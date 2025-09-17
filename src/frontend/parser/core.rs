@@ -354,14 +354,14 @@ mod tests {
 
     #[test]
     fn test_parse_if_expression() {
-        let mut parser = Parser::new("if true then 1 else 2");
+        let mut parser = Parser::new("if true { 1 } else { 2 }");
         let result = parser.parse();
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_parse_if_without_else() {
-        let mut parser = Parser::new("if condition then action");
+        let mut parser = Parser::new("if condition { action }");
         let result = parser.parse();
         assert!(result.is_ok());
     }
@@ -382,7 +382,7 @@ mod tests {
 
     #[test]
     fn test_parse_lambda_multiple_params() {
-        let mut parser = Parser::new("\\x y -> x + y");
+        let mut parser = Parser::new("\\x, y -> x + y");
         let result = parser.parse();
         assert!(result.is_ok());
     }

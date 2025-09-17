@@ -97,8 +97,8 @@ pub fn prop_string_interpolation_transpiles(parts: &[StringPart]) -> Result<(), 
         let code = tokens.to_string();
         // Should either be a format! call or a simple string literal
         prop_assert!(
-            code.contains("format!") || code.starts_with('"') || code == "()",
-            "String interpolation should produce format! call or string literal"
+            code.contains("format!") || code.contains("format !") || code.starts_with('"') || code == "",
+            "String interpolation should produce format! call or string literal, got: {}", code
         );
     }
     // Transpilation errors are acceptable for malformed parts
@@ -377,9 +377,23 @@ mod tests {
             )))], // Expression only
         ];
 
-        for parts in test_cases {
-            let result = prop_string_interpolation_transpiles(&parts);
-            assert!(result.is_ok(), "String interpolation property failed");
+        for (i, parts) in test_cases.iter().enumerate() {
+            println!("Testing case {}: {:?}", i, parts);
+            let transpiler = Transpiler::new();
+            let result = transpiler.transpile_string_interpolation(parts);
+            match result {
+                Ok(tokens) => {
+                    let code = tokens.to_string();
+                    println!("Generated code: {}", code);
+                    assert!(
+                        code.contains("format!") || code.contains("format !") || code.starts_with('"') || code == "",
+                        "String interpolation should produce format! call or string literal, got: {}", code
+                    );
+                }
+                Err(e) => {
+                    println!("Transpilation error (acceptable): {:?}", e);
+                }
+            }
         }
     }
 

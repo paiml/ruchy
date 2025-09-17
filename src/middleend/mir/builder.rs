@@ -1225,9 +1225,7 @@ mod property_tests_builder {
 
         /// Property: Local allocation IDs are sequential
         #[test]
-        fn test_local_allocation_sequential(count: usize) {
-            prop_assume!(count <= 50); // Reasonable limit for property tests
-
+        fn test_local_allocation_sequential(count in 0..=50usize) {
             let mut builder = MirBuilder::new();
             builder.start_function("test".to_string(), Type::Unit);
 
@@ -1245,9 +1243,7 @@ mod property_tests_builder {
 
         /// Property: Block allocation IDs are sequential
         #[test]
-        fn test_block_allocation_sequential(count: usize) {
-            prop_assume!(count <= 50); // Reasonable limit for property tests
-
+        fn test_block_allocation_sequential(count in 0..=50usize) {
             let mut builder = MirBuilder::new();
             builder.start_function("test".to_string(), Type::Unit);
 
@@ -1303,9 +1299,7 @@ mod property_tests_builder {
 
         /// Property: Statement count increases with each push
         #[test]
-        fn test_statement_count_increases(stmt_count: usize) {
-            prop_assume!(stmt_count <= 20); // Reasonable limit
-
+        fn test_statement_count_increases(stmt_count in 0..=20usize) {
             let mut builder = MirBuilder::new();
             builder.start_function("test".to_string(), Type::Unit);
             let block = builder.new_block();
@@ -1366,9 +1360,7 @@ mod property_tests_builder {
 
         /// Property: Function can be built without current function set
         #[test]
-        fn test_no_function_operations_safe(op_count: usize) {
-            prop_assume!(op_count <= 10);
-
+        fn test_no_function_operations_safe(op_count in 0..=10usize) {
             let mut builder = MirBuilder::new();
             // Don't start a function
 
@@ -1385,10 +1377,7 @@ mod property_tests_builder {
 
         /// Property: Block mutation is consistent
         #[test]
-        fn test_block_mutation_consistent(valid_block_count: usize, invalid_id: usize) {
-            prop_assume!(valid_block_count <= 10);
-            prop_assume!(invalid_id >= 100); // Ensure it's invalid
-
+        fn test_block_mutation_consistent(valid_block_count in 0..=10usize, invalid_id in 100..=200usize) {
             let mut builder = MirBuilder::new();
             builder.start_function("test".to_string(), Type::Unit);
 

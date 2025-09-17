@@ -1494,6 +1494,7 @@ mod tests {
     #[test]
     fn test_linter_with_all_rules() {
         let mut linter = Linter::new();
+        linter.rules.clear(); // Clear default rules first
         linter.add_rule(LintRule::UnusedVariable);
         linter.add_rule(LintRule::UndefinedVariable);
         linter.add_rule(LintRule::VariableShadowing);

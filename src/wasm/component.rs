@@ -1110,14 +1110,29 @@ mod tests {
     fn test_builder_add_multiple_sources() {
         let mut builder = ComponentBuilder::new();
 
-        builder.add_source("file1.ruchy").unwrap();
-        builder.add_source("file2.ruchy").unwrap();
-        builder.add_source("file3.ruchy").unwrap();
+        // Create temporary files
+        let temp_dir = std::env::temp_dir();
+        let file1 = temp_dir.join("file1.ruchy");
+        let file2 = temp_dir.join("file2.ruchy");
+        let file3 = temp_dir.join("file3.ruchy");
+
+        fs::write(&file1, "fn main() {}").unwrap();
+        fs::write(&file2, "fn helper() {}").unwrap();
+        fs::write(&file3, "fn utils() {}").unwrap();
+
+        builder.add_source(&file1).unwrap();
+        builder.add_source(&file2).unwrap();
+        builder.add_source(&file3).unwrap();
 
         assert_eq!(builder.source_files.len(), 3);
-        assert!(builder.source_files.contains(&PathBuf::from("file1.ruchy")));
-        assert!(builder.source_files.contains(&PathBuf::from("file2.ruchy")));
-        assert!(builder.source_files.contains(&PathBuf::from("file3.ruchy")));
+        assert!(builder.source_files.contains(&file1));
+        assert!(builder.source_files.contains(&file2));
+        assert!(builder.source_files.contains(&file3));
+
+        // Clean up
+        let _ = fs::remove_file(file1);
+        let _ = fs::remove_file(file2);
+        let _ = fs::remove_file(file3);
     }
 
     #[test]

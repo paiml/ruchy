@@ -17,7 +17,7 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
             parse_identifier_token(state, token_clone, span_clone)
         }
         // Unary operator tokens - delegated to focused helper
-        Token::Minus | Token::Bang => {
+        Token::Minus | Token::Bang | Token::Await => {
             parse_unary_operator_token(state, token_clone, span_clone)
         }
         // Function/block tokens - delegated to focused helper
@@ -29,7 +29,7 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
             parse_variable_declaration_token(state, token_clone)
         }
         // Control flow tokens - delegated to focused helper
-        Token::If | Token::Match | Token::While | Token::For | Token::Try => {
+        Token::If | Token::Match | Token::While | Token::For | Token::Try | Token::Loop => {
             parse_control_flow_token(state, token_clone)
         }
         // Module declaration token
@@ -37,7 +37,7 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
             parse_module_declaration(state)
         }
         // Lambda expression tokens - delegated to focused helper
-        Token::Pipe | Token::OrOr => {
+        Token::Pipe | Token::OrOr | Token::Backslash => {
             parse_lambda_token(state, token_clone)
         }
         // Parentheses tokens - delegated to focused helper (unit, grouping, tuples, lambdas)
@@ -57,7 +57,8 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
             parse_special_definition_token(state, token_clone)
         }
         // Control statement tokens - delegated to focused helper
-        Token::Pub | Token::Break | Token::Continue | Token::Return | Token::Throw => {
+        Token::Pub | Token::Break | Token::Continue | Token::Return | Token::Throw |
+        Token::Export | Token::Async | Token::Increment | Token::Decrement => {
             parse_control_statement_token(state, token_clone, span_clone)
         }
         // Collection/enum definition tokens - delegated to focused helper
@@ -174,9 +175,16 @@ fn parse_unary_operator_token(state: &mut ParserState, token: Token, span: Span)
         Token::Bang => {
             state.tokens.advance();
             let expr = super::parse_expr_with_precedence_recursive(state, 13)?;
-            Ok(Expr::new(ExprKind::Unary { 
-                op: UnaryOp::Not, 
-                operand: Box::new(expr) 
+            Ok(Expr::new(ExprKind::Unary {
+                op: UnaryOp::Not,
+                operand: Box::new(expr)
+            }, span))
+        }
+        Token::Await => {
+            state.tokens.advance();
+            let expr = super::parse_expr_with_precedence_recursive(state, 13)?;
+            Ok(Expr::new(ExprKind::Await {
+                expr: Box::new(expr)
             }, span))
         }
         _ => bail!("Expected unary operator token, got: {:?}", token),
@@ -327,6 +335,7 @@ fn parse_control_flow_token(state: &mut ParserState, token: Token) -> Result<Exp
         Token::While => parse_while_loop(state),
         Token::For => parse_for_loop(state),
         Token::Try => parse_try_catch(state),
+        Token::Loop => parse_loop(state),
         _ => bail!("Expected control flow token, got: {:?}", token),
     }
 }
@@ -422,6 +431,7 @@ fn parse_lambda_token(state: &mut ParserState, token: Token) -> Result<Expr> {
     match token {
         Token::Pipe => parse_lambda_expression(state),
         Token::OrOr => parse_lambda_no_params(state),
+        Token::Backslash => super::functions::parse_lambda(state),
         _ => bail!("Expected lambda token, got: {:?}", token),
     }
 }
@@ -471,9 +481,13 @@ fn parse_control_statement_token(state: &mut ParserState, token: Token, span: Sp
     match token {
         Token::Pub => parse_pub_token(state),
         Token::Break => parse_break_token(state, span),
-        Token::Continue => parse_continue_token(state, span), 
+        Token::Continue => parse_continue_token(state, span),
         Token::Return => parse_return_token(state, span),
         Token::Throw => parse_throw_token(state, span),
+        Token::Export => parse_export_token(state),
+        Token::Async => parse_async_token(state),
+        Token::Increment => parse_increment_token(state, span),
+        Token::Decrement => parse_decrement_token(state, span),
         _ => bail!("Expected control statement token, got: {:?}", token),
     }
 }
@@ -2937,6 +2951,114 @@ mod tests {
         let result = parser.parse();
         assert!(result.is_ok(), "Failed to parse chained comparisons");
     }
+}
+
+/// Parse export statement - delegates to utils module
+fn parse_export_token(state: &mut ParserState) -> Result<Expr> {
+    super::utils::parse_export(state)
+}
+
+/// Parse async function declaration - modifies following function
+fn parse_async_token(state: &mut ParserState) -> Result<Expr> {
+    state.tokens.advance(); // consume 'async'
+
+    // After 'async', we expect 'fun' for async function
+    if matches!(state.tokens.peek(), Some((Token::Fun, _))) {
+        // Parse the async function
+        parse_async_function(state, false)
+    } else {
+        bail!("Expected 'fun' after 'async'")
+    }
+}
+
+/// Parse async function with explicit async flag handling
+fn parse_async_function(state: &mut ParserState, is_pub: bool) -> Result<Expr> {
+    let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume fun
+    let is_async = true; // We know it's async since we came from async token
+
+    // Parse function name
+    let name = if let Some((Token::Identifier(n), _)) = state.tokens.peek() {
+        let name = n.clone();
+        state.tokens.advance();
+        name
+    } else {
+        "anonymous".to_string()
+    };
+
+    // Parse optional type parameters <T, U, ...>
+    let type_params = if matches!(state.tokens.peek(), Some((Token::Less, _))) {
+        super::utils::parse_type_parameters(state)?
+    } else {
+        Vec::new()
+    };
+
+    // Parse parameters
+    let params = super::utils::parse_params(state)?;
+
+    // Parse return type if present
+    let return_type = if matches!(state.tokens.peek(), Some((Token::Arrow, _))) {
+        state.tokens.advance(); // consume ->
+        Some(super::utils::parse_type(state)?)
+    } else {
+        None
+    };
+
+    // Parse body
+    let body = super::parse_expr_recursive(state)?;
+
+    Ok(Expr::new(
+        ExprKind::Function {
+            name,
+            type_params,
+            params,
+            return_type,
+            body: Box::new(body),
+            is_async,
+            is_pub,
+        },
+        start_span,
+    ))
+}
+
+/// Parse loop statement - infinite loop with break/continue
+fn parse_loop(state: &mut ParserState) -> Result<Expr> {
+    let start_span = state.tokens.expect(&Token::Loop)?;
+    let body = Box::new(super::parse_expr_recursive(state)?);
+
+    Ok(Expr::new(
+        ExprKind::Loop { body },
+        start_span,
+    ))
+}
+
+/// Parse increment operator (++var or var++)
+fn parse_increment_token(state: &mut ParserState, span: Span) -> Result<Expr> {
+    state.tokens.advance(); // consume '++'
+
+    // Parse the variable being incremented
+    let variable = super::parse_expr_recursive(state)?;
+
+    Ok(Expr::new(
+        ExprKind::PreIncrement {
+            target: Box::new(variable),
+        },
+        span,
+    ))
+}
+
+/// Parse decrement operator (--var or var--)
+fn parse_decrement_token(state: &mut ParserState, span: Span) -> Result<Expr> {
+    state.tokens.advance(); // consume '--'
+
+    // Parse the variable being decremented
+    let variable = super::parse_expr_recursive(state)?;
+
+    Ok(Expr::new(
+        ExprKind::PreDecrement {
+            target: Box::new(variable),
+        },
+        span,
+    ))
 }
 
 #[cfg(test)]

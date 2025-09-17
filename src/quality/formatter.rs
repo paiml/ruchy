@@ -52,7 +52,7 @@ pub fn format(&self, ast: &Expr) -> Result<String> {
             ExprKind::Literal(lit) => match lit {
                 crate::frontend::ast::Literal::Integer(n) => n.to_string(),
                 crate::frontend::ast::Literal::Float(f) => f.to_string(),
-                crate::frontend::ast::Literal::String(s) => format!("\"{s}\""),
+                crate::frontend::ast::Literal::String(s) => format!("\"{}\"", s.replace("\"", "\\\"")),
                 crate::frontend::ast::Literal::Bool(b) => b.to_string(),
                 crate::frontend::ast::Literal::Char(c) => format!("'{c}'"),
                 crate::frontend::ast::Literal::Unit => "()".to_string(),
@@ -68,7 +68,7 @@ pub fn format(&self, ast: &Expr) -> Result<String> {
             }
             ExprKind::Binary { left, op, right } => {
                 format!(
-                    "{} {} {}",
+                    "{} {:?} {}",
                     self.format_expr(left, indent),
                     op,
                     self.format_expr(right, indent)
@@ -76,10 +76,15 @@ pub fn format(&self, ast: &Expr) -> Result<String> {
             }
             ExprKind::Block(exprs) => {
                 let mut result = String::from("{\n");
+                let inner_indent_str = if self.use_tabs {
+                    "\t".repeat(indent + 1)
+                } else {
+                    " ".repeat((indent + 1) * self.indent_width)
+                };
                 for expr in exprs {
                     result.push_str(&format!(
                         "{}{}\n",
-                        indent_str,
+                        inner_indent_str,
                         self.format_expr(expr, indent + 1)
                     ));
                 }

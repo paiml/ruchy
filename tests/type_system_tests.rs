@@ -3,15 +3,14 @@
 
 use ruchy::middleend::types::{MonoType, TypeScheme, TyVar};
 use ruchy::middleend::environment::TypeEnv;
-use std::collections::HashMap;
 
 #[test]
 fn test_type_creation() {
     // Test basic type creation
-    let int_type = MonoMonoType::Int;
-    let bool_type = MonoMonoType::Bool;
-    let string_type = MonoMonoType::String;
-    let float_type = MonoMonoType::Float;
+    let int_type = MonoType::Int;
+    let bool_type = MonoType::Bool;
+    let string_type = MonoType::String;
+    let float_type = MonoType::Float;
     
     assert_eq!(format!("{:?}", int_type), "Int");
     assert_eq!(format!("{:?}", bool_type), "Bool");
@@ -45,10 +44,10 @@ fn test_function_type() {
 #[test]
 fn test_array_type() {
     let elem_type = MonoType::Int;
-    let array_type = MonoType::Array(Box::new(elem_type));
+    let array_type = MonoType::List(Box::new(elem_type));
     
     match array_type {
-        MonoType::Array(elem) => {
+        MonoType::List(elem) => {
             assert!(matches!(*elem, MonoType::Int));
         }
         _ => panic!("Expected array type"),
@@ -58,10 +57,10 @@ fn test_array_type() {
 #[test]
 fn test_option_type() {
     let inner_type = MonoType::String;
-    let option_type = MonoType::Option(Box::new(inner_type));
+    let option_type = MonoType::Optional(Box::new(inner_type));
     
     match option_type {
-        MonoType::Option(inner) => {
+        MonoType::Optional(inner) => {
             assert!(matches!(*inner, MonoType::String));
         }
         _ => panic!("Expected option type"),
@@ -101,11 +100,11 @@ fn test_tuple_type() {
 
 #[test]
 fn test_type_variable() {
-    let type_var = MonoType::Var(42);
+    let type_var = MonoType::Var(TyVar(42));
     
     match type_var {
         MonoType::Var(id) => {
-            assert_eq!(id, 42);
+            assert_eq!(id, TyVar(42));
         }
         _ => panic!("Expected type variable"),
     }
@@ -184,9 +183,9 @@ fn test_type_equality() {
     assert_eq!(MonoType::Bool, MonoType::Bool);
     assert_ne!(MonoType::Int, MonoType::Bool);
     
-    let array1 = MonoType::Array(Box::new(MonoType::Int));
-    let array2 = MonoType::Array(Box::new(MonoType::Int));
-    let array3 = MonoType::Array(Box::new(MonoType::Bool));
+    let array1 = MonoType::List(Box::new(MonoType::Int));
+    let array2 = MonoType::List(Box::new(MonoType::Int));
+    let array3 = MonoType::List(Box::new(MonoType::Bool));
     
     assert_eq!(array1, array2);
     assert_ne!(array1, array3);
@@ -195,14 +194,14 @@ fn test_type_equality() {
 #[test]
 fn test_nested_types() {
     // Test Option<Array<Int>>
-    let nested = MonoType::Option(Box::new(
-        MonoType::Array(Box::new(MonoType::Int))
+    let nested = MonoType::Optional(Box::new(
+        MonoType::List(Box::new(MonoType::Int))
     ));
     
     match nested {
-        MonoType::Option(inner) => {
+        MonoType::Optional(inner) => {
             match *inner {
-                MonoType::Array(elem) => {
+                MonoType::List(elem) => {
                     assert!(matches!(*elem, MonoType::Int));
                 }
                 _ => panic!("Expected array inside option"),
@@ -214,16 +213,14 @@ fn test_nested_types() {
 
 #[test]
 fn test_generic_type() {
-    // Test a generic list type
-    let list_type = MonoType::Generic("List".to_string(), vec![MonoType::Int]);
-    
+    // Test a named type (user-defined)
+    let list_type = MonoType::Named("List".to_string());
+
     match list_type {
-        MonoType::Generic(name, args) => {
+        MonoType::Named(name) => {
             assert_eq!(name, "List");
-            assert_eq!(args.len(), 1);
-            assert!(matches!(args[0], MonoType::Int));
         }
-        _ => panic!("Expected generic type"),
+        _ => panic!("Expected named type"),
     }
 }
 
@@ -236,9 +233,9 @@ mod property_tests {
     proptest! {
         #[test]
         fn prop_type_var_roundtrip(id in 0u32..10000) {
-            let ty = MonoType::Var(id);
+            let ty = MonoType::Var(TyVar(id));
             match ty {
-                MonoType::Var(n) => prop_assert_eq!(n, id),
+                MonoType::Var(n) => prop_assert_eq!(n, TyVar(id)),
                 _ => prop_assert!(false, "Expected type variable"),
             }
         }
@@ -263,7 +260,7 @@ mod property_tests {
 
             prop_assert_eq!(scheme.vars.len(), vars.len());
             for (i, var) in vars.iter().enumerate() {
-                prop_assert_eq!(scheme.vars[i], TyVar(*var));
+                prop_assert_eq!(scheme.vars[i].clone(), TyVar(*var));
             }
         }
     }

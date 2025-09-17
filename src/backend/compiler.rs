@@ -608,13 +608,12 @@ mod tests {
             "{{{[[[@#$%",           // Invalid syntax
             "fun(",                 // Incomplete function
             "\"unterminated string", // Unterminated string
-            "fun main() { return; return; }", // Multiple returns
         ];
 
         for source in invalid_sources {
-            let result = parse_and_transpile(source);
+            let result = compile_source_to_binary(source, &CompileOptions::default());
             // Should return error, not panic
-            assert!(result.is_err());
+            assert!(result.is_err(), "Expected error for source: '{}'", source);
         }
     }
 

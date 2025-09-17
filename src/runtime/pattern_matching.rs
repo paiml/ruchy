@@ -492,12 +492,12 @@ mod tests {
     // Test 8: Option Pattern Matching (Some/None)
     #[test]
     fn test_option_pattern_matching() {
-        // Some pattern matching
-        let some_value = Value::Object({
-            let mut map = HashMap::new();
-            map.insert("Some".to_string(), Value::Int(42));
-            map
-        });
+        // Some pattern matching - should use EnumVariant representation
+        let some_value = Value::EnumVariant {
+            enum_name: "Option".to_string(),
+            variant_name: "Some".to_string(),
+            data: Some(vec![Value::Int(42)]),
+        };
 
         let some_pattern = Pattern::Some(Box::new(Pattern::Identifier("value".to_string())));
         let binding = match_pattern(&some_pattern, &some_value);
@@ -507,8 +507,12 @@ mod tests {
         assert_eq!(bindings[0].0, "value");
         assert!(values_equal(&bindings[0].1, &Value::Int(42)));
 
-        // None pattern matching
-        let none_value = Value::Unit; // Assuming None is represented as Unit
+        // None pattern matching - should use EnumVariant representation
+        let none_value = Value::EnumVariant {
+            enum_name: "Option".to_string(),
+            variant_name: "None".to_string(),
+            data: None,
+        };
         let none_pattern = Pattern::None;
         assert!(match_pattern(&none_pattern, &none_value).is_some());
 

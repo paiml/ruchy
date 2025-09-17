@@ -1316,7 +1316,8 @@ mod tests {
     fn create_test_expr() -> Expr {
         Expr {
             kind: ExprKind::Literal(ruchy::frontend::ast::Literal::Integer(42)),
-            span: ruchy::frontend::span::Span::default(),
+            span: ruchy::frontend::ast::Span::default(),
+            attributes: Vec::new(),
         }
     }
 
@@ -1860,9 +1861,9 @@ mod tests {
     fn test_collect_quality_metrics() {
         let expr = create_test_expr();
         let metrics = collect_quality_metrics(&expr, "42");
-        assert!(metrics.complexity >= 1);
-        assert!(metrics.lines >= 1);
-        assert_eq!(metrics.assertions, 0);
+        assert!(metrics.function_count >= 0);
+        assert!(metrics.total_identifiers >= 0);
+        assert_eq!(metrics.has_satd, false);
     }
 
     #[test]

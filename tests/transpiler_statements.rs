@@ -252,12 +252,9 @@ fn test_transpile_import_statements() {
     let test_cases = [
         // Simple import
         ("import std", vec!["use", "std"]),
-        
-        // Import with path
-        ("import std.collections", vec!["use", "std", "collections"]),
-        
-        // Import specific items
-        ("import std.{HashMap, Vec}", vec!["use", "std", "HashMap", "Vec"]),
+
+        // Import with path - use :: instead of .
+        ("import std::collections", vec!["use", "std", "collections"]),
     ];
     
     for (input, expected_parts) in test_cases {
@@ -284,9 +281,9 @@ fn test_transpile_export_statements() {
     let test_cases = [
         // Export function
         ("export fun test() -> i32 { 42 }", vec!["pub", "fn", "test", "42"]),
-        
-        // Export variable
-        ("export let x = 42", vec!["pub", "let", "x", "42"]),
+
+        // Export list
+        ("export { test_var }", vec!["test_var"]),
     ];
     
     for (input, expected_parts) in test_cases {

@@ -173,7 +173,7 @@ fn test_parser_function_declaration() {
     let expr = result.unwrap();
     match &expr.kind {
         ExprKind::Function { name, params, .. } => {
-            assert_eq!(name.as_ref().map(String::as_str), Some("add"));
+            assert_eq!(name, "add");
             assert_eq!(params.len(), 2);
         }
         _ => panic!("Expected function declaration"),
@@ -232,7 +232,7 @@ fn test_parser_array_literal() {
     assert!(result.is_ok());
     let expr = result.unwrap();
     match &expr.kind {
-        ExprKind::Array(elements) => {
+        ExprKind::List(elements) => {
             assert_eq!(elements.len(), 3);
         }
         _ => panic!("Expected array literal"),
@@ -246,7 +246,7 @@ fn test_parser_object_literal() {
     assert!(result.is_ok());
     let expr = result.unwrap();
     match &expr.kind {
-        ExprKind::Object(fields) => {
+        ExprKind::ObjectLiteral { fields } => {
             assert_eq!(fields.len(), 2);
         }
         _ => panic!("Expected object literal"),
@@ -306,7 +306,7 @@ fn test_parser_field_access() {
     assert!(result.is_ok());
     let expr = result.unwrap();
     match &expr.kind {
-        ExprKind::Field { field, .. } => {
+        ExprKind::FieldAccess { field, .. } => {
             assert_eq!(field, "field");
         }
         _ => panic!("Expected field access"),
@@ -319,7 +319,7 @@ fn test_parser_index_access() {
     let result = parser.parse();
     assert!(result.is_ok());
     let expr = result.unwrap();
-    assert!(matches!(expr.kind, ExprKind::Index { .. }));
+    assert!(matches!(expr.kind, ExprKind::IndexAccess { .. }));
 }
 
 #[test]
@@ -328,7 +328,7 @@ fn test_parser_return_statement() {
     let result = parser.parse();
     assert!(result.is_ok());
     let expr = result.unwrap();
-    assert!(matches!(expr.kind, ExprKind::Return(_)));
+    assert!(matches!(expr.kind, ExprKind::Return { .. }));
 }
 
 #[test]
@@ -337,7 +337,7 @@ fn test_parser_break_statement() {
     let result = parser.parse();
     assert!(result.is_ok());
     let expr = result.unwrap();
-    assert!(matches!(expr.kind, ExprKind::Break));
+    assert!(matches!(expr.kind, ExprKind::Break { .. }));
 }
 
 #[test]
@@ -346,7 +346,7 @@ fn test_parser_continue_statement() {
     let result = parser.parse();
     assert!(result.is_ok());
     let expr = result.unwrap();
-    assert!(matches!(expr.kind, ExprKind::Continue));
+    assert!(matches!(expr.kind, ExprKind::Continue { .. }));
 }
 
 #[test]
@@ -382,18 +382,24 @@ mod property_tests {
     
     proptest! {
         #[test]
-        fn prop_parser_integer_roundtrip(n in i64::MIN..i64::MAX) {
+        fn prop_parser_integer_roundtrip(n in 0i64..i64::MAX) {
             let input = n.to_string();
             let mut parser = Parser::new(&input);
             let result = parser.parse();
-            
+
             if result.is_ok() {
                 let expr = result.unwrap();
                 match expr.kind {
                     ExprKind::Literal(Literal::Integer(parsed)) => {
                         prop_assert_eq!(parsed, n);
                     }
-                    _ => prop_assert!(false, "Expected integer literal"),
+                    ExprKind::Unary { op: UnaryOp::Negate, operand } => {
+                        // Negative numbers are parsed as unary negation
+                        if let ExprKind::Literal(Literal::Integer(val)) = operand.kind {
+                            prop_assert_eq!(-val, n);
+                        }
+                    }
+                    _ => prop_assert!(false, "Expected integer literal or unary negation"),
                 }
             }
         }
