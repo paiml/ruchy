@@ -28,7 +28,7 @@ use crate::frontend::ast::{
     Pattern, PipelineStage, Span, StringPart, StructField, TraitMethod, Type, TypeKind, UnaryOp,
 };
 use crate::frontend::lexer::{Token, TokenStream};
-use crate::parser::error_recovery::{ErrorNode, ErrorRecovery};
+use crate::parser::error_recovery::ErrorNode;
 use anyhow::{bail, Result};
 /// Shared parser state and utilities
 pub(crate) struct ParserState<'a> {

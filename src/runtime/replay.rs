@@ -536,7 +536,7 @@ mod tests {
         // Test Success variant
         let success = EvalResult::Success { value: "42".to_string() };
         match success {
-            EvalResult::Success { value } => assert_eq!(value, "42"),
+            EvalResult::Success { ref value } => assert_eq!(value, "42"),
             _ => panic!("Expected Success variant"),
         }
 

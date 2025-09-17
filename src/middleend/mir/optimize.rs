@@ -59,8 +59,10 @@ pub fn new() -> Self {
 /// let mut dce = DeadCodeElimination::new();
 /// // dce.run(&mut function);
 /// ```
+///
+/// ```ignore
 /// use ruchy::middleend::mir::optimize::run;
-/// 
+///
 /// let result = run(());
 /// assert_eq!(result, Ok(()));
 /// ```

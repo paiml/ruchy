@@ -2017,7 +2017,7 @@ mod sprint_44_tests {
 
         for i in 0..5 {
             nested_expr = Expr::new(ExprKind::If {
-                condition: Box::new(Expr::new(ExprKind::Literal(Literal::Boolean(true)), Span { start: 0, end: 1 })),
+                condition: Box::new(Expr::new(ExprKind::Literal(Literal::Bool(true)), Span { start: 0, end: 1 })),
                 then_branch: Box::new(Expr::new(ExprKind::Literal(Literal::Integer(i)), Span { start: 0, end: 1 })),
                 else_branch: Some(Box::new(nested_expr)),
             }, Span { start: 0, end: 1 });

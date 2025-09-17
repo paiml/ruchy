@@ -230,20 +230,36 @@ pub enum DataValue {
 /// Performance metrics for a pipeline stage
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct StageMetrics {
+    /// Stage identifier
+    pub stage_id: String,
     /// Stage execution time
     pub execution_time: Duration,
+    /// Number of times stage has been executed
+    pub execution_count: u32,
+    /// Total execution time across all runs
+    pub total_execution_time: Duration,
+    /// Average execution time per run
+    pub average_execution_time: Duration,
     /// Memory peak usage during stage
     pub peak_memory: usize,
+    /// Memory peak usage during stage (alternative name)
+    pub peak_memory_usage: usize,
     /// Number of rows input to stage
     pub input_rows: usize,
     /// Number of rows output from stage
     pub output_rows: usize,
+    /// Total rows processed (alternative name)
+    pub total_rows_processed: usize,
+    /// Number of errors encountered
+    pub error_count: u32,
     /// CPU time spent in stage
     pub cpu_time: Duration,
     /// I/O operations performed
     pub io_operations: usize,
     /// Cache hit ratio (if applicable)
     pub cache_hit_ratio: Option<f64>,
+    /// Timestamp of last execution
+    pub last_execution: std::time::SystemTime,
 }
 /// Execution event in the debugging session
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -293,6 +309,8 @@ pub enum ExportFormat {
     Json,
     /// Parquet format
     Parquet,
+    /// Arrow format
+    Arrow,
     /// Debug text format
     Debug,
 }
@@ -378,13 +396,21 @@ impl DataflowDebugger {
         pipeline_stage.status = StageStatus::Completed;
         // Store performance metrics
         let metrics = StageMetrics {
+            stage_id: pipeline_stage.stage_id.clone(),
             execution_time,
+            execution_count: 1,
+            total_execution_time: execution_time,
+            average_execution_time: execution_time,
             peak_memory: 1024 * 1024, // 1MB simulated
+            peak_memory_usage: 1024 * 1024, // 1MB simulated
             input_rows: pipeline_stage.rows_processed.unwrap_or(0),
             output_rows: pipeline_stage.rows_processed.unwrap_or(0),
+            total_rows_processed: pipeline_stage.rows_processed.unwrap_or(0),
+            error_count: 0,
             cpu_time: execution_time,
             io_operations: 1,
             cache_hit_ratio: Some(0.85),
+            last_execution: std::time::SystemTime::now(),
         };
         let mut stage_metrics = self.stage_metrics
             .lock()
@@ -634,6 +660,37 @@ impl DataflowDebugger {
     fn compute_data_changes(&self, _data1: &[DataRow], _data2: &[DataRow]) -> Vec<DataChange> {
         // Simplified implementation - in reality would compute detailed row-level diffs
         vec![DataChange::RowCountChanged]
+    }
+
+    /// Stop the debugging session
+    pub fn stop_session(&self) -> Result<()> {
+        let mut state = self.session_state
+            .lock()
+            .map_err(|_| anyhow::anyhow!("Failed to acquire session state lock"))?;
+        state.active = false;
+        self.record_event(EventType::StageCompleted, "session".to_string(), HashMap::new())?;
+        Ok(())
+    }
+
+    /// Add a stage to the pipeline
+    pub fn add_stage(&self, stage: PipelineStage) -> Result<()> {
+        let mut stages = self.pipeline_stages
+            .lock()
+            .map_err(|_| anyhow::anyhow!("Failed to acquire pipeline stages lock"))?;
+        stages.push(stage);
+        Ok(())
+    }
+
+    /// Set a breakpoint at a specific stage
+    pub fn set_breakpoint(&self, stage_id: String, condition: Option<BreakpointCondition>) -> Result<()> {
+        let breakpoint = Breakpoint {
+            stage_id: stage_id.clone(),
+            condition,
+            active: true,
+            hit_count: 0,
+            actions: vec![BreakpointAction::Pause],
+        };
+        self.add_breakpoint(breakpoint)
     }
 }
 /// Result of executing a pipeline stage
@@ -902,7 +959,7 @@ mod tests {
             actions: vec![BreakpointAction::Pause],
         };
 
-        let result = debugger.set_breakpoint("stage_1".to_string(), breakpoint);
+        let result = debugger.set_breakpoint("stage_1".to_string(), breakpoint.condition);
         assert!(result.is_ok());
     }
 
@@ -1102,12 +1159,19 @@ mod tests {
     fn test_stage_metrics_creation() {
         let metrics = StageMetrics {
             stage_id: "stage_1".to_string(),
+            execution_time: Duration::from_millis(500),
             execution_count: 1,
             total_execution_time: Duration::from_millis(500),
             average_execution_time: Duration::from_millis(500),
+            peak_memory: 1024,
             peak_memory_usage: 1024,
+            input_rows: 10000,
+            output_rows: 10000,
             total_rows_processed: 10000,
             error_count: 0,
+            cpu_time: Duration::from_millis(400),
+            io_operations: 5,
+            cache_hit_ratio: Some(0.8),
             last_execution: std::time::SystemTime::now(),
         };
 
@@ -1119,65 +1183,67 @@ mod tests {
 
     #[test]
     fn test_execution_event_stage_start() {
-        let event = ExecutionEvent::StageStart {
-            stage_id: "stage_1".to_string(),
+        let event = ExecutionEvent {
             timestamp: std::time::SystemTime::now(),
+            event_type: EventType::StageStarted,
+            stage_id: "stage_1".to_string(),
+            data: HashMap::new(),
         };
 
-        if let ExecutionEvent::StageStart { stage_id, .. } = event {
-            assert_eq!(stage_id, "stage_1");
-        } else {
-            panic!("Expected StageStart event");
-        }
+        assert_eq!(event.stage_id, "stage_1");
+        assert!(matches!(event.event_type, EventType::StageStarted));
     }
 
     #[test]
     fn test_execution_event_stage_complete() {
-        let event = ExecutionEvent::StageComplete {
-            stage_id: "stage_1".to_string(),
+        let mut data = HashMap::new();
+        data.insert("execution_time".to_string(), "100".to_string());
+        data.insert("rows_processed".to_string(), "1000".to_string());
+
+        let event = ExecutionEvent {
             timestamp: std::time::SystemTime::now(),
-            execution_time: Duration::from_millis(100),
-            rows_processed: 1000,
+            event_type: EventType::StageCompleted,
+            stage_id: "stage_1".to_string(),
+            data,
         };
 
-        if let ExecutionEvent::StageComplete { stage_id, rows_processed, .. } = event {
-            assert_eq!(stage_id, "stage_1");
-            assert_eq!(rows_processed, 1000);
-        } else {
-            panic!("Expected StageComplete event");
-        }
+        assert_eq!(event.stage_id, "stage_1");
+        assert!(matches!(event.event_type, EventType::StageCompleted));
+        assert_eq!(event.data.get("rows_processed"), Some(&"1000".to_string()));
     }
 
     #[test]
     fn test_execution_event_breakpoint_hit() {
-        let event = ExecutionEvent::BreakpointHit {
-            stage_id: "stage_1".to_string(),
-            breakpoint_id: "bp_1".to_string(),
+        let mut data = HashMap::new();
+        data.insert("breakpoint_id".to_string(), "bp_1".to_string());
+
+        let event = ExecutionEvent {
             timestamp: std::time::SystemTime::now(),
+            event_type: EventType::BreakpointHit,
+            stage_id: "stage_1".to_string(),
+            data,
         };
 
-        if let ExecutionEvent::BreakpointHit { stage_id, breakpoint_id, .. } = event {
-            assert_eq!(stage_id, "stage_1");
-            assert_eq!(breakpoint_id, "bp_1");
-        } else {
-            panic!("Expected BreakpointHit event");
-        }
+        assert_eq!(event.stage_id, "stage_1");
+        assert!(matches!(event.event_type, EventType::BreakpointHit));
+        assert_eq!(event.data.get("breakpoint_id"), Some(&"bp_1".to_string()));
     }
 
     #[test]
     fn test_execution_event_error() {
-        let event = ExecutionEvent::Error {
-            stage_id: "stage_1".to_string(),
-            error_message: "Division by zero".to_string(),
+        let mut data = HashMap::new();
+        data.insert("error_message".to_string(), "Division by zero".to_string());
+
+        let event = ExecutionEvent {
             timestamp: std::time::SystemTime::now(),
+            event_type: EventType::StageFailed,
+            stage_id: "stage_1".to_string(),
+            data,
         };
 
-        if let ExecutionEvent::Error { stage_id, error_message, .. } = event {
-            assert_eq!(stage_id, "stage_1");
-            assert_eq!(error_message, "Division by zero");
-        } else {
-            panic!("Expected Error event");
-        }
+        assert_eq!(event.stage_id, "stage_1");
+        assert!(matches!(event.event_type, EventType::StageFailed));
+        assert_eq!(event.data.get("error_message"), Some(&"Division by zero".to_string()));
     }
 
     #[test]

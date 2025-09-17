@@ -778,10 +778,10 @@ mod tests {
         let builder = AstBuilder::new();
 
         // Test negation
-        let neg_expr = builder.unary(UnaryOp::Minus, builder.int(42));
+        let neg_expr = builder.unary(UnaryOp::Negate, builder.int(42));
 
         if let ExprKind::Unary { op, operand } = neg_expr.kind {
-            assert!(matches!(op, UnaryOp::Minus));
+            assert!(matches!(op, UnaryOp::Negate));
             if let ExprKind::Literal(Literal::Integer(val)) = operand.kind {
                 assert_eq!(val, 42);
             } else {
@@ -1937,7 +1937,7 @@ mod tests {
         let builder = AstBuilder::new();
 
         let operators = vec![
-            UnaryOp::Minus,
+            UnaryOp::Negate,
             UnaryOp::Not,
         ];
 

@@ -2,7 +2,8 @@
 //! Tests complex interactions between Parser, Interpreter, Transpiler, and LSP
 //! Quality: PMAT A+ standards, ≤10 complexity per function
 
-use ruchy::{Parser, Repl, Transpiler};
+use ruchy::{Parser, Transpiler};
+use ruchy::runtime::Repl;
 use std::time::Instant;
 
 // ========== Cross-Module Integration Tests ==========
@@ -108,7 +109,7 @@ fn test_async_function_support() {
         let rust_code = transpiler.transpile(&ast.unwrap());
         
         if rust_code.is_ok() {
-            let code = rust_code.unwrap();
+            let code = rust_code.unwrap().to_string();
             assert!(code.contains("async"));
             assert!(code.contains("await"));
         }
@@ -316,7 +317,7 @@ fn test_generic_functions() {
         let rust_code = transpiler.transpile(&ast.unwrap());
         
         if rust_code.is_ok() {
-            let code = rust_code.unwrap();
+            let code = rust_code.unwrap().to_string();
             assert!(code.contains("fn identity"));
         }
     }
@@ -384,7 +385,7 @@ proptest! {
             let result = transpiler.transpile(&ast);
             
             if result.is_ok() {
-                let rust_code = result.unwrap();
+                let rust_code = result.unwrap().to_string();
                 assert!(rust_code.contains(&input));
             }
         }

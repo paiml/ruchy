@@ -162,7 +162,7 @@ pub fn transpile_binary(&self, left: &Expr, op: BinaryOp, right: &Expr) -> Resul
                 Self::transpile_arithmetic_op(left, op, right)
             }
             // Comparison operations
-            Equal | NotEqual | Less | LessEqual | Greater | GreaterEqual => {
+            Equal | NotEqual | Less | LessEqual | Greater | GreaterEqual | BinaryOp::Gt => {
                 Self::transpile_comparison_op(left, op, right)
             }
             // Logical operations

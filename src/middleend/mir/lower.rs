@@ -266,6 +266,7 @@ pub fn lower_expr(&mut self, expr: &Expr) -> Result<Program> {
             AstBinOp::LessEqual => BinOp::Le,
             AstBinOp::Greater => BinOp::Gt,
             AstBinOp::GreaterEqual => BinOp::Ge,
+            AstBinOp::Gt => BinOp::Gt, // Alias for Greater
             AstBinOp::And => BinOp::And,
             AstBinOp::Or => BinOp::Or,
             AstBinOp::NullCoalesce => BinOp::NullCoalesce,
@@ -370,6 +371,7 @@ pub fn lower_expr(&mut self, expr: &Expr) -> Result<Program> {
             | AstBinOp::LessEqual
             | AstBinOp::Greater
             | AstBinOp::GreaterEqual
+            | AstBinOp::Gt
             | AstBinOp::And
             | AstBinOp::Or => Type::Bool,
             AstBinOp::NullCoalesce => Type::I32, // For now, assume Int (could be improved)

@@ -680,17 +680,7 @@ mod tests {
 
     fn create_mock_repl() -> Repl {
         // Create a minimal repl for testing
-        Repl::new().unwrap_or_else(|_| {
-            // Fallback if new() fails, create minimal instance
-            use crate::runtime::value::Value;
-            Repl {
-                evaluator: crate::runtime::evaluator::Evaluator::new(),
-                variables: std::collections::HashMap::new(),
-                history: Vec::new(),
-                last_error: None,
-                config: crate::runtime::repl::ReplConfig::default(),
-            }
-        })
+        Repl::new().unwrap()
     }
 
     #[test]

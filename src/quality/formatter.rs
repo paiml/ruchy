@@ -244,11 +244,11 @@ mod tests {
                 name: "x".to_string(),
                 value: Box::new(value),
                 body: Box::new(body),
-                ty: Some(Type {
+                type_annotation: Some(Type {
                     kind: TypeKind::Named("Int".to_string()),
                     span: Default::default(),
                 }),
-                is_mut: false,
+                is_mutable: false,
             },
             Default::default()
         );

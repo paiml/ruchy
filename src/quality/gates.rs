@@ -102,7 +102,7 @@ pub struct Violation {
     pub message: String,
 }
 /// Types of quality gate violations
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 pub enum ViolationType {
     OverallScore,
     Grade,

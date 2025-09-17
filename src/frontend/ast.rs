@@ -390,6 +390,7 @@ pub enum BinaryOp {
     LessEqual,
     Greater,
     GreaterEqual,
+    Gt, // Alias for Greater (for compatibility)
     // Logical
     And,
     Or,
@@ -662,6 +663,7 @@ impl fmt::Display for BinaryOp {
             Self::BitwiseOr => write!(f, "|"),
             Self::BitwiseXor => write!(f, "^"),
             Self::LeftShift => write!(f, "<<"),
+            Self::Gt => write!(f, ">"),
         }
     }
 }
@@ -1355,12 +1357,12 @@ mod tests {
     fn test_string_interpolation_parts() {
         // Test string interpolation with mixed parts
         let parts = vec![
-            StringPart::Static("Hello, ".to_string()),
-            StringPart::Dynamic(Box::new(Expr::new(
+            StringPart::Text("Hello, ".to_string()),
+            StringPart::Expr(Box::new(Expr::new(
                 ExprKind::Identifier("name".to_string()),
                 Span::new(8, 12),
             ))),
-            StringPart::Static("!".to_string()),
+            StringPart::Text("!".to_string()),
         ];
 
         let expr = Expr::new(
@@ -1371,11 +1373,11 @@ mod tests {
         if let ExprKind::StringInterpolation { parts } = expr.kind {
             assert_eq!(parts.len(), 3);
             match &parts[0] {
-                StringPart::Static(s) => assert_eq!(s, "Hello, "),
+                StringPart::Text(s) => assert_eq!(s, "Hello, "),
                 _ => panic!("Expected static part"),
             }
             match &parts[1] {
-                StringPart::Dynamic(e) => {
+                StringPart::Expr(e) => {
                     if let ExprKind::Identifier(id) = &e.kind {
                         assert_eq!(id, "name");
                     }
@@ -1390,8 +1392,10 @@ mod tests {
         // Test async function with await
         let func = Expr::new(
             ExprKind::Function {
-                name: Some("fetch_data".to_string()),
+                name: "fetch_data".to_string(),
+                type_params: vec![],
                 params: vec![],
+                return_type: None,
                 body: Box::new(Expr::new(
                     ExprKind::Await {
                         expr: Box::new(Expr::new(
@@ -1401,8 +1405,8 @@ mod tests {
                     },
                     Span::new(0, 14),
                 )),
-                ret_type: None,
                 is_async: true,
+                is_pub: false,
             },
             Span::new(0, 30),
         );
@@ -1577,7 +1581,7 @@ mod tests {
         // Test import and export statements
         let import = Expr::new(
             ExprKind::Import {
-                module_path: vec!["std".to_string(), "collections".to_string()],
+                path: "std::collections".to_string(),
                 items: vec![ImportItem::Aliased {
                     name: "HashMap".to_string(),
                     alias: "Map".to_string(),
@@ -1593,8 +1597,8 @@ mod tests {
             Span::new(0, 25),
         );
 
-        if let ExprKind::Import { module_path, items } = import.kind {
-            assert_eq!(module_path.len(), 2);
+        if let ExprKind::Import { path, items } = import.kind {
+            assert_eq!(path, "std::collections");
             assert_eq!(items.len(), 1);
         }
 
@@ -1609,24 +1613,28 @@ mod tests {
         // Test decorator/attribute attachment
         let decorated = Expr::with_attributes(
             ExprKind::Function {
-                name: Some("test_func".to_string()),
+                name: "test_func".to_string(),
+                type_params: vec![],
                 params: vec![],
+                return_type: None,
                 body: Box::new(Expr::new(
                     ExprKind::Literal(Literal::Unit),
                     Span::new(0, 0),
                 )),
-                ret_type: None,
                 is_async: false,
+                is_pub: false,
             },
             Span::new(0, 20),
             vec![
                 Attribute {
                     name: "test".to_string(),
                     args: vec![],
+                    span: Span::new(0, 5),
                 },
                 Attribute {
                     name: "bench".to_string(),
                     args: vec![],
+                    span: Span::new(0, 6),
                 },
             ],
         );
@@ -1642,39 +1650,45 @@ mod tests {
     fn test_dataframe_operations() {
         // Test DataFrame literal and operations
         let df = Expr::new(
-            ExprKind::DataFrameLiteral {
+            ExprKind::DataFrame {
                 columns: vec![
-                    ("name".to_string(), vec![
-                        Expr::new(
-                            ExprKind::Literal(Literal::String("Alice".to_string())),
-                            Span::new(0, 7),
-                        ),
-                        Expr::new(
-                            ExprKind::Literal(Literal::String("Bob".to_string())),
-                            Span::new(8, 13),
-                        ),
-                    ]),
-                    ("age".to_string(), vec![
-                        Expr::new(
-                            ExprKind::Literal(Literal::Integer(25)),
-                            Span::new(14, 16),
-                        ),
-                        Expr::new(
-                            ExprKind::Literal(Literal::Integer(30)),
-                            Span::new(17, 19),
-                        ),
-                    ]),
+                    DataFrameColumn {
+                        name: "name".to_string(),
+                        values: vec![
+                            Expr::new(
+                                ExprKind::Literal(Literal::String("Alice".to_string())),
+                                Span::new(0, 7),
+                            ),
+                            Expr::new(
+                                ExprKind::Literal(Literal::String("Bob".to_string())),
+                                Span::new(8, 13),
+                            ),
+                        ],
+                    },
+                    DataFrameColumn {
+                        name: "age".to_string(),
+                        values: vec![
+                            Expr::new(
+                                ExprKind::Literal(Literal::Integer(25)),
+                                Span::new(14, 16),
+                            ),
+                            Expr::new(
+                                ExprKind::Literal(Literal::Integer(30)),
+                                Span::new(17, 19),
+                            ),
+                        ],
+                    },
                 ],
             },
             Span::new(0, 50),
         );
 
-        if let ExprKind::DataFrameLiteral { columns } = df.kind {
+        if let ExprKind::DataFrame { columns } = df.kind {
             assert_eq!(columns.len(), 2);
-            assert_eq!(columns[0].0, "name");
-            assert_eq!(columns[0].1.len(), 2);
-            assert_eq!(columns[1].0, "age");
-            assert_eq!(columns[1].1.len(), 2);
+            assert_eq!(columns[0].name, "name");
+            assert_eq!(columns[0].values.len(), 2);
+            assert_eq!(columns[1].name, "age");
+            assert_eq!(columns[1].values.len(), 2);
         }
     }
 

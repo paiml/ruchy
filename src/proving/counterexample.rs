@@ -641,21 +641,23 @@ mod tests {
 
     #[test]
     fn test_counterexample_generator() {
-        let gen = CounterexampleGenerator::new(SmtBackend::Z3);
+        let mut gen = CounterexampleGenerator::new();
+        gen.set_backend(SmtBackend::Z3);
         assert!(matches!(gen.backend, SmtBackend::Z3));
 
-        let cex = gen.build_counterexample("test", HashMap::new());
+        let cex = gen.build_counterexample("test", Some(HashMap::new()));
         assert_eq!(cex.failed_assertion, "test");
     }
 
     #[test]
     fn test_counterexample_from_model() {
-        let gen = CounterexampleGenerator::new(SmtBackend::Z3);
+        let mut gen = CounterexampleGenerator::new();
+        gen.set_backend(SmtBackend::Z3);
         let mut model = HashMap::new();
         model.insert("x".to_string(), "42".to_string());
         model.insert("y".to_string(), "true".to_string());
 
-        let cex = gen.build_counterexample("assertion", model);
+        let cex = gen.build_counterexample("assertion", Some(model));
         assert_eq!(cex.failed_assertion, "assertion");
         // Model parsing is minimal, mainly tests structure
     }
