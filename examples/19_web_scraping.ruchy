@@ -1,0 +1,251 @@
+// 19_web_scraping.ruchy - Web scraping and HTTP requests
+
+import std::http
+import std::html
+
+fn main() {
+    println("=== Web Scraping ===\n")
+
+    // Basic HTTP GET request
+    println("=== HTTP GET Request ===")
+
+    async fn fetch_page(url) {
+        let response = await http::get(url)
+
+        if response.status == 200 {
+            Ok(response.text)
+        } else {
+            Err(f"HTTP {response.status}: {response.status_text}")
+        }
+    }
+
+    // Fetch and parse HTML
+    async fn scrape_website() {
+        let url = "https://example.com"
+
+        match await fetch_page(url) {
+            Ok(html) => {
+                println(f"Fetched {html.len()} bytes from {url}")
+                parse_html(html)
+            },
+            Err(msg) => println(f"Error: {msg}")
+        }
+    }
+
+    fn parse_html(html_content) {
+        let doc = html::parse(html_content)
+
+        // Extract title
+        let title = doc.select("title").text()
+        println(f"Page title: {title}")
+
+        // Extract all links
+        let links = doc.select_all("a")
+        println(f"\nFound {links.len()} links:")
+
+        for link in links.take(5) {
+            let href = link.attr("href")
+            let text = link.text()
+            println(f"  - {text}: {href}")
+        }
+
+        // Extract meta tags
+        let meta_tags = doc.select_all("meta")
+        println(f"\nMeta tags:")
+
+        for meta in meta_tags {
+            if meta.has_attr("name") && meta.has_attr("content") {
+                let name = meta.attr("name")
+                let content = meta.attr("content")
+                println(f"  {name}: {content}")
+            }
+        }
+    }
+
+    // Scraping with CSS selectors
+    fn scrape_with_selectors(html) {
+        let doc = html::parse(html)
+
+        // Complex CSS selectors
+        let articles = doc.select_all("article.post")
+
+        for article in articles {
+            let title = article.select("h2.title").text()
+            let author = article.select(".author").text()
+            let date = article.select(".date").text()
+            let summary = article.select("p.summary").text()
+
+            println(f"Article: {title}")
+            println(f"  Author: {author}")
+            println(f"  Date: {date}")
+            println(f"  Summary: {summary}")
+            println("")
+        }
+    }
+
+    // Web API interaction
+    async fn fetch_json_api() {
+        println("\n=== JSON API Request ===")
+
+        let api_url = "https://api.github.com/users/github"
+        let response = await http::get(api_url, {
+            headers: {
+                "Accept": "application/json",
+                "User-Agent": "Ruchy-WebScraper/1.0"
+            }
+        })
+
+        if response.status == 200 {
+            let data = parse_json(response.text)
+
+            println(f"GitHub User: {data.name}")
+            println(f"Company: {data.company}")
+            println(f"Public repos: {data.public_repos}")
+            println(f"Followers: {data.followers}")
+        }
+    }
+
+    // POST request with form data
+    async fn submit_form() {
+        println("\n=== POST Request ===")
+
+        let form_data = {
+            username: "user123",
+            email: "user@example.com",
+            message: "Hello from Ruchy!"
+        }
+
+        let response = await http::post("https://httpbin.org/post", {
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded"
+            },
+            body: form_data
+        })
+
+        let result = parse_json(response.text)
+        println(f"Posted data: {result.form}")
+    }
+
+    // Handling cookies
+    async fn handle_cookies() {
+        println("\n=== Cookie Handling ===")
+
+        let session = http::Session::new()
+
+        // First request sets cookies
+        let response1 = await session.get("https://httpbin.org/cookies/set?session=abc123")
+
+        // Second request includes cookies
+        let response2 = await session.get("https://httpbin.org/cookies")
+        let data = parse_json(response2.text)
+
+        println(f"Cookies: {data.cookies}")
+    }
+
+    // Rate limiting
+    fn create_rate_limiter(max_requests, time_window) {
+        let requests = []
+
+        |url| {
+            let now = current_time()
+
+            // Remove old requests outside time window
+            requests = requests.filter(t => now - t < time_window)
+
+            if requests.len() >= max_requests {
+                let wait_time = time_window - (now - requests[0])
+                Err(f"Rate limit exceeded. Wait {wait_time}ms")
+            } else {
+                requests.append(now)
+                Ok(true)
+            }
+        }
+    }
+
+    // Parallel scraping
+    async fn parallel_scrape(urls) {
+        println("\n=== Parallel Scraping ===")
+
+        let tasks = urls.map(url => async {
+            try {
+                let response = await http::get(url)
+                let doc = html::parse(response.text)
+                let title = doc.select("title").text()
+                Ok({ url: url, title: title })
+            } catch e {
+                Err({ url: url, error: e })
+            }
+        })
+
+        let results = await Promise.all(tasks)
+
+        for result in results {
+            match result {
+                Ok(data) => println(f"✓ {data.url}: {data.title}"),
+                Err(data) => println(f"✗ {data.url}: {data.error}")
+            }
+        }
+    }
+
+    // Data extraction patterns
+    fn extract_structured_data(html) {
+        let doc = html::parse(html)
+
+        // Extract table data
+        let table = doc.select("table#data")
+        let headers = table.select_all("th").map(th => th.text())
+        let rows = []
+
+        for tr in table.select_all("tbody tr") {
+            let cells = tr.select_all("td").map(td => td.text())
+            let row_data = {}
+
+            for (i, header) in headers.enumerate() {
+                row_data[header] = cells[i]
+            }
+
+            rows.append(row_data)
+        }
+
+        DataFrame::from_records(rows)
+    }
+
+    // Caching scraped data
+    fn create_cache() {
+        let cache = {}
+        let expiry_times = {}
+
+        {
+            get: |key| {
+                if key in cache {
+                    if current_time() < expiry_times[key] {
+                        Some(cache[key])
+                    } else {
+                        cache.remove(key)
+                        expiry_times.remove(key)
+                        None
+                    }
+                } else {
+                    None
+                }
+            },
+            set: |key, value, ttl| {
+                cache[key] = value
+                expiry_times[key] = current_time() + ttl
+            }
+        }
+    }
+
+    // Run examples
+    await scrape_website()
+    await fetch_json_api()
+    await submit_form()
+    await handle_cookies()
+
+    let urls = [
+        "https://example.com",
+        "https://httpbin.org",
+        "https://github.com"
+    ]
+    await parallel_scrape(urls)
+}

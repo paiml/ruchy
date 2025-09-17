@@ -1,6 +1,39 @@
-//! Modular transpiler for Ruchy language
+//! Transpiler module for converting Ruchy AST to Rust code.
 //!
-//! This module is responsible for converting Ruchy AST into Rust code using `proc_macro2` `TokenStream`.
+//! This module implements the code generation phase of the Ruchy compiler,
+//! transforming the Abstract Syntax Tree (AST) into executable Rust code
+//! using the `proc_macro2` and `quote` crates for token generation.
+//!
+//! # Architecture
+//!
+//! The transpiler is organized into specialized submodules:
+//! - `expressions`: Handles expression transpilation
+//! - `statements`: Processes statements and declarations
+//! - `patterns`: Pattern matching and destructuring
+//! - `types`: Type conversion and inference
+//! - `actors`: Actor model support
+//! - `dataframe`: `DataFrame` operations
+//!
+//! # Code Generation Process
+//!
+//! 1. **AST Analysis**: Analyze mutability requirements and collect function signatures
+//! 2. **Token Generation**: Convert AST nodes to Rust tokens using `quote!`
+//! 3. **Type Inference**: Apply type inference for gradual typing
+//! 4. **Optimization**: Apply transpilation-time optimizations
+//! 5. **Formatting**: Generate readable, idiomatic Rust code
+//!
+//! # Examples
+//!
+//! ```ignore
+//! use ruchy::{Parser, Transpiler};
+//!
+//! let mut parser = Parser::new("let x = 42");
+//! let ast = parser.parse().unwrap();
+//!
+//! let mut transpiler = Transpiler::new();
+//! let rust_code = transpiler.transpile(&ast).unwrap();
+//! println!("{}", rust_code);
+//! ```
 #![allow(clippy::missing_errors_doc)]
 #![allow(clippy::too_many_lines)]
 mod actors;
@@ -27,20 +60,64 @@ use quote::{format_ident, quote};
 // Module exports are handled by the impl blocks in each module
 /// Block categorization result: (functions, statements, modules, `has_main`, `main_expr`)
 type BlockCategorization<'a> = (Vec<TokenStream>, Vec<TokenStream>, Vec<TokenStream>, bool, Option<&'a Expr>);
-/// Function signature information for type coercion
+/// Function signature information used for type coercion.
+///
+/// Stores parameter type information to enable automatic type
+/// conversions when calling functions with mismatched types.
+///
+/// # Examples
+///
+/// ```ignore
+/// let signature = FunctionSignature {
+///     name: "add".to_string(),
+///     param_types: vec!["i32".to_string(), "i32".to_string()],
+/// };
+/// ```
 #[derive(Debug, Clone)]
 pub struct FunctionSignature {
+    /// The function name.
     pub name: String,
-    pub param_types: Vec<String>,  // Simplified: just the type name as string
+    /// Parameter types as string representations.
+    pub param_types: Vec<String>,
 }
-/// The main transpiler struct
+/// The main transpiler for converting Ruchy AST to Rust code.
+///
+/// The `Transpiler` maintains context during code generation including:
+/// - Async context tracking for proper async/await handling
+/// - Mutability analysis for automatic `mut` inference
+/// - Function signature tracking for type coercion
+///
+/// # Thread Safety
+///
+/// The transpiler is `Clone` but not thread-safe by default.
+/// Each thread should use its own transpiler instance.
+///
+/// # Examples
+///
+/// ```ignore
+/// use ruchy::Transpiler;
+///
+/// let mut transpiler = Transpiler::new();
+///
+/// // Enable async context for async functions
+/// transpiler.in_async_context = true;
+///
+/// // Track mutable variables
+/// transpiler.mutable_vars.insert("counter".to_string());
+/// ```
 #[derive(Clone)]
 pub struct Transpiler {
-    /// Track whether we're in an async context
+    /// Whether the current code generation is within an async context.
+    ///
+    /// This affects how await expressions and async blocks are generated.
     pub in_async_context: bool,
-    /// Track variables that need to be mutable (for auto-mutability)
+    /// Set of variable names that require mutable bindings.
+    ///
+    /// Populated during mutability analysis to automatically infer `mut`.
     pub mutable_vars: std::collections::HashSet<String>,
-    /// Track function signatures for type coercion
+    /// Function signatures for type coercion and overload resolution.
+    ///
+    /// Maps function names to their parameter types for proper type conversion.
     pub function_signatures: std::collections::HashMap<String, FunctionSignature>,
 }
 impl Default for Transpiler {
@@ -98,13 +175,45 @@ impl Transpiler {
             }
         }
     }
-    /// Analyze expressions to determine which variables need to be mutable
+    /// Analyzes expressions to determine which variables need mutable bindings.
+    ///
+    /// This performs a static analysis pass over the AST to identify variables
+    /// that are assigned to after their initial declaration, marking them as
+    /// requiring `mut` in the generated Rust code.
+    ///
+    /// # Arguments
+    ///
+    /// * `exprs` - The expressions to analyze for mutability
+    ///
+    /// # Examples
+    ///
+    /// ```ignore
+    /// let mut transpiler = Transpiler::new();
+    /// transpiler.analyze_mutability(&ast_expressions);
+    /// assert!(transpiler.mutable_vars.contains("counter"));
+    /// ```
     pub fn analyze_mutability(&mut self, exprs: &[Expr]) {
         for expr in exprs {
             self.analyze_expr_mutability(expr);
         }
     }
-    /// Collect function signatures for type coercion
+    /// Collects function signatures from the AST for type coercion.
+    ///
+    /// Scans the AST for function definitions and records their signatures
+    /// to enable automatic type conversions when these functions are called
+    /// with arguments of compatible but different types.
+    ///
+    /// # Arguments
+    ///
+    /// * `exprs` - The expressions to scan for function definitions
+    ///
+    /// # Examples
+    ///
+    /// ```ignore
+    /// let mut transpiler = Transpiler::new();
+    /// transpiler.collect_function_signatures(&ast_expressions);
+    /// // Now the transpiler knows about all function signatures
+    /// ```
     pub fn collect_function_signatures(&mut self, exprs: &[Expr]) {
         for expr in exprs {
             self.collect_signatures_from_expr(expr);
@@ -268,7 +377,41 @@ impl Transpiler {
     ///
     /// # Errors
     ///
-    /// Returns an error if the AST cannot be transpiled to valid Rust code.
+    /// Transpiles a Ruchy AST expression to Rust tokens.
+    ///
+    /// This is the main entry point for code generation. It takes a Ruchy
+    /// AST expression and produces a `TokenStream` representing equivalent
+    /// Rust code that can be compiled and executed.
+    ///
+    /// # Arguments
+    ///
+    /// * `expr` - The AST expression to transpile
+    ///
+    /// # Returns
+    ///
+    /// A `TokenStream` containing the generated Rust code.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if:
+    /// - The AST contains unsupported language features
+    /// - Type inference fails
+    /// - Invalid code patterns are detected
+    ///
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::{Parser, Transpiler};
+    ///
+    /// let mut parser = Parser::new("fn double(x: int) { x * 2 }");
+    /// let ast = parser.parse().unwrap();
+    ///
+    /// let transpiler = Transpiler::new();
+    /// let tokens = transpiler.transpile(&ast).unwrap();
+    ///
+    /// // Convert to string for compilation
+    /// let rust_code = tokens.to_string();
+    /// ```
     pub fn transpile(&self, expr: &Expr) -> Result<TokenStream> {
         self.transpile_expr(expr)
     }

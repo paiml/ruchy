@@ -1,0 +1,376 @@
+// 37_compiler_plugins.ruchy - Compiler plugins and metaprogramming
+
+import std::compiler
+import std::ast
+import std::macro
+
+fn main() {
+    println("=== Compiler Plugins & Metaprogramming ===\n")
+
+    // AST manipulation
+    println("=== AST Manipulation ===")
+
+    // Parse code into AST
+    let code = "fn add(x, y) { x + y }"
+    let ast = compiler::parse(code)
+    println(f"AST: {ast}")
+
+    // Walk the AST
+    ast.walk(node => {
+        match node {
+            Function(name, params, body) => {
+                println(f"Found function: {name}")
+                println(f"  Parameters: {params}")
+            },
+            BinaryOp(op, left, right) => {
+                println(f"Found binary operation: {op}")
+            },
+            _ => {}
+        }
+    })
+
+    // Transform AST
+    let transformed = ast.transform(node => {
+        match node {
+            BinaryOp("+", left, right) => {
+                // Replace addition with multiplication
+                BinaryOp("*", left, right)
+            },
+            _ => node
+        }
+    })
+
+    println(f"Transformed code: {compiler::unparse(transformed)}")
+
+    // Code generation
+    println("\n=== Code Generation ===")
+
+    struct CodeGenerator {
+        output: string = "",
+        indent_level: int = 0
+    }
+
+    impl CodeGenerator {
+        fn indent(self) -> string {
+            "    " * self.indent_level
+        }
+
+        fn emit(mut self, code: string) {
+            self.output += self.indent() + code + "\n"
+        }
+
+        fn emit_function(mut self, name: string, params: list, body: fn()) {
+            let params_str = params.join(", ")
+            self.emit(f"fn {name}({params_str}) {{")
+            self.indent_level += 1
+            body()
+            self.indent_level -= 1
+            self.emit("}")
+        }
+
+        fn emit_struct(mut self, name: string, fields: list) {
+            self.emit(f"struct {name} {{")
+            self.indent_level += 1
+            for field in fields {
+                self.emit(f"{field.name}: {field.type},")
+            }
+            self.indent_level -= 1
+            self.emit("}")
+        }
+    }
+
+    let gen = CodeGenerator {}
+
+    gen.emit_struct("Person", [
+        { name: "name", type: "string" },
+        { name: "age", type: "int" },
+        { name: "email", type: "Option<string>" }
+    ])
+
+    gen.emit_function("greet", ["self"], || {
+        gen.emit('println(f"Hello, my name is {self.name}")')
+    })
+
+    println("Generated code:")
+    println(gen.output)
+
+    // Compile-time computation
+    println("\n=== Compile-Time Computation ===")
+
+    // Const functions evaluated at compile time
+    const fn factorial(n: int) -> int {
+        if n <= 1 { 1 } else { n * factorial(n - 1) }
+    }
+
+    const FACTORIAL_10 = factorial(10)
+    println(f"10! = {FACTORIAL_10}")  // Computed at compile time
+
+    // Const generics
+    struct Matrix<const ROWS: int, const COLS: int> {
+        data: [[float; COLS]; ROWS]
+    }
+
+    impl<const ROWS: int, const COLS: int> Matrix<ROWS, COLS> {
+        fn transpose(self) -> Matrix<COLS, ROWS> {
+            let mut result = Matrix::zeros()
+            for i in 0..ROWS {
+                for j in 0..COLS {
+                    result.data[j][i] = self.data[i][j]
+                }
+            }
+            result
+        }
+    }
+
+    // Build script
+    println("\n=== Build Script ===")
+
+    #[build]
+    fn generate_version_info() {
+        let version = env::var("VERSION").unwrap_or("0.0.0")
+        let commit = git::current_commit()
+        let timestamp = datetime::now()
+
+        compiler::emit(f"""
+            const VERSION = "{version}"
+            const COMMIT = "{commit}"
+            const BUILD_TIME = "{timestamp}"
+        """)
+    }
+
+    // Procedural macros
+    println("\n=== Procedural Macros ===")
+
+    #[proc_macro]
+    fn derive_builder(input: TokenStream) -> TokenStream {
+        let ast = parse_struct(input)
+        let name = ast.name
+        let builder_name = f"{name}Builder"
+        let fields = ast.fields
+
+        let mut output = TokenStream::new()
+
+        // Generate builder struct
+        output.append(f"struct {builder_name} {{")
+        for field in fields {
+            output.append(f"    {field.name}: Option<{field.type}>,")
+        }
+        output.append("}")
+
+        // Generate builder methods
+        output.append(f"impl {builder_name} {{")
+        output.append("    fn new() -> Self {")
+        output.append(f"        {builder_name} {{")
+        for field in fields {
+            output.append(f"            {field.name}: None,")
+        }
+        output.append("        }")
+        output.append("    }")
+
+        for field in fields {
+            output.append(f"    fn {field.name}(mut self, value: {field.type}) -> Self {{")
+            output.append(f"        self.{field.name} = Some(value);")
+            output.append("        self")
+            output.append("    }")
+        }
+
+        output.append(f"    fn build(self) -> Result<{name}, String> {{")
+        for field in fields {
+            if !field.optional {
+                output.append(f'        let {field.name} = self.{field.name}.ok_or("{field.name} is required")?;')
+            }
+        }
+        output.append(f"        Ok({name} {{")
+        for field in fields {
+            output.append(f"            {field.name},")
+        }
+        output.append("        })")
+        output.append("    }")
+        output.append("}")
+
+        output
+    }
+
+    // Usage
+    #[derive_builder]
+    struct Config {
+        host: string,
+        port: int,
+        timeout: Option<int>
+    }
+
+    let config = ConfigBuilder::new()
+        .host("localhost")
+        .port(8080)
+        .timeout(30)
+        .build()
+        .unwrap()
+
+    // Attribute macros
+    println("\n=== Attribute Macros ===")
+
+    #[benchmark]
+    fn slow_function() {
+        sleep_ms(100)
+        println("Done!")
+    }
+
+    #[memoize]
+    fn expensive_computation(n: int) -> int {
+        println(f"Computing for {n}...")
+        sleep_ms(1000)
+        n * n
+    }
+
+    // First call computes
+    expensive_computation(5)
+    // Second call returns cached result
+    expensive_computation(5)
+
+    #[retry(attempts = 3, delay = 1000)]
+    fn flaky_network_call() -> Result<String, Error> {
+        if random() < 0.7 {
+            Err(Error::NetworkError)
+        } else {
+            Ok("Success!")
+        }
+    }
+
+    // Compiler plugins
+    println("\n=== Compiler Plugins ===")
+
+    struct LintPlugin {
+        rules: list<LintRule>
+    }
+
+    impl CompilerPlugin for LintPlugin {
+        fn process(self, ast: AST) -> list<Diagnostic> {
+            let mut diagnostics = []
+
+            for rule in self.rules {
+                diagnostics.extend(rule.check(ast))
+            }
+
+            diagnostics
+        }
+    }
+
+    struct NoUnwrapRule {}
+
+    impl LintRule for NoUnwrapRule {
+        fn check(self, ast: AST) -> list<Diagnostic> {
+            let mut diagnostics = []
+
+            ast.walk(node => {
+                if let MethodCall(_, "unwrap", _) = node {
+                    diagnostics.append(Diagnostic {
+                        level: Warning,
+                        message: "Avoid using unwrap(), use expect() or pattern matching",
+                        location: node.span
+                    })
+                }
+            })
+
+            diagnostics
+        }
+    }
+
+    // Register plugin
+    compiler::register_plugin(LintPlugin {
+        rules: [NoUnwrapRule {}]
+    })
+
+    // Syntax extensions
+    println("\n=== Syntax Extensions ===")
+
+    // Define custom syntax
+    syntax! {
+        rule query = "SELECT" fields:field_list
+                     "FROM" table:ident
+                     where_clause?
+                     ";" => {
+            SqlQuery {
+                fields: fields,
+                table: table,
+                where: where_clause
+            }
+        }
+
+        rule field_list = field ("," field)* => collect()
+        rule field = ident | "*"
+        rule where_clause = "WHERE" condition:expr => condition
+    }
+
+    // Use custom syntax
+    let users = query! {
+        SELECT name, email
+        FROM users
+        WHERE age >= 18;
+    }
+
+    // Type providers
+    println("\n=== Type Providers ===")
+
+    // Generate types from external schema
+    #[type_provider("schema.json")]
+    struct ApiTypes {}
+
+    // This generates:
+    // struct User { ... }
+    // struct Product { ... }
+    // etc. based on JSON schema
+
+    let user: ApiTypes::User = fetch_user(123)
+
+    // Compile-time validation
+    println("\n=== Compile-Time Validation ===")
+
+    // Regex validation at compile time
+    #[regex("^[a-zA-Z0-9]+$")]
+    const USERNAME_PATTERN: Regex
+
+    // SQL validation at compile time
+    #[sql("SELECT * FROM users WHERE id = ?")]
+    const GET_USER_QUERY: SqlQuery
+
+    // Format string validation
+    #[format_args("Hello, {name}! You have {count} messages.")]
+    fn greeting_template(name: string, count: int) -> string
+
+    // Contract programming
+    println("\n=== Contract Programming ===")
+
+    #[requires(x > 0, "x must be positive")]
+    #[ensures(result >= 0, "result must be non-negative")]
+    fn sqrt(x: float) -> float {
+        x.sqrt()
+    }
+
+    #[invariant(self.size >= 0, "size must be non-negative")]
+    struct Stack<T> {
+        items: Vec<T>,
+        size: int
+    }
+
+    // Plugin configuration
+    println("\n=== Plugin Configuration ===")
+
+    // ruchy.plugins.toml
+    let plugin_config = r#"
+        [[plugins]]
+        name = "ruchy-formatter"
+        version = "1.0.0"
+
+        [[plugins]]
+        name = "ruchy-linter"
+        version = "2.3.1"
+        config = { max_line_length = 100, indent = 4 }
+
+        [[plugins]]
+        name = "ruchy-test-generator"
+        version = "0.5.0"
+        only_in = ["test"]
+    "#
+
+    println("Compiler plugins configured!")
+}

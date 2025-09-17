@@ -1,0 +1,318 @@
+// 34_machine_learning.ruchy - Machine learning and data science
+
+import std::ml
+import std::tensor
+import std::plot
+
+fn main() {
+    println("=== Machine Learning ===\n")
+
+    // Data preparation
+    println("=== Data Preparation ===")
+
+    // Load dataset
+    let dataset = ml::datasets::load_iris()
+    let X = dataset.data       // Features
+    let y = dataset.target     // Labels
+
+    // Split data
+    let (X_train, X_test, y_train, y_test) = ml::train_test_split(
+        X, y, test_size: 0.2, random_state: 42
+    )
+
+    println(f"Training samples: {X_train.shape[0]}")
+    println(f"Test samples: {X_test.shape[0]}")
+
+    // Feature scaling
+    let scaler = ml::StandardScaler()
+    X_train = scaler.fit_transform(X_train)
+    X_test = scaler.transform(X_test)
+
+    // Linear regression
+    println("\n=== Linear Regression ===")
+
+    let lr_model = ml::LinearRegression()
+        .fit(X_train, y_train)
+
+    let predictions = lr_model.predict(X_test)
+    let mse = ml::metrics::mean_squared_error(y_test, predictions)
+    let r2 = ml::metrics::r2_score(y_test, predictions)
+
+    println(f"MSE: {mse:.4}")
+    println(f"R² score: {r2:.4}")
+    println(f"Coefficients: {lr_model.coef_}")
+    println(f"Intercept: {lr_model.intercept_}")
+
+    // Classification
+    println("\n=== Classification ===")
+
+    // Logistic regression
+    let clf = ml::LogisticRegression()
+        .set_max_iter(100)
+        .set_penalty("l2")
+        .fit(X_train, y_train)
+
+    let y_pred = clf.predict(X_test)
+    let accuracy = ml::metrics::accuracy_score(y_test, y_pred)
+    let precision = ml::metrics::precision_score(y_test, y_pred, average: "macro")
+    let recall = ml::metrics::recall_score(y_test, y_pred, average: "macro")
+    let f1 = ml::metrics::f1_score(y_test, y_pred, average: "macro")
+
+    println(f"Accuracy: {accuracy:.4}")
+    println(f"Precision: {precision:.4}")
+    println(f"Recall: {recall:.4}")
+    println(f"F1 Score: {f1:.4}")
+
+    // Confusion matrix
+    let cm = ml::metrics::confusion_matrix(y_test, y_pred)
+    println(f"Confusion Matrix:\n{cm}")
+
+    // Decision tree
+    println("\n=== Decision Tree ===")
+
+    let tree = ml::DecisionTreeClassifier()
+        .set_max_depth(3)
+        .set_min_samples_split(5)
+        .fit(X_train, y_train)
+
+    let tree_pred = tree.predict(X_test)
+    let tree_accuracy = ml::metrics::accuracy_score(y_test, tree_pred)
+    println(f"Tree accuracy: {tree_accuracy:.4}")
+
+    // Feature importance
+    let importances = tree.feature_importances_
+    for (i, importance) in importances.enumerate() {
+        println(f"Feature {i}: {importance:.4}")
+    }
+
+    // Random Forest
+    println("\n=== Random Forest ===")
+
+    let rf = ml::RandomForestClassifier()
+        .set_n_estimators(100)
+        .set_max_depth(5)
+        .set_random_state(42)
+        .fit(X_train, y_train)
+
+    let rf_pred = rf.predict(X_test)
+    let rf_accuracy = ml::metrics::accuracy_score(y_test, rf_pred)
+    println(f"Random Forest accuracy: {rf_accuracy:.4}")
+
+    // Cross-validation
+    println("\n=== Cross-Validation ===")
+
+    let cv_scores = ml::cross_val_score(
+        clf, X, y,
+        cv: 5,
+        scoring: "accuracy"
+    )
+
+    println(f"CV scores: {cv_scores}")
+    println(f"Mean CV score: {cv_scores.mean():.4} (+/- {cv_scores.std():.4})")
+
+    // K-Means clustering
+    println("\n=== K-Means Clustering ===")
+
+    let kmeans = ml::KMeans()
+        .set_n_clusters(3)
+        .set_max_iter(300)
+        .fit(X)
+
+    let clusters = kmeans.predict(X)
+    let inertia = kmeans.inertia_
+    let silhouette = ml::metrics::silhouette_score(X, clusters)
+
+    println(f"Inertia: {inertia:.4}")
+    println(f"Silhouette score: {silhouette:.4}")
+    println(f"Cluster centers:\n{kmeans.cluster_centers_}")
+
+    // Neural network
+    println("\n=== Neural Network ===")
+
+    struct NeuralNetwork {
+        layers: list
+    }
+
+    impl NeuralNetwork {
+        fn new() {
+            NeuralNetwork { layers: [] }
+        }
+
+        fn add_layer(mut self, layer) {
+            self.layers.append(layer)
+            self
+        }
+
+        fn forward(self, X) {
+            let mut output = X
+            for layer in self.layers {
+                output = layer.forward(output)
+            }
+            output
+        }
+
+        fn backward(self, grad) {
+            let mut grad = grad
+            for layer in self.layers.reverse() {
+                grad = layer.backward(grad)
+            }
+        }
+
+        fn fit(self, X, y, epochs=100, batch_size=32, lr=0.01) {
+            let optimizer = ml::Adam(lr)
+
+            for epoch in 0..epochs {
+                // Mini-batch training
+                for batch in ml::batch_iterator(X, y, batch_size) {
+                    let X_batch = batch.X
+                    let y_batch = batch.y
+
+                    // Forward pass
+                    let output = self.forward(X_batch)
+
+                    // Compute loss
+                    let loss = ml::losses::cross_entropy(y_batch, output)
+
+                    // Backward pass
+                    let grad = ml::losses::cross_entropy_grad(y_batch, output)
+                    self.backward(grad)
+
+                    // Update weights
+                    optimizer.step(self.layers)
+                }
+
+                if epoch % 10 == 0 {
+                    println(f"Epoch {epoch}, Loss: {loss:.4}")
+                }
+            }
+        }
+    }
+
+    // Build neural network
+    let nn = NeuralNetwork::new()
+        .add_layer(ml::Dense(input_dim: 4, output_dim: 10, activation: "relu"))
+        .add_layer(ml::Dropout(rate: 0.2))
+        .add_layer(ml::Dense(input_dim: 10, output_dim: 10, activation: "relu"))
+        .add_layer(ml::Dense(input_dim: 10, output_dim: 3, activation: "softmax"))
+
+    nn.fit(X_train, y_train, epochs: 50)
+
+    // Gradient boosting
+    println("\n=== Gradient Boosting ===")
+
+    let gb = ml::GradientBoostingClassifier()
+        .set_n_estimators(100)
+        .set_learning_rate(0.1)
+        .set_max_depth(3)
+        .fit(X_train, y_train)
+
+    let gb_pred = gb.predict(X_test)
+    let gb_accuracy = ml::metrics::accuracy_score(y_test, gb_pred)
+    println(f"Gradient Boosting accuracy: {gb_accuracy:.4}")
+
+    // Feature engineering
+    println("\n=== Feature Engineering ===")
+
+    // Polynomial features
+    let poly = ml::PolynomialFeatures(degree: 2)
+    let X_poly = poly.fit_transform(X)
+    println(f"Original features: {X.shape[1]}")
+    println(f"Polynomial features: {X_poly.shape[1]}")
+
+    // Feature selection
+    let selector = ml::SelectKBest(k: 10)
+    let X_selected = selector.fit_transform(X_poly, y)
+    println(f"Selected features: {X_selected.shape[1]}")
+
+    // PCA
+    let pca = ml::PCA(n_components: 2)
+    let X_pca = pca.fit_transform(X)
+    println(f"Explained variance ratio: {pca.explained_variance_ratio_}")
+
+    // Time series
+    println("\n=== Time Series ===")
+
+    // Generate time series data
+    let dates = datetime::date_range("2023-01-01", periods: 365, freq: "D")
+    let values = [100 + i * 0.5 + random::normal(0, 10) for i in 0..365]
+
+    let ts = ml::TimeSeries(dates, values)
+
+    // Moving average
+    let ma = ts.rolling_mean(window: 7)
+    println(f"7-day moving average: {ma[-5:]}")
+
+    // Exponential smoothing
+    let es = ml::ExponentialSmoothing(alpha: 0.3)
+        .fit(values)
+    let forecast = es.predict(steps: 30)
+    println(f"30-day forecast: {forecast[:5]}")
+
+    // ARIMA
+    let arima = ml::ARIMA(order: (1, 1, 1))
+        .fit(values)
+    let arima_forecast = arima.forecast(steps: 30)
+
+    // Model persistence
+    println("\n=== Model Persistence ===")
+
+    // Save model
+    ml::save_model(rf, "random_forest.pkl")
+    println("Model saved to random_forest.pkl")
+
+    // Load model
+    let loaded_model = ml::load_model("random_forest.pkl")
+    let loaded_pred = loaded_model.predict(X_test)
+    println("Model loaded and predictions made")
+
+    // Hyperparameter tuning
+    println("\n=== Hyperparameter Tuning ===")
+
+    let param_grid = {
+        n_estimators: [50, 100, 200],
+        max_depth: [3, 5, 7, None],
+        min_samples_split: [2, 5, 10]
+    }
+
+    let grid_search = ml::GridSearchCV(
+        ml::RandomForestClassifier(),
+        param_grid,
+        cv: 5,
+        scoring: "accuracy"
+    )
+
+    grid_search.fit(X_train, y_train)
+    println(f"Best parameters: {grid_search.best_params_}")
+    println(f"Best score: {grid_search.best_score_:.4}")
+
+    // Ensemble methods
+    println("\n=== Ensemble Methods ===")
+
+    let voting_clf = ml::VotingClassifier([
+        ("lr", ml::LogisticRegression()),
+        ("rf", ml::RandomForestClassifier()),
+        ("gb", ml::GradientBoostingClassifier())
+    ], voting: "soft")
+
+    voting_clf.fit(X_train, y_train)
+    let ensemble_pred = voting_clf.predict(X_test)
+    let ensemble_accuracy = ml::metrics::accuracy_score(y_test, ensemble_pred)
+    println(f"Ensemble accuracy: {ensemble_accuracy:.4}")
+
+    // Model interpretation
+    println("\n=== Model Interpretation ===")
+
+    // SHAP values
+    let explainer = ml::explain::TreeExplainer(rf)
+    let shap_values = explainer.shap_values(X_test)
+
+    println("SHAP summary:")
+    for (i, feature) in dataset.feature_names.enumerate() {
+        let mean_shap = shap_values[:, i].mean().abs()
+        println(f"  {feature}: {mean_shap:.4}")
+    }
+
+    // Partial dependence
+    let pd = ml::partial_dependence(rf, X_test, features: [0, 1])
+    println(f"Partial dependence computed for features 0 and 1")
+}

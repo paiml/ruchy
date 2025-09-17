@@ -1,0 +1,301 @@
+// 21_concurrency.ruchy - Concurrent programming with actors and channels
+
+fn main() {
+    println("=== Concurrency with Actors ===\n")
+
+    // Basic actor definition
+    actor Counter {
+        count: int = 0
+
+        handler Increment(amount: int) {
+            self.count += amount
+            println(f"Count increased to {self.count}")
+        }
+
+        handler GetCount() -> int {
+            self.count
+        }
+
+        handler Reset() {
+            self.count = 0
+            println("Counter reset")
+        }
+    }
+
+    // Create and use an actor
+    let counter = spawn Counter()
+
+    // Send messages
+    counter <- Increment(5)
+    counter <- Increment(3)
+
+    // Query with response
+    let current = counter <? GetCount()
+    println(f"Current count: {current}")
+
+    counter <- Reset()
+
+    // Actor with state management
+    println("\n=== Stateful Actor ===")
+
+    actor BankAccount {
+        balance: float = 0.0
+        owner: string
+        transactions: list = []
+
+        handler Deposit(amount: float) {
+            if amount > 0 {
+                self.balance += amount
+                self.transactions.append({
+                    type: "deposit",
+                    amount: amount,
+                    timestamp: now()
+                })
+                println(f"Deposited ${amount}. New balance: ${self.balance}")
+            }
+        }
+
+        handler Withdraw(amount: float) -> Result {
+            if amount <= 0 {
+                Err("Invalid amount")
+            } else if amount > self.balance {
+                Err("Insufficient funds")
+            } else {
+                self.balance -= amount
+                self.transactions.append({
+                    type: "withdrawal",
+                    amount: amount,
+                    timestamp: now()
+                })
+                Ok(f"Withdrew ${amount}. New balance: ${self.balance}")
+            }
+        }
+
+        handler GetBalance() -> float {
+            self.balance
+        }
+
+        handler GetTransactionHistory() -> list {
+            self.transactions
+        }
+    }
+
+    let account = spawn BankAccount { owner: "Alice" }
+
+    account <- Deposit(1000.0)
+    account <- Deposit(500.0)
+
+    match account <? Withdraw(200.0) {
+        Ok(msg) => println(msg),
+        Err(e) => println(f"Error: {e}")
+    }
+
+    let balance = account <? GetBalance()
+    println(f"Final balance: ${balance}")
+
+    // Channel-based communication
+    println("\n=== Channels ===")
+
+    fn worker(id: int, jobs: Channel<int>, results: Channel<int>) {
+        loop {
+            match jobs.receive() {
+                Some(job) => {
+                    println(f"Worker {id} processing job {job}")
+                    sleep_ms(100)  // Simulate work
+                    results.send(job * 2)
+                },
+                None => {
+                    println(f"Worker {id} shutting down")
+                    break
+                }
+            }
+        }
+    }
+
+    let jobs = Channel::new(100)  // Buffered channel
+    let results = Channel::new(100)
+
+    // Start workers
+    for id in 1..=3 {
+        spawn worker(id, jobs.clone(), results.clone())
+    }
+
+    // Send jobs
+    for i in 1..=10 {
+        jobs.send(i)
+    }
+
+    // Collect results
+    for _ in 1..=10 {
+        let result = results.receive()
+        println(f"Result: {result}")
+    }
+
+    // Close channel
+    jobs.close()
+
+    // Select statement for multiple channels
+    println("\n=== Select Statement ===")
+
+    let ch1 = Channel::new(1)
+    let ch2 = Channel::new(1)
+    let timeout = Timer::after(100)
+
+    select {
+        msg = ch1.receive() => {
+            println(f"Received from ch1: {msg}")
+        },
+        msg = ch2.receive() => {
+            println(f"Received from ch2: {msg}")
+        },
+        _ = timeout.wait() => {
+            println("Timeout occurred")
+        }
+    }
+
+    // Producer-Consumer pattern
+    println("\n=== Producer-Consumer ===")
+
+    actor Producer {
+        id: int
+
+        handler Produce(channel: Channel<int>, count: int) {
+            for i in 0..count {
+                let item = self.id * 100 + i
+                channel.send(item)
+                println(f"Producer {self.id} produced {item}")
+                sleep_ms(50)
+            }
+        }
+    }
+
+    actor Consumer {
+        id: int
+
+        handler Consume(channel: Channel<int>) {
+            loop {
+                match channel.receive_timeout(200) {
+                    Some(item) => {
+                        println(f"Consumer {self.id} consumed {item}")
+                        sleep_ms(75)
+                    },
+                    None => {
+                        println(f"Consumer {self.id} timed out")
+                        break
+                    }
+                }
+            }
+        }
+    }
+
+    let pipeline = Channel::new(10)
+
+    // Start producers
+    for i in 1..=2 {
+        let producer = spawn Producer { id: i }
+        producer <- Produce(pipeline.clone(), 5)
+    }
+
+    // Start consumers
+    for i in 1..=3 {
+        let consumer = spawn Consumer { id: i }
+        consumer <- Consume(pipeline.clone())
+    }
+
+    sleep_ms(2000)  // Let them run
+
+    // Message routing actor
+    println("\n=== Message Router ===")
+
+    actor MessageRouter {
+        subscribers: map = {}
+
+        handler Subscribe(topic: string, actor: ActorRef) {
+            if !self.subscribers.contains_key(topic) {
+                self.subscribers[topic] = []
+            }
+            self.subscribers[topic].append(actor)
+            println(f"Actor subscribed to {topic}")
+        }
+
+        handler Publish(topic: string, message: any) {
+            if self.subscribers.contains_key(topic) {
+                for subscriber in self.subscribers[topic] {
+                    subscriber <- message
+                }
+                println(f"Published to {self.subscribers[topic].len()} subscribers")
+            }
+        }
+    }
+
+    // Supervisor pattern
+    println("\n=== Supervisor Pattern ===")
+
+    actor Supervisor {
+        workers: list = []
+        restart_policy: string = "one_for_one"
+
+        handler StartWorker(worker_fn) {
+            let worker = spawn worker_fn()
+            self.workers.append(worker)
+            monitor(worker)  // Monitor for failures
+        }
+
+        handler WorkerFailed(worker_id, reason) {
+            println(f"Worker {worker_id} failed: {reason}")
+
+            match self.restart_policy {
+                "one_for_one" => {
+                    // Restart only the failed worker
+                    self.restart_worker(worker_id)
+                },
+                "one_for_all" => {
+                    // Restart all workers
+                    for worker in self.workers {
+                        self.restart_worker(worker)
+                    }
+                },
+                _ => println("Unknown restart policy")
+            }
+        }
+
+        fn restart_worker(worker) {
+            println(f"Restarting worker {worker}")
+            // Restart logic
+        }
+    }
+
+    // Parallel map-reduce
+    println("\n=== Parallel Map-Reduce ===")
+
+    fn parallel_map_reduce(data, map_fn, reduce_fn, num_workers = 4) {
+        let chunk_size = data.len() / num_workers
+        let chunks = data.chunks(chunk_size)
+        let results_channel = Channel::new(num_workers)
+
+        // Map phase - parallel
+        for chunk in chunks {
+            spawn async {
+                let mapped = chunk.map(map_fn)
+                results_channel.send(mapped)
+            }
+        }
+
+        // Collect mapped results
+        let mut all_mapped = []
+        for _ in 0..chunks.len() {
+            all_mapped.extend(results_channel.receive())
+        }
+
+        // Reduce phase
+        all_mapped.reduce(reduce_fn)
+    }
+
+    let numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    let sum_of_squares = parallel_map_reduce(
+        numbers,
+        x => x * x,
+        (a, b) => a + b
+    )
+    println(f"Sum of squares: {sum_of_squares}")
+}

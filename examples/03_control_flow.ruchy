@@ -1,0 +1,109 @@
+// 03_control_flow.ruchy - Control flow structures
+
+fn main() {
+    println("=== Control Flow ===\n")
+
+    // If-else expressions
+    let age = 25
+    let status = if age >= 18 {
+        "adult"
+    } else {
+        "minor"
+    }
+    println(f"Age {age}: {status}")
+
+    // If-else if-else chains
+    let score = 85
+    let grade = if score >= 90 {
+        "A"
+    } else if score >= 80 {
+        "B"
+    } else if score >= 70 {
+        "C"
+    } else if score >= 60 {
+        "D"
+    } else {
+        "F"
+    }
+    println(f"Score {score}: Grade {grade}")
+
+    // Pattern matching with match
+    println("\n=== Pattern Matching ===")
+
+    let number = 42
+    let description = match number {
+        0 => "zero",
+        1 => "one",
+        2..=10 => "small",
+        11..=50 => "medium",
+        _ => "large"
+    }
+    println(f"{number} is {description}")
+
+    // Match with multiple patterns
+    let day = "Saturday"
+    let day_type = match day {
+        "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday" => "weekday",
+        "Saturday" | "Sunday" => "weekend",
+        _ => "unknown"
+    }
+    println(f"{day} is a {day_type}")
+
+    // For loops
+    println("\n=== Loops ===")
+
+    println("For loop with range:")
+    for i in 0..5 {
+        println(f"  i = {i}")
+    }
+
+    println("\nFor loop with list:")
+    let fruits = ["apple", "banana", "orange"]
+    for fruit in fruits {
+        println(f"  {fruit}")
+    }
+
+    // While loop
+    println("\nWhile loop:")
+    let mut count = 0
+    while count < 3 {
+        println(f"  count = {count}")
+        count += 1
+    }
+
+    // Loop with break
+    println("\nLoop with break:")
+    let mut n = 0
+    loop {
+        if n >= 3 {
+            break
+        }
+        println(f"  n = {n}")
+        n += 1
+    }
+
+    // Loop with continue
+    println("\nLoop with continue (skip even numbers):")
+    for i in 0..6 {
+        if i % 2 == 0 {
+            continue
+        }
+        println(f"  {i} is odd")
+    }
+
+    // Pattern guards in match
+    let value = Some(42)
+    let result = match value {
+        Some(x) if x > 50 => "large value",
+        Some(x) if x > 0 => "positive value",
+        Some(_) => "non-positive value",
+        None => "no value"
+    }
+    println(f"\nPattern guard result: {result}")
+
+    // If-let for pattern matching
+    let optional = Some(10)
+    if let Some(x) = optional {
+        println(f"Found value: {x}")
+    }
+}

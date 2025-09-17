@@ -1,0 +1,158 @@
+// 09_async_await.ruchy - Asynchronous programming with async/await
+
+fn main() {
+    println("=== Async/Await ===\n")
+
+    // Basic async function
+    async fn fetch_data(url) {
+        println(f"Fetching from {url}...")
+        // Simulate async operation
+        await sleep_ms(100)
+        f"Data from {url}"
+    }
+
+    // Using await
+    async fn process() {
+        let data = await fetch_data("https://api.example.com")
+        println(f"Received: {data}")
+    }
+
+    // Run async function
+    await process()
+
+    // Multiple async operations
+    println("\n=== Multiple Async Operations ===")
+
+    async fn fetch_user(id) {
+        await sleep_ms(50)
+        { id: id, name: f"User_{id}" }
+    }
+
+    async fn fetch_posts(user_id) {
+        await sleep_ms(75)
+        [
+            { id: 1, user_id: user_id, title: "First Post" },
+            { id: 2, user_id: user_id, title: "Second Post" }
+        ]
+    }
+
+    async fn load_user_with_posts(user_id) {
+        let user = await fetch_user(user_id)
+        let posts = await fetch_posts(user_id)
+        {
+            user: user,
+            posts: posts
+        }
+    }
+
+    let result = await load_user_with_posts(123)
+    println(f"User with posts: {result}")
+
+    // Async with error handling
+    println("\n=== Async Error Handling ===")
+
+    async fn risky_async_operation(succeed) {
+        await sleep_ms(25)
+        if succeed {
+            Ok("Success!")
+        } else {
+            Err("Operation failed")
+        }
+    }
+
+    async fn handle_async_errors() {
+        // Success case
+        match await risky_async_operation(true) {
+            Ok(msg) => println(f"Success: {msg}"),
+            Err(e) => println(f"Error: {e}")
+        }
+
+        // Failure case
+        match await risky_async_operation(false) {
+            Ok(msg) => println(f"Success: {msg}"),
+            Err(e) => println(f"Error: {e}")
+        }
+    }
+
+    await handle_async_errors()
+
+    // Async with try-catch
+    println("\n=== Async Try-Catch ===")
+
+    async fn may_fail() {
+        await sleep_ms(10)
+        throw "Something went wrong"
+    }
+
+    try {
+        await may_fail()
+    } catch e {
+        println(f"Caught async error: {e}")
+    }
+
+    // Parallel async operations
+    println("\n=== Parallel Async Operations ===")
+
+    async fn parallel_fetch() {
+        // These would run in parallel in a real async runtime
+        let urls = [
+            "https://api1.example.com",
+            "https://api2.example.com",
+            "https://api3.example.com"
+        ]
+
+        let results = await Promise.all(
+            urls.map(url => fetch_data(url))
+        )
+
+        println(f"All results: {results}")
+    }
+
+    await parallel_fetch()
+
+    // Async streams
+    println("\n=== Async Streams ===")
+
+    async fn* generate_numbers() {
+        for i in 0..5 {
+            await sleep_ms(20)
+            yield i
+        }
+    }
+
+    async fn consume_stream() {
+        await for num in generate_numbers() {
+            println(f"Received: {num}")
+        }
+    }
+
+    await consume_stream()
+
+    // Async with timeout
+    println("\n=== Async with Timeout ===")
+
+    async fn slow_operation() {
+        await sleep_ms(1000)
+        "Finally done"
+    }
+
+    async fn with_timeout() {
+        match await timeout_ms(100, slow_operation()) {
+            Ok(result) => println(f"Completed: {result}"),
+            Err(_) => println("Operation timed out")
+        }
+    }
+
+    await with_timeout()
+
+    // Async closures
+    println("\n=== Async Closures ===")
+
+    let async_closure = async |x| {
+        await sleep_ms(10)
+        x * 2
+    }
+
+    let doubled = await async_closure(21)
+    println(f"Async closure result: {doubled}")
+}

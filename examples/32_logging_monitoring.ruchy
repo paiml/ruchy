@@ -1,0 +1,392 @@
+// 32_logging_monitoring.ruchy - Logging, monitoring, and observability
+
+import std::log
+import std::metrics
+import std::trace
+
+fn main() {
+    println("=== Logging & Monitoring ===\n")
+
+    // Basic logging
+    println("=== Basic Logging ===")
+
+    // Configure logger
+    let logger = log::Logger::new()
+        .level(log::Level::Debug)
+        .format(log::Format::Json)
+        .output(log::Output::Stdout)
+        .with_timestamp(true)
+        .with_caller(true)
+
+    log::set_global(logger)
+
+    // Log at different levels
+    log::trace("Detailed trace information")
+    log::debug("Debug information for development")
+    log::info("Informational message")
+    log::warn("Warning: something might be wrong")
+    log::error("Error occurred but recovered")
+    log::fatal("Fatal error - system shutting down")
+
+    // Structured logging
+    println("\n=== Structured Logging ===")
+
+    log::info("User action", {
+        user_id: 12345,
+        action: "login",
+        ip_address: "192.168.1.1",
+        timestamp: datetime::now()
+    })
+
+    log::error("Database error", {
+        error_code: "DB_CONN_001",
+        message: "Connection timeout",
+        retry_count: 3,
+        next_retry: "5s"
+    })
+
+    // Context logging
+    println("\n=== Context Logging ===")
+
+    struct RequestContext {
+        request_id: string,
+        user_id: int,
+        session_id: string
+    }
+
+    fn with_context(ctx: RequestContext, func) {
+        log::with_fields({
+            request_id: ctx.request_id,
+            user_id: ctx.user_id,
+            session_id: ctx.session_id
+        }, func)
+    }
+
+    let ctx = RequestContext {
+        request_id: "req-123-456",
+        user_id: 42,
+        session_id: "sess-789"
+    }
+
+    with_context(ctx, || {
+        log::info("Processing request")
+        // All logs within this scope include context
+        log::debug("Validating input")
+        log::info("Request completed")
+    })
+
+    // Metrics collection
+    println("\n=== Metrics ===")
+
+    // Counter metric
+    let request_counter = metrics::Counter::new("http_requests_total")
+        .with_labels({ method: "GET", endpoint: "/api/users" })
+
+    request_counter.inc()
+    request_counter.add(5)
+
+    // Gauge metric
+    let memory_gauge = metrics::Gauge::new("memory_usage_bytes")
+    memory_gauge.set(1024 * 1024 * 100)  // 100MB
+    memory_gauge.inc()
+    memory_gauge.dec()
+
+    // Histogram metric
+    let latency_histogram = metrics::Histogram::new("request_latency_ms")
+        .with_buckets([0.1, 0.5, 1.0, 2.5, 5.0, 10.0])
+
+    latency_histogram.observe(0.234)
+    latency_histogram.observe(1.567)
+    latency_histogram.observe(0.089)
+
+    // Summary metric
+    let response_size = metrics::Summary::new("response_size_bytes")
+        .with_quantiles([0.5, 0.9, 0.99])
+
+    response_size.observe(2048)
+    response_size.observe(4096)
+    response_size.observe(1024)
+
+    // Distributed tracing
+    println("\n=== Distributed Tracing ===")
+
+    let tracer = trace::Tracer::new("my-service")
+        .with_sampler(trace::Sampler::Probabilistic(0.1))  // Sample 10%
+
+    fn process_request(tracer: Tracer) {
+        let span = tracer.start_span("handle_request")
+            .with_tag("http.method", "POST")
+            .with_tag("http.url", "/api/orders")
+
+        // Child span
+        let db_span = tracer.start_span("database_query")
+            .with_parent(span)
+            .with_tag("db.type", "postgresql")
+            .with_tag("db.statement", "SELECT * FROM orders")
+
+        // Simulate work
+        sleep_ms(50)
+        db_span.finish()
+
+        // Another child span
+        let cache_span = tracer.start_span("cache_lookup")
+            .with_parent(span)
+
+        sleep_ms(10)
+        cache_span.finish()
+
+        span.finish()
+    }
+
+    process_request(tracer)
+
+    // Performance monitoring
+    println("\n=== Performance Monitoring ===")
+
+    struct PerformanceMonitor {
+        metrics: map = {}
+    }
+
+    impl PerformanceMonitor {
+        fn measure(mut self, name, func) {
+            let start = perf::high_resolution_time()
+            let result = func()
+            let duration = perf::high_resolution_time() - start
+
+            if name not in self.metrics {
+                self.metrics[name] = []
+            }
+            self.metrics[name].append(duration)
+
+            log::debug(f"Performance: {name} took {duration:.3}ms")
+            result
+        }
+
+        fn report(self) {
+            println("\n=== Performance Report ===")
+            for (name, times) in self.metrics {
+                let avg = times.sum() / times.len()
+                let min = times.min()
+                let max = times.max()
+                println(f"{name}:")
+                println(f"  Avg: {avg:.3}ms")
+                println(f"  Min: {min:.3}ms")
+                println(f"  Max: {max:.3}ms")
+            }
+        }
+    }
+
+    let monitor = PerformanceMonitor {}
+
+    monitor.measure("database_query", || {
+        sleep_ms(100)
+        "query result"
+    })
+
+    monitor.measure("api_call", || {
+        sleep_ms(50)
+        "api response"
+    })
+
+    monitor.report()
+
+    // Error tracking
+    println("\n=== Error Tracking ===")
+
+    struct ErrorTracker {
+        errors: list = [],
+        max_errors: int = 100
+    }
+
+    impl ErrorTracker {
+        fn track(mut self, error) {
+            let tracked_error = {
+                error: error,
+                timestamp: datetime::now(),
+                stack_trace: debug::stack_trace(),
+                context: log::get_context()
+            }
+
+            self.errors.append(tracked_error)
+
+            // Limit memory usage
+            if self.errors.len() > self.max_errors {
+                self.errors = self.errors[-self.max_errors:]
+            }
+
+            // Alert on critical errors
+            if error.severity == "critical" {
+                self.send_alert(error)
+            }
+        }
+
+        fn send_alert(self, error) {
+            // Send to monitoring service
+            log::error("CRITICAL ERROR ALERT", {
+                error: error,
+                alert_sent: true
+            })
+        }
+
+        fn get_statistics(self) {
+            let by_type = {}
+            for error in self.errors {
+                let type = error.error.type
+                by_type[type] = by_type.get(type, 0) + 1
+            }
+            by_type
+        }
+    }
+
+    // Health checks
+    println("\n=== Health Checks ===")
+
+    struct HealthCheck {
+        name: string,
+        check: fn() -> Result,
+        timeout: int = 5000
+    }
+
+    struct HealthMonitor {
+        checks: list
+    }
+
+    impl HealthMonitor {
+        fn add_check(mut self, check) {
+            self.checks.append(check)
+        }
+
+        fn run_checks(self) {
+            let results = {}
+
+            for check in self.checks {
+                let result = timeout(check.timeout, check.check)
+                results[check.name] = match result {
+                    Ok(_) => { status: "healthy", message: "OK" },
+                    Err(e) => { status: "unhealthy", message: e.to_string() }
+                }
+            }
+
+            results
+        }
+
+        fn is_healthy(self) {
+            let results = self.run_checks()
+            results.values().all(r => r.status == "healthy")
+        }
+    }
+
+    let health = HealthMonitor { checks: [] }
+
+    health.add_check(HealthCheck {
+        name: "database",
+        check: || {
+            // Check database connection
+            Ok("Connected")
+        }
+    })
+
+    health.add_check(HealthCheck {
+        name: "redis",
+        check: || {
+            // Check Redis connection
+            Ok("Connected")
+        }
+    })
+
+    let health_status = health.run_checks()
+    println(f"Health status: {health_status}")
+
+    // Audit logging
+    println("\n=== Audit Logging ===")
+
+    struct AuditLogger {
+        file: File
+    }
+
+    impl AuditLogger {
+        fn log_action(self, action, user, details) {
+            let entry = {
+                timestamp: datetime::now().to_iso8601(),
+                action: action,
+                user_id: user.id,
+                user_name: user.name,
+                ip_address: user.ip,
+                details: details,
+                hash: self.calculate_hash(action, user, details)
+            }
+
+            self.file.write_line(json::stringify(entry))
+        }
+
+        fn calculate_hash(self, action, user, details) {
+            // Tamper-proof hash
+            let data = f"{action}{user.id}{details}{datetime::now()}"
+            crypto::sha256(data)
+        }
+    }
+
+    // Custom log formatter
+    println("\n=== Custom Formatters ===")
+
+    fn custom_formatter(record) {
+        let color = match record.level {
+            "TRACE" => "\x1b[90m",  // Gray
+            "DEBUG" => "\x1b[36m",  // Cyan
+            "INFO" => "\x1b[32m",   // Green
+            "WARN" => "\x1b[33m",   // Yellow
+            "ERROR" => "\x1b[31m",  // Red
+            "FATAL" => "\x1b[35m",  // Magenta
+            _ => "\x1b[0m"
+        }
+
+        let reset = "\x1b[0m"
+        f"{color}[{record.timestamp}] {record.level}: {record.message}{reset}"
+    }
+
+    // Log aggregation
+    println("\n=== Log Aggregation ===")
+
+    struct LogAggregator {
+        buffer: list = [],
+        batch_size: int = 100,
+        flush_interval: int = 5000
+    }
+
+    impl LogAggregator {
+        fn add(mut self, log_entry) {
+            self.buffer.append(log_entry)
+
+            if self.buffer.len() >= self.batch_size {
+                self.flush()
+            }
+        }
+
+        fn flush(mut self) {
+            if self.buffer.len() == 0 {
+                return
+            }
+
+            // Send to log aggregation service
+            let batch = {
+                logs: self.buffer,
+                source: "my-service",
+                environment: env::get("ENV"),
+                timestamp: datetime::now()
+            }
+
+            // http::post("https://logs.example.com/ingest", batch)
+            println(f"Flushed {self.buffer.len()} logs")
+            self.buffer.clear()
+        }
+
+        fn start_auto_flush(mut self) {
+            spawn async {
+                loop {
+                    sleep_ms(self.flush_interval)
+                    self.flush()
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,286 @@
+// 27_datetime.ruchy - Date and time operations
+
+import std::datetime
+import std::chrono
+import std::timezone
+
+fn main() {
+    println("=== Date & Time Operations ===\n")
+
+    // Current date and time
+    println("=== Current DateTime ===")
+
+    let now = datetime::now()
+    println(f"Now: {now}")
+    println(f"UTC: {datetime::utc()}")
+
+    // Components
+    println(f"Year: {now.year()}")
+    println(f"Month: {now.month()}")
+    println(f"Day: {now.day()}")
+    println(f"Hour: {now.hour()}")
+    println(f"Minute: {now.minute()}")
+    println(f"Second: {now.second()}")
+    println(f"Millisecond: {now.millisecond()}")
+    println(f"Day of week: {now.weekday()}")
+    println(f"Day of year: {now.day_of_year()}")
+
+    // Creating specific dates
+    println("\n=== Creating Dates ===")
+
+    let date = datetime::date(2024, 12, 25)
+    println(f"Christmas 2024: {date}")
+
+    let time = datetime::time(14, 30, 0)
+    println(f"2:30 PM: {time}")
+
+    let dt = datetime::datetime(2024, 7, 4, 16, 0, 0)
+    println(f"July 4th, 4 PM: {dt}")
+
+    // Parsing dates
+    println("\n=== Parsing Dates ===")
+
+    let parsed1 = datetime::parse("2024-03-15")
+    println(f"ISO date: {parsed1}")
+
+    let parsed2 = datetime::parse("03/15/2024", "MM/DD/YYYY")
+    println(f"US format: {parsed2}")
+
+    let parsed3 = datetime::parse("15-Mar-2024 14:30:00", "DD-MMM-YYYY HH:mm:ss")
+    println(f"Custom format: {parsed3}")
+
+    // Formatting dates
+    println("\n=== Formatting Dates ===")
+
+    let dt = datetime::now()
+
+    println(f"ISO 8601: {dt.format_iso()}")
+    println(f"RFC 3339: {dt.format_rfc3339()}")
+    println(f"US format: {dt.format('MM/DD/YYYY')}")
+    println(f"EU format: {dt.format('DD.MM.YYYY')}")
+    println(f"Long format: {dt.format('MMMM D, YYYY at h:mm A')}")
+    println(f"Custom: {dt.format('YYYY-MM-DD HH:mm:ss.SSS')}")
+
+    // Date arithmetic
+    println("\n=== Date Arithmetic ===")
+
+    let today = datetime::today()
+    let tomorrow = today.add_days(1)
+    let yesterday = today.subtract_days(1)
+    let next_week = today.add_weeks(1)
+    let last_month = today.subtract_months(1)
+    let next_year = today.add_years(1)
+
+    println(f"Today: {today}")
+    println(f"Tomorrow: {tomorrow}")
+    println(f"Yesterday: {yesterday}")
+    println(f"Next week: {next_week}")
+    println(f"Last month: {last_month}")
+    println(f"Next year: {next_year}")
+
+    // Duration and intervals
+    println("\n=== Durations ===")
+
+    let start = datetime::parse("2024-01-01 09:00:00")
+    let end = datetime::parse("2024-01-01 17:30:00")
+
+    let duration = end - start
+    println(f"Duration: {duration}")
+    println(f"Hours: {duration.total_hours()}")
+    println(f"Minutes: {duration.total_minutes()}")
+    println(f"Seconds: {duration.total_seconds()}")
+
+    // Creating durations
+    let duration1 = datetime::duration(hours=2, minutes=30)
+    let duration2 = datetime::duration(days=7)
+    let duration3 = datetime::duration(weeks=2, days=3)
+
+    println(f"2.5 hours: {duration1}")
+    println(f"7 days: {duration2}")
+    println(f"2 weeks 3 days: {duration3}")
+
+    // Time zones
+    println("\n=== Time Zones ===")
+
+    let utc = datetime::utc()
+    let eastern = utc.to_timezone("America/New_York")
+    let pacific = utc.to_timezone("America/Los_Angeles")
+    let london = utc.to_timezone("Europe/London")
+    let tokyo = utc.to_timezone("Asia/Tokyo")
+
+    println(f"UTC: {utc}")
+    println(f"New York: {eastern}")
+    println(f"Los Angeles: {pacific}")
+    println(f"London: {london}")
+    println(f"Tokyo: {tokyo}")
+
+    // List available timezones
+    let zones = timezone::list_all()
+    println(f"Available timezones: {zones.len()}")
+
+    // Working days and business hours
+    println("\n=== Business Days ===")
+
+    fn is_business_day(date) {
+        let weekday = date.weekday()
+        weekday != "Saturday" && weekday != "Sunday"
+    }
+
+    fn add_business_days(start_date, days) {
+        let mut current = start_date
+        let mut added = 0
+
+        while added < days {
+            current = current.add_days(1)
+            if is_business_day(current) {
+                added += 1
+            }
+        }
+        current
+    }
+
+    let start = datetime::today()
+    let deadline = add_business_days(start, 10)
+    println(f"10 business days from now: {deadline}")
+
+    // Recurring events
+    println("\n=== Recurring Events ===")
+
+    fn generate_recurring(start, frequency, count) {
+        let mut dates = [start]
+        let mut current = start
+
+        for _ in 1..count {
+            current = match frequency {
+                "daily" => current.add_days(1),
+                "weekly" => current.add_weeks(1),
+                "monthly" => current.add_months(1),
+                "yearly" => current.add_years(1),
+                _ => current.add_days(1)
+            }
+            dates.append(current)
+        }
+        dates
+    }
+
+    let meetings = generate_recurring(datetime::today(), "weekly", 4)
+    println("Weekly meetings:")
+    for date in meetings {
+        println(f"  {date.format('YYYY-MM-DD')}")
+    }
+
+    // Age calculation
+    println("\n=== Age Calculation ===")
+
+    fn calculate_age(birthdate) {
+        let today = datetime::today()
+        let years = today.year() - birthdate.year()
+
+        // Adjust if birthday hasn't occurred this year
+        if today.month() < birthdate.month() ||
+           (today.month() == birthdate.month() && today.day() < birthdate.day()) {
+            years - 1
+        } else {
+            years
+        }
+    }
+
+    let birthday = datetime::date(1990, 6, 15)
+    let age = calculate_age(birthday)
+    println(f"Age: {age} years")
+
+    // Timestamps
+    println("\n=== Timestamps ===")
+
+    let unix_timestamp = datetime::now().to_unix_timestamp()
+    println(f"Unix timestamp: {unix_timestamp}")
+
+    let from_timestamp = datetime::from_unix_timestamp(unix_timestamp)
+    println(f"From timestamp: {from_timestamp}")
+
+    let millis = datetime::now().to_unix_millis()
+    println(f"Milliseconds: {millis}")
+
+    // Calendar operations
+    println("\n=== Calendar Operations ===")
+
+    fn days_in_month(year, month) {
+        match month {
+            2 => if is_leap_year(year) { 29 } else { 28 },
+            4 | 6 | 9 | 11 => 30,
+            _ => 31
+        }
+    }
+
+    fn is_leap_year(year) {
+        (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0)
+    }
+
+    let year = 2024
+    println(f"Is {year} a leap year? {is_leap_year(year)}")
+    println(f"Days in February {year}: {days_in_month(year, 2)}")
+
+    // Timer and stopwatch
+    println("\n=== Timer & Stopwatch ===")
+
+    let stopwatch = chrono::Stopwatch::new()
+    stopwatch.start()
+
+    // Simulate some work
+    sleep_ms(100)
+
+    let elapsed = stopwatch.elapsed()
+    println(f"Elapsed: {elapsed.milliseconds()}ms")
+
+    stopwatch.stop()
+
+    // Scheduling
+    println("\n=== Scheduling ===")
+
+    fn next_occurrence(cron_expr) {
+        // Simple cron expression parser
+        // "0 9 * * MON" = Every Monday at 9:00 AM
+        let parts = cron_expr.split(" ")
+        let minute = parts[0]
+        let hour = parts[1]
+        let day = parts[2]
+        let month = parts[3]
+        let weekday = parts[4]
+
+        // Calculate next occurrence
+        let now = datetime::now()
+        // ... implementation
+        now.add_days(1)  // Simplified
+    }
+
+    // Date ranges
+    println("\n=== Date Ranges ===")
+
+    struct DateRange {
+        start: datetime,
+        end: datetime
+    }
+
+    impl DateRange {
+        fn contains(self, date) {
+            date >= self.start && date <= self.end
+        }
+
+        fn overlaps(self, other) {
+            self.start <= other.end && self.end >= other.start
+        }
+
+        fn days(self) {
+            (self.end - self.start).total_days()
+        }
+    }
+
+    let q1_2024 = DateRange {
+        start: datetime::date(2024, 1, 1),
+        end: datetime::date(2024, 3, 31)
+    }
+
+    let today = datetime::today()
+    println(f"Is today in Q1 2024? {q1_2024.contains(today)}")
+    println(f"Q1 2024 has {q1_2024.days()} days")
+}

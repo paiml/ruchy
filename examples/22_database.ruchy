@@ -1,0 +1,300 @@
+// 22_database.ruchy - Database operations and SQL integration
+
+import std::db
+import std::sql
+
+fn main() {
+    println("=== Database Operations ===\n")
+
+    // Database connection
+    println("=== Connecting to Database ===")
+
+    let conn = db::connect({
+        driver: "postgres",
+        host: "localhost",
+        port: 5432,
+        database: "myapp",
+        user: "dbuser",
+        password: "secret"
+    })
+
+    // Alternative connection strings
+    let sqlite_conn = db::connect("sqlite:///path/to/database.db")
+    let mysql_conn = db::connect("mysql://user:pass@localhost/dbname")
+
+    // Basic queries
+    println("\n=== Basic Queries ===")
+
+    // Create table
+    conn.execute("
+        CREATE TABLE IF NOT EXISTS users (
+            id SERIAL PRIMARY KEY,
+            name VARCHAR(100) NOT NULL,
+            email VARCHAR(255) UNIQUE NOT NULL,
+            age INT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ")
+
+    // Insert data
+    conn.execute("
+        INSERT INTO users (name, email, age)
+        VALUES ($1, $2, $3)
+    ", ["Alice", "alice@example.com", 30])
+
+    // Parameterized queries to prevent SQL injection
+    fn insert_user(conn, name, email, age) {
+        conn.execute("
+            INSERT INTO users (name, email, age)
+            VALUES ($1, $2, $3)
+        ", [name, email, age])
+    }
+
+    insert_user(conn, "Bob", "bob@example.com", 25)
+    insert_user(conn, "Charlie", "charlie@example.com", 35)
+
+    // Query data
+    println("\n=== Querying Data ===")
+
+    let users = conn.query("
+        SELECT id, name, email, age
+        FROM users
+        WHERE age > $1
+        ORDER BY name
+    ", [20])
+
+    for user in users {
+        println(f"User: {user.name} ({user.email}), Age: {user.age}")
+    }
+
+    // Query builder pattern
+    println("\n=== Query Builder ===")
+
+    let query = sql::select("users")
+        .columns(["id", "name", "email"])
+        .where("age > ?", 25)
+        .where("email LIKE ?", "%@example.com")
+        .order_by("name", "ASC")
+        .limit(10)
+
+    let results = conn.query(query)
+    println(f"Found {results.len()} users")
+
+    // Transactions
+    println("\n=== Transactions ===")
+
+    fn transfer_funds(conn, from_account, to_account, amount) {
+        let tx = conn.begin_transaction()
+
+        try {
+            // Debit from account
+            tx.execute("
+                UPDATE accounts
+                SET balance = balance - $1
+                WHERE id = $2 AND balance >= $1
+            ", [amount, from_account])
+
+            // Credit to account
+            tx.execute("
+                UPDATE accounts
+                SET balance = balance + $1
+                WHERE id = $2
+            ", [amount, to_account])
+
+            // Commit transaction
+            tx.commit()
+            Ok("Transfer successful")
+        } catch e {
+            // Rollback on error
+            tx.rollback()
+            Err(f"Transfer failed: {e}")
+        }
+    }
+
+    // Connection pooling
+    println("\n=== Connection Pool ===")
+
+    let pool = db::Pool::new({
+        driver: "postgres",
+        host: "localhost",
+        database: "myapp",
+        max_connections: 10,
+        min_connections: 2,
+        connection_timeout: 5000
+    })
+
+    async fn handle_request(pool) {
+        let conn = await pool.acquire()
+
+        try {
+            let result = conn.query("SELECT * FROM users LIMIT 1")
+            println(f"Got user: {result[0].name}")
+        } finally {
+            pool.release(conn)
+        }
+    }
+
+    // ORM-like interface
+    println("\n=== ORM Interface ===")
+
+    #[table("users")]
+    struct User {
+        #[primary_key]
+        id: int,
+        name: string,
+        email: string,
+        age: int,
+        created_at: datetime
+    }
+
+    impl User {
+        // Find by ID
+        fn find(conn, id) {
+            conn.query_one("
+                SELECT * FROM users WHERE id = $1
+            ", [id]).map(User::from_row)
+        }
+
+        // Find all
+        fn all(conn) {
+            conn.query("SELECT * FROM users")
+                .map(rows => rows.map(User::from_row))
+        }
+
+        // Find with conditions
+        fn where(conn, conditions) {
+            let query = sql::select("users")
+
+            for (key, value) in conditions {
+                query.where(f"{key} = ?", value)
+            }
+
+            conn.query(query).map(rows => rows.map(User::from_row))
+        }
+
+        // Save (insert or update)
+        fn save(self, conn) {
+            if self.id == 0 {
+                // Insert
+                let result = conn.query_one("
+                    INSERT INTO users (name, email, age)
+                    VALUES ($1, $2, $3)
+                    RETURNING id
+                ", [self.name, self.email, self.age])
+
+                self.id = result.id
+            } else {
+                // Update
+                conn.execute("
+                    UPDATE users
+                    SET name = $1, email = $2, age = $3
+                    WHERE id = $4
+                ", [self.name, self.email, self.age, self.id])
+            }
+        }
+
+        // Delete
+        fn delete(self, conn) {
+            conn.execute("DELETE FROM users WHERE id = $1", [self.id])
+        }
+
+        fn from_row(row) {
+            User {
+                id: row.id,
+                name: row.name,
+                email: row.email,
+                age: row.age,
+                created_at: row.created_at
+            }
+        }
+    }
+
+    // Using ORM interface
+    let user = User::find(conn, 1)
+    match user {
+        Some(u) => {
+            println(f"Found user: {u.name}")
+            u.age += 1
+            u.save(conn)
+        },
+        None => println("User not found")
+    }
+
+    // Migrations
+    println("\n=== Database Migrations ===")
+
+    let migrator = db::Migrator::new(conn, "migrations/")
+
+    // Define migrations
+    migrator.add_migration("001_create_users", {
+        up: "
+            CREATE TABLE users (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(100) NOT NULL,
+                email VARCHAR(255) UNIQUE NOT NULL
+            );
+        ",
+        down: "DROP TABLE users;"
+    })
+
+    migrator.add_migration("002_add_age_column", {
+        up: "ALTER TABLE users ADD COLUMN age INT;",
+        down: "ALTER TABLE users DROP COLUMN age;"
+    })
+
+    // Run migrations
+    migrator.migrate()  // Run all pending migrations
+    migrator.rollback() // Rollback last migration
+    migrator.reset()    // Rollback all and re-run
+
+    // Prepared statements
+    println("\n=== Prepared Statements ===")
+
+    let stmt = conn.prepare("
+        SELECT * FROM users
+        WHERE age BETWEEN $1 AND $2
+    ")
+
+    let young_users = stmt.query([18, 25])
+    let middle_aged = stmt.query([26, 40])
+    let seniors = stmt.query([60, 100])
+
+    // Batch operations
+    println("\n=== Batch Operations ===")
+
+    let users_to_insert = [
+        { name: "David", email: "david@example.com", age: 28 },
+        { name: "Eve", email: "eve@example.com", age: 31 },
+        { name: "Frank", email: "frank@example.com", age: 29 }
+    ]
+
+    conn.batch_insert("users", users_to_insert)
+
+    // Database introspection
+    println("\n=== Database Introspection ===")
+
+    let tables = conn.list_tables()
+    println(f"Tables: {tables}")
+
+    let columns = conn.list_columns("users")
+    for col in columns {
+        println(f"Column: {col.name} ({col.type})")
+    }
+
+    let indexes = conn.list_indexes("users")
+    println(f"Indexes: {indexes}")
+
+    // Backup and restore
+    println("\n=== Backup and Restore ===")
+
+    conn.backup("backup.sql")
+    println("Database backed up")
+
+    // Restore from backup
+    let new_conn = db::connect("sqlite:///restored.db")
+    new_conn.restore("backup.sql")
+    println("Database restored")
+
+    // Close connection
+    conn.close()
+}

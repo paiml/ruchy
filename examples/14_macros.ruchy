@@ -1,0 +1,209 @@
+// 14_macros.ruchy - Using macros for code generation and metaprogramming
+
+fn main() {
+    println("=== Macros ===\n")
+
+    // Built-in macros
+    println("=== Built-in Macros ===")
+
+    // println! macro
+    println!("Using println! macro")
+
+    // format! macro
+    let formatted = format!("Number: {}, String: {}", 42, "hello")
+    println(formatted)
+
+    // assert! macro
+    assert!(2 + 2 == 4)
+    println("Assertion passed!")
+
+    // debug! macro
+    let value = { x: 10, y: 20 }
+    debug!(value)
+
+    // DataFrame macro
+    println("\n=== DataFrame Macro ===")
+
+    let df = df![
+        "id" => [1, 2, 3],
+        "name" => ["Alice", "Bob", "Charlie"],
+        "score" => [95, 87, 92]
+    ]
+    println(df)
+
+    // Vector macro
+    let vec = vec![1, 2, 3, 4, 5]
+    println(f"Vector: {vec}")
+
+    // HashMap macro
+    let map = hashmap![
+        "key1" => "value1",
+        "key2" => "value2",
+        "key3" => "value3"
+    ]
+    println(f"HashMap: {map}")
+
+    // Custom macro-like functions
+    println("\n=== Macro-like Functions ===")
+
+    // Timing macro
+    fn time_it(label, func) {
+        let start = now()
+        let result = func()
+        let elapsed = now() - start
+        println(f"{label}: {elapsed}ms")
+        result
+    }
+
+    let result = time_it("Computation", || {
+        let mut sum = 0
+        for i in 0..1000 {
+            sum += i
+        }
+        sum
+    })
+    println(f"Result: {result}")
+
+    // Memoization macro-like function
+    fn memoize(func) {
+        let cache = {}
+        |x| {
+            if cache.contains_key(x) {
+                cache[x]
+            } else {
+                let result = func(x)
+                cache[x] = result
+                result
+            }
+        }
+    }
+
+    fn expensive_computation(n) {
+        println(f"Computing for {n}...")
+        n * n * n
+    }
+
+    let memoized = memoize(expensive_computation)
+    println("\n=== Memoization ===")
+    println(f"First call: {memoized(5)}")
+    println(f"Second call (cached): {memoized(5)}")
+    println(f"New value: {memoized(7)}")
+
+    // DSL-like macros
+    println("\n=== DSL Macros ===")
+
+    // SQL-like query macro
+    macro sql_select {
+        SELECT $fields:expr FROM $table:ident WHERE $condition:expr => {
+            $table.filter($condition).select($fields)
+        }
+    }
+
+    // HTML-like template macro
+    macro html {
+        <$tag:ident>$content:expr</$tag:ident> => {
+            f"<{stringify!($tag)}>{$content}</{stringify!($tag)}>"
+        }
+    }
+
+    // Test framework macro
+    macro test {
+        $name:ident { $body:expr } => {
+            fn $name() {
+                println(f"Running test: {stringify!($name)}")
+                $body
+                println("  ✓ Passed")
+            }
+        }
+    }
+
+    test! simple_test {
+        assert!(1 + 1 == 2)
+    }
+
+    test! string_test {
+        let s = "hello"
+        assert!(s.len() == 5)
+    }
+
+    simple_test()
+    string_test()
+
+    // Derive-like macros
+    println("\n=== Derive-like Macros ===")
+
+    #[derive(Debug, Clone, PartialEq)]
+    struct User {
+        name: string,
+        age: int
+    }
+
+    let user1 = User { name: "Alice", age: 30 }
+    let user2 = user1.clone()
+
+    println(f"User1: {debug!(user1)}")
+    println(f"User2: {debug!(user2)}")
+    println(f"Equal: {user1 == user2}")
+
+    // Attribute macros
+    println("\n=== Attribute Macros ===")
+
+    #[test]
+    fn test_addition() {
+        assert!(2 + 2 == 4)
+    }
+
+    #[bench]
+    fn bench_iteration() {
+        for i in 0..1000 {
+            // benchmark code
+        }
+    }
+
+    #[deprecated("Use new_function instead")]
+    fn old_function() {
+        println("This is deprecated")
+    }
+
+    // Conditional compilation
+    println("\n=== Conditional Compilation ===")
+
+    #[cfg(debug)]
+    fn debug_only() {
+        println("Debug mode only")
+    }
+
+    #[cfg(release)]
+    fn release_only() {
+        println("Release mode only")
+    }
+
+    #[cfg(target_os = "linux")]
+    fn linux_specific() {
+        println("Linux-specific code")
+    }
+
+    // Variadic macros
+    println("\n=== Variadic Macros ===")
+
+    macro sum {
+        () => { 0 },
+        ($x:expr) => { $x },
+        ($x:expr, $($rest:expr),+) => {
+            $x + sum!($($rest),+)
+        }
+    }
+
+    let total = sum!(1, 2, 3, 4, 5)
+    println(f"Sum: {total}")
+
+    // Recursive macros
+    macro factorial {
+        (0) => { 1 },
+        ($n:expr) => {
+            $n * factorial!($n - 1)
+        }
+    }
+
+    println(f"Factorial of 5: {factorial!(5)}")
+}

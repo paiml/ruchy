@@ -1,0 +1,82 @@
+// 02_functions.ruchy - Function definitions and calls
+
+fn main() {
+    println("=== Functions in Ruchy ===\n")
+
+    // Basic function
+    fn greet(name) {
+        println(f"Hello, {name}!")
+    }
+
+    greet("Alice")
+    greet("Bob")
+
+    // Function with return value
+    fn add(a, b) {
+        a + b  // Implicit return
+    }
+
+    let result = add(10, 20)
+    println(f"10 + 20 = {result}")
+
+    // Function with type annotations
+    fn multiply(x: int, y: int) -> int {
+        x * y
+    }
+
+    println(f"5 * 6 = {multiply(5, 6)}")
+
+    // Functions with default parameters
+    fn greet_with_title(name, title = "Mr.") {
+        println(f"Hello, {title} {name}!")
+    }
+
+    greet_with_title("Smith")
+    greet_with_title("Johnson", "Dr.")
+
+    // Fat arrow functions (lambdas)
+    let square = x => x * x
+    let double = x => x * 2
+
+    println(f"Square of 5: {square(5)}")
+    println(f"Double of 7: {double(7)}")
+
+    // Multi-line lambda
+    let calculate = (a, b) => {
+        let sum = a + b
+        let product = a * b
+        (sum, product)
+    }
+
+    let (s, p) = calculate(3, 4)
+    println(f"3 + 4 = {s}, 3 * 4 = {p}")
+
+    // Higher-order functions
+    fn apply_twice(f, x) {
+        f(f(x))
+    }
+
+    let result = apply_twice(double, 5)
+    println(f"Double twice of 5: {result}")
+
+    // Recursive function
+    fn factorial(n) {
+        if n <= 1 {
+            1
+        } else {
+            n * factorial(n - 1)
+        }
+    }
+
+    println(f"Factorial of 5: {factorial(5)}")
+
+    // Nested functions
+    fn outer(x) {
+        fn inner(y) {
+            y * 2
+        }
+        inner(x) + 10
+    }
+
+    println(f"Nested function result: {outer(5)}")
+}

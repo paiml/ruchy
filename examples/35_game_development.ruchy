@@ -1,0 +1,526 @@
+// 35_game_development.ruchy - Game development patterns and systems
+
+import std::game
+import std::physics
+import std::graphics
+
+fn main() {
+    println("=== Game Development ===\n")
+
+    // Game state management
+    println("=== Game State ===")
+
+    enum GameState {
+        Menu,
+        Playing,
+        Paused,
+        GameOver
+    }
+
+    struct Game {
+        state: GameState = GameState::Menu,
+        score: int = 0,
+        lives: int = 3,
+        level: int = 1,
+        entities: list = [],
+        systems: list = [],
+        input_handler: InputHandler,
+        renderer: Renderer
+    }
+
+    impl Game {
+        fn update(mut self, delta_time) {
+            match self.state {
+                GameState::Menu => self.update_menu(delta_time),
+                GameState::Playing => self.update_playing(delta_time),
+                GameState::Paused => self.update_paused(delta_time),
+                GameState::GameOver => self.update_game_over(delta_time)
+            }
+        }
+
+        fn update_playing(mut self, delta_time) {
+            // Update all systems
+            for system in self.systems {
+                system.update(self.entities, delta_time)
+            }
+
+            // Check game conditions
+            if self.lives <= 0 {
+                self.state = GameState::GameOver
+            }
+        }
+
+        fn render(self) {
+            self.renderer.clear()
+
+            match self.state {
+                GameState::Menu => self.render_menu(),
+                GameState::Playing => self.render_game(),
+                GameState::Paused => {
+                    self.render_game()
+                    self.render_pause_overlay()
+                },
+                GameState::GameOver => self.render_game_over()
+            }
+
+            self.renderer.present()
+        }
+    }
+
+    // Entity Component System (ECS)
+    println("\n=== Entity Component System ===")
+
+    struct Entity {
+        id: int,
+        components: map = {}
+    }
+
+    impl Entity {
+        fn add_component(mut self, name, component) {
+            self.components[name] = component
+            self
+        }
+
+        fn get_component(self, name) {
+            self.components.get(name)
+        }
+
+        fn has_component(self, name) {
+            name in self.components
+        }
+    }
+
+    // Components
+    struct Transform {
+        position: Vec3,
+        rotation: Quaternion,
+        scale: Vec3 = Vec3(1, 1, 1)
+    }
+
+    struct Velocity {
+        linear: Vec3,
+        angular: Vec3
+    }
+
+    struct Sprite {
+        texture: Texture,
+        color: Color = Color::white(),
+        flip_x: bool = false,
+        flip_y: bool = false
+    }
+
+    struct Collider {
+        shape: Shape,
+        is_trigger: bool = false,
+        layer: int = 0
+    }
+
+    struct Health {
+        current: int,
+        max: int
+    }
+
+    // Systems
+    struct MovementSystem {}
+
+    impl MovementSystem {
+        fn update(self, entities, delta_time) {
+            for entity in entities {
+                if let Some(transform) = entity.get_component("transform") {
+                    if let Some(velocity) = entity.get_component("velocity") {
+                        transform.position += velocity.linear * delta_time
+                        transform.rotation *= Quaternion::from_euler(
+                            velocity.angular * delta_time
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    struct CollisionSystem {
+        spatial_hash: SpatialHash
+    }
+
+    impl CollisionSystem {
+        fn update(self, entities, delta_time) {
+            // Update spatial hash
+            self.spatial_hash.clear()
+            for entity in entities {
+                if let Some(collider) = entity.get_component("collider") {
+                    let transform = entity.get_component("transform")
+                    self.spatial_hash.insert(entity, transform.position)
+                }
+            }
+
+            // Check collisions
+            for entity in entities {
+                if !entity.has_component("collider") { continue }
+
+                let nearby = self.spatial_hash.query(entity.position, radius: 100)
+                for other in nearby {
+                    if entity.id == other.id { continue }
+
+                    if self.check_collision(entity, other) {
+                        self.handle_collision(entity, other)
+                    }
+                }
+            }
+        }
+
+        fn check_collision(self, a, b) {
+            let collider_a = a.get_component("collider")
+            let collider_b = b.get_component("collider")
+            let transform_a = a.get_component("transform")
+            let transform_b = b.get_component("transform")
+
+            physics::intersects(
+                collider_a.shape, transform_a,
+                collider_b.shape, transform_b
+            )
+        }
+    }
+
+    // Input handling
+    println("\n=== Input Handling ===")
+
+    struct InputHandler {
+        key_states: map = {},
+        mouse_position: Vec2 = Vec2::zero(),
+        gamepad_states: map = {}
+    }
+
+    impl InputHandler {
+        fn is_key_down(self, key) {
+            self.key_states.get(key, false)
+        }
+
+        fn is_key_pressed(self, key) {
+            // True only on the frame the key was pressed
+            self.key_states.get(f"{key}_pressed", false)
+        }
+
+        fn get_axis(self, negative_key, positive_key) {
+            let mut value = 0.0
+            if self.is_key_down(negative_key) { value -= 1.0 }
+            if self.is_key_down(positive_key) { value += 1.0 }
+            value
+        }
+
+        fn get_vector(self) {
+            Vec2(
+                self.get_axis("left", "right"),
+                self.get_axis("up", "down")
+            )
+        }
+
+        fn update(mut self) {
+            // Clear pressed states
+            for key in self.key_states.keys() {
+                if key.ends_with("_pressed") {
+                    self.key_states[key] = false
+                }
+            }
+
+            // Process new input events
+            for event in game::poll_events() {
+                match event {
+                    KeyDown(key) => {
+                        self.key_states[key] = true
+                        self.key_states[f"{key}_pressed"] = true
+                    },
+                    KeyUp(key) => {
+                        self.key_states[key] = false
+                    },
+                    MouseMove(x, y) => {
+                        self.mouse_position = Vec2(x, y)
+                    }
+                }
+            }
+        }
+    }
+
+    // Player controller
+    println("\n=== Player Controller ===")
+
+    struct PlayerController {
+        speed: float = 200.0,
+        jump_force: float = 500.0,
+        is_grounded: bool = false
+    }
+
+    impl PlayerController {
+        fn update(self, entity, input, delta_time) {
+            let transform = entity.get_component("transform")
+            let velocity = entity.get_component("velocity")
+
+            // Horizontal movement
+            let horizontal = input.get_axis("a", "d")
+            velocity.linear.x = horizontal * self.speed
+
+            // Jumping
+            if self.is_grounded && input.is_key_pressed("space") {
+                velocity.linear.y = self.jump_force
+                self.is_grounded = false
+            }
+
+            // Apply gravity
+            if !self.is_grounded {
+                velocity.linear.y -= physics::GRAVITY * delta_time
+            }
+        }
+
+        fn on_collision_enter(mut self, collision) {
+            // Check if landed on ground
+            if collision.normal.y > 0.7 {
+                self.is_grounded = true
+            }
+        }
+    }
+
+    // Animation system
+    println("\n=== Animation System ===")
+
+    struct AnimationClip {
+        name: string,
+        frames: list,
+        duration: float,
+        loop: bool = true
+    }
+
+    struct Animator {
+        clips: map,
+        current_clip: Option<AnimationClip> = None,
+        current_time: float = 0.0,
+        current_frame: int = 0
+    }
+
+    impl Animator {
+        fn play(mut self, clip_name) {
+            if let Some(clip) = self.clips.get(clip_name) {
+                self.current_clip = Some(clip)
+                self.current_time = 0.0
+                self.current_frame = 0
+            }
+        }
+
+        fn update(mut self, delta_time) {
+            if let Some(clip) = self.current_clip {
+                self.current_time += delta_time
+
+                let frame_duration = clip.duration / clip.frames.len()
+                let new_frame = (self.current_time / frame_duration).floor()
+
+                if new_frame != self.current_frame {
+                    if new_frame >= clip.frames.len() {
+                        if clip.loop {
+                            self.current_time = 0.0
+                            self.current_frame = 0
+                        } else {
+                            self.current_frame = clip.frames.len() - 1
+                        }
+                    } else {
+                        self.current_frame = new_frame
+                    }
+                }
+            }
+        }
+
+        fn get_current_frame(self) {
+            if let Some(clip) = self.current_clip {
+                clip.frames[self.current_frame]
+            } else {
+                None
+            }
+        }
+    }
+
+    // Particle system
+    println("\n=== Particle System ===")
+
+    struct Particle {
+        position: Vec3,
+        velocity: Vec3,
+        color: Color,
+        size: float,
+        lifetime: float,
+        age: float = 0.0
+    }
+
+    struct ParticleEmitter {
+        position: Vec3,
+        emission_rate: float,
+        particle_lifetime: float,
+        initial_velocity: Vec3,
+        velocity_variance: Vec3,
+        color: Color,
+        color_variance: Color,
+        size: float,
+        size_variance: float,
+        gravity: Vec3 = Vec3(0, -9.8, 0),
+        particles: list = [],
+        time_since_emission: float = 0.0
+    }
+
+    impl ParticleEmitter {
+        fn update(mut self, delta_time) {
+            // Emit new particles
+            self.time_since_emission += delta_time
+            let particles_to_emit = (self.time_since_emission * self.emission_rate).floor()
+
+            for _ in 0..particles_to_emit {
+                self.emit_particle()
+            }
+            self.time_since_emission %= (1.0 / self.emission_rate)
+
+            // Update existing particles
+            self.particles = self.particles
+                .filter(|p| p.age < p.lifetime)
+                .map(|p| {
+                    p.age += delta_time
+                    p.position += p.velocity * delta_time
+                    p.velocity += self.gravity * delta_time
+                    p.color.a = 1.0 - (p.age / p.lifetime)  // Fade out
+                    p
+                })
+        }
+
+        fn emit_particle(mut self) {
+            let particle = Particle {
+                position: self.position,
+                velocity: self.initial_velocity + random_variance(self.velocity_variance),
+                color: self.color + random_variance(self.color_variance),
+                size: self.size + random::range(-self.size_variance, self.size_variance),
+                lifetime: self.particle_lifetime
+            }
+            self.particles.append(particle)
+        }
+    }
+
+    // Audio system
+    println("\n=== Audio System ===")
+
+    struct AudioManager {
+        sound_effects: map,
+        music_tracks: map,
+        current_music: Option<AudioSource> = None,
+        master_volume: float = 1.0,
+        sfx_volume: float = 1.0,
+        music_volume: float = 0.7
+    }
+
+    impl AudioManager {
+        fn play_sfx(self, name, position = None) {
+            if let Some(sound) = self.sound_effects.get(name) {
+                let source = AudioSource::new(sound)
+                    .set_volume(self.sfx_volume * self.master_volume)
+
+                if position {
+                    source.set_position(position)  // 3D sound
+                }
+
+                source.play()
+            }
+        }
+
+        fn play_music(mut self, name, loop = true) {
+            if self.current_music {
+                self.current_music.stop()
+            }
+
+            if let Some(track) = self.music_tracks.get(name) {
+                self.current_music = Some(
+                    AudioSource::new(track)
+                        .set_volume(self.music_volume * self.master_volume)
+                        .set_loop(loop)
+                )
+                self.current_music.play()
+            }
+        }
+
+        fn crossfade_music(self, to_track, duration) {
+            spawn async {
+                let fade_steps = 60  // 60 FPS
+                let step_duration = duration / fade_steps
+
+                for i in 0..fade_steps {
+                    let t = i / fade_steps
+                    if self.current_music {
+                        self.current_music.set_volume((1.0 - t) * self.music_volume)
+                    }
+                    sleep_ms(step_duration * 1000)
+                }
+
+                self.play_music(to_track)
+            }
+        }
+    }
+
+    // Game loop
+    println("\n=== Main Game Loop ===")
+
+    let mut game = Game {
+        state: GameState::Playing,
+        input_handler: InputHandler {},
+        renderer: Renderer::new(800, 600),
+        systems: [
+            MovementSystem {},
+            CollisionSystem { spatial_hash: SpatialHash::new() },
+            AnimationSystem {},
+            ParticleSystem {}
+        ]
+    }
+
+    // Create player entity
+    let player = Entity { id: 1 }
+        .add_component("transform", Transform {
+            position: Vec3(400, 300, 0)
+        })
+        .add_component("velocity", Velocity {
+            linear: Vec3::zero(),
+            angular: Vec3::zero()
+        })
+        .add_component("sprite", Sprite {
+            texture: Texture::load("player.png")
+        })
+        .add_component("collider", Collider {
+            shape: Shape::Rectangle(32, 32)
+        })
+        .add_component("health", Health {
+            current: 100,
+            max: 100
+        })
+
+    game.entities.append(player)
+
+    // Main loop
+    let target_fps = 60
+    let target_frame_time = 1.0 / target_fps
+
+    loop {
+        let frame_start = game::time()
+
+        // Handle input
+        game.input_handler.update()
+
+        if game.input_handler.is_key_pressed("escape") {
+            match game.state {
+                GameState::Playing => game.state = GameState::Paused,
+                GameState::Paused => game.state = GameState::Playing,
+                _ => {}
+            }
+        }
+
+        // Update game
+        game.update(target_frame_time)
+
+        // Render
+        game.render()
+
+        // Frame rate limiting
+        let frame_time = game::time() - frame_start
+        if frame_time < target_frame_time {
+            sleep_ms((target_frame_time - frame_time) * 1000)
+        }
+    }
+}

@@ -1,0 +1,133 @@
+// 08_dataframes.ruchy - Working with DataFrames for data analysis
+
+fn main() {
+    println("=== DataFrames ===\n")
+
+    // Creating a DataFrame
+    let df = df![
+        "name" => ["Alice", "Bob", "Charlie", "Diana", "Eve"],
+        "age" => [30, 25, 35, 28, 32],
+        "city" => ["NYC", "SF", "NYC", "LA", "NYC"],
+        "salary" => [75000, 85000, 95000, 70000, 80000]
+    ]
+
+    println("Original DataFrame:")
+    println(df)
+
+    // Filtering rows
+    println("\n=== Filtering ===")
+    let adults = df.filter(row => row.age >= 30)
+    println("People aged 30+:")
+    println(adults)
+
+    // Selecting columns
+    println("\n=== Column Selection ===")
+    let names_ages = df.select(["name", "age"])
+    println("Names and ages only:")
+    println(names_ages)
+
+    // Sorting
+    println("\n=== Sorting ===")
+    let sorted_by_age = df.sort("age")
+    println("Sorted by age:")
+    println(sorted_by_age)
+
+    let sorted_desc = df.sort_desc("salary")
+    println("\nSorted by salary (descending):")
+    println(sorted_desc)
+
+    // Grouping and aggregation
+    println("\n=== Grouping ===")
+    let by_city = df.group_by("city")
+                    .agg([
+                        ("age", "mean"),
+                        ("salary", "sum")
+                    ])
+    println("Grouped by city:")
+    println(by_city)
+
+    // Adding computed columns
+    println("\n=== Computed Columns ===")
+    let with_bonus = df.with_column("bonus", row => row.salary * 0.1)
+    println("With 10% bonus column:")
+    println(with_bonus)
+
+    // Chaining operations
+    println("\n=== Chained Operations ===")
+    let result = df
+        .filter(row => row.city == "NYC")
+        .select(["name", "salary"])
+        .sort_desc("salary")
+        .head(2)
+
+    println("Top 2 NYC salaries:")
+    println(result)
+
+    // Statistical operations
+    println("\n=== Statistics ===")
+    let stats = df.describe()
+    println("Statistical summary:")
+    println(stats)
+
+    let avg_age = df.column("age").mean()
+    println(f"Average age: {avg_age}")
+
+    let total_salary = df.column("salary").sum()
+    println(f"Total salary: {total_salary}")
+
+    // Joining DataFrames
+    println("\n=== Joining DataFrames ===")
+
+    let departments = df![
+        "name" => ["Alice", "Bob", "Charlie"],
+        "department" => ["Engineering", "Sales", "Marketing"]
+    ]
+
+    let joined = df.join(departments, on="name", how="inner")
+    println("Joined with departments:")
+    println(joined)
+
+    // Pivot tables
+    println("\n=== Pivot Tables ===")
+    let sales_data = df![
+        "product" => ["A", "B", "A", "C", "B", "A"],
+        "region" => ["North", "South", "South", "North", "North", "South"],
+        "sales" => [100, 200, 150, 300, 250, 175]
+    ]
+
+    let pivot = sales_data.pivot(
+        index="product",
+        columns="region",
+        values="sales",
+        agg="sum"
+    )
+    println("Sales pivot table:")
+    println(pivot)
+
+    // Window functions
+    println("\n=== Window Functions ===")
+    let with_rank = df.with_column("salary_rank",
+        window("rank").over("city").order_by("salary", "desc")
+    )
+    println("With salary rank per city:")
+    println(with_rank)
+
+    // DataFrame from CSV-like string
+    println("\n=== Loading from CSV ===")
+    let csv_data = "id,name,score
+1,Alice,95
+2,Bob,87
+3,Charlie,92"
+
+    let from_csv = DataFrame::from_csv(csv_data)
+    println("DataFrame from CSV:")
+    println(from_csv)
+
+    // Exporting to different formats
+    println("\n=== Export Formats ===")
+    let json = df.to_json()
+    println(f"As JSON: {json}")
+
+    let csv = df.to_csv()
+    println(f"As CSV:\n{csv}")
+}

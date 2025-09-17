@@ -1,0 +1,143 @@
+// 07_pipeline_operator.ruchy - Using the pipeline operator for functional programming
+
+fn main() {
+    println("=== Pipeline Operator |> ===\n")
+
+    // Basic pipeline
+    let result = "hello world"
+        |> upper
+        |> len
+
+    println(f"Length of uppercase: {result}")
+
+    // Pipeline with multiple transformations
+    println("\n=== Data Transformation Pipeline ===")
+
+    fn double(x) { x * 2 }
+    fn add_ten(x) { x + 10 }
+    fn square(x) { x * x }
+
+    let value = 5
+        |> double
+        |> add_ten
+        |> square
+
+    println(f"5 |> double |> add_ten |> square = {value}")
+
+    // Pipeline with collections
+    println("\n=== Collection Pipeline ===")
+
+    let numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+
+    let result = numbers
+        |> filter(x => x % 2 == 0)
+        |> map(x => x * x)
+        |> reduce(0, (a, b) => a + b)
+
+    println(f"Sum of squares of even numbers: {result}")
+
+    // String processing pipeline
+    println("\n=== String Processing ===")
+
+    let text = "  The Quick Brown Fox  "
+
+    let processed = text
+        |> trim
+        |> lower
+        |> replace(" ", "_")
+        |> append("_processed")
+
+    println(f"Original: '{text}'")
+    println(f"Processed: '{processed}'")
+
+    // Custom pipeline functions
+    println("\n=== Custom Pipeline Functions ===")
+
+    fn remove_vowels(s) {
+        s.replace("a", "")
+         .replace("e", "")
+         .replace("i", "")
+         .replace("o", "")
+         .replace("u", "")
+    }
+
+    fn reverse(s) {
+        s.chars().reverse().join("")
+    }
+
+    let word = "hello"
+        |> upper
+        |> remove_vowels
+        |> reverse
+
+    println(f"'hello' after pipeline: '{word}'")
+
+    // Complex data pipeline
+    println("\n=== Complex Data Pipeline ===")
+
+    let people = [
+        { name: "Alice", age: 30, city: "NYC" },
+        { name: "Bob", age: 25, city: "SF" },
+        { name: "Charlie", age: 35, city: "NYC" },
+        { name: "Diana", age: 28, city: "LA" },
+        { name: "Eve", age: 32, city: "NYC" }
+    ]
+
+    let nyc_names = people
+        |> filter(p => p.city == "NYC")
+        |> filter(p => p.age >= 30)
+        |> map(p => p.name)
+        |> sort
+        |> join(", ")
+
+    println(f"NYC residents 30+: {nyc_names}")
+
+    // Pipeline with error handling
+    println("\n=== Pipeline with Error Handling ===")
+
+    fn safe_divide(x, y) {
+        if y == 0 {
+            Err("Division by zero")
+        } else {
+            Ok(x / y)
+        }
+    }
+
+    fn validate_positive(x) {
+        if x > 0 {
+            Ok(x)
+        } else {
+            Err("Not positive")
+        }
+    }
+
+    // This would need proper Result chaining in real code
+    let calculation = 100
+        |> (x => safe_divide(x, 10))
+        |> (r => match r {
+            Ok(v) => validate_positive(v),
+            Err(e) => Err(e)
+        })
+
+    match calculation {
+        Ok(v) => println(f"Result: {v}"),
+        Err(e) => println(f"Error: {e}")
+    }
+
+    // Nested pipelines
+    println("\n=== Nested Pipelines ===")
+
+    let matrix = [
+        [1, 2, 3],
+        [4, 5, 6],
+        [7, 8, 9]
+    ]
+
+    let row_sums = matrix
+        |> map(row => row
+            |> filter(x => x % 2 == 0)
+            |> reduce(0, (a, b) => a + b)
+        )
+
+    println(f"Sum of even numbers per row: {row_sums}")
+}
