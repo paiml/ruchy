@@ -418,21 +418,489 @@ impl Default for RuchyCoverageCollector {
     }
 }
 #[cfg(test)]
+mod tests {
+    use super::*;
+    use std::path::PathBuf;
+    use tempfile::NamedTempFile;
+    use std::io::Write;
+
+    fn create_test_file(content: &str) -> NamedTempFile {
+        let mut file = NamedTempFile::new().unwrap();
+        file.write_all(content.as_bytes()).unwrap();
+        file.flush().unwrap();
+        file
+    }
+
+    #[test]
+    fn test_ruchy_coverage_new() {
+        let coverage = RuchyCoverage::new("test.ruchy");
+        assert_eq!(coverage.file_path, "test.ruchy");
+        assert_eq!(coverage.total_lines, 0);
+        assert_eq!(coverage.total_functions, 0);
+        assert_eq!(coverage.total_branches, 0);
+        assert!(coverage.covered_lines.is_empty());
+        assert!(coverage.covered_functions.is_empty());
+    }
+
+    #[test]
+    fn test_line_coverage_empty() {
+        let coverage = RuchyCoverage::new("test.ruchy");
+        assert_eq!(coverage.line_coverage(), 100.0);
+    }
+
+    #[test]
+    fn test_line_coverage_partial() {
+        let mut coverage = RuchyCoverage::new("test.ruchy");
+        coverage.total_lines = 10;
+        coverage.covered_lines.insert(1);
+        coverage.covered_lines.insert(2);
+        coverage.covered_lines.insert(5);
+
+        assert_eq!(coverage.line_coverage(), 30.0);
+    }
+
+    #[test]
+    fn test_line_coverage_full() {
+        let mut coverage = RuchyCoverage::new("test.ruchy");
+        coverage.total_lines = 3;
+        coverage.covered_lines.insert(1);
+        coverage.covered_lines.insert(2);
+        coverage.covered_lines.insert(3);
+
+        assert_eq!(coverage.line_coverage(), 100.0);
+    }
+
+    #[test]
+    fn test_function_coverage_empty() {
+        let coverage = RuchyCoverage::new("test.ruchy");
+        assert_eq!(coverage.function_coverage(), 100.0);
+    }
+
+    #[test]
+    fn test_function_coverage_partial() {
+        let mut coverage = RuchyCoverage::new("test.ruchy");
+        coverage.total_functions = 4;
+        coverage.covered_functions.insert("func1".to_string());
+        coverage.covered_functions.insert("func2".to_string());
+
+        assert_eq!(coverage.function_coverage(), 50.0);
+    }
+
+    #[test]
+    fn test_branch_coverage_empty() {
+        let coverage = RuchyCoverage::new("test.ruchy");
+        assert_eq!(coverage.branch_coverage(), 100.0);
+    }
+
+    #[test]
+    fn test_branch_coverage_partial() {
+        let mut coverage = RuchyCoverage::new("test.ruchy");
+        coverage.total_branches = 8;
+        coverage.covered_branches = 3;
+
+        assert_eq!(coverage.branch_coverage(), 37.5);
+    }
+
+    #[test]
+    fn test_overall_coverage_calculation() {
+        let mut coverage = RuchyCoverage::new("test.ruchy");
+        coverage.total_lines = 10;
+        coverage.covered_lines.insert(1);
+        coverage.covered_lines.insert(2);
+        coverage.covered_lines.insert(3);
+        coverage.covered_lines.insert(4);
+        coverage.covered_lines.insert(5); // 50% line coverage
+
+        coverage.total_functions = 2;
+        coverage.covered_functions.insert("func1".to_string()); // 50% function coverage
+
+        coverage.total_branches = 4;
+        coverage.covered_branches = 2; // 50% branch coverage
+
+        // Overall = 50% * 0.6 + 50% * 0.3 + 50% * 0.1 = 30 + 15 + 5 = 50%
+        assert_eq!(coverage.overall_coverage(), 50.0);
+    }
+
+    #[test]
+    fn test_ruchy_coverage_collector_new() {
+        let collector = RuchyCoverageCollector::new();
+        assert!(collector.coverage_data.is_empty());
+    }
+
+    #[test]
+    fn test_analyze_empty_file() {
+        let mut collector = RuchyCoverageCollector::new();
+        let file = create_test_file("");
+
+        let result = collector.analyze_file(file.path());
+        assert!(result.is_ok());
+
+        let file_path = file.path().to_str().unwrap();
+        let coverage = collector.coverage_data.get(file_path).unwrap();
+        assert_eq!(coverage.total_lines, 0);
+        assert_eq!(coverage.total_functions, 0);
+    }
+
+    #[test]
+    fn test_analyze_simple_function() {
+        let mut collector = RuchyCoverageCollector::new();
+        let content = r#"
+// This is a comment
+fn hello() {
+    println("Hello, world!")
+}
+"#;
+        let file = create_test_file(content);
+
+        let result = collector.analyze_file(file.path());
+        assert!(result.is_ok());
+
+        let file_path = file.path().to_str().unwrap();
+        let coverage = collector.coverage_data.get(file_path).unwrap();
+        assert_eq!(coverage.total_lines, 3); // Non-empty, non-comment lines
+        assert_eq!(coverage.total_functions, 1);
+    }
+
+    #[test]
+    fn test_analyze_multiple_functions() {
+        let mut collector = RuchyCoverageCollector::new();
+        let content = r#"
+fn add(a, b) {
+    return a + b
+}
+
+fun multiply(x, y) {
+    return x * y
+}
+"#;
+        let file = create_test_file(content);
+
+        let result = collector.analyze_file(file.path());
+        assert!(result.is_ok());
+
+        let file_path = file.path().to_str().unwrap();
+        let coverage = collector.coverage_data.get(file_path).unwrap();
+        assert_eq!(coverage.total_functions, 2);
+    }
+
+    #[test]
+    fn test_analyze_branches() {
+        let mut collector = RuchyCoverageCollector::new();
+        let content = r#"
+fn test_branches(x) {
+    if x > 0 {
+        println("positive")
+    }
+
+    match x {
+        1 => "one",
+        _ => "other"
+    }
+
+    while x > 0 {
+        x = x - 1
+    }
+
+    for i in 0..x {
+        println(i)
+    }
+}
+"#;
+        let file = create_test_file(content);
+
+        let result = collector.analyze_file(file.path());
+        assert!(result.is_ok());
+
+        let file_path = file.path().to_str().unwrap();
+        let coverage = collector.coverage_data.get(file_path).unwrap();
+        // if (2 branches) + match (1) + while (1) + for (1) = 5 branches
+        assert_eq!(coverage.total_branches, 5);
+    }
+
+    #[test]
+    fn test_mark_covered_lines() {
+        let mut collector = RuchyCoverageCollector::new();
+        let mut coverage = RuchyCoverage::new("test.ruchy");
+        coverage.total_lines = 10;
+        collector.coverage_data.insert("test.ruchy".to_string(), coverage);
+
+        collector.mark_covered("test.ruchy", vec![1, 3, 5]);
+
+        let coverage = collector.coverage_data.get("test.ruchy").unwrap();
+        assert!(coverage.covered_lines.contains(&1));
+        assert!(coverage.covered_lines.contains(&3));
+        assert!(coverage.covered_lines.contains(&5));
+        assert!(!coverage.covered_lines.contains(&2));
+        assert_eq!(coverage.line_coverage(), 30.0);
+    }
+
+    #[test]
+    fn test_mark_function_covered() {
+        let mut collector = RuchyCoverageCollector::new();
+        let mut coverage = RuchyCoverage::new("test.ruchy");
+        coverage.total_functions = 3;
+        collector.coverage_data.insert("test.ruchy".to_string(), coverage);
+
+        collector.mark_function_covered("test.ruchy", "main");
+        collector.mark_function_covered("test.ruchy", "helper");
+
+        let coverage = collector.coverage_data.get("test.ruchy").unwrap();
+        assert!(coverage.covered_functions.contains("main"));
+        assert!(coverage.covered_functions.contains("helper"));
+        assert_eq!(coverage.function_coverage(), 66.66666666666667); // 2/3
+    }
+
+    #[test]
+    fn test_generate_text_report_empty() {
+        let collector = RuchyCoverageCollector::new();
+        let report = collector.generate_text_report();
+
+        assert!(report.contains("Coverage Report"));
+        assert!(report.contains("Summary"));
+        assert!(report.contains("Total Lines: 0/0 (100.0%)"));
+    }
+
+    #[test]
+    fn test_generate_text_report_with_data() {
+        let mut collector = RuchyCoverageCollector::new();
+        let mut coverage = RuchyCoverage::new("test.ruchy");
+        coverage.total_lines = 10;
+        coverage.covered_lines.insert(1);
+        coverage.covered_lines.insert(2);
+        coverage.total_functions = 2;
+        coverage.covered_functions.insert("main".to_string());
+        collector.coverage_data.insert("test.ruchy".to_string(), coverage);
+
+        let report = collector.generate_text_report();
+
+        assert!(report.contains("test.ruchy"));
+        assert!(report.contains("Lines: 2/10 (20.0%)"));
+        assert!(report.contains("Functions: 1/2 (50.0%)"));
+    }
+
+    #[test]
+    fn test_generate_json_report() {
+        let mut collector = RuchyCoverageCollector::new();
+        let coverage = RuchyCoverage::new("test.ruchy");
+        collector.coverage_data.insert("test.ruchy".to_string(), coverage);
+
+        let json_report = collector.generate_json_report();
+        assert!(json_report.contains("test.ruchy"));
+        assert!(json_report.contains("file_path"));
+        assert!(json_report.contains("total_lines"));
+    }
+
+    #[test]
+    fn test_generate_html_report() {
+        let mut collector = RuchyCoverageCollector::new();
+        let coverage = RuchyCoverage::new("test.ruchy");
+        collector.coverage_data.insert("test.ruchy".to_string(), coverage);
+
+        let html_report = collector.generate_html_report();
+        assert!(html_report.contains("<!DOCTYPE html>"));
+        assert!(html_report.contains("Ruchy Coverage Report"));
+        assert!(html_report.contains("test.ruchy"));
+        assert!(html_report.contains("Line Coverage"));
+        assert!(html_report.contains("</html>"));
+    }
+
+    #[test]
+    fn test_meets_threshold_true() {
+        let mut collector = RuchyCoverageCollector::new();
+        let mut coverage = RuchyCoverage::new("test.ruchy");
+        coverage.total_lines = 10;
+        coverage.covered_lines.insert(1);
+        coverage.covered_lines.insert(2);
+        coverage.covered_lines.insert(3);
+        coverage.covered_lines.insert(4);
+        coverage.covered_lines.insert(5);
+        coverage.covered_lines.insert(6);
+        coverage.covered_lines.insert(7);
+        coverage.covered_lines.insert(8); // 80% coverage
+        collector.coverage_data.insert("test.ruchy".to_string(), coverage);
+
+        assert!(collector.meets_threshold(70.0));
+        assert!(collector.meets_threshold(80.0));
+    }
+
+    #[test]
+    fn test_meets_threshold_false() {
+        let mut collector = RuchyCoverageCollector::new();
+        let mut coverage = RuchyCoverage::new("test.ruchy");
+        coverage.total_lines = 10;
+        coverage.covered_lines.insert(1);
+        coverage.covered_lines.insert(2); // 20% coverage
+        collector.coverage_data.insert("test.ruchy".to_string(), coverage);
+
+        assert!(!collector.meets_threshold(50.0));
+        assert!(!collector.meets_threshold(25.0));
+    }
+
+    #[test]
+    fn test_extract_function_name_fn() {
+        assert_eq!(extract_function_name("fn hello()"), Some("hello".to_string()));
+        assert_eq!(extract_function_name("fn add(a, b)"), Some("add".to_string()));
+        assert_eq!(extract_function_name("  fn  test  (  )  "), Some("test".to_string()));
+    }
+
+    #[test]
+    fn test_extract_function_name_fun() {
+        assert_eq!(extract_function_name("fun hello()"), Some("hello".to_string()));
+        assert_eq!(extract_function_name("fun multiply(x, y)"), Some("multiply".to_string()));
+    }
+
+    #[test]
+    fn test_extract_function_name_invalid() {
+        assert_eq!(extract_function_name("not a function"), None);
+        assert_eq!(extract_function_name("fn"), None);
+        assert_eq!(extract_function_name("fun"), None);
+        assert_eq!(extract_function_name("function hello()"), None);
+    }
+
+    #[test]
+    fn test_extract_function_name_no_parens() {
+        assert_eq!(extract_function_name("fn hello"), Some("hello".to_string()));
+        assert_eq!(extract_function_name("fun test"), Some("test".to_string()));
+    }
+
+    #[test]
+    fn test_get_runtime_coverage() {
+        let mut collector = RuchyCoverageCollector::new();
+
+        // Mark some runtime execution
+        collector.runtime_instrumentation.mark_line_executed("test.ruchy", 1);
+        collector.runtime_instrumentation.mark_line_executed("test.ruchy", 2);
+        collector.runtime_instrumentation.mark_function_executed("test.ruchy", "main");
+
+        let (lines, functions) = collector.get_runtime_coverage("test.ruchy").unwrap();
+
+        if let Some(lines) = lines {
+            assert!(lines.contains(&1));
+            assert!(lines.contains(&2));
+        }
+
+        if let Some(functions) = functions {
+            assert!(functions.contains("main"));
+        }
+    }
+
+    #[test]
+    fn test_collector_default() {
+        let collector = RuchyCoverageCollector::default();
+        assert!(collector.coverage_data.is_empty());
+    }
+
+    #[test]
+    fn test_analyze_test_functions() {
+        let mut collector = RuchyCoverageCollector::new();
+        let content = r#"
+#[test]
+fn test_something() {
+    assert_eq!(1, 1)
+}
+
+fn regular_function() {
+    println("not a test")
+}
+
+// This function has test in name
+fn test_helper() {
+    println("helper")
+}
+"#;
+        let file = create_test_file(content);
+
+        let result = collector.analyze_file(file.path());
+        assert!(result.is_ok());
+
+        let file_path = file.path().to_str().unwrap();
+        let coverage = collector.coverage_data.get(file_path).unwrap();
+        assert_eq!(coverage.total_functions, 3);
+
+        // Should mark test functions as covered
+        assert!(coverage.covered_functions.contains("test_something"));
+        assert!(coverage.covered_functions.contains("test_helper"));
+        assert!(!coverage.covered_functions.contains("regular_function"));
+    }
+
+    #[test]
+    fn test_analyze_mixed_content() {
+        let mut collector = RuchyCoverageCollector::new();
+        let content = r#"
+// Header comment
+/*
+ * Multi-line comment
+ */
+
+fn main() {
+    if true {
+        println("Hello")
+    } else {
+        println("World")
+    }
+
+    match x {
+        1 => println("one"),
+        2 => println("two"),
+        _ => println("other")
+    }
+}
+
+// Another comment
+fun helper() {
+    for i in range(10) {
+        println(i)
+    }
+}
+"#;
+        let file = create_test_file(content);
+
+        let result = collector.analyze_file(file.path());
+        assert!(result.is_ok());
+
+        let file_path = file.path().to_str().unwrap();
+        let coverage = collector.coverage_data.get(file_path).unwrap();
+
+        // Should count non-comment, non-empty lines
+        assert!(coverage.total_lines > 10);
+        assert_eq!(coverage.total_functions, 2);
+        // if statement has 2 branches, match has 1, for has 1 = 4 total
+        assert_eq!(coverage.total_branches, 4);
+    }
+}
+
+#[cfg(test)]
 mod property_tests_ruchy_coverage {
+    use super::*;
     use proptest::proptest;
-    
-    
+
     proptest! {
-        /// Property: Function never panics on any input
+        /// Property: RuchyCoverage::new never panics
         #[test]
-        fn test_new_never_panics(input: String) {
-            // Limit input size to avoid timeout
-            let _input = if input.len() > 100 { &input[..100] } else { &input[..] };
-            // Function should not panic on any input
-            let _ = std::panic::catch_unwind(|| {
-                // Call function with various inputs
-                // This is a template - adjust based on actual function signature
-            });
+        fn test_new_never_panics(file_path: String) {
+            let _ = RuchyCoverage::new(&file_path);
+        }
+
+        /// Property: line_coverage is always between 0 and 100
+        #[test]
+        fn test_line_coverage_bounds(total_lines: u16, covered_count: u8) {
+            let mut coverage = RuchyCoverage::new("test");
+            coverage.total_lines = total_lines as usize;
+
+            // Add covered lines up to the limit
+            let max_covered = std::cmp::min(covered_count as usize, total_lines as usize);
+            for i in 1..=max_covered {
+                coverage.covered_lines.insert(i);
+            }
+
+            let percentage = coverage.line_coverage();
+            assert!(percentage >= 0.0 && percentage <= 100.0);
+        }
+
+        /// Property: extract_function_name never panics
+        #[test]
+        fn test_extract_function_name_never_panics(input: String) {
+            let _ = extract_function_name(&input);
         }
     }
 }

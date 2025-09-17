@@ -405,6 +405,7 @@ pub fn prove_equivalence(&mut self, left: &str, right: &str) -> Result<SmtResult
 #[cfg(test)]
 mod tests {
     use super::*;
+
     #[test]
     fn test_smt_query_construction() {
         let mut query = SmtQuery::new("(> x 0)");
@@ -414,11 +415,250 @@ mod tests {
         assert_eq!(query.variables.len(), 1);
         assert_eq!(query.assumptions.len(), 1);
     }
+
     #[test]
     fn test_solver_initialization() {
         let solver = SmtSolver::new(SmtBackend::Z3);
         assert_eq!(solver.backend, SmtBackend::Z3);
         assert_eq!(solver.timeout_ms, 5000);
+    }
+
+    #[test]
+    fn test_smt_backend_commands() {
+        assert_eq!(SmtBackend::Z3.command(), "z3");
+        assert_eq!(SmtBackend::CVC5.command(), "cvc5");
+        assert_eq!(SmtBackend::Yices2.command(), "yices-smt2");
+        assert_eq!(SmtBackend::MathSAT.command(), "mathsat");
+    }
+
+    #[test]
+    fn test_smt_backend_args() {
+        assert_eq!(SmtBackend::Z3.args(), vec!["-in", "-smt2"]);
+        assert_eq!(SmtBackend::CVC5.args(), vec!["--lang", "smt2", "--incremental"]);
+        assert_eq!(SmtBackend::Yices2.args(), vec!["--incremental"]);
+        assert_eq!(SmtBackend::MathSAT.args(), vec!["-input=smt2"]);
+    }
+
+    #[test]
+    fn test_solver_timeout_setting() {
+        let mut solver = SmtSolver::new(SmtBackend::Z3);
+        solver.set_timeout(10000);
+        assert_eq!(solver.timeout_ms, 10000);
+    }
+
+    #[test]
+    fn test_solver_declare_var() {
+        let mut solver = SmtSolver::new(SmtBackend::Z3);
+        solver.declare_var("x", "Int");
+        assert!(solver.declarations.contains_key("x"));
+        assert_eq!(solver.declarations["x"], "(declare-fun x () Int)");
+    }
+
+    #[test]
+    fn test_solver_declare_fun() {
+        let mut solver = SmtSolver::new(SmtBackend::Z3);
+        solver.declare_fun("f", &["Int", "Bool"], "Real");
+        assert!(solver.declarations.contains_key("f"));
+        assert_eq!(solver.declarations["f"], "(declare-fun f (Int Bool) Real)");
+    }
+
+    #[test]
+    fn test_solver_declare_fun_no_params() {
+        let mut solver = SmtSolver::new(SmtBackend::Z3);
+        solver.declare_fun("g", &[], "String");
+        assert!(solver.declarations.contains_key("g"));
+        assert_eq!(solver.declarations["g"], "(declare-fun g () String)");
+    }
+
+    #[test]
+    fn test_solver_assert() {
+        let mut solver = SmtSolver::new(SmtBackend::Z3);
+        solver.assert("(> x 0)");
+        assert_eq!(solver.assertions.len(), 1);
+        assert_eq!(solver.assertions[0], "(assert (> x 0))");
+    }
+
+    #[test]
+    fn test_solver_multiple_assertions() {
+        let mut solver = SmtSolver::new(SmtBackend::Z3);
+        solver.assert("(> x 0)");
+        solver.assert("(< x 10)");
+        assert_eq!(solver.assertions.len(), 2);
+        assert!(solver.assertions.contains(&"(assert (> x 0))".to_string()));
+        assert!(solver.assertions.contains(&"(assert (< x 10))".to_string()));
+    }
+
+    #[test]
+    fn test_build_query() {
+        let mut solver = SmtSolver::new(SmtBackend::Z3);
+        solver.declare_var("x", "Int");
+        solver.assert("(> x 0)");
+        let query = solver.build_query("(check-sat)");
+
+        assert!(query.contains("(set-logic ALL)"));
+        assert!(query.contains("(set-option :timeout 5000)"));
+        assert!(query.contains("(declare-fun x () Int)"));
+        assert!(query.contains("(assert (> x 0))"));
+        assert!(query.contains("(check-sat)"));
+        assert!(query.contains("(exit)"));
+    }
+
+    #[test]
+    fn test_parse_result_sat() {
+        let solver = SmtSolver::new(SmtBackend::Z3);
+        let result = solver.parse_result("sat").unwrap();
+        assert_eq!(result, SmtResult::Sat);
+    }
+
+    #[test]
+    fn test_parse_result_unsat() {
+        let solver = SmtSolver::new(SmtBackend::Z3);
+        let result = solver.parse_result("unsat").unwrap();
+        assert_eq!(result, SmtResult::Unsat);
+    }
+
+    #[test]
+    fn test_parse_result_unknown() {
+        let solver = SmtSolver::new(SmtBackend::Z3);
+        let result = solver.parse_result("unknown").unwrap();
+        assert_eq!(result, SmtResult::Unknown);
+    }
+
+    #[test]
+    fn test_parse_result_timeout() {
+        let solver = SmtSolver::new(SmtBackend::Z3);
+        let result = solver.parse_result("timeout").unwrap();
+        assert_eq!(result, SmtResult::Timeout);
+    }
+
+    #[test]
+    fn test_parse_result_error() {
+        let solver = SmtSolver::new(SmtBackend::Z3);
+        let result = solver.parse_result("unexpected output").unwrap();
+        if let SmtResult::Error(msg) = result {
+            assert!(msg.contains("Unexpected output"));
+        } else {
+            panic!("Expected Error result");
+        }
+    }
+
+    #[test]
+    fn test_smt_result_is_success() {
+        assert!(SmtResult::Valid.is_success());
+        assert!(SmtResult::Unsat.is_success());
+        assert!(!SmtResult::Sat.is_success());
+        assert!(!SmtResult::Invalid.is_success());
+        assert!(!SmtResult::Unknown.is_success());
+        assert!(!SmtResult::Timeout.is_success());
+        assert!(!SmtResult::Error("test".to_string()).is_success());
+    }
+
+    #[test]
+    fn test_smt_result_description() {
+        assert_eq!(SmtResult::Sat.description(), "Satisfiable");
+        assert_eq!(SmtResult::Unsat.description(), "Unsatisfiable");
+        assert_eq!(SmtResult::Valid.description(), "Valid");
+        assert_eq!(SmtResult::Invalid.description(), "Invalid");
+        assert_eq!(SmtResult::Unknown.description(), "Unknown");
+        assert_eq!(SmtResult::Timeout.description(), "Timeout");
+        assert_eq!(SmtResult::Error("test".to_string()).description(), "Error");
+    }
+
+    #[test]
+    fn test_smt_query_new() {
+        let query = SmtQuery::new("(= x y)");
+        assert_eq!(query.formula, "(= x y)");
+        assert!(query.variables.is_empty());
+        assert!(query.assumptions.is_empty());
+    }
+
+    #[test]
+    fn test_smt_query_add_var() {
+        let mut query = SmtQuery::new("(> x 0)");
+        query.add_var("x", "Int");
+        query.add_var("y", "Real");
+        assert_eq!(query.variables.len(), 2);
+        assert!(query.variables.contains(&("x".to_string(), "Int".to_string())));
+        assert!(query.variables.contains(&("y".to_string(), "Real".to_string())));
+    }
+
+    #[test]
+    fn test_smt_query_add_assumption() {
+        let mut query = SmtQuery::new("(> x 0)");
+        query.add_assumption("(< x 10)");
+        query.add_assumption("(> y 5)");
+        assert_eq!(query.assumptions.len(), 2);
+        assert!(query.assumptions.contains(&"(< x 10)".to_string()));
+        assert!(query.assumptions.contains(&"(> y 5)".to_string()));
+    }
+
+    #[test]
+    fn test_proof_automation_new() {
+        let automation = ProofAutomation::new(SmtBackend::Z3);
+        assert_eq!(automation.backend, SmtBackend::Z3);
+        assert!(automation.cache.is_empty());
+    }
+
+    #[test]
+    fn test_solver_clone() {
+        let mut solver1 = SmtSolver::new(SmtBackend::CVC5);
+        solver1.set_timeout(8000);
+        solver1.declare_var("x", "Bool");
+        solver1.assert("(= x true)");
+
+        let solver2 = solver1.clone();
+        assert_eq!(solver2.backend, SmtBackend::CVC5);
+        assert_eq!(solver2.timeout_ms, 8000);
+        assert_eq!(solver2.declarations.len(), 1);
+        assert_eq!(solver2.assertions.len(), 1);
+    }
+
+    #[test]
+    fn test_solver_multiple_declare_var() {
+        let mut solver = SmtSolver::new(SmtBackend::Z3);
+        solver.declare_var("x", "Int");
+        solver.declare_var("y", "Real");
+        solver.declare_var("z", "Bool");
+
+        assert_eq!(solver.declarations.len(), 3);
+        assert_eq!(solver.declarations["x"], "(declare-fun x () Int)");
+        assert_eq!(solver.declarations["y"], "(declare-fun y () Real)");
+        assert_eq!(solver.declarations["z"], "(declare-fun z () Bool)");
+    }
+
+    #[test]
+    fn test_build_query_with_custom_timeout() {
+        let mut solver = SmtSolver::new(SmtBackend::Z3);
+        solver.set_timeout(15000);
+        solver.declare_var("x", "Int");
+        let query = solver.build_query("(check-sat)");
+
+        assert!(query.contains("(set-option :timeout 15000)"));
+    }
+
+    #[test]
+    fn test_parse_result_mixed_output() {
+        let solver = SmtSolver::new(SmtBackend::Z3);
+
+        // Test case where output contains both "sat" and "unsat" - should prefer unsat
+        let result = solver.parse_result("something unsat something sat").unwrap();
+        assert_eq!(result, SmtResult::Unsat);
+
+        // Test case where output only contains "sat"
+        let result = solver.parse_result("the result is sat").unwrap();
+        assert_eq!(result, SmtResult::Sat);
+    }
+
+    #[test]
+    fn test_smt_backend_enum_properties() {
+        // Test PartialEq
+        assert_eq!(SmtBackend::Z3, SmtBackend::Z3);
+        assert_ne!(SmtBackend::Z3, SmtBackend::CVC5);
+
+        // Test Clone
+        let backend = SmtBackend::Yices2;
+        let cloned = backend;
+        assert_eq!(backend, cloned);
     }
 }
 #[cfg(test)]

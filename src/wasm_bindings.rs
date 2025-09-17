@@ -373,3 +373,79 @@ mod property_tests_wasm_bindings {
 }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    
+    #[test]
+    fn test_rust_repl_new() {
+        let repl = RuchyRepl::new();
+        assert!(repl.engine.is_none());
+    }
+    
+    #[test]
+    fn test_rust_repl_eval_simple() {
+        let mut repl = RuchyRepl::new();
+        let result = repl.eval("2 + 2");
+        assert!(result.is_some());
+    }
+    
+    #[test]
+    fn test_rust_repl_eval_let() {
+        let mut repl = RuchyRepl::new();
+        let result = repl.eval("let x = 10");
+        assert!(result.is_some());
+    }
+    
+    #[test]
+    fn test_rust_repl_eval_function() {
+        let mut repl = RuchyRepl::new();
+        let result = repl.eval("fun add(a, b) { a + b }");
+        assert!(result.is_some());
+    }
+    
+    #[test]
+    fn test_rust_repl_eval_invalid() {
+        let mut repl = RuchyRepl::new();
+        let result = repl.eval("invalid++syntax");
+        assert!(result.is_some()); // Returns error string
+    }
+    
+    #[test]
+    fn test_rust_repl_eval_empty() {
+        let mut repl = RuchyRepl::new();
+        let result = repl.eval("");
+        assert!(result.is_some());
+    }
+    
+    #[test]
+    fn test_rust_repl_eval_whitespace() {
+        let mut repl = RuchyRepl::new();
+        let result = repl.eval("   ");
+        assert!(result.is_some());
+    }
+    
+    #[test]
+    fn test_rust_repl_eval_comment() {
+        let mut repl = RuchyRepl::new();
+        let result = repl.eval("// just a comment");
+        assert!(result.is_some());
+    }
+    
+    #[test]
+    fn test_rust_repl_eval_multiline() {
+        let mut repl = RuchyRepl::new();
+        let result = repl.eval("let x = 1
+let y = 2
+x + y");
+        assert!(result.is_some());
+    }
+    
+    #[test]
+    fn test_rust_repl_eval_string() {
+        let mut repl = RuchyRepl::new();
+        let result = repl.eval("\"hello world\"");
+        assert!(result.is_some());
+    }
+}
