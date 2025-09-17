@@ -9,12 +9,10 @@ impl Transpiler {
     /// Main dispatcher for method calls (complexity: ~15)
 /// # Examples
 /// 
-/// ```
-/// use ruchy::backend::transpiler::method_call_refactored::Transpiler;
-/// 
-let mut instance = Transpiler::new();
-let result = instance.transpile_method_call_refactored();
-// Verify behavior
+/// ```ignore
+/// use ruchy::backend::Transpiler;
+/// let transpiler = Transpiler::new();
+/// // Method call transpilation is handled internally
 /// ```
 pub fn transpile_method_call_refactored(
         &self,

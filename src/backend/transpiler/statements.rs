@@ -128,15 +128,13 @@ impl Transpiler {
     }
     /// Transpiles let bindings
 /// # Examples
-/// 
+///
+/// ```ignore
+/// use ruchy::backend::transpiler::Transpiler;
+/// let transpiler = Transpiler::new();
+/// // transpile_let is called internally by transpile
 /// ```
-/// use ruchy::backend::transpiler::statements::Transpiler;
-/// 
-let mut instance = Transpiler::new();
-let result = instance.transpile_let();
-// Verify behavior
-/// ```
-pub fn transpile_let(
+    pub fn transpile_let(
         &self,
         name: &str,
         value: &Expr,
@@ -231,10 +229,9 @@ pub fn transpile_let(
 /// # Examples
 /// 
 /// ```ignore
-/// use ruchy::backend::transpiler::statements::transpile_let_pattern;
-/// 
-/// let result = transpile_let_pattern(());
-/// assert_eq!(result, Ok(()));
+/// use ruchy::backend::transpiler::Transpiler;
+/// let transpiler = Transpiler::new();
+/// // transpile_let_pattern is called internally
 /// ```
 pub fn transpile_let_pattern(
         &self,
@@ -527,14 +524,12 @@ pub fn transpile_let_pattern(
     }
 /// # Examples
 /// 
+/// ```ignore
+/// use ruchy::backend::transpiler::Transpiler;
+/// let transpiler = Transpiler::new();
+/// // transpile_function is called internally by transpile
 /// ```
-/// use ruchy::backend::transpiler::statements::Transpiler;
-/// 
-let mut instance = Transpiler::new();
-let result = instance.transpile_function();
-// Verify behavior
-/// ```
-pub fn transpile_function(
+    pub fn transpile_function(
         &self,
         name: &str,
         type_params: &[String],
@@ -572,10 +567,9 @@ pub fn transpile_function(
 /// # Examples
 /// 
 /// ```ignore
-/// use ruchy::backend::transpiler::statements::transpile_lambda;
-/// 
-/// let result = transpile_lambda(());
-/// assert_eq!(result, Ok(()));
+/// use ruchy::backend::transpiler::Transpiler;
+/// let transpiler = Transpiler::new();
+/// // transpile_lambda is called internally
 /// ```
 pub fn transpile_lambda(&self, params: &[Param], body: &Expr) -> Result<TokenStream> {
         let param_names: Vec<_> = params

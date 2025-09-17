@@ -44,14 +44,15 @@ pub fn new() -> Self {
     /// # Errors
     ///
     /// Returns an error if the operation fails
+/// Lower a Ruchy expression to MIR
+///
 /// # Examples
-/// 
-/// ```
+///
+/// ```ignore
 /// use ruchy::middleend::mir::lower::LoweringContext;
-/// 
-let mut instance = LoweringContext::new();
-let result = instance.lower_expr();
-// Verify behavior
+/// use ruchy::frontend::ast::Expr;
+/// let mut ctx = LoweringContext::new();
+/// // ctx.lower_expr(&expr)?;
 /// ```
 pub fn lower_expr(&mut self, expr: &Expr) -> Result<Program> {
         match &expr.kind {

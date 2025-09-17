@@ -6,12 +6,11 @@ use crate::frontend::ast::{Expr, ExprKind, BinaryOp, Literal};
 /// Analyzes if a parameter is used as an argument to a function that takes i32
 /// # Examples
 /// 
-/// ```
-/// use ruchy::backend::transpiler::type_inference::Transpiler;
-/// 
-let mut instance = Transpiler::new();
-let result = instance.is_param_used_as_function_argument();
-// Verify behavior
+/// ```ignore
+/// use ruchy::backend::transpiler::type_inference::is_param_used_as_function_argument;
+/// use ruchy::frontend::ast::{Expr, ExprKind};
+/// let expr = Expr::new(ExprKind::Literal(42.into()), (0, 0));
+/// let result = is_param_used_as_function_argument("x", &expr);
 /// ```
 pub fn is_param_used_as_function_argument(param_name: &str, expr: &Expr) -> bool {
     match &expr.kind {
@@ -76,12 +75,11 @@ fn check_binary_for_param(param_name: &str, left: &Expr, right: &Expr) -> bool {
 /// Analyzes if a parameter is used as a function in the given expression
 /// # Examples
 /// 
-/// ```
-/// use ruchy::backend::transpiler::type_inference::Transpiler;
-/// 
-let mut instance = Transpiler::new();
-let result = instance.is_param_used_as_function();
-// Verify behavior
+/// ```ignore
+/// use ruchy::backend::transpiler::type_inference::is_param_used_as_function;
+/// use ruchy::frontend::ast::{Expr, ExprKind};
+/// let expr = Expr::new(ExprKind::Literal(42.into()), (0, 0));
+/// let result = is_param_used_as_function("x", &expr);
 /// ```
 pub fn is_param_used_as_function(param_name: &str, expr: &Expr) -> bool {
     match &expr.kind {
@@ -122,9 +120,10 @@ pub fn is_param_used_as_function(param_name: &str, expr: &Expr) -> bool {
 /// 
 /// ```ignore
 /// use ruchy::backend::transpiler::type_inference::is_param_used_numerically;
-/// 
-/// let result = is_param_used_numerically("example");
-/// assert_eq!(result, Ok(()));
+/// use ruchy::frontend::ast::{Expr, ExprKind};
+/// let expr = Expr::new(ExprKind::Literal(42.into()), (0, 0));
+/// let result = is_param_used_numerically("x", &expr);
+/// assert!(result);
 /// ```
 pub fn is_param_used_numerically(param_name: &str, expr: &Expr) -> bool {
     match &expr.kind {

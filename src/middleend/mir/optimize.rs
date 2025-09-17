@@ -50,18 +50,15 @@ pub fn new() -> Self {
         }
     }
     /// Run DCE on a function
+/// Run dead code elimination on a function
+///
 /// # Examples
-/// 
-/// ```
-/// use ruchy::middleend::mir::optimize::DeadCodeElimination;
-/// 
-let mut instance = DeadCodeElimination::new();
-let result = instance.run();
-// Verify behavior
-/// ```
-/// # Examples
-/// 
+///
 /// ```ignore
+/// use ruchy::middleend::mir::optimize::DeadCodeElimination;
+/// let mut dce = DeadCodeElimination::new();
+/// // dce.run(&mut function);
+/// ```
 /// use ruchy::middleend::mir::optimize::run;
 /// 
 /// let result = run(());

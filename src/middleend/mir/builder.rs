@@ -35,14 +35,15 @@ pub fn new() -> Self {
         }
     }
     /// Start building a new function
+/// Start building a new function
+///
 /// # Examples
-/// 
-/// ```
+///
+/// ```ignore
 /// use ruchy::middleend::mir::builder::MirBuilder;
-/// 
-let mut instance = MirBuilder::new();
-let result = instance.start_function();
-// Verify behavior
+/// use ruchy::middleend::types::Type;
+/// let mut builder = MirBuilder::new();
+/// builder.start_function("main".to_string(), Type::Unit);
 /// ```
 pub fn start_function(&mut self, name: String, return_ty: Type) -> &mut Self {
         self.current_function = Some(Function {
