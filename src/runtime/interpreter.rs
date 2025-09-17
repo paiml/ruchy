@@ -3494,6 +3494,63 @@ impl Interpreter {
                     Err(InterpreterError::RuntimeError("split expects string argument".to_string()))
                 }
             }
+            "trim_start" if args.is_empty() => Ok(Value::from_string(s.trim_start().to_string())),
+            "trim_end" if args.is_empty() => Ok(Value::from_string(s.trim_end().to_string())),
+            "is_empty" if args.is_empty() => Ok(Value::Bool(s.is_empty())),
+            "chars" if args.is_empty() => {
+                let chars: Vec<Value> = s.chars()
+                    .map(|c| Value::from_string(c.to_string()))
+                    .collect();
+                Ok(Value::Array(Rc::new(chars)))
+            }
+            "lines" if args.is_empty() => {
+                let lines: Vec<Value> = s.lines()
+                    .map(|line| Value::from_string(line.to_string()))
+                    .collect();
+                Ok(Value::Array(Rc::new(lines)))
+            }
+            "repeat" if args.len() == 1 => {
+                if let Value::Integer(n) = &args[0] {
+                    if *n >= 0 {
+                        Ok(Value::from_string(s.repeat(*n as usize)))
+                    } else {
+                        Err(InterpreterError::RuntimeError("repeat count must be non-negative".to_string()))
+                    }
+                } else {
+                    Err(InterpreterError::RuntimeError("repeat expects integer argument".to_string()))
+                }
+            }
+            "char_at" if args.len() == 1 => {
+                if let Value::Integer(index) = &args[0] {
+                    if *index >= 0 {
+                        let chars: Vec<char> = s.chars().collect();
+                        if let Some(ch) = chars.get(*index as usize) {
+                            Ok(Value::from_string(ch.to_string()))
+                        } else {
+                            Ok(Value::Nil)
+                        }
+                    } else {
+                        Err(InterpreterError::RuntimeError("char_at index must be non-negative".to_string()))
+                    }
+                } else {
+                    Err(InterpreterError::RuntimeError("char_at expects integer argument".to_string()))
+                }
+            }
+            "substring" if args.len() == 2 => {
+                if let (Value::Integer(start), Value::Integer(end)) = (&args[0], &args[1]) {
+                    if *start >= 0 && *end >= *start {
+                        let chars: Vec<char> = s.chars().collect();
+                        let start_idx = (*start as usize).min(chars.len());
+                        let end_idx = (*end as usize).min(chars.len());
+                        let substring: String = chars[start_idx..end_idx].iter().collect();
+                        Ok(Value::from_string(substring))
+                    } else {
+                        Err(InterpreterError::RuntimeError("substring indices must be non-negative and start <= end".to_string()))
+                    }
+                } else {
+                    Err(InterpreterError::RuntimeError("substring expects two integer arguments".to_string()))
+                }
+            }
             _ => Err(InterpreterError::RuntimeError(format!("Unknown string method: {}", method))),
         }
     }
