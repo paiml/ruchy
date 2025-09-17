@@ -21,16 +21,16 @@ impl TestConfig {
 /// ```
 /// use ruchy::notebook::testing::types::TestConfig;
 ///
-let instance = TestConfig::new();
-// Verify behavior
+/// let instance = TestConfig::new();
+/// // Verify behavior
 /// ```
 /// # Examples
 ///
 /// ```
 /// use ruchy::notebook::testing::types::TestConfig;
 ///
-let instance = TestConfig::new();
-// Verify behavior
+/// let instance = TestConfig::new();
+/// // Verify behavior
 /// ```
 pub fn new() -> Self {
         Self {
@@ -166,9 +166,9 @@ impl NotebookParser {
 /// ```
 /// use ruchy::notebook::testing::types::NotebookParser;
 /// 
-let mut instance = NotebookParser::new();
-let result = instance.parse();
-// Verify behavior
+/// let mut instance = NotebookParser::new();
+/// let result = instance.parse();
+/// // Verify behavior
 /// ```
 pub fn parse(&self, content: &str) -> anyhow::Result<Notebook> {
         serde_json::from_str(content)

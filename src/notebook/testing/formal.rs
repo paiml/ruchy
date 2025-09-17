@@ -86,8 +86,8 @@ impl FormalVerifier {
 /// ```
 /// use ruchy::notebook::testing::formal::FormalVerifier;
 /// 
-let instance = FormalVerifier::new();
-// Verify behavior
+/// let instance = FormalVerifier::new();
+/// // Verify behavior
 /// ```
 pub fn new() -> Self {
         Self {
@@ -100,9 +100,9 @@ pub fn new() -> Self {
 /// ```
 /// use ruchy::notebook::testing::formal::FormalVerifier;
 /// 
-let mut instance = FormalVerifier::new();
-let result = instance.with_config();
-// Verify behavior
+/// let mut instance = FormalVerifier::new();
+/// let result = instance.with_config();
+/// // Verify behavior
 /// ```
 pub fn with_config(config: FormalConfig) -> Self {
         Self {
@@ -115,9 +115,9 @@ pub fn with_config(config: FormalConfig) -> Self {
 /// ```
 /// use ruchy::notebook::testing::formal::FormalVerifier;
 /// 
-let mut instance = FormalVerifier::new();
-let result = instance.is_ready();
-// Verify behavior
+/// let mut instance = FormalVerifier::new();
+/// let result = instance.is_ready();
+/// // Verify behavior
 /// ```
 pub fn is_ready(&self) -> bool {
         // Check if solver is available

@@ -36,24 +36,24 @@ impl CiCdIntegrator {
 /// ```
 /// use ruchy::notebook::testing::integration::CiCdIntegrator;
 /// 
-let instance = CiCdIntegrator::new();
-// Verify behavior
+/// let instance = CiCdIntegrator::new();
+/// // Verify behavior
 /// ```
 /// # Examples
 /// 
 /// ```
 /// use ruchy::notebook::testing::integration::CiCdIntegrator;
 /// 
-let instance = CiCdIntegrator::new();
-// Verify behavior
+/// let instance = CiCdIntegrator::new();
+/// // Verify behavior
 /// ```
 /// # Examples
 /// 
 /// ```
 /// use ruchy::notebook::testing::integration::CiCdIntegrator;
 /// 
-let instance = CiCdIntegrator::new();
-// Verify behavior
+/// let instance = CiCdIntegrator::new();
+/// // Verify behavior
 /// ```
 pub fn new() -> Self {
         Self { config: None }
@@ -64,9 +64,9 @@ pub fn new() -> Self {
 /// ```
 /// use ruchy::notebook::testing::integration::CiCdIntegrator;
 /// 
-let mut instance = CiCdIntegrator::new();
-let result = instance.configure();
-// Verify behavior
+/// let mut instance = CiCdIntegrator::new();
+/// let result = instance.configure();
+/// // Verify behavior
 /// ```
 pub fn configure(&mut self, config: CiCdConfig) -> Result<(), String> {
         if config.coverage_threshold > 100.0 || config.coverage_threshold < 0.0 {

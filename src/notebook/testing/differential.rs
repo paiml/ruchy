@@ -53,8 +53,8 @@ impl DifferentialTester {
 /// ```
 /// use ruchy::notebook::testing::differential::DifferentialTester;
 /// 
-let instance = DifferentialTester::new();
-// Verify behavior
+/// let instance = DifferentialTester::new();
+/// // Verify behavior
 /// ```
 pub fn new() -> Self {
         Self {
@@ -68,9 +68,9 @@ pub fn new() -> Self {
 /// ```
 /// use ruchy::notebook::testing::differential::DifferentialTester;
 /// 
-let mut instance = DifferentialTester::new();
-let result = instance.with_config();
-// Verify behavior
+/// let mut instance = DifferentialTester::new();
+/// let result = instance.with_config();
+/// // Verify behavior
 /// ```
 pub fn with_config(config: DifferentialConfig) -> Self {
         Self {
@@ -85,9 +85,9 @@ pub fn with_config(config: DifferentialConfig) -> Self {
 /// ```
 /// use ruchy::notebook::testing::differential::DifferentialTester;
 /// 
-let mut instance = DifferentialTester::new();
-let result = instance.compare();
-// Verify behavior
+/// let mut instance = DifferentialTester::new();
+/// let result = instance.compare();
+/// // Verify behavior
 /// ```
 pub fn compare(&mut self, notebook: &Notebook) -> Vec<DifferentialResult> {
         let mut results = Vec::new();

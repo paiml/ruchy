@@ -39,56 +39,56 @@ impl PerformanceBenchmarker {
 /// ```
 /// use ruchy::notebook::testing::performance::PerformanceBenchmarker;
 /// 
-let instance = PerformanceBenchmarker::new();
-// Verify behavior
+/// let instance = PerformanceBenchmarker::new();
+/// // Verify behavior
 /// ```
 /// # Examples
 /// 
 /// ```
 /// use ruchy::notebook::testing::performance::PerformanceBenchmarker;
 /// 
-let instance = PerformanceBenchmarker::new();
-// Verify behavior
+/// let instance = PerformanceBenchmarker::new();
+/// // Verify behavior
 /// ```
 /// # Examples
 /// 
 /// ```
 /// use ruchy::notebook::testing::performance::PerformanceBenchmarker;
 /// 
-let instance = PerformanceBenchmarker::new();
-// Verify behavior
+/// let instance = PerformanceBenchmarker::new();
+/// // Verify behavior
 /// ```
 /// # Examples
 /// 
 /// ```
 /// use ruchy::notebook::testing::performance::PerformanceBenchmarker;
 /// 
-let instance = PerformanceBenchmarker::new();
-// Verify behavior
+/// let instance = PerformanceBenchmarker::new();
+/// // Verify behavior
 /// ```
 /// # Examples
 /// 
 /// ```
 /// use ruchy::notebook::testing::performance::PerformanceBenchmarker;
 /// 
-let instance = PerformanceBenchmarker::new();
-// Verify behavior
+/// let instance = PerformanceBenchmarker::new();
+/// // Verify behavior
 /// ```
 /// # Examples
 /// 
 /// ```
 /// use ruchy::notebook::testing::performance::PerformanceBenchmarker;
 /// 
-let instance = PerformanceBenchmarker::new();
-// Verify behavior
+/// let instance = PerformanceBenchmarker::new();
+/// // Verify behavior
 /// ```
 /// # Examples
 /// 
 /// ```
 /// use ruchy::notebook::testing::performance::PerformanceBenchmarker;
 /// 
-let instance = PerformanceBenchmarker::new();
-// Verify behavior
+/// let instance = PerformanceBenchmarker::new();
+/// // Verify behavior
 /// ```
 pub fn new() -> Self {
         Self {
@@ -102,9 +102,9 @@ pub fn new() -> Self {
 /// ```
 /// use ruchy::notebook::testing::performance::PerformanceBenchmarker;
 /// 
-let mut instance = PerformanceBenchmarker::new();
-let result = instance.add_benchmark();
-// Verify behavior
+/// let mut instance = PerformanceBenchmarker::new();
+/// let result = instance.add_benchmark();
+/// // Verify behavior
 /// ```
 pub fn add_benchmark(&mut self, benchmark: Benchmark) {
         self.benchmarks.push(benchmark);
@@ -188,9 +188,9 @@ impl ParallelTestExecutor {
 /// ```
 /// use ruchy::notebook::testing::performance::ParallelTestExecutor;
 /// 
-let mut instance = ParallelTestExecutor::new();
-let result = instance.with_threads();
-// Verify behavior
+/// let mut instance = ParallelTestExecutor::new();
+/// let result = instance.with_threads();
+/// // Verify behavior
 /// ```
 pub fn with_threads(num_threads: usize) -> Self {
         Self { num_threads }
@@ -201,9 +201,9 @@ pub fn with_threads(num_threads: usize) -> Self {
 /// ```
 /// use ruchy::notebook::testing::performance::ParallelTestExecutor;
 /// 
-let mut instance = ParallelTestExecutor::new();
-let result = instance.execute_parallel();
-// Verify behavior
+/// let mut instance = ParallelTestExecutor::new();
+/// let result = instance.execute_parallel();
+/// // Verify behavior
 /// ```
 pub fn execute_parallel(&self, notebook: &Notebook, threads: usize) -> Vec<TestExecutionResult> {
         use std::thread;

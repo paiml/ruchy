@@ -48,16 +48,16 @@ impl InteractiveTutorial {
 /// ```
 /// use ruchy::notebook::testing::tutorial::InteractiveTutorial;
 /// 
-let instance = InteractiveTutorial::new();
-// Verify behavior
+/// let instance = InteractiveTutorial::new();
+/// // Verify behavior
 /// ```
 /// # Examples
 /// 
 /// ```
 /// use ruchy::notebook::testing::tutorial::InteractiveTutorial;
 /// 
-let instance = InteractiveTutorial::new();
-// Verify behavior
+/// let instance = InteractiveTutorial::new();
+/// // Verify behavior
 /// ```
 pub fn new(id: &str) -> Self {
         Self {
@@ -74,9 +74,9 @@ pub fn new(id: &str) -> Self {
 /// ```
 /// use ruchy::notebook::testing::tutorial::InteractiveTutorial;
 /// 
-let mut instance = InteractiveTutorial::new();
-let result = instance.add_step();
-// Verify behavior
+/// let mut instance = InteractiveTutorial::new();
+/// let result = instance.add_step();
+/// // Verify behavior
 /// ```
 pub fn add_step(&mut self, step: TutorialStep) {
         self.progress.insert(step.id.clone(), StepProgress {
@@ -170,9 +170,9 @@ pub fn validate_step(&mut self, step_id: &str, submission: &str) -> StepResult {
 /// ```
 /// use ruchy::notebook::testing::tutorial::InteractiveTutorial;
 /// 
-let mut instance = InteractiveTutorial::new();
-let result = instance.get_completion();
-// Verify behavior
+/// let mut instance = InteractiveTutorial::new();
+/// let result = instance.get_completion();
+/// // Verify behavior
 /// ```
 pub fn get_completion(&self) -> f64 {
         let completed = self.progress.values().filter(|p| p.completed).count();
@@ -257,9 +257,9 @@ pub fn record_attempt(&mut self, student: &str, problem: &str, attempt: &str, su
 /// ```
 /// use ruchy::notebook::testing::tutorial::AdaptiveHintSystem;
 /// 
-let mut instance = AdaptiveHintSystem::new();
-let result = instance.get_hint();
-// Verify behavior
+/// let mut instance = AdaptiveHintSystem::new();
+/// let result = instance.get_hint();
+/// // Verify behavior
 /// ```
 pub fn get_hint(&self, student: &str, problem: &str) -> String {
         let student_attempts = self.get_student_attempts(student, problem);

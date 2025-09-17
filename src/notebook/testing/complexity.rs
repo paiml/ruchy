@@ -72,8 +72,8 @@ impl ComplexityAnalyzer {
 /// ```
 /// use ruchy::notebook::testing::complexity::ComplexityAnalyzer;
 /// 
-let instance = ComplexityAnalyzer::new();
-// Verify behavior
+/// let instance = ComplexityAnalyzer::new();
+/// // Verify behavior
 /// ```
 pub fn new() -> Self {
         Self {
@@ -85,9 +85,9 @@ pub fn new() -> Self {
 /// ```
 /// use ruchy::notebook::testing::complexity::ComplexityAnalyzer;
 /// 
-let mut instance = ComplexityAnalyzer::new();
-let result = instance.with_config();
-// Verify behavior
+/// let mut instance = ComplexityAnalyzer::new();
+/// let result = instance.with_config();
+/// // Verify behavior
 /// ```
 pub fn with_config(config: ComplexityConfig) -> Self {
         Self { config }
@@ -97,9 +97,9 @@ pub fn with_config(config: ComplexityConfig) -> Self {
 /// ```
 /// use ruchy::notebook::testing::complexity::ComplexityAnalyzer;
 /// 
-let mut instance = ComplexityAnalyzer::new();
-let result = instance.get_default_threshold();
-// Verify behavior
+/// let mut instance = ComplexityAnalyzer::new();
+/// let result = instance.get_default_threshold();
+/// // Verify behavior
 /// ```
 pub fn get_default_threshold(&self) -> usize {
         self.config.cyclomatic_threshold
@@ -110,9 +110,9 @@ pub fn get_default_threshold(&self) -> usize {
 /// ```
 /// use ruchy::notebook::testing::complexity::ComplexityAnalyzer;
 /// 
-let mut instance = ComplexityAnalyzer::new();
-let result = instance.analyze();
-// Verify behavior
+/// let mut instance = ComplexityAnalyzer::new();
+/// let result = instance.analyze();
+/// // Verify behavior
 /// ```
 pub fn analyze(&self, cell: &Cell) -> ComplexityResult {
         let source = &cell.source;

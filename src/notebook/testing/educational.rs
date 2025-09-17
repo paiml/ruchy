@@ -79,16 +79,16 @@ impl EducationalPlatform {
 /// ```
 /// use ruchy::notebook::testing::educational::EducationalPlatform;
 /// 
-let instance = EducationalPlatform::new();
-// Verify behavior
+/// let instance = EducationalPlatform::new();
+/// // Verify behavior
 /// ```
 /// # Examples
 /// 
 /// ```
 /// use ruchy::notebook::testing::educational::EducationalPlatform;
 /// 
-let instance = EducationalPlatform::new();
-// Verify behavior
+/// let instance = EducationalPlatform::new();
+/// // Verify behavior
 /// ```
 pub fn new() -> Self {
         Self {
@@ -104,9 +104,9 @@ pub fn new() -> Self {
 /// ```
 /// use ruchy::notebook::testing::educational::EducationalPlatform;
 /// 
-let mut instance = EducationalPlatform::new();
-let result = instance.create_assignment();
-// Verify behavior
+/// let mut instance = EducationalPlatform::new();
+/// let result = instance.create_assignment();
+/// // Verify behavior
 /// ```
 pub fn create_assignment(&mut self, assignment: Assignment) -> Result<(), String> {
         if self.assignments.iter().any(|a| a.id == assignment.id) {
@@ -169,9 +169,9 @@ pub fn submit_assignment(&mut self, student_id: &str, mut submission: StudentSub
 /// ```
 /// use ruchy::notebook::testing::educational::EducationalPlatform;
 /// 
-let mut instance = EducationalPlatform::new();
-let result = instance.auto_grade();
-// Verify behavior
+/// let mut instance = EducationalPlatform::new();
+/// let result = instance.auto_grade();
+/// // Verify behavior
 /// ```
 pub fn auto_grade(&self, submission: &StudentSubmission) -> Grade {
         let assignment = self.assignments.iter()

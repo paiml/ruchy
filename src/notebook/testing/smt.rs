@@ -57,16 +57,16 @@ impl SmtSolver {
 /// ```
 /// use ruchy::notebook::testing::smt::SmtSolver;
 /// 
-let instance = SmtSolver::new();
-// Verify behavior
+/// let instance = SmtSolver::new();
+/// // Verify behavior
 /// ```
 /// # Examples
 /// 
 /// ```
 /// use ruchy::notebook::testing::smt::SmtSolver;
 /// 
-let instance = SmtSolver::new();
-// Verify behavior
+/// let instance = SmtSolver::new();
+/// // Verify behavior
 /// ```
 pub fn new(solver_type: SolverType) -> Self {
         Self {
@@ -80,9 +80,9 @@ pub fn new(solver_type: SolverType) -> Self {
 /// ```
 /// use ruchy::notebook::testing::smt::SmtSolver;
 /// 
-let mut instance = SmtSolver::new();
-let result = instance.with_timeout();
-// Verify behavior
+/// let mut instance = SmtSolver::new();
+/// let result = instance.with_timeout();
+/// // Verify behavior
 /// ```
 pub fn with_timeout(solver_type: SolverType, timeout: Duration) -> Self {
         Self {
@@ -97,9 +97,9 @@ pub fn with_timeout(solver_type: SolverType, timeout: Duration) -> Self {
 /// ```
 /// use ruchy::notebook::testing::smt::SmtSolver;
 /// 
-let mut instance = SmtSolver::new();
-let result = instance.solve();
-// Verify behavior
+/// let mut instance = SmtSolver::new();
+/// let result = instance.solve();
+/// // Verify behavior
 /// ```
 pub fn solve(&mut self, query: &SmtQuery) -> SmtResult {
         let query_string = self.format_query(query);
@@ -125,9 +125,9 @@ pub fn solve(&mut self, query: &SmtQuery) -> SmtResult {
 /// ```
 /// use ruchy::notebook::testing::smt::SmtSolver;
 /// 
-let mut instance = SmtSolver::new();
-let result = instance.verify_function();
-// Verify behavior
+/// let mut instance = SmtSolver::new();
+/// let result = instance.verify_function();
+/// // Verify behavior
 /// ```
 pub fn verify_function(&mut self, function: &Function, spec: &FunctionSpec) -> VerificationResult {
         let mut assertions = Vec::new();
@@ -388,9 +388,9 @@ impl ProofCache {
 /// ```
 /// use ruchy::notebook::testing::smt::ProofCache;
 /// 
-let mut instance = ProofCache::new();
-let result = instance.get_hit_rate();
-// Verify behavior
+/// let mut instance = ProofCache::new();
+/// let result = instance.get_hit_rate();
+/// // Verify behavior
 /// ```
 pub fn get_hit_rate(&self) -> f64 {
         let total = self.hit_count + self.miss_count;
@@ -461,9 +461,9 @@ impl BoundedModelChecker {
 /// ```
 /// use ruchy::notebook::testing::smt::BoundedModelChecker;
 /// 
-let mut instance = BoundedModelChecker::new();
-let result = instance.check_bounded();
-// Verify behavior
+/// let mut instance = BoundedModelChecker::new();
+/// let result = instance.check_bounded();
+/// // Verify behavior
 /// ```
 pub fn check_bounded(&mut self, property: &str, program: &Program) -> BoundedResult {
         for depth in 1..=self.max_depth {
