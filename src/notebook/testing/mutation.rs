@@ -65,8 +65,8 @@ impl MutationTester {
 /// ```
 /// use ruchy::notebook::testing::mutation::MutationTester;
 /// 
-let instance = MutationTester::new();
-// Verify behavior
+/// let instance = MutationTester::new();
+/// // Verify behavior
 /// ```
 pub fn new() -> Self {
         Self {
@@ -80,9 +80,9 @@ pub fn new() -> Self {
 /// ```
 /// use ruchy::notebook::testing::mutation::MutationTester;
 /// 
-let mut instance = MutationTester::new();
-let result = instance.with_config();
-// Verify behavior
+/// let mut instance = MutationTester::new();
+/// let result = instance.with_config();
+/// // Verify behavior
 /// ```
 pub fn with_config(config: MutationConfig) -> Self {
         Self {
@@ -97,9 +97,9 @@ pub fn with_config(config: MutationConfig) -> Self {
 /// ```
 /// use ruchy::notebook::testing::mutation::MutationTester;
 /// 
-let mut instance = MutationTester::new();
-let result = instance.generate_mutations();
-// Verify behavior
+/// let mut instance = MutationTester::new();
+/// let result = instance.generate_mutations();
+/// // Verify behavior
 /// ```
 pub fn generate_mutations(&self, cell: &Cell) -> Vec<Mutation> {
         let mut mutations = Vec::new();
@@ -229,9 +229,9 @@ pub fn generate_mutations(&self, cell: &Cell) -> Vec<Mutation> {
 /// ```
 /// use ruchy::notebook::testing::mutation::MutationTester;
 /// 
-let mut instance = MutationTester::new();
-let result = instance.apply_mutation();
-// Verify behavior
+/// let mut instance = MutationTester::new();
+/// let result = instance.apply_mutation();
+/// // Verify behavior
 /// ```
 pub fn apply_mutation(&self, cell: &Cell, mutation: &Mutation) -> Cell {
         let lines: Vec<&str> = cell.source.lines().collect();
@@ -286,9 +286,9 @@ pub fn apply_mutation(&self, cell: &Cell, mutation: &Mutation) -> Cell {
 /// ```
 /// use ruchy::notebook::testing::mutation::MutationTester;
 /// 
-let mut instance = MutationTester::new();
-let result = instance.calculate_score();
-// Verify behavior
+/// let mut instance = MutationTester::new();
+/// let result = instance.calculate_score();
+/// // Verify behavior
 /// ```
 pub fn calculate_score(&self) -> f64 {
         if self.results.is_empty() {

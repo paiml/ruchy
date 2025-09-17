@@ -9,8 +9,8 @@ impl TestState {
 /// ```
 /// use ruchy::notebook::testing::state::TestState;
 /// 
-let instance = TestState::new();
-// Verify behavior
+/// let instance = TestState::new();
+/// // Verify behavior
 /// ```
 pub fn new() -> Self {
         Self::default()
@@ -20,9 +20,9 @@ pub fn new() -> Self {
 /// ```
 /// use ruchy::notebook::testing::state::TestState;
 /// 
-let mut instance = TestState::new();
-let result = instance.is_empty();
-// Verify behavior
+/// let mut instance = TestState::new();
+/// let result = instance.is_empty();
+/// // Verify behavior
 /// ```
 pub fn is_empty(&self) -> bool {
         self.variables.is_empty()
@@ -47,9 +47,9 @@ pub fn set_variable(&mut self, name: String, value: String) {
 /// ```
 /// use ruchy::notebook::testing::state::TestState;
 /// 
-let mut instance = TestState::new();
-let result = instance.get_variable();
-// Verify behavior
+/// let mut instance = TestState::new();
+/// let result = instance.get_variable();
+/// // Verify behavior
 /// ```
 pub fn get_variable(&self, name: &str) -> Option<&String> {
         self.variables

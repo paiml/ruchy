@@ -32,8 +32,8 @@ impl PropertyTester {
 /// ```
 /// use ruchy::notebook::testing::property::PropertyTester;
 /// 
-let instance = PropertyTester::new();
-// Verify behavior
+/// let instance = PropertyTester::new();
+/// // Verify behavior
 /// ```
 pub fn new() -> Self {
         Self {
@@ -45,9 +45,9 @@ pub fn new() -> Self {
 /// ```
 /// use ruchy::notebook::testing::property::PropertyTester;
 /// 
-let mut instance = PropertyTester::new();
-let result = instance.with_config();
-// Verify behavior
+/// let mut instance = PropertyTester::new();
+/// let result = instance.with_config();
+/// // Verify behavior
 /// ```
 pub fn with_config(config: PropertyTestConfig) -> Self {
         Self { config }

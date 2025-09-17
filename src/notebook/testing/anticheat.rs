@@ -44,24 +44,24 @@ impl AntiCheatSystem {
 /// ```
 /// use ruchy::notebook::testing::anticheat::AntiCheatSystem;
 /// 
-let instance = AntiCheatSystem::new();
-// Verify behavior
+/// let instance = AntiCheatSystem::new();
+/// // Verify behavior
 /// ```
 /// # Examples
 /// 
 /// ```
 /// use ruchy::notebook::testing::anticheat::AntiCheatSystem;
 /// 
-let instance = AntiCheatSystem::new();
-// Verify behavior
+/// let instance = AntiCheatSystem::new();
+/// // Verify behavior
 /// ```
 /// # Examples
 /// 
 /// ```
 /// use ruchy::notebook::testing::anticheat::AntiCheatSystem;
 /// 
-let instance = AntiCheatSystem::new();
-// Verify behavior
+/// let instance = AntiCheatSystem::new();
+/// // Verify behavior
 /// ```
 pub fn new() -> Self {
         Self {
@@ -75,9 +75,9 @@ pub fn new() -> Self {
 /// ```
 /// use ruchy::notebook::testing::anticheat::AntiCheatSystem;
 /// 
-let mut instance = AntiCheatSystem::new();
-let result = instance.with_threshold();
-// Verify behavior
+/// let mut instance = AntiCheatSystem::new();
+/// let result = instance.with_threshold();
+/// // Verify behavior
 /// ```
 pub fn with_threshold(threshold: f64) -> Self {
         Self {
@@ -92,9 +92,9 @@ pub fn with_threshold(threshold: f64) -> Self {
 /// ```
 /// use ruchy::notebook::testing::anticheat::AntiCheatSystem;
 /// 
-let mut instance = AntiCheatSystem::new();
-let result = instance.check_plagiarism();
-// Verify behavior
+/// let mut instance = AntiCheatSystem::new();
+/// let result = instance.check_plagiarism();
+/// // Verify behavior
 /// ```
 pub fn check_plagiarism(&mut self, submission: &Submission) -> PlagiarismResult {
         let fingerprint = self.generate_fingerprint(&submission.code);

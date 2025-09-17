@@ -32,24 +32,24 @@ impl NotebookTester {
 /// ```
 /// use ruchy::notebook::testing::tester::NotebookTester;
 /// 
-let instance = NotebookTester::new();
-// Verify behavior
+/// let instance = NotebookTester::new();
+/// // Verify behavior
 /// ```
 /// # Examples
 /// 
 /// ```
 /// use ruchy::notebook::testing::tester::NotebookTester;
 /// 
-let instance = NotebookTester::new();
-// Verify behavior
+/// let instance = NotebookTester::new();
+/// // Verify behavior
 /// ```
 /// # Examples
 /// 
 /// ```
 /// use ruchy::notebook::testing::tester::NotebookTester;
 /// 
-let instance = NotebookTester::new();
-// Verify behavior
+/// let instance = NotebookTester::new();
+/// // Verify behavior
 /// ```
 pub fn new() -> Self {
         Self::with_config(TestConfig::default())
@@ -59,9 +59,9 @@ pub fn new() -> Self {
 /// ```
 /// use ruchy::notebook::testing::tester::NotebookTester;
 /// 
-let mut instance = NotebookTester::new();
-let result = instance.with_config();
-// Verify behavior
+/// let mut instance = NotebookTester::new();
+/// let result = instance.with_config();
+/// // Verify behavior
 /// ```
 pub fn with_config(config: TestConfig) -> Self {
         let repl = Repl::new().expect("Failed to create REPL");
@@ -77,9 +77,9 @@ pub fn with_config(config: TestConfig) -> Self {
 /// ```
 /// use ruchy::notebook::testing::tester::NotebookTester;
 /// 
-let mut instance = NotebookTester::new();
-let result = instance.execute_cell();
-// Verify behavior
+/// let mut instance = NotebookTester::new();
+/// let result = instance.execute_cell();
+/// // Verify behavior
 /// ```
 pub fn execute_cell(&mut self, cell: &Cell) -> Result<CellOutput, String> {
         // Skip markdown cells
@@ -117,9 +117,9 @@ pub fn execute_cell(&mut self, cell: &Cell) -> Result<CellOutput, String> {
 /// ```
 /// use ruchy::notebook::testing::tester::NotebookTester;
 /// 
-let mut instance = NotebookTester::new();
-let result = instance.cell_count();
-// Verify behavior
+/// let mut instance = NotebookTester::new();
+/// let result = instance.cell_count();
+/// // Verify behavior
 /// ```
 pub fn cell_count(&self) -> usize {
         self.cell_outputs.len()
@@ -253,9 +253,9 @@ impl NotebookTestSession {
 /// ```
 /// use ruchy::notebook::testing::tester::NotebookTestSession;
 /// 
-let mut instance = NotebookTestSession::new();
-let result = instance.execute_cell_str();
-// Verify behavior
+/// let mut instance = NotebookTestSession::new();
+/// let result = instance.execute_cell_str();
+/// // Verify behavior
 /// ```
 pub fn execute_cell_str(&mut self, _source: &str) -> CellOutput {
         CellOutput::Value("42".to_string())
@@ -278,9 +278,9 @@ pub fn create_checkpoint(&mut self, name: &str) -> Option<String> {
 /// ```
 /// use ruchy::notebook::testing::tester::NotebookTestSession;
 /// 
-let mut instance = NotebookTestSession::new();
-let result = instance.restore_checkpoint();
-// Verify behavior
+/// let mut instance = NotebookTestSession::new();
+/// let result = instance.restore_checkpoint();
+/// // Verify behavior
 /// ```
 pub fn restore_checkpoint(&mut self, id: &str) -> bool {
         if let Some(pos) = self.checkpoints.iter().position(|(cid, _)| cid == id) {
@@ -343,9 +343,9 @@ impl NotebookParser {
 /// ```
 /// use ruchy::notebook::testing::tester::NotebookParser;
 /// 
-let mut instance = NotebookParser::new();
-let result = instance.validate();
-// Verify behavior
+/// let mut instance = NotebookParser::new();
+/// let result = instance.validate();
+/// // Verify behavior
 /// ```
 pub fn validate(&self, _notebook: &Notebook) -> Result<(), String> {
         Ok(())

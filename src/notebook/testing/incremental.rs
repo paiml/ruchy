@@ -82,24 +82,24 @@ impl IncrementalTester {
 /// ```
 /// use ruchy::notebook::testing::incremental::IncrementalTester;
 /// 
-let instance = IncrementalTester::new();
-// Verify behavior
+/// let instance = IncrementalTester::new();
+/// // Verify behavior
 /// ```
 /// # Examples
 /// 
 /// ```
 /// use ruchy::notebook::testing::incremental::IncrementalTester;
 /// 
-let instance = IncrementalTester::new();
-// Verify behavior
+/// let instance = IncrementalTester::new();
+/// // Verify behavior
 /// ```
 /// # Examples
 /// 
 /// ```
 /// use ruchy::notebook::testing::incremental::IncrementalTester;
 /// 
-let instance = IncrementalTester::new();
-// Verify behavior
+/// let instance = IncrementalTester::new();
+/// // Verify behavior
 /// ```
 pub fn new() -> Self {
         Self::with_config(IncrementalConfig::default())
@@ -109,9 +109,9 @@ pub fn new() -> Self {
 /// ```
 /// use ruchy::notebook::testing::incremental::IncrementalTester;
 /// 
-let mut instance = IncrementalTester::new();
-let result = instance.with_config();
-// Verify behavior
+/// let mut instance = IncrementalTester::new();
+/// let result = instance.with_config();
+/// // Verify behavior
 /// ```
 pub fn with_config(config: IncrementalConfig) -> Self {
         let cache = TestResultCache::new(config.cache_directory.clone(), config.max_cache_size);
@@ -128,9 +128,9 @@ pub fn with_config(config: IncrementalConfig) -> Self {
 /// ```
 /// use ruchy::notebook::testing::incremental::IncrementalTester;
 /// 
-let mut instance = IncrementalTester::new();
-let result = instance.execute_incremental();
-// Verify behavior
+/// let mut instance = IncrementalTester::new();
+/// let result = instance.execute_incremental();
+/// // Verify behavior
 /// ```
 pub fn execute_incremental(&mut self, notebook: &Notebook, changed_cells: &[String]) -> IncrementalResult {
         let mut executed_cells = Vec::new();
@@ -390,9 +390,9 @@ impl DependencyTracker {
 /// ```
 /// use ruchy::notebook::testing::incremental::DependencyTracker;
 /// 
-let mut instance = DependencyTracker::new();
-let result = instance.analyze_dependencies();
-// Verify behavior
+/// let mut instance = DependencyTracker::new();
+/// let result = instance.analyze_dependencies();
+/// // Verify behavior
 /// ```
 pub fn analyze_dependencies(&mut self, notebook: &Notebook) {
         self.dependencies.clear();

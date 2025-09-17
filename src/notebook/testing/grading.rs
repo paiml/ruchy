@@ -36,16 +36,16 @@ impl Grader {
 /// ```
 /// use ruchy::notebook::testing::grading::Grader;
 /// 
-let instance = Grader::new();
-// Verify behavior
+/// let instance = Grader::new();
+/// // Verify behavior
 /// ```
 /// # Examples
 /// 
 /// ```
 /// use ruchy::notebook::testing::grading::Grader;
 /// 
-let instance = Grader::new();
-// Verify behavior
+/// let instance = Grader::new();
+/// // Verify behavior
 /// ```
 pub fn new() -> Self {
         Self {
@@ -57,9 +57,9 @@ pub fn new() -> Self {
 /// ```
 /// use ruchy::notebook::testing::grading::Grader;
 /// 
-let mut instance = Grader::new();
-let result = instance.with_config();
-// Verify behavior
+/// let mut instance = Grader::new();
+/// let result = instance.with_config();
+/// // Verify behavior
 /// ```
 pub fn with_config(config: GradingConfig) -> Self {
         Self { config }
@@ -70,9 +70,9 @@ pub fn with_config(config: GradingConfig) -> Self {
 /// ```
 /// use ruchy::notebook::testing::grading::Grader;
 /// 
-let mut instance = Grader::new();
-let result = instance.grade_with_rubric();
-// Verify behavior
+/// let mut instance = Grader::new();
+/// let result = instance.grade_with_rubric();
+/// // Verify behavior
 /// ```
 pub fn grade_with_rubric(
         &self,
@@ -120,9 +120,9 @@ pub fn grade_with_rubric(
 /// ```
 /// use ruchy::notebook::testing::grading::Grader;
 /// 
-let mut instance = Grader::new();
-let result = instance.apply_late_penalty();
-// Verify behavior
+/// let mut instance = Grader::new();
+/// let result = instance.apply_late_penalty();
+/// // Verify behavior
 /// ```
 pub fn apply_late_penalty(&self, grade: &mut Grade, hours_late: f64) {
         if hours_late <= 0.0 {
@@ -227,9 +227,9 @@ impl ExerciseValidator {
 /// ```
 /// use ruchy::notebook::testing::grading::ExerciseValidator;
 /// 
-let mut instance = ExerciseValidator::new();
-let result = instance.validate();
-// Verify behavior
+/// let mut instance = ExerciseValidator::new();
+/// let result = instance.validate();
+/// // Verify behavior
 /// ```
 pub fn validate(&self, exercise: &Exercise, solution: &str) -> ValidationResult {
         let mut passed = 0;

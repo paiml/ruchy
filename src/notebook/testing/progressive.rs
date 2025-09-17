@@ -123,8 +123,8 @@ impl ProgressiveDisclosure {
 /// ```
 /// use ruchy::notebook::testing::progressive::ProgressiveDisclosure;
 /// 
-let instance = ProgressiveDisclosure::new();
-// Verify behavior
+/// let instance = ProgressiveDisclosure::new();
+/// // Verify behavior
 /// ```
 pub fn new(config: DisclosureConfig, hierarchy: TestHierarchy) -> Self {
         Self {
@@ -139,9 +139,9 @@ pub fn new(config: DisclosureConfig, hierarchy: TestHierarchy) -> Self {
 /// ```
 /// use ruchy::notebook::testing::progressive::ProgressiveDisclosure;
 /// 
-let mut instance = ProgressiveDisclosure::new();
-let result = instance.get_available_content();
-// Verify behavior
+/// let mut instance = ProgressiveDisclosure::new();
+/// let result = instance.get_available_content();
+/// // Verify behavior
 /// ```
 pub fn get_available_content(&mut self, student_id: &str) -> DisclosureResult {
         // First create/get progress without holding a reference

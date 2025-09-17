@@ -131,9 +131,9 @@ impl WasmSandbox {
 /// ```
 /// use ruchy::notebook::testing::sandbox::WasmSandbox;
 /// 
-let mut instance = WasmSandbox::new();
-let result = instance.configure();
-// Verify behavior
+/// let mut instance = WasmSandbox::new();
+/// let result = instance.configure();
+/// // Verify behavior
 /// ```
 pub fn configure(&mut self, limits: ResourceLimits) -> Result<(), String> {
         if limits.memory_mb == 0 || limits.memory_mb > 1024 {
