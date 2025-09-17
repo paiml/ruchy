@@ -15,7 +15,7 @@ fn test_repl_with_custom_config() {
     let config = ReplConfig {
         max_memory: 1024,
         timeout: Duration::from_millis(50),
-        max_depth: 10,
+        maxdepth: 10,
         debug: false,
     };
     

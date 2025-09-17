@@ -1110,9 +1110,9 @@ mod tests {
     fn test_builder_add_multiple_sources() {
         let mut builder = ComponentBuilder::new();
 
-        builder.add_source_file("file1.ruchy");
-        builder.add_source_file("file2.ruchy");
-        builder.add_source_file("file3.ruchy");
+        builder.add_source("file1.ruchy").unwrap();
+        builder.add_source("file2.ruchy").unwrap();
+        builder.add_source("file3.ruchy").unwrap();
 
         assert_eq!(builder.source_files.len(), 3);
         assert!(builder.source_files.contains(&PathBuf::from("file1.ruchy")));
@@ -1123,7 +1123,7 @@ mod tests {
     #[test]
     fn test_optimization_levels() {
         let levels = vec![
-            OptimizationLevel::O0,
+            OptimizationLevel::None,
             OptimizationLevel::O1,
             OptimizationLevel::O2,
             OptimizationLevel::O3,
@@ -1132,8 +1132,8 @@ mod tests {
         ];
 
         for level in levels {
-            let mut builder = ComponentBuilder::new();
-            builder.set_optimization_level(level.clone());
+            let builder = ComponentBuilder::new();
+            let builder = builder.with_optimization(level.clone());
             assert_eq!(builder.optimization_level, level);
         }
     }
@@ -1189,12 +1189,12 @@ mod tests {
 
     #[test]
     fn test_builder_with_debug_info() {
-        let mut builder = ComponentBuilder::new();
+        let builder = ComponentBuilder::new();
 
-        builder.enable_debug_info(true);
+        let builder = builder.with_debug_info(true);
         assert!(builder.include_debug_info);
 
-        builder.enable_debug_info(false);
+        let builder = builder.with_debug_info(false);
         assert!(!builder.include_debug_info);
     }
 

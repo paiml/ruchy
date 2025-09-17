@@ -273,7 +273,7 @@ pub fn fuzz_repl_eval(data: &[u8]) -> i32 {
     let config = ReplConfig {
         max_memory: MAX_MEMORY,
         timeout: Duration::from_millis(100),
-        max_depth: 100,
+        maxdepth: 100,
         debug: false,
     };
     
@@ -411,7 +411,7 @@ fn test_repl_fuzz_resource_bounds() {
     let config = ReplConfig {
         max_memory: 512 * 1024, // 512KB - tighter bounds
         timeout: Duration::from_millis(50), // Shorter timeout
-        max_depth: 50, // Shallower stack
+        maxdepth: 50, // Shallower stack
         debug: false,
     };
     

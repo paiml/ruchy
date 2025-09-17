@@ -770,8 +770,7 @@ mod tests {
     fn test_magic_result_profile() {
         let profile_data = ProfileData {
             total_time: Duration::from_millis(500),
-            function_times: std::collections::HashMap::new(),
-            memory_usage: 1024,
+            function_times: vec![], // Changed from HashMap to Vec for the new structure
         };
         let result = MagicResult::Profile(profile_data);
         let formatted = format!("{}", result);
@@ -991,30 +990,32 @@ mod tests {
 
     #[test]
     fn test_profile_data_creation() {
-        let mut function_times = std::collections::HashMap::new();
-        function_times.insert("main".to_string(), Duration::from_millis(100));
-        function_times.insert("helper".to_string(), Duration::from_millis(50));
+        // ProfileData.function_times expects Vec<(String, Duration, usize)>
+        let function_times = vec![
+            ("main".to_string(), Duration::from_millis(100), 1),
+            ("helper".to_string(), Duration::from_millis(50), 1),
+        ];
 
         let profile = ProfileData {
             total_time: Duration::from_millis(150),
             function_times,
-            memory_usage: 2048,
         };
 
         assert_eq!(profile.total_time, Duration::from_millis(150));
-        assert_eq!(profile.memory_usage, 2048);
+        // assert_eq!(profile.memory_usage, 2048); // Field not present in ProfileData
         assert_eq!(profile.function_times.len(), 2);
     }
 
     #[test]
     fn test_profile_data_display() {
-        let mut function_times = std::collections::HashMap::new();
-        function_times.insert("test_func".to_string(), Duration::from_millis(75));
+        // ProfileData.function_times expects Vec<(String, Duration, usize)>
+        let function_times = vec![
+            ("test_func".to_string(), Duration::from_millis(75), 1),
+        ];
 
         let profile = ProfileData {
             total_time: Duration::from_millis(100),
             function_times,
-            memory_usage: 1024,
         };
 
         let formatted = format!("{}", profile);
