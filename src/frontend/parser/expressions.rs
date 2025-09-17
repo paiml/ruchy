@@ -2791,7 +2791,7 @@ mod tests {
 
     // Test 61: Await expressions
     #[test]
-    fn test_parse_await_expression() {
+    fn test_parse_await_expression_comprehensive() {
         let mut parser = Parser::new("await fetch_data()");
         let result = parser.parse();
         assert!(result.is_ok(), "Failed to parse await expression");

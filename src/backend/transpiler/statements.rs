@@ -2932,7 +2932,7 @@ mod tests {
 
     // Test 38: Variable Mutation Detection
     #[test]
-    fn test_is_variable_mutated() {
+    fn test_is_variable_mutated_comprehensive() {
         let code = "let mut x = 5; x = 10; x";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
@@ -2986,7 +2986,7 @@ mod tests {
 
     // Test 41: Match Expression Transpilation
     #[test]
-    fn test_match_expression() {
+    fn test_match_expression_transpilation() {
         let transpiler = create_transpiler();
         let code = "match x { 1 => \"one\", 2 => \"two\", _ => \"other\" }";
         let mut parser = Parser::new(code);
