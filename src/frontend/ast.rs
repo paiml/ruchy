@@ -1752,7 +1752,8 @@ mod tests {
                 | Pattern::Err(_)
                 | Pattern::Some(_)
                 | Pattern::None
-                | Pattern::QualifiedName(_) 
+                | Pattern::QualifiedName(_)
+                | Pattern::AtBinding { .. }
                 | Pattern::WithDefault { .. } => {} // Simple patterns
             }
         }
