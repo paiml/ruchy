@@ -50,6 +50,7 @@
 pub mod actors;
 pub mod api_docs;
 pub mod backend;
+pub mod debugger;
 pub mod docs;
 pub mod error_recovery_enhanced;
 pub mod frontend;
