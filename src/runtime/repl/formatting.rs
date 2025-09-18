@@ -9,7 +9,7 @@ pub fn format_value(value: &Value) -> String {
     match value {
         Value::Integer(n) => n.to_string(),
         Value::Float(f) => f.to_string(),
-        Value::String(s) => format!("\"{}\"", s),
+        Value::String(s) => format!("\"{s}\""),
         Value::Bool(b) => b.to_string(),
         Value::Nil => "nil".to_string(),
         Value::Array(arr) => {
@@ -49,13 +49,13 @@ pub fn format_value(value: &Value) -> String {
 
 /// Format an error for display in the REPL (complexity: 2)
 pub fn format_error(error: &str) -> String {
-    format!("Error: {}", error)
+    format!("Error: {error}")
 }
 
 /// Format AST for display in the REPL (complexity: 1)
 pub fn format_ast(ast: &str) -> String {
     // Simplified AST formatting for now
-    format!("AST: {}", ast)
+    format!("AST: {ast}")
 }
 
 #[cfg(test)]
