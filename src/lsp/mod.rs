@@ -2,10 +2,12 @@
 //!
 //! Based on SPECIFICATION.md section 8: LSP Specification
 mod analyzer;
+mod basic;
 mod capabilities;
 mod formatter;
 mod server;
 pub use analyzer::SemanticAnalyzer;
+pub use basic::{LspServer, Notification, Request, Response};
 pub use capabilities::{ruchy_token_to_lsp, RuchyTokenType, SEMANTIC_TOKEN_LEGEND};
 pub use formatter::Formatter;
 pub use server::RuchyLanguageServer;
