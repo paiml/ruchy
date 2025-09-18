@@ -8853,6 +8853,337 @@ impl Repl {
             _ => bail!("{}", Self::numeric_args_error(op)),
         }
     }
+
+    /// Apply len function to a value
+    fn apply_len_function(&self, value: &Value) -> Result<Value> {
+        match value {
+            Value::String(s) => Ok(Value::Int(s.len() as i64)),
+            Value::List(items) => Ok(Value::Int(items.len() as i64)),
+            _ => bail!("len() can only be applied to strings and lists"),
+        }
+    }
+
+    /// Apply range function with single argument (0..end)
+    fn apply_range_function_single(&self, end: &Value) -> Result<Value> {
+        match end {
+            Value::Int(n) => {
+                let mut result = Vec::new();
+                for i in 0..*n {
+                    result.push(Value::Int(i));
+                }
+                Ok(Value::List(result))
+            }
+            _ => bail!("range() expects integer arguments"),
+        }
+    }
+
+    /// Apply range function with two arguments (start..end)
+    fn apply_range_function_double(&self, start: &Value, end: &Value) -> Result<Value> {
+        match (start, end) {
+            (Value::Int(s), Value::Int(e)) => {
+                let mut result = Vec::new();
+                for i in *s..*e {
+                    result.push(Value::Int(i));
+                }
+                Ok(Value::List(result))
+            }
+            _ => bail!("range() expects integer arguments"),
+        }
+    }
+
+    /// Apply range function with three arguments (start..end by step)
+    fn apply_range_function_triple(&self, start: &Value, end: &Value, step: &Value) -> Result<Value> {
+        match (start, end, step) {
+            (Value::Int(s), Value::Int(e), Value::Int(st)) => {
+                if *st == 0 {
+                    bail!("range() step cannot be zero");
+                }
+                let mut result = Vec::new();
+                if *st > 0 {
+                    let mut i = *s;
+                    while i < *e {
+                        result.push(Value::Int(i));
+                        i += st;
+                    }
+                } else {
+                    let mut i = *s;
+                    while i > *e {
+                        result.push(Value::Int(i));
+                        i += st;
+                    }
+                }
+                Ok(Value::List(result))
+            }
+            _ => bail!("range() expects integer arguments"),
+        }
+    }
+
+    /// Apply typeof function to get the type name of a value
+    fn apply_typeof_function(&self, value: &Value) -> Value {
+        let type_name = match value {
+            Value::Int(_) => "integer",
+            Value::Float(_) => "float",
+            Value::String(_) => "string",
+            Value::Bool(_) => "boolean",
+            Value::Char(_) => "char",
+            Value::List(_) => "list",
+            Value::Tuple(_) => "tuple",
+            Value::Function { .. } => "function",
+            Value::Lambda { .. } => "lambda",
+            Value::DataFrame { .. } => "dataframe",
+            Value::Object(_) => "object",
+            Value::HashMap(_) => "hashmap",
+            Value::HashSet(_) => "hashset",
+            Value::Range { .. } => "range",
+            Value::EnumVariant { .. } => "enum",
+            Value::Unit => "unit",
+            Value::Nil => "nil",
+        };
+        Value::String(type_name.to_string())
+    }
+
+    /// Apply reverse function to reverse a list or string
+    fn apply_reverse_function(&self, value: &Value) -> Result<Value> {
+        match value {
+            Value::List(items) => {
+                let mut reversed = items.clone();
+                reversed.reverse();
+                Ok(Value::List(reversed))
+            }
+            Value::String(s) => Ok(Value::String(s.chars().rev().collect())),
+            _ => bail!("reverse() can only be applied to lists and strings"),
+        }
+    }
+
+    /// Apply sort function to sort a list
+    fn apply_sort_function(&self, value: &Value) -> Result<Value> {
+        match value {
+            Value::List(items) => {
+                let mut sorted = items.clone();
+                sorted.sort_by(|a, b| {
+                    match (a, b) {
+                        (Value::Int(x), Value::Int(y)) => x.cmp(y),
+                        (Value::Float(x), Value::Float(y)) => x.partial_cmp(y).unwrap_or(std::cmp::Ordering::Equal),
+                        (Value::String(x), Value::String(y)) => x.cmp(y),
+                        _ => std::cmp::Ordering::Equal,
+                    }
+                });
+                Ok(Value::List(sorted))
+            }
+            _ => bail!("sort() can only be applied to lists"),
+        }
+    }
+
+    /// Apply sum function to sum numeric values in a list
+    fn apply_sum_function(&self, value: &Value) -> Result<Value> {
+        match value {
+            Value::List(items) => {
+                let mut sum = 0i64;
+                let mut float_sum = 0.0f64;
+                let mut has_floats = false;
+                for val in items {
+                    match val {
+                        Value::Int(n) => {
+                            if has_floats {
+                                float_sum += *n as f64;
+                            } else {
+                                sum += n;
+                            }
+                        }
+                        Value::Float(f) => {
+                            if has_floats {
+                                float_sum += f;
+                            } else {
+                                has_floats = true;
+                                float_sum = sum as f64 + f;
+                            }
+                        }
+                        _ => bail!("sum() can only sum numbers"),
+                    }
+                }
+                if has_floats {
+                    Ok(Value::Float(float_sum))
+                } else {
+                    Ok(Value::Int(sum))
+                }
+            }
+            _ => bail!("sum() can only be applied to lists"),
+        }
+    }
+
+    /// Apply product function to multiply numeric values in a list
+    fn apply_product_function(&self, value: &Value) -> Result<Value> {
+        match value {
+            Value::List(items) => {
+                let mut product = 1i64;
+                let mut float_product = 1.0f64;
+                let mut has_floats = false;
+                for val in items {
+                    match val {
+                        Value::Int(n) => {
+                            if has_floats {
+                                float_product *= *n as f64;
+                            } else {
+                                product *= n;
+                            }
+                        }
+                        Value::Float(f) => {
+                            if has_floats {
+                                float_product *= f;
+                            } else {
+                                has_floats = true;
+                                float_product = product as f64 * f;
+                            }
+                        }
+                        _ => bail!("product() can only multiply numbers"),
+                    }
+                }
+                if has_floats {
+                    Ok(Value::Float(float_product))
+                } else {
+                    Ok(Value::Int(product))
+                }
+            }
+            _ => bail!("product() can only be applied to lists"),
+        }
+    }
+
+    /// Apply unique function to get unique values from a list
+    fn apply_unique_function(&self, value: &Value) -> Result<Value> {
+        match value {
+            Value::List(items) => {
+                let mut unique_vals = Vec::new();
+                for val in items {
+                    if !unique_vals.contains(val) {
+                        unique_vals.push(val.clone());
+                    }
+                }
+                Ok(Value::List(unique_vals))
+            }
+            _ => bail!("unique() can only be applied to lists"),
+        }
+    }
+
+    /// Apply flatten function to flatten nested lists
+    fn apply_flatten_function(&self, value: &Value) -> Result<Value> {
+        match value {
+            Value::List(items) => {
+                let mut flattened = Vec::new();
+                for val in items {
+                    match val {
+                        Value::List(inner_items) => {
+                            flattened.extend_from_slice(inner_items);
+                        }
+                        _ => flattened.push(val.clone()),
+                    }
+                }
+                Ok(Value::List(flattened))
+            }
+            _ => bail!("flatten() can only be applied to lists"),
+        }
+    }
+
+    /// Apply enumerate function to add indices to list items
+    fn apply_enumerate_function(&self, value: &Value) -> Result<Value> {
+        match value {
+            Value::List(items) => {
+                let mut enumerated = Vec::new();
+                for (i, val) in items.iter().enumerate() {
+                    let tuple = Value::List(vec![Value::Int(i as i64), val.clone()]);
+                    enumerated.push(tuple);
+                }
+                Ok(Value::List(enumerated))
+            }
+            _ => bail!("enumerate() can only be applied to lists"),
+        }
+    }
+
+    /// Apply zip function to combine two lists
+    fn apply_zip_function(&self, a: &Value, b: &Value) -> Result<Value> {
+        match (a, b) {
+            (Value::List(items1), Value::List(items2)) => {
+                let mut zipped = Vec::new();
+                let min_len = items1.len().min(items2.len());
+                for i in 0..min_len {
+                    let tuple = Value::List(vec![items1[i].clone(), items2[i].clone()]);
+                    zipped.push(tuple);
+                }
+                Ok(Value::List(zipped))
+            }
+            _ => bail!("zip() expects two lists"),
+        }
+    }
+
+    /// Apply join function to join list of strings with separator
+    fn apply_join_function(&self, a: &Value, b: &Value) -> Result<Value> {
+        match (a, b) {
+            (Value::List(items), Value::String(sep)) => {
+                let strings: Result<Vec<String>, _> = items.iter().map(|v| {
+                    match v {
+                        Value::String(s) => Ok(s.clone()),
+                        _ => bail!("join() can only join lists of strings"),
+                    }
+                }).collect();
+                match strings {
+                    Ok(strs) => Ok(Value::String(strs.join(sep))),
+                    Err(e) => Err(e),
+                }
+            }
+            _ => bail!("join() expects a list and a string separator"),
+        }
+    }
+
+    /// Apply split function to split string by separator
+    fn apply_split_function(&self, a: &Value, b: &Value) -> Result<Value> {
+        match (a, b) {
+            (Value::String(s), Value::String(sep)) => {
+                let parts: Vec<Value> = s.split(sep).map(|part| Value::String(part.to_string())).collect();
+                Ok(Value::List(parts))
+            }
+            _ => bail!("split() expects two strings"),
+        }
+    }
+
+    /// Apply random function to generate random float 0..1
+    fn apply_random_function(&self) -> Value {
+        use rand::Rng;
+        let mut rng = rand::thread_rng();
+        Value::Float(rng.gen::<f64>())
+    }
+
+    /// Apply `random_int` function with single argument (0..max)
+    fn apply_random_int_function_single(&self, max: &Value) -> Result<Value> {
+        match max {
+            Value::Int(n) => {
+                use rand::Rng;
+                let mut rng = rand::thread_rng();
+                Ok(Value::Int(rng.gen_range(0..*n)))
+            }
+            _ => bail!("random_int() expects an integer"),
+        }
+    }
+
+    /// Apply `random_int` function with two arguments (min..max)
+    fn apply_random_int_function_double(&self, min: &Value, max: &Value) -> Result<Value> {
+        match (min, max) {
+            (Value::Int(min_val), Value::Int(max_val)) => {
+                use rand::Rng;
+                let mut rng = rand::thread_rng();
+                Ok(Value::Int(rng.gen_range(*min_val..*max_val)))
+            }
+            _ => bail!("random_int() expects two integers"),
+        }
+    }
+
+    /// Apply timestamp function to get current Unix timestamp
+    fn apply_timestamp_function(&self) -> Result<Value> {
+        use std::time::{SystemTime, UNIX_EPOCH};
+        let timestamp = SystemTime::now().duration_since(UNIX_EPOCH)
+            .map_err(|_| anyhow::anyhow!("Failed to get timestamp"))?
+            .as_secs();
+        Ok(Value::Int(timestamp as i64))
+    }
+
     /// Handle built-in math functions (sqrt, pow, abs, min, max, floor, ceil, round).
     /// 
     /// Returns `Ok(Some(value))` if the function name matches a math function,
@@ -8881,6 +9212,113 @@ impl Repl {
                 let a = self.evaluate_expr(&args[0], deadline, depth + 1)?;
                 let b = self.evaluate_arg(args, 1, deadline, depth)?;
                 Ok(Some(self.apply_binary_math_op(&a, &b, func_name)?))
+            }
+            // Utility functions
+            "len" => {
+                self.validate_arg_count(func_name, args, 1)?;
+                let value = self.evaluate_first_arg(args, deadline, depth)?;
+                Ok(Some(self.apply_len_function(&value)?))
+            }
+            "range" => {
+                match args.len() {
+                    1 => {
+                        let end = self.evaluate_first_arg(args, deadline, depth)?;
+                        Ok(Some(self.apply_range_function_single(&end)?))
+                    }
+                    2 => {
+                        let start = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+                        let end = self.evaluate_expr(&args[1], deadline, depth + 1)?;
+                        Ok(Some(self.apply_range_function_double(&start, &end)?))
+                    }
+                    3 => {
+                        let start = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+                        let end = self.evaluate_expr(&args[1], deadline, depth + 1)?;
+                        let step = self.evaluate_expr(&args[2], deadline, depth + 1)?;
+                        Ok(Some(self.apply_range_function_triple(&start, &end, &step)?))
+                    }
+                    _ => Err(anyhow::anyhow!("range() expects 1, 2, or 3 arguments")),
+                }
+            }
+            "typeof" => {
+                self.validate_arg_count(func_name, args, 1)?;
+                let value = self.evaluate_first_arg(args, deadline, depth)?;
+                Ok(Some(self.apply_typeof_function(&value)))
+            }
+            // Advanced utility functions
+            "reverse" => {
+                self.validate_arg_count(func_name, args, 1)?;
+                let value = self.evaluate_first_arg(args, deadline, depth)?;
+                Ok(Some(self.apply_reverse_function(&value)?))
+            }
+            "sort" => {
+                self.validate_arg_count(func_name, args, 1)?;
+                let value = self.evaluate_first_arg(args, deadline, depth)?;
+                Ok(Some(self.apply_sort_function(&value)?))
+            }
+            "sum" => {
+                self.validate_arg_count(func_name, args, 1)?;
+                let value = self.evaluate_first_arg(args, deadline, depth)?;
+                Ok(Some(self.apply_sum_function(&value)?))
+            }
+            "product" => {
+                self.validate_arg_count(func_name, args, 1)?;
+                let value = self.evaluate_first_arg(args, deadline, depth)?;
+                Ok(Some(self.apply_product_function(&value)?))
+            }
+            "unique" => {
+                self.validate_arg_count(func_name, args, 1)?;
+                let value = self.evaluate_first_arg(args, deadline, depth)?;
+                Ok(Some(self.apply_unique_function(&value)?))
+            }
+            "flatten" => {
+                self.validate_arg_count(func_name, args, 1)?;
+                let value = self.evaluate_first_arg(args, deadline, depth)?;
+                Ok(Some(self.apply_flatten_function(&value)?))
+            }
+            "enumerate" => {
+                self.validate_arg_count(func_name, args, 1)?;
+                let value = self.evaluate_first_arg(args, deadline, depth)?;
+                Ok(Some(self.apply_enumerate_function(&value)?))
+            }
+            "zip" => {
+                self.validate_arg_count(func_name, args, 2)?;
+                let a = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+                let b = self.evaluate_expr(&args[1], deadline, depth + 1)?;
+                Ok(Some(self.apply_zip_function(&a, &b)?))
+            }
+            "join" => {
+                self.validate_arg_count(func_name, args, 2)?;
+                let a = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+                let b = self.evaluate_expr(&args[1], deadline, depth + 1)?;
+                Ok(Some(self.apply_join_function(&a, &b)?))
+            }
+            "split" => {
+                self.validate_arg_count(func_name, args, 2)?;
+                let a = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+                let b = self.evaluate_expr(&args[1], deadline, depth + 1)?;
+                Ok(Some(self.apply_split_function(&a, &b)?))
+            }
+            "random" => {
+                self.validate_arg_count(func_name, args, 0)?;
+                Ok(Some(self.apply_random_function()))
+            }
+            "random_int" => {
+                match args.len() {
+                    1 => {
+                        let max = self.evaluate_first_arg(args, deadline, depth)?;
+                        Ok(Some(self.apply_random_int_function_single(&max)?))
+                    }
+                    2 => {
+                        let min = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+                        let max = self.evaluate_expr(&args[1], deadline, depth + 1)?;
+                        Ok(Some(self.apply_random_int_function_double(&min, &max)?))
+                    }
+                    _ => Err(anyhow::anyhow!("random_int() expects 1 or 2 arguments")),
+                }
+            }
+            "timestamp" => {
+                self.validate_arg_count(func_name, args, 0)?;
+                Ok(Some(self.apply_timestamp_function()?))
             }
             _ => Ok(None), // Not a math function
         }

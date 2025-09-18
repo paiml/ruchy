@@ -211,7 +211,7 @@ test-repl:
 # Run linter
 lint:
 	@echo "Running clippy..."
-	@cargo clippy --lib --bins -- -D warnings
+	@cargo clippy --lib --bin ruchy -- -D warnings
 	@echo "✓ Linting complete"
 
 # Run linter on all targets including tests (use with caution - test code may have warnings)
