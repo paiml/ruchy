@@ -2,14 +2,14 @@
 //!
 //! Handles pretty-printing with <10 complexity
 
-use crate::runtime::value::Value;
+use crate::runtime::interpreter::Value;
 use crate::frontend::ast::Expr;
 
 /// Format values for display (complexity: 8)
 pub fn format_value(value: &Value) -> String {
     match value {
-        Value::Unit => String::new(),
-        Value::Int(n) => n.to_string(),
+        Value::Nil => String::new(),
+        Value::Integer(n) => n.to_string(),
         Value::Float(f) => {
             if f.fract() == 0.0 && f.abs() < 1e10 {
                 format!("{:.1}", f)
@@ -18,10 +18,9 @@ pub fn format_value(value: &Value) -> String {
             }
         }
         Value::Bool(b) => b.to_string(),
-        Value::String(s) => s.clone(),
-        Value::List(items) => format_list(items),
+        Value::String(s) => s.to_string(),
+        Value::Array(items) => format_list(items),
         Value::Tuple(items) => format_tuple(items),
-        Value::Object(fields) => format_object(fields),
         _ => format!("{:?}", value),
     }
 }
@@ -42,12 +41,10 @@ fn format_tuple(items: &[Value]) -> String {
     format!("({})", formatted.join(", "))
 }
 
-/// Format an object (complexity: 5)
-fn format_object(fields: &[(String, Value)]) -> String {
-    let formatted: Vec<String> = fields.iter()
-        .map(|(k, v)| format!("{}: {}", k, format_value(v)))
-        .collect();
-    format!("{{ {} }}", formatted.join(", "))
+/// Format an object (complexity: 2)
+fn format_object() -> String {
+    // Object type not yet implemented in interpreter
+    "{}".to_string()
 }
 
 /// Format an error message (complexity: 3)

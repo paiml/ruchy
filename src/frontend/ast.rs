@@ -647,15 +647,14 @@ pub enum Literal {
 }
 impl Literal {
     /// Convert a REPL Value to a Literal (for synthetic expressions)
-    pub fn from_value(value: &crate::runtime::repl::Value) -> Self {
-        use crate::runtime::repl::Value;
+    pub fn from_value(value: &crate::runtime::interpreter::Value) -> Self {
+        use crate::runtime::interpreter::Value;
         match value {
-            Value::Int(i) => Literal::Integer(*i),
+            Value::Integer(i) => Literal::Integer(*i),
             Value::Float(f) => Literal::Float(*f),
-            Value::String(s) => Literal::String(s.clone()),
+            Value::String(s) => Literal::String(s.to_string()),
             Value::Bool(b) => Literal::Bool(*b),
-            Value::Char(c) => Literal::Char(*c),
-            Value::Unit => Literal::Unit,
+            Value::Nil => Literal::Unit,
             _ => Literal::Unit, // Fallback for complex types
         }
     }

@@ -4,7 +4,7 @@
 //! Complexity: <10 per function (MANDATORY)
 //! Coverage: >95% (MANDATORY)
 
-use crate::runtime::value::Value;
+use crate::runtime::interpreter::Value;
 use std::collections::HashMap;
 
 /// REPL execution state
@@ -144,11 +144,12 @@ mod tests {
     fn test_variable_management() {
         let mut state = ReplState::new();
 
-        state.set_variable("x".to_string(), Value::Int(42));
-        state.set_variable("y".to_string(), Value::String("hello".to_string()));
+        use std::rc::Rc;
+        state.set_variable("x".to_string(), Value::Integer(42));
+        state.set_variable("y".to_string(), Value::String(Rc::new("hello".to_string())));
 
-        assert_eq!(state.get_variable("x"), Some(&Value::Int(42)));
-        assert_eq!(state.get_variable("y"), Some(&Value::String("hello".to_string())));
+        assert_eq!(state.get_variable("x"), Some(&Value::Integer(42)));
+        assert_eq!(state.get_variable("y"), Some(&Value::String(Rc::new("hello".to_string()))));
         assert_eq!(state.get_variable("z"), None);
 
         let names = state.get_variable_names();
@@ -215,7 +216,7 @@ mod tests {
             fn test_variable_names_always_sorted(names in prop::collection::vec("[a-z]+", 0..100)) {
                 let mut state = ReplState::new();
                 for (i, name) in names.iter().enumerate() {
-                    state.set_variable(name.clone(), Value::Int(i as i64));
+                    state.set_variable(name.clone(), Value::Integer(i as i64));
                 }
 
                 let retrieved = state.get_variable_names();

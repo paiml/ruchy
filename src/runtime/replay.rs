@@ -6,7 +6,7 @@ use anyhow::Result;
 use serde::{Serialize, Deserialize};
 use std::collections::{HashMap, BTreeMap};
 use std::time::Instant;
-use crate::runtime::repl::Value;
+use crate::runtime::interpreter::Value;
 // ============================================================================
 // Core Data Structures
 // ============================================================================
