@@ -217,10 +217,16 @@ pub enum Token {
     Use,
     #[token("as")]
     As,
+    #[token("from")]
+    From,
     #[token("module")]
     Module,
     #[token("export")]
     Export,
+    #[token("default")]
+    Default,
+    #[token("class")]
+    Class,
     #[token("df", priority = 2)]
     DataFrame,
     // Identifiers (lower priority than keywords)

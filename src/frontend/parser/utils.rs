@@ -471,18 +471,11 @@ fn parse_type_list(state: &mut ParserState) -> Result<Vec<Type>> {
 /// - Unexpected tokens in import list
 ///
 /// Parse import statement (complexity: 7)
-/// Orchestrates URL and regular import parsing
-pub fn parse_import(state: &mut ParserState) -> Result<Expr> {
-    let start_span = state.tokens.advance().expect("checked by parser logic").1;
-    // Check for URL import first
-    if let Some((Token::String(url), _)) = state.tokens.peek() {
-        let url = url.clone();
-        return parse_url_import(state, &url, start_span);
-    }
-    // Parse regular module import
-    let path_parts = parse_module_path(state)?;
-    let items = parse_import_items(state, &path_parts)?;
-    create_import_expression(path_parts, items, start_span)
+/// NOTE: This is the legacy import parser. New imports are parsed in expressions.rs
+#[allow(dead_code)]
+pub fn parse_import_legacy(state: &mut ParserState) -> Result<Expr> {
+    // Delegate to the new import parser in expressions.rs
+    super::expressions::parse_import_statement(state)
 }
 /// Parse URL import statement (complexity: 6)
 fn parse_url_import(state: &mut ParserState, url: &str, start_span: Span) -> Result<Expr> {
@@ -493,10 +486,11 @@ fn parse_url_import(state: &mut ParserState, url: &str, start_span: Span) -> Res
     // Safety validation for URL imports
     validate_url_import(url)?;
     state.tokens.advance();
+    // URL imports become simple module imports
     Ok(Expr::new(
         ExprKind::Import {
-            path: url.to_string(),
-            items: vec![ImportItem::Named("*".to_string())],
+            module: url.to_string(),
+            items: None,  // URL imports import everything
         },
         start_span,
     ))
@@ -645,13 +639,17 @@ fn parse_simple_import_without_alias(path_parts: &[String]) -> Result<Vec<Import
     }
 }
 /// Create final import expression (complexity: 4)
-fn create_import_expression(path_parts: Vec<String>, items: Vec<ImportItem>, start_span: Span) -> Result<Expr> {
-    let path = path_parts.join("::");
-    // Validate that we have either a path or items
-    if path.is_empty() && items.is_empty() {
-        bail!("Expected import path or items after 'import'");
+fn create_import_expression(path_parts: Vec<String>, _items: Vec<ImportItem>, start_span: Span) -> Result<Expr> {
+    let module = path_parts.join("::");
+    // Validate that we have a module
+    if module.is_empty() {
+        bail!("Expected import path after 'import'");
     }
-    Ok(Expr::new(ExprKind::Import { path, items }, start_span))
+    // Legacy import - convert to simple module import
+    Ok(Expr::new(ExprKind::Import {
+        module,
+        items: None  // Legacy imports use None for now
+    }, start_span))
 }
 /// # Errors
 ///
@@ -1037,41 +1035,65 @@ pub fn parse_module(state: &mut ParserState) -> Result<Expr> {
 /// - Missing closing brace in export block
 pub fn parse_export(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume export
-    let mut items = Vec::new();
-    // Parse export list
+
+    // Check for different export forms
+    // 1. export default ...
+    if matches!(state.tokens.peek(), Some((Token::Default, _))) {
+        state.tokens.advance(); // consume default
+        let expr = super::parse_expr_with_precedence_recursive(state, 0)?;
+        return Ok(Expr::new(ExprKind::ExportDefault {
+            expr: Box::new(expr),
+        }, start_span));
+    }
+
+    // 2. export { item1, item2, ... } from "module" (re-export)
     if matches!(state.tokens.peek(), Some((Token::LeftBrace, _))) {
-        // Export block: export { item1, item2, ... }
         state.tokens.advance(); // consume {
+        let mut items = Vec::new();
         while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
             if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
                 items.push(name.clone());
                 state.tokens.advance();
                 if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
                     state.tokens.advance(); // consume comma
-                } else {
-                    break;
                 }
             } else {
                 bail!("Expected identifier in export list");
             }
         }
         state.tokens.expect(&Token::RightBrace)?;
-    } else if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
-        // Single export: export item
-        items.push(name.clone());
-        state.tokens.advance();
-    } else if matches!(state.tokens.peek(), Some((Token::Fun, _))) {
-        // Export function declaration: export fun name() { ... }
-        let func_expr = super::functions::parse_function_with_visibility(state, true)?;
-        if let ExprKind::Function { name, .. } = &func_expr.kind {
-            items.push(name.clone());
+
+        // Check if this is a re-export
+        if matches!(state.tokens.peek(), Some((Token::From, _))) {
+            state.tokens.advance(); // consume from
+            if let Some((Token::String(module), _)) = state.tokens.peek() {
+                let module = module.clone();
+                state.tokens.advance();
+                return Ok(Expr::new(ExprKind::ReExport {
+                    items,
+                    module,
+                }, start_span));
+            } else {
+                bail!("Expected module path after 'from'");
+            }
+        } else {
+            // Simple export list
+            return Ok(Expr::new(ExprKind::ExportList {
+                names: items,
+            }, start_span));
         }
-        // Return the function expression directly instead of just the export
-        return Ok(func_expr);
-    } else {
-        bail!("Expected export list or identifier after 'export'");
     }
-    Ok(Expr::new(ExprKind::Export { items }, start_span))
+
+    // 3. export function/const/class declaration
+    if matches!(state.tokens.peek(), Some((Token::Fun | Token::Const | Token::Let | Token::Class, _))) {
+        let expr = super::parse_expr_with_precedence_recursive(state, 0)?;
+        return Ok(Expr::new(ExprKind::Export {
+            expr: Box::new(expr),
+            is_default: false,
+        }, start_span));
+    }
+
+    bail!("Invalid export statement")
 }
 
 #[cfg(test)]

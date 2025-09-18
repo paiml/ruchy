@@ -530,16 +530,9 @@ pub enum ExprKind {
         end: Box<Expr>,
         inclusive: bool,
     },
-    Import {
-        path: String,
-        items: Vec<ImportItem>,
-    },
     Module {
         name: String,
         body: Box<Expr>,
-    },
-    Export {
-        items: Vec<String>,
     },
     Break {
         label: Option<String>,
@@ -574,6 +567,39 @@ pub enum ExprKind {
     Extension {
         target_type: String,
         methods: Vec<ImplMethod>,
+    },
+    /// Import statement for modules
+    Import {
+        module: String,
+        items: Option<Vec<String>>,
+    },
+    /// Import all items with an alias (import * as name)
+    ImportAll {
+        module: String,
+        alias: String,
+    },
+    /// Import default export
+    ImportDefault {
+        module: String,
+        name: String,
+    },
+    /// Export a declaration
+    Export {
+        expr: Box<Expr>,
+        is_default: bool,
+    },
+    /// Export a list of identifiers
+    ExportList {
+        names: Vec<String>,
+    },
+    /// Re-export from another module
+    ReExport {
+        items: Vec<String>,
+        module: String,
+    },
+    /// Export default declaration
+    ExportDefault {
+        expr: Box<Expr>,
     },
 }
 /// Literal values that can appear in the source code.

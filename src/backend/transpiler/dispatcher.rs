@@ -362,15 +362,21 @@ impl Transpiler {
             } => self.transpile_let_pattern(pattern, value, body),
             ExprKind::Block(exprs) => self.transpile_block(exprs),
             ExprKind::Pipeline { expr, stages } => self.transpile_pipeline(expr, stages),
-            ExprKind::Import { path, items } => Ok(Self::transpile_import(path, items)),
+            ExprKind::Import { module, items } => Ok(Self::transpile_import(module, items.as_deref())),
+            ExprKind::ImportAll { module, alias } => Ok(Self::transpile_import_all(module, alias)),
+            ExprKind::ImportDefault { module, name } => Ok(Self::transpile_import_default(module, name)),
+            ExprKind::ReExport { items, module } => Ok(Self::transpile_reexport(items, module)),
             ExprKind::Module { name, body } => self.transpile_module(name, body),
             ExprKind::Trait { .. }
             | ExprKind::Impl { .. }
             | ExprKind::Extension { .. }
             | ExprKind::Enum { .. } => self.transpile_type_decl_expr(expr),
-            ExprKind::Break { .. } | ExprKind::Continue { .. } | ExprKind::Return { .. } | ExprKind::Export { .. } => {
+            ExprKind::Break { .. } | ExprKind::Continue { .. } | ExprKind::Return { .. } => {
                 Self::transpile_control_misc_expr(expr)
             }
+            ExprKind::Export { expr, is_default } => Ok(Self::transpile_export(expr, *is_default)),
+            ExprKind::ExportList { names } => Ok(Self::transpile_export_list(names)),
+            ExprKind::ExportDefault { expr } => Ok(Self::transpile_export_default(expr)),
             _ => bail!("Unsupported expression kind: {:?}", expr.kind),
         }
     }
@@ -617,10 +623,10 @@ impl Transpiler {
                     Ok(quote! { return })
                 }
             }
-            ExprKind::Export { items } => {
-                let item_idents: Vec<_> =
-                    items.iter().map(|item| format_ident!("{}", item)).collect();
-                Ok(quote! { pub use { #(#item_idents),* }; })
+            // Export variants are now handled elsewhere
+            ExprKind::Export { .. } | ExprKind::ExportList { .. } => {
+                // These should be handled in the main dispatch
+                Ok(quote! { /* Export handled in main dispatch */ })
             }
             _ => unreachable!(),
         }
