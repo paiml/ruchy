@@ -606,6 +606,11 @@ pub enum ExprKind {
         name: String,
         target_type: Type,
     },
+    /// Macro invocation (e.g., `println!("hello")`)
+    MacroInvocation {
+        name: String,
+        args: Vec<Expr>,
+    },
 }
 /// Literal values that can appear in the source code.
 ///

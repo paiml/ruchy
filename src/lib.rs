@@ -54,6 +54,7 @@ pub mod docs;
 pub mod error_recovery_enhanced;
 pub mod frontend;
 pub mod lints;
+pub mod macros;
 #[cfg(feature = "mcp")]
 pub mod lsp;
 #[cfg(feature = "mcp")]
