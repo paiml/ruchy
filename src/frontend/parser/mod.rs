@@ -55,6 +55,7 @@ mod utils;
 // Re-export the main parser
 pub use core::Parser;
 use crate::frontend::arena::{Arena, StringInterner};
+use std::collections::VecDeque;
 use crate::frontend::ast::{
     Attribute, BinaryOp, Expr, ExprKind, Literal, Param,
     Pattern, PipelineStage, Span, Type, UnaryOp,
@@ -71,6 +72,7 @@ use anyhow::{bail, Result};
 /// - Error collection for diagnostics
 /// - Arena allocator for efficient AST allocation
 /// - String interner for identifier deduplication
+/// - Expression cache for common subexpressions
 ///
 /// The parser state is passed through all parsing functions to maintain
 /// consistency and enable error recovery.
@@ -85,6 +87,9 @@ pub(crate) struct ParserState<'a> {
     /// String interner for deduplicating identifiers and strings.
     #[allow(dead_code)]
     pub interner: StringInterner,
+    /// Small cache for recently parsed expressions (capacity 8)
+    #[allow(dead_code)]
+    pub expr_cache: VecDeque<(usize, Expr)>,
 }
 impl<'a> ParserState<'a> {
     #[must_use]
@@ -94,6 +99,7 @@ impl<'a> ParserState<'a> {
             errors: Vec::new(),
             arena: Arena::new(),
             interner: StringInterner::new(),
+            expr_cache: VecDeque::with_capacity(8),
         }
     }
     /// Get all errors encountered during parsing
