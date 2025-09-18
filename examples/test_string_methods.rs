@@ -1,7 +1,7 @@
 use ruchy::runtime::Repl;
 
 fn main() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     println!("Testing string methods:\n");
     

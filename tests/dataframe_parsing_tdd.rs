@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod dataframe_parsing_tdd {
-    use std::{env, time::Instant;
+    use std::{env, time::Instant};
     
     #[test]
     fn test_df_empty_brackets_should_parse() {

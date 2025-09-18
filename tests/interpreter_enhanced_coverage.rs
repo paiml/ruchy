@@ -5,7 +5,9 @@
 #![allow(clippy::expect_used)]
 
 use ruchy::runtime::interpreter::{Interpreter, Value};
+use std::rc::Rc;
 use ruchy::frontend::Parser;
+use std::rc::Rc;
 
 // Helper to parse and eval
 fn eval(interpreter: &mut Interpreter, input: &str) -> Result<Value, Box<dyn std::error::Error>> {

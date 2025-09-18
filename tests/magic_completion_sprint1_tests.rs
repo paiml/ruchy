@@ -199,7 +199,7 @@ fn test_repl_import_simulation() {
 #[test]
 fn test_repl_debug_mode() {
     use ruchy::runtime::ReplConfig;
-    use std::{env, time::Duration;
+    use std::{env, time::Duration};
 
     let config = ReplConfig {
         max_memory: 1024 * 1024,

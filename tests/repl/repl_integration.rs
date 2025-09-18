@@ -3,7 +3,7 @@
 //! Tests interactive REPL features including metacommands, multiline input, and state persistence
 
 use ruchy::runtime::repl::Repl;
-use std::{env, time::Duration;
+use std::{env, time::Duration};
 
 #[test]
 fn repl_basic_evaluation() {

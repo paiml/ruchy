@@ -7,9 +7,13 @@
 
 /*
 use ruchy::runtime::{Interpreter, Value};
+use std::rc::Rc;
 use ruchy::frontend::ast::{Expr, ExprKind, Literal};
+use std::rc::Rc;
 use ruchy::transpiler::CoreExpr;
+use std::rc::Rc;
 use proptest::prelude::*;
+use std::rc::Rc;
 
 #[cfg(test)]
 mod eval_prim_tdd_tests {
@@ -61,7 +65,7 @@ mod eval_prim_tdd_tests {
         fn test_add_integers() {
             let mut interp = setup_interpreter();
             let result = interp.eval_prim(Prim::Add, vec![int_lit(5), int_lit(3)]);
-            assert_eq!(result, Ok(Value::Int(8)));
+            assert_eq!(result, Ok(Value::Integer(8)));
         }
 
         #[test]
@@ -88,21 +92,21 @@ mod eval_prim_tdd_tests {
         fn test_subtract_integers() {
             let mut interp = setup_interpreter();
             let result = interp.eval_prim(Prim::Sub, vec![int_lit(10), int_lit(3)]);
-            assert_eq!(result, Ok(Value::Int(7)));
+            assert_eq!(result, Ok(Value::Integer(7)));
         }
 
         #[test]
         fn test_multiply_integers() {
             let mut interp = setup_interpreter();
             let result = interp.eval_prim(Prim::Mul, vec![int_lit(4), int_lit(3)]);
-            assert_eq!(result, Ok(Value::Int(12)));
+            assert_eq!(result, Ok(Value::Integer(12)));
         }
 
         #[test]
         fn test_divide_integers() {
             let mut interp = setup_interpreter();
             let result = interp.eval_prim(Prim::Div, vec![int_lit(10), int_lit(3)]);
-            assert_eq!(result, Ok(Value::Int(3)));
+            assert_eq!(result, Ok(Value::Integer(3)));
         }
 
         #[test]
@@ -117,14 +121,14 @@ mod eval_prim_tdd_tests {
         fn test_modulo() {
             let mut interp = setup_interpreter();
             let result = interp.eval_prim(Prim::Mod, vec![int_lit(10), int_lit(3)]);
-            assert_eq!(result, Ok(Value::Int(1)));
+            assert_eq!(result, Ok(Value::Integer(1)));
         }
 
         #[test]
         fn test_power() {
             let mut interp = setup_interpreter();
             let result = interp.eval_prim(Prim::Pow, vec![int_lit(2), int_lit(3)]);
-            assert_eq!(result, Ok(Value::Int(8)));
+            assert_eq!(result, Ok(Value::Integer(8)));
         }
     }
 
@@ -209,14 +213,14 @@ mod eval_prim_tdd_tests {
         fn test_string_concat() {
             let mut interp = setup_interpreter();
             let result = interp.eval_prim(Prim::Concat, vec![string_lit("Hello, "), string_lit("World!")]);
-            assert_eq!(result, Ok(Value::String("Hello, World!".to_string())));
+            assert_eq!(result, Ok(Value::String(Rc::new("Hello, World!".to_string()))));
         }
 
         #[test]
         fn test_string_length() {
             let mut interp = setup_interpreter();
             let result = interp.eval_prim(Prim::Len, vec![string_lit("Hello")]);
-            assert_eq!(result, Ok(Value::Int(5)));
+            assert_eq!(result, Ok(Value::Integer(5)));
         }
     }
 
@@ -277,14 +281,14 @@ mod eval_prim_property_tests {
             
             // (a + b) + c
             let ab = match interp.eval_prim(Prim::Add, vec![int_lit(a as i64), int_lit(b as i64)]) {
-                Ok(Value::Int(n)) => n,
+                Ok(Value::Integer(n)) => n,
                 _ => return Ok(()),
             };
             let result1 = interp.eval_prim(Prim::Add, vec![int_lit(ab), int_lit(c as i64)]);
             
             // a + (b + c)
             let bc = match interp.eval_prim(Prim::Add, vec![int_lit(b as i64), int_lit(c as i64)]) {
-                Ok(Value::Int(n)) => n,
+                Ok(Value::Integer(n)) => n,
                 _ => return Ok(()),
             };
             let result2 = interp.eval_prim(Prim::Add, vec![int_lit(a as i64), int_lit(bc)]);
@@ -299,7 +303,7 @@ mod eval_prim_property_tests {
                 Prim::Mul,
                 vec![int_lit(n as i64), int_lit(0)]
             );
-            prop_assert_eq!(result, Ok(Value::Int(0)));
+            prop_assert_eq!(result, Ok(Value::Integer(0)));
         }
 
         #[test]
@@ -309,7 +313,7 @@ mod eval_prim_property_tests {
                 Prim::Div,
                 vec![int_lit(n as i64), int_lit(1)]
             );
-            prop_assert_eq!(result, Ok(Value::Int(n as i64)));
+            prop_assert_eq!(result, Ok(Value::Integer(n as i64)));
         }
 
         #[test]

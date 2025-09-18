@@ -5,8 +5,11 @@
 //! - All public APIs: 100%
 
 use ruchy::runtime::transaction::*;
+use std::rc::Rc;
 use ruchy::runtime::repl::Value;
+use std::rc::Rc;
 use std::time::Duration;
+use std::rc::Rc;
 
 // ============================================================================
 // Core Data Structure Tests
@@ -91,14 +94,14 @@ fn test_commit_transaction() {
     let mut state = TransactionalState::new(1024 * 1024);
     
     let tx_id = state.begin_transaction(TransactionMetadata::default()).unwrap();
-    state.insert_binding("x".to_string(), Value::Int(42), false);
+    state.insert_binding("x".to_string(), Value::Integer(42), false);
     
     assert_eq!(state.depth(), 1);
     state.commit_transaction(tx_id).unwrap();
     assert_eq!(state.depth(), 0);
     
     // Binding should be preserved after commit
-    assert_eq!(state.bindings().get("x"), Some(&Value::Int(42)));
+    assert_eq!(state.bindings().get("x"), Some(&Value::Integer(42)));
 }
 
 #[test]
@@ -106,21 +109,21 @@ fn test_rollback_transaction() {
     let mut state = TransactionalState::new(1024 * 1024);
     
     // Initial binding
-    state.insert_binding("x".to_string(), Value::Int(10), false);
+    state.insert_binding("x".to_string(), Value::Integer(10), false);
     
     // Begin transaction and modify
     let tx_id = state.begin_transaction(TransactionMetadata::default()).unwrap();
-    state.insert_binding("x".to_string(), Value::Int(20), false);
-    state.insert_binding("y".to_string(), Value::Int(30), false);
+    state.insert_binding("x".to_string(), Value::Integer(20), false);
+    state.insert_binding("y".to_string(), Value::Integer(30), false);
     
-    assert_eq!(state.bindings().get("x"), Some(&Value::Int(20)));
-    assert_eq!(state.bindings().get("y"), Some(&Value::Int(30)));
+    assert_eq!(state.bindings().get("x"), Some(&Value::Integer(20)));
+    assert_eq!(state.bindings().get("y"), Some(&Value::Integer(30)));
     
     // Rollback
     state.rollback_transaction(tx_id).unwrap();
     
     // Should restore original state
-    assert_eq!(state.bindings().get("x"), Some(&Value::Int(10)));
+    assert_eq!(state.bindings().get("x"), Some(&Value::Integer(10)));
     assert!(state.bindings().get("y").is_none());
     assert_eq!(state.depth(), 0);
 }
@@ -129,23 +132,23 @@ fn test_rollback_transaction() {
 fn test_nested_transactions() {
     let mut state = TransactionalState::new(1024 * 1024);
     
-    state.insert_binding("x".to_string(), Value::Int(1), false);
+    state.insert_binding("x".to_string(), Value::Integer(1), false);
     
     let tx1 = state.begin_transaction(TransactionMetadata::default()).unwrap();
-    state.insert_binding("x".to_string(), Value::Int(2), false);
+    state.insert_binding("x".to_string(), Value::Integer(2), false);
     
     let tx2 = state.begin_transaction(TransactionMetadata::default()).unwrap();
-    state.insert_binding("x".to_string(), Value::Int(3), false);
+    state.insert_binding("x".to_string(), Value::Integer(3), false);
     
-    assert_eq!(state.bindings().get("x"), Some(&Value::Int(3)));
+    assert_eq!(state.bindings().get("x"), Some(&Value::Integer(3)));
     
     // Rollback inner transaction
     state.rollback_transaction(tx2).unwrap();
-    assert_eq!(state.bindings().get("x"), Some(&Value::Int(2)));
+    assert_eq!(state.bindings().get("x"), Some(&Value::Integer(2)));
     
     // Commit outer transaction
     state.commit_transaction(tx1).unwrap();
-    assert_eq!(state.bindings().get("x"), Some(&Value::Int(2)));
+    assert_eq!(state.bindings().get("x"), Some(&Value::Integer(2)));
 }
 
 #[test]
@@ -213,11 +216,11 @@ fn test_rollback_wrong_transaction_id() {
 fn test_insert_binding() {
     let mut state = TransactionalState::new(1024 * 1024);
     
-    state.insert_binding("x".to_string(), Value::Int(42), false);
-    state.insert_binding("y".to_string(), Value::String("hello".to_string()), true);
+    state.insert_binding("x".to_string(), Value::Integer(42), false);
+    state.insert_binding("y".to_string(), Value::String(Rc::new("hello".to_string())), true);
     
-    assert_eq!(state.bindings().get("x"), Some(&Value::Int(42)));
-    assert_eq!(state.bindings().get("y"), Some(&Value::String("hello".to_string())));
+    assert_eq!(state.bindings().get("x"), Some(&Value::Integer(42)));
+    assert_eq!(state.bindings().get("y"), Some(&Value::String(Rc::new("hello".to_string()))));
     assert!(!state.is_mutable("x"));
     assert!(state.is_mutable("y"));
 }
@@ -226,8 +229,8 @@ fn test_insert_binding() {
 fn test_binding_mutability() {
     let mut state = TransactionalState::new(1024 * 1024);
     
-    state.insert_binding("immut".to_string(), Value::Int(1), false);
-    state.insert_binding("mut".to_string(), Value::Int(2), true);
+    state.insert_binding("immut".to_string(), Value::Integer(1), false);
+    state.insert_binding("mut".to_string(), Value::Integer(2), true);
     
     assert!(!state.is_mutable("immut"));
     assert!(state.is_mutable("mut"));
@@ -238,21 +241,21 @@ fn test_binding_mutability() {
 fn test_bindings_mut() {
     let mut state = TransactionalState::new(1024 * 1024);
     
-    state.insert_binding("x".to_string(), Value::Int(1), false);
+    state.insert_binding("x".to_string(), Value::Integer(1), false);
     
     // Direct mutation through bindings_mut
-    state.bindings_mut().insert("y".to_string(), Value::Int(2));
+    state.bindings_mut().insert("y".to_string(), Value::Integer(2));
     
-    assert_eq!(state.bindings().get("x"), Some(&Value::Int(1)));
-    assert_eq!(state.bindings().get("y"), Some(&Value::Int(2)));
+    assert_eq!(state.bindings().get("x"), Some(&Value::Integer(1)));
+    assert_eq!(state.bindings().get("y"), Some(&Value::Integer(2)));
 }
 
 #[test]
 fn test_clear_state() {
     let mut state = TransactionalState::new(1024 * 1024);
     
-    state.insert_binding("x".to_string(), Value::Int(1), false);
-    state.insert_binding("y".to_string(), Value::Int(2), true);
+    state.insert_binding("x".to_string(), Value::Integer(1), false);
+    state.insert_binding("y".to_string(), Value::Integer(2), true);
     let _tx = state.begin_transaction(TransactionMetadata::default());
     
     state.clear();
@@ -543,10 +546,10 @@ fn test_mvcc_write_and_read() {
     let mut mvcc = MVCC::new();
     
     let write_version = mvcc.begin_write();
-    mvcc.write("x".to_string(), Value::Int(42), write_version);
+    mvcc.write("x".to_string(), Value::Integer(42), write_version);
     
     let value = mvcc.read("x", write_version);
-    assert_eq!(value, Some(&Value::Int(42)));
+    assert_eq!(value, Some(&Value::Integer(42)));
 }
 
 #[test]
@@ -562,14 +565,14 @@ fn test_mvcc_multiple_versions() {
     let mut mvcc = MVCC::new();
     
     let v1 = mvcc.begin_write();
-    mvcc.write("x".to_string(), Value::Int(1), v1);
+    mvcc.write("x".to_string(), Value::Integer(1), v1);
     
     let v2 = mvcc.begin_write();
-    mvcc.write("x".to_string(), Value::Int(2), v2);
+    mvcc.write("x".to_string(), Value::Integer(2), v2);
     
     // Should be able to read both versions
-    assert_eq!(mvcc.read("x", v1), Some(&Value::Int(1)));
-    assert_eq!(mvcc.read("x", v2), Some(&Value::Int(2)));
+    assert_eq!(mvcc.read("x", v1), Some(&Value::Integer(1)));
+    assert_eq!(mvcc.read("x", v2), Some(&Value::Integer(2)));
 }
 
 #[test]
@@ -580,7 +583,7 @@ fn test_mvcc_garbage_collection() {
     let mut versions = Vec::new();
     for i in 0..15 {
         let v = mvcc.begin_write();
-        mvcc.write("x".to_string(), Value::Int(i), v);
+        mvcc.write("x".to_string(), Value::Integer(i), v);
         versions.push(v);
     }
     
@@ -606,7 +609,7 @@ fn test_transactional_workflow() {
     let mut state = TransactionalState::new(1024 * 1024);
     
     // Initial state
-    state.insert_binding("counter".to_string(), Value::Int(0), true);
+    state.insert_binding("counter".to_string(), Value::Integer(0), true);
     
     // Transaction 1: Increment counter
     let tx1 = state.begin_transaction(TransactionMetadata {
@@ -614,10 +617,10 @@ fn test_transactional_workflow() {
         ..Default::default()
     }).unwrap();
     
-    state.insert_binding("counter".to_string(), Value::Int(1), true);
+    state.insert_binding("counter".to_string(), Value::Integer(1), true);
     state.commit_transaction(tx1).unwrap();
     
-    assert_eq!(state.bindings().get("counter"), Some(&Value::Int(1)));
+    assert_eq!(state.bindings().get("counter"), Some(&Value::Integer(1)));
     
     // Transaction 2: Try increment but rollback
     let tx2 = state.begin_transaction(TransactionMetadata {
@@ -625,13 +628,13 @@ fn test_transactional_workflow() {
         ..Default::default()
     }).unwrap();
     
-    state.insert_binding("counter".to_string(), Value::Int(2), true);
-    state.insert_binding("temp".to_string(), Value::String("test".to_string()), false);
+    state.insert_binding("counter".to_string(), Value::Integer(2), true);
+    state.insert_binding("temp".to_string(), Value::String(Rc::new("test".to_string())), false);
     
     state.rollback_transaction(tx2).unwrap();
     
     // Should be back to committed state
-    assert_eq!(state.bindings().get("counter"), Some(&Value::Int(1)));
+    assert_eq!(state.bindings().get("counter"), Some(&Value::Integer(1)));
     assert!(state.bindings().get("temp").is_none());
 }
 
@@ -639,7 +642,7 @@ fn test_transactional_workflow() {
 fn test_speculative_evaluation() {
     let mut state = TransactionalState::new(1024 * 1024);
     
-    state.insert_binding("x".to_string(), Value::Int(10), false);
+    state.insert_binding("x".to_string(), Value::Integer(10), false);
     
     // Begin speculative transaction
     let tx = state.begin_transaction(TransactionMetadata {
@@ -649,17 +652,17 @@ fn test_speculative_evaluation() {
     }).unwrap();
     
     // Speculative changes
-    state.insert_binding("x".to_string(), Value::Int(20), false);
-    state.insert_binding("y".to_string(), Value::Int(30), false);
+    state.insert_binding("x".to_string(), Value::Integer(20), false);
+    state.insert_binding("y".to_string(), Value::Integer(30), false);
     
     // Check speculative state
-    assert_eq!(state.bindings().get("x"), Some(&Value::Int(20)));
-    assert_eq!(state.bindings().get("y"), Some(&Value::Int(30)));
+    assert_eq!(state.bindings().get("x"), Some(&Value::Integer(20)));
+    assert_eq!(state.bindings().get("y"), Some(&Value::Integer(30)));
     
     // Rollback speculation
     state.rollback_transaction(tx).unwrap();
     
     // Back to original
-    assert_eq!(state.bindings().get("x"), Some(&Value::Int(10)));
+    assert_eq!(state.bindings().get("x"), Some(&Value::Integer(10)));
     assert!(state.bindings().get("y").is_none());
 }

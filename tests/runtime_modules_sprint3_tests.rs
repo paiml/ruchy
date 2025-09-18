@@ -3,7 +3,7 @@
 
 use ruchy::runtime::{Repl, ReplConfig};
 use ruchy::runtime::repl::Value;
-use std::{env, time::Duration;
+use std::{env, time::Duration};
 
 // Transaction tests
 
@@ -229,7 +229,7 @@ fn test_bindings_management() {
 
     // Modify bindings directly
     let bindings_mut = repl.get_bindings_mut();
-    bindings_mut.insert("d".to_string(), Value::Int(4));
+    bindings_mut.insert("d".to_string(), Value::Integer(4));
 
     assert_eq!(repl.eval("d").unwrap(), "4");
 

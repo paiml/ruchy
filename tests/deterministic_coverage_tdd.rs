@@ -4,7 +4,7 @@
 use ruchy::runtime::deterministic::{MockTime, DeterministicRng};
 use ruchy::runtime::repl::Repl;
 use ruchy::runtime::replay::{DeterministicRepl, StateCheckpoint, ResourceUsage, Divergence};
-use std::{env, collections::HashMap;
+use std::{env, collections::HashMap};
 
 #[test]
 fn test_mock_time_new() {

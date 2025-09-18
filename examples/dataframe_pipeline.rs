@@ -9,7 +9,7 @@ use ruchy::runtime::Repl;
 fn main() -> Result<()> {
     println!("DataFrame Pipeline Example\n");
 
-    let mut repl = Repl::new()?;
+    let mut repl = Repl::new(std::env::temp_dir())?;
 
     // Create sample sales data
     println!("1. Creating sales DataFrame:");

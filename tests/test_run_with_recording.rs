@@ -81,7 +81,7 @@ mod property_tests {
 /// 
 /// ```no_run
 /// use ruchy::runtime::repl::Repl;
-/// use std::{env, path::Path;
+/// use std::{env, path::Path};
 /// 
 /// let mut repl = Repl::new(std::env::temp_dir()).unwrap();
 /// let record_file = Path::new("session.replay");

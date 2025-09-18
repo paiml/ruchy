@@ -200,7 +200,7 @@ mod regression_prevention {
         
         let mut completer = RuchyCompleter::new();
         let mut bindings = HashMap::new();
-        bindings.insert("test_var".to_string(), ruchy::runtime::repl::Value::Int(42));
+        bindings.insert("test_var".to_string(), ruchy::runtime::repl::Value::Integer(42));
         
         // Test builtin completions
         let completions = completer.get_completions("prin", 4, &bindings);

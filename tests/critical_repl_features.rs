@@ -8,8 +8,11 @@
 #![allow(clippy::unwrap_used)]
 
 use ruchy::runtime::repl::Repl;
+use std::rc::Rc;
 use ruchy::runtime::Value;
+use std::rc::Rc;
 use std::{env, time::{Duration, Instant};
+use std::rc::Rc;
 
 #[test]
 fn test_one_liner_execution() {
@@ -17,7 +20,7 @@ fn test_one_liner_execution() {
     let deadline = Some(Instant::now() + Duration::from_secs(1));
 
     let result = repl.evaluate_expr_str("2 + 2", deadline).unwrap();
-    assert_eq!(result, Value::Int(4));
+    assert_eq!(result, Value::Integer(4));
 }
 
 #[test]
@@ -31,7 +34,7 @@ fn test_function_definition_and_call() {
 
     // Call function
     let result = repl.evaluate_expr_str("add(5, 3)", deadline).unwrap();
-    assert_eq!(result, Value::Int(8));
+    assert_eq!(result, Value::Integer(8));
 }
 
 #[test]
@@ -45,7 +48,7 @@ fn test_match_expressions() {
             deadline,
         )
         .unwrap();
-    assert_eq!(result, Value::String("two".to_string()));
+    assert_eq!(result, Value::String(Rc::new("two".to_string())));
 }
 
 #[test]
@@ -56,7 +59,7 @@ fn test_block_returns_last_value() {
     let result = repl
         .evaluate_expr_str("{ let a = 5; let b = 10; a + b }", deadline)
         .unwrap();
-    assert_eq!(result, Value::Int(15));
+    assert_eq!(result, Value::Integer(15));
 }
 
 #[test]
@@ -80,7 +83,7 @@ fn test_while_loops() {
     repl.evaluate_expr_str("while x < 3 { x = x + 1 }", deadline)
         .unwrap();
     let result = repl.evaluate_expr_str("x", deadline).unwrap();
-    assert_eq!(result, Value::Int(3));
+    assert_eq!(result, Value::Integer(3));
 }
 
 #[test]
@@ -93,7 +96,7 @@ fn test_string_interpolation() {
     let result = repl
         .evaluate_expr_str(r#"f"Hello {name}""#, deadline)
         .unwrap();
-    assert_eq!(result, Value::String("Hello World".to_string()));
+    assert_eq!(result, Value::String(Rc::new("Hello World".to_string())));
 }
 
 #[test]
@@ -104,7 +107,7 @@ fn test_list_display() {
     let result = repl.evaluate_expr_str("[1, 2, 3]", deadline).unwrap();
     assert_eq!(
         result,
-        Value::List(vec![Value::Int(1), Value::Int(2), Value::Int(3)])
+        Value::List(vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)])
     );
 }
 
@@ -116,7 +119,7 @@ fn test_variable_persistence() {
     repl.evaluate_expr_str("let x = 42", deadline).unwrap();
     repl.evaluate_expr_str("let y = 58", deadline).unwrap();
     let result = repl.evaluate_expr_str("x + y", deadline).unwrap();
-    assert_eq!(result, Value::Int(100));
+    assert_eq!(result, Value::Integer(100));
 }
 
 #[test]
@@ -132,5 +135,5 @@ fn test_nested_functions() {
     )
     .unwrap();
     let result = repl.evaluate_expr_str("quadruple(5)", deadline).unwrap();
-    assert_eq!(result, Value::Int(20));
+    assert_eq!(result, Value::Integer(20));
 }

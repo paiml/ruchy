@@ -18,7 +18,7 @@ fn main() {
     println!("Reference Operator Demo");
     println!("=======================\n");
 
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
 
     run_demo(&mut repl, "Basic reference", "&42");
     run_demo(&mut repl, "Reference to sum", "&(10 + 20)");

@@ -11,8 +11,7 @@
 use ruchy::backend::transpiler::Transpiler;
 use ruchy::frontend::parser::Parser;
 use ruchy::runtime::repl::Repl;
-use std::{env, fs;
-use std::{env, process::Command;
+use std::{env, fs, process::Command};
 use tempfile::TempDir;
 
 #[test]
@@ -344,7 +343,7 @@ fn test_error_recovery() {
 
 #[test]
 fn test_large_file_handling() {
-    use std::{env, fmt::Write;
+    use std::{env, fmt::Write};
     // Generate a large input file
     let mut large_input = String::new();
     for i in 0..1000 {

@@ -4,7 +4,9 @@
 #![allow(warnings)] // Test file
 
 use ruchy::runtime::repl::{Repl, ReplConfig, Value};
-use std::{env, time::{Duration, Instant};
+use std::rc::Rc;
+use std::{env, time::{Duration, Instant}};
+use std::rc::Rc;
 
 /// Test basic REPL creation and configuration
 #[test]
@@ -31,12 +33,12 @@ fn test_evaluate_expr_str() {
     
     // Simple arithmetic
     let result = repl.evaluate_expr_str("2 + 3", None).unwrap();
-    assert_eq!(result, Value::Int(5));
+    assert_eq!(result, Value::Integer(5));
     
     // With deadline
     let deadline = Some(Instant::now() + Duration::from_secs(1));
     let result = repl.evaluate_expr_str("5 * 6", deadline).unwrap();
-    assert_eq!(result, Value::Int(30));
+    assert_eq!(result, Value::Integer(30));
     
     // String expression
     let result = repl.evaluate_expr_str("\"hello\"", None).unwrap();
@@ -346,11 +348,11 @@ fn test_deadline_handling() {
     // Reasonable deadline
     let deadline = Some(Instant::now() + Duration::from_secs(1));
     let result = repl.evaluate_expr_str("2 + 2", deadline).unwrap();
-    assert_eq!(result, Value::Int(4));
+    assert_eq!(result, Value::Integer(4));
     
     // No deadline
     let result = repl.evaluate_expr_str("3 + 3", None).unwrap();
-    assert_eq!(result, Value::Int(6));
+    assert_eq!(result, Value::Integer(6));
 }
 
 /// Test string interpolation
@@ -395,6 +397,6 @@ fn test_imports() {
     let _result = repl.eval("import { sqrt } from \"math\"");
     // May or may not be supported
     
-    let _result = repl.eval("use std::{env, collections::HashMap");
+    let _result = repl.eval("use std::{env, collections::HashMap}");
     // May or may not be supported
 }

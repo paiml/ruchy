@@ -3,7 +3,7 @@
 
 use proptest::prelude::*;
 use ruchy::runtime::{Repl, Value};
-use std::{env, time::Duration;
+use std::{env, time::Duration};
 
 // PROP-001: Property tests with 10,000+ iterations
 
