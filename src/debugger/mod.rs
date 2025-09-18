@@ -408,3 +408,114 @@ impl Breakpoint {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_debugger_new() {
+        let debugger = Debugger::new();
+        assert!(!debugger.is_running());
+        assert!(!debugger.is_paused());
+        assert_eq!(debugger.breakpoint_count(), 0);
+    }
+
+    #[test]
+    fn test_breakpoint_at_line() {
+        let bp = Breakpoint::at_line("test.rs", 10);
+        assert_eq!(bp.file, "test.rs");
+        assert_eq!(bp.line, 10);
+        assert!(bp.condition.is_none());
+    }
+
+    #[test]
+    fn test_breakpoint_conditional() {
+        let bp = Breakpoint::conditional("test.rs", 20, "x > 5");
+        assert_eq!(bp.condition, Some("x > 5".to_string()));
+    }
+
+    #[test]
+    fn test_breakpoint_with_hit_count() {
+        let bp = Breakpoint::with_hit_count("test.rs", 30, 5);
+        assert_eq!(bp.hit_count_target, Some(5));
+    }
+
+    #[test]
+    fn test_debugger_add_breakpoint() {
+        let mut debugger = Debugger::new();
+        let bp = Breakpoint::at_line("test.rs", 10);
+        let id = debugger.add_breakpoint(bp);
+        assert_eq!(id, 0);
+        assert_eq!(debugger.breakpoint_count(), 1);
+    }
+
+    #[test]
+    fn test_debugger_remove_breakpoint() {
+        let mut debugger = Debugger::new();
+        let bp = Breakpoint::at_line("test.rs", 10);
+        let id = debugger.add_breakpoint(bp);
+        debugger.remove_breakpoint(id);
+        assert_eq!(debugger.breakpoint_count(), 0);
+    }
+
+    #[test]
+    fn test_debugger_has_breakpoint_at() {
+        let mut debugger = Debugger::new();
+        let bp = Breakpoint::at_line("test.rs", 10);
+        debugger.add_breakpoint(bp);
+        assert!(debugger.has_breakpoint_at("test.rs", 10));
+        assert!(!debugger.has_breakpoint_at("test.rs", 20));
+    }
+
+    #[test]
+    fn test_debugger_step_operations() {
+        let mut debugger = Debugger::new();
+        debugger.step_over();
+        debugger.step_into();
+        debugger.step_out();
+        debugger.continue_execution();
+        // Operations should not panic
+    }
+
+    #[test]
+    fn test_debugger_watch() {
+        let mut debugger = Debugger::new();
+        let id = debugger.add_watch("x");
+        assert_eq!(id, 0);
+        assert_eq!(debugger.watch_count(), 1);
+        debugger.remove_watch(id);
+        assert_eq!(debugger.watch_count(), 0);
+    }
+
+    #[test]
+    fn test_debugger_events() {
+        let debugger = Debugger::new();
+        let events = debugger.get_events();
+        assert_eq!(events.len(), 0);
+    }
+
+    #[test]
+    fn test_line_to_offset() {
+        let debugger = Debugger::new();
+        let source = "line1\nline2\nline3";
+        let offset = debugger.line_to_offset(source, 2);
+        assert_eq!(offset, 6);
+    }
+
+    #[test]
+    fn test_offset_to_line() {
+        let debugger = Debugger::new();
+        let source = "line1\nline2\nline3";
+        let line = debugger.offset_to_line(source, 7);
+        assert_eq!(line, 2);
+    }
+
+    #[test]
+    fn test_get_source_context() {
+        let debugger = Debugger::new();
+        let source = "line1\nline2\nline3\nline4\nline5";
+        let context = debugger.get_source_context(source, 3, 1);
+        assert_eq!(context.len(), 3);
+    }
+}
