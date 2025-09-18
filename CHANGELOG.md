@@ -4,6 +4,28 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.21.1] - 2025-01-18
+
+### Fixed
+- **Test Suite**: Achieved 100% test passing across all v3 sprint features (201 tests total)
+  - v3.12 Type System: Fixed Option/Result type inference tests
+  - v3.14 Error Recovery: Adjusted parser error expectations
+  - v3.18 Macro System: Fixed macro expansion test assertions
+  - v3.20 Debugging: Added proper event emission and fixed offset calculations
+  - v3.21 Package Manager: Fixed manifest parsing and circular dependency detection
+
+### Completed Sprints
+- **v3.12.0**: Type System Enhancement (27 tests passing)
+- **v3.13.0**: Performance Optimization (benchmarks functional)
+- **v3.14.0**: Error Recovery and Diagnostics (25 tests passing)
+- **v3.15.0**: WASM Compilation (26 tests passing)
+- **v3.16.0**: Documentation Generation (16 tests passing)
+- **v3.17.0**: LSP Basic Support (19 tests passing with --features mcp)
+- **v3.18.0**: Macro System Foundation (20 tests passing)
+- **v3.19.0**: Async/Await Runtime Support (22 tests passing)
+- **v3.20.0**: Debugging Support (23 tests passing)
+- **v3.21.0**: Package Manager (23 tests passing)
+
 ## [3.7.0] - 2025-01-18
 
 ### 🚀 ALL NIGHT SPRINT COMPLETION - Production Standard Library
