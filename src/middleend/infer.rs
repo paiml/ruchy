@@ -923,6 +923,11 @@ pub fn infer_method_call(
                 self.env = self.env.extend(name, TypeScheme::mono(expected_ty.clone()));
                 Ok(())
             }
+            Pattern::AtBinding { name, pattern } => {
+                // @ bindings bind the name to the matched value and also match the pattern
+                self.env = self.env.extend(name, TypeScheme::mono(expected_ty.clone()));
+                self.infer_pattern(pattern, expected_ty)
+            }
             Pattern::WithDefault { pattern, .. } => {
                 // For default patterns, we check the inner pattern with the expected type
                 // The default value will be used if the actual value doesn't match

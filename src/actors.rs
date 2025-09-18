@@ -296,8 +296,6 @@ impl<A: Actor> Supervisor<A> {
 mod tests {
     use super::*;
     use tokio;
-#[cfg(test)]
-use proptest::prelude::*;
     #[derive(Debug, Clone, Serialize, Deserialize)]
     struct TestMessage {
         content: String,
