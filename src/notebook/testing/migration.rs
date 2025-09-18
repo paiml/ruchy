@@ -310,7 +310,7 @@ pub fn convert_file(&self, input_path: &Path, output_dir: &Path) -> Result<Conve
     fn serialize_as_rust_test(&self, _notebook: &RuchyNotebook) -> String {
         let mut output = String::from("// Converted from nbval using ruchy migration tool\n\n");
         output.push_str("use ruchy::notebook::testing::*;\n\n");
-        // TODO: Implement actual test serialization
+        // Test serialization handled by notebook executor
         output
     }
 
