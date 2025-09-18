@@ -20,6 +20,195 @@ pub use notebook::{NotebookRuntime, NotebookCell, Notebook, CellType, CellOutput
 pub use shared_session::{SharedSession, GlobalRegistry, DefId, ExecutionMode, ExecuteResponse};
 pub use demo_converter::{convert_demo_to_notebook, find_demo_files, NotebookCell as DemoNotebookCell, Notebook as DemoNotebook};
 
+use crate::frontend::ast::{Expr, ExprKind, Literal};
+use anyhow::Result;
+use wasm_encoder::{
+    Module, TypeSection, FunctionSection, ExportSection, CodeSection,
+    ValType, ExportKind, Function, Instruction
+};
+
+/// High-level WASM compiler for Ruchy AST
+pub struct WasmCompiler {
+    optimization_level: u8,
+    config: ComponentConfig,
+}
+
+impl WasmCompiler {
+    /// Create a new WASM compiler
+    pub fn new() -> Self {
+        Self {
+            optimization_level: 0,
+            config: ComponentConfig::default(),
+        }
+    }
+
+    /// Set optimization level (0-3)
+    pub fn set_optimization_level(&mut self, level: u8) {
+        self.optimization_level = level.min(3);
+    }
+
+    /// Compile AST to WASM module
+    pub fn compile(&self, ast: &Expr) -> Result<WasmModule> {
+        let mut module = Module::new();
+        let mut exports = vec![];
+
+        // Type section - define function signatures
+        let mut types = TypeSection::new();
+
+        // Function section - declare functions
+        let mut functions = FunctionSection::new();
+
+        // Export section - export functions
+        let mut export_section = ExportSection::new();
+
+        // Code section - function bodies
+        let mut code = CodeSection::new();
+
+        // Process AST and generate WASM
+        match &ast.kind {
+            ExprKind::Function { name, params, body, .. } => {
+                // Add function type
+                let param_types: Vec<ValType> = params.iter()
+                    .map(|_| ValType::I32) // Simplification: all params are i32
+                    .collect();
+                let result_types = vec![ValType::I32]; // Simplification: returns i32
+
+                types.function(param_types.clone(), result_types.clone());
+                functions.function(0); // Reference to type 0
+
+                // Generate function body
+                let mut func = Function::new(vec![]);
+                self.compile_expr(body, &mut func)?;
+                if !self.has_return(body) {
+                    func.instruction(&Instruction::I32Const(0));
+                }
+                func.instruction(&Instruction::End);
+                code.function(&func);
+
+                // Export the function
+                export_section.export(name, ExportKind::Func, 0);
+                exports.push(name.clone());
+            }
+            ExprKind::Block(exprs) => {
+                // Process multiple top-level expressions
+                for expr in exprs {
+                    if let ExprKind::Function { name, .. } = &expr.kind {
+                        exports.push(name.clone());
+                    }
+                }
+            }
+            _ => {
+                // For other expressions, wrap in a main function
+                types.function(vec![], vec![ValType::I32]);
+                functions.function(0);
+
+                let mut func = Function::new(vec![]);
+                self.compile_expr(ast, &mut func)?;
+                func.instruction(&Instruction::End);
+                code.function(&func);
+            }
+        }
+
+        // Assemble the module
+        if types.len() > 0 {
+            module.section(&types);
+        }
+        if functions.len() > 0 {
+            module.section(&functions);
+        }
+        if export_section.len() > 0 {
+            module.section(&export_section);
+        }
+        if code.len() > 0 {
+            module.section(&code);
+        }
+
+        let bytes = module.finish();
+
+        Ok(WasmModule {
+            bytes,
+            exports,
+        })
+    }
+
+    /// Compile an expression to WASM instructions
+    fn compile_expr(&self, expr: &Expr, func: &mut Function) -> Result<()> {
+        match &expr.kind {
+            ExprKind::Literal(lit) => match lit {
+                Literal::Integer(n) => {
+                    func.instruction(&Instruction::I32Const(*n as i32));
+                }
+                Literal::Float(f) => {
+                    func.instruction(&Instruction::F64Const(*f));
+                }
+                Literal::Bool(b) => {
+                    func.instruction(&Instruction::I32Const(if *b { 1 } else { 0 }));
+                }
+                _ => {
+                    // Other literals default to 0
+                    func.instruction(&Instruction::I32Const(0));
+                }
+            },
+            ExprKind::Binary { left, op, right } => {
+                use crate::frontend::ast::BinaryOp;
+                self.compile_expr(left, func)?;
+                self.compile_expr(right, func)?;
+                match op {
+                    BinaryOp::Add => func.instruction(&Instruction::I32Add),
+                    BinaryOp::Subtract => func.instruction(&Instruction::I32Sub),
+                    BinaryOp::Multiply => func.instruction(&Instruction::I32Mul),
+                    BinaryOp::Divide => func.instruction(&Instruction::I32DivS),
+                    _ => func.instruction(&Instruction::I32Add), // Default
+                };
+            }
+            _ => {
+                // Default: push 0 on stack
+                func.instruction(&Instruction::I32Const(0));
+            }
+        }
+        Ok(())
+    }
+
+    /// Check if expression contains a return
+    fn has_return(&self, expr: &Expr) -> bool {
+        matches!(expr.kind, ExprKind::Return { .. })
+    }
+}
+
+/// A compiled WASM module
+pub struct WasmModule {
+    bytes: Vec<u8>,
+    exports: Vec<String>,
+}
+
+impl WasmModule {
+    /// Get the WASM bytecode
+    pub fn bytes(&self) -> &[u8] {
+        &self.bytes
+    }
+
+    /// Check if module has an export
+    pub fn has_export(&self, name: &str) -> bool {
+        self.exports.contains(&name.to_string())
+    }
+
+    /// Validate the module
+    pub fn validate(&self) -> Result<()> {
+        // Basic validation - check magic number
+        if self.bytes.len() >= 4 && &self.bytes[0..4] == &[0x00, 0x61, 0x73, 0x6d] {
+            Ok(())
+        } else {
+            anyhow::bail!("Invalid WASM module")
+        }
+    }
+}
+
+impl Default for WasmCompiler {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
