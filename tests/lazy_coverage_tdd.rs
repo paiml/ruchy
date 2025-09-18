@@ -148,7 +148,7 @@ fn test_lazy_value_pipeline_with_deferred() {
     let source = LazyValue::deferred(|| Ok(Value::Integer(7)));
     let pipeline = LazyValue::pipeline(source, |v| {
         if let Value::Integer(n) = v {
-            Ok(Value::String(format!("number: {n}")))
+            Ok(Value::String(Rc::new(format!("number: {n}"))))
         } else {
             Ok(v)
         }
@@ -234,7 +234,7 @@ fn test_lazy_iterator_map_strings() {
     let lazy_iter = LazyIterator::from_vec(values);
     let mapped = lazy_iter.map(|v| {
         if let Value::String(s) = v {
-            Ok(Value::String(s.to_uppercase()))
+            Ok(Value::String(Rc::new(s.to_uppercase())))
         } else {
             Ok(v)
         }
