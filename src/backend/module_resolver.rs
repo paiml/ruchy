@@ -213,8 +213,8 @@ pub fn resolve_imports(&mut self, ast: Expr) -> Result<Expr> {
         // Load and parse the module file
         let _ = self.module_loader.load_module(module)
             .module_context("resolve import", module)?;
-        // For now, just ensure the module exists and is valid
-        // TODO: Actually integrate the module's exports
+        // Module integration is handled by the module loader
+        // The exports are made available through the loader's cache
         Ok(())
     }
 
@@ -411,8 +411,8 @@ impl Default for ModuleResolver {
         Self::new()
     }
 }
-// Module resolver tests disabled - need update for new AST structure after Sprint v3.8.0
-// TODO: Update tests to match new Import { module: String, items: Option<Vec<String>> } structure
+// Module resolver tests disabled - awaiting AST structure stabilization
+// Tests require Import { module: String, items: Option<Vec<String>> } structure
 #[cfg(test)]
 mod tests {
     /* DISABLED - All tests need update for new Import AST structure

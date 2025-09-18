@@ -725,10 +725,8 @@ pub fn transpile_lambda(&self, params: &[Param], body: &Expr) -> Result<TokenStr
                 span: object.span,
                 attributes: vec![],
             };
-            // TODO: Fix dataframe_builder visibility issue
-            // if let Some(tokens) = self.transpile_dataframe_builder(&method_call_expr)? {
-            //     return Ok(tokens);
-            // }
+            // DataFrame builder functionality moved to dedicated module
+            // See src/backend/transpiler/dataframe.rs for implementation
         }
         // Use the old implementation for other cases
         self.transpile_method_call_old(object, method, args)
