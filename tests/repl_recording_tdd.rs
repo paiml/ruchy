@@ -9,7 +9,7 @@ mod repl_recording_tdd {
         let temp_dir = TempDir::new().expect("Failed to create temp directory");
         let record_path = temp_dir.path().join("test_session.replay");
         
-        let mut repl = Repl::new().expect("Failed to create REPL");
+        let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
         
         // This should create a .replay file when recording is enabled
         // For now, just test that the method exists and doesn't panic
@@ -30,7 +30,7 @@ mod repl_recording_tdd {
         let temp_dir = TempDir::new().expect("Failed to create temp directory");
         let record_path = temp_dir.path().join("test.replay");
         
-        let mut repl = Repl::new().expect("Failed to create REPL");
+        let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
         
         // This should fail because run_with_recording_refactored doesn't exist yet
         let result = repl.run_with_recording(&record_path);
@@ -45,7 +45,7 @@ mod repl_recording_tdd {
         // RED: This test should fail because SessionRecorder uses hardcoded seed of 0
         
         use ruchy::runtime::replay::{SessionRecorder, SessionMetadata};
-        use std::time::SystemTime;
+        use std::{env, time::SystemTime;
         
         // Create metadata for two sessions
         let metadata1 = SessionMetadata {
@@ -151,7 +151,7 @@ mod repl_recording_tdd {
     #[ignore = "Integration test - run with --ignored flag"]
     fn test_actual_repl_recording_generates_nonzero_seed() {
         // RED: Test that actual REPL recording generates non-zero seed
-        use std::process::Command;
+        use std::{env, process::Command;
         use tempfile::TempDir;
         
         let temp_dir = TempDir::new().expect("Failed to create temp directory");

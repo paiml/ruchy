@@ -4,14 +4,14 @@
 
 use ruchy::runtime::{Repl, ReplConfig, ReplState, Value};
 use ruchy::frontend::ast::{Expr, ExprKind, Literal, Span};
-use std::collections::{HashMap, HashSet};
-use std::time::{Duration, Instant};
+use std::{env, collections::{HashMap, HashSet};
+use std::{env, time::{Duration, Instant};
 
 // REPL-001: Core REPL loop with 50+ test cases
 
 #[test]
 fn test_repl_new_creation() {
-    let repl = Repl::new();
+    let repl = Repl::new(std::env::temp_dir());
     assert!(repl.is_ok());
     let repl = repl.unwrap();
     assert_eq!(repl.get_mode(), "normal");
@@ -39,7 +39,7 @@ fn test_repl_sandboxed_mode() {
 
 #[test]
 fn test_repl_memory_tracking() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     let initial_memory = repl.memory_used();
     assert_eq!(initial_memory, 0);
 
@@ -54,20 +54,20 @@ fn test_repl_memory_tracking() {
 
 #[test]
 fn test_repl_memory_pressure() {
-    let repl = Repl::new().unwrap();
+    let repl = Repl::new(std::env::temp_dir()).unwrap();
     let pressure = repl.memory_pressure();
     assert!(pressure >= 0.0 && pressure <= 1.0);
 }
 
 #[test]
 fn test_repl_can_accept_input() {
-    let repl = Repl::new().unwrap();
+    let repl = Repl::new(std::env::temp_dir()).unwrap();
     assert!(repl.can_accept_input());
 }
 
 #[test]
 fn test_repl_bindings_valid() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     assert!(repl.bindings_valid());
 
     repl.eval("let x = 42").unwrap();
@@ -76,7 +76,7 @@ fn test_repl_bindings_valid() {
 
 #[test]
 fn test_repl_state_transitions() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     // State is ready after initialization
 
     // Test state after successful evaluation
@@ -86,7 +86,7 @@ fn test_repl_state_transitions() {
 
 #[test]
 fn test_repl_failed_state_recovery() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
 
     // Force a failure
     let result = repl.eval("undefined_variable");
@@ -103,7 +103,7 @@ fn test_repl_failed_state_recovery() {
 
 #[test]
 fn test_repl_checkpoint_and_restore() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
 
     // Create initial state
     repl.eval("let x = 10").unwrap();
@@ -130,7 +130,7 @@ fn test_repl_checkpoint_and_restore() {
 
 #[test]
 fn test_repl_eval_bounded() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     let result = repl.eval_bounded(
         "1 + 2 + 3",
         1024 * 1024, // 1MB memory limit
@@ -142,7 +142,7 @@ fn test_repl_eval_bounded() {
 
 #[test]
 fn test_repl_eval_bounded_timeout() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     let result = repl.eval_bounded(
         "let x = 1",
         1024 * 1024,
@@ -155,7 +155,7 @@ fn test_repl_eval_bounded_timeout() {
 
 #[test]
 fn test_repl_evaluate_expr_str() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     let deadline = Some(Instant::now() + Duration::from_millis(100));
 
     let value = repl.evaluate_expr_str("5 * 5", deadline);
@@ -165,7 +165,7 @@ fn test_repl_evaluate_expr_str() {
 
 #[test]
 fn test_repl_eval_transactional() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
 
     // Set initial state
     repl.eval("let x = 10").unwrap();
@@ -182,7 +182,7 @@ fn test_repl_eval_transactional() {
 
 #[test]
 fn test_repl_clear_bindings() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
 
     repl.eval("let x = 1").unwrap();
     repl.eval("let y = 2").unwrap();
@@ -195,7 +195,7 @@ fn test_repl_clear_bindings() {
 
 #[test]
 fn test_repl_get_bindings_mut() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
 
     repl.eval("let x = 42").unwrap();
 
@@ -210,7 +210,7 @@ fn test_repl_get_bindings_mut() {
 
 #[test]
 fn test_repl_result_history_len() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
 
     assert_eq!(repl.result_history_len(), 0);
 
@@ -223,7 +223,7 @@ fn test_repl_result_history_len() {
 
 #[test]
 fn test_repl_get_last_error() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
 
     assert!(repl.get_last_error().is_none());
 
@@ -411,7 +411,7 @@ fn test_value_enum_variant_no_data() {
 
 #[test]
 fn test_repl_integer_arithmetic() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
 
     assert_eq!(repl.eval("5 + 3").unwrap(), "8");
     assert_eq!(repl.eval("10 - 4").unwrap(), "6");
@@ -422,7 +422,7 @@ fn test_repl_integer_arithmetic() {
 
 #[test]
 fn test_repl_float_arithmetic() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
 
     assert_eq!(repl.eval("3.5 + 1.5").unwrap(), "5.0");
     assert_eq!(repl.eval("10.0 - 2.5").unwrap(), "7.5");
@@ -432,7 +432,7 @@ fn test_repl_float_arithmetic() {
 
 #[test]
 fn test_repl_mixed_arithmetic() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
 
     // Integer promoted to float
     assert_eq!(repl.eval("5 + 2.5").unwrap(), "7.5");
@@ -441,7 +441,7 @@ fn test_repl_mixed_arithmetic() {
 
 #[test]
 fn test_repl_comparison_operators() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
 
     assert_eq!(repl.eval("5 > 3").unwrap(), "true");
     assert_eq!(repl.eval("3 < 5").unwrap(), "true");
@@ -453,7 +453,7 @@ fn test_repl_comparison_operators() {
 
 #[test]
 fn test_repl_logical_operators() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
 
     assert_eq!(repl.eval("true && true").unwrap(), "true");
     assert_eq!(repl.eval("true && false").unwrap(), "false");

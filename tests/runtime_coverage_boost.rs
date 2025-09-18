@@ -9,12 +9,14 @@
 //! to help reach our 80% coverage target.
 
 use anyhow::Result;
+use std::env;
 use ruchy::runtime::Repl;
+use std::env;
 
 /// Test REPL interpreter with basic arithmetic
 #[test]
 fn test_interpreter_basic_arithmetic() -> Result<()> {
-    let mut interpreter = Repl::new()?;
+    let mut interpreter = Repl::new(std::env::temp_dir())?;
     
     let result = interpreter.eval("2 + 3")?;
     assert_eq!(result, "5");
@@ -31,7 +33,7 @@ fn test_interpreter_basic_arithmetic() -> Result<()> {
 /// Test interpreter with string operations
 #[test]
 fn test_interpreter_string_operations() -> Result<()> {
-    let mut interpreter = Repl::new()?;
+    let mut interpreter = Repl::new(std::env::temp_dir())?;
     
     let result = interpreter.eval(r#""hello" + " world""#)?;
     assert!(result.contains("hello") && result.contains("world"));
@@ -46,7 +48,7 @@ fn test_interpreter_string_operations() -> Result<()> {
 /// Test interpreter with variable bindings
 #[test]
 fn test_interpreter_variable_bindings() -> Result<()> {
-    let mut interpreter = Repl::new()?;
+    let mut interpreter = Repl::new(std::env::temp_dir())?;
     
     // Test variable assignment
     let _result = interpreter.eval("let x = 42")?;
@@ -64,7 +66,7 @@ fn test_interpreter_variable_bindings() -> Result<()> {
 /// Test interpreter with conditional expressions
 #[test]
 fn test_interpreter_conditionals() -> Result<()> {
-    let mut interpreter = Repl::new()?;
+    let mut interpreter = Repl::new(std::env::temp_dir())?;
     
     let result = interpreter.eval("if true { 10 } else { 20 }")?;
     assert_eq!(result, "10");
@@ -81,7 +83,7 @@ fn test_interpreter_conditionals() -> Result<()> {
 /// Test interpreter with function definitions
 #[test]
 fn test_interpreter_functions() -> Result<()> {
-    let mut interpreter = Repl::new()?;
+    let mut interpreter = Repl::new(std::env::temp_dir())?;
     
     // Define a function
     let _result = interpreter.eval("fn double(x) { x * 2 }")?;
@@ -96,7 +98,7 @@ fn test_interpreter_functions() -> Result<()> {
 /// Test interpreter with boolean logic
 #[test]
 fn test_interpreter_boolean_logic() -> Result<()> {
-    let mut interpreter = Repl::new()?;
+    let mut interpreter = Repl::new(std::env::temp_dir())?;
     
     let result = interpreter.eval("true && false")?;
     assert_eq!(result, "false");
@@ -113,7 +115,7 @@ fn test_interpreter_boolean_logic() -> Result<()> {
 /// Test interpreter with comparison operations
 #[test]
 fn test_interpreter_comparisons() -> Result<()> {
-    let mut interpreter = Repl::new()?;
+    let mut interpreter = Repl::new(std::env::temp_dir())?;
     
     let result = interpreter.eval("5 > 3")?;
     assert_eq!(result, "true");
@@ -133,7 +135,7 @@ fn test_interpreter_comparisons() -> Result<()> {
 /// Test interpreter with list operations
 #[test]
 fn test_interpreter_lists() -> Result<()> {
-    let mut interpreter = Repl::new()?;
+    let mut interpreter = Repl::new(std::env::temp_dir())?;
     
     // Create a list
     let result = interpreter.eval("[1, 2, 3]")?;
@@ -150,7 +152,7 @@ fn test_interpreter_lists() -> Result<()> {
 /// Test interpreter with nested expressions
 #[test]
 fn test_interpreter_nested_expressions() -> Result<()> {
-    let mut interpreter = Repl::new()?;
+    let mut interpreter = Repl::new(std::env::temp_dir())?;
     
     let result = interpreter.eval("(2 + 3) * (4 - 1)")?;
     assert_eq!(result, "15");
@@ -164,7 +166,7 @@ fn test_interpreter_nested_expressions() -> Result<()> {
 /// Test interpreter error handling
 #[test]
 fn test_interpreter_error_handling() -> Result<()> {
-    let mut interpreter = Repl::new()?;
+    let mut interpreter = Repl::new(std::env::temp_dir())?;
     
     // Test division by zero
     let result = interpreter.eval("10 / 0");
@@ -182,7 +184,7 @@ fn test_interpreter_error_handling() -> Result<()> {
 /// Test interpreter with match expressions
 #[test]
 fn test_interpreter_pattern_matching() -> Result<()> {
-    let mut interpreter = Repl::new()?;
+    let mut interpreter = Repl::new(std::env::temp_dir())?;
     
     let result = interpreter.eval(r#"
         match 42 {
@@ -198,7 +200,7 @@ fn test_interpreter_pattern_matching() -> Result<()> {
 /// Test interpreter with loops
 #[test]
 fn test_interpreter_loops() -> Result<()> {
-    let mut interpreter = Repl::new()?;
+    let mut interpreter = Repl::new(std::env::temp_dir())?;
     
     // Simple for loop (if supported)
     let result = interpreter.eval(r"
@@ -218,7 +220,7 @@ fn test_interpreter_loops() -> Result<()> {
 /// Test interpreter state persistence
 #[test]
 fn test_interpreter_state_persistence() -> Result<()> {
-    let mut interpreter = Repl::new()?;
+    let mut interpreter = Repl::new(std::env::temp_dir())?;
     
     // Set up initial state
     let _result = interpreter.eval("let counter = 0")?;
@@ -235,7 +237,7 @@ fn test_interpreter_state_persistence() -> Result<()> {
 /// Test REPL command evaluation
 #[test]
 fn test_repl_commands() -> Result<()> {
-    let mut interpreter = Repl::new()?;
+    let mut interpreter = Repl::new(std::env::temp_dir())?;
     
     // Test help command (if implemented)
     let result = interpreter.eval(":help");
@@ -252,7 +254,7 @@ fn test_repl_commands() -> Result<()> {
 /// Test recursive function evaluation
 #[test]
 fn test_interpreter_recursion() -> Result<()> {
-    let mut interpreter = Repl::new()?;
+    let mut interpreter = Repl::new(std::env::temp_dir())?;
     
     // Define factorial function
     let _result = interpreter.eval(r"

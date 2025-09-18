@@ -202,7 +202,7 @@ impl Repl {
 
         let bindings: HashMap<String, String> = self.state.get_bindings()
             .iter()
-            .map(|(k, v)| (k.clone(), format!("{}", v)))
+            .map(|(k, v)| (k.clone(), format!("{v}")))
             .collect();
 
         serde_json::to_string(&bindings).unwrap_or_else(|_| "{}".to_string())

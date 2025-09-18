@@ -4,7 +4,7 @@
 #[cfg(test)]
 mod repl_value_fmt_coverage {
     use ruchy::runtime::repl::{Value, DataFrameColumn};
-    use std::collections::{HashMap, HashSet};
+    use std::{env, collections::{HashMap, HashSet};
     
     /// Test Value::fmt - COMPLEXITY 94/149 (TOP TARGET)
     /// This single function is responsible for most REPL display logic
@@ -274,12 +274,12 @@ mod repl_value_fmt_coverage {
 #[cfg(test)]
 mod repl_high_complexity_functions_coverage {
     use ruchy::runtime::repl::Repl;
-    use std::time::{Duration, Instant};
+    use std::{env, time::{Duration, Instant};
 
     /// Test Repl::evaluate_save_image_function - COMPLEXITY 25/59
     #[test]
     fn test_evaluate_save_image_function_coverage() {
-        let mut repl = Repl::new().expect("REPL creation should work");
+        let mut repl = Repl::new(std::env::temp_dir()).expect("REPL creation should work");
         
         // Test save_image function if it exists
         let save_tests = vec![
@@ -300,7 +300,7 @@ mod repl_high_complexity_functions_coverage {
     /// Test Repl::get_type_info_with_bindings - COMPLEXITY 23/60  
     #[test]
     fn test_get_type_info_with_bindings_coverage() {
-        let mut repl = Repl::new().expect("REPL creation should work");
+        let mut repl = Repl::new(std::env::temp_dir()).expect("REPL creation should work");
         
         // Setup various types of bindings to test type info
         let setup_commands = vec![
@@ -340,7 +340,7 @@ mod repl_high_complexity_functions_coverage {
     /// Test Repl::evaluate_function_expr - COMPLEXITY 27/47
     #[test]
     fn test_evaluate_function_expr_coverage() {
-        let mut repl = Repl::new().expect("REPL creation should work");
+        let mut repl = Repl::new(std::env::temp_dir()).expect("REPL creation should work");
         
         // Test various function expression patterns
         let function_tests = vec![
@@ -403,7 +403,7 @@ mod repl_high_complexity_functions_coverage {
     /// Test Repl::evaluate_call - COMPLEXITY 26/43
     #[test]
     fn test_evaluate_call_coverage() {
-        let mut repl = Repl::new().expect("REPL creation should work");
+        let mut repl = Repl::new(std::env::temp_dir()).expect("REPL creation should work");
         
         // Setup functions for call testing
         let setup = vec![
@@ -477,7 +477,7 @@ mod repl_high_complexity_functions_coverage {
     /// Test Repl::evaluate_comparison - COMPLEXITY 26/41
     #[test] 
     fn test_evaluate_comparison_coverage() {
-        let mut repl = Repl::new().expect("REPL creation should work");
+        let mut repl = Repl::new(std::env::temp_dir()).expect("REPL creation should work");
         
         // Test all comparison operators with different value types
         let comparison_tests = vec![

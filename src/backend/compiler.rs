@@ -700,7 +700,7 @@ mod tests {
         assert_eq!(options.rustc_flags, cloned_options.rustc_flags);
 
         // Test Debug trait
-        let debug_str = format!("{:?}", options);
+        let debug_str = format!("{options:?}");
         assert!(debug_str.contains("CompileOptions"));
         assert!(debug_str.contains("test_binary"));
         assert!(debug_str.contains("2"));

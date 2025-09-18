@@ -11,11 +11,12 @@
 #![allow(clippy::needless_raw_string_hashes)]
 
 use ruchy::runtime::Repl;
+use std::env;
 
 #[test]
 fn test_variable_binding_persistence() {
     // Regression test for Unit Add Unit bug where variables were corrupted
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
 
     // Set up variables
     repl.eval("let x = 10").expect("Failed to set x");
@@ -42,7 +43,7 @@ fn test_variable_binding_persistence() {
 #[test]
 fn test_let_binding_returns_unit() {
     // Ensure let bindings return Unit but store the correct value
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
 
     let result = repl.eval("let z = 42").expect("Failed to create binding");
     assert_eq!(result, "()", "Let binding should return Unit");
@@ -54,7 +55,7 @@ fn test_let_binding_returns_unit() {
 #[test]
 fn test_block_returns_last_value() {
     // Regression test for blocks returning first instead of last value
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
 
     let result = repl.eval("{ 1; 2; 3 }").expect("Failed to evaluate block");
     assert_eq!(result, "3", "Block should return last value");
@@ -71,7 +72,7 @@ fn test_block_returns_last_value() {
 #[test]
 fn test_match_expression_evaluation() {
     // Test that match expressions work correctly
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
 
     let result = repl
         .eval(
@@ -102,7 +103,7 @@ fn test_match_expression_evaluation() {
 #[test]
 fn test_function_definition_and_call() {
     // Ensure functions can be defined and called
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
 
     repl.eval("fun double(x: i32) -> i32 { x * 2 }")
         .expect("Failed to define function");
@@ -113,7 +114,7 @@ fn test_function_definition_and_call() {
 #[test]
 fn test_string_interpolation_complex() {
     // Test f-string interpolation with expressions
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
 
     repl.eval("let name = \"World\"")
         .expect("Failed to set name");
@@ -128,7 +129,7 @@ fn test_string_interpolation_complex() {
 #[test]
 fn test_nested_control_flow() {
     // Test complex nested structures work correctly
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
 
     let _result = repl
         .eval(
@@ -151,7 +152,7 @@ fn test_nested_control_flow() {
 #[test]
 fn test_list_operations() {
     // Test list creation and iteration
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
 
     repl.eval("let list = [10, 20, 30]")
         .expect("Failed to create list");
@@ -168,7 +169,7 @@ fn test_list_operations() {
 #[test]
 fn test_character_literals() {
     // Test character literal support
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
 
     let result = repl.eval("'a'").expect("Failed to evaluate char");
     assert_eq!(result, "'a'");
@@ -182,7 +183,7 @@ fn test_character_literals() {
 #[test]
 fn test_comparison_operators() {
     // Test all comparison operators work
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
 
     assert_eq!(repl.eval("5 > 3").unwrap(), "true");
     assert_eq!(repl.eval("5 < 3").unwrap(), "false");

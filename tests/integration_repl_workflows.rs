@@ -9,6 +9,7 @@
 #![allow(clippy::unwrap_used)]
 
 use ruchy::runtime::repl::Repl;
+use std::env;
 
 /// Test harness for REPL workflow testing
 struct ReplWorkflowHarness {
@@ -18,7 +19,7 @@ struct ReplWorkflowHarness {
 impl ReplWorkflowHarness {
     fn new() -> Self {
         Self {
-            repl: Repl::new().expect("Failed to create REPL instance"),
+            repl: Repl::new(std::env::temp_dir()).expect("Failed to create REPL instance"),
         }
     }
     

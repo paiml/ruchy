@@ -12,10 +12,11 @@
 #![allow(clippy::uninlined_format_args)]
 
 use ruchy::runtime::Repl;
+use std::env;
 
 #[test]
 fn test_string_interpolation_no_f_prefix() {
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
 
     // Bug: Parser must reject interpolation syntax without 'f' prefix
     // Regular strings with braces should remain literal
@@ -36,7 +37,7 @@ fn test_string_interpolation_no_f_prefix() {
 
 #[test]
 fn test_let_statement_without_semicolon() {
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
 
     // Bug: REPL must accept let statements without semicolons
     let result = repl.eval("let x = 1");
@@ -60,7 +61,7 @@ fn test_let_statement_without_semicolon() {
 
 #[test]
 fn test_function_with_string_interpolation() {
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
 
     // Original failing case - function with f-string
     let result = repl.eval(
@@ -80,7 +81,7 @@ fn test_function_with_string_interpolation() {
 fn test_no_polars_dependency_in_simple_code() {
     // This test would require access to the transpiler's output
     // For now, we'll just ensure simple functions parse without issues
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
 
     let result = repl.eval("fun add(x, y) { x + y }");
     assert!(

@@ -1,9 +1,11 @@
 use ruchy::runtime::repl::Repl;
+use std::env;
 use anyhow::Result;
+use std::env;
 
 #[test]
 fn test_test_attribute_compilation_regression() -> Result<()> {
-    let mut repl = Repl::new()?;
+    let mut repl = Repl::new(std::env::temp_dir())?;
     
     // This is the test case that was failing in P0-BOOK-001
     // The main thing is that this should NOT panic during compilation
@@ -24,7 +26,7 @@ fn test_simple_addition() {
 
 #[test] 
 fn test_multiple_test_functions() -> Result<()> {
-    let mut repl = Repl::new()?;
+    let mut repl = Repl::new(std::env::temp_dir())?;
     
     let test_code = r"
 #[test]

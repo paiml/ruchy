@@ -11,10 +11,11 @@
 #![allow(clippy::unnecessary_unwrap)]
 
 use ruchy::runtime::Repl;
+use std::env;
 
 #[test]
 fn test_match_literal_patterns() {
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
 
     let result = repl.eval(
         r#"
@@ -31,7 +32,7 @@ fn test_match_literal_patterns() {
 
 #[test]
 fn test_match_wildcard_pattern() {
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
 
     let result = repl.eval(
         r#"
@@ -48,7 +49,7 @@ fn test_match_wildcard_pattern() {
 
 #[test]
 fn test_match_variable_binding() {
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
 
     let result = repl.eval(
         r#"
@@ -64,7 +65,7 @@ fn test_match_variable_binding() {
 
 #[test]
 fn test_match_multiple_patterns() {
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
 
     let result = repl.eval(
         r#"
@@ -83,7 +84,7 @@ fn test_match_multiple_patterns() {
 
 #[test]
 fn test_match_boolean_patterns() {
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
 
     let result = repl.eval(
         r#"
@@ -100,7 +101,7 @@ fn test_match_boolean_patterns() {
 
 #[test]
 fn test_match_string_patterns() {
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
 
     let result = repl.eval(
         r#"
@@ -118,7 +119,7 @@ fn test_match_string_patterns() {
 
 #[test]
 fn test_match_list_patterns() {
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
 
     let result = repl.eval(
         r#"
@@ -136,7 +137,7 @@ fn test_match_list_patterns() {
 
 #[test]
 fn test_match_list_binding() {
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
 
     let result = repl.eval(
         r#"
@@ -152,7 +153,7 @@ fn test_match_list_binding() {
 
 #[test]
 fn test_match_with_variable() {
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
 
     // Set up a variable
     assert!(repl.eval("let value = 42").is_ok());
@@ -172,7 +173,7 @@ fn test_match_with_variable() {
 
 #[test]
 fn test_match_range_pattern() {
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
 
     let result = repl.eval(
         r#"
@@ -191,7 +192,7 @@ fn test_match_range_pattern() {
 
 #[test]
 fn test_match_no_pattern_matches() {
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
 
     let result = repl.eval(
         r#"

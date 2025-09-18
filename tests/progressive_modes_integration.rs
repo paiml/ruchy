@@ -2,10 +2,11 @@
 // This test validates the complete REPL-UX-002 implementation
 
 use ruchy::runtime::Repl;
+use std::env;
 
 #[test]
 fn test_complete_progressive_modes_workflow() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     // 1. Start in standard mode
     assert_eq!(repl.get_mode(), "normal");
@@ -73,7 +74,7 @@ fn test_complete_progressive_modes_workflow() {
 
 #[test]
 fn test_contextual_features_per_mode() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     // Test mode specific features
     let _ = repl.eval(":test");
@@ -96,7 +97,7 @@ fn test_contextual_features_per_mode() {
 
 #[test]
 fn test_mode_persistence_and_context() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     // Variables should persist across mode switches
     let _ = repl.eval("let x = 42");
@@ -126,7 +127,7 @@ fn test_mode_persistence_and_context() {
 
 #[test]
 fn test_all_mode_types() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     // Test all available modes can be activated
     let modes = [
@@ -159,7 +160,7 @@ fn test_all_mode_types() {
 
 #[test]  
 fn test_progressive_activation_edge_cases() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     // Test that wrong patterns don't trigger activation
     // Since #[testing] is not a valid attribute, it won't activate test mode

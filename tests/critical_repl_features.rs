@@ -9,11 +9,11 @@
 
 use ruchy::runtime::repl::Repl;
 use ruchy::runtime::Value;
-use std::time::{Duration, Instant};
+use std::{env, time::{Duration, Instant};
 
 #[test]
 fn test_one_liner_execution() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     let deadline = Some(Instant::now() + Duration::from_secs(1));
 
     let result = repl.evaluate_expr_str("2 + 2", deadline).unwrap();
@@ -22,7 +22,7 @@ fn test_one_liner_execution() {
 
 #[test]
 fn test_function_definition_and_call() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     let deadline = Some(Instant::now() + Duration::from_secs(1));
 
     // Define function
@@ -36,7 +36,7 @@ fn test_function_definition_and_call() {
 
 #[test]
 fn test_match_expressions() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     let deadline = Some(Instant::now() + Duration::from_secs(1));
 
     let result = repl
@@ -50,7 +50,7 @@ fn test_match_expressions() {
 
 #[test]
 fn test_block_returns_last_value() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     let deadline = Some(Instant::now() + Duration::from_secs(1));
 
     let result = repl
@@ -61,7 +61,7 @@ fn test_block_returns_last_value() {
 
 #[test]
 fn test_for_loops() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     let deadline = Some(Instant::now() + Duration::from_secs(1));
 
     // For loop should return unit
@@ -73,7 +73,7 @@ fn test_for_loops() {
 
 #[test]
 fn test_while_loops() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     let deadline = Some(Instant::now() + Duration::from_secs(1));
 
     repl.evaluate_expr_str("let mut x = 0", deadline).unwrap();
@@ -85,7 +85,7 @@ fn test_while_loops() {
 
 #[test]
 fn test_string_interpolation() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     let deadline = Some(Instant::now() + Duration::from_secs(1));
 
     repl.evaluate_expr_str(r#"let name = "World""#, deadline)
@@ -98,7 +98,7 @@ fn test_string_interpolation() {
 
 #[test]
 fn test_list_display() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     let deadline = Some(Instant::now() + Duration::from_secs(1));
 
     let result = repl.evaluate_expr_str("[1, 2, 3]", deadline).unwrap();
@@ -110,7 +110,7 @@ fn test_list_display() {
 
 #[test]
 fn test_variable_persistence() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     let deadline = Some(Instant::now() + Duration::from_secs(1));
 
     repl.evaluate_expr_str("let x = 42", deadline).unwrap();
@@ -121,7 +121,7 @@ fn test_variable_persistence() {
 
 #[test]
 fn test_nested_functions() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     let deadline = Some(Instant::now() + Duration::from_secs(1));
 
     repl.evaluate_expr_str("fun double(x: i32) -> i32 { x * 2 }", deadline)

@@ -4,7 +4,7 @@
 use ruchy::runtime::deterministic::{MockTime, DeterministicRng};
 use ruchy::runtime::repl::Repl;
 use ruchy::runtime::replay::{DeterministicRepl, StateCheckpoint, ResourceUsage, Divergence};
-use std::collections::HashMap;
+use std::{env, collections::HashMap;
 
 #[test]
 fn test_mock_time_new() {
@@ -145,7 +145,7 @@ fn test_deterministic_rng_wrapping_behavior() {
 
 #[test]
 fn test_execute_with_seed_basic() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     let result = repl.execute_with_seed("42", 12345);
     assert!(result.output.is_ok());
@@ -155,7 +155,7 @@ fn test_execute_with_seed_basic() {
 
 #[test]
 fn test_execute_with_seed_error_handling() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     let result = repl.execute_with_seed("undefined_variable", 12345);
     assert!(result.output.is_err());
@@ -164,7 +164,7 @@ fn test_execute_with_seed_error_handling() {
 
 #[test]
 fn test_execute_with_seed_resource_usage() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     let result = repl.execute_with_seed("let x = 42", 12345);
     
@@ -176,7 +176,7 @@ fn test_execute_with_seed_resource_usage() {
 
 #[test]
 fn test_execute_with_seed_state_hash() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     let result = repl.execute_with_seed("let y = 99", 12345);
     assert!(result.output.is_ok());
@@ -186,7 +186,7 @@ fn test_execute_with_seed_state_hash() {
 
 #[test]
 fn test_checkpoint_empty_repl() {
-    let repl = Repl::new().unwrap();
+    let repl = Repl::new(std::env::temp_dir()).unwrap();
     let checkpoint = DeterministicRepl::checkpoint(&repl);
     
     assert!(checkpoint.bindings.is_empty());
@@ -197,7 +197,7 @@ fn test_checkpoint_empty_repl() {
 
 #[test]
 fn test_checkpoint_with_variables() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     repl.eval("let x = 10").unwrap();
     repl.eval("let name = \"test\"").unwrap();
@@ -209,7 +209,7 @@ fn test_checkpoint_with_variables() {
 
 #[test]
 fn test_restore_empty_checkpoint() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     // Add some variables
     repl.eval("let x = 1").unwrap();
@@ -234,7 +234,7 @@ fn test_restore_empty_checkpoint() {
 
 #[test]
 fn test_restore_with_values() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     let mut checkpoint = StateCheckpoint {
         bindings: HashMap::new(),
@@ -255,8 +255,8 @@ fn test_restore_with_values() {
 
 #[test]
 fn test_validate_determinism_identical() {
-    let mut repl1 = Repl::new().unwrap();
-    let mut repl2 = Repl::new().unwrap();
+    let mut repl1 = Repl::new(std::env::temp_dir()).unwrap();
+    let mut repl2 = Repl::new(std::env::temp_dir()).unwrap();
     
     // Execute identical operations
     repl1.eval("let a = 1").unwrap();
@@ -269,8 +269,8 @@ fn test_validate_determinism_identical() {
 
 #[test]
 fn test_validate_determinism_different_values() {
-    let mut repl1 = Repl::new().unwrap();
-    let mut repl2 = Repl::new().unwrap();
+    let mut repl1 = Repl::new(std::env::temp_dir()).unwrap();
+    let mut repl2 = Repl::new(std::env::temp_dir()).unwrap();
     
     // Execute different operations
     repl1.eval("let x = 10").unwrap();
@@ -291,8 +291,8 @@ fn test_validate_determinism_different_values() {
 
 #[test]
 fn test_validate_determinism_missing_variable() {
-    let mut repl1 = Repl::new().unwrap();
-    let repl2 = Repl::new().unwrap();
+    let mut repl1 = Repl::new(std::env::temp_dir()).unwrap();
+    let repl2 = Repl::new(std::env::temp_dir()).unwrap();
     
     // repl1 has variable, repl2 doesn't
     repl1.eval("let missing = 42").unwrap();
@@ -304,8 +304,8 @@ fn test_validate_determinism_missing_variable() {
 
 #[test]
 fn test_validate_determinism_empty_repls() {
-    let repl1 = Repl::new().unwrap();
-    let repl2 = Repl::new().unwrap();
+    let repl1 = Repl::new(std::env::temp_dir()).unwrap();
+    let repl2 = Repl::new(std::env::temp_dir()).unwrap();
     
     let validation = DeterministicRepl::validate_determinism(&repl1, &repl2);
     assert!(validation.is_deterministic);
@@ -314,8 +314,8 @@ fn test_validate_determinism_empty_repls() {
 
 #[test]
 fn test_deterministic_execution_same_seed() {
-    let mut repl1 = Repl::new().unwrap();
-    let mut repl2 = Repl::new().unwrap();
+    let mut repl1 = Repl::new(std::env::temp_dir()).unwrap();
+    let mut repl2 = Repl::new(std::env::temp_dir()).unwrap();
     
     // Execute same commands with same seed
     let result1 = repl1.execute_with_seed("let x = 42", 12345);
@@ -329,7 +329,7 @@ fn test_deterministic_execution_same_seed() {
 
 #[test]
 fn test_checkpoint_restore_cycle() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     // Create some state
     repl.eval("let x = 10").unwrap();
@@ -348,7 +348,7 @@ fn test_checkpoint_restore_cycle() {
 
 #[test]
 fn test_resource_usage_structure() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     let result = repl.execute_with_seed("42", 100);
     
     let usage = &result.resource_usage;
@@ -359,8 +359,8 @@ fn test_resource_usage_structure() {
 
 #[test]
 fn test_state_hash_consistency() {
-    let mut repl1 = Repl::new().unwrap();
-    let mut repl2 = Repl::new().unwrap();
+    let mut repl1 = Repl::new(std::env::temp_dir()).unwrap();
+    let mut repl2 = Repl::new(std::env::temp_dir()).unwrap();
     
     // Same operations should produce same hash
     repl1.eval("let test = 123").unwrap();
@@ -374,42 +374,42 @@ fn test_state_hash_consistency() {
 
 #[test]
 fn test_value_conversion_unit() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     let result = repl.execute_with_seed("()", 12345);
     assert!(result.output.is_ok());
 }
 
 #[test]
 fn test_value_conversion_bool_true() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     let result = repl.execute_with_seed("true", 12345);
     assert!(result.output.is_ok());
 }
 
 #[test]
 fn test_value_conversion_bool_false() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     let result = repl.execute_with_seed("false", 12345);
     assert!(result.output.is_ok());
 }
 
 #[test]
 fn test_value_conversion_integer() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     let result = repl.execute_with_seed("42", 12345);
     assert!(result.output.is_ok());
 }
 
 #[test]
 fn test_value_conversion_string() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     let result = repl.execute_with_seed("\"hello\"", 12345);
     assert!(result.output.is_ok());
 }
 
 #[test]
 fn test_checkpoint_bindings_extraction() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     repl.eval("let extracted = 456").unwrap();
     let checkpoint = DeterministicRepl::checkpoint(&repl);
@@ -421,8 +421,8 @@ fn test_checkpoint_bindings_extraction() {
 
 #[test]
 fn test_validation_divergence_detection() {
-    let mut repl1 = Repl::new().unwrap();
-    let mut repl2 = Repl::new().unwrap();
+    let mut repl1 = Repl::new(std::env::temp_dir()).unwrap();
+    let mut repl2 = Repl::new(std::env::temp_dir()).unwrap();
     
     repl1.eval("let divergent = 100").unwrap();
     repl2.eval("let divergent = 200").unwrap();
@@ -439,7 +439,7 @@ fn test_validation_divergence_detection() {
 
 #[test]
 fn test_multiple_executions_same_repl() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     let result1 = repl.execute_with_seed("let first = 1", 100);
     let result2 = repl.execute_with_seed("let second = 2", 200);
@@ -451,7 +451,7 @@ fn test_multiple_executions_same_repl() {
 
 #[test]
 fn test_error_state_handling() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     let error_result = repl.execute_with_seed("invalid syntax +++", 999);
     assert!(error_result.output.is_err());
@@ -463,7 +463,7 @@ fn test_error_state_handling() {
 
 #[test]
 fn test_resource_usage_accumulation() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     let result1 = repl.execute_with_seed("let a = 1", 100);
     let result2 = repl.execute_with_seed("let b = 2", 100);
@@ -477,7 +477,7 @@ fn test_resource_usage_accumulation() {
 
 #[test]
 fn test_checkpoint_type_environment_empty() {
-    let repl = Repl::new().unwrap();
+    let repl = Repl::new(std::env::temp_dir()).unwrap();
     let checkpoint = DeterministicRepl::checkpoint(&repl);
     
     // Type environment should be empty for now (not implemented)
@@ -486,7 +486,7 @@ fn test_checkpoint_type_environment_empty() {
 
 #[test]
 fn test_restore_value_types() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     // Test restoring different value types
     let mut checkpoint = StateCheckpoint {

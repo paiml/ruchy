@@ -7,14 +7,17 @@
 //! Extended property-based tests for Ruchy compiler
 
 use proptest::prelude::*;
+use std::env;
 use ruchy::Parser;
+use std::env;
 use ruchy::runtime::Repl;
+use std::env;
 
 proptest! {
     /// Test that arithmetic operations preserve mathematical properties
     #[test]
     fn prop_arithmetic_commutative(a in -1000i32..1000, b in -1000i32..1000) {
-        let mut repl = Repl::new().unwrap();
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
         
         // Addition is commutative
         let expr1 = format!("{} + {}", a, b);
@@ -34,7 +37,7 @@ proptest! {
     /// Test that string operations don't panic
     #[test]
     fn prop_string_handling(s in "\\PC*") {
-        let mut repl = Repl::new().unwrap();
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
         
         // String literal handling
         let expr = format!(r#"let x = "{}""#, s.escape_default());
@@ -57,7 +60,7 @@ proptest! {
     /// Test that numbers are parsed and evaluated correctly
     #[test]
     fn prop_number_roundtrip(n in -1_000_000i64..1_000_000) {
-        let mut repl = Repl::new().unwrap();
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
         let expr = n.to_string();
         let result = repl.eval(&expr).unwrap();
         prop_assert_eq!(result, n.to_string(), "Number roundtrip failed");
@@ -66,7 +69,7 @@ proptest! {
     /// Test that boolean operations follow logic laws
     #[test]
     fn prop_boolean_logic(a: bool, b: bool) {
-        let mut repl = Repl::new().unwrap();
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
         
         // De Morgan's law: !(a && b) == !a || !b
         let expr1 = format!("!({} && {})", a, b);
@@ -84,7 +87,7 @@ proptest! {
     /// Test that list operations preserve length
     #[test]
     fn prop_list_length(items in prop::collection::vec(0i32..100, 0..20)) {
-        let mut repl = Repl::new().unwrap();
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
         
         let list_str = format!("[{}]", items.iter().map(|i| i.to_string()).collect::<Vec<_>>().join(", "));
         let expr = format!("{}.len()", list_str);
@@ -95,7 +98,7 @@ proptest! {
     /// Test that function definitions and calls work
     #[test]
     fn prop_function_identity(x in -1000i32..1000) {
-        let mut repl = Repl::new().unwrap();
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
         
         // Define identity function
         repl.eval("fun identity(x: i32) -> i32 { x }").unwrap();
@@ -109,7 +112,7 @@ proptest! {
     /// Test that match expressions are exhaustive
     #[test]
     fn prop_match_exhaustive(n in 0i32..10) {
-        let mut repl = Repl::new().unwrap();
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
         
         let expr = format!(r#"
             match {} {{
@@ -127,7 +130,7 @@ proptest! {
     /// Test that loops terminate correctly
     #[test]
     fn prop_loop_termination(limit in 0i32..100) {
-        let mut repl = Repl::new().unwrap();
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
         
         let expr = format!(r"
             let mut count = 0
@@ -144,7 +147,7 @@ proptest! {
     /// Test that block expressions return last value
     #[test]
     fn prop_block_return(a in -100i32..100, b in -100i32..100) {
-        let mut repl = Repl::new().unwrap();
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
         
         let expr = format!(r"
             {{

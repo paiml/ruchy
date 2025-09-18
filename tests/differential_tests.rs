@@ -2,7 +2,7 @@
 // Validates REPL behavior against reference implementations and expected outputs
 
 use ruchy::runtime::Repl;
-use std::collections::HashMap;
+use std::{env, collections::HashMap;
 
 /// Reference implementation for basic expressions
 /// This serves as a simple reference to test against production REPL
@@ -127,8 +127,8 @@ mod tests {
             "2 + 3 * 4", // This may differ due to precedence
         ];
         
-        let mut production = Repl::new().unwrap();
-        let mut reference = ReferenceRepl::new();
+        let mut production = Repl::new(std::env::temp_dir()).unwrap();
+        let mut reference = ReferenceRepl::new(std::env::temp_dir());
         
         for case in test_cases {
             let prod_result = production.eval(case);
@@ -168,8 +168,8 @@ mod tests {
             "z",
         ];
         
-        let mut production = Repl::new().unwrap();
-        let mut reference = ReferenceRepl::new();
+        let mut production = Repl::new(std::env::temp_dir()).unwrap();
+        let mut reference = ReferenceRepl::new(std::env::temp_dir());
         
         for case in test_sequence {
             let prod_result = production.eval(case);
@@ -204,8 +204,8 @@ mod tests {
             "false",
         ];
         
-        let mut production = Repl::new().unwrap();
-        let mut reference = ReferenceRepl::new();
+        let mut production = Repl::new(std::env::temp_dir()).unwrap();
+        let mut reference = ReferenceRepl::new(std::env::temp_dir());
         
         for case in boolean_cases {
             let prod_result = production.eval(case);
@@ -235,8 +235,8 @@ mod tests {
             r#"""#, // Empty string
         ];
         
-        let mut production = Repl::new().unwrap();
-        let mut reference = ReferenceRepl::new();
+        let mut production = Repl::new(std::env::temp_dir()).unwrap();
+        let mut reference = ReferenceRepl::new(std::env::temp_dir());
         
         for case in string_cases {
             let prod_result = production.eval(case);
@@ -261,8 +261,8 @@ mod tests {
             "+ 1", // Invalid prefix
         ];
         
-        let mut production = Repl::new().unwrap();
-        let mut reference = ReferenceRepl::new();
+        let mut production = Repl::new(std::env::temp_dir()).unwrap();
+        let mut reference = ReferenceRepl::new(std::env::temp_dir());
         
         for case in error_cases {
             let prod_result = production.eval(case);
@@ -292,8 +292,8 @@ mod tests {
             ("5 - 2", "3"),
         ];
         
-        let mut production = Repl::new().unwrap();
-        let mut reference = ReferenceRepl::new();
+        let mut production = Repl::new(std::env::temp_dir()).unwrap();
+        let mut reference = ReferenceRepl::new(std::env::temp_dir());
         
         for (expr, expected) in precedence_cases {
             let prod_result = production.eval(expr);
@@ -315,8 +315,8 @@ mod tests {
     #[test]
     fn test_differential_state_isolation() {
         // Test that both REPLs maintain state correctly
-        let mut production = Repl::new().unwrap();
-        let mut reference = ReferenceRepl::new();
+        let mut production = Repl::new(std::env::temp_dir()).unwrap();
+        let mut reference = ReferenceRepl::new(std::env::temp_dir());
         
         // Set up state in both
         let _ = production.eval("let a = 1");
@@ -356,8 +356,8 @@ mod tests {
             r#""test""#,
         ];
         
-        let mut production = Repl::new().unwrap();
-        let mut reference = ReferenceRepl::new();
+        let mut production = Repl::new(std::env::temp_dir()).unwrap();
+        let mut reference = ReferenceRepl::new(std::env::temp_dir());
         
         for case in regression_cases {
             let prod_result = production.eval(case);
@@ -403,8 +403,8 @@ mod tests {
             "-1",
         ];
         
-        let mut production = Repl::new().unwrap();
-        let mut reference = ReferenceRepl::new();
+        let mut production = Repl::new(std::env::temp_dir()).unwrap();
+        let mut reference = ReferenceRepl::new(std::env::temp_dir());
         let mut divergences = 0;
         let mut total_cases = 0;
         

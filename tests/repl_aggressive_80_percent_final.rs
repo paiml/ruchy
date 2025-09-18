@@ -1,3 +1,4 @@
+use std::env;
 //! REPL Aggressive 80% Coverage - Final Systematic Push
 //! Target remaining high-complexity functions to achieve 80% coverage
 
@@ -9,7 +10,7 @@ mod repl_aggressive_high_complexity_coverage {
     /// Target: needs_continuation, hashmap_methods, try_operator, etc.
     #[test]
     fn test_needs_continuation_comprehensive() {
-        let mut repl = Repl::new().expect("REPL creation should work");
+        let mut repl = Repl::new(std::env::temp_dir()).expect("REPL creation should work");
         
         // Test multiline continuation detection - COMPLEXITY 28/36
         let continuation_tests = vec![
@@ -41,7 +42,7 @@ mod repl_aggressive_high_complexity_coverage {
     /// Test evaluate_hashmap_methods - COMPLEXITY 28/33  
     #[test]
     fn test_evaluate_hashmap_methods_comprehensive() {
-        let mut repl = Repl::new().expect("REPL creation should work");
+        let mut repl = Repl::new(std::env::temp_dir()).expect("REPL creation should work");
         
         // Setup HashMap for method testing
         let _ = repl.eval("let map = HashMap::new()");
@@ -84,7 +85,7 @@ mod repl_aggressive_high_complexity_coverage {
     /// Test evaluate_try_operator - COMPLEXITY 15/46
     #[test]
     fn test_evaluate_try_operator_comprehensive() {
-        let mut repl = Repl::new().expect("REPL creation should work");
+        let mut repl = Repl::new(std::env::temp_dir()).expect("REPL creation should work");
         
         // Setup Result and Option values for try operator
         let setup = vec![
@@ -137,7 +138,7 @@ mod repl_aggressive_high_complexity_coverage {
     /// Test handle_basic_hashset_methods - COMPLEXITY 26/34
     #[test]
     fn test_handle_basic_hashset_methods_comprehensive() {
-        let mut repl = Repl::new().expect("REPL creation should work");
+        let mut repl = Repl::new(std::env::temp_dir()).expect("REPL creation should work");
         
         // Setup HashSet for method testing
         let _ = repl.eval("let set = HashSet::new()");
@@ -189,7 +190,7 @@ mod repl_aggressive_high_complexity_coverage {
     /// Test dispatch_performance_methods - COMPLEXITY 24/34
     #[test]
     fn test_dispatch_performance_methods_comprehensive() {
-        let mut repl = Repl::new().expect("REPL creation should work");
+        let mut repl = Repl::new(std::env::temp_dir()).expect("REPL creation should work");
         
         // Test performance monitoring functions
         let performance_tests = vec![
@@ -238,7 +239,7 @@ mod repl_aggressive_high_complexity_coverage {
     /// Test evaluate_list_reduce - COMPLEXITY 22/34
     #[test]
     fn test_evaluate_list_reduce_comprehensive() {
-        let mut repl = Repl::new().expect("REPL creation should work");
+        let mut repl = Repl::new(std::env::temp_dir()).expect("REPL creation should work");
         
         // Test list reduce operations with various scenarios
         let reduce_tests = vec![
@@ -284,7 +285,7 @@ mod repl_aggressive_high_complexity_coverage {
     /// Test compile_session - COMPLEXITY 21/34
     #[test]
     fn test_compile_session_comprehensive() {
-        let mut repl = Repl::new().expect("REPL creation should work");
+        let mut repl = Repl::new(std::env::temp_dir()).expect("REPL creation should work");
         
         // Test session compilation features
         let compile_tests = vec![
@@ -339,7 +340,7 @@ mod repl_edge_cases_and_error_paths {
     /// Test error paths and edge cases for maximum coverage
     #[test]
     fn test_comprehensive_error_paths() {
-        let mut repl = Repl::new().expect("REPL creation should work");
+        let mut repl = Repl::new(std::env::temp_dir()).expect("REPL creation should work");
         
         // Syntax errors - Different parse error types
         let syntax_errors = vec![
@@ -388,7 +389,7 @@ mod repl_edge_cases_and_error_paths {
     /// Test boundary conditions and edge cases
     #[test]
     fn test_boundary_conditions() {
-        let mut repl = Repl::new().expect("REPL creation should work");
+        let mut repl = Repl::new(std::env::temp_dir()).expect("REPL creation should work");
         
         // Numeric boundaries
         let boundary_tests = vec![

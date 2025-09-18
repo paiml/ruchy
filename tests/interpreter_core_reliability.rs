@@ -12,7 +12,7 @@
 #![allow(clippy::unwrap_used)]
 
 use ruchy::runtime::Repl;
-use std::time::{Duration, Instant};
+use std::{env, time::{Duration, Instant};
 
 /// Helper macro for testing REPL evaluation
 macro_rules! assert_eval {
@@ -48,7 +48,7 @@ macro_rules! assert_eval_err {
 
 #[test]
 fn test_integer_arithmetic() {
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
 
     // Basic operations
     assert_eval!(repl, "1 + 2", "3");
@@ -65,7 +65,7 @@ fn test_integer_arithmetic() {
 
 #[test]
 fn test_operator_precedence() {
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
 
     assert_eval!(repl, "2 + 3 * 4", "14");
     assert_eval!(repl, "(2 + 3) * 4", "20");
@@ -77,7 +77,7 @@ fn test_operator_precedence() {
 
 #[test]
 fn test_float_arithmetic() {
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
 
     assert_eval!(repl, "1.5 + 2.5", "4");
     assert_eval!(repl, "10.0 - 3.5", "6.5");
@@ -87,7 +87,7 @@ fn test_float_arithmetic() {
 
 #[test]
 fn test_division_by_zero() {
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
 
     assert_eval_err!(repl, "5 / 0");
     assert_eval_err!(repl, "10 % 0");
@@ -99,7 +99,7 @@ fn test_division_by_zero() {
 
 #[test]
 fn test_immutable_bindings() {
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
 
     assert_eval!(repl, "let x = 10", "10");
     assert_eval!(repl, "x", "10");
@@ -110,7 +110,7 @@ fn test_immutable_bindings() {
 
 #[test]
 fn test_mutable_bindings() {
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
 
     assert_eval!(repl, "let mut x = 10", "10");
     assert_eval!(repl, "x", "10");
@@ -120,7 +120,7 @@ fn test_mutable_bindings() {
 
 #[test]
 fn test_undefined_variable() {
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
 
     assert_eval_err!(repl, "undefined_var");
     assert_eval_err!(repl, "x + y");
@@ -128,7 +128,7 @@ fn test_undefined_variable() {
 
 #[test]
 fn test_variable_shadowing() {
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
 
     assert_eval!(repl, "let x = 10", "10");
     assert_eval!(repl, "let x = 20", "20");
@@ -141,7 +141,7 @@ fn test_variable_shadowing() {
 
 #[test]
 fn test_simple_function() {
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
 
     assert_eval!(repl, "fun double(x) { x * 2 }", "fn double(x)");
     assert_eval!(repl, "double(5)", "10");
@@ -150,7 +150,7 @@ fn test_simple_function() {
 
 #[test]
 fn test_recursive_factorial() {
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
 
     let factorial = r"
         fun fact(n) {
@@ -167,7 +167,7 @@ fn test_recursive_factorial() {
 
 #[test]
 fn test_fibonacci() {
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
 
     let fibonacci = r"
         fun fib(n) {
@@ -183,7 +183,7 @@ fn test_fibonacci() {
 
 #[test]
 fn test_higher_order_functions() {
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
 
     repl.eval("fun apply(f, x) { f(x) }")
         .expect("Failed to define apply");
@@ -199,7 +199,7 @@ fn test_higher_order_functions() {
 
 #[test]
 fn test_if_else() {
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
 
     assert_eval!(repl, "if true { 10 } else { 20 }", "10");
     assert_eval!(repl, "if false { 10 } else { 20 }", "20");
@@ -209,7 +209,7 @@ fn test_if_else() {
 
 #[test]
 fn test_nested_if() {
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
 
     let nested = r#"
         let x = 10
@@ -225,7 +225,7 @@ fn test_nested_if() {
 
 #[test]
 fn test_match_expression() {
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
 
     let match_expr = r#"
         let x = 2
@@ -242,7 +242,7 @@ fn test_match_expression() {
 
 #[test]
 fn test_for_loop() {
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
 
     // Test with list
     repl.eval("let mut sum = 0").expect("Failed to create sum");
@@ -253,7 +253,7 @@ fn test_for_loop() {
 
 #[test]
 fn test_while_loop() {
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
 
     let while_loop = r"
         let mut i = 0
@@ -274,7 +274,7 @@ fn test_while_loop() {
 
 #[test]
 fn test_strings() {
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
 
     assert_eval!(repl, r#""hello""#, r#""hello""#);
     assert_eval!(repl, r#""hello" + " " + "world""#, r#""hello world""#);
@@ -283,7 +283,7 @@ fn test_strings() {
 
 #[test]
 fn test_string_interpolation() {
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
 
     assert_eval!(repl, "let name = \"Alice\"", "\"Alice\"");
     assert_eval!(repl, r#"f"Hello, {name}!""#, r#""Hello, Alice!""#);
@@ -294,7 +294,7 @@ fn test_string_interpolation() {
 
 #[test]
 fn test_lists() {
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
 
     assert_eval!(repl, "[1, 2, 3]", "[1, 2, 3]");
     assert_eval!(repl, "[1, 2, 3].len()", "3");
@@ -304,7 +304,7 @@ fn test_lists() {
 
 #[test]
 fn test_tuples() {
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
 
     assert_eval!(repl, "(1, 2, 3)", "(1, 2, 3)");
     assert_eval!(repl, "(\"hello\", 42, true)", "(\"hello\", 42, true)");
@@ -312,7 +312,7 @@ fn test_tuples() {
 
 #[test]
 fn test_option_type() {
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
 
     assert_eval!(repl, "Some(42)", "Option::Some(42)");
     assert_eval!(repl, "None", "Option::None");
@@ -320,7 +320,7 @@ fn test_option_type() {
 
 #[test]
 fn test_result_type() {
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
 
     assert_eval!(repl, "Ok(42)", "Result::Ok(42)");
     assert_eval!(
@@ -336,7 +336,7 @@ fn test_result_type() {
 
 #[test]
 fn test_lambda_basic() {
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
 
     assert_eval!(repl, "let add = |x, y| x + y", "|x, y| <closure>");
     assert_eval!(repl, "add(3, 4)", "7");
@@ -344,7 +344,7 @@ fn test_lambda_basic() {
 
 #[test]
 fn test_lambda_closure() {
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
 
     repl.eval("let x = 10").expect("Failed to set x");
     assert_eval!(repl, "let add_x = |y| x + y", "|y| <closure>");
@@ -357,7 +357,7 @@ fn test_lambda_closure() {
 
 #[test]
 fn test_stack_overflow_protection() {
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
 
     // Infinite recursion should error, not crash
     repl.eval("fun infinite() { infinite() }")
@@ -367,7 +367,7 @@ fn test_stack_overflow_protection() {
 
 #[test]
 fn test_type_errors() {
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
 
     assert_eval_err!(repl, r#"5 + "string""#);
     assert_eval_err!(repl, "true * 5");
@@ -379,7 +379,7 @@ fn test_type_errors() {
 
 #[test]
 fn test_response_time() {
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
 
     let start = Instant::now();
     let _ = repl.eval("1 + 2");
@@ -393,7 +393,7 @@ fn test_response_time() {
 
 #[test]
 fn test_deep_recursion() {
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
 
     // Should handle reasonable recursion depth
     repl.eval("fun sum(n) { if n <= 0 { 0 } else { n + sum(n - 1) } }")
@@ -412,7 +412,7 @@ fn test_deep_recursion() {
 
 #[test]
 fn test_session_state_persistence() {
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
 
     // Define things in sequence
     assert_eval!(repl, "let x = 10", "10");
@@ -427,7 +427,7 @@ fn test_session_state_persistence() {
 
 #[test]
 fn test_error_recovery() {
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
 
     // Set up state
     assert_eval!(repl, "let x = 10", "10");
@@ -450,14 +450,14 @@ fn test_error_recovery() {
 #[test]
 fn test_regression_tuple_parsing() {
     // Bug: Tuples used to fail parsing in REPL
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
     assert_eval!(repl, "(1, 2, 3)", "(1, 2, 3)");
 }
 
 #[test]
 fn test_regression_struct_creation() {
     // Bug: Struct literals had type mismatches
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
 
     repl.eval("struct Point { x: i32, y: i32 }")
         .expect("Failed to define struct");
@@ -472,7 +472,7 @@ fn test_regression_struct_creation() {
 #[test]
 fn test_regression_enum_variants() {
     // Bug: Enum variants weren't properly constructed
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
 
     repl.eval("enum Color { Red, Green, Blue }")
         .expect("Failed to define enum");

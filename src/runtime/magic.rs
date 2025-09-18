@@ -1123,7 +1123,7 @@ mod tests {
     #[test]
     fn test_magic_result_debug() {
         let result = MagicResult::Silent;
-        let debug_str = format!("{:?}", result);
+        let debug_str = format!("{result:?}");
         assert!(debug_str.contains("Silent"));
     }
 }

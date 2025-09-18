@@ -654,7 +654,7 @@ mod tests {
         for _ in 0..200 {
             let value_tree = strategy.new_tree(&mut runner).unwrap();
             let op = value_tree.current();
-            found_ops.insert(format!("{:?}", op));
+            found_ops.insert(format!("{op:?}"));
         }
 
         // Should find several different operators
@@ -676,7 +676,7 @@ mod tests {
         for _ in 0..100 {
             let value_tree = strategy.new_tree(&mut runner).unwrap();
             let op = value_tree.current();
-            found_ops.insert(format!("{:?}", op));
+            found_ops.insert(format!("{op:?}"));
         }
 
         // Should find all unary operator types

@@ -4,7 +4,7 @@
 
 use ruchy::{Parser, Transpiler};
 use ruchy::runtime::Repl;
-use std::time::Instant;
+use std::{env, time::Instant;
 
 // ========== Cross-Module Integration Tests ==========
 
@@ -27,7 +27,7 @@ fn test_parse_interpret_transpile_cycle() {
     assert!(ast.is_ok(), "Failed to parse: {:?}", ast);
     
     // Interpret via REPL
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
     let result = repl.eval(source);
     
     if result.is_ok() {
@@ -56,7 +56,7 @@ fn test_complex_data_structure_pipeline() {
         sum
     "#;
     
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
     
     // Define matrix
     let result1 = repl.eval("let matrix = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]");
@@ -81,7 +81,7 @@ fn test_error_propagation_across_modules() {
     assert!(ast.is_ok(), "Parse should succeed for syntactically valid code");
     
     // Interpretation should fail
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
     let result = repl.eval(source_with_error);
     
     // Should get meaningful error
@@ -132,7 +132,7 @@ fn test_pattern_matching_integration() {
         }
     "#;
     
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
     
     // Test enum definition and pattern matching
     let result = repl.eval(source);
@@ -203,7 +203,7 @@ fn test_recursive_type_inference_performance() {
 
 #[test]
 fn test_memory_leak_prevention() {
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
     
     // Create many temporary values
     for i in 0..1000 {
@@ -224,7 +224,7 @@ fn test_circular_reference_handling() {
         a.next = b;  // Circular reference
     "#;
     
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
     let result = repl.eval(source);
     
     // Should handle circular references gracefully
@@ -235,8 +235,8 @@ fn test_circular_reference_handling() {
 
 #[test]
 fn test_parallel_compilation() {
-    use std::thread;
-    use std::sync::Arc;
+    use std::{env, thread;
+    use std::{env, sync::Arc;
     
     let sources = vec![
         "fn test1() { 1 + 1 }",
@@ -363,7 +363,7 @@ fn test_dataframe_operations() {
           .sort_by("Name")
     "#;
     
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
     let result = repl.eval(source);
     
     // DataFrame operations if supported
@@ -395,7 +395,7 @@ proptest! {
     fn test_arithmetic_evaluation_consistency(a in -100i32..100, b in -100i32..100, c in 1i32..100) {
         let source = format!("({} + {}) * {} / {}", a, b, c, c);
         
-        let mut repl = Repl::new().unwrap();
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
         let result = repl.eval(&source);
         
         if result.is_ok() {

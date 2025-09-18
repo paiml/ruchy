@@ -4,7 +4,7 @@
 #[cfg(test)]
 mod repl_value_coverage {
     use ruchy::runtime::repl::{Value, DataFrameColumn};
-    use std::collections::{HashMap, HashSet};
+    use std::{env, collections::{HashMap, HashSet};
 
     /// Test Value creation and basic operations - Core type coverage
     #[test]
@@ -163,12 +163,12 @@ mod repl_value_coverage {
 #[cfg(test)]
 mod repl_integration_coverage {
     use ruchy::runtime::repl::Repl;
-    use std::time::{Duration, Instant};
+    use std::{env, time::{Duration, Instant};
 
     /// Test REPL creation and basic evaluation
     #[test]
     fn test_repl_creation_and_evaluation_coverage() {
-        let mut repl = Repl::new().expect("REPL creation should succeed");
+        let mut repl = Repl::new(std::env::temp_dir()).expect("REPL creation should succeed");
 
         // Test basic arithmetic evaluation
         let result = repl.eval("2 + 2").expect("Basic arithmetic should work");
@@ -192,7 +192,7 @@ mod repl_integration_coverage {
     /// Test REPL with deadlines - Timeout coverage
     #[test] 
     fn test_repl_deadline_evaluation_coverage() {
-        let mut repl = Repl::new().expect("REPL creation should succeed");
+        let mut repl = Repl::new(std::env::temp_dir()).expect("REPL creation should succeed");
 
         // Test evaluation with generous deadline
         let deadline = Some(Instant::now() + Duration::from_secs(5));
@@ -211,7 +211,7 @@ mod repl_integration_coverage {
     /// Test REPL error handling - Error path coverage
     #[test]
     fn test_repl_error_handling_coverage() {
-        let mut repl = Repl::new().expect("REPL creation should succeed");
+        let mut repl = Repl::new(std::env::temp_dir()).expect("REPL creation should succeed");
 
         // Test syntax error
         let result = repl.eval("let x ="); // Incomplete
@@ -235,7 +235,7 @@ mod repl_integration_coverage {
     /// Test REPL complex expressions - Advanced evaluation coverage
     #[test]
     fn test_repl_complex_expressions_coverage() {
-        let mut repl = Repl::new().expect("REPL creation should succeed");
+        let mut repl = Repl::new(std::env::temp_dir()).expect("REPL creation should succeed");
 
         // Test nested arithmetic
         let result = repl.eval("(2 + 3) * (4 - 1)").expect("Nested arithmetic should work");
@@ -259,7 +259,7 @@ mod repl_integration_coverage {
     /// Test REPL state management - State coverage
     #[test]
     fn test_repl_state_management_coverage() {
-        let mut repl = Repl::new().expect("REPL creation should succeed");
+        let mut repl = Repl::new(std::env::temp_dir()).expect("REPL creation should succeed");
 
         // Test multiple variable assignments
         repl.eval("let a = 1").expect("Variable a assignment should work");
@@ -284,7 +284,7 @@ mod repl_integration_coverage {
     /// Test REPL function definitions - Function coverage
     #[test] 
     fn test_repl_function_definitions_coverage() {
-        let mut repl = Repl::new().expect("REPL creation should succeed");
+        let mut repl = Repl::new(std::env::temp_dir()).expect("REPL creation should succeed");
 
         // Test function definition
         let result = repl.eval("fn double(x) { x * 2 }");
@@ -317,12 +317,12 @@ mod repl_integration_coverage {
 #[cfg(test)]
 mod repl_performance_coverage {
     use ruchy::runtime::repl::Repl;
-    use std::time::Instant;
+    use std::{env, time::Instant;
 
     /// Test REPL performance characteristics
     #[test]
     fn test_repl_performance_coverage() {
-        let mut repl = Repl::new().expect("REPL creation should succeed");
+        let mut repl = Repl::new(std::env::temp_dir()).expect("REPL creation should succeed");
 
         // Test evaluation speed for simple expressions
         let start = Instant::now();
@@ -347,7 +347,7 @@ mod repl_performance_coverage {
     /// Test REPL memory usage patterns
     #[test]
     fn test_repl_memory_usage_coverage() {
-        let mut repl = Repl::new().expect("REPL creation should succeed");
+        let mut repl = Repl::new(std::env::temp_dir()).expect("REPL creation should succeed");
 
         // Test creating many variables
         for i in 1..=100 {

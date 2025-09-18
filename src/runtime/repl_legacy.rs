@@ -5834,7 +5834,7 @@ impl Repl {
                         .join("; ")
                 }
             }
-            _ => format!("{:?}", expr.kind).chars().take(50).collect()
+            _ => format!("{expr.kind:?}").chars().take(50).collect()
         }
     }
     /// Format help for builtin functions

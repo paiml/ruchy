@@ -1,13 +1,15 @@
 //! Generated tests from basic arithmetic replay
 
 use anyhow::Result;
+use std::env;
 use ruchy::runtime::repl::Repl;
+use std::env;
 
 
 #[test]
 fn test_01_basic_arithmetic_001() -> Result<()> {
     // Interactive REPL input
-    let mut repl = Repl::new()?;
+    let mut repl = Repl::new(std::env::temp_dir())?;
     
     let deadline = Some(std::time::Instant::now() + std::time::Duration::from_millis(5000));
     let result = repl.eval("2 + 3");
@@ -21,7 +23,7 @@ fn test_01_basic_arithmetic_001() -> Result<()> {
 #[test]
 fn test_01_basic_arithmetic_002() -> Result<()> {
     // Interactive REPL input
-    let mut repl = Repl::new()?;
+    let mut repl = Repl::new(std::env::temp_dir())?;
     
     let deadline = Some(std::time::Instant::now() + std::time::Duration::from_millis(5000));
     let result = repl.eval("6 * 7");
@@ -35,7 +37,7 @@ fn test_01_basic_arithmetic_002() -> Result<()> {
 #[test]
 fn test_01_basic_arithmetic_003() -> Result<()> {
     // Interactive REPL input
-    let mut repl = Repl::new()?;
+    let mut repl = Repl::new(std::env::temp_dir())?;
     
     let deadline = Some(std::time::Instant::now() + std::time::Duration::from_millis(5000));
     let result = repl.eval("20 / 4");
@@ -49,7 +51,7 @@ fn test_01_basic_arithmetic_003() -> Result<()> {
 #[test]
 fn test_01_basic_arithmetic_004() -> Result<()> {
     // Interactive REPL input
-    let mut repl = Repl::new()?;
+    let mut repl = Repl::new(std::env::temp_dir())?;
     
     let deadline = Some(std::time::Instant::now() + std::time::Duration::from_millis(5000));
     let result = repl.eval("2 + 3 * 4");
@@ -63,7 +65,7 @@ fn test_01_basic_arithmetic_004() -> Result<()> {
 #[test]
 fn test_01_basic_arithmetic_005() -> Result<()> {
     // Interactive REPL input
-    let mut repl = Repl::new()?;
+    let mut repl = Repl::new(std::env::temp_dir())?;
     
     let deadline = Some(std::time::Instant::now() + std::time::Duration::from_millis(5000));
     let result = repl.eval("(2 + 3) * 4");
@@ -77,7 +79,7 @@ fn test_01_basic_arithmetic_005() -> Result<()> {
 #[test]
 fn test_01_basic_arithmetic_006() -> Result<()> {
     // Interactive REPL input
-    let mut repl = Repl::new()?;
+    let mut repl = Repl::new(std::env::temp_dir())?;
     
     let deadline = Some(std::time::Instant::now() + std::time::Duration::from_millis(5000));
     let result = repl.eval("17 % 5");
@@ -91,7 +93,7 @@ fn test_01_basic_arithmetic_006() -> Result<()> {
 #[test]
 fn test_01_basic_arithmetic_007() -> Result<()> {
     // Interactive REPL input
-    let mut repl = Repl::new()?;
+    let mut repl = Repl::new(std::env::temp_dir())?;
     
     let deadline = Some(std::time::Instant::now() + std::time::Duration::from_millis(5000));
     let result = repl.eval("3.14 * 2.0");
@@ -105,7 +107,7 @@ fn test_01_basic_arithmetic_007() -> Result<()> {
 #[test]
 fn test_01_basic_arithmetic_008() -> Result<()> {
     // Interactive REPL input
-    let mut repl = Repl::new()?;
+    let mut repl = Repl::new(std::env::temp_dir())?;
     
     let deadline = Some(std::time::Instant::now() + std::time::Duration::from_millis(5000));
     let result = repl.eval("10.0 / 3.0");
@@ -119,7 +121,7 @@ fn test_01_basic_arithmetic_008() -> Result<()> {
 #[test]
 fn test_01_basic_arithmetic_009() -> Result<()> {
     // Interactive REPL input
-    let mut repl = Repl::new()?;
+    let mut repl = Repl::new(std::env::temp_dir())?;
     
     let deadline = Some(std::time::Instant::now() + std::time::Duration::from_millis(5000));
     let result = repl.eval("5 + 2");
@@ -133,7 +135,7 @@ fn test_01_basic_arithmetic_009() -> Result<()> {
 #[test]
 fn test_01_basic_arithmetic_010() -> Result<()> {
     // Interactive REPL input
-    let mut repl = Repl::new()?;
+    let mut repl = Repl::new(std::env::temp_dir())?;
     
     let deadline = Some(std::time::Instant::now() + std::time::Duration::from_millis(5000));
     let result = repl.eval("(10 + 5) * 3 - 8 / 2");
@@ -148,7 +150,7 @@ fn test_01_basic_arithmetic_010() -> Result<()> {
 fn test_01_basic_arithmetic_session_integration() -> Result<()> {
     // Integration test for complete REPL session
     // Tests state persistence and interaction patterns
-    let mut repl = Repl::new()?;
+    let mut repl = Repl::new(std::env::temp_dir())?;
     
     // Session timeout
     let _deadline = Some(std::time::Instant::now() + std::time::Duration::from_millis(5000));
@@ -187,8 +189,8 @@ fn test_01_basic_arithmetic_determinism_property() -> Result<()> {
     // Property: Session should produce identical results on replay
     // Property-based determinism testing - empty for generated test
     
-    let mut repl1 = Repl::new()?;
-    let mut repl2 = Repl::new()?;
+    let mut repl1 = Repl::new(std::env::temp_dir())?;
+    let mut repl2 = Repl::new(std::env::temp_dir())?;
     
     // Execute same sequence on both REPLs
     let inputs = ["2 + 3", "6 * 7"];
@@ -210,7 +212,7 @@ fn test_01_basic_arithmetic_determinism_property() -> Result<()> {
 #[test] 
 fn test_01_basic_arithmetic_memory_bounds() -> Result<()> {
     // Property: REPL should respect memory limits
-    let mut repl = Repl::new()?;
+    let mut repl = Repl::new(std::env::temp_dir())?;
     
     let initial_memory = repl.memory_used();
     

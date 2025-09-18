@@ -7,8 +7,8 @@ use crate::runtime::repl::Repl;
 use crate::frontend::ast::{Expr, ExprKind, Span};
 use crate::runtime::value::Value;
 use proptest::prelude::*;
-use std::collections::HashSet;
-use std::time::Instant;
+use std::{env, collections::HashSet;
+use std::{env, time::Instant;
 
 #[derive(Debug, Clone)]
 pub enum ReplAction {
@@ -183,7 +183,7 @@ proptest! {
     /// Property: REPL state transitions maintain fundamental invariants
     #[test]
     fn test_repl_state_invariants(actions in prop::collection::vec(arb_repl_action(), 0..20)) {
-        let mut repl = Repl::new().expect("Failed to create REPL");
+        let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
         let mut state = ReplState::initial();
         
         for action in actions {
@@ -227,7 +227,7 @@ proptest! {
     /// Property: REPL never panics on any input
     #[test]
     fn test_repl_never_panics(actions in prop::collection::vec(arb_repl_action(), 0..50)) {
-        let mut repl = Repl::new().expect("Failed to create REPL");
+        let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
         
         for action in actions {
             // This should never panic - all errors should be handled gracefully
@@ -241,7 +241,7 @@ proptest! {
     /// Property: Valid expressions always produce some output
     #[test]
     fn test_valid_expressions_produce_output(expr in arb_valid_expression()) {
-        let mut repl = Repl::new().expect("Failed to create REPL");
+        let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
         
         let result = repl.apply_action(&ReplAction::Eval(expr.clone()));
         
@@ -261,7 +261,7 @@ proptest! {
     fn test_history_consistency(
         expressions in prop::collection::vec(arb_valid_expression(), 1..10)
     ) {
-        let mut repl = Repl::new().expect("Failed to create REPL");
+        let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
         let mut expected_history = Vec::new();
         
         for expr in expressions {
@@ -287,7 +287,7 @@ proptest! {
     fn test_clear_operation_completeness(
         setup_actions in prop::collection::vec(arb_repl_action(), 1..10)
     ) {
-        let mut repl = Repl::new().expect("Failed to create REPL");
+        let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
         
         // Perform some operations to build up state
         for action in setup_actions {
@@ -314,7 +314,7 @@ proptest! {
         var_name in "[a-z][a-z0-9]*",
         value in any::<i32>()
     ) {
-        let mut repl = Repl::new().expect("Failed to create REPL");
+        let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
         
         let binding_expr = format!("let {var_name} = {value}");
         let eval_result = repl.apply_action(&ReplAction::Eval(binding_expr));
@@ -344,7 +344,7 @@ proptest! {
         valid_expr in arb_valid_expression(),
         invalid_expr in arb_invalid_expression()
     ) {
-        let mut repl = Repl::new().expect("Failed to create REPL");
+        let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
         
         // Execute valid expression
         let valid_result = repl.apply_action(&ReplAction::Eval(valid_expr.clone()));
@@ -376,7 +376,7 @@ mod unit_tests {
 
     #[test]
     fn test_repl_state_extraction() {
-        let repl = Repl::new().expect("Failed to create REPL");
+        let repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
         let state = ReplState::extract_from_repl(&repl);
         
         assert_eq!(state.history_count, 0);
@@ -424,7 +424,7 @@ mod unit_tests {
         let config = ProptestConfig::with_cases(100);
         
         proptest!(config, |(func_name in prop::sample::select(vec!["None", "Some", "Ok", "Err"]))| {
-            let mut repl = Repl::new().expect("Failed to create REPL");
+            let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
             let deadline = Instant::now() + std::time::Duration::from_secs(1);
             
             let args = match func_name.as_str() {
@@ -457,7 +457,7 @@ mod unit_tests {
             x in -1000i64..1000i64,
             y in -1000i64..1000i64
         )| {
-            let mut repl = Repl::new().expect("Failed to create REPL");
+            let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
             let deadline = Instant::now() + std::time::Duration::from_secs(1);
             
             // Test abs is always non-negative
@@ -493,7 +493,7 @@ mod unit_tests {
         let config = ProptestConfig::with_cases(50);
         
         proptest!(config, |(var_name in "[a-z]{1,5}", value in -100i64..100i64)| {
-            let mut repl = Repl::new().expect("Failed to create REPL");
+            let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
             let deadline = Instant::now() + std::time::Duration::from_secs(1);
             
             // Set up a variable in global scope

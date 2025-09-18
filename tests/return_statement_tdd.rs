@@ -3,9 +3,10 @@
 // Target: Fix 6+ examples in Ch17, Ch03, Ch04
 
 use ruchy::runtime::repl::Repl;
+use std::env;
 
 fn eval(code: &str) -> String {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     repl.eval(code).unwrap_or_else(|e| format!("Error: {}", e))
 }
 

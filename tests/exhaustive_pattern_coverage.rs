@@ -9,8 +9,11 @@
 //! This prevents compilation failures when new expression types are added.
 
 use ruchy::frontend::ast::{Expr, ExprKind, Literal, Span};
+use std::env;
 use ruchy::middleend::infer::InferenceContext;
+use std::env;
 use ruchy::backend::transpiler::Transpiler;
+use std::env;
 
 /// Test that ensures all `ExprKind` variants can be processed by the interpreter
 #[test]
@@ -116,7 +119,7 @@ fn create_macro_expr() -> Expr {
 fn test_slice_operations_comprehensive() {
     use ruchy::runtime::Repl;
     
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
     
     // Test basic slice operations with different range types
     let test_cases = vec![
@@ -158,7 +161,7 @@ fn test_slice_operations_comprehensive() {
 fn test_slice_operations_error_cases() {
     use ruchy::runtime::Repl;
     
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
     
     // Test error cases that should fail gracefully
     let error_cases = vec![

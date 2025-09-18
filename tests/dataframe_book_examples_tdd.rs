@@ -1,3 +1,4 @@
+use std::env;
 #[cfg(test)]
 mod dataframe_book_examples_tdd {
     use ruchy::runtime::Repl;
@@ -5,7 +6,7 @@ mod dataframe_book_examples_tdd {
     #[test]
     fn test_dataframe_new_constructor() {
         // RED: Test that DataFrame::new() works as shown in book Ch18
-        let mut repl = Repl::new().expect("Failed to create REPL");
+        let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
         
         // Book example from Ch18-00-dataframes-data-processing.md
         let code = r#"
@@ -30,7 +31,7 @@ mod dataframe_book_examples_tdd {
     #[test]
     fn test_dataframe_rows_method() {
         // RED: Test that df.rows() works as shown in book
-        let mut repl = Repl::new().expect("Failed to create REPL");
+        let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
         
         let code = r#"
             let df = DataFrame::new()
@@ -52,7 +53,7 @@ mod dataframe_book_examples_tdd {
     #[test]
     fn test_dataframe_columns_method() {
         // RED: Test that df.columns() works as shown in book
-        let mut repl = Repl::new().expect("Failed to create REPL");
+        let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
         
         let code = r#"
             let df = DataFrame::new()
@@ -75,7 +76,7 @@ mod dataframe_book_examples_tdd {
     #[test]
     fn test_dataframe_display() {
         // RED: Test that println(df) displays DataFrame nicely
-        let mut repl = Repl::new().expect("Failed to create REPL");
+        let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
         
         let code = r#"
             let df = DataFrame::new()
