@@ -58,6 +58,7 @@ pub mod lints;
 pub mod macros;
 #[cfg(feature = "mcp")]
 pub mod lsp;
+pub mod package;
 #[cfg(feature = "mcp")]
 pub mod mcp;
 pub mod cli;
