@@ -941,6 +941,10 @@ pub enum Pattern {
     Or(Vec<Pattern>),
     Rest, // For ... patterns
     RestNamed(String), // For ..name patterns
+    AtBinding {
+        name: String,
+        pattern: Box<Pattern>,
+    }, // For @ bindings like name @ pattern
     WithDefault {
         pattern: Box<Pattern>,
         default: Box<Expr>,
@@ -989,6 +993,7 @@ impl Pattern {
             Pattern::Wildcard => "_".to_string(),
             Pattern::Rest => "_rest".to_string(),
             Pattern::RestNamed(name) => name.clone(),
+            Pattern::AtBinding { name, .. } => name.clone(),
             Pattern::WithDefault { pattern, .. } => pattern.primary_name(),
             Pattern::Literal(lit) => format!("_literal_{lit:?}"),
             Pattern::Range { .. } => "_range".to_string(),

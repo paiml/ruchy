@@ -3791,7 +3791,7 @@ mod tests {
     #[test]
     fn test_cell_metadata() {
         let mut runtime = NotebookRuntime::new().unwrap();
-        let id = runtime.add_cell("code", "print('test')");
+        let _id = runtime.add_cell("code", "print('test')");
 
         let cell = &runtime.notebook.cells[0];
         assert!(!cell.metadata.collapsed);

@@ -273,6 +273,8 @@ pub enum Token {
     Pipe,
     #[token("^")]
     Caret,
+    #[token("@")]
+    At,
     #[token("~")]
     Tilde,
     #[token("\\")]

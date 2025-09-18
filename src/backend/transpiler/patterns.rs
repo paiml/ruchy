@@ -96,6 +96,11 @@ impl Transpiler {
             Pattern::Or(patterns) => self.transpile_or_pattern(patterns),
             Pattern::Rest => Ok(quote! { .. }),
             Pattern::RestNamed(name) => self.transpile_rest_named_pattern(name),
+            Pattern::AtBinding { name, pattern } => {
+                let name_ident = format_ident!("{}", name);
+                let inner = self.transpile_pattern(pattern)?;
+                Ok(quote! { #name_ident @ #inner })
+            }
             Pattern::WithDefault { pattern, default: _ } => {
                 // For patterns with defaults, just use the pattern part in match
                 self.transpile_pattern(pattern)

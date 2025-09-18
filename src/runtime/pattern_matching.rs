@@ -98,6 +98,15 @@ pub fn match_pattern(pattern: &Pattern, value: &Value) -> Option<Vec<(String, Va
             // When within collections, they're handled by match_collection_patterns
             Some(vec![])
         },
+        Pattern::AtBinding { name, pattern } => {
+            // @ bindings both bind the value and match the pattern
+            if let Some(mut bindings) = match_pattern(pattern, value) {
+                bindings.push((name.clone(), value.clone()));
+                Some(bindings)
+            } else {
+                None
+            }
+        },
         Pattern::Range { start, end, inclusive } => match_range_pattern_helper(start, end, *inclusive, value),
         Pattern::QualifiedName(_) => None,
         Pattern::Some(inner_pattern) => match_some_pattern_helper(inner_pattern, value),

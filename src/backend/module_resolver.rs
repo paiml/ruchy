@@ -401,7 +401,8 @@ impl Default for ModuleResolver {
 }
 // Module resolver tests disabled - need update for new AST structure after Sprint v3.8.0
 // TODO: Update tests to match new Import { module: String, items: Option<Vec<String>> } structure
-#[cfg(test_disabled)]
+#[cfg(test)]
+#[ignore]
 mod tests {
     use super::*;
     use tempfile::TempDir;
@@ -671,7 +672,8 @@ mod tests {
         Ok(())
     }
 }
-#[cfg(test_disabled)]
+#[cfg(test)]
+#[ignore]
 mod property_tests_module_resolver {
     use proptest::{proptest, prop_assert_eq};
     

@@ -659,9 +659,9 @@ fn create_let_expression(
                 start_span.merge(end_span),
             ))
         }
-        Pattern::Wildcard | Pattern::Literal(_) | Pattern::QualifiedName(_) | Pattern::Struct { .. } 
-        | Pattern::Range { .. } | Pattern::Or(_) | Pattern::Rest | Pattern::RestNamed(_) 
-        | Pattern::WithDefault { .. } | Pattern::Ok(_) | Pattern::Err(_) | Pattern::Some(_) | Pattern::None => {
+        Pattern::Wildcard | Pattern::Literal(_) | Pattern::QualifiedName(_) | Pattern::Struct { .. }
+        | Pattern::Range { .. } | Pattern::Or(_) | Pattern::Rest | Pattern::RestNamed(_)
+        | Pattern::AtBinding { .. } | Pattern::WithDefault { .. } | Pattern::Ok(_) | Pattern::Err(_) | Pattern::Some(_) | Pattern::None => {
             // For other pattern types, use LetPattern variant
             Ok(Expr::new(
                 ExprKind::LetPattern {
@@ -1112,7 +1112,7 @@ fn parse_literal_pattern(state: &mut ParserState) -> Result<Pattern> {
         Token::Integer(val) => parse_integer_literal_pattern(state, val)?,
         Token::Float(val) => parse_simple_literal_pattern(state, Literal::Float(val))?,
         Token::String(s) => parse_simple_literal_pattern(state, Literal::String(s))?,
-        Token::Char(c) => parse_simple_literal_pattern(state, Literal::Char(c))?,
+        Token::Char(c) => parse_char_literal_pattern(state, c)?,
         Token::Bool(b) => parse_simple_literal_pattern(state, Literal::Bool(b))?,
         _ => bail!("Expected literal pattern, got: {:?}", token)
     };
@@ -1143,6 +1143,33 @@ fn parse_integer_range_pattern(state: &mut ParserState, start_val: i64, inclusiv
         })
     } else {
         bail!("Expected integer after range operator");
+    }
+}
+
+/// Extract method: Parse char literal with optional range pattern - complexity: 8
+fn parse_char_literal_pattern(state: &mut ParserState, val: char) -> Result<Pattern> {
+    state.tokens.advance();
+    // Check for range patterns: 'a'..'z' or 'a'..='z'
+    match state.tokens.peek() {
+        Some((Token::DotDot, _)) => parse_char_range_pattern(state, val, false),
+        Some((Token::DotDotEqual, _)) => parse_char_range_pattern(state, val, true),
+        _ => Ok(Pattern::Literal(Literal::Char(val))),
+    }
+}
+
+/// Extract method: Parse char range pattern - complexity: 6
+fn parse_char_range_pattern(state: &mut ParserState, start_val: char, inclusive: bool) -> Result<Pattern> {
+    state.tokens.advance(); // consume '..' or '..='
+    if let Some((Token::Char(end_val), _)) = state.tokens.peek() {
+        let end_val = *end_val;
+        state.tokens.advance();
+        Ok(Pattern::Range {
+            start: Box::new(Pattern::Literal(Literal::Char(start_val))),
+            end: Box::new(Pattern::Literal(Literal::Char(end_val))),
+            inclusive,
+        })
+    } else {
+        bail!("Expected char after range operator");
     }
 }
 
@@ -1211,6 +1238,17 @@ fn parse_identifier_or_constructor_pattern(state: &mut ParserState) -> Result<Pa
     };
     let name = name.clone();
     state.tokens.advance();
+
+    // Check for @ bindings: name @ pattern
+    if matches!(state.tokens.peek(), Some((Token::At, _))) {
+        state.tokens.advance();
+        let inner_pattern = parse_single_pattern(state)?;
+        return Ok(Pattern::AtBinding {
+            name,
+            pattern: Box::new(inner_pattern),
+        });
+    }
+
     // Check for enum-like patterns: Ok(x), Err(e), etc.
     if matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
         parse_constructor_pattern(state, name)
@@ -1251,16 +1289,22 @@ fn parse_match_list_pattern(state: &mut ParserState) -> Result<Pattern> {
     // Parse pattern elements
     let mut patterns = vec![];
     loop {
-        // Check for rest pattern ...tail
-        if matches!(state.tokens.peek(), Some((Token::DotDotDot, _))) {
+        // Check for rest pattern ..tail (Ruchy uses .. not ...)
+        if matches!(state.tokens.peek(), Some((Token::DotDot, _))) {
             state.tokens.advance();
             if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
                 let name = name.clone();
                 state.tokens.advance();
                 patterns.push(Pattern::RestNamed(name));
+                // Check if there are more elements after the rest pattern
+                if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+                    state.tokens.advance();
+                    // Continue parsing remaining patterns after rest
+                    continue;
+                }
                 break;
             }
-            bail!("Expected identifier after ... in list pattern");
+            bail!("Expected identifier after .. in list pattern");
         }
         patterns.push(parse_match_pattern(state)?);
         if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
