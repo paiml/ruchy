@@ -64,7 +64,7 @@ pub fn new() -> Self {
 /// // Verify behavior
 /// ```
 pub fn with_config(config: TestConfig) -> Self {
-        let repl = Repl::new().expect("Failed to create REPL");
+        let repl = Repl::new(std::env::current_dir().unwrap_or_else(|_| "/tmp".into())).expect("Failed to create REPL");
         Self {
             config,
             state: TestState::default(),
@@ -87,22 +87,10 @@ pub fn execute_cell(&mut self, cell: &Cell) -> Result<CellOutput, String> {
             return Ok(CellOutput::None);
         }
         // Execute the cell using the REPL
-        match self.repl.eval(&cell.source) {
-            Ok(value) => {
-                let output = CellOutput::Value(value.to_string());
+        match self.repl.process_line(&cell.source) {
+            Ok(_should_exit) => {
+                let output = CellOutput::Value("Cell executed".to_string());
                 self.cell_outputs.insert(cell.id.clone(), output.clone());
-                // Update state if it's a variable assignment
-                if cell.source.starts_with("let ") {
-                    if let Some(eq_pos) = cell.source.find('=') {
-                        let var_part = &cell.source[4..eq_pos].trim();
-                        if let Some(space_pos) = var_part.find(' ') {
-                            let var_name = &var_part[..space_pos];
-                            self.state.set_variable(var_name.to_string(), value);
-                        } else {
-                            self.state.set_variable((*var_part).to_string(), value);
-                        }
-                    }
-                }
                 Ok(output)
             }
             Err(e) => {

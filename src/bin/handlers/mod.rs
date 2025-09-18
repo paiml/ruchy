@@ -28,7 +28,7 @@ pub fn handle_eval_command(expr: &str, verbose: bool, format: &str) -> Result<()
     if verbose {
         eprintln!("Parsing expression: {expr}");
     }
-    let mut repl = Repl::new()?;
+    let mut repl = Repl::new(std::env::temp_dir())?;
     match repl.eval(expr) {
         Ok(result) => {
             if verbose {
@@ -83,7 +83,7 @@ pub fn handle_file_execution(file: &Path) -> Result<()> {
     let source = fs::read_to_string(file)
         .with_context(|| format!("Failed to read file: {}", file.display()))?;
     // Use REPL to evaluate the file
-    let mut repl = Repl::new()?;
+    let mut repl = Repl::new(std::env::temp_dir())?;
     match repl.eval(&source) {
         Ok(result) => {
             // Only print non-unit results from file evaluation
@@ -122,7 +122,7 @@ pub fn handle_file_execution(file: &Path) -> Result<()> {
 /// # Errors
 /// Returns error if input cannot be parsed or evaluated
 pub fn handle_stdin_input(input: &str) -> Result<()> {
-    let mut repl = Repl::new()?;
+    let mut repl = Repl::new(std::env::temp_dir())?;
     match repl.eval(input) {
         Ok(result) => {
             println!("{result}");
@@ -362,7 +362,7 @@ pub fn handle_repl_command(record_file: Option<PathBuf>) -> Result<()> {
         ":help".green(),
         ":quit".yellow()
     );
-    let mut repl = Repl::new()?;
+    let mut repl = Repl::new(std::env::temp_dir())?;
     if let Some(record_path) = record_file {
         repl.run_with_recording(&record_path)
     } else {

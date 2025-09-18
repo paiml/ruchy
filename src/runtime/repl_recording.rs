@@ -6,6 +6,7 @@ use crate::runtime::replay::{SessionMetadata, SessionRecorder, InputMode};
 use crate::runtime::completion::RuchyCompleter;
 use crate::runtime::Value;
 use anyhow::Result;
+use std::rc::Rc;
 use colored::Colorize;
 use rustyline::{Config, CompletionType, EditMode};
 use rustyline::history::DefaultHistory;
@@ -66,7 +67,7 @@ impl Repl {
             // Evaluate and record result
             let result = self.eval(input);
             let result_for_recording = match &result {
-                Ok(s) => Ok(Value::String(s.clone())),
+                Ok(s) => Ok(Value::String(Rc::new(s.clone()))),
                 Err(e) => Err(anyhow::anyhow!("{}", e)),
             };
             recorder.record_output(result_for_recording);
@@ -101,7 +102,7 @@ impl Repl {
                 // Evaluate and record result
                 let result = self.eval(&full_input);
                 let result_for_recording = match &result {
-                    Ok(s) => Ok(Value::String(s.clone())),
+                    Ok(s) => Ok(Value::String(Rc::new(s.clone()))),
                     Err(e) => Err(anyhow::anyhow!("{}", e)),
                 };
                 recorder.record_output(result_for_recording);
@@ -209,7 +210,7 @@ mod tests {
     }
     #[test]
     fn test_setup_recording_editor() -> Result<()> {
-        let repl = Repl::new()?;
+        let repl = Repl::new(std::env::temp_dir())?;
         // Just verify it doesn't panic
         let _editor = repl.setup_recording_editor()?;
         Ok(())

@@ -72,7 +72,7 @@ pub mod pattern_matching;
 pub mod observatory;
 pub mod observatory_ui;
 pub mod repl; // New EXTREME Quality REPL
-pub mod repl_legacy; // Old REPL (backup)
+// pub mod repl_legacy; // Old REPL (backup) - temporarily disabled for integration
 // pub mod repl_modules;  // Temporarily disabled - compilation errors
 pub mod repl_recording;
 pub mod replay;
@@ -87,7 +87,7 @@ pub mod inspect;
 // pub mod resource_eval;  // Temporarily disabled - causes duplicate impl
 // Export the unified REPL
 pub use repl::Repl;
-pub use repl_legacy::{ReplConfig, ReplState as LegacyReplState};
+// pub use repl_legacy::{ReplConfig, ReplState as LegacyReplState}; // Temporarily disabled
 // Export interpreter components
 pub use interpreter::{
     Interpreter, InterpreterError, InterpreterResult, Value,
@@ -143,12 +143,13 @@ pub use replay_converter::{
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::rc::Rc;
 
     // Sprint 4: Comprehensive runtime tests for coverage improvement
 
     #[test]
     fn test_repl_creation_and_basic_eval() {
-        let mut repl = Repl::new().unwrap();
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
         assert_eq!(repl.eval("1 + 1").unwrap(), "2");
         assert_eq!(repl.eval("2 * 3").unwrap(), "6");
         assert_eq!(repl.eval("10 - 5").unwrap(), "5");
@@ -156,7 +157,7 @@ mod tests {
 
     #[test]
     fn test_repl_variable_binding() {
-        let mut repl = Repl::new().unwrap();
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
         assert_eq!(repl.eval("let x = 42").unwrap(), "42");
         assert_eq!(repl.eval("x").unwrap(), "42");
         assert_eq!(repl.eval("let y = x + 8").unwrap(), "50");
@@ -165,7 +166,7 @@ mod tests {
 
     #[test]
     fn test_repl_function_definition() {
-        let mut repl = Repl::new().unwrap();
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
         repl.eval("fn add(a, b) { a + b }").unwrap();
         assert_eq!(repl.eval("add(3, 4)").unwrap(), "7");
         assert_eq!(repl.eval("add(10, 20)").unwrap(), "30");
@@ -173,7 +174,7 @@ mod tests {
 
     #[test]
     fn test_repl_if_expression() {
-        let mut repl = Repl::new().unwrap();
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
         assert_eq!(repl.eval("if true { 1 } else { 2 }").unwrap(), "1");
         assert_eq!(repl.eval("if false { 1 } else { 2 }").unwrap(), "2");
         assert_eq!(repl.eval("if 5 > 3 { \"yes\" } else { \"no\" }").unwrap(), "\"yes\"");
@@ -182,7 +183,7 @@ mod tests {
     #[test]
     #[ignore = "List operations need investigation"]
     fn test_repl_list_operations() {
-        let mut repl = Repl::new().unwrap();
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
         assert_eq!(repl.eval("[1, 2, 3]").unwrap(), "[1, 2, 3]");
         assert_eq!(repl.eval("[]").unwrap(), "[]");
         assert_eq!(repl.eval("[1] + [2, 3]").unwrap(), "[1, 2, 3]");
@@ -190,7 +191,7 @@ mod tests {
 
     #[test]
     fn test_repl_for_loop() {
-        let mut repl = Repl::new().unwrap();
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
         repl.eval("let mut sum = 0").unwrap();
         repl.eval("for i in 1..=5 { sum = sum + i }").unwrap();
         assert_eq!(repl.eval("sum").unwrap(), "15");
@@ -198,7 +199,7 @@ mod tests {
 
     #[test]
     fn test_repl_while_loop() {
-        let mut repl = Repl::new().unwrap();
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
         repl.eval("let mut n = 0").unwrap();
         repl.eval("while n < 5 { n = n + 1 }").unwrap();
         assert_eq!(repl.eval("n").unwrap(), "5");
@@ -206,7 +207,7 @@ mod tests {
 
     #[test]
     fn test_repl_match_expression() {
-        let mut repl = Repl::new().unwrap();
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
         let code = r#"
             match 2 {
                 1 => "one",
@@ -219,21 +220,21 @@ mod tests {
 
     #[test]
     fn test_repl_lambda() {
-        let mut repl = Repl::new().unwrap();
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
         repl.eval("let double = |x| x * 2").unwrap();
         assert_eq!(repl.eval("double(21)").unwrap(), "42");
     }
 
     #[test]
     fn test_repl_string_operations() {
-        let mut repl = Repl::new().unwrap();
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
         assert_eq!(repl.eval("\"hello\" + \" world\"").unwrap(), "\"hello world\"");
         assert_eq!(repl.eval("\"test\"").unwrap(), "\"test\"");
     }
 
     #[test]
     fn test_repl_boolean_operations() {
-        let mut repl = Repl::new().unwrap();
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
         assert_eq!(repl.eval("true && true").unwrap(), "true");
         assert_eq!(repl.eval("true || false").unwrap(), "true");
         assert_eq!(repl.eval("!true").unwrap(), "false");
@@ -241,7 +242,7 @@ mod tests {
 
     #[test]
     fn test_repl_comparison_operators() {
-        let mut repl = Repl::new().unwrap();
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
         assert_eq!(repl.eval("5 > 3").unwrap(), "true");
         assert_eq!(repl.eval("3 < 5").unwrap(), "true");
         assert_eq!(repl.eval("5 == 5").unwrap(), "true");
@@ -251,7 +252,7 @@ mod tests {
     #[test]
     #[ignore = "Float arithmetic needs investigation"]
     fn test_repl_float_arithmetic() {
-        let mut repl = Repl::new().unwrap();
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
         assert_eq!(repl.eval("3.5 + 1.5").unwrap(), "5.0");
         assert_eq!(repl.eval("10.0 - 2.5").unwrap(), "7.5");
         assert_eq!(repl.eval("2.5 * 2.0").unwrap(), "5.0");
@@ -259,7 +260,7 @@ mod tests {
 
     #[test]
     fn test_repl_error_handling() {
-        let mut repl = Repl::new().unwrap();
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
         assert!(repl.eval("undefined_var").is_err());
         assert!(repl.eval("1 / 0").is_err());
         // Should recover after error
@@ -268,7 +269,7 @@ mod tests {
 
     #[test]
     fn test_repl_memory_tracking() {
-        let mut repl = Repl::new().unwrap();
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
         let initial = repl.memory_used();
         assert_eq!(initial, 0);
 
@@ -281,7 +282,7 @@ mod tests {
 
     #[test]
     fn test_repl_checkpoint_restore() {
-        let mut repl = Repl::new().unwrap();
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
         repl.eval("let x = 10").unwrap();
 
         let checkpoint = repl.checkpoint();
@@ -294,7 +295,7 @@ mod tests {
 
     #[test]
     fn test_repl_bindings_management() {
-        let mut repl = Repl::new().unwrap();
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
         repl.eval("let a = 1").unwrap();
         repl.eval("let b = 2").unwrap();
 
@@ -309,26 +310,26 @@ mod tests {
     #[test]
     #[ignore = "Value type formatting needs investigation"]
     fn test_value_types() {
-        assert_eq!(Value::Int(42).to_string(), "42");
+        assert_eq!(Value::Integer(42).to_string(), "42");
         assert_eq!(Value::Float(3.14).to_string(), "3.14");
         assert_eq!(Value::Bool(true).to_string(), "true");
-        assert_eq!(Value::String("hello".to_string()).to_string(), "\"hello\"");
+        assert_eq!(Value::String(Rc::new("hello".to_string())).to_string(), "\"hello\"");
         assert_eq!(Value::Nil.to_string(), "nil");
-        assert_eq!(Value::Unit.to_string(), "()");
+        assert_eq!(Value::Nil.to_string(), "()");
     }
 
     #[test]
     fn test_value_list() {
-        let list = Value::List(vec![Value::Int(1), Value::Int(2), Value::Int(3)]);
+        let list = Value::Array(Rc::new(vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)]));
         assert_eq!(list.to_string(), "[1, 2, 3]");
 
-        let empty = Value::List(vec![]);
+        let empty = Value::Array(Rc::new(vec![]));
         assert_eq!(empty.to_string(), "[]");
     }
 
     #[test]
     fn test_value_tuple() {
-        let tuple = Value::Tuple(vec![Value::Int(1), Value::String("test".to_string())]);
+        let tuple = Value::Tuple(Rc::new(vec![Value::Integer(1), Value::String(Rc::new("test".to_string()))]));
         assert_eq!(tuple.to_string(), "(1, \"test\")");
     }
 }

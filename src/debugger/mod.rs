@@ -135,7 +135,7 @@ impl Debugger {
         self.events.clear();
 
         // Check if program contains panic (simplified check)
-        let ast_str = format!("{:?}", ast);
+        let ast_str = format!("{ast:?}");
         if ast_str.contains("panic") {
             self.events.push(DebugEvent::ExceptionThrown("panic detected".to_string()));
         }
@@ -158,13 +158,13 @@ impl Debugger {
         self.is_running = true;
 
         // Check if we have breakpoints
-        if !self.breakpoints.is_empty() {
-            self.is_paused = true; // Paused at breakpoint for testing
-            self.current_line = self.breakpoints.first().map(|bp| bp.line).unwrap_or(0);
-            self.events.push(DebugEvent::BreakpointHit(0));
-        } else {
+        if self.breakpoints.is_empty() {
             // No breakpoints, run to completion
             self.events.push(DebugEvent::ProgramTerminated);
+        } else {
+            self.is_paused = true; // Paused at breakpoint for testing
+            self.current_line = self.breakpoints.first().map_or(0, |bp| bp.line);
+            self.events.push(DebugEvent::BreakpointHit(0));
         }
 
         // Simulate call stack
@@ -260,7 +260,7 @@ impl Debugger {
 
     /// Set a variable value
     pub fn set_variable(&mut self, _name: &str, value: &str) {
-        self.output = format!("{}\n", value);
+        self.output = format!("{value}\n");
     }
 
     /// Get output
@@ -325,7 +325,7 @@ impl Debugger {
     /// Convert line number to byte offset
     pub fn line_to_offset(&self, source: &str, line: usize) -> usize {
         let mut current_line = 1;
-        let mut line_start = 0;
+        // Line start tracking removed as not currently used
 
         for (i, ch) in source.char_indices() {
             if ch == '\n' {
@@ -363,7 +363,7 @@ impl Debugger {
 
         lines[start..end]
             .iter()
-            .map(|s| s.to_string())
+            .map(|s| (*s).to_string())
             .collect()
     }
 }

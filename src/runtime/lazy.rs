@@ -378,9 +378,9 @@ mod tests {
     use super::*;
     #[test]
     fn test_lazy_value_computed() {
-        let lazy = LazyValue::computed(Value::Int(42));
+        let lazy = LazyValue::computed(Value::Integer(42));
         assert!(lazy.is_computed());
-        assert_eq!(lazy.force().unwrap(), Value::Int(42));
+        assert_eq!(lazy.force().unwrap(), Value::Integer(42));
     }
     #[test]
     fn test_lazy_value_deferred() {
@@ -388,42 +388,42 @@ mod tests {
         let counter_clone = Rc::clone(&counter);
         let lazy = LazyValue::deferred(move || {
             *counter_clone.borrow_mut() += 1;
-            Ok(Value::Int(42))
+            Ok(Value::Integer(42))
         });
         assert!(!lazy.is_computed());
         assert_eq!(*counter.borrow(), 0);
         // First force computes
-        assert_eq!(lazy.force().unwrap(), Value::Int(42));
+        assert_eq!(lazy.force().unwrap(), Value::Integer(42));
         assert_eq!(*counter.borrow(), 1);
         // Second force uses cache
-        assert_eq!(lazy.force().unwrap(), Value::Int(42));
+        assert_eq!(lazy.force().unwrap(), Value::Integer(42));
         assert_eq!(*counter.borrow(), 1); // Not incremented again
     }
     #[test]
     fn test_lazy_iterator_map() {
-        let values = vec![Value::Int(1), Value::Int(2), Value::Int(3)];
+        let values = vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)];
         let lazy = LazyIterator::from_vec(values).map(|v| {
-            if let Value::Int(n) = v {
-                Ok(Value::Int(n * 2))
+            if let Value::Integer(n) = v {
+                Ok(Value::Integer(n * 2))
             } else {
                 Ok(v)
             }
         });
         let result = lazy.collect().unwrap();
-        assert_eq!(result, vec![Value::Int(2), Value::Int(4), Value::Int(6)]);
+        assert_eq!(result, vec![Value::Integer(2), Value::Integer(4), Value::Integer(6)]);
     }
     #[test]
     fn test_lazy_iterator_filter() {
-        let values = vec![Value::Int(1), Value::Int(2), Value::Int(3), Value::Int(4)];
+        let values = vec![Value::Integer(1), Value::Integer(2), Value::Integer(3), Value::Integer(4)];
         let lazy = LazyIterator::from_vec(values).filter(|v| {
-            if let Value::Int(n) = v {
+            if let Value::Integer(n) = v {
                 Ok(n % 2 == 0)
             } else {
                 Ok(false)
             }
         });
         let result = lazy.collect().unwrap();
-        assert_eq!(result, vec![Value::Int(2), Value::Int(4)]);
+        assert_eq!(result, vec![Value::Integer(2), Value::Integer(4)]);
     }
     #[test]
     fn test_lazy_cache() {
@@ -434,20 +434,20 @@ mod tests {
         let result = cache
             .get_or_compute("key", || {
                 *counter_clone.borrow_mut() += 1;
-                Ok(Value::Int(42))
+                Ok(Value::Integer(42))
             })
             .unwrap();
-        assert_eq!(result, Value::Int(42));
+        assert_eq!(result, Value::Integer(42));
         assert_eq!(*counter.borrow(), 1);
         // Second call uses cache
         let counter_clone = Rc::clone(&counter);
         let result = cache
             .get_or_compute("key", || {
                 *counter_clone.borrow_mut() += 1;
-                Ok(Value::Int(100))
+                Ok(Value::Integer(100))
             })
             .unwrap();
-        assert_eq!(result, Value::Int(42)); // Cached value
+        assert_eq!(result, Value::Integer(42)); // Cached value
         assert_eq!(*counter.borrow(), 1); // Not incremented
     }
 }

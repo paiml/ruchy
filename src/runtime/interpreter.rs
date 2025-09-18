@@ -67,6 +67,19 @@ pub enum Value {
     DataFrame {
         columns: Vec<DataFrameColumn>,
     },
+    /// Object/HashMap value for key-value mappings
+    Object(Rc<HashMap<String, Value>>),
+    /// Range value for representing ranges
+    Range {
+        start: Box<Value>,
+        end: Box<Value>,
+        inclusive: bool,
+    },
+    /// Enum variant value
+    EnumVariant {
+        variant_name: String,
+        data: Option<Vec<Value>>,
+    },
 }
 
 impl Value {
@@ -116,6 +129,28 @@ impl Value {
     /// Create array value
     pub fn from_array(arr: Vec<Value>) -> Self {
         Value::Array(Rc::new(arr))
+    }
+
+    /// Create object value
+    pub fn from_object(obj: HashMap<String, Value>) -> Self {
+        Value::Object(Rc::new(obj))
+    }
+
+    /// Create range value
+    pub fn from_range(start: Value, end: Value, inclusive: bool) -> Self {
+        Value::Range {
+            start: Box::new(start),
+            end: Box::new(end),
+            inclusive,
+        }
+    }
+
+    /// Create enum variant value
+    pub fn from_enum_variant(variant_name: String, data: Option<Vec<Value>>) -> Self {
+        Value::EnumVariant {
+            variant_name,
+            data,
+        }
     }
 
     /// Check if value is nil
@@ -197,6 +232,9 @@ impl Value {
             Value::Tuple(_) => "tuple",
             Value::Closure { .. } => "function",
             Value::DataFrame { .. } => "dataframe",
+            Value::Object(_) => "object",
+            Value::Range { .. } => "range",
+            Value::EnumVariant { .. } => "enum_variant",
         }
     }
 }
@@ -300,7 +338,7 @@ impl std::fmt::Display for Value {
             Value::Float(fl) => write!(f, "{fl}"),
             Value::Bool(b) => write!(f, "{b}"),
             Value::Nil => write!(f, "nil"),
-            Value::String(s) => write!(f, "{s}"),
+            Value::String(s) => write!(f, "\"{}\"", s),
             Value::Array(arr) => {
                 write!(f, "[")?;
                 for (i, val) in arr.iter().enumerate() {
@@ -326,6 +364,39 @@ impl std::fmt::Display for Value {
                 writeln!(f, "DataFrame with {} columns:", columns.len())?;
                 for col in columns {
                     writeln!(f, "  {}: {} rows", col.name, col.values.len())?;
+                }
+                Ok(())
+            }
+            Value::Object(obj) => {
+                write!(f, "{{")?;
+                for (i, (key, val)) in obj.iter().enumerate() {
+                    if i > 0 {
+                        write!(f, ", ")?;
+                    }
+                    write!(f, "{key}: {val}")?;
+                }
+                write!(f, "}}")
+            }
+            Value::Range { start, end, inclusive } => {
+                if *inclusive {
+                    write!(f, "{start}..={end}")
+                } else {
+                    write!(f, "{start}..{end}")
+                }
+            }
+            Value::EnumVariant { variant_name, data } => {
+                write!(f, "{variant_name}")?;
+                if let Some(values) = data {
+                    if !values.is_empty() {
+                        write!(f, "(")?;
+                        for (i, val) in values.iter().enumerate() {
+                            if i > 0 {
+                                write!(f, ", ")?;
+                            }
+                            write!(f, "{val}")?;
+                        }
+                        write!(f, ")")?;
+                    }
                 }
                 Ok(())
             }
@@ -1057,6 +1128,25 @@ impl ConservativeGC {
                     col.name.len() + col.values.iter().map(|v| self.estimate_object_size(v)).sum::<usize>()
                 }).sum::<usize>();
                 base_size + columns_size
+            }
+            Value::Object(obj) => {
+                let base_size = 24; // HashMap overhead
+                let content_size = obj.iter().map(|(k, v)| {
+                    k.len() + self.estimate_object_size(v)
+                }).sum::<usize>();
+                base_size + content_size
+            }
+            Value::Range { start, end, .. } => {
+                let base_size = 16; // Range overhead
+                base_size + self.estimate_object_size(start) + self.estimate_object_size(end)
+            }
+            Value::EnumVariant { variant_name, data } => {
+                let base_size = 24; // EnumVariant overhead
+                let name_size = variant_name.len();
+                let data_size = data.as_ref().map_or(0, |values| {
+                    values.iter().map(|v| self.estimate_object_size(v)).sum::<usize>()
+                });
+                base_size + name_size + data_size
             }
         }
     }
@@ -1812,6 +1902,9 @@ impl Value {
             Value::Tuple(_) => std::any::TypeId::of::<(Value,)>(),
             Value::Closure { .. } => std::any::TypeId::of::<fn()>(),
             Value::DataFrame { .. } => std::any::TypeId::of::<DataFrameColumn>(),
+            Value::Object(_) => std::any::TypeId::of::<HashMap<String, Value>>(),
+            Value::Range { .. } => std::any::TypeId::of::<std::ops::Range<i64>>(),
+            Value::EnumVariant { .. } => std::any::TypeId::of::<String>(),
         }
     }
 }
@@ -3516,10 +3609,32 @@ impl Interpreter {
                 format!("function/{}", params.len())
             }
             Value::DataFrame { columns } => {
-                format!("DataFrame({} columns, {} rows)", 
-                    columns.len(), 
+                format!("DataFrame({} columns, {} rows)",
+                    columns.len(),
                     columns.first().map_or(0, |c| c.values.len())
                 )
+            }
+            Value::Object(map) => {
+                let entries: Vec<String> = map.iter()
+                    .map(|(k, v)| format!("{}: {}", k, self.print_value(v)))
+                    .collect();
+                format!("{{{}}}", entries.join(", "))
+            }
+            Value::Range { start, end, inclusive } => {
+                if *inclusive {
+                    format!("{}..={}", self.print_value(start), self.print_value(end))
+                } else {
+                    format!("{}..{}", self.print_value(start), self.print_value(end))
+                }
+            }
+            Value::EnumVariant { variant_name, data } => {
+                match data {
+                    Some(values) => {
+                        let value_strs: Vec<String> = values.iter().map(|v| self.print_value(v)).collect();
+                        format!("{}({})", variant_name, value_strs.join(", "))
+                    }
+                    None => variant_name.clone(),
+                }
             }
         }
     }

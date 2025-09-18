@@ -73,7 +73,7 @@ impl WasmCompiler {
                     .collect();
                 let result_types = vec![ValType::I32]; // Simplification: returns i32
 
-                types.function(param_types.clone(), result_types.clone());
+                types.function(param_types, result_types);
                 functions.function(0); // Reference to type 0
 
                 // Generate function body
@@ -110,16 +110,16 @@ impl WasmCompiler {
         }
 
         // Assemble the module
-        if types.len() > 0 {
+        if !types.is_empty() {
             module.section(&types);
         }
-        if functions.len() > 0 {
+        if !functions.is_empty() {
             module.section(&functions);
         }
-        if export_section.len() > 0 {
+        if !export_section.is_empty() {
             module.section(&export_section);
         }
-        if code.len() > 0 {
+        if !code.is_empty() {
             module.section(&code);
         }
 
@@ -142,7 +142,7 @@ impl WasmCompiler {
                     func.instruction(&Instruction::F64Const(*f));
                 }
                 Literal::Bool(b) => {
-                    func.instruction(&Instruction::I32Const(if *b { 1 } else { 0 }));
+                    func.instruction(&Instruction::I32Const(i32::from(*b)));
                 }
                 _ => {
                     // Other literals default to 0
@@ -195,7 +195,7 @@ impl WasmModule {
     /// Validate the module
     pub fn validate(&self) -> Result<()> {
         // Basic validation - check magic number
-        if self.bytes.len() >= 4 && &self.bytes[0..4] == &[0x00, 0x61, 0x73, 0x6d] {
+        if self.bytes.len() >= 4 && self.bytes[0..4] == [0x00, 0x61, 0x73, 0x6d] {
             Ok(())
         } else {
             anyhow::bail!("Invalid WASM module")

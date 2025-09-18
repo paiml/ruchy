@@ -531,32 +531,32 @@ mod tests {
     fn test_transaction_commit() {
         let mut state = TransactionalState::new(1024 * 1024);
         // Add initial binding
-        state.insert_binding("x".to_string(), Value::Int(1), false);
+        state.insert_binding("x".to_string(), Value::Integer(1), false);
         // Begin transaction
         let tx = state.begin_transaction(TransactionMetadata::default()).unwrap();
         // Modify binding
-        state.insert_binding("x".to_string(), Value::Int(2), false);
-        state.insert_binding("y".to_string(), Value::Int(3), false);
+        state.insert_binding("x".to_string(), Value::Integer(2), false);
+        state.insert_binding("y".to_string(), Value::Integer(3), false);
         // Commit
         state.commit_transaction(tx).unwrap();
         // Changes should persist
-        assert_eq!(state.bindings.get("x"), Some(&Value::Int(2)));
-        assert_eq!(state.bindings.get("y"), Some(&Value::Int(3)));
+        assert_eq!(state.bindings.get("x"), Some(&Value::Integer(2)));
+        assert_eq!(state.bindings.get("y"), Some(&Value::Integer(3)));
     }
     #[test]
     fn test_transaction_rollback() {
         let mut state = TransactionalState::new(1024 * 1024);
         // Add initial binding
-        state.insert_binding("x".to_string(), Value::Int(1), false);
+        state.insert_binding("x".to_string(), Value::Integer(1), false);
         // Begin transaction
         let tx = state.begin_transaction(TransactionMetadata::default()).unwrap();
         // Modify binding
-        state.insert_binding("x".to_string(), Value::Int(2), false);
-        state.insert_binding("y".to_string(), Value::Int(3), false);
+        state.insert_binding("x".to_string(), Value::Integer(2), false);
+        state.insert_binding("y".to_string(), Value::Integer(3), false);
         // Rollback
         state.rollback_transaction(tx).unwrap();
         // Changes should be reverted
-        assert_eq!(state.bindings.get("x"), Some(&Value::Int(1)));
+        assert_eq!(state.bindings.get("x"), Some(&Value::Integer(1)));
         assert_eq!(state.bindings.get("y"), None);
     }
     // Note: SavePoint test disabled - feature temporarily disabled
@@ -564,27 +564,27 @@ mod tests {
     // fn test_savepoint() {
     //     let mut state = TransactionalState::new(1024 * 1024);
     //     
-    //     state.insert_binding("x".to_string(), Value::Int(1), false);
+    //     state.insert_binding("x".to_string(), Value::Integer(1), false);
     //     
     //     {
     //         let sp = state.savepoint().unwrap();
-    //         state.insert_binding("x".to_string(), Value::Int(2), false);
+    //         state.insert_binding("x".to_string(), Value::Integer(2), false);
     //         // SavePoint dropped here, automatic rollback
     //     }
     //     
     //     // Should be rolled back
-    //     assert_eq!(state.bindings.get("x"), Some(&Value::Int(1)));
+    //     assert_eq!(state.bindings.get("x"), Some(&Value::Integer(1)));
     // }
     #[test]
     fn test_mvcc() {
         let mut mvcc = MVCC::new();
         let v1 = mvcc.begin_write();
-        mvcc.write("x".to_string(), Value::Int(1), v1);
+        mvcc.write("x".to_string(), Value::Integer(1), v1);
         let v2 = mvcc.begin_write();
-        mvcc.write("x".to_string(), Value::Int(2), v2);
+        mvcc.write("x".to_string(), Value::Integer(2), v2);
         // Read at different versions
-        assert_eq!(mvcc.read("x", v1), Some(&Value::Int(1)));
-        assert_eq!(mvcc.read("x", v2), Some(&Value::Int(2)));
+        assert_eq!(mvcc.read("x", v1), Some(&Value::Integer(1)));
+        assert_eq!(mvcc.read("x", v2), Some(&Value::Integer(2)));
     }
 }
 #[cfg(test)]

@@ -11,6 +11,7 @@ pub mod state;
 pub mod evaluation;
 pub mod completion;
 pub mod formatting;
+mod minimal_test;
 
 // Re-export main types for easy access
 pub use self::commands::{CommandRegistry, CommandResult, CommandContext};
@@ -24,11 +25,10 @@ pub use crate::runtime::interpreter::Value;
 
 use anyhow::{Context, Result};
 use rustyline::error::ReadlineError;
-use rustyline::{Config, Editor};
+use rustyline::{Config, DefaultEditor};
 use std::path::PathBuf;
 use std::time::Instant;
 
-use crate::frontend::parser::Parser;
 // Value is already imported above via pub use
 
 /// EXTREME Quality REPL with guaranteed <10 complexity per function
@@ -65,7 +65,7 @@ impl Repl {
             .history_ignore_space(true)
             .completion_type(rustyline::CompletionType::List)
             .build();
-        let mut editor = Editor::<()>::with_config(config)?;
+        let mut editor = DefaultEditor::with_config(config)?;
 
         // Load history if it exists
         let _ = self.load_history(&mut editor);
@@ -74,7 +74,7 @@ impl Repl {
             let prompt = self.get_prompt();
             match editor.readline(&prompt) {
                 Ok(line) => {
-                    editor.add_history_entry(&line);
+                    let _ = editor.add_history_entry(&line);
                     if self.process_line(&line)? {
                         break; // Exit requested
                     }
@@ -87,15 +87,32 @@ impl Repl {
                     break;
                 }
                 Err(err) => {
-                    eprintln!("REPL Error: {:?}", err);
+                    eprintln!("REPL Error: {err:?}");
                     break;
                 }
             }
         }
 
         // Save history before exit
-        let _ = self.save_history(&editor);
+        let _ = self.save_history(&mut editor);
         Ok(())
+    }
+
+    /// Evaluate a line and return the result as a string (compatibility method)
+    /// Complexity: 6
+    pub fn eval(&mut self, line: &str) -> Result<String> {
+        match self.evaluator.evaluate_line(line, &mut self.state)? {
+            EvalResult::Value(value) => {
+                let formatted = format_value(&value);
+                Ok(formatted)
+            }
+            EvalResult::NeedMoreInput => {
+                Ok(String::new()) // Multiline mode
+            }
+            EvalResult::Error(msg) => {
+                Err(anyhow::anyhow!("Evaluation error: {}", msg))
+            }
+        }
     }
 
     /// Process a single input line (complexity: 8)
@@ -127,6 +144,103 @@ impl Repl {
         Ok(should_exit)
     }
 
+    /// Check if input needs continuation (compatibility method)
+    /// Complexity: 1
+    pub fn needs_continuation(_input: &str) -> bool {
+        // Simplified static implementation for compatibility
+        // In the future, this could check for incomplete expressions
+        false
+    }
+
+    /// Get last error (compatibility method)
+    /// Complexity: 1
+    pub fn get_last_error(&mut self) -> Option<String> {
+        // For now, we don't track last error separately
+        // This is a compatibility shim
+        None
+    }
+
+    /// Evaluate expression string (compatibility method)
+    /// Complexity: 3
+    pub fn evaluate_expr_str(&mut self, expr: &str, _context: Option<()>) -> Result<Value> {
+        match self.evaluator.evaluate_line(expr, &mut self.state)? {
+            EvalResult::Value(value) => Ok(value),
+            EvalResult::NeedMoreInput => Err(anyhow::anyhow!("Incomplete expression")),
+            EvalResult::Error(msg) => Err(anyhow::anyhow!("Evaluation error: {}", msg)),
+        }
+    }
+
+    /// Run REPL with recording (compatibility method)
+    /// Complexity: 2
+    pub fn run_with_recording(&mut self, _record_path: &std::path::Path) -> Result<()> {
+        // For now, just run normally
+        // Recording functionality to be implemented in future release
+        self.run()
+    }
+
+    /// Get memory usage (compatibility method)
+    /// Complexity: 1
+    pub fn memory_used(&self) -> usize {
+        // Simplified memory tracking for compatibility
+        self.state.get_bindings().len() * 64 // Rough estimate
+    }
+
+    /// Get memory pressure (compatibility method)
+    /// Complexity: 1
+    pub fn memory_pressure(&self) -> f64 {
+        // Simplified pressure calculation
+        let used = self.memory_used() as f64;
+        let max = 1024.0 * 1024.0; // 1MB
+        (used / max).min(1.0)
+    }
+
+    /// Create checkpoint (compatibility method)
+    /// Complexity: 2
+    pub fn checkpoint(&self) -> String {
+        // Serialize current state bindings as checkpoint
+        use std::collections::HashMap;
+
+        let bindings: HashMap<String, String> = self.state.get_bindings()
+            .iter()
+            .map(|(k, v)| (k.clone(), format!("{}", v)))
+            .collect();
+
+        serde_json::to_string(&bindings).unwrap_or_else(|_| "{}".to_string())
+    }
+
+    /// Restore checkpoint (compatibility method)
+    /// Complexity: 5
+    pub fn restore_checkpoint(&mut self, checkpoint: &str) {
+        use std::collections::HashMap;
+
+        // Deserialize checkpoint and restore bindings
+        if let Ok(saved_bindings) = serde_json::from_str::<HashMap<String, String>>(checkpoint) {
+            self.clear_bindings();
+
+            // Convert string representations back to Values and restore them
+            for (name, value_str) in saved_bindings {
+                let value = if let Ok(int_val) = value_str.parse::<i64>() {
+                    Value::Integer(int_val)
+                } else if value_str == "true" {
+                    Value::Bool(true)
+                } else if value_str == "false" {
+                    Value::Bool(false)
+                } else if value_str == "nil" {
+                    Value::Nil
+                } else if value_str.starts_with('"') && value_str.ends_with('"') {
+                    let content = &value_str[1..value_str.len()-1];
+                    Value::String(std::rc::Rc::new(content.to_string()))
+                } else {
+                    continue; // Skip unknown types
+                };
+
+                // Restore to both REPL state and interpreter
+                self.state.get_bindings_mut().insert(name.clone(), value.clone());
+                self.evaluator.set_variable(name, value);
+            }
+        }
+    }
+
     /// Process REPL commands (complexity: 6)
     fn process_command(&mut self, line: &str) -> Result<bool> {
         let parts: Vec<&str> = line.split_whitespace().collect();
@@ -135,16 +249,16 @@ impl Repl {
             state: &mut self.state,
         };
 
-        match self.commands.execute(&parts[0], &mut context)? {
+        match self.commands.execute(parts[0], &mut context)? {
             CommandResult::Exit => Ok(true),
             CommandResult::Success(output) => {
                 if !output.is_empty() {
-                    println!("{}", output);
+                    println!("{output}");
                 }
                 Ok(false)
             }
             CommandResult::ModeChange(mode) => {
-                println!("Switched to {} mode", mode);
+                println!("Switched to {mode} mode");
                 Ok(false)
             }
             CommandResult::Silent => Ok(false),
@@ -153,11 +267,11 @@ impl Repl {
 
     /// Process expression evaluation (complexity: 7)
     fn process_evaluation(&mut self, line: &str) -> Result<()> {
-        match self.evaluator.evaluate_line(line)? {
+        match self.evaluator.evaluate_line(line, &mut self.state)? {
             EvalResult::Value(value) => {
                 let formatted = format_value(&value);
                 if !formatted.is_empty() {
-                    println!("{}", formatted);
+                    println!("{formatted}");
                 }
             }
             EvalResult::NeedMoreInput => {
@@ -171,7 +285,7 @@ impl Repl {
     }
 
     /// Get current prompt string (complexity: 4)
-    fn get_prompt(&self) -> String {
+    pub fn get_prompt(&self) -> String {
         let mode_indicator = match self.state.get_mode() {
             ReplMode::Debug => "debug",
             ReplMode::Transpile => "transpile",
@@ -180,9 +294,9 @@ impl Repl {
         };
 
         if self.evaluator.is_multiline() {
-            format!("{}... ", mode_indicator)
+            format!("{mode_indicator}... ")
         } else {
-            format!("{}> ", mode_indicator)
+            format!("{mode_indicator}> ")
         }
     }
 
@@ -194,7 +308,7 @@ impl Repl {
     }
 
     /// Load history from file (complexity: 4)
-    fn load_history(&self, editor: &mut Editor<()>) -> Result<()> {
+    fn load_history(&self, editor: &mut DefaultEditor) -> Result<()> {
         let history_file = self.work_dir.join("repl_history.txt");
         if history_file.exists() {
             editor.load_history(&history_file)
@@ -204,7 +318,7 @@ impl Repl {
     }
 
     /// Save history to file (complexity: 3)
-    fn save_history(&self, editor: &Editor<()>) -> Result<()> {
+    fn save_history(&self, editor: &mut DefaultEditor) -> Result<()> {
         let history_file = self.work_dir.join("repl_history.txt");
         editor.save_history(&history_file)
             .context("Failed to save history")
@@ -214,13 +328,28 @@ impl Repl {
     pub fn handle_command(&mut self, command: &str) -> String {
         match self.process_line(command) {
             Ok(_) => "Command executed".to_string(),
-            Err(e) => format!("Error: {}", e),
+            Err(e) => format!("Error: {e}"),
         }
     }
 
     /// Get completion suggestions (complexity: 2)
     pub fn get_completions(&self, input: &str) -> Vec<String> {
         self.completion.complete(input)
+    }
+
+    /// Get variable bindings (compatibility method)
+    pub fn get_bindings(&self) -> &std::collections::HashMap<String, Value> {
+        self.state.get_bindings()
+    }
+
+    /// Get mutable variable bindings (compatibility method)
+    pub fn get_bindings_mut(&mut self) -> &mut std::collections::HashMap<String, Value> {
+        self.state.get_bindings_mut()
+    }
+
+    /// Clear all variable bindings (compatibility method)
+    pub fn clear_bindings(&mut self) {
+        self.state.clear_bindings();
     }
 }
 

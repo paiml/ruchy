@@ -122,7 +122,7 @@ impl MacroExpander {
             kind: ExprKind::Literal(crate::frontend::ast::Literal::String(
                 "hello + world".to_string(),
             )),
-            span: ast.span.clone(),
+            span: ast.span,
             attributes: vec![],
         }
     }
@@ -132,7 +132,7 @@ impl MacroExpander {
         // Return current line number
         Expr {
             kind: ExprKind::Literal(crate::frontend::ast::Literal::Integer(42)),
-            span: ast.span.clone(),
+            span: ast.span,
             attributes: vec![],
         }
     }
@@ -144,7 +144,7 @@ impl MacroExpander {
             kind: ExprKind::Literal(crate::frontend::ast::Literal::String(
                 "test.ruchy".to_string(),
             )),
-            span: ast.span.clone(),
+            span: ast.span,
             attributes: vec![],
         }
     }

@@ -58,7 +58,7 @@ impl<T> StdFuture for JoinHandle<T> {
     }
 }
 
-/// Ruchy's Future trait (wraps std::future::Future)
+/// Ruchy's Future trait (wraps `std::future::Future`)
 pub trait Future {
     type Output;
 

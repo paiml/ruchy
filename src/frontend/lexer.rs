@@ -454,7 +454,7 @@ impl<'a> TokenStream<'a> {
         let start = self.current_position.saturating_sub(20);
         let end = (self.current_position + 20).min(self.input.len());
         let context = &self.input[start..end];
-        format!("...{}...", context)
+        format!("...{context}...")
     }
     /// Save the current position for later restoration
     #[must_use]

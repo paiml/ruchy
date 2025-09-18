@@ -798,7 +798,7 @@ fn handle_advanced_command(command: Commands) -> Result<()> {
 fn run_file(file: &Path) -> Result<()> {
     let source = fs::read_to_string(file)?;
     // Use REPL to evaluate the file
-    let mut repl = Repl::new()?;
+    let mut repl = Repl::new(std::env::temp_dir())?;
     match repl.eval(&source) {
         Ok(result) => {
             // Only print non-unit results

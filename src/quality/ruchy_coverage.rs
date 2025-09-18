@@ -338,14 +338,14 @@ pub fn execute_with_coverage(&mut self, file_path: &Path) -> Result<()> {
         let mut parser = Parser::new(&content);
         if let Ok(_ast) = parser.parse() {
             // Execute using the Ruchy interpreter
-            let mut repl = match Repl::new() {
+            let mut repl = match Repl::new(std::env::current_dir().unwrap_or_else(|_| "/tmp".into())) {
                 Ok(repl) => repl,
                 Err(_) => {
                     return Ok(()); // Can't create REPL, skip coverage
                 }
             };
             // Track execution through AST evaluation
-            if let Ok(_) = repl.eval(&content) {
+            if let Ok(_) = repl.process_line(&content) {
                 // Execution successful - mark lines and functions as covered
                 let file_str_owned = file_str.to_string();
                 if let Some(coverage) = self.coverage_data.get_mut(file_str) {
