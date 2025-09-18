@@ -17,7 +17,8 @@ fn process_basic_escape(ch: char) -> Option<char> {
 /// Process a Unicode escape sequence
 fn process_unicode_escape(chars: &mut std::str::Chars) -> String {
     chars.next(); // consume '{'
-    let mut hex = String::new();
+    // Most Unicode escapes are 4-6 chars
+    let mut hex = String::with_capacity(6);
     for hex_char in chars.by_ref() {
         if hex_char == '}' {
             break;
@@ -34,7 +35,8 @@ fn process_unicode_escape(chars: &mut std::str::Chars) -> String {
 }
 /// Process escape sequences in a string literal
 fn process_escapes(s: &str) -> String {
-    let mut result = String::new();
+    // Pre-allocate based on input size for common case
+    let mut result = String::with_capacity(s.len());
     let mut chars = s.chars();
     while let Some(ch) = chars.next() {
         if ch == '\\' {
