@@ -601,6 +601,11 @@ pub enum ExprKind {
     ExportDefault {
         expr: Box<Expr>,
     },
+    /// Type alias declaration (type Name = Type)
+    TypeAlias {
+        name: String,
+        target_type: Type,
+    },
 }
 /// Literal values that can appear in the source code.
 ///

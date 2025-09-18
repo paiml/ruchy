@@ -88,7 +88,7 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
             parse_parentheses_token(state, span)
         }
         // Data structure definition tokens - delegated to focused helper
-        Token::Struct | Token::Trait | Token::Impl => {
+        Token::Struct | Token::Trait | Token::Impl | Token::Type => {
             parse_data_structure_token(state, token)
         }
         // Import/module tokens - delegated to focused helper
@@ -456,6 +456,7 @@ fn parse_data_structure_token(state: &mut ParserState, token: Token) -> Result<E
         Token::Struct => parse_struct_definition(state),
         Token::Trait => parse_trait_definition(state),
         Token::Impl => parse_impl_block(state),
+        Token::Type => parse_type_alias(state),
         _ => bail!("Expected data structure token, got: {:?}", token),
     }
 }
@@ -1660,6 +1661,33 @@ fn parse_lambda_expression(state: &mut ParserState) -> Result<Expr> {
     }).collect();
     Ok(Expr::new(ExprKind::Lambda { params, body }, start_span))
 }
+/// Parse type alias: type Name = Type
+/// Complexity: <5
+fn parse_type_alias(state: &mut ParserState) -> Result<Expr> {
+    let start_span = state.tokens.expect(&Token::Type)?;
+
+    // Parse the alias name
+    let name = if let Some((Token::Identifier(n), _)) = state.tokens.peek() {
+        let name = n.clone();
+        state.tokens.advance();
+        name
+    } else {
+        bail!("Expected identifier after 'type'");
+    };
+
+    // Expect =
+    state.tokens.expect(&Token::Equal)?;
+
+    // Parse the target type
+    let target_type = super::utils::parse_type(state)?;
+
+    let end_span = target_type.span;
+    Ok(Expr::new(
+        ExprKind::TypeAlias { name, target_type },
+        start_span.merge(end_span),
+    ))
+}
+
 fn parse_struct_definition(state: &mut ParserState) -> Result<Expr> {
     // Parse struct Name<T> { field: Type, ... }
     let start_span = state.tokens.expect(&Token::Struct)?;

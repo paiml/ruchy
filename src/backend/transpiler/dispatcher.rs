@@ -370,7 +370,8 @@ impl Transpiler {
             ExprKind::Trait { .. }
             | ExprKind::Impl { .. }
             | ExprKind::Extension { .. }
-            | ExprKind::Enum { .. } => self.transpile_type_decl_expr(expr),
+            | ExprKind::Enum { .. }
+            | ExprKind::TypeAlias { .. } => self.transpile_type_decl_expr(expr),
             ExprKind::Break { .. } | ExprKind::Continue { .. } | ExprKind::Return { .. } => {
                 Self::transpile_control_misc_expr(expr)
             }
@@ -405,6 +406,11 @@ impl Transpiler {
                 variants,
                 is_pub,
             } => self.transpile_enum(name, type_params, variants, *is_pub),
+            ExprKind::TypeAlias { name, target_type } => {
+                let name_ident = format_ident!("{}", name);
+                let type_tokens = self.transpile_type(target_type)?;
+                Ok(quote! { type #name_ident = #type_tokens; })
+            }
             _ => unreachable!(),
         }
     }
