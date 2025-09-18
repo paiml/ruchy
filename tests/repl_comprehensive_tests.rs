@@ -1,10 +1,10 @@
 // Comprehensive unit tests for REPL to increase code coverage
 use ruchy::runtime::{Repl, ReplConfig};
-use std::time::Duration;
+use std::{env, time::Duration;
 
 #[test]
 fn test_repl_creation_and_defaults() {
-    let repl = Repl::new().unwrap();
+    let repl = Repl::new(std::env::temp_dir()).unwrap();
     assert_eq!(repl.get_mode(), "normal");
     assert_eq!(repl.get_prompt(), "ruchy> ");
     // assert!(!repl.is_multiline_mode());
@@ -25,7 +25,7 @@ fn test_repl_with_custom_config() {
 
 #[test]
 fn test_basic_arithmetic_evaluation() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     // Test basic arithmetic
     assert_eq!(repl.eval("1 + 1").unwrap(), "2");
@@ -37,7 +37,7 @@ fn test_basic_arithmetic_evaluation() {
 
 #[test]
 fn test_variable_binding_and_retrieval() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     // Test variable binding
     assert_eq!(repl.eval("let x = 42").unwrap(), "42");
@@ -50,7 +50,7 @@ fn test_variable_binding_and_retrieval() {
 
 #[test]
 fn test_string_operations() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     assert_eq!(repl.eval("\"hello\"").unwrap(), "\"hello\"");
     assert_eq!(repl.eval("\"hello\" + \" world\"").unwrap(), "\"hello world\"");
@@ -59,7 +59,7 @@ fn test_string_operations() {
 
 #[test]
 fn test_list_operations() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     assert_eq!(repl.eval("[1, 2, 3]").unwrap(), "[1, 2, 3]");
     assert_eq!(repl.eval("[1, 2, 3].length()").unwrap(), "3");
@@ -68,7 +68,7 @@ fn test_list_operations() {
 
 #[test]
 fn test_object_operations() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     assert_eq!(repl.eval("{x: 10, y: 20}").unwrap(), "{x: 10, y: 20}");
     assert_eq!(repl.eval("let obj = {x: 10, y: 20}").unwrap(), "{x: 10, y: 20}");
@@ -77,7 +77,7 @@ fn test_object_operations() {
 
 #[test]
 fn test_boolean_operations() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     assert_eq!(repl.eval("true").unwrap(), "true");
     assert_eq!(repl.eval("false").unwrap(), "false");
@@ -88,7 +88,7 @@ fn test_boolean_operations() {
 
 #[test]
 fn test_comparison_operations() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     assert_eq!(repl.eval("5 > 3").unwrap(), "true");
     assert_eq!(repl.eval("5 < 3").unwrap(), "false");
@@ -100,7 +100,7 @@ fn test_comparison_operations() {
 
 #[test]
 fn test_if_else_expressions() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     assert_eq!(repl.eval("if true { 1 } else { 2 }").unwrap(), "1");
     assert_eq!(repl.eval("if false { 1 } else { 2 }").unwrap(), "2");
@@ -109,7 +109,7 @@ fn test_if_else_expressions() {
 
 #[test]
 fn test_function_definition_and_call() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     assert!(repl.eval("fn add(a, b) { a + b }").is_ok());
     assert_eq!(repl.eval("add(3, 4)").unwrap(), "7");
@@ -120,7 +120,7 @@ fn test_function_definition_and_call() {
 
 #[test]
 fn test_lambda_functions() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     assert!(repl.eval("let add = fn(a, b) { a + b }").is_ok());
     assert_eq!(repl.eval("add(10, 20)").unwrap(), "30");
@@ -128,7 +128,7 @@ fn test_lambda_functions() {
 
 #[test]
 fn test_for_loop() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     assert!(repl.eval("let sum = 0").is_ok());
     assert!(repl.eval("for i in [1, 2, 3] { sum = sum + i }").is_ok());
@@ -137,7 +137,7 @@ fn test_for_loop() {
 
 #[test]
 fn test_while_loop() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     assert!(repl.eval("let count = 0").is_ok());
     assert!(repl.eval("while count < 5 { count = count + 1 }").is_ok());
@@ -146,7 +146,7 @@ fn test_while_loop() {
 
 #[test]
 fn test_match_expression() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     assert_eq!(
         repl.eval("match 2 { 1 => \"one\", 2 => \"two\", _ => \"other\" }").unwrap(),
@@ -156,7 +156,7 @@ fn test_match_expression() {
 
 #[test]
 fn test_enum_definition() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     assert!(repl.eval("enum Color { Red, Green, Blue }").is_ok());
     assert!(repl.eval("Color::Red").is_ok());
@@ -164,7 +164,7 @@ fn test_enum_definition() {
 
 #[test]
 fn test_struct_operations() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     assert!(repl.eval("struct Point { x, y }").is_ok());
     assert_eq!(repl.eval("Point { x: 10, y: 20 }").unwrap(), "Point { x: 10, y: 20 }");
@@ -172,7 +172,7 @@ fn test_struct_operations() {
 
 #[test]
 fn test_colon_commands() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     // Test :help command
     assert!(repl.eval(":help").unwrap().contains("Available commands"));
@@ -188,7 +188,7 @@ fn test_colon_commands() {
 
 #[test]
 fn test_magic_commands() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     // Test %help
     assert!(repl.eval("%help").unwrap().contains("magic commands"));
@@ -199,7 +199,7 @@ fn test_magic_commands() {
 
 #[test]
 fn test_history_indexing() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     assert_eq!(repl.eval("42").unwrap(), "42");
     assert_eq!(repl.eval("100").unwrap(), "100");
@@ -209,7 +209,7 @@ fn test_history_indexing() {
 
 #[test]
 fn test_unicode_expansion() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     // Test that backslash sequences are expanded
     let result = repl.eval("\"\\\\alpha\"").unwrap();
@@ -218,7 +218,7 @@ fn test_unicode_expansion() {
 
 #[test]
 fn test_multiline_mode() {
-    let _repl = Repl::new().unwrap();
+    let _repl = Repl::new(std::env::temp_dir()).unwrap();
     
     // Multiline mode checking would go here
     // Currently not exposed in public API
@@ -227,7 +227,7 @@ fn test_multiline_mode() {
 
 #[test]
 fn test_error_handling() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     // Test undefined variable
     assert!(repl.eval("undefined_var").unwrap().contains("Undefined variable"));
@@ -241,7 +241,7 @@ fn test_error_handling() {
 
 #[test]
 fn test_range_operations() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     assert!(repl.eval("1..5").is_ok());
     assert!(repl.eval("for i in 1..3 { i }").is_ok());
@@ -249,7 +249,7 @@ fn test_range_operations() {
 
 #[test]
 fn test_pipe_operator() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     assert!(repl.eval("fn double(x) { x * 2 }").is_ok());
     assert_eq!(repl.eval("5 |> double").unwrap(), "10");
@@ -257,7 +257,7 @@ fn test_pipe_operator() {
 
 #[test]
 fn test_async_await() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     // Test async function definition
     assert!(repl.eval("async fn fetch() { 42 }").is_ok());
@@ -266,7 +266,7 @@ fn test_async_await() {
 
 #[test]
 fn test_generics() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     assert!(repl.eval("fn identity<T>(x: T) -> T { x }").is_ok());
     assert_eq!(repl.eval("identity(42)").unwrap(), "42");
@@ -274,14 +274,14 @@ fn test_generics() {
 
 #[test]
 fn test_try_catch() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     assert!(repl.eval("try { 1 / 0 } catch { \"error\" }").is_ok());
 }
 
 #[test]
 fn test_builtin_functions() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     // Test math functions
     assert_eq!(repl.eval("abs(-5)").unwrap(), "5");
@@ -300,7 +300,7 @@ fn test_builtin_functions() {
 
 #[test]
 fn test_checkpoint_and_restore() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     assert!(repl.eval("let x = 100").is_ok());
     let checkpoint = repl.checkpoint();
@@ -312,7 +312,7 @@ fn test_checkpoint_and_restore() {
 
 #[test]
 fn test_repl_state_transitions() {
-    let repl = Repl::new().unwrap();
+    let repl = Repl::new(std::env::temp_dir()).unwrap();
     
     // Check state
     let state = repl.get_state();
@@ -321,7 +321,7 @@ fn test_repl_state_transitions() {
 
 #[test]
 fn test_type_command() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     assert!(repl.eval(":type 42").unwrap().contains("Int") || 
             repl.eval(":type 42").unwrap().contains("i32"));
@@ -332,7 +332,7 @@ fn test_type_command() {
 
 #[test]
 fn test_ast_command() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     let ast_output = repl.eval(":ast 1 + 2").unwrap();
     assert!(ast_output.contains("Binary") || ast_output.contains("Add"));
@@ -340,7 +340,7 @@ fn test_ast_command() {
 
 #[test]
 fn test_inspect_command() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     assert!(repl.eval("let data = [1, 2, 3]").is_ok());
     let inspect_output = repl.eval(":inspect data").unwrap();
@@ -349,7 +349,7 @@ fn test_inspect_command() {
 
 #[test]
 fn test_memory_tracking() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     // Create large data structures to test memory tracking
     assert!(repl.eval("let big_list = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]").is_ok());
@@ -361,7 +361,7 @@ fn test_memory_tracking() {
 
 #[test]
 fn test_completion_generation() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     // Add some variables
     assert!(repl.eval("let test_var = 42").is_ok());
@@ -375,7 +375,7 @@ fn test_completion_generation() {
 
 #[test]
 fn test_pattern_matching() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     assert!(repl.eval("let [a, b, c] = [1, 2, 3]").is_ok());
     assert_eq!(repl.eval("a").unwrap(), "1");
@@ -385,7 +385,7 @@ fn test_pattern_matching() {
 
 #[test]
 fn test_spread_operator() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     assert!(repl.eval("let arr = [1, 2, 3]").is_ok());
     assert!(repl.eval("let expanded = [0, ...arr, 4]").is_ok());
@@ -394,7 +394,7 @@ fn test_spread_operator() {
 
 #[test]
 fn test_fat_arrow_functions() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     assert!(repl.eval("let double = x => x * 2").is_ok());
     assert_eq!(repl.eval("double(5)").unwrap(), "10");
@@ -402,7 +402,7 @@ fn test_fat_arrow_functions() {
 
 #[test]
 fn test_string_interpolation() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     assert!(repl.eval("let name = \"World\"").is_ok());
     let result = repl.eval("f\"Hello {name}\"");
@@ -412,7 +412,7 @@ fn test_string_interpolation() {
 
 #[test]
 fn test_dataframe_operations() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     // Test DataFrame literal
     assert!(repl.eval("df![[1, 2], [3, 4]]").is_ok() ||
@@ -421,7 +421,7 @@ fn test_dataframe_operations() {
 
 #[test]
 fn test_session_export() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     assert!(repl.eval("let x = 42").is_ok());
     assert!(repl.eval("let y = x * 2").is_ok());
@@ -434,7 +434,7 @@ fn test_session_export() {
 
 #[test]
 fn test_clear_history() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     assert!(repl.eval("1 + 1").is_ok());
     assert!(repl.eval("2 + 2").is_ok());
@@ -446,7 +446,7 @@ fn test_clear_history() {
 
 #[test]
 fn test_math_constants() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     // Test pi constant
     let pi_result = repl.eval("pi");
@@ -459,7 +459,7 @@ fn test_math_constants() {
 
 #[test]
 fn test_complex_nested_structures() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     // Test nested objects
     assert!(repl.eval("let nested = {a: {b: {c: 42}}}").is_ok());
@@ -472,7 +472,7 @@ fn test_complex_nested_structures() {
 
 #[test]
 fn test_recursive_functions() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     // Test factorial
     assert!(repl.eval("fn fact(n) { if n <= 1 { 1 } else { n * fact(n - 1) } }").is_ok());
@@ -481,7 +481,7 @@ fn test_recursive_functions() {
 
 #[test]
 fn test_closure_capture() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     assert!(repl.eval("let x = 10").is_ok());
     assert!(repl.eval("let add_x = fn(y) { x + y }").is_ok());
@@ -490,7 +490,7 @@ fn test_closure_capture() {
 
 #[test]
 fn test_module_system() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     // Test module definition (if supported)
     let module_result = repl.eval("module math { pub fn add(a, b) { a + b } }");

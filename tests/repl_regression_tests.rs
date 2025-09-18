@@ -10,10 +10,11 @@
 #![allow(clippy::expect_used)] // OK in tests
 
 use ruchy::runtime::repl::Repl;
+use std::env;
 
 /// Helper to run REPL command and get output
 fn run_repl_command(input: &str) -> String {
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
 
     // Evaluate and return result
     repl.eval(input).unwrap_or_else(|e| format!("Error: {e}"))
@@ -21,7 +22,7 @@ fn run_repl_command(input: &str) -> String {
 
 /// Helper to run multiple REPL commands
 fn run_repl_commands(commands: &[&str]) -> Vec<String> {
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
     let mut results = Vec::new();
 
     for cmd in commands {

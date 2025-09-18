@@ -11,10 +11,11 @@
 #![allow(clippy::single_char_pattern)]
 
 use ruchy::runtime::Repl;
+use std::env;
 
 #[test]
 fn test_reference_operator_parsing() {
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
 
     // Test that reference operator can be parsed
     let result = repl.eval("&42");
@@ -42,7 +43,7 @@ fn test_reference_operator_parsing() {
 
 #[test]
 fn test_reference_operator_with_expressions() {
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
 
     // Test reference with more complex expressions
     let result = repl.eval("&(1 + 2)");
@@ -58,7 +59,7 @@ fn test_reference_operator_with_expressions() {
 
 #[test]
 fn test_reference_operator_priority() {
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
 
     // Test that reference operator has correct precedence as unary operator
     let result = repl.eval("&!true");
@@ -73,7 +74,7 @@ fn test_reference_operator_priority() {
 
 #[test]
 fn test_reference_vs_bitwise_and() {
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
 
     // Test that & still works as bitwise AND in binary context
     let result = repl.eval("5 & 3");

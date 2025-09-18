@@ -11,10 +11,11 @@
 #![allow(unused_variables)]
 
 use ruchy::runtime::Repl;
+use std::env;
 
 #[test]
 fn test_for_loop_with_list() {
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
 
     let result = repl.eval(
         r#"
@@ -34,7 +35,7 @@ fn test_for_loop_with_list() {
 
 #[test]
 fn test_while_loop_basic() {
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
 
     let result = repl.eval(
         r#"
@@ -51,7 +52,7 @@ fn test_while_loop_basic() {
 
 #[test]
 fn test_while_loop_with_counter() {
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
 
     // Set up a counter
     assert!(repl.eval("let counter = 0").is_ok());

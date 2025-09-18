@@ -7,7 +7,7 @@ use ruchy::runtime::Repl;
 
 #[test]
 fn test_repl_completion_basic() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
 
     // Add some bindings
     repl.eval("let variable_one = 1").unwrap();
@@ -26,7 +26,7 @@ fn test_repl_completion_basic() {
 
 #[test]
 fn test_repl_builtin_functions() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
 
     // Check that we can define and find variables
     repl.eval("let test_func = 42").unwrap();
@@ -40,7 +40,7 @@ fn test_repl_builtin_functions() {
 
 #[test]
 fn test_repl_clear_command() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
 
     // Add some bindings
     repl.eval("let x = 1").unwrap();
@@ -56,7 +56,7 @@ fn test_repl_clear_command() {
 
 #[test]
 fn test_repl_history_tracking() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
 
     assert_eq!(repl.result_history_len(), 0);
 
@@ -72,7 +72,7 @@ fn test_repl_history_tracking() {
 
 #[test]
 fn test_repl_memory_stats() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
 
     let initial_mem = repl.memory_used();
     assert_eq!(initial_mem, 0);
@@ -92,7 +92,7 @@ fn test_repl_memory_stats() {
 
 #[test]
 fn test_repl_multiline_input() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
 
     // Test multiline function definition
     let multiline = r#"
@@ -111,7 +111,7 @@ fn test_repl_multiline_input() {
 
 #[test]
 fn test_repl_error_recovery_with_suggestions() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
 
     // Define a variable
     repl.eval("let my_variable = 42").unwrap();
@@ -130,7 +130,7 @@ fn test_repl_error_recovery_with_suggestions() {
 
 #[test]
 fn test_repl_load_file_simulation() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
 
     // Simulate loading a file with multiple statements
     let file_content = r#"
@@ -156,7 +156,7 @@ fn test_repl_load_file_simulation() {
 
 #[test]
 fn test_repl_type_info() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
 
     // Different types
     repl.eval("let int_var = 42").unwrap();
@@ -175,7 +175,7 @@ fn test_repl_type_info() {
 
 #[test]
 fn test_repl_import_simulation() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
 
     // Simulate module definition
     let module_code = r#"
@@ -199,7 +199,7 @@ fn test_repl_import_simulation() {
 #[test]
 fn test_repl_debug_mode() {
     use ruchy::runtime::ReplConfig;
-    use std::time::Duration;
+    use std::{env, time::Duration;
 
     let config = ReplConfig {
         max_memory: 1024 * 1024,
@@ -234,7 +234,7 @@ fn test_repl_sandboxed_restrictions() {
 
 #[test]
 fn test_repl_pattern_matching() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
 
     // Test various pattern matching scenarios
     let code = r#"
@@ -251,7 +251,7 @@ fn test_repl_pattern_matching() {
 
 #[test]
 fn test_repl_destructuring() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
 
     // Tuple destructuring
     repl.eval("let (a, b) = (10, 20)").unwrap();
@@ -267,7 +267,7 @@ fn test_repl_destructuring() {
 
 #[test]
 fn test_repl_pipeline_operator() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
 
     // Define some functions
     repl.eval("fn double(x) { x * 2 }").unwrap();
@@ -282,7 +282,7 @@ fn test_repl_pipeline_operator() {
 
 #[test]
 fn test_repl_async_simulation() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
 
     // Simulate async-like behavior with functions
     let code = r#"
@@ -299,7 +299,7 @@ fn test_repl_async_simulation() {
 
 #[test]
 fn test_repl_custom_types() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
 
     // Define a custom type/struct simulation
     let code = r#"
@@ -320,7 +320,7 @@ fn test_repl_custom_types() {
 
 #[test]
 fn test_repl_method_chaining() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
 
     // Test method chaining on strings
     let result = repl.eval(r#""hello".to_uppercase()"#);
@@ -331,7 +331,7 @@ fn test_repl_method_chaining() {
 
 #[test]
 fn test_repl_comprehensions() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
 
     // List comprehension simulation
     repl.eval("let nums = [1, 2, 3, 4, 5]").unwrap();
@@ -343,7 +343,7 @@ fn test_repl_comprehensions() {
 
 #[test]
 fn test_repl_exception_handling() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
 
     // Test try-catch simulation
     let code = r#"

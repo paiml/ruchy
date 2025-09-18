@@ -3653,21 +3653,111 @@ impl Interpreter {
     /// Check if a pattern matches a value
     /// # Errors
     /// Returns error if pattern matching fails
-    fn pattern_matches(&self, pattern: &Pattern, value: &Value) -> Result<bool, InterpreterError> {
+    /// Try to match a pattern against a value, returning bindings if successful
+    fn try_pattern_match(&self, pattern: &Pattern, value: &Value) -> Result<Option<Vec<(String, Value)>>, InterpreterError> {
         match pattern {
-            Pattern::Wildcard => Ok(true),
-            Pattern::Literal(lit) => self.match_literal_pattern(lit, value),
-            Pattern::Identifier(_name) => Ok(true), // Always matches, binding handled separately
-            Pattern::Tuple(patterns) => self.match_tuple_pattern(patterns, value),
-            Pattern::List(patterns) => self.match_list_pattern(patterns, value),
-            Pattern::Or(patterns) => self.match_or_pattern(patterns, value),
-            Pattern::Range { start, end, inclusive } => self.match_range_pattern(start, end, *inclusive, value),
-            _ => Ok(false), // Other patterns not yet implemented
+            Pattern::Wildcard => Ok(Some(vec![])),
+            Pattern::Literal(lit) => {
+                if self.match_literal_pattern(lit, value)? {
+                    Ok(Some(vec![]))
+                } else {
+                    Ok(None)
+                }
+            }
+            Pattern::Identifier(name) => {
+                // Always matches and binds the value to the identifier
+                Ok(Some(vec![(name.clone(), value.clone())]))
+            }
+            Pattern::Tuple(patterns) => self.try_match_tuple_pattern(patterns, value),
+            Pattern::List(patterns) => self.try_match_list_pattern(patterns, value),
+            Pattern::Or(patterns) => self.try_match_or_pattern(patterns, value),
+            Pattern::Range { start, end, inclusive } => {
+                if self.match_range_pattern(start, end, *inclusive, value)? {
+                    Ok(Some(vec![]))
+                } else {
+                    Ok(None)
+                }
+            }
+            Pattern::AtBinding { pattern, name } => {
+                if let Some(mut bindings) = self.try_pattern_match(pattern, value)? {
+                    bindings.push((name.clone(), value.clone()));
+                    Ok(Some(bindings))
+                } else {
+                    Ok(None)
+                }
+            }
+            _ => Ok(None), // Other patterns not yet implemented
         }
     }
+
+    /// Legacy method for backwards compatibility
+    fn pattern_matches(&self, pattern: &Pattern, value: &Value) -> Result<bool, InterpreterError> {
+        Ok(self.try_pattern_match(pattern, value)?.is_some())
+    }
     
+    /// Scope management for pattern bindings
+    fn push_scope(&mut self) {
+        let new_env = HashMap::new();
+        self.env_push(new_env);
+    }
+
+    fn pop_scope(&mut self) {
+        self.env_pop();
+    }
+
+    /// New pattern matching methods that return bindings
+
+    fn try_match_tuple_pattern(&self, patterns: &[Pattern], value: &Value) -> Result<Option<Vec<(String, Value)>>, InterpreterError> {
+        if let Value::Tuple(tuple_values) = value {
+            if patterns.len() != tuple_values.len() {
+                return Ok(None);
+            }
+
+            let mut all_bindings = Vec::new();
+            for (pattern, val) in patterns.iter().zip(tuple_values.iter()) {
+                if let Some(bindings) = self.try_pattern_match(pattern, val)? {
+                    all_bindings.extend(bindings);
+                } else {
+                    return Ok(None);
+                }
+            }
+            Ok(Some(all_bindings))
+        } else {
+            Ok(None)
+        }
+    }
+
+    fn try_match_list_pattern(&self, patterns: &[Pattern], value: &Value) -> Result<Option<Vec<(String, Value)>>, InterpreterError> {
+        if let Value::Array(array_values) = value {
+            if patterns.len() != array_values.len() {
+                return Ok(None);
+            }
+
+            let mut all_bindings = Vec::new();
+            for (pattern, val) in patterns.iter().zip(array_values.iter()) {
+                if let Some(bindings) = self.try_pattern_match(pattern, val)? {
+                    all_bindings.extend(bindings);
+                } else {
+                    return Ok(None);
+                }
+            }
+            Ok(Some(all_bindings))
+        } else {
+            Ok(None)
+        }
+    }
+
+    fn try_match_or_pattern(&self, patterns: &[Pattern], value: &Value) -> Result<Option<Vec<(String, Value)>>, InterpreterError> {
+        for pattern in patterns {
+            if let Some(bindings) = self.try_pattern_match(pattern, value)? {
+                return Ok(Some(bindings));
+            }
+        }
+        Ok(None)
+    }
+
     // Helper methods for pattern matching (complexity <10 each)
-    
+
     fn match_literal_pattern(&self, lit: &Literal, value: &Value) -> Result<bool, InterpreterError> {
         let lit_value = self.eval_literal(lit);
         Ok(lit_value == *value)
@@ -4009,15 +4099,45 @@ impl Interpreter {
     /// Evaluate a match expression
     fn eval_match(&mut self, expr: &Expr, arms: &[MatchArm]) -> Result<Value, InterpreterError> {
         let value = self.eval_expr(expr)?;
-        
+
         for arm in arms {
-            if self.pattern_matches(&arm.pattern, &value)? {
-                // Pattern bindings are handled by pattern_matches method
-                // when it returns true, any variables are already bound
-                return self.eval_expr(&arm.body);
+            // First check if pattern matches
+            if let Some(bindings) = self.try_pattern_match(&arm.pattern, &value)? {
+                // Create new scope for pattern bindings
+                self.push_scope();
+
+                // Bind pattern variables
+                for (name, val) in bindings {
+                    self.env_set(name, val);
+                }
+
+                // Check guard condition if present
+                let guard_passed = if let Some(guard) = &arm.guard {
+                    match self.eval_expr(guard)? {
+                        Value::Bool(true) => true,
+                        Value::Bool(false) => false,
+                        _ => {
+                            self.pop_scope();
+                            return Err(InterpreterError::RuntimeError(
+                                "Guard condition must evaluate to a boolean".to_string()
+                            ));
+                        }
+                    }
+                } else {
+                    true // No guard means always pass
+                };
+
+                if guard_passed {
+                    // Evaluate body with bindings in scope
+                    let result = self.eval_expr(&arm.body);
+                    self.pop_scope();
+                    return result;
+                }
+                // Guard failed, restore scope and try next arm
+                self.pop_scope();
             }
         }
-        
+
         Err(InterpreterError::RuntimeError(
             "No match arm matched the value".to_string()
         ))

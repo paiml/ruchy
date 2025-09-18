@@ -11,8 +11,8 @@
 use ruchy::backend::transpiler::Transpiler;
 use ruchy::frontend::parser::Parser;
 use ruchy::runtime::repl::Repl;
-use std::fs;
-use std::process::Command;
+use std::{env, fs;
+use std::{env, process::Command;
 use tempfile::TempDir;
 
 #[test]
@@ -295,7 +295,7 @@ fn test_compile_generated_rust_code() {
 fn test_repl_basic_evaluation() {
     // This would test the REPL functionality
     // For now, just verify REPL can be created
-    let repl = Repl::new();
+    let repl = Repl::new(std::env::temp_dir());
     assert!(repl.is_ok());
 }
 
@@ -344,7 +344,7 @@ fn test_error_recovery() {
 
 #[test]
 fn test_large_file_handling() {
-    use std::fmt::Write;
+    use std::{env, fmt::Write;
     // Generate a large input file
     let mut large_input = String::new();
     for i in 0..1000 {

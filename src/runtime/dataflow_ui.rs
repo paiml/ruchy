@@ -587,7 +587,7 @@ impl DataflowUI {
     }
     fn format_timestamp(&self, timestamp: std::time::SystemTime) -> String {
         // Simplified timestamp formatting
-        format!("{:?}", timestamp.duration_since(std::time::UNIX_EPOCH).unwrap_or_else(|_| std::time::Duration::from_secs(0)).as_secs())
+        format!("{}", timestamp.duration_since(std::time::UNIX_EPOCH).unwrap_or_else(|_| std::time::Duration::from_secs(0)).as_secs())
     }
     fn render_session_info(&self, session: &SessionState) -> Result<()> {
         self.print_section_header("Session Status")?;

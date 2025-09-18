@@ -1523,7 +1523,7 @@ mod tests {
             name: "test_name".to_string(),
         };
 
-        let debug_str = format!("{:?}", issue);
+        let debug_str = format!("{issue:?}");
         assert!(debug_str.contains("LintIssue"));
         assert!(debug_str.contains("line: 1"));
         assert!(debug_str.contains("error"));
@@ -1538,7 +1538,7 @@ mod tests {
             var_type: VarType::Parameter,
         };
 
-        let debug_str = format!("{:?}", var_info);
+        let debug_str = format!("{var_info:?}");
         assert!(debug_str.contains("VariableInfo"));
         assert!(debug_str.contains("defined_at"));
         assert!(debug_str.contains("used: true"));
@@ -1554,7 +1554,7 @@ mod tests {
         ];
 
         for rule in rules {
-            let debug_str = format!("{:?}", rule);
+            let debug_str = format!("{rule:?}");
             assert!(!debug_str.is_empty());
         }
     }

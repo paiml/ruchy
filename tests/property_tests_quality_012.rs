@@ -223,7 +223,7 @@ proptest! {
         ];
         
         for (expr, expected) in test_cases {
-            if let Ok(mut repl) = Repl::new() {
+            if let Ok(mut repl) = Repl::new(std::env::temp_dir()) {
                 if let Ok(value) = repl.eval(&expr) {
                     let result_str = value.to_string();
                     prop_assert_eq!(result_str, expected.to_string(),
@@ -249,7 +249,7 @@ proptest! {
         ];
         
         for (expr, expected) in test_cases {
-            if let Ok(mut repl) = Repl::new() {
+            if let Ok(mut repl) = Repl::new(std::env::temp_dir()) {
                 if let Ok(value) = repl.eval(&expr) {
                     let result_str = value.to_string();
                     prop_assert_eq!(result_str, expected.to_string(),
@@ -265,7 +265,7 @@ proptest! {
         var in identifier_strategy(),
         value in any::<i32>()
     ) {
-        if let Ok(mut repl) = Repl::new() {
+        if let Ok(mut repl) = Repl::new(std::env::temp_dir()) {
             // Define variable
             let define = format!("let {} = {}", var, value);
             if repl.eval(&define).is_ok() {
@@ -319,7 +319,7 @@ proptest! {
         let list_str = format!("[{}]", nums.iter().map(|n| n.to_string()).collect::<Vec<_>>().join(", "));
         let program = format!("{}.map(|x| x * 2)", list_str);
         
-        if let Ok(mut repl) = Repl::new() {
+        if let Ok(mut repl) = Repl::new(std::env::temp_dir()) {
             if let Ok(result) = repl.eval(&program) {
                 // Parse result to check length preserved
                 let result_str = result.to_string();
@@ -343,7 +343,7 @@ proptest! {
         let list_str = format!("[{}]", nums.iter().map(|n| n.to_string()).collect::<Vec<_>>().join(", "));
         let program = format!("{}.filter(|x| x > 50)", list_str);
         
-        if let Ok(mut repl) = Repl::new() {
+        if let Ok(mut repl) = Repl::new(std::env::temp_dir()) {
             if let Ok(result) = repl.eval(&program) {
                 let result_str = result.to_string();
                 if result_str.starts_with('[') {
@@ -367,7 +367,7 @@ proptest! {
         
         let expected_sum: i32 = nums.iter().sum();
         
-        if let Ok(mut repl) = Repl::new() {
+        if let Ok(mut repl) = Repl::new(std::env::temp_dir()) {
             if let Ok(result) = repl.eval(&program) {
                 let result_str = result.to_string();
                 if let Ok(result_val) = result_str.parse::<i32>() {
@@ -433,7 +433,7 @@ proptest! {
     fn prop_division_by_zero_handled(numerator in any::<i32>()) {
         let program = format!("{} / 0", numerator);
         
-        if let Ok(mut repl) = Repl::new() {
+        if let Ok(mut repl) = Repl::new(std::env::temp_dir()) {
             // Should either return error or special value, but not panic
             let _ = repl.eval(&program);
         }
@@ -448,7 +448,7 @@ proptest! {
     /// Property: Parsing time is bounded
     #[test]
     fn prop_parsing_time_bounded(input in prop::string::string_regex(".{0,1000}").unwrap()) {
-        use std::time::{Duration, Instant};
+        use std::{env, time::{Duration, Instant};
         
         let start = Instant::now();
         let mut parser = Parser::new(&input);

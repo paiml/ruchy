@@ -3,12 +3,12 @@
 //! [TEST-COV-008] REPL Demo Validation Suite
 
 use ruchy::runtime::repl::Repl;
-use std::fs;
-use std::path::Path;
+use std::{env, fs;
+use std::{env, path::Path;
 
 #[test]
 fn test_basic_arithmetic_demo() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     // Test addition
     let result = repl.eval("2 + 2");
@@ -28,7 +28,7 @@ fn test_basic_arithmetic_demo() {
 
 #[test]
 fn test_variable_assignment_demo() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     // Test basic assignment
     let result = repl.eval("let x = 5");
@@ -57,7 +57,7 @@ fn test_variable_assignment_demo() {
 
 #[test]
 fn test_string_operations_demo() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     // Test string concatenation
     let result = repl.eval("\"Hello\" + \", \" + \"World!\"");
@@ -80,7 +80,7 @@ fn test_string_operations_demo() {
 
 #[test]
 fn test_boolean_operations_demo() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     // Test boolean literals
     let result = repl.eval("true");
@@ -107,7 +107,7 @@ fn test_boolean_operations_demo() {
 
 #[test]
 fn test_array_operations_demo() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     // Test array creation
     let result = repl.eval("let arr = [1, 2, 3, 4, 5]");
@@ -135,7 +135,7 @@ fn test_array_operations_demo() {
 
 #[test]
 fn test_closure_operations_demo() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     // Test simple closure
     let result = repl.eval("let double = |x| x * 2");
@@ -156,7 +156,7 @@ fn test_closure_operations_demo() {
 
 #[test]
 fn test_conditional_operations_demo() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     // Test basic if-else
     let result = repl.eval("let x = 10");
@@ -177,7 +177,7 @@ fn test_conditional_operations_demo() {
 
 #[test]
 fn test_function_definition_demo() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     // Test factorial function
     let factorial_def = r"
@@ -208,7 +208,7 @@ fn test_function_definition_demo() {
 
 #[test]
 fn test_loop_operations_demo() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     // Test for loop with range
     let loop_code = r"
@@ -239,7 +239,7 @@ fn test_loop_operations_demo() {
 
 #[test]
 fn test_data_analysis_demo() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     // Test average calculation
     let result = repl.eval("let data = [10, 20, 30, 40, 50]");
@@ -264,7 +264,7 @@ fn test_data_analysis_demo() {
 /// Test one-liner demos from the sister project
 #[test]
 fn test_oneliner_math_calculations() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     // Factorial calculation
     let result = repl.eval("1 * 2 * 3 * 4 * 5");
@@ -285,7 +285,7 @@ fn test_oneliner_math_calculations() {
 /// Test string manipulation one-liners
 #[test]
 fn test_oneliner_string_manipulation() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     // String reverse
     let result = repl.eval("\"hello\".reverse()");
@@ -303,7 +303,7 @@ fn test_oneliner_string_manipulation() {
 /// Test functional programming one-liners
 #[test]
 fn test_oneliner_functional() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     // Map operation
     let result = repl.eval("[1, 2, 3].map(|x| x * 2)");
@@ -327,7 +327,7 @@ fn test_demo_script_loading() {
         return;
     }
     
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     // Try loading a basic demo script
     let basic_demo = demo_path.join("basic_arithmetic.ruchy");
@@ -349,7 +349,7 @@ fn test_demo_script_loading() {
 /// Test that all documented REPL features work
 #[test]
 fn test_repl_feature_coverage() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     // Test basic evaluation
     let result = repl.eval("42");

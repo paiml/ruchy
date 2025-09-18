@@ -2,8 +2,8 @@
 // Toyota Way: Once fixed, it must never break again
 
 use ruchy::runtime::Repl;
-use std::process::Command;
-use std::fs;
+use std::{env, process::Command;
+use std::{env, fs;
 
 /// Regression tests for specific bugs that were found and fixed
 /// Each test documents the original issue and prevents re-occurrence
@@ -15,7 +15,7 @@ fn regression_while_loop_off_by_one() {
     // FIX: Always return Value::Unit from while loops
     // DATE: 2024-12-XX
     
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     // Test 1: Exact original failing case (now using var for mutable bindings)
     let result = repl.eval("var i = 0; var count = 0; while i < 3 { count = count + 1; i = i + 1 }; count").unwrap();
@@ -65,7 +65,7 @@ fn regression_test_compilation_errors() {
     // This should compile without errors now
     let test_code = r#"println("Hello \"World\"")"#;
     
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     let result = repl.eval(test_code);
     assert!(result.is_ok(), "Raw string test code should compile: {result:?}");
 }
@@ -135,7 +135,7 @@ fn regression_template_future_bug() {
     // This should fail before the fix and pass after
     
     // Example:
-    // let mut repl = Repl::new().unwrap();
+    // let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     // let result = repl.eval("code that used to break").unwrap();
     // assert_eq!(result.to_string(), "expected_result");
 }
@@ -144,9 +144,9 @@ fn regression_template_future_bug() {
 #[test]
 fn regression_performance_not_degraded() {
     // Ensure critical operations stay fast
-    use std::time::Instant;
+    use std::{env, time::Instant;
     
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     // Simple arithmetic should be very fast
     let start = Instant::now();

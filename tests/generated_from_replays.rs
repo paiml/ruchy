@@ -7,12 +7,14 @@
 //! Coverage areas: 0
 
 use anyhow::Result;
+use std::env;
 use ruchy::runtime::Repl;
+use std::env;
 
 // Placeholder test until replay-to-tests command is fully implemented
 #[test]
 fn test_replay_conversion_placeholder() -> Result<()> {
-    let mut repl = Repl::new()?;
+    let mut repl = Repl::new(std::env::temp_dir())?;
     let result = repl.eval("2 + 2")?;
     assert_eq!(result, "4");
     Ok(())

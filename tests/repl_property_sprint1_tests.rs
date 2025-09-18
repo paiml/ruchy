@@ -3,7 +3,7 @@
 
 use proptest::prelude::*;
 use ruchy::runtime::{Repl, Value};
-use std::time::Duration;
+use std::{env, time::Duration;
 
 // PROP-001: Property tests with 10,000+ iterations
 
@@ -12,7 +12,7 @@ proptest! {
 
     #[test]
     fn test_integer_arithmetic_commutative(a: i32, b: i32) {
-        let mut repl = Repl::new().unwrap();
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
 
         // Addition is commutative
         let expr1 = format!("{} + {}", a, b);
@@ -25,7 +25,7 @@ proptest! {
 
     #[test]
     fn test_integer_arithmetic_associative(a: i16, b: i16, c: i16) {
-        let mut repl = Repl::new().unwrap();
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
 
         // Addition is associative
         let expr1 = format!("({} + {}) + {}", a, b, c);
@@ -38,7 +38,7 @@ proptest! {
 
     #[test]
     fn test_multiplication_distributive(a: i8, b: i8, c: i8) {
-        let mut repl = Repl::new().unwrap();
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
 
         // Multiplication distributes over addition
         let expr1 = format!("{} * ({} + {})", a, b, c);
@@ -53,7 +53,7 @@ proptest! {
     fn test_comparison_transitivity(a: i32, b: i32, c: i32) {
         prop_assume!(a < b && b < c);
 
-        let mut repl = Repl::new().unwrap();
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
 
         let expr = format!("{} < {}", a, c);
         let result = repl.eval(&expr).unwrap();
@@ -62,7 +62,7 @@ proptest! {
 
     #[test]
     fn test_boolean_logic_laws(a: bool, b: bool) {
-        let mut repl = Repl::new().unwrap();
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
 
         // De Morgan's law: !(a && b) == !a || !b
         let expr1 = format!("!({} && {})", a, b);
@@ -79,7 +79,7 @@ proptest! {
         b in "[a-z]{1,10}",
         c in "[a-z]{1,10}"
     ) {
-        let mut repl = Repl::new().unwrap();
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
 
         let expr1 = format!(r#"("{}" + "{}") + "{}""#, a, b, c);
         let expr2 = format!(r#""{}" + ("{}" + "{}")"#, a, b, c);
@@ -93,7 +93,7 @@ proptest! {
     fn test_list_operations_preserve_length(
         elements in prop::collection::vec(0i32..100, 0..20)
     ) {
-        let mut repl = Repl::new().unwrap();
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
 
         let list_str = format!("[{}]", elements.iter()
             .map(|e| e.to_string())
@@ -111,7 +111,7 @@ proptest! {
         name in "[a-z][a-z0-9]{0,9}",
         value: i32
     ) {
-        let mut repl = Repl::new().unwrap();
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
 
         let bind_expr = format!("let {} = {}", name, value);
         if repl.eval(&bind_expr).is_ok() {
@@ -124,7 +124,7 @@ proptest! {
 
     #[test]
     fn test_if_expression_consistency(condition: bool, a: i16, b: i16) {
-        let mut repl = Repl::new().unwrap();
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
 
         let expr = format!("if {} {{ {} }} else {{ {} }}", condition, a, b);
         let expected = if condition { a } else { b };
@@ -138,7 +138,7 @@ proptest! {
     fn test_range_bounds(start: i16, end: i16) {
         prop_assume!(start < end && (end - start) < 100);
 
-        let mut repl = Repl::new().unwrap();
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
 
         let expr = format!("{}..{}", start, end);
         if let Ok(result) = repl.eval(&expr) {
@@ -159,7 +159,7 @@ proptest! {
     ) {
         prop_assume!(fn_name != param);
 
-        let mut repl = Repl::new().unwrap();
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
 
         let fn_def = format!("fn {}({}) {{ {} + 1 }}", fn_name, param, param);
         if repl.eval(&fn_def).is_ok() {
@@ -179,7 +179,7 @@ proptest! {
     ) {
         prop_assume!(var_name != param);
 
-        let mut repl = Repl::new().unwrap();
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
 
         let lambda_def = format!("let {} = |{}| {} * 2", var_name, param, param);
         if repl.eval(&lambda_def).is_ok() {
@@ -200,7 +200,7 @@ proptest! {
     ) {
         prop_assume!(outer_var != inner_var);
 
-        let mut repl = Repl::new().unwrap();
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
 
         let expr = format!(
             r#"
@@ -225,7 +225,7 @@ proptest! {
 
     #[test]
     fn test_match_expression_exhaustive(value: i8) {
-        let mut repl = Repl::new().unwrap();
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
 
         let expr = format!(
             r#"
@@ -256,7 +256,7 @@ proptest! {
         invalid_var in "[0-9][a-z]+", // Invalid variable name
         valid_expr2: i16
     ) {
-        let mut repl = Repl::new().unwrap();
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
 
         // First valid expression
         let result1 = repl.eval(&format!("{} + 1", valid_expr1));
@@ -275,7 +275,7 @@ proptest! {
     fn test_memory_allocation_bounded(
         size in 1usize..100
     ) {
-        let mut repl = Repl::new().unwrap();
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
 
         let list_expr = format!("[{}]",
             (0..size).map(|i| i.to_string()).collect::<Vec<_>>().join(", "));
@@ -299,7 +299,7 @@ proptest! {
     ) {
         prop_assume!(var1 != var2);
 
-        let mut repl = Repl::new().unwrap();
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
 
         // Set initial state
         repl.eval(&format!("let {} = {}", var1, val1)).unwrap();
@@ -320,7 +320,7 @@ proptest! {
 
     #[test]
     fn test_math_function_properties(x in 0.0f64..100.0) {
-        let mut repl = Repl::new().unwrap();
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
 
         // sqrt(x)^2 ≈ x
         let expr = format!("pow(sqrt({}), 2.0)", x);
@@ -341,7 +341,7 @@ proptest! {
 
     #[test]
     fn test_type_coercion_consistency(int_val: i16, float_val in 0.0f32..100.0) {
-        let mut repl = Repl::new().unwrap();
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
 
         // Integer + Float should produce Float
         let expr = format!("{} + {}", int_val, float_val);

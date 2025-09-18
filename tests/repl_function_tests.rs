@@ -9,10 +9,11 @@
 #![allow(clippy::unwrap_used)]
 
 use ruchy::runtime::Repl;
+use std::env;
 
 #[test]
 fn test_function_definition() {
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
 
     let result = repl.eval("fun add(a: i32, b: i32) -> i32 { a + b }");
     assert!(result.is_ok());
@@ -22,7 +23,7 @@ fn test_function_definition() {
 
 #[test]
 fn test_function_call() {
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
 
     // Define function
     let result = repl.eval("fun add(a: i32, b: i32) -> i32 { a + b }");
@@ -37,7 +38,7 @@ fn test_function_call() {
 
 #[test]
 fn test_function_with_local_vars() {
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
 
     // Define function that uses local variables
     let result =
@@ -53,7 +54,7 @@ fn test_function_with_local_vars() {
 
 #[test]
 fn test_function_wrong_arg_count() {
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
 
     // Define function
     let result = repl.eval("fun add(a: i32, b: i32) -> i32 { a + b }");
@@ -70,7 +71,7 @@ fn test_function_wrong_arg_count() {
 
 #[test]
 fn test_recursive_function() {
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
 
     // Define factorial function
     let result = repl.eval("fun fact(n: i32) -> i32 { if n <= 1 { 1 } else { n * fact(n - 1) } }");
@@ -85,7 +86,7 @@ fn test_recursive_function() {
 
 #[test]
 fn test_function_with_string_params() {
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
 
     // Define function with strings
     let result = repl.eval(r#"fun greet(name: String) -> String { "Hello, " + name }"#);
@@ -100,7 +101,7 @@ fn test_function_with_string_params() {
 
 #[test]
 fn test_multiple_functions() {
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
 
     // Define multiple functions
     assert!(repl
@@ -121,7 +122,7 @@ fn test_multiple_functions() {
 
 #[test]
 fn test_function_using_global_variable() {
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
 
     // Define global variable
     assert!(repl.eval("let global = 100").is_ok());

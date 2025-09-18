@@ -9,7 +9,7 @@
 use ruchy::{Parser, Transpiler};
 use ruchy::runtime::Repl;
 use ruchy::runtime::repl::ReplConfig;
-use std::time::{Duration, Instant};
+use std::{env, time::{Duration, Instant};
 
 /// Generate random valid Ruchy code
 fn generate_random_code(seed: usize) -> String {
@@ -77,7 +77,7 @@ fn fuzz_transpiler_valid_ast() {
 fn fuzz_repl_timeout() {
     for seed in 0..100 {
         let code = generate_random_code(seed);
-        let mut repl = Repl::new().unwrap();
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
         let deadline = Some(Instant::now() + Duration::from_millis(100));
         let _ = repl.evaluate_expr_str(&code, deadline); // Should not hang
     }
@@ -193,7 +193,7 @@ fn fuzz_operator_precedence() {
     ];
     
     for expr in expressions {
-        let mut repl = Repl::new().unwrap();
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
         let _ = repl.eval(expr); // Should evaluate correctly
     }
 }
@@ -236,7 +236,7 @@ fn fuzz_syntax_errors() {
 /// Fuzz test: Memory-intensive operations
 #[test]
 fn fuzz_memory_limits() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     // Large list
     let large_list = format!("[{}]", (0..1000).map(|i| i.to_string()).collect::<Vec<_>>().join(", "));
@@ -351,7 +351,7 @@ fn test_repl_fuzz_memory_exhaustion() {
 #[test]
 fn test_repl_fuzz_state_corruption() {
     // Test sequences that might corrupt internal state
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     let state_corruption_inputs = vec![
         "let x = 1",
@@ -377,7 +377,7 @@ fn test_repl_fuzz_state_corruption() {
 
 #[test]
 fn test_repl_fuzz_checkpoint_consistency() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     // Set up initial state
     let _ = repl.eval("let initial = 42");
@@ -512,8 +512,8 @@ fn test_repl_fuzz_boundary_values() {
 #[test]
 fn test_repl_fuzz_random_bytes() {
     // Test truly random byte sequences to simulate real fuzzing
-    use std::collections::hash_map::DefaultHasher;
-    use std::hash::{Hash, Hasher};
+    use std::{env, collections::hash_map::DefaultHasher;
+    use std::{env, hash::{Hash, Hasher};
     
     // Generate deterministic "random" bytes for consistent testing
     for seed in 0..50 { // Reduced from 100 for test performance

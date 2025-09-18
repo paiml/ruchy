@@ -3,7 +3,9 @@
 //! Tests that certain properties hold for all valid inputs
 
 use proptest::prelude::*;
+use std::env;
 use ruchy::runtime::repl::Repl;
+use std::env;
 
 /// Generate valid arithmetic expressions
 fn arithmetic_expr() -> impl Strategy<Value = String> {
@@ -51,8 +53,8 @@ proptest! {
     /// Test that evaluation is deterministic
     #[test]
     fn eval_deterministic(expr in arithmetic_expr()) {
-        let mut repl1 = Repl::new().unwrap();
-        let mut repl2 = Repl::new().unwrap();
+        let mut repl1 = Repl::new(std::env::temp_dir()).unwrap();
+        let mut repl2 = Repl::new(std::env::temp_dir()).unwrap();
         
         let result1 = repl1.eval(&expr);
         let result2 = repl2.eval(&expr);
@@ -67,7 +69,7 @@ proptest! {
     /// Test that arithmetic operations don't panic
     #[test]
     fn arithmetic_no_panic(expr in arithmetic_expr()) {
-        let mut repl = Repl::new().unwrap();
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
         // Just ensure it doesn't panic - error is OK
         let _ = repl.eval(&expr);
     }
@@ -75,7 +77,7 @@ proptest! {
     /// Test that boolean operations always return bool
     #[test]
     fn boolean_returns_bool(expr in boolean_expr()) {
-        let mut repl = Repl::new().unwrap();
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
         if let Ok(result) = repl.eval(&expr) {
             let s = result.to_string();
             prop_assert!(s == "true" || s == "false", 
@@ -86,7 +88,7 @@ proptest! {
     /// Test that list operations preserve length
     #[test]
     fn list_map_preserves_length(list in list_expr()) {
-        let mut repl = Repl::new().unwrap();
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
         let map_expr = format!("{}.map(|x| x * 2)", list);
         
         if let (Ok(orig), Ok(mapped)) = (repl.eval(&list), repl.eval(&map_expr)) {
@@ -105,7 +107,7 @@ proptest! {
     /// Test that string operations don't panic
     #[test]
     fn string_operations_safe(s in "[a-zA-Z0-9 ]{0,100}") {
-        let mut repl = Repl::new().unwrap();
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
         
         // Test various string operations
         let exprs = vec![

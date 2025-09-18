@@ -1190,13 +1190,13 @@ mod tests {
         for wasm_type in types {
             // Each type should be distinct
             match wasm_type {
-                WasmType::I32 => assert_eq!(format!("{:?}", wasm_type), "I32"),
-                WasmType::I64 => assert_eq!(format!("{:?}", wasm_type), "I64"),
-                WasmType::F32 => assert_eq!(format!("{:?}", wasm_type), "F32"),
-                WasmType::F64 => assert_eq!(format!("{:?}", wasm_type), "F64"),
-                WasmType::V128 => assert_eq!(format!("{:?}", wasm_type), "V128"),
-                WasmType::FuncRef => assert_eq!(format!("{:?}", wasm_type), "FuncRef"),
-                WasmType::ExternRef => assert_eq!(format!("{:?}", wasm_type), "ExternRef"),
+                WasmType::I32 => assert_eq!(format!("{wasm_type:?}"), "I32"),
+                WasmType::I64 => assert_eq!(format!("{wasm_type:?}"), "I64"),
+                WasmType::F32 => assert_eq!(format!("{wasm_type:?}"), "F32"),
+                WasmType::F64 => assert_eq!(format!("{wasm_type:?}"), "F64"),
+                WasmType::V128 => assert_eq!(format!("{wasm_type:?}"), "V128"),
+                WasmType::FuncRef => assert_eq!(format!("{wasm_type:?}"), "FuncRef"),
+                WasmType::ExternRef => assert_eq!(format!("{wasm_type:?}"), "ExternRef"),
                 WasmType::Ref(name) => assert!(name.len() > 0),
             }
         }

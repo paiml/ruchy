@@ -4,13 +4,13 @@
 #![allow(warnings)] // Test file
 
 use ruchy::runtime::repl::{Repl, ReplConfig, Value};
-use std::time::{Duration, Instant};
+use std::{env, time::{Duration, Instant};
 
 /// Test basic REPL creation and configuration
 #[test]
 fn test_repl_creation() {
     // Default creation
-    let repl = Repl::new();
+    let repl = Repl::new(std::env::temp_dir());
     assert!(repl.is_ok());
     
     // With custom config
@@ -27,7 +27,7 @@ fn test_repl_creation() {
 /// Test evaluate_expr_str method
 #[test]
 fn test_evaluate_expr_str() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     // Simple arithmetic
     let result = repl.evaluate_expr_str("2 + 3", None).unwrap();
@@ -62,7 +62,7 @@ fn test_evaluate_expr_str() {
 /// Test eval method (string output)
 #[test]
 fn test_eval_method() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     // Simple expressions
     assert_eq!(repl.eval("42").unwrap(), "42");
@@ -87,7 +87,7 @@ fn test_eval_method() {
 /// Test REPL commands
 #[test]
 fn test_repl_commands() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     // Test :help command
     let should_exit = repl.handle_command(":help").unwrap();
@@ -139,7 +139,7 @@ fn test_needs_continuation() {
 /// Test multiline input
 #[test]
 fn test_multiline_input() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     // Multiline function
     repl.eval("fun factorial(n) {").unwrap_err(); // Should need continuation
@@ -160,7 +160,7 @@ fn test_multiline_input() {
 /// Test error handling
 #[test]
 fn test_error_handling() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     // Undefined variable
     assert!(repl.eval("undefined_var").is_err());
@@ -181,7 +181,7 @@ fn test_error_handling() {
 /// Test complex expressions
 #[test]
 fn test_complex_expressions() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     // Nested expressions
     assert_eq!(repl.eval("(1 + 2) * (3 + 4)").unwrap(), "21");
@@ -205,7 +205,7 @@ fn test_complex_expressions() {
 /// Test control flow
 #[test]
 fn test_control_flow() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     // If-else
     assert_eq!(repl.eval("if true { 1 } else { 0 }").unwrap(), "1");
@@ -234,7 +234,7 @@ fn test_control_flow() {
 /// Test special values
 #[test]
 fn test_special_values() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     // nil/null
     assert_eq!(repl.eval("nil").unwrap(), "nil");
@@ -257,7 +257,7 @@ fn test_special_values() {
 /// Test REPL state management
 #[test]
 fn test_state_management() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     // Define multiple variables
     repl.eval("let a = 1").unwrap();
@@ -281,7 +281,7 @@ fn test_state_management() {
 /// Test function definitions
 #[test]
 fn test_function_definitions() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     // Simple function
     repl.eval("fun greet(name) { \"Hello, \" + name }").unwrap();
@@ -305,7 +305,7 @@ fn test_function_definitions() {
 /// Test edge cases and boundary conditions
 #[test]
 fn test_edge_cases() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     // Empty input
     assert!(repl.eval("").is_err() || repl.eval("").unwrap() == "");
@@ -336,7 +336,7 @@ fn test_edge_cases() {
 /// Test performance with deadline
 #[test]
 fn test_deadline_handling() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     // Very short deadline (might timeout)
     let deadline = Some(Instant::now() + Duration::from_micros(1));
@@ -356,7 +356,7 @@ fn test_deadline_handling() {
 /// Test string interpolation
 #[test]
 fn test_string_interpolation() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     repl.eval("let name = \"Ruchy\"").unwrap();
     repl.eval("let age = 1").unwrap();
@@ -369,7 +369,7 @@ fn test_string_interpolation() {
 /// Test type system features
 #[test]
 fn test_type_features() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     // Type annotations (if supported)
     let result = repl.eval("let x: i32 = 42");
@@ -389,12 +389,12 @@ fn test_type_features() {
 /// Test import/export (if supported)
 #[test]
 fn test_imports() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     // Try to import something
     let _result = repl.eval("import { sqrt } from \"math\"");
     // May or may not be supported
     
-    let _result = repl.eval("use std::collections::HashMap");
+    let _result = repl.eval("use std::{env, collections::HashMap");
     // May or may not be supported
 }

@@ -663,7 +663,7 @@ mod tests {
     #[test]
     fn test_harness_debug_formatting() {
         let harness = RuchyTestHarness::new();
-        let debug_str = format!("{:?}", harness);
+        let debug_str = format!("{harness:?}");
         assert!(debug_str.contains("RuchyTestHarness"));
         assert!(debug_str.contains("keep_intermediates"));
         assert!(debug_str.contains("optimization_level"));
@@ -674,7 +674,7 @@ mod tests {
     fn test_opt_level_debug_formatting() {
         let levels = [OptLevel::None, OptLevel::Basic, OptLevel::Full];
         for level in levels {
-            let debug_str = format!("{:?}", level);
+            let debug_str = format!("{level:?}");
             assert!(!debug_str.is_empty());
         }
     }
@@ -690,7 +690,7 @@ mod tests {
             rust_code: None,
         };
 
-        let debug_str = format!("{:?}", result);
+        let debug_str = format!("{result:?}");
         assert!(debug_str.contains("ValidationResult"));
         assert!(debug_str.contains("debug_test"));
         assert!(debug_str.contains("parse_success"));
@@ -704,7 +704,7 @@ mod tests {
             stderr: None,
         };
 
-        let debug_str = format!("{:?}", result);
+        let debug_str = format!("{result:?}");
         assert!(debug_str.contains("ExecutionResult"));
         assert!(debug_str.contains("compiled"));
         assert!(debug_str.contains("test_output"));
@@ -713,7 +713,7 @@ mod tests {
     #[test]
     fn test_test_error_debug_formatting() {
         let error = TestError::Parse("test error".to_string());
-        let debug_str = format!("{:?}", error);
+        let debug_str = format!("{error:?}");
         assert!(debug_str.contains("Parse"));
         assert!(debug_str.contains("test error"));
     }

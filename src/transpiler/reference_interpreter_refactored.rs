@@ -100,7 +100,7 @@ pub fn eval_prim(&mut self, op: &PrimOp, args: &[CoreExpr]) -> Result<Value, Str
             (Value::Integer(x), Value::Float(y)) => Ok(Value::Float(*x as f64 + y)),
             (Value::Float(x), Value::Integer(y)) => Ok(Value::Float(x + *y as f64)),
             (Value::String(x), Value::String(y)) => Ok(Value::String(format!("{x}{y}"))),
-            _ => Err(format!("Type error in addition: {:?} + {:?}", a, b)),
+            _ => Err(format!("Type error in addition: {:?} + {a, b:?}")),
         }
     }
     /// Subtract operation (complexity: 4)
@@ -110,7 +110,7 @@ pub fn eval_prim(&mut self, op: &PrimOp, args: &[CoreExpr]) -> Result<Value, Str
             (Value::Float(x), Value::Float(y)) => Ok(Value::Float(x - y)),
             (Value::Integer(x), Value::Float(y)) => Ok(Value::Float(*x as f64 - y)),
             (Value::Float(x), Value::Integer(y)) => Ok(Value::Float(x - *y as f64)),
-            _ => Err(format!("Type error in subtraction: {:?} - {:?}", a, b)),
+            _ => Err(format!("Type error in subtraction: {:?} - {a, b:?}")),
         }
     }
     /// Multiply operation (complexity: 4)
@@ -120,7 +120,7 @@ pub fn eval_prim(&mut self, op: &PrimOp, args: &[CoreExpr]) -> Result<Value, Str
             (Value::Float(x), Value::Float(y)) => Ok(Value::Float(x * y)),
             (Value::Integer(x), Value::Float(y)) => Ok(Value::Float(*x as f64 * y)),
             (Value::Float(x), Value::Integer(y)) => Ok(Value::Float(x * *y as f64)),
-            _ => Err(format!("Type error in multiplication: {:?} * {:?}", a, b)),
+            _ => Err(format!("Type error in multiplication: {:?} * {a, b:?}")),
         }
     }
     /// Divide operation with zero check (complexity: 6)
@@ -154,7 +154,7 @@ pub fn eval_prim(&mut self, op: &PrimOp, args: &[CoreExpr]) -> Result<Value, Str
                     Ok(Value::Float(x / *y as f64))
                 }
             }
-            _ => Err(format!("Type error in division: {:?} / {:?}", a, b)),
+            _ => Err(format!("Type error in division: {:?} / {a, b:?}")),
         }
     }
     /// Modulo operation (complexity: 3)
@@ -167,7 +167,7 @@ pub fn eval_prim(&mut self, op: &PrimOp, args: &[CoreExpr]) -> Result<Value, Str
                     Ok(Value::Integer(x % y))
                 }
             }
-            _ => Err(format!("Type error in modulo: {:?} % {:?}", a, b)),
+            _ => Err(format!("Type error in modulo: {:?} % {a, b:?}")),
         }
     }
     /// Power operation (complexity: 3)
@@ -181,7 +181,7 @@ pub fn eval_prim(&mut self, op: &PrimOp, args: &[CoreExpr]) -> Result<Value, Str
                 }
             }
             (Value::Float(x), Value::Float(y)) => Ok(Value::Float(x.powf(*y))),
-            _ => Err(format!("Type error in power: {:?} ^ {:?}", a, b)),
+            _ => Err(format!("Type error in power: {:?} ^ {a, b:?}")),
         }
     }
     /// Handle comparison operations (complexity: 8)
@@ -216,7 +216,7 @@ pub fn eval_prim(&mut self, op: &PrimOp, args: &[CoreExpr]) -> Result<Value, Str
             (Value::Integer(x), Value::Integer(y)) => Ok(Value::Bool(x < y)),
             (Value::Float(x), Value::Float(y)) => Ok(Value::Bool(x < y)),
             (Value::String(x), Value::String(y)) => Ok(Value::Bool(x < y)),
-            _ => Err(format!("Type error in comparison: {:?} < {:?}", a, b)),
+            _ => Err(format!("Type error in comparison: {:?} < {a, b:?}")),
         }
     }
     /// Less than or equal comparison (complexity: 4)
@@ -225,7 +225,7 @@ pub fn eval_prim(&mut self, op: &PrimOp, args: &[CoreExpr]) -> Result<Value, Str
             (Value::Integer(x), Value::Integer(y)) => Ok(Value::Bool(x <= y)),
             (Value::Float(x), Value::Float(y)) => Ok(Value::Bool(x <= y)),
             (Value::String(x), Value::String(y)) => Ok(Value::Bool(x <= y)),
-            _ => Err(format!("Type error in comparison: {:?} <= {:?}", a, b)),
+            _ => Err(format!("Type error in comparison: {:?} <= {a, b:?}")),
         }
     }
     /// Greater than comparison (complexity: 4)
@@ -234,7 +234,7 @@ pub fn eval_prim(&mut self, op: &PrimOp, args: &[CoreExpr]) -> Result<Value, Str
             (Value::Integer(x), Value::Integer(y)) => Ok(Value::Bool(x > y)),
             (Value::Float(x), Value::Float(y)) => Ok(Value::Bool(x > y)),
             (Value::String(x), Value::String(y)) => Ok(Value::Bool(x > y)),
-            _ => Err(format!("Type error in comparison: {:?} > {:?}", a, b)),
+            _ => Err(format!("Type error in comparison: {:?} > {a, b:?}")),
         }
     }
     /// Greater than or equal comparison (complexity: 4)
@@ -243,7 +243,7 @@ pub fn eval_prim(&mut self, op: &PrimOp, args: &[CoreExpr]) -> Result<Value, Str
             (Value::Integer(x), Value::Integer(y)) => Ok(Value::Bool(x >= y)),
             (Value::Float(x), Value::Float(y)) => Ok(Value::Bool(x >= y)),
             (Value::String(x), Value::String(y)) => Ok(Value::Bool(x >= y)),
-            _ => Err(format!("Type error in comparison: {:?} >= {:?}", a, b)),
+            _ => Err(format!("Type error in comparison: {:?} >= {a, b:?}")),
         }
     }
     /// Handle logical operations (complexity: 6)

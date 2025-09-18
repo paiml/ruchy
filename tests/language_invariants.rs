@@ -2,6 +2,7 @@
 // Uses mathematical properties to verify correctness
 
 use ruchy::runtime::Repl;
+use std::env;
 
 #[test]
 fn test_while_loop_iteration_invariant() {
@@ -11,7 +12,7 @@ fn test_while_loop_iteration_invariant() {
             "var count = 0; var i = 0; while i < {n} {{ count = count + 1; i = i + 1 }}; count"
         );
         
-        let mut repl = Repl::new().unwrap();
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
         let result = repl.eval(&code).unwrap();
         
         assert_eq!(result.to_string(), n.to_string(),
@@ -29,7 +30,7 @@ fn test_while_loop_never_returns_body_value() {
     ];
     
     for code in test_cases {
-        let mut repl = Repl::new().unwrap();
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
         let result = repl.eval(code).unwrap();
         
         assert_eq!(result.to_string(), "",
@@ -47,7 +48,7 @@ fn test_object_items_consistency() {
     ];
     
     for obj_literal in test_cases {
-        let mut repl = Repl::new().unwrap();
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
         
         // Get lengths
         let items_len = repl.eval(&format!("let obj = {obj_literal}; obj.items().len()")).unwrap().to_string();
@@ -64,7 +65,7 @@ fn test_object_items_consistency() {
 #[test]
 fn test_for_loop_tuple_destructuring_consistency() {
     // Property: for (a, b) in tuples should bind correctly
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     // Test that tuple destructuring works correctly
     repl.eval(r#"let obj = {"x": 1, "y": 2}"#).unwrap();
@@ -87,7 +88,7 @@ fn test_arithmetic_associativity() {
     let test_cases = vec![(1, 2, 3), (10, 20, 30), (0, 5, -5)];
     
     for (a, b, c) in test_cases {
-        let mut repl = Repl::new().unwrap();
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
         
         let left = repl.eval(&format!("({a} + {b}) + {c}")).unwrap().to_string();
         let right = repl.eval(&format!("{a} + ({b} + {c})")).unwrap().to_string();
@@ -103,7 +104,7 @@ fn test_string_concatenation_identity() {
     let test_cases = vec!["hello", "world", "test123", ""];
     
     for s in test_cases {
-        let mut repl = Repl::new().unwrap();
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
         
         let original = repl.eval(&format!(r#""{s}""#)).unwrap().to_string();
         let left_identity = repl.eval(&format!(r#""{s}" + """#)).unwrap().to_string();
@@ -119,7 +120,7 @@ fn test_string_concatenation_identity() {
 #[test]
 fn test_function_determinism() {
     // Property: Functions with same inputs always produce same outputs
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     
     // Define a function
     repl.eval("fn compute(x) { x * 2 + 1 }").unwrap();

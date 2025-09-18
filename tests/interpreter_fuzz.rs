@@ -3,7 +3,9 @@
 #![allow(unused_variables, clippy::match_same_arms, clippy::single_match)]
 
 use ruchy::runtime::repl::Repl;
+use std::env;
 use ruchy::frontend::parser::Parser;
+use std::env;
 
 /// Fuzz test: Interpreter robustness with malformed input
 #[test]
@@ -27,7 +29,7 @@ fn fuzz_interpreter_robustness() {
     for input in malformed_inputs {
         let mut parser = Parser::new(input);
         if let Ok(ast) = parser.parse() {
-            let mut repl = Repl::new().unwrap();
+            let mut repl = Repl::new(std::env::temp_dir()).unwrap();
             let _ = repl.eval(input); // Should not panic
         }
     }
@@ -66,7 +68,7 @@ fn fuzz_memory_bounds() {
     ];
     
     for input in memory_intensive {
-        let mut repl = Repl::new().unwrap();
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
         let _ = repl.eval(input); // Should not exhaust memory
     }
 }
@@ -87,7 +89,7 @@ fn fuzz_unicode_robustness() {
         let mut parser = Parser::new(input);
         let _ = parser.parse();
         
-        let mut repl = Repl::new().unwrap();
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
         let _ = repl.eval(input);
     }
 }
@@ -106,7 +108,7 @@ fn fuzz_error_propagation() {
     ];
     
     for input in error_cases {
-        let mut repl = Repl::new().unwrap();
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
         match repl.eval(input) {
             Ok(_) => {}, // Some might succeed
             Err(_) => {}, // Expected for many cases
@@ -132,7 +134,7 @@ fn fuzz_collection_operations() {
     ];
     
     for input in collection_tests {
-        let mut repl = Repl::new().unwrap();
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
         let _ = repl.eval(input);
     }
 }
@@ -152,7 +154,7 @@ fn fuzz_function_calls() {
     ];
     
     for input in function_tests {
-        let mut repl = Repl::new().unwrap();
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
         let _ = repl.eval(input);
     }
 }
@@ -175,7 +177,7 @@ fn property_valid_parse_no_crash() {
         let mut parser = Parser::new(&code);
         
         if let Ok(_ast) = parser.parse() {
-            let mut repl = Repl::new().unwrap();
+            let mut repl = Repl::new(std::env::temp_dir()).unwrap();
             let _ = repl.eval(&code); // Should never panic
         }
     }
@@ -192,7 +194,7 @@ fn fuzz_repl_state_consistency() {
     ];
     
     for (setup, access) in state_tests {
-        let mut repl = Repl::new().unwrap();
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
         let _ = repl.eval(setup); // Setup
         let _ = repl.eval(access); // Access - should work or fail gracefully
     }
@@ -211,7 +213,7 @@ fn fuzz_type_coercion() {
     ];
     
     for input in coercion_tests {
-        let mut repl = Repl::new().unwrap();
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
         let _ = repl.eval(input);
     }
 }
@@ -230,7 +232,7 @@ fn fuzz_control_flow() {
     ];
     
     for input in control_flow_tests {
-        let mut repl = Repl::new().unwrap();
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
         let _ = repl.eval(input);
     }
 }
@@ -250,7 +252,7 @@ fn fuzz_operator_precedence() {
     ];
     
     for input in precedence_tests {
-        let mut repl = Repl::new().unwrap();
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
         let _ = repl.eval(input);
     }
 }
@@ -272,7 +274,7 @@ fn fuzz_string_operations() {
     ];
     
     for input in string_tests {
-        let mut repl = Repl::new().unwrap();
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
         let _ = repl.eval(input);
     }
 }
@@ -301,7 +303,7 @@ fn fuzz_numeric_operations() {
     ];
     
     for input in numeric_tests {
-        let mut repl = Repl::new().unwrap();
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
         let _ = repl.eval(input);
     }
 }
@@ -320,7 +322,7 @@ fn fuzz_nested_expressions() {
     ];
     
     for input in nested_tests {
-        let mut repl = Repl::new().unwrap();
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
         let _ = repl.eval(input);
     }
 }
@@ -336,7 +338,7 @@ fn fuzz_stress_test() {
     ];
     
     for input in stress_tests {
-        let mut repl = Repl::new().unwrap();
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
         let _ = repl.eval(input);
     }
 }

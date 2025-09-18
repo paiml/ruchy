@@ -73,7 +73,7 @@ impl CommandRegistry {
                     }
                 } else {
                     let current = context.state.get_mode();
-                    Ok(CommandResult::Success(format!("Current mode: {:?}", current)))
+                    Ok(CommandResult::Success(format!("Current mode: {current:?}")))
                 }
             }
             ":history" => Ok(CommandResult::Success(self.format_history(context.state))),

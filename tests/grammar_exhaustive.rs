@@ -18,12 +18,12 @@
 use ruchy::frontend::parser::Parser;
 use ruchy::runtime::grammar_coverage::{GrammarCoverageMatrix, GRAMMAR_PRODUCTIONS};
 use ruchy::runtime::Repl;
-use std::time::{Duration, Instant};
+use std::{env, time::{Duration, Instant};
 
 #[test]
 fn test_grammar_complete() {
     let mut coverage = GrammarCoverageMatrix::new();
-    let mut repl = Repl::new().expect("REPL creation should succeed");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("REPL creation should succeed");
 
     for (name, input) in GRAMMAR_PRODUCTIONS {
         let start = Instant::now();
@@ -77,7 +77,7 @@ fn test_grammar_complete() {
 
 #[test]
 fn test_basic_expressions() {
-    let mut repl = Repl::new().expect("REPL creation should succeed");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("REPL creation should succeed");
 
     // Test expressions that should work with current implementation
     let test_cases = vec![
@@ -107,7 +107,7 @@ fn test_basic_expressions() {
 
 #[test]
 fn test_precedence() {
-    let mut repl = Repl::new().expect("REPL creation should succeed");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("REPL creation should succeed");
 
     // Test operator precedence
     let test_cases = vec![
@@ -133,7 +133,7 @@ fn test_precedence() {
 
 #[test]
 fn test_error_cases() {
-    let mut repl = Repl::new().expect("REPL creation should succeed");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("REPL creation should succeed");
 
     // Test expressions that should fail gracefully
     let error_cases = vec![

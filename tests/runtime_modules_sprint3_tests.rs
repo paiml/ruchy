@@ -3,13 +3,13 @@
 
 use ruchy::runtime::{Repl, ReplConfig};
 use ruchy::runtime::repl::Value;
-use std::time::Duration;
+use std::{env, time::Duration;
 
 // Transaction tests
 
 #[test]
 fn test_transactional_evaluation() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
 
     // Set initial state
     repl.eval("let x = 10").unwrap();
@@ -31,7 +31,7 @@ fn test_transactional_evaluation() {
 
 #[test]
 fn test_checkpoint_restore_comprehensive() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
 
     // Create complex state
     repl.eval("let a = 1").unwrap();
@@ -62,7 +62,7 @@ fn test_checkpoint_restore_comprehensive() {
 
 #[test]
 fn test_multiple_checkpoints() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
 
     repl.eval("let x = 1").unwrap();
     let checkpoint1 = repl.checkpoint();
@@ -129,7 +129,7 @@ fn test_custom_config_repl() {
 
 #[test]
 fn test_memory_tracking_detailed() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
 
     assert_eq!(repl.memory_used(), 0);
 
@@ -154,7 +154,7 @@ fn test_memory_tracking_detailed() {
 
 #[test]
 fn test_memory_limits() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
 
     // Try to exceed memory limit
     let result = repl.eval_bounded(
@@ -170,7 +170,7 @@ fn test_memory_limits() {
 
 #[test]
 fn test_repl_state_transitions() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
 
     // Check initial state
     assert!(repl.can_accept_input());
@@ -195,7 +195,7 @@ fn test_repl_state_transitions() {
 
 #[test]
 fn test_result_history() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
 
     assert_eq!(repl.result_history_len(), 0);
 
@@ -215,7 +215,7 @@ fn test_result_history() {
 
 #[test]
 fn test_bindings_management() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
 
     // Add bindings
     repl.eval("let a = 1").unwrap();
@@ -242,7 +242,7 @@ fn test_bindings_management() {
 
 #[test]
 fn test_error_recovery_mechanism() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
 
     // Cause various errors
     let _ = repl.eval("1 / 0"); // Division by zero
@@ -258,7 +258,7 @@ fn test_error_recovery_mechanism() {
 
 #[test]
 fn test_error_recovery_suggestions() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
 
     // Define a variable
     repl.eval("let my_variable = 42").unwrap();
@@ -282,7 +282,7 @@ fn test_error_recovery_suggestions() {
 
 #[test]
 fn test_builtin_print_functions() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
 
     // print and println might be builtins
     let result = repl.eval("print(\"hello\")");
@@ -294,7 +294,7 @@ fn test_builtin_print_functions() {
 
 #[test]
 fn test_builtin_type_functions() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
 
     // Type checking functions
     let result = repl.eval("type_of(42)");
@@ -315,7 +315,7 @@ fn test_builtin_type_functions() {
 
 #[test]
 fn test_builtin_conversion_functions() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
 
     // to_string conversions
     let result = repl.eval("to_string(42)");
@@ -339,7 +339,7 @@ fn test_builtin_conversion_functions() {
 
 #[test]
 fn test_nested_function_scopes() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
 
     repl.eval(r#"
         fn outer(x) {
@@ -356,7 +356,7 @@ fn test_nested_function_scopes() {
 
 #[test]
 fn test_complex_control_flow() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
 
     let result = repl.eval(r#"
         let mut result = 0;
@@ -380,7 +380,7 @@ fn test_complex_control_flow() {
 
 #[test]
 fn test_exception_like_handling() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
 
     // Simulate try-catch with if
     repl.eval(r#"
@@ -406,7 +406,7 @@ fn test_exception_like_handling() {
 
 #[test]
 fn test_custom_types_simulation() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
 
     // Simulate struct with functions
     repl.eval(r#"
@@ -436,7 +436,7 @@ fn test_custom_types_simulation() {
 
 #[test]
 fn test_iterators_simulation() {
-    let mut repl = Repl::new().unwrap();
+    let mut repl = Repl::new(std::env::temp_dir()).unwrap();
 
     // Simulate iterator pattern
     repl.eval(r#"

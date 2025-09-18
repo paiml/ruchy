@@ -9,10 +9,11 @@
 #![allow(clippy::unnecessary_unwrap)]
 
 use ruchy::runtime::Repl;
+use std::env;
 
 #[test]
 fn test_basic_pipeline() {
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
 
     // Define a simple function to use in pipeline
     assert!(repl.eval("fun double(x: i32) -> i32 { x * 2 }").is_ok());
@@ -28,7 +29,7 @@ fn test_basic_pipeline() {
 
 #[test]
 fn test_chained_pipeline() {
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
 
     // Define helper functions
     assert!(repl.eval("fun double(x: i32) -> i32 { x * 2 }").is_ok());

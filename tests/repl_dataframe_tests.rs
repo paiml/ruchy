@@ -11,10 +11,11 @@
 #![allow(clippy::doc_markdown)]
 
 use ruchy::runtime::Repl;
+use std::env;
 
 #[test]
 fn test_repl_dataframe_empty() {
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
 
     let result = repl.eval("df![]");
     assert!(result.is_ok());
@@ -24,7 +25,7 @@ fn test_repl_dataframe_empty() {
 
 #[test]
 fn test_repl_dataframe_single_column() {
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
 
     let result = repl.eval(r#"df![age => [25, 30, 35]]"#);
     assert!(result.is_ok());
@@ -38,7 +39,7 @@ fn test_repl_dataframe_single_column() {
 
 #[test]
 fn test_repl_dataframe_multiple_columns() {
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
 
     let result = repl.eval(
         r#"df![
@@ -60,7 +61,7 @@ fn test_repl_dataframe_multiple_columns() {
 
 #[test]
 fn test_repl_dataframe_with_variables() {
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
 
     // Define some variables
     assert!(repl.eval("let x = 10").is_ok());
@@ -81,7 +82,7 @@ fn test_repl_dataframe_with_variables() {
 
 #[test]
 fn test_repl_dataframe_assignment() {
-    let mut repl = Repl::new().expect("Failed to create REPL");
+    let mut repl = Repl::new(std::env::temp_dir()).expect("Failed to create REPL");
 
     // Assign DataFrame to variable
     let result = repl.eval(
