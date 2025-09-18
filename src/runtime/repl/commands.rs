@@ -69,7 +69,7 @@ impl CommandRegistry {
                             context.state.set_mode(ReplMode::Transpile);
                             Ok(CommandResult::ModeChange(ReplMode::Transpile))
                         }
-                        _ => Ok(CommandResult::Success(format!("Unknown mode: {}", mode_arg))),
+                        _ => Ok(CommandResult::Success(format!("Unknown mode: {mode_arg}"))),
                     }
                 } else {
                     let current = context.state.get_mode();
@@ -78,13 +78,13 @@ impl CommandRegistry {
             }
             ":history" => Ok(CommandResult::Success(self.format_history(context.state))),
             ":vars" => Ok(CommandResult::Success(self.format_bindings(context.state))),
-            _ => Ok(CommandResult::Success(format!("Unknown command: {}", command))),
+            _ => Ok(CommandResult::Success(format!("Unknown command: {command}"))),
         }
     }
 
     /// Get help text (complexity: 1)
     fn help_text(&self) -> String {
-        r#"Ruchy REPL Commands:
+        r"Ruchy REPL Commands:
   :help, :h          Show this help
   :quit, :exit, :q   Exit the REPL
   :clear             Clear command history
@@ -94,7 +94,7 @@ impl CommandRegistry {
   :vars              Show variable bindings
 
 Enter expressions to evaluate them.
-"#.to_string()
+".to_string()
     }
 
     /// Format command history (complexity: 3)
@@ -118,7 +118,7 @@ Enter expressions to evaluate them.
             "No variables defined".to_string()
         } else {
             bindings.iter()
-                .map(|(name, value)| format!("{} = {:?}", name, value))
+                .map(|(name, value)| format!("{name} = {value:?}"))
                 .collect::<Vec<_>>()
                 .join("\n")
         }

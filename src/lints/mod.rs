@@ -181,9 +181,9 @@ mod tests {
     }
     #[test]
     fn test_severity_display() {
-        assert_eq!(format!("{Severity::Error:?}"), "Error");
-        assert_eq!(format!("{Severity::Warning:?}"), "Warning");
-        assert_eq!(format!("{Severity::Info:?}"), "Info");
+        assert_eq!(format!("{:?}", Severity::Error), "Error");
+        assert_eq!(format!("{:?}", Severity::Warning), "Warning");
+        assert_eq!(format!("{:?}", Severity::Info), "Info");
     }
     #[test]
     fn test_severity_equality() {

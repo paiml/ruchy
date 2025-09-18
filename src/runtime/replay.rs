@@ -422,6 +422,7 @@ mod tests {
     #[cfg(test)]
     mod enabled_tests {
         use super::*;
+        use std::rc::Rc;
 
     // Test 1: SemVer Creation and Equality
     #[test]

@@ -36,11 +36,11 @@ impl Evaluator {
     /// Evaluate a line of input with state synchronization (complexity: 9)
     pub fn evaluate_line(&mut self, line: &str, state: &mut crate::runtime::repl::state::ReplState) -> Result<EvalResult> {
         // Handle multiline continuation
-        if !self.multiline_buffer.is_empty() {
+        if self.multiline_buffer.is_empty() {
+            self.multiline_buffer = line.to_string();
+        } else {
             self.multiline_buffer.push('\n');
             self.multiline_buffer.push_str(line);
-        } else {
-            self.multiline_buffer = line.to_string();
         }
 
         // Try to parse and evaluate the accumulated input
