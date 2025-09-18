@@ -3,8 +3,7 @@
 //! [TEST-COV-008] REPL Demo Validation Suite
 
 use ruchy::runtime::repl::Repl;
-use std::{env, fs;
-use std::{env, path::Path;
+use std::{env, fs, path::Path};
 
 #[test]
 fn test_basic_arithmetic_demo() {

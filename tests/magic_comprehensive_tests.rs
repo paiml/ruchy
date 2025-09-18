@@ -6,7 +6,7 @@
 
 use ruchy::runtime::Repl;
 use ruchy::runtime::magic::{MagicRegistry, MagicResult, UnicodeExpander, ProfileData};
-use std::{env, time::Duration;
+use std::{env, time::Duration};
 
 // Helper function to create a mock repl for testing
 fn create_test_repl() -> Repl {

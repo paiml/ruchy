@@ -4,7 +4,7 @@
 
 use ruchy::{Parser, Transpiler};
 use ruchy::runtime::Repl;
-use std::{env, time::Instant;
+use std::{env, time::Instant};
 
 // ========== Cross-Module Integration Tests ==========
 
@@ -235,8 +235,7 @@ fn test_circular_reference_handling() {
 
 #[test]
 fn test_parallel_compilation() {
-    use std::{env, thread;
-    use std::{env, sync::Arc;
+    use std::{env, thread, sync::Arc};
     
     let sources = vec![
         "fn test1() { 1 + 1 }",

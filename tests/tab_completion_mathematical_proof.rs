@@ -123,8 +123,8 @@ mod tab_completion_proof {
         
         let mut completer = RuchyCompleter::new();
         let mut bindings = HashMap::new();
-        bindings.insert("print_test".to_string(), ruchy::runtime::repl::Value::Int(42));
-        bindings.insert("println_test".to_string(), ruchy::runtime::repl::Value::String("test".to_string()));
+        bindings.insert("print_test".to_string(), ruchy::runtime::repl::Value::Integer(42));
+        bindings.insert("println_test".to_string(), ruchy::runtime::repl::Value::String(Rc::new("test".to_string())));
         
         // QUANTITATIVE MEASUREMENT: Completion results
         let completions = completer.get_completions("print", 5, &bindings);

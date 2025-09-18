@@ -7,8 +7,7 @@ use crate::runtime::repl::Repl;
 use crate::frontend::ast::{Expr, ExprKind, Span};
 use crate::runtime::value::Value;
 use proptest::prelude::*;
-use std::{env, collections::HashSet;
-use std::{env, time::Instant;
+use std::{env, collections::HashSet, time::Instant};
 
 #[derive(Debug, Clone)]
 pub enum ReplAction {
@@ -462,7 +461,7 @@ mod unit_tests {
             
             // Test abs is always non-negative
             let abs_arg = vec![Expr { kind: ExprKind::Int(x), span: Span::default() }];
-            if let Ok(Some(Value::Int(result))) = repl.try_math_function("abs", &abs_arg, deadline, 0) {
+            if let Ok(Some(Value::Integer(result))) = repl.try_math_function("abs", &abs_arg, deadline, 0) {
                 prop_assert!(result >= 0, "abs({}) = {} should be non-negative", x, result);
             }
             
@@ -474,7 +473,7 @@ mod unit_tests {
                 ];
                 let max_args = min_args.clone();
                 
-                if let (Ok(Some(Value::Int(min_val))), Ok(Some(Value::Int(max_val)))) = (
+                if let (Ok(Some(Value::Integer(min_val))), Ok(Some(Value::Integer(max_val)))) = (
                     repl.try_math_function("min", &min_args, deadline, 0),
                     repl.try_math_function("max", &max_args, deadline, 0)
                 ) {
@@ -497,7 +496,7 @@ mod unit_tests {
             let deadline = Instant::now() + std::time::Duration::from_secs(1);
             
             // Set up a variable in global scope
-            repl.bindings.insert(var_name.clone(), Value::Int(value));
+            repl.bindings.insert(var_name.clone(), Value::Integer(value));
             let original_bindings = repl.bindings.clone();
             
             // Define a simple function that modifies a parameter with the same name

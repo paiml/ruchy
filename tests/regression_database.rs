@@ -2,8 +2,7 @@
 // Toyota Way: Once fixed, it must never break again
 
 use ruchy::runtime::Repl;
-use std::{env, process::Command;
-use std::{env, fs;
+use std::{env, fs, process::Command};
 
 /// Regression tests for specific bugs that were found and fixed
 /// Each test documents the original issue and prevents re-occurrence
@@ -144,7 +143,7 @@ fn regression_template_future_bug() {
 #[test]
 fn regression_performance_not_degraded() {
     // Ensure critical operations stay fast
-    use std::{env, time::Instant;
+    use std::{env, time::Instant};
     
     let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     

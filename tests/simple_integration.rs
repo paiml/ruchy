@@ -72,7 +72,7 @@ fn test_parse_and_eval_string() {
     let mut interpreter = Interpreter::new();
     let result = interpreter.eval_expr(&expr).expect("Failed to evaluate");
     
-    assert_eq!(result, Value::String(Rc::new("hello world".to_string())));
+    assert_eq!(result, Value::String(Rc::new("hello world".to_string()))));
 }
 
 #[test]

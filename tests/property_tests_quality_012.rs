@@ -448,7 +448,7 @@ proptest! {
     /// Property: Parsing time is bounded
     #[test]
     fn prop_parsing_time_bounded(input in prop::string::string_regex(".{0,1000}").unwrap()) {
-        use std::{env, time::{Duration, Instant};
+        use std::{env, time::{Duration, Instant}};
         
         let start = Instant::now();
         let mut parser = Parser::new(&input);

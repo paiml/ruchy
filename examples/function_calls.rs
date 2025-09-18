@@ -12,7 +12,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("🎯 Ruchy Function Call Examples");
     println!("{}", "=".repeat(50));
 
-    let mut repl = Repl::new()?;
+    let mut repl = Repl::new(std::env::temp_dir())?;
 
     // Basic println examples
     println!("\n📝 Basic println Examples:");

@@ -9,7 +9,7 @@
 use ruchy::{Parser, Transpiler};
 use ruchy::runtime::Repl;
 use ruchy::runtime::repl::ReplConfig;
-use std::{env, time::{Duration, Instant};
+use std::{env, time::{Duration, Instant}};
 
 /// Generate random valid Ruchy code
 fn generate_random_code(seed: usize) -> String {
@@ -512,8 +512,7 @@ fn test_repl_fuzz_boundary_values() {
 #[test]
 fn test_repl_fuzz_random_bytes() {
     // Test truly random byte sequences to simulate real fuzzing
-    use std::{env, collections::hash_map::DefaultHasher;
-    use std::{env, hash::{Hash, Hasher};
+    use std::{env, collections::hash_map::DefaultHasher, hash::{Hash, Hasher}};
     
     // Generate deterministic "random" bytes for consistent testing
     for seed in 0..50 { // Reduced from 100 for test performance

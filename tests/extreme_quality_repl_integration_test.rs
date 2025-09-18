@@ -62,8 +62,8 @@ mod extreme_quality_tests {
         let mut state = ReplState::new();
 
         // Test variable management
-        state.set_variable("x".to_string(), Value::Int(42));
-        assert_eq!(state.get_variable("x"), Some(&Value::Int(42)));
+        state.set_variable("x".to_string(), Value::Integer(42));
+        assert_eq!(state.get_variable("x"), Some(&Value::Integer(42)));
 
         // Test history management
         state.add_to_history("command1".to_string());

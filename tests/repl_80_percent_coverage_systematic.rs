@@ -4,7 +4,7 @@
 #[cfg(test)]
 mod repl_value_fmt_coverage {
     use ruchy::runtime::repl::{Value, DataFrameColumn};
-    use std::{env, collections::{HashMap, HashSet};
+    use std::{env, collections::{HashMap, HashSet}};
     
     /// Test Value::fmt - COMPLEXITY 94/149 (TOP TARGET)
     /// This single function is responsible for most REPL display logic
@@ -13,9 +13,9 @@ mod repl_value_fmt_coverage {
         // Test ALL Value::fmt branches systematically
         let test_values = vec![
             // Basic types
-            Value::Int(-9223372036854775808), // i64::MIN
-            Value::Int(9223372036854775807),  // i64::MAX
-            Value::Int(0),
+            Value::Integer(-9223372036854775808), // i64::MIN
+            Value::Integer(9223372036854775807),  // i64::MAX
+            Value::Integer(0),
             Value::Float(-f64::INFINITY),
             Value::Float(f64::INFINITY),
             Value::Float(f64::NAN),
@@ -23,8 +23,8 @@ mod repl_value_fmt_coverage {
             Value::Float(-0.0),
             Value::Float(3.141592653589793),
             Value::String(String::new()),           // Empty string
-            Value::String("hello\nworld\ttab".to_string()), // Escape sequences
-            Value::String("🦀 unicode ∑∞".to_string()),     // Unicode
+            Value::String(Rc::new("hello\nworld\ttab".to_string())), // Escape sequences
+            Value::String(Rc::new("🦀 unicode ∑∞".to_string())),     // Unicode
             Value::Bool(true),
             Value::Bool(false),
             Value::Char('\0'),               // Null char
@@ -57,11 +57,11 @@ mod repl_value_fmt_coverage {
         // Test List formatting - multiple branches
         let lists = vec![
             Value::List(vec![]),                          // Empty list
-            Value::List(vec![Value::Int(1)]),            // Single element
-            Value::List(vec![Value::Int(1), Value::Int(2), Value::Int(3)]), // Multiple elements
+            Value::List(vec![Value::Integer(1)]),            // Single element
+            Value::List(vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)]), // Multiple elements
             Value::List(vec![                            // Nested lists
-                Value::List(vec![Value::Int(1), Value::Int(2)]),
-                Value::List(vec![Value::Int(3), Value::Int(4)]),
+                Value::List(vec![Value::Integer(1), Value::Integer(2)]),
+                Value::List(vec![Value::Integer(3), Value::Integer(4)]),
             ]),
             Value::List((0..100).map(Value::Int).collect()), // Long list
         ];
@@ -76,8 +76,8 @@ mod repl_value_fmt_coverage {
         // Test Tuple formatting
         let tuples = vec![
             Value::Tuple(vec![]),                        // Empty tuple  
-            Value::Tuple(vec![Value::Int(1)]),          // Single element
-            Value::Tuple(vec![Value::Int(1), Value::String("test".to_string())]), // Mixed types
+            Value::Tuple(vec![Value::Integer(1)]),          // Single element
+            Value::Tuple(vec![Value::Integer(1), Value::String(Rc::new("test".to_string()))]), // Mixed types
             Value::Tuple((0..50).map(Value::Int).collect()), // Long tuple
         ];
         
@@ -93,13 +93,13 @@ mod repl_value_fmt_coverage {
             Value::Object(HashMap::new()),               // Empty object
             {
                 let mut obj = HashMap::new();
-                obj.insert("key".to_string(), Value::Int(42));
+                obj.insert("key".to_string(), Value::Integer(42));
                 Value::Object(obj)
             },
             {
                 let mut obj = HashMap::new();
                 for i in 0..10 {
-                    obj.insert(format!("key_{i}"), Value::Int(i));
+                    obj.insert(format!("key_{i}"), Value::Integer(i));
                 }
                 Value::Object(obj)
             }
@@ -117,7 +117,7 @@ mod repl_value_fmt_coverage {
             Value::HashMap(HashMap::new()),              // Empty hashmap
             {
                 let mut map = HashMap::new();
-                map.insert(Value::String("key".to_string()), Value::Int(42));
+                map.insert(Value::String(Rc::new("key".to_string())), Value::Integer(42));
                 Value::HashMap(map)
             }
         ];
@@ -132,7 +132,7 @@ mod repl_value_fmt_coverage {
             Value::HashSet(HashSet::new()),              // Empty hashset
             {
                 let mut set = HashSet::new();
-                set.insert(Value::String("item".to_string()));
+                set.insert(Value::String(Rc::new("item".to_string())));
                 Value::HashSet(set)
             }
         ];
@@ -174,18 +174,18 @@ mod repl_value_fmt_coverage {
             Value::EnumVariant {                         // Variant with single data
                 enum_name: "Option".to_string(),
                 variant_name: "Some".to_string(),
-                data: Some(vec![Value::Int(42)]),
+                data: Some(vec![Value::Integer(42)]),
             },
             Value::EnumVariant {                         // Variant with multiple data
                 enum_name: "Result".to_string(),
                 variant_name: "Ok".to_string(),
-                data: Some(vec![Value::String("success".to_string()), Value::Int(200)]),
+                data: Some(vec![Value::String(Rc::new("success".to_string())), Value::Integer(200)]),
             },
             Value::EnumVariant {                         // Complex nested data
                 enum_name: "Complex".to_string(),
                 variant_name: "Nested".to_string(),
                 data: Some(vec![
-                    Value::List(vec![Value::Int(1), Value::Int(2)]),
+                    Value::List(vec![Value::Integer(1), Value::Integer(2)]),
                     Value::Object({
                         let mut map = HashMap::new();
                         map.insert("inner".to_string(), Value::Bool(true));
@@ -244,7 +244,7 @@ mod repl_value_fmt_coverage {
                 columns: vec![
                     DataFrameColumn {
                         name: "numbers".to_string(),
-                        values: vec![Value::Int(1), Value::Int(2), Value::Int(3)],
+                        values: vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)],
                     }
                 ]
             },
@@ -252,11 +252,11 @@ mod repl_value_fmt_coverage {
                 columns: vec![
                     DataFrameColumn {
                         name: "id".to_string(),
-                        values: vec![Value::Int(1), Value::Int(2)],
+                        values: vec![Value::Integer(1), Value::Integer(2)],
                     },
                     DataFrameColumn {
                         name: "name".to_string(),
-                        values: vec![Value::String("Alice".to_string()), Value::String("Bob".to_string())],
+                        values: vec![Value::String(Rc::new("Alice".to_string())), Value::String(Rc::new("Bob".to_string()))],
                     }
                 ]
             }

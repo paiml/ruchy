@@ -4,16 +4,16 @@
 #[cfg(test)]
 mod repl_value_coverage {
     use ruchy::runtime::repl::{Value, DataFrameColumn};
-    use std::{env, collections::{HashMap, HashSet};
+    use std::{env, collections::{HashMap, HashSet}};
 
     /// Test Value creation and basic operations - Core type coverage
     #[test]
     fn test_value_creation_comprehensive_coverage() {
         // Test all Value variants for completeness
         let values = vec![
-            Value::Int(42),
+            Value::Integer(42),
             Value::Float(3.14159),
-            Value::String("hello world".to_string()),
+            Value::String(Rc::new("hello world".to_string())),
             Value::Bool(true),
             Value::Bool(false),
             Value::Char('R'),
@@ -43,39 +43,39 @@ mod repl_value_coverage {
     fn test_value_collections_coverage() {
         // Test List
         let list = Value::List(vec![
-            Value::Int(1),
-            Value::Int(2),
-            Value::Int(3),
+            Value::Integer(1),
+            Value::Integer(2),
+            Value::Integer(3),
         ]);
         assert_eq!(format!("{}", list), "[1, 2, 3]");
 
         // Test Tuple  
         let tuple = Value::Tuple(vec![
-            Value::String("name".to_string()),
-            Value::Int(25),
+            Value::String(Rc::new("name".to_string())),
+            Value::Integer(25),
         ]);
         let tuple_str = format!("{}", tuple);
         assert!(tuple_str.contains("name") && tuple_str.contains("25"));
 
         // Test Object
         let mut obj_map = HashMap::new();
-        obj_map.insert("name".to_string(), Value::String("Alice".to_string()));
-        obj_map.insert("age".to_string(), Value::Int(30));
+        obj_map.insert("name".to_string(), Value::String(Rc::new("Alice".to_string())));
+        obj_map.insert("age".to_string(), Value::Integer(30));
         let object = Value::Object(obj_map);
         let obj_str = format!("{}", object);
         assert!(obj_str.contains("name") && obj_str.contains("Alice"));
 
         // Test HashMap
         let mut hash_map = HashMap::new();
-        hash_map.insert(Value::String("key1".to_string()), Value::Int(100));
+        hash_map.insert(Value::String(Rc::new("key1".to_string())), Value::Integer(100));
         let hash_value = Value::HashMap(hash_map);
         let hash_str = format!("{}", hash_value);
         assert!(hash_str.contains("key1"));
 
         // Test HashSet
         let mut hash_set = HashSet::new();
-        hash_set.insert(Value::String("item1".to_string()));
-        hash_set.insert(Value::String("item2".to_string()));
+        hash_set.insert(Value::String(Rc::new("item1".to_string())));
+        hash_set.insert(Value::String(Rc::new("item2".to_string())));
         let set_value = Value::HashSet(hash_set);
         let set_str = format!("{}", set_value);
         assert!(set_str.contains("item1") || set_str.contains("item2"));
@@ -108,7 +108,7 @@ mod repl_value_coverage {
         let enum_with_data = Value::EnumVariant {
             enum_name: "Result".to_string(),
             variant_name: "Ok".to_string(), 
-            data: Some(vec![Value::Int(42)]),
+            data: Some(vec![Value::Integer(42)]),
         };
         let enum_data_str = format!("{}", enum_with_data);
         assert!(enum_data_str.contains("Ok") && enum_data_str.contains("42"));
@@ -116,7 +116,7 @@ mod repl_value_coverage {
         // Test DataFrame
         let df_column = DataFrameColumn {
             name: "column1".to_string(),
-            values: vec![Value::Int(1), Value::Int(2)],
+            values: vec![Value::Integer(1), Value::Integer(2)],
         };
         let dataframe = Value::DataFrame {
             columns: vec![df_column],
@@ -317,7 +317,7 @@ mod repl_integration_coverage {
 #[cfg(test)]
 mod repl_performance_coverage {
     use ruchy::runtime::repl::Repl;
-    use std::{env, time::Instant;
+    use std::{env, time::Instant};
 
     /// Test REPL performance characteristics
     #[test]

@@ -1,6 +1,6 @@
 // Comprehensive unit tests for REPL to increase code coverage
 use ruchy::runtime::{Repl, ReplConfig};
-use std::{env, time::Duration;
+use std::{env, time::Duration};
 
 #[test]
 fn test_repl_creation_and_defaults() {

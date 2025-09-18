@@ -2,8 +2,11 @@
 //! Tests invariants and properties that should always hold
 
 use proptest::prelude::*;
+use std::rc::Rc;
 use ruchy::runtime::{Value, binary_ops::evaluate_binary_op};
+use std::rc::Rc;
 use ruchy::frontend::ast::BinaryOp;
+use std::rc::Rc;
 
 #[cfg(test)]
 mod binary_ops_properties {
@@ -17,8 +20,8 @@ mod binary_ops_properties {
                 return Ok(());
             }
             
-            let lhs = Value::Int(a);
-            let rhs = Value::Int(b);
+            let lhs = Value::Integer(a);
+            let rhs = Value::Integer(b);
             
             let result1 = evaluate_binary_op(&BinaryOp::Add, &lhs, &rhs).unwrap();
             let result2 = evaluate_binary_op(&BinaryOp::Add, &rhs, &lhs).unwrap();
@@ -33,8 +36,8 @@ mod binary_ops_properties {
                 return Ok(());
             }
             
-            let lhs = Value::Int(a);
-            let rhs = Value::Int(b);
+            let lhs = Value::Integer(a);
+            let rhs = Value::Integer(b);
             
             let result1 = evaluate_binary_op(&BinaryOp::Multiply, &lhs, &rhs).unwrap();
             let result2 = evaluate_binary_op(&BinaryOp::Multiply, &rhs, &lhs).unwrap();
@@ -44,9 +47,9 @@ mod binary_ops_properties {
 
         #[test]
         fn test_string_concatenation_associative(a: String, b: String, c: String) {
-            let val_a = Value::String(a.clone());
-            let val_b = Value::String(b.clone());
-            let val_c = Value::String(c.clone());
+            let val_a = Value::String(Rc::new(a.clone()));
+            let val_b = Value::String(Rc::new(b.clone()));
+            let val_c = Value::String(Rc::new(c.clone()));
             
             // (a + b) + c
             let ab = evaluate_binary_op(&BinaryOp::Add, &val_a, &val_b).unwrap();
@@ -81,8 +84,8 @@ mod binary_ops_properties {
 
         #[test]
         fn test_division_by_one_identity(a: i64) {
-            let val = Value::Int(a);
-            let one = Value::Int(1);
+            let val = Value::Integer(a);
+            let one = Value::Integer(1);
             
             let result = evaluate_binary_op(&BinaryOp::Divide, &val, &one).unwrap();
             
@@ -91,7 +94,7 @@ mod binary_ops_properties {
 
         #[test]
         fn test_comparison_reflexivity(a: i64) {
-            let val = Value::Int(a);
+            let val = Value::Integer(a);
             
             let eq_result = evaluate_binary_op(&BinaryOp::Equal, &val, &val).unwrap();
             assert_eq!(eq_result, Value::Bool(true), "Value should equal itself");
@@ -109,8 +112,8 @@ mod binary_ops_properties {
                 return Ok(()); // Skip equal values
             }
             
-            let val_a = Value::Int(a);
-            let val_b = Value::Int(b);
+            let val_a = Value::Integer(a);
+            let val_b = Value::Integer(b);
             
             let less = evaluate_binary_op(&BinaryOp::Less, &val_a, &val_b).unwrap();
             let greater = evaluate_binary_op(&BinaryOp::Greater, &val_a, &val_b).unwrap();
@@ -132,7 +135,7 @@ mod pattern_matching_properties {
     proptest! {
         #[test]
         fn test_literal_pattern_reflexivity(n: i64) {
-            let value = Value::Int(n);
+            let value = Value::Integer(n);
             let pattern = Literal::Integer(n);
             
             assert!(match_literal_pattern(&value, &pattern), 
@@ -141,7 +144,7 @@ mod pattern_matching_properties {
 
         #[test]
         fn test_values_equal_reflexivity(n: i64) {
-            let value = Value::Int(n);
+            let value = Value::Integer(n);
             
             assert!(values_equal(&value, &value), 
                     "Value should equal itself");
@@ -149,8 +152,8 @@ mod pattern_matching_properties {
 
         #[test]
         fn test_values_equal_symmetry(a: i64, b: i64) {
-            let val_a = Value::Int(a);
-            let val_b = Value::Int(b);
+            let val_a = Value::Integer(a);
+            let val_b = Value::Integer(b);
             
             let eq1 = values_equal(&val_a, &val_b);
             let eq2 = values_equal(&val_b, &val_a);
@@ -160,7 +163,7 @@ mod pattern_matching_properties {
 
         #[test]
         fn test_string_values_equal(s: String) {
-            let val1 = Value::String(s.clone());
+            let val1 = Value::String(Rc::new(s.clone()));
             let val2 = Value::String(s);
             
             assert!(values_equal(&val1, &val2), 

@@ -4,7 +4,7 @@
 use ruchy::runtime::Repl;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let mut repl = Repl::new()?;
+    let mut repl = Repl::new(std::env::temp_dir())?;
     
     println!("=== Variables and Functions Demo ===\n");
     

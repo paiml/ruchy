@@ -4,7 +4,9 @@
 #![allow(warnings)] // Test file
 
 use ruchy::runtime::interpreter::{Interpreter, Value};
+use std::rc::Rc;
 use ruchy::frontend::Parser;
+use std::rc::Rc;
 
 // Helper function to parse and eval string
 fn eval_str(interpreter: &mut Interpreter, input: &str) -> Result<Value, Box<dyn std::error::Error>> {

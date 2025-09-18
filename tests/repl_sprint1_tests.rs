@@ -4,8 +4,8 @@
 
 use ruchy::runtime::{Repl, ReplConfig, ReplState, Value};
 use ruchy::frontend::ast::{Expr, ExprKind, Literal, Span};
-use std::{env, collections::{HashMap, HashSet};
-use std::{env, time::{Duration, Instant};
+use std::rc::Rc;
+use std::{env, collections::{HashMap, HashSet}, time::{Duration, Instant}};
 
 // REPL-001: Core REPL loop with 50+ test cases
 
@@ -160,7 +160,7 @@ fn test_repl_evaluate_expr_str() {
 
     let value = repl.evaluate_expr_str("5 * 5", deadline);
     assert!(value.is_ok());
-    assert_eq!(value.unwrap(), Value::Int(25));
+    assert_eq!(value.unwrap(), Value::Integer(25));
 }
 
 #[test]
@@ -201,7 +201,7 @@ fn test_repl_get_bindings_mut() {
 
     // Modify bindings directly
     let bindings = repl.get_bindings_mut();
-    bindings.insert("y".to_string(), Value::Int(100));
+    bindings.insert("y".to_string(), Value::Integer(100));
 
     // Verify the change
     let result = repl.eval("y").unwrap();
@@ -240,7 +240,7 @@ fn test_repl_get_last_error() {
 
 #[test]
 fn test_value_int() {
-    let value = Value::Int(42);
+    let value = Value::Integer(42);
     assert_eq!(value.to_string(), "42");
     // Value is truthy based on its representation
 }
@@ -254,7 +254,7 @@ fn test_value_float() {
 
 #[test]
 fn test_value_string() {
-    let value = Value::String("hello".to_string());
+    let value = Value::String(Rc::new("hello".to_string()));
     assert_eq!(value.to_string(), "\"hello\"");
     // Value is truthy based on its representation
 }
@@ -280,9 +280,9 @@ fn test_value_char() {
 #[test]
 fn test_value_list() {
     let value = Value::List(vec![
-        Value::Int(1),
-        Value::Int(2),
-        Value::Int(3),
+        Value::Integer(1),
+        Value::Integer(2),
+        Value::Integer(3),
     ]);
     assert_eq!(value.to_string(), "[1, 2, 3]");
     // Value is truthy based on its representation
@@ -298,8 +298,8 @@ fn test_value_empty_list() {
 #[test]
 fn test_value_tuple() {
     let value = Value::Tuple(vec![
-        Value::Int(1),
-        Value::String("hello".to_string()),
+        Value::Integer(1),
+        Value::String(Rc::new("hello".to_string())),
     ]);
     assert_eq!(value.to_string(), "(1, \"hello\")");
     // Value is truthy based on its representation
@@ -344,8 +344,8 @@ fn test_value_range_inclusive() {
 #[test]
 fn test_value_object() {
     let mut object = HashMap::new();
-    object.insert("name".to_string(), Value::String("Alice".to_string()));
-    object.insert("age".to_string(), Value::Int(30));
+    object.insert("name".to_string(), Value::String(Rc::new("Alice".to_string())));
+    object.insert("age".to_string(), Value::Integer(30));
 
     let value = Value::Object(object);
     assert!(value.to_string().contains("name"));
@@ -363,7 +363,7 @@ fn test_value_empty_object() {
 #[test]
 fn test_value_hashmap() {
     let mut map = HashMap::new();
-    map.insert(Value::String("key".to_string()), Value::Int(42));
+    map.insert(Value::String(Rc::new("key".to_string())), Value::Integer(42));
 
     let value = Value::HashMap(map);
     assert!(value.to_string().contains("key"));
@@ -373,8 +373,8 @@ fn test_value_hashmap() {
 #[test]
 fn test_value_hashset() {
     let mut set = HashSet::new();
-    set.insert(Value::Int(1));
-    set.insert(Value::Int(2));
+    set.insert(Value::Integer(1));
+    set.insert(Value::Integer(2));
 
     let value = Value::HashSet(set);
     let str_repr = value.to_string();
@@ -390,7 +390,7 @@ fn test_value_enum_variant() {
     let value = Value::EnumVariant {
         enum_name: "Option".to_string(),
         variant_name: "Some".to_string(),
-        data: Some(vec![Value::Int(42)]),
+        data: Some(vec![Value::Integer(42)]),
     };
     assert_eq!(value.to_string(), "Option::Some(42)");
     // Value is truthy based on its representation
