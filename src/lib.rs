@@ -462,7 +462,7 @@ mod tests {
         assert!(result.contains("await"));
     }
     #[test]
-    #[ignore] // Module system changed in Sprint v3.8.0
+    #[ignore = "Module system changed in Sprint v3.8.0"]
     fn test_compile_import() {
         let result = compile("import std.collections.HashMap").unwrap();
         assert!(result.contains("use"));
@@ -722,7 +722,7 @@ mod tests {
         assert!(compile("export fn helper()").is_ok());
     }
     #[test]
-    #[ignore] // Decorators not implemented yet
+    #[ignore = "Decorators not implemented yet"]
     fn test_decorators() {
         assert!(compile("@memoize\nfn expensive(n) { }").is_ok());
         assert!(compile("@derive(Debug, Clone)\nstruct Data { }").is_ok());
@@ -924,7 +924,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore] // Module system changed in Sprint v3.8.0
+    #[ignore = "Module system changed in Sprint v3.8.0"]
     fn test_compile_modules() {
         assert!(compile("mod math { fun add(x: i32, y: i32) -> i32 { x + y } }").is_ok());
         assert!(compile("use std::collections::HashMap").is_ok());

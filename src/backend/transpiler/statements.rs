@@ -2748,7 +2748,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore] // Parser doesn't support this syntax yet
+    #[ignore = "Parser doesn't support this syntax yet"]
     fn test_transpile_match_expression() {
         let transpiler = create_transpiler();
         let code = "match x { 1 => \"one\", 2 => \"two\", _ => \"other\" }";
@@ -2790,7 +2790,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore] // Parser doesn't support this syntax yet
+    #[ignore = "Parser doesn't support this syntax yet"]
     fn test_transpile_impl_block() {
         let transpiler = create_transpiler();
         let code = "impl Point { fun new(x, y) { Point { x, y } } }";
@@ -2803,7 +2803,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore] // Parser doesn't support this syntax yet
+    #[ignore = "Parser doesn't support this syntax yet"]
     fn test_transpile_async_function() {
         let transpiler = create_transpiler();
         let code = "async fun fetch_data() { await http_get(\"url\") }";
@@ -3101,7 +3101,7 @@ mod tests {
 
     // Test 47: Import Statement
     #[test]
-    #[ignore] // Module system changed in Sprint v3.8.0
+    #[ignore = "Module system changed in Sprint v3.8.0"]
     fn test_import_statement() {
         let transpiler = create_transpiler();
         let code = "import std::fs";

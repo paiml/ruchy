@@ -148,7 +148,7 @@ mod repl_recording_tdd {
     }
     
     #[test]
-    #[ignore] // Integration test - run with --ignored flag
+    #[ignore = "Integration test - run with --ignored flag"]
     fn test_actual_repl_recording_generates_nonzero_seed() {
         // RED: Test that actual REPL recording generates non-zero seed
         use std::process::Command;

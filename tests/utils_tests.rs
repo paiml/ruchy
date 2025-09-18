@@ -204,7 +204,7 @@ mod property_tests {
         }
         
         #[test]
-        #[ignore] // Skip for now - needs fixing in conversion logic
+        #[ignore = "Skip for now - needs fixing in conversion logic"]
         fn prop_snake_camel_roundtrip(s in "[a-z]+(_[a-z]+)*") {
             // Only test well-formed snake_case strings
             let camel = snake_to_camel(&s);
