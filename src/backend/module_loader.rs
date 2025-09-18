@@ -220,10 +220,18 @@ pub fn load_module(&mut self, module_name: &str) -> Result<ParsedModule> {
     /// Recursive helper to collect dependencies from AST nodes
     fn collect_dependencies(&self, expr: &Expr, dependencies: &mut Vec<String>) {
         match &expr.kind {
-            ExprKind::Import { path, .. } => {
+            ExprKind::Import { module, .. }
+            | ExprKind::ImportAll { module, .. }
+            | ExprKind::ImportDefault { module, .. } => {
                 // Only treat simple names (no ::) as potential file imports
-                if !path.contains("::") && !path.starts_with("std::") && !path.starts_with("http") {
-                    dependencies.push(path.clone());
+                if !module.contains("::") && !module.starts_with("std::") && !module.starts_with("http") {
+                    dependencies.push(module.clone());
+                }
+            }
+            ExprKind::ReExport { module, .. } => {
+                // Re-exports also create dependencies
+                if !module.contains("::") && !module.starts_with("std::") && !module.starts_with("http") {
+                    dependencies.push(module.clone());
                 }
             }
             ExprKind::Block(exprs) => {

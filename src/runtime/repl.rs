@@ -2002,11 +2002,35 @@ impl Repl {
             ExprKind::Macro { name, args } => {
                 self.evaluate_macro(name, args, deadline, depth)
             }
-            ExprKind::Import { path, items } => {
-                self.evaluate_import(path, items)
+            ExprKind::Import { module, items } => {
+                self.evaluate_import(module, items.as_deref())
             }
-            ExprKind::Export { items } => {
-                self.evaluate_export(items)
+            ExprKind::ImportAll { module, alias } => {
+                // Import all with alias
+                bail!("Import all not yet implemented in REPL: {} as {}", module, alias)
+            }
+            ExprKind::ImportDefault { module, name } => {
+                // Import default
+                bail!("Default import not yet implemented in REPL: {} from {}", name, module)
+            }
+            ExprKind::Export { expr, is_default } => {
+                // Export an expression
+                if *is_default {
+                    bail!("Default export not yet implemented in REPL")
+                } else {
+                    self.evaluate_expr(expr, deadline, depth)
+                }
+            }
+            ExprKind::ExportList { names } => {
+                self.evaluate_export_list(names)
+            }
+            ExprKind::ExportDefault { expr } => {
+                // Export default
+                self.evaluate_expr(expr, deadline, depth)
+            }
+            ExprKind::ReExport { items, module } => {
+                // Re-export from another module
+                bail!("Re-export not yet implemented in REPL: {:?} from {}", items, module)
             }
             ExprKind::TypeCast { expr, target_type } => {
                 self.evaluate_type_cast(expr, target_type, deadline, depth)
@@ -9700,7 +9724,18 @@ impl Repl {
     }
     /// Evaluate import statements (complexity < 10)
     /// Import standard library filesystem module (complexity: 6)
-    fn import_std_fs(&mut self, items: &[ImportItem]) -> Result<()> {
+    fn import_std_fs(&mut self, items: Option<&[String]>) -> Result<()> {
+        use crate::frontend::ast::ImportItem;
+        // Convert to legacy format
+        let import_items = if let Some(item_names) = items {
+            item_names.iter().map(|name| ImportItem::Named(name.clone())).collect::<Vec<_>>()
+        } else {
+            vec![ImportItem::Wildcard]
+        };
+        self.import_std_fs_legacy(&import_items)
+    }
+
+    fn import_std_fs_legacy(&mut self, items: &[ImportItem]) -> Result<()> {
         for item in items {
             match item {
                 ImportItem::Named(name) if name == "read_file" => {
@@ -9718,7 +9753,18 @@ impl Repl {
         Ok(())
     }
     /// Import standard library collections module (complexity: 3)
-    fn import_std_collections(&mut self, items: &[ImportItem]) -> Result<()> {
+    fn import_std_collections(&mut self, items: Option<&[String]>) -> Result<()> {
+        use crate::frontend::ast::ImportItem;
+        // Convert to legacy format
+        let import_items = if let Some(item_names) = items {
+            item_names.iter().map(|name| ImportItem::Named(name.clone())).collect::<Vec<_>>()
+        } else {
+            vec![ImportItem::Wildcard]
+        };
+        self.import_std_collections_legacy(&import_items)
+    }
+
+    fn import_std_collections_legacy(&mut self, items: &[ImportItem]) -> Result<()> {
         for item in items {
             if let ImportItem::Named(_name) = item {
                 // Successfully imported
@@ -9756,7 +9802,18 @@ impl Repl {
         }
     }
     /// Load and cache a module from file (complexity: 7)
-    fn load_and_cache_module(&mut self, path: &str, items: &[ImportItem]) -> Result<()> {
+    fn load_and_cache_module(&mut self, path: &str, items: Option<&[String]>) -> Result<()> {
+        use crate::frontend::ast::ImportItem;
+        // Convert to legacy format
+        let import_items = if let Some(item_names) = items {
+            item_names.iter().map(|name| ImportItem::Named(name.clone())).collect::<Vec<_>>()
+        } else {
+            vec![ImportItem::Wildcard]
+        };
+        self.load_and_cache_module_legacy(path, &import_items)
+    }
+
+    fn load_and_cache_module_legacy(&mut self, path: &str, items: &[ImportItem]) -> Result<()> {
         let module_path = format!("{path}.ruchy");
         if !std::path::Path::new(&module_path).exists() {
             bail!("Module not found: {}", path);
@@ -9777,9 +9834,9 @@ impl Repl {
         Ok(())
     }
     /// Main import dispatcher (complexity: 8)
-    fn evaluate_import(&mut self, path: &str, items: &[ImportItem]) -> Result<Value> {
+    fn evaluate_import(&mut self, module: &str, items: Option<&[String]>) -> Result<Value> {
         // Handle standard library imports
-        match path {
+        match module {
             "std::fs" | "std::fs::read_file" => {
                 self.import_std_fs(items)?;
             }
@@ -9787,15 +9844,22 @@ impl Repl {
                 self.import_std_collections(items)?;
             }
             "std::mem" | "std::parallel" | "std::simd" | "std::cache" | "std::bench" | "std::profile" => {
-                self.import_performance_module(path)?;
+                self.import_performance_module(module)?;
             }
             _ => {
                 // Check cache first
-                if let Some(cached_functions) = self.module_cache.get(path).cloned() {
-                    self.import_from_cache(&cached_functions, items);
+                if let Some(cached_functions) = self.module_cache.get(module).cloned() {
+                    // Convert to legacy format for import_from_cache
+                    use crate::frontend::ast::ImportItem;
+                    let import_items = if let Some(item_names) = items {
+                        item_names.iter().map(|name| ImportItem::Named(name.clone())).collect::<Vec<_>>()
+                    } else {
+                        vec![ImportItem::Wildcard]
+                    };
+                    self.import_from_cache(&cached_functions, &import_items);
                 } else {
                     // Load from file and cache
-                    self.load_and_cache_module(path, items)?;
+                    self.load_and_cache_module(module, items)?;
                 }
             }
         }
@@ -9840,7 +9904,7 @@ impl Repl {
         Ok(())
     }
     /// Evaluate export statements (complexity < 10)
-    fn evaluate_export(&mut self, _items: &[String]) -> Result<Value> {
+    fn evaluate_export_list(&mut self, _items: &[String]) -> Result<Value> {
         // For now, just track the export
         // Real implementation would:
         // 1. Mark items for export

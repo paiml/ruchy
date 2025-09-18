@@ -109,8 +109,17 @@ pub fn resolve_imports(&mut self, ast: Expr) -> Result<Expr> {
     /// Recursively resolve imports in an expression
     fn resolve_expr(&mut self, expr: Expr) -> Result<Expr> {
         match expr.kind {
-            ExprKind::Import { path, items } => {
-                self.resolve_import_expr(expr.span, &path, &items)
+            ExprKind::Import { module, items } => {
+                self.resolve_simple_import(expr.span, &module, items.as_deref())
+            }
+            ExprKind::ImportAll { module, alias } => {
+                self.resolve_import_all(expr.span, &module, &alias)
+            }
+            ExprKind::ImportDefault { module, name } => {
+                self.resolve_import_default(expr.span, &module, &name)
+            }
+            ExprKind::ReExport { items, module } => {
+                self.resolve_reexport(expr.span, &items, &module)
             }
             ExprKind::Block(exprs) => {
                 self.resolve_block_expr(exprs, expr.span)
@@ -147,12 +156,65 @@ pub fn resolve_imports(&mut self, ast: Expr) -> Result<Expr> {
         }
     }
     /// Resolve import expressions
-    fn resolve_import_expr(&mut self, span: Span, path: &str, items: &[ImportItem]) -> Result<Expr> {
-        if self.is_file_import(path) {
-            self.resolve_file_import(span, path, items)
-        } else {
-            self.resolve_standard_import(span, path, items)
+    fn resolve_simple_import(&mut self, span: Span, module: &str, items: Option<&[String]>) -> Result<Expr> {
+        if self.is_file_import(module) {
+            self.resolve_file_module(span, module)?;
         }
+        Ok(Expr::new(
+            ExprKind::Import {
+                module: module.to_string(),
+                items: items.map(|i| i.to_vec()),
+            },
+            span,
+        ))
+    }
+
+    fn resolve_import_all(&mut self, span: Span, module: &str, alias: &str) -> Result<Expr> {
+        if self.is_file_import(module) {
+            self.resolve_file_module(span, module)?;
+        }
+        Ok(Expr::new(
+            ExprKind::ImportAll {
+                module: module.to_string(),
+                alias: alias.to_string(),
+            },
+            span,
+        ))
+    }
+
+    fn resolve_import_default(&mut self, span: Span, module: &str, name: &str) -> Result<Expr> {
+        if self.is_file_import(module) {
+            self.resolve_file_module(span, module)?;
+        }
+        Ok(Expr::new(
+            ExprKind::ImportDefault {
+                module: module.to_string(),
+                name: name.to_string(),
+            },
+            span,
+        ))
+    }
+
+    fn resolve_reexport(&mut self, span: Span, items: &[String], module: &str) -> Result<Expr> {
+        if self.is_file_import(module) {
+            self.resolve_file_module(span, module)?;
+        }
+        Ok(Expr::new(
+            ExprKind::ReExport {
+                items: items.to_vec(),
+                module: module.to_string(),
+            },
+            span,
+        ))
+    }
+
+    fn resolve_file_module(&mut self, _span: Span, module: &str) -> Result<()> {
+        // Load and parse the module file
+        let _ = self.module_loader.load_module(module)
+            .module_context("resolve import", module)?;
+        // For now, just ensure the module exists and is valid
+        // TODO: Actually integrate the module's exports
+        Ok(())
     }
 
     fn resolve_file_import(&mut self, span: Span, path: &str, items: &[ImportItem]) -> Result<Expr> {
@@ -174,8 +236,8 @@ pub fn resolve_imports(&mut self, ast: Expr) -> Result<Expr> {
     fn resolve_standard_import(&self, span: Span, path: &str, items: &[ImportItem]) -> Result<Expr> {
         Ok(Expr::new(
             ExprKind::Import {
-                path: path.to_string(),
-                items: items.to_vec(),
+                module: path.to_string(),
+                items: None,  // Legacy standard imports converted to simple imports
             },
             span,
         ))
@@ -195,9 +257,9 @@ pub fn resolve_imports(&mut self, ast: Expr) -> Result<Expr> {
         if items.iter().any(|item| matches!(item, ImportItem::Wildcard)) || items.is_empty() {
             // Wildcard import: use module::*;
             Expr::new(
-                ExprKind::Import {
-                    path: path.to_string(),
-                    items: vec![ImportItem::Wildcard],
+                ExprKind::ImportAll {
+                    module: path.to_string(),
+                    alias: "*".to_string(),  // Wildcard imports
                 },
                 Span { start: 0, end: 0 },
             )
@@ -285,10 +347,19 @@ pub fn resolve_imports(&mut self, ast: Expr) -> Result<Expr> {
     fn create_use_statements(&self, module_path: &str, items: &[ImportItem]) -> Expr {
         // Create a use statement that imports specific items from the module
         // This will be transpiled to proper Rust use statements
+        // Convert legacy ImportItem list to string list for new AST
+        let item_names: Vec<String> = items.iter().filter_map(|item| {
+            match item {
+                ImportItem::Named(name) => Some(name.clone()),
+                ImportItem::Aliased { name, .. } => Some(name.clone()),
+                ImportItem::Wildcard => None,
+            }
+        }).collect();
+
         Expr::new(
             ExprKind::Import {
-                path: module_path.to_string(), // Use the module path as-is
-                items: items.to_vec(),
+                module: module_path.to_string(),
+                items: if item_names.is_empty() { None } else { Some(item_names) },
             },
             Span { start: 0, end: 0 },
         )

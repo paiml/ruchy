@@ -32,6 +32,60 @@
 - [x] **Utility Functions** (5): len, range (3 variants), typeof, random, timestamp
 - [x] **LSP Integration**: Enabled ruchy-lsp binary for IDE support
 
+## 🚨 **CRITICAL: Core Language Completion Sprints** (v3.8.0 - v3.11.0)
+
+### **Sprint v3.8.0: Module System Implementation** [NEXT]
+**Objective**: Fix completely broken import/export system (0% functional)
+**Quality Requirements**:
+- TDD: Write failing tests FIRST
+- Complexity: ≤10 (PMAT enforced)
+- TDG Score: A+ (≥95 points)
+- Zero warnings, zero build breaks
+
+#### Tasks:
+- [ ] **Import Statement Parser**: Fix "Expected module path" error
+- [ ] **Export Statement Parser**: Implement export parsing
+- [ ] **Module Resolution**: Implement file-based module loading
+- [ ] **Module Cache**: Prevent circular dependencies
+- [ ] **Namespace Management**: Handle imported symbols
+- [ ] **Tests**: 100+ test cases for all import/export patterns
+
+### **Sprint v3.9.0: Impl Blocks & Methods**
+**Objective**: Fix method transpilation (parser works, transpiler broken)
+**Quality Requirements**: Same as above
+
+#### Tasks:
+- [ ] **Method Transpilation**: Fix empty impl block output
+- [ ] **Self Parameters**: Handle self, &self, &mut self
+- [ ] **Associated Functions**: Support Type::function() syntax
+- [ ] **Method Calls**: Enable instance.method() calls
+- [ ] **Constructor Pattern**: Implement new() convention
+- [ ] **Tests**: Property tests for all method patterns
+
+### **Sprint v3.10.0: Error Handling System**
+**Objective**: Implement proper error handling (currently broken)
+**Quality Requirements**: Same as above
+
+#### Tasks:
+- [ ] **Result Type**: Full Result<T, E> support
+- [ ] **Try Operator**: Implement ? operator
+- [ ] **Try/Catch**: Fix transpilation to proper Rust
+- [ ] **Error Types**: Custom error type support
+- [ ] **Stack Traces**: Proper error propagation
+- [ ] **Tests**: Error handling in all contexts
+
+### **Sprint v3.11.0: Pattern Matching Completeness**
+**Objective**: Fix all pattern matching edge cases
+**Quality Requirements**: Same as above
+
+#### Tasks:
+- [ ] **Range Patterns**: Implement 1..=5 syntax
+- [ ] **List Destructuring**: Fix [first, ..rest] patterns
+- [ ] **Pattern Guards**: Full if guard support
+- [ ] **Or Patterns**: pattern1 | pattern2
+- [ ] **@ Bindings**: pattern @ binding syntax
+- [ ] **Tests**: Exhaustive pattern coverage
+
 #### **Priority 4: Coverage Gap Closure** 🎯
 - [ ] **Runtime (65-70%)**: Complex REPL scenarios
 - [ ] **Middleend (70-75%)**: Optimization pass tests
