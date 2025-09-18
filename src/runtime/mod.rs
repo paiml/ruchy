@@ -71,7 +71,8 @@ pub mod lazy;
 pub mod pattern_matching;
 pub mod observatory;
 pub mod observatory_ui;
-pub mod repl;
+pub mod repl; // New EXTREME Quality REPL
+pub mod repl_legacy; // Old REPL (backup)
 // pub mod repl_modules;  // Temporarily disabled - compilation errors
 pub mod repl_recording;
 pub mod replay;
@@ -85,10 +86,11 @@ pub mod transaction;
 pub mod inspect;
 // pub mod resource_eval;  // Temporarily disabled - causes duplicate impl
 // Export the unified REPL
-pub use repl::{Repl, ReplConfig, ReplState, Value};
+pub use repl::Repl;
+pub use repl_legacy::{ReplConfig, ReplState as LegacyReplState};
 // Export interpreter components
 pub use interpreter::{
-    Interpreter, InterpreterError, InterpreterResult, Value as InterpreterValue,
+    Interpreter, InterpreterError, InterpreterResult, Value,
 };
 // Export actor system components
 pub use actor::{

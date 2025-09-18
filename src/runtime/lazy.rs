@@ -30,7 +30,7 @@ impl Clone for LazyValue {
         }
     }
 }
-use crate::runtime::repl::Value;
+use crate::runtime::interpreter::Value;
 use anyhow::Result;
 impl LazyValue {
     /// Create a new computed lazy value

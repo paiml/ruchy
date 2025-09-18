@@ -6,7 +6,7 @@ use anyhow::{Context, Result};
 use crate::frontend::parser::Parser;
 use crate::frontend::ast::Expr;
 use crate::runtime::interpreter::Interpreter;
-use crate::runtime::value::Value;
+use crate::runtime::interpreter::Value;
 
 /// Evaluation context for REPL expressions
 pub struct Evaluator {
@@ -156,8 +156,8 @@ mod tests {
         let result = eval.evaluate_line("2 + 2").unwrap();
 
         match result {
-            EvalResult::Value(Value::Int(4)) => {},
-            _ => panic!("Expected Value(Int(4))"),
+            EvalResult::Value(Value::Integer(4)) => {},
+            _ => panic!("Expected Value(Integer(4))"),
         }
     }
 

@@ -4,7 +4,7 @@
 use anyhow::{Result, anyhow};
 use std::collections::HashMap;
 use std::time::{Duration, Instant};
-use crate::runtime::repl::Value;
+use crate::runtime::interpreter::Value;
 use crate::runtime::safe_arena::{TransactionalArena, SafeArena as Arena};
 // ============================================================================
 // Transactional REPL State

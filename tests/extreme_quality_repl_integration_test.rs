@@ -85,8 +85,8 @@ mod extreme_quality_tests {
         let result = eval.evaluate_line("2 + 2").unwrap();
         match result {
             EvalResult::Value(v) => {
-                use ruchy::runtime::value::Value;
-                assert_eq!(v, Value::Int(4));
+                use ruchy::runtime::interpreter::Value;
+                assert_eq!(v, Value::Integer(4));
             }
             _ => panic!("Expected value result"),
         }
@@ -114,13 +114,14 @@ mod extreme_quality_tests {
     #[test]
     fn test_formatting_quality() {
         use ruchy::runtime::repl::formatting::{format_value, format_error};
-        use ruchy::runtime::value::Value;
+        use ruchy::runtime::interpreter::Value;
+        use std::rc::Rc;
 
         // Test value formatting
-        assert_eq!(format_value(&Value::Int(42)), "42");
+        assert_eq!(format_value(&Value::Integer(42)), "42");
         assert_eq!(format_value(&Value::Bool(true)), "true");
 
-        let list = Value::List(vec![Value::Int(1), Value::Int(2)]);
+        let list = Value::Array(Rc::new(vec![Value::Integer(1), Value::Integer(2)]));
         assert_eq!(format_value(&list), "[1, 2]");
 
         // Test error formatting
