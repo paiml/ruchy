@@ -3,6 +3,7 @@
 //! This binary starts the Ruchy Language Server Protocol server for editor integration.
 
 use clap::{Arg, Command};
+#[cfg(feature = "mcp")]
 use ruchy::lsp::start_server;
 use std::process;
 use tracing::{error, info};
@@ -37,14 +38,30 @@ async fn main() {
         });
 
         info!("Starting Ruchy LSP server on TCP port {port}");
-        if let Err(err) = ruchy::lsp::start_tcp_server(port).await {
-            error!("LSP server error: {err}");
+        #[cfg(feature = "mcp")]
+        {
+            if let Err(err) = ruchy::lsp::start_tcp_server(port).await {
+                error!("LSP server error: {err}");
+                process::exit(1);
+            }
+        }
+        #[cfg(not(feature = "mcp"))]
+        {
+            error!("LSP support requires the 'mcp' feature to be enabled");
             process::exit(1);
         }
     } else {
         info!("Starting Ruchy LSP server on stdio");
-        if let Err(err) = start_server().await {
-            error!("LSP server error: {err}");
+        #[cfg(feature = "mcp")]
+        {
+            if let Err(err) = start_server().await {
+                error!("LSP server error: {err}");
+                process::exit(1);
+            }
+        }
+        #[cfg(not(feature = "mcp"))]
+        {
+            error!("LSP support requires the 'mcp' feature to be enabled");
             process::exit(1);
         }
     }

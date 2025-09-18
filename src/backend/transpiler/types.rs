@@ -340,9 +340,12 @@ impl Transpiler {
                     .iter()
                     .enumerate()
                     .map(|(i, param)| {
-                        if i == 0 && (param.name() == "self" || param.name() == "&self") {
+                        let name = param.name();
+                        if i == 0 && name.contains("self") {
                             // Handle self parameter
-                            if param.name().starts_with('&') {
+                            if name.contains("&mut") {
+                                quote! { &mut self }
+                            } else if name.contains('&') {
                                 quote! { &self }
                             } else {
                                 quote! { self }
@@ -472,9 +475,12 @@ impl Transpiler {
                     .iter()
                     .enumerate()
                     .map(|(i, param)| {
-                        if i == 0 && (param.name() == "self" || param.name() == "&self") {
+                        let name = param.name();
+                        if i == 0 && name.contains("self") {
                             // Handle self parameter
-                            if param.name().starts_with('&') {
+                            if name.contains("&mut") {
+                                quote! { &mut self }
+                            } else if name.contains('&') {
                                 quote! { &self }
                             } else {
                                 quote! { self }
