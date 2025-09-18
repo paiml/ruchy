@@ -616,7 +616,7 @@ impl SecureSandbox {
 pub fn create_isolated_repl(&self) -> Result<Repl> {
         // In production, would create actual sandboxed environment
         // For now, create regular REPL with resource tracking
-        Repl::new()
+        Repl::new(std::env::temp_dir())
     }
 }
 // ============================================================================

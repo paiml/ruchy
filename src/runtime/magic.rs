@@ -288,14 +288,8 @@ impl MagicCommand for DebugMagic {
         if let Some(debug_info) = repl.get_last_error() {
             let output = format!(
                 "=== Debug Information ===\n\
-                Expression: {}\n\
-                Error: {}\n\
-                Stack trace:\n{}\n\
-                Bindings at error: {} variables",
-                debug_info.expression,
-                debug_info.error_message,
-                debug_info.stack_trace.join("\n"),
-                debug_info.bindings_snapshot.len()
+                Last Error: {debug_info}\n\
+                Note: Enhanced debugging features coming in future release"
             );
             Ok(MagicResult::Text(output))
         } else {
@@ -339,7 +333,7 @@ impl MagicCommand for ProfileMagic {
         }
         // Simple profiling - in production would use more sophisticated profiling
         let start = Instant::now();
-        let _result = repl.eval(args)?;
+        let _result = repl.process_line(args)?;
         let total_time = start.elapsed();
         // Mock profile data - in production would collect actual function timings
         let profile_data = ProfileData {
@@ -369,23 +363,22 @@ impl MagicCommand for WhosMagic {
         output.push_str("--------   ----        -----\n");
         for (name, value) in bindings {
             let type_name = match value {
-                Value::Int(_) => "Int",
+                Value::Integer(_) => "Integer",
                 Value::Float(_) => "Float",
                 Value::String(_) => "String",
                 Value::Bool(_) => "Bool",
-                Value::Char(_) => "Char",
-                Value::List(_) => "List",
+                // Value::Char not in current enum
+                Value::Array(_) => "Array",
                 Value::Tuple(_) => "Tuple",
-                Value::Object(_) => "Object",
-                Value::HashMap(_) => "HashMap",
-                Value::HashSet(_) => "HashSet",
-                Value::Function { .. } => "Function",
-                Value::Lambda { .. } => "Lambda",
+                // Value::Object not in current enum
+                // Value::HashMap not in current enum
+                // Value::HashSet not in current enum
+                Value::Closure { .. } => "Closure",
+                Value::Nil => "Nil",
                 Value::DataFrame { .. } => "DataFrame",
+                Value::Object(_) => "Object",
                 Value::Range { .. } => "Range",
                 Value::EnumVariant { .. } => "EnumVariant",
-                Value::Unit => "Unit",
-                Value::Nil => "Nil",
             };
             let value_str = format!("{value:?}");
             let value_display = if value_str.len() > 40 {
@@ -680,7 +673,7 @@ mod tests {
 
     fn create_mock_repl() -> Repl {
         // Create a minimal repl for testing
-        Repl::new().unwrap()
+        Repl::new(std::env::temp_dir()).unwrap()
     }
 
     #[test]

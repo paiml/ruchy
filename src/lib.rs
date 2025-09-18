@@ -149,7 +149,7 @@ pub fn get_parse_error(source: &str) -> Option<String> {
 /// - The REPL cannot be initialized
 /// - User interaction fails
 pub fn run_repl() -> Result<()> {
-    let mut repl = runtime::repl::Repl::new()?;
+    let mut repl = runtime::repl::Repl::new(std::env::current_dir().unwrap_or_else(|_| "/tmp".into()))?;
     repl.run()
 }
 #[cfg(test)]

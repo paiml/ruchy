@@ -8,7 +8,7 @@ pub fn error_with_context(msg: &str, state: &mut ParserState, expected: &str) ->
     anyhow::anyhow!(
         "Parse error at line {}, column {}:\n  {}\n  Expected: {}\n  Found: {}\n  Context: {}",
         line, col, msg, expected,
-        state.tokens.peek().map(|(t, _)| format!("{t:?}")).unwrap_or_else(|| "EOF".to_string()),
+        state.tokens.peek().map_or_else(|| "EOF".to_string(), |(t, _)| format!("{t:?}")),
         context_str
     )
 }

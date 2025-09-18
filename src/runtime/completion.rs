@@ -623,7 +623,7 @@ impl RuchyCompleter {
         &mut self, 
         input: &str, 
         _pos: usize, 
-        bindings: &HashMap<String, crate::runtime::repl::Value>
+        bindings: &HashMap<String, crate::runtime::interpreter::Value>
     ) -> Vec<String> {
         // Check cache first (complexity: 2)
         if let Some(cached) = self.cache.get(input) {
@@ -642,7 +642,7 @@ impl RuchyCompleter {
     fn add_variable_matches(
         &self,
         input: &str,
-        bindings: &HashMap<String, crate::runtime::repl::Value>,
+        bindings: &HashMap<String, crate::runtime::interpreter::Value>,
         results: &mut Vec<String>
     ) {
         for name in bindings.keys() {

@@ -291,6 +291,28 @@ pub fn size_bytes(&self) -> usize {
                 }
                 size
             }
+            Value::Object(map) => {
+                let mut size = 24; // HashMap overhead
+                for (key, value) in map.iter() {
+                    size += key.len(); // Key size
+                    size += self.estimate_value_size(value); // Value size
+                }
+                size
+            }
+            Value::Range { start, end, .. } => {
+                // Size of start value + end value + metadata
+                self.estimate_value_size(start) + self.estimate_value_size(end) + 8
+            }
+            Value::EnumVariant { variant_name, data } => {
+                let mut size = variant_name.len(); // Variant name size
+                if let Some(values) = data {
+                    size += 24; // Vec overhead
+                    for value in values {
+                        size += self.estimate_value_size(value);
+                    }
+                }
+                size
+            }
         }
     }
 /// # Examples

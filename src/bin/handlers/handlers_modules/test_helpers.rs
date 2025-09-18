@@ -74,7 +74,7 @@ pub fn run_test_file(test_file: &Path, verbose: bool) -> Result<()> {
         println!("   📖 Parsing test file...");
         println!("   🏃 Executing test...");
     }
-    let mut repl = Repl::new()?;
+    let mut repl = Repl::new(std::env::temp_dir())?;
     let result = repl.evaluate_expr_str(&test_content, None)
         .with_context(|| format!("Test execution failed for: {}", test_file.display()))?;
     if verbose {

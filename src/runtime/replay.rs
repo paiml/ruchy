@@ -5,6 +5,7 @@
 use anyhow::Result;
 use serde::{Serialize, Deserialize};
 use std::collections::{HashMap, BTreeMap};
+use std::rc::Rc;
 use std::time::Instant;
 use crate::runtime::interpreter::Value;
 // ============================================================================
@@ -329,7 +330,7 @@ impl SessionRecorder {
         let id = EventId(self.next_event_id);
         self.next_event_id += 1;
         let eval_result = match result {
-            Ok(Value::Unit) => EvalResult::Unit,
+            Ok(Value::Nil) => EvalResult::Unit,
             Ok(value) => EvalResult::Success { 
                 value: format!("{value:?}") 
             },
@@ -589,7 +590,7 @@ mod tests {
         assert_eq!(input_id, EventId(1));
 
         // Test output recording
-        let output_id = recorder.record_output(Ok(Value::Unit));
+        let output_id = recorder.record_output(Ok(Value::Nil));
         assert_eq!(output_id, EventId(2));
 
         // Verify timeline
@@ -617,7 +618,7 @@ mod tests {
             event_ids.push(input_id);
             assert_eq!(input_id, EventId((i as u64 * 2) + 1));
 
-            let output_id = recorder.record_output(Ok(Value::Int(i as i64 + 1)));
+            let output_id = recorder.record_output(Ok(Value::Integer(i as i64 + 1)));
             event_ids.push(output_id);
             assert_eq!(output_id, EventId((i as u64 * 2) + 2));
         }
@@ -636,7 +637,7 @@ mod tests {
 
         // Record some operations
         let input_id1 = recorder.record_input("let x = 42".to_string(), InputMode::Interactive);
-        let output_id1 = recorder.record_output(Ok(Value::Unit));
+        let output_id1 = recorder.record_output(Ok(Value::Nil));
 
         // Add checkpoint after first operation
         let checkpoint1 = create_test_checkpoint();
@@ -644,7 +645,7 @@ mod tests {
 
         // Record more operations
         let input_id2 = recorder.record_input("x * 2".to_string(), InputMode::Interactive);
-        let output_id2 = recorder.record_output(Ok(Value::Int(84)));
+        let output_id2 = recorder.record_output(Ok(Value::Integer(84)));
 
         // Add another checkpoint
         let mut checkpoint2 = create_test_checkpoint();
@@ -696,7 +697,7 @@ mod tests {
 
         // Record some data
         recorder.record_input("test input".to_string(), InputMode::Interactive);
-        recorder.record_output(Ok(Value::String("test output".to_string())));
+        recorder.record_output(Ok(Value::String(Rc::new("test output".to_string()))));
 
         // Test borrowing session
         {
@@ -748,7 +749,7 @@ mod tests {
 
         // Record successful operation
         recorder.record_input("let x = 42".to_string(), InputMode::Interactive);
-        recorder.record_output(Ok(Value::Unit));
+        recorder.record_output(Ok(Value::Nil));
 
         // Record failed operation
         recorder.record_input("x / 0".to_string(), InputMode::Interactive);
@@ -756,7 +757,7 @@ mod tests {
 
         // Record recovery
         recorder.record_input("x / 2".to_string(), InputMode::Interactive);
-        recorder.record_output(Ok(Value::Int(21)));
+        recorder.record_output(Ok(Value::Integer(21)));
 
         let session = recorder.get_session();
         assert_eq!(session.timeline.len(), 6); // 3 inputs + 3 outputs
@@ -801,7 +802,7 @@ mod tests {
 
         // Create a complete session
         recorder.record_input("let x = 42".to_string(), InputMode::Interactive);
-        recorder.record_output(Ok(Value::Int(42)));
+        recorder.record_output(Ok(Value::Integer(42)));
 
         let checkpoint = create_test_checkpoint();
         recorder.add_checkpoint(EventId(2), checkpoint);

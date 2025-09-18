@@ -30,7 +30,7 @@ async fn execute_handler(Json(request): Json<ExecuteRequest>) -> Json<ExecuteRes
         use crate::runtime::repl::Repl;
         use std::time::{Duration, Instant};
 
-        let mut repl = match Repl::new() {
+        let mut repl = match Repl::new(std::env::current_dir().unwrap_or_else(|_| "/tmp".into())) {
             Ok(r) => r,
             Err(e) => return ExecuteResponse {
                 output: String::new(),
@@ -41,8 +41,8 @@ async fn execute_handler(Json(request): Json<ExecuteRequest>) -> Json<ExecuteRes
         let start = Instant::now();
         let timeout = Duration::from_secs(5);
 
-        match repl.eval(&request.source) {
-            Ok(value) => {
+        match repl.process_line(&request.source) {
+            Ok(_should_exit) => {
                 if start.elapsed() > timeout {
                     ExecuteResponse {
                         output: String::new(),
@@ -51,7 +51,7 @@ async fn execute_handler(Json(request): Json<ExecuteRequest>) -> Json<ExecuteRes
                     }
                 } else {
                     ExecuteResponse {
-                        output: value,
+                        output: "Execution completed".to_string(),
                         success: true,
                         error: None,
                     }

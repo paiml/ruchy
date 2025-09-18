@@ -131,18 +131,16 @@ impl PackageManager {
         let mut result = self.packages.clone();
 
         // Add 'b' package if 'a' depends on it
-        if self.packages.iter().any(|p| p.name == "a" && p.dependencies.iter().any(|d| d.name == "b")) {
-            if !result.iter().any(|p| p.name == "b") {
+        if self.packages.iter().any(|p| p.name == "a" && p.dependencies.iter().any(|d| d.name == "b"))
+            && !result.iter().any(|p| p.name == "b") {
                 result.push(Package::new("b", "1.0.0"));
             }
-        }
 
         // Add transitive dependency 'c' if 'b' exists
-        if result.iter().any(|p| p.name == "b") {
-            if !result.iter().any(|p| p.name == "c") {
+        if result.iter().any(|p| p.name == "b")
+            && !result.iter().any(|p| p.name == "c") {
                 result.push(Package::new("c", "1.0.0"));
             }
-        }
         Ok(result)
     }
 
@@ -155,11 +153,10 @@ impl PackageManager {
 
     /// Install from manifest
     pub fn install_from_manifest(&self, manifest: &Manifest) -> Result<()> {
-        for (name, _dep) in &manifest.dependencies {
-            let package_dir = self.root.join(format!("packages/{}-", name));
+        for name in manifest.dependencies.keys() {
             // Create with appropriate version
             let version = if name == "http" { "0.2.0" } else { "1.0.0" };
-            let full_dir = self.root.join(format!("packages/{}-{}", name, version));
+            let full_dir = self.root.join(format!("packages/{name}-{version}"));
             std::fs::create_dir_all(full_dir)?;
         }
         Ok(())
@@ -178,7 +175,7 @@ impl PackageManager {
 
     /// Remove a package
     pub fn remove_package(&self, name: &str) -> Result<()> {
-        let package_dir = self.root.join(format!("packages/{}-1.0.0", name));
+        let package_dir = self.root.join(format!("packages/{name}-1.0.0"));
         if package_dir.exists() {
             std::fs::remove_dir_all(package_dir)?;
         }
@@ -419,7 +416,7 @@ impl Registry {
     /// Publish a package
     pub fn publish(&mut self, package: Package) -> Result<()> {
         self.packages.entry(package.name.clone())
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(package);
         Ok(())
     }
