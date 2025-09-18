@@ -1,5 +1,5 @@
 //! Basic expression parsing - minimal version with only used functions
-use super::{ParserState, bail, Result, Expr, Token, ExprKind, Span, Literal, BinaryOp, UnaryOp, Param, Pattern, Type, TypeKind, MatchArm, StructField, TraitMethod, ImportItem, DataFrameColumn, ActorHandler, StringPart, EnumVariant};
+use super::{ParserState, bail, Result, Expr, Token, ExprKind, Span, Literal, BinaryOp, UnaryOp, Param, Pattern, Type, TypeKind, MatchArm, StructField, TraitMethod, DataFrameColumn, ActorHandler, StringPart, EnumVariant};
 pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
     let Some((token, span)) = state.tokens.peek() else {
         bail!("Unexpected end of input - expected expression");
@@ -1880,9 +1880,8 @@ pub(super) fn parse_import_statement(state: &mut ParserState) -> Result<Expr> {
                 module,
                 items: Some(items),
             }, start_span));
-        } else {
-            bail!("Expected module path after 'from'");
         }
+        bail!("Expected module path after 'from'");
     }
 
     // 3. import * as name from "module"
@@ -1900,12 +1899,10 @@ pub(super) fn parse_import_statement(state: &mut ParserState) -> Result<Expr> {
                     module,
                     alias,
                 }, start_span));
-            } else {
-                bail!("Expected module path after 'from'");
             }
-        } else {
-            bail!("Expected alias after 'as'");
+            bail!("Expected module path after 'from'");
         }
+        bail!("Expected alias after 'as'");
     }
 
     // 4. import Name from "module" (default import)
@@ -1920,9 +1917,8 @@ pub(super) fn parse_import_statement(state: &mut ParserState) -> Result<Expr> {
                 module,
                 name,
             }, start_span));
-        } else {
-            bail!("Expected module path after 'from'");
         }
+        bail!("Expected module path after 'from'");
     }
 
     bail!("Invalid import statement")

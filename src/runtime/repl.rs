@@ -2017,9 +2017,8 @@ impl Repl {
                 // Export an expression
                 if *is_default {
                     bail!("Default export not yet implemented in REPL")
-                } else {
-                    self.evaluate_expr(expr, deadline, depth)
                 }
+                self.evaluate_expr(expr, deadline, depth)
             }
             ExprKind::ExportList { names } => {
                 self.evaluate_export_list(names)

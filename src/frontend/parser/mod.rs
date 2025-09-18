@@ -59,7 +59,7 @@ use crate::frontend::ast::{
     Attribute, BinaryOp, Expr, ExprKind, Literal, Param,
     Pattern, PipelineStage, Span, Type, UnaryOp,
     // Additional types for re-export to submodules
-    ActorHandler, DataFrameColumn, EnumVariant, ImportItem, MatchArm, StringPart, StructField, TraitMethod, TypeKind,
+    ActorHandler, DataFrameColumn, EnumVariant, MatchArm, StringPart, StructField, TraitMethod, TypeKind,
 };
 use crate::frontend::lexer::{Token, TokenStream};
 use crate::parser::error_recovery::ErrorNode;
