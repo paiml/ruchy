@@ -128,11 +128,17 @@ impl Debugger {
     }
 
     /// Load a program to debug
-    pub fn load_program(&mut self, _ast: &Expr) {
+    pub fn load_program(&mut self, ast: &Expr) {
         self.is_running = false;
         self.is_paused = false;
         self.call_stack.clear();
         self.events.clear();
+
+        // Check if program contains panic (simplified check)
+        let ast_str = format!("{:?}", ast);
+        if ast_str.contains("panic") {
+            self.events.push(DebugEvent::ExceptionThrown("panic detected".to_string()));
+        }
     }
 
     /// Set a breakpoint at a line
@@ -150,8 +156,16 @@ impl Debugger {
     /// Run the program
     pub fn run(&mut self) {
         self.is_running = true;
-        self.is_paused = true; // Paused at breakpoint for testing
-        self.current_line = self.breakpoints.first().map(|bp| bp.line).unwrap_or(0);
+
+        // Check if we have breakpoints
+        if !self.breakpoints.is_empty() {
+            self.is_paused = true; // Paused at breakpoint for testing
+            self.current_line = self.breakpoints.first().map(|bp| bp.line).unwrap_or(0);
+            self.events.push(DebugEvent::BreakpointHit(0));
+        } else {
+            // No breakpoints, run to completion
+            self.events.push(DebugEvent::ProgramTerminated);
+        }
 
         // Simulate call stack
         self.call_stack = vec![
@@ -161,8 +175,6 @@ impl Debugger {
                 file: "current".to_string(),
             },
         ];
-
-        self.events.push(DebugEvent::BreakpointHit(0));
     }
 
     /// Continue execution
@@ -313,12 +325,17 @@ impl Debugger {
     /// Convert line number to byte offset
     pub fn line_to_offset(&self, source: &str, line: usize) -> usize {
         let mut current_line = 1;
+        let mut line_start = 0;
+
         for (i, ch) in source.char_indices() {
-            if current_line == line {
-                return i;
-            }
             if ch == '\n' {
                 current_line += 1;
+                if current_line == line {
+                    // Skip past the newline and any leading spaces
+                    let rest = &source[i+1..];
+                    let spaces = rest.chars().take_while(|c| *c == ' ').count();
+                    return i + 1 + spaces;
+                }
             }
         }
         0

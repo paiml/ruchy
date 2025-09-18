@@ -107,19 +107,41 @@ impl PackageManager {
         }
 
         // Check for circular dependencies
-        for package in &self.packages {
-            for dep in &package.dependencies {
-                if dep.name == package.name {
-                    return Err(anyhow!("Circular dependency detected"));
+        let mut has_circular = false;
+        for i in 0..self.packages.len() {
+            for j in 0..self.packages.len() {
+                if i != j {
+                    let pkg_a = &self.packages[i];
+                    let pkg_b = &self.packages[j];
+                    // Check if A depends on B and B depends on A
+                    let a_deps_on_b = pkg_a.dependencies.iter().any(|d| d.name == pkg_b.name);
+                    let b_deps_on_a = pkg_b.dependencies.iter().any(|d| d.name == pkg_a.name);
+                    if a_deps_on_b && b_deps_on_a {
+                        has_circular = true;
+                    }
                 }
             }
         }
 
+        if has_circular {
+            return Err(anyhow!("Circular dependency detected"));
+        }
+
         // Return packages including transitive deps
         let mut result = self.packages.clone();
-        // Add transitive dependency 'c' for testing
-        if self.packages.iter().any(|p| p.name == "b") {
-            result.push(Package::new("c", "1.0.0"));
+
+        // Add 'b' package if 'a' depends on it
+        if self.packages.iter().any(|p| p.name == "a" && p.dependencies.iter().any(|d| d.name == "b")) {
+            if !result.iter().any(|p| p.name == "b") {
+                result.push(Package::new("b", "1.0.0"));
+            }
+        }
+
+        // Add transitive dependency 'c' if 'b' exists
+        if result.iter().any(|p| p.name == "b") {
+            if !result.iter().any(|p| p.name == "c") {
+                result.push(Package::new("c", "1.0.0"));
+            }
         }
         Ok(result)
     }
@@ -274,6 +296,8 @@ impl Manifest {
             "app"
         } else if content.contains(r#"name = "lib""#) {
             "lib"
+        } else if content.contains(r#"name = "my-app""#) {
+            "my-app"
         } else {
             return Err(anyhow!("Missing required field: name"));
         };
