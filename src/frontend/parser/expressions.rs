@@ -1728,13 +1728,13 @@ fn parse_impl_block(state: &mut ParserState) -> Result<Expr> {
     let (trait_name, type_name) = parse_impl_header(state)?;
     // Parse impl body (methods)
     state.tokens.expect(&Token::LeftBrace)?;
-    skip_impl_body(state)?;
+    let methods = parse_impl_methods(state)?;
     state.tokens.expect(&Token::RightBrace)?;
     Ok(Expr::new(ExprKind::Impl {
         type_params: vec![],
         trait_name,
         for_type: type_name,
-        methods: vec![],
+        methods,
         is_pub: false,
     }, start_span))
 }
@@ -1774,7 +1774,60 @@ fn parse_required_identifier(state: &mut ParserState, context: &str) -> Result<S
         bail!("Expected {}", context)
     }
 }
-/// Skip impl body by tracking brace depth (complexity: 5)
+/// Parse impl methods (complexity: 7)
+fn parse_impl_methods(state: &mut ParserState) -> Result<Vec<crate::frontend::ast::ImplMethod>> {
+    let mut methods = Vec::new();
+
+    while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
+        // Skip any visibility modifiers for now
+        if matches!(state.tokens.peek(), Some((Token::Pub, _))) {
+            state.tokens.advance();
+        }
+
+        // Parse method
+        if matches!(state.tokens.peek(), Some((Token::Fun, _))) {
+            let method = parse_impl_method(state)?;
+            methods.push(method);
+        } else {
+            // Skip unexpected tokens
+            state.tokens.advance();
+        }
+    }
+
+    Ok(methods)
+}
+
+/// Parse a single impl method (complexity: 8)
+fn parse_impl_method(state: &mut ParserState) -> Result<crate::frontend::ast::ImplMethod> {
+    state.tokens.expect(&Token::Fun)?;
+
+    // Parse method name
+    let name = parse_required_identifier(state, "method name")?;
+
+    // Parse parameters
+    let params = super::utils::parse_params(state)?;
+
+    // Parse return type if present
+    let return_type = if matches!(state.tokens.peek(), Some((Token::Arrow, _))) {
+        state.tokens.advance();
+        Some(super::utils::parse_type(state)?)
+    } else {
+        None
+    };
+
+    // Parse body
+    let body = super::parse_expr_recursive(state)?;
+
+    Ok(crate::frontend::ast::ImplMethod {
+        name,
+        params,
+        return_type,
+        body: Box::new(body),
+        is_pub: false,
+    })
+}
+
+/// Skip impl body by tracking brace depth (complexity: 5) - DEPRECATED
 fn skip_impl_body(state: &mut ParserState) -> Result<()> {
     let mut depth = 1;
     while depth > 0 && state.tokens.peek().is_some() {
