@@ -1168,7 +1168,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore] // Parser doesn't support this syntax yet
+    #[ignore = "Parser doesn't support this syntax yet"]
     fn test_transpile_array_literal() {
         let transpiler = create_transpiler();
         let code = "[1, 2, 3]";

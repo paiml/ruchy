@@ -7,6 +7,7 @@ use proc_macro2::TokenStream;
 use quote::quote;
 use crate::frontend::ast::{Expr, ExprKind};
 #[cfg(test)]
+#[allow(unused_imports)]
 use proptest::prelude::*;
 impl Transpiler {
     /// Transpile `DataFrame` builder pattern chains
@@ -116,8 +117,10 @@ pub fn is_dataframe_builder(&self, expr: &Expr) -> bool {
 #[cfg(test)]
 mod property_tests_dataframe_builder {
     use proptest::proptest;
+    #[allow(unused_imports)]
     use super::*;
-    use proptest::prelude::*;
+    #[allow(unused_imports)]
+use proptest::prelude::*;
     proptest! {
         /// Property: Function never panics on any input
         #[test]

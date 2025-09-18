@@ -129,7 +129,7 @@ fn test_dataframe_memory_efficiency() {
 }
 
 #[test]
-#[ignore] // Performance test - run with --ignored
+#[ignore = "Performance test - run with --ignored"]
 fn test_dataframe_1m_row_performance() {
     let mut runtime = NotebookRuntime::new().unwrap();
     

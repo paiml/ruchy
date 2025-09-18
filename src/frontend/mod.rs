@@ -375,7 +375,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore] // Nil variant doesn't exist in Literal enum
+    #[ignore = "Nil variant doesn't exist in Literal enum"]
     fn test_parse_nil_literal() {
         let mut parser = Parser::new("nil");
         let result = parser.parse();

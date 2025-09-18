@@ -1,6 +1,28 @@
 //! Parsing utilities and helper functions
 use super::{ParserState, bail, Result, Expr, Token, ExprKind, Span, Param, Type, TypeKind, Literal, Pattern, Attribute, StringPart};
 use crate::frontend::ast::ImportItem;
+/// Create a detailed error message with context
+pub fn error_with_context(msg: &str, state: &mut ParserState, expected: &str) -> anyhow::Error {
+    let (line, col) = state.tokens.current_position();
+    let context_str = state.tokens.get_context_string();
+    anyhow::anyhow!(
+        "Parse error at line {}, column {}:\n  {}\n  Expected: {}\n  Found: {}\n  Context: {}",
+        line, col, msg, expected,
+        state.tokens.peek().map(|(t, _)| format!("{t:?}")).unwrap_or_else(|| "EOF".to_string()),
+        context_str
+    )
+}
+
+/// Suggest corrections for common typos
+pub fn suggest_correction(input: &str) -> Option<String> {
+    match input {
+        "fucntion" | "funtion" | "functon" => Some("function".to_string()),
+        "retrun" | "reutrn" | "retrn" => Some("return".to_string()),
+        "lamba" | "lamda" | "lamdba" => Some("lambda".to_string()),
+        "mactch" | "mathc" | "mtach" => Some("match".to_string()),
+        _ => None
+    }
+}
 /// Validate URL imports for safe operation
 fn validate_url_import(url: &str) -> Result<()> {
     validate_url_scheme(url)?;
@@ -15,7 +37,7 @@ fn validate_url_scheme(url: &str) -> Result<()> {
     if is_valid_url_scheme(url) {
         Ok(())
     } else {
-        bail!("URL imports must use HTTPS (except for localhost)")
+        bail!("URL imports must use HTTPS for security (except for localhost). Got: {url}")
     }
 }
 /// Check if URL has valid scheme
@@ -29,13 +51,13 @@ fn validate_url_extension(url: &str) -> Result<()> {
     if url.ends_with(".ruchy") || url.ends_with(".rchy") {
         Ok(())
     } else {
-        bail!("URL imports must reference .ruchy or .rchy files")
+        bail!("URL imports must reference .ruchy or .rchy files. Got: {url}")
     }
 }
 /// Validate URL doesn't contain path traversal
 fn validate_url_path_safety(url: &str) -> Result<()> {
     if url.contains("..") || url.contains("/.") {
-        bail!("URL imports cannot contain path traversal sequences")
+        bail!("URL imports cannot contain path traversal sequences (.. or /.): {url}")
     }
     Ok(())
 }
@@ -1489,7 +1511,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore] // Module system changed in Sprint v3.8.0
+    #[ignore = "Module system changed in Sprint v3.8.0"]
     fn test_parse_import_simple() {
         let mut state = ParserState::new("import std");
         let result = parse_import_legacy(&mut state);
@@ -1497,7 +1519,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore] // Module system changed in Sprint v3.8.0
+    #[ignore = "Module system changed in Sprint v3.8.0"]
     fn test_parse_import_with_items() {
         let mut state = ParserState::new("import std.{HashMap, Vec}");
         let result = parse_import_legacy(&mut state);

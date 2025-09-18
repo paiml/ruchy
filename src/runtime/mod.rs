@@ -177,7 +177,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore] // List operations need investigation
+    #[ignore = "List operations need investigation"]
     fn test_repl_list_operations() {
         let mut repl = Repl::new().unwrap();
         assert_eq!(repl.eval("[1, 2, 3]").unwrap(), "[1, 2, 3]");
@@ -246,7 +246,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore] // Float arithmetic needs investigation
+    #[ignore = "Float arithmetic needs investigation"]
     fn test_repl_float_arithmetic() {
         let mut repl = Repl::new().unwrap();
         assert_eq!(repl.eval("3.5 + 1.5").unwrap(), "5.0");
@@ -304,7 +304,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore] // Value type formatting needs investigation
+    #[ignore = "Value type formatting needs investigation"]
     fn test_value_types() {
         assert_eq!(Value::Int(42).to_string(), "42");
         assert_eq!(Value::Float(3.14).to_string(), "3.14");

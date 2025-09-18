@@ -410,12 +410,15 @@ impl Token {
 pub struct TokenStream<'a> {
     lexer: Lexer<'a, Token>,
     peeked: Option<(Token, Span)>,
+    input: &'a str,
+    current_position: usize,
 }
 /// Saved position in the token stream for backtracking
 #[derive(Clone)]
 pub struct TokenStreamPosition<'a> {
     lexer: Lexer<'a, Token>,
     peeked: Option<(Token, Span)>,
+    current_position: usize,
 }
 impl<'a> TokenStream<'a> {
     #[must_use]
@@ -423,7 +426,35 @@ impl<'a> TokenStream<'a> {
         Self {
             lexer: Token::lexer(input),
             peeked: None,
+            input,
+            current_position: 0,
         }
+    }
+
+    /// Get the current line and column position
+    pub fn current_position(&self) -> (usize, usize) {
+        let mut line = 1;
+        let mut col = 1;
+        for (i, ch) in self.input.chars().enumerate() {
+            if i >= self.current_position {
+                break;
+            }
+            if ch == '\n' {
+                line += 1;
+                col = 1;
+            } else {
+                col += 1;
+            }
+        }
+        (line, col)
+    }
+
+    /// Get a string showing the context around the current position
+    pub fn get_context_string(&self) -> String {
+        let start = self.current_position.saturating_sub(20);
+        let end = (self.current_position + 20).min(self.input.len());
+        let context = &self.input[start..end];
+        format!("...{}...", context)
     }
     /// Save the current position for later restoration
     #[must_use]
@@ -431,21 +462,25 @@ impl<'a> TokenStream<'a> {
         TokenStreamPosition {
             lexer: self.lexer.clone(),
             peeked: self.peeked.clone(),
+            current_position: self.current_position,
         }
     }
     /// Restore a previously saved position
     pub fn set_position(&mut self, pos: TokenStreamPosition<'a>) {
         self.lexer = pos.lexer;
         self.peeked = pos.peeked;
+        self.current_position = pos.current_position;
     }
     #[allow(clippy::should_implement_trait)]
     pub fn next(&mut self) -> Option<(Token, Span)> {
         if let Some(peeked) = self.peeked.take() {
+            self.current_position = peeked.1.end;
             return Some(peeked);
         }
         self.lexer.next().map(|result| {
             let token = result.unwrap_or(Token::Bang); // Error recovery
             let span = Span::new(self.lexer.span().start, self.lexer.span().end);
+            self.current_position = span.end;
             (token, span)
         })
     }

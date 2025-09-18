@@ -579,7 +579,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore] // Error message format doesn't match
+    #[ignore = "Error message format doesn't match"]
     fn test_resolve_imports_error_handling() -> Result<()> {
         let mut resolver = ModuleResolver::new();
         resolver.module_loader.search_paths.clear();

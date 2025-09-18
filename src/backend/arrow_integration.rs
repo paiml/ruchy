@@ -2,10 +2,8 @@
 //! 
 //! This module provides efficient interoperability between Ruchy DataFrames
 //! and Apache Arrow format for high-performance data processing.
-#![cfg(feature = "dataframe")]
 use anyhow::{Context, Result};
 use arrow::array::{Array, ArrayRef, Float64Array, Int64Array, StringArray, BooleanArray};
-use arrow::datatypes::DataType;
 use arrow::record_batch::RecordBatch;
 use arrow_schema::SchemaRef;
 use std::sync::Arc;

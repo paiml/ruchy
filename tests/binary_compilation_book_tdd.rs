@@ -136,7 +136,7 @@ mod binary_compilation_book_tdd {
     }
     
     #[test]
-    #[ignore] // Mark as integration test
+    #[ignore = "Mark as integration test"]
     fn test_compile_shows_binary_size() {
         // RED: Test that compile command shows binary size
         let temp_dir = TempDir::new().expect("Failed to create temp dir");

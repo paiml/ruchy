@@ -368,7 +368,7 @@ mod tests {
 
     // ========== Watch Mode Tests ==========
     #[test]
-    #[ignore] // Ignore by default as this is an infinite loop test
+    #[ignore = "Ignore by default as this is an infinite loop test"]
     fn test_handle_watch_mode_setup() {
         let temp_dir = create_test_directory_with_files().unwrap();
 

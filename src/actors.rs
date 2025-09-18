@@ -387,7 +387,9 @@ mod tests {
 #[cfg(test)]
 mod property_tests_actors {
     use proptest::proptest;
+    #[allow(unused_imports)]
     use super::*;
+    #[allow(unused_imports)]
     use proptest::prelude::*;
     proptest! {
         /// Property: Function never panics on any input

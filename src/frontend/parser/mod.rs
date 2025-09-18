@@ -809,7 +809,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore] // Assignment parsing needs investigation
+    #[ignore = "Assignment parsing needs investigation"]
     fn test_parser_assignment_operators() {
         // Assignment is parsed as a binary operation in this AST
         let mut state = ParserState::new("x = 5");
@@ -824,7 +824,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore] // Pipeline parsing needs investigation
+    #[ignore = "Pipeline parsing needs investigation"]
     fn test_parser_pipeline_operator() {
         let mut state = ParserState::new("data >> transform");
         let expr = parse_expr_recursive(&mut state).unwrap();
@@ -901,7 +901,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore] // Safe navigation parsing needs investigation
+    #[ignore = "Safe navigation parsing needs investigation"]
     fn test_parser_safe_navigation() {
         let mut state = ParserState::new("obj?.method()");
         let expr = parse_expr_recursive(&mut state).unwrap();
@@ -911,7 +911,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore] // Macro parsing needs investigation
+    #[ignore = "Macro parsing needs investigation"]
     fn test_parser_macro_call() {
         let mut state = ParserState::new("println!(\"hello\")");
         let expr = parse_expr_recursive(&mut state).unwrap();
