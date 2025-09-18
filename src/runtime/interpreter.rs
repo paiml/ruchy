@@ -1844,6 +1844,43 @@ impl Interpreter {
         global_env.insert("DataFrame::from_range".to_string(), Value::String(Rc::new("__builtin_dataframe_from_range__".to_string())));
         global_env.insert("DataFrame::from_rows".to_string(), Value::String(Rc::new("__builtin_dataframe_from_rows__".to_string())));
         global_env.insert("col".to_string(), Value::String(Rc::new("__builtin_col__".to_string())));
+
+        // Math standard library functions
+        global_env.insert("sqrt".to_string(), Value::String(Rc::new("__builtin_sqrt__".to_string())));
+        global_env.insert("pow".to_string(), Value::String(Rc::new("__builtin_pow__".to_string())));
+        global_env.insert("abs".to_string(), Value::String(Rc::new("__builtin_abs__".to_string())));
+        global_env.insert("min".to_string(), Value::String(Rc::new("__builtin_min__".to_string())));
+        global_env.insert("max".to_string(), Value::String(Rc::new("__builtin_max__".to_string())));
+        global_env.insert("floor".to_string(), Value::String(Rc::new("__builtin_floor__".to_string())));
+        global_env.insert("ceil".to_string(), Value::String(Rc::new("__builtin_ceil__".to_string())));
+        global_env.insert("round".to_string(), Value::String(Rc::new("__builtin_round__".to_string())));
+        global_env.insert("sin".to_string(), Value::String(Rc::new("__builtin_sin__".to_string())));
+        global_env.insert("cos".to_string(), Value::String(Rc::new("__builtin_cos__".to_string())));
+        global_env.insert("tan".to_string(), Value::String(Rc::new("__builtin_tan__".to_string())));
+
+        // Utility functions
+        global_env.insert("len".to_string(), Value::String(Rc::new("__builtin_len__".to_string())));
+        global_env.insert("range".to_string(), Value::String(Rc::new("__builtin_range__".to_string())));
+        global_env.insert("typeof".to_string(), Value::String(Rc::new("__builtin_type__".to_string())));
+
+        // Advanced utility functions
+        global_env.insert("reverse".to_string(), Value::String(Rc::new("__builtin_reverse__".to_string())));
+        global_env.insert("sort".to_string(), Value::String(Rc::new("__builtin_sort__".to_string())));
+        global_env.insert("sum".to_string(), Value::String(Rc::new("__builtin_sum__".to_string())));
+        global_env.insert("product".to_string(), Value::String(Rc::new("__builtin_product__".to_string())));
+        global_env.insert("unique".to_string(), Value::String(Rc::new("__builtin_unique__".to_string())));
+        global_env.insert("flatten".to_string(), Value::String(Rc::new("__builtin_flatten__".to_string())));
+        global_env.insert("zip".to_string(), Value::String(Rc::new("__builtin_zip__".to_string())));
+        global_env.insert("enumerate".to_string(), Value::String(Rc::new("__builtin_enumerate__".to_string())));
+
+        // String utility functions
+        global_env.insert("join".to_string(), Value::String(Rc::new("__builtin_join__".to_string())));
+        global_env.insert("split".to_string(), Value::String(Rc::new("__builtin_split__".to_string())));
+
+        // Random and time functions
+        global_env.insert("random".to_string(), Value::String(Rc::new("__builtin_random__".to_string())));
+        global_env.insert("random_int".to_string(), Value::String(Rc::new("__builtin_random_int__".to_string())));
+        global_env.insert("timestamp".to_string(), Value::String(Rc::new("__builtin_timestamp__".to_string())));
         
         Self {
             stack: Vec::with_capacity(1024), // Pre-allocate stack
@@ -2300,6 +2337,468 @@ impl Interpreter {
                             }
                             _ => Err(InterpreterError::RuntimeError("DataFrame::from_rows() expects rows as array".to_string())),
                         }
+                    }
+                    // Math functions
+                    "__builtin_sqrt__" => {
+                        if args.len() != 1 {
+                            return Err(InterpreterError::RuntimeError("sqrt() expects exactly 1 argument".to_string()));
+                        }
+                        match &args[0] {
+                            Value::Integer(n) => Ok(Value::Float((*n as f64).sqrt())),
+                            Value::Float(f) => Ok(Value::Float(f.sqrt())),
+                            _ => Err(InterpreterError::RuntimeError("sqrt() expects a number".to_string())),
+                        }
+                    }
+                    "__builtin_pow__" => {
+                        if args.len() != 2 {
+                            return Err(InterpreterError::RuntimeError("pow() expects exactly 2 arguments".to_string()));
+                        }
+                        match (&args[0], &args[1]) {
+                            (Value::Integer(base), Value::Integer(exp)) => {
+                                if *exp >= 0 {
+                                    Ok(Value::Integer(base.pow(*exp as u32)))
+                                } else {
+                                    Ok(Value::Float((*base as f64).powf(*exp as f64)))
+                                }
+                            }
+                            (Value::Float(base), Value::Integer(exp)) => Ok(Value::Float(base.powf(*exp as f64))),
+                            (Value::Integer(base), Value::Float(exp)) => Ok(Value::Float((*base as f64).powf(*exp))),
+                            (Value::Float(base), Value::Float(exp)) => Ok(Value::Float(base.powf(*exp))),
+                            _ => Err(InterpreterError::RuntimeError("pow() expects two numbers".to_string())),
+                        }
+                    }
+                    "__builtin_abs__" => {
+                        if args.len() != 1 {
+                            return Err(InterpreterError::RuntimeError("abs() expects exactly 1 argument".to_string()));
+                        }
+                        match &args[0] {
+                            Value::Integer(n) => Ok(Value::Integer(n.abs())),
+                            Value::Float(f) => Ok(Value::Float(f.abs())),
+                            _ => Err(InterpreterError::RuntimeError("abs() expects a number".to_string())),
+                        }
+                    }
+                    "__builtin_min__" => {
+                        if args.len() != 2 {
+                            return Err(InterpreterError::RuntimeError("min() expects exactly 2 arguments".to_string()));
+                        }
+                        match (&args[0], &args[1]) {
+                            (Value::Integer(a), Value::Integer(b)) => Ok(Value::Integer(*a.min(b))),
+                            (Value::Float(a), Value::Float(b)) => Ok(Value::Float(a.min(*b))),
+                            (Value::Integer(a), Value::Float(b)) => Ok(Value::Float((*a as f64).min(*b))),
+                            (Value::Float(a), Value::Integer(b)) => Ok(Value::Float(a.min(*b as f64))),
+                            _ => Err(InterpreterError::RuntimeError("min() expects two numbers".to_string())),
+                        }
+                    }
+                    "__builtin_max__" => {
+                        if args.len() != 2 {
+                            return Err(InterpreterError::RuntimeError("max() expects exactly 2 arguments".to_string()));
+                        }
+                        match (&args[0], &args[1]) {
+                            (Value::Integer(a), Value::Integer(b)) => Ok(Value::Integer(*a.max(b))),
+                            (Value::Float(a), Value::Float(b)) => Ok(Value::Float(a.max(*b))),
+                            (Value::Integer(a), Value::Float(b)) => Ok(Value::Float((*a as f64).max(*b))),
+                            (Value::Float(a), Value::Integer(b)) => Ok(Value::Float(a.max(*b as f64))),
+                            _ => Err(InterpreterError::RuntimeError("max() expects two numbers".to_string())),
+                        }
+                    }
+                    "__builtin_floor__" => {
+                        if args.len() != 1 {
+                            return Err(InterpreterError::RuntimeError("floor() expects exactly 1 argument".to_string()));
+                        }
+                        match &args[0] {
+                            Value::Integer(n) => Ok(Value::Integer(*n)), // Integer is already floored
+                            Value::Float(f) => Ok(Value::Integer(f.floor() as i64)),
+                            _ => Err(InterpreterError::RuntimeError("floor() expects a number".to_string())),
+                        }
+                    }
+                    "__builtin_ceil__" => {
+                        if args.len() != 1 {
+                            return Err(InterpreterError::RuntimeError("ceil() expects exactly 1 argument".to_string()));
+                        }
+                        match &args[0] {
+                            Value::Integer(n) => Ok(Value::Integer(*n)), // Integer is already ceiled
+                            Value::Float(f) => Ok(Value::Integer(f.ceil() as i64)),
+                            _ => Err(InterpreterError::RuntimeError("ceil() expects a number".to_string())),
+                        }
+                    }
+                    "__builtin_round__" => {
+                        if args.len() != 1 {
+                            return Err(InterpreterError::RuntimeError("round() expects exactly 1 argument".to_string()));
+                        }
+                        match &args[0] {
+                            Value::Integer(n) => Ok(Value::Integer(*n)), // Integer is already rounded
+                            Value::Float(f) => Ok(Value::Integer(f.round() as i64)),
+                            _ => Err(InterpreterError::RuntimeError("round() expects a number".to_string())),
+                        }
+                    }
+                    "__builtin_sin__" => {
+                        if args.len() != 1 {
+                            return Err(InterpreterError::RuntimeError("sin() expects exactly 1 argument".to_string()));
+                        }
+                        match &args[0] {
+                            Value::Integer(n) => Ok(Value::Float((*n as f64).sin())),
+                            Value::Float(f) => Ok(Value::Float(f.sin())),
+                            _ => Err(InterpreterError::RuntimeError("sin() expects a number".to_string())),
+                        }
+                    }
+                    "__builtin_cos__" => {
+                        if args.len() != 1 {
+                            return Err(InterpreterError::RuntimeError("cos() expects exactly 1 argument".to_string()));
+                        }
+                        match &args[0] {
+                            Value::Integer(n) => Ok(Value::Float((*n as f64).cos())),
+                            Value::Float(f) => Ok(Value::Float(f.cos())),
+                            _ => Err(InterpreterError::RuntimeError("cos() expects a number".to_string())),
+                        }
+                    }
+                    "__builtin_tan__" => {
+                        if args.len() != 1 {
+                            return Err(InterpreterError::RuntimeError("tan() expects exactly 1 argument".to_string()));
+                        }
+                        match &args[0] {
+                            Value::Integer(n) => Ok(Value::Float((*n as f64).tan())),
+                            Value::Float(f) => Ok(Value::Float(f.tan())),
+                            _ => Err(InterpreterError::RuntimeError("tan() expects a number".to_string())),
+                        }
+                    }
+                    // Utility functions
+                    "__builtin_len__" => {
+                        if args.len() != 1 {
+                            return Err(InterpreterError::RuntimeError("len() expects exactly 1 argument".to_string()));
+                        }
+                        match &args[0] {
+                            Value::String(s) => Ok(Value::Integer(s.len() as i64)),
+                            Value::Array(arr) => Ok(Value::Integer(arr.len() as i64)),
+                            Value::DataFrame { columns } => {
+                                if columns.is_empty() {
+                                    Ok(Value::Integer(0))
+                                } else {
+                                    Ok(Value::Integer(columns[0].values.len() as i64))
+                                }
+                            }
+                            _ => Err(InterpreterError::RuntimeError("len() expects a string, array, or dataframe".to_string())),
+                        }
+                    }
+                    "__builtin_range__" => {
+                        match args.len() {
+                            1 => {
+                                // range(end) -> 0..end
+                                match &args[0] {
+                                    Value::Integer(end) => {
+                                        let mut result = Vec::new();
+                                        for i in 0..*end {
+                                            result.push(Value::Integer(i));
+                                        }
+                                        Ok(Value::Array(result.into()))
+                                    }
+                                    _ => Err(InterpreterError::RuntimeError("range() expects integer arguments".to_string())),
+                                }
+                            }
+                            2 => {
+                                // range(start, end) -> start..end
+                                match (&args[0], &args[1]) {
+                                    (Value::Integer(start), Value::Integer(end)) => {
+                                        let mut result = Vec::new();
+                                        for i in *start..*end {
+                                            result.push(Value::Integer(i));
+                                        }
+                                        Ok(Value::Array(result.into()))
+                                    }
+                                    _ => Err(InterpreterError::RuntimeError("range() expects integer arguments".to_string())),
+                                }
+                            }
+                            3 => {
+                                // range(start, end, step) -> start..end by step
+                                match (&args[0], &args[1], &args[2]) {
+                                    (Value::Integer(start), Value::Integer(end), Value::Integer(step)) => {
+                                        if *step == 0 {
+                                            return Err(InterpreterError::RuntimeError("range() step cannot be zero".to_string()));
+                                        }
+                                        let mut result = Vec::new();
+                                        if *step > 0 {
+                                            let mut i = *start;
+                                            while i < *end {
+                                                result.push(Value::Integer(i));
+                                                i += step;
+                                            }
+                                        } else {
+                                            let mut i = *start;
+                                            while i > *end {
+                                                result.push(Value::Integer(i));
+                                                i += step;
+                                            }
+                                        }
+                                        Ok(Value::Array(result.into()))
+                                    }
+                                    _ => Err(InterpreterError::RuntimeError("range() expects integer arguments".to_string())),
+                                }
+                            }
+                            _ => Err(InterpreterError::RuntimeError("range() expects 1, 2, or 3 arguments".to_string())),
+                        }
+                    }
+                    "__builtin_type__" => {
+                        if args.len() != 1 {
+                            return Err(InterpreterError::RuntimeError("type() expects exactly 1 argument".to_string()));
+                        }
+                        Ok(Value::from_string(args[0].type_name().to_string()))
+                    }
+                    // Advanced utility functions
+                    "__builtin_reverse__" => {
+                        if args.len() != 1 {
+                            return Err(InterpreterError::RuntimeError("reverse() expects exactly 1 argument".to_string()));
+                        }
+                        match &args[0] {
+                            Value::Array(arr) => {
+                                let mut reversed = arr.as_ref().clone();
+                                reversed.reverse();
+                                Ok(Value::Array(reversed.into()))
+                            }
+                            Value::String(s) => Ok(Value::from_string(s.chars().rev().collect())),
+                            _ => Err(InterpreterError::RuntimeError("reverse() expects an array or string".to_string())),
+                        }
+                    }
+                    "__builtin_sort__" => {
+                        if args.len() != 1 {
+                            return Err(InterpreterError::RuntimeError("sort() expects exactly 1 argument".to_string()));
+                        }
+                        match &args[0] {
+                            Value::Array(arr) => {
+                                let mut sorted = arr.as_ref().clone();
+                                sorted.sort_by(|a, b| {
+                                    match (a, b) {
+                                        (Value::Integer(x), Value::Integer(y)) => x.cmp(y),
+                                        (Value::Float(x), Value::Float(y)) => x.partial_cmp(y).unwrap_or(std::cmp::Ordering::Equal),
+                                        (Value::String(x), Value::String(y)) => x.cmp(y),
+                                        _ => std::cmp::Ordering::Equal,
+                                    }
+                                });
+                                Ok(Value::Array(sorted.into()))
+                            }
+                            _ => Err(InterpreterError::RuntimeError("sort() expects an array".to_string())),
+                        }
+                    }
+                    "__builtin_sum__" => {
+                        if args.len() != 1 {
+                            return Err(InterpreterError::RuntimeError("sum() expects exactly 1 argument".to_string()));
+                        }
+                        match &args[0] {
+                            Value::Array(arr) => {
+                                let mut sum = 0i64;
+                                let mut float_sum = 0.0f64;
+                                let mut has_floats = false;
+                                for val in arr.iter() {
+                                    match val {
+                                        Value::Integer(n) => {
+                                            if has_floats {
+                                                float_sum += *n as f64;
+                                            } else {
+                                                sum += n;
+                                            }
+                                        }
+                                        Value::Float(f) => {
+                                            if has_floats {
+                                                float_sum += f;
+                                            } else {
+                                                has_floats = true;
+                                                float_sum = sum as f64 + f;
+                                            }
+                                        }
+                                        _ => return Err(InterpreterError::RuntimeError("sum() can only sum numbers".to_string())),
+                                    }
+                                }
+                                if has_floats {
+                                    Ok(Value::Float(float_sum))
+                                } else {
+                                    Ok(Value::Integer(sum))
+                                }
+                            }
+                            _ => Err(InterpreterError::RuntimeError("sum() expects an array".to_string())),
+                        }
+                    }
+                    "__builtin_product__" => {
+                        if args.len() != 1 {
+                            return Err(InterpreterError::RuntimeError("product() expects exactly 1 argument".to_string()));
+                        }
+                        match &args[0] {
+                            Value::Array(arr) => {
+                                let mut product = 1i64;
+                                let mut float_product = 1.0f64;
+                                let mut has_floats = false;
+                                for val in arr.iter() {
+                                    match val {
+                                        Value::Integer(n) => {
+                                            if has_floats {
+                                                float_product *= *n as f64;
+                                            } else {
+                                                product *= n;
+                                            }
+                                        }
+                                        Value::Float(f) => {
+                                            if has_floats {
+                                                float_product *= f;
+                                            } else {
+                                                has_floats = true;
+                                                float_product = product as f64 * f;
+                                            }
+                                        }
+                                        _ => return Err(InterpreterError::RuntimeError("product() can only multiply numbers".to_string())),
+                                    }
+                                }
+                                if has_floats {
+                                    Ok(Value::Float(float_product))
+                                } else {
+                                    Ok(Value::Integer(product))
+                                }
+                            }
+                            _ => Err(InterpreterError::RuntimeError("product() expects an array".to_string())),
+                        }
+                    }
+                    "__builtin_unique__" => {
+                        if args.len() != 1 {
+                            return Err(InterpreterError::RuntimeError("unique() expects exactly 1 argument".to_string()));
+                        }
+                        match &args[0] {
+                            Value::Array(arr) => {
+                                let mut unique_vals = Vec::new();
+                                for val in arr.iter() {
+                                    if !unique_vals.contains(val) {
+                                        unique_vals.push(val.clone());
+                                    }
+                                }
+                                Ok(Value::Array(unique_vals.into()))
+                            }
+                            _ => Err(InterpreterError::RuntimeError("unique() expects an array".to_string())),
+                        }
+                    }
+                    "__builtin_flatten__" => {
+                        if args.len() != 1 {
+                            return Err(InterpreterError::RuntimeError("flatten() expects exactly 1 argument".to_string()));
+                        }
+                        match &args[0] {
+                            Value::Array(arr) => {
+                                let mut flattened = Vec::new();
+                                for val in arr.iter() {
+                                    match val {
+                                        Value::Array(inner_arr) => {
+                                            flattened.extend_from_slice(inner_arr);
+                                        }
+                                        _ => flattened.push(val.clone()),
+                                    }
+                                }
+                                Ok(Value::Array(flattened.into()))
+                            }
+                            _ => Err(InterpreterError::RuntimeError("flatten() expects an array".to_string())),
+                        }
+                    }
+                    "__builtin_zip__" => {
+                        if args.len() != 2 {
+                            return Err(InterpreterError::RuntimeError("zip() expects exactly 2 arguments".to_string()));
+                        }
+                        match (&args[0], &args[1]) {
+                            (Value::Array(arr1), Value::Array(arr2)) => {
+                                let mut zipped = Vec::new();
+                                let min_len = arr1.len().min(arr2.len());
+                                for i in 0..min_len {
+                                    let tuple = Value::Array(vec![arr1[i].clone(), arr2[i].clone()].into());
+                                    zipped.push(tuple);
+                                }
+                                Ok(Value::Array(zipped.into()))
+                            }
+                            _ => Err(InterpreterError::RuntimeError("zip() expects two arrays".to_string())),
+                        }
+                    }
+                    "__builtin_enumerate__" => {
+                        if args.len() != 1 {
+                            return Err(InterpreterError::RuntimeError("enumerate() expects exactly 1 argument".to_string()));
+                        }
+                        match &args[0] {
+                            Value::Array(arr) => {
+                                let mut enumerated = Vec::new();
+                                for (i, val) in arr.iter().enumerate() {
+                                    let tuple = Value::Array(vec![Value::Integer(i as i64), val.clone()].into());
+                                    enumerated.push(tuple);
+                                }
+                                Ok(Value::Array(enumerated.into()))
+                            }
+                            _ => Err(InterpreterError::RuntimeError("enumerate() expects an array".to_string())),
+                        }
+                    }
+                    // String utility functions
+                    "__builtin_join__" => {
+                        if args.len() != 2 {
+                            return Err(InterpreterError::RuntimeError("join() expects exactly 2 arguments".to_string()));
+                        }
+                        match (&args[0], &args[1]) {
+                            (Value::Array(arr), Value::String(sep)) => {
+                                let strings: Result<Vec<String>, _> = arr.iter().map(|v| {
+                                    match v {
+                                        Value::String(s) => Ok(s.to_string()),
+                                        _ => Err(InterpreterError::RuntimeError("join() can only join arrays of strings".to_string())),
+                                    }
+                                }).collect();
+                                match strings {
+                                    Ok(strs) => Ok(Value::from_string(strs.join(sep))),
+                                    Err(e) => Err(e),
+                                }
+                            }
+                            _ => Err(InterpreterError::RuntimeError("join() expects an array and a string separator".to_string())),
+                        }
+                    }
+                    "__builtin_split__" => {
+                        if args.len() != 2 {
+                            return Err(InterpreterError::RuntimeError("split() expects exactly 2 arguments".to_string()));
+                        }
+                        match (&args[0], &args[1]) {
+                            (Value::String(s), Value::String(sep)) => {
+                                let parts: Vec<Value> = s.split(sep.as_str()).map(|part| Value::from_string(part.to_string())).collect();
+                                Ok(Value::Array(parts.into()))
+                            }
+                            _ => Err(InterpreterError::RuntimeError("split() expects two strings".to_string())),
+                        }
+                    }
+                    // Random and time functions
+                    "__builtin_random__" => {
+                        if !args.is_empty() {
+                            return Err(InterpreterError::RuntimeError("random() expects no arguments".to_string()));
+                        }
+                        use rand::Rng;
+                        let mut rng = rand::thread_rng();
+                        Ok(Value::Float(rng.gen::<f64>()))
+                    }
+                    "__builtin_random_int__" => {
+                        match args.len() {
+                            1 => {
+                                match &args[0] {
+                                    Value::Integer(max) => {
+                                        use rand::Rng;
+                                        let mut rng = rand::thread_rng();
+                                        Ok(Value::Integer(rng.gen_range(0..*max)))
+                                    }
+                                    _ => Err(InterpreterError::RuntimeError("random_int() expects an integer".to_string())),
+                                }
+                            }
+                            2 => {
+                                match (&args[0], &args[1]) {
+                                    (Value::Integer(min), Value::Integer(max)) => {
+                                        use rand::Rng;
+                                        let mut rng = rand::thread_rng();
+                                        Ok(Value::Integer(rng.gen_range(*min..*max)))
+                                    }
+                                    _ => Err(InterpreterError::RuntimeError("random_int() expects two integers".to_string())),
+                                }
+                            }
+                            _ => Err(InterpreterError::RuntimeError("random_int() expects 1 or 2 arguments".to_string())),
+                        }
+                    }
+                    "__builtin_timestamp__" => {
+                        if !args.is_empty() {
+                            return Err(InterpreterError::RuntimeError("timestamp() expects no arguments".to_string()));
+                        }
+                        use std::time::{SystemTime, UNIX_EPOCH};
+                        let timestamp = SystemTime::now().duration_since(UNIX_EPOCH)
+                            .map_err(|_| InterpreterError::RuntimeError("Failed to get timestamp".to_string()))?
+                            .as_secs();
+                        Ok(Value::Integer(timestamp as i64))
                     }
                     _ => Err(InterpreterError::RuntimeError(format!("Unknown builtin function: {}", s))),
                 }
