@@ -2,7 +2,7 @@
 // Validates REPL behavior against reference implementations and expected outputs
 
 use ruchy::runtime::Repl;
-use std::{env, collections::HashMap;
+use std::{env, collections::HashMap};
 
 /// Reference implementation for basic expressions
 /// This serves as a simple reference to test against production REPL

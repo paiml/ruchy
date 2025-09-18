@@ -11,7 +11,7 @@ use ruchy::runtime::repl::Repl;
 use std::rc::Rc;
 use ruchy::runtime::Value;
 use std::rc::Rc;
-use std::{env, time::{Duration, Instant};
+use std::{env, time::{Duration, Instant}};
 use std::rc::Rc;
 
 #[test]
