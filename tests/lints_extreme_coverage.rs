@@ -7,7 +7,7 @@
 // - Zero uncovered lines
 
 use ruchy::lints::{RuchyLinter, LintViolation, Severity, LintRule};
-use ruchy::frontend::ast::{Expr, ExprKind};
+use ruchy::frontend::ast::{Expr, ExprKind, Param, Pattern};
 
 // Helper to create basic expression
 fn create_simple_expr(kind: ExprKind) -> Expr {
@@ -111,7 +111,8 @@ fn test_lint_for_loop() {
     let body = Box::new(create_simple_expr(ExprKind::Block(vec![])));
 
     let expr = create_simple_expr(ExprKind::For {
-        pattern,
+        var: pattern,
+        pattern: None,
         iter,
         body,
     });
@@ -286,7 +287,7 @@ fn test_lint_violation_creation() {
 }
 
 #[test]
-fn test_lint_violation_no_suggestion() {
+fn test_lint_violation_error() {
     let violation = LintViolation::Violation {
         location: "test.rs:5".to_string(),
         message: "Error here".to_string(),
@@ -330,7 +331,6 @@ fn test_lint_lambda() {
     let expr = create_simple_expr(ExprKind::Lambda {
         params,
         body,
-        is_async: false,
     });
 
     let violations = linter.lint(&expr);

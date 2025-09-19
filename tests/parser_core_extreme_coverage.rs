@@ -240,7 +240,8 @@ fn test_parse_semicolon_separated() {
 #[test]
 fn test_parse_many_expressions() {
     for i in 0..100 {
-        let mut parser = Parser::new(&i.to_string());
+        let input = i.to_string();
+        let mut parser = Parser::new(&input);
         let _ = parser.parse();
     }
 }
