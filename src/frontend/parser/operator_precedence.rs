@@ -67,6 +67,7 @@ pub fn get_operator_info(token: &Token) -> Option<(Precedence, Associativity)> {
         Token::Caret => Option::Some((Precedence::BITWISE_XOR, Left)),
         Token::Ampersand => Option::Some((Precedence::BITWISE_AND, Left)),
         Token::LeftShift => Option::Some((Precedence::SHIFT, Left)),
+        Token::RightShift => Option::Some((Precedence::SHIFT, Left)),
         // Range operators
         Token::DotDot | Token::DotDotEqual => Option::Some((Precedence::RANGE, Left)),
         // Arithmetic operators

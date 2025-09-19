@@ -3,13 +3,12 @@
 //! [TEST-COV-006] Transaction State Coverage
 
 use ruchy::runtime::{
-use std::rc::Rc;
     TransactionalState, TransactionMetadata, TransactionId,
     TransactionEvent, TransactionLog, MVCC,
     Value,
 };
-use std::time::Duration;
 use std::rc::Rc;
+use std::time::Duration;
 
 #[test]
 fn test_transactional_state_basic() {

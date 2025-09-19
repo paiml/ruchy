@@ -341,9 +341,9 @@ fn test_parse_import_statement() -> Result<()> {
     let ast = parser.parse()?;
 
     match &ast.kind {
-        ExprKind::Import { path, items } => {
-            assert_eq!(path, "std.collections");
-            assert!(!items.is_empty());
+        ExprKind::Import { module, items } => {
+            assert_eq!(module, "std.collections");
+            assert!(items.as_ref().map_or(false, |v| !v.is_empty()));
         }
         _ => panic!("Expected import, got {:?}", ast.kind),
     }

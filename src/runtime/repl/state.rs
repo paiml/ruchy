@@ -37,8 +37,12 @@ pub struct ReplState {
     bindings: HashMap<String, Value>,
     /// Command history
     history: Vec<String>,
+    /// Result history (evaluation results)
+    result_history: Vec<Value>,
     /// Maximum history size
     max_history: usize,
+    /// Peak memory usage
+    peak_memory: usize,
 }
 
 impl ReplState {
@@ -48,7 +52,9 @@ impl ReplState {
             mode: ReplMode::Normal,
             bindings: HashMap::new(),
             history: Vec::new(),
+            result_history: Vec::new(),
             max_history: 1000,
+            peak_memory: 0,
         }
     }
 
@@ -93,6 +99,41 @@ impl ReplState {
     /// Clear command history (complexity: 1)
     pub fn clear_history(&mut self) {
         self.history.clear();
+    }
+
+    /// Add to result history (complexity: 3)
+    pub fn add_to_result_history(&mut self, result: Value) {
+        if self.result_history.len() >= self.max_history {
+            self.result_history.remove(0);
+        }
+        self.result_history.push(result);
+    }
+
+    /// Get result history length (complexity: 1)
+    pub fn result_history_len(&self) -> usize {
+        self.result_history.len()
+    }
+
+    /// Get result history (complexity: 1)
+    pub fn get_result_history(&self) -> &[Value] {
+        &self.result_history
+    }
+
+    /// Clear result history (complexity: 1)
+    pub fn clear_result_history(&mut self) {
+        self.result_history.clear();
+    }
+
+    /// Update peak memory (complexity: 2)
+    pub fn update_peak_memory(&mut self, current: usize) {
+        if current > self.peak_memory {
+            self.peak_memory = current;
+        }
+    }
+
+    /// Get peak memory (complexity: 1)
+    pub fn get_peak_memory(&self) -> usize {
+        self.peak_memory
     }
 }
 

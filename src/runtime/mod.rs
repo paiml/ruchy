@@ -86,7 +86,7 @@ pub mod transaction;
 pub mod inspect;
 // pub mod resource_eval;  // Temporarily disabled - causes duplicate impl
 // Export the unified REPL
-pub use repl::Repl;
+pub use repl::{Repl, ReplConfig};
 // pub use repl_legacy::{ReplConfig, ReplState as LegacyReplState}; // Temporarily disabled
 // Export interpreter components
 pub use interpreter::{

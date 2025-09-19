@@ -9,7 +9,6 @@
 use anyhow::Result;
 use std::env;
 use ruchy::runtime::Repl;
-use std::env;
 
 // Placeholder test until replay-to-tests command is fully implemented
 #[test]

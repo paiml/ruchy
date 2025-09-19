@@ -174,7 +174,8 @@ pub fn normalize(&mut self, expr: &Expr) -> CoreExpr {
                     BinaryOp::BitwiseAnd
                     | BinaryOp::BitwiseOr
                     | BinaryOp::BitwiseXor
-                    | BinaryOp::LeftShift => {
+                    | BinaryOp::LeftShift
+                    | BinaryOp::RightShift => {
                         panic!("Bitwise operations not yet supported in core language")
                     }
                 };

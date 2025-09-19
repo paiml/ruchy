@@ -31,6 +31,7 @@ pub fn evaluate_binary_op(op: &BinaryOp, lhs: &Value, rhs: &Value) -> Result<Val
         BinaryOp::BitwiseOr => evaluate_bitwise_or(lhs, rhs),
         BinaryOp::BitwiseXor => evaluate_bitwise_xor(lhs, rhs),
         BinaryOp::LeftShift => evaluate_left_shift(lhs, rhs),
+        BinaryOp::RightShift => evaluate_right_shift(lhs, rhs),
         BinaryOp::NullCoalesce => Ok(if matches!(lhs, Value::Nil) { 
             rhs.clone() 
         } else { 
@@ -188,6 +189,18 @@ fn evaluate_left_shift(lhs: &Value, rhs: &Value) -> Result<Value> {
             Ok(Value::Integer(a << b))
         }
         _ => bail!("Cannot left shift {:?} by {:?}", lhs, rhs),
+    }
+}
+
+fn evaluate_right_shift(lhs: &Value, rhs: &Value) -> Result<Value> {
+    match (lhs, rhs) {
+        (Value::Integer(a), Value::Integer(b)) => {
+            if *b < 0 || *b >= 64 {
+                bail!("Invalid shift amount: {}", b);
+            }
+            Ok(Value::Integer(a >> b))
+        }
+        _ => bail!("Cannot right shift {:?} by {:?}", lhs, rhs),
     }
 }
 /// Check if two values are equal

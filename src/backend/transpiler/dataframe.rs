@@ -506,30 +506,77 @@ mod tests {
 }
 #[cfg(test)]
 mod property_tests_dataframe {
-    use proptest::proptest;
     use super::*;
-    
-    proptest! {
-        /// Property: transpile_dataframe never panics on any input
-        #[test]
-        fn test_transpile_dataframe_never_panics(_input: String) {
-            // Function should not panic on any DataFrame columns input
-            let result = std::panic::catch_unwind(|| {
-                let transpiler = super::Transpiler::new();
-                
-                // Test with empty columns (common edge case)
-                let _ = transpiler.transpile_dataframe(&[]);
-                
-                // Test with malformed column data (should handle gracefully)
-                let bad_columns = vec![
-                    DataFrameColumn {
-                        name: String::new(), // Empty name
-                        values: vec![],      // Empty values
-                    }
-                ];
-                let _ = transpiler.transpile_dataframe(&bad_columns);
-            });
-            assert!(result.is_ok(), "transpile_dataframe panicked unexpectedly");
-        }
+    use crate::frontend::ast::{Expr, ExprKind, Literal, Span};
+
+    #[test]
+    fn test_transpile_dataframe_never_panics() {
+        // Property: transpile_dataframe never panics on any input
+        let transpiler = super::Transpiler::new();
+
+        // Test with empty columns (common edge case)
+        let result = std::panic::catch_unwind(|| {
+            let _ = transpiler.transpile_dataframe(&[]);
+        });
+        assert!(result.is_ok(), "transpile_dataframe should not panic on empty input");
+
+        // Test with malformed column data (should handle gracefully)
+        let result = std::panic::catch_unwind(|| {
+            let bad_columns = vec![
+                DataFrameColumn {
+                    name: String::new(), // Empty name
+                    values: vec![],      // Empty values
+                }
+            ];
+            let _ = transpiler.transpile_dataframe(&bad_columns);
+        });
+        assert!(result.is_ok(), "transpile_dataframe should handle malformed data gracefully");
+    }
+
+    #[test]
+    fn test_coverage_boost_dataframe() {
+        let transpiler = Transpiler::new();
+
+        // Test basic functionality to boost coverage
+        let columns = vec![
+            DataFrameColumn {
+                name: "id".to_string(),
+                values: vec![
+                    Expr {
+                        kind: ExprKind::Literal(Literal::Integer(1)),
+                        span: Span::default(),
+                        attributes: vec![],
+                    },
+                    Expr {
+                        kind: ExprKind::Literal(Literal::Integer(2)),
+                        span: Span::default(),
+                        attributes: vec![],
+                    },
+                ],
+            },
+            DataFrameColumn {
+                name: "name".to_string(),
+                values: vec![
+                    Expr {
+                        kind: ExprKind::Literal(Literal::String("Alice".to_string())),
+                        span: Span::default(),
+                        attributes: vec![],
+                    },
+                    Expr {
+                        kind: ExprKind::Literal(Literal::String("Bob".to_string())),
+                        span: Span::default(),
+                        attributes: vec![],
+                    },
+                ],
+            },
+        ];
+
+        let result = transpiler.transpile_dataframe(&columns);
+        assert!(result.is_ok());
+
+        // Test empty dataframe
+        let empty_columns = vec![];
+        let result = transpiler.transpile_dataframe(&empty_columns);
+        assert!(result.is_ok());
     }
 }

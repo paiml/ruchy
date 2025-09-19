@@ -63,6 +63,14 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
                 expr: Box::new(expr)
             }, span))
         }
+        Token::Tilde => {
+            state.tokens.advance();
+            let expr = super::parse_expr_with_precedence_recursive(state, 13)?;
+            Ok(Expr::new(ExprKind::Unary {
+                op: UnaryOp::BitwiseNot,
+                operand: Box::new(expr)
+            }, span))
+        }
         // Function/block tokens - delegated to focused helper
         Token::Fun | Token::Fn | Token::LeftBrace => {
             parse_function_block_token(state, token)
@@ -228,6 +236,14 @@ fn parse_unary_operator_token(state: &mut ParserState, token: &Token, span: Span
             let expr = super::parse_expr_with_precedence_recursive(state, 13)?;
             Ok(Expr::new(ExprKind::Await {
                 expr: Box::new(expr)
+            }, span))
+        }
+        Token::Tilde => {
+            state.tokens.advance();
+            let expr = super::parse_expr_with_precedence_recursive(state, 13)?;
+            Ok(Expr::new(ExprKind::Unary {
+                op: UnaryOp::BitwiseNot,
+                operand: Box::new(expr)
             }, span))
         }
         _ => bail!("Expected unary operator token, got: {:?}", token),
@@ -2424,6 +2440,7 @@ fn map_bitwise_operator(token: &Token) -> Option<BinaryOp> {
         Token::Pipe => Some(BinaryOp::BitwiseOr),
         Token::Caret => Some(BinaryOp::BitwiseXor),
         Token::LeftShift => Some(BinaryOp::LeftShift),
+        Token::RightShift => Some(BinaryOp::RightShift),
         _ => None,
     }
 }
@@ -2438,6 +2455,7 @@ pub fn get_precedence(op: BinaryOp) -> i32 {
         BinaryOp::Equal | BinaryOp::NotEqual => 7,
         BinaryOp::Less | BinaryOp::LessEqual | BinaryOp::Greater | BinaryOp::GreaterEqual | BinaryOp::Gt => 8,
         BinaryOp::LeftShift => 9,
+        BinaryOp::RightShift => 9,
         BinaryOp::Add | BinaryOp::Subtract => 10,
         BinaryOp::Multiply | BinaryOp::Divide | BinaryOp::Modulo => 11,
         BinaryOp::Power => 12,

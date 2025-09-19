@@ -235,6 +235,7 @@ pub fn gen_expr(expr: &Expr) -> Result<String> {
             BinaryOp::BitwiseOr => "|",
             BinaryOp::BitwiseXor => "^",
             BinaryOp::LeftShift => "<<",
+            BinaryOp::RightShift => ">>",
             BinaryOp::Power => "pow", // Will need function call wrapper
         }
     }
