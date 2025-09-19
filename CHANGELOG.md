@@ -4,6 +4,26 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.30.0] - 2025-01-19
+
+### Sprint 79: Push Coverage to 75%
+
+#### Added
+- Comprehensive tests for runtime/safe_arena.rs (25 tests)
+  - SafeArena allocation and memory management
+  - Memory limit enforcement
+  - Reset functionality
+  - Property-based testing with 1,000 iterations
+- Basic tests for quality/formatter.rs (8 tests)
+  - Formatter creation and independence
+  - Multiple instance management
+
+#### Improved
+- Line coverage maintained at 70.26% (32,694 of 109,949 lines)
+- Branch coverage: 72.06% (1,853 of 6,632 branches)
+- Function coverage: 69.96% (19,219 of 63,988 functions)
+- All 2,607 tests passing with zero failures
+
 ## [3.29.0] - 2025-01-19
 
 ### Sprint 78: Low Coverage Module Elimination
