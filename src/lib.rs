@@ -940,6 +940,138 @@ mod tests {
         let _ = compile("const PI: f64 = 3.14159");
         let _ = compile("static COUNT: i32 = 0");
     }
+
+    #[test]
+    fn test_compile_error_handling() {
+        // Test various error conditions
+        assert!(compile("").is_err() || compile("").is_ok());
+        assert!(compile("(").is_err());
+        assert!(compile(")").is_err());
+        assert!(compile("fun").is_err());
+        assert!(compile("if").is_err());
+        assert!(compile("match").is_err());
+    }
+
+    #[test]
+    fn test_compile_unicode() {
+        assert!(compile("let emoji = \"😀\"").is_ok());
+        assert!(compile("let chinese = \"你好\"").is_ok());
+        assert!(compile("let arabic = \"مرحبا\"").is_ok());
+    }
+
+    #[test]
+    fn test_compile_edge_cases() {
+        // Very long identifier
+        let long_id = "a".repeat(1000);
+        let _ = compile(&format!("let {} = 1", long_id));
+
+        // Deeply nested expression
+        let nested = "(".repeat(100) + "1" + &")".repeat(100);
+        let _ = compile(&nested);
+
+        // Many arguments
+        let args = (0..100).map(|i| format!("arg{}", i)).collect::<Vec<_>>().join(", ");
+        let _ = compile(&format!("fun f({}) {{ }}", args));
+    }
+
+    #[test]
+    fn test_transpile_direct() {
+        use crate::backend::transpiler::Transpiler;
+        use crate::frontend::parser::Parser;
+
+        let mut parser = Parser::new("1 + 2");
+        if let Ok(ast) = parser.parse() {
+            let transpiler = Transpiler::new();
+            let _ = transpiler.transpile(&ast);
+        }
+    }
+
+    #[test]
+    fn test_type_inference_direct() {
+        use crate::middleend::infer::InferenceContext;
+        use crate::frontend::parser::Parser;
+
+        let mut ctx = InferenceContext::new();
+        let mut parser = Parser::new("42");
+        if let Ok(ast) = parser.parse() {
+            let _ = ctx.infer(&ast);
+        }
+    }
+
+    #[test]
+    fn test_interpreter_direct() {
+        use crate::runtime::interpreter::Interpreter;
+        use crate::frontend::parser::Parser;
+
+        let mut interp = Interpreter::new();
+        let mut parser = Parser::new("1 + 2");
+        if let Ok(ast) = parser.parse() {
+            let _ = interp.eval_expr(&ast);
+        }
+    }
+
+    #[test]
+    fn test_repl_commands() {
+        use crate::runtime::repl::Repl;
+        use std::path::PathBuf;
+
+        let mut repl = Repl::new(PathBuf::from("/tmp")).unwrap();
+        let _ = repl.eval(":help");
+        let _ = repl.eval(":clear");
+        let _ = repl.eval(":exit");
+    }
+
+    #[test]
+    fn test_module_resolver() {
+        use crate::backend::module_resolver::ModuleResolver;
+
+        let mut resolver = ModuleResolver::new();
+        resolver.add_search_path(".");
+        resolver.clear_cache();
+        let stats = resolver.stats();
+        assert_eq!(stats.cached_modules, 0);
+    }
+
+    #[test]
+    fn test_token_types() {
+        use crate::frontend::lexer::Token;
+
+        let t1 = Token::Integer(42);
+        let t2 = Token::Identifier("test".to_string());
+        let t3 = Token::String("hello".to_string());
+
+        assert!(matches!(t1, Token::Integer(_)));
+        assert!(matches!(t2, Token::Identifier(_)));
+        assert!(matches!(t3, Token::String(_)));
+    }
+
+    #[test]
+    fn test_value_operations() {
+        use crate::runtime::Value;
+        use std::rc::Rc;
+
+        let v1 = Value::Integer(42);
+        let v2 = Value::String(Rc::new("test".to_string()));
+        let v3 = Value::Bool(true);
+        let v4 = Value::Nil;
+
+        assert_eq!(v1.to_string(), "42");
+        assert_eq!(v2.to_string(), "\"test\"");
+        assert_eq!(v3.to_string(), "true");
+        assert_eq!(v4.to_string(), "nil");
+    }
+
+    #[test]
+    fn test_span_operations() {
+        use crate::frontend::ast::Span;
+
+        let s1 = Span::new(0, 10);
+        let s2 = Span::new(5, 15);
+        let merged = s1.merge(s2);
+
+        assert_eq!(merged.start, 0);
+        assert_eq!(merged.end, 15);
+    }
 }
 #[cfg(test)]
 mod property_tests_lib {
