@@ -1,0 +1,45 @@
+thread 'opt dreohwfvpya3ziezm9y6ewe9g' panicked at /rustc/6f69710780d579b180ab38da4c1384d630f7bd31/compiler/rustc_codegen_ssa/src/back/write.rs:916:21:
+Error writing pre-lto-bitcode file `/home/noah/src/ruchy/target/llvm-cov-target/debug/incremental/ruchy-2s4jg7c6xx8dw/s-hb98liclzo-0dii0wn-working/dreohwfvpya3ziezm9y6ewe9g.pre-lto.bc`: No such file or directory (os error 2)
+stack backtrace:
+   0:     0x76fbc82e0525 - std::backtrace::Backtrace::create::hfb83f3c767d64ec5
+   1:     0x76fbc6590655 - std::backtrace::Backtrace::force_capture::h0170c680568687bd
+   2:     0x76fbc55c7260 - std[e6210fe6bfb05217]::panicking::update_hook::<alloc[7fe74edc2d343fa0]::boxed::Box<rustc_driver_impl[a7b2fbd870b91242]::install_ice_hook::{closure#1}>>::{closure#0}
+   3:     0x76fbc65aa953 - std::panicking::rust_panic_with_hook::h8420800b765cd135
+   4:     0x76fbc65aa64a - std::panicking::begin_panic_handler::{{closure}}::h866dea13634479fa
+   5:     0x76fbc65a6b59 - std::sys::backtrace::__rust_end_short_backtrace::hcbc1297e71ada1e4
+   6:     0x76fbc65aa30d - __rustc[639246b2d0dec09c]::rust_begin_unwind
+   7:     0x76fbc2e916c0 - core::panicking::panic_fmt::hde0745d704342d61
+   8:     0x76fbc7e48469 - std[e6210fe6bfb05217]::sys::backtrace::__rust_begin_short_backtrace::<<rustc_codegen_llvm[a8b13e6bda5396d3]::LlvmCodegenBackend as rustc_codegen_ssa[417a606caa3d819c]::traits::backend::ExtraBackendMethods>::spawn_named_thread<rustc_codegen_ssa[417a606caa3d819c]::back::write::spawn_work<rustc_codegen_llvm[a8b13e6bda5396d3]::LlvmCodegenBackend>::{closure#0}, ()>::{closure#0}, ()>
+   9:     0x76fbc7eb351c - <<std[e6210fe6bfb05217]::thread::Builder>::spawn_unchecked_<<rustc_codegen_llvm[a8b13e6bda5396d3]::LlvmCodegenBackend as rustc_codegen_ssa[417a606caa3d819c]::traits::backend::ExtraBackendMethods>::spawn_named_thread<rustc_codegen_ssa[417a606caa3d819c]::back::write::spawn_work<rustc_codegen_llvm[a8b13e6bda5396d3]::LlvmCodegenBackend>::{closure#0}, ()>::{closure#0}, ()>::{closure#1} as core[1b9441325713e532]::ops::function::FnOnce<()>>::call_once::{shim:vtable#0}
+  10:     0x76fbc7eb4e7d - std::sys::pal::unix::thread::Thread::new::thread_start::h58c3eac7ad4546ef
+  11:     0x76fbc1894ac3 - start_thread
+                               at ./nptl/pthread_create.c:442:8
+  12:     0x76fbc1926850 - __GI___clone3
+                               at ./misc/../sysdeps/unix/sysv/linux/x86_64/clone3.S:81:0
+  13:                0x0 - <unknown>
+
+
+rustc version: 1.89.0-nightly (6f6971078 2025-05-28)
+platform: x86_64-unknown-linux-gnuthread 'coordinator' panicked at /rustc/6f69710780d579b180ab38da4c1384d630f7bd31/compiler/rustc_codegen_ssa/src/back/write.rs:1703:29:
+/rustc/6f69710780d579b180ab38da4c1384d630f7bd31/compiler/rustc_codegen_ssa/src/back/write.rs:1703:29: worker thread panicked
+stack backtrace:
+   0:     0x76fbc82e0525 - std::backtrace::Backtrace::create::hfb83f3c767d64ec5
+   1:     0x76fbc6590655 - std::backtrace::Backtrace::force_capture::h0170c680568687bd
+   2:     0x76fbc55c7260 - std[e6210fe6bfb05217]::panicking::update_hook::<alloc[7fe74edc2d343fa0]::boxed::Box<rustc_driver_impl[a7b2fbd870b91242]::install_ice_hook::{closure#1}>>::{closure#0}
+   3:     0x76fbc65aa953 - std::panicking::rust_panic_with_hook::h8420800b765cd135
+   4:     0x76fbc5bf0a62 - std[e6210fe6bfb05217]::panicking::begin_panic::<alloc[7fe74edc2d343fa0]::string::String>::{closure#0}
+   5:     0x76fbc5beb736 - std[e6210fe6bfb05217]::sys::backtrace::__rust_end_short_backtrace::<std[e6210fe6bfb05217]::panicking::begin_panic<alloc[7fe74edc2d343fa0]::string::String>::{closure#0}, !>
+   6:     0x76fbc5bea8a2 - std[e6210fe6bfb05217]::panicking::begin_panic::<alloc[7fe74edc2d343fa0]::string::String>
+   7:     0x76fbc5c7faf7 - rustc_middle[82e107a7907be8c0]::util::bug::opt_span_bug_fmt::<rustc_span[b509845b2461b8a1]::span_encoding::Span>::{closure#0}
+   8:     0x76fbc5c59fea - rustc_middle[82e107a7907be8c0]::ty::context::tls::with_opt::<rustc_middle[82e107a7907be8c0]::util::bug::opt_span_bug_fmt<rustc_span[b509845b2461b8a1]::span_encoding::Span>::{closure#0}, !>::{closure#0}
+   9:     0x76fbc5c59e5b - rustc_middle[82e107a7907be8c0]::ty::context::tls::with_context_opt::<rustc_middle[82e107a7907be8c0]::ty::context::tls::with_opt<rustc_middle[82e107a7907be8c0]::util::bug::opt_span_bug_fmt<rustc_span[b509845b2461b8a1]::span_encoding::Span>::{closure#0}, !>::{closure#0}, !>
+  10:     0x76fbc2e92030 - rustc_middle[82e107a7907be8c0]::util::bug::bug_fmt
+  11:     0x76fbc7e3f069 - rustc_codegen_ssa[417a606caa3d819c]::back::write::start_executing_work::<rustc_codegen_llvm[a8b13e6bda5396d3]::LlvmCodegenBackend>::{closure#5}
+  12:     0x76fbc7e3cd7f - std[e6210fe6bfb05217]::sys::backtrace::__rust_begin_short_backtrace::<<rustc_codegen_llvm[a8b13e6bda5396d3]::LlvmCodegenBackend as rustc_codegen_ssa[417a606caa3d819c]::traits::backend::ExtraBackendMethods>::spawn_named_thread<rustc_codegen_ssa[417a606caa3d819c]::back::write::start_executing_work<rustc_codegen_llvm[a8b13e6bda5396d3]::LlvmCodegenBackend>::{closure#5}, core[1b9441325713e532]::result::Result<rustc_codegen_ssa[417a606caa3d819c]::back::write::CompiledModules, ()>>::{closure#0}, core[1b9441325713e532]::result::Result<rustc_codegen_ssa[417a606caa3d819c]::back::write::CompiledModules, ()>>
+  13:     0x76fbc7eb21fe - <<std[e6210fe6bfb05217]::thread::Builder>::spawn_unchecked_<<rustc_codegen_llvm[a8b13e6bda5396d3]::LlvmCodegenBackend as rustc_codegen_ssa[417a606caa3d819c]::traits::backend::ExtraBackendMethods>::spawn_named_thread<rustc_codegen_ssa[417a606caa3d819c]::back::write::start_executing_work<rustc_codegen_llvm[a8b13e6bda5396d3]::LlvmCodegenBackend>::{closure#5}, core[1b9441325713e532]::result::Result<rustc_codegen_ssa[417a606caa3d819c]::back::write::CompiledModules, ()>>::{closure#0}, core[1b9441325713e532]::result::Result<rustc_codegen_ssa[417a606caa3d819c]::back::write::CompiledModules, ()>>::{closure#1} as core[1b9441325713e532]::ops::function::FnOnce<()>>::call_once::{shim:vtable#0}
+  14:     0x76fbc7eb4e7d - std::sys::pal::unix::thread::Thread::new::thread_start::h58c3eac7ad4546ef
+  15:     0x76fbc1894ac3 - start_thread
+                               at ./nptl/pthread_create.c:442:8
+  16:     0x76fbc1926850 - __GI___clone3
+                               at ./misc/../sysdeps/unix/sysv/linux/x86_64/clone3.S:81:0
+  17:                0x0 - <unknown>
