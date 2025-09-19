@@ -5,7 +5,6 @@
 use ruchy::runtime::repl::Repl;
 use std::env;
 use ruchy::frontend::parser::Parser;
-use std::env;
 
 /// Fuzz test: Interpreter robustness with malformed input
 #[test]
