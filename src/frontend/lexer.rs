@@ -283,6 +283,8 @@ pub enum Token {
     Backslash,
     #[token("<<")]
     LeftShift,
+    #[token(">>")]
+    RightShift,
     #[token("=")]
     Equal,
     #[token("+=")]

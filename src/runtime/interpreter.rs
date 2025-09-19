@@ -1929,6 +1929,9 @@ impl Interpreter {
     pub fn new() -> Self {
         let mut global_env = HashMap::new();
         
+        // Add builtin constants
+        global_env.insert("nil".to_string(), Value::Nil);
+
         // Add builtin functions to global environment
         // These are special markers that will be handled in eval_function_call
         global_env.insert("format".to_string(), Value::String(Rc::new("__builtin_format__".to_string())));
@@ -1955,6 +1958,12 @@ impl Interpreter {
         global_env.insert("len".to_string(), Value::String(Rc::new("__builtin_len__".to_string())));
         global_env.insert("range".to_string(), Value::String(Rc::new("__builtin_range__".to_string())));
         global_env.insert("typeof".to_string(), Value::String(Rc::new("__builtin_type__".to_string())));
+
+        // Type conversion functions
+        global_env.insert("int".to_string(), Value::String(Rc::new("__builtin_int__".to_string())));
+        global_env.insert("float".to_string(), Value::String(Rc::new("__builtin_float__".to_string())));
+        global_env.insert("str".to_string(), Value::String(Rc::new("__builtin_str__".to_string())));
+        global_env.insert("bool".to_string(), Value::String(Rc::new("__builtin_bool__".to_string())));
 
         // Advanced utility functions
         global_env.insert("reverse".to_string(), Value::String(Rc::new("__builtin_reverse__".to_string())));
@@ -2060,6 +2069,8 @@ impl Interpreter {
             ExprKind::Call { func, args } => self.eval_function_call(func, args),
             ExprKind::MethodCall { receiver, method, args } => self.eval_method_call(receiver, method, args),
             ExprKind::DataFrameOperation { source, operation } => self.eval_dataframe_operation(source, operation),
+            ExprKind::IndexAccess { object, index } => self.eval_index_access(object, index),
+            ExprKind::FieldAccess { object, field } => self.eval_field_access(object, field),
             
             // Functions and lambdas
             ExprKind::Function { name, params, body, .. } => self.eval_function(name, params, body),
@@ -2077,7 +2088,9 @@ impl Interpreter {
             // Other expressions
             ExprKind::StringInterpolation { parts } => self.eval_string_interpolation(parts),
             ExprKind::QualifiedName { module, name } => self.eval_qualified_name(module, name),
-            
+            ExprKind::ObjectLiteral { fields } => self.eval_object_literal(fields),
+            ExprKind::LetPattern { pattern, value, body, .. } => self.eval_let_pattern(pattern, value, body),
+
             // Unimplemented expressions
             _ => Err(InterpreterError::RuntimeError(format!(
                 "Expression type not yet implemented: {expr_kind:?}"
@@ -2157,7 +2170,95 @@ impl Interpreter {
             _ => unreachable!("Non-assignment expression passed to eval_assignment_expr"),
         }
     }
-    
+
+    fn eval_index_access(&mut self, object: &Expr, index: &Expr) -> Result<Value, InterpreterError> {
+        let object_value = self.eval_expr(object)?;
+        let index_value = self.eval_expr(index)?;
+
+        match (&object_value, &index_value) {
+            (Value::Array(ref array), Value::Integer(idx)) => {
+                let index = *idx as usize;
+                if index < array.len() {
+                    Ok(array[index].clone())
+                } else {
+                    Err(InterpreterError::RuntimeError(format!(
+                        "Index {} out of bounds for array of length {}",
+                        index, array.len()
+                    )))
+                }
+            }
+            (Value::String(ref s), Value::Integer(idx)) => {
+                let index = *idx as usize;
+                let chars: Vec<char> = s.chars().collect();
+                if index < chars.len() {
+                    Ok(Value::from_string(chars[index].to_string()))
+                } else {
+                    Err(InterpreterError::RuntimeError(format!(
+                        "Index {} out of bounds for string of length {}",
+                        index, chars.len()
+                    )))
+                }
+            }
+            (Value::Tuple(ref tuple), Value::Integer(idx)) => {
+                let index = *idx as usize;
+                if index < tuple.len() {
+                    Ok(tuple[index].clone())
+                } else {
+                    Err(InterpreterError::RuntimeError(format!(
+                        "Index {} out of bounds for tuple of length {}",
+                        index, tuple.len()
+                    )))
+                }
+            }
+            _ => Err(InterpreterError::RuntimeError(format!(
+                "Cannot index {} with {}",
+                object_value.type_name(),
+                index_value.type_name()
+            )))
+        }
+    }
+
+    fn eval_field_access(&mut self, object: &Expr, field: &str) -> Result<Value, InterpreterError> {
+        let object_value = self.eval_expr(object)?;
+
+        match object_value {
+            Value::Object(ref object_map) => {
+                if let Some(value) = object_map.get(field) {
+                    Ok(value.clone())
+                } else {
+                    Err(InterpreterError::RuntimeError(format!(
+                        "Object has no field named '{}'", field
+                    )))
+                }
+            }
+            _ => Err(InterpreterError::RuntimeError(format!(
+                "Cannot access field '{}' on type {}",
+                field,
+                object_value.type_name()
+            )))
+        }
+    }
+
+    fn eval_object_literal(&mut self, fields: &[crate::frontend::ast::ObjectField]) -> Result<Value, InterpreterError> {
+        let mut object = HashMap::new();
+
+        for field in fields {
+            match field {
+                crate::frontend::ast::ObjectField::KeyValue { key, value } => {
+                    let eval_value = self.eval_expr(value)?;
+                    object.insert(key.clone(), eval_value);
+                }
+                crate::frontend::ast::ObjectField::Spread { expr: _ } => {
+                    return Err(InterpreterError::RuntimeError(
+                        "Spread operator in object literals not yet implemented".to_string()
+                    ));
+                }
+            }
+        }
+
+        Ok(Value::Object(Rc::new(object)))
+    }
+
     fn eval_qualified_name(&self, module: &str, name: &str) -> Result<Value, InterpreterError> {
         if module == "HashMap" && name == "new" {
             Ok(Value::String(Rc::new("__builtin_hashmap__".to_string())))
@@ -2893,6 +2994,57 @@ impl Interpreter {
                             .as_secs();
                         Ok(Value::Integer(timestamp as i64))
                     }
+                    // Type conversion functions
+                    "__builtin_int__" => {
+                        if args.len() != 1 {
+                            return Err(InterpreterError::RuntimeError("int() expects exactly 1 argument".to_string()));
+                        }
+                        match &args[0] {
+                            Value::Integer(n) => Ok(Value::Integer(*n)),
+                            Value::Float(f) => Ok(Value::Integer(*f as i64)),
+                            Value::String(s) => {
+                                s.parse::<i64>()
+                                    .map(Value::Integer)
+                                    .map_err(|_| InterpreterError::RuntimeError(format!("Cannot convert '{}' to integer", s)))
+                            }
+                            Value::Bool(b) => Ok(Value::Integer(i64::from(*b))),
+                            _ => Err(InterpreterError::RuntimeError(format!("Cannot convert {} to integer", args[0].type_name()))),
+                        }
+                    }
+                    "__builtin_float__" => {
+                        if args.len() != 1 {
+                            return Err(InterpreterError::RuntimeError("float() expects exactly 1 argument".to_string()));
+                        }
+                        match &args[0] {
+                            Value::Integer(n) => Ok(Value::Float(*n as f64)),
+                            Value::Float(f) => Ok(Value::Float(*f)),
+                            Value::String(s) => {
+                                s.parse::<f64>()
+                                    .map(Value::Float)
+                                    .map_err(|_| InterpreterError::RuntimeError(format!("Cannot convert '{}' to float", s)))
+                            }
+                            _ => Err(InterpreterError::RuntimeError(format!("Cannot convert {} to float", args[0].type_name()))),
+                        }
+                    }
+                    "__builtin_str__" => {
+                        if args.len() != 1 {
+                            return Err(InterpreterError::RuntimeError("str() expects exactly 1 argument".to_string()));
+                        }
+                        Ok(Value::from_string(args[0].to_string()))
+                    }
+                    "__builtin_bool__" => {
+                        if args.len() != 1 {
+                            return Err(InterpreterError::RuntimeError("bool() expects exactly 1 argument".to_string()));
+                        }
+                        match &args[0] {
+                            Value::Bool(b) => Ok(Value::Bool(*b)),
+                            Value::Integer(n) => Ok(Value::Bool(*n != 0)),
+                            Value::Float(f) => Ok(Value::Bool(*f != 0.0)),
+                            Value::String(s) => Ok(Value::Bool(!s.is_empty())),
+                            Value::Nil => Ok(Value::Bool(false)),
+                            _ => Ok(Value::Bool(true)), // Non-null/non-false values are truthy
+                        }
+                    }
                     _ => Err(InterpreterError::RuntimeError(format!("Unknown builtin function: {}", s))),
                 }
             }
@@ -2962,6 +3114,9 @@ impl Interpreter {
             }
             AstBinaryOp::And | AstBinaryOp::Or => {
                 self.eval_logical_op(op, left, right)
+            }
+            AstBinaryOp::BitwiseAnd | AstBinaryOp::BitwiseOr | AstBinaryOp::BitwiseXor | AstBinaryOp::LeftShift | AstBinaryOp::RightShift => {
+                self.eval_bitwise_op(op, left, right)
             }
             _ => Err(InterpreterError::RuntimeError(format!(
                 "Binary operator not yet implemented: {op:?}"
@@ -3072,6 +3227,32 @@ impl Interpreter {
         }
     }
 
+    fn eval_bitwise_op(
+        &self,
+        op: AstBinaryOp,
+        left: &Value,
+        right: &Value,
+    ) -> Result<Value, InterpreterError> {
+        match (left, right) {
+            (Value::Integer(a), Value::Integer(b)) => {
+                let result = match op {
+                    AstBinaryOp::BitwiseAnd => a & b,
+                    AstBinaryOp::BitwiseOr => a | b,
+                    AstBinaryOp::BitwiseXor => a ^ b,
+                    AstBinaryOp::LeftShift => a << b,
+                    AstBinaryOp::RightShift => a >> b,
+                    _ => unreachable!("Non-bitwise operation passed to eval_bitwise_op"),
+                };
+                Ok(Value::Integer(result))
+            }
+            _ => Err(InterpreterError::RuntimeError(format!(
+                "Bitwise operations require integer operands, got {} and {}",
+                left.type_name(),
+                right.type_name()
+            ))),
+        }
+    }
+
     /// Evaluate a unary operation
     fn eval_unary_op(
         &self,
@@ -3089,7 +3270,14 @@ impl Interpreter {
                 ))),
             },
             UnaryOp::Not => Ok(Value::from_bool(!operand.is_truthy())),
-            _ => Err(InterpreterError::RuntimeError(format!(
+            UnaryOp::BitwiseNot => match operand {
+                Value::Integer(i) => Ok(Value::from_i64(!i)),
+                _ => Err(InterpreterError::TypeError(format!(
+                    "Cannot apply bitwise NOT to {}",
+                    operand.type_name()
+                ))),
+            },
+            UnaryOp::Reference => Err(InterpreterError::RuntimeError(format!(
                 "Unary operator not yet implemented: {op:?}"
             ))),
         }
@@ -3256,12 +3444,11 @@ impl Interpreter {
         
         match (start_val, end_val) {
             (Value::Integer(start_i), Value::Integer(end_i)) => {
-                let range: Vec<Value> = if inclusive {
-                    (start_i..=end_i).map(Value::from_i64).collect()
-                } else {
-                    (start_i..end_i).map(Value::from_i64).collect()
-                };
-                Ok(Value::from_array(range))
+                Ok(Value::Range {
+                    start: Box::new(Value::Integer(start_i)),
+                    end: Box::new(Value::Integer(end_i)),
+                    inclusive,
+                })
             }
             _ => Err(InterpreterError::TypeError(
                 "Range bounds must be integers".to_string(),
@@ -4060,7 +4247,7 @@ impl Interpreter {
                         // Simple variable binding
                         self.set_variable(var.to_string(), item.clone());
                     }
-                    
+
                     // Execute body
                     match self.eval_expr(body) {
                         Ok(value) => last_value = value,
@@ -4071,8 +4258,45 @@ impl Interpreter {
                 }
                 Ok(last_value)
             }
+            Value::Range { start, end, inclusive } => {
+                let mut last_value = Value::nil();
+                // Extract integer values from range bounds
+                if let (Value::Integer(start_i), Value::Integer(end_i)) = (start.as_ref(), end.as_ref()) {
+                    let range_iter: Box<dyn Iterator<Item = i64>> = if inclusive {
+                        Box::new(*start_i..=*end_i)
+                    } else {
+                        Box::new(*start_i..*end_i)
+                    };
+
+                    for i in range_iter {
+                        let item = Value::Integer(i);
+                        // Handle pattern matching if present
+                        if let Some(_pat) = pattern {
+                            // Pattern matching for destructuring would go here
+                            // For now, just bind to var
+                            self.set_variable(var.to_string(), item);
+                        } else {
+                            // Simple variable binding
+                            self.set_variable(var.to_string(), item);
+                        }
+
+                        // Execute body
+                        match self.eval_expr(body) {
+                            Ok(value) => last_value = value,
+                            Err(InterpreterError::RuntimeError(msg)) if msg == "break" => break,
+                            Err(InterpreterError::RuntimeError(msg)) if msg == "continue" => {},
+                            Err(e) => return Err(e),
+                        }
+                    }
+                    Ok(last_value)
+                } else {
+                    Err(InterpreterError::TypeError(
+                        "Range bounds must be integers for iteration".to_string()
+                    ))
+                }
+            }
             _ => Err(InterpreterError::TypeError(
-                "For loop requires an iterable (array)".to_string()
+                "For loop requires an iterable (array or range)".to_string()
             )),
         }
     }
@@ -4142,7 +4366,32 @@ impl Interpreter {
             "No match arm matched the value".to_string()
         ))
     }
-    
+
+    /// Evaluate a let pattern expression (array/tuple destructuring)
+    fn eval_let_pattern(&mut self, pattern: &Pattern, value: &Expr, body: &Expr) -> Result<Value, InterpreterError> {
+        // Evaluate the right-hand side value
+        let rhs_value = self.eval_expr(value)?;
+
+        // Try to match the pattern against the value
+        if let Some(bindings) = self.try_pattern_match(pattern, &rhs_value)? {
+            // Bind pattern variables directly to current scope (like regular let)
+            for (name, val) in bindings {
+                self.env_set(name, val);
+            }
+
+            // If body is unit (empty), return the value like REPL does
+            // This makes `let [a, b] = [1, 2]` return [1, 2] instead of nil
+            match &body.kind {
+                ExprKind::Literal(Literal::Unit) => Ok(rhs_value),
+                _ => self.eval_expr(body)
+            }
+        } else {
+            Err(InterpreterError::RuntimeError(
+                "Pattern did not match the value".to_string()
+            ))
+        }
+    }
+
     /// Evaluate an assignment
     fn eval_assign(&mut self, target: &Expr, value: &Expr) -> Result<Value, InterpreterError> {
         let val = self.eval_expr(value)?;
@@ -4185,7 +4434,7 @@ impl Interpreter {
     #[allow(clippy::rc_buffer)]
     fn eval_string_method(&mut self, s: &Rc<String>, method: &str, args: &[Value]) -> Result<Value, InterpreterError> {
         match method {
-            "len" if args.is_empty() => Ok(Value::Integer(s.len() as i64)),
+            "len" | "length" if args.is_empty() => Ok(Value::Integer(s.len() as i64)),
             "to_upper" if args.is_empty() => Ok(Value::from_string(s.to_uppercase())),
             "to_lower" if args.is_empty() => Ok(Value::from_string(s.to_lowercase())),
             "trim" if args.is_empty() => Ok(Value::from_string(s.trim().to_string())),
@@ -4293,7 +4542,7 @@ impl Interpreter {
     #[allow(clippy::rc_buffer)]
     fn eval_array_method(&mut self, arr: &Rc<Vec<Value>>, method: &str, args: &[Value]) -> Result<Value, InterpreterError> {
         match method {
-            "len" if args.is_empty() => Ok(Value::Integer(arr.len() as i64)),
+            "len" | "length" if args.is_empty() => Ok(Value::Integer(arr.len() as i64)),
             "push" if args.len() == 1 => {
                 let mut new_arr = (**arr).clone();
                 new_arr.push(args[0].clone());
@@ -6976,5 +7225,376 @@ mod tests {
 
         assert_eq!(interp.instruction_count(), 0);
         assert_eq!(interp.constants_count(), 0);
+    }
+
+    #[test]
+    fn test_binary_arithmetic_operations() {
+        let mut interp = Interpreter::new();
+
+        // Addition
+        let result = interp.eval_string("5 + 3").unwrap();
+        assert_eq!(result, Value::Integer(8));
+
+        // Subtraction
+        let result = interp.eval_string("10 - 4").unwrap();
+        assert_eq!(result, Value::Integer(6));
+
+        // Multiplication
+        let result = interp.eval_string("6 * 7").unwrap();
+        assert_eq!(result, Value::Integer(42));
+
+        // Division
+        let result = interp.eval_string("15 / 3").unwrap();
+        assert_eq!(result, Value::Integer(5));
+
+        // Modulo
+        let result = interp.eval_string("17 % 5").unwrap();
+        assert_eq!(result, Value::Integer(2));
+    }
+
+    #[test]
+    fn test_unary_operations() {
+        let mut interp = Interpreter::new();
+
+        // Negation
+        let result = interp.eval_string("-5").unwrap();
+        assert_eq!(result, Value::Integer(-5));
+
+        // Boolean not
+        let result = interp.eval_string("!true").unwrap();
+        assert_eq!(result, Value::Bool(false));
+
+        let result = interp.eval_string("!false").unwrap();
+        assert_eq!(result, Value::Bool(true));
+    }
+
+    #[test]
+    fn test_string_operations() {
+        let mut interp = Interpreter::new();
+
+        // String concatenation
+        let result = interp.eval_string(r#""Hello, " + "World!""#).unwrap();
+        assert_eq!(result, Value::String(Rc::new("Hello, World!".to_string())));
+
+        // String length
+        let result = interp.eval_string(r#""test".length()"#).unwrap();
+        assert_eq!(result, Value::Integer(4));
+    }
+
+    #[test]
+    fn test_array_operations() {
+        let mut interp = Interpreter::new();
+
+        // Array creation
+        let result = interp.eval_string("[1, 2, 3]").unwrap();
+        match result {
+            Value::Array(arr) => assert_eq!(arr.len(), 3),
+            _ => panic!("Expected array"),
+        }
+
+        // Array indexing
+        let result = interp.eval_string("[10, 20, 30][1]").unwrap();
+        assert_eq!(result, Value::Integer(20));
+
+        // Array length
+        let result = interp.eval_string("[1, 2, 3, 4].length()").unwrap();
+        assert_eq!(result, Value::Integer(4));
+    }
+
+    #[test]
+    fn test_object_operations() {
+        let mut interp = Interpreter::new();
+
+        // Object creation
+        let result = interp.eval_string(r#"{ "x": 10, "y": 20 }"#).unwrap();
+        match result {
+            Value::Object(obj) => assert_eq!(obj.len(), 2),
+            _ => panic!("Expected object"),
+        }
+
+        // Object field access
+        let result = interp.eval_string(r#"{ "name": "test" }.name"#).unwrap();
+        assert_eq!(result, Value::String(Rc::new("test".to_string())));
+    }
+
+    #[test]
+    fn test_type_conversions() {
+        let mut interp = Interpreter::new();
+
+        // Integer to string
+        let result = interp.eval_string("(42).to_string()").unwrap();
+        assert_eq!(result, Value::String(Rc::new("42".to_string())));
+
+        // String to integer
+        let result = interp.eval_string(r#"int("123")"#).unwrap();
+        assert_eq!(result, Value::Integer(123));
+
+        // Boolean to string
+        let result = interp.eval_string("true.to_string()").unwrap();
+        assert_eq!(result, Value::String(Rc::new("true".to_string())));
+    }
+
+    #[test]
+    fn test_float_operations() {
+        let mut interp = Interpreter::new();
+
+        // Float arithmetic
+        let result = interp.eval_string("3.14 + 2.86").unwrap();
+        match result {
+            Value::Float(f) => assert!((f - 6.0).abs() < 0.001),
+            _ => panic!("Expected float"),
+        }
+
+        // Float division
+        let result = interp.eval_string("10.0 / 4.0").unwrap();
+        match result {
+            Value::Float(f) => assert!((f - 2.5).abs() < 0.001),
+            _ => panic!("Expected float"),
+        }
+    }
+
+    #[test]
+    fn test_error_handling_operations() {
+        let mut interp = Interpreter::new();
+
+        // Division by zero
+        let result = interp.eval_string("5 / 0");
+        assert!(result.is_err());
+
+        // Invalid array index
+        let result = interp.eval_string("[1, 2, 3][10]");
+        assert!(result.is_err());
+
+        // Undefined variable
+        let result = interp.eval_string("undefined_var");
+        assert!(result.is_err());
+
+        // Type error
+        let result = interp.eval_string(r#"5 + "string""#);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_tuple_operations() {
+        let mut interp = Interpreter::new();
+
+        // Tuple creation
+        let result = interp.eval_string("(1, 2, 3)").unwrap();
+        match result {
+            Value::Tuple(tup) => assert_eq!(tup.len(), 3),
+            _ => panic!("Expected tuple"),
+        }
+
+        // Tuple indexing
+        let result = interp.eval_string("(10, 20, 30)[1]").unwrap();
+        assert_eq!(result, Value::Integer(20));
+    }
+
+    #[test]
+    fn test_bitwise_operations() {
+        let mut interp = Interpreter::new();
+
+        // Bitwise AND
+        let result = interp.eval_string("5 & 3").unwrap();
+        assert_eq!(result, Value::Integer(1));
+
+        // Bitwise OR
+        let result = interp.eval_string("5 | 3").unwrap();
+        assert_eq!(result, Value::Integer(7));
+
+        // Bitwise XOR
+        let result = interp.eval_string("5 ^ 3").unwrap();
+        assert_eq!(result, Value::Integer(6));
+
+        // Bitwise NOT
+        let result = interp.eval_string("~5").unwrap();
+        assert_eq!(result, Value::Integer(-6));
+
+        // Bit shift left
+        let result = interp.eval_string("2 << 3").unwrap();
+        assert_eq!(result, Value::Integer(16));
+
+        // Bit shift right
+        let result = interp.eval_string("16 >> 2").unwrap();
+        assert_eq!(result, Value::Integer(4));
+    }
+
+    #[test]
+    fn test_comparison_operations() {
+        let mut interp = Interpreter::new();
+
+        // Equality
+        let result = interp.eval_string("5 == 5").unwrap();
+        assert_eq!(result, Value::Bool(true));
+
+        let result = interp.eval_string("5 == 3").unwrap();
+        assert_eq!(result, Value::Bool(false));
+
+        // Inequality
+        let result = interp.eval_string("5 != 3").unwrap();
+        assert_eq!(result, Value::Bool(true));
+
+        // Greater than
+        let result = interp.eval_string("5 > 3").unwrap();
+        assert_eq!(result, Value::Bool(true));
+
+        // Less than
+        let result = interp.eval_string("3 < 5").unwrap();
+        assert_eq!(result, Value::Bool(true));
+
+        // Greater or equal
+        let result = interp.eval_string("5 >= 5").unwrap();
+        assert_eq!(result, Value::Bool(true));
+
+        // Less or equal
+        let result = interp.eval_string("3 <= 5").unwrap();
+        assert_eq!(result, Value::Bool(true));
+    }
+
+    #[test]
+    fn test_logical_operations() {
+        let mut interp = Interpreter::new();
+
+        // AND
+        let result = interp.eval_string("true && true").unwrap();
+        assert_eq!(result, Value::Bool(true));
+
+        let result = interp.eval_string("true && false").unwrap();
+        assert_eq!(result, Value::Bool(false));
+
+        // OR
+        let result = interp.eval_string("true || false").unwrap();
+        assert_eq!(result, Value::Bool(true));
+
+        let result = interp.eval_string("false || false").unwrap();
+        assert_eq!(result, Value::Bool(false));
+
+        // Short-circuit evaluation
+        interp.eval_string("let x = 0").unwrap();
+        let result = interp.eval_string("false && (x = 5)").unwrap();
+        assert_eq!(result, Value::Bool(false));
+        let result = interp.eval_string("x").unwrap();
+        assert_eq!(result, Value::Integer(0)); // x should still be 0
+    }
+
+    #[test]
+    fn test_range_operations() {
+        let mut interp = Interpreter::new();
+
+        // Range creation
+        let result = interp.eval_string("1..5").unwrap();
+        match result {
+            Value::Range { .. } => {},
+            _ => panic!("Expected range"),
+        }
+
+        // Range iteration
+        interp.eval_string("let sum = 0").unwrap();
+        interp.eval_string("for i in 1..4 { sum = sum + i }").unwrap();
+        let result = interp.eval_string("sum").unwrap();
+        assert_eq!(result, Value::Integer(6)); // 1 + 2 + 3
+    }
+
+    #[test]
+    fn test_closure_operations() {
+        let mut interp = Interpreter::new();
+
+        // Simple closure
+        interp.eval_string("let add = fn(x) { fn(y) { x + y } }").unwrap();
+        interp.eval_string("let add5 = add(5)").unwrap();
+        let result = interp.eval_string("add5(3)").unwrap();
+        assert_eq!(result, Value::Integer(8));
+
+        // Closure capturing
+        interp.eval_string("let x = 10").unwrap();
+        interp.eval_string("let get_x = fn() { x }").unwrap();
+        let result = interp.eval_string("get_x()").unwrap();
+        assert_eq!(result, Value::Integer(10));
+    }
+
+    #[test]
+    fn test_pattern_matching_operations() {
+        let mut interp = Interpreter::new();
+
+        // Simple match
+        let result = interp.eval_string("match 2 { 1 => 'a', 2 => 'b', _ => 'c' }").unwrap();
+        assert_eq!(result, Value::String(Rc::new("b".to_string())));
+
+        // Array destructuring
+        interp.eval_string("let [a, b, c] = [1, 2, 3]").unwrap();
+        let result = interp.eval_string("b").unwrap();
+        assert_eq!(result, Value::Integer(2));
+    }
+
+    #[test]
+    fn test_special_values() {
+        let mut interp = Interpreter::new();
+
+        // Nil/null
+        let result = interp.eval_string("nil").unwrap();
+        assert_eq!(result, Value::Nil);
+
+        // Boolean literals
+        let result = interp.eval_string("true").unwrap();
+        assert_eq!(result, Value::Bool(true));
+
+        let result = interp.eval_string("false").unwrap();
+        assert_eq!(result, Value::Bool(false));
+    }
+
+    #[test]
+    fn test_assignment_operations() {
+        let mut interp = Interpreter::new();
+
+        // Simple assignment
+        interp.eval_string("let x = 5").unwrap();
+        let result = interp.eval_string("x").unwrap();
+        assert_eq!(result, Value::Integer(5));
+
+        // Reassignment
+        interp.eval_string("x = 10").unwrap();
+        let result = interp.eval_string("x").unwrap();
+        assert_eq!(result, Value::Integer(10));
+
+        // Compound assignment
+        interp.eval_string("x += 5").unwrap();
+        let result = interp.eval_string("x").unwrap();
+        assert_eq!(result, Value::Integer(15));
+
+        interp.eval_string("x -= 3").unwrap();
+        let result = interp.eval_string("x").unwrap();
+        assert_eq!(result, Value::Integer(12));
+
+        interp.eval_string("x *= 2").unwrap();
+        let result = interp.eval_string("x").unwrap();
+        assert_eq!(result, Value::Integer(24));
+
+        interp.eval_string("x /= 4").unwrap();
+        let result = interp.eval_string("x").unwrap();
+        assert_eq!(result, Value::Integer(6));
+    }
+
+    #[test]
+    fn test_loop_operations() {
+        let mut interp = Interpreter::new();
+
+        // While loop
+        interp.eval_string("let i = 0").unwrap();
+        interp.eval_string("let sum = 0").unwrap();
+        interp.eval_string("while i < 5 { sum = sum + i; i = i + 1 }").unwrap();
+        let result = interp.eval_string("sum").unwrap();
+        assert_eq!(result, Value::Integer(10)); // 0+1+2+3+4
+
+        // For loop with break
+        interp.eval_string("let result = 0").unwrap();
+        interp.eval_string("for x in 1..10 { if x == 5 { break }; result = x }").unwrap();
+        let result = interp.eval_string("result").unwrap();
+        assert_eq!(result, Value::Integer(4));
+
+        // For loop with continue
+        interp.eval_string("let sum2 = 0").unwrap();
+        interp.eval_string("for x in 1..6 { if x == 3 { continue }; sum2 = sum2 + x }").unwrap();
+        let result = interp.eval_string("sum2").unwrap();
+        assert_eq!(result, Value::Integer(12)); // 1+2+4+5 (skip 3)
     }
 }

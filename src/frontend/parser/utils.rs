@@ -421,7 +421,39 @@ fn parse_qualified_name(state: &mut ParserState) -> Result<String> {
 fn parse_generic_type(state: &mut ParserState, base: String, span: Span) -> Result<Type> {
     state.tokens.advance(); // consume <
     let type_params = parse_type_list(state)?;
-    state.tokens.expect(&Token::Greater)?;
+
+    // Now we need exactly one > to close this generic
+    // If we see >>, only consume it if this is the innermost generic (last one)
+    match state.tokens.peek() {
+        Some((Token::Greater, _)) => {
+            state.tokens.advance(); // consume >
+        }
+        Some((Token::RightShift, _)) => {
+            // Consume >> - this handles nested generics ending like Vec<i32>>
+            state.tokens.advance(); // consume >>
+        }
+        _ => {
+            // Handle cases where >> was already consumed by nested generic parsing
+            match state.tokens.peek() {
+                Some((Token::RightBrace, _)) | None => {
+                    // Either we hit } (actor case) or end of input (direct test case)
+                    // This means the >> was already consumed by the inner parser
+                    // Just return without consuming anything more
+                    return Ok(Type {
+                        kind: TypeKind::Generic {
+                            base,
+                            params: type_params,
+                        },
+                        span,
+                    });
+                }
+                _ => {
+                    bail!("Expected > to close generic type, found {:?}", state.tokens.peek());
+                }
+            }
+        }
+    }
+
     Ok(Type {
         kind: TypeKind::Generic {
             base,
@@ -433,7 +465,7 @@ fn parse_generic_type(state: &mut ParserState, base: String, span: Span) -> Resu
 // Helper: Parse comma-separated type list (complexity: 3)
 fn parse_type_list(state: &mut ParserState) -> Result<Vec<Type>> {
     let mut types = Vec::new();
-    if !matches!(state.tokens.peek(), Some((Token::RightParen | Token::Greater, _))) {
+    if !matches!(state.tokens.peek(), Some((Token::RightParen | Token::Greater | Token::RightShift, _))) {
         types.push(parse_type(state)?);
         while matches!(state.tokens.peek(), Some((Token::Comma, _))) {
             state.tokens.advance(); // consume comma

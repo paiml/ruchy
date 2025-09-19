@@ -1,4 +1,4 @@
-.PHONY: help all build test lint format clean coverage coverage-wasm-notebook examples bench install doc ci prepare-publish quality-gate test-examples test-fuzz test-fuzz-quick tdg-dashboard tdg-stop tdg-status tdg-restart
+.PHONY: help all build test lint format clean clean-coverage coverage coverage-wasm-notebook examples bench install doc ci prepare-publish quality-gate test-examples test-fuzz test-fuzz-quick tdg-dashboard tdg-stop tdg-status tdg-restart
 
 # Default target
 help:
@@ -22,6 +22,7 @@ help:
 	@echo ""
 	@echo "Quality Commands:"
 	@echo "  make coverage    - Generate comprehensive coverage report (Toyota Way)"
+	@echo "  make clean-coverage - Clean and generate fresh coverage report"
 	@echo "  make coverage-wasm-notebook - LLVM coverage for WASM & notebooks (>80% target, A+ TDG)"
 	@echo "  make coverage-quick - Quick coverage check for development"
 	@echo "  make coverage-open - Generate and open coverage report in browser"
@@ -239,6 +240,17 @@ clean:
 	@rm -rf target/
 	@rm -rf ~/.ruchy/cache/
 	@echo "✓ Clean complete"
+
+# Clean coverage data and generate fresh coverage report
+clean-coverage:
+	@echo "🧹 Cleaning coverage data..."
+	@cargo llvm-cov clean
+	@rm -rf target/llvm-cov-target
+	@echo "📊 Generating fresh coverage report..."
+	@cargo llvm-cov --lib --ignore-run-fail --html
+	@cargo llvm-cov report
+	@echo "✅ Fresh coverage report generated"
+	@echo "📈 Coverage report saved to target/llvm-cov/html/index.html"
 
 # Generate comprehensive test coverage using cargo-llvm-cov (Toyota Way)
 coverage:

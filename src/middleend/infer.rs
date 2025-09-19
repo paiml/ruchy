@@ -331,7 +331,8 @@ pub fn infer(&mut self, expr: &Expr) -> Result<MonoType> {
             BinaryOp::BitwiseAnd
             | BinaryOp::BitwiseOr
             | BinaryOp::BitwiseXor
-            | BinaryOp::LeftShift => {
+            | BinaryOp::LeftShift
+            | BinaryOp::RightShift => {
                 self.unifier.unify(&left_ty, &MonoType::Int)?;
                 self.unifier.unify(&right_ty, &MonoType::Int)?;
                 Ok(MonoType::Int)
@@ -1079,7 +1080,8 @@ pub fn infer_method_call(
             BinaryOp::BitwiseAnd
             | BinaryOp::BitwiseOr
             | BinaryOp::BitwiseXor
-            | BinaryOp::LeftShift => {
+            | BinaryOp::LeftShift
+            | BinaryOp::RightShift => {
                 // Bitwise operations: both operands must be Int, result is Int
                 self.unifier.unify(left_ty, &MonoType::Int)?;
                 self.unifier.unify(right_ty, &MonoType::Int)?;
@@ -2338,4 +2340,73 @@ mod property_tests_infer {
             });
         }
     }
+
+    /* Sprint 86: Comprehensive inline tests for coverage improvement
+    #[test]
+    fn test_infer_comprehensive_expressions() {
+        let mut ctx = InferenceContext::new();
+
+        // Test all expression kinds
+        let test_cases = vec![
+            // Literals
+            "42",
+            "3.14",
+            "true",
+            "\"hello\"",
+            "'c'",
+
+            // Binary operations
+            "1 + 2",
+            "3 - 1",
+            "4 * 5",
+            "10 / 2",
+            "7 % 3",
+
+            // Comparisons
+            "5 > 3",
+            "2 < 8",
+            "4 >= 4",
+            "3 <= 5",
+            "1 == 1",
+            "2 != 3",
+
+            // Logical
+            "true && false",
+            "true || false",
+
+            // Unary
+            "-5",
+            "!true",
+
+            // Collections
+            "[1, 2, 3]",
+            "(1, \"hello\")",
+
+            // Function calls
+            "print(\"test\")",
+
+            // Lambda
+            "x => x + 1",
+            "(a, b) => a * b",
+        ];
+
+        for code in test_cases {
+            let parser = crate::frontend::parser::Parser::new(code);
+            if let Ok(ast) = parser.parse() {
+                let _ = ctx.infer(&ast);
+                // Reset recursion depth
+                ctx.recursion_depth = 0;
+            }
+        }
+    }
+
+    #[test]
+    fn test_helper_function_coverage() {
+        let mut ctx = InferenceContext::new();
+
+        // Test fresh_tyvar
+        let tv1 = ctx.fresh_tyvar();
+        let tv2 = ctx.fresh_tyvar();
+        assert_ne!(tv1, tv2);
+    } */
 }

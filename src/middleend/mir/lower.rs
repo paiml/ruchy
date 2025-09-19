@@ -274,6 +274,7 @@ pub fn lower_expr(&mut self, expr: &Expr) -> Result<Program> {
             AstBinOp::BitwiseOr => BinOp::BitOr,
             AstBinOp::BitwiseXor => BinOp::BitXor,
             AstBinOp::LeftShift => BinOp::Shl,
+            AstBinOp::RightShift => BinOp::Shr,
         }
     }
     /// Lower unary operator
@@ -364,7 +365,8 @@ pub fn lower_expr(&mut self, expr: &Expr) -> Result<Program> {
             | AstBinOp::BitwiseAnd
             | AstBinOp::BitwiseOr
             | AstBinOp::BitwiseXor
-            | AstBinOp::LeftShift => Type::I32,
+            | AstBinOp::LeftShift
+            | AstBinOp::RightShift => Type::I32,
             AstBinOp::Equal
             | AstBinOp::NotEqual
             | AstBinOp::Less
