@@ -459,7 +459,7 @@ mod tests {
             // Just verify it doesn't panic
             match literal {
                 Literal::Integer(_) | Literal::Float(_) | Literal::Bool(_) |
-                Literal::String(_) | Literal::Unit | Literal::Char(_) => {},
+                Literal::String(_) | Literal::Unit | Literal::Char(_) | Literal::Null => {},
             }
         }
     }
@@ -615,6 +615,7 @@ mod tests {
                 Literal::String(_) => { found_variants.insert("String"); },
                 Literal::Unit => { found_variants.insert("Unit"); },
                 Literal::Char(_) => { found_variants.insert("Char"); },
+                Literal::Null => { found_variants.insert("Null"); },
             }
         }
         // Should find at least some variants
@@ -859,6 +860,7 @@ mod tests {
                 Literal::String(s) => assert_eq!(s, "test"),
                 Literal::Char(c) => assert_eq!(*c, 'a'),
                 Literal::Unit => assert!(true),
+                Literal::Null => assert!(true),
             }
         }
     }
