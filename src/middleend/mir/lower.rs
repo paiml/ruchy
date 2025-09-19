@@ -249,6 +249,7 @@ pub fn lower_expr(&mut self, expr: &Expr) -> Result<Program> {
             Literal::Bool(b) => Constant::Bool(*b),
             Literal::Char(c) => Constant::Char(*c),
             Literal::Unit => Constant::Unit,
+            Literal::Null => Constant::Unit, // Null represented as Unit in MIR
         }
     }
     /// Lower binary operator

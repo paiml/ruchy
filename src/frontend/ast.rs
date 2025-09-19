@@ -644,6 +644,8 @@ pub enum Literal {
     Char(char),
     /// The unit value `()`.
     Unit,
+    /// A null value.
+    Null,
 }
 impl Literal {
     /// Convert a REPL Value to a Literal (for synthetic expressions)

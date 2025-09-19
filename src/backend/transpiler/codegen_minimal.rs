@@ -212,6 +212,7 @@ pub fn gen_expr(expr: &Expr) -> Result<String> {
             Literal::Bool(b) => Ok(b.to_string()),
             Literal::Char(c) => Ok(format!("'{c}'")),
             Literal::Unit => Ok("()".to_string()),
+            Literal::Null => Ok("None".to_string()),
         }
     }
     fn gen_binary_op(op: BinaryOp) -> &'static str {

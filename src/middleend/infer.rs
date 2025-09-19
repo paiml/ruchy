@@ -263,6 +263,7 @@ pub fn infer(&mut self, expr: &Expr) -> Result<MonoType> {
             Literal::Bool(_) => MonoType::Bool,
             Literal::Char(_) => MonoType::Char,
             Literal::Unit => MonoType::Unit,
+            Literal::Null => MonoType::Unit, // Treat null as unit type for now
         }
     }
     fn infer_identifier(&mut self, name: &str) -> Result<MonoType> {

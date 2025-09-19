@@ -56,6 +56,7 @@ pub fn format(&self, ast: &Expr) -> Result<String> {
                 crate::frontend::ast::Literal::Bool(b) => b.to_string(),
                 crate::frontend::ast::Literal::Char(c) => format!("'{c}'"),
                 crate::frontend::ast::Literal::Unit => "()".to_string(),
+                crate::frontend::ast::Literal::Null => "null".to_string(),
             },
             ExprKind::Identifier(name) => name.clone(),
             ExprKind::Let { name, value, body, .. } => {
