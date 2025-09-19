@@ -597,7 +597,7 @@ mod tests {
 
     #[test]
     fn test_string_interpolation_empty() {
-        use crate::frontend::ast::StringPart;
+        
         let parts = vec![];
         let result = MinimalCodeGen::gen_string_interpolation(&parts).unwrap();
         assert_eq!(result, r#"format!("")"#);

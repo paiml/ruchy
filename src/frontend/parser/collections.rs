@@ -853,7 +853,7 @@ fn populate_dataframe_columns(columns: &mut [DataFrameColumn], rows: &[Vec<Expr>
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    
     use crate::frontend::parser::Parser;
 
     #[test]

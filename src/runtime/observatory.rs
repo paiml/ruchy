@@ -575,7 +575,7 @@ mod tests {
 
     #[test]
     fn test_sprint_45_01_complex_deadlock_detection() {
-        let mut observatory = create_test_observatory();
+        let observatory = create_test_observatory();
 
         // Create complex deadlock scenario: A -> B -> C -> A
         let mut detector = observatory.deadlock_detector.lock().unwrap();
@@ -1035,7 +1035,7 @@ mod tests {
 
     #[test]
     fn test_sprint_45_12_deadlock_resolution_tracking() {
-        let mut observatory = create_test_observatory();
+        let observatory = create_test_observatory();
         let mut detector = observatory.deadlock_detector.lock().unwrap();
 
         // Create deadlock scenario

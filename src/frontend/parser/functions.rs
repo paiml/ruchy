@@ -454,7 +454,7 @@ fn parse_optional_method_or_field_access(state: &mut ParserState, receiver: Expr
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    
     use crate::frontend::parser::Parser;
 
     #[test]

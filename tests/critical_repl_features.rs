@@ -107,7 +107,7 @@ fn test_list_display() {
     let result = repl.evaluate_expr_str("[1, 2, 3]", deadline).unwrap();
     assert_eq!(
         result,
-        Value::List(vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)])
+        Value::Array(vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)])
     );
 }
 

@@ -1,4 +1,3 @@
-use std::env;
 #[cfg(test)]
 mod dataframe_book_examples_tdd {
     use ruchy::runtime::Repl;

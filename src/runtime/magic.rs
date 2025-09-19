@@ -668,8 +668,8 @@ impl Default for UnicodeExpander {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tempfile::NamedTempFile;
-    use std::io::Write;
+    
+    
 
     fn create_mock_repl() -> Repl {
         // Create a minimal repl for testing

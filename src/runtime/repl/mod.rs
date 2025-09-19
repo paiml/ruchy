@@ -430,6 +430,45 @@ impl Repl {
     pub fn get_mode(&self) -> String {
         format!("{}", self.state.get_mode())
     }
+
+    /// Evaluate with transactional semantics (complexity: 3)
+    pub fn eval_transactional(&mut self, line: &str) -> Result<String> {
+        // Save current state for potential rollback
+        let saved_bindings = self.state.bindings_snapshot();
+
+        match self.eval(line) {
+            Ok(result) => Ok(result),
+            Err(e) => {
+                // Rollback on error
+                self.state.restore_bindings(saved_bindings);
+                Err(e)
+            }
+        }
+    }
+
+    /// Check if REPL can accept input (complexity: 1)
+    pub fn can_accept_input(&self) -> bool {
+        // REPL can always accept input unless in special state
+        true
+    }
+
+    /// Check if bindings are valid (complexity: 1)
+    pub fn bindings_valid(&self) -> bool {
+        // Bindings are always valid in current implementation
+        true
+    }
+
+    /// Check if REPL is in failed state (complexity: 1)
+    pub fn is_failed(&self) -> bool {
+        // REPL doesn't have persistent failure state in current implementation
+        false
+    }
+
+    /// Recover from failed state (complexity: 1)
+    pub fn recover(&mut self) -> Result<()> {
+        // No-op in current implementation as we don't have failure states
+        Ok(())
+    }
 }
 
 #[cfg(test)]

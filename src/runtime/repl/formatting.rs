@@ -61,7 +61,7 @@ pub fn format_ast(ast: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::{collections::HashMap, rc::Rc};
+    use std::rc::Rc;
 
     #[test]
     fn test_format_integer() {

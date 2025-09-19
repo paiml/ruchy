@@ -42,7 +42,7 @@ mod repl_value_coverage {
     #[test]
     fn test_value_collections_coverage() {
         // Test List
-        let list = Value::List(vec![
+        let list = Value::Array(vec![
             Value::Integer(1),
             Value::Integer(2),
             Value::Integer(3),

@@ -1,9 +1,7 @@
 //! Generated tests from basic arithmetic replay
 
 use anyhow::Result;
-use std::env;
 use ruchy::runtime::repl::Repl;
-use std::env;
 
 
 #[test]

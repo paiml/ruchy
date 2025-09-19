@@ -1215,10 +1215,10 @@ mod tests {
 
     #[test]
     fn test_parse_params_empty() {
-        use crate::frontend::lexer::TokenStream;
+        
         use crate::frontend::parser::Parser;
 
-        let mut parser = Parser::new("()");
+        let parser = Parser::new("()");
         // Test would need proper ParserState setup
         // This is a placeholder to show intent
         assert!(true); // Placeholder assertion
@@ -1227,7 +1227,7 @@ mod tests {
     #[test]
     fn test_check_and_consume_mut() {
         use crate::frontend::lexer::{Token, TokenStream};
-        use crate::frontend::ast::Span;
+        
 
         // Test would require proper ParserState setup
         // Demonstrating the function exists

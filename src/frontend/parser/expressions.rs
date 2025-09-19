@@ -2581,9 +2581,9 @@ fn validate_try_catch_structure(
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    
     use crate::frontend::parser::Parser;
-    use crate::frontend::ast::{Expr, ExprKind, Literal};
+    use crate::frontend::ast::{ExprKind, Literal};
 
     // Unit tests for specific parsing functions
 

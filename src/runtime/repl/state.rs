@@ -135,6 +135,16 @@ impl ReplState {
     pub fn get_peak_memory(&self) -> usize {
         self.peak_memory
     }
+
+    /// Create a snapshot of current bindings (complexity: 1)
+    pub fn bindings_snapshot(&self) -> HashMap<String, Value> {
+        self.bindings.clone()
+    }
+
+    /// Restore bindings from snapshot (complexity: 1)
+    pub fn restore_bindings(&mut self, snapshot: HashMap<String, Value>) {
+        self.bindings = snapshot;
+    }
 }
 
 impl Default for ReplState {
