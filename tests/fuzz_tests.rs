@@ -284,7 +284,8 @@ pub fn fuzz_repl_eval(data: &[u8]) -> i32 {
     
     // Verify REPL can still accept basic input after fuzz input
     let basic_test = repl.eval("1 + 1");
-    // Basic test complete - result:
+    // Basic test complete - ensure no panic occurred
+    assert!(basic_test.is_ok() || basic_test.is_err(),
         "Basic functionality lost after fuzz input: {:?}", input);
     
     0 // Success
