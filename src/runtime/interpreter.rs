@@ -1955,6 +1955,11 @@ impl Interpreter {
         global_env.insert("cos".to_string(), Value::String(Rc::new("__builtin_cos__".to_string())));
         global_env.insert("tan".to_string(), Value::String(Rc::new("__builtin_tan__".to_string())));
 
+        // Print/output functions
+        global_env.insert("println".to_string(), Value::String(Rc::new("__builtin_println__".to_string())));
+        global_env.insert("print".to_string(), Value::String(Rc::new("__builtin_print__".to_string())));
+        global_env.insert("dbg".to_string(), Value::String(Rc::new("__builtin_dbg__".to_string())));
+
         // Utility functions
         global_env.insert("len".to_string(), Value::String(Rc::new("__builtin_len__".to_string())));
         global_env.insert("range".to_string(), Value::String(Rc::new("__builtin_range__".to_string())));
@@ -2536,6 +2541,39 @@ impl Interpreter {
                         }
                     }
                     // Math functions
+                    // Print/output functions
+                    "__builtin_println__" => {
+                        // println can accept any number of arguments
+                        if args.is_empty() {
+                            println!();
+                        } else {
+                            let output = args.iter()
+                                .map(|v| format!("{}", v))
+                                .collect::<Vec<_>>()
+                                .join(" ");
+                            println!("{}", output);
+                        }
+                        Ok(Value::Nil)
+                    }
+                    "__builtin_print__" => {
+                        // print without newline
+                        let output = args.iter()
+                            .map(|v| format!("{}", v))
+                            .collect::<Vec<_>>()
+                            .join(" ");
+                        print!("{}", output);
+                        Ok(Value::Nil)
+                    }
+                    "__builtin_dbg__" => {
+                        // debug print with value inspection
+                        if args.len() == 1 {
+                            println!("[DEBUG] {:?}", args[0]);
+                            Ok(args[0].clone())
+                        } else {
+                            println!("[DEBUG] {:?}", args);
+                            Ok(Value::Array(Rc::new(args.to_vec())))
+                        }
+                    }
                     "__builtin_sqrt__" => {
                         if args.len() != 1 {
                             return Err(InterpreterError::RuntimeError("sqrt() expects exactly 1 argument".to_string()));
