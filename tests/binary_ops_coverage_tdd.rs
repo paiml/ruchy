@@ -5,9 +5,7 @@
 //! - All public APIs: 100%
 
 use ruchy::runtime::binary_ops::evaluate_binary_op;
-use std::rc::Rc;
 use ruchy::runtime::Value;
-use std::rc::Rc;
 use ruchy::frontend::ast::BinaryOp;
 use std::rc::Rc;
 
@@ -41,10 +39,10 @@ fn test_add_strings() {
 
 #[test]
 fn test_add_lists() {
-    let lhs = Value::List(vec![Value::Integer(1), Value::Integer(2)]);
-    let rhs = Value::List(vec![Value::Integer(3), Value::Integer(4)]);
+    let lhs = Value::Array(Rc::new(vec![Value::Integer(1), Value::Integer(2)]));
+    let rhs = Value::Array(Rc::new(vec![Value::Integer(3), Value::Integer(4)]));
     let result = evaluate_binary_op(&BinaryOp::Add, &lhs, &rhs).unwrap();
-    assert_eq!(result, Value::List(vec![
+    assert_eq!(result, Value::Array(Rc::new(vec![
         Value::Integer(1), Value::Integer(2), Value::Integer(3), Value::Integer(4)
     ]));
 }
@@ -313,32 +311,32 @@ fn test_equal_bools() {
 
 #[test]
 fn test_equal_chars() {
-    let lhs = Value::Char('a');
-    let rhs = Value::Char('a');
+    let lhs = Value::Character('a');
+    let rhs = Value::Character('a');
     let result = evaluate_binary_op(&BinaryOp::Equal, &lhs, &rhs).unwrap();
     assert_eq!(result, Value::Bool(true));
 }
 
 #[test]
 fn test_equal_lists() {
-    let lhs = Value::List(vec![Value::Integer(1), Value::Integer(2)]);
-    let rhs = Value::List(vec![Value::Integer(1), Value::Integer(2)]);
+    let lhs = Value::Array(Rc::new(vec![Value::Integer(1), Value::Integer(2)]));
+    let rhs = Value::Array(Rc::new(vec![Value::Integer(1), Value::Integer(2)]));
     let result = evaluate_binary_op(&BinaryOp::Equal, &lhs, &rhs).unwrap();
     assert_eq!(result, Value::Bool(true));
 }
 
 #[test]
 fn test_equal_lists_different() {
-    let lhs = Value::List(vec![Value::Integer(1), Value::Integer(2)]);
-    let rhs = Value::List(vec![Value::Integer(1), Value::Integer(3)]);
+    let lhs = Value::Array(Rc::new(vec![Value::Integer(1), Value::Integer(2)]));
+    let rhs = Value::Array(Rc::new(vec![Value::Integer(1), Value::Integer(3)]));
     let result = evaluate_binary_op(&BinaryOp::Equal, &lhs, &rhs).unwrap();
     assert_eq!(result, Value::Bool(false));
 }
 
 #[test]
 fn test_equal_tuples() {
-    let lhs = Value::Tuple(vec![Value::Integer(1), Value::String(Rc::new("a".to_string()))]);
-    let rhs = Value::Tuple(vec![Value::Integer(1), Value::String(Rc::new("a".to_string()))]);
+    let lhs = Value::Tuple(vec![Value::Integer(1), Value::String(Rc::new("a".to_string()))]));
+    let rhs = Value::Tuple(vec![Value::Integer(1), Value::String(Rc::new("a".to_string()))]));
     let result = evaluate_binary_op(&BinaryOp::Equal, &lhs, &rhs).unwrap();
     assert_eq!(result, Value::Bool(true));
 }
@@ -668,10 +666,10 @@ fn test_add_empty_strings() {
 
 #[test]
 fn test_add_empty_lists() {
-    let lhs = Value::List(vec![]);
-    let rhs = Value::List(vec![]);
+    let lhs = Value::Array(Rc::new(vec![]));
+    let rhs = Value::Array(Rc::new(vec![]));
     let result = evaluate_binary_op(&BinaryOp::Add, &lhs, &rhs).unwrap();
-    assert_eq!(result, Value::List(vec![]));
+    assert_eq!(result, Value::Array(Rc::new(vec![]));
 }
 
 #[test]
@@ -701,30 +699,30 @@ fn test_float_equality_epsilon() {
 
 #[test]
 fn test_nested_list_equality() {
-    let lhs = Value::List(vec![
-        Value::List(vec![Value::Integer(1), Value::Integer(2)]),
-        Value::List(vec![Value::Integer(3)]),
-    ]);
-    let rhs = Value::List(vec![
-        Value::List(vec![Value::Integer(1), Value::Integer(2)]),
-        Value::List(vec![Value::Integer(3)]),
-    ]);
+    let lhs = Value::Array(Rc::new(vec![
+        Value::Array(Rc::new(vec![Value::Integer(1), Value::Integer(2)]),
+        Value::Array(Rc::new(vec![Value::Integer(3)]),
+    ]));
+    let rhs = Value::Array(Rc::new(vec![
+        Value::Array(Rc::new(vec![Value::Integer(1), Value::Integer(2)]),
+        Value::Array(Rc::new(vec![Value::Integer(3)]),
+    ]));
     let result = evaluate_binary_op(&BinaryOp::Equal, &lhs, &rhs).unwrap();
     assert_eq!(result, Value::Bool(true));
 }
 
 #[test]
 fn test_list_length_mismatch() {
-    let lhs = Value::List(vec![Value::Integer(1), Value::Integer(2)]);
-    let rhs = Value::List(vec![Value::Integer(1)]);
+    let lhs = Value::Array(Rc::new(vec![Value::Integer(1), Value::Integer(2)]));
+    let rhs = Value::Array(Rc::new(vec![Value::Integer(1)]));
     let result = evaluate_binary_op(&BinaryOp::Equal, &lhs, &rhs).unwrap();
     assert_eq!(result, Value::Bool(false));
 }
 
 #[test]
 fn test_tuple_length_mismatch() {
-    let lhs = Value::Tuple(vec![Value::Integer(1), Value::Integer(2)]);
-    let rhs = Value::Tuple(vec![Value::Integer(1)]);
+    let lhs = Value::Tuple(vec![Value::Integer(1), Value::Integer(2)]));
+    let rhs = Value::Tuple(vec![Value::Integer(1)]));
     let result = evaluate_binary_op(&BinaryOp::Equal, &lhs, &rhs).unwrap();
     assert_eq!(result, Value::Bool(false));
 }

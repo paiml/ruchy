@@ -279,7 +279,7 @@ fn test_value_char() {
 
 #[test]
 fn test_value_list() {
-    let value = Value::List(vec![
+    let value = Value::Array(vec![
         Value::Integer(1),
         Value::Integer(2),
         Value::Integer(3),
@@ -290,7 +290,7 @@ fn test_value_list() {
 
 #[test]
 fn test_value_empty_list() {
-    let value = Value::List(vec![]);
+    let value = Value::Array(vec![]);
     assert_eq!(value.to_string(), "[]");
     // Value is falsy based on its representation // Empty list is falsy
 }

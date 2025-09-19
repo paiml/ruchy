@@ -60,21 +60,21 @@ fn test_value_unit() {
 
 #[test]
 fn test_value_list() {
-    let val = Value::List(vec![
+    let val = Value::Array(vec![
         Value::Integer(1),
         Value::Integer(2),
         Value::Integer(3),
     ]);
     assert_eq!(val.to_string(), "[1, 2, 3]");
     
-    let val2 = Value::List(vec![
+    let val2 = Value::Array(vec![
         Value::Integer(1),
         Value::Integer(2),
         Value::Integer(3),
     ]);
     assert_eq!(val, val2);
     
-    let val3 = Value::List(vec![Value::Integer(1)]);
+    let val3 = Value::Array(vec![Value::Integer(1)]);
     assert_ne!(val, val3);
 }
 
@@ -214,7 +214,7 @@ fn test_value_clone() {
     let val4 = val3.clone();
     assert_eq!(val3, val4);
     
-    let val5 = Value::List(vec![Value::Integer(1), Value::Integer(2)]);
+    let val5 = Value::Array(vec![Value::Integer(1), Value::Integer(2)]);
     let val6 = val5.clone();
     assert_eq!(val5, val6);
 }

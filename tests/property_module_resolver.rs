@@ -2,7 +2,7 @@
 
 use quickcheck::{quickcheck, TestResult};
 use ruchy::backend::module_resolver::ModuleResolver;
-use ruchy::frontend::ast::{Expr, ExprKind, ImportItem, Span};
+use ruchy::frontend::ast::{Expr, ExprKind, Span};
 
 // Property: Module resolver preserves expression structure for non-imports
 fn prop_non_import_preserved(seed: u64) -> TestResult {
@@ -27,8 +27,8 @@ fn prop_std_imports_preserved(module: String, item: String) -> TestResult {
     let path = format!("std::{}", module);
     let expr = Expr::new(
         ExprKind::Import {
-            path: path.clone(),
-            items: vec![ImportItem::Named(item.clone())],
+            module: path.clone(),
+            items: Some(vec![item.clone()]),
         },
         Span { start: 0, end: 0 },
     );

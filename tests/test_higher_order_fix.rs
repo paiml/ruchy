@@ -13,7 +13,7 @@ fun main() {
     
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Should parse");
-    let mut transpiler = Transpiler::new();
+    let transpiler = Transpiler::new();
     let rust_code = transpiler.transpile(&ast).expect("Should transpile");
     let rust_str = rust_code.to_string();
     
@@ -40,7 +40,7 @@ apply(double, 5)
     
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Should parse");
-    let mut transpiler = Transpiler::new();
+    let transpiler = Transpiler::new();
     let rust_code = transpiler.transpile(&ast).expect("Should transpile");
     let rust_str = rust_code.to_string();
     
@@ -68,7 +68,7 @@ greet("World")
     
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Should parse");
-    let mut transpiler = Transpiler::new();
+    let transpiler = Transpiler::new();
     let rust_code = transpiler.transpile(&ast).expect("Should transpile");
     
     // Should compile without errors
@@ -87,7 +87,7 @@ add(3, 4)
     
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Should parse");
-    let mut transpiler = Transpiler::new();
+    let transpiler = Transpiler::new();
     let rust_code = transpiler.transpile(&ast).expect("Should transpile");
     let rust_str = rust_code.to_string();
     
@@ -112,7 +112,7 @@ double(5)
     
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Should parse");
-    let mut transpiler = Transpiler::new();
+    let transpiler = Transpiler::new();
     let rust_code = transpiler.transpile(&ast).expect("Should transpile");
     let rust_str = rust_code.to_string();
     
@@ -138,7 +138,7 @@ log_message("test")
     
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Should parse");
-    let mut transpiler = Transpiler::new();
+    let transpiler = Transpiler::new();
     let rust_code = transpiler.transpile(&ast).expect("Should transpile");
     let rust_str = rust_code.to_string();
     

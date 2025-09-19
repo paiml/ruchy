@@ -2,13 +2,12 @@
 //! Target: Increase coverage for src/backend/transpiler/statements.rs
 
 use ruchy::backend::Transpiler;
-use ruchy::frontend::ast::*;
 use ruchy::Parser;
 
 fn parse_and_transpile(code: &str) -> Result<String, Box<dyn std::error::Error>> {
     let mut parser = Parser::new(code);
     let ast = parser.parse()?;
-    let mut transpiler = Transpiler::new();
+    let transpiler = Transpiler::new();
     let tokens = transpiler.transpile(&ast)?;
     Ok(tokens.to_string())
 }

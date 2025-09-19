@@ -1043,7 +1043,7 @@ impl Transpiler {
 mod tests {
     use super::*;
     use crate::frontend::ast::{Expr, ExprKind, Literal, Span, BinaryOp, Type, TypeKind, Param, Pattern};
-    use std::collections::HashMap;
+    
 
     // Helper function to create test expressions
     fn create_test_literal_expr(value: i64) -> Expr {

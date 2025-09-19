@@ -56,14 +56,14 @@ mod repl_value_fmt_coverage {
     fn test_value_fmt_collections_comprehensive() {
         // Test List formatting - multiple branches
         let lists = vec![
-            Value::List(vec![]),                          // Empty list
-            Value::List(vec![Value::Integer(1)]),            // Single element
-            Value::List(vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)]), // Multiple elements
-            Value::List(vec![                            // Nested lists
-                Value::List(vec![Value::Integer(1), Value::Integer(2)]),
-                Value::List(vec![Value::Integer(3), Value::Integer(4)]),
+            Value::Array(vec![]),                          // Empty list
+            Value::Array(vec![Value::Integer(1)]),            // Single element
+            Value::Array(vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)]), // Multiple elements
+            Value::Array(vec![                            // Nested lists
+                Value::Array(vec![Value::Integer(1), Value::Integer(2)]),
+                Value::Array(vec![Value::Integer(3), Value::Integer(4)]),
             ]),
-            Value::List((0..100).map(Value::Int).collect()), // Long list
+            Value::Array((0..100).map(Value::Int).collect()), // Long list
         ];
         
         for list in lists {
@@ -185,7 +185,7 @@ mod repl_value_fmt_coverage {
                 enum_name: "Complex".to_string(),
                 variant_name: "Nested".to_string(),
                 data: Some(vec![
-                    Value::List(vec![Value::Integer(1), Value::Integer(2)]),
+                    Value::Array(vec![Value::Integer(1), Value::Integer(2)]),
                     Value::Object({
                         let mut map = HashMap::new();
                         map.insert("inner".to_string(), Value::Bool(true));

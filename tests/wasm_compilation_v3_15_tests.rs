@@ -1,9 +1,8 @@
 //! TDD Tests for WASM Compilation
 //! Sprint v3.15.0 - WebAssembly target support and compilation
 
-use ruchy::wasm::{WasmCompiler, WasmModule};
+use ruchy::wasm::WasmCompiler;
 use ruchy::frontend::parser::Parser;
-use ruchy::compile;
 
 #[cfg(test)]
 mod basic_wasm_compilation {

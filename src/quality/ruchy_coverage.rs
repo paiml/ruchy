@@ -420,7 +420,7 @@ impl Default for RuchyCoverageCollector {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::path::PathBuf;
+    
     use tempfile::NamedTempFile;
     use std::io::Write;
 
