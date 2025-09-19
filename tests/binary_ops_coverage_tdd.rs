@@ -44,7 +44,7 @@ fn test_add_lists() {
     let result = evaluate_binary_op(&BinaryOp::Add, &lhs, &rhs).unwrap();
     assert_eq!(result, Value::Array(Rc::new(vec![
         Value::Integer(1), Value::Integer(2), Value::Integer(3), Value::Integer(4)
-    ]));
+    ])));
 }
 
 #[test]
@@ -335,8 +335,8 @@ fn test_equal_lists_different() {
 
 #[test]
 fn test_equal_tuples() {
-    let lhs = Value::Tuple(vec![Value::Integer(1), Value::String(Rc::new("a".to_string()))]));
-    let rhs = Value::Tuple(vec![Value::Integer(1), Value::String(Rc::new("a".to_string()))]));
+    let lhs = Value::Tuple(vec![Value::Integer(1), Value::String(Rc::new("a".to_string()))]);
+    let rhs = Value::Tuple(vec![Value::Integer(1), Value::String(Rc::new("a".to_string()))]);
     let result = evaluate_binary_op(&BinaryOp::Equal, &lhs, &rhs).unwrap();
     assert_eq!(result, Value::Bool(true));
 }
