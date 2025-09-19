@@ -1,7 +1,0 @@
-# Seeds for failure cases proptest has generated in the past. It is
-# automatically read and these particular cases re-run before any
-# novel cases are generated.
-#
-# It is recommended to check this file in to source control so that
-# everyone who runs the test benefits from these saved cases.
-cc f16522ac6b1fce6320c5fd42f2375cfaef16328fd54eb09c86cf1c6c6e39f8d5 # shrinks to int_val = 0, float_val = -3.4117334200551196e47, bool_val = false, string_val = ".\u{dea1f}\t*\t\u{1b}Ⱥ&*9\t<E\u{d912c}ú{\u{3ceb3}<\u{1b}\u{1b}"
