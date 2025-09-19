@@ -7,9 +7,7 @@
 use ruchy::runtime::transaction::*;
 use std::rc::Rc;
 use ruchy::runtime::repl::Value;
-use std::rc::Rc;
 use std::time::Duration;
-use std::rc::Rc;
 
 // ============================================================================
 // Core Data Structure Tests
