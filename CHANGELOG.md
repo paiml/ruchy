@@ -4,6 +4,24 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.31.0] - 2025-01-20
+
+### Sprint 80: ALL NIGHT Coverage Marathon
+
+#### Added
+- 61 comprehensive tests for CompletionEngine with property-based testing
+- 32 tests for Evaluator expression evaluation
+- 40 tests for Parser core functionality
+- 7 tests for Transpiler/Actors module
+- 8 tests for RuchyLinter
+- Property-based testing with 10,000+ iterations per test suite
+
+#### Test Coverage
+- Line coverage: 70.27% (32,687 of 109,949 lines)
+- Branch coverage: 72.07% (1,852 of 6,632 branches)
+- Function coverage: 69.96% (19,220 of 63,988 functions)
+- Total tests: 2,722+ all passing
+
 ## [3.30.0] - 2025-01-19
 
 ### Sprint 79: Push Coverage to 75%
