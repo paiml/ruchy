@@ -1413,7 +1413,7 @@ impl DirectThreadedInterpreter {
     // Helper methods for DirectThreadedInterpreter compilation (complexity <10 each)
     
     fn compile_literal(&mut self, lit: &Literal) -> Result<(), InterpreterError> {
-        if matches!(lit, Literal::Unit) {
+        if matches!(lit, Literal::Unit | Literal::Null) {
             self.emit_instruction(op_load_nil, 0);
         } else {
             let const_idx = self.add_constant(self.literal_to_value(lit));
@@ -1520,6 +1520,7 @@ impl DirectThreadedInterpreter {
             Literal::String(s) => Value::String(Rc::new(s.clone())),
             Literal::Char(c) => Value::String(Rc::new(c.to_string())), // Convert char to single-character string
             Literal::Unit => Value::Nil,                               // Unit maps to Nil
+            Literal::Null => Value::Nil,                               // Null maps to Nil
         }
     }
 
@@ -2061,6 +2062,7 @@ impl Interpreter {
             ExprKind::Literal(Literal::Bool(b)) => Ok(Value::from_bool(*b)),
             ExprKind::Literal(Literal::Char(c)) => Ok(Value::from_string(c.to_string())),
             ExprKind::Literal(Literal::Unit) => Ok(Value::nil()),
+            ExprKind::Literal(Literal::Null) => Ok(Value::nil()),
             ExprKind::Identifier(name) => self.lookup_variable(name),
             
             // Operations and calls
@@ -2279,6 +2281,7 @@ impl Interpreter {
             Literal::Bool(b) => Value::from_bool(*b),
             Literal::Char(c) => Value::from_string(c.to_string()),
             Literal::Unit => Value::nil(),
+            Literal::Null => Value::nil(),
         }
     }
 

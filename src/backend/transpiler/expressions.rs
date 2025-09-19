@@ -23,6 +23,7 @@ pub fn transpile_literal(lit: &Literal) -> TokenStream {
             Literal::Integer(i) => Self::transpile_integer(*i),
             Literal::Float(f) => quote! { #f },
             Literal::Unit => quote! { () },
+            Literal::Null => quote! { None },
             _ => Self::transpile_simple_literal(lit),
         }
     }
@@ -31,6 +32,8 @@ pub fn transpile_literal(lit: &Literal) -> TokenStream {
             Literal::String(s) => quote! { #s },
             Literal::Bool(b) => quote! { #b },
             Literal::Char(c) => quote! { #c },
+            Literal::Unit => quote! { () },
+            Literal::Null => quote! { None },
             _ => unreachable!(),
         }
     }

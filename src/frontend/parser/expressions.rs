@@ -35,6 +35,10 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
             state.tokens.advance();
             Ok(Expr::new(ExprKind::Literal(Literal::Bool(value)), span))
         }
+        Token::Null => {
+            state.tokens.advance();
+            Ok(Expr::new(ExprKind::Literal(Literal::Null), span))
+        }
         // Identifier tokens - delegated to focused helper
         Token::Identifier(_) | Token::Underscore => {
             parse_identifier_token(state, &token, span)

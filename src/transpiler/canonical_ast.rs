@@ -311,6 +311,7 @@ pub fn normalize(&mut self, expr: &Expr) -> CoreExpr {
             Literal::Bool(b) => CoreLiteral::Bool(*b),
             Literal::Char(c) => CoreLiteral::Char(*c),
             Literal::Unit => CoreLiteral::Unit,
+            Literal::Null => CoreLiteral::Unit, // Represent null as unit in canonical AST
         })
     }
 }

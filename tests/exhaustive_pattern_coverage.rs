@@ -11,9 +11,7 @@
 use ruchy::frontend::ast::{Expr, ExprKind, Literal, Span};
 use std::env;
 use ruchy::middleend::infer::InferenceContext;
-use std::env;
 use ruchy::backend::transpiler::Transpiler;
-use std::env;
 
 /// Test that ensures all `ExprKind` variants can be processed by the interpreter
 #[test]

@@ -62,6 +62,7 @@ impl Transpiler {
                     crate::frontend::ast::Literal::Bool(b) => Ok(quote! { #b }),
                     crate::frontend::ast::Literal::Char(c) => Ok(quote! { #c }),
                     crate::frontend::ast::Literal::Unit => Ok(quote! { () }),
+                    crate::frontend::ast::Literal::Null => Ok(quote! { None }),
                 }
             }
             Pattern::Identifier(name) => {
