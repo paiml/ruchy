@@ -1,8 +1,0 @@
-// Ruchy Script - Exported from REPL Session
-// Generated: 2025-09-04 12:54:57 UTC
-// Total commands: 0
-
-// No executable statements to export
-fn main() {
-    println!("Hello, Ruchy!");
-}
