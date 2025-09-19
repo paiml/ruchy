@@ -1120,15 +1120,22 @@ pub fn parse_export(state: &mut ParserState) -> Result<Expr> {
         // Check if this is a re-export
         if matches!(state.tokens.peek(), Some((Token::From, _))) {
             state.tokens.advance(); // consume from
-            if let Some((Token::String(module), _)) = state.tokens.peek() {
+            // Accept both string literals and identifiers for module names
+            let module = if let Some((Token::String(module), _)) = state.tokens.peek() {
                 let module = module.clone();
                 state.tokens.advance();
-                return Ok(Expr::new(ExprKind::ReExport {
-                    items,
-                    module,
-                }, start_span));
-            }
-            bail!("Expected module path after 'from'");
+                module
+            } else if let Some((Token::Identifier(module), _)) = state.tokens.peek() {
+                let module = module.clone();
+                state.tokens.advance();
+                module
+            } else {
+                bail!("Expected module path after 'from'");
+            };
+            return Ok(Expr::new(ExprKind::ReExport {
+                items,
+                module,
+            }, start_span));
         }
         // Simple export list
         return Ok(Expr::new(ExprKind::ExportList {

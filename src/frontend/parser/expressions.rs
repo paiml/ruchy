@@ -87,8 +87,8 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
         Token::If | Token::Match | Token::While | Token::For | Token::Try | Token::Loop => {
             parse_control_flow_token(state, token)
         }
-        // Module declaration token
-        Token::Mod => {
+        // Module declaration token - support both 'mod' and 'module'
+        Token::Mod | Token::Module => {
             parse_module_declaration(state)
         }
         // Lambda expression tokens - delegated to focused helper
@@ -277,7 +277,13 @@ fn parse_parentheses_token(state: &mut ParserState, span: Span) -> Result<Expr> 
                 elements.push(super::parse_expr_recursive(state)?);
             }
             state.tokens.expect(&Token::RightParen)?;
-            Ok(Expr::new(ExprKind::Tuple(elements), span))
+            let tuple_expr = Expr::new(ExprKind::Tuple(elements), span);
+            // Check if this is a lambda: (x, y) => expr
+            if matches!(state.tokens.peek(), Some((Token::FatArrow, _))) {
+                parse_lambda_from_expr(state, tuple_expr, span)
+            } else {
+                Ok(tuple_expr)
+            }
         } else {
             // Just a grouped expression
             state.tokens.expect(&Token::RightParen)?;
@@ -422,14 +428,19 @@ fn parse_try_catch(state: &mut ParserState) -> Result<Expr> {
 /// Parse module declaration: mod name { body }
 /// Complexity: <5 (simple structure)
 fn parse_module_declaration(state: &mut ParserState) -> Result<Expr> {
-    let start_span = state.tokens.expect(&Token::Mod)?;
+    // Accept both 'mod' and 'module' keywords
+    let start_span = if matches!(state.tokens.peek(), Some((Token::Mod, _))) {
+        state.tokens.expect(&Token::Mod)?
+    } else {
+        state.tokens.expect(&Token::Module)?
+    };
     // Parse module name
     let name = if let Some((Token::Identifier(n), _)) = state.tokens.peek() {
         let n = n.clone();
         state.tokens.advance();
         n
     } else {
-        bail!("Expected module name after 'mod'");
+        bail!("Expected module name after 'mod' or 'module'");
     };
     // Parse module body with visibility support
     state.tokens.expect(&Token::LeftBrace)?;
@@ -1624,11 +1635,11 @@ fn parse_lambda_no_params(state: &mut ParserState) -> Result<Expr> {
     }, start_span))
 }
 fn parse_lambda_from_expr(state: &mut ParserState, expr: Expr, start_span: Span) -> Result<Expr> {
-    // Convert (x) => expr syntax
+    // Convert (x) => expr or (x, y) => expr syntax
     state.tokens.advance(); // consume =>
-    // Convert the expression to a parameter
-    let param = match &expr.kind {
-        ExprKind::Identifier(name) => Param {
+    // Convert the expression to parameters
+    let params = match &expr.kind {
+        ExprKind::Identifier(name) => vec![Param {
             pattern: Pattern::Identifier(name.clone()),
             ty: Type {
                 kind: TypeKind::Named("_".to_string()),
@@ -1637,13 +1648,31 @@ fn parse_lambda_from_expr(state: &mut ParserState, expr: Expr, start_span: Span)
             default_value: None,
             is_mutable: false,
             span: expr.span,
-        },
-        _ => bail!("Expected identifier in lambda parameter")
+        }],
+        ExprKind::Tuple(elements) => {
+            // Convert tuple elements to parameters
+            elements.iter().map(|elem| {
+                match &elem.kind {
+                    ExprKind::Identifier(name) => Ok(Param {
+                        pattern: Pattern::Identifier(name.clone()),
+                        ty: Type {
+                            kind: TypeKind::Named("_".to_string()),
+                            span: elem.span,
+                        },
+                        default_value: None,
+                        is_mutable: false,
+                        span: elem.span,
+                    }),
+                    _ => bail!("Expected identifier in lambda parameter")
+                }
+            }).collect::<Result<Vec<_>>>()?
+        }
+        _ => bail!("Expected identifier or tuple in lambda parameter")
     };
     // Parse the body
     let body = Box::new(super::parse_expr_recursive(state)?);
     Ok(Expr::new(ExprKind::Lambda {
-        params: vec![param],
+        params,
         body,
     }, start_span))
 }
