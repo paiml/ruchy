@@ -57,7 +57,7 @@ mod extreme_quality_tests {
     #[test]
     fn test_state_management_quality() {
         use ruchy::runtime::repl::state::{ReplState, ReplMode};
-        use ruchy::runtime::value::Value;
+        use ruchy::runtime::Value;
 
         let mut state = ReplState::new();
 
@@ -78,11 +78,13 @@ mod extreme_quality_tests {
     #[test]
     fn test_evaluation_quality() {
         use ruchy::runtime::repl::evaluation::{Evaluator, EvalResult};
+        use ruchy::runtime::repl::state::ReplState;
 
         let mut eval = Evaluator::new();
+        let mut state = ReplState::new();
 
         // Test simple evaluation
-        let result = eval.evaluate_line("2 + 2").unwrap();
+        let result = eval.evaluate_line("2 + 2", &mut state).unwrap();
         match result {
             EvalResult::Value(v) => {
                 use ruchy::runtime::interpreter::Value;
@@ -131,20 +133,22 @@ mod extreme_quality_tests {
     #[test]
     fn test_multiline_handling_quality() {
         use ruchy::runtime::repl::evaluation::{Evaluator, EvalResult};
+        use ruchy::runtime::repl::state::ReplState;
 
         let mut eval = Evaluator::new();
+        let mut state = ReplState::new();
 
         // Start multiline function
-        let result = eval.evaluate_line("fn test() {").unwrap();
+        let result = eval.evaluate_line("fn test() {", &mut state).unwrap();
         assert!(matches!(result, EvalResult::NeedMoreInput));
         assert!(eval.is_multiline());
 
         // Continue multiline
-        let result = eval.evaluate_line("  42").unwrap();
+        let result = eval.evaluate_line("  42", &mut state).unwrap();
         assert!(matches!(result, EvalResult::NeedMoreInput));
 
         // Complete multiline
-        let result = eval.evaluate_line("}").unwrap();
+        let result = eval.evaluate_line("}", &mut state).unwrap();
         assert!(!eval.is_multiline());
     }
 

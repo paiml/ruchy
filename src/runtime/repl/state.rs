@@ -145,6 +145,21 @@ impl ReplState {
     pub fn restore_bindings(&mut self, snapshot: HashMap<String, Value>) {
         self.bindings = snapshot;
     }
+
+    /// Set a variable in the bindings (complexity: 1)
+    pub fn set_variable(&mut self, name: String, value: Value) {
+        self.bindings.insert(name, value);
+    }
+
+    /// Get a variable from the bindings (complexity: 1)
+    pub fn get_variable(&self, name: &str) -> Option<&Value> {
+        self.bindings.get(name)
+    }
+
+    /// Check if in debug mode (complexity: 1)
+    pub fn is_debug_mode(&self) -> bool {
+        matches!(self.mode, ReplMode::Debug)
+    }
 }
 
 impl Default for ReplState {

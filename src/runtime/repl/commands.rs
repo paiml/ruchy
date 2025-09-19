@@ -82,6 +82,11 @@ impl CommandRegistry {
         }
     }
 
+    /// Get list of available commands (complexity: 1)
+    pub fn available_commands(&self) -> Vec<&'static str> {
+        vec![":help", ":h", ":quit", ":exit", ":q", ":clear", ":reset", ":mode", ":history", ":vars"]
+    }
+
     /// Get help text (complexity: 1)
     fn help_text(&self) -> String {
         r"Ruchy REPL Commands:
