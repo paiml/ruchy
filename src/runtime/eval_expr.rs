@@ -310,8 +310,8 @@ mod tests {
         };
         assert!(is_control_flow_expr(&if_expr));
 
-        let lit_expr = ExprKind::Literal(Literal::Integer(42));
-        assert!(!is_control_flow_expr(&lit_expr));
+        let literal_expr = ExprKind::Literal(Literal::Integer(42));
+        assert!(!is_control_flow_expr(&literal_expr));
     }
 
     #[test]
@@ -322,8 +322,8 @@ mod tests {
         let tuple_expr = ExprKind::Tuple(vec![]);
         assert!(is_data_structure_expr(&tuple_expr));
 
-        let lit_expr = ExprKind::Literal(Literal::Integer(42));
-        assert!(!is_data_structure_expr(&lit_expr));
+        let literal_expr = ExprKind::Literal(Literal::Integer(42));
+        assert!(!is_data_structure_expr(&literal_expr));
     }
 
     #[test]
