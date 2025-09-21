@@ -1373,7 +1373,7 @@ mod tests {
                 deadlock_check_interval_ms: 50, // Very frequent
                 enable_metrics: true,
                 metrics_interval_ms: 10, // Very frequent
-                max_snapshots: 1000000,
+                max_snapshots: 1_000_000,
             },
         ];
 

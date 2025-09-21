@@ -14,6 +14,74 @@ Strategy: 6 weeks × 350 tests/week = 2,100+ new tests
 Method: EXTREME TDD - Test FIRST, Code SECOND
 ```
 
+### 🚨 **PRIORITY 0: UNIFIED SPEC IMPLEMENTATION** (ALL NIGHT SPRINT - Sept 21)
+
+#### **Unified Language Specification - Immediate Implementation**
+**Goal**: Implement core features from ruchy-unified-spec.md using EXTREME TDD
+
+##### **Features to Implement Tonight**:
+1. [ ] **UNIFIED-001: `fun` keyword for functions** (replacing `fn`)
+   - [ ] Write 50+ failing tests for `fun` syntax
+   - [ ] Parser support for `fun` keyword
+   - [ ] Transpiler to generate `fn` in Rust
+   - [ ] Update all examples and tests
+
+2. [ ] **UNIFIED-002: Rust-style `use` imports** (replacing current import syntax)
+   - [ ] Write 40+ failing tests for `use` statements
+   - [ ] Parser support for `use std::collections::{HashMap, BTreeMap}`
+   - [ ] Support for `use numpy as np` aliasing
+   - [ ] Transpiler to generate proper Rust imports
+
+3. [ ] **UNIFIED-003: List/Set/Dict Comprehensions**
+   - [ ] Write 100+ failing tests for all comprehension types
+   - [ ] `[x * x for x in 0..100]` → iterator chains
+   - [ ] `{x % 10 for x in data}` → HashSet comprehensions
+   - [ ] `{word: word.len() for word in text}` → HashMap comprehensions
+
+4. [ ] **UNIFIED-004: DataFrame as First-Class Type**
+   - [ ] Write 60+ failing tests for DataFrame operations
+   - [ ] Native DataFrame literal support
+   - [ ] Method chaining: `.filter().groupby().agg()`
+   - [ ] SQL macro: `sql! { SELECT * FROM {df} }`
+
+5. [ ] **UNIFIED-005: Quality Attributes**
+   - [ ] Write 30+ failing tests for quality enforcement
+   - [ ] `#[complexity(max = 10)]` attribute
+   - [ ] `#[coverage(min = 95)]` attribute
+   - [ ] `#[no_panic]` attribute
+   - [ ] Compiler enforcement of quality metrics
+
+##### **Test-First Implementation Plan**:
+```bash
+# Hour 1-2: Write all failing tests
+tests/unified_spec/
+├── test_fun_keyword.rs        # 50 tests
+├── test_use_imports.rs        # 40 tests
+├── test_comprehensions.rs     # 100 tests
+├── test_dataframe.rs          # 60 tests
+└── test_quality_attrs.rs      # 30 tests
+
+# Hour 3-4: Parser implementation
+src/frontend/parser/
+├── fun_parser.rs              # Parse fun keyword
+├── use_parser.rs              # Parse use statements
+├── comprehension_parser.rs    # Parse comprehensions
+└── attribute_parser.rs        # Parse quality attributes
+
+# Hour 5-6: Transpiler implementation
+src/backend/transpiler/
+├── fun_transpiler.rs          # fun → fn
+├── use_transpiler.rs          # use statement generation
+├── comprehension_transpiler.rs # Comprehensions → iterators
+└── quality_transpiler.rs      # Attribute enforcement
+
+# Hour 7-8: Integration and validation
+- Run all 280+ new tests
+- Fix edge cases
+- Update documentation
+- Measure coverage improvement
+```
+
 ### 🚀 **Active Sprint: EXTREME TDD IMPLEMENTATION** (Starting 2025-09-21)
 
 #### **🎯 Quick Start Guide**

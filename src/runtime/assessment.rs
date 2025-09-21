@@ -910,7 +910,7 @@ mod tests {
                 check_fn: "x % 2 == 0".to_string(),
             }),
             ExpectedBehavior::PerformanceBound {
-                max_ns: 1000000,
+                max_ns: 1_000_000,
                 max_bytes: 1024,
             },
         ];

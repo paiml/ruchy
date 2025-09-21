@@ -430,7 +430,7 @@ mod tests {
             resource_usage: ResourceUsage {
                 heap_bytes: 1024,
                 stack_depth: 5,
-                cpu_ns: 1000000,
+                cpu_ns: 1_000_000,
             },
         }
     }
@@ -518,7 +518,7 @@ mod tests {
             let usage = ResourceUsage {
                 heap_bytes: 2048,
                 stack_depth: 10,
-                cpu_ns: 5000000,
+                cpu_ns: 5_000_000,
             };
 
             assert_eq!(usage.heap_bytes, 2048);
