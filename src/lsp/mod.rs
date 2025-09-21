@@ -342,8 +342,8 @@ mod tests {
     fn test_ruchy_token_to_lsp_conversion() {
         // Test token conversion
         let keyword_idx = ruchy_token_to_lsp(RuchyTokenType::Keyword);
-        let function_idx = ruchy_token_to_lsp(RuchyTokenType::Function);
-        let variable_idx = ruchy_token_to_lsp(RuchyTokenType::Variable);
+        let function_idx = ruchy_token_to_lsp(RuchyTokenType::Actor);
+        let variable_idx = ruchy_token_to_lsp(RuchyTokenType::Pattern);
 
         // Indices should be different
         assert_ne!(keyword_idx, function_idx);
@@ -351,9 +351,9 @@ mod tests {
         assert_ne!(function_idx, variable_idx);
 
         // Indices should be valid
-        assert!(keyword_idx < SEMANTIC_TOKEN_LEGEND.token_types.len() as u32);
-        assert!(function_idx < SEMANTIC_TOKEN_LEGEND.token_types.len() as u32);
-        assert!(variable_idx < SEMANTIC_TOKEN_LEGEND.token_types.len() as u32);
+        assert!((keyword_idx.0 as usize) < SEMANTIC_TOKEN_LEGEND.token_types.len());
+        assert!((function_idx.0 as usize) < SEMANTIC_TOKEN_LEGEND.token_types.len());
+        assert!((variable_idx.0 as usize) < SEMANTIC_TOKEN_LEGEND.token_types.len());
     }
 
     #[test]

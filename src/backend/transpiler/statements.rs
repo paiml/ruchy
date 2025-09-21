@@ -1315,16 +1315,53 @@ impl Transpiler {
     }
     /// Static method for transpiling inline imports (backward compatibility)
     pub fn transpile_import(module: &str, items: Option<&[String]>) -> TokenStream {
-        // Convert new import format to old format temporarily for compatibility
-        let import_items = if let Some(item_names) = items {
-            item_names
-                .iter()
-                .map(|name| crate::frontend::ast::ImportItem::Named(name.clone()))
-                .collect::<Vec<_>>()
-        } else {
-            vec![]
+        // Convert dot notation to Rust's :: notation
+        let rust_module = module.replace('.', "::");
+
+        // Handle special cases for specific keywords that might come as module names
+        let rust_module = match rust_module.as_str() {
+            "self" => "self".to_string(),
+            "super" => "super".to_string(),
+            "crate" => "crate".to_string(),
+            _ => rust_module,
         };
-        Self::transpile_import_inline(module, &import_items)
+
+        // Convert new import format to old format temporarily for compatibility
+        // Interpret the items parameter:
+        // - None => simple import like "import std" -> generates "use std;"
+        // - Some([]) => wildcard import like "from std import *" -> generates "use std::*;"
+        // - Some([items...]) => specific imports -> generates "use std::{items};"
+        let (import_items, _is_wildcard_from_empty) = match items {
+            None => (vec![], false), // Simple import
+            Some([]) => {
+                // Empty array from "from module import *" means wildcard
+                (vec![crate::frontend::ast::ImportItem::Wildcard], true)
+            }
+            Some(item_names) => {
+                // Specific items to import
+                let items = item_names
+                    .iter()
+                    .map(|name| {
+                        // Handle 'as' aliases in the item names
+                        if name.contains(" as ") {
+                            let parts: Vec<&str> = name.split(" as ").collect();
+                            if parts.len() == 2 {
+                                crate::frontend::ast::ImportItem::Aliased {
+                                    name: parts[0].to_string(),
+                                    alias: parts[1].to_string(),
+                                }
+                            } else {
+                                crate::frontend::ast::ImportItem::Named(name.clone())
+                            }
+                        } else {
+                            crate::frontend::ast::ImportItem::Named(name.clone())
+                        }
+                    })
+                    .collect::<Vec<_>>();
+                (items, false)
+            }
+        };
+        Self::transpile_import_inline(&rust_module, &import_items)
     }
 
     pub fn transpile_import_all(module: &str, alias: &str) -> TokenStream {
@@ -1893,7 +1930,9 @@ impl Transpiler {
     ) -> TokenStream {
         let path_tokens = Self::path_to_tokens(path);
         if items.is_empty() {
-            quote! { use #path_tokens::*; }
+            // For a simple import like `import std.collections.HashMap`,
+            // we want `use std::collections::HashMap;` not `use std::collections::HashMap::*;`
+            quote! { use #path_tokens; }
         } else if items.len() == 1 {
             Self::handle_single_import_item(&path_tokens, path, &items[0])
         } else {

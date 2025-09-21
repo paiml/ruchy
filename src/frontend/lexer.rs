@@ -229,6 +229,12 @@ pub enum Token {
     Default,
     #[token("class")]
     Class,
+    #[token("self")]
+    Self_,
+    #[token("super")]
+    Super,
+    #[token("crate")]
+    Crate,
     #[token("df", priority = 2)]
     DataFrame,
     // Identifiers (lower priority than keywords)
@@ -492,6 +498,11 @@ impl<'a> TokenStream<'a> {
         }
         self.peeked.as_ref()
     }
+    /// Look ahead n tokens in the stream
+    pub fn peek_ahead(&mut self, n: usize) -> Option<(Token, Span)> {
+        self.peek_nth(n)
+    }
+
     pub fn peek_nth(&mut self, n: usize) -> Option<(Token, Span)> {
         // For simplicity, we'll only support peek_nth(1) by cloning the lexer
         if n == 1 {

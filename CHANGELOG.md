@@ -4,6 +4,27 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.32.0] - 2025-09-21
+
+### EXTREME TDD Roadmap Update
+
+#### Added
+- Comprehensive EXTREME TDD roadmap for achieving 80% test coverage
+- Detailed sprint plan (Sprints 81-86) for implementing missing language features
+- Structured approach to fix all ignored tests representing missing functionality
+
+#### Changed
+- Updated roadmap with 3-phase EXTREME TDD strategy:
+  - Phase 1: Fix 5 ignored tests (set literals, comprehensions, try/catch, classes/structs, decorators)
+  - Phase 2: Zero coverage module blitz (6 modules with 0% coverage)
+  - Phase 3: Low coverage critical modules (interpreter, parser, transpiler, REPL)
+- Target: Move from ~33% coverage to 80% with 5,000+ tests
+
+#### Documentation
+- Enhanced roadmap with clear sprint execution plan
+- Added EXTREME TDD process guidelines with mandatory test-first development
+- Defined success metrics: 100% test-first rate, ≤10 complexity, zero SATD
+
 ## [3.31.0] - 2025-01-20
 
 ### Sprint 80: ALL NIGHT Coverage Marathon

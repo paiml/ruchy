@@ -142,6 +142,11 @@ fn parse_param_pattern(state: &mut ParserState) -> Result<Pattern> {
             state.tokens.advance();
             Ok(Pattern::Identifier("df".to_string()))
         }
+        Some((Token::Self_, _)) => {
+            // Handle "self" parameter name
+            state.tokens.advance();
+            Ok(Pattern::Identifier("self".to_string()))
+        }
         Some((Token::LeftParen, _)) => {
             // Parse tuple destructuring: fun f((x, y)) {}
             super::expressions::parse_tuple_pattern(state)
@@ -560,8 +565,15 @@ fn parse_type_list(state: &mut ParserState) -> Result<Vec<Type>> {
 /// NOTE: This is the legacy import parser. New imports are parsed in expressions.rs
 #[allow(dead_code)]
 pub fn parse_import_legacy(state: &mut ParserState) -> Result<Expr> {
-    // Delegate to the new import parser in expressions.rs
-    super::expressions::parse_import_statement(state)
+    // Consume the Import token first (required by new parser)
+    state.tokens.expect(&Token::Import)?;
+    // Check if it's JS-style import
+    if matches!(state.tokens.peek(), Some((Token::LeftBrace, _))) {
+        super::imports::parse_js_style_import(state)
+    } else {
+        // Delegate to the new import parser in expressions.rs
+        super::imports::parse_import_statement(state)
+    }
 }
 /// Parse URL import statement (complexity: 6)
 fn parse_url_import(state: &mut ParserState, url: &str, start_span: Span) -> Result<Expr> {
