@@ -2,11 +2,11 @@
 //!
 //! Provides IPython-style magic commands for enhanced REPL interaction.
 //! Based on docs/specifications/repl-magic-spec.md
-use anyhow::{Result, anyhow};
-use std::collections::HashMap;
-use std::time::{Duration, Instant};
-use std::fmt;
 use crate::runtime::repl::{Repl, Value};
+use anyhow::{anyhow, Result};
+use std::collections::HashMap;
+use std::fmt;
+use std::time::{Duration, Instant};
 // ============================================================================
 // Magic Command Registry
 // ============================================================================
@@ -15,23 +15,23 @@ pub struct MagicRegistry {
     commands: HashMap<String, Box<dyn MagicCommand>>,
 }
 impl MagicRegistry {
-/// # Examples
-/// 
-/// ```
-/// use ruchy::runtime::magic::MagicRegistry;
-/// 
-/// let instance = MagicRegistry::new();
-/// // Verify behavior
-/// ```
-/// # Examples
-/// 
-/// ```
-/// use ruchy::runtime::magic::MagicRegistry;
-/// 
-/// let instance = MagicRegistry::new();
-/// // Verify behavior
-/// ```
-pub fn new() -> Self {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::magic::MagicRegistry;
+    ///
+    /// let instance = MagicRegistry::new();
+    /// // Verify behavior
+    /// ```
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::magic::MagicRegistry;
+    ///
+    /// let instance = MagicRegistry::new();
+    /// // Verify behavior
+    /// ```
+    pub fn new() -> Self {
         let mut registry = Self {
             commands: HashMap::new(),
         };
@@ -53,42 +53,42 @@ pub fn new() -> Self {
         registry
     }
     /// Register a new magic command
-/// # Examples
-/// 
-/// ```
-/// use ruchy::runtime::magic::MagicRegistry;
-/// 
-/// let mut instance = MagicRegistry::new();
-/// let result = instance.register();
-/// // Verify behavior
-/// ```
-pub fn register(&mut self, name: &str, command: Box<dyn MagicCommand>) {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::magic::MagicRegistry;
+    ///
+    /// let mut instance = MagicRegistry::new();
+    /// let result = instance.register();
+    /// // Verify behavior
+    /// ```
+    pub fn register(&mut self, name: &str, command: Box<dyn MagicCommand>) {
         self.commands.insert(name.to_string(), command);
     }
     /// Check if input is a magic command
-/// # Examples
-/// 
-/// ```
-/// use ruchy::runtime::magic::MagicRegistry;
-/// 
-/// let mut instance = MagicRegistry::new();
-/// let result = instance.is_magic();
-/// // Verify behavior
-/// ```
-pub fn is_magic(&self, input: &str) -> bool {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::magic::MagicRegistry;
+    ///
+    /// let mut instance = MagicRegistry::new();
+    /// let result = instance.is_magic();
+    /// // Verify behavior
+    /// ```
+    pub fn is_magic(&self, input: &str) -> bool {
         input.starts_with('%') || input.starts_with("%%")
     }
     /// Execute a magic command
-/// # Examples
-/// 
-/// ```
-/// use ruchy::runtime::magic::MagicRegistry;
-/// 
-/// let mut instance = MagicRegistry::new();
-/// let result = instance.execute();
-/// // Verify behavior
-/// ```
-pub fn execute(&mut self, repl: &mut Repl, input: &str) -> Result<MagicResult> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::magic::MagicRegistry;
+    ///
+    /// let mut instance = MagicRegistry::new();
+    /// let result = instance.execute();
+    /// // Verify behavior
+    /// ```
+    pub fn execute(&mut self, repl: &mut Repl, input: &str) -> Result<MagicResult> {
         if !self.is_magic(input) {
             return Err(anyhow!("Not a magic command"));
         }
@@ -117,15 +117,15 @@ pub fn execute(&mut self, repl: &mut Repl, input: &str) -> Result<MagicResult> {
         }
     }
     /// Get list of available magic commands
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::runtime::magic::list_commands;
-/// 
-/// let result = list_commands(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn list_commands(&self) -> Vec<String> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::runtime::magic::list_commands;
+    ///
+    /// let result = list_commands(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn list_commands(&self) -> Vec<String> {
         let mut commands: Vec<_> = self.commands.keys().cloned().collect();
         commands.sort();
         commands
@@ -156,7 +156,12 @@ impl fmt::Display for MagicResult {
         match self {
             MagicResult::Text(s) => write!(f, "{s}"),
             MagicResult::Timed { output, duration } => {
-                write!(f, "{}\nExecution time: {:.3}s", output, duration.as_secs_f64())
+                write!(
+                    f,
+                    "{}\nExecution time: {:.3}s",
+                    output,
+                    duration.as_secs_f64()
+                )
             }
             MagicResult::Profile(data) => write!(f, "{data}"),
             MagicResult::Silent => Ok(()),
@@ -217,7 +222,8 @@ impl MagicCommand for TimeitMagic {
             if parts.len() < 3 {
                 return Err(anyhow!("Invalid -n syntax"));
             }
-            let n = parts[1].parse::<usize>()
+            let n = parts[1]
+                .parse::<usize>()
                 .map_err(|_| anyhow!("Invalid number of runs"))?;
             (n, parts[2])
         } else {
@@ -246,7 +252,8 @@ impl MagicCommand for TimeitMagic {
         let output = format!(
             "{} loops, best of {}: {:.3}µs per loop\n\
              min: {:.3}µs, median: {:.3}µs, max: {:.3}µs",
-            runs, runs,
+            runs,
+            runs,
             mean.as_micros() as f64,
             min.as_micros() as f64,
             median.as_micros() as f64,
@@ -268,8 +275,8 @@ impl MagicCommand for RunMagic {
         if args.trim().is_empty() {
             return Err(anyhow!("Usage: %run <script.ruchy>"));
         }
-        let script_content = std::fs::read_to_string(args)
-            .map_err(|e| anyhow!("Failed to read script: {}", e))?;
+        let script_content =
+            std::fs::read_to_string(args).map_err(|e| anyhow!("Failed to read script: {}", e))?;
         let result = repl.eval(&script_content)?;
         Ok(MagicResult::Text(result))
     }
@@ -314,11 +321,19 @@ impl fmt::Display for ProfileData {
         writeln!(f, "=== Profile Results ===")?;
         writeln!(f, "Total time: {:.3}s", self.total_time.as_secs_f64())?;
         writeln!(f, "\nFunction Times:")?;
-        writeln!(f, "{:<30} {:>10} {:>10} {:>10}", "Function", "Time (ms)", "Count", "Avg (ms)")?;
+        writeln!(
+            f,
+            "{:<30} {:>10} {:>10} {:>10}",
+            "Function", "Time (ms)", "Count", "Avg (ms)"
+        )?;
         writeln!(f, "{:-<60}", "")?;
         for (name, time, count) in &self.function_times {
             let time_ms = time.as_micros() as f64 / 1000.0;
-            let avg_ms = if *count > 0 { time_ms / *count as f64 } else { 0.0 };
+            let avg_ms = if *count > 0 {
+                time_ms / *count as f64
+            } else {
+                0.0
+            };
             writeln!(f, "{name:<30} {time_ms:>10.3} {count:>10} {avg_ms:>10.3}")?;
         }
         Ok(())
@@ -338,9 +353,7 @@ impl MagicCommand for ProfileMagic {
         // Mock profile data - in production would collect actual function timings
         let profile_data = ProfileData {
             total_time,
-            function_times: vec![
-                ("main".to_string(), total_time, 1),
-            ],
+            function_times: vec![("main".to_string(), total_time, 1)],
         };
         Ok(MagicResult::Profile(profile_data))
     }
@@ -379,6 +392,8 @@ impl MagicCommand for WhosMagic {
                 Value::Object(_) => "Object",
                 Value::Range { .. } => "Range",
                 Value::EnumVariant { .. } => "EnumVariant",
+                // BuiltinFunction variant not in current Value enum
+                // Value::BuiltinFunction(_) => "BuiltinFunction",
             };
             let value_str = format!("{value:?}");
             let value_display = if value_str.len() > 40 {
@@ -470,9 +485,11 @@ impl MagicCommand for SaveMagic {
         }
         let json = serde_json::to_string_pretty(&serializable)
             .map_err(|e| anyhow!("Failed to serialize: {}", e))?;
-        std::fs::write(args.trim(), json)
-            .map_err(|e| anyhow!("Failed to write file: {}", e))?;
-        Ok(MagicResult::Text(format!("Saved workspace to {}", args.trim())))
+        std::fs::write(args.trim(), json).map_err(|e| anyhow!("Failed to write file: {}", e))?;
+        Ok(MagicResult::Text(format!(
+            "Saved workspace to {}",
+            args.trim()
+        )))
     }
     fn help(&self) -> &'static str {
         "Save workspace to file"
@@ -488,7 +505,10 @@ impl MagicCommand for LoadMagic {
         let _content = std::fs::read_to_string(args.trim())
             .map_err(|e| anyhow!("Failed to read file: {}", e))?;
         // In production, would deserialize and load into workspace
-        Ok(MagicResult::Text(format!("Loaded workspace from {}", args.trim())))
+        Ok(MagicResult::Text(format!(
+            "Loaded workspace from {}",
+            args.trim()
+        )))
     }
     fn help(&self) -> &'static str {
         "Load workspace from file"
@@ -501,8 +521,7 @@ impl MagicCommand for LoadMagic {
 struct PwdMagic;
 impl MagicCommand for PwdMagic {
     fn execute_line(&self, _repl: &mut Repl, _args: &str) -> Result<MagicResult> {
-        let pwd = std::env::current_dir()
-            .map_err(|e| anyhow!("Failed to get pwd: {}", e))?;
+        let pwd = std::env::current_dir().map_err(|e| anyhow!("Failed to get pwd: {}", e))?;
         Ok(MagicResult::Text(pwd.display().to_string()))
     }
     fn help(&self) -> &'static str {
@@ -520,8 +539,7 @@ impl MagicCommand for CdMagic {
         };
         std::env::set_current_dir(&path)
             .map_err(|e| anyhow!("Failed to change directory: {}", e))?;
-        let pwd = std::env::current_dir()
-            .map_err(|e| anyhow!("Failed to get pwd: {}", e))?;
+        let pwd = std::env::current_dir().map_err(|e| anyhow!("Failed to get pwd: {}", e))?;
         Ok(MagicResult::Text(format!("Changed to: {}", pwd.display())))
     }
     fn help(&self) -> &'static str {
@@ -537,8 +555,8 @@ impl MagicCommand for LsMagic {
         } else {
             args.trim()
         };
-        let entries = std::fs::read_dir(path)
-            .map_err(|e| anyhow!("Failed to read directory: {}", e))?;
+        let entries =
+            std::fs::read_dir(path).map_err(|e| anyhow!("Failed to read directory: {}", e))?;
         let mut output = String::new();
         for entry in entries {
             let entry = entry.map_err(|e| anyhow!("Failed to read entry: {}", e))?;
@@ -625,15 +643,15 @@ impl UnicodeExpander {
         Self { mappings }
     }
     /// Expand LaTeX-style sequence to Unicode character
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::runtime::magic::expand;
-/// 
-/// let result = expand("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn expand(&self, sequence: &str) -> Option<char> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::runtime::magic::expand;
+    ///
+    /// let result = expand("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn expand(&self, sequence: &str) -> Option<char> {
         // Remove leading backslash if present
         let key = if sequence.starts_with('\\') {
             &sequence[1..]
@@ -643,16 +661,17 @@ pub fn expand(&self, sequence: &str) -> Option<char> {
         self.mappings.get(key).copied()
     }
     /// Get all available expansions
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::runtime::magic::list_expansions;
-/// 
-/// let result = list_expansions(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn list_expansions(&self) -> Vec<(String, char)> {
-        let mut expansions: Vec<_> = self.mappings
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::runtime::magic::list_expansions;
+    ///
+    /// let result = list_expansions(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn list_expansions(&self) -> Vec<(String, char)> {
+        let mut expansions: Vec<_> = self
+            .mappings
             .iter()
             .map(|(k, v)| (format!("\\{k}"), *v))
             .collect();
@@ -668,8 +687,6 @@ impl Default for UnicodeExpander {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
-    
 
     fn create_mock_repl() -> Repl {
         // Create a minimal repl for testing
@@ -738,7 +755,7 @@ mod tests {
     #[test]
     fn test_magic_result_text() {
         let result = MagicResult::Text("Hello World".to_string());
-        assert_eq!(format!("{}", result), "Hello World");
+        assert_eq!(format!("{result}"), "Hello World");
     }
 
     #[test]
@@ -747,7 +764,7 @@ mod tests {
             output: "42".to_string(),
             duration: Duration::from_millis(123),
         };
-        let formatted = format!("{}", result);
+        let formatted = format!("{result}");
         assert!(formatted.contains("42"));
         assert!(formatted.contains("0.123s"));
         assert!(formatted.contains("Execution time"));
@@ -756,7 +773,7 @@ mod tests {
     #[test]
     fn test_magic_result_silent() {
         let result = MagicResult::Silent;
-        assert_eq!(format!("{}", result), "");
+        assert_eq!(format!("{result}"), "");
     }
 
     #[test]
@@ -766,7 +783,7 @@ mod tests {
             function_times: vec![], // Changed from HashMap to Vec for the new structure
         };
         let result = MagicResult::Profile(profile_data);
-        let formatted = format!("{}", result);
+        let formatted = format!("{result}");
         assert!(formatted.contains("Total time"));
     }
 
@@ -795,7 +812,10 @@ mod tests {
     #[test]
     fn test_timeit_magic_help() {
         let timeit = TimeitMagic::default();
-        assert_eq!(timeit.help(), "Time execution with statistics over multiple runs");
+        assert_eq!(
+            timeit.help(),
+            "Time execution with statistics over multiple runs"
+        );
     }
 
     #[test]
@@ -831,7 +851,10 @@ mod tests {
 
         let result = run_magic.execute_line(&mut repl, "nonexistent.ruchy");
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Failed to read script"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Failed to read script"));
     }
 
     #[test]
@@ -929,7 +952,10 @@ mod tests {
     #[test]
     fn test_profile_magic_help() {
         let profile_magic = ProfileMagic;
-        assert_eq!(profile_magic.help(), "Profile code execution and generate flamegraph");
+        assert_eq!(
+            profile_magic.help(),
+            "Profile code execution and generate flamegraph"
+        );
     }
 
     #[test]
@@ -978,9 +1004,9 @@ mod tests {
         let expander = UnicodeExpander::new();
 
         // Should be case sensitive - different cases map to different characters
-        assert_eq!(expander.expand("alpha"), Some('α'));    // lowercase maps to lowercase Greek
-        assert_eq!(expander.expand("ALPHA"), None);         // all caps not supported
-        assert_eq!(expander.expand("Alpha"), Some('Α'));    // capitalized maps to uppercase Greek
+        assert_eq!(expander.expand("alpha"), Some('α')); // lowercase maps to lowercase Greek
+        assert_eq!(expander.expand("ALPHA"), None); // all caps not supported
+        assert_eq!(expander.expand("Alpha"), Some('Α')); // capitalized maps to uppercase Greek
     }
 
     #[test]
@@ -1004,18 +1030,16 @@ mod tests {
     #[test]
     fn test_profile_data_display() {
         // ProfileData.function_times expects Vec<(String, Duration, usize)>
-        let function_times = vec![
-            ("test_func".to_string(), Duration::from_millis(75), 1),
-        ];
+        let function_times = vec![("test_func".to_string(), Duration::from_millis(75), 1)];
 
         let profile = ProfileData {
             total_time: Duration::from_millis(100),
             function_times,
         };
 
-        let formatted = format!("{}", profile);
+        let formatted = format!("{profile}");
         assert!(formatted.contains("Total time"));
-        assert!(formatted.contains("Function Times"));  // This is what the implementation actually contains
+        assert!(formatted.contains("Function Times")); // This is what the implementation actually contains
         assert!(formatted.contains("Profile Results"));
         assert!(formatted.contains("test_func"));
     }
@@ -1046,7 +1070,10 @@ mod tests {
 
         let result = registry.execute(&mut repl, "%unknown_command arg1 arg2");
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Unknown magic command"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Unknown magic command"));
     }
 
     #[test]
@@ -1056,7 +1083,10 @@ mod tests {
 
         let result = registry.execute(&mut repl, "%");
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Empty magic command"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Empty magic command"));
     }
 
     #[test]
@@ -1066,7 +1096,10 @@ mod tests {
 
         let result = registry.execute(&mut repl, "regular code");
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Not a magic command"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Not a magic command"));
     }
 
     #[test]
@@ -1104,7 +1137,10 @@ mod tests {
         // Test incomplete -n flag (needs space and incomplete syntax)
         let result = timeit.execute_line(&mut repl, "-n ");
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Invalid -n syntax"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Invalid -n syntax"));
     }
 
     #[test]
@@ -1115,7 +1151,7 @@ mod tests {
         match (original, cloned) {
             (MagicResult::Text(orig), MagicResult::Text(clone)) => {
                 assert_eq!(orig, clone);
-            },
+            }
             _ => panic!("Clone type mismatch"),
         }
     }
@@ -1130,8 +1166,7 @@ mod tests {
 #[cfg(test)]
 mod property_tests_magic {
     use proptest::proptest;
-    
-    
+
     proptest! {
         /// Property: Function never panics on any input
         #[test]

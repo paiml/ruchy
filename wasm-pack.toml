@@ -1,0 +1,20 @@
+# wasm-pack.toml
+# WebAssembly Extreme Quality Assurance Framework v3.0
+
+[pack]
+# Optimization for browser loading
+out-dir = "pkg"
+
+[pack.build]
+# Use release profile for size optimization
+profile = "release"
+# Target specific features
+target = "web"
+# Enable all features for comprehensive testing
+features = []
+
+[pack.test]
+# Browser testing configuration
+headless = true
+# Test in multiple browsers for compatibility
+browser = ["chrome", "firefox"]

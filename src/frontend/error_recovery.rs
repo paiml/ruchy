@@ -327,8 +327,8 @@ impl<'a> RecoveryParser<'a> {
                         format!("Unexpected operator: {token_clone:?}"),
                         Some("An expression was expected here, not an operator".to_string()),
                     );
-                    // Try to parse what comes after the misplaced operator
-                    return self.parse_prefix_recovery();
+                    // Don't recurse infinitely - return a ghost node
+                    return Ok(self.create_ghost_node("Misplaced operator"));
                 }
                 self.tokens.advance(); // Advance before recording error
                 self.record_error(
@@ -778,7 +778,10 @@ mod tests {
     fn test_parse_error_with_fields() {
         let mut error = ParseError::new("Missing semicolon".to_string(), Span::new(10, 10));
         error.recovery_hint = Some("Add a semicolon at the end of the statement".to_string());
-        assert_eq!(error.recovery_hint, Some("Add a semicolon at the end of the statement".to_string()));
+        assert_eq!(
+            error.recovery_hint,
+            Some("Add a semicolon at the end of the statement".to_string())
+        );
 
         error.expected = vec![Token::Semicolon, Token::Comma];
         assert_eq!(error.expected.len(), 2);
@@ -823,7 +826,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "Parser behavior needs adjustment"]
+
     fn test_recovery_nested_blocks() {
         let mut parser = RecoveryParser::new("{ { { 1 } } }");
         let result = parser.parse_with_recovery();
@@ -832,7 +835,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "Parser behavior needs adjustment"]
+
     fn test_recovery_function_call_missing_args() {
         let mut parser = RecoveryParser::new("foo(,)");
         let result = parser.parse_with_recovery();
@@ -853,7 +856,7 @@ mod tests {
         let mut parser = RecoveryParser::new("let x = @ + # * $");
         let result = parser.parse_with_recovery();
         assert!(result.ast.is_some());
-        assert!(result.errors.len() >= 1);
+        assert!(!result.errors.is_empty());
         assert!(result.partial_ast);
     }
 

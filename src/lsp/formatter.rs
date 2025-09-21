@@ -6,15 +6,15 @@ pub struct Formatter {
     _transpiler: Transpiler,
 }
 impl Formatter {
-/// # Examples
-/// 
-/// ```
-/// use ruchy::lsp::formatter::new;
-/// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn new() -> Self {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::lsp::formatter::new;
+    ///
+    /// let result = new(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn new() -> Self {
         Self {
             _transpiler: Transpiler::new(),
         }
@@ -24,15 +24,15 @@ pub fn new() -> Self {
     /// # Errors
     ///
     /// This function currently does not return errors but returns Result for future compatibility
-/// # Examples
-/// 
-/// ```
-/// use ruchy::lsp::formatter::format;
-/// 
-/// let result = format("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn format(&self, document: &str) -> Result<String> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::lsp::formatter::format;
+    ///
+    /// let result = format("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn format(&self, document: &str) -> Result<String> {
         // For now, basic formatting - in the future this would be more sophisticated
         let formatted = Self::basic_format(document);
         // Validate the formatted code still parses
@@ -79,9 +79,9 @@ impl Default for Formatter {
 }
 #[cfg(test)]
 mod tests {
-    use super::*;
-#[cfg(test)]
-use proptest::prelude::*;
+    use super::Formatter;
+    #[cfg(test)]
+    use proptest::prelude::*;
     #[test]
     fn test_basic_formatting() -> anyhow::Result<()> {
         let formatter = Formatter::new();
@@ -102,9 +102,8 @@ use proptest::prelude::*;
 }
 #[cfg(test)]
 mod property_tests_formatter {
-    use proptest::proptest;
-    use super::*;
     use proptest::prelude::*;
+    use proptest::proptest;
     proptest! {
         /// Property: Function never panics on any input
         #[test]

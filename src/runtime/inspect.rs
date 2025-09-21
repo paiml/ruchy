@@ -148,28 +148,28 @@ impl Default for Inspector {
 }
 impl Inspector {
     /// Create a new inspector with default settings
-/// # Examples
-/// 
-/// ```
-/// use ruchy::runtime::inspect::Inspector;
-/// 
-/// let instance = Inspector::new();
-/// // Verify behavior
-/// ```
-pub fn new() -> Self {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::inspect::Inspector;
+    ///
+    /// let instance = Inspector::new();
+    /// // Verify behavior
+    /// ```
+    pub fn new() -> Self {
         Self::with_style(InspectStyle::default())
     }
     /// Create an inspector with custom style
-/// # Examples
-/// 
-/// ```
-/// use ruchy::runtime::inspect::Inspector;
-/// 
-/// let mut instance = Inspector::new();
-/// let result = instance.with_style();
-/// // Verify behavior
-/// ```
-pub fn with_style(style: InspectStyle) -> Self {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::inspect::Inspector;
+    ///
+    /// let mut instance = Inspector::new();
+    /// let result = instance.with_style();
+    /// // Verify behavior
+    /// ```
+    pub fn with_style(style: InspectStyle) -> Self {
         Self {
             depth: 0,
             max_depth: 10,
@@ -191,66 +191,66 @@ pub fn with_style(style: InspectStyle) -> Self {
         }
     }
     /// Exit an inspection context
-/// # Examples
-/// 
-/// ```
-/// use ruchy::runtime::inspect::Inspector;
-/// 
-/// let mut instance = Inspector::new();
-/// let result = instance.exit();
-/// // Verify behavior
-/// ```
-pub fn exit(&mut self) {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::inspect::Inspector;
+    ///
+    /// let mut instance = Inspector::new();
+    /// let result = instance.exit();
+    /// // Verify behavior
+    /// ```
+    pub fn exit(&mut self) {
         self.depth = self.depth.saturating_sub(1);
     }
     /// Check if budget allows continued inspection
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::runtime::inspect::has_budget;
-/// 
-/// let result = has_budget(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn has_budget(&self) -> bool {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::runtime::inspect::has_budget;
+    ///
+    /// let result = has_budget(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn has_budget(&self) -> bool {
         self.budget > 0
     }
     /// Consume inspection budget
-/// # Examples
-/// 
-/// ```
-/// use ruchy::runtime::inspect::Inspector;
-/// 
-/// let mut instance = Inspector::new();
-/// let result = instance.consume_budget();
-/// // Verify behavior
-/// ```
-pub fn consume_budget(&mut self, amount: usize) {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::inspect::Inspector;
+    ///
+    /// let mut instance = Inspector::new();
+    /// let result = instance.consume_budget();
+    /// // Verify behavior
+    /// ```
+    pub fn consume_budget(&mut self, amount: usize) {
         self.budget = self.budget.saturating_sub(amount);
     }
     /// Get current depth
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::runtime::inspect::depth;
-/// 
-/// let result = depth(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn depth(&self) -> usize {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::runtime::inspect::depth;
+    ///
+    /// let result = depth(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn depth(&self) -> usize {
         self.depth
     }
     /// Check if at maximum depth
-/// # Examples
-/// 
-/// ```
-/// use ruchy::runtime::inspect::Inspector;
-/// 
-/// let mut instance = Inspector::new();
-/// let result = instance.at_max_depth();
-/// // Verify behavior
-/// ```
-pub fn at_max_depth(&self) -> bool {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::inspect::Inspector;
+    ///
+    /// let mut instance = Inspector::new();
+    /// let result = instance.at_max_depth();
+    /// // Verify behavior
+    /// ```
+    pub fn at_max_depth(&self) -> bool {
         self.depth >= self.max_depth
     }
 }
@@ -287,9 +287,12 @@ impl Inspect for String {
         if self.len() <= inspector.style.max_string_len {
             write!(inspector, "\"{self}\"")
         } else {
-            write!(inspector, "\"{}...\" ({} chars)", 
-                &self[..inspector.style.max_string_len], 
-                self.len())
+            write!(
+                inspector,
+                "\"{}...\" ({} chars)",
+                &self[..inspector.style.max_string_len],
+                self.len()
+            )
         }
     }
 }
@@ -298,9 +301,12 @@ impl Inspect for &str {
         if self.len() <= inspector.style.max_string_len {
             write!(inspector, "\"{self}\"")
         } else {
-            write!(inspector, "\"{}...\" ({} chars)", 
-                &self[..inspector.style.max_string_len], 
-                self.len())
+            write!(
+                inspector,
+                "\"{}...\" ({} chars)",
+                &self[..inspector.style.max_string_len],
+                self.len()
+            )
         }
     }
 }
@@ -433,8 +439,7 @@ mod tests {
 #[cfg(test)]
 mod property_tests_inspect {
     use proptest::proptest;
-    
-    
+
     proptest! {
         /// Property: Function never panics on any input
         #[test]

@@ -1,10 +1,10 @@
 //! Unified quality scoring system for Ruchy code (RUCHY-0810)
 //! Incremental scoring architecture (RUCHY-0813)
-use std::collections::HashMap;
-use std::time::{Duration, SystemTime};
-use std::path::PathBuf;
-use std::fs;
 use crate::frontend::ast::ExprKind;
+use std::collections::HashMap;
+use std::fs;
+use std::path::PathBuf;
+use std::time::{Duration, SystemTime};
 /// Analysis depth for quality scoring
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
 pub enum AnalysisDepth {
@@ -18,17 +18,17 @@ pub enum AnalysisDepth {
 /// Unified quality score with components
 #[derive(Debug, Clone)]
 pub struct QualityScore {
-    pub value: f64,           // 0.0-1.0 normalized score
+    pub value: f64, // 0.0-1.0 normalized score
     pub components: ScoreComponents,
-    pub grade: Grade,         // Human-readable grade
-    pub confidence: f64,      // Confidence in score accuracy
-    pub cache_hit_rate: f64,  // Percentage from cached analysis
+    pub grade: Grade,        // Human-readable grade
+    pub confidence: f64,     // Confidence in score accuracy
+    pub cache_hit_rate: f64, // Percentage from cached analysis
 }
 /// Individual score components
 #[derive(Debug, Clone)]
 pub struct ScoreComponents {
     pub correctness: f64,     // 35% - Semantic correctness
-    pub performance: f64,     // 25% - Runtime efficiency  
+    pub performance: f64,     // 25% - Runtime efficiency
     pub maintainability: f64, // 20% - Change resilience
     pub safety: f64,          // 15% - Memory/type safety
     pub idiomaticity: f64,    // 5%  - Language conventions
@@ -49,16 +49,16 @@ pub enum Grade {
     F,      // [0.00, 0.60) - Fundamental problems
 }
 impl Grade {
-/// # Examples
-/// 
-/// ```
-/// use ruchy::quality::scoring::Grade;
-/// 
-/// let mut instance = Grade::new();
-/// let result = instance.from_score();
-/// // Verify behavior
-/// ```
-pub fn from_score(value: f64) -> Self {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::quality::scoring::Grade;
+    ///
+    /// let mut instance = Grade::new();
+    /// let result = instance.from_score();
+    /// // Verify behavior
+    /// ```
+    pub fn from_score(value: f64) -> Self {
         match value {
             v if v >= 0.97 => Grade::APlus,
             v if v >= 0.93 => Grade::A,
@@ -73,11 +73,11 @@ pub fn from_score(value: f64) -> Self {
             _ => Grade::F,
         }
     }
-    
+
     /// Extract method: Convert grade to numeric rank for ordering - complexity: 6
     /// Reduces complexity of cmp function from 25 to 2
     pub fn to_rank(&self) -> u8 {
-        use Grade::{F, D, CMinus, C, CPlus, BMinus, B, BPlus, AMinus, A, APlus};
+        use Grade::{AMinus, APlus, BMinus, BPlus, CMinus, CPlus, A, B, C, D, F};
         match self {
             F => 0,
             D => 1,
@@ -158,49 +158,49 @@ impl Default for DependencyTracker {
     }
 }
 impl DependencyTracker {
-/// # Examples
-/// 
-/// ```
-/// use ruchy::quality::scoring::DependencyTracker;
-/// 
-/// let instance = DependencyTracker::new();
-/// // Verify behavior
-/// ```
-/// # Examples
-/// 
-/// ```
-/// use ruchy::quality::scoring::DependencyTracker;
-/// 
-/// let instance = DependencyTracker::new();
-/// // Verify behavior
-/// ```
-pub fn new() -> Self {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::quality::scoring::DependencyTracker;
+    ///
+    /// let instance = DependencyTracker::new();
+    /// // Verify behavior
+    /// ```
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::quality::scoring::DependencyTracker;
+    ///
+    /// let instance = DependencyTracker::new();
+    /// // Verify behavior
+    /// ```
+    pub fn new() -> Self {
         Self {
             dependencies: HashMap::new(),
             file_times: HashMap::new(),
         }
     }
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::quality::scoring::track_dependency;
-/// 
-/// let result = track_dependency(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn track_dependency(&mut self, file: PathBuf, dependency: PathBuf) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::quality::scoring::track_dependency;
+    ///
+    /// let result = track_dependency(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn track_dependency(&mut self, file: PathBuf, dependency: PathBuf) {
         self.dependencies.entry(file).or_default().push(dependency);
     }
-/// # Examples
-/// 
-/// ```
-/// use ruchy::quality::scoring::DependencyTracker;
-/// 
-/// let mut instance = DependencyTracker::new();
-/// let result = instance.is_stale();
-/// // Verify behavior
-/// ```
-pub fn is_stale(&self, file: &PathBuf) -> bool {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::quality::scoring::DependencyTracker;
+    ///
+    /// let mut instance = DependencyTracker::new();
+    /// let result = instance.is_stale();
+    /// // Verify behavior
+    /// ```
+    pub fn is_stale(&self, file: &PathBuf) -> bool {
         if let Some(dependencies) = self.dependencies.get(file) {
             for dep in dependencies {
                 if self.is_file_modified(dep) {
@@ -211,23 +211,27 @@ pub fn is_stale(&self, file: &PathBuf) -> bool {
         false
     }
     fn is_file_modified(&self, file: &PathBuf) -> bool {
-        let Ok(metadata) = fs::metadata(file) else { return true; };
-        let Ok(modified) = metadata.modified() else { return true; };
+        let Ok(metadata) = fs::metadata(file) else {
+            return true;
+        };
+        let Ok(modified) = metadata.modified() else {
+            return true;
+        };
         if let Some(&cached_time) = self.file_times.get(file) {
             modified > cached_time
         } else {
             true
         }
     }
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::quality::scoring::update_file_time;
-/// 
-/// let result = update_file_time(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn update_file_time(&mut self, file: PathBuf) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::quality::scoring::update_file_time;
+    ///
+    /// let result = update_file_time(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn update_file_time(&mut self, file: PathBuf) {
         if let Ok(metadata) = fs::metadata(&file) {
             if let Ok(modified) = metadata.modified() {
                 self.file_times.insert(file, modified);
@@ -243,21 +247,21 @@ pub struct ScoreEngine {
 }
 impl ScoreEngine {
     pub fn new(config: ScoreConfig) -> Self {
-        Self { 
+        Self {
             config,
             cache: HashMap::new(),
             dependency_tracker: DependencyTracker::new(),
         }
     }
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::quality::scoring::score;
-/// 
-/// let result = score(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn score(&self, ast: &crate::frontend::ast::Expr, depth: AnalysisDepth) -> QualityScore {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::quality::scoring::score;
+    ///
+    /// let result = score(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn score(&self, ast: &crate::frontend::ast::Expr, depth: AnalysisDepth) -> QualityScore {
         let components = match depth {
             AnalysisDepth::Shallow => Self::score_shallow(ast),
             AnalysisDepth::Standard => Self::score_standard(ast),
@@ -275,15 +279,15 @@ pub fn score(&self, ast: &crate::frontend::ast::Expr, depth: AnalysisDepth) -> Q
         }
     }
     /// Incremental scoring with file-based caching (RUCHY-0813)
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::quality::scoring::score_incremental;
-/// 
-/// let result = score_incremental("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn score_incremental(
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::quality::scoring::score_incremental;
+    ///
+    /// let result = score_incremental("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn score_incremental(
         &mut self,
         ast: &crate::frontend::ast::Expr,
         file_path: PathBuf,
@@ -350,15 +354,15 @@ pub fn score_incremental(
         score
     }
     /// Progressive scoring that refines analysis depth based on time budget
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::quality::scoring::score_progressive;
-/// 
-/// let result = score_progressive("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn score_progressive(
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::quality::scoring::score_progressive;
+    ///
+    /// let result = score_progressive("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn score_progressive(
         &mut self,
         ast: &crate::frontend::ast::Expr,
         file_path: PathBuf,
@@ -367,10 +371,12 @@ pub fn score_progressive(
     ) -> QualityScore {
         let start = std::time::Instant::now();
         // Start with shallow analysis
-        let mut score = self.score_incremental(ast, file_path.clone(), content, AnalysisDepth::Shallow);
+        let mut score =
+            self.score_incremental(ast, file_path.clone(), content, AnalysisDepth::Shallow);
         if start.elapsed() < time_budget / 3 {
             // Upgrade to standard analysis
-            score = self.score_incremental(ast, file_path.clone(), content, AnalysisDepth::Standard);
+            score =
+                self.score_incremental(ast, file_path.clone(), content, AnalysisDepth::Standard);
             if start.elapsed() < time_budget * 2 / 3 {
                 // Upgrade to deep analysis
                 score = self.score_incremental(ast, file_path, content, AnalysisDepth::Deep);
@@ -395,7 +401,7 @@ pub fn score_progressive(
         let now = SystemTime::now();
         let cutoff = Duration::from_secs(300); // 5 minutes
         let max_entries = 500; // Maximum cache entries for performance
-        // First pass: Remove old entries
+                               // First pass: Remove old entries
         self.cache.retain(|_, entry| {
             if let Ok(age) = now.duration_since(entry.timestamp) {
                 age < cutoff
@@ -405,10 +411,15 @@ pub fn score_progressive(
         });
         // Second pass: If still too many entries, remove least recently used
         if self.cache.len() > max_entries {
-            let mut entries: Vec<_> = self.cache.iter().map(|(k, v)| (k.clone(), v.timestamp)).collect();
+            let mut entries: Vec<_> = self
+                .cache
+                .iter()
+                .map(|(k, v)| (k.clone(), v.timestamp))
+                .collect();
             entries.sort_by_key(|(_, timestamp)| *timestamp);
             let to_remove = self.cache.len() - max_entries;
-            let keys_to_remove: Vec<_> = entries.iter()
+            let keys_to_remove: Vec<_> = entries
+                .iter()
                 .take(to_remove)
                 .map(|(k, _)| k.clone())
                 .collect();
@@ -418,28 +429,28 @@ pub fn score_progressive(
         }
     }
     /// Clear all caches - useful for memory management
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::quality::scoring::clear_cache;
-/// 
-/// let result = clear_cache(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn clear_cache(&mut self) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::quality::scoring::clear_cache;
+    ///
+    /// let result = clear_cache(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn clear_cache(&mut self) {
         self.cache.clear();
         self.dependency_tracker = DependencyTracker::new();
     }
     /// Get cache statistics
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::quality::scoring::cache_stats;
-/// 
-/// let result = cache_stats(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn cache_stats(&self) -> CacheStats {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::quality::scoring::cache_stats;
+    ///
+    /// let result = cache_stats(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn cache_stats(&self) -> CacheStats {
         CacheStats {
             entries: self.cache.len(),
             memory_usage_estimate: self.cache.len() * 1024, // Rough estimate
@@ -529,7 +540,12 @@ fn analyze_ast_metrics(ast: &crate::frontend::ast::Expr) -> AstMetrics {
     analyze_expr(ast, &mut metrics, 0, 0);
     metrics
 }
-fn analyze_expr(expr: &crate::frontend::ast::Expr, metrics: &mut AstMetrics, depth: usize, nesting: usize) {
+fn analyze_expr(
+    expr: &crate::frontend::ast::Expr,
+    metrics: &mut AstMetrics,
+    depth: usize,
+    nesting: usize,
+) {
     metrics.max_depth = metrics.max_depth.max(depth);
     metrics.max_nesting = metrics.max_nesting.max(nesting);
     match &expr.kind {
@@ -542,7 +558,11 @@ fn analyze_expr(expr: &crate::frontend::ast::Expr, metrics: &mut AstMetrics, dep
                 analyze_expr(e, metrics, depth + 1, nesting);
             }
         }
-        ExprKind::If { condition, then_branch, else_branch } => {
+        ExprKind::If {
+            condition,
+            then_branch,
+            else_branch,
+        } => {
             metrics.cyclomatic_complexity += 1;
             analyze_expr(condition, metrics, depth + 1, nesting + 1);
             analyze_expr(then_branch, metrics, depth + 1, nesting + 1);
@@ -560,7 +580,10 @@ fn analyze_expr(expr: &crate::frontend::ast::Expr, metrics: &mut AstMetrics, dep
             analyze_expr(iter, metrics, depth + 1, nesting + 1);
             analyze_expr(body, metrics, depth + 1, nesting + 1);
         }
-        ExprKind::Match { expr: match_expr, arms } => {
+        ExprKind::Match {
+            expr: match_expr,
+            arms,
+        } => {
             analyze_expr(match_expr, metrics, depth + 1, nesting);
             for arm in arms {
                 metrics.cyclomatic_complexity += 1;
@@ -573,30 +596,47 @@ fn analyze_expr(expr: &crate::frontend::ast::Expr, metrics: &mut AstMetrics, dep
 }
 impl QualityScore {
     /// Explain changes from a baseline score
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::quality::scoring::explain_delta;
-/// 
-/// let result = explain_delta(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn explain_delta(&self, baseline: &QualityScore) -> ScoreExplanation {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::quality::scoring::explain_delta;
+    ///
+    /// let result = explain_delta(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn explain_delta(&self, baseline: &QualityScore) -> ScoreExplanation {
         let delta = self.value - baseline.value;
         let mut changes = Vec::new();
         let mut tradeoffs = Vec::new();
         // Track component changes
         let components = [
-            ("Correctness", self.components.correctness, baseline.components.correctness),
-            ("Performance", self.components.performance, baseline.components.performance),
-            ("Maintainability", self.components.maintainability, baseline.components.maintainability),
+            (
+                "Correctness",
+                self.components.correctness,
+                baseline.components.correctness,
+            ),
+            (
+                "Performance",
+                self.components.performance,
+                baseline.components.performance,
+            ),
+            (
+                "Maintainability",
+                self.components.maintainability,
+                baseline.components.maintainability,
+            ),
             ("Safety", self.components.safety, baseline.components.safety),
-            ("Idiomaticity", self.components.idiomaticity, baseline.components.idiomaticity),
+            (
+                "Idiomaticity",
+                self.components.idiomaticity,
+                baseline.components.idiomaticity,
+            ),
         ];
         for (name, current, baseline) in components {
             let diff = current - baseline;
             if diff.abs() > 0.01 {
-                changes.push(format!("{}: {}{:.1}%", 
+                changes.push(format!(
+                    "{}: {}{:.1}%",
                     name,
                     if diff > 0.0 { "+" } else { "" },
                     diff * 100.0
@@ -604,12 +644,14 @@ pub fn explain_delta(&self, baseline: &QualityScore) -> ScoreExplanation {
             }
         }
         // Detect tradeoffs
-        if self.components.performance > baseline.components.performance 
-            && self.components.maintainability < baseline.components.maintainability {
+        if self.components.performance > baseline.components.performance
+            && self.components.maintainability < baseline.components.maintainability
+        {
             tradeoffs.push("Performance improved at the cost of maintainability".to_string());
         }
-        if self.components.safety > baseline.components.safety 
-            && self.components.performance < baseline.components.performance {
+        if self.components.safety > baseline.components.safety
+            && self.components.performance < baseline.components.performance
+        {
             tradeoffs.push("Safety improved at the cost of performance".to_string());
         }
         ScoreExplanation {
@@ -635,10 +677,10 @@ pub struct CacheStats {
 }
 /// Score correctness component (35% weight)
 /// # Examples
-/// 
+///
 /// ```ignore
 /// use ruchy::quality::scoring::score_correctness;
-/// 
+///
 /// let result = score_correctness(());
 /// assert_eq!(result, Ok(()));
 /// ```
@@ -677,13 +719,17 @@ fn analyze_pattern_completeness_recursive(
     complete_matches: &mut usize,
 ) {
     match &expr.kind {
-        ExprKind::Match { expr: match_expr, arms } => {
+        ExprKind::Match {
+            expr: match_expr,
+            arms,
+        } => {
             *total_matches += 1;
             // Check if match has wildcard pattern or covers all cases
-            let has_wildcard = arms.iter().any(|arm| {
-                matches!(arm.pattern, crate::frontend::ast::Pattern::Wildcard)
-            });
-            if has_wildcard || arms.len() >= 2 { // Basic heuristic
+            let has_wildcard = arms
+                .iter()
+                .any(|arm| matches!(arm.pattern, crate::frontend::ast::Pattern::Wildcard));
+            if has_wildcard || arms.len() >= 2 {
+                // Basic heuristic
                 *complete_matches += 1;
             }
             analyze_pattern_completeness_recursive(match_expr, total_matches, complete_matches);
@@ -691,7 +737,11 @@ fn analyze_pattern_completeness_recursive(
                 analyze_pattern_completeness_recursive(&arm.body, total_matches, complete_matches);
             }
         }
-        ExprKind::If { condition, then_branch, else_branch } => {
+        ExprKind::If {
+            condition,
+            then_branch,
+            else_branch,
+        } => {
             analyze_pattern_completeness_recursive(condition, total_matches, complete_matches);
             analyze_pattern_completeness_recursive(then_branch, total_matches, complete_matches);
             if let Some(else_expr) = else_branch {
@@ -733,7 +783,10 @@ fn analyze_error_handling_recursive(
     handled_ops: &mut usize,
 ) {
     match &expr.kind {
-        ExprKind::Match { expr: match_expr, arms } => {
+        ExprKind::Match {
+            expr: match_expr,
+            arms,
+        } => {
             // Check if matching on Result type (heuristic)
             if arms.len() >= 2 {
                 *total_fallible_ops += 1;
@@ -788,12 +841,18 @@ fn has_unreachable_code(ast: &crate::frontend::ast::Expr) -> bool {
             }
             false
         }
-        ExprKind::If { condition, then_branch, else_branch } => {
-            has_unreachable_code(condition) ||
-            has_unreachable_code(then_branch) ||
-            else_branch.as_ref().is_some_and(|e| has_unreachable_code(e))
+        ExprKind::If {
+            condition,
+            then_branch,
+            else_branch,
+        } => {
+            has_unreachable_code(condition)
+                || has_unreachable_code(then_branch)
+                || else_branch
+                    .as_ref()
+                    .is_some_and(|e| has_unreachable_code(e))
         }
-        _ => false
+        _ => false,
     }
 }
 fn is_diverging_expr(expr: &crate::frontend::ast::Expr) -> bool {
@@ -806,7 +865,7 @@ fn is_diverging_expr(expr: &crate::frontend::ast::Expr) -> bool {
                 false
             }
         }
-        _ => false
+        _ => false,
     }
 }
 fn has_potential_infinite_loops(ast: &crate::frontend::ast::Expr) -> bool {
@@ -822,27 +881,31 @@ fn has_potential_infinite_loops(ast: &crate::frontend::ast::Expr) -> bool {
         }
         ExprKind::Block(exprs) => exprs.iter().any(has_potential_infinite_loops),
         ExprKind::Function { body, .. } => has_potential_infinite_loops(body),
-        _ => false
+        _ => false,
     }
 }
 fn has_break_statement(ast: &crate::frontend::ast::Expr) -> bool {
     match &ast.kind {
         ExprKind::Break { .. } => true,
         ExprKind::Block(exprs) => exprs.iter().any(has_break_statement),
-        ExprKind::If { condition, then_branch, else_branch } => {
-            has_break_statement(condition) ||
-            has_break_statement(then_branch) ||
-            else_branch.as_ref().is_some_and(|e| has_break_statement(e))
+        ExprKind::If {
+            condition,
+            then_branch,
+            else_branch,
+        } => {
+            has_break_statement(condition)
+                || has_break_statement(then_branch)
+                || else_branch.as_ref().is_some_and(|e| has_break_statement(e))
         }
-        _ => false
+        _ => false,
     }
 }
 /// Score performance component (25% weight)
 /// # Examples
-/// 
+///
 /// ```ignore
 /// use ruchy::quality::scoring::score_performance;
-/// 
+///
 /// let result = score_performance(());
 /// assert_eq!(result, Ok(()));
 /// ```
@@ -896,7 +959,11 @@ fn analyze_complexity_recursive(
     current_nesting: i32,
 ) {
     match &expr.kind {
-        ExprKind::For { iter, body, .. } | ExprKind::While { condition: iter, body } => {
+        ExprKind::For { iter, body, .. }
+        | ExprKind::While {
+            condition: iter,
+            body,
+        } => {
             if current_nesting > 0 {
                 *nested_loops += 1;
             }
@@ -921,11 +988,25 @@ fn analyze_complexity_recursive(
         ExprKind::Function { body, .. } => {
             analyze_complexity_recursive(body, nested_loops, recursive_calls, 0);
         }
-        ExprKind::If { condition, then_branch, else_branch } => {
+        ExprKind::If {
+            condition,
+            then_branch,
+            else_branch,
+        } => {
             analyze_complexity_recursive(condition, nested_loops, recursive_calls, current_nesting);
-            analyze_complexity_recursive(then_branch, nested_loops, recursive_calls, current_nesting);
+            analyze_complexity_recursive(
+                then_branch,
+                nested_loops,
+                recursive_calls,
+                current_nesting,
+            );
             if let Some(else_expr) = else_branch {
-                analyze_complexity_recursive(else_expr, nested_loops, recursive_calls, current_nesting);
+                analyze_complexity_recursive(
+                    else_expr,
+                    nested_loops,
+                    recursive_calls,
+                    current_nesting,
+                );
             }
         }
         _ => {}
@@ -991,10 +1072,10 @@ fn count_allocations_recursive(
 // AST supports indexing and dictionary operations
 /// Score maintainability component (20% weight)
 /// # Examples
-/// 
+///
 /// ```ignore
 /// use ruchy::quality::scoring::score_maintainability;
-/// 
+///
 /// let result = score_maintainability(());
 /// assert_eq!(result, Ok(()));
 /// ```
@@ -1034,7 +1115,11 @@ fn analyze_coupling(ast: &crate::frontend::ast::Expr) -> f64 {
         1.0 // Good coupling
     }
 }
-fn count_coupling_metrics(expr: &crate::frontend::ast::Expr, external_calls: &mut i32, total_functions: &mut i32) {
+fn count_coupling_metrics(
+    expr: &crate::frontend::ast::Expr,
+    external_calls: &mut i32,
+    total_functions: &mut i32,
+) {
     match &expr.kind {
         ExprKind::Function { body, .. } => {
             *total_functions += 1;
@@ -1076,7 +1161,10 @@ fn analyze_cohesion(_ast: &crate::frontend::ast::Expr, metrics: &AstMetrics) -> 
 fn analyze_duplication(ast: &crate::frontend::ast::Expr) -> f64 {
     let mut expression_patterns = std::collections::HashMap::new();
     collect_expression_patterns(ast, &mut expression_patterns);
-    let duplicated_patterns = expression_patterns.values().filter(|&&count| count > 1).count();
+    let duplicated_patterns = expression_patterns
+        .values()
+        .filter(|&&count| count > 1)
+        .count();
     if duplicated_patterns > 5 {
         0.8 // Significant duplication penalty
     } else if duplicated_patterns > 2 {
@@ -1085,7 +1173,10 @@ fn analyze_duplication(ast: &crate::frontend::ast::Expr) -> f64 {
         1.0 // Little to no duplication
     }
 }
-fn collect_expression_patterns(expr: &crate::frontend::ast::Expr, patterns: &mut std::collections::HashMap<String, i32>) {
+fn collect_expression_patterns(
+    expr: &crate::frontend::ast::Expr,
+    patterns: &mut std::collections::HashMap<String, i32>,
+) {
     // Simplified pattern matching - use expression kind as pattern
     let pattern = format!("{:?}", std::mem::discriminant(&expr.kind));
     *patterns.entry(pattern).or_insert(0) += 1;
@@ -1098,7 +1189,11 @@ fn collect_expression_patterns(expr: &crate::frontend::ast::Expr, patterns: &mut
         ExprKind::Function { body, .. } => {
             collect_expression_patterns(body, patterns);
         }
-        ExprKind::If { condition, then_branch, else_branch } => {
+        ExprKind::If {
+            condition,
+            then_branch,
+            else_branch,
+        } => {
             collect_expression_patterns(condition, patterns);
             collect_expression_patterns(then_branch, patterns);
             if let Some(else_expr) = else_branch {
@@ -1120,7 +1215,11 @@ fn analyze_naming_quality(ast: &crate::frontend::ast::Expr) -> f64 {
     let good_ratio = f64::from(good_names) / f64::from(total_names);
     good_ratio.max(0.5) // Minimum score for naming
 }
-fn analyze_names_recursive(expr: &crate::frontend::ast::Expr, good_names: &mut i32, total_names: &mut i32) {
+fn analyze_names_recursive(
+    expr: &crate::frontend::ast::Expr,
+    good_names: &mut i32,
+    total_names: &mut i32,
+) {
     match &expr.kind {
         ExprKind::Function { name, .. } => {
             *total_names += 1;
@@ -1153,10 +1252,10 @@ fn is_good_name(name: &str) -> bool {
 }
 /// Score safety component (15% weight)
 /// # Examples
-/// 
+///
 /// ```ignore
 /// use ruchy::quality::scoring::score_safety;
-/// 
+///
 /// let result = score_safety(());
 /// assert_eq!(result, Ok(()));
 /// ```
@@ -1192,7 +1291,11 @@ fn analyze_null_safety(ast: &crate::frontend::ast::Expr) -> f64 {
         safety_ratio.max(0.5) // Minimum safety score
     }
 }
-fn analyze_null_safety_recursive(expr: &crate::frontend::ast::Expr, option_uses: &mut i32, unsafe_accesses: &mut i32) {
+fn analyze_null_safety_recursive(
+    expr: &crate::frontend::ast::Expr,
+    option_uses: &mut i32,
+    unsafe_accesses: &mut i32,
+) {
     match &expr.kind {
         ExprKind::Some { .. } | ExprKind::None => {
             *option_uses += 1;
@@ -1229,7 +1332,11 @@ fn analyze_resource_management(ast: &crate::frontend::ast::Expr) -> f64 {
     let cleanup_ratio = f64::from(proper_cleanup) / f64::from(resource_allocations);
     cleanup_ratio.max(0.7) // Minimum score for resource management
 }
-fn analyze_resources_recursive(expr: &crate::frontend::ast::Expr, allocations: &mut i32, cleanup: &mut i32) {
+fn analyze_resources_recursive(
+    expr: &crate::frontend::ast::Expr,
+    allocations: &mut i32,
+    cleanup: &mut i32,
+) {
     match &expr.kind {
         ExprKind::Block(exprs) => {
             for e in exprs {
@@ -1244,10 +1351,10 @@ fn analyze_resources_recursive(expr: &crate::frontend::ast::Expr, allocations: &
 }
 /// Score idiomaticity component (5% weight)
 /// # Examples
-/// 
+///
 /// ```ignore
 /// use ruchy::quality::scoring::score_idiomaticity;
-/// 
+///
 /// let result = score_idiomaticity(());
 /// assert_eq!(result, Ok(()));
 /// ```
@@ -1284,7 +1391,11 @@ fn analyze_pattern_usage(ast: &crate::frontend::ast::Expr) -> f64 {
         0.8
     }
 }
-fn count_pattern_vs_conditional(expr: &crate::frontend::ast::Expr, matches: &mut i32, conditionals: &mut i32) {
+fn count_pattern_vs_conditional(
+    expr: &crate::frontend::ast::Expr,
+    matches: &mut i32,
+    conditionals: &mut i32,
+) {
     match &expr.kind {
         ExprKind::Match { arms, .. } => {
             *matches += 1;
@@ -1292,7 +1403,11 @@ fn count_pattern_vs_conditional(expr: &crate::frontend::ast::Expr, matches: &mut
                 count_pattern_vs_conditional(&arm.body, matches, conditionals);
             }
         }
-        ExprKind::If { condition, then_branch, else_branch } => {
+        ExprKind::If {
+            condition,
+            then_branch,
+            else_branch,
+        } => {
             *conditionals += 1;
             count_pattern_vs_conditional(condition, matches, conditionals);
             count_pattern_vs_conditional(then_branch, matches, conditionals);
@@ -1331,7 +1446,11 @@ fn analyze_iterator_usage(ast: &crate::frontend::ast::Expr) -> f64 {
         0.8
     }
 }
-fn count_iterator_vs_loops(expr: &crate::frontend::ast::Expr, iterators: &mut i32, loops: &mut i32) {
+fn count_iterator_vs_loops(
+    expr: &crate::frontend::ast::Expr,
+    iterators: &mut i32,
+    loops: &mut i32,
+) {
     match &expr.kind {
         ExprKind::For { .. } => {
             *iterators += 1; // For loops in Ruchy are iterator-based
@@ -1369,7 +1488,11 @@ fn analyze_lambda_usage(ast: &crate::frontend::ast::Expr) -> f64 {
         0.9 // Still good if other patterns are used
     }
 }
-fn count_lambda_usage(expr: &crate::frontend::ast::Expr, lambdas: &mut i32, total_functions: &mut i32) {
+fn count_lambda_usage(
+    expr: &crate::frontend::ast::Expr,
+    lambdas: &mut i32,
+    total_functions: &mut i32,
+) {
     match &expr.kind {
         ExprKind::Lambda { .. } => {
             *lambdas += 1;
@@ -1478,7 +1601,7 @@ mod tests {
 
         let score = QualityScore {
             value: 0.88,
-            components: components.clone(),
+            components: components,
             grade: Grade::BPlus,
             confidence: 0.95,
             cache_hit_rate: 0.2,
@@ -1590,9 +1713,11 @@ mod tests {
             idiomaticity: 0.05,
         };
 
-        let sum = components.correctness + components.performance +
-                  components.maintainability + components.safety +
-                  components.idiomaticity;
+        let sum = components.correctness
+            + components.performance
+            + components.maintainability
+            + components.safety
+            + components.idiomaticity;
         assert!((sum - 1.0).abs() < 0.001);
     }
 
@@ -1857,8 +1982,7 @@ mod tests {
     fn test_grade_rank_consistency() {
         // Test that to_rank() is consistent with from_score()
         let test_scores = vec![
-            0.98, 0.95, 0.92, 0.88, 0.85, 0.82,
-            0.78, 0.75, 0.72, 0.65, 0.50
+            0.98, 0.95, 0.92, 0.88, 0.85, 0.82, 0.78, 0.75, 0.72, 0.65, 0.50,
         ];
 
         for score in test_scores {
@@ -1976,10 +2100,17 @@ mod tests {
     fn test_score_serialization_compatibility() {
         // Test that Grade enum is serializable
         let grades = vec![
-            Grade::APlus, Grade::A, Grade::AMinus,
-            Grade::BPlus, Grade::B, Grade::BMinus,
-            Grade::CPlus, Grade::C, Grade::CMinus,
-            Grade::D, Grade::F
+            Grade::APlus,
+            Grade::A,
+            Grade::AMinus,
+            Grade::BPlus,
+            Grade::B,
+            Grade::BMinus,
+            Grade::CPlus,
+            Grade::C,
+            Grade::CMinus,
+            Grade::D,
+            Grade::F,
         ];
 
         for grade in grades {
@@ -1994,8 +2125,7 @@ mod tests {
 #[cfg(test)]
 mod property_tests_scoring {
     use proptest::proptest;
-    
-    
+
     proptest! {
         /// Property: Function never panics on any input
         #[test]

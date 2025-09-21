@@ -34,16 +34,16 @@ use crate::runtime::interpreter::Value;
 use anyhow::Result;
 impl LazyValue {
     /// Create a new computed lazy value
-/// # Examples
-/// 
-/// ```
-/// use ruchy::runtime::lazy::LazyValue;
-/// 
-/// let mut instance = LazyValue::new();
-/// let result = instance.computed();
-/// // Verify behavior
-/// ```
-pub fn computed(value: Value) -> Self {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::lazy::LazyValue;
+    ///
+    /// let mut instance = LazyValue::new();
+    /// let result = instance.computed();
+    /// // Verify behavior
+    /// ```
+    pub fn computed(value: Value) -> Self {
         LazyValue::Computed(value)
     }
     /// Create a new deferred lazy value
@@ -68,15 +68,15 @@ pub fn computed(value: Value) -> Self {
     /// # Errors
     ///
     /// Returns an error if the computation fails
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::runtime::lazy::force;
-/// 
-/// let result = force(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn force(&self) -> Result<Value> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::runtime::lazy::force;
+    ///
+    /// let result = force(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn force(&self) -> Result<Value> {
         match self {
             LazyValue::Computed(value) => Ok(value.clone()),
             LazyValue::Deferred(cache, computation) => {
@@ -96,15 +96,15 @@ pub fn force(&self) -> Result<Value> {
         }
     }
     /// Check if the value has been computed
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::runtime::lazy::is_computed;
-/// 
-/// let result = is_computed(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn is_computed(&self) -> bool {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::runtime::lazy::is_computed;
+    ///
+    /// let result = is_computed(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn is_computed(&self) -> bool {
         match self {
             LazyValue::Computed(_) => true,
             LazyValue::Deferred(cache, _) => cache.borrow().is_some(),
@@ -147,16 +147,16 @@ enum LazyIterState {
 }
 impl LazyIterator {
     /// Create a new lazy iterator from a collection
-/// # Examples
-/// 
-/// ```
-/// use ruchy::runtime::lazy::LazyIterator;
-/// 
-/// let mut instance = LazyIterator::new();
-/// let result = instance.from_vec();
-/// // Verify behavior
-/// ```
-pub fn from_vec(values: Vec<Value>) -> Self {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::lazy::LazyIterator;
+    ///
+    /// let mut instance = LazyIterator::new();
+    /// let result = instance.from_vec();
+    /// // Verify behavior
+    /// ```
+    pub fn from_vec(values: Vec<Value>) -> Self {
         LazyIterator {
             state: RefCell::new(LazyIterState::Source(values)),
         }
@@ -189,15 +189,15 @@ pub fn from_vec(values: Vec<Value>) -> Self {
     }
     /// Take first n elements
     #[must_use]
-/// # Examples
-/// 
-/// ```
-/// use ruchy::runtime::lazy::take;
-/// 
-/// let result = take(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn take(self, count: usize) -> Self {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::lazy::take;
+    ///
+    /// let result = take(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn take(self, count: usize) -> Self {
         LazyIterator {
             state: RefCell::new(LazyIterState::Take {
                 source: Box::new(self),
@@ -207,15 +207,15 @@ pub fn take(self, count: usize) -> Self {
     }
     /// Skip first n elements
     #[must_use]
-/// # Examples
-/// 
-/// ```
-/// use ruchy::runtime::lazy::skip;
-/// 
-/// let result = skip(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn skip(self, count: usize) -> Self {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::lazy::skip;
+    ///
+    /// let result = skip(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn skip(self, count: usize) -> Self {
         LazyIterator {
             state: RefCell::new(LazyIterState::Skip {
                 source: Box::new(self),
@@ -228,16 +228,16 @@ pub fn skip(self, count: usize) -> Self {
     /// # Errors
     ///
     /// Returns an error if any transformation fails
-/// # Examples
-/// 
-/// ```
-/// use ruchy::runtime::lazy::LazyIterator;
-/// 
-/// let mut instance = LazyIterator::new();
-/// let result = instance.collect();
-/// // Verify behavior
-/// ```
-pub fn collect(&self) -> Result<Vec<Value>> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::lazy::LazyIterator;
+    ///
+    /// let mut instance = LazyIterator::new();
+    /// let result = instance.collect();
+    /// // Verify behavior
+    /// ```
+    pub fn collect(&self) -> Result<Vec<Value>> {
         match &*self.state.borrow() {
             LazyIterState::Source(values) => Ok(values.clone()),
             LazyIterState::Map { source, transform } => {
@@ -272,15 +272,15 @@ pub fn collect(&self) -> Result<Vec<Value>> {
     /// # Errors
     ///
     /// Returns an error if evaluation fails
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::runtime::lazy::first;
-/// 
-/// let result = first(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn first(&self) -> Result<Option<Value>> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::runtime::lazy::first;
+    ///
+    /// let result = first(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn first(&self) -> Result<Option<Value>> {
         let values = self.collect()?;
         Ok(values.into_iter().next())
     }
@@ -289,15 +289,15 @@ pub fn first(&self) -> Result<Option<Value>> {
     /// # Errors
     ///
     /// Returns an error if evaluation fails
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::runtime::lazy::count;
-/// 
-/// let result = count(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn count(&self) -> Result<usize> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::runtime::lazy::count;
+    ///
+    /// let result = count(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn count(&self) -> Result<usize> {
         match &*self.state.borrow() {
             LazyIterState::Source(values) => Ok(values.len()),
             _ => self.collect().map(|v| v.len()),
@@ -310,15 +310,15 @@ pub struct LazyCache {
 }
 impl LazyCache {
     /// Create a new lazy cache
-/// # Examples
-/// 
-/// ```
-/// use ruchy::runtime::lazy::LazyCache;
-/// 
-/// let instance = LazyCache::new();
-/// // Verify behavior
-/// ```
-pub fn new() -> Self {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::lazy::LazyCache;
+    ///
+    /// let instance = LazyCache::new();
+    /// // Verify behavior
+    /// ```
+    pub fn new() -> Self {
         LazyCache {
             cache: RefCell::new(std::collections::HashMap::new()),
         }
@@ -342,28 +342,28 @@ pub fn new() -> Self {
         Ok(value)
     }
     /// Clear the cache
-/// # Examples
-/// 
-/// ```
-/// use ruchy::runtime::lazy::LazyCache;
-/// 
-/// let mut instance = LazyCache::new();
-/// let result = instance.clear();
-/// // Verify behavior
-/// ```
-pub fn clear(&self) {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::lazy::LazyCache;
+    ///
+    /// let mut instance = LazyCache::new();
+    /// let result = instance.clear();
+    /// // Verify behavior
+    /// ```
+    pub fn clear(&self) {
         self.cache.borrow_mut().clear();
     }
     /// Get cache size
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::runtime::lazy::size;
-/// 
-/// let result = size(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn size(&self) -> usize {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::runtime::lazy::size;
+    ///
+    /// let result = size(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn size(&self) -> usize {
         self.cache.borrow().len()
     }
 }
@@ -410,11 +410,19 @@ mod tests {
             }
         });
         let result = lazy.collect().unwrap();
-        assert_eq!(result, vec![Value::Integer(2), Value::Integer(4), Value::Integer(6)]);
+        assert_eq!(
+            result,
+            vec![Value::Integer(2), Value::Integer(4), Value::Integer(6)]
+        );
     }
     #[test]
     fn test_lazy_iterator_filter() {
-        let values = vec![Value::Integer(1), Value::Integer(2), Value::Integer(3), Value::Integer(4)];
+        let values = vec![
+            Value::Integer(1),
+            Value::Integer(2),
+            Value::Integer(3),
+            Value::Integer(4),
+        ];
         let lazy = LazyIterator::from_vec(values).filter(|v| {
             if let Value::Integer(n) = v {
                 Ok(n % 2 == 0)
@@ -454,8 +462,7 @@ mod tests {
 #[cfg(test)]
 mod property_tests_lazy {
     use proptest::proptest;
-    
-    
+
     proptest! {
         /// Property: Function never panics on any input
         #[test]

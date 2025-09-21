@@ -1,12 +1,12 @@
 //! Platform-specific deployment for WebAssembly components (RUCHY-0819)
 //!
 //! Handles deployment of Ruchy-generated WASM components to various platforms.
+use super::component::WasmComponent;
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::path::{Path, PathBuf};
 use std::fs;
-use super::component::WasmComponent;
+use std::path::{Path, PathBuf};
 /// Deployment target platform
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum DeploymentTarget {
@@ -69,8 +69,7 @@ pub enum Environment {
     Custom(String),
 }
 /// Deployment credentials
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct Credentials {
     /// API key
     pub api_key: Option<String>,
@@ -163,15 +162,15 @@ pub enum DeploymentStatus {
 }
 impl Deployer {
     /// Create a new deployer
-/// # Examples
-/// 
-/// ```
-/// use ruchy::wasm::deployment::Deployer;
-/// 
-/// let instance = Deployer::new();
-/// // Verify behavior
-/// ```
-pub fn new(target: DeploymentTarget, config: DeploymentConfig) -> Self {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::wasm::deployment::Deployer;
+    ///
+    /// let instance = Deployer::new();
+    /// // Verify behavior
+    /// ```
+    pub fn new(target: DeploymentTarget, config: DeploymentConfig) -> Self {
         Self {
             config,
             target,
@@ -179,28 +178,28 @@ pub fn new(target: DeploymentTarget, config: DeploymentConfig) -> Self {
         }
     }
     /// Add a deployment artifact
-/// # Examples
-/// 
-/// ```
-/// use ruchy::wasm::deployment::Deployer;
-/// 
-/// let mut instance = Deployer::new();
-/// let result = instance.add_artifact();
-/// // Verify behavior
-/// ```
-pub fn add_artifact(&mut self, artifact: DeploymentArtifact) {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::wasm::deployment::Deployer;
+    ///
+    /// let mut instance = Deployer::new();
+    /// let result = instance.add_artifact();
+    /// // Verify behavior
+    /// ```
+    pub fn add_artifact(&mut self, artifact: DeploymentArtifact) {
         self.artifacts.push(artifact);
     }
     /// Deploy the component
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::deployment::deploy;
-/// 
-/// let result = deploy(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn deploy(&self, component: &WasmComponent) -> Result<DeploymentResult> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::deployment::deploy;
+    ///
+    /// let result = deploy(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn deploy(&self, component: &WasmComponent) -> Result<DeploymentResult> {
         match &self.target {
             DeploymentTarget::CloudflareWorkers => self.deploy_cloudflare(component),
             DeploymentTarget::FastlyCompute => self.deploy_fastly(component),
@@ -211,21 +210,26 @@ pub fn deploy(&self, component: &WasmComponent) -> Result<DeploymentResult> {
             DeploymentTarget::NodeJs => self.deploy_nodejs(component),
             DeploymentTarget::Wasmtime => self.deploy_wasmtime(component),
             DeploymentTarget::WasmEdge => self.deploy_wasmedge(component),
-            DeploymentTarget::Custom(name) => {
-                Err(anyhow::anyhow!("Custom deployment target '{}' not implemented", name))
-            }
+            DeploymentTarget::Custom(name) => Err(anyhow::anyhow!(
+                "Custom deployment target '{}' not implemented",
+                name
+            )),
         }
     }
     /// Generate deployment package
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::deployment::generate_package;
-/// 
-/// let result = generate_package(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn generate_package(&self, component: &WasmComponent, output_dir: &Path) -> Result<PathBuf> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::deployment::generate_package;
+    ///
+    /// let result = generate_package(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn generate_package(
+        &self,
+        component: &WasmComponent,
+        output_dir: &Path,
+    ) -> Result<PathBuf> {
         // Create output directory
         fs::create_dir_all(output_dir)?;
         // Generate artifacts based on target
@@ -262,7 +266,10 @@ pub fn generate_package(&self, component: &WasmComponent, output_dir: &Path) -> 
         // Generate Fastly Compute@Edge specific artifacts
         Ok(DeploymentResult {
             deployment_id: format!("fastly-{}", uuid::Uuid::new_v4()),
-            url: Some(format!("https://{}.edgecompute.app", self.config.project_name)),
+            url: Some(format!(
+                "https://{}.edgecompute.app",
+                self.config.project_name
+            )),
             status: DeploymentStatus::Success,
             timestamp: std::time::SystemTime::now(),
             metadata: HashMap::new(),
@@ -272,7 +279,10 @@ pub fn generate_package(&self, component: &WasmComponent, output_dir: &Path) -> 
         // Generate AWS Lambda specific artifacts
         Ok(DeploymentResult {
             deployment_id: format!("lambda-{}", uuid::Uuid::new_v4()),
-            url: Some(format!("https://lambda.amazonaws.com/functions/{}", self.config.project_name)),
+            url: Some(format!(
+                "https://lambda.amazonaws.com/functions/{}",
+                self.config.project_name
+            )),
             status: DeploymentStatus::Success,
             timestamp: std::time::SystemTime::now(),
             metadata: HashMap::new(),
@@ -339,14 +349,12 @@ pub fn generate_package(&self, component: &WasmComponent, output_dir: &Path) -> 
         })
     }
     fn generate_artifacts(&self, component: &WasmComponent) -> Result<Vec<DeploymentArtifact>> {
-        let mut artifacts = vec![
-            DeploymentArtifact {
-                name: format!("{}.wasm", component.name),
-                artifact_type: ArtifactType::WasmModule,
-                content: component.bytecode.clone(),
-                metadata: HashMap::new(),
-            },
-        ];
+        let mut artifacts = vec![DeploymentArtifact {
+            name: format!("{}.wasm", component.name),
+            artifact_type: ArtifactType::WasmModule,
+            content: component.bytecode.clone(),
+            metadata: HashMap::new(),
+        }];
         // Add target-specific artifacts
         match &self.target {
             DeploymentTarget::Browser => {
@@ -496,7 +504,7 @@ impl Default for RuntimeConfig {
     fn default() -> Self {
         Self {
             memory_limit: Some(128), // 128 MB
-            cpu_limit: Some(10000),   // 10 seconds
+            cpu_limit: Some(10000),  // 10 seconds
             env_vars: HashMap::new(),
             runtime_version: None,
         }
@@ -505,7 +513,6 @@ impl Default for RuntimeConfig {
 #[cfg(test)]
 mod property_tests_deployment {
     use proptest::proptest;
-
 
     proptest! {
         /// Property: Function never panics on any input
@@ -528,16 +535,28 @@ mod tests {
 
     #[test]
     fn test_deployment_target_equality() {
-        assert_eq!(DeploymentTarget::CloudflareWorkers, DeploymentTarget::CloudflareWorkers);
-        assert_ne!(DeploymentTarget::CloudflareWorkers, DeploymentTarget::FastlyCompute);
-        assert_ne!(DeploymentTarget::Custom("a".to_string()), DeploymentTarget::Custom("b".to_string()));
+        assert_eq!(
+            DeploymentTarget::CloudflareWorkers,
+            DeploymentTarget::CloudflareWorkers
+        );
+        assert_ne!(
+            DeploymentTarget::CloudflareWorkers,
+            DeploymentTarget::FastlyCompute
+        );
+        assert_ne!(
+            DeploymentTarget::Custom("a".to_string()),
+            DeploymentTarget::Custom("b".to_string())
+        );
     }
 
     #[test]
     fn test_environment_equality() {
         assert_eq!(Environment::Development, Environment::Development);
         assert_ne!(Environment::Development, Environment::Production);
-        assert_eq!(Environment::Custom("test".to_string()), Environment::Custom("test".to_string()));
+        assert_eq!(
+            Environment::Custom("test".to_string()),
+            Environment::Custom("test".to_string())
+        );
     }
 
     #[test]
@@ -599,7 +618,7 @@ mod tests {
             metadata: HashMap::new(),
         };
 
-        deployer.add_artifact(artifact.clone());
+        deployer.add_artifact(artifact);
         assert_eq!(deployer.artifacts.len(), 1);
         assert_eq!(deployer.artifacts[0].name, "test.wasm");
     }

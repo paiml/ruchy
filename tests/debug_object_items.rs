@@ -8,14 +8,14 @@ for (key, value) in person.items() {
     println(key + ": " + value)
 }
 "#;
-    
+
     let mut parser = Parser::new(input);
     let result = parser.parse();
-    
-    println!("Parse result: {:?}", result);
-    
+
+    println!("Parse result: {result:?}");
+
     match result {
-        Ok(ast) => println!("Successfully parsed: {:?}", ast),
-        Err(e) => println!("Parse error: {}", e),
+        Ok(ast) => println!("Successfully parsed: {ast:?}"),
+        Err(e) => println!("Parse error: {e}"),
     }
 }

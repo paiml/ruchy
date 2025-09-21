@@ -14,16 +14,35 @@ impl CompletionEngine {
     /// Create a new completion engine (complexity: 3)
     pub fn new() -> Self {
         let keywords = vec![
-            "fn", "let", "if", "else", "for", "while", "match", "true", "false",
-            "nil", "return", "break", "continue", "in", "mut", "struct", "enum",
-            "impl", "trait", "pub", "use", "mod", "type", "const", "static",
-        ].into_iter().map(String::from).collect();
+            "fn", "let", "if", "else", "for", "while", "match", "true", "false", "nil", "return",
+            "break", "continue", "in", "mut", "struct", "enum", "impl", "trait", "pub", "use",
+            "mod", "type", "const", "static",
+        ]
+        .into_iter()
+        .map(String::from)
+        .collect();
 
         let commands = vec![
-            ":help", ":quit", ":exit", ":clear", ":history", ":reset",
-            ":mode", ":debug", ":ast", ":transpile", ":bench", ":load",
-            ":save", ":vars", ":funcs", ":types",
-        ].into_iter().map(String::from).collect();
+            ":help",
+            ":quit",
+            ":exit",
+            ":clear",
+            ":history",
+            ":reset",
+            ":mode",
+            ":debug",
+            ":ast",
+            ":transpile",
+            ":bench",
+            ":load",
+            ":save",
+            ":vars",
+            ":funcs",
+            ":types",
+        ]
+        .into_iter()
+        .map(String::from)
+        .collect();
 
         Self { keywords, commands }
     }

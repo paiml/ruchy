@@ -3,16 +3,14 @@
 
 #![allow(clippy::unwrap_used)]
 
+use ruchy::frontend::ast::{Expr, ExprKind, Literal, MatchArm, Pattern, Span};
 use ruchy::Transpiler;
-use ruchy::frontend::ast::{
-    Expr, ExprKind, Literal, Pattern, MatchArm, Span,
-};
 
 /// Test simple match expression
 #[test]
 fn test_direct_match_construction() {
     let mut transpiler = Transpiler::new();
-    
+
     // Create: match x { 1 => "one", _ => "other" }
     let match_expr = Expr {
         kind: ExprKind::Match {
@@ -47,20 +45,20 @@ fn test_direct_match_construction() {
         span: Span::default(),
         attributes: vec![],
     };
-    
+
     let result = transpiler.transpile(&match_expr).unwrap();
     let code = result.to_string();
-    
+
     assert!(code.contains("match"));
     assert!(code.contains("one"));
     assert!(code.contains("other"));
 }
 
 /// Test or-pattern construction
-#[test] 
+#[test]
 fn test_or_pattern_direct() {
     let mut transpiler = Transpiler::new();
-    
+
     // Create: match x { 1 | 2 => "small", _ => "large" }
     let match_expr = Expr {
         kind: ExprKind::Match {
@@ -98,11 +96,11 @@ fn test_or_pattern_direct() {
         span: Span::default(),
         attributes: vec![],
     };
-    
+
     // This tests or-patterns which parser doesn't support
     let result = transpiler.transpile(&match_expr).unwrap();
     let code = result.to_string();
-    
+
     assert!(code.contains("small"));
     assert!(code.contains("large"));
 }
@@ -111,7 +109,7 @@ fn test_or_pattern_direct() {
 #[test]
 fn test_result_pattern_direct() {
     let mut transpiler = Transpiler::new();
-    
+
     // Create: match result { Ok(x) => x, Err(_) => 0 }
     let match_expr = Expr {
         kind: ExprKind::Match {
@@ -146,10 +144,10 @@ fn test_result_pattern_direct() {
         span: Span::default(),
         attributes: vec![],
     };
-    
+
     let result = transpiler.transpile(&match_expr).unwrap();
     let code = result.to_string();
-    
+
     assert!(code.contains("Ok"));
     assert!(code.contains("Err"));
 }

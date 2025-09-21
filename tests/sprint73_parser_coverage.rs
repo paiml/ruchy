@@ -43,13 +43,7 @@ mod parser_tests {
 
     #[test]
     fn test_tuple_operations() {
-        let tests = vec![
-            "()",
-            "(1,)",
-            "(1, 2)",
-            "(1, 2, 3)",
-            r#"(1, "hello", true)"#,
-        ];
+        let tests = vec!["()", "(1,)", "(1, 2)", "(1, 2, 3)", r#"(1, "hello", true)"#];
 
         for code in tests {
             let mut parser = Parser::new(code);
@@ -92,11 +86,7 @@ mod parser_tests {
 
     #[test]
     fn test_string_interpolation() {
-        let tests = vec![
-            r#"f"Hello {name}""#,
-            r#"f"Result: {1 + 2}""#,
-            r#"f"{}""#,
-        ];
+        let tests = vec![r#"f"Hello {name}""#, r#"f"Result: {1 + 2}""#, r#"f"{}""#];
 
         for code in tests {
             let mut parser = Parser::new(code);
@@ -107,11 +97,7 @@ mod parser_tests {
 
     #[test]
     fn test_async_await() {
-        let tests = vec![
-            "async fn fetch() { }",
-            "await fetch()",
-            "async { 42 }",
-        ];
+        let tests = vec!["async fn fetch() { }", "await fetch()", "async { 42 }"];
 
         for code in tests {
             let mut parser = Parser::new(code);
@@ -216,8 +202,8 @@ mod module_resolver_tests {
 
 #[cfg(test)]
 mod type_inference_tests {
-    use ruchy::middleend::infer::InferenceContext;
     use ruchy::frontend::parser::Parser;
+    use ruchy::middleend::infer::InferenceContext;
 
     #[test]
     fn test_inference_context() {

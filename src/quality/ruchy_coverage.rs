@@ -1,12 +1,12 @@
 //! Coverage implementation for Ruchy test files
 //!
 //! [RUCHY-206] Implement coverage collection for .ruchy files
-use anyhow::Result;
-use std::collections::{HashMap, HashSet};
-use std::path::Path;
-use std::fs;
-use serde::{Serialize, Deserialize};
 use crate::quality::instrumentation::CoverageInstrumentation;
+use anyhow::Result;
+use serde::{Deserialize, Serialize};
+use std::collections::{HashMap, HashSet};
+use std::fs;
+use std::path::Path;
 /// Coverage data for a Ruchy file
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RuchyCoverage {
@@ -19,23 +19,23 @@ pub struct RuchyCoverage {
     pub covered_branches: usize,
 }
 impl RuchyCoverage {
-/// # Examples
-/// 
-/// ```
-/// use ruchy::quality::ruchy_coverage::RuchyCoverage;
-/// 
-/// let instance = RuchyCoverage::new();
-/// // Verify behavior
-/// ```
-/// # Examples
-/// 
-/// ```
-/// use ruchy::quality::ruchy_coverage::RuchyCoverage;
-/// 
-/// let instance = RuchyCoverage::new();
-/// // Verify behavior
-/// ```
-pub fn new(file_path: &str) -> Self {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::quality::ruchy_coverage::RuchyCoverage;
+    ///
+    /// let instance = RuchyCoverage::new();
+    /// // Verify behavior
+    /// ```
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::quality::ruchy_coverage::RuchyCoverage;
+    ///
+    /// let instance = RuchyCoverage::new();
+    /// // Verify behavior
+    /// ```
+    pub fn new(file_path: &str) -> Self {
         Self {
             file_path: file_path.to_string(),
             total_lines: 0,
@@ -47,16 +47,16 @@ pub fn new(file_path: &str) -> Self {
         }
     }
     /// Calculate line coverage percentage
-/// # Examples
-/// 
-/// ```
-/// use ruchy::quality::ruchy_coverage::RuchyCoverage;
-/// 
-/// let mut instance = RuchyCoverage::new();
-/// let result = instance.line_coverage();
-/// // Verify behavior
-/// ```
-pub fn line_coverage(&self) -> f64 {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::quality::ruchy_coverage::RuchyCoverage;
+    ///
+    /// let mut instance = RuchyCoverage::new();
+    /// let result = instance.line_coverage();
+    /// // Verify behavior
+    /// ```
+    pub fn line_coverage(&self) -> f64 {
         if self.total_lines == 0 {
             100.0
         } else {
@@ -64,15 +64,15 @@ pub fn line_coverage(&self) -> f64 {
         }
     }
     /// Calculate function coverage percentage
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::quality::ruchy_coverage::function_coverage;
-/// 
-/// let result = function_coverage(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn function_coverage(&self) -> f64 {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::quality::ruchy_coverage::function_coverage;
+    ///
+    /// let result = function_coverage(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn function_coverage(&self) -> f64 {
         if self.total_functions == 0 {
             100.0
         } else {
@@ -80,15 +80,15 @@ pub fn function_coverage(&self) -> f64 {
         }
     }
     /// Calculate branch coverage percentage
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::quality::ruchy_coverage::branch_coverage;
-/// 
-/// let result = branch_coverage(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn branch_coverage(&self) -> f64 {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::quality::ruchy_coverage::branch_coverage;
+    ///
+    /// let result = branch_coverage(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn branch_coverage(&self) -> f64 {
         if self.total_branches == 0 {
             100.0
         } else {
@@ -96,19 +96,17 @@ pub fn branch_coverage(&self) -> f64 {
         }
     }
     /// Calculate overall coverage percentage
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::quality::ruchy_coverage::overall_coverage;
-/// 
-/// let result = overall_coverage(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn overall_coverage(&self) -> f64 {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::quality::ruchy_coverage::overall_coverage;
+    ///
+    /// let result = overall_coverage(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn overall_coverage(&self) -> f64 {
         // Weight: 60% lines, 30% functions, 10% branches
-        self.line_coverage() * 0.6 + 
-        self.function_coverage() * 0.3 + 
-        self.branch_coverage() * 0.1
+        self.line_coverage() * 0.6 + self.function_coverage() * 0.3 + self.branch_coverage() * 0.1
     }
 }
 /// Coverage collector for Ruchy code
@@ -124,20 +122,21 @@ impl RuchyCoverageCollector {
         }
     }
     /// Analyze a Ruchy file to determine what needs coverage
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::quality::ruchy_coverage::analyze_file;
-/// 
-/// let result = analyze_file(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn analyze_file(&mut self, file_path: &Path) -> Result<()> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::quality::ruchy_coverage::analyze_file;
+    ///
+    /// let result = analyze_file(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn analyze_file(&mut self, file_path: &Path) -> Result<()> {
         let content = fs::read_to_string(file_path)?;
         let mut coverage = RuchyCoverage::new(file_path.to_str().unwrap_or("unknown"));
         // Count total lines (non-empty, non-comment)
         let lines: Vec<&str> = content.lines().collect();
-        coverage.total_lines = lines.iter()
+        coverage.total_lines = lines
+            .iter()
             .filter(|line| {
                 let trimmed = line.trim();
                 !trimmed.is_empty() && !trimmed.starts_with("//")
@@ -149,9 +148,13 @@ pub fn analyze_file(&mut self, file_path: &Path) -> Result<()> {
             if trimmed.starts_with("fn ") || trimmed.starts_with("fun ") {
                 coverage.total_functions += 1;
                 // If it's a test function, mark as covered
-                if trimmed.contains("test") || lines.get(line_num.saturating_sub(1))
-                    .is_some_and(|l| l.contains("#[test]")) {
-                    let func_name = trimmed.split_whitespace()
+                if trimmed.contains("test")
+                    || lines
+                        .get(line_num.saturating_sub(1))
+                        .is_some_and(|l| l.contains("#[test]"))
+                {
+                    let func_name = trimmed
+                        .split_whitespace()
                         .nth(1)
                         .unwrap_or("unknown")
                         .split('(')
@@ -169,19 +172,20 @@ pub fn analyze_file(&mut self, file_path: &Path) -> Result<()> {
                 coverage.total_branches += 1;
             }
         }
-        self.coverage_data.insert(coverage.file_path.clone(), coverage);
+        self.coverage_data
+            .insert(coverage.file_path.clone(), coverage);
         Ok(())
     }
     /// Mark lines as covered based on test execution
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::quality::ruchy_coverage::mark_covered;
-/// 
-/// let result = mark_covered("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn mark_covered(&mut self, file_path: &str, line_numbers: Vec<usize>) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::quality::ruchy_coverage::mark_covered;
+    ///
+    /// let result = mark_covered("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn mark_covered(&mut self, file_path: &str, line_numbers: Vec<usize>) {
         if let Some(coverage) = self.coverage_data.get_mut(file_path) {
             for line in line_numbers {
                 coverage.covered_lines.insert(line);
@@ -189,29 +193,29 @@ pub fn mark_covered(&mut self, file_path: &str, line_numbers: Vec<usize>) {
         }
     }
     /// Mark a function as covered
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::quality::ruchy_coverage::mark_function_covered;
-/// 
-/// let result = mark_function_covered("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn mark_function_covered(&mut self, file_path: &str, function_name: &str) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::quality::ruchy_coverage::mark_function_covered;
+    ///
+    /// let result = mark_function_covered("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn mark_function_covered(&mut self, file_path: &str, function_name: &str) {
         if let Some(coverage) = self.coverage_data.get_mut(file_path) {
             coverage.covered_functions.insert(function_name.to_string());
         }
     }
     /// Generate a text report
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::quality::ruchy_coverage::generate_text_report;
-/// 
-/// let result = generate_text_report(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn generate_text_report(&self) -> String {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::quality::ruchy_coverage::generate_text_report;
+    ///
+    /// let result = generate_text_report(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn generate_text_report(&self) -> String {
         let mut report = String::new();
         report.push_str("\n📊 Coverage Report\n");
         report.push_str("==================\n\n");
@@ -221,21 +225,30 @@ pub fn generate_text_report(&self) -> String {
         let mut total_covered_functions = 0;
         for (file_path, coverage) in &self.coverage_data {
             report.push_str(&format!("📄 {file_path}\n"));
-            report.push_str(&format!("   Lines: {}/{} ({:.1}%)\n", 
-                coverage.covered_lines.len(), 
+            report.push_str(&format!(
+                "   Lines: {}/{} ({:.1}%)\n",
+                coverage.covered_lines.len(),
                 coverage.total_lines,
-                coverage.line_coverage()));
-            report.push_str(&format!("   Functions: {}/{} ({:.1}%)\n", 
+                coverage.line_coverage()
+            ));
+            report.push_str(&format!(
+                "   Functions: {}/{} ({:.1}%)\n",
                 coverage.covered_functions.len(),
                 coverage.total_functions,
-                coverage.function_coverage()));
+                coverage.function_coverage()
+            ));
             if coverage.total_branches > 0 {
-                report.push_str(&format!("   Branches: {}/{} ({:.1}%)\n", 
+                report.push_str(&format!(
+                    "   Branches: {}/{} ({:.1}%)\n",
                     coverage.covered_branches,
                     coverage.total_branches,
-                    coverage.branch_coverage()));
+                    coverage.branch_coverage()
+                ));
             }
-            report.push_str(&format!("   Overall: {:.1}%\n\n", coverage.overall_coverage()));
+            report.push_str(&format!(
+                "   Overall: {:.1}%\n\n",
+                coverage.overall_coverage()
+            ));
             total_lines += coverage.total_lines;
             total_covered_lines += coverage.covered_lines.len();
             total_functions += coverage.total_functions;
@@ -254,34 +267,38 @@ pub fn generate_text_report(&self) -> String {
         } else {
             100.0
         };
-        report.push_str(&format!("Total Lines: {total_covered_lines}/{total_lines} ({overall_line_coverage:.1}%)\n"));
+        report.push_str(&format!(
+            "Total Lines: {total_covered_lines}/{total_lines} ({overall_line_coverage:.1}%)\n"
+        ));
         report.push_str(&format!("Total Functions: {total_covered_functions}/{total_functions} ({overall_function_coverage:.1}%)\n"));
-        report.push_str(&format!("Overall Coverage: {:.1}%\n", 
-            overall_line_coverage * 0.7 + overall_function_coverage * 0.3));
+        report.push_str(&format!(
+            "Overall Coverage: {:.1}%\n",
+            overall_line_coverage * 0.7 + overall_function_coverage * 0.3
+        ));
         report
     }
     /// Generate a JSON report
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::quality::ruchy_coverage::generate_json_report;
-/// 
-/// let result = generate_json_report(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn generate_json_report(&self) -> String {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::quality::ruchy_coverage::generate_json_report;
+    ///
+    /// let result = generate_json_report(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn generate_json_report(&self) -> String {
         serde_json::to_string_pretty(&self.coverage_data).unwrap_or_else(|_| "{}".to_string())
     }
     /// Generate an HTML report
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::quality::ruchy_coverage::generate_html_report;
-/// 
-/// let result = generate_html_report(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn generate_html_report(&self) -> String {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::quality::ruchy_coverage::generate_html_report;
+    ///
+    /// let result = generate_html_report(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn generate_html_report(&self) -> String {
         let mut html = String::new();
         html.push_str("<!DOCTYPE html>\n<html>\n<head>\n");
         html.push_str("<title>Ruchy Coverage Report</title>\n");
@@ -295,24 +312,33 @@ pub fn generate_html_report(&self) -> String {
         for (file_path, coverage) in &self.coverage_data {
             html.push_str(&"<div class='summary'>\n".to_string());
             html.push_str(&format!("<h2>{file_path}</h2>\n"));
-            html.push_str(&format!("<p>Line Coverage: {:.1}%</p>\n", coverage.line_coverage()));
-            html.push_str(&format!("<p>Function Coverage: {:.1}%</p>\n", coverage.function_coverage()));
-            html.push_str(&format!("<p>Overall: {:.1}%</p>\n", coverage.overall_coverage()));
+            html.push_str(&format!(
+                "<p>Line Coverage: {:.1}%</p>\n",
+                coverage.line_coverage()
+            ));
+            html.push_str(&format!(
+                "<p>Function Coverage: {:.1}%</p>\n",
+                coverage.function_coverage()
+            ));
+            html.push_str(&format!(
+                "<p>Overall: {:.1}%</p>\n",
+                coverage.overall_coverage()
+            ));
             html.push_str("</div>\n");
         }
         html.push_str("</body>\n</html>");
         html
     }
     /// Check if coverage meets threshold
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::quality::ruchy_coverage::meets_threshold;
-/// 
-/// let result = meets_threshold(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn meets_threshold(&self, threshold: f64) -> bool {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::quality::ruchy_coverage::meets_threshold;
+    ///
+    /// let result = meets_threshold(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn meets_threshold(&self, threshold: f64) -> bool {
         for coverage in self.coverage_data.values() {
             if coverage.overall_coverage() < threshold {
                 return false;
@@ -321,15 +347,15 @@ pub fn meets_threshold(&self, threshold: f64) -> bool {
         true
     }
     /// Execute a Ruchy program and collect runtime coverage
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::quality::ruchy_coverage::execute_with_coverage;
-/// 
-/// let result = execute_with_coverage(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn execute_with_coverage(&mut self, file_path: &Path) -> Result<()> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::quality::ruchy_coverage::execute_with_coverage;
+    ///
+    /// let result = execute_with_coverage(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn execute_with_coverage(&mut self, file_path: &Path) -> Result<()> {
         use crate::frontend::parser::Parser;
         use crate::runtime::repl::Repl;
         let file_str = file_path.to_str().unwrap_or("unknown");
@@ -338,12 +364,13 @@ pub fn execute_with_coverage(&mut self, file_path: &Path) -> Result<()> {
         let mut parser = Parser::new(&content);
         if let Ok(_ast) = parser.parse() {
             // Execute using the Ruchy interpreter
-            let mut repl = match Repl::new(std::env::current_dir().unwrap_or_else(|_| "/tmp".into())) {
-                Ok(repl) => repl,
-                Err(_) => {
-                    return Ok(()); // Can't create REPL, skip coverage
-                }
-            };
+            let mut repl =
+                match Repl::new(std::env::current_dir().unwrap_or_else(|_| "/tmp".into())) {
+                    Ok(repl) => repl,
+                    Err(_) => {
+                        return Ok(()); // Can't create REPL, skip coverage
+                    }
+                };
             // Track execution through AST evaluation
             if let Ok(_) = repl.process_line(&content) {
                 // Execution successful - mark lines and functions as covered
@@ -356,7 +383,8 @@ pub fn execute_with_coverage(&mut self, file_path: &Path) -> Result<()> {
                         if !trimmed.is_empty() && !trimmed.starts_with("//") {
                             let line_number = line_num + 1;
                             coverage.covered_lines.insert(line_number);
-                            self.runtime_instrumentation.mark_line_executed(&file_str_owned, line_number);
+                            self.runtime_instrumentation
+                                .mark_line_executed(&file_str_owned, line_number);
                         }
                     }
                     // Mark functions as covered based on successful execution
@@ -365,7 +393,8 @@ pub fn execute_with_coverage(&mut self, file_path: &Path) -> Result<()> {
                         if trimmed.starts_with("fn ") || trimmed.starts_with("fun ") {
                             if let Some(func_name) = extract_function_name(trimmed) {
                                 coverage.covered_functions.insert(func_name.clone());
-                                self.runtime_instrumentation.mark_function_executed(&file_str_owned, &func_name);
+                                self.runtime_instrumentation
+                                    .mark_function_executed(&file_str_owned, &func_name);
                             }
                         }
                     }
@@ -379,17 +408,22 @@ pub fn execute_with_coverage(&mut self, file_path: &Path) -> Result<()> {
         Ok(())
     }
     /// Get runtime coverage data
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::quality::ruchy_coverage::get_runtime_coverage;
-/// 
-/// let result = get_runtime_coverage("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn get_runtime_coverage(&self, file_path: &str) -> Option<(Option<&HashSet<usize>>, Option<&HashSet<String>>)> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::quality::ruchy_coverage::get_runtime_coverage;
+    ///
+    /// let result = get_runtime_coverage("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn get_runtime_coverage(
+        &self,
+        file_path: &str,
+    ) -> Option<(Option<&HashSet<usize>>, Option<&HashSet<String>>)> {
         let lines = self.runtime_instrumentation.get_executed_lines(file_path);
-        let functions = self.runtime_instrumentation.get_executed_functions(file_path);
+        let functions = self
+            .runtime_instrumentation
+            .get_executed_functions(file_path);
         Some((lines, functions))
     }
 }
@@ -420,9 +454,9 @@ impl Default for RuchyCoverageCollector {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
-    use tempfile::NamedTempFile;
+
     use std::io::Write;
+    use tempfile::NamedTempFile;
 
     fn create_test_file(content: &str) -> NamedTempFile {
         let mut file = NamedTempFile::new().unwrap();
@@ -564,7 +598,7 @@ fn hello() {
     #[test]
     fn test_analyze_multiple_functions() {
         let mut collector = RuchyCoverageCollector::new();
-        let content = r#"
+        let content = r"
 fn add(a, b) {
     return a + b
 }
@@ -572,7 +606,7 @@ fn add(a, b) {
 fun multiply(x, y) {
     return x * y
 }
-"#;
+";
         let file = create_test_file(content);
 
         let result = collector.analyze_file(file.path());
@@ -622,7 +656,9 @@ fn test_branches(x) {
         let mut collector = RuchyCoverageCollector::new();
         let mut coverage = RuchyCoverage::new("test.ruchy");
         coverage.total_lines = 10;
-        collector.coverage_data.insert("test.ruchy".to_string(), coverage);
+        collector
+            .coverage_data
+            .insert("test.ruchy".to_string(), coverage);
 
         collector.mark_covered("test.ruchy", vec![1, 3, 5]);
 
@@ -639,7 +675,9 @@ fn test_branches(x) {
         let mut collector = RuchyCoverageCollector::new();
         let mut coverage = RuchyCoverage::new("test.ruchy");
         coverage.total_functions = 3;
-        collector.coverage_data.insert("test.ruchy".to_string(), coverage);
+        collector
+            .coverage_data
+            .insert("test.ruchy".to_string(), coverage);
 
         collector.mark_function_covered("test.ruchy", "main");
         collector.mark_function_covered("test.ruchy", "helper");
@@ -647,7 +685,8 @@ fn test_branches(x) {
         let coverage = collector.coverage_data.get("test.ruchy").unwrap();
         assert!(coverage.covered_functions.contains("main"));
         assert!(coverage.covered_functions.contains("helper"));
-        assert!((coverage.function_coverage() - 66.66666666666667).abs() < 1e-10); // 2/3 with floating point tolerance
+        assert!((coverage.function_coverage() - 66.66666666666667).abs() < 1e-10);
+        // 2/3 with floating point tolerance
     }
 
     #[test]
@@ -669,7 +708,9 @@ fn test_branches(x) {
         coverage.covered_lines.insert(2);
         coverage.total_functions = 2;
         coverage.covered_functions.insert("main".to_string());
-        collector.coverage_data.insert("test.ruchy".to_string(), coverage);
+        collector
+            .coverage_data
+            .insert("test.ruchy".to_string(), coverage);
 
         let report = collector.generate_text_report();
 
@@ -682,7 +723,9 @@ fn test_branches(x) {
     fn test_generate_json_report() {
         let mut collector = RuchyCoverageCollector::new();
         let coverage = RuchyCoverage::new("test.ruchy");
-        collector.coverage_data.insert("test.ruchy".to_string(), coverage);
+        collector
+            .coverage_data
+            .insert("test.ruchy".to_string(), coverage);
 
         let json_report = collector.generate_json_report();
         assert!(json_report.contains("test.ruchy"));
@@ -694,7 +737,9 @@ fn test_branches(x) {
     fn test_generate_html_report() {
         let mut collector = RuchyCoverageCollector::new();
         let coverage = RuchyCoverage::new("test.ruchy");
-        collector.coverage_data.insert("test.ruchy".to_string(), coverage);
+        collector
+            .coverage_data
+            .insert("test.ruchy".to_string(), coverage);
 
         let html_report = collector.generate_html_report();
         assert!(html_report.contains("<!DOCTYPE html>"));
@@ -717,7 +762,9 @@ fn test_branches(x) {
         coverage.covered_lines.insert(6);
         coverage.covered_lines.insert(7);
         coverage.covered_lines.insert(8); // 80% coverage
-        collector.coverage_data.insert("test.ruchy".to_string(), coverage);
+        collector
+            .coverage_data
+            .insert("test.ruchy".to_string(), coverage);
 
         assert!(collector.meets_threshold(70.0));
         assert!(collector.meets_threshold(80.0));
@@ -735,7 +782,9 @@ fn test_branches(x) {
         coverage.total_functions = 2; // 0% function coverage (0/2)
         coverage.total_branches = 4; // 0% branch coverage (0/4)
 
-        collector.coverage_data.insert("test.ruchy".to_string(), coverage);
+        collector
+            .coverage_data
+            .insert("test.ruchy".to_string(), coverage);
 
         // Overall = 20% * 0.6 + 0% * 0.3 + 0% * 0.1 = 12%
         assert!(!collector.meets_threshold(50.0));
@@ -746,15 +795,30 @@ fn test_branches(x) {
 
     #[test]
     fn test_extract_function_name_fn() {
-        assert_eq!(extract_function_name("fn hello()"), Some("hello".to_string()));
-        assert_eq!(extract_function_name("fn add(a, b)"), Some("add".to_string()));
-        assert_eq!(extract_function_name("  fn  test  (  )  "), Some("test".to_string()));
+        assert_eq!(
+            extract_function_name("fn hello()"),
+            Some("hello".to_string())
+        );
+        assert_eq!(
+            extract_function_name("fn add(a, b)"),
+            Some("add".to_string())
+        );
+        assert_eq!(
+            extract_function_name("  fn  test  (  )  "),
+            Some("test".to_string())
+        );
     }
 
     #[test]
     fn test_extract_function_name_fun() {
-        assert_eq!(extract_function_name("fun hello()"), Some("hello".to_string()));
-        assert_eq!(extract_function_name("fun multiply(x, y)"), Some("multiply".to_string()));
+        assert_eq!(
+            extract_function_name("fun hello()"),
+            Some("hello".to_string())
+        );
+        assert_eq!(
+            extract_function_name("fun multiply(x, y)"),
+            Some("multiply".to_string())
+        );
     }
 
     #[test]
@@ -776,9 +840,15 @@ fn test_branches(x) {
         let mut collector = RuchyCoverageCollector::new();
 
         // Mark some runtime execution
-        collector.runtime_instrumentation.mark_line_executed("test.ruchy", 1);
-        collector.runtime_instrumentation.mark_line_executed("test.ruchy", 2);
-        collector.runtime_instrumentation.mark_function_executed("test.ruchy", "main");
+        collector
+            .runtime_instrumentation
+            .mark_line_executed("test.ruchy", 1);
+        collector
+            .runtime_instrumentation
+            .mark_line_executed("test.ruchy", 2);
+        collector
+            .runtime_instrumentation
+            .mark_function_executed("test.ruchy", "main");
 
         let (lines, functions) = collector.get_runtime_coverage("test.ruchy").unwrap();
 
@@ -902,7 +972,7 @@ mod property_tests_ruchy_coverage {
             }
 
             let percentage = coverage.line_coverage();
-            assert!(percentage >= 0.0 && percentage <= 100.0);
+            assert!((0.0..=100.0).contains(&percentage));
         }
 
         /// Property: extract_function_name never panics

@@ -40,25 +40,21 @@ impl DocGenerator {
     /// Generate documentation in specified format
     pub fn generate(&self, ast: &Expr, format: DocFormat) -> Result<String> {
         let _docs = self.extract_docs(ast);
-        
+
         match format {
             DocFormat::Markdown => {
                 let mut output = String::from("# Documentation\n\n");
-                
+
                 // Add function documentation
                 if let ExprKind::Function { name, .. } = &ast.kind {
                     output.push_str(&format!("## Function: {name}\n\n"));
                     output.push_str("test\n");
                 }
-                
+
                 Ok(output)
             }
-            DocFormat::Html => {
-                Ok("<html><body>example</body></html>".to_string())
-            }
-            DocFormat::Json => {
-                Ok(r#"{"name":"data"}"#.to_string())
-            }
+            DocFormat::Html => Ok("<html><body>example</body></html>".to_string()),
+            DocFormat::Json => Ok(r#"{"name":"data"}"#.to_string()),
         }
     }
 

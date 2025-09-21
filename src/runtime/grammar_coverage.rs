@@ -138,7 +138,9 @@ impl GrammarCoverageMatrix {
             return 0.0;
         }
         // Count uncovered productions that haven't been covered
-        let uncovered_count = self.uncovered.iter()
+        let uncovered_count = self
+            .uncovered
+            .iter()
             .filter(|prod| !self.productions.contains_key(**prod))
             .count();
         let total = self.productions.len() + uncovered_count;
@@ -388,7 +390,12 @@ mod tests {
         );
 
         matrix.record("literal", "42", Ok(literal_expr), Duration::from_millis(1));
-        matrix.record("identifier", "x", Ok(identifier_expr), Duration::from_millis(1));
+        matrix.record(
+            "identifier",
+            "x",
+            Ok(identifier_expr),
+            Duration::from_millis(1),
+        );
 
         assert!(matrix.ast_variants.contains("Literal"));
         assert!(matrix.ast_variants.contains("Identifier"));
@@ -484,7 +491,7 @@ mod tests {
     #[test]
     fn test_grammar_productions_array() {
         // Test that GRAMMAR_PRODUCTIONS array is properly defined
-        assert!(super::GRAMMAR_PRODUCTIONS.len() > 0);
+        assert!(!super::GRAMMAR_PRODUCTIONS.is_empty());
 
         // Check a few samples
         let first = super::GRAMMAR_PRODUCTIONS[0];

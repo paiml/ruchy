@@ -1,12 +1,12 @@
 // Implementation of advanced CLI commands for Deno parity
 // Toyota Way: Build quality in with proper implementations
 use anyhow::{Context, Result};
+use colored::Colorize;
+use ruchy::utils::{parse_ruchy_code, read_file_with_context};
 use ruchy::Parser as RuchyParser;
-use ruchy::utils::{read_file_with_context, parse_ruchy_code};
+use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::collections::HashMap;
-use colored::Colorize;
 /// Handle AST command - show Abstract Syntax Tree for a file
 pub fn handle_ast_command(
     file: &Path,
@@ -69,7 +69,9 @@ fn generate_metrics_output(ast: &ruchy::Expr) -> String {
          Nodes: {}\n\
          Depth: {}\n\
          Complexity: {}\n",
-        node_count, depth, node_count + depth
+        node_count,
+        depth,
+        node_count + depth
     )
 }
 /// Generate symbols output
@@ -159,25 +161,25 @@ fn handle_fmt_output(
     formatted_code: &str,
     verbose: bool,
 ) -> Result<()> {
-    use FmtMode::{Check, Stdout, Diff, Write, Default};
+    use FmtMode::{Check, Default, Diff, Stdout, Write};
     match mode {
         Check => {
             handle_check_mode(path, source, formatted_code);
             Ok(())
-        },
+        }
         Stdout => {
             handle_stdout_mode(formatted_code);
             Ok(())
-        },
+        }
         Diff => {
             handle_diff_mode(path, source, formatted_code);
             Ok(())
-        },
+        }
         Write => handle_write_mode(path, source, formatted_code, verbose),
         Default => {
             handle_default_mode(formatted_code);
             Ok(())
-        },
+        }
     }
 }
 /// Handle check mode output (complexity: 3)
@@ -245,7 +247,7 @@ fn configure_linter(rules: Option<&str>, strict: bool) -> ruchy::quality::linter
 fn run_linter_analysis(
     linter: &ruchy::quality::linter::Linter,
     ast: &ruchy::frontend::ast::Expr,
-    source: &str
+    source: &str,
 ) -> Result<Vec<ruchy::quality::linter::LintIssue>> {
     linter.lint(ast, source)
 }
@@ -264,26 +266,28 @@ fn count_issue_types(issues: &[ruchy::quality::linter::LintIssue]) -> (usize, us
     (errors, warnings)
 }
 /// Format issues as text output with details (complexity: 8)
-fn format_text_output(
-    issues: &[ruchy::quality::linter::LintIssue],
-    path: &Path,
-    verbose: bool
-) {
+fn format_text_output(issues: &[ruchy::quality::linter::LintIssue], path: &Path, verbose: bool) {
     if issues.is_empty() {
         println!("{} No issues found in {}", "✓".green(), path.display());
     } else {
         let (errors, warnings) = count_issue_types(issues);
-        println!("{} Found {} issues in {}", "⚠".yellow(), issues.len(), path.display());
+        println!(
+            "{} Found {} issues in {}",
+            "⚠".yellow(),
+            issues.len(),
+            path.display()
+        );
         for issue in issues {
-            let severity_str = if issue.severity == "error" { 
-                "Error".red().to_string() 
-            } else { 
-                "Warning".yellow().to_string() 
+            let severity_str = if issue.severity == "error" {
+                "Error".red().to_string()
+            } else {
+                "Warning".yellow().to_string()
             };
-            println!("  {}:{}: {} - {}", 
-                path.display(), 
-                issue.line, 
-                severity_str, 
+            println!(
+                "  {}:{}: {} - {}",
+                path.display(),
+                issue.line,
+                severity_str,
                 issue.message
             );
             if verbose && !issue.suggestion.is_empty() {
@@ -292,9 +296,12 @@ fn format_text_output(
         }
         // Summary if there are issues
         if errors > 0 || warnings > 0 {
-            println!("\nSummary: {} Error{}, {} Warning{}",
-                errors, if errors == 1 { "" } else { "s" },
-                warnings, if warnings == 1 { "" } else { "s" }
+            println!(
+                "\nSummary: {} Error{}, {} Warning{}",
+                errors,
+                if errors == 1 { "" } else { "s" },
+                warnings,
+                if warnings == 1 { "" } else { "s" }
             );
         }
     }
@@ -305,7 +312,7 @@ fn handle_auto_fix(
     source: &str,
     issues: &[ruchy::quality::linter::LintIssue],
     path: &Path,
-    auto_fix: bool
+    auto_fix: bool,
 ) -> Result<()> {
     if auto_fix && !issues.is_empty() {
         println!("\n{} Attempting auto-fix...", "→".blue());
@@ -359,7 +366,14 @@ pub fn handle_provability_command(
     let ast = parse_ruchy_code(&source)?;
     let mut output_content = generate_provability_header(file, &ast);
     // Add requested analysis sections
-    add_provability_sections(&mut output_content, verify, contracts, invariants, termination, bounds);
+    add_provability_sections(
+        &mut output_content,
+        verify,
+        contracts,
+        invariants,
+        termination,
+        bounds,
+    );
     write_provability_output(output_content, output)?;
     Ok(())
 }
@@ -433,7 +447,10 @@ fn add_bounds_section(output: &mut String) {
 fn write_provability_output(content: String, output: Option<&Path>) -> Result<()> {
     if let Some(output_path) = output {
         fs::write(output_path, content)?;
-        println!("✅ Verification report written to: {}", output_path.display());
+        println!(
+            "✅ Verification report written to: {}",
+            output_path.display()
+        );
     } else {
         print!("{}", content);
     }
@@ -532,7 +549,10 @@ fn add_comparison_section(output: &mut String, current: &Path, baseline: &Path) 
 fn write_runtime_output(content: String, output: Option<&Path>) -> Result<()> {
     if let Some(output_path) = output {
         fs::write(output_path, content)?;
-        println!("✅ Performance report written to: {}", output_path.display());
+        println!(
+            "✅ Performance report written to: {}",
+            output_path.display()
+        );
     } else {
         print!("{}", content);
     }
@@ -632,7 +652,8 @@ fn handle_directory_score(
     }
     // Calculate average and generate output
     let average_score = calculate_average(&file_scores);
-    let output_content = format_score_output(path, depth, &file_scores, average_score, min, format)?;
+    let output_content =
+        format_score_output(path, depth, &file_scores, average_score, min, format)?;
     // Write output
     write_output(&output_content, output)?;
     // Check threshold
@@ -748,7 +769,10 @@ fn write_output(content: &str, output: Option<&Path>) -> Result<()> {
 fn check_score_threshold(average_score: f64, min: Option<f64>) {
     if let Some(min_score) = min {
         if average_score < min_score {
-            eprintln!("❌ Average score {} is below threshold {}", average_score, min_score);
+            eprintln!(
+                "❌ Average score {} is below threshold {}",
+                average_score, min_score
+            );
             std::process::exit(1);
         }
     }
@@ -774,7 +798,8 @@ fn calculate_file_score(file_path: &Path) -> Result<f64> {
     let source = fs::read_to_string(file_path)
         .with_context(|| format!("Failed to read file: {}", file_path.display()))?;
     let mut parser = RuchyParser::new(&source);
-    let ast = parser.parse()
+    let ast = parser
+        .parse()
         .with_context(|| format!("Failed to parse file: {}", file_path.display()))?;
     Ok(calculate_quality_score(&ast, &source))
 }
@@ -828,7 +853,10 @@ fn check_complexity_gate(ast: &ruchy::frontend::ast::Expr) -> (bool, String) {
     let complexity = calculate_complexity(ast);
     let limit = 10;
     if complexity > limit {
-        (false, format!("❌ Complexity {} exceeds limit {}", complexity, limit))
+        (
+            false,
+            format!("❌ Complexity {} exceeds limit {}", complexity, limit),
+        )
     } else {
         (true, format!("✅ Complexity {} within limit", complexity))
     }
@@ -857,7 +885,8 @@ fn format_gate_results(passed: bool, results: &[String], json: bool) -> Result<S
         serde_json::to_string_pretty(&serde_json::json!({
             "passed": passed,
             "gates": results
-        })).map_err(Into::into)
+        }))
+        .map_err(Into::into)
     } else {
         Ok(format!("{}\n", results.join("\n")))
     }
@@ -997,20 +1026,24 @@ fn calculate_average_function_length(metrics: &QualityMetrics) -> f64 {
 }
 /// Get SATD penalty (complexity: 1)
 fn get_satd_penalty(has_satd: bool) -> f64 {
-    if has_satd { 0.70 } else { 1.0 }
+    if has_satd {
+        0.70
+    } else {
+        1.0
+    }
 }
 /// Get documentation penalty (complexity: 3)
 fn get_documentation_penalty(metrics: &QualityMetrics) -> f64 {
     if metrics.function_count == 0 {
-        return 1.0;  // No penalty if no functions
+        return 1.0; // No penalty if no functions
     }
     let doc_ratio = metrics.documented_functions as f64 / metrics.function_count as f64;
     if doc_ratio < 0.5 {
-        0.85  // Penalty for poor documentation
+        0.85 // Penalty for poor documentation
     } else if doc_ratio > 0.8 {
-        1.05  // Small bonus for good documentation
+        1.05 // Small bonus for good documentation
     } else {
-        1.0   // Neutral for average documentation
+        1.0 // Neutral for average documentation
     }
 }
 fn calculate_complexity(ast: &ruchy::frontend::ast::Expr) -> usize {
@@ -1019,7 +1052,11 @@ fn calculate_complexity(ast: &ruchy::frontend::ast::Expr) -> usize {
     fn count_branches(expr: &ruchy::frontend::ast::Expr) -> usize {
         use ruchy::frontend::ast::ExprKind;
         match &expr.kind {
-            ExprKind::If { condition, then_branch, else_branch } => {
+            ExprKind::If {
+                condition,
+                then_branch,
+                else_branch,
+            } => {
                 // Each if adds 1 to complexity
                 let mut complexity = 1;
                 complexity += count_branches(condition);
@@ -1042,7 +1079,12 @@ fn calculate_complexity(ast: &ruchy::frontend::ast::Expr) -> usize {
                 // Loops add 1 to complexity
                 1 + count_branches(condition) + count_branches(body)
             }
-            ExprKind::For { var: _, pattern: _, iter, body } => {
+            ExprKind::For {
+                var: _,
+                pattern: _,
+                iter,
+                body,
+            } => {
                 // Loops add 1 to complexity
                 1 + count_branches(iter) + count_branches(body)
             }
@@ -1057,16 +1099,26 @@ fn calculate_complexity(ast: &ruchy::frontend::ast::Expr) -> usize {
                 complexity += count_branches(right);
                 complexity
             }
-            ExprKind::Block(exprs) => {
-                exprs.iter().map(count_branches).sum()
-            }
-            ExprKind::Function { name: _, type_params: _, params: _, body, return_type: _, is_async: _, is_pub: _ } => {
+            ExprKind::Block(exprs) => exprs.iter().map(count_branches).sum(),
+            ExprKind::Function {
+                name: _,
+                type_params: _,
+                params: _,
+                body,
+                return_type: _,
+                is_async: _,
+                is_pub: _,
+            } => {
                 // Function itself has base complexity of 1, plus its body
                 1 + count_branches(body)
             }
-            ExprKind::Let { name: _, type_annotation: _, value, body, is_mutable: _ } => {
-                count_branches(value) + count_branches(body)
-            }
+            ExprKind::Let {
+                name: _,
+                type_annotation: _,
+                value,
+                body,
+                is_mutable: _,
+            } => count_branches(value) + count_branches(body),
             _ => 0, // Other expressions don't add complexity
         }
     }
@@ -1079,10 +1131,10 @@ fn analyze_complexity(ast: &ruchy::frontend::ast::Expr) -> String {
     // Analyze algorithmic complexity based on loop nesting
     let nesting_depth = calculate_max_nesting(ast);
     match nesting_depth {
-        0 => "1".to_string(),           // Constant
-        1 => "n".to_string(),           // Linear
-        2 => "n²".to_string(),          // Quadratic
-        3 => "n³".to_string(),          // Cubic
+        0 => "1".to_string(),                // Constant
+        1 => "n".to_string(),                // Linear
+        2 => "n²".to_string(),               // Quadratic
+        3 => "n³".to_string(),               // Cubic
         _ => format!("n^{}", nesting_depth), // Higher polynomial
     }
 }
@@ -1101,9 +1153,17 @@ struct QualityMetrics {
 fn analyze_ast_quality(expr: &ruchy::frontend::ast::Expr, metrics: &mut QualityMetrics) {
     use ruchy::frontend::ast::ExprKind;
     match &expr.kind {
-        ExprKind::Function { name, type_params: _, params, body, return_type: _, is_async: _, is_pub: _ } => {
+        ExprKind::Function {
+            name,
+            type_params: _,
+            params,
+            body,
+            return_type: _,
+            is_async: _,
+            is_pub: _,
+        } => {
             metrics.function_count += 1;
-            // Track maximum parameter count 
+            // Track maximum parameter count
             metrics.max_parameters = metrics.max_parameters.max(params.len());
             // Check if function is "documented" (has descriptive name)
             if name.len() > 1 && !name.chars().all(|c| c == '_') {
@@ -1126,7 +1186,13 @@ fn analyze_ast_quality(expr: &ruchy::frontend::ast::Expr, metrics: &mut QualityM
                 metrics.good_names += 1;
             }
         }
-        ExprKind::Let { name, type_annotation: _, value, body, is_mutable: _ } => {
+        ExprKind::Let {
+            name,
+            type_annotation: _,
+            value,
+            body,
+            is_mutable: _,
+        } => {
             metrics.total_identifiers += 1;
             if name.len() > 1 {
                 metrics.good_names += 1;
@@ -1140,7 +1206,11 @@ fn analyze_ast_quality(expr: &ruchy::frontend::ast::Expr, metrics: &mut QualityM
                 analyze_ast_quality(expr, metrics);
             }
         }
-        ExprKind::If { condition, then_branch, else_branch } => {
+        ExprKind::If {
+            condition,
+            then_branch,
+            else_branch,
+        } => {
             analyze_ast_quality(condition, metrics);
             analyze_ast_quality(then_branch, metrics);
             if let Some(else_expr) = else_branch {
@@ -1160,13 +1230,19 @@ fn count_lines_in_expr(expr: &ruchy::frontend::ast::Expr) -> usize {
     // Simplified line counting - counts expression depth as proxy for lines
     use ruchy::frontend::ast::ExprKind;
     match &expr.kind {
-        ExprKind::Block(exprs) => exprs.len() + exprs.iter().map(count_lines_in_expr).sum::<usize>(),
-        ExprKind::If { condition, then_branch, else_branch } => {
-            1 + count_lines_in_expr(condition) 
-              + count_lines_in_expr(then_branch)
-              + else_branch.as_ref().map_or(0, |e| count_lines_in_expr(e))
+        ExprKind::Block(exprs) => {
+            exprs.len() + exprs.iter().map(count_lines_in_expr).sum::<usize>()
         }
-        _ => 1
+        ExprKind::If {
+            condition,
+            then_branch,
+            else_branch,
+        } => {
+            1 + count_lines_in_expr(condition)
+                + count_lines_in_expr(then_branch)
+                + else_branch.as_ref().map_or(0, |e| count_lines_in_expr(e))
+        }
+        _ => 1,
     }
 }
 fn calculate_max_nesting(expr: &ruchy::frontend::ast::Expr) -> usize {
@@ -1174,7 +1250,12 @@ fn calculate_max_nesting(expr: &ruchy::frontend::ast::Expr) -> usize {
     fn nesting_helper(expr: &ruchy::frontend::ast::Expr, current_depth: usize) -> usize {
         use ruchy::frontend::ast::ExprKind;
         match &expr.kind {
-            ExprKind::For { var: _, pattern: _, iter: _, body } => {
+            ExprKind::For {
+                var: _,
+                pattern: _,
+                iter: _,
+                body,
+            } => {
                 // For loop increases nesting by 1
                 nesting_helper(body, current_depth + 1)
             }
@@ -1182,7 +1263,11 @@ fn calculate_max_nesting(expr: &ruchy::frontend::ast::Expr) -> usize {
                 // While loop increases nesting by 1
                 nesting_helper(body, current_depth + 1)
             }
-            ExprKind::If { condition: _, then_branch, else_branch } => {
+            ExprKind::If {
+                condition: _,
+                then_branch,
+                else_branch,
+            } => {
                 // If statement increases nesting by 1
                 let then_depth = nesting_helper(then_branch, current_depth + 1);
                 let else_depth = else_branch
@@ -1192,16 +1277,31 @@ fn calculate_max_nesting(expr: &ruchy::frontend::ast::Expr) -> usize {
             }
             ExprKind::Block(exprs) => {
                 // Block doesn't increase nesting, just pass through
-                exprs.iter()
+                exprs
+                    .iter()
                     .map(|e| nesting_helper(e, current_depth))
                     .max()
                     .unwrap_or(current_depth)
             }
-            ExprKind::Function { name: _, type_params: _, params: _, body, return_type: _, is_async: _, is_pub: _ } => {
+            ExprKind::Function {
+                name: _,
+                type_params: _,
+                params: _,
+                body,
+                return_type: _,
+                is_async: _,
+                is_pub: _,
+            } => {
                 // Function body starts fresh (functions are separate scopes)
                 nesting_helper(body, 0)
             }
-            ExprKind::Let { name: _, type_annotation: _, value, body, is_mutable: _ } => {
+            ExprKind::Let {
+                name: _,
+                type_annotation: _,
+                value,
+                body,
+                is_mutable: _,
+            } => {
                 let val_depth = nesting_helper(value, current_depth);
                 let body_depth = nesting_helper(body, current_depth);
                 val_depth.max(body_depth)
@@ -1218,15 +1318,15 @@ fn calculate_max_nesting(expr: &ruchy::frontend::ast::Expr) -> usize {
                     .max()
                     .unwrap_or(current_depth)
             }
-            _ => current_depth
+            _ => current_depth,
         }
     }
     nesting_helper(expr, 0)
 }
 fn count_assertions_recursive(
-    expr: &ruchy::frontend::ast::Expr, 
+    expr: &ruchy::frontend::ast::Expr,
     assertion_count: &mut usize,
-    total_statements: &mut usize
+    total_statements: &mut usize,
 ) {
     use ruchy::frontend::ast::ExprKind;
     *total_statements += 1;
@@ -1240,9 +1340,18 @@ fn count_assertions_recursive(
         ExprKind::Block(exprs) => {
             count_assertions_in_block(exprs, assertion_count, total_statements);
         }
-        ExprKind::If { condition, then_branch, else_branch } => {
-            count_assertions_in_if(condition, then_branch, else_branch.as_deref(), 
-                                   assertion_count, total_statements);
+        ExprKind::If {
+            condition,
+            then_branch,
+            else_branch,
+        } => {
+            count_assertions_in_if(
+                condition,
+                then_branch,
+                else_branch.as_deref(),
+                assertion_count,
+                total_statements,
+            );
         }
         _ => {}
     }
@@ -1271,7 +1380,7 @@ fn check_call_assertion(func: &ruchy::frontend::ast::Expr, assertion_count: &mut
 fn count_assertions_in_block(
     exprs: &[ruchy::frontend::ast::Expr],
     assertion_count: &mut usize,
-    total_statements: &mut usize
+    total_statements: &mut usize,
 ) {
     for expr in exprs {
         count_assertions_recursive(expr, assertion_count, total_statements);
@@ -1284,7 +1393,7 @@ fn count_assertions_in_if(
     then_branch: &ruchy::frontend::ast::Expr,
     else_branch: Option<&ruchy::frontend::ast::Expr>,
     assertion_count: &mut usize,
-    total_statements: &mut usize
+    total_statements: &mut usize,
 ) {
     count_assertions_recursive(condition, assertion_count, total_statements);
     count_assertions_recursive(then_branch, assertion_count, total_statements);
@@ -1308,9 +1417,9 @@ fn extract_symbols(_ast: &ruchy::frontend::ast::Expr) -> SymbolInfo {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use ruchy::frontend::ast::{Expr, ExprKind};
     use std::io::Write;
     use tempfile::{NamedTempFile, TempDir};
-    use ruchy::frontend::ast::{Expr, ExprKind};
 
     // Helper function to create a test expression
     fn create_test_expr() -> Expr {
@@ -1629,15 +1738,15 @@ mod tests {
     fn test_add_benchmark_section() {
         let mut output = String::new();
         add_benchmark_section(&mut output);
-        assert!(output.contains("## Benchmark Results"));
-        assert!(output.contains("benchmark"));
+        assert!(output.contains("=== Benchmark Results ==="));
+        assert!(output.contains("execution time"));
     }
 
     #[test]
     fn test_add_memory_section() {
         let mut output = String::new();
         add_memory_section(&mut output);
-        assert!(output.contains("## Memory Analysis"));
+        assert!(output.contains("=== Memory Analysis ==="));
         assert!(output.contains("memory usage"));
     }
 
@@ -1647,7 +1756,7 @@ mod tests {
         let temp_file2 = create_temp_file_with_content("baseline").unwrap();
         let mut output = String::new();
         add_comparison_section(&mut output, temp_file1.path(), temp_file2.path());
-        assert!(output.contains("## Performance Comparison"));
+        assert!(output.contains("=== Performance Comparison ==="));
         assert!(output.contains("current"));
         assert!(output.contains("baseline"));
     }

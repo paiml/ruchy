@@ -1,9 +1,9 @@
 //! TDD tests for backend/transpiler/expressions.rs
 //! Comprehensive coverage for expression transpilation
 
+use ruchy::frontend::ast::{ObjectField, Span, StringPart};
 use ruchy::Transpiler;
-use ruchy::{Expr, ExprKind, Literal, BinaryOp, UnaryOp};
-use ruchy::frontend::ast::{Span, StringPart, ObjectField};
+use ruchy::{BinaryOp, Expr, ExprKind, Literal, UnaryOp};
 
 // ============================================================================
 // Test Helpers
@@ -147,7 +147,9 @@ fn test_transpile_binary_add() {
     let transpiler = Transpiler::new();
     let left = make_literal(10);
     let right = make_literal(20);
-    let result = transpiler.transpile_binary(&left, BinaryOp::Add, &right).unwrap();
+    let result = transpiler
+        .transpile_binary(&left, BinaryOp::Add, &right)
+        .unwrap();
     let code = result.to_string();
     assert!(code.contains("10"));
     assert!(code.contains("20"));
@@ -159,7 +161,9 @@ fn test_transpile_binary_subtract() {
     let transpiler = Transpiler::new();
     let left = make_literal(30);
     let right = make_literal(15);
-    let result = transpiler.transpile_binary(&left, BinaryOp::Subtract, &right).unwrap();
+    let result = transpiler
+        .transpile_binary(&left, BinaryOp::Subtract, &right)
+        .unwrap();
     let code = result.to_string();
     assert!(code.contains("-"));
 }
@@ -169,7 +173,9 @@ fn test_transpile_binary_multiply() {
     let transpiler = Transpiler::new();
     let left = make_literal(5);
     let right = make_literal(6);
-    let result = transpiler.transpile_binary(&left, BinaryOp::Multiply, &right).unwrap();
+    let result = transpiler
+        .transpile_binary(&left, BinaryOp::Multiply, &right)
+        .unwrap();
     let code = result.to_string();
     assert!(code.contains("*"));
 }
@@ -179,7 +185,9 @@ fn test_transpile_binary_divide() {
     let transpiler = Transpiler::new();
     let left = make_literal(100);
     let right = make_literal(4);
-    let result = transpiler.transpile_binary(&left, BinaryOp::Divide, &right).unwrap();
+    let result = transpiler
+        .transpile_binary(&left, BinaryOp::Divide, &right)
+        .unwrap();
     let code = result.to_string();
     assert!(code.contains("/"));
 }
@@ -189,7 +197,9 @@ fn test_transpile_binary_modulo() {
     let transpiler = Transpiler::new();
     let left = make_literal(17);
     let right = make_literal(5);
-    let result = transpiler.transpile_binary(&left, BinaryOp::Modulo, &right).unwrap();
+    let result = transpiler
+        .transpile_binary(&left, BinaryOp::Modulo, &right)
+        .unwrap();
     let code = result.to_string();
     assert!(code.contains("%"));
 }
@@ -199,7 +209,9 @@ fn test_transpile_binary_power() {
     let transpiler = Transpiler::new();
     let left = make_literal(2);
     let right = make_literal(8);
-    let result = transpiler.transpile_binary(&left, BinaryOp::Power, &right).unwrap();
+    let result = transpiler
+        .transpile_binary(&left, BinaryOp::Power, &right)
+        .unwrap();
     let code = result.to_string();
     assert!(code.contains("pow"));
 }
@@ -209,7 +221,9 @@ fn test_transpile_binary_equal() {
     let transpiler = Transpiler::new();
     let left = make_literal(42);
     let right = make_literal(42);
-    let result = transpiler.transpile_binary(&left, BinaryOp::Equal, &right).unwrap();
+    let result = transpiler
+        .transpile_binary(&left, BinaryOp::Equal, &right)
+        .unwrap();
     let code = result.to_string();
     assert!(code.contains("=="));
 }
@@ -219,7 +233,9 @@ fn test_transpile_binary_not_equal() {
     let transpiler = Transpiler::new();
     let left = make_literal(1);
     let right = make_literal(2);
-    let result = transpiler.transpile_binary(&left, BinaryOp::NotEqual, &right).unwrap();
+    let result = transpiler
+        .transpile_binary(&left, BinaryOp::NotEqual, &right)
+        .unwrap();
     let code = result.to_string();
     assert!(code.contains("!="));
 }
@@ -229,7 +245,9 @@ fn test_transpile_binary_less() {
     let transpiler = Transpiler::new();
     let left = make_literal(1);
     let right = make_literal(10);
-    let result = transpiler.transpile_binary(&left, BinaryOp::Less, &right).unwrap();
+    let result = transpiler
+        .transpile_binary(&left, BinaryOp::Less, &right)
+        .unwrap();
     let code = result.to_string();
     assert!(code.contains("<"));
 }
@@ -239,7 +257,9 @@ fn test_transpile_binary_less_equal() {
     let transpiler = Transpiler::new();
     let left = make_literal(5);
     let right = make_literal(5);
-    let result = transpiler.transpile_binary(&left, BinaryOp::LessEqual, &right).unwrap();
+    let result = transpiler
+        .transpile_binary(&left, BinaryOp::LessEqual, &right)
+        .unwrap();
     let code = result.to_string();
     assert!(code.contains("<="));
 }
@@ -249,7 +269,9 @@ fn test_transpile_binary_greater() {
     let transpiler = Transpiler::new();
     let left = make_literal(100);
     let right = make_literal(50);
-    let result = transpiler.transpile_binary(&left, BinaryOp::Greater, &right).unwrap();
+    let result = transpiler
+        .transpile_binary(&left, BinaryOp::Greater, &right)
+        .unwrap();
     let code = result.to_string();
     assert!(code.contains(">"));
 }
@@ -259,7 +281,9 @@ fn test_transpile_binary_greater_equal() {
     let transpiler = Transpiler::new();
     let left = make_literal(7);
     let right = make_literal(7);
-    let result = transpiler.transpile_binary(&left, BinaryOp::GreaterEqual, &right).unwrap();
+    let result = transpiler
+        .transpile_binary(&left, BinaryOp::GreaterEqual, &right)
+        .unwrap();
     let code = result.to_string();
     assert!(code.contains(">="));
 }
@@ -277,7 +301,9 @@ fn test_transpile_binary_and() {
         span: Span::default(),
         attributes: vec![],
     };
-    let result = transpiler.transpile_binary(&left, BinaryOp::And, &right).unwrap();
+    let result = transpiler
+        .transpile_binary(&left, BinaryOp::And, &right)
+        .unwrap();
     let code = result.to_string();
     assert!(code.contains("&&"));
 }
@@ -295,7 +321,9 @@ fn test_transpile_binary_or() {
         span: Span::default(),
         attributes: vec![],
     };
-    let result = transpiler.transpile_binary(&left, BinaryOp::Or, &right).unwrap();
+    let result = transpiler
+        .transpile_binary(&left, BinaryOp::Or, &right)
+        .unwrap();
     let code = result.to_string();
     assert!(code.contains("||"));
 }
@@ -305,7 +333,9 @@ fn test_transpile_binary_bitwise_and() {
     let transpiler = Transpiler::new();
     let left = make_literal(0b1100);
     let right = make_literal(0b1010);
-    let result = transpiler.transpile_binary(&left, BinaryOp::BitwiseAnd, &right).unwrap();
+    let result = transpiler
+        .transpile_binary(&left, BinaryOp::BitwiseAnd, &right)
+        .unwrap();
     let code = result.to_string();
     assert!(code.contains("&"));
     assert!(!code.contains("&&"));
@@ -316,7 +346,9 @@ fn test_transpile_binary_bitwise_or() {
     let transpiler = Transpiler::new();
     let left = make_literal(0b1100);
     let right = make_literal(0b0011);
-    let result = transpiler.transpile_binary(&left, BinaryOp::BitwiseOr, &right).unwrap();
+    let result = transpiler
+        .transpile_binary(&left, BinaryOp::BitwiseOr, &right)
+        .unwrap();
     let code = result.to_string();
     assert!(code.contains("|"));
     assert!(!code.contains("||"));
@@ -327,7 +359,9 @@ fn test_transpile_binary_bitwise_xor() {
     let transpiler = Transpiler::new();
     let left = make_literal(0b1111);
     let right = make_literal(0b1010);
-    let result = transpiler.transpile_binary(&left, BinaryOp::BitwiseXor, &right).unwrap();
+    let result = transpiler
+        .transpile_binary(&left, BinaryOp::BitwiseXor, &right)
+        .unwrap();
     let code = result.to_string();
     assert!(code.contains("^"));
 }
@@ -337,7 +371,9 @@ fn test_transpile_binary_left_shift() {
     let transpiler = Transpiler::new();
     let left = make_literal(4);
     let right = make_literal(2);
-    let result = transpiler.transpile_binary(&left, BinaryOp::LeftShift, &right).unwrap();
+    let result = transpiler
+        .transpile_binary(&left, BinaryOp::LeftShift, &right)
+        .unwrap();
     let code = result.to_string();
     assert!(code.contains("<<"));
 }
@@ -363,7 +399,9 @@ fn test_transpile_binary_left_shift() {
 fn test_transpile_unary_negate() {
     let transpiler = Transpiler::new();
     let operand = make_literal(42);
-    let result = transpiler.transpile_unary(UnaryOp::Negate, &operand).unwrap();
+    let result = transpiler
+        .transpile_unary(UnaryOp::Negate, &operand)
+        .unwrap();
     let code = result.to_string();
     assert!(code.contains("-"));
 }
@@ -385,7 +423,9 @@ fn test_transpile_unary_not() {
 fn test_transpile_unary_bitwise_not() {
     let transpiler = Transpiler::new();
     let operand = make_literal(0b1010);
-    let result = transpiler.transpile_unary(UnaryOp::BitwiseNot, &operand).unwrap();
+    let result = transpiler
+        .transpile_unary(UnaryOp::BitwiseNot, &operand)
+        .unwrap();
     let code = result.to_string();
     assert!(code.contains("!"));
 }
@@ -538,7 +578,9 @@ fn test_transpile_compound_assign_add() {
     let transpiler = Transpiler::new();
     let target = make_identifier("sum");
     let value = make_literal(10);
-    let result = transpiler.transpile_compound_assign(&target, BinaryOp::Add, &value).unwrap();
+    let result = transpiler
+        .transpile_compound_assign(&target, BinaryOp::Add, &value)
+        .unwrap();
     let code = result.to_string();
     assert!(code.contains("sum"));
     assert!(code.contains("+="));
@@ -549,7 +591,9 @@ fn test_transpile_compound_assign_subtract() {
     let transpiler = Transpiler::new();
     let target = make_identifier("count");
     let value = make_literal(1);
-    let result = transpiler.transpile_compound_assign(&target, BinaryOp::Subtract, &value).unwrap();
+    let result = transpiler
+        .transpile_compound_assign(&target, BinaryOp::Subtract, &value)
+        .unwrap();
     let code = result.to_string();
     assert!(code.contains("-="));
 }
@@ -559,7 +603,9 @@ fn test_transpile_compound_assign_multiply() {
     let transpiler = Transpiler::new();
     let target = make_identifier("product");
     let value = make_literal(2);
-    let result = transpiler.transpile_compound_assign(&target, BinaryOp::Multiply, &value).unwrap();
+    let result = transpiler
+        .transpile_compound_assign(&target, BinaryOp::Multiply, &value)
+        .unwrap();
     let code = result.to_string();
     assert!(code.contains("*="));
 }
@@ -569,7 +615,9 @@ fn test_transpile_compound_assign_divide() {
     let transpiler = Transpiler::new();
     let target = make_identifier("quotient");
     let value = make_literal(3);
-    let result = transpiler.transpile_compound_assign(&target, BinaryOp::Divide, &value).unwrap();
+    let result = transpiler
+        .transpile_compound_assign(&target, BinaryOp::Divide, &value)
+        .unwrap();
     let code = result.to_string();
     assert!(code.contains("/="));
 }
@@ -641,11 +689,7 @@ fn test_transpile_list_single() {
 #[test]
 fn test_transpile_list_multiple() {
     let transpiler = Transpiler::new();
-    let elements = vec![
-        make_literal(1),
-        make_literal(2),
-        make_literal(3),
-    ];
+    let elements = vec![make_literal(1), make_literal(2), make_literal(3)];
     let result = transpiler.transpile_list(&elements).unwrap();
     let code = result.to_string();
     assert!(code.contains("vec"));
@@ -676,10 +720,7 @@ fn test_transpile_tuple_single() {
 #[test]
 fn test_transpile_tuple_pair() {
     let transpiler = Transpiler::new();
-    let elements = vec![
-        make_literal(10),
-        make_literal(20),
-    ];
+    let elements = vec![make_literal(10), make_literal(20)];
     let result = transpiler.transpile_tuple(&elements).unwrap();
     let code = result.to_string();
     assert!(code.contains("10"));
@@ -691,7 +732,9 @@ fn test_transpile_range_inclusive() {
     let transpiler = Transpiler::new();
     let start_expr = make_literal(0);
     let end_expr = make_literal(10);
-    let result = transpiler.transpile_range(&start_expr, &end_expr, true).unwrap();
+    let result = transpiler
+        .transpile_range(&start_expr, &end_expr, true)
+        .unwrap();
     let code = result.to_string();
     assert!(code.contains("0"));
     assert!(code.contains("10"));
@@ -703,7 +746,9 @@ fn test_transpile_range_exclusive() {
     let transpiler = Transpiler::new();
     let start_expr = make_literal(1);
     let end_expr = make_literal(100);
-    let result = transpiler.transpile_range(&start_expr, &end_expr, false).unwrap();
+    let result = transpiler
+        .transpile_range(&start_expr, &end_expr, false)
+        .unwrap();
     let code = result.to_string();
     assert!(code.contains("1"));
     assert!(code.contains("100"));
@@ -728,12 +773,10 @@ fn test_transpile_object_literal_empty() {
 #[test]
 fn test_transpile_object_literal_single_field() {
     let transpiler = Transpiler::new();
-    let fields = vec![
-        ObjectField::KeyValue { 
-            key: "name".to_string(), 
-            value: make_string_literal("Alice") 
-        },
-    ];
+    let fields = vec![ObjectField::KeyValue {
+        key: "name".to_string(),
+        value: make_string_literal("Alice"),
+    }];
     let result = transpiler.transpile_object_literal(&fields).unwrap();
     let code = result.to_string();
     assert!(code.contains("HashMap"));
@@ -745,17 +788,17 @@ fn test_transpile_object_literal_single_field() {
 fn test_transpile_object_literal_multiple_fields() {
     let transpiler = Transpiler::new();
     let fields = vec![
-        ObjectField::KeyValue { 
-            key: "x".to_string(), 
-            value: make_literal(10) 
+        ObjectField::KeyValue {
+            key: "x".to_string(),
+            value: make_literal(10),
         },
-        ObjectField::KeyValue { 
-            key: "y".to_string(), 
-            value: make_literal(20) 
+        ObjectField::KeyValue {
+            key: "y".to_string(),
+            value: make_literal(20),
         },
-        ObjectField::KeyValue { 
-            key: "label".to_string(), 
-            value: make_string_literal("point") 
+        ObjectField::KeyValue {
+            key: "label".to_string(),
+            value: make_string_literal("point"),
         },
     ];
     let result = transpiler.transpile_object_literal(&fields).unwrap();
@@ -781,7 +824,9 @@ fn test_transpile_struct_literal_with_fields() {
         ("x".to_string(), make_literal(100)),
         ("y".to_string(), make_literal(200)),
     ];
-    let result = transpiler.transpile_struct_literal("Point", &fields).unwrap();
+    let result = transpiler
+        .transpile_struct_literal("Point", &fields)
+        .unwrap();
     let code = result.to_string();
     assert!(code.contains("Point"));
     assert!(code.contains("x"));

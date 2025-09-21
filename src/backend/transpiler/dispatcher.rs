@@ -127,7 +127,9 @@ impl Transpiler {
             ExprKind::Binary { left, op, right } => self.transpile_binary(left, *op, right),
             ExprKind::Unary { op, operand } => self.transpile_unary(*op, operand),
             ExprKind::Assign { target, value } => self.transpile_assign(target, value),
-            ExprKind::CompoundAssign { target, op, value } => self.transpile_compound_assign(target, *op, value),
+            ExprKind::CompoundAssign { target, op, value } => {
+                self.transpile_compound_assign(target, *op, value)
+            }
             ExprKind::PreIncrement { target } => self.transpile_pre_increment(target),
             ExprKind::PostIncrement { target } => self.transpile_post_increment(target),
             ExprKind::PreDecrement { target } => self.transpile_pre_decrement(target),
@@ -145,7 +147,12 @@ impl Transpiler {
                 else_branch,
             } => self.transpile_if(condition, then_branch, else_branch.as_deref()),
             ExprKind::Match { expr, arms } => self.transpile_match(expr, arms),
-            ExprKind::For { var, pattern, iter, body } => self.transpile_for(var, pattern.as_ref(), iter, body),
+            ExprKind::For {
+                var,
+                pattern,
+                iter,
+                body,
+            } => self.transpile_for(var, pattern.as_ref(), iter, body),
             ExprKind::While { condition, body } => self.transpile_while(condition, body),
             ExprKind::IfLet {
                 pattern,
@@ -159,9 +166,11 @@ impl Transpiler {
                 body,
             } => self.transpile_while_let(pattern, expr, body),
             ExprKind::Loop { body } => self.transpile_loop(body),
-            ExprKind::TryCatch { try_block, catch_clauses, finally_block } => {
-                self.transpile_try_catch(try_block, catch_clauses, finally_block.as_deref())
-            }
+            ExprKind::TryCatch {
+                try_block,
+                catch_clauses,
+                finally_block,
+            } => self.transpile_try_catch(try_block, catch_clauses, finally_block.as_deref()),
             _ => unreachable!(),
         }
     }
@@ -235,7 +244,9 @@ impl Transpiler {
             ExprKind::ObjectLiteral { fields } => self.transpile_object_literal(fields),
             ExprKind::FieldAccess { object, field } => self.transpile_field_access(object, field),
             ExprKind::IndexAccess { object, index } => self.transpile_index_access(object, index),
-            ExprKind::Slice { object, start, end } => self.transpile_slice(object, start.as_deref(), end.as_deref()),
+            ExprKind::Slice { object, start, end } => {
+                self.transpile_slice(object, start.as_deref(), end.as_deref())
+            }
             _ => unreachable!("Non-struct expression in transpile_struct_expr"),
         }
     }
@@ -249,7 +260,7 @@ impl Transpiler {
             | ExprKind::Tuple(_)
             | ExprKind::ListComprehension { .. }
             | ExprKind::Range { .. } => self.transpile_data_only_expr(expr),
- ExprKind::Throw { .. }
+            ExprKind::Throw { .. }
             | ExprKind::Ok { .. }
             | ExprKind::Err { .. }
             | ExprKind::Some { .. }
@@ -305,7 +316,7 @@ impl Transpiler {
             ExprKind::Literal(crate::frontend::ast::Literal::String(_)) => {
                 quote! { #error_tokens.to_string() }
             }
-            _ => error_tokens
+            _ => error_tokens,
         };
         Ok(quote! { Err(#final_tokens) })
     }
@@ -337,9 +348,12 @@ impl Transpiler {
                 // Actor query is like Ask without timeout
                 self.transpile_ask(actor, message, None)
             }
-            ExprKind::Command { program, args, env, working_dir } => {
-                self.transpile_command(program, args, env, working_dir)
-            }
+            ExprKind::Command {
+                program,
+                args,
+                env,
+                working_dir,
+            } => self.transpile_command(program, args, env, working_dir),
             _ => unreachable!("Non-actor expression in transpile_actor_expr"),
         }
     }
@@ -362,9 +376,13 @@ impl Transpiler {
             } => self.transpile_let_pattern(pattern, value, body),
             ExprKind::Block(exprs) => self.transpile_block(exprs),
             ExprKind::Pipeline { expr, stages } => self.transpile_pipeline(expr, stages),
-            ExprKind::Import { module, items } => Ok(Self::transpile_import(module, items.as_deref())),
+            ExprKind::Import { module, items } => {
+                Ok(Self::transpile_import(module, items.as_deref()))
+            }
             ExprKind::ImportAll { module, alias } => Ok(Self::transpile_import_all(module, alias)),
-            ExprKind::ImportDefault { module, name } => Ok(Self::transpile_import_default(module, name)),
+            ExprKind::ImportDefault { module, name } => {
+                Ok(Self::transpile_import_default(module, name))
+            }
             ExprKind::ReExport { items, module } => Ok(Self::transpile_reexport(items, module)),
             ExprKind::Module { name, body } => self.transpile_module(name, body),
             ExprKind::Trait { .. }
@@ -395,7 +413,13 @@ impl Transpiler {
                 for_type,
                 methods,
                 is_pub,
-            } => self.transpile_impl(for_type, type_params, trait_name.as_deref(), methods, *is_pub),
+            } => self.transpile_impl(
+                for_type,
+                type_params,
+                trait_name.as_deref(),
+                methods,
+                *is_pub,
+            ),
             ExprKind::Extension {
                 target_type,
                 methods,
@@ -415,10 +439,10 @@ impl Transpiler {
         }
     }
     /// Transpile println! macro with string formatting support
-    /// 
+    ///
     /// Handles string literals, string interpolation, and format strings correctly.
     /// Complexity: <10 per Toyota Way requirement.
-    /// 
+    ///
     /// # Example Usage
     /// Transpiles arguments and wraps them in Rust's `println!` macro.
     /// Empty args produce `println!()`, otherwise `println!(arg1, arg2, ...)`
@@ -431,10 +455,10 @@ impl Transpiler {
         }
     }
     /// Transpile print! macro with string formatting support
-    /// 
+    ///
     /// Handles string literals, string interpolation, and format strings correctly.
     /// Complexity: <10 per Toyota Way requirement.
-    /// 
+    ///
     /// # Example Usage
     /// Transpiles arguments and wraps them in Rust's `print!` macro.
     /// Empty args produce `print!()`, otherwise `print!(arg1, arg2, ...)`
@@ -447,10 +471,10 @@ impl Transpiler {
         }
     }
     /// Transpile panic! macro with string formatting support
-    /// 
+    ///
     /// Handles string literals, string interpolation, and format strings correctly.
     /// Complexity: <10 per Toyota Way requirement.
-    /// 
+    ///
     /// # Example Usage
     /// Transpiles arguments and wraps them in Rust's `panic!` macro.
     /// Empty args produce `panic!()`, otherwise `panic!(arg1, arg2, ...)`
@@ -463,7 +487,7 @@ impl Transpiler {
         }
     }
     /// Common helper for transpiling print-style macro arguments
-    /// 
+    ///
     /// Handles string literals, string interpolation, and format strings.
     /// This eliminates code duplication between println!, print!, and panic!.
     /// Complexity: <10 per Toyota Way requirement.
@@ -494,9 +518,7 @@ impl Transpiler {
             args.iter()
                 .map(|arg| {
                     match &arg.kind {
-                        ExprKind::Literal(Literal::String(s)) => {
-                            Ok(quote! { #s })
-                        }
+                        ExprKind::Literal(Literal::String(s)) => Ok(quote! { #s }),
                         ExprKind::StringInterpolation { parts } => {
                             self.transpile_string_interpolation_for_print(parts)
                         }
@@ -509,9 +531,7 @@ impl Transpiler {
                                     Ok(quote! { "{}", #expr_tokens })
                                 }
                                 // Complex types that need Debug formatting for safety
-                                _ => {
-                                    Ok(quote! { "{:?}", #expr_tokens })
-                                }
+                                _ => Ok(quote! { "{:?}", #expr_tokens }),
                             }
                         }
                     }
@@ -520,57 +540,61 @@ impl Transpiler {
         }
     }
     /// Handle string interpolation for print-style macros
-    /// 
+    ///
     /// Detects if string interpolation has expressions or is just format text.
     /// Complexity: <10 per Toyota Way requirement.
-    fn transpile_string_interpolation_for_print(&self, parts: &[crate::frontend::ast::StringPart]) -> Result<TokenStream> {
-        let has_expressions = parts.iter().any(|part| matches!(part, 
-            crate::frontend::ast::StringPart::Expr(_) | 
-            crate::frontend::ast::StringPart::ExprWithFormat { .. }));
+    fn transpile_string_interpolation_for_print(
+        &self,
+        parts: &[crate::frontend::ast::StringPart],
+    ) -> Result<TokenStream> {
+        let has_expressions = parts.iter().any(|part| {
+            matches!(
+                part,
+                crate::frontend::ast::StringPart::Expr(_)
+                    | crate::frontend::ast::StringPart::ExprWithFormat { .. }
+            )
+        });
         if has_expressions {
             // This has actual interpolation - transpile normally
             self.transpile_string_interpolation(parts)
         } else {
             // This is a format string like "Hello {}" - treat as literal
-            let format_string = parts.iter()
+            let format_string = parts
+                .iter()
                 .map(|part| match part {
                     crate::frontend::ast::StringPart::Text(s) => s.as_str(),
-                    crate::frontend::ast::StringPart::Expr(_) | 
-                    crate::frontend::ast::StringPart::ExprWithFormat { .. } => unreachable!()
+                    crate::frontend::ast::StringPart::Expr(_)
+                    | crate::frontend::ast::StringPart::ExprWithFormat { .. } => unreachable!(),
                 })
                 .collect::<String>();
             Ok(quote! { #format_string })
         }
     }
     /// Transpile vec! macro
-    /// 
+    ///
     /// Simple element-by-element transpilation for collection creation.
     /// Complexity: <10 per Toyota Way requirement.
-    /// 
+    ///
     /// # Example Usage
     /// Transpiles list elements and wraps them in Rust's `vec!` macro.
     /// Produces `vec![elem1, elem2, ...]`
     fn transpile_vec_macro(&self, args: &[Expr]) -> Result<TokenStream> {
-        let arg_tokens: Result<Vec<_>, _> = args
-            .iter()
-            .map(|arg| self.transpile_expr(arg))
-            .collect();
+        let arg_tokens: Result<Vec<_>, _> =
+            args.iter().map(|arg| self.transpile_expr(arg)).collect();
         let arg_tokens = arg_tokens?;
         Ok(quote! { vec![#(#arg_tokens),*] })
     }
     /// Transpile assert! macro
-    /// 
+    ///
     /// Simple argument transpilation for basic assertions.
     /// Complexity: <10 per Toyota Way requirement.
-    /// 
+    ///
     /// # Example Usage
     /// Transpiles assertion condition and wraps it in Rust's `assert!` macro.
     /// Produces `assert!(condition, optional_message)`
     fn transpile_assert_macro(&self, args: &[Expr]) -> Result<TokenStream> {
-        let arg_tokens: Result<Vec<_>, _> = args
-            .iter()
-            .map(|arg| self.transpile_expr(arg))
-            .collect();
+        let arg_tokens: Result<Vec<_>, _> =
+            args.iter().map(|arg| self.transpile_expr(arg)).collect();
         let arg_tokens = arg_tokens?;
         if arg_tokens.is_empty() {
             Ok(quote! { assert!() })
@@ -579,10 +603,10 @@ impl Transpiler {
         }
     }
     /// Transpile `assert_eq`! macro with validation
-    /// 
+    ///
     /// Validates argument count and transpiles for equality assertions.
     /// Complexity: <10 per Toyota Way requirement.
-    /// 
+    ///
     /// # Example Usage
     /// Validates at least 2 arguments and transpiles to Rust's `assert_eq!` macro.
     /// Produces `assert_eq!(left, right, optional_message)`
@@ -590,18 +614,16 @@ impl Transpiler {
         if args.len() < 2 {
             bail!("assert_eq! requires at least 2 arguments")
         }
-        let arg_tokens: Result<Vec<_>, _> = args
-            .iter()
-            .map(|arg| self.transpile_expr(arg))
-            .collect();
+        let arg_tokens: Result<Vec<_>, _> =
+            args.iter().map(|arg| self.transpile_expr(arg)).collect();
         let arg_tokens = arg_tokens?;
         Ok(quote! { assert_eq!(#(#arg_tokens),*) })
     }
     /// Transpile `assert_ne`! macro with validation
-    /// 
+    ///
     /// Validates argument count and transpiles for inequality assertions.
     /// Complexity: <10 per Toyota Way requirement.
-    /// 
+    ///
     /// # Example Usage
     /// Validates at least 2 arguments and transpiles to Rust's `assert_ne!` macro.
     /// Produces `assert_ne!(left, right, optional_message)`
@@ -609,10 +631,8 @@ impl Transpiler {
         if args.len() < 2 {
             bail!("assert_ne! requires at least 2 arguments")
         }
-        let arg_tokens: Result<Vec<_>, _> = args
-            .iter()
-            .map(|arg| self.transpile_expr(arg))
-            .collect();
+        let arg_tokens: Result<Vec<_>, _> =
+            args.iter().map(|arg| self.transpile_expr(arg)).collect();
         let arg_tokens = arg_tokens?;
         Ok(quote! { assert_ne!(#(#arg_tokens),*) })
     }
@@ -782,13 +802,12 @@ mod tests {
     #[test]
     fn test_transpile_type_cast() {
         let transpiler = Transpiler::new();
-        let expr = Expr::new(
-            ExprKind::Literal(Literal::Integer(42)),
-            Default::default()
-        );
+        let expr = Expr::new(ExprKind::Literal(Literal::Integer(42)), Default::default());
 
         // Test various type casts
-        let types = vec!["i32", "i64", "f32", "f64", "usize", "u8", "u16", "u32", "u64", "i8", "i16"];
+        let types = vec![
+            "i32", "i64", "f32", "f64", "usize", "u8", "u16", "u32", "u64", "i8", "i16",
+        ];
         for target_type in types {
             let result = transpiler.transpile_type_cast(&expr, target_type);
             assert!(result.is_ok());
@@ -801,14 +820,14 @@ mod tests {
     #[test]
     fn test_transpile_type_cast_unsupported() {
         let transpiler = Transpiler::new();
-        let expr = Expr::new(
-            ExprKind::Literal(Literal::Integer(42)),
-            Default::default()
-        );
+        let expr = Expr::new(ExprKind::Literal(Literal::Integer(42)), Default::default());
 
         let result = transpiler.transpile_type_cast(&expr, "unknown_type");
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Unsupported cast target type"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Unsupported cast target type"));
     }
 
     #[test]
@@ -853,10 +872,7 @@ mod tests {
         let transpiler = Transpiler::new();
 
         // Test literal
-        let expr = Expr::new(
-            ExprKind::Literal(Literal::Integer(42)),
-            Default::default()
-        );
+        let expr = Expr::new(ExprKind::Literal(Literal::Integer(42)), Default::default());
         let result = transpiler.transpile_basic_expr(&expr);
         assert!(result.is_ok());
         assert_eq!(result.unwrap().to_string(), "42i32");
@@ -864,7 +880,7 @@ mod tests {
         // Test identifier
         let expr = Expr::new(
             ExprKind::Identifier("my_var".to_string()),
-            Default::default()
+            Default::default(),
         );
         let result = transpiler.transpile_basic_expr(&expr);
         assert!(result.is_ok());
@@ -874,9 +890,9 @@ mod tests {
         let expr = Expr::new(
             ExprKind::QualifiedName {
                 module: "std".to_string(),
-                name: "vec".to_string()
+                name: "vec".to_string(),
             },
-            Default::default()
+            Default::default(),
         );
         let result = transpiler.transpile_basic_expr(&expr);
         assert!(result.is_ok());
@@ -886,25 +902,27 @@ mod tests {
     fn test_is_rust_reserved_keyword() {
         // Test that all documented Rust keywords are recognized
         let reserved = vec![
-            "as", "async", "await", "break", "const", "continue", "crate",
-            "else", "enum", "extern", "false", "fn", "for", "if", "impl",
-            "in", "let", "loop", "match", "mod", "move", "mut", "pub",
-            "ref", "return", "static", "struct", "super", "trait", "true",
-            "type", "unsafe", "use", "where", "while", "abstract", "become",
-            "box", "do", "final", "macro", "override", "priv", "typeof",
-            "unsized", "virtual", "yield", "try"
+            "as", "async", "await", "break", "const", "continue", "crate", "else", "enum",
+            "extern", "false", "fn", "for", "if", "impl", "in", "let", "loop", "match", "mod",
+            "move", "mut", "pub", "ref", "return", "static", "struct", "super", "trait", "true",
+            "type", "unsafe", "use", "where", "while", "abstract", "become", "box", "do", "final",
+            "macro", "override", "priv", "typeof", "unsized", "virtual", "yield", "try",
         ];
 
         for keyword in reserved {
-            assert!(Transpiler::is_rust_reserved_keyword(keyword),
-                    "Keyword '{}' should be recognized as reserved", keyword);
+            assert!(
+                Transpiler::is_rust_reserved_keyword(keyword),
+                "Keyword '{keyword}' should be recognized as reserved"
+            );
         }
 
         // Test non-keywords
         let non_reserved = vec!["my_var", "data", "value", "self_data"];
         for word in non_reserved {
-            assert!(!Transpiler::is_rust_reserved_keyword(word),
-                    "Word '{}' should not be recognized as reserved", word);
+            assert!(
+                !Transpiler::is_rust_reserved_keyword(word),
+                "Word '{word}' should not be recognized as reserved"
+            );
         }
     }
 
@@ -912,9 +930,9 @@ mod tests {
     fn test_qualified_name_with_multiple_parts() {
         let result = Transpiler::transpile_qualified_name("a::b::c", "Method");
         let str_result = result.to_string();
-        assert!(str_result.contains("a"));
-        assert!(str_result.contains("b"));
-        assert!(str_result.contains("c"));
+        assert!(str_result.contains('a'));
+        assert!(str_result.contains('b'));
+        assert!(str_result.contains('c'));
         assert!(str_result.contains("Method"));
     }
 

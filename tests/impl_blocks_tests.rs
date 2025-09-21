@@ -1,9 +1,9 @@
 //! TDD Tests for Impl Blocks & Methods
 //! Sprint v3.9.0 - Testing method transpilation fix
 
-use ruchy::frontend::parser::Parser;
-use ruchy::frontend::ast::{Expr, ExprKind};
 use ruchy::backend::transpiler::Transpiler;
+use ruchy::frontend::ast::{Expr, ExprKind};
+use ruchy::frontend::parser::Parser;
 
 #[cfg(test)]
 mod impl_parsing_tests {
@@ -23,7 +23,10 @@ mod impl_parsing_tests {
         assert!(result.is_ok(), "Should parse impl block");
 
         let ast = result.unwrap();
-        if let ExprKind::Impl { for_type, methods, .. } = &ast.kind {
+        if let ExprKind::Impl {
+            for_type, methods, ..
+        } = &ast.kind
+        {
             assert_eq!(for_type, "Point");
             assert_eq!(methods.len(), 1);
             assert_eq!(methods[0].name, "new");
@@ -91,7 +94,12 @@ mod impl_parsing_tests {
         assert!(result.is_ok(), "Should parse method call");
 
         let ast = result.unwrap();
-        if let ExprKind::MethodCall { receiver, method, args } = &ast.kind {
+        if let ExprKind::MethodCall {
+            receiver,
+            method,
+            args,
+        } = &ast.kind
+        {
             if let ExprKind::Identifier(name) = &receiver.kind {
                 assert_eq!(name, "point");
             }
@@ -214,8 +222,8 @@ mod impl_transpilation_tests {
 
 #[cfg(test)]
 mod property_tests {
-    use proptest::prelude::*;
     use super::*;
+    use proptest::prelude::*;
 
     proptest! {
         #[test]

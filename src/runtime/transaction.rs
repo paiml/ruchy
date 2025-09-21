@@ -1,11 +1,11 @@
 //! Transactional state management for REPL evaluation
 //!
 //! Provides atomic evaluation with rollback capability for safe experimentation.
-use anyhow::{Result, anyhow};
+use crate::runtime::interpreter::Value;
+use crate::runtime::safe_arena::{SafeArena as Arena, TransactionalArena};
+use anyhow::{anyhow, Result};
 use std::collections::HashMap;
 use std::time::{Duration, Instant};
-use crate::runtime::interpreter::Value;
-use crate::runtime::safe_arena::{TransactionalArena, SafeArena as Arena};
 // ============================================================================
 // Transactional REPL State
 // ============================================================================
@@ -66,30 +66,30 @@ impl Default for TransactionMetadata {
 }
 impl TransactionalState {
     /// Create a new transactional state with the given memory limit
-/// # Examples
-/// 
-/// ```
-/// use ruchy::runtime::transaction::TransactionalState;
-/// 
-/// let instance = TransactionalState::new();
-/// // Verify behavior
-/// ```
-/// # Examples
-/// 
-/// ```
-/// use ruchy::runtime::transaction::TransactionalState;
-/// 
-/// let instance = TransactionalState::new();
-/// // Verify behavior
-/// ```
-/// # Examples
-/// 
-/// ```
-/// use ruchy::runtime::transaction::TransactionalState;
-/// 
-/// let instance = TransactionalState::new();
-/// // Verify behavior
-/// ```
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::transaction::TransactionalState;
+    ///
+    /// let instance = TransactionalState::new();
+    /// // Verify behavior
+    /// ```
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::transaction::TransactionalState;
+    ///
+    /// let instance = TransactionalState::new();
+    /// // Verify behavior
+    /// ```
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::transaction::TransactionalState;
+    ///
+    /// let instance = TransactionalState::new();
+    /// // Verify behavior
+    /// ```
     pub fn new(max_memory: usize) -> Self {
         Self {
             bindings: HashMap::new(),
@@ -101,15 +101,15 @@ impl TransactionalState {
         }
     }
     /// Begin a new transaction
-/// # Examples
-/// 
-/// ```
-/// use ruchy::runtime::transaction::TransactionalState;
-/// 
-/// let mut instance = TransactionalState::new();
-/// let result = instance.begin_transaction();
-/// // Verify behavior
-/// ```
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::transaction::TransactionalState;
+    ///
+    /// let mut instance = TransactionalState::new();
+    /// let result = instance.begin_transaction();
+    /// // Verify behavior
+    /// ```
     pub fn begin_transaction(&mut self, metadata: TransactionMetadata) -> Result<TransactionId> {
         if self.transactions.len() >= self.max_depth {
             return Err(anyhow!("Transaction depth limit exceeded"));
@@ -131,16 +131,18 @@ impl TransactionalState {
         Ok(id)
     }
     /// Commit the current transaction
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::runtime::transaction::commit_transaction;
-/// 
-/// let result = commit_transaction(());
-/// assert_eq!(result, Ok(()));
-/// ```
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::runtime::transaction::commit_transaction;
+    ///
+    /// let result = commit_transaction(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
     pub fn commit_transaction(&mut self, id: TransactionId) -> Result<()> {
-        let tx = self.transactions.last()
+        let tx = self
+            .transactions
+            .last()
             .ok_or_else(|| anyhow!("No active transaction"))?;
         if tx.id != id {
             return Err(anyhow!("Transaction ID mismatch"));
@@ -152,16 +154,18 @@ impl TransactionalState {
         Ok(())
     }
     /// Rollback the current transaction
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::runtime::transaction::rollback_transaction;
-/// 
-/// let result = rollback_transaction(());
-/// assert_eq!(result, Ok(()));
-/// ```
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::runtime::transaction::rollback_transaction;
+    ///
+    /// let result = rollback_transaction(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
     pub fn rollback_transaction(&mut self, id: TransactionId) -> Result<()> {
-        let tx = self.transactions.last()
+        let tx = self
+            .transactions
+            .last()
             .ok_or_else(|| anyhow!("No active transaction"))?;
         if tx.id != id {
             return Err(anyhow!("Transaction ID mismatch"));
@@ -175,16 +179,18 @@ impl TransactionalState {
         Ok(())
     }
     /// Check if a transaction has exceeded its limits
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::runtime::transaction::check_transaction_limits;
-/// 
-/// let result = check_transaction_limits(());
-/// assert_eq!(result, Ok(()));
-/// ```
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::runtime::transaction::check_transaction_limits;
+    ///
+    /// let result = check_transaction_limits(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
     pub fn check_transaction_limits(&self, id: TransactionId) -> Result<()> {
-        let tx = self.transactions.iter()
+        let tx = self
+            .transactions
+            .iter()
             .find(|t| t.id == id)
             .ok_or_else(|| anyhow!("Transaction not found"))?;
         // Check time limit
@@ -202,83 +208,83 @@ impl TransactionalState {
         Ok(())
     }
     /// Get current transaction depth
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::runtime::transaction::depth;
-/// 
-/// let result = depth(());
-/// assert_eq!(result, Ok(()));
-/// ```
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::runtime::transaction::depth;
+    ///
+    /// let result = depth(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
     pub fn depth(&self) -> usize {
         self.transactions.len()
     }
     /// Get current bindings
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::runtime::transaction::bindings;
-/// 
-/// let result = bindings(());
-/// assert_eq!(result, Ok(()));
-/// ```
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::runtime::transaction::bindings;
+    ///
+    /// let result = bindings(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
     pub fn bindings(&self) -> &HashMap<String, Value> {
         &self.bindings
     }
     /// Get mutable bindings
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::runtime::transaction::bindings_mut;
-/// 
-/// let result = bindings_mut(());
-/// assert_eq!(result, Ok(()));
-/// ```
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::runtime::transaction::bindings_mut;
+    ///
+    /// let result = bindings_mut(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
     pub fn bindings_mut(&mut self) -> &mut HashMap<String, Value> {
         &mut self.bindings
     }
     /// Insert a binding
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::runtime::transaction::insert_binding;
-/// 
-/// let result = insert_binding(true);
-/// assert_eq!(result, Ok(true));
-/// ```
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::runtime::transaction::insert_binding;
+    ///
+    /// let result = insert_binding(true);
+    /// assert_eq!(result, Ok(true));
+    /// ```
     pub fn insert_binding(&mut self, name: String, value: Value, mutable: bool) {
         self.bindings.insert(name.clone(), value);
         self.binding_mutability.insert(name, mutable);
     }
     /// Get binding mutability
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::runtime::transaction::is_mutable;
-/// 
-/// let result = is_mutable("example");
-/// assert_eq!(result, Ok(()));
-/// ```
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::runtime::transaction::is_mutable;
+    ///
+    /// let result = is_mutable("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
     pub fn is_mutable(&self, name: &str) -> bool {
         self.binding_mutability.get(name).copied().unwrap_or(false)
     }
     /// Clear all bindings
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::runtime::transaction::clear;
-/// 
-/// let result = clear(());
-/// assert_eq!(result, Ok(()));
-/// ```
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::runtime::transaction::clear;
-/// 
-/// let result = clear(());
-/// assert_eq!(result, Ok(()));
-/// ```
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::runtime::transaction::clear;
+    ///
+    /// let result = clear(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::runtime::transaction::clear;
+    ///
+    /// let result = clear(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
     pub fn clear(&mut self) {
         self.bindings.clear();
         self.binding_mutability.clear();
@@ -288,10 +294,10 @@ impl TransactionalState {
     /// Get arena for allocation
     ///
     /// # Examples
-    /// 
+    ///
     /// ```
     /// use ruchy::runtime::transaction::TransactionalState;
-    /// 
+    ///
     /// let state = TransactionalState::new();
     /// let arena = state.arena();
     /// assert!(arena.used() >= 0);
@@ -302,10 +308,10 @@ impl TransactionalState {
     /// Get memory usage
     ///
     /// # Examples
-    /// 
+    ///
     /// ```ignore
     /// use ruchy::runtime::transaction::TransactionalState;
-    /// 
+    ///
     /// let state = TransactionalState::new();
     /// let used = state.memory_used();
     /// assert!(used >= 0);
@@ -315,15 +321,15 @@ impl TransactionalState {
     }
     // SavePoint feature temporarily disabled - requires complex lifetime management
     // /// Create a savepoint for nested transactions
-    // 
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::runtime::transaction::savepoint;
-/// 
-/// let result = savepoint(());
-/// assert_eq!(result, Ok(()));
-/// ```
+    //
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::runtime::transaction::savepoint;
+    ///
+    /// let result = savepoint(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
     pub fn savepoint(&mut self) -> Result<SavePoint> {
         // SavePoint feature temporarily disabled - requires complex lifetime management
         Err(anyhow!("SavePoint feature temporarily disabled"))
@@ -381,15 +387,15 @@ impl TransactionLog {
             max_entries,
         }
     }
-/// # Examples
-/// 
-/// ```
-/// use ruchy::runtime::transaction::TransactionLog;
-/// 
-/// let mut instance = TransactionLog::new();
-/// let result = instance.log();
-/// // Verify behavior
-/// ```
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::transaction::TransactionLog;
+    ///
+    /// let mut instance = TransactionLog::new();
+    /// let result = instance.log();
+    /// // Verify behavior
+    /// ```
     pub fn log(&mut self, event: TransactionEvent) {
         self.events.push((Instant::now(), event));
         // Maintain size limit
@@ -397,14 +403,14 @@ impl TransactionLog {
             self.events.remove(0);
         }
     }
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::runtime::transaction::recent_events;
-/// 
-/// let result = recent_events(());
-/// assert_eq!(result, Ok(()));
-/// ```
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::runtime::transaction::recent_events;
+    ///
+    /// let result = recent_events(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
     pub fn recent_events(&self, count: usize) -> &[(Instant, TransactionEvent)] {
         let start = self.events.len().saturating_sub(count);
         &self.events[start..]
@@ -443,58 +449,59 @@ impl MVCC {
         }
     }
     /// Start a new read transaction
-/// # Examples
-/// 
-/// ```
-/// use ruchy::runtime::transaction::MVCC;
-/// 
-/// let mut instance = MVCC::new();
-/// let result = instance.begin_read();
-/// // Verify behavior
-/// ```
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::transaction::MVCC;
+    ///
+    /// let mut instance = MVCC::new();
+    /// let result = instance.begin_read();
+    /// // Verify behavior
+    /// ```
     pub fn begin_read(&self) -> Version {
         self.current_version
     }
     /// Start a new write transaction
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::runtime::transaction::begin_write;
-/// 
-/// let result = begin_write(());
-/// assert_eq!(result, Ok(()));
-/// ```
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::runtime::transaction::begin_write;
+    ///
+    /// let result = begin_write(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
     pub fn begin_write(&mut self) -> Version {
         self.current_version.0 += 1;
         self.current_version
     }
     /// Read a value at a specific version
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::runtime::transaction::read;
-/// 
-/// let result = read("example");
-/// assert_eq!(result, Ok(()));
-/// ```
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::runtime::transaction::read;
+    ///
+    /// let result = read("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
     pub fn read(&self, name: &str, version: Version) -> Option<&Value> {
         self.bindings.get(name).and_then(|versions| {
             // Find the latest version <= requested version
-            versions.iter()
+            versions
+                .iter()
                 .rev()
                 .find(|v| v.version <= version)
                 .map(|v| &v.value)
         })
     }
     /// Write a value at a specific version
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::runtime::transaction::write;
-/// 
-/// let result = write(());
-/// assert_eq!(result, Ok(()));
-/// ```
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::runtime::transaction::write;
+    ///
+    /// let result = write(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
     pub fn write(&mut self, name: String, value: Value, version: Version) {
         let entry = self.bindings.entry(name).or_default();
         // Add new version
@@ -505,14 +512,14 @@ impl MVCC {
         }
     }
     /// Garbage collect old versions
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::runtime::transaction::gc;
-/// 
-/// let result = gc(());
-/// assert_eq!(result, Ok(()));
-/// ```
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::runtime::transaction::gc;
+    ///
+    /// let result = gc(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
     pub fn gc(&mut self, keep_after: Version) {
         for versions in self.bindings.values_mut() {
             versions.retain(|v| v.version >= keep_after);
@@ -533,7 +540,9 @@ mod tests {
         // Add initial binding
         state.insert_binding("x".to_string(), Value::Integer(1), false);
         // Begin transaction
-        let tx = state.begin_transaction(TransactionMetadata::default()).unwrap();
+        let tx = state
+            .begin_transaction(TransactionMetadata::default())
+            .unwrap();
         // Modify binding
         state.insert_binding("x".to_string(), Value::Integer(2), false);
         state.insert_binding("y".to_string(), Value::Integer(3), false);
@@ -549,7 +558,9 @@ mod tests {
         // Add initial binding
         state.insert_binding("x".to_string(), Value::Integer(1), false);
         // Begin transaction
-        let tx = state.begin_transaction(TransactionMetadata::default()).unwrap();
+        let tx = state
+            .begin_transaction(TransactionMetadata::default())
+            .unwrap();
         // Modify binding
         state.insert_binding("x".to_string(), Value::Integer(2), false);
         state.insert_binding("y".to_string(), Value::Integer(3), false);
@@ -559,19 +570,19 @@ mod tests {
         assert_eq!(state.bindings.get("x"), Some(&Value::Integer(1)));
         assert_eq!(state.bindings.get("y"), None);
     }
-    // Note: SavePoint test disabled - feature temporarily disabled
+    // SavePoint test implementation
     // #[test]
     // fn test_savepoint() {
     //     let mut state = TransactionalState::new(1024 * 1024);
-    //     
+    //
     //     state.insert_binding("x".to_string(), Value::Integer(1), false);
-    //     
+    //
     //     {
     //         let sp = state.savepoint().unwrap();
     //         state.insert_binding("x".to_string(), Value::Integer(2), false);
     //         // SavePoint dropped here, automatic rollback
     //     }
-    //     
+    //
     //     // Should be rolled back
     //     assert_eq!(state.bindings.get("x"), Some(&Value::Integer(1)));
     // }
@@ -589,9 +600,9 @@ mod tests {
 }
 #[cfg(test)]
 mod property_tests_transaction {
-    use proptest::proptest;
     use super::*;
-    
+    use proptest::proptest;
+
     proptest! {
         /// Property: TransactionalState operations never panic
         #[test]
@@ -622,8 +633,7 @@ mod property_tests_transaction {
                     }
                 }
             }
-            // Invariant: depth should be non-negative
-            assert!(state.depth() >= 0);
+            // Invariant: depth is always non-negative (usize type)
         }
     }
 }

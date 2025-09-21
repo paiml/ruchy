@@ -8,30 +8,30 @@ pub struct TypeEnv {
 }
 impl TypeEnv {
     #[must_use]
-/// Create a new empty type environment
-///
-/// # Examples
-///
-/// ```
-/// use ruchy::middleend::environment::TypeEnv;
-/// let env = TypeEnv::new();
-/// ```
-pub fn new() -> Self {
+    /// Create a new empty type environment
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::middleend::environment::TypeEnv;
+    /// let env = TypeEnv::new();
+    /// ```
+    pub fn new() -> Self {
         TypeEnv {
             bindings: HashMap::new(),
         }
     }
     /// Create a standard environment with built-in functions
     #[must_use]
-/// Create a standard type environment with built-in functions
-///
-/// # Examples
-///
-/// ```
-/// use ruchy::middleend::environment::TypeEnv;
-/// let env = TypeEnv::standard();
-/// ```
-pub fn standard() -> Self {
+    /// Create a standard type environment with built-in functions
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::middleend::environment::TypeEnv;
+    /// let env = TypeEnv::standard();
+    /// ```
+    pub fn standard() -> Self {
         let mut env = Self::new();
         // Arithmetic functions
         env.bind(
@@ -73,58 +73,58 @@ pub fn standard() -> Self {
         env
     }
     /// Bind a name to a type scheme
-/// Bind a name to a type scheme in the environment
-///
-/// # Examples
-///
-/// ```
-/// use ruchy::middleend::environment::{TypeEnv, TypeScheme};
-/// use ruchy::middleend::types::MonoType;
-/// let mut env = TypeEnv::new();
-/// env.bind("x", TypeScheme::mono(MonoType::Int));
-/// ```
-pub fn bind(&mut self, name: impl Into<String>, scheme: TypeScheme) {
+    /// Bind a name to a type scheme in the environment
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::middleend::environment::{TypeEnv, TypeScheme};
+    /// use ruchy::middleend::types::MonoType;
+    /// let mut env = TypeEnv::new();
+    /// env.bind("x", TypeScheme::mono(MonoType::Int));
+    /// ```
+    pub fn bind(&mut self, name: impl Into<String>, scheme: TypeScheme) {
         self.bindings.insert(name.into(), scheme);
     }
     /// Look up a name in the environment
     #[must_use]
-/// # Examples
-/// 
-/// ```
-/// use ruchy::middleend::environment::lookup;
-/// 
-/// let result = lookup("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn lookup(&self, name: &str) -> Option<&TypeScheme> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::middleend::environment::lookup;
+    ///
+    /// let result = lookup("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn lookup(&self, name: &str) -> Option<&TypeScheme> {
         self.bindings.get(name)
     }
     /// Extend the environment with a new binding (functional style)
     #[must_use]
-/// # Examples
-/// 
-/// ```
-/// use ruchy::middleend::environment::extend;
-/// 
-/// let result = extend(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn extend(&self, name: impl Into<String>, scheme: TypeScheme) -> Self {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::middleend::environment::extend;
+    ///
+    /// let result = extend(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn extend(&self, name: impl Into<String>, scheme: TypeScheme) -> Self {
         let mut new_env = self.clone();
         new_env.bind(name, scheme);
         new_env
     }
     /// Get free type variables in the environment
     #[must_use]
-/// # Examples
-/// 
-/// ```
-/// use ruchy::middleend::environment::free_vars;
-/// 
-/// let result = free_vars(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn free_vars(&self) -> Vec<crate::middleend::types::TyVar> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::middleend::environment::free_vars;
+    ///
+    /// let result = free_vars(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn free_vars(&self) -> Vec<crate::middleend::types::TyVar> {
         let mut vars = Vec::new();
         for scheme in self.bindings.values() {
             // Only collect free variables not bound by the scheme
@@ -139,15 +139,15 @@ pub fn free_vars(&self) -> Vec<crate::middleend::types::TyVar> {
     }
     /// Generalize a monomorphic type to a type scheme
     #[must_use]
-/// # Examples
-/// 
-/// ```
-/// use ruchy::middleend::environment::generalize;
-/// 
-/// let result = generalize(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn generalize(&self, ty: MonoType) -> TypeScheme {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::middleend::environment::generalize;
+    ///
+    /// let result = generalize(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn generalize(&self, ty: MonoType) -> TypeScheme {
         let ty_vars = ty.free_vars();
         let env_vars = self.free_vars();
         // Variables to generalize are those in ty but not in env
@@ -158,15 +158,15 @@ pub fn generalize(&self, ty: MonoType) -> TypeScheme {
         TypeScheme { vars: gen_vars, ty }
     }
     /// Instantiate a type scheme with fresh variables
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::middleend::environment::instantiate;
-/// 
-/// let result = instantiate(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn instantiate(&self, scheme: &TypeScheme, gen: &mut TyVarGenerator) -> MonoType {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::middleend::environment::instantiate;
+    ///
+    /// let result = instantiate(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn instantiate(&self, scheme: &TypeScheme, gen: &mut TyVarGenerator) -> MonoType {
         scheme.instantiate(gen)
     }
 }
@@ -252,7 +252,7 @@ mod tests {
         env.bind("x", TypeScheme::mono(MonoType::Bool));
         let scheme = env.lookup("x").unwrap();
         match &scheme.ty {
-            MonoType::Bool => {}, // Expected
+            MonoType::Bool => {} // Expected
             _ => panic!("Expected Bool type after overwrite"),
         }
     }
@@ -375,8 +375,7 @@ mod tests {
 #[cfg(test)]
 mod property_tests_environment {
     use proptest::proptest;
-    
-    
+
     proptest! {
         /// Property: Function never panics on any input
         #[test]

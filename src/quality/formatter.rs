@@ -1,38 +1,38 @@
 // Code formatter for Ruchy
 // Toyota Way: Consistent code style prevents defects
-use anyhow::Result;
 use crate::frontend::ast::{Expr, ExprKind};
+use anyhow::Result;
 pub struct Formatter {
     indent_width: usize,
     use_tabs: bool,
     _line_width: usize,
 }
 impl Formatter {
-/// # Examples
-/// 
-/// ```
-/// use ruchy::quality::formatter::Formatter;
-/// 
-/// let instance = Formatter::new();
-/// // Verify behavior
-/// ```
-pub fn new() -> Self {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::quality::formatter::Formatter;
+    ///
+    /// let instance = Formatter::new();
+    /// // Verify behavior
+    /// ```
+    pub fn new() -> Self {
         Self {
             indent_width: 4,
             use_tabs: false,
             _line_width: 100,
         }
     }
-/// # Examples
-/// 
-/// ```
-/// use ruchy::quality::formatter::Formatter;
-/// 
-/// let mut instance = Formatter::new();
-/// let result = instance.format();
-/// // Verify behavior
-/// ```
-pub fn format(&self, ast: &Expr) -> Result<String> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::quality::formatter::Formatter;
+    ///
+    /// let mut instance = Formatter::new();
+    /// let result = instance.format();
+    /// // Verify behavior
+    /// ```
+    pub fn format(&self, ast: &Expr) -> Result<String> {
         // Simple formatter that converts AST back to source
         Ok(self.format_expr(ast, 0))
     }
@@ -52,14 +52,18 @@ pub fn format(&self, ast: &Expr) -> Result<String> {
             ExprKind::Literal(lit) => match lit {
                 crate::frontend::ast::Literal::Integer(n) => n.to_string(),
                 crate::frontend::ast::Literal::Float(f) => f.to_string(),
-                crate::frontend::ast::Literal::String(s) => format!("\"{}\"", s.replace('"', "\\\"")),
+                crate::frontend::ast::Literal::String(s) => {
+                    format!("\"{}\"", s.replace('"', "\\\""))
+                }
                 crate::frontend::ast::Literal::Bool(b) => b.to_string(),
                 crate::frontend::ast::Literal::Char(c) => format!("'{c}'"),
                 crate::frontend::ast::Literal::Unit => "()".to_string(),
                 crate::frontend::ast::Literal::Null => "null".to_string(),
             },
             ExprKind::Identifier(name) => name.clone(),
-            ExprKind::Let { name, value, body, .. } => {
+            ExprKind::Let {
+                name, value, body, ..
+            } => {
                 format!(
                     "let {} = {} in {}",
                     name,
@@ -92,12 +96,20 @@ pub fn format(&self, ast: &Expr) -> Result<String> {
                 result.push_str(&format!("{indent_str}}}"));
                 result
             }
-            ExprKind::Function { name, params, return_type, body, .. } => {
+            ExprKind::Function {
+                name,
+                params,
+                return_type,
+                body,
+                ..
+            } => {
                 let mut result = format!("fun {name}");
                 // Parameters
                 result.push('(');
                 for (i, param) in params.iter().enumerate() {
-                    if i > 0 { result.push_str(", "); }
+                    if i > 0 {
+                        result.push_str(", ");
+                    }
                     if let crate::frontend::ast::Pattern::Identifier(param_name) = &param.pattern {
                         result.push_str(param_name);
                         result.push_str(": ");
@@ -114,7 +126,11 @@ pub fn format(&self, ast: &Expr) -> Result<String> {
                 result.push_str(&self.format_expr(body.as_ref(), indent));
                 result
             }
-            ExprKind::If { condition, then_branch, else_branch } => {
+            ExprKind::If {
+                condition,
+                then_branch,
+                else_branch,
+            } => {
                 let mut result = "if ".to_string();
                 result.push_str(&self.format_expr(condition, indent));
                 result.push(' ');
@@ -142,7 +158,10 @@ mod tests {
     use crate::frontend::ast::*;
 
     fn create_simple_literal(value: i64) -> Expr {
-        Expr::new(ExprKind::Literal(Literal::Integer(value)), Default::default())
+        Expr::new(
+            ExprKind::Literal(Literal::Integer(value)),
+            Default::default(),
+        )
     }
 
     fn create_identifier(name: &str) -> Expr {
@@ -182,7 +201,10 @@ mod tests {
     #[test]
     fn test_format_string_literal() {
         let formatter = Formatter::new();
-        let expr = Expr::new(ExprKind::Literal(Literal::String("hello".to_string())), Default::default());
+        let expr = Expr::new(
+            ExprKind::Literal(Literal::String("hello".to_string())),
+            Default::default(),
+        );
         let result = formatter.format(&expr).unwrap();
         assert_eq!(result, "\"hello\"");
     }
@@ -234,7 +256,7 @@ mod tests {
                 op: BinaryOp::Add,
                 right: Box::new(right),
             },
-            Default::default()
+            Default::default(),
         );
         let result = formatter.format(&expr).unwrap();
         assert_eq!(result, "1 Add 2");
@@ -256,7 +278,7 @@ mod tests {
                 }),
                 is_mutable: false,
             },
-            Default::default()
+            Default::default(),
         );
         let result = formatter.format(&expr).unwrap();
         assert_eq!(result, "let x = 42 in x");
@@ -265,16 +287,13 @@ mod tests {
     #[test]
     fn test_format_block_expression() {
         let formatter = Formatter::new();
-        let exprs = vec![
-            create_simple_literal(1),
-            create_simple_literal(2),
-        ];
+        let exprs = vec![create_simple_literal(1), create_simple_literal(2)];
         let expr = Expr::new(ExprKind::Block(exprs), Default::default());
         let result = formatter.format(&expr).unwrap();
         assert!(result.contains("{\n"));
         assert!(result.contains("1\n"));
         assert!(result.contains("2\n"));
-        assert!(result.contains("}"));
+        assert!(result.contains('}'));
     }
 
     #[test]
@@ -289,7 +308,7 @@ mod tests {
                 then_branch: Box::new(then_branch),
                 else_branch: Some(Box::new(else_branch)),
             },
-            Default::default()
+            Default::default(),
         );
         let result = formatter.format(&expr).unwrap();
         assert_eq!(result, "if true 1 else 2");
@@ -306,7 +325,7 @@ mod tests {
                 then_branch: Box::new(then_branch),
                 else_branch: None,
             },
-            Default::default()
+            Default::default(),
         );
         let result = formatter.format(&expr).unwrap();
         assert_eq!(result, "if true 1");
@@ -326,7 +345,7 @@ mod tests {
                 is_async: false,
                 is_pub: false,
             },
-            Default::default()
+            Default::default(),
         );
         let result = formatter.format(&expr).unwrap();
         assert!(result.starts_with("fun test"));
@@ -360,7 +379,7 @@ mod tests {
                 is_async: false,
                 is_pub: false,
             },
-            Default::default()
+            Default::default(),
         );
         let result = formatter.format(&expr).unwrap();
         assert!(result.contains("fun identity"));
@@ -394,7 +413,7 @@ mod tests {
         let exprs = vec![create_simple_literal(1)];
         let expr = Expr::new(ExprKind::Block(exprs), Default::default());
         let result = formatter.format(&expr).unwrap();
-        assert!(result.contains("\t"));
+        assert!(result.contains('\t'));
     }
 
     #[test]
@@ -417,7 +436,7 @@ mod tests {
                 op: BinaryOp::Add,
                 right: Box::new(create_simple_literal(2)),
             },
-            Default::default()
+            Default::default(),
         );
         let outer = Expr::new(
             ExprKind::Binary {
@@ -425,7 +444,7 @@ mod tests {
                 op: BinaryOp::Multiply,
                 right: Box::new(create_simple_literal(3)),
             },
-            Default::default()
+            Default::default(),
         );
         let result = formatter.format(&outer).unwrap();
         assert!(result.contains("1 Add 2"));
@@ -466,7 +485,7 @@ mod tests {
                 is_async: false,
                 is_pub: false,
             },
-            Default::default()
+            Default::default(),
         );
         let result = formatter.format(&expr).unwrap();
         assert!(result.contains("x: Int, y: Float"));
@@ -485,7 +504,7 @@ mod tests {
         let formatter = Formatter::new();
         let expr = Expr::new(
             ExprKind::Literal(Literal::String("hello \"world\"".to_string())),
-            Default::default()
+            Default::default(),
         );
         let result = formatter.format(&expr).unwrap();
         assert_eq!(result, "\"hello \\\"world\\\"\"");
@@ -505,7 +524,7 @@ mod tests {
         // Use an expression kind that doesn't have explicit formatting
         let expr = Expr::new(
             ExprKind::StringInterpolation { parts: vec![] },
-            Default::default()
+            Default::default(),
         );
         let result = formatter.format(&expr).unwrap();
         assert!(result.contains("StringInterpolation"));
@@ -523,23 +542,19 @@ mod tests {
         let formatter = Formatter::new();
         let inner_block = Expr::new(
             ExprKind::Block(vec![create_simple_literal(1)]),
-            Default::default()
+            Default::default(),
         );
-        let outer_block = Expr::new(
-            ExprKind::Block(vec![inner_block]),
-            Default::default()
-        );
+        let outer_block = Expr::new(ExprKind::Block(vec![inner_block]), Default::default());
         let result = formatter.format(&outer_block).unwrap();
         assert!(result.contains("{\n"));
         assert!(result.contains("}\n"));
-        assert!(result.contains("}"));
+        assert!(result.contains('}'));
     }
 }
 
 #[cfg(test)]
 mod property_tests_formatter {
     use proptest::proptest;
-
 
     proptest! {
         /// Property: Function never panics on any input

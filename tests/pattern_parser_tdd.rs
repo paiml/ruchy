@@ -1,7 +1,7 @@
 //! TDD for pattern parsing improvements
 
-use ruchy::Parser;
 use ruchy::frontend::ast::{ExprKind, Pattern};
+use ruchy::Parser;
 
 #[test]
 fn test_parse_nested_tuple_pattern() {
@@ -9,7 +9,7 @@ fn test_parse_nested_tuple_pattern() {
     let code = "let ((a, b), (c, d)) = nested";
     let mut parser = Parser::new(code);
     let ast = parser.parse();
-    
+
     // This should fail initially
     assert!(ast.is_err() || matches_nested_pattern(&ast.unwrap()));
 }
@@ -32,7 +32,7 @@ fn test_parse_simple_tuple_pattern() {
     let code = "let (x, y) = tup";
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Simple tuple pattern should parse");
-    
+
     match &ast.kind {
         ExprKind::LetPattern { pattern, .. } => {
             assert!(matches!(pattern, Pattern::Tuple(patterns) if patterns.len() == 2));

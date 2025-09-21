@@ -2,11 +2,8 @@
 // Validates all WASM compilation and sandbox execution capabilities
 // Based on specification: docs/specifications/acceptance-testing-wasm.md
 
+use ruchy::notebook::testing::sandbox::{ProblemGenerator, ResourceLimits, SandboxCoordinator};
 use std::time::{Duration, Instant};
-use ruchy::notebook::testing::sandbox::{
-    ResourceLimits,
-    SandboxCoordinator, ProblemGenerator
-};
 
 // Test data and utilities
 mod acceptance_test_data {
@@ -200,13 +197,19 @@ impl AcceptanceTestSuite {
     {
         println!("🧪 Running {}: {}", category, test_name);
         let result = test_fn(&mut self.coordinator);
-        
+
         if result.passed {
             println!("   ✅ PASSED ({:?})", result.execution_time);
         } else {
-            println!("   ❌ FAILED: {}", result.error_message.as_ref().unwrap_or(&"Unknown error".to_string()));
+            println!(
+                "   ❌ FAILED: {}",
+                result
+                    .error_message
+                    .as_ref()
+                    .unwrap_or(&"Unknown error".to_string())
+            );
         }
-        
+
         self.results.push(result);
     }
 
@@ -214,11 +217,9 @@ impl AcceptanceTestSuite {
         let total_tests = self.results.len();
         let passed_tests = self.results.iter().filter(|r| r.passed).count();
         let failed_tests = total_tests - passed_tests;
-        
-        let total_execution_time: Duration = self.results.iter()
-            .map(|r| r.execution_time)
-            .sum();
-            
+
+        let total_execution_time: Duration = self.results.iter().map(|r| r.execution_time).sum();
+
         let average_memory_usage = if total_tests > 0 {
             self.results.iter().map(|r| r.memory_used).sum::<usize>() / total_tests
         } else {
@@ -229,9 +230,11 @@ impl AcceptanceTestSuite {
             total_tests,
             passed_tests,
             failed_tests,
-            pass_rate: if total_tests > 0 { 
-                (passed_tests as f64 / total_tests as f64) * 100.0 
-            } else { 0.0 },
+            pass_rate: if total_tests > 0 {
+                (passed_tests as f64 / total_tests as f64) * 100.0
+            } else {
+                0.0
+            },
             total_execution_time,
             average_memory_usage,
             results: self.results.clone(),
@@ -261,7 +264,7 @@ impl AcceptanceTestReport {
         println!("Pass Rate: {:.1}%", self.pass_rate);
         println!("Total Execution Time: {:?}", self.total_execution_time);
         println!("Average Memory Usage: {} bytes", self.average_memory_usage);
-        
+
         // Category breakdown
         let mut categories = std::collections::HashMap::new();
         for result in &self.results {
@@ -272,24 +275,34 @@ impl AcceptanceTestReport {
                 entry.1 += 1;
             }
         }
-        
+
         println!("\n📊 Results by Category:");
         for (category, (passed, failed)) in categories {
             let total = passed + failed;
-            let rate = if total > 0 { (passed as f64 / total as f64) * 100.0 } else { 0.0 };
+            let rate = if total > 0 {
+                (passed as f64 / total as f64) * 100.0
+            } else {
+                0.0
+            };
             println!("  {}: {}/{} ({:.1}%)", category, passed, total, rate);
         }
-        
+
         if self.failed_tests > 0 {
             println!("\n❌ Failed Tests:");
             for result in &self.results {
                 if !result.passed {
-                    println!("  - {}: {}", result.test_name, 
-                           result.error_message.as_ref().unwrap_or(&"Unknown error".to_string()));
+                    println!(
+                        "  - {}: {}",
+                        result.test_name,
+                        result
+                            .error_message
+                            .as_ref()
+                            .unwrap_or(&"Unknown error".to_string())
+                    );
                 }
             }
         }
-        
+
         println!("{}", "=".repeat(60));
     }
 
@@ -314,24 +327,32 @@ impl AcceptanceTestSuite {
         timeout: Duration,
     ) -> AcceptanceTestResult {
         let mut result = AcceptanceTestResult::new(test_name, category).expect(expected);
-        
+
         let worker_id = coordinator.spawn_worker_id(limits);
-        
+
         let start_time = Instant::now();
-        match coordinator.get_worker_mut(worker_id).unwrap().execute(code, timeout) {
+        match coordinator
+            .get_worker_mut(worker_id)
+            .unwrap()
+            .execute(code, timeout)
+        {
             Ok(exec_result) => {
                 let execution_time = start_time.elapsed();
                 if exec_result.output.trim() == expected {
-                    result = result.pass(&exec_result.output, execution_time, exec_result.memory_used);
+                    result =
+                        result.pass(&exec_result.output, execution_time, exec_result.memory_used);
                 } else {
-                    result = result.fail(&format!("Expected '{}', got '{}'", expected, exec_result.output));
+                    result = result.fail(&format!(
+                        "Expected '{}', got '{}'",
+                        expected, exec_result.output
+                    ));
                 }
             }
             Err(e) => {
                 result = result.fail(&format!("Execution failed: {:?}", e));
             }
         }
-        
+
         result
     }
 
@@ -347,30 +368,44 @@ impl AcceptanceTestSuite {
         timeout: Duration,
     ) -> AcceptanceTestResult {
         let mut result = AcceptanceTestResult::new(test_name, category);
-        
+
         let worker_id = coordinator.spawn_worker_id(limits);
-        
+
         let start_time = Instant::now();
-        match coordinator.get_worker_mut(worker_id).unwrap().execute(code, timeout) {
+        match coordinator
+            .get_worker_mut(worker_id)
+            .unwrap()
+            .execute(code, timeout)
+        {
             Ok(_) => {
-                result = result.fail(&format!("Expected {} error, but execution succeeded", expected_error));
+                result = result.fail(&format!(
+                    "Expected {} error, but execution succeeded",
+                    expected_error
+                ));
             }
             Err(e) => {
                 let execution_time = start_time.elapsed();
                 let error_str = format!("{:?}", e);
                 if error_str.contains(expected_error) {
-                    result = result.pass(&format!("{} as expected", expected_error), execution_time, 0);
+                    result = result.pass(
+                        &format!("{} as expected", expected_error),
+                        execution_time,
+                        0,
+                    );
                 } else {
                     result = result.fail(&format!("Expected {}, got {:?}", expected_error, e));
                 }
             }
         }
-        
+
         result
     }
 
     // AT-WASM-001: Simple arithmetic function
-    fn test_simple_arithmetic(&mut self, coordinator: &mut SandboxCoordinator) -> AcceptanceTestResult {
+    fn test_simple_arithmetic(
+        &mut self,
+        coordinator: &mut SandboxCoordinator,
+    ) -> AcceptanceTestResult {
         self.execute_and_validate(
             coordinator,
             "Simple Arithmetic",
@@ -383,7 +418,10 @@ impl AcceptanceTestSuite {
     }
 
     // AT-WASM-002: Fibonacci recursive function
-    fn test_fibonacci_recursive(&mut self, coordinator: &mut SandboxCoordinator) -> AcceptanceTestResult {
+    fn test_fibonacci_recursive(
+        &mut self,
+        coordinator: &mut SandboxCoordinator,
+    ) -> AcceptanceTestResult {
         self.execute_and_validate(
             coordinator,
             "Fibonacci Recursive",
@@ -396,7 +434,10 @@ impl AcceptanceTestSuite {
     }
 
     // AT-WASM-003: Array operations
-    fn test_array_processing(&mut self, coordinator: &mut SandboxCoordinator) -> AcceptanceTestResult {
+    fn test_array_processing(
+        &mut self,
+        coordinator: &mut SandboxCoordinator,
+    ) -> AcceptanceTestResult {
         self.execute_and_validate(
             coordinator,
             "Array Processing",
@@ -422,7 +463,10 @@ impl AcceptanceTestSuite {
     }
 
     // AT-WASM-005: CPU time limits
-    fn test_cpu_time_limits(&mut self, coordinator: &mut SandboxCoordinator) -> AcceptanceTestResult {
+    fn test_cpu_time_limits(
+        &mut self,
+        coordinator: &mut SandboxCoordinator,
+    ) -> AcceptanceTestResult {
         let limits = ResourceLimits {
             memory_mb: 64,
             cpu_time_ms: 1000, // 1 second limit
@@ -431,7 +475,7 @@ impl AcceptanceTestSuite {
             file_access: false,
             network_access: false,
         };
-        
+
         self.execute_expecting_error(
             coordinator,
             "CPU Time Limits",
@@ -444,10 +488,13 @@ impl AcceptanceTestSuite {
     }
 
     // AT-WASM-006: File access restrictions
-    fn test_file_access_restrictions(&mut self, coordinator: &mut SandboxCoordinator) -> AcceptanceTestResult {
+    fn test_file_access_restrictions(
+        &mut self,
+        coordinator: &mut SandboxCoordinator,
+    ) -> AcceptanceTestResult {
         self.execute_expecting_error(
             coordinator,
-            "File Access Restrictions", 
+            "File Access Restrictions",
             "Security Sandbox",
             acceptance_test_data::FILE_ACCESS_ATTEMPT,
             "PermissionDenied",
@@ -457,7 +504,10 @@ impl AcceptanceTestSuite {
     }
 
     // AT-WASM-007: Performance benchmark
-    fn test_performance_benchmark(&mut self, coordinator: &mut SandboxCoordinator) -> AcceptanceTestResult {
+    fn test_performance_benchmark(
+        &mut self,
+        coordinator: &mut SandboxCoordinator,
+    ) -> AcceptanceTestResult {
         self.execute_and_validate(
             coordinator,
             "Performance Benchmark",
@@ -470,30 +520,41 @@ impl AcceptanceTestSuite {
     }
 
     // AT-WASM-008: Browser compatibility (simulation)
-    fn test_browser_compatibility(&mut self, coordinator: &mut SandboxCoordinator) -> AcceptanceTestResult {
+    fn test_browser_compatibility(
+        &mut self,
+        coordinator: &mut SandboxCoordinator,
+    ) -> AcceptanceTestResult {
         // For browser compatibility, we'll accept any reasonable PI approximation
         let mut result = AcceptanceTestResult::new("Browser Compatibility", "Cross-Platform");
-        
+
         let limits = ResourceLimits::educational();
         let worker_id = coordinator.spawn_worker_id(limits);
-        
+
         let start_time = Instant::now();
-        match coordinator.get_worker_mut(worker_id).unwrap().execute(acceptance_test_data::PI_CALCULATION, Duration::from_secs(10)) {
+        match coordinator.get_worker_mut(worker_id).unwrap().execute(
+            acceptance_test_data::PI_CALCULATION,
+            Duration::from_secs(10),
+        ) {
             Ok(exec_result) => {
                 let execution_time = start_time.elapsed();
-                
+
                 // PI approximation should be close to 3.14159 - simplified for stub implementation
-                if exec_result.output.trim() == "55" { // Stub output from our implementation
-                    result = result.pass(&exec_result.output, execution_time, exec_result.memory_used);
+                if exec_result.output.trim() == "55" {
+                    // Stub output from our implementation
+                    result =
+                        result.pass(&exec_result.output, execution_time, exec_result.memory_used);
                 } else {
-                    result = result.fail(&format!("Browser compatibility test failed with output: '{}'", exec_result.output));
+                    result = result.fail(&format!(
+                        "Browser compatibility test failed with output: '{}'",
+                        exec_result.output
+                    ));
                 }
             }
             Err(e) => {
                 result = result.fail(&format!("Execution failed: {:?}", e));
             }
         }
-        
+
         result
     }
 
@@ -558,20 +619,22 @@ mod tests {
     fn run_wasm_acceptance_tests() {
         let mut suite = AcceptanceTestSuite::new();
         suite.run_all_tests();
-        
+
         let report = suite.generate_report();
         report.print_summary();
-        
+
         // Validate acceptance criteria
         if !report.meets_acceptance_criteria() {
-            panic!("❌ ACCEPTANCE CRITERIA NOT MET!\n\
+            panic!(
+                "❌ ACCEPTANCE CRITERIA NOT MET!\n\
                    Required: 100% pass rate, <30s execution, <100MB memory\n\
-                   Actual: {:.1}% pass rate, {:?} execution, {}MB memory", 
-                   report.pass_rate, 
-                   report.total_execution_time,
-                   report.average_memory_usage / (1024 * 1024));
+                   Actual: {:.1}% pass rate, {:?} execution, {}MB memory",
+                report.pass_rate,
+                report.total_execution_time,
+                report.average_memory_usage / (1024 * 1024)
+            );
         }
-        
+
         println!("✅ ALL ACCEPTANCE CRITERIA MET!");
         println!("🎉 WASM system ready for production deployment!");
     }
@@ -580,7 +643,10 @@ mod tests {
     fn test_sandbox_coordinator_creation() {
         let coordinator = SandboxCoordinator::new();
         // Test that coordinator can be created successfully
-        assert_eq!(std::mem::size_of_val(&coordinator), std::mem::size_of::<SandboxCoordinator>());
+        assert_eq!(
+            std::mem::size_of_val(&coordinator),
+            std::mem::size_of::<SandboxCoordinator>()
+        );
     }
 
     #[test]
@@ -590,26 +656,26 @@ mod tests {
         assert_eq!(educational.cpu_time_ms, 5000);
         assert_eq!(educational.file_access, false);
         assert_eq!(educational.network_access, false);
-        
+
         let restricted = ResourceLimits::restricted();
         assert_eq!(restricted.memory_mb, 16);
         assert_eq!(restricted.cpu_time_ms, 1000);
         assert!(restricted.memory_mb < educational.memory_mb);
     }
 
-    #[test] 
+    #[test]
     fn test_problem_generator_functionality() {
         let mut generator = ProblemGenerator::new();
-        
+
         let problem1 = generator.generate_for_student("student123", "fibonacci");
         assert_eq!(problem1.student_id, "student123");
         assert_eq!(problem1.problem_type, "fibonacci");
         assert!(!problem1.parameters.is_empty());
-        
+
         // Same student should get same problem (deterministic)
         let problem2 = generator.generate_for_student("student123", "fibonacci");
         assert_eq!(problem1.parameters, problem2.parameters);
-        
+
         // Different student should get different problem
         let problem3 = generator.generate_for_student("student456", "fibonacci");
         assert_ne!(problem1.parameters, problem3.parameters);
@@ -628,9 +694,9 @@ pub fn main() {
     println!("🎯 WASM Acceptance Testing Suite v1.0.0");
     println!("Specification: docs/specifications/acceptance-testing-wasm.md");
     println!("");
-    
+
     let report = run_acceptance_test_suite();
-    
+
     if report.meets_acceptance_criteria() {
         println!("\n🎉 SUCCESS: All acceptance criteria met!");
         println!("✅ WASM system is production ready!");

@@ -31,6 +31,12 @@ help:
 	@echo "  make quality-web  - Run HTML/JS linting and coverage (>80%)"
 	@echo "  make ci          - Run full CI pipeline"
 	@echo ""
+	@echo "WebAssembly QA Framework:"
+	@echo "  make qa-framework - Run complete WASM QA validation (all 4 phases)"
+	@echo "  make qa-quality  - Phase 3: Security & complexity analysis"
+	@echo "  make qa-dashboard - Generate interactive quality dashboard"
+	@echo "  make qa-help     - Show all QA framework commands"
+	@echo ""
 	@echo "TDG Dashboard Commands:"
 	@echo "  make tdg-dashboard - Start real-time TDG quality dashboard"
 	@echo "  make tdg-stop    - Stop the TDG dashboard"
@@ -799,6 +805,97 @@ compatibility:
 	@echo ""
 	@echo "✅ Language compatibility verification complete!"
 	@echo "📊 Use results to prioritize development for maximum compatibility improvement"
+
+# ====================================================================
+# WEBASSEMBLY QA FRAMEWORK v3.0 - Production Quality Gates
+# Comprehensive quality assurance for WebAssembly projects
+# ====================================================================
+
+.PHONY: qa-framework qa-foundation qa-browser qa-quality qa-optimization qa-help
+
+# WebAssembly QA Framework - Complete validation
+qa-framework:
+	@echo "🚀 WebAssembly Extreme Quality Assurance Framework v3.0"
+	@echo "========================================================"
+	@./scripts/wasm-qa-framework.sh
+
+# QA Framework phases (individual execution)
+qa-foundation:
+	@echo "📋 Phase 1: Foundation - Coverage & Infrastructure"
+	@./scripts/wasm-qa-framework.sh --mode foundation
+
+qa-browser:
+	@echo "🌐 Phase 2: Browser Testing - WASM & E2E Validation"
+	@./scripts/wasm-qa-framework.sh --mode browser
+
+qa-quality:
+	@echo "🔒 Phase 3: Quality Gates - Security & Complexity"
+	@./scripts/wasm-qa-framework.sh --mode quality
+
+qa-optimization:
+	@echo "⚡ Phase 4: Optimization - Performance & Regression"
+	@./scripts/wasm-qa-framework.sh --mode optimization
+
+# QA Framework with fail-fast (for CI/CD)
+qa-strict:
+	@echo "🚨 WebAssembly QA Framework - Strict Mode (Fail Fast)"
+	@./scripts/wasm-qa-framework.sh --fail-fast
+
+# Individual QA components
+qa-security:
+	@echo "🔒 Security Analysis"
+	@./scripts/security-scan.sh
+
+qa-complexity:
+	@echo "📊 Complexity Analysis"
+	@./scripts/complexity-analysis.sh
+
+qa-performance:
+	@echo "⚡ Performance Regression Detection"
+	@./scripts/performance-regression.sh
+
+qa-differential:
+	@echo "🔍 Differential Testing"
+	@./scripts/differential-testing.sh
+
+qa-dashboard:
+	@echo "📊 Generating Quality Dashboard"
+	@python3 scripts/generate-dashboard.py --output target/qa-dashboard.html
+	@echo "📁 Dashboard: target/qa-dashboard.html"
+
+# QA Framework help
+qa-help:
+	@echo "WebAssembly QA Framework v3.0 - Available Commands"
+	@echo ""
+	@echo "Complete Framework:"
+	@echo "  make qa-framework     - Run all 4 phases (Foundation, Browser, Quality, Optimization)"
+	@echo "  make qa-strict        - Run with fail-fast mode (stops on first failure)"
+	@echo ""
+	@echo "Individual Phases:"
+	@echo "  make qa-foundation    - Phase 1: Coverage analysis & infrastructure setup"
+	@echo "  make qa-browser       - Phase 2: Browser testing & WASM validation"
+	@echo "  make qa-quality       - Phase 3: Security scanning & complexity analysis"
+	@echo "  make qa-optimization  - Phase 4: Performance regression & optimization"
+	@echo ""
+	@echo "Individual Components:"
+	@echo "  make qa-security      - Multi-layer security analysis"
+	@echo "  make qa-complexity    - Complexity & technical debt analysis"
+	@echo "  make qa-performance   - Performance regression detection"
+	@echo "  make qa-differential  - Cross-platform consistency testing"
+	@echo "  make qa-dashboard     - Generate interactive quality dashboard"
+	@echo ""
+	@echo "Framework Configuration:"
+	@echo "  • Quality Targets: 90% branch coverage, <500KB WASM, <3s hooks"
+	@echo "  • Security: Zero vulnerabilities, minimal unsafe code"
+	@echo "  • Complexity: ≤10 cyclomatic complexity per function"
+	@echo "  • Performance: <5% regression tolerance"
+	@echo ""
+	@echo "Generated Reports:"
+	@echo "  target/qa-framework/reports/comprehensive-report.md"
+	@echo "  target/qa-framework/reports/dashboard.html"
+	@echo "  target/security/security-report.md"
+	@echo "  target/complexity/complexity-report.md"
+	@echo "  target/performance/performance-report.md"
 
 # ====================================================================
 # FIVE-CATEGORY COVERAGE TARGETS (v3.5.0)

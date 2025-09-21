@@ -14,16 +14,24 @@ fn test_if_let_option_some() {
             println("Got None");
         }
     "#;
-    
+
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Failed to parse if-let with Some");
-    
+
     let transpiler = Transpiler::new();
-    let rust_code = transpiler.transpile_to_string(&ast).expect("Failed to transpile");
-    
+    let rust_code = transpiler
+        .transpile_to_string(&ast)
+        .expect("Failed to transpile");
+
     // Should generate Rust if-let pattern matching
-    assert!(rust_code.contains("if let Some"), "Should contain 'if let Some' pattern");
-    assert!(!rust_code.contains("if Some"), "Should not be a regular if statement");
+    assert!(
+        rust_code.contains("if let Some"),
+        "Should contain 'if let Some' pattern"
+    );
+    assert!(
+        !rust_code.contains("if Some"),
+        "Should not be a regular if statement"
+    );
 }
 
 #[test]
@@ -37,15 +45,20 @@ fn test_if_let_result_ok() {
             println("Error occurred");
         }
     "#;
-    
+
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Failed to parse if-let with Ok");
-    
+
     let transpiler = Transpiler::new();
-    let rust_code = transpiler.transpile_to_string(&ast).expect("Failed to transpile");
-    
+    let rust_code = transpiler
+        .transpile_to_string(&ast)
+        .expect("Failed to transpile");
+
     // Should generate Rust if-let pattern matching
-    assert!(rust_code.contains("if let Ok"), "Should contain 'if let Ok' pattern");
+    assert!(
+        rust_code.contains("if let Ok"),
+        "Should contain 'if let Ok' pattern"
+    );
 }
 
 #[test]
@@ -63,15 +76,22 @@ fn test_if_let_custom_enum() {
             println("Text message: " + s);
         }
     "#;
-    
+
     let mut parser = Parser::new(code);
-    let ast = parser.parse().expect("Failed to parse if-let with custom enum");
-    
+    let ast = parser
+        .parse()
+        .expect("Failed to parse if-let with custom enum");
+
     let transpiler = Transpiler::new();
-    let rust_code = transpiler.transpile_to_string(&ast).expect("Failed to transpile");
-    
+    let rust_code = transpiler
+        .transpile_to_string(&ast)
+        .expect("Failed to transpile");
+
     // Should generate Rust if-let pattern matching
-    assert!(rust_code.contains("if let Message::Text"), "Should contain enum pattern matching");
+    assert!(
+        rust_code.contains("if let Message::Text"),
+        "Should contain enum pattern matching"
+    );
 }
 
 #[test]
@@ -83,15 +103,20 @@ fn test_if_let_nested_pattern() {
             println("Number: " + num.to_string() + ", Text: " + text);
         }
     "#;
-    
+
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Failed to parse nested if-let");
-    
+
     let transpiler = Transpiler::new();
-    let rust_code = transpiler.transpile_to_string(&ast).expect("Failed to transpile");
-    
+    let rust_code = transpiler
+        .transpile_to_string(&ast)
+        .expect("Failed to transpile");
+
     // Should handle nested destructuring in if-let
-    assert!(rust_code.contains("if let Some(("), "Should handle nested patterns");
+    assert!(
+        rust_code.contains("if let Some(("),
+        "Should handle nested patterns"
+    );
 }
 
 #[test]
@@ -103,15 +128,20 @@ fn test_if_let_with_guard() {
             println("Got large value: " + x.to_string());
         }
     "#;
-    
+
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Failed to parse if-let with guard");
-    
+
     let transpiler = Transpiler::new();
-    let rust_code = transpiler.transpile_to_string(&ast).expect("Failed to transpile");
-    
+    let rust_code = transpiler
+        .transpile_to_string(&ast)
+        .expect("Failed to transpile");
+
     // Should handle if-let with guard condition
-    assert!(rust_code.contains("if let Some"), "Should contain if-let pattern");
+    assert!(
+        rust_code.contains("if let Some"),
+        "Should contain if-let pattern"
+    );
     assert!(rust_code.contains("&&"), "Should include guard condition");
 }
 
@@ -125,15 +155,20 @@ fn test_while_let() {
             iter = None;
         }
     "#;
-    
+
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Failed to parse while-let");
-    
+
     let transpiler = Transpiler::new();
-    let rust_code = transpiler.transpile_to_string(&ast).expect("Failed to transpile");
-    
+    let rust_code = transpiler
+        .transpile_to_string(&ast)
+        .expect("Failed to transpile");
+
     // Should generate while-let loop
-    assert!(rust_code.contains("while let Some"), "Should contain 'while let Some' pattern");
+    assert!(
+        rust_code.contains("while let Some"),
+        "Should contain 'while let Some' pattern"
+    );
 }
 
 #[test]
@@ -149,14 +184,22 @@ fn test_if_let_else_if_let() {
             println("No value");
         }
     "#;
-    
+
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Failed to parse chained if-let");
-    
+
     let transpiler = Transpiler::new();
-    let rust_code = transpiler.transpile_to_string(&ast).expect("Failed to transpile");
-    
+    let rust_code = transpiler
+        .transpile_to_string(&ast)
+        .expect("Failed to transpile");
+
     // Should handle chained if-let patterns
-    assert!(rust_code.contains("if let Some"), "Should contain first if-let");
-    assert!(rust_code.contains("else if let Some"), "Should contain else if-let");
+    assert!(
+        rust_code.contains("if let Some"),
+        "Should contain first if-let"
+    );
+    assert!(
+        rust_code.contains("else if let Some"),
+        "Should contain else if-let"
+    );
 }

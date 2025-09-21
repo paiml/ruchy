@@ -2,9 +2,9 @@
 // Target: Maximum runtime coverage
 // Sprint 80: ALL NIGHT Coverage Marathon Phase 12
 
-use ruchy::runtime::{Environment, Value, Binding, Scope};
-use std::rc::Rc;
+use ruchy::runtime::{Binding, Environment, Scope, Value};
 use std::collections::HashMap;
+use std::rc::Rc;
 
 // Environment tests
 #[test]
@@ -210,9 +210,7 @@ fn test_value_object() {
 
 #[test]
 fn test_value_function() {
-    let func = |_args: Vec<Value>| -> Result<Value, String> {
-        Ok(Value::Integer(42))
-    };
+    let func = |_args: Vec<Value>| -> Result<Value, String> { Ok(Value::Integer(42)) };
     let val = Value::Function(Rc::new(func));
     assert!(matches!(val, Value::Function(_)));
 }

@@ -88,12 +88,16 @@ impl Transpiler {
                 Ok(quote! { (#(#pattern_tokens),*) })
             }
             Pattern::List(patterns) => self.transpile_array_pattern(patterns, false),
-            Pattern::Struct { name, fields, has_rest } => {
-                self.transpile_struct_pattern(name, fields, *has_rest)
-            }
-            Pattern::Range { start, end, inclusive } => {
-                self.transpile_range_pattern(start, end, *inclusive)
-            }
+            Pattern::Struct {
+                name,
+                fields,
+                has_rest,
+            } => self.transpile_struct_pattern(name, fields, *has_rest),
+            Pattern::Range {
+                start,
+                end,
+                inclusive,
+            } => self.transpile_range_pattern(start, end, *inclusive),
             Pattern::Or(patterns) => self.transpile_or_pattern(patterns),
             Pattern::Rest => Ok(quote! { .. }),
             Pattern::RestNamed(name) => self.transpile_rest_named_pattern(name),
@@ -102,7 +106,10 @@ impl Transpiler {
                 let inner = self.transpile_pattern(pattern)?;
                 Ok(quote! { #name_ident @ #inner })
             }
-            Pattern::WithDefault { pattern, default: _ } => {
+            Pattern::WithDefault {
+                pattern,
+                default: _,
+            } => {
                 // For patterns with defaults, just use the pattern part in match
                 self.transpile_pattern(pattern)
             }
@@ -118,16 +125,18 @@ impl Transpiler {
                 let inner = self.transpile_pattern(pattern)?;
                 Ok(quote! { Some(#inner) })
             }
-            Pattern::None => Ok(quote! { None })
+            Pattern::None => Ok(quote! { None }),
         }
     }
     fn transpile_array_pattern(
         &self,
         patterns: &[Pattern],
-        _has_rest: bool
+        _has_rest: bool,
     ) -> Result<TokenStream> {
         // Check if any pattern is a rest pattern
-        let has_rest = patterns.iter().any(|p| matches!(p, Pattern::Rest | Pattern::RestNamed(_)));
+        let has_rest = patterns
+            .iter()
+            .any(|p| matches!(p, Pattern::Rest | Pattern::RestNamed(_)));
         if has_rest {
             // For array patterns with rest, we need special handling
             let mut pattern_tokens = Vec::new();
@@ -160,9 +169,9 @@ impl Transpiler {
             } else {
                 // For non-empty patterns, check if any contain identifiers
                 // If so, we might need to bind to a slice
-                let has_bindings = patterns.iter().any(|p| {
-                    matches!(p, Pattern::Identifier(_) | Pattern::RestNamed(_))
-                });
+                let has_bindings = patterns
+                    .iter()
+                    .any(|p| matches!(p, Pattern::Identifier(_) | Pattern::RestNamed(_)));
                 if has_bindings {
                     // Use slice pattern for binding
                     Ok(quote! { [#(#pattern_tokens),*] })
@@ -177,7 +186,7 @@ impl Transpiler {
         &self,
         name: &str,
         fields: &[StructPatternField],
-        has_rest: bool
+        has_rest: bool,
     ) -> Result<TokenStream> {
         if name.is_empty() {
             return Ok(quote! { _ });
@@ -194,15 +203,18 @@ impl Transpiler {
         }
     }
     fn transpile_field_patterns(&self, fields: &[StructPatternField]) -> Result<Vec<TokenStream>> {
-        fields.iter().map(|field| {
-            let field_ident = format_ident!("{}", field.name);
-            if let Some(ref pattern) = field.pattern {
-                let pattern_tokens = self.transpile_pattern(pattern)?;
-                Ok(quote! { #field_ident: #pattern_tokens })
-            } else {
-                Ok(quote! { #field_ident })
-            }
-        }).collect()
+        fields
+            .iter()
+            .map(|field| {
+                let field_ident = format_ident!("{}", field.name);
+                if let Some(ref pattern) = field.pattern {
+                    let pattern_tokens = self.transpile_pattern(pattern)?;
+                    Ok(quote! { #field_ident: #pattern_tokens })
+                } else {
+                    Ok(quote! { #field_ident })
+                }
+            })
+            .collect()
     }
     fn transpile_or_pattern(&self, patterns: &[Pattern]) -> Result<TokenStream> {
         let pattern_tokens: Result<Vec<_>> =
@@ -221,7 +233,7 @@ impl Transpiler {
         &self,
         start: &Pattern,
         end: &Pattern,
-        inclusive: bool
+        inclusive: bool,
     ) -> Result<TokenStream> {
         let start_tokens = self.transpile_pattern(start)?;
         let end_tokens = self.transpile_pattern(end)?;
@@ -258,9 +270,9 @@ impl Transpiler {
 
 #[cfg(test)]
 mod tests {
-    
+
     use crate::frontend::ast::{
-        Expr, ExprKind, Literal, MatchArm, Pattern, Span, StructPatternField, BinaryOp
+        BinaryOp, Expr, ExprKind, Literal, MatchArm, Pattern, Span, StructPatternField,
     };
     use crate::Transpiler;
 
@@ -300,10 +312,10 @@ mod tests {
         ]);
         let result = transpiler.transpile_pattern(&pattern).unwrap();
         let output = result.to_string();
-        assert!(output.contains("("));
-        assert!(output.contains(")"));
-        assert!(output.contains("a"));
-        assert!(output.contains("b"));
+        assert!(output.contains('('));
+        assert!(output.contains(')'));
+        assert!(output.contains('a'));
+        assert!(output.contains('b'));
     }
 
     #[test]
@@ -311,8 +323,8 @@ mod tests {
         let transpiler = Transpiler::new();
         let pattern = Pattern::List(vec![]);
         let result = transpiler.transpile_pattern(&pattern).unwrap();
-        assert!(result.to_string().contains("["));
-        assert!(result.to_string().contains("]"));
+        assert!(result.to_string().contains('['));
+        assert!(result.to_string().contains(']'));
     }
 
     #[test]
@@ -329,7 +341,7 @@ mod tests {
         let pattern = Pattern::RestNamed("rest".to_string());
         let result = transpiler.transpile_pattern(&pattern).unwrap();
         assert!(result.to_string().contains("rest"));
-        assert!(result.to_string().contains("@"));
+        assert!(result.to_string().contains('@'));
     }
 
     #[test]
@@ -343,7 +355,11 @@ mod tests {
     #[test]
     fn test_transpile_qualified_path_pattern() {
         let transpiler = Transpiler::new();
-        let pattern = Pattern::QualifiedName(vec!["std".to_string(), "option".to_string(), "Option".to_string()]);
+        let pattern = Pattern::QualifiedName(vec![
+            "std".to_string(),
+            "option".to_string(),
+            "Option".to_string(),
+        ]);
         let result = transpiler.transpile_pattern(&pattern).unwrap();
         let output = result.to_string();
         assert!(output.contains("std"));
@@ -383,8 +399,8 @@ mod tests {
         let result = transpiler.transpile_pattern(&pattern).unwrap();
         let output = result.to_string();
         assert!(output.contains("Point"));
-        assert!(output.contains("x"));
-        assert!(output.contains("y"));
+        assert!(output.contains('x'));
+        assert!(output.contains('y'));
     }
 
     #[test]
@@ -392,12 +408,10 @@ mod tests {
         let transpiler = Transpiler::new();
         let pattern = Pattern::Struct {
             name: "Config".to_string(),
-            fields: vec![
-                StructPatternField {
-                    name: "debug".to_string(),
-                    pattern: None,
-                },
-            ],
+            fields: vec![StructPatternField {
+                name: "debug".to_string(),
+                pattern: None,
+            }],
             has_rest: true,
         };
         let result = transpiler.transpile_pattern(&pattern).unwrap();
@@ -416,7 +430,7 @@ mod tests {
         };
         let result = transpiler.transpile_pattern(&pattern).unwrap();
         let output = result.to_string();
-        assert!(output.contains("1"));
+        assert!(output.contains('1'));
         assert!(output.contains("10"));
         assert!(output.contains(".."));
         assert!(!output.contains("..="));
@@ -432,7 +446,7 @@ mod tests {
         };
         let result = transpiler.transpile_pattern(&pattern).unwrap();
         let output = result.to_string();
-        assert!(output.contains("1"));
+        assert!(output.contains('1'));
         assert!(output.contains("10"));
         assert!(output.contains("..="));
     }
@@ -447,10 +461,10 @@ mod tests {
         ]);
         let result = transpiler.transpile_pattern(&pattern).unwrap();
         let output = result.to_string();
-        assert!(output.contains("1"));
-        assert!(output.contains("2"));
-        assert!(output.contains("3"));
-        assert!(output.contains("|"));
+        assert!(output.contains('1'));
+        assert!(output.contains('2'));
+        assert!(output.contains('3'));
+        assert!(output.contains('|'));
     }
 
     #[test]
@@ -474,10 +488,7 @@ mod tests {
     #[test]
     fn test_transpile_match_without_guard() {
         let transpiler = Transpiler::new();
-        let expr = Expr::new(
-            ExprKind::Identifier("x".to_string()),
-            Span::new(0, 0),
-        );
+        let expr = Expr::new(ExprKind::Identifier("x".to_string()), Span::new(0, 0));
         let arms = vec![
             MatchArm {
                 pattern: Pattern::Literal(Literal::Integer(1)),
@@ -501,42 +512,37 @@ mod tests {
         let result = transpiler.transpile_match(&expr, &arms).unwrap();
         let output = result.to_string();
         assert!(output.contains("match"));
-        assert!(output.contains("x"));
-        assert!(output.contains("1"));
-        assert!(output.contains("_"));
+        assert!(output.contains('x'));
+        assert!(output.contains('1'));
+        assert!(output.contains('_'));
     }
 
     #[test]
     fn test_transpile_match_with_guard() {
         let transpiler = Transpiler::new();
-        let expr = Expr::new(
-            ExprKind::Identifier("x".to_string()),
-            Span::new(0, 0),
-        );
-        let arms = vec![
-            MatchArm {
-                pattern: Pattern::Identifier("n".to_string()),
-                guard: Some(Box::new(Expr::new(
-                    ExprKind::Binary {
-                        op: BinaryOp::Greater,
-                        left: Box::new(Expr::new(
-                            ExprKind::Identifier("n".to_string()),
-                            Span::new(0, 0),
-                        )),
-                        right: Box::new(Expr::new(
-                            ExprKind::Literal(Literal::Integer(0)),
-                            Span::new(0, 0),
-                        )),
-                    },
-                    Span::new(0, 0),
-                ))),
-                body: Box::new(Expr::new(
-                    ExprKind::Literal(Literal::String("positive".to_string())),
-                    Span::new(0, 0),
-                )),
-                span: Span::new(0, 0),
-            },
-        ];
+        let expr = Expr::new(ExprKind::Identifier("x".to_string()), Span::new(0, 0));
+        let arms = vec![MatchArm {
+            pattern: Pattern::Identifier("n".to_string()),
+            guard: Some(Box::new(Expr::new(
+                ExprKind::Binary {
+                    op: BinaryOp::Greater,
+                    left: Box::new(Expr::new(
+                        ExprKind::Identifier("n".to_string()),
+                        Span::new(0, 0),
+                    )),
+                    right: Box::new(Expr::new(
+                        ExprKind::Literal(Literal::Integer(0)),
+                        Span::new(0, 0),
+                    )),
+                },
+                Span::new(0, 0),
+            ))),
+            body: Box::new(Expr::new(
+                ExprKind::Literal(Literal::String("positive".to_string())),
+                Span::new(0, 0),
+            )),
+            span: Span::new(0, 0),
+        }];
         let result = transpiler.transpile_match(&expr, &arms).unwrap();
         let output = result.to_string();
         assert!(output.contains("match"));
@@ -552,10 +558,10 @@ mod tests {
         ]);
         let result = transpiler.transpile_pattern(&pattern).unwrap();
         let output = result.to_string();
-        assert!(output.contains("["));
+        assert!(output.contains('['));
         assert!(output.contains("first"));
         assert!(output.contains(".."));
-        assert!(output.contains("]"));
+        assert!(output.contains(']'));
     }
 
     #[test]
@@ -567,18 +573,18 @@ mod tests {
         ]);
         let result = transpiler.transpile_pattern(&pattern).unwrap();
         let output = result.to_string();
-        assert!(output.contains("["));
+        assert!(output.contains('['));
         assert!(output.contains("head"));
         assert!(output.contains("tail"));
-        assert!(output.contains("@"));
-        assert!(output.contains("]"));
+        assert!(output.contains('@'));
+        assert!(output.contains(']'));
     }
 
     #[test]
     fn test_empty_struct_name() {
         let transpiler = Transpiler::new();
         let pattern = Pattern::Struct {
-            name: "".to_string(),
+            name: String::new(),
             fields: vec![],
             has_rest: false,
         };

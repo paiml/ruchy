@@ -9,7 +9,10 @@ mod tests {
     fn test_extreme_quality_repl_creation() {
         let temp_dir = TempDir::new().unwrap();
         let repl_result = Repl::new(temp_dir.path().to_path_buf());
-        assert!(repl_result.is_ok(), "EXTREME Quality REPL should create successfully");
+        assert!(
+            repl_result.is_ok(),
+            "EXTREME Quality REPL should create successfully"
+        );
     }
 
     #[test]

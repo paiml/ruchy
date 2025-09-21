@@ -2,9 +2,9 @@
 // Target: Test complete flow from source to execution
 // Sprint 80: ALL NIGHT Coverage Marathon Phase 18
 
-use ruchy::{Parser, Transpiler, Compiler};
+use ruchy::compile::{CompilationTarget, CompilerOptions};
 use ruchy::runtime::interpreter::Interpreter;
-use ruchy::compile::{CompilerOptions, CompilationTarget};
+use ruchy::{Compiler, Parser, Transpiler};
 use std::fs;
 use std::process::Command;
 

@@ -2,15 +2,13 @@
 //!
 //! Provides automated grading, rubric evaluation, and academic integrity checking
 //! for educational use of the Ruchy REPL.
-use anyhow::Result;
-use serde::{Serialize, Deserialize};
-use std::collections::{HashMap, HashSet};
-use sha2::{Sha256, Digest};
-use regex::Regex;
-use crate::runtime::replay::{
-    ReplSession, Event, ReplayValidator
-};
 use crate::runtime::repl::Repl;
+use crate::runtime::replay::{Event, ReplSession, ReplayValidator};
+use anyhow::Result;
+use regex::Regex;
+use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
+use std::collections::{HashMap, HashSet};
 // ============================================================================
 // Assignment Specification
 // ============================================================================
@@ -57,10 +55,7 @@ pub enum ExpectedBehavior {
     Pattern(String), // Regex pattern
     TypeSignature(String),
     Predicate(PredicateCheck),
-    PerformanceBound {
-        max_ns: u64,
-        max_bytes: usize,
-    },
+    PerformanceBound { max_ns: u64, max_bytes: usize },
 }
 /// Predicate-based checking for complex validation
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -123,7 +118,10 @@ pub struct Criterion {
 pub enum CriterionEvaluation {
     Automatic(AutomaticCheck),
     Manual(String), // Instructions for manual grading
-    Hybrid { auto_weight: f32, manual_weight: f32 },
+    Hybrid {
+        auto_weight: f32,
+        manual_weight: f32,
+    },
 }
 /// Automatic checking methods
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -169,47 +167,47 @@ impl Default for GradingEngine {
     }
 }
 impl GradingEngine {
-/// # Examples
-/// 
-/// ```
-/// use ruchy::runtime::assessment::GradingEngine;
-/// 
-/// let instance = GradingEngine::new();
-/// // Verify behavior
-/// ```
-/// # Examples
-/// 
-/// ```
-/// use ruchy::runtime::assessment::GradingEngine;
-/// 
-/// let instance = GradingEngine::new();
-/// // Verify behavior
-/// ```
-/// # Examples
-/// 
-/// ```
-/// use ruchy::runtime::assessment::GradingEngine;
-/// 
-/// let instance = GradingEngine::new();
-/// // Verify behavior
-/// ```
-/// # Examples
-/// 
-/// ```
-/// use ruchy::runtime::assessment::GradingEngine;
-/// 
-/// let instance = GradingEngine::new();
-/// // Verify behavior
-/// ```
-/// # Examples
-/// 
-/// ```
-/// use ruchy::runtime::assessment::GradingEngine;
-/// 
-/// let instance = GradingEngine::new();
-/// // Verify behavior
-/// ```
-pub fn new() -> Self {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::assessment::GradingEngine;
+    ///
+    /// let instance = GradingEngine::new();
+    /// // Verify behavior
+    /// ```
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::assessment::GradingEngine;
+    ///
+    /// let instance = GradingEngine::new();
+    /// // Verify behavior
+    /// ```
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::assessment::GradingEngine;
+    ///
+    /// let instance = GradingEngine::new();
+    /// // Verify behavior
+    /// ```
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::assessment::GradingEngine;
+    ///
+    /// let instance = GradingEngine::new();
+    /// // Verify behavior
+    /// ```
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::assessment::GradingEngine;
+    ///
+    /// let instance = GradingEngine::new();
+    /// // Verify behavior
+    /// ```
+    pub fn new() -> Self {
         Self {
             replay_validator: ReplayValidator::new(true),
             plagiarism_detector: PlagiarismDetector::new(),
@@ -217,16 +215,16 @@ pub fn new() -> Self {
         }
     }
     /// Grade a student submission against an assignment
-/// # Examples
-/// 
-/// ```
-/// use ruchy::runtime::assessment::GradingEngine;
-/// 
-/// let mut instance = GradingEngine::new();
-/// let result = instance.grade_submission();
-/// // Verify behavior
-/// ```
-pub fn grade_submission(
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::assessment::GradingEngine;
+    ///
+    /// let mut instance = GradingEngine::new();
+    /// let result = instance.grade_submission();
+    /// // Verify behavior
+    /// ```
+    pub fn grade_submission(
         &mut self,
         assignment: &Assignment,
         submission: &ReplSession,
@@ -291,12 +289,7 @@ pub fn grade_submission(
         }
         Ok(())
     }
-    fn grade_task(
-        &mut self,
-        repl: &mut Repl,
-        task: &Task,
-        _submission: &ReplSession,
-    ) -> TaskGrade {
+    fn grade_task(&mut self, repl: &mut Repl, task: &Task, _submission: &ReplSession) -> TaskGrade {
         let mut grade = TaskGrade::new(task.id.clone());
         // Test visible cases
         for test in &task.test_cases {
@@ -450,7 +443,9 @@ pub fn grade_submission(
     ) -> f32 {
         let mut score: f32 = 100.0;
         // Check CPU time
-        let total_cpu_ns: u64 = session.timeline.iter()
+        let total_cpu_ns: u64 = session
+            .timeline
+            .iter()
             .filter_map(|e| {
                 if let Event::ResourceUsage { cpu_ns, .. } = &e.event {
                     Some(*cpu_ns)
@@ -464,7 +459,9 @@ pub fn grade_submission(
             score -= 20.0;
         }
         // Check heap usage
-        let max_heap: usize = session.timeline.iter()
+        let max_heap: usize = session
+            .timeline
+            .iter()
             .filter_map(|e| {
                 if let Event::ResourceUsage { heap_bytes, .. } = &e.event {
                     Some(*heap_bytes)
@@ -506,15 +503,15 @@ impl PlagiarismDetector {
             known_submissions: Vec::new(),
         }
     }
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::runtime::assessment::analyze;
-/// 
-/// let result = analyze(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn analyze(&self, submission: &ReplSession) -> f32 {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::runtime::assessment::analyze;
+    ///
+    /// let result = analyze(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn analyze(&self, submission: &ReplSession) -> f32 {
         // Generate fingerprint for submission
         let fingerprint = self.generate_fingerprint(submission);
         // Compare against known submissions
@@ -564,7 +561,9 @@ pub fn analyze(&self, submission: &ReplSession) -> f32 {
             return 1.0; // Identical
         }
         // Compare structural patterns
-        let common: usize = fp1.structure.iter()
+        let common: usize = fp1
+            .structure
+            .iter()
             .zip(fp2.structure.iter())
             .filter(|(a, b)| a == b)
             .count();
@@ -605,15 +604,15 @@ impl SecureSandbox {
             },
         }
     }
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::runtime::assessment::create_isolated_repl;
-/// 
-/// let result = create_isolated_repl(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn create_isolated_repl(&self) -> Result<Repl> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::runtime::assessment::create_isolated_repl;
+    ///
+    /// let result = create_isolated_repl(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn create_isolated_repl(&self) -> Result<Repl> {
         // In production, would create actual sandboxed environment
         // For now, create regular REPL with resource tracking
         Repl::new(std::env::temp_dir())
@@ -651,41 +650,41 @@ impl GradeReport {
             is_valid: true,
         }
     }
-/// # Examples
-/// 
-/// ```
-/// use ruchy::runtime::assessment::GradeReport;
-/// 
-/// let mut instance = GradeReport::new();
-/// let result = instance.mark_invalid();
-/// // Verify behavior
-/// ```
-pub fn mark_invalid(&mut self, reason: &str) {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::assessment::GradeReport;
+    ///
+    /// let mut instance = GradeReport::new();
+    /// let result = instance.mark_invalid();
+    /// // Verify behavior
+    /// ```
+    pub fn mark_invalid(&mut self, reason: &str) {
         self.is_valid = false;
         self.violations.push(reason.to_string());
         self.final_grade = 0.0;
     }
-/// # Examples
-/// 
-/// ```
-/// use ruchy::runtime::assessment::GradeReport;
-/// 
-/// let mut instance = GradeReport::new();
-/// let result = instance.add_task_grade();
-/// // Verify behavior
-/// ```
-pub fn add_task_grade(&mut self, grade: TaskGrade) {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::assessment::GradeReport;
+    ///
+    /// let mut instance = GradeReport::new();
+    /// let result = instance.add_task_grade();
+    /// // Verify behavior
+    /// ```
+    pub fn add_task_grade(&mut self, grade: TaskGrade) {
         self.task_grades.push(grade);
     }
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::runtime::assessment::calculate_final_grade;
-/// 
-/// let result = calculate_final_grade(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn calculate_final_grade(&mut self) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::runtime::assessment::calculate_final_grade;
+    ///
+    /// let result = calculate_final_grade(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn calculate_final_grade(&mut self) {
         if !self.is_valid {
             self.final_grade = 0.0;
             return;
@@ -703,7 +702,7 @@ pub fn calculate_final_grade(&mut self) {
             }
         };
         // Weighted average: 60% tasks, 20% rubric, 10% performance, 10% originality
-        self.final_grade = task_score * 0.6 
+        self.final_grade = task_score * 0.6
             + self.rubric_score * 0.2
             + self.performance_score * 0.1
             + self.originality_score * 0.1;
@@ -740,43 +739,43 @@ impl TaskGrade {
             requirements_met: HashSet::new(),
         }
     }
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::runtime::assessment::add_test_result;
-/// 
-/// let result = add_test_result(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn add_test_result(&mut self, input: String, result: TestResult) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::runtime::assessment::add_test_result;
+    ///
+    /// let result = add_test_result(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn add_test_result(&mut self, input: String, result: TestResult) {
         self.test_results.push((input, result));
     }
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::runtime::assessment::add_hidden_result;
-/// 
-/// let result = add_hidden_result(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn add_hidden_result(&mut self, input: String, result: TestResult) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::runtime::assessment::add_hidden_result;
+    ///
+    /// let result = add_hidden_result(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn add_hidden_result(&mut self, input: String, result: TestResult) {
         self.hidden_results.push((input, result));
     }
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::runtime::assessment::calculate_score;
-/// 
-/// let result = calculate_score(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn calculate_score(&mut self, max_points: u32) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::runtime::assessment::calculate_score;
+    ///
+    /// let result = calculate_score(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn calculate_score(&mut self, max_points: u32) {
         self.points_possible = max_points;
         // Sum points from test results
-        let test_points: u32 = self.test_results.iter()
-            .map(|(_, r)| r.points_earned)
-            .sum();
-        let hidden_points: u32 = self.hidden_results.iter()
+        let test_points: u32 = self.test_results.iter().map(|(_, r)| r.points_earned).sum();
+        let hidden_points: u32 = self
+            .hidden_results
+            .iter()
             .map(|(_, r)| r.points_earned)
             .sum();
         self.points_earned = (test_points + hidden_points).min(max_points);
@@ -878,22 +877,18 @@ mod tests {
             id: "task_1".to_string(),
             description: "Implement fibonacci function".to_string(),
             points: 20,
-            test_cases: vec![
-                TestCase {
-                    input: "fib(5)".to_string(),
-                    expected: ExpectedBehavior::ExactOutput("5".to_string()),
-                    points: 10,
-                    timeout_ms: 1000,
-                },
-            ],
-            hidden_cases: vec![
-                TestCase {
-                    input: "fib(10)".to_string(),
-                    expected: ExpectedBehavior::ExactOutput("55".to_string()),
-                    points: 10,
-                    timeout_ms: 1000,
-                },
-            ],
+            test_cases: vec![TestCase {
+                input: "fib(5)".to_string(),
+                expected: ExpectedBehavior::ExactOutput("5".to_string()),
+                points: 10,
+                timeout_ms: 1000,
+            }],
+            hidden_cases: vec![TestCase {
+                input: "fib(10)".to_string(),
+                expected: ExpectedBehavior::ExactOutput("55".to_string()),
+                points: 10,
+                timeout_ms: 1000,
+            }],
             requirements: vec![Requirement::UseRecursion],
         };
 
@@ -936,7 +931,7 @@ mod tests {
 
     #[test]
     fn test_requirements_enum() {
-        let requirements = vec![
+        let requirements = [
             Requirement::UseRecursion,
             Requirement::NoLoops,
             Requirement::UseHigherOrderFunctions,
@@ -950,8 +945,10 @@ mod tests {
         for (i, req1) in requirements.iter().enumerate() {
             for (j, req2) in requirements.iter().enumerate() {
                 if i != j {
-                    assert!(!matches!((req1, req2),
-                        (Requirement::UseRecursion, Requirement::UseRecursion)));
+                    assert!(!matches!(
+                        (req1, req2),
+                        (Requirement::UseRecursion, Requirement::UseRecursion)
+                    ));
                 }
             }
         }
@@ -964,13 +961,11 @@ mod tests {
                 RubricCategory {
                     name: "Correctness".to_string(),
                     weight: 0.5,
-                    criteria: vec![
-                        Criterion {
-                            description: "All tests pass".to_string(),
-                            max_points: 50,
-                            evaluation: CriterionEvaluation::Automatic(AutomaticCheck::TestsPassed),
-                        },
-                    ],
+                    criteria: vec![Criterion {
+                        description: "All tests pass".to_string(),
+                        max_points: 50,
+                        evaluation: CriterionEvaluation::Automatic(AutomaticCheck::TestsPassed),
+                    }],
                 },
                 RubricCategory {
                     name: "Style".to_string(),
@@ -1145,8 +1140,7 @@ mod tests {
 #[cfg(test)]
 mod property_tests_assessment {
     use proptest::proptest;
-    use super::*;
-    
+
     proptest! {
         /// Property: Function never panics on any input
         #[test]

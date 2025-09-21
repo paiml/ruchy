@@ -1,0 +1,454 @@
+// EXTREME TDD: Runtime Comprehensive Tests
+// Sprint 80: Final push to 80% coverage
+// ALL NIGHT MARATHON CONTINUES!
+
+use ruchy::runtime::interpreter::{Environment, Value};
+use std::collections::HashMap;
+use std::rc::Rc;
+
+#[cfg(test)]
+mod environment_tests {
+    use super::*;
+
+    #[test]
+    fn test_environment_operations() {
+        let mut env = Environment::new();
+
+        // Test define and lookup
+        env.define("x", Value::Integer(42), false);
+        assert_eq!(env.lookup("x"), Some(&Value::Integer(42)));
+
+        // Test mutable variable
+        env.define("mut_var", Value::Integer(10), true);
+        env.set("mut_var", Value::Integer(20));
+        assert_eq!(env.lookup("mut_var"), Some(&Value::Integer(20)));
+
+        // Test scopes
+        env.push_scope();
+        env.define("scoped", Value::Bool(true), false);
+        assert_eq!(env.lookup("scoped"), Some(&Value::Bool(true)));
+
+        env.pop_scope();
+        assert_eq!(env.lookup("scoped"), None);
+        assert_eq!(env.lookup("x"), Some(&Value::Integer(42)));
+    }
+
+    #[test]
+    fn test_value_operations() {
+        // Test integer operations
+        let int1 = Value::Integer(42);
+        let int2 = Value::Integer(42);
+        let int3 = Value::Integer(100);
+        assert_eq!(int1, int2);
+        assert_ne!(int1, int3);
+
+        // Test float operations
+        let float1 = Value::Float(3.14);
+        let float2 = Value::Float(3.14);
+        assert_eq!(float1, float2);
+
+        // Test string operations
+        let str1 = Value::String(Rc::new("hello".to_string()));
+        let str2 = Value::String(Rc::new("hello".to_string()));
+        let str3 = Value::String(Rc::new("world".to_string()));
+        assert_eq!(str1, str2);
+        assert_ne!(str1, str3);
+
+        // Test boolean operations
+        let bool1 = Value::Bool(true);
+        let bool2 = Value::Bool(true);
+        let bool3 = Value::Bool(false);
+        assert_eq!(bool1, bool2);
+        assert_ne!(bool1, bool3);
+
+        // Test Nil value
+        let nil1 = Value::Nil;
+        let nil2 = Value::Nil;
+        assert_eq!(nil1, nil2);
+    }
+
+    #[test]
+    fn test_value_display() {
+        assert_eq!(format!("{}", Value::Integer(42)), "42");
+        assert_eq!(format!("{}", Value::Float(3.14)), "3.14");
+        assert_eq!(format!("{}", Value::Bool(true)), "true");
+        assert_eq!(format!("{}", Value::Bool(false)), "false");
+        assert_eq!(format!("{}", Value::Nil), "nil");
+        assert_eq!(
+            format!("{}", Value::String(Rc::new("test".to_string()))),
+            "test"
+        );
+    }
+
+    #[test]
+    fn test_value_debug() {
+        let val = Value::Integer(42);
+        let debug = format!("{:?}", val);
+        assert!(debug.contains("Integer"));
+
+        let val = Value::Bool(true);
+        let debug = format!("{:?}", val);
+        assert!(debug.contains("Bool"));
+    }
+
+    #[test]
+    fn test_value_array() {
+        let array = Value::Array(Rc::new(vec![
+            Value::Integer(1),
+            Value::Integer(2),
+            Value::Integer(3),
+        ]));
+
+        if let Value::Array(arr) = &array {
+            assert_eq!(arr.len(), 3);
+            assert_eq!(arr[0], Value::Integer(1));
+            assert_eq!(arr[1], Value::Integer(2));
+            assert_eq!(arr[2], Value::Integer(3));
+        } else {
+            panic!("Expected Array");
+        }
+    }
+
+    #[test]
+    fn test_value_tuple() {
+        let tuple = Value::Tuple(Rc::new(vec![
+            Value::Integer(42),
+            Value::Bool(true),
+            Value::String(Rc::new("test".to_string())),
+        ]));
+
+        if let Value::Tuple(tup) = &tuple {
+            assert_eq!(tup.len(), 3);
+            assert_eq!(tup[0], Value::Integer(42));
+            assert_eq!(tup[1], Value::Bool(true));
+        } else {
+            panic!("Expected Tuple");
+        }
+    }
+
+    #[test]
+    fn test_value_object() {
+        let mut map = HashMap::new();
+        map.insert("x".to_string(), Value::Integer(10));
+        map.insert("y".to_string(), Value::Integer(20));
+        map.insert(
+            "name".to_string(),
+            Value::String(Rc::new("test".to_string())),
+        );
+
+        let obj = Value::Object(Rc::new(map));
+
+        if let Value::Object(o) = &obj {
+            assert_eq!(o.len(), 3);
+            assert_eq!(o.get("x"), Some(&Value::Integer(10)));
+            assert_eq!(o.get("y"), Some(&Value::Integer(20)));
+            assert_eq!(
+                o.get("name"),
+                Some(&Value::String(Rc::new("test".to_string())))
+            );
+        } else {
+            panic!("Expected Object");
+        }
+    }
+
+    #[test]
+    fn test_nested_values() {
+        // Nested arrays
+        let nested_array = Value::Array(Rc::new(vec![
+            Value::Array(Rc::new(vec![Value::Integer(1), Value::Integer(2)])),
+            Value::Array(Rc::new(vec![Value::Integer(3), Value::Integer(4)])),
+        ]));
+
+        if let Value::Array(outer) = &nested_array {
+            assert_eq!(outer.len(), 2);
+            if let Value::Array(inner) = &outer[0] {
+                assert_eq!(inner.len(), 2);
+            }
+        }
+
+        // Mixed nested structures
+        let complex = Value::Tuple(Rc::new(vec![
+            Value::Integer(42),
+            Value::Array(Rc::new(vec![
+                Value::Bool(true),
+                Value::String(Rc::new("nested".to_string())),
+            ])),
+        ]));
+
+        if let Value::Tuple(tup) = &complex {
+            assert_eq!(tup.len(), 2);
+            if let Value::Array(arr) = &tup[1] {
+                assert_eq!(arr.len(), 2);
+            }
+        }
+    }
+
+    #[test]
+    fn test_environment_nested_scopes() {
+        let mut env = Environment::new();
+
+        env.define("global", Value::Integer(0), false);
+
+        env.push_scope();
+        env.define("level1", Value::Integer(1), false);
+        assert_eq!(env.lookup("level1"), Some(&Value::Integer(1)));
+        assert_eq!(env.lookup("global"), Some(&Value::Integer(0)));
+
+        env.push_scope();
+        env.define("level2", Value::Integer(2), false);
+        assert_eq!(env.lookup("level2"), Some(&Value::Integer(2)));
+        assert_eq!(env.lookup("level1"), Some(&Value::Integer(1)));
+        assert_eq!(env.lookup("global"), Some(&Value::Integer(0)));
+
+        env.pop_scope();
+        assert_eq!(env.lookup("level2"), None);
+        assert_eq!(env.lookup("level1"), Some(&Value::Integer(1)));
+
+        env.pop_scope();
+        assert_eq!(env.lookup("level1"), None);
+        assert_eq!(env.lookup("global"), Some(&Value::Integer(0)));
+    }
+
+    #[test]
+    fn test_environment_shadowing() {
+        let mut env = Environment::new();
+
+        env.define("x", Value::Integer(1), false);
+        assert_eq!(env.lookup("x"), Some(&Value::Integer(1)));
+
+        env.push_scope();
+        env.define("x", Value::Integer(2), false);
+        assert_eq!(env.lookup("x"), Some(&Value::Integer(2)));
+
+        env.push_scope();
+        env.define("x", Value::Integer(3), false);
+        assert_eq!(env.lookup("x"), Some(&Value::Integer(3)));
+
+        env.pop_scope();
+        assert_eq!(env.lookup("x"), Some(&Value::Integer(2)));
+
+        env.pop_scope();
+        assert_eq!(env.lookup("x"), Some(&Value::Integer(1)));
+    }
+
+    #[test]
+    fn test_environment_clear() {
+        let mut env = Environment::new();
+
+        for i in 0..10 {
+            env.define(&format!("var{}", i), Value::Integer(i), false);
+        }
+
+        for i in 0..10 {
+            assert!(env.lookup(&format!("var{}", i)).is_some());
+        }
+
+        env.clear();
+
+        for i in 0..10 {
+            assert!(env.lookup(&format!("var{}", i)).is_none());
+        }
+    }
+
+    #[test]
+    fn test_rc_memory_management() {
+        // Test Rc reference counting
+        let s1 = Rc::new("shared".to_string());
+        let s2 = Rc::clone(&s1);
+        let s3 = Rc::clone(&s1);
+
+        assert_eq!(Rc::strong_count(&s1), 3);
+
+        drop(s2);
+        assert_eq!(Rc::strong_count(&s1), 2);
+
+        drop(s3);
+        assert_eq!(Rc::strong_count(&s1), 1);
+
+        // Test with Value types
+        let val = Value::String(Rc::new("test".to_string()));
+        let val2 = val.clone();
+
+        match (&val, &val2) {
+            (Value::String(s1), Value::String(s2)) => {
+                assert!(Rc::ptr_eq(s1, s2));
+            }
+            _ => panic!("Expected String values"),
+        }
+    }
+
+    #[test]
+    fn test_large_environment() {
+        let mut env = Environment::new();
+
+        // Create a large environment with many variables
+        for i in 0..1000 {
+            env.define(&format!("var_{}", i), Value::Integer(i), false);
+        }
+
+        // Verify all can be looked up
+        for i in 0..1000 {
+            assert_eq!(env.lookup(&format!("var_{}", i)), Some(&Value::Integer(i)));
+        }
+
+        // Test with nested scopes
+        env.push_scope();
+        for i in 1000..1100 {
+            env.define(&format!("var_{}", i), Value::Integer(i), false);
+        }
+
+        env.pop_scope();
+
+        // Original variables should still be there
+        for i in 0..1000 {
+            assert_eq!(env.lookup(&format!("var_{}", i)), Some(&Value::Integer(i)));
+        }
+
+        // New variables should be gone
+        for i in 1000..1100 {
+            assert_eq!(env.lookup(&format!("var_{}", i)), None);
+        }
+    }
+
+    #[test]
+    fn test_value_equality_comprehensive() {
+        // Test all value type combinations for equality
+        let values = vec![
+            Value::Integer(42),
+            Value::Float(3.14),
+            Value::Bool(true),
+            Value::String(Rc::new("test".to_string())),
+            Value::Nil,
+            Value::Array(Rc::new(vec![Value::Integer(1)])),
+            Value::Tuple(Rc::new(vec![Value::Integer(1)])),
+        ];
+
+        for v in &values {
+            assert_eq!(v, v); // Self equality
+            let cloned = v.clone();
+            assert_eq!(v, &cloned); // Clone equality
+        }
+
+        // Test inequality between different types
+        for i in 0..values.len() {
+            for j in 0..values.len() {
+                if i != j {
+                    assert_ne!(&values[i], &values[j]);
+                }
+            }
+        }
+    }
+}
+
+// Property-based tests
+#[cfg(test)]
+mod runtime_property_tests {
+    use super::*;
+    use proptest::prelude::*;
+
+    proptest! {
+        #[test]
+        fn test_environment_never_panics(name: String, value: i64) {
+            let mut env = Environment::new();
+
+            // Should never panic
+            env.define(&name, Value::Integer(value), false);
+            let _ = env.lookup(&name);
+            env.set(&name, Value::Integer(value + 1));
+            env.push_scope();
+            env.pop_scope();
+            env.clear();
+        }
+
+        #[test]
+        fn test_value_display_never_panics(n: i64, f: f64, s: String) {
+            let values = vec![
+                Value::Integer(n),
+                Value::Float(f),
+                Value::Bool(n % 2 == 0),
+                Value::String(Rc::new(s)),
+                Value::Nil,
+            ];
+
+            for v in values {
+                // Display should never panic
+                let _ = format!("{}", v);
+                let _ = format!("{:?}", v);
+            }
+        }
+
+        #[test]
+        fn test_nested_scopes_maintain_invariants(depth: u8) {
+            let mut env = Environment::new();
+            let depth = (depth % 20) as usize; // Limit depth
+
+            // Push scopes
+            for i in 0..depth {
+                env.push_scope();
+                env.define(&format!("var_{}", i), Value::Integer(i as i64), false);
+            }
+
+            // Pop scopes
+            for _ in 0..depth {
+                env.pop_scope();
+            }
+
+            // Environment should be usable
+            env.define("after", Value::Integer(999), false);
+            assert_eq!(env.lookup("after"), Some(&Value::Integer(999)));
+        }
+    }
+}
+
+// Stress tests
+#[cfg(test)]
+mod runtime_stress_tests {
+    use super::*;
+
+    #[test]
+    #[ignore] // Can be expensive
+    fn test_massive_environment() {
+        let mut env = Environment::new();
+
+        // Create 10,000 variables
+        for i in 0..10_000 {
+            env.define(&format!("variable_{}", i), Value::Integer(i), false);
+        }
+
+        // Random lookups
+        for i in (0..10_000).step_by(100) {
+            assert_eq!(
+                env.lookup(&format!("variable_{}", i)),
+                Some(&Value::Integer(i))
+            );
+        }
+    }
+
+    #[test]
+    #[ignore] // Can be expensive
+    fn test_deep_nesting() {
+        // Create deeply nested value structure
+        let mut value = Value::Integer(0);
+
+        for i in 1..100 {
+            value = Value::Array(Rc::new(vec![value, Value::Integer(i)]));
+        }
+
+        // Should not stack overflow
+        let _ = format!("{:?}", value);
+    }
+
+    #[test]
+    #[ignore] // Can be expensive
+    fn test_rapid_scope_changes() {
+        let mut env = Environment::new();
+
+        for _ in 0..1000 {
+            env.push_scope();
+            env.define("temp", Value::Integer(42), false);
+            assert_eq!(env.lookup("temp"), Some(&Value::Integer(42)));
+            env.pop_scope();
+            assert_eq!(env.lookup("temp"), None);
+        }
+    }
+}

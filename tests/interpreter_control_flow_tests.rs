@@ -2,8 +2,8 @@
 #![allow(warnings)]
 //! Tests for control flow features in the interpreter
 
+use ruchy::frontend::ast::{BinaryOp, Expr, ExprKind, Literal, MatchArm, Pattern, Span};
 use ruchy::runtime::interpreter::{Interpreter, Value};
-use ruchy::frontend::ast::{Expr, ExprKind, Literal, BinaryOp, Pattern, MatchArm, Span};
 use std::rc::Rc;
 
 /// Helper function to create test expressions
@@ -15,7 +15,7 @@ fn create_expr(kind: ExprKind) -> Expr {
 #[test]
 fn test_for_loop_array() {
     let mut interpreter = Interpreter::new();
-    
+
     // for i in [1, 2, 3] { i * 2 }
     let for_expr = create_expr(ExprKind::For {
         var: "i".to_string(),
@@ -31,7 +31,7 @@ fn test_for_loop_array() {
             right: Box::new(create_expr(ExprKind::Literal(Literal::Integer(2)))),
         })),
     });
-    
+
     // The loop returns the last value
     let result = interpreter.eval_expr(&for_expr).unwrap();
     assert_eq!(result, Value::Integer(6)); // 3 * 2
@@ -41,7 +41,7 @@ fn test_for_loop_array() {
 #[test]
 fn test_for_loop_range() {
     let mut interpreter = Interpreter::new();
-    
+
     // for i in 0..3 { i }
     let for_expr = create_expr(ExprKind::For {
         var: "i".to_string(),
@@ -53,7 +53,7 @@ fn test_for_loop_range() {
         })),
         body: Box::new(create_expr(ExprKind::Identifier("i".to_string()))),
     });
-    
+
     let result = interpreter.eval_expr(&for_expr).unwrap();
     assert_eq!(result, Value::Integer(2)); // Last value is 2
 }
@@ -62,7 +62,7 @@ fn test_for_loop_range() {
 #[test]
 fn test_while_loop() {
     let mut interpreter = Interpreter::new();
-    
+
     // let mut i = 0; while i < 3 { i = i + 1; i }
     let while_expr = create_expr(ExprKind::Let {
         name: "i".to_string(),
@@ -88,7 +88,7 @@ fn test_while_loop() {
         })),
         is_mutable: true,
     });
-    
+
     let result = interpreter.eval_expr(&while_expr).unwrap();
     assert_eq!(result, Value::Integer(3));
 }
@@ -97,7 +97,7 @@ fn test_while_loop() {
 #[test]
 fn test_match_literals() {
     let mut interpreter = Interpreter::new();
-    
+
     // match 2 { 1 => "one", 2 => "two", _ => "other" }
     let match_expr = create_expr(ExprKind::Match {
         expr: Box::new(create_expr(ExprKind::Literal(Literal::Integer(2)))),
@@ -105,24 +105,30 @@ fn test_match_literals() {
             MatchArm {
                 pattern: Pattern::Literal(Literal::Integer(1)),
                 guard: None,
-                body: Box::new(create_expr(ExprKind::Literal(Literal::String("one".to_string())))),
+                body: Box::new(create_expr(ExprKind::Literal(Literal::String(
+                    "one".to_string(),
+                )))),
                 span: Span::new(0, 10),
             },
             MatchArm {
                 pattern: Pattern::Literal(Literal::Integer(2)),
                 guard: None,
-                body: Box::new(create_expr(ExprKind::Literal(Literal::String("two".to_string())))),
+                body: Box::new(create_expr(ExprKind::Literal(Literal::String(
+                    "two".to_string(),
+                )))),
                 span: Span::new(0, 10),
             },
             MatchArm {
                 pattern: Pattern::Wildcard,
                 guard: None,
-                body: Box::new(create_expr(ExprKind::Literal(Literal::String("other".to_string())))),
+                body: Box::new(create_expr(ExprKind::Literal(Literal::String(
+                    "other".to_string(),
+                )))),
                 span: Span::new(0, 10),
             },
         ],
     });
-    
+
     let result = interpreter.eval_expr(&match_expr).unwrap();
     if let Value::String(s) = result {
         assert_eq!(&**s, "two");
@@ -135,7 +141,7 @@ fn test_match_literals() {
 #[test]
 fn test_match_range() {
     let mut interpreter = Interpreter::new();
-    
+
     // match 5 { 1..3 => "low", 3..7 => "mid", _ => "high" }
     let match_expr = create_expr(ExprKind::Match {
         expr: Box::new(create_expr(ExprKind::Literal(Literal::Integer(5)))),
@@ -147,7 +153,9 @@ fn test_match_range() {
                     inclusive: false,
                 },
                 guard: None,
-                body: Box::new(create_expr(ExprKind::Literal(Literal::String("low".to_string())))),
+                body: Box::new(create_expr(ExprKind::Literal(Literal::String(
+                    "low".to_string(),
+                )))),
                 span: Span::new(0, 10),
             },
             MatchArm {
@@ -157,18 +165,22 @@ fn test_match_range() {
                     inclusive: false,
                 },
                 guard: None,
-                body: Box::new(create_expr(ExprKind::Literal(Literal::String("mid".to_string())))),
+                body: Box::new(create_expr(ExprKind::Literal(Literal::String(
+                    "mid".to_string(),
+                )))),
                 span: Span::new(0, 10),
             },
             MatchArm {
                 pattern: Pattern::Wildcard,
                 guard: None,
-                body: Box::new(create_expr(ExprKind::Literal(Literal::String("high".to_string())))),
+                body: Box::new(create_expr(ExprKind::Literal(Literal::String(
+                    "high".to_string(),
+                )))),
                 span: Span::new(0, 10),
             },
         ],
     });
-    
+
     let result = interpreter.eval_expr(&match_expr).unwrap();
     if let Value::String(s) = result {
         assert_eq!(&**s, "mid");
@@ -181,7 +193,7 @@ fn test_match_range() {
 #[test]
 fn test_assignment() {
     let mut interpreter = Interpreter::new();
-    
+
     // let x = 5; x = 10; x
     let assign_expr = create_expr(ExprKind::Let {
         name: "x".to_string(),
@@ -196,7 +208,7 @@ fn test_assignment() {
         ]))),
         is_mutable: true,
     });
-    
+
     let result = interpreter.eval_expr(&assign_expr).unwrap();
     assert_eq!(result, Value::Integer(10));
 }
@@ -205,7 +217,7 @@ fn test_assignment() {
 #[test]
 fn test_compound_assignment() {
     let mut interpreter = Interpreter::new();
-    
+
     // let x = 5; x += 3; x
     let compound_expr = create_expr(ExprKind::Let {
         name: "x".to_string(),
@@ -221,7 +233,7 @@ fn test_compound_assignment() {
         ]))),
         is_mutable: true,
     });
-    
+
     let result = interpreter.eval_expr(&compound_expr).unwrap();
     assert_eq!(result, Value::Integer(8));
 }
@@ -230,7 +242,7 @@ fn test_compound_assignment() {
 #[test]
 fn test_for_loop_break() {
     let mut interpreter = Interpreter::new();
-    
+
     // Test collecting values until break
     // for i in [1, 2, 3, 4, 5] { if i == 3 { break } else { i } }
     let for_expr = create_expr(ExprKind::For {
@@ -253,7 +265,7 @@ fn test_for_loop_break() {
             else_branch: Some(Box::new(create_expr(ExprKind::Identifier("i".to_string())))),
         })),
     });
-    
+
     // Should return the last value before break (2)
     let result = interpreter.eval_expr(&for_expr).unwrap();
     assert_eq!(result, Value::Integer(2));
@@ -263,7 +275,7 @@ fn test_for_loop_break() {
 #[test]
 fn test_for_loop_continue() {
     let mut interpreter = Interpreter::new();
-    
+
     // Sum only even numbers
     // let sum = 0; for i in [1, 2, 3, 4] { if i % 2 == 1 { continue }; sum = sum + i }; sum
     let continue_expr = create_expr(ExprKind::Let {
@@ -286,7 +298,9 @@ fn test_for_loop_continue() {
                             left: Box::new(create_expr(ExprKind::Binary {
                                 left: Box::new(create_expr(ExprKind::Identifier("i".to_string()))),
                                 op: BinaryOp::Modulo,
-                                right: Box::new(create_expr(ExprKind::Literal(Literal::Integer(2)))),
+                                right: Box::new(create_expr(ExprKind::Literal(Literal::Integer(
+                                    2,
+                                )))),
                             })),
                             op: BinaryOp::Equal,
                             right: Box::new(create_expr(ExprKind::Literal(Literal::Integer(1)))),
@@ -308,7 +322,7 @@ fn test_for_loop_continue() {
         ]))),
         is_mutable: true,
     });
-    
+
     let result = interpreter.eval_expr(&continue_expr).unwrap();
     assert_eq!(result, Value::Integer(6)); // 2 + 4
 }
@@ -317,7 +331,7 @@ fn test_for_loop_continue() {
 #[test]
 fn test_match_tuple_pattern() {
     let mut interpreter = Interpreter::new();
-    
+
     // match (1, 2) { (1, 2) => "match", _ => "no match" }
     let match_expr = create_expr(ExprKind::Match {
         expr: Box::new(create_expr(ExprKind::Tuple(vec![
@@ -331,18 +345,22 @@ fn test_match_tuple_pattern() {
                     Pattern::Literal(Literal::Integer(2)),
                 ]),
                 guard: None,
-                body: Box::new(create_expr(ExprKind::Literal(Literal::String("match".to_string())))),
+                body: Box::new(create_expr(ExprKind::Literal(Literal::String(
+                    "match".to_string(),
+                )))),
                 span: Span::new(0, 10),
             },
             MatchArm {
                 pattern: Pattern::Wildcard,
                 guard: None,
-                body: Box::new(create_expr(ExprKind::Literal(Literal::String("no match".to_string())))),
+                body: Box::new(create_expr(ExprKind::Literal(Literal::String(
+                    "no match".to_string(),
+                )))),
                 span: Span::new(0, 10),
             },
         ],
     });
-    
+
     let result = interpreter.eval_expr(&match_expr).unwrap();
     if let Value::String(s) = result {
         assert_eq!(&**s, "match");

@@ -2,23 +2,26 @@
 #![allow(clippy::missing_errors_doc)]
 #![allow(clippy::needless_pass_by_value)] // TokenStream by value is intentional for quote! macro
 use super::Transpiler;
-use crate::frontend::ast::{BinaryOp::{self, NullCoalesce}, Expr, ExprKind, Literal, StringPart, UnaryOp};
+use crate::frontend::ast::{
+    BinaryOp::{self, NullCoalesce},
+    Expr, ExprKind, Literal, StringPart, UnaryOp,
+};
 use anyhow::{bail, Result};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 impl Transpiler {
     /// Transpiles literal values
-/// # Examples
-/// 
-/// ```
-/// use ruchy::backend::transpiler::Transpiler;
-/// use ruchy::frontend::ast::Literal;
-///
-/// let lit = Literal::Integer(42);
-/// let result = Transpiler::transpile_literal(&lit);
-/// // Returns TokenStream
-/// ```
-pub fn transpile_literal(lit: &Literal) -> TokenStream {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::backend::transpiler::Transpiler;
+    /// use ruchy::frontend::ast::Literal;
+    ///
+    /// let lit = Literal::Integer(42);
+    /// let result = Transpiler::transpile_literal(&lit);
+    /// // Returns TokenStream
+    /// ```
+    pub fn transpile_literal(lit: &Literal) -> TokenStream {
         match lit {
             Literal::Integer(i) => Self::transpile_integer(*i),
             Literal::Float(f) => quote! { #f },
@@ -54,15 +57,15 @@ pub fn transpile_literal(lit: &Literal) -> TokenStream {
     ///
     /// # Errors
     /// Returns an error if expression transpilation fails
-/// # Examples
-/// 
-/// ```
-/// use ruchy::backend::transpiler::expressions::transpile_string_interpolation;
-/// 
-/// let result = transpile_string_interpolation(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn transpile_string_interpolation(&self, parts: &[StringPart]) -> Result<TokenStream> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::backend::transpiler::expressions::transpile_string_interpolation;
+    ///
+    /// let result = transpile_string_interpolation(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn transpile_string_interpolation(&self, parts: &[StringPart]) -> Result<TokenStream> {
         if parts.is_empty() {
             return Ok(quote! { "" });
         }
@@ -94,22 +97,24 @@ pub fn transpile_string_interpolation(&self, parts: &[StringPart]) -> Result<Tok
         })
     }
     /// Transpiles binary operations
-/// # Examples
-/// 
-/// ```
-/// use ruchy::backend::transpiler::Transpiler;
-/// use ruchy::frontend::ast::{Expr, BinaryOp};
-///
-/// let transpiler = Transpiler::new();
-/// let left = Expr::literal(1.into());
-/// let right = Expr::literal(2.into());
-/// let result = transpiler.transpile_binary(&left, BinaryOp::Add, &right);
-/// assert!(result.is_ok());
-/// ```
-pub fn transpile_binary(&self, left: &Expr, op: BinaryOp, right: &Expr) -> Result<TokenStream> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::backend::transpiler::Transpiler;
+    /// use ruchy::frontend::ast::{Expr, BinaryOp};
+    ///
+    /// let transpiler = Transpiler::new();
+    /// let left = Expr::literal(1.into());
+    /// let right = Expr::literal(2.into());
+    /// let result = transpiler.transpile_binary(&left, BinaryOp::Add, &right);
+    /// assert!(result.is_ok());
+    /// ```
+    pub fn transpile_binary(&self, left: &Expr, op: BinaryOp, right: &Expr) -> Result<TokenStream> {
         // Special handling for string concatenation
         // Only treat as string concatenation if at least one operand is definitely a string
-        if op == BinaryOp::Add && (Self::is_definitely_string(left) || Self::is_definitely_string(right)) {
+        if op == BinaryOp::Add
+            && (Self::is_definitely_string(left) || Self::is_definitely_string(right))
+        {
             return self.transpile_string_concatenation(left, right);
         }
         // Transpile operands with precedence-aware parentheses
@@ -118,18 +123,25 @@ pub fn transpile_binary(&self, left: &Expr, op: BinaryOp, right: &Expr) -> Resul
         Ok(Self::transpile_binary_op(left_tokens, op, right_tokens))
     }
     /// Transpile expression with precedence-aware parentheses
-    /// 
+    ///
     /// Adds parentheses around sub-expressions when needed to preserve precedence
-    fn transpile_expr_with_precedence(&self, expr: &Expr, parent_op: BinaryOp, is_left_operand: bool) -> Result<TokenStream> {
+    fn transpile_expr_with_precedence(
+        &self,
+        expr: &Expr,
+        parent_op: BinaryOp,
+        is_left_operand: bool,
+    ) -> Result<TokenStream> {
         let tokens = self.transpile_expr(expr)?;
         // Check if we need parentheses
         if let ExprKind::Binary { op: child_op, .. } = &expr.kind {
             let parent_prec = Self::get_operator_precedence(parent_op);
             let child_prec = Self::get_operator_precedence(*child_op);
             // Add parentheses if child has lower precedence
-            // For right operands, also add parentheses if precedence is equal and parent is right-associative  
-            let needs_parens = child_prec < parent_prec ||
-                (!is_left_operand && child_prec == parent_prec && Self::is_right_associative(parent_op));
+            // For right operands, also add parentheses if precedence is equal and parent is right-associative
+            let needs_parens = child_prec < parent_prec
+                || (!is_left_operand
+                    && child_prec == parent_prec
+                    && Self::is_right_associative(parent_op));
             if needs_parens {
                 return Ok(quote! { (#tokens) });
             }
@@ -156,7 +168,7 @@ pub fn transpile_binary(&self, left: &Expr, op: BinaryOp, right: &Expr) -> Resul
     fn transpile_binary_op(left: TokenStream, op: BinaryOp, right: TokenStream) -> TokenStream {
         use BinaryOp::{
             Add, And, BitwiseAnd, BitwiseOr, BitwiseXor, Divide, Equal, Greater, GreaterEqual,
-            LeftShift, RightShift, Less, LessEqual, Modulo, Multiply, NotEqual, Or, Power,
+            LeftShift, Less, LessEqual, Modulo, Multiply, NotEqual, Or, Power, RightShift,
             Subtract,
         };
         match op {
@@ -171,9 +183,7 @@ pub fn transpile_binary(&self, left: &Expr, op: BinaryOp, right: &Expr) -> Resul
             // Logical operations
             And | Or | NullCoalesce => Self::transpile_logical_op(left, op, right),
             // Bitwise operations
-            BitwiseAnd | BitwiseOr | BitwiseXor => {
-                Self::transpile_bitwise_op(left, op, right)
-            }
+            BitwiseAnd | BitwiseOr | BitwiseXor => Self::transpile_bitwise_op(left, op, right),
             // Shift operations
             LeftShift => Self::transpile_shift_ops(left, op, right),
             RightShift => Self::transpile_shift_ops(left, op, right),
@@ -213,7 +223,9 @@ pub fn transpile_binary(&self, left: &Expr, op: BinaryOp, right: &Expr) -> Resul
         use BinaryOp::{Equal, Greater, GreaterEqual, Less, LessEqual, NotEqual};
         match op {
             Equal | NotEqual => Self::transpile_equality(left, op, right),
-            Less | LessEqual | Greater | GreaterEqual | BinaryOp::Gt => Self::transpile_ordering(left, op, right),
+            Less | LessEqual | Greater | GreaterEqual | BinaryOp::Gt => {
+                Self::transpile_ordering(left, op, right)
+            }
             _ => unreachable!(),
         }
     }
@@ -264,15 +276,15 @@ pub fn transpile_binary(&self, left: &Expr, op: BinaryOp, right: &Expr) -> Resul
         }
     }
     /// Transpiles unary operations  
-/// # Examples
-/// 
-/// ```
-/// use ruchy::backend::transpiler::expressions::transpile_unary;
-/// 
-/// let result = transpile_unary(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn transpile_unary(&self, op: UnaryOp, operand: &Expr) -> Result<TokenStream> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::backend::transpiler::expressions::transpile_unary;
+    ///
+    /// let result = transpile_unary(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn transpile_unary(&self, op: UnaryOp, operand: &Expr) -> Result<TokenStream> {
         let operand_tokens = self.transpile_expr(operand)?;
         Ok(match op {
             UnaryOp::Not | UnaryOp::BitwiseNot => quote! { !#operand_tokens },
@@ -281,63 +293,63 @@ pub fn transpile_unary(&self, op: UnaryOp, operand: &Expr) -> Result<TokenStream
         })
     }
     /// Transpiles await expressions
-/// # Examples
-/// 
-/// ```
-/// use ruchy::backend::transpiler::expressions::transpile_await;
-/// 
-/// let result = transpile_await(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn transpile_await(&self, expr: &Expr) -> Result<TokenStream> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::backend::transpiler::expressions::transpile_await;
+    ///
+    /// let result = transpile_await(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn transpile_await(&self, expr: &Expr) -> Result<TokenStream> {
         let expr_tokens = self.transpile_expr(expr)?;
         Ok(quote! { #expr_tokens.await })
     }
     /// Transpiles async blocks
-/// # Examples
-/// 
-/// ```
-/// use ruchy::backend::transpiler::expressions::transpile_async_block;
-/// 
-/// let result = transpile_async_block(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn transpile_async_block(&self, body: &Expr) -> Result<TokenStream> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::backend::transpiler::expressions::transpile_async_block;
+    ///
+    /// let result = transpile_async_block(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn transpile_async_block(&self, body: &Expr) -> Result<TokenStream> {
         let body_tokens = self.transpile_expr(body)?;
         Ok(quote! { async { #body_tokens } })
     }
     /// Transpiles throw expressions (panic in Rust)
-/// # Examples
-/// 
-/// ```
-/// use ruchy::backend::transpiler::expressions::transpile_throw;
-/// 
-/// let result = transpile_throw(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn transpile_throw(&self, expr: &Expr) -> Result<TokenStream> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::backend::transpiler::expressions::transpile_throw;
+    ///
+    /// let result = transpile_throw(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn transpile_throw(&self, expr: &Expr) -> Result<TokenStream> {
         let expr_tokens = self.transpile_expr(expr)?;
         Ok(quote! {
             panic!(#expr_tokens)
         })
     }
     /// Transpiles field access
-/// # Examples
-/// 
-/// ```
-/// use ruchy::backend::transpiler::expressions::transpile_field_access;
-/// 
-/// let result = transpile_field_access("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn transpile_field_access(&self, object: &Expr, field: &str) -> Result<TokenStream> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::backend::transpiler::expressions::transpile_field_access;
+    ///
+    /// let result = transpile_field_access("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn transpile_field_access(&self, object: &Expr, field: &str) -> Result<TokenStream> {
         use crate::frontend::ast::ExprKind;
         let obj_tokens = self.transpile_expr(object)?;
         // Check if the object is an ObjectLiteral (HashMap) or module path
         match &object.kind {
             ExprKind::ObjectLiteral { .. } => {
                 // Direct object literal access - use get()
-                Ok(quote! { 
+                Ok(quote! {
                     #obj_tokens.get(#field)
                         .cloned()
                         .unwrap_or_else(|| panic!("Field '{}' not found", #field))
@@ -355,7 +367,7 @@ pub fn transpile_field_access(&self, object: &Expr, field: &str) -> Result<Token
             }
             _ => {
                 // For other cases, assume HashMap access
-                Ok(quote! { 
+                Ok(quote! {
                     #obj_tokens.get(#field)
                         .cloned()
                         .unwrap_or_else(|| panic!("Field '{}' not found", #field))
@@ -364,44 +376,45 @@ pub fn transpile_field_access(&self, object: &Expr, field: &str) -> Result<Token
         }
     }
     /// Transpiles index access `(array[index])`
-/// # Examples
-/// 
-/// ```
-/// use ruchy::backend::transpiler::expressions::transpile_index_access;
-/// 
-/// let result = transpile_index_access(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn transpile_index_access(&self, object: &Expr, index: &Expr) -> Result<TokenStream> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::backend::transpiler::expressions::transpile_index_access;
+    ///
+    /// let result = transpile_index_access(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn transpile_index_access(&self, object: &Expr, index: &Expr) -> Result<TokenStream> {
         use crate::frontend::ast::{ExprKind, Literal};
         let obj_tokens = self.transpile_expr(object)?;
         let index_tokens = self.transpile_expr(index)?;
         // Smart index access: HashMap.get() for string keys, array indexing for numeric
         match &index.kind {
             // String literal keys use HashMap.get()
-            ExprKind::Literal(Literal::String(_)) => {
-                Ok(quote! { 
-                    #obj_tokens.get(#index_tokens)
-                        .cloned()
-                        .unwrap_or_else(|| panic!("Key not found"))
-                })
-            }
+            ExprKind::Literal(Literal::String(_)) => Ok(quote! {
+                #obj_tokens.get(#index_tokens)
+                    .cloned()
+                    .unwrap_or_else(|| panic!("Key not found"))
+            }),
             // Numeric and other keys use array indexing
-            _ => {
-                Ok(quote! { #obj_tokens[#index_tokens as usize] })
-            }
+            _ => Ok(quote! { #obj_tokens[#index_tokens as usize] }),
         }
     }
     /// Transpiles slice access `(array[start:end])`
-/// # Examples
-/// 
-/// ```
-/// use ruchy::backend::transpiler::expressions::transpile_slice;
-/// 
-/// let result = transpile_slice(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn transpile_slice(&self, object: &Expr, start: Option<&Expr>, end: Option<&Expr>) -> Result<TokenStream> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::backend::transpiler::expressions::transpile_slice;
+    ///
+    /// let result = transpile_slice(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn transpile_slice(
+        &self,
+        object: &Expr,
+        start: Option<&Expr>,
+        end: Option<&Expr>,
+    ) -> Result<TokenStream> {
         let obj_tokens = self.transpile_expr(object)?;
         match (start, end) {
             (None, None) => {
@@ -427,29 +440,29 @@ pub fn transpile_slice(&self, object: &Expr, start: Option<&Expr>, end: Option<&
         }
     }
     /// Transpiles assignment
-/// # Examples
-/// 
-/// ```
-/// use ruchy::backend::transpiler::expressions::transpile_assign;
-/// 
-/// let result = transpile_assign(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn transpile_assign(&self, target: &Expr, value: &Expr) -> Result<TokenStream> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::backend::transpiler::expressions::transpile_assign;
+    ///
+    /// let result = transpile_assign(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn transpile_assign(&self, target: &Expr, value: &Expr) -> Result<TokenStream> {
         let target_tokens = self.transpile_expr(target)?;
         let value_tokens = self.transpile_expr(value)?;
         Ok(quote! { #target_tokens = #value_tokens })
     }
     /// Transpiles compound assignment
-/// # Examples
-/// 
-/// ```
-/// use ruchy::backend::transpiler::expressions::transpile_compound_assign;
-/// 
-/// let result = transpile_compound_assign(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn transpile_compound_assign(
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::backend::transpiler::expressions::transpile_compound_assign;
+    ///
+    /// let result = transpile_compound_assign(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn transpile_compound_assign(
         &self,
         target: &Expr,
         op: BinaryOp,
@@ -487,28 +500,28 @@ pub fn transpile_compound_assign(
         }
     }
     /// Transpiles pre-increment
-/// # Examples
-/// 
-/// ```
-/// use ruchy::backend::transpiler::expressions::transpile_pre_increment;
-/// 
-/// let result = transpile_pre_increment(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn transpile_pre_increment(&self, target: &Expr) -> Result<TokenStream> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::backend::transpiler::expressions::transpile_pre_increment;
+    ///
+    /// let result = transpile_pre_increment(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn transpile_pre_increment(&self, target: &Expr) -> Result<TokenStream> {
         let target_tokens = self.transpile_expr(target)?;
         Ok(quote! { { #target_tokens += 1; #target_tokens } })
     }
     /// Transpiles post-increment
-/// # Examples
-/// 
-/// ```
-/// use ruchy::backend::transpiler::expressions::transpile_post_increment;
-/// 
-/// let result = transpile_post_increment(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn transpile_post_increment(&self, target: &Expr) -> Result<TokenStream> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::backend::transpiler::expressions::transpile_post_increment;
+    ///
+    /// let result = transpile_post_increment(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn transpile_post_increment(&self, target: &Expr) -> Result<TokenStream> {
         let target_tokens = self.transpile_expr(target)?;
         Ok(quote! {
             {
@@ -519,28 +532,28 @@ pub fn transpile_post_increment(&self, target: &Expr) -> Result<TokenStream> {
         })
     }
     /// Transpiles pre-decrement
-/// # Examples
-/// 
-/// ```
-/// use ruchy::backend::transpiler::expressions::transpile_pre_decrement;
-/// 
-/// let result = transpile_pre_decrement(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn transpile_pre_decrement(&self, target: &Expr) -> Result<TokenStream> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::backend::transpiler::expressions::transpile_pre_decrement;
+    ///
+    /// let result = transpile_pre_decrement(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn transpile_pre_decrement(&self, target: &Expr) -> Result<TokenStream> {
         let target_tokens = self.transpile_expr(target)?;
         Ok(quote! { { #target_tokens -= 1; #target_tokens } })
     }
     /// Transpiles post-decrement
-/// # Examples
-/// 
-/// ```
-/// use ruchy::backend::transpiler::expressions::transpile_post_decrement;
-/// 
-/// let result = transpile_post_decrement(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn transpile_post_decrement(&self, target: &Expr) -> Result<TokenStream> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::backend::transpiler::expressions::transpile_post_decrement;
+    ///
+    /// let result = transpile_post_decrement(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn transpile_post_decrement(&self, target: &Expr) -> Result<TokenStream> {
         let target_tokens = self.transpile_expr(target)?;
         Ok(quote! {
             {
@@ -551,15 +564,15 @@ pub fn transpile_post_decrement(&self, target: &Expr) -> Result<TokenStream> {
         })
     }
     /// Transpiles array initialization syntax [value; size]
-/// # Examples
-/// 
-/// ```
-/// use ruchy::backend::transpiler::expressions::transpile_array_init;
-/// 
-/// let result = transpile_array_init(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn transpile_array_init(&self, value: &Expr, size: &Expr) -> Result<TokenStream> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::backend::transpiler::expressions::transpile_array_init;
+    ///
+    /// let result = transpile_array_init(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn transpile_array_init(&self, value: &Expr, size: &Expr) -> Result<TokenStream> {
         let value_tokens = self.transpile_expr(value)?;
         let size_tokens = self.transpile_expr(size)?;
         // Generate vec![value; size] for now
@@ -567,17 +580,19 @@ pub fn transpile_array_init(&self, value: &Expr, size: &Expr) -> Result<TokenStr
         Ok(quote! { vec![#value_tokens; #size_tokens as usize] })
     }
     /// Transpiles list literals
-/// # Examples
-/// 
-/// ```
-/// use ruchy::backend::transpiler::expressions::transpile_list;
-/// 
-/// let result = transpile_list(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn transpile_list(&self, elements: &[Expr]) -> Result<TokenStream> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::backend::transpiler::expressions::transpile_list;
+    ///
+    /// let result = transpile_list(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn transpile_list(&self, elements: &[Expr]) -> Result<TokenStream> {
         // Check if any elements are spread expressions
-        let has_spread = elements.iter().any(|e| matches!(e.kind, crate::frontend::ast::ExprKind::Spread { .. }));
+        let has_spread = elements
+            .iter()
+            .any(|e| matches!(e.kind, crate::frontend::ast::ExprKind::Spread { .. }));
         if has_spread {
             // Handle spread expressions by building vector with extends
             let mut statements = Vec::new();
@@ -602,30 +617,30 @@ pub fn transpile_list(&self, elements: &[Expr]) -> Result<TokenStream> {
         }
     }
     /// Transpiles tuple literals
-/// # Examples
-/// 
-/// ```
-/// use ruchy::backend::transpiler::expressions::transpile_tuple;
-/// 
-/// let result = transpile_tuple(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn transpile_tuple(&self, elements: &[Expr]) -> Result<TokenStream> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::backend::transpiler::expressions::transpile_tuple;
+    ///
+    /// let result = transpile_tuple(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn transpile_tuple(&self, elements: &[Expr]) -> Result<TokenStream> {
         let element_tokens: Result<Vec<_>> =
             elements.iter().map(|e| self.transpile_expr(e)).collect();
         let element_tokens = element_tokens?;
         Ok(quote! { (#(#element_tokens),*) })
     }
     /// Transpiles range expressions
-/// # Examples
-/// 
-/// ```
-/// use ruchy::backend::transpiler::expressions::transpile_range;
-/// 
-/// let result = transpile_range(true);
-/// assert_eq!(result, Ok(true));
-/// ```
-pub fn transpile_range(
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::backend::transpiler::expressions::transpile_range;
+    ///
+    /// let result = transpile_range(true);
+    /// assert_eq!(result, Ok(true));
+    /// ```
+    pub fn transpile_range(
         &self,
         start: &Expr,
         end: &Expr,
@@ -640,15 +655,15 @@ pub fn transpile_range(
         }
     }
     /// Transpiles object literals
-/// # Examples
-/// 
-/// ```
-/// use ruchy::backend::transpiler::expressions::transpile_object_literal;
-/// 
-/// let result = transpile_object_literal(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn transpile_object_literal(
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::backend::transpiler::expressions::transpile_object_literal;
+    ///
+    /// let result = transpile_object_literal(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn transpile_object_literal(
         &self,
         fields: &[crate::frontend::ast::ObjectField],
     ) -> Result<TokenStream> {
@@ -676,7 +691,7 @@ pub fn transpile_object_literal(
                 ObjectField::Spread { expr } => {
                     let expr_tokens = self.transpile_expr(expr)?;
                     // For spread syntax, merge the other map into this one
-                    quote! { 
+                    quote! {
                         for (k, v) in #expr_tokens {
                             map.insert(k, v);
                         }
@@ -688,15 +703,15 @@ pub fn transpile_object_literal(
         Ok(field_tokens)
     }
     /// Transpiles struct literals
-/// # Examples
-/// 
-/// ```
-/// use ruchy::backend::transpiler::expressions::transpile_struct_literal;
-/// 
-/// let result = transpile_struct_literal("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn transpile_struct_literal(
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::backend::transpiler::expressions::transpile_struct_literal;
+    ///
+    /// let result = transpile_struct_literal("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn transpile_struct_literal(
         &self,
         name: &str,
         fields: &[(String, Expr)],
@@ -728,14 +743,20 @@ pub fn transpile_struct_literal(
             // String interpolation is definitely strings
             ExprKind::StringInterpolation { .. } => true,
             // Binary expressions with + that involve strings are string concatenations
-            ExprKind::Binary { op: BinaryOp::Add, left, right } => {
-                Self::is_definitely_string(left) || Self::is_definitely_string(right)
-            },
+            ExprKind::Binary {
+                op: BinaryOp::Add,
+                left,
+                right,
+            } => Self::is_definitely_string(left) || Self::is_definitely_string(right),
             // Method calls on strings that return strings
-            ExprKind::MethodCall { receiver, method, .. } => {
-                matches!(method.as_str(), "to_string" | "trim" | "to_uppercase" | "to_lowercase") ||
-                Self::is_definitely_string(receiver)
-            },
+            ExprKind::MethodCall {
+                receiver, method, ..
+            } => {
+                matches!(
+                    method.as_str(),
+                    "to_string" | "trim" | "to_uppercase" | "to_lowercase"
+                ) || Self::is_definitely_string(receiver)
+            }
             // Variables could be strings, but we can't be sure without type info
             // For now, be conservative and don't assume variables are strings
             ExprKind::Identifier(_) => false,
@@ -758,7 +779,7 @@ pub fn transpile_struct_literal(
 #[allow(clippy::single_char_pattern)]
 mod tests {
     use super::*;
-    use crate::{Parser, frontend::ast::ExprKind};
+    use crate::{frontend::ast::ExprKind, Parser};
     fn create_transpiler() -> Transpiler {
         Transpiler::new()
     }
@@ -878,8 +899,10 @@ mod tests {
             let ast = parser.parse().expect("Failed to parse");
             let result = transpiler.transpile(&ast).unwrap();
             let rust_str = result.to_string();
-            assert!(rust_str.contains("5") && rust_str.contains("3"), 
-                   "Failed for operator {op}: {rust_str}");
+            assert!(
+                rust_str.contains("5") && rust_str.contains("3"),
+                "Failed for operator {op}: {rust_str}"
+            );
         }
     }
     #[test]
@@ -892,24 +915,22 @@ mod tests {
             let ast = parser.parse().expect("Failed to parse");
             let result = transpiler.transpile(&ast).unwrap();
             let rust_str = result.to_string();
-            assert!(rust_str.contains("true") && rust_str.contains("false"),
-                   "Failed for operator {op}: {rust_str}");
+            assert!(
+                rust_str.contains("true") && rust_str.contains("false"),
+                "Failed for operator {op}: {rust_str}"
+            );
         }
     }
     #[test]
     fn test_transpile_unary_operators() {
-        let test_cases = vec![
-            ("!true", "true"),
-            ("-5", "5"),
-        ];
+        let test_cases = vec![("!true", "true"), ("-5", "5")];
         for (code, expected) in test_cases {
             let transpiler = create_transpiler();
             let mut parser = Parser::new(code);
             let ast = parser.parse().expect("Failed to parse");
             let result = transpiler.transpile(&ast).unwrap();
             let rust_str = result.to_string();
-            assert!(rust_str.contains(expected),
-                   "Failed for {code}: {rust_str}");
+            assert!(rust_str.contains(expected), "Failed for {code}: {rust_str}");
         }
     }
     #[test]
@@ -1039,11 +1060,8 @@ mod tests {
     #[test]
     fn test_integer_literal_size_handling() {
         // Small integers
-        assert_eq!(
-            Transpiler::transpile_integer(42).to_string(),
-            "42i32"
-        );
-        // Large integers  
+        assert_eq!(Transpiler::transpile_integer(42).to_string(), "42i32");
+        // Large integers
         #[allow(clippy::unreadable_literal)]
         let large_int = 9223372036854775807;
         assert_eq!(
@@ -1051,10 +1069,7 @@ mod tests {
             "9223372036854775807i64"
         );
         // Negative integers
-        assert_eq!(
-            Transpiler::transpile_integer(-42).to_string(),
-            "- 42i32"
-        );
+        assert_eq!(Transpiler::transpile_integer(-42).to_string(), "- 42i32");
     }
     #[test]
     fn test_method_call_transpilation() {
@@ -1133,17 +1148,13 @@ mod tests {
             let ast = parser.parse().expect("Failed to parse");
             let result = transpiler.transpile(&ast).unwrap();
             let rust_str = result.to_string();
-            assert!(rust_str.contains(expected_op), "Failed for: {}", code);
+            assert!(rust_str.contains(expected_op), "Failed for: {code}");
         }
     }
 
     #[test]
     fn test_transpile_expr_logical_operators() {
-        let tests = vec![
-            ("a && b", "&&"),
-            ("a || b", "||"),
-            ("!a", "!"),
-        ];
+        let tests = vec![("a && b", "&&"), ("a || b", "||"), ("!a", "!")];
 
         for (code, expected_op) in tests {
             let transpiler = create_transpiler();
@@ -1151,7 +1162,7 @@ mod tests {
             let ast = parser.parse().expect("Failed to parse");
             let result = transpiler.transpile(&ast).unwrap();
             let rust_str = result.to_string();
-            assert!(rust_str.contains(expected_op), "Failed for: {}", code);
+            assert!(rust_str.contains(expected_op), "Failed for: {code}");
         }
     }
 
@@ -1172,12 +1183,12 @@ mod tests {
             let result = transpiler.transpile(&ast).unwrap();
             let rust_str = result.to_string();
             // Check that the operator appears
-            assert!(rust_str.contains(expected_op), "Failed for: {}", code);
+            assert!(rust_str.contains(expected_op), "Failed for: {code}");
         }
     }
 
     #[test]
-    #[ignore = "Parser doesn't support this syntax yet"]
+
     fn test_transpile_array_literal() {
         let transpiler = create_transpiler();
         let code = "[1, 2, 3]";
@@ -1245,9 +1256,9 @@ mod tests {
 }
 #[cfg(test)]
 mod property_tests_expressions {
-    use proptest::proptest;
     use super::*;
-    
+    use proptest::proptest;
+
     proptest! {
         /// Property: transpile_literal never panics on any literal input
         #[test]
@@ -1257,16 +1268,16 @@ mod property_tests_expressions {
             // Function should not panic on any valid literal
             let result = std::panic::catch_unwind(|| {
                 use crate::frontend::ast::Literal;
-                
+
                 // Test common literal types (should never panic)
                 let _ = Transpiler::transpile_literal(&Literal::Integer(42));
                 let _ = Transpiler::transpile_literal(&Literal::Float(3.14));
                 let _ = Transpiler::transpile_literal(&Literal::Bool(true));
-                let _ = Transpiler::transpile_literal(&Literal::String(input.to_string()));
+                let _ = Transpiler::transpile_literal(&Literal::String(input.clone()));
                 let _ = Transpiler::transpile_literal(&Literal::Char('a'));
                 let _ = Transpiler::transpile_literal(&Literal::Unit);
             });
-            assert!(result.is_ok(), "transpile_literal panicked on input: {:?}", input);
+            assert!(result.is_ok(), "transpile_literal panicked on input: {input:?}");
         }
     }
 
@@ -1278,94 +1289,80 @@ mod property_tests_expressions {
         // Test every single ExprKind variant for 100% coverage
         let comprehensive_test_cases = vec![
             // All literal types
-            "42",              // Integer
-            "3.14",            // Float
-            "true",            // Bool
-            "false",           // Bool
-            "\"hello\"",       // String
-            "'a'",             // Char
-            "()",              // Unit
-
+            "42",        // Integer
+            "3.14",      // Float
+            "true",      // Bool
+            "false",     // Bool
+            "\"hello\"", // String
+            "'a'",       // Char
+            "()",        // Unit
             // All binary operations
-            "1 + 2",           // Add
-            "5 - 3",           // Sub
-            "4 * 6",           // Mul
-            "8 / 2",           // Div
-            "7 % 3",           // Mod
-            "2 ** 3",          // Pow
-            "1 == 2",          // Eq
-            "1 != 2",          // Ne
-            "1 < 2",           // Lt
-            "1 <= 2",          // Le
-            "1 > 2",           // Gt
-            "1 >= 2",          // Ge
-            "true && false",   // And
-            "true || false",   // Or
-            "1 | 2",           // BitOr
-            "1 & 2",           // BitAnd
-            "1 ^ 2",           // BitXor
-            "1 << 2",          // Shl
-            "1 >> 2",          // Shr
-            "a ?? b",          // NullCoalesce
-
+            "1 + 2",         // Add
+            "5 - 3",         // Sub
+            "4 * 6",         // Mul
+            "8 / 2",         // Div
+            "7 % 3",         // Mod
+            "2 ** 3",        // Pow
+            "1 == 2",        // Eq
+            "1 != 2",        // Ne
+            "1 < 2",         // Lt
+            "1 <= 2",        // Le
+            "1 > 2",         // Gt
+            "1 >= 2",        // Ge
+            "true && false", // And
+            "true || false", // Or
+            "1 | 2",         // BitOr
+            "1 & 2",         // BitAnd
+            "1 ^ 2",         // BitXor
+            "1 << 2",        // Shl
+            "1 >> 2",        // Shr
+            "a ?? b",        // NullCoalesce
             // All unary operations
-            "-5",              // Neg
-            "!true",           // Not
-            "~5",              // BitNot
-
+            "-5",    // Neg
+            "!true", // Not
+            "~5",    // BitNot
             // Collections
-            "[1, 2, 3]",       // List
-            "(1, 2)",          // Tuple
-            "{x: 1, y: 2}",    // Object
-            "#{1, 2, 3}",      // Set
-            "{\"a\": 1}",      // Map
-
+            "[1, 2, 3]",    // List
+            "(1, 2)",       // Tuple
+            "{x: 1, y: 2}", // Object
+            "#{1, 2, 3}",   // Set
+            "{\"a\": 1}",   // Map
             // Control flow
             "if x { 1 } else { 2 }",                    // If
             "match x { 1 => \"one\", _ => \"other\" }", // Match
             "for i in 0..10 { i }",                     // For
             "while x < 10 { x = x + 1 }",               // While
-
             // Functions and calls
-            "fn add(a, b) { a + b }",      // Function
-            "add(1, 2)",                   // Call
-            "obj.method()",                // MethodCall
-            "x => x + 1",                  // Lambda
-
+            "fn add(a, b) { a + b }", // Function
+            "add(1, 2)",              // Call
+            "obj.method()",           // MethodCall
+            "x => x + 1",             // Lambda
             // Access operations
-            "arr[0]",          // Index
-            "obj.field",       // FieldAccess
-            "obj?.field",      // SafeFieldAccess
-
+            "arr[0]",     // Index
+            "obj.field",  // FieldAccess
+            "obj?.field", // SafeFieldAccess
             // Advanced operations
             "data |> process", // Pipeline
             "1..10",           // Range
             "0..=5",           // RangeInclusive
             "await promise",   // Await
             "async { 42 }",    // Async
-
             // String interpolation
-            "f\"Hello {name}\"",           // StringInterpolation
-
+            "f\"Hello {name}\"", // StringInterpolation
             // Variable assignment
-            "let x = 5",       // Let
-            "x = 10",          // Assign
-
+            "let x = 5", // Let
+            "x = 10",    // Assign
             // Blocks and groups
             "{ let x = 5; x }", // Block
             "(1 + 2)",          // Group
-
             // Try/catch
             "try { risky() } catch(e) { handle(e) }", // Try
-
             // Spawn/yield
-            "spawn task()",     // Spawn
-            "yield value",      // Yield
-
+            "spawn task()", // Spawn
+            "yield value",  // Yield
             // Type operations
-            "x as i32",         // Cast
-            "x is String",      // TypeCheck
-
+            "x as i32",    // Cast
+            "x is String", // TypeCheck
             // DataFrame operations
             "df![col1: [1, 2], col2: [3, 4]]", // DataFrame
         ];
@@ -1376,8 +1373,10 @@ mod property_tests_expressions {
             if let Ok(ast) = parser.parse() {
                 let result = transpiler.transpile(&ast);
                 // Must handle all cases without panicking
-                assert!(result.is_ok() || result.is_err(),
-                    "Test case {} failed: {}", i, code);
+                assert!(
+                    result.is_ok() || result.is_err(),
+                    "Test case {i} failed: {code}"
+                );
             }
         }
     }
@@ -1445,8 +1444,10 @@ mod property_tests_expressions {
             if let Ok(ast) = parser.parse() {
                 let result = transpiler.transpile(&ast);
                 // All edge cases must be handled gracefully
-                assert!(result.is_ok() || result.is_err(),
-                    "Edge case {} failed: {}", i, code);
+                assert!(
+                    result.is_ok() || result.is_err(),
+                    "Edge case {i} failed: {code}"
+                );
             }
         }
     }
@@ -1461,36 +1462,28 @@ mod property_tests_expressions {
             "\"string\" + 42",
             "true * false",
             "[1, 2] / 3",
-
             // Invalid operations
             "undefined_var",
             "obj.nonexistent_method()",
             "invalid[key]",
-
             // Malformed expressions
             "1 +",
             "* 2",
             "|| true",
             "&& false",
-
             // Invalid casts
             "\"string\" as NonExistentType",
             "42 as InvalidType",
-
             // Invalid patterns
             "match x { invalid => {} }",
-
             // Invalid async/await
             "await non_promise",
             "async invalid",
-
             // Invalid lambda syntax
             "| invalid lambda",
             "=> missing param",
-
             // Stack overflow potential
             "a.b.c.d.e.f.g.h.i.j.k.l.m.n.o.p.q.r.s.t.u.v.w.x.y.z",
-
             // Memory intensive
             "[1; 1000000]",
             "\"x\".repeat(1000000)",
@@ -1501,8 +1494,10 @@ mod property_tests_expressions {
             if let Ok(ast) = parser.parse() {
                 let result = transpiler.transpile(&ast);
                 // Error cases should be handled gracefully (not panic)
-                assert!(result.is_ok() || result.is_err(),
-                    "Error case {} not handled gracefully: {}", i, code);
+                assert!(
+                    result.is_ok() || result.is_err(),
+                    "Error case {i} not handled gracefully: {code}"
+                );
             }
         }
     }
@@ -1518,10 +1513,25 @@ mod property_tests_expressions {
 
         // Test binary operation handling for all variants
         let binary_ops = vec![
-            BinaryOp::Add, BinaryOp::Subtract, BinaryOp::Multiply, BinaryOp::Divide, BinaryOp::Modulo,
-            BinaryOp::Power, BinaryOp::Equal, BinaryOp::NotEqual, BinaryOp::Less, BinaryOp::LessEqual,
-            BinaryOp::Greater, BinaryOp::GreaterEqual, BinaryOp::Gt, BinaryOp::And, BinaryOp::Or,
-            BinaryOp::BitwiseAnd, BinaryOp::BitwiseOr, BinaryOp::BitwiseXor, BinaryOp::LeftShift,
+            BinaryOp::Add,
+            BinaryOp::Subtract,
+            BinaryOp::Multiply,
+            BinaryOp::Divide,
+            BinaryOp::Modulo,
+            BinaryOp::Power,
+            BinaryOp::Equal,
+            BinaryOp::NotEqual,
+            BinaryOp::Less,
+            BinaryOp::LessEqual,
+            BinaryOp::Greater,
+            BinaryOp::GreaterEqual,
+            BinaryOp::Gt,
+            BinaryOp::And,
+            BinaryOp::Or,
+            BinaryOp::BitwiseAnd,
+            BinaryOp::BitwiseOr,
+            BinaryOp::BitwiseXor,
+            BinaryOp::LeftShift,
             BinaryOp::NullCoalesce,
         ];
 
@@ -1538,7 +1548,11 @@ mod property_tests_expressions {
             };
 
             let binary_expr = Expr {
-                kind: ExprKind::Binary { op, left: Box::new(left), right: Box::new(right) },
+                kind: ExprKind::Binary {
+                    op,
+                    left: Box::new(left),
+                    right: Box::new(right),
+                },
                 span: Default::default(),
                 attributes: vec![],
             };
@@ -1548,7 +1562,12 @@ mod property_tests_expressions {
         }
 
         // Test unary operation handling for all variants
-        let unary_ops = vec![UnaryOp::Not, UnaryOp::Negate, UnaryOp::BitwiseNot, UnaryOp::Reference];
+        let unary_ops = vec![
+            UnaryOp::Not,
+            UnaryOp::Negate,
+            UnaryOp::BitwiseNot,
+            UnaryOp::Reference,
+        ];
 
         for op in unary_ops {
             let operand = Expr {
@@ -1558,7 +1577,10 @@ mod property_tests_expressions {
             };
 
             let unary_expr = Expr {
-                kind: ExprKind::Unary { op, operand: Box::new(operand) },
+                kind: ExprKind::Unary {
+                    op,
+                    operand: Box::new(operand),
+                },
                 span: Default::default(),
                 attributes: vec![],
             };
@@ -1568,4 +1590,3 @@ mod property_tests_expressions {
         }
     }
 }
-

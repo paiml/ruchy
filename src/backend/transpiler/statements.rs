@@ -4,7 +4,7 @@
 #![allow(clippy::collapsible_else_if)]
 use super::*;
 use crate::frontend::ast::{CatchClause, Expr, Literal, Param, Pattern, PipelineStage, UnaryOp};
-use anyhow::{Result, bail};
+use anyhow::{bail, Result};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 impl Transpiler {
@@ -22,7 +22,9 @@ impl Transpiler {
                 false
             }
             // Compound assignment (+=, -=, etc.)
-            ExprKind::CompoundAssign { target, value: _, .. } => {
+            ExprKind::CompoundAssign {
+                target, value: _, ..
+            } => {
                 if let ExprKind::Identifier(var_name) = &target.kind {
                     if var_name == name {
                         return true;
@@ -31,10 +33,10 @@ impl Transpiler {
                 false
             }
             // Pre/Post increment/decrement
-            ExprKind::PreIncrement { target } | 
-            ExprKind::PostIncrement { target } |
-            ExprKind::PreDecrement { target } |
-            ExprKind::PostDecrement { target } => {
+            ExprKind::PreIncrement { target }
+            | ExprKind::PostIncrement { target }
+            | ExprKind::PreDecrement { target }
+            | ExprKind::PostDecrement { target } => {
                 if let ExprKind::Identifier(var_name) = &target.kind {
                     if var_name == name {
                         return true;
@@ -43,58 +45,54 @@ impl Transpiler {
                 false
             }
             // Check in blocks
-            ExprKind::Block(exprs) => {
-                exprs.iter().any(|e| Self::is_variable_mutated(name, e))
-            }
+            ExprKind::Block(exprs) => exprs.iter().any(|e| Self::is_variable_mutated(name, e)),
             // Check in if branches
-            ExprKind::If { condition, then_branch, else_branch } => {
-                Self::is_variable_mutated(name, condition) ||
-                Self::is_variable_mutated(name, then_branch) ||
-                else_branch.as_ref().is_some_and(|e| Self::is_variable_mutated(name, e))
+            ExprKind::If {
+                condition,
+                then_branch,
+                else_branch,
+            } => {
+                Self::is_variable_mutated(name, condition)
+                    || Self::is_variable_mutated(name, then_branch)
+                    || else_branch
+                        .as_ref()
+                        .is_some_and(|e| Self::is_variable_mutated(name, e))
             }
             // Check in while loops
             ExprKind::While { condition, body } => {
-                Self::is_variable_mutated(name, condition) ||
-                Self::is_variable_mutated(name, body)
+                Self::is_variable_mutated(name, condition) || Self::is_variable_mutated(name, body)
             }
             // Check in for loops
-            ExprKind::For { body, .. } => {
-                Self::is_variable_mutated(name, body)
-            }
+            ExprKind::For { body, .. } => Self::is_variable_mutated(name, body),
             // Check in match expressions
             ExprKind::Match { expr, arms } => {
-                Self::is_variable_mutated(name, expr) ||
-                arms.iter().any(|arm| Self::is_variable_mutated(name, &arm.body))
+                Self::is_variable_mutated(name, expr)
+                    || arms
+                        .iter()
+                        .any(|arm| Self::is_variable_mutated(name, &arm.body))
             }
             // Check in nested let expressions
             ExprKind::Let { body, .. } | ExprKind::LetPattern { body, .. } => {
                 Self::is_variable_mutated(name, body)
             }
             // Check in function bodies
-            ExprKind::Function { body, .. } => {
-                Self::is_variable_mutated(name, body)
-            }
+            ExprKind::Function { body, .. } => Self::is_variable_mutated(name, body),
             // Check in lambda bodies
-            ExprKind::Lambda { body, .. } => {
-                Self::is_variable_mutated(name, body)
-            }
+            ExprKind::Lambda { body, .. } => Self::is_variable_mutated(name, body),
             // Check binary operations
             ExprKind::Binary { left, right, .. } => {
-                Self::is_variable_mutated(name, left) ||
-                Self::is_variable_mutated(name, right)
+                Self::is_variable_mutated(name, left) || Self::is_variable_mutated(name, right)
             }
             // Check unary operations
-            ExprKind::Unary { operand, .. } => {
-                Self::is_variable_mutated(name, operand)
-            }
+            ExprKind::Unary { operand, .. } => Self::is_variable_mutated(name, operand),
             // Check function/method calls
             ExprKind::Call { func, args } => {
-                Self::is_variable_mutated(name, func) ||
-                args.iter().any(|a| Self::is_variable_mutated(name, a))
+                Self::is_variable_mutated(name, func)
+                    || args.iter().any(|a| Self::is_variable_mutated(name, a))
             }
             ExprKind::MethodCall { receiver, args, .. } => {
-                Self::is_variable_mutated(name, receiver) ||
-                args.iter().any(|a| Self::is_variable_mutated(name, a))
+                Self::is_variable_mutated(name, receiver)
+                    || args.iter().any(|a| Self::is_variable_mutated(name, a))
             }
             // Other expressions don't contain mutations
             _ => false,
@@ -127,13 +125,13 @@ impl Transpiler {
         }
     }
     /// Transpiles let bindings
-/// # Examples
-///
-/// ```ignore
-/// use ruchy::backend::transpiler::Transpiler;
-/// let transpiler = Transpiler::new();
-/// // transpile_let is called internally by transpile
-/// ```
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::backend::transpiler::Transpiler;
+    /// let transpiler = Transpiler::new();
+    /// // transpile_let is called internally by transpile
+    /// ```
     pub fn transpile_let(
         &self,
         name: &str,
@@ -149,19 +147,21 @@ impl Transpiler {
         };
         let name_ident = format_ident!("{}", safe_name);
         // Auto-detect mutability: check if variable is in the mutable_vars set or is reassigned in body
-        let effective_mutability = is_mutable || 
-                                  self.mutable_vars.contains(name) || 
-                                  Self::is_variable_mutated(name, body);
+        let effective_mutability =
+            is_mutable || self.mutable_vars.contains(name) || Self::is_variable_mutated(name, body);
         // Convert string literals to String type at variable declaration time
         // This ensures string variables are String, not &str, making function calls work
         let value_tokens = match &value.kind {
             crate::frontend::ast::ExprKind::Literal(crate::frontend::ast::Literal::String(s)) => {
                 quote! { #s.to_string() }
             }
-            _ => self.transpile_expr(value)?
+            _ => self.transpile_expr(value)?,
         };
         // HOTFIX: If body is Unit, this is a top-level let statement without scoping
-        if matches!(body.kind, crate::frontend::ast::ExprKind::Literal(crate::frontend::ast::Literal::Unit)) {
+        if matches!(
+            body.kind,
+            crate::frontend::ast::ExprKind::Literal(crate::frontend::ast::Literal::Unit)
+        ) {
             if effective_mutability {
                 Ok(quote! { let mut #name_ident = #value_tokens; })
             } else {
@@ -184,8 +184,8 @@ impl Transpiler {
                     let expr_tokens = self.transpile_expr(expr)?;
                     // Check if this is a Let expression with Unit body (standalone let statement)
                     // These already have semicolons from transpile_let
-                    let is_standalone_let = matches!(&expr.kind, 
-                        crate::frontend::ast::ExprKind::Let { body, .. } 
+                    let is_standalone_let = matches!(&expr.kind,
+                        crate::frontend::ast::ExprKind::Let { body, .. }
                         if matches!(body.kind, crate::frontend::ast::ExprKind::Literal(crate::frontend::ast::Literal::Unit))
                     );
                     if is_standalone_let {
@@ -226,14 +226,14 @@ impl Transpiler {
         }
     }
     /// Transpiles let pattern bindings (destructuring)
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::backend::transpiler::Transpiler;
-/// let transpiler = Transpiler::new();
-/// // transpile_let_pattern is called internally
-/// ```
-pub fn transpile_let_pattern(
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::backend::transpiler::Transpiler;
+    /// let transpiler = Transpiler::new();
+    /// // transpile_let_pattern is called internally
+    /// ```
+    pub fn transpile_let_pattern(
         &self,
         pattern: &crate::frontend::ast::Pattern,
         value: &Expr,
@@ -247,9 +247,12 @@ pub fn transpile_let_pattern(
             // Add [..] to convert Vec to slice for pattern matching
             value_tokens = quote! { &#value_tokens[..] };
         }
-        
+
         // HOTFIX: If body is Unit, this is a top-level let statement without scoping
-        if matches!(body.kind, crate::frontend::ast::ExprKind::Literal(crate::frontend::ast::Literal::Unit)) {
+        if matches!(
+            body.kind,
+            crate::frontend::ast::ExprKind::Literal(crate::frontend::ast::Literal::Unit)
+        ) {
             // For destructuring assignments, we need to generate multiple let statements
             // Extract variables from the pattern and assign them individually
             match pattern {
@@ -257,7 +260,8 @@ pub fn transpile_let_pattern(
                     let mut assignments = Vec::new();
                     for (i, pat) in patterns.iter().enumerate() {
                         if let crate::frontend::ast::Pattern::Identifier(name) = pat {
-                            let ident = proc_macro2::Ident::new(name, proc_macro2::Span::call_site());
+                            let ident =
+                                proc_macro2::Ident::new(name, proc_macro2::Span::call_site());
                             assignments.push(quote! {
                                 let #ident = #value_tokens[#i].clone();
                             });
@@ -285,15 +289,16 @@ pub fn transpile_let_pattern(
     fn pattern_needs_slice(&self, pattern: &crate::frontend::ast::Pattern) -> bool {
         matches!(pattern, crate::frontend::ast::Pattern::List(_))
     }
-    
+
     /// Check if an expression creates a Vec that needs conversion to slice
     fn value_creates_vec(&self, expr: &Expr) -> bool {
         matches!(expr.kind, crate::frontend::ast::ExprKind::List(_))
     }
-    
+
     /// Check if function name suggests numeric operations
     fn looks_like_numeric_function(&self, name: &str) -> bool {
-        matches!(name,
+        matches!(
+            name,
             // Basic arithmetic
             "add" | "subtract" | "multiply" | "divide" | "sum" | "product" |
             "min" | "max" | "abs" | "sqrt" | "pow" | "mod" | "gcd" | "lcm" |
@@ -329,7 +334,8 @@ pub fn transpile_let_pattern(
             crate::frontend::ast::ExprKind::Call { func, .. } => {
                 if let crate::frontend::ast::ExprKind::Identifier(name) = &func.kind {
                     // Comprehensive list of void functions
-                    matches!(name.as_str(), 
+                    matches!(
+                        name.as_str(),
                         // Output functions
                         "println" | "print" | "eprintln" | "eprint" |
                         // Debug functions
@@ -342,7 +348,7 @@ pub fn transpile_let_pattern(
                     false
                 }
             }
-            _ => false
+            _ => false,
         }
     }
     /// Check if an expression is void (returns unit/nothing)
@@ -353,23 +359,27 @@ pub fn transpile_let_pattern(
             // Void function calls
             crate::frontend::ast::ExprKind::Call { .. } if self.is_void_function_call(expr) => true,
             // Assignments are void
-            crate::frontend::ast::ExprKind::Assign { .. } |
-            crate::frontend::ast::ExprKind::CompoundAssign { .. } => true,
+            crate::frontend::ast::ExprKind::Assign { .. }
+            | crate::frontend::ast::ExprKind::CompoundAssign { .. } => true,
             // Loops are void
-            crate::frontend::ast::ExprKind::While { .. } |
-            crate::frontend::ast::ExprKind::For { .. } => true,
+            crate::frontend::ast::ExprKind::While { .. }
+            | crate::frontend::ast::ExprKind::For { .. } => true,
             // Let bindings - check the body expression
-            crate::frontend::ast::ExprKind::Let { body, .. } => {
-                self.is_void_expression(body)
-            }
+            crate::frontend::ast::ExprKind::Let { body, .. } => self.is_void_expression(body),
             // Block - check last expression
             crate::frontend::ast::ExprKind::Block(exprs) => {
                 exprs.last().is_none_or(|e| self.is_void_expression(e))
             }
             // If expression - both branches must be void
-            crate::frontend::ast::ExprKind::If { then_branch, else_branch, .. } => {
-                self.is_void_expression(then_branch) && 
-                else_branch.as_ref().is_none_or(|e| self.is_void_expression(e))
+            crate::frontend::ast::ExprKind::If {
+                then_branch,
+                else_branch,
+                ..
+            } => {
+                self.is_void_expression(then_branch)
+                    && else_branch
+                        .as_ref()
+                        .is_none_or(|e| self.is_void_expression(e))
             }
             // Match expression - all arms must be void
             crate::frontend::ast::ExprKind::Match { arms, .. } => {
@@ -378,7 +388,7 @@ pub fn transpile_let_pattern(
             // Return without value is void
             crate::frontend::ast::ExprKind::Return { value } if value.is_none() => true,
             // Everything else produces a value
-            _ => false
+            _ => false,
         }
     }
     /// Check if expression has a non-unit value (i.e., returns something meaningful)
@@ -389,19 +399,28 @@ pub fn transpile_let_pattern(
     #[allow(clippy::too_many_arguments)]
     /// Infer parameter type based on usage in function body
     fn infer_param_type(&self, param: &Param, body: &Expr, func_name: &str) -> TokenStream {
-        use super::type_inference::{is_param_used_as_function, is_param_used_numerically, is_param_used_as_function_argument};
+        use super::type_inference::{
+            is_param_used_as_function, is_param_used_as_function_argument,
+            is_param_used_numerically,
+        };
         if is_param_used_as_function(&param.name(), body) {
             quote! { impl Fn(i32) -> i32 }
-        } else if is_param_used_numerically(&param.name(), body) || 
-                  self.looks_like_numeric_function(func_name) ||
-                  is_param_used_as_function_argument(&param.name(), body) {
+        } else if is_param_used_numerically(&param.name(), body)
+            || self.looks_like_numeric_function(func_name)
+            || is_param_used_as_function_argument(&param.name(), body)
+        {
             quote! { i32 }
         } else {
             quote! { String }
         }
     }
     /// Generate parameter tokens with proper type inference
-    fn generate_param_tokens(&self, params: &[Param], body: &Expr, func_name: &str) -> Result<Vec<TokenStream>> {
+    fn generate_param_tokens(
+        &self,
+        params: &[Param],
+        body: &Expr,
+        func_name: &str,
+    ) -> Result<Vec<TokenStream>> {
         params
             .iter()
             .map(|p| {
@@ -421,7 +440,12 @@ pub fn transpile_let_pattern(
             .collect()
     }
     /// Generate return type tokens based on function analysis
-    fn generate_return_type_tokens(&self, name: &str, return_type: Option<&Type>, body: &Expr) -> Result<TokenStream> {
+    fn generate_return_type_tokens(
+        &self,
+        name: &str,
+        return_type: Option<&Type>,
+        body: &Expr,
+    ) -> Result<TokenStream> {
         // FIRST CHECK: Override for test functions
         if name.starts_with("test_") {
             return Ok(quote! {});
@@ -480,7 +504,7 @@ pub fn transpile_let_pattern(
                             Ok(quote! { #(#statements)* })
                         }
                     }
-                },
+                }
                 _ => {
                     // Not a block - transpile normally
                     self.transpile_expr(body)
@@ -522,15 +546,22 @@ pub fn transpile_let_pattern(
         } else {
             return_type_tokens.clone()
         };
-        let visibility = if is_pub { quote! { pub } } else { quote! {} };
+        let visibility = if is_pub {
+            quote! { pub }
+        } else {
+            quote! {}
+        };
         // Generate attribute tokens
-        let attr_tokens: Vec<TokenStream> = attributes.iter()
+        let attr_tokens: Vec<TokenStream> = attributes
+            .iter()
             .map(|attr| {
                 let attr_name = format_ident!("{}", attr.name);
                 if attr.args.is_empty() {
                     quote! { #[#attr_name] }
                 } else {
-                    let args: Vec<TokenStream> = attr.args.iter()
+                    let args: Vec<TokenStream> = attr
+                        .args
+                        .iter()
                         .map(|arg| arg.parse().unwrap_or_else(|_| quote! { #arg }))
                         .collect();
                     quote! { #[#attr_name(#(#args),*)] }
@@ -564,13 +595,13 @@ pub fn transpile_let_pattern(
             },
         })
     }
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::backend::transpiler::Transpiler;
-/// let transpiler = Transpiler::new();
-/// // transpile_function is called internally by transpile
-/// ```
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::backend::transpiler::Transpiler;
+    /// let transpiler = Transpiler::new();
+    /// // transpile_function is called internally by transpile
+    /// ```
     pub fn transpile_function(
         &self,
         name: &str,
@@ -592,28 +623,29 @@ pub fn transpile_let_pattern(
         } else {
             return_type
         };
-        let return_type_tokens = self.generate_return_type_tokens(name, effective_return_type, body)?;
+        let return_type_tokens =
+            self.generate_return_type_tokens(name, effective_return_type, body)?;
         let type_param_tokens = self.generate_type_param_tokens(type_params)?;
         self.generate_function_signature(
-            is_pub, 
-            is_async, 
-            &fn_name, 
-            &type_param_tokens, 
-            &param_tokens, 
-            &return_type_tokens, 
+            is_pub,
+            is_async,
+            &fn_name,
+            &type_param_tokens,
+            &param_tokens,
+            &return_type_tokens,
             &body_tokens,
-            attributes
+            attributes,
         )
     }
     /// Transpiles lambda expressions
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::backend::transpiler::Transpiler;
-/// let transpiler = Transpiler::new();
-/// // transpile_lambda is called internally
-/// ```
-pub fn transpile_lambda(&self, params: &[Param], body: &Expr) -> Result<TokenStream> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::backend::transpiler::Transpiler;
+    /// let transpiler = Transpiler::new();
+    /// // transpile_lambda is called internally
+    /// ```
+    pub fn transpile_lambda(&self, params: &[Param], body: &Expr) -> Result<TokenStream> {
         let param_names: Vec<_> = params
             .iter()
             .map(|p| format_ident!("{}", p.name()))
@@ -636,12 +668,12 @@ pub fn transpile_lambda(&self, params: &[Param], body: &Expr) -> Result<TokenStr
         }
     }
     /// Transpiles function calls
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// ```
     /// use ruchy::{Transpiler, Parser};
-    /// 
+    ///
     /// let transpiler = Transpiler::new();
     /// let mut parser = Parser::new(r#"println("Hello, {}", name)"#);
     /// let ast = parser.parse().expect("Failed to parse");
@@ -649,10 +681,10 @@ pub fn transpile_lambda(&self, params: &[Param], body: &Expr) -> Result<TokenStr
     /// assert!(result.contains("println !"));
     /// assert!(result.contains("Hello, {}"));
     /// ```
-    /// 
+    ///
     /// ```
     /// use ruchy::{Transpiler, Parser};
-    /// 
+    ///
     /// let transpiler = Transpiler::new();
     /// let mut parser = Parser::new(r#"println("Simple message")"#);
     /// let ast = parser.parse().expect("Failed to parse");
@@ -660,10 +692,10 @@ pub fn transpile_lambda(&self, params: &[Param], body: &Expr) -> Result<TokenStr
     /// assert!(result.contains("println !"));
     /// assert!(result.contains("Simple message"));
     /// ```
-    /// 
+    ///
     /// ```
     /// use ruchy::{Transpiler, Parser};
-    /// 
+    ///
     /// let transpiler = Transpiler::new();
     /// let mut parser = Parser::new("some_function(\"test\")");
     /// let ast = parser.parse().expect("Failed to parse");
@@ -690,7 +722,9 @@ pub fn transpile_lambda(&self, params: &[Param], body: &Expr) -> Result<TokenStr
             if let Some(result) = self.try_transpile_input_function(base_name, args)? {
                 return Ok(result);
             }
-            if let Some(result) = self.try_transpile_assert_function(&func_tokens, base_name, args)? {
+            if let Some(result) =
+                self.try_transpile_assert_function(&func_tokens, base_name, args)?
+            {
                 return Ok(result);
             }
             if let Some(result) = self.try_transpile_type_conversion(base_name, args)? {
@@ -785,10 +819,25 @@ pub fn transpile_lambda(&self, params: &[Param], body: &Expr) -> Result<TokenStr
         let arg_tokens: Result<Vec<_>> = args.iter().map(|a| self.transpile_expr(a)).collect();
         let arg_tokens = arg_tokens?;
         // Check DataFrame methods FIRST before generic collection methods
-        if self.is_dataframe_expr(object) && matches!(method, 
-            "get" | "rows" | "columns" | "select" | "filter" | "sort" | 
-            "head" | "tail" | "mean" | "std" | "min" | "max" | "sum" | "count"
-        ) {
+        if self.is_dataframe_expr(object)
+            && matches!(
+                method,
+                "get"
+                    | "rows"
+                    | "columns"
+                    | "select"
+                    | "filter"
+                    | "sort"
+                    | "head"
+                    | "tail"
+                    | "mean"
+                    | "std"
+                    | "min"
+                    | "max"
+                    | "sum"
+                    | "count"
+            )
+        {
             return self.transpile_dataframe_method(object, method, args);
         }
         // Dispatch to specialized handlers based on method category
@@ -798,8 +847,7 @@ pub fn transpile_lambda(&self, params: &[Param], body: &Expr) -> Result<TokenStr
                 self.transpile_iterator_methods(&obj_tokens, method, &arg_tokens)
             }
             // HashMap/HashSet methods (get, contains_key, items, etc.)
-            "get" | "contains_key" | "keys" | "values" | "entry" | "items" |
-            "update" | "add" => {
+            "get" | "contains_key" | "keys" | "values" | "entry" | "items" | "update" | "add" => {
                 self.transpile_map_set_methods(&obj_tokens, &method_ident, method, &arg_tokens)
             }
             // Set operations (union, intersection, difference, symmetric_difference)
@@ -811,9 +859,9 @@ pub fn transpile_lambda(&self, params: &[Param], body: &Expr) -> Result<TokenStr
                 Ok(quote! { #obj_tokens.#method_ident(#(#arg_tokens),*) })
             }
             // DataFrame operations - use special handling for correct Polars API
-            "select" | "groupby" | "group_by" | "agg" | "sort" | "mean" | "std" | "min"
-            | "max" | "sum" | "count" | "drop_nulls" | "fill_null" | "pivot"
-            | "melt" | "head" | "tail" | "sample" | "describe" | "rows" | "columns" | "column" | "build" => {
+            "select" | "groupby" | "group_by" | "agg" | "sort" | "mean" | "std" | "min" | "max"
+            | "sum" | "count" | "drop_nulls" | "fill_null" | "pivot" | "melt" | "head" | "tail"
+            | "sample" | "describe" | "rows" | "columns" | "column" | "build" => {
                 // Check if this is a DataFrame operation
                 if self.is_dataframe_expr(object) {
                     self.transpile_dataframe_method(object, method, args)
@@ -822,11 +870,9 @@ pub fn transpile_lambda(&self, params: &[Param], body: &Expr) -> Result<TokenStr
                 }
             }
             // String methods (Python-style and Rust-style)
-            "to_s" | "to_string" | "to_upper" | "to_lower" | "upper" | "lower" | 
-            "length" | "substring" | "strip" | "lstrip" | "rstrip" | 
-            "startswith" | "endswith" | "split" | "replace" => {
-                self.transpile_string_methods(&obj_tokens, method, &arg_tokens)
-            }
+            "to_s" | "to_string" | "to_upper" | "to_lower" | "upper" | "lower" | "length"
+            | "substring" | "strip" | "lstrip" | "rstrip" | "startswith" | "endswith" | "split"
+            | "replace" => self.transpile_string_methods(&obj_tokens, method, &arg_tokens),
             // List/Vec methods (Python-style)
             "append" => {
                 // Python's append() -> Rust's push()
@@ -851,7 +897,12 @@ pub fn transpile_lambda(&self, params: &[Param], body: &Expr) -> Result<TokenStr
         }
     }
     /// Handle iterator operations: map, filter, reduce
-    fn transpile_iterator_methods(&self, obj_tokens: &TokenStream, method: &str, arg_tokens: &[TokenStream]) -> Result<TokenStream> {
+    fn transpile_iterator_methods(
+        &self,
+        obj_tokens: &TokenStream,
+        method: &str,
+        arg_tokens: &[TokenStream],
+    ) -> Result<TokenStream> {
         match method {
             "map" => {
                 // vec.map(f) -> vec.iter().map(f).collect::<Vec<_>>()
@@ -869,7 +920,13 @@ pub fn transpile_lambda(&self, params: &[Param], body: &Expr) -> Result<TokenStr
         }
     }
     /// Handle HashMap/HashSet methods: get, `contains_key`, items, etc.
-    fn transpile_map_set_methods(&self, obj_tokens: &TokenStream, method_ident: &proc_macro2::Ident, method: &str, arg_tokens: &[TokenStream]) -> Result<TokenStream> {
+    fn transpile_map_set_methods(
+        &self,
+        obj_tokens: &TokenStream,
+        method_ident: &proc_macro2::Ident,
+        method: &str,
+        arg_tokens: &[TokenStream],
+    ) -> Result<TokenStream> {
         match method {
             "get" => {
                 // HashMap.get() returns Option<&V>, but we want owned values
@@ -890,17 +947,25 @@ pub fn transpile_lambda(&self, params: &[Param], body: &Expr) -> Result<TokenStr
                 // Python set.add(item) -> Rust HashSet.insert(item)
                 Ok(quote! { #obj_tokens.insert(#(#arg_tokens),*) })
             }
-            _ => unreachable!("Non-map/set method {} passed to transpile_map_set_methods", method),
+            _ => unreachable!(
+                "Non-map/set method {} passed to transpile_map_set_methods",
+                method
+            ),
         }
     }
     /// Handle `HashSet` set operations: union, intersection, difference, `symmetric_difference`
-    fn transpile_set_operations(&self, obj_tokens: &TokenStream, method: &str, arg_tokens: &[TokenStream]) -> Result<TokenStream> {
+    fn transpile_set_operations(
+        &self,
+        obj_tokens: &TokenStream,
+        method: &str,
+        arg_tokens: &[TokenStream],
+    ) -> Result<TokenStream> {
         if arg_tokens.len() != 1 {
             bail!("{} requires exactly 1 argument", method);
         }
         let other = &arg_tokens[0];
         let method_ident = format_ident!("{}", method);
-        Ok(quote! { 
+        Ok(quote! {
             {
                 use std::collections::HashSet;
                 #obj_tokens.#method_ident(&#other).cloned().collect::<HashSet<_>>()
@@ -908,7 +973,12 @@ pub fn transpile_lambda(&self, params: &[Param], body: &Expr) -> Result<TokenStr
         })
     }
     /// Handle string methods: Python-style and Rust-style
-    fn transpile_string_methods(&self, obj_tokens: &TokenStream, method: &str, arg_tokens: &[TokenStream]) -> Result<TokenStream> {
+    fn transpile_string_methods(
+        &self,
+        obj_tokens: &TokenStream,
+        method: &str,
+        arg_tokens: &[TokenStream],
+    ) -> Result<TokenStream> {
         match method {
             "to_s" | "to_string" => {
                 // Convert any value to string - already a String stays String
@@ -922,27 +992,13 @@ pub fn transpile_lambda(&self, params: &[Param], body: &Expr) -> Result<TokenStr
                 let rust_method = format_ident!("to_lowercase");
                 Ok(quote! { #obj_tokens.#rust_method(#(#arg_tokens),*) })
             }
-            "strip" => {
-                Ok(quote! { #obj_tokens.trim().to_string() })
-            }
-            "lstrip" => {
-                Ok(quote! { #obj_tokens.trim_start() })
-            }
-            "rstrip" => {
-                Ok(quote! { #obj_tokens.trim_end() })
-            }
-            "startswith" => {
-                Ok(quote! { #obj_tokens.starts_with(#(#arg_tokens),*) })
-            }
-            "endswith" => {
-                Ok(quote! { #obj_tokens.ends_with(#(#arg_tokens),*) })
-            }
-            "split" => {
-                Ok(quote! { #obj_tokens.split(#(#arg_tokens),*) })
-            }
-            "replace" => {
-                Ok(quote! { #obj_tokens.replace(#(#arg_tokens),*) })
-            }
+            "strip" => Ok(quote! { #obj_tokens.trim().to_string() }),
+            "lstrip" => Ok(quote! { #obj_tokens.trim_start() }),
+            "rstrip" => Ok(quote! { #obj_tokens.trim_end() }),
+            "startswith" => Ok(quote! { #obj_tokens.starts_with(#(#arg_tokens),*) }),
+            "endswith" => Ok(quote! { #obj_tokens.ends_with(#(#arg_tokens),*) }),
+            "split" => Ok(quote! { #obj_tokens.split(#(#arg_tokens),*) }),
+            "replace" => Ok(quote! { #obj_tokens.replace(#(#arg_tokens),*) }),
             "length" => {
                 // Map Ruchy's length() to Rust's len()
                 let rust_method = format_ident!("len");
@@ -955,18 +1011,26 @@ pub fn transpile_lambda(&self, params: &[Param], body: &Expr) -> Result<TokenStr
                 }
                 let start = &arg_tokens[0];
                 let end = &arg_tokens[1];
-                Ok(quote! { 
+                Ok(quote! {
                     #obj_tokens.chars()
                         .skip(#start as usize)
                         .take((#end as usize).saturating_sub(#start as usize))
                         .collect::<String>()
                 })
             }
-            _ => unreachable!("Non-string method {} passed to transpile_string_methods", method),
+            _ => unreachable!(
+                "Non-string method {} passed to transpile_string_methods",
+                method
+            ),
         }
     }
     /// Handle advanced collection methods: slice, concat, flatten, unique, join
-    fn transpile_advanced_collection_methods(&self, obj_tokens: &TokenStream, method: &str, arg_tokens: &[TokenStream]) -> Result<TokenStream> {
+    fn transpile_advanced_collection_methods(
+        &self,
+        obj_tokens: &TokenStream,
+        method: &str,
+        arg_tokens: &[TokenStream],
+    ) -> Result<TokenStream> {
         match method {
             "slice" => {
                 // vec.slice(start, end) -> vec[start..end].to_vec()
@@ -997,7 +1061,7 @@ pub fn transpile_lambda(&self, params: &[Param], body: &Expr) -> Result<TokenStr
                 if !arg_tokens.is_empty() {
                     bail!("unique requires no arguments");
                 }
-                Ok(quote! { 
+                Ok(quote! {
                     {
                         use std::collections::HashSet;
                         #obj_tokens.into_iter().collect::<HashSet<_>>().into_iter().collect::<Vec<_>>()
@@ -1012,7 +1076,9 @@ pub fn transpile_lambda(&self, params: &[Param], body: &Expr) -> Result<TokenStr
                 let separator = &arg_tokens[0];
                 Ok(quote! { #obj_tokens.join(&#separator) })
             }
-            _ => unreachable!("Non-advanced-collection method passed to transpile_advanced_collection_methods"),
+            _ => unreachable!(
+                "Non-advanced-collection method passed to transpile_advanced_collection_methods"
+            ),
         }
     }
     /// Transpiles blocks
@@ -1023,7 +1089,7 @@ pub fn transpile_lambda(&self, params: &[Param], body: &Expr) -> Result<TokenStr
         let mut statements = Vec::new();
         for (i, expr) in exprs.iter().enumerate() {
             let expr_tokens = self.transpile_expr(expr)?;
-            // HOTFIX: Never add semicolon to the last expression in a block (it should be the return value)  
+            // HOTFIX: Never add semicolon to the last expression in a block (it should be the return value)
             if i < exprs.len() - 1 {
                 statements.push(quote! { #expr_tokens; });
             } else {
@@ -1069,7 +1135,13 @@ pub fn transpile_lambda(&self, params: &[Param], body: &Expr) -> Result<TokenStr
         Ok(result)
     }
     /// Transpiles for loops
-    pub fn transpile_for(&self, var: &str, pattern: Option<&Pattern>, iter: &Expr, body: &Expr) -> Result<TokenStream> {
+    pub fn transpile_for(
+        &self,
+        var: &str,
+        pattern: Option<&Pattern>,
+        iter: &Expr,
+        body: &Expr,
+    ) -> Result<TokenStream> {
         let iter_tokens = self.transpile_expr(iter)?;
         let body_tokens = self.transpile_expr(body)?;
         // If we have a pattern, use it for destructuring
@@ -1154,10 +1226,10 @@ pub fn transpile_lambda(&self, params: &[Param], body: &Expr) -> Result<TokenStr
     }
     /// Transpiles try-catch-finally blocks
     pub fn transpile_try_catch(
-        &self, 
-        try_block: &Expr, 
+        &self,
+        try_block: &Expr,
         catch_clauses: &[CatchClause],
-        finally_block: Option<&Expr>
+        finally_block: Option<&Expr>,
     ) -> Result<TokenStream> {
         // For now, we'll transpile try-catch to a match on Result
         // This is a simplified implementation that handles the common case
@@ -1169,7 +1241,9 @@ pub fn transpile_lambda(&self, params: &[Param], body: &Expr) -> Result<TokenStr
         let catch_pattern = if let Pattern::Identifier(name) = &catch_clauses[0].pattern {
             let ident = format_ident!("{}", name);
             quote! { #ident }
-        } else { quote! { _e } };
+        } else {
+            quote! { _e }
+        };
         let catch_body = self.transpile_expr(&catch_clauses[0].body)?;
         // If there's a finally block, we need to ensure it runs
         let result = if let Some(finally) = finally_block {
@@ -1243,7 +1317,10 @@ pub fn transpile_lambda(&self, params: &[Param], body: &Expr) -> Result<TokenStr
     pub fn transpile_import(module: &str, items: Option<&[String]>) -> TokenStream {
         // Convert new import format to old format temporarily for compatibility
         let import_items = if let Some(item_names) = items {
-            item_names.iter().map(|name| crate::frontend::ast::ImportItem::Named(name.clone())).collect::<Vec<_>>()
+            item_names
+                .iter()
+                .map(|name| crate::frontend::ast::ImportItem::Named(name.clone()))
+                .collect::<Vec<_>>()
         } else {
             vec![]
         };
@@ -1374,7 +1451,10 @@ pub fn transpile_lambda(&self, params: &[Param], body: &Expr) -> Result<TokenStr
         }
     }
     /// Handle `std::fs` imports with path-based syntax (import `std::fs::read_file`)
-    fn transpile_std_fs_import_with_path(path: &str, items: &[crate::frontend::ast::ImportItem]) -> TokenStream {
+    fn transpile_std_fs_import_with_path(
+        path: &str,
+        items: &[crate::frontend::ast::ImportItem],
+    ) -> TokenStream {
         use crate::frontend::ast::ImportItem;
         let mut tokens = TokenStream::new();
         // Always include std::fs for file operations
@@ -1382,9 +1462,10 @@ pub fn transpile_lambda(&self, params: &[Param], body: &Expr) -> Result<TokenStr
         if path == "std::fs" {
             // Wildcard import or specific items from std::fs
             // Special case: if path is "std::fs" and items contain Named("fs"), treat as wildcard
-            let is_wildcard_import = items.is_empty() 
+            let is_wildcard_import = items.is_empty()
                 || items.iter().any(|i| matches!(i, ImportItem::Wildcard))
-                || (items.len() == 1 && matches!(&items[0], ImportItem::Named(name) if name == "fs"));
+                || (items.len() == 1
+                    && matches!(&items[0], ImportItem::Named(name) if name == "fs"));
             if is_wildcard_import {
                 // Import all file operations for wildcard or empty imports
                 tokens.extend(Self::generate_all_file_operations());
@@ -1426,7 +1507,10 @@ pub fn transpile_lambda(&self, params: &[Param], body: &Expr) -> Result<TokenStr
         tokens
     }
     /// Handle `std::process` imports with process management functions
-    fn transpile_std_process_import(_path: &str, _items: &[crate::frontend::ast::ImportItem]) -> TokenStream {
+    fn transpile_std_process_import(
+        _path: &str,
+        _items: &[crate::frontend::ast::ImportItem],
+    ) -> TokenStream {
         // Generate process functions
         quote! {
             mod process {
@@ -1446,7 +1530,10 @@ pub fn transpile_lambda(&self, params: &[Param], body: &Expr) -> Result<TokenStr
         }
     }
     /// Handle `std::system` imports with system information functions
-    fn transpile_std_system_import(_path: &str, _items: &[crate::frontend::ast::ImportItem]) -> TokenStream {
+    fn transpile_std_system_import(
+        _path: &str,
+        _items: &[crate::frontend::ast::ImportItem],
+    ) -> TokenStream {
         // Generate system functions
         quote! {
             mod system {
@@ -1466,7 +1553,10 @@ pub fn transpile_lambda(&self, params: &[Param], body: &Expr) -> Result<TokenStr
         }
     }
     /// Handle `std::signal` imports with signal handling functions
-    fn transpile_std_signal_import(_path: &str, _items: &[crate::frontend::ast::ImportItem]) -> TokenStream {
+    fn transpile_std_signal_import(
+        _path: &str,
+        _items: &[crate::frontend::ast::ImportItem],
+    ) -> TokenStream {
         // For now, just provide stubs as signal handling is complex and platform-specific
         quote! {
             // Import signal constants at top level
@@ -1489,7 +1579,10 @@ pub fn transpile_lambda(&self, params: &[Param], body: &Expr) -> Result<TokenStr
         }
     }
     /// Handle `std::net` imports with networking functions
-    fn transpile_std_net_import(_path: &str, _items: &[crate::frontend::ast::ImportItem]) -> TokenStream {
+    fn transpile_std_net_import(
+        _path: &str,
+        _items: &[crate::frontend::ast::ImportItem],
+    ) -> TokenStream {
         // Generate networking functions and re-export std types
         quote! {
             mod net {
@@ -1530,7 +1623,10 @@ pub fn transpile_lambda(&self, params: &[Param], body: &Expr) -> Result<TokenStr
             }
         }
     }
-    fn transpile_std_mem_import(_path: &str, _items: &[crate::frontend::ast::ImportItem]) -> TokenStream {
+    fn transpile_std_mem_import(
+        _path: &str,
+        _items: &[crate::frontend::ast::ImportItem],
+    ) -> TokenStream {
         // Generate memory management functions
         quote! {
             mod mem {
@@ -1562,7 +1658,10 @@ pub fn transpile_lambda(&self, params: &[Param], body: &Expr) -> Result<TokenStr
             }
         }
     }
-    fn transpile_std_parallel_import(_path: &str, _items: &[crate::frontend::ast::ImportItem]) -> TokenStream {
+    fn transpile_std_parallel_import(
+        _path: &str,
+        _items: &[crate::frontend::ast::ImportItem],
+    ) -> TokenStream {
         // Generate parallel processing functions
         quote! {
             mod parallel {
@@ -1592,7 +1691,10 @@ pub fn transpile_lambda(&self, params: &[Param], body: &Expr) -> Result<TokenStr
             }
         }
     }
-    fn transpile_std_simd_import(_path: &str, _items: &[crate::frontend::ast::ImportItem]) -> TokenStream {
+    fn transpile_std_simd_import(
+        _path: &str,
+        _items: &[crate::frontend::ast::ImportItem],
+    ) -> TokenStream {
         // Generate SIMD vectorization functions
         quote! {
             mod simd {
@@ -1637,7 +1739,10 @@ pub fn transpile_lambda(&self, params: &[Param], body: &Expr) -> Result<TokenStr
             }
         }
     }
-    fn transpile_std_cache_import(_path: &str, _items: &[crate::frontend::ast::ImportItem]) -> TokenStream {
+    fn transpile_std_cache_import(
+        _path: &str,
+        _items: &[crate::frontend::ast::ImportItem],
+    ) -> TokenStream {
         // Generate caching functions - placeholder for @memoize attribute support
         quote! {
             mod cache {
@@ -1664,7 +1769,10 @@ pub fn transpile_lambda(&self, params: &[Param], body: &Expr) -> Result<TokenStr
             }
         }
     }
-    fn transpile_std_bench_import(_path: &str, _items: &[crate::frontend::ast::ImportItem]) -> TokenStream {
+    fn transpile_std_bench_import(
+        _path: &str,
+        _items: &[crate::frontend::ast::ImportItem],
+    ) -> TokenStream {
         // Generate benchmarking functions
         quote! {
             mod bench {
@@ -1696,7 +1804,10 @@ pub fn transpile_lambda(&self, params: &[Param], body: &Expr) -> Result<TokenStr
             }
         }
     }
-    fn transpile_std_profile_import(_path: &str, _items: &[crate::frontend::ast::ImportItem]) -> TokenStream {
+    fn transpile_std_profile_import(
+        _path: &str,
+        _items: &[crate::frontend::ast::ImportItem],
+    ) -> TokenStream {
         // Generate profiling functions - placeholder for @hot_path attribute support
         quote! {
             mod profile {
@@ -1707,7 +1818,7 @@ pub fn transpile_lambda(&self, params: &[Param], body: &Expr) -> Result<TokenStr
                 }
                 impl std::fmt::Display for ProfileInfo {
                     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-                        write!(f, "{}: {} calls, {}ms total", 
+                        write!(f, "{}: {} calls, {}ms total",
                                self.function_name, self.call_count, self.total_time)
                     }
                 }
@@ -1724,7 +1835,10 @@ pub fn transpile_lambda(&self, params: &[Param], body: &Expr) -> Result<TokenStr
     /// Handle `std::system` imports with system information functions
     /// Core inline import transpilation logic - REFACTORED FOR COMPLEXITY REDUCTION
     /// Original: 48 cyclomatic complexity, Target: <20
-    pub fn transpile_import_inline(path: &str, items: &[crate::frontend::ast::ImportItem]) -> TokenStream {
+    pub fn transpile_import_inline(
+        path: &str,
+        items: &[crate::frontend::ast::ImportItem],
+    ) -> TokenStream {
         // Try std module handlers first (complexity: delegated)
         if let Some(result) = Self::handle_std_module_import(path, items) {
             return result;
@@ -1733,7 +1847,10 @@ pub fn transpile_lambda(&self, params: &[Param], body: &Expr) -> Result<TokenStr
         Self::handle_generic_import(path, items)
     }
     /// Extract std module dispatcher (complexity ~12)
-    fn handle_std_module_import(path: &str, items: &[crate::frontend::ast::ImportItem]) -> Option<TokenStream> {
+    fn handle_std_module_import(
+        path: &str,
+        items: &[crate::frontend::ast::ImportItem],
+    ) -> Option<TokenStream> {
         if path.starts_with("std::fs") {
             return Some(Self::transpile_std_fs_import_with_path(path, items));
         }
@@ -1770,7 +1887,10 @@ pub fn transpile_lambda(&self, params: &[Param], body: &Expr) -> Result<TokenStr
         None
     }
     /// Extract generic import handling (complexity ~8)
-    fn handle_generic_import(path: &str, items: &[crate::frontend::ast::ImportItem]) -> TokenStream {
+    fn handle_generic_import(
+        path: &str,
+        items: &[crate::frontend::ast::ImportItem],
+    ) -> TokenStream {
         let path_tokens = Self::path_to_tokens(path);
         if items.is_empty() {
             quote! { use #path_tokens::*; }
@@ -1797,9 +1917,9 @@ pub fn transpile_lambda(&self, params: &[Param], body: &Expr) -> Result<TokenStr
     }
     /// Extract single item handling (complexity ~5)
     fn handle_single_import_item(
-        path_tokens: &TokenStream, 
-        path: &str, 
-        item: &crate::frontend::ast::ImportItem
+        path_tokens: &TokenStream,
+        path: &str,
+        item: &crate::frontend::ast::ImportItem,
     ) -> TokenStream {
         use crate::frontend::ast::ImportItem;
         match item {
@@ -1821,8 +1941,8 @@ pub fn transpile_lambda(&self, params: &[Param], body: &Expr) -> Result<TokenStr
     }
     /// Extract multiple items handling (complexity ~3)
     fn handle_multiple_import_items(
-        path_tokens: &TokenStream, 
-        items: &[crate::frontend::ast::ImportItem]
+        path_tokens: &TokenStream,
+        items: &[crate::frontend::ast::ImportItem],
     ) -> TokenStream {
         let item_tokens = Self::process_import_items(items);
         quote! { use #path_tokens::{#(#item_tokens),*}; }
@@ -1830,18 +1950,21 @@ pub fn transpile_lambda(&self, params: &[Param], body: &Expr) -> Result<TokenStr
     /// Extract import items processing (complexity ~3)
     fn process_import_items(items: &[crate::frontend::ast::ImportItem]) -> Vec<TokenStream> {
         use crate::frontend::ast::ImportItem;
-        items.iter().map(|item| match item {
-            ImportItem::Named(name) => {
-                let name_ident = format_ident!("{}", name);
-                quote! { #name_ident }
-            }
-            ImportItem::Aliased { name, alias } => {
-                let name_ident = format_ident!("{}", name);
-                let alias_ident = format_ident!("{}", alias);
-                quote! { #name_ident as #alias_ident }
-            }
-            ImportItem::Wildcard => quote! { * },
-        }).collect()
+        items
+            .iter()
+            .map(|item| match item {
+                ImportItem::Named(name) => {
+                    let name_ident = format_ident!("{}", name);
+                    quote! { #name_ident }
+                }
+                ImportItem::Aliased { name, alias } => {
+                    let name_ident = format_ident!("{}", name);
+                    let alias_ident = format_ident!("{}", alias);
+                    quote! { #name_ident as #alias_ident }
+                }
+                ImportItem::Wildcard => quote! { * },
+            })
+            .collect()
     }
     /// Transpiles export statements
     // Legacy export transpiler - replaced by new export AST
@@ -1856,12 +1979,12 @@ pub fn transpile_lambda(&self, params: &[Param], body: &Expr) -> Result<TokenStr
         }
     }
     /// Handle print/debug macros (println, print, dbg, panic)
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// ```
     /// use ruchy::{Transpiler, Parser};
-    /// 
+    ///
     /// // Test println macro handling
     /// let mut transpiler = Transpiler::new();
     /// let mut parser = Parser::new("println(42)");
@@ -1870,18 +1993,24 @@ pub fn transpile_lambda(&self, params: &[Param], body: &Expr) -> Result<TokenStr
     /// assert!(result.contains("println"));
     /// ```
     fn try_transpile_print_macro(
-        &self, 
-        func_tokens: &TokenStream, 
-        base_name: &str, 
-        args: &[Expr]
+        &self,
+        func_tokens: &TokenStream,
+        base_name: &str,
+        args: &[Expr],
     ) -> Result<Option<TokenStream>> {
-        if !(base_name == "println" || base_name == "print" || base_name == "dbg" || base_name == "panic") {
+        if !(base_name == "println"
+            || base_name == "print"
+            || base_name == "dbg"
+            || base_name == "panic")
+        {
             return Ok(None);
         }
         // Handle single argument with string interpolation
         if (base_name == "println" || base_name == "print") && args.len() == 1 {
             if let ExprKind::StringInterpolation { parts } = &args[0].kind {
-                return Ok(Some(self.transpile_print_with_interpolation(base_name, parts)?));
+                return Ok(Some(
+                    self.transpile_print_with_interpolation(base_name, parts)?,
+                ));
             }
             // For single non-string arguments, add smart format string
             if !matches!(&args[0].kind, ExprKind::Literal(Literal::String(_))) {
@@ -1904,7 +2033,7 @@ pub fn transpile_lambda(&self, params: &[Param], body: &Expr) -> Result<TokenStr
     fn transpile_print_multiple_args(
         &self,
         func_tokens: &TokenStream,
-        args: &[Expr]
+        args: &[Expr],
     ) -> Result<Option<TokenStream>> {
         // FIXED: Don't treat first string argument as format string
         // Instead, treat all arguments as values to print with spaces
@@ -1916,8 +2045,7 @@ pub fn transpile_lambda(&self, params: &[Param], body: &Expr) -> Result<TokenStr
         if args.len() == 1 {
             // Single argument - check if it's a string-like expression
             match &args[0].kind {
-                ExprKind::Literal(Literal::String(_)) | 
-                ExprKind::StringInterpolation { .. } => {
+                ExprKind::Literal(Literal::String(_)) | ExprKind::StringInterpolation { .. } => {
                     // String literal or interpolation - use Display format
                     Ok(Some(quote! { #func_tokens!("{}", #(#all_args)*) }))
                 }
@@ -1925,7 +2053,8 @@ pub fn transpile_lambda(&self, params: &[Param], body: &Expr) -> Result<TokenStr
                     // For identifiers, we can't know the type at compile time
                     // Use a runtime check to decide format
                     let arg = &all_args[0];
-                    let printing_logic = self.generate_value_printing_tokens(quote! { #arg }, quote! { #func_tokens });
+                    let printing_logic = self
+                        .generate_value_printing_tokens(quote! { #arg }, quote! { #func_tokens });
                     Ok(Some(printing_logic))
                 }
                 _ => {
@@ -1940,45 +2069,53 @@ pub fn transpile_lambda(&self, params: &[Param], body: &Expr) -> Result<TokenStr
                     // First argument is a format string, rest are values
                     let format_arg = &all_args[0];
                     let value_args = &all_args[1..];
-                    Ok(Some(quote! { #func_tokens!(#format_arg, #(#value_args),*) }))
+                    Ok(Some(
+                        quote! { #func_tokens!(#format_arg, #(#value_args),*) },
+                    ))
                 } else {
                     // First argument is regular string, treat all as separate values
-                    let format_parts: Vec<_> = args.iter().map(|arg| {
-                        match &arg.kind {
+                    let format_parts: Vec<_> = args
+                        .iter()
+                        .map(|arg| match &arg.kind {
                             ExprKind::Literal(Literal::String(_)) => "{}",
-                            _ => "{:?}"
-                        }
-                    }).collect();
+                            _ => "{:?}",
+                        })
+                        .collect();
                     let format_str = format_parts.join(" ");
                     Ok(Some(quote! { #func_tokens!(#format_str, #(#all_args),*) }))
                 }
             } else {
                 // No format string, treat all as separate values
-                let format_parts: Vec<_> = args.iter().map(|arg| {
-                    match &arg.kind {
+                let format_parts: Vec<_> = args
+                    .iter()
+                    .map(|arg| match &arg.kind {
                         ExprKind::Literal(Literal::String(_)) => "{}",
-                        _ => "{:?}"
-                    }
-                }).collect();
+                        _ => "{:?}",
+                    })
+                    .collect();
                 let format_str = format_parts.join(" ");
                 Ok(Some(quote! { #func_tokens!(#format_str, #(#all_args),*) }))
             }
         }
     }
     /// Handle math functions (sqrt, pow, abs, min, max, floor, ceil, round)
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// ```
     /// use ruchy::{Transpiler, Parser};
-    /// 
+    ///
     /// let transpiler = Transpiler::new();
     /// let mut parser = Parser::new("sqrt(4.0)");
     /// let ast = parser.parse().expect("Failed to parse");
     /// let result = transpiler.transpile(&ast).unwrap().to_string();
     /// assert!(result.contains("sqrt"));
     /// ```
-    fn try_transpile_math_function(&self, base_name: &str, args: &[Expr]) -> Result<Option<TokenStream>> {
+    fn try_transpile_math_function(
+        &self,
+        base_name: &str,
+        args: &[Expr],
+    ) -> Result<Option<TokenStream>> {
         match (base_name, args.len()) {
             ("sqrt", 1) => self.transpile_sqrt(&args[0]).map(Some),
             ("pow", 2) => self.transpile_pow(&args[0], &args[1]).map(Some),
@@ -1988,7 +2125,7 @@ pub fn transpile_lambda(&self, params: &[Param], body: &Expr) -> Result<TokenStr
             ("floor", 1) => self.transpile_floor(&args[0]).map(Some),
             ("ceil", 1) => self.transpile_ceil(&args[0]).map(Some),
             ("round", 1) => self.transpile_round(&args[0]).map(Some),
-            _ => Ok(None)
+            _ => Ok(None),
         }
     }
     fn transpile_sqrt(&self, arg: &Expr) -> Result<TokenStream> {
@@ -2003,7 +2140,11 @@ pub fn transpile_lambda(&self, params: &[Param], body: &Expr) -> Result<TokenStr
     fn transpile_abs(&self, arg: &Expr) -> Result<TokenStream> {
         let arg_tokens = self.transpile_expr(arg)?;
         // Check if arg is negative literal to handle type
-        if let ExprKind::Unary { op: UnaryOp::Negate, operand } = &arg.kind {
+        if let ExprKind::Unary {
+            op: UnaryOp::Negate,
+            operand,
+        } = &arg.kind
+        {
             if matches!(&operand.kind, ExprKind::Literal(Literal::Float(_))) {
                 return Ok(quote! { (#arg_tokens).abs() });
             }
@@ -2015,7 +2156,7 @@ pub fn transpile_lambda(&self, params: &[Param], body: &Expr) -> Result<TokenStr
         let a_tokens = self.transpile_expr(a)?;
         let b_tokens = self.transpile_expr(b)?;
         // Check if args are float literals to determine type
-        let is_float = matches!(&a.kind, ExprKind::Literal(Literal::Float(_))) 
+        let is_float = matches!(&a.kind, ExprKind::Literal(Literal::Float(_)))
             || matches!(&b.kind, ExprKind::Literal(Literal::Float(_)));
         if is_float {
             Ok(quote! { (#a_tokens as f64).min(#b_tokens as f64) })
@@ -2027,7 +2168,7 @@ pub fn transpile_lambda(&self, params: &[Param], body: &Expr) -> Result<TokenStr
         let a_tokens = self.transpile_expr(a)?;
         let b_tokens = self.transpile_expr(b)?;
         // Check if args are float literals to determine type
-        let is_float = matches!(&a.kind, ExprKind::Literal(Literal::Float(_))) 
+        let is_float = matches!(&a.kind, ExprKind::Literal(Literal::Float(_)))
             || matches!(&b.kind, ExprKind::Literal(Literal::Float(_)));
         if is_float {
             Ok(quote! { (#a_tokens as f64).max(#b_tokens as f64) })
@@ -2048,19 +2189,23 @@ pub fn transpile_lambda(&self, params: &[Param], body: &Expr) -> Result<TokenStr
         Ok(quote! { (#arg_tokens as f64).round() })
     }
     /// Handle input functions (input, readline)
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// ```
     /// use ruchy::{Transpiler, Parser};
-    /// 
+    ///
     /// let transpiler = Transpiler::new();
     /// let mut parser = Parser::new("input()");
     /// let ast = parser.parse().expect("Failed to parse");
     /// let result = transpiler.transpile(&ast).unwrap().to_string();
     /// assert!(result.contains("read_line"));
     /// ```
-    fn try_transpile_input_function(&self, base_name: &str, args: &[Expr]) -> Result<Option<TokenStream>> {
+    fn try_transpile_input_function(
+        &self,
+        base_name: &str,
+        args: &[Expr],
+    ) -> Result<Option<TokenStream>> {
         match base_name {
             "input" => {
                 if args.len() > 1 {
@@ -2073,15 +2218,13 @@ pub fn transpile_lambda(&self, params: &[Param], body: &Expr) -> Result<TokenStr
                     Ok(Some(self.generate_input_with_prompt(prompt)))
                 }
             }
-            "readline" if args.is_empty() => {
-                Ok(Some(self.generate_input_without_prompt()))
-            }
-            _ => Ok(None)
+            "readline" if args.is_empty() => Ok(Some(self.generate_input_without_prompt())),
+            _ => Ok(None),
         }
     }
     /// Generate input reading code without prompt
     fn generate_input_without_prompt(&self) -> TokenStream {
-        quote! { 
+        quote! {
             {
                 let mut input = String::new();
                 std::io::stdin().read_line(&mut input).expect("Failed to read input");
@@ -2097,7 +2240,7 @@ pub fn transpile_lambda(&self, params: &[Param], body: &Expr) -> Result<TokenStr
     }
     /// Generate input reading code with prompt
     fn generate_input_with_prompt(&self, prompt: TokenStream) -> TokenStream {
-        quote! { 
+        quote! {
             {
                 print!("{}", #prompt);
                 let _ = std::io::Write::flush(&mut std::io::stdout());
@@ -2114,9 +2257,9 @@ pub fn transpile_lambda(&self, params: &[Param], body: &Expr) -> Result<TokenStr
         }
     }
     /// Try to transpile type conversion functions (str, int, float, bool)
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// ```rust
     /// # use ruchy::backend::transpiler::Transpiler;
     /// let transpiler = Transpiler::new();
@@ -2125,20 +2268,28 @@ pub fn transpile_lambda(&self, params: &[Param], body: &Expr) -> Result<TokenStr
     /// // float(42) -> 42 as f64
     /// // bool(1) -> 1 != 0
     /// ```
-    fn try_transpile_type_conversion(&self, base_name: &str, args: &[Expr]) -> Result<Option<TokenStream>> {
+    fn try_transpile_type_conversion(
+        &self,
+        base_name: &str,
+        args: &[Expr],
+    ) -> Result<Option<TokenStream>> {
         // Delegate to refactored version with reduced complexity
         // Original complexity: 62, New complexity: <20 per function
         self.try_transpile_type_conversion_refactored(base_name, args)
     }
     // Old implementation kept for reference (will be removed after verification)
     #[allow(dead_code)]
-    pub fn try_transpile_type_conversion_old(&self, base_name: &str, args: &[Expr]) -> Result<Option<TokenStream>> {
+    pub fn try_transpile_type_conversion_old(
+        &self,
+        base_name: &str,
+        args: &[Expr],
+    ) -> Result<Option<TokenStream>> {
         match base_name {
             "str" => self.transpile_str_conversion(args).map(Some),
-            "int" => self.transpile_int_conversion(args).map(Some), 
+            "int" => self.transpile_int_conversion(args).map(Some),
             "float" => self.transpile_float_conversion(args).map(Some),
             "bool" => self.transpile_bool_conversion(args).map(Some),
-            _ => Ok(None)
+            _ => Ok(None),
         }
     }
     /// Handle `str()` type conversion - extract string representation
@@ -2176,7 +2327,7 @@ pub fn transpile_lambda(&self, params: &[Param], body: &Expr) -> Result<TokenStr
                 let value = self.transpile_expr(&args[0])?;
                 Ok(quote! { if #value { 1i64 } else { 0i64 } })
             }
-            _ => self.transpile_int_generic(&args[0])
+            _ => self.transpile_int_generic(&args[0]),
         }
     }
     /// Generic int conversion for non-literal expressions
@@ -2207,7 +2358,7 @@ pub fn transpile_lambda(&self, params: &[Param], body: &Expr) -> Result<TokenStr
                 let value = self.transpile_expr(&args[0])?;
                 Ok(quote! { (#value as f64) })
             }
-            _ => self.transpile_float_generic(&args[0])
+            _ => self.transpile_float_generic(&args[0]),
         }
     }
     /// Generic float conversion for non-literal expressions
@@ -2247,9 +2398,9 @@ pub fn transpile_lambda(&self, params: &[Param], body: &Expr) -> Result<TokenStr
         }
     }
     /// Try to transpile advanced math functions (sin, cos, tan, log, log10, random)
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// ```rust
     /// # use ruchy::backend::transpiler::Transpiler;
     /// let transpiler = Transpiler::new();
@@ -2258,7 +2409,11 @@ pub fn transpile_lambda(&self, params: &[Param], body: &Expr) -> Result<TokenStr
     /// // log(x) -> x.ln()
     /// // random() -> rand::random::<f64>()
     /// ```
-    fn try_transpile_math_functions(&self, base_name: &str, args: &[Expr]) -> Result<Option<TokenStream>> {
+    fn try_transpile_math_functions(
+        &self,
+        base_name: &str,
+        args: &[Expr],
+    ) -> Result<Option<TokenStream>> {
         match base_name {
             "sin" | "cos" | "tan" => {
                 if args.len() != 1 {
@@ -2302,16 +2457,16 @@ pub fn transpile_lambda(&self, params: &[Param], body: &Expr) -> Result<TokenStr
                     }
                 }))
             }
-            _ => Ok(None)
+            _ => Ok(None),
         }
     }
     /// Handle assert functions (assert, `assert_eq`, `assert_ne`)
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// ```
     /// use ruchy::{Transpiler, Parser};
-    /// 
+    ///
     /// let transpiler = Transpiler::new();
     /// let mut parser = Parser::new("assert(true)");
     /// let ast = parser.parse().expect("Failed to parse");
@@ -2322,7 +2477,7 @@ pub fn transpile_lambda(&self, params: &[Param], body: &Expr) -> Result<TokenStr
         &self,
         _func_tokens: &TokenStream,
         base_name: &str,
-        args: &[Expr]
+        args: &[Expr],
     ) -> Result<Option<TokenStream>> {
         match base_name {
             "assert" => {
@@ -2363,53 +2518,63 @@ pub fn transpile_lambda(&self, params: &[Param], body: &Expr) -> Result<TokenStr
                     Ok(Some(quote! { assert_ne!(#left, #right, "{}", #message) }))
                 }
             }
-            _ => Ok(None)
+            _ => Ok(None),
         }
     }
     /// Handle collection constructors (`HashMap`, `HashSet`)
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// ```
     /// use ruchy::{Transpiler, Parser};
-    /// 
+    ///
     /// let transpiler = Transpiler::new();
     /// let mut parser = Parser::new("HashMap()");
     /// let ast = parser.parse().expect("Failed to parse");
     /// let result = transpiler.transpile(&ast).unwrap().to_string();
     /// assert!(result.contains("HashMap"));
     /// ```
-    fn try_transpile_collection_constructor(&self, base_name: &str, args: &[Expr]) -> Result<Option<TokenStream>> {
+    fn try_transpile_collection_constructor(
+        &self,
+        base_name: &str,
+        args: &[Expr],
+    ) -> Result<Option<TokenStream>> {
         match (base_name, args.len()) {
             ("HashMap", 0) => Ok(Some(quote! { std::collections::HashMap::new() })),
             ("HashSet", 0) => Ok(Some(quote! { std::collections::HashSet::new() })),
-            _ => Ok(None)
+            _ => Ok(None),
         }
     }
     /// Handle `DataFrame` functions (col)
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// ```
     /// use ruchy::{Transpiler, Parser};
-    /// 
+    ///
     /// let transpiler = Transpiler::new();
     /// let mut parser = Parser::new(r#"col("name")"#);
     /// let ast = parser.parse().expect("Failed to parse");
     /// let result = transpiler.transpile(&ast).unwrap().to_string();
     /// assert!(result.contains("polars"));
     /// ```
-    fn try_transpile_dataframe_function(&self, base_name: &str, args: &[Expr]) -> Result<Option<TokenStream>> {
+    fn try_transpile_dataframe_function(
+        &self,
+        base_name: &str,
+        args: &[Expr],
+    ) -> Result<Option<TokenStream>> {
         // Handle DataFrame static methods
         if base_name.starts_with("DataFrame::") {
-            let method = base_name.strip_prefix("DataFrame::").expect("Already checked starts_with");
+            let method = base_name
+                .strip_prefix("DataFrame::")
+                .expect("Already checked starts_with");
             match method {
                 "new" if args.is_empty() => {
                     return Ok(Some(quote! { polars::prelude::DataFrame::empty() }));
                 }
                 "from_csv" if args.len() == 1 => {
                     let path_tokens = self.transpile_expr(&args[0])?;
-                    return Ok(Some(quote! { 
+                    return Ok(Some(quote! {
                         polars::prelude::CsvReader::from_path(#path_tokens)
                             .expect("Failed to open CSV file")
                             .finish()
@@ -2428,12 +2593,12 @@ pub fn transpile_lambda(&self, params: &[Param], body: &Expr) -> Result<TokenStr
         Ok(None)
     }
     /// Handle regular function calls with string literal conversion
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// ```
     /// use ruchy::{Transpiler, Parser};
-    /// 
+    ///
     /// let transpiler = Transpiler::new();
     /// let mut parser = Parser::new(r#"my_func("test")"#);
     /// let ast = parser.parse().expect("Failed to parse");
@@ -2443,25 +2608,29 @@ pub fn transpile_lambda(&self, params: &[Param], body: &Expr) -> Result<TokenStr
     fn transpile_regular_function_call(
         &self,
         func_tokens: &TokenStream,
-        args: &[Expr]
+        args: &[Expr],
     ) -> Result<TokenStream> {
         // Get function name for signature lookup
         let func_name = func_tokens.to_string().trim().to_string();
         // Apply type coercion based on function signature
-        let arg_tokens: Result<Vec<_>> = if let Some(signature) = self.function_signatures.get(&func_name) {
-            args.iter().enumerate().map(|(i, arg)| {
-                let base_tokens = self.transpile_expr(arg)?;
-                // Apply String/&str coercion if needed
-                if let Some(expected_type) = signature.param_types.get(i) {
-                    self.apply_string_coercion(arg, &base_tokens, expected_type)
-                } else {
-                    Ok(base_tokens)
-                }
-            }).collect()
-        } else {
-            // No signature info - transpile as-is
-            args.iter().map(|a| self.transpile_expr(a)).collect()
-        };
+        let arg_tokens: Result<Vec<_>> =
+            if let Some(signature) = self.function_signatures.get(&func_name) {
+                args.iter()
+                    .enumerate()
+                    .map(|(i, arg)| {
+                        let base_tokens = self.transpile_expr(arg)?;
+                        // Apply String/&str coercion if needed
+                        if let Some(expected_type) = signature.param_types.get(i) {
+                            self.apply_string_coercion(arg, &base_tokens, expected_type)
+                        } else {
+                            Ok(base_tokens)
+                        }
+                    })
+                    .collect()
+            } else {
+                // No signature info - transpile as-is
+                args.iter().map(|a| self.transpile_expr(a)).collect()
+            };
         let arg_tokens = arg_tokens?;
         Ok(quote! { #func_tokens(#(#arg_tokens),*) })
     }
@@ -2470,14 +2639,12 @@ pub fn transpile_lambda(&self, params: &[Param], body: &Expr) -> Result<TokenStr
         &self,
         arg: &Expr,
         tokens: &TokenStream,
-        expected_type: &str
+        expected_type: &str,
     ) -> Result<TokenStream> {
         use crate::frontend::ast::{ExprKind, Literal};
         match (&arg.kind, expected_type) {
             // String literal to String parameter: add .to_string()
-            (ExprKind::Literal(Literal::String(_)), "String") => {
-                Ok(quote! { #tokens.to_string() })
-            }
+            (ExprKind::Literal(Literal::String(_)), "String") => Ok(quote! { #tokens.to_string() }),
             // String literal to &str parameter: keep as-is
             (ExprKind::Literal(Literal::String(_)), expected) if expected.starts_with('&') => {
                 Ok(tokens.clone())
@@ -2489,7 +2656,7 @@ pub fn transpile_lambda(&self, params: &[Param], body: &Expr) -> Result<TokenStr
                 Ok(tokens.clone())
             }
             // No coercion needed
-            _ => Ok(tokens.clone())
+            _ => Ok(tokens.clone()),
         }
     }
 }
@@ -2613,7 +2780,7 @@ mod tests {
     #[test]
     fn test_reserved_keyword_handling() {
         let transpiler = create_transpiler();
-        let code = "let final = 5; final";  // Use regular keyword, not r# syntax
+        let code = "let final = 5; final"; // Use regular keyword, not r# syntax
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
         let result = transpiler.transpile(&ast).unwrap();
@@ -2742,22 +2909,22 @@ mod tests {
 
     #[test]
     fn test_is_variable_mutated() {
-        use crate::frontend::ast::{Expr, ExprKind, Span};
         use super::Transpiler;
+        use crate::frontend::ast::{Expr, ExprKind, Span};
 
         // Test direct assignment
         let assign_expr = Expr::new(
             ExprKind::Assign {
                 target: Box::new(Expr::new(
                     ExprKind::Identifier("x".to_string()),
-                    Span { start: 0, end: 0 }
+                    Span { start: 0, end: 0 },
                 )),
                 value: Box::new(Expr::new(
                     ExprKind::Literal(crate::frontend::ast::Literal::Integer(42)),
-                    Span { start: 0, end: 0 }
+                    Span { start: 0, end: 0 },
                 )),
             },
-            Span { start: 0, end: 0 }
+            Span { start: 0, end: 0 },
         );
         assert!(Transpiler::is_variable_mutated("x", &assign_expr));
         assert!(!Transpiler::is_variable_mutated("y", &assign_expr));
@@ -2776,7 +2943,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "Parser doesn't support this syntax yet"]
+
     fn test_transpile_match_expression() {
         let transpiler = create_transpiler();
         let code = "match x { 1 => \"one\", 2 => \"two\", _ => \"other\" }";
@@ -2818,7 +2985,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "Parser doesn't support this syntax yet"]
+
     fn test_transpile_impl_block() {
         let transpiler = create_transpiler();
         let code = "impl Point { fun new(x, y) { Point { x, y } } }";
@@ -2831,7 +2998,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "Parser doesn't support this syntax yet"]
+
     fn test_transpile_async_function() {
         let transpiler = create_transpiler();
         let code = "async fun fetch_data() { await http_get(\"url\") }";
@@ -2870,7 +3037,7 @@ mod tests {
                 target: Box::new(make_ident("x")),
                 value: Box::new(make_ident("y")),
             },
-            Span::new(0, 1)
+            Span::new(0, 1),
         );
         assert!(Transpiler::is_variable_mutated("x", &assign_expr));
         assert!(!Transpiler::is_variable_mutated("z", &assign_expr));
@@ -2882,7 +3049,7 @@ mod tests {
                 op: crate::frontend::ast::BinaryOp::Add,
                 value: Box::new(make_ident("1")),
             },
-            Span::new(0, 1)
+            Span::new(0, 1),
         );
         assert!(Transpiler::is_variable_mutated("count", &compound_expr));
         assert!(!Transpiler::is_variable_mutated("other", &compound_expr));
@@ -2892,7 +3059,7 @@ mod tests {
             ExprKind::PreIncrement {
                 target: Box::new(make_ident("i")),
             },
-            Span::new(0, 1)
+            Span::new(0, 1),
         );
         assert!(Transpiler::is_variable_mutated("i", &pre_inc));
 
@@ -2901,17 +3068,14 @@ mod tests {
             ExprKind::PostIncrement {
                 target: Box::new(make_ident("j")),
             },
-            Span::new(0, 1)
+            Span::new(0, 1),
         );
         assert!(Transpiler::is_variable_mutated("j", &post_inc));
 
         // Test in block
         let block = Expr::new(
-            ExprKind::Block(vec![
-                assign_expr.clone(),
-                make_ident("other"),
-            ]),
-            Span::new(0, 1)
+            ExprKind::Block(vec![assign_expr, make_ident("other")]),
+            Span::new(0, 1),
         );
         assert!(Transpiler::is_variable_mutated("x", &block));
         assert!(!Transpiler::is_variable_mutated("other", &block));
@@ -3129,7 +3293,7 @@ mod tests {
 
     // Test 47: Import Statement
     #[test]
-    #[ignore = "Module system changed in Sprint v3.8.0"]
+
     fn test_import_statement() {
         let transpiler = create_transpiler();
         let code = "import std::fs";
@@ -3281,8 +3445,14 @@ mod tests {
         use crate::frontend::ast::{Expr, ExprKind, Span};
 
         // Test direct assignment: x = 5
-        let target = Box::new(Expr::new(ExprKind::Identifier("x".to_string()), Span::default()));
-        let value = Box::new(Expr::new(ExprKind::Literal(crate::frontend::ast::Literal::Integer(5)), Span::default()));
+        let target = Box::new(Expr::new(
+            ExprKind::Identifier("x".to_string()),
+            Span::default(),
+        ));
+        let value = Box::new(Expr::new(
+            ExprKind::Literal(crate::frontend::ast::Literal::Integer(5)),
+            Span::default(),
+        ));
         let assign_expr = Expr::new(ExprKind::Assign { target, value }, Span::default());
 
         assert!(Transpiler::is_variable_mutated("x", &assign_expr));
@@ -3291,16 +3461,25 @@ mod tests {
 
     #[test]
     fn test_is_variable_mutated_compound_assign() {
-        use crate::frontend::ast::{Expr, ExprKind, Span, BinaryOp};
+        use crate::frontend::ast::{BinaryOp, Expr, ExprKind, Span};
 
         // Test compound assignment: x += 5
-        let target = Box::new(Expr::new(ExprKind::Identifier("x".to_string()), Span::default()));
-        let value = Box::new(Expr::new(ExprKind::Literal(crate::frontend::ast::Literal::Integer(5)), Span::default()));
-        let compound_expr = Expr::new(ExprKind::CompoundAssign {
-            target,
-            op: BinaryOp::Add,
-            value
-        }, Span::default());
+        let target = Box::new(Expr::new(
+            ExprKind::Identifier("x".to_string()),
+            Span::default(),
+        ));
+        let value = Box::new(Expr::new(
+            ExprKind::Literal(crate::frontend::ast::Literal::Integer(5)),
+            Span::default(),
+        ));
+        let compound_expr = Expr::new(
+            ExprKind::CompoundAssign {
+                target,
+                op: BinaryOp::Add,
+                value,
+            },
+            Span::default(),
+        );
 
         assert!(Transpiler::is_variable_mutated("x", &compound_expr));
         assert!(!Transpiler::is_variable_mutated("y", &compound_expr));
@@ -3310,18 +3489,36 @@ mod tests {
     fn test_is_variable_mutated_increment_decrement() {
         use crate::frontend::ast::{Expr, ExprKind, Span};
 
-        let target = Box::new(Expr::new(ExprKind::Identifier("x".to_string()), Span::default()));
+        let target = Box::new(Expr::new(
+            ExprKind::Identifier("x".to_string()),
+            Span::default(),
+        ));
 
         // Test pre-increment: ++x
-        let pre_inc = Expr::new(ExprKind::PreIncrement { target: target.clone() }, Span::default());
+        let pre_inc = Expr::new(
+            ExprKind::PreIncrement {
+                target: target.clone(),
+            },
+            Span::default(),
+        );
         assert!(Transpiler::is_variable_mutated("x", &pre_inc));
 
         // Test post-increment: x++
-        let post_inc = Expr::new(ExprKind::PostIncrement { target: target.clone() }, Span::default());
+        let post_inc = Expr::new(
+            ExprKind::PostIncrement {
+                target: target.clone(),
+            },
+            Span::default(),
+        );
         assert!(Transpiler::is_variable_mutated("x", &post_inc));
 
         // Test pre-decrement: --x
-        let pre_dec = Expr::new(ExprKind::PreDecrement { target: target.clone() }, Span::default());
+        let pre_dec = Expr::new(
+            ExprKind::PreDecrement {
+                target: target.clone(),
+            },
+            Span::default(),
+        );
         assert!(Transpiler::is_variable_mutated("x", &pre_dec));
 
         // Test post-decrement: x--
@@ -3334,8 +3531,14 @@ mod tests {
         use crate::frontend::ast::{Expr, ExprKind, Span};
 
         // Create a block with an assignment inside
-        let target = Box::new(Expr::new(ExprKind::Identifier("x".to_string()), Span::default()));
-        let value = Box::new(Expr::new(ExprKind::Literal(crate::frontend::ast::Literal::Integer(5)), Span::default()));
+        let target = Box::new(Expr::new(
+            ExprKind::Identifier("x".to_string()),
+            Span::default(),
+        ));
+        let value = Box::new(Expr::new(
+            ExprKind::Literal(crate::frontend::ast::Literal::Integer(5)),
+            Span::default(),
+        ));
         let assign_expr = Expr::new(ExprKind::Assign { target, value }, Span::default());
         let block_expr = Expr::new(ExprKind::Block(vec![assign_expr]), Span::default());
 
@@ -3345,20 +3548,32 @@ mod tests {
 
     #[test]
     fn test_is_variable_mutated_in_if_branches() {
-        use crate::frontend::ast::{Expr, ExprKind, Span, Literal};
+        use crate::frontend::ast::{Expr, ExprKind, Literal, Span};
 
         // Create assignment in then branch
-        let target = Box::new(Expr::new(ExprKind::Identifier("x".to_string()), Span::default()));
-        let value = Box::new(Expr::new(ExprKind::Literal(Literal::Integer(5)), Span::default()));
+        let target = Box::new(Expr::new(
+            ExprKind::Identifier("x".to_string()),
+            Span::default(),
+        ));
+        let value = Box::new(Expr::new(
+            ExprKind::Literal(Literal::Integer(5)),
+            Span::default(),
+        ));
         let assign_expr = Expr::new(ExprKind::Assign { target, value }, Span::default());
 
-        let condition = Box::new(Expr::new(ExprKind::Literal(Literal::Bool(true)), Span::default()));
+        let condition = Box::new(Expr::new(
+            ExprKind::Literal(Literal::Bool(true)),
+            Span::default(),
+        ));
         let then_branch = Box::new(assign_expr);
-        let if_expr = Expr::new(ExprKind::If {
-            condition,
-            then_branch,
-            else_branch: None
-        }, Span::default());
+        let if_expr = Expr::new(
+            ExprKind::If {
+                condition,
+                then_branch,
+                else_branch: None,
+            },
+            Span::default(),
+        );
 
         assert!(Transpiler::is_variable_mutated("x", &if_expr));
         assert!(!Transpiler::is_variable_mutated("y", &if_expr));
@@ -3366,19 +3581,28 @@ mod tests {
 
     #[test]
     fn test_is_variable_mutated_in_binary_expressions() {
-        use crate::frontend::ast::{Expr, ExprKind, Span, Literal, BinaryOp};
+        use crate::frontend::ast::{BinaryOp, Expr, ExprKind, Literal, Span};
 
         // Create x = 5 as left operand of binary expression
-        let target = Box::new(Expr::new(ExprKind::Identifier("x".to_string()), Span::default()));
-        let value = Box::new(Expr::new(ExprKind::Literal(Literal::Integer(5)), Span::default()));
+        let target = Box::new(Expr::new(
+            ExprKind::Identifier("x".to_string()),
+            Span::default(),
+        ));
+        let value = Box::new(Expr::new(
+            ExprKind::Literal(Literal::Integer(5)),
+            Span::default(),
+        ));
         let assign_expr = Expr::new(ExprKind::Assign { target, value }, Span::default());
 
         let right = Expr::new(ExprKind::Literal(Literal::Integer(10)), Span::default());
-        let binary_expr = Expr::new(ExprKind::Binary {
-            left: Box::new(assign_expr),
-            op: BinaryOp::Add,
-            right: Box::new(right)
-        }, Span::default());
+        let binary_expr = Expr::new(
+            ExprKind::Binary {
+                left: Box::new(assign_expr),
+                op: BinaryOp::Add,
+                right: Box::new(right),
+            },
+            Span::default(),
+        );
 
         assert!(Transpiler::is_variable_mutated("x", &binary_expr));
         assert!(!Transpiler::is_variable_mutated("y", &binary_expr));
@@ -3430,7 +3654,7 @@ mod tests {
 
     #[test]
     fn test_value_creates_vec() {
-        use crate::frontend::ast::{Expr, ExprKind, Span, Literal};
+        use crate::frontend::ast::{Expr, ExprKind, Literal, Span};
         let transpiler = create_transpiler();
 
         // Test list expression (should create vec)
@@ -3445,7 +3669,6 @@ mod tests {
         let id_expr = Expr::new(ExprKind::Identifier("x".to_string()), Span::default());
         assert!(!transpiler.value_creates_vec(&id_expr));
     }
-
 }
 #[cfg(test)]
 mod property_tests_statements {
@@ -3544,7 +3767,6 @@ mod property_tests_statements {
             "eprint(\"error\")",
             "eprintln(\"error line\")",
             "dbg!(value)",
-
             // Math functions
             "sqrt(16)",
             "pow(2, 8)",
@@ -3559,34 +3781,28 @@ mod property_tests_statements {
             "tan(0)",
             "log(1)",
             "exp(0)",
-
             // Type conversions
             "int(3.14)",
             "float(42)",
             "str(123)",
             "bool(1)",
             "char(65)",
-
             // Collections
             "vec![1, 2, 3]",
             "Vec::new()",
             "HashMap::new()",
             "HashSet::from([1, 2, 3])",
-
             // Input
             "input()",
             "input(\"Enter: \")",
-
             // Assert
             "assert!(true)",
             "assert_eq!(1, 1)",
             "assert_ne!(1, 2)",
             "debug_assert!(x > 0)",
-
             // DataFrame
             "df.select(\"col1\", \"col2\")",
             "DataFrame::new()",
-
             // Regular functions
             "custom_function(1, 2, 3)",
             "object.method()",
@@ -3739,14 +3955,7 @@ mod property_tests_statements {
         let transpiler = Transpiler::new();
 
         // Test empty and minimal cases
-        let test_cases = vec![
-            "",
-            ";",
-            "{ }",
-            "( )",
-            "let x",
-            "fn f",
-        ];
+        let test_cases = vec!["", ";", "{ }", "( )", "let x", "fn f"];
 
         for code in test_cases {
             let mut parser = Parser::new(code);
@@ -3849,25 +4058,20 @@ mod property_tests_statements {
             "if { }",
             "for { }",
             "while { }",
-
             // Type mismatches
             "let x: String = 42",
             "let y: Vec<i32> = \"string\"",
-
             // Invalid operations
             "undefined_function()",
             "some_var.nonexistent_method()",
             "invalid.chain.of.calls()",
-
             // Complex nesting that might cause issues
             "((((((nested))))))",
             "{ { { { { nested } } } } }",
-
             // Edge case patterns
             "let _ = _",
             "let .. = array",
             "match x { .. => {} }",
-
             // Empty/minimal cases
             "",
             ";",
@@ -3898,14 +4102,43 @@ mod property_tests_statements {
 
         // Test various numeric function names
         let numeric_functions = vec![
-            "sin", "cos", "tan", "asin", "acos", "atan", "atan2",
-            "sinh", "cosh", "tanh", "asinh", "acosh", "atanh",
-            "exp", "exp2", "ln", "log", "log2", "log10",
-            "sqrt", "cbrt", "pow", "powf", "powi",
-            "abs", "signum", "copysign",
-            "floor", "ceil", "round", "trunc", "fract",
-            "min", "max", "clamp",
-            "to_degrees", "to_radians",
+            "sin",
+            "cos",
+            "tan",
+            "asin",
+            "acos",
+            "atan",
+            "atan2",
+            "sinh",
+            "cosh",
+            "tanh",
+            "asinh",
+            "acosh",
+            "atanh",
+            "exp",
+            "exp2",
+            "ln",
+            "log",
+            "log2",
+            "log10",
+            "sqrt",
+            "cbrt",
+            "pow",
+            "powf",
+            "powi",
+            "abs",
+            "signum",
+            "copysign",
+            "floor",
+            "ceil",
+            "round",
+            "trunc",
+            "fract",
+            "min",
+            "max",
+            "clamp",
+            "to_degrees",
+            "to_radians",
         ];
 
         for func in numeric_functions {
@@ -3913,10 +4146,27 @@ mod property_tests_statements {
         }
 
         let non_numeric_functions = vec![
-            "println", "print", "format", "write", "read",
-            "push", "pop", "insert", "remove", "clear",
-            "len", "is_empty", "contains", "starts_with", "ends_with",
-            "split", "join", "replace", "trim", "to_uppercase", "to_lowercase",
+            "println",
+            "print",
+            "format",
+            "write",
+            "read",
+            "push",
+            "pop",
+            "insert",
+            "remove",
+            "clear",
+            "len",
+            "is_empty",
+            "contains",
+            "starts_with",
+            "ends_with",
+            "split",
+            "join",
+            "replace",
+            "trim",
+            "to_uppercase",
+            "to_lowercase",
         ];
 
         for func in non_numeric_functions {
@@ -3926,7 +4176,10 @@ mod property_tests_statements {
         // Test pattern needs slice with various patterns
         let slice_patterns = vec![
             Pattern::List(vec![Pattern::Wildcard]),
-            Pattern::List(vec![Pattern::Identifier("x".to_string()), Pattern::Wildcard]),
+            Pattern::List(vec![
+                Pattern::Identifier("x".to_string()),
+                Pattern::Wildcard,
+            ]),
             Pattern::Tuple(vec![Pattern::List(vec![])]),
         ];
 
@@ -4009,5 +4262,4 @@ mod property_tests_statements {
             }
         }
     }
-
 }

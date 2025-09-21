@@ -17,7 +17,7 @@ impl Transpiler {
     ///
     /// ```
     /// use ruchy::Transpiler;
-    /// 
+    ///
     /// let helpers = Transpiler::generate_result_helpers();
     /// let code = helpers.to_string();
     /// assert!(code.contains("trait ResultExt"));
@@ -77,11 +77,11 @@ impl Transpiler {
     ///
     /// ```
     /// use ruchy::{Transpiler, Parser};
-    /// 
+    ///
     /// let transpiler = Transpiler::new();
     /// let mut parser = Parser::new(r#"match result { Ok(val) => val, Err(e) => 0 }"#);
     /// let ast = parser.parse().expect("Failed to parse");
-    /// 
+    ///
     /// let result = transpiler.transpile(&ast).unwrap();
     /// let code = result.to_string();
     /// assert!(code.contains("Ok"));
@@ -117,11 +117,11 @@ impl Transpiler {
     ///
     /// ```
     /// use ruchy::{Transpiler, Parser};
-    /// 
+    ///
     /// let transpiler = Transpiler::new();
     /// let mut parser = Parser::new("result?");
     /// let ast = parser.parse().expect("Failed to parse");
-    /// 
+    ///
     /// let result = transpiler.transpile(&ast).unwrap();
     /// let code = result.to_string();
     /// assert!(code.contains("?"));
@@ -243,7 +243,10 @@ mod tests {
         let variants = vec![
             ("NotFound".to_string(), None),
             ("InvalidInput".to_string(), Some("String".to_string())),
-            ("NetworkError".to_string(), Some("std::io::Error".to_string())),
+            (
+                "NetworkError".to_string(),
+                Some("std::io::Error".to_string()),
+            ),
         ];
         let error_type = transpiler.transpile_error_type("AppError", &variants);
         let code = error_type.to_string();
@@ -251,11 +254,26 @@ mod tests {
         assert!(code.contains("enum AppError"));
         assert!(code.contains("NotFound"));
         assert!(code.contains("InvalidInput") && code.contains("String"));
-        assert!(code.contains("NetworkError") && code.contains("std") && code.contains("io") && code.contains("Error"));
+        assert!(
+            code.contains("NetworkError")
+                && code.contains("std")
+                && code.contains("io")
+                && code.contains("Error")
+        );
         // Check trait implementations
         assert!(code.contains("derive") && code.contains("Debug") && code.contains("Clone"));
-        assert!(code.contains("impl") && code.contains("std") && code.contains("fmt") && code.contains("Display"));
-        assert!(code.contains("impl") && code.contains("std") && code.contains("error") && code.contains("Error"));
+        assert!(
+            code.contains("impl")
+                && code.contains("std")
+                && code.contains("fmt")
+                && code.contains("Display")
+        );
+        assert!(
+            code.contains("impl")
+                && code.contains("std")
+                && code.contains("error")
+                && code.contains("Error")
+        );
     }
 
     #[test]
@@ -309,7 +327,7 @@ mod tests {
         assert!(result.is_ok());
         let code = result.unwrap().to_string();
         assert!(code.contains("Ok") && code.contains("value"));
-        assert!(code.contains("_"));
+        assert!(code.contains('_'));
     }
 
     #[test]
@@ -337,11 +355,7 @@ mod tests {
     #[test]
     fn test_transpile_result_chain_multiple() {
         let transpiler = make_transpiler();
-        let operations = vec![
-            make_ident("op1"),
-            make_ident("op2"),
-            make_ident("op3"),
-        ];
+        let operations = vec![make_ident("op1"), make_ident("op2"), make_ident("op3")];
 
         let result = transpiler.transpile_result_chain(&operations);
         assert!(result.is_ok());
@@ -362,7 +376,7 @@ mod tests {
         assert!(result.is_ok());
         let code = result.unwrap().to_string();
         assert!(code.contains("my_result . unwrap_or"));
-        assert!(code.contains("0"));
+        assert!(code.contains('0'));
     }
 
     #[test]
@@ -381,9 +395,10 @@ mod tests {
     #[test]
     fn test_transpile_error_type_with_invalid_type() {
         let transpiler = Transpiler::new();
-        let variants = vec![
-            ("BadInput".to_string(), Some("Invalid::Type::Syntax".to_string())),
-        ];
+        let variants = vec![(
+            "BadInput".to_string(),
+            Some("Invalid::Type::Syntax".to_string()),
+        )];
         let error_type = transpiler.transpile_error_type("TestError", &variants);
         let code = error_type.to_string();
         // Should fall back to String for invalid types
@@ -396,8 +411,14 @@ mod tests {
         let transpiler = Transpiler::new();
         let variants = vec![
             ("IoError".to_string(), Some("std::io::Error".to_string())),
-            ("ParseError".to_string(), Some("std::num::ParseIntError".to_string())),
-            ("Custom".to_string(), Some("Box<dyn std::error::Error>".to_string())),
+            (
+                "ParseError".to_string(),
+                Some("std::num::ParseIntError".to_string()),
+            ),
+            (
+                "Custom".to_string(),
+                Some("Box<dyn std::error::Error>".to_string()),
+            ),
         ];
         let error_type = transpiler.transpile_error_type("ComplexError", &variants);
         let code = error_type.to_string();
@@ -425,9 +446,7 @@ mod tests {
     fn test_transpile_result_match_only_ok() {
         let transpiler = make_transpiler();
         let expr = make_ident("maybe_value");
-        let arms = vec![
-            ("Ok".to_string(), make_ident("value")),
-        ];
+        let arms = vec![("Ok".to_string(), make_ident("value"))];
 
         let result = transpiler.transpile_result_match(&expr, &arms);
         assert!(result.is_ok());
@@ -461,8 +480,7 @@ mod tests {
 #[cfg(test)]
 mod property_tests_result_type {
     use proptest::proptest;
-    
-    
+
     proptest! {
         /// Property: Function never panics on any input
         #[test]

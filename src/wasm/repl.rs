@@ -1,11 +1,11 @@
 //! WebAssembly REPL implementation for browser-based evaluation
 //!
 //! Provides interactive Ruchy evaluation in the browser with progressive enhancement.
+#[cfg(not(target_arch = "wasm32"))]
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
-#[cfg(not(target_arch = "wasm32"))]
-use serde::{Serialize, Deserialize};
 // For non-WASM builds, provide stub types
 #[cfg(not(target_arch = "wasm32"))]
 #[derive(Debug, Clone)]
@@ -47,23 +47,23 @@ pub struct WasmRepl {
 impl WasmRepl {
     /// Create a new WASM REPL instance
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(constructor))]
-/// # Examples
-/// 
-/// ```
-/// use ruchy::wasm::repl::new;
-/// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
-/// ```
-/// # Examples
-/// 
-/// ```
-/// use ruchy::wasm::repl::new;
-/// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn new() -> Result<WasmRepl, JsValue> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::wasm::repl::new;
+    ///
+    /// let result = new(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::wasm::repl::new;
+    ///
+    /// let result = new(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn new() -> Result<WasmRepl, JsValue> {
         #[cfg(target_arch = "wasm32")]
         console_error_panic_hook::set_once();
         Ok(WasmRepl {
@@ -74,15 +74,15 @@ pub fn new() -> Result<WasmRepl, JsValue> {
     }
     /// Evaluate a Ruchy expression
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
-/// # Examples
-/// 
-/// ```
-/// use ruchy::wasm::repl::eval;
-/// 
-/// let result = eval("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn eval(&mut self, input: &str) -> Result<String, JsValue> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::wasm::repl::eval;
+    ///
+    /// let result = eval("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn eval(&mut self, input: &str) -> Result<String, JsValue> {
         let start = get_timestamp();
         // Parse the input
         let parse_start = get_timestamp();
@@ -102,7 +102,8 @@ pub fn eval(&mut self, input: &str) -> Result<String, JsValue> {
                         eval_ms: 0.0,
                         total_ms: get_timestamp() - start,
                     },
-                }).unwrap_or_else(|_| "Error serializing output".to_string()));
+                })
+                .unwrap_or_else(|_| "Error serializing output".to_string()));
             }
         };
         let parse_time = get_timestamp() - parse_start;
@@ -130,46 +131,47 @@ pub fn eval(&mut self, input: &str) -> Result<String, JsValue> {
                 eval_ms: eval_time,
                 total_ms: get_timestamp() - start,
             },
-        }).unwrap_or_else(|_| "Error serializing output".to_string()))
+        })
+        .unwrap_or_else(|_| "Error serializing output".to_string()))
     }
     /// Get command history
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
-/// # Examples
-/// 
-/// ```
-/// use ruchy::wasm::repl::get_history;
-/// 
-/// let result = get_history(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn get_history(&self) -> Vec<String> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::wasm::repl::get_history;
+    ///
+    /// let result = get_history(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn get_history(&self) -> Vec<String> {
         self.history.clone()
     }
     /// Clear the REPL state
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
-/// # Examples
-/// 
-/// ```
-/// use ruchy::wasm::repl::clear;
-/// 
-/// let result = clear(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn clear(&mut self) {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::wasm::repl::clear;
+    ///
+    /// let result = clear(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn clear(&mut self) {
         self.bindings.clear();
         self.history.clear();
     }
     /// Get session ID
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
-/// # Examples
-/// 
-/// ```
-/// use ruchy::wasm::repl::session_id;
-/// 
-/// let result = session_id(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn session_id(&self) -> String {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::wasm::repl::session_id;
+    ///
+    /// let result = session_id(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn session_id(&self) -> String {
         self.session_id.clone()
     }
 }
@@ -191,10 +193,13 @@ fn generate_session_id() -> String {
     #[cfg(not(target_arch = "wasm32"))]
     {
         // Use system time for non-WASM builds
-        format!("session-{}", std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
-            .as_millis())
+        format!(
+            "session-{}",
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_millis()
+        )
     }
 }
 /// Get current timestamp in milliseconds
@@ -226,35 +231,35 @@ pub struct WasmHeap {
 impl WasmHeap {
     pub fn new() -> Self {
         Self {
-            young: Vec::with_capacity(256 * 1024), // 256KB
+            young: Vec::with_capacity(256 * 1024),    // 256KB
             old: Vec::with_capacity(2 * 1024 * 1024), // 2MB
             roots: Vec::new(),
         }
     }
     /// Perform minor garbage collection
-/// # Examples
-/// 
-/// ```
-/// use ruchy::wasm::repl::WasmHeap;
-/// 
-/// let mut instance = WasmHeap::new();
-/// let result = instance.minor_gc();
-/// // Verify behavior
-/// ```
-pub fn minor_gc(&mut self) {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::wasm::repl::WasmHeap;
+    ///
+    /// let mut instance = WasmHeap::new();
+    /// let result = instance.minor_gc();
+    /// // Verify behavior
+    /// ```
+    pub fn minor_gc(&mut self) {
         self.young.clear();
     }
     /// Perform major garbage collection
-/// # Examples
-/// 
-/// ```
-/// use ruchy::wasm::repl::WasmHeap;
-/// 
-/// let mut instance = WasmHeap::new();
-/// let result = instance.major_gc();
-/// // Verify behavior
-/// ```
-pub fn major_gc(&mut self) {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::wasm::repl::WasmHeap;
+    ///
+    /// let mut instance = WasmHeap::new();
+    /// let result = instance.major_gc();
+    /// // Verify behavior
+    /// ```
+    pub fn major_gc(&mut self) {
         // Mark phase
         let mut marked = vec![false; self.old.len()];
         for &root in &self.roots {
@@ -304,8 +309,7 @@ mod tests {
 #[cfg(test)]
 mod property_tests_repl {
     use proptest::proptest;
-    
-    
+
     proptest! {
         /// Property: Function never panics on any input
         #[test]

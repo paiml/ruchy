@@ -1,0 +1,56 @@
+# mutants.toml
+# WebAssembly Extreme Quality Assurance Framework v3.0
+# Mutation Testing Configuration
+
+# Minimum test timeout to allow for complex tests
+minimum_test_timeout = "10s"
+
+# Timeout multiplier for mutation tests
+timeout_multiplier = 1.5
+
+# Number of parallel jobs
+jobs = 2
+
+# Exclude certain patterns from mutation testing
+exclude_globs = [
+    "tests/**",
+    "benches/**",
+    "examples/**",
+    "target/**",
+    "*.md",
+    "*.toml",
+    "*.yml",
+    "*.yaml"
+]
+
+# Focus on core functionality for mutation testing
+examine_globs = [
+    "src/frontend/**",
+    "src/backend/**",
+    "src/runtime/**",
+    "src/wasm/**"
+]
+
+# Mutation operators to use
+mutate_functions = true
+mutate_comparison_operators = true
+mutate_binary_operators = true
+mutate_constants = true
+
+# Quality thresholds
+error_on_no_tests = false  # Some modules might not have direct tests
+baseline = "auto"
+
+# Output configuration
+output_in_dir = "target/mutants"
+output_format = "json"
+
+# Skip mutations in test-only code
+skip_calls_in_tests = [
+    "assert*",
+    "debug_assert*",
+    "unreachable*",
+    "panic*",
+    "todo*",
+    "unimplemented*"
+]

@@ -1,12 +1,12 @@
 //! Integration regression tests
-//! 
+//!
 //! These tests ensure that bugs found in integration testing (from ruchy-book and ruchy-repl-demos)
 //! are fixed and never regress. Each test corresponds to a BUG ticket from the roadmap.
 
 #![allow(clippy::needless_raw_string_hashes)]
 
-use std::process::Command;
 use std::fs;
+use std::process::Command;
 use tempfile::NamedTempFile;
 
 /// Helper to compile and run Ruchy code
@@ -14,14 +14,14 @@ fn run_ruchy_code(code: &str) -> Result<String, String> {
     // Write code to temporary file
     let temp_file = NamedTempFile::new().map_err(|e| e.to_string())?;
     fs::write(temp_file.path(), code).map_err(|e| e.to_string())?;
-    
+
     // Run with ruchy
     let output = Command::new("./target/release/ruchy")
         .arg("run")
         .arg(temp_file.path())
         .output()
         .map_err(|e| format!("Failed to run ruchy: {e}"))?;
-    
+
     if output.status.success() {
         Ok(String::from_utf8_lossy(&output.stdout).to_string())
     } else {
@@ -44,7 +44,7 @@ fun double(n) {
 let result = apply(double, 5)
 println(result)
 "#;
-    
+
     let output = run_ruchy_code(code).expect("Higher-order functions should work");
     assert_eq!(output.trim(), "10", "apply(double, 5) should return 10");
 }
@@ -68,9 +68,13 @@ fun double(n) {
 let result = compose(double, add_one, 5)
 println(result)
 "#;
-    
+
     let output = run_ruchy_code(code).expect("Function composition should work");
-    assert_eq!(output.trim(), "12", "compose(double, add_one, 5) should return 12");
+    assert_eq!(
+        output.trim(),
+        "12",
+        "compose(double, add_one, 5) should return 12"
+    );
 }
 
 /// Test lambdas as arguments
@@ -84,7 +88,7 @@ fun apply(f, x) {
 let result = apply(|n| { n * 3 }, 7)
 println(result)
 "#;
-    
+
     let output = run_ruchy_code(code).expect("Lambda arguments should work");
     assert_eq!(output.trim(), "21", "apply(|n| n*3, 7) should return 21");
 }
@@ -104,7 +108,7 @@ fun square(n) {
 let result = map_value(square, 8)
 println(result)
 "#;
-    
+
     let output = run_ruchy_code(code).expect("Map-like functions should work");
     assert_eq!(output.trim(), "64", "map_value(square, 8) should return 64");
 }
@@ -130,7 +134,7 @@ let result2 = filter_value(is_even, 5)
 println(result1)
 println(result2)
 "#;
-    
+
     let output = run_ruchy_code(code).expect("Filter predicates should work");
     let lines: Vec<&str> = output.trim().lines().collect();
     assert_eq!(lines[0], "4", "filter_value(is_even, 4) should return 4");
@@ -149,7 +153,7 @@ let times_three = make_multiplier(3)
 let result = times_three(7)
 println(result)
 "#;
-    
+
     let output = run_ruchy_code(code).expect("Currying should work");
     assert_eq!(output.trim(), "21", "times_three(7) should return 21");
 }
@@ -169,7 +173,7 @@ fun inc(n) {
 let result = twice(inc, 10)
 println(result)
 "#;
-    
+
     let output = run_ruchy_code(code).expect("Nested higher-order functions should work");
     assert_eq!(output.trim(), "12", "twice(inc, 10) should return 12");
 }
@@ -190,7 +194,7 @@ let add_five = curry_add(5)
 let result = add_five(15)
 println(result)
 "#;
-    
+
     let output = run_ruchy_code(code).expect("Chained function calls should work");
     assert_eq!(output.trim(), "20", "add_five(15) should return 20");
 }
@@ -211,7 +215,7 @@ let adder = get_operator("add")
 let result = adder(3, 4)
 println(result)
 "#;
-    
+
     let output = run_ruchy_code(code).expect("Functions as return values should work");
     assert_eq!(output.trim(), "7", "adder(3, 4) should return 7");
 }
@@ -231,7 +235,7 @@ fun add(a, b) {
 let result = fold(add, 10, 5)
 println(result)
 "#;
-    
+
     let output = run_ruchy_code(code).expect("Reduce-like functions should work");
     assert_eq!(output.trim(), "15", "fold(add, 10, 5) should return 15");
 }

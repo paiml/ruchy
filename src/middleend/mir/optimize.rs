@@ -19,62 +19,62 @@ impl Default for DeadCodeElimination {
 impl DeadCodeElimination {
     /// Create a new DCE pass
     #[must_use]
-/// # Examples
-/// 
-/// ```
-/// use ruchy::middleend::mir::optimize::new;
-/// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
-/// ```
-/// # Examples
-/// 
-/// ```
-/// use ruchy::middleend::mir::optimize::new;
-/// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
-/// ```
-/// # Examples
-/// 
-/// ```
-/// use ruchy::middleend::mir::optimize::new;
-/// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn new() -> Self {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::middleend::mir::optimize::new;
+    ///
+    /// let result = new(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::middleend::mir::optimize::new;
+    ///
+    /// let result = new(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::middleend::mir::optimize::new;
+    ///
+    /// let result = new(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn new() -> Self {
         Self {
             live_locals: HashSet::new(),
             live_blocks: HashSet::new(),
         }
     }
     /// Run DCE on a function
-/// Run dead code elimination on a function
-///
-/// # Examples
-///
-/// ```ignore
-/// use ruchy::middleend::mir::optimize::DeadCodeElimination;
-/// let mut dce = DeadCodeElimination::new();
-/// // dce.run(&mut function);
-/// ```
-///
-/// ```ignore
-/// use ruchy::middleend::mir::optimize::run;
-///
-/// let result = run(());
-/// assert_eq!(result, Ok(()));
-/// ```
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::middleend::mir::optimize::run;
-/// 
-/// let result = run(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn run(&mut self, func: &mut Function) {
+    /// Run dead code elimination on a function
+    ///
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::middleend::mir::optimize::DeadCodeElimination;
+    /// let mut dce = DeadCodeElimination::new();
+    /// // dce.run(&mut function);
+    /// ```
+    ///
+    /// ```ignore
+    /// use ruchy::middleend::mir::optimize::run;
+    ///
+    /// let result = run(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::middleend::mir::optimize::run;
+    ///
+    /// let result = run(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn run(&mut self, func: &mut Function) {
         // Mark live locals and blocks
         self.mark_live(func);
         // Remove dead statements
@@ -492,10 +492,10 @@ impl CommonSubexpressionElimination {
 }
 /// Run all optimization passes on a function
 /// # Examples
-/// 
+///
 /// ```ignore
 /// use ruchy::middleend::mir::optimize::optimize_function;
-/// 
+///
 /// let result = optimize_function(());
 /// assert_eq!(result, Ok(()));
 /// ```
@@ -512,10 +512,10 @@ pub fn optimize_function(func: &mut Function) {
 }
 /// Run all optimization passes on a program
 /// # Examples
-/// 
+///
 /// ```ignore
 /// use ruchy::middleend::mir::optimize::optimize_program;
-/// 
+///
 /// let result = optimize_program(());
 /// assert_eq!(result, Ok(()));
 /// ```
@@ -549,8 +549,7 @@ mod tests {
 #[cfg(test)]
 mod property_tests_optimize {
     use proptest::proptest;
-    
-    
+
     proptest! {
         /// Property: Function never panics on any input
         #[test]

@@ -51,10 +51,10 @@
 //! // Basic transpilation
 //! let mut parser = Parser::new("let x = 42");
 //! let ast = parser.parse().unwrap();
-//! 
+//!
 //! let mut transpiler = Transpiler::new();
 //! let rust_code = transpiler.transpile_to_program(&ast).unwrap();
-//! 
+//!
 //! println!("Generated Rust:\n{}", rust_code);
 //! ```
 //!
@@ -67,18 +67,17 @@
 //! let binary_path = compile_to_binary(Path::new("main.ruchy"), &options).unwrap();
 //! println!("Binary created: {}", binary_path.display());
 //! ```
+#[cfg(feature = "dataframe")]
+pub mod arrow_integration;
 pub mod compiler;
 pub mod module_loader;
 pub mod module_resolver;
 pub mod transpiler;
 pub mod wasm;
-#[cfg(feature = "dataframe")]
-pub mod arrow_integration;
-pub use compiler::{compile_to_binary, compile_source_to_binary, CompileOptions};
-pub use module_loader::{ModuleLoader, ParsedModule, ModuleLoaderStats};
+pub use compiler::{compile_source_to_binary, compile_to_binary, CompileOptions};
+pub use module_loader::{ModuleLoader, ModuleLoaderStats, ParsedModule};
 pub use module_resolver::ModuleResolver;
 pub use transpiler::Transpiler;
 
 // Tests removed: This module only re-exports from submodules.
 // Actual implementations and tests belong in the submodules.
-

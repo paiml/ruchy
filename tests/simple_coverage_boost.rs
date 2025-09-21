@@ -1,10 +1,10 @@
 // SIMPLE COVERAGE BOOST - Compilable tests for immediate coverage gain
 // Sprint 80 CONTINUATION: Push from 70.25% to 75%+
 
-use ruchy::frontend::lexer::{Lexer, Token};
-use ruchy::frontend::ast::*;
-use ruchy::runtime::{Value, Environment};
 use ruchy::backend::transpiler::Transpiler;
+use ruchy::frontend::ast::*;
+use ruchy::frontend::lexer::{Lexer, Token};
+use ruchy::runtime::{Environment, Value};
 
 #[test]
 fn test_lexer_tokenize_numbers() {

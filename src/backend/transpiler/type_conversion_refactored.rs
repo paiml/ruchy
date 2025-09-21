@@ -7,17 +7,17 @@ use proc_macro2::TokenStream;
 use quote::quote;
 impl Transpiler {
     /// Main dispatcher for type conversion (complexity: ~8)
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::backend::Transpiler;
-/// let transpiler = Transpiler::new();
-/// // Type conversion is handled internally
-/// ```
-pub fn try_transpile_type_conversion_refactored(
-        &self, 
-        base_name: &str, 
-        args: &[Expr]
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::backend::Transpiler;
+    /// let transpiler = Transpiler::new();
+    /// // Type conversion is handled internally
+    /// ```
+    pub fn try_transpile_type_conversion_refactored(
+        &self,
+        base_name: &str,
+        args: &[Expr],
     ) -> Result<Option<TokenStream>> {
         // Only check known type conversion functions
         match base_name {
@@ -51,12 +51,16 @@ pub fn try_transpile_type_conversion_refactored(
             // String literal -> parse
             ExprKind::Literal(Literal::String(_)) => {
                 let value = self.transpile_expr(arg)?;
-                Ok(Some(quote! { #value.parse::<i64>().expect("Failed to parse integer") }))
+                Ok(Some(
+                    quote! { #value.parse::<i64>().expect("Failed to parse integer") },
+                ))
             }
             // String interpolation with single text part -> parse
             ExprKind::StringInterpolation { parts } if is_single_text_part(parts) => {
                 let value = self.transpile_expr(arg)?;
-                Ok(Some(quote! { #value.parse::<i64>().expect("Failed to parse integer") }))
+                Ok(Some(
+                    quote! { #value.parse::<i64>().expect("Failed to parse integer") },
+                ))
             }
             // Float literal -> cast
             ExprKind::Literal(Literal::Float(_)) => {
@@ -81,12 +85,16 @@ pub fn try_transpile_type_conversion_refactored(
             // String literal -> parse
             ExprKind::Literal(Literal::String(_)) => {
                 let value = self.transpile_expr(arg)?;
-                Ok(Some(quote! { #value.parse::<f64>().expect("Failed to parse float") }))
+                Ok(Some(
+                    quote! { #value.parse::<f64>().expect("Failed to parse float") },
+                ))
             }
             // String interpolation with single text part -> parse
             ExprKind::StringInterpolation { parts } if is_single_text_part(parts) => {
                 let value = self.transpile_expr(arg)?;
-                Ok(Some(quote! { #value.parse::<f64>().expect("Failed to parse float") }))
+                Ok(Some(
+                    quote! { #value.parse::<f64>().expect("Failed to parse float") },
+                ))
             }
             // Integer literal -> cast
             ExprKind::Literal(Literal::Integer(_)) => {
@@ -142,7 +150,7 @@ pub fn try_transpile_type_conversion_refactored(
     /// Generic truthiness check (complexity: 3)
     fn convert_generic_to_bool(&self, arg: &Expr) -> Result<Option<TokenStream>> {
         let value = self.transpile_expr(arg)?;
-        Ok(Some(quote! { 
+        Ok(Some(quote! {
             {
                 // Generic truthiness check
                 match &#value {
@@ -158,7 +166,9 @@ pub fn try_transpile_type_conversion_refactored(
             // String -> chars as list
             ExprKind::Literal(Literal::String(_)) => {
                 let value = self.transpile_expr(arg)?;
-                Ok(Some(quote! { #value.chars().map(|c| c.to_string()).collect::<Vec<_>>() }))
+                Ok(Some(
+                    quote! { #value.chars().map(|c| c.to_string()).collect::<Vec<_>>() },
+                ))
             }
             // Range -> collect to vec
             ExprKind::Range { .. } => {
@@ -183,22 +193,22 @@ pub fn try_transpile_type_conversion_refactored(
             // List -> convert to HashSet
             ExprKind::List(_) => {
                 let value = self.transpile_expr(arg)?;
-                Ok(Some(quote! { 
-                    #value.into_iter().collect::<std::collections::HashSet<_>>() 
+                Ok(Some(quote! {
+                    #value.into_iter().collect::<std::collections::HashSet<_>>()
                 }))
             }
             // String -> chars as set
             ExprKind::Literal(Literal::String(_)) => {
                 let value = self.transpile_expr(arg)?;
-                Ok(Some(quote! { 
+                Ok(Some(quote! {
                     #value.chars().map(|c| c.to_string())
-                        .collect::<std::collections::HashSet<_>>() 
+                        .collect::<std::collections::HashSet<_>>()
                 }))
             }
             // Default: single element set
             _ => {
                 let value = self.transpile_expr(arg)?;
-                Ok(Some(quote! { 
+                Ok(Some(quote! {
                     {
                         let mut set = std::collections::HashSet::new();
                         set.insert(#value);
@@ -214,23 +224,21 @@ pub fn try_transpile_type_conversion_refactored(
             // List of tuples -> dict
             ExprKind::List(items) if items.iter().all(is_tuple_expr) => {
                 let value = self.transpile_expr(arg)?;
-                Ok(Some(quote! { 
+                Ok(Some(quote! {
                     #value.into_iter()
                         .map(|(k, v)| (k, v))
-                        .collect::<std::collections::HashMap<_, _>>() 
+                        .collect::<std::collections::HashMap<_, _>>()
                 }))
             }
             // ObjectLiteral -> convert to HashMap
             ExprKind::ObjectLiteral { .. } => {
                 let value = self.transpile_expr(arg)?;
-                Ok(Some(quote! { 
-                    #value.into_iter().collect::<std::collections::HashMap<_, _>>() 
+                Ok(Some(quote! {
+                    #value.into_iter().collect::<std::collections::HashMap<_, _>>()
                 }))
             }
             // Default: empty dict
-            _ => {
-                Ok(Some(quote! { std::collections::HashMap::new() }))
-            }
+            _ => Ok(Some(quote! { std::collections::HashMap::new() })),
         }
     }
 }
@@ -244,8 +252,7 @@ fn is_tuple_expr(expr: &Expr) -> bool {
 #[cfg(test)]
 mod property_tests_type_conversion_refactored {
     use proptest::proptest;
-    
-    
+
     proptest! {
         /// Property: Function never panics on any input
         #[test]

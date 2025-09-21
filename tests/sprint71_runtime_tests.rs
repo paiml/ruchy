@@ -1,10 +1,10 @@
 //! Sprint 71: Runtime Module Tests
 //! Target: Boost runtime module coverage
 
-use ruchy::runtime::{interpreter::*, repl::Repl, Value};
 use ruchy::frontend::parser::Parser;
-use std::rc::Rc;
+use ruchy::runtime::{interpreter::*, repl::Repl, Value};
 use std::path::PathBuf;
+use std::rc::Rc;
 
 #[cfg(test)]
 mod interpreter_error_handling {
@@ -144,7 +144,10 @@ mod value_operations {
         assert_eq!(Value::Integer(42).to_string(), "42");
         assert_eq!(Value::Bool(true).to_string(), "true");
         assert_eq!(Value::Bool(false).to_string(), "false");
-        assert_eq!(Value::String(Rc::new("test".to_string())).to_string(), "\"test\"");
+        assert_eq!(
+            Value::String(Rc::new("test".to_string())).to_string(),
+            "\"test\""
+        );
         assert_eq!(Value::Nil.to_string(), "nil");
     }
 

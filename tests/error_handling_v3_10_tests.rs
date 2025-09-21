@@ -1,9 +1,9 @@
 //! TDD Tests for Error Handling System
 //! Sprint v3.10.0 - Result types, try operator, try/catch
 
-use ruchy::frontend::parser::Parser;
-use ruchy::frontend::ast::{Expr, ExprKind};
 use ruchy::backend::transpiler::Transpiler;
+use ruchy::frontend::ast::{Expr, ExprKind};
+use ruchy::frontend::parser::Parser;
 
 #[cfg(test)]
 mod result_type_tests {
@@ -167,7 +167,12 @@ mod try_catch_tests {
         assert!(result.is_ok(), "Should parse try/catch block");
 
         let ast = result.unwrap();
-        if let ExprKind::TryCatch { try_block, catch_clauses, .. } = &ast.kind {
+        if let ExprKind::TryCatch {
+            try_block,
+            catch_clauses,
+            ..
+        } = &ast.kind
+        {
             assert_eq!(catch_clauses.len(), 1, "Should have one catch clause");
         } else {
             panic!("Expected TryCatch expression");
@@ -237,7 +242,10 @@ mod try_catch_tests {
         assert!(result.is_ok(), "Should transpile try/catch");
 
         let code = result.unwrap();
-        assert!(code.contains("match"), "Should use match for error handling");
+        assert!(
+            code.contains("match"),
+            "Should use match for error handling"
+        );
         assert!(code.contains("Ok"), "Should handle Ok case");
         assert!(code.contains("Err"), "Should handle Err case");
     }
@@ -321,8 +329,8 @@ mod integration_tests {
 
 #[cfg(test)]
 mod property_tests {
-    use proptest::prelude::*;
     use super::*;
+    use proptest::prelude::*;
 
     proptest! {
         #[test]

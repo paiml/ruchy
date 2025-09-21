@@ -2,9 +2,9 @@
 // Target: Maximum WASM codegen coverage
 // Sprint 80: ALL NIGHT Coverage Marathon Phase 11
 
-use ruchy::backend::wasm::codegen::{WasmCodeGen, WasmModule, WasmFunction, WasmInstruction};
+use ruchy::backend::wasm::codegen::{WasmCodeGen, WasmFunction, WasmInstruction, WasmModule};
 use ruchy::frontend::ast::{Expr, ExprKind, Literal};
-use wasm_encoder::{Module, Function, Instruction};
+use wasm_encoder::{Function, Instruction, Module};
 
 // Basic codegen tests
 #[test]
@@ -286,8 +286,14 @@ fn test_build_wasm_module() {
 // Memory operations
 #[test]
 fn test_wasm_memory_operations() {
-    let _load = WasmInstruction::I32Load { offset: 0, align: 2 };
-    let _store = WasmInstruction::I32Store { offset: 0, align: 2 };
+    let _load = WasmInstruction::I32Load {
+        offset: 0,
+        align: 2,
+    };
+    let _store = WasmInstruction::I32Store {
+        offset: 0,
+        align: 2,
+    };
     let _grow = WasmInstruction::MemoryGrow;
     let _size = WasmInstruction::MemorySize;
     assert!(true);

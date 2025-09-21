@@ -2,8 +2,10 @@
 //! Sprint 75: Systematic coverage improvement
 
 use ruchy::backend::transpiler::Transpiler;
+use ruchy::frontend::ast::{
+    Expr, ExprKind, ImportItem, Literal, Param, Pattern, Span, Type, TypeKind,
+};
 use ruchy::frontend::parser::Parser;
-use ruchy::frontend::ast::{Expr, ExprKind, Literal, Span, ImportItem, Param, Type, TypeKind, Pattern};
 
 #[test]
 fn test_print_macros_comprehensive() {

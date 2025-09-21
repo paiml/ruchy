@@ -3,13 +3,13 @@
 //! This module implements the core abstraction for maintaining state across
 //! notebook cell executions, solving the fundamental invariant violation where
 //! each cell previously had an isolated REPL instance.
-use std::collections::{HashMap, HashSet, VecDeque};
-use std::sync::Arc;
-use std::sync::atomic::{AtomicU64, Ordering};
-use serde::{Serialize, Deserialize};
-use crate::runtime::interpreter::{Interpreter, Value};
-use crate::frontend::parser::Parser;
 use crate::frontend::ast::Expr;
+use crate::frontend::parser::Parser;
+use crate::runtime::interpreter::{Interpreter, Value};
+use serde::{Deserialize, Serialize};
+use std::collections::{HashMap, HashSet, VecDeque};
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::Arc;
 // ============================================================================
 // Core Types
 // ============================================================================
@@ -41,16 +41,16 @@ pub struct ExecuteResponse {
     pub execution_time_ms: f64,
 }
 impl ExecuteResponse {
-/// # Examples
-/// 
-/// ```
-/// use ruchy::wasm::shared_session::ExecuteResponse;
-/// 
-/// let mut instance = ExecuteResponse::new();
-/// let result = instance.success();
-/// // Verify behavior
-/// ```
-pub fn success(value: Value) -> Self {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::wasm::shared_session::ExecuteResponse;
+    ///
+    /// let mut instance = ExecuteResponse::new();
+    /// let result = instance.success();
+    /// // Verify behavior
+    /// ```
+    pub fn success(value: Value) -> Self {
         ExecuteResponse {
             success: true,
             cell_id: String::new(),
@@ -60,16 +60,16 @@ pub fn success(value: Value) -> Self {
             execution_time_ms: 0.0,
         }
     }
-/// # Examples
-/// 
-/// ```
-/// use ruchy::wasm::shared_session::ExecuteResponse;
-/// 
-/// let mut instance = ExecuteResponse::new();
-/// let result = instance.error();
-/// // Verify behavior
-/// ```
-pub fn error(err: String) -> Self {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::wasm::shared_session::ExecuteResponse;
+    ///
+    /// let mut instance = ExecuteResponse::new();
+    /// let result = instance.error();
+    /// // Verify behavior
+    /// ```
+    pub fn error(err: String) -> Self {
         ExecuteResponse {
             success: false,
             cell_id: String::new(),
@@ -166,15 +166,15 @@ impl GlobalRegistry {
             generation: 0,
         }
     }
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::shared_session::store_value;
-/// 
-/// let result = store_value("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn store_value(&mut self, name: String, value: Value, cell_id: &str) -> DefId {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::shared_session::store_value;
+    ///
+    /// let result = store_value("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn store_value(&mut self, name: String, value: Value, cell_id: &str) -> DefId {
         let def_id = DefId::next();
         let values = Arc::make_mut(&mut self.values);
         values.insert(name.clone(), (value, def_id));
@@ -184,65 +184,65 @@ pub fn store_value(&mut self, name: String, value: Value, cell_id: &str) -> DefI
         self.generation += 1;
         def_id
     }
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::shared_session::get_value;
-/// 
-/// let result = get_value("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn get_value(&self, name: &str) -> Option<Value> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::shared_session::get_value;
+    ///
+    /// let result = get_value("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn get_value(&self, name: &str) -> Option<Value> {
         self.values.get(name).map(|(v, _)| v.clone())
     }
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::shared_session::get_def_id;
-/// 
-/// let result = get_def_id("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn get_def_id(&self, name: &str) -> Option<DefId> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::shared_session::get_def_id;
+    ///
+    /// let result = get_def_id("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn get_def_id(&self, name: &str) -> Option<DefId> {
         self.values.get(name).map(|(_, id)| *id)
     }
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::shared_session::cow_checkpoint;
-/// 
-/// let result = cow_checkpoint(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn cow_checkpoint(&self) -> RegistrySnapshot {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::shared_session::cow_checkpoint;
+    ///
+    /// let result = cow_checkpoint(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn cow_checkpoint(&self) -> RegistrySnapshot {
         RegistrySnapshot {
             values: Arc::clone(&self.values),
             functions: Arc::clone(&self.functions),
             generation: self.generation,
         }
     }
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::shared_session::restore_cow;
-/// 
-/// let result = restore_cow(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn restore_cow(&mut self, snapshot: RegistrySnapshot) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::shared_session::restore_cow;
+    ///
+    /// let result = restore_cow(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn restore_cow(&mut self, snapshot: RegistrySnapshot) {
         self.values = snapshot.values;
         self.functions = snapshot.functions;
         self.generation = snapshot.generation;
     }
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::shared_session::size_bytes;
-/// 
-/// let result = size_bytes(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn size_bytes(&self) -> usize {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::shared_session::size_bytes;
+    ///
+    /// let result = size_bytes(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn size_bytes(&self) -> usize {
         // Calculate actual size of values
         let mut total_size = 0;
         for (key, (value, _def_id)) in self.values.iter() {
@@ -274,7 +274,11 @@ pub fn size_bytes(&self) -> usize {
                 }
                 size
             }
-            Value::Closure { params, body: _, env } => {
+            Value::Closure {
+                params,
+                body: _,
+                env,
+            } => {
                 let mut size = 128; // Base closure size
                 size += params.len() * 32; // Parameter names
                 size += env.len() * 64; // Environment size estimate
@@ -312,18 +316,19 @@ pub fn size_bytes(&self) -> usize {
                     }
                 }
                 size
-            }
+            } // BuiltinFunction variant not in current Value enum
+              // Value::BuiltinFunction(name) => name.len() + 8, // String overhead
         }
     }
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::shared_session::serialize_for_inspection;
-/// 
-/// let result = serialize_for_inspection(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn serialize_for_inspection(&self) -> serde_json::Value {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::shared_session::serialize_for_inspection;
+    ///
+    /// let result = serialize_for_inspection(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn serialize_for_inspection(&self) -> serde_json::Value {
         serde_json::json!({
             "values": self.values.keys().cloned().collect::<Vec<_>>(),
             "functions": self.functions.keys().cloned().collect::<Vec<_>>(),
@@ -334,8 +339,7 @@ pub fn serialize_for_inspection(&self) -> serde_json::Value {
 }
 impl PartialEq for GlobalRegistry {
     fn eq(&self, other: &Self) -> bool {
-        self.generation == other.generation && 
-        Arc::ptr_eq(&self.values, &other.values)
+        self.generation == other.generation && Arc::ptr_eq(&self.values, &other.values)
     }
 }
 /// Snapshot for COW checkpointing
@@ -389,22 +393,23 @@ impl SharedSession {
             halt_on_error: true,
         }
     }
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::shared_session::set_execution_mode;
-/// 
-/// let result = set_execution_mode(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn set_execution_mode(&mut self, mode: ExecutionMode) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::shared_session::set_execution_mode;
+    ///
+    /// let result = set_execution_mode(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn set_execution_mode(&mut self, mode: ExecutionMode) {
         self.execution_mode = mode;
     }
     /// Execute a cell with persistent state management
     pub fn execute(&mut self, cell_id: &str, code: &str) -> Result<ExecuteResponse, String> {
         let start = std::time::Instant::now();
         // Store code for potential re-execution
-        self.cell_cache.insert(cell_id.to_string(), code.to_string());
+        self.cell_cache
+            .insert(cell_id.to_string(), code.to_string());
         // Create COW checkpoint for rollback
         let snapshot = self.globals.cow_checkpoint();
         // Hydrate interpreter with global state
@@ -424,7 +429,8 @@ pub fn set_execution_mode(&mut self, mode: ExecutionMode) {
                 // Update dependency graph
                 let reads = self.extract_reads(&expr, &initial_defs);
                 let writes = new_defs;
-                self.def_graph.insert(cell_id.to_string(), (reads, writes.clone()));
+                self.def_graph
+                    .insert(cell_id.to_string(), (reads, writes.clone()));
                 // Invalidate dependent cells
                 self.invalidate_consumers(&writes);
                 let elapsed = start.elapsed().as_secs_f64() * 1000.0;
@@ -461,15 +467,15 @@ pub fn set_execution_mode(&mut self, mode: ExecutionMode) {
         }
     }
     /// Estimate memory usage of interpreter
-    /// 
+    ///
     /// Returns an approximation of memory used by variable bindings and state.
     /// This is useful for monitoring resource usage in notebook environments.
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// ```
     /// use ruchy::wasm::shared_session::SharedSession;
-    /// 
+    ///
     /// let session = SharedSession::new();
     /// let initial_memory = session.estimate_interpreter_memory();
     /// assert!(initial_memory > 0);
@@ -519,22 +525,24 @@ pub fn set_execution_mode(&mut self, mode: ExecutionMode) {
         let order = self.topological_sort(&stale);
         ExecutionPlan {
             primary: cell_id.to_string(),
-            cascade: order.iter().map(|cell| {
-                CascadeStep {
+            cascade: order
+                .iter()
+                .map(|cell| CascadeStep {
                     cell_id: cell.clone(),
                     estimated_time: self.estimate_execution_time(cell),
                     dependencies: self.def_graph.get(cell).map(|(d, _)| d.clone()),
                     can_skip: !self.is_critical(cell),
                     skipped: false,
-                }
-            }).collect(),
+                })
+                .collect(),
             total_cells: order.len() + 1,
             estimated_total_time: self.estimate_total_time(&order),
         }
     }
     /// Get dependencies for a cell
     pub fn get_dependencies(&self, cell_id: &str) -> HashSet<DefId> {
-        self.def_graph.get(cell_id)
+        self.def_graph
+            .get(cell_id)
             .map(|(deps, _)| deps.clone())
             .unwrap_or_default()
     }
@@ -544,10 +552,9 @@ pub fn set_execution_mode(&mut self, mode: ExecutionMode) {
         let mut visited = HashSet::new();
         let mut rec_stack = HashSet::new();
         for cell in self.def_graph.keys() {
-            if !visited.contains(cell)
-                && self.has_cycle_dfs(cell, &mut visited, &mut rec_stack) {
-                    return true;
-                }
+            if !visited.contains(cell) && self.has_cycle_dfs(cell, &mut visited, &mut rec_stack) {
+                return true;
+            }
         }
         false
     }
@@ -557,13 +564,18 @@ pub fn set_execution_mode(&mut self, mode: ExecutionMode) {
     fn hydrate_interpreter(&mut self) {
         // Load all global values into interpreter
         for (name, (value, _def_id)) in self.globals.values.iter() {
-            self.interpreter.set_global_binding(name.clone(), value.clone());
+            self.interpreter
+                .set_global_binding(name.clone(), value.clone());
         }
     }
     fn collect_current_defs(&self) -> HashSet<DefId> {
         self.globals.values.values().map(|(_, id)| *id).collect()
     }
-    fn extract_new_bindings(&mut self, cell_id: &str, initial_defs: &HashSet<DefId>) -> HashSet<DefId> {
+    fn extract_new_bindings(
+        &mut self,
+        cell_id: &str,
+        initial_defs: &HashSet<DefId>,
+    ) -> HashSet<DefId> {
         let mut new_defs = HashSet::new();
         // Get current bindings from interpreter
         let bindings = self.interpreter.get_current_bindings();
@@ -575,8 +587,9 @@ pub fn set_execution_mode(&mut self, mode: ExecutionMode) {
                 }
             }
             // Check if this is a new or updated binding
-            if !self.globals.values.contains_key(&name) || 
-               !initial_defs.contains(&self.globals.get_def_id(&name).unwrap_or(DefId(0))) {
+            if !self.globals.values.contains_key(&name)
+                || !initial_defs.contains(&self.globals.get_def_id(&name).unwrap_or(DefId(0)))
+            {
                 let def_id = self.globals.store_value(name, value, cell_id);
                 new_defs.insert(def_id);
             }
@@ -615,8 +628,7 @@ pub fn set_execution_mode(&mut self, mode: ExecutionMode) {
         let mut sorted = Vec::new();
         // Build in-degree map
         for cell in cells {
-            let deps = self.def_graph.get(cell)
-                .map_or(0, |(d, _)| d.len());
+            let deps = self.def_graph.get(cell).map_or(0, |(d, _)| d.len());
             in_degree.insert(cell.clone(), deps);
             if deps == 0 {
                 queue.push_back(cell.clone());
@@ -637,7 +649,12 @@ pub fn set_execution_mode(&mut self, mode: ExecutionMode) {
         }
         sorted
     }
-    fn has_cycle_dfs(&self, cell: &str, visited: &mut HashSet<String>, rec_stack: &mut HashSet<String>) -> bool {
+    fn has_cycle_dfs(
+        &self,
+        cell: &str,
+        visited: &mut HashSet<String>,
+        rec_stack: &mut HashSet<String>,
+    ) -> bool {
         visited.insert(cell.to_string());
         rec_stack.insert(cell.to_string());
         for dependent in self.find_dependents(cell) {
@@ -667,25 +684,25 @@ pub fn set_execution_mode(&mut self, mode: ExecutionMode) {
     // Advanced Features - Sprint 9
     // ============================================================================
     /// Create a named checkpoint for rollback
-    /// 
+    ///
     /// Saves the current state of all variable bindings so it can be restored later.
     /// Useful for experimental changes that might need to be rolled back.
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// ```
     /// use ruchy::wasm::shared_session::SharedSession;
-#[cfg(test)]
-    /// 
+    #[cfg(test)]
+    ///
     /// let mut session = SharedSession::new();
     /// session.execute("cell1", "let x = 42").unwrap();
-    /// 
+    ///
     /// // Save checkpoint
     /// session.create_checkpoint("before_changes").unwrap();
-    /// 
+    ///
     /// // Make some changes
     /// session.execute("cell2", "let x = 100").unwrap();
-    /// 
+    ///
     /// // Can restore later with restore_from_checkpoint
     /// ```
     pub fn create_checkpoint(&mut self, name: &str) -> Result<(), String> {
@@ -695,7 +712,9 @@ pub fn set_execution_mode(&mut self, mode: ExecutionMode) {
     }
     /// Restore session state from a named checkpoint
     pub fn restore_from_checkpoint(&mut self, name: &str) -> Result<(), String> {
-        let checkpoint = self.checkpoints.get(name)
+        let checkpoint = self
+            .checkpoints
+            .get(name)
             .ok_or_else(|| format!("Checkpoint '{name}' not found"))?;
         // Note: Implement state restoration
         // This would restore the interpreter state from the checkpoint
@@ -706,7 +725,11 @@ pub fn set_execution_mode(&mut self, mode: ExecutionMode) {
     /// Export session state for persistence
     pub fn export_session_state(&self) -> SessionExportData {
         SessionExportData {
-            version: SessionVersion { major: 1, minor: 0, patch: 0 },
+            version: SessionVersion {
+                major: 1,
+                minor: 0,
+                patch: 0,
+            },
             globals: self.globals.serialize_for_inspection(),
             cell_cache: self.cell_cache.clone(),
             execution_mode: match self.execution_mode {
@@ -746,27 +769,32 @@ pub fn set_execution_mode(&mut self, mode: ExecutionMode) {
     /// Get execution history
     pub fn get_execution_history(&self) -> Vec<ExecutionHistoryEntry> {
         // Create history from cell cache (simplified implementation)
-        self.cell_cache.iter().enumerate().map(|(index, (cell_id, code))| {
-            ExecutionHistoryEntry {
-                sequence: index,
-                cell_id: cell_id.clone(),
-                code: code.clone(),
-                timestamp: chrono::Utc::now().timestamp() - (self.cell_cache.len() - index) as i64,
-                success: true, // Assume success if in cache
-            }
-        }).collect()
+        self.cell_cache
+            .iter()
+            .enumerate()
+            .map(|(index, (cell_id, code))| {
+                ExecutionHistoryEntry {
+                    sequence: index,
+                    cell_id: cell_id.clone(),
+                    code: code.clone(),
+                    timestamp: chrono::Utc::now().timestamp()
+                        - (self.cell_cache.len() - index) as i64,
+                    success: true, // Assume success if in cache
+                }
+            })
+            .collect()
     }
     /// Analyze dependencies for a specific cell
     pub fn analyze_dependencies(&self, cell_id: &str) -> DependencyAnalysisResult {
-        let (reads, writes) = self.def_graph.get(cell_id)
-            .cloned()
-            .unwrap_or_default();
+        let (reads, writes) = self.def_graph.get(cell_id).cloned().unwrap_or_default();
         // Convert DefIds to variable names
-        let depends_on: Vec<String> = reads.iter()
+        let depends_on: Vec<String> = reads
+            .iter()
             .filter_map(|def_id| self.globals.def_to_name.get(def_id))
             .cloned()
             .collect();
-        let defines: Vec<String> = writes.iter()
+        let defines: Vec<String> = writes
+            .iter()
             .filter_map(|def_id| self.globals.def_to_name.get(def_id))
             .cloned()
             .collect();
@@ -782,16 +810,21 @@ pub fn set_execution_mode(&mut self, mode: ExecutionMode) {
     }
     /// Begin a transaction for atomic operations
     pub fn begin_transaction(&mut self) -> Result<TransactionId, String> {
-        let transaction_id = TransactionId(format!("tx_{}", chrono::Utc::now().timestamp_nanos_opt().unwrap_or(0)));
+        let transaction_id = TransactionId(format!(
+            "tx_{}",
+            chrono::Utc::now().timestamp_nanos_opt().unwrap_or(0)
+        ));
         // Create checkpoint for transaction rollback
         let checkpoint = self.globals.cow_checkpoint();
-        self.checkpoints.insert(format!("transaction_{}", transaction_id.0), checkpoint);
+        self.checkpoints
+            .insert(format!("transaction_{}", transaction_id.0), checkpoint);
         Ok(transaction_id)
     }
     /// Commit a transaction
     pub fn commit_transaction(&mut self, transaction_id: TransactionId) -> Result<(), String> {
         // Remove the transaction checkpoint (commit = keep changes)
-        self.checkpoints.remove(&format!("transaction_{}", transaction_id.0));
+        self.checkpoints
+            .remove(&format!("transaction_{}", transaction_id.0));
         Ok(())
     }
     /// Rollback a transaction
@@ -818,7 +851,11 @@ pub fn set_execution_mode(&mut self, mode: ExecutionMode) {
     }
     /// Get session version
     pub fn get_version(&self) -> SessionVersion {
-        SessionVersion { major: 1, minor: 0, patch: 0 }
+        SessionVersion {
+            major: 1,
+            minor: 0,
+            patch: 0,
+        }
     }
     /// Upgrade session to new version
     pub fn upgrade_to_version(&mut self, _target_version: SessionVersion) -> Result<(), String> {
@@ -849,7 +886,11 @@ pub struct SessionVersion {
 }
 impl SessionVersion {
     pub fn new(major: u32, minor: u32) -> Self {
-        SessionVersion { major, minor, patch: 0 }
+        SessionVersion {
+            major,
+            minor,
+            patch: 0,
+        }
     }
 }
 /// Variable inspection result

@@ -2,11 +2,11 @@
 // Sprint 80 Phase 28: Target REPL and runtime modules
 // ALL NIGHT MARATHON CONTINUES!
 
-use ruchy::runtime::repl::{Repl, ReplConfig};
 use ruchy::runtime::completion::CompletionEngine;
-use ruchy::runtime::{Environment, Value, TransactionalState};
-use std::rc::Rc;
+use ruchy::runtime::repl::{Repl, ReplConfig};
+use ruchy::runtime::{Environment, TransactionalState, Value};
 use std::collections::HashMap;
+use std::rc::Rc;
 
 #[test]
 fn test_repl_creation() {
@@ -73,7 +73,7 @@ fn test_completion_engine_complete() {
     let mut engine = CompletionEngine::new();
     engine.add_keyword("let");
     engine.add_keyword("letterbox");
-    
+
     let completions = engine.complete("le", 2);
     assert!(completions.len() >= 1);
 }
@@ -284,10 +284,7 @@ fn test_value_list_ops() {
 
 #[test]
 fn test_value_tuple_ops() {
-    let tuple = Value::Tuple(Rc::new(vec![
-        Value::Integer(42),
-        Value::Bool(true),
-    ]));
+    let tuple = Value::Tuple(Rc::new(vec![Value::Integer(42), Value::Bool(true)]));
     if let Value::Tuple(t) = &tuple {
         assert_eq!(t.len(), 2);
     }
@@ -311,7 +308,10 @@ fn test_value_display() {
     assert_eq!(format!("{}", Value::Bool(true)), "true");
     assert_eq!(format!("{}", Value::Bool(false)), "false");
     assert_eq!(format!("{}", Value::Unit), "()");
-    assert_eq!(format!("{}", Value::String(Rc::new("test".to_string()))), "test");
+    assert_eq!(
+        format!("{}", Value::String(Rc::new("test".to_string()))),
+        "test"
+    );
 }
 
 #[test]
@@ -362,14 +362,8 @@ fn test_runtime_large_values() {
 #[test]
 fn test_runtime_nested_structures() {
     let nested = Value::List(Rc::new(vec![
-        Value::List(Rc::new(vec![
-            Value::Integer(1),
-            Value::Integer(2),
-        ])),
-        Value::List(Rc::new(vec![
-            Value::Integer(3),
-            Value::Integer(4),
-        ])),
+        Value::List(Rc::new(vec![Value::Integer(1), Value::Integer(2)])),
+        Value::List(Rc::new(vec![Value::Integer(3), Value::Integer(4)])),
     ]));
     if let Value::List(outer) = nested {
         assert_eq!(outer.len(), 2);

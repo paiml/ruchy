@@ -1,25 +1,27 @@
 //! Refactored recording functionality with reduced complexity
 //!
 //! Following TDD approach: Each function has complexity < 20
-use crate::runtime::repl::Repl;
-use crate::runtime::replay::{SessionMetadata, SessionRecorder, InputMode};
 use crate::runtime::completion::RuchyCompleter;
+use crate::runtime::repl::Repl;
+use crate::runtime::replay::{InputMode, SessionMetadata, SessionRecorder};
 use crate::runtime::Value;
 use anyhow::Result;
-use std::rc::Rc;
 use colored::Colorize;
-use rustyline::{Config, CompletionType, EditMode};
 use rustyline::history::DefaultHistory;
+use rustyline::{CompletionType, Config, EditMode};
 use std::path::Path;
+use std::rc::Rc;
 use std::time::SystemTime;
 impl Repl {
     /// Create session metadata for recording (complexity: 3)
     fn create_session_metadata() -> Result<SessionMetadata> {
         Ok(SessionMetadata {
-            session_id: format!("ruchy-session-{}", 
+            session_id: format!(
+                "ruchy-session-{}",
                 SystemTime::now()
                     .duration_since(SystemTime::UNIX_EPOCH)?
-                    .as_secs()),
+                    .as_secs()
+            ),
             created_at: chrono::Utc::now().to_rfc3339(),
             ruchy_version: env!("CARGO_PKG_VERSION").to_string(),
             student_id: None,
@@ -54,10 +56,7 @@ impl Repl {
     ) -> Result<bool> {
         let input = line.trim();
         // Record the input
-        let _input_id = recorder.record_input(
-            line.clone(), 
-            InputMode::Interactive
-        );
+        let _input_id = recorder.record_input(line.clone(), InputMode::Interactive);
         // Check for quit commands
         if input == ":quit" || input == ":exit" {
             return Ok(true); // Signal to exit
@@ -129,7 +128,10 @@ impl Repl {
         // Create session metadata
         let metadata = Self::create_session_metadata()?;
         let mut recorder = SessionRecorder::new(metadata);
-        println!("{}", format!("🎬 Recording session to: {}", record_file.display()).bright_yellow());
+        println!(
+            "{}",
+            format!("🎬 Recording session to: {}", record_file.display()).bright_yellow()
+        );
         // Setup editor
         let mut rl = self.setup_recording_editor()?;
         let mut multiline_buffer = String::new();
@@ -145,16 +147,13 @@ impl Repl {
                 Ok(line) => {
                     if in_multiline {
                         // Record multiline input
-                        let _input_id = recorder.record_input(
-                            line.clone(), 
-                            InputMode::Paste
-                        );
+                        let _input_id = recorder.record_input(line.clone(), InputMode::Paste);
                         self.process_multiline_recorded_input(
                             line,
                             &mut multiline_buffer,
                             &mut in_multiline,
                             &mut recorder,
-                            &mut rl
+                            &mut rl,
                         )?;
                     } else {
                         let input = line.trim();
@@ -163,17 +162,11 @@ impl Repl {
                             multiline_buffer = format!("{line}\n");
                             in_multiline = true;
                             // Record the start of multiline
-                            let _input_id = recorder.record_input(
-                                line.clone(), 
-                                InputMode::Paste
-                            );
+                            let _input_id = recorder.record_input(line.clone(), InputMode::Paste);
                         } else {
                             // Process single line
-                            let should_exit = self.process_recorded_input(
-                                line,
-                                &mut recorder,
-                                &mut rl
-                            )?;
+                            let should_exit =
+                                self.process_recorded_input(line, &mut recorder, &mut rl)?;
                             if should_exit {
                                 break;
                             }
@@ -194,7 +187,10 @@ impl Repl {
         let session = recorder.into_session();
         let session_json = serde_json::to_string_pretty(&session)?;
         std::fs::write(record_file, session_json)?;
-        println!("{}", format!("📼 Session saved to: {}", record_file.display()).bright_green());
+        println!(
+            "{}",
+            format!("📼 Session saved to: {}", record_file.display()).bright_green()
+        );
         Ok(())
     }
 }

@@ -73,17 +73,17 @@ impl LspServer {
     }
 
     /// Handle an LSP request
-    pub async fn handle_request(&self, request: Value) -> Result<Value> {
+    pub fn handle_request(&self, request: Value) -> Result<Value> {
         let method = request["method"].as_str().unwrap_or("");
         let id = request["id"].clone();
         let params = &request["params"];
 
         let result = match method {
-            "initialize" => self.handle_initialize(params).await?,
+            "initialize" => self.handle_initialize(params)?,
             "shutdown" => json!(null),
-            "textDocument/hover" => self.handle_hover(params).await?,
-            "textDocument/completion" => self.handle_completion(params).await?,
-            "textDocument/definition" => self.handle_definition(params).await?,
+            "textDocument/hover" => self.handle_hover(params)?,
+            "textDocument/completion" => self.handle_completion(params)?,
+            "textDocument/definition" => self.handle_definition(params)?,
             _ => {
                 // Method not found
                 return Ok(json!({
@@ -126,7 +126,7 @@ impl LspServer {
                 self.handle_did_close(params).await?;
             }
             "textDocument/didSave" => {
-                self.handle_did_save(params).await?;
+                self.handle_did_save(params)?;
             }
             _ => {
                 // Unknown notification - ignore
@@ -137,7 +137,7 @@ impl LspServer {
     }
 
     /// Handle raw message (for error handling tests)
-    pub async fn handle_raw_message(&self, _message: &str) -> Result<Value> {
+    pub fn handle_raw_message(&self, _message: &str) -> Result<Value> {
         // In a real implementation, this would parse JSON
         // For tests, we'll just return an error for invalid JSON
         Ok(json!({
@@ -150,7 +150,7 @@ impl LspServer {
     }
 
     /// Handle initialize request
-    async fn handle_initialize(&self, _params: &Value) -> Result<Value> {
+    fn handle_initialize(&self, _params: &Value) -> Result<Value> {
         Ok(json!({
             "capabilities": {
                 "textDocumentSync": 1,  // Full sync
@@ -220,13 +220,13 @@ impl LspServer {
     }
 
     /// Handle textDocument/didSave notification
-    async fn handle_did_save(&self, _params: &Value) -> Result<()> {
+    fn handle_did_save(&self, _params: &Value) -> Result<()> {
         // Could trigger additional validation here
         Ok(())
     }
 
     /// Handle textDocument/hover request
-    async fn handle_hover(&self, params: &Value) -> Result<Value> {
+    fn handle_hover(&self, params: &Value) -> Result<Value> {
         // Check for required params
         if params.is_null() || !params.is_object() {
             return Ok(json!(null));
@@ -242,7 +242,7 @@ impl LspServer {
     }
 
     /// Handle textDocument/completion request
-    async fn handle_completion(&self, _params: &Value) -> Result<Value> {
+    fn handle_completion(&self, _params: &Value) -> Result<Value> {
         // Return basic completions
         Ok(json!([
             {
@@ -259,7 +259,7 @@ impl LspServer {
     }
 
     /// Handle textDocument/definition request
-    async fn handle_definition(&self, params: &Value) -> Result<Value> {
+    fn handle_definition(&self, params: &Value) -> Result<Value> {
         // Return a mock definition location
         let uri = params["textDocument"]["uri"].as_str().unwrap_or("");
 
@@ -280,8 +280,14 @@ impl LspServer {
         if text.contains("let x = }") {
             let diagnostics = vec![Diagnostic {
                 range: Range {
-                    start: Position { line: 0, character: 8 },
-                    end: Position { line: 0, character: 9 },
+                    start: Position {
+                        line: 0,
+                        character: 8,
+                    },
+                    end: Position {
+                        line: 0,
+                        character: 9,
+                    },
                 },
                 severity: DiagnosticSeverity::Error,
                 message: "Expected expression after '='".to_string(),

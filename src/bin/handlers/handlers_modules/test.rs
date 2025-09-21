@@ -1,7 +1,10 @@
 //! Refactored test command handler
 //! Complexity reduced from ~200 lines to ≤10 per function
+use super::test_helpers::{
+    discover_test_files, execute_tests, generate_coverage_report, generate_json_output,
+    print_test_summary, TestResult,
+};
 use anyhow::Result;
-use super::test_helpers::{discover_test_files, execute_tests, print_test_summary, generate_json_output, generate_coverage_report, TestResult};
 use std::path::{Path, PathBuf};
 use std::time::Instant;
 /// Handle test command - refactored with ≤10 complexity
@@ -129,8 +132,8 @@ mod tests {
     use super::*;
     use std::fs;
     use std::io::Write;
-    use tempfile::{NamedTempFile, TempDir};
     use std::time::Duration;
+    use tempfile::{NamedTempFile, TempDir};
 
     // Helper function to create a test directory with .ruchy files
     fn create_test_directory_with_files() -> Result<TempDir> {
@@ -152,7 +155,12 @@ mod tests {
     }
 
     // Helper function to create TestResult instances
-    fn create_test_result(file: &str, success: bool, duration_ms: u64, error: Option<&str>) -> TestResult {
+    fn create_test_result(
+        file: &str,
+        success: bool,
+        duration_ms: u64,
+        error: Option<&str>,
+    ) -> TestResult {
         TestResult {
             file: PathBuf::from(file),
             success,
@@ -171,14 +179,14 @@ mod tests {
         std::env::set_current_dir(&temp_dir.path()).unwrap();
 
         let result = handle_test_command(
-            None, // Use default path (current directory)
-            false, // No watch mode
-            false, // Not verbose
-            None, // No filter
-            false, // No coverage
+            None,   // Use default path (current directory)
+            false,  // No watch mode
+            false,  // Not verbose
+            None,   // No filter
+            false,  // No coverage
             "text", // Coverage format
-            1, // Parallel threads
-            0.0, // No threshold
+            1,      // Parallel threads
+            0.0,    // No threshold
             "text", // Output format
         );
 
@@ -195,13 +203,13 @@ mod tests {
 
         let result = handle_test_command(
             Some(temp_dir.path().to_path_buf()),
-            false, // No watch mode
-            true, // Verbose
-            None, // No filter
-            false, // No coverage
+            false,  // No watch mode
+            true,   // Verbose
+            None,   // No filter
+            false,  // No coverage
             "text", // Coverage format
-            1, // Parallel threads
-            0.0, // No threshold
+            1,      // Parallel threads
+            0.0,    // No threshold
             "text", // Output format
         );
 
@@ -215,14 +223,14 @@ mod tests {
 
         let result = handle_test_command(
             Some(temp_dir.path().to_path_buf()),
-            false, // No watch mode
-            false, // Not verbose
+            false,           // No watch mode
+            false,           // Not verbose
             Some("passing"), // Filter for "passing" in filename
-            false, // No coverage
-            "text", // Coverage format
-            1, // Parallel threads
-            0.0, // No threshold
-            "text", // Output format
+            false,           // No coverage
+            "text",          // Coverage format
+            1,               // Parallel threads
+            0.0,             // No threshold
+            "text",          // Output format
         );
 
         // Test should complete without panicking
@@ -235,13 +243,13 @@ mod tests {
 
         let result = handle_test_command(
             Some(temp_dir.path().to_path_buf()),
-            false, // No watch mode
-            false, // Not verbose
-            None, // No filter
-            true, // Enable coverage
+            false,  // No watch mode
+            false,  // Not verbose
+            None,   // No filter
+            true,   // Enable coverage
             "html", // HTML coverage format
-            1, // Parallel threads
-            80.0, // Coverage threshold
+            1,      // Parallel threads
+            80.0,   // Coverage threshold
             "text", // Output format
         );
 
@@ -255,13 +263,13 @@ mod tests {
 
         let result = handle_test_command(
             Some(temp_dir.path().to_path_buf()),
-            false, // No watch mode
-            false, // Not verbose
-            None, // No filter
-            false, // No coverage
+            false,  // No watch mode
+            false,  // Not verbose
+            None,   // No filter
+            false,  // No coverage
             "text", // Coverage format
-            1, // Parallel threads
-            0.0, // No threshold
+            1,      // Parallel threads
+            0.0,    // No threshold
             "json", // JSON output format
         );
 
@@ -277,12 +285,12 @@ mod tests {
 
         let result = run_tests(
             temp_dir.path(),
-            false, // Not verbose
-            None, // No filter
-            false, // No coverage
+            false,  // Not verbose
+            None,   // No filter
+            false,  // No coverage
             "text", // Coverage format
-            1, // Parallel threads
-            0.0, // No threshold
+            1,      // Parallel threads
+            0.0,    // No threshold
             "text", // Output format
         );
 
@@ -296,12 +304,12 @@ mod tests {
 
         let result = run_tests(
             temp_dir.path(),
-            true, // Verbose
-            None, // No filter
-            false, // No coverage
+            true,   // Verbose
+            None,   // No filter
+            false,  // No coverage
             "text", // Coverage format
-            1, // Parallel threads
-            0.0, // No threshold
+            1,      // Parallel threads
+            0.0,    // No threshold
             "text", // Output format
         );
 
@@ -315,13 +323,13 @@ mod tests {
 
         let result = run_tests(
             temp_dir.path(),
-            false, // Not verbose
+            false,           // Not verbose
             Some("another"), // Filter for "another" in filename
-            false, // No coverage
-            "text", // Coverage format
-            1, // Parallel threads
-            0.0, // No threshold
-            "text", // Output format
+            false,           // No coverage
+            "text",          // Coverage format
+            1,               // Parallel threads
+            0.0,             // No threshold
+            "text",          // Output format
         );
 
         // Test should complete without panicking
@@ -334,12 +342,12 @@ mod tests {
 
         let result = run_tests(
             temp_dir.path(),
-            false, // Not verbose
-            None, // No filter
-            false, // No coverage
+            false,  // Not verbose
+            None,   // No filter
+            false,  // No coverage
             "text", // Coverage format
-            1, // Parallel threads
-            0.0, // No threshold
+            1,      // Parallel threads
+            0.0,    // No threshold
             "json", // JSON output format
         );
 
@@ -353,12 +361,12 @@ mod tests {
 
         let result = run_tests(
             temp_dir.path(),
-            false, // Not verbose
-            None, // No filter
-            true, // Enable coverage
+            false,  // Not verbose
+            None,   // No filter
+            true,   // Enable coverage
             "html", // HTML coverage format
-            1, // Parallel threads
-            75.0, // Coverage threshold
+            1,      // Parallel threads
+            75.0,   // Coverage threshold
             "text", // Output format
         );
 
@@ -368,7 +376,7 @@ mod tests {
 
     // ========== Watch Mode Tests ==========
     #[test]
-    #[ignore = "Ignore by default as this is an infinite loop test"]
+
     fn test_handle_watch_mode_setup() {
         let temp_dir = create_test_directory_with_files().unwrap();
 
@@ -379,7 +387,7 @@ mod tests {
         // For now, just test that the function exists and can be called
         // In a real test environment, you'd use a timeout or separate thread
 
-        // Note: This test is marked as #[ignore] to prevent infinite loop in CI
+        // Note: This test is marked as  to prevent infinite loop in CI
         let _result = std::panic::catch_unwind(|| {
             std::thread::spawn(move || {
                 std::thread::sleep(Duration::from_millis(10)); // Short sleep
@@ -492,13 +500,13 @@ mod tests {
         // Test the complete workflow without watch mode
         let result = handle_test_command(
             Some(temp_dir.path().to_path_buf()),
-            false, // No watch mode
-            true, // Verbose
-            None, // No filter
-            false, // No coverage (to keep test simple)
+            false,  // No watch mode
+            true,   // Verbose
+            None,   // No filter
+            false,  // No coverage (to keep test simple)
             "text", // Coverage format
-            1, // Single thread
-            0.0, // No threshold
+            1,      // Single thread
+            0.0,    // No threshold
             "text", // Text output
         );
 
@@ -513,14 +521,14 @@ mod tests {
         // Test with maximum options enabled
         let result = handle_test_command(
             Some(temp_dir.path().to_path_buf()),
-            false, // No watch mode (to keep test finite)
-            true, // Verbose
+            false,        // No watch mode (to keep test finite)
+            true,         // Verbose
             Some("test"), // Filter
-            true, // Enable coverage
-            "json", // JSON coverage format
-            2, // Multiple threads
-            50.0, // Coverage threshold
-            "json", // JSON output
+            true,         // Enable coverage
+            "json",       // JSON coverage format
+            2,            // Multiple threads
+            50.0,         // Coverage threshold
+            "json",       // JSON output
         );
 
         // Should handle all options gracefully
@@ -534,13 +542,13 @@ mod tests {
 
         let result = handle_test_command(
             Some(invalid_path),
-            false, // No watch mode
-            false, // Not verbose
-            None, // No filter
-            false, // No coverage
+            false,  // No watch mode
+            false,  // Not verbose
+            None,   // No filter
+            false,  // No coverage
             "text", // Coverage format
-            1, // Single thread
-            0.0, // No threshold
+            1,      // Single thread
+            0.0,    // No threshold
             "text", // Text output
         );
 
@@ -562,10 +570,10 @@ mod tests {
         for (parallel, threshold, format) in test_cases {
             let result = handle_test_command(
                 Some(temp_dir.path().to_path_buf()),
-                false, // No watch mode
-                false, // Not verbose
-                None, // No filter
-                false, // No coverage
+                false,  // No watch mode
+                false,  // Not verbose
+                None,   // No filter
+                false,  // No coverage
                 "text", // Coverage format
                 parallel,
                 threshold,

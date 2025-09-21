@@ -1,5 +1,5 @@
 //! Demo to notebook conversion module
-//! 
+//!
 //! Converts Ruchy demo files (.ruchy) to Jupyter notebook format
 //! for use with the `SharedSession` architecture
 use serde::{Deserialize, Serialize};
@@ -17,31 +17,31 @@ pub struct Notebook {
     pub nbformat_minor: u32,
 }
 impl NotebookCell {
-/// # Examples
-/// 
-/// ```
-/// use ruchy::wasm::demo_converter::NotebookCell;
-/// 
-/// let mut instance = NotebookCell::new();
-/// let result = instance.code();
-/// // Verify behavior
-/// ```
-pub fn code(source: String) -> Self {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::wasm::demo_converter::NotebookCell;
+    ///
+    /// let mut instance = NotebookCell::new();
+    /// let result = instance.code();
+    /// // Verify behavior
+    /// ```
+    pub fn code(source: String) -> Self {
         Self {
             cell_type: "code".to_string(),
             source,
             metadata: serde_json::Value::Object(serde_json::Map::new()),
         }
     }
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::demo_converter::markdown;
-/// 
-/// let result = markdown(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn markdown(source: String) -> Self {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::demo_converter::markdown;
+    ///
+    /// let result = markdown(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn markdown(source: String) -> Self {
         Self {
             cell_type: "markdown".to_string(),
             source,
@@ -50,14 +50,17 @@ pub fn markdown(source: String) -> Self {
     }
 }
 /// # Examples
-/// 
+///
 /// ```ignore
 /// use ruchy::wasm::demo_converter::convert_demo_to_notebook;
-/// 
+///
 /// let result = convert_demo_to_notebook("example");
 /// assert_eq!(result, Ok(()));
 /// ```
-pub fn convert_demo_to_notebook(name: &str, content: &str) -> Result<Notebook, Box<dyn std::error::Error>> {
+pub fn convert_demo_to_notebook(
+    name: &str,
+    content: &str,
+) -> Result<Notebook, Box<dyn std::error::Error>> {
     let mut cells = Vec::new();
     let lines: Vec<&str> = content.lines().collect();
     let mut i = 0;
@@ -89,17 +92,41 @@ pub fn convert_demo_to_notebook(name: &str, content: &str) -> Result<Notebook, B
     let mut metadata = serde_json::Map::new();
     // Language info
     let mut language_info = serde_json::Map::new();
-    language_info.insert("name".to_string(), serde_json::Value::String("ruchy".to_string()));
-    language_info.insert("version".to_string(), serde_json::Value::String("3.1.0".to_string()));
-    metadata.insert("language_info".to_string(), serde_json::Value::Object(language_info));
+    language_info.insert(
+        "name".to_string(),
+        serde_json::Value::String("ruchy".to_string()),
+    );
+    language_info.insert(
+        "version".to_string(),
+        serde_json::Value::String("3.1.0".to_string()),
+    );
+    metadata.insert(
+        "language_info".to_string(),
+        serde_json::Value::Object(language_info),
+    );
     // Kernel spec
     let mut kernelspec = serde_json::Map::new();
-    kernelspec.insert("display_name".to_string(), serde_json::Value::String("Ruchy".to_string()));
-    kernelspec.insert("language".to_string(), serde_json::Value::String("ruchy".to_string()));
-    kernelspec.insert("name".to_string(), serde_json::Value::String("ruchy".to_string()));
-    metadata.insert("kernelspec".to_string(), serde_json::Value::Object(kernelspec));
+    kernelspec.insert(
+        "display_name".to_string(),
+        serde_json::Value::String("Ruchy".to_string()),
+    );
+    kernelspec.insert(
+        "language".to_string(),
+        serde_json::Value::String("ruchy".to_string()),
+    );
+    kernelspec.insert(
+        "name".to_string(),
+        serde_json::Value::String("ruchy".to_string()),
+    );
+    metadata.insert(
+        "kernelspec".to_string(),
+        serde_json::Value::Object(kernelspec),
+    );
     // Original demo name
-    metadata.insert("original_demo".to_string(), serde_json::Value::String(name.to_string()));
+    metadata.insert(
+        "original_demo".to_string(),
+        serde_json::Value::String(name.to_string()),
+    );
     Ok(Notebook {
         cells,
         metadata,
@@ -107,7 +134,10 @@ pub fn convert_demo_to_notebook(name: &str, content: &str) -> Result<Notebook, B
         nbformat_minor: 2,
     })
 }
-fn parse_code_block(lines: &[&str], index: &mut usize) -> Result<String, Box<dyn std::error::Error>> {
+fn parse_code_block(
+    lines: &[&str],
+    index: &mut usize,
+) -> Result<String, Box<dyn std::error::Error>> {
     let mut code_lines = Vec::new();
     let start_line = lines[*index].trim();
     // Check if this is a multi-line statement (function, if, etc.)
@@ -132,12 +162,12 @@ fn parse_code_block(lines: &[&str], index: &mut usize) -> Result<String, Box<dyn
     Ok(code_lines.join("\n"))
 }
 fn is_multiline_start(line: &str) -> bool {
-    line.starts_with("fun ") ||
-    line.starts_with("if ") ||
-    line.starts_with("while ") ||
-    line.starts_with("for ") ||
-    line.starts_with("match ") ||
-    line.contains('{')
+    line.starts_with("fun ")
+        || line.starts_with("if ")
+        || line.starts_with("while ")
+        || line.starts_with("for ")
+        || line.starts_with("match ")
+        || line.contains('{')
 }
 fn count_braces(line: &str) -> i32 {
     let open = line.chars().filter(|&c| c == '{').count() as i32;
@@ -145,10 +175,10 @@ fn count_braces(line: &str) -> i32 {
     open - close
 }
 /// # Examples
-/// 
+///
 /// ```ignore
 /// use ruchy::wasm::demo_converter::find_demo_files;
-/// 
+///
 /// let result = find_demo_files(());
 /// assert_eq!(result, Ok(()));
 /// ```
@@ -196,8 +226,7 @@ mod tests {
 #[cfg(test)]
 mod property_tests_demo_converter {
     use proptest::proptest;
-    
-    
+
     proptest! {
         /// Property: Function never panics on any input
         #[test]

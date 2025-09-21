@@ -8,11 +8,14 @@
 #![allow(clippy::unwrap_used)]
 
 use ruchy::runtime::repl::Repl;
-use std::rc::Rc;
 use ruchy::runtime::Value;
 use std::rc::Rc;
-use std::{env, time::{Duration, Instant}};
 use std::rc::Rc;
+use std::rc::Rc;
+use std::{
+    env,
+    time::{Duration, Instant},
+};
 
 #[test]
 fn test_one_liner_execution() {
@@ -107,7 +110,11 @@ fn test_list_display() {
     let result = repl.evaluate_expr_str("[1, 2, 3]", deadline).unwrap();
     assert_eq!(
         result,
-        Value::Array(vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)])
+        Value::Array(vec![
+            Value::Integer(1),
+            Value::Integer(2),
+            Value::Integer(3)
+        ])
     );
 }
 

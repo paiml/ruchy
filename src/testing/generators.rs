@@ -6,10 +6,10 @@ use proptest::strategy::{BoxedStrategy, Strategy};
 const MAX_DEPTH: u32 = 5;
 /// Generate arbitrary literals
 /// # Examples
-/// 
+///
 /// ```
 /// use ruchy::testing::generators::arb_literal;
-/// 
+///
 /// let result = arb_literal(());
 /// assert_eq!(result, Ok(()));
 /// ```
@@ -25,10 +25,10 @@ pub fn arb_literal() -> BoxedStrategy<Literal> {
 }
 /// Generate arbitrary identifiers
 /// # Examples
-/// 
+///
 /// ```
 /// use ruchy::testing::generators::arb_identifier;
-/// 
+///
 /// let result = arb_identifier(());
 /// assert_eq!(result, Ok(()));
 /// ```
@@ -37,10 +37,10 @@ pub fn arb_identifier() -> BoxedStrategy<String> {
 }
 /// Generate arbitrary binary operators
 /// # Examples
-/// 
+///
 /// ```
 /// use ruchy::testing::generators::arb_binary_op;
-/// 
+///
 /// let result = arb_binary_op(());
 /// assert_eq!(result, Ok(()));
 /// ```
@@ -69,10 +69,10 @@ pub fn arb_binary_op() -> BoxedStrategy<BinaryOp> {
 }
 /// Generate arbitrary unary operators
 /// # Examples
-/// 
+///
 /// ```
 /// use ruchy::testing::generators::arb_unary_op;
-/// 
+///
 /// let result = arb_unary_op(());
 /// assert_eq!(result, Ok(()));
 /// ```
@@ -87,10 +87,10 @@ pub fn arb_unary_op() -> BoxedStrategy<UnaryOp> {
 }
 /// Generate arbitrary expressions with depth limiting
 /// # Examples
-/// 
+///
 /// ```
 /// use ruchy::testing::generators::arb_expr_with_depth;
-/// 
+///
 /// let result = arb_expr_with_depth(());
 /// assert_eq!(result, Ok(()));
 /// ```
@@ -157,10 +157,10 @@ pub fn arb_expr_with_depth(depth: u32) -> BoxedStrategy<Expr> {
 }
 /// Generate arbitrary expressions
 /// # Examples
-/// 
+///
 /// ```
 /// use ruchy::testing::generators::arb_expr;
-/// 
+///
 /// let result = arb_expr(());
 /// assert_eq!(result, Ok(()));
 /// ```
@@ -169,10 +169,10 @@ pub fn arb_expr() -> BoxedStrategy<Expr> {
 }
 /// Generate arbitrary patterns
 /// # Examples
-/// 
+///
 /// ```
 /// use ruchy::testing::generators::arb_pattern;
-/// 
+///
 /// let strategy = arb_pattern();
 /// // Use the strategy with proptest
 /// ```
@@ -187,10 +187,10 @@ pub fn arb_pattern() -> BoxedStrategy<Pattern> {
 }
 /// Generate well-typed expressions (simplified for testing)
 /// # Examples
-/// 
+///
 /// ```
 /// use ruchy::testing::generators::arb_well_typed_expr;
-/// 
+///
 /// let result = arb_well_typed_expr(());
 /// assert_eq!(result, Ok(()));
 /// ```
@@ -222,7 +222,6 @@ pub fn arb_well_typed_expr() -> BoxedStrategy<Expr> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
 
     #[test]
     fn test_arb_literal_generates_all_variants() {
@@ -252,7 +251,7 @@ mod tests {
 
     #[test]
     fn test_arb_binary_op_covers_all_ops() {
-        let ops = vec![
+        let _ops = vec![
             BinaryOp::Add,
             BinaryOp::Subtract,
             BinaryOp::Multiply,
@@ -283,7 +282,7 @@ mod tests {
 
     #[test]
     fn test_arb_unary_op_covers_all_ops() {
-        let ops = vec![
+        let _ops = [
             UnaryOp::Negate,
             UnaryOp::Not,
             UnaryOp::BitwiseNot,
@@ -315,7 +314,7 @@ mod tests {
             let expr = strategy.new_tree(&mut runner).unwrap().current();
             // At max depth, should only generate literals or identifiers
             match &expr.kind {
-                ExprKind::Literal(_) | ExprKind::Identifier(_) => {},
+                ExprKind::Literal(_) | ExprKind::Identifier(_) => {}
                 _ => panic!("Generated recursive expression at MAX_DEPTH"),
             }
         }
@@ -349,7 +348,7 @@ mod tests {
                 Pattern::Literal(_) => has_literal = true,
                 Pattern::Identifier(_) => has_identifier = true,
                 Pattern::Wildcard => has_wildcard = true,
-                _ => {},
+                _ => {}
             }
         }
 
@@ -366,9 +365,11 @@ mod tests {
             let expr = strategy.new_tree(&mut runner).unwrap().current();
             // Well-typed expressions should be simple
             match &expr.kind {
-                ExprKind::Literal(_) => {},
-                ExprKind::Identifier(_) => {},
-                ExprKind::Binary { op: BinaryOp::Add, .. } => {},
+                ExprKind::Literal(_) => {}
+                ExprKind::Identifier(_) => {}
+                ExprKind::Binary {
+                    op: BinaryOp::Add, ..
+                } => {}
                 _ => panic!("Unexpected expression type in well-typed generator"),
             }
         }
@@ -430,9 +431,18 @@ mod tests {
 
     #[test]
     fn test_expr_kind_if_variant() {
-        let cond = Box::new(Expr::new(ExprKind::Literal(Literal::Bool(true)), Span::new(0, 0)));
-        let then = Box::new(Expr::new(ExprKind::Literal(Literal::Integer(1)), Span::new(0, 0)));
-        let else_b = Some(Box::new(Expr::new(ExprKind::Literal(Literal::Integer(2)), Span::new(0, 0))));
+        let cond = Box::new(Expr::new(
+            ExprKind::Literal(Literal::Bool(true)),
+            Span::new(0, 0),
+        ));
+        let then = Box::new(Expr::new(
+            ExprKind::Literal(Literal::Integer(1)),
+            Span::new(0, 0),
+        ));
+        let else_b = Some(Box::new(Expr::new(
+            ExprKind::Literal(Literal::Integer(2)),
+            Span::new(0, 0),
+        )));
 
         let if_expr = ExprKind::If {
             condition: cond,
@@ -458,8 +468,13 @@ mod tests {
             let literal = value_tree.current();
             // Just verify it doesn't panic
             match literal {
-                Literal::Integer(_) | Literal::Float(_) | Literal::Bool(_) |
-                Literal::String(_) | Literal::Unit | Literal::Char(_) | Literal::Null => {},
+                Literal::Integer(_)
+                | Literal::Float(_)
+                | Literal::Bool(_)
+                | Literal::String(_)
+                | Literal::Unit
+                | Literal::Char(_)
+                | Literal::Null => {}
             }
         }
     }
@@ -524,8 +539,12 @@ mod tests {
             let pattern = value_tree.current();
             // Verify pattern is valid
             match pattern {
-                Pattern::Literal(_) | Pattern::Identifier(_) | Pattern::Wildcard |
-                Pattern::Tuple(_) | Pattern::Struct { .. } | _ => {},
+                Pattern::Literal(_)
+                | Pattern::Identifier(_)
+                | Pattern::Wildcard
+                | Pattern::Tuple(_)
+                | Pattern::Struct { .. }
+                | _ => {}
             }
         }
     }
@@ -609,13 +628,27 @@ mod tests {
             let value_tree = strategy.new_tree(&mut runner).unwrap();
             let literal = value_tree.current();
             match literal {
-                Literal::Integer(_) => { found_variants.insert("Integer"); },
-                Literal::Float(_) => { found_variants.insert("Float"); },
-                Literal::Bool(_) => { found_variants.insert("Bool"); },
-                Literal::String(_) => { found_variants.insert("String"); },
-                Literal::Unit => { found_variants.insert("Unit"); },
-                Literal::Char(_) => { found_variants.insert("Char"); },
-                Literal::Null => { found_variants.insert("Null"); },
+                Literal::Integer(_) => {
+                    found_variants.insert("Integer");
+                }
+                Literal::Float(_) => {
+                    found_variants.insert("Float");
+                }
+                Literal::Bool(_) => {
+                    found_variants.insert("Bool");
+                }
+                Literal::String(_) => {
+                    found_variants.insert("String");
+                }
+                Literal::Unit => {
+                    found_variants.insert("Unit");
+                }
+                Literal::Char(_) => {
+                    found_variants.insert("Char");
+                }
+                Literal::Null => {
+                    found_variants.insert("Null");
+                }
             }
         }
         // Should find at least some variants
@@ -639,7 +672,9 @@ mod tests {
             // Should be reasonable length
             assert!(identifier.len() <= 11);
             // Should only contain valid identifier characters
-            assert!(identifier.chars().all(|c| c.is_ascii_alphanumeric() || c == '_'));
+            assert!(identifier
+                .chars()
+                .all(|c| c.is_ascii_alphanumeric() || c == '_'));
         }
     }
 
@@ -710,7 +745,7 @@ mod tests {
         match expr.kind {
             ExprKind::Literal(_) | ExprKind::Identifier(_) => {
                 // Expected for max depth
-            },
+            }
             _ => {
                 // May still get simple expressions
             }
@@ -759,12 +794,24 @@ mod tests {
             let pattern = value_tree.current();
 
             match &pattern {
-                Pattern::Literal(_) => { found_patterns.insert("Literal"); },
-                Pattern::Identifier(_) => { found_patterns.insert("Identifier"); },
-                Pattern::Wildcard => { found_patterns.insert("Wildcard"); },
-                Pattern::Tuple(_) => { found_patterns.insert("Tuple"); },
-                Pattern::Struct { .. } => { found_patterns.insert("Struct"); },
-                _ => { found_patterns.insert("Other"); },
+                Pattern::Literal(_) => {
+                    found_patterns.insert("Literal");
+                }
+                Pattern::Identifier(_) => {
+                    found_patterns.insert("Identifier");
+                }
+                Pattern::Wildcard => {
+                    found_patterns.insert("Wildcard");
+                }
+                Pattern::Tuple(_) => {
+                    found_patterns.insert("Tuple");
+                }
+                Pattern::Struct { .. } => {
+                    found_patterns.insert("Struct");
+                }
+                _ => {
+                    found_patterns.insert("Other");
+                }
             }
         }
 
@@ -783,16 +830,10 @@ mod tests {
     #[test]
     fn test_expr_with_specific_kinds() {
         // Test that we can generate expressions with specific kinds
-        let literal_expr = Expr::new(
-            ExprKind::Literal(Literal::Integer(42)),
-            Span::new(0, 0)
-        );
+        let literal_expr = Expr::new(ExprKind::Literal(Literal::Integer(42)), Span::new(0, 0));
         assert!(matches!(literal_expr.kind, ExprKind::Literal(_)));
 
-        let id_expr = Expr::new(
-            ExprKind::Identifier("test".to_string()),
-            Span::new(0, 0)
-        );
+        let id_expr = Expr::new(ExprKind::Identifier("test".to_string()), Span::new(0, 0));
         assert!(matches!(id_expr.kind, ExprKind::Identifier(_)));
     }
 
@@ -827,7 +868,7 @@ mod tests {
     #[test]
     fn test_unary_ops_enumeration() {
         // Test that we can enumerate all unary operators
-        let all_ops = vec![
+        let all_ops = [
             UnaryOp::Negate,
             UnaryOp::Not,
             UnaryOp::BitwiseNot,
@@ -856,7 +897,7 @@ mod tests {
             match literal {
                 Literal::Integer(n) => assert_eq!(*n, 42),
                 Literal::Float(f) => assert!((*f - 3.14).abs() < f64::EPSILON),
-                Literal::Bool(b) => assert_eq!(*b, true),
+                Literal::Bool(b) => assert!(*b),
                 Literal::String(s) => assert_eq!(s, "test"),
                 Literal::Char(c) => assert_eq!(*c, 'a'),
                 Literal::Unit => assert!(true),
@@ -914,16 +955,13 @@ mod tests {
     #[test]
     fn test_expr_construction() {
         // Test various ways to construct expressions
-        let expr1 = Expr::new(
-            ExprKind::Literal(Literal::Integer(123)),
-            Span::new(5, 8)
-        );
+        let expr1 = Expr::new(ExprKind::Literal(Literal::Integer(123)), Span::new(5, 8));
         assert_eq!(expr1.span.start, 5);
         assert_eq!(expr1.span.end, 8);
 
         let expr2 = Expr::new(
             ExprKind::Identifier("variable".to_string()),
-            Default::default()
+            Default::default(),
         );
         assert_eq!(expr2.span.start, 0);
         assert_eq!(expr2.span.end, 0);

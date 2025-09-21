@@ -2,10 +2,10 @@
 // Sprint 80 Phase 25: Full pipeline testing
 // Target: Exercise all code paths end-to-end
 
-use ruchy::{Parser, Compiler, Transpiler};
-use ruchy::runtime::interpreter::Interpreter;
 use ruchy::backend::CompilerOptions;
+use ruchy::runtime::interpreter::Interpreter;
 use ruchy::runtime::Value;
+use ruchy::{Compiler, Parser, Transpiler};
 
 #[test]
 fn test_full_pipeline_arithmetic() {
@@ -17,17 +17,17 @@ fn test_full_pipeline_arithmetic() {
         "3.14 * 2.0",
         "10.5 / 2.5",
     ];
-    
+
     for program in programs {
         // Parse
         let mut parser = Parser::new(program);
         let ast = parser.parse().expect("Parse failed");
-        
+
         // Transpile
         let transpiler = Transpiler::new();
         let rust_code = transpiler.transpile(&ast);
         assert!(!rust_code.is_empty());
-        
+
         // Interpret
         let mut interpreter = Interpreter::new();
         let _ = interpreter.evaluate(&ast);
@@ -42,14 +42,14 @@ fn test_full_pipeline_variables() {
         let z = x + y;
         z * 2
     "#;
-    
+
     let mut parser = Parser::new(program);
     let ast = parser.parse().expect("Parse failed");
-    
+
     let transpiler = Transpiler::new();
     let rust_code = transpiler.transpile(&ast);
     assert!(rust_code.contains("let"));
-    
+
     let mut interpreter = Interpreter::new();
     if let Ok(result) = interpreter.evaluate(&ast) {
         assert_eq!(result, Value::Integer(60));
@@ -65,14 +65,14 @@ fn test_full_pipeline_functions() {
         let sum = add(3, 4);
         multiply(sum, 2)
     "#;
-    
+
     let mut parser = Parser::new(program);
     let ast = parser.parse().expect("Parse failed");
-    
+
     let transpiler = Transpiler::new();
     let rust_code = transpiler.transpile(&ast);
     assert!(rust_code.contains("fn"));
-    
+
     let mut interpreter = Interpreter::new();
     if let Ok(result) = interpreter.evaluate(&ast) {
         assert_eq!(result, Value::Integer(14));
@@ -86,15 +86,15 @@ fn test_full_pipeline_control_flow() {
         "if 5 > 3 { 100 } else { 200 }",
         "if false { 1 } else if true { 2 } else { 3 }",
     ];
-    
+
     for program in programs {
         let mut parser = Parser::new(program);
         let ast = parser.parse().expect("Parse failed");
-        
+
         let transpiler = Transpiler::new();
         let rust_code = transpiler.transpile(&ast);
         assert!(rust_code.contains("if"));
-        
+
         let mut interpreter = Interpreter::new();
         let _ = interpreter.evaluate(&ast);
     }
@@ -111,14 +111,14 @@ fn test_full_pipeline_loops() {
         };
         sum
     "#;
-    
+
     let mut parser = Parser::new(while_program);
     if let Ok(ast) = parser.parse() {
         let transpiler = Transpiler::new();
         let rust_code = transpiler.transpile(&ast);
         assert!(rust_code.contains("while"));
     }
-    
+
     let for_program = r#"
         let mut total = 0;
         for x in [1, 2, 3, 4, 5] {
@@ -126,7 +126,7 @@ fn test_full_pipeline_loops() {
         };
         total
     "#;
-    
+
     let mut parser = Parser::new(for_program);
     if let Ok(ast) = parser.parse() {
         let transpiler = Transpiler::new();
@@ -140,15 +140,15 @@ fn test_full_pipeline_data_structures() {
     let list_program = "[1, 2, 3, 4, 5]";
     let tuple_program = "(42, \"hello\", true, 3.14)";
     let object_program = "{x: 10, y: 20, name: \"point\"}";
-    
+
     for program in [list_program, tuple_program, object_program] {
         let mut parser = Parser::new(program);
         let ast = parser.parse().expect("Parse failed");
-        
+
         let transpiler = Transpiler::new();
         let rust_code = transpiler.transpile(&ast);
         assert!(!rust_code.is_empty());
-        
+
         let mut interpreter = Interpreter::new();
         let _ = interpreter.evaluate(&ast);
     }
@@ -165,13 +165,13 @@ fn test_full_pipeline_pattern_matching() {
             _ => "other"
         }
     "#;
-    
+
     let mut parser = Parser::new(program);
     if let Ok(ast) = parser.parse() {
         let transpiler = Transpiler::new();
         let rust_code = transpiler.transpile(&ast);
         assert!(rust_code.contains("match"));
-        
+
         let mut interpreter = Interpreter::new();
         if let Ok(result) = interpreter.evaluate(&ast) {
             if let Value::String(s) = result {
@@ -189,13 +189,13 @@ fn test_full_pipeline_string_operations() {
         r#""HELLO".lower()"#,
         r#""hello".upper()"#,
     ];
-    
+
     for program in programs {
         let mut parser = Parser::new(program);
         if let Ok(ast) = parser.parse() {
             let transpiler = Transpiler::new();
             let _ = transpiler.transpile(&ast);
-            
+
             let mut interpreter = Interpreter::new();
             let _ = interpreter.evaluate(&ast);
         }
@@ -218,7 +218,7 @@ fn test_full_pipeline_closures() {
         counter();
         counter()
     "#;
-    
+
     let mut parser = Parser::new(program);
     if let Ok(ast) = parser.parse() {
         let transpiler = Transpiler::new();
@@ -240,13 +240,13 @@ fn test_full_pipeline_recursion() {
         
         fibonacci(10)
     "#;
-    
+
     let mut parser = Parser::new(program);
     if let Ok(ast) = parser.parse() {
         let transpiler = Transpiler::new();
         let rust_code = transpiler.transpile(&ast);
         assert!(rust_code.contains("fibonacci"));
-        
+
         let mut interpreter = Interpreter::new();
         if let Ok(result) = interpreter.evaluate(&ast) {
             assert_eq!(result, Value::Integer(55));
@@ -268,7 +268,7 @@ fn test_full_pipeline_higher_order_functions() {
         let double = fn(x) { x * 2 };
         map([1, 2, 3, 4, 5], double)
     "#;
-    
+
     let mut parser = Parser::new(program);
     if let Ok(ast) = parser.parse() {
         let transpiler = Transpiler::new();
@@ -279,11 +279,11 @@ fn test_full_pipeline_higher_order_functions() {
 #[test]
 fn test_full_pipeline_error_cases() {
     let error_programs = vec![
-        "1 / 0",  // Division by zero
-        "undefined_variable",  // Undefined variable
-        "[1, 2, 3][10]",  // Index out of bounds
+        "1 / 0",              // Division by zero
+        "undefined_variable", // Undefined variable
+        "[1, 2, 3][10]",      // Index out of bounds
     ];
-    
+
     for program in error_programs {
         let mut parser = Parser::new(program);
         if let Ok(ast) = parser.parse() {
@@ -299,7 +299,7 @@ fn test_full_pipeline_error_cases() {
 fn test_compiler_options() {
     let options = CompilerOptions::default();
     let compiler = Compiler::with_options(options);
-    
+
     let simple_program = "42";
     let _ = compiler.compile_str(simple_program);
 }
@@ -338,7 +338,7 @@ fn test_transpiler_complex() {
             println!("Distances: {:?}", distances);
         }
     "#;
-    
+
     let mut parser = Parser::new(complex_program);
     if let Ok(ast) = parser.parse() {
         let transpiler = Transpiler::new();
@@ -351,7 +351,7 @@ fn test_transpiler_complex() {
 #[test]
 fn test_mixed_numeric_types() {
     let program = "let x = 10; let y = 3.14; x as f64 + y";
-    
+
     let mut parser = Parser::new(program);
     if let Ok(ast) = parser.parse() {
         let transpiler = Transpiler::new();
@@ -373,7 +373,7 @@ fn test_async_functions() {
             result
         }
     "#;
-    
+
     let mut parser = Parser::new(program);
     if let Ok(ast) = parser.parse() {
         let transpiler = Transpiler::new();
@@ -390,7 +390,7 @@ fn test_string_interpolation() {
         let greeting = f"Hello, {name}!";
         greeting
     "#;
-    
+
     let mut parser = Parser::new(program);
     if let Ok(ast) = parser.parse() {
         let transpiler = Transpiler::new();
@@ -407,7 +407,7 @@ fn test_destructuring() {
         "let (x, y) = (10, 20)",
         "let {name, age} = {name: \"Alice\", age: 30}",
     ];
-    
+
     for program in programs {
         let mut parser = Parser::new(program);
         if let Ok(ast) = parser.parse() {
@@ -426,7 +426,7 @@ fn test_pipeline_operator() {
         
         5 |> add_one |> double |> square
     "#;
-    
+
     let mut parser = Parser::new(program);
     if let Ok(ast) = parser.parse() {
         let transpiler = Transpiler::new();
@@ -438,7 +438,7 @@ fn test_pipeline_operator() {
 #[test]
 fn test_all_binary_operators() {
     use ruchy::frontend::ast::BinaryOp;
-    
+
     let ops = vec![
         (BinaryOp::Add, "+"),
         (BinaryOp::Sub, "-"),
@@ -460,7 +460,7 @@ fn test_all_binary_operators() {
         (BinaryOp::Shl, "<<"),
         (BinaryOp::Shr, ">>"),
     ];
-    
+
     for (op, symbol) in ops {
         let program = format!("1 {} 2", symbol);
         let mut parser = Parser::new(&program);
@@ -474,12 +474,8 @@ fn test_all_binary_operators() {
 // Test all unary operators
 #[test]
 fn test_all_unary_operators() {
-    let programs = vec![
-        "-42",
-        "!true",
-        "~0xFF",
-    ];
-    
+    let programs = vec!["-42", "!true", "~0xFF"];
+
     for program in programs {
         let mut parser = Parser::new(program);
         if let Ok(ast) = parser.parse() {
@@ -493,21 +489,21 @@ fn test_all_unary_operators() {
 #[test]
 fn test_all_literal_types() {
     let literals = vec![
-        "42",           // Integer
-        "3.14",         // Float
-        "true",         // Bool true
-        "false",        // Bool false
+        "42",          // Integer
+        "3.14",        // Float
+        "true",        // Bool true
+        "false",       // Bool false
         r#""string""#, // String
-        "'c'",          // Char
-        "()",           // Unit
+        "'c'",         // Char
+        "()",          // Unit
     ];
-    
+
     for literal in literals {
         let mut parser = Parser::new(literal);
         if let Ok(ast) = parser.parse() {
             let transpiler = Transpiler::new();
             let _ = transpiler.transpile(&ast);
-            
+
             let mut interpreter = Interpreter::new();
             let _ = interpreter.evaluate(&ast);
         }

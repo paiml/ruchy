@@ -1,5 +1,5 @@
 //! P0-BOOK-005: Performance Optimization Test Suite
-//! 
+//!
 //! Tests for performance optimization features including:
 //! - Loop unrolling and vectorization
 //! - Memory allocation strategies
@@ -19,11 +19,11 @@ for i in 1..1000 {
 }
 sum
 ";
-    
+
     let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     let result = repl.eval(code);
     assert!(result.is_ok(), "Basic loop should execute: {result:?}");
-    assert_eq!(result.unwrap(), "499500"); 
+    assert_eq!(result.unwrap(), "499500");
 }
 
 #[test]
@@ -34,7 +34,7 @@ let big_array = Array.new(10000, 0)
 let memory_info = mem::usage()
 println(f"Memory allocated: {memory_info}")
 "#;
-    
+
     let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     let result = repl.eval(code);
     assert!(result.is_ok(), "Memory allocation should work: {result:?}");
@@ -48,10 +48,13 @@ let data = [1, 2, 3, 4, 5]
 let results = parallel::map(data, |x| x * 2)
 println(results)
 ";
-    
+
     let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     let result = repl.eval(code);
-    assert!(result.is_ok(), "Parallel processing should work: {result:?}");
+    assert!(
+        result.is_ok(),
+        "Parallel processing should work: {result:?}"
+    );
 }
 
 #[test]
@@ -64,7 +67,7 @@ let fibonacci = fn(n) {
 }
 println(fibonacci(10))
 ";
-    
+
     let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     let result = repl.eval(code);
     assert!(result.is_ok(), "Memoization should work: {result:?}");
@@ -79,7 +82,7 @@ let vec2 = simd::from_slice([5.0, 6.0, 7.0, 8.0])
 let result = vec1 + vec2
 println(result)
 ";
-    
+
     let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     let result = repl.eval(code);
     assert!(result.is_ok(), "SIMD vectorization should work: {result:?}");
@@ -99,10 +102,13 @@ let calculate_intensive = fn(data) {
 let data = [1, 2, 3, 4, 5]
 println(calculate_intensive(data))
 ";
-    
+
     let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     let result = repl.eval(code);
-    assert!(result.is_ok(), "Profile-guided optimization should work: {result:?}");
+    assert!(
+        result.is_ok(),
+        "Profile-guided optimization should work: {result:?}"
+    );
 }
 
 #[test]
@@ -118,10 +124,13 @@ let benchmark_result = bench::time(fn() {
 })
 println(f"Execution time: {benchmark_result}")
 "#;
-    
+
     let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     let result = repl.eval(code);
-    assert!(result.is_ok(), "Performance benchmarking should work: {result:?}");
+    assert!(
+        result.is_ok(),
+        "Performance benchmarking should work: {result:?}"
+    );
 }
 
 #[test]
@@ -133,8 +142,11 @@ let slow_function = fn(x) { x + 1 }
 let result = fast_multiply(42, 2) + slow_function(1)
 println(result)
 ";
-    
+
     let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     let result = repl.eval(code);
-    assert!(result.is_ok(), "Compiler optimization hints should work: {result:?}");
+    assert!(
+        result.is_ok(),
+        "Compiler optimization hints should work: {result:?}"
+    );
 }

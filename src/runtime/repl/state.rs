@@ -211,7 +211,9 @@ mod tests {
     fn test_bindings_management() {
         let mut state = ReplState::new();
 
-        state.get_bindings_mut().insert("x".to_string(), Value::Integer(42));
+        state
+            .get_bindings_mut()
+            .insert("x".to_string(), Value::Integer(42));
         assert!(state.get_bindings().contains_key("x"));
 
         state.clear_bindings();

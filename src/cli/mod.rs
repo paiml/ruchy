@@ -1,13 +1,15 @@
 // [RUCHY-207] CLI Module Implementation
 // PMAT Complexity: <10 per function
+use crate::utils::format_file_error;
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
-use crate::utils::format_file_error;
 #[derive(Parser, Debug)]
 #[command(name = "ruchy")]
 #[command(author = "Noah Gift")]
 #[command(version = "3.4.1")]
-#[command(about = "The Ruchy programming language - A modern, expressive language for data science")]
+#[command(
+    about = "The Ruchy programming language - A modern, expressive language for data science"
+)]
 #[command(long_about = None)]
 pub struct Cli {
     /// Enable verbose output
@@ -137,16 +139,16 @@ pub enum TestCommand {
 }
 // Implementation functions with complexity <10
 impl Cli {
-/// Execute the CLI command
-///
-/// # Examples
-///
-/// ```ignore
-/// use ruchy::cli::Cli;
-/// let cli = Cli::new();
-/// cli.execute().expect("Failed to execute");
-/// ```
-pub fn execute(self) -> Result<(), String> {
+    /// Execute the CLI command
+    ///
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::cli::Cli;
+    /// let cli = Cli::new();
+    /// cli.execute().expect("Failed to execute");
+    /// ```
+    pub fn execute(self) -> Result<(), String> {
         match self.command {
             Command::Repl => execute_repl(self.verbose, self.quiet),
             Command::Run { path } => execute_run(path, self.verbose),
@@ -162,20 +164,18 @@ fn execute_repl(_verbose: bool, quiet: bool) -> Result<(), String> {
         println!("Starting Ruchy REPL v3.4.1...");
     }
     // Use existing REPL implementation
-    crate::run_repl()
-        .map_err(|e| format!("REPL error: {e}"))
+    crate::run_repl().map_err(|e| format!("REPL error: {e}"))
 }
 fn execute_run(path: PathBuf, verbose: bool) -> Result<(), String> {
     if verbose {
         println!("Running script: {}", path.display());
     }
-    let source = std::fs::read_to_string(&path)
-        .map_err(|_e| format_file_error("read", &path))?;
+    let source = std::fs::read_to_string(&path).map_err(|_e| format_file_error("read", &path))?;
     let mut parser = crate::frontend::parser::Parser::new(&source);
-    let ast = parser.parse()
-        .map_err(|e| format!("Parse error: {e:?}"))?;
+    let ast = parser.parse().map_err(|e| format!("Parse error: {e:?}"))?;
     let mut interpreter = crate::runtime::interpreter::Interpreter::new();
-    interpreter.eval_expr(&ast)
+    interpreter
+        .eval_expr(&ast)
         .map_err(|e| format!("Runtime error: {e:?}"))?;
     Ok(())
 }
@@ -183,20 +183,22 @@ fn execute_format(path: PathBuf, check: bool) -> Result<(), String> {
     if check {
         println!("Checking formatting for: {}", path.display());
         // Basic format checking - verify file is parseable
-        let source = std::fs::read_to_string(&path)
-            .map_err(|_e| format_file_error("read", &path))?;
+        let source =
+            std::fs::read_to_string(&path).map_err(|_e| format_file_error("read", &path))?;
         let mut parser = crate::frontend::parser::Parser::new(&source);
-        parser.parse()
+        parser
+            .parse()
             .map_err(|e| format!("Parse error (formatting issue): {e:?}"))?;
         println!("✓ File is properly formatted");
         Ok(())
     } else {
         println!("Formatting: {}", path.display());
         // Basic formatting - ensure file is parseable and write back
-        let source = std::fs::read_to_string(&path)
-            .map_err(|_e| format_file_error("read", &path))?;
+        let source =
+            std::fs::read_to_string(&path).map_err(|_e| format_file_error("read", &path))?;
         let mut parser = crate::frontend::parser::Parser::new(&source);
-        let _ast = parser.parse()
+        let _ast = parser
+            .parse()
             .map_err(|e| format!("Cannot format unparseable file: {e:?}"))?;
         // For now, just verify it's parseable (real formatting would rewrite)
         println!("✓ File verified as valid Ruchy code");
@@ -215,7 +217,8 @@ fn execute_notebook(cmd: NotebookCommand, verbose: bool) -> Result<(), String> {
                 let rt = tokio::runtime::Runtime::new()
                     .map_err(|e| format!("Failed to create runtime: {e}"))?;
                 rt.block_on(async {
-                    crate::notebook::server::start_server(port).await
+                    crate::notebook::server::start_server(port)
+                        .await
                         .map_err(|e| format!("Server error: {e}"))
                 })?;
             }
@@ -225,7 +228,11 @@ fn execute_notebook(cmd: NotebookCommand, verbose: bool) -> Result<(), String> {
             }
             Ok(())
         }
-        NotebookCommand::Test { path, coverage: _coverage, format } => {
+        NotebookCommand::Test {
+            path,
+            coverage: _coverage,
+            format,
+        } => {
             if verbose {
                 println!("Testing notebook: {}", path.display());
             }
@@ -234,11 +241,9 @@ fn execute_notebook(cmd: NotebookCommand, verbose: bool) -> Result<(), String> {
                 let config = crate::notebook::testing::types::TestConfig::default();
                 let report = run_test_command(&path, config)?;
                 match format.as_str() {
-                    "json" => {
-                        match serde_json::to_string_pretty(&report) {
-                            Ok(json) => println!("{json}"),
-                            Err(e) => eprintln!("Failed to serialize report: {e}"),
-                        }
+                    "json" => match serde_json::to_string_pretty(&report) {
+                        Ok(json) => println!("{json}"),
+                        Err(e) => eprintln!("Failed to serialize report: {e}"),
                     },
                     "html" => println!("HTML report generation not yet implemented"),
                     _ => println!("{report:#?}"),
@@ -251,7 +256,11 @@ fn execute_notebook(cmd: NotebookCommand, verbose: bool) -> Result<(), String> {
             }
             Ok(())
         }
-        NotebookCommand::Convert { input, output: _, format } => {
+        NotebookCommand::Convert {
+            input,
+            output: _,
+            format,
+        } => {
             if verbose {
                 println!("Converting {} to {format} format", input.display());
             }
@@ -263,28 +272,27 @@ fn execute_notebook(cmd: NotebookCommand, verbose: bool) -> Result<(), String> {
 // COMPLEXITY REDUCTION: Split execute_wasm into separate functions (was 14, now <5 each)
 fn execute_wasm(cmd: WasmCommand, verbose: bool) -> Result<(), String> {
     match cmd {
-        WasmCommand::Compile { input, output, optimize: _, validate } => {
-            execute_wasm_compile(input, output, validate, verbose)
-        }
-        WasmCommand::Run { module, args } => {
-            execute_wasm_run(module, args, verbose)
-        }
-        WasmCommand::Validate { module } => {
-            execute_wasm_validate(module, verbose)
-        }
+        WasmCommand::Compile {
+            input,
+            output,
+            optimize: _,
+            validate,
+        } => execute_wasm_compile(input, output, validate, verbose),
+        WasmCommand::Run { module, args } => execute_wasm_run(module, args, verbose),
+        WasmCommand::Validate { module } => execute_wasm_validate(module, verbose),
     }
 }
 fn execute_wasm_compile(
-    input: std::path::PathBuf, 
-    output: Option<std::path::PathBuf>, 
-    validate: bool, 
-    verbose: bool
+    input: std::path::PathBuf,
+    output: Option<std::path::PathBuf>,
+    validate: bool,
+    verbose: bool,
 ) -> Result<(), String> {
     if verbose {
         println!("Compiling {} to WASM", input.display());
     }
-    let source = std::fs::read_to_string(&input)
-        .map_err(|e| format!("Failed to read file: {e}"))?;
+    let source =
+        std::fs::read_to_string(&input).map_err(|e| format!("Failed to read file: {e}"))?;
     let output_path = output.unwrap_or_else(|| {
         let mut path = input.clone();
         path.set_extension("wasm");
@@ -294,22 +302,21 @@ fn execute_wasm_compile(
 }
 #[cfg(feature = "wasm-compile")]
 fn compile_wasm_source(
-    source: &str, 
-    output_path: &std::path::Path, 
-    validate: bool, 
-    verbose: bool
+    source: &str,
+    output_path: &std::path::Path,
+    validate: bool,
+    verbose: bool,
 ) -> Result<(), String> {
     let mut parser = crate::frontend::parser::Parser::new(source);
-    let ast = parser.parse()
-        .map_err(|e| format!("Parse error: {e:?}"))?;
+    let ast = parser.parse().map_err(|e| format!("Parse error: {e:?}"))?;
     let emitter = crate::backend::wasm::WasmEmitter::new();
-    let wasm_bytes = emitter.emit(&ast)
+    let wasm_bytes = emitter
+        .emit(&ast)
         .map_err(|e| format!("WASM compilation error: {e}"))?;
     if validate {
         #[cfg(feature = "notebook")]
         {
-            wasmparser::validate(&wasm_bytes)
-                .map_err(|e| format!("WASM validation error: {e}"))?;
+            wasmparser::validate(&wasm_bytes).map_err(|e| format!("WASM validation error: {e}"))?;
         }
         #[cfg(not(feature = "notebook"))]
         {
@@ -325,17 +332,17 @@ fn compile_wasm_source(
 }
 #[cfg(not(feature = "wasm-compile"))]
 fn compile_wasm_source(
-    _source: &str, 
-    _output_path: &std::path::Path, 
-    _validate: bool, 
-    _verbose: bool
+    _source: &str,
+    _output_path: &std::path::Path,
+    _validate: bool,
+    _verbose: bool,
 ) -> Result<(), String> {
     Err("WASM compilation feature not enabled".to_string())
 }
 fn execute_wasm_run(
-    module: std::path::PathBuf, 
-    _args: Vec<String>, 
-    verbose: bool
+    module: std::path::PathBuf,
+    _args: Vec<String>,
+    verbose: bool,
 ) -> Result<(), String> {
     if verbose {
         println!("Running WASM module: {}", module.display());
@@ -347,12 +354,10 @@ fn execute_wasm_validate(module: std::path::PathBuf, verbose: bool) -> Result<()
     if verbose {
         println!("Validating WASM module: {}", module.display());
     }
-    let bytes = std::fs::read(&module)
-        .map_err(|e| format!("Failed to read WASM file: {e}"))?;
+    let bytes = std::fs::read(&module).map_err(|e| format!("Failed to read WASM file: {e}"))?;
     #[cfg(feature = "notebook")]
     {
-        wasmparser::validate(&bytes)
-            .map_err(|e| format!("WASM validation error: {e}"))?;
+        wasmparser::validate(&bytes).map_err(|e| format!("WASM validation error: {e}"))?;
     }
     #[cfg(not(feature = "notebook"))]
     {
@@ -364,7 +369,12 @@ fn execute_wasm_validate(module: std::path::PathBuf, verbose: bool) -> Result<()
 }
 fn execute_test(cmd: TestCommand, verbose: bool) -> Result<(), String> {
     match cmd {
-        TestCommand::Run { path, coverage: _, parallel: _, filter: _ } => {
+        TestCommand::Run {
+            path,
+            coverage: _,
+            parallel: _,
+            filter: _,
+        } => {
             if verbose {
                 println!("Running tests in {}", path.display());
             }
@@ -384,14 +394,17 @@ fn execute_test(cmd: TestCommand, verbose: bool) -> Result<(), String> {
 // Keep the existing run_test_command function
 #[cfg(feature = "notebook")]
 /// # Examples
-/// 
+///
 /// ```ignore
 /// use ruchy::cli::mod::run_test_command;
-/// 
+///
 /// let result = run_test_command(());
 /// assert_eq!(result, Ok(()));
 /// ```
-pub fn run_test_command(_notebook_path: &std::path::Path, _config: crate::notebook::testing::types::TestConfig) -> Result<crate::notebook::testing::types::TestReport, String> {
+pub fn run_test_command(
+    _notebook_path: &std::path::Path,
+    _config: crate::notebook::testing::types::TestConfig,
+) -> Result<crate::notebook::testing::types::TestReport, String> {
     // Stub implementation for Sprint 0
     Ok(crate::notebook::testing::types::TestReport {
         total_tests: 1,
@@ -451,7 +464,7 @@ mod tests {
         let path = PathBuf::from("test.ruchy");
         let command = Command::Format {
             path: path.clone(),
-            check: true
+            check: true,
         };
         if let Command::Format { path: p, check: c } = command {
             assert_eq!(p, path);
@@ -482,7 +495,12 @@ mod tests {
             coverage: true,
             format: "json".to_string(),
         };
-        if let NotebookCommand::Test { path, coverage, format } = cmd {
+        if let NotebookCommand::Test {
+            path,
+            coverage,
+            format,
+        } = cmd
+        {
             assert_eq!(path, PathBuf::from("test.ipynb"));
             assert!(coverage);
             assert_eq!(format, "json");
@@ -498,7 +516,12 @@ mod tests {
             output: PathBuf::from("output.html"),
             format: "html".to_string(),
         };
-        if let NotebookCommand::Convert { input, output, format } = cmd {
+        if let NotebookCommand::Convert {
+            input,
+            output,
+            format,
+        } = cmd
+        {
             assert_eq!(input, PathBuf::from("input.ipynb"));
             assert_eq!(output, PathBuf::from("output.html"));
             assert_eq!(format, "html");
@@ -515,7 +538,13 @@ mod tests {
             optimize: true,
             validate: false,
         };
-        if let WasmCommand::Compile { input, output, optimize, validate } = cmd {
+        if let WasmCommand::Compile {
+            input,
+            output,
+            optimize,
+            validate,
+        } = cmd
+        {
             assert_eq!(input, PathBuf::from("test.ruchy"));
             assert_eq!(output, Some(PathBuf::from("test.wasm")));
             assert!(optimize);
@@ -560,7 +589,13 @@ mod tests {
             parallel: false,
             filter: Some("test_".to_string()),
         };
-        if let TestCommand::Run { path, coverage, parallel, filter } = cmd {
+        if let TestCommand::Run {
+            path,
+            coverage,
+            parallel,
+            filter,
+        } = cmd
+        {
             assert_eq!(path, PathBuf::from("tests/"));
             assert!(coverage);
             assert!(!parallel);
@@ -651,7 +686,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "Server test - runs indefinitely, use --ignored to run manually"]
+
     fn test_execute_notebook_serve() {
         let cmd = NotebookCommand::Serve {
             port: 8888,
@@ -705,8 +740,7 @@ mod tests {
 #[cfg(test)]
 mod property_tests_mod {
     use proptest::proptest;
-    
-    
+
     proptest! {
         /// Property: Function never panics on any input
         #[test]
@@ -721,4 +755,3 @@ mod property_tests_mod {
         }
     }
 }
-

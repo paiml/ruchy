@@ -65,7 +65,7 @@ impl CompilationCache {
     ///
     /// let mut cache = CompilationCache::new(100);
     /// cache.insert("test".to_string(), "output".to_string(), std::time::Duration::from_millis(100), 512);
-    /// 
+    ///
     /// let result = cache.get("test");
     /// assert!(result.is_some());
     /// assert_eq!(result.unwrap(), "output");
@@ -82,7 +82,13 @@ impl CompilationCache {
     }
 
     /// Insert compilation result into cache
-    pub fn insert(&mut self, key: String, output: String, compile_time: Duration, memory_bytes: usize) {
+    pub fn insert(
+        &mut self,
+        key: String,
+        output: String,
+        compile_time: Duration,
+        memory_bytes: usize,
+    ) {
         // Evict least recently used entries if at capacity
         if self.cache.len() >= self.max_size {
             self.evict_lru();
@@ -105,7 +111,8 @@ impl CompilationCache {
         }
 
         // Find LRU entry
-        let (lru_key, _) = self.cache
+        let (lru_key, _) = self
+            .cache
             .iter()
             .min_by_key(|(_, entry)| entry.last_access)
             .map(|(k, v)| (k.clone(), v.clone()))
@@ -212,7 +219,7 @@ impl CacheStats {
 }
 
 /// Thread-safe parser pool for reuse
-/// 
+///
 /// Note: This is a simplified version that focuses on cache management.
 /// For a full implementation, consider parser state management.
 pub struct ParserPool {
@@ -254,7 +261,7 @@ impl ParserPool {
     }
 
     /// Create a new parser (simplified implementation)
-    /// 
+    ///
     /// In a full implementation, this would manage a pool of reusable parsers
     pub fn create_parser<'a>(&self, input: &'a str) -> crate::frontend::Parser<'a> {
         let mut stats = self.stats.lock().expect("Lock poisoned");
@@ -293,7 +300,7 @@ impl ParserPool {
 #[derive(Debug, Clone)]
 pub struct PoolStatsSummary {
     pub created: u64,
-    pub borrowed: u64, 
+    pub borrowed: u64,
     pub returned: u64,
     pub current_size: usize,
 }
@@ -383,12 +390,17 @@ mod tests {
     #[test]
     fn test_compilation_cache_basic() {
         let mut cache = CompilationCache::new(2);
-        
+
         // Test insertion and retrieval
-        cache.insert("test1".to_string(), "output1".to_string(), Duration::from_millis(100), 512);
+        cache.insert(
+            "test1".to_string(),
+            "output1".to_string(),
+            Duration::from_millis(100),
+            512,
+        );
         assert_eq!(cache.get("test1"), Some("output1".to_string()));
         assert_eq!(cache.len(), 1);
-        
+
         // Test miss
         assert_eq!(cache.get("missing"), None);
     }
@@ -396,17 +408,32 @@ mod tests {
     #[test]
     fn test_compilation_cache_lru_eviction() {
         let mut cache = CompilationCache::new(2);
-        
+
         // Fill cache
-        cache.insert("a".to_string(), "output_a".to_string(), Duration::from_millis(100), 256);
-        cache.insert("b".to_string(), "output_b".to_string(), Duration::from_millis(100), 256);
+        cache.insert(
+            "a".to_string(),
+            "output_a".to_string(),
+            Duration::from_millis(100),
+            256,
+        );
+        cache.insert(
+            "b".to_string(),
+            "output_b".to_string(),
+            Duration::from_millis(100),
+            256,
+        );
         assert_eq!(cache.len(), 2);
-        
+
         // Access 'a' to make it more recently used
         cache.get("a");
-        
+
         // Insert 'c' should evict 'b' (least recently used)
-        cache.insert("c".to_string(), "output_c".to_string(), Duration::from_millis(100), 256);
+        cache.insert(
+            "c".to_string(),
+            "output_c".to_string(),
+            Duration::from_millis(100),
+            256,
+        );
         assert_eq!(cache.len(), 2);
         assert!(cache.get("a").is_some());
         assert!(cache.get("c").is_some());
@@ -416,14 +443,19 @@ mod tests {
     #[test]
     fn test_cache_stats() {
         let mut cache = CompilationCache::new(100);
-        
+
         // Add some data
-        cache.insert("test".to_string(), "output".to_string(), Duration::from_millis(100), 512);
-        
+        cache.insert(
+            "test".to_string(),
+            "output".to_string(),
+            Duration::from_millis(100),
+            512,
+        );
+
         // Generate some hits and misses
         cache.get("test");
         cache.get("missing");
-        
+
         let stats = cache.stats();
         assert_eq!(stats.hits, 1);
         assert_eq!(stats.misses, 1);
@@ -434,15 +466,15 @@ mod tests {
     #[test]
     fn test_string_interner() {
         let mut interner = StringInterner::new();
-        
+
         // Test basic interning
         let id1 = interner.intern("hello");
         let id2 = interner.intern("world");
         let id3 = interner.intern("hello"); // Same string
-        
+
         assert_ne!(id1, id2);
         assert_eq!(id1, id3); // Same string gets same ID
-        
+
         // Test retrieval
         assert_eq!(interner.get(id1), Some("hello"));
         assert_eq!(interner.get(id2), Some("world"));
@@ -452,16 +484,16 @@ mod tests {
     #[test]
     fn test_parser_pool_basic() {
         let pool = ParserPool::new(5);
-        
+
         // Create parser
         let _parser1 = pool.create_parser("42");
-        
+
         // Pool should work
         assert_eq!(pool.capacity(), 5);
-        
+
         // Should be able to create another
         let _parser2 = pool.create_parser("true");
-        
+
         let stats = pool.stats();
         assert_eq!(stats.created, 2);
         assert_eq!(stats.borrowed, 2);
@@ -470,10 +502,20 @@ mod tests {
     #[test]
     fn test_cache_memory_usage() {
         let mut cache = CompilationCache::new(10);
-        
-        cache.insert("small".to_string(), "x".to_string(), Duration::from_millis(50), 100);
-        cache.insert("large".to_string(), "y".repeat(1000), Duration::from_millis(200), 2000);
-        
+
+        cache.insert(
+            "small".to_string(),
+            "x".to_string(),
+            Duration::from_millis(50),
+            100,
+        );
+        cache.insert(
+            "large".to_string(),
+            "y".repeat(1000),
+            Duration::from_millis(200),
+            2000,
+        );
+
         let total_memory = cache.memory_usage();
         assert_eq!(total_memory, 2100); // 100 + 2000
     }
@@ -481,9 +523,14 @@ mod tests {
     #[test]
     fn test_cache_clear() {
         let mut cache = CompilationCache::new(10);
-        cache.insert("test".to_string(), "output".to_string(), Duration::from_millis(100), 512);
+        cache.insert(
+            "test".to_string(),
+            "output".to_string(),
+            Duration::from_millis(100),
+            512,
+        );
         assert_eq!(cache.len(), 1);
-        
+
         cache.clear();
         assert_eq!(cache.len(), 0);
         assert!(cache.is_empty());

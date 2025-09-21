@@ -16,23 +16,23 @@ pub struct TestConfig {
 }
 
 impl TestConfig {
-/// # Examples
-///
-/// ```
-/// use ruchy::notebook::testing::types::TestConfig;
-///
-/// let instance = TestConfig::new();
-/// // Verify behavior
-/// ```
-/// # Examples
-///
-/// ```
-/// use ruchy::notebook::testing::types::TestConfig;
-///
-/// let instance = TestConfig::new();
-/// // Verify behavior
-/// ```
-pub fn new() -> Self {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::notebook::testing::types::TestConfig;
+    ///
+    /// let instance = TestConfig::new();
+    /// // Verify behavior
+    /// ```
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::notebook::testing::types::TestConfig;
+    ///
+    /// let instance = TestConfig::new();
+    /// // Verify behavior
+    /// ```
+    pub fn new() -> Self {
         Self {
             tolerance: 1e-6,
             coverage: false,
@@ -161,29 +161,29 @@ impl NotebookParser {
         Self
     }
     /// Parse a notebook from JSON
-/// # Examples
-/// 
-/// ```
-/// use ruchy::notebook::testing::types::NotebookParser;
-/// 
-/// let mut instance = NotebookParser::new();
-/// let result = instance.parse();
-/// // Verify behavior
-/// ```
-pub fn parse(&self, content: &str) -> anyhow::Result<Notebook> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::notebook::testing::types::NotebookParser;
+    ///
+    /// let mut instance = NotebookParser::new();
+    /// let result = instance.parse();
+    /// // Verify behavior
+    /// ```
+    pub fn parse(&self, content: &str) -> anyhow::Result<Notebook> {
         serde_json::from_str(content)
             .map_err(|e| anyhow::anyhow!("Failed to parse notebook: {}", e))
     }
     /// Validate notebook structure
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::notebook::testing::types::validate;
-/// 
-/// let result = validate(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn validate(&self, notebook: &Notebook) -> anyhow::Result<()> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::notebook::testing::types::validate;
+    ///
+    /// let result = validate(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn validate(&self, notebook: &Notebook) -> anyhow::Result<()> {
         if notebook.cells.is_empty() {
             return Err(anyhow::anyhow!("Notebook has no cells"));
         }

@@ -79,7 +79,7 @@
 //!
 //! let mut parser = Parser::new("1 + 2");
 //! let ast = parser.parse().unwrap();
-//! 
+//!
 //! // Process the AST as needed
 //! match &ast.kind {
 //!     ExprKind::Binary { left, op, right } => {
@@ -181,7 +181,7 @@
 //!
 //! ```rust,no_run
 //! use ruchy::{compile, is_valid_syntax};
-//! 
+//!
 //! pub struct RuchyKernel {
 //!     // kernel state...
 //! }
@@ -279,7 +279,6 @@
 
 #[cfg(test)]
 mod tests {
-    
 
     // Sprint 12: API documentation tests
 

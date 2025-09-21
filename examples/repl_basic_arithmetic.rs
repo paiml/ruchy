@@ -5,9 +5,9 @@ use ruchy::runtime::Repl;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut repl = Repl::new(std::env::temp_dir())?;
-    
+
     println!("=== Basic Arithmetic Demo ===\n");
-    
+
     // Basic math operations
     let expressions = vec![
         ("2 + 2", "Addition"),
@@ -18,7 +18,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         ("2 ** 8", "Exponentiation"),
         ("(10 + 5) * 2", "Parentheses"),
     ];
-    
+
     for (expr, description) in expressions {
         println!("{description}:");
         println!("  > {expr}");
@@ -27,6 +27,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             Err(e) => println!("  ERROR: {e}\n"),
         }
     }
-    
+
     Ok(())
 }

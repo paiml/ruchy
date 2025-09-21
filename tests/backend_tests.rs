@@ -28,10 +28,10 @@ fn create_binary_expr(left: Expr, op: BinaryOp, right: Expr) -> Expr {
 fn test_transpile_integer_literal() {
     let transpiler = Transpiler::new();
     let expr = create_literal_expr(Literal::Integer(42));
-    
+
     let result = transpiler.transpile_expr(&expr);
     assert!(result.is_ok());
-    
+
     let code = result.unwrap().to_string();
     assert!(code.contains("42"));
 }
@@ -40,10 +40,10 @@ fn test_transpile_integer_literal() {
 fn test_transpile_float_literal() {
     let transpiler = Transpiler::new();
     let expr = create_literal_expr(Literal::Float(3.14));
-    
+
     let result = transpiler.transpile_expr(&expr);
     assert!(result.is_ok());
-    
+
     let code = result.unwrap().to_string();
     assert!(code.contains("3.14"));
 }
@@ -52,10 +52,10 @@ fn test_transpile_float_literal() {
 fn test_transpile_string_literal() {
     let transpiler = Transpiler::new();
     let expr = create_literal_expr(Literal::String("hello".to_string()));
-    
+
     let result = transpiler.transpile_expr(&expr);
     assert!(result.is_ok());
-    
+
     let code = result.unwrap().to_string();
     assert!(code.contains("hello") || code.contains("\"hello\""));
 }
@@ -63,13 +63,13 @@ fn test_transpile_string_literal() {
 #[test]
 fn test_transpile_bool_literal() {
     let transpiler = Transpiler::new();
-    
+
     let true_expr = create_literal_expr(Literal::Bool(true));
     let result = transpiler.transpile_expr(&true_expr);
     assert!(result.is_ok());
     let code = result.unwrap().to_string();
     assert!(code.contains("true"));
-    
+
     let false_expr = create_literal_expr(Literal::Bool(false));
     let result = transpiler.transpile_expr(&false_expr);
     assert!(result.is_ok());
@@ -83,10 +83,10 @@ fn test_transpile_binary_addition() {
     let left = create_literal_expr(Literal::Integer(1));
     let right = create_literal_expr(Literal::Integer(2));
     let expr = create_binary_expr(left, BinaryOp::Add, right);
-    
+
     let result = transpiler.transpile_expr(&expr);
     assert!(result.is_ok());
-    
+
     let code = result.unwrap().to_string();
     assert!(code.contains("1") && code.contains("2"));
     assert!(code.contains("+"));
@@ -98,10 +98,10 @@ fn test_transpile_binary_subtraction() {
     let left = create_literal_expr(Literal::Integer(5));
     let right = create_literal_expr(Literal::Integer(3));
     let expr = create_binary_expr(left, BinaryOp::Subtract, right);
-    
+
     let result = transpiler.transpile_expr(&expr);
     assert!(result.is_ok());
-    
+
     let code = result.unwrap().to_string();
     assert!(code.contains("-"));
 }
@@ -112,10 +112,10 @@ fn test_transpile_binary_multiplication() {
     let left = create_literal_expr(Literal::Integer(3));
     let right = create_literal_expr(Literal::Integer(4));
     let expr = create_binary_expr(left, BinaryOp::Multiply, right);
-    
+
     let result = transpiler.transpile_expr(&expr);
     assert!(result.is_ok());
-    
+
     let code = result.unwrap().to_string();
     assert!(code.contains("*"));
 }
@@ -126,10 +126,10 @@ fn test_transpile_binary_division() {
     let left = create_literal_expr(Literal::Integer(10));
     let right = create_literal_expr(Literal::Integer(2));
     let expr = create_binary_expr(left, BinaryOp::Divide, right);
-    
+
     let result = transpiler.transpile_expr(&expr);
     assert!(result.is_ok());
-    
+
     let code = result.unwrap().to_string();
     assert!(code.contains("/"));
 }
@@ -145,12 +145,12 @@ fn test_transpile_comparison_operators() {
         BinaryOp::Equal,
         BinaryOp::NotEqual,
     ];
-    
+
     for op in ops {
         let left = create_literal_expr(Literal::Integer(1));
         let right = create_literal_expr(Literal::Integer(2));
         let expr = create_binary_expr(left, op, right);
-        
+
         let result = transpiler.transpile_expr(&expr);
         assert!(result.is_ok(), "Failed to transpile {:?}", op);
     }
@@ -159,17 +159,17 @@ fn test_transpile_comparison_operators() {
 #[test]
 fn test_transpile_logical_operators() {
     let transpiler = Transpiler::new();
-    
+
     let true_expr = create_literal_expr(Literal::Bool(true));
     let false_expr = create_literal_expr(Literal::Bool(false));
-    
+
     // Test AND
     let and_expr = create_binary_expr(true_expr.clone(), BinaryOp::And, false_expr.clone());
     let result = transpiler.transpile_expr(&and_expr);
     assert!(result.is_ok());
     let code = result.unwrap().to_string();
     assert!(code.contains("&&"));
-    
+
     // Test OR
     let or_expr = create_binary_expr(true_expr, BinaryOp::Or, false_expr);
     let result = transpiler.transpile_expr(&or_expr);
@@ -190,10 +190,10 @@ fn test_transpile_unary_negation() {
         span: Span::new(0, 3),
         attributes: vec![],
     };
-    
+
     let result = transpiler.transpile_expr(&expr);
     assert!(result.is_ok());
-    
+
     let code = result.unwrap().to_string();
     assert!(code.contains("-"));
     assert!(code.contains("42"));
@@ -211,10 +211,10 @@ fn test_transpile_unary_not() {
         span: Span::new(0, 5),
         attributes: vec![],
     };
-    
+
     let result = transpiler.transpile_expr(&expr);
     assert!(result.is_ok());
-    
+
     let code = result.unwrap().to_string();
     assert!(code.contains("!"));
 }
@@ -227,10 +227,10 @@ fn test_transpile_identifier() {
         span: Span::new(0, 6),
         attributes: vec![],
     };
-    
+
     let result = transpiler.transpile_expr(&expr);
     assert!(result.is_ok());
-    
+
     let code = result.unwrap().to_string();
     assert!(code.contains("my_var"));
 }
@@ -248,10 +248,10 @@ fn test_transpile_array_literal() {
         span: Span::new(0, 9),
         attributes: vec![],
     };
-    
+
     let result = transpiler.transpile_expr(&expr);
     assert!(result.is_ok());
-    
+
     let code = result.unwrap().to_string();
     assert!(code.contains("vec!") || code.contains("["));
     assert!(code.contains("1"));
@@ -262,18 +262,16 @@ fn test_transpile_array_literal() {
 #[test]
 fn test_transpile_block_expression() {
     let transpiler = Transpiler::new();
-    let statements = vec![
-        create_literal_expr(Literal::Integer(42)),
-    ];
+    let statements = vec![create_literal_expr(Literal::Integer(42))];
     let expr = Expr {
         kind: ExprKind::Block(statements),
         span: Span::new(0, 10),
         attributes: vec![],
     };
-    
+
     let result = transpiler.transpile_expr(&expr);
     assert!(result.is_ok());
-    
+
     let code = result.unwrap().to_string();
     assert!(code.contains("{") || code.contains("42"));
 }
@@ -284,7 +282,7 @@ fn test_transpile_if_expression() {
     let condition = create_literal_expr(Literal::Bool(true));
     let then_branch = create_literal_expr(Literal::Integer(1));
     let else_branch = Some(Box::new(create_literal_expr(Literal::Integer(2))));
-    
+
     let expr = Expr {
         kind: ExprKind::If {
             condition: Box::new(condition),
@@ -294,10 +292,10 @@ fn test_transpile_if_expression() {
         span: Span::new(0, 20),
         attributes: vec![],
     };
-    
+
     let result = transpiler.transpile_expr(&expr);
     assert!(result.is_ok());
-    
+
     let code = result.unwrap().to_string();
     assert!(code.contains("if"));
 }
@@ -311,7 +309,7 @@ fn test_transpile_function_call() {
         attributes: vec![],
     };
     let args = vec![create_literal_expr(Literal::String("Hello".to_string()))];
-    
+
     let expr = Expr {
         kind: ExprKind::Call {
             func: Box::new(callee),
@@ -320,10 +318,10 @@ fn test_transpile_function_call() {
         span: Span::new(0, 15),
         attributes: vec![],
     };
-    
+
     let result = transpiler.transpile_expr(&expr);
     assert!(result.is_ok());
-    
+
     let code = result.unwrap().to_string();
     assert!(code.contains("print") || code.contains("("));
 }
@@ -332,7 +330,7 @@ fn test_transpile_function_call() {
 fn test_transpile_let_binding() {
     let transpiler = Transpiler::new();
     let value = create_literal_expr(Literal::Integer(42));
-    
+
     let expr = Expr {
         kind: ExprKind::Let {
             name: "x".to_string(),
@@ -344,10 +342,10 @@ fn test_transpile_let_binding() {
         span: Span::new(0, 10),
         attributes: vec![],
     };
-    
+
     let result = transpiler.transpile_expr(&expr);
     assert!(result.is_ok());
-    
+
     let code = result.unwrap().to_string();
     assert!(code.contains("let") || code.contains("x"));
 }
@@ -361,7 +359,7 @@ fn test_transpile_assignment() {
         attributes: vec![],
     };
     let value = create_literal_expr(Literal::Integer(100));
-    
+
     let expr = Expr {
         kind: ExprKind::Assign {
             target: Box::new(target),
@@ -370,10 +368,10 @@ fn test_transpile_assignment() {
         span: Span::new(0, 8),
         attributes: vec![],
     };
-    
+
     let result = transpiler.transpile_expr(&expr);
     assert!(result.is_ok());
-    
+
     let code = result.unwrap().to_string();
     assert!(code.contains("=") || code.contains("x"));
 }
@@ -383,7 +381,7 @@ fn test_transpile_while_loop() {
     let transpiler = Transpiler::new();
     let condition = create_literal_expr(Literal::Bool(true));
     let body = create_literal_expr(Literal::Integer(42));
-    
+
     let expr = Expr {
         kind: ExprKind::While {
             condition: Box::new(condition),
@@ -392,10 +390,10 @@ fn test_transpile_while_loop() {
         span: Span::new(0, 20),
         attributes: vec![],
     };
-    
+
     let result = transpiler.transpile_expr(&expr);
     assert!(result.is_ok());
-    
+
     let code = result.unwrap().to_string();
     assert!(code.contains("while") || code.contains("loop"));
 }
@@ -404,16 +402,16 @@ fn test_transpile_while_loop() {
 fn test_transpile_return_statement() {
     let transpiler = Transpiler::new();
     let value = Some(Box::new(create_literal_expr(Literal::Integer(42))));
-    
+
     let expr = Expr {
         kind: ExprKind::Return { value },
         span: Span::new(0, 10),
         attributes: vec![],
     };
-    
+
     let result = transpiler.transpile_expr(&expr);
     assert!(result.is_ok());
-    
+
     let code = result.unwrap().to_string();
     assert!(code.contains("return"));
 }
@@ -426,10 +424,10 @@ fn test_transpile_break_statement() {
         span: Span::new(0, 5),
         attributes: vec![],
     };
-    
+
     let result = transpiler.transpile_expr(&expr);
     assert!(result.is_ok());
-    
+
     let code = result.unwrap().to_string();
     assert!(code.contains("break"));
 }
@@ -442,10 +440,10 @@ fn test_transpile_continue_statement() {
         span: Span::new(0, 8),
         attributes: vec![],
     };
-    
+
     let result = transpiler.transpile_expr(&expr);
     assert!(result.is_ok());
-    
+
     let code = result.unwrap().to_string();
     assert!(code.contains("continue"));
 }
@@ -455,31 +453,31 @@ fn test_transpile_continue_statement() {
 mod property_tests {
     use super::*;
     use proptest::prelude::*;
-    
+
     proptest! {
         #[test]
         fn prop_transpile_integer_never_panics(n in i64::MIN..i64::MAX) {
             let transpiler = Transpiler::new();
             let expr = create_literal_expr(Literal::Integer(n));
-            
+
             // Should never panic
             let _ = transpiler.transpile_expr(&expr);
         }
-        
+
         #[test]
         fn prop_transpile_string_never_panics(s in ".*") {
             let transpiler = Transpiler::new();
             let expr = create_literal_expr(Literal::String(s));
-            
+
             // Should never panic
             let _ = transpiler.transpile_expr(&expr);
         }
-        
+
         #[test]
         fn prop_transpile_preserves_integer_value(n in i64::MIN..i64::MAX) {
             let transpiler = Transpiler::new();
             let expr = create_literal_expr(Literal::Integer(n));
-            
+
             if let Ok(code) = transpiler.transpile_expr(&expr) {
                 let code_str = code.to_string();
                 // The integer value should appear in the generated code

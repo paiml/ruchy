@@ -1,8 +1,8 @@
 //! Code instrumentation for coverage tracking
 //!
 //! [RUCHY-206] Instrument Ruchy code for runtime coverage collection
-use std::collections::{HashMap, HashSet};
 use anyhow::Result;
+use std::collections::{HashMap, HashSet};
 /// Runtime coverage collector
 pub struct CoverageInstrumentation {
     /// Map of file -> set of executed line numbers
@@ -13,13 +13,13 @@ pub struct CoverageInstrumentation {
     pub executed_branches: HashMap<String, HashMap<String, usize>>,
 }
 impl CoverageInstrumentation {
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::quality::instrumentation::CoverageInstrumentation;
-/// let instance = CoverageInstrumentation::new();
-/// ```
-pub fn new() -> Self {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::quality::instrumentation::CoverageInstrumentation;
+    /// let instance = CoverageInstrumentation::new();
+    /// ```
+    pub fn new() -> Self {
         Self {
             executed_lines: HashMap::new(),
             executed_functions: HashMap::new(),
@@ -27,93 +27,94 @@ pub fn new() -> Self {
         }
     }
     /// Mark a line as executed
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::quality::instrumentation::CoverageInstrumentation;
-/// let mut instance = CoverageInstrumentation::new();
-/// instance.mark_line_executed("test.rs", 42);
-/// ```
-pub fn mark_line_executed(&mut self, file: &str, line: usize) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::quality::instrumentation::CoverageInstrumentation;
+    /// let mut instance = CoverageInstrumentation::new();
+    /// instance.mark_line_executed("test.rs", 42);
+    /// ```
+    pub fn mark_line_executed(&mut self, file: &str, line: usize) {
         self.executed_lines
             .entry(file.to_string())
             .or_default()
             .insert(line);
     }
     /// Mark a function as executed
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::quality::instrumentation::CoverageInstrumentation;
-/// let mut instance = CoverageInstrumentation::new();
-/// instance.mark_function_executed("test.rs", "main");
-/// ```
-pub fn mark_function_executed(&mut self, file: &str, function: &str) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::quality::instrumentation::CoverageInstrumentation;
+    /// let mut instance = CoverageInstrumentation::new();
+    /// instance.mark_function_executed("test.rs", "main");
+    /// ```
+    pub fn mark_function_executed(&mut self, file: &str, function: &str) {
         self.executed_functions
             .entry(file.to_string())
             .or_default()
             .insert(function.to_string());
     }
     /// Mark a branch as executed
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::quality::instrumentation::CoverageInstrumentation;
-/// let mut instance = CoverageInstrumentation::new();
-/// instance.mark_branch_executed("test.rs", "branch_1");
-/// ```
-pub fn mark_branch_executed(&mut self, file: &str, branch_id: &str) {
-        *self.executed_branches
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::quality::instrumentation::CoverageInstrumentation;
+    /// let mut instance = CoverageInstrumentation::new();
+    /// instance.mark_branch_executed("test.rs", "branch_1");
+    /// ```
+    pub fn mark_branch_executed(&mut self, file: &str, branch_id: &str) {
+        *self
+            .executed_branches
             .entry(file.to_string())
             .or_default()
             .entry(branch_id.to_string())
             .or_default() += 1;
     }
     /// Get executed lines for a file
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::quality::instrumentation::CoverageInstrumentation;
-/// let mut instance = CoverageInstrumentation::new();
-/// let lines = instance.get_executed_lines("test.rs");
-/// ```
-pub fn get_executed_lines(&self, file: &str) -> Option<&HashSet<usize>> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::quality::instrumentation::CoverageInstrumentation;
+    /// let mut instance = CoverageInstrumentation::new();
+    /// let lines = instance.get_executed_lines("test.rs");
+    /// ```
+    pub fn get_executed_lines(&self, file: &str) -> Option<&HashSet<usize>> {
         self.executed_lines.get(file)
     }
     /// Get executed functions for a file
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::quality::instrumentation::get_executed_functions;
-/// 
-/// let functions = instance.get_executed_functions("test.rs");
-/// assert!(functions.is_some());
-/// ```
-pub fn get_executed_functions(&self, file: &str) -> Option<&HashSet<String>> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::quality::instrumentation::get_executed_functions;
+    ///
+    /// let functions = instance.get_executed_functions("test.rs");
+    /// assert!(functions.is_some());
+    /// ```
+    pub fn get_executed_functions(&self, file: &str) -> Option<&HashSet<String>> {
         self.executed_functions.get(file)
     }
     /// Get branch execution counts for a file
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::quality::instrumentation::CoverageInstrumentation;
-/// let mut instance = CoverageInstrumentation::new();
-/// let branches = instance.get_executed_branches("test.rs");
-/// ```
-pub fn get_executed_branches(&self, file: &str) -> Option<&HashMap<String, usize>> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::quality::instrumentation::CoverageInstrumentation;
+    /// let mut instance = CoverageInstrumentation::new();
+    /// let branches = instance.get_executed_branches("test.rs");
+    /// ```
+    pub fn get_executed_branches(&self, file: &str) -> Option<&HashMap<String, usize>> {
         self.executed_branches.get(file)
     }
     /// Merge coverage data from another instrumentation instance
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::quality::instrumentation::merge;
-/// 
-/// let mut instance = CoverageInstrumentation::new();
-/// let other = CoverageInstrumentation::new();
-/// instance.merge(&other);
-/// ```
-pub fn merge(&mut self, other: &CoverageInstrumentation) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::quality::instrumentation::merge;
+    ///
+    /// let mut instance = CoverageInstrumentation::new();
+    /// let other = CoverageInstrumentation::new();
+    /// instance.merge(&other);
+    /// ```
+    pub fn merge(&mut self, other: &CoverageInstrumentation) {
         // Merge executed lines
         for (file, lines) in &other.executed_lines {
             let entry = self.executed_lines.entry(file.clone()).or_default();
@@ -144,10 +145,10 @@ impl Default for CoverageInstrumentation {
 }
 /// Add instrumentation to Ruchy source code
 /// # Examples
-/// 
+///
 /// ```ignore
 /// use ruchy::quality::instrumentation::instrument_source;
-/// 
+///
 /// let result = instrument_source("println(\"hello\")", "test.rs");
 /// assert!(result.is_ok());
 /// ```
@@ -155,9 +156,7 @@ pub fn instrument_source(source: &str, file_path: &str) -> Result<String> {
     let lines: Vec<&str> = source.lines().collect();
     let mut instrumented = String::new();
     // Add coverage initialization at the top
-    instrumented.push_str(&format!(
-        "// Coverage instrumentation for {file_path}\n"
-    ));
+    instrumented.push_str(&format!("// Coverage instrumentation for {file_path}\n"));
     instrumented.push_str("let __coverage = CoverageInstrumentation::new();\n\n");
     for (line_num, line) in lines.iter().enumerate() {
         let actual_line_num = line_num + 1;
@@ -207,20 +206,20 @@ fn is_executable_line(line: &str) -> bool {
 }
 /// Check if line is a control flow statement (complexity: 4)
 fn is_control_flow_statement(trimmed: &str) -> bool {
-    trimmed.starts_with("if ") ||
-    trimmed.starts_with("while ") ||
-    trimmed.starts_with("for ") ||
-    trimmed.starts_with("match ")
+    trimmed.starts_with("if ")
+        || trimmed.starts_with("while ")
+        || trimmed.starts_with("for ")
+        || trimmed.starts_with("match ")
 }
 /// Check if line is a declaration (complexity: 7)
 fn is_declaration_statement(trimmed: &str) -> bool {
-    trimmed.starts_with("fn ") || 
-    trimmed.starts_with("fun ") ||
-    trimmed.starts_with("struct ") ||
-    trimmed.starts_with("enum ") ||
-    trimmed.starts_with("use ") ||
-    trimmed.starts_with("mod ") ||
-    trimmed.starts_with("#[")
+    trimmed.starts_with("fn ")
+        || trimmed.starts_with("fun ")
+        || trimmed.starts_with("struct ")
+        || trimmed.starts_with("enum ")
+        || trimmed.starts_with("use ")
+        || trimmed.starts_with("mod ")
+        || trimmed.starts_with("#[")
 }
 /// Check if line starts a block (complexity: 2)
 fn is_block_start(trimmed: &str) -> bool {
@@ -228,10 +227,10 @@ fn is_block_start(trimmed: &str) -> bool {
 }
 /// Check if line contains executable statement (complexity: 4)
 fn is_executable_statement(trimmed: &str) -> bool {
-    trimmed.contains('=') ||
-    trimmed.contains("println") ||
-    trimmed.contains("assert") ||
-    trimmed.contains("return")
+    trimmed.contains('=')
+        || trimmed.contains("println")
+        || trimmed.contains("assert")
+        || trimmed.contains("return")
 }
 /// Extract function name from function declaration
 fn extract_function_name(line: &str) -> String {
@@ -251,11 +250,23 @@ mod tests {
         coverage.mark_line_executed("test.ruchy", 5);
         coverage.mark_function_executed("test.ruchy", "main");
         coverage.mark_branch_executed("test.ruchy", "if_1");
-        assert!(coverage.get_executed_lines("test.ruchy").unwrap().contains(&5));
-        assert!(coverage.get_executed_functions("test.ruchy").unwrap().contains("main"));
-        assert_eq!(coverage.get_executed_branches("test.ruchy").unwrap().get("if_1"), Some(&1));
+        assert!(coverage
+            .get_executed_lines("test.ruchy")
+            .unwrap()
+            .contains(&5));
+        assert!(coverage
+            .get_executed_functions("test.ruchy")
+            .unwrap()
+            .contains("main"));
+        assert_eq!(
+            coverage
+                .get_executed_branches("test.ruchy")
+                .unwrap()
+                .get("if_1"),
+            Some(&1)
+        );
     }
-    #[test] 
+    #[test]
     fn test_is_executable_line() {
         assert!(is_executable_line("let x = 5;"));
         assert!(is_executable_line("println(\"hello\");"));
@@ -263,18 +274,26 @@ mod tests {
         assert!(is_executable_line("if x > 0 {"));
         assert!(!is_executable_line("fn main() {"));
         assert!(!is_executable_line("struct Point {"));
-        assert!(!is_executable_line("use std::collections::HashMap;
+        assert!(!is_executable_line(
+            "use std::collections::HashMap;
 #[cfg(test)]
 use proptest::prelude::*;
-"));
+"
+        ));
         assert!(!is_executable_line("// comment"));
         assert!(!is_executable_line(""));
     }
     #[test]
     fn test_extract_function_name() {
         assert_eq!(extract_function_name("fn main() {"), "main");
-        assert_eq!(extract_function_name("fun test_function(x: i32) -> i32 {"), "test_function");
-        assert_eq!(extract_function_name("fn add(a: i32, b: i32) -> i32 {"), "add");
+        assert_eq!(
+            extract_function_name("fun test_function(x: i32) -> i32 {"),
+            "test_function"
+        );
+        assert_eq!(
+            extract_function_name("fn add(a: i32, b: i32) -> i32 {"),
+            "add"
+        );
     }
     #[test]
     fn test_merge_coverage() {
@@ -296,8 +315,7 @@ use proptest::prelude::*;
 #[cfg(test)]
 mod property_tests_instrumentation {
     use proptest::proptest;
-    
-    
+
     proptest! {
         /// Property: Function never panics on any input
         #[test]

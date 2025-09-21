@@ -1,8 +1,8 @@
 //! Sprint 3: Tests for specific runtime modules
 //! Coverage for completion, magic, transaction, and other modules
 
-use ruchy::runtime::{Repl, ReplConfig};
 use ruchy::runtime::repl::Value;
+use ruchy::runtime::{Repl, ReplConfig};
 use std::{env, time::Duration};
 
 // Transaction tests
@@ -95,7 +95,7 @@ fn test_sandboxed_repl() {
     let result = repl.eval_bounded(
         "[0; 1000000]", // Large allocation
         1024,           // Small memory limit
-        Duration::from_millis(10)
+        Duration::from_millis(10),
     );
     assert!(result.is_err());
 }
@@ -115,11 +115,14 @@ fn test_custom_config_repl() {
     assert_eq!(repl.eval("2 * 21").unwrap(), "42");
 
     // Test depth limit
-    repl.eval(r#"
+    repl.eval(
+        r#"
         fn recursive(n) {
             if n == 0 { 0 } else { recursive(n - 1) + 1 }
         }
-    "#).unwrap();
+    "#,
+    )
+    .unwrap();
 
     // Small recursion should work
     assert_eq!(repl.eval("recursive(5)").unwrap(), "5");
@@ -160,7 +163,7 @@ fn test_memory_limits() {
     let result = repl.eval_bounded(
         "let huge = [0; 1000000]",
         100, // Very small limit
-        Duration::from_secs(1)
+        Duration::from_secs(1),
     );
 
     assert!(result.is_err());
@@ -341,14 +344,17 @@ fn test_builtin_conversion_functions() {
 fn test_nested_function_scopes() {
     let mut repl = Repl::new(std::env::temp_dir()).unwrap();
 
-    repl.eval(r#"
+    repl.eval(
+        r#"
         fn outer(x) {
             fn inner(y) {
                 x + y
             }
             inner
         }
-    "#).unwrap();
+    "#,
+    )
+    .unwrap();
 
     repl.eval("let add5 = outer(5)").unwrap();
     assert_eq!(repl.eval("add5(10)").unwrap(), "15");
@@ -358,7 +364,9 @@ fn test_nested_function_scopes() {
 fn test_complex_control_flow() {
     let mut repl = Repl::new(std::env::temp_dir()).unwrap();
 
-    let result = repl.eval(r#"
+    let result = repl
+        .eval(
+            r#"
         let mut result = 0;
         for i in 1..=5 {
             if i % 2 == 0 {
@@ -372,7 +380,9 @@ fn test_complex_control_flow() {
             }
         }
         result
-    "#).unwrap();
+    "#,
+        )
+        .unwrap();
 
     // (1*1) + (3*1) + (5*1) = 1 + 3 + 5 = 9
     assert_eq!(result, "9");
@@ -383,7 +393,8 @@ fn test_exception_like_handling() {
     let mut repl = Repl::new(std::env::temp_dir()).unwrap();
 
     // Simulate try-catch with if
-    repl.eval(r#"
+    repl.eval(
+        r#"
         fn safe_divide(a, b) {
             if b == 0 {
                 Err("Division by zero")
@@ -391,7 +402,9 @@ fn test_exception_like_handling() {
                 Ok(a / b)
             }
         }
-    "#).unwrap();
+    "#,
+    )
+    .unwrap();
 
     let result = repl.eval("safe_divide(10, 2)");
     if let Ok(value) = result {
@@ -409,7 +422,8 @@ fn test_custom_types_simulation() {
     let mut repl = Repl::new(std::env::temp_dir()).unwrap();
 
     // Simulate struct with functions
-    repl.eval(r#"
+    repl.eval(
+        r#"
         fn Point(x, y) {
             {
                 x: x,
@@ -421,7 +435,9 @@ fn test_custom_types_simulation() {
                 }
             }
         }
-    "#).unwrap();
+    "#,
+    )
+    .unwrap();
 
     repl.eval("let p1 = Point(0, 0)").unwrap();
     repl.eval("let p2 = Point(3, 4)").unwrap();
@@ -439,7 +455,8 @@ fn test_iterators_simulation() {
     let mut repl = Repl::new(std::env::temp_dir()).unwrap();
 
     // Simulate iterator pattern
-    repl.eval(r#"
+    repl.eval(
+        r#"
         fn range_iter(start, end) {
             let mut current = start;
             || {
@@ -452,7 +469,9 @@ fn test_iterators_simulation() {
                 }
             }
         }
-    "#).unwrap();
+    "#,
+    )
+    .unwrap();
 
     repl.eval("let iter = range_iter(0, 3)").unwrap();
 

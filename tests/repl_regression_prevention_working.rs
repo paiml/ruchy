@@ -4,54 +4,62 @@
 #[cfg(test)]
 mod regression_prevention_working {
     use std::process::Command;
-    
+
     /// CRITICAL: Basic arithmetic must always work
     #[test]
     fn test_basic_arithmetic_never_breaks() {
         let test_cases = vec![
             ("2 + 2", "4"),
-            ("10 - 5", "5"),  
+            ("10 - 5", "5"),
             ("3 * 4", "12"),
             ("15 / 3", "5"),
         ];
-        
+
         for (input, expected) in test_cases {
             let output = Command::new("ruchy")
                 .arg("-e")
                 .arg(input)
                 .output()
                 .expect("Failed to execute ruchy");
-            
+
             let stdout = String::from_utf8_lossy(&output.stdout);
-            assert!(stdout.contains(expected), 
-                    "CRITICAL REGRESSION: Arithmetic failed - {} -> expected {} in {}", 
-                    input, expected, stdout);
+            assert!(
+                stdout.contains(expected),
+                "CRITICAL REGRESSION: Arithmetic failed - {} -> expected {} in {}",
+                input,
+                expected,
+                stdout
+            );
         }
-        
+
         println!("✅ REGRESSION PROTECTION: Basic arithmetic works");
     }
 
     /// CRITICAL: String operations must work
-    #[test] 
+    #[test]
     fn test_string_operations_never_break() {
         let test_cases = vec![
             ("\"hello\"", "hello"),
             ("\"hello\" + \" world\"", "hello world"),
         ];
-        
+
         for (input, expected) in test_cases {
             let output = Command::new("ruchy")
                 .arg("-e")
                 .arg(input)
                 .output()
                 .expect("Failed to execute ruchy");
-            
+
             let stdout = String::from_utf8_lossy(&output.stdout);
-            assert!(stdout.contains(expected),
-                    "CRITICAL REGRESSION: String operation failed - {} -> expected {} in {}",
-                    input, expected, stdout);
+            assert!(
+                stdout.contains(expected),
+                "CRITICAL REGRESSION: String operation failed - {} -> expected {} in {}",
+                input,
+                expected,
+                stdout
+            );
         }
-        
+
         println!("✅ REGRESSION PROTECTION: String operations work");
     }
 
@@ -60,15 +68,17 @@ mod regression_prevention_working {
     fn test_variable_assignment_never_breaks() {
         // Test simple variable assignment
         let output = Command::new("ruchy")
-            .arg("-e")  
+            .arg("-e")
             .arg("let x = 42")
             .output()
             .expect("Failed to execute ruchy");
-        
+
         // Should succeed (either return value or no error)
-        assert!(output.status.success() || output.stderr.is_empty(),
-                "CRITICAL REGRESSION: Variable assignment failed");
-        
+        assert!(
+            output.status.success() || output.stderr.is_empty(),
+            "CRITICAL REGRESSION: Variable assignment failed"
+        );
+
         println!("✅ REGRESSION PROTECTION: Variable assignment works");
     }
 
@@ -80,11 +90,13 @@ mod regression_prevention_working {
             .arg("fn double(x) { x * 2 }")
             .output()
             .expect("Failed to execute ruchy");
-        
+
         // Function definition should succeed
-        assert!(output.status.success() || output.stderr.is_empty(),
-                "CRITICAL REGRESSION: Function definition failed");
-        
+        assert!(
+            output.status.success() || output.stderr.is_empty(),
+            "CRITICAL REGRESSION: Function definition failed"
+        );
+
         println!("✅ REGRESSION PROTECTION: Function definitions work");
     }
 
@@ -92,24 +104,27 @@ mod regression_prevention_working {
     #[test]
     fn test_error_handling_never_crashes() {
         let error_cases = vec![
-            "let x =",        // Incomplete statement
-            "unknown_var",   // Undefined variable
-            "1 +",           // Incomplete expression
+            "let x =",     // Incomplete statement
+            "unknown_var", // Undefined variable
+            "1 +",         // Incomplete expression
         ];
-        
+
         for input in error_cases {
             let output = Command::new("ruchy")
                 .arg("-e")
                 .arg(input)
                 .output()
                 .expect("Failed to execute ruchy");
-            
+
             // Should not crash silently - provide some form of feedback
             let has_feedback = !output.stdout.is_empty() || !output.stderr.is_empty();
-            assert!(has_feedback,
-                    "CRITICAL REGRESSION: Silent failure for: {}", input);
+            assert!(
+                has_feedback,
+                "CRITICAL REGRESSION: Silent failure for: {}",
+                input
+            );
         }
-        
+
         println!("✅ REGRESSION PROTECTION: Error handling works gracefully");
     }
 
@@ -118,23 +133,31 @@ mod regression_prevention_working {
     fn test_tab_completion_system_never_breaks() {
         use ruchy::runtime::completion::RuchyCompleter;
         use std::collections::HashMap;
-        
+
         let mut completer = RuchyCompleter::new();
         let bindings = HashMap::new();
-        
+
         // Test that basic completion works
         let completions = completer.get_completions("prin", 4, &bindings);
-        assert!(!completions.is_empty(), "CRITICAL REGRESSION: No completions returned");
-        assert!(completions.iter().any(|c| c.contains("println")), 
-                "CRITICAL REGRESSION: println completion missing");
-        
+        assert!(
+            !completions.is_empty(),
+            "CRITICAL REGRESSION: No completions returned"
+        );
+        assert!(
+            completions.iter().any(|c| c.contains("println")),
+            "CRITICAL REGRESSION: println completion missing"
+        );
+
         // Test performance requirement
         let start = std::time::Instant::now();
         let _completions = completer.get_completions("test", 4, &bindings);
         let duration = start.elapsed();
-        assert!(duration < std::time::Duration::from_millis(50),
-                "CRITICAL REGRESSION: Tab completion too slow: {:?}", duration);
-        
+        assert!(
+            duration < std::time::Duration::from_millis(50),
+            "CRITICAL REGRESSION: Tab completion too slow: {:?}",
+            duration
+        );
+
         println!("✅ REGRESSION PROTECTION: Tab completion system works");
     }
 
@@ -146,12 +169,15 @@ mod regression_prevention_working {
             .arg("--help")
             .output()
             .expect("Failed to execute ruchy repl --help");
-        
-        assert!(output.status.success(), "CRITICAL REGRESSION: REPL help failed");
-        
+
+        assert!(
+            output.status.success(),
+            "CRITICAL REGRESSION: REPL help failed"
+        );
+
         let stdout = String::from_utf8_lossy(&output.stdout);
         assert!(!stdout.is_empty(), "CRITICAL REGRESSION: No help output");
-        
+
         println!("✅ REGRESSION PROTECTION: REPL help system works");
     }
 
@@ -162,12 +188,18 @@ mod regression_prevention_working {
             .arg("--help")
             .output()
             .expect("Failed to execute ruchy --help");
-        
-        assert!(output.status.success(), "CRITICAL REGRESSION: Main command failed");
-        
+
+        assert!(
+            output.status.success(),
+            "CRITICAL REGRESSION: Main command failed"
+        );
+
         let stdout = String::from_utf8_lossy(&output.stdout);
-        assert!(stdout.contains("Ruchy"), "CRITICAL REGRESSION: Invalid help output");
-        
+        assert!(
+            stdout.contains("Ruchy"),
+            "CRITICAL REGRESSION: Invalid help output"
+        );
+
         println!("✅ REGRESSION PROTECTION: Main command works");
     }
 
@@ -175,20 +207,29 @@ mod regression_prevention_working {
     #[test]
     fn test_performance_never_degrades() {
         let start = std::time::Instant::now();
-        
+
         let output = Command::new("ruchy")
             .arg("-e")
             .arg("2 + 2")
             .output()
             .expect("Failed to execute ruchy");
-        
+
         let duration = start.elapsed();
-        
-        assert!(output.status.success(), "CRITICAL REGRESSION: Basic execution failed");
-        assert!(duration < std::time::Duration::from_secs(2),
-                "CRITICAL REGRESSION: Execution too slow: {:?}", duration);
-        
-        println!("✅ REGRESSION PROTECTION: Performance maintained ({:?})", duration);
+
+        assert!(
+            output.status.success(),
+            "CRITICAL REGRESSION: Basic execution failed"
+        );
+        assert!(
+            duration < std::time::Duration::from_secs(2),
+            "CRITICAL REGRESSION: Execution too slow: {:?}",
+            duration
+        );
+
+        println!(
+            "✅ REGRESSION PROTECTION: Performance maintained ({:?})",
+            duration
+        );
     }
 }
 
@@ -198,7 +239,7 @@ mod regression_summary {
     #[test]
     fn test_comprehensive_regression_protection() {
         println!("\n🛡️ COMPREHENSIVE REGRESSION PROTECTION:");
-        println!("✅ 1. Basic arithmetic operations");  
+        println!("✅ 1. Basic arithmetic operations");
         println!("✅ 2. String operations and concatenation");
         println!("✅ 3. Variable assignment system");
         println!("✅ 4. Function definition system");
@@ -210,7 +251,7 @@ mod regression_summary {
         println!("\n🎯 RESULT: REPL is bulletproof against regressions");
         println!("📊 COVERAGE: 9 critical paths protected");
         println!("⚡ PERFORMANCE: <2s execution, <50ms tab completion");
-        
+
         assert!(true, "All critical regression protection implemented");
     }
 }

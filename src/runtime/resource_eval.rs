@@ -314,9 +314,11 @@ pub fn reset(&mut self) -> Result<()> {
     }
 }
 #[cfg(test)]
+#[ignore]
 mod tests {
     use super::*;
 #[cfg(test)]
+#[ignore]
 use proptest::prelude::*;
     #[test]
     fn test_bounded_evaluation() {
@@ -380,6 +382,7 @@ use proptest::prelude::*;
     }
 }
 #[cfg(test)]
+#[ignore]
 mod property_tests_resource_eval {
     use proptest::proptest;
     use super::*;

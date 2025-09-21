@@ -1,8 +1,8 @@
 //! TDD Tests for Module System Implementation
 //! Sprint v3.8.0 - All tests should fail initially
 
-use ruchy::frontend::parser::Parser;
 use ruchy::frontend::ast::{Expr, ExprKind};
+use ruchy::frontend::parser::Parser;
 
 #[cfg(test)]
 mod import_parsing_tests {
@@ -93,14 +93,12 @@ mod export_parsing_tests {
 
         let ast = result.unwrap();
         match &ast.kind {
-            ExprKind::Export { expr, .. } => {
-                match &expr.kind {
-                    ExprKind::Function { name, .. } => {
-                        assert_eq!(name, "add");
-                    }
-                    _ => panic!("Expected exported function"),
+            ExprKind::Export { expr, .. } => match &expr.kind {
+                ExprKind::Function { name, .. } => {
+                    assert_eq!(name, "add");
                 }
-            }
+                _ => panic!("Expected exported function"),
+            },
             _ => panic!("Expected Export expression"),
         }
     }
@@ -114,14 +112,12 @@ mod export_parsing_tests {
 
         let ast = result.unwrap();
         match &ast.kind {
-            ExprKind::ExportDefault { expr } => {
-                match &expr.kind {
-                    ExprKind::Function { name, .. } => {
-                        assert_eq!(name, "main");
-                    }
-                    _ => panic!("Expected default exported function"),
+            ExprKind::ExportDefault { expr } => match &expr.kind {
+                ExprKind::Function { name, .. } => {
+                    assert_eq!(name, "main");
                 }
-            }
+                _ => panic!("Expected default exported function"),
+            },
             _ => panic!("Expected ExportDefault expression"),
         }
     }
@@ -238,8 +234,8 @@ mod module_transpilation_tests {
 
 #[cfg(test)]
 mod property_tests {
-    use proptest::prelude::*;
     use super::*;
+    use proptest::prelude::*;
 
     proptest! {
         #[test]

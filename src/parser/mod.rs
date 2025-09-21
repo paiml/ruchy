@@ -10,7 +10,6 @@ pub use error_recovery::{
 
 #[cfg(test)]
 mod tests {
-    
 
     // Sprint 12: Parser module tests
 

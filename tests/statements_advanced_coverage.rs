@@ -243,7 +243,8 @@ fn test_function_definitions_advanced() {
     }
 
     // Recursive function
-    let mut parser = Parser::new("fun factorial(n) { if n <= 1 { 1 } else { n * factorial(n - 1) } }");
+    let mut parser =
+        Parser::new("fun factorial(n) { if n <= 1 { 1 } else { n * factorial(n - 1) } }");
     let ast = parser.parse().unwrap();
     let result = transpiler.transpile(&ast).unwrap().to_string();
     assert!(result.contains("fn"));

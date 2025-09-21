@@ -77,14 +77,7 @@ fn test_parse_string_literals() {
 
 #[test]
 fn test_parse_number_literals() {
-    let numbers = vec![
-        "0",
-        "42",
-        "1234567890",
-        "3.14",
-        "0.5",
-        "10.0",
-    ];
+    let numbers = vec!["0", "42", "1234567890", "3.14", "0.5", "10.0"];
 
     for num in numbers {
         let mut parser = Parser::new(num);
@@ -181,12 +174,12 @@ fn test_parse_nested_structures() {
 #[test]
 fn test_parse_edge_cases() {
     let edge_cases = vec![
-        "",           // Empty
-        "   ",        // Whitespace only
-        "42",         // Single token
-        "(())",       // Empty parens
-        "[]",         // Empty array
-        "{}",         // Empty object
+        "",     // Empty
+        "   ",  // Whitespace only
+        "42",   // Single token
+        "(())", // Empty parens
+        "[]",   // Empty array
+        "{}",   // Empty object
     ];
 
     for expr in edge_cases {
@@ -239,10 +232,7 @@ fn test_parse_fat_arrow() {
 
 #[test]
 fn test_parse_pipeline() {
-    let pipelines = vec![
-        "5 |> double",
-        "data |> filter |> map",
-    ];
+    let pipelines = vec!["5 |> double", "data |> filter |> map"];
 
     for expr in pipelines {
         let mut parser = Parser::new(expr);
@@ -253,11 +243,7 @@ fn test_parse_pipeline() {
 
 #[test]
 fn test_parse_async_await() {
-    let async_code = vec![
-        "async { 1 }",
-        "await promise",
-        "async fn foo() { }",
-    ];
+    let async_code = vec!["async { 1 }", "await promise", "async fn foo() { }"];
 
     for expr in async_code {
         let mut parser = Parser::new(expr);
@@ -268,10 +254,7 @@ fn test_parse_async_await() {
 
 #[test]
 fn test_parse_string_interpolation() {
-    let interpolated = vec![
-        r#"f"Hello {name}""#,
-        r#"f"Result: {1 + 1}""#,
-    ];
+    let interpolated = vec![r#"f"Hello {name}""#, r#"f"Result: {1 + 1}""#];
 
     for expr in interpolated {
         let mut parser = Parser::new(expr);
@@ -298,11 +281,7 @@ fn test_parse_patterns() {
 
 #[test]
 fn test_parse_generics() {
-    let generics = vec![
-        "Vec<T>",
-        "HashMap<String, i32>",
-        "fn foo<T>(x: T) { }",
-    ];
+    let generics = vec!["Vec<T>", "HashMap<String, i32>", "fn foo<T>(x: T) { }"];
 
     for expr in generics {
         let mut parser = Parser::new(expr);
@@ -313,10 +292,7 @@ fn test_parse_generics() {
 
 #[test]
 fn test_parse_attributes() {
-    let attrs = vec![
-        "#[derive(Debug)]",
-        "#[test]",
-    ];
+    let attrs = vec!["#[derive(Debug)]", "#[test]"];
 
     for attr in attrs {
         let mut parser = Parser::new(attr);
@@ -329,12 +305,7 @@ fn test_parse_attributes() {
 
 #[test]
 fn test_parse_incomplete() {
-    let incomplete = vec![
-        "let x =",
-        "if true {",
-        "fn foo(",
-        "1 +",
-    ];
+    let incomplete = vec!["let x =", "if true {", "fn foo(", "1 +"];
 
     for expr in incomplete {
         let mut parser = Parser::new(expr);
@@ -345,12 +316,7 @@ fn test_parse_incomplete() {
 
 #[test]
 fn test_parse_invalid() {
-    let invalid = vec![
-        "let 123 = x",
-        "fn () { }",
-        "if { }",
-        "1 + + 2",
-    ];
+    let invalid = vec!["let 123 = x", "fn () { }", "if { }", "1 + + 2"];
 
     for expr in invalid {
         let mut parser = Parser::new(expr);

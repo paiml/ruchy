@@ -33,15 +33,15 @@ pub enum TypeConstraint {
 }
 impl InferenceContext {
     #[must_use]
-/// Create a new inference context
-///
-/// # Examples
-///
-/// ```
-/// use ruchy::middleend::infer::InferenceContext;
-/// let ctx = InferenceContext::new();
-/// ```
-pub fn new() -> Self {
+    /// Create a new inference context
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::middleend::infer::InferenceContext;
+    /// let ctx = InferenceContext::new();
+    /// ```
+    pub fn new() -> Self {
         InferenceContext {
             gen: TyVarGenerator::new(),
             unifier: Unifier::new(),
@@ -52,15 +52,15 @@ pub fn new() -> Self {
         }
     }
     #[must_use]
-/// # Examples
-///
-/// ```ignore
-/// use ruchy::middleend::infer::InferenceContext;
-/// use ruchy::middleend::environment::TypeEnv;
-///
-/// let ctx = InferenceContext::with_env(TypeEnv::standard());
-/// ```
-pub fn with_env(env: TypeEnv) -> Self {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::middleend::infer::InferenceContext;
+    /// use ruchy::middleend::environment::TypeEnv;
+    ///
+    /// let ctx = InferenceContext::with_env(TypeEnv::standard());
+    /// ```
+    pub fn with_env(env: TypeEnv) -> Self {
         InferenceContext {
             gen: TyVarGenerator::new(),
             unifier: Unifier::new(),
@@ -75,16 +75,16 @@ pub fn with_env(env: TypeEnv) -> Self {
     /// # Errors
     ///
     /// Returns an error if type inference fails (type error, undefined variable, etc.)
-/// # Examples
-///
-/// ```ignore
-/// use ruchy::middleend::infer::InferenceContext;
-/// use ruchy::frontend::ast::Expr;
-///
-/// let mut ctx = InferenceContext::new();
-/// // ctx.infer(&expr)?;
-/// ```
-pub fn infer(&mut self, expr: &Expr) -> Result<MonoType> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::middleend::infer::InferenceContext;
+    /// use ruchy::frontend::ast::Expr;
+    ///
+    /// let mut ctx = InferenceContext::new();
+    /// // ctx.infer(&expr)?;
+    /// ```
+    pub fn infer(&mut self, expr: &Expr) -> Result<MonoType> {
         // Check recursion depth to prevent infinite loops
         if self.recursion_depth > 100 {
             bail!("Type inference recursion limit exceeded");
@@ -197,14 +197,25 @@ pub fn infer(&mut self, expr: &Expr) -> Result<MonoType> {
             // DataFrame methods
             ("filter" | "groupby" | "agg" | "select" | "col", MonoType::DataFrame(_)) => Ok(()),
             ("filter" | "groupby" | "agg" | "select" | "col", MonoType::Named(name))
-                if name == "DataFrame" => Ok(()),
+                if name == "DataFrame" =>
+            {
+                Ok(())
+            }
             // Series methods
-            ("mean" | "std" | "sum" | "count", MonoType::Series(_) | MonoType::DataFrame(_)) => Ok(()),
+            ("mean" | "std" | "sum" | "count", MonoType::Series(_) | MonoType::DataFrame(_)) => {
+                Ok(())
+            }
             ("mean" | "std" | "sum" | "count", MonoType::Named(name))
-                if name == "Series" || name == "DataFrame" => Ok(()),
+                if name == "Series" || name == "DataFrame" =>
+            {
+                Ok(())
+            }
             // HashMap methods (for compiler symbol tables)
-            ("insert" | "get" | "contains_key", MonoType::Named(name)) 
-                if name.starts_with("HashMap") => Ok(()),
+            ("insert" | "get" | "contains_key", MonoType::Named(name))
+                if name.starts_with("HashMap") =>
+            {
+                Ok(())
+            }
             // String methods
             ("chars" | "trim" | "to_upper" | "to_lower", MonoType::String) => Ok(()),
             // For testing purposes, be more permissive with unknown methods
@@ -216,9 +227,9 @@ pub fn infer(&mut self, expr: &Expr) -> Result<MonoType> {
         }
     }
     /// Core type inference dispatcher with complexity <10
-    /// 
+    ///
     /// Delegates to specialized handlers for each expression category
-    /// 
+    ///
     /// # Example Usage
     /// This method infers types for expressions by delegating to specialized handlers.
     /// For example, literals get their type directly, while function calls check argument types.
@@ -229,9 +240,11 @@ pub fn infer(&mut self, expr: &Expr) -> Result<MonoType> {
             ExprKind::Identifier(name) => self.infer_identifier(name),
             ExprKind::QualifiedName { module: _, name } => self.infer_identifier(name),
             // Control flow and pattern matching
-            ExprKind::If { condition: _, then_branch: _, else_branch: _ } => {
-                self.infer_control_flow_expr(expr)
-            }
+            ExprKind::If {
+                condition: _,
+                then_branch: _,
+                else_branch: _,
+            } => self.infer_control_flow_expr(expr),
             ExprKind::For { .. } | ExprKind::While { .. } | ExprKind::Loop { .. } => {
                 self.infer_control_flow_expr(expr)
             }
@@ -240,17 +253,16 @@ pub fn infer(&mut self, expr: &Expr) -> Result<MonoType> {
                 self.infer_control_flow_expr(expr)
             }
             // Functions and lambdas
-            ExprKind::Function { .. } | ExprKind::Lambda { .. } => {
-                self.infer_function_expr(expr)
-            }
+            ExprKind::Function { .. } | ExprKind::Lambda { .. } => self.infer_function_expr(expr),
             // Collections and data structures
             ExprKind::List(..) | ExprKind::Tuple(..) | ExprKind::ListComprehension { .. } => {
                 self.infer_collection_expr(expr)
             }
             // Operations and method calls
-            ExprKind::Binary { .. } | ExprKind::Unary { .. } | ExprKind::Call { .. } | ExprKind::MethodCall { .. } => {
-                self.infer_operation_expr(expr)
-            }
+            ExprKind::Binary { .. }
+            | ExprKind::Unary { .. }
+            | ExprKind::Call { .. }
+            | ExprKind::MethodCall { .. } => self.infer_operation_expr(expr),
             // All other expressions
             _ => self.infer_other_expr(expr),
         }
@@ -290,10 +302,7 @@ pub fn infer(&mut self, expr: &Expr) -> Result<MonoType> {
                 }
             }
             // Other arithmetic operators (numeric only)
-            BinaryOp::Subtract
-            | BinaryOp::Multiply
-            | BinaryOp::Divide
-            | BinaryOp::Modulo => {
+            BinaryOp::Subtract | BinaryOp::Multiply | BinaryOp::Divide | BinaryOp::Modulo => {
                 // Both operands must be numeric and same type
                 self.unifier.unify(&left_ty, &right_ty)?;
                 // For now, assume Int (could be Float too)
@@ -532,15 +541,15 @@ pub fn infer(&mut self, expr: &Expr) -> Result<MonoType> {
     /// REFACTORED FOR COMPLEXITY REDUCTION
     /// Original: 41 cyclomatic complexity, Target: <20
     /// Strategy: Extract method-category specific handlers
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::middleend::infer::infer_method_call;
-/// 
-/// let result = infer_method_call("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn infer_method_call(
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::middleend::infer::infer_method_call;
+    ///
+    /// let result = infer_method_call("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn infer_method_call(
         &mut self,
         receiver: &Expr,
         method: &str,
@@ -563,10 +572,10 @@ pub fn infer_method_call(
     }
     /// Extract method constraint addition (complexity ~3)
     fn add_method_constraint(
-        &mut self, 
-        receiver_ty: &MonoType, 
-        method: &str, 
-        args: &[Expr]
+        &mut self,
+        receiver_ty: &MonoType,
+        method: &str,
+        args: &[Expr],
     ) -> Result<()> {
         let arg_types: Result<Vec<_>> = args.iter().map(|arg| self.infer_expr(arg)).collect();
         let arg_types = arg_types?;
@@ -579,10 +588,10 @@ pub fn infer_method_call(
     }
     /// Extract list method handling (complexity ~10)
     fn infer_list_method(
-        &mut self, 
-        receiver_ty: &MonoType, 
-        method: &str, 
-        args: &[Expr]
+        &mut self,
+        receiver_ty: &MonoType,
+        method: &str,
+        args: &[Expr],
     ) -> Result<MonoType> {
         if let MonoType::List(elem_ty) = receiver_ty {
             match method {
@@ -620,10 +629,10 @@ pub fn infer_method_call(
     }
     /// Extract string method handling (complexity ~5)
     fn infer_string_method(
-        &mut self, 
-        receiver_ty: &MonoType, 
-        method: &str, 
-        args: &[Expr]
+        &mut self,
+        receiver_ty: &MonoType,
+        method: &str,
+        args: &[Expr],
     ) -> Result<MonoType> {
         match method {
             "len" | "length" => {
@@ -639,21 +648,19 @@ pub fn infer_method_call(
     }
     /// Extract dataframe method handling (complexity ~8)
     fn infer_dataframe_method(
-        &mut self, 
-        receiver_ty: &MonoType, 
-        method: &str, 
-        args: &[Expr]
+        &mut self,
+        receiver_ty: &MonoType,
+        method: &str,
+        args: &[Expr],
     ) -> Result<MonoType> {
         match method {
-            "filter" | "groupby" | "agg" | "select" => {
-                match receiver_ty {
-                    MonoType::DataFrame(columns) => Ok(MonoType::DataFrame(columns.clone())),
-                    MonoType::Named(name) if name == "DataFrame" => {
-                        Ok(MonoType::Named("DataFrame".to_string()))
-                    }
-                    _ => Ok(MonoType::Named("DataFrame".to_string())),
+            "filter" | "groupby" | "agg" | "select" => match receiver_ty {
+                MonoType::DataFrame(columns) => Ok(MonoType::DataFrame(columns.clone())),
+                MonoType::Named(name) if name == "DataFrame" => {
+                    Ok(MonoType::Named("DataFrame".to_string()))
                 }
-            }
+                _ => Ok(MonoType::Named("DataFrame".to_string())),
+            },
             "mean" | "std" | "sum" | "count" => Ok(MonoType::Float),
             "col" => self.infer_column_selection(receiver_ty, args),
             _ => self.infer_generic_method(receiver_ty, method, args),
@@ -661,9 +668,9 @@ pub fn infer_method_call(
     }
     /// Extract column selection logic (complexity ~5)
     fn infer_column_selection(
-        &mut self, 
-        receiver_ty: &MonoType, 
-        args: &[Expr]
+        &mut self,
+        receiver_ty: &MonoType,
+        args: &[Expr],
     ) -> Result<MonoType> {
         if let MonoType::DataFrame(columns) = receiver_ty {
             if let Some(arg) = args.first() {
@@ -680,15 +687,16 @@ pub fn infer_method_call(
     }
     /// Extract generic method handling (complexity ~8)
     fn infer_generic_method(
-        &mut self, 
-        receiver_ty: &MonoType, 
-        method: &str, 
-        args: &[Expr]
+        &mut self,
+        receiver_ty: &MonoType,
+        method: &str,
+        args: &[Expr],
     ) -> Result<MonoType> {
         if let Some(scheme) = self.env.lookup(method) {
             let method_ty = self.env.instantiate(scheme, &mut self.gen);
             let result_ty = MonoType::Var(self.gen.fresh());
-            let expected_func_ty = self.build_method_function_type(receiver_ty, args, result_ty.clone())?;
+            let expected_func_ty =
+                self.build_method_function_type(receiver_ty, args, result_ty.clone())?;
             self.unifier.unify(&method_ty, &expected_func_ty)?;
             Ok(self.unifier.apply(&result_ty))
         } else {
@@ -697,10 +705,10 @@ pub fn infer_method_call(
     }
     /// Extract function type construction (complexity ~4)
     fn build_method_function_type(
-        &mut self, 
-        receiver_ty: &MonoType, 
-        args: &[Expr], 
-        result_ty: MonoType
+        &mut self,
+        receiver_ty: &MonoType,
+        args: &[Expr],
+        result_ty: MonoType,
     ) -> Result<MonoType> {
         let mut expected_func_ty = result_ty;
         for arg in args.iter().rev() {
@@ -708,7 +716,8 @@ pub fn infer_method_call(
             expected_func_ty = MonoType::Function(Box::new(arg_ty), Box::new(expected_func_ty));
         }
         // Add receiver as first argument
-        expected_func_ty = MonoType::Function(Box::new(receiver_ty.clone()), Box::new(expected_func_ty));
+        expected_func_ty =
+            MonoType::Function(Box::new(receiver_ty.clone()), Box::new(expected_func_ty));
         Ok(expected_func_ty)
     }
     /// Helper methods for argument validation (complexity ~3 each)
@@ -884,7 +893,11 @@ pub fn infer_method_call(
                 let tuple_ty = MonoType::Tuple(elem_types);
                 self.unifier.unify(expected_ty, &tuple_ty)
             }
-            Pattern::Struct { name, fields, has_rest: _ } => {
+            Pattern::Struct {
+                name,
+                fields,
+                has_rest: _,
+            } => {
                 // For now, treat struct patterns as a named type
                 // In a more complete implementation, we'd look up the struct definition
                 let struct_ty = MonoType::Named(name.clone());
@@ -1171,10 +1184,8 @@ pub fn infer_method_call(
                 MonoType::Series(Box::new(Self::ast_type_to_mono_static(dtype)?))
             }
             TypeKind::Tuple(types) => {
-                let mono_types: Result<Vec<_>> = types
-                    .iter()
-                    .map(Self::ast_type_to_mono_static)
-                    .collect();
+                let mono_types: Result<Vec<_>> =
+                    types.iter().map(Self::ast_type_to_mono_static).collect();
                 MonoType::Tuple(mono_types?)
             }
             TypeKind::Reference { inner, .. } => {
@@ -1185,45 +1196,54 @@ pub fn infer_method_call(
     }
     /// Get the final inferred type for a type variable
     #[must_use]
-/// # Examples
-/// 
-/// ```
-/// use ruchy::middleend::infer::solve;
-/// 
-/// let result = solve(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn solve(&self, var: &crate::middleend::types::TyVar) -> MonoType {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::middleend::infer::solve;
+    ///
+    /// let result = solve(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn solve(&self, var: &crate::middleend::types::TyVar) -> MonoType {
         self.unifier.solve(var)
     }
     /// Apply current substitution to a type
     #[must_use]
-/// # Examples
-/// 
-/// ```
-/// use ruchy::middleend::infer::apply;
-/// 
-/// let result = apply(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn apply(&self, ty: &MonoType) -> MonoType {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::middleend::infer::apply;
+    ///
+    /// let result = apply(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn apply(&self, ty: &MonoType) -> MonoType {
         self.unifier.apply(ty)
     }
     /// Infer types for control flow expressions (if, match, loops)
-    /// 
+    ///
     /// # Example Usage
     /// Handles type inference for control flow constructs.
     /// For if expressions, ensures both branches have compatible types.
     /// For match expressions, checks pattern compatibility and branch types.
     fn infer_control_flow_expr(&mut self, expr: &Expr) -> Result<MonoType> {
         match &expr.kind {
-            ExprKind::If { condition, then_branch, else_branch } => {
-                self.infer_if(condition, then_branch, else_branch.as_deref())
-            }
-            ExprKind::For { var, iter, body, .. } => self.infer_for(var, iter, body),
+            ExprKind::If {
+                condition,
+                then_branch,
+                else_branch,
+            } => self.infer_if(condition, then_branch, else_branch.as_deref()),
+            ExprKind::For {
+                var, iter, body, ..
+            } => self.infer_for(var, iter, body),
             ExprKind::While { condition, body } => self.infer_while(condition, body),
             ExprKind::Loop { body } => self.infer_loop(body),
-            ExprKind::IfLet { pattern: _, expr, then_branch, else_branch } => {
+            ExprKind::IfLet {
+                pattern: _,
+                expr,
+                then_branch,
+                else_branch,
+            } => {
                 let _expr_ty = self.infer_expr(expr)?;
                 let then_ty = self.infer_expr(then_branch)?;
                 let else_ty = if let Some(else_expr) = else_branch {
@@ -1234,7 +1254,11 @@ pub fn apply(&self, ty: &MonoType) -> MonoType {
                 self.unifier.unify(&then_ty, &else_ty)?;
                 Ok(then_ty)
             }
-            ExprKind::WhileLet { pattern: _, expr, body } => {
+            ExprKind::WhileLet {
+                pattern: _,
+                expr,
+                body,
+            } => {
                 let _expr_ty = self.infer_expr(expr)?;
                 let _body_ty = self.infer_expr(body)?;
                 Ok(MonoType::Unit)
@@ -1245,9 +1269,14 @@ pub fn apply(&self, ty: &MonoType) -> MonoType {
     /// Infer types for function and lambda expressions
     fn infer_function_expr(&mut self, expr: &Expr) -> Result<MonoType> {
         match &expr.kind {
-            ExprKind::Function { name, params, body, return_type, is_async, .. } => {
-                self.infer_function(name, params, body, return_type.as_ref(), *is_async)
-            }
+            ExprKind::Function {
+                name,
+                params,
+                body,
+                return_type,
+                is_async,
+                ..
+            } => self.infer_function(name, params, body, return_type.as_ref(), *is_async),
             ExprKind::Lambda { params, body } => self.infer_lambda(params, body),
             _ => bail!("Unexpected expression type in function handler"),
         }
@@ -1257,12 +1286,16 @@ pub fn apply(&self, ty: &MonoType) -> MonoType {
         match &expr.kind {
             ExprKind::List(elements) => self.infer_list(elements),
             ExprKind::Tuple(elements) => {
-                let element_types: Result<Vec<_>> = elements.iter().map(|e| self.infer_expr(e)).collect();
+                let element_types: Result<Vec<_>> =
+                    elements.iter().map(|e| self.infer_expr(e)).collect();
                 Ok(MonoType::Tuple(element_types?))
             }
-            ExprKind::ListComprehension { element, variable, iterable, condition } => {
-                self.infer_list_comprehension(element, variable, iterable, condition.as_deref())
-            }
+            ExprKind::ListComprehension {
+                element,
+                variable,
+                iterable,
+                condition,
+            } => self.infer_list_comprehension(element, variable, iterable, condition.as_deref()),
             _ => bail!("Unexpected expression type in collection handler"),
         }
     }
@@ -1272,24 +1305,26 @@ pub fn apply(&self, ty: &MonoType) -> MonoType {
             ExprKind::Binary { left, op, right } => self.infer_binary(left, *op, right),
             ExprKind::Unary { op, operand } => self.infer_unary(*op, operand),
             ExprKind::Call { func, args } => self.infer_call(func, args),
-            ExprKind::MethodCall { receiver, method, args } => {
-                self.infer_method_call(receiver, method, args)
-            }
+            ExprKind::MethodCall {
+                receiver,
+                method,
+                args,
+            } => self.infer_method_call(receiver, method, args),
             _ => bail!("Unexpected expression type in operation handler"),
         }
     }
     /// REFACTORED FOR COMPLEXITY REDUCTION
     /// Original: 38 cyclomatic complexity, Target: <20
     /// Strategy: Group related expression types into category handlers
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::middleend::infer::infer_other_expr;
-/// 
-/// let result = infer_other_expr(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn infer_other_expr(&mut self, expr: &Expr) -> Result<MonoType> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::middleend::infer::infer_other_expr;
+    ///
+    /// let result = infer_other_expr(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn infer_other_expr(&mut self, expr: &Expr) -> Result<MonoType> {
         match &expr.kind {
             // Special cases that need specific handling
             ExprKind::StringInterpolation { parts } => self.infer_string_interpolation(parts),
@@ -1301,16 +1336,20 @@ pub fn infer_other_expr(&mut self, expr: &Expr) -> Result<MonoType> {
                 self.infer_other_control_flow_expr(expr)
             }
             // Definition expressions (all return Unit)
-            ExprKind::Struct { .. } | ExprKind::Enum { .. } | ExprKind::Trait { .. } | 
-            ExprKind::Impl { .. } | ExprKind::Extension { .. } | ExprKind::Actor { .. } |
-            ExprKind::Import { .. } | ExprKind::Export { .. } => {
-                self.infer_other_definition_expr(expr)
-            }
+            ExprKind::Struct { .. }
+            | ExprKind::Enum { .. }
+            | ExprKind::Trait { .. }
+            | ExprKind::Impl { .. }
+            | ExprKind::Extension { .. }
+            | ExprKind::Actor { .. }
+            | ExprKind::Import { .. }
+            | ExprKind::Export { .. } => self.infer_other_definition_expr(expr),
             // Literal and access expressions
-            ExprKind::StructLiteral { .. } | ExprKind::ObjectLiteral { .. } | 
-            ExprKind::FieldAccess { .. } | ExprKind::IndexAccess { .. } | ExprKind::Slice { .. } => {
-                self.infer_other_literal_access_expr(expr)
-            }
+            ExprKind::StructLiteral { .. }
+            | ExprKind::ObjectLiteral { .. }
+            | ExprKind::FieldAccess { .. }
+            | ExprKind::IndexAccess { .. }
+            | ExprKind::Slice { .. } => self.infer_other_literal_access_expr(expr),
             // Option expressions
             ExprKind::Some { .. } | ExprKind::None => self.infer_other_option_expr(expr),
             // Async expressions
@@ -1318,27 +1357,28 @@ pub fn infer_other_expr(&mut self, expr: &Expr) -> Result<MonoType> {
                 self.infer_other_async_expr(expr)
             }
             // Actor expressions
-            ExprKind::Send { .. } | ExprKind::ActorSend { .. } | ExprKind::Ask { .. } | 
-            ExprKind::ActorQuery { .. } => {
-                self.infer_other_actor_expr(expr)
-            }
+            ExprKind::Send { .. }
+            | ExprKind::ActorSend { .. }
+            | ExprKind::Ask { .. }
+            | ExprKind::ActorQuery { .. } => self.infer_other_actor_expr(expr),
             // Assignment expressions
-            ExprKind::Assign { .. } | ExprKind::CompoundAssign { .. } |
-            ExprKind::PreIncrement { .. } | ExprKind::PostIncrement { .. } |
-            ExprKind::PreDecrement { .. } | ExprKind::PostDecrement { .. } => {
-                self.infer_other_assignment_expr(expr)
-            }
+            ExprKind::Assign { .. }
+            | ExprKind::CompoundAssign { .. }
+            | ExprKind::PreIncrement { .. }
+            | ExprKind::PostIncrement { .. }
+            | ExprKind::PreDecrement { .. }
+            | ExprKind::PostDecrement { .. } => self.infer_other_assignment_expr(expr),
             // Remaining expressions
             _ => self.infer_remaining_expr(expr),
         }
     }
     /// Extract control flow handling (complexity ~1)
     fn infer_other_control_flow_expr(&mut self, _expr: &Expr) -> Result<MonoType> {
-        Ok(MonoType::Unit)  // All control flow returns Unit
+        Ok(MonoType::Unit) // All control flow returns Unit
     }
     /// Extract definition handling (complexity ~1)  
     fn infer_other_definition_expr(&mut self, _expr: &Expr) -> Result<MonoType> {
-        Ok(MonoType::Unit)  // All definitions return Unit
+        Ok(MonoType::Unit) // All definitions return Unit
     }
     /// Extract literal/access handling (complexity ~8)
     fn infer_other_literal_access_expr(&mut self, expr: &Expr) -> Result<MonoType> {
@@ -1383,9 +1423,11 @@ pub fn infer_other_expr(&mut self, expr: &Expr) -> Result<MonoType> {
             ExprKind::Send { actor, message } | ExprKind::ActorSend { actor, message } => {
                 self.infer_send(actor, message)
             }
-            ExprKind::Ask { actor, message, timeout } => {
-                self.infer_ask(actor, message, timeout.as_deref())
-            }
+            ExprKind::Ask {
+                actor,
+                message,
+                timeout,
+            } => self.infer_ask(actor, message, timeout.as_deref()),
             ExprKind::ActorQuery { actor, message } => self.infer_ask(actor, message, None),
             _ => bail!("Unexpected actor expression"),
         }
@@ -1397,19 +1439,23 @@ pub fn infer_other_expr(&mut self, expr: &Expr) -> Result<MonoType> {
             ExprKind::CompoundAssign { target, op, value } => {
                 self.infer_compound_assign(target, *op, value)
             }
-            ExprKind::PreIncrement { target } | ExprKind::PostIncrement { target } |
-            ExprKind::PreDecrement { target } | ExprKind::PostDecrement { target } => {
-                self.infer_increment_decrement(target)
-            }
+            ExprKind::PreIncrement { target }
+            | ExprKind::PostIncrement { target }
+            | ExprKind::PreDecrement { target }
+            | ExprKind::PostDecrement { target } => self.infer_increment_decrement(target),
             _ => bail!("Unexpected assignment expression"),
         }
     }
     /// Extract remaining expressions (complexity ~8)
     fn infer_remaining_expr(&mut self, expr: &Expr) -> Result<MonoType> {
         match &expr.kind {
-            ExprKind::Let { name, value, body, is_mutable, .. } => {
-                self.infer_let(name, value, body, *is_mutable)
-            }
+            ExprKind::Let {
+                name,
+                value,
+                body,
+                is_mutable,
+                ..
+            } => self.infer_let(name, value, body, *is_mutable),
             ExprKind::Block(exprs) => self.infer_block(exprs),
             ExprKind::Range { start, end, .. } => self.infer_range(start, end),
             ExprKind::Pipeline { expr, stages } => self.infer_pipeline(expr, stages),
@@ -1666,7 +1712,7 @@ mod tests {
         );
     }
     #[test]
-    #[ignore = "DataFrame syntax changed - needs update"]
+
     fn test_infer_dataframe() {
         let df_str = r#"DataFrame::new()
             .column("age", [25, 30, 35])
@@ -1685,7 +1731,7 @@ mod tests {
         }
     }
     #[test]
-    #[ignore = "DataFrame syntax changed - needs update"]
+
     fn test_infer_dataframe_operations() {
         // Test filter operation with simpler pattern
         let filter_str = r"let df = DataFrame::new(); df.filter(|x| x > 25)";
@@ -1703,7 +1749,7 @@ mod tests {
         }
     }
     #[test]
-    #[ignore = "DataFrame syntax changed - needs update"]
+
     fn test_infer_series() {
         // Test column selection returns Series
         let col_str = r#"let df = DataFrame::new(); df.col("age")"#;
@@ -1782,10 +1828,15 @@ mod tests {
             _ => panic!("Expected function type for fat arrow lambda"),
         }
         // Test higher-order function patterns (compiler combinators)
-        let result = infer_str("let map = |f, xs| xs in let double = |x| x * 2 in map(double, [1, 2, 3])").unwrap();
+        let result =
+            infer_str("let map = |f, xs| xs in let double = |x| x * 2 in map(double, [1, 2, 3])")
+                .unwrap();
         assert!(matches!(result, MonoType::List(_)));
         // Test recursive function inference (needed for recursive descent parser)
-        let result = infer_str("fun factorial(n: i32) -> i32 { if n <= 1 { 1 } else { n * factorial(n - 1) } }").unwrap();
+        let result = infer_str(
+            "fun factorial(n: i32) -> i32 { if n <= 1 { 1 } else { n * factorial(n - 1) } }",
+        )
+        .unwrap();
         match result {
             MonoType::Function(arg, ret) => {
                 assert!(matches!(arg.as_ref(), MonoType::Int));
@@ -1815,7 +1866,8 @@ mod tests {
         let result = infer_str("[1, 2, 3].len()").unwrap();
         assert_eq!(result, MonoType::Int);
         // Test polymorphic function inference
-        let result = infer_str("let id = |x| x in let n = id(42) in let s = id(\"hello\") in n").unwrap();
+        let result =
+            infer_str("let id = |x| x in let n = id(42) in let s = id(\"hello\") in n").unwrap();
         assert_eq!(result, MonoType::Int);
         // Test simple constraint solving
         let result = infer_str("let f = |x| x + 1 in f").unwrap();
@@ -1906,13 +1958,19 @@ mod tests {
     #[test]
     fn test_for_loop() {
         // For loops return unit
-        assert_eq!(infer_str("for x in [1, 2, 3] { x }").unwrap(), MonoType::Unit);
+        assert_eq!(
+            infer_str("for x in [1, 2, 3] { x }").unwrap(),
+            MonoType::Unit
+        );
     }
 
     #[test]
     fn test_string_operations() {
         // Test string concatenation
-        assert_eq!(infer_str("\"hello\" + \" world\"").unwrap(), MonoType::String);
+        assert_eq!(
+            infer_str("\"hello\" + \" world\"").unwrap(),
+            MonoType::String
+        );
 
         // Test string interpolation - comment out for now (requires undefined variable handling)
         // assert_eq!(infer_str("f\"Hello {name}\"").unwrap(), MonoType::String);
@@ -1924,10 +1982,7 @@ mod tests {
         let mut ctx = InferenceContext::new();
         ctx.recursion_depth = 99; // Set close to limit
 
-        let expr = Expr::new(
-            ExprKind::Literal(Literal::Integer(42)),
-            Default::default()
-        );
+        let expr = Expr::new(ExprKind::Literal(Literal::Integer(42)), Default::default());
 
         // Should still work at depth 99
         let result = ctx.infer(&expr);
@@ -1943,10 +1998,7 @@ mod tests {
         let mut ctx = InferenceContext::with_env(env);
 
         // Simple literal should still work
-        let expr = Expr::new(
-            ExprKind::Literal(Literal::Integer(42)),
-            Default::default()
-        );
+        let expr = Expr::new(ExprKind::Literal(Literal::Integer(42)), Default::default());
 
         let result = ctx.infer(&expr);
         assert_eq!(result.unwrap(), MonoType::Int);
@@ -1973,11 +2025,7 @@ mod tests {
             _ => panic!("Expected FunctionArity constraint"),
         }
 
-        let method = TypeConstraint::MethodCall(
-            MonoType::String,
-            "len".to_string(),
-            vec![]
-        );
+        let method = TypeConstraint::MethodCall(MonoType::String, "len".to_string(), vec![]);
         match method {
             TypeConstraint::MethodCall(ty, name, args) => {
                 assert_eq!(ty, MonoType::String);
@@ -1987,10 +2035,7 @@ mod tests {
             _ => panic!("Expected MethodCall constraint"),
         }
 
-        let iter = TypeConstraint::Iterable(
-            MonoType::List(Box::new(MonoType::Int)),
-            MonoType::Int
-        );
+        let iter = TypeConstraint::Iterable(MonoType::List(Box::new(MonoType::Int)), MonoType::Int);
         match iter {
             TypeConstraint::Iterable(container, elem) => {
                 assert!(matches!(container, MonoType::List(_)));
@@ -2115,14 +2160,11 @@ mod tests {
     fn test_tuple_inference() {
         let result = infer_str("(1, \"hello\", true)");
         if let Ok(ty) = result {
-            match ty {
-                MonoType::Tuple(types) => {
-                    assert_eq!(types.len(), 3);
-                    assert_eq!(types[0], MonoType::Int);
-                    assert_eq!(types[1], MonoType::String);
-                    assert_eq!(types[2], MonoType::Bool);
-                }
-                _ => {}
+            if let MonoType::Tuple(types) = ty {
+                assert_eq!(types.len(), 3);
+                assert_eq!(types[0], MonoType::Int);
+                assert_eq!(types[1], MonoType::String);
+                assert_eq!(types[2], MonoType::Bool);
             }
         }
     }
@@ -2138,7 +2180,8 @@ mod tests {
     // Test 41: Recursive type inference
     #[test]
     fn test_recursive_type_inference() {
-        let result = infer_str("let rec fact = fun(n) { if n == 0 { 1 } else { n * fact(n - 1) } } in fact");
+        let result =
+            infer_str("let rec fact = fun(n) { if n == 0 { 1 } else { n * fact(n - 1) } } in fact");
         // Recursive functions should have proper type inference
         assert!(result.is_ok() || result.is_err());
     }
@@ -2214,14 +2257,8 @@ mod tests {
         let mut ctx = InferenceContext::new();
 
         // Try unifying function types
-        let fn1 = MonoType::Function(
-            Box::new(MonoType::Int),
-            Box::new(MonoType::Bool)
-        );
-        let fn2 = MonoType::Function(
-            Box::new(MonoType::Int),
-            Box::new(MonoType::Bool)
-        );
+        let fn1 = MonoType::Function(Box::new(MonoType::Int), Box::new(MonoType::Bool));
+        let fn2 = MonoType::Function(Box::new(MonoType::Int), Box::new(MonoType::Bool));
 
         let result = ctx.unifier.unify(&fn1, &fn2);
         assert!(result.is_ok());
@@ -2308,14 +2345,12 @@ mod tests {
         let mut ctx = InferenceContext::new();
 
         // Add various constraint types
-        ctx.type_constraints.push(TypeConstraint::Unify(
-            MonoType::Int,
-            MonoType::Int
-        ));
+        ctx.type_constraints
+            .push(TypeConstraint::Unify(MonoType::Int, MonoType::Int));
 
         ctx.type_constraints.push(TypeConstraint::FunctionArity(
             MonoType::Function(Box::new(MonoType::Int), Box::new(MonoType::Bool)),
-            1
+            1,
         ));
 
         // Should be able to process constraints
@@ -2326,8 +2361,7 @@ mod tests {
 #[cfg(test)]
 mod property_tests_infer {
     use proptest::proptest;
-    
-    
+
     proptest! {
         /// Property: Function never panics on any input
         #[test]

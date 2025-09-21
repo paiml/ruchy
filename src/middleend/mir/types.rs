@@ -456,9 +456,11 @@ mod tests {
     fn test_rvalue_variants() {
         let rvalues = vec![
             Rvalue::Use(Operand::Constant(Constant::Int(42, Type::I64))),
-            Rvalue::BinaryOp(BinOp::Add,
+            Rvalue::BinaryOp(
+                BinOp::Add,
                 Operand::Constant(Constant::Int(1, Type::I64)),
-                Operand::Constant(Constant::Int(2, Type::I64))),
+                Operand::Constant(Constant::Int(2, Type::I64)),
+            ),
             Rvalue::UnaryOp(UnOp::Neg, Operand::Constant(Constant::Int(5, Type::I64))),
             Rvalue::Ref(Mutability::Immutable, Place::Local(Local(0))),
         ];
@@ -470,9 +472,18 @@ mod tests {
     #[test]
     fn test_binary_ops() {
         let ops = vec![
-            BinOp::Add, BinOp::Sub, BinOp::Mul, BinOp::Div,
-            BinOp::Eq, BinOp::Ne, BinOp::Lt, BinOp::Gt,
-            BinOp::And, BinOp::Or, BinOp::BitAnd, BinOp::BitOr,
+            BinOp::Add,
+            BinOp::Sub,
+            BinOp::Mul,
+            BinOp::Div,
+            BinOp::Eq,
+            BinOp::Ne,
+            BinOp::Lt,
+            BinOp::Gt,
+            BinOp::And,
+            BinOp::Or,
+            BinOp::BitAnd,
+            BinOp::BitOr,
         ];
         for op in ops {
             assert!(!format!("{op:?}").is_empty());
@@ -542,13 +553,13 @@ mod tests {
     #[test]
     fn test_display_block_id() {
         let id = BlockId(42);
-        assert_eq!(format!("{}", id), "bb42");
+        assert_eq!(format!("{id}"), "bb42");
     }
 
     #[test]
     fn test_display_local() {
         let local = Local(7);
-        assert_eq!(format!("{}", local), "__7");
+        assert_eq!(format!("{local}"), "__7");
     }
 
     #[test]
@@ -559,37 +570,37 @@ mod tests {
         assert_eq!(format!("{}", Type::F64), "f64");
         assert_eq!(format!("{}", Type::String), "String");
         assert_eq!(format!("{}", Type::Vec(Box::new(Type::I32))), "Vec<i32>");
-        assert_eq!(format!("{}", Type::Tuple(vec![Type::I32, Type::Bool])), "(i32, bool)");
+        assert_eq!(
+            format!("{}", Type::Tuple(vec![Type::I32, Type::Bool])),
+            "(i32, bool)"
+        );
     }
 
     #[test]
     fn test_ref_type_display() {
         let immut_ref = Type::Ref(Box::new(Type::I32), Mutability::Immutable);
-        assert_eq!(format!("{}", immut_ref), "&i32");
+        assert_eq!(format!("{immut_ref}"), "&i32");
 
         let mut_ref = Type::Ref(Box::new(Type::String), Mutability::Mutable);
-        assert_eq!(format!("{}", mut_ref), "&mut String");
+        assert_eq!(format!("{mut_ref}"), "&mut String");
     }
 
     #[test]
     fn test_array_type_display() {
         let arr = Type::Array(Box::new(Type::U8), 256);
-        assert_eq!(format!("{}", arr), "[u8; 256]");
+        assert_eq!(format!("{arr}"), "[u8; 256]");
     }
 
     #[test]
     fn test_function_pointer_display() {
-        let fn_ptr = Type::FnPtr(
-            vec![Type::I32, Type::Bool],
-            Box::new(Type::String),
-        );
-        assert_eq!(format!("{}", fn_ptr), "fn(i32, bool) -> String");
+        let fn_ptr = Type::FnPtr(vec![Type::I32, Type::Bool], Box::new(Type::String));
+        assert_eq!(format!("{fn_ptr}"), "fn(i32, bool) -> String");
     }
 
     #[test]
     fn test_user_type_display() {
         let user_type = Type::UserType("MyCustomType".to_string());
-        assert_eq!(format!("{}", user_type), "MyCustomType");
+        assert_eq!(format!("{user_type}"), "MyCustomType");
     }
 
     #[test]
@@ -602,7 +613,10 @@ mod tests {
             ],
             default: Some(BlockId(3)),
         };
-        if let Terminator::Switch { targets, default, .. } = switch {
+        if let Terminator::Switch {
+            targets, default, ..
+        } = switch
+        {
             assert_eq!(targets.len(), 2);
             assert_eq!(default, Some(BlockId(3)));
         } else {
@@ -620,7 +634,10 @@ mod tests {
             ],
             destination: Some((Place::Local(Local(0)), BlockId(1))),
         };
-        if let Terminator::Call { args, destination, .. } = call {
+        if let Terminator::Call {
+            args, destination, ..
+        } = call
+        {
             assert_eq!(args.len(), 2);
             assert!(destination.is_some());
         } else {
@@ -643,10 +660,7 @@ mod tests {
     #[test]
     fn test_place_index() {
         let base = Place::Local(Local(0));
-        let index = Place::Index(
-            Box::new(base.clone()),
-            Box::new(Place::Local(Local(1))),
-        );
+        let index = Place::Index(Box::new(base.clone()), Box::new(Place::Local(Local(1))));
         if let Place::Index(p, _) = index {
             assert_eq!(*p, base);
         } else {

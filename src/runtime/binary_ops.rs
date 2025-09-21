@@ -2,7 +2,7 @@
 //! Extracted to reduce duplication across interpreter and REPL
 use crate::frontend::ast::BinaryOp;
 use crate::runtime::Value;
-use anyhow::{Result, bail};
+use anyhow::{bail, Result};
 use std::rc::Rc;
 ///
 /// let lhs = `Value::Integer(5)`;
@@ -32,10 +32,10 @@ pub fn evaluate_binary_op(op: &BinaryOp, lhs: &Value, rhs: &Value) -> Result<Val
         BinaryOp::BitwiseXor => evaluate_bitwise_xor(lhs, rhs),
         BinaryOp::LeftShift => evaluate_left_shift(lhs, rhs),
         BinaryOp::RightShift => evaluate_right_shift(lhs, rhs),
-        BinaryOp::NullCoalesce => Ok(if matches!(lhs, Value::Nil) { 
-            rhs.clone() 
-        } else { 
-            lhs.clone() 
+        BinaryOp::NullCoalesce => Ok(if matches!(lhs, Value::Nil) {
+            rhs.clone()
+        } else {
+            lhs.clone()
         }),
     }
 }
@@ -231,11 +231,13 @@ mod tests {
     #[test]
     fn test_addition_operations() {
         // Integer addition
-        let result = evaluate_binary_op(&BinaryOp::Add, &Value::Integer(5), &Value::Integer(3)).unwrap();
+        let result =
+            evaluate_binary_op(&BinaryOp::Add, &Value::Integer(5), &Value::Integer(3)).unwrap();
         assert_eq!(result, Value::Integer(8));
 
         // Float addition
-        let result = evaluate_binary_op(&BinaryOp::Add, &Value::Float(5.5), &Value::Float(3.2)).unwrap();
+        let result =
+            evaluate_binary_op(&BinaryOp::Add, &Value::Float(5.5), &Value::Float(3.2)).unwrap();
         if let Value::Float(f) = result {
             assert!((f - 8.7).abs() < f64::EPSILON);
         } else {
@@ -243,17 +245,35 @@ mod tests {
         }
 
         // String concatenation
-        let result = evaluate_binary_op(&BinaryOp::Add, &Value::String(Rc::new("hello".to_string())), &Value::String(Rc::new(" world".to_string()))).unwrap();
+        let result = evaluate_binary_op(
+            &BinaryOp::Add,
+            &Value::String(Rc::new("hello".to_string())),
+            &Value::String(Rc::new(" world".to_string())),
+        )
+        .unwrap();
         assert_eq!(result, Value::String(Rc::new("hello world".to_string())));
 
         // List concatenation
         let list1 = Value::Array(Rc::new(vec![Value::Integer(1), Value::Integer(2)]));
         let list2 = Value::Array(Rc::new(vec![Value::Integer(3), Value::Integer(4)]));
         let result = evaluate_binary_op(&BinaryOp::Add, &list1, &list2).unwrap();
-        assert_eq!(result, Value::Array(Rc::new(vec![Value::Integer(1), Value::Integer(2), Value::Integer(3), Value::Integer(4)])));
+        assert_eq!(
+            result,
+            Value::Array(Rc::new(vec![
+                Value::Integer(1),
+                Value::Integer(2),
+                Value::Integer(3),
+                Value::Integer(4)
+            ]))
+        );
 
         // Empty string concatenation
-        let result = evaluate_binary_op(&BinaryOp::Add, &Value::String(Rc::new("".to_string())), &Value::String(Rc::new("test".to_string()))).unwrap();
+        let result = evaluate_binary_op(
+            &BinaryOp::Add,
+            &Value::String(Rc::new(String::new())),
+            &Value::String(Rc::new("test".to_string())),
+        )
+        .unwrap();
         assert_eq!(result, Value::String(Rc::new("test".to_string())));
     }
 
@@ -261,15 +281,21 @@ mod tests {
     #[test]
     fn test_subtraction_operations() {
         // Integer subtraction
-        let result = evaluate_binary_op(&BinaryOp::Subtract, &Value::Integer(10), &Value::Integer(3)).unwrap();
+        let result =
+            evaluate_binary_op(&BinaryOp::Subtract, &Value::Integer(10), &Value::Integer(3))
+                .unwrap();
         assert_eq!(result, Value::Integer(7));
 
         // Negative result
-        let result = evaluate_binary_op(&BinaryOp::Subtract, &Value::Integer(3), &Value::Integer(10)).unwrap();
+        let result =
+            evaluate_binary_op(&BinaryOp::Subtract, &Value::Integer(3), &Value::Integer(10))
+                .unwrap();
         assert_eq!(result, Value::Integer(-7));
 
         // Float subtraction
-        let result = evaluate_binary_op(&BinaryOp::Subtract, &Value::Float(10.5), &Value::Float(3.2)).unwrap();
+        let result =
+            evaluate_binary_op(&BinaryOp::Subtract, &Value::Float(10.5), &Value::Float(3.2))
+                .unwrap();
         if let Value::Float(f) = result {
             assert!((f - 7.3).abs() < f64::EPSILON);
         } else {
@@ -277,7 +303,9 @@ mod tests {
         }
 
         // Zero result
-        let result = evaluate_binary_op(&BinaryOp::Subtract, &Value::Integer(5), &Value::Integer(5)).unwrap();
+        let result =
+            evaluate_binary_op(&BinaryOp::Subtract, &Value::Integer(5), &Value::Integer(5))
+                .unwrap();
         assert_eq!(result, Value::Integer(0));
     }
 
@@ -285,11 +313,15 @@ mod tests {
     #[test]
     fn test_multiplication_operations() {
         // Integer multiplication
-        let result = evaluate_binary_op(&BinaryOp::Multiply, &Value::Integer(6), &Value::Integer(7)).unwrap();
+        let result =
+            evaluate_binary_op(&BinaryOp::Multiply, &Value::Integer(6), &Value::Integer(7))
+                .unwrap();
         assert_eq!(result, Value::Integer(42));
 
         // Float multiplication
-        let result = evaluate_binary_op(&BinaryOp::Multiply, &Value::Float(2.5), &Value::Float(4.0)).unwrap();
+        let result =
+            evaluate_binary_op(&BinaryOp::Multiply, &Value::Float(2.5), &Value::Float(4.0))
+                .unwrap();
         if let Value::Float(f) = result {
             assert!((f - 10.0).abs() < f64::EPSILON);
         } else {
@@ -297,31 +329,50 @@ mod tests {
         }
 
         // String repetition (string * int)
-        let result = evaluate_binary_op(&BinaryOp::Multiply, &Value::String(Rc::new("hi".to_string())), &Value::Integer(3)).unwrap();
+        let result = evaluate_binary_op(
+            &BinaryOp::Multiply,
+            &Value::String(Rc::new("hi".to_string())),
+            &Value::Integer(3),
+        )
+        .unwrap();
         assert_eq!(result, Value::String(Rc::new("hihihi".to_string())));
 
         // String repetition (int * string)
-        let result = evaluate_binary_op(&BinaryOp::Multiply, &Value::Integer(2), &Value::String(Rc::new("ab".to_string()))).unwrap();
+        let result = evaluate_binary_op(
+            &BinaryOp::Multiply,
+            &Value::Integer(2),
+            &Value::String(Rc::new("ab".to_string())),
+        )
+        .unwrap();
         assert_eq!(result, Value::String(Rc::new("abab".to_string())));
 
         // Zero multiplication
-        let result = evaluate_binary_op(&BinaryOp::Multiply, &Value::Integer(42), &Value::Integer(0)).unwrap();
+        let result =
+            evaluate_binary_op(&BinaryOp::Multiply, &Value::Integer(42), &Value::Integer(0))
+                .unwrap();
         assert_eq!(result, Value::Integer(0));
 
         // Empty string repetition
-        let result = evaluate_binary_op(&BinaryOp::Multiply, &Value::String(Rc::new("".to_string())), &Value::Integer(5)).unwrap();
-        assert_eq!(result, Value::String(Rc::new("".to_string())));
+        let result = evaluate_binary_op(
+            &BinaryOp::Multiply,
+            &Value::String(Rc::new(String::new())),
+            &Value::Integer(5),
+        )
+        .unwrap();
+        assert_eq!(result, Value::String(Rc::new(String::new())));
     }
 
     // Test 4: Division Operations and Error Cases
     #[test]
     fn test_division_operations() {
         // Integer division
-        let result = evaluate_binary_op(&BinaryOp::Divide, &Value::Integer(15), &Value::Integer(3)).unwrap();
+        let result =
+            evaluate_binary_op(&BinaryOp::Divide, &Value::Integer(15), &Value::Integer(3)).unwrap();
         assert_eq!(result, Value::Integer(5));
 
         // Float division
-        let result = evaluate_binary_op(&BinaryOp::Divide, &Value::Float(10.0), &Value::Float(4.0)).unwrap();
+        let result =
+            evaluate_binary_op(&BinaryOp::Divide, &Value::Float(10.0), &Value::Float(4.0)).unwrap();
         if let Value::Float(f) = result {
             assert!((f - 2.5).abs() < f64::EPSILON);
         } else {
@@ -339,7 +390,9 @@ mod tests {
         assert!(result.unwrap_err().to_string().contains("Division by zero"));
 
         // Negative division
-        let result = evaluate_binary_op(&BinaryOp::Divide, &Value::Integer(-12), &Value::Integer(3)).unwrap();
+        let result =
+            evaluate_binary_op(&BinaryOp::Divide, &Value::Integer(-12), &Value::Integer(3))
+                .unwrap();
         assert_eq!(result, Value::Integer(-4));
     }
 
@@ -347,57 +400,173 @@ mod tests {
     #[test]
     fn test_comparison_operations() {
         // Integer comparisons
-        assert_eq!(evaluate_binary_op(&BinaryOp::Less, &Value::Integer(3), &Value::Integer(5)).unwrap(), Value::Bool(true));
-        assert_eq!(evaluate_binary_op(&BinaryOp::Less, &Value::Integer(5), &Value::Integer(3)).unwrap(), Value::Bool(false));
-        assert_eq!(evaluate_binary_op(&BinaryOp::LessEqual, &Value::Integer(3), &Value::Integer(3)).unwrap(), Value::Bool(true));
-        assert_eq!(evaluate_binary_op(&BinaryOp::Greater, &Value::Integer(5), &Value::Integer(3)).unwrap(), Value::Bool(true));
-        assert_eq!(evaluate_binary_op(&BinaryOp::GreaterEqual, &Value::Integer(3), &Value::Integer(3)).unwrap(), Value::Bool(true));
+        assert_eq!(
+            evaluate_binary_op(&BinaryOp::Less, &Value::Integer(3), &Value::Integer(5)).unwrap(),
+            Value::Bool(true)
+        );
+        assert_eq!(
+            evaluate_binary_op(&BinaryOp::Less, &Value::Integer(5), &Value::Integer(3)).unwrap(),
+            Value::Bool(false)
+        );
+        assert_eq!(
+            evaluate_binary_op(&BinaryOp::LessEqual, &Value::Integer(3), &Value::Integer(3))
+                .unwrap(),
+            Value::Bool(true)
+        );
+        assert_eq!(
+            evaluate_binary_op(&BinaryOp::Greater, &Value::Integer(5), &Value::Integer(3)).unwrap(),
+            Value::Bool(true)
+        );
+        assert_eq!(
+            evaluate_binary_op(
+                &BinaryOp::GreaterEqual,
+                &Value::Integer(3),
+                &Value::Integer(3)
+            )
+            .unwrap(),
+            Value::Bool(true)
+        );
 
         // Float comparisons
-        assert_eq!(evaluate_binary_op(&BinaryOp::Less, &Value::Float(3.1), &Value::Float(3.2)).unwrap(), Value::Bool(true));
-        assert_eq!(evaluate_binary_op(&BinaryOp::Greater, &Value::Float(3.2), &Value::Float(3.1)).unwrap(), Value::Bool(true));
+        assert_eq!(
+            evaluate_binary_op(&BinaryOp::Less, &Value::Float(3.1), &Value::Float(3.2)).unwrap(),
+            Value::Bool(true)
+        );
+        assert_eq!(
+            evaluate_binary_op(&BinaryOp::Greater, &Value::Float(3.2), &Value::Float(3.1)).unwrap(),
+            Value::Bool(true)
+        );
 
         // String comparisons (lexicographic)
-        assert_eq!(evaluate_binary_op(&BinaryOp::Less, &Value::String(Rc::new("apple".to_string())), &Value::String(Rc::new("banana".to_string()))).unwrap(), Value::Bool(true));
-        assert_eq!(evaluate_binary_op(&BinaryOp::Greater, &Value::String(Rc::new("zebra".to_string())), &Value::String(Rc::new("apple".to_string()))).unwrap(), Value::Bool(true));
+        assert_eq!(
+            evaluate_binary_op(
+                &BinaryOp::Less,
+                &Value::String(Rc::new("apple".to_string())),
+                &Value::String(Rc::new("banana".to_string()))
+            )
+            .unwrap(),
+            Value::Bool(true)
+        );
+        assert_eq!(
+            evaluate_binary_op(
+                &BinaryOp::Greater,
+                &Value::String(Rc::new("zebra".to_string())),
+                &Value::String(Rc::new("apple".to_string()))
+            )
+            .unwrap(),
+            Value::Bool(true)
+        );
     }
 
     // Test 6: Equality Operations
     #[test]
     fn test_equality_operations() {
         // Basic equality
-        assert_eq!(evaluate_binary_op(&BinaryOp::Equal, &Value::Integer(42), &Value::Integer(42)).unwrap(), Value::Bool(true));
-        assert_eq!(evaluate_binary_op(&BinaryOp::Equal, &Value::Integer(42), &Value::Integer(43)).unwrap(), Value::Bool(false));
+        assert_eq!(
+            evaluate_binary_op(&BinaryOp::Equal, &Value::Integer(42), &Value::Integer(42)).unwrap(),
+            Value::Bool(true)
+        );
+        assert_eq!(
+            evaluate_binary_op(&BinaryOp::Equal, &Value::Integer(42), &Value::Integer(43)).unwrap(),
+            Value::Bool(false)
+        );
 
         // String equality
-        assert_eq!(evaluate_binary_op(&BinaryOp::Equal, &Value::String(Rc::new("test".to_string())), &Value::String(Rc::new("test".to_string()))).unwrap(), Value::Bool(true));
-        assert_eq!(evaluate_binary_op(&BinaryOp::Equal, &Value::String(Rc::new("test".to_string())), &Value::String(Rc::new("other".to_string()))).unwrap(), Value::Bool(false));
+        assert_eq!(
+            evaluate_binary_op(
+                &BinaryOp::Equal,
+                &Value::String(Rc::new("test".to_string())),
+                &Value::String(Rc::new("test".to_string()))
+            )
+            .unwrap(),
+            Value::Bool(true)
+        );
+        assert_eq!(
+            evaluate_binary_op(
+                &BinaryOp::Equal,
+                &Value::String(Rc::new("test".to_string())),
+                &Value::String(Rc::new("other".to_string()))
+            )
+            .unwrap(),
+            Value::Bool(false)
+        );
 
         // Not equal
-        assert_eq!(evaluate_binary_op(&BinaryOp::NotEqual, &Value::Integer(42), &Value::Integer(43)).unwrap(), Value::Bool(true));
-        assert_eq!(evaluate_binary_op(&BinaryOp::NotEqual, &Value::Integer(42), &Value::Integer(42)).unwrap(), Value::Bool(false));
+        assert_eq!(
+            evaluate_binary_op(
+                &BinaryOp::NotEqual,
+                &Value::Integer(42),
+                &Value::Integer(43)
+            )
+            .unwrap(),
+            Value::Bool(true)
+        );
+        assert_eq!(
+            evaluate_binary_op(
+                &BinaryOp::NotEqual,
+                &Value::Integer(42),
+                &Value::Integer(42)
+            )
+            .unwrap(),
+            Value::Bool(false)
+        );
 
         // Float equality with epsilon
-        assert_eq!(evaluate_binary_op(&BinaryOp::Equal, &Value::Float(1.0), &Value::Float(1.0)).unwrap(), Value::Bool(true));
+        assert_eq!(
+            evaluate_binary_op(&BinaryOp::Equal, &Value::Float(1.0), &Value::Float(1.0)).unwrap(),
+            Value::Bool(true)
+        );
 
         // Different types should not be equal
-        assert_eq!(evaluate_binary_op(&BinaryOp::Equal, &Value::Integer(42), &Value::String(Rc::new("42".to_string()))).unwrap(), Value::Bool(false));
+        assert_eq!(
+            evaluate_binary_op(
+                &BinaryOp::Equal,
+                &Value::Integer(42),
+                &Value::String(Rc::new("42".to_string()))
+            )
+            .unwrap(),
+            Value::Bool(false)
+        );
     }
 
     // Test 7: Logical Operations
     #[test]
     fn test_logical_operations() {
         // AND operations
-        assert_eq!(evaluate_binary_op(&BinaryOp::And, &Value::Bool(true), &Value::Bool(true)).unwrap(), Value::Bool(true));
-        assert_eq!(evaluate_binary_op(&BinaryOp::And, &Value::Bool(true), &Value::Bool(false)).unwrap(), Value::Bool(false));
-        assert_eq!(evaluate_binary_op(&BinaryOp::And, &Value::Bool(false), &Value::Bool(true)).unwrap(), Value::Bool(false));
-        assert_eq!(evaluate_binary_op(&BinaryOp::And, &Value::Bool(false), &Value::Bool(false)).unwrap(), Value::Bool(false));
+        assert_eq!(
+            evaluate_binary_op(&BinaryOp::And, &Value::Bool(true), &Value::Bool(true)).unwrap(),
+            Value::Bool(true)
+        );
+        assert_eq!(
+            evaluate_binary_op(&BinaryOp::And, &Value::Bool(true), &Value::Bool(false)).unwrap(),
+            Value::Bool(false)
+        );
+        assert_eq!(
+            evaluate_binary_op(&BinaryOp::And, &Value::Bool(false), &Value::Bool(true)).unwrap(),
+            Value::Bool(false)
+        );
+        assert_eq!(
+            evaluate_binary_op(&BinaryOp::And, &Value::Bool(false), &Value::Bool(false)).unwrap(),
+            Value::Bool(false)
+        );
 
         // OR operations
-        assert_eq!(evaluate_binary_op(&BinaryOp::Or, &Value::Bool(true), &Value::Bool(true)).unwrap(), Value::Bool(true));
-        assert_eq!(evaluate_binary_op(&BinaryOp::Or, &Value::Bool(true), &Value::Bool(false)).unwrap(), Value::Bool(true));
-        assert_eq!(evaluate_binary_op(&BinaryOp::Or, &Value::Bool(false), &Value::Bool(true)).unwrap(), Value::Bool(true));
-        assert_eq!(evaluate_binary_op(&BinaryOp::Or, &Value::Bool(false), &Value::Bool(false)).unwrap(), Value::Bool(false));
+        assert_eq!(
+            evaluate_binary_op(&BinaryOp::Or, &Value::Bool(true), &Value::Bool(true)).unwrap(),
+            Value::Bool(true)
+        );
+        assert_eq!(
+            evaluate_binary_op(&BinaryOp::Or, &Value::Bool(true), &Value::Bool(false)).unwrap(),
+            Value::Bool(true)
+        );
+        assert_eq!(
+            evaluate_binary_op(&BinaryOp::Or, &Value::Bool(false), &Value::Bool(true)).unwrap(),
+            Value::Bool(true)
+        );
+        assert_eq!(
+            evaluate_binary_op(&BinaryOp::Or, &Value::Bool(false), &Value::Bool(false)).unwrap(),
+            Value::Bool(false)
+        );
     }
 
     // Test 8: Error Cases for Invalid Operations
@@ -409,17 +578,26 @@ mod tests {
         assert!(result.unwrap_err().to_string().contains("Cannot add"));
 
         // Cannot subtract string and int
-        let result = evaluate_binary_op(&BinaryOp::Subtract, &Value::String(Rc::new("test".to_string())), &Value::Integer(5));
+        let result = evaluate_binary_op(
+            &BinaryOp::Subtract,
+            &Value::String(Rc::new("test".to_string())),
+            &Value::Integer(5),
+        );
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("Cannot subtract"));
 
         // Cannot multiply bool and float
-        let result = evaluate_binary_op(&BinaryOp::Multiply, &Value::Bool(true), &Value::Float(3.14));
+        let result =
+            evaluate_binary_op(&BinaryOp::Multiply, &Value::Bool(true), &Value::Float(3.14));
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("Cannot multiply"));
 
         // Cannot compare int and string
-        let result = evaluate_binary_op(&BinaryOp::Less, &Value::Integer(5), &Value::String(Rc::new("test".to_string())));
+        let result = evaluate_binary_op(
+            &BinaryOp::Less,
+            &Value::Integer(5),
+            &Value::String(Rc::new("test".to_string())),
+        );
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("Cannot compare"));
     }

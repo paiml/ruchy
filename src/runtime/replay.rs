@@ -1,12 +1,12 @@
 //! REPL Replay Testing System
-//! 
+//!
 //! Provides deterministic replay capabilities for testing and educational assessment.
 //! Based on docs/specifications/repl-replay-testing-spec.md
-use anyhow::Result;
-use serde::{Serialize, Deserialize};
-use std::collections::{HashMap, BTreeMap};
-use std::time::Instant;
 use crate::runtime::interpreter::Value;
+use anyhow::Result;
+use serde::{Deserialize, Serialize};
+use std::collections::{BTreeMap, HashMap};
+use std::time::Instant;
 // ============================================================================
 // Core Data Structures
 // ============================================================================
@@ -22,7 +22,11 @@ pub struct SemVer {
 }
 impl SemVer {
     pub fn new(major: u32, minor: u32, patch: u32) -> Self {
-        Self { major, minor, patch }
+        Self {
+            major,
+            minor,
+            patch,
+        }
     }
 }
 /// Complete REPL session recording
@@ -148,9 +152,18 @@ pub struct ValidationResult {
 /// Types of divergence in replay
 #[derive(Debug, Clone)]
 pub enum Divergence {
-    Output { expected: String, actual: String },
-    State { expected_hash: String, actual_hash: String },
-    Resources { expected: ResourceUsage, actual: ResourceUsage },
+    Output {
+        expected: String,
+        actual: String,
+    },
+    State {
+        expected_hash: String,
+        actual_hash: String,
+    },
+    Resources {
+        expected: ResourceUsage,
+        actual: ResourceUsage,
+    },
 }
 // ============================================================================
 // Replay Validation Engine
@@ -169,8 +182,8 @@ pub struct ResourceTolerance {
 impl Default for ResourceTolerance {
     fn default() -> Self {
         Self {
-            heap_bytes_percent: 10.0,  // Allow 10% variation
-            cpu_ns_percent: 20.0,       // Allow 20% CPU variation
+            heap_bytes_percent: 10.0, // Allow 10% variation
+            cpu_ns_percent: 20.0,     // Allow 20% CPU variation
         }
     }
 }
@@ -218,7 +231,7 @@ impl ReplayValidator {
                             Divergence::Output {
                                 expected: format!("{expected_output:?}"),
                                 actual: format!("{:?}", result.output),
-                            }
+                            },
                         );
                     }
                 }
@@ -233,7 +246,7 @@ impl ReplayValidator {
                                 cpu_ns: 0,
                             },
                             actual: result.resource_usage.clone(),
-                        }
+                        },
                     );
                 }
             }
@@ -243,26 +256,30 @@ impl ReplayValidator {
         }
         report
     }
-    fn find_next_output<'a>(&self, session: &'a ReplSession, after_id: EventId) -> Option<&'a Event> {
-        session.timeline
+    fn find_next_output<'a>(
+        &self,
+        session: &'a ReplSession,
+        after_id: EventId,
+    ) -> Option<&'a Event> {
+        session
+            .timeline
             .iter()
             .find(|e| e.id > after_id && matches!(e.event, Event::Output { .. }))
             .map(|e| &e.event)
     }
     fn outputs_equivalent(&self, result: &ReplayResult, expected: &Event) -> bool {
         match expected {
-            Event::Output { result: expected_result, .. } => {
-                match (&result.output, expected_result) {
-                    (Ok(value), EvalResult::Success { value: expected }) => {
-                        format!("{value:?}") == *expected
-                    }
-                    (Err(e), EvalResult::Error { message }) => {
-                        e.to_string().contains(message)
-                    }
-                    _ => false
+            Event::Output {
+                result: expected_result,
+                ..
+            } => match (&result.output, expected_result) {
+                (Ok(value), EvalResult::Success { value: expected }) => {
+                    format!("{value:?}") == *expected
                 }
-            }
-            _ => false
+                (Err(e), EvalResult::Error { message }) => e.to_string().contains(message),
+                _ => false,
+            },
+            _ => false,
         }
     }
     fn tolerance_accepts(&self, _usage: &ResourceUsage) -> bool {
@@ -330,11 +347,11 @@ impl SessionRecorder {
         self.next_event_id += 1;
         let eval_result = match result {
             Ok(Value::Nil) => EvalResult::Unit,
-            Ok(value) => EvalResult::Success { 
-                value: format!("{value:?}") 
+            Ok(value) => EvalResult::Success {
+                value: format!("{value:?}"),
             },
-            Err(e) => EvalResult::Error { 
-                message: e.to_string() 
+            Err(e) => EvalResult::Error {
+                message: e.to_string(),
             },
         };
         let event = TimestampedEvent {
@@ -418,407 +435,414 @@ mod tests {
         }
     }
 
-    // NOTE: Tests disabled due to struct field mismatches with current API
+    // Tests for replay functionality
     #[cfg(test)]
     mod enabled_tests {
         use super::*;
         use std::rc::Rc;
 
-    // Test 1: SemVer Creation and Equality
-    #[test]
-    fn test_semver_creation() {
-        let version = SemVer::new(1, 2, 3);
-        assert_eq!(version.major, 1);
-        assert_eq!(version.minor, 2);
-        assert_eq!(version.patch, 3);
+        // Test 1: SemVer Creation and Equality
+        #[test]
+        fn test_semver_creation() {
+            let version = SemVer::new(1, 2, 3);
+            assert_eq!(version.major, 1);
+            assert_eq!(version.minor, 2);
+            assert_eq!(version.patch, 3);
 
-        // Test equality
-        let version2 = SemVer::new(1, 2, 3);
-        assert_eq!(version, version2);
+            // Test equality
+            let version2 = SemVer::new(1, 2, 3);
+            assert_eq!(version, version2);
 
-        // Test inequality
-        let version3 = SemVer::new(1, 2, 4);
-        assert_ne!(version, version3);
-    }
-
-    // Test 2: Session Metadata Creation and Serialization
-    #[test]
-    fn test_session_metadata() {
-        let metadata = create_test_metadata();
-
-        assert_eq!(metadata.session_id, "test-001");
-        assert_eq!(metadata.ruchy_version, "1.23.0");
-        assert_eq!(metadata.student_id, Some("student-123".to_string()));
-        assert_eq!(metadata.assignment_id, Some("assignment-456".to_string()));
-        assert_eq!(metadata.tags.len(), 2);
-        assert!(metadata.tags.contains(&"test".to_string()));
-        assert!(metadata.tags.contains(&"development".to_string()));
-
-        // Test serialization/deserialization
-        let json = serde_json::to_string(&metadata).unwrap();
-        let deserialized: SessionMetadata = serde_json::from_str(&json).unwrap();
-        assert_eq!(metadata.session_id, deserialized.session_id);
-        assert_eq!(metadata.student_id, deserialized.student_id);
-    }
-
-    // Test 3: Environment Configuration
-    #[test]
-    fn test_environment() {
-        let environment = create_test_environment();
-        assert_eq!(environment.seed, 12345);
-        assert!(environment.feature_flags.is_empty());
-        assert_eq!(environment.resource_limits.heap_mb, 1024);
-
-        // Test serialization
-        let json = serde_json::to_string(&environment).unwrap();
-        let deserialized: Environment = serde_json::from_str(&json).unwrap();
-        assert_eq!(environment.seed, deserialized.seed);
-    }
-
-    // Test 4: Event ID Ordering and Comparison
-    #[test]
-    fn test_event_id_ordering() {
-        let id1 = EventId(1);
-        let id2 = EventId(2);
-        let id3 = EventId(1);
-
-        // Test ordering
-        assert!(id1 < id2);
-        assert!(id2 > id1);
-        assert_eq!(id1, id3);
-
-        // Test hash consistency
-        use std::collections::HashSet;
-        let mut set = HashSet::new();
-        set.insert(id1);
-        set.insert(id2);
-        set.insert(id3); // Should not add duplicate
-        assert_eq!(set.len(), 2);
-    }
-
-    // Test 5: Resource Usage Tracking
-    #[test]
-    fn test_resource_usage() {
-        let usage = ResourceUsage {
-            heap_bytes: 2048,
-            stack_depth: 10,
-            cpu_ns: 5000000,
-        };
-
-        assert_eq!(usage.heap_bytes, 2048);
-        assert_eq!(usage.stack_depth, 10);
-        assert_eq!(usage.cpu_ns, 5000000);
-
-        // Test serialization
-        let json = serde_json::to_string(&usage).unwrap();
-        let deserialized: ResourceUsage = serde_json::from_str(&json).unwrap();
-        assert_eq!(usage.heap_bytes, deserialized.heap_bytes);
-        assert_eq!(usage.stack_depth, deserialized.stack_depth);
-        assert_eq!(usage.cpu_ns, deserialized.cpu_ns);
-    }
-
-    // Test 6: State Checkpoint Creation and Validation
-    #[test]
-    fn test_state_checkpoint() {
-        let checkpoint = create_test_checkpoint();
-
-        assert_eq!(checkpoint.bindings.len(), 2);
-        assert_eq!(checkpoint.bindings.get("x"), Some(&"42".to_string()));
-        assert_eq!(checkpoint.bindings.get("y"), Some(&"\"hello\"".to_string()));
-
-        assert_eq!(checkpoint.type_environment.len(), 2);
-        assert_eq!(checkpoint.type_environment.get("x"), Some(&"Int".to_string()));
-        assert_eq!(checkpoint.type_environment.get("y"), Some(&"String".to_string()));
-
-        assert_eq!(checkpoint.state_hash, "abc123def456");
-        assert_eq!(checkpoint.resource_usage.heap_bytes, 1024);
-
-        // Test serialization
-        let json = serde_json::to_string(&checkpoint).unwrap();
-        let deserialized: StateCheckpoint = serde_json::from_str(&json).unwrap();
-        assert_eq!(checkpoint.state_hash, deserialized.state_hash);
-        assert_eq!(checkpoint.bindings.len(), deserialized.bindings.len());
-    }
-
-    // Test 7: EvalResult Variants
-    #[test]
-    fn test_eval_result_variants() {
-        // Test Success variant
-        let success = EvalResult::Success { value: "42".to_string() };
-        match success {
-            EvalResult::Success { ref value } => assert_eq!(value, "42"),
-            _ => panic!("Expected Success variant"),
+            // Test inequality
+            let version3 = SemVer::new(1, 2, 4);
+            assert_ne!(version, version3);
         }
 
-        // Test Error variant
-        let error = EvalResult::Error { message: "Division by zero".to_string() };
-        match error {
-            EvalResult::Error { message } => assert_eq!(message, "Division by zero"),
-            _ => panic!("Expected Error variant"),
+        // Test 2: Session Metadata Creation and Serialization
+        #[test]
+        fn test_session_metadata() {
+            let metadata = create_test_metadata();
+
+            assert_eq!(metadata.session_id, "test-001");
+            assert_eq!(metadata.ruchy_version, "1.23.0");
+            assert_eq!(metadata.student_id, Some("student-123".to_string()));
+            assert_eq!(metadata.assignment_id, Some("assignment-456".to_string()));
+            assert_eq!(metadata.tags.len(), 2);
+            assert!(metadata.tags.contains(&"test".to_string()));
+            assert!(metadata.tags.contains(&"development".to_string()));
+
+            // Test serialization/deserialization
+            let json = serde_json::to_string(&metadata).unwrap();
+            let deserialized: SessionMetadata = serde_json::from_str(&json).unwrap();
+            assert_eq!(metadata.session_id, deserialized.session_id);
+            assert_eq!(metadata.student_id, deserialized.student_id);
         }
 
-        // Test Unit variant
-        let unit = EvalResult::Unit;
-        match unit {
-            EvalResult::Unit => {},
-            _ => panic!("Expected Unit variant"),
+        // Test 3: Environment Configuration
+        #[test]
+        fn test_environment() {
+            let environment = create_test_environment();
+            assert_eq!(environment.seed, 12345);
+            assert!(environment.feature_flags.is_empty());
+            assert_eq!(environment.resource_limits.heap_mb, 1024);
+
+            // Test serialization
+            let json = serde_json::to_string(&environment).unwrap();
+            let deserialized: Environment = serde_json::from_str(&json).unwrap();
+            assert_eq!(environment.seed, deserialized.seed);
         }
 
-        // Test serialization
-        let json = serde_json::to_string(&success).unwrap();
-        let deserialized: EvalResult = serde_json::from_str(&json).unwrap();
-        match deserialized {
-            EvalResult::Success { value } => assert_eq!(value, "42"),
-            _ => panic!("Deserialization failed"),
-        }
-    }
+        // Test 4: Event ID Ordering and Comparison
+        #[test]
+        fn test_event_id_ordering() {
+            let id1 = EventId(1);
+            let id2 = EventId(2);
+            let id3 = EventId(1);
 
-    // Test 8: Session Recorder Basic Operations
-    #[test]
-    fn test_session_recorder_basic() {
-        let metadata = create_test_metadata();
-        let mut recorder = SessionRecorder::new(metadata.clone());
+            // Test ordering
+            assert!(id1 < id2);
+            assert!(id2 > id1);
+            assert_eq!(id1, id3);
 
-        // Test initial state
-        let session = recorder.get_session();
-        assert_eq!(session.metadata.session_id, "test-001");
-        assert_eq!(session.timeline.len(), 0);
-        assert_eq!(session.checkpoints.len(), 0);
-
-        // Test input recording
-        let input_id = recorder.record_input("let x = 42".to_string(), InputMode::Interactive);
-        assert_eq!(input_id, EventId(1));
-
-        // Test output recording
-        let output_id = recorder.record_output(Ok(Value::Nil));
-        assert_eq!(output_id, EventId(2));
-
-        // Verify timeline
-        let session = recorder.get_session();
-        assert_eq!(session.timeline.len(), 2);
-    }
-
-    // Test 9: Session Recorder Sequential Operations
-    #[test]
-    fn test_session_recorder_sequential() {
-        let metadata = create_test_metadata();
-        let mut recorder = SessionRecorder::new(metadata);
-
-        // Record sequence of operations
-        let inputs = vec![
-            "let x = 1",
-            "let y = 2",
-            "x + y",
-            "println(x + y)"
-        ];
-
-        let mut event_ids = Vec::new();
-        for (i, input) in inputs.iter().enumerate() {
-            let input_id = recorder.record_input(input.to_string(), InputMode::Interactive);
-            event_ids.push(input_id);
-            assert_eq!(input_id, EventId((i as u64 * 2) + 1));
-
-            let output_id = recorder.record_output(Ok(Value::Integer(i as i64 + 1)));
-            event_ids.push(output_id);
-            assert_eq!(output_id, EventId((i as u64 * 2) + 2));
+            // Test hash consistency
+            use std::collections::HashSet;
+            let mut set = HashSet::new();
+            set.insert(id1);
+            set.insert(id2);
+            set.insert(id3); // Should not add duplicate
+            assert_eq!(set.len(), 2);
         }
 
-        // Verify all events recorded
-        let session = recorder.get_session();
-        assert_eq!(session.timeline.len(), 8); // 4 inputs + 4 outputs
-        assert_eq!(event_ids.len(), 8);
-    }
+        // Test 5: Resource Usage Tracking
+        #[test]
+        fn test_resource_usage() {
+            let usage = ResourceUsage {
+                heap_bytes: 2048,
+                stack_depth: 10,
+                cpu_ns: 5000000,
+            };
 
-    // Test 10: Session Recorder with Checkpoints
-    #[test]
-    fn test_session_recorder_with_checkpoints() {
-        let metadata = create_test_metadata();
-        let mut recorder = SessionRecorder::new(metadata);
+            assert_eq!(usage.heap_bytes, 2048);
+            assert_eq!(usage.stack_depth, 10);
+            assert_eq!(usage.cpu_ns, 5000000);
 
-        // Record some operations
-        let input_id1 = recorder.record_input("let x = 42".to_string(), InputMode::Interactive);
-        let output_id1 = recorder.record_output(Ok(Value::Nil));
+            // Test serialization
+            let json = serde_json::to_string(&usage).unwrap();
+            let deserialized: ResourceUsage = serde_json::from_str(&json).unwrap();
+            assert_eq!(usage.heap_bytes, deserialized.heap_bytes);
+            assert_eq!(usage.stack_depth, deserialized.stack_depth);
+            assert_eq!(usage.cpu_ns, deserialized.cpu_ns);
+        }
 
-        // Add checkpoint after first operation
-        let checkpoint1 = create_test_checkpoint();
-        recorder.add_checkpoint(output_id1, checkpoint1.clone());
+        // Test 6: State Checkpoint Creation and Validation
+        #[test]
+        fn test_state_checkpoint() {
+            let checkpoint = create_test_checkpoint();
 
-        // Record more operations
-        let input_id2 = recorder.record_input("x * 2".to_string(), InputMode::Interactive);
-        let output_id2 = recorder.record_output(Ok(Value::Integer(84)));
+            assert_eq!(checkpoint.bindings.len(), 2);
+            assert_eq!(checkpoint.bindings.get("x"), Some(&"42".to_string()));
+            assert_eq!(checkpoint.bindings.get("y"), Some(&"\"hello\"".to_string()));
 
-        // Add another checkpoint
-        let mut checkpoint2 = create_test_checkpoint();
-        checkpoint2.state_hash = "def456abc789".to_string();
-        recorder.add_checkpoint(output_id2, checkpoint2.clone());
+            assert_eq!(checkpoint.type_environment.len(), 2);
+            assert_eq!(
+                checkpoint.type_environment.get("x"),
+                Some(&"Int".to_string())
+            );
+            assert_eq!(
+                checkpoint.type_environment.get("y"),
+                Some(&"String".to_string())
+            );
 
-        // Verify checkpoints
-        let session = recorder.get_session();
-        assert_eq!(session.checkpoints.len(), 2);
-        assert!(session.checkpoints.contains_key(&output_id1));
-        assert!(session.checkpoints.contains_key(&output_id2));
+            assert_eq!(checkpoint.state_hash, "abc123def456");
+            assert_eq!(checkpoint.resource_usage.heap_bytes, 1024);
 
-        let retrieved_checkpoint1 = session.checkpoints.get(&output_id1).unwrap();
-        assert_eq!(retrieved_checkpoint1.state_hash, "abc123def456");
+            // Test serialization
+            let json = serde_json::to_string(&checkpoint).unwrap();
+            let deserialized: StateCheckpoint = serde_json::from_str(&json).unwrap();
+            assert_eq!(checkpoint.state_hash, deserialized.state_hash);
+            assert_eq!(checkpoint.bindings.len(), deserialized.bindings.len());
+        }
 
-        let retrieved_checkpoint2 = session.checkpoints.get(&output_id2).unwrap();
-        assert_eq!(retrieved_checkpoint2.state_hash, "def456abc789");
-    }
+        // Test 7: EvalResult Variants
+        #[test]
+        fn test_eval_result_variants() {
+            // Test Success variant
+            let success = EvalResult::Success {
+                value: "42".to_string(),
+            };
+            match success {
+                EvalResult::Success { ref value } => assert_eq!(value, "42"),
+                _ => panic!("Expected Success variant"),
+            }
 
-    // Test 11: Session Recorder Input Modes
-    #[test]
-    fn test_input_modes() {
-        let metadata = create_test_metadata();
-        let mut recorder = SessionRecorder::new(metadata);
+            // Test Error variant
+            let error = EvalResult::Error {
+                message: "Division by zero".to_string(),
+            };
+            match error {
+                EvalResult::Error { message } => assert_eq!(message, "Division by zero"),
+                _ => panic!("Expected Error variant"),
+            }
 
-        // Test different input modes
-        let interactive_id = recorder.record_input("2 + 2".to_string(), InputMode::Interactive);
-        let batch_id = recorder.record_input("let batch = true".to_string(), InputMode::Script);
+            // Test Unit variant
+            let unit = EvalResult::Unit;
+            match unit {
+                EvalResult::Unit => {}
+                _ => panic!("Expected Unit variant"),
+            }
 
-        let session = recorder.get_session();
-        assert_eq!(session.timeline.len(), 2);
-
-        // Verify modes are stored correctly in timeline
-        for event in &session.timeline {
-            match &event.event {
-                Event::Input { mode, .. } => {
-                    assert!(matches!(mode, InputMode::Interactive | InputMode::Script));
-                },
-                _ => {},
+            // Test serialization
+            let json = serde_json::to_string(&success).unwrap();
+            let deserialized: EvalResult = serde_json::from_str(&json).unwrap();
+            match deserialized {
+                EvalResult::Success { value } => assert_eq!(value, "42"),
+                _ => panic!("Deserialization failed"),
             }
         }
-    }
 
-    // Test 12: Session Conversion and Ownership
-    #[test]
-    fn test_session_conversion() {
-        let metadata = create_test_metadata();
-        let mut recorder = SessionRecorder::new(metadata.clone());
+        // Test 8: Session Recorder Basic Operations
+        #[test]
+        fn test_session_recorder_basic() {
+            let metadata = create_test_metadata();
+            let mut recorder = SessionRecorder::new(metadata);
 
-        // Record some data
-        recorder.record_input("test input".to_string(), InputMode::Interactive);
-        recorder.record_output(Ok(Value::String(Rc::new("test output".to_string()))));
+            // Test initial state
+            let session = recorder.get_session();
+            assert_eq!(session.metadata.session_id, "test-001");
+            assert_eq!(session.timeline.len(), 0);
+            assert_eq!(session.checkpoints.len(), 0);
 
-        // Test borrowing session
-        {
-            let session_ref = recorder.get_session();
-            assert_eq!(session_ref.metadata.session_id, "test-001");
-            assert_eq!(session_ref.timeline.len(), 2);
+            // Test input recording
+            let input_id = recorder.record_input("let x = 42".to_string(), InputMode::Interactive);
+            assert_eq!(input_id, EventId(1));
+
+            // Test output recording
+            let output_id = recorder.record_output(Ok(Value::Nil));
+            assert_eq!(output_id, EventId(2));
+
+            // Verify timeline
+            let session = recorder.get_session();
+            assert_eq!(session.timeline.len(), 2);
         }
 
-        // Test taking ownership
-        let session = recorder.into_session();
-        assert_eq!(session.metadata.session_id, "test-001");
-        assert_eq!(session.timeline.len(), 2);
-        assert_eq!(session.checkpoints.len(), 0);
+        // Test 9: Session Recorder Sequential Operations
+        #[test]
+        fn test_session_recorder_sequential() {
+            let metadata = create_test_metadata();
+            let mut recorder = SessionRecorder::new(metadata);
 
-        // Recorder should be consumed at this point
-        // (can't test this directly, but the into_session() call above confirms it)
-    }
+            // Record sequence of operations
+            let inputs = ["let x = 1", "let y = 2", "x + y", "println(x + y)"];
 
-    // Test 13: Validation Report Creation
-    #[test]
-    fn test_validation_report() {
-        let mut report = ValidationReport::new();
-        assert!(report.divergences.is_empty());
+            let mut event_ids = Vec::new();
+            for (i, input) in inputs.iter().enumerate() {
+                let input_id = recorder.record_input((*input).to_string(), InputMode::Interactive);
+                event_ids.push(input_id);
+                assert_eq!(input_id, EventId((i as u64 * 2) + 1));
 
-        // Add divergences
-        let divergence1 = Divergence::Output {
-            expected: "42".to_string(),
-            actual: "43".to_string(),
-        };
+                let output_id = recorder.record_output(Ok(Value::Integer(i as i64 + 1)));
+                event_ids.push(output_id);
+                assert_eq!(output_id, EventId((i as u64 * 2) + 2));
+            }
 
-        let divergence2 = Divergence::State {
-            expected_hash: "abc123".to_string(),
-            actual_hash: "def456".to_string(),
-        };
+            // Verify all events recorded
+            let session = recorder.get_session();
+            assert_eq!(session.timeline.len(), 8); // 4 inputs + 4 outputs
+            assert_eq!(event_ids.len(), 8);
+        }
 
-        report.add_divergence(EventId(1), divergence1);
-        report.add_divergence(EventId(2), divergence2);
+        // Test 10: Session Recorder with Checkpoints
+        #[test]
+        fn test_session_recorder_with_checkpoints() {
+            let metadata = create_test_metadata();
+            let mut recorder = SessionRecorder::new(metadata);
 
-        assert_eq!(report.divergences.len(), 2);
-        assert!(report.divergences.iter().any(|(id, _)| *id == EventId(1)));
-        assert!(report.divergences.iter().any(|(id, _)| *id == EventId(2)));
-    }
+            // Record some operations
+            let _input_id1 =
+                recorder.record_input("let x = 42".to_string(), InputMode::Interactive);
+            let output_id1 = recorder.record_output(Ok(Value::Nil));
 
-    // Test 14: Complex Session with Error Handling
-    #[test]
-    fn test_session_with_errors() {
-        let metadata = create_test_metadata();
-        let mut recorder = SessionRecorder::new(metadata);
+            // Add checkpoint after first operation
+            let checkpoint1 = create_test_checkpoint();
+            recorder.add_checkpoint(output_id1, checkpoint1);
 
-        // Record successful operation
-        recorder.record_input("let x = 42".to_string(), InputMode::Interactive);
-        recorder.record_output(Ok(Value::Nil));
+            // Record more operations
+            let _input_id2 = recorder.record_input("x * 2".to_string(), InputMode::Interactive);
+            let output_id2 = recorder.record_output(Ok(Value::Integer(84)));
 
-        // Record failed operation
-        recorder.record_input("x / 0".to_string(), InputMode::Interactive);
-        recorder.record_output(Err(anyhow::anyhow!("Division by zero")));
+            // Add another checkpoint
+            let mut checkpoint2 = create_test_checkpoint();
+            checkpoint2.state_hash = "def456abc789".to_string();
+            recorder.add_checkpoint(output_id2, checkpoint2);
 
-        // Record recovery
-        recorder.record_input("x / 2".to_string(), InputMode::Interactive);
-        recorder.record_output(Ok(Value::Integer(21)));
+            // Verify checkpoints
+            let session = recorder.get_session();
+            assert_eq!(session.checkpoints.len(), 2);
+            assert!(session.checkpoints.contains_key(&output_id1));
+            assert!(session.checkpoints.contains_key(&output_id2));
 
-        let session = recorder.get_session();
-        assert_eq!(session.timeline.len(), 6); // 3 inputs + 3 outputs
+            let retrieved_checkpoint1 = session.checkpoints.get(&output_id1).unwrap();
+            assert_eq!(retrieved_checkpoint1.state_hash, "abc123def456");
 
-        // Verify error is recorded properly in timeline
-        let error_output = &session.timeline[3]; // Second output (index 3)
-        match &error_output.event {
-            Event::Output { result, .. } => {
-                match result {
-                    EvalResult::Error { .. } => {}, // Expected error
-                    _ => panic!("Expected error result"),
+            let retrieved_checkpoint2 = session.checkpoints.get(&output_id2).unwrap();
+            assert_eq!(retrieved_checkpoint2.state_hash, "def456abc789");
+        }
+
+        // Test 11: Session Recorder Input Modes
+        #[test]
+        fn test_input_modes() {
+            let metadata = create_test_metadata();
+            let mut recorder = SessionRecorder::new(metadata);
+
+            // Test different input modes
+            let _interactive_id =
+                recorder.record_input("2 + 2".to_string(), InputMode::Interactive);
+            let _batch_id =
+                recorder.record_input("let batch = true".to_string(), InputMode::Script);
+
+            let session = recorder.get_session();
+            assert_eq!(session.timeline.len(), 2);
+
+            // Verify modes are stored correctly in timeline
+            for event in &session.timeline {
+                if let Event::Input { mode, .. } = &event.event {
+                    assert!(matches!(mode, InputMode::Interactive | InputMode::Script));
                 }
-            },
-            _ => panic!("Expected output event"),
+            }
         }
-    }
 
-    // Test 15: Resource Tolerance and Validation
-    #[test]
-    fn test_resource_tolerance() {
-        let tolerance = ResourceTolerance::default();
+        // Test 12: Session Conversion and Ownership
+        #[test]
+        fn test_session_conversion() {
+            let metadata = create_test_metadata();
+            let mut recorder = SessionRecorder::new(metadata);
 
-        // Default values should be reasonable
-        assert!(tolerance.heap_bytes_percent > 0.0);
-        assert!(tolerance.cpu_ns_percent > 0.0);
+            // Record some data
+            recorder.record_input("test input".to_string(), InputMode::Interactive);
+            recorder.record_output(Ok(Value::String(Rc::new("test output".to_string()))));
 
-        // Create custom tolerance
-        let custom_tolerance = ResourceTolerance {
-            heap_bytes_percent: 15.0,
-            cpu_ns_percent: 25.0,
-        };
+            // Test borrowing session
+            {
+                let session_ref = recorder.get_session();
+                assert_eq!(session_ref.metadata.session_id, "test-001");
+                assert_eq!(session_ref.timeline.len(), 2);
+            }
 
-        assert_eq!(custom_tolerance.heap_bytes_percent, 15.0);
-        assert_eq!(custom_tolerance.cpu_ns_percent, 25.0);
-    }
+            // Test taking ownership
+            let session = recorder.into_session();
+            assert_eq!(session.metadata.session_id, "test-001");
+            assert_eq!(session.timeline.len(), 2);
+            assert_eq!(session.checkpoints.len(), 0);
 
-    // Test 16: Complete Session Serialization
-    #[test]
-    fn test_complete_session_serialization() {
-        let metadata = create_test_metadata();
-        let mut recorder = SessionRecorder::new(metadata);
+            // Recorder should be consumed at this point
+            // (can't test this directly, but the into_session() call above confirms it)
+        }
 
-        // Create a complete session
-        recorder.record_input("let x = 42".to_string(), InputMode::Interactive);
-        recorder.record_output(Ok(Value::Integer(42)));
+        // Test 13: Validation Report Creation
+        #[test]
+        fn test_validation_report() {
+            let mut report = ValidationReport::new();
+            assert!(report.divergences.is_empty());
 
-        let checkpoint = create_test_checkpoint();
-        recorder.add_checkpoint(EventId(2), checkpoint);
+            // Add divergences
+            let divergence1 = Divergence::Output {
+                expected: "42".to_string(),
+                actual: "43".to_string(),
+            };
 
-        let session = recorder.into_session();
+            let divergence2 = Divergence::State {
+                expected_hash: "abc123".to_string(),
+                actual_hash: "def456".to_string(),
+            };
 
-        // Test full session serialization
-        let json = serde_json::to_string(&session).unwrap();
-        let deserialized: ReplSession = serde_json::from_str(&json).unwrap();
+            report.add_divergence(EventId(1), divergence1);
+            report.add_divergence(EventId(2), divergence2);
 
-        assert_eq!(session.metadata.session_id, deserialized.metadata.session_id);
-        assert_eq!(session.timeline.len(), deserialized.timeline.len());
-        assert_eq!(session.checkpoints.len(), deserialized.checkpoints.len());
-        assert_eq!(session.environment.seed, deserialized.environment.seed);
-        assert_eq!(session.version, deserialized.version);
-    }
+            assert_eq!(report.divergences.len(), 2);
+            assert!(report.divergences.iter().any(|(id, _)| *id == EventId(1)));
+            assert!(report.divergences.iter().any(|(id, _)| *id == EventId(2)));
+        }
 
+        // Test 14: Complex Session with Error Handling
+        #[test]
+        fn test_session_with_errors() {
+            let metadata = create_test_metadata();
+            let mut recorder = SessionRecorder::new(metadata);
+
+            // Record successful operation
+            recorder.record_input("let x = 42".to_string(), InputMode::Interactive);
+            recorder.record_output(Ok(Value::Nil));
+
+            // Record failed operation
+            recorder.record_input("x / 0".to_string(), InputMode::Interactive);
+            recorder.record_output(Err(anyhow::anyhow!("Division by zero")));
+
+            // Record recovery
+            recorder.record_input("x / 2".to_string(), InputMode::Interactive);
+            recorder.record_output(Ok(Value::Integer(21)));
+
+            let session = recorder.get_session();
+            assert_eq!(session.timeline.len(), 6); // 3 inputs + 3 outputs
+
+            // Verify error is recorded properly in timeline
+            let error_output = &session.timeline[3]; // Second output (index 3)
+            match &error_output.event {
+                Event::Output { result, .. } => {
+                    match result {
+                        EvalResult::Error { .. } => {} // Expected error
+                        _ => panic!("Expected error result"),
+                    }
+                }
+                _ => panic!("Expected output event"),
+            }
+        }
+
+        // Test 15: Resource Tolerance and Validation
+        #[test]
+        fn test_resource_tolerance() {
+            let tolerance = ResourceTolerance::default();
+
+            // Default values should be reasonable
+            assert!(tolerance.heap_bytes_percent > 0.0);
+            assert!(tolerance.cpu_ns_percent > 0.0);
+
+            // Create custom tolerance
+            let custom_tolerance = ResourceTolerance {
+                heap_bytes_percent: 15.0,
+                cpu_ns_percent: 25.0,
+            };
+
+            assert_eq!(custom_tolerance.heap_bytes_percent, 15.0);
+            assert_eq!(custom_tolerance.cpu_ns_percent, 25.0);
+        }
+
+        // Test 16: Complete Session Serialization
+        #[test]
+        fn test_complete_session_serialization() {
+            let metadata = create_test_metadata();
+            let mut recorder = SessionRecorder::new(metadata);
+
+            // Create a complete session
+            recorder.record_input("let x = 42".to_string(), InputMode::Interactive);
+            recorder.record_output(Ok(Value::Integer(42)));
+
+            let checkpoint = create_test_checkpoint();
+            recorder.add_checkpoint(EventId(2), checkpoint);
+
+            let session = recorder.into_session();
+
+            // Test full session serialization
+            let json = serde_json::to_string(&session).unwrap();
+            let deserialized: ReplSession = serde_json::from_str(&json).unwrap();
+
+            assert_eq!(
+                session.metadata.session_id,
+                deserialized.metadata.session_id
+            );
+            assert_eq!(session.timeline.len(), deserialized.timeline.len());
+            assert_eq!(session.checkpoints.len(), deserialized.checkpoints.len());
+            assert_eq!(session.environment.seed, deserialized.environment.seed);
+            assert_eq!(session.version, deserialized.version);
+        }
     } // End enabled_tests module
 }

@@ -1,8 +1,8 @@
 // SPRINT6-002: Anti-cheating measures implementation
 // PMAT Complexity: <10 per function
-use std::collections::{HashMap, HashSet};
-use sha2::{Sha256, Digest};
 use chrono::Timelike;
+use sha2::{Digest, Sha256};
+use std::collections::{HashMap, HashSet};
 #[derive(Debug, Clone)]
 pub struct Submission {
     pub student_id: String,
@@ -39,47 +39,47 @@ impl Default for AntiCheatSystem {
 }
 
 impl AntiCheatSystem {
-/// # Examples
-/// 
-/// ```
-/// use ruchy::notebook::testing::anticheat::AntiCheatSystem;
-/// 
-/// let instance = AntiCheatSystem::new();
-/// // Verify behavior
-/// ```
-/// # Examples
-/// 
-/// ```
-/// use ruchy::notebook::testing::anticheat::AntiCheatSystem;
-/// 
-/// let instance = AntiCheatSystem::new();
-/// // Verify behavior
-/// ```
-/// # Examples
-/// 
-/// ```
-/// use ruchy::notebook::testing::anticheat::AntiCheatSystem;
-/// 
-/// let instance = AntiCheatSystem::new();
-/// // Verify behavior
-/// ```
-pub fn new() -> Self {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::notebook::testing::anticheat::AntiCheatSystem;
+    ///
+    /// let instance = AntiCheatSystem::new();
+    /// // Verify behavior
+    /// ```
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::notebook::testing::anticheat::AntiCheatSystem;
+    ///
+    /// let instance = AntiCheatSystem::new();
+    /// // Verify behavior
+    /// ```
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::notebook::testing::anticheat::AntiCheatSystem;
+    ///
+    /// let instance = AntiCheatSystem::new();
+    /// // Verify behavior
+    /// ```
+    pub fn new() -> Self {
         Self {
             similarity_threshold: 0.85,
             submission_history: HashMap::new(),
             fingerprint_db: HashMap::new(),
         }
     }
-/// # Examples
-/// 
-/// ```
-/// use ruchy::notebook::testing::anticheat::AntiCheatSystem;
-/// 
-/// let mut instance = AntiCheatSystem::new();
-/// let result = instance.with_threshold();
-/// // Verify behavior
-/// ```
-pub fn with_threshold(threshold: f64) -> Self {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::notebook::testing::anticheat::AntiCheatSystem;
+    ///
+    /// let mut instance = AntiCheatSystem::new();
+    /// let result = instance.with_threshold();
+    /// // Verify behavior
+    /// ```
+    pub fn with_threshold(threshold: f64) -> Self {
         Self {
             similarity_threshold: threshold,
             submission_history: HashMap::new(),
@@ -87,16 +87,16 @@ pub fn with_threshold(threshold: f64) -> Self {
         }
     }
     /// Check submission for plagiarism
-/// # Examples
-/// 
-/// ```
-/// use ruchy::notebook::testing::anticheat::AntiCheatSystem;
-/// 
-/// let mut instance = AntiCheatSystem::new();
-/// let result = instance.check_plagiarism();
-/// // Verify behavior
-/// ```
-pub fn check_plagiarism(&mut self, submission: &Submission) -> PlagiarismResult {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::notebook::testing::anticheat::AntiCheatSystem;
+    ///
+    /// let mut instance = AntiCheatSystem::new();
+    /// let result = instance.check_plagiarism();
+    /// // Verify behavior
+    /// ```
+    pub fn check_plagiarism(&mut self, submission: &Submission) -> PlagiarismResult {
         let fingerprint = self.generate_fingerprint(&submission.code);
         // Check exact match first
         if let Some(matched_student) = self.fingerprint_db.get(&fingerprint) {
@@ -171,9 +171,7 @@ pub fn check_plagiarism(&mut self, submission: &Submission) -> PlagiarismResult 
     fn tokenize(&self, code: &str) -> Vec<String> {
         // Simple tokenization - split on whitespace and symbols
         code.split_whitespace()
-            .flat_map(|word| {
-                word.split(|c: char| !c.is_alphanumeric() && c != '_')
-            })
+            .flat_map(|word| word.split(|c: char| !c.is_alphanumeric() && c != '_'))
             .filter(|s| !s.is_empty())
             .map(std::string::ToString::to_string)
             .collect()
@@ -207,9 +205,7 @@ pub fn check_plagiarism(&mut self, submission: &Submission) -> PlagiarismResult 
             if tokens1.is_empty() || tokens2.is_empty() {
                 0.0
             } else {
-                let common = tokens1.iter()
-                    .filter(|t| tokens2.contains(t))
-                    .count();
+                let common = tokens1.iter().filter(|t| tokens2.contains(t)).count();
                 common as f64 / tokens1.len().max(tokens2.len()) as f64
             }
         }
@@ -270,15 +266,15 @@ impl ObfuscationDetector {
         }
     }
     /// Check if code appears obfuscated
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::notebook::testing::anticheat::is_obfuscated;
-/// 
-/// let result = is_obfuscated("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn is_obfuscated(&self, code: &str) -> ObfuscationResult {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::notebook::testing::anticheat::is_obfuscated;
+    ///
+    /// let result = is_obfuscated("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn is_obfuscated(&self, code: &str) -> ObfuscationResult {
         let mut indicators = Vec::new();
         // Check for suspicious patterns
         for pattern in &self.suspicious_patterns {
@@ -288,7 +284,8 @@ pub fn is_obfuscated(&self, code: &str) -> ObfuscationResult {
         }
         // Check for unusual variable names
         let var_names = self.extract_variable_names(code);
-        let unusual_count = var_names.iter()
+        let unusual_count = var_names
+            .iter()
             .filter(|name| self.is_unusual_name(name))
             .count();
         if unusual_count > var_names.len() / 2 {
@@ -325,7 +322,7 @@ pub fn is_obfuscated(&self, code: &str) -> ObfuscationResult {
         name.len() == 1 ||  // Single letter
         name.chars().all(|c| c == '_') ||  // All underscores
         name.len() > 30 ||  // Very long
-        name.chars().filter(|c| c.is_numeric()).count() > name.len() / 2  // Mostly numbers
+        name.chars().filter(|c| c.is_numeric()).count() > name.len() / 2 // Mostly numbers
     }
 }
 #[derive(Debug)]
@@ -357,16 +354,22 @@ impl PatternAnalyzer {
         }
     }
     /// Analyze submission patterns for suspicious behavior
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::notebook::testing::anticheat::analyze_pattern;
-/// 
-/// let result = analyze_pattern("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn analyze_pattern(&mut self, student_id: &str, timestamp: chrono::DateTime<chrono::Utc>) -> PatternAnalysis {
-        let pattern = self.patterns.entry(student_id.to_string())
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::notebook::testing::anticheat::analyze_pattern;
+    ///
+    /// let result = analyze_pattern("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn analyze_pattern(
+        &mut self,
+        student_id: &str,
+        timestamp: chrono::DateTime<chrono::Utc>,
+    ) -> PatternAnalysis {
+        let pattern = self
+            .patterns
+            .entry(student_id.to_string())
             .or_insert_with(|| SubmissionPattern {
                 student_id: student_id.to_string(),
                 submission_times: Vec::new(),
@@ -377,7 +380,7 @@ pub fn analyze_pattern(&mut self, student_id: &str, timestamp: chrono::DateTime<
         if pattern.submission_times.len() > 1 {
             let mut intervals = Vec::new();
             for i in 1..pattern.submission_times.len() {
-                let interval = pattern.submission_times[i] - pattern.submission_times[i-1];
+                let interval = pattern.submission_times[i] - pattern.submission_times[i - 1];
                 intervals.push(interval);
             }
             let total: chrono::Duration = intervals.iter().sum();
@@ -392,7 +395,9 @@ pub fn analyze_pattern(&mut self, student_id: &str, timestamp: chrono::DateTime<
             }
         }
         // Late night pattern
-        let late_night_count = pattern.submission_times.iter()
+        let late_night_count = pattern
+            .submission_times
+            .iter()
             .filter(|t| {
                 let hour = t.hour();
                 (2..=5).contains(&hour)

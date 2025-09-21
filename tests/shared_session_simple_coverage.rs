@@ -2,10 +2,8 @@
 // Target: Basic coverage for SharedSession
 // Sprint 80: ALL NIGHT Coverage Marathon Phase 2
 
-use ruchy::wasm::shared_session::{
-    SharedSession, ExecuteResponse, ExecutionMode, DefId
-};
 use ruchy::runtime::interpreter::Value;
+use ruchy::wasm::shared_session::{DefId, ExecuteResponse, ExecutionMode, SharedSession};
 
 // Basic SharedSession tests
 #[test]

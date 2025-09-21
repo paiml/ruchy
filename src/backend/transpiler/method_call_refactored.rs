@@ -4,17 +4,17 @@ use crate::backend::Transpiler;
 use crate::frontend::ast::Expr;
 use anyhow::{bail, Result};
 use proc_macro2::TokenStream;
-use quote::{quote, format_ident};
+use quote::{format_ident, quote};
 impl Transpiler {
     /// Main dispatcher for method calls (complexity: ~15)
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::backend::Transpiler;
-/// let transpiler = Transpiler::new();
-/// // Method call transpilation is handled internally
-/// ```
-pub fn transpile_method_call_refactored(
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::backend::Transpiler;
+    /// let transpiler = Transpiler::new();
+    /// // Method call transpilation is handled internally
+    /// ```
+    pub fn transpile_method_call_refactored(
         &self,
         object: &Expr,
         method: &str,
@@ -26,29 +26,36 @@ pub fn transpile_method_call_refactored(
         // Dispatch to specialized handlers based on method category
         match method {
             // Iterator methods
-            "map" | "filter" | "reduce" | "fold" | "any" | "all" | "find" => 
-                self.transpile_iterator_method(&obj_tokens, method, &arg_tokens),
+            "map" | "filter" | "reduce" | "fold" | "any" | "all" | "find" => {
+                self.transpile_iterator_method(&obj_tokens, method, &arg_tokens)
+            }
             // HashMap/Dict methods
-            "get" | "contains_key" | "keys" | "values" | "items" | "entry" =>
-                self.transpile_hashmap_method(&obj_tokens, method, &arg_tokens),
+            "get" | "contains_key" | "keys" | "values" | "items" | "entry" => {
+                self.transpile_hashmap_method(&obj_tokens, method, &arg_tokens)
+            }
             // HashSet methods
-            "contains" | "union" | "intersection" | "difference" | "symmetric_difference" =>
-                self.transpile_hashset_method(&obj_tokens, method, &arg_tokens),
+            "contains" | "union" | "intersection" | "difference" | "symmetric_difference" => {
+                self.transpile_hashset_method(&obj_tokens, method, &arg_tokens)
+            }
             // Collection mutators
-            "insert" | "remove" | "clear" | "push" | "pop" | "append" | "extend" =>
-                self.transpile_collection_mutator(&obj_tokens, method, &arg_tokens),
+            "insert" | "remove" | "clear" | "push" | "pop" | "append" | "extend" => {
+                self.transpile_collection_mutator(&obj_tokens, method, &arg_tokens)
+            }
             // Collection accessors
-            "len" | "is_empty" | "iter" | "slice" | "first" | "last" =>
-                self.transpile_collection_accessor(&obj_tokens, method, &arg_tokens),
+            "len" | "is_empty" | "iter" | "slice" | "first" | "last" => {
+                self.transpile_collection_accessor(&obj_tokens, method, &arg_tokens)
+            }
             // String methods
-            "to_s" | "to_string" | "to_upper" | "to_lower" | "length" | 
-            "trim" | "split" | "replace" | "starts_with" | "ends_with" =>
-                self.transpile_string_method(&obj_tokens, method, &arg_tokens),
+            "to_s" | "to_string" | "to_upper" | "to_lower" | "length" | "trim" | "split"
+            | "replace" | "starts_with" | "ends_with" => {
+                self.transpile_string_method(&obj_tokens, method, &arg_tokens)
+            }
             // DataFrame methods
-            "select" | "groupby" | "agg" | "sort" | "mean" | "std" | "min" | "max" |
-            "sum" | "count" | "drop_nulls" | "fill_null" | "pivot" | "melt" | 
-            "head" | "tail" | "sample" | "describe" =>
-                self.transpile_dataframe_method_refactored(&obj_tokens, method, &arg_tokens),
+            "select" | "groupby" | "agg" | "sort" | "mean" | "std" | "min" | "max" | "sum"
+            | "count" | "drop_nulls" | "fill_null" | "pivot" | "melt" | "head" | "tail"
+            | "sample" | "describe" => {
+                self.transpile_dataframe_method_refactored(&obj_tokens, method, &arg_tokens)
+            }
             // Default: pass through
             _ => {
                 let method_ident = format_ident!("{}", method);
@@ -92,8 +99,9 @@ pub fn transpile_method_call_refactored(
         match method {
             "get" => Ok(quote! { #obj.#method_ident(#(#args),*).cloned() }),
             "items" => Ok(quote! { #obj.iter().map(|(k, v)| (k.clone(), v.clone())) }),
-            "contains_key" | "keys" | "values" | "entry" => 
-                Ok(quote! { #obj.#method_ident(#(#args),*) }),
+            "contains_key" | "keys" | "values" | "entry" => {
+                Ok(quote! { #obj.#method_ident(#(#args),*) })
+            }
             _ => unreachable!("Unknown HashMap method: {}", method),
         }
     }
@@ -115,13 +123,13 @@ pub fn transpile_method_call_refactored(
                 }
                 let other = &args[0];
                 let method_ident = format_ident!("{}", method);
-                Ok(quote! { 
-                    {
-                        use std::collections::HashSet;
-#[cfg(test)]
-                        #obj.#method_ident(&#other).cloned().collect::<HashSet<_>>()
-                    }
-                })
+                Ok(quote! {
+                                    {
+                                        use std::collections::HashSet;
+                #[cfg(test)]
+                                        #obj.#method_ident(&#other).cloned().collect::<HashSet<_>>()
+                                    }
+                                })
             }
             _ => unreachable!("Unknown HashSet method: {}", method),
         }
@@ -246,7 +254,7 @@ mod tests {
         assert!(result.is_ok());
 
         // Test reduce method
-        let result = t.transpile_method_call_refactored(&obj, "reduce", &[arg.clone()]);
+        let result = t.transpile_method_call_refactored(&obj, "reduce", &[arg]);
         assert!(result.is_ok());
     }
 
@@ -261,7 +269,7 @@ mod tests {
         assert!(result.is_ok());
 
         // Test contains_key method
-        let result = t.transpile_method_call_refactored(&obj, "contains_key", &[key.clone()]);
+        let result = t.transpile_method_call_refactored(&obj, "contains_key", &[key]);
         assert!(result.is_ok());
 
         // Test keys method
@@ -276,7 +284,7 @@ mod tests {
         let val = make_string_expr("value");
 
         // Test contains method
-        let result = t.transpile_method_call_refactored(&obj, "contains", &[val.clone()]);
+        let result = t.transpile_method_call_refactored(&obj, "contains", &[val]);
         assert!(result.is_ok());
 
         // Test union method
@@ -292,7 +300,7 @@ mod tests {
         let val = make_string_expr("item");
 
         // Test push method
-        let result = t.transpile_method_call_refactored(&obj, "push", &[val.clone()]);
+        let result = t.transpile_method_call_refactored(&obj, "push", &[val]);
         assert!(result.is_ok());
 
         // Test pop method
@@ -351,7 +359,7 @@ mod tests {
         let col = make_string_expr("column");
 
         // Test select method
-        let result = t.transpile_method_call_refactored(&obj, "select", &[col.clone()]);
+        let result = t.transpile_method_call_refactored(&obj, "select", &[col]);
         assert!(result.is_ok());
 
         // Test mean method

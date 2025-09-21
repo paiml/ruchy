@@ -14,7 +14,7 @@ fn test_check_command_valid_syntax() {
     let dir = tempdir().unwrap();
     let file = dir.path().join("test.ruchy");
     fs::write(&file, "let x = 42 in x + 1").unwrap();
-    
+
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
     cmd.arg("check")
         .arg(&file)
@@ -28,7 +28,7 @@ fn test_check_command_invalid_syntax() {
     let dir = tempdir().unwrap();
     let file = dir.path().join("test.ruchy");
     fs::write(&file, "let x = ").unwrap();
-    
+
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
     cmd.arg("check")
         .arg(&file)
@@ -43,13 +43,13 @@ fn test_fmt_command_check_mode() {
     let dir = tempdir().unwrap();
     let file = dir.path().join("test.ruchy");
     fs::write(&file, "let x=42 in x+1").unwrap();
-    
+
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
     cmd.arg("fmt")
         .arg(&file)
         .arg("--check")
         .assert()
-        .failure()  // Exits with 1 when formatting needed
+        .failure() // Exits with 1 when formatting needed
         .stdout(predicate::str::contains("needs formatting"));
 }
 
@@ -58,7 +58,7 @@ fn test_fmt_command_stdout() {
     let dir = tempdir().unwrap();
     let file = dir.path().join("test.ruchy");
     fs::write(&file, "let x=42 in x+1").unwrap();
-    
+
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
     cmd.arg("fmt")
         .arg(&file)
@@ -74,12 +74,9 @@ fn test_lint_command_basic() {
     let dir = tempdir().unwrap();
     let file = dir.path().join("test.ruchy");
     fs::write(&file, "let x = 42 in x + 1").unwrap();
-    
+
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
-    cmd.arg("lint")
-        .arg(&file)
-        .assert()
-        .success();
+    cmd.arg("lint").arg(&file).assert().success();
 }
 
 #[test]
@@ -87,7 +84,7 @@ fn test_lint_command_json_output() {
     let dir = tempdir().unwrap();
     let file = dir.path().join("test.ruchy");
     fs::write(&file, "let x = 42 in 43").unwrap(); // unused variable
-    
+
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
     cmd.arg("lint")
         .arg(&file)
@@ -101,12 +98,9 @@ fn test_lint_command_json_output() {
 #[test]
 fn test_test_command_no_tests() {
     let dir = tempdir().unwrap();
-    
+
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
-    cmd.arg("test")
-        .arg(dir.path())
-        .assert()
-        .success();
+    cmd.arg("test").arg(dir.path()).assert().success();
 }
 
 #[test]
@@ -114,7 +108,7 @@ fn test_test_command_with_coverage() {
     let dir = tempdir().unwrap();
     let file = dir.path().join("test.ruchy");
     fs::write(&file, "fun test_add() { assert(1 + 1 == 2) }").unwrap();
-    
+
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
     cmd.arg("test")
         .arg(&file)
@@ -128,13 +122,14 @@ fn test_test_command_with_coverage() {
 fn test_doc_command_basic() {
     let dir = tempdir().unwrap();
     let file = dir.path().join("test.ruchy");
-    fs::write(&file, "/// Adds two numbers\nfun add(a: i32, b: i32) -> i32 { a + b }").unwrap();
-    
+    fs::write(
+        &file,
+        "/// Adds two numbers\nfun add(a: i32, b: i32) -> i32 { a + b }",
+    )
+    .unwrap();
+
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
-    cmd.arg("doc")
-        .arg(&file)
-        .assert()
-        .success();
+    cmd.arg("doc").arg(&file).assert().success();
 }
 
 /// Test the `bench` command - benchmarking
@@ -142,13 +137,14 @@ fn test_doc_command_basic() {
 fn test_bench_command_basic() {
     let dir = tempdir().unwrap();
     let file = dir.path().join("test.ruchy");
-    fs::write(&file, "fun fib(n: i32) -> i32 { if n <= 1 { n } else { fib(n-1) + fib(n-2) } }").unwrap();
-    
+    fs::write(
+        &file,
+        "fun fib(n: i32) -> i32 { if n <= 1 { n } else { fib(n-1) + fib(n-2) } }",
+    )
+    .unwrap();
+
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
-    cmd.arg("bench")
-        .arg(&file)
-        .assert()
-        .success();
+    cmd.arg("bench").arg(&file).assert().success();
 }
 
 /// Test the `ast` command - AST analysis
@@ -157,7 +153,7 @@ fn test_ast_command_basic() {
     let dir = tempdir().unwrap();
     let file = dir.path().join("test.ruchy");
     fs::write(&file, "let x = 42 in x + 1").unwrap();
-    
+
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
     cmd.arg("ast")
         .arg(&file)
@@ -171,7 +167,7 @@ fn test_ast_command_json() {
     let dir = tempdir().unwrap();
     let file = dir.path().join("test.ruchy");
     fs::write(&file, "42").unwrap();
-    
+
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
     cmd.arg("ast")
         .arg(&file)
@@ -186,7 +182,7 @@ fn test_ast_command_metrics() {
     let dir = tempdir().unwrap();
     let file = dir.path().join("test.ruchy");
     fs::write(&file, "let x = 42 in x + 1").unwrap();
-    
+
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
     cmd.arg("ast")
         .arg(&file)
@@ -202,7 +198,7 @@ fn test_provability_command_basic() {
     let dir = tempdir().unwrap();
     let file = dir.path().join("test.ruchy");
     fs::write(&file, "fun pure_add(a: i32, b: i32) -> i32 { a + b }").unwrap();
-    
+
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
     cmd.arg("provability")
         .arg(&file)
@@ -215,8 +211,12 @@ fn test_provability_command_basic() {
 fn test_provability_command_verify() {
     let dir = tempdir().unwrap();
     let file = dir.path().join("test.ruchy");
-    fs::write(&file, "fun factorial(n: i32) -> i32 { if n <= 1 { 1 } else { n * factorial(n-1) } }").unwrap();
-    
+    fs::write(
+        &file,
+        "fun factorial(n: i32) -> i32 { if n <= 1 { 1 } else { n * factorial(n-1) } }",
+    )
+    .unwrap();
+
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
     cmd.arg("provability")
         .arg(&file)
@@ -231,7 +231,7 @@ fn test_runtime_command_basic() {
     let dir = tempdir().unwrap();
     let file = dir.path().join("test.ruchy");
     fs::write(&file, "fun bubble_sort(arr: [i32]) -> [i32] { arr }").unwrap();
-    
+
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
     cmd.arg("runtime")
         .arg(&file)
@@ -245,7 +245,7 @@ fn test_runtime_command_bigo() {
     let dir = tempdir().unwrap();
     let file = dir.path().join("test.ruchy");
     fs::write(&file, "fun linear_search(arr: [i32], x: i32) -> bool { for item in arr { if item == x { return true } } false }").unwrap();
-    
+
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
     cmd.arg("runtime")
         .arg(&file)
@@ -261,7 +261,7 @@ fn test_score_command_basic() {
     let dir = tempdir().unwrap();
     let file = dir.path().join("test.ruchy");
     fs::write(&file, "fun well_written() { 42 }").unwrap();
-    
+
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
     cmd.arg("score")
         .arg(&file)
@@ -275,7 +275,7 @@ fn test_score_command_json() {
     let dir = tempdir().unwrap();
     let file = dir.path().join("test.ruchy");
     fs::write(&file, "42").unwrap();
-    
+
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
     cmd.arg("score")
         .arg(&file)
@@ -292,12 +292,9 @@ fn test_quality_gate_command() {
     let dir = tempdir().unwrap();
     let file = dir.path().join("test.ruchy");
     fs::write(&file, "fun clean_code() { 42 }").unwrap();
-    
+
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
-    cmd.arg("quality-gate")
-        .arg(&file)
-        .assert()
-        .success();
+    cmd.arg("quality-gate").arg(&file).assert().success();
 }
 
 /// Test the `run` command - execute Ruchy files
@@ -306,7 +303,7 @@ fn test_run_command_basic() {
     let dir = tempdir().unwrap();
     let file = dir.path().join("test.ruchy");
     fs::write(&file, "42").unwrap();
-    
+
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
     cmd.arg("run")
         .arg(&file)
@@ -321,7 +318,7 @@ fn test_transpile_command_basic() {
     let dir = tempdir().unwrap();
     let file = dir.path().join("test.ruchy");
     fs::write(&file, "let x = 42 in x").unwrap();
-    
+
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
     cmd.arg("transpile")
         .arg(&file)
@@ -337,7 +334,7 @@ fn test_compile_command_basic() {
     let file = dir.path().join("test.ruchy");
     let output = dir.path().join("test_binary");
     fs::write(&file, "42").unwrap();
-    
+
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
     cmd.arg("compile")
         .arg(&file)
@@ -345,7 +342,7 @@ fn test_compile_command_basic() {
         .arg(&output)
         .assert()
         .success();
-    
+
     // Check that binary was created
     assert!(output.exists());
 }
@@ -388,14 +385,27 @@ fn test_eval_flag_json_format() {
 #[test]
 fn test_all_commands_have_help() {
     let commands = vec![
-        "check", "fmt", "lint", "test", "doc", "bench",
-        "ast", "provability", "runtime", "score", "quality-gate",
-        "run", "transpile", "compile", "repl"
+        "check",
+        "fmt",
+        "lint",
+        "test",
+        "doc",
+        "bench",
+        "ast",
+        "provability",
+        "runtime",
+        "score",
+        "quality-gate",
+        "run",
+        "transpile",
+        "compile",
+        "repl",
     ];
-    
+
     for cmd in commands {
         let mut command = Command::cargo_bin("ruchy").unwrap();
-        command.arg(cmd)
+        command
+            .arg(cmd)
             .arg("--help")
             .assert()
             .success()

@@ -1,5 +1,5 @@
 //! Collections parsing (lists, dataframes, comprehensions, blocks, object literals)
-use super::{ParserState, bail, Result, Expr, Token, ExprKind, Span, expressions, functions};
+use super::{bail, expressions, functions, Expr, ExprKind, ParserState, Result, Span, Token};
 use crate::frontend::ast::{DataFrameColumn, Literal, ObjectField};
 /// Parse a block expression or object literal
 ///
@@ -33,7 +33,7 @@ use crate::frontend::ast::{DataFrameColumn, Literal, ObjectField};
 /// Handles both regular blocks and let-statement conversion to let-expressions
 pub fn parse_block(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume {
-    // Check if this might be an object literal
+                                                                                 // Check if this might be an object literal
     if is_object_literal(state) {
         return parse_object_literal_body(state, start_span);
     }
@@ -99,7 +99,11 @@ fn is_let_expression(state: &mut ParserState) -> bool {
     matches!(state.tokens.peek(), Some((Token::In, _)))
 }
 /// Create let statement expression from binding info (complexity: 8)
-fn create_let_statement_expression(state: &mut ParserState, let_info: LetBindingInfo, start_span: Span) -> Result<Expr> {
+fn create_let_statement_expression(
+    state: &mut ParserState,
+    let_info: LetBindingInfo,
+    start_span: Span,
+) -> Result<Expr> {
     consume_optional_semicolon(state);
     let body = parse_remaining_block_body(state, start_span)?;
     Ok(Expr::new(
@@ -367,7 +371,10 @@ fn parse_object_spread_field(state: &mut ParserState, fields: &mut Vec<ObjectFie
     Ok(())
 }
 /// Parse object key-value field (key: value or key => value) - complexity: 5
-fn parse_object_key_value_field(state: &mut ParserState, fields: &mut Vec<ObjectField>) -> Result<()> {
+fn parse_object_key_value_field(
+    state: &mut ParserState,
+    fields: &mut Vec<ObjectField>,
+) -> Result<()> {
     let key = parse_object_key(state)?;
     // Accept either : or => for object key-value pairs (book compatibility)
     if matches!(state.tokens.peek(), Some((Token::FatArrow, _))) {
@@ -419,7 +426,7 @@ fn handle_object_field_separator(state: &mut ParserState) -> Result<()> {
 /// Returns an error if the operation fails
 pub fn parse_list(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume [
-    // Check for empty list
+                                                                                 // Check for empty list
     if matches!(state.tokens.peek(), Some((Token::RightBracket, _))) {
         state.tokens.advance(); // consume ]
         return Ok(Expr::new(ExprKind::List(Vec::new()), start_span));
@@ -448,11 +455,16 @@ fn parse_list_element(state: &mut ParserState) -> Result<Expr> {
     if matches!(state.tokens.peek(), Some((Token::DotDotDot, _))) {
         let start_pos = state.tokens.advance().expect("checked above").1.start; // consume ...
         let expr = super::parse_expr_recursive(state)?;
-        let span = Span { 
-            start: start_pos, 
-            end: expr.span.end 
+        let span = Span {
+            start: start_pos,
+            end: expr.span.end,
         };
-        Ok(Expr::new(ExprKind::Spread { expr: Box::new(expr) }, span))
+        Ok(Expr::new(
+            ExprKind::Spread {
+                expr: Box::new(expr),
+            },
+            span,
+        ))
     } else {
         // Regular element
         super::parse_expr_recursive(state)
@@ -712,7 +724,7 @@ fn parse_dataframe_column_definitions(state: &mut ParserState) -> Result<Vec<Dat
 fn parse_single_dataframe_column(
     state: &mut ParserState,
     col_name: String,
-    columns: &mut Vec<DataFrameColumn>
+    columns: &mut Vec<DataFrameColumn>,
 ) -> Result<()> {
     if matches!(state.tokens.peek(), Some((Token::FatArrow, _))) {
         // New syntax: col => [values]
@@ -737,7 +749,7 @@ fn is_dataframe_legacy_syntax_token(state: &mut ParserState) -> bool {
 /// Handle `DataFrame` column continuation tokens - complexity: 5
 fn handle_dataframe_column_continuation(
     state: &mut ParserState,
-    columns: &mut Vec<DataFrameColumn>
+    columns: &mut Vec<DataFrameColumn>,
 ) -> Result<bool> {
     if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
         state.tokens.advance();
@@ -853,7 +865,7 @@ fn populate_dataframe_columns(columns: &mut [DataFrameColumn], rows: &[Vec<Expr>
 
 #[cfg(test)]
 mod tests {
-    
+
     use crate::frontend::parser::Parser;
 
     #[test]
@@ -906,7 +918,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "empty object literal syntax not fully implemented"]
+
     fn test_parse_object_literal_empty() {
         let mut parser = Parser::new("{:}");
         let result = parser.parse();
@@ -938,7 +950,10 @@ mod tests {
     fn test_parse_list_comprehension_with_filter() {
         let mut parser = Parser::new("[x for x in range(10) if x % 2 == 0]");
         let result = parser.parse();
-        assert!(result.is_ok(), "Failed to parse list comprehension with filter");
+        assert!(
+            result.is_ok(),
+            "Failed to parse list comprehension with filter"
+        );
     }
 
     #[test]
@@ -949,7 +964,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "dataframe column syntax not fully implemented"]
+
     fn test_parse_dataframe_with_columns() {
         let mut parser = Parser::new("df![col1: [1, 2, 3], col2: [4, 5, 6]]");
         let result = parser.parse();
@@ -964,7 +979,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "dataframe curly brace syntax not implemented"]
+
     fn test_parse_dataframe_macro() {
         let mut parser = Parser::new("df!{1, 2, 3; 4, 5, 6}");
         let result = parser.parse();
@@ -975,7 +990,10 @@ mod tests {
     fn test_parse_block_with_multiple_expressions() {
         let mut parser = Parser::new("{ 1; 2; 3 }");
         let result = parser.parse();
-        assert!(result.is_ok(), "Failed to parse block with multiple expressions");
+        assert!(
+            result.is_ok(),
+            "Failed to parse block with multiple expressions"
+        );
     }
 
     #[test]
@@ -1024,7 +1042,10 @@ mod tests {
     fn test_parse_block_returns_last_expression() {
         let mut parser = Parser::new("{ 1; 2; 3 }");
         let result = parser.parse();
-        assert!(result.is_ok(), "Failed to parse block that returns last expression");
+        assert!(
+            result.is_ok(),
+            "Failed to parse block that returns last expression"
+        );
     }
 
     #[test]
@@ -1038,15 +1059,21 @@ mod tests {
     fn test_parse_object_with_computed_values() {
         let mut parser = Parser::new("{sum: 1 + 2, product: 3 * 4}");
         let result = parser.parse();
-        assert!(result.is_ok(), "Failed to parse object with computed values");
+        assert!(
+            result.is_ok(),
+            "Failed to parse object with computed values"
+        );
     }
 
     #[test]
-    #[ignore = "dataframe row separator syntax not fully implemented"]
+
     fn test_parse_dataframe_semicolon_rows() {
         let mut parser = Parser::new("df![1, 2; 3, 4; 5, 6]");
         let result = parser.parse();
-        assert!(result.is_ok(), "Failed to parse dataframe with semicolon-separated rows");
+        assert!(
+            result.is_ok(),
+            "Failed to parse dataframe with semicolon-separated rows"
+        );
     }
 
     #[test]
@@ -1064,10 +1091,13 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "object shorthand properties not fully implemented"]
+
     fn test_parse_object_shorthand_properties() {
         let mut parser = Parser::new("{x, y, z}");
         let result = parser.parse();
-        assert!(result.is_ok(), "Failed to parse object with shorthand properties");
+        assert!(
+            result.is_ok(),
+            "Failed to parse object with shorthand properties"
+        );
     }
 }

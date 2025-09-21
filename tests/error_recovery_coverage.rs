@@ -2,10 +2,10 @@
 // Target: Test all error paths and recovery mechanisms
 // Sprint 80: ALL NIGHT Coverage Marathon Phase 10
 
-use ruchy::frontend::parser::Parser;
-use ruchy::frontend::lexer::Lexer;
-use ruchy::runtime::interpreter::Interpreter;
 use ruchy::compile::Compiler;
+use ruchy::frontend::lexer::Lexer;
+use ruchy::frontend::parser::Parser;
+use ruchy::runtime::interpreter::Interpreter;
 
 // Parser error recovery
 #[test]
@@ -189,7 +189,8 @@ fn test_recover_from_panic() {
         // This might panic
         let mut parser = Parser::new("((((((((((");
         let _ = parser.parse();
-    }).ok();
+    })
+    .ok();
 
     // Should still be able to continue
     assert!(true);

@@ -4,8 +4,8 @@
 
 use assert_cmd::Command;
 use predicates::prelude::*;
-use tempfile::NamedTempFile;
 use std::io::Write;
+use tempfile::NamedTempFile;
 
 #[test]
 fn test_ruchy_version() {
@@ -39,31 +39,25 @@ fn test_ruchy_eval() {
 fn test_ruchy_check_valid() {
     let mut file = NamedTempFile::new().unwrap();
     writeln!(file, "let x = 42").unwrap();
-    
+
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
-    cmd.arg("check")
-        .arg(file.path())
-        .assert()
-        .success();
+    cmd.arg("check").arg(file.path()).assert().success();
 }
 
 #[test]
 fn test_ruchy_check_invalid() {
     let mut file = NamedTempFile::new().unwrap();
     writeln!(file, "let x =").unwrap();
-    
+
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
-    cmd.arg("check")
-        .arg(file.path())
-        .assert()
-        .failure();
+    cmd.arg("check").arg(file.path()).assert().failure();
 }
 
 #[test]
 fn test_ruchy_ast() {
     let mut file = NamedTempFile::new().unwrap();
     writeln!(file, "let x = 42").unwrap();
-    
+
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
     cmd.arg("ast")
         .arg(file.path())
@@ -76,19 +70,16 @@ fn test_ruchy_ast() {
 fn test_ruchy_fmt() {
     let mut file = NamedTempFile::new().unwrap();
     writeln!(file, "let   x   =   42").unwrap();
-    
+
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
-    cmd.arg("fmt")
-        .arg(file.path())
-        .assert()
-        .success();
+    cmd.arg("fmt").arg(file.path()).assert().success();
 }
 
 #[test]
 fn test_ruchy_transpile() {
     let mut file = NamedTempFile::new().unwrap();
     writeln!(file, "let x = 42").unwrap();
-    
+
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
     cmd.arg("transpile")
         .arg(file.path())
@@ -101,7 +92,7 @@ fn test_ruchy_transpile() {
 fn test_ruchy_run() {
     let mut file = NamedTempFile::new().unwrap();
     writeln!(file, r#"println("Running test")"#).unwrap();
-    
+
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
     cmd.arg("run")
         .arg(file.path())

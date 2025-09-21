@@ -1,7 +1,7 @@
 //! TDD Tests for Debugging Support
 //! Sprint v3.20.0 - Debugging infrastructure and tools
 
-use ruchy::debugger::{Debugger, Breakpoint, DebugEvent, StackFrame};
+use ruchy::debugger::{Breakpoint, DebugEvent, Debugger, StackFrame};
 use ruchy::frontend::parser::Parser;
 use ruchy::runtime::interpreter::Interpreter;
 
@@ -347,7 +347,9 @@ mod debug_events {
         debugger.run();
 
         let events = debugger.get_events();
-        assert!(events.iter().any(|e| matches!(e, DebugEvent::BreakpointHit(_))));
+        assert!(events
+            .iter()
+            .any(|e| matches!(e, DebugEvent::BreakpointHit(_))));
     }
 
     #[test]
@@ -374,7 +376,9 @@ mod debug_events {
         debugger.run();
 
         let events = debugger.get_events();
-        assert!(events.iter().any(|e| matches!(e, DebugEvent::ProgramTerminated)));
+        assert!(events
+            .iter()
+            .any(|e| matches!(e, DebugEvent::ProgramTerminated)));
     }
 
     #[test]
@@ -393,7 +397,9 @@ mod debug_events {
         debugger.run();
 
         let events = debugger.get_events();
-        assert!(events.iter().any(|e| matches!(e, DebugEvent::ExceptionThrown(_))));
+        assert!(events
+            .iter()
+            .any(|e| matches!(e, DebugEvent::ExceptionThrown(_))));
     }
 }
 

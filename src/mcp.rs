@@ -10,14 +10,14 @@ pub mod tool_discovery;
 // Re-export tool discovery for easy access
 pub use tool_discovery::RuchyToolDiscovery;
 // Re-export all pmcp types except Result to avoid conflicts
+use crate::middleend::types::MonoType;
+use crate::runtime::ActorSystem;
+use anyhow::{anyhow, Result};
 pub use pmcp::{
     async_trait, Client, ClientCapabilities, Error as PmcpError, PromptHandler,
     RequestHandlerExtra, ResourceHandler, Server, ServerCapabilities, StdioTransport, ToolHandler,
     Transport,
 };
-use crate::middleend::types::MonoType;
-use crate::runtime::ActorSystem;
-use anyhow::{anyhow, Result};
 use serde_json::Value;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -41,28 +41,28 @@ impl RuchyMCP {
     }
     /// Set the actor system for actor-based MCP tools
     #[must_use]
-/// # Examples
-/// 
-/// ```
-/// use ruchy::mcp::with_actor_system;
-/// 
-/// let result = with_actor_system(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn with_actor_system(mut self, actor_system: Arc<ActorSystem>) -> Self {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::mcp::with_actor_system;
+    ///
+    /// let result = with_actor_system(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn with_actor_system(mut self, actor_system: Arc<ActorSystem>) -> Self {
         self.actor_system = Some(actor_system);
         self
     }
     /// Register a Ruchy type for MCP tool validation
-/// # Examples
-/// 
-/// ```
-/// use ruchy::mcp::register_type;
-/// 
-/// let result = register_type(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn register_type(&mut self, name: String, mono_type: MonoType) {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::mcp::register_type;
+    ///
+    /// let result = register_type(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn register_type(&mut self, name: String, mono_type: MonoType) {
         self.type_registry.insert(name, mono_type);
     }
     /// Validate a JSON value against a registered Ruchy type
@@ -273,7 +273,8 @@ fn create_score_tool() -> (&'static str, RuchyMCPTool) {
                 let code = args["code"]
                     .as_str()
                     .ok_or_else(|| anyhow!("Missing 'code' field"))?;
-                let depth = args.get("depth")
+                let depth = args
+                    .get("depth")
                     .and_then(|v| v.as_str())
                     .unwrap_or("standard");
                 // Parse and analyze the code
@@ -364,7 +365,8 @@ fn create_format_tool() -> (&'static str, RuchyMCPTool) {
                     .as_str()
                     .ok_or_else(|| anyhow!("Missing 'code' field"))?;
                 #[allow(clippy::cast_possible_truncation)]
-                let line_width = args.get("line_width")
+                let line_width = args
+                    .get("line_width")
                     .and_then(serde_json::Value::as_u64)
                     .unwrap_or(100) as usize;
                 // For now, return the code as-is with formatting metadata
@@ -392,10 +394,12 @@ fn create_analyze_tool() -> (&'static str, RuchyMCPTool) {
                 let code = args["code"]
                     .as_str()
                     .ok_or_else(|| anyhow!("Missing 'code' field"))?;
-                let include_ast = args.get("include_ast")
+                let include_ast = args
+                    .get("include_ast")
                     .and_then(serde_json::Value::as_bool)
                     .unwrap_or(false);
-                let include_metrics = args.get("include_metrics")
+                let include_metrics = args
+                    .get("include_metrics")
                     .and_then(serde_json::Value::as_bool)
                     .unwrap_or(true);
                 // Parse and analyze
@@ -596,9 +600,9 @@ mod tests {
     }
     #[tokio::test]
     async fn test_ruchy_tool_handler() {
+        #[cfg(test)]
+        use proptest::prelude::*;
         use tokio_util::sync::CancellationToken;
-#[cfg(test)]
-use proptest::prelude::*;
         let tool = RuchyMCPTool::new("echo-tool".to_string(), "Echo input".to_string(), |args| {
             Ok(args)
         });
@@ -631,9 +635,9 @@ use proptest::prelude::*;
 }
 #[cfg(test)]
 mod property_tests_mcp {
-    use proptest::proptest;
     use super::*;
     use proptest::prelude::*;
+    use proptest::proptest;
     proptest! {
         /// Property: Function never panics on any input
         #[test]

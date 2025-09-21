@@ -1,9 +1,9 @@
 // EXTREME TDD: Simple interpreter tests that compile and run
 // Following Toyota Way: Fix root causes, not symptoms
 
+use ruchy::frontend::ast::{BinaryOp, Expr, ExprKind, Literal, UnaryOp};
 use ruchy::runtime::interpreter::Interpreter;
 use ruchy::runtime::repl::Value;
-use ruchy::frontend::ast::{Expr, ExprKind, Literal, BinaryOp, UnaryOp};
 use std::rc::Rc;
 
 #[cfg(test)]
@@ -13,7 +13,7 @@ use proptest::prelude::*;
 fn make_literal(value: i64) -> Expr {
     Expr::new(
         ExprKind::Literal(Literal::Integer(value)),
-        ruchy::frontend::ast::Span { start: 0, end: 0 }
+        ruchy::frontend::ast::Span { start: 0, end: 0 },
     )
 }
 
@@ -24,7 +24,7 @@ fn make_binary_op(left: Expr, op: BinaryOp, right: Expr) -> Expr {
             op,
             right: Box::new(right),
         },
-        ruchy::frontend::ast::Span { start: 0, end: 0 }
+        ruchy::frontend::ast::Span { start: 0, end: 0 },
     )
 }
 
@@ -39,11 +39,7 @@ fn test_eval_integer_literal() {
 #[test]
 fn test_eval_addition() {
     let mut interpreter = Interpreter::new();
-    let expr = make_binary_op(
-        make_literal(2),
-        BinaryOp::Add,
-        make_literal(3)
-    );
+    let expr = make_binary_op(make_literal(2), BinaryOp::Add, make_literal(3));
     let result = interpreter.eval_expr(&expr).unwrap();
     assert_eq!(result, Value::Integer(5));
 }
@@ -51,11 +47,7 @@ fn test_eval_addition() {
 #[test]
 fn test_eval_subtraction() {
     let mut interpreter = Interpreter::new();
-    let expr = make_binary_op(
-        make_literal(10),
-        BinaryOp::Subtract,
-        make_literal(3)
-    );
+    let expr = make_binary_op(make_literal(10), BinaryOp::Subtract, make_literal(3));
     let result = interpreter.eval_expr(&expr).unwrap();
     assert_eq!(result, Value::Integer(7));
 }
@@ -63,11 +55,7 @@ fn test_eval_subtraction() {
 #[test]
 fn test_eval_multiplication() {
     let mut interpreter = Interpreter::new();
-    let expr = make_binary_op(
-        make_literal(4),
-        BinaryOp::Multiply,
-        make_literal(5)
-    );
+    let expr = make_binary_op(make_literal(4), BinaryOp::Multiply, make_literal(5));
     let result = interpreter.eval_expr(&expr).unwrap();
     assert_eq!(result, Value::Integer(20));
 }
@@ -75,11 +63,7 @@ fn test_eval_multiplication() {
 #[test]
 fn test_eval_division() {
     let mut interpreter = Interpreter::new();
-    let expr = make_binary_op(
-        make_literal(20),
-        BinaryOp::Divide,
-        make_literal(4)
-    );
+    let expr = make_binary_op(make_literal(20), BinaryOp::Divide, make_literal(4));
     let result = interpreter.eval_expr(&expr).unwrap();
     assert_eq!(result, Value::Integer(5));
 }
@@ -87,11 +71,7 @@ fn test_eval_division() {
 #[test]
 fn test_eval_modulo() {
     let mut interpreter = Interpreter::new();
-    let expr = make_binary_op(
-        make_literal(10),
-        BinaryOp::Modulo,
-        make_literal(3)
-    );
+    let expr = make_binary_op(make_literal(10), BinaryOp::Modulo, make_literal(3));
     let result = interpreter.eval_expr(&expr).unwrap();
     assert_eq!(result, Value::Integer(1));
 }
@@ -99,11 +79,7 @@ fn test_eval_modulo() {
 #[test]
 fn test_eval_comparison_equal() {
     let mut interpreter = Interpreter::new();
-    let expr = make_binary_op(
-        make_literal(5),
-        BinaryOp::Equal,
-        make_literal(5)
-    );
+    let expr = make_binary_op(make_literal(5), BinaryOp::Equal, make_literal(5));
     let result = interpreter.eval_expr(&expr).unwrap();
     assert_eq!(result, Value::Bool(true));
 }
@@ -111,11 +87,7 @@ fn test_eval_comparison_equal() {
 #[test]
 fn test_eval_comparison_not_equal() {
     let mut interpreter = Interpreter::new();
-    let expr = make_binary_op(
-        make_literal(5),
-        BinaryOp::NotEqual,
-        make_literal(3)
-    );
+    let expr = make_binary_op(make_literal(5), BinaryOp::NotEqual, make_literal(3));
     let result = interpreter.eval_expr(&expr).unwrap();
     assert_eq!(result, Value::Bool(true));
 }
@@ -123,11 +95,7 @@ fn test_eval_comparison_not_equal() {
 #[test]
 fn test_eval_comparison_less() {
     let mut interpreter = Interpreter::new();
-    let expr = make_binary_op(
-        make_literal(3),
-        BinaryOp::Less,
-        make_literal(5)
-    );
+    let expr = make_binary_op(make_literal(3), BinaryOp::Less, make_literal(5));
     let result = interpreter.eval_expr(&expr).unwrap();
     assert_eq!(result, Value::Bool(true));
 }
@@ -135,11 +103,7 @@ fn test_eval_comparison_less() {
 #[test]
 fn test_eval_comparison_greater() {
     let mut interpreter = Interpreter::new();
-    let expr = make_binary_op(
-        make_literal(5),
-        BinaryOp::Greater,
-        make_literal(3)
-    );
+    let expr = make_binary_op(make_literal(5), BinaryOp::Greater, make_literal(3));
     let result = interpreter.eval_expr(&expr).unwrap();
     assert_eq!(result, Value::Bool(true));
 }
@@ -149,7 +113,7 @@ fn test_eval_string_literal() {
     let mut interpreter = Interpreter::new();
     let expr = Expr::new(
         ExprKind::Literal(Literal::String("hello".to_string())),
-        ruchy::frontend::ast::Span { start: 0, end: 0 }
+        ruchy::frontend::ast::Span { start: 0, end: 0 },
     );
     let result = interpreter.eval_expr(&expr).unwrap();
     assert_eq!(result, Value::String(Rc::new("hello".to_string())));
@@ -160,7 +124,7 @@ fn test_eval_boolean_literal_true() {
     let mut interpreter = Interpreter::new();
     let expr = Expr::new(
         ExprKind::Literal(Literal::Bool(true)),
-        ruchy::frontend::ast::Span { start: 0, end: 0 }
+        ruchy::frontend::ast::Span { start: 0, end: 0 },
     );
     let result = interpreter.eval_expr(&expr).unwrap();
     assert_eq!(result, Value::Bool(true));
@@ -171,7 +135,7 @@ fn test_eval_boolean_literal_false() {
     let mut interpreter = Interpreter::new();
     let expr = Expr::new(
         ExprKind::Literal(Literal::Bool(false)),
-        ruchy::frontend::ast::Span { start: 0, end: 0 }
+        ruchy::frontend::ast::Span { start: 0, end: 0 },
     );
     let result = interpreter.eval_expr(&expr).unwrap();
     assert_eq!(result, Value::Bool(false));
@@ -182,7 +146,7 @@ fn test_eval_float_literal() {
     let mut interpreter = Interpreter::new();
     let expr = Expr::new(
         ExprKind::Literal(Literal::Float(3.14)),
-        ruchy::frontend::ast::Span { start: 0, end: 0 }
+        ruchy::frontend::ast::Span { start: 0, end: 0 },
     );
     let result = interpreter.eval_expr(&expr).unwrap();
     assert_eq!(result, Value::Float(3.14));
@@ -193,7 +157,7 @@ fn test_eval_null_literal() {
     let mut interpreter = Interpreter::new();
     let expr = Expr::new(
         ExprKind::Literal(Literal::Null),
-        ruchy::frontend::ast::Span { start: 0, end: 0 }
+        ruchy::frontend::ast::Span { start: 0, end: 0 },
     );
     let result = interpreter.eval_expr(&expr).unwrap();
     assert_eq!(result, Value::Nil);
@@ -204,7 +168,7 @@ fn test_eval_char_literal() {
     let mut interpreter = Interpreter::new();
     let expr = Expr::new(
         ExprKind::Literal(Literal::Char('a')),
-        ruchy::frontend::ast::Span { start: 0, end: 0 }
+        ruchy::frontend::ast::Span { start: 0, end: 0 },
     );
     let result = interpreter.eval_expr(&expr).unwrap();
     assert_eq!(result, Value::String(Rc::new("a".to_string())));
@@ -214,12 +178,8 @@ fn test_eval_char_literal() {
 fn test_eval_list_literal() {
     let mut interpreter = Interpreter::new();
     let expr = Expr::new(
-        ExprKind::List(vec![
-            make_literal(1),
-            make_literal(2),
-            make_literal(3),
-        ]),
-        ruchy::frontend::ast::Span { start: 0, end: 0 }
+        ExprKind::List(vec![make_literal(1), make_literal(2), make_literal(3)]),
+        ruchy::frontend::ast::Span { start: 0, end: 0 },
     );
     let result = interpreter.eval_expr(&expr).unwrap();
     match result {
@@ -241,14 +201,14 @@ fn test_eval_tuple_literal() {
             make_literal(1),
             Expr::new(
                 ExprKind::Literal(Literal::String("hello".to_string())),
-                ruchy::frontend::ast::Span { start: 0, end: 0 }
+                ruchy::frontend::ast::Span { start: 0, end: 0 },
             ),
             Expr::new(
                 ExprKind::Literal(Literal::Bool(true)),
-                ruchy::frontend::ast::Span { start: 0, end: 0 }
+                ruchy::frontend::ast::Span { start: 0, end: 0 },
             ),
         ]),
-        ruchy::frontend::ast::Span { start: 0, end: 0 }
+        ruchy::frontend::ast::Span { start: 0, end: 0 },
     );
     let result = interpreter.eval_expr(&expr).unwrap();
     match result {
@@ -266,12 +226,8 @@ fn test_eval_tuple_literal() {
 fn test_eval_block() {
     let mut interpreter = Interpreter::new();
     let expr = Expr::new(
-        ExprKind::Block(vec![
-            make_literal(1),
-            make_literal(2),
-            make_literal(3),
-        ]),
-        ruchy::frontend::ast::Span { start: 0, end: 0 }
+        ExprKind::Block(vec![make_literal(1), make_literal(2), make_literal(3)]),
+        ruchy::frontend::ast::Span { start: 0, end: 0 },
     );
     let result = interpreter.eval_expr(&expr).unwrap();
     assert_eq!(result, Value::Integer(3)); // Block returns last value
@@ -284,12 +240,12 @@ fn test_eval_if_true() {
         ExprKind::If {
             condition: Box::new(Expr::new(
                 ExprKind::Literal(Literal::Bool(true)),
-                ruchy::frontend::ast::Span { start: 0, end: 0 }
+                ruchy::frontend::ast::Span { start: 0, end: 0 },
             )),
             then_branch: Box::new(make_literal(1)),
             else_branch: Some(Box::new(make_literal(2))),
         },
-        ruchy::frontend::ast::Span { start: 0, end: 0 }
+        ruchy::frontend::ast::Span { start: 0, end: 0 },
     );
     let result = interpreter.eval_expr(&expr).unwrap();
     assert_eq!(result, Value::Integer(1));
@@ -302,12 +258,12 @@ fn test_eval_if_false() {
         ExprKind::If {
             condition: Box::new(Expr::new(
                 ExprKind::Literal(Literal::Bool(false)),
-                ruchy::frontend::ast::Span { start: 0, end: 0 }
+                ruchy::frontend::ast::Span { start: 0, end: 0 },
             )),
             then_branch: Box::new(make_literal(1)),
             else_branch: Some(Box::new(make_literal(2))),
         },
-        ruchy::frontend::ast::Span { start: 0, end: 0 }
+        ruchy::frontend::ast::Span { start: 0, end: 0 },
     );
     let result = interpreter.eval_expr(&expr).unwrap();
     assert_eq!(result, Value::Integer(2));
@@ -319,13 +275,13 @@ fn test_eval_logical_and_true() {
     let expr = make_binary_op(
         Expr::new(
             ExprKind::Literal(Literal::Bool(true)),
-            ruchy::frontend::ast::Span { start: 0, end: 0 }
+            ruchy::frontend::ast::Span { start: 0, end: 0 },
         ),
         BinaryOp::And,
         Expr::new(
             ExprKind::Literal(Literal::Bool(true)),
-            ruchy::frontend::ast::Span { start: 0, end: 0 }
-        )
+            ruchy::frontend::ast::Span { start: 0, end: 0 },
+        ),
     );
     let result = interpreter.eval_expr(&expr).unwrap();
     assert_eq!(result, Value::Bool(true));
@@ -337,13 +293,13 @@ fn test_eval_logical_and_false() {
     let expr = make_binary_op(
         Expr::new(
             ExprKind::Literal(Literal::Bool(true)),
-            ruchy::frontend::ast::Span { start: 0, end: 0 }
+            ruchy::frontend::ast::Span { start: 0, end: 0 },
         ),
         BinaryOp::And,
         Expr::new(
             ExprKind::Literal(Literal::Bool(false)),
-            ruchy::frontend::ast::Span { start: 0, end: 0 }
-        )
+            ruchy::frontend::ast::Span { start: 0, end: 0 },
+        ),
     );
     let result = interpreter.eval_expr(&expr).unwrap();
     assert_eq!(result, Value::Bool(false));
@@ -355,13 +311,13 @@ fn test_eval_logical_or_true() {
     let expr = make_binary_op(
         Expr::new(
             ExprKind::Literal(Literal::Bool(false)),
-            ruchy::frontend::ast::Span { start: 0, end: 0 }
+            ruchy::frontend::ast::Span { start: 0, end: 0 },
         ),
         BinaryOp::Or,
         Expr::new(
             ExprKind::Literal(Literal::Bool(true)),
-            ruchy::frontend::ast::Span { start: 0, end: 0 }
-        )
+            ruchy::frontend::ast::Span { start: 0, end: 0 },
+        ),
     );
     let result = interpreter.eval_expr(&expr).unwrap();
     assert_eq!(result, Value::Bool(true));
@@ -373,13 +329,13 @@ fn test_eval_logical_or_false() {
     let expr = make_binary_op(
         Expr::new(
             ExprKind::Literal(Literal::Bool(false)),
-            ruchy::frontend::ast::Span { start: 0, end: 0 }
+            ruchy::frontend::ast::Span { start: 0, end: 0 },
         ),
         BinaryOp::Or,
         Expr::new(
             ExprKind::Literal(Literal::Bool(false)),
-            ruchy::frontend::ast::Span { start: 0, end: 0 }
-        )
+            ruchy::frontend::ast::Span { start: 0, end: 0 },
+        ),
     );
     let result = interpreter.eval_expr(&expr).unwrap();
     assert_eq!(result, Value::Bool(false));
@@ -388,11 +344,7 @@ fn test_eval_logical_or_false() {
 #[test]
 fn test_eval_bitwise_and() {
     let mut interpreter = Interpreter::new();
-    let expr = make_binary_op(
-        make_literal(5),
-        BinaryOp::BitwiseAnd,
-        make_literal(3)
-    );
+    let expr = make_binary_op(make_literal(5), BinaryOp::BitwiseAnd, make_literal(3));
     let result = interpreter.eval_expr(&expr).unwrap();
     assert_eq!(result, Value::Integer(1));
 }
@@ -400,11 +352,7 @@ fn test_eval_bitwise_and() {
 #[test]
 fn test_eval_bitwise_or() {
     let mut interpreter = Interpreter::new();
-    let expr = make_binary_op(
-        make_literal(5),
-        BinaryOp::BitwiseOr,
-        make_literal(3)
-    );
+    let expr = make_binary_op(make_literal(5), BinaryOp::BitwiseOr, make_literal(3));
     let result = interpreter.eval_expr(&expr).unwrap();
     assert_eq!(result, Value::Integer(7));
 }
@@ -412,11 +360,7 @@ fn test_eval_bitwise_or() {
 #[test]
 fn test_eval_bitwise_xor() {
     let mut interpreter = Interpreter::new();
-    let expr = make_binary_op(
-        make_literal(5),
-        BinaryOp::BitwiseXor,
-        make_literal(3)
-    );
+    let expr = make_binary_op(make_literal(5), BinaryOp::BitwiseXor, make_literal(3));
     let result = interpreter.eval_expr(&expr).unwrap();
     assert_eq!(result, Value::Integer(6));
 }
@@ -430,10 +374,10 @@ fn test_eval_unary_not() {
             op: UnaryOp::Not,
             operand: Box::new(Expr::new(
                 ExprKind::Literal(Literal::Bool(true)),
-                ruchy::frontend::ast::Span { start: 0, end: 0 }
+                ruchy::frontend::ast::Span { start: 0, end: 0 },
             )),
         },
-        ruchy::frontend::ast::Span { start: 0, end: 0 }
+        ruchy::frontend::ast::Span { start: 0, end: 0 },
     );
     let result = interpreter.eval_expr(&expr).unwrap();
     assert_eq!(result, Value::Bool(false));
@@ -447,7 +391,7 @@ fn test_eval_unary_negate() {
             op: UnaryOp::Negate,
             operand: Box::new(make_literal(42)),
         },
-        ruchy::frontend::ast::Span { start: 0, end: 0 }
+        ruchy::frontend::ast::Span { start: 0, end: 0 },
     );
     let result = interpreter.eval_expr(&expr).unwrap();
     assert_eq!(result, Value::Integer(-42));
@@ -464,11 +408,11 @@ fn test_eval_let() {
             value: Box::new(make_literal(100)),
             body: Box::new(Expr::new(
                 ExprKind::Identifier("x".to_string()),
-                ruchy::frontend::ast::Span { start: 0, end: 0 }
+                ruchy::frontend::ast::Span { start: 0, end: 0 },
             )),
             is_mutable: false,
         },
-        ruchy::frontend::ast::Span { start: 0, end: 0 }
+        ruchy::frontend::ast::Span { start: 0, end: 0 },
     );
     let result = interpreter.eval_expr(&expr).unwrap();
     // Let expression returns the value of its body
@@ -490,22 +434,22 @@ fn test_eval_assign() {
                         ExprKind::Assign {
                             target: Box::new(Expr::new(
                                 ExprKind::Identifier("y".to_string()),
-                                ruchy::frontend::ast::Span { start: 0, end: 0 }
+                                ruchy::frontend::ast::Span { start: 0, end: 0 },
                             )),
                             value: Box::new(make_literal(42)),
                         },
-                        ruchy::frontend::ast::Span { start: 0, end: 0 }
+                        ruchy::frontend::ast::Span { start: 0, end: 0 },
                     ),
                     Expr::new(
                         ExprKind::Identifier("y".to_string()),
-                        ruchy::frontend::ast::Span { start: 0, end: 0 }
+                        ruchy::frontend::ast::Span { start: 0, end: 0 },
                     ),
                 ]),
-                ruchy::frontend::ast::Span { start: 0, end: 0 }
+                ruchy::frontend::ast::Span { start: 0, end: 0 },
             )),
             is_mutable: true,
         },
-        ruchy::frontend::ast::Span { start: 0, end: 0 }
+        ruchy::frontend::ast::Span { start: 0, end: 0 },
     );
     let result = interpreter.eval_expr(&expr).unwrap();
     assert_eq!(result, Value::Integer(42));
@@ -521,11 +465,15 @@ fn test_eval_range() {
             end: Box::new(make_literal(5)),
             inclusive: false,
         },
-        ruchy::frontend::ast::Span { start: 0, end: 0 }
+        ruchy::frontend::ast::Span { start: 0, end: 0 },
     );
     let result = interpreter.eval_expr(&expr).unwrap();
     match result {
-        Value::Range { start, end, inclusive } => {
+        Value::Range {
+            start,
+            end,
+            inclusive,
+        } => {
             assert_eq!(*start, Value::Integer(1));
             assert_eq!(*end, Value::Integer(5));
             assert!(!inclusive);
@@ -551,42 +499,42 @@ fn test_eval_while() {
                             condition: Box::new(make_binary_op(
                                 Expr::new(
                                     ExprKind::Identifier("counter".to_string()),
-                                    ruchy::frontend::ast::Span { start: 0, end: 0 }
+                                    ruchy::frontend::ast::Span { start: 0, end: 0 },
                                 ),
                                 BinaryOp::Less,
-                                make_literal(3)
+                                make_literal(3),
                             )),
                             body: Box::new(Expr::new(
                                 ExprKind::Assign {
                                     target: Box::new(Expr::new(
                                         ExprKind::Identifier("counter".to_string()),
-                                        ruchy::frontend::ast::Span { start: 0, end: 0 }
+                                        ruchy::frontend::ast::Span { start: 0, end: 0 },
                                     )),
                                     value: Box::new(make_binary_op(
                                         Expr::new(
                                             ExprKind::Identifier("counter".to_string()),
-                                            ruchy::frontend::ast::Span { start: 0, end: 0 }
+                                            ruchy::frontend::ast::Span { start: 0, end: 0 },
                                         ),
                                         BinaryOp::Add,
-                                        make_literal(1)
+                                        make_literal(1),
                                     )),
                                 },
-                                ruchy::frontend::ast::Span { start: 0, end: 0 }
+                                ruchy::frontend::ast::Span { start: 0, end: 0 },
                             )),
                         },
-                        ruchy::frontend::ast::Span { start: 0, end: 0 }
+                        ruchy::frontend::ast::Span { start: 0, end: 0 },
                     ),
                     // Return the final counter value
                     Expr::new(
                         ExprKind::Identifier("counter".to_string()),
-                        ruchy::frontend::ast::Span { start: 0, end: 0 }
+                        ruchy::frontend::ast::Span { start: 0, end: 0 },
                     ),
                 ]),
-                ruchy::frontend::ast::Span { start: 0, end: 0 }
+                ruchy::frontend::ast::Span { start: 0, end: 0 },
             )),
             is_mutable: true,
         },
-        ruchy::frontend::ast::Span { start: 0, end: 0 }
+        ruchy::frontend::ast::Span { start: 0, end: 0 },
     );
     let result = interpreter.eval_expr(&expr).unwrap();
     assert_eq!(result, Value::Integer(3));

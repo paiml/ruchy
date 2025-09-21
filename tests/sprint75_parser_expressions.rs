@@ -7,22 +7,52 @@ use ruchy::frontend::parser::Parser;
 fn test_binary_operators_comprehensive() {
     let expressions = vec![
         // Arithmetic
-        "1 + 2", "3 - 4", "5 * 6", "7 / 8", "9 % 10",
-        "2 ** 3", "10 // 3",
+        "1 + 2",
+        "3 - 4",
+        "5 * 6",
+        "7 / 8",
+        "9 % 10",
+        "2 ** 3",
+        "10 // 3",
         // Comparison
-        "1 < 2", "3 <= 4", "5 > 6", "7 >= 8", "9 == 10", "11 != 12",
+        "1 < 2",
+        "3 <= 4",
+        "5 > 6",
+        "7 >= 8",
+        "9 == 10",
+        "11 != 12",
         // Logical
-        "true && false", "true || false", "!true",
+        "true && false",
+        "true || false",
+        "!true",
         // Bitwise
-        "1 & 2", "3 | 4", "5 ^ 6", "~7", "8 << 2", "16 >> 2",
+        "1 & 2",
+        "3 | 4",
+        "5 ^ 6",
+        "~7",
+        "8 << 2",
+        "16 >> 2",
         // Assignment
-        "x = 5", "x += 1", "x -= 1", "x *= 2", "x /= 2", "x %= 3",
-        "x &= 1", "x |= 2", "x ^= 3", "x <<= 1", "x >>= 1",
+        "x = 5",
+        "x += 1",
+        "x -= 1",
+        "x *= 2",
+        "x /= 2",
+        "x %= 3",
+        "x &= 1",
+        "x |= 2",
+        "x ^= 3",
+        "x <<= 1",
+        "x >>= 1",
         // Compound
-        "1 + 2 * 3", "(1 + 2) * 3", "1 + 2 + 3 + 4",
-        "true && false || true", "!true && false",
+        "1 + 2 * 3",
+        "(1 + 2) * 3",
+        "1 + 2 + 3 + 4",
+        "true && false || true",
+        "!true && false",
         // Chain comparisons
-        "1 < 2 < 3", "5 > 4 > 3",
+        "1 < 2 < 3",
+        "5 > 4 > 3",
     ];
 
     for expr in expressions {
@@ -35,9 +65,7 @@ fn test_binary_operators_comprehensive() {
 #[test]
 fn test_unary_operators() {
     let expressions = vec![
-        "-5", "+5", "!true", "~42",
-        "--5", "++x", "x++", "x--",
-        "-+5", "+-5", "!!true", "~~42",
+        "-5", "+5", "!true", "~42", "--5", "++x", "x++", "x--", "-+5", "+-5", "!!true", "~~42",
     ];
 
     for expr in expressions {
@@ -51,31 +79,61 @@ fn test_unary_operators() {
 fn test_literals_comprehensive() {
     let literals = vec![
         // Integers
-        "42", "0", "-1", "1_000_000",
-        "0x1F", "0xDEADBEEF", "0X10",
-        "0o755", "0o777", "0O10",
-        "0b1010", "0b11111111", "0B10",
+        "42",
+        "0",
+        "-1",
+        "1_000_000",
+        "0x1F",
+        "0xDEADBEEF",
+        "0X10",
+        "0o755",
+        "0o777",
+        "0O10",
+        "0b1010",
+        "0b11111111",
+        "0B10",
         // Floats
-        "3.14", "2.718", "0.5", ".5", "5.",
-        "1e10", "2.5e-4", "1E10", "2.5E-4",
+        "3.14",
+        "2.718",
+        "0.5",
+        ".5",
+        "5.",
+        "1e10",
+        "2.5e-4",
+        "1E10",
+        "2.5E-4",
         // Strings
-        r#""hello""#, r#"'world'"#, r#""escaped \"quote\"""#,
-        r#""line\nbreak""#, r#""tab\there""#, r#""null\0byte""#,
-        r#""\x41""#, r#""\u{1F600}""#,
+        r#""hello""#,
+        r#"'world'"#,
+        r#""escaped \"quote\"""#,
+        r#""line\nbreak""#,
+        r#""tab\there""#,
+        r#""null\0byte""#,
+        r#""\x41""#,
+        r#""\u{1F600}""#,
         // Raw strings
-        r#"r"raw string""#, r#"r'raw string'"#,
+        r#"r"raw string""#,
+        r#"r'raw string'"#,
         r##"r#"raw with "quotes""#"##,
         // Template strings
-        r#"f"Hello {name}""#, r#"f"2 + 2 = {2 + 2}""#,
+        r#"f"Hello {name}""#,
+        r#"f"2 + 2 = {2 + 2}""#,
         // Multi-line strings
         r#""""triple quoted""""#,
         r#"'''triple single quoted'''"#,
         // Characters
-        "'a'", "'\\n'", "'\\t'", "'\\''", "'\"'",
+        "'a'",
+        "'\\n'",
+        "'\\t'",
+        "'\\''",
+        "'\"'",
         // Booleans
-        "true", "false",
+        "true",
+        "false",
         // Null
-        "null", "nil", "None",
+        "null",
+        "nil",
+        "None",
     ];
 
     for lit in literals {
@@ -88,8 +146,12 @@ fn test_literals_comprehensive() {
 #[test]
 fn test_array_expressions() {
     let arrays = vec![
-        "[]", "[1]", "[1, 2]", "[1, 2, 3]",
-        "[[1, 2], [3, 4]]", "[[[1]]]",
+        "[]",
+        "[1]",
+        "[1, 2]",
+        "[1, 2, 3]",
+        "[[1, 2], [3, 4]]",
+        "[[[1]]]",
         "[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",
         "[x for x in range(10)]",
         "[x * 2 for x in [1, 2, 3]]",
@@ -111,7 +173,7 @@ fn test_object_expressions() {
         "{}",
         r#"{ "key": "value" }"#,
         "{ x: 1, y: 2 }",
-        "{ x, y }", // shorthand
+        "{ x, y }",             // shorthand
         "{ ...obj1, ...obj2 }", // spread
         r#"{ "nested": { "deep": { "value": 123 } } }"#,
         "{ [computed]: value }",
@@ -129,9 +191,14 @@ fn test_object_expressions() {
 #[test]
 fn test_tuple_expressions() {
     let tuples = vec![
-        "()", "(1,)", "(1, 2)", "(1, 2, 3)",
-        "((1, 2), (3, 4))", "(((1,),),)",
-        "(x, y, z)", "(a, b, c, d, e, f)",
+        "()",
+        "(1,)",
+        "(1, 2)",
+        "(1, 2, 3)",
+        "((1, 2), (3, 4))",
+        "(((1,),),)",
+        "(x, y, z)",
+        "(a, b, c, d, e, f)",
     ];
 
     for tup in tuples {
@@ -144,13 +211,21 @@ fn test_tuple_expressions() {
 #[test]
 fn test_function_calls() {
     let calls = vec![
-        "f()", "f(1)", "f(1, 2)", "f(1, 2, 3)",
-        "f(x, y, z)", "f(a, b, c, d, e)",
+        "f()",
+        "f(1)",
+        "f(1, 2)",
+        "f(1, 2, 3)",
+        "f(x, y, z)",
+        "f(a, b, c, d, e)",
         "f(g(h(i(j(k())))))",
-        "obj.method()", "obj.method(1, 2)",
-        "arr[0]()", "fn()()()())",
+        "obj.method()",
+        "obj.method(1, 2)",
+        "arr[0]()",
+        "fn()()()())",
         "f(1, b=2, c=3)", // keyword args
-        "f(*args)", "f(**kwargs)", "f(*args, **kwargs)",
+        "f(*args)",
+        "f(**kwargs)",
+        "f(*args, **kwargs)",
     ];
 
     for call in calls {
@@ -163,12 +238,23 @@ fn test_function_calls() {
 #[test]
 fn test_index_and_slice() {
     let expressions = vec![
-        "arr[0]", "arr[1]", "arr[-1]",
-        "arr[i]", "arr[i + 1]", "arr[2 * i]",
-        "arr[0][1][2]", "matrix[row][col]",
-        "arr[1:5]", "arr[:5]", "arr[1:]", "arr[:]",
-        "arr[::2]", "arr[1:10:2]", "arr[::-1]",
-        "s[start:end]", "s[start:end:step]",
+        "arr[0]",
+        "arr[1]",
+        "arr[-1]",
+        "arr[i]",
+        "arr[i + 1]",
+        "arr[2 * i]",
+        "arr[0][1][2]",
+        "matrix[row][col]",
+        "arr[1:5]",
+        "arr[:5]",
+        "arr[1:]",
+        "arr[:]",
+        "arr[::2]",
+        "arr[1:10:2]",
+        "arr[::-1]",
+        "s[start:end]",
+        "s[start:end:step]",
     ];
 
     for expr in expressions {
@@ -181,10 +267,13 @@ fn test_index_and_slice() {
 #[test]
 fn test_member_access() {
     let expressions = vec![
-        "obj.field", "obj.method", "obj.nested.field",
+        "obj.field",
+        "obj.method",
+        "obj.nested.field",
         "obj.field.method().result",
-        "obj?.field", "obj?.method?()",  // optional chaining
-        "obj!.field", // non-null assertion
+        "obj?.field",
+        "obj?.method?()", // optional chaining
+        "obj!.field",     // non-null assertion
         "a.b.c.d.e.f.g",
     ];
 
@@ -198,11 +287,14 @@ fn test_member_access() {
 #[test]
 fn test_lambda_expressions() {
     let lambdas = vec![
-        "x => x", "x => x + 1", "(x, y) => x + y",
-        "() => 42", "x => { x * 2 }",
+        "x => x",
+        "x => x + 1",
+        "(x, y) => x + y",
+        "() => 42",
+        "x => { x * 2 }",
         "(a, b, c) => a + b + c",
         "x => y => x + y", // curried
-        "|x| x + 1", // alternative syntax
+        "|x| x + 1",       // alternative syntax
         "fn(x) { x + 1 }", // anonymous function
     ];
 
@@ -218,9 +310,9 @@ fn test_conditional_expressions() {
     let conditionals = vec![
         "true ? 1 : 2",
         "x > 0 ? x : -x",
-        "a ? b ? c : d : e",  // nested
+        "a ? b ? c : d : e", // nested
         "condition ? value1 : condition2 ? value2 : value3",
-        "x if x > 0 else -x",  // python style
+        "x if x > 0 else -x", // python style
     ];
 
     for cond in conditionals {
@@ -233,11 +325,15 @@ fn test_conditional_expressions() {
 #[test]
 fn test_type_expressions() {
     let types = vec![
-        "x as int", "y as string", "z as bool",
+        "x as int",
+        "y as string",
+        "z as bool",
         "value as? Type", // optional cast
         "value as! Type", // force cast
-        "x is int", "y is string",
-        "typeof x", "sizeof(Type)",
+        "x is int",
+        "y is string",
+        "typeof x",
+        "sizeof(Type)",
     ];
 
     for typ in types {
@@ -265,10 +361,7 @@ fn test_await_and_async() {
 
 #[test]
 fn test_yield_expressions() {
-    let expressions = vec![
-        "yield", "yield 42", "yield* gen()",
-        "yield from iterable",
-    ];
+    let expressions = vec!["yield", "yield 42", "yield* gen()", "yield from iterable"];
 
     for expr in expressions {
         let mut parser = Parser::new(expr);
@@ -280,7 +373,8 @@ fn test_yield_expressions() {
 #[test]
 fn test_pipeline_operator() {
     let pipelines = vec![
-        "x |> f", "x |> f |> g |> h",
+        "x |> f",
+        "x |> f |> g |> h",
         "data |> filter(x => x > 0) |> map(x => x * 2)",
         "[1, 2, 3] |> sum |> double",
     ];
@@ -295,9 +389,14 @@ fn test_pipeline_operator() {
 #[test]
 fn test_range_expressions() {
     let ranges = vec![
-        "1..10", "1..=10", "..10", "1..",
-        "start..end", "start..=end",
-        "'a'..'z'", "0.0..1.0",
+        "1..10",
+        "1..=10",
+        "..10",
+        "1..",
+        "start..end",
+        "start..=end",
+        "'a'..'z'",
+        "0.0..1.0",
     ];
 
     for range in ranges {
@@ -311,9 +410,7 @@ fn test_range_expressions() {
 fn test_error_recovery() {
     // These should parse with error recovery
     let malformed = vec![
-        "1 +", "* 2", "( ]", "{ }",
-        "fn(", "if (", "for x in",
-        "1...", "...2", "x.", ".y",
+        "1 +", "* 2", "( ]", "{ }", "fn(", "if (", "for x in", "1...", "...2", "x.", ".y",
     ];
 
     for expr in malformed {
@@ -325,16 +422,16 @@ fn test_error_recovery() {
 #[test]
 fn test_precedence_and_associativity() {
     let expressions = vec![
-        "1 + 2 * 3", // 7, not 9
-        "2 * 3 + 4", // 10, not 14
-        "1 + 2 + 3", // left associative
-        "a = b = c", // right associative
+        "1 + 2 * 3",             // 7, not 9
+        "2 * 3 + 4",             // 10, not 14
+        "1 + 2 + 3",             // left associative
+        "a = b = c",             // right associative
         "true || false && true", // && binds tighter
-        "1 < 2 == true", // comparison then equality
-        "x & 0xFF == 0x10", // bitwise vs comparison
-        "!x && y", // unary binds tighter
-        "-x * y", // unary binds tighter
-        "x++ + ++y", // postfix vs prefix
+        "1 < 2 == true",         // comparison then equality
+        "x & 0xFF == 0x10",      // bitwise vs comparison
+        "!x && y",               // unary binds tighter
+        "-x * y",                // unary binds tighter
+        "x++ + ++y",             // postfix vs prefix
     ];
 
     for expr in expressions {

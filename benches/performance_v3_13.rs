@@ -1,11 +1,11 @@
 //! Performance benchmarks for Sprint v3.13.0
 //! Focus on interpreter speed, memory usage, compilation time
 
-use criterion::{criterion_group, criterion_main, Criterion, BenchmarkId};
-use std::hint::black_box;
-use ruchy::frontend::parser::Parser;
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use ruchy::backend::transpiler::Transpiler;
 use ruchy::compile;
+use ruchy::frontend::parser::Parser;
+use std::hint::black_box;
 
 fn bench_parser_simple(c: &mut Criterion) {
     let inputs = vec![
@@ -18,16 +18,12 @@ fn bench_parser_simple(c: &mut Criterion) {
 
     let mut group = c.benchmark_group("parser_simple");
     for (name, input) in inputs {
-        group.bench_with_input(
-            BenchmarkId::new("parse", name),
-            &input,
-            |b, &input| {
-                b.iter(|| {
-                    let mut parser = Parser::new(input);
-                    let _ = black_box(parser.parse());
-                });
-            },
-        );
+        group.bench_with_input(BenchmarkId::new("parse", name), &input, |b, &input| {
+            b.iter(|| {
+                let mut parser = Parser::new(input);
+                let _ = black_box(parser.parse());
+            });
+        });
     }
     group.finish();
 }
@@ -75,19 +71,15 @@ fn bench_transpiler(c: &mut Criterion) {
 
     let mut group = c.benchmark_group("transpiler");
     for (name, input) in programs {
-        group.bench_with_input(
-            BenchmarkId::new("transpile", name),
-            &input,
-            |b, &input| {
-                let mut parser = Parser::new(input);
-                let ast = parser.parse().unwrap();
-                let transpiler = Transpiler::new();
-                
-                b.iter(|| {
-                    let _ = black_box(transpiler.transpile_to_string(&ast));
-                });
-            },
-        );
+        group.bench_with_input(BenchmarkId::new("transpile", name), &input, |b, &input| {
+            let mut parser = Parser::new(input);
+            let ast = parser.parse().unwrap();
+            let transpiler = Transpiler::new();
+
+            b.iter(|| {
+                let _ = black_box(transpiler.transpile_to_string(&ast));
+            });
+        });
     }
     group.finish();
 }
@@ -103,22 +95,19 @@ fn bench_compile_pipeline(c: &mut Criterion) {
 
     let mut group = c.benchmark_group("compile_pipeline");
     for (name, input) in expressions {
-        group.bench_with_input(
-            BenchmarkId::new("compile", name),
-            &input,
-            |b, &input| {
-                b.iter(|| {
-                    let _ = black_box(compile(input));
-                });
-            },
-        );
+        group.bench_with_input(BenchmarkId::new("compile", name), &input, |b, &input| {
+            b.iter(|| {
+                let _ = black_box(compile(input));
+            });
+        });
     }
     group.finish();
 }
 
 fn bench_memory_allocation(c: &mut Criterion) {
     c.bench_function("parser_allocation_stress", |b| {
-        let input = "[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(|x| x * 2).filter(|x| x > 5).reduce(|a, b| a + b)";
+        let input =
+            "[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(|x| x * 2).filter(|x| x > 5).reduce(|a, b| a + b)";
         b.iter(|| {
             let mut parser = Parser::new(input);
             let _ = black_box(parser.parse());
@@ -153,16 +142,9 @@ fn bench_recursive_compilation(c: &mut Criterion) {
     });
 }
 
-criterion_group!(
-    parser_benches,
-    bench_parser_simple,
-    bench_parser_complex
-);
+criterion_group!(parser_benches, bench_parser_simple, bench_parser_complex);
 
-criterion_group!(
-    transpiler_benches,
-    bench_transpiler
-);
+criterion_group!(transpiler_benches, bench_transpiler);
 
 criterion_group!(
     pipeline_benches,

@@ -2,11 +2,11 @@
 //!
 //! This module provides caching mechanisms to avoid re-parsing and
 //! re-compiling expressions that have been seen before.
+use crate::frontend::ast::Expr;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
 use std::rc::Rc;
-use crate::frontend::ast::Expr;
 /// A cache key that represents source code
 #[derive(Clone, Debug, Eq)]
 pub struct CacheKey {
@@ -313,8 +313,7 @@ mod tests {
 #[cfg(test)]
 mod property_tests_cache {
     use proptest::proptest;
-    
-    
+
     proptest! {
         /// Property: Function never panics on any input
         #[test]

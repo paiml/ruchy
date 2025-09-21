@@ -1,5 +1,9 @@
 //! Basic expression parsing - minimal version with only used functions
-use super::{ParserState, bail, Result, Expr, Token, ExprKind, Span, Literal, BinaryOp, UnaryOp, Param, Pattern, Type, TypeKind, MatchArm, StructField, TraitMethod, DataFrameColumn, ActorHandler, StringPart, EnumVariant};
+use super::{
+    bail, ActorHandler, BinaryOp, DataFrameColumn, EnumVariant, Expr, ExprKind, Literal, MatchArm,
+    Param, ParserState, Pattern, Result, Span, StringPart, StructField, Token, TraitMethod, Type,
+    TypeKind, UnaryOp,
+};
 pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
     let Some((token, span)) = state.tokens.peek() else {
         bail!("Unexpected end of input - expected expression");
@@ -40,86 +44,85 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
             Ok(Expr::new(ExprKind::Literal(Literal::Null), span))
         }
         // Identifier tokens - delegated to focused helper
-        Token::Identifier(_) | Token::Underscore => {
-            parse_identifier_token(state, &token, span)
-        }
+        Token::Identifier(_) | Token::Underscore => parse_identifier_token(state, &token, span),
         // Unary operator tokens - inlined for performance
         Token::Minus => {
             state.tokens.advance();
             let expr = super::parse_expr_with_precedence_recursive(state, 13)?; // High precedence for unary
-            Ok(Expr::new(ExprKind::Unary {
-                op: UnaryOp::Negate,
-                operand: Box::new(expr)
-            }, span))
+            Ok(Expr::new(
+                ExprKind::Unary {
+                    op: UnaryOp::Negate,
+                    operand: Box::new(expr),
+                },
+                span,
+            ))
         }
         Token::Bang => {
             state.tokens.advance();
             let expr = super::parse_expr_with_precedence_recursive(state, 13)?;
-            Ok(Expr::new(ExprKind::Unary {
-                op: UnaryOp::Not,
-                operand: Box::new(expr)
-            }, span))
+            Ok(Expr::new(
+                ExprKind::Unary {
+                    op: UnaryOp::Not,
+                    operand: Box::new(expr),
+                },
+                span,
+            ))
         }
         Token::Await => {
             state.tokens.advance();
             let expr = super::parse_expr_with_precedence_recursive(state, 13)?;
-            Ok(Expr::new(ExprKind::Await {
-                expr: Box::new(expr)
-            }, span))
+            Ok(Expr::new(
+                ExprKind::Await {
+                    expr: Box::new(expr),
+                },
+                span,
+            ))
         }
         Token::Tilde => {
             state.tokens.advance();
             let expr = super::parse_expr_with_precedence_recursive(state, 13)?;
-            Ok(Expr::new(ExprKind::Unary {
-                op: UnaryOp::BitwiseNot,
-                operand: Box::new(expr)
-            }, span))
+            Ok(Expr::new(
+                ExprKind::Unary {
+                    op: UnaryOp::BitwiseNot,
+                    operand: Box::new(expr),
+                },
+                span,
+            ))
         }
         // Function/block tokens - delegated to focused helper
-        Token::Fun | Token::Fn | Token::LeftBrace => {
-            parse_function_block_token(state, token)
-        }
+        Token::Fun | Token::Fn | Token::LeftBrace => parse_function_block_token(state, token),
         // Variable declaration tokens - delegated to focused helper
-        Token::Let | Token::Var => {
-            parse_variable_declaration_token(state, token)
-        }
+        Token::Let | Token::Var => parse_variable_declaration_token(state, token),
         // Control flow tokens - delegated to focused helper
         Token::If | Token::Match | Token::While | Token::For | Token::Try | Token::Loop => {
             parse_control_flow_token(state, token)
         }
         // Module declaration token - support both 'mod' and 'module'
-        Token::Mod | Token::Module => {
-            parse_module_declaration(state)
-        }
+        Token::Mod | Token::Module => parse_module_declaration(state),
         // Lambda expression tokens - delegated to focused helper
-        Token::Pipe | Token::OrOr | Token::Backslash => {
-            parse_lambda_token(state, token)
-        }
+        Token::Pipe | Token::OrOr | Token::Backslash => parse_lambda_token(state, token),
         // Parentheses tokens - delegated to focused helper (unit, grouping, tuples, lambdas)
-        Token::LeftParen => {
-            parse_parentheses_token(state, span)
-        }
+        Token::LeftParen => parse_parentheses_token(state, span),
         // Data structure definition tokens - delegated to focused helper
         Token::Struct | Token::Trait | Token::Impl | Token::Type => {
             parse_data_structure_token(state, token)
         }
         // Import/module tokens - delegated to focused helper
-        Token::Import => {
-            parse_import_token(state, token)
-        }
+        Token::Import => parse_import_token(state, token),
         // Special definition tokens - delegated to focused helper
-        Token::DataFrame | Token::Actor => {
-            parse_special_definition_token(state, token)
-        }
+        Token::DataFrame | Token::Actor => parse_special_definition_token(state, token),
         // Control statement tokens - delegated to focused helper
-        Token::Pub | Token::Break | Token::Continue | Token::Return | Token::Throw |
-        Token::Export | Token::Async | Token::Increment | Token::Decrement => {
-            parse_control_statement_token(state, token, span)
-        }
+        Token::Pub
+        | Token::Break
+        | Token::Continue
+        | Token::Return
+        | Token::Throw
+        | Token::Export
+        | Token::Async
+        | Token::Increment
+        | Token::Decrement => parse_control_statement_token(state, token, span),
         // Collection/enum definition tokens - delegated to focused helper
-        Token::LeftBracket | Token::Enum => {
-            parse_collection_enum_token(state, token)
-        }
+        Token::LeftBracket | Token::Enum => parse_collection_enum_token(state, token),
         // Constructor tokens - delegated to focused helper
         Token::Some | Token::None | Token::Ok | Token::Err | Token::Result | Token::Option => {
             parse_constructor_token(state, token, span)
@@ -141,7 +144,10 @@ fn parse_literal_token(state: &mut ParserState, token: &Token, span: Span) -> Re
         }
         Token::String(value) => {
             state.tokens.advance();
-            Ok(Expr::new(ExprKind::Literal(Literal::String(value.clone())), span))
+            Ok(Expr::new(
+                ExprKind::Literal(Literal::String(value.clone())),
+                span,
+            ))
         }
         Token::FString(template) => {
             state.tokens.advance();
@@ -201,8 +207,8 @@ fn parse_identifier_token(state: &mut ParserState, token: &Token, span: Span) ->
             } else if matches!(state.tokens.peek(), Some((Token::Bang, _))) {
                 // This is a macro call like println!
                 state.tokens.advance(); // consume !
-                // Convert macro syntax to regular function call
-                // println! -> println, assert! -> assert, etc.
+                                        // Convert macro syntax to regular function call
+                                        // println! -> println, assert! -> assert, etc.
                 Ok(Expr::new(ExprKind::Identifier(name.clone()), span))
             } else {
                 Ok(Expr::new(ExprKind::Identifier(name.clone()), span))
@@ -222,33 +228,45 @@ fn parse_unary_operator_token(state: &mut ParserState, token: &Token, span: Span
         Token::Minus => {
             state.tokens.advance();
             let expr = super::parse_expr_with_precedence_recursive(state, 13)?; // High precedence for unary
-            Ok(Expr::new(ExprKind::Unary { 
-                op: UnaryOp::Negate, 
-                operand: Box::new(expr) 
-            }, span))
+            Ok(Expr::new(
+                ExprKind::Unary {
+                    op: UnaryOp::Negate,
+                    operand: Box::new(expr),
+                },
+                span,
+            ))
         }
         Token::Bang => {
             state.tokens.advance();
             let expr = super::parse_expr_with_precedence_recursive(state, 13)?;
-            Ok(Expr::new(ExprKind::Unary {
-                op: UnaryOp::Not,
-                operand: Box::new(expr)
-            }, span))
+            Ok(Expr::new(
+                ExprKind::Unary {
+                    op: UnaryOp::Not,
+                    operand: Box::new(expr),
+                },
+                span,
+            ))
         }
         Token::Await => {
             state.tokens.advance();
             let expr = super::parse_expr_with_precedence_recursive(state, 13)?;
-            Ok(Expr::new(ExprKind::Await {
-                expr: Box::new(expr)
-            }, span))
+            Ok(Expr::new(
+                ExprKind::Await {
+                    expr: Box::new(expr),
+                },
+                span,
+            ))
         }
         Token::Tilde => {
             state.tokens.advance();
             let expr = super::parse_expr_with_precedence_recursive(state, 13)?;
-            Ok(Expr::new(ExprKind::Unary {
-                op: UnaryOp::BitwiseNot,
-                operand: Box::new(expr)
-            }, span))
+            Ok(Expr::new(
+                ExprKind::Unary {
+                    op: UnaryOp::BitwiseNot,
+                    operand: Box::new(expr),
+                },
+                span,
+            ))
         }
         _ => bail!("Expected unary operator token, got: {:?}", token),
     }
@@ -270,7 +288,7 @@ fn parse_parentheses_token(state: &mut ParserState, span: Span) -> Result<Expr> 
             let mut elements = vec![first_expr];
             while matches!(state.tokens.peek(), Some((Token::Comma, _))) {
                 state.tokens.advance(); // consume comma
-                // Check for trailing comma before closing paren
+                                        // Check for trailing comma before closing paren
                 if matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
                     break;
                 }
@@ -345,8 +363,9 @@ fn parse_continue_token(state: &mut ParserState, span: Span) -> Result<Expr> {
 fn parse_return_token(state: &mut ParserState, span: Span) -> Result<Expr> {
     state.tokens.advance();
     // Check if there's an expression to return
-    let value = if matches!(state.tokens.peek(), Some((Token::Semicolon, _))) 
-        || state.tokens.peek().is_none() {
+    let value = if matches!(state.tokens.peek(), Some((Token::Semicolon, _)))
+        || state.tokens.peek().is_none()
+    {
         // No expression, just return
         None
     } else {
@@ -367,7 +386,7 @@ fn parse_throw_token(state: &mut ParserState, span: Span) -> Result<Expr> {
 fn parse_constructor_token(state: &mut ParserState, token: Token, span: Span) -> Result<Expr> {
     let constructor_name = match token {
         Token::Some => "Some",
-        Token::None => "None", 
+        Token::None => "None",
         Token::Ok => "Ok",
         Token::Err => "Err",
         Token::Result => "Result",
@@ -393,7 +412,10 @@ fn parse_constructor_token(state: &mut ParserState, token: Token, span: Span) ->
         }
         bail!("Expected variant name after '::'");
     }
-    Ok(Expr::new(ExprKind::Identifier(constructor_name.to_string()), span))
+    Ok(Expr::new(
+        ExprKind::Identifier(constructor_name.to_string()),
+        span,
+    ))
 }
 /// Parse control flow tokens (If, Match, While, For, Try)
 /// Extracted from `parse_prefix` to reduce complexity
@@ -445,14 +467,14 @@ fn parse_module_declaration(state: &mut ParserState) -> Result<Expr> {
     // Parse module body with visibility support
     state.tokens.expect(&Token::LeftBrace)?;
     let body = Box::new(parse_module_body(state)?);
-    Ok(Expr::new(
-        ExprKind::Module { name, body },
-        start_span,
-    ))
+    Ok(Expr::new(ExprKind::Module { name, body }, start_span))
 }
 /// Parse module body with support for visibility modifiers (pub)
 fn parse_module_body(state: &mut ParserState) -> Result<Expr> {
-    let start_span = state.tokens.peek().map_or(Span { start: 0, end: 0 }, |t| t.1);
+    let start_span = state
+        .tokens
+        .peek()
+        .map_or(Span { start: 0, end: 0 }, |t| t.1);
     let mut exprs = Vec::new();
     while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
         // Check for visibility modifier
@@ -552,7 +574,11 @@ fn parse_special_definition_token(state: &mut ParserState, token: Token) -> Resu
 }
 /// Parse control statement tokens (Pub, Break, Continue, Return)
 /// Extracted from `parse_prefix` to reduce complexity
-fn parse_control_statement_token(state: &mut ParserState, token: Token, span: Span) -> Result<Expr> {
+fn parse_control_statement_token(
+    state: &mut ParserState,
+    token: Token,
+    span: Span,
+) -> Result<Expr> {
     match token {
         Token::Pub => parse_pub_token(state),
         Token::Break => parse_break_token(state, span),
@@ -591,7 +617,14 @@ fn parse_let_statement(state: &mut ParserState) -> Result<Expr> {
     // Parse optional 'in' clause for let expressions
     let body = parse_let_in_clause(state, value.span)?;
     // Create the appropriate expression based on pattern type
-    create_let_expression(pattern, type_annotation, value, body, is_mutable, start_span)
+    create_let_expression(
+        pattern,
+        type_annotation,
+        value,
+        body,
+        is_mutable,
+        start_span,
+    )
 }
 /// Parse mutability for let statement
 /// Extracted from `parse_let_statement` to reduce complexity
@@ -629,8 +662,10 @@ fn parse_let_pattern(state: &mut ParserState, is_mutable: bool) -> Result<Patter
             // Parse struct destructuring: {name, age} = obj
             parse_struct_pattern(state)
         }
-        _ => bail!("Expected identifier or pattern after 'let{}'", 
-                   if is_mutable { " mut" } else { "" })
+        _ => bail!(
+            "Expected identifier or pattern after 'let{}'",
+            if is_mutable { " mut" } else { "" }
+        ),
     }
 }
 /// Parse optional type annotation for let statement
@@ -651,7 +686,10 @@ fn parse_let_in_clause(state: &mut ParserState, value_span: Span) -> Result<Box<
         Ok(Box::new(super::parse_expr_recursive(state)?))
     } else {
         // For let statements (no 'in'), body is unit
-        Ok(Box::new(Expr::new(ExprKind::Literal(Literal::Unit), value_span)))
+        Ok(Box::new(Expr::new(
+            ExprKind::Literal(Literal::Unit),
+            value_span,
+        )))
     }
 }
 /// Create the appropriate let expression based on pattern type
@@ -666,18 +704,16 @@ fn create_let_expression(
 ) -> Result<Expr> {
     let end_span = body.span;
     match &pattern {
-        Pattern::Identifier(name) => {
-            Ok(Expr::new(
-                ExprKind::Let {
-                    name: name.clone(),
-                    type_annotation,
-                    value,
-                    body,
-                    is_mutable,
-                },
-                start_span.merge(end_span),
-            ))
-        }
+        Pattern::Identifier(name) => Ok(Expr::new(
+            ExprKind::Let {
+                name: name.clone(),
+                type_annotation,
+                value,
+                body,
+                is_mutable,
+            },
+            start_span.merge(end_span),
+        )),
         Pattern::Tuple(_) | Pattern::List(_) => {
             // For destructuring patterns, use LetPattern variant
             Ok(Expr::new(
@@ -691,9 +727,20 @@ fn create_let_expression(
                 start_span.merge(end_span),
             ))
         }
-        Pattern::Wildcard | Pattern::Literal(_) | Pattern::QualifiedName(_) | Pattern::Struct { .. }
-        | Pattern::Range { .. } | Pattern::Or(_) | Pattern::Rest | Pattern::RestNamed(_)
-        | Pattern::AtBinding { .. } | Pattern::WithDefault { .. } | Pattern::Ok(_) | Pattern::Err(_) | Pattern::Some(_) | Pattern::None => {
+        Pattern::Wildcard
+        | Pattern::Literal(_)
+        | Pattern::QualifiedName(_)
+        | Pattern::Struct { .. }
+        | Pattern::Range { .. }
+        | Pattern::Or(_)
+        | Pattern::Rest
+        | Pattern::RestNamed(_)
+        | Pattern::AtBinding { .. }
+        | Pattern::WithDefault { .. }
+        | Pattern::Ok(_)
+        | Pattern::Err(_)
+        | Pattern::Some(_)
+        | Pattern::None => {
             // For other pattern types, use LetPattern variant
             Ok(Expr::new(
                 ExprKind::LetPattern {
@@ -713,13 +760,13 @@ fn create_let_expression(
 fn parse_var_statement(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.expect(&Token::Var)?;
     // var is always mutable
-    
+
     let pattern = parse_var_pattern(state)?;
     let type_annotation = parse_optional_type_annotation(state)?;
-    
+
     state.tokens.expect(&Token::Equal)?;
     let value = Box::new(super::parse_expr_recursive(state)?);
-    
+
     create_var_expression(pattern, type_annotation, value, start_span)
 }
 
@@ -738,12 +785,14 @@ fn parse_var_pattern(state: &mut ParserState) -> Result<Pattern> {
         }
         Some((Token::LeftParen, _)) => parse_tuple_pattern(state),
         Some((Token::LeftBracket, _)) => parse_list_pattern(state),
-        _ => bail!("Expected identifier or pattern after 'var'")
+        _ => bail!("Expected identifier or pattern after 'var'"),
     }
 }
 
 /// Extract method: Parse optional type annotation - complexity: 4
-fn parse_optional_type_annotation(state: &mut ParserState) -> Result<Option<crate::frontend::ast::Type>> {
+fn parse_optional_type_annotation(
+    state: &mut ParserState,
+) -> Result<Option<crate::frontend::ast::Type>> {
     if matches!(state.tokens.peek(), Some((Token::Colon, _))) {
         state.tokens.advance();
         Ok(Some(super::utils::parse_type(state)?))
@@ -754,40 +803,36 @@ fn parse_optional_type_annotation(state: &mut ParserState) -> Result<Option<crat
 
 /// Extract method: Create variable expression - complexity: 6
 fn create_var_expression(
-    pattern: Pattern, 
-    type_annotation: Option<crate::frontend::ast::Type>, 
-    value: Box<Expr>, 
-    start_span: Span
+    pattern: Pattern,
+    type_annotation: Option<crate::frontend::ast::Type>,
+    value: Box<Expr>,
+    start_span: Span,
 ) -> Result<Expr> {
     let body = Box::new(Expr::new(ExprKind::Literal(Literal::Unit), value.span));
     let end_span = value.span;
     let is_mutable = true;
-    
+
     match &pattern {
-        Pattern::Identifier(name) => {
-            Ok(Expr::new(
-                ExprKind::Let {
-                    name: name.clone(),
-                    type_annotation,
-                    value,
-                    body,
-                    is_mutable,
-                },
-                start_span.merge(end_span),
-            ))
-        }
-        _ => {
-            Ok(Expr::new(
-                ExprKind::LetPattern {
-                    pattern,
-                    type_annotation,
-                    value,
-                    body,
-                    is_mutable,
-                },
-                start_span.merge(end_span),
-            ))
-        }
+        Pattern::Identifier(name) => Ok(Expr::new(
+            ExprKind::Let {
+                name: name.clone(),
+                type_annotation,
+                value,
+                body,
+                is_mutable,
+            },
+            start_span.merge(end_span),
+        )),
+        _ => Ok(Expr::new(
+            ExprKind::LetPattern {
+                pattern,
+                type_annotation,
+                value,
+                body,
+                is_mutable,
+            },
+            start_span.merge(end_span),
+        )),
     }
 }
 pub fn parse_tuple_pattern(state: &mut ParserState) -> Result<Pattern> {
@@ -913,7 +958,7 @@ fn parse_identifier_pattern_with_default(state: &mut ParserState, name: String) 
 /// Extracted to reduce complexity
 fn parse_rest_pattern(state: &mut ParserState) -> Result<Pattern> {
     state.tokens.advance(); // consume ...
-    // Check if named rest pattern
+                            // Check if named rest pattern
     if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
         let name = name.clone();
         state.tokens.advance();
@@ -937,11 +982,11 @@ fn handle_pattern_separator(state: &mut ParserState, end_token: Token) -> Result
         Ok(true)
     } else if let Some((token, _)) = state.tokens.peek() {
         if *token != end_token {
-        let expected = match end_token {
-            Token::RightBracket => "',' or ']'",
-            Token::RightParen => "',' or ')'",
-            _ => "',' or closing delimiter",
-        };
+            let expected = match end_token {
+                Token::RightBracket => "',' or ']'",
+                Token::RightParen => "',' or ')'",
+                _ => "',' or closing delimiter",
+            };
             bail!("Expected {} in pattern", expected);
         }
         Ok(false)
@@ -965,18 +1010,26 @@ fn parse_if_expression(state: &mut ParserState) -> Result<Expr> {
 /// Complexity: <10
 fn parse_if_let_expression(state: &mut ParserState, start_span: Span) -> Result<Expr> {
     state.tokens.advance(); // consume 'let'
-    // Parse the pattern
+                            // Parse the pattern
     let pattern = parse_match_pattern(state)
         .map_err(|e| anyhow::anyhow!("Expected pattern after 'if let': {}", e))?;
     // Expect '='
-    state.tokens.expect(&Token::Equal)
+    state
+        .tokens
+        .expect(&Token::Equal)
         .map_err(|e| anyhow::anyhow!("Expected '=' after pattern in if-let: {}", e))?;
     // Parse the expression to match against
-    let expr = Box::new(super::parse_expr_recursive(state)
-        .map_err(|e| anyhow::anyhow!("Expected expression after '=' in if-let: {}", e))?);
+    let expr = Box::new(
+        super::parse_expr_recursive(state)
+            .map_err(|e| anyhow::anyhow!("Expected expression after '=' in if-let: {}", e))?,
+    );
     // Parse then branch
-    let then_branch = Box::new(super::parse_expr_recursive(state)
-        .map_err(|e| anyhow::anyhow!("Expected body after if-let condition, typically {{ ... }}: {}", e))?);
+    let then_branch = Box::new(super::parse_expr_recursive(state).map_err(|e| {
+        anyhow::anyhow!(
+            "Expected body after if-let condition, typically {{ ... }}: {}",
+            e
+        )
+    })?);
     // Parse optional else branch
     let else_branch = parse_else_branch(state)?;
     Ok(Expr::new(
@@ -993,11 +1046,17 @@ fn parse_if_let_expression(state: &mut ParserState, start_span: Span) -> Result<
 /// Complexity: <10
 fn parse_regular_if_expression(state: &mut ParserState, start_span: Span) -> Result<Expr> {
     // Parse condition with better error context
-    let condition = Box::new(super::parse_expr_recursive(state)
-        .map_err(|e| anyhow::anyhow!("Expected condition after 'if': {}", e))?);
+    let condition = Box::new(
+        super::parse_expr_recursive(state)
+            .map_err(|e| anyhow::anyhow!("Expected condition after 'if': {}", e))?,
+    );
     // Parse then branch (expect block) with better error context
-    let then_branch = Box::new(super::parse_expr_recursive(state)
-        .map_err(|e| anyhow::anyhow!("Expected body after if condition, typically {{ ... }}: {}", e))?);
+    let then_branch = Box::new(super::parse_expr_recursive(state).map_err(|e| {
+        anyhow::anyhow!(
+            "Expected body after if condition, typically {{ ... }}: {}",
+            e
+        )
+    })?);
     // Parse optional else branch
     let else_branch = parse_else_branch(state)?;
     Ok(Expr::new(
@@ -1014,13 +1073,14 @@ fn parse_regular_if_expression(state: &mut ParserState, start_span: Span) -> Res
 fn parse_else_branch(state: &mut ParserState) -> Result<Option<Box<Expr>>> {
     if matches!(state.tokens.peek(), Some((Token::Else, _))) {
         state.tokens.advance(); // consume 'else'
-        // Check for else-if or else-if-let
+                                // Check for else-if or else-if-let
         if matches!(state.tokens.peek(), Some((Token::If, _))) {
             // Let the recursive call handle else-if or else-if-let
             Ok(Some(Box::new(parse_if_expression(state)?)))
         } else {
-            Ok(Some(Box::new(super::parse_expr_recursive(state)
-                .map_err(|e| anyhow::anyhow!("Expected body after 'else', typically {{ ... }}: {}", e))?)))
+            Ok(Some(Box::new(super::parse_expr_recursive(state).map_err(
+                |e| anyhow::anyhow!("Expected body after 'else', typically {{ ... }}: {}", e),
+            )?)))
         }
     } else {
         Ok(None)
@@ -1031,20 +1091,23 @@ fn parse_else_branch(state: &mut ParserState) -> Result<Option<Box<Expr>>> {
 fn parse_match_expression(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.expect(&Token::Match)?;
     // Parse the expression to match on
-    let expr = Box::new(super::parse_expr_recursive(state)
-        .map_err(|e| anyhow::anyhow!("Expected expression after 'match': {}", e))?);
+    let expr = Box::new(
+        super::parse_expr_recursive(state)
+            .map_err(|e| anyhow::anyhow!("Expected expression after 'match': {}", e))?,
+    );
     // Expect opening brace for match arms
-    state.tokens.expect(&Token::LeftBrace)
+    state
+        .tokens
+        .expect(&Token::LeftBrace)
         .map_err(|_| anyhow::anyhow!("Expected '{{' after match expression"))?;
     // Parse match arms
     let arms = parse_match_arms(state)?;
     // Expect closing brace
-    state.tokens.expect(&Token::RightBrace)
+    state
+        .tokens
+        .expect(&Token::RightBrace)
         .map_err(|_| anyhow::anyhow!("Expected '}}' after match arms"))?;
-    Ok(Expr::new(
-        ExprKind::Match { expr, arms },
-        start_span,
-    ))
+    Ok(Expr::new(ExprKind::Match { expr, arms }, start_span))
 }
 /// Parse match arms with low complexity (helper function for TDG compliance)
 fn parse_match_arms(state: &mut ParserState) -> Result<Vec<MatchArm>> {
@@ -1070,8 +1133,7 @@ fn parse_match_arms(state: &mut ParserState) -> Result<Vec<MatchArm>> {
 /// Parse a single match arm: pattern [if guard] => expr
 /// Complexity: <5 (simple sequential parsing)
 fn parse_single_match_arm(state: &mut ParserState) -> Result<MatchArm> {
-    let start_span = state.tokens.peek().map(|(_, s)| *s)
-        .unwrap_or_default();
+    let start_span = state.tokens.peek().map(|(_, s)| *s).unwrap_or_default();
     // Parse pattern
     let pattern = parse_match_pattern(state)?;
     // Parse optional guard (if condition)
@@ -1082,7 +1144,9 @@ fn parse_single_match_arm(state: &mut ParserState) -> Result<MatchArm> {
         None
     };
     // Expect => token
-    state.tokens.expect(&Token::FatArrow)
+    state
+        .tokens
+        .expect(&Token::FatArrow)
         .map_err(|_| anyhow::anyhow!("Expected '=>' in match arm"))?;
     // Parse result expression
     let body = Box::new(super::parse_expr_recursive(state)?);
@@ -1117,14 +1181,17 @@ fn parse_single_pattern(state: &mut ParserState) -> Result<Pattern> {
     };
     match token {
         Token::Underscore => parse_wildcard_pattern(state),
-        Token::Integer(_) | Token::Float(_) | Token::String(_) | 
-        Token::Char(_) | Token::Bool(_) => parse_literal_pattern(state),
+        Token::Integer(_)
+        | Token::Float(_)
+        | Token::String(_)
+        | Token::Char(_)
+        | Token::Bool(_) => parse_literal_pattern(state),
         Token::Some | Token::None => parse_option_pattern(state),
         Token::Ok | Token::Err => parse_result_pattern(state),
         Token::Identifier(_) => parse_identifier_or_constructor_pattern(state),
         Token::LeftParen => parse_match_tuple_pattern(state),
         Token::LeftBracket => parse_match_list_pattern(state),
-        _ => bail!("Unexpected token in pattern: {:?}", token)
+        _ => bail!("Unexpected token in pattern: {:?}", token),
     }
 }
 /// Parse wildcard pattern: _
@@ -1146,7 +1213,7 @@ fn parse_literal_pattern(state: &mut ParserState) -> Result<Pattern> {
         Token::String(s) => parse_simple_literal_pattern(state, Literal::String(s))?,
         Token::Char(c) => parse_char_literal_pattern(state, c)?,
         Token::Bool(b) => parse_simple_literal_pattern(state, Literal::Bool(b))?,
-        _ => bail!("Expected literal pattern, got: {:?}", token)
+        _ => bail!("Expected literal pattern, got: {:?}", token),
     };
     Ok(pattern)
 }
@@ -1163,7 +1230,11 @@ fn parse_integer_literal_pattern(state: &mut ParserState, val: i64) -> Result<Pa
 }
 
 /// Extract method: Parse integer range pattern - complexity: 6
-fn parse_integer_range_pattern(state: &mut ParserState, start_val: i64, inclusive: bool) -> Result<Pattern> {
+fn parse_integer_range_pattern(
+    state: &mut ParserState,
+    start_val: i64,
+    inclusive: bool,
+) -> Result<Pattern> {
     state.tokens.advance(); // consume '..' or '..='
     if let Some((Token::Integer(end_val), _)) = state.tokens.peek() {
         let end_val = *end_val;
@@ -1190,7 +1261,11 @@ fn parse_char_literal_pattern(state: &mut ParserState, val: char) -> Result<Patt
 }
 
 /// Extract method: Parse char range pattern - complexity: 6
-fn parse_char_range_pattern(state: &mut ParserState, start_val: char, inclusive: bool) -> Result<Pattern> {
+fn parse_char_range_pattern(
+    state: &mut ParserState,
+    start_val: char,
+    inclusive: bool,
+) -> Result<Pattern> {
     state.tokens.advance(); // consume '..' or '..='
     if let Some((Token::Char(end_val), _)) = state.tokens.peek() {
         let end_val = *end_val;
@@ -1233,7 +1308,7 @@ fn parse_option_pattern(state: &mut ParserState) -> Result<Pattern> {
                 Ok(Pattern::Identifier("None".to_string()))
             }
         }
-        _ => bail!("Expected Some or None pattern")
+        _ => bail!("Expected Some or None pattern"),
     }
 }
 /// Parse Result patterns (Ok/Err)
@@ -1259,7 +1334,7 @@ fn parse_result_pattern(state: &mut ParserState) -> Result<Pattern> {
                 Ok(Pattern::Identifier("Err".to_string()))
             }
         }
-        _ => bail!("Expected Ok or Err pattern")
+        _ => bail!("Expected Ok or Err pattern"),
     }
 }
 /// Parse identifier or constructor patterns
@@ -1383,18 +1458,21 @@ fn create_constructor_pattern(name: String, patterns: Vec<Pattern>) -> Result<Pa
     match (name.as_str(), patterns.len()) {
         ("Ok", 1) => {
             // Ok(pattern) - Result success case
-            Ok(Pattern::Ok(Box::new(patterns.into_iter().next()
-                .expect("patterns.len() == 1, so next() must return Some"))))
+            Ok(Pattern::Ok(Box::new(patterns.into_iter().next().expect(
+                "patterns.len() == 1, so next() must return Some",
+            ))))
         }
         ("Err", 1) => {
             // Err(pattern) - Result error case
-            Ok(Pattern::Err(Box::new(patterns.into_iter().next()
-                .expect("patterns.len() == 1, so next() must return Some"))))
+            Ok(Pattern::Err(Box::new(patterns.into_iter().next().expect(
+                "patterns.len() == 1, so next() must return Some",
+            ))))
         }
         ("Some", 1) => {
             // Some(pattern) - Option success case
-            Ok(Pattern::Some(Box::new(patterns.into_iter().next()
-                .expect("patterns.len() == 1, so next() must return Some"))))
+            Ok(Pattern::Some(Box::new(patterns.into_iter().next().expect(
+                "patterns.len() == 1, so next() must return Some",
+            ))))
         }
         ("None", 0) => {
             // None - Option empty case
@@ -1402,7 +1480,9 @@ fn create_constructor_pattern(name: String, patterns: Vec<Pattern>) -> Result<Pa
         }
         (_, 1) => {
             // Single argument constructor - for simplicity, use the inner pattern
-            Ok(patterns.into_iter().next()
+            Ok(patterns
+                .into_iter()
+                .next()
                 .expect("patterns.len() == 1, so next() must return Some"))
         }
         (name, 0) => {
@@ -1421,13 +1501,15 @@ fn parse_or_pattern(state: &mut ParserState, first: Pattern) -> Result<Pattern> 
     let mut patterns = vec![first];
     while matches!(state.tokens.peek(), Some((Token::Pipe, _))) {
         state.tokens.advance(); // consume '|'
-        // Need to parse the next pattern without recursing into or-patterns again
+                                // Need to parse the next pattern without recursing into or-patterns again
         let next = parse_single_pattern(state)?;
         patterns.push(next);
     }
     // Use the Or pattern variant for multiple alternatives
     if patterns.len() == 1 {
-        Ok(patterns.into_iter().next()
+        Ok(patterns
+            .into_iter()
+            .next()
             .expect("patterns.len() == 1, so next() must return Some"))
     } else {
         Ok(Pattern::Or(patterns))
@@ -1442,18 +1524,24 @@ fn parse_while_loop(state: &mut ParserState) -> Result<Expr> {
     // Check for while-let syntax
     if matches!(state.tokens.peek(), Some((Token::Let, _))) {
         state.tokens.advance(); // consume 'let'
-        // Parse the pattern
+                                // Parse the pattern
         let pattern = parse_match_pattern(state)
             .map_err(|e| anyhow::anyhow!("Expected pattern after 'while let': {}", e))?;
         // Expect '='
-        state.tokens.expect(&Token::Equal)
+        state
+            .tokens
+            .expect(&Token::Equal)
             .map_err(|e| anyhow::anyhow!("Expected '=' after pattern in while-let: {}", e))?;
         // Parse the expression to match against
-        let expr = Box::new(super::parse_expr_recursive(state)
-            .map_err(|e| anyhow::anyhow!("Expected expression after '=' in while-let: {}", e))?);
+        let expr =
+            Box::new(super::parse_expr_recursive(state).map_err(|e| {
+                anyhow::anyhow!("Expected expression after '=' in while-let: {}", e)
+            })?);
         // Parse body (expect block)
-        let body = Box::new(super::parse_expr_recursive(state)
-            .map_err(|e| anyhow::anyhow!("Expected body after while-let condition: {}", e))?);
+        let body = Box::new(
+            super::parse_expr_recursive(state)
+                .map_err(|e| anyhow::anyhow!("Expected body after while-let condition: {}", e))?,
+        );
         Ok(Expr::new(
             ExprKind::WhileLet {
                 pattern,
@@ -1465,15 +1553,16 @@ fn parse_while_loop(state: &mut ParserState) -> Result<Expr> {
     } else {
         // Regular while loop
         // Parse condition
-        let condition = Box::new(super::parse_expr_recursive(state)
-            .map_err(|e| anyhow::anyhow!("Expected condition after 'while': {}", e))?);
+        let condition = Box::new(
+            super::parse_expr_recursive(state)
+                .map_err(|e| anyhow::anyhow!("Expected condition after 'while': {}", e))?,
+        );
         // Parse body (expect block)
-        let body = Box::new(super::parse_expr_recursive(state)
-            .map_err(|e| anyhow::anyhow!("Expected body after while condition: {}", e))?);
-        Ok(Expr::new(
-            ExprKind::While { condition, body },
-            start_span,
-        ))
+        let body = Box::new(
+            super::parse_expr_recursive(state)
+                .map_err(|e| anyhow::anyhow!("Expected body after while condition: {}", e))?,
+        );
+        Ok(Expr::new(ExprKind::While { condition, body }, start_span))
     }
 }
 /// Parse for loop: for pattern in iterator { body }
@@ -1483,22 +1572,28 @@ fn parse_for_loop(state: &mut ParserState) -> Result<Expr> {
     // Parse pattern (e.g., "i" in "for i in ...")
     let pattern = parse_for_pattern(state)?;
     // Expect 'in' keyword
-    state.tokens.expect(&Token::In)
+    state
+        .tokens
+        .expect(&Token::In)
         .map_err(|_| anyhow::anyhow!("Expected 'in' after for pattern"))?;
     // Parse iterator expression
-    let iterator = Box::new(super::parse_expr_recursive(state)
-        .map_err(|e| anyhow::anyhow!("Expected iterator after 'in': {}", e))?);
+    let iterator = Box::new(
+        super::parse_expr_recursive(state)
+            .map_err(|e| anyhow::anyhow!("Expected iterator after 'in': {}", e))?,
+    );
     // Parse body (expect block)
-    let body = Box::new(super::parse_expr_recursive(state)
-        .map_err(|e| anyhow::anyhow!("Expected body after for iterator: {}", e))?);
+    let body = Box::new(
+        super::parse_expr_recursive(state)
+            .map_err(|e| anyhow::anyhow!("Expected body after for iterator: {}", e))?,
+    );
     // Get the var name from the pattern for backward compatibility
     let var = pattern.primary_name();
     Ok(Expr::new(
-        ExprKind::For { 
+        ExprKind::For {
             var,
-            pattern: Some(pattern), 
-            iter: iterator, 
-            body 
+            pattern: Some(pattern),
+            iter: iterator,
+            body,
         },
         start_span,
     ))
@@ -1527,7 +1622,7 @@ fn parse_for_pattern(state: &mut ParserState) -> Result<Pattern> {
             // Parse list pattern: [x, y]
             parse_list_pattern(state)
         }
-        _ => bail!("Expected identifier, underscore, or destructuring pattern in for loop")
+        _ => bail!("Expected identifier, underscore, or destructuring pattern in for loop"),
     }
 }
 /// Parse an array element which might be a spread expression (...expr) or regular expression
@@ -1535,7 +1630,12 @@ fn parse_array_element(state: &mut ParserState) -> Result<Expr> {
     if matches!(state.tokens.peek(), Some((Token::DotDotDot, _))) {
         let start_span = state.tokens.expect(&Token::DotDotDot)?; // consume ...
         let expr = super::parse_expr_recursive(state)?;
-        Ok(Expr::new(ExprKind::Spread { expr: Box::new(expr) }, start_span))
+        Ok(Expr::new(
+            ExprKind::Spread {
+                expr: Box::new(expr),
+            },
+            start_span,
+        ))
     } else {
         super::parse_expr_recursive(state)
     }
@@ -1561,14 +1661,16 @@ fn parse_list_literal(state: &mut ParserState) -> Result<Expr> {
 fn parse_array_init(state: &mut ParserState, value_expr: Expr, start_span: Span) -> Result<Expr> {
     state.tokens.advance(); // consume ;
     let size_expr = super::parse_expr_recursive(state)?;
-    state.tokens.expect(&Token::RightBracket)
+    state
+        .tokens
+        .expect(&Token::RightBracket)
         .map_err(|_| anyhow::anyhow!("Expected ']' after array initialization"))?;
     Ok(Expr::new(
-        ExprKind::ArrayInit { 
-            value: Box::new(value_expr), 
-            size: Box::new(size_expr) 
-        }, 
-        start_span
+        ExprKind::ArrayInit {
+            value: Box::new(value_expr),
+            size: Box::new(size_expr),
+        },
+        start_span,
     ))
 }
 /// Parse regular list literal: [expr, expr, ...]
@@ -1584,7 +1686,9 @@ fn parse_regular_list(state: &mut ParserState, first_expr: Expr, start_span: Spa
         }
         elements.push(parse_array_element(state)?);
     }
-    state.tokens.expect(&Token::RightBracket)
+    state
+        .tokens
+        .expect(&Token::RightBracket)
         .map_err(|_| anyhow::anyhow!("Expected ']' to close list literal"))?;
     Ok(Expr::new(ExprKind::List(elements), start_span))
 }
@@ -1629,15 +1733,18 @@ fn parse_lambda_no_params(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.expect(&Token::OrOr)?;
     // Parse the body
     let body = Box::new(super::parse_expr_recursive(state)?);
-    Ok(Expr::new(ExprKind::Lambda { 
-        params: vec![], 
-        body 
-    }, start_span))
+    Ok(Expr::new(
+        ExprKind::Lambda {
+            params: vec![],
+            body,
+        },
+        start_span,
+    ))
 }
 fn parse_lambda_from_expr(state: &mut ParserState, expr: Expr, start_span: Span) -> Result<Expr> {
     // Convert (x) => expr or (x, y) => expr syntax
     state.tokens.advance(); // consume =>
-    // Convert the expression to parameters
+                            // Convert the expression to parameters
     let params = match &expr.kind {
         ExprKind::Identifier(name) => vec![Param {
             pattern: Pattern::Identifier(name.clone()),
@@ -1651,8 +1758,9 @@ fn parse_lambda_from_expr(state: &mut ParserState, expr: Expr, start_span: Span)
         }],
         ExprKind::Tuple(elements) => {
             // Convert tuple elements to parameters
-            elements.iter().map(|elem| {
-                match &elem.kind {
+            elements
+                .iter()
+                .map(|elem| match &elem.kind {
                     ExprKind::Identifier(name) => Ok(Param {
                         pattern: Pattern::Identifier(name.clone()),
                         ty: Type {
@@ -1663,18 +1771,15 @@ fn parse_lambda_from_expr(state: &mut ParserState, expr: Expr, start_span: Span)
                         is_mutable: false,
                         span: elem.span,
                     }),
-                    _ => bail!("Expected identifier in lambda parameter")
-                }
-            }).collect::<Result<Vec<_>>>()?
+                    _ => bail!("Expected identifier in lambda parameter"),
+                })
+                .collect::<Result<Vec<_>>>()?
         }
-        _ => bail!("Expected identifier or tuple in lambda parameter")
+        _ => bail!("Expected identifier or tuple in lambda parameter"),
     };
     // Parse the body
     let body = Box::new(super::parse_expr_recursive(state)?);
-    Ok(Expr::new(ExprKind::Lambda {
-        params,
-        body,
-    }, start_span))
+    Ok(Expr::new(ExprKind::Lambda { params, body }, start_span))
 }
 fn parse_lambda_expression(state: &mut ParserState) -> Result<Expr> {
     // Parse |param, param| body or |param| body
@@ -1693,21 +1798,26 @@ fn parse_lambda_expression(state: &mut ParserState) -> Result<Expr> {
             bail!("Expected parameter name in lambda");
         }
     }
-    state.tokens.expect(&Token::Pipe)
+    state
+        .tokens
+        .expect(&Token::Pipe)
         .map_err(|_| anyhow::anyhow!("Expected '|' after lambda parameters"))?;
     // Parse body
     let body = Box::new(super::parse_expr_recursive(state)?);
     // Convert Pattern to Param for Lambda
-    let params = params.into_iter().map(|p| Param {
-        pattern: p,
-        ty: Type {
-            kind: TypeKind::Named("_".to_string()),
+    let params = params
+        .into_iter()
+        .map(|p| Param {
+            pattern: p,
+            ty: Type {
+                kind: TypeKind::Named("_".to_string()),
+                span: start_span,
+            },
             span: start_span,
-        },
-        span: start_span,
-        is_mutable: false,
-        default_value: None,
-    }).collect();
+            is_mutable: false,
+            default_value: None,
+        })
+        .collect();
     Ok(Expr::new(ExprKind::Lambda { params, body }, start_span))
 }
 /// Parse type alias: type Name = Type
@@ -1743,12 +1853,15 @@ fn parse_struct_definition(state: &mut ParserState) -> Result<Expr> {
     let name = parse_struct_name(state)?;
     let type_params = parse_optional_generics(state)?;
     let struct_fields = parse_struct_fields(state)?;
-    Ok(Expr::new(ExprKind::Struct {
-        name,
-        type_params,
-        fields: struct_fields,
-        is_pub: false,
-    }, start_span))
+    Ok(Expr::new(
+        ExprKind::Struct {
+            name,
+            type_params,
+            fields: struct_fields,
+            is_pub: false,
+        },
+        start_span,
+    ))
 }
 /// Parse struct name identifier - complexity: 4
 fn parse_struct_name(state: &mut ParserState) -> Result<String> {
@@ -1773,11 +1886,14 @@ fn parse_struct_fields(state: &mut ParserState) -> Result<Vec<StructField>> {
     }
     state.tokens.expect(&Token::RightBrace)?;
     // Convert to proper Struct variant with StructField
-    Ok(fields.into_iter().map(|(name, ty)| StructField {
-        name,
-        ty,
-        is_pub: false,
-    }).collect())
+    Ok(fields
+        .into_iter()
+        .map(|(name, ty)| StructField {
+            name,
+            ty,
+            is_pub: false,
+        })
+        .collect())
 }
 /// Parse a single struct field (name: Type) - complexity: 5
 fn parse_single_struct_field(state: &mut ParserState) -> Result<(String, Type)> {
@@ -1822,26 +1938,35 @@ fn parse_trait_definition(state: &mut ParserState) -> Result<Expr> {
         // This is a simplified implementation
         methods.push(method_name);
         // Skip to end of line or next method
-        while !matches!(state.tokens.peek(), Some((Token::Fun | Token::RightBrace, _))) 
-              && state.tokens.peek().is_some() {
+        while !matches!(
+            state.tokens.peek(),
+            Some((Token::Fun | Token::RightBrace, _))
+        ) && state.tokens.peek().is_some()
+        {
             state.tokens.advance();
         }
     }
     state.tokens.expect(&Token::RightBrace)?;
     // Convert to proper Trait variant with TraitMethod
-    let trait_methods = methods.into_iter().map(|name| TraitMethod {
-        name,
-        params: vec![],
-        return_type: None,
-        body: None,
-        is_pub: true,
-    }).collect();
-    Ok(Expr::new(ExprKind::Trait {
-        name,
-        type_params: vec![],
-        methods: trait_methods,
-        is_pub: false,
-    }, start_span))
+    let trait_methods = methods
+        .into_iter()
+        .map(|name| TraitMethod {
+            name,
+            params: vec![],
+            return_type: None,
+            body: None,
+            is_pub: true,
+        })
+        .collect();
+    Ok(Expr::new(
+        ExprKind::Trait {
+            name,
+            type_params: vec![],
+            methods: trait_methods,
+            is_pub: false,
+        },
+        start_span,
+    ))
 }
 fn parse_impl_block(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.expect(&Token::Impl)?;
@@ -1851,13 +1976,16 @@ fn parse_impl_block(state: &mut ParserState) -> Result<Expr> {
     state.tokens.expect(&Token::LeftBrace)?;
     let methods = parse_impl_methods(state)?;
     state.tokens.expect(&Token::RightBrace)?;
-    Ok(Expr::new(ExprKind::Impl {
-        type_params: vec![],
-        trait_name,
-        for_type: type_name,
-        methods,
-        is_pub: false,
-    }, start_span))
+    Ok(Expr::new(
+        ExprKind::Impl {
+            type_params: vec![],
+            trait_name,
+            for_type: type_name,
+            methods,
+            is_pub: false,
+        },
+        start_span,
+    ))
 }
 /// Parse impl header to get trait and type names (complexity: 8)
 fn parse_impl_header(state: &mut ParserState) -> Result<(Option<String>, String)> {
@@ -1971,10 +2099,13 @@ pub(super) fn parse_import_statement(state: &mut ParserState) -> Result<Expr> {
     if let Some((Token::String(module), _)) = state.tokens.peek() {
         let module = module.clone();
         state.tokens.advance();
-        return Ok(Expr::new(ExprKind::Import {
-            module,
-            items: None,
-        }, start_span));
+        return Ok(Expr::new(
+            ExprKind::Import {
+                module,
+                items: None,
+            },
+            start_span,
+        ));
     }
 
     // 2. import { items } from "module"
@@ -1997,10 +2128,13 @@ pub(super) fn parse_import_statement(state: &mut ParserState) -> Result<Expr> {
         if let Some((Token::String(module), _)) = state.tokens.peek() {
             let module = module.clone();
             state.tokens.advance();
-            return Ok(Expr::new(ExprKind::Import {
-                module,
-                items: Some(items),
-            }, start_span));
+            return Ok(Expr::new(
+                ExprKind::Import {
+                    module,
+                    items: Some(items),
+                },
+                start_span,
+            ));
         }
         bail!("Expected module path after 'from'");
     }
@@ -2016,10 +2150,7 @@ pub(super) fn parse_import_statement(state: &mut ParserState) -> Result<Expr> {
             if let Some((Token::String(module), _)) = state.tokens.peek() {
                 let module = module.clone();
                 state.tokens.advance();
-                return Ok(Expr::new(ExprKind::ImportAll {
-                    module,
-                    alias,
-                }, start_span));
+                return Ok(Expr::new(ExprKind::ImportAll { module, alias }, start_span));
             }
             bail!("Expected module path after 'from'");
         }
@@ -2034,10 +2165,10 @@ pub(super) fn parse_import_statement(state: &mut ParserState) -> Result<Expr> {
         if let Some((Token::String(module), _)) = state.tokens.peek() {
             let module = module.clone();
             state.tokens.advance();
-            return Ok(Expr::new(ExprKind::ImportDefault {
-                module,
-                name,
-            }, start_span));
+            return Ok(Expr::new(
+                ExprKind::ImportDefault { module, name },
+                start_span,
+            ));
         }
         bail!("Expected module path after 'from'");
     }
@@ -2056,7 +2187,12 @@ fn parse_dataframe_literal(state: &mut ParserState) -> Result<Expr> {
     state.tokens.expect(&Token::RightBracket)?;
     // Convert to DataFrame expression
     let df_columns = create_dataframe_columns(columns);
-    Ok(Expr::new(ExprKind::DataFrame { columns: df_columns }, start_span))
+    Ok(Expr::new(
+        ExprKind::DataFrame {
+            columns: df_columns,
+        },
+        start_span,
+    ))
 }
 /// Parse dataframe header: df![
 /// Complexity: 3
@@ -2102,7 +2238,7 @@ fn parse_dataframe_column_name(state: &mut ParserState) -> Result<String> {
             state.tokens.advance();
             Ok(name)
         }
-        _ => bail!("Expected column name (string or identifier) in dataframe")
+        _ => bail!("Expected column name (string or identifier) in dataframe"),
     }
 }
 /// Parse dataframe column values (must be a list)
@@ -2117,28 +2253,34 @@ fn parse_dataframe_column_values(state: &mut ParserState) -> Result<Expr> {
 /// Convert parsed columns to `DataFrameColumn` structs
 /// Complexity: <5
 fn create_dataframe_columns(columns: Vec<(String, Expr)>) -> Vec<DataFrameColumn> {
-    columns.into_iter().map(|(name, values)| {
-        let value_exprs = match values.kind {
-            ExprKind::List(exprs) => exprs,
-            _ => vec![values], // Fallback for non-list
-        };
-        DataFrameColumn {
-            name,
-            values: value_exprs,
-        }
-    }).collect()
+    columns
+        .into_iter()
+        .map(|(name, values)| {
+            let value_exprs = match values.kind {
+                ExprKind::List(exprs) => exprs,
+                _ => vec![values], // Fallback for non-list
+            };
+            DataFrameColumn {
+                name,
+                values: value_exprs,
+            }
+        })
+        .collect()
 }
 fn parse_enum_definition(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.expect(&Token::Enum)?;
     let name = parse_enum_name(state)?;
     let type_params = parse_optional_generics(state)?;
     let variants = parse_enum_variants(state)?;
-    Ok(Expr::new(ExprKind::Enum {
-        name,
-        type_params,
-        variants,
-        is_pub: false,
-    }, start_span))
+    Ok(Expr::new(
+        ExprKind::Enum {
+            name,
+            type_params,
+            variants,
+            is_pub: false,
+        },
+        start_span,
+    ))
 }
 fn parse_enum_name(state: &mut ParserState) -> Result<String> {
     match state.tokens.peek() {
@@ -2155,7 +2297,7 @@ fn parse_enum_name(state: &mut ParserState) -> Result<String> {
             state.tokens.advance();
             Ok("Result".to_string())
         }
-        _ => bail!("Expected enum name after 'enum'")
+        _ => bail!("Expected enum name after 'enum'"),
     }
 }
 fn parse_optional_generics(state: &mut ParserState) -> Result<Vec<String>> {
@@ -2215,10 +2357,10 @@ fn parse_variant_discriminant(state: &mut ParserState) -> Result<Option<i64>> {
                     state.tokens.advance();
                     Ok(Some(value))
                 }
-                _ => bail!("Expected integer after - in enum discriminant")
+                _ => bail!("Expected integer after - in enum discriminant"),
             }
         }
-        _ => bail!("Expected integer value for enum discriminant")
+        _ => bail!("Expected integer value for enum discriminant"),
     }
 }
 fn parse_variant_name(state: &mut ParserState) -> Result<String> {
@@ -2244,7 +2386,7 @@ fn parse_variant_name(state: &mut ParserState) -> Result<String> {
             state.tokens.advance();
             Ok("Err".to_string())
         }
-        _ => bail!("Expected variant name in enum")
+        _ => bail!("Expected variant name in enum"),
     }
 }
 fn parse_variant_fields(state: &mut ParserState) -> Result<Option<Vec<Type>>> {
@@ -2307,7 +2449,9 @@ fn parse_actor_name(state: &mut ParserState) -> Result<String> {
 }
 /// Parse actor body including state fields and handlers
 /// Extracted from `parse_actor_definition` to reduce complexity
-fn parse_actor_body(state: &mut ParserState) -> Result<(Vec<(String, Type, Option<Box<Expr>>)>, Vec<String>)> {
+fn parse_actor_body(
+    state: &mut ParserState,
+) -> Result<(Vec<(String, Type, Option<Box<Expr>>)>, Vec<String>)> {
     let mut state_fields = Vec::new();
     let mut handlers = Vec::new();
     while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
@@ -2367,7 +2511,7 @@ fn parse_actor_receive_block(state: &mut ParserState) -> Result<Vec<String>> {
             // Skip => value for now
             state.tokens.expect(&Token::FatArrow)?;
             super::parse_expr_recursive(state)?; // Skip the value
-            // Optional comma
+                                                 // Optional comma
             if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
                 state.tokens.advance();
             }
@@ -2405,22 +2549,31 @@ fn create_actor_expression(
     start_span: Span,
 ) -> Result<Expr> {
     // Create an Actor expression with proper types
-    let actor_state = state_fields.into_iter().map(|(name, ty, _init)| StructField {
-        name,
-        ty,
-        is_pub: false,
-    }).collect();
+    let actor_state = state_fields
+        .into_iter()
+        .map(|(name, ty, _init)| StructField {
+            name,
+            ty,
+            is_pub: false,
+        })
+        .collect();
     // For now, create simple handlers
-    let actor_handlers = handlers.into_iter().map(|name| ActorHandler {
-        message_type: name,
-        params: vec![],
-        body: Box::new(Expr::new(ExprKind::Block(vec![]), start_span)),
-    }).collect();
-    Ok(Expr::new(ExprKind::Actor { 
-        name, 
-        state: actor_state,
-        handlers: actor_handlers,
-    }, start_span))
+    let actor_handlers = handlers
+        .into_iter()
+        .map(|name| ActorHandler {
+            message_type: name,
+            params: vec![],
+            body: Box::new(Expr::new(ExprKind::Block(vec![]), start_span)),
+        })
+        .collect();
+    Ok(Expr::new(
+        ExprKind::Actor {
+            name,
+            state: actor_state,
+            handlers: actor_handlers,
+        },
+        start_span,
+    ))
 }
 pub fn token_to_binary_op(token: &Token) -> Option<BinaryOp> {
     // Try each category of operators
@@ -2486,7 +2639,11 @@ pub fn get_precedence(op: BinaryOp) -> i32 {
         BinaryOp::BitwiseXor => 5,
         BinaryOp::BitwiseAnd => 6,
         BinaryOp::Equal | BinaryOp::NotEqual => 7,
-        BinaryOp::Less | BinaryOp::LessEqual | BinaryOp::Greater | BinaryOp::GreaterEqual | BinaryOp::Gt => 8,
+        BinaryOp::Less
+        | BinaryOp::LessEqual
+        | BinaryOp::Greater
+        | BinaryOp::GreaterEqual
+        | BinaryOp::Gt => 8,
         BinaryOp::LeftShift => 9,
         BinaryOp::RightShift => 9,
         BinaryOp::Add | BinaryOp::Subtract => 10,
@@ -2595,7 +2752,7 @@ fn parse_catch_body(state: &mut ParserState) -> Result<Box<Expr>> {
 fn parse_finally_block(state: &mut ParserState) -> Result<Option<Box<Expr>>> {
     if matches!(state.tokens.peek(), Some((Token::Finally, _))) {
         state.tokens.advance(); // consume 'finally'
-        // parse_block expects and consumes the left brace
+                                // parse_block expects and consumes the left brace
         Ok(Some(Box::new(super::collections::parse_block(state)?)))
     } else {
         Ok(None)
@@ -2603,8 +2760,8 @@ fn parse_finally_block(state: &mut ParserState) -> Result<Option<Box<Expr>>> {
 }
 /// Helper for validating try-catch structure (complexity: 3)
 fn validate_try_catch_structure(
-    catch_clauses: &[crate::frontend::ast::CatchClause], 
-    finally_block: Option<&Expr>
+    catch_clauses: &[crate::frontend::ast::CatchClause],
+    finally_block: Option<&Expr>,
 ) -> Result<()> {
     if catch_clauses.is_empty() && finally_block.is_none() {
         bail!("Try block must have at least one catch clause or a finally block");
@@ -2614,9 +2771,9 @@ fn validate_try_catch_structure(
 
 #[cfg(test)]
 mod tests {
-    
-    use crate::frontend::parser::Parser;
+
     use crate::frontend::ast::{ExprKind, Literal};
+    use crate::frontend::parser::Parser;
 
     // Unit tests for specific parsing functions
 
@@ -2905,7 +3062,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "async blocks not fully implemented"]
+
     fn test_parse_async_block() {
         let mut parser = Parser::new("async { 42 }");
         let result = parser.parse();
@@ -2913,7 +3070,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "await expressions not fully implemented"]
+
     fn test_parse_await_expression() {
         let mut parser = Parser::new("await async_func()");
         let result = parser.parse();
@@ -2935,7 +3092,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "exclusive range syntax not fully implemented"]
+
     fn test_parse_range_exclusive() {
         let mut parser = Parser::new("1...10");
         let result = parser.parse();
@@ -2950,7 +3107,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "ternary conditional not fully implemented"]
+
     fn test_parse_ternary_conditional() {
         let mut parser = Parser::new("condition ? true_val : false_val");
         let result = parser.parse();
@@ -3251,10 +3408,7 @@ fn parse_loop(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.expect(&Token::Loop)?;
     let body = Box::new(super::parse_expr_recursive(state)?);
 
-    Ok(Expr::new(
-        ExprKind::Loop { body },
-        start_span,
-    ))
+    Ok(Expr::new(ExprKind::Loop { body }, start_span))
 }
 
 /// Parse increment operator (++var or var++)
@@ -3290,30 +3444,30 @@ fn parse_decrement_token(state: &mut ParserState, span: Span) -> Result<Expr> {
 #[cfg(test)]
 mod property_tests_parser_expressions {
 
-    use proptest::prelude::*;
     use crate::frontend::parser::Parser;
-    
+    use proptest::prelude::*;
+
     proptest! {
         /// Property: Parser never panics on any string input (fuzzing)
         #[test]
         fn test_parser_never_panics_on_any_input(input: String) {
             // Limit input size to avoid timeout
             let _input = if input.len() > 200 { &input[..200] } else { &input };
-            
+
             let result = std::panic::catch_unwind(|| {
                 let mut parser = Parser::new(&input);
                 // Parser should never panic, even on invalid syntax
                 let _ = parser.parse();
             });
-            
-            assert!(result.is_ok(), "Parser panicked on input: {:?}", input);
+
+            assert!(result.is_ok(), "Parser panicked on input: {input:?}");
         }
-        
+
         /// Property: Valid literals always parse successfully
         #[test]
         fn test_valid_literals_always_parse(
-            int_val in -1000000i64..1000000i64,
-            float_val in -1000000.0f64..1000000.0f64,
+            int_val in -1_000_000i64..1_000_000i64,
+            float_val in -1_000_000.0f64..1_000_000.0f64,
             bool_val in any::<bool>(),
             string_val in "[a-zA-Z0-9 ]{0,20}", // Simple ASCII strings only
         ) {
@@ -3323,36 +3477,36 @@ mod property_tests_parser_expressions {
                 bool_val.to_string(),
                 format!("\"{}\"", string_val.replace('"', "\\\"")),
             ];
-            
+
             for input in test_cases {
                 let mut parser = Parser::new(&input);
                 let result = parser.parse();
-                
+
                 // Valid literals should always parse successfully
                 prop_assert!(result.is_ok(), "Failed to parse valid literal: {}", input);
             }
         }
-        
+
         /// Property: Balanced parentheses expressions parse correctly
         #[test]
         fn test_balanced_parentheses_parse(
             expr_content in "42|true|\"test\"|x",
             nesting_level in 0..5_u32, // Limit nesting to avoid timeout
         ) {
-            let mut input = expr_content.clone();
-            
+            let mut input = expr_content;
+
             // Add balanced parentheses
             for _ in 0..nesting_level {
-                input = format!("({})", input);
+                input = format!("({input})");
             }
-            
+
             let mut parser = Parser::new(&input);
             let result = parser.parse();
-            
+
             // Balanced expressions should parse successfully
             prop_assert!(result.is_ok(), "Failed to parse balanced expression: {}", input);
         }
-        
+
         /// Property: Binary operations with valid operators parse correctly
         #[test]
         fn test_binary_operations_parse(
@@ -3360,26 +3514,26 @@ mod property_tests_parser_expressions {
             op in r"\+|\-|\*|/|==|!=|<|>|<=|>=|&&|\|\|",
             right in "42|y|false",
         ) {
-            let input = format!("{} {} {}", left, op, right);
-            
+            let input = format!("{left} {op} {right}");
+
             let mut parser = Parser::new(&input);
             let result = parser.parse();
-            
-            // Valid binary operations should parse successfully  
+
+            // Valid binary operations should parse successfully
             prop_assert!(result.is_ok(), "Failed to parse binary operation: {}", input);
         }
-        
+
         /// Property: Function definitions with valid syntax parse correctly
         #[test]
         fn test_function_definitions_parse(
             func_name in "[a-z][a-z0-9_]*{1,20}",
             param_name in "[a-z][a-z0-9_]*{1,10}",
         ) {
-            let input = format!("fun {}({}: i32) -> i32 {{ {} + 1 }}", func_name, param_name, param_name);
-            
+            let input = format!("fun {func_name}({param_name}: i32) -> i32 {{ {param_name} + 1 }}");
+
             let mut parser = Parser::new(&input);
             let result = parser.parse();
-            
+
             // Valid function definitions should parse successfully
             prop_assert!(result.is_ok(), "Failed to parse function definition: {}", input);
         }

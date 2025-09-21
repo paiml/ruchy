@@ -1,5 +1,8 @@
 //! Parsing utilities and helper functions
-use super::{ParserState, bail, Result, Expr, Token, ExprKind, Span, Param, Type, TypeKind, Literal, Pattern, Attribute, StringPart};
+use super::{
+    bail, Attribute, Expr, ExprKind, Literal, Param, ParserState, Pattern, Result, Span,
+    StringPart, Token, Type, TypeKind,
+};
 use crate::frontend::ast::ImportItem;
 /// Create a detailed error message with context
 pub fn error_with_context(msg: &str, state: &mut ParserState, expected: &str) -> anyhow::Error {
@@ -7,8 +10,14 @@ pub fn error_with_context(msg: &str, state: &mut ParserState, expected: &str) ->
     let context_str = state.tokens.get_context_string();
     anyhow::anyhow!(
         "Parse error at line {}, column {}:\n  {}\n  Expected: {}\n  Found: {}\n  Context: {}",
-        line, col, msg, expected,
-        state.tokens.peek().map_or_else(|| "EOF".to_string(), |(t, _)| format!("{t:?}")),
+        line,
+        col,
+        msg,
+        expected,
+        state
+            .tokens
+            .peek()
+            .map_or_else(|| "EOF".to_string(), |(t, _)| format!("{t:?}")),
         context_str
     )
 }
@@ -20,7 +29,7 @@ pub fn suggest_correction(input: &str) -> Option<String> {
         "retrun" | "reutrn" | "retrn" => Some("return".to_string()),
         "lamba" | "lamda" | "lamdba" => Some("lambda".to_string()),
         "mactch" | "mathc" | "mtach" => Some("match".to_string()),
-        _ => None
+        _ => None,
     }
 }
 /// Validate URL imports for safe operation
@@ -42,9 +51,9 @@ fn validate_url_scheme(url: &str) -> Result<()> {
 }
 /// Check if URL has valid scheme
 fn is_valid_url_scheme(url: &str) -> bool {
-    url.starts_with("https://") || 
-    url.starts_with("http://localhost") ||
-    url.starts_with("http://127.0.0.1")
+    url.starts_with("https://")
+        || url.starts_with("http://localhost")
+        || url.starts_with("http://127.0.0.1")
 }
 /// Validate URL has correct file extension
 fn validate_url_extension(url: &str) -> Result<()> {
@@ -165,7 +174,11 @@ fn parse_reference_pattern(state: &mut ParserState) -> Result<Pattern> {
             }
         }
         _ => {
-            let expected = if is_mut_ref { "'self' after '&mut'" } else { "'self' after '&'" };
+            let expected = if is_mut_ref {
+                "'self' after '&mut'"
+            } else {
+                "'self' after '&'"
+            };
             bail!("Expected {}", expected)
         }
     }
@@ -236,8 +249,18 @@ pub fn parse_type(state: &mut ParserState) -> Result<Type> {
         Some((Token::Fn, _)) => parse_fn_type(state, span),
         Some((Token::LeftBracket, _)) => parse_list_type(state, span),
         Some((Token::LeftParen, _)) => parse_paren_type(state, span),
-        Some((Token::Identifier(_) | Token::Result | Token::Option | Token::Ok |
-Token::Err | Token::Some | Token::DataFrame | Token::None | Token::Null, _)) => parse_named_type(state, span),
+        Some((
+            Token::Identifier(_)
+            | Token::Result
+            | Token::Option
+            | Token::Ok
+            | Token::Err
+            | Token::Some
+            | Token::DataFrame
+            | Token::None
+            | Token::Null,
+            _,
+        )) => parse_named_type(state, span),
         _ => bail!("Expected type"),
     }
 }
@@ -282,7 +305,7 @@ fn parse_list_type(state: &mut ParserState, span: Span) -> Result<Type> {
     // Check for array syntax [T; size]
     if matches!(state.tokens.peek(), Some((Token::Semicolon, _))) {
         state.tokens.advance(); // consume ;
-        // Parse the size - could be a literal or identifier
+                                // Parse the size - could be a literal or identifier
         let size = if let Some((Token::Integer(n), _)) = state.tokens.peek() {
             let size = *n as usize;
             state.tokens.advance();
@@ -303,7 +326,10 @@ fn parse_list_type(state: &mut ParserState, span: Span) -> Result<Type> {
         };
         state.tokens.expect(&Token::RightBracket)?;
         Ok(Type {
-            kind: TypeKind::Array { elem_type: Box::new(inner), size },
+            kind: TypeKind::Array {
+                elem_type: Box::new(inner),
+                size,
+            },
             span,
         })
     } else {
@@ -448,7 +474,10 @@ fn parse_generic_type(state: &mut ParserState, base: String, span: Span) -> Resu
                     });
                 }
                 _ => {
-                    bail!("Expected > to close generic type, found {:?}", state.tokens.peek());
+                    bail!(
+                        "Expected > to close generic type, found {:?}",
+                        state.tokens.peek()
+                    );
                 }
             }
         }
@@ -465,7 +494,10 @@ fn parse_generic_type(state: &mut ParserState, base: String, span: Span) -> Resu
 // Helper: Parse comma-separated type list (complexity: 3)
 fn parse_type_list(state: &mut ParserState) -> Result<Vec<Type>> {
     let mut types = Vec::new();
-    if !matches!(state.tokens.peek(), Some((Token::RightParen | Token::Greater | Token::RightShift, _))) {
+    if !matches!(
+        state.tokens.peek(),
+        Some((Token::RightParen | Token::Greater | Token::RightShift, _))
+    ) {
         types.push(parse_type(state)?);
         while matches!(state.tokens.peek(), Some((Token::Comma, _))) {
             state.tokens.advance(); // consume comma
@@ -544,7 +576,7 @@ fn parse_url_import(state: &mut ParserState, url: &str, start_span: Span) -> Res
     Ok(Expr::new(
         ExprKind::Import {
             module: url.to_string(),
-            items: None,  // URL imports import everything
+            items: None, // URL imports import everything
         },
         start_span,
     ))
@@ -559,7 +591,7 @@ fn parse_module_path(state: &mut ParserState) -> Result<Vec<String>> {
         // Parse additional path segments
         while matches!(state.tokens.peek(), Some((Token::ColonColon, _))) {
             state.tokens.advance(); // consume ::
-            // Check if this is the start of import items
+                                    // Check if this is the start of import items
             if is_import_items_start(state) {
                 break;
             }
@@ -662,7 +694,10 @@ fn parse_simple_import(state: &mut ParserState, path_parts: &[String]) -> Result
     }
 }
 /// Parse simple import with alias (complexity: 5)
-fn parse_simple_import_with_alias(state: &mut ParserState, path_parts: &[String]) -> Result<Vec<ImportItem>> {
+fn parse_simple_import_with_alias(
+    state: &mut ParserState,
+    path_parts: &[String],
+) -> Result<Vec<ImportItem>> {
     state.tokens.advance(); // consume as
     if let Some((Token::Identifier(alias), _)) = state.tokens.peek() {
         let alias = alias.clone();
@@ -693,17 +728,24 @@ fn parse_simple_import_without_alias(path_parts: &[String]) -> Result<Vec<Import
     }
 }
 /// Create final import expression (complexity: 4)
-fn create_import_expression(path_parts: Vec<String>, _items: Vec<ImportItem>, start_span: Span) -> Result<Expr> {
+fn create_import_expression(
+    path_parts: Vec<String>,
+    _items: Vec<ImportItem>,
+    start_span: Span,
+) -> Result<Expr> {
     let module = path_parts.join("::");
     // Validate that we have a module
     if module.is_empty() {
         bail!("Expected import path after 'import'");
     }
     // Legacy import - convert to simple module import
-    Ok(Expr::new(ExprKind::Import {
-        module,
-        items: None  // Legacy imports use None for now
-    }, start_span))
+    Ok(Expr::new(
+        ExprKind::Import {
+            module,
+            items: None, // Legacy imports use None for now
+        },
+        start_span,
+    ))
 }
 /// # Errors
 ///
@@ -1001,7 +1043,7 @@ impl ExprContext {
 /// - Invalid syntax in module body
 pub fn parse_module(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume module
-    // Parse module name
+                                                                                 // Parse module name
     let name = if let Some((Token::Identifier(n), _)) = state.tokens.peek() {
         let name = n.clone();
         state.tokens.advance();
@@ -1095,9 +1137,12 @@ pub fn parse_export(state: &mut ParserState) -> Result<Expr> {
     if matches!(state.tokens.peek(), Some((Token::Default, _))) {
         state.tokens.advance(); // consume default
         let expr = super::parse_expr_with_precedence_recursive(state, 0)?;
-        return Ok(Expr::new(ExprKind::ExportDefault {
-            expr: Box::new(expr),
-        }, start_span));
+        return Ok(Expr::new(
+            ExprKind::ExportDefault {
+                expr: Box::new(expr),
+            },
+            start_span,
+        ));
     }
 
     // 2. export { item1, item2, ... } from "module" (re-export)
@@ -1120,7 +1165,7 @@ pub fn parse_export(state: &mut ParserState) -> Result<Expr> {
         // Check if this is a re-export
         if matches!(state.tokens.peek(), Some((Token::From, _))) {
             state.tokens.advance(); // consume from
-            // Accept both string literals and identifiers for module names
+                                    // Accept both string literals and identifiers for module names
             let module = if let Some((Token::String(module), _)) = state.tokens.peek() {
                 let module = module.clone();
                 state.tokens.advance();
@@ -1132,24 +1177,25 @@ pub fn parse_export(state: &mut ParserState) -> Result<Expr> {
             } else {
                 bail!("Expected module path after 'from'");
             };
-            return Ok(Expr::new(ExprKind::ReExport {
-                items,
-                module,
-            }, start_span));
+            return Ok(Expr::new(ExprKind::ReExport { items, module }, start_span));
         }
         // Simple export list
-        return Ok(Expr::new(ExprKind::ExportList {
-            names: items,
-        }, start_span));
+        return Ok(Expr::new(ExprKind::ExportList { names: items }, start_span));
     }
 
     // 3. export function/const/class declaration
-    if matches!(state.tokens.peek(), Some((Token::Fun | Token::Const | Token::Let | Token::Class, _))) {
+    if matches!(
+        state.tokens.peek(),
+        Some((Token::Fun | Token::Const | Token::Let | Token::Class, _))
+    ) {
         let expr = super::parse_expr_with_precedence_recursive(state, 0)?;
-        return Ok(Expr::new(ExprKind::Export {
-            expr: Box::new(expr),
-            is_default: false,
-        }, start_span));
+        return Ok(Expr::new(
+            ExprKind::Export {
+                expr: Box::new(expr),
+                is_default: false,
+            },
+            start_span,
+        ));
     }
 
     bail!("Invalid export statement")
@@ -1202,7 +1248,10 @@ mod tests {
     fn test_validate_url_no_suspicious_patterns() {
         assert!(validate_url_no_suspicious_patterns("https://example.com/file.ruchy").is_ok());
         assert!(validate_url_no_suspicious_patterns("javascript:alert(1)").is_err());
-        assert!(validate_url_no_suspicious_patterns("data:text/html,<script>alert(1)</script>").is_err());
+        assert!(
+            validate_url_no_suspicious_patterns("data:text/html,<script>alert(1)</script>")
+                .is_err()
+        );
         assert!(validate_url_no_suspicious_patterns("file:///etc/passwd").is_err());
     }
 
@@ -1222,10 +1271,9 @@ mod tests {
 
     #[test]
     fn test_parse_params_empty() {
-        
         use crate::frontend::parser::Parser;
 
-        let parser = Parser::new("()");
+        let _parser = Parser::new("()");
         // Test would need proper ParserState setup
         // This is a placeholder to show intent
         assert!(true); // Placeholder assertion
@@ -1234,7 +1282,6 @@ mod tests {
     #[test]
     fn test_check_and_consume_mut() {
         use crate::frontend::lexer::{Token, TokenStream};
-        
 
         // Test would require proper ParserState setup
         // Demonstrating the function exists
@@ -1310,7 +1357,9 @@ mod tests {
         assert!(validate_url_no_suspicious_patterns("file:///C:/Windows/System32").is_err());
 
         // Patterns that might look suspicious but are valid
-        assert!(validate_url_no_suspicious_patterns("https://example.com/javascript-tutorial").is_ok());
+        assert!(
+            validate_url_no_suspicious_patterns("https://example.com/javascript-tutorial").is_ok()
+        );
         assert!(validate_url_no_suspicious_patterns("https://example.com/data-analysis").is_ok());
         assert!(validate_url_no_suspicious_patterns("https://example.com/file-upload").is_ok());
     }
@@ -1340,8 +1389,9 @@ mod tests {
     #[test]
     fn test_parse_string_interpolation_escaped_brace() {
         // Test escaped braces
-        let parts = parse_string_interpolation(&mut ParserState::new(""), "Use {{braces}} like this");
-        assert!(parts.len() >= 1);
+        let parts =
+            parse_string_interpolation(&mut ParserState::new(""), "Use {{braces}} like this");
+        assert!(!parts.is_empty());
         // Should handle escaped braces properly
     }
 
@@ -1349,7 +1399,7 @@ mod tests {
     fn test_parse_string_interpolation_format_spec() {
         // Test format specifier
         let parts = parse_string_interpolation(&mut ParserState::new(""), "Pi is {pi:.2f}");
-        assert!(parts.len() >= 1);
+        assert!(!parts.is_empty());
         // Should handle format specifiers
     }
 
@@ -1490,7 +1540,7 @@ mod tests {
         let result = parse_attributes(&mut state);
         assert!(result.is_ok());
         if let Ok(attrs) = result {
-            assert!(attrs.len() > 0);
+            assert!(!attrs.is_empty());
         }
     }
 
@@ -1550,7 +1600,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "Module system changed in Sprint v3.8.0"]
+
     fn test_parse_import_simple() {
         let mut state = ParserState::new("import std");
         let result = parse_import_legacy(&mut state);
@@ -1558,7 +1608,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "Module system changed in Sprint v3.8.0"]
+
     fn test_parse_import_with_items() {
         let mut state = ParserState::new("import std.{HashMap, Vec}");
         let result = parse_import_legacy(&mut state);
@@ -1593,7 +1643,7 @@ mod tests {
 
         // Test adding empty text (should not add)
         let mut parts2 = Vec::new();
-        finalize_text_part(&mut parts2, "".to_string());
+        finalize_text_part(&mut parts2, String::new());
         assert_eq!(parts2.len(), 0);
     }
 

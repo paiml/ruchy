@@ -9,7 +9,7 @@ fn run_ruchy_code(code: &str) -> String {
         .arg(code)
         .output()
         .expect("Failed to execute ruchy");
-    
+
     String::from_utf8_lossy(&output.stdout).to_string()
 }
 
@@ -21,7 +21,7 @@ let [a = 10, b = 20] = [1];
 println(a);
 println(b);
 ";
-    
+
     let output = run_ruchy_code(code);
     assert_eq!(output.trim(), "1\n20");
 }
@@ -34,7 +34,7 @@ let [a = 10, b = 20] = [1, 2];
 println(a);
 println(b);
 ";
-    
+
     let output = run_ruchy_code(code);
     assert_eq!(output.trim(), "1\n2");
 }
@@ -47,7 +47,7 @@ let [a = 10, b = 20] = [];
 println(a);
 println(b);
 ";
-    
+
     let output = run_ruchy_code(code);
     assert_eq!(output.trim(), "10\n20");
 }
@@ -62,7 +62,7 @@ println(x);
 println(y);
 println(z);
 ";
-    
+
     let output = run_ruchy_code(code);
     assert_eq!(output.trim(), "1\n2\n3");
 }
@@ -76,7 +76,7 @@ let {name, age} = obj;
 println(name);
 println(age);
 "#;
-    
+
     let output = run_ruchy_code(code);
     assert_eq!(output.trim(), "Alice\n30");
 }
@@ -92,7 +92,7 @@ println(b);
 println(x);
 println(y);
 ";
-    
+
     let output = run_ruchy_code(code);
     assert_eq!(output.trim(), "1\n2\n10\n20");
 }
@@ -106,7 +106,7 @@ fun add([x, y]) {
 }
 println(add([5, 3]));
 ";
-    
+
     let output = run_ruchy_code(code);
     assert_eq!(output.trim(), "8");
 }
@@ -121,7 +121,7 @@ println(b);
 println(c);
 println(d);
 ";
-    
+
     let output = run_ruchy_code(code);
     assert_eq!(output.trim(), "10\n2\n3\n4");
 }
@@ -136,7 +136,7 @@ for item in rest {
     println(item);
 }
 ";
-    
+
     let output = run_ruchy_code(code);
     assert_eq!(output.trim(), "1\n2\n3\n4");
 }
@@ -150,7 +150,7 @@ let [a = get_default(), b = 10 * 2] = [];
 println(a);
 println(b);
 ";
-    
+
     let output = run_ruchy_code(code);
     assert_eq!(output.trim(), "42\n20");
 }
@@ -159,7 +159,7 @@ println(b);
 #[test]
 fn test_compilation_performance() {
     use std::time::Instant;
-    
+
     let code = r"
 let [a = 1, b = 2, c = 3, d = 4, e = 5] = [10, 20];
 let {x, y, z} = {x: 100, y: 200, z: 300};
@@ -168,11 +168,14 @@ println(a + b + c + d + e);
 println(x + y + z);
 println(process([1, 2, 3]));
 ";
-    
+
     let start = Instant::now();
     let _ = run_ruchy_code(code);
     let duration = start.elapsed();
-    
+
     // Should compile and run in under 2 seconds
-    assert!(duration.as_secs() < 2, "Compilation took too long: {duration:?}");
+    assert!(
+        duration.as_secs() < 2,
+        "Compilation took too long: {duration:?}"
+    );
 }

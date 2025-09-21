@@ -3,28 +3,31 @@
 //! This module provides WebAssembly component generation, WIT interface generation,
 //! platform-specific deployment, and portability scoring for Ruchy code.
 pub mod component;
-pub mod wit;
+pub mod demo_converter;
 pub mod deployment;
+pub mod notebook;
 pub mod portability;
 pub mod repl;
-pub mod notebook;
 pub mod shared_session;
-pub mod demo_converter;
+pub mod wit;
 
-pub use component::{WasmComponent, ComponentBuilder, ComponentConfig};
-pub use wit::{WitInterface, WitGenerator, InterfaceDefinition};
-pub use deployment::{DeploymentTarget, Deployer, DeploymentConfig};
-pub use portability::{PortabilityScore, PortabilityAnalyzer, PortabilityReport};
-pub use repl::{WasmRepl, ReplOutput, TimingInfo};
-pub use notebook::{NotebookRuntime, NotebookCell, Notebook, CellType, CellOutput};
-pub use shared_session::{SharedSession, GlobalRegistry, DefId, ExecutionMode, ExecuteResponse};
-pub use demo_converter::{convert_demo_to_notebook, find_demo_files, NotebookCell as DemoNotebookCell, Notebook as DemoNotebook};
+pub use component::{ComponentBuilder, ComponentConfig, WasmComponent};
+pub use demo_converter::{
+    convert_demo_to_notebook, find_demo_files, Notebook as DemoNotebook,
+    NotebookCell as DemoNotebookCell,
+};
+pub use deployment::{Deployer, DeploymentConfig, DeploymentTarget};
+pub use notebook::{CellOutput, CellType, Notebook, NotebookCell, NotebookRuntime};
+pub use portability::{PortabilityAnalyzer, PortabilityReport, PortabilityScore};
+pub use repl::{ReplOutput, TimingInfo, WasmRepl};
+pub use shared_session::{DefId, ExecuteResponse, ExecutionMode, GlobalRegistry, SharedSession};
+pub use wit::{InterfaceDefinition, WitGenerator, WitInterface};
 
 use crate::frontend::ast::{Expr, ExprKind, Literal};
 use anyhow::Result;
 use wasm_encoder::{
-    Module, TypeSection, FunctionSection, ExportSection, CodeSection,
-    ValType, ExportKind, Function, Instruction
+    CodeSection, ExportKind, ExportSection, Function, FunctionSection, Instruction, Module,
+    TypeSection, ValType,
 };
 
 /// High-level WASM compiler for Ruchy AST
@@ -66,9 +69,12 @@ impl WasmCompiler {
 
         // Process AST and generate WASM
         match &ast.kind {
-            ExprKind::Function { name, params, body, .. } => {
+            ExprKind::Function {
+                name, params, body, ..
+            } => {
                 // Add function type
-                let param_types: Vec<ValType> = params.iter()
+                let param_types: Vec<ValType> = params
+                    .iter()
                     .map(|_| ValType::I32) // Simplification: all params are i32
                     .collect();
                 let result_types = vec![ValType::I32]; // Simplification: returns i32
@@ -125,10 +131,7 @@ impl WasmCompiler {
 
         let bytes = module.finish();
 
-        Ok(WasmModule {
-            bytes,
-            exports,
-        })
+        Ok(WasmModule { bytes, exports })
     }
 
     /// Compile an expression to WASM instructions

@@ -2,18 +2,21 @@
 //!
 //! Provides REPL-based refinement type verification, property proving,
 //! and counterexample generation.
-pub mod prover;
-pub mod tactics;
-pub mod smt;
-pub mod refinement;
 pub mod counterexample;
+pub mod prover;
+pub mod refinement;
+pub mod smt;
+pub mod tactics;
 pub mod verification;
-pub use prover::{InteractiveProver, ProverSession, ProofResult, ProofGoal};
-pub use tactics::{Tactic, TacticLibrary, TacticSuggestion};
-pub use smt::{SmtSolver, SmtBackend, SmtQuery, SmtResult};
-pub use refinement::{RefinementType, TypeRefinement, RefinementChecker};
 pub use counterexample::{Counterexample, CounterexampleGenerator, TestCase};
-pub use verification::{ProofVerificationResult, extract_assertions_from_ast, verify_single_assertion, verify_assertions_batch};
+pub use prover::{InteractiveProver, ProofGoal, ProofResult, ProverSession};
+pub use refinement::{RefinementChecker, RefinementType, TypeRefinement};
+pub use smt::{SmtBackend, SmtQuery, SmtResult, SmtSolver};
+pub use tactics::{Tactic, TacticLibrary, TacticSuggestion};
+pub use verification::{
+    extract_assertions_from_ast, verify_assertions_batch, verify_single_assertion,
+    ProofVerificationResult,
+};
 
 // Tests removed: This module only re-exports from submodules.
 // Actual implementations and tests belong in the submodules.

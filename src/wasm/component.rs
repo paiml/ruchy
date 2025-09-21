@@ -2,8 +2,8 @@
 //!
 //! Generates WebAssembly components from Ruchy source code with full
 //! component model support and interface bindings.
-use anyhow::Result;
 use crate::utils::{read_file_with_context, write_file_with_context};
+use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
@@ -309,15 +309,15 @@ impl Default for ComponentBuilder {
 }
 impl ComponentBuilder {
     /// Create a new component builder with default config
-/// # Examples
-/// 
-/// ```
-/// use ruchy::wasm::component::ComponentBuilder;
-/// 
-/// let instance = ComponentBuilder::new();
-/// // Verify behavior
-/// ```
-pub fn new() -> Self {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::wasm::component::ComponentBuilder;
+    ///
+    /// let instance = ComponentBuilder::new();
+    /// // Verify behavior
+    /// ```
+    pub fn new() -> Self {
         Self {
             config: ComponentConfig::default(),
             source_files: Vec::new(),
@@ -327,16 +327,16 @@ pub fn new() -> Self {
         }
     }
     /// Create a new component builder with a specific config
-/// # Examples
-/// 
-/// ```
-/// use ruchy::wasm::component::ComponentBuilder;
-/// 
-/// let mut instance = ComponentBuilder::new();
-/// let result = instance.new_with_config();
-/// // Verify behavior
-/// ```
-pub fn new_with_config(config: ComponentConfig) -> Self {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::wasm::component::ComponentBuilder;
+    ///
+    /// let mut instance = ComponentBuilder::new();
+    /// let result = instance.new_with_config();
+    /// // Verify behavior
+    /// ```
+    pub fn new_with_config(config: ComponentConfig) -> Self {
         Self {
             config,
             source_files: Vec::new(),
@@ -346,123 +346,126 @@ pub fn new_with_config(config: ComponentConfig) -> Self {
         }
     }
     /// Add a source file to compile
-/// # Examples
-/// 
-/// ```
-/// use ruchy::wasm::component::ComponentBuilder;
-/// 
-/// let mut instance = ComponentBuilder::new();
-/// let result = instance.add_source();
-/// // Verify behavior
-/// ```
-pub fn add_source(&mut self, path: impl AsRef<Path>) -> Result<&mut Self> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::wasm::component::ComponentBuilder;
+    ///
+    /// let mut instance = ComponentBuilder::new();
+    /// let result = instance.add_source();
+    /// // Verify behavior
+    /// ```
+    pub fn add_source(&mut self, path: impl AsRef<Path>) -> Result<&mut Self> {
         let path = path.as_ref().to_path_buf();
         if !path.exists() {
-            return Err(anyhow::anyhow!("Source file does not exist: {}", path.display()));
+            return Err(anyhow::anyhow!(
+                "Source file does not exist: {}",
+                path.display()
+            ));
         }
         self.source_files.push(path);
         Ok(self)
     }
     /// Set component metadata
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::component::with_metadata;
-/// 
-/// let result = with_metadata(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn with_metadata(mut self, metadata: ComponentMetadata) -> Self {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::component::with_metadata;
+    ///
+    /// let result = with_metadata(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn with_metadata(mut self, metadata: ComponentMetadata) -> Self {
         self.metadata = metadata;
         self
     }
     /// Set optimization level
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::component::with_optimization;
-/// 
-/// let result = with_optimization(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn with_optimization(mut self, level: OptimizationLevel) -> Self {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::component::with_optimization;
+    ///
+    /// let result = with_optimization(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn with_optimization(mut self, level: OptimizationLevel) -> Self {
         self.optimization_level = level;
         self
     }
     /// Include debug information
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::component::with_debug_info;
-/// 
-/// let result = with_debug_info(true);
-/// assert_eq!(result, Ok(true));
-/// ```
-pub fn with_debug_info(mut self, include: bool) -> Self {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::component::with_debug_info;
+    ///
+    /// let result = with_debug_info(true);
+    /// assert_eq!(result, Ok(true));
+    /// ```
+    pub fn with_debug_info(mut self, include: bool) -> Self {
         self.include_debug_info = include;
         self
     }
     /// Set the configuration
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::component::with_config;
-/// 
-/// let result = with_config(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn with_config(mut self, config: ComponentConfig) -> Self {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::component::with_config;
+    ///
+    /// let result = with_config(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn with_config(mut self, config: ComponentConfig) -> Self {
         self.config = config;
         self
     }
     /// Add source code directly (for in-memory compilation)
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::component::with_source;
-/// 
-/// let result = with_source(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn with_source(self, _source: String) -> Self {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::component::with_source;
+    ///
+    /// let result = with_source(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn with_source(self, _source: String) -> Self {
         // Store source code for later compilation
         // In a real implementation, this would be stored properly
         self
     }
     /// Set metadata name
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::component::set_name;
-/// 
-/// let result = set_name(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn set_name(&mut self, name: String) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::component::set_name;
+    ///
+    /// let result = set_name(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn set_name(&mut self, name: String) {
         self.metadata.name = name;
     }
     /// Set metadata version
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::component::set_version;
-/// 
-/// let result = set_version(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn set_version(&mut self, version: String) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::component::set_version;
+    ///
+    /// let result = set_version(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn set_version(&mut self, version: String) {
         self.metadata.version = version;
     }
     /// Build the WebAssembly component
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::component::build;
-/// 
-/// let result = build(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn build(&self) -> Result<WasmComponent> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::component::build;
+    ///
+    /// let result = build(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn build(&self) -> Result<WasmComponent> {
         // Validate configuration
         self.validate_config()?;
         // Parse source files
@@ -513,9 +516,9 @@ pub fn build(&self) -> Result<WasmComponent> {
         ];
         // Add type section
         module.extend(&[0x01, 0x04, 0x01, 0x60, 0x00, 0x00]); // Empty function type
-        // Add function section
+                                                              // Add function section
         module.extend(&[0x03, 0x02, 0x01, 0x00]); // One function
-        // Add export section
+                                                  // Add export section
         let export_name = "main";
         let name_bytes = export_name.as_bytes();
         module.push(0x07); // Export section
@@ -525,25 +528,26 @@ pub fn build(&self) -> Result<WasmComponent> {
         module.extend(name_bytes);
         module.push(0x00); // Function export
         module.push(0x00); // Function index
-        // Add code section
+                           // Add code section
         module.extend(&[0x0a, 0x04, 0x01, 0x02, 0x00, 0x0b]); // Empty function body
         Ok(module)
     }
-    fn analyze_module(&self, _bytecode: &[u8]) -> Result<(Vec<ExportDefinition>, Vec<ImportDefinition>)> {
+    fn analyze_module(
+        &self,
+        _bytecode: &[u8],
+    ) -> Result<(Vec<ExportDefinition>, Vec<ImportDefinition>)> {
         // In a real implementation, this would parse the WASM module
         // and extract export/import information
-        let exports = vec![
-            ExportDefinition {
-                name: "main".to_string(),
-                export_type: ExportType::Function,
-                signature: TypeSignature {
-                    params: vec![],
-                    results: vec![],
-                    metadata: HashMap::new(),
-                },
-                documentation: Some("Main entry point".to_string()),
+        let exports = vec![ExportDefinition {
+            name: "main".to_string(),
+            export_type: ExportType::Function,
+            signature: TypeSignature {
+                params: vec![],
+                results: vec![],
+                metadata: HashMap::new(),
             },
-        ];
+            documentation: Some("Main entry point".to_string()),
+        }];
         let imports = vec![];
         Ok((exports, imports))
     }
@@ -567,15 +571,15 @@ pub fn build(&self) -> Result<WasmComponent> {
         Ok(producer.as_bytes().to_vec())
     }
     /// Build a dry-run component (for testing without actual compilation)
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::component::build_dry_run;
-/// 
-/// let result = build_dry_run(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn build_dry_run(&self) -> Result<WasmComponent> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::component::build_dry_run;
+    ///
+    /// let result = build_dry_run(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn build_dry_run(&self) -> Result<WasmComponent> {
         // Create a minimal component with dummy bytecode for dry-run
         let bytecode = vec![
             0x00, 0x61, 0x73, 0x6d, // WASM magic number
@@ -588,18 +592,16 @@ pub fn build_dry_run(&self) -> Result<WasmComponent> {
             version: self.metadata.version.clone(),
             bytecode,
             metadata: self.metadata.clone(),
-            exports: vec![
-                ExportDefinition {
-                    name: "main".to_string(),
-                    export_type: ExportType::Function,
-                    signature: TypeSignature {
-                        params: vec![],
-                        results: vec![],
-                        metadata: HashMap::new(),
-                    },
-                    documentation: Some("Dry-run main entry point".to_string()),
+            exports: vec![ExportDefinition {
+                name: "main".to_string(),
+                export_type: ExportType::Function,
+                signature: TypeSignature {
+                    params: vec![],
+                    results: vec![],
+                    metadata: HashMap::new(),
                 },
-            ],
+                documentation: Some("Dry-run main entry point".to_string()),
+            }],
             imports: vec![],
             custom_sections: HashMap::new(),
         })
@@ -607,41 +609,41 @@ pub fn build_dry_run(&self) -> Result<WasmComponent> {
 }
 impl WasmComponent {
     /// Save the component to a file
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::component::save;
-/// 
-/// let result = save(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn save(&self, path: impl AsRef<Path>) -> Result<()> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::component::save;
+    ///
+    /// let result = save(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn save(&self, path: impl AsRef<Path>) -> Result<()> {
         let path = path.as_ref();
         write_file_with_context(path, std::str::from_utf8(&self.bytecode)?)?;
         Ok(())
     }
     /// Get the size of the component in bytes
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::component::size;
-/// 
-/// let result = size(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn size(&self) -> usize {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::component::size;
+    ///
+    /// let result = size(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn size(&self) -> usize {
         self.bytecode.len()
     }
     /// Validate the component
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::component::validate;
-/// 
-/// let result = validate(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn validate(&self) -> Result<()> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::component::validate;
+    ///
+    /// let result = validate(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn validate(&self) -> Result<()> {
         // In a real implementation, this would use wasmparser to validate
         if self.bytecode.len() < 8 {
             return Err(anyhow::anyhow!("Invalid WASM module: too small"));
@@ -653,27 +655,27 @@ pub fn validate(&self) -> Result<()> {
         Ok(())
     }
     /// Verify the component (alias for validate)
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::component::verify;
-/// 
-/// let result = verify(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn verify(&self) -> Result<()> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::component::verify;
+    ///
+    /// let result = verify(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn verify(&self) -> Result<()> {
         self.validate()
     }
     /// Get a summary of the component
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::component::summary;
-/// 
-/// let result = summary(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn summary(&self) -> ComponentSummary {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::component::summary;
+    ///
+    /// let result = summary(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn summary(&self) -> ComponentSummary {
         ComponentSummary {
             name: self.name.clone(),
             version: self.version.clone(),
@@ -718,7 +720,6 @@ impl Default for ComponentMetadata {
 mod tests {
     use super::*;
     use std::fs;
-    
 
     #[test]
     fn test_component_builder_new() {
@@ -732,7 +733,10 @@ mod tests {
         let config = ComponentConfig::default();
         let builder = ComponentBuilder::new_with_config(config.clone());
         assert_eq!(builder.source_files.len(), 0);
-        assert_eq!(builder.config.memory.initial_pages, config.memory.initial_pages);
+        assert_eq!(
+            builder.config.memory.initial_pages,
+            config.memory.initial_pages
+        );
     }
 
     #[test]
@@ -743,7 +747,7 @@ mod tests {
             version: "1.0.0".to_string(),
             ..Default::default()
         };
-        let updated = builder.with_metadata(metadata.clone());
+        let updated = builder.with_metadata(metadata);
         assert_eq!(updated.metadata.name, "test");
         assert_eq!(updated.metadata.version, "1.0.0");
     }
@@ -774,7 +778,7 @@ mod tests {
             },
             ..Default::default()
         };
-        let updated = builder.with_config(config.clone());
+        let updated = builder.with_config(config);
         assert_eq!(updated.config.memory.initial_pages, 10);
         assert_eq!(updated.config.memory.maximum_pages, Some(100));
     }
@@ -907,30 +911,26 @@ mod tests {
             version: "1.0.0".to_string(),
             bytecode: vec![1, 2, 3],
             metadata: ComponentMetadata::default(),
-            exports: vec![
-                ExportDefinition {
-                    name: "func1".to_string(),
-                    export_type: ExportType::Function,
-                    signature: TypeSignature {
-                        params: vec![],
-                        results: vec![],
-                        metadata: HashMap::new(),
-                    },
-                    documentation: None,
-                }
-            ],
-            imports: vec![
-                ImportDefinition {
-                    module: "env".to_string(),
-                    name: "import1".to_string(),
-                    import_type: ImportType::Function,
-                    signature: TypeSignature {
-                        params: vec![],
-                        results: vec![],
-                        metadata: HashMap::new(),
-                    },
-                }
-            ],
+            exports: vec![ExportDefinition {
+                name: "func1".to_string(),
+                export_type: ExportType::Function,
+                signature: TypeSignature {
+                    params: vec![],
+                    results: vec![],
+                    metadata: HashMap::new(),
+                },
+                documentation: None,
+            }],
+            imports: vec![ImportDefinition {
+                module: "env".to_string(),
+                name: "import1".to_string(),
+                import_type: ImportType::Function,
+                signature: TypeSignature {
+                    params: vec![],
+                    results: vec![],
+                    metadata: HashMap::new(),
+                },
+            }],
             custom_sections: HashMap::new(),
         };
 
@@ -1155,10 +1155,7 @@ mod tests {
 
     #[test]
     fn test_target_architecture_variants_comprehensive() {
-        let targets = vec![
-            TargetArchitecture::Wasm32,
-            TargetArchitecture::Wasm64,
-        ];
+        let targets = vec![TargetArchitecture::Wasm32, TargetArchitecture::Wasm64];
 
         for target in targets {
             let config = ComponentConfig {
@@ -1197,7 +1194,7 @@ mod tests {
                 WasmType::V128 => assert_eq!(format!("{wasm_type:?}"), "V128"),
                 WasmType::FuncRef => assert_eq!(format!("{wasm_type:?}"), "FuncRef"),
                 WasmType::ExternRef => assert_eq!(format!("{wasm_type:?}"), "ExternRef"),
-                WasmType::Ref(name) => assert!(name.len() > 0),
+                WasmType::Ref(name) => assert!(!name.is_empty()),
             }
         }
     }
@@ -1247,18 +1244,16 @@ mod tests {
             version: "0.1.0".to_string(),
             bytecode: vec![0x00, 0x61, 0x73, 0x6d], // WASM magic number
             metadata: ComponentMetadata::default(),
-            exports: vec![
-                ExportDefinition {
-                    name: "validate".to_string(),
-                    export_type: ExportType::Function,
-                    signature: TypeSignature {
-                        params: vec![WasmType::I32],
-                        results: vec![WasmType::I32],
-                        metadata: HashMap::new(),
-                    },
-                    documentation: None,
+            exports: vec![ExportDefinition {
+                name: "validate".to_string(),
+                export_type: ExportType::Function,
+                signature: TypeSignature {
+                    params: vec![WasmType::I32],
+                    results: vec![WasmType::I32],
+                    metadata: HashMap::new(),
                 },
-            ],
+                documentation: None,
+            }],
             imports: vec![],
             custom_sections: HashMap::new(),
         };
@@ -1317,7 +1312,9 @@ mod tests {
 
         assert_eq!(config.imports.len(), 3);
         assert!(config.imports.contains(&"env".to_string()));
-        assert!(config.imports.contains(&"wasi_snapshot_preview1".to_string()));
+        assert!(config
+            .imports
+            .contains(&"wasi_snapshot_preview1".to_string()));
         assert!(config.export_all);
         assert!(config.generate_names);
     }

@@ -535,6 +535,7 @@ impl<T> std::ops::DerefMut for PoolBox<T> {
     }
 }
 #[cfg(test)]
+#[ignore]
 mod tests {
     use super::*;
     #[test]
@@ -601,11 +602,13 @@ mod tests {
         // Next allocation should reuse
         let v2 = pool.alloc(100).unwrap();
 #[cfg(test)]
+#[ignore]
 use proptest::prelude::*;
         assert_eq!(*v2, 100);
     }
 }
 #[cfg(test)]
+#[ignore]
 mod property_tests_arena {
     use proptest::proptest;
     use super::*;

@@ -31,44 +31,44 @@ impl Default for CiCdIntegrator {
 }
 
 impl CiCdIntegrator {
-/// # Examples
-/// 
-/// ```
-/// use ruchy::notebook::testing::integration::CiCdIntegrator;
-/// 
-/// let instance = CiCdIntegrator::new();
-/// // Verify behavior
-/// ```
-/// # Examples
-/// 
-/// ```
-/// use ruchy::notebook::testing::integration::CiCdIntegrator;
-/// 
-/// let instance = CiCdIntegrator::new();
-/// // Verify behavior
-/// ```
-/// # Examples
-/// 
-/// ```
-/// use ruchy::notebook::testing::integration::CiCdIntegrator;
-/// 
-/// let instance = CiCdIntegrator::new();
-/// // Verify behavior
-/// ```
-pub fn new() -> Self {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::notebook::testing::integration::CiCdIntegrator;
+    ///
+    /// let instance = CiCdIntegrator::new();
+    /// // Verify behavior
+    /// ```
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::notebook::testing::integration::CiCdIntegrator;
+    ///
+    /// let instance = CiCdIntegrator::new();
+    /// // Verify behavior
+    /// ```
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::notebook::testing::integration::CiCdIntegrator;
+    ///
+    /// let instance = CiCdIntegrator::new();
+    /// // Verify behavior
+    /// ```
+    pub fn new() -> Self {
         Self { config: None }
     }
     /// Configure CI/CD settings
-/// # Examples
-/// 
-/// ```
-/// use ruchy::notebook::testing::integration::CiCdIntegrator;
-/// 
-/// let mut instance = CiCdIntegrator::new();
-/// let result = instance.configure();
-/// // Verify behavior
-/// ```
-pub fn configure(&mut self, config: CiCdConfig) -> Result<(), String> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::notebook::testing::integration::CiCdIntegrator;
+    ///
+    /// let mut instance = CiCdIntegrator::new();
+    /// let result = instance.configure();
+    /// // Verify behavior
+    /// ```
+    pub fn configure(&mut self, config: CiCdConfig) -> Result<(), String> {
         if config.coverage_threshold > 100.0 || config.coverage_threshold < 0.0 {
             return Err("Coverage threshold must be between 0 and 100".to_string());
         }
@@ -76,15 +76,15 @@ pub fn configure(&mut self, config: CiCdConfig) -> Result<(), String> {
         Ok(())
     }
     /// Generate workflow file for the configured provider
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::notebook::testing::integration::generate_workflow;
-/// 
-/// let result = generate_workflow(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn generate_workflow(&self) -> String {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::notebook::testing::integration::generate_workflow;
+    ///
+    /// let result = generate_workflow(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn generate_workflow(&self) -> String {
         let config = match &self.config {
             Some(c) => c,
             None => return String::new(),
@@ -157,27 +157,27 @@ impl DistributedTestCoordinator {
         }
     }
     /// Register a worker node
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::notebook::testing::integration::register_worker;
-/// 
-/// let result = register_worker("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn register_worker(&mut self, name: &str, address: &str) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::notebook::testing::integration::register_worker;
+    ///
+    /// let result = register_worker("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn register_worker(&mut self, name: &str, address: &str) {
         self.workers.insert(name.to_string(), address.to_string());
     }
     /// Distribute tests across workers
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::notebook::testing::integration::distribute;
-/// 
-/// let result = distribute(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn distribute(&self, tests: &[String]) -> HashMap<String, Vec<String>> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::notebook::testing::integration::distribute;
+    ///
+    /// let result = distribute(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn distribute(&self, tests: &[String]) -> HashMap<String, Vec<String>> {
         let mut distribution = HashMap::new();
         if self.workers.is_empty() {
             return distribution;
@@ -193,15 +193,15 @@ pub fn distribute(&self, tests: &[String]) -> HashMap<String, Vec<String>> {
         distribution
     }
     /// Get worker status
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::notebook::testing::integration::get_worker_status;
-/// 
-/// let result = get_worker_status("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn get_worker_status(&self, worker: &str) -> WorkerStatus {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::notebook::testing::integration::get_worker_status;
+    ///
+    /// let result = get_worker_status("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn get_worker_status(&self, worker: &str) -> WorkerStatus {
         if self.workers.contains_key(worker) {
             WorkerStatus::Active
         } else {
@@ -259,59 +259,61 @@ impl ContinuousMonitor {
         }
     }
     /// Add an alert configuration
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::notebook::testing::integration::add_alert;
-/// 
-/// let result = add_alert(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn add_alert(&mut self, alert: Alert) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::notebook::testing::integration::add_alert;
+    ///
+    /// let result = add_alert(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn add_alert(&mut self, alert: Alert) {
         self.alerts.push(alert);
     }
     /// Start monitoring
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::notebook::testing::integration::start;
-/// 
-/// let result = start(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn start(&self) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::notebook::testing::integration::start;
+    ///
+    /// let result = start(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn start(&self) {
         // In real implementation, would spawn monitoring thread
     }
     /// Stop monitoring
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::notebook::testing::integration::stop;
-/// 
-/// let result = stop(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn stop(&self) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::notebook::testing::integration::stop;
+    ///
+    /// let result = stop(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn stop(&self) {
         // In real implementation, would stop monitoring thread
     }
     /// Record a metric value
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::notebook::testing::integration::record_metric;
-/// 
-/// let result = record_metric(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn record_metric(&mut self, metric: Metric, value: f64) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::notebook::testing::integration::record_metric;
+    ///
+    /// let result = record_metric(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn record_metric(&mut self, metric: Metric, value: f64) {
         self.metrics.insert(metric.clone(), value);
         // Check if any alerts should trigger
         for alert in &self.alerts {
-            if alert.metric == metric && value > alert.threshold
-                && !self.triggered.contains(&alert.id) {
-                    self.triggered.push(alert.id.clone());
-                    self.trigger_alert(alert);
-                }
+            if alert.metric == metric
+                && value > alert.threshold
+                && !self.triggered.contains(&alert.id)
+            {
+                self.triggered.push(alert.id.clone());
+                self.trigger_alert(alert);
+            }
         }
     }
     fn trigger_alert(&self, alert: &Alert) {
@@ -331,27 +333,27 @@ pub fn record_metric(&mut self, metric: Metric, value: f64) {
         }
     }
     /// Get triggered alerts
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::notebook::testing::integration::get_triggered_alerts;
-/// 
-/// let result = get_triggered_alerts(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn get_triggered_alerts(&self) -> Vec<String> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::notebook::testing::integration::get_triggered_alerts;
+    ///
+    /// let result = get_triggered_alerts(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn get_triggered_alerts(&self) -> Vec<String> {
         self.triggered.clone()
     }
     /// Clear triggered alerts
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::notebook::testing::integration::clear_alerts;
-/// 
-/// let result = clear_alerts(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn clear_alerts(&mut self) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::notebook::testing::integration::clear_alerts;
+    ///
+    /// let result = clear_alerts(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn clear_alerts(&mut self) {
         self.triggered.clear();
     }
 }

@@ -1,10 +1,10 @@
 // SPRINT6-004: Incremental testing with smart caching
 // PMAT Complexity: <10 per function
+use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
-use std::time::{SystemTime, Duration};
-use sha2::{Sha256, Digest};
-use serde::{Serialize, Deserialize};
+use std::time::{Duration, SystemTime};
 /// Incremental test executor with dependency tracking
 pub struct IncrementalTester {
     cache: TestResultCache,
@@ -77,43 +77,43 @@ impl Default for IncrementalTester {
 }
 
 impl IncrementalTester {
-/// # Examples
-/// 
-/// ```
-/// use ruchy::notebook::testing::incremental::IncrementalTester;
-/// 
-/// let instance = IncrementalTester::new();
-/// // Verify behavior
-/// ```
-/// # Examples
-/// 
-/// ```
-/// use ruchy::notebook::testing::incremental::IncrementalTester;
-/// 
-/// let instance = IncrementalTester::new();
-/// // Verify behavior
-/// ```
-/// # Examples
-/// 
-/// ```
-/// use ruchy::notebook::testing::incremental::IncrementalTester;
-/// 
-/// let instance = IncrementalTester::new();
-/// // Verify behavior
-/// ```
-pub fn new() -> Self {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::notebook::testing::incremental::IncrementalTester;
+    ///
+    /// let instance = IncrementalTester::new();
+    /// // Verify behavior
+    /// ```
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::notebook::testing::incremental::IncrementalTester;
+    ///
+    /// let instance = IncrementalTester::new();
+    /// // Verify behavior
+    /// ```
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::notebook::testing::incremental::IncrementalTester;
+    ///
+    /// let instance = IncrementalTester::new();
+    /// // Verify behavior
+    /// ```
+    pub fn new() -> Self {
         Self::with_config(IncrementalConfig::default())
     }
-/// # Examples
-/// 
-/// ```
-/// use ruchy::notebook::testing::incremental::IncrementalTester;
-/// 
-/// let mut instance = IncrementalTester::new();
-/// let result = instance.with_config();
-/// // Verify behavior
-/// ```
-pub fn with_config(config: IncrementalConfig) -> Self {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::notebook::testing::incremental::IncrementalTester;
+    ///
+    /// let mut instance = IncrementalTester::new();
+    /// let result = instance.with_config();
+    /// // Verify behavior
+    /// ```
+    pub fn with_config(config: IncrementalConfig) -> Self {
         let cache = TestResultCache::new(config.cache_directory.clone(), config.max_cache_size);
         let dependency_tracker = DependencyTracker::new();
         Self {
@@ -123,16 +123,20 @@ pub fn with_config(config: IncrementalConfig) -> Self {
         }
     }
     /// Execute notebook with incremental testing
-/// # Examples
-/// 
-/// ```
-/// use ruchy::notebook::testing::incremental::IncrementalTester;
-/// 
-/// let mut instance = IncrementalTester::new();
-/// let result = instance.execute_incremental();
-/// // Verify behavior
-/// ```
-pub fn execute_incremental(&mut self, notebook: &Notebook, changed_cells: &[String]) -> IncrementalResult {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::notebook::testing::incremental::IncrementalTester;
+    ///
+    /// let mut instance = IncrementalTester::new();
+    /// let result = instance.execute_incremental();
+    /// // Verify behavior
+    /// ```
+    pub fn execute_incremental(
+        &mut self,
+        notebook: &Notebook,
+        changed_cells: &[String],
+    ) -> IncrementalResult {
         let mut executed_cells = Vec::new();
         let mut cached_cells = Vec::new();
         // Build dependency graph
@@ -142,14 +146,20 @@ pub fn execute_incremental(&mut self, notebook: &Notebook, changed_cells: &[Stri
         // Determine execution order
         let execution_order = self.dependency_tracker.topological_sort(notebook);
         // Find cells that need re-execution
-        let cells_to_execute = self.find_cells_to_execute(notebook, changed_cells, &execution_order);
+        let cells_to_execute =
+            self.find_cells_to_execute(notebook, changed_cells, &execution_order);
         // Execute or retrieve from cache
         for cell_id in &execution_order {
             let cell = notebook.get_cell(cell_id).unwrap();
             if cells_to_execute.contains(cell_id) {
                 // Execute and cache
                 let result = self.execute_cell(cell);
-                self.cache.store(cell_id, &cell.source, &self.get_dependencies_hash(cell_id), result);
+                self.cache.store(
+                    cell_id,
+                    &cell.source,
+                    &self.get_dependencies_hash(cell_id),
+                    result,
+                );
                 executed_cells.push(cell_id.clone());
             } else {
                 // Try to use cached result
@@ -158,7 +168,12 @@ pub fn execute_incremental(&mut self, notebook: &Notebook, changed_cells: &[Stri
                 } else {
                     // Cache miss - need to execute
                     let result = self.execute_cell(cell);
-                    self.cache.store(cell_id, &cell.source, &self.get_dependencies_hash(cell_id), result);
+                    self.cache.store(
+                        cell_id,
+                        &cell.source,
+                        &self.get_dependencies_hash(cell_id),
+                        result,
+                    );
                     executed_cells.push(cell_id.clone());
                 }
             }
@@ -170,7 +185,12 @@ pub fn execute_incremental(&mut self, notebook: &Notebook, changed_cells: &[Stri
             cache_stats: self.cache.get_statistics(),
         }
     }
-    fn find_cells_to_execute(&mut self, notebook: &Notebook, changed_cells: &[String], execution_order: &[String]) -> HashSet<String> {
+    fn find_cells_to_execute(
+        &mut self,
+        notebook: &Notebook,
+        changed_cells: &[String],
+        execution_order: &[String],
+    ) -> HashSet<String> {
         let mut to_execute = HashSet::new();
         // Add directly changed cells
         for cell_id in changed_cells {
@@ -232,7 +252,10 @@ pub fn execute_incremental(&mut self, notebook: &Notebook, changed_cells: &[Stri
     }
     fn get_dependencies_hash(&self, cell_id: &str) -> String {
         let dependencies = self.dependency_tracker.get_dependencies(cell_id);
-        let mut combined = dependencies.iter().map(std::string::String::as_str).collect::<Vec<_>>();
+        let mut combined = dependencies
+            .iter()
+            .map(std::string::String::as_str)
+            .collect::<Vec<_>>();
         combined.sort_unstable();
         self.calculate_hash(&combined.join(","))
     }
@@ -258,15 +281,21 @@ impl TestResultCache {
         cache.load_from_disk();
         cache
     }
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::notebook::testing::incremental::store;
-/// 
-/// let result = store("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn store(&mut self, cell_id: &str, source: &str, dependencies_hash: &str, result: TestResult) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::notebook::testing::incremental::store;
+    ///
+    /// let result = store("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn store(
+        &mut self,
+        cell_id: &str,
+        source: &str,
+        dependencies_hash: &str,
+        result: TestResult,
+    ) {
         let source_hash = self.calculate_hash(source);
         let cached_result = CachedTestResult {
             cell_id: cell_id.to_string(),
@@ -289,15 +318,15 @@ pub fn store(&mut self, cell_id: &str, source: &str, dependencies_hash: &str, re
         // Persist to disk
         self.save_to_disk(cell_id);
     }
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::notebook::testing::incremental::get;
-/// 
-/// let result = get("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn get(&mut self, cell_id: &str) -> Option<CachedTestResult> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::notebook::testing::incremental::get;
+    ///
+    /// let result = get("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn get(&mut self, cell_id: &str) -> Option<CachedTestResult> {
         if let Some(mut cached) = self.cache.get(cell_id).cloned() {
             // Update access order
             self.access_order.retain(|id| id != cell_id);
@@ -342,22 +371,22 @@ pub fn get(&mut self, cell_id: &str) -> Option<CachedTestResult> {
             }
         }
     }
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::notebook::testing::incremental::get_statistics;
-/// 
-/// let result = get_statistics(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn get_statistics(&self) -> CacheStatistics {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::notebook::testing::incremental::get_statistics;
+    ///
+    /// let result = get_statistics(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn get_statistics(&self) -> CacheStatistics {
         let total_access_count: usize = self.cache.values().map(|c| c.access_count).sum();
         let total_lookups = total_access_count + self.cache.len(); // Approximate
         CacheStatistics {
-            hit_rate: if total_lookups > 0 { 
-                total_access_count as f64 / total_lookups as f64 
-            } else { 
-                0.0 
+            hit_rate: if total_lookups > 0 {
+                total_access_count as f64 / total_lookups as f64
+            } else {
+                0.0
             },
             total_lookups,
             cache_hits: total_access_count,
@@ -385,16 +414,16 @@ impl DependencyTracker {
         }
     }
     /// Analyze dependencies between cells
-/// # Examples
-/// 
-/// ```
-/// use ruchy::notebook::testing::incremental::DependencyTracker;
-/// 
-/// let mut instance = DependencyTracker::new();
-/// let result = instance.analyze_dependencies();
-/// // Verify behavior
-/// ```
-pub fn analyze_dependencies(&mut self, notebook: &Notebook) {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::notebook::testing::incremental::DependencyTracker;
+    ///
+    /// let mut instance = DependencyTracker::new();
+    /// let result = instance.analyze_dependencies();
+    /// // Verify behavior
+    /// ```
+    pub fn analyze_dependencies(&mut self, notebook: &Notebook) {
         self.dependencies.clear();
         self.variable_definitions.clear();
         // First pass: find variable definitions
@@ -453,27 +482,27 @@ pub fn analyze_dependencies(&mut self, notebook: &Notebook) {
             .collect()
     }
     /// Get dependencies for a specific cell
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::notebook::testing::incremental::get_dependencies;
-/// 
-/// let result = get_dependencies("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn get_dependencies(&self, cell_id: &str) -> HashSet<String> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::notebook::testing::incremental::get_dependencies;
+    ///
+    /// let result = get_dependencies("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn get_dependencies(&self, cell_id: &str) -> HashSet<String> {
         self.dependencies.get(cell_id).cloned().unwrap_or_default()
     }
     /// Perform topological sort for execution order
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::notebook::testing::incremental::topological_sort;
-/// 
-/// let result = topological_sort(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn topological_sort(&self, notebook: &Notebook) -> Vec<String> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::notebook::testing::incremental::topological_sort;
+    ///
+    /// let result = topological_sort(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn topological_sort(&self, notebook: &Notebook) -> Vec<String> {
         let mut result = Vec::new();
         let mut visited = HashSet::new();
         let mut visiting = HashSet::new();
@@ -485,7 +514,13 @@ pub fn topological_sort(&self, notebook: &Notebook) -> Vec<String> {
         result.reverse();
         result
     }
-    fn dfs_visit(&self, cell_id: &str, visited: &mut HashSet<String>, visiting: &mut HashSet<String>, result: &mut Vec<String>) {
+    fn dfs_visit(
+        &self,
+        cell_id: &str,
+        visited: &mut HashSet<String>,
+        visiting: &mut HashSet<String>,
+        result: &mut Vec<String>,
+    ) {
         if visiting.contains(cell_id) {
             // Cycle detected - skip for now
             return;
@@ -504,15 +539,15 @@ pub fn topological_sort(&self, notebook: &Notebook) -> Vec<String> {
         result.push(cell_id.to_string());
     }
     /// Get dependency graph representation
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::notebook::testing::incremental::get_graph;
-/// 
-/// let result = get_graph(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn get_graph(&self) -> DependencyGraph {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::notebook::testing::incremental::get_graph;
+    ///
+    /// let result = get_graph(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn get_graph(&self) -> DependencyGraph {
         let mut nodes = HashSet::new();
         let mut edges = Vec::new();
         for (cell_id, deps) in &self.dependencies {
@@ -535,7 +570,7 @@ impl Default for IncrementalConfig {
             cache_directory: PathBuf::from(".ruchy_cache"),
             max_cache_size: 1000,
             cache_ttl: Duration::from_secs(24 * 60 * 60), // 24 hours
-            force_rerun_threshold: 0.1, // 10% change threshold
+            force_rerun_threshold: 0.1,                   // 10% change threshold
             dependency_analysis: true,
         }
     }
@@ -554,15 +589,181 @@ pub enum CellType {
     Markdown,
 }
 impl Notebook {
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::notebook::testing::incremental::get_cell;
-/// 
-/// let result = get_cell("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn get_cell(&self, cell_id: &str) -> Option<&Cell> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::notebook::testing::incremental::get_cell;
+    ///
+    /// let result = get_cell("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn get_cell(&self, cell_id: &str) -> Option<&Cell> {
         self.cells.iter().find(|c| c.id == cell_id)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tempfile::TempDir;
+
+    fn create_test_config() -> IncrementalConfig {
+        IncrementalConfig {
+            cache_directory: PathBuf::from("/tmp/test_cache"),
+            max_cache_size: 100,
+            cache_ttl: Duration::from_secs(3600),
+            force_rerun_threshold: 0.1,
+            dependency_analysis: true,
+        }
+    }
+
+    fn create_test_cell(id: &str, source: &str) -> Cell {
+        Cell {
+            id: id.to_string(),
+            source: source.to_string(),
+            cell_type: CellType::Code,
+        }
+    }
+
+    fn create_test_notebook() -> Notebook {
+        Notebook {
+            cells: vec![
+                create_test_cell("cell1", "x = 1"),
+                create_test_cell("cell2", "y = x + 1"),
+                create_test_cell("cell3", "z = y * 2"),
+            ],
+        }
+    }
+
+    #[test]
+    fn test_incremental_tester_new() {
+        let tester = IncrementalTester::new();
+        assert_eq!(tester.config.max_cache_size, 1000);
+        assert_eq!(tester.config.cache_ttl, Duration::from_secs(24 * 60 * 60));
+        assert!(tester.config.dependency_analysis);
+    }
+
+    #[test]
+    fn test_incremental_tester_default() {
+        let tester = IncrementalTester::default();
+        assert_eq!(tester.config.max_cache_size, 1000);
+    }
+
+    #[test]
+    fn test_incremental_tester_with_config() {
+        let config = create_test_config();
+        let tester = IncrementalTester::with_config(config);
+        assert_eq!(tester.config.max_cache_size, 100);
+        assert_eq!(tester.config.cache_ttl, Duration::from_secs(3600));
+    }
+
+    #[test]
+    fn test_execute_incremental_empty_notebook() {
+        let mut tester = IncrementalTester::new();
+        let notebook = Notebook { cells: vec![] };
+        let result = tester.execute_incremental(&notebook, &[]);
+        assert!(result.executed_cells.is_empty());
+        assert!(result.cached_cells.is_empty());
+    }
+
+    #[test]
+    fn test_test_result_cache_new() {
+        let temp_dir = TempDir::new().unwrap();
+        let cache = TestResultCache::new(temp_dir.path().to_path_buf(), 10);
+        assert_eq!(cache.max_size, 10);
+        assert!(cache.cache.is_empty());
+        assert!(cache.access_order.is_empty());
+    }
+
+    #[test]
+    fn test_cache_store_and_get() {
+        let temp_dir = TempDir::new().unwrap();
+        let mut cache = TestResultCache::new(temp_dir.path().to_path_buf(), 10);
+
+        let test_result = TestResult {
+            success: true,
+            output: "test output".to_string(),
+            duration_ms: 100,
+            memory_used: 1024,
+        };
+
+        cache.store("test_cell", "println('hello')", "dep_hash", test_result);
+
+        let cached = cache.get("test_cell");
+        assert!(cached.is_some());
+        let cached = cached.unwrap();
+        assert_eq!(cached.cell_id, "test_cell");
+        assert_eq!(cached.result.output, "test output");
+        assert_eq!(cached.result.duration_ms, 100);
+    }
+
+    #[test]
+    fn test_dependency_tracker_new() {
+        let tracker = DependencyTracker::new();
+        assert!(tracker.dependencies.is_empty());
+        assert!(tracker.variable_definitions.is_empty());
+    }
+
+    #[test]
+    fn test_dependency_tracker_default() {
+        let tracker = DependencyTracker::default();
+        assert!(tracker.dependencies.is_empty());
+    }
+
+    #[test]
+    fn test_analyze_dependencies() {
+        let mut tracker = DependencyTracker::new();
+        let notebook = create_test_notebook();
+
+        tracker.analyze_dependencies(&notebook);
+
+        // Check that dependencies are tracked
+        let deps = tracker.get_dependencies("cell2");
+        assert!(!deps.is_empty());
+    }
+
+    #[test]
+    fn test_get_dependencies_empty() {
+        let tracker = DependencyTracker::new();
+        let deps = tracker.get_dependencies("nonexistent");
+        assert!(deps.is_empty());
+    }
+
+    #[test]
+    fn test_topological_sort() {
+        let mut tracker = DependencyTracker::new();
+        let notebook = create_test_notebook();
+
+        tracker.analyze_dependencies(&notebook);
+        let order = tracker.topological_sort(&notebook);
+
+        assert_eq!(order.len(), 3);
+        // cell1 should come before cell2, cell2 before cell3
+        let pos1 = order.iter().position(|x| x == "cell1").unwrap();
+        let pos2 = order.iter().position(|x| x == "cell2").unwrap();
+        let pos3 = order.iter().position(|x| x == "cell3").unwrap();
+        assert!(pos1 < pos2);
+        assert!(pos2 < pos3);
+    }
+
+    #[test]
+    fn test_notebook_get_cell() {
+        let notebook = create_test_notebook();
+
+        let cell = notebook.get_cell("cell1");
+        assert!(cell.is_some());
+        assert_eq!(cell.unwrap().source, "x = 1");
+
+        let nonexistent = notebook.get_cell("nonexistent");
+        assert!(nonexistent.is_none());
+    }
+
+    #[test]
+    fn test_incremental_config_default() {
+        let config = IncrementalConfig::default();
+        assert_eq!(config.max_cache_size, 1000);
+        assert_eq!(config.cache_ttl, Duration::from_secs(24 * 60 * 60));
+        assert_eq!(config.force_rerun_threshold, 0.1);
+        assert!(config.dependency_analysis);
     }
 }

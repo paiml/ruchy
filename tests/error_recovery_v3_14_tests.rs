@@ -1,8 +1,8 @@
 //! TDD Tests for Error Recovery and Diagnostics
 //! Sprint v3.14.0 - Improve parser error recovery and diagnostic messages
 
-use ruchy::frontend::parser::Parser;
 use ruchy::compile;
+use ruchy::frontend::parser::Parser;
 
 #[cfg(test)]
 mod syntax_error_recovery {
@@ -14,10 +14,10 @@ mod syntax_error_recovery {
         let x = 42
         let y = 10
         "#;
-        
+
         let mut parser = Parser::new(input);
         let result = parser.parse();
-        
+
         // Should recover and parse both statements
         assert!(result.is_ok() || result.is_err());
     }
@@ -25,10 +25,10 @@ mod syntax_error_recovery {
     #[test]
     fn test_recover_from_unclosed_paren() {
         let input = "let x = (1 + 2";
-        
+
         let mut parser = Parser::new(input);
         let result = parser.parse();
-        
+
         // Should report error but not panic
         assert!(result.is_err());
     }
@@ -36,10 +36,10 @@ mod syntax_error_recovery {
     #[test]
     fn test_recover_from_invalid_token() {
         let input = "let x = 42 @ let y = 10";
-        
+
         let mut parser = Parser::new(input);
         let result = parser.parse();
-        
+
         // Should skip invalid token and continue
         assert!(result.is_ok() || result.is_err());
     }
@@ -54,10 +54,10 @@ mod syntax_error_recovery {
             let y = 10
         }
         "#;
-        
+
         let mut parser = Parser::new(input);
         let result = parser.parse();
-        
+
         // Should recover at function boundary
         assert!(result.is_ok() || result.is_err());
     }
@@ -70,10 +70,10 @@ mod syntax_error_recovery {
             2 =>
         }
         "#;
-        
+
         let mut parser = Parser::new(input);
         let result = parser.parse();
-        
+
         // Should report incomplete match arm
         assert!(result.is_err());
     }
@@ -86,25 +86,29 @@ mod error_message_quality {
     #[test]
     fn test_helpful_type_mismatch_message() {
         let input = "let x: i32 = \"string\"";
-        
+
         let result = compile(input);
-        
+
         // Error message should mention type mismatch
         if let Err(e) = result {
             let msg = format!("{}", e);
-            assert!(msg.contains("type") || msg.contains("Type") || 
-                    msg.contains("expected") || msg.contains("Expected") ||
-                    msg.len() > 0);
+            assert!(
+                msg.contains("type")
+                    || msg.contains("Type")
+                    || msg.contains("expected")
+                    || msg.contains("Expected")
+                    || msg.len() > 0
+            );
         }
     }
 
     #[test]
     fn test_undefined_variable_message() {
         let input = "let x = y + 1";
-        
+
         let mut parser = Parser::new(input);
         let result = parser.parse();
-        
+
         // Should parse successfully (undefined var is semantic error)
         assert!(result.is_ok() || result.is_err());
     }
@@ -112,10 +116,10 @@ mod error_message_quality {
     #[test]
     fn test_invalid_operator_message() {
         let input = "let x = 1 ++ 2";
-        
+
         let mut parser = Parser::new(input);
         let result = parser.parse();
-        
+
         // Should report invalid operator
         assert!(result.is_err() || result.is_ok());
     }
@@ -144,10 +148,10 @@ mod multiple_error_reporting {
         let y = 42 @
         fn foo( {}
         "#;
-        
+
         let mut parser = Parser::new(input);
         let result = parser.parse();
-        
+
         // Should report multiple errors
         assert!(result.is_err());
     }
@@ -155,10 +159,10 @@ mod multiple_error_reporting {
     #[test]
     fn test_error_location_tracking() {
         let input = "let x = @";
-        
+
         let mut parser = Parser::new(input);
         let result = parser.parse();
-        
+
         // Error should include location info
         if let Err(e) = result {
             let msg = format!("{}", e);
@@ -176,10 +180,10 @@ mod multiple_error_reporting {
             }
         }
         "#;
-        
+
         let mut parser = Parser::new(input);
         let result = parser.parse();
-        
+
         // Error should mention match context
         assert!(result.is_err());
     }
@@ -192,10 +196,10 @@ mod panic_recovery {
     #[test]
     fn test_no_panic_on_empty_input() {
         let input = "";
-        
+
         let mut parser = Parser::new(input);
         let result = parser.parse();
-        
+
         // Should handle empty input gracefully
         assert!(result.is_ok() || result.is_err());
     }
@@ -203,10 +207,10 @@ mod panic_recovery {
     #[test]
     fn test_no_panic_on_only_whitespace() {
         let input = "   \n\t  ";
-        
+
         let mut parser = Parser::new(input);
         let result = parser.parse();
-        
+
         // Should handle whitespace-only input
         assert!(result.is_ok() || result.is_err());
     }
@@ -214,10 +218,10 @@ mod panic_recovery {
     #[test]
     fn test_no_panic_on_only_comments() {
         let input = "// comment\n/* block comment */";
-        
+
         let mut parser = Parser::new(input);
         let result = parser.parse();
-        
+
         // Should handle comment-only input
         assert!(result.is_ok() || result.is_err());
     }
@@ -225,10 +229,10 @@ mod panic_recovery {
     #[test]
     fn test_no_panic_on_unicode() {
         let input = "let 变量 = 42";
-        
+
         let mut parser = Parser::new(input);
         let result = parser.parse();
-        
+
         // Should handle unicode identifiers
         assert!(result.is_ok() || result.is_err());
     }
@@ -236,10 +240,10 @@ mod panic_recovery {
     #[test]
     fn test_no_panic_on_deep_nesting() {
         let input = "((((((((((1))))))))))";
-        
+
         let mut parser = Parser::new(input);
         let result = parser.parse();
-        
+
         // Should handle deep nesting without stack overflow
         assert!(result.is_ok() || result.is_err());
     }
@@ -255,10 +259,10 @@ mod error_recovery_strategies {
         let x = @ error here
         let y = 42
         "#;
-        
+
         let mut parser = Parser::new(input);
         let _ = parser.parse();
-        
+
         // Should recover at 'let y'
         // Just verify no panic
         assert!(true);
@@ -272,10 +276,10 @@ mod error_recovery_strategies {
         }
         let y = 42
         "#;
-        
+
         let mut parser = Parser::new(input);
         let _ = parser.parse();
-        
+
         // Should recover after block
         assert!(true);
     }
@@ -291,10 +295,10 @@ mod error_recovery_strategies {
             let x = 42
         }
         "#;
-        
+
         let mut parser = Parser::new(input);
         let _ = parser.parse();
-        
+
         // Should recover at 'fn bar'
         assert!(true);
     }
@@ -302,10 +306,10 @@ mod error_recovery_strategies {
     #[test]
     fn test_skip_until_delimiter() {
         let input = "[1, @error, 3, 4]";
-        
+
         let mut parser = Parser::new(input);
         let result = parser.parse();
-        
+
         // Should skip error and parse rest of list
         assert!(result.is_ok() || result.is_err());
     }
@@ -313,10 +317,10 @@ mod error_recovery_strategies {
     #[test]
     fn test_recover_in_expressions() {
         let input = "1 + @ + 3";
-        
+
         let mut parser = Parser::new(input);
         let result = parser.parse();
-        
+
         // Should report error but attempt to continue
         assert!(result.is_err());
     }
@@ -324,8 +328,8 @@ mod error_recovery_strategies {
 
 #[cfg(test)]
 mod property_tests {
-    use proptest::prelude::*;
     use super::*;
+    use proptest::prelude::*;
 
     proptest! {
         #[test]

@@ -12,7 +12,7 @@ fn test_is_valid_identifier() {
     assert!(is_valid_identifier("snake_case"));
     assert!(is_valid_identifier("_"));
     assert!(is_valid_identifier("_123"));
-    
+
     // Invalid identifiers
     assert!(!is_valid_identifier(""));
     assert!(!is_valid_identifier("123abc")); // starts with digit
@@ -35,7 +35,7 @@ fn test_is_keyword() {
     assert!(is_keyword("match"));
     assert!(is_keyword("true"));
     assert!(is_keyword("false"));
-    
+
     // Not keywords
     assert!(!is_keyword("foo"));
     assert!(!is_keyword("Let")); // case sensitive
@@ -60,9 +60,12 @@ fn test_unescape_string() {
     assert_eq!(unescape_string("hello\\nworld").unwrap(), "hello\nworld");
     assert_eq!(unescape_string("tab\\there").unwrap(), "tab\there");
     assert_eq!(unescape_string("quote\\\"test").unwrap(), "quote\"test");
-    assert_eq!(unescape_string("backslash\\\\test").unwrap(), "backslash\\test");
+    assert_eq!(
+        unescape_string("backslash\\\\test").unwrap(),
+        "backslash\\test"
+    );
     assert_eq!(unescape_string("\\r\\n").unwrap(), "\r\n");
-    
+
     // Invalid escape sequences
     assert!(unescape_string("\\q").is_err()); // invalid escape
     assert!(unescape_string("\\").is_err()); // incomplete escape
@@ -94,7 +97,10 @@ fn test_camel_to_snake() {
     assert_eq!(camel_to_snake("fooBarBaz"), "foo_bar_baz");
     assert_eq!(camel_to_snake("simple"), "simple");
     assert_eq!(camel_to_snake("HTTPServer"), "httpserver");
-    assert_eq!(camel_to_snake("getHTTPResponseCode"), "get_httpresponse_code");
+    assert_eq!(
+        camel_to_snake("getHTTPResponseCode"),
+        "get_httpresponse_code"
+    );
     assert_eq!(camel_to_snake(""), "");
 }
 
@@ -103,7 +109,7 @@ fn test_is_numeric() {
     assert!(is_numeric("123"));
     assert!(is_numeric("0"));
     assert!(is_numeric("999999"));
-    
+
     assert!(!is_numeric(""));
     assert!(!is_numeric("123a"));
     assert!(!is_numeric("a123"));
@@ -118,7 +124,7 @@ fn test_is_float() {
     assert!(is_float("123.456"));
     assert!(is_float(".5")); // leading dot
     assert!(is_float("5.")); // trailing dot
-    
+
     assert!(!is_float("123")); // integer
     assert!(!is_float(""));
     assert!(!is_float("3.14.15")); // multiple dots
@@ -130,7 +136,10 @@ fn test_strip_comments() {
     assert_eq!(strip_comments("hello // comment"), "hello ");
     assert_eq!(strip_comments("// full line comment\ncode"), "\ncode");
     assert_eq!(strip_comments("no comment"), "no comment");
-    assert_eq!(strip_comments("url: http://example.com"), "url: http://example.com");
+    assert_eq!(
+        strip_comments("url: http://example.com"),
+        "url: http://example.com"
+    );
 }
 
 #[test]
@@ -161,7 +170,10 @@ fn test_trim_indent() {
 
 #[test]
 fn test_split_at_delimiter() {
-    assert_eq!(split_at_delimiter("foo,bar,baz", ','), vec!["foo", "bar", "baz"]);
+    assert_eq!(
+        split_at_delimiter("foo,bar,baz", ','),
+        vec!["foo", "bar", "baz"]
+    );
     assert_eq!(split_at_delimiter("a|b|c", '|'), vec!["a", "b", "c"]);
     assert_eq!(split_at_delimiter("single", ','), vec!["single"]);
     assert_eq!(split_at_delimiter("", ','), vec![""]);
@@ -190,40 +202,40 @@ fn test_levenshtein_distance() {
 mod property_tests {
     use super::*;
     use proptest::prelude::*;
-    
+
     proptest! {
         #[test]
         fn prop_escape_unescape_roundtrip(s in ".*") {
             let escaped = escape_string(&s);
             let unescaped = unescape_string(&escaped);
-            
+
             // Should roundtrip successfully for valid strings
             if !s.contains('\\') || s.ends_with("\\\\") {
                 prop_assert_eq!(unescaped.unwrap(), s);
             }
         }
-        
+
         #[test]
         #[ignore = "Skip for now - needs fixing in conversion logic"]
         fn prop_snake_camel_roundtrip(s in "[a-z]+(_[a-z]+)*") {
             // Only test well-formed snake_case strings
             let camel = snake_to_camel(&s);
             let snake = camel_to_snake(&camel);
-            
+
             prop_assert_eq!(s, snake);
         }
-        
+
         #[test]
         fn prop_capitalize_first_char(s in "[a-z][a-z0-9]*") {
             let capitalized = capitalize(&s);
             prop_assert!(capitalized.chars().next().unwrap().is_uppercase());
         }
-        
+
         #[test]
         fn prop_count_lines_consistency(s in ".*") {
             let count = count_lines(&s);
             let actual_lines: Vec<&str> = s.lines().collect();
-            
+
             if s.is_empty() {
                 prop_assert_eq!(count, 0);
             } else {

@@ -2,9 +2,9 @@
 //!
 //! [TEST-COV-012] Basic runtime test coverage
 
+use ruchy::frontend::ast::{Expr, ExprKind, Literal};
 use ruchy::runtime::Value;
 use std::rc::Rc;
-use ruchy::frontend::ast::{Expr, ExprKind, Literal};
 use std::rc::Rc;
 
 #[test]
@@ -27,7 +27,7 @@ fn test_value_float() {
 fn test_value_bool() {
     let val_true = Value::Bool(true);
     let val_false = Value::Bool(false);
-    
+
     assert_eq!(val_true.to_string(), "true");
     assert_eq!(val_false.to_string(), "false");
     assert_eq!(val_true, Value::Bool(true));
@@ -66,14 +66,14 @@ fn test_value_list() {
         Value::Integer(3),
     ]);
     assert_eq!(val.to_string(), "[1, 2, 3]");
-    
+
     let val2 = Value::Array(vec![
         Value::Integer(1),
         Value::Integer(2),
         Value::Integer(3),
     ]);
     assert_eq!(val, val2);
-    
+
     let val3 = Value::Array(vec![Value::Integer(1)]);
     assert_ne!(val, val3);
 }
@@ -85,7 +85,7 @@ fn test_value_tuple() {
         Value::String(Rc::new("test".to_string())),
     ]);
     assert_eq!(val.to_string(), "(10, \"test\")");
-    
+
     let val2 = Value::Tuple(vec![
         Value::Integer(10),
         Value::String(Rc::new("test".to_string())),
@@ -109,7 +109,7 @@ fn test_value_range() {
         inclusive: false,
     };
     assert_eq!(val.to_string(), "1..5");
-    
+
     let val2 = Value::Range {
         start: 1,
         end: 5,
@@ -122,11 +122,14 @@ fn test_value_range() {
 #[test]
 fn test_value_object() {
     use std::collections::HashMap;
-    
+
     let mut map = HashMap::new();
-    map.insert("name".to_string(), Value::String(Rc::new("Alice".to_string())));
+    map.insert(
+        "name".to_string(),
+        Value::String(Rc::new("Alice".to_string())),
+    );
     map.insert("age".to_string(), Value::Integer(30));
-    
+
     let val = Value::Object(map);
     let display = val.to_string();
     assert!(display.contains("name"));
@@ -138,11 +141,17 @@ fn test_value_object() {
 #[test]
 fn test_value_hashmap() {
     use std::collections::HashMap;
-    
+
     let mut map = HashMap::new();
-    map.insert(Value::String(Rc::new("key1".to_string())), Value::Integer(100));
-    map.insert(Value::String(Rc::new("key2".to_string())), Value::Integer(200));
-    
+    map.insert(
+        Value::String(Rc::new("key1".to_string())),
+        Value::Integer(100),
+    );
+    map.insert(
+        Value::String(Rc::new("key2".to_string())),
+        Value::Integer(200),
+    );
+
     let val = Value::HashMap(map);
     let display = val.to_string();
     assert!(display.contains("HashMap"));
@@ -153,12 +162,12 @@ fn test_value_hashmap() {
 #[test]
 fn test_value_hashset() {
     use std::collections::HashSet;
-    
+
     let mut set = HashSet::new();
     set.insert(Value::Integer(1));
     set.insert(Value::Integer(2));
     set.insert(Value::Integer(3));
-    
+
     let val = Value::HashSet(set);
     let display = val.to_string();
     assert!(display.contains("HashSet"));
@@ -169,9 +178,12 @@ fn test_value_function() {
     let val = Value::Function {
         name: "test_func".to_string(),
         params: vec!["a".to_string(), "b".to_string()],
-        body: Box::new(Expr::new(ExprKind::Literal(Literal::Integer(42)), Default::default())),
+        body: Box::new(Expr::new(
+            ExprKind::Literal(Literal::Integer(42)),
+            Default::default(),
+        )),
     };
-    
+
     assert_eq!(val.to_string(), "fn test_func(a, b)");
 }
 
@@ -179,9 +191,12 @@ fn test_value_function() {
 fn test_value_lambda() {
     let val = Value::Lambda {
         params: vec!["x".to_string()],
-        body: Box::new(Expr::new(ExprKind::Literal(Literal::Integer(10)), Default::default())),
+        body: Box::new(Expr::new(
+            ExprKind::Literal(Literal::Integer(10)),
+            Default::default(),
+        )),
     };
-    
+
     assert_eq!(val.to_string(), "|x| <closure>");
 }
 
@@ -193,7 +208,7 @@ fn test_value_enum_variant() {
         data: Some(vec![Value::Integer(42)]),
     };
     assert_eq!(val.to_string(), "Option::Some(42)");
-    
+
     let val2 = Value::EnumVariant {
         enum_name: "Option".to_string(),
         variant_name: "None".to_string(),
@@ -209,11 +224,11 @@ fn test_value_clone() {
     let val1 = Value::Integer(42);
     let val2 = val1.clone();
     assert_eq!(val1, val2);
-    
+
     let val3 = Value::String(Rc::new("test".to_string()));
     let val4 = val3.clone();
     assert_eq!(val3, val4);
-    
+
     let val5 = Value::Array(vec![Value::Integer(1), Value::Integer(2)]);
     let val6 = val5.clone();
     assert_eq!(val5, val6);
@@ -225,7 +240,7 @@ fn test_value_debug() {
     let debug = format!("{val:?}");
     assert!(debug.contains("Int"));
     assert!(debug.contains("42"));
-    
+
     let val2 = Value::String(Rc::new("hello".to_string()));
     let debug2 = format!("{val2:?}");
     assert!(debug2.contains("String"));

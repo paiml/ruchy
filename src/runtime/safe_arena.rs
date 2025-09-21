@@ -1,7 +1,7 @@
 //! Safe arena allocator without unsafe code
 //!
 //! Provides bounded memory allocation using safe Rust abstractions.
-use anyhow::{Result, anyhow};
+use anyhow::{anyhow, Result};
 use std::cell::RefCell;
 use std::rc::Rc;
 // ============================================================================
@@ -19,23 +19,23 @@ pub struct SafeArena {
 }
 impl SafeArena {
     /// Create a new arena with the given size limit
-/// # Examples
-/// 
-/// ```
-/// use ruchy::runtime::safe_arena::SafeArena;
-/// 
-/// let instance = SafeArena::new();
-/// // Verify behavior
-/// ```
-/// # Examples
-/// 
-/// ```
-/// use ruchy::runtime::safe_arena::SafeArena;
-/// 
-/// let instance = SafeArena::new();
-/// // Verify behavior
-/// ```
-pub fn new(max_size: usize) -> Self {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::safe_arena::SafeArena;
+    ///
+    /// let instance = SafeArena::new();
+    /// // Verify behavior
+    /// ```
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::safe_arena::SafeArena;
+    ///
+    /// let instance = SafeArena::new();
+    /// // Verify behavior
+    /// ```
+    pub fn new(max_size: usize) -> Self {
         Self {
             storage: RefCell::new(Vec::new()),
             used: RefCell::new(0),
@@ -51,7 +51,9 @@ pub fn new(max_size: usize) -> Self {
         }
         // Store value in Rc
         let rc_value = Rc::new(value);
-        self.storage.borrow_mut().push(Box::new(rc_value.clone()) as Box<dyn std::any::Any>);
+        self.storage
+            .borrow_mut()
+            .push(Box::new(rc_value.clone()) as Box<dyn std::any::Any>);
         *self.used.borrow_mut() += size;
         Ok(ArenaRef {
             value: rc_value,
@@ -59,37 +61,37 @@ pub fn new(max_size: usize) -> Self {
         })
     }
     /// Reset the arena, clearing all allocations
-/// # Examples
-/// 
-/// ```
-/// use ruchy::runtime::safe_arena::SafeArena;
-/// 
-/// let mut instance = SafeArena::new();
-/// let result = instance.reset();
-/// // Verify behavior
-/// ```
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::runtime::safe_arena::reset;
-/// 
-/// let result = reset(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn reset(&self) {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::safe_arena::SafeArena;
+    ///
+    /// let mut instance = SafeArena::new();
+    /// let result = instance.reset();
+    /// // Verify behavior
+    /// ```
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::runtime::safe_arena::reset;
+    ///
+    /// let result = reset(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn reset(&self) {
         self.storage.borrow_mut().clear();
         *self.used.borrow_mut() = 0;
     }
     /// Get current memory usage
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::runtime::safe_arena::used;
-/// 
-/// let result = used(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn used(&self) -> usize {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::runtime::safe_arena::used;
+    ///
+    /// let result = used(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn used(&self) -> usize {
         *self.used.borrow()
     }
 }
@@ -128,15 +130,15 @@ impl TransactionalArena {
             checkpoints: Vec::new(),
         }
     }
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::runtime::safe_arena::checkpoint;
-/// 
-/// let result = checkpoint(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn checkpoint(&mut self) -> usize {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::runtime::safe_arena::checkpoint;
+    ///
+    /// let result = checkpoint(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn checkpoint(&mut self) -> usize {
         let checkpoint = ArenaCheckpoint {
             storage_size: self.current.storage.borrow().len(),
             used: self.current.used(),
@@ -144,50 +146,53 @@ pub fn checkpoint(&mut self) -> usize {
         self.checkpoints.push(checkpoint);
         self.checkpoints.len() - 1
     }
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::runtime::safe_arena::rollback;
-/// 
-/// let result = rollback(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn rollback(&mut self, checkpoint_id: usize) -> Result<()> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::runtime::safe_arena::rollback;
+    ///
+    /// let result = rollback(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn rollback(&mut self, checkpoint_id: usize) -> Result<()> {
         if checkpoint_id >= self.checkpoints.len() {
             return Err(anyhow!("Invalid checkpoint"));
         }
         let checkpoint = &self.checkpoints[checkpoint_id];
         // Truncate storage to checkpoint size
-        self.current.storage.borrow_mut().truncate(checkpoint.storage_size);
+        self.current
+            .storage
+            .borrow_mut()
+            .truncate(checkpoint.storage_size);
         *self.current.used.borrow_mut() = checkpoint.used;
         // Remove later checkpoints
         self.checkpoints.truncate(checkpoint_id + 1);
         Ok(())
     }
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::runtime::safe_arena::commit;
-/// 
-/// let result = commit(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn commit(&mut self) -> Result<()> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::runtime::safe_arena::commit;
+    ///
+    /// let result = commit(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn commit(&mut self) -> Result<()> {
         if self.checkpoints.is_empty() {
             return Err(anyhow!("No checkpoint to commit"));
         }
         self.checkpoints.pop();
         Ok(())
     }
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::runtime::safe_arena::arena;
-/// 
-/// let result = arena(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn arena(&self) -> &SafeArena {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::runtime::safe_arena::arena;
+    ///
+    /// let result = arena(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn arena(&self) -> &SafeArena {
         &self.current
     }
     pub fn reset(&mut self) {
@@ -222,12 +227,15 @@ mod tests {
     #[test]
     fn test_arena_memory_limit() {
         let arena = SafeArena::new(16); // Very small limit
-        // First allocation should succeed
+                                        // First allocation should succeed
         let _val1 = arena.alloc([0u8; 8]).unwrap();
         // Second allocation should fail due to memory limit
         let result = arena.alloc([0u8; 16]);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("memory limit exceeded"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("memory limit exceeded"));
     }
     #[test]
     fn test_arena_used_tracking() {
@@ -278,7 +286,10 @@ mod tests {
         // Try to rollback to invalid checkpoint
         let result = arena.rollback(999);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Invalid checkpoint"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Invalid checkpoint"));
     }
     #[test]
     fn test_transactional_arena_commit() {
@@ -296,7 +307,10 @@ mod tests {
         // Try to commit without checkpoint
         let result = arena.commit();
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("No checkpoint to commit"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("No checkpoint to commit"));
     }
     #[test]
     fn test_transactional_arena_reset() {
@@ -374,8 +388,7 @@ mod tests {
 #[cfg(test)]
 mod property_tests_safe_arena {
     use proptest::proptest;
-    
-    
+
     proptest! {
         /// Property: Function never panics on any input
         #[test]

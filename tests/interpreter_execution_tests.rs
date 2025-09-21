@@ -3,10 +3,10 @@
 // ALL NIGHT CONTINUES!
 
 use ruchy::runtime::interpreter::Interpreter;
-use ruchy::runtime::{Value, Environment};
+use ruchy::runtime::{Environment, Value};
 use ruchy::Parser;
-use std::rc::Rc;
 use std::collections::HashMap;
+use std::rc::Rc;
 
 #[test]
 fn test_interpreter_execute_integer() {

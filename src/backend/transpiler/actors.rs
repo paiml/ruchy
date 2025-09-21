@@ -8,17 +8,17 @@ use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 impl Transpiler {
     /// Transpiles actor definitions
-/// # Examples
-/// 
-/// ```
-/// use ruchy::backend::transpiler::Transpiler;
-/// use ruchy::frontend::ast::StructField;
-///
-/// let transpiler = Transpiler::new();
-/// let result = transpiler.transpile_actor("TestActor", &[], &[]);
-/// assert!(result.is_ok());
-/// ```
-pub fn transpile_actor(
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::backend::transpiler::Transpiler;
+    /// use ruchy::frontend::ast::StructField;
+    ///
+    /// let transpiler = Transpiler::new();
+    /// let result = transpiler.transpile_actor("TestActor", &[], &[]);
+    /// assert!(result.is_ok());
+    /// ```
+    pub fn transpile_actor(
         &self,
         name: &str,
         state: &[StructField],
@@ -128,19 +128,19 @@ pub fn transpile_actor(
         })
     }
     /// Transpiles send operations (actor ! message)
-/// # Examples
-/// 
-/// ```
-/// use ruchy::backend::transpiler::Transpiler;
-/// use ruchy::frontend::ast::Expr;
-///
-/// let transpiler = Transpiler::new();
-/// let actor = Expr::literal(42.into());
-/// let message = Expr::literal("hello".into());
-/// let result = transpiler.transpile_send(&actor, &message);
-/// assert!(result.is_ok());
-/// ```
-pub fn transpile_send(&self, actor: &Expr, message: &Expr) -> Result<TokenStream> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::backend::transpiler::Transpiler;
+    /// use ruchy::frontend::ast::Expr;
+    ///
+    /// let transpiler = Transpiler::new();
+    /// let actor = Expr::literal(42.into());
+    /// let message = Expr::literal("hello".into());
+    /// let result = transpiler.transpile_send(&actor, &message);
+    /// assert!(result.is_ok());
+    /// ```
+    pub fn transpile_send(&self, actor: &Expr, message: &Expr) -> Result<TokenStream> {
         let actor_tokens = self.transpile_expr(actor)?;
         let message_tokens = self.transpile_expr(message)?;
         Ok(quote! {
@@ -148,19 +148,19 @@ pub fn transpile_send(&self, actor: &Expr, message: &Expr) -> Result<TokenStream
         })
     }
     /// Transpiles ask operations (actor ? message)
-/// # Examples
-/// 
-/// ```
-/// use ruchy::backend::transpiler::Transpiler;
-/// use ruchy::frontend::ast::Expr;
-///
-/// let transpiler = Transpiler::new();
-/// let actor = Expr::literal(42.into());
-/// let message = Expr::literal("hello".into());
-/// let result = transpiler.transpile_ask(&actor, &message);
-/// assert!(result.is_ok());
-/// ```
-pub fn transpile_ask(
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::backend::transpiler::Transpiler;
+    /// use ruchy::frontend::ast::Expr;
+    ///
+    /// let transpiler = Transpiler::new();
+    /// let actor = Expr::literal(42.into());
+    /// let message = Expr::literal("hello".into());
+    /// let result = transpiler.transpile_ask(&actor, &message);
+    /// assert!(result.is_ok());
+    /// ```
+    pub fn transpile_ask(
         &self,
         actor: &Expr,
         message: &Expr,
@@ -181,18 +181,18 @@ pub fn transpile_ask(
         }
     }
     /// Transpiles command execution
-/// # Examples
-/// 
-/// ```
-/// use ruchy::backend::transpiler::Transpiler;
-/// use ruchy::frontend::ast::Expr;
-///
-/// let transpiler = Transpiler::new();
-/// let command = Expr::literal("test_command".into());
-/// let result = transpiler.transpile_command(&command);
-/// assert!(result.is_ok());
-/// ```
-pub fn transpile_command(
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::backend::transpiler::Transpiler;
+    /// use ruchy::frontend::ast::Expr;
+    ///
+    /// let transpiler = Transpiler::new();
+    /// let command = Expr::literal("test_command".into());
+    /// let result = transpiler.transpile_command(&command);
+    /// assert!(result.is_ok());
+    /// ```
+    pub fn transpile_command(
         &self,
         program: &str,
         args: &[String],
@@ -212,7 +212,7 @@ pub fn transpile_command(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::frontend::ast::{Expr, ExprKind, Literal, Param, Pattern, Type, TypeKind, Span};
+    use crate::frontend::ast::{Expr, ExprKind, Literal, Param, Pattern, Span, Type, TypeKind};
 
     fn make_transpiler() -> Transpiler {
         Transpiler::new()
@@ -249,13 +249,11 @@ mod tests {
     #[test]
     fn test_actor_with_state() {
         let transpiler = make_transpiler();
-        let state = vec![
-            StructField {
-                name: "count".to_string(),
-                ty: make_type("i32"),
-                is_pub: false,
-            },
-        ];
+        let state = vec![StructField {
+            name: "count".to_string(),
+            ty: make_type("i32"),
+            is_pub: false,
+        }];
         let handlers = vec![];
 
         let result = transpiler.transpile_actor("Counter", &state, &handlers);
@@ -268,13 +266,11 @@ mod tests {
     fn test_actor_with_simple_handler() {
         let transpiler = make_transpiler();
         let state = vec![];
-        let handlers = vec![
-            ActorHandler {
-                message_type: "Reset".to_string(),
-                params: vec![],
-                body: Box::new(make_literal(Literal::Unit)),
-            },
-        ];
+        let handlers = vec![ActorHandler {
+            message_type: "Reset".to_string(),
+            params: vec![],
+            body: Box::new(make_literal(Literal::Unit)),
+        }];
 
         let result = transpiler.transpile_actor("Counter", &state, &handlers);
         assert!(result.is_ok());
@@ -287,22 +283,18 @@ mod tests {
     fn test_actor_with_parameterized_handler() {
         let transpiler = make_transpiler();
         let state = vec![];
-        let params = vec![
-            Param {
-                pattern: Pattern::Identifier("value".to_string()),
-                ty: make_type("i32"),
-                span: Span::new(0, 1),
-                is_mutable: false,
-                default_value: None,
-            },
-        ];
-        let handlers = vec![
-            ActorHandler {
-                message_type: "Add".to_string(),
-                params,
-                body: Box::new(make_ident("value")),
-            },
-        ];
+        let params = vec![Param {
+            pattern: Pattern::Identifier("value".to_string()),
+            ty: make_type("i32"),
+            span: Span::new(0, 1),
+            is_mutable: false,
+            default_value: None,
+        }];
+        let handlers = vec![ActorHandler {
+            message_type: "Add".to_string(),
+            params,
+            body: Box::new(make_ident("value")),
+        }];
 
         let result = transpiler.transpile_actor("Counter", &state, &handlers);
         assert!(result.is_ok());
@@ -434,13 +426,11 @@ mod tests {
                 default_value: None,
             },
         ];
-        let handlers = vec![
-            ActorHandler {
-                message_type: "Compute".to_string(),
-                params,
-                body: Box::new(make_ident("x")),
-            },
-        ];
+        let handlers = vec![ActorHandler {
+            message_type: "Compute".to_string(),
+            params,
+            body: Box::new(make_ident("x")),
+        }];
 
         let result = transpiler.transpile_actor("Calculator", &state, &handlers);
         assert!(result.is_ok());

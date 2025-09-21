@@ -2,9 +2,9 @@
 // Sprint 80 Phase 30: Backend and code generation
 // ALL NIGHT FINAL PUSH!
 
-use ruchy::backend::compiler::{Compiler, CompilerOptions, CompilationTarget, OptimizationLevel};
-use ruchy::backend::transpiler::Transpiler;
+use ruchy::backend::compiler::{CompilationTarget, Compiler, CompilerOptions, OptimizationLevel};
 use ruchy::backend::module_loader::ModuleLoader;
+use ruchy::backend::transpiler::Transpiler;
 use ruchy::backend::SafeArena;
 use ruchy::Parser;
 use std::path::Path;
@@ -136,7 +136,7 @@ fn test_compiler_emit_rust() {
     let mut options = CompilerOptions::default();
     options.target = CompilationTarget::Rust;
     let compiler = Compiler::with_options(options);
-    
+
     let program = "let x = 42; x + 1";
     let result = compiler.emit_rust(program);
     assert!(result.is_ok());
@@ -148,7 +148,7 @@ fn test_compiler_emit_wasm() {
     let mut options = CompilerOptions::default();
     options.target = CompilationTarget::Wasm;
     let compiler = Compiler::with_options(options);
-    
+
     let program = "42";
     let result = compiler.emit_wasm(program);
     // WASM generation might not be implemented yet
@@ -160,7 +160,7 @@ fn test_compiler_emit_llvm() {
     let mut options = CompilerOptions::default();
     options.target = CompilationTarget::LLVM;
     let compiler = Compiler::with_options(options);
-    
+
     let program = "42";
     let result = compiler.emit_llvm(program);
     // LLVM generation might not be implemented yet
@@ -172,7 +172,7 @@ fn test_compiler_optimize_none() {
     let mut options = CompilerOptions::default();
     options.optimization_level = OptimizationLevel::None;
     let compiler = Compiler::with_options(options);
-    
+
     let program = "1 + 2 + 3";
     let result = compiler.compile_str(program);
     assert!(result.is_ok());
@@ -183,7 +183,7 @@ fn test_compiler_optimize_basic() {
     let mut options = CompilerOptions::default();
     options.optimization_level = OptimizationLevel::Basic;
     let compiler = Compiler::with_options(options);
-    
+
     let program = "1 + 2 + 3";
     let result = compiler.compile_str(program);
     assert!(result.is_ok());
@@ -194,7 +194,7 @@ fn test_compiler_optimize_aggressive() {
     let mut options = CompilerOptions::default();
     options.optimization_level = OptimizationLevel::Aggressive;
     let compiler = Compiler::with_options(options);
-    
+
     let program = "1 + 2 + 3";
     let result = compiler.compile_str(program);
     assert!(result.is_ok());
@@ -405,16 +405,16 @@ fn test_safe_arena_alignment() {
 #[test]
 fn test_backend_integration() {
     let source = "let x = 42; x + 1";
-    
+
     // Parse
     let mut parser = Parser::new(source);
     let ast = parser.parse().unwrap();
-    
+
     // Transpile
     let transpiler = Transpiler::new();
     let rust_code = transpiler.transpile(&ast);
     assert!(!rust_code.is_empty());
-    
+
     // Compile
     let compiler = Compiler::new();
     let result = compiler.compile_str(source);
@@ -424,12 +424,12 @@ fn test_backend_integration() {
 #[test]
 fn test_compiler_error_handling() {
     let compiler = Compiler::new();
-    
+
     // Invalid syntax
     assert!(compiler.compile_str("let").is_err());
     assert!(compiler.compile_str("fn").is_err());
     assert!(compiler.compile_str("if").is_err());
-    
+
     // Empty input
     assert!(compiler.compile_str("").is_ok());
     assert!(compiler.compile_str("   ").is_ok());
@@ -445,9 +445,7 @@ fn test_compiler_options_clone() {
 
 #[test]
 fn test_compiler_options_debug() {
-    let options = CompilerOptions::builder()
-        .debug(true)
-        .build();
+    let options = CompilerOptions::builder().debug(true).build();
     assert!(options.debug);
 }
 
@@ -456,7 +454,10 @@ fn test_compiler_options_output_path() {
     let options = CompilerOptions::builder()
         .output(Path::new("output.exe"))
         .build();
-    assert_eq!(options.output_path, Some(Path::new("output.exe").to_path_buf()));
+    assert_eq!(
+        options.output_path,
+        Some(Path::new("output.exe").to_path_buf())
+    );
 }
 
 // ALL NIGHT FINAL TESTS!

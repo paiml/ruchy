@@ -21,29 +21,34 @@ pub fn format_value(value: &Value) -> String {
             format!("({})", elements.join(", "))
         }
         Value::Object(obj) => {
-            let pairs: Vec<String> = obj.iter()
+            let pairs: Vec<String> = obj
+                .iter()
                 .map(|(k, v)| format!("{}: {}", k, format_value(v)))
                 .collect();
             format!("{{{}}}", pairs.join(", "))
         }
-        Value::Range { start, end, inclusive } => {
+        Value::Range {
+            start,
+            end,
+            inclusive,
+        } => {
             if *inclusive {
                 format!("{}..={}", format_value(start), format_value(end))
             } else {
                 format!("{}..{}", format_value(start), format_value(end))
             }
         }
-        Value::EnumVariant { variant_name, data } => {
-            match data {
-                Some(values) => {
-                    let formatted: Vec<String> = values.iter().map(format_value).collect();
-                    format!("{}({})", variant_name, formatted.join(", "))
-                }
-                None => variant_name.clone(),
+        Value::EnumVariant { variant_name, data } => match data {
+            Some(values) => {
+                let formatted: Vec<String> = values.iter().map(format_value).collect();
+                format!("{}({})", variant_name, formatted.join(", "))
             }
-        }
+            None => variant_name.clone(),
+        },
         Value::Closure { .. } => "<closure>".to_string(),
         Value::DataFrame { .. } => "<dataframe>".to_string(),
+        // BuiltinFunction variant not in current Value enum
+        // Value::BuiltinFunction(name) => format!("<builtin function: {}>", name),
     }
 }
 

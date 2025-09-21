@@ -17,9 +17,7 @@ fn test_repl_completion_basic() {
     // Completion should work for prefixes
     // This tests internal completion mechanism
     let bindings = repl.get_bindings();
-    let vars_starting_with_var: Vec<_> = bindings.keys()
-        .filter(|k| k.starts_with("var"))
-        .collect();
+    let vars_starting_with_var: Vec<_> = bindings.keys().filter(|k| k.starts_with("var")).collect();
 
     assert_eq!(vars_starting_with_var.len(), 3);
 }
@@ -223,9 +221,9 @@ fn test_repl_sandboxed_restrictions() {
 
     // Test that basic restrictions work by timeout
     let result = repl.eval_bounded(
-        "let x = 1 + 1", // Simple operation that should work
-        1024 * 1024, // Reasonable memory limit
-        std::time::Duration::from_millis(1000) // Reasonable timeout
+        "let x = 1 + 1",                        // Simple operation that should work
+        1024 * 1024,                            // Reasonable memory limit
+        std::time::Duration::from_millis(1000), // Reasonable timeout
     );
 
     // Should succeed within limits
@@ -358,5 +356,8 @@ fn test_repl_exception_handling() {
 
     repl.eval(code).unwrap();
     assert_eq!(repl.eval("safe_divide(10, 2)").unwrap(), "5");
-    assert_eq!(repl.eval("safe_divide(10, 0)").unwrap(), "\"error: division by zero\"");
+    assert_eq!(
+        repl.eval("safe_divide(10, 0)").unwrap(),
+        "\"error: division by zero\""
+    );
 }

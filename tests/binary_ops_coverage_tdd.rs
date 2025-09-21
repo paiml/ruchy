@@ -1,12 +1,12 @@
 //! TDD tests for runtime/binary_ops.rs - achieving 90%+ coverage
-//! QDD Metrics Target: 
+//! QDD Metrics Target:
 //! - Line Coverage: ≥90%
 //! - Branch Coverage: ≥85%
 //! - All public APIs: 100%
 
+use ruchy::frontend::ast::BinaryOp;
 use ruchy::runtime::binary_ops::evaluate_binary_op;
 use ruchy::runtime::Value;
-use ruchy::frontend::ast::BinaryOp;
 use std::rc::Rc;
 
 // ============================================================================
@@ -42,9 +42,15 @@ fn test_add_lists() {
     let lhs = Value::Array(Rc::new(vec![Value::Integer(1), Value::Integer(2)]));
     let rhs = Value::Array(Rc::new(vec![Value::Integer(3), Value::Integer(4)]));
     let result = evaluate_binary_op(&BinaryOp::Add, &lhs, &rhs).unwrap();
-    assert_eq!(result, Value::Array(Rc::new(vec![
-        Value::Integer(1), Value::Integer(2), Value::Integer(3), Value::Integer(4)
-    ])));
+    assert_eq!(
+        result,
+        Value::Array(Rc::new(vec![
+            Value::Integer(1),
+            Value::Integer(2),
+            Value::Integer(3),
+            Value::Integer(4)
+        ]))
+    );
 }
 
 #[test]
@@ -242,7 +248,10 @@ fn test_power_integer_negative_exponent() {
     let rhs = Value::Integer(-1);
     let result = evaluate_binary_op(&BinaryOp::Power, &lhs, &rhs);
     assert!(result.is_err());
-    assert!(result.unwrap_err().to_string().contains("Negative exponent"));
+    assert!(result
+        .unwrap_err()
+        .to_string()
+        .contains("Negative exponent"));
 }
 
 #[test]
@@ -279,7 +288,7 @@ fn test_equal_integers() {
     let rhs = Value::Integer(42);
     let result = evaluate_binary_op(&BinaryOp::Equal, &lhs, &rhs).unwrap();
     assert_eq!(result, Value::Bool(true));
-    
+
     let rhs = Value::Integer(43);
     let result = evaluate_binary_op(&BinaryOp::Equal, &lhs, &rhs).unwrap();
     assert_eq!(result, Value::Bool(false));
@@ -335,8 +344,14 @@ fn test_equal_lists_different() {
 
 #[test]
 fn test_equal_tuples() {
-    let lhs = Value::Tuple(vec![Value::Integer(1), Value::String(Rc::new("a".to_string()))]);
-    let rhs = Value::Tuple(vec![Value::Integer(1), Value::String(Rc::new("a".to_string()))]);
+    let lhs = Value::Tuple(vec![
+        Value::Integer(1),
+        Value::String(Rc::new("a".to_string())),
+    ]);
+    let rhs = Value::Tuple(vec![
+        Value::Integer(1),
+        Value::String(Rc::new("a".to_string())),
+    ]);
     let result = evaluate_binary_op(&BinaryOp::Equal, &lhs, &rhs).unwrap();
     assert_eq!(result, Value::Bool(true));
 }
@@ -363,7 +378,7 @@ fn test_not_equal() {
     let rhs = Value::Integer(3);
     let result = evaluate_binary_op(&BinaryOp::NotEqual, &lhs, &rhs).unwrap();
     assert_eq!(result, Value::Bool(true));
-    
+
     let rhs = Value::Integer(5);
     let result = evaluate_binary_op(&BinaryOp::NotEqual, &lhs, &rhs).unwrap();
     assert_eq!(result, Value::Bool(false));
@@ -375,7 +390,7 @@ fn test_less_integers() {
     let rhs = Value::Integer(5);
     let result = evaluate_binary_op(&BinaryOp::Less, &lhs, &rhs).unwrap();
     assert_eq!(result, Value::Bool(true));
-    
+
     let lhs = Value::Integer(5);
     let rhs = Value::Integer(3);
     let result = evaluate_binary_op(&BinaryOp::Less, &lhs, &rhs).unwrap();
@@ -412,11 +427,11 @@ fn test_less_equal() {
     let rhs = Value::Integer(5);
     let result = evaluate_binary_op(&BinaryOp::LessEqual, &lhs, &rhs).unwrap();
     assert_eq!(result, Value::Bool(true));
-    
+
     let rhs = Value::Integer(6);
     let result = evaluate_binary_op(&BinaryOp::LessEqual, &lhs, &rhs).unwrap();
     assert_eq!(result, Value::Bool(true));
-    
+
     let rhs = Value::Integer(4);
     let result = evaluate_binary_op(&BinaryOp::LessEqual, &lhs, &rhs).unwrap();
     assert_eq!(result, Value::Bool(false));
@@ -428,7 +443,7 @@ fn test_greater() {
     let rhs = Value::Integer(3);
     let result = evaluate_binary_op(&BinaryOp::Greater, &lhs, &rhs).unwrap();
     assert_eq!(result, Value::Bool(true));
-    
+
     let rhs = Value::Integer(7);
     let result = evaluate_binary_op(&BinaryOp::Greater, &lhs, &rhs).unwrap();
     assert_eq!(result, Value::Bool(false));
@@ -440,7 +455,7 @@ fn test_greater_equal() {
     let rhs = Value::Float(3.14);
     let result = evaluate_binary_op(&BinaryOp::GreaterEqual, &lhs, &rhs).unwrap();
     assert_eq!(result, Value::Bool(true));
-    
+
     let rhs = Value::Float(2.0);
     let result = evaluate_binary_op(&BinaryOp::GreaterEqual, &lhs, &rhs).unwrap();
     assert_eq!(result, Value::Bool(true));
@@ -596,7 +611,10 @@ fn test_left_shift_negative() {
     let rhs = Value::Integer(-1);
     let result = evaluate_binary_op(&BinaryOp::LeftShift, &lhs, &rhs);
     assert!(result.is_err());
-    assert!(result.unwrap_err().to_string().contains("Invalid shift amount"));
+    assert!(result
+        .unwrap_err()
+        .to_string()
+        .contains("Invalid shift amount"));
 }
 
 #[test]
@@ -605,7 +623,10 @@ fn test_left_shift_too_large() {
     let rhs = Value::Integer(64);
     let result = evaluate_binary_op(&BinaryOp::LeftShift, &lhs, &rhs);
     assert!(result.is_err());
-    assert!(result.unwrap_err().to_string().contains("Invalid shift amount"));
+    assert!(result
+        .unwrap_err()
+        .to_string()
+        .contains("Invalid shift amount"));
 }
 
 #[test]
@@ -669,7 +690,7 @@ fn test_add_empty_lists() {
     let lhs = Value::Array(Rc::new(vec![]));
     let rhs = Value::Array(Rc::new(vec![]));
     let result = evaluate_binary_op(&BinaryOp::Add, &lhs, &rhs).unwrap();
-    assert_eq!(result, Value::Array(Rc::new(vec![]));
+    assert_eq!(result, Value::Array(Rc::new(vec![])));
 }
 
 #[test]
@@ -700,12 +721,12 @@ fn test_float_equality_epsilon() {
 #[test]
 fn test_nested_list_equality() {
     let lhs = Value::Array(Rc::new(vec![
-        Value::Array(Rc::new(vec![Value::Integer(1), Value::Integer(2)]),
-        Value::Array(Rc::new(vec![Value::Integer(3)]),
+        Value::Array(Rc::new(vec![Value::Integer(1), Value::Integer(2)])),
+        Value::Array(Rc::new(vec![Value::Integer(3)])),
     ]));
     let rhs = Value::Array(Rc::new(vec![
-        Value::Array(Rc::new(vec![Value::Integer(1), Value::Integer(2)]),
-        Value::Array(Rc::new(vec![Value::Integer(3)]),
+        Value::Array(Rc::new(vec![Value::Integer(1), Value::Integer(2)])),
+        Value::Array(Rc::new(vec![Value::Integer(3)])),
     ]));
     let result = evaluate_binary_op(&BinaryOp::Equal, &lhs, &rhs).unwrap();
     assert_eq!(result, Value::Bool(true));
@@ -721,8 +742,8 @@ fn test_list_length_mismatch() {
 
 #[test]
 fn test_tuple_length_mismatch() {
-    let lhs = Value::Tuple(vec![Value::Integer(1), Value::Integer(2)]));
-    let rhs = Value::Tuple(vec![Value::Integer(1)]));
+    let lhs = Value::Tuple(vec![Value::Integer(1), Value::Integer(2)]);
+    let rhs = Value::Tuple(vec![Value::Integer(1)]);
     let result = evaluate_binary_op(&BinaryOp::Equal, &lhs, &rhs).unwrap();
     assert_eq!(result, Value::Bool(false));
 }
@@ -740,16 +761,16 @@ fn test_large_integer_add() {
 fn test_all_comparison_ops_with_strings() {
     let apple = Value::String(Rc::new("apple".to_string()));
     let banana = Value::String(Rc::new("banana".to_string()));
-    
+
     let less = evaluate_binary_op(&BinaryOp::Less, &apple, &banana).unwrap();
     assert_eq!(less, Value::Bool(true));
-    
+
     let less_eq = evaluate_binary_op(&BinaryOp::LessEqual, &apple, &banana).unwrap();
     assert_eq!(less_eq, Value::Bool(true));
-    
+
     let greater = evaluate_binary_op(&BinaryOp::Greater, &apple, &banana).unwrap();
     assert_eq!(greater, Value::Bool(false));
-    
+
     let greater_eq = evaluate_binary_op(&BinaryOp::GreaterEqual, &apple, &banana).unwrap();
     assert_eq!(greater_eq, Value::Bool(false));
 }

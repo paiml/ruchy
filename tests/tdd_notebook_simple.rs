@@ -4,7 +4,7 @@
 #[tokio::test]
 async fn test_notebook_executes_ruchy_code() {
     // RED: This will fail because no server implementation exists
-    
+
     // Start server
     let server_handle = std::process::Command::new("./target/debug/ruchy")
         .args(["notebook", "--port", "9200"])
@@ -12,10 +12,10 @@ async fn test_notebook_executes_ruchy_code() {
         .stderr(std::process::Stdio::null())
         .spawn()
         .expect("Failed to start server");
-    
+
     // Wait for startup
     tokio::time::sleep(std::time::Duration::from_secs(1)).await;
-    
+
     // Test execution
     let client = reqwest::Client::new();
     let response = client
@@ -27,13 +27,13 @@ async fn test_notebook_executes_ruchy_code() {
         .send()
         .await
         .expect("Failed to send request");
-    
+
     assert_eq!(response.status(), 200);
-    
+
     let json: serde_json::Value = response.json().await.expect("Failed to parse JSON");
     assert_eq!(json["success"], true);
     assert_eq!(json["result"], "4");
-    
+
     // Kill server
     let _ = std::process::Command::new("pkill")
         .arg("-f")

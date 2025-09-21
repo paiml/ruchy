@@ -7,55 +7,55 @@ mod capabilities;
 mod formatter;
 mod server;
 pub use analyzer::SemanticAnalyzer;
+use anyhow;
 pub use basic::{LspServer, Notification, Request, Response};
 pub use capabilities::{ruchy_token_to_lsp, RuchyTokenType, SEMANTIC_TOKEN_LEGEND};
 pub use formatter::Formatter;
+#[cfg(test)]
+use proptest::prelude::*;
 pub use server::RuchyLanguageServer;
-use anyhow;
 use std::collections::HashMap;
 use tokio::net::TcpListener;
 use tower_lsp::lsp_types::Url;
 use tower_lsp::{LspService, Server};
-#[cfg(test)]
-use proptest::prelude::*;
 /// Workspace management for LSP
 pub struct Workspace {
     documents: HashMap<Url, String>,
 }
 impl Workspace {
-/// # Examples
-/// 
-/// ```
-/// use ruchy::lsp::mod::new;
-/// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn new() -> Self {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::lsp::mod::new;
+    ///
+    /// let result = new(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn new() -> Self {
         Self {
             documents: HashMap::new(),
         }
     }
-/// # Examples
-/// 
-/// ```
-/// use ruchy::lsp::mod::add_document;
-/// 
-/// let result = add_document(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn add_document(&mut self, uri: Url, content: String) {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::lsp::mod::add_document;
+    ///
+    /// let result = add_document(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn add_document(&mut self, uri: Url, content: String) {
         self.documents.insert(uri, content);
     }
-/// # Examples
-/// 
-/// ```
-/// use ruchy::lsp::mod::update_document;
-/// 
-/// let result = update_document(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn update_document(&mut self, uri: &Url, content: String) {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::lsp::mod::update_document;
+    ///
+    /// let result = update_document(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn update_document(&mut self, uri: &Url, content: String) {
         self.documents.insert(uri.clone(), content);
     }
     /// Get document content by URI
@@ -63,28 +63,28 @@ pub fn update_document(&mut self, uri: &Url, content: String) {
     /// # Errors
     ///
     /// Returns an error if the document is not found in the workspace
-/// # Examples
-/// 
-/// ```
-/// use ruchy::lsp::mod::get_document;
-/// 
-/// let result = get_document(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn get_document(&self, uri: &Url) -> anyhow::Result<&String> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::lsp::mod::get_document;
+    ///
+    /// let result = get_document(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn get_document(&self, uri: &Url) -> anyhow::Result<&String> {
         self.documents
             .get(uri)
             .ok_or_else(|| anyhow::anyhow!("Document not found: {uri}"))
     }
-/// # Examples
-/// 
-/// ```
-/// use ruchy::lsp::mod::remove_document;
-/// 
-/// let result = remove_document(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn remove_document(&mut self, uri: &Url) {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::lsp::mod::remove_document;
+    ///
+    /// let result = remove_document(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn remove_document(&mut self, uri: &Url) {
         self.documents.remove(uri);
     }
 }
@@ -99,10 +99,10 @@ impl Default for Workspace {
 ///
 /// Returns an error if the LSP server fails to start or encounters I/O issues
 /// # Examples
-/// 
+///
 /// ```
 /// use ruchy::lsp::mod::start_server;
-/// 
+///
 /// let result = start_server(());
 /// assert_eq!(result, Ok(()));
 /// ```
@@ -119,10 +119,10 @@ pub async fn start_server() -> anyhow::Result<()> {
 ///
 /// Returns an error if the TCP listener fails to bind or connection handling fails
 /// # Examples
-/// 
+///
 /// ```
 /// use ruchy::lsp::mod::start_tcp_server;
-/// 
+///
 /// let result = start_tcp_server(());
 /// assert_eq!(result, Ok(()));
 /// ```
@@ -140,7 +140,7 @@ pub async fn start_tcp_server(port: u16) -> anyhow::Result<()> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use super::{default_supported_capabilities, Capability};
     use tower_lsp::lsp_types::Url;
 
     // Sprint 9: Comprehensive LSP module tests
@@ -199,7 +199,10 @@ mod tests {
 
         let result = workspace.get_document(&uri);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Document not found"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Document not found"));
     }
 
     #[test]
@@ -265,7 +268,10 @@ mod tests {
 
         assert_eq!(workspace.documents.len(), 2);
         assert_eq!(workspace.get_document(&file_uri).unwrap(), "file content");
-        assert_eq!(workspace.get_document(&untitled_uri).unwrap(), "untitled content");
+        assert_eq!(
+            workspace.get_document(&untitled_uri).unwrap(),
+            "untitled content"
+        );
     }
 
     #[test]
@@ -377,9 +383,8 @@ mod tests {
 
 #[cfg(test)]
 mod property_tests_mod {
-    use proptest::proptest;
-    use super::*;
     use proptest::prelude::*;
+    use proptest::proptest;
     proptest! {
         /// Property: Function never panics on any input
         #[test]

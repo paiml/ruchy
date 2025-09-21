@@ -1,9 +1,9 @@
 //! TDD Tests for Pattern Matching Completeness
 //! Sprint v3.11.0 - Fix all pattern matching edge cases
 
-use ruchy::frontend::parser::Parser;
-use ruchy::frontend::ast::{Expr, ExprKind, Pattern};
 use ruchy::backend::transpiler::Transpiler;
+use ruchy::frontend::ast::{Expr, ExprKind, Pattern};
+use ruchy::frontend::parser::Parser;
 
 #[cfg(test)]
 mod range_pattern_tests {
@@ -341,8 +341,8 @@ mod integration_tests {
 
 #[cfg(test)]
 mod property_tests {
-    use proptest::prelude::*;
     use super::*;
+    use proptest::prelude::*;
 
     proptest! {
         #[test]

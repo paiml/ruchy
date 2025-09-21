@@ -17,7 +17,7 @@
 #![allow(clippy::expect_used)]
 #![allow(clippy::missing_errors_doc)]
 #![allow(clippy::missing_panics_doc)]
-// Additional clippy allows for P0 lint fixes  
+// Additional clippy allows for P0 lint fixes
 #![allow(clippy::empty_line_after_doc_comments)]
 #![allow(clippy::manual_let_else)]
 #![allow(clippy::redundant_pattern_matching)]
@@ -26,7 +26,7 @@
 #![allow(clippy::type_complexity)]
 #![allow(dead_code)]
 #![allow(clippy::float_cmp)]
-#![allow(clippy::collapsible_match)]  
+#![allow(clippy::collapsible_match)]
 #![allow(clippy::cast_sign_loss)]
 #![allow(clippy::manual_strip)]
 #![allow(clippy::implicit_hasher)]
@@ -50,21 +50,21 @@
 pub mod actors;
 pub mod api_docs;
 pub mod backend;
+pub mod cli;
 pub mod debugger;
 pub mod docs;
 pub mod error_recovery_enhanced;
 pub mod frontend;
 pub mod lints;
-pub mod macros;
 #[cfg(feature = "mcp")]
 pub mod lsp;
-pub mod package;
+pub mod macros;
 #[cfg(feature = "mcp")]
 pub mod mcp;
-pub mod cli;
 pub mod middleend;
 #[cfg(feature = "notebook")]
 pub mod notebook;
+pub mod package;
 pub mod parser;
 pub mod performance_optimizations;
 pub mod proving;
@@ -83,20 +83,20 @@ mod wasm_bindings;
 pub use actors::{
     Actor, ActorHandle, McpActor, McpMessage, McpResponse, SupervisionStrategy, Supervisor,
 };
-pub use backend::{ModuleResolver, Transpiler};
+use anyhow::Result;
 pub use backend::wasm::WasmEmitter;
+pub use backend::{ModuleResolver, Transpiler};
 pub use frontend::ast::{BinaryOp, Expr, ExprKind, Literal, Pattern, UnaryOp};
 pub use frontend::lexer::{Token, TokenStream};
 pub use frontend::parser::Parser;
 #[cfg(feature = "mcp")]
 pub use lsp::{start_server, start_tcp_server, Formatter, RuchyLanguageServer, SemanticAnalyzer};
+pub use quality::gates::{GateResult, QualityGateConfig, QualityGateEnforcer};
 pub use quality::{
     CiQualityEnforcer, CoverageCollector, CoverageReport, CoverageTool, FileCoverage,
     HtmlReportGenerator, QualityGates, QualityMetrics, QualityReport, QualityThresholds,
 };
-pub use quality::gates::{QualityGateEnforcer, QualityGateConfig, GateResult};
 pub use utils::*;
-use anyhow::Result;
 /// Compile Ruchy source code to Rust
 ///
 /// # Examples
@@ -149,7 +149,8 @@ pub fn get_parse_error(source: &str) -> Option<String> {
 /// - The REPL cannot be initialized
 /// - User interaction fails
 pub fn run_repl() -> Result<()> {
-    let mut repl = runtime::repl::Repl::new(std::env::current_dir().unwrap_or_else(|_| "/tmp".into()))?;
+    let mut repl =
+        runtime::repl::Repl::new(std::env::current_dir().unwrap_or_else(|_| "/tmp".into()))?;
     repl.run()
 }
 #[cfg(test)]
@@ -466,7 +467,6 @@ mod tests {
         assert!(result.contains("await"));
     }
     #[test]
-    #[ignore = "Module system changed in Sprint v3.8.0"]
     fn test_compile_import() {
         let result = compile("import std.collections.HashMap").unwrap();
         assert!(result.contains("use"));
@@ -527,7 +527,7 @@ mod tests {
         assert!(compile("str(42)").is_ok());
         assert!(compile("str(3.14)").is_ok());
         assert!(compile("str(true)").is_ok());
-        // Integer conversions  
+        // Integer conversions
         assert!(compile("int(\"42\")").is_ok());
         assert!(compile("int(3.14)").is_ok());
         assert!(compile("int(true)").is_ok());
@@ -568,7 +568,6 @@ mod tests {
         assert!(compile("[1,2,3].reduce(|a,b| a+b)").is_ok());
     }
     #[test]
-    #[ignore = "Patterns not fully implemented"]
     fn test_patterns() {
         // Literal patterns
         assert!(compile("match x { 0 => \"zero\", _ => \"other\" }").is_ok());
@@ -591,7 +590,6 @@ mod tests {
         assert!(compile("match x { 0 | 1 => \"binary\", _ => \"other\" }").is_ok());
     }
     #[test]
-    #[ignore = "Not all operators implemented yet"]
     fn test_all_operators() {
         // Arithmetic
         assert!(compile("x + y").is_ok());
@@ -629,7 +627,6 @@ mod tests {
         assert!(compile("x?.y").is_ok());
     }
     #[test]
-    #[ignore = "Control flow not fully implemented"]
     fn test_control_flow() {
         // If statements
         assert!(compile("if x { 1 }").is_ok());
@@ -645,7 +642,6 @@ mod tests {
         assert!(compile("for i in 0..10 { continue }").is_ok());
     }
     #[test]
-    #[ignore = "Data structures not fully implemented"]
     fn test_data_structures() {
         // Lists
         assert!(compile("[]").is_ok());
@@ -664,7 +660,6 @@ mod tests {
         assert!(compile("(1, 2, 3)").is_ok());
     }
     #[test]
-    #[ignore = "Functions not fully implemented"]
     fn test_functions_lambdas() {
         // Functions
         assert!(compile("fn f() { }").is_ok());
@@ -686,7 +681,6 @@ mod tests {
         assert!(compile("f\"Result: {calculate()}\"").is_ok());
     }
     #[test]
-    #[ignore = "Comprehensions not fully implemented"]
     fn test_comprehensions() {
         assert!(compile("[x * 2 for x in 0..10]").is_ok());
         assert!(compile("[x for x in items if x > 0]").is_ok());
@@ -694,7 +688,6 @@ mod tests {
         assert!(compile("{x for x in items if unique(x)}").is_ok());
     }
     #[test]
-    #[ignore = "Destructuring not fully implemented"]
     fn test_destructuring() {
         assert!(compile("let [a, b, c] = [1, 2, 3]").is_ok());
         assert!(compile("let {x, y} = point").is_ok());
@@ -702,7 +695,6 @@ mod tests {
         assert!(compile("let (a, b) = (1, 2)").is_ok());
     }
     #[test]
-    #[ignore = "Error handling not fully implemented"]
     fn test_error_handling() {
         assert!(compile("try { risky() } catch e { handle(e) }").is_ok());
         assert!(compile("result?").is_ok());
@@ -711,14 +703,12 @@ mod tests {
         assert!(compile("result.unwrap_or(default)").is_ok());
     }
     #[test]
-    #[ignore = "Classes/structs not fully implemented"]
     fn test_classes_structs() {
         assert!(compile("struct Point { x: int, y: int }").is_ok());
         assert!(compile("class Calculator { fn add(x, y) { x + y } }").is_ok());
         assert!(compile("enum Option { Some(value), None }").is_ok());
     }
     #[test]
-    #[ignore = "Imports not fully implemented"]
     fn test_imports() {
         assert!(compile("import std").is_ok());
         assert!(compile("from std import println").is_ok());
@@ -726,7 +716,6 @@ mod tests {
         assert!(compile("export fn helper()").is_ok());
     }
     #[test]
-    #[ignore = "Decorators not implemented yet"]
     fn test_decorators() {
         assert!(compile("@memoize\nfn expensive(n) { }").is_ok());
         assert!(compile("@derive(Debug, Clone)\nstruct Data { }").is_ok());
@@ -924,11 +913,12 @@ mod tests {
     #[test]
     fn test_compile_traits() {
         assert!(compile("trait Show { fun show(self) -> String }").is_ok());
-        assert!(compile("impl Show for i32 { fun show(self) -> String { self.to_string() } }").is_ok());
+        assert!(
+            compile("impl Show for i32 { fun show(self) -> String { self.to_string() } }").is_ok()
+        );
     }
 
     #[test]
-    #[ignore = "Module system changed in Sprint v3.8.0"]
     fn test_compile_modules() {
         assert!(compile("mod math { fun add(x: i32, y: i32) -> i32 { x + y } }").is_ok());
         assert!(compile("use std::collections::HashMap").is_ok());
@@ -963,15 +953,18 @@ mod tests {
     fn test_compile_edge_cases() {
         // Very long identifier
         let long_id = "a".repeat(1000);
-        let _ = compile(&format!("let {} = 1", long_id));
+        let _ = compile(&format!("let {long_id} = 1"));
 
         // Deeply nested expression
         let nested = "(".repeat(100) + "1" + &")".repeat(100);
         let _ = compile(&nested);
 
         // Many arguments
-        let args = (0..100).map(|i| format!("arg{}", i)).collect::<Vec<_>>().join(", ");
-        let _ = compile(&format!("fun f({}) {{ }}", args));
+        let args = (0..100)
+            .map(|i| format!("arg{i}"))
+            .collect::<Vec<_>>()
+            .join(", ");
+        let _ = compile(&format!("fun f({args}) {{ }}"));
     }
 
     #[test]
@@ -988,8 +981,8 @@ mod tests {
 
     #[test]
     fn test_type_inference_direct() {
-        use crate::middleend::infer::InferenceContext;
         use crate::frontend::parser::Parser;
+        use crate::middleend::infer::InferenceContext;
 
         let mut ctx = InferenceContext::new();
         let mut parser = Parser::new("42");
@@ -1000,8 +993,8 @@ mod tests {
 
     #[test]
     fn test_interpreter_direct() {
-        use crate::runtime::interpreter::Interpreter;
         use crate::frontend::parser::Parser;
+        use crate::runtime::interpreter::Interpreter;
 
         let mut interp = Interpreter::new();
         let mut parser = Parser::new("1 + 2");
@@ -1076,8 +1069,7 @@ mod tests {
 #[cfg(test)]
 mod property_tests_lib {
     use proptest::proptest;
-    
-    
+
     proptest! {
         /// Property: Function never panics on any input
         #[test]

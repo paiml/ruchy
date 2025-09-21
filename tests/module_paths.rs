@@ -6,8 +6,8 @@
 //! Tests for module path (::) syntax support
 #![allow(clippy::print_stdout, clippy::uninlined_format_args)] // Test debugging output
 
-use ruchy::frontend::parser::Parser;
 use ruchy::frontend::ast::{ExprKind, TypeKind};
+use ruchy::frontend::parser::Parser;
 
 #[test]
 fn test_qualified_type_names() {
@@ -22,7 +22,7 @@ fn test_qualified_type_names() {
         let mut parser = Parser::new(input);
         let result = parser.parse();
         assert!(result.is_ok(), "Failed to parse: {}", input);
-        
+
         if let Ok(expr) = result {
             if let ExprKind::Function { params, .. } = &expr.kind {
                 assert_eq!(params.len(), 1);
@@ -122,19 +122,24 @@ fn test_three_segment_qualified_call() {
     let input = "std::fs::read_file(\"test.txt\")";
     let mut parser = Parser::new(input);
     let result = parser.parse();
-    assert!(result.is_ok(), "Failed to parse: {} - Error: {:?}", input, result.err());
+    assert!(
+        result.is_ok(),
+        "Failed to parse: {} - Error: {:?}",
+        input,
+        result.err()
+    );
 }
 
-#[test] 
+#[test]
 fn debug_repl_vs_unittest() {
     // TOYOTA WAY: Go to the source - debug the exact difference
     let input = "std::fs::read_file(\"test.txt\")";
-    
+
     println!("=== UNIT TEST CONTEXT DEBUG ===");
     let mut parser = Parser::new(input);
     let result = parser.parse();
     println!("Unit test result: {:?}", result.is_ok());
-    
+
     if let Err(e) = &result {
         println!("Unit test error: {:?}", e);
         // Print the error chain for full context
@@ -144,7 +149,10 @@ fn debug_repl_vs_unittest() {
             current = cause.source();
         }
     }
-    
+
     // This test MUST pass - if it fails, something is fundamentally wrong
-    assert!(result.is_ok(), "Unit test context MUST work for qualified calls");
+    assert!(
+        result.is_ok(),
+        "Unit test context MUST work for qualified calls"
+    );
 }

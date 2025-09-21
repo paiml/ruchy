@@ -13,7 +13,13 @@
 #![allow(clippy::expect_used)] // Used appropriately in tests
 #![allow(clippy::cast_possible_truncation)] // Controlled truncations for indices
 
-use crate::frontend::ast::{BinaryOp as AstBinaryOp, Expr, ExprKind, Literal, StringPart, Pattern, MatchArm};
+use super::eval_expr;
+use super::eval_func;
+use super::eval_method;
+use super::eval_operations;
+use crate::frontend::ast::{
+    BinaryOp as AstBinaryOp, Expr, ExprKind, Literal, MatchArm, Pattern, StringPart,
+};
 use crate::frontend::Param;
 use smallvec::{smallvec, SmallVec};
 use std::collections::HashMap;
@@ -64,9 +70,7 @@ pub enum Value {
         env: Rc<HashMap<String, Value>>, // Captured environment
     },
     /// `DataFrame` value
-    DataFrame {
-        columns: Vec<DataFrameColumn>,
-    },
+    DataFrame { columns: Vec<DataFrameColumn> },
     /// Object/HashMap value for key-value mappings
     Object(Rc<HashMap<String, Value>>),
     /// Range value for representing ranges
@@ -83,161 +87,30 @@ pub enum Value {
 }
 
 impl Value {
-    /// Create an integer value from an `i64`.
+    /// Get the type ID for this value for caching purposes
     ///
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::runtime::interpreter::Value;
-    ///
-    /// let val = Value::from_i64(42);
-    /// assert_eq!(val.as_i64().unwrap(), 42);
-    /// ```
-    pub fn from_i64(i: i64) -> Self {
-        Value::Integer(i)
-    }
-
-    /// Create a float value from an `f64`.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::runtime::interpreter::Value;
-    ///
-    /// let val = Value::from_f64(3.14);
-    /// assert_eq!(val.as_f64().unwrap(), 3.14);
-    /// ```
-    pub fn from_f64(f: f64) -> Self {
-        Value::Float(f)
-    }
-
-    /// Create boolean value
-    pub fn from_bool(b: bool) -> Self {
-        Value::Bool(b)
-    }
-
-    /// Create nil value
-    pub fn nil() -> Self {
-        Value::Nil
-    }
-
-    /// Create string value
-    pub fn from_string(s: String) -> Self {
-        Value::String(Rc::new(s))
-    }
-
-    /// Create array value
-    pub fn from_array(arr: Vec<Value>) -> Self {
-        Value::Array(Rc::new(arr))
-    }
-
-    /// Create object value
-    pub fn from_object(obj: HashMap<String, Value>) -> Self {
-        Value::Object(Rc::new(obj))
-    }
-
-    /// Create range value
-    pub fn from_range(start: Value, end: Value, inclusive: bool) -> Self {
-        Value::Range {
-            start: Box::new(start),
-            end: Box::new(end),
-            inclusive,
-        }
-    }
-
-    /// Create enum variant value
-    pub fn from_enum_variant(variant_name: String, data: Option<Vec<Value>>) -> Self {
-        Value::EnumVariant {
-            variant_name,
-            data,
-        }
-    }
-
-    /// Check if value is nil
-    pub fn is_nil(&self) -> bool {
-        matches!(self, Value::Nil)
-    }
-
-    /// Check if value is truthy.
-    ///
-    /// In Ruchy, only `false` and `nil` are falsy. All other values,
-    /// including `0` and empty strings, are truthy.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::runtime::interpreter::Value;
-    ///
-    /// assert!(Value::from_i64(0).is_truthy());
-    /// assert!(Value::from_string("".to_string()).is_truthy());
-    /// assert!(!Value::Bool(false).is_truthy());
-    /// assert!(!Value::Nil.is_truthy());
-    /// ```
-    pub fn is_truthy(&self) -> bool {
+    /// # Complexity
+    /// Cyclomatic complexity: 10 (within Toyota Way limits, just barely)
+    pub fn type_id(&self) -> std::any::TypeId {
+        use std::any::TypeId;
         match self {
-            Value::Bool(b) => *b,
-            Value::Nil => false,
-            _ => true,
-        }
-    }
-
-    /// Extract integer value
-    /// # Errors
-    /// Returns error if the value is not an integer
-    pub fn as_i64(&self) -> Result<i64, InterpreterError> {
-        match self {
-            Value::Integer(i) => Ok(*i),
-            _ => Err(InterpreterError::TypeError(format!(
-                "Expected integer, got {}",
-                self.type_name()
-            ))),
-        }
-    }
-
-    /// Extract float value  
-    /// # Errors
-    /// Returns error if the value is not a float
-    pub fn as_f64(&self) -> Result<f64, InterpreterError> {
-        match self {
-            Value::Float(f) => Ok(*f),
-            _ => Err(InterpreterError::TypeError(format!(
-                "Expected float, got {}",
-                self.type_name()
-            ))),
-        }
-    }
-
-    /// Extract boolean value
-    /// # Errors
-    /// Returns error if the value is not a boolean
-    pub fn as_bool(&self) -> Result<bool, InterpreterError> {
-        match self {
-            Value::Bool(b) => Ok(*b),
-            _ => Err(InterpreterError::TypeError(format!(
-                "Expected boolean, got {}",
-                self.type_name()
-            ))),
-        }
-    }
-
-    /// Get type name for debugging
-    pub fn type_name(&self) -> &'static str {
-        match self {
-            Value::Integer(_) => "integer",
-            Value::Float(_) => "float",
-            Value::Bool(_) => "boolean",
-            Value::Nil => "nil",
-            Value::String(_) => "string",
-            Value::Array(_) => "array",
-            Value::Tuple(_) => "tuple",
-            Value::Closure { .. } => "function",
-            Value::DataFrame { .. } => "dataframe",
-            Value::Object(_) => "object",
-            Value::Range { .. } => "range",
-            Value::EnumVariant { .. } => "enum_variant",
+            Value::Integer(_) => TypeId::of::<i64>(),
+            Value::Float(_) => TypeId::of::<f64>(),
+            Value::Bool(_) => TypeId::of::<bool>(),
+            Value::String(_) => TypeId::of::<String>(),
+            Value::Nil => TypeId::of::<()>(),
+            Value::Array(_) => TypeId::of::<Vec<Value>>(),
+            Value::Tuple(_) => TypeId::of::<(Value,)>(), // Generic tuple marker
+            Value::Closure { .. } => TypeId::of::<fn()>(), // Generic closure marker
+            Value::DataFrame { .. } => TypeId::of::<crate::runtime::DataFrameColumn>(),
+            Value::Object(_) => TypeId::of::<HashMap<String, Value>>(),
+            Value::Range { .. } => TypeId::of::<std::ops::Range<i64>>(),
+            Value::EnumVariant { .. } => TypeId::of::<(String, Option<Vec<Value>>)>(),
         }
     }
 }
+
+// Value utility methods moved to value_utils.rs
 
 // Note: Complex object structures (ObjectHeader, Class, etc.) will be implemented
 // in Phase 1 of the interpreter spec when we add proper GC and method dispatch.
@@ -329,96 +202,12 @@ pub enum InterpreterError {
     InvalidInstruction,
     DivisionByZero,
     IndexOutOfBounds,
+    Break(Value),
+    Continue,
+    Return(Value),
 }
 
-impl std::fmt::Display for Value {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Value::Integer(i) => write!(f, "{i}"),
-            Value::Float(fl) => write!(f, "{fl}"),
-            Value::Bool(b) => write!(f, "{b}"),
-            Value::Nil => write!(f, "nil"),
-            Value::String(s) => write!(f, "\"{}\"", s),
-            Value::Array(arr) => {
-                write!(f, "[")?;
-                for (i, val) in arr.iter().enumerate() {
-                    if i > 0 {
-                        write!(f, ", ")?;
-                    }
-                    write!(f, "{val}")?;
-                }
-                write!(f, "]")
-            }
-            Value::Tuple(elements) => {
-                write!(f, "(")?;
-                for (i, val) in elements.iter().enumerate() {
-                    if i > 0 {
-                        write!(f, ", ")?;
-                    }
-                    write!(f, "{val}")?;
-                }
-                write!(f, ")")
-            }
-            Value::Closure { .. } => write!(f, "<function>"),
-            Value::DataFrame { columns } => {
-                writeln!(f, "DataFrame with {} columns:", columns.len())?;
-                for col in columns {
-                    writeln!(f, "  {}: {} rows", col.name, col.values.len())?;
-                }
-                Ok(())
-            }
-            Value::Object(obj) => {
-                write!(f, "{{")?;
-                for (i, (key, val)) in obj.iter().enumerate() {
-                    if i > 0 {
-                        write!(f, ", ")?;
-                    }
-                    write!(f, "{key}: {val}")?;
-                }
-                write!(f, "}}")
-            }
-            Value::Range { start, end, inclusive } => {
-                if *inclusive {
-                    write!(f, "{start}..={end}")
-                } else {
-                    write!(f, "{start}..{end}")
-                }
-            }
-            Value::EnumVariant { variant_name, data } => {
-                write!(f, "{variant_name}")?;
-                if let Some(values) = data {
-                    if !values.is_empty() {
-                        write!(f, "(")?;
-                        for (i, val) in values.iter().enumerate() {
-                            if i > 0 {
-                                write!(f, ", ")?;
-                            }
-                            write!(f, "{val}")?;
-                        }
-                        write!(f, ")")?;
-                    }
-                }
-                Ok(())
-            }
-        }
-    }
-}
-
-impl std::fmt::Display for InterpreterError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            InterpreterError::TypeError(msg) => write!(f, "Type error: {msg}"),
-            InterpreterError::RuntimeError(msg) => write!(f, "Runtime error: {msg}"),
-            InterpreterError::StackOverflow => write!(f, "Stack overflow"),
-            InterpreterError::StackUnderflow => write!(f, "Stack underflow"),
-            InterpreterError::InvalidInstruction => write!(f, "Invalid instruction"),
-            InterpreterError::DivisionByZero => write!(f, "Division by zero"),
-            InterpreterError::IndexOutOfBounds => write!(f, "Index out of bounds"),
-        }
-    }
-}
-
-impl std::error::Error for InterpreterError {}
+// Display implementations moved to eval_display.rs
 
 /// Inline cache states for polymorphic method dispatch
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -904,1011 +693,15 @@ pub struct TypeFeedbackStats {
     pub total_samples: u64,
 }
 
-/// Conservative garbage collector for heap-allocated objects.
-///
-/// This GC implementation uses conservative stack scanning and mark-and-sweep
-/// collection. It operates alongside Rust's `Rc` reference counting for a
-/// hybrid memory management approach.
-///
-/// # Features
-///
-/// - Conservative stack scanning (treats all stack values as potential pointers)
-/// - Mark-and-sweep collection algorithm
-/// - Automatic collection based on memory pressure
-/// - Collection statistics for performance monitoring
-///
-/// # Future Enhancements
-///
-/// - Generational collection for better performance
-/// - Precise stack maps for accurate root identification
-/// - Incremental collection to reduce pause times
-#[derive(Debug)]
-pub struct ConservativeGC {
-    /// Objects currently tracked by the GC
-    tracked_objects: Vec<GCObject>,
-    /// Collection statistics
-    collections_performed: u64,
-    /// Total objects collected
-    objects_collected: u64,
-    /// Memory pressure threshold (bytes)
-    collection_threshold: usize,
-    /// Current allocated bytes estimate
-    allocated_bytes: usize,
-    /// Enable/disable automatic collection
-    auto_collect_enabled: bool,
-}
-
-/// A garbage-collected object with metadata
-#[derive(Debug, Clone)]
-pub struct GCObject {
-    /// Object identifier (address-like)
-    id: usize,
-    /// Object size in bytes
-    size: usize,
-    /// Mark bit for mark-and-sweep
-    marked: bool,
-    /// Object generation (for future generational GC)
-    #[allow(dead_code)] // Will be used in future generational GC implementation
-    generation: u8,
-    /// Reference to the actual value
-    value: Value,
-}
-
-impl ConservativeGC {
-    /// Create new conservative garbage collector
-    pub fn new() -> Self {
-        Self {
-            tracked_objects: Vec::new(),
-            collections_performed: 0,
-            objects_collected: 0,
-            collection_threshold: 1024 * 1024, // 1MB default threshold
-            allocated_bytes: 0,
-            auto_collect_enabled: true,
-        }
-    }
-
-    /// Add an object to GC tracking
-    pub fn track_object(&mut self, value: Value) -> usize {
-        let id = self.tracked_objects.len();
-        let size = self.estimate_object_size(&value);
-
-        let gc_object = GCObject {
-            id,
-            size,
-            marked: false,
-            generation: 0,
-            value,
-        };
-
-        self.tracked_objects.push(gc_object);
-        self.allocated_bytes += size;
-
-        // Trigger collection if we've exceeded threshold
-        if self.auto_collect_enabled && self.allocated_bytes > self.collection_threshold {
-            self.collect_garbage();
-        }
-
-        id
-    }
-
-    /// Perform garbage collection using conservative stack scanning
-    pub fn collect_garbage(&mut self) -> GCStats {
-        let initial_count = self.tracked_objects.len();
-        let initial_bytes = self.allocated_bytes;
-
-        // Mark phase: mark all reachable objects
-        self.mark_phase();
-
-        // Sweep phase: collect unmarked objects
-        let collected = self.sweep_phase();
-
-        self.collections_performed += 1;
-        self.objects_collected += collected as u64;
-
-        GCStats {
-            objects_before: initial_count,
-            objects_after: self.tracked_objects.len(),
-            objects_collected: collected,
-            bytes_before: initial_bytes,
-            bytes_after: self.allocated_bytes,
-            collection_time_ns: 0, // Simple implementation doesn't time
-        }
-    }
-
-    /// Mark phase: mark all reachable objects
-    fn mark_phase(&mut self) {
-        // Reset all marks
-        for obj in &mut self.tracked_objects {
-            obj.marked = false;
-        }
-
-        // Mark objects based on Value references
-        // In a more sophisticated implementation, this would scan the stack
-        // For now, we conservatively mark all objects referenced by other tracked objects
-        for i in 0..self.tracked_objects.len() {
-            if self.is_root_object(i) {
-                self.mark_object(i);
-            }
-        }
-    }
-
-    /// Check if object is a root (conservatively assume all are roots for safety)
-    fn is_root_object(&self, _index: usize) -> bool {
-        // Conservative implementation: treat all objects as potentially reachable
-        // In a real implementation, this would scan the stack and globals
-        true
-    }
-
-    /// Mark an object and all objects it references
-    fn mark_object(&mut self, index: usize) {
-        if index >= self.tracked_objects.len() || self.tracked_objects[index].marked {
-            return;
-        }
-
-        self.tracked_objects[index].marked = true;
-
-        // Mark objects referenced by this object
-        let value = &self.tracked_objects[index].value.clone();
-        if let Value::Array(arr) = value {
-            // Mark all array elements that are tracked objects
-            for elem in arr.iter() {
-                if let Some(referenced_id) = self.find_object_id(elem) {
-                    self.mark_object(referenced_id);
-                }
-            }
-        }
-        // Note: Closure environments and other value types don't contain tracked object references
-        // In a real implementation, would mark closure environment
-    }
-
-    /// Find the GC object ID for a given value
-    fn find_object_id(&self, target: &Value) -> Option<usize> {
-        // Simple linear search - in production would use hash table
-        for (id, obj) in self.tracked_objects.iter().enumerate() {
-            if std::ptr::eq(&raw const obj.value, target) {
-                return Some(id);
-            }
-        }
-        None
-    }
-
-    /// Sweep phase: collect unmarked objects
-    fn sweep_phase(&mut self) -> usize {
-        let initial_len = self.tracked_objects.len();
-
-        // Keep only marked objects
-        self.tracked_objects.retain(|obj| {
-            if obj.marked {
-                true
-            } else {
-                self.allocated_bytes = self.allocated_bytes.saturating_sub(obj.size);
-                false
-            }
-        });
-
-        // Reassign IDs after compaction
-        for (new_id, obj) in self.tracked_objects.iter_mut().enumerate() {
-            obj.id = new_id;
-        }
-
-        initial_len - self.tracked_objects.len()
-    }
-
-    /// Estimate memory size of a value
-    fn estimate_object_size(&self, value: &Value) -> usize {
-        match value {
-            Value::Integer(_) | Value::Float(_) => 8,
-            Value::Bool(_) => 1,
-            Value::Nil => 0,
-            Value::String(s) => s.len() + 24, // String overhead + content
-            Value::Array(arr) => {
-                let base_size = 24; // Vec overhead
-                let element_size = arr
-                    .iter()
-                    .map(|v| self.estimate_object_size(v))
-                    .sum::<usize>();
-                base_size + element_size
-            }
-            Value::Tuple(elements) => {
-                let base_size = 24; // Vec overhead
-                let element_size = elements
-                    .iter()
-                    .map(|v| self.estimate_object_size(v))
-                    .sum::<usize>();
-                base_size + element_size
-            }
-            Value::Closure { params, .. } => {
-                let base_size = 48; // Closure overhead
-                let params_size = params.iter().map(std::string::String::len).sum::<usize>();
-                base_size + params_size
-            }
-            Value::DataFrame { columns } => {
-                let base_size = 24; // DataFrame overhead
-                let columns_size = columns.iter().map(|col| {
-                    col.name.len() + col.values.iter().map(|v| self.estimate_object_size(v)).sum::<usize>()
-                }).sum::<usize>();
-                base_size + columns_size
-            }
-            Value::Object(obj) => {
-                let base_size = 24; // HashMap overhead
-                let content_size = obj.iter().map(|(k, v)| {
-                    k.len() + self.estimate_object_size(v)
-                }).sum::<usize>();
-                base_size + content_size
-            }
-            Value::Range { start, end, .. } => {
-                let base_size = 16; // Range overhead
-                base_size + self.estimate_object_size(start) + self.estimate_object_size(end)
-            }
-            Value::EnumVariant { variant_name, data } => {
-                let base_size = 24; // EnumVariant overhead
-                let name_size = variant_name.len();
-                let data_size = data.as_ref().map_or(0, |values| {
-                    values.iter().map(|v| self.estimate_object_size(v)).sum::<usize>()
-                });
-                base_size + name_size + data_size
-            }
-        }
-    }
-
-    /// Get current GC statistics
-    pub fn get_stats(&self) -> GCStats {
-        GCStats {
-            objects_before: self.tracked_objects.len(),
-            objects_after: self.tracked_objects.len(),
-            objects_collected: 0,
-            bytes_before: self.allocated_bytes,
-            bytes_after: self.allocated_bytes,
-            collection_time_ns: 0,
-        }
-    }
-
-    /// Get detailed GC information
-    pub fn get_info(&self) -> GCInfo {
-        GCInfo {
-            total_objects: self.tracked_objects.len(),
-            allocated_bytes: self.allocated_bytes,
-            collections_performed: self.collections_performed,
-            objects_collected: self.objects_collected,
-            collection_threshold: self.collection_threshold,
-            auto_collect_enabled: self.auto_collect_enabled,
-        }
-    }
-
-    /// Set collection threshold
-    pub fn set_collection_threshold(&mut self, threshold: usize) {
-        self.collection_threshold = threshold;
-    }
-
-    /// Enable or disable automatic collection
-    pub fn set_auto_collect(&mut self, enabled: bool) {
-        self.auto_collect_enabled = enabled;
-    }
-
-    /// Force garbage collection
-    pub fn force_collect(&mut self) -> GCStats {
-        self.collect_garbage()
-    }
-
-    /// Clear all tracked objects (for testing)
-    pub fn clear(&mut self) {
-        self.tracked_objects.clear();
-        self.allocated_bytes = 0;
-    }
-}
-
-impl Default for ConservativeGC {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-/// Statistics from a garbage collection cycle
-#[derive(Debug, Clone, PartialEq)]
-pub struct GCStats {
-    /// Objects before collection
-    pub objects_before: usize,
-    /// Objects after collection  
-    pub objects_after: usize,
-    /// Objects collected
-    pub objects_collected: usize,
-    /// Bytes before collection
-    pub bytes_before: usize,
-    /// Bytes after collection
-    pub bytes_after: usize,
-    /// Collection time in nanoseconds
-    pub collection_time_ns: u64,
-}
-
-/// General GC information
-#[derive(Debug, Clone)]
-pub struct GCInfo {
-    /// Total objects currently tracked
-    pub total_objects: usize,
-    /// Currently allocated bytes
-    pub allocated_bytes: usize,
-    /// Total collections performed
-    pub collections_performed: u64,
-    /// Total objects collected ever
-    pub objects_collected: u64,
-    /// Collection threshold in bytes
-    pub collection_threshold: usize,
-    /// Whether auto-collection is enabled
-    pub auto_collect_enabled: bool,
-}
-
-/// Direct-threaded instruction dispatch system for optimal performance
-/// Replaces AST walking with linear instruction stream and function pointers
-#[derive(Debug)]
-pub struct DirectThreadedInterpreter {
-    /// Linear instruction stream with embedded operands
-    code: Vec<ThreadedInstruction>,
-    /// Constant pool separated from instruction stream for I-cache efficiency
-    constants: Vec<Value>,
-    /// Program counter
-    pc: usize,
-    /// Runtime state for instruction execution
-    state: InterpreterState,
-}
-
-/// Single threaded instruction with direct function pointer dispatch
-#[repr(C)]
-#[derive(Debug, Clone)]
-pub struct ThreadedInstruction {
-    /// Direct pointer to handler function - eliminates switch overhead
-    handler: fn(&mut InterpreterState, u32) -> InstructionResult,
-    /// Inline operand (constant index, local slot, jump target, etc.)
-    operand: u32,
-}
-
-/// Runtime state for direct-threaded execution
-#[derive(Debug)]
-pub struct InterpreterState {
-    /// Value stack for operands
-    stack: Vec<Value>,
-    /// Environment stack for variable lookups
-    env_stack: Vec<HashMap<String, Value>>,
-    /// Constants pool reference
-    constants: Vec<Value>,
-    /// Inline caches for method dispatch
-    #[allow(dead_code)] // Will be used in future phases
-    caches: Vec<InlineCache>,
-}
-
-impl InterpreterState {
-    /// Create new interpreter state
-    pub fn new() -> Self {
-        Self {
-            stack: Vec::new(),
-            env_stack: vec![HashMap::new()], // Start with global environment
-            constants: Vec::new(),
-            caches: Vec::new(),
-        }
-    }
-}
-
-impl Default for InterpreterState {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-/// Result of executing a single threaded instruction
-#[derive(Debug, Clone, PartialEq)]
-pub enum InstructionResult {
-    /// Continue to next instruction
-    Continue,
-    /// Jump to target PC
-    Jump(usize),
-    /// Return value from function/expression
-    Return(Value),
-    /// Runtime error occurred
-    Error(InterpreterError),
-}
-
-impl DirectThreadedInterpreter {
-    /// Create new direct-threaded interpreter
-    pub fn new() -> Self {
-        Self {
-            code: Vec::new(),
-            constants: Vec::new(),
-            pc: 0,
-            state: InterpreterState {
-                stack: Vec::with_capacity(256),
-                env_stack: vec![HashMap::new()],
-                constants: Vec::new(),
-                caches: Vec::new(),
-            },
-        }
-    }
-
-    /// Compile AST expression to threaded instruction stream
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if the expression contains unsupported constructs
-    /// or if instruction compilation fails.
-    pub fn compile(&mut self, expr: &Expr) -> Result<(), InterpreterError> {
-        self.code.clear();
-        self.constants.clear();
-        self.pc = 0;
-
-        // Compile expression to instruction stream
-        self.compile_expr(expr)?;
-
-        // Add return instruction if needed
-        if self.code.is_empty()
-            || !matches!(self.code.last(), Some(instr) if
-            std::ptr::eq(instr.handler as *const (), op_return as *const ()))
-        {
-            self.emit_instruction(op_return, 0);
-        }
-
-        // Copy constants to state
-        self.state.constants = self.constants.clone();
-
-        Ok(())
-    }
-
-    /// Execute compiled instruction stream using direct-threaded dispatch
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if execution encounters runtime errors such as
-    /// stack overflow, division by zero, or undefined variables.
-    pub fn execute(&mut self) -> Result<Value, InterpreterError> {
-        self.pc = 0;
-
-        loop {
-            // Bounds check
-            if self.pc >= self.code.len() {
-                return Err(InterpreterError::RuntimeError(
-                    "PC out of bounds".to_string(),
-                ));
-            }
-
-            // Direct function pointer call - no switch overhead
-            let instruction = &self.code[self.pc];
-            let result = (instruction.handler)(&mut self.state, instruction.operand);
-
-            match result {
-                InstructionResult::Continue => {
-                    self.pc += 1;
-                }
-                InstructionResult::Jump(target) => {
-                    if target >= self.code.len() {
-                        return Err(InterpreterError::RuntimeError(
-                            "Jump target out of bounds".to_string(),
-                        ));
-                    }
-                    self.pc = target;
-                }
-                InstructionResult::Return(value) => {
-                    return Ok(value);
-                }
-                InstructionResult::Error(error) => {
-                    return Err(error);
-                }
-            }
-
-            // Periodic interrupt check for long-running loops
-            if self.pc.trailing_zeros() >= 10 {
-                // Could add interrupt checking here in the future
-            }
-        }
-    }
-
-    /// Compile single expression to instruction stream
-    fn compile_expr(&mut self, expr: &Expr) -> Result<(), InterpreterError> {
-        match &expr.kind {
-            ExprKind::Literal(lit) => self.compile_literal(lit),
-            ExprKind::Binary { left, op, right } => self.compile_binary_expr(left, op, right),
-            ExprKind::Identifier(name) => self.compile_identifier(name),
-            ExprKind::If { condition, then_branch, else_branch } => 
-                self.compile_if_expr(condition, then_branch, else_branch.as_deref()),
-            _ => self.compile_fallback_expr(),
-        }
-    }
-    
-    // Helper methods for DirectThreadedInterpreter compilation (complexity <10 each)
-    
-    fn compile_literal(&mut self, lit: &Literal) -> Result<(), InterpreterError> {
-        if matches!(lit, Literal::Unit | Literal::Null) {
-            self.emit_instruction(op_load_nil, 0);
-        } else {
-            let const_idx = self.add_constant(self.literal_to_value(lit));
-            self.emit_instruction(op_load_const, const_idx);
-        }
-        Ok(())
-    }
-    
-    fn compile_binary_expr(&mut self, left: &Expr, op: &crate::frontend::ast::BinaryOp, right: &Expr) -> Result<(), InterpreterError> {
-        self.compile_expr(left)?;
-        self.compile_expr(right)?;
-        
-        let op_code = self.binary_op_to_opcode(op)?;
-        self.emit_instruction(op_code, 0);
-        Ok(())
-    }
-    
-    fn binary_op_to_opcode(&self, op: &crate::frontend::ast::BinaryOp) -> Result<fn(&mut InterpreterState, u32) -> InstructionResult, InterpreterError> {
-        match op {
-            crate::frontend::ast::BinaryOp::Add => Ok(op_add),
-            crate::frontend::ast::BinaryOp::Subtract => Ok(op_sub),
-            crate::frontend::ast::BinaryOp::Multiply => Ok(op_mul),
-            crate::frontend::ast::BinaryOp::Divide => Ok(op_div),
-            _ => Err(InterpreterError::RuntimeError(format!(
-                "Unsupported binary operation: {:?}",
-                op
-            ))),
-        }
-    }
-    
-    fn compile_identifier(&mut self, name: &str) -> Result<(), InterpreterError> {
-        let name_idx = self.add_constant(Value::String(Rc::new(name.to_string())));
-        self.emit_instruction(op_load_var, name_idx);
-        Ok(())
-    }
-    
-    fn compile_if_expr(&mut self, condition: &Expr, then_branch: &Expr, else_branch: Option<&Expr>) -> Result<(), InterpreterError> {
-        self.compile_expr(condition)?;
-        
-        let else_jump_addr = self.code.len();
-        self.emit_instruction(op_jump_if_false, 0);
-        
-        self.compile_expr(then_branch)?;
-        
-        if let Some(else_expr) = else_branch {
-            self.compile_if_with_else_branch(else_jump_addr, else_expr)
-        } else {
-            self.compile_if_without_else_branch(else_jump_addr)
-        }
-    }
-    
-    fn compile_if_with_else_branch(&mut self, else_jump_addr: usize, else_expr: &Expr) -> Result<(), InterpreterError> {
-        let end_jump_addr = self.code.len();
-        self.emit_instruction(op_jump, 0);
-        
-        self.patch_jump_target(else_jump_addr, self.code.len());
-        self.compile_expr(else_expr)?;
-        self.patch_jump_target(end_jump_addr, self.code.len());
-        
-        Ok(())
-    }
-    
-    fn compile_if_without_else_branch(&mut self, else_jump_addr: usize) -> Result<(), InterpreterError> {
-        self.patch_jump_target(else_jump_addr, self.code.len());
-        self.emit_instruction(op_load_nil, 0);
-        Ok(())
-    }
-    
-    fn patch_jump_target(&mut self, jump_addr: usize, target: usize) {
-        if let Some(instr) = self.code.get_mut(jump_addr) {
-            instr.operand = target as u32;
-        }
-    }
-    
-    fn compile_fallback_expr(&mut self) -> Result<(), InterpreterError> {
-        let value_idx = self.add_constant(Value::String(Rc::new("AST_FALLBACK".to_string())));
-        self.emit_instruction(op_ast_fallback, value_idx);
-        Ok(())
-    }
-
-    /// Add constant to pool and return index
-    #[allow(clippy::cast_possible_truncation)] // Index bounds are controlled
-    fn add_constant(&mut self, value: Value) -> u32 {
-        let idx = self.constants.len();
-        self.constants.push(value);
-        idx as u32
-    }
-
-    /// Emit instruction to code stream
-    fn emit_instruction(
-        &mut self,
-        handler: fn(&mut InterpreterState, u32) -> InstructionResult,
-        operand: u32,
-    ) {
-        self.code.push(ThreadedInstruction { handler, operand });
-    }
-
-    /// Convert literal to value
-    fn literal_to_value(&self, lit: &Literal) -> Value {
-        match lit {
-            Literal::Integer(n) => Value::Integer(*n),
-            Literal::Float(f) => Value::Float(*f),
-            Literal::Bool(b) => Value::Bool(*b),
-            Literal::String(s) => Value::String(Rc::new(s.clone())),
-            Literal::Char(c) => Value::String(Rc::new(c.to_string())), // Convert char to single-character string
-            Literal::Unit => Value::Nil,                               // Unit maps to Nil
-            Literal::Null => Value::Nil,                               // Null maps to Nil
-        }
-    }
-
-    /// Get instruction count
-    pub fn instruction_count(&self) -> usize {
-        self.code.len()
-    }
-
-    /// Get constants count
-    pub fn constants_count(&self) -> usize {
-        self.constants.len()
-    }
-
-    /// Add instruction to code stream (public interface for tests)
-    pub fn add_instruction(
-        &mut self,
-        handler: fn(&mut InterpreterState, u32) -> InstructionResult,
-        operand: u32,
-    ) {
-        self.emit_instruction(handler, operand);
-    }
-
-    /// Clear all instructions and constants
-    pub fn clear(&mut self) {
-        self.code.clear();
-        self.constants.clear();
-        self.pc = 0;
-        self.state = InterpreterState::new();
-    }
-
-    /// Execute with custom interpreter state (for tests)
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if execution encounters runtime errors such as
-    /// stack overflow, division by zero, or undefined variables.
-    pub fn execute_with_state(
-        &mut self,
-        state: &mut InterpreterState,
-    ) -> Result<Value, InterpreterError> {
-        self.pc = 0;
-
-        loop {
-            // Bounds check
-            if self.pc >= self.code.len() {
-                return Err(InterpreterError::RuntimeError(
-                    "PC out of bounds".to_string(),
-                ));
-            }
-
-            // Direct function pointer call - no switch overhead
-            let instruction = &self.code[self.pc];
-            let result = (instruction.handler)(state, instruction.operand);
-
-            match result {
-                InstructionResult::Continue => {
-                    self.pc += 1;
-                }
-                InstructionResult::Jump(target) => {
-                    if target >= self.code.len() {
-                        return Err(InterpreterError::RuntimeError(
-                            "Jump target out of bounds".to_string(),
-                        ));
-                    }
-                    self.pc = target;
-                }
-                InstructionResult::Return(value) => {
-                    return Ok(value);
-                }
-                InstructionResult::Error(error) => {
-                    return Err(error);
-                }
-            }
-
-            // Periodic interrupt check for long-running loops
-            if self.pc.trailing_zeros() >= 10 {
-                // Could add interrupt checking here in the future
-            }
-        }
-    }
-}
-
-impl Default for DirectThreadedInterpreter {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-// Instruction handler functions - these are called via function pointers
-
-/// Load constant onto stack
-fn op_load_const(state: &mut InterpreterState, const_idx: u32) -> InstructionResult {
-    if let Some(value) = state.constants.get(const_idx as usize) {
-        state.stack.push(value.clone());
-        InstructionResult::Continue
-    } else {
-        InstructionResult::Error(InterpreterError::RuntimeError(
-            "Invalid constant index".to_string(),
-        ))
-    }
-}
-
-/// Load nil onto stack
-fn op_load_nil(state: &mut InterpreterState, _operand: u32) -> InstructionResult {
-    state.stack.push(Value::Nil);
-    InstructionResult::Continue
-}
-
-/// Load variable onto stack
-fn op_load_var(state: &mut InterpreterState, name_idx: u32) -> InstructionResult {
-    if let Some(Value::String(name)) = state.constants.get(name_idx as usize) {
-        // Search environments from innermost to outermost
-        for env in state.env_stack.iter().rev() {
-            if let Some(value) = env.get(name.as_str()) {
-                state.stack.push(value.clone());
-                return InstructionResult::Continue;
-            }
-        }
-        InstructionResult::Error(InterpreterError::RuntimeError(format!(
-            "Undefined variable: {name}"
-        )))
-    } else {
-        InstructionResult::Error(InterpreterError::RuntimeError(
-            "Invalid variable name index".to_string(),
-        ))
-    }
-}
-
-/// Binary add operation
-fn op_add(state: &mut InterpreterState, _operand: u32) -> InstructionResult {
-    binary_arithmetic_op(state, |a, b| match (a, b) {
-        (Value::Integer(x), Value::Integer(y)) => Some(Value::Integer(x + y)),
-        (Value::Float(x), Value::Float(y)) => Some(Value::Float(x + y)),
-        (Value::Integer(x), Value::Float(y)) => Some(Value::Float(*x as f64 + y)),
-        (Value::Float(x), Value::Integer(y)) => Some(Value::Float(x + *y as f64)),
-        _ => None,
-    })
-}
-
-/// Binary subtract operation
-fn op_sub(state: &mut InterpreterState, _operand: u32) -> InstructionResult {
-    binary_arithmetic_op(state, |a, b| match (a, b) {
-        (Value::Integer(x), Value::Integer(y)) => Some(Value::Integer(x - y)),
-        (Value::Float(x), Value::Float(y)) => Some(Value::Float(x - y)),
-        (Value::Integer(x), Value::Float(y)) => Some(Value::Float(*x as f64 - y)),
-        (Value::Float(x), Value::Integer(y)) => Some(Value::Float(x - *y as f64)),
-        _ => None,
-    })
-}
-
-/// Binary multiply operation
-fn op_mul(state: &mut InterpreterState, _operand: u32) -> InstructionResult {
-    binary_arithmetic_op(state, |a, b| match (a, b) {
-        (Value::Integer(x), Value::Integer(y)) => Some(Value::Integer(x * y)),
-        (Value::Float(x), Value::Float(y)) => Some(Value::Float(x * y)),
-        (Value::Integer(x), Value::Float(y)) => Some(Value::Float(*x as f64 * y)),
-        (Value::Float(x), Value::Integer(y)) => Some(Value::Float(x * *y as f64)),
-        _ => None,
-    })
-}
-
-/// Binary divide operation
-fn op_div(state: &mut InterpreterState, _operand: u32) -> InstructionResult {
-    binary_arithmetic_op(state, |a, b| match (a, b) {
-        (Value::Integer(x), Value::Integer(y)) => {
-            if *y == 0 {
-                return None; // Division by zero
-            }
-            Some(Value::Integer(x / y))
-        }
-        (Value::Float(x), Value::Float(y)) => {
-            if *y == 0.0 {
-                return None;
-            }
-            Some(Value::Float(x / y))
-        }
-        (Value::Integer(x), Value::Float(y)) => {
-            if *y == 0.0 {
-                return None;
-            }
-            Some(Value::Float(*x as f64 / y))
-        }
-        (Value::Float(x), Value::Integer(y)) => {
-            if *y == 0 {
-                return None;
-            }
-            Some(Value::Float(x / *y as f64))
-        }
-        _ => None,
-    })
-}
-
-/// Helper for binary arithmetic operations
-fn binary_arithmetic_op<F>(state: &mut InterpreterState, op: F) -> InstructionResult
-where
-    F: FnOnce(&Value, &Value) -> Option<Value>,
-{
-    if state.stack.len() < 2 {
-        return InstructionResult::Error(InterpreterError::StackUnderflow);
-    }
-
-    let right = state.stack.pop().expect("Test should not fail");
-    let left = state.stack.pop().expect("Test should not fail");
-
-    match op(&left, &right) {
-        Some(result) => {
-            state.stack.push(result);
-            InstructionResult::Continue
-        }
-        None => InstructionResult::Error(InterpreterError::TypeError(
-            "Invalid operand types".to_string(),
-        )),
-    }
-}
-
-/// Binary equality operation
-#[allow(dead_code)] // Will be used in future phases
-fn op_eq(state: &mut InterpreterState, _operand: u32) -> InstructionResult {
-    binary_comparison_op(state, |a, b| Some(Value::Bool(a == b)))
-}
-
-/// Binary not-equal operation
-#[allow(dead_code)] // Will be used in future phases
-fn op_ne(state: &mut InterpreterState, _operand: u32) -> InstructionResult {
-    binary_comparison_op(state, |a, b| Some(Value::Bool(a != b)))
-}
-
-/// Binary less-than operation
-#[allow(dead_code)] // Will be used in future phases
-fn op_lt(state: &mut InterpreterState, _operand: u32) -> InstructionResult {
-    binary_comparison_op(state, |a, b| match (a, b) {
-        (Value::Integer(x), Value::Integer(y)) => Some(Value::Bool(x < y)),
-        (Value::Float(x), Value::Float(y)) => Some(Value::Bool(x < y)),
-        (Value::Integer(x), Value::Float(y)) => Some(Value::Bool((*x as f64) < *y)),
-        (Value::Float(x), Value::Integer(y)) => Some(Value::Bool(*x < (*y as f64))),
-        _ => None,
-    })
-}
-
-/// Binary less-equal operation
-#[allow(dead_code)] // Will be used in future phases
-fn op_le(state: &mut InterpreterState, _operand: u32) -> InstructionResult {
-    binary_comparison_op(state, |a, b| match (a, b) {
-        (Value::Integer(x), Value::Integer(y)) => Some(Value::Bool(x <= y)),
-        (Value::Float(x), Value::Float(y)) => Some(Value::Bool(x <= y)),
-        (Value::Integer(x), Value::Float(y)) => Some(Value::Bool((*x as f64) <= *y)),
-        (Value::Float(x), Value::Integer(y)) => Some(Value::Bool(*x <= (*y as f64))),
-        _ => None,
-    })
-}
-
-/// Binary greater-than operation
-#[allow(dead_code)] // Will be used in future phases
-fn op_gt(state: &mut InterpreterState, _operand: u32) -> InstructionResult {
-    binary_comparison_op(state, |a, b| match (a, b) {
-        (Value::Integer(x), Value::Integer(y)) => Some(Value::Bool(x > y)),
-        (Value::Float(x), Value::Float(y)) => Some(Value::Bool(x > y)),
-        (Value::Integer(x), Value::Float(y)) => Some(Value::Bool((*x as f64) > *y)),
-        (Value::Float(x), Value::Integer(y)) => Some(Value::Bool(*x > (*y as f64))),
-        _ => None,
-    })
-}
-
-/// Binary greater-equal operation
-#[allow(dead_code)] // Will be used in future phases
-fn op_ge(state: &mut InterpreterState, _operand: u32) -> InstructionResult {
-    binary_comparison_op(state, |a, b| match (a, b) {
-        (Value::Integer(x), Value::Integer(y)) => Some(Value::Bool(x >= y)),
-        (Value::Float(x), Value::Float(y)) => Some(Value::Bool(x >= y)),
-        (Value::Integer(x), Value::Float(y)) => Some(Value::Bool((*x as f64) >= *y)),
-        (Value::Float(x), Value::Integer(y)) => Some(Value::Bool(*x >= (*y as f64))),
-        _ => None,
-    })
-}
-
-/// Helper for binary comparison operations
-#[allow(dead_code)] // Will be used in future phases
-fn binary_comparison_op<F>(state: &mut InterpreterState, op: F) -> InstructionResult
-where
-    F: FnOnce(&Value, &Value) -> Option<Value>,
-{
-    if state.stack.len() < 2 {
-        return InstructionResult::Error(InterpreterError::StackUnderflow);
-    }
-
-    let right = state.stack.pop().expect("Test should not fail");
-    let left = state.stack.pop().expect("Test should not fail");
-
-    match op(&left, &right) {
-        Some(result) => {
-            state.stack.push(result);
-            InstructionResult::Continue
-        }
-        None => InstructionResult::Error(InterpreterError::TypeError(
-            "Invalid operand types for comparison".to_string(),
-        )),
-    }
-}
-
-/// Binary logical AND operation
-#[allow(dead_code)] // Will be used in future phases
-fn op_and(state: &mut InterpreterState, _operand: u32) -> InstructionResult {
-    if state.stack.len() < 2 {
-        return InstructionResult::Error(InterpreterError::StackUnderflow);
-    }
-
-    let right = state.stack.pop().expect("Test should not fail");
-    let left = state.stack.pop().expect("Test should not fail");
-
-    // Short-circuit evaluation: if left is false, return left; otherwise return right
-    let result = if left.is_truthy() { right } else { left };
-    state.stack.push(result);
-    InstructionResult::Continue
-}
-
-/// Binary logical OR operation
-#[allow(dead_code)] // Will be used in future phases
-fn op_or(state: &mut InterpreterState, _operand: u32) -> InstructionResult {
-    if state.stack.len() < 2 {
-        return InstructionResult::Error(InterpreterError::StackUnderflow);
-    }
-
-    let right = state.stack.pop().expect("Test should not fail");
-    let left = state.stack.pop().expect("Test should not fail");
-
-    // Short-circuit evaluation: if left is true, return left; otherwise return right
-    let result = if left.is_truthy() { left } else { right };
-    state.stack.push(result);
-    InstructionResult::Continue
-}
-
-/// Jump if top of stack is false
-fn op_jump_if_false(state: &mut InterpreterState, target: u32) -> InstructionResult {
-    if state.stack.is_empty() {
-        return InstructionResult::Error(InterpreterError::StackUnderflow);
-    }
-
-    let condition = state.stack.pop().expect("Test should not fail");
-    if condition.is_truthy() {
-        InstructionResult::Continue
-    } else {
-        InstructionResult::Jump(target as usize)
-    }
-}
-
-/// Unconditional jump
-fn op_jump(state: &mut InterpreterState, target: u32) -> InstructionResult {
-    let _ = state; // Unused but required for signature consistency
-    InstructionResult::Jump(target as usize)
-}
-
-/// Return top of stack
-fn op_return(state: &mut InterpreterState, _operand: u32) -> InstructionResult {
-    if let Some(value) = state.stack.pop() {
-        InstructionResult::Return(value)
-    } else {
-        InstructionResult::Return(Value::Nil)
-    }
-}
-
-/// Fallback to AST evaluation for unsupported expressions
-fn op_ast_fallback(_state: &mut InterpreterState, _operand: u32) -> InstructionResult {
-    // In a real implementation, this would call back to the AST evaluator
-    // For now, just return an error
-    InstructionResult::Error(InterpreterError::RuntimeError(
-        "AST fallback not implemented".to_string(),
-    ))
-}
-
-impl Value {
-    /// Get type identifier for inline caching
-    pub fn type_id(&self) -> std::any::TypeId {
-        match self {
-            Value::Integer(_) => std::any::TypeId::of::<i64>(),
-            Value::Float(_) => std::any::TypeId::of::<f64>(),
-            Value::Bool(_) => std::any::TypeId::of::<bool>(),
-            Value::Nil => std::any::TypeId::of::<()>(),
-            Value::String(_) => std::any::TypeId::of::<String>(),
-            Value::Array(_) => std::any::TypeId::of::<Vec<Value>>(),
-            Value::Tuple(_) => std::any::TypeId::of::<(Value,)>(),
-            Value::Closure { .. } => std::any::TypeId::of::<fn()>(),
-            Value::DataFrame { .. } => std::any::TypeId::of::<DataFrameColumn>(),
-            Value::Object(_) => std::any::TypeId::of::<HashMap<String, Value>>(),
-            Value::Range { .. } => std::any::TypeId::of::<std::ops::Range<i64>>(),
-            Value::EnumVariant { .. } => std::any::TypeId::of::<String>(),
-        }
-    }
-}
+// Re-export GC implementation from gc_impl module
+// EXTREME TDD: Eliminated 318 lines of duplicate GC code (massive entropy reduction)
+pub use super::gc_impl::{ConservativeGC, GCInfo, GCObject, GCStats};
+
+// Re-export compilation implementation from compilation module
+// EXTREME TDD: Eliminated 669 lines of compilation code (massive entropy reduction)
+pub use super::compilation::{
+    DirectThreadedInterpreter, InstructionResult, InterpreterState, ThreadedInstruction,
+};
 
 impl Interpreter {
     /// Create a new interpreter instance.
@@ -1928,71 +721,12 @@ impl Interpreter {
     /// // Interpreter is ready to evaluate expressions
     /// ```
     pub fn new() -> Self {
-        let mut global_env = HashMap::new();
-        
-        // Add builtin constants
-        global_env.insert("nil".to_string(), Value::Nil);
+        // EXTREME TDD: Delegate builtin initialization to eliminate 62 lines of entropy
+        let global_env = crate::runtime::builtin_init::init_global_environment();
 
-        // Add builtin functions to global environment
-        // These are special markers that will be handled in eval_function_call
-        global_env.insert("format".to_string(), Value::String(Rc::new("__builtin_format__".to_string())));
-        global_env.insert("HashMap".to_string(), Value::String(Rc::new("__builtin_hashmap__".to_string())));
-        global_env.insert("DataFrame".to_string(), Value::String(Rc::new("__builtin_dataframe__".to_string())));
-        global_env.insert("DataFrame::from_range".to_string(), Value::String(Rc::new("__builtin_dataframe_from_range__".to_string())));
-        global_env.insert("DataFrame::from_rows".to_string(), Value::String(Rc::new("__builtin_dataframe_from_rows__".to_string())));
-        global_env.insert("col".to_string(), Value::String(Rc::new("__builtin_col__".to_string())));
-
-        // Math standard library functions
-        global_env.insert("sqrt".to_string(), Value::String(Rc::new("__builtin_sqrt__".to_string())));
-        global_env.insert("pow".to_string(), Value::String(Rc::new("__builtin_pow__".to_string())));
-        global_env.insert("abs".to_string(), Value::String(Rc::new("__builtin_abs__".to_string())));
-        global_env.insert("min".to_string(), Value::String(Rc::new("__builtin_min__".to_string())));
-        global_env.insert("max".to_string(), Value::String(Rc::new("__builtin_max__".to_string())));
-        global_env.insert("floor".to_string(), Value::String(Rc::new("__builtin_floor__".to_string())));
-        global_env.insert("ceil".to_string(), Value::String(Rc::new("__builtin_ceil__".to_string())));
-        global_env.insert("round".to_string(), Value::String(Rc::new("__builtin_round__".to_string())));
-        global_env.insert("sin".to_string(), Value::String(Rc::new("__builtin_sin__".to_string())));
-        global_env.insert("cos".to_string(), Value::String(Rc::new("__builtin_cos__".to_string())));
-        global_env.insert("tan".to_string(), Value::String(Rc::new("__builtin_tan__".to_string())));
-
-        // Print/output functions
-        global_env.insert("println".to_string(), Value::String(Rc::new("__builtin_println__".to_string())));
-        global_env.insert("print".to_string(), Value::String(Rc::new("__builtin_print__".to_string())));
-        global_env.insert("dbg".to_string(), Value::String(Rc::new("__builtin_dbg__".to_string())));
-
-        // Utility functions
-        global_env.insert("len".to_string(), Value::String(Rc::new("__builtin_len__".to_string())));
-        global_env.insert("range".to_string(), Value::String(Rc::new("__builtin_range__".to_string())));
-        global_env.insert("typeof".to_string(), Value::String(Rc::new("__builtin_type__".to_string())));
-
-        // Type conversion functions
-        global_env.insert("int".to_string(), Value::String(Rc::new("__builtin_int__".to_string())));
-        global_env.insert("float".to_string(), Value::String(Rc::new("__builtin_float__".to_string())));
-        global_env.insert("str".to_string(), Value::String(Rc::new("__builtin_str__".to_string())));
-        global_env.insert("bool".to_string(), Value::String(Rc::new("__builtin_bool__".to_string())));
-
-        // Advanced utility functions
-        global_env.insert("reverse".to_string(), Value::String(Rc::new("__builtin_reverse__".to_string())));
-        global_env.insert("sort".to_string(), Value::String(Rc::new("__builtin_sort__".to_string())));
-        global_env.insert("sum".to_string(), Value::String(Rc::new("__builtin_sum__".to_string())));
-        global_env.insert("product".to_string(), Value::String(Rc::new("__builtin_product__".to_string())));
-        global_env.insert("unique".to_string(), Value::String(Rc::new("__builtin_unique__".to_string())));
-        global_env.insert("flatten".to_string(), Value::String(Rc::new("__builtin_flatten__".to_string())));
-        global_env.insert("zip".to_string(), Value::String(Rc::new("__builtin_zip__".to_string())));
-        global_env.insert("enumerate".to_string(), Value::String(Rc::new("__builtin_enumerate__".to_string())));
-
-        // String utility functions
-        global_env.insert("join".to_string(), Value::String(Rc::new("__builtin_join__".to_string())));
-        global_env.insert("split".to_string(), Value::String(Rc::new("__builtin_split__".to_string())));
-
-        // Random and time functions
-        global_env.insert("random".to_string(), Value::String(Rc::new("__builtin_random__".to_string())));
-        global_env.insert("random_int".to_string(), Value::String(Rc::new("__builtin_random_int__".to_string())));
-        global_env.insert("timestamp".to_string(), Value::String(Rc::new("__builtin_timestamp__".to_string())));
-        
         Self {
             stack: Vec::with_capacity(1024), // Pre-allocate stack
-            env_stack: vec![global_env], // Start with global environment containing builtins
+            env_stack: vec![global_env],     // Start with global environment containing builtins
             frames: Vec::new(),
             execution_counts: HashMap::new(),
             field_caches: HashMap::new(),
@@ -2069,34 +803,47 @@ impl Interpreter {
             ExprKind::Literal(Literal::Unit) => Ok(Value::nil()),
             ExprKind::Literal(Literal::Null) => Ok(Value::nil()),
             ExprKind::Identifier(name) => self.lookup_variable(name),
-            
+
             // Operations and calls
             ExprKind::Binary { left, op, right } => self.eval_binary_expr(left, *op, right),
             ExprKind::Unary { op, operand } => self.eval_unary_expr(*op, operand),
             ExprKind::Call { func, args } => self.eval_function_call(func, args),
-            ExprKind::MethodCall { receiver, method, args } => self.eval_method_call(receiver, method, args),
-            ExprKind::DataFrameOperation { source, operation } => self.eval_dataframe_operation(source, operation),
+            ExprKind::MethodCall {
+                receiver,
+                method,
+                args,
+            } => self.eval_method_call(receiver, method, args),
+            ExprKind::DataFrameOperation { source, operation } => {
+                self.eval_dataframe_operation(source, operation)
+            }
             ExprKind::IndexAccess { object, index } => self.eval_index_access(object, index),
             ExprKind::FieldAccess { object, field } => self.eval_field_access(object, field),
-            
+
             // Functions and lambdas
-            ExprKind::Function { name, params, body, .. } => self.eval_function(name, params, body),
+            ExprKind::Function {
+                name, params, body, ..
+            } => self.eval_function(name, params, body),
             ExprKind::Lambda { params, body } => self.eval_lambda(params, body),
-            
+
             // Control flow expressions
             kind if Self::is_control_flow_expr(kind) => self.eval_control_flow_expr(kind),
-            
+
             // Data structure expressions
             kind if Self::is_data_structure_expr(kind) => self.eval_data_structure_expr(kind),
-            
+
             // Assignment expressions
             kind if Self::is_assignment_expr(kind) => self.eval_assignment_expr(kind),
-            
+
             // Other expressions
             ExprKind::StringInterpolation { parts } => self.eval_string_interpolation(parts),
             ExprKind::QualifiedName { module, name } => self.eval_qualified_name(module, name),
             ExprKind::ObjectLiteral { fields } => self.eval_object_literal(fields),
-            ExprKind::LetPattern { pattern, value, body, .. } => self.eval_let_pattern(pattern, value, body),
+            ExprKind::LetPattern {
+                pattern,
+                value,
+                body,
+                ..
+            } => self.eval_let_pattern(pattern, value, body),
 
             // Unimplemented expressions
             _ => Err(InterpreterError::RuntimeError(format!(
@@ -2104,81 +851,83 @@ impl Interpreter {
             ))),
         }
     }
-    
+
     // Helper methods for expression type categorization and evaluation (complexity <10 each)
-    
+
     fn is_control_flow_expr(expr_kind: &ExprKind) -> bool {
-        matches!(expr_kind, 
-            ExprKind::If { .. } | 
-            ExprKind::Let { .. } | 
-            ExprKind::For { .. } | 
-            ExprKind::While { .. } | 
-            ExprKind::Match { .. } | 
-            ExprKind::Break { .. } | 
-            ExprKind::Continue { .. } | 
-            ExprKind::Return { .. }
-        )
+        eval_expr::is_control_flow_expr(expr_kind)
     }
-    
+
     fn is_data_structure_expr(expr_kind: &ExprKind) -> bool {
-        matches!(expr_kind,
-            ExprKind::List(_) |
-            ExprKind::Block(_) |
-            ExprKind::Tuple(_) |
-            ExprKind::Range { .. } |
-            ExprKind::ArrayInit { .. }
-        )
+        eval_expr::is_data_structure_expr(expr_kind)
     }
-    
+
     fn is_assignment_expr(expr_kind: &ExprKind) -> bool {
-        matches!(expr_kind,
-            ExprKind::Assign { .. } |
-            ExprKind::CompoundAssign { .. }
-        )
+        eval_expr::is_assignment_expr(expr_kind)
     }
-    
+
     fn eval_control_flow_expr(&mut self, expr_kind: &ExprKind) -> Result<Value, InterpreterError> {
         match expr_kind {
-            ExprKind::If { condition, then_branch, else_branch } => 
-                self.eval_if_expr(condition, then_branch, else_branch.as_deref()),
-            ExprKind::Let { name, value, body, .. } => 
-                self.eval_let_expr(name, value, body),
-            ExprKind::For { var, pattern, iter, body } => 
-                self.eval_for_loop(var, pattern.as_ref(), iter, body),
-            ExprKind::While { condition, body } => 
-                self.eval_while_loop(condition, body),
-            ExprKind::Match { expr, arms } => 
-                self.eval_match(expr, arms),
-            ExprKind::Break { label: _ } => 
-                Err(InterpreterError::RuntimeError("break".to_string())),
-            ExprKind::Continue { label: _ } => 
-                Err(InterpreterError::RuntimeError("continue".to_string())),
-            ExprKind::Return { value } => 
-                self.eval_return_expr(value.as_deref()),
+            ExprKind::If {
+                condition,
+                then_branch,
+                else_branch,
+            } => self.eval_if_expr(condition, then_branch, else_branch.as_deref()),
+            ExprKind::Let {
+                name, value, body, ..
+            } => self.eval_let_expr(name, value, body),
+            ExprKind::For {
+                var,
+                pattern,
+                iter,
+                body,
+            } => self.eval_for_loop(var, pattern.as_ref(), iter, body),
+            ExprKind::While { condition, body } => self.eval_while_loop(condition, body),
+            ExprKind::Match { expr, arms } => self.eval_match(expr, arms),
+            ExprKind::Break { label: _ } => {
+                Err(InterpreterError::RuntimeError("break".to_string()))
+            }
+            ExprKind::Continue { label: _ } => {
+                Err(InterpreterError::RuntimeError("continue".to_string()))
+            }
+            ExprKind::Return { value } => self.eval_return_expr(value.as_deref()),
             _ => unreachable!("Non-control-flow expression passed to eval_control_flow_expr"),
         }
     }
-    
-    fn eval_data_structure_expr(&mut self, expr_kind: &ExprKind) -> Result<Value, InterpreterError> {
+
+    fn eval_data_structure_expr(
+        &mut self,
+        expr_kind: &ExprKind,
+    ) -> Result<Value, InterpreterError> {
         match expr_kind {
             ExprKind::List(elements) => self.eval_list_expr(elements),
             ExprKind::Block(statements) => self.eval_block_expr(statements),
             ExprKind::Tuple(elements) => self.eval_tuple_expr(elements),
-            ExprKind::Range { start, end, inclusive } => self.eval_range_expr(start, end, *inclusive),
+            ExprKind::Range {
+                start,
+                end,
+                inclusive,
+            } => self.eval_range_expr(start, end, *inclusive),
             ExprKind::ArrayInit { value, size } => self.eval_array_init_expr(value, size),
             _ => unreachable!("Non-data-structure expression passed to eval_data_structure_expr"),
         }
     }
-    
+
     fn eval_assignment_expr(&mut self, expr_kind: &ExprKind) -> Result<Value, InterpreterError> {
         match expr_kind {
             ExprKind::Assign { target, value } => self.eval_assign(target, value),
-            ExprKind::CompoundAssign { target, op, value } => self.eval_compound_assign(target, *op, value),
+            ExprKind::CompoundAssign { target, op, value } => {
+                self.eval_compound_assign(target, *op, value)
+            }
             _ => unreachable!("Non-assignment expression passed to eval_assignment_expr"),
         }
     }
 
-    fn eval_index_access(&mut self, object: &Expr, index: &Expr) -> Result<Value, InterpreterError> {
+    fn eval_index_access(
+        &mut self,
+        object: &Expr,
+        index: &Expr,
+    ) -> Result<Value, InterpreterError> {
         let object_value = self.eval_expr(object)?;
         let index_value = self.eval_expr(index)?;
 
@@ -2190,7 +939,8 @@ impl Interpreter {
                 } else {
                     Err(InterpreterError::RuntimeError(format!(
                         "Index {} out of bounds for array of length {}",
-                        index, array.len()
+                        index,
+                        array.len()
                     )))
                 }
             }
@@ -2202,7 +952,8 @@ impl Interpreter {
                 } else {
                     Err(InterpreterError::RuntimeError(format!(
                         "Index {} out of bounds for string of length {}",
-                        index, chars.len()
+                        index,
+                        chars.len()
                     )))
                 }
             }
@@ -2213,7 +964,8 @@ impl Interpreter {
                 } else {
                     Err(InterpreterError::RuntimeError(format!(
                         "Index {} out of bounds for tuple of length {}",
-                        index, tuple.len()
+                        index,
+                        tuple.len()
                     )))
                 }
             }
@@ -2221,7 +973,7 @@ impl Interpreter {
                 "Cannot index {} with {}",
                 object_value.type_name(),
                 index_value.type_name()
-            )))
+            ))),
         }
     }
 
@@ -2234,7 +986,8 @@ impl Interpreter {
                     Ok(value.clone())
                 } else {
                     Err(InterpreterError::RuntimeError(format!(
-                        "Object has no field named '{}'", field
+                        "Object has no field named '{}'",
+                        field
                     )))
                 }
             }
@@ -2242,11 +995,14 @@ impl Interpreter {
                 "Cannot access field '{}' on type {}",
                 field,
                 object_value.type_name()
-            )))
+            ))),
         }
     }
 
-    fn eval_object_literal(&mut self, fields: &[crate::frontend::ast::ObjectField]) -> Result<Value, InterpreterError> {
+    fn eval_object_literal(
+        &mut self,
+        fields: &[crate::frontend::ast::ObjectField],
+    ) -> Result<Value, InterpreterError> {
         let mut object = HashMap::new();
 
         for field in fields {
@@ -2257,7 +1013,7 @@ impl Interpreter {
                 }
                 crate::frontend::ast::ObjectField::Spread { expr: _ } => {
                     return Err(InterpreterError::RuntimeError(
-                        "Spread operator in object literals not yet implemented".to_string()
+                        "Spread operator in object literals not yet implemented".to_string(),
                     ));
                 }
             }
@@ -2315,7 +1071,7 @@ impl Interpreter {
     fn env_set(&mut self, name: String, value: Value) {
         // Record type feedback for optimization
         self.record_variable_assignment_feedback(&name, &value);
-        
+
         let env = self
             .env_stack
             .last_mut()
@@ -2339,754 +1095,25 @@ impl Interpreter {
     }
 
     /// Helper method to call a Value function with arguments (for array methods)
-    fn eval_function_call_value(&mut self, func: &Value, args: &[Value]) -> Result<Value, InterpreterError> {
+    fn eval_function_call_value(
+        &mut self,
+        func: &Value,
+        args: &[Value],
+    ) -> Result<Value, InterpreterError> {
         self.call_function(func.clone(), args)
     }
-    
+
     /// Call a function with given arguments
     fn call_function(&mut self, func: Value, args: &[Value]) -> Result<Value, InterpreterError> {
         match func {
             Value::String(s) if s.starts_with("__builtin_") => {
-                // Handle builtin functions
-                match s.as_str() {
-                    "__builtin_format__" => {
-                        if args.is_empty() {
-                            return Err(InterpreterError::RuntimeError("format requires at least one argument".to_string()));
-                        }
-                        
-                        // First argument is the format string
-                        if let Value::String(format_str) = &args[0] {
-                            let mut result = format_str.to_string();
-                            let mut arg_index = 1;
-                            
-                            // Simple format string replacement - find {} and replace with arguments
-                            while let Some(pos) = result.find("{}") {
-                                if arg_index < args.len() {
-                                    let replacement = args[arg_index].to_string();
-                                    result.replace_range(pos..pos+2, &replacement);
-                                    arg_index += 1;
-                                } else {
-                                    break;
-                                }
-                            }
-                            
-                            Ok(Value::from_string(result))
-                        } else {
-                            Err(InterpreterError::RuntimeError("format expects string as first argument".to_string()))
-                        }
-                    }
-                    "__builtin_hashmap__" => {
-                        // For now, we don't have a proper HashMap type, so return empty string representation
-                        Ok(Value::from_string("{}".to_string()))
-                    }
-                    "__builtin_dataframe__" => {
-                        // Handle DataFrame constructor
-                        if args.is_empty() {
-                            // DataFrame() - create empty DataFrame
-                            Ok(Value::DataFrame { columns: Vec::new() })
-                        } else if args.len() == 1 {
-                            // DataFrame(rows) - from_rows pattern
-                            match &args[0] {
-                                Value::Array(rows) => {
-                                    // Convert rows to columns
-                                    let mut columns = Vec::new();
-                                    if !rows.is_empty() {
-                                        // Determine number of columns from first row
-                                        if let Value::Array(first_row) = &rows[0] {
-                                            let num_cols = first_row.len();
-                                            
-                                            // Initialize columns with default names
-                                            for col_idx in 0..num_cols {
-                                                columns.push(DataFrameColumn {
-                                                    name: format!("column_{}", col_idx),
-                                                    values: Vec::new(),
-                                                });
-                                            }
-                                            
-                                            // Fill column data from rows
-                                            for row in rows.iter() {
-                                                if let Value::Array(row_values) = row {
-                                                    if row_values.len() != num_cols {
-                                                        return Err(InterpreterError::RuntimeError(
-                                                            "DataFrame rows must have the same length".to_string()
-                                                        ));
-                                                    }
-                                                    for (col_idx, value) in row_values.iter().enumerate() {
-                                                        columns[col_idx].values.push(value.clone());
-                                                    }
-                                                } else {
-                                                    return Err(InterpreterError::RuntimeError(
-                                                        "DataFrame expects each row to be an array".to_string()
-                                                    ));
-                                                }
-                                            }
-                                        } else {
-                                            return Err(InterpreterError::RuntimeError(
-                                                "DataFrame expects rows to be arrays".to_string()
-                                            ));
-                                        }
-                                    }
-                                    Ok(Value::DataFrame { columns })
-                                }
-                                _ => Err(InterpreterError::RuntimeError(
-                                    "DataFrame expects an array of rows".to_string()
-                                )),
-                            }
-                        } else {
-                            Err(InterpreterError::RuntimeError(
-                                "DataFrame expects 0 or 1 arguments".to_string()
-                            ))
-                        }
-                    }
-                    "__builtin_col__" => {
-                        // Handle col() function - for now just return the column name as a string
-                        // In a full implementation, this would create a column reference object
-                        if args.len() == 1 {
-                            if let Value::String(_column_name) = &args[0] {
-                                // For now, just return the column name
-                                // Note: Create a proper ColumnRef type
-                                Ok(args[0].clone())
-                            } else {
-                                Err(InterpreterError::RuntimeError("col() expects a string column name".to_string()))
-                            }
-                        } else {
-                            Err(InterpreterError::RuntimeError("col() expects exactly 1 argument (column_name)".to_string()))
-                        }
-                    }
-                    "__builtin_dataframe_from_range__" => {
-                        // Handle DataFrame::from_range(start, end) function
-                        if args.len() != 2 {
-                            return Err(InterpreterError::RuntimeError("DataFrame::from_range() expects exactly 2 arguments (start, end)".to_string()));
-                        }
-                        
-                        let start = match &args[0] {
-                            Value::Integer(s) => *s,
-                            _ => return Err(InterpreterError::RuntimeError("DataFrame::from_range() expects start as integer".to_string())),
-                        };
-                        
-                        let end = match &args[1] {
-                            Value::Integer(e) => *e,
-                            _ => return Err(InterpreterError::RuntimeError("DataFrame::from_range() expects end as integer".to_string())),
-                        };
-                        
-                        if start >= end {
-                            return Err(InterpreterError::RuntimeError("DataFrame::from_range() expects start < end".to_string()));
-                        }
-                        
-                        // Create a DataFrame with a single "value" column containing the range
-                        let mut values = Vec::new();
-                        for i in start..end {
-                            values.push(Value::Integer(i));
-                        }
-                        
-                        let column = DataFrameColumn {
-                            name: "value".to_string(),
-                            values,
-                        };
-                        
-                        Ok(Value::DataFrame {
-                            columns: vec![column],
-                        })
-                    }
-                    "__builtin_dataframe_from_rows__" => {
-                        // Handle DataFrame::from_rows(rows) function
-                        if args.len() != 1 {
-                            return Err(InterpreterError::RuntimeError("DataFrame::from_rows() expects exactly 1 argument (rows)".to_string()));
-                        }
-                        
-                        match &args[0] {
-                            Value::Array(rows) => {
-                                // Convert rows to columns
-                                let mut columns = Vec::new();
-                                if !rows.is_empty() {
-                                    // Determine number of columns from first row
-                                    if let Value::Array(first_row) = &rows[0] {
-                                        let num_cols = first_row.len();
-                                        
-                                        // Initialize columns with default names
-                                        for col_idx in 0..num_cols {
-                                            columns.push(DataFrameColumn {
-                                                name: format!("column_{}", col_idx),
-                                                values: Vec::new(),
-                                            });
-                                        }
-                                        
-                                        // Fill column data from rows
-                                        for row in rows.iter() {
-                                            if let Value::Array(row_values) = row {
-                                                if row_values.len() != num_cols {
-                                                    return Err(InterpreterError::RuntimeError(
-                                                        "DataFrame::from_rows rows must have the same length".to_string()
-                                                    ));
-                                                }
-                                                for (col_idx, value) in row_values.iter().enumerate() {
-                                                    columns[col_idx].values.push(value.clone());
-                                                }
-                                            } else {
-                                                return Err(InterpreterError::RuntimeError(
-                                                    "DataFrame::from_rows expects each row to be an array".to_string()
-                                                ));
-                                            }
-                                        }
-                                    } else {
-                                        return Err(InterpreterError::RuntimeError(
-                                            "DataFrame::from_rows expects first row to be an array".to_string()
-                                        ));
-                                    }
-                                }
-                                
-                                Ok(Value::DataFrame { columns })
-                            }
-                            _ => Err(InterpreterError::RuntimeError("DataFrame::from_rows() expects rows as array".to_string())),
-                        }
-                    }
-                    // Math functions
-                    // Print/output functions
-                    "__builtin_println__" => {
-                        // println can accept any number of arguments
-                        if args.is_empty() {
-                            println!();
-                        } else {
-                            let output = args.iter()
-                                .map(|v| format!("{}", v))
-                                .collect::<Vec<_>>()
-                                .join(" ");
-                            println!("{}", output);
-                        }
-                        Ok(Value::Nil)
-                    }
-                    "__builtin_print__" => {
-                        // print without newline
-                        let output = args.iter()
-                            .map(|v| format!("{}", v))
-                            .collect::<Vec<_>>()
-                            .join(" ");
-                        print!("{}", output);
-                        Ok(Value::Nil)
-                    }
-                    "__builtin_dbg__" => {
-                        // debug print with value inspection
-                        if args.len() == 1 {
-                            println!("[DEBUG] {:?}", args[0]);
-                            Ok(args[0].clone())
-                        } else {
-                            println!("[DEBUG] {:?}", args);
-                            Ok(Value::Array(Rc::new(args.to_vec())))
-                        }
-                    }
-                    "__builtin_sqrt__" => {
-                        if args.len() != 1 {
-                            return Err(InterpreterError::RuntimeError("sqrt() expects exactly 1 argument".to_string()));
-                        }
-                        match &args[0] {
-                            Value::Integer(n) => Ok(Value::Float((*n as f64).sqrt())),
-                            Value::Float(f) => Ok(Value::Float(f.sqrt())),
-                            _ => Err(InterpreterError::RuntimeError("sqrt() expects a number".to_string())),
-                        }
-                    }
-                    "__builtin_pow__" => {
-                        if args.len() != 2 {
-                            return Err(InterpreterError::RuntimeError("pow() expects exactly 2 arguments".to_string()));
-                        }
-                        match (&args[0], &args[1]) {
-                            (Value::Integer(base), Value::Integer(exp)) => {
-                                if *exp >= 0 {
-                                    Ok(Value::Integer(base.pow(*exp as u32)))
-                                } else {
-                                    Ok(Value::Float((*base as f64).powf(*exp as f64)))
-                                }
-                            }
-                            (Value::Float(base), Value::Integer(exp)) => Ok(Value::Float(base.powf(*exp as f64))),
-                            (Value::Integer(base), Value::Float(exp)) => Ok(Value::Float((*base as f64).powf(*exp))),
-                            (Value::Float(base), Value::Float(exp)) => Ok(Value::Float(base.powf(*exp))),
-                            _ => Err(InterpreterError::RuntimeError("pow() expects two numbers".to_string())),
-                        }
-                    }
-                    "__builtin_abs__" => {
-                        if args.len() != 1 {
-                            return Err(InterpreterError::RuntimeError("abs() expects exactly 1 argument".to_string()));
-                        }
-                        match &args[0] {
-                            Value::Integer(n) => Ok(Value::Integer(n.abs())),
-                            Value::Float(f) => Ok(Value::Float(f.abs())),
-                            _ => Err(InterpreterError::RuntimeError("abs() expects a number".to_string())),
-                        }
-                    }
-                    "__builtin_min__" => {
-                        if args.len() != 2 {
-                            return Err(InterpreterError::RuntimeError("min() expects exactly 2 arguments".to_string()));
-                        }
-                        match (&args[0], &args[1]) {
-                            (Value::Integer(a), Value::Integer(b)) => Ok(Value::Integer(*a.min(b))),
-                            (Value::Float(a), Value::Float(b)) => Ok(Value::Float(a.min(*b))),
-                            (Value::Integer(a), Value::Float(b)) => Ok(Value::Float((*a as f64).min(*b))),
-                            (Value::Float(a), Value::Integer(b)) => Ok(Value::Float(a.min(*b as f64))),
-                            _ => Err(InterpreterError::RuntimeError("min() expects two numbers".to_string())),
-                        }
-                    }
-                    "__builtin_max__" => {
-                        if args.len() != 2 {
-                            return Err(InterpreterError::RuntimeError("max() expects exactly 2 arguments".to_string()));
-                        }
-                        match (&args[0], &args[1]) {
-                            (Value::Integer(a), Value::Integer(b)) => Ok(Value::Integer(*a.max(b))),
-                            (Value::Float(a), Value::Float(b)) => Ok(Value::Float(a.max(*b))),
-                            (Value::Integer(a), Value::Float(b)) => Ok(Value::Float((*a as f64).max(*b))),
-                            (Value::Float(a), Value::Integer(b)) => Ok(Value::Float(a.max(*b as f64))),
-                            _ => Err(InterpreterError::RuntimeError("max() expects two numbers".to_string())),
-                        }
-                    }
-                    "__builtin_floor__" => {
-                        if args.len() != 1 {
-                            return Err(InterpreterError::RuntimeError("floor() expects exactly 1 argument".to_string()));
-                        }
-                        match &args[0] {
-                            Value::Integer(n) => Ok(Value::Integer(*n)), // Integer is already floored
-                            Value::Float(f) => Ok(Value::Integer(f.floor() as i64)),
-                            _ => Err(InterpreterError::RuntimeError("floor() expects a number".to_string())),
-                        }
-                    }
-                    "__builtin_ceil__" => {
-                        if args.len() != 1 {
-                            return Err(InterpreterError::RuntimeError("ceil() expects exactly 1 argument".to_string()));
-                        }
-                        match &args[0] {
-                            Value::Integer(n) => Ok(Value::Integer(*n)), // Integer is already ceiled
-                            Value::Float(f) => Ok(Value::Integer(f.ceil() as i64)),
-                            _ => Err(InterpreterError::RuntimeError("ceil() expects a number".to_string())),
-                        }
-                    }
-                    "__builtin_round__" => {
-                        if args.len() != 1 {
-                            return Err(InterpreterError::RuntimeError("round() expects exactly 1 argument".to_string()));
-                        }
-                        match &args[0] {
-                            Value::Integer(n) => Ok(Value::Integer(*n)), // Integer is already rounded
-                            Value::Float(f) => Ok(Value::Integer(f.round() as i64)),
-                            _ => Err(InterpreterError::RuntimeError("round() expects a number".to_string())),
-                        }
-                    }
-                    "__builtin_sin__" => {
-                        if args.len() != 1 {
-                            return Err(InterpreterError::RuntimeError("sin() expects exactly 1 argument".to_string()));
-                        }
-                        match &args[0] {
-                            Value::Integer(n) => Ok(Value::Float((*n as f64).sin())),
-                            Value::Float(f) => Ok(Value::Float(f.sin())),
-                            _ => Err(InterpreterError::RuntimeError("sin() expects a number".to_string())),
-                        }
-                    }
-                    "__builtin_cos__" => {
-                        if args.len() != 1 {
-                            return Err(InterpreterError::RuntimeError("cos() expects exactly 1 argument".to_string()));
-                        }
-                        match &args[0] {
-                            Value::Integer(n) => Ok(Value::Float((*n as f64).cos())),
-                            Value::Float(f) => Ok(Value::Float(f.cos())),
-                            _ => Err(InterpreterError::RuntimeError("cos() expects a number".to_string())),
-                        }
-                    }
-                    "__builtin_tan__" => {
-                        if args.len() != 1 {
-                            return Err(InterpreterError::RuntimeError("tan() expects exactly 1 argument".to_string()));
-                        }
-                        match &args[0] {
-                            Value::Integer(n) => Ok(Value::Float((*n as f64).tan())),
-                            Value::Float(f) => Ok(Value::Float(f.tan())),
-                            _ => Err(InterpreterError::RuntimeError("tan() expects a number".to_string())),
-                        }
-                    }
-                    // Utility functions
-                    "__builtin_len__" => {
-                        if args.len() != 1 {
-                            return Err(InterpreterError::RuntimeError("len() expects exactly 1 argument".to_string()));
-                        }
-                        match &args[0] {
-                            Value::String(s) => Ok(Value::Integer(s.len() as i64)),
-                            Value::Array(arr) => Ok(Value::Integer(arr.len() as i64)),
-                            Value::DataFrame { columns } => {
-                                if columns.is_empty() {
-                                    Ok(Value::Integer(0))
-                                } else {
-                                    Ok(Value::Integer(columns[0].values.len() as i64))
-                                }
-                            }
-                            _ => Err(InterpreterError::RuntimeError("len() expects a string, array, or dataframe".to_string())),
-                        }
-                    }
-                    "__builtin_range__" => {
-                        match args.len() {
-                            1 => {
-                                // range(end) -> 0..end
-                                match &args[0] {
-                                    Value::Integer(end) => {
-                                        let mut result = Vec::new();
-                                        for i in 0..*end {
-                                            result.push(Value::Integer(i));
-                                        }
-                                        Ok(Value::Array(result.into()))
-                                    }
-                                    _ => Err(InterpreterError::RuntimeError("range() expects integer arguments".to_string())),
-                                }
-                            }
-                            2 => {
-                                // range(start, end) -> start..end
-                                match (&args[0], &args[1]) {
-                                    (Value::Integer(start), Value::Integer(end)) => {
-                                        let mut result = Vec::new();
-                                        for i in *start..*end {
-                                            result.push(Value::Integer(i));
-                                        }
-                                        Ok(Value::Array(result.into()))
-                                    }
-                                    _ => Err(InterpreterError::RuntimeError("range() expects integer arguments".to_string())),
-                                }
-                            }
-                            3 => {
-                                // range(start, end, step) -> start..end by step
-                                match (&args[0], &args[1], &args[2]) {
-                                    (Value::Integer(start), Value::Integer(end), Value::Integer(step)) => {
-                                        if *step == 0 {
-                                            return Err(InterpreterError::RuntimeError("range() step cannot be zero".to_string()));
-                                        }
-                                        let mut result = Vec::new();
-                                        if *step > 0 {
-                                            let mut i = *start;
-                                            while i < *end {
-                                                result.push(Value::Integer(i));
-                                                i += step;
-                                            }
-                                        } else {
-                                            let mut i = *start;
-                                            while i > *end {
-                                                result.push(Value::Integer(i));
-                                                i += step;
-                                            }
-                                        }
-                                        Ok(Value::Array(result.into()))
-                                    }
-                                    _ => Err(InterpreterError::RuntimeError("range() expects integer arguments".to_string())),
-                                }
-                            }
-                            _ => Err(InterpreterError::RuntimeError("range() expects 1, 2, or 3 arguments".to_string())),
-                        }
-                    }
-                    "__builtin_type__" => {
-                        if args.len() != 1 {
-                            return Err(InterpreterError::RuntimeError("type() expects exactly 1 argument".to_string()));
-                        }
-                        Ok(Value::from_string(args[0].type_name().to_string()))
-                    }
-                    // Advanced utility functions
-                    "__builtin_reverse__" => {
-                        if args.len() != 1 {
-                            return Err(InterpreterError::RuntimeError("reverse() expects exactly 1 argument".to_string()));
-                        }
-                        match &args[0] {
-                            Value::Array(arr) => {
-                                let mut reversed = arr.as_ref().clone();
-                                reversed.reverse();
-                                Ok(Value::Array(reversed.into()))
-                            }
-                            Value::String(s) => Ok(Value::from_string(s.chars().rev().collect())),
-                            _ => Err(InterpreterError::RuntimeError("reverse() expects an array or string".to_string())),
-                        }
-                    }
-                    "__builtin_sort__" => {
-                        if args.len() != 1 {
-                            return Err(InterpreterError::RuntimeError("sort() expects exactly 1 argument".to_string()));
-                        }
-                        match &args[0] {
-                            Value::Array(arr) => {
-                                let mut sorted = arr.as_ref().clone();
-                                sorted.sort_by(|a, b| {
-                                    match (a, b) {
-                                        (Value::Integer(x), Value::Integer(y)) => x.cmp(y),
-                                        (Value::Float(x), Value::Float(y)) => x.partial_cmp(y).unwrap_or(std::cmp::Ordering::Equal),
-                                        (Value::String(x), Value::String(y)) => x.cmp(y),
-                                        _ => std::cmp::Ordering::Equal,
-                                    }
-                                });
-                                Ok(Value::Array(sorted.into()))
-                            }
-                            _ => Err(InterpreterError::RuntimeError("sort() expects an array".to_string())),
-                        }
-                    }
-                    "__builtin_sum__" => {
-                        if args.len() != 1 {
-                            return Err(InterpreterError::RuntimeError("sum() expects exactly 1 argument".to_string()));
-                        }
-                        match &args[0] {
-                            Value::Array(arr) => {
-                                let mut sum = 0i64;
-                                let mut float_sum = 0.0f64;
-                                let mut has_floats = false;
-                                for val in arr.iter() {
-                                    match val {
-                                        Value::Integer(n) => {
-                                            if has_floats {
-                                                float_sum += *n as f64;
-                                            } else {
-                                                sum += n;
-                                            }
-                                        }
-                                        Value::Float(f) => {
-                                            if has_floats {
-                                                float_sum += f;
-                                            } else {
-                                                has_floats = true;
-                                                float_sum = sum as f64 + f;
-                                            }
-                                        }
-                                        _ => return Err(InterpreterError::RuntimeError("sum() can only sum numbers".to_string())),
-                                    }
-                                }
-                                if has_floats {
-                                    Ok(Value::Float(float_sum))
-                                } else {
-                                    Ok(Value::Integer(sum))
-                                }
-                            }
-                            _ => Err(InterpreterError::RuntimeError("sum() expects an array".to_string())),
-                        }
-                    }
-                    "__builtin_product__" => {
-                        if args.len() != 1 {
-                            return Err(InterpreterError::RuntimeError("product() expects exactly 1 argument".to_string()));
-                        }
-                        match &args[0] {
-                            Value::Array(arr) => {
-                                let mut product = 1i64;
-                                let mut float_product = 1.0f64;
-                                let mut has_floats = false;
-                                for val in arr.iter() {
-                                    match val {
-                                        Value::Integer(n) => {
-                                            if has_floats {
-                                                float_product *= *n as f64;
-                                            } else {
-                                                product *= n;
-                                            }
-                                        }
-                                        Value::Float(f) => {
-                                            if has_floats {
-                                                float_product *= f;
-                                            } else {
-                                                has_floats = true;
-                                                float_product = product as f64 * f;
-                                            }
-                                        }
-                                        _ => return Err(InterpreterError::RuntimeError("product() can only multiply numbers".to_string())),
-                                    }
-                                }
-                                if has_floats {
-                                    Ok(Value::Float(float_product))
-                                } else {
-                                    Ok(Value::Integer(product))
-                                }
-                            }
-                            _ => Err(InterpreterError::RuntimeError("product() expects an array".to_string())),
-                        }
-                    }
-                    "__builtin_unique__" => {
-                        if args.len() != 1 {
-                            return Err(InterpreterError::RuntimeError("unique() expects exactly 1 argument".to_string()));
-                        }
-                        match &args[0] {
-                            Value::Array(arr) => {
-                                let mut unique_vals = Vec::new();
-                                for val in arr.iter() {
-                                    if !unique_vals.contains(val) {
-                                        unique_vals.push(val.clone());
-                                    }
-                                }
-                                Ok(Value::Array(unique_vals.into()))
-                            }
-                            _ => Err(InterpreterError::RuntimeError("unique() expects an array".to_string())),
-                        }
-                    }
-                    "__builtin_flatten__" => {
-                        if args.len() != 1 {
-                            return Err(InterpreterError::RuntimeError("flatten() expects exactly 1 argument".to_string()));
-                        }
-                        match &args[0] {
-                            Value::Array(arr) => {
-                                let mut flattened = Vec::new();
-                                for val in arr.iter() {
-                                    match val {
-                                        Value::Array(inner_arr) => {
-                                            flattened.extend_from_slice(inner_arr);
-                                        }
-                                        _ => flattened.push(val.clone()),
-                                    }
-                                }
-                                Ok(Value::Array(flattened.into()))
-                            }
-                            _ => Err(InterpreterError::RuntimeError("flatten() expects an array".to_string())),
-                        }
-                    }
-                    "__builtin_zip__" => {
-                        if args.len() != 2 {
-                            return Err(InterpreterError::RuntimeError("zip() expects exactly 2 arguments".to_string()));
-                        }
-                        match (&args[0], &args[1]) {
-                            (Value::Array(arr1), Value::Array(arr2)) => {
-                                let mut zipped = Vec::new();
-                                let min_len = arr1.len().min(arr2.len());
-                                for i in 0..min_len {
-                                    let tuple = Value::Array(vec![arr1[i].clone(), arr2[i].clone()].into());
-                                    zipped.push(tuple);
-                                }
-                                Ok(Value::Array(zipped.into()))
-                            }
-                            _ => Err(InterpreterError::RuntimeError("zip() expects two arrays".to_string())),
-                        }
-                    }
-                    "__builtin_enumerate__" => {
-                        if args.len() != 1 {
-                            return Err(InterpreterError::RuntimeError("enumerate() expects exactly 1 argument".to_string()));
-                        }
-                        match &args[0] {
-                            Value::Array(arr) => {
-                                let mut enumerated = Vec::new();
-                                for (i, val) in arr.iter().enumerate() {
-                                    let tuple = Value::Array(vec![Value::Integer(i as i64), val.clone()].into());
-                                    enumerated.push(tuple);
-                                }
-                                Ok(Value::Array(enumerated.into()))
-                            }
-                            _ => Err(InterpreterError::RuntimeError("enumerate() expects an array".to_string())),
-                        }
-                    }
-                    // String utility functions
-                    "__builtin_join__" => {
-                        if args.len() != 2 {
-                            return Err(InterpreterError::RuntimeError("join() expects exactly 2 arguments".to_string()));
-                        }
-                        match (&args[0], &args[1]) {
-                            (Value::Array(arr), Value::String(sep)) => {
-                                let strings: Result<Vec<String>, _> = arr.iter().map(|v| {
-                                    match v {
-                                        Value::String(s) => Ok(s.to_string()),
-                                        _ => Err(InterpreterError::RuntimeError("join() can only join arrays of strings".to_string())),
-                                    }
-                                }).collect();
-                                match strings {
-                                    Ok(strs) => Ok(Value::from_string(strs.join(sep))),
-                                    Err(e) => Err(e),
-                                }
-                            }
-                            _ => Err(InterpreterError::RuntimeError("join() expects an array and a string separator".to_string())),
-                        }
-                    }
-                    "__builtin_split__" => {
-                        if args.len() != 2 {
-                            return Err(InterpreterError::RuntimeError("split() expects exactly 2 arguments".to_string()));
-                        }
-                        match (&args[0], &args[1]) {
-                            (Value::String(s), Value::String(sep)) => {
-                                let parts: Vec<Value> = s.split(sep.as_str()).map(|part| Value::from_string(part.to_string())).collect();
-                                Ok(Value::Array(parts.into()))
-                            }
-                            _ => Err(InterpreterError::RuntimeError("split() expects two strings".to_string())),
-                        }
-                    }
-                    // Random and time functions
-                    "__builtin_random__" => {
-                        if !args.is_empty() {
-                            return Err(InterpreterError::RuntimeError("random() expects no arguments".to_string()));
-                        }
-                        use rand::Rng;
-                        let mut rng = rand::thread_rng();
-                        Ok(Value::Float(rng.gen::<f64>()))
-                    }
-                    "__builtin_random_int__" => {
-                        match args.len() {
-                            1 => {
-                                match &args[0] {
-                                    Value::Integer(max) => {
-                                        use rand::Rng;
-                                        let mut rng = rand::thread_rng();
-                                        Ok(Value::Integer(rng.gen_range(0..*max)))
-                                    }
-                                    _ => Err(InterpreterError::RuntimeError("random_int() expects an integer".to_string())),
-                                }
-                            }
-                            2 => {
-                                match (&args[0], &args[1]) {
-                                    (Value::Integer(min), Value::Integer(max)) => {
-                                        use rand::Rng;
-                                        let mut rng = rand::thread_rng();
-                                        Ok(Value::Integer(rng.gen_range(*min..*max)))
-                                    }
-                                    _ => Err(InterpreterError::RuntimeError("random_int() expects two integers".to_string())),
-                                }
-                            }
-                            _ => Err(InterpreterError::RuntimeError("random_int() expects 1 or 2 arguments".to_string())),
-                        }
-                    }
-                    "__builtin_timestamp__" => {
-                        if !args.is_empty() {
-                            return Err(InterpreterError::RuntimeError("timestamp() expects no arguments".to_string()));
-                        }
-                        use std::time::{SystemTime, UNIX_EPOCH};
-                        let timestamp = SystemTime::now().duration_since(UNIX_EPOCH)
-                            .map_err(|_| InterpreterError::RuntimeError("Failed to get timestamp".to_string()))?
-                            .as_secs();
-                        Ok(Value::Integer(timestamp as i64))
-                    }
-                    // Type conversion functions
-                    "__builtin_int__" => {
-                        if args.len() != 1 {
-                            return Err(InterpreterError::RuntimeError("int() expects exactly 1 argument".to_string()));
-                        }
-                        match &args[0] {
-                            Value::Integer(n) => Ok(Value::Integer(*n)),
-                            Value::Float(f) => Ok(Value::Integer(*f as i64)),
-                            Value::String(s) => {
-                                s.parse::<i64>()
-                                    .map(Value::Integer)
-                                    .map_err(|_| InterpreterError::RuntimeError(format!("Cannot convert '{}' to integer", s)))
-                            }
-                            Value::Bool(b) => Ok(Value::Integer(i64::from(*b))),
-                            _ => Err(InterpreterError::RuntimeError(format!("Cannot convert {} to integer", args[0].type_name()))),
-                        }
-                    }
-                    "__builtin_float__" => {
-                        if args.len() != 1 {
-                            return Err(InterpreterError::RuntimeError("float() expects exactly 1 argument".to_string()));
-                        }
-                        match &args[0] {
-                            Value::Integer(n) => Ok(Value::Float(*n as f64)),
-                            Value::Float(f) => Ok(Value::Float(*f)),
-                            Value::String(s) => {
-                                s.parse::<f64>()
-                                    .map(Value::Float)
-                                    .map_err(|_| InterpreterError::RuntimeError(format!("Cannot convert '{}' to float", s)))
-                            }
-                            _ => Err(InterpreterError::RuntimeError(format!("Cannot convert {} to float", args[0].type_name()))),
-                        }
-                    }
-                    "__builtin_str__" => {
-                        if args.len() != 1 {
-                            return Err(InterpreterError::RuntimeError("str() expects exactly 1 argument".to_string()));
-                        }
-                        Ok(Value::from_string(args[0].to_string()))
-                    }
-                    "__builtin_bool__" => {
-                        if args.len() != 1 {
-                            return Err(InterpreterError::RuntimeError("bool() expects exactly 1 argument".to_string()));
-                        }
-                        match &args[0] {
-                            Value::Bool(b) => Ok(Value::Bool(*b)),
-                            Value::Integer(n) => Ok(Value::Bool(*n != 0)),
-                            Value::Float(f) => Ok(Value::Bool(*f != 0.0)),
-                            Value::String(s) => Ok(Value::Bool(!s.is_empty())),
-                            Value::Nil => Ok(Value::Bool(false)),
-                            _ => Ok(Value::Bool(true)), // Non-null/non-false values are truthy
-                        }
-                    }
-                    _ => Err(InterpreterError::RuntimeError(format!("Unknown builtin function: {}", s))),
+                // Delegate to extracted builtin module
+                match crate::runtime::eval_builtin::eval_builtin_function(s.as_str(), args)? {
+                    Some(result) => Ok(result),
+                    None => Err(InterpreterError::RuntimeError(format!(
+                        "Unknown builtin function: {}",
+                        s
+                    ))),
                 }
             }
             Value::Closure { params, body, env } => {
@@ -3144,184 +1171,15 @@ impl Interpreter {
         left: &Value,
         right: &Value,
     ) -> Result<Value, InterpreterError> {
-        match op {
-            AstBinaryOp::Add | AstBinaryOp::Subtract | AstBinaryOp::Multiply | 
-            AstBinaryOp::Divide | AstBinaryOp::Modulo | AstBinaryOp::Power => {
-                self.eval_arithmetic_op(op, left, right)
-            }
-            AstBinaryOp::Equal | AstBinaryOp::NotEqual | AstBinaryOp::Less | 
-            AstBinaryOp::Greater | AstBinaryOp::LessEqual | AstBinaryOp::GreaterEqual => {
-                self.eval_comparison_op(op, left, right)
-            }
-            AstBinaryOp::And | AstBinaryOp::Or => {
-                self.eval_logical_op(op, left, right)
-            }
-            AstBinaryOp::BitwiseAnd | AstBinaryOp::BitwiseOr | AstBinaryOp::BitwiseXor | AstBinaryOp::LeftShift | AstBinaryOp::RightShift => {
-                self.eval_bitwise_op(op, left, right)
-            }
-            _ => Err(InterpreterError::RuntimeError(format!(
-                "Binary operator not yet implemented: {op:?}"
-            ))),
-        }
-    }
-    
-    /// Handle arithmetic operations.
-    ///
-    /// Supports numeric operations between integers and floats with automatic
-    /// type promotion when mixing types. String concatenation is supported
-    /// for the `+` operator.
-    ///
-    /// # Type Promotion Rules
-    ///
-    /// - `int + int -> int`
-    /// - `int + float -> float`
-    /// - `float + float -> float`
-    /// - `string + string -> string` (concatenation)
-    ///
-    /// # Errors
-    ///
-    /// Returns an error for type mismatches or division by zero.
-    fn eval_arithmetic_op(
-        &self,
-        op: AstBinaryOp,
-        left: &Value,
-        right: &Value,
-    ) -> Result<Value, InterpreterError> {
-        match op {
-            AstBinaryOp::Add => self.add_values(left, right),
-            AstBinaryOp::Subtract => self.sub_values(left, right),
-            AstBinaryOp::Multiply => self.mul_values(left, right),
-            AstBinaryOp::Divide => self.div_values(left, right),
-            AstBinaryOp::Modulo => self.modulo_values(left, right),
-            AstBinaryOp::Power => self.power_values(left, right),
-            _ => unreachable!("Non-arithmetic operation passed to eval_arithmetic_op"),
-        }
-    }
-    
-    /// Handle comparison operations.
-    ///
-    /// Compares values of compatible types and returns a boolean result.
-    /// Supports comparisons between:
-    /// - Numbers (integers and floats)
-    /// - Strings (lexicographic comparison)
-    /// - Booleans
-    ///
-    /// # Equality
-    ///
-    /// - Values of different types are never equal
-    /// - NaN is not equal to itself (following IEEE 754)
-    ///
-    /// # Errors
-    ///
-    /// Returns an error when comparing incompatible types for ordering
-    /// operations (`<`, `>`, `<=`, `>=`).
-    fn eval_comparison_op(
-        &self,
-        op: AstBinaryOp,
-        left: &Value,
-        right: &Value,
-    ) -> Result<Value, InterpreterError> {
-        match op {
-            AstBinaryOp::Equal => Ok(Value::from_bool(self.equal_values(left, right))),
-            AstBinaryOp::NotEqual => Ok(Value::from_bool(!self.equal_values(left, right))),
-            AstBinaryOp::Less => Ok(Value::from_bool(self.less_than_values(left, right)?)),
-            AstBinaryOp::Greater => Ok(Value::from_bool(self.greater_than_values(left, right)?)),
-            AstBinaryOp::LessEqual => {
-                let less = self.less_than_values(left, right)?;
-                let equal = self.equal_values(left, right);
-                Ok(Value::from_bool(less || equal))
-            }
-            AstBinaryOp::GreaterEqual => {
-                let greater = self.greater_than_values(left, right)?;
-                let equal = self.equal_values(left, right);
-                Ok(Value::from_bool(greater || equal))
-            }
-            _ => unreachable!("Non-comparison operation passed to eval_comparison_op"),
-        }
-    }
-    
-    /// Handle logical operations (And, Or)
-    fn eval_logical_op(
-        &self,
-        op: AstBinaryOp,
-        left: &Value,
-        right: &Value,
-    ) -> Result<Value, InterpreterError> {
-        match op {
-            AstBinaryOp::And => {
-                // Short-circuit evaluation for logical AND
-                if left.is_truthy() {
-                    Ok(right.clone())
-                } else {
-                    Ok(left.clone())
-                }
-            }
-            AstBinaryOp::Or => {
-                // Short-circuit evaluation for logical OR
-                if left.is_truthy() {
-                    Ok(left.clone())
-                } else {
-                    Ok(right.clone())
-                }
-            }
-            _ => unreachable!("Non-logical operation passed to eval_logical_op"),
-        }
+        crate::runtime::eval_operations::eval_binary_op(op, left, right)
     }
 
-    fn eval_bitwise_op(
-        &self,
-        op: AstBinaryOp,
-        left: &Value,
-        right: &Value,
-    ) -> Result<Value, InterpreterError> {
-        match (left, right) {
-            (Value::Integer(a), Value::Integer(b)) => {
-                let result = match op {
-                    AstBinaryOp::BitwiseAnd => a & b,
-                    AstBinaryOp::BitwiseOr => a | b,
-                    AstBinaryOp::BitwiseXor => a ^ b,
-                    AstBinaryOp::LeftShift => a << b,
-                    AstBinaryOp::RightShift => a >> b,
-                    _ => unreachable!("Non-bitwise operation passed to eval_bitwise_op"),
-                };
-                Ok(Value::Integer(result))
-            }
-            _ => Err(InterpreterError::RuntimeError(format!(
-                "Bitwise operations require integer operands, got {} and {}",
-                left.type_name(),
-                right.type_name()
-            ))),
-        }
-    }
-
-    /// Evaluate a unary operation
     fn eval_unary_op(
         &self,
         op: crate::frontend::ast::UnaryOp,
         operand: &Value,
     ) -> Result<Value, InterpreterError> {
-        use crate::frontend::ast::UnaryOp;
-        match op {
-            UnaryOp::Negate => match operand {
-                Value::Integer(i) => Ok(Value::from_i64(-i)),
-                Value::Float(f) => Ok(Value::from_f64(-f)),
-                _ => Err(InterpreterError::TypeError(format!(
-                    "Cannot negate {}",
-                    operand.type_name()
-                ))),
-            },
-            UnaryOp::Not => Ok(Value::from_bool(!operand.is_truthy())),
-            UnaryOp::BitwiseNot => match operand {
-                Value::Integer(i) => Ok(Value::from_i64(!i)),
-                _ => Err(InterpreterError::TypeError(format!(
-                    "Cannot apply bitwise NOT to {}",
-                    operand.type_name()
-                ))),
-            },
-            UnaryOp::Reference => Err(InterpreterError::RuntimeError(format!(
-                "Unary operator not yet implemented: {op:?}"
-            ))),
-        }
+        crate::runtime::eval_operations::eval_unary_op(op, operand)
     }
 
     /// Evaluate binary expression
@@ -3361,11 +1219,11 @@ impl Interpreter {
                 let left_val = self.eval_expr(left)?;
                 let right_val = self.eval_expr(right)?;
                 let result = self.eval_binary_op(op, &left_val, &right_val)?;
-                
+
                 // Record type feedback for optimization
                 let site_id = left.span.start; // Use span start as site ID
                 self.record_binary_op_feedback(site_id, &left_val, &right_val, &result);
-                
+
                 Ok(result)
             }
         }
@@ -3388,14 +1246,7 @@ impl Interpreter {
         then_branch: &Expr,
         else_branch: Option<&Expr>,
     ) -> Result<Value, InterpreterError> {
-        let condition_val = self.eval_expr(condition)?;
-        if condition_val.is_truthy() {
-            self.eval_expr(then_branch)
-        } else if let Some(else_expr) = else_branch {
-            self.eval_expr(else_expr)
-        } else {
-            Ok(Value::nil())
-        }
+        eval_expr::eval_if_expr(condition, then_branch, else_branch, |e| self.eval_expr(e))
     }
 
     /// Evaluate let expression
@@ -3407,70 +1258,42 @@ impl Interpreter {
     ) -> Result<Value, InterpreterError> {
         let val = self.eval_expr(value)?;
         self.env_set(name.to_string(), val.clone());
-        
+
         // If body is unit (empty), return the value like REPL does
         // This makes `let x = 42` return 42 instead of nil
         match &body.kind {
             ExprKind::Literal(Literal::Unit) => Ok(val),
-            _ => self.eval_expr(body)
+            _ => self.eval_expr(body),
         }
     }
 
     /// Evaluate return expression
     fn eval_return_expr(&mut self, value: Option<&Expr>) -> Result<Value, InterpreterError> {
-        if let Some(expr) = value {
-            let val = self.eval_expr(expr)?;
-            Err(InterpreterError::RuntimeError(format!("return {val:?}")))
-        } else {
-            Err(InterpreterError::RuntimeError("return".to_string()))
-        }
+        eval_expr::eval_return_expr(value, |e| self.eval_expr(e))
     }
 
     /// Evaluate list expression
     fn eval_list_expr(&mut self, elements: &[Expr]) -> Result<Value, InterpreterError> {
-        let mut values = Vec::new();
-        for elem in elements {
-            values.push(self.eval_expr(elem)?);
-        }
-        Ok(Value::from_array(values))
+        eval_expr::eval_list_expr(elements, |e| self.eval_expr(e))
     }
 
     /// Evaluate array initialization expression [value; size]
-    fn eval_array_init_expr(&mut self, value_expr: &Expr, size_expr: &Expr) -> Result<Value, InterpreterError> {
-        let value = self.eval_expr(value_expr)?;
-        let size_val = self.eval_expr(size_expr)?;
-        
-        let size = match size_val {
-            Value::Integer(n) => n as usize,
-            _ => return Err(InterpreterError::RuntimeError(
-                "Array size must be an integer".to_string()
-            )),
-        };
-        
-        let mut values = Vec::with_capacity(size);
-        for _ in 0..size {
-            values.push(value.clone());
-        }
-        
-        Ok(Value::from_array(values))
+    fn eval_array_init_expr(
+        &mut self,
+        value_expr: &Expr,
+        size_expr: &Expr,
+    ) -> Result<Value, InterpreterError> {
+        eval_expr::eval_array_init_expr(value_expr, size_expr, |e| self.eval_expr(e))
     }
 
     /// Evaluate block expression
     fn eval_block_expr(&mut self, statements: &[Expr]) -> Result<Value, InterpreterError> {
-        let mut result = Value::nil();
-        for stmt in statements {
-            result = self.eval_expr(stmt)?;
-        }
-        Ok(result)
+        eval_expr::eval_block_expr(statements, |e| self.eval_expr(e))
     }
 
     /// Evaluate tuple expression
     fn eval_tuple_expr(&mut self, elements: &[Expr]) -> Result<Value, InterpreterError> {
-        let mut values = Vec::new();
-        for elem in elements {
-            values.push(self.eval_expr(elem)?);
-        }
-        Ok(Value::Tuple(Rc::new(values)))
+        eval_expr::eval_tuple_expr(elements, |e| self.eval_expr(e))
     }
 
     /// Evaluate range expression
@@ -3480,21 +1303,7 @@ impl Interpreter {
         end: &Expr,
         inclusive: bool,
     ) -> Result<Value, InterpreterError> {
-        let start_val = self.eval_expr(start)?;
-        let end_val = self.eval_expr(end)?;
-        
-        match (start_val, end_val) {
-            (Value::Integer(start_i), Value::Integer(end_i)) => {
-                Ok(Value::Range {
-                    start: Box::new(Value::Integer(start_i)),
-                    end: Box::new(Value::Integer(end_i)),
-                    inclusive,
-                })
-            }
-            _ => Err(InterpreterError::TypeError(
-                "Range bounds must be integers".to_string(),
-            )),
-        }
+        eval_expr::eval_range_expr(start, end, inclusive, |e| self.eval_expr(e))
     }
 
     /// Helper function for testing - evaluate a string expression via parser
@@ -3567,13 +1376,13 @@ impl Interpreter {
         let left = self.pop()?;
 
         let result = match op {
-            BinaryOp::Add => self.add_values(&left, &right)?,
-            BinaryOp::Sub => self.sub_values(&left, &right)?,
-            BinaryOp::Mul => self.mul_values(&left, &right)?,
-            BinaryOp::Div => self.div_values(&left, &right)?,
-            BinaryOp::Eq => Value::from_bool(self.equal_values(&left, &right)),
-            BinaryOp::Lt => Value::from_bool(self.less_than_values(&left, &right)?),
-            BinaryOp::Gt => Value::from_bool(self.greater_than_values(&left, &right)?),
+            BinaryOp::Add => eval_operations::eval_binary_op(AstBinaryOp::Add, &left, &right)?,
+            BinaryOp::Sub => eval_operations::eval_binary_op(AstBinaryOp::Subtract, &left, &right)?,
+            BinaryOp::Mul => eval_operations::eval_binary_op(AstBinaryOp::Multiply, &left, &right)?,
+            BinaryOp::Div => eval_operations::eval_binary_op(AstBinaryOp::Divide, &left, &right)?,
+            BinaryOp::Eq => eval_operations::eval_binary_op(AstBinaryOp::Equal, &left, &right)?,
+            BinaryOp::Lt => eval_operations::eval_binary_op(AstBinaryOp::Less, &left, &right)?,
+            BinaryOp::Gt => eval_operations::eval_binary_op(AstBinaryOp::Greater, &left, &right)?,
         };
 
         self.push(result)?;
@@ -3581,348 +1390,42 @@ impl Interpreter {
     }
 
     /// Add two values with type coercion
-    fn add_values(&self, left: &Value, right: &Value) -> Result<Value, InterpreterError> {
-        match (left, right) {
-            (Value::Integer(a), Value::Integer(b)) => Ok(Value::from_i64(a + b)),
-            (Value::Float(a), Value::Float(b)) => Ok(Value::from_f64(a + b)),
-            (Value::Integer(a), Value::Float(b)) =>
-            {
-                #[allow(clippy::cast_precision_loss)]
-                Ok(Value::from_f64(*a as f64 + b))
-            }
-            (Value::Float(a), Value::Integer(b)) =>
-            {
-                #[allow(clippy::cast_precision_loss)]
-                Ok(Value::from_f64(a + *b as f64))
-            }
-            (Value::String(a), Value::String(b)) => {
-                Ok(Value::from_string(format!("{}{}", a.as_ref(), b.as_ref())))
-            }
-            _ => Err(InterpreterError::TypeError(format!(
-                "Cannot add {} and {}",
-                left.type_name(),
-                right.type_name()
-            ))),
-        }
-    }
-
-    /// Subtract two values
-    fn sub_values(&self, left: &Value, right: &Value) -> Result<Value, InterpreterError> {
-        match (left, right) {
-            (Value::Integer(a), Value::Integer(b)) => Ok(Value::from_i64(a - b)),
-            (Value::Float(a), Value::Float(b)) => Ok(Value::from_f64(a - b)),
-            (Value::Integer(a), Value::Float(b)) =>
-            {
-                #[allow(clippy::cast_precision_loss)]
-                Ok(Value::from_f64(*a as f64 - b))
-            }
-            (Value::Float(a), Value::Integer(b)) =>
-            {
-                #[allow(clippy::cast_precision_loss)]
-                Ok(Value::from_f64(a - *b as f64))
-            }
-            _ => Err(InterpreterError::TypeError(format!(
-                "Cannot subtract {} from {}",
-                right.type_name(),
-                left.type_name()
-            ))),
-        }
-    }
-
-    /// Multiply two values
-    fn mul_values(&self, left: &Value, right: &Value) -> Result<Value, InterpreterError> {
-        match (left, right) {
-            (Value::Integer(a), Value::Integer(b)) => Ok(Value::from_i64(a * b)),
-            (Value::Float(a), Value::Float(b)) => Ok(Value::from_f64(a * b)),
-            (Value::Integer(a), Value::Float(b)) =>
-            {
-                #[allow(clippy::cast_precision_loss)]
-                Ok(Value::from_f64(*a as f64 * b))
-            }
-            (Value::Float(a), Value::Integer(b)) =>
-            {
-                #[allow(clippy::cast_precision_loss)]
-                Ok(Value::from_f64(a * *b as f64))
-            }
-            _ => Err(InterpreterError::TypeError(format!(
-                "Cannot multiply {} and {}",
-                left.type_name(),
-                right.type_name()
-            ))),
-        }
-    }
-
-    /// Divide two values
-    fn div_values(&self, left: &Value, right: &Value) -> Result<Value, InterpreterError> {
-        match (left, right) {
-            (Value::Integer(a), Value::Integer(b)) => {
-                if *b == 0 {
-                    return Err(InterpreterError::DivisionByZero);
-                }
-                Ok(Value::from_i64(a / b))
-            }
-            (Value::Float(a), Value::Float(b)) => {
-                if *b == 0.0 {
-                    return Err(InterpreterError::DivisionByZero);
-                }
-                Ok(Value::from_f64(a / b))
-            }
-            (Value::Integer(a), Value::Float(b)) => {
-                if *b == 0.0 {
-                    return Err(InterpreterError::DivisionByZero);
-                }
-                #[allow(clippy::cast_precision_loss)]
-                Ok(Value::from_f64(*a as f64 / b))
-            }
-            (Value::Float(a), Value::Integer(b)) => {
-                #[allow(clippy::cast_precision_loss)]
-                let divisor = *b as f64;
-                if divisor == 0.0 {
-                    return Err(InterpreterError::DivisionByZero);
-                }
-                Ok(Value::from_f64(a / divisor))
-            }
-            _ => Err(InterpreterError::TypeError(format!(
-                "Cannot divide {} by {}",
-                left.type_name(),
-                right.type_name()
-            ))),
-        }
-    }
-
-    /// Modulo operation between two values
-    fn modulo_values(&self, left: &Value, right: &Value) -> Result<Value, InterpreterError> {
-        match (left, right) {
-            (Value::Integer(a), Value::Integer(b)) => {
-                if *b == 0 {
-                    return Err(InterpreterError::DivisionByZero);
-                }
-                Ok(Value::from_i64(a % b))
-            }
-            (Value::Float(a), Value::Float(b)) => {
-                if *b == 0.0 {
-                    return Err(InterpreterError::DivisionByZero);
-                }
-                Ok(Value::from_f64(a % b))
-            }
-            (Value::Integer(a), Value::Float(b)) => {
-                if *b == 0.0 {
-                    return Err(InterpreterError::DivisionByZero);
-                }
-                #[allow(clippy::cast_precision_loss)]
-                Ok(Value::from_f64((*a as f64) % b))
-            }
-            (Value::Float(a), Value::Integer(b)) => {
-                #[allow(clippy::cast_precision_loss)]
-                let divisor = *b as f64;
-                if divisor == 0.0 {
-                    return Err(InterpreterError::DivisionByZero);
-                }
-                Ok(Value::from_f64(a % divisor))
-            }
-            _ => Err(InterpreterError::TypeError(format!(
-                "Cannot compute modulo of {} and {}",
-                left.type_name(),
-                right.type_name()
-            ))),
-        }
-    }
-
-    /// Power operation between two values
-    fn power_values(&self, left: &Value, right: &Value) -> Result<Value, InterpreterError> {
-        match (left, right) {
-            (Value::Integer(a), Value::Integer(b)) => {
-                if *b < 0 {
-                    // For negative exponents, convert to float
-                    #[allow(clippy::cast_precision_loss)]
-                    let result = (*a as f64).powf(*b as f64);
-                    Ok(Value::from_f64(result))
-                } else {
-                    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
-                    if let Some(result) = a.checked_pow(*b as u32) { Ok(Value::from_i64(result)) } else {
-                        // Overflow - convert to float
-                        #[allow(clippy::cast_precision_loss)]
-                        let result = (*a as f64).powf(*b as f64);
-                        Ok(Value::from_f64(result))
-                    }
-                }
-            }
-            (Value::Float(a), Value::Float(b)) => {
-                Ok(Value::from_f64(a.powf(*b)))
-            }
-            (Value::Integer(a), Value::Float(b)) => {
-                #[allow(clippy::cast_precision_loss)]
-                Ok(Value::from_f64((*a as f64).powf(*b)))
-            }
-            (Value::Float(a), Value::Integer(b)) => {
-                #[allow(clippy::cast_precision_loss)]
-                Ok(Value::from_f64(a.powf(*b as f64)))
-            }
-            _ => Err(InterpreterError::TypeError(format!(
-                "Cannot raise {} to the power of {}",
-                left.type_name(),
-                right.type_name()
-            ))),
-        }
-    }
-
-    /// Check equality of two values
-    fn equal_values(&self, left: &Value, right: &Value) -> bool {
-        left == right // PartialEq is derived for Value
-    }
-
-    /// Check if left < right
-    fn less_than_values(&self, left: &Value, right: &Value) -> Result<bool, InterpreterError> {
-        match (left, right) {
-            (Value::Integer(a), Value::Integer(b)) => Ok(a < b),
-            (Value::Float(a), Value::Float(b)) => Ok(a < b),
-            (Value::Integer(a), Value::Float(b)) =>
-            {
-                #[allow(clippy::cast_precision_loss)]
-                Ok((*a as f64) < *b)
-            }
-            (Value::Float(a), Value::Integer(b)) =>
-            {
-                #[allow(clippy::cast_precision_loss)]
-                Ok(*a < (*b as f64))
-            }
-            _ => Err(InterpreterError::TypeError(format!(
-                "Cannot compare {} and {}",
-                left.type_name(),
-                right.type_name()
-            ))),
-        }
-    }
-
-    /// Check if left > right
-    fn greater_than_values(&self, left: &Value, right: &Value) -> Result<bool, InterpreterError> {
-        match (left, right) {
-            (Value::Integer(a), Value::Integer(b)) => Ok(a > b),
-            (Value::Float(a), Value::Float(b)) => Ok(a > b),
-            (Value::Integer(a), Value::Float(b)) =>
-            {
-                #[allow(clippy::cast_precision_loss)]
-                Ok((*a as f64) > *b)
-            }
-            (Value::Float(a), Value::Integer(b)) =>
-            {
-                #[allow(clippy::cast_precision_loss)]
-                Ok(*a > (*b as f64))
-            }
-            _ => Err(InterpreterError::TypeError(format!(
-                "Cannot compare {} and {}",
-                left.type_name(),
-                right.type_name()
-            ))),
-        }
-    }
-
-    /// Print value for debugging
-    pub fn print_value(&self, value: &Value) -> std::string::String {
-        match value {
-            Value::Integer(i) => i.to_string(),
-            Value::Float(f) => f.to_string(),
-            Value::Bool(b) => b.to_string(),
-            Value::Nil => "nil".to_string(),
-            Value::String(s) => s.as_ref().clone(),
-            Value::Array(arr) => {
-                let elements: Vec<String> = arr.iter().map(|v| self.print_value(v)).collect();
-                format!("[{}]", elements.join(", "))
-            }
-            Value::Tuple(elements) => {
-                let element_strs: Vec<String> = elements.iter().map(|v| self.print_value(v)).collect();
-                format!("({})", element_strs.join(", "))
-            }
-            Value::Closure { params, .. } => {
-                format!("function/{}", params.len())
-            }
-            Value::DataFrame { columns } => {
-                format!("DataFrame({} columns, {} rows)",
-                    columns.len(),
-                    columns.first().map_or(0, |c| c.values.len())
-                )
-            }
-            Value::Object(map) => {
-                let entries: Vec<String> = map.iter()
-                    .map(|(k, v)| format!("{}: {}", k, self.print_value(v)))
-                    .collect();
-                format!("{{{}}}", entries.join(", "))
-            }
-            Value::Range { start, end, inclusive } => {
-                if *inclusive {
-                    format!("{}..={}", self.print_value(start), self.print_value(end))
-                } else {
-                    format!("{}..{}", self.print_value(start), self.print_value(end))
-                }
-            }
-            Value::EnumVariant { variant_name, data } => {
-                match data {
-                    Some(values) => {
-                        let value_strs: Vec<String> = values.iter().map(|v| self.print_value(v)).collect();
-                        format!("{}({})", variant_name, value_strs.join(", "))
-                    }
-                    None => variant_name.clone(),
-                }
-            }
-        }
-    }
-
-    /// Set a variable in the current environment
     fn set_variable(&mut self, name: String, value: Value) {
         self.env_set(name, value);
     }
-    
+
     /// Apply a binary operation to two values
-    fn apply_binary_op(&self, left: &Value, op: AstBinaryOp, right: &Value) -> Result<Value, InterpreterError> {
+    fn apply_binary_op(
+        &self,
+        left: &Value,
+        op: AstBinaryOp,
+        right: &Value,
+    ) -> Result<Value, InterpreterError> {
         // Delegate to existing binary operation evaluation
         self.eval_binary_op(op, left, right)
     }
-    
+
     /// Check if a pattern matches a value
     /// # Errors
     /// Returns error if pattern matching fails
     /// Try to match a pattern against a value, returning bindings if successful
-    fn try_pattern_match(&self, pattern: &Pattern, value: &Value) -> Result<Option<Vec<(String, Value)>>, InterpreterError> {
-        match pattern {
-            Pattern::Wildcard => Ok(Some(vec![])),
-            Pattern::Literal(lit) => {
-                if self.match_literal_pattern(lit, value)? {
-                    Ok(Some(vec![]))
-                } else {
-                    Ok(None)
-                }
-            }
-            Pattern::Identifier(name) => {
-                // Always matches and binds the value to the identifier
-                Ok(Some(vec![(name.clone(), value.clone())]))
-            }
-            Pattern::Tuple(patterns) => self.try_match_tuple_pattern(patterns, value),
-            Pattern::List(patterns) => self.try_match_list_pattern(patterns, value),
-            Pattern::Or(patterns) => self.try_match_or_pattern(patterns, value),
-            Pattern::Range { start, end, inclusive } => {
-                if self.match_range_pattern(start, end, *inclusive, value)? {
-                    Ok(Some(vec![]))
-                } else {
-                    Ok(None)
-                }
-            }
-            Pattern::AtBinding { pattern, name } => {
-                if let Some(mut bindings) = self.try_pattern_match(pattern, value)? {
-                    bindings.push((name.clone(), value.clone()));
-                    Ok(Some(bindings))
-                } else {
-                    Ok(None)
-                }
-            }
-            _ => Ok(None), // Other patterns not yet implemented
-        }
+    fn try_pattern_match(
+        &self,
+        pattern: &Pattern,
+        value: &Value,
+    ) -> Result<Option<Vec<(String, Value)>>, InterpreterError> {
+        crate::runtime::eval_pattern_match::try_pattern_match(pattern, value, &|lit| {
+            self.eval_literal(lit)
+        })
     }
 
     /// Legacy method for backwards compatibility
     fn pattern_matches(&self, pattern: &Pattern, value: &Value) -> Result<bool, InterpreterError> {
-        Ok(self.try_pattern_match(pattern, value)?.is_some())
+        crate::runtime::eval_pattern_match::pattern_matches(pattern, value, &|lit| {
+            self.eval_literal(lit)
+        })
     }
-    
+
     /// Scope management for pattern bindings
     fn push_scope(&mut self) {
         let new_env = HashMap::new();
@@ -3935,122 +1438,38 @@ impl Interpreter {
 
     /// New pattern matching methods that return bindings
 
-    fn try_match_tuple_pattern(&self, patterns: &[Pattern], value: &Value) -> Result<Option<Vec<(String, Value)>>, InterpreterError> {
-        if let Value::Tuple(tuple_values) = value {
-            if patterns.len() != tuple_values.len() {
-                return Ok(None);
-            }
-
-            let mut all_bindings = Vec::new();
-            for (pattern, val) in patterns.iter().zip(tuple_values.iter()) {
-                if let Some(bindings) = self.try_pattern_match(pattern, val)? {
-                    all_bindings.extend(bindings);
-                } else {
-                    return Ok(None);
-                }
-            }
-            Ok(Some(all_bindings))
-        } else {
-            Ok(None)
-        }
-    }
-
-    fn try_match_list_pattern(&self, patterns: &[Pattern], value: &Value) -> Result<Option<Vec<(String, Value)>>, InterpreterError> {
-        if let Value::Array(array_values) = value {
-            if patterns.len() != array_values.len() {
-                return Ok(None);
-            }
-
-            let mut all_bindings = Vec::new();
-            for (pattern, val) in patterns.iter().zip(array_values.iter()) {
-                if let Some(bindings) = self.try_pattern_match(pattern, val)? {
-                    all_bindings.extend(bindings);
-                } else {
-                    return Ok(None);
-                }
-            }
-            Ok(Some(all_bindings))
-        } else {
-            Ok(None)
-        }
-    }
-
-    fn try_match_or_pattern(&self, patterns: &[Pattern], value: &Value) -> Result<Option<Vec<(String, Value)>>, InterpreterError> {
-        for pattern in patterns {
-            if let Some(bindings) = self.try_pattern_match(pattern, value)? {
-                return Ok(Some(bindings));
-            }
-        }
-        Ok(None)
-    }
-
     // Helper methods for pattern matching (complexity <10 each)
 
-    fn match_literal_pattern(&self, lit: &Literal, value: &Value) -> Result<bool, InterpreterError> {
-        let lit_value = self.eval_literal(lit);
-        Ok(lit_value == *value)
+    fn match_tuple_pattern(
+        &self,
+        patterns: &[Pattern],
+        value: &Value,
+    ) -> Result<bool, InterpreterError> {
+        crate::runtime::eval_pattern_match::match_tuple_pattern(patterns, value, |lit| {
+            self.eval_literal(lit)
+        })
     }
-    
-    fn match_tuple_pattern(&self, patterns: &[Pattern], value: &Value) -> Result<bool, InterpreterError> {
-        if let Value::Tuple(elements) = value {
-            self.match_sequence_patterns(patterns, elements)
-        } else {
-            Ok(false)
-        }
+
+    fn match_list_pattern(
+        &self,
+        patterns: &[Pattern],
+        value: &Value,
+    ) -> Result<bool, InterpreterError> {
+        crate::runtime::eval_pattern_match::match_list_pattern(patterns, value, |lit| {
+            self.eval_literal(lit)
+        })
     }
-    
-    fn match_list_pattern(&self, patterns: &[Pattern], value: &Value) -> Result<bool, InterpreterError> {
-        if let Value::Array(elements) = value {
-            self.match_sequence_patterns(patterns, elements)
-        } else {
-            Ok(false)
-        }
+
+    fn match_or_pattern(
+        &self,
+        patterns: &[Pattern],
+        value: &Value,
+    ) -> Result<bool, InterpreterError> {
+        crate::runtime::eval_pattern_match::match_or_pattern(patterns, value, |lit| {
+            self.eval_literal(lit)
+        })
     }
-    
-    fn match_sequence_patterns(&self, patterns: &[Pattern], elements: &[Value]) -> Result<bool, InterpreterError> {
-        if patterns.len() != elements.len() {
-            return Ok(false);
-        }
-        for (pat, val) in patterns.iter().zip(elements.iter()) {
-            if !self.pattern_matches(pat, val)? {
-                return Ok(false);
-            }
-        }
-        Ok(true)
-    }
-    
-    fn match_or_pattern(&self, patterns: &[Pattern], value: &Value) -> Result<bool, InterpreterError> {
-        for pat in patterns {
-            if self.pattern_matches(pat, value)? {
-                return Ok(true);
-            }
-        }
-        Ok(false)
-    }
-    
-    fn match_range_pattern(&self, start: &Pattern, end: &Pattern, inclusive: bool, value: &Value) -> Result<bool, InterpreterError> {
-        if let Value::Integer(i) = value {
-            let start_val = self.extract_integer_from_pattern(start)?;
-            let end_val = self.extract_integer_from_pattern(end)?;
-            
-            if inclusive {
-                Ok(*i >= start_val && *i <= end_val)
-            } else {
-                Ok(*i >= start_val && *i < end_val)
-            }
-        } else {
-            Ok(false)
-        }
-    }
-    
-    fn extract_integer_from_pattern(&self, pattern: &Pattern) -> Result<i64, InterpreterError> {
-        if let Pattern::Literal(Literal::Integer(val)) = pattern {
-            Ok(*val)
-        } else {
-            Err(InterpreterError::RuntimeError("Range pattern requires integer literals".to_string()))
-        }
-    }
-    
+
     /// Access field with inline caching optimization
     /// # Errors
     /// Returns error if field access fails
@@ -4104,9 +1523,7 @@ impl Interpreter {
                 .last()
                 .cloned()
                 .ok_or_else(|| InterpreterError::RuntimeError("Array is empty".to_string())),
-            (Value::Array(arr), "is_empty") => {
-                Ok(Value::from_bool(arr.is_empty()))
-            }
+            (Value::Array(arr), "is_empty") => Ok(Value::from_bool(arr.is_empty())),
 
             // Type information
             (obj, "type") => Ok(Value::String(Rc::new(obj.type_name().to_string()))),
@@ -4241,11 +1658,11 @@ impl Interpreter {
         self.gc.track_object(closure_value.clone());
         closure_value
     }
-    
+
     // ========================================================================
     // Public methods for SharedSession integration
     // ========================================================================
-    
+
     /// Get all bindings from the global environment (for `SharedSession` state persistence)
     pub fn get_global_bindings(&self) -> HashMap<String, Value> {
         if let Some(global_env) = self.env_stack.first() {
@@ -4254,14 +1671,14 @@ impl Interpreter {
             HashMap::new()
         }
     }
-    
+
     /// Set a binding in the global environment (for `SharedSession` state restoration)
     pub fn set_global_binding(&mut self, name: String, value: Value) {
         if let Some(global_env) = self.env_stack.first_mut() {
             global_env.insert(name, value);
         }
     }
-    
+
     /// Get all bindings from the current environment (for `SharedSession` extraction)
     pub fn get_current_bindings(&self) -> HashMap<String, Value> {
         if let Some(current_env) = self.env_stack.last() {
@@ -4270,97 +1687,74 @@ impl Interpreter {
             HashMap::new()
         }
     }
-    
-    /// Evaluate a for loop
-    fn eval_for_loop(&mut self, var: &str, pattern: Option<&Pattern>, iter: &Expr, body: &Expr) -> Result<Value, InterpreterError> {
-        let iter_value = self.eval_expr(iter)?;
-        
-        match iter_value {
-            Value::Array(arr) => {
-                let mut last_value = Value::nil();
-                for item in arr.iter() {
-                    // Handle pattern matching if present
-                    if let Some(_pat) = pattern {
-                        // Pattern matching for destructuring would go here
-                        // For now, just bind to var
-                        self.set_variable(var.to_string(), item.clone());
-                    } else {
-                        // Simple variable binding
-                        self.set_variable(var.to_string(), item.clone());
-                    }
 
-                    // Execute body
+    /// Evaluate a for loop
+    fn eval_for_loop(
+        &mut self,
+        var: &str,
+        _pattern: Option<&Pattern>,
+        iter: &Expr,
+        body: &Expr,
+    ) -> Result<Value, InterpreterError> {
+        let iter_value = self.eval_expr(iter)?;
+
+        // Delegate to eval_loops but we need to handle the borrowing issue
+        // For now, keep a simplified version here
+        let mut last_value = Value::nil();
+
+        match iter_value {
+            Value::Array(ref arr) => {
+                for item in arr.iter() {
+                    self.set_variable(var.to_string(), item.clone());
                     match self.eval_expr(body) {
                         Ok(value) => last_value = value,
-                        Err(InterpreterError::RuntimeError(msg)) if msg == "break" => break,
-                        Err(InterpreterError::RuntimeError(msg)) if msg == "continue" => {},
+                        Err(InterpreterError::Break(val)) => return Ok(val),
+                        Err(InterpreterError::Continue) => continue,
                         Err(e) => return Err(e),
                     }
                 }
-                Ok(last_value)
             }
-            Value::Range { start, end, inclusive } => {
-                let mut last_value = Value::nil();
-                // Extract integer values from range bounds
-                if let (Value::Integer(start_i), Value::Integer(end_i)) = (start.as_ref(), end.as_ref()) {
-                    let range_iter: Box<dyn Iterator<Item = i64>> = if inclusive {
-                        Box::new(*start_i..=*end_i)
+            Value::Range {
+                ref start,
+                ref end,
+                inclusive,
+            } => {
+                if let (Value::Integer(s), Value::Integer(e)) = (start.as_ref(), end.as_ref()) {
+                    let range: Box<dyn Iterator<Item = i64>> = if inclusive {
+                        Box::new(*s..=*e)
                     } else {
-                        Box::new(*start_i..*end_i)
+                        Box::new(*s..*e)
                     };
-
-                    for i in range_iter {
-                        let item = Value::Integer(i);
-                        // Handle pattern matching if present
-                        if let Some(_pat) = pattern {
-                            // Pattern matching for destructuring would go here
-                            // For now, just bind to var
-                            self.set_variable(var.to_string(), item);
-                        } else {
-                            // Simple variable binding
-                            self.set_variable(var.to_string(), item);
-                        }
-
-                        // Execute body
+                    for i in range {
+                        self.set_variable(var.to_string(), Value::Integer(i));
                         match self.eval_expr(body) {
                             Ok(value) => last_value = value,
-                            Err(InterpreterError::RuntimeError(msg)) if msg == "break" => break,
-                            Err(InterpreterError::RuntimeError(msg)) if msg == "continue" => {},
+                            Err(InterpreterError::Break(val)) => return Ok(val),
+                            Err(InterpreterError::Continue) => continue,
                             Err(e) => return Err(e),
                         }
                     }
-                    Ok(last_value)
-                } else {
-                    Err(InterpreterError::TypeError(
-                        "Range bounds must be integers for iteration".to_string()
-                    ))
                 }
             }
-            _ => Err(InterpreterError::TypeError(
-                "For loop requires an iterable (array or range)".to_string()
-            )),
-        }
-    }
-    
-    /// Evaluate a while loop
-    fn eval_while_loop(&mut self, condition: &Expr, body: &Expr) -> Result<Value, InterpreterError> {
-        let mut last_value = Value::nil();
-        loop {
-            let cond_value = self.eval_expr(condition)?;
-            if !cond_value.is_truthy() {
-                break;
-            }
-            
-            match self.eval_expr(body) {
-                Ok(val) => last_value = val,
-                Err(InterpreterError::RuntimeError(msg)) if msg == "break" => break,
-                Err(InterpreterError::RuntimeError(msg)) if msg == "continue" => {},
-                Err(e) => return Err(e),
+            _ => {
+                return Err(InterpreterError::TypeError(
+                    "For loop requires an iterable".to_string(),
+                ))
             }
         }
+
         Ok(last_value)
     }
-    
+
+    /// Evaluate a while loop
+    fn eval_while_loop(
+        &mut self,
+        condition: &Expr,
+        body: &Expr,
+    ) -> Result<Value, InterpreterError> {
+        crate::runtime::eval_loops::eval_while_loop(condition, body, |expr| self.eval_expr(expr))
+    }
+
     /// Evaluate a match expression
     fn eval_match(&mut self, expr: &Expr, arms: &[MatchArm]) -> Result<Value, InterpreterError> {
         let value = self.eval_expr(expr)?;
@@ -4384,7 +1778,7 @@ impl Interpreter {
                         _ => {
                             self.pop_scope();
                             return Err(InterpreterError::RuntimeError(
-                                "Guard condition must evaluate to a boolean".to_string()
+                                "Guard condition must evaluate to a boolean".to_string(),
                             ));
                         }
                     }
@@ -4404,12 +1798,17 @@ impl Interpreter {
         }
 
         Err(InterpreterError::RuntimeError(
-            "No match arm matched the value".to_string()
+            "No match arm matched the value".to_string(),
         ))
     }
 
     /// Evaluate a let pattern expression (array/tuple destructuring)
-    fn eval_let_pattern(&mut self, pattern: &Pattern, value: &Expr, body: &Expr) -> Result<Value, InterpreterError> {
+    fn eval_let_pattern(
+        &mut self,
+        pattern: &Pattern,
+        value: &Expr,
+        body: &Expr,
+    ) -> Result<Value, InterpreterError> {
         // Evaluate the right-hand side value
         let rhs_value = self.eval_expr(value)?;
 
@@ -4424,11 +1823,11 @@ impl Interpreter {
             // This makes `let [a, b] = [1, 2]` return [1, 2] instead of nil
             match &body.kind {
                 ExprKind::Literal(Literal::Unit) => Ok(rhs_value),
-                _ => self.eval_expr(body)
+                _ => self.eval_expr(body),
             }
         } else {
             Err(InterpreterError::RuntimeError(
-                "Pattern did not match the value".to_string()
+                "Pattern did not match the value".to_string(),
             ))
         }
     }
@@ -4436,7 +1835,7 @@ impl Interpreter {
     /// Evaluate an assignment
     fn eval_assign(&mut self, target: &Expr, value: &Expr) -> Result<Value, InterpreterError> {
         let val = self.eval_expr(value)?;
-        
+
         // Handle different assignment targets
         match &target.kind {
             ExprKind::Identifier(name) => {
@@ -4444,300 +1843,93 @@ impl Interpreter {
                 Ok(val)
             }
             _ => Err(InterpreterError::RuntimeError(
-                "Invalid assignment target".to_string()
+                "Invalid assignment target".to_string(),
             )),
         }
     }
-    
+
     /// Evaluate a compound assignment
-    fn eval_compound_assign(&mut self, target: &Expr, op: AstBinaryOp, value: &Expr) -> Result<Value, InterpreterError> {
+    fn eval_compound_assign(
+        &mut self,
+        target: &Expr,
+        op: AstBinaryOp,
+        value: &Expr,
+    ) -> Result<Value, InterpreterError> {
         // Get current value
         let current = match &target.kind {
             ExprKind::Identifier(name) => self.lookup_variable(name)?,
-            _ => return Err(InterpreterError::RuntimeError(
-                "Invalid compound assignment target".to_string()
-            )),
+            _ => {
+                return Err(InterpreterError::RuntimeError(
+                    "Invalid compound assignment target".to_string(),
+                ))
+            }
         };
-        
+
         // Compute new value
         let rhs = self.eval_expr(value)?;
         let new_val = self.apply_binary_op(&current, op, &rhs)?;
-        
+
         // Assign back
         if let ExprKind::Identifier(name) = &target.kind {
             self.set_variable(name.clone(), new_val.clone());
         }
-        
+
         Ok(new_val)
     }
-    
+
     /// Evaluate string methods
-    #[allow(clippy::rc_buffer)]
-    fn eval_string_method(&mut self, s: &Rc<String>, method: &str, args: &[Value]) -> Result<Value, InterpreterError> {
-        match method {
-            "len" | "length" if args.is_empty() => Ok(Value::Integer(s.len() as i64)),
-            "to_upper" if args.is_empty() => Ok(Value::from_string(s.to_uppercase())),
-            "to_lower" if args.is_empty() => Ok(Value::from_string(s.to_lowercase())),
-            "trim" if args.is_empty() => Ok(Value::from_string(s.trim().to_string())),
-            "to_string" if args.is_empty() => Ok(Value::from_string(s.to_string())),
-            "contains" if args.len() == 1 => {
-                if let Value::String(needle) = &args[0] {
-                    Ok(Value::Bool(s.contains(needle.as_str())))
-                } else {
-                    Err(InterpreterError::RuntimeError("contains expects string argument".to_string()))
-                }
-            }
-            "starts_with" if args.len() == 1 => {
-                if let Value::String(prefix) = &args[0] {
-                    Ok(Value::Bool(s.starts_with(prefix.as_str())))
-                } else {
-                    Err(InterpreterError::RuntimeError("starts_with expects string argument".to_string()))
-                }
-            }
-            "ends_with" if args.len() == 1 => {
-                if let Value::String(suffix) = &args[0] {
-                    Ok(Value::Bool(s.ends_with(suffix.as_str())))
-                } else {
-                    Err(InterpreterError::RuntimeError("ends_with expects string argument".to_string()))
-                }
-            }
-            "replace" if args.len() == 2 => {
-                if let (Value::String(from), Value::String(to)) = (&args[0], &args[1]) {
-                    Ok(Value::from_string(s.replace(from.as_str(), to.as_str())))
-                } else {
-                    Err(InterpreterError::RuntimeError("replace expects two string arguments".to_string()))
-                }
-            }
-            "split" if args.len() == 1 => {
-                if let Value::String(separator) = &args[0] {
-                    let parts: Vec<Value> = s.split(separator.as_str())
-                        .map(|part| Value::from_string(part.to_string()))
-                        .collect();
-                    Ok(Value::Array(Rc::new(parts)))
-                } else {
-                    Err(InterpreterError::RuntimeError("split expects string argument".to_string()))
-                }
-            }
-            "trim_start" if args.is_empty() => Ok(Value::from_string(s.trim_start().to_string())),
-            "trim_end" if args.is_empty() => Ok(Value::from_string(s.trim_end().to_string())),
-            "is_empty" if args.is_empty() => Ok(Value::Bool(s.is_empty())),
-            "chars" if args.is_empty() => {
-                let chars: Vec<Value> = s.chars()
-                    .map(|c| Value::from_string(c.to_string()))
-                    .collect();
-                Ok(Value::Array(Rc::new(chars)))
-            }
-            "lines" if args.is_empty() => {
-                let lines: Vec<Value> = s.lines()
-                    .map(|line| Value::from_string(line.to_string()))
-                    .collect();
-                Ok(Value::Array(Rc::new(lines)))
-            }
-            "repeat" if args.len() == 1 => {
-                if let Value::Integer(n) = &args[0] {
-                    if *n >= 0 {
-                        Ok(Value::from_string(s.repeat(*n as usize)))
-                    } else {
-                        Err(InterpreterError::RuntimeError("repeat count must be non-negative".to_string()))
-                    }
-                } else {
-                    Err(InterpreterError::RuntimeError("repeat expects integer argument".to_string()))
-                }
-            }
-            "char_at" if args.len() == 1 => {
-                if let Value::Integer(index) = &args[0] {
-                    if *index >= 0 {
-                        let chars: Vec<char> = s.chars().collect();
-                        if let Some(ch) = chars.get(*index as usize) {
-                            Ok(Value::from_string(ch.to_string()))
-                        } else {
-                            Ok(Value::Nil)
-                        }
-                    } else {
-                        Err(InterpreterError::RuntimeError("char_at index must be non-negative".to_string()))
-                    }
-                } else {
-                    Err(InterpreterError::RuntimeError("char_at expects integer argument".to_string()))
-                }
-            }
-            "substring" if args.len() == 2 => {
-                if let (Value::Integer(start), Value::Integer(end)) = (&args[0], &args[1]) {
-                    if *start >= 0 && *end >= *start {
-                        let chars: Vec<char> = s.chars().collect();
-                        let start_idx = (*start as usize).min(chars.len());
-                        let end_idx = (*end as usize).min(chars.len());
-                        let substring: String = chars[start_idx..end_idx].iter().collect();
-                        Ok(Value::from_string(substring))
-                    } else {
-                        Err(InterpreterError::RuntimeError("substring indices must be non-negative and start <= end".to_string()))
-                    }
-                } else {
-                    Err(InterpreterError::RuntimeError("substring expects two integer arguments".to_string()))
-                }
-            }
-            _ => Err(InterpreterError::RuntimeError(format!("Unknown string method: {}", method))),
-        }
+    fn eval_string_method(
+        &mut self,
+        s: &Rc<String>,
+        method: &str,
+        args: &[Value],
+    ) -> Result<Value, InterpreterError> {
+        super::eval_string_methods::eval_string_method(s, method, args)
     }
 
     /// Evaluate array methods
     #[allow(clippy::rc_buffer)]
-    fn eval_array_method(&mut self, arr: &Rc<Vec<Value>>, method: &str, args: &[Value]) -> Result<Value, InterpreterError> {
-        match method {
-            "len" | "length" if args.is_empty() => Ok(Value::Integer(arr.len() as i64)),
-            "push" if args.len() == 1 => {
-                let mut new_arr = (**arr).clone();
-                new_arr.push(args[0].clone());
-                Ok(Value::Array(Rc::new(new_arr)))
-            }
-            "pop" if args.is_empty() => {
-                let mut new_arr = (**arr).clone();
-                new_arr.pop().unwrap_or(Value::nil());
-                Ok(Value::Array(Rc::new(new_arr)))
-            }
-            "get" if args.len() == 1 => {
-                if let Value::Integer(idx) = &args[0] {
-                    if *idx < 0 {
-                        return Ok(Value::Nil);
-                    }
-                    #[allow(clippy::cast_sign_loss)]
-                    let index = *idx as usize;
-                    if index < arr.len() {
-                        Ok(arr[index].clone())
-                    } else {
-                        Ok(Value::Nil)
-                    }
-                } else {
-                    Err(InterpreterError::RuntimeError("get expects integer index".to_string()))
-                }
-            }
-            "first" if args.is_empty() => Ok(arr.first().cloned().unwrap_or(Value::Nil)),
-            "last" if args.is_empty() => Ok(arr.last().cloned().unwrap_or(Value::Nil)),
-            "map" | "filter" | "reduce" | "any" | "all" | "find" => 
-                self.eval_array_higher_order_method(arr, method, args),
-            _ => Err(InterpreterError::RuntimeError(format!("Unknown array method: {}", method))),
-        }
-    }
-    
-    /// Evaluate higher-order array methods
-    #[allow(clippy::rc_buffer)]
-    fn eval_array_higher_order_method(&mut self, arr: &Rc<Vec<Value>>, method: &str, args: &[Value]) -> Result<Value, InterpreterError> {
-        match method {
-            "map" => self.eval_array_map_method(arr, args),
-            "filter" => self.eval_array_filter_method(arr, args),
-            "reduce" => self.eval_array_reduce_method(arr, args),
-            "any" => self.eval_array_any_method(arr, args),
-            "all" => self.eval_array_all_method(arr, args),
-            "find" => self.eval_array_find_method(arr, args),
-            _ => Err(InterpreterError::RuntimeError(format!("Unknown array method: {}", method))),
-        }
-    }
-    
-    // Helper methods for array higher-order functions (complexity <10 each)
-    
-    #[allow(clippy::rc_buffer)]
-    fn eval_array_map_method(&mut self, arr: &Rc<Vec<Value>>, args: &[Value]) -> Result<Value, InterpreterError> {
-        self.validate_single_closure_argument(args, "map")?;
-        let mut result = Vec::new();
-        for item in arr.iter() {
-            let func_result = self.eval_function_call_value(&args[0], std::slice::from_ref(item))?;
-            result.push(func_result);
-        }
-        Ok(Value::Array(Rc::new(result)))
-    }
-    
-    #[allow(clippy::rc_buffer)]
-    fn eval_array_filter_method(&mut self, arr: &Rc<Vec<Value>>, args: &[Value]) -> Result<Value, InterpreterError> {
-        self.validate_single_closure_argument(args, "filter")?;
-        let mut result = Vec::new();
-        for item in arr.iter() {
-            let func_result = self.eval_function_call_value(&args[0], std::slice::from_ref(item))?;
-            if func_result.is_truthy() {
-                result.push(item.clone());
-            }
-        }
-        Ok(Value::Array(Rc::new(result)))
-    }
-    
-    #[allow(clippy::rc_buffer)]
-    fn eval_array_reduce_method(&mut self, arr: &Rc<Vec<Value>>, args: &[Value]) -> Result<Value, InterpreterError> {
-        if args.len() != 2 {
-            return Err(InterpreterError::RuntimeError("reduce expects 2 arguments".to_string()));
-        }
-        if !matches!(&args[0], Value::Closure { .. }) {
-            return Err(InterpreterError::RuntimeError("reduce expects a function and initial value".to_string()));
-        }
-        
-        let mut accumulator = args[1].clone();
-        for item in arr.iter() {
-            accumulator = self.eval_function_call_value(&args[0], &[accumulator, item.clone()])?;
-        }
-        Ok(accumulator)
-    }
-    
-    #[allow(clippy::rc_buffer)]
-    fn eval_array_any_method(&mut self, arr: &Rc<Vec<Value>>, args: &[Value]) -> Result<Value, InterpreterError> {
-        self.validate_single_closure_argument(args, "any")?;
-        for item in arr.iter() {
-            let func_result = self.eval_function_call_value(&args[0], std::slice::from_ref(item))?;
-            if func_result.is_truthy() {
-                return Ok(Value::Bool(true));
-            }
-        }
-        Ok(Value::Bool(false))
-    }
-    
-    #[allow(clippy::rc_buffer)]
-    fn eval_array_all_method(&mut self, arr: &Rc<Vec<Value>>, args: &[Value]) -> Result<Value, InterpreterError> {
-        self.validate_single_closure_argument(args, "all")?;
-        for item in arr.iter() {
-            let func_result = self.eval_function_call_value(&args[0], std::slice::from_ref(item))?;
-            if !func_result.is_truthy() {
-                return Ok(Value::Bool(false));
-            }
-        }
-        Ok(Value::Bool(true))
-    }
-    
-    #[allow(clippy::rc_buffer)]
-    fn eval_array_find_method(&mut self, arr: &Rc<Vec<Value>>, args: &[Value]) -> Result<Value, InterpreterError> {
-        self.validate_single_closure_argument(args, "find")?;
-        for item in arr.iter() {
-            let func_result = self.eval_function_call_value(&args[0], std::slice::from_ref(item))?;
-            if func_result.is_truthy() {
-                return Ok(item.clone());
-            }
-        }
-        Ok(Value::Nil)
-    }
-    
-    fn validate_single_closure_argument(&self, args: &[Value], method_name: &str) -> Result<(), InterpreterError> {
-        if args.len() != 1 {
-            return Err(InterpreterError::RuntimeError(format!("{} expects 1 argument", method_name)));
-        }
-        if !matches!(&args[0], Value::Closure { .. }) {
-            return Err(InterpreterError::RuntimeError(format!("{} expects a function argument", method_name)));
-        }
-        Ok(())
+    fn eval_array_method(
+        &mut self,
+        arr: &Rc<Vec<Value>>,
+        method: &str,
+        args: &[Value],
+    ) -> Result<Value, InterpreterError> {
+        // Delegate to extracted array module with function call capability
+        crate::runtime::eval_array::eval_array_method(arr, method, args, |func, args| {
+            self.eval_function_call_value(func, args)
+        })
     }
 
     /// Evaluate a method call
-    fn eval_method_call(&mut self, receiver: &Expr, method: &str, args: &[Expr]) -> Result<Value, InterpreterError> {
+    fn eval_method_call(
+        &mut self,
+        receiver: &Expr,
+        method: &str,
+        args: &[Expr],
+    ) -> Result<Value, InterpreterError> {
         let receiver_value = self.eval_expr(receiver)?;
-        
+
         // Special handling for DataFrame filter method - don't pre-evaluate the condition
         if matches!(receiver_value, Value::DataFrame { .. }) && method == "filter" {
             return self.eval_dataframe_filter_method(&receiver_value, args);
         }
-        
+
         let arg_values: Result<Vec<_>, _> = args.iter().map(|arg| self.eval_expr(arg)).collect();
         let arg_values = arg_values?;
-        
+
         self.dispatch_method_call(&receiver_value, method, &arg_values, args.is_empty())
     }
-    
+
     // Helper methods for method dispatch (complexity <10 each)
-    
-    fn dispatch_method_call(&mut self, receiver: &Value, method: &str, arg_values: &[Value], args_empty: bool) -> Result<Value, InterpreterError> {
+
+    fn dispatch_method_call(
+        &mut self,
+        receiver: &Value,
+        method: &str,
+        arg_values: &[Value],
+        args_empty: bool,
+    ) -> Result<Value, InterpreterError> {
         match receiver {
             Value::String(s) => self.eval_string_method(s, method, arg_values),
             Value::Array(arr) => self.eval_array_method(arr, method, arg_values),
@@ -4747,355 +1939,76 @@ impl Interpreter {
             _ => self.eval_generic_method(receiver, method, args_empty),
         }
     }
-    
-    fn eval_float_method(&self, f: f64, method: &str, args_empty: bool) -> Result<Value, InterpreterError> {
-        if !args_empty {
-            return Err(InterpreterError::RuntimeError(format!("Float method '{}' takes no arguments", method)));
-        }
-        
-        match method {
-            "sqrt" => Ok(Value::Float(f.sqrt())),
-            "abs" => Ok(Value::Float(f.abs())),
-            "round" => Ok(Value::Float(f.round())),
-            "floor" => Ok(Value::Float(f.floor())),
-            "ceil" => Ok(Value::Float(f.ceil())),
-            "to_string" => Ok(Value::from_string(f.to_string())),
-            _ => Err(InterpreterError::RuntimeError(format!("Unknown float method: {}", method))),
-        }
+
+    fn eval_float_method(
+        &self,
+        f: f64,
+        method: &str,
+        args_empty: bool,
+    ) -> Result<Value, InterpreterError> {
+        eval_method::eval_float_method(f, method, args_empty)
     }
-    
-    fn eval_integer_method(&self, n: i64, method: &str, args_empty: bool) -> Result<Value, InterpreterError> {
-        if !args_empty {
-            return Err(InterpreterError::RuntimeError(format!("Integer method '{}' takes no arguments", method)));
-        }
-        
-        match method {
-            "abs" => Ok(Value::Integer(n.abs())),
-            "to_string" => Ok(Value::from_string(n.to_string())),
-            _ => Err(InterpreterError::RuntimeError(format!("Unknown integer method: {}", method))),
-        }
+
+    fn eval_integer_method(
+        &self,
+        n: i64,
+        method: &str,
+        args_empty: bool,
+    ) -> Result<Value, InterpreterError> {
+        eval_method::eval_integer_method(n, method, args_empty)
     }
-    
-    fn eval_generic_method(&self, receiver: &Value, method: &str, args_empty: bool) -> Result<Value, InterpreterError> {
-        if method == "to_string" && args_empty {
-            Ok(Value::from_string(receiver.to_string()))
-        } else {
-            Err(InterpreterError::RuntimeError(format!(
-                "Method '{}' not found for type {}",
-                method,
-                receiver.type_name()
-            )))
-        }
+
+    fn eval_generic_method(
+        &self,
+        receiver: &Value,
+        method: &str,
+        args_empty: bool,
+    ) -> Result<Value, InterpreterError> {
+        eval_method::eval_generic_method(receiver, method, args_empty)
     }
-    
-    fn eval_dataframe_method(&self, columns: &[DataFrameColumn], method: &str, arg_values: &[Value]) -> Result<Value, InterpreterError> {
-        match method {
-            "select" => {
-                // Select specific columns by name
-                if arg_values.len() != 1 {
-                    return Err(InterpreterError::RuntimeError("DataFrame.select() requires exactly 1 argument (column_name)".to_string()));
-                }
-                
-                if let Value::String(column_name) = &arg_values[0] {
-                    // Find the column
-                    for col in columns {
-                        if col.name == **column_name {
-                            // Return a DataFrame with just this column
-                            return Ok(Value::DataFrame {
-                                columns: vec![col.clone()],
-                            });
-                        }
-                    }
-                    Err(InterpreterError::RuntimeError(format!("Column '{}' not found in DataFrame", column_name)))
-                } else {
-                    Err(InterpreterError::RuntimeError("DataFrame.select() expects column name as string".to_string()))
-                }
-            }
-            "sum" => {
-                // Sum all numeric values in all columns
-                if !arg_values.is_empty() {
-                    return Err(InterpreterError::RuntimeError("DataFrame.sum() takes no arguments".to_string()));
-                }
-                
-                let mut total = 0.0;
-                for col in columns {
-                    for value in &col.values {
-                        match value {
-                            Value::Integer(i) => total += *i as f64,
-                            Value::Float(f) => total += f,
-                            _ => {} // Skip non-numeric values
-                        }
-                    }
-                }
-                
-                // Return as integer if it's a whole number, otherwise float
-                if total.fract() == 0.0 {
-                    Ok(Value::Integer(total as i64))
-                } else {
-                    Ok(Value::Float(total))
-                }
-            }
-            "slice" => {
-                // Slice DataFrame rows
-                if arg_values.len() != 2 {
-                    return Err(InterpreterError::RuntimeError("DataFrame.slice() requires exactly 2 arguments (start, length)".to_string()));
-                }
-                
-                let start = match &arg_values[0] {
-                    Value::Integer(s) => *s as usize,
-                    _ => return Err(InterpreterError::RuntimeError("DataFrame.slice() expects start as integer".to_string())),
-                };
-                
-                let length = match &arg_values[1] {
-                    Value::Integer(l) => *l as usize,
-                    _ => return Err(InterpreterError::RuntimeError("DataFrame.slice() expects length as integer".to_string())),
-                };
-                
-                // Create new columns with sliced values (zero-copy by cloning references)
-                let mut sliced_columns = Vec::new();
-                for col in columns {
-                    let end_idx = (start + length).min(col.values.len());
-                    let sliced_values = if start < col.values.len() {
-                        col.values[start..end_idx].to_vec()
-                    } else {
-                        Vec::new()
-                    };
-                    
-                    sliced_columns.push(DataFrameColumn {
-                        name: col.name.clone(),
-                        values: sliced_values,
-                    });
-                }
-                
-                Ok(Value::DataFrame {
-                    columns: sliced_columns,
-                })
-            }
-            "join" => {
-                // Join two DataFrames
-                if arg_values.len() != 2 {
-                    return Err(InterpreterError::RuntimeError("DataFrame.join() requires exactly 2 arguments (other_df, on)".to_string()));
-                }
-                
-                let other_df = &arg_values[0];
-                let join_column = match &arg_values[1] {
-                    Value::String(col_name) => col_name.as_str(),
-                    _ => return Err(InterpreterError::RuntimeError("DataFrame.join() expects 'on' as string column name".to_string())),
-                };
-                
-                if let Value::DataFrame { columns: other_columns } = other_df {
-                    // Find the join column in both DataFrames
-                    let left_join_col = columns.iter().find(|col| col.name == join_column);
-                    let right_join_col = other_columns.iter().find(|col| col.name == join_column);
-                    
-                    if left_join_col.is_none() {
-                        return Err(InterpreterError::RuntimeError(format!("Join column '{}' not found in left DataFrame", join_column)));
-                    }
-                    if right_join_col.is_none() {
-                        return Err(InterpreterError::RuntimeError(format!("Join column '{}' not found in right DataFrame", join_column)));
-                    }
-                    
-                    let left_join_col = left_join_col
-                        .expect("left_join_col existence verified by is_none() check above");
-                    let right_join_col = right_join_col
-                        .expect("right_join_col existence verified by is_none() check above");
-                    
-                    // For simplicity, implement inner join
-                    let mut joined_columns = Vec::new();
-                    
-                    // Add all columns from left DataFrame
-                    for col in columns {
-                        joined_columns.push(DataFrameColumn {
-                            name: col.name.clone(),
-                            values: Vec::new(),
-                        });
-                    }
-                    
-                    // Add columns from right DataFrame (excluding the join column to avoid duplication)
-                    for col in other_columns {
-                        if col.name != join_column {
-                            joined_columns.push(DataFrameColumn {
-                                name: format!("{}_right", col.name), // Rename to avoid conflicts
-                                values: Vec::new(),
-                            });
-                        }
-                    }
-                    
-                    // Perform inner join
-                    for (left_idx, left_join_val) in left_join_col.values.iter().enumerate() {
-                        for (right_idx, right_join_val) in right_join_col.values.iter().enumerate() {
-                            if self.values_equal(left_join_val, right_join_val) {
-                                // Match found - add row to result
-                                
-                                // Add values from left DataFrame
-                                for (col_idx, col) in columns.iter().enumerate() {
-                                    if let Some(val) = col.values.get(left_idx) {
-                                        joined_columns[col_idx].values.push(val.clone());
-                                    }
-                                }
-                                
-                                // Add values from right DataFrame (excluding join column)
-                                let mut right_col_idx = columns.len();
-                                for col in other_columns {
-                                    if col.name != join_column {
-                                        if let Some(val) = col.values.get(right_idx) {
-                                            joined_columns[right_col_idx].values.push(val.clone());
-                                        }
-                                        right_col_idx += 1;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    
-                    Ok(Value::DataFrame {
-                        columns: joined_columns,
-                    })
-                } else {
-                    Err(InterpreterError::RuntimeError("DataFrame.join() expects first argument to be a DataFrame".to_string()))
-                }
-            }
-            "groupby" => {
-                // Group by a column (simplified implementation - returns grouped DataFrame for now)
-                if arg_values.len() != 1 {
-                    return Err(InterpreterError::RuntimeError("DataFrame.groupby() requires exactly 1 argument (column_name)".to_string()));
-                }
-                
-                let group_column = match &arg_values[0] {
-                    Value::String(col_name) => col_name.as_str(),
-                    _ => return Err(InterpreterError::RuntimeError("DataFrame.groupby() expects column name as string".to_string())),
-                };
-                
-                // Find the group column
-                let group_col = columns.iter().find(|col| col.name == group_column);
-                if group_col.is_none() {
-                    return Err(InterpreterError::RuntimeError(format!("Group column '{}' not found in DataFrame", group_column)));
-                }
-                let group_col = group_col
-                    .expect("group_col existence verified by is_none() check above");
-                
-                // For simplicity, implement groupby as immediate aggregation (sum)
-                // In a full implementation, this would return a GroupBy object
-                use std::collections::HashMap;
-                let mut groups: HashMap<String, Vec<usize>> = HashMap::new();
-                
-                // Group rows by the group column values
-                for (row_idx, value) in group_col.values.iter().enumerate() {
-                    let key = match value {
-                        Value::String(s) => s.to_string(),
-                        Value::Integer(i) => i.to_string(),
-                        Value::Float(f) => f.to_string(),
-                        Value::Bool(b) => b.to_string(),
-                        _ => "null".to_string(),
-                    };
-                    groups.entry(key).or_default().push(row_idx);
-                }
-                
-                // Create result columns: group column + aggregated numeric columns
-                let mut result_columns = Vec::new();
-                
-                // Group column (unique values)
-                let mut group_values = Vec::new();
-                for key in groups.keys() {
-                    group_values.push(Value::from_string(key.clone()));
-                }
-                result_columns.push(DataFrameColumn {
-                    name: group_column.to_string(),
-                    values: group_values,
-                });
-                
-                // Aggregate numeric columns
-                for col in columns {
-                    if col.name != group_column {
-                        let mut aggregated_values = Vec::new();
-                        for indices in groups.values() {
-                            let mut sum = 0.0;
-                            for &idx in indices {
-                                if let Some(value) = col.values.get(idx) {
-                                    match value {
-                                        Value::Integer(i) => sum += *i as f64,
-                                        Value::Float(f) => sum += f,
-                                        _ => {} // Skip non-numeric values
-                                    }
-                                }
-                            }
-                            // Return as integer if it's a whole number, otherwise float
-                            if sum.fract() == 0.0 {
-                                aggregated_values.push(Value::Integer(sum as i64));
-                            } else {
-                                aggregated_values.push(Value::Float(sum));
-                            }
-                        }
-                        result_columns.push(DataFrameColumn {
-                            name: format!("{}_sum", col.name),
-                            values: aggregated_values,
-                        });
-                    }
-                }
-                
-                Ok(Value::DataFrame {
-                    columns: result_columns,
-                })
-            }
-            _ => Err(InterpreterError::RuntimeError(format!("Unknown DataFrame method: {}", method))),
-        }
+
+    fn eval_dataframe_method(
+        &self,
+        columns: &[DataFrameColumn],
+        method: &str,
+        arg_values: &[Value],
+    ) -> Result<Value, InterpreterError> {
+        crate::runtime::eval_dataframe_ops::eval_dataframe_method(columns, method, arg_values)
     }
-    
     /// Special handler for `DataFrame` filter method
-    fn eval_dataframe_filter_method(&mut self, receiver: &Value, args: &[Expr]) -> Result<Value, InterpreterError> {
+    /// Special handler for `DataFrame` filter method
+    fn eval_dataframe_filter_method(
+        &mut self,
+        receiver: &Value,
+        args: &[Expr],
+    ) -> Result<Value, InterpreterError> {
         if args.len() != 1 {
-            return Err(InterpreterError::RuntimeError("DataFrame.filter() requires exactly 1 argument (condition)".to_string()));
+            return Err(InterpreterError::RuntimeError(
+                "DataFrame.filter() requires exactly 1 argument (condition)".to_string(),
+            ));
         }
-        
+
         if let Value::DataFrame { columns } = receiver {
             let condition = &args[0];
-            
-            if columns.is_empty() {
-                return Ok(Value::DataFrame { columns: columns.clone() });
-            }
-            
-            let num_rows = columns[0].values.len();
-            let mut filtered_rows: Vec<bool> = Vec::new();
-            
-            // Evaluate the condition for each row
-            for row_idx in 0..num_rows {
-                let condition_result = self.eval_expr_with_column_context(condition, columns, row_idx);
-                
-                match condition_result {
-                    Ok(Value::Bool(true)) => filtered_rows.push(true),
-                    Ok(Value::Bool(false)) => filtered_rows.push(false),
-                    Ok(_) => return Err(InterpreterError::RuntimeError("Filter condition must return boolean".to_string())),
-                    Err(e) => return Err(e),
-                }
-            }
-            
-            // Create new columns with filtered values
-            let mut new_columns = Vec::new();
-            for col in columns {
-                let mut filtered_values = Vec::new();
-                for (idx, &keep) in filtered_rows.iter().enumerate() {
-                    if keep {
-                        if let Some(value) = col.values.get(idx) {
-                            filtered_values.push(value.clone());
-                        }
-                    }
-                }
-                new_columns.push(DataFrameColumn {
-                    name: col.name.clone(),
-                    values: filtered_values,
-                });
-            }
-            
-            Ok(Value::DataFrame {
-                columns: new_columns,
-            })
+            crate::runtime::eval_dataframe_ops::eval_dataframe_filter(
+                columns,
+                condition,
+                |expr, cols, idx| self.eval_expr_with_column_context(expr, cols, idx),
+            )
         } else {
-            Err(InterpreterError::RuntimeError("filter method can only be called on DataFrame".to_string()))
+            Err(InterpreterError::RuntimeError(
+                "filter method can only be called on DataFrame".to_string(),
+            ))
         }
     }
 
     /// Compare two values using a comparison function
-    fn compare_values<F>(&self, left: &Value, right: &Value, cmp: F) -> Result<Value, InterpreterError>
+    fn compare_values<F>(
+        &self,
+        left: &Value,
+        right: &Value,
+        cmp: F,
+    ) -> Result<Value, InterpreterError>
     where
         F: Fn(i64, i64) -> bool,
     {
@@ -5136,7 +2049,12 @@ impl Interpreter {
     }
 
     /// Evaluate an expression with column context (for `DataFrame` filtering)
-    fn eval_expr_with_column_context(&mut self, expr: &Expr, columns: &[DataFrameColumn], row_idx: usize) -> Result<Value, InterpreterError> {
+    fn eval_expr_with_column_context(
+        &mut self,
+        expr: &Expr,
+        columns: &[DataFrameColumn],
+        row_idx: usize,
+    ) -> Result<Value, InterpreterError> {
         match &expr.kind {
             // Special handling for function calls that might be col() references
             ExprKind::Call { func, args } => {
@@ -5144,17 +2062,25 @@ impl Interpreter {
                     if name == "col" && args.len() == 1 {
                         // This is a col("column_name") call - resolve to actual column value
                         let col_name_expr = &args[0];
-                        if let ExprKind::Literal(crate::frontend::ast::Literal::String(col_name)) = &col_name_expr.kind {
+                        if let ExprKind::Literal(crate::frontend::ast::Literal::String(col_name)) =
+                            &col_name_expr.kind
+                        {
                             // Find the column and return the value for this row
                             for col in columns {
                                 if col.name == *col_name {
                                     if let Some(value) = col.values.get(row_idx) {
                                         return Ok(value.clone());
                                     }
-                                    return Err(InterpreterError::RuntimeError(format!("Row index {} out of bounds for column '{}'", row_idx, col_name)));
+                                    return Err(InterpreterError::RuntimeError(format!(
+                                        "Row index {} out of bounds for column '{}'",
+                                        row_idx, col_name
+                                    )));
                                 }
                             }
-                            return Err(InterpreterError::RuntimeError(format!("Column '{}' not found", col_name)));
+                            return Err(InterpreterError::RuntimeError(format!(
+                                "Column '{}' not found",
+                                col_name
+                            )));
                         }
                     }
                 }
@@ -5165,7 +2091,7 @@ impl Interpreter {
             ExprKind::Binary { left, right, .. } => {
                 let left_val = self.eval_expr_with_column_context(left, columns, row_idx)?;
                 let right_val = self.eval_expr_with_column_context(right, columns, row_idx)?;
-                
+
                 // Rebuild the binary expression with resolved values and evaluate
                 // For simplicity, handle common comparison operations directly
                 if let ExprKind::Binary { op, .. } = &expr.kind {
@@ -5182,178 +2108,42 @@ impl Interpreter {
                         crate::frontend::ast::BinaryOp::NotEqual => {
                             Ok(Value::Bool(!self.values_equal(&left_val, &right_val)))
                         }
-                        _ => self.eval_expr(expr) // Use regular evaluation for other operators
+                        _ => self.eval_expr(expr), // Use regular evaluation for other operators
                     }
                 } else {
                     unreachable!()
                 }
             }
             // For all other expressions, use normal evaluation
-            _ => self.eval_expr(expr)
+            _ => self.eval_expr(expr),
         }
     }
 
-    fn eval_dataframe_operation(&mut self, source: &Expr, operation: &crate::frontend::ast::DataFrameOp) -> Result<Value, InterpreterError> {
+    fn eval_dataframe_operation(
+        &mut self,
+        source: &Expr,
+        operation: &crate::frontend::ast::DataFrameOp,
+    ) -> Result<Value, InterpreterError> {
         let source_value = self.eval_expr(source)?;
-        
+
         if let Value::DataFrame { columns } = source_value {
-            match operation {
-                crate::frontend::ast::DataFrameOp::Select(column_names) => {
-                    // Select specific columns by name
-                    let mut selected_columns = Vec::new();
-                    
-                    for name in column_names {
-                        // Find the column
-                        let mut found = false;
-                        for col in &columns {
-                            if col.name == *name {
-                                selected_columns.push(col.clone());
-                                found = true;
-                                break;
-                            }
-                        }
-                        if !found {
-                            return Err(InterpreterError::RuntimeError(format!("Column '{}' not found in DataFrame", name)));
-                        }
-                    }
-                    
-                    Ok(Value::DataFrame {
-                        columns: selected_columns,
-                    })
-                }
-                crate::frontend::ast::DataFrameOp::Filter(condition) => {
-                    // Filter rows based on condition
-                    if columns.is_empty() {
-                        return Ok(Value::DataFrame { columns });
-                    }
-                    
-                    let num_rows = columns[0].values.len();
-                    let mut filtered_rows: Vec<bool> = Vec::new();
-                    
-                    // Evaluate the condition for each row
-                    for row_idx in 0..num_rows {
-                        // Evaluate condition with column context
-                        let condition_result = self.eval_expr_with_column_context(condition, &columns, row_idx);
-                        
-                        match condition_result {
-                            Ok(Value::Bool(true)) => filtered_rows.push(true),
-                            Ok(Value::Bool(false)) => filtered_rows.push(false),
-                            Ok(_) => return Err(InterpreterError::RuntimeError("Filter condition must return boolean".to_string())),
-                            Err(e) => return Err(e),
-                        }
-                    }
-                    
-                    // Create new columns with filtered values
-                    let mut new_columns = Vec::new();
-                    for col in &columns {
-                        let mut filtered_values = Vec::new();
-                        for (idx, &keep) in filtered_rows.iter().enumerate() {
-                            if keep {
-                                if let Some(value) = col.values.get(idx) {
-                                    filtered_values.push(value.clone());
-                                }
-                            }
-                        }
-                        new_columns.push(DataFrameColumn {
-                            name: col.name.clone(),
-                            values: filtered_values,
-                        });
-                    }
-                    
-                    Ok(Value::DataFrame {
-                        columns: new_columns,
-                    })
-                }
-                crate::frontend::ast::DataFrameOp::GroupBy(group_columns) => {
-                    // Group by one or more columns 
-                    // Parser limitation: use first column as default when no columns provided
-                    let group_column = if group_columns.is_empty() {
-                        if columns.is_empty() {
-                            return Err(InterpreterError::RuntimeError("Cannot group by empty DataFrame".to_string()));
-                        }
-                        &columns[0].name // Default to first column
-                    } else {
-                        &group_columns[0]
-                    };
-                    
-                    // Find the group column
-                    let group_col = columns.iter().find(|col| col.name == *group_column);
-                    if group_col.is_none() {
-                        return Err(InterpreterError::RuntimeError(format!("Group column '{}' not found in DataFrame", group_column)));
-                    }
-                    let group_col = group_col
-                        .expect("group_col existence verified by is_none() check above");
-                    
-                    // Group rows by the group column values
-                    use std::collections::HashMap;
-                    let mut groups: HashMap<String, Vec<usize>> = HashMap::new();
-                    
-                    for (row_idx, value) in group_col.values.iter().enumerate() {
-                        let key = match value {
-                            Value::String(s) => s.to_string(),
-                            Value::Integer(i) => i.to_string(),
-                            Value::Float(f) => f.to_string(),
-                            Value::Bool(b) => b.to_string(),
-                            _ => "null".to_string(),
-                        };
-                        groups.entry(key).or_default().push(row_idx);
-                    }
-                    
-                    // Create result columns: group column + aggregated numeric columns
-                    let mut result_columns = Vec::new();
-                    
-                    // Group column (unique values)
-                    let mut group_values = Vec::new();
-                    for key in groups.keys() {
-                        group_values.push(Value::from_string(key.clone()));
-                    }
-                    result_columns.push(DataFrameColumn {
-                        name: group_column.to_string(),
-                        values: group_values,
-                    });
-                    
-                    // Aggregate numeric columns (sum by default for now)
-                    for col in &columns {
-                        if col.name != *group_column {
-                            let mut aggregated_values = Vec::new();
-                            for indices in groups.values() {
-                                let mut sum = 0.0;
-                                for &idx in indices {
-                                    if let Some(value) = col.values.get(idx) {
-                                        match value {
-                                            Value::Integer(i) => sum += *i as f64,
-                                            Value::Float(f) => sum += f,
-                                            _ => {} // Skip non-numeric values
-                                        }
-                                    }
-                                }
-                                // Return as integer if it's a whole number, otherwise float
-                                if sum.fract() == 0.0 {
-                                    aggregated_values.push(Value::Integer(sum as i64));
-                                } else {
-                                    aggregated_values.push(Value::Float(sum));
-                                }
-                            }
-                            result_columns.push(DataFrameColumn {
-                                name: format!("{}_sum", col.name),
-                                values: aggregated_values,
-                            });
-                        }
-                    }
-                    
-                    Ok(Value::DataFrame {
-                        columns: result_columns,
-                    })
-                }
-                _ => Err(InterpreterError::RuntimeError("DataFrameOperation not yet implemented".to_string())),
-            }
+            crate::runtime::eval_dataframe_ops::eval_dataframe_operation(
+                columns,
+                operation,
+                |expr, cols, idx| self.eval_expr_with_column_context(expr, cols, idx),
+            )
         } else {
-            Err(InterpreterError::RuntimeError("DataFrameOperation can only be applied to DataFrame values".to_string()))
+            Err(InterpreterError::RuntimeError(
+                "DataFrameOperation can only be applied to DataFrame values".to_string(),
+            ))
         }
     }
-    
+
     /// Evaluate string interpolation
-    fn eval_string_interpolation(&mut self, parts: &[StringPart]) -> Result<Value, InterpreterError> {
+    fn eval_string_interpolation(
+        &mut self,
+        parts: &[StringPart],
+    ) -> Result<Value, InterpreterError> {
         let mut result = String::new();
         for part in parts {
             match part {
@@ -5380,7 +2170,9 @@ impl Interpreter {
             if let Ok(precision) = stripped.parse::<usize>() {
                 match value {
                     Value::Float(f) => return format!("{:.precision$}", f, precision = precision),
-                    Value::Integer(i) => return format!("{:.precision$}", *i as f64, precision = precision),
+                    Value::Integer(i) => {
+                        return format!("{:.precision$}", *i as f64, precision = precision)
+                    }
                     _ => {}
                 }
             }
@@ -5388,9 +2180,14 @@ impl Interpreter {
         // Default formatting if spec doesn't match or isn't supported
         value.to_string()
     }
-    
+
     /// Evaluate function definition
-    fn eval_function(&mut self, name: &str, params: &[Param], body: &Expr) -> Result<Value, InterpreterError> {
+    fn eval_function(
+        &mut self,
+        name: &str,
+        params: &[Param],
+        body: &Expr,
+    ) -> Result<Value, InterpreterError> {
         let param_names: Vec<String> = params
             .iter()
             .map(crate::frontend::ast::Param::name)
@@ -5406,25 +2203,18 @@ impl Interpreter {
         self.env_set(name.to_string(), closure.clone());
         Ok(closure)
     }
-    
+
     /// Evaluate lambda expression
     fn eval_lambda(&mut self, params: &[Param], body: &Expr) -> Result<Value, InterpreterError> {
-        let param_names: Vec<String> = params
-            .iter()
-            .map(crate::frontend::ast::Param::name)
-            .collect();
-
-        let closure = Value::Closure {
-            params: param_names,
-            body: Rc::new(body.clone()),
-            env: Rc::new(self.current_env().clone()),
-        };
-
-        Ok(closure)
+        eval_func::eval_lambda(params, body, self.current_env())
     }
-    
+
     /// Evaluate function call
-    fn eval_function_call(&mut self, func: &Expr, args: &[Expr]) -> Result<Value, InterpreterError> {
+    fn eval_function_call(
+        &mut self,
+        func: &Expr,
+        args: &[Expr],
+    ) -> Result<Value, InterpreterError> {
         let func_val = self.eval_expr(func)?;
         let arg_vals: Result<Vec<Value>, InterpreterError> =
             args.iter().map(|arg| self.eval_expr(arg)).collect();
@@ -5468,7 +2258,6 @@ pub enum BinaryOp {
 #[allow(clippy::panic)] // Tests can panic on assertion failures
 mod tests {
     use super::*;
-    use crate::frontend::ast::Span;
 
     #[test]
     fn test_value_creation() {
@@ -5521,2121 +2310,6 @@ mod tests {
             _ => unreachable!("Expected float, got {result:?}"),
         }
     }
-
-    #[test]
-    fn test_division_by_zero() {
-        let mut interp = Interpreter::new();
-
-        assert!(interp.push(Value::from_i64(10)).is_ok());
-        assert!(interp.push(Value::from_i64(0)).is_ok());
-
-        let result = interp.binary_op(BinaryOp::Div);
-        assert!(matches!(result, Err(InterpreterError::DivisionByZero)));
-    }
-
-    #[test]
-    fn test_comparison() {
-        let mut interp = Interpreter::new();
-
-        // Test 5 < 10
-        assert!(interp.push(Value::from_i64(5)).is_ok());
-        assert!(interp.push(Value::from_i64(10)).is_ok());
-        assert!(interp.binary_op(BinaryOp::Lt).is_ok());
-
-        let result = interp.pop().expect("Stack should not be empty");
-        assert_eq!(result, Value::Bool(true));
-    }
-
-    #[test]
-    fn test_stack_operations() {
-        let mut interp = Interpreter::new();
-
-        let val1 = Value::from_i64(42);
-        let val2 = Value::from_bool(true);
-
-        assert!(interp.push(val1.clone()).is_ok());
-        assert!(interp.push(val2.clone()).is_ok());
-
-        assert_eq!(interp.peek(0).expect("Should peek at top"), val2);
-        assert_eq!(interp.peek(1).expect("Should peek at second"), val1);
-
-        assert_eq!(interp.pop().expect("Should pop top"), val2);
-        assert_eq!(interp.pop().expect("Should pop second"), val1);
-    }
-
-    #[test]
-    fn test_truthiness() {
-        assert!(Value::from_i64(42).is_truthy());
-        assert!(Value::from_bool(true).is_truthy());
-        assert!(!Value::from_bool(false).is_truthy());
-        assert!(!Value::nil().is_truthy());
-        assert!(Value::from_f64(std::f64::consts::PI).is_truthy());
-        assert!(Value::from_f64(0.0).is_truthy()); // 0.0 is truthy in Ruchy
-        assert!(Value::from_string("hello".to_string()).is_truthy());
-    }
-
-    // AST Walker tests
-
-    #[test]
-    fn test_eval_literal() {
-        let mut interp = Interpreter::new();
-
-        // Test integer literal
-        let int_expr = Expr::new(ExprKind::Literal(Literal::Integer(42)), Span::new(0, 2));
-        let result = interp
-            .eval_expr(&int_expr)
-            .expect("Should evaluate integer");
-        assert_eq!(result, Value::Integer(42));
-
-        // Test string literal
-        let str_expr = Expr::new(
-            ExprKind::Literal(Literal::String("hello".to_string())),
-            Span::new(0, 7),
-        );
-        let result = interp.eval_expr(&str_expr).expect("Should evaluate string");
-        assert_eq!(result.type_name(), "string");
-
-        // Test boolean literal
-        let bool_expr = Expr::new(ExprKind::Literal(Literal::Bool(true)), Span::new(0, 4));
-        let result = interp
-            .eval_expr(&bool_expr)
-            .expect("Should evaluate boolean");
-        assert_eq!(result, Value::Bool(true));
-    }
-
-    #[test]
-    fn test_eval_binary_arithmetic() {
-        let mut interp = Interpreter::new();
-
-        // Test 5 + 3 = 8
-        let left = Box::new(Expr::new(
-            ExprKind::Literal(Literal::Integer(5)),
-            Span::new(0, 1),
-        ));
-        let right = Box::new(Expr::new(
-            ExprKind::Literal(Literal::Integer(3)),
-            Span::new(4, 5),
-        ));
-        let add_expr = Expr::new(
-            ExprKind::Binary {
-                left,
-                op: AstBinaryOp::Add,
-                right,
-            },
-            Span::new(0, 5),
-        );
-
-        let result = interp
-            .eval_expr(&add_expr)
-            .expect("Should evaluate addition");
-        assert_eq!(result, Value::Integer(8));
-    }
-
-    #[test]
-    fn test_eval_binary_comparison() {
-        let mut interp = Interpreter::new();
-
-        // Test 5 < 10 = true
-        let left = Box::new(Expr::new(
-            ExprKind::Literal(Literal::Integer(5)),
-            Span::new(0, 1),
-        ));
-        let right = Box::new(Expr::new(
-            ExprKind::Literal(Literal::Integer(10)),
-            Span::new(4, 6),
-        ));
-        let cmp_expr = Expr::new(
-            ExprKind::Binary {
-                left,
-                op: AstBinaryOp::Less,
-                right,
-            },
-            Span::new(0, 6),
-        );
-
-        let result = interp
-            .eval_expr(&cmp_expr)
-            .expect("Should evaluate comparison");
-        assert_eq!(result, Value::Bool(true));
-    }
-
-    #[test]
-    fn test_eval_unary_operations() {
-        let mut interp = Interpreter::new();
-
-        // Test -42 = -42
-        let operand = Box::new(Expr::new(
-            ExprKind::Literal(Literal::Integer(42)),
-            Span::new(1, 3),
-        ));
-        let neg_expr = Expr::new(
-            ExprKind::Unary {
-                op: crate::frontend::ast::UnaryOp::Negate,
-                operand,
-            },
-            Span::new(0, 3),
-        );
-
-        let result = interp
-            .eval_expr(&neg_expr)
-            .expect("Should evaluate negation");
-        assert_eq!(result, Value::Integer(-42));
-
-        // Test !true = false
-        let operand = Box::new(Expr::new(
-            ExprKind::Literal(Literal::Bool(true)),
-            Span::new(1, 5),
-        ));
-        let not_expr = Expr::new(
-            ExprKind::Unary {
-                op: crate::frontend::ast::UnaryOp::Not,
-                operand,
-            },
-            Span::new(0, 5),
-        );
-
-        let result = interp
-            .eval_expr(&not_expr)
-            .expect("Should evaluate logical not");
-        assert_eq!(result, Value::Bool(false));
-    }
-
-    #[test]
-    fn test_eval_if_expression() {
-        let mut interp = Interpreter::new();
-
-        // Test if true then 1 else 2 = 1
-        let condition = Box::new(Expr::new(
-            ExprKind::Literal(Literal::Bool(true)),
-            Span::new(3, 7),
-        ));
-        let then_branch = Box::new(Expr::new(
-            ExprKind::Literal(Literal::Integer(1)),
-            Span::new(13, 14),
-        ));
-        let else_branch = Some(Box::new(Expr::new(
-            ExprKind::Literal(Literal::Integer(2)),
-            Span::new(20, 21),
-        )));
-
-        let if_expr = Expr::new(
-            ExprKind::If {
-                condition,
-                then_branch,
-                else_branch,
-            },
-            Span::new(0, 21),
-        );
-
-        let result = interp
-            .eval_expr(&if_expr)
-            .expect("Should evaluate if expression");
-        assert_eq!(result, Value::Integer(1));
-    }
-
-    #[test]
-    fn test_eval_let_expression() {
-        let mut interp = Interpreter::new();
-
-        // Test let x = 5 in x + 2 = 7
-        let value = Box::new(Expr::new(
-            ExprKind::Literal(Literal::Integer(5)),
-            Span::new(8, 9),
-        ));
-
-        let left = Box::new(Expr::new(
-            ExprKind::Identifier("x".to_string()),
-            Span::new(13, 14),
-        ));
-        let right = Box::new(Expr::new(
-            ExprKind::Literal(Literal::Integer(2)),
-            Span::new(17, 18),
-        ));
-        let body = Box::new(Expr::new(
-            ExprKind::Binary {
-                left,
-                op: AstBinaryOp::Add,
-                right,
-            },
-            Span::new(13, 18),
-        ));
-
-        let let_expr = Expr::new(
-            ExprKind::Let {
-                name: "x".to_string(),
-                type_annotation: None,
-                value,
-                body,
-                is_mutable: false,
-            },
-            Span::new(0, 18),
-        );
-
-        let result = interp
-            .eval_expr(&let_expr)
-            .expect("Should evaluate let expression");
-        assert_eq!(result, Value::Integer(7));
-    }
-
-    #[test]
-    fn test_eval_logical_operators() {
-        let mut interp = Interpreter::new();
-
-        // Test true && false = false (short-circuit)
-        let left = Box::new(Expr::new(
-            ExprKind::Literal(Literal::Bool(true)),
-            Span::new(0, 4),
-        ));
-        let right = Box::new(Expr::new(
-            ExprKind::Literal(Literal::Bool(false)),
-            Span::new(8, 13),
-        ));
-        let and_expr = Expr::new(
-            ExprKind::Binary {
-                left,
-                op: AstBinaryOp::And,
-                right,
-            },
-            Span::new(0, 13),
-        );
-
-        let result = interp
-            .eval_expr(&and_expr)
-            .expect("Should evaluate logical AND");
-        assert_eq!(result, Value::Bool(false));
-
-        // Test false || true = true (short-circuit)
-        let left = Box::new(Expr::new(
-            ExprKind::Literal(Literal::Bool(false)),
-            Span::new(0, 5),
-        ));
-        let right = Box::new(Expr::new(
-            ExprKind::Literal(Literal::Bool(true)),
-            Span::new(9, 13),
-        ));
-        let or_expr = Expr::new(
-            ExprKind::Binary {
-                left,
-                op: AstBinaryOp::Or,
-                right,
-            },
-            Span::new(0, 13),
-        );
-
-        let result = interp
-            .eval_expr(&or_expr)
-            .expect("Should evaluate logical OR");
-        assert_eq!(result, Value::Bool(true));
-    }
-
-    #[test]
-    fn test_parser_integration() {
-        let mut interp = Interpreter::new();
-
-        // Test simple arithmetic: 2 + 3 * 4 = 14
-        let result = interp
-            .eval_string("2 + 3 * 4")
-            .expect("Should parse and evaluate");
-        assert_eq!(result, Value::Integer(14));
-
-        // Test comparison: 5 > 3 = true
-        let result = interp
-            .eval_string("5 > 3")
-            .expect("Should parse and evaluate");
-        assert_eq!(result, Value::Bool(true));
-
-        // Test boolean literals: true && false = false
-        let result = interp
-            .eval_string("true && false")
-            .expect("Should parse and evaluate");
-        assert_eq!(result, Value::Bool(false));
-
-        // Test unary operations: -42 = -42
-        let result = interp
-            .eval_string("-42")
-            .expect("Should parse and evaluate");
-        assert_eq!(result, Value::Integer(-42));
-
-        // Test string literals
-        let result = interp
-            .eval_string(r#""hello""#)
-            .expect("Should parse and evaluate");
-        assert_eq!(result.type_name(), "string");
-    }
-
-    #[test]
-    fn test_eval_lambda() {
-        use crate::frontend::ast::{Pattern, Type, TypeKind};
-        let mut interp = Interpreter::new();
-
-        // Test lambda: |x| x + 1
-        let param = Param {
-            pattern: Pattern::Identifier("x".to_string()),
-            ty: Type {
-                kind: TypeKind::Named("i32".to_string()),
-                span: Span::new(0, 3),
-            },
-            span: Span::new(0, 1),
-            is_mutable: false,
-            default_value: None,
-        };
-
-        let left = Box::new(Expr::new(
-            ExprKind::Identifier("x".to_string()),
-            Span::new(0, 1),
-        ));
-        let right = Box::new(Expr::new(
-            ExprKind::Literal(Literal::Integer(1)),
-            Span::new(4, 5),
-        ));
-        let body = Box::new(Expr::new(
-            ExprKind::Binary {
-                left,
-                op: AstBinaryOp::Add,
-                right,
-            },
-            Span::new(0, 5),
-        ));
-
-        let lambda_expr = Expr::new(
-            ExprKind::Lambda {
-                params: vec![param],
-                body,
-            },
-            Span::new(0, 10),
-        );
-
-        let result = interp
-            .eval_expr(&lambda_expr)
-            .expect("Should evaluate lambda");
-        assert_eq!(result.type_name(), "function");
-    }
-
-    #[test]
-    fn test_eval_function_call() {
-        use crate::frontend::ast::{Pattern, Type, TypeKind};
-        let mut interp = Interpreter::new();
-
-        // Create lambda: |x| x + 1
-        let param = Param {
-            pattern: Pattern::Identifier("x".to_string()),
-            ty: Type {
-                kind: TypeKind::Named("i32".to_string()),
-                span: Span::new(0, 3),
-            },
-            span: Span::new(0, 1),
-            is_mutable: false,
-            default_value: None,
-        };
-
-        let left = Box::new(Expr::new(
-            ExprKind::Identifier("x".to_string()),
-            Span::new(0, 1),
-        ));
-        let right = Box::new(Expr::new(
-            ExprKind::Literal(Literal::Integer(1)),
-            Span::new(4, 5),
-        ));
-        let body = Box::new(Expr::new(
-            ExprKind::Binary {
-                left,
-                op: AstBinaryOp::Add,
-                right,
-            },
-            Span::new(0, 5),
-        ));
-
-        let lambda_expr = Expr::new(
-            ExprKind::Lambda {
-                params: vec![param],
-                body,
-            },
-            Span::new(0, 10),
-        );
-
-        // Call lambda with argument 5: (|x| x + 1)(5) = 6
-        let call_expr = Expr::new(
-            ExprKind::Call {
-                func: Box::new(lambda_expr),
-                args: vec![Expr::new(
-                    ExprKind::Literal(Literal::Integer(5)),
-                    Span::new(0, 1),
-                )],
-            },
-            Span::new(0, 15),
-        );
-
-        let result = interp
-            .eval_expr(&call_expr)
-            .expect("Should evaluate function call");
-        assert_eq!(result, Value::Integer(6));
-    }
-
-    #[test]
-    fn test_eval_function_definition() {
-        use crate::frontend::ast::{Pattern, Type, TypeKind};
-        let mut interp = Interpreter::new();
-
-        // Create function: fn add_one(x) = x + 1
-        let param = Param {
-            pattern: Pattern::Identifier("x".to_string()),
-            ty: Type {
-                kind: TypeKind::Named("i32".to_string()),
-                span: Span::new(0, 3),
-            },
-            span: Span::new(0, 1),
-            is_mutable: false,
-            default_value: None,
-        };
-
-        let left = Box::new(Expr::new(
-            ExprKind::Identifier("x".to_string()),
-            Span::new(0, 1),
-        ));
-        let right = Box::new(Expr::new(
-            ExprKind::Literal(Literal::Integer(1)),
-            Span::new(4, 5),
-        ));
-        let body = Box::new(Expr::new(
-            ExprKind::Binary {
-                left,
-                op: AstBinaryOp::Add,
-                right,
-            },
-            Span::new(0, 5),
-        ));
-
-        let func_expr = Expr::new(
-            ExprKind::Function {
-                name: "add_one".to_string(),
-                type_params: vec![],
-                params: vec![param],
-                return_type: None,
-                body,
-                is_async: false,
-                is_pub: false,
-            },
-            Span::new(0, 20),
-        );
-
-        let result = interp
-            .eval_expr(&func_expr)
-            .expect("Should evaluate function");
-        assert_eq!(result.type_name(), "function");
-
-        // Verify function is bound in environment
-        let bound_func = interp
-            .lookup_variable("add_one")
-            .expect("Function should be bound");
-        assert_eq!(bound_func.type_name(), "function");
-    }
-
-    #[test]
-    fn test_eval_recursive_function() {
-        use crate::frontend::ast::{Pattern, Type, TypeKind};
-        let mut interp = Interpreter::new();
-
-        // Create recursive factorial function
-        let param = Param {
-            pattern: Pattern::Identifier("n".to_string()),
-            ty: Type {
-                kind: TypeKind::Named("i32".to_string()),
-                span: Span::new(0, 3),
-            },
-            span: Span::new(0, 1),
-            is_mutable: false,
-            default_value: None,
-        };
-
-        // if n <= 1 then 1 else n * factorial(n - 1)
-        let n_id = Expr::new(ExprKind::Identifier("n".to_string()), Span::new(0, 1));
-        let one = Expr::new(ExprKind::Literal(Literal::Integer(1)), Span::new(0, 1));
-
-        let condition = Box::new(Expr::new(
-            ExprKind::Binary {
-                left: Box::new(n_id.clone()),
-                op: AstBinaryOp::LessEqual,
-                right: Box::new(one.clone()),
-            },
-            Span::new(0, 6),
-        ));
-
-        let then_branch = Box::new(one.clone());
-
-        // n * factorial(n - 1)
-        let n_minus_1 = Expr::new(
-            ExprKind::Binary {
-                left: Box::new(n_id.clone()),
-                op: AstBinaryOp::Subtract,
-                right: Box::new(one),
-            },
-            Span::new(0, 5),
-        );
-
-        let recursive_call = Expr::new(
-            ExprKind::Call {
-                func: Box::new(Expr::new(
-                    ExprKind::Identifier("factorial".to_string()),
-                    Span::new(0, 9),
-                )),
-                args: vec![n_minus_1],
-            },
-            Span::new(0, 15),
-        );
-
-        let else_branch = Some(Box::new(Expr::new(
-            ExprKind::Binary {
-                left: Box::new(n_id),
-                op: AstBinaryOp::Multiply,
-                right: Box::new(recursive_call),
-            },
-            Span::new(0, 20),
-        )));
-
-        let body = Box::new(Expr::new(
-            ExprKind::If {
-                condition,
-                then_branch,
-                else_branch,
-            },
-            Span::new(0, 25),
-        ));
-
-        let factorial_expr = Expr::new(
-            ExprKind::Function {
-                name: "factorial".to_string(),
-                type_params: vec![],
-                params: vec![param],
-                return_type: None,
-                body,
-                is_async: false,
-                is_pub: false,
-            },
-            Span::new(0, 30),
-        );
-
-        // Define factorial function
-        let result = interp
-            .eval_expr(&factorial_expr)
-            .expect("Should evaluate factorial function");
-        assert_eq!(result.type_name(), "function");
-
-        // Test factorial(5) = 120
-        let call_expr = Expr::new(
-            ExprKind::Call {
-                func: Box::new(Expr::new(
-                    ExprKind::Identifier("factorial".to_string()),
-                    Span::new(0, 9),
-                )),
-                args: vec![Expr::new(
-                    ExprKind::Literal(Literal::Integer(5)),
-                    Span::new(0, 1),
-                )],
-            },
-            Span::new(0, 15),
-        );
-
-        let result = interp
-            .eval_expr(&call_expr)
-            .expect("Should evaluate factorial(5)");
-        assert_eq!(result, Value::Integer(120));
-    }
-
-    #[test]
-    fn test_function_closure() {
-        use crate::frontend::ast::{Pattern, Type, TypeKind};
-        let mut interp = Interpreter::new();
-
-        // Test closure: let x = 10 in |y| x + y
-        let x_val = Box::new(Expr::new(
-            ExprKind::Literal(Literal::Integer(10)),
-            Span::new(8, 10),
-        ));
-
-        let param = Param {
-            pattern: Pattern::Identifier("y".to_string()),
-            ty: Type {
-                kind: TypeKind::Named("i32".to_string()),
-                span: Span::new(0, 3),
-            },
-            span: Span::new(0, 1),
-            is_mutable: false,
-            default_value: None,
-        };
-
-        let left = Box::new(Expr::new(
-            ExprKind::Identifier("x".to_string()),
-            Span::new(0, 1),
-        ));
-        let right = Box::new(Expr::new(
-            ExprKind::Identifier("y".to_string()),
-            Span::new(4, 5),
-        ));
-        let lambda_body = Box::new(Expr::new(
-            ExprKind::Binary {
-                left,
-                op: AstBinaryOp::Add,
-                right,
-            },
-            Span::new(0, 5),
-        ));
-
-        let lambda = Expr::new(
-            ExprKind::Lambda {
-                params: vec![param],
-                body: lambda_body,
-            },
-            Span::new(14, 24),
-        );
-
-        let let_body = Box::new(lambda);
-
-        let let_expr = Expr::new(
-            ExprKind::Let {
-                name: "x".to_string(),
-                type_annotation: None,
-                value: x_val,
-                body: let_body,
-                is_mutable: false,
-            },
-            Span::new(0, 24),
-        );
-
-        let closure = interp
-            .eval_expr(&let_expr)
-            .expect("Should evaluate closure");
-        assert_eq!(closure.type_name(), "function");
-
-        // Call closure with argument 5: (|y| x + y)(5) = 15 (x = 10)
-        let call_expr = Expr::new(
-            ExprKind::Call {
-                func: Box::new(let_expr), // Re-create the closure
-                args: vec![Expr::new(
-                    ExprKind::Literal(Literal::Integer(5)),
-                    Span::new(0, 1),
-                )],
-            },
-            Span::new(0, 30),
-        );
-
-        // Note: This test demonstrates lexical scoping where the closure captures 'x'
-        let result = interp
-            .eval_expr(&call_expr)
-            .expect("Should evaluate closure call");
-        assert_eq!(result, Value::Integer(15));
-    }
-
-    #[test]
-    fn test_inline_cache_string_methods() {
-        let mut interp = Interpreter::new();
-        let test_string = Value::String(Rc::new("Hello World".to_string()));
-
-        // Test string.len() with caching
-        let result1 = interp
-            .get_field_cached(&test_string, "len")
-            .expect("Should get string length");
-        assert_eq!(result1, Value::Integer(11));
-
-        let result2 = interp
-            .get_field_cached(&test_string, "len")
-            .expect("Should get cached result");
-        assert_eq!(result2, Value::Integer(11));
-
-        // Verify cache hit occurred
-        let stats = interp.get_cache_stats();
-        let cache_key = format!("{:?}::len", test_string.type_id());
-        assert!(stats.get(&cache_key).unwrap_or(&0.0) > &0.0);
-
-        // Test other string methods
-        let upper_result = interp
-            .get_field_cached(&test_string, "to_upper")
-            .expect("Should get uppercase");
-        assert_eq!(
-            upper_result,
-            Value::String(Rc::new("HELLO WORLD".to_string()))
-        );
-
-        let trim_result = interp
-            .get_field_cached(&Value::String(Rc::new("  test  ".to_string())), "trim")
-            .expect("Should trim string");
-        assert_eq!(trim_result, Value::String(Rc::new("test".to_string())));
-    }
-
-    #[test]
-    fn test_inline_cache_array_methods() {
-        let mut interp = Interpreter::new();
-        let test_array = Value::Array(Rc::new(vec![
-            Value::Integer(1),
-            Value::Integer(2),
-            Value::Integer(3),
-        ]));
-
-        // Test array.len() with caching
-        let result1 = interp
-            .get_field_cached(&test_array, "len")
-            .expect("Should get array length");
-        assert_eq!(result1, Value::Integer(3));
-
-        let result2 = interp
-            .get_field_cached(&test_array, "len")
-            .expect("Should get cached result");
-        assert_eq!(result2, Value::Integer(3));
-
-        // Test first and last
-        let first_result = interp
-            .get_field_cached(&test_array, "first")
-            .expect("Should get first element");
-        assert_eq!(first_result, Value::Integer(1));
-
-        let last_result = interp
-            .get_field_cached(&test_array, "last")
-            .expect("Should get last element");
-        assert_eq!(last_result, Value::Integer(3));
-
-        // Test empty array (use fresh interpreter to avoid cache pollution)
-        let mut fresh_interp = Interpreter::new();
-        let empty_array = Value::Array(Rc::new(vec![]));
-        let first_err = fresh_interp.get_field_cached(&empty_array, "first");
-        assert!(first_err.is_err());
-    }
-
-    #[test]
-    fn test_inline_cache_polymorphic() {
-        let mut interp = Interpreter::new();
-
-        // Test polymorphic caching with different types calling same method
-        let string_val = Value::String(Rc::new("test".to_string()));
-        let array_val = Value::Array(Rc::new(vec![Value::Integer(1), Value::Integer(2)]));
-
-        // Both call len() method
-        let string_len = interp
-            .get_field_cached(&string_val, "len")
-            .expect("Should get string length");
-        assert_eq!(string_len, Value::Integer(4));
-
-        let array_len = interp
-            .get_field_cached(&array_val, "len")
-            .expect("Should get array length");
-        assert_eq!(array_len, Value::Integer(2));
-
-        // Both should have separate cache entries
-        let stats = interp.get_cache_stats();
-        assert_eq!(stats.len(), 2); // Two different cache keys
-    }
-
-    #[test]
-    fn test_inline_cache_type_method() {
-        let mut interp = Interpreter::new();
-
-        // Test the universal 'type' method
-        let int_val = Value::Integer(42);
-        let string_val = Value::String(Rc::new("test".to_string()));
-        let bool_val = Value::Bool(true);
-
-        let int_type = interp
-            .get_field_cached(&int_val, "type")
-            .expect("Should get int type");
-        assert_eq!(int_type, Value::String(Rc::new("integer".to_string())));
-
-        let string_type = interp
-            .get_field_cached(&string_val, "type")
-            .expect("Should get string type");
-        assert_eq!(string_type, Value::String(Rc::new("string".to_string())));
-
-        let bool_type = interp
-            .get_field_cached(&bool_val, "type")
-            .expect("Should get bool type");
-        assert_eq!(bool_type, Value::String(Rc::new("boolean".to_string())));
-    }
-
-    #[test]
-    fn test_inline_cache_miss_handling() {
-        let mut interp = Interpreter::new();
-        let test_val = Value::Integer(42);
-
-        // Test accessing non-existent field
-        let result = interp.get_field_cached(&test_val, "non_existent");
-        assert!(result.is_err());
-
-        // Test that error doesn't get cached (cache should be empty)
-        let stats = interp.get_cache_stats();
-        assert!(stats.is_empty());
-    }
-
-    #[test]
-    fn test_cache_state_transitions() {
-        let mut interp = Interpreter::new();
-
-        // Create multiple values of same type for same field
-        let vals = [
-            Value::String(Rc::new("test1".to_string())),
-            Value::String(Rc::new("test2".to_string())),
-            Value::String(Rc::new("test3".to_string())),
-        ];
-
-        // Access same field multiple times to test cache evolution
-        for val in &vals {
-            let _ = interp
-                .get_field_cached(val, "len")
-                .expect("Should get length");
-        }
-
-        // Verify caching occurred
-        let stats = interp.get_cache_stats();
-        assert!(!stats.is_empty());
-
-        // Clear caches and verify
-        interp.clear_caches();
-        let stats_after = interp.get_cache_stats();
-        assert!(stats_after.is_empty());
-    }
-
-    #[test]
-    fn test_type_feedback_binary_operations() {
-        use crate::frontend::ast::Span;
-        let mut interp = Interpreter::new();
-
-        // Create binary operation: 42 + 10
-        let left = Expr::new(ExprKind::Literal(Literal::Integer(42)), Span::new(0, 2));
-        let right = Expr::new(ExprKind::Literal(Literal::Integer(10)), Span::new(5, 7));
-        let binary_expr = Expr::new(
-            ExprKind::Binary {
-                left: Box::new(left),
-                op: AstBinaryOp::Add,
-                right: Box::new(right),
-            },
-            Span::new(0, 7),
-        );
-
-        // Evaluate the expression multiple times to collect feedback
-        for _ in 0..15 {
-            let result = interp
-                .eval_expr(&binary_expr)
-                .expect("Should evaluate binary operation");
-            assert_eq!(result, Value::Integer(52));
-        }
-
-        // Check type feedback statistics
-        let stats = interp.get_type_feedback_stats();
-        assert_eq!(stats.total_operation_sites, 1);
-        assert_eq!(stats.monomorphic_operation_sites, 1);
-        assert_eq!(stats.total_samples, 15);
-
-        // Check specialization candidates
-        let candidates = interp.get_specialization_candidates();
-        assert!(!candidates.is_empty());
-        assert!((candidates[0].confidence - 1.0).abs() < f64::EPSILON); // Monomorphic operation
-    }
-
-    #[test]
-    fn test_type_feedback_variable_assignments() {
-        use crate::frontend::ast::Span;
-        let mut interp = Interpreter::new();
-
-        // Create let binding: let x = 42 in x
-        let value_expr = Box::new(Expr::new(
-            ExprKind::Literal(Literal::Integer(42)),
-            Span::new(8, 10),
-        ));
-        let body_expr = Box::new(Expr::new(
-            ExprKind::Identifier("x".to_string()),
-            Span::new(14, 15),
-        ));
-
-        let let_expr = Expr::new(
-            ExprKind::Let {
-                name: "x".to_string(),
-                type_annotation: None,
-                value: value_expr,
-                body: body_expr,
-                is_mutable: false,
-            },
-            Span::new(0, 15),
-        );
-
-        // Evaluate the expression
-        let result = interp
-            .eval_expr(&let_expr)
-            .expect("Should evaluate let expression");
-        assert_eq!(result, Value::Integer(42));
-
-        // Check type feedback statistics
-        let stats = interp.get_type_feedback_stats();
-        assert_eq!(stats.total_variables, 1);
-        assert_eq!(stats.stable_variables, 1);
-
-        // Check specialization candidates for stable variable
-        let candidates = interp.get_specialization_candidates();
-        let variable_candidates: Vec<_> = candidates
-            .iter()
-            .filter(|c| matches!(c.kind, SpecializationKind::Variable { .. }))
-            .collect();
-        assert!(!variable_candidates.is_empty());
-    }
-
-    #[test]
-    fn test_type_feedback_function_calls() {
-        use crate::frontend::ast::{Param, Pattern, Span, Type, TypeKind};
-        let mut interp = Interpreter::new();
-
-        // Create function: fn double(x) = x + x
-        let param = Param {
-            pattern: Pattern::Identifier("x".to_string()),
-            ty: Type {
-                kind: TypeKind::Named("i32".to_string()),
-                span: Span::new(0, 3),
-            },
-            span: Span::new(0, 1),
-            is_mutable: false,
-            default_value: None,
-        };
-
-        let left_body = Box::new(Expr::new(
-            ExprKind::Identifier("x".to_string()),
-            Span::new(0, 1),
-        ));
-        let right_body = Box::new(Expr::new(
-            ExprKind::Identifier("x".to_string()),
-            Span::new(4, 5),
-        ));
-        let func_body = Box::new(Expr::new(
-            ExprKind::Binary {
-                left: left_body,
-                op: AstBinaryOp::Add,
-                right: right_body,
-            },
-            Span::new(0, 5),
-        ));
-
-        let func_expr = Expr::new(
-            ExprKind::Function {
-                name: "double".to_string(),
-                type_params: vec![],
-                params: vec![param],
-                body: func_body,
-                return_type: None,
-                is_async: false,
-                is_pub: false,
-            },
-            Span::new(0, 20),
-        );
-
-        // Define the function
-        let _func = interp
-            .eval_expr(&func_expr)
-            .expect("Should define function");
-
-        // Create function call: double(21)
-        let func_ref = Box::new(Expr::new(
-            ExprKind::Identifier("double".to_string()),
-            Span::new(0, 6),
-        ));
-        let arg = Expr::new(ExprKind::Literal(Literal::Integer(21)), Span::new(7, 9));
-        let call_expr = Expr::new(
-            ExprKind::Call {
-                func: func_ref,
-                args: vec![arg],
-            },
-            Span::new(0, 10),
-        );
-
-        // Call the function multiple times
-        for _ in 0..10 {
-            let result = interp.eval_expr(&call_expr).expect("Should call function");
-            assert_eq!(result, Value::Integer(42));
-        }
-
-        // Check type feedback statistics
-        let stats = interp.get_type_feedback_stats();
-        assert!(stats.total_call_sites > 0);
-        assert!(stats.monomorphic_call_sites > 0);
-
-        // Check specialization candidates for function calls
-        let candidates = interp.get_specialization_candidates();
-        let call_candidates: Vec<_> = candidates
-            .iter()
-            .filter(|c| matches!(c.kind, SpecializationKind::FunctionCall { .. }))
-            .collect();
-        assert!(!call_candidates.is_empty());
-    }
-
-    #[test]
-    fn test_type_feedback_polymorphic_detection() {
-        use crate::frontend::ast::Span;
-        let mut interp = Interpreter::new();
-
-        // Create integer addition
-        let int_expr = Expr::new(
-            ExprKind::Binary {
-                left: Box::new(Expr::new(
-                    ExprKind::Literal(Literal::Integer(1)),
-                    Span::new(0, 1),
-                )),
-                op: AstBinaryOp::Add,
-                right: Box::new(Expr::new(
-                    ExprKind::Literal(Literal::Integer(2)),
-                    Span::new(4, 5),
-                )),
-            },
-            Span::new(0, 5),
-        );
-
-        // Create float addition (different site)
-        let float_expr = Expr::new(
-            ExprKind::Binary {
-                left: Box::new(Expr::new(
-                    ExprKind::Literal(Literal::Float(1.5)),
-                    Span::new(10, 13),
-                )),
-                op: AstBinaryOp::Add,
-                right: Box::new(Expr::new(
-                    ExprKind::Literal(Literal::Float(2.5)),
-                    Span::new(16, 19),
-                )),
-            },
-            Span::new(10, 19),
-        );
-
-        // Evaluate both expressions multiple times
-        for _ in 0..12 {
-            let _ = interp
-                .eval_expr(&int_expr)
-                .expect("Should evaluate int addition");
-            let _ = interp
-                .eval_expr(&float_expr)
-                .expect("Should evaluate float addition");
-        }
-
-        // Check that we have multiple operation sites
-        let stats = interp.get_type_feedback_stats();
-        assert_eq!(stats.total_operation_sites, 2);
-        assert_eq!(stats.monomorphic_operation_sites, 2); // Both should be monomorphic
-        assert_eq!(stats.total_samples, 24); // 12 * 2 operations
-
-        // Both should be candidates for specialization
-        let candidates = interp.get_specialization_candidates();
-        let op_candidates: Vec<_> = candidates
-            .iter()
-            .filter(|c| matches!(c.kind, SpecializationKind::BinaryOperation { .. }))
-            .collect();
-        assert_eq!(op_candidates.len(), 2);
-    }
-
-    #[test]
-    fn test_type_feedback_clear() {
-        use crate::frontend::ast::Span;
-        let mut interp = Interpreter::new();
-
-        // Create and evaluate a simple expression
-        let expr = Expr::new(
-            ExprKind::Binary {
-                left: Box::new(Expr::new(
-                    ExprKind::Literal(Literal::Integer(1)),
-                    Span::new(0, 1),
-                )),
-                op: AstBinaryOp::Add,
-                right: Box::new(Expr::new(
-                    ExprKind::Literal(Literal::Integer(1)),
-                    Span::new(4, 5),
-                )),
-            },
-            Span::new(0, 5),
-        );
-
-        let _ = interp.eval_expr(&expr).expect("Should evaluate");
-
-        // Verify feedback was collected
-        let stats_before = interp.get_type_feedback_stats();
-        assert!(stats_before.total_samples > 0);
-
-        // Clear feedback and verify
-        interp.clear_type_feedback();
-        let stats_after = interp.get_type_feedback_stats();
-        assert_eq!(stats_after.total_samples, 0);
-        assert_eq!(stats_after.total_operation_sites, 0);
-    }
-
-    #[test]
-    fn test_gc_basic_tracking() {
-        let mut interp = Interpreter::new();
-
-        // Create some values to track
-        let values = vec![
-            Value::Integer(42),
-            Value::String(Rc::new("hello".to_string())),
-            Value::Array(Rc::new(vec![Value::Integer(1), Value::Integer(2)])),
-        ];
-
-        // Track them in GC
-        for value in values {
-            interp.gc_track(value);
-        }
-
-        // Check GC info
-        let info = interp.gc_info();
-        assert_eq!(info.total_objects, 3);
-        assert!(info.allocated_bytes > 0);
-        assert_eq!(info.collections_performed, 0);
-    }
-
-    #[test]
-    fn test_gc_collection() {
-        let mut interp = Interpreter::new();
-
-        // Disable auto-collection for manual testing
-        interp.gc_set_auto_collect(false);
-
-        // Track several objects
-        for i in 0..10 {
-            let value = Value::Integer(i);
-            interp.gc_track(value);
-        }
-
-        let info_before = interp.gc_info();
-        assert_eq!(info_before.total_objects, 10);
-
-        // Force garbage collection
-        let stats = interp.gc_collect();
-
-        // Since we treat all objects as roots conservatively, none should be collected
-        assert_eq!(stats.objects_collected, 0);
-        assert_eq!(stats.objects_after, 10);
-
-        let info_after = interp.gc_info();
-        assert_eq!(info_after.collections_performed, 1);
-    }
-
-    #[test]
-    fn test_gc_auto_collection() {
-        let mut interp = Interpreter::new();
-
-        // Set a very low threshold to trigger auto-collection
-        interp.gc_set_threshold(100);
-        interp.gc_set_auto_collect(true);
-
-        // Track a large object to trigger collection
-        let large_string = "x".repeat(200);
-        let value = Value::String(Rc::new(large_string));
-        interp.gc_track(value);
-
-        // Auto-collection should have been triggered
-        let info = interp.gc_info();
-        assert!(info.collections_performed > 0);
-    }
-
-    #[test]
-    fn test_gc_allocation_helpers() {
-        let mut interp = Interpreter::new();
-
-        // Test GC allocation helpers
-        let array = interp.gc_alloc_array(vec![Value::Integer(1), Value::Integer(2)]);
-        let string = interp.gc_alloc_string("test".to_string());
-
-        // Both should be tracked
-        let info = interp.gc_info();
-        assert_eq!(info.total_objects, 2);
-
-        // Verify the values are correct
-        match array {
-            Value::Array(arr) => {
-                assert_eq!(arr.len(), 2);
-                assert_eq!(arr[0], Value::Integer(1));
-                assert_eq!(arr[1], Value::Integer(2));
-            }
-            _ => panic!("Expected array"),
-        }
-
-        match string {
-            Value::String(s) => {
-                assert_eq!(s.as_ref(), "test");
-            }
-            _ => panic!("Expected string"),
-        }
-    }
-
-    #[test]
-    fn test_gc_size_estimation() {
-        let gc = ConservativeGC::new();
-
-        // Test size estimation for different value types
-        let int_size = gc.estimate_object_size(&Value::Integer(42));
-        let float_size = gc.estimate_object_size(&Value::Float(3.14));
-        let bool_size = gc.estimate_object_size(&Value::Bool(true));
-        let nil_size = gc.estimate_object_size(&Value::Nil);
-
-        assert_eq!(int_size, 8);
-        assert_eq!(float_size, 8);
-        assert_eq!(bool_size, 1);
-        assert_eq!(nil_size, 0);
-
-        // Test string size estimation
-        let string_val = Value::String(Rc::new("hello".to_string()));
-        let string_size = gc.estimate_object_size(&string_val);
-        assert_eq!(string_size, 5 + 24); // content + overhead
-
-        // Test array size estimation
-        let array_val = Value::Array(Rc::new(vec![Value::Integer(1), Value::Integer(2)]));
-        let array_size = gc.estimate_object_size(&array_val);
-        assert_eq!(array_size, 24 + 8 + 8); // overhead + 2 integers
-    }
-
-    #[test]
-    fn test_gc_threshold_management() {
-        let mut interp = Interpreter::new();
-
-        // Test threshold setting
-        interp.gc_set_threshold(2048);
-        let info = interp.gc_info();
-        assert_eq!(info.collection_threshold, 2048);
-
-        // Test auto-collect setting
-        interp.gc_set_auto_collect(false);
-        let info = interp.gc_info();
-        assert!(!info.auto_collect_enabled);
-
-        interp.gc_set_auto_collect(true);
-        let info = interp.gc_info();
-        assert!(info.auto_collect_enabled);
-    }
-
-    #[test]
-    fn test_gc_clear() {
-        let mut interp = Interpreter::new();
-
-        // Track some objects
-        for i in 0..5 {
-            interp.gc_track(Value::Integer(i));
-        }
-
-        let info_before = interp.gc_info();
-        assert_eq!(info_before.total_objects, 5);
-        assert!(info_before.allocated_bytes > 0);
-
-        // Clear GC
-        interp.gc_clear();
-
-        let info_after = interp.gc_info();
-        assert_eq!(info_after.total_objects, 0);
-        assert_eq!(info_after.allocated_bytes, 0);
-    }
-
-    #[test]
-    fn test_gc_stats_consistency() {
-        let mut interp = Interpreter::new();
-
-        // Track objects and get initial stats
-        for i in 0..3 {
-            interp.gc_track(Value::Integer(i));
-        }
-
-        let stats = interp.gc_stats();
-        let info = interp.gc_info();
-
-        // Stats and info should be consistent
-        assert_eq!(stats.objects_before, info.total_objects);
-        assert_eq!(stats.objects_after, info.total_objects);
-        assert_eq!(stats.bytes_before, info.allocated_bytes);
-        assert_eq!(stats.bytes_after, info.allocated_bytes);
-        assert_eq!(stats.objects_collected, 0);
-    }
-
-    // Direct-threaded interpreter tests
-
-    #[test]
-    fn test_direct_threaded_creation() {
-        let interp = DirectThreadedInterpreter::new();
-        assert_eq!(interp.instruction_count(), 0);
-        assert_eq!(interp.constants_count(), 0);
-    }
-
-    #[test]
-    fn test_direct_threaded_constants() {
-        let mut interp = DirectThreadedInterpreter::new();
-
-        let int_idx = interp.add_constant(Value::Integer(42));
-        let float_idx = interp.add_constant(Value::Float(3.14));
-        let string_idx = interp.add_constant(Value::String(Rc::new("hello".to_string())));
-
-        assert_eq!(int_idx, 0);
-        assert_eq!(float_idx, 1);
-        assert_eq!(string_idx, 2);
-        assert_eq!(interp.constants_count(), 3);
-    }
-
-    #[test]
-    fn test_direct_threaded_instruction_stream() {
-        let mut interp = DirectThreadedInterpreter::new();
-
-        // Add some constants
-        let const_idx = interp.add_constant(Value::Integer(42));
-
-        // Add instructions
-        interp.add_instruction(op_load_const, const_idx);
-        interp.add_instruction(op_load_nil, 0);
-
-        assert_eq!(interp.instruction_count(), 2);
-    }
-
-    #[test]
-    fn test_direct_threaded_literal_compilation() {
-        use crate::frontend::ast::{Expr, ExprKind};
-
-        let mut interp = DirectThreadedInterpreter::new();
-
-        // Compile integer literal
-        let int_ast = Expr::new(
-            ExprKind::Literal(Literal::Integer(42)),
-            crate::frontend::ast::Span::new(0, 0),
-        );
-        let result = interp.compile(&int_ast);
-        assert!(result.is_ok());
-
-        assert_eq!(interp.constants_count(), 1);
-        assert_eq!(interp.instruction_count(), 2); // load_const + return
-
-        // Compile float literal
-        let float_ast = Expr::new(
-            ExprKind::Literal(Literal::Float(3.14)),
-            crate::frontend::ast::Span::new(0, 0),
-        );
-        let result = interp.compile(&float_ast);
-        assert!(result.is_ok());
-
-        assert_eq!(interp.constants_count(), 1); // resets on each compile
-        assert_eq!(interp.instruction_count(), 2); // load_const + return
-
-        // Compile string literal
-        let string_ast = Expr::new(
-            ExprKind::Literal(Literal::String("hello".to_string())),
-            crate::frontend::ast::Span::new(0, 0),
-        );
-        let result = interp.compile(&string_ast);
-        assert!(result.is_ok());
-
-        assert_eq!(interp.constants_count(), 1); // resets on each compile
-        assert_eq!(interp.instruction_count(), 2); // load_const + return
-
-        // Compile boolean literal
-        let bool_ast = Expr::new(
-            ExprKind::Literal(Literal::Bool(true)),
-            crate::frontend::ast::Span::new(0, 0),
-        );
-        let result = interp.compile(&bool_ast);
-        assert!(result.is_ok());
-
-        assert_eq!(interp.constants_count(), 1); // resets on each compile
-        assert_eq!(interp.instruction_count(), 2); // load_const + return
-
-        // Compile nil literal
-        let nil_ast = Expr::new(
-            ExprKind::Literal(Literal::Unit),
-            crate::frontend::ast::Span::new(0, 0),
-        );
-        let result = interp.compile(&nil_ast);
-        assert!(result.is_ok());
-
-        assert_eq!(interp.instruction_count(), 2); // load_nil + return
-                                                   // Nil doesn't add to constants, uses special instruction
-    }
-
-    #[test]
-    fn test_direct_threaded_binary_op_compilation() {
-        use crate::frontend::ast::{BinaryOp, Expr, ExprKind};
-
-        let mut interp = DirectThreadedInterpreter::new();
-
-        // Compile: 2 + 3
-        let add_ast = Expr::new(
-            ExprKind::Binary {
-                op: BinaryOp::Add,
-                left: Box::new(Expr::new(
-                    ExprKind::Literal(Literal::Integer(2)),
-                    crate::frontend::ast::Span::new(0, 0),
-                )),
-                right: Box::new(Expr::new(
-                    ExprKind::Literal(Literal::Integer(3)),
-                    crate::frontend::ast::Span::new(0, 0),
-                )),
-            },
-            crate::frontend::ast::Span::new(0, 0),
-        );
-
-        let result = interp.compile(&add_ast);
-        assert!(result.is_ok());
-
-        // Should have: load_const(2), load_const(3), add, return
-        assert_eq!(interp.instruction_count(), 4);
-        assert_eq!(interp.constants_count(), 2);
-    }
-
-    #[test]
-    fn test_direct_threaded_identifier_compilation() {
-        use crate::frontend::ast::{Expr, ExprKind};
-
-        let mut interp = DirectThreadedInterpreter::new();
-
-        let ident_ast = Expr::new(
-            ExprKind::Identifier("x".to_string()),
-            crate::frontend::ast::Span::new(0, 0),
-        );
-        let result = interp.compile(&ident_ast);
-        assert!(result.is_ok());
-
-        // Should add variable name to constants and generate load_var instruction
-        assert_eq!(interp.constants_count(), 1);
-        assert_eq!(interp.instruction_count(), 2); // load_var + return
-    }
-
-    #[test]
-    fn test_direct_threaded_execution_simple() {
-        use crate::frontend::ast::{Expr, ExprKind};
-
-        let mut interp = DirectThreadedInterpreter::new();
-
-        // Compile and execute: 42
-        let ast = Expr::new(
-            ExprKind::Literal(Literal::Integer(42)),
-            crate::frontend::ast::Span::new(0, 0),
-        );
-        interp.compile(&ast).expect("Test should not fail");
-
-        let result = interp.execute();
-        assert!(result.is_ok());
-        assert_eq!(result.expect("Test should not fail"), Value::Integer(42));
-    }
-
-    #[test]
-    fn test_direct_threaded_execution_arithmetic() {
-        use crate::frontend::ast::{BinaryOp, Expr, ExprKind};
-
-        let mut interp = DirectThreadedInterpreter::new();
-
-        // Compile and execute: 2 + 3
-        let ast = Expr::new(
-            ExprKind::Binary {
-                op: BinaryOp::Add,
-                left: Box::new(Expr::new(
-                    ExprKind::Literal(Literal::Integer(2)),
-                    crate::frontend::ast::Span::new(0, 0),
-                )),
-                right: Box::new(Expr::new(
-                    ExprKind::Literal(Literal::Integer(3)),
-                    crate::frontend::ast::Span::new(0, 0),
-                )),
-            },
-            crate::frontend::ast::Span::new(0, 0),
-        );
-
-        interp.compile(&ast).expect("Test should not fail");
-        let result = interp.execute();
-        assert!(result.is_ok());
-        assert_eq!(result.expect("Test should not fail"), Value::Integer(5));
-    }
-
-    #[test]
-    fn test_direct_threaded_execution_subtraction() {
-        use crate::frontend::ast::{BinaryOp, Expr, ExprKind};
-
-        let mut interp = DirectThreadedInterpreter::new();
-
-        // Compile and execute: 10 - 4
-        let ast = Expr::new(
-            ExprKind::Binary {
-                op: BinaryOp::Subtract,
-                left: Box::new(Expr::new(
-                    ExprKind::Literal(Literal::Integer(10)),
-                    crate::frontend::ast::Span::new(0, 0),
-                )),
-                right: Box::new(Expr::new(
-                    ExprKind::Literal(Literal::Integer(4)),
-                    crate::frontend::ast::Span::new(0, 0),
-                )),
-            },
-            crate::frontend::ast::Span::new(0, 0),
-        );
-
-        interp.compile(&ast).expect("Test should not fail");
-        let result = interp.execute();
-        assert!(result.is_ok());
-        assert_eq!(result.expect("Test should not fail"), Value::Integer(6));
-    }
-
-    #[test]
-    fn test_direct_threaded_execution_multiplication() {
-        use crate::frontend::ast::{BinaryOp, Expr, ExprKind};
-
-        let mut interp = DirectThreadedInterpreter::new();
-
-        // Compile and execute: 6 * 7
-        let ast = Expr::new(
-            ExprKind::Binary {
-                op: BinaryOp::Multiply,
-                left: Box::new(Expr::new(
-                    ExprKind::Literal(Literal::Integer(6)),
-                    crate::frontend::ast::Span::new(0, 0),
-                )),
-                right: Box::new(Expr::new(
-                    ExprKind::Literal(Literal::Integer(7)),
-                    crate::frontend::ast::Span::new(0, 0),
-                )),
-            },
-            crate::frontend::ast::Span::new(0, 0),
-        );
-
-        interp.compile(&ast).expect("Test should not fail");
-        let result = interp.execute();
-        assert!(result.is_ok());
-        assert_eq!(result.expect("Test should not fail"), Value::Integer(42));
-    }
-
-    #[test]
-    fn test_direct_threaded_execution_division() {
-        use crate::frontend::ast::{BinaryOp, Expr, ExprKind};
-
-        let mut interp = DirectThreadedInterpreter::new();
-
-        // Compile and execute: 20 / 4
-        let ast = Expr::new(
-            ExprKind::Binary {
-                op: BinaryOp::Divide,
-                left: Box::new(Expr::new(
-                    ExprKind::Literal(Literal::Integer(20)),
-                    crate::frontend::ast::Span::new(0, 0),
-                )),
-                right: Box::new(Expr::new(
-                    ExprKind::Literal(Literal::Integer(4)),
-                    crate::frontend::ast::Span::new(0, 0),
-                )),
-            },
-            crate::frontend::ast::Span::new(0, 0),
-        );
-
-        interp.compile(&ast).expect("Test should not fail");
-        let result = interp.execute();
-        assert!(result.is_ok());
-        assert_eq!(result.expect("Test should not fail"), Value::Integer(5));
-    }
-
-    #[test]
-    fn test_direct_threaded_execution_mixed_types() {
-        use crate::frontend::ast::{BinaryOp, Expr, ExprKind};
-
-        let mut interp = DirectThreadedInterpreter::new();
-
-        // Compile and execute: 2.5 + 3 (float + int)
-        let ast = Expr::new(
-            ExprKind::Binary {
-                op: BinaryOp::Add,
-                left: Box::new(Expr::new(
-                    ExprKind::Literal(Literal::Float(2.5)),
-                    crate::frontend::ast::Span::new(0, 0),
-                )),
-                right: Box::new(Expr::new(
-                    ExprKind::Literal(Literal::Integer(3)),
-                    crate::frontend::ast::Span::new(0, 0),
-                )),
-            },
-            crate::frontend::ast::Span::new(0, 0),
-        );
-
-        interp.compile(&ast).expect("Test should not fail");
-        let result = interp.execute();
-        assert!(result.is_ok());
-        assert_eq!(result.expect("Test should not fail"), Value::Float(5.5));
-    }
-
-    #[test]
-    fn test_direct_threaded_execution_division_by_zero() {
-        use crate::frontend::ast::{BinaryOp, Expr, ExprKind};
-
-        let mut interp = DirectThreadedInterpreter::new();
-
-        // Compile and execute: 5 / 0
-        let ast = Expr::new(
-            ExprKind::Binary {
-                op: BinaryOp::Divide,
-                left: Box::new(Expr::new(
-                    ExprKind::Literal(Literal::Integer(5)),
-                    crate::frontend::ast::Span::new(0, 0),
-                )),
-                right: Box::new(Expr::new(
-                    ExprKind::Literal(Literal::Integer(0)),
-                    crate::frontend::ast::Span::new(0, 0),
-                )),
-            },
-            crate::frontend::ast::Span::new(0, 0),
-        );
-
-        interp.compile(&ast).expect("Test should not fail");
-        let result = interp.execute();
-        assert!(result.is_err());
-    }
-
-    #[test]
-    fn test_direct_threaded_execution_variable_lookup() {
-        use crate::frontend::ast::{Expr, ExprKind};
-        use std::collections::HashMap;
-
-        let mut interp = DirectThreadedInterpreter::new();
-
-        // Set up environment with variable
-        let mut env = HashMap::new();
-        env.insert("x".to_string(), Value::Integer(42));
-
-        // Compile and execute: x
-        let ast = Expr::new(
-            ExprKind::Identifier("x".to_string()),
-            crate::frontend::ast::Span::new(0, 0),
-        );
-        interp.compile(&ast).expect("Test should not fail");
-
-        let mut state = InterpreterState::new();
-        state.env_stack.push(env);
-        state.constants = interp.constants.clone();
-
-        // Execute with variable in environment
-        let result = interp.execute_with_state(&mut state);
-        assert!(result.is_ok());
-        assert_eq!(result.expect("Test should not fail"), Value::Integer(42));
-    }
-
-    #[test]
-    fn test_direct_threaded_execution_undefined_variable() {
-        use crate::frontend::ast::{Expr, ExprKind};
-
-        let mut interp = DirectThreadedInterpreter::new();
-
-        // Compile and execute: undefined_var
-        let ast = Expr::new(
-            ExprKind::Identifier("undefined_var".to_string()),
-            crate::frontend::ast::Span::new(0, 0),
-        );
-        interp.compile(&ast).expect("Test should not fail");
-
-        let result = interp.execute();
-        assert!(result.is_err());
-        match result.expect_err("Test should fail") {
-            InterpreterError::RuntimeError(msg) => {
-                assert!(msg.contains("Undefined variable"));
-            }
-            _ => panic!("Expected RuntimeError"),
-        }
-    }
-
-    #[test]
-    fn test_direct_threaded_instruction_handlers() {
-        let mut state = InterpreterState::new();
-
-        // Test op_load_const
-        state.constants.push(Value::Integer(42));
-        let result = op_load_const(&mut state, 0);
-        assert_eq!(result, InstructionResult::Continue);
-        assert_eq!(state.stack.len(), 1);
-        assert_eq!(state.stack[0], Value::Integer(42));
-
-        // Test op_load_nil
-        let result = op_load_nil(&mut state, 0);
-        assert_eq!(result, InstructionResult::Continue);
-        assert_eq!(state.stack.len(), 2);
-        assert_eq!(state.stack[1], Value::Nil);
-
-        // Test arithmetic operations
-        state.stack.clear();
-        state.stack.push(Value::Integer(5));
-        state.stack.push(Value::Integer(3));
-
-        let result = op_add(&mut state, 0);
-        assert_eq!(result, InstructionResult::Continue);
-        assert_eq!(state.stack.len(), 1);
-        assert_eq!(state.stack[0], Value::Integer(8));
-    }
-
-    #[test]
-    fn test_direct_threaded_clear() {
-        let mut interp = DirectThreadedInterpreter::new();
-
-        // Add some instructions and constants
-        interp.add_constant(Value::Integer(42));
-        interp.add_instruction(op_load_const, 0);
-
-        assert!(interp.instruction_count() > 0);
-        assert!(interp.constants_count() > 0);
-
-        // Clear should reset everything
-        interp.clear();
-
-        assert_eq!(interp.instruction_count(), 0);
-        assert_eq!(interp.constants_count(), 0);
-    }
-
-    #[test]
-    fn test_binary_arithmetic_operations() {
-        let mut interp = Interpreter::new();
-
-        // Addition
-        let result = interp.eval_string("5 + 3").unwrap();
-        assert_eq!(result, Value::Integer(8));
-
-        // Subtraction
-        let result = interp.eval_string("10 - 4").unwrap();
-        assert_eq!(result, Value::Integer(6));
-
-        // Multiplication
-        let result = interp.eval_string("6 * 7").unwrap();
-        assert_eq!(result, Value::Integer(42));
-
-        // Division
-        let result = interp.eval_string("15 / 3").unwrap();
-        assert_eq!(result, Value::Integer(5));
-
-        // Modulo
-        let result = interp.eval_string("17 % 5").unwrap();
-        assert_eq!(result, Value::Integer(2));
-    }
-
-    #[test]
-    fn test_unary_operations() {
-        let mut interp = Interpreter::new();
-
-        // Negation
-        let result = interp.eval_string("-5").unwrap();
-        assert_eq!(result, Value::Integer(-5));
-
-        // Boolean not
-        let result = interp.eval_string("!true").unwrap();
-        assert_eq!(result, Value::Bool(false));
-
-        let result = interp.eval_string("!false").unwrap();
-        assert_eq!(result, Value::Bool(true));
-    }
-
-    #[test]
-    fn test_string_operations() {
-        let mut interp = Interpreter::new();
-
-        // String concatenation
-        let result = interp.eval_string(r#""Hello, " + "World!""#).unwrap();
-        assert_eq!(result, Value::String(Rc::new("Hello, World!".to_string())));
-
-        // String length
-        let result = interp.eval_string(r#""test".length()"#).unwrap();
-        assert_eq!(result, Value::Integer(4));
-    }
-
-    #[test]
-    fn test_array_operations() {
-        let mut interp = Interpreter::new();
-
-        // Array creation
-        let result = interp.eval_string("[1, 2, 3]").unwrap();
-        match result {
-            Value::Array(arr) => assert_eq!(arr.len(), 3),
-            _ => panic!("Expected array"),
-        }
-
-        // Array indexing
-        let result = interp.eval_string("[10, 20, 30][1]").unwrap();
-        assert_eq!(result, Value::Integer(20));
-
-        // Array length
-        let result = interp.eval_string("[1, 2, 3, 4].length()").unwrap();
-        assert_eq!(result, Value::Integer(4));
-    }
-
-    #[test]
-    fn test_object_operations() {
-        let mut interp = Interpreter::new();
-
-        // Object creation
-        let result = interp.eval_string(r#"{ "x": 10, "y": 20 }"#).unwrap();
-        match result {
-            Value::Object(obj) => assert_eq!(obj.len(), 2),
-            _ => panic!("Expected object"),
-        }
-
-        // Object field access
-        let result = interp.eval_string(r#"{ "name": "test" }.name"#).unwrap();
-        assert_eq!(result, Value::String(Rc::new("test".to_string())));
-    }
-
-    #[test]
-    fn test_type_conversions() {
-        let mut interp = Interpreter::new();
-
-        // Integer to string
-        let result = interp.eval_string("(42).to_string()").unwrap();
-        assert_eq!(result, Value::String(Rc::new("42".to_string())));
-
-        // String to integer
-        let result = interp.eval_string(r#"int("123")"#).unwrap();
-        assert_eq!(result, Value::Integer(123));
-
-        // Boolean to string
-        let result = interp.eval_string("true.to_string()").unwrap();
-        assert_eq!(result, Value::String(Rc::new("true".to_string())));
-    }
-
-    #[test]
-    fn test_float_operations() {
-        let mut interp = Interpreter::new();
-
-        // Float arithmetic
-        let result = interp.eval_string("3.14 + 2.86").unwrap();
-        match result {
-            Value::Float(f) => assert!((f - 6.0).abs() < 0.001),
-            _ => panic!("Expected float"),
-        }
-
-        // Float division
-        let result = interp.eval_string("10.0 / 4.0").unwrap();
-        match result {
-            Value::Float(f) => assert!((f - 2.5).abs() < 0.001),
-            _ => panic!("Expected float"),
-        }
-    }
-
-    #[test]
-    fn test_error_handling_operations() {
-        let mut interp = Interpreter::new();
-
-        // Division by zero
-        let result = interp.eval_string("5 / 0");
-        assert!(result.is_err());
-
-        // Invalid array index
-        let result = interp.eval_string("[1, 2, 3][10]");
-        assert!(result.is_err());
-
-        // Undefined variable
-        let result = interp.eval_string("undefined_var");
-        assert!(result.is_err());
-
-        // Type error
-        let result = interp.eval_string(r#"5 + "string""#);
-        assert!(result.is_err());
-    }
-
-    #[test]
-    fn test_tuple_operations() {
-        let mut interp = Interpreter::new();
-
-        // Tuple creation
-        let result = interp.eval_string("(1, 2, 3)").unwrap();
-        match result {
-            Value::Tuple(tup) => assert_eq!(tup.len(), 3),
-            _ => panic!("Expected tuple"),
-        }
-
-        // Tuple indexing
-        let result = interp.eval_string("(10, 20, 30)[1]").unwrap();
-        assert_eq!(result, Value::Integer(20));
-    }
-
-    #[test]
-    fn test_bitwise_operations() {
-        let mut interp = Interpreter::new();
-
-        // Bitwise AND
-        let result = interp.eval_string("5 & 3").unwrap();
-        assert_eq!(result, Value::Integer(1));
-
-        // Bitwise OR
-        let result = interp.eval_string("5 | 3").unwrap();
-        assert_eq!(result, Value::Integer(7));
-
-        // Bitwise XOR
-        let result = interp.eval_string("5 ^ 3").unwrap();
-        assert_eq!(result, Value::Integer(6));
-
-        // Bitwise NOT
-        let result = interp.eval_string("~5").unwrap();
-        assert_eq!(result, Value::Integer(-6));
-
-        // Bit shift left
-        let result = interp.eval_string("2 << 3").unwrap();
-        assert_eq!(result, Value::Integer(16));
-
-        // Bit shift right
-        let result = interp.eval_string("16 >> 2").unwrap();
-        assert_eq!(result, Value::Integer(4));
-    }
-
-    #[test]
-    fn test_comparison_operations() {
-        let mut interp = Interpreter::new();
-
-        // Equality
-        let result = interp.eval_string("5 == 5").unwrap();
-        assert_eq!(result, Value::Bool(true));
-
-        let result = interp.eval_string("5 == 3").unwrap();
-        assert_eq!(result, Value::Bool(false));
-
-        // Inequality
-        let result = interp.eval_string("5 != 3").unwrap();
-        assert_eq!(result, Value::Bool(true));
-
-        // Greater than
-        let result = interp.eval_string("5 > 3").unwrap();
-        assert_eq!(result, Value::Bool(true));
-
-        // Less than
-        let result = interp.eval_string("3 < 5").unwrap();
-        assert_eq!(result, Value::Bool(true));
-
-        // Greater or equal
-        let result = interp.eval_string("5 >= 5").unwrap();
-        assert_eq!(result, Value::Bool(true));
-
-        // Less or equal
-        let result = interp.eval_string("3 <= 5").unwrap();
-        assert_eq!(result, Value::Bool(true));
-    }
-
-    #[test]
-    fn test_logical_operations() {
-        let mut interp = Interpreter::new();
-
-        // AND
-        let result = interp.eval_string("true && true").unwrap();
-        assert_eq!(result, Value::Bool(true));
-
-        let result = interp.eval_string("true && false").unwrap();
-        assert_eq!(result, Value::Bool(false));
-
-        // OR
-        let result = interp.eval_string("true || false").unwrap();
-        assert_eq!(result, Value::Bool(true));
-
-        let result = interp.eval_string("false || false").unwrap();
-        assert_eq!(result, Value::Bool(false));
-
-        // Short-circuit evaluation
-        interp.eval_string("let x = 0").unwrap();
-        let result = interp.eval_string("false && (x = 5)").unwrap();
-        assert_eq!(result, Value::Bool(false));
-        let result = interp.eval_string("x").unwrap();
-        assert_eq!(result, Value::Integer(0)); // x should still be 0
-    }
-
-    #[test]
-    fn test_range_operations() {
-        let mut interp = Interpreter::new();
-
-        // Range creation
-        let result = interp.eval_string("1..5").unwrap();
-        match result {
-            Value::Range { .. } => {},
-            _ => panic!("Expected range"),
-        }
-
-        // Range iteration
-        interp.eval_string("let sum = 0").unwrap();
-        interp.eval_string("for i in 1..4 { sum = sum + i }").unwrap();
-        let result = interp.eval_string("sum").unwrap();
-        assert_eq!(result, Value::Integer(6)); // 1 + 2 + 3
-    }
-
-    #[test]
-    fn test_closure_operations() {
-        let mut interp = Interpreter::new();
-
-        // Simple closure
-        interp.eval_string("let add = fn(x) { fn(y) { x + y } }").unwrap();
-        interp.eval_string("let add5 = add(5)").unwrap();
-        let result = interp.eval_string("add5(3)").unwrap();
-        assert_eq!(result, Value::Integer(8));
-
-        // Closure capturing
-        interp.eval_string("let x = 10").unwrap();
-        interp.eval_string("let get_x = fn() { x }").unwrap();
-        let result = interp.eval_string("get_x()").unwrap();
-        assert_eq!(result, Value::Integer(10));
-    }
-
-    #[test]
-    fn test_pattern_matching_operations() {
-        let mut interp = Interpreter::new();
-
-        // Simple match
-        let result = interp.eval_string("match 2 { 1 => 'a', 2 => 'b', _ => 'c' }").unwrap();
-        assert_eq!(result, Value::String(Rc::new("b".to_string())));
-
-        // Array destructuring
-        interp.eval_string("let [a, b, c] = [1, 2, 3]").unwrap();
-        let result = interp.eval_string("b").unwrap();
-        assert_eq!(result, Value::Integer(2));
-    }
-
-    #[test]
-    fn test_special_values() {
-        let mut interp = Interpreter::new();
-
-        // Nil/null
-        let result = interp.eval_string("nil").unwrap();
-        assert_eq!(result, Value::Nil);
-
-        // Boolean literals
-        let result = interp.eval_string("true").unwrap();
-        assert_eq!(result, Value::Bool(true));
-
-        let result = interp.eval_string("false").unwrap();
-        assert_eq!(result, Value::Bool(false));
-    }
-
-    #[test]
-    fn test_assignment_operations() {
-        let mut interp = Interpreter::new();
-
-        // Simple assignment
-        interp.eval_string("let x = 5").unwrap();
-        let result = interp.eval_string("x").unwrap();
-        assert_eq!(result, Value::Integer(5));
-
-        // Reassignment
-        interp.eval_string("x = 10").unwrap();
-        let result = interp.eval_string("x").unwrap();
-        assert_eq!(result, Value::Integer(10));
-
-        // Compound assignment
-        interp.eval_string("x += 5").unwrap();
-        let result = interp.eval_string("x").unwrap();
-        assert_eq!(result, Value::Integer(15));
-
-        interp.eval_string("x -= 3").unwrap();
-        let result = interp.eval_string("x").unwrap();
-        assert_eq!(result, Value::Integer(12));
-
-        interp.eval_string("x *= 2").unwrap();
-        let result = interp.eval_string("x").unwrap();
-        assert_eq!(result, Value::Integer(24));
-
-        interp.eval_string("x /= 4").unwrap();
-        let result = interp.eval_string("x").unwrap();
-        assert_eq!(result, Value::Integer(6));
-    }
-
-    #[test]
-    fn test_loop_operations() {
-        let mut interp = Interpreter::new();
-
-        // While loop
-        interp.eval_string("let i = 0").unwrap();
-        interp.eval_string("let sum = 0").unwrap();
-        interp.eval_string("while i < 5 { sum = sum + i; i = i + 1 }").unwrap();
-        let result = interp.eval_string("sum").unwrap();
-        assert_eq!(result, Value::Integer(10)); // 0+1+2+3+4
-
-        // For loop with break
-        interp.eval_string("let result = 0").unwrap();
-        interp.eval_string("for x in 1..10 { if x == 5 { break }; result = x }").unwrap();
-        let result = interp.eval_string("result").unwrap();
-        assert_eq!(result, Value::Integer(4));
-
-        // For loop with continue
-        interp.eval_string("let sum2 = 0").unwrap();
-        interp.eval_string("for x in 1..6 { if x == 3 { continue }; sum2 = sum2 + x }").unwrap();
-        let result = interp.eval_string("sum2").unwrap();
-        assert_eq!(result, Value::Integer(12)); // 1+2+4+5 (skip 3)
-    }
 }
+
+// Tests removed - moved to separate test files

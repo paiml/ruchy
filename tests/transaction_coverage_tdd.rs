@@ -4,9 +4,9 @@
 //! - Branch Coverage: ≥85%
 //! - All public APIs: 100%
 
+use ruchy::runtime::repl::Value;
 use ruchy::runtime::transaction::*;
 use std::rc::Rc;
-use ruchy::runtime::repl::Value;
 use std::time::Duration;
 
 // ============================================================================
@@ -69,7 +69,7 @@ fn test_transactional_state_new() {
 fn test_begin_transaction() {
     let mut state = TransactionalState::new(1024 * 1024);
     let metadata = TransactionMetadata::default();
-    
+
     let tx_id = state.begin_transaction(metadata).unwrap();
     assert_eq!(tx_id, TransactionId(1));
     assert_eq!(state.depth(), 1);
@@ -78,10 +78,14 @@ fn test_begin_transaction() {
 #[test]
 fn test_begin_multiple_transactions() {
     let mut state = TransactionalState::new(1024 * 1024);
-    
-    let tx1 = state.begin_transaction(TransactionMetadata::default()).unwrap();
-    let tx2 = state.begin_transaction(TransactionMetadata::default()).unwrap();
-    
+
+    let tx1 = state
+        .begin_transaction(TransactionMetadata::default())
+        .unwrap();
+    let tx2 = state
+        .begin_transaction(TransactionMetadata::default())
+        .unwrap();
+
     assert_eq!(tx1, TransactionId(1));
     assert_eq!(tx2, TransactionId(2));
     assert_eq!(state.depth(), 2);
@@ -90,14 +94,16 @@ fn test_begin_multiple_transactions() {
 #[test]
 fn test_commit_transaction() {
     let mut state = TransactionalState::new(1024 * 1024);
-    
-    let tx_id = state.begin_transaction(TransactionMetadata::default()).unwrap();
+
+    let tx_id = state
+        .begin_transaction(TransactionMetadata::default())
+        .unwrap();
     state.insert_binding("x".to_string(), Value::Integer(42), false);
-    
+
     assert_eq!(state.depth(), 1);
     state.commit_transaction(tx_id).unwrap();
     assert_eq!(state.depth(), 0);
-    
+
     // Binding should be preserved after commit
     assert_eq!(state.bindings().get("x"), Some(&Value::Integer(42)));
 }
@@ -105,21 +111,23 @@ fn test_commit_transaction() {
 #[test]
 fn test_rollback_transaction() {
     let mut state = TransactionalState::new(1024 * 1024);
-    
+
     // Initial binding
     state.insert_binding("x".to_string(), Value::Integer(10), false);
-    
+
     // Begin transaction and modify
-    let tx_id = state.begin_transaction(TransactionMetadata::default()).unwrap();
+    let tx_id = state
+        .begin_transaction(TransactionMetadata::default())
+        .unwrap();
     state.insert_binding("x".to_string(), Value::Integer(20), false);
     state.insert_binding("y".to_string(), Value::Integer(30), false);
-    
+
     assert_eq!(state.bindings().get("x"), Some(&Value::Integer(20)));
     assert_eq!(state.bindings().get("y"), Some(&Value::Integer(30)));
-    
+
     // Rollback
     state.rollback_transaction(tx_id).unwrap();
-    
+
     // Should restore original state
     assert_eq!(state.bindings().get("x"), Some(&Value::Integer(10)));
     assert!(state.bindings().get("y").is_none());
@@ -129,21 +137,25 @@ fn test_rollback_transaction() {
 #[test]
 fn test_nested_transactions() {
     let mut state = TransactionalState::new(1024 * 1024);
-    
+
     state.insert_binding("x".to_string(), Value::Integer(1), false);
-    
-    let tx1 = state.begin_transaction(TransactionMetadata::default()).unwrap();
+
+    let tx1 = state
+        .begin_transaction(TransactionMetadata::default())
+        .unwrap();
     state.insert_binding("x".to_string(), Value::Integer(2), false);
-    
-    let tx2 = state.begin_transaction(TransactionMetadata::default()).unwrap();
+
+    let tx2 = state
+        .begin_transaction(TransactionMetadata::default())
+        .unwrap();
     state.insert_binding("x".to_string(), Value::Integer(3), false);
-    
+
     assert_eq!(state.bindings().get("x"), Some(&Value::Integer(3)));
-    
+
     // Rollback inner transaction
     state.rollback_transaction(tx2).unwrap();
     assert_eq!(state.bindings().get("x"), Some(&Value::Integer(2)));
-    
+
     // Commit outer transaction
     state.commit_transaction(tx1).unwrap();
     assert_eq!(state.bindings().get("x"), Some(&Value::Integer(2)));
@@ -152,14 +164,16 @@ fn test_nested_transactions() {
 #[test]
 fn test_transaction_depth_limit() {
     let mut state = TransactionalState::new(1024 * 1024);
-    
+
     // Fill up to max depth (100)
     for _ in 0..100 {
-        state.begin_transaction(TransactionMetadata::default()).unwrap();
+        state
+            .begin_transaction(TransactionMetadata::default())
+            .unwrap();
     }
-    
+
     assert_eq!(state.depth(), 100);
-    
+
     // Next one should fail
     let result = state.begin_transaction(TransactionMetadata::default());
     assert!(result.is_err());
@@ -169,19 +183,24 @@ fn test_transaction_depth_limit() {
 #[test]
 fn test_commit_no_transaction() {
     let mut state = TransactionalState::new(1024 * 1024);
-    
+
     let result = state.commit_transaction(TransactionId(1));
     assert!(result.is_err());
-    assert!(result.unwrap_err().to_string().contains("No active transaction"));
+    assert!(result
+        .unwrap_err()
+        .to_string()
+        .contains("No active transaction"));
 }
 
 #[test]
 fn test_commit_wrong_transaction_id() {
     let mut state = TransactionalState::new(1024 * 1024);
-    
-    let _tx1 = state.begin_transaction(TransactionMetadata::default()).unwrap();
+
+    let _tx1 = state
+        .begin_transaction(TransactionMetadata::default())
+        .unwrap();
     let result = state.commit_transaction(TransactionId(999));
-    
+
     assert!(result.is_err());
     assert!(result.unwrap_err().to_string().contains("ID mismatch"));
 }
@@ -189,19 +208,24 @@ fn test_commit_wrong_transaction_id() {
 #[test]
 fn test_rollback_no_transaction() {
     let mut state = TransactionalState::new(1024 * 1024);
-    
+
     let result = state.rollback_transaction(TransactionId(1));
     assert!(result.is_err());
-    assert!(result.unwrap_err().to_string().contains("No active transaction"));
+    assert!(result
+        .unwrap_err()
+        .to_string()
+        .contains("No active transaction"));
 }
 
 #[test]
 fn test_rollback_wrong_transaction_id() {
     let mut state = TransactionalState::new(1024 * 1024);
-    
-    let _tx1 = state.begin_transaction(TransactionMetadata::default()).unwrap();
+
+    let _tx1 = state
+        .begin_transaction(TransactionMetadata::default())
+        .unwrap();
     let result = state.rollback_transaction(TransactionId(999));
-    
+
     assert!(result.is_err());
     assert!(result.unwrap_err().to_string().contains("ID mismatch"));
 }
@@ -213,12 +237,19 @@ fn test_rollback_wrong_transaction_id() {
 #[test]
 fn test_insert_binding() {
     let mut state = TransactionalState::new(1024 * 1024);
-    
+
     state.insert_binding("x".to_string(), Value::Integer(42), false);
-    state.insert_binding("y".to_string(), Value::String(Rc::new("hello".to_string())), true);
-    
+    state.insert_binding(
+        "y".to_string(),
+        Value::String(Rc::new("hello".to_string())),
+        true,
+    );
+
     assert_eq!(state.bindings().get("x"), Some(&Value::Integer(42)));
-    assert_eq!(state.bindings().get("y"), Some(&Value::String(Rc::new("hello".to_string()))));
+    assert_eq!(
+        state.bindings().get("y"),
+        Some(&Value::String(Rc::new("hello".to_string())))
+    );
     assert!(!state.is_mutable("x"));
     assert!(state.is_mutable("y"));
 }
@@ -226,10 +257,10 @@ fn test_insert_binding() {
 #[test]
 fn test_binding_mutability() {
     let mut state = TransactionalState::new(1024 * 1024);
-    
+
     state.insert_binding("immut".to_string(), Value::Integer(1), false);
     state.insert_binding("mut".to_string(), Value::Integer(2), true);
-    
+
     assert!(!state.is_mutable("immut"));
     assert!(state.is_mutable("mut"));
     assert!(!state.is_mutable("nonexistent"));
@@ -238,12 +269,14 @@ fn test_binding_mutability() {
 #[test]
 fn test_bindings_mut() {
     let mut state = TransactionalState::new(1024 * 1024);
-    
+
     state.insert_binding("x".to_string(), Value::Integer(1), false);
-    
+
     // Direct mutation through bindings_mut
-    state.bindings_mut().insert("y".to_string(), Value::Integer(2));
-    
+    state
+        .bindings_mut()
+        .insert("y".to_string(), Value::Integer(2));
+
     assert_eq!(state.bindings().get("x"), Some(&Value::Integer(1)));
     assert_eq!(state.bindings().get("y"), Some(&Value::Integer(2)));
 }
@@ -251,13 +284,13 @@ fn test_bindings_mut() {
 #[test]
 fn test_clear_state() {
     let mut state = TransactionalState::new(1024 * 1024);
-    
+
     state.insert_binding("x".to_string(), Value::Integer(1), false);
     state.insert_binding("y".to_string(), Value::Integer(2), true);
     let _tx = state.begin_transaction(TransactionMetadata::default());
-    
+
     state.clear();
-    
+
     assert!(state.bindings().is_empty());
     assert!(!state.is_mutable("x"));
     assert!(!state.is_mutable("y"));
@@ -271,7 +304,7 @@ fn test_clear_state() {
 #[test]
 fn test_check_transaction_limits_not_found() {
     let state = TransactionalState::new(1024 * 1024);
-    
+
     let result = state.check_transaction_limits(TransactionId(999));
     assert!(result.is_err());
     assert!(result.unwrap_err().to_string().contains("not found"));
@@ -280,8 +313,10 @@ fn test_check_transaction_limits_not_found() {
 #[test]
 fn test_check_transaction_limits_no_limits() {
     let mut state = TransactionalState::new(1024 * 1024);
-    
-    let tx_id = state.begin_transaction(TransactionMetadata::default()).unwrap();
+
+    let tx_id = state
+        .begin_transaction(TransactionMetadata::default())
+        .unwrap();
     let result = state.check_transaction_limits(tx_id);
     assert!(result.is_ok());
 }
@@ -289,20 +324,20 @@ fn test_check_transaction_limits_no_limits() {
 #[test]
 fn test_check_memory_limit() {
     let mut state = TransactionalState::new(1024 * 1024);
-    
+
     let metadata = TransactionMetadata {
         description: "memory limited".to_string(),
         memory_limit: Some(100), // Very small limit
         time_limit: None,
         speculative: false,
     };
-    
+
     let tx_id = state.begin_transaction(metadata).unwrap();
-    
+
     // Initially should be OK
     let result = state.check_transaction_limits(tx_id);
     assert!(result.is_ok());
-    
+
     // Note: Actually exceeding memory limit would require allocating in the arena
     // which is more complex to test here
 }
@@ -310,22 +345,25 @@ fn test_check_memory_limit() {
 #[test]
 fn test_check_time_limit() {
     let mut state = TransactionalState::new(1024 * 1024);
-    
+
     let metadata = TransactionMetadata {
         description: "time limited".to_string(),
         memory_limit: None,
         time_limit: Some(Duration::from_millis(1)), // Very short limit
         speculative: false,
     };
-    
+
     let tx_id = state.begin_transaction(metadata).unwrap();
-    
+
     // Sleep to exceed time limit
     std::thread::sleep(Duration::from_millis(2));
-    
+
     let result = state.check_transaction_limits(tx_id);
     assert!(result.is_err());
-    assert!(result.unwrap_err().to_string().contains("time limit exceeded"));
+    assert!(result
+        .unwrap_err()
+        .to_string()
+        .contains("time limit exceeded"));
 }
 
 // ============================================================================
@@ -355,7 +393,7 @@ fn test_transaction_event_begin() {
         id: TransactionId(1),
         metadata: TransactionMetadata::default(),
     };
-    
+
     match event {
         TransactionEvent::Begin { id, metadata } => {
             assert_eq!(id, TransactionId(1));
@@ -372,9 +410,13 @@ fn test_transaction_event_commit() {
         duration: Duration::from_secs(1),
         memory_used: 1024,
     };
-    
+
     match event {
-        TransactionEvent::Commit { id, duration, memory_used } => {
+        TransactionEvent::Commit {
+            id,
+            duration,
+            memory_used,
+        } => {
             assert_eq!(id, TransactionId(1));
             assert_eq!(duration, Duration::from_secs(1));
             assert_eq!(memory_used, 1024);
@@ -389,7 +431,7 @@ fn test_transaction_event_rollback() {
         id: TransactionId(1),
         reason: "test rollback".to_string(),
     };
-    
+
     match event {
         TransactionEvent::Rollback { id, reason } => {
             assert_eq!(id, TransactionId(1));
@@ -405,7 +447,7 @@ fn test_transaction_event_binding_added() {
         name: "x".to_string(),
         value_type: "Int".to_string(),
     };
-    
+
     match event {
         TransactionEvent::BindingAdded { name, value_type } => {
             assert_eq!(name, "x");
@@ -422,9 +464,13 @@ fn test_transaction_event_binding_modified() {
         old_type: "Int".to_string(),
         new_type: "String".to_string(),
     };
-    
+
     match event {
-        TransactionEvent::BindingModified { name, old_type, new_type } => {
+        TransactionEvent::BindingModified {
+            name,
+            old_type,
+            new_type,
+        } => {
             assert_eq!(name, "x");
             assert_eq!(old_type, "Int");
             assert_eq!(new_type, "String");
@@ -446,18 +492,18 @@ fn test_transaction_log_new() {
 #[test]
 fn test_transaction_log_log_event() {
     let mut log = TransactionLog::new(100);
-    
+
     log.log(TransactionEvent::Begin {
         id: TransactionId(1),
         metadata: TransactionMetadata::default(),
     });
-    
+
     log.log(TransactionEvent::Commit {
         id: TransactionId(1),
         duration: Duration::from_millis(100),
         memory_used: 512,
     });
-    
+
     let recent = log.recent_events(10);
     assert_eq!(recent.len(), 2);
 }
@@ -465,23 +511,23 @@ fn test_transaction_log_log_event() {
 #[test]
 fn test_transaction_log_max_entries() {
     let mut log = TransactionLog::new(2);
-    
+
     log.log(TransactionEvent::Begin {
         id: TransactionId(1),
         metadata: TransactionMetadata::default(),
     });
-    
+
     log.log(TransactionEvent::Commit {
         id: TransactionId(1),
         duration: Duration::from_millis(100),
         memory_used: 512,
     });
-    
+
     log.log(TransactionEvent::Begin {
         id: TransactionId(2),
         metadata: TransactionMetadata::default(),
     });
-    
+
     // Should only keep last 2 entries
     let recent = log.recent_events(10);
     assert_eq!(recent.len(), 2);
@@ -490,14 +536,14 @@ fn test_transaction_log_max_entries() {
 #[test]
 fn test_transaction_log_clear() {
     let mut log = TransactionLog::new(100);
-    
+
     log.log(TransactionEvent::Begin {
         id: TransactionId(1),
         metadata: TransactionMetadata::default(),
     });
-    
+
     assert!(!log.recent_events(10).is_empty());
-    
+
     log.clear();
     assert!(log.recent_events(10).is_empty());
 }
@@ -505,14 +551,14 @@ fn test_transaction_log_clear() {
 #[test]
 fn test_transaction_log_recent_events() {
     let mut log = TransactionLog::new(100);
-    
+
     for i in 0..5 {
         log.log(TransactionEvent::Begin {
             id: TransactionId(i),
             metadata: TransactionMetadata::default(),
         });
     }
-    
+
     assert_eq!(log.recent_events(3).len(), 3);
     assert_eq!(log.recent_events(10).len(), 5);
     assert_eq!(log.recent_events(0).len(), 0);
@@ -542,10 +588,10 @@ fn test_mvcc_begin_write() {
 #[test]
 fn test_mvcc_write_and_read() {
     let mut mvcc = MVCC::new();
-    
+
     let write_version = mvcc.begin_write();
     mvcc.write("x".to_string(), Value::Integer(42), write_version);
-    
+
     let value = mvcc.read("x", write_version);
     assert_eq!(value, Some(&Value::Integer(42)));
 }
@@ -561,13 +607,13 @@ fn test_mvcc_read_nonexistent() {
 #[test]
 fn test_mvcc_multiple_versions() {
     let mut mvcc = MVCC::new();
-    
+
     let v1 = mvcc.begin_write();
     mvcc.write("x".to_string(), Value::Integer(1), v1);
-    
+
     let v2 = mvcc.begin_write();
     mvcc.write("x".to_string(), Value::Integer(2), v2);
-    
+
     // Should be able to read both versions
     assert_eq!(mvcc.read("x", v1), Some(&Value::Integer(1)));
     assert_eq!(mvcc.read("x", v2), Some(&Value::Integer(2)));
@@ -576,7 +622,7 @@ fn test_mvcc_multiple_versions() {
 #[test]
 fn test_mvcc_garbage_collection() {
     let mut mvcc = MVCC::new();
-    
+
     // Create many versions
     let mut versions = Vec::new();
     for i in 0..15 {
@@ -584,15 +630,15 @@ fn test_mvcc_garbage_collection() {
         mvcc.write("x".to_string(), Value::Integer(i), v);
         versions.push(v);
     }
-    
+
     // Garbage collect old versions
     if versions.len() > 5 {
         mvcc.gc(versions[5]);
-        
+
         // Old versions should be gone
         assert!(mvcc.read("x", versions[0]).is_none());
         assert!(mvcc.read("x", versions[4]).is_none());
-        
+
         // Recent versions should still exist
         assert!(mvcc.read("x", versions[6]).is_some());
     }
@@ -605,32 +651,40 @@ fn test_mvcc_garbage_collection() {
 #[test]
 fn test_transactional_workflow() {
     let mut state = TransactionalState::new(1024 * 1024);
-    
+
     // Initial state
     state.insert_binding("counter".to_string(), Value::Integer(0), true);
-    
+
     // Transaction 1: Increment counter
-    let tx1 = state.begin_transaction(TransactionMetadata {
-        description: "increment".to_string(),
-        ..Default::default()
-    }).unwrap();
-    
+    let tx1 = state
+        .begin_transaction(TransactionMetadata {
+            description: "increment".to_string(),
+            ..Default::default()
+        })
+        .unwrap();
+
     state.insert_binding("counter".to_string(), Value::Integer(1), true);
     state.commit_transaction(tx1).unwrap();
-    
+
     assert_eq!(state.bindings().get("counter"), Some(&Value::Integer(1)));
-    
+
     // Transaction 2: Try increment but rollback
-    let tx2 = state.begin_transaction(TransactionMetadata {
-        description: "failed increment".to_string(),
-        ..Default::default()
-    }).unwrap();
-    
+    let tx2 = state
+        .begin_transaction(TransactionMetadata {
+            description: "failed increment".to_string(),
+            ..Default::default()
+        })
+        .unwrap();
+
     state.insert_binding("counter".to_string(), Value::Integer(2), true);
-    state.insert_binding("temp".to_string(), Value::String(Rc::new("test".to_string())), false);
-    
+    state.insert_binding(
+        "temp".to_string(),
+        Value::String(Rc::new("test".to_string())),
+        false,
+    );
+
     state.rollback_transaction(tx2).unwrap();
-    
+
     // Should be back to committed state
     assert_eq!(state.bindings().get("counter"), Some(&Value::Integer(1)));
     assert!(state.bindings().get("temp").is_none());
@@ -639,27 +693,29 @@ fn test_transactional_workflow() {
 #[test]
 fn test_speculative_evaluation() {
     let mut state = TransactionalState::new(1024 * 1024);
-    
+
     state.insert_binding("x".to_string(), Value::Integer(10), false);
-    
+
     // Begin speculative transaction
-    let tx = state.begin_transaction(TransactionMetadata {
-        description: "speculative".to_string(),
-        speculative: true,
-        ..Default::default()
-    }).unwrap();
-    
+    let tx = state
+        .begin_transaction(TransactionMetadata {
+            description: "speculative".to_string(),
+            speculative: true,
+            ..Default::default()
+        })
+        .unwrap();
+
     // Speculative changes
     state.insert_binding("x".to_string(), Value::Integer(20), false);
     state.insert_binding("y".to_string(), Value::Integer(30), false);
-    
+
     // Check speculative state
     assert_eq!(state.bindings().get("x"), Some(&Value::Integer(20)));
     assert_eq!(state.bindings().get("y"), Some(&Value::Integer(30)));
-    
+
     // Rollback speculation
     state.rollback_transaction(tx).unwrap();
-    
+
     // Back to original
     assert_eq!(state.bindings().get("x"), Some(&Value::Integer(10)));
     assert!(state.bindings().get("y").is_none());

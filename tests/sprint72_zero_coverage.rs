@@ -3,7 +3,7 @@
 
 #[cfg(test)]
 mod debugger_tests {
-    use ruchy::debugger::{Debugger, Breakpoint, DebugEvent};
+    use ruchy::debugger::{Breakpoint, DebugEvent, Debugger};
 
     #[test]
     fn test_debugger_basic() {
@@ -43,7 +43,7 @@ mod debugger_tests {
 
 #[cfg(test)]
 mod docs_tests {
-    use ruchy::docs::{DocGenerator, DocFormat};
+    use ruchy::docs::{DocFormat, DocGenerator};
     use ruchy::frontend::ast::{Expr, ExprKind};
 
     #[test]

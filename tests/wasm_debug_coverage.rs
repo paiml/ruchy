@@ -2,7 +2,7 @@
 // Target: Basic coverage for WASM debug module
 // Sprint 80: ALL NIGHT Coverage Marathon Phase 5
 
-use ruchy::backend::wasm::debug::{WasmDebugInfo, SourceLocation, DebugSymbol};
+use ruchy::backend::wasm::debug::{DebugSymbol, SourceLocation, WasmDebugInfo};
 
 // Basic debug info tests
 #[test]

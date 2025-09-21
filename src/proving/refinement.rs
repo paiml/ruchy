@@ -1,9 +1,9 @@
 //! Refinement type system for property verification
+use super::smt::{SmtBackend, SmtResult, SmtSolver};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt;
-use super::smt::{SmtSolver, SmtBackend, SmtResult};
 /// Refinement type
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RefinementType {
@@ -36,16 +36,16 @@ pub struct Predicate {
 }
 impl RefinementType {
     /// Create integer with bounds
-/// # Examples
-/// 
-/// ```
-/// use ruchy::proving::refinement::RefinementType;
-/// 
-/// let mut instance = RefinementType::new();
-/// let result = instance.bounded_int();
-/// assert_eq!(result, Ok(42));
-/// ```
-pub fn bounded_int(min: i64, max: i64) -> Self {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::proving::refinement::RefinementType;
+    ///
+    /// let mut instance = RefinementType::new();
+    /// let result = instance.bounded_int();
+    /// assert_eq!(result, Ok(42));
+    /// ```
+    pub fn bounded_int(min: i64, max: i64) -> Self {
         Self {
             base: BaseType::Int,
             predicate: Some(Predicate {
@@ -56,15 +56,15 @@ pub fn bounded_int(min: i64, max: i64) -> Self {
         }
     }
     /// Create positive integer
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::proving::refinement::positive_int;
-/// 
-/// let result = positive_int(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn positive_int() -> Self {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::proving::refinement::positive_int;
+    ///
+    /// let result = positive_int(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn positive_int() -> Self {
         Self {
             base: BaseType::Int,
             predicate: Some(Predicate {
@@ -75,15 +75,15 @@ pub fn positive_int() -> Self {
         }
     }
     /// Create non-empty array
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::proving::refinement::non_empty_array;
-/// 
-/// let result = non_empty_array(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn non_empty_array(elem_type: BaseType) -> Self {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::proving::refinement::non_empty_array;
+    ///
+    /// let result = non_empty_array(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn non_empty_array(elem_type: BaseType) -> Self {
         Self {
             base: BaseType::Array(Box::new(elem_type)),
             predicate: Some(Predicate {
@@ -94,15 +94,15 @@ pub fn non_empty_array(elem_type: BaseType) -> Self {
         }
     }
     /// Create sorted array
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::proving::refinement::sorted_array;
-/// 
-/// let result = sorted_array(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn sorted_array() -> Self {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::proving::refinement::sorted_array;
+    ///
+    /// let result = sorted_array(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn sorted_array() -> Self {
         Self {
             base: BaseType::Array(Box::new(BaseType::Int)),
             predicate: Some(Predicate {
@@ -133,7 +133,9 @@ impl fmt::Display for BaseType {
             Self::Tuple(ts) => {
                 write!(f, "(")?;
                 for (i, t) in ts.iter().enumerate() {
-                    if i > 0 { write!(f, ", ")?; }
+                    if i > 0 {
+                        write!(f, ", ")?;
+                    }
                     write!(f, "{t}")?;
                 }
                 write!(f, ")")
@@ -141,7 +143,9 @@ impl fmt::Display for BaseType {
             Self::Function(params, ret) => {
                 write!(f, "(")?;
                 for (i, p) in params.iter().enumerate() {
-                    if i > 0 { write!(f, ", ")?; }
+                    if i > 0 {
+                        write!(f, ", ")?;
+                    }
                     write!(f, "{p}")?;
                 }
                 write!(f, ") -> {ret}")
@@ -170,31 +174,31 @@ pub struct TypeRefinement {
 }
 impl TypeRefinement {
     /// Create new refinement
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::proving::refinement::new;
-/// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
-/// ```
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::proving::refinement::new;
-/// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
-/// ```
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::proving::refinement::new;
-/// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn new(name: &str, input: RefinementType, output: RefinementType) -> Self {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::proving::refinement::new;
+    ///
+    /// let result = new(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::proving::refinement::new;
+    ///
+    /// let result = new(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::proving::refinement::new;
+    ///
+    /// let result = new(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn new(name: &str, input: RefinementType, output: RefinementType) -> Self {
         Self {
             name: name.to_string(),
             input,
@@ -211,39 +215,39 @@ pub fn new(name: &str, input: RefinementType, output: RefinementType) -> Self {
         self.args.push((name.to_string(), ty));
     }
     /// Add precondition
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::proving::refinement::add_precondition;
-/// 
-/// let result = add_precondition("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn add_precondition(&mut self, pred: &str) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::proving::refinement::add_precondition;
+    ///
+    /// let result = add_precondition("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn add_precondition(&mut self, pred: &str) {
         self.preconditions.push(pred.to_string());
     }
     /// Add postcondition
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::proving::refinement::add_postcondition;
-/// 
-/// let result = add_postcondition("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn add_postcondition(&mut self, pred: &str) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::proving::refinement::add_postcondition;
+    ///
+    /// let result = add_postcondition("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn add_postcondition(&mut self, pred: &str) {
         self.postconditions.push(pred.to_string());
     }
     /// Add invariant
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::proving::refinement::add_invariant;
-/// 
-/// let result = add_invariant("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn add_invariant(&mut self, inv: &str) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::proving::refinement::add_invariant;
+    ///
+    /// let result = add_invariant("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn add_invariant(&mut self, inv: &str) {
         self.invariants.push(inv.to_string());
     }
 }
@@ -266,53 +270,57 @@ impl RefinementChecker {
         }
     }
     /// Set SMT backend
-/// # Examples
-/// 
-/// ```
-/// use ruchy::proving::refinement::RefinementChecker;
-/// 
-/// let mut instance = RefinementChecker::new();
-/// let result = instance.set_backend();
-/// // Verify behavior
-/// ```
-pub fn set_backend(&mut self, backend: SmtBackend) {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::proving::refinement::RefinementChecker;
+    ///
+    /// let mut instance = RefinementChecker::new();
+    /// let result = instance.set_backend();
+    /// // Verify behavior
+    /// ```
+    pub fn set_backend(&mut self, backend: SmtBackend) {
         self.backend = backend;
     }
     /// Declare variable
-/// # Examples
-/// 
-/// ```
-/// use ruchy::proving::refinement::RefinementChecker;
-/// 
-/// let mut instance = RefinementChecker::new();
-/// let result = instance.declare_var();
-/// // Verify behavior
-/// ```
-pub fn declare_var(&mut self, name: &str, ty: RefinementType) {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::proving::refinement::RefinementChecker;
+    ///
+    /// let mut instance = RefinementChecker::new();
+    /// let result = instance.declare_var();
+    /// // Verify behavior
+    /// ```
+    pub fn declare_var(&mut self, name: &str, ty: RefinementType) {
         self.env.insert(name.to_string(), ty);
     }
     /// Declare function
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::proving::refinement::declare_function;
-/// 
-/// let result = declare_function("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn declare_function(&mut self, name: &str, refinement: TypeRefinement) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::proving::refinement::declare_function;
+    ///
+    /// let result = declare_function("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn declare_function(&mut self, name: &str, refinement: TypeRefinement) {
         self.signatures.insert(name.to_string(), refinement);
     }
     /// Check subtyping
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::proving::refinement::is_subtype;
-/// 
-/// let result = is_subtype(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn is_subtype(&self, sub_type: &RefinementType, super_type: &RefinementType) -> Result<bool> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::proving::refinement::is_subtype;
+    ///
+    /// let result = is_subtype(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn is_subtype(
+        &self,
+        sub_type: &RefinementType,
+        super_type: &RefinementType,
+    ) -> Result<bool> {
         if sub_type.base != super_type.base {
             return Ok(false);
         }
@@ -336,16 +344,18 @@ pub fn is_subtype(&self, sub_type: &RefinementType, super_type: &RefinementType)
         }
     }
     /// Verify function refinement
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::proving::refinement::verify_function;
-/// 
-/// let result = verify_function("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn verify_function(&self, name: &str, body: &str) -> Result<VerificationResult> {
-        let refinement = self.signatures.get(name)
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::proving::refinement::verify_function;
+    ///
+    /// let result = verify_function("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn verify_function(&self, name: &str, body: &str) -> Result<VerificationResult> {
+        let refinement = self
+            .signatures
+            .get(name)
             .ok_or_else(|| anyhow::anyhow!("Unknown function: {}", name))?;
         let mut solver = SmtSolver::new(self.backend);
         for pre in &refinement.preconditions {
@@ -357,21 +367,23 @@ pub fn verify_function(&self, name: &str, body: &str) -> Result<VerificationResu
         }
         match solver.check_sat()? {
             SmtResult::Unsat => Ok(VerificationResult::Valid),
-            SmtResult::Sat => Ok(VerificationResult::Invalid("Postcondition violation".to_string())),
+            SmtResult::Sat => Ok(VerificationResult::Invalid(
+                "Postcondition violation".to_string(),
+            )),
             _ => Ok(VerificationResult::Unknown),
         }
     }
     /// Check invariant preservation
-/// # Examples
-/// 
-/// ```
-/// use ruchy::proving::refinement::RefinementChecker;
-/// 
-/// let mut instance = RefinementChecker::new();
-/// let result = instance.check_invariant();
-/// // Verify behavior
-/// ```
-pub fn check_invariant(&self, invariant: &str, body: &str) -> Result<bool> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::proving::refinement::RefinementChecker;
+    ///
+    /// let mut instance = RefinementChecker::new();
+    /// let result = instance.check_invariant();
+    /// // Verify behavior
+    /// ```
+    pub fn check_invariant(&self, invariant: &str, body: &str) -> Result<bool> {
         let mut solver = SmtSolver::new(self.backend);
         solver.assert(invariant);
         solver.assert(body);
@@ -396,27 +408,27 @@ pub enum VerificationResult {
 }
 impl VerificationResult {
     /// Check if valid
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::proving::refinement::is_valid;
-/// 
-/// let result = is_valid(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn is_valid(&self) -> bool {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::proving::refinement::is_valid;
+    ///
+    /// let result = is_valid(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn is_valid(&self) -> bool {
         matches!(self, Self::Valid)
     }
     /// Get error message
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::proving::refinement::error;
-/// 
-/// let result = error(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn error(&self) -> Option<&str> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::proving::refinement::error;
+    ///
+    /// let result = error(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn error(&self) -> Option<&str> {
         match self {
             Self::Invalid(msg) => Some(msg),
             _ => None,
@@ -437,19 +449,21 @@ impl LiquidTypeInference {
         }
     }
     /// Infer refinement type
-/// # Examples
-/// 
-/// ```
-/// use ruchy::proving::refinement::LiquidTypeInference;
-/// 
-/// let mut instance = LiquidTypeInference::new();
-/// let result = instance.infer();
-/// // Verify behavior
-/// ```
-pub fn infer(&mut self, expr: &str) -> Result<RefinementType> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::proving::refinement::LiquidTypeInference;
+    ///
+    /// let mut instance = LiquidTypeInference::new();
+    /// let result = instance.infer();
+    /// // Verify behavior
+    /// ```
+    pub fn infer(&mut self, expr: &str) -> Result<RefinementType> {
         match expr {
             s if s.parse::<i64>().is_ok() => {
-                let n = s.parse::<i64>().expect("Failed to parse integer after validation");
+                let n = s
+                    .parse::<i64>()
+                    .expect("Failed to parse integer after validation");
                 Ok(RefinementType {
                     base: BaseType::Int,
                     predicate: Some(Predicate {
@@ -472,28 +486,28 @@ pub fn infer(&mut self, expr: &str) -> Result<RefinementType> {
         }
     }
     /// Add constraint
-/// # Examples
-/// 
-/// ```
-/// use ruchy::proving::refinement::LiquidTypeInference;
-/// 
-/// let mut instance = LiquidTypeInference::new();
-/// let result = instance.add_constraint();
-/// // Verify behavior
-/// ```
-pub fn add_constraint(&mut self, constraint: &str) {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::proving::refinement::LiquidTypeInference;
+    ///
+    /// let mut instance = LiquidTypeInference::new();
+    /// let result = instance.add_constraint();
+    /// // Verify behavior
+    /// ```
+    pub fn add_constraint(&mut self, constraint: &str) {
         self.constraints.push(constraint.to_string());
     }
     /// Solve constraints
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::proving::refinement::solve;
-/// 
-/// let result = solve(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn solve(&self) -> Result<bool> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::proving::refinement::solve;
+    ///
+    /// let result = solve(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn solve(&self) -> Result<bool> {
         let mut solver = SmtSolver::new(self.checker.backend);
         for constraint in &self.constraints {
             solver.assert(constraint);
@@ -524,10 +538,13 @@ mod tests {
     #[test]
     fn test_base_type_display() {
         assert_eq!(BaseType::Int.to_string(), "Int");
-        assert_eq!(BaseType::Array(Box::new(BaseType::Int)).to_string(), "[Int]");
+        assert_eq!(
+            BaseType::Array(Box::new(BaseType::Int)).to_string(),
+            "[Int]"
+        );
         let func = BaseType::Function(
             vec![BaseType::Int, BaseType::Bool],
-            Box::new(BaseType::String)
+            Box::new(BaseType::String),
         );
         assert_eq!(func.to_string(), "(Int, Bool) -> String");
     }
@@ -580,7 +597,11 @@ mod tests {
 
     #[test]
     fn test_type_refinement_creation() {
-        let mut refinement = TypeRefinement::new("add", RefinementType::positive_int(), RefinementType::positive_int());
+        let mut refinement = TypeRefinement::new(
+            "add",
+            RefinementType::positive_int(),
+            RefinementType::positive_int(),
+        );
         assert_eq!(refinement.name, "add");
 
         refinement.add_arg("x", RefinementType::bounded_int(0, 10));
@@ -609,7 +630,7 @@ mod tests {
         let mut checker = RefinementChecker::new();
         let ty = RefinementType::positive_int();
 
-        checker.declare_var("count", ty.clone());
+        checker.declare_var("count", ty);
         assert!(checker.env.contains_key("count"));
 
         let stored = &checker.env["count"];
@@ -619,9 +640,13 @@ mod tests {
     #[test]
     fn test_refinement_checker_declare_function() {
         let mut checker = RefinementChecker::new();
-        let refinement = TypeRefinement::new("increment", RefinementType::positive_int(), RefinementType::positive_int());
+        let refinement = TypeRefinement::new(
+            "increment",
+            RefinementType::positive_int(),
+            RefinementType::positive_int(),
+        );
 
-        checker.declare_function("increment", refinement.clone());
+        checker.declare_function("increment", refinement);
         assert!(checker.signatures.contains_key("increment"));
 
         let stored = &checker.signatures["increment"];
@@ -709,24 +734,21 @@ mod tests {
                 assert_eq!(elems[0], BaseType::Int);
                 assert_eq!(elems[1], BaseType::Bool);
                 assert_eq!(elems[2], BaseType::String);
-            },
+            }
             _ => panic!("Expected tuple type"),
         }
     }
 
     #[test]
     fn test_function_type() {
-        let func = BaseType::Function(
-            vec![BaseType::Int, BaseType::Int],
-            Box::new(BaseType::Bool)
-        );
+        let func = BaseType::Function(vec![BaseType::Int, BaseType::Int], Box::new(BaseType::Bool));
 
         match func {
             BaseType::Function(args, ret) => {
                 assert_eq!(args.len(), 2);
                 assert_eq!(args[0], BaseType::Int);
                 assert_eq!(*ret, BaseType::Bool);
-            },
+            }
             _ => panic!("Expected function type"),
         }
     }
@@ -765,9 +787,7 @@ mod tests {
 
     #[test]
     fn test_nested_array() {
-        let nested = BaseType::Array(Box::new(
-            BaseType::Array(Box::new(BaseType::Int))
-        ));
+        let nested = BaseType::Array(Box::new(BaseType::Array(Box::new(BaseType::Int))));
 
         let formatted = nested.to_string();
         assert_eq!(formatted, "[[Int]]");
@@ -805,8 +825,7 @@ mod tests {
 #[cfg(test)]
 mod property_tests_refinement {
     use proptest::proptest;
-    
-    
+
     proptest! {
         /// Property: Function never panics on any input
         #[test]

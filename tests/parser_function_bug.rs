@@ -3,24 +3,30 @@
 
 use ruchy::Parser;
 
-#[test] 
+#[test]
 fn test_fun_keyword_parsing() {
     let mut parser = Parser::new("fun main() { println(\"Hello\") }");
     let result = parser.parse();
-    
+
     // This MUST fail initially - parser doesn't handle Fun token in expressions.rs
-    assert!(result.is_ok(), "Parser should handle 'fun' keyword in top-level expressions");
+    assert!(
+        result.is_ok(),
+        "Parser should handle 'fun' keyword in top-level expressions"
+    );
 }
 
 #[test]
 fn test_fun_with_parameters() {
     let mut parser = Parser::new("fun greet(name: str) { println(\"Hello, {}!\", name) }");
     let result = parser.parse();
-    
-    assert!(result.is_ok(), "Parser should handle 'fun' with typed parameters");
+
+    assert!(
+        result.is_ok(),
+        "Parser should handle 'fun' with typed parameters"
+    );
 }
 
-#[test]  
+#[test]
 fn test_multiple_functions() {
     let code = r"
         fun add(a: int, b: int) -> int {
@@ -30,10 +36,10 @@ fn test_multiple_functions() {
         fun main() {
             println(add(1, 2))
         }";
-    
+
     let mut parser = Parser::new(code);
     let result = parser.parse();
-    
+
     assert!(result.is_ok(), "Parser should handle multiple functions");
 }
 
@@ -47,17 +53,20 @@ fn test_function_with_body() {
                 n * factorial(n - 1)
             }
         }";
-    
+
     let mut parser = Parser::new(code);
     let result = parser.parse();
-    
-    assert!(result.is_ok(), "Parser should handle functions with complex bodies");
+
+    assert!(
+        result.is_ok(),
+        "Parser should handle functions with complex bodies"
+    );
 }
 
 #[test]
 fn test_function_return_type() {
     let mut parser = Parser::new("fun get_answer() -> int { 42 }");
     let result = parser.parse();
-    
+
     assert!(result.is_ok(), "Parser should handle function return types");
 }

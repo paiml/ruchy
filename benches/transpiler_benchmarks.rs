@@ -15,42 +15,30 @@ fn parse_and_transpile(code: &str) -> String {
 
 fn benchmark_simple_transpilation(c: &mut Criterion) {
     c.bench_function("transpile_literal", |b| {
-        b.iter(|| {
-            parse_and_transpile(black_box("42"))
-        })
+        b.iter(|| parse_and_transpile(black_box("42")))
     });
 
     c.bench_function("transpile_arithmetic", |b| {
-        b.iter(|| {
-            parse_and_transpile(black_box("2 + 3 * 4 - 5"))
-        })
+        b.iter(|| parse_and_transpile(black_box("2 + 3 * 4 - 5")))
     });
 
     c.bench_function("transpile_variable", |b| {
-        b.iter(|| {
-            parse_and_transpile(black_box("let x = 42; x + 1"))
-        })
+        b.iter(|| parse_and_transpile(black_box("let x = 42; x + 1")))
     });
 
     c.bench_function("transpile_string", |b| {
-        b.iter(|| {
-            parse_and_transpile(black_box(r#""hello, world""#))
-        })
+        b.iter(|| parse_and_transpile(black_box(r#""hello, world""#)))
     });
 
     c.bench_function("transpile_string_interpolation", |b| {
-        b.iter(|| {
-            parse_and_transpile(black_box(r#"f"The value is {x} and {y}""#))
-        })
+        b.iter(|| parse_and_transpile(black_box(r#"f"The value is {x} and {y}""#)))
     });
 }
 
 fn benchmark_control_flow_transpilation(c: &mut Criterion) {
     c.bench_function("transpile_if_else", |b| {
         let code = "if x > 0 { x * 2 } else { x * -1 }";
-        b.iter(|| {
-            parse_and_transpile(black_box(code))
-        })
+        b.iter(|| parse_and_transpile(black_box(code)))
     });
 
     c.bench_function("transpile_match", |b| {
@@ -60,39 +48,29 @@ fn benchmark_control_flow_transpilation(c: &mut Criterion) {
                 None => 0
             }
         "#;
-        b.iter(|| {
-            parse_and_transpile(black_box(code))
-        })
+        b.iter(|| parse_and_transpile(black_box(code)))
     });
 
     c.bench_function("transpile_for_loop", |b| {
         let code = "for i in 0..10 { sum = sum + i }";
-        b.iter(|| {
-            parse_and_transpile(black_box(code))
-        })
+        b.iter(|| parse_and_transpile(black_box(code)))
     });
 
     c.bench_function("transpile_while_loop", |b| {
         let code = "while x < 100 { x = x * 2 }";
-        b.iter(|| {
-            parse_and_transpile(black_box(code))
-        })
+        b.iter(|| parse_and_transpile(black_box(code)))
     });
 }
 
 fn benchmark_function_transpilation(c: &mut Criterion) {
     c.bench_function("transpile_function", |b| {
         let code = "fn add(x: int, y: int) -> int { x + y }";
-        b.iter(|| {
-            parse_and_transpile(black_box(code))
-        })
+        b.iter(|| parse_and_transpile(black_box(code)))
     });
 
     c.bench_function("transpile_lambda", |b| {
         let code = "x => x * 2";
-        b.iter(|| {
-            parse_and_transpile(black_box(code))
-        })
+        b.iter(|| parse_and_transpile(black_box(code)))
     });
 
     c.bench_function("transpile_recursive_function", |b| {
@@ -105,46 +83,34 @@ fn benchmark_function_transpilation(c: &mut Criterion) {
                 }
             }
         "#;
-        b.iter(|| {
-            parse_and_transpile(black_box(code))
-        })
+        b.iter(|| parse_and_transpile(black_box(code)))
     });
 
     c.bench_function("transpile_generic_function", |b| {
         let code = "fn identity<T>(x: T) -> T { x }";
-        b.iter(|| {
-            parse_and_transpile(black_box(code))
-        })
+        b.iter(|| parse_and_transpile(black_box(code)))
     });
 }
 
 fn benchmark_data_structure_transpilation(c: &mut Criterion) {
     c.bench_function("transpile_list", |b| {
         let code = "[1, 2, 3, 4, 5]";
-        b.iter(|| {
-            parse_and_transpile(black_box(code))
-        })
+        b.iter(|| parse_and_transpile(black_box(code)))
     });
 
     c.bench_function("transpile_tuple", |b| {
         let code = "(1, \"hello\", true)";
-        b.iter(|| {
-            parse_and_transpile(black_box(code))
-        })
+        b.iter(|| parse_and_transpile(black_box(code)))
     });
 
     c.bench_function("transpile_object", |b| {
         let code = "{ name: \"John\", age: 30, active: true }";
-        b.iter(|| {
-            parse_and_transpile(black_box(code))
-        })
+        b.iter(|| parse_and_transpile(black_box(code)))
     });
 
     c.bench_function("transpile_nested_structures", |b| {
         let code = "[[1, 2], [3, 4], [5, 6]]";
-        b.iter(|| {
-            parse_and_transpile(black_box(code))
-        })
+        b.iter(|| parse_and_transpile(black_box(code)))
     });
 }
 
@@ -156,9 +122,7 @@ fn benchmark_class_transpilation(c: &mut Criterion) {
                 y: float
             }
         "#;
-        b.iter(|| {
-            parse_and_transpile(black_box(code))
-        })
+        b.iter(|| parse_and_transpile(black_box(code)))
     });
 
     c.bench_function("transpile_impl_block", |b| {
@@ -173,9 +137,7 @@ fn benchmark_class_transpilation(c: &mut Criterion) {
                 }
             }
         "#;
-        b.iter(|| {
-            parse_and_transpile(black_box(code))
-        })
+        b.iter(|| parse_and_transpile(black_box(code)))
     });
 
     c.bench_function("transpile_trait", |b| {
@@ -185,9 +147,7 @@ fn benchmark_class_transpilation(c: &mut Criterion) {
                 fn get_bounds(self) -> Rect;
             }
         "#;
-        b.iter(|| {
-            parse_and_transpile(black_box(code))
-        })
+        b.iter(|| parse_and_transpile(black_box(code)))
     });
 
     c.bench_function("transpile_trait_impl", |b| {
@@ -207,9 +167,7 @@ fn benchmark_class_transpilation(c: &mut Criterion) {
                 }
             }
         "#;
-        b.iter(|| {
-            parse_and_transpile(black_box(code))
-        })
+        b.iter(|| parse_and_transpile(black_box(code)))
     });
 }
 
@@ -221,9 +179,7 @@ fn benchmark_async_transpilation(c: &mut Criterion) {
                 await response.json()
             }
         "#;
-        b.iter(|| {
-            parse_and_transpile(black_box(code))
-        })
+        b.iter(|| parse_and_transpile(black_box(code)))
     });
 
     c.bench_function("transpile_async_block", |b| {
@@ -233,9 +189,7 @@ fn benchmark_async_transpilation(c: &mut Criterion) {
                 process(data)
             }
         "#;
-        b.iter(|| {
-            parse_and_transpile(black_box(code))
-        })
+        b.iter(|| parse_and_transpile(black_box(code)))
     });
 }
 
@@ -272,9 +226,7 @@ fn benchmark_complex_transpilation(c: &mut Criterion) {
                 }
             }
         "#;
-        b.iter(|| {
-            parse_and_transpile(black_box(code))
-        })
+        b.iter(|| parse_and_transpile(black_box(code)))
     });
 
     c.bench_function("transpile_complex_match", |b| {
@@ -299,9 +251,7 @@ fn benchmark_complex_transpilation(c: &mut Criterion) {
                 }
             }
         "#;
-        b.iter(|| {
-            parse_and_transpile(black_box(code))
-        })
+        b.iter(|| parse_and_transpile(black_box(code)))
     });
 
     c.bench_function("transpile_pipeline_operations", |b| {
@@ -314,9 +264,7 @@ fn benchmark_complex_transpilation(c: &mut Criterion) {
                 |> sort_by_value()
                 |> take(10)
         "#;
-        b.iter(|| {
-            parse_and_transpile(black_box(code))
-        })
+        b.iter(|| parse_and_transpile(black_box(code)))
     });
 }
 
@@ -330,9 +278,7 @@ fn benchmark_stress_test_transpilation(c: &mut Criterion) {
         for _ in 0..15 {
             code.push_str(" }");
         }
-        b.iter(|| {
-            parse_and_transpile(black_box(&code))
-        })
+        b.iter(|| parse_and_transpile(black_box(&code)))
     });
 
     c.bench_function("transpile_many_functions", |b| {
@@ -340,9 +286,7 @@ fn benchmark_stress_test_transpilation(c: &mut Criterion) {
         for i in 0..20 {
             code.push_str(&format!("fn func{}(x: int) -> int {{ x + {} }}\n", i, i));
         }
-        b.iter(|| {
-            parse_and_transpile(black_box(&code))
-        })
+        b.iter(|| parse_and_transpile(black_box(&code)))
     });
 
     c.bench_function("transpile_large_struct", |b| {
@@ -351,9 +295,7 @@ fn benchmark_stress_test_transpilation(c: &mut Criterion) {
             code.push_str(&format!("    field{}: int,\n", i));
         }
         code.push_str("}");
-        b.iter(|| {
-            parse_and_transpile(black_box(&code))
-        })
+        b.iter(|| parse_and_transpile(black_box(&code)))
     });
 }
 

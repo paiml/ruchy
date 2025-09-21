@@ -70,14 +70,14 @@ pub struct ProvenanceTracker {
 impl ProvenanceTracker {
     /// Create a new provenance tracker for the given source
     #[must_use]
-/// # Examples
-///
-/// ```
-/// use ruchy::transpiler::provenance::ProvenanceTracker;
-///
-/// let tracker = ProvenanceTracker::new("let x = 5;");
-/// ```
-pub fn new(source: &str) -> Self {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::transpiler::provenance::ProvenanceTracker;
+    ///
+    /// let tracker = ProvenanceTracker::new("let x = 5;");
+    /// ```
+    pub fn new(source: &str) -> Self {
         Self {
             source_hash: Self::hash(source),
             transformations: Vec::new(),
@@ -86,44 +86,44 @@ pub fn new(source: &str) -> Self {
         }
     }
     /// Start tracking a new transformation pass
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::transpiler::provenance::ProvenanceTracker;
-///
-/// let mut tracker = ProvenanceTracker::new("source");
-/// tracker.begin_pass("optimization", "input");
-/// ```
-pub fn begin_pass(&mut self, name: &str, input: &str) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::transpiler::provenance::ProvenanceTracker;
+    ///
+    /// let mut tracker = ProvenanceTracker::new("source");
+    /// tracker.begin_pass("optimization", "input");
+    /// ```
+    pub fn begin_pass(&mut self, name: &str, input: &str) {
         if let Some(builder) = self.current_transformation.take() {
             self.transformations.push(builder.finish());
         }
         self.current_transformation = Some(TransformationBuilder::new(name, input));
     }
     /// Record a rule application
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::transpiler::provenance::record_rule;
-/// 
-/// let result = record_rule(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn record_rule(&mut self, rule: Rule) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::transpiler::provenance::record_rule;
+    ///
+    /// let result = record_rule(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn record_rule(&mut self, rule: Rule) {
         if let Some(ref mut builder) = self.current_transformation {
             builder.add_rule(rule);
         }
     }
     /// Finish the current pass
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::transpiler::provenance::end_pass;
-/// 
-/// let result = end_pass("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn end_pass(&mut self, output: &str) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::transpiler::provenance::end_pass;
+    ///
+    /// let result = end_pass("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn end_pass(&mut self, output: &str) {
         if let Some(mut builder) = self.current_transformation.take() {
             builder.set_output(output);
             self.transformations.push(builder.finish());
@@ -132,15 +132,15 @@ pub fn end_pass(&mut self, output: &str) {
     /// Generate the complete compilation trace
     #[must_use]
     #[allow(clippy::cast_possible_truncation)]
-/// # Examples
-/// 
-/// ```
-/// use ruchy::transpiler::provenance::finish;
-/// 
-/// let result = finish(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn finish(mut self) -> CompilationTrace {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::transpiler::provenance::finish;
+    ///
+    /// let result = finish(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn finish(mut self) -> CompilationTrace {
         // Finish any pending transformation
         if let Some(builder) = self.current_transformation.take() {
             self.transformations.push(builder.finish());
@@ -220,15 +220,15 @@ impl TraceDiffer {
     }
     /// Find the first point where the traces diverge
     #[must_use]
-/// # Examples
-/// 
-/// ```
-/// use ruchy::transpiler::provenance::find_divergence;
-/// 
-/// let result = find_divergence(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn find_divergence(&self) -> Option<DivergencePoint> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::transpiler::provenance::find_divergence;
+    ///
+    /// let result = find_divergence(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn find_divergence(&self) -> Option<DivergencePoint> {
         // Check source hash
         if self.trace1.source_hash != self.trace2.source_hash {
             return Some(DivergencePoint {
@@ -281,15 +281,15 @@ pub struct DivergencePoint {
 /// Integration with the transpiler
 impl crate::Transpiler {
     /// Transpile with provenance tracking
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::transpiler::provenance::transpile_with_provenance;
-/// 
-/// let result = transpile_with_provenance(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn transpile_with_provenance(
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::transpiler::provenance::transpile_with_provenance;
+    ///
+    /// let result = transpile_with_provenance(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn transpile_with_provenance(
         &self,
         expr: &crate::Expr,
     ) -> (
@@ -380,8 +380,7 @@ mod tests {
 #[cfg(test)]
 mod property_tests_provenance {
     use proptest::proptest;
-    use super::*;
-    
+
     proptest! {
         /// Property: Function never panics on any input
         #[test]
