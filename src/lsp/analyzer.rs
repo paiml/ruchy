@@ -208,7 +208,6 @@ impl Default for SemanticAnalyzer {
 #[cfg(test)]
 mod property_tests_analyzer {
     use proptest::prelude::*;
-    use proptest::proptest;
     proptest! {
         /// Property: Function never panics on any input
         #[test]

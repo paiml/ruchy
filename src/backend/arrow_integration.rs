@@ -232,6 +232,7 @@ fn convert_arrow_string(
     Ok(Series::new(name_str, values))
 }
 /// Efficient zero-copy operations for large datasets
+#[derive(Debug)]
 pub struct ArrowDataFrame {
     schema: SchemaRef,
     batches: Vec<RecordBatch>,
@@ -638,7 +639,7 @@ mod tests {
         // Test handling of nullable columns
         let values: Vec<Option<i32>> = vec![Some(1), None, Some(3), None, Some(5)];
         let s = Series::new(PlSmallStr::from("nullable"), values);
-        let df = DataFrame::new(vec![s]).unwrap();
+        let df = DataFrame::new(vec![s.into()]).unwrap();
 
         let batch = dataframe_to_arrow(&df).unwrap();
         assert_eq!(batch.num_rows(), 5);
@@ -718,13 +719,13 @@ mod property_tests_arrow_integration {
             int_values in prop::collection::vec(any::<i32>(), 1..10), // Smaller range for testing
             col_name in r"[a-zA-Z][a-zA-Z0-9_]*"
         ) {
-            use polars::prelude::{DataFrame, Series};
+            use polars::prelude::{DataFrame, Series, NamedFrom};
             use polars::datatypes::PlSmallStr;
 
             // Create DataFrame with random data
             let col_name_small = PlSmallStr::from(col_name.as_str());
             let series = Series::new(col_name_small, int_values);
-            let df = DataFrame::new(vec![series]).expect("Failed to create DataFrame");
+            let df = DataFrame::new(vec![series.into()]).expect("Failed to create DataFrame");
 
             // Convert to Arrow and back - should preserve shape
             if let Ok(record_batch) = dataframe_to_arrow(&df) {

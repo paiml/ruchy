@@ -1,7 +1,5 @@
 //! Core LSP server implementation
 use super::{Formatter, SemanticAnalyzer, Workspace, SEMANTIC_TOKEN_LEGEND};
-#[cfg(test)]
-use proptest::prelude::*;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use tower_lsp::jsonrpc::Result;
@@ -185,7 +183,6 @@ impl RuchyLanguageServer {
 #[cfg(test)]
 mod property_tests_server {
     use proptest::prelude::*;
-    use proptest::proptest;
     proptest! {
         /// Property: Function never panics on any input
         #[test]

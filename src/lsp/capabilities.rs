@@ -71,8 +71,6 @@ pub enum RuchyTokenType {
 /// assert_eq!(ruchy_token_to_lsp(RuchyTokenType::Actor), SemanticTokenType::CLASS);
 /// assert_eq!(ruchy_token_to_lsp(RuchyTokenType::DataFrame), SemanticTokenType::TYPE);
 /// ```
-#[cfg(test)]
-use proptest::prelude::*;
 pub fn ruchy_token_to_lsp(token: RuchyTokenType) -> SemanticTokenType {
     match token {
         RuchyTokenType::Actor => SemanticTokenType::CLASS,
@@ -84,7 +82,6 @@ pub fn ruchy_token_to_lsp(token: RuchyTokenType) -> SemanticTokenType {
 #[cfg(test)]
 mod property_tests_capabilities {
     use proptest::prelude::*;
-    use proptest::proptest;
     proptest! {
         /// Property: Function never panics on any input
         #[test]

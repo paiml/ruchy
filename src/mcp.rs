@@ -600,8 +600,6 @@ mod tests {
     }
     #[tokio::test]
     async fn test_ruchy_tool_handler() {
-        #[cfg(test)]
-        use proptest::prelude::*;
         use tokio_util::sync::CancellationToken;
         let tool = RuchyMCPTool::new("echo-tool".to_string(), "Echo input".to_string(), |args| {
             Ok(args)
@@ -635,9 +633,7 @@ mod tests {
 }
 #[cfg(test)]
 mod property_tests_mcp {
-    use super::*;
     use proptest::prelude::*;
-    use proptest::proptest;
     proptest! {
         /// Property: Function never panics on any input
         #[test]

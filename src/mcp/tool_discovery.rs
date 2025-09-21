@@ -5,8 +5,6 @@
 //! from paiml-mcp-agent-toolkit for optimal tool discovery.
 use crate::mcp::RuchyMCPTool;
 use anyhow::{anyhow, Result};
-#[cfg(test)]
-use proptest::prelude::*;
 use serde_json::{json, Value};
 use std::collections::HashMap;
 use std::process::Command;
@@ -639,7 +637,6 @@ impl Default for RuchyToolDiscovery {
 mod property_tests_tool_discovery {
     use super::*;
     use proptest::prelude::*;
-    use proptest::proptest;
 
     proptest! {
         /// Property: RuchyToolDiscovery::new() never panics
@@ -664,10 +661,9 @@ mod property_tests_tool_discovery {
         #[test]
         fn test_get_tool_never_panics(tool_name in ".*") {
             let discovery = RuchyToolDiscovery::new();
-            let result = std::panic::catch_unwind(|| {
-                discovery.get_tool(&tool_name)
-            });
-            assert!(result.is_ok(), "get_tool should never panic");
+            // Test that get_tool doesn't panic - if it returns an error, that's fine
+            let _result = discovery.get_tool(&tool_name);
+            // If we get here, the method didn't panic
         }
 
         /// Property: All discovery instances have the same tool count
