@@ -1,11 +1,11 @@
 //! Type inference helpers for transpiler
-//! 
+//!
 //! This module provides intelligent type inference by analyzing how
 //! parameters and expressions are used in function bodies.
-use crate::frontend::ast::{Expr, ExprKind, BinaryOp, Literal};
+use crate::frontend::ast::{BinaryOp, Expr, ExprKind, Literal};
 /// Analyzes if a parameter is used as an argument to a function that takes i32
 /// # Examples
-/// 
+///
 /// ```ignore
 /// use ruchy::backend::transpiler::type_inference::is_param_used_as_function_argument;
 /// use ruchy::frontend::ast::{Expr, ExprKind};
@@ -14,26 +14,19 @@ use crate::frontend::ast::{Expr, ExprKind, BinaryOp, Literal};
 /// ```
 pub fn is_param_used_as_function_argument(param_name: &str, expr: &Expr) -> bool {
     match &expr.kind {
-        ExprKind::Call { func, args } => {
-            check_call_for_param_argument(param_name, func, args)
-        }
-        ExprKind::Block(exprs) => {
-            check_expressions_for_param(param_name, exprs)
-        }
-        ExprKind::If { condition, then_branch, else_branch } => {
-            check_if_for_param(param_name, condition, then_branch, else_branch.as_deref())
-        }
-        ExprKind::Let { value, body, .. } | 
-        ExprKind::LetPattern { value, body, .. } => {
+        ExprKind::Call { func, args } => check_call_for_param_argument(param_name, func, args),
+        ExprKind::Block(exprs) => check_expressions_for_param(param_name, exprs),
+        ExprKind::If {
+            condition,
+            then_branch,
+            else_branch,
+        } => check_if_for_param(param_name, condition, then_branch, else_branch.as_deref()),
+        ExprKind::Let { value, body, .. } | ExprKind::LetPattern { value, body, .. } => {
             check_let_for_param(param_name, value, body)
         }
-        ExprKind::Binary { left, right, .. } => {
-            check_binary_for_param(param_name, left, right)
-        }
-        ExprKind::Unary { operand, .. } => {
-            is_param_used_as_function_argument(param_name, operand)
-        }
-        _ => false
+        ExprKind::Binary { left, right, .. } => check_binary_for_param(param_name, left, right),
+        ExprKind::Unary { operand, .. } => is_param_used_as_function_argument(param_name, operand),
+        _ => false,
     }
 }
 /// Check if parameter is used as argument in function call
@@ -50,31 +43,39 @@ fn check_call_for_param_argument(param_name: &str, func: &Expr, args: &[Expr]) -
         }
     }
     // Recursively check arguments
-    args.iter().any(|arg| is_param_used_as_function_argument(param_name, arg))
+    args.iter()
+        .any(|arg| is_param_used_as_function_argument(param_name, arg))
 }
 /// Check if parameter is used in expressions list
 fn check_expressions_for_param(param_name: &str, exprs: &[Expr]) -> bool {
-    exprs.iter().any(|e| is_param_used_as_function_argument(param_name, e))
+    exprs
+        .iter()
+        .any(|e| is_param_used_as_function_argument(param_name, e))
 }
 /// Check if parameter is used in if expression
-fn check_if_for_param(param_name: &str, condition: &Expr, then_branch: &Expr, else_branch: Option<&Expr>) -> bool {
-    is_param_used_as_function_argument(param_name, condition) ||
-    is_param_used_as_function_argument(param_name, then_branch) ||
-    else_branch.is_some_and(|e| is_param_used_as_function_argument(param_name, e))
+fn check_if_for_param(
+    param_name: &str,
+    condition: &Expr,
+    then_branch: &Expr,
+    else_branch: Option<&Expr>,
+) -> bool {
+    is_param_used_as_function_argument(param_name, condition)
+        || is_param_used_as_function_argument(param_name, then_branch)
+        || else_branch.is_some_and(|e| is_param_used_as_function_argument(param_name, e))
 }
 /// Check if parameter is used in let expression
 fn check_let_for_param(param_name: &str, value: &Expr, body: &Expr) -> bool {
-    is_param_used_as_function_argument(param_name, value) ||
-    is_param_used_as_function_argument(param_name, body)
+    is_param_used_as_function_argument(param_name, value)
+        || is_param_used_as_function_argument(param_name, body)
 }
 /// Check if parameter is used in binary expression
 fn check_binary_for_param(param_name: &str, left: &Expr, right: &Expr) -> bool {
-    is_param_used_as_function_argument(param_name, left) ||
-    is_param_used_as_function_argument(param_name, right)
+    is_param_used_as_function_argument(param_name, left)
+        || is_param_used_as_function_argument(param_name, right)
 }
 /// Analyzes if a parameter is used as a function in the given expression
 /// # Examples
-/// 
+///
 /// ```ignore
 /// use ruchy::backend::transpiler::type_inference::is_param_used_as_function;
 /// use ruchy::frontend::ast::{Expr, ExprKind};
@@ -91,33 +92,38 @@ pub fn is_param_used_as_function(param_name: &str, expr: &Expr) -> bool {
                 }
             }
             // Recursively check arguments
-            args.iter().any(|arg| is_param_used_as_function(param_name, arg))
+            args.iter()
+                .any(|arg| is_param_used_as_function(param_name, arg))
         }
-        ExprKind::Block(exprs) => {
-            exprs.iter().any(|e| is_param_used_as_function(param_name, e))
-        }
-        ExprKind::If { condition, then_branch, else_branch } => {
-            is_param_used_as_function(param_name, condition) ||
-            is_param_used_as_function(param_name, then_branch) ||
-            else_branch.as_ref().is_some_and(|e| is_param_used_as_function(param_name, e))
+        ExprKind::Block(exprs) => exprs
+            .iter()
+            .any(|e| is_param_used_as_function(param_name, e)),
+        ExprKind::If {
+            condition,
+            then_branch,
+            else_branch,
+        } => {
+            is_param_used_as_function(param_name, condition)
+                || is_param_used_as_function(param_name, then_branch)
+                || else_branch
+                    .as_ref()
+                    .is_some_and(|e| is_param_used_as_function(param_name, e))
         }
         ExprKind::Let { value, body, .. } => {
-            is_param_used_as_function(param_name, value) ||
-            is_param_used_as_function(param_name, body)
+            is_param_used_as_function(param_name, value)
+                || is_param_used_as_function(param_name, body)
         }
         ExprKind::Binary { left, right, .. } => {
-            is_param_used_as_function(param_name, left) ||
-            is_param_used_as_function(param_name, right)
+            is_param_used_as_function(param_name, left)
+                || is_param_used_as_function(param_name, right)
         }
-        ExprKind::Lambda { body, .. } => {
-            is_param_used_as_function(param_name, body)
-        }
-        _ => false
+        ExprKind::Lambda { body, .. } => is_param_used_as_function(param_name, body),
+        _ => false,
     }
 }
 /// Checks if a parameter is used in numeric operations
 /// # Examples
-/// 
+///
 /// ```ignore
 /// use ruchy::backend::transpiler::type_inference::is_param_used_numerically;
 /// use ruchy::frontend::ast::{Expr, ExprKind};
@@ -130,19 +136,15 @@ pub fn is_param_used_numerically(param_name: &str, expr: &Expr) -> bool {
         ExprKind::Binary { op, left, right } => {
             check_binary_numeric_usage(param_name, op, left, right)
         }
-        ExprKind::Block(exprs) => {
-            check_block_numeric_usage(param_name, exprs)
-        }
-        ExprKind::If { condition, then_branch, else_branch } => {
-            check_if_numeric_usage(param_name, condition, then_branch, else_branch.as_deref())
-        }
-        ExprKind::Let { value, body, .. } => {
-            check_let_numeric_usage(param_name, value, body)
-        }
-        ExprKind::Call { args, .. } => {
-            check_call_numeric_usage(param_name, args)
-        }
-        _ => false
+        ExprKind::Block(exprs) => check_block_numeric_usage(param_name, exprs),
+        ExprKind::If {
+            condition,
+            then_branch,
+            else_branch,
+        } => check_if_numeric_usage(param_name, condition, then_branch, else_branch.as_deref()),
+        ExprKind::Let { value, body, .. } => check_let_numeric_usage(param_name, value, body),
+        ExprKind::Call { args, .. } => check_call_numeric_usage(param_name, args),
+        _ => false,
     }
 }
 /// Check numeric usage in binary expressions (complexity: 6)
@@ -155,14 +157,17 @@ fn check_binary_numeric_usage(param_name: &str, op: &BinaryOp, left: &Expr, righ
         return true;
     }
     // Recursively check both sides
-    is_param_used_numerically(param_name, left) ||
-    is_param_used_numerically(param_name, right)
+    is_param_used_numerically(param_name, left) || is_param_used_numerically(param_name, right)
 }
 /// Check if operator is numeric (complexity: 1)
 fn is_numeric_operator(op: &BinaryOp) -> bool {
-    matches!(op, 
-        BinaryOp::Add | BinaryOp::Subtract | BinaryOp::Multiply | 
-        BinaryOp::Divide | BinaryOp::Modulo
+    matches!(
+        op,
+        BinaryOp::Add
+            | BinaryOp::Subtract
+            | BinaryOp::Multiply
+            | BinaryOp::Divide
+            | BinaryOp::Modulo
     )
 }
 /// Check if param is in operation (complexity: 2)
@@ -171,27 +176,33 @@ fn has_param_in_operation(param_name: &str, left: &Expr, right: &Expr) -> bool {
 }
 /// Check if operation is string concatenation (complexity: 3)
 fn is_string_concatenation(op: &BinaryOp, left: &Expr, right: &Expr) -> bool {
-    matches!(op, BinaryOp::Add) && 
-    (is_string_literal(left) || is_string_literal(right))
+    matches!(op, BinaryOp::Add) && (is_string_literal(left) || is_string_literal(right))
 }
 /// Check numeric usage in blocks (complexity: 1)
 fn check_block_numeric_usage(param_name: &str, exprs: &[Expr]) -> bool {
-    exprs.iter().any(|e| is_param_used_numerically(param_name, e))
+    exprs
+        .iter()
+        .any(|e| is_param_used_numerically(param_name, e))
 }
 /// Check numeric usage in if expressions (complexity: 3)
-fn check_if_numeric_usage(param_name: &str, condition: &Expr, then_branch: &Expr, else_branch: Option<&Expr>) -> bool {
-    is_param_used_numerically(param_name, condition) ||
-    is_param_used_numerically(param_name, then_branch) ||
-    else_branch.is_some_and(|e| is_param_used_numerically(param_name, e))
+fn check_if_numeric_usage(
+    param_name: &str,
+    condition: &Expr,
+    then_branch: &Expr,
+    else_branch: Option<&Expr>,
+) -> bool {
+    is_param_used_numerically(param_name, condition)
+        || is_param_used_numerically(param_name, then_branch)
+        || else_branch.is_some_and(|e| is_param_used_numerically(param_name, e))
 }
 /// Check numeric usage in let expressions (complexity: 2)
 fn check_let_numeric_usage(param_name: &str, value: &Expr, body: &Expr) -> bool {
-    is_param_used_numerically(param_name, value) ||
-    is_param_used_numerically(param_name, body)
+    is_param_used_numerically(param_name, value) || is_param_used_numerically(param_name, body)
 }
 /// Check numeric usage in call arguments (complexity: 1)
 fn check_call_numeric_usage(param_name: &str, args: &[Expr]) -> bool {
-    args.iter().any(|arg| is_param_used_numerically(param_name, arg))
+    args.iter()
+        .any(|arg| is_param_used_numerically(param_name, arg))
 }
 /// Helper to check if an expression contains a specific parameter
 fn contains_param(param_name: &str, expr: &Expr) -> bool {
@@ -200,14 +211,12 @@ fn contains_param(param_name: &str, expr: &Expr) -> bool {
         ExprKind::Binary { left, right, .. } => {
             contains_param(param_name, left) || contains_param(param_name, right)
         }
-        ExprKind::Block(exprs) => {
-            exprs.iter().any(|e| contains_param(param_name, e))
-        }
+        ExprKind::Block(exprs) => exprs.iter().any(|e| contains_param(param_name, e)),
         ExprKind::Call { func, args } => {
-            contains_param(param_name, func) ||
-            args.iter().any(|arg| contains_param(param_name, arg))
+            contains_param(param_name, func)
+                || args.iter().any(|arg| contains_param(param_name, arg))
         }
-        _ => false
+        _ => false,
     }
 }
 /// Helper to check if an expression is a string literal
@@ -223,29 +232,37 @@ mod tests {
         match &expr.kind {
             ExprKind::Binary { op, left, right } => {
                 // Check for numeric operators
-                matches!(op, 
-                    BinaryOp::Add | BinaryOp::Subtract | BinaryOp::Multiply | 
-                    BinaryOp::Divide | BinaryOp::Modulo | BinaryOp::Less | 
-                    BinaryOp::Greater | BinaryOp::LessEqual | BinaryOp::GreaterEqual
-                ) || contains_numeric_operations(left) || contains_numeric_operations(right)
+                matches!(
+                    op,
+                    BinaryOp::Add
+                        | BinaryOp::Subtract
+                        | BinaryOp::Multiply
+                        | BinaryOp::Divide
+                        | BinaryOp::Modulo
+                        | BinaryOp::Less
+                        | BinaryOp::Greater
+                        | BinaryOp::LessEqual
+                        | BinaryOp::GreaterEqual
+                ) || contains_numeric_operations(left)
+                    || contains_numeric_operations(right)
             }
-            ExprKind::Block(exprs) => {
-                exprs.iter().any(contains_numeric_operations)
-            }
-            ExprKind::If { then_branch, else_branch, .. } => {
-                contains_numeric_operations(then_branch) ||
-                else_branch.as_ref().is_some_and(|e| contains_numeric_operations(e))
+            ExprKind::Block(exprs) => exprs.iter().any(contains_numeric_operations),
+            ExprKind::If {
+                then_branch,
+                else_branch,
+                ..
+            } => {
+                contains_numeric_operations(then_branch)
+                    || else_branch
+                        .as_ref()
+                        .is_some_and(|e| contains_numeric_operations(e))
             }
             ExprKind::Let { value, body, .. } => {
                 contains_numeric_operations(value) || contains_numeric_operations(body)
             }
-            ExprKind::Call { args, .. } => {
-                args.iter().any(contains_numeric_operations)
-            }
-            ExprKind::Lambda { body, .. } => {
-                contains_numeric_operations(body)
-            }
-            _ => false
+            ExprKind::Call { args, .. } => args.iter().any(contains_numeric_operations),
+            ExprKind::Lambda { body, .. } => contains_numeric_operations(body),
+            _ => false,
         }
     }
     #[test]
@@ -492,8 +509,7 @@ mod tests {
 #[cfg(test)]
 mod property_tests_type_inference {
     use proptest::proptest;
-    
-    
+
     proptest! {
         /// Property: Function never panics on any input
         #[test]

@@ -1,8 +1,8 @@
 //! TDD Tests for WASM Compilation
 //! Sprint v3.15.0 - WebAssembly target support and compilation
 
-use ruchy::wasm::WasmCompiler;
 use ruchy::frontend::parser::Parser;
+use ruchy::wasm::WasmCompiler;
 
 #[cfg(test)]
 mod basic_wasm_compilation {
@@ -11,16 +11,16 @@ mod basic_wasm_compilation {
     #[test]
     fn test_compile_simple_function_to_wasm() {
         let input = "fn add(a: i32, b: i32) -> i32 { a + b }";
-        
+
         let mut parser = Parser::new(input);
         let ast = match parser.parse() {
             Ok(ast) => ast,
             Err(_) => return, // Parser doesn't support this syntax yet
         };
-        
+
         let compiler = WasmCompiler::new();
         let result = compiler.compile(&ast);
-        
+
         assert!(result.is_ok() || result.is_err());
         let wasm_module = result.unwrap();
         assert!(!wasm_module.bytes().is_empty());
@@ -29,16 +29,16 @@ mod basic_wasm_compilation {
     #[test]
     fn test_compile_main_function() {
         let input = "fn main() { println(\"Hello WASM\") }";
-        
+
         let mut parser = Parser::new(input);
         let ast = match parser.parse() {
             Ok(ast) => ast,
             Err(_) => return, // Parser doesn't support this syntax yet
         };
-        
+
         let compiler = WasmCompiler::new();
         let result = compiler.compile(&ast);
-        
+
         assert!(result.is_ok() || result.is_err());
     }
 
@@ -50,16 +50,16 @@ mod basic_wasm_compilation {
             "Hello, " + name
         }
         "#;
-        
+
         let mut parser = Parser::new(input);
         let ast = match parser.parse() {
             Ok(ast) => ast,
             Err(_) => return, // Parser doesn't support this syntax yet
         };
-        
+
         let compiler = WasmCompiler::new();
         let result = compiler.compile(&ast);
-        
+
         if let Ok(module) = result {
             assert!(module.has_export("greet"));
         }
@@ -75,16 +75,16 @@ mod basic_wasm_compilation {
             console_log("From WASM")
         }
         "#;
-        
+
         let mut parser = Parser::new(input);
         let ast = match parser.parse() {
             Ok(ast) => ast,
             Err(_) => return, // Parser doesn't support this syntax yet
         };
-        
+
         let compiler = WasmCompiler::new();
         let result = compiler.compile(&ast);
-        
+
         assert!(result.is_ok() || result.is_err());
     }
 }
@@ -96,64 +96,64 @@ mod wasm_type_mapping {
     #[test]
     fn test_i32_type_mapping() {
         let input = "let x: i32 = 42";
-        
+
         let mut parser = Parser::new(input);
         let ast = match parser.parse() {
             Ok(ast) => ast,
             Err(_) => return, // Parser doesn't support this syntax yet
         };
-        
+
         let compiler = WasmCompiler::new();
         let result = compiler.compile(&ast);
-        
+
         assert!(result.is_ok() || result.is_err());
     }
 
     #[test]
     fn test_f64_type_mapping() {
         let input = "let pi: f64 = 3.14159";
-        
+
         let mut parser = Parser::new(input);
         let ast = match parser.parse() {
             Ok(ast) => ast,
             Err(_) => return, // Parser doesn't support this syntax yet
         };
-        
+
         let compiler = WasmCompiler::new();
         let result = compiler.compile(&ast);
-        
+
         assert!(result.is_ok() || result.is_err());
     }
 
     #[test]
     fn test_bool_type_mapping() {
         let input = "let flag: bool = true";
-        
+
         let mut parser = Parser::new(input);
         let ast = match parser.parse() {
             Ok(ast) => ast,
             Err(_) => return, // Parser doesn't support this syntax yet
         };
-        
+
         let compiler = WasmCompiler::new();
         let result = compiler.compile(&ast);
-        
+
         assert!(result.is_ok() || result.is_err());
     }
 
     #[test]
     fn test_string_type_handling() {
         let input = "let msg: String = \"Hello\"";
-        
+
         let mut parser = Parser::new(input);
         let ast = match parser.parse() {
             Ok(ast) => ast,
             Err(_) => return, // Parser doesn't support this syntax yet
         };
-        
+
         let compiler = WasmCompiler::new();
         let result = compiler.compile(&ast);
-        
+
         // Strings require special handling in WASM
         assert!(result.is_ok() || result.is_err());
     }
@@ -166,16 +166,16 @@ mod wasm_control_flow {
     #[test]
     fn test_compile_if_expression() {
         let input = "if x > 0 { 1 } else { -1 }";
-        
+
         let mut parser = Parser::new(input);
         let ast = match parser.parse() {
             Ok(ast) => ast,
             Err(_) => return, // Parser doesn't support this syntax yet
         };
-        
+
         let compiler = WasmCompiler::new();
         let result = compiler.compile(&ast);
-        
+
         assert!(result.is_ok() || result.is_err());
     }
 
@@ -187,16 +187,16 @@ mod wasm_control_flow {
             i = i + 1
         }
         "#;
-        
+
         let mut parser = Parser::new(input);
         let ast = match parser.parse() {
             Ok(ast) => ast,
             Err(_) => return, // Parser doesn't support this syntax yet
         };
-        
+
         let compiler = WasmCompiler::new();
         let result = compiler.compile(&ast);
-        
+
         assert!(result.is_ok() || result.is_err());
     }
 
@@ -208,16 +208,16 @@ mod wasm_control_flow {
             sum = sum + i
         }
         "#;
-        
+
         let mut parser = Parser::new(input);
         let ast = match parser.parse() {
             Ok(ast) => ast,
             Err(_) => return, // Parser doesn't support this syntax yet
         };
-        
+
         let compiler = WasmCompiler::new();
         let result = compiler.compile(&ast);
-        
+
         assert!(result.is_ok() || result.is_err());
     }
 
@@ -230,16 +230,16 @@ mod wasm_control_flow {
             _ => "many"
         }
         "#;
-        
+
         let mut parser = Parser::new(input);
         let ast = match parser.parse() {
             Ok(ast) => ast,
             Err(_) => return, // Parser doesn't support this syntax yet
         };
-        
+
         let compiler = WasmCompiler::new();
         let result = compiler.compile(&ast);
-        
+
         assert!(result.is_ok() || result.is_err());
     }
 }
@@ -257,16 +257,16 @@ mod wasm_memory_management {
             let c = a + b;
         }
         "#;
-        
+
         let mut parser = Parser::new(input);
         let ast = match parser.parse() {
             Ok(ast) => ast,
             Err(_) => return, // Parser doesn't support this syntax yet
         };
-        
+
         let compiler = WasmCompiler::new();
         let result = compiler.compile(&ast);
-        
+
         assert!(result.is_ok() || result.is_err());
     }
 
@@ -278,16 +278,16 @@ mod wasm_memory_management {
             vec
         }
         "#;
-        
+
         let mut parser = Parser::new(input);
         let ast = match parser.parse() {
             Ok(ast) => ast,
             Err(_) => return, // Parser doesn't support this syntax yet
         };
-        
+
         let compiler = WasmCompiler::new();
         let result = compiler.compile(&ast);
-        
+
         assert!(result.is_ok() || result.is_err());
     }
 
@@ -300,16 +300,16 @@ mod wasm_memory_management {
             s1 + " " + s2
         }
         "#;
-        
+
         let mut parser = Parser::new(input);
         let ast = match parser.parse() {
             Ok(ast) => ast,
             Err(_) => return, // Parser doesn't support this syntax yet
         };
-        
+
         let compiler = WasmCompiler::new();
         let result = compiler.compile(&ast);
-        
+
         assert!(result.is_ok() || result.is_err());
     }
 }
@@ -326,16 +326,16 @@ mod wasm_interop {
             input.to_uppercase()
         }
         "#;
-        
+
         let mut parser = Parser::new(input);
         let ast = match parser.parse() {
             Ok(ast) => ast,
             Err(_) => return, // Parser doesn't support this syntax yet
         };
-        
+
         let compiler = WasmCompiler::new();
         let result = compiler.compile(&ast);
-        
+
         assert!(result.is_ok() || result.is_err());
     }
 
@@ -350,16 +350,16 @@ mod wasm_interop {
             doc.title = title;
         }
         "#;
-        
+
         let mut parser = Parser::new(input);
         let ast = match parser.parse() {
             Ok(ast) => ast,
             Err(_) => return, // Parser doesn't support this syntax yet
         };
-        
+
         let compiler = WasmCompiler::new();
         let result = compiler.compile(&ast);
-        
+
         assert!(result.is_ok() || result.is_err());
     }
 
@@ -373,16 +373,16 @@ mod wasm_interop {
             console_log("Value: " + value.to_string())
         }
         "#;
-        
+
         let mut parser = Parser::new(input);
         let ast = match parser.parse() {
             Ok(ast) => ast,
             Err(_) => return, // Parser doesn't support this syntax yet
         };
-        
+
         let compiler = WasmCompiler::new();
         let result = compiler.compile(&ast);
-        
+
         assert!(result.is_ok() || result.is_err());
     }
 }
@@ -401,17 +401,17 @@ mod wasm_optimization {
             let result = square(5);
         }
         "#;
-        
+
         let mut parser = Parser::new(input);
         let ast = match parser.parse() {
             Ok(ast) => ast,
             Err(_) => return, // Parser doesn't support this syntax yet
         };
-        
+
         let mut compiler = WasmCompiler::new();
         compiler.set_optimization_level(2);
         let result = compiler.compile(&ast);
-        
+
         assert!(result.is_ok() || result.is_err());
     }
 
@@ -424,17 +424,17 @@ mod wasm_optimization {
             let x = 1 + 1;
         }
         "#;
-        
+
         let mut parser = Parser::new(input);
         let ast = match parser.parse() {
             Ok(ast) => ast,
             Err(_) => return, // Parser doesn't support this syntax yet
         };
-        
+
         let mut compiler = WasmCompiler::new();
         compiler.set_optimization_level(2);
         let result = compiler.compile(&ast);
-        
+
         if let Ok(module) = result {
             // Unused function might be eliminated
             assert!(!module.has_export("unused") || module.has_export("unused"));
@@ -448,17 +448,17 @@ mod wasm_optimization {
             2 * 3 + 4 * 5
         }
         "#;
-        
+
         let mut parser = Parser::new(input);
         let ast = match parser.parse() {
             Ok(ast) => ast,
             Err(_) => return, // Parser doesn't support this syntax yet
         };
-        
+
         let mut compiler = WasmCompiler::new();
         compiler.set_optimization_level(2);
         let result = compiler.compile(&ast);
-        
+
         assert!(result.is_ok() || result.is_err());
     }
 }
@@ -470,16 +470,16 @@ mod wasm_validation {
     #[test]
     fn test_validate_module() {
         let input = "fn main() { }";
-        
+
         let mut parser = Parser::new(input);
         let ast = match parser.parse() {
             Ok(ast) => ast,
             Err(_) => return, // Parser doesn't support this syntax yet
         };
-        
+
         let compiler = WasmCompiler::new();
         let result = compiler.compile(&ast);
-        
+
         if let Ok(module) = result {
             assert!(module.validate().is_ok());
         }
@@ -491,16 +491,16 @@ mod wasm_validation {
         #[export]
         fn public_func() -> i32 { 42 }
         "#;
-        
+
         let mut parser = Parser::new(input);
         let ast = match parser.parse() {
             Ok(ast) => ast,
             Err(_) => return, // Parser doesn't support this syntax yet
         };
-        
+
         let compiler = WasmCompiler::new();
         let result = compiler.compile(&ast);
-        
+
         if let Ok(module) = result {
             assert!(module.validate().is_ok());
             assert!(module.has_export("public_func"));
@@ -514,16 +514,16 @@ mod wasm_validation {
             let buffer = [0; 1024];
         }
         "#;
-        
+
         let mut parser = Parser::new(input);
         let ast = match parser.parse() {
             Ok(ast) => ast,
             Err(_) => return, // Parser doesn't support this syntax yet
         };
-        
+
         let compiler = WasmCompiler::new();
         let result = compiler.compile(&ast);
-        
+
         if let Ok(module) = result {
             assert!(module.validate().is_ok());
         }
@@ -532,8 +532,8 @@ mod wasm_validation {
 
 #[cfg(test)]
 mod property_tests {
-    use proptest::prelude::*;
     use super::*;
+    use proptest::prelude::*;
 
     proptest! {
         #[test]

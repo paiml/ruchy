@@ -41,10 +41,10 @@
 //!
 //! // Create an actor system
 //! let mut system = ActorSystem::new();
-//! 
+//!
 //! // Spawn an echo actor
 //! let echo_ref = system.spawn_echo_actor("echo".to_string()).unwrap();
-//! 
+//!
 //! // Send a message
 //! let msg = Message::new(MessageValue::String("Hello".to_string()));
 //! // Note: In real usage, you would handle the Result properly
@@ -66,32 +66,62 @@ pub mod dataflow_debugger;
 pub mod dataflow_ui;
 pub mod grammar_coverage;
 pub mod interpreter;
+pub mod value_utils;
+// Decomposed interpreter modules
+pub mod builtin_init; // EXTREME TDD: Builtin functions initialization
+pub mod builtins;
+pub mod compilation; // EXTREME TDD: Direct-threaded interpreter compilation
+pub mod eval_arithmetic;
+pub mod eval_array;
+pub mod eval_binary;
+pub mod eval_builtin;
+pub mod eval_control_flow;
+pub mod eval_control_flow_new;
+pub mod eval_data_structures;
+pub mod eval_dataframe;
+pub mod eval_dataframe_ops;
+pub mod eval_display;
+pub mod eval_expr;
+pub mod eval_func;
+pub mod eval_function;
+pub mod eval_literal;
+pub mod eval_loops;
+pub mod eval_method;
+pub mod eval_method_dispatch;
+pub mod eval_operations;
+pub mod eval_pattern;
+pub mod eval_pattern_match;
+pub mod eval_string;
+pub mod eval_string_interpolation;
+pub mod eval_string_methods;
+pub mod gc;
+pub mod gc_impl; // EXTREME TDD: Full GC implementation with tests
+pub mod transformation;
+pub mod validation;
 // pub mod interpreter_modules;  // Temporarily disabled - compilation errors
 pub mod lazy;
-pub mod pattern_matching;
 pub mod observatory;
 pub mod observatory_ui;
+pub mod pattern_matching;
 pub mod repl; // New EXTREME Quality REPL
-// pub mod repl_legacy; // Old REPL (backup) - temporarily disabled for integration
-// pub mod repl_modules;  // Temporarily disabled - compilation errors
+              // pub mod repl_legacy; // Old REPL (backup) - temporarily disabled for integration
+              // pub mod repl_modules;  // Temporarily disabled - compilation errors
+pub mod assessment;
+pub mod deterministic;
+pub mod magic;
 pub mod repl_recording;
 pub mod replay;
 pub mod replay_converter;
-pub mod deterministic;
-pub mod assessment;
-pub mod magic;
 // pub mod arena;  // Disabled - uses unsafe code
+pub mod inspect;
 pub mod safe_arena;
 pub mod transaction;
-pub mod inspect;
 // pub mod resource_eval;  // Temporarily disabled - causes duplicate impl
 // Export the unified REPL
 pub use repl::{Repl, ReplConfig};
 // pub use repl_legacy::{ReplConfig, ReplState as LegacyReplState}; // Temporarily disabled
 // Export interpreter components
-pub use interpreter::{
-    Interpreter, InterpreterError, InterpreterResult, Value,
-};
+pub use interpreter::{DataFrameColumn, Interpreter, InterpreterError, InterpreterResult, Value};
 // Export actor system components
 pub use actor::{
     ActorBehavior, ActorContext, ActorId, ActorRef, ActorSystem, EchoActor, Message, MessageValue,
@@ -99,30 +129,23 @@ pub use actor::{
 };
 // Export observatory components
 pub use observatory::{
-    ActorObservatory, ActorSnapshot, ActorState, DeadlockCycle, MessageFilter, MessageTrace,
-    MessageStatus, ObservatoryConfig, SystemMetrics,
+    ActorObservatory, ActorSnapshot, ActorState, DeadlockCycle, MessageFilter, MessageStatus,
+    MessageTrace, ObservatoryConfig, SystemMetrics,
 };
 // Export assessment components
 pub use assessment::{
-    Assignment, AssignmentSetup, Task, TestCase, ExpectedBehavior,
-    GradingEngine, GradeReport, TaskGrade, GradingRubric,
-    PlagiarismDetector, SecureSandbox,
+    Assignment, AssignmentSetup, ExpectedBehavior, GradeReport, GradingEngine, GradingRubric,
+    PlagiarismDetector, SecureSandbox, Task, TaskGrade, TestCase,
 };
 // Export magic commands
-pub use magic::{
-    MagicRegistry, MagicResult, MagicCommand, UnicodeExpander, ProfileData,
-};
+pub use magic::{MagicCommand, MagicRegistry, MagicResult, ProfileData, UnicodeExpander};
 // Export inspection protocol
-pub use inspect::{
-    Inspect, Inspector, InspectStyle, DisplayForm, CompositeForm, OpaqueHandle,
-};
+pub use inspect::{CompositeForm, DisplayForm, Inspect, InspectStyle, Inspector, OpaqueHandle};
 // Export resource-bounded evaluation
-pub use safe_arena::{
-    SafeArena as Arena, TransactionalArena,
-};
+pub use safe_arena::{SafeArena as Arena, TransactionalArena};
 pub use transaction::{
-    TransactionalState, TransactionId, TransactionMetadata, SavePoint,
-    TransactionEvent, TransactionLog, MVCC, Version, VersionedValue,
+    SavePoint, TransactionEvent, TransactionId, TransactionLog, TransactionMetadata,
+    TransactionalState, Version, VersionedValue, MVCC,
 };
 // pub use resource_eval::{
 //     CheckpointHandle, ResourceLimits, Sandbox,
@@ -130,15 +153,13 @@ pub use transaction::{
 pub use observatory_ui::{DashboardConfig, DisplayMode, ObservatoryDashboard};
 // Export dataflow debugger components
 pub use dataflow_debugger::{
-    DataflowDebugger, DataflowConfig, PipelineStage, StageType, StageStatus,
-    Breakpoint, BreakpointCondition, BreakpointAction, MaterializedFrame, 
-    StageMetrics, ExecutionEvent, StageDiff, ExportFormat,
+    Breakpoint, BreakpointAction, BreakpointCondition, DataflowConfig, DataflowDebugger,
+    ExecutionEvent, ExportFormat, MaterializedFrame, PipelineStage, StageDiff, StageMetrics,
+    StageStatus, StageType,
 };
 pub use dataflow_ui::{DataflowUI, UIConfig};
 // Export replay-to-test converter
-pub use replay_converter::{
-    ReplayConverter, ConversionConfig, GeneratedTest, TestCategory,
-};
+pub use replay_converter::{ConversionConfig, GeneratedTest, ReplayConverter, TestCategory};
 
 #[cfg(test)]
 mod tests {
@@ -177,11 +198,13 @@ mod tests {
         let mut repl = Repl::new(std::env::temp_dir()).unwrap();
         assert_eq!(repl.eval("if true { 1 } else { 2 }").unwrap(), "1");
         assert_eq!(repl.eval("if false { 1 } else { 2 }").unwrap(), "2");
-        assert_eq!(repl.eval("if 5 > 3 { \"yes\" } else { \"no\" }").unwrap(), "\"yes\"");
+        assert_eq!(
+            repl.eval("if 5 > 3 { \"yes\" } else { \"no\" }").unwrap(),
+            "\"yes\""
+        );
     }
 
     #[test]
-    #[ignore = "List operations need investigation"]
     fn test_repl_list_operations() {
         let mut repl = Repl::new(std::env::temp_dir()).unwrap();
         assert_eq!(repl.eval("[1, 2, 3]").unwrap(), "[1, 2, 3]");
@@ -228,7 +251,10 @@ mod tests {
     #[test]
     fn test_repl_string_operations() {
         let mut repl = Repl::new(std::env::temp_dir()).unwrap();
-        assert_eq!(repl.eval("\"hello\" + \" world\"").unwrap(), "\"hello world\"");
+        assert_eq!(
+            repl.eval("\"hello\" + \" world\"").unwrap(),
+            "\"hello world\""
+        );
         assert_eq!(repl.eval("\"test\"").unwrap(), "\"test\"");
     }
 
@@ -250,7 +276,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "Float arithmetic needs investigation"]
     fn test_repl_float_arithmetic() {
         let mut repl = Repl::new(std::env::temp_dir()).unwrap();
         assert_eq!(repl.eval("3.5 + 1.5").unwrap(), "5.0");
@@ -277,7 +302,7 @@ mod tests {
         assert!(repl.memory_used() >= initial);
 
         let pressure = repl.memory_pressure();
-        assert!(pressure >= 0.0 && pressure <= 1.0);
+        assert!((0.0..=1.0).contains(&pressure));
     }
 
     #[test]
@@ -308,19 +333,25 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "Value type formatting needs investigation"]
     fn test_value_types() {
         assert_eq!(Value::Integer(42).to_string(), "42");
         assert_eq!(Value::Float(3.14).to_string(), "3.14");
         assert_eq!(Value::Bool(true).to_string(), "true");
-        assert_eq!(Value::String(Rc::new("hello".to_string())).to_string(), "\"hello\"");
+        assert_eq!(
+            Value::String(Rc::new("hello".to_string())).to_string(),
+            "\"hello\""
+        );
         assert_eq!(Value::Nil.to_string(), "nil");
         assert_eq!(Value::Nil.to_string(), "()");
     }
 
     #[test]
     fn test_value_list() {
-        let list = Value::Array(Rc::new(vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)]));
+        let list = Value::Array(Rc::new(vec![
+            Value::Integer(1),
+            Value::Integer(2),
+            Value::Integer(3),
+        ]));
         assert_eq!(list.to_string(), "[1, 2, 3]");
 
         let empty = Value::Array(Rc::new(vec![]));
@@ -329,7 +360,10 @@ mod tests {
 
     #[test]
     fn test_value_tuple() {
-        let tuple = Value::Tuple(Rc::new(vec![Value::Integer(1), Value::String(Rc::new("test".to_string()))]));
+        let tuple = Value::Tuple(Rc::new(vec![
+            Value::Integer(1),
+            Value::String(Rc::new("test".to_string())),
+        ]));
         assert_eq!(tuple.to_string(), "(1, \"test\")");
     }
 }

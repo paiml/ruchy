@@ -42,7 +42,10 @@ fn prop_fmt_idempotent() {
         let second_format = fs::read_to_string(&test_file).unwrap();
 
         // Property: format(format(x)) == format(x)
-        assert_eq!(first_format, second_format, "Idempotency failed for: {code}");
+        assert_eq!(
+            first_format, second_format,
+            "Idempotency failed for: {code}"
+        );
     }
 }
 
@@ -69,7 +72,10 @@ fn prop_fmt_preserves_function_names() {
         let formatted = fs::read_to_string(&test_file).unwrap();
 
         // Property: function name is preserved
-        assert!(formatted.contains(&format!("fun {name}")), "Function name not preserved in: {formatted}");
+        assert!(
+            formatted.contains(&format!("fun {name}")),
+            "Function name not preserved in: {formatted}"
+        );
     }
 }
 
@@ -98,7 +104,10 @@ fn prop_fmt_preserves_operators() {
         let formatted = fs::read_to_string(&test_file).unwrap();
 
         // Property: operator is preserved
-        assert!(formatted.contains(op), "Operator {op} not preserved in: {formatted}");
+        assert!(
+            formatted.contains(op),
+            "Operator {op} not preserved in: {formatted}"
+        );
     }
 }
 

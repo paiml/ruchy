@@ -137,7 +137,8 @@ impl Debugger {
         // Check if program contains panic (simplified check)
         let ast_str = format!("{ast:?}");
         if ast_str.contains("panic") {
-            self.events.push(DebugEvent::ExceptionThrown("panic detected".to_string()));
+            self.events
+                .push(DebugEvent::ExceptionThrown("panic detected".to_string()));
         }
     }
 
@@ -168,13 +169,11 @@ impl Debugger {
         }
 
         // Simulate call stack
-        self.call_stack = vec![
-            StackFrame {
-                function_name: self.current_function.clone(),
-                line: self.current_line,
-                file: "current".to_string(),
-            },
-        ];
+        self.call_stack = vec![StackFrame {
+            function_name: self.current_function.clone(),
+            line: self.current_line,
+            file: "current".to_string(),
+        }];
     }
 
     /// Continue execution
@@ -194,11 +193,14 @@ impl Debugger {
     pub fn step_into(&mut self) {
         self.current_function = "add".to_string();
         self.current_line = 2;
-        self.call_stack.insert(0, StackFrame {
-            function_name: "add".to_string(),
-            line: 2,
-            file: "current".to_string(),
-        });
+        self.call_stack.insert(
+            0,
+            StackFrame {
+                function_name: "add".to_string(),
+                line: 2,
+                file: "current".to_string(),
+            },
+        );
     }
 
     /// Step out
@@ -332,7 +334,7 @@ impl Debugger {
                 current_line += 1;
                 if current_line == line {
                     // Skip past the newline and any leading spaces
-                    let rest = &source[i+1..];
+                    let rest = &source[i + 1..];
                     let spaces = rest.chars().take_while(|c| *c == ' ').count();
                     return i + 1 + spaces;
                 }
@@ -361,10 +363,7 @@ impl Debugger {
         let start = line.saturating_sub(radius + 1);
         let end = (line + radius).min(lines.len());
 
-        lines[start..end]
-            .iter()
-            .map(|s| (*s).to_string())
-            .collect()
+        lines[start..end].iter().map(|s| (*s).to_string()).collect()
     }
 }
 

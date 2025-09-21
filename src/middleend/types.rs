@@ -11,7 +11,7 @@
 //! // Create basic types
 //! let int_type = MonoType::Int;
 //! let bool_type = MonoType::Bool;
-//! 
+//!
 //! // Create function type: i32 -> bool
 //! let func_type = MonoType::Function(
 //!     Box::new(int_type),
@@ -129,10 +129,10 @@ impl TypeScheme {
     /// Create a monomorphic type scheme (no quantified variables)
     ///
     /// # Examples
-    /// 
+    ///
     /// ```
     /// use ruchy::middleend::types::{MonoType, TypeScheme};
-    /// 
+    ///
     /// let scheme = TypeScheme::mono(MonoType::Int);
     /// assert_eq!(scheme.vars.len(), 0);
     /// assert_eq!(scheme.ty, MonoType::Int);
@@ -147,10 +147,10 @@ impl TypeScheme {
     /// Instantiate a type scheme with fresh type variables
     ///
     /// # Examples
-    /// 
+    ///
     /// ```
     /// use ruchy::middleend::types::{MonoType, TypeScheme, TyVarGenerator, TyVar};
-    /// 
+    ///
     /// let mut gen = TyVarGenerator::new();
     /// let var = gen.fresh();
     /// let scheme = TypeScheme {
@@ -229,10 +229,10 @@ impl TyVarGenerator {
     /// Create a new type variable generator
     ///
     /// # Examples
-    /// 
+    ///
     /// ```
     /// use ruchy::middleend::types::TyVarGenerator;
-    /// 
+    ///
     /// let gen = TyVarGenerator::new();
     /// // Generator starts with id 0
     /// ```
@@ -243,10 +243,10 @@ impl TyVarGenerator {
     /// Generate a fresh type variable
     ///
     /// # Examples
-    /// 
+    ///
     /// ```
     /// use ruchy::middleend::types::{TyVarGenerator, TyVar};
-    /// 
+    ///
     /// let mut gen = TyVarGenerator::new();
     /// let var1 = gen.fresh();
     /// let var2 = gen.fresh();
@@ -270,15 +270,15 @@ impl MonoType {
     /// Apply a substitution to this type
     ///
     /// # Examples
-    /// 
+    ///
     /// ```
     /// use std::collections::HashMap;
     /// use ruchy::middleend::types::{MonoType, TyVar};
-    /// 
+    ///
     /// let mut subst = HashMap::new();
     /// let var = TyVar(0);
     /// subst.insert(var.clone(), MonoType::Int);
-    /// 
+    ///
     /// let list_type = MonoType::List(Box::new(MonoType::Var(var)));
     /// let result = list_type.substitute(&subst);
     /// assert_eq!(result, MonoType::List(Box::new(MonoType::Int)));
@@ -314,17 +314,17 @@ impl MonoType {
     /// Get free type variables in this type
     ///
     /// # Examples
-    /// 
+    ///
     /// ```
     /// use ruchy::middleend::types::{MonoType, TyVar};
-    /// 
+    ///
     /// let var1 = TyVar(0);
     /// let var2 = TyVar(1);
     /// let func_type = MonoType::Function(
     ///     Box::new(MonoType::Var(var1.clone())),
     ///     Box::new(MonoType::Var(var2.clone()))
     /// );
-    /// 
+    ///
     /// let free_vars = func_type.free_vars();
     /// assert_eq!(free_vars.len(), 2);
     /// assert!(free_vars.contains(&var1));
@@ -439,8 +439,7 @@ mod tests {
 #[cfg(test)]
 mod property_tests_types {
     use proptest::proptest;
-    
-    
+
     proptest! {
         /// Property: Function never panics on any input
         #[test]

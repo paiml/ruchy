@@ -1,10 +1,10 @@
 //! AST Builder for Testing
-//! 
+//!
 //! Provides convenient methods to construct AST nodes directly without parsing.
 //! This allows testing transpiler functionality that the parser doesn't support yet.
 use crate::frontend::ast::{
-    Expr, ExprKind, Literal, Pattern, MatchArm, Type, TypeKind,
-    Param, Span, BinaryOp, UnaryOp, StringPart, StructPatternField,
+    BinaryOp, Expr, ExprKind, Literal, MatchArm, Param, Pattern, Span, StringPart,
+    StructPatternField, Type, TypeKind, UnaryOp,
 };
 /// Builder for creating AST expressions programmatically
 pub struct AstBuilder {
@@ -12,29 +12,29 @@ pub struct AstBuilder {
 }
 impl AstBuilder {
     /// Create a new AST builder
-/// # Examples
-/// 
-/// ```
-/// use ruchy::testing::ast_builder::new;
-/// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn new() -> Self {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::testing::ast_builder::new;
+    ///
+    /// let result = new(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn new() -> Self {
         Self {
             span: Span::default(),
         }
     }
     /// Create an integer literal
-/// # Examples
-/// 
-/// ```
-/// use ruchy::testing::ast_builder::int;
-/// 
-/// let result = int(42);
-/// assert_eq!(result, Ok(42));
-/// ```
-pub fn int(&self, value: i64) -> Expr {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::testing::ast_builder::int;
+    ///
+    /// let result = int(42);
+    /// assert_eq!(result, Ok(42));
+    /// ```
+    pub fn int(&self, value: i64) -> Expr {
         Expr {
             kind: ExprKind::Literal(Literal::Integer(value)),
             span: self.span,
@@ -42,15 +42,15 @@ pub fn int(&self, value: i64) -> Expr {
         }
     }
     /// Create a float literal
-/// # Examples
-/// 
-/// ```
-/// use ruchy::testing::ast_builder::float;
-/// 
-/// let result = float(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn float(&self, value: f64) -> Expr {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::testing::ast_builder::float;
+    ///
+    /// let result = float(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn float(&self, value: f64) -> Expr {
         Expr {
             kind: ExprKind::Literal(Literal::Float(value)),
             span: self.span,
@@ -58,15 +58,15 @@ pub fn float(&self, value: f64) -> Expr {
         }
     }
     /// Create a string literal
-/// # Examples
-/// 
-/// ```
-/// use ruchy::testing::ast_builder::string;
-/// 
-/// let result = string("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn string(&self, value: &str) -> Expr {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::testing::ast_builder::string;
+    ///
+    /// let result = string("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn string(&self, value: &str) -> Expr {
         Expr {
             kind: ExprKind::Literal(Literal::String(value.to_string())),
             span: self.span,
@@ -74,15 +74,15 @@ pub fn string(&self, value: &str) -> Expr {
         }
     }
     /// Create a boolean literal
-/// # Examples
-/// 
-/// ```
-/// use ruchy::testing::ast_builder::bool;
-/// 
-/// let result = bool(true);
-/// assert_eq!(result, Ok(true));
-/// ```
-pub fn bool(&self, value: bool) -> Expr {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::testing::ast_builder::bool;
+    ///
+    /// let result = bool(true);
+    /// assert_eq!(result, Ok(true));
+    /// ```
+    pub fn bool(&self, value: bool) -> Expr {
         Expr {
             kind: ExprKind::Literal(Literal::Bool(value)),
             span: self.span,
@@ -90,15 +90,15 @@ pub fn bool(&self, value: bool) -> Expr {
         }
     }
     /// Create an identifier expression
-/// # Examples
-/// 
-/// ```
-/// use ruchy::testing::ast_builder::ident;
-/// 
-/// let result = ident("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn ident(&self, name: &str) -> Expr {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::testing::ast_builder::ident;
+    ///
+    /// let result = ident("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn ident(&self, name: &str) -> Expr {
         Expr {
             kind: ExprKind::Identifier(name.to_string()),
             span: self.span,
@@ -106,15 +106,15 @@ pub fn ident(&self, name: &str) -> Expr {
         }
     }
     /// Create a binary operation
-/// # Examples
-/// 
-/// ```
-/// use ruchy::testing::ast_builder::binary;
-/// 
-/// let result = binary(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn binary(&self, left: Expr, op: BinaryOp, right: Expr) -> Expr {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::testing::ast_builder::binary;
+    ///
+    /// let result = binary(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn binary(&self, left: Expr, op: BinaryOp, right: Expr) -> Expr {
         Expr {
             kind: ExprKind::Binary {
                 left: Box::new(left),
@@ -126,15 +126,15 @@ pub fn binary(&self, left: Expr, op: BinaryOp, right: Expr) -> Expr {
         }
     }
     /// Create a unary operation
-/// # Examples
-/// 
-/// ```
-/// use ruchy::testing::ast_builder::unary;
-/// 
-/// let result = unary(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn unary(&self, op: UnaryOp, operand: Expr) -> Expr {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::testing::ast_builder::unary;
+    ///
+    /// let result = unary(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn unary(&self, op: UnaryOp, operand: Expr) -> Expr {
         Expr {
             kind: ExprKind::Unary {
                 op,
@@ -145,15 +145,15 @@ pub fn unary(&self, op: UnaryOp, operand: Expr) -> Expr {
         }
     }
     /// Create an if expression
-/// # Examples
-/// 
-/// ```
-/// use ruchy::testing::ast_builder::if_expr;
-/// 
-/// let result = if_expr(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn if_expr(&self, condition: Expr, then_branch: Expr, else_branch: Option<Expr>) -> Expr {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::testing::ast_builder::if_expr;
+    ///
+    /// let result = if_expr(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn if_expr(&self, condition: Expr, then_branch: Expr, else_branch: Option<Expr>) -> Expr {
         Expr {
             kind: ExprKind::If {
                 condition: Box::new(condition),
@@ -165,15 +165,15 @@ pub fn if_expr(&self, condition: Expr, then_branch: Expr, else_branch: Option<Ex
         }
     }
     /// Create a match expression
-/// # Examples
-/// 
-/// ```
-/// use ruchy::testing::ast_builder::match_expr;
-/// 
-/// let result = match_expr(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn match_expr(&self, expr: Expr, arms: Vec<MatchArm>) -> Expr {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::testing::ast_builder::match_expr;
+    ///
+    /// let result = match_expr(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn match_expr(&self, expr: Expr, arms: Vec<MatchArm>) -> Expr {
         Expr {
             kind: ExprKind::Match {
                 expr: Box::new(expr),
@@ -184,15 +184,15 @@ pub fn match_expr(&self, expr: Expr, arms: Vec<MatchArm>) -> Expr {
         }
     }
     /// Create a match arm
-/// # Examples
-/// 
-/// ```
-/// use ruchy::testing::ast_builder::match_arm;
-/// 
-/// let result = match_arm(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn match_arm(&self, pattern: Pattern, guard: Option<Expr>, body: Expr) -> MatchArm {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::testing::ast_builder::match_arm;
+    ///
+    /// let result = match_arm(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn match_arm(&self, pattern: Pattern, guard: Option<Expr>, body: Expr) -> MatchArm {
         MatchArm {
             pattern,
             guard: guard.map(Box::new),
@@ -201,102 +201,110 @@ pub fn match_arm(&self, pattern: Pattern, guard: Option<Expr>, body: Expr) -> Ma
         }
     }
     /// Create a wildcard pattern
-/// # Examples
-/// 
-/// ```
-/// use ruchy::testing::ast_builder::pattern_wildcard;
-/// 
-/// let result = pattern_wildcard(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn pattern_wildcard(&self) -> Pattern {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::testing::ast_builder::pattern_wildcard;
+    ///
+    /// let result = pattern_wildcard(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn pattern_wildcard(&self) -> Pattern {
         Pattern::Wildcard
     }
     /// Create an identifier pattern
-/// # Examples
-/// 
-/// ```
-/// use ruchy::testing::ast_builder::pattern_ident;
-/// 
-/// let result = pattern_ident("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn pattern_ident(&self, name: &str) -> Pattern {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::testing::ast_builder::pattern_ident;
+    ///
+    /// let result = pattern_ident("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn pattern_ident(&self, name: &str) -> Pattern {
         Pattern::Identifier(name.to_string())
     }
     /// Create a literal pattern
-/// # Examples
-/// 
-/// ```
-/// use ruchy::testing::ast_builder::pattern_literal;
-/// 
-/// let result = pattern_literal(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn pattern_literal(&self, lit: Literal) -> Pattern {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::testing::ast_builder::pattern_literal;
+    ///
+    /// let result = pattern_literal(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn pattern_literal(&self, lit: Literal) -> Pattern {
         Pattern::Literal(lit)
     }
     /// Create a tuple pattern
-/// # Examples
-/// 
-/// ```
-/// use ruchy::testing::ast_builder::pattern_tuple;
-/// 
-/// let result = pattern_tuple(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn pattern_tuple(&self, patterns: Vec<Pattern>) -> Pattern {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::testing::ast_builder::pattern_tuple;
+    ///
+    /// let result = pattern_tuple(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn pattern_tuple(&self, patterns: Vec<Pattern>) -> Pattern {
         Pattern::Tuple(patterns)
     }
     /// Create an or pattern (not supported by parser yet)
-/// # Examples
-/// 
-/// ```
-/// use ruchy::testing::ast_builder::pattern_or;
-/// 
-/// let result = pattern_or(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn pattern_or(&self, patterns: Vec<Pattern>) -> Pattern {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::testing::ast_builder::pattern_or;
+    ///
+    /// let result = pattern_or(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn pattern_or(&self, patterns: Vec<Pattern>) -> Pattern {
         Pattern::Or(patterns)
     }
     /// Create a struct pattern
-/// # Examples
-/// 
-/// ```
-/// use ruchy::testing::ast_builder::pattern_struct;
-/// 
-/// let result = pattern_struct(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn pattern_struct(&self, name: String, fields: Vec<(String, Pattern)>) -> Pattern {
-        let struct_fields = fields.into_iter().map(|(name, pattern)| {
-            StructPatternField { name, pattern: Some(pattern) }
-        }).collect();
-        Pattern::Struct { name, fields: struct_fields, has_rest: false }
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::testing::ast_builder::pattern_struct;
+    ///
+    /// let result = pattern_struct(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn pattern_struct(&self, name: String, fields: Vec<(String, Pattern)>) -> Pattern {
+        let struct_fields = fields
+            .into_iter()
+            .map(|(name, pattern)| StructPatternField {
+                name,
+                pattern: Some(pattern),
+            })
+            .collect();
+        Pattern::Struct {
+            name,
+            fields: struct_fields,
+            has_rest: false,
+        }
     }
     /// Create a rest pattern (..)
-/// # Examples
-/// 
-/// ```
-/// use ruchy::testing::ast_builder::pattern_rest;
-/// 
-/// let result = pattern_rest(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn pattern_rest(&self) -> Pattern {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::testing::ast_builder::pattern_rest;
+    ///
+    /// let result = pattern_rest(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn pattern_rest(&self) -> Pattern {
         Pattern::Rest
     }
     /// Create a function call
-/// # Examples
-/// 
-/// ```
-/// use ruchy::testing::ast_builder::call;
-/// 
-/// let result = call(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn call(&self, func: Expr, args: Vec<Expr>) -> Expr {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::testing::ast_builder::call;
+    ///
+    /// let result = call(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn call(&self, func: Expr, args: Vec<Expr>) -> Expr {
         Expr {
             kind: ExprKind::Call {
                 func: Box::new(func),
@@ -307,15 +315,15 @@ pub fn call(&self, func: Expr, args: Vec<Expr>) -> Expr {
         }
     }
     /// Create a lambda expression
-/// # Examples
-/// 
-/// ```
-/// use ruchy::testing::ast_builder::lambda;
-/// 
-/// let result = lambda(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn lambda(&self, params: Vec<Param>, body: Expr) -> Expr {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::testing::ast_builder::lambda;
+    ///
+    /// let result = lambda(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn lambda(&self, params: Vec<Param>, body: Expr) -> Expr {
         Expr {
             kind: ExprKind::Lambda {
                 params,
@@ -326,15 +334,15 @@ pub fn lambda(&self, params: Vec<Param>, body: Expr) -> Expr {
         }
     }
     /// Create a block expression
-/// # Examples
-/// 
-/// ```
-/// use ruchy::testing::ast_builder::block;
-/// 
-/// let result = block(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn block(&self, statements: Vec<Expr>) -> Expr {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::testing::ast_builder::block;
+    ///
+    /// let result = block(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn block(&self, statements: Vec<Expr>) -> Expr {
         Expr {
             kind: ExprKind::Block(statements),
             span: self.span,
@@ -342,15 +350,15 @@ pub fn block(&self, statements: Vec<Expr>) -> Expr {
         }
     }
     /// Create a let expression
-/// # Examples
-/// 
-/// ```
-/// use ruchy::testing::ast_builder::let_expr;
-/// 
-/// let result = let_expr(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn let_expr(&self, name: String, value: Expr) -> Expr {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::testing::ast_builder::let_expr;
+    ///
+    /// let result = let_expr(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn let_expr(&self, name: String, value: Expr) -> Expr {
         Expr {
             kind: ExprKind::Let {
                 name,
@@ -368,15 +376,15 @@ pub fn let_expr(&self, name: String, value: Expr) -> Expr {
         }
     }
     /// Create an assignment
-/// # Examples
-/// 
-/// ```
-/// use ruchy::testing::ast_builder::assign;
-/// 
-/// let result = assign(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn assign(&self, target: Expr, value: Expr) -> Expr {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::testing::ast_builder::assign;
+    ///
+    /// let result = assign(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn assign(&self, target: Expr, value: Expr) -> Expr {
         Expr {
             kind: ExprKind::Assign {
                 target: Box::new(target),
@@ -387,15 +395,15 @@ pub fn assign(&self, target: Expr, value: Expr) -> Expr {
         }
     }
     /// Create a `Result::Ok` variant
-/// # Examples
-/// 
-/// ```
-/// use ruchy::testing::ast_builder::ok;
-/// 
-/// let result = ok(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn ok(&self, value: Expr) -> Expr {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::testing::ast_builder::ok;
+    ///
+    /// let result = ok(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn ok(&self, value: Expr) -> Expr {
         Expr {
             kind: ExprKind::Call {
                 func: Box::new(self.ident("Ok")),
@@ -406,15 +414,15 @@ pub fn ok(&self, value: Expr) -> Expr {
         }
     }
     /// Create a `Result::Err` variant
-/// # Examples
-/// 
-/// ```
-/// use ruchy::testing::ast_builder::err;
-/// 
-/// let result = err(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn err(&self, value: Expr) -> Expr {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::testing::ast_builder::err;
+    ///
+    /// let result = err(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn err(&self, value: Expr) -> Expr {
         Expr {
             kind: ExprKind::Call {
                 func: Box::new(self.ident("Err")),
@@ -425,15 +433,15 @@ pub fn err(&self, value: Expr) -> Expr {
         }
     }
     /// Create an `Option::Some` variant
-/// # Examples
-/// 
-/// ```
-/// use ruchy::testing::ast_builder::some;
-/// 
-/// let result = some(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn some(&self, value: Expr) -> Expr {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::testing::ast_builder::some;
+    ///
+    /// let result = some(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn some(&self, value: Expr) -> Expr {
         Expr {
             kind: ExprKind::Call {
                 func: Box::new(self.ident("Some")),
@@ -444,27 +452,27 @@ pub fn some(&self, value: Expr) -> Expr {
         }
     }
     /// Create an `Option::None` variant
-/// # Examples
-/// 
-/// ```
-/// use ruchy::testing::ast_builder::none;
-/// 
-/// let result = none(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn none(&self) -> Expr {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::testing::ast_builder::none;
+    ///
+    /// let result = none(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn none(&self) -> Expr {
         self.ident("None")
     }
     /// Create a list/array literal
-/// # Examples
-/// 
-/// ```
-/// use ruchy::testing::ast_builder::list;
-/// 
-/// let result = list(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn list(&self, elements: Vec<Expr>) -> Expr {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::testing::ast_builder::list;
+    ///
+    /// let result = list(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn list(&self, elements: Vec<Expr>) -> Expr {
         Expr {
             kind: ExprKind::List(elements),
             span: self.span,
@@ -472,15 +480,15 @@ pub fn list(&self, elements: Vec<Expr>) -> Expr {
         }
     }
     /// Create a tuple literal
-/// # Examples
-/// 
-/// ```
-/// use ruchy::testing::ast_builder::tuple;
-/// 
-/// let result = tuple(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn tuple(&self, elements: Vec<Expr>) -> Expr {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::testing::ast_builder::tuple;
+    ///
+    /// let result = tuple(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn tuple(&self, elements: Vec<Expr>) -> Expr {
         Expr {
             kind: ExprKind::Tuple(elements),
             span: self.span,
@@ -488,15 +496,15 @@ pub fn tuple(&self, elements: Vec<Expr>) -> Expr {
         }
     }
     /// Create string interpolation
-/// # Examples
-/// 
-/// ```
-/// use ruchy::testing::ast_builder::string_interpolation;
-/// 
-/// let result = string_interpolation(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn string_interpolation(&self, parts: Vec<StringPart>) -> Expr {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::testing::ast_builder::string_interpolation;
+    ///
+    /// let result = string_interpolation(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn string_interpolation(&self, parts: Vec<StringPart>) -> Expr {
         Expr {
             kind: ExprKind::StringInterpolation { parts },
             span: self.span,
@@ -504,15 +512,15 @@ pub fn string_interpolation(&self, parts: Vec<StringPart>) -> Expr {
         }
     }
     /// Create a for loop
-/// # Examples
-/// 
-/// ```
-/// use ruchy::testing::ast_builder::for_loop;
-/// 
-/// let result = for_loop(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn for_loop(&self, var: String, iter: Expr, body: Expr) -> Expr {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::testing::ast_builder::for_loop;
+    ///
+    /// let result = for_loop(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn for_loop(&self, var: String, iter: Expr, body: Expr) -> Expr {
         Expr {
             kind: ExprKind::For {
                 var,
@@ -525,15 +533,15 @@ pub fn for_loop(&self, var: String, iter: Expr, body: Expr) -> Expr {
         }
     }
     /// Create a while loop
-/// # Examples
-/// 
-/// ```
-/// use ruchy::testing::ast_builder::while_loop;
-/// 
-/// let result = while_loop(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn while_loop(&self, condition: Expr, body: Expr) -> Expr {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::testing::ast_builder::while_loop;
+    ///
+    /// let result = while_loop(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn while_loop(&self, condition: Expr, body: Expr) -> Expr {
         Expr {
             kind: ExprKind::While {
                 condition: Box::new(condition),
@@ -544,15 +552,15 @@ pub fn while_loop(&self, condition: Expr, body: Expr) -> Expr {
         }
     }
     /// Create a loop expression
-/// # Examples
-/// 
-/// ```
-/// use ruchy::testing::ast_builder::loop_expr;
-/// 
-/// let result = loop_expr(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn loop_expr(&self, body: Expr) -> Expr {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::testing::ast_builder::loop_expr;
+    ///
+    /// let result = loop_expr(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn loop_expr(&self, body: Expr) -> Expr {
         Expr {
             kind: ExprKind::Loop {
                 body: Box::new(body),
@@ -562,15 +570,15 @@ pub fn loop_expr(&self, body: Expr) -> Expr {
         }
     }
     /// Create a break expression
-/// # Examples
-/// 
-/// ```
-/// use ruchy::testing::ast_builder::break_expr;
-/// 
-/// let result = break_expr(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn break_expr(&self, label: Option<String>) -> Expr {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::testing::ast_builder::break_expr;
+    ///
+    /// let result = break_expr(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn break_expr(&self, label: Option<String>) -> Expr {
         Expr {
             kind: ExprKind::Break { label },
             span: self.span,
@@ -578,15 +586,15 @@ pub fn break_expr(&self, label: Option<String>) -> Expr {
         }
     }
     /// Create a continue expression
-/// # Examples
-/// 
-/// ```
-/// use ruchy::testing::ast_builder::continue_expr;
-/// 
-/// let result = continue_expr(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn continue_expr(&self, label: Option<String>) -> Expr {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::testing::ast_builder::continue_expr;
+    ///
+    /// let result = continue_expr(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn continue_expr(&self, label: Option<String>) -> Expr {
         Expr {
             kind: ExprKind::Continue { label },
             span: self.span,
@@ -594,46 +602,48 @@ pub fn continue_expr(&self, label: Option<String>) -> Expr {
         }
     }
     /// Create a return expression
-/// # Examples
-/// 
-/// ```
-/// use ruchy::testing::ast_builder::return_expr;
-/// 
-/// let result = return_expr(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn return_expr(&self, value: Option<Expr>) -> Expr {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::testing::ast_builder::return_expr;
+    ///
+    /// let result = return_expr(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn return_expr(&self, value: Option<Expr>) -> Expr {
         Expr {
-            kind: ExprKind::Return { value: value.map(Box::new) },
+            kind: ExprKind::Return {
+                value: value.map(Box::new),
+            },
             span: self.span,
             attributes: vec![],
         }
     }
     /// Create a type annotation
-/// # Examples
-/// 
-/// ```
-/// use ruchy::testing::ast_builder::type_int;
-/// 
-/// let result = type_int(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn type_int(&self) -> Type {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::testing::ast_builder::type_int;
+    ///
+    /// let result = type_int(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn type_int(&self) -> Type {
         Type {
             kind: TypeKind::Named("i32".to_string()),
             span: self.span,
         }
     }
     /// Create a Result type
-/// # Examples
-/// 
-/// ```
-/// use ruchy::testing::ast_builder::type_result;
-/// 
-/// let result = type_result(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn type_result(&self, ok: Type, err: Type) -> Type {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::testing::ast_builder::type_result;
+    ///
+    /// let result = type_result(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn type_result(&self, ok: Type, err: Type) -> Type {
         Type {
             kind: TypeKind::Generic {
                 base: "Result".to_string(),
@@ -643,15 +653,15 @@ pub fn type_result(&self, ok: Type, err: Type) -> Type {
         }
     }
     /// Create an Option type
-/// # Examples
-/// 
-/// ```
-/// use ruchy::testing::ast_builder::type_option;
-/// 
-/// let result = type_option(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn type_option(&self, inner: Type) -> Type {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::testing::ast_builder::type_option;
+    ///
+    /// let result = type_option(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn type_option(&self, inner: Type) -> Type {
         Type {
             kind: TypeKind::Generic {
                 base: "Option".to_string(),
@@ -750,11 +760,7 @@ mod tests {
         let builder = AstBuilder::new();
 
         // Test addition
-        let add_expr = builder.binary(
-            builder.int(1),
-            BinaryOp::Add,
-            builder.int(2),
-        );
+        let add_expr = builder.binary(builder.int(1), BinaryOp::Add, builder.int(2));
 
         if let ExprKind::Binary { left, op, right } = add_expr.kind {
             assert!(matches!(op, BinaryOp::Add));
@@ -803,7 +809,12 @@ mod tests {
             Some(builder.string("else")),
         );
 
-        if let ExprKind::If { condition, then_branch, else_branch } = if_expr.kind {
+        if let ExprKind::If {
+            condition,
+            then_branch,
+            else_branch,
+        } = if_expr.kind
+        {
             // Verify condition
             if let ExprKind::Literal(Literal::Bool(val)) = condition.kind {
                 assert!(val);
@@ -836,11 +847,7 @@ mod tests {
     fn test_if_expression_without_else() {
         let builder = AstBuilder::new();
 
-        let if_expr = builder.if_expr(
-            builder.bool(true),
-            builder.string("then"),
-            None,
-        );
+        let if_expr = builder.if_expr(builder.bool(true), builder.string("then"), None);
 
         if let ExprKind::If { else_branch, .. } = if_expr.kind {
             assert!(else_branch.is_none());
@@ -890,10 +897,13 @@ mod tests {
         let lambda = builder.lambda(
             vec![Param {
                 pattern: Pattern::Identifier("x".to_string()),
-                ty: Type { kind: TypeKind::Named("unknown".to_string()), span: Span::new(0, 1) }, // Fixed: create proper Type struct
+                ty: Type {
+                    kind: TypeKind::Named("unknown".to_string()),
+                    span: Span::new(0, 1),
+                }, // Fixed: create proper Type struct
                 span: Span::new(0, 1),
                 is_mutable: false,
-                default_value: None
+                default_value: None,
             }],
             builder.ident("x"),
         );
@@ -948,10 +958,8 @@ mod tests {
     #[test]
     fn test_pattern_tuple() {
         let builder = AstBuilder::new();
-        let pattern = builder.pattern_tuple(vec![
-            builder.pattern_ident("x"),
-            builder.pattern_ident("y"),
-        ]);
+        let pattern =
+            builder.pattern_tuple(vec![builder.pattern_ident("x"), builder.pattern_ident("y")]);
 
         if let Pattern::Tuple(patterns) = pattern {
             assert_eq!(patterns.len(), 2);
@@ -990,7 +998,12 @@ mod tests {
             ],
         );
 
-        if let Pattern::Struct { name, fields, has_rest } = pattern {
+        if let Pattern::Struct {
+            name,
+            fields,
+            has_rest,
+        } = pattern
+        {
             assert_eq!(name, "Point");
             assert_eq!(fields.len(), 2);
             assert!(!has_rest);
@@ -1015,11 +1028,7 @@ mod tests {
     #[test]
     fn test_list_literal() {
         let builder = AstBuilder::new();
-        let list = builder.list(vec![
-            builder.int(1),
-            builder.int(2),
-            builder.int(3),
-        ]);
+        let list = builder.list(vec![builder.int(1), builder.int(2), builder.int(3)]);
 
         if let ExprKind::List(elements) = list.kind {
             assert_eq!(elements.len(), 3);
@@ -1027,7 +1036,7 @@ mod tests {
                 if let ExprKind::Literal(Literal::Integer(val)) = element.kind {
                     assert_eq!(val, (i + 1) as i64);
                 } else {
-                    panic!("Expected integer literal at index {}", i);
+                    panic!("Expected integer literal at index {i}");
                 }
             }
         } else {
@@ -1038,10 +1047,7 @@ mod tests {
     #[test]
     fn test_tuple_literal() {
         let builder = AstBuilder::new();
-        let tuple = builder.tuple(vec![
-            builder.string("first"),
-            builder.int(42),
-        ]);
+        let tuple = builder.tuple(vec![builder.string("first"), builder.int(42)]);
 
         if let ExprKind::Tuple(elements) = tuple.kind {
             assert_eq!(elements.len(), 2);
@@ -1072,7 +1078,13 @@ mod tests {
             builder.ident("i"),
         );
 
-        if let ExprKind::For { var, iter, body, pattern } = for_loop.kind {
+        if let ExprKind::For {
+            var,
+            iter,
+            body,
+            pattern,
+        } = for_loop.kind
+        {
             assert_eq!(var, "i");
             assert!(pattern.is_none());
 
@@ -1095,10 +1107,7 @@ mod tests {
     #[test]
     fn test_while_loop() {
         let builder = AstBuilder::new();
-        let while_loop = builder.while_loop(
-            builder.bool(true),
-            builder.string("body"),
-        );
+        let while_loop = builder.while_loop(builder.bool(true), builder.string("body"));
 
         if let ExprKind::While { condition, body } = while_loop.kind {
             if let ExprKind::Literal(Literal::Bool(val)) = condition.kind {
@@ -1295,7 +1304,14 @@ mod tests {
         let builder = AstBuilder::new();
         let let_expr = builder.let_expr("variable".to_string(), builder.int(42));
 
-        if let ExprKind::Let { name, value, type_annotation, is_mutable, body } = let_expr.kind {
+        if let ExprKind::Let {
+            name,
+            value,
+            type_annotation,
+            is_mutable,
+            body,
+        } = let_expr.kind
+        {
             assert_eq!(name, "variable");
             assert!(type_annotation.is_none());
             assert!(!is_mutable);
@@ -1321,10 +1337,7 @@ mod tests {
     #[test]
     fn test_assignment() {
         let builder = AstBuilder::new();
-        let assign = builder.assign(
-            builder.ident("variable"),
-            builder.int(100),
-        );
+        let assign = builder.assign(builder.ident("variable"), builder.int(100));
 
         if let ExprKind::Assign { target, value } = assign.kind {
             // Verify target
@@ -1365,7 +1378,10 @@ mod tests {
         let builder = AstBuilder::new();
         let result_type = builder.type_result(
             builder.type_int(),
-            Type { kind: TypeKind::Named("String".to_string()), span: Span::default() },
+            Type {
+                kind: TypeKind::Named("String".to_string()),
+                span: Span::default(),
+            },
         );
 
         if let TypeKind::Generic { base, params } = result_type.kind {
@@ -1415,11 +1431,7 @@ mod tests {
         let builder = AstBuilder::new();
         // Create: if x > 0 { "positive" } else { "negative" }
         let ast = builder.if_expr(
-            builder.binary(
-                builder.ident("x"),
-                BinaryOp::Greater,
-                builder.int(0),
-            ),
+            builder.binary(builder.ident("x"), BinaryOp::Greater, builder.int(0)),
             builder.string("positive"),
             Some(builder.string("negative")),
         );
@@ -1437,18 +1449,10 @@ mod tests {
             vec![
                 builder.match_arm(
                     builder.pattern_ident("n"),
-                    Some(builder.binary(
-                        builder.ident("n"),
-                        BinaryOp::Greater,
-                        builder.int(0),
-                    )),
+                    Some(builder.binary(builder.ident("n"), BinaryOp::Greater, builder.int(0))),
                     builder.string("positive"),
                 ),
-                builder.match_arm(
-                    builder.pattern_wildcard(),
-                    None,
-                    builder.string("other"),
-                ),
+                builder.match_arm(builder.pattern_wildcard(), None, builder.string("other")),
             ],
         );
         // Should be able to transpile even though parser can't parse this
@@ -1472,11 +1476,7 @@ mod tests {
                     None,
                     builder.string("small"),
                 ),
-                builder.match_arm(
-                    builder.pattern_wildcard(),
-                    None,
-                    builder.string("other"),
-                ),
+                builder.match_arm(builder.pattern_wildcard(), None, builder.string("other")),
             ],
         );
         let transpiler = Transpiler::new();
@@ -1496,11 +1496,7 @@ mod tests {
                     None,
                     builder.string("one"),
                 ),
-                builder.match_arm(
-                    builder.pattern_wildcard(),
-                    None,
-                    builder.string("other"),
-                ),
+                builder.match_arm(builder.pattern_wildcard(), None, builder.string("other")),
             ],
         );
 
@@ -1516,7 +1512,10 @@ mod tests {
             assert_eq!(arms.len(), 2);
 
             // First arm
-            assert!(matches!(arms[0].pattern, Pattern::Literal(Literal::Integer(1))));
+            assert!(matches!(
+                arms[0].pattern,
+                Pattern::Literal(Literal::Integer(1))
+            ));
             assert!(arms[0].guard.is_none());
             if let ExprKind::Literal(Literal::String(val)) = &arms[0].body.kind {
                 assert_eq!(val, "one");
@@ -1542,11 +1541,7 @@ mod tests {
         let builder = AstBuilder::new();
         let arm = builder.match_arm(
             builder.pattern_ident("n"),
-            Some(builder.binary(
-                builder.ident("n"),
-                BinaryOp::Greater,
-                builder.int(0),
-            )),
+            Some(builder.binary(builder.ident("n"), BinaryOp::Greater, builder.int(0))),
             builder.string("positive"),
         );
 
@@ -1733,11 +1728,7 @@ mod tests {
         // Deeply nested binary operations: ((1 + 2) * 3) - 4
         let nested = builder.binary(
             builder.binary(
-                builder.binary(
-                    builder.int(1),
-                    BinaryOp::Add,
-                    builder.int(2),
-                ),
+                builder.binary(builder.int(1), BinaryOp::Add, builder.int(2)),
                 BinaryOp::Multiply,
                 builder.int(3),
             ),
@@ -1841,29 +1832,17 @@ mod tests {
 
         // Test complex expression: fibonacci-style recursive structure
         let complex_expr = builder.if_expr(
-            builder.binary(
-                builder.ident("n"),
-                BinaryOp::LessEqual,
-                builder.int(1),
-            ),
+            builder.binary(builder.ident("n"), BinaryOp::LessEqual, builder.int(1)),
             builder.ident("n"),
             Some(builder.binary(
                 builder.call(
                     builder.ident("fib"),
-                    vec![builder.binary(
-                        builder.ident("n"),
-                        BinaryOp::Subtract,
-                        builder.int(1),
-                    )],
+                    vec![builder.binary(builder.ident("n"), BinaryOp::Subtract, builder.int(1))],
                 ),
                 BinaryOp::Add,
                 builder.call(
                     builder.ident("fib"),
-                    vec![builder.binary(
-                        builder.ident("n"),
-                        BinaryOp::Subtract,
-                        builder.int(2),
-                    )],
+                    vec![builder.binary(builder.ident("n"), BinaryOp::Subtract, builder.int(2))],
                 ),
             )),
         );
@@ -1878,11 +1857,7 @@ mod tests {
         let transpiler = Transpiler::new();
 
         // Test collection transpilation
-        let list_expr = builder.list(vec![
-            builder.int(1),
-            builder.int(2),
-            builder.int(3),
-        ]);
+        let list_expr = builder.list(vec![builder.int(1), builder.int(2), builder.int(3)]);
 
         let result = transpiler.transpile(&list_expr);
         assert!(result.is_ok(), "Failed to transpile list");
@@ -1919,11 +1894,7 @@ mod tests {
         ];
 
         for op in operators {
-            let expr = builder.binary(
-                builder.int(1),
-                op,
-                builder.int(2),
-            );
+            let expr = builder.binary(builder.int(1), op, builder.int(2));
 
             if let ExprKind::Binary { op: actual_op, .. } = expr.kind {
                 // Using discriminant comparison since BinaryOp doesn't derive PartialEq
@@ -1933,7 +1904,7 @@ mod tests {
                     "Operator mismatch"
                 );
             } else {
-                panic!("Expected binary expression with operator {:?}", op);
+                panic!("Expected binary expression with operator {op:?}");
             }
         }
     }
@@ -1942,10 +1913,7 @@ mod tests {
     fn test_all_unary_operators() {
         let builder = AstBuilder::new();
 
-        let operators = vec![
-            UnaryOp::Negate,
-            UnaryOp::Not,
-        ];
+        let operators = vec![UnaryOp::Negate, UnaryOp::Not];
 
         for op in operators {
             let expr = builder.unary(op, builder.int(42));
@@ -1957,7 +1925,7 @@ mod tests {
                     "Operator mismatch"
                 );
             } else {
-                panic!("Expected unary expression with operator {:?}", op);
+                panic!("Expected unary expression with operator {op:?}");
             }
         }
     }

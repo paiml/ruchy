@@ -75,7 +75,7 @@
 //!
 //! let scorer = PmatScorer::new();
 //! let score = scorer.analyze_project(".")?.overall_grade();
-//! 
+//!
 //! if score >= 85.0 {
 //!     println!("✅ PMAT A- grade achieved: {:.1}", score);
 //! } else {
@@ -122,13 +122,13 @@
 //!
 //! Based on SPECIFICATION.md section 20 requirements
 pub mod coverage;
-pub mod ruchy_coverage;
-pub mod instrumentation;
-pub mod scoring;
-pub mod gates;
 pub mod enforcement;
 pub mod formatter;
+pub mod gates;
+pub mod instrumentation;
 pub mod linter;
+pub mod ruchy_coverage;
+pub mod scoring;
 pub use coverage::{
     CoverageCollector, CoverageReport, CoverageTool, FileCoverage, HtmlReportGenerator,
 };
@@ -181,47 +181,47 @@ pub enum QualityReport {
     Fail { violations: Vec<Violation> },
 }
 impl QualityGates {
-/// Create new quality gates
-///
-/// # Examples
-///
-/// ```
-/// use ruchy::quality::QualityGates;
-/// let gates = QualityGates::new();
-/// ```
-/// // Verify behavior
-/// ```
-pub fn new() -> Self {
+    /// Create new quality gates
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::quality::QualityGates;
+    /// let gates = QualityGates::new();
+    /// ```
+    /// // Verify behavior
+    /// ```
+    pub fn new() -> Self {
         Self {
             metrics: QualityMetrics::default(),
             thresholds: QualityThresholds::default(),
         }
     }
-/// # Examples
-/// 
-/// ```
-/// use ruchy::quality::mod::QualityGates;
-/// 
-/// let mut instance = QualityGates::new();
-/// let result = instance.with_thresholds();
-/// // Verify behavior
-/// ```
-pub fn with_thresholds(thresholds: QualityThresholds) -> Self {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::quality::mod::QualityGates;
+    ///
+    /// let mut instance = QualityGates::new();
+    /// let result = instance.with_thresholds();
+    /// // Verify behavior
+    /// ```
+    pub fn with_thresholds(thresholds: QualityThresholds) -> Self {
         Self {
             metrics: QualityMetrics::default(),
             thresholds,
         }
     }
-/// # Examples
-/// 
-/// ```
-/// use ruchy::quality::mod::QualityGates;
-/// 
-/// let mut instance = QualityGates::new();
-/// let result = instance.update_metrics();
-/// // Verify behavior
-/// ```
-pub fn update_metrics(&mut self, metrics: QualityMetrics) {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::quality::mod::QualityGates;
+    ///
+    /// let mut instance = QualityGates::new();
+    /// let result = instance.update_metrics();
+    /// // Verify behavior
+    /// ```
+    pub fn update_metrics(&mut self, metrics: QualityMetrics) {
         self.metrics = metrics;
     }
     /// Check quality gates against current metrics
@@ -229,16 +229,16 @@ pub fn update_metrics(&mut self, metrics: QualityMetrics) {
     /// # Errors
     ///
     /// Returns an error containing `QualityReport::Fail` if any quality gates are violated
-/// # Examples
-/// 
-/// ```
-/// use ruchy::quality::mod::QualityGates;
-/// 
-/// let mut instance = QualityGates::new();
-/// let result = instance.check();
-/// // Verify behavior
-/// ```
-pub fn check(&self) -> Result<QualityReport, QualityReport> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::quality::mod::QualityGates;
+    ///
+    /// let mut instance = QualityGates::new();
+    /// let result = instance.check();
+    /// // Verify behavior
+    /// ```
+    pub fn check(&self) -> Result<QualityReport, QualityReport> {
         let mut violations = Vec::new();
         if self.metrics.test_coverage < self.thresholds.min_test_coverage {
             violations.push(Violation::InsufficientCoverage {
@@ -279,15 +279,15 @@ pub fn check(&self) -> Result<QualityReport, QualityReport> {
     /// # Errors
     ///
     /// Returns an error if metric collection fails
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::quality::mod::collect_metrics;
-/// 
-/// let result = collect_metrics(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn collect_metrics(&mut self) -> Result<QualityMetrics, Box<dyn std::error::Error>> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::quality::mod::collect_metrics;
+    ///
+    /// let result = collect_metrics(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn collect_metrics(&mut self) -> Result<QualityMetrics, Box<dyn std::error::Error>> {
         // Collect SATD count first
         let satd_count = Self::count_satd_comments()?;
         let mut metrics = QualityMetrics {
@@ -303,7 +303,7 @@ pub fn collect_metrics(&mut self) -> Result<QualityMetrics, Box<dyn std::error::
         }
         // Collect clippy warnings - would need actual clippy run
         metrics.clippy_warnings = 0; // We know this is 0 from recent fixes
-        // Update stored metrics
+                                     // Update stored metrics
         self.metrics = metrics.clone();
         Ok(metrics)
     }
@@ -377,26 +377,26 @@ pub fn collect_metrics(&mut self) -> Result<QualityMetrics, Box<dyn std::error::
             .sum();
         Ok(count)
     }
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::quality::mod::get_metrics;
-/// 
-/// let result = get_metrics(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn get_metrics(&self) -> &QualityMetrics {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::quality::mod::get_metrics;
+    ///
+    /// let result = get_metrics(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn get_metrics(&self) -> &QualityMetrics {
         &self.metrics
     }
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::quality::mod::get_thresholds;
-/// 
-/// let result = get_thresholds(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn get_thresholds(&self) -> &QualityThresholds {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::quality::mod::get_thresholds;
+    ///
+    /// let result = get_thresholds(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn get_thresholds(&self) -> &QualityThresholds {
         &self.thresholds
     }
     /// Generate a detailed coverage report
@@ -404,15 +404,15 @@ pub fn get_thresholds(&self) -> &QualityThresholds {
     /// # Errors
     ///
     /// Returns an error if coverage collection or HTML generation fails
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::quality::mod::generate_coverage_report;
-/// 
-/// let result = generate_coverage_report(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn generate_coverage_report(&self) -> Result<(), Box<dyn std::error::Error>> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::quality::mod::generate_coverage_report;
+    ///
+    /// let result = generate_coverage_report(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn generate_coverage_report(&self) -> Result<(), Box<dyn std::error::Error>> {
         let coverage_report = Self::collect_coverage()?;
         // Generate HTML report
         let html_generator = HtmlReportGenerator::new("target/coverage");
@@ -553,7 +553,7 @@ mod tests {
             max_clippy_warnings: 1,
             min_doc_coverage: 85.0,
         };
-        let gates = QualityGates::with_thresholds(thresholds.clone());
+        let gates = QualityGates::with_thresholds(thresholds);
         assert_eq!(gates.thresholds.min_test_coverage, 90.0);
         assert_eq!(gates.thresholds.max_complexity, 5);
         assert_eq!(gates.thresholds.max_satd, 2);
@@ -629,8 +629,12 @@ mod tests {
 
         let result = gates.check();
         if let Err(QualityReport::Fail { violations }) = result {
-            assert!(violations.iter().any(|v| matches!(v,
-                Violation::InsufficientCoverage { current: 50.0, required: 80.0 }
+            assert!(violations.iter().any(|v| matches!(
+                v,
+                Violation::InsufficientCoverage {
+                    current: 50.0,
+                    required: 80.0
+                }
             )));
         } else {
             panic!("Expected insufficient coverage violation");
@@ -649,8 +653,12 @@ mod tests {
 
         let result = gates.check();
         if let Err(QualityReport::Fail { violations }) = result {
-            assert!(violations.iter().any(|v| matches!(v,
-                Violation::ExcessiveComplexity { current: 20, maximum: 10 }
+            assert!(violations.iter().any(|v| matches!(
+                v,
+                Violation::ExcessiveComplexity {
+                    current: 20,
+                    maximum: 10
+                }
             )));
         } else {
             panic!("Expected excessive complexity violation");
@@ -669,9 +677,9 @@ mod tests {
 
         let result = gates.check();
         if let Err(QualityReport::Fail { violations }) = result {
-            assert!(violations.iter().any(|v| matches!(v,
-                Violation::TechnicalDebt { count: 3 }
-            )));
+            assert!(violations
+                .iter()
+                .any(|v| matches!(v, Violation::TechnicalDebt { count: 3 })));
         } else {
             panic!("Expected technical debt violation");
         }
@@ -689,9 +697,9 @@ mod tests {
 
         let result = gates.check();
         if let Err(QualityReport::Fail { violations }) = result {
-            assert!(violations.iter().any(|v| matches!(v,
-                Violation::ClippyWarnings { count: 5 }
-            )));
+            assert!(violations
+                .iter()
+                .any(|v| matches!(v, Violation::ClippyWarnings { count: 5 })));
         } else {
             panic!("Expected clippy warnings violation");
         }
@@ -708,8 +716,12 @@ mod tests {
 
         let result = gates.check();
         if let Err(QualityReport::Fail { violations }) = result {
-            assert!(violations.iter().any(|v| matches!(v,
-                Violation::InsufficientDocumentation { current: 60.0, required: 90.0 }
+            assert!(violations.iter().any(|v| matches!(
+                v,
+                Violation::InsufficientDocumentation {
+                    current: 60.0,
+                    required: 90.0
+                }
             )));
         } else {
             panic!("Expected insufficient documentation violation");
@@ -728,7 +740,7 @@ mod tests {
             documentation_coverage: 85.0,
             unsafe_blocks: 3,
         };
-        gates.update_metrics(metrics.clone());
+        gates.update_metrics(metrics);
 
         let retrieved = gates.get_metrics();
         assert_eq!(retrieved.test_coverage, 75.0);
@@ -745,7 +757,7 @@ mod tests {
             max_clippy_warnings: 2,
             min_doc_coverage: 80.0,
         };
-        let gates = QualityGates::with_thresholds(thresholds.clone());
+        let gates = QualityGates::with_thresholds(thresholds);
 
         let retrieved = gates.get_thresholds();
         assert_eq!(retrieved.min_test_coverage, 85.0);
@@ -760,8 +772,8 @@ mod tests {
             test_coverage: 50.0,       // Below 80%
             cyclomatic_complexity: 15, // Above 10
             cognitive_complexity: 20,
-            satd_count: 10,            // Above 0
-            clippy_warnings: 5,        // Above 0
+            satd_count: 10,               // Above 0
+            clippy_warnings: 5,           // Above 0
             documentation_coverage: 50.0, // Below 90%
             unsafe_blocks: 0,
         });
@@ -789,17 +801,17 @@ mod tests {
         assert!(matches!(console, ReportingBackend::Console));
 
         let json = ReportingBackend::Json {
-            output_path: "report.json".to_string()
+            output_path: "report.json".to_string(),
         };
         assert!(matches!(json, ReportingBackend::Json { .. }));
 
         let github = ReportingBackend::GitHub {
-            token: "token".to_string()
+            token: "token".to_string(),
         };
         assert!(matches!(github, ReportingBackend::GitHub { .. }));
 
         let html = ReportingBackend::Html {
-            output_dir: "coverage".to_string()
+            output_dir: "coverage".to_string(),
         };
         assert!(matches!(html, ReportingBackend::Html { .. }));
     }
@@ -810,8 +822,14 @@ mod tests {
         let gates2 = QualityGates::default();
 
         // Both should have same default values
-        assert_eq!(gates1.thresholds.min_test_coverage, gates2.thresholds.min_test_coverage);
-        assert_eq!(gates1.thresholds.max_complexity, gates2.thresholds.max_complexity);
+        assert_eq!(
+            gates1.thresholds.min_test_coverage,
+            gates2.thresholds.min_test_coverage
+        );
+        assert_eq!(
+            gates1.thresholds.max_complexity,
+            gates2.thresholds.max_complexity
+        );
     }
 
     #[test]
@@ -819,11 +837,11 @@ mod tests {
         let mut gates = QualityGates::new();
         // Set metrics exactly at thresholds
         gates.update_metrics(QualityMetrics {
-            test_coverage: 80.0,      // Exactly at minimum
+            test_coverage: 80.0,       // Exactly at minimum
             cyclomatic_complexity: 10, // Exactly at maximum
             cognitive_complexity: 10,
-            satd_count: 0,            // Exactly at maximum
-            clippy_warnings: 0,       // Exactly at maximum
+            satd_count: 0,                // Exactly at maximum
+            clippy_warnings: 0,           // Exactly at maximum
             documentation_coverage: 90.0, // Exactly at minimum
             unsafe_blocks: 0,
         });
@@ -853,7 +871,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "slow integration test - run with --ignored flag"]
+
     fn test_coverage_integration() {
         // Test that coverage collection doesn't panic
         let result = QualityGates::collect_coverage();
@@ -865,7 +883,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "requires filesystem access"]
+
     fn test_collect_metrics() {
         let mut gates = QualityGates::new();
         let result = gates.collect_metrics();
@@ -874,7 +892,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "requires filesystem access"]
+
     fn test_generate_coverage_report() {
         let gates = QualityGates::new();
         let result = gates.generate_coverage_report();
@@ -885,8 +903,7 @@ mod tests {
 #[cfg(test)]
 mod property_tests_mod {
     use proptest::proptest;
-    
-    
+
     proptest! {
         /// Property: Function never panics on any input
         #[test]

@@ -171,7 +171,7 @@ fn test_ch15_array_initialization() {
         
         init_array()
     "#;
-    assert_eq!(eval(code), "20");  // 10 + 10 = 20
+    assert_eq!(eval(code), "20"); // 10 + 10 = 20
 }
 
 // Test array size in local variable declarations

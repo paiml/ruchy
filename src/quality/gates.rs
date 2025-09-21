@@ -1,8 +1,8 @@
 //! Quality gate enforcement system (RUCHY-0815)
+use crate::quality::scoring::{Grade, QualityScore};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use serde::{Deserialize, Serialize};
-use crate::quality::scoring::{QualityScore, Grade};
 /// Quality gate configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct QualityGateConfig {
@@ -132,19 +132,16 @@ impl Default for QualityGateConfig {
             min_score: 0.7, // B- grade minimum
             min_grade: Grade::BMinus,
             component_thresholds: ComponentThresholds {
-                correctness: 0.8,   // High correctness required
-                performance: 0.6,   // Moderate performance required
-                maintainability: 0.7, // Good maintainability required  
-                safety: 0.8,        // High safety required
-                idiomaticity: 0.5,  // Basic idiomaticity required
+                correctness: 0.8,     // High correctness required
+                performance: 0.6,     // Moderate performance required
+                maintainability: 0.7, // Good maintainability required
+                safety: 0.8,          // High safety required
+                idiomaticity: 0.5,    // Basic idiomaticity required
             },
             anti_gaming: AntiGamingRules {
                 min_confidence: 0.6,
                 max_cache_hit_rate: 0.8,
-                require_deep_analysis: vec![
-                    "src/main.rs".to_string(),
-                    "src/lib.rs".to_string(),
-                ],
+                require_deep_analysis: vec!["src/main.rs".to_string(), "src/lib.rs".to_string()],
                 min_file_size_bytes: 100,
                 max_test_ratio: 2.0,
             },
@@ -164,28 +161,28 @@ impl Default for QualityGateConfig {
     }
 }
 impl QualityGateEnforcer {
-/// # Examples
-/// 
-/// ```
-/// use ruchy::quality::gates::QualityGateEnforcer;
-/// 
-/// let instance = QualityGateEnforcer::new();
-/// // Verify behavior
-/// ```
-pub fn new(config: QualityGateConfig) -> Self {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::quality::gates::QualityGateEnforcer;
+    ///
+    /// let instance = QualityGateEnforcer::new();
+    /// // Verify behavior
+    /// ```
+    pub fn new(config: QualityGateConfig) -> Self {
         Self { config }
     }
     /// Load configuration from .ruchy/score.toml
-/// # Examples
-/// 
-/// ```
-/// use ruchy::quality::gates::QualityGateEnforcer;
-/// 
-/// let mut instance = QualityGateEnforcer::new();
-/// let result = instance.load_config();
-/// // Verify behavior
-/// ```
-pub fn load_config(project_root: &Path) -> anyhow::Result<QualityGateConfig> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::quality::gates::QualityGateEnforcer;
+    ///
+    /// let mut instance = QualityGateEnforcer::new();
+    /// let result = instance.load_config();
+    /// // Verify behavior
+    /// ```
+    pub fn load_config(project_root: &Path) -> anyhow::Result<QualityGateConfig> {
         let config_path = project_root.join(".ruchy").join("score.toml");
         if config_path.exists() {
             let content = std::fs::read_to_string(&config_path)?;
@@ -201,16 +198,16 @@ pub fn load_config(project_root: &Path) -> anyhow::Result<QualityGateConfig> {
         }
     }
     /// Enforce quality gates on a score
-/// # Examples
-/// 
-/// ```
-/// use ruchy::quality::gates::QualityGateEnforcer;
-/// 
-/// let mut instance = QualityGateEnforcer::new();
-/// let result = instance.enforce_gates();
-/// // Verify behavior
-/// ```
-pub fn enforce_gates(&self, score: &QualityScore, file_path: Option<&PathBuf>) -> GateResult {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::quality::gates::QualityGateEnforcer;
+    ///
+    /// let mut instance = QualityGateEnforcer::new();
+    /// let result = instance.enforce_gates();
+    /// // Verify behavior
+    /// ```
+    pub fn enforce_gates(&self, score: &QualityScore, file_path: Option<&PathBuf>) -> GateResult {
         let mut violations = Vec::new();
         let mut gaming_warnings = Vec::new();
         // Check overall score threshold
@@ -236,8 +233,7 @@ pub fn enforce_gates(&self, score: &QualityScore, file_path: Option<&PathBuf>) -
                 severity: Severity::Critical,
                 message: format!(
                     "Grade {} below minimum {}",
-                    score.grade,
-                    self.config.min_grade
+                    score.grade, self.config.min_grade
                 ),
             });
         }
@@ -364,31 +360,41 @@ pub fn enforce_gates(&self, score: &QualityScore, file_path: Option<&PathBuf>) -
             }
             // Check if critical files require deep analysis
             let path_str = path.to_string_lossy();
-            if self.config.anti_gaming.require_deep_analysis.iter().any(|p| path_str.contains(p))
-                && score.confidence < 0.9 {
-                    violations.push(Violation {
-                        violation_type: ViolationType::Gaming,
-                        actual: score.confidence,
-                        required: 0.9,
-                        severity: Severity::Critical,
-                        message: format!(
-                            "Critical file {} requires deep analysis (confidence < 90%)",
-                            path.display()
-                        ),
-                    });
-                }
+            if self
+                .config
+                .anti_gaming
+                .require_deep_analysis
+                .iter()
+                .any(|p| path_str.contains(p))
+                && score.confidence < 0.9
+            {
+                violations.push(Violation {
+                    violation_type: ViolationType::Gaming,
+                    actual: score.confidence,
+                    required: 0.9,
+                    severity: Severity::Critical,
+                    message: format!(
+                        "Critical file {} requires deep analysis (confidence < 90%)",
+                        path.display()
+                    ),
+                });
+            }
         }
     }
     /// Export results for CI/CD integration
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::quality::gates::export_ci_results;
-/// 
-/// let result = export_ci_results(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn export_ci_results(&self, results: &[GateResult], output_dir: &Path) -> anyhow::Result<()> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::quality::gates::export_ci_results;
+    ///
+    /// let result = export_ci_results(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn export_ci_results(
+        &self,
+        results: &[GateResult],
+        output_dir: &Path,
+    ) -> anyhow::Result<()> {
         if self.config.ci_integration.json_output {
             self.export_json_results(results, output_dir)?;
         }
@@ -403,13 +409,19 @@ pub fn export_ci_results(&self, results: &[GateResult], output_dir: &Path) -> an
         std::fs::write(output_path, json_content)?;
         Ok(())
     }
-    fn export_junit_results(&self, results: &[GateResult], output_dir: &Path) -> anyhow::Result<()> {
+    fn export_junit_results(
+        &self,
+        results: &[GateResult],
+        output_dir: &Path,
+    ) -> anyhow::Result<()> {
         let output_path = output_dir.join("quality-gates.xml");
         let total = results.len();
         let failures = results.iter().filter(|r| !r.passed).count();
-        let mut xml = format!(r#"<?xml version="1.0" encoding="UTF-8"?>
+        let mut xml = format!(
+            r#"<?xml version="1.0" encoding="UTF-8"?>
 <testsuite name="Quality Gates" tests="{total}" failures="{failures}" time="0.0">
-"#);
+"#
+        );
         for (i, result) in results.iter().enumerate() {
             let test_name = format!("quality-gate-{i}");
             if result.passed {
@@ -448,7 +460,7 @@ impl Ord for Grade {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::quality::scoring::{QualityScore, Grade};
+    use crate::quality::scoring::{Grade, QualityScore};
     use tempfile::TempDir;
     fn create_minimal_score() -> QualityScore {
         use crate::quality::scoring::ScoreComponents;
@@ -530,7 +542,9 @@ mod tests {
         let result = enforcer.enforce_gates(&score, None);
         assert!(!result.passed, "Score below threshold should fail");
         // Should have overall score violation
-        let overall_violations: Vec<_> = result.violations.iter()
+        let overall_violations: Vec<_> = result
+            .violations
+            .iter()
             .filter(|v| v.violation_type == ViolationType::OverallScore)
             .collect();
         assert_eq!(overall_violations.len(), 1);
@@ -549,7 +563,9 @@ mod tests {
         let mut score = create_passing_score();
         score.confidence = 0.4; // Below 0.6 threshold
         let result = enforcer.enforce_gates(&score, None);
-        let confidence_violations: Vec<_> = result.violations.iter()
+        let confidence_violations: Vec<_> = result
+            .violations
+            .iter()
             .filter(|v| v.violation_type == ViolationType::Confidence)
             .collect();
         assert_eq!(confidence_violations.len(), 1);
@@ -618,7 +634,9 @@ mod tests {
         score.grade = Grade::C; // Below BMinus threshold
 
         let result = enforcer.enforce_gates(&score, None);
-        let grade_violations: Vec<_> = result.violations.iter()
+        let grade_violations: Vec<_> = result
+            .violations
+            .iter()
             .filter(|v| v.violation_type == ViolationType::Grade)
             .collect();
 
@@ -638,7 +656,9 @@ mod tests {
         score.components.correctness = 0.7; // Below 0.8 threshold
 
         let result = enforcer.enforce_gates(&score, None);
-        let correctness_violations: Vec<_> = result.violations.iter()
+        let correctness_violations: Vec<_> = result
+            .violations
+            .iter()
             .filter(|v| v.violation_type == ViolationType::Correctness)
             .collect();
 
@@ -661,7 +681,9 @@ mod tests {
         score.components.performance = 0.5; // Below 0.6 threshold
 
         let result = enforcer.enforce_gates(&score, None);
-        let performance_violations: Vec<_> = result.violations.iter()
+        let performance_violations: Vec<_> = result
+            .violations
+            .iter()
             .filter(|v| v.violation_type == ViolationType::Performance)
             .collect();
 
@@ -682,7 +704,9 @@ mod tests {
         score.components.safety = 0.75; // Below 0.8 threshold
 
         let result = enforcer.enforce_gates(&score, None);
-        let safety_violations: Vec<_> = result.violations.iter()
+        let safety_violations: Vec<_> = result
+            .violations
+            .iter()
             .filter(|v| v.violation_type == ViolationType::Safety)
             .collect();
 
@@ -703,7 +727,9 @@ mod tests {
         score.components.maintainability = 0.65; // Below 0.7 threshold
 
         let result = enforcer.enforce_gates(&score, None);
-        let maintainability_violations: Vec<_> = result.violations.iter()
+        let maintainability_violations: Vec<_> = result
+            .violations
+            .iter()
             .filter(|v| v.violation_type == ViolationType::Maintainability)
             .collect();
 
@@ -724,7 +750,9 @@ mod tests {
         score.components.idiomaticity = 0.4; // Below 0.5 threshold
 
         let result = enforcer.enforce_gates(&score, None);
-        let idiomaticity_violations: Vec<_> = result.violations.iter()
+        let idiomaticity_violations: Vec<_> = result
+            .violations
+            .iter()
             .filter(|v| v.violation_type == ViolationType::Idiomaticity)
             .collect();
 
@@ -788,7 +816,9 @@ mod tests {
 
         let result = enforcer.enforce_gates(&score, Some(&critical_file));
 
-        let gaming_violations: Vec<_> = result.violations.iter()
+        let gaming_violations: Vec<_> = result
+            .violations
+            .iter()
             .filter(|v| v.violation_type == ViolationType::Gaming)
             .collect();
 
@@ -814,7 +844,9 @@ mod tests {
         assert!(result.violations.len() >= 3); // At least overall score, grade, and confidence
 
         // Check we have different violation types
-        let violation_types: std::collections::HashSet<_> = result.violations.iter()
+        let violation_types: std::collections::HashSet<_> = result
+            .violations
+            .iter()
             .map(|v| &v.violation_type)
             .collect();
         assert!(violation_types.contains(&ViolationType::OverallScore));
@@ -904,7 +936,7 @@ mod tests {
         }
 
         // Test all Severity variants
-        let severities = vec![
+        let severities = [
             Severity::Critical,
             Severity::High,
             Severity::Medium,
@@ -934,9 +966,12 @@ mod tests {
         let serialized = serde_json::to_string(&config).unwrap();
         let deserialized: NotificationConfig = serde_json::from_str(&serialized).unwrap();
 
-        assert_eq!(deserialized.slack, true);
-        assert_eq!(deserialized.email, false);
-        assert_eq!(deserialized.webhook, Some("https://test.example.com/webhook".to_string()));
+        assert!(deserialized.slack);
+        assert!(!deserialized.email);
+        assert_eq!(
+            deserialized.webhook,
+            Some("https://test.example.com/webhook".to_string())
+        );
     }
 
     // Helper functions for testing
@@ -956,15 +991,13 @@ mod tests {
             passed: false,
             score: 0.6,
             grade: Grade::D,
-            violations: vec![
-                Violation {
-                    violation_type: ViolationType::OverallScore,
-                    actual: 0.6,
-                    required: 0.7,
-                    severity: Severity::Critical,
-                    message: "Overall score 60.0% below minimum 70.0%".to_string(),
-                },
-            ],
+            violations: vec![Violation {
+                violation_type: ViolationType::OverallScore,
+                actual: 0.6,
+                required: 0.7,
+                severity: Severity::Critical,
+                message: "Overall score 60.0% below minimum 70.0%".to_string(),
+            }],
             confidence: 0.5,
             gaming_warnings: vec!["Low confidence warning".to_string()],
         }
@@ -973,8 +1006,7 @@ mod tests {
 #[cfg(test)]
 mod property_tests_gates {
     use proptest::proptest;
-    
-    
+
     proptest! {
         /// Property: Function never panics on any input
         #[test]

@@ -139,7 +139,13 @@ mod tests {
         let result = parser.parse();
         assert!(result.is_ok());
         let expr = result.unwrap();
-        assert!(matches!(expr.kind, ExprKind::Binary { op: BinaryOp::Add, .. }));
+        assert!(matches!(
+            expr.kind,
+            ExprKind::Binary {
+                op: BinaryOp::Add,
+                ..
+            }
+        ));
     }
 
     #[test]
@@ -228,7 +234,13 @@ mod tests {
         let result = parser.parse();
         assert!(result.is_ok());
         let expr = result.unwrap();
-        assert!(matches!(expr.kind, ExprKind::Unary { op: UnaryOp::Negate, .. }));
+        assert!(matches!(
+            expr.kind,
+            ExprKind::Unary {
+                op: UnaryOp::Negate,
+                ..
+            }
+        ));
     }
 
     #[test]
@@ -237,7 +249,13 @@ mod tests {
         let result = parser.parse();
         assert!(result.is_ok());
         let expr = result.unwrap();
-        assert!(matches!(expr.kind, ExprKind::Unary { op: UnaryOp::Not, .. }));
+        assert!(matches!(
+            expr.kind,
+            ExprKind::Unary {
+                op: UnaryOp::Not,
+                ..
+            }
+        ));
     }
 
     #[test]
@@ -254,12 +272,12 @@ mod tests {
         for (input, expected_op) in test_cases {
             let mut parser = Parser::new(input);
             let result = parser.parse();
-            assert!(result.is_ok(), "Failed to parse: {}", input);
+            assert!(result.is_ok(), "Failed to parse: {input}");
             let expr = result.unwrap();
             if let ExprKind::Binary { op, .. } = expr.kind {
-                assert_eq!(op, expected_op, "Wrong operator for: {}", input);
+                assert_eq!(op, expected_op, "Wrong operator for: {input}");
             } else {
-                panic!("Expected binary operation for: {}", input);
+                panic!("Expected binary operation for: {input}");
             }
         }
     }
@@ -270,13 +288,25 @@ mod tests {
         let result = parser.parse();
         assert!(result.is_ok());
         let expr = result.unwrap();
-        assert!(matches!(expr.kind, ExprKind::Binary { op: BinaryOp::And, .. }));
+        assert!(matches!(
+            expr.kind,
+            ExprKind::Binary {
+                op: BinaryOp::And,
+                ..
+            }
+        ));
 
         let mut parser = Parser::new("true || false");
         let result = parser.parse();
         assert!(result.is_ok());
         let expr = result.unwrap();
-        assert!(matches!(expr.kind, ExprKind::Binary { op: BinaryOp::Or, .. }));
+        assert!(matches!(
+            expr.kind,
+            ExprKind::Binary {
+                op: BinaryOp::Or,
+                ..
+            }
+        ));
     }
 
     #[test]
@@ -292,12 +322,12 @@ mod tests {
         for (input, expected_op) in test_cases {
             let mut parser = Parser::new(input);
             let result = parser.parse();
-            assert!(result.is_ok(), "Failed to parse: {}", input);
+            assert!(result.is_ok(), "Failed to parse: {input}");
             let expr = result.unwrap();
             if let ExprKind::Binary { op, .. } = expr.kind {
-                assert_eq!(op, expected_op, "Wrong operator for: {}", input);
+                assert_eq!(op, expected_op, "Wrong operator for: {input}");
             } else {
-                panic!("Expected binary operation for: {}", input);
+                panic!("Expected binary operation for: {input}");
             }
         }
     }
@@ -313,12 +343,12 @@ mod tests {
         for (input, expected_op) in test_cases {
             let mut parser = Parser::new(input);
             let result = parser.parse();
-            assert!(result.is_ok(), "Failed to parse: {}", input);
+            assert!(result.is_ok(), "Failed to parse: {input}");
             let expr = result.unwrap();
             if let ExprKind::Binary { op, .. } = expr.kind {
-                assert_eq!(op, expected_op, "Wrong operator for: {}", input);
+                assert_eq!(op, expected_op, "Wrong operator for: {input}");
             } else {
-                panic!("Expected binary operation for: {}", input);
+                panic!("Expected binary operation for: {input}");
             }
         }
     }
@@ -341,8 +371,19 @@ mod tests {
         assert!(result.is_ok());
         let expr = result.unwrap();
         // Should parse as 1 + (2 * 3), not (1 + 2) * 3
-        if let ExprKind::Binary { op: BinaryOp::Add, right, .. } = expr.kind {
-            assert!(matches!(right.kind, ExprKind::Binary { op: BinaryOp::Multiply, .. }));
+        if let ExprKind::Binary {
+            op: BinaryOp::Add,
+            right,
+            ..
+        } = expr.kind
+        {
+            assert!(matches!(
+                right.kind,
+                ExprKind::Binary {
+                    op: BinaryOp::Multiply,
+                    ..
+                }
+            ));
         } else {
             panic!("Expected addition at top level");
         }
@@ -375,7 +416,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "Nil variant doesn't exist in Literal enum"]
+
     fn test_parse_nil_literal() {
         let mut parser = Parser::new("nil");
         let result = parser.parse();
@@ -475,8 +516,10 @@ mod tests {
         assert!(result.is_ok());
         let expr = result.unwrap();
         // Empty tuple might be parsed as unit or as empty tuple
-        assert!(matches!(expr.kind, ExprKind::Tuple(_)) ||
-                matches!(expr.kind, ExprKind::Literal(Literal::Unit)));
+        assert!(
+            matches!(expr.kind, ExprKind::Tuple(_))
+                || matches!(expr.kind, ExprKind::Literal(Literal::Unit))
+        );
     }
 
     #[test]

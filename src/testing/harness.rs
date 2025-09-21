@@ -53,15 +53,15 @@ impl Default for RuchyTestHarness {
 }
 impl RuchyTestHarness {
     /// Create a new test harness with default settings
-/// # Examples
-/// 
-/// ```
-/// use ruchy::testing::harness::new;
-/// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn new() -> Self {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::testing::harness::new;
+    ///
+    /// let result = new(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn new() -> Self {
         Self::default()
     }
     /// Validate a Ruchy file through the full compilation pipeline
@@ -69,15 +69,15 @@ pub fn new() -> Self {
     /// # Errors
     ///
     /// Returns an error if the file cannot be read, parsed, transpiled, compiled, or executed.
-/// # Examples
-/// 
-/// ```
-/// use ruchy::testing::harness::validate_file;
-/// 
-/// let result = validate_file(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn validate_file(&self, path: &Path) -> TestResult<ValidationResult> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::testing::harness::validate_file;
+    ///
+    /// let result = validate_file(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn validate_file(&self, path: &Path) -> TestResult<ValidationResult> {
         let content = fs::read_to_string(path).map_err(|e| TestError::FileRead(e.to_string()))?;
         self.validate_source(&content, path.to_string_lossy().as_ref())
     }
@@ -86,15 +86,15 @@ pub fn validate_file(&self, path: &Path) -> TestResult<ValidationResult> {
     /// # Errors
     ///
     /// Returns an error if the source cannot be parsed, transpiled, compiled, or executed.
-/// # Examples
-/// 
-/// ```
-/// use ruchy::testing::harness::validate_source;
-/// 
-/// let result = validate_source("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn validate_source(&self, source: &str, name: &str) -> TestResult<ValidationResult> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::testing::harness::validate_source;
+    ///
+    /// let result = validate_source("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn validate_source(&self, source: &str, name: &str) -> TestResult<ValidationResult> {
         // Parse
         let mut parser = Parser::new(source);
         let ast = parser
@@ -178,15 +178,15 @@ pub fn validate_source(&self, source: &str, name: &str) -> TestResult<Validation
     ///
     /// Returns an error if parsing, transpilation, compilation, or execution fails,
     /// or if the actual output doesn't match the expected output.
-/// # Examples
-/// 
-/// ```
-/// use ruchy::testing::harness::assert_output;
-/// 
-/// let result = assert_output("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn assert_output(&self, source: &str, expected: &str, name: &str) -> TestResult<()> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::testing::harness::assert_output;
+    ///
+    /// let result = assert_output("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn assert_output(&self, source: &str, expected: &str, name: &str) -> TestResult<()> {
         let result = self.validate_source(source, name)?;
         if let Some(actual) = result.execution_output {
             if actual.trim() != expected.trim() {
@@ -205,15 +205,15 @@ pub fn assert_output(&self, source: &str, expected: &str, name: &str) -> TestRes
     /// # Errors
     ///
     /// Returns an error if the directory cannot be read or any of the .ruchy files fail to validate.
-/// # Examples
-/// 
-/// ```
-/// use ruchy::testing::harness::validate_directory;
-/// 
-/// let result = validate_directory(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn validate_directory(&self, dir: &Path) -> TestResult<Vec<ValidationResult>> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::testing::harness::validate_directory;
+    ///
+    /// let result = validate_directory(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn validate_directory(&self, dir: &Path) -> TestResult<Vec<ValidationResult>> {
         let mut results = Vec::new();
         for entry in fs::read_dir(dir).map_err(|e| TestError::FileRead(e.to_string()))? {
             let entry = entry.map_err(|e| TestError::FileRead(e.to_string()))?;
@@ -261,7 +261,7 @@ mod tests {
     #[test]
     fn test_harness_new() {
         let harness = RuchyTestHarness::new();
-        assert_eq!(harness.keep_intermediates, false);
+        assert!(!harness.keep_intermediates);
         assert_eq!(harness.timeout_secs, 30);
     }
 
@@ -326,13 +326,10 @@ mod tests {
         fs::write(&file_path, "let x = 1").unwrap();
 
         let result = harness.validate_directory(temp_dir.path());
-        match result {
-            Ok(results) => {
-                assert_eq!(results.len(), 1);
-            }
-            Err(_) => {
-                // Expected - may fail at parse/transpile stage
-            }
+        if let Ok(results) = result {
+            assert_eq!(results.len(), 1);
+        } else {
+            // Expected - may fail at parse/transpile stage
         }
     }
 

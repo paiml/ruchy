@@ -1,7 +1,7 @@
 //! Sprint 81: Test macros module to boost coverage
 
-use ruchy::macros::{MacroRegistry, MacroExpander};
 use ruchy::frontend::ast::{Expr, ExprKind, Literal, Span};
+use ruchy::macros::{MacroExpander, MacroRegistry};
 
 #[test]
 fn test_macro_registry() {

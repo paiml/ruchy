@@ -58,11 +58,8 @@ mod tests {
 
     #[test]
     fn test_create_success_response() {
-        let response = create_success_response(
-            "result_value".to_string(),
-            "cell_123".to_string(),
-            123.45
-        );
+        let response =
+            create_success_response("result_value".to_string(), "cell_123".to_string(), 123.45);
 
         assert!(response.success);
         assert_eq!(response.cell_id, "cell_123");
@@ -74,10 +71,7 @@ mod tests {
 
     #[test]
     fn test_create_error_response() {
-        let response = create_error_response(
-            "error message".to_string(),
-            "cell_456".to_string()
-        );
+        let response = create_error_response("error message".to_string(), "cell_456".to_string());
 
         assert!(!response.success);
         assert_eq!(response.cell_id, "cell_456");
@@ -99,11 +93,11 @@ mod tests {
 
         let duration = Duration::from_secs(0);
         let formatted = format_duration(duration);
-        assert!(formatted.contains("0"));
+        assert!(formatted.contains('0'));
 
         let duration = Duration::from_secs(61);
         let formatted = format_duration(duration);
-        assert!(formatted.contains("1") || formatted.contains("61"));
+        assert!(formatted.contains('1') || formatted.contains("61"));
     }
 
     #[test]
@@ -140,7 +134,7 @@ mod tests {
         let error = format_module_error("", "");
         assert_eq!(error, "Failed to  module ''");
 
-        let response = create_success_response("".to_string(), "".to_string(), 0.0);
+        let response = create_success_response(String::new(), String::new(), 0.0);
         assert_eq!(response.value, "");
         assert_eq!(response.cell_id, "");
     }
@@ -158,11 +152,7 @@ mod tests {
     #[test]
     fn test_large_values_in_response() {
         let large_string = "x".repeat(10000);
-        let response = create_success_response(
-            large_string.clone(),
-            "cell".to_string(),
-            999999.99
-        );
+        let response = create_success_response(large_string.clone(), "cell".to_string(), 999999.99);
         assert_eq!(response.value.len(), 10000);
         assert_eq!(response.result, large_string);
     }

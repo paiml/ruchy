@@ -1,9 +1,9 @@
 //! Counterexample generation for failed proofs
+use super::smt::{SmtBackend, SmtResult, SmtSolver};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt;
-use super::smt::{SmtSolver, SmtBackend, SmtResult};
 /// Counterexample
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Counterexample {
@@ -37,7 +37,9 @@ impl fmt::Display for Value {
             Self::Array(vs) => {
                 write!(f, "[")?;
                 for (i, v) in vs.iter().enumerate() {
-                    if i > 0 { write!(f, ", ")?; }
+                    if i > 0 {
+                        write!(f, ", ")?;
+                    }
                     write!(f, "{v}")?;
                 }
                 write!(f, "]")
@@ -45,7 +47,9 @@ impl fmt::Display for Value {
             Self::Tuple(vs) => {
                 write!(f, "(")?;
                 for (i, v) in vs.iter().enumerate() {
-                    if i > 0 { write!(f, ", ")?; }
+                    if i > 0 {
+                        write!(f, ", ")?;
+                    }
                     write!(f, "{v}")?;
                 }
                 write!(f, ")")
@@ -68,39 +72,39 @@ pub struct TraceStep {
 }
 impl Counterexample {
     /// Create new counterexample
-/// # Examples
-/// 
-/// ```
-/// use ruchy::proving::counterexample::Counterexample;
-/// 
-/// let instance = Counterexample::new();
-/// // Verify behavior
-/// ```
-/// # Examples
-/// 
-/// ```
-/// use ruchy::proving::counterexample::Counterexample;
-/// 
-/// let instance = Counterexample::new();
-/// // Verify behavior
-/// ```
-/// # Examples
-/// 
-/// ```
-/// use ruchy::proving::counterexample::Counterexample;
-/// 
-/// let instance = Counterexample::new();
-/// // Verify behavior
-/// ```
-/// # Examples
-/// 
-/// ```
-/// use ruchy::proving::counterexample::Counterexample;
-/// 
-/// let instance = Counterexample::new();
-/// // Verify behavior
-/// ```
-pub fn new(failed_assertion: &str) -> Self {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::proving::counterexample::Counterexample;
+    ///
+    /// let instance = Counterexample::new();
+    /// // Verify behavior
+    /// ```
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::proving::counterexample::Counterexample;
+    ///
+    /// let instance = Counterexample::new();
+    /// // Verify behavior
+    /// ```
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::proving::counterexample::Counterexample;
+    ///
+    /// let instance = Counterexample::new();
+    /// // Verify behavior
+    /// ```
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::proving::counterexample::Counterexample;
+    ///
+    /// let instance = Counterexample::new();
+    /// // Verify behavior
+    /// ```
+    pub fn new(failed_assertion: &str) -> Self {
         Self {
             assignments: HashMap::new(),
             trace: Vec::new(),
@@ -109,52 +113,52 @@ pub fn new(failed_assertion: &str) -> Self {
         }
     }
     /// Add assignment
-/// # Examples
-/// 
-/// ```
-/// use ruchy::proving::counterexample::Counterexample;
-/// 
-/// let mut instance = Counterexample::new();
-/// let result = instance.add_assignment();
-/// // Verify behavior
-/// ```
-pub fn add_assignment(&mut self, var: &str, value: Value) {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::proving::counterexample::Counterexample;
+    ///
+    /// let mut instance = Counterexample::new();
+    /// let result = instance.add_assignment();
+    /// // Verify behavior
+    /// ```
+    pub fn add_assignment(&mut self, var: &str, value: Value) {
         self.assignments.insert(var.to_string(), value);
     }
     /// Add trace step
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::proving::counterexample::add_trace_step;
-/// 
-/// let result = add_trace_step(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn add_trace_step(&mut self, step: TraceStep) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::proving::counterexample::add_trace_step;
+    ///
+    /// let result = add_trace_step(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn add_trace_step(&mut self, step: TraceStep) {
         self.trace.push(step);
     }
     /// Set explanation
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::proving::counterexample::set_explanation;
-/// 
-/// let result = set_explanation("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn set_explanation(&mut self, explanation: &str) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::proving::counterexample::set_explanation;
+    ///
+    /// let result = set_explanation("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn set_explanation(&mut self, explanation: &str) {
         self.explanation = Some(explanation.to_string());
     }
     /// Format as readable report
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::proving::counterexample::format_report;
-/// 
-/// let result = format_report(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn format_report(&self) -> String {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::proving::counterexample::format_report;
+    ///
+    /// let result = format_report(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn format_report(&self) -> String {
         let mut report = String::new();
         report.push_str("=== Counterexample Found ===\n\n");
         report.push_str("Failed Assertion:\n");
@@ -169,8 +173,10 @@ pub fn format_report(&self) -> String {
         if !self.trace.is_empty() {
             report.push_str("Execution Trace:\n");
             for step in &self.trace {
-                report.push_str(&format!("  Step {}: {} at {}\n", 
-                    step.step, step.operation, step.location));
+                report.push_str(&format!(
+                    "  Step {}: {} at {}\n",
+                    step.step, step.operation, step.location
+                ));
                 if !step.state.is_empty() {
                     for (var, val) in &step.state {
                         report.push_str(&format!("    {var} = {val}\n"));
@@ -206,49 +212,54 @@ impl TestCase {
         }
     }
     /// Add input
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::proving::counterexample::add_input;
-/// 
-/// let result = add_input("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn add_input(&mut self, name: &str, value: Value) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::proving::counterexample::add_input;
+    ///
+    /// let result = add_input("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn add_input(&mut self, name: &str, value: Value) {
         self.inputs.insert(name.to_string(), value);
     }
     /// Set expected output
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::proving::counterexample::set_expected;
-/// 
-/// let result = set_expected(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn set_expected(&mut self, value: Value) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::proving::counterexample::set_expected;
+    ///
+    /// let result = set_expected(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn set_expected(&mut self, value: Value) {
         self.expected = Some(value);
     }
     /// Generate Ruchy test code
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::proving::counterexample::to_ruchy_test;
-/// 
-/// let result = to_ruchy_test("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn to_ruchy_test(&self, test_name: &str) -> String {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::proving::counterexample::to_ruchy_test;
+    ///
+    /// let result = to_ruchy_test("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn to_ruchy_test(&self, test_name: &str) -> String {
         let mut code = String::new();
         code.push_str(&format!("#[test]\nfun {test_name}() {{\n"));
         for (name, value) in &self.inputs {
-            code.push_str(&format!("    let {} = {};\n", name, 
-                self.value_to_ruchy(value)));
+            code.push_str(&format!(
+                "    let {} = {};\n",
+                name,
+                self.value_to_ruchy(value)
+            ));
         }
         code.push_str(&format!("    assert!({});\n", self.property));
         if let Some(expected) = &self.expected {
-            code.push_str(&format!("    assert_eq!(result, {});\n", 
-                self.value_to_ruchy(expected)));
+            code.push_str(&format!(
+                "    assert_eq!(result, {});\n",
+                self.value_to_ruchy(expected)
+            ));
         }
         code.push_str("}\n");
         code
@@ -261,15 +272,11 @@ pub fn to_ruchy_test(&self, test_name: &str) -> String {
             Value::String(s) => format!("\"{s}\""),
             Value::Float(x) => format!("{x:.6}"),
             Value::Array(vs) => {
-                let items: Vec<String> = vs.iter()
-                    .map(|v| self.value_to_ruchy(v))
-                    .collect();
+                let items: Vec<String> = vs.iter().map(|v| self.value_to_ruchy(v)).collect();
                 format!("[{}]", items.join(", "))
             }
             Value::Tuple(vs) => {
-                let items: Vec<String> = vs.iter()
-                    .map(|v| self.value_to_ruchy(v))
-                    .collect();
+                let items: Vec<String> = vs.iter().map(|v| self.value_to_ruchy(v)).collect();
                 format!("({})", items.join(", "))
             }
             Value::Null => "None".to_string(),
@@ -292,39 +299,43 @@ impl CounterexampleGenerator {
         }
     }
     /// Set SMT backend
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::proving::counterexample::set_backend;
-/// 
-/// let result = set_backend(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn set_backend(&mut self, backend: SmtBackend) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::proving::counterexample::set_backend;
+    ///
+    /// let result = set_backend(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn set_backend(&mut self, backend: SmtBackend) {
         self.backend = backend;
     }
     /// Enable/disable shrinking
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::proving::counterexample::set_shrinking;
-/// 
-/// let result = set_shrinking(true);
-/// assert_eq!(result, Ok(true));
-/// ```
-pub fn set_shrinking(&mut self, enabled: bool) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::proving::counterexample::set_shrinking;
+    ///
+    /// let result = set_shrinking(true);
+    /// assert_eq!(result, Ok(true));
+    /// ```
+    pub fn set_shrinking(&mut self, enabled: bool) {
         self.shrinking = enabled;
     }
     /// Generate counterexample for property
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::proving::counterexample::generate;
-/// 
-/// let result = generate("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn generate(&self, property: &str, vars: &[(String, String)]) -> Result<Option<Counterexample>> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::proving::counterexample::generate;
+    ///
+    /// let result = generate("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn generate(
+        &self,
+        property: &str,
+        vars: &[(String, String)],
+    ) -> Result<Option<Counterexample>> {
         let mut solver = SmtSolver::new(self.backend);
         for (name, sort) in vars {
             solver.declare_var(name, sort);
@@ -339,7 +350,11 @@ pub fn generate(&self, property: &str, vars: &[(String, String)]) -> Result<Opti
         }
     }
     /// Build counterexample from model
-    fn build_counterexample(&self, property: &str, model: Option<HashMap<String, String>>) -> Counterexample {
+    fn build_counterexample(
+        &self,
+        property: &str,
+        model: Option<HashMap<String, String>>,
+    ) -> Counterexample {
         let mut cex = Counterexample::new(property);
         if let Some(assignments) = model {
             for (var, val) in assignments {
@@ -389,22 +404,25 @@ pub fn generate(&self, property: &str, vars: &[(String, String)]) -> Result<Opti
                 shrunk.pop();
                 Some(Value::Array(shrunk))
             }
-            Value::String(s) if s.len() > 1 => {
-                Some(Value::String(s[..s.len()-1].to_string()))
-            }
+            Value::String(s) if s.len() > 1 => Some(Value::String(s[..s.len() - 1].to_string())),
             _ => None,
         }
     }
     /// Generate multiple test cases
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::proving::counterexample::generate_test_suite;
-/// 
-/// let result = generate_test_suite("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn generate_test_suite(&self, property: &str, vars: &[(String, String)], count: usize) -> Result<Vec<TestCase>> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::proving::counterexample::generate_test_suite;
+    ///
+    /// let result = generate_test_suite("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn generate_test_suite(
+        &self,
+        property: &str,
+        vars: &[(String, String)],
+        count: usize,
+    ) -> Result<Vec<TestCase>> {
         let mut test_cases: Vec<TestCase> = Vec::new();
         for i in 0..count {
             let mut solver = SmtSolver::new(self.backend);
@@ -413,8 +431,7 @@ pub fn generate_test_suite(&self, property: &str, vars: &[(String, String)], cou
             }
             for prev_case in &test_cases {
                 for (var, val) in &prev_case.inputs {
-                    solver.assert(&format!("(not (= {} {}))", var, 
-                        self.value_to_smt(val)));
+                    solver.assert(&format!("(not (= {} {}))", var, self.value_to_smt(val)));
                 }
             }
             solver.assert(&format!("(not {property})"));
@@ -468,39 +485,40 @@ impl SymbolicExecutor {
         }
     }
     /// Add path condition
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::proving::counterexample::add_condition;
-/// 
-/// let result = add_condition("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn add_condition(&mut self, condition: &str) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::proving::counterexample::add_condition;
+    ///
+    /// let result = add_condition("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn add_condition(&mut self, condition: &str) {
         self.path_conditions.push(condition.to_string());
     }
     /// Set symbolic variable
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::proving::counterexample::set_symbolic;
-/// 
-/// let result = set_symbolic("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn set_symbolic(&mut self, var: &str, symbolic: &str) {
-        self.symbolic_state.insert(var.to_string(), symbolic.to_string());
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::proving::counterexample::set_symbolic;
+    ///
+    /// let result = set_symbolic("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn set_symbolic(&mut self, var: &str, symbolic: &str) {
+        self.symbolic_state
+            .insert(var.to_string(), symbolic.to_string());
     }
     /// Find path to error
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::proving::counterexample::find_error_path;
-/// 
-/// let result = find_error_path("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn find_error_path(&self, error_condition: &str) -> Result<Option<Counterexample>> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::proving::counterexample::find_error_path;
+    ///
+    /// let result = find_error_path("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn find_error_path(&self, error_condition: &str) -> Result<Option<Counterexample>> {
         let mut solver = SmtSolver::new(self.generator.backend);
         for var in self.symbolic_state.keys() {
             solver.declare_var(var, "Int");
@@ -512,7 +530,9 @@ pub fn find_error_path(&self, error_condition: &str) -> Result<Option<Counterexa
         match solver.check_sat()? {
             SmtResult::Sat => {
                 let model = solver.get_model()?;
-                Ok(Some(self.generator.build_counterexample(error_condition, model)))
+                Ok(Some(
+                    self.generator.build_counterexample(error_condition, model),
+                ))
             }
             _ => Ok(None),
         }
@@ -689,8 +709,8 @@ mod tests {
         // The result can be Ok or Err depending on SMT solver availability
         // What matters is that it doesn't panic
         match result {
-            Ok(_) => {}, // SMT solver worked
-            Err(_) => {}, // SMT solver not available or failed, which is acceptable
+            Ok(_) => {}  // SMT solver worked
+            Err(_) => {} // SMT solver not available or failed, which is acceptable
         }
     }
 
@@ -776,8 +796,7 @@ mod tests {
 #[cfg(test)]
 mod property_tests_counterexample {
     use proptest::proptest;
-    
-    
+
     proptest! {
         /// Property: Function never panics on any input
         #[test]

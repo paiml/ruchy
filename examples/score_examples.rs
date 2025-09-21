@@ -2,14 +2,13 @@
 
 /// Examples demonstrating different quality scores
 /// Run with: cargo run --example `score_examples`
-
 use std::fs;
 use std::process::Command;
 use tempfile::TempDir;
 
 fn main() {
     println!("🎯 Ruchy Score Examples - Demonstrating Quality Spectrum\n");
-    
+
     let examples = vec![
         (
             "perfect_code",
@@ -174,44 +173,44 @@ fn nightmare(
             "0.01-0.10",
         ),
     ];
-    
+
     let temp_dir = TempDir::new().unwrap();
-    
+
     for (name, code, expected_score) in examples {
         println!("📝 Example: {name} (Expected: {expected_score})");
         println!("{}", "─".repeat(50));
-        
+
         // Write the code to a working file
         let file_path = temp_dir.path().join(format!("{name}.ruchy"));
         fs::write(&file_path, code).unwrap();
-        
+
         // Run the score command
         let output = Command::new("./target/debug/ruchy")
             .args(["score", file_path.to_str().unwrap()])
             .output()
             .expect("Failed to execute ruchy score");
-        
+
         let stdout = String::from_utf8_lossy(&output.stdout);
-        
+
         // Extract and display the score
         if let Some(score_line) = stdout.lines().find(|l| l.contains("Score:")) {
             println!("{score_line}");
         } else {
             println!("Output: {stdout}");
         }
-        
+
         // Also run with JSON format for detailed metrics
         let json_output = Command::new("./target/debug/ruchy")
             .args(["score", file_path.to_str().unwrap(), "--format", "json"])
             .output()
             .expect("Failed to execute ruchy score");
-        
+
         if json_output.status.success() {
             let json_str = String::from_utf8_lossy(&json_output.stdout);
             if let Ok(json) = serde_json::from_str::<serde_json::Value>(&json_str) {
                 if let Some(score) = json["score"].as_f64() {
                     println!("Actual Score: {score:.2}");
-                    
+
                     // Validate score is in expected range
                     let in_range = match expected_score {
                         "1.00" => score >= 0.95,
@@ -221,7 +220,7 @@ fn nightmare(
                         "0.01-0.10" => (0.01..=0.10).contains(&score),
                         _ => true,
                     };
-                    
+
                     if in_range {
                         println!("✅ Score is in expected range");
                     } else {
@@ -230,10 +229,10 @@ fn nightmare(
                 }
             }
         }
-        
+
         println!("\n");
     }
-    
+
     println!("🏁 Score Examples Complete");
     println!("\nTo test individual files:");
     println!("  ruchy score path/to/file.ruchy");

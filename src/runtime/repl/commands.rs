@@ -2,7 +2,7 @@
 //!
 //! Handles REPL commands like :help, :quit, :mode, etc.
 
-use super::state::{ReplState, ReplMode};
+use super::state::{ReplMode, ReplState};
 use anyhow::Result;
 
 /// Result of executing a command
@@ -78,13 +78,17 @@ impl CommandRegistry {
             }
             ":history" => Ok(CommandResult::Success(self.format_history(context.state))),
             ":vars" => Ok(CommandResult::Success(self.format_bindings(context.state))),
-            _ => Ok(CommandResult::Success(format!("Unknown command: {command}"))),
+            _ => Ok(CommandResult::Success(format!(
+                "Unknown command: {command}"
+            ))),
         }
     }
 
     /// Get list of available commands (complexity: 1)
     pub fn available_commands(&self) -> Vec<&'static str> {
-        vec![":help", ":h", ":quit", ":exit", ":q", ":clear", ":reset", ":mode", ":history", ":vars"]
+        vec![
+            ":help", ":h", ":quit", ":exit", ":q", ":clear", ":reset", ":mode", ":history", ":vars",
+        ]
     }
 
     /// Get help text (complexity: 1)
@@ -99,7 +103,8 @@ impl CommandRegistry {
   :vars              Show variable bindings
 
 Enter expressions to evaluate them.
-".to_string()
+"
+        .to_string()
     }
 
     /// Format command history (complexity: 3)
@@ -108,7 +113,8 @@ Enter expressions to evaluate them.
         if history.is_empty() {
             "No history".to_string()
         } else {
-            history.iter()
+            history
+                .iter()
                 .enumerate()
                 .map(|(i, cmd)| format!("{}: {}", i + 1, cmd))
                 .collect::<Vec<_>>()
@@ -122,7 +128,8 @@ Enter expressions to evaluate them.
         if bindings.is_empty() {
             "No variables defined".to_string()
         } else {
-            bindings.iter()
+            bindings
+                .iter()
                 .map(|(name, value)| format!("{name} = {value:?}"))
                 .collect::<Vec<_>>()
                 .join("\n")
@@ -162,7 +169,7 @@ mod tests {
                 assert!(help.contains(":help"));
                 assert!(help.contains(":quit"));
             }
-            result => panic!("Expected Success, got {:?}", result),
+            result => panic!("Expected Success, got {result:?}"),
         }
     }
 
@@ -176,8 +183,8 @@ mod tests {
         };
 
         match registry.execute(":quit", &mut context).unwrap() {
-            CommandResult::Exit => {},
-            result => panic!("Expected Exit, got {:?}", result),
+            CommandResult::Exit => {}
+            result => panic!("Expected Exit, got {result:?}"),
         }
     }
 
@@ -191,8 +198,8 @@ mod tests {
         };
 
         match registry.execute(":mode", &mut context).unwrap() {
-            CommandResult::ModeChange(ReplMode::Debug) => {},
-            result => panic!("Expected ModeChange(Debug), got {:?}", result),
+            CommandResult::ModeChange(ReplMode::Debug) => {}
+            result => panic!("Expected ModeChange(Debug), got {result:?}"),
         }
 
         assert!(matches!(state.get_mode(), ReplMode::Debug));

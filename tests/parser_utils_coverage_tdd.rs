@@ -53,7 +53,7 @@ fn test_parse_params_simple() {
     let code = "fun add(x, y) { x + y }";
     let mut parser = Parser::new(code);
     let ast = parser.parse().unwrap();
-    
+
     match &ast.kind {
         ruchy::frontend::ast::ExprKind::Function { params, .. } => {
             assert_eq!(params.len(), 2);
@@ -68,7 +68,7 @@ fn test_parse_params_with_types() {
     let code = "fun add(x: i32, y: i32) { x + y }";
     let mut parser = Parser::new(code);
     let ast = parser.parse().unwrap();
-    
+
     match &ast.kind {
         ruchy::frontend::ast::ExprKind::Function { params, .. } => {
             assert_eq!(params.len(), 2);
@@ -83,7 +83,7 @@ fn test_parse_params_with_defaults() {
     let code = "fun greet(name = \"World\") { println(f\"Hello {name}\") }";
     let mut parser = Parser::new(code);
     let ast = parser.parse().unwrap();
-    
+
     match &ast.kind {
         ruchy::frontend::ast::ExprKind::Function { params, .. } => {
             assert_eq!(params.len(), 1);
@@ -98,7 +98,7 @@ fn test_parse_simple_let() {
     let code = "let x = 42";
     let mut parser = Parser::new(code);
     let ast = parser.parse().unwrap();
-    
+
     match &ast.kind {
         ruchy::frontend::ast::ExprKind::Let { name, .. } => {
             assert_eq!(name, "x");
@@ -112,9 +112,13 @@ fn test_parse_let_with_type() {
     let code = "let x: i32 = 42";
     let mut parser = Parser::new(code);
     let ast = parser.parse().unwrap();
-    
+
     match &ast.kind {
-        ruchy::frontend::ast::ExprKind::Let { name, type_annotation, .. } => {
+        ruchy::frontend::ast::ExprKind::Let {
+            name,
+            type_annotation,
+            ..
+        } => {
             assert_eq!(name, "x");
             assert!(type_annotation.is_some());
         }
@@ -127,7 +131,7 @@ fn test_parse_let_mut() {
     let code = "let mut x = 42";
     let mut parser = Parser::new(code);
     let ast = parser.parse().unwrap();
-    
+
     match &ast.kind {
         ruchy::frontend::ast::ExprKind::Let { is_mutable, .. } => {
             assert!(*is_mutable);
@@ -136,13 +140,12 @@ fn test_parse_let_mut() {
     }
 }
 
-
 #[test]
 fn test_parse_rest_pattern() {
     let code = "fun sum(...numbers) { numbers.reduce((a, b) => a + b) }";
     let mut parser = Parser::new(code);
     let ast = parser.parse().unwrap();
-    
+
     match &ast.kind {
         ruchy::frontend::ast::ExprKind::Function { params, .. } => {
             assert_eq!(params.len(), 1);

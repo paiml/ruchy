@@ -508,8 +508,8 @@ pub enum ExprKind {
         operation: DataFrameOp,
     },
     For {
-        var: String,  // Keep for backward compatibility
-        pattern: Option<Pattern>,  // New: Support destructuring patterns
+        var: String,              // Keep for backward compatibility
+        pattern: Option<Pattern>, // New: Support destructuring patterns
         iter: Box<Expr>,
         body: Box<Expr>,
     },
@@ -951,7 +951,7 @@ pub enum Pattern {
         inclusive: bool,
     },
     Or(Vec<Pattern>),
-    Rest, // For ... patterns
+    Rest,              // For ... patterns
     RestNamed(String), // For ..name patterns
     AtBinding {
         name: String,
@@ -989,7 +989,9 @@ impl Pattern {
             Pattern::Struct { name, fields, .. } => {
                 // Return the struct type name, or first field name if anonymous
                 if name.is_empty() {
-                    fields.first().map_or_else(|| "_struct".to_string(), |f| f.name.clone())
+                    fields
+                        .first()
+                        .map_or_else(|| "_struct".to_string(), |f| f.name.clone())
                 } else {
                     name.clone()
                 }
@@ -1817,9 +1819,12 @@ mod tests {
                 TypeKind::Function { params, .. } => assert!(!params.is_empty()),
                 TypeKind::DataFrame { columns } => assert!(!columns.is_empty()),
                 TypeKind::Tuple(ref types) => assert!(!types.is_empty()),
-                TypeKind::Reference { is_mut: _, ref inner } => {
+                TypeKind::Reference {
+                    is_mut: _,
+                    ref inner,
+                } => {
                     // Reference types should have a valid inner type
-                    if let TypeKind::Named(ref name) = inner.kind { 
+                    if let TypeKind::Named(ref name) = inner.kind {
                         assert!(!name.is_empty());
                     }
                 }
@@ -1861,10 +1866,7 @@ mod tests {
             StringPart::Text("!".to_string()),
         ];
 
-        let expr = Expr::new(
-            ExprKind::StringInterpolation { parts },
-            Span::new(0, 13),
-        );
+        let expr = Expr::new(ExprKind::StringInterpolation { parts }, Span::new(0, 13));
 
         if let ExprKind::StringInterpolation { parts } = expr.kind {
             assert_eq!(parts.len(), 3);
@@ -2094,10 +2096,7 @@ mod tests {
                 type_params: vec![],
                 params: vec![],
                 return_type: None,
-                body: Box::new(Expr::new(
-                    ExprKind::Literal(Literal::Unit),
-                    Span::new(0, 0),
-                )),
+                body: Box::new(Expr::new(ExprKind::Literal(Literal::Unit), Span::new(0, 0))),
                 is_async: false,
                 is_pub: false,
             },
@@ -2145,14 +2144,8 @@ mod tests {
                     DataFrameColumn {
                         name: "age".to_string(),
                         values: vec![
-                            Expr::new(
-                                ExprKind::Literal(Literal::Integer(25)),
-                                Span::new(14, 16),
-                            ),
-                            Expr::new(
-                                ExprKind::Literal(Literal::Integer(30)),
-                                Span::new(17, 19),
-                            ),
+                            Expr::new(ExprKind::Literal(Literal::Integer(25)), Span::new(14, 16)),
+                            Expr::new(ExprKind::Literal(Literal::Integer(30)), Span::new(17, 19)),
                         ],
                     },
                 ],
@@ -2374,11 +2367,26 @@ mod tests {
         });
 
         let binary_ops = vec![
-            BinaryOp::Add, BinaryOp::Subtract, BinaryOp::Multiply, BinaryOp::Divide,
-            BinaryOp::Modulo, BinaryOp::Power, BinaryOp::Equal, BinaryOp::NotEqual,
-            BinaryOp::Less, BinaryOp::LessEqual, BinaryOp::Greater, BinaryOp::GreaterEqual,
-            BinaryOp::Gt, BinaryOp::And, BinaryOp::Or, BinaryOp::BitwiseAnd,
-            BinaryOp::BitwiseOr, BinaryOp::BitwiseXor, BinaryOp::LeftShift, BinaryOp::NullCoalesce,
+            BinaryOp::Add,
+            BinaryOp::Subtract,
+            BinaryOp::Multiply,
+            BinaryOp::Divide,
+            BinaryOp::Modulo,
+            BinaryOp::Power,
+            BinaryOp::Equal,
+            BinaryOp::NotEqual,
+            BinaryOp::Less,
+            BinaryOp::LessEqual,
+            BinaryOp::Greater,
+            BinaryOp::GreaterEqual,
+            BinaryOp::Gt,
+            BinaryOp::And,
+            BinaryOp::Or,
+            BinaryOp::BitwiseAnd,
+            BinaryOp::BitwiseOr,
+            BinaryOp::BitwiseXor,
+            BinaryOp::LeftShift,
+            BinaryOp::NullCoalesce,
         ];
 
         for op in binary_ops {
@@ -2402,7 +2410,12 @@ mod tests {
             attributes: vec![],
         });
 
-        let unary_ops = vec![UnaryOp::Not, UnaryOp::Negate, UnaryOp::BitwiseNot, UnaryOp::Reference];
+        let unary_ops = vec![
+            UnaryOp::Not,
+            UnaryOp::Negate,
+            UnaryOp::BitwiseNot,
+            UnaryOp::Reference,
+        ];
 
         for op in unary_ops {
             let unary_expr = ExprKind::Unary {
@@ -2482,14 +2495,20 @@ mod tests {
             })),
             TypeKind::DataFrame {
                 columns: vec![
-                    ("id".to_string(), Type {
-                        kind: TypeKind::Named("i32".to_string()),
-                        span: Span::new(0, 3),
-                    }),
-                    ("name".to_string(), Type {
-                        kind: TypeKind::Named("String".to_string()),
-                        span: Span::new(0, 6),
-                    }),
+                    (
+                        "id".to_string(),
+                        Type {
+                            kind: TypeKind::Named("i32".to_string()),
+                            span: Span::new(0, 3),
+                        },
+                    ),
+                    (
+                        "name".to_string(),
+                        Type {
+                            kind: TypeKind::Named("String".to_string()),
+                            span: Span::new(0, 6),
+                        },
+                    ),
                 ],
             },
             TypeKind::Series {
@@ -2624,13 +2643,11 @@ mod tests {
                 attributes: vec![],
             }),
             then_branch: Box::new(Expr {
-                kind: ExprKind::Block(vec![
-                    Expr {
-                        kind: ExprKind::Literal(Literal::String("positive".to_string())),
-                        span: Span::new(11, 21),
-                        attributes: vec![],
-                    },
-                ]),
+                kind: ExprKind::Block(vec![Expr {
+                    kind: ExprKind::Literal(Literal::String("positive".to_string())),
+                    span: Span::new(11, 21),
+                    attributes: vec![],
+                }]),
                 span: Span::new(9, 23),
                 attributes: vec![],
             }),
@@ -2803,12 +2820,7 @@ mod tests {
         };
 
         // Test all constructions
-        let expressions = vec![
-            list_expr,
-            tuple_expr,
-            assign_expr,
-            func_expr,
-        ];
+        let expressions = vec![list_expr, tuple_expr, assign_expr, func_expr];
 
         for expr_kind in expressions {
             let expr = Expr {

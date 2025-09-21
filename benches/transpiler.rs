@@ -1,33 +1,45 @@
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
-use ruchy::{Parser, Transpiler};
 use ruchy::frontend::ast::{Expr, ExprKind, Literal, Span};
+use ruchy::{Parser, Transpiler};
 
 fn transpile_literals(c: &mut Criterion) {
     let mut group = c.benchmark_group("transpile_literals");
-    
+
     let literals = vec![
-        ("integer", Expr {
-            kind: ExprKind::Literal(Literal::Integer(42)),
-            span: Span::default(),
-            attributes: vec![],
-        }),
-        ("float", Expr {
-            kind: ExprKind::Literal(Literal::Float(3.1415)),
-            span: Span::default(),
-            attributes: vec![],
-        }),
-        ("string", Expr {
-            kind: ExprKind::Literal(Literal::String("Hello, World!".to_string())),
-            span: Span::default(),
-            attributes: vec![],
-        }),
-        ("bool", Expr {
-            kind: ExprKind::Literal(Literal::Bool(true)),
-            span: Span::default(),
-            attributes: vec![],
-        }),
+        (
+            "integer",
+            Expr {
+                kind: ExprKind::Literal(Literal::Integer(42)),
+                span: Span::default(),
+                attributes: vec![],
+            },
+        ),
+        (
+            "float",
+            Expr {
+                kind: ExprKind::Literal(Literal::Float(3.1415)),
+                span: Span::default(),
+                attributes: vec![],
+            },
+        ),
+        (
+            "string",
+            Expr {
+                kind: ExprKind::Literal(Literal::String("Hello, World!".to_string())),
+                span: Span::default(),
+                attributes: vec![],
+            },
+        ),
+        (
+            "bool",
+            Expr {
+                kind: ExprKind::Literal(Literal::Bool(true)),
+                span: Span::default(),
+                attributes: vec![],
+            },
+        ),
     ];
-    
+
     for (name, expr) in literals {
         group.bench_with_input(BenchmarkId::from_parameter(name), &expr, |b, expr| {
             b.iter(|| {
@@ -36,13 +48,13 @@ fn transpile_literals(c: &mut Criterion) {
             });
         });
     }
-    
+
     group.finish();
 }
 
 fn transpile_expressions(c: &mut Criterion) {
     let mut group = c.benchmark_group("transpile_expressions");
-    
+
     // Parse different expression types
     let test_cases = vec![
         ("binary_op", "1 + 2 * 3"),
@@ -52,13 +64,13 @@ fn transpile_expressions(c: &mut Criterion) {
         ("lambda", "|x| x * 2"),
         ("list", "[1, 2, 3, 4, 5]"),
     ];
-    
+
     for (name, code) in test_cases {
         let ast = {
             let mut parser = Parser::new(code);
             parser.parse().expect("Should parse")
         };
-        
+
         group.bench_with_input(BenchmarkId::from_parameter(name), &ast, |b, ast| {
             b.iter(|| {
                 let transpiler = Transpiler::new();
@@ -66,33 +78,39 @@ fn transpile_expressions(c: &mut Criterion) {
             });
         });
     }
-    
+
     group.finish();
 }
 
 fn transpile_functions(c: &mut Criterion) {
     let mut group = c.benchmark_group("transpile_functions");
-    
+
     let functions = vec![
         ("simple", "fun add(a: i32, b: i32) -> i32 { a + b }"),
-        ("recursive", r"
+        (
+            "recursive",
+            r"
             fun factorial(n: i32) -> i32 {
                 if n <= 1 { 1 } else { n * factorial(n - 1) }
             }
-        "),
-        ("higher_order", r"
+        ",
+        ),
+        (
+            "higher_order",
+            r"
             fun map(f: (i32) -> i32, list: [i32]) -> [i32] {
                 list.map(f)
             }
-        "),
+        ",
+        ),
     ];
-    
+
     for (name, code) in functions {
         let ast = {
             let mut parser = Parser::new(code);
             parser.parse().expect("Should parse")
         };
-        
+
         group.bench_with_input(BenchmarkId::from_parameter(name), &ast, |b, ast| {
             b.iter(|| {
                 let transpiler = Transpiler::new();
@@ -100,13 +118,13 @@ fn transpile_functions(c: &mut Criterion) {
             });
         });
     }
-    
+
     group.finish();
 }
 
 fn transpile_patterns(c: &mut Criterion) {
     let mut group = c.benchmark_group("transpile_patterns");
-    
+
     let patterns = vec![
         ("literal", "match x { 42 => \"answer\" }"),
         ("wildcard", "match x { _ => \"any\" }"),
@@ -115,13 +133,13 @@ fn transpile_patterns(c: &mut Criterion) {
         ("list", "match list { [first, second] => first }"),
         ("nested", "match opt { Some(Ok(x)) => x, _ => 0 }"),
     ];
-    
+
     for (name, code) in patterns {
         let ast = {
             let mut parser = Parser::new(code);
             parser.parse().expect("Should parse")
         };
-        
+
         group.bench_with_input(BenchmarkId::from_parameter(name), &ast, |b, ast| {
             b.iter(|| {
                 let transpiler = Transpiler::new();
@@ -129,20 +147,20 @@ fn transpile_patterns(c: &mut Criterion) {
             });
         });
     }
-    
+
     group.finish();
 }
 
 fn transpile_scalability(c: &mut Criterion) {
     let mut group = c.benchmark_group("transpile_scalability");
-    
+
     for size in &[10, 100, 1000] {
         let code = format!("let x = {}; ", "1 + 2 * 3").repeat(*size);
         let ast = {
             let mut parser = Parser::new(&code);
             parser.parse().expect("Should parse")
         };
-        
+
         group.bench_with_input(BenchmarkId::from_parameter(size), &ast, |b, ast| {
             b.iter(|| {
                 let transpiler = Transpiler::new();
@@ -150,15 +168,17 @@ fn transpile_scalability(c: &mut Criterion) {
             });
         });
     }
-    
+
     group.finish();
 }
 
 fn transpile_real_world(c: &mut Criterion) {
     let mut group = c.benchmark_group("transpile_real_world");
-    
+
     let programs = vec![
-        ("quicksort", r"
+        (
+            "quicksort",
+            r"
             fun quicksort(arr: [i32]) -> [i32] {
                 if arr.len() <= 1 {
                     arr
@@ -170,8 +190,11 @@ fn transpile_real_world(c: &mut Criterion) {
                     quicksort(less) + equal + quicksort(greater)
                 }
             }
-        "),
-        ("fibonacci_memo", r"
+        ",
+        ),
+        (
+            "fibonacci_memo",
+            r"
             let mut cache = {}
             
             fun fib_memo(n: i32) -> i32 {
@@ -183,22 +206,26 @@ fn transpile_real_world(c: &mut Criterion) {
                     result
                 }
             }
-        "),
-        ("data_pipeline", r"
+        ",
+        ),
+        (
+            "data_pipeline",
+            r"
             let data = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
             let result = data
                 .map(|x| x * 2)
                 .filter(|x| x > 10)
                 .reduce(0, |acc, x| acc + x)
-        "),
+        ",
+        ),
     ];
-    
+
     for (name, code) in programs {
         let ast = {
             let mut parser = Parser::new(code);
             parser.parse().expect("Should parse")
         };
-        
+
         group.bench_with_input(BenchmarkId::from_parameter(name), &ast, |b, ast| {
             b.iter(|| {
                 let transpiler = Transpiler::new();
@@ -206,7 +233,7 @@ fn transpile_real_world(c: &mut Criterion) {
             });
         });
     }
-    
+
     group.finish();
 }
 

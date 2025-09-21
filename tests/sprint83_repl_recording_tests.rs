@@ -1,7 +1,7 @@
 //! Sprint 83: Comprehensive tests for repl_recording.rs to achieve 100% coverage
 
 use ruchy::runtime::repl::Repl;
-use ruchy::runtime::replay::{SessionRecorder, SessionMetadata, InputMode, ReplSession};
+use ruchy::runtime::replay::{InputMode, ReplSession, SessionMetadata, SessionRecorder};
 use std::path::PathBuf;
 use tempfile::TempDir;
 
@@ -74,11 +74,7 @@ fn test_session_recorder() {
 
 #[test]
 fn test_input_modes() {
-    let modes = vec![
-        InputMode::Interactive,
-        InputMode::Paste,
-        InputMode::Script,
-    ];
+    let modes = vec![InputMode::Interactive, InputMode::Paste, InputMode::Script];
 
     for mode in modes {
         let metadata = SessionMetadata {
@@ -112,17 +108,25 @@ fn test_repl_eval_recording_scenarios() {
         ("fn add(a, b) { a + b }", true),
         ("add(5, 3)", false), // Will fail if add not defined
         ("invalid syntax !", false),
-        ("", true), // Empty input
+        ("", true),    // Empty input
         ("   ", true), // Whitespace
     ];
 
     for (input, should_succeed) in test_cases {
         let result = repl.eval(input);
         if should_succeed {
-            assert!(result.is_ok() || result.is_err(), "Eval should complete for: {}", input);
+            assert!(
+                result.is_ok() || result.is_err(),
+                "Eval should complete for: {}",
+                input
+            );
         } else {
             // We expect errors for invalid inputs
-            assert!(result.is_err() || result.is_ok(), "Eval should handle: {}", input);
+            assert!(
+                result.is_err() || result.is_ok(),
+                "Eval should handle: {}",
+                input
+            );
         }
     }
 }
@@ -295,7 +299,9 @@ fn test_edge_cases() {
     // Test very long input
     let long_input = "x".repeat(1000);
     recorder.record_input(long_input, InputMode::Interactive);
-    recorder.record_output(Ok(ruchy::runtime::Value::String(std::rc::Rc::new("result".to_string()))));
+    recorder.record_output(Ok(ruchy::runtime::Value::String(std::rc::Rc::new(
+        "result".to_string(),
+    ))));
 
     // Test special characters
     recorder.record_input("let 你好 = '世界'".to_string(), InputMode::Interactive);

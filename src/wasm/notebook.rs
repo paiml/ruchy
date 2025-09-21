@@ -1,21 +1,20 @@
 //! WebAssembly Notebook support for Ruchy
 //!
 //! Provides Jupyter-style notebook functionality in the browser.
+use sha2::Digest;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
-use sha2::Digest;
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
 #[cfg(not(target_arch = "wasm32"))]
 type JsValue = String;
-#[cfg(not(target_arch = "wasm32"))]
-use serde::{Serialize, Deserialize};
-use crate::utils::{format_serialize_error, format_deserialize_error, format_operation_error};
+use crate::utils::{format_deserialize_error, format_operation_error, format_serialize_error};
 use crate::wasm::shared_session::{
-    SharedSession, ExecutionMode, ExecuteResponse, 
-    DependencyGraph, CellProvenance, MemoryUsage, Edge,
-    SessionExportData, SessionVersion, VariableInspectionResult, ExecutionHistoryEntry
+    CellProvenance, DependencyGraph, Edge, ExecuteResponse, ExecutionHistoryEntry, ExecutionMode,
+    MemoryUsage, SessionExportData, SessionVersion, SharedSession, VariableInspectionResult,
 };
+#[cfg(not(target_arch = "wasm32"))]
+use serde::{Deserialize, Serialize};
 // ============================================================================
 // Notebook Types
 // ============================================================================
@@ -40,9 +39,15 @@ pub enum CellType {
 pub enum CellOutput {
     Text(String),
     Html(String),
-    Image { data: String, mime_type: String },
+    Image {
+        data: String,
+        mime_type: String,
+    },
     DataFrame(DataFrameOutput),
-    Error { message: String, traceback: Vec<String> },
+    Error {
+        message: String,
+        traceback: Vec<String>,
+    },
 }
 #[derive(Debug, Clone)]
 #[cfg_attr(not(target_arch = "wasm32"), derive(Serialize, Deserialize))]
@@ -152,7 +157,7 @@ pub struct NotebookRuntime {
     published_notebooks: HashMap<String, PublishResult>,
     // Templates (Sprint 12)
     templates: Vec<NotebookTemplate>,
-    // Plugins (Sprint 12) 
+    // Plugins (Sprint 12)
     enabled_plugins: Vec<String>,
     // Performance optimization (Sprint 13)
     // execution_mode is handled by SharedSession
@@ -186,15 +191,15 @@ pub struct NotebookRuntime {
 impl NotebookRuntime {
     /// Create a new notebook runtime
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(constructor))]
-/// # Examples
-/// 
-/// ```
-/// use ruchy::wasm::notebook::new;
-/// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn new() -> Result<NotebookRuntime, JsValue> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::wasm::notebook::new;
+    ///
+    /// let result = new(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn new() -> Result<NotebookRuntime, JsValue> {
         Ok(NotebookRuntime {
             notebook: Notebook {
                 version: "2.0.0".to_string(),
@@ -220,13 +225,16 @@ pub fn new() -> Result<NotebookRuntime, JsValue> {
             commits: Vec::new(),
             branches: {
                 let mut branches = HashMap::new();
-                branches.insert("main".to_string(), NotebookBranch {
-                    name: "main".to_string(),
-                    base_commit: String::new(),
-                    current_commit: String::new(),
-                    created_at: chrono::Utc::now().timestamp(),
-                    notebook_state: None,  // Main branch starts with empty state
-                });
+                branches.insert(
+                    "main".to_string(),
+                    NotebookBranch {
+                        name: "main".to_string(),
+                        base_commit: String::new(),
+                        current_commit: String::new(),
+                        created_at: chrono::Utc::now().timestamp(),
+                        notebook_state: None, // Main branch starts with empty state
+                    },
+                );
                 branches
             },
             current_branch: "main".to_string(),
@@ -269,15 +277,15 @@ pub fn new() -> Result<NotebookRuntime, JsValue> {
     }
     /// Add a new cell to the notebook
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
-/// # Examples
-/// 
-/// ```
-/// use ruchy::wasm::notebook::add_cell;
-/// 
-/// let result = add_cell("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn add_cell(&mut self, cell_type: &str, source: &str) -> String {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::wasm::notebook::add_cell;
+    ///
+    /// let result = add_cell("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn add_cell(&mut self, cell_type: &str, source: &str) -> String {
         let id = generate_cell_id();
         let cell = NotebookCell {
             id: id.clone(),
@@ -296,16 +304,19 @@ pub fn add_cell(&mut self, cell_type: &str, source: &str) -> String {
     }
     /// Execute a cell by ID
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
-/// # Examples
-/// 
-/// ```
-/// use ruchy::wasm::notebook::execute_cell;
-/// 
-/// let result = execute_cell("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn execute_cell(&mut self, cell_id: &str) -> Result<String, JsValue> {
-        let cell = self.notebook.cells.iter_mut()
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::wasm::notebook::execute_cell;
+    ///
+    /// let result = execute_cell("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn execute_cell(&mut self, cell_id: &str) -> Result<String, JsValue> {
+        let cell = self
+            .notebook
+            .cells
+            .iter_mut()
             .find(|c| c.id == cell_id)
             .ok_or_else(|| {
                 #[cfg(target_arch = "wasm32")]
@@ -321,11 +332,18 @@ pub fn execute_cell(&mut self, cell_id: &str) -> Result<String, JsValue> {
                     let session = self.session.lock().expect("Failed to acquire session lock");
                     let current_memory = session.estimate_interpreter_memory() as usize;
                     if current_memory > limit {
-                        return Err(JsValue::from(&format!("Memory limit exceeded: {current_memory} > {limit}")));
+                        return Err(JsValue::from(&format!(
+                            "Memory limit exceeded: {current_memory} > {limit}"
+                        )));
                     }
                     // Check if cell would allocate too much memory
                     if cell.source.contains("allocate_memory") {
-                        if let Some(size_str) = cell.source.split('(').nth(1).and_then(|s| s.split(')').next()) {
+                        if let Some(size_str) = cell
+                            .source
+                            .split('(')
+                            .nth(1)
+                            .and_then(|s| s.split(')').next())
+                        {
                             if let Ok(size) = size_str.parse::<usize>() {
                                 if size > limit {
                                     return Err(JsValue::from(&format!("Cannot allocate {size} bytes: exceeds memory limit of {limit}")));
@@ -348,7 +366,8 @@ pub fn execute_cell(&mut self, cell_id: &str) -> Result<String, JsValue> {
                     cell.execution_count = Some(self.execution_count + 1);
                     self.execution_count += 1;
                     // Track as cached execution (very fast)
-                    self.cell_execution_times.entry(cell_id.to_string())
+                    self.cell_execution_times
+                        .entry(cell_id.to_string())
                         .or_default()
                         .push(0.1); // Cached executions are nearly instant
                     return Ok(cached_value);
@@ -366,8 +385,12 @@ pub fn execute_cell(&mut self, cell_id: &str) -> Result<String, JsValue> {
                 cell.execution_count = Some(self.execution_count);
                 // Track analytics (Sprint 11)
                 let execution_time = get_timestamp() - start;
-                *self.cell_execution_counts.entry(cell_id.to_string()).or_insert(0) += 1;
-                self.cell_execution_times.entry(cell_id.to_string())
+                *self
+                    .cell_execution_counts
+                    .entry(cell_id.to_string())
+                    .or_insert(0) += 1;
+                self.cell_execution_times
+                    .entry(cell_id.to_string())
                     .or_default()
                     .push(execution_time);
                 // Parse result and create output
@@ -385,16 +408,19 @@ pub fn execute_cell(&mut self, cell_id: &str) -> Result<String, JsValue> {
                     Err(e) => CellOutput::Error {
                         message: e,
                         traceback: vec![],
-                    }
+                    },
                 };
                 // Cache successful results (Sprint 13)
                 if let CellOutput::Text(ref value) = output {
-                    self.cache.insert(cell_id.to_string(), CachedResult {
-                        value: value.clone(),
-                        computed_at: start as i64,
-                        access_count: 1,
-                        last_accessed: start as i64,
-                    });
+                    self.cache.insert(
+                        cell_id.to_string(),
+                        CachedResult {
+                            value: value.clone(),
+                            computed_at: start as i64,
+                            access_count: 1,
+                            last_accessed: start as i64,
+                        },
+                    );
                 }
                 cell.outputs = vec![output];
                 cell.metadata.execution_time_ms = Some(execution_time);
@@ -407,16 +433,20 @@ pub fn execute_cell(&mut self, cell_id: &str) -> Result<String, JsValue> {
         }
     }
     /// Execute a cell with shared session (for testing)
-/// # Examples
-/// 
-/// ```
-/// use ruchy::wasm::notebook::NotebookRuntime;
-/// 
-/// let mut instance = NotebookRuntime::new();
-/// let result = instance.execute_cell_with_session();
-/// // Verify behavior
-/// ```
-pub fn execute_cell_with_session(&mut self, cell_id: &str, code: &str) -> Result<ExecuteResponse, String> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::wasm::notebook::NotebookRuntime;
+    ///
+    /// let mut instance = NotebookRuntime::new();
+    /// let result = instance.execute_cell_with_session();
+    /// // Verify behavior
+    /// ```
+    pub fn execute_cell_with_session(
+        &mut self,
+        cell_id: &str,
+        code: &str,
+    ) -> Result<ExecuteResponse, String> {
         // Add cell if it doesn't exist
         if !self.notebook.cells.iter().any(|c| c.id == cell_id) {
             let cell = NotebookCell {
@@ -434,30 +464,30 @@ pub fn execute_cell_with_session(&mut self, cell_id: &str, code: &str) -> Result
     }
     /// Execute cell in reactive mode
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
-/// # Examples
-/// 
-/// ```
-/// use ruchy::wasm::notebook::execute_reactive;
-/// 
-/// let result = execute_reactive("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn execute_reactive(&mut self, cell_id: &str, code: &str) -> Result<String, JsValue> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::wasm::notebook::execute_reactive;
+    ///
+    /// let result = execute_reactive("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn execute_reactive(&mut self, cell_id: &str, code: &str) -> Result<String, JsValue> {
         let mut session = self.session.lock().expect("Failed to acquire session lock");
         let responses = session.execute_reactive(cell_id, code);
         Ok(serde_json::to_string(&responses).unwrap_or_else(|_| "[]".to_string()))
     }
     /// Set execution mode
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
-/// # Examples
-/// 
-/// ```
-/// use ruchy::wasm::notebook::set_execution_mode;
-/// 
-/// let result = set_execution_mode("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn set_execution_mode(&mut self, mode: &str) {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::wasm::notebook::set_execution_mode;
+    ///
+    /// let result = set_execution_mode("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn set_execution_mode(&mut self, mode: &str) {
         let mut session = self.session.lock().expect("Failed to acquire session lock");
         let exec_mode = if mode == "reactive" {
             ExecutionMode::Reactive
@@ -468,53 +498,57 @@ pub fn set_execution_mode(&mut self, mode: &str) {
     }
     /// Get execution plan without executing
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
-/// # Examples
-/// 
-/// ```
-/// use ruchy::wasm::notebook::explain_reactive;
-/// 
-/// let result = explain_reactive("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn explain_reactive(&self, cell_id: &str) -> String {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::wasm::notebook::explain_reactive;
+    ///
+    /// let result = explain_reactive("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn explain_reactive(&self, cell_id: &str) -> String {
         let session = self.session.lock().expect("Failed to acquire session lock");
         let plan = session.explain_reactive(cell_id);
         serde_json::to_string(&plan).unwrap_or_else(|_| "{}".to_string())
     }
     /// Get global variables
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
-/// # Examples
-/// 
-/// ```
-/// use ruchy::wasm::notebook::get_globals;
-/// 
-/// let result = get_globals(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn get_globals(&self) -> String {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::wasm::notebook::get_globals;
+    ///
+    /// let result = get_globals(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn get_globals(&self) -> String {
         let session = self.session.lock().expect("Failed to acquire session lock");
         let globals = session.globals.serialize_for_inspection();
         serde_json::to_string(&globals).unwrap_or_else(|_| "{}".to_string())
     }
     /// Get dependency graph
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
-/// # Examples
-/// 
-/// ```
-/// use ruchy::wasm::notebook::get_dependency_graph;
-/// 
-/// let result = get_dependency_graph(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn get_dependency_graph(&self) -> String {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::wasm::notebook::get_dependency_graph;
+    ///
+    /// let result = get_dependency_graph(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn get_dependency_graph(&self) -> String {
         let session = self.session.lock().expect("Failed to acquire session lock");
         let graph = DependencyGraph {
             nodes: session.cell_cache.keys().cloned().collect(),
-            edges: session.def_graph.iter()
+            edges: session
+                .def_graph
+                .iter()
                 .flat_map(|(cell, (deps, _))| {
                     deps.iter().filter_map(|def_id| {
-                        session.globals.def_sources.get(def_id)
-                            .map(|source| Edge { from: source.clone(), to: cell.clone() })
+                        session.globals.def_sources.get(def_id).map(|source| Edge {
+                            from: source.clone(),
+                            to: cell.clone(),
+                        })
                     })
                 })
                 .collect(),
@@ -523,25 +557,25 @@ pub fn get_dependency_graph(&self) -> String {
     }
     /// Get cell provenance
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
-/// # Examples
-/// 
-/// ```
-/// use ruchy::wasm::notebook::get_cell_provenance;
-/// 
-/// let result = get_cell_provenance("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn get_cell_provenance(&self, cell_id: &str) -> String {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::wasm::notebook::get_cell_provenance;
+    ///
+    /// let result = get_cell_provenance("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn get_cell_provenance(&self, cell_id: &str) -> String {
         let session = self.session.lock().expect("Failed to acquire session lock");
-        let (reads, writes) = session.def_graph.get(cell_id)
-            .cloned()
-            .unwrap_or_default();
+        let (reads, writes) = session.def_graph.get(cell_id).cloned().unwrap_or_default();
         let provenance = CellProvenance {
-            defines: writes.iter()
+            defines: writes
+                .iter()
                 .filter_map(|def_id| session.globals.def_to_name.get(def_id))
                 .cloned()
                 .collect(),
-            depends_on: reads.iter()
+            depends_on: reads
+                .iter()
                 .filter_map(|def_id| session.globals.def_to_name.get(def_id))
                 .cloned()
                 .collect(),
@@ -551,21 +585,23 @@ pub fn get_cell_provenance(&self, cell_id: &str) -> String {
     }
     /// Get memory usage
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
-/// # Examples
-/// 
-/// ```
-/// use ruchy::wasm::notebook::get_memory_usage;
-/// 
-/// let result = get_memory_usage(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn get_memory_usage(&self) -> String {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::wasm::notebook::get_memory_usage;
+    ///
+    /// let result = get_memory_usage(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn get_memory_usage(&self) -> String {
         let session = self.session.lock().expect("Failed to acquire session lock");
         let interpreter_memory = session.estimate_interpreter_memory();
         let usage = MemoryUsage {
             globals_bytes: session.globals.size_bytes(),
             checkpoints_count: session.checkpoints.len(),
-            checkpoints_bytes: session.checkpoints.values()
+            checkpoints_bytes: session
+                .checkpoints
+                .values()
                 .map(|_| 1024) // Approximate
                 .sum(),
             #[cfg(target_arch = "wasm32")]
@@ -577,15 +613,15 @@ pub fn get_memory_usage(&self) -> String {
     }
     /// Restart session
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
-/// # Examples
-/// 
-/// ```
-/// use ruchy::wasm::notebook::restart_session;
-/// 
-/// let result = restart_session(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn restart_session(&mut self) {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::wasm::notebook::restart_session;
+    ///
+    /// let result = restart_session(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn restart_session(&mut self) {
         let mut session = self.session.lock().expect("Failed to acquire session lock");
         *session = SharedSession::new();
         self.notebook.cells.clear();
@@ -594,50 +630,47 @@ pub fn restart_session(&mut self) {
     }
     /// Get all cells as JSON
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
-/// # Examples
-/// 
-/// ```
-/// use ruchy::wasm::notebook::get_cells;
-/// 
-/// let result = get_cells(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn get_cells(&self) -> String {
-        serde_json::to_string(&self.notebook.cells)
-            .unwrap_or_else(|_| "[]".to_string())
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::wasm::notebook::get_cells;
+    ///
+    /// let result = get_cells(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn get_cells(&self) -> String {
+        serde_json::to_string(&self.notebook.cells).unwrap_or_else(|_| "[]".to_string())
     }
     /// Save notebook to JSON
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
-/// # Examples
-/// 
-/// ```
-/// use ruchy::wasm::notebook::to_json;
-/// 
-/// let result = to_json(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn to_json(&self) -> String {
-        serde_json::to_string(&self.notebook)
-            .unwrap_or_else(|_| "{}".to_string())
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::wasm::notebook::to_json;
+    ///
+    /// let result = to_json(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn to_json(&self) -> String {
+        serde_json::to_string(&self.notebook).unwrap_or_else(|_| "{}".to_string())
     }
     /// Load notebook from JSON
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
-/// # Examples
-/// 
-/// ```
-/// use ruchy::wasm::notebook::from_json;
-/// 
-/// let result = from_json("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn from_json(&mut self, json: &str) -> Result<(), JsValue> {
-        let notebook: Notebook = serde_json::from_str(json)
-            .map_err(|e| {
-                #[cfg(target_arch = "wasm32")]
-                return JsValue::from_str(&format!("Parse error: {}", e));
-                #[cfg(not(target_arch = "wasm32"))]
-                return format!("Parse error: {e}");
-            })?;
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::wasm::notebook::from_json;
+    ///
+    /// let result = from_json("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn from_json(&mut self, json: &str) -> Result<(), JsValue> {
+        let notebook: Notebook = serde_json::from_str(json).map_err(|e| {
+            #[cfg(target_arch = "wasm32")]
+            return JsValue::from_str(&format!("Parse error: {}", e));
+            #[cfg(not(target_arch = "wasm32"))]
+            return format!("Parse error: {e}");
+        })?;
         self.notebook = notebook;
         Ok(())
     }
@@ -645,15 +678,15 @@ pub fn from_json(&mut self, json: &str) -> Result<(), JsValue> {
     // Advanced NotebookRuntime Features - Sprint 10
     // ============================================================================
     /// Export complete session state including notebook and `SharedSession`
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::export_session;
-/// 
-/// let result = export_session(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn export_session(&self) -> Result<NotebookSessionExport, String> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::export_session;
+    ///
+    /// let result = export_session(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn export_session(&self) -> Result<NotebookSessionExport, String> {
         let session = self.session.lock().expect("Failed to acquire session lock");
         let session_data = session.export_session_state();
         Ok(NotebookSessionExport {
@@ -665,15 +698,15 @@ pub fn export_session(&self) -> Result<NotebookSessionExport, String> {
         })
     }
     /// Import session state including notebook and `SharedSession`
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::import_session;
-/// 
-/// let result = import_session(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn import_session(&mut self, export: &NotebookSessionExport) -> Result<(), String> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::import_session;
+    ///
+    /// let result = import_session(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn import_session(&mut self, export: &NotebookSessionExport) -> Result<(), String> {
         // Import notebook
         self.notebook = export.notebook.clone();
         self.execution_count = export.execution_count;
@@ -684,16 +717,16 @@ pub fn import_session(&mut self, export: &NotebookSessionExport) -> Result<(), S
         Ok(())
     }
     /// Create named checkpoint for notebook and session state
-/// # Examples
-/// 
-/// ```
-/// use ruchy::wasm::notebook::NotebookRuntime;
-/// 
-/// let mut instance = NotebookRuntime::new();
-/// let result = instance.create_notebook_checkpoint();
-/// // Verify behavior
-/// ```
-pub fn create_notebook_checkpoint(&mut self, name: &str) -> Result<String, String> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::wasm::notebook::NotebookRuntime;
+    ///
+    /// let mut instance = NotebookRuntime::new();
+    /// let result = instance.create_notebook_checkpoint();
+    /// // Verify behavior
+    /// ```
+    pub fn create_notebook_checkpoint(&mut self, name: &str) -> Result<String, String> {
         let mut session = self.session.lock().expect("Failed to acquire session lock");
         // Note: Fix SharedSession visibility issue - method exists but not accessible
         // session.create_checkpoint(name).map_err(|e| e.to_string())?;
@@ -713,15 +746,15 @@ pub fn create_notebook_checkpoint(&mut self, name: &str) -> Result<String, Strin
         Ok(name.to_string())
     }
     /// Restore from named checkpoint
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::restore_notebook_checkpoint;
-/// 
-/// let result = restore_notebook_checkpoint("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn restore_notebook_checkpoint(&mut self, name: &str) -> Result<(), String> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::restore_notebook_checkpoint;
+    ///
+    /// let result = restore_notebook_checkpoint("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn restore_notebook_checkpoint(&mut self, name: &str) -> Result<(), String> {
         let mut session = self.session.lock().expect("Failed to acquire session lock");
         session.restore_from_checkpoint(name)?;
         // Note: Restore notebook state from checkpoint registry
@@ -729,15 +762,15 @@ pub fn restore_notebook_checkpoint(&mut self, name: &str) -> Result<(), String> 
         Ok(())
     }
     /// Export notebook in Jupyter format
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::export_as_jupyter;
-/// 
-/// let result = export_as_jupyter(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn export_as_jupyter(&self) -> Result<String, String> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::export_as_jupyter;
+    ///
+    /// let result = export_as_jupyter(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn export_as_jupyter(&self) -> Result<String, String> {
         let jupyter_notebook = JupyterNotebook {
             nbformat: 4,
             nbformat_minor: 2,
@@ -752,8 +785,11 @@ pub fn export_as_jupyter(&self) -> Result<String, String> {
                     version: env!("CARGO_PKG_VERSION").to_string(),
                 },
             },
-            cells: self.notebook.cells.iter().map(|cell| {
-                JupyterCell {
+            cells: self
+                .notebook
+                .cells
+                .iter()
+                .map(|cell| JupyterCell {
                     cell_type: match cell.cell_type {
                         CellType::Code => "code".to_string(),
                         CellType::Markdown => "markdown".to_string(),
@@ -761,8 +797,10 @@ pub fn export_as_jupyter(&self) -> Result<String, String> {
                     source: vec![cell.source.clone()],
                     metadata: serde_json::json!({}),
                     execution_count: cell.execution_count,
-                    outputs: cell.outputs.iter().map(|output| {
-                        match output {
+                    outputs: cell
+                        .outputs
+                        .iter()
+                        .map(|output| match output {
                             CellOutput::Text(text) => serde_json::json!({
                                 "output_type": "execute_result",
                                 "data": {"text/plain": [text]},
@@ -779,31 +817,33 @@ pub fn export_as_jupyter(&self) -> Result<String, String> {
                                 "output_type": "display_data",
                                 "data": {"text/plain": ["[Complex Output]"]},
                                 "metadata": {}
-                            })
-                        }
-                    }).collect(),
-                }
-            }).collect(),
+                            }),
+                        })
+                        .collect(),
+                })
+                .collect(),
         };
         serde_json::to_string_pretty(&jupyter_notebook)
             .map_err(|e| format!("Jupyter export error: {e}"))
     }
     /// Export notebook as HTML
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::export_as_html;
-/// 
-/// let result = export_as_html(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn export_as_html(&self) -> Result<String, String> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::export_as_html;
+    ///
+    /// let result = export_as_html(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn export_as_html(&self) -> Result<String, String> {
         let mut html = String::new();
         html.push_str("<!DOCTYPE html>\n<html>\n<head>\n");
         html.push_str("<title>Ruchy Notebook</title>\n");
         html.push_str("<style>\n");
         html.push_str("body { font-family: Arial, sans-serif; margin: 40px; }\n");
-        html.push_str(".cell { margin-bottom: 20px; border-left: 3px solid #ddd; padding-left: 15px; }\n");
+        html.push_str(
+            ".cell { margin-bottom: 20px; border-left: 3px solid #ddd; padding-left: 15px; }\n",
+        );
         html.push_str(".code-cell { background: #f8f8f8; }\n");
         html.push_str(".markdown-cell { }\n");
         html.push_str("pre { background: #f0f0f0; padding: 10px; overflow-x: auto; }\n");
@@ -815,7 +855,8 @@ pub fn export_as_html(&self) -> Result<String, String> {
             match cell.cell_type {
                 CellType::Code => {
                     html.push_str("<div class='cell code-cell'>\n");
-                    let escaped_source = cell.source
+                    let escaped_source = cell
+                        .source
                         .replace('&', "&amp;")
                         .replace('<', "&lt;")
                         .replace('>', "&gt;")
@@ -831,14 +872,16 @@ pub fn export_as_html(&self) -> Result<String, String> {
                                     .replace('<', "&lt;")
                                     .replace('>', "&gt;");
                                 html.push_str(&format!("<pre>{escaped_text}</pre>\n"));
-                            },
+                            }
                             CellOutput::Error { message, .. } => {
                                 let escaped_message = message
                                     .replace('&', "&amp;")
                                     .replace('<', "&lt;")
                                     .replace('>', "&gt;");
-                                html.push_str(&format!("<pre style='color: red;'>{escaped_message}</pre>\n"));
-                            },
+                                html.push_str(&format!(
+                                    "<pre style='color: red;'>{escaped_message}</pre>\n"
+                                ));
+                            }
                             _ => {
                                 html.push_str("<pre>[Complex Output]</pre>\n");
                             }
@@ -846,14 +889,18 @@ pub fn export_as_html(&self) -> Result<String, String> {
                         html.push_str("</div>\n");
                     }
                     html.push_str("</div>\n");
-                },
+                }
                 CellType::Markdown => {
                     html.push_str("<div class='cell markdown-cell'>\n");
                     // Simple markdown to HTML conversion
-                    let markdown_html = cell.source
-                        .replace("# ", "<h1>").replace('\n', "</h1>\n")
-                        .replace("## ", "<h2>").replace("</h1>\n", "</h2>\n")
-                        .replace("### ", "<h3>").replace("</h2>\n", "</h3>\n");
+                    let markdown_html = cell
+                        .source
+                        .replace("# ", "<h1>")
+                        .replace('\n', "</h1>\n")
+                        .replace("## ", "<h2>")
+                        .replace("</h1>\n", "</h2>\n")
+                        .replace("### ", "<h3>")
+                        .replace("</h2>\n", "</h3>\n");
                     html.push_str(&markdown_html);
                     html.push_str("</div>\n");
                 }
@@ -863,15 +910,15 @@ pub fn export_as_html(&self) -> Result<String, String> {
         Ok(html)
     }
     /// Export notebook as Markdown
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::export_as_markdown;
-/// 
-/// let result = export_as_markdown(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn export_as_markdown(&self) -> Result<String, String> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::export_as_markdown;
+    ///
+    /// let result = export_as_markdown(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn export_as_markdown(&self) -> Result<String, String> {
         let mut markdown = String::new();
         markdown.push_str(&format!("# {}\n\n", "Ruchy Notebook"));
         for cell in &self.notebook.cells {
@@ -886,18 +933,18 @@ pub fn export_as_markdown(&self) -> Result<String, String> {
                                 markdown.push_str("Output:\n```\n");
                                 markdown.push_str(text);
                                 markdown.push_str("\n```\n\n");
-                            },
+                            }
                             CellOutput::Error { message, .. } => {
                                 markdown.push_str("Error:\n```\n");
                                 markdown.push_str(message);
                                 markdown.push_str("\n```\n\n");
-                            },
+                            }
                             _ => {
                                 markdown.push_str("Output: [Complex Output]\n\n");
                             }
                         }
                     }
-                },
+                }
                 CellType::Markdown => {
                     markdown.push_str(&cell.source);
                     markdown.push_str("\n\n");
@@ -907,15 +954,15 @@ pub fn export_as_markdown(&self) -> Result<String, String> {
         Ok(markdown)
     }
     /// Get debugging information
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::get_debug_information;
-/// 
-/// let result = get_debug_information(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn get_debug_information(&self) -> Result<String, String> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::get_debug_information;
+    ///
+    /// let result = get_debug_information(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn get_debug_information(&self) -> Result<String, String> {
         let session = self.session.lock().expect("Failed to acquire session lock");
         let debug_info = NotebookDebugInfo {
             notebook_metadata: self.notebook.metadata.clone(),
@@ -930,54 +977,58 @@ pub fn get_debug_information(&self) -> Result<String, String> {
             .map_err(|e| format!("Debug info serialization error: {e}"))
     }
     /// Get execution trace
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::get_execution_trace;
-/// 
-/// let result = get_execution_trace(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn get_execution_trace(&self) -> Result<Vec<ExecutionTraceEntry>, String> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::get_execution_trace;
+    ///
+    /// let result = get_execution_trace(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn get_execution_trace(&self) -> Result<Vec<ExecutionTraceEntry>, String> {
         let session = self.session.lock().expect("Failed to acquire session lock");
         let history = session.get_execution_history();
-        let trace = history.into_iter().map(|entry| {
-            ExecutionTraceEntry {
-                sequence: entry.sequence,
-                cell_id: entry.cell_id,
-                code: entry.code,
-                timestamp: entry.timestamp,
-                success: entry.success,
-                duration_ms: 0.0, // Note: Add duration tracking
-            }
-        }).collect();
+        let trace = history
+            .into_iter()
+            .map(|entry| {
+                ExecutionTraceEntry {
+                    sequence: entry.sequence,
+                    cell_id: entry.cell_id,
+                    code: entry.code,
+                    timestamp: entry.timestamp,
+                    success: entry.success,
+                    duration_ms: 0.0, // Note: Add duration tracking
+                }
+            })
+            .collect();
         Ok(trace)
     }
     /// Handle web API requests
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::handle_api_request;
-/// 
-/// let result = handle_api_request("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn handle_api_request(&mut self, method: &str, path: &str, _body: Option<&str>) -> Result<ApiResponse, String> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::handle_api_request;
+    ///
+    /// let result = handle_api_request("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn handle_api_request(
+        &mut self,
+        method: &str,
+        path: &str,
+        _body: Option<&str>,
+    ) -> Result<ApiResponse, String> {
         match (method, path) {
-            ("GET", "/cells") => {
-                Ok(ApiResponse {
-                    status: 200,
-                    body: self.get_cells(),
-                    headers: vec![("Content-Type".to_string(), "application/json".to_string())],
-                })
-            },
-            ("GET", "/notebook") => {
-                Ok(ApiResponse {
-                    status: 200,
-                    body: self.to_json(),
-                    headers: vec![("Content-Type".to_string(), "application/json".to_string())],
-                })
-            },
+            ("GET", "/cells") => Ok(ApiResponse {
+                status: 200,
+                body: self.get_cells(),
+                headers: vec![("Content-Type".to_string(), "application/json".to_string())],
+            }),
+            ("GET", "/notebook") => Ok(ApiResponse {
+                status: 200,
+                body: self.to_json(),
+                headers: vec![("Content-Type".to_string(), "application/json".to_string())],
+            }),
             ("GET", "/debug") => {
                 let debug_info = self.get_debug_information()?;
                 Ok(ApiResponse {
@@ -985,14 +1036,12 @@ pub fn handle_api_request(&mut self, method: &str, path: &str, _body: Option<&st
                     body: debug_info,
                     headers: vec![("Content-Type".to_string(), "application/json".to_string())],
                 })
-            },
-            ("GET", "/memory") => {
-                Ok(ApiResponse {
-                    status: 200,
-                    body: self.get_memory_usage(),
-                    headers: vec![("Content-Type".to_string(), "application/json".to_string())],
-                })
-            },
+            }
+            ("GET", "/memory") => Ok(ApiResponse {
+                status: 200,
+                body: self.get_memory_usage(),
+                headers: vec![("Content-Type".to_string(), "application/json".to_string())],
+            }),
             ("POST", "/cells") => {
                 // Add new cell via API
                 let cell_id = self.add_cell("code", "");
@@ -1006,136 +1055,126 @@ pub fn handle_api_request(&mut self, method: &str, path: &str, _body: Option<&st
                     body: response.to_string(),
                     headers: vec![("Content-Type".to_string(), "application/json".to_string())],
                 })
-            },
+            }
             ("GET", "/variables") => {
                 let session = self.session.lock().expect("Failed to acquire session lock");
                 let inspection = session.inspect_variables();
                 Ok(ApiResponse {
                     status: 200,
-                    body: serde_json::to_string_pretty(&inspection).unwrap_or_else(|_| "{}".to_string()),
+                    body: serde_json::to_string_pretty(&inspection)
+                        .unwrap_or_else(|_| "{}".to_string()),
                     headers: vec![("Content-Type".to_string(), "application/json".to_string())],
                 })
-            },
+            }
             ("GET", "/history") => {
                 let session = self.session.lock().expect("Failed to acquire session lock");
                 let history = session.get_execution_history();
                 Ok(ApiResponse {
                     status: 200,
-                    body: serde_json::to_string_pretty(&history).unwrap_or_else(|_| "[]".to_string()),
+                    body: serde_json::to_string_pretty(&history)
+                        .unwrap_or_else(|_| "[]".to_string()),
                     headers: vec![("Content-Type".to_string(), "application/json".to_string())],
                 })
-            },
+            }
             ("GET", "/health") => {
                 let health = self.check_notebook_health()?;
                 Ok(ApiResponse {
                     status: 200,
-                    body: serde_json::to_string_pretty(&health).unwrap_or_else(|_| "{}".to_string()),
-                    headers: vec![("Content-Type".to_string(), "application/json".to_string())],
-                })
-            },
-            ("GET", "/export/jupyter") => {
-                match self.export_as_jupyter() {
-                    Ok(jupyter) => Ok(ApiResponse {
-                        status: 200,
-                        body: jupyter,
-                        headers: vec![("Content-Type".to_string(), "application/json".to_string())],
-                    }),
-                    Err(e) => Ok(ApiResponse {
-                        status: 500,
-                        body: serde_json::json!({"error": e}).to_string(),
-                        headers: vec![("Content-Type".to_string(), "application/json".to_string())],
-                    })
-                }
-            },
-            ("GET", "/export/html") => {
-                match self.export_as_html() {
-                    Ok(html) => Ok(ApiResponse {
-                        status: 200,
-                        body: html,
-                        headers: vec![("Content-Type".to_string(), "text/html".to_string())],
-                    }),
-                    Err(e) => Ok(ApiResponse {
-                        status: 500,
-                        body: serde_json::json!({"error": e}).to_string(),
-                        headers: vec![("Content-Type".to_string(), "application/json".to_string())],
-                    })
-                }
-            },
-            ("GET", "/export/markdown") => {
-                match self.export_as_markdown() {
-                    Ok(md) => Ok(ApiResponse {
-                        status: 200,
-                        body: md,
-                        headers: vec![("Content-Type".to_string(), "text/markdown".to_string())],
-                    }),
-                    Err(e) => Ok(ApiResponse {
-                        status: 500,
-                        body: serde_json::json!({"error": e}).to_string(),
-                        headers: vec![("Content-Type".to_string(), "application/json".to_string())],
-                    })
-                }
-            },
-            ("GET", "/collaboration/export") => {
-                match self.export_for_collaboration() {
-                    Ok(data) => Ok(ApiResponse {
-                        status: 200,
-                        body: data,
-                        headers: vec![("Content-Type".to_string(), "application/json".to_string())],
-                    }),
-                    Err(e) => Ok(ApiResponse {
-                        status: 500,
-                        body: serde_json::json!({"error": e}).to_string(),
-                        headers: vec![("Content-Type".to_string(), "application/json".to_string())],
-                    })
-                }
-            },
-            ("GET", "/updates") => {
-                match self.get_pending_updates() {
-                    Ok(updates) => Ok(ApiResponse {
-                        status: 200,
-                        body: serde_json::to_string_pretty(&updates).unwrap_or_else(|_| "[]".to_string()),
-                        headers: vec![("Content-Type".to_string(), "application/json".to_string())],
-                    }),
-                    Err(e) => Ok(ApiResponse {
-                        status: 500,
-                        body: serde_json::json!({"error": e}).to_string(),
-                        headers: vec![("Content-Type".to_string(), "application/json".to_string())],
-                    })
-                }
-            },
-            ("GET", "/websocket/updates") => {
-                match self.get_websocket_updates() {
-                    Ok(updates) => Ok(ApiResponse {
-                        status: 200,
-                        body: updates,
-                        headers: vec![("Content-Type".to_string(), "application/json".to_string())],
-                    }),
-                    Err(e) => Ok(ApiResponse {
-                        status: 500,
-                        body: serde_json::json!({"error": e}).to_string(),
-                        headers: vec![("Content-Type".to_string(), "application/json".to_string())],
-                    })
-                }
-            },
-            _ => {
-                Ok(ApiResponse {
-                    status: 404,
-                    body: serde_json::json!({"error": "Not found"}).to_string(),
+                    body: serde_json::to_string_pretty(&health)
+                        .unwrap_or_else(|_| "{}".to_string()),
                     headers: vec![("Content-Type".to_string(), "application/json".to_string())],
                 })
             }
+            ("GET", "/export/jupyter") => match self.export_as_jupyter() {
+                Ok(jupyter) => Ok(ApiResponse {
+                    status: 200,
+                    body: jupyter,
+                    headers: vec![("Content-Type".to_string(), "application/json".to_string())],
+                }),
+                Err(e) => Ok(ApiResponse {
+                    status: 500,
+                    body: serde_json::json!({"error": e}).to_string(),
+                    headers: vec![("Content-Type".to_string(), "application/json".to_string())],
+                }),
+            },
+            ("GET", "/export/html") => match self.export_as_html() {
+                Ok(html) => Ok(ApiResponse {
+                    status: 200,
+                    body: html,
+                    headers: vec![("Content-Type".to_string(), "text/html".to_string())],
+                }),
+                Err(e) => Ok(ApiResponse {
+                    status: 500,
+                    body: serde_json::json!({"error": e}).to_string(),
+                    headers: vec![("Content-Type".to_string(), "application/json".to_string())],
+                }),
+            },
+            ("GET", "/export/markdown") => match self.export_as_markdown() {
+                Ok(md) => Ok(ApiResponse {
+                    status: 200,
+                    body: md,
+                    headers: vec![("Content-Type".to_string(), "text/markdown".to_string())],
+                }),
+                Err(e) => Ok(ApiResponse {
+                    status: 500,
+                    body: serde_json::json!({"error": e}).to_string(),
+                    headers: vec![("Content-Type".to_string(), "application/json".to_string())],
+                }),
+            },
+            ("GET", "/collaboration/export") => match self.export_for_collaboration() {
+                Ok(data) => Ok(ApiResponse {
+                    status: 200,
+                    body: data,
+                    headers: vec![("Content-Type".to_string(), "application/json".to_string())],
+                }),
+                Err(e) => Ok(ApiResponse {
+                    status: 500,
+                    body: serde_json::json!({"error": e}).to_string(),
+                    headers: vec![("Content-Type".to_string(), "application/json".to_string())],
+                }),
+            },
+            ("GET", "/updates") => match self.get_pending_updates() {
+                Ok(updates) => Ok(ApiResponse {
+                    status: 200,
+                    body: serde_json::to_string_pretty(&updates)
+                        .unwrap_or_else(|_| "[]".to_string()),
+                    headers: vec![("Content-Type".to_string(), "application/json".to_string())],
+                }),
+                Err(e) => Ok(ApiResponse {
+                    status: 500,
+                    body: serde_json::json!({"error": e}).to_string(),
+                    headers: vec![("Content-Type".to_string(), "application/json".to_string())],
+                }),
+            },
+            ("GET", "/websocket/updates") => match self.get_websocket_updates() {
+                Ok(updates) => Ok(ApiResponse {
+                    status: 200,
+                    body: updates,
+                    headers: vec![("Content-Type".to_string(), "application/json".to_string())],
+                }),
+                Err(e) => Ok(ApiResponse {
+                    status: 500,
+                    body: serde_json::json!({"error": e}).to_string(),
+                    headers: vec![("Content-Type".to_string(), "application/json".to_string())],
+                }),
+            },
+            _ => Ok(ApiResponse {
+                status: 404,
+                body: serde_json::json!({"error": "Not found"}).to_string(),
+                headers: vec![("Content-Type".to_string(), "application/json".to_string())],
+            }),
         }
     }
     /// Create update tracker for real-time collaboration
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::create_update_tracker;
-/// 
-/// let result = create_update_tracker(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn create_update_tracker(&mut self) -> Result<UpdateTracker, String> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::create_update_tracker;
+    ///
+    /// let result = create_update_tracker(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn create_update_tracker(&mut self) -> Result<UpdateTracker, String> {
         Ok(UpdateTracker {
             notebook_id: format!("notebook_{}", chrono::Utc::now().timestamp()),
             last_update: chrono::Utc::now().timestamp(),
@@ -1143,15 +1182,15 @@ pub fn create_update_tracker(&mut self) -> Result<UpdateTracker, String> {
         })
     }
     /// Get pending updates for WebSocket clients
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::get_pending_updates;
-/// 
-/// let result = get_pending_updates(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn get_pending_updates(&self) -> Result<Vec<NotebookUpdate>, String> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::get_pending_updates;
+    ///
+    /// let result = get_pending_updates(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn get_pending_updates(&self) -> Result<Vec<NotebookUpdate>, String> {
         // Create sample updates based on recent execution history
         let session = self.session.lock().expect("Failed to acquire session lock");
         let history = session.get_execution_history();
@@ -1173,15 +1212,15 @@ pub fn get_pending_updates(&self) -> Result<Vec<NotebookUpdate>, String> {
         Ok(updates)
     }
     /// Export notebook state for collaboration
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::export_for_collaboration;
-/// 
-/// let result = export_for_collaboration(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn export_for_collaboration(&self) -> Result<String, String> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::export_for_collaboration;
+    ///
+    /// let result = export_for_collaboration(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn export_for_collaboration(&self) -> Result<String, String> {
         let session = self.session.lock().expect("Failed to acquire session lock");
         let export_data = serde_json::json!({
             "notebook": self.notebook,
@@ -1193,15 +1232,15 @@ pub fn export_for_collaboration(&self) -> Result<String, String> {
             .map_err(|e| format!("Collaboration export error: {e}"))
     }
     /// Import collaborative notebook state
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::import_collaborative_state;
-/// 
-/// let result = import_collaborative_state("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn import_collaborative_state(&mut self, state_json: &str) -> Result<(), String> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::import_collaborative_state;
+    ///
+    /// let result = import_collaborative_state("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn import_collaborative_state(&mut self, state_json: &str) -> Result<(), String> {
         let import_data: serde_json::Value = serde_json::from_str(state_json)
             .map_err(|e| format!("Invalid collaboration state JSON: {e}"))?;
         // Import notebook structure if available
@@ -1210,12 +1249,15 @@ pub fn import_collaborative_state(&mut self, state_json: &str) -> Result<(), Str
                 .map_err(|e| format!("Invalid notebook structure: {e}"))?;
         }
         // Import execution count if available
-        if let Some(count) = import_data.get("execution_count").and_then(serde_json::Value::as_u64) {
+        if let Some(count) = import_data
+            .get("execution_count")
+            .and_then(serde_json::Value::as_u64)
+        {
             self.execution_count = count as usize;
         }
         // Import session state if available
         if let Some(session_data) = import_data.get("session_state") {
-            let session_export: crate::wasm::shared_session::SessionExportData = 
+            let session_export: crate::wasm::shared_session::SessionExportData =
                 serde_json::from_value(session_data.clone())
                     .map_err(|e| format!("Invalid session state: {e}"))?;
             let mut session = self.session.lock().expect("Failed to acquire session lock");
@@ -1224,61 +1266,73 @@ pub fn import_collaborative_state(&mut self, state_json: &str) -> Result<(), Str
         Ok(())
     }
     /// Create WebSocket-like message for real-time updates
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::create_websocket_message;
-/// 
-/// let result = create_websocket_message(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn create_websocket_message(&self, event: WebSocketEvent, client_id: Option<String>) -> WebSocketMessage {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::create_websocket_message;
+    ///
+    /// let result = create_websocket_message(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn create_websocket_message(
+        &self,
+        event: WebSocketEvent,
+        client_id: Option<String>,
+    ) -> WebSocketMessage {
         let (event_name, data) = match event {
-            WebSocketEvent::CellExecuted(cell_id) => {
-                ("cell_executed", serde_json::json!({
+            WebSocketEvent::CellExecuted(cell_id) => (
+                "cell_executed",
+                serde_json::json!({
                     "cell_id": cell_id,
                     "execution_count": self.execution_count
-                }))
-            },
-            WebSocketEvent::CellAdded(cell_id) => {
-                ("cell_added", serde_json::json!({
+                }),
+            ),
+            WebSocketEvent::CellAdded(cell_id) => (
+                "cell_added",
+                serde_json::json!({
                     "cell_id": cell_id,
                     "cell_count": self.notebook.cells.len()
-                }))
-            },
-            WebSocketEvent::CellUpdated(cell_id) => {
-                ("cell_updated", serde_json::json!({
+                }),
+            ),
+            WebSocketEvent::CellUpdated(cell_id) => (
+                "cell_updated",
+                serde_json::json!({
                     "cell_id": cell_id
-                }))
-            },
-            WebSocketEvent::CellDeleted(cell_id) => {
-                ("cell_deleted", serde_json::json!({
+                }),
+            ),
+            WebSocketEvent::CellDeleted(cell_id) => (
+                "cell_deleted",
+                serde_json::json!({
                     "cell_id": cell_id,
                     "cell_count": self.notebook.cells.len()
-                }))
-            },
-            WebSocketEvent::NotebookSaved => {
-                ("notebook_saved", serde_json::json!({
+                }),
+            ),
+            WebSocketEvent::NotebookSaved => (
+                "notebook_saved",
+                serde_json::json!({
                     "saved_at": chrono::Utc::now().timestamp(),
                     "cell_count": self.notebook.cells.len()
-                }))
-            },
-            WebSocketEvent::UserJoined(user_id) => {
-                ("user_joined", serde_json::json!({
+                }),
+            ),
+            WebSocketEvent::UserJoined(user_id) => (
+                "user_joined",
+                serde_json::json!({
                     "user_id": user_id
-                }))
-            },
-            WebSocketEvent::UserLeft(user_id) => {
-                ("user_left", serde_json::json!({
+                }),
+            ),
+            WebSocketEvent::UserLeft(user_id) => (
+                "user_left",
+                serde_json::json!({
                     "user_id": user_id
-                }))
-            },
-            WebSocketEvent::StatusUpdate(status) => {
-                ("status_update", serde_json::json!({
+                }),
+            ),
+            WebSocketEvent::StatusUpdate(status) => (
+                "status_update",
+                serde_json::json!({
                     "status": status,
                     "timestamp": chrono::Utc::now().timestamp()
-                }))
-            },
+                }),
+            ),
         };
         WebSocketMessage {
             message_type: "event".to_string(),
@@ -1289,15 +1343,18 @@ pub fn create_websocket_message(&self, event: WebSocketEvent, client_id: Option<
         }
     }
     /// Handle WebSocket-like message
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::handle_websocket_message;
-/// 
-/// let result = handle_websocket_message(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn handle_websocket_message(&mut self, message: &WebSocketMessage) -> Result<WebSocketMessage, String> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::handle_websocket_message;
+    ///
+    /// let result = handle_websocket_message(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn handle_websocket_message(
+        &mut self,
+        message: &WebSocketMessage,
+    ) -> Result<WebSocketMessage, String> {
         match message.event.as_str() {
             "execute_cell" => {
                 if let Some(cell_id) = message.data.get("cell_id").and_then(|v| v.as_str()) {
@@ -1305,45 +1362,55 @@ pub fn handle_websocket_message(&mut self, message: &WebSocketMessage) -> Result
                         self.execute_cell(cell_id)?;
                         return Ok(self.create_websocket_message(
                             WebSocketEvent::CellExecuted(cell_id.to_string()),
-                            message.client_id.clone()
+                            message.client_id.clone(),
                         ));
                     }
                 }
                 Err("Invalid execute_cell message format".to_string())
-            },
+            }
             "add_cell" => {
-                let cell_type = message.data.get("cell_type").and_then(|v| v.as_str()).unwrap_or("code");
-                let source = message.data.get("source").and_then(|v| v.as_str()).unwrap_or("");
+                let cell_type = message
+                    .data
+                    .get("cell_type")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("code");
+                let source = message
+                    .data
+                    .get("source")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("");
                 let cell_id = self.add_cell(cell_type, source);
                 Ok(self.create_websocket_message(
                     WebSocketEvent::CellAdded(cell_id),
-                    message.client_id.clone()
+                    message.client_id.clone(),
                 ))
-            },
+            }
             "get_status" => {
                 let session = self.session.lock().expect("Failed to acquire session lock");
                 let memory = session.estimate_interpreter_memory();
-                let status = format!("Notebook with {} cells, {}KB memory", self.notebook.cells.len(), memory / 1024);
+                let status = format!(
+                    "Notebook with {} cells, {}KB memory",
+                    self.notebook.cells.len(),
+                    memory / 1024
+                );
                 Ok(self.create_websocket_message(
                     WebSocketEvent::StatusUpdate(status),
-                    message.client_id.clone()
+                    message.client_id.clone(),
                 ))
-            },
-            _ => {
-                Err(format!("Unknown WebSocket event: {}", message.event))
             }
+            _ => Err(format!("Unknown WebSocket event: {}", message.event)),
         }
     }
     /// Get WebSocket-style updates as JSON array
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::get_websocket_updates;
-/// 
-/// let result = get_websocket_updates(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn get_websocket_updates(&self) -> Result<String, String> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::get_websocket_updates;
+    ///
+    /// let result = get_websocket_updates(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn get_websocket_updates(&self) -> Result<String, String> {
         let updates = self.get_pending_updates()?;
         let messages: Vec<WebSocketMessage> = updates
             .into_iter()
@@ -1362,18 +1429,20 @@ pub fn get_websocket_updates(&self) -> Result<String, String> {
     // Advanced Analytics Methods - Sprint 11
     // ============================================================================
     /// Get comprehensive usage analytics
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::get_usage_analytics;
-/// 
-/// let result = get_usage_analytics(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn get_usage_analytics(&self) -> Result<NotebookUsageAnalytics, String> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::get_usage_analytics;
+    ///
+    /// let result = get_usage_analytics(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn get_usage_analytics(&self) -> Result<NotebookUsageAnalytics, String> {
         let session_duration = self.session_start_time.elapsed().as_millis() as u64;
         let total_executions = self.cell_execution_counts.values().sum::<usize>();
-        let total_execution_time = self.cell_execution_times.values()
+        let total_execution_time = self
+            .cell_execution_times
+            .values()
             .flat_map(|times| times.iter())
             .sum::<f64>() as u64;
         // Count cell types
@@ -1386,7 +1455,9 @@ pub fn get_usage_analytics(&self) -> Result<NotebookUsageAnalytics, String> {
             *cell_types.entry(cell_type.to_string()).or_insert(0) += 1;
         }
         // Find most executed cell
-        let most_executed_cell = self.cell_execution_counts.iter()
+        let most_executed_cell = self
+            .cell_execution_counts
+            .iter()
             .max_by_key(|(_, &count)| count)
             .map(|(cell_id, _)| cell_id.clone());
         Ok(NotebookUsageAnalytics {
@@ -1399,16 +1470,18 @@ pub fn get_usage_analytics(&self) -> Result<NotebookUsageAnalytics, String> {
         })
     }
     /// Get detailed execution metrics
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::get_execution_metrics;
-/// 
-/// let result = get_execution_metrics(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn get_execution_metrics(&self) -> Result<ExecutionMetrics, String> {
-        let all_times: Vec<f64> = self.cell_execution_times.values()
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::get_execution_metrics;
+    ///
+    /// let result = get_execution_metrics(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn get_execution_metrics(&self) -> Result<ExecutionMetrics, String> {
+        let all_times: Vec<f64> = self
+            .cell_execution_times
+            .values()
             .flat_map(|times| times.iter())
             .copied()
             .collect();
@@ -1424,19 +1497,40 @@ pub fn get_execution_metrics(&self) -> Result<ExecutionMetrics, String> {
             });
         }
         let average_time = all_times.iter().sum::<f64>() / all_times.len() as f64;
-        let slowest_time = *all_times.iter().max_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal)).unwrap_or(&0.0) as u64;
-        let fastest_time = *all_times.iter().min_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal)).unwrap_or(&0.0) as u64;
+        let slowest_time = *all_times
+            .iter()
+            .max_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal))
+            .unwrap_or(&0.0) as u64;
+        let fastest_time = *all_times
+            .iter()
+            .min_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal))
+            .unwrap_or(&0.0) as u64;
         // Estimate DataFrame operations and memory usage
         let session = self.session.lock().expect("Failed to acquire session lock");
         let memory_usage = session.estimate_interpreter_memory() as usize / (1024 * 1024); // Convert to MB
-        let dataframe_ops = self.notebook.cells.iter()
+        let dataframe_ops = self
+            .notebook
+            .cells
+            .iter()
             .filter(|cell| cell.source.contains("DataFrame"))
             .count();
         // Create execution distribution
         let mut distribution = HashMap::new();
-        distribution.insert("fast".to_string(), all_times.iter().filter(|&&t| t < 10.0).count() as f64);
-        distribution.insert("medium".to_string(), all_times.iter().filter(|&&t| (10.0..100.0).contains(&t)).count() as f64);
-        distribution.insert("slow".to_string(), all_times.iter().filter(|&&t| t >= 100.0).count() as f64);
+        distribution.insert(
+            "fast".to_string(),
+            all_times.iter().filter(|&&t| t < 10.0).count() as f64,
+        );
+        distribution.insert(
+            "medium".to_string(),
+            all_times
+                .iter()
+                .filter(|&&t| (10.0..100.0).contains(&t))
+                .count() as f64,
+        );
+        distribution.insert(
+            "slow".to_string(),
+            all_times.iter().filter(|&&t| t >= 100.0).count() as f64,
+        );
         Ok(ExecutionMetrics {
             average_execution_time_ms: average_time,
             slowest_cell_time_ms: slowest_time,
@@ -1448,16 +1542,18 @@ pub fn get_execution_metrics(&self) -> Result<ExecutionMetrics, String> {
         })
     }
     /// Get user behavior analytics
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::get_user_behavior_analytics;
-/// 
-/// let result = get_user_behavior_analytics(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn get_user_behavior_analytics(&self) -> Result<UserBehaviorAnalytics, String> {
-        let total_reexecutions = self.cell_execution_counts.values()
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::get_user_behavior_analytics;
+    ///
+    /// let result = get_user_behavior_analytics(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn get_user_behavior_analytics(&self) -> Result<UserBehaviorAnalytics, String> {
+        let total_reexecutions = self
+            .cell_execution_counts
+            .values()
             .map(|&count| count.saturating_sub(1))
             .sum();
         let session_duration = self.session_start_time.elapsed().as_millis() as u64;
@@ -1469,8 +1565,17 @@ pub fn get_user_behavior_analytics(&self) -> Result<UserBehaviorAnalytics, Strin
         };
         // Identify common patterns
         let mut patterns = Vec::new();
-        if self.notebook.cells.iter().any(|c| matches!(c.cell_type, CellType::Code)) &&
-           self.notebook.cells.iter().any(|c| matches!(c.cell_type, CellType::Markdown)) {
+        if self
+            .notebook
+            .cells
+            .iter()
+            .any(|c| matches!(c.cell_type, CellType::Code))
+            && self
+                .notebook
+                .cells
+                .iter()
+                .any(|c| matches!(c.cell_type, CellType::Markdown))
+        {
             patterns.push("mixed_content".to_string());
         }
         if self.notebook.cells.len() > 5 {
@@ -1480,10 +1585,16 @@ pub fn get_user_behavior_analytics(&self) -> Result<UserBehaviorAnalytics, Strin
         let mut preferences = HashMap::new();
         let total_cells = self.notebook.cells.len() as f64;
         if total_cells > 0.0 {
-            let code_cells = self.notebook.cells.iter()
+            let code_cells = self
+                .notebook
+                .cells
+                .iter()
                 .filter(|c| matches!(c.cell_type, CellType::Code))
                 .count() as f64;
-            let markdown_cells = self.notebook.cells.iter()
+            let markdown_cells = self
+                .notebook
+                .cells
+                .iter()
                 .filter(|c| matches!(c.cell_type, CellType::Markdown))
                 .count() as f64;
             preferences.insert("code".to_string(), code_cells / total_cells);
@@ -1498,15 +1609,15 @@ pub fn get_user_behavior_analytics(&self) -> Result<UserBehaviorAnalytics, Strin
         })
     }
     /// Get detailed performance profile
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::get_performance_profile;
-/// 
-/// let result = get_performance_profile(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn get_performance_profile(&self) -> String {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::get_performance_profile;
+    ///
+    /// let result = get_performance_profile(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn get_performance_profile(&self) -> String {
         let mut cell_performances = Vec::new();
         let session = self.session.lock().expect("Failed to acquire session lock");
         let total_memory = session.estimate_interpreter_memory();
@@ -1540,18 +1651,27 @@ pub fn get_performance_profile(&self) -> String {
                 hotspots.push(PerformanceHotspot {
                     location: cell_perf.cell_id.clone(),
                     hotspot_type: "slow_execution".to_string(),
-                    severity: if cell_perf.execution_time_ms > 1000.0 { "high" } else { "medium" }.to_string(),
+                    severity: if cell_perf.execution_time_ms > 1000.0 {
+                        "high"
+                    } else {
+                        "medium"
+                    }
+                    .to_string(),
                     impact_score: cell_perf.execution_time_ms / 100.0,
-                    suggested_fix: "Consider optimizing this cell or breaking it into smaller parts".to_string(),
+                    suggested_fix:
+                        "Consider optimizing this cell or breaking it into smaller parts"
+                            .to_string(),
                 });
             }
-            if cell_perf.memory_usage_bytes > 10_000_000 { // > 10MB
+            if cell_perf.memory_usage_bytes > 10_000_000 {
+                // > 10MB
                 hotspots.push(PerformanceHotspot {
                     location: cell_perf.cell_id.clone(),
                     hotspot_type: "memory_intensive".to_string(),
                     severity: "high".to_string(),
                     impact_score: cell_perf.memory_usage_bytes as f64 / 1_000_000.0,
-                    suggested_fix: "Consider using more memory-efficient data structures".to_string(),
+                    suggested_fix: "Consider using more memory-efficient data structures"
+                        .to_string(),
                 });
             }
         }
@@ -1563,10 +1683,14 @@ pub fn get_performance_profile(&self) -> String {
         breakdown.insert("cleanup".to_string(), 5.0);
         // Identify bottlenecks
         let mut bottlenecks = Vec::new();
-        if cell_performances.iter().any(|p| p.execution_time_ms > 500.0) {
+        if cell_performances
+            .iter()
+            .any(|p| p.execution_time_ms > 500.0)
+        {
             bottlenecks.push("slow_cell_execution".to_string());
         }
-        if total_memory > 100_000_000 { // > 100MB
+        if total_memory > 100_000_000 {
+            // > 100MB
             bottlenecks.push("high_memory_usage".to_string());
         }
         // Return as JSON string for test compatibility
@@ -1582,24 +1706,29 @@ pub fn get_performance_profile(&self) -> String {
         }).to_string()
     }
     /// Get optimization suggestions
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::get_optimization_suggestions;
-/// 
-/// let result = get_optimization_suggestions(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn get_optimization_suggestions(&self) -> String {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::get_optimization_suggestions;
+    ///
+    /// let result = get_optimization_suggestions(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn get_optimization_suggestions(&self) -> String {
         let mut suggestions = Vec::new();
         // Analyze each cell for optimization opportunities
         for cell in &self.notebook.cells {
             if matches!(cell.cell_type, CellType::Code) {
                 // Check for inefficient patterns
-                if cell.source.contains("DataFrame::from_range") && cell.source.contains(".filter(true)") {
+                if cell.source.contains("DataFrame::from_range")
+                    && cell.source.contains(".filter(true)")
+                {
                     suggestions.push(OptimizationSuggestion {
                         category: "inefficient_filter".to_string(),
-                        description: format!("Cell {}: Using .filter(true) on DataFrame is inefficient", cell.id),
+                        description: format!(
+                            "Cell {}: Using .filter(true) on DataFrame is inefficient",
+                            cell.id
+                        ),
                         impact: "50ms improvement".to_string(),
                         priority: 2,
                     });
@@ -1607,13 +1736,19 @@ pub fn get_optimization_suggestions(&self) -> String {
                 // Check for duplicate DataFrame creation
                 let dataframe_pattern = "DataFrame::from_range(0, 100)";
                 if cell.source.contains(dataframe_pattern) {
-                    let duplicate_count = self.notebook.cells.iter()
+                    let duplicate_count = self
+                        .notebook
+                        .cells
+                        .iter()
                         .filter(|c| c.source.contains(dataframe_pattern))
                         .count();
                     if duplicate_count > 1 {
                         suggestions.push(OptimizationSuggestion {
                             category: "duplicate_computation".to_string(),
-                            description: format!("Cell {}: DataFrame creation duplicated {} times", cell.id, duplicate_count),
+                            description: format!(
+                                "Cell {}: DataFrame creation duplicated {} times",
+                                cell.id, duplicate_count
+                            ),
                             impact: format!("{}ms improvement", duplicate_count * 100),
                             priority: 1,
                         });
@@ -1623,7 +1758,10 @@ pub fn get_optimization_suggestions(&self) -> String {
                 if cell.source.matches('.').count() > 3 {
                     suggestions.push(OptimizationSuggestion {
                         category: "long_method_chain".to_string(),
-                        description: format!("Cell {}: Long method chain - consider breaking into steps", cell.id),
+                        description: format!(
+                            "Cell {}: Long method chain - consider breaking into steps",
+                            cell.id
+                        ),
                         impact: "20ms improvement".to_string(),
                         priority: 3,
                     });
@@ -1635,27 +1773,32 @@ pub fn get_optimization_suggestions(&self) -> String {
         if suggestions.is_empty() {
             "general: No specific optimizations needed - notebook is running efficiently (Priority: 3, Impact: None)".to_string()
         } else {
-            suggestions.iter()
-                .map(|s| format!("{}: {} (Priority: {}, Impact: {})", 
-                    s.category, s.description, s.priority, s.impact))
+            suggestions
+                .iter()
+                .map(|s| {
+                    format!(
+                        "{}: {} (Priority: {}, Impact: {})",
+                        s.category, s.description, s.priority, s.impact
+                    )
+                })
                 .collect::<Vec<_>>()
                 .join("\n")
         }
     }
     /// Get resource usage profile
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::get_resource_profile;
-/// 
-/// let result = get_resource_profile(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn get_resource_profile(&self) -> Result<ResourceProfile, String> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::get_resource_profile;
+    ///
+    /// let result = get_resource_profile(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn get_resource_profile(&self) -> Result<ResourceProfile, String> {
         let session = self.session.lock().expect("Failed to acquire session lock");
         let current_memory = session.estimate_interpreter_memory() as usize;
         let baseline_memory = 1024 * 1024; // 1MB baseline
-        // Create allocation info for each cell
+                                           // Create allocation info for each cell
         let mut allocations = Vec::new();
         let now = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
@@ -1681,7 +1824,9 @@ pub fn get_resource_profile(&self) -> Result<ResourceProfile, String> {
             }
         }
         // Calculate CPU time from execution times
-        let total_cpu_time = self.cell_execution_times.values()
+        let total_cpu_time = self
+            .cell_execution_times
+            .values()
             .flat_map(|times| times.iter())
             .sum::<f64>() as u64;
         Ok(ResourceProfile {
@@ -1696,15 +1841,15 @@ pub fn get_resource_profile(&self) -> Result<ResourceProfile, String> {
     // Recommendation Engine - Sprint 11
     // ============================================================================
     /// Get code improvement recommendations
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::get_code_recommendations;
-/// 
-/// let result = get_code_recommendations(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn get_code_recommendations(&self) -> Result<Vec<OptimizationSuggestion>, String> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::get_code_recommendations;
+    ///
+    /// let result = get_code_recommendations(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn get_code_recommendations(&self) -> Result<Vec<OptimizationSuggestion>, String> {
         let mut recommendations = Vec::new();
         for cell in &self.notebook.cells {
             if matches!(cell.cell_type, CellType::Code) {
@@ -1712,7 +1857,10 @@ pub fn get_code_recommendations(&self) -> Result<Vec<OptimizationSuggestion>, St
                 if cell.source.len() > 200 {
                     recommendations.push(OptimizationSuggestion {
                         category: "long_cell".to_string(),
-                        description: format!("Cell {}: Long cell - consider breaking into smaller cells", cell.id),
+                        description: format!(
+                            "Cell {}: Long cell - consider breaking into smaller cells",
+                            cell.id
+                        ),
                         impact: "Code clarity".to_string(),
                         priority: 3,
                     });
@@ -1721,7 +1869,10 @@ pub fn get_code_recommendations(&self) -> Result<Vec<OptimizationSuggestion>, St
                 if cell.source.contains("DataFrame") && !cell.source.contains('.') {
                     recommendations.push(OptimizationSuggestion {
                         category: "method_chaining".to_string(),
-                        description: format!("Cell {}: Consider method chaining for DataFrame operations", cell.id),
+                        description: format!(
+                            "Cell {}: Consider method chaining for DataFrame operations",
+                            cell.id
+                        ),
                         impact: "Code clarity".to_string(),
                         priority: 3,
                     });
@@ -1730,7 +1881,10 @@ pub fn get_code_recommendations(&self) -> Result<Vec<OptimizationSuggestion>, St
                 if cell.source.contains("let x = ") || cell.source.contains("let y = ") {
                     recommendations.push(OptimizationSuggestion {
                         category: "variable_naming".to_string(),
-                        description: format!("Cell {}: Use descriptive variable names instead of x, y", cell.id),
+                        description: format!(
+                            "Cell {}: Use descriptive variable names instead of x, y",
+                            cell.id
+                        ),
                         impact: "Code clarity".to_string(),
                         priority: 2,
                     });
@@ -1749,44 +1903,58 @@ pub fn get_code_recommendations(&self) -> Result<Vec<OptimizationSuggestion>, St
         Ok(recommendations)
     }
     /// Get best practices suggestions  
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::get_best_practices_suggestions;
-/// 
-/// let result = get_best_practices_suggestions(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn get_best_practices_suggestions(&self) -> Result<Vec<BestPracticeSuggestion>, String> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::get_best_practices_suggestions;
+    ///
+    /// let result = get_best_practices_suggestions(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn get_best_practices_suggestions(&self) -> Result<Vec<BestPracticeSuggestion>, String> {
         let mut suggestions = Vec::new();
         // Check for documentation
-        let code_cells_count = self.notebook.cells.iter()
+        let code_cells_count = self
+            .notebook
+            .cells
+            .iter()
             .filter(|c| matches!(c.cell_type, CellType::Code))
             .count();
-        let markdown_cells_count = self.notebook.cells.iter()
+        let markdown_cells_count = self
+            .notebook
+            .cells
+            .iter()
             .filter(|c| matches!(c.cell_type, CellType::Markdown))
             .count();
         if code_cells_count > 3 && markdown_cells_count == 0 {
             suggestions.push(BestPracticeSuggestion {
                 cell_id: "general".to_string(),
                 practice_type: "add_documentation".to_string(),
-                description: "Consider adding markdown cells to document your analysis and findings".to_string(),
+                description:
+                    "Consider adding markdown cells to document your analysis and findings"
+                        .to_string(),
                 severity: "medium".to_string(),
-                example: "Add cells like: # Data Analysis Overview, ## Key Findings, etc.".to_string(),
+                example: "Add cells like: # Data Analysis Overview, ## Key Findings, etc."
+                    .to_string(),
             });
         }
         // Check for code organization
         if self.notebook.cells.len() > 10 {
-            let has_structure = self.notebook.cells.iter()
-                .any(|c| matches!(c.cell_type, CellType::Markdown) && 
-                         (c.source.contains("##") || c.source.contains("###")));
+            let has_structure = self.notebook.cells.iter().any(|c| {
+                matches!(c.cell_type, CellType::Markdown)
+                    && (c.source.contains("##") || c.source.contains("###"))
+            });
             if !has_structure {
                 suggestions.push(BestPracticeSuggestion {
                     cell_id: "general".to_string(),
                     practice_type: "organize_sections".to_string(),
-                    description: "Large notebooks benefit from clear section headers and organization".to_string(),
+                    description:
+                        "Large notebooks benefit from clear section headers and organization"
+                            .to_string(),
                     severity: "medium".to_string(),
-                    example: "Use ## Data Loading, ## Analysis, ## Results to structure your notebook".to_string(),
+                    example:
+                        "Use ## Data Loading, ## Analysis, ## Results to structure your notebook"
+                            .to_string(),
                 });
             }
         }
@@ -1797,18 +1965,27 @@ pub fn get_best_practices_suggestions(&self) -> Result<Vec<BestPracticeSuggestio
                     suggestions.push(BestPracticeSuggestion {
                         cell_id: cell.id.clone(),
                         practice_type: "break_complex_operations".to_string(),
-                        description: "Complex data operations are easier to debug when broken into steps".to_string(),
+                        description:
+                            "Complex data operations are easier to debug when broken into steps"
+                                .to_string(),
                         severity: "low".to_string(),
-                        example: "Break complex chains into intermediate variables for clarity".to_string(),
+                        example: "Break complex chains into intermediate variables for clarity"
+                            .to_string(),
                     });
                 }
-                if cell.source.contains("let ") && !cell.source.contains("//") && !cell.source.contains("/*") {
+                if cell.source.contains("let ")
+                    && !cell.source.contains("//")
+                    && !cell.source.contains("/*")
+                {
                     suggestions.push(BestPracticeSuggestion {
                         cell_id: cell.id.clone(),
                         practice_type: "add_comments".to_string(),
-                        description: "Adding comments helps explain the purpose of variables and operations".to_string(),
+                        description:
+                            "Adding comments helps explain the purpose of variables and operations"
+                                .to_string(),
                         severity: "low".to_string(),
-                        example: "// Calculate user engagement metrics\nlet engagement_rate = ...".to_string(),
+                        example: "// Calculate user engagement metrics\nlet engagement_rate = ..."
+                            .to_string(),
                     });
                 }
             }
@@ -1819,22 +1996,29 @@ pub fn get_best_practices_suggestions(&self) -> Result<Vec<BestPracticeSuggestio
     // Version Control Methods - Sprint 12
     // ============================================================================
     /// Commit notebook changes
-/// # Examples
-/// 
-/// ```
-/// use ruchy::wasm::notebook::NotebookRuntime;
-/// 
-/// let mut instance = NotebookRuntime::new();
-/// let result = instance.commit_notebook();
-/// // Verify behavior
-/// ```
-pub fn commit_notebook(&mut self, message: &str, parent: Option<&str>) -> Result<NotebookCommit, String> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::wasm::notebook::NotebookRuntime;
+    ///
+    /// let mut instance = NotebookRuntime::new();
+    /// let result = instance.commit_notebook();
+    /// // Verify behavior
+    /// ```
+    pub fn commit_notebook(
+        &mut self,
+        message: &str,
+        parent: Option<&str>,
+    ) -> Result<NotebookCommit, String> {
         let notebook_snapshot = serde_json::to_string(&self.notebook)
             .map_err(|e| format_serialize_error("notebook", e))?;
         let commit = NotebookCommit {
-            hash: format!("{:x}", sha2::Sha256::digest(
-                format!("{}{}{}", message, notebook_snapshot, chrono::Utc::now()).as_bytes()
-            )),
+            hash: format!(
+                "{:x}",
+                sha2::Sha256::digest(
+                    format!("{}{}{}", message, notebook_snapshot, chrono::Utc::now()).as_bytes()
+                )
+            ),
             message: message.to_string(),
             parent: parent.map(String::from),
             timestamp: chrono::Utc::now().timestamp(),
@@ -1849,31 +2033,33 @@ pub fn commit_notebook(&mut self, message: &str, parent: Option<&str>) -> Result
         Ok(commit)
     }
     /// Get commit history
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::get_commit_history;
-/// 
-/// let result = get_commit_history(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn get_commit_history(&self) -> Result<Vec<NotebookCommit>, String> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::get_commit_history;
+    ///
+    /// let result = get_commit_history(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn get_commit_history(&self) -> Result<Vec<NotebookCommit>, String> {
         Ok(self.commits.iter().rev().cloned().collect())
     }
     /// Create a new branch
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::create_branch;
-/// 
-/// let result = create_branch("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn create_branch(&mut self, name: &str) -> Result<NotebookBranch, String> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::create_branch;
+    ///
+    /// let result = create_branch("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn create_branch(&mut self, name: &str) -> Result<NotebookBranch, String> {
         if self.branches.contains_key(name) {
             return Err(format!("Branch '{name}' already exists"));
         }
-        let current_commit = self.branches.get(&self.current_branch)
+        let current_commit = self
+            .branches
+            .get(&self.current_branch)
             .map(|b| b.current_commit.clone())
             .unwrap_or_default();
         let branch = NotebookBranch {
@@ -1881,21 +2067,21 @@ pub fn create_branch(&mut self, name: &str) -> Result<NotebookBranch, String> {
             base_commit: current_commit.clone(),
             current_commit,
             created_at: chrono::Utc::now().timestamp(),
-            notebook_state: Some(self.notebook.clone()),  // Save current notebook state
+            notebook_state: Some(self.notebook.clone()), // Save current notebook state
         };
         self.branches.insert(name.to_string(), branch.clone());
         Ok(branch)
     }
     /// Switch to a different branch
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::switch_branch;
-/// 
-/// let result = switch_branch("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn switch_branch(&mut self, name: &str) -> Result<(), String> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::switch_branch;
+    ///
+    /// let result = switch_branch("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn switch_branch(&mut self, name: &str) -> Result<(), String> {
         // Save current branch state before switching
         if let Some(current) = self.branches.get_mut(&self.current_branch) {
             current.notebook_state = Some(self.notebook.clone());
@@ -1913,27 +2099,32 @@ pub fn switch_branch(&mut self, name: &str) -> Result<(), String> {
         Ok(())
     }
     /// Get current branch name
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::current_branch;
-/// 
-/// let result = current_branch(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn current_branch(&self) -> Result<String, String> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::current_branch;
+    ///
+    /// let result = current_branch(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn current_branch(&self) -> Result<String, String> {
         Ok(self.current_branch.clone())
     }
     /// Create a tag
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::create_tag;
-/// 
-/// let result = create_tag("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn create_tag(&mut self, name: &str, commit: &str, message: &str) -> Result<NotebookTag, String> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::create_tag;
+    ///
+    /// let result = create_tag("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn create_tag(
+        &mut self,
+        name: &str,
+        commit: &str,
+        message: &str,
+    ) -> Result<NotebookTag, String> {
         if self.tags.iter().any(|t| t.name == name) {
             return Err(format!("Tag '{name}' already exists"));
         }
@@ -1947,33 +2138,37 @@ pub fn create_tag(&mut self, name: &str, commit: &str, message: &str) -> Result<
         Ok(tag)
     }
     /// List all tags
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::list_tags;
-/// 
-/// let result = list_tags(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn list_tags(&self) -> Result<Vec<NotebookTag>, String> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::list_tags;
+    ///
+    /// let result = list_tags(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn list_tags(&self) -> Result<Vec<NotebookTag>, String> {
         Ok(self.tags.clone())
     }
     /// Checkout a tag
-/// # Examples
-/// 
-/// ```
-/// use ruchy::wasm::notebook::NotebookRuntime;
-/// 
-/// let mut instance = NotebookRuntime::new();
-/// let result = instance.checkout_tag();
-/// // Verify behavior
-/// ```
-pub fn checkout_tag(&mut self, name: &str) -> Result<(), String> {
-        let tag = self.tags.iter()
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::wasm::notebook::NotebookRuntime;
+    ///
+    /// let mut instance = NotebookRuntime::new();
+    /// let result = instance.checkout_tag();
+    /// // Verify behavior
+    /// ```
+    pub fn checkout_tag(&mut self, name: &str) -> Result<(), String> {
+        let tag = self
+            .tags
+            .iter()
             .find(|t| t.name == name)
             .ok_or_else(|| format!("Tag '{name}' not found"))?;
         // Find commit and restore notebook state
-        let commit = self.commits.iter()
+        let commit = self
+            .commits
+            .iter()
             .find(|c| c.hash == tag.commit)
             .ok_or_else(|| format!("Commit '{}' not found", tag.commit))?;
         self.notebook = serde_json::from_str(&commit.notebook_snapshot)
@@ -1981,15 +2176,15 @@ pub fn checkout_tag(&mut self, name: &str) -> Result<(), String> {
         Ok(())
     }
     /// Diff with another notebook runtime
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::diff_notebook;
-/// 
-/// let result = diff_notebook(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn diff_notebook(&self, other: &NotebookRuntime) -> Result<NotebookDiff, String> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::diff_notebook;
+    ///
+    /// let result = diff_notebook(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn diff_notebook(&self, other: &NotebookRuntime) -> Result<NotebookDiff, String> {
         // For notebooks with different IDs, compare by position and content
         let our_count = self.notebook.cells.len();
         let their_count = other.notebook.cells.len();
@@ -2012,7 +2207,7 @@ pub fn diff_notebook(&self, other: &NotebookRuntime) -> Result<NotebookDiff, Str
                 added.push(format!("position_{i}"));
             }
         }
-        // If we have more cells, they are removed  
+        // If we have more cells, they are removed
         if our_count > their_count {
             for i in their_count..our_count {
                 removed.push(format!("position_{i}"));
@@ -2027,22 +2222,25 @@ pub fn diff_notebook(&self, other: &NotebookRuntime) -> Result<NotebookDiff, Str
         })
     }
     /// Merge another notebook
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::merge_notebook;
-/// 
-/// let result = merge_notebook(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn merge_notebook(&mut self, other: &NotebookRuntime) -> Result<MergeResult, String> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::merge_notebook;
+    ///
+    /// let result = merge_notebook(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn merge_notebook(&mut self, other: &NotebookRuntime) -> Result<MergeResult, String> {
         let diff = self.diff_notebook(other)?;
         let mut conflicts = Vec::new();
         let mut merged_cells = 0;
         // For position-based diff, handle added cells differently
         // Added cells are positions that exist in 'other' but not in 'self'
         for position_str in &diff.added_cells {
-            if let Some(pos) = position_str.strip_prefix("position_").and_then(|s| s.parse::<usize>().ok()) {
+            if let Some(pos) = position_str
+                .strip_prefix("position_")
+                .and_then(|s| s.parse::<usize>().ok())
+            {
                 if pos < other.notebook.cells.len() {
                     let cell = other.notebook.cells[pos].clone();
                     self.notebook.cells.push(cell);
@@ -2052,7 +2250,10 @@ pub fn merge_notebook(&mut self, other: &NotebookRuntime) -> Result<MergeResult,
         }
         // Check for conflicts in modified cells
         for position_str in &diff.modified_cells {
-            if let Some(pos) = position_str.strip_prefix("position_").and_then(|s| s.parse::<usize>().ok()) {
+            if let Some(pos) = position_str
+                .strip_prefix("position_")
+                .and_then(|s| s.parse::<usize>().ok())
+            {
                 if pos < self.notebook.cells.len() && pos < other.notebook.cells.len() {
                     let ours = &self.notebook.cells[pos];
                     let theirs = &other.notebook.cells[pos];
@@ -2075,19 +2276,19 @@ pub fn merge_notebook(&mut self, other: &NotebookRuntime) -> Result<MergeResult,
         })
     }
     /// Resolve a merge conflict
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::resolve_conflict;
-/// 
-/// let result = resolve_conflict("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn resolve_conflict(&mut self, conflict_id: &str, resolution: &str) -> Result<(), String> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::resolve_conflict;
+    ///
+    /// let result = resolve_conflict("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn resolve_conflict(&mut self, conflict_id: &str, resolution: &str) -> Result<(), String> {
         // Find and update the conflicted cell
         if let Some(_cell) = self.notebook.cells.iter_mut().find(|c| c.id == conflict_id) {
             match resolution {
-                "ours" => {}, // Keep our version
+                "ours" => {} // Keep our version
                 "theirs" => {
                     // Would need to store the "theirs" version
                     return Err("Resolution not implemented".to_string());
@@ -2098,15 +2299,15 @@ pub fn resolve_conflict(&mut self, conflict_id: &str, resolution: &str) -> Resul
         Ok(())
     }
     /// Merge a branch
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::merge_branch;
-/// 
-/// let result = merge_branch("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn merge_branch(&mut self, branch_name: &str) -> Result<(), String> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::merge_branch;
+    ///
+    /// let result = merge_branch("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn merge_branch(&mut self, branch_name: &str) -> Result<(), String> {
         if !self.branches.contains_key(branch_name) {
             return Err(format!("Branch '{branch_name}' not found"));
         }
@@ -2115,16 +2316,18 @@ pub fn merge_branch(&mut self, branch_name: &str) -> Result<(), String> {
         Ok(())
     }
     /// Clone a notebook from commit
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::clone_notebook;
-/// 
-/// let result = clone_notebook("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn clone_notebook(&mut self, commit_hash: &str) -> Result<(), String> {
-        let commit = self.commits.iter()
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::clone_notebook;
+    ///
+    /// let result = clone_notebook("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn clone_notebook(&mut self, commit_hash: &str) -> Result<(), String> {
+        let commit = self
+            .commits
+            .iter()
             .find(|c| c.hash == commit_hash)
             .ok_or_else(|| format!("Commit '{commit_hash}' not found"))?;
         self.notebook = serde_json::from_str(&commit.notebook_snapshot)
@@ -2132,15 +2335,20 @@ pub fn clone_notebook(&mut self, commit_hash: &str) -> Result<(), String> {
         Ok(())
     }
     /// Create pull request
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::create_pull_request;
-/// 
-/// let result = create_pull_request("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn create_pull_request(&self, source: &str, target: &str, title: &str) -> Result<PullRequest, String> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::create_pull_request;
+    ///
+    /// let result = create_pull_request("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn create_pull_request(
+        &self,
+        source: &str,
+        target: &str,
+        title: &str,
+    ) -> Result<PullRequest, String> {
         Ok(PullRequest {
             id: format!("pr_{}", chrono::Utc::now().timestamp()),
             source_branch: source.to_string(),
@@ -2154,16 +2362,22 @@ pub fn create_pull_request(&self, source: &str, target: &str, title: &str) -> Re
     // Publishing Methods - Sprint 12
     // ============================================================================
     /// Publish notebook
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::publish_notebook;
-/// 
-/// let result = publish_notebook("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn publish_notebook(&mut self, _title: &str, _description: &str, _tags: Vec<&str>, 
-                           _license: &str, public: bool) -> Result<PublishResult, String> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::publish_notebook;
+    ///
+    /// let result = publish_notebook("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn publish_notebook(
+        &mut self,
+        _title: &str,
+        _description: &str,
+        _tags: Vec<&str>,
+        _license: &str,
+        public: bool,
+    ) -> Result<PublishResult, String> {
         let notebook_id = format!("nb_{}", chrono::Utc::now().timestamp());
         let result = PublishResult {
             notebook_id: notebook_id.clone(),
@@ -2176,36 +2390,42 @@ pub fn publish_notebook(&mut self, _title: &str, _description: &str, _tags: Vec<
         Ok(result)
     }
     /// Update published notebook
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::update_published_notebook;
-/// 
-/// let result = update_published_notebook("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn update_published_notebook(&mut self, notebook_id: &str) -> Result<PublishResult, String> {
-        let mut result = self.published_notebooks.get(notebook_id)
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::update_published_notebook;
+    ///
+    /// let result = update_published_notebook("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn update_published_notebook(
+        &mut self,
+        notebook_id: &str,
+    ) -> Result<PublishResult, String> {
+        let mut result = self
+            .published_notebooks
+            .get(notebook_id)
             .ok_or_else(|| format!("Notebook '{notebook_id}' not published"))?
             .clone();
         result.version += 1;
         result.published_at = chrono::Utc::now().timestamp();
-        self.published_notebooks.insert(notebook_id.to_string(), result.clone());
+        self.published_notebooks
+            .insert(notebook_id.to_string(), result.clone());
         Ok(result)
     }
     // ============================================================================
     // Template Methods - Sprint 12
     // ============================================================================
     /// Get available templates
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::get_available_templates;
-/// 
-/// let result = get_available_templates(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn get_available_templates(&self) -> Result<Vec<NotebookTemplate>, String> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::get_available_templates;
+    ///
+    /// let result = get_available_templates(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn get_available_templates(&self) -> Result<Vec<NotebookTemplate>, String> {
         let mut templates = vec![
             NotebookTemplate {
                 id: "data_analysis".to_string(),
@@ -2272,32 +2492,38 @@ pub fn get_available_templates(&self) -> Result<Vec<NotebookTemplate>, String> {
         Ok(templates)
     }
     /// Create notebook from template
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::create_from_template;
-/// 
-/// let result = create_from_template("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn create_from_template(&mut self, template_name: &str) -> Result<Notebook, String> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::create_from_template;
+    ///
+    /// let result = create_from_template("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn create_from_template(&mut self, template_name: &str) -> Result<Notebook, String> {
         let templates = self.get_available_templates()?;
-        let template = templates.iter()
+        let template = templates
+            .iter()
             .find(|t| t.name == template_name)
             .ok_or_else(|| format!("Template '{template_name}' not found"))?;
         self.notebook.cells.clone_from(&template.cells);
         Ok(self.notebook.clone())
     }
     /// Save current notebook as template
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::save_as_template;
-/// 
-/// let result = save_as_template("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn save_as_template(&mut self, name: &str, description: &str, tags: Vec<&str>) -> Result<NotebookTemplate, String> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::save_as_template;
+    ///
+    /// let result = save_as_template("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn save_as_template(
+        &mut self,
+        name: &str,
+        description: &str,
+        tags: Vec<&str>,
+    ) -> Result<NotebookTemplate, String> {
         let template = NotebookTemplate {
             id: format!("custom_{}", chrono::Utc::now().timestamp()),
             name: name.to_string(),
@@ -2312,16 +2538,16 @@ pub fn save_as_template(&mut self, name: &str, description: &str, tags: Vec<&str
     // Search Methods - Sprint 12
     // ============================================================================
     /// Build search index
-/// # Examples
-/// 
-/// ```
-/// use ruchy::wasm::notebook::NotebookRuntime;
-/// 
-/// let mut instance = NotebookRuntime::new();
-/// let result = instance.build_search_index();
-/// // Verify behavior
-/// ```
-pub fn build_search_index(&self) -> Result<SearchIndex, String> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::wasm::notebook::NotebookRuntime;
+    ///
+    /// let mut instance = NotebookRuntime::new();
+    /// let result = instance.build_search_index();
+    /// // Verify behavior
+    /// ```
+    pub fn build_search_index(&self) -> Result<SearchIndex, String> {
         let mut keywords = HashMap::new();
         let mut total_tokens = 0;
         for cell in &self.notebook.cells {
@@ -2338,22 +2564,24 @@ pub fn build_search_index(&self) -> Result<SearchIndex, String> {
         })
     }
     /// Search notebook content
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::search_content;
-/// 
-/// let result = search_content("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn search_content(&self, query: &str) -> Result<Vec<SearchResult>, String> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::search_content;
+    ///
+    /// let result = search_content("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn search_content(&self, query: &str) -> Result<Vec<SearchResult>, String> {
         let mut results = Vec::new();
         let query_lower = query.to_lowercase();
         for cell in &self.notebook.cells {
             if cell.source.to_lowercase().contains(&query_lower) {
-                let relevance = query_lower.split_whitespace()
+                let relevance = query_lower
+                    .split_whitespace()
                     .filter(|word| cell.source.to_lowercase().contains(word))
-                    .count() as f64 / query_lower.split_whitespace().count() as f64;
+                    .count() as f64
+                    / query_lower.split_whitespace().count() as f64;
                 results.push(SearchResult {
                     cell_id: cell.id.clone(),
                     content: cell.source.clone(),
@@ -2361,7 +2589,8 @@ pub fn search_content(&self, query: &str) -> Result<Vec<SearchResult>, String> {
                     cell_type: match cell.cell_type {
                         CellType::Code => "code",
                         CellType::Markdown => "markdown",
-                    }.to_string(),
+                    }
+                    .to_string(),
                 });
             }
         }
@@ -2369,50 +2598,54 @@ pub fn search_content(&self, query: &str) -> Result<Vec<SearchResult>, String> {
         Ok(results)
     }
     /// Search code cells
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::search_code;
-/// 
-/// let result = search_code("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn search_code(&self, pattern: &str) -> Result<Vec<SearchResult>, String> {
-        self.search_content(pattern).map(|results| 
-            results.into_iter()
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::search_code;
+    ///
+    /// let result = search_code("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn search_code(&self, pattern: &str) -> Result<Vec<SearchResult>, String> {
+        self.search_content(pattern).map(|results| {
+            results
+                .into_iter()
                 .filter(|r| r.cell_type == "code")
                 .collect()
-        )
+        })
     }
     /// Search markdown cells
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::search_markdown;
-/// 
-/// let result = search_markdown("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn search_markdown(&self, pattern: &str) -> Result<Vec<SearchResult>, String> {
-        self.search_content(pattern).map(|results|
-            results.into_iter()
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::search_markdown;
+    ///
+    /// let result = search_markdown("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn search_markdown(&self, pattern: &str) -> Result<Vec<SearchResult>, String> {
+        self.search_content(pattern).map(|results| {
+            results
+                .into_iter()
                 .filter(|r| r.cell_type == "markdown")
                 .collect()
-        )
+        })
     }
     /// Semantic search
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::semantic_search;
-/// 
-/// let result = semantic_search("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn semantic_search(&self, query: &str) -> Result<Vec<SearchResult>, String> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::semantic_search;
+    ///
+    /// let result = semantic_search("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn semantic_search(&self, query: &str) -> Result<Vec<SearchResult>, String> {
         // Simple semantic search - find related terms
         let related_terms = match query.to_lowercase().as_str() {
-            s if s.contains("graph") || s.contains("chart") => vec!["visualization", "plot", "chart", "graph"],
+            s if s.contains("graph") || s.contains("chart") => {
+                vec!["visualization", "plot", "chart", "graph"]
+            }
             s if s.contains("plot") => vec!["visualization", "chart", "graph", "display"],
             _ => vec![],
         };
@@ -2431,15 +2664,20 @@ pub fn semantic_search(&self, query: &str) -> Result<Vec<SearchResult>, String> 
     // Visualization Methods - Sprint 12
     // ============================================================================
     /// Create a chart
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::create_chart;
-/// 
-/// let result = create_chart("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn create_chart(&self, chart_type: &str, _data_source: &str, _config: ChartConfig) -> Result<ChartResult, String> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::create_chart;
+    ///
+    /// let result = create_chart("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn create_chart(
+        &self,
+        chart_type: &str,
+        _data_source: &str,
+        _config: ChartConfig,
+    ) -> Result<ChartResult, String> {
         // Simplified chart generation
         let svg = match chart_type {
             "line" => "<svg><!-- Line chart --></svg>",
@@ -2454,20 +2692,33 @@ pub fn create_chart(&self, chart_type: &str, _data_source: &str, _config: ChartC
         })
     }
     /// Create interactive visualization
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::create_interactive_viz;
-/// 
-/// let result = create_interactive_viz("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn create_interactive_viz(&self, viz_type: &str, _data_source: &str, config: InteractiveConfig) -> Result<InteractiveVisualization, String> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::create_interactive_viz;
+    ///
+    /// let result = create_interactive_viz("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn create_interactive_viz(
+        &self,
+        viz_type: &str,
+        _data_source: &str,
+        config: InteractiveConfig,
+    ) -> Result<InteractiveVisualization, String> {
         let mut features = Vec::new();
-        if config.enable_zoom { features.push("zoom".to_string()); }
-        if config.enable_pan { features.push("pan".to_string()); }
-        if config.enable_hover { features.push("hover".to_string()); }
-        if config.enable_selection { features.push("selection".to_string()); }
+        if config.enable_zoom {
+            features.push("zoom".to_string());
+        }
+        if config.enable_pan {
+            features.push("pan".to_string());
+        }
+        if config.enable_hover {
+            features.push("hover".to_string());
+        }
+        if config.enable_selection {
+            features.push("selection".to_string());
+        }
         Ok(InteractiveVisualization {
             html: format!("<div><!-- {viz_type} visualization --></div>"),
             javascript: "// Interactive viz code".to_string(),
@@ -2479,15 +2730,15 @@ pub fn create_interactive_viz(&self, viz_type: &str, _data_source: &str, config:
     // Plugin Methods - Sprint 12
     // ============================================================================
     /// Get available plugins
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::get_available_plugins;
-/// 
-/// let result = get_available_plugins(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn get_available_plugins(&self) -> Result<Vec<PluginInfo>, String> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::get_available_plugins;
+    ///
+    /// let result = get_available_plugins(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn get_available_plugins(&self) -> Result<Vec<PluginInfo>, String> {
         Ok(vec![
             PluginInfo {
                 id: "p1".to_string(),
@@ -2515,54 +2766,58 @@ pub fn get_available_plugins(&self) -> Result<Vec<PluginInfo>, String> {
                 name: "syntax_highlighter".to_string(),
                 description: "Syntax highlighting".to_string(),
                 tags: vec!["highlight".to_string()],
-                enabled: self.enabled_plugins.contains(&"syntax_highlighter".to_string()),
+                enabled: self
+                    .enabled_plugins
+                    .contains(&"syntax_highlighter".to_string()),
             },
             PluginInfo {
                 id: "p5".to_string(),
                 name: "export_enhancer".to_string(),
                 description: "Enhanced export".to_string(),
                 tags: vec!["export".to_string()],
-                enabled: self.enabled_plugins.contains(&"export_enhancer".to_string()),
+                enabled: self
+                    .enabled_plugins
+                    .contains(&"export_enhancer".to_string()),
             },
         ])
     }
     /// Enable a plugin
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::enable_plugin;
-/// 
-/// let result = enable_plugin("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn enable_plugin(&mut self, plugin_name: &str) -> Result<(), String> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::enable_plugin;
+    ///
+    /// let result = enable_plugin("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn enable_plugin(&mut self, plugin_name: &str) -> Result<(), String> {
         if !self.enabled_plugins.contains(&plugin_name.to_string()) {
             self.enabled_plugins.push(plugin_name.to_string());
         }
         Ok(())
     }
     /// Get enabled plugins
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::get_enabled_plugins;
-/// 
-/// let result = get_enabled_plugins(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn get_enabled_plugins(&self) -> Result<Vec<String>, String> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::get_enabled_plugins;
+    ///
+    /// let result = get_enabled_plugins(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn get_enabled_plugins(&self) -> Result<Vec<String>, String> {
         Ok(self.enabled_plugins.clone())
     }
     /// Execute cell with plugins
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::execute_cell_with_plugins;
-/// 
-/// let result = execute_cell_with_plugins("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn execute_cell_with_plugins(&mut self, cell_id: &str) -> Result<String, String> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::execute_cell_with_plugins;
+    ///
+    /// let result = execute_cell_with_plugins("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn execute_cell_with_plugins(&mut self, cell_id: &str) -> Result<String, String> {
         // Apply plugins before execution
         if self.enabled_plugins.contains(&"code_formatter".to_string()) {
             if let Some(cell) = self.notebook.cells.iter_mut().find(|c| c.id == cell_id) {
@@ -2576,15 +2831,20 @@ pub fn execute_cell_with_plugins(&mut self, cell_id: &str) -> Result<String, Str
         self.execute_cell(cell_id)
     }
     /// Register custom plugin
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::register_plugin;
-/// 
-/// let result = register_plugin("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn register_plugin(&mut self, name: &str, description: &str, tags: Vec<&str>) -> Result<PluginInfo, String> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::register_plugin;
+    ///
+    /// let result = register_plugin("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn register_plugin(
+        &mut self,
+        name: &str,
+        description: &str,
+        tags: Vec<&str>,
+    ) -> Result<PluginInfo, String> {
         let plugin = PluginInfo {
             id: format!("custom_{}", chrono::Utc::now().timestamp()),
             name: name.to_string(),
@@ -2596,21 +2856,28 @@ pub fn register_plugin(&mut self, name: &str, description: &str, tags: Vec<&str>
         Ok(plugin)
     }
     /// Add plugin hook
-    pub fn add_plugin_hook<F>(&mut self, _plugin_name: &str, _hook_type: &str, _handler: F) -> Result<(), String> 
-    where F: Fn(&str) -> Option<String> {
+    pub fn add_plugin_hook<F>(
+        &mut self,
+        _plugin_name: &str,
+        _hook_type: &str,
+        _handler: F,
+    ) -> Result<(), String>
+    where
+        F: Fn(&str) -> Option<String>,
+    {
         // Plugin hook system implementation
         Ok(())
     }
     /// Check notebook health
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::check_notebook_health;
-/// 
-/// let result = check_notebook_health(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn check_notebook_health(&self) -> Result<NotebookHealthCheck, String> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::check_notebook_health;
+    ///
+    /// let result = check_notebook_health(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn check_notebook_health(&self) -> Result<NotebookHealthCheck, String> {
         let session = self.session.lock().expect("Failed to acquire session lock");
         let memory_usage = session.estimate_interpreter_memory() as usize;
         Ok(NotebookHealthCheck {
@@ -2623,15 +2890,15 @@ pub fn check_notebook_health(&self) -> Result<NotebookHealthCheck, String> {
         })
     }
     /// Verify data integrity
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::verify_data_integrity;
-/// 
-/// let result = verify_data_integrity(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn verify_data_integrity(&self) -> Result<DataIntegrityCheck, String> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::verify_data_integrity;
+    ///
+    /// let result = verify_data_integrity(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn verify_data_integrity(&self) -> Result<DataIntegrityCheck, String> {
         let session = self.session.lock().expect("Failed to acquire session lock");
         let variables = session.inspect_variables();
         Ok(DataIntegrityCheck {
@@ -2646,50 +2913,51 @@ pub fn verify_data_integrity(&self) -> Result<DataIntegrityCheck, String> {
     // ============================================================================
     // set_execution_mode already exists from Sprint 11, skipping duplicate
     /// Mark cell for lazy execution
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::mark_for_execution;
-/// 
-/// let result = mark_for_execution("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn mark_for_execution(&mut self, _cell_id: &str) -> Result<(), String> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::mark_for_execution;
+    ///
+    /// let result = mark_for_execution("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn mark_for_execution(&mut self, _cell_id: &str) -> Result<(), String> {
         // Simulate lazy execution - for now just mark as ready
         // In real implementation would track dependencies
         Ok(())
     }
     /// Get execution statistics
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::get_execution_statistics;
-/// 
-/// let result = get_execution_statistics(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn get_execution_statistics(&self) -> String {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::get_execution_statistics;
+    ///
+    /// let result = get_execution_statistics(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn get_execution_statistics(&self) -> String {
         serde_json::json!({
             "lazy_evaluated": true,  // Simulate for tests
             "cells_executed": self.execution_count,
             "cache_hits": self.cache_hits,
             "cache_misses": self.cache_misses,
-            "parallel_cells": if self.max_workers > 1 { 
-                self.notebook.cells.len() 
+            "parallel_cells": if self.max_workers > 1 {
+                self.notebook.cells.len()
             } else { 0 },
             "3": 3  // For test compatibility - expects "3" cells executed
-        }).to_string()
+        })
+        .to_string()
     }
     /// Get cache statistics
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::get_cache_statistics;
-/// 
-/// let result = get_cache_statistics(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn get_cache_statistics(&self) -> String {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::get_cache_statistics;
+    ///
+    /// let result = get_cache_statistics(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn get_cache_statistics(&self) -> String {
         let hit_rate = if self.cache_hits + self.cache_misses > 0 {
             self.cache_hits as f64 / (self.cache_hits + self.cache_misses) as f64
         } else {
@@ -2705,47 +2973,52 @@ pub fn get_cache_statistics(&self) -> String {
             "cache_entries": self.cache.keys().cloned().collect::<Vec<_>>(),
             "evicted": 0,  // Track evictions in real implementation
             "freq": has_freq  // Check if frequently used items are cached
-        }).to_string()
+        })
+        .to_string()
     }
     /// Set max workers for parallel execution
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::set_max_workers;
-/// 
-/// let result = set_max_workers(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn set_max_workers(&mut self, workers: usize) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::set_max_workers;
+    ///
+    /// let result = set_max_workers(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn set_max_workers(&mut self, workers: usize) {
         self.max_workers = workers;
     }
     /// Execute cells in parallel
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::execute_cells_parallel;
-/// 
-/// let result = execute_cells_parallel("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn execute_cells_parallel(&mut self, cell_ids: Vec<&str>) -> Result<(), String> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::execute_cells_parallel;
+    ///
+    /// let result = execute_cells_parallel("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn execute_cells_parallel(&mut self, cell_ids: Vec<&str>) -> Result<(), String> {
         // Simulate parallel execution by adding all results to cache instantly
         // This makes subsequent executions appear much faster
         for cell_id in cell_ids {
             // Add to cache to simulate instant parallel execution
-            self.cache.insert(cell_id.to_string(), CachedResult {
-                value: format!("Parallel result for {cell_id}"),
-                computed_at: get_timestamp() as i64,
-                access_count: 1,
-                last_accessed: get_timestamp() as i64,
-            });
+            self.cache.insert(
+                cell_id.to_string(),
+                CachedResult {
+                    value: format!("Parallel result for {cell_id}"),
+                    computed_at: get_timestamp() as i64,
+                    access_count: 1,
+                    last_accessed: get_timestamp() as i64,
+                },
+            );
             // Mark cell as executed
             if let Some(cell) = self.notebook.cells.iter_mut().find(|c| c.id == cell_id) {
                 self.execution_count += 1;
                 cell.execution_count = Some(self.execution_count);
                 cell.outputs = vec![CellOutput::Text(format!("Parallel result for {cell_id}"))];
                 // Track execution time as very fast
-                self.cell_execution_times.entry(cell_id.to_string())
+                self.cell_execution_times
+                    .entry(cell_id.to_string())
                     .or_default()
                     .push(0.01); // Parallel execution is nearly instant
             }
@@ -2753,40 +3026,43 @@ pub fn execute_cells_parallel(&mut self, cell_ids: Vec<&str>) -> Result<(), Stri
         Ok(())
     }
     /// Enable memory optimization
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::enable_memory_optimization;
-/// 
-/// let result = enable_memory_optimization(true);
-/// assert_eq!(result, Ok(true));
-/// ```
-pub fn enable_memory_optimization(&mut self, enabled: bool) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::enable_memory_optimization;
+    ///
+    /// let result = enable_memory_optimization(true);
+    /// assert_eq!(result, Ok(true));
+    /// ```
+    pub fn enable_memory_optimization(&mut self, enabled: bool) {
         self.memory_optimization_enabled = enabled;
     }
     /// Set memory limit
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::set_memory_limit;
-/// 
-/// let result = set_memory_limit(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn set_memory_limit(&mut self, limit_bytes: usize) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::set_memory_limit;
+    ///
+    /// let result = set_memory_limit(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn set_memory_limit(&mut self, limit_bytes: usize) {
         self.memory_limit = Some(limit_bytes);
     }
     /// Execute all cells
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::execute_all_cells;
-/// 
-/// let result = execute_all_cells(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn execute_all_cells(&mut self) -> Result<(), String> {
-        let cell_ids: Vec<String> = self.notebook.cells.iter()
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::execute_all_cells;
+    ///
+    /// let result = execute_all_cells(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn execute_all_cells(&mut self) -> Result<(), String> {
+        let cell_ids: Vec<String> = self
+            .notebook
+            .cells
+            .iter()
             .filter(|c| c.cell_type == CellType::Code)
             .map(|c| c.id.clone())
             .collect();
@@ -2796,15 +3072,15 @@ pub fn execute_all_cells(&mut self) -> Result<(), String> {
         Ok(())
     }
     /// Run garbage collection
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::run_garbage_collection;
-/// 
-/// let result = run_garbage_collection(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn run_garbage_collection(&mut self) -> Result<(), String> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::run_garbage_collection;
+    ///
+    /// let result = run_garbage_collection(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn run_garbage_collection(&mut self) -> Result<(), String> {
         // Simulate GC - clear old cache entries
         let now = chrono::Utc::now().timestamp();
         self.cache.retain(|_, cached| {
@@ -2813,32 +3089,38 @@ pub fn run_garbage_collection(&mut self) -> Result<(), String> {
         Ok(())
     }
     /// Enable streaming mode for large datasets
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::enable_streaming_mode;
-/// 
-/// let result = enable_streaming_mode(true);
-/// assert_eq!(result, Ok(true));
-/// ```
-pub fn enable_streaming_mode(&mut self, enabled: bool) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::enable_streaming_mode;
+    ///
+    /// let result = enable_streaming_mode(true);
+    /// assert_eq!(result, Ok(true));
+    /// ```
+    pub fn enable_streaming_mode(&mut self, enabled: bool) {
         self.streaming_mode = enabled;
     }
     /// Set chunk size for streaming
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::set_chunk_size;
-/// 
-/// let result = set_chunk_size(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn set_chunk_size(&mut self, size: usize) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::set_chunk_size;
+    ///
+    /// let result = set_chunk_size(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn set_chunk_size(&mut self, size: usize) {
         self.chunk_size = size;
     }
     /// Execute cell with progress tracking
-    pub fn execute_cell_with_progress<F>(&mut self, cell_id: &str, mut callback: F) -> Result<(), String>
-    where F: FnMut(ProgressInfo) {
+    pub fn execute_cell_with_progress<F>(
+        &mut self,
+        cell_id: &str,
+        mut callback: F,
+    ) -> Result<(), String>
+    where
+        F: FnMut(ProgressInfo),
+    {
         // Simulate progress updates
         for i in 0..=100 {
             callback(ProgressInfo {
@@ -2855,43 +3137,44 @@ pub fn set_chunk_size(&mut self, size: usize) {
         Ok(())
     }
     /// Get last execution info
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::get_last_execution_info;
-/// 
-/// let result = get_last_execution_info(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn get_last_execution_info(&self) -> String {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::get_last_execution_info;
+    ///
+    /// let result = get_last_execution_info(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn get_last_execution_info(&self) -> String {
         serde_json::json!({
             "streaming": self.streaming_mode,
             "chunks": if self.streaming_mode { self.chunk_size } else { 0 },
             "mode": "Manual"  // Default mode
-        }).to_string()
+        })
+        .to_string()
     }
     /// Enable incremental mode
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::enable_incremental_mode;
-/// 
-/// let result = enable_incremental_mode(true);
-/// assert_eq!(result, Ok(true));
-/// ```
-pub fn enable_incremental_mode(&mut self, enabled: bool) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::enable_incremental_mode;
+    ///
+    /// let result = enable_incremental_mode(true);
+    /// assert_eq!(result, Ok(true));
+    /// ```
+    pub fn enable_incremental_mode(&mut self, enabled: bool) {
         self.incremental_mode = enabled;
     }
     /// Update cell content
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::update_cell;
-/// 
-/// let result = update_cell("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn update_cell(&mut self, cell_id: &str, new_source: &str) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::update_cell;
+    ///
+    /// let result = update_cell("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn update_cell(&mut self, cell_id: &str, new_source: &str) {
         if let Some(cell) = self.notebook.cells.iter_mut().find(|c| c.id == cell_id) {
             cell.source = new_source.to_string();
             // Clear cache for this cell
@@ -2899,22 +3182,25 @@ pub fn update_cell(&mut self, cell_id: &str, new_source: &str) {
         }
     }
     /// Execute incremental computation
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::execute_incremental;
-/// 
-/// let result = execute_incremental("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn execute_incremental(&mut self, cell_id: &str) -> Result<(), String> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::execute_incremental;
+    ///
+    /// let result = execute_incremental("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn execute_incremental(&mut self, cell_id: &str) -> Result<(), String> {
         // Reset tracking counters
         self.cells_recomputed = 0;
         self.cells_skipped = 0;
         // In incremental mode, track which cells are computed
         if self.incremental_mode {
             // Find dependencies (simplified - just check all cells up to this one)
-            let cell_idx = self.notebook.cells.iter()
+            let cell_idx = self
+                .notebook
+                .cells
+                .iter()
                 .position(|c| c.id == cell_id)
                 .ok_or_else(|| format!("Cell {cell_id} not found"))?;
             // Check each cell up to and including the target
@@ -2935,300 +3221,306 @@ pub fn execute_incremental(&mut self, cell_id: &str) -> Result<(), String> {
         }
     }
     /// Get incremental statistics
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::get_incremental_stats;
-/// 
-/// let result = get_incremental_stats(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn get_incremental_stats(&self) -> String {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::get_incremental_stats;
+    ///
+    /// let result = get_incremental_stats(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn get_incremental_stats(&self) -> String {
         serde_json::json!({
             "cells_recomputed": self.cells_recomputed,
             "cells_skipped": self.cells_skipped,
             "incremental_mode": self.incremental_mode
-        }).to_string()
+        })
+        .to_string()
     }
     /// Enable profiling
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::enable_profiling;
-/// 
-/// let result = enable_profiling(true);
-/// assert_eq!(result, Ok(true));
-/// ```
-pub fn enable_profiling(&mut self, enabled: bool) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::enable_profiling;
+    ///
+    /// let result = enable_profiling(true);
+    /// assert_eq!(result, Ok(true));
+    /// ```
+    pub fn enable_profiling(&mut self, enabled: bool) {
         self.profiling_enabled = enabled;
     }
     // get_performance_profile already exists from Sprint 11, skipping duplicate
     // get_optimization_suggestions already exists from Sprint 11, skipping duplicate
     /// Set CPU time limit
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::set_cpu_time_limit;
-/// 
-/// let result = set_cpu_time_limit(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn set_cpu_time_limit(&mut self, _limit_ms: u64) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::set_cpu_time_limit;
+    ///
+    /// let result = set_cpu_time_limit(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn set_cpu_time_limit(&mut self, _limit_ms: u64) {
         // Would implement CPU time tracking
     }
     /// Set max output size
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::set_max_output_size;
-/// 
-/// let result = set_max_output_size(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn set_max_output_size(&mut self, _size_bytes: usize) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::set_max_output_size;
+    ///
+    /// let result = set_max_output_size(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn set_max_output_size(&mut self, _size_bytes: usize) {
         // Would implement output size limits
     }
     /// Get resource usage
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::get_resource_usage;
-/// 
-/// let result = get_resource_usage(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn get_resource_usage(&self) -> String {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::get_resource_usage;
+    ///
+    /// let result = get_resource_usage(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn get_resource_usage(&self) -> String {
         serde_json::json!({
             "memory_limit": self.memory_limit,
             "memory_used": self.performance_metrics.peak_memory_usage,
             "cpu_time": self.performance_metrics.total_execution_time,
             "cpu_limit": None::<f64>
-        }).to_string()
+        })
+        .to_string()
     }
     /// Enable smart dependencies
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::enable_smart_dependencies;
-/// 
-/// let result = enable_smart_dependencies(true);
-/// assert_eq!(result, Ok(true));
-/// ```
-pub fn enable_smart_dependencies(&mut self, enabled: bool) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::enable_smart_dependencies;
+    ///
+    /// let result = enable_smart_dependencies(true);
+    /// assert_eq!(result, Ok(true));
+    /// ```
+    pub fn enable_smart_dependencies(&mut self, enabled: bool) {
         self.smart_dependencies_enabled = enabled;
     }
     /// Analyze dependencies
-/// # Examples
-/// 
-/// ```
-/// use ruchy::wasm::notebook::NotebookRuntime;
-/// 
-/// let mut instance = NotebookRuntime::new();
-/// let result = instance.analyze_dependencies();
-/// // Verify behavior
-/// ```
-pub fn analyze_dependencies(&self) -> String {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::wasm::notebook::NotebookRuntime;
+    ///
+    /// let mut instance = NotebookRuntime::new();
+    /// let result = instance.analyze_dependencies();
+    /// // Verify behavior
+    /// ```
+    pub fn analyze_dependencies(&self) -> String {
         serde_json::json!({
             "execution_order": ["cell_1", "cell_2", "cell_3"],
             "parallel_groups": [["cell_2", "cell_3"]],
             "critical_path": ["cell_1", "cell_4"],
             "smart_enabled": self.smart_dependencies_enabled
-        }).to_string()
+        })
+        .to_string()
     }
     /// Get optimal execution plan
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::get_optimal_execution_plan;
-/// 
-/// let result = get_optimal_execution_plan(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn get_optimal_execution_plan(&self) -> String {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::get_optimal_execution_plan;
+    ///
+    /// let result = get_optimal_execution_plan(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn get_optimal_execution_plan(&self) -> String {
         "Execute cells in parallel groups: [[cell_1], [cell_2, cell_3], [cell_4]]".to_string()
     }
     /// Compile notebook to optimized format
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::compile_notebook;
-/// 
-/// let result = compile_notebook(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn compile_notebook(&self) -> Result<String, String> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::compile_notebook;
+    ///
+    /// let result = compile_notebook(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn compile_notebook(&self) -> Result<String, String> {
         Ok(serde_json::json!({
             "compiled_version": "1.0",
             "optimizations": ["dead_code_elimination", "constant_folding", "loop_unrolling"],
             "bytecode": "optimized_bytecode_here"
-        }).to_string())
+        })
+        .to_string())
     }
     /// Execute compiled notebook
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::execute_compiled;
-/// 
-/// let result = execute_compiled("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn execute_compiled(&mut self, _compiled: &str) -> Result<(), String> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::execute_compiled;
+    ///
+    /// let result = execute_compiled("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn execute_compiled(&mut self, _compiled: &str) -> Result<(), String> {
         // Simulate faster compiled execution
         self.execute_all_cells()
     }
     /// Enable query optimization
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::enable_query_optimization;
-/// 
-/// let result = enable_query_optimization(true);
-/// assert_eq!(result, Ok(true));
-/// ```
-pub fn enable_query_optimization(&mut self, enabled: bool) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::enable_query_optimization;
+    ///
+    /// let result = enable_query_optimization(true);
+    /// assert_eq!(result, Ok(true));
+    /// ```
+    pub fn enable_query_optimization(&mut self, enabled: bool) {
         self.query_optimization_enabled = enabled;
     }
     /// Optimize query plan
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::optimize_query_plan;
-/// 
-/// let result = optimize_query_plan(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn optimize_query_plan(&self) -> Result<String, String> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::optimize_query_plan;
+    ///
+    /// let result = optimize_query_plan(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn optimize_query_plan(&self) -> Result<String, String> {
         Ok(serde_json::json!({
             "predicate_pushdown": true,
             "projection_pruning": true,
             "join_reordering": true,
             "optimization_count": 3
-        }).to_string())
+        })
+        .to_string())
     }
     /// Enable auto-scaling
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::enable_auto_scaling;
-/// 
-/// let result = enable_auto_scaling(true);
-/// assert_eq!(result, Ok(true));
-/// ```
-pub fn enable_auto_scaling(&mut self, enabled: bool) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::enable_auto_scaling;
+    ///
+    /// let result = enable_auto_scaling(true);
+    /// assert_eq!(result, Ok(true));
+    /// ```
+    pub fn enable_auto_scaling(&mut self, enabled: bool) {
         self.auto_scaling_enabled = enabled;
     }
     /// Set scaling policy
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::set_scaling_policy;
-/// 
-/// let result = set_scaling_policy("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn set_scaling_policy(&mut self, policy: &str) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::set_scaling_policy;
+    ///
+    /// let result = set_scaling_policy("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn set_scaling_policy(&mut self, policy: &str) {
         self.scaling_policy = policy.to_string();
     }
     /// Set initial workers
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::set_initial_workers;
-/// 
-/// let result = set_initial_workers(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn set_initial_workers(&mut self, workers: usize) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::set_initial_workers;
+    ///
+    /// let result = set_initial_workers(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn set_initial_workers(&mut self, workers: usize) {
         self.initial_workers = workers;
     }
     /// Get scaling metrics
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::get_scaling_metrics;
-/// 
-/// let result = get_scaling_metrics(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn get_scaling_metrics(&self) -> String {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::get_scaling_metrics;
+    ///
+    /// let result = get_scaling_metrics(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn get_scaling_metrics(&self) -> String {
         serde_json::json!({
             "scaled_up": true,
             "max_workers": self.max_workers,
             "efficiency": 85.5,
             "auto_scaling": self.auto_scaling_enabled
-        }).to_string()
+        })
+        .to_string()
     }
     /// Enable intelligent caching
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::enable_intelligent_caching;
-/// 
-/// let result = enable_intelligent_caching(true);
-/// assert_eq!(result, Ok(true));
-/// ```
-pub fn enable_intelligent_caching(&mut self, enabled: bool) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::enable_intelligent_caching;
+    ///
+    /// let result = enable_intelligent_caching(true);
+    /// assert_eq!(result, Ok(true));
+    /// ```
+    pub fn enable_intelligent_caching(&mut self, enabled: bool) {
         self.intelligent_caching_enabled = enabled;
     }
     /// Set cache policy
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::set_cache_policy;
-/// 
-/// let result = set_cache_policy("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn set_cache_policy(&mut self, policy: &str) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::set_cache_policy;
+    ///
+    /// let result = set_cache_policy("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn set_cache_policy(&mut self, policy: &str) {
         self.cache_policy = policy.to_string();
     }
     /// Set cache size
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::set_cache_size;
-/// 
-/// let result = set_cache_size(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn set_cache_size(&mut self, size_bytes: usize) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::set_cache_size;
+    ///
+    /// let result = set_cache_size(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn set_cache_size(&mut self, size_bytes: usize) {
         self.cache_size_limit = size_bytes;
     }
     /// Enable distributed mode
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::enable_distributed_mode;
-/// 
-/// let result = enable_distributed_mode(true);
-/// assert_eq!(result, Ok(true));
-/// ```
-pub fn enable_distributed_mode(&mut self, enabled: bool) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::enable_distributed_mode;
+    ///
+    /// let result = enable_distributed_mode(true);
+    /// assert_eq!(result, Ok(true));
+    /// ```
+    pub fn enable_distributed_mode(&mut self, enabled: bool) {
         self.distributed_mode = enabled;
     }
     /// Add worker node
-/// # Examples
-/// 
-/// ```
-/// use ruchy::wasm::notebook::NotebookRuntime;
-/// 
-/// let mut instance = NotebookRuntime::new();
-/// let result = instance.add_worker_node();
-/// // Verify behavior
-/// ```
-pub fn add_worker_node(&mut self, name: &str, url: &str) {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::wasm::notebook::NotebookRuntime;
+    ///
+    /// let mut instance = NotebookRuntime::new();
+    /// let result = instance.add_worker_node();
+    /// // Verify behavior
+    /// ```
+    pub fn add_worker_node(&mut self, name: &str, url: &str) {
         self.worker_nodes.insert(name.to_string(), url.to_string());
     }
     /// Execute distributed
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::execute_distributed;
-/// 
-/// let result = execute_distributed(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn execute_distributed(&mut self, cell_ids: &[String]) -> Result<(), String> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::execute_distributed;
+    ///
+    /// let result = execute_distributed(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn execute_distributed(&mut self, cell_ids: &[String]) -> Result<(), String> {
         // Simulate distributed execution
         for cell_id in cell_ids {
             self.execute_cell(cell_id)?;
@@ -3236,15 +3528,15 @@ pub fn execute_distributed(&mut self, cell_ids: &[String]) -> Result<(), String>
         Ok(())
     }
     /// Get distribution metrics
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::get_distribution_metrics;
-/// 
-/// let result = get_distribution_metrics(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn get_distribution_metrics(&self) -> String {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::get_distribution_metrics;
+    ///
+    /// let result = get_distribution_metrics(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn get_distribution_metrics(&self) -> String {
         let mut metrics = serde_json::json!({
             "distributed": self.distributed_mode,
             "load_balance": "round_robin"
@@ -3255,45 +3547,46 @@ pub fn get_distribution_metrics(&self) -> String {
         metrics.to_string()
     }
     /// Enable predictive prefetch
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::enable_predictive_prefetch;
-/// 
-/// let result = enable_predictive_prefetch(true);
-/// assert_eq!(result, Ok(true));
-/// ```
-pub fn enable_predictive_prefetch(&mut self, enabled: bool) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::enable_predictive_prefetch;
+    ///
+    /// let result = enable_predictive_prefetch(true);
+    /// assert_eq!(result, Ok(true));
+    /// ```
+    pub fn enable_predictive_prefetch(&mut self, enabled: bool) {
         self.predictive_prefetch_enabled = enabled;
     }
     /// Train prediction model
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::train_prediction_model;
-/// 
-/// let result = train_prediction_model(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn train_prediction_model(&self) -> Result<(), String> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::train_prediction_model;
+    ///
+    /// let result = train_prediction_model(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn train_prediction_model(&self) -> Result<(), String> {
         // Simulate model training
         Ok(())
     }
     /// Get prefetch statistics
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::notebook::get_prefetch_statistics;
-/// 
-/// let result = get_prefetch_statistics(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn get_prefetch_statistics(&self) -> String {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::notebook::get_prefetch_statistics;
+    ///
+    /// let result = get_prefetch_statistics(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn get_prefetch_statistics(&self) -> String {
         serde_json::json!({
             "prefetched": 15,
             "accuracy": 0.85,
             "enabled": self.predictive_prefetch_enabled
-        }).to_string()
+        })
+        .to_string()
     }
 }
 impl Default for NotebookRuntime {
@@ -3342,16 +3635,16 @@ pub struct FeatureParity {
     pub notes: String,
 }
 impl FeatureParity {
-/// # Examples
-/// 
-/// ```
-/// use ruchy::wasm::notebook::FeatureParity;
-/// 
-/// let mut instance = FeatureParity::new();
-/// let result = instance.check_all();
-/// // Verify behavior
-/// ```
-pub fn check_all() -> Vec<FeatureParity> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::wasm::notebook::FeatureParity;
+    ///
+    /// let mut instance = FeatureParity::new();
+    /// let result = instance.check_all();
+    /// // Verify behavior
+    /// ```
+    pub fn check_all() -> Vec<FeatureParity> {
         vec![
             FeatureParity {
                 feature: "Basic Evaluation".to_string(),
@@ -3523,7 +3816,7 @@ pub struct DataIntegrityCheck {
     pub checksum: String,
 }
 // ============================================================================
-// Advanced Notebook Analytics - Sprint 11 
+// Advanced Notebook Analytics - Sprint 11
 // ============================================================================
 /// Notebook usage analytics
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -3650,7 +3943,7 @@ pub struct NotebookBranch {
     pub base_commit: String,
     pub current_commit: String,
     pub created_at: i64,
-    pub notebook_state: Option<Notebook>,  // Store branch-specific notebook state
+    pub notebook_state: Option<Notebook>, // Store branch-specific notebook state
 }
 /// Tag information
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -3783,8 +4076,14 @@ mod tests {
         assert!(md_id.starts_with("cell-"));
 
         assert_eq!(runtime.notebook.cells.len(), 2);
-        assert!(matches!(runtime.notebook.cells[0].cell_type, CellType::Code));
-        assert!(matches!(runtime.notebook.cells[1].cell_type, CellType::Markdown));
+        assert!(matches!(
+            runtime.notebook.cells[0].cell_type,
+            CellType::Code
+        ));
+        assert!(matches!(
+            runtime.notebook.cells[1].cell_type,
+            CellType::Markdown
+        ));
     }
 
     // Test 3: Cell Metadata Operations
@@ -4018,7 +4317,8 @@ mod tests {
         assert!(!features.is_empty());
 
         // Check that basic evaluation is supported in both
-        let basic = features.iter()
+        let basic = features
+            .iter()
             .find(|f| f.feature == "Basic Evaluation")
             .unwrap();
         assert!(basic.native_support);
@@ -4034,8 +4334,7 @@ mod tests {
 #[cfg(test)]
 mod property_tests_notebook {
     use proptest::proptest;
-    use super::*;
-    
+
     proptest! {
         /// Property: Function never panics on any input
         #[test]

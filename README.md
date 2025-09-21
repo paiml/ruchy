@@ -129,20 +129,49 @@ This project follows strict quality engineering practices:
 
 ## Development
 
+### Basic Development Commands
 ```bash
 # Run tests
-cargo test
+make test
 
 # Check coverage
-cargo llvm-cov
+make coverage
 
 # Run quality checks
-cargo clippy -- -D warnings
-cargo fmt -- --check
+make lint
 
 # Build documentation
-cargo doc --open
+make doc
 ```
+
+### WebAssembly QA Framework
+The project includes a comprehensive WebAssembly Quality Assurance Framework v3.0 with 4 validation phases:
+
+```bash
+# Run complete QA validation
+make qa-framework
+
+# Individual phases
+make qa-foundation    # Coverage & infrastructure
+make qa-browser       # Browser testing & WASM validation
+make qa-quality       # Security & complexity analysis
+make qa-optimization  # Performance & regression testing
+
+# Quick quality checks
+make qa-security      # Security analysis
+make qa-complexity    # Complexity analysis
+make qa-dashboard     # Interactive quality dashboard
+
+# See all QA commands
+make qa-help
+```
+
+**Quality Targets:**
+- 90% branch coverage
+- ≤10 cyclomatic complexity per function
+- Zero security vulnerabilities
+- <500KB optimized WASM binaries
+- <5% performance regression tolerance
 
 ## Documentation
 

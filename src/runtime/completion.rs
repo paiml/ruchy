@@ -1,8 +1,8 @@
 //! Tab completion module for REPL
 //! Handles intelligent code completion with low complexity
-use std::collections::{HashMap, HashSet};
 use rustyline::completion::{Completer, Pair};
 use rustyline::Context;
+use std::collections::{HashMap, HashSet};
 /// Completion candidate with metadata
 #[derive(Debug, Clone)]
 pub struct CompletionCandidate {
@@ -31,16 +31,16 @@ pub enum CompletionKind {
 }
 impl CompletionKind {
     /// Get display prefix (complexity: 1)
-/// # Examples
-/// 
-/// ```
-/// use ruchy::runtime::completion::CompletionKind;
-/// 
-/// let mut instance = CompletionKind::new();
-/// let result = instance.prefix();
-/// // Verify behavior
-/// ```
-pub fn prefix(&self) -> &str {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::completion::CompletionKind;
+    ///
+    /// let mut instance = CompletionKind::new();
+    /// let result = instance.prefix();
+    /// // Verify behavior
+    /// ```
+    pub fn prefix(&self) -> &str {
         match self {
             CompletionKind::Variable => "var",
             CompletionKind::Function => "fn",
@@ -53,15 +53,15 @@ pub fn prefix(&self) -> &str {
         }
     }
     /// Get priority boost (complexity: 1)
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::runtime::completion::priority;
-/// 
-/// let result = priority(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn priority(&self) -> i32 {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::runtime::completion::priority;
+    ///
+    /// let result = priority(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn priority(&self) -> i32 {
         match self {
             CompletionKind::Variable => 100,
             CompletionKind::Function => 90,
@@ -116,23 +116,23 @@ impl Default for CompletionEngine {
 }
 impl CompletionEngine {
     /// Create new completion engine (complexity: 3)
-/// # Examples
-/// 
-/// ```
-/// use ruchy::runtime::completion::CompletionEngine;
-/// 
-/// let instance = CompletionEngine::new();
-/// // Verify behavior
-/// ```
-/// # Examples
-/// 
-/// ```
-/// use ruchy::runtime::completion::CompletionEngine;
-/// 
-/// let instance = CompletionEngine::new();
-/// // Verify behavior
-/// ```
-pub fn new() -> Self {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::completion::CompletionEngine;
+    ///
+    /// let instance = CompletionEngine::new();
+    /// // Verify behavior
+    /// ```
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::completion::CompletionEngine;
+    ///
+    /// let instance = CompletionEngine::new();
+    /// // Verify behavior
+    /// ```
+    pub fn new() -> Self {
         Self {
             variables: HashSet::new(),
             functions: HashMap::new(),
@@ -145,24 +145,24 @@ pub fn new() -> Self {
         }
     }
     /// Get completions for input (complexity: 8)
-/// # Examples
-/// 
-/// ```
-/// use ruchy::runtime::completion::CompletionEngine;
-/// 
-/// let mut instance = CompletionEngine::new();
-/// let result = instance.get_completions();
-/// // Verify behavior
-/// ```
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::runtime::completion::get_completions;
-/// 
-/// let result = get_completions("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn get_completions(&mut self, input: &str, position: usize) -> Vec<CompletionCandidate> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::completion::CompletionEngine;
+    ///
+    /// let mut instance = CompletionEngine::new();
+    /// let result = instance.get_completions();
+    /// // Verify behavior
+    /// ```
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::runtime::completion::get_completions;
+    ///
+    /// let result = get_completions("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn get_completions(&mut self, input: &str, position: usize) -> Vec<CompletionCandidate> {
         // Check cache first
         if let Some(cached) = self.cache.get(input, position) {
             return cached;
@@ -199,15 +199,17 @@ pub fn get_completions(&mut self, input: &str, position: usize) -> Vec<Completio
             if dot_pos > 0 {
                 let object = &prefix[..dot_pos];
                 if let Some(obj_type) = self.infer_type(object) {
-                    return CompletionContext::MemberAccess { object_type: obj_type };
+                    return CompletionContext::MemberAccess {
+                        object_type: obj_type,
+                    };
                 }
             }
         }
         // Check for module path
         if let Some(colon_pos) = prefix.rfind("::") {
             let module = &prefix[..colon_pos];
-            return CompletionContext::ModulePath { 
-                module: module.to_string() 
+            return CompletionContext::ModulePath {
+                module: module.to_string(),
             };
         }
         // Check if at line start
@@ -313,8 +315,8 @@ pub fn get_completions(&mut self, input: &str, position: usize) -> Vec<Completio
                     display: var.clone(),
                     kind: CompletionKind::Variable,
                     doc: None,
-                    priority: CompletionKind::Variable.priority() + 
-                             self.calculate_fuzzy_score(&word, var),
+                    priority: CompletionKind::Variable.priority()
+                        + self.calculate_fuzzy_score(&word, var),
                 });
             }
         }
@@ -327,8 +329,8 @@ pub fn get_completions(&mut self, input: &str, position: usize) -> Vec<Completio
                     display: signature,
                     kind: CompletionKind::Function,
                     doc: None,
-                    priority: CompletionKind::Function.priority() +
-                             self.calculate_fuzzy_score(&word, func),
+                    priority: CompletionKind::Function.priority()
+                        + self.calculate_fuzzy_score(&word, func),
                 });
             }
         }
@@ -340,62 +342,62 @@ pub fn get_completions(&mut self, input: &str, position: usize) -> Vec<Completio
                     display: typ.clone(),
                     kind: CompletionKind::Type,
                     doc: None,
-                    priority: CompletionKind::Type.priority() +
-                             self.calculate_fuzzy_score(&word, typ),
+                    priority: CompletionKind::Type.priority()
+                        + self.calculate_fuzzy_score(&word, typ),
                 });
             }
         }
         candidates
     }
     /// Register a variable (complexity: 2)
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::runtime::completion::register_variable;
-/// 
-/// let result = register_variable(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn register_variable(&mut self, name: String) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::runtime::completion::register_variable;
+    ///
+    /// let result = register_variable(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn register_variable(&mut self, name: String) {
         self.variables.insert(name);
         self.cache.clear(); // Invalidate cache
     }
     /// Register a function (complexity: 2)
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::runtime::completion::register_function;
-/// 
-/// let result = register_function(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn register_function(&mut self, name: String, params: Vec<String>) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::runtime::completion::register_function;
+    ///
+    /// let result = register_function(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn register_function(&mut self, name: String, params: Vec<String>) {
         self.functions.insert(name, params);
         self.cache.clear();
     }
     /// Register a type (complexity: 2)
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::runtime::completion::register_type;
-/// 
-/// let result = register_type(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn register_type(&mut self, name: String) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::runtime::completion::register_type;
+    ///
+    /// let result = register_type(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn register_type(&mut self, name: String) {
         self.types.insert(name);
         self.cache.clear();
     }
     /// Register methods for a type (complexity: 3)
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::runtime::completion::register_methods;
-/// 
-/// let result = register_methods(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn register_methods(&mut self, type_name: String, methods: Vec<String>) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::runtime::completion::register_methods;
+    ///
+    /// let result = register_methods(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn register_methods(&mut self, type_name: String, methods: Vec<String>) {
         self.methods.insert(type_name, methods);
         self.cache.clear();
     }
@@ -476,36 +478,101 @@ pub fn register_methods(&mut self, type_name: String, methods: Vec<String>) {
     /// Default keywords (complexity: 1)
     fn default_keywords() -> Vec<String> {
         vec![
-            "let", "mut", "const", "fn", "if", "else", "match", "for", "while",
-            "loop", "break", "continue", "return", "struct", "enum", "trait",
-            "impl", "pub", "mod", "use", "async", "await", "type", "where",
-        ].into_iter().map(String::from).collect()
+            "let", "mut", "const", "fn", "if", "else", "match", "for", "while", "loop", "break",
+            "continue", "return", "struct", "enum", "trait", "impl", "pub", "mod", "use", "async",
+            "await", "type", "where",
+        ]
+        .into_iter()
+        .map(String::from)
+        .collect()
     }
     /// Default commands (complexity: 1)
     fn default_commands() -> Vec<String> {
         vec![
-            "help", "quit", "exit", "history", "clear", "reset", "bindings",
-            "env", "vars", "functions", "compile", "transpile", "load", "save",
-            "export", "type", "ast", "parse", "mode", "debug", "time", "inspect",
-            "doc", "ls", "state",
-        ].into_iter().map(String::from).collect()
+            "help",
+            "quit",
+            "exit",
+            "history",
+            "clear",
+            "reset",
+            "bindings",
+            "env",
+            "vars",
+            "functions",
+            "compile",
+            "transpile",
+            "load",
+            "save",
+            "export",
+            "type",
+            "ast",
+            "parse",
+            "mode",
+            "debug",
+            "time",
+            "inspect",
+            "doc",
+            "ls",
+            "state",
+        ]
+        .into_iter()
+        .map(String::from)
+        .collect()
     }
     /// Default methods by type (complexity: 2)
     fn default_methods() -> HashMap<String, Vec<String>> {
         let mut methods = HashMap::new();
-        methods.insert("String".to_string(), vec![
-            "len", "is_empty", "chars", "bytes", "lines", "split", "trim",
-            "to_uppercase", "to_lowercase", "replace", "contains", "starts_with",
-            "ends_with", "parse", "repeat",
-        ].into_iter().map(String::from).collect());
-        methods.insert("List".to_string(), vec![
-            "len", "is_empty", "push", "pop", "first", "last", "get", "sort",
-            "reverse", "contains", "iter", "map", "filter", "fold", "find",
-        ].into_iter().map(String::from).collect());
-        methods.insert("HashMap".to_string(), vec![
-            "len", "is_empty", "insert", "remove", "get", "contains_key",
-            "keys", "values", "iter", "clear",
-        ].into_iter().map(String::from).collect());
+        methods.insert(
+            "String".to_string(),
+            vec![
+                "len",
+                "is_empty",
+                "chars",
+                "bytes",
+                "lines",
+                "split",
+                "trim",
+                "to_uppercase",
+                "to_lowercase",
+                "replace",
+                "contains",
+                "starts_with",
+                "ends_with",
+                "parse",
+                "repeat",
+            ]
+            .into_iter()
+            .map(String::from)
+            .collect(),
+        );
+        methods.insert(
+            "List".to_string(),
+            vec![
+                "len", "is_empty", "push", "pop", "first", "last", "get", "sort", "reverse",
+                "contains", "iter", "map", "filter", "fold", "find",
+            ]
+            .into_iter()
+            .map(String::from)
+            .collect(),
+        );
+        methods.insert(
+            "HashMap".to_string(),
+            vec![
+                "len",
+                "is_empty",
+                "insert",
+                "remove",
+                "get",
+                "contains_key",
+                "keys",
+                "values",
+                "iter",
+                "clear",
+            ]
+            .into_iter()
+            .map(String::from)
+            .collect(),
+        );
         methods
     }
 }
@@ -620,10 +687,10 @@ impl RuchyCompleter {
     }
     /// Get completions for REPL (complexity: 8)
     pub fn get_completions(
-        &mut self, 
-        input: &str, 
-        _pos: usize, 
-        bindings: &HashMap<String, crate::runtime::interpreter::Value>
+        &mut self,
+        input: &str,
+        _pos: usize,
+        bindings: &HashMap<String, crate::runtime::interpreter::Value>,
     ) -> Vec<String> {
         // Check cache first (complexity: 2)
         if let Some(cached) = self.cache.get(input) {
@@ -643,7 +710,7 @@ impl RuchyCompleter {
         &self,
         input: &str,
         bindings: &HashMap<String, crate::runtime::interpreter::Value>,
-        results: &mut Vec<String>
+        results: &mut Vec<String>,
     ) {
         for name in bindings.keys() {
             if name.starts_with(input) {
@@ -660,21 +727,25 @@ impl RuchyCompleter {
         }
     }
     /// Analyze completion context (complexity: 4)
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::runtime::completion::analyze_context;
-/// 
-/// let result = analyze_context("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn analyze_context(&self, line: &str, pos: usize) -> CompletionContext {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::runtime::completion::analyze_context;
+    ///
+    /// let result = analyze_context("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn analyze_context(&self, line: &str, pos: usize) -> CompletionContext {
         if line.starts_with(':') {
             CompletionContext::Command
         } else if line.contains('.') && pos > line.rfind('.').unwrap_or(0) {
-            CompletionContext::MemberAccess { object_type: String::new() }
+            CompletionContext::MemberAccess {
+                object_type: String::new(),
+            }
         } else if line.contains("::") {
-            CompletionContext::ModulePath { module: String::new() }
+            CompletionContext::ModulePath {
+                module: String::new(),
+            }
         } else {
             CompletionContext::Expression
         }
@@ -685,9 +756,10 @@ pub fn analyze_context(&self, line: &str, pos: usize) -> CompletionContext {
 impl rustyline::Helper for RuchyCompleter {}
 /// Validator trait implementation (complexity: 2)
 impl rustyline::validate::Validator for RuchyCompleter {
-    fn validate(&self, _ctx: &mut rustyline::validate::ValidationContext) -> 
-        Result<rustyline::validate::ValidationResult, rustyline::error::ReadlineError> 
-    {
+    fn validate(
+        &self,
+        _ctx: &mut rustyline::validate::ValidationContext,
+    ) -> Result<rustyline::validate::ValidationResult, rustyline::error::ReadlineError> {
         Ok(rustyline::validate::ValidationResult::Valid(None))
     }
 }
@@ -700,7 +772,7 @@ impl rustyline::hint::Hinter for RuchyCompleter {
     }
 }
 impl RuchyCompleter {
-    /// Create contextual hint (complexity: 2) 
+    /// Create contextual hint (complexity: 2)
     fn create_hint(&self, context: CompletionContext) -> Option<String> {
         match context {
             CompletionContext::MemberAccess { .. } => Some(" (method access)".to_string()),
@@ -718,13 +790,16 @@ impl rustyline::highlight::Highlighter for RuchyCompleter {
 /// Completer trait implementation (complexity: 7)
 impl Completer for RuchyCompleter {
     type Candidate = Pair;
-    fn complete(&self, line: &str, pos: usize, _ctx: &Context<'_>) -> 
-        rustyline::Result<(usize, Vec<Pair>)> 
-    {
+    fn complete(
+        &self,
+        line: &str,
+        pos: usize,
+        _ctx: &Context<'_>,
+    ) -> rustyline::Result<(usize, Vec<Pair>)> {
         // Extract word to complete (complexity: 3)
         let start = self.find_word_start(line, pos);
         let word = &line[start..pos];
-        // Get basic completions (complexity: 2) 
+        // Get basic completions (complexity: 2)
         let completions = self.get_basic_completions(word);
         // Convert to Pairs (complexity: 2)
         let pairs = self.convert_to_pairs(completions);
@@ -740,23 +815,27 @@ impl RuchyCompleter {
     }
     /// Get basic completions without bindings (complexity: 2)
     fn get_basic_completions(&self, word: &str) -> Vec<String> {
-        self.builtins.iter()
+        self.builtins
+            .iter()
             .filter(|name| name.starts_with(word))
             .cloned()
             .collect()
     }
     /// Convert completions to rustyline Pairs (complexity: 2)
     fn convert_to_pairs(&self, completions: Vec<String>) -> Vec<Pair> {
-        completions.into_iter()
-            .map(|s| Pair { display: s.clone(), replacement: s })
+        completions
+            .into_iter()
+            .map(|s| Pair {
+                display: s.clone(),
+                replacement: s,
+            })
             .collect()
     }
 }
 #[cfg(test)]
 mod property_tests_completion {
     use proptest::proptest;
-    
-    
+
     proptest! {
         /// Property: Function never panics on any input
         #[test]

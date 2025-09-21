@@ -22,6 +22,14 @@ test-prop = "test property_ --lib -- --test-threads=2"
 test-heavy = "test --lib -- --ignored --test-threads=1"
 test-quick = "test --lib -- --test-threads=4 --skip property_"
 
+# WASM QA Framework aliases (following spec)
+wasm-test = "test --target wasm32-unknown-unknown"
+coverage = "llvm-cov --branch --fail-under-branches 90"
+quick-check = """sh -c '
+    cargo fmt --check &&
+    cargo clippy -- -D warnings -W clippy::cognitive_complexity
+'"""
+
 # Coverage aliases - Toyota Way: Easy access to quality metrics
 cov = "llvm-cov --html"
 cov-report = "llvm-cov report"
@@ -39,11 +47,5 @@ opt-level = 1
 debug = 1
 
 [target.wasm32-unknown-unknown]
-rustflags = [
-    "-C", "opt-level=z",
-    "-C", "lto=fat",
-    "-C", "embed-bitcode=yes",
-    "-C", "codegen-units=1",
-    "-C", "strip=symbols",
-    "-C", "panic=abort",
-]
+# Runner for local testing only - CI uses explicit wasm-pack
+runner = "wasmtime run --dir . --"

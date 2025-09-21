@@ -81,58 +81,58 @@ impl Default for FormalVerifier {
 }
 
 impl FormalVerifier {
-/// # Examples
-/// 
-/// ```
-/// use ruchy::notebook::testing::formal::FormalVerifier;
-/// 
-/// let instance = FormalVerifier::new();
-/// // Verify behavior
-/// ```
-pub fn new() -> Self {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::notebook::testing::formal::FormalVerifier;
+    ///
+    /// let instance = FormalVerifier::new();
+    /// // Verify behavior
+    /// ```
+    pub fn new() -> Self {
         Self {
             backend: SolverBackend::SimpleSMT,
             config: FormalConfig::default(),
         }
     }
-/// # Examples
-/// 
-/// ```
-/// use ruchy::notebook::testing::formal::FormalVerifier;
-/// 
-/// let mut instance = FormalVerifier::new();
-/// let result = instance.with_config();
-/// // Verify behavior
-/// ```
-pub fn with_config(config: FormalConfig) -> Self {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::notebook::testing::formal::FormalVerifier;
+    ///
+    /// let mut instance = FormalVerifier::new();
+    /// let result = instance.with_config();
+    /// // Verify behavior
+    /// ```
+    pub fn with_config(config: FormalConfig) -> Self {
         Self {
             backend: SolverBackend::SimpleSMT,
             config,
         }
     }
-/// # Examples
-/// 
-/// ```
-/// use ruchy::notebook::testing::formal::FormalVerifier;
-/// 
-/// let mut instance = FormalVerifier::new();
-/// let result = instance.is_ready();
-/// // Verify behavior
-/// ```
-pub fn is_ready(&self) -> bool {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::notebook::testing::formal::FormalVerifier;
+    ///
+    /// let mut instance = FormalVerifier::new();
+    /// let result = instance.is_ready();
+    /// // Verify behavior
+    /// ```
+    pub fn is_ready(&self) -> bool {
         // Check if solver is available
         true
     }
     /// Verify an invariant holds for a cell
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::notebook::testing::formal::verify_invariant;
-/// 
-/// let result = verify_invariant(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn verify_invariant(&self, invariant: &Invariant, _cell: &Cell) -> VerificationResult {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::notebook::testing::formal::verify_invariant;
+    ///
+    /// let result = verify_invariant(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn verify_invariant(&self, invariant: &Invariant, _cell: &Cell) -> VerificationResult {
         // Simplified verification logic
         let mut is_valid = true;
         let mut counterexample = None;
@@ -162,48 +162,48 @@ pub fn verify_invariant(&self, invariant: &Invariant, _cell: &Cell) -> Verificat
         }
     }
     /// Verify a constraint is satisfied
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::notebook::testing::formal::verify_constraint;
-/// 
-/// let result = verify_constraint(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn verify_constraint(&self, constraint: &Constraint, cell: &Cell) -> ConstraintResult {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::notebook::testing::formal::verify_constraint;
+    ///
+    /// let result = verify_constraint(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn verify_constraint(&self, constraint: &Constraint, cell: &Cell) -> ConstraintResult {
         let mut satisfied = true;
         let mut violations = Vec::new();
         // Check array bounds constraints
-        if constraint.expression.contains("0 <= i < arr.length")
-            && cell.source.contains("arr[") {
-                // Simple check: ensure no negative indices
-                if cell.source.contains("arr[-") {
-                    satisfied = false;
-                    violations.push("Negative array index detected".to_string());
-                } else {
-                    satisfied = true;
-                }
+        if constraint.expression.contains("0 <= i < arr.length") && cell.source.contains("arr[") {
+            // Simple check: ensure no negative indices
+            if cell.source.contains("arr[-") {
+                satisfied = false;
+                violations.push("Negative array index detected".to_string());
+            } else {
+                satisfied = true;
             }
+        }
         ConstraintResult {
             satisfied,
             violations,
         }
     }
     /// Prove function correctness against specification
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::notebook::testing::formal::prove_function;
-/// 
-/// let result = prove_function(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn prove_function(&self, spec: &FunctionSpec, cell: &Cell) -> ProofResult {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::notebook::testing::formal::prove_function;
+    ///
+    /// let result = prove_function(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn prove_function(&self, spec: &FunctionSpec, cell: &Cell) -> ProofResult {
         let mut is_valid = true;
         let mut unsatisfied = Vec::new();
         // Check if function exists
-        if !cell.source.contains(&format!("fn {}", spec.name)) &&
-           !cell.source.contains(&format!("fun {}", spec.name)) {
+        if !cell.source.contains(&format!("fn {}", spec.name))
+            && !cell.source.contains(&format!("fun {}", spec.name))
+        {
             is_valid = false;
             unsatisfied.push("Function not found".to_string());
         }
@@ -218,15 +218,15 @@ pub fn prove_function(&self, spec: &FunctionSpec, cell: &Cell) -> ProofResult {
         }
     }
     /// Perform symbolic execution
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::notebook::testing::formal::symbolic_execute;
-/// 
-/// let result = symbolic_execute(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn symbolic_execute(&self, cell: &Cell) -> Vec<ExecutionPath> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::notebook::testing::formal::symbolic_execute;
+    ///
+    /// let result = symbolic_execute(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn symbolic_execute(&self, cell: &Cell) -> Vec<ExecutionPath> {
         let mut paths = Vec::new();
         // Count branches in the code
         let if_count = cell.source.matches("if ").count();
@@ -253,15 +253,19 @@ pub fn symbolic_execute(&self, cell: &Cell) -> Vec<ExecutionPath> {
         paths
     }
     /// Verify loop invariants
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::notebook::testing::formal::verify_loop_invariant;
-/// 
-/// let result = verify_loop_invariant(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn verify_loop_invariant(&self, _invariant: &LoopInvariant, _cell: &Cell) -> LoopVerificationResult {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::notebook::testing::formal::verify_loop_invariant;
+    ///
+    /// let result = verify_loop_invariant(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn verify_loop_invariant(
+        &self,
+        _invariant: &LoopInvariant,
+        _cell: &Cell,
+    ) -> LoopVerificationResult {
         // Simplified verification
         LoopVerificationResult {
             initialization_valid: true,

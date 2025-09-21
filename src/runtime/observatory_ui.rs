@@ -5,11 +5,11 @@
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::runtime::actor::{ActorSystem, ActorId};
     use crate::runtime::actor::Message;
+    use crate::runtime::actor::{ActorId, ActorSystem};
     use crate::runtime::observatory::{
-        ActorObservatory, ObservatoryConfig, MessageTrace, MessageStatus,
-        ActorSnapshot, ActorState, MessageStats,
+        ActorObservatory, ActorSnapshot, ActorState, MessageStats, MessageStatus, MessageTrace,
+        ObservatoryConfig,
     };
     use std::sync::{Arc, Mutex};
     use std::time::{Duration, Instant};
@@ -112,12 +112,14 @@ mod tests {
     // ========== DisplayMode Tests ==========
     #[test]
     fn test_display_mode_variants() {
-        let modes = [DisplayMode::Overview,
+        let modes = [
+            DisplayMode::Overview,
             DisplayMode::ActorList,
             DisplayMode::MessageTraces,
             DisplayMode::Metrics,
             DisplayMode::Deadlocks,
-            DisplayMode::Help];
+            DisplayMode::Help,
+        ];
         assert_eq!(modes.len(), 6);
         assert_eq!(modes[0], DisplayMode::Overview);
         assert_ne!(modes[0], DisplayMode::ActorList);
@@ -197,7 +199,10 @@ mod tests {
         let config = create_test_config();
         let dashboard = ObservatoryDashboard::new(observatory, config.clone());
         assert_eq!(dashboard.display_mode, DisplayMode::Overview);
-        assert_eq!(dashboard.config.refresh_interval_ms, config.refresh_interval_ms);
+        assert_eq!(
+            dashboard.config.refresh_interval_ms,
+            config.refresh_interval_ms
+        );
         assert_eq!(dashboard.terminal_size, (80, 24));
         assert!(dashboard.scroll_positions.is_empty());
     }
@@ -280,7 +285,10 @@ mod tests {
     fn test_set_scroll_position() {
         let mut dashboard = create_test_dashboard();
         dashboard.set_scroll_position(DisplayMode::MessageTraces, 10);
-        assert_eq!(dashboard.get_scroll_position(DisplayMode::MessageTraces), 10);
+        assert_eq!(
+            dashboard.get_scroll_position(DisplayMode::MessageTraces),
+            10
+        );
     }
     #[test]
     fn test_get_scroll_position_default() {
@@ -486,13 +494,10 @@ mod tests {
         use std::thread;
         let observatory = Arc::new(Mutex::new(ActorObservatory::new(
             create_test_actor_system(),
-            ObservatoryConfig::default()
+            ObservatoryConfig::default(),
         )));
         let config = create_test_config();
-        let dashboard = Arc::new(Mutex::new(ObservatoryDashboard::new(
-            observatory,
-            config
-        )));
+        let dashboard = Arc::new(Mutex::new(ObservatoryDashboard::new(observatory, config)));
         let mut handles = vec![];
         // Spawn threads to access dashboard concurrently
         for i in 0..3 {
@@ -512,9 +517,7 @@ mod tests {
         assert!(d.scroll_positions.contains_key(&DisplayMode::MessageTraces));
     }
 }
-use crate::runtime::observatory::{
-    ActorObservatory, ActorState, MessageStatus,
-};
+use crate::runtime::observatory::{ActorObservatory, ActorState, MessageStatus};
 use anyhow::Result;
 use std::collections::HashMap;
 use std::io::{self, Write};
@@ -629,15 +632,15 @@ impl Colors {
 }
 impl ObservatoryDashboard {
     /// Create a new dashboard
-/// # Examples
-/// 
-/// ```
-/// use ruchy::runtime::observatory_ui::ObservatoryDashboard;
-/// 
-/// let instance = ObservatoryDashboard::new();
-/// // Verify behavior
-/// ```
-pub fn new(observatory: Arc<Mutex<ActorObservatory>>, config: DashboardConfig) -> Self {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::observatory_ui::ObservatoryDashboard;
+    ///
+    /// let instance = ObservatoryDashboard::new();
+    /// // Verify behavior
+    /// ```
+    pub fn new(observatory: Arc<Mutex<ActorObservatory>>, config: DashboardConfig) -> Self {
         Self {
             observatory,
             config,
@@ -648,16 +651,16 @@ pub fn new(observatory: Arc<Mutex<ActorObservatory>>, config: DashboardConfig) -
         }
     }
     /// Start the interactive dashboard
-/// # Examples
-/// 
-/// ```
-/// use ruchy::runtime::observatory_ui::ObservatoryDashboard;
-/// 
-/// let mut instance = ObservatoryDashboard::new();
-/// let result = instance.start_interactive();
-/// // Verify behavior
-/// ```
-pub fn start_interactive(&mut self) -> Result<()> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::observatory_ui::ObservatoryDashboard;
+    ///
+    /// let mut instance = ObservatoryDashboard::new();
+    /// let result = instance.start_interactive();
+    /// // Verify behavior
+    /// ```
+    pub fn start_interactive(&mut self) -> Result<()> {
         // Clear screen and hide cursor
         print!("\x1b[2J\x1b[?25l");
         io::stdout().flush()?;
@@ -679,16 +682,16 @@ pub fn start_interactive(&mut self) -> Result<()> {
         Ok(())
     }
     /// Render the current view to the terminal
-/// # Examples
-/// 
-/// ```
-/// use ruchy::runtime::observatory_ui::ObservatoryDashboard;
-/// 
-/// let mut instance = ObservatoryDashboard::new();
-/// let result = instance.render_current_view();
-/// // Verify behavior
-/// ```
-pub fn render_current_view(&mut self) -> Result<()> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::observatory_ui::ObservatoryDashboard;
+    ///
+    /// let mut instance = ObservatoryDashboard::new();
+    /// let result = instance.render_current_view();
+    /// // Verify behavior
+    /// ```
+    pub fn render_current_view(&mut self) -> Result<()> {
         // Clear screen and move to top
         print!("\x1b[2J\x1b[H");
         match self.display_mode {
@@ -708,11 +711,15 @@ pub fn render_current_view(&mut self) -> Result<()> {
     /// Render the overview screen
     fn render_overview(&self) -> Result<()> {
         let colors = Colors::new(self.config.enable_colors);
-        println!("{}{}Ruchy Actor Observatory - System Overview{}", 
-                 colors.bold, colors.cyan, colors.reset);
+        println!(
+            "{}{}Ruchy Actor Observatory - System Overview{}",
+            colors.bold, colors.cyan, colors.reset
+        );
         println!("{}", "─".repeat(self.terminal_size.0 as usize));
         // Get system metrics
-        let observatory = self.observatory.lock()
+        let observatory = self
+            .observatory
+            .lock()
             .map_err(|_| anyhow::anyhow!("Failed to acquire observatory lock"))?;
         let metrics = observatory.get_metrics()?;
         let snapshots = observatory.get_actor_snapshots()?;
@@ -720,13 +727,30 @@ pub fn render_current_view(&mut self) -> Result<()> {
         let deadlocks = observatory.detect_deadlocks()?;
         // System status summary
         println!("{}System Status:{}", colors.bold, colors.reset);
-        println!("  Active Actors: {}{}{}", colors.green, metrics.active_actors, colors.reset);
-        println!("  Messages Processed: {}{}{}", colors.blue, metrics.total_messages_processed, colors.reset);
-        println!("  Messages/sec: {}{:.2}{}", colors.yellow, metrics.system_messages_per_second, colors.reset);
-        println!("  Avg Mailbox Size: {}{:.1}{}", colors.cyan, metrics.avg_mailbox_size, colors.reset);
+        println!(
+            "  Active Actors: {}{}{}",
+            colors.green, metrics.active_actors, colors.reset
+        );
+        println!(
+            "  Messages Processed: {}{}{}",
+            colors.blue, metrics.total_messages_processed, colors.reset
+        );
+        println!(
+            "  Messages/sec: {}{:.2}{}",
+            colors.yellow, metrics.system_messages_per_second, colors.reset
+        );
+        println!(
+            "  Avg Mailbox Size: {}{:.1}{}",
+            colors.cyan, metrics.avg_mailbox_size, colors.reset
+        );
         if !deadlocks.is_empty() {
-            println!("  {}Deadlocks Detected: {}{}{}", 
-                     colors.red, colors.bold, deadlocks.len(), colors.reset);
+            println!(
+                "  {}Deadlocks Detected: {}{}{}",
+                colors.red,
+                colors.bold,
+                deadlocks.len(),
+                colors.reset
+            );
         }
         println!();
         // Actor states summary
@@ -743,7 +767,13 @@ pub fn render_current_view(&mut self) -> Result<()> {
                 ActorState::Restarting => colors.magenta,
                 _ => colors.gray,
             };
-            println!("  {}: {}{}{}", state_display(state), state_color, count, colors.reset);
+            println!(
+                "  {}: {}{}{}",
+                state_display(state),
+                state_color,
+                count,
+                colors.reset
+            );
         }
         println!();
         // Recent message activity
@@ -763,13 +793,17 @@ pub fn render_current_view(&mut self) -> Result<()> {
                 } else {
                     String::new()
                 };
-                println!("  {} → {}: {}{:?}{}{}", 
-                         trace.source.map_or("external".to_string(), |id| id.to_string()),
-                         trace.destination,
-                         status_color,
-                         trace.status,
-                         colors.reset,
-                         duration_str);
+                println!(
+                    "  {} → {}: {}{:?}{}{}",
+                    trace
+                        .source
+                        .map_or("external".to_string(), |id| id.to_string()),
+                    trace.destination,
+                    status_color,
+                    trace.status,
+                    colors.reset,
+                    duration_str
+                );
             }
         }
         Ok(())
@@ -777,10 +811,14 @@ pub fn render_current_view(&mut self) -> Result<()> {
     /// Render the actor list view
     fn render_actor_list(&self) -> Result<()> {
         let colors = Colors::new(self.config.enable_colors);
-        println!("{}{}Ruchy Actor Observatory - Actor List{}", 
-                 colors.bold, colors.cyan, colors.reset);
+        println!(
+            "{}{}Ruchy Actor Observatory - Actor List{}",
+            colors.bold, colors.cyan, colors.reset
+        );
         println!("{}", "─".repeat(self.terminal_size.0 as usize));
-        let observatory = self.observatory.lock()
+        let observatory = self
+            .observatory
+            .lock()
             .map_err(|_| anyhow::anyhow!("Failed to acquire observatory lock"))?;
         let snapshots = observatory.get_actor_snapshots()?;
         if snapshots.is_empty() {
@@ -788,8 +826,10 @@ pub fn render_current_view(&mut self) -> Result<()> {
             return Ok(());
         }
         // Table headers
-        println!("{}ID        Name            State       Mailbox  Messages  Avg Time{}", 
-                 colors.bold, colors.reset);
+        println!(
+            "{}ID        Name            State       Mailbox  Messages  Avg Time{}",
+            colors.bold, colors.reset
+        );
         println!("{}", "─".repeat(self.terminal_size.0 as usize));
         // Sort actors by ID for consistent display
         let mut sorted_snapshots: Vec<_> = snapshots.values().collect();
@@ -807,25 +847,31 @@ pub fn render_current_view(&mut self) -> Result<()> {
                 ActorState::Failed(reason) => format!("Failed({reason})"),
                 other => state_display(other),
             };
-            println!("{:<9} {:<15} {}{:<11}{} {:<8} {:<9} {:.1}µs",
-                     snapshot.actor_id,
-                     snapshot.name,
-                     state_color,
-                     state_display,
-                     colors.reset,
-                     snapshot.mailbox_size,
-                     snapshot.message_stats.total_processed,
-                     snapshot.message_stats.avg_processing_time_us);
+            println!(
+                "{:<9} {:<15} {}{:<11}{} {:<8} {:<9} {:.1}µs",
+                snapshot.actor_id,
+                snapshot.name,
+                state_color,
+                state_display,
+                colors.reset,
+                snapshot.mailbox_size,
+                snapshot.message_stats.total_processed,
+                snapshot.message_stats.avg_processing_time_us
+            );
         }
         Ok(())
     }
     /// Render the message traces view
     fn render_message_traces(&self) -> Result<()> {
         let colors = Colors::new(self.config.enable_colors);
-        println!("{}{}Ruchy Actor Observatory - Message Traces{}", 
-                 colors.bold, colors.cyan, colors.reset);
+        println!(
+            "{}{}Ruchy Actor Observatory - Message Traces{}",
+            colors.bold, colors.cyan, colors.reset
+        );
         println!("{}", "─".repeat(self.terminal_size.0 as usize));
-        let observatory = self.observatory.lock()
+        let observatory = self
+            .observatory
+            .lock()
             .map_err(|_| anyhow::anyhow!("Failed to acquire observatory lock"))?;
         let traces = observatory.get_traces(Some(self.config.max_traces_display), None)?;
         if traces.is_empty() {
@@ -833,12 +879,16 @@ pub fn render_current_view(&mut self) -> Result<()> {
             return Ok(());
         }
         // Table headers
-        println!("{}Time     Source    Destination  Status      Duration  Message{}", 
-                 colors.bold, colors.reset);
+        println!(
+            "{}Time     Source    Destination  Status      Duration  Message{}",
+            colors.bold, colors.reset
+        );
         println!("{}", "─".repeat(self.terminal_size.0 as usize));
         for trace in &traces {
             let timestamp = format_timestamp(trace.timestamp);
-            let source = trace.source.map_or("external".to_string(), |id| id.to_string());
+            let source = trace
+                .source
+                .map_or("external".to_string(), |id| id.to_string());
             let status_color = match trace.status {
                 MessageStatus::Completed => colors.green,
                 MessageStatus::Failed => colors.red,
@@ -852,25 +902,31 @@ pub fn render_current_view(&mut self) -> Result<()> {
                 "       -".to_string()
             };
             let message_preview = format_message_preview(&trace.message);
-            println!("{} {:<9} {:<12} {}{:<11}{} {} {}",
-                     timestamp,
-                     source,
-                     trace.destination,
-                     status_color,
-                     format!("{:?}", trace.status),
-                     colors.reset,
-                     duration_str,
-                     message_preview);
+            println!(
+                "{} {:<9} {:<12} {}{:<11}{} {} {}",
+                timestamp,
+                source,
+                trace.destination,
+                status_color,
+                format!("{:?}", trace.status),
+                colors.reset,
+                duration_str,
+                message_preview
+            );
         }
         Ok(())
     }
     /// Render the system metrics view
     fn render_metrics(&self) -> Result<()> {
         let colors = Colors::new(self.config.enable_colors);
-        println!("{}{}Ruchy Actor Observatory - System Metrics{}", 
-                 colors.bold, colors.cyan, colors.reset);
+        println!(
+            "{}{}Ruchy Actor Observatory - System Metrics{}",
+            colors.bold, colors.cyan, colors.reset
+        );
         println!("{}", "─".repeat(self.terminal_size.0 as usize));
-        let observatory = self.observatory.lock()
+        let observatory = self
+            .observatory
+            .lock()
             .map_err(|_| anyhow::anyhow!("Failed to acquire observatory lock"))?;
         let metrics = observatory.get_metrics()?;
         let uptime = observatory.uptime();
@@ -880,24 +936,51 @@ pub fn render_current_view(&mut self) -> Result<()> {
         println!("  Last Updated: {}", format_timestamp(metrics.last_updated));
         println!();
         println!("{}Actor Metrics:{}", colors.bold, colors.reset);
-        println!("  Active Actors: {}{}{}", colors.green, metrics.active_actors, colors.reset);
-        println!("  Total Queued Messages: {}{}{}", colors.yellow, metrics.total_queued_messages, colors.reset);
-        println!("  Average Mailbox Size: {}{:.2}{}", colors.cyan, metrics.avg_mailbox_size, colors.reset);
-        println!("  Recent Restarts: {}{}{}", colors.red, metrics.recent_restarts, colors.reset);
+        println!(
+            "  Active Actors: {}{}{}",
+            colors.green, metrics.active_actors, colors.reset
+        );
+        println!(
+            "  Total Queued Messages: {}{}{}",
+            colors.yellow, metrics.total_queued_messages, colors.reset
+        );
+        println!(
+            "  Average Mailbox Size: {}{:.2}{}",
+            colors.cyan, metrics.avg_mailbox_size, colors.reset
+        );
+        println!(
+            "  Recent Restarts: {}{}{}",
+            colors.red, metrics.recent_restarts, colors.reset
+        );
         println!();
         println!("{}Performance Metrics:{}", colors.bold, colors.reset);
-        println!("  Total Messages Processed: {}{}{}", colors.blue, metrics.total_messages_processed, colors.reset);
-        println!("  System Messages/sec: {}{:.2}{}", colors.green, metrics.system_messages_per_second, colors.reset);
-        println!("  Estimated Memory Usage: {}{}{}", colors.magenta, format_bytes(metrics.total_memory_usage), colors.reset);
+        println!(
+            "  Total Messages Processed: {}{}{}",
+            colors.blue, metrics.total_messages_processed, colors.reset
+        );
+        println!(
+            "  System Messages/sec: {}{:.2}{}",
+            colors.green, metrics.system_messages_per_second, colors.reset
+        );
+        println!(
+            "  Estimated Memory Usage: {}{}{}",
+            colors.magenta,
+            format_bytes(metrics.total_memory_usage),
+            colors.reset
+        );
         Ok(())
     }
     /// Render the deadlocks view
     fn render_deadlocks(&self) -> Result<()> {
         let colors = Colors::new(self.config.enable_colors);
-        println!("{}{}Ruchy Actor Observatory - Deadlock Detection{}", 
-                 colors.bold, colors.cyan, colors.reset);
+        println!(
+            "{}{}Ruchy Actor Observatory - Deadlock Detection{}",
+            colors.bold, colors.cyan, colors.reset
+        );
         println!("{}", "─".repeat(self.terminal_size.0 as usize));
-        let observatory = self.observatory.lock()
+        let observatory = self
+            .observatory
+            .lock()
             .map_err(|_| anyhow::anyhow!("Failed to acquire observatory lock"))?;
         let deadlocks = observatory.detect_deadlocks()?;
         if deadlocks.is_empty() {
@@ -906,14 +989,25 @@ pub fn render_current_view(&mut self) -> Result<()> {
             println!("The system is currently free of detected deadlocks.");
             println!("Deadlock detection runs automatically in the background.");
         } else {
-            println!("{}⚠ {} Deadlock(s) Detected{}", colors.red, deadlocks.len(), colors.reset);
+            println!(
+                "{}⚠ {} Deadlock(s) Detected{}",
+                colors.red,
+                deadlocks.len(),
+                colors.reset
+            );
             println!();
             for (i, deadlock) in deadlocks.iter().enumerate() {
                 println!("{}Deadlock #{}{}", colors.bold, i + 1, colors.reset);
                 println!("  Detected: {}", format_timestamp(deadlock.detected_at));
                 println!("  Duration: {}ms", deadlock.duration_estimate_ms);
-                println!("  Actors Involved: {}{:?}{}", colors.yellow, deadlock.actors, colors.reset);
-                println!("  {}Suggestion:{} {}", colors.cyan, colors.reset, deadlock.resolution_suggestion);
+                println!(
+                    "  Actors Involved: {}{:?}{}",
+                    colors.yellow, deadlock.actors, colors.reset
+                );
+                println!(
+                    "  {}Suggestion:{} {}",
+                    colors.cyan, colors.reset, deadlock.resolution_suggestion
+                );
                 println!();
             }
         }
@@ -922,8 +1016,10 @@ pub fn render_current_view(&mut self) -> Result<()> {
     /// Render the help screen
     fn render_help(&self) -> Result<()> {
         let colors = Colors::new(self.config.enable_colors);
-        println!("{}{}Ruchy Actor Observatory - Help{}", 
-                 colors.bold, colors.cyan, colors.reset);
+        println!(
+            "{}{}Ruchy Actor Observatory - Help{}",
+            colors.bold, colors.cyan, colors.reset
+        );
         println!("{}", "─".repeat(self.terminal_size.0 as usize));
         println!("{}Navigation:{}", colors.bold, colors.reset);
         println!("  1 - Overview screen");
@@ -939,7 +1035,10 @@ pub fn render_current_view(&mut self) -> Result<()> {
         println!("  • Message tracing with filtering capabilities");
         println!("  • Automatic deadlock detection");
         println!("  • Performance metrics and statistics");
-        println!("  • Real-time updates every {} seconds", self.config.refresh_interval_ms / 1000);
+        println!(
+            "  • Real-time updates every {} seconds",
+            self.config.refresh_interval_ms / 1000
+        );
         Ok(())
     }
     /// Render the status bar at the bottom of the screen
@@ -964,7 +1063,11 @@ pub fn render_current_view(&mut self) -> Result<()> {
             colors.reset
         );
         // Print status bar with background
-        print!("\x1b[7m{:<width$}\x1b[0m", status_bar, width = self.terminal_size.0 as usize);
+        print!(
+            "\x1b[7m{:<width$}\x1b[0m",
+            status_bar,
+            width = self.terminal_size.0 as usize
+        );
         Ok(())
     }
     /// Update terminal size
@@ -975,41 +1078,41 @@ pub fn render_current_view(&mut self) -> Result<()> {
         Ok(())
     }
     /// Switch to a different display mode
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::runtime::observatory_ui::set_display_mode;
-/// 
-/// let result = set_display_mode(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn set_display_mode(&mut self, mode: DisplayMode) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::runtime::observatory_ui::set_display_mode;
+    ///
+    /// let result = set_display_mode(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn set_display_mode(&mut self, mode: DisplayMode) {
         self.display_mode = mode;
     }
     /// Get current display mode
-/// # Examples
-/// 
-/// ```
-/// use ruchy::runtime::observatory_ui::ObservatoryDashboard;
-/// 
-/// let mut instance = ObservatoryDashboard::new();
-/// let result = instance.get_display_mode();
-/// // Verify behavior
-/// ```
-pub fn get_display_mode(&self) -> DisplayMode {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::observatory_ui::ObservatoryDashboard;
+    ///
+    /// let mut instance = ObservatoryDashboard::new();
+    /// let result = instance.get_display_mode();
+    /// // Verify behavior
+    /// ```
+    pub fn get_display_mode(&self) -> DisplayMode {
         self.display_mode
     }
     /// Cycle to the next display mode
-/// # Examples
-/// 
-/// ```
-/// use ruchy::runtime::observatory_ui::ObservatoryDashboard;
-/// 
-/// let mut instance = ObservatoryDashboard::new();
-/// let result = instance.cycle_display_mode();
-/// // Verify behavior
-/// ```
-pub fn cycle_display_mode(&mut self) {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::observatory_ui::ObservatoryDashboard;
+    ///
+    /// let mut instance = ObservatoryDashboard::new();
+    /// let result = instance.cycle_display_mode();
+    /// // Verify behavior
+    /// ```
+    pub fn cycle_display_mode(&mut self) {
         self.display_mode = match self.display_mode {
             DisplayMode::Overview => DisplayMode::ActorList,
             DisplayMode::ActorList => DisplayMode::MessageTraces,
@@ -1020,63 +1123,63 @@ pub fn cycle_display_mode(&mut self) {
         };
     }
     /// Set terminal size
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::runtime::observatory_ui::set_terminal_size;
-/// 
-/// let result = set_terminal_size(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn set_terminal_size(&mut self, width: u16, height: u16) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::runtime::observatory_ui::set_terminal_size;
+    ///
+    /// let result = set_terminal_size(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn set_terminal_size(&mut self, width: u16, height: u16) {
         self.terminal_size = (width, height);
     }
     /// Set scroll position for a display mode
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::runtime::observatory_ui::set_scroll_position;
-/// 
-/// let result = set_scroll_position(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn set_scroll_position(&mut self, mode: DisplayMode, position: usize) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::runtime::observatory_ui::set_scroll_position;
+    ///
+    /// let result = set_scroll_position(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn set_scroll_position(&mut self, mode: DisplayMode, position: usize) {
         self.scroll_positions.insert(mode, position);
     }
     /// Get scroll position for a display mode
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::runtime::observatory_ui::get_scroll_position;
-/// 
-/// let result = get_scroll_position(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn get_scroll_position(&self, mode: DisplayMode) -> usize {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::runtime::observatory_ui::get_scroll_position;
+    ///
+    /// let result = get_scroll_position(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn get_scroll_position(&self, mode: DisplayMode) -> usize {
         self.scroll_positions.get(&mode).copied().unwrap_or(0)
     }
     /// Format text with color
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::runtime::observatory_ui::format_with_color;
-/// 
-/// let result = format_with_color("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn format_with_color(&self, text: &str, _color: &str) -> String {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::runtime::observatory_ui::format_with_color;
+    ///
+    /// let result = format_with_color("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn format_with_color(&self, text: &str, _color: &str) -> String {
         text.to_string()
     }
     /// Get color for actor state
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::runtime::observatory_ui::get_actor_state_color;
-/// 
-/// let result = get_actor_state_color(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn get_actor_state_color(&self, state: ActorState) -> &'static str {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::runtime::observatory_ui::get_actor_state_color;
+    ///
+    /// let result = get_actor_state_color(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn get_actor_state_color(&self, state: ActorState) -> &'static str {
         match state {
             ActorState::Running => "green",
             ActorState::Failed(_) => "red",
@@ -1088,15 +1191,15 @@ pub fn get_actor_state_color(&self, state: ActorState) -> &'static str {
         }
     }
     /// Get color for message status
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::runtime::observatory_ui::get_message_status_color;
-/// 
-/// let result = get_message_status_color(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn get_message_status_color(&self, status: MessageStatus) -> &'static str {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::runtime::observatory_ui::get_message_status_color;
+    ///
+    /// let result = get_message_status_color(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn get_message_status_color(&self, status: MessageStatus) -> &'static str {
         match status {
             MessageStatus::Completed => "green",
             MessageStatus::Failed => "red",
@@ -1106,15 +1209,15 @@ pub fn get_message_status_color(&self, status: MessageStatus) -> &'static str {
         }
     }
     /// Format duration in microseconds
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::runtime::observatory_ui::format_duration_us;
-/// 
-/// let result = format_duration_us(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn format_duration_us(&self, us: u64) -> String {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::runtime::observatory_ui::format_duration_us;
+    ///
+    /// let result = format_duration_us(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn format_duration_us(&self, us: u64) -> String {
         if us < 1000 {
             format!("{us}μs")
         } else if us < 1_000_000 {
@@ -1127,40 +1230,40 @@ pub fn format_duration_us(&self, us: u64) -> String {
         }
     }
     /// Format bytes helper
-/// # Examples
-/// 
-/// ```
-/// use ruchy::runtime::observatory_ui::ObservatoryDashboard;
-/// 
-/// let mut instance = ObservatoryDashboard::new();
-/// let result = instance.format_bytes();
-/// // Verify behavior
-/// ```
-pub fn format_bytes(&self, bytes: usize) -> String {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::observatory_ui::ObservatoryDashboard;
+    ///
+    /// let mut instance = ObservatoryDashboard::new();
+    /// let result = instance.format_bytes();
+    /// // Verify behavior
+    /// ```
+    pub fn format_bytes(&self, bytes: usize) -> String {
         format_bytes(bytes)
     }
     /// Format timestamp
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::runtime::observatory_ui::format_timestamp;
-/// 
-/// let result = format_timestamp(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn format_timestamp(&self, _timestamp: u64) -> String {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::runtime::observatory_ui::format_timestamp;
+    ///
+    /// let result = format_timestamp(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn format_timestamp(&self, _timestamp: u64) -> String {
         "12:34:56".to_string()
     }
     /// Truncate string
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::runtime::observatory_ui::truncate_string;
-/// 
-/// let result = truncate_string("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn truncate_string(&self, text: &str, max_len: usize) -> String {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::runtime::observatory_ui::truncate_string;
+    ///
+    /// let result = truncate_string("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn truncate_string(&self, text: &str, max_len: usize) -> String {
         if text.len() <= max_len {
             text.to_string()
         } else if max_len < 3 {
@@ -1170,51 +1273,51 @@ pub fn truncate_string(&self, text: &str, max_len: usize) -> String {
         }
     }
     /// Render header
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::runtime::observatory_ui::render_header;
-/// 
-/// let result = render_header("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn render_header(&self, title: &str) -> String {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::runtime::observatory_ui::render_header;
+    ///
+    /// let result = render_header("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn render_header(&self, title: &str) -> String {
         format!("=== {title} ===")
     }
     /// Render separator
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::runtime::observatory_ui::render_separator;
-/// 
-/// let result = render_separator(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn render_separator(&self) -> String {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::runtime::observatory_ui::render_separator;
+    ///
+    /// let result = render_separator(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn render_separator(&self) -> String {
         "-".repeat(40)
     }
     /// Render table row
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::runtime::observatory_ui::render_table_row;
-/// 
-/// let result = render_table_row("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn render_table_row(&self, columns: Vec<&str>) -> String {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::runtime::observatory_ui::render_table_row;
+    ///
+    /// let result = render_table_row("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn render_table_row(&self, columns: Vec<&str>) -> String {
         columns.join(" | ")
     }
     /// Render progress bar
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::runtime::observatory_ui::render_progress_bar;
-/// 
-/// let result = render_progress_bar(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn render_progress_bar(&self, current: usize, total: usize, _width: usize) -> String {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::runtime::observatory_ui::render_progress_bar;
+    ///
+    /// let result = render_progress_bar(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn render_progress_bar(&self, current: usize, total: usize, _width: usize) -> String {
         let percent = if total > 0 {
             (current * 100) / total
         } else {
@@ -1223,24 +1326,45 @@ pub fn render_progress_bar(&self, current: usize, total: usize, _width: usize) -
         format!("[{percent}%]")
     }
     /// Handle key press
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::runtime::observatory_ui::handle_key;
-/// 
-/// let result = handle_key(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn handle_key(&mut self, key: char) -> bool {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::runtime::observatory_ui::handle_key;
+    ///
+    /// let result = handle_key(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn handle_key(&mut self, key: char) -> bool {
         match key {
             'q' | 'Q' => true,
-            '1' => { self.display_mode = DisplayMode::Overview; false }
-            '2' => { self.display_mode = DisplayMode::ActorList; false }
-            '3' => { self.display_mode = DisplayMode::MessageTraces; false }
-            '4' => { self.display_mode = DisplayMode::Metrics; false }
-            '5' => { self.display_mode = DisplayMode::Deadlocks; false }
-            'h' => { self.display_mode = DisplayMode::Help; false }
-            'r' => { self.last_update = Instant::now(); false }
+            '1' => {
+                self.display_mode = DisplayMode::Overview;
+                false
+            }
+            '2' => {
+                self.display_mode = DisplayMode::ActorList;
+                false
+            }
+            '3' => {
+                self.display_mode = DisplayMode::MessageTraces;
+                false
+            }
+            '4' => {
+                self.display_mode = DisplayMode::Metrics;
+                false
+            }
+            '5' => {
+                self.display_mode = DisplayMode::Deadlocks;
+                false
+            }
+            'h' => {
+                self.display_mode = DisplayMode::Help;
+                false
+            }
+            'r' => {
+                self.last_update = Instant::now();
+                false
+            }
             _ => false,
         }
     }
@@ -1326,8 +1450,7 @@ fn format_message_preview(message: &crate::runtime::actor::Message) -> String {
 #[cfg(test)]
 mod property_tests_observatory_ui {
     use proptest::proptest;
-    
-    
+
     proptest! {
         /// Property: Function never panics on any input
         #[test]

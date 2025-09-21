@@ -1,9 +1,9 @@
 //! Simplified interactive theorem prover
+use super::smt::SmtBackend;
+use super::tactics::TacticLibrary;
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use super::smt::SmtBackend;
-use super::tactics::TacticLibrary;
 /// Interactive prover
 pub struct InteractiveProver {
     _backend: SmtBackend,
@@ -13,31 +13,31 @@ pub struct InteractiveProver {
 }
 impl InteractiveProver {
     /// Create new prover
-/// # Examples
-/// 
-/// ```
-/// use ruchy::proving::prover::InteractiveProver;
-/// 
-/// let instance = InteractiveProver::new();
-/// // Verify behavior
-/// ```
-/// # Examples
-/// 
-/// ```
-/// use ruchy::proving::prover::InteractiveProver;
-/// 
-/// let instance = InteractiveProver::new();
-/// // Verify behavior
-/// ```
-/// # Examples
-/// 
-/// ```
-/// use ruchy::proving::prover::InteractiveProver;
-/// 
-/// let instance = InteractiveProver::new();
-/// // Verify behavior
-/// ```
-pub fn new(backend: SmtBackend) -> Self {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::proving::prover::InteractiveProver;
+    ///
+    /// let instance = InteractiveProver::new();
+    /// // Verify behavior
+    /// ```
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::proving::prover::InteractiveProver;
+    ///
+    /// let instance = InteractiveProver::new();
+    /// // Verify behavior
+    /// ```
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::proving::prover::InteractiveProver;
+    ///
+    /// let instance = InteractiveProver::new();
+    /// // Verify behavior
+    /// ```
+    pub fn new(backend: SmtBackend) -> Self {
         Self {
             _backend: backend,
             tactics: TacticLibrary::default(),
@@ -46,69 +46,74 @@ pub fn new(backend: SmtBackend) -> Self {
         }
     }
     /// Set timeout
-/// # Examples
-/// 
-/// ```
-/// use ruchy::proving::prover::InteractiveProver;
-/// 
-/// let mut instance = InteractiveProver::new();
-/// let result = instance.set_timeout();
-/// // Verify behavior
-/// ```
-pub fn set_timeout(&mut self, timeout: u64) {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::proving::prover::InteractiveProver;
+    ///
+    /// let mut instance = InteractiveProver::new();
+    /// let result = instance.set_timeout();
+    /// // Verify behavior
+    /// ```
+    pub fn set_timeout(&mut self, timeout: u64) {
         self.timeout = timeout;
     }
     /// Enable ML suggestions
-/// # Examples
-/// 
-/// ```
-/// use ruchy::proving::prover::InteractiveProver;
-/// 
-/// let mut instance = InteractiveProver::new();
-/// let result = instance.set_ml_suggestions();
-/// assert_eq!(result, Ok(true));
-/// ```
-pub fn set_ml_suggestions(&mut self, enabled: bool) {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::proving::prover::InteractiveProver;
+    ///
+    /// let mut instance = InteractiveProver::new();
+    /// let result = instance.set_ml_suggestions();
+    /// assert_eq!(result, Ok(true));
+    /// ```
+    pub fn set_ml_suggestions(&mut self, enabled: bool) {
         self.ml_suggestions = enabled;
     }
     /// Load proof script
-/// # Examples
-/// 
-/// ```
-/// use ruchy::proving::prover::InteractiveProver;
-/// 
-/// let mut instance = InteractiveProver::new();
-/// let result = instance.load_script();
-/// // Verify behavior
-/// ```
-pub fn load_script(&mut self, _script: &str) -> Result<()> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::proving::prover::InteractiveProver;
+    ///
+    /// let mut instance = InteractiveProver::new();
+    /// let result = instance.load_script();
+    /// // Verify behavior
+    /// ```
+    pub fn load_script(&mut self, _script: &str) -> Result<()> {
         // Simplified: just return ok
         Ok(())
     }
     /// Get available tactics
-/// # Examples
-/// 
-/// ```
-/// use ruchy::proving::prover::InteractiveProver;
-/// 
-/// let mut instance = InteractiveProver::new();
-/// let result = instance.get_available_tactics();
-/// // Verify behavior
-/// ```
-pub fn get_available_tactics(&self) -> Vec<&dyn super::tactics::Tactic> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::proving::prover::InteractiveProver;
+    ///
+    /// let mut instance = InteractiveProver::new();
+    /// let result = instance.get_available_tactics();
+    /// // Verify behavior
+    /// ```
+    pub fn get_available_tactics(&self) -> Vec<&dyn super::tactics::Tactic> {
         self.tactics.all_tactics()
     }
     /// Apply tactic
-/// # Examples
-/// 
-/// ```
-/// use ruchy::proving::prover::InteractiveProver;
-/// 
-/// let mut instance = InteractiveProver::new();
-/// let result = instance.apply_tactic();
-/// // Verify behavior
-/// ```
-pub fn apply_tactic(&mut self, session: &mut ProverSession, tactic_name: &str, args: &[&str]) -> Result<ProofResult> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::proving::prover::InteractiveProver;
+    ///
+    /// let mut instance = InteractiveProver::new();
+    /// let result = instance.apply_tactic();
+    /// // Verify behavior
+    /// ```
+    pub fn apply_tactic(
+        &mut self,
+        session: &mut ProverSession,
+        tactic_name: &str,
+        args: &[&str],
+    ) -> Result<ProofResult> {
         let tactic = self.tactics.get_tactic(tactic_name)?;
         if let Some(goal) = session.current_goal() {
             let result = tactic.apply(goal, args, &session.context)?;
@@ -125,24 +130,26 @@ pub fn apply_tactic(&mut self, session: &mut ProverSession, tactic_name: &str, a
                     session.replace_with_subgoals(subgoals);
                     Ok(ProofResult::Progress)
                 }
-                StepResult::Failed(msg) => {
-                    Ok(ProofResult::Failed(msg))
-                }
+                StepResult::Failed(msg) => Ok(ProofResult::Failed(msg)),
             }
         } else {
             Ok(ProofResult::Failed("No active goal".to_string()))
         }
     }
     /// Process input
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::proving::prover::process_input;
-/// 
-/// let result = process_input("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn process_input(&mut self, session: &mut ProverSession, input: &str) -> Result<ProofResult> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::proving::prover::process_input;
+    ///
+    /// let result = process_input("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn process_input(
+        &mut self,
+        session: &mut ProverSession,
+        input: &str,
+    ) -> Result<ProofResult> {
         // Try to parse as goal
         if let Some(goal) = input.strip_prefix("prove ") {
             session.add_goal(goal.to_string());
@@ -158,15 +165,18 @@ pub fn process_input(&mut self, session: &mut ProverSession, input: &str) -> Res
         Ok(ProofResult::Failed("Unknown command".to_string()))
     }
     /// Suggest tactics
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::proving::prover::suggest_tactics;
-/// 
-/// let result = suggest_tactics(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn suggest_tactics(&self, goal: &ProofGoal) -> Result<Vec<super::tactics::TacticSuggestion>> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::proving::prover::suggest_tactics;
+    ///
+    /// let result = suggest_tactics(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn suggest_tactics(
+        &self,
+        goal: &ProofGoal,
+    ) -> Result<Vec<super::tactics::TacticSuggestion>> {
         self.tactics.suggest_tactics(goal, &ProofContext::new())
     }
 }
@@ -187,67 +197,67 @@ impl ProverSession {
         }
     }
     /// Add goal
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::proving::prover::add_goal;
-/// 
-/// let result = add_goal(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn add_goal(&mut self, statement: String) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::proving::prover::add_goal;
+    ///
+    /// let result = add_goal(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn add_goal(&mut self, statement: String) {
         self.goals.push(ProofGoal { statement });
     }
     /// Get current goal
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::proving::prover::current_goal;
-/// 
-/// let result = current_goal(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn current_goal(&self) -> Option<&ProofGoal> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::proving::prover::current_goal;
+    ///
+    /// let result = current_goal(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn current_goal(&self) -> Option<&ProofGoal> {
         self.goals.first()
     }
     /// Update current goal
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::proving::prover::update_goal;
-/// 
-/// let result = update_goal(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn update_goal(&mut self, statement: String) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::proving::prover::update_goal;
+    ///
+    /// let result = update_goal(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn update_goal(&mut self, statement: String) {
         if !self.goals.is_empty() {
             self.goals[0].statement = statement;
         }
     }
     /// Complete current goal
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::proving::prover::complete_goal;
-/// 
-/// let result = complete_goal(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn complete_goal(&mut self) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::proving::prover::complete_goal;
+    ///
+    /// let result = complete_goal(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn complete_goal(&mut self) {
         if !self.goals.is_empty() {
             self.goals.remove(0);
         }
     }
     /// Replace with subgoals
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::proving::prover::replace_with_subgoals;
-/// 
-/// let result = replace_with_subgoals(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn replace_with_subgoals(&mut self, subgoals: Vec<String>) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::proving::prover::replace_with_subgoals;
+    ///
+    /// let result = replace_with_subgoals(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn replace_with_subgoals(&mut self, subgoals: Vec<String>) {
         if !self.goals.is_empty() {
             self.goals.remove(0);
             for subgoal in subgoals.into_iter().rev() {
@@ -256,39 +266,39 @@ pub fn replace_with_subgoals(&mut self, subgoals: Vec<String>) {
         }
     }
     /// Get all goals
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::proving::prover::get_goals;
-/// 
-/// let result = get_goals(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn get_goals(&self) -> &[ProofGoal] {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::proving::prover::get_goals;
+    ///
+    /// let result = get_goals(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn get_goals(&self) -> &[ProofGoal] {
         &self.goals
     }
     /// Check if complete
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::proving::prover::is_complete;
-/// 
-/// let result = is_complete(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn is_complete(&self) -> bool {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::proving::prover::is_complete;
+    ///
+    /// let result = is_complete(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn is_complete(&self) -> bool {
         self.goals.is_empty()
     }
     /// Export to text
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::proving::prover::to_text_proof;
-/// 
-/// let result = to_text_proof(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn to_text_proof(&self) -> String {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::proving::prover::to_text_proof;
+    ///
+    /// let result = to_text_proof(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn to_text_proof(&self) -> String {
         let mut proof = String::new();
         proof.push_str("Proof:\n");
         for line in &self.history {
@@ -301,27 +311,27 @@ pub fn to_text_proof(&self) -> String {
         proof
     }
     /// Export to Coq
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::proving::prover::to_coq_proof;
-/// 
-/// let result = to_coq_proof(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn to_coq_proof(&self) -> String {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::proving::prover::to_coq_proof;
+    ///
+    /// let result = to_coq_proof(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn to_coq_proof(&self) -> String {
         self.to_text_proof() // Simplified
     }
     /// Export to Lean
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::proving::prover::to_lean_proof;
-/// 
-/// let result = to_lean_proof(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn to_lean_proof(&self) -> String {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::proving::prover::to_lean_proof;
+    ///
+    /// let result = to_lean_proof(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn to_lean_proof(&self) -> String {
         self.to_text_proof() // Simplified
     }
 }
@@ -468,7 +478,7 @@ mod tests {
         session.replace_with_subgoals(subgoals);
         assert_eq!(session.goals.len(), 2);
         // Due to .rev() then inserting at position 0, order is preserved
-        assert_eq!(session.goals[0].statement, "subgoal1"); 
+        assert_eq!(session.goals[0].statement, "subgoal1");
         assert_eq!(session.goals[1].statement, "subgoal2");
     }
     // Test 3: Goal Operations
@@ -539,7 +549,9 @@ mod tests {
     fn test_process_prove_command() {
         let mut prover = create_test_prover();
         let mut session = create_test_session();
-        let result = prover.process_input(&mut session, "prove forall x, x = x").unwrap();
+        let result = prover
+            .process_input(&mut session, "prove forall x, x = x")
+            .unwrap();
         match result {
             ProofResult::Progress => {
                 assert_eq!(session.goals.len(), 1);
@@ -652,7 +664,10 @@ mod tests {
         assert_eq!(session.goals.len(), 2);
         // Update current goal
         session.update_goal("modified subgoal".to_string());
-        assert_eq!(session.current_goal().unwrap().statement, "modified subgoal");
+        assert_eq!(
+            session.current_goal().unwrap().statement,
+            "modified subgoal"
+        );
         // Complete remaining goals
         session.complete_goal();
         session.complete_goal();
@@ -662,8 +677,7 @@ mod tests {
 #[cfg(test)]
 mod property_tests_prover {
     use proptest::proptest;
-    
-    
+
     proptest! {
         /// Property: Function never panics on any input
         #[test]

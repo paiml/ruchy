@@ -112,27 +112,27 @@ impl Default for ErrorRecovery {
 }
 impl ErrorRecovery {
     #[must_use]
-/// # Examples
-///
-/// ```
-/// use ruchy::parser::error_recovery::ErrorRecovery;
-///
-/// let recovery = ErrorRecovery::new();
-/// ```
-pub fn new() -> Self {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::parser::error_recovery::ErrorRecovery;
+    ///
+    /// let recovery = ErrorRecovery::new();
+    /// ```
+    pub fn new() -> Self {
         Self::default()
     }
     /// Create a synthetic error node for missing function name
-/// # Examples
-/// 
-/// ```
-/// use ruchy::parser::error_recovery::ErrorRecovery;
-/// 
-/// let mut instance = ErrorRecovery::new();
-/// let result = instance.missing_function_name();
-/// // Verify behavior
-/// ```
-pub fn missing_function_name(&mut self, location: SourceLocation) -> ErrorNode {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::parser::error_recovery::ErrorRecovery;
+    ///
+    /// let mut instance = ErrorRecovery::new();
+    /// let result = instance.missing_function_name();
+    /// // Verify behavior
+    /// ```
+    pub fn missing_function_name(&mut self, location: SourceLocation) -> ErrorNode {
         self.error_count += 1;
         ErrorNode {
             message: "expected function name".to_string(),
@@ -146,15 +146,15 @@ pub fn missing_function_name(&mut self, location: SourceLocation) -> ErrorNode {
         }
     }
     /// Create a synthetic error node for missing function parameters
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::parser::error_recovery::missing_function_params;
-/// 
-/// let result = missing_function_params(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn missing_function_params(&mut self, name: String, location: SourceLocation) -> ErrorNode {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::parser::error_recovery::missing_function_params;
+    ///
+    /// let result = missing_function_params(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn missing_function_params(&mut self, name: String, location: SourceLocation) -> ErrorNode {
         self.error_count += 1;
         ErrorNode {
             message: "expected function parameters".to_string(),
@@ -168,15 +168,15 @@ pub fn missing_function_params(&mut self, name: String, location: SourceLocation
         }
     }
     /// Create a synthetic error node for missing function body
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::parser::error_recovery::missing_function_body;
-/// 
-/// let result = missing_function_body(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn missing_function_body(
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::parser::error_recovery::missing_function_body;
+    ///
+    /// let result = missing_function_body(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn missing_function_body(
         &mut self,
         name: String,
         params: Vec<Param>,
@@ -195,16 +195,16 @@ pub fn missing_function_body(
         }
     }
     /// Create error node for malformed let binding
-/// # Examples
-/// 
-/// ```
-/// use ruchy::parser::error_recovery::ErrorRecovery;
-/// 
-/// let mut instance = ErrorRecovery::new();
-/// let result = instance.malformed_let_binding();
-/// // Verify behavior
-/// ```
-pub fn malformed_let_binding(
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::parser::error_recovery::ErrorRecovery;
+    ///
+    /// let mut instance = ErrorRecovery::new();
+    /// let result = instance.malformed_let_binding();
+    /// // Verify behavior
+    /// ```
+    pub fn malformed_let_binding(
         &mut self,
         partial_name: Option<String>,
         partial_value: Option<Box<Expr>>,
@@ -222,16 +222,16 @@ pub fn malformed_let_binding(
         }
     }
     /// Create error node for incomplete if expression
-/// # Examples
-/// 
-/// ```
-/// use ruchy::parser::error_recovery::ErrorRecovery;
-/// 
-/// let mut instance = ErrorRecovery::new();
-/// let result = instance.incomplete_if_expr();
-/// // Verify behavior
-/// ```
-pub fn incomplete_if_expr(
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::parser::error_recovery::ErrorRecovery;
+    ///
+    /// let mut instance = ErrorRecovery::new();
+    /// let result = instance.incomplete_if_expr();
+    /// // Verify behavior
+    /// ```
+    pub fn incomplete_if_expr(
         &mut self,
         condition: Option<Box<Expr>>,
         then_branch: Option<Box<Expr>>,
@@ -251,40 +251,40 @@ pub fn incomplete_if_expr(
     }
     /// Check if we should continue parsing or give up
     #[must_use]
-/// # Examples
-/// 
-/// ```
-/// use ruchy::parser::error_recovery::should_continue;
-/// 
-/// let result = should_continue(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn should_continue(&self) -> bool {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::parser::error_recovery::should_continue;
+    ///
+    /// let result = should_continue(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn should_continue(&self) -> bool {
         self.error_count < self.max_errors
     }
     /// Reset error count for new parsing session
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::parser::error_recovery::reset;
-/// 
-/// let result = reset(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn reset(&mut self) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::parser::error_recovery::reset;
+    ///
+    /// let result = reset(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn reset(&mut self) {
         self.error_count = 0;
     }
     /// Check if token is a synchronization point
     #[must_use]
-/// # Examples
-/// 
-/// ```
-/// use ruchy::parser::error_recovery::is_sync_token;
-/// 
-/// let result = is_sync_token("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn is_sync_token(&self, token: &str) -> bool {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::parser::error_recovery::is_sync_token;
+    ///
+    /// let result = is_sync_token("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn is_sync_token(&self, token: &str) -> bool {
         self.sync_tokens.contains(&token.to_string())
     }
     /// Skip tokens until we find a synchronization point
@@ -305,15 +305,15 @@ pub struct RecoveryRules;
 impl RecoveryRules {
     /// Determine recovery strategy based on context
     #[must_use]
-/// # Examples
-/// 
-/// ```
-/// use ruchy::parser::error_recovery::select_strategy;
-/// 
-/// let result = select_strategy(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn select_strategy(context: &ErrorContext) -> RecoveryStrategy {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::parser::error_recovery::select_strategy;
+    ///
+    /// let result = select_strategy(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn select_strategy(context: &ErrorContext) -> RecoveryStrategy {
         match context {
             ErrorContext::FunctionDecl { name, params, body } => {
                 if name.is_none() {
@@ -336,15 +336,15 @@ pub fn select_strategy(context: &ErrorContext) -> RecoveryStrategy {
     }
     /// Generate synthetic AST for error recovery
     #[must_use]
-/// # Examples
-/// 
-/// ```
-/// use ruchy::parser::error_recovery::synthesize_ast;
-/// 
-/// let result = synthesize_ast(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn synthesize_ast(error: &ErrorNode) -> Expr {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::parser::error_recovery::synthesize_ast;
+    ///
+    /// let result = synthesize_ast(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn synthesize_ast(error: &ErrorNode) -> Expr {
         let default_span = Span::new(0, 0);
         match &error.context {
             ErrorContext::FunctionDecl { .. } => {
@@ -484,7 +484,12 @@ mod tests {
         };
         let ast = RecoveryRules::synthesize_ast(&error);
         match ast.kind {
-            ExprKind::Let { name, type_annotation: _, value, .. } => {
+            ExprKind::Let {
+                name,
+                type_annotation: _,
+                value,
+                ..
+            } => {
                 assert_eq!(name, "x");
                 match value.kind {
                     ExprKind::Literal(Literal::Unit) => {}

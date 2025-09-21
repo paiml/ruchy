@@ -2,8 +2,8 @@
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::process::{Command, Stdio};
 use std::io::Write;
+use std::process::{Command, Stdio};
 /// SMT solver backend
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SmtBackend {
@@ -41,31 +41,31 @@ pub struct SmtSolver {
 }
 impl SmtSolver {
     /// Create new SMT solver
-/// # Examples
-/// 
-/// ```
-/// use ruchy::proving::smt::SmtSolver;
-/// 
-/// let instance = SmtSolver::new();
-/// // Verify behavior
-/// ```
-/// # Examples
-/// 
-/// ```
-/// use ruchy::proving::smt::SmtSolver;
-/// 
-/// let instance = SmtSolver::new();
-/// // Verify behavior
-/// ```
-/// # Examples
-/// 
-/// ```
-/// use ruchy::proving::smt::SmtSolver;
-/// 
-/// let instance = SmtSolver::new();
-/// // Verify behavior
-/// ```
-pub fn new(backend: SmtBackend) -> Self {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::proving::smt::SmtSolver;
+    ///
+    /// let instance = SmtSolver::new();
+    /// // Verify behavior
+    /// ```
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::proving::smt::SmtSolver;
+    ///
+    /// let instance = SmtSolver::new();
+    /// // Verify behavior
+    /// ```
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::proving::smt::SmtSolver;
+    ///
+    /// let instance = SmtSolver::new();
+    /// // Verify behavior
+    /// ```
+    pub fn new(backend: SmtBackend) -> Self {
         Self {
             backend,
             timeout_ms: 5000,
@@ -74,87 +74,85 @@ pub fn new(backend: SmtBackend) -> Self {
         }
     }
     /// Set timeout
-/// # Examples
-/// 
-/// ```
-/// use ruchy::proving::smt::SmtSolver;
-/// 
-/// let mut instance = SmtSolver::new();
-/// let result = instance.set_timeout();
-/// // Verify behavior
-/// ```
-pub fn set_timeout(&mut self, timeout_ms: u64) {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::proving::smt::SmtSolver;
+    ///
+    /// let mut instance = SmtSolver::new();
+    /// let result = instance.set_timeout();
+    /// // Verify behavior
+    /// ```
+    pub fn set_timeout(&mut self, timeout_ms: u64) {
         self.timeout_ms = timeout_ms;
     }
     /// Declare a variable
-/// # Examples
-/// 
-/// ```
-/// use ruchy::proving::smt::SmtSolver;
-/// 
-/// let mut instance = SmtSolver::new();
-/// let result = instance.declare_var();
-/// // Verify behavior
-/// ```
-pub fn declare_var(&mut self, name: &str, sort: &str) {
-        self.declarations.insert(
-            name.to_string(),
-            format!("(declare-fun {name} () {sort})")
-        );
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::proving::smt::SmtSolver;
+    ///
+    /// let mut instance = SmtSolver::new();
+    /// let result = instance.declare_var();
+    /// // Verify behavior
+    /// ```
+    pub fn declare_var(&mut self, name: &str, sort: &str) {
+        self.declarations
+            .insert(name.to_string(), format!("(declare-fun {name} () {sort})"));
     }
     /// Declare a function
-/// # Examples
-/// 
-/// ```
-/// use ruchy::proving::smt::SmtSolver;
-/// 
-/// let mut instance = SmtSolver::new();
-/// let result = instance.declare_fun();
-/// // Verify behavior
-/// ```
-pub fn declare_fun(&mut self, name: &str, params: &[&str], ret: &str) {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::proving::smt::SmtSolver;
+    ///
+    /// let mut instance = SmtSolver::new();
+    /// let result = instance.declare_fun();
+    /// // Verify behavior
+    /// ```
+    pub fn declare_fun(&mut self, name: &str, params: &[&str], ret: &str) {
         let params_str = params.join(" ");
         self.declarations.insert(
             name.to_string(),
-            format!("(declare-fun {name} ({params_str}) {ret})")
+            format!("(declare-fun {name} ({params_str}) {ret})"),
         );
     }
     /// Add an assertion
-/// # Examples
-/// 
-/// ```
-/// use ruchy::proving::smt::SmtSolver;
-/// 
-/// let mut instance = SmtSolver::new();
-/// let result = instance.assert();
-/// // Verify behavior
-/// ```
-pub fn assert(&mut self, expr: &str) {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::proving::smt::SmtSolver;
+    ///
+    /// let mut instance = SmtSolver::new();
+    /// let result = instance.assert();
+    /// // Verify behavior
+    /// ```
+    pub fn assert(&mut self, expr: &str) {
         self.assertions.push(format!("(assert {expr})"));
     }
     /// Check satisfiability
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::proving::smt::check_sat;
-/// 
-/// let result = check_sat(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn check_sat(&self) -> Result<SmtResult> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::proving::smt::check_sat;
+    ///
+    /// let result = check_sat(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn check_sat(&self) -> Result<SmtResult> {
         let query = self.build_query("(check-sat)");
         self.execute_query(&query)
     }
     /// Get model (if sat)
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::proving::smt::get_model;
-/// 
-/// let result = get_model(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn get_model(&self) -> Result<Option<HashMap<String, String>>> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::proving::smt::get_model;
+    ///
+    /// let result = get_model(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn get_model(&self) -> Result<Option<HashMap<String, String>>> {
         let query = self.build_query("(check-sat)\n(get-model)");
         let result = self.execute_query(&query)?;
         if result == SmtResult::Sat {
@@ -164,15 +162,15 @@ pub fn get_model(&self) -> Result<Option<HashMap<String, String>>> {
         }
     }
     /// Check validity (prove formula)
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::proving::smt::prove;
-/// 
-/// let result = prove("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn prove(&self, formula: &str) -> Result<SmtResult> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::proving::smt::prove;
+    ///
+    /// let result = prove("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn prove(&self, formula: &str) -> Result<SmtResult> {
         let mut solver = self.clone();
         solver.assert(&format!("(not {formula})"));
         match solver.check_sat()? {
@@ -260,41 +258,41 @@ impl SmtQuery {
         }
     }
     /// Add variable
-/// # Examples
-/// 
-/// ```
-/// use ruchy::proving::smt::SmtQuery;
-/// 
-/// let mut instance = SmtQuery::new();
-/// let result = instance.add_var();
-/// // Verify behavior
-/// ```
-pub fn add_var(&mut self, name: &str, sort: &str) {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::proving::smt::SmtQuery;
+    ///
+    /// let mut instance = SmtQuery::new();
+    /// let result = instance.add_var();
+    /// // Verify behavior
+    /// ```
+    pub fn add_var(&mut self, name: &str, sort: &str) {
         self.variables.push((name.to_string(), sort.to_string()));
     }
     /// Add assumption
-/// # Examples
-/// 
-/// ```
-/// use ruchy::proving::smt::SmtQuery;
-/// 
-/// let mut instance = SmtQuery::new();
-/// let result = instance.add_assumption();
-/// // Verify behavior
-/// ```
-pub fn add_assumption(&mut self, expr: &str) {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::proving::smt::SmtQuery;
+    ///
+    /// let mut instance = SmtQuery::new();
+    /// let result = instance.add_assumption();
+    /// // Verify behavior
+    /// ```
+    pub fn add_assumption(&mut self, expr: &str) {
         self.assumptions.push(expr.to_string());
     }
     /// Execute query
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::proving::smt::execute;
-/// 
-/// let result = execute(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn execute(&self, backend: SmtBackend) -> Result<SmtResult> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::proving::smt::execute;
+    ///
+    /// let result = execute(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn execute(&self, backend: SmtBackend) -> Result<SmtResult> {
         let mut solver = SmtSolver::new(backend);
         for (name, sort) in &self.variables {
             solver.declare_var(name, sort);
@@ -318,27 +316,27 @@ pub enum SmtResult {
 }
 impl SmtResult {
     /// Check if result indicates success
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::proving::smt::is_success;
-/// 
-/// let result = is_success(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn is_success(&self) -> bool {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::proving::smt::is_success;
+    ///
+    /// let result = is_success(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn is_success(&self) -> bool {
         matches!(self, Self::Valid | Self::Unsat)
     }
     /// Get human-readable description
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::proving::smt::description;
-/// 
-/// let result = description(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn description(&self) -> &str {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::proving::smt::description;
+    ///
+    /// let result = description(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn description(&self) -> &str {
         match self {
             Self::Sat => "Satisfiable",
             Self::Unsat => "Unsatisfiable",
@@ -364,30 +362,30 @@ impl ProofAutomation {
         }
     }
     /// Prove implication
-/// # Examples
-/// 
-/// ```
-/// use ruchy::proving::smt::ProofAutomation;
-/// 
-/// let mut instance = ProofAutomation::new();
-/// let result = instance.prove_implication();
-/// // Verify behavior
-/// ```
-pub fn prove_implication(&mut self, antecedent: &str, consequent: &str) -> Result<SmtResult> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::proving::smt::ProofAutomation;
+    ///
+    /// let mut instance = ProofAutomation::new();
+    /// let result = instance.prove_implication();
+    /// // Verify behavior
+    /// ```
+    pub fn prove_implication(&mut self, antecedent: &str, consequent: &str) -> Result<SmtResult> {
         let formula = format!("(=> {antecedent} {consequent})");
         self.prove(&formula)
     }
     /// Prove equivalence
-/// # Examples
-/// 
-/// ```
-/// use ruchy::proving::smt::ProofAutomation;
-/// 
-/// let mut instance = ProofAutomation::new();
-/// let result = instance.prove_equivalence();
-/// // Verify behavior
-/// ```
-pub fn prove_equivalence(&mut self, left: &str, right: &str) -> Result<SmtResult> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::proving::smt::ProofAutomation;
+    ///
+    /// let mut instance = ProofAutomation::new();
+    /// let result = instance.prove_equivalence();
+    /// // Verify behavior
+    /// ```
+    pub fn prove_equivalence(&mut self, left: &str, right: &str) -> Result<SmtResult> {
         let formula = format!("(= {left} {right})");
         self.prove(&formula)
     }
@@ -434,7 +432,10 @@ mod tests {
     #[test]
     fn test_smt_backend_args() {
         assert_eq!(SmtBackend::Z3.args(), vec!["-in", "-smt2"]);
-        assert_eq!(SmtBackend::CVC5.args(), vec!["--lang", "smt2", "--incremental"]);
+        assert_eq!(
+            SmtBackend::CVC5.args(),
+            vec!["--lang", "smt2", "--incremental"]
+        );
         assert_eq!(SmtBackend::Yices2.args(), vec!["--incremental"]);
         assert_eq!(SmtBackend::MathSAT.args(), vec!["-input=smt2"]);
     }
@@ -578,8 +579,12 @@ mod tests {
         query.add_var("x", "Int");
         query.add_var("y", "Real");
         assert_eq!(query.variables.len(), 2);
-        assert!(query.variables.contains(&("x".to_string(), "Int".to_string())));
-        assert!(query.variables.contains(&("y".to_string(), "Real".to_string())));
+        assert!(query
+            .variables
+            .contains(&("x".to_string(), "Int".to_string())));
+        assert!(query
+            .variables
+            .contains(&("y".to_string(), "Real".to_string())));
     }
 
     #[test]
@@ -641,7 +646,9 @@ mod tests {
         let solver = SmtSolver::new(SmtBackend::Z3);
 
         // Test case where output contains both "sat" and "unsat" - should prefer unsat
-        let result = solver.parse_result("something unsat something sat").unwrap();
+        let result = solver
+            .parse_result("something unsat something sat")
+            .unwrap();
         assert_eq!(result, SmtResult::Unsat);
 
         // Test case where output only contains "sat"
@@ -664,8 +671,7 @@ mod tests {
 #[cfg(test)]
 mod property_tests_smt {
     use proptest::proptest;
-    
-    
+
     proptest! {
         /// Property: Function never panics on any input
         #[test]

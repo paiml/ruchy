@@ -146,7 +146,7 @@ impl LintRule for NoDebugPrintRule {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::frontend::ast::{Expr, ExprKind, Span, Literal, BinaryOp};
+    use crate::frontend::ast::{BinaryOp, Expr, ExprKind, Literal, Span};
     fn make_test_expr(kind: ExprKind) -> Expr {
         Expr {
             kind,
@@ -231,7 +231,7 @@ mod tests {
     #[test]
     fn test_complexity_rule_if_statement() {
         let rule = ComplexityRule { max_complexity: 0 }; // Will use default of 10
-        // Create a simple if statement
+                                                         // Create a simple if statement
         let if_expr = make_test_expr(ExprKind::If {
             condition: Box::new(make_test_expr(ExprKind::Literal(Literal::Bool(true)))),
             then_branch: Box::new(make_test_expr(ExprKind::Literal(Literal::Integer(1)))),
@@ -252,7 +252,9 @@ mod tests {
         let outer_if = make_test_expr(ExprKind::If {
             condition: Box::new(make_test_expr(ExprKind::Literal(Literal::Bool(false)))),
             then_branch: Box::new(inner_if),
-            else_branch: Some(Box::new(make_test_expr(ExprKind::Literal(Literal::Integer(2))))),
+            else_branch: Some(Box::new(make_test_expr(ExprKind::Literal(
+                Literal::Integer(2),
+            )))),
         });
         let violations = rule.check_expression(&outer_if);
         assert!(!violations.is_empty());
@@ -314,7 +316,9 @@ mod tests {
         assert!(violations[0].to_string().contains("Debug print"));
         // Test debug_print - should have violation
         let debug_print = make_test_expr(ExprKind::Call {
-            func: Box::new(make_test_expr(ExprKind::Identifier("debug_print".to_string()))),
+            func: Box::new(make_test_expr(ExprKind::Identifier(
+                "debug_print".to_string(),
+            ))),
             args: vec![],
         });
         let violations = rule.check_expression(&debug_print);
@@ -421,7 +425,9 @@ mod tests {
         let if_expr = make_test_expr(ExprKind::If {
             condition: Box::new(make_test_expr(ExprKind::Literal(Literal::Bool(true)))),
             then_branch: Box::new(make_test_expr(ExprKind::Literal(Literal::Integer(1)))),
-            else_branch: Some(Box::new(make_test_expr(ExprKind::Literal(Literal::Integer(2))))),
+            else_branch: Some(Box::new(make_test_expr(ExprKind::Literal(
+                Literal::Integer(2),
+            )))),
         });
         let violations = rule.check_expression(&if_expr);
         assert!(violations.is_empty());

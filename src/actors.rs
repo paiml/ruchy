@@ -45,15 +45,15 @@ where
     /// # Errors
     ///
     /// Returns an error if the actor has stopped and can no longer receive messages
-/// # Examples
-/// 
-/// ```
-/// use ruchy::actors::send;
-/// 
-/// let result = send(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub async fn send(&self, msg: M) -> Result<()> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::actors::send;
+    ///
+    /// let result = send(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub async fn send(&self, msg: M) -> Result<()> {
         let (reply_tx, _) = mpsc::channel::<R>(1);
         self.tx
             .send((msg, reply_tx))
@@ -66,15 +66,15 @@ pub async fn send(&self, msg: M) -> Result<()> {
     /// # Errors
     ///
     /// Returns an error if the actor has stopped or does not respond
-/// # Examples
-/// 
-/// ```
-/// use ruchy::actors::ask;
-/// 
-/// let result = ask(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub async fn ask(&self, msg: M) -> Result<R> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::actors::ask;
+    ///
+    /// let result = ask(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub async fn ask(&self, msg: M) -> Result<R> {
         let (reply_tx, mut reply_rx) = mpsc::channel::<R>(1);
         self.tx
             .send((msg, reply_tx))
@@ -86,15 +86,15 @@ pub async fn ask(&self, msg: M) -> Result<R> {
             .ok_or_else(|| anyhow::anyhow!("No response received"))
     }
     /// Check if the actor is still alive
-/// # Examples
-/// 
-/// ```
-/// use ruchy::actors::is_alive;
-/// 
-/// let result = is_alive(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn is_alive(&self) -> bool {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::actors::is_alive;
+    ///
+    /// let result = is_alive(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn is_alive(&self) -> bool {
         !self.tx.is_closed()
     }
 }
@@ -386,11 +386,11 @@ mod tests {
 }
 #[cfg(test)]
 mod property_tests_actors {
-    use proptest::proptest;
     #[allow(unused_imports)]
     use super::*;
     #[allow(unused_imports)]
     use proptest::prelude::*;
+    use proptest::proptest;
     proptest! {
         /// Property: Function never panics on any input
         #[test]

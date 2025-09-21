@@ -1,5 +1,5 @@
 //! Actor system parsing
-use super::{ParserState, bail, Result, Expr, Token, ExprKind, utils, collections, Param};
+use super::{bail, collections, utils, Expr, ExprKind, Param, ParserState, Result, Token};
 use crate::frontend::ast::{ActorHandler, StructField};
 /// # Errors
 ///
@@ -95,7 +95,10 @@ fn parse_receive_block(state: &mut ParserState, handlers: &mut Vec<ActorHandler>
     Ok(())
 }
 // Helper: Parse individual handler (complexity: 4)
-fn parse_individual_handler(state: &mut ParserState, handlers: &mut Vec<ActorHandler>) -> Result<()> {
+fn parse_individual_handler(
+    state: &mut ParserState,
+    handlers: &mut Vec<ActorHandler>,
+) -> Result<()> {
     let message_type = parse_field_name(state, "Expected message type after receive")?;
     let params = parse_optional_params(state)?;
     // Parse optional return type
@@ -112,7 +115,10 @@ fn parse_individual_handler(state: &mut ParserState, handlers: &mut Vec<ActorHan
     Ok(())
 }
 // Helper: Parse inline state field (complexity: 4)
-fn parse_inline_state_field(state: &mut ParserState, state_fields: &mut Vec<StructField>) -> Result<()> {
+fn parse_inline_state_field(
+    state: &mut ParserState,
+    state_fields: &mut Vec<StructField>,
+) -> Result<()> {
     let field_name = parse_field_name(state, "Expected field name")?;
     state.tokens.expect(&Token::Colon)?;
     let ty = utils::parse_type(state)?;
@@ -195,7 +201,7 @@ mod tests {
     #[test]
     fn test_actor_handler_struct() {
         // Test that ActorHandler can be created
-        use crate::frontend::ast::{ActorHandler, ExprKind, Span, Literal};
+        use crate::frontend::ast::{ActorHandler, ExprKind, Literal, Span};
 
         let handler = ActorHandler {
             message_type: "TestMessage".to_string(),
@@ -212,7 +218,7 @@ mod tests {
 
     #[test]
     fn test_struct_field_creation() {
-        use crate::frontend::ast::{StructField, Type, TypeKind, Span};
+        use crate::frontend::ast::{Span, StructField, Type, TypeKind};
 
         let field = StructField {
             name: "test_field".to_string(),
@@ -239,7 +245,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "actor state block syntax not implemented"]
+
     fn test_parse_actor_with_state_block() {
         use crate::frontend::parser::Parser;
         let mut parser = Parser::new("actor User { state { name: String, age: i32 } }");
@@ -248,7 +254,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "actor receive syntax not implemented"]
+
     fn test_parse_actor_with_receive() {
         use crate::frontend::parser::Parser;
         let mut parser = Parser::new("actor Echo { receive msg -> println(msg) }");
@@ -257,10 +263,11 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "actor multiple handlers not implemented"]
+
     fn test_parse_actor_with_multiple_handlers() {
         use crate::frontend::parser::Parser;
-        let mut parser = Parser::new(r#"
+        let mut parser = Parser::new(
+            r"
             actor Calculator {
                 state { value: i32 }
                 receive {
@@ -269,9 +276,13 @@ mod tests {
                     Reset => 0
                 }
             }
-        "#);
+        ",
+        );
         let result = parser.parse();
-        assert!(result.is_ok(), "Failed to parse actor with multiple handlers");
+        assert!(
+            result.is_ok(),
+            "Failed to parse actor with multiple handlers"
+        );
     }
 
     #[test]
@@ -299,35 +310,41 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "actor handler params not implemented"]
+
     fn test_parse_actor_with_handler_params() {
         use crate::frontend::parser::Parser;
         let mut parser = Parser::new("actor Server { receive Request(url, method) -> Response }");
         let result = parser.parse();
-        assert!(result.is_ok(), "Failed to parse actor with handler parameters");
+        assert!(
+            result.is_ok(),
+            "Failed to parse actor with handler parameters"
+        );
     }
 
     #[test]
-    #[ignore = "actor block handler not implemented"]
+
     fn test_parse_actor_with_block_handler() {
         use crate::frontend::parser::Parser;
-        let mut parser = Parser::new(r#"
+        let mut parser = Parser::new(
+            r"
             actor Logger {
                 receive Log(msg) => {
                     let timestamp = now();
                     println(timestamp, msg)
                 }
             }
-        "#);
+        ",
+        );
         let result = parser.parse();
         assert!(result.is_ok(), "Failed to parse actor with block handler");
     }
 
     #[test]
-    #[ignore = "actor mixed content not implemented"]
+
     fn test_parse_actor_with_mixed_content() {
         use crate::frontend::parser::Parser;
-        let mut parser = Parser::new(r#"
+        let mut parser = Parser::new(
+            r"
             actor Worker {
                 id: String
                 state {
@@ -338,28 +355,31 @@ mod tests {
                 receive Stop => active = false
                 receive AddTask(task) => tasks.push(task)
             }
-        "#);
+        ",
+        );
         let result = parser.parse();
         assert!(result.is_ok(), "Failed to parse actor with mixed content");
     }
 
     #[test]
-    #[ignore = "nested actors not implemented"]
+
     fn test_parse_nested_actors() {
         use crate::frontend::parser::Parser;
-        let mut parser = Parser::new(r#"
+        let mut parser = Parser::new(
+            r"
             {
                 actor Parent {
                     child: actor Child { value: i32 }
                 }
             }
-        "#);
+        ",
+        );
         let result = parser.parse();
         assert!(result.is_ok(), "Failed to parse nested actors");
     }
 
     #[test]
-    #[ignore = "actor generics not implemented"]
+
     fn test_parse_actor_with_generics() {
         use crate::frontend::parser::Parser;
         let mut parser = Parser::new("actor Container<T> { items: Vec<T> }");
@@ -368,7 +388,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "spawn expression not implemented"]
+
     fn test_parse_spawn_expression() {
         use crate::frontend::parser::Parser;
         let mut parser = Parser::new("spawn actor Counter { count: 0 }");
@@ -385,14 +405,16 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "actor with await not implemented"]
+
     fn test_parse_actor_with_await() {
         use crate::frontend::parser::Parser;
-        let mut parser = Parser::new(r#"
+        let mut parser = Parser::new(
+            r"
             actor AsyncWorker {
                 receive Fetch(url) => await http_get(url)
             }
-        "#);
+        ",
+        );
         let result = parser.parse();
         assert!(result.is_ok(), "Failed to parse actor with await");
     }

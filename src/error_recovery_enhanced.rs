@@ -68,11 +68,17 @@ pub struct RecoveredError {
 #[derive(Debug, Clone, PartialEq)]
 pub enum RecoveryAction {
     /// Skipped tokens until delimiter
-    SkippedToDelimiter { skipped_count: usize, delimiter: String },
+    SkippedToDelimiter {
+        skipped_count: usize,
+        delimiter: String,
+    },
     /// Inserted missing token
     InsertedToken { token: String },
     /// Replaced malformed token
-    ReplacedToken { original: String, replacement: String },
+    ReplacedToken {
+        original: String,
+        replacement: String,
+    },
     /// Used adaptive recovery
     AdaptiveRecovery { strategy_used: String },
 }
@@ -119,7 +125,12 @@ impl ErrorRecoveryContext {
     }
 
     /// Push a recovery point
-    pub fn push_recovery_point(&mut self, position: usize, description: String, nesting_level: usize) {
+    pub fn push_recovery_point(
+        &mut self,
+        position: usize,
+        description: String,
+        nesting_level: usize,
+    ) {
         let point = RecoveryPoint {
             position,
             state_description: description,
@@ -136,13 +147,13 @@ impl ErrorRecoveryContext {
     /// Record an error recovery
     pub fn record_error(&mut self, error: RecoveredError) {
         self.error_count += 1;
-        
+
         // Maintain error history size
         if self.error_history.len() >= 100 {
             self.error_history.pop_front();
         }
         self.error_history.push_back(error);
-        
+
         // Update strategy based on success patterns
         self.update_strategy();
     }
@@ -153,10 +164,7 @@ impl ErrorRecoveryContext {
             return;
         }
 
-        let recent_errors: Vec<_> = self.error_history.iter()
-            .rev()
-            .take(5)
-            .collect();
+        let recent_errors: Vec<_> = self.error_history.iter().rev().take(5).collect();
 
         if recent_errors.len() < 3 {
             return;
@@ -181,16 +189,17 @@ impl ErrorRecoveryContext {
         } else if insert_success > replace_success {
             // Insert strategy is preferred
         } else {
-            // Replace strategy is preferred  
+            // Replace strategy is preferred
         }
     }
 
     /// Calculate success rate for a given recovery action type
-    fn calculate_success_rate<F>(errors: &[&RecoveredError], predicate: F) -> f64 
+    fn calculate_success_rate<F>(errors: &[&RecoveredError], predicate: F) -> f64
     where
         F: Fn(&RecoveryAction) -> bool,
     {
-        let matching_errors: Vec<_> = errors.iter()
+        let matching_errors: Vec<_> = errors
+            .iter()
             .filter(|error| predicate(&error.recovery_action))
             .collect();
 
@@ -198,7 +207,8 @@ impl ErrorRecoveryContext {
             return 0.0;
         }
 
-        let successful = matching_errors.iter()
+        let successful = matching_errors
+            .iter()
             .filter(|error| error.recovery_success)
             .count();
 
@@ -235,7 +245,9 @@ impl ErrorRecoveryContext {
     #[must_use]
     pub fn recovery_statistics(&self) -> RecoveryStatistics {
         let total_errors = self.error_history.len();
-        let successful_recoveries = self.error_history.iter()
+        let successful_recoveries = self
+            .error_history
+            .iter()
             .filter(|error| error.recovery_success)
             .count();
 
@@ -281,7 +293,10 @@ impl ErrorRecoveryContext {
 
     /// Extract message prefix for pattern analysis
     fn extract_message_prefix(message: &str) -> String {
-        message.chars().take(20).collect::<String>()
+        message
+            .chars()
+            .take(20)
+            .collect::<String>()
             .split_whitespace()
             .take(3)
             .collect::<Vec<_>>()
@@ -293,7 +308,7 @@ impl ErrorRecoveryContext {
 #[derive(Debug, Clone)]
 pub struct RecoveryStatistics {
     pub total_errors: usize,
-    pub successful_recoveries: usize, 
+    pub successful_recoveries: usize,
     pub success_rate: f64,
     pub current_error_count: usize,
     pub max_errors: usize,
@@ -310,13 +325,19 @@ pub struct ErrorPattern {
 impl fmt::Display for RecoveryAction {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            RecoveryAction::SkippedToDelimiter { skipped_count, delimiter } => {
+            RecoveryAction::SkippedToDelimiter {
+                skipped_count,
+                delimiter,
+            } => {
                 write!(f, "Skipped {skipped_count} tokens to '{delimiter}'")
             }
             RecoveryAction::InsertedToken { token } => {
                 write!(f, "Inserted '{token}'")
             }
-            RecoveryAction::ReplacedToken { original, replacement } => {
+            RecoveryAction::ReplacedToken {
+                original,
+                replacement,
+            } => {
                 write!(f, "Replaced '{original}' with '{replacement}'")
             }
             RecoveryAction::AdaptiveRecovery { strategy_used } => {
@@ -328,7 +349,12 @@ impl fmt::Display for RecoveryAction {
 
 impl RecoveredError {
     /// Create a new recovered error
-    pub fn new(message: String, position: usize, recovery_action: RecoveryAction, recovery_success: bool) -> Self {
+    pub fn new(
+        message: String,
+        position: usize,
+        recovery_action: RecoveryAction,
+        recovery_success: bool,
+    ) -> Self {
         Self {
             message,
             position,
@@ -359,7 +385,9 @@ impl ErrorSuggestions {
 
         if error_message.contains("Expected ';'") {
             suggestions.push("Add a semicolon ';' at the end of the statement".to_string());
-            suggestions.push("Check if you're inside an expression context where ';' is not needed".to_string());
+            suggestions.push(
+                "Check if you're inside an expression context where ';' is not needed".to_string(),
+            );
         }
 
         if error_message.contains("Expected '}'") {
@@ -368,7 +396,8 @@ impl ErrorSuggestions {
         }
 
         if error_message.contains("Expected ')'") {
-            suggestions.push("Add a closing parenthesis ')' to match the opening parenthesis".to_string());
+            suggestions
+                .push("Add a closing parenthesis ')' to match the opening parenthesis".to_string());
             suggestions.push("Check function call arguments or expression grouping".to_string());
         }
 
@@ -397,15 +426,24 @@ impl ErrorSuggestions {
 
         // Add context-specific suggestions
         if context.contains("fn ") && error_message.contains("Expected '{'") {
-            suggestions.insert(0, "Function declarations require a body enclosed in braces '{}'".to_string());
+            suggestions.insert(
+                0,
+                "Function declarations require a body enclosed in braces '{}'".to_string(),
+            );
         }
 
         if context.contains("if ") && error_message.contains("Expected '{'") {
-            suggestions.insert(0, "If statements require a condition and body block".to_string());
+            suggestions.insert(
+                0,
+                "If statements require a condition and body block".to_string(),
+            );
         }
 
         if context.contains("let ") && error_message.contains("Expected '='") {
-            suggestions.insert(0, "Variable declarations need an assignment with '='".to_string());
+            suggestions.insert(
+                0,
+                "Variable declarations need an assignment with '='".to_string(),
+            );
         }
 
         suggestions
@@ -427,12 +465,12 @@ mod tests {
     #[test]
     fn test_recovery_point_management() {
         let mut context = ErrorRecoveryContext::new(RecoveryStrategy::Adaptive, 10);
-        
+
         context.push_recovery_point(0, "start".to_string(), 0);
         context.push_recovery_point(10, "function".to_string(), 1);
-        
+
         assert_eq!(context.recovery_stack.len(), 2);
-        
+
         let point = context.pop_recovery_point().unwrap();
         assert_eq!(point.position, 10);
         assert_eq!(point.state_description, "function");
@@ -441,17 +479,19 @@ mod tests {
     #[test]
     fn test_error_recording() {
         let mut context = ErrorRecoveryContext::new(RecoveryStrategy::Adaptive, 10);
-        
+
         let error = RecoveredError::new(
             "Test error".to_string(),
             5,
-            RecoveryAction::InsertedToken { token: ";".to_string() },
-            true
+            RecoveryAction::InsertedToken {
+                token: ";".to_string(),
+            },
+            true,
         );
-        
+
         context.record_error(error);
         assert_eq!(context.error_count(), 1);
-        
+
         let stats = context.recovery_statistics();
         assert_eq!(stats.total_errors, 1);
         assert_eq!(stats.successful_recoveries, 1);
@@ -461,23 +501,28 @@ mod tests {
     #[test]
     fn test_recovery_capacity() {
         let mut context = ErrorRecoveryContext::new(RecoveryStrategy::Adaptive, 2);
-        
+
         assert!(context.can_recover());
-        
+
         let error1 = RecoveredError::new(
             "Error 1".to_string(),
             0,
-            RecoveryAction::InsertedToken { token: ";".to_string() },
-            true
+            RecoveryAction::InsertedToken {
+                token: ";".to_string(),
+            },
+            true,
         );
         context.record_error(error1);
         assert!(context.can_recover());
-        
+
         let error2 = RecoveredError::new(
             "Error 2".to_string(),
             10,
-            RecoveryAction::SkippedToDelimiter { skipped_count: 3, delimiter: "}".to_string() },
-            false
+            RecoveryAction::SkippedToDelimiter {
+                skipped_count: 3,
+                delimiter: "}".to_string(),
+            },
+            false,
         );
         context.record_error(error2);
         assert!(!context.can_recover());
@@ -488,7 +533,7 @@ mod tests {
         let suggestions = ErrorSuggestions::suggest_fixes("Expected ';' after expression");
         assert!(!suggestions.is_empty());
         assert!(suggestions.iter().any(|s| s.contains("semicolon")));
-        
+
         let suggestions = ErrorSuggestions::suggest_fixes("Expected '}'");
         assert!(suggestions.iter().any(|s| s.contains("closing brace")));
     }
@@ -497,61 +542,71 @@ mod tests {
     fn test_contextual_suggestions() {
         let context = "fn test() ";
         let suggestions = ErrorSuggestions::contextual_suggestions("Expected '{'", context);
-        assert!(suggestions.iter().any(|s| s.contains("Function declarations")));
+        assert!(suggestions
+            .iter()
+            .any(|s| s.contains("Function declarations")));
     }
 
     #[test]
     fn test_recovery_action_display() {
-        let action = RecoveryAction::SkippedToDelimiter { 
-            skipped_count: 3, 
-            delimiter: "}".to_string() 
+        let action = RecoveryAction::SkippedToDelimiter {
+            skipped_count: 3,
+            delimiter: "}".to_string(),
         };
-        let display = format!("{}", action);
+        let display = format!("{action}");
         assert!(display.contains("Skipped 3 tokens"));
-        
-        let action = RecoveryAction::InsertedToken { token: ";".to_string() };
-        let display = format!("{}", action);
+
+        let action = RecoveryAction::InsertedToken {
+            token: ";".to_string(),
+        };
+        let display = format!("{action}");
         assert!(display.contains("Inserted ';'"));
     }
 
     #[test]
     fn test_error_pattern_analysis() {
         let mut context = ErrorRecoveryContext::new(RecoveryStrategy::Adaptive, 10);
-        
+
         // Add multiple errors with different patterns
         for i in 0..5 {
             let error = RecoveredError::new(
-                format!("Missing semicolon at position {}", i),
+                format!("Missing semicolon at position {i}"),
                 i * 10,
-                RecoveryAction::InsertedToken { token: ";".to_string() },
-                i % 2 == 0
+                RecoveryAction::InsertedToken {
+                    token: ";".to_string(),
+                },
+                i % 2 == 0,
             );
             context.record_error(error);
         }
-        
+
         let patterns = context.recent_error_patterns();
         assert_eq!(patterns.len(), 5);
-        assert!(patterns.iter().all(|p| p.message_prefix.contains("Missing semicolon")));
+        assert!(patterns
+            .iter()
+            .all(|p| p.message_prefix.contains("Missing semicolon")));
     }
 
     #[test]
     fn test_context_reset() {
         let mut context = ErrorRecoveryContext::new(RecoveryStrategy::Adaptive, 10);
-        
+
         let error = RecoveredError::new(
             "Test error".to_string(),
             5,
-            RecoveryAction::InsertedToken { token: ";".to_string() },
-            true
+            RecoveryAction::InsertedToken {
+                token: ";".to_string(),
+            },
+            true,
         );
         context.record_error(error);
         context.push_recovery_point(0, "test".to_string(), 0);
-        
+
         assert_eq!(context.error_count(), 1);
         assert_eq!(context.recovery_stack.len(), 1);
-        
+
         context.reset();
-        
+
         assert_eq!(context.error_count(), 0);
         assert_eq!(context.recovery_stack.len(), 0);
         assert_eq!(context.error_history.len(), 0);

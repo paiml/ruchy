@@ -8,43 +8,43 @@ pub struct Unifier {
 }
 impl Unifier {
     #[must_use]
-/// Create a new unifier
-///
-/// # Examples
-///
-/// ```
-/// use ruchy::middleend::unify::Unifier;
-/// let unifier = Unifier::new();
-/// ```
-pub fn new() -> Self {
+    /// Create a new unifier
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::middleend::unify::Unifier;
+    /// let unifier = Unifier::new();
+    /// ```
+    pub fn new() -> Self {
         Unifier {
             subst: HashMap::new(),
         }
     }
     /// Get the current substitution
     #[must_use]
-/// # Examples
-/// 
-/// ```
-/// use ruchy::middleend::unify::substitution;
-/// 
-/// let result = substitution(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn substitution(&self) -> &Substitution {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::middleend::unify::substitution;
+    ///
+    /// let result = substitution(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn substitution(&self) -> &Substitution {
         &self.subst
     }
     /// Apply current substitution to a type
     #[must_use]
-/// # Examples
-/// 
-/// ```
-/// use ruchy::middleend::unify::apply;
-/// 
-/// let result = apply(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn apply(&self, ty: &MonoType) -> MonoType {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::middleend::unify::apply;
+    ///
+    /// let result = apply(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn apply(&self, ty: &MonoType) -> MonoType {
         ty.substitute(&self.subst)
     }
     /// Unify two types, updating the substitution
@@ -55,16 +55,16 @@ pub fn apply(&self, ty: &MonoType) -> MonoType {
     /// # Errors
     ///
     /// Returns an error if the operation fails
-/// # Examples
-/// 
-/// ```
-/// use ruchy::middleend::unify::Unifier;
-/// 
-/// let mut instance = Unifier::new();
-/// let result = instance.unify();
-/// // Verify behavior
-/// ```
-pub fn unify(&mut self, t1: &MonoType, t2: &MonoType) -> Result<()> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::middleend::unify::Unifier;
+    ///
+    /// let mut instance = Unifier::new();
+    /// let result = instance.unify();
+    /// // Verify behavior
+    /// ```
+    pub fn unify(&mut self, t1: &MonoType, t2: &MonoType) -> Result<()> {
         let t1 = self.apply(t1);
         let t2 = self.apply(t2);
         match (t1, t2) {
@@ -149,15 +149,15 @@ pub fn unify(&mut self, t1: &MonoType, t2: &MonoType) -> Result<()> {
     }
     /// Solve a type variable to its final type
     #[must_use]
-/// # Examples
-/// 
-/// ```
-/// use ruchy::middleend::unify::solve;
-/// 
-/// let result = solve(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn solve(&self, var: &TyVar) -> MonoType {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::middleend::unify::solve;
+    ///
+    /// let result = solve(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn solve(&self, var: &TyVar) -> MonoType {
         self.subst
             .get(var)
             .map_or_else(|| MonoType::Var(var.clone()), |ty| self.apply(ty))
@@ -244,8 +244,7 @@ mod tests {
 #[cfg(test)]
 mod property_tests_unify {
     use proptest::proptest;
-    
-    
+
     proptest! {
         /// Property: Function never panics on any input
         #[test]

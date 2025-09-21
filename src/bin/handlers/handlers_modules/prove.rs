@@ -1,7 +1,10 @@
 //! Refactored prove command handler
 //! Complexity reduced from 390 to ≤10 per function
+use super::prove_helpers::{
+    configure_prover, export_proof, handle_prover_command, load_proof_file, load_proof_script,
+    parse_smt_backend, show_prover_state, verify_proofs_from_ast,
+};
 use anyhow::Result;
-use super::prove_helpers::{parse_smt_backend, configure_prover, load_proof_script, load_proof_file, verify_proofs_from_ast, handle_prover_command, show_prover_state, export_proof};
 use ruchy::proving::{InteractiveProver, ProverSession};
 use std::io::{self, Write};
 /// Handle interactive theorem prover - refactored with ≤10 complexity
@@ -127,16 +130,16 @@ mod tests {
     #[test]
     fn test_handle_prove_command_minimal() {
         let result = handle_prove_command(
-            None,        // No file
-            "z3",        // Backend
-            false,       // No ML suggestions
-            5000,        // Timeout
-            None,        // No script
-            None,        // No export
-            true,        // Check mode (avoid interactive)
-            false,       // No counterexample
-            false,       // Not verbose
-            "text",      // Format
+            None,   // No file
+            "z3",   // Backend
+            false,  // No ML suggestions
+            5000,   // Timeout
+            None,   // No script
+            None,   // No export
+            true,   // Check mode (avoid interactive)
+            false,  // No counterexample
+            false,  // Not verbose
+            "text", // Format
         );
 
         // Should complete without error (may fail due to missing dependencies, but shouldn't panic)
@@ -146,16 +149,16 @@ mod tests {
     #[test]
     fn test_handle_prove_command_verbose() {
         let result = handle_prove_command(
-            None,        // No file
-            "cvc5",      // Different backend
-            true,        // Enable ML suggestions
-            10000,       // Longer timeout
-            None,        // No script
-            None,        // No export
-            true,        // Check mode (avoid interactive)
-            true,        // Enable counterexample
-            true,        // Verbose mode
-            "json",      // JSON format
+            None,   // No file
+            "cvc5", // Different backend
+            true,   // Enable ML suggestions
+            10000,  // Longer timeout
+            None,   // No script
+            None,   // No export
+            true,   // Check mode (avoid interactive)
+            true,   // Enable counterexample
+            true,   // Verbose mode
+            "json", // JSON format
         );
 
         // Should handle verbose mode without panicking
@@ -168,20 +171,21 @@ mod tests {
             "fn example() -> bool { true }\n\
              proof example_correct { \n\
                prove example() == true\n\
-             }"
-        ).unwrap();
+             }",
+        )
+        .unwrap();
 
         let result = handle_prove_command(
             Some(temp_file.path()), // Provide file
-            "z3",        // Backend
-            false,       // No ML suggestions
-            5000,        // Timeout
-            None,        // No script
-            None,        // No export
-            false,       // Not check mode
-            false,       // No counterexample
-            false,       // Not verbose
-            "text",      // Format
+            "z3",                   // Backend
+            false,                  // No ML suggestions
+            5000,                   // Timeout
+            None,                   // No script
+            None,                   // No export
+            false,                  // Not check mode
+            false,                  // No counterexample
+            false,                  // Not verbose
+            "text",                 // Format
         );
 
         // Should handle file input
@@ -194,20 +198,21 @@ mod tests {
             "theorem test_theorem { \n\
                assume x > 0\n\
                prove x + 1 > 1\n\
-             }"
-        ).unwrap();
+             }",
+        )
+        .unwrap();
 
         let result = handle_prove_command(
-            None,                    // No file
-            "z3",                   // Backend
-            false,                  // No ML suggestions
-            5000,                   // Timeout
+            None,                     // No file
+            "z3",                     // Backend
+            false,                    // No ML suggestions
+            5000,                     // Timeout
             Some(script_file.path()), // Provide script
-            None,                   // No export
-            true,                   // Check mode (avoid interactive)
-            false,                  // No counterexample
-            false,                  // Not verbose
-            "text",                 // Format
+            None,                     // No export
+            true,                     // Check mode (avoid interactive)
+            false,                    // No counterexample
+            false,                    // Not verbose
+            "text",                   // Format
         );
 
         // Should handle script input
@@ -220,16 +225,16 @@ mod tests {
         let export_file = export_dir.path().join("proof_export.json");
 
         let result = handle_prove_command(
-            None,                      // No file
-            "z3",                     // Backend
-            false,                    // No ML suggestions
-            5000,                     // Timeout
-            None,                     // No script
-            Some(&export_file),       // Export file
-            true,                     // Check mode (avoid interactive)
-            false,                    // No counterexample
-            false,                    // Not verbose
-            "json",                   // JSON format
+            None,               // No file
+            "z3",               // Backend
+            false,              // No ML suggestions
+            5000,               // Timeout
+            None,               // No script
+            Some(&export_file), // Export file
+            true,               // Check mode (avoid interactive)
+            false,              // No counterexample
+            false,              // Not verbose
+            "json",             // JSON format
         );
 
         // Should handle export functionality
@@ -244,7 +249,7 @@ mod tests {
         let export_file = export_dir.path().join("full_export.json");
 
         let result = handle_prove_command(
-            Some(proof_file.path()),   // Provide file
+            Some(proof_file.path()),  // Provide file
             "cvc5",                   // Backend
             true,                     // Enable ML suggestions
             15000,                    // Long timeout
@@ -267,16 +272,16 @@ mod tests {
 
         for backend in backends {
             let result = handle_prove_command(
-                None,        // No file
-                backend,     // Test each backend
-                false,       // No ML suggestions
-                5000,        // Timeout
-                None,        // No script
-                None,        // No export
-                true,        // Check mode (avoid interactive)
-                false,       // No counterexample
-                false,       // Not verbose
-                "text",      // Format
+                None,    // No file
+                backend, // Test each backend
+                false,   // No ML suggestions
+                5000,    // Timeout
+                None,    // No script
+                None,    // No export
+                true,    // Check mode (avoid interactive)
+                false,   // No counterexample
+                false,   // Not verbose
+                "text",  // Format
             );
 
             // Should handle all backend types
@@ -294,14 +299,15 @@ mod tests {
              \n\
              proof validity_proof {\n\
                prove valid_function() == true\n\
-             }"
-        ).unwrap();
+             }",
+        )
+        .unwrap();
 
         let result = handle_file_proving(
             temp_file.path(),
-            "text",  // Format
-            false,   // No counterexample
-            false,   // Not verbose
+            "text", // Format
+            false,  // No counterexample
+            false,  // Not verbose
         );
 
         // Should handle valid proof file
@@ -317,14 +323,15 @@ mod tests {
              \n\
              proof wrong_proof {\n\
                prove maybe_wrong() == true\n\
-             }"
-        ).unwrap();
+             }",
+        )
+        .unwrap();
 
         let result = handle_file_proving(
             temp_file.path(),
-            "json",  // JSON format
-            true,    // Enable counterexample
-            true,    // Verbose mode
+            "json", // JSON format
+            true,   // Enable counterexample
+            true,   // Verbose mode
         );
 
         // Should handle counterexample generation
@@ -339,9 +346,9 @@ mod tests {
         for format in formats {
             let result = handle_file_proving(
                 temp_file.path(),
-                format,  // Test each format
-                false,   // No counterexample
-                false,   // Not verbose
+                format, // Test each format
+                false,  // No counterexample
+                false,  // Not verbose
             );
 
             // Should handle all output formats
@@ -355,9 +362,9 @@ mod tests {
 
         let result = handle_file_proving(
             nonexistent_path,
-            "text",  // Format
-            false,   // No counterexample
-            false,   // Not verbose
+            "text", // Format
+            false,  // No counterexample
+            false,  // Not verbose
         );
 
         // Should handle missing file gracefully (likely return error)
@@ -386,20 +393,21 @@ mod tests {
              proof identity_correct {\n\
                assume x: i32\n\
                prove identity(x) == x\n\
-             }"
-        ).unwrap();
+             }",
+        )
+        .unwrap();
 
         let result = handle_prove_command(
             Some(temp_file.path()), // File-based proving
-            "z3",        // Backend
-            false,       // No ML suggestions
-            5000,        // Timeout
-            None,        // No script
-            None,        // No export
-            false,       // Not check mode
-            false,       // No counterexample
-            false,       // Not verbose
-            "text",      // Format
+            "z3",                   // Backend
+            false,                  // No ML suggestions
+            5000,                   // Timeout
+            None,                   // No script
+            None,                   // No export
+            false,                  // Not check mode
+            false,                  // No counterexample
+            false,                  // Not verbose
+            "text",                 // Format
         );
 
         // Should complete file-based proving workflow
@@ -415,21 +423,23 @@ mod tests {
              proof distributive_property {\n\
                assume a: i32, b: i32, c: i32\n\
                prove mult(a, add(b, c)) == add(mult(a, b), mult(a, c))\n\
-             }"
-        ).unwrap();
+             }",
+        )
+        .unwrap();
 
         let script_file = create_test_script_file(
             "// Proof tactics\n\
              tactic expand_definitions\n\
              tactic use_arithmetic\n\
-             tactic qed"
-        ).unwrap();
+             tactic qed",
+        )
+        .unwrap();
 
         let export_dir = create_test_export_dir().unwrap();
         let export_file = export_dir.path().join("distributive_proof.json");
 
         let result = handle_prove_command(
-            Some(proof_file.path()),   // Complex proof file
+            Some(proof_file.path()),  // Complex proof file
             "cvc5",                   // Different backend
             true,                     // Enable ML suggestions
             10000,                    // Longer timeout
@@ -458,16 +468,16 @@ mod tests {
 
         for (backend, format) in error_cases {
             let result = handle_prove_command(
-                None,        // No file
-                backend,     // Test backend
-                false,       // No ML suggestions
-                5000,        // Timeout
-                None,        // No script
-                None,        // No export
-                true,        // Check mode
-                false,       // No counterexample
-                false,       // Not verbose
-                format,      // Test format
+                None,    // No file
+                backend, // Test backend
+                false,   // No ML suggestions
+                5000,    // Timeout
+                None,    // No script
+                None,    // No export
+                true,    // Check mode
+                false,   // No counterexample
+                false,   // Not verbose
+                format,  // Test format
             );
 
             // Should handle errors gracefully
@@ -481,16 +491,16 @@ mod tests {
 
         for timeout in timeouts {
             let result = handle_prove_command(
-                None,        // No file
-                "z3",        // Backend
-                false,       // No ML suggestions
-                timeout,     // Test different timeouts
-                None,        // No script
-                None,        // No export
-                true,        // Check mode
-                false,       // No counterexample
-                false,       // Not verbose
-                "text",      // Format
+                None,    // No file
+                "z3",    // Backend
+                false,   // No ML suggestions
+                timeout, // Test different timeouts
+                None,    // No script
+                None,    // No export
+                true,    // Check mode
+                false,   // No counterexample
+                false,   // Not verbose
+                "text",  // Format
             );
 
             // Should handle all timeout values
@@ -514,15 +524,15 @@ mod tests {
         for (ml_suggestions, counterexample, verbose) in test_cases {
             let result = handle_prove_command(
                 Some(temp_file.path()), // Provide file
-                "z3",                  // Backend
-                ml_suggestions,        // Test ML suggestions
-                5000,                  // Timeout
-                None,                  // No script
-                None,                  // No export
-                false,                 // Not check mode
-                counterexample,        // Test counterexample
-                verbose,               // Test verbose
-                "text",                // Format
+                "z3",                   // Backend
+                ml_suggestions,         // Test ML suggestions
+                5000,                   // Timeout
+                None,                   // No script
+                None,                   // No export
+                false,                  // Not check mode
+                counterexample,         // Test counterexample
+                verbose,                // Test verbose
+                "text",                 // Format
             );
 
             // Should handle all parameter combinations

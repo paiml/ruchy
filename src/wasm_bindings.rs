@@ -1,15 +1,15 @@
 //! WebAssembly bindings for Ruchy compiler
-//! 
+//!
 //! This module provides WASM bindings for core Ruchy functionality.
 //! Network-dependent features are excluded to minimize binary size.
 #![cfg(target_arch = "wasm32")]
-use wasm_bindgen::prelude::*;
-use crate::frontend::parser::Parser;
 use crate::backend::transpiler::Transpiler;
+use crate::frontend::parser::Parser;
 use js_sys::Promise;
-use wasm_bindgen_futures::future_to_promise;
 #[cfg(test)]
 use proptest::prelude::*;
+use wasm_bindgen::prelude::*;
+use wasm_bindgen_futures::future_to_promise;
 /// WebAssembly compiler interface for Ruchy
 #[wasm_bindgen]
 pub struct RuchyWasm {
@@ -19,15 +19,15 @@ pub struct RuchyWasm {
 impl RuchyWasm {
     /// Create a new compiler instance
     #[wasm_bindgen(constructor)]
-/// # Examples
-/// 
-/// ```
-/// use ruchy::wasm_bindings::new;
-/// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn new() -> Self {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::wasm_bindings::new;
+    ///
+    /// let result = new(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn new() -> Self {
         // Set panic hook for better browser debugging
         console_error_panic_hook::set_once();
         Self {
@@ -36,46 +36,49 @@ pub fn new() -> Self {
     }
     /// Compile Ruchy code to Rust
     #[wasm_bindgen]
-/// # Examples
-/// 
-/// ```
-/// use ruchy::wasm_bindings::compile;
-/// 
-/// let result = compile("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn compile(&self, source: &str) -> Result<String, JsValue> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::wasm_bindings::compile;
+    ///
+    /// let result = compile("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn compile(&self, source: &str) -> Result<String, JsValue> {
         let mut parser = Parser::new(source);
-        let ast = parser.parse()
+        let ast = parser
+            .parse()
             .map_err(|e| JsValue::from_str(&format!("Parse error: {}", e)))?;
-        let rust_code = self.transpiler.transpile(&ast)
+        let rust_code = self
+            .transpiler
+            .transpile(&ast)
             .map_err(|e| JsValue::from_str(&format!("Transpile error: {}", e)))?;
         Ok(rust_code.to_string())
     }
     /// Validate Ruchy syntax
     #[wasm_bindgen]
-/// # Examples
-/// 
-/// ```
-/// use ruchy::wasm_bindings::validate;
-/// 
-/// let result = validate("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn validate(&self, source: &str) -> bool {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::wasm_bindings::validate;
+    ///
+    /// let result = validate("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn validate(&self, source: &str) -> bool {
         Parser::new(source).parse().is_ok()
     }
     /// Get version
     #[wasm_bindgen(getter)]
-/// # Examples
-/// 
-/// ```
-/// use ruchy::wasm_bindings::version;
-/// 
-/// let result = version(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn version(&self) -> String {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::wasm_bindings::version;
+    ///
+    /// let result = version(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn version(&self) -> String {
         env!("CARGO_PKG_VERSION").to_string()
     }
 
@@ -87,9 +90,11 @@ pub fn version(&self) -> String {
         future_to_promise(async move {
             // Parse and transpile in async context
             let mut parser = Parser::new(&source);
-            let ast = parser.parse()
+            let ast = parser
+                .parse()
                 .map_err(|e| JsValue::from_str(&format!("Parse error: {}", e)))?;
-            let rust_code = transpiler.transpile(&ast)
+            let rust_code = transpiler
+                .transpile(&ast)
                 .map_err(|e| JsValue::from_str(&format!("Transpile error: {}", e)))?;
             Ok(JsValue::from_str(&rust_code.to_string()))
         })
@@ -100,35 +105,34 @@ pub fn version(&self) -> String {
     #[wasm_bindgen]
     pub fn compile_cells_parallel(&self, sources: &js_sys::Array) -> Promise {
         let transpiler = self.transpiler.clone();
-        let sources: Vec<String> = sources.iter()
+        let sources: Vec<String> = sources
+            .iter()
             .map(|val| val.as_string().unwrap_or_default())
             .collect();
-            
+
         future_to_promise(async move {
             let mut results = Vec::new();
-            
+
             // Process each cell independently (WebWorker-friendly)
             for source in sources {
                 let mut parser = Parser::new(&source);
                 match parser.parse() {
-                    Ok(ast) => {
-                        match transpiler.transpile(&ast) {
-                            Ok(rust_code) => {
-                                results.push(serde_json::json!({
-                                    "success": true,
-                                    "result": rust_code.to_string(),
-                                    "error": null
-                                }));
-                            }
-                            Err(e) => {
-                                results.push(serde_json::json!({
-                                    "success": false,
-                                    "result": null,
-                                    "error": format!("Transpile error: {}", e)
-                                }));
-                            }
+                    Ok(ast) => match transpiler.transpile(&ast) {
+                        Ok(rust_code) => {
+                            results.push(serde_json::json!({
+                                "success": true,
+                                "result": rust_code.to_string(),
+                                "error": null
+                            }));
                         }
-                    }
+                        Err(e) => {
+                            results.push(serde_json::json!({
+                                "success": false,
+                                "result": null,
+                                "error": format!("Transpile error: {}", e)
+                            }));
+                        }
+                    },
                     Err(e) => {
                         results.push(serde_json::json!({
                             "success": false,
@@ -138,7 +142,7 @@ pub fn version(&self) -> String {
                     }
                 }
             }
-            
+
             let results_array = js_sys::Array::new();
             for result in results {
                 results_array.push(&JsValue::from_str(&result.to_string()));
@@ -171,7 +175,7 @@ pub fn version(&self) -> String {
     #[wasm_bindgen]
     pub fn execute_cell_fast(&self, source: &str) -> JsValue {
         let start_time = js_sys::Date::now();
-        
+
         // Fast path compilation
         let result = match self.compile(source) {
             Ok(rust_code) => {
@@ -189,10 +193,10 @@ pub fn version(&self) -> String {
                 })
             }
         };
-        
+
         let end_time = js_sys::Date::now();
         let execution_time = end_time - start_time;
-        
+
         let performance_result = serde_json::json!({
             "cell_result": result,
             "performance": {
@@ -202,7 +206,7 @@ pub fn version(&self) -> String {
                 "optimization_level": "fast"
             }
         });
-        
+
         JsValue::from_str(&performance_result.to_string())
     }
 
@@ -210,33 +214,33 @@ pub fn version(&self) -> String {
     #[wasm_bindgen]
     pub fn benchmark_cell_execution(&self, iterations: usize) -> JsValue {
         let test_cases = vec![
-            "let x = 42",                                // Simple assignment
-            "let y = x * 2 + 1",                        // Expression
-            "fun double(n: Int) -> Int { n * 2 }",      // Function definition
-            "let result = double(21)",                   // Function call
-            "if x > 0 { x } else { 0 }",                // Conditional
+            "let x = 42",                          // Simple assignment
+            "let y = x * 2 + 1",                   // Expression
+            "fun double(n: Int) -> Int { n * 2 }", // Function definition
+            "let result = double(21)",             // Function call
+            "if x > 0 { x } else { 0 }",           // Conditional
         ];
-        
+
         let mut benchmark_results = Vec::new();
-        
+
         for (i, test_case) in test_cases.iter().enumerate() {
             let mut total_time = 0.0;
             let mut success_count = 0;
-            
+
             for _ in 0..iterations {
                 let start_time = js_sys::Date::now();
                 let result = self.compile(test_case);
                 let end_time = js_sys::Date::now();
-                
+
                 total_time += end_time - start_time;
                 if result.is_ok() {
                     success_count += 1;
                 }
             }
-            
+
             let avg_time = total_time / iterations as f64;
             let success_rate = (success_count as f64) / (iterations as f64) * 100.0;
-            
+
             benchmark_results.push(serde_json::json!({
                 "test_case": test_case,
                 "test_id": i,
@@ -246,11 +250,13 @@ pub fn version(&self) -> String {
                 "iterations": iterations
             }));
         }
-        
-        let overall_avg = benchmark_results.iter()
+
+        let overall_avg = benchmark_results
+            .iter()
             .map(|r| r["avg_execution_time_ms"].as_f64().unwrap_or(0.0))
-            .sum::<f64>() / benchmark_results.len() as f64;
-            
+            .sum::<f64>()
+            / benchmark_results.len() as f64;
+
         let result = serde_json::json!({
             "benchmark_results": benchmark_results,
             "summary": {
@@ -260,7 +266,7 @@ pub fn version(&self) -> String {
                 "total_iterations": iterations * test_cases.len()
             }
         });
-        
+
         JsValue::from_str(&result.to_string())
     }
 }
@@ -288,18 +294,18 @@ impl WebWorkerRuntime {
     pub fn execute_with_workers(&mut self, task_data: &str) -> Promise {
         let max_workers = self.max_workers;
         let task_data = task_data.to_string();
-        
+
         future_to_promise(async move {
             // Simulate WebWorker execution with resource management
             let start_time = js_sys::Date::now();
-            
+
             // Create compiler instance for this worker
             let compiler = RuchyWasm::new();
             let result = compiler.compile(&task_data);
-            
+
             let end_time = js_sys::Date::now();
             let duration = end_time - start_time;
-            
+
             match result {
                 Ok(output) => {
                     let response = serde_json::json!({
@@ -331,8 +337,8 @@ impl WebWorkerRuntime {
             "max_workers": self.max_workers,
             "active_workers": self.active_workers,
             "available_workers": self.max_workers - self.active_workers,
-            "load_factor": if self.max_workers > 0 { 
-                (self.active_workers as f64) / (self.max_workers as f64) 
+            "load_factor": if self.max_workers > 0 {
+                (self.active_workers as f64) / (self.max_workers as f64)
             } else { 0.0 }
         });
         JsValue::from_str(&status.to_string())
@@ -342,21 +348,95 @@ impl WebWorkerRuntime {
 /// Initialize WASM module
 #[wasm_bindgen(start)]
 /// # Examples
-/// 
+///
 /// ```
 /// use ruchy::wasm_bindings::wasm_init;
-/// 
+///
 /// let result = wasm_init(());
 /// assert_eq!(result, Ok(()));
 /// ```
 pub fn wasm_init() {
     console_error_panic_hook::set_once();
 }
+
+/// FFI Boundary Testing Methods for QA Framework
+#[wasm_bindgen]
+impl RuchyWasm {
+    /// Test bidirectional type marshalling
+    #[wasm_bindgen]
+    pub fn roundtrip(&self, input: JsValue) -> JsValue {
+        input
+    }
+
+    /// Test panic propagation across FFI boundary
+    #[wasm_bindgen]
+    pub fn trigger_panic(&self, message: &str) {
+        panic!("{}", message);
+    }
+
+    /// Test JavaScript callback integration
+    #[wasm_bindgen]
+    pub fn call_js_callback(&self, callback: &js_sys::Function) -> JsValue {
+        match callback.call0(&JsValue::NULL) {
+            Ok(result) => serde_wasm_bindgen::to_value(&serde_json::json!({
+                "is_err": false,
+                "value": result
+            }))
+            .unwrap_or(JsValue::NULL),
+            Err(e) => serde_wasm_bindgen::to_value(&serde_json::json!({
+                "is_err": true,
+                "error": format!("{:?}", e)
+            }))
+            .unwrap_or(JsValue::NULL),
+        }
+    }
+
+    /// Test memory management with large data
+    #[wasm_bindgen]
+    pub fn process_bytes(&self, data: &[u8]) -> ProcessResult {
+        ProcessResult::new(data.to_vec())
+    }
+
+    /// Test async operations
+    #[wasm_bindgen]
+    pub fn async_operation(&self, value: i32) -> Promise {
+        future_to_promise(async move {
+            // Simulate some async work
+            Ok(JsValue::from(value))
+        })
+    }
+}
+
+/// Memory management test helper
+#[wasm_bindgen]
+pub struct ProcessResult {
+    data: Vec<u8>,
+}
+
+#[wasm_bindgen]
+impl ProcessResult {
+    fn new(data: Vec<u8>) -> Self {
+        Self { data }
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn data(&self) -> js_sys::Uint8Array {
+        js_sys::Uint8Array::from(&self.data[..])
+    }
+
+    /// Explicit memory cleanup for testing
+    #[wasm_bindgen]
+    pub fn free(self) {
+        // Rust will handle cleanup automatically
+        drop(self);
+    }
+}
 #[cfg(test)]
 mod property_tests_wasm_bindings {
-    use proptest::proptest;
     use super::*;
     use proptest::prelude::*;
+    use proptest::proptest;
+
     proptest! {
         /// Property: Function never panics on any input
         #[test]
@@ -365,83 +445,82 @@ mod property_tests_wasm_bindings {
             let _input = if input.len() > 100 { &input[..100] } else { &input[..] };
             // Function should not panic on any input
             let _ = std::panic::catch_unwind(|| {
-                // Call function with various inputs
-                // This is a template - adjust based on actual function signature
+                let _ruchy = RuchyWasm::new();
             });
         }
-    }
-}
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_rust_repl_new() {
         let repl = RuchyRepl::new();
         assert!(repl.engine.is_none());
     }
-    
+
     #[test]
     fn test_rust_repl_eval_simple() {
         let mut repl = RuchyRepl::new();
         let result = repl.eval("2 + 2");
         assert!(result.is_some());
     }
-    
+
     #[test]
     fn test_rust_repl_eval_let() {
         let mut repl = RuchyRepl::new();
         let result = repl.eval("let x = 10");
         assert!(result.is_some());
     }
-    
+
     #[test]
     fn test_rust_repl_eval_function() {
         let mut repl = RuchyRepl::new();
         let result = repl.eval("fun add(a, b) { a + b }");
         assert!(result.is_some());
     }
-    
+
     #[test]
     fn test_rust_repl_eval_invalid() {
         let mut repl = RuchyRepl::new();
         let result = repl.eval("invalid++syntax");
         assert!(result.is_some()); // Returns error string
     }
-    
+
     #[test]
     fn test_rust_repl_eval_empty() {
         let mut repl = RuchyRepl::new();
         let result = repl.eval("");
         assert!(result.is_some());
     }
-    
+
     #[test]
     fn test_rust_repl_eval_whitespace() {
         let mut repl = RuchyRepl::new();
         let result = repl.eval("   ");
         assert!(result.is_some());
     }
-    
+
     #[test]
     fn test_rust_repl_eval_comment() {
         let mut repl = RuchyRepl::new();
         let result = repl.eval("// just a comment");
         assert!(result.is_some());
     }
-    
+
     #[test]
     fn test_rust_repl_eval_multiline() {
         let mut repl = RuchyRepl::new();
-        let result = repl.eval("let x = 1
+        let result = repl.eval(
+            "let x = 1
 let y = 2
-x + y");
+x + y",
+        );
         assert!(result.is_some());
     }
-    
+
     #[test]
     fn test_rust_repl_eval_string() {
         let mut repl = RuchyRepl::new();

@@ -2,16 +2,15 @@
 //!
 //! Implements the `DeterministicRepl` trait for the Ruchy REPL to enable
 //! deterministic replay for testing and educational assessment.
+use crate::runtime::interpreter::Value;
+use crate::runtime::repl::Repl;
+use crate::runtime::replay::{
+    DeterministicRepl, Divergence, ReplayResult, ResourceUsage, StateCheckpoint, ValidationResult,
+};
 use anyhow::Result;
+use sha2::{Digest, Sha256};
 use std::collections::HashMap;
 use std::rc::Rc;
-use sha2::{Sha256, Digest};
-use crate::runtime::repl::Repl;
-use crate::runtime::interpreter::Value;
-use crate::runtime::replay::{
-    DeterministicRepl, ReplayResult, StateCheckpoint, ResourceUsage,
-    ValidationResult, Divergence
-};
 /// Mock time source for deterministic time operations
 pub struct MockTime {
     current_ns: u64,
@@ -39,14 +38,13 @@ pub struct DeterministicRng {
 }
 impl DeterministicRng {
     pub fn new(seed: u64) -> Self {
-        Self {
-            seed,
-            state: seed,
-        }
+        Self { seed, state: seed }
     }
     pub fn next(&mut self) -> u64 {
         // Simple LCG for deterministic pseudo-random numbers
-        self.state = self.state.wrapping_mul(6_364_136_223_846_793_005)
+        self.state = self
+            .state
+            .wrapping_mul(6_364_136_223_846_793_005)
             .wrapping_add(1_442_695_040_888_963_407);
         self.state
     }
@@ -68,8 +66,8 @@ impl DeterministicRepl for Repl {
             // For now, we'll return a placeholder string representation
             // In the future, we should capture actual evaluation results
             let s = "success"; // Simplified for now
-            // Convert string output back to Value
-            // This is a simplified conversion - in production we'd preserve the actual Value
+                               // Convert string output back to Value
+                               // This is a simplified conversion - in production we'd preserve the actual Value
             if s == "()" {
                 Value::Nil
             } else if s == "true" {
@@ -79,7 +77,7 @@ impl DeterministicRepl for Repl {
             } else if let Ok(n) = s.parse::<i64>() {
                 Value::Integer(n)
             } else if s.starts_with('"') && s.ends_with('"') {
-                Value::String(Rc::new(s[1..s.len()-1].to_string()))
+                Value::String(Rc::new(s[1..s.len() - 1].to_string()))
             } else {
                 // For complex types, we store as string representation
                 Value::String(Rc::new(s.to_string()))
@@ -234,7 +232,6 @@ mod tests {
         assert_eq!(result1.state_hash, result2.state_hash);
     }
     #[test]
-    #[ignore] // Temporarily disabled - checkpoint restore behavior needs investigation
     fn test_checkpoint_restore() {
         let mut repl = Repl::new(std::env::temp_dir()).unwrap();
         // Create some state

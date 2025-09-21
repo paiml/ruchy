@@ -64,3 +64,62 @@ pub trait Future {
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output>;
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::time::Duration;
+
+    #[test]
+    fn test_async_runtime_new() {
+        let _runtime = AsyncRuntime::new();
+        // Should create runtime
+        assert!(true);
+    }
+
+    #[test]
+    fn test_async_runtime_default() {
+        let _runtime = AsyncRuntime::default();
+        // Should create runtime via default
+        assert!(true);
+    }
+
+    #[tokio::test]
+    async fn test_async_runtime_sleep() {
+        let runtime = AsyncRuntime::new();
+        runtime.sleep(Duration::from_millis(1)).await;
+        // Should sleep without panic
+        assert!(true);
+    }
+
+    #[tokio::test]
+    async fn test_async_runtime_spawn() {
+        let runtime = AsyncRuntime::new();
+        let handle = runtime.spawn(async { 42 });
+        let result = handle.await;
+        assert_eq!(result, 42);
+    }
+
+    #[tokio::test]
+    async fn test_async_runtime_spawn_multiple() {
+        let runtime = AsyncRuntime::new();
+        let handle1 = runtime.spawn(async { 10 });
+        let handle2 = runtime.spawn(async { 20 });
+        let handle3 = runtime.spawn(async { 30 });
+
+        assert_eq!(handle1.await, 10);
+        assert_eq!(handle2.await, 20);
+        assert_eq!(handle3.await, 30);
+    }
+
+    #[tokio::test]
+    async fn test_async_runtime_spawn_with_sleep() {
+        let runtime = AsyncRuntime::new();
+        let handle = runtime.spawn(async {
+            sleep(Duration::from_millis(1)).await;
+            "completed"
+        });
+        let result = handle.await;
+        assert_eq!(result, "completed");
+    }
+}

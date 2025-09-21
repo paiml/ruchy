@@ -22,7 +22,6 @@ const GOLDEN_TESTS: &[GoldenTest] = &[
         expected_stderr: "",
         should_succeed: true,
     },
-    
     // While loops - critical after our fix
     GoldenTest {
         name: "while_loop_boundary",
@@ -31,7 +30,6 @@ const GOLDEN_TESTS: &[GoldenTest] = &[
         expected_stderr: "",
         should_succeed: true,
     },
-    
     // Object.items() - critical after our fix
     GoldenTest {
         name: "object_items_simple",
@@ -40,7 +38,6 @@ const GOLDEN_TESTS: &[GoldenTest] = &[
         expected_stderr: "",
         should_succeed: true,
     },
-    
     // String operations
     GoldenTest {
         name: "string_interpolation",
@@ -49,7 +46,6 @@ const GOLDEN_TESTS: &[GoldenTest] = &[
         expected_stderr: "",
         should_succeed: true,
     },
-    
     // Pattern matching
     GoldenTest {
         name: "match_exhaustive",
@@ -58,16 +54,14 @@ const GOLDEN_TESTS: &[GoldenTest] = &[
         expected_stderr: "",
         should_succeed: true,
     },
-    
     // Functions
     GoldenTest {
         name: "function_return",
         code: "fn double(x) { x * 2 }; println(double(21))",
-        expected_stdout: "42\n", 
+        expected_stdout: "42\n",
         expected_stderr: "",
         should_succeed: true,
     },
-    
     // Arrays
     GoldenTest {
         name: "array_methods",
@@ -81,14 +75,14 @@ const GOLDEN_TESTS: &[GoldenTest] = &[
 #[test]
 fn test_all_golden_masters() {
     let mut failures = Vec::new();
-    
+
     for test in GOLDEN_TESTS {
         let result = run_golden_test(test);
         if !result.passed {
             failures.push((test.name, result.error));
         }
     }
-    
+
     if !failures.is_empty() {
         let mut error_msg = String::from("Golden master tests failed:\n");
         for (name, error) in failures {
@@ -107,41 +101,50 @@ fn run_golden_test(test: &GoldenTest) -> GoldenResult {
     // Write test to file
     let test_file = format!("/tmp/golden_{}.ruchy", test.name);
     fs::write(&test_file, test.code).unwrap();
-    
+
     // Execute
     let output = Command::new("./target/release/ruchy")
         .arg(&test_file)
         .output()
         .expect("Failed to run ruchy");
-    
+
     let stdout = String::from_utf8_lossy(&output.stdout);
     let stderr = String::from_utf8_lossy(&output.stderr);
     let success = output.status.success();
-    
+
     // Check exact match
     if success != test.should_succeed {
         return GoldenResult {
             passed: false,
-            error: format!("Expected success={}, got success={}", test.should_succeed, success),
+            error: format!(
+                "Expected success={}, got success={}",
+                test.should_succeed, success
+            ),
         };
     }
-    
+
     if stdout != test.expected_stdout {
         return GoldenResult {
             passed: false,
-            error: format!("STDOUT mismatch.\nExpected: {:?}\nActual: {:?}", 
-                test.expected_stdout, stdout.as_ref()),
+            error: format!(
+                "STDOUT mismatch.\nExpected: {:?}\nActual: {:?}",
+                test.expected_stdout,
+                stdout.as_ref()
+            ),
         };
     }
-    
+
     if stderr != test.expected_stderr {
         return GoldenResult {
             passed: false,
-            error: format!("STDERR mismatch.\nExpected: {:?}\nActual: {:?}", 
-                test.expected_stderr, stderr.as_ref()),
+            error: format!(
+                "STDERR mismatch.\nExpected: {:?}\nActual: {:?}",
+                test.expected_stderr,
+                stderr.as_ref()
+            ),
         };
     }
-    
+
     GoldenResult {
         passed: true,
         error: String::new(),

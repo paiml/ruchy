@@ -2,9 +2,9 @@ use ruchy::runtime::Repl;
 
 fn main() {
     let mut repl = Repl::new(std::env::temp_dir()).unwrap();
-    
+
     println!("Testing string methods:\n");
-    
+
     let tests = vec![
         ("\"hello\"", "String literal"),
         ("\"hello\".length()", "String length"),
@@ -13,7 +13,7 @@ fn main() {
         ("\"  trim  \".trim()", "Trim"),
         ("\"hello world\".split(\" \")", "Split"),
     ];
-    
+
     for (expr, desc) in tests {
         println!("{desc}: > {expr}");
         match repl.eval(expr) {

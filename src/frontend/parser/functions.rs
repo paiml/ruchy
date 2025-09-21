@@ -1,5 +1,5 @@
 //! Function-related parsing (function definitions, lambdas, calls)
-use super::{ParserState, bail, Result, Expr, Token, ExprKind, Span, Param, Type, TypeKind, utils};
+use super::{bail, utils, Expr, ExprKind, Param, ParserState, Result, Span, Token, Type, TypeKind};
 use crate::frontend::ast::{DataFrameOp, Literal, Pattern};
 /// # Errors
 ///
@@ -12,7 +12,7 @@ pub fn parse_function(state: &mut ParserState) -> Result<Expr> {
 }
 pub fn parse_function_with_visibility(state: &mut ParserState, is_pub: bool) -> Result<Expr> {
     let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume fun
-    // For regular functions, async is not supported in this path
+                                                                                 // For regular functions, async is not supported in this path
     let is_async = false;
     // Parse function name
     let name = if let Some((Token::Identifier(n), _)) = state.tokens.peek() {
@@ -103,8 +103,8 @@ fn parse_lambda_params(state: &mut ParserState) -> Result<Vec<Param>> {
 /// Returns an error if the operation fails
 pub fn parse_empty_lambda(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume ||
-    // Lambda syntax: || expr (no => allowed)
-    // Parse the body
+                                                                                 // Lambda syntax: || expr (no => allowed)
+                                                                                 // Parse the body
     let body = super::parse_expr_recursive(state)?;
     Ok(Expr::new(
         ExprKind::Lambda {
@@ -152,7 +152,7 @@ fn parse_backslash_lambda(state: &mut ParserState) -> Result<Vec<Param>> {
 /// Parse pipe-style lambda: |x, y| body (complexity: 5)
 fn parse_pipe_lambda(state: &mut ParserState) -> Result<Vec<Param>> {
     state.tokens.advance(); // consume |
-    // Handle || as empty params
+                            // Handle || as empty params
     if matches!(state.tokens.peek(), Some((Token::Pipe, _))) {
         state.tokens.advance(); // consume second |
         return Ok(Vec::new());
@@ -294,7 +294,11 @@ pub fn parse_optional_method_call(state: &mut ParserState, receiver: Expr) -> Re
         }
     }
 }
-fn parse_method_or_field_access(state: &mut ParserState, receiver: Expr, method: String) -> Result<Expr> {
+fn parse_method_or_field_access(
+    state: &mut ParserState,
+    receiver: Expr,
+    method: String,
+) -> Result<Expr> {
     // Check if it's a method call (with parentheses) or field access
     if matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
         parse_method_call_access(state, receiver, method)
@@ -304,7 +308,11 @@ fn parse_method_or_field_access(state: &mut ParserState, receiver: Expr, method:
     }
 }
 /// Parse method call with arguments (complexity: 6)
-fn parse_method_call_access(state: &mut ParserState, receiver: Expr, method: String) -> Result<Expr> {
+fn parse_method_call_access(
+    state: &mut ParserState,
+    receiver: Expr,
+    method: String,
+) -> Result<Expr> {
     state.tokens.advance(); // consume (
     let args = parse_method_arguments(state)?;
     state.tokens.expect(&Token::RightParen)?;
@@ -332,8 +340,19 @@ fn parse_method_arguments(state: &mut ParserState) -> Result<Vec<Expr>> {
 fn is_dataframe_method(method: &str) -> bool {
     matches!(
         method,
-        "select" | "groupby" | "group_by" | "agg" | "pivot" | "melt" | 
-        "join" | "rolling" | "shift" | "diff" | "pct_change" | "corr" | "cov"
+        "select"
+            | "groupby"
+            | "group_by"
+            | "agg"
+            | "pivot"
+            | "melt"
+            | "join"
+            | "rolling"
+            | "shift"
+            | "diff"
+            | "pct_change"
+            | "corr"
+            | "cov"
     )
 }
 /// Handle DataFrame-specific methods (complexity: 4)
@@ -413,7 +432,11 @@ fn create_field_access(receiver: Expr, field: String) -> Expr {
         attributes: Vec::new(),
     }
 }
-fn parse_optional_method_or_field_access(state: &mut ParserState, receiver: Expr, method: String) -> Result<Expr> {
+fn parse_optional_method_or_field_access(
+    state: &mut ParserState,
+    receiver: Expr,
+    method: String,
+) -> Result<Expr> {
     // Check if it's a method call (with parentheses) or field access
     if matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
         // Optional method call - convert to OptionalMethodCall AST node
@@ -454,7 +477,7 @@ fn parse_optional_method_or_field_access(state: &mut ParserState, receiver: Expr
 
 #[cfg(test)]
 mod tests {
-    
+
     use crate::frontend::parser::Parser;
 
     #[test]
@@ -468,14 +491,20 @@ mod tests {
     fn test_parse_function_no_params() {
         let mut parser = Parser::new("fun hello() { println(\"Hello\") }");
         let result = parser.parse();
-        assert!(result.is_ok(), "Failed to parse function without parameters");
+        assert!(
+            result.is_ok(),
+            "Failed to parse function without parameters"
+        );
     }
 
     #[test]
     fn test_parse_function_no_return_type() {
         let mut parser = Parser::new("fun greet(name: String) { println(name) }");
         let result = parser.parse();
-        assert!(result.is_ok(), "Failed to parse function without return type");
+        assert!(
+            result.is_ok(),
+            "Failed to parse function without return type"
+        );
     }
 
     #[test]
@@ -496,7 +525,10 @@ mod tests {
     fn test_parse_function_multiple_params() {
         let mut parser = Parser::new("fun sum(a: i32, b: i32, c: i32) -> i32 { a + b + c }");
         let result = parser.parse();
-        assert!(result.is_ok(), "Failed to parse function with multiple parameters");
+        assert!(
+            result.is_ok(),
+            "Failed to parse function with multiple parameters"
+        );
     }
 
     #[test]
@@ -510,15 +542,21 @@ mod tests {
     fn test_parse_lambda_multiple_params() {
         let mut parser = Parser::new("|x, y| x + y");
         let result = parser.parse();
-        assert!(result.is_ok(), "Failed to parse lambda with multiple parameters");
+        assert!(
+            result.is_ok(),
+            "Failed to parse lambda with multiple parameters"
+        );
     }
 
     #[test]
-    #[ignore = "typed lambda parameters not fully implemented"]
+
     fn test_parse_lambda_with_types() {
         let mut parser = Parser::new("|x: i32, y: i32| x + y");
         let result = parser.parse();
-        assert!(result.is_ok(), "Failed to parse lambda with type annotations");
+        assert!(
+            result.is_ok(),
+            "Failed to parse lambda with type annotations"
+        );
     }
 
     #[test]
@@ -536,47 +574,65 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "fat arrow lambda with parentheses not fully implemented"]
+
     fn test_parse_fat_arrow_lambda_multiple() {
         let mut parser = Parser::new("(x, y) => x + y");
         let result = parser.parse();
-        assert!(result.is_ok(), "Failed to parse fat arrow lambda with multiple params");
+        assert!(
+            result.is_ok(),
+            "Failed to parse fat arrow lambda with multiple params"
+        );
     }
 
     #[test]
     fn test_parse_function_call_no_args() {
         let mut parser = Parser::new("print()");
         let result = parser.parse();
-        assert!(result.is_ok(), "Failed to parse function call without arguments");
+        assert!(
+            result.is_ok(),
+            "Failed to parse function call without arguments"
+        );
     }
 
     #[test]
     fn test_parse_function_call_single_arg() {
         let mut parser = Parser::new("sqrt(16)");
         let result = parser.parse();
-        assert!(result.is_ok(), "Failed to parse function call with single argument");
+        assert!(
+            result.is_ok(),
+            "Failed to parse function call with single argument"
+        );
     }
 
     #[test]
     fn test_parse_function_call_multiple_args() {
         let mut parser = Parser::new("max(1, 2, 3)");
         let result = parser.parse();
-        assert!(result.is_ok(), "Failed to parse function call with multiple arguments");
+        assert!(
+            result.is_ok(),
+            "Failed to parse function call with multiple arguments"
+        );
     }
 
     #[test]
-    #[ignore = "named arguments not fully implemented"]
+
     fn test_parse_function_call_named_args() {
         let mut parser = Parser::new("create(name: \"test\", value: 42)");
         let result = parser.parse();
-        assert!(result.is_ok(), "Failed to parse function call with named arguments");
+        assert!(
+            result.is_ok(),
+            "Failed to parse function call with named arguments"
+        );
     }
 
     #[test]
     fn test_parse_method_call_no_args() {
         let mut parser = Parser::new("obj.method()");
         let result = parser.parse();
-        assert!(result.is_ok(), "Failed to parse method call without arguments");
+        assert!(
+            result.is_ok(),
+            "Failed to parse method call without arguments"
+        );
     }
 
     #[test]
@@ -611,15 +667,21 @@ mod tests {
     fn test_parse_function_with_default_params() {
         let mut parser = Parser::new("fun greet(name: String = \"World\") { println(name) }");
         let result = parser.parse();
-        assert!(result.is_ok(), "Failed to parse function with default parameters");
+        assert!(
+            result.is_ok(),
+            "Failed to parse function with default parameters"
+        );
     }
 
     #[test]
-    #[ignore = "rest parameters not fully implemented"]
+
     fn test_parse_function_with_rest_params() {
         let mut parser = Parser::new("fun sum(...numbers: [i32]) -> i32 { numbers.sum() }");
         let result = parser.parse();
-        assert!(result.is_ok(), "Failed to parse function with rest parameters");
+        assert!(
+            result.is_ok(),
+            "Failed to parse function with rest parameters"
+        );
     }
 
     #[test]
@@ -633,7 +695,10 @@ mod tests {
     fn test_parse_function_call_with_lambda() {
         let mut parser = Parser::new("map(list, |x| x * 2)");
         let result = parser.parse();
-        assert!(result.is_ok(), "Failed to parse function call with lambda argument");
+        assert!(
+            result.is_ok(),
+            "Failed to parse function call with lambda argument"
+        );
     }
 
     #[test]
@@ -645,13 +710,15 @@ mod tests {
 
     #[test]
     fn test_parse_recursive_function() {
-        let mut parser = Parser::new("fun factorial(n: i32) -> i32 { if n <= 1 { 1 } else { n * factorial(n - 1) } }");
+        let mut parser = Parser::new(
+            "fun factorial(n: i32) -> i32 { if n <= 1 { 1 } else { n * factorial(n - 1) } }",
+        );
         let result = parser.parse();
         assert!(result.is_ok(), "Failed to parse recursive function");
     }
 
     #[test]
-    #[ignore = "function type syntax not fully implemented"]
+
     fn test_parse_higher_order_function() {
         let mut parser = Parser::new("fun apply(f: Fn(i32) -> i32, x: i32) -> i32 { f(x) }");
         let result = parser.parse();
@@ -669,6 +736,9 @@ mod tests {
     fn test_parse_iife() {
         let mut parser = Parser::new("(|x| x * 2)(5)");
         let result = parser.parse();
-        assert!(result.is_ok(), "Failed to parse immediately invoked function expression");
+        assert!(
+            result.is_ok(),
+            "Failed to parse immediately invoked function expression"
+        );
     }
 }

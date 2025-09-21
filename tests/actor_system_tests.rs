@@ -128,11 +128,7 @@ fn test_parse_ask_operation() {
     assert!(result.is_ok(), "Failed to parse ask: {result:?}");
     let expr = result.unwrap();
 
-    if let ExprKind::ActorQuery {
-        actor,
-        message,
-    } = &expr.kind
-    {
+    if let ExprKind::ActorQuery { actor, message } = &expr.kind {
         if let ExprKind::Identifier(name) = &actor.kind {
             assert_eq!(name, "calculator");
         } else {

@@ -2,8 +2,8 @@
 /// Following strict TDD - only implement what tests require
 use crate::frontend::ast::{BinaryOp, Expr, ExprKind, Literal};
 use wasm_encoder::{
-    CodeSection, ExportSection, Function, FunctionSection,
-    Instruction, MemorySection, MemoryType, Module, TypeSection,
+    CodeSection, ExportSection, Function, FunctionSection, Instruction, MemorySection, MemoryType,
+    Module, TypeSection,
 };
 #[cfg(test)]
 mod debug;
@@ -11,28 +11,28 @@ pub struct WasmEmitter {
     module: Module,
 }
 impl WasmEmitter {
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::backend::wasm::WasmEmitter;
-/// let instance = WasmEmitter::new();
-/// ```
-pub fn new() -> Self {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::backend::wasm::WasmEmitter;
+    /// let instance = WasmEmitter::new();
+    /// ```
+    pub fn new() -> Self {
         Self {
             module: Module::new(),
         }
     }
     /// Emit a complete WASM module from a Ruchy AST expression
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::backend::wasm::WasmEmitter;
-/// use ruchy::frontend::ast::{Expr, ExprKind};
-/// let instance = WasmEmitter::new();
-/// let expr = Expr::new(ExprKind::Block(vec![]), Default::default());
-/// let result = instance.emit(&expr);
-/// ```
-pub fn emit(&self, expr: &Expr) -> Result<Vec<u8>, String> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::backend::wasm::WasmEmitter;
+    /// use ruchy::frontend::ast::{Expr, ExprKind};
+    /// let instance = WasmEmitter::new();
+    /// let expr = Expr::new(ExprKind::Block(vec![]), Default::default());
+    /// let result = instance.emit(&expr);
+    /// ```
+    pub fn emit(&self, expr: &Expr) -> Result<Vec<u8>, String> {
         let mut module = Module::new();
         // Collect all function definitions
         let func_defs = self.collect_functions(expr);
@@ -80,11 +80,11 @@ pub fn emit(&self, expr: &Expr) -> Result<Vec<u8>, String> {
         if self.needs_memory(expr) {
             let mut memories = MemorySection::new();
             memories.memory(MemoryType {
-                minimum: 1,  // 1 page (64KB)
+                minimum: 1, // 1 page (64KB)
                 maximum: None,
                 memory64: false,
                 shared: false,
-                page_size_log2: None,  // Use default page size
+                page_size_log2: None, // Use default page size
             });
             module.section(&memories);
         }
@@ -199,7 +199,11 @@ pub fn emit(&self, expr: &Expr) -> Result<Vec<u8>, String> {
                 }
                 Ok(instructions)
             }
-            ExprKind::If { condition, then_branch, else_branch } => {
+            ExprKind::If {
+                condition,
+                then_branch,
+                else_branch,
+            } => {
                 let mut instructions = vec![];
                 // Emit condition
                 instructions.extend(self.lower_expression(condition)?);
@@ -235,7 +239,7 @@ pub fn emit(&self, expr: &Expr) -> Result<Vec<u8>, String> {
                 // Branch if false (exit loop)
                 instructions.push(Instruction::I32Eqz);
                 instructions.push(Instruction::BrIf(1)); // Break out of loop
-                // Body
+                                                         // Body
                 instructions.extend(self.lower_expression(body)?);
                 // Branch back to loop start
                 instructions.push(Instruction::Br(0));
@@ -243,7 +247,12 @@ pub fn emit(&self, expr: &Expr) -> Result<Vec<u8>, String> {
                 instructions.push(Instruction::End);
                 Ok(instructions)
             }
-            ExprKind::Function { name: _, params: _, body: _, .. } => {
+            ExprKind::Function {
+                name: _,
+                params: _,
+                body: _,
+                ..
+            } => {
                 // Function definitions don't produce instructions in the current function
                 // They would be handled separately to create new WASM functions
                 Ok(vec![])
@@ -259,7 +268,12 @@ pub fn emit(&self, expr: &Expr) -> Result<Vec<u8>, String> {
                 instructions.push(Instruction::Call(0));
                 Ok(instructions)
             }
-            ExprKind::Let { name: _, value, body, .. } => {
+            ExprKind::Let {
+                name: _,
+                value,
+                body,
+                ..
+            } => {
                 let mut instructions = vec![];
                 // Compile the value
                 instructions.extend(self.lower_expression(value)?);
@@ -329,14 +343,23 @@ pub fn emit(&self, expr: &Expr) -> Result<Vec<u8>, String> {
         }
     }
     /// Collect all function definitions from the AST
-    fn collect_functions(&self, expr: &Expr) -> Vec<(String, Vec<crate::frontend::ast::Param>, Box<Expr>)> {
+    fn collect_functions(
+        &self,
+        expr: &Expr,
+    ) -> Vec<(String, Vec<crate::frontend::ast::Param>, Box<Expr>)> {
         let mut functions = Vec::new();
         self.collect_functions_rec(expr, &mut functions);
         functions
     }
-    fn collect_functions_rec(&self, expr: &Expr, functions: &mut Vec<(String, Vec<crate::frontend::ast::Param>, Box<Expr>)>) {
+    fn collect_functions_rec(
+        &self,
+        expr: &Expr,
+        functions: &mut Vec<(String, Vec<crate::frontend::ast::Param>, Box<Expr>)>,
+    ) {
         match &expr.kind {
-            ExprKind::Function { name, params, body, .. } => {
+            ExprKind::Function {
+                name, params, body, ..
+            } => {
                 functions.push((name.clone(), params.clone(), body.clone()));
             }
             ExprKind::Block(exprs) => {
@@ -351,15 +374,20 @@ pub fn emit(&self, expr: &Expr) -> Result<Vec<u8>, String> {
     fn get_non_function_code(&self, expr: &Expr) -> Option<Expr> {
         match &expr.kind {
             ExprKind::Block(exprs) => {
-                let non_func_exprs: Vec<Expr> = exprs.iter()
+                let non_func_exprs: Vec<Expr> = exprs
+                    .iter()
                     .filter(|e| !matches!(e.kind, ExprKind::Function { .. }))
                     .cloned()
                     .collect();
                 if non_func_exprs.is_empty() {
                     None
                 } else if non_func_exprs.len() == 1 {
-                    Some(non_func_exprs.into_iter().next()
-                        .expect("non_func_exprs.len() == 1, so next() must return Some"))
+                    Some(
+                        non_func_exprs
+                            .into_iter()
+                            .next()
+                            .expect("non_func_exprs.len() == 1, so next() must return Some"),
+                    )
                 } else {
                     Some(Expr::new(ExprKind::Block(non_func_exprs), expr.span))
                 }
@@ -381,10 +409,14 @@ pub fn emit(&self, expr: &Expr) -> Result<Vec<u8>, String> {
             ExprKind::Binary { left, right, .. } => {
                 self.needs_memory(left) || self.needs_memory(right)
             }
-            ExprKind::If { condition, then_branch, else_branch } => {
-                self.needs_memory(condition) ||
-                self.needs_memory(then_branch) ||
-                else_branch.as_ref().is_some_and(|e| self.needs_memory(e))
+            ExprKind::If {
+                condition,
+                then_branch,
+                else_branch,
+            } => {
+                self.needs_memory(condition)
+                    || self.needs_memory(then_branch)
+                    || else_branch.as_ref().is_some_and(|e| self.needs_memory(e))
             }
             _ => false,
         }
@@ -402,10 +434,16 @@ pub fn emit(&self, expr: &Expr) -> Result<Vec<u8>, String> {
         match &expr.kind {
             ExprKind::Return { value } => value.is_some(),
             ExprKind::Block(exprs) => exprs.iter().any(|e| self.has_return_with_value(e)),
-            ExprKind::If { condition, then_branch, else_branch } => {
-                self.has_return_with_value(condition) ||
-                self.has_return_with_value(then_branch) ||
-                else_branch.as_ref().is_some_and(|e| self.has_return_with_value(e))
+            ExprKind::If {
+                condition,
+                then_branch,
+                else_branch,
+            } => {
+                self.has_return_with_value(condition)
+                    || self.has_return_with_value(then_branch)
+                    || else_branch
+                        .as_ref()
+                        .is_some_and(|e| self.has_return_with_value(e))
             }
             ExprKind::While { condition, body } => {
                 self.has_return_with_value(condition) || self.has_return_with_value(body)
@@ -427,10 +465,14 @@ pub fn emit(&self, expr: &Expr) -> Result<Vec<u8>, String> {
             ExprKind::Identifier(_) => true,
             ExprKind::Function { .. } => true,
             ExprKind::Block(exprs) => exprs.iter().any(|e| self.needs_locals(e)),
-            ExprKind::If { condition, then_branch, else_branch } => {
-                self.needs_locals(condition) ||
-                self.needs_locals(then_branch) ||
-                else_branch.as_ref().is_some_and(|e| self.needs_locals(e))
+            ExprKind::If {
+                condition,
+                then_branch,
+                else_branch,
+            } => {
+                self.needs_locals(condition)
+                    || self.needs_locals(then_branch)
+                    || else_branch.as_ref().is_some_and(|e| self.needs_locals(e))
             }
             ExprKind::While { condition, body } => {
                 self.needs_locals(condition) || self.needs_locals(body)
@@ -452,7 +494,9 @@ pub fn emit(&self, expr: &Expr) -> Result<Vec<u8>, String> {
             ExprKind::List(_) => true,
             ExprKind::Block(exprs) => {
                 // Block produces value if last expression does
-                exprs.last().is_some_and(|e| self.expression_produces_value(e))
+                exprs
+                    .last()
+                    .is_some_and(|e| self.expression_produces_value(e))
             }
             ExprKind::If { .. } => true,
             ExprKind::Let { body, .. } => {
@@ -463,7 +507,7 @@ pub fn emit(&self, expr: &Expr) -> Result<Vec<u8>, String> {
                 }
             }
             ExprKind::Return { .. } => false, // Return doesn't leave value on stack
-            ExprKind::While { .. } => false, // Loops are void
+            ExprKind::While { .. } => false,  // Loops are void
             ExprKind::Function { .. } => false, // Function definitions don't produce values
             _ => false,
         }
@@ -495,15 +539,15 @@ impl WasmModule {
     pub fn new(bytes: Vec<u8>) -> Self {
         Self { bytes }
     }
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::backend::wasm::mod::bytes;
-/// 
-/// let result = bytes(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn bytes(&self) -> &[u8] {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::backend::wasm::mod::bytes;
+    ///
+    /// let result = bytes(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn bytes(&self) -> &[u8] {
         &self.bytes
     }
 }
@@ -520,10 +564,7 @@ mod tests {
         let mut parser = Parser::new("");
         let expr = parser.parse().unwrap_or_else(|_| {
             // Create an empty block expression for empty input
-            Expr::new(
-                ExprKind::Block(vec![]),
-                Default::default(),
-            )
+            Expr::new(ExprKind::Block(vec![]), Default::default())
         });
         let emitter = WasmEmitter::new();
         let result = emitter.emit(&expr);
@@ -544,7 +585,7 @@ mod tests {
         assert!(result.is_ok());
         let bytes = result.unwrap();
         // Should contain i32.const instruction (0x41)
-        assert!(bytes.iter().any(|&b| b == 0x41));
+        assert!(bytes.contains(&0x41));
     }
 
     #[test]
@@ -557,7 +598,7 @@ mod tests {
         assert!(result.is_ok());
         let bytes = result.unwrap();
         // Should contain i32.add instruction (0x6a)
-        assert!(bytes.iter().any(|&b| b == 0x6a));
+        assert!(bytes.contains(&0x6a));
 
         // Test subtraction
         let mut parser = Parser::new("5 - 3");
@@ -566,7 +607,7 @@ mod tests {
         assert!(result.is_ok());
         let bytes = result.unwrap();
         // Should contain i32.sub instruction (0x6b)
-        assert!(bytes.iter().any(|&b| b == 0x6b));
+        assert!(bytes.contains(&0x6b));
 
         // Test multiplication
         let mut parser = Parser::new("3 * 4");
@@ -575,7 +616,7 @@ mod tests {
         assert!(result.is_ok());
         let bytes = result.unwrap();
         // Should contain i32.mul instruction (0x6c)
-        assert!(bytes.iter().any(|&b| b == 0x6c));
+        assert!(bytes.contains(&0x6c));
     }
 
     #[test]
@@ -603,7 +644,7 @@ mod tests {
         let bytes = result.unwrap();
 
         // Should contain if instruction (0x04)
-        assert!(bytes.iter().any(|&b| b == 0x04));
+        assert!(bytes.contains(&0x04));
     }
 
     #[test]
@@ -629,7 +670,7 @@ mod tests {
         let bytes = result.unwrap();
 
         // Should contain i32.gt_s instruction (0x4a)
-        assert!(bytes.iter().any(|&b| b == 0x4a));
+        assert!(bytes.contains(&0x4a));
     }
 
     #[test]
@@ -664,7 +705,7 @@ mod tests {
         let bytes = result.unwrap();
 
         // Should contain block instruction (0x02)
-        assert!(bytes.iter().any(|&b| b == 0x02));
+        assert!(bytes.contains(&0x02));
     }
 
     #[test]
@@ -677,7 +718,7 @@ mod tests {
         let bytes = result.unwrap();
 
         // Should contain loop instruction (0x03)
-        assert!(bytes.iter().any(|&b| b == 0x03));
+        assert!(bytes.contains(&0x03));
     }
 
     #[test]
@@ -690,7 +731,7 @@ mod tests {
         let bytes = result.unwrap();
 
         // Should contain br instruction (0x0c)
-        assert!(bytes.iter().any(|&b| b == 0x0c));
+        assert!(bytes.contains(&0x0c));
     }
 
     #[test]
@@ -703,7 +744,7 @@ mod tests {
         let bytes = result.unwrap();
 
         // Should contain br instruction for continue
-        assert!(bytes.iter().any(|&b| b == 0x0c));
+        assert!(bytes.contains(&0x0c));
     }
 
     #[test]
@@ -716,7 +757,7 @@ mod tests {
         let bytes = result.unwrap();
 
         // Should contain return instruction (0x0f)
-        assert!(bytes.iter().any(|&b| b == 0x0f));
+        assert!(bytes.contains(&0x0f));
     }
 
     #[test]
@@ -729,9 +770,9 @@ mod tests {
         let bytes = result.unwrap();
 
         // Should contain add, sub, and mul instructions
-        assert!(bytes.iter().any(|&b| b == 0x6a)); // add
-        assert!(bytes.iter().any(|&b| b == 0x6b)); // sub
-        assert!(bytes.iter().any(|&b| b == 0x6c)); // mul
+        assert!(bytes.contains(&0x6a)); // add
+        assert!(bytes.contains(&0x6b)); // sub
+        assert!(bytes.contains(&0x6c)); // mul
     }
 
     #[test]
@@ -766,7 +807,7 @@ mod tests {
         let bytes = result.unwrap();
 
         // Should contain i32.eqz instruction (0x45)
-        assert!(bytes.iter().any(|&b| b == 0x45));
+        assert!(bytes.contains(&0x45));
 
         let mut parser = Parser::new("-5");
         let expr = parser.parse().expect("Should parse negate");
@@ -777,7 +818,8 @@ mod tests {
 
     #[test]
     fn test_complex_function() {
-        let mut parser = Parser::new(r#"
+        let mut parser = Parser::new(
+            r"
             fun factorial(n) {
                 if n <= 1 {
                     1
@@ -785,7 +827,8 @@ mod tests {
                     n * factorial(n - 1)
                 }
             }
-        "#);
+        ",
+        );
         let expr = parser.parse().expect("Should parse complex function");
         let emitter = WasmEmitter::new();
         let result = emitter.emit(&expr);
@@ -802,17 +845,11 @@ mod tests {
         let emitter = WasmEmitter::new();
 
         // Simple integer shouldn't need memory
-        let expr = Expr::new(
-            ExprKind::Literal(Literal::Integer(42)),
-            Default::default()
-        );
+        let expr = Expr::new(ExprKind::Literal(Literal::Integer(42)), Default::default());
         assert!(!emitter.needs_memory(&expr));
 
         // List should need memory
-        let list_expr = Expr::new(
-            ExprKind::List(vec![]),
-            Default::default()
-        );
+        let list_expr = Expr::new(ExprKind::List(vec![]), Default::default());
         assert!(emitter.needs_memory(&list_expr));
     }
 
@@ -828,13 +865,13 @@ mod tests {
                 params: vec![],
                 body: Box::new(Expr::new(
                     ExprKind::Literal(Literal::Integer(42)),
-                    Default::default()
+                    Default::default(),
                 )),
                 return_type: None,
                 is_async: false,
                 is_pub: false,
             },
-            Default::default()
+            Default::default(),
         );
 
         let funcs = emitter.collect_functions(&func_expr);
@@ -852,14 +889,13 @@ mod tests {
         let bytes = result.unwrap();
 
         // Should contain i32.div_s instruction (0x6d)
-        assert!(bytes.iter().any(|&b| b == 0x6d));
+        assert!(bytes.contains(&0x6d));
     }
 }
 #[cfg(test)]
 mod property_tests_mod {
     use proptest::proptest;
-    
-    
+
     proptest! {
         /// Property: Function never panics on any input
         #[test]

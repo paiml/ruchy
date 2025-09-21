@@ -1,5 +1,5 @@
 //! Type-related parsing - minimal version with only used functions
-use super::{ParserState, bail, Result, Expr, Token, ExprKind, Span};
+use super::{bail, Expr, ExprKind, ParserState, Result, Span, Token};
 pub fn parse_struct_literal(
     state: &mut ParserState,
     name: String,

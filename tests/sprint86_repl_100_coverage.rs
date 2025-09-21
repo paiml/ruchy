@@ -1,11 +1,10 @@
 //! Sprint 86: Achieve 100% coverage for repl module
 
-use ruchy::runtime::Repl;
 use ruchy::runtime::repl::{
-    ReplState, ReplMode, CommandRegistry, CommandContext,
-    Evaluator, EvalResult, CompletionEngine,
-    format_value, format_error, format_ast, Value
+    format_ast, format_error, format_value, CommandContext, CommandRegistry, CompletionEngine,
+    EvalResult, Evaluator, ReplMode, ReplState, Value,
 };
+use ruchy::runtime::Repl;
 use tempfile::TempDir;
 
 #[test]
@@ -330,11 +329,7 @@ fn test_eval_result_variants() {
 
 #[test]
 fn test_repl_mode_variants() {
-    let modes = vec![
-        ReplMode::Interactive,
-        ReplMode::Script,
-        ReplMode::Notebook,
-    ];
+    let modes = vec![ReplMode::Interactive, ReplMode::Script, ReplMode::Notebook];
 
     for mode in modes {
         let mut state = ReplState::new();

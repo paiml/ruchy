@@ -1,10 +1,10 @@
 //! TDD Tests for Type System Enhancement
 //! Sprint v3.12.0 - Improve type inference, generics, and annotations
 
-use ruchy::frontend::parser::Parser;
-use ruchy::frontend::ast::{Expr, ExprKind};
-use ruchy::middleend::infer::InferenceContext;
 use ruchy::backend::transpiler::Transpiler;
+use ruchy::frontend::ast::{Expr, ExprKind};
+use ruchy::frontend::parser::Parser;
+use ruchy::middleend::infer::InferenceContext;
 
 #[cfg(test)]
 mod type_inference_tests {
@@ -18,7 +18,7 @@ mod type_inference_tests {
             Ok(ast) => ast,
             Err(_) => return, // Parser doesn't support this syntax yet
         };
-        
+
         let mut inferrer = InferenceContext::new();
         let typed_ast = inferrer.infer(&ast);
         assert!(typed_ast.is_ok(), "Should infer i32 for integer literal");
@@ -32,7 +32,7 @@ mod type_inference_tests {
             Ok(ast) => ast,
             Err(_) => return, // Parser doesn't support this syntax yet
         };
-        
+
         let mut inferrer = InferenceContext::new();
         let typed_ast = inferrer.infer(&ast);
         assert!(typed_ast.is_ok(), "Should infer return type as i32");
@@ -46,10 +46,13 @@ mod type_inference_tests {
             Ok(ast) => ast,
             Err(_) => return, // Parser doesn't support this syntax yet
         };
-        
+
         let mut inferrer = InferenceContext::new();
         let typed_ast = inferrer.infer(&ast);
-        assert!(typed_ast.is_ok(), "Should infer closure parameter and return types");
+        assert!(
+            typed_ast.is_ok(),
+            "Should infer closure parameter and return types"
+        );
     }
 
     #[test]
@@ -60,7 +63,7 @@ mod type_inference_tests {
             Ok(ast) => ast,
             Err(_) => return, // Parser doesn't support this syntax yet
         };
-        
+
         let mut inferrer = InferenceContext::new();
         let typed_ast = inferrer.infer(&ast);
         assert!(typed_ast.is_ok(), "Should infer [i32] for array literal");
@@ -124,7 +127,7 @@ mod generic_type_tests {
             Ok(ast) => ast,
             Err(_) => return, // Parser doesn't support this syntax yet
         };
-        
+
         let transpiler = Transpiler::new();
         let result = transpiler.transpile_to_string(&ast);
         assert!(result.is_ok() || result.is_err());
@@ -140,7 +143,7 @@ mod generic_type_tests {
             Ok(ast) => ast,
             Err(_) => return, // Parser doesn't support this syntax yet
         };
-        
+
         let transpiler = Transpiler::new();
         let result = transpiler.transpile_to_string(&ast);
         assert!(result.is_ok() || result.is_err());
@@ -160,13 +163,13 @@ mod generic_type_tests {
                 self.items.push(item)
             }
         }"#;
-        
+
         let mut parser = Parser::new(input);
         let ast = match parser.parse() {
             Ok(ast) => ast,
             Err(_) => return, // Parser doesn't support this syntax yet
         };
-        
+
         let transpiler = Transpiler::new();
         let result = transpiler.transpile_to_string(&ast);
         assert!(result.is_ok() || result.is_err());
@@ -180,7 +183,7 @@ mod generic_type_tests {
             Ok(ast) => ast,
             Err(_) => return, // Parser doesn't support this syntax yet
         };
-        
+
         let transpiler = Transpiler::new();
         let result = transpiler.transpile_to_string(&ast);
         assert!(result.is_ok() || result.is_err());
@@ -193,13 +196,13 @@ mod generic_type_tests {
             Some(T),
             None
         }"#;
-        
+
         let mut parser = Parser::new(input);
         let ast = match parser.parse() {
             Ok(ast) => ast,
             Err(_) => return, // Parser doesn't support this syntax yet
         };
-        
+
         let transpiler = Transpiler::new();
         let result = transpiler.transpile_to_string(&ast);
         assert!(result.is_ok() || result.is_err());
@@ -229,7 +232,7 @@ mod type_annotation_tests {
             Ok(ast) => ast,
             Err(_) => return, // Parser doesn't support this syntax yet
         };
-        
+
         let transpiler = Transpiler::new();
         let result = transpiler.transpile_to_string(&ast);
         assert!(result.is_ok() || result.is_err());
@@ -245,7 +248,7 @@ mod type_annotation_tests {
             Ok(ast) => ast,
             Err(_) => return, // Parser doesn't support this syntax yet
         };
-        
+
         let transpiler = Transpiler::new();
         let result = transpiler.transpile_to_string(&ast);
         assert!(result.is_ok() || result.is_err());
@@ -259,13 +262,13 @@ mod type_annotation_tests {
             age: u32,
             email: Option<String>
         }"#;
-        
+
         let mut parser = Parser::new(input);
         let ast = match parser.parse() {
             Ok(ast) => ast,
             Err(_) => return, // Parser doesn't support this syntax yet
         };
-        
+
         let transpiler = Transpiler::new();
         let result = transpiler.transpile_to_string(&ast);
         assert!(result.is_ok() || result.is_err());
@@ -279,7 +282,7 @@ mod type_annotation_tests {
             Ok(ast) => ast,
             Err(_) => return, // Parser doesn't support this syntax yet
         };
-        
+
         let transpiler = Transpiler::new();
         let result = transpiler.transpile_to_string(&ast);
         assert!(result.is_ok() || result.is_err());
@@ -293,7 +296,7 @@ mod type_annotation_tests {
             Ok(ast) => ast,
             Err(_) => return, // Parser doesn't support this syntax yet
         };
-        
+
         let transpiler = Transpiler::new();
         let result = transpiler.transpile_to_string(&ast);
         assert!(result.is_ok() || result.is_err());
@@ -307,7 +310,7 @@ mod type_annotation_tests {
             Ok(ast) => ast,
             Err(_) => return, // Parser doesn't support this syntax yet
         };
-        
+
         let transpiler = Transpiler::new();
         let result = transpiler.transpile_to_string(&ast);
         assert!(result.is_ok() || result.is_err());
@@ -326,7 +329,7 @@ mod type_casting_tests {
             Ok(ast) => ast,
             Err(_) => return, // Parser doesn't support this syntax yet
         };
-        
+
         let transpiler = Transpiler::new();
         let result = transpiler.transpile_to_string(&ast);
         assert!(result.is_ok() || result.is_err());
@@ -342,7 +345,7 @@ mod type_casting_tests {
             Ok(ast) => ast,
             Err(_) => return, // Parser doesn't support this syntax yet
         };
-        
+
         let transpiler = Transpiler::new();
         let result = transpiler.transpile_to_string(&ast);
         assert!(result.is_ok() || result.is_err());
@@ -356,7 +359,7 @@ mod type_casting_tests {
             Ok(ast) => ast,
             Err(_) => return, // Parser doesn't support this syntax yet
         };
-        
+
         let transpiler = Transpiler::new();
         let result = transpiler.transpile_to_string(&ast);
         assert!(result.is_ok() || result.is_err());
@@ -374,7 +377,7 @@ mod advanced_type_tests {
             type Item;
             fn next(&mut self) -> Option<Self::Item>;
         }"#;
-        
+
         let mut parser = Parser::new(input);
         let result = parser.parse();
         // Traits not yet implemented, but test parsing
@@ -396,7 +399,7 @@ mod advanced_type_tests {
         struct Marker<T> {
             _phantom: PhantomData<T>
         }"#;
-        
+
         let mut parser = Parser::new(input);
         let result = parser.parse();
         assert!(result.is_ok() || result.is_err());
@@ -405,8 +408,8 @@ mod advanced_type_tests {
 
 #[cfg(test)]
 mod property_tests {
-    use proptest::prelude::*;
     use super::*;
+    use proptest::prelude::*;
 
     proptest! {
         #[test]

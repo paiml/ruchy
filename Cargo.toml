@@ -294,6 +294,8 @@ js-sys = "0.3"
 wasm-bindgen-futures = "0.4"
 console_error_panic_hook = "0.1"
 web-sys = "0.3"
+# WASM-compatible tokio without networking
+tokio = { version = "1.47", features = ["macros", "rt", "time"], optional = true }
 
 [dev-dependencies]
 proptest = { workspace = true }
@@ -312,6 +314,11 @@ walkdir = "2.5"
 axum = { version = "0.7", features = ["macros"] }
 tower = { version = "0.4", features = ["util"] }
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+
+# WASM QA Framework dependencies (following spec)
+wasm-bindgen-test = "0.3"
+arbitrary = { version = "1.3", features = ["derive"] }
+serde-wasm-bindgen = "0.6"
 
 [[bench]]
 name = "parser"
@@ -337,6 +344,10 @@ harness = false
 name = "performance_v3_13"
 harness = false
 
+[[bench]]
+name = "wasm_performance"
+harness = false
+
 # Commented out due to compilation errors
 # [[bench]]
 # name = "shared_session_performance"
@@ -347,6 +358,23 @@ opt-level = 0
 
 [profile.release]
 opt-level = "z"      # Optimize for size
+
+# WASM QA Framework profiles (following spec)
+[profile.coverage]
+inherits = "test"
+opt-level = 0
+debug = 2
+debug-assertions = true
+overflow-checks = true
+lto = false
+panic = 'abort'
+incremental = false
+codegen-units = 1  # Deterministic coverage
+
+# Separate profile for WASM testing
+[profile.wasm-test]
+inherits = "test"
+opt-level = "s"  # Size optimization for faster browser loading
 lto = true           # Enable Link Time Optimization
 codegen-units = 1    # Single codegen unit for better optimization
 strip = true         # Strip symbols for smaller size

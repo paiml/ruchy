@@ -5,11 +5,11 @@
 //! from paiml-mcp-agent-toolkit for optimal tool discovery.
 use crate::mcp::RuchyMCPTool;
 use anyhow::{anyhow, Result};
+#[cfg(test)]
+use proptest::prelude::*;
 use serde_json::{json, Value};
 use std::collections::HashMap;
 use std::process::Command;
-#[cfg(test)]
-use proptest::prelude::*;
 /// MCP tool discovery service for Ruchy compiler commands
 pub struct RuchyToolDiscovery {
     /// Registry of available tools
@@ -19,15 +19,15 @@ pub struct RuchyToolDiscovery {
 }
 impl RuchyToolDiscovery {
     /// Create new tool discovery service
-/// # Examples
-/// 
-/// ```
-/// use ruchy::mcp::tool_discovery::new;
-/// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn new() -> Self {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::mcp::tool_discovery::new;
+    ///
+    /// let result = new(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn new() -> Self {
         let mut discovery = Self {
             tools: HashMap::new(),
             binary_path: "ruchy".to_string(),
@@ -36,15 +36,15 @@ pub fn new() -> Self {
         discovery
     }
     /// Create with custom binary path
-/// # Examples
-/// 
-/// ```
-/// use ruchy::mcp::tool_discovery::with_binary_path;
-/// 
-/// let result = with_binary_path(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn with_binary_path(binary_path: String) -> Self {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::mcp::tool_discovery::with_binary_path;
+    ///
+    /// let result = with_binary_path(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn with_binary_path(binary_path: String) -> Self {
         let mut discovery = Self {
             tools: HashMap::new(),
             binary_path,
@@ -80,7 +80,8 @@ pub fn with_binary_path(binary_path: String) -> Self {
             "ruchy_parse".to_string(),
             "Parse Ruchy code and show AST structure for syntax analysis".to_string(),
             move |args: Value| -> Result<Value> {
-                let _code = args.get("code")
+                let _code = args
+                    .get("code")
                     .and_then(|v| v.as_str())
                     .ok_or_else(|| anyhow!("Missing 'code' parameter"))?;
                 let output = Command::new(&binary_path)
@@ -104,7 +105,7 @@ pub fn with_binary_path(binary_path: String) -> Self {
                         "tool": "ruchy_parse"
                     }))
                 }
-            }
+            },
         );
         self.tools.insert("ruchy_parse".to_string(), tool);
     }
@@ -115,7 +116,8 @@ pub fn with_binary_path(binary_path: String) -> Self {
             "ruchy_ast".to_string(),
             "Generate detailed AST representation for Ruchy code analysis".to_string(),
             move |args: Value| -> Result<Value> {
-                let _code = args.get("code")
+                let _code = args
+                    .get("code")
                     .and_then(|v| v.as_str())
                     .ok_or_else(|| anyhow!("Missing 'code' parameter"))?;
                 let output = Command::new(&binary_path)
@@ -138,7 +140,7 @@ pub fn with_binary_path(binary_path: String) -> Self {
                         "tool": "ruchy_ast"
                     }))
                 }
-            }
+            },
         );
         self.tools.insert("ruchy_ast".to_string(), tool);
     }
@@ -149,7 +151,8 @@ pub fn with_binary_path(binary_path: String) -> Self {
             "ruchy_transpile".to_string(),
             "Transpile Ruchy code to Rust for analysis and compilation".to_string(),
             move |args: Value| -> Result<Value> {
-                let _code = args.get("code")
+                let _code = args
+                    .get("code")
                     .and_then(|v| v.as_str())
                     .ok_or_else(|| anyhow!("Missing 'code' parameter"))?;
                 let output = Command::new(&binary_path)
@@ -171,7 +174,7 @@ pub fn with_binary_path(binary_path: String) -> Self {
                         "tool": "ruchy_transpile"
                     }))
                 }
-            }
+            },
         );
         self.tools.insert("ruchy_transpile".to_string(), tool);
     }
@@ -182,13 +185,11 @@ pub fn with_binary_path(binary_path: String) -> Self {
             "ruchy_check".to_string(),
             "Check Ruchy code syntax and types without executing".to_string(),
             move |args: Value| -> Result<Value> {
-                let _code = args.get("code")
+                let _code = args
+                    .get("code")
                     .and_then(|v| v.as_str())
                     .ok_or_else(|| anyhow!("Missing 'code' parameter"))?;
-                let output = Command::new(&binary_path)
-                    .arg("check")
-                    .arg("-")
-                    .output()?;
+                let output = Command::new(&binary_path).arg("check").arg("-").output()?;
                 if output.status.success() {
                     Ok(json!({
                         "success": true,
@@ -203,7 +204,7 @@ pub fn with_binary_path(binary_path: String) -> Self {
                         "tool": "ruchy_check"
                     }))
                 }
-            }
+            },
         );
         self.tools.insert("ruchy_check".to_string(), tool);
     }
@@ -214,10 +215,12 @@ pub fn with_binary_path(binary_path: String) -> Self {
             "ruchy_eval".to_string(),
             "Evaluate Ruchy expressions and return results".to_string(),
             move |args: Value| -> Result<Value> {
-                let expression = args.get("expression")
+                let expression = args
+                    .get("expression")
                     .and_then(|v| v.as_str())
                     .ok_or_else(|| anyhow!("Missing 'expression' parameter"))?;
-                let format = args.get("format")
+                let format = args
+                    .get("format")
                     .and_then(|v| v.as_str())
                     .unwrap_or("json");
                 let output = Command::new(&binary_path)
@@ -243,7 +246,7 @@ pub fn with_binary_path(binary_path: String) -> Self {
                         "tool": "ruchy_eval"
                     }))
                 }
-            }
+            },
         );
         self.tools.insert("ruchy_eval".to_string(), tool);
     }
@@ -254,13 +257,11 @@ pub fn with_binary_path(binary_path: String) -> Self {
             "ruchy_run".to_string(),
             "Compile and run complete Ruchy programs".to_string(),
             move |args: Value| -> Result<Value> {
-                let _code = args.get("code")
+                let _code = args
+                    .get("code")
                     .and_then(|v| v.as_str())
                     .ok_or_else(|| anyhow!("Missing 'code' parameter"))?;
-                let output = Command::new(&binary_path)
-                    .arg("run")
-                    .arg("-")
-                    .output()?;
+                let output = Command::new(&binary_path).arg("run").arg("-").output()?;
                 if output.status.success() {
                     let stdout = String::from_utf8_lossy(&output.stdout);
                     Ok(json!({
@@ -276,7 +277,7 @@ pub fn with_binary_path(binary_path: String) -> Self {
                         "tool": "ruchy_run"
                     }))
                 }
-            }
+            },
         );
         self.tools.insert("ruchy_run".to_string(), tool);
     }
@@ -287,7 +288,8 @@ pub fn with_binary_path(binary_path: String) -> Self {
             "ruchy_lint".to_string(),
             "Lint Ruchy code for style violations and potential issues".to_string(),
             move |args: Value| -> Result<Value> {
-                let _code = args.get("code")
+                let _code = args
+                    .get("code")
                     .and_then(|v| v.as_str())
                     .ok_or_else(|| anyhow!("Missing 'code' parameter"))?;
                 let output = Command::new(&binary_path)
@@ -310,7 +312,7 @@ pub fn with_binary_path(binary_path: String) -> Self {
                         "tool": "ruchy_lint"
                     }))
                 }
-            }
+            },
         );
         self.tools.insert("ruchy_lint".to_string(), tool);
     }
@@ -321,13 +323,11 @@ pub fn with_binary_path(binary_path: String) -> Self {
             "ruchy_fmt".to_string(),
             "Format Ruchy code according to style guidelines".to_string(),
             move |args: Value| -> Result<Value> {
-                let _code = args.get("code")
+                let _code = args
+                    .get("code")
                     .and_then(|v| v.as_str())
                     .ok_or_else(|| anyhow!("Missing 'code' parameter"))?;
-                let output = Command::new(&binary_path)
-                    .arg("fmt")
-                    .arg("-")
-                    .output()?;
+                let output = Command::new(&binary_path).arg("fmt").arg("-").output()?;
                 if output.status.success() {
                     let stdout = String::from_utf8_lossy(&output.stdout);
                     Ok(json!({
@@ -343,7 +343,7 @@ pub fn with_binary_path(binary_path: String) -> Self {
                         "tool": "ruchy_fmt"
                     }))
                 }
-            }
+            },
         );
         self.tools.insert("ruchy_fmt".to_string(), tool);
     }
@@ -354,7 +354,8 @@ pub fn with_binary_path(binary_path: String) -> Self {
             "ruchy_score".to_string(),
             "Calculate unified quality score for Ruchy code".to_string(),
             move |args: Value| -> Result<Value> {
-                let _code = args.get("code")
+                let _code = args
+                    .get("code")
                     .and_then(|v| v.as_str())
                     .ok_or_else(|| anyhow!("Missing 'code' parameter"))?;
                 let output = Command::new(&binary_path)
@@ -377,7 +378,7 @@ pub fn with_binary_path(binary_path: String) -> Self {
                         "tool": "ruchy_score"
                     }))
                 }
-            }
+            },
         );
         self.tools.insert("ruchy_score".to_string(), tool);
     }
@@ -388,7 +389,8 @@ pub fn with_binary_path(binary_path: String) -> Self {
             "ruchy_quality_gate".to_string(),
             "Enforce quality gates and standards on Ruchy code".to_string(),
             move |args: Value| -> Result<Value> {
-                let _code = args.get("code")
+                let _code = args
+                    .get("code")
                     .and_then(|v| v.as_str())
                     .ok_or_else(|| anyhow!("Missing 'code' parameter"))?;
                 let output = Command::new(&binary_path)
@@ -411,7 +413,7 @@ pub fn with_binary_path(binary_path: String) -> Self {
                         "tool": "ruchy_quality_gate"
                     }))
                 }
-            }
+            },
         );
         self.tools.insert("ruchy_quality_gate".to_string(), tool);
     }
@@ -422,7 +424,8 @@ pub fn with_binary_path(binary_path: String) -> Self {
             "ruchy_provability".to_string(),
             "Formal verification and correctness analysis of Ruchy code".to_string(),
             move |args: Value| -> Result<Value> {
-                let _code = args.get("code")
+                let _code = args
+                    .get("code")
                     .and_then(|v| v.as_str())
                     .ok_or_else(|| anyhow!("Missing 'code' parameter"))?;
                 let output = Command::new(&binary_path)
@@ -445,7 +448,7 @@ pub fn with_binary_path(binary_path: String) -> Self {
                         "tool": "ruchy_provability"
                     }))
                 }
-            }
+            },
         );
         self.tools.insert("ruchy_provability".to_string(), tool);
     }
@@ -456,7 +459,8 @@ pub fn with_binary_path(binary_path: String) -> Self {
             "ruchy_runtime".to_string(),
             "Performance analysis and BigO complexity detection".to_string(),
             move |args: Value| -> Result<Value> {
-                let _code = args.get("code")
+                let _code = args
+                    .get("code")
                     .and_then(|v| v.as_str())
                     .ok_or_else(|| anyhow!("Missing 'code' parameter"))?;
                 let output = Command::new(&binary_path)
@@ -479,7 +483,7 @@ pub fn with_binary_path(binary_path: String) -> Self {
                         "tool": "ruchy_runtime"
                     }))
                 }
-            }
+            },
         );
         self.tools.insert("ruchy_runtime".to_string(), tool);
     }
@@ -490,7 +494,8 @@ pub fn with_binary_path(binary_path: String) -> Self {
             "ruchy_optimize".to_string(),
             "Hardware-aware optimization analysis for Ruchy code".to_string(),
             move |args: Value| -> Result<Value> {
-                let _code = args.get("code")
+                let _code = args
+                    .get("code")
                     .and_then(|v| v.as_str())
                     .ok_or_else(|| anyhow!("Missing 'code' parameter"))?;
                 let output = Command::new(&binary_path)
@@ -513,57 +518,59 @@ pub fn with_binary_path(binary_path: String) -> Self {
                         "tool": "ruchy_optimize"
                     }))
                 }
-            }
+            },
         );
         self.tools.insert("ruchy_optimize".to_string(), tool);
     }
     /// Get all registered tools
-/// # Examples
-/// 
-/// ```
-/// use ruchy::mcp::tool_discovery::get_tools;
-/// 
-/// let result = get_tools(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn get_tools(&self) -> &HashMap<String, RuchyMCPTool> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::mcp::tool_discovery::get_tools;
+    ///
+    /// let result = get_tools(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn get_tools(&self) -> &HashMap<String, RuchyMCPTool> {
         &self.tools
     }
     /// Get tool by name
-/// # Examples
-/// 
-/// ```
-/// use ruchy::mcp::tool_discovery::get_tool;
-/// 
-/// let result = get_tool("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn get_tool(&self, name: &str) -> Option<&RuchyMCPTool> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::mcp::tool_discovery::get_tool;
+    ///
+    /// let result = get_tool("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn get_tool(&self, name: &str) -> Option<&RuchyMCPTool> {
         self.tools.get(name)
     }
     /// List all available tool names
-/// # Examples
-/// 
-/// ```
-/// use ruchy::mcp::tool_discovery::list_tool_names;
-/// 
-/// let result = list_tool_names(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn list_tool_names(&self) -> Vec<String> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::mcp::tool_discovery::list_tool_names;
+    ///
+    /// let result = list_tool_names(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn list_tool_names(&self) -> Vec<String> {
         self.tools.keys().cloned().collect()
     }
     /// Get tool discovery information for MCP registration
-/// # Examples
-/// 
-/// ```
-/// use ruchy::mcp::tool_discovery::get_discovery_info;
-/// 
-/// let result = get_discovery_info(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn get_discovery_info(&self) -> Value {
-        let tools: Vec<Value> = self.tools.iter()
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::mcp::tool_discovery::get_discovery_info;
+    ///
+    /// let result = get_discovery_info(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn get_discovery_info(&self) -> Value {
+        let tools: Vec<Value> = self
+            .tools
+            .iter()
             .map(|(name, tool)| {
                 json!({
                     "name": name,
@@ -580,7 +587,7 @@ pub fn get_discovery_info(&self) -> Value {
             "tools": tools,
             "categories": [
                 "parsing",
-                "transpilation", 
+                "transpilation",
                 "execution",
                 "quality",
                 "analysis"
@@ -593,8 +600,14 @@ pub fn get_discovery_info(&self) -> Value {
             name if name.contains("parse") || name.contains("ast") => "parsing",
             name if name.contains("transpile") || name.contains("check") => "transpilation",
             name if name.contains("eval") || name.contains("run") => "execution",
-            name if name.contains("lint") || name.contains("fmt") || name.contains("score") || name.contains("quality") => "quality",
-            _ => "analysis"
+            name if name.contains("lint")
+                || name.contains("fmt")
+                || name.contains("score")
+                || name.contains("quality") =>
+            {
+                "quality"
+            }
+            _ => "analysis",
         }
     }
     /// Get aliases for better tool discovery (following paiml-mcp-agent-toolkit patterns)
@@ -613,7 +626,7 @@ pub fn get_discovery_info(&self) -> Value {
             "ruchy_provability" => vec!["prove", "verify", "formal"],
             "ruchy_runtime" => vec!["runtime", "performance", "bigo"],
             "ruchy_optimize" => vec!["optimize", "hardware", "perf"],
-            _ => vec![]
+            _ => vec![],
         }
     }
 }
@@ -624,9 +637,9 @@ impl Default for RuchyToolDiscovery {
 }
 #[cfg(test)]
 mod property_tests_tool_discovery {
-    use proptest::proptest;
     use super::*;
     use proptest::prelude::*;
+    use proptest::proptest;
 
     proptest! {
         /// Property: RuchyToolDiscovery::new() never panics

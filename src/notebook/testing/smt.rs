@@ -1,9 +1,9 @@
 // SPRINT6-005: Full Z3 SMT solver integration
 // PMAT Complexity: <10 per function
 use std::collections::HashMap;
-use std::time::Duration;
-use std::process::{Command, Stdio};
 use std::io::Write;
+use std::process::{Command, Stdio};
+use std::time::Duration;
 /// SMT solver integration for formal verification
 pub struct SmtSolver {
     solver_type: SolverType,
@@ -52,39 +52,39 @@ struct CachedProof {
     timestamp: std::time::SystemTime,
 }
 impl SmtSolver {
-/// # Examples
-/// 
-/// ```
-/// use ruchy::notebook::testing::smt::SmtSolver;
-/// 
-/// let instance = SmtSolver::new();
-/// // Verify behavior
-/// ```
-/// # Examples
-/// 
-/// ```
-/// use ruchy::notebook::testing::smt::SmtSolver;
-/// 
-/// let instance = SmtSolver::new();
-/// // Verify behavior
-/// ```
-pub fn new(solver_type: SolverType) -> Self {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::notebook::testing::smt::SmtSolver;
+    ///
+    /// let instance = SmtSolver::new();
+    /// // Verify behavior
+    /// ```
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::notebook::testing::smt::SmtSolver;
+    ///
+    /// let instance = SmtSolver::new();
+    /// // Verify behavior
+    /// ```
+    pub fn new(solver_type: SolverType) -> Self {
         Self {
             solver_type,
             timeout: Duration::from_secs(5),
             proof_cache: ProofCache::new(),
         }
     }
-/// # Examples
-/// 
-/// ```
-/// use ruchy::notebook::testing::smt::SmtSolver;
-/// 
-/// let mut instance = SmtSolver::new();
-/// let result = instance.with_timeout();
-/// // Verify behavior
-/// ```
-pub fn with_timeout(solver_type: SolverType, timeout: Duration) -> Self {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::notebook::testing::smt::SmtSolver;
+    ///
+    /// let mut instance = SmtSolver::new();
+    /// let result = instance.with_timeout();
+    /// // Verify behavior
+    /// ```
+    pub fn with_timeout(solver_type: SolverType, timeout: Duration) -> Self {
         Self {
             solver_type,
             timeout,
@@ -92,16 +92,16 @@ pub fn with_timeout(solver_type: SolverType, timeout: Duration) -> Self {
         }
     }
     /// Solve an SMT query
-/// # Examples
-/// 
-/// ```
-/// use ruchy::notebook::testing::smt::SmtSolver;
-/// 
-/// let mut instance = SmtSolver::new();
-/// let result = instance.solve();
-/// // Verify behavior
-/// ```
-pub fn solve(&mut self, query: &SmtQuery) -> SmtResult {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::notebook::testing::smt::SmtSolver;
+    ///
+    /// let mut instance = SmtSolver::new();
+    /// let result = instance.solve();
+    /// // Verify behavior
+    /// ```
+    pub fn solve(&mut self, query: &SmtQuery) -> SmtResult {
         let query_string = self.format_query(query);
         let query_hash = self.calculate_hash(&query_string);
         // Check cache first
@@ -120,16 +120,20 @@ pub fn solve(&mut self, query: &SmtQuery) -> SmtResult {
         result
     }
     /// Verify a function against its specification
-/// # Examples
-/// 
-/// ```
-/// use ruchy::notebook::testing::smt::SmtSolver;
-/// 
-/// let mut instance = SmtSolver::new();
-/// let result = instance.verify_function();
-/// // Verify behavior
-/// ```
-pub fn verify_function(&mut self, function: &Function, spec: &FunctionSpec) -> VerificationResult {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::notebook::testing::smt::SmtSolver;
+    ///
+    /// let mut instance = SmtSolver::new();
+    /// let result = instance.verify_function();
+    /// // Verify behavior
+    /// ```
+    pub fn verify_function(
+        &mut self,
+        function: &Function,
+        spec: &FunctionSpec,
+    ) -> VerificationResult {
         let mut assertions = Vec::new();
         // Add function definition
         assertions.push(self.encode_function(function));
@@ -174,15 +178,19 @@ pub fn verify_function(&mut self, function: &Function, spec: &FunctionSpec) -> V
         }
     }
     /// Verify loop invariants
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::notebook::testing::smt::verify_loop_invariant;
-/// 
-/// let result = verify_loop_invariant("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn verify_loop_invariant(&mut self, loop_info: &LoopInfo, invariant: &str) -> LoopVerificationResult {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::notebook::testing::smt::verify_loop_invariant;
+    ///
+    /// let result = verify_loop_invariant("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn verify_loop_invariant(
+        &mut self,
+        loop_info: &LoopInfo,
+        invariant: &str,
+    ) -> LoopVerificationResult {
         // Initialization: invariant holds before loop
         let init_query = SmtQuery {
             declarations: loop_info.variable_declarations.clone(),
@@ -260,7 +268,9 @@ pub fn verify_loop_invariant(&mut self, loop_info: &LoopInfo, invariant: &str) -
                 assignments: vec![
                     ("x".to_string(), "42".to_string()),
                     ("y".to_string(), "true".to_string()),
-                ].into_iter().collect(),
+                ]
+                .into_iter()
+                .collect(),
             })
         }
     }
@@ -273,10 +283,8 @@ pub fn verify_loop_invariant(&mut self, loop_info: &LoopInfo, invariant: &str) -
                 if line.contains("->") {
                     let parts: Vec<&str> = line.split("->").collect();
                     if parts.len() == 2 {
-                        assignments.insert(
-                            parts[0].trim().to_string(),
-                            parts[1].trim().to_string(),
-                        );
+                        assignments
+                            .insert(parts[0].trim().to_string(), parts[1].trim().to_string());
                     }
                 }
             }
@@ -339,7 +347,11 @@ pub fn verify_loop_invariant(&mut self, loop_info: &LoopInfo, invariant: &str) -
                 assertions: vec![
                     format!("(assert {})", loop_info.loop_condition),
                     loop_info.loop_body.clone(),
-                    format!("(assert (>= {} {}))", measure, measure.replace('x', "x_next")),
+                    format!(
+                        "(assert (>= {} {}))",
+                        measure,
+                        measure.replace('x', "x_next")
+                    ),
                 ],
                 query: "(check-sat)".to_string(),
             };
@@ -349,7 +361,7 @@ pub fn verify_loop_invariant(&mut self, loop_info: &LoopInfo, invariant: &str) -
         }
     }
     fn calculate_hash(&self, content: &str) -> String {
-        use sha2::{Sha256, Digest};
+        use sha2::{Digest, Sha256};
         let mut hasher = Sha256::new();
         hasher.update(content);
         format!("{:x}", hasher.finalize())
@@ -377,22 +389,25 @@ impl ProofCache {
         None
     }
     fn store(&mut self, query_hash: String, result: SmtResult) {
-        self.cache.insert(query_hash.clone(), CachedProof {
-            query_hash,
-            result,
-            timestamp: std::time::SystemTime::now(),
-        });
+        self.cache.insert(
+            query_hash.clone(),
+            CachedProof {
+                query_hash,
+                result,
+                timestamp: std::time::SystemTime::now(),
+            },
+        );
     }
-/// # Examples
-/// 
-/// ```
-/// use ruchy::notebook::testing::smt::ProofCache;
-/// 
-/// let mut instance = ProofCache::new();
-/// let result = instance.get_hit_rate();
-/// // Verify behavior
-/// ```
-pub fn get_hit_rate(&self) -> f64 {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::notebook::testing::smt::ProofCache;
+    ///
+    /// let mut instance = ProofCache::new();
+    /// let result = instance.get_hit_rate();
+    /// // Verify behavior
+    /// ```
+    pub fn get_hit_rate(&self) -> f64 {
         let total = self.hit_count + self.miss_count;
         if total > 0 {
             self.hit_count as f64 / total as f64
@@ -424,9 +439,15 @@ pub struct VerificationResult {
 #[derive(Debug)]
 pub enum PostconditionResult {
     Satisfied(String),
-    Violated { postcondition: String, counterexample: Model },
+    Violated {
+        postcondition: String,
+        counterexample: Model,
+    },
     Timeout(String),
-    Unknown { postcondition: String, reason: String },
+    Unknown {
+        postcondition: String,
+        reason: String,
+    },
 }
 #[derive(Debug, Clone)]
 pub struct LoopInfo {
@@ -456,24 +477,21 @@ impl BoundedModelChecker {
         }
     }
     /// Check property up to bounded depth
-/// # Examples
-/// 
-/// ```
-/// use ruchy::notebook::testing::smt::BoundedModelChecker;
-/// 
-/// let mut instance = BoundedModelChecker::new();
-/// let result = instance.check_bounded();
-/// // Verify behavior
-/// ```
-pub fn check_bounded(&mut self, property: &str, program: &Program) -> BoundedResult {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::notebook::testing::smt::BoundedModelChecker;
+    ///
+    /// let mut instance = BoundedModelChecker::new();
+    /// let result = instance.check_bounded();
+    /// // Verify behavior
+    /// ```
+    pub fn check_bounded(&mut self, property: &str, program: &Program) -> BoundedResult {
         for depth in 1..=self.max_depth {
             let unrolled = self.unroll_program(program, depth);
             let query = SmtQuery {
                 declarations: program.variable_declarations.clone(),
-                assertions: vec![
-                    unrolled,
-                    format!("(assert (not {}))", property),
-                ],
+                assertions: vec![unrolled, format!("(assert (not {}))", property)],
                 query: "(check-sat)".to_string(),
             };
             match self.solver.solve(&query) {
@@ -484,24 +502,24 @@ pub fn check_bounded(&mut self, property: &str, program: &Program) -> BoundedRes
                     // Property holds at this depth, continue
                 }
                 SmtResult::Timeout => {
-                    return BoundedResult::Timeout { reached_depth: depth };
+                    return BoundedResult::Timeout {
+                        reached_depth: depth,
+                    };
                 }
                 SmtResult::Unknown(reason) => {
                     return BoundedResult::Unknown { reason, depth };
                 }
             }
         }
-        BoundedResult::BoundedSafe { max_depth: self.max_depth }
+        BoundedResult::BoundedSafe {
+            max_depth: self.max_depth,
+        }
     }
     fn unroll_program(&self, _program: &Program, depth: usize) -> String {
         // Unroll loops and function calls up to specified depth
         let mut unrolled = String::new();
         for step in 0..depth {
-            unrolled.push_str(&format!(
-                "(assert (= x_{} (f x_{})))\n",
-                step + 1,
-                step
-            ));
+            unrolled.push_str(&format!("(assert (= x_{} (f x_{})))\n", step + 1, step));
         }
         unrolled
     }

@@ -1,23 +1,23 @@
 //! Minimal codegen for self-hosting MVP
 //! Direct Rust mapping with no optimization - as specified in self-hosting spec
 #![allow(clippy::missing_errors_doc)]
-use crate::frontend::ast::{Expr, Literal, Pattern, BinaryOp, UnaryOp};
+use crate::frontend::ast::{BinaryOp, Expr, Literal, Pattern, UnaryOp};
 use anyhow::Result;
 /// Minimal code generator for self-hosting
 pub struct MinimalCodeGen;
 impl MinimalCodeGen {
     /// Generate Rust code directly from AST with no optimization
-/// # Examples
-/// 
-/// ```
-/// use ruchy::backend::transpiler::codegen_minimal::MinimalCodeGen;
-/// use ruchy::frontend::ast::Expr;
-///
-/// let expr = Expr::literal(42.into());
-/// let result = MinimalCodeGen::gen_expr(&expr);
-/// assert!(result.is_ok());
-/// ```
-pub fn gen_expr(expr: &Expr) -> Result<String> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::backend::transpiler::codegen_minimal::MinimalCodeGen;
+    /// use ruchy::frontend::ast::Expr;
+    ///
+    /// let expr = Expr::literal(42.into());
+    /// let result = MinimalCodeGen::gen_expr(&expr);
+    /// assert!(result.is_ok());
+    /// ```
+    pub fn gen_expr(expr: &Expr) -> Result<String> {
         use crate::frontend::ast::ExprKind;
         match &expr.kind {
             ExprKind::Literal(lit) => Self::gen_literal(lit),
@@ -28,14 +28,14 @@ pub fn gen_expr(expr: &Expr) -> Result<String> {
             ExprKind::Function { name, params, body, .. } => Self::gen_function_expr(name, params, body),
             ExprKind::Lambda { params, body } => Self::gen_lambda_expr(params, body),
             ExprKind::Call { func, args } => Self::gen_call_expr(func, args),
-            ExprKind::If { condition, then_branch, else_branch } => 
+            ExprKind::If { condition, then_branch, else_branch } =>
                 Self::gen_if_expr(condition, then_branch, else_branch.as_deref()),
             ExprKind::Block(exprs) => Self::gen_block_expr(exprs),
             ExprKind::Match { expr, arms } => Self::gen_match_expr(expr, arms),
             ExprKind::List(elements) => Self::gen_list_expr(elements),
             ExprKind::Struct { name, fields, .. } => Self::gen_struct_def(name, fields),
             ExprKind::StructLiteral { name, fields } => Self::gen_struct_literal(name, fields),
-            ExprKind::MethodCall { receiver, method, args } => 
+            ExprKind::MethodCall { receiver, method, args } =>
                 Self::gen_method_call(receiver, method, args),
             ExprKind::Macro { name, args } => Self::gen_macro_call(name, args),
             ExprKind::QualifiedName { module, name } => Ok(format!("{module}::{name}")),
@@ -63,19 +63,24 @@ pub fn gen_expr(expr: &Expr) -> Result<String> {
         Ok(format!("{{ let {name} = {value_code}; {body_code} }}"))
     }
     fn gen_function_expr(
-        name: &str, 
-        params: &[crate::frontend::ast::Param], 
-        body: &Expr
+        name: &str,
+        params: &[crate::frontend::ast::Param],
+        body: &Expr,
     ) -> Result<String> {
-        let param_list = params.iter()
-            .map(|p| { let name = p.name(); format!("{name}: i32") }) // Simplified for MVP
+        let param_list = params
+            .iter()
+            .map(|p| {
+                let name = p.name();
+                format!("{name}: i32")
+            }) // Simplified for MVP
             .collect::<Vec<_>>()
             .join(", ");
         let body_code = Self::gen_expr(body)?;
         Ok(format!("fn {name}({param_list}) {{ {body_code} }}"))
     }
     fn gen_lambda_expr(params: &[crate::frontend::ast::Param], body: &Expr) -> Result<String> {
-        let param_list = params.iter()
+        let param_list = params
+            .iter()
             .map(crate::frontend::ast::Param::name)
             .collect::<Vec<_>>()
             .join(", ");
@@ -84,21 +89,24 @@ pub fn gen_expr(expr: &Expr) -> Result<String> {
     }
     fn gen_call_expr(func: &Expr, args: &[Expr]) -> Result<String> {
         let func_code = Self::gen_expr(func)?;
-        let arg_codes = args.iter()
+        let arg_codes = args
+            .iter()
             .map(Self::gen_expr)
             .collect::<Result<Vec<_>>>()?;
         Ok(format!("{func_code}({})", arg_codes.join(", ")))
     }
     fn gen_if_expr(
-        condition: &Expr, 
-        then_branch: &Expr, 
-        else_branch: Option<&Expr>
+        condition: &Expr,
+        then_branch: &Expr,
+        else_branch: Option<&Expr>,
     ) -> Result<String> {
         let cond_code = Self::gen_expr(condition)?;
         let then_code = Self::gen_expr(then_branch)?;
         if let Some(else_expr) = else_branch {
             let else_code = Self::gen_expr(else_expr)?;
-            Ok(format!("if {cond_code} {{ {then_code} }} else {{ {else_code} }}"))
+            Ok(format!(
+                "if {cond_code} {{ {then_code} }} else {{ {else_code} }}"
+            ))
         } else {
             Ok(format!("if {cond_code} {{ {then_code} }}"))
         }
@@ -130,24 +138,27 @@ pub fn gen_expr(expr: &Expr) -> Result<String> {
         Ok(code)
     }
     fn gen_list_expr(elements: &[Expr]) -> Result<String> {
-        let element_codes = elements.iter()
+        let element_codes = elements
+            .iter()
             .map(Self::gen_expr)
             .collect::<Result<Vec<_>>>()?;
         let elements = element_codes.join(", ");
         Ok(format!("vec![{elements}]"))
     }
-    fn gen_struct_def(
-        name: &str, 
-        fields: &[crate::frontend::ast::StructField]
-    ) -> Result<String> {
-        let field_list = fields.iter()
-            .map(|f| { let name = &f.name; format!("    {name}: String,") }) // Simplified for MVP
+    fn gen_struct_def(name: &str, fields: &[crate::frontend::ast::StructField]) -> Result<String> {
+        let field_list = fields
+            .iter()
+            .map(|f| {
+                let name = &f.name;
+                format!("    {name}: String,")
+            }) // Simplified for MVP
             .collect::<Vec<_>>()
             .join("\n");
         Ok(format!("struct {name} {{\n{field_list}\n}}"))
     }
     fn gen_struct_literal(name: &str, fields: &[(String, Expr)]) -> Result<String> {
-        let field_codes = fields.iter()
+        let field_codes = fields
+            .iter()
             .map(|f| {
                 let value_code = Self::gen_expr(&f.1)?;
                 let field_name = &f.0;
@@ -159,22 +170,22 @@ pub fn gen_expr(expr: &Expr) -> Result<String> {
     }
     fn gen_method_call(receiver: &Expr, method: &str, args: &[Expr]) -> Result<String> {
         let receiver_code = Self::gen_expr(receiver)?;
-        let arg_codes = args.iter()
+        let arg_codes = args
+            .iter()
             .map(Self::gen_expr)
             .collect::<Result<Vec<_>>>()?;
         let args = arg_codes.join(", ");
         Ok(format!("{receiver_code}.{method}({args})"))
     }
     fn gen_macro_call(name: &str, args: &[Expr]) -> Result<String> {
-        let arg_codes = args.iter()
+        let arg_codes = args
+            .iter()
             .map(Self::gen_expr)
             .collect::<Result<Vec<_>>>()?;
         let args = arg_codes.join(", ");
         Ok(format!("{name}!({args})"))
     }
-    fn gen_string_interpolation(
-        parts: &[crate::frontend::ast::StringPart]
-    ) -> Result<String> {
+    fn gen_string_interpolation(parts: &[crate::frontend::ast::StringPart]) -> Result<String> {
         // Simplified string interpolation for MVP
         let mut result = String::from("format!(");
         let mut format_str = String::new();
@@ -218,7 +229,7 @@ pub fn gen_expr(expr: &Expr) -> Result<String> {
     fn gen_binary_op(op: BinaryOp) -> &'static str {
         match op {
             BinaryOp::Add => "+",
-            BinaryOp::Subtract => "-", 
+            BinaryOp::Subtract => "-",
             BinaryOp::Multiply => "*",
             BinaryOp::Divide => "/",
             BinaryOp::Modulo => "%",
@@ -254,7 +265,8 @@ pub fn gen_expr(expr: &Expr) -> Result<String> {
             Pattern::Literal(lit) => Self::gen_literal(lit),
             Pattern::Identifier(name) => Ok(name.clone()),
             Pattern::List(patterns) => {
-                let pattern_codes = patterns.iter()
+                let pattern_codes = patterns
+                    .iter()
                     .map(Self::gen_pattern)
                     .collect::<Result<Vec<_>>>()?;
                 let patterns = pattern_codes.join(", ");
@@ -282,28 +294,26 @@ pub fn gen_expr(expr: &Expr) -> Result<String> {
         Ok("String".to_string()) // Simplified for self-hosting MVP
     }
     /// Generate complete Rust program for self-hosting
-/// # Examples
-/// 
-/// ```
-/// use ruchy::backend::transpiler::codegen_minimal::MinimalCodeGen;
-/// use ruchy::frontend::ast::Expr;
-///
-/// let expr = Expr::literal(42.into());
-/// let result = MinimalCodeGen::gen_program(&expr);
-/// assert!(result.is_ok());
-/// ```
-pub fn gen_program(expr: &Expr) -> Result<String> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::backend::transpiler::codegen_minimal::MinimalCodeGen;
+    /// use ruchy::frontend::ast::Expr;
+    ///
+    /// let expr = Expr::literal(42.into());
+    /// let result = MinimalCodeGen::gen_program(&expr);
+    /// assert!(result.is_ok());
+    /// ```
+    pub fn gen_program(expr: &Expr) -> Result<String> {
         let main_code = Self::gen_expr(expr)?;
-        Ok(format!(
-            "use std::collections::HashMap;\n\n{main_code}"
-        ))
+        Ok(format!("use std::collections::HashMap;\n\n{main_code}"))
     }
 }
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::frontend::ast::{BinaryOp, Expr, ExprKind, Literal, Pattern, Span, UnaryOp};
     use crate::frontend::parser::Parser;
-    use crate::frontend::ast::{Expr, ExprKind, Literal, BinaryOp, UnaryOp, Pattern, Span};
 
     fn gen_str(input: &str) -> Result<String> {
         let mut parser = Parser::new(input);
@@ -329,19 +339,40 @@ mod tests {
 
     #[test]
     fn test_all_literals() {
-        assert_eq!(MinimalCodeGen::gen_literal(&Literal::Integer(42)).unwrap(), "42");
-        assert_eq!(MinimalCodeGen::gen_literal(&Literal::Float(3.14)).unwrap(), "3.14");
-        assert_eq!(MinimalCodeGen::gen_literal(&Literal::String("test".into())).unwrap(), "\"test\"");
-        assert_eq!(MinimalCodeGen::gen_literal(&Literal::Bool(true)).unwrap(), "true");
-        assert_eq!(MinimalCodeGen::gen_literal(&Literal::Bool(false)).unwrap(), "false");
-        assert_eq!(MinimalCodeGen::gen_literal(&Literal::Char('a')).unwrap(), "'a'");
+        assert_eq!(
+            MinimalCodeGen::gen_literal(&Literal::Integer(42)).unwrap(),
+            "42"
+        );
+        assert_eq!(
+            MinimalCodeGen::gen_literal(&Literal::Float(3.14)).unwrap(),
+            "3.14"
+        );
+        assert_eq!(
+            MinimalCodeGen::gen_literal(&Literal::String("test".into())).unwrap(),
+            "\"test\""
+        );
+        assert_eq!(
+            MinimalCodeGen::gen_literal(&Literal::Bool(true)).unwrap(),
+            "true"
+        );
+        assert_eq!(
+            MinimalCodeGen::gen_literal(&Literal::Bool(false)).unwrap(),
+            "false"
+        );
+        assert_eq!(
+            MinimalCodeGen::gen_literal(&Literal::Char('a')).unwrap(),
+            "'a'"
+        );
         assert_eq!(MinimalCodeGen::gen_literal(&Literal::Unit).unwrap(), "()");
     }
 
     #[test]
     fn test_string_escaping() {
         let lit = Literal::String("Hello \"World\"".into());
-        assert_eq!(MinimalCodeGen::gen_literal(&lit).unwrap(), "\"Hello \\\"World\\\"\"");
+        assert_eq!(
+            MinimalCodeGen::gen_literal(&lit).unwrap(),
+            "\"Hello \\\"World\\\"\""
+        );
     }
 
     #[test]
@@ -390,7 +421,10 @@ mod tests {
     #[test]
     fn test_if_expression() {
         assert_eq!(gen_str("if true { 1 }").unwrap(), "if true { { 1 } }");
-        assert_eq!(gen_str("if x > 0 { 1 } else { 2 }").unwrap(), "if (x > 0) { { 1 } } else { { 2 } }");
+        assert_eq!(
+            gen_str("if x > 0 { 1 } else { 2 }").unwrap(),
+            "if (x > 0) { { 1 } } else { { 2 } }"
+        );
     }
 
     #[test]
@@ -448,7 +482,10 @@ mod tests {
 
     #[test]
     fn test_nested_list() {
-        assert_eq!(gen_str("[[1, 2], [3, 4]]").unwrap(), "vec![vec![1, 2], vec![3, 4]]");
+        assert_eq!(
+            gen_str("[[1, 2], [3, 4]]").unwrap(),
+            "vec![vec![1, 2], vec![3, 4]]"
+        );
     }
 
     #[test]
@@ -464,16 +501,19 @@ mod tests {
         let expr = Expr::new(
             ExprKind::QualifiedName {
                 module: "std".to_string(),
-                name: "println".to_string()
+                name: "println".to_string(),
             },
-            Span::new(0, 1)
+            Span::new(0, 1),
         );
         assert_eq!(MinimalCodeGen::gen_expr(&expr).unwrap(), "std::println");
     }
 
     #[test]
     fn test_pattern_wildcard() {
-        assert_eq!(MinimalCodeGen::gen_pattern(&Pattern::Wildcard).unwrap(), "_");
+        assert_eq!(
+            MinimalCodeGen::gen_pattern(&Pattern::Wildcard).unwrap(),
+            "_"
+        );
     }
 
     #[test]
@@ -550,7 +590,10 @@ mod tests {
 
     #[test]
     fn test_chained_method_calls() {
-        assert_eq!(gen_str("obj.method1().method2()").unwrap(), "obj.method1().method2()");
+        assert_eq!(
+            gen_str("obj.method1().method2()").unwrap(),
+            "obj.method1().method2()"
+        );
     }
 
     #[test]
@@ -598,7 +641,6 @@ mod tests {
 
     #[test]
     fn test_string_interpolation_empty() {
-        
         let parts = vec![];
         let result = MinimalCodeGen::gen_string_interpolation(&parts).unwrap();
         assert_eq!(result, r#"format!("")"#);
@@ -606,7 +648,10 @@ mod tests {
 
     #[test]
     fn test_let_expression() {
-        assert_eq!(gen_str("let x = 5 in x + 1").unwrap(), "{ let x = 5; (x + 1) }");
+        assert_eq!(
+            gen_str("let x = 5 in x + 1").unwrap(),
+            "{ let x = 5; (x + 1) }"
+        );
     }
 
     #[test]
@@ -623,7 +668,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "struct definition syntax not fully implemented"]
+
     fn test_struct_definition() {
         let input = "struct Point { x: i32, y: i32 }";
         let result = gen_str(input);
@@ -645,16 +690,16 @@ mod tests {
     fn test_deeply_nested_expression() {
         let input = "((a + b) * (c - d)) / (e + f)";
         let result = gen_str(input).unwrap();
-        assert!(result.contains("+"));
-        assert!(result.contains("-"));
-        assert!(result.contains("*"));
-        assert!(result.contains("/"));
+        assert!(result.contains('+'));
+        assert!(result.contains('-'));
+        assert!(result.contains('*'));
+        assert!(result.contains('/'));
     }
 }
 #[cfg(test)]
 mod property_tests_codegen_minimal {
     use proptest::proptest;
-    
+
     proptest! {
         /// Property: Function never panics on any input
         #[test]

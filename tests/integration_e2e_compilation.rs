@@ -1,5 +1,5 @@
 //! End-to-End Compilation Integration Tests (QUALITY-009 Phase 1)
-//! 
+//!
 //! Tests complete compilation workflows from source to execution,
 //! validating cross-module functionality that unit tests cannot cover.
 
@@ -27,40 +27,41 @@ impl E2ETestHarness {
         Ok(result.to_string())
     }
 
-
     /// Validate that transpiled code contains expected patterns
     fn validate_output(&self, transpiled: &str, expected_patterns: &[&str]) -> bool {
-        expected_patterns.iter().all(|pattern| {
-            transpiled.contains(pattern)
-        })
+        expected_patterns
+            .iter()
+            .all(|pattern| transpiled.contains(pattern))
     }
 }
 
 #[test]
 fn test_single_file_hello_world() {
     let harness = E2ETestHarness::new();
-    
+
     let source = r#"
         fun main() {
             println("Hello, World!")
         }
     "#;
 
-    let result = harness.compile_program(source)
+    let result = harness
+        .compile_program(source)
         .expect("Should compile simple hello world program");
-    
+
     // Validate essential patterns are present in transpiled code
     let expected_patterns = ["fn main", "println", "Hello, World!"];
     assert!(
         harness.validate_output(&result, &expected_patterns),
-        "Transpiled code missing expected patterns. Got: {}", result
+        "Transpiled code missing expected patterns. Got: {}",
+        result
     );
 }
 
-#[test] 
+#[test]
 fn test_single_file_with_functions() {
     let harness = E2ETestHarness::new();
-    
+
     let source = r#"
         fun add(a: i32, b: i32) -> i32 {
             a + b
@@ -72,20 +73,29 @@ fn test_single_file_with_functions() {
         }
     "#;
 
-    let result = harness.compile_program(source)
+    let result = harness
+        .compile_program(source)
         .expect("Should compile program with functions");
-    
-    let expected_patterns = ["fn add", "a : i32", "b : i32", "-> i32", "fn main", "let result"];
+
+    let expected_patterns = [
+        "fn add",
+        "a : i32",
+        "b : i32",
+        "-> i32",
+        "fn main",
+        "let result",
+    ];
     assert!(
         harness.validate_output(&result, &expected_patterns),
-        "Transpiled code missing function patterns. Got: {}", result
+        "Transpiled code missing function patterns. Got: {}",
+        result
     );
 }
 
 #[test]
 fn test_single_file_with_match_expressions() {
     let harness = E2ETestHarness::new();
-    
+
     let source = r#"
         fun classify(x: i32) -> str {
             match x {
@@ -100,20 +110,24 @@ fn test_single_file_with_match_expressions() {
         }
     "#;
 
-    let result = harness.compile_program(source)
+    let result = harness
+        .compile_program(source)
         .expect("Should compile program with match expressions");
-    
-    let expected_patterns = ["match", "0i32 =>", "1i32 =>", "_ =>", "zero", "one", "other"];
+
+    let expected_patterns = [
+        "match", "0i32 =>", "1i32 =>", "_ =>", "zero", "one", "other",
+    ];
     assert!(
         harness.validate_output(&result, &expected_patterns),
-        "Transpiled code missing match patterns. Got: {}", result
+        "Transpiled code missing match patterns. Got: {}",
+        result
     );
 }
 
 #[test]
 fn test_single_file_with_loops() {
     let harness = E2ETestHarness::new();
-    
+
     let source = r#"
         fun main() {
             let mut i = 0
@@ -128,20 +142,22 @@ fn test_single_file_with_loops() {
         }
     "#;
 
-    let result = harness.compile_program(source)
+    let result = harness
+        .compile_program(source)
         .expect("Should compile program with loops");
-    
+
     let expected_patterns = ["while", "for", "in", "vec !"];
     assert!(
         harness.validate_output(&result, &expected_patterns),
-        "Transpiled code missing loop patterns. Got: {}", result
+        "Transpiled code missing loop patterns. Got: {}",
+        result
     );
 }
 
 #[test]
 fn test_single_file_with_data_structures() {
     let harness = E2ETestHarness::new();
-    
+
     let source = r#"
         fun main() {
             let tuple = (1, "hello", true)
@@ -154,20 +170,22 @@ fn test_single_file_with_data_structures() {
         }
     "#;
 
-    let result = harness.compile_program(source)
+    let result = harness
+        .compile_program(source)
         .expect("Should compile program with data structures");
-    
+
     let expected_patterns = ["tuple", "array", "obj", "HashMap"];
     assert!(
         harness.validate_output(&result, &expected_patterns),
-        "Transpiled code missing data structure patterns. Got: {}", result
+        "Transpiled code missing data structure patterns. Got: {}",
+        result
     );
 }
 
 #[test]
 fn test_pattern_destructuring_integration() {
     let harness = E2ETestHarness::new();
-    
+
     // Test the newly implemented pattern destructuring from QUALITY-007
     let source = r#"
         fun main() {
@@ -181,20 +199,28 @@ fn test_pattern_destructuring_integration() {
         }
     "#;
 
-    let result = harness.compile_program(source)
+    let result = harness
+        .compile_program(source)
         .expect("Should compile program with pattern destructuring");
-    
-    let expected_patterns = ["let (a , b)", "let [first", "rest]", "match", "(1i32 , 2i32)"];
+
+    let expected_patterns = [
+        "let (a , b)",
+        "let [first",
+        "rest]",
+        "match",
+        "(1i32 , 2i32)",
+    ];
     assert!(
         harness.validate_output(&result, &expected_patterns),
-        "Transpiled code missing pattern destructuring. Got: {}", result
+        "Transpiled code missing pattern destructuring. Got: {}",
+        result
     );
 }
 
-#[test] 
+#[test]
 fn test_error_handling_compilation() {
     let harness = E2ETestHarness::new();
-    
+
     let source = r#"
         fun divide(a: i32, b: i32) -> i32 {
             if b == 0 {
@@ -210,20 +236,22 @@ fn test_error_handling_compilation() {
         }
     "#;
 
-    let result = harness.compile_program(source)
+    let result = harness
+        .compile_program(source)
         .expect("Should compile program with error handling");
-    
+
     let expected_patterns = ["fn divide", "if", "else", "fn main"];
     assert!(
         harness.validate_output(&result, &expected_patterns),
-        "Transpiled code missing error handling patterns. Got: {}", result
+        "Transpiled code missing error handling patterns. Got: {}",
+        result
     );
 }
 
 #[test]
 fn test_string_interpolation_compilation() {
     let harness = E2ETestHarness::new();
-    
+
     let source = r#"
         fun main() {
             let name = "World"
@@ -232,20 +260,22 @@ fn test_string_interpolation_compilation() {
         }
     "#;
 
-    let result = harness.compile_program(source)
+    let result = harness
+        .compile_program(source)
         .expect("Should compile program with string interpolation");
-    
+
     let expected_patterns = ["Hello", "Count:", "name", "count"];
     assert!(
         harness.validate_output(&result, &expected_patterns),
-        "Transpiled code missing string interpolation patterns. Got: {}", result
+        "Transpiled code missing string interpolation patterns. Got: {}",
+        result
     );
 }
 
 #[test]
 fn test_comprehensive_language_features() {
     let harness = E2ETestHarness::new();
-    
+
     // Comprehensive test combining multiple language features
     let source = r#"
         fun fibonacci(n: i32) -> i32 {
@@ -271,15 +301,23 @@ fn test_comprehensive_language_features() {
         }
     "#;
 
-    let result = harness.compile_program(source)
+    let result = harness
+        .compile_program(source)
         .expect("Should compile comprehensive program");
-    
+
     let expected_patterns = [
-        "fn fibonacci", "match", "fn main", "for", "in", 
-        "first", "fib(", "First:"
+        "fn fibonacci",
+        "match",
+        "fn main",
+        "for",
+        "in",
+        "first",
+        "fib(",
+        "First:",
     ];
     assert!(
         harness.validate_output(&result, &expected_patterns),
-        "Transpiled code missing comprehensive patterns. Got: {}", result
+        "Transpiled code missing comprehensive patterns. Got: {}",
+        result
     );
 }

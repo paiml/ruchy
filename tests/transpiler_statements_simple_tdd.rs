@@ -1,9 +1,9 @@
 //! Simple TDD tests for backend/transpiler/statements.rs
 //! Focus on testable parts without complex type construction
 
+use ruchy::frontend::ast::{ImportItem, Pattern, PipelineStage, Span};
 use ruchy::Transpiler;
 use ruchy::{Expr, ExprKind, Literal};
-use ruchy::frontend::ast::{Span, Pattern, PipelineStage, ImportItem};
 
 // ============================================================================
 // Test Helpers
@@ -58,7 +58,9 @@ fn test_transpile_if_simple() {
     let transpiler = Transpiler::new();
     let condition = make_bool_literal(true);
     let then_branch = make_literal(42);
-    let result = transpiler.transpile_if(&condition, &then_branch, None).unwrap();
+    let result = transpiler
+        .transpile_if(&condition, &then_branch, None)
+        .unwrap();
     let code = result.to_string();
     assert!(code.contains("if"));
     assert!(code.contains("true"));
@@ -71,7 +73,9 @@ fn test_transpile_if_with_else() {
     let condition = make_bool_literal(false);
     let then_branch = make_literal(1);
     let else_branch = make_literal(2);
-    let result = transpiler.transpile_if(&condition, &then_branch, Some(&else_branch)).unwrap();
+    let result = transpiler
+        .transpile_if(&condition, &then_branch, Some(&else_branch))
+        .unwrap();
     let code = result.to_string();
     assert!(code.contains("if"));
     assert!(code.contains("else"));
@@ -89,7 +93,9 @@ fn test_transpile_let_simple() {
     let name = "x";
     let value = make_literal(100);
     let body = make_identifier("x");
-    let result = transpiler.transpile_let(name, &value, &body, false).unwrap();
+    let result = transpiler
+        .transpile_let(name, &value, &body, false)
+        .unwrap();
     let code = result.to_string();
     assert!(code.contains("let"));
     assert!(code.contains('x'));
@@ -119,7 +125,9 @@ fn test_transpile_let_pattern_identifier() {
     let pattern = Pattern::Identifier("x".to_string());
     let value = make_literal(42);
     let body = make_identifier("x");
-    let result = transpiler.transpile_let_pattern(&pattern, &value, &body).unwrap();
+    let result = transpiler
+        .transpile_let_pattern(&pattern, &value, &body)
+        .unwrap();
     let code = result.to_string();
     assert!(code.contains("let"));
     assert!(code.contains('x'));
@@ -139,7 +147,9 @@ fn test_transpile_let_pattern_tuple() {
         attributes: vec![],
     };
     let body = make_identifier("a");
-    let result = transpiler.transpile_let_pattern(&pattern, &value, &body).unwrap();
+    let result = transpiler
+        .transpile_let_pattern(&pattern, &value, &body)
+        .unwrap();
     let code = result.to_string();
     assert!(code.contains("let"));
     assert!(code.contains('a'));
@@ -152,7 +162,9 @@ fn test_transpile_let_pattern_wildcard() {
     let pattern = Pattern::Wildcard;
     let value = make_literal(999);
     let body = make_literal(0);
-    let result = transpiler.transpile_let_pattern(&pattern, &value, &body).unwrap();
+    let result = transpiler
+        .transpile_let_pattern(&pattern, &value, &body)
+        .unwrap();
     let code = result.to_string();
     assert!(code.contains("let"));
     assert!(code.contains('_'));
@@ -188,11 +200,7 @@ fn test_transpile_call_no_args() {
 fn test_transpile_call_multiple_args() {
     let transpiler = Transpiler::new();
     let func = make_identifier("add");
-    let args = vec![
-        make_literal(10),
-        make_literal(20),
-        make_literal(30),
-    ];
+    let args = vec![make_literal(10), make_literal(20), make_literal(30)];
     let result = transpiler.transpile_call(&func, &args).unwrap();
     let code = result.to_string();
     assert!(code.contains("add"));
@@ -228,11 +236,7 @@ fn test_transpile_block_single() {
 #[test]
 fn test_transpile_block_multiple() {
     let transpiler = Transpiler::new();
-    let exprs = vec![
-        make_literal(1),
-        make_literal(2),
-        make_literal(3),
-    ];
+    let exprs = vec![make_literal(1), make_literal(2), make_literal(3)];
     let result = transpiler.transpile_block(&exprs).unwrap();
     let code = result.to_string();
     assert!(code.contains('{'));
@@ -329,7 +333,9 @@ fn test_transpile_if_let() {
     let pattern = Pattern::Identifier("x".to_string());
     let expr = make_identifier("maybe_value");
     let then_branch = make_identifier("x");
-    let result = transpiler.transpile_if_let(&pattern, &expr, &then_branch, None).unwrap();
+    let result = transpiler
+        .transpile_if_let(&pattern, &expr, &then_branch, None)
+        .unwrap();
     let code = result.to_string();
     assert!(code.contains("if"));
     assert!(code.contains("let"));
@@ -341,7 +347,9 @@ fn test_transpile_while_let() {
     let pattern = Pattern::Identifier("item".to_string());
     let expr = make_identifier("iter");
     let body = make_identifier("item");
-    let result = transpiler.transpile_while_let(&pattern, &expr, &body).unwrap();
+    let result = transpiler
+        .transpile_while_let(&pattern, &expr, &body)
+        .unwrap();
     let code = result.to_string();
     assert!(code.contains("while"));
     assert!(code.contains("let"));
@@ -390,15 +398,13 @@ fn test_transpile_list_comprehension() {
     let output = make_identifier("x");
     let var = "x";
     let iter = Expr {
-        kind: ExprKind::List(vec![
-            make_literal(1),
-            make_literal(2),
-            make_literal(3),
-        ]),
+        kind: ExprKind::List(vec![make_literal(1), make_literal(2), make_literal(3)]),
         span: Span::default(),
         attributes: vec![],
     };
-    let result = transpiler.transpile_list_comprehension(&output, var, &iter, None).unwrap();
+    let result = transpiler
+        .transpile_list_comprehension(&output, var, &iter, None)
+        .unwrap();
     let code = result.to_string();
     assert!(code.contains('x'));
 }
@@ -418,7 +424,9 @@ fn test_transpile_list_comprehension_with_filter() {
         span: Span::default(),
         attributes: vec![],
     };
-    let result = transpiler.transpile_list_comprehension(&output, var, &iter, Some(&filter)).unwrap();
+    let result = transpiler
+        .transpile_list_comprehension(&output, var, &iter, Some(&filter))
+        .unwrap();
     let code = result.to_string();
     assert!(code.contains("filter"));
 }
@@ -457,9 +465,7 @@ fn test_transpile_import_wildcard() {
 #[test]
 fn test_transpile_import_specific() {
     let path = "std::vec";
-    let items = vec![
-        ImportItem::Named("Vec".to_string()),
-    ];
+    let items = vec![ImportItem::Named("Vec".to_string())];
     let result = Transpiler::transpile_import(path, &items);
     let code = result.to_string();
     assert!(code.contains("use"));
@@ -469,12 +475,10 @@ fn test_transpile_import_specific() {
 #[test]
 fn test_transpile_import_aliased() {
     let path = "std::collections";
-    let items = vec![
-        ImportItem::Aliased {
-            name: "HashMap".to_string(),
-            alias: "Map".to_string(),
-        },
-    ];
+    let items = vec![ImportItem::Aliased {
+        name: "HashMap".to_string(),
+        alias: "Map".to_string(),
+    }];
     let result = Transpiler::transpile_import(path, &items);
     let code = result.to_string();
     assert!(code.contains("use"));
@@ -485,10 +489,7 @@ fn test_transpile_import_aliased() {
 
 #[test]
 fn test_transpile_export() {
-    let items = vec![
-        "my_function".to_string(),
-        "MyStruct".to_string(),
-    ];
+    let items = vec!["my_function".to_string(), "MyStruct".to_string()];
     let result = Transpiler::transpile_export(&items);
     let code = result.to_string();
     assert!(code.contains("pub"));

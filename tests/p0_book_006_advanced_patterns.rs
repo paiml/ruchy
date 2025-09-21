@@ -1,5 +1,5 @@
 //! P0-BOOK-006: Advanced Patterns Test Suite
-//! 
+//!
 //! Tests for advanced pattern matching and destructuring features including:
 //! - Complex pattern matching with guards
 //! - Destructuring assignment
@@ -17,10 +17,13 @@ fn test_tuple_destructuring() {
 let (a, b, c) = (1, 2, 3)
 println(f"a={a}, b={b}, c={c}")
 "#;
-    
+
     let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     let result = repl.eval(code);
-    assert!(result.is_ok(), "Tuple destructuring should work: {result:?}");
+    assert!(
+        result.is_ok(),
+        "Tuple destructuring should work: {result:?}"
+    );
     // The println returns "()" but the actual output goes to stdout
 }
 
@@ -33,10 +36,13 @@ match arr {
     _ => println("Multiple elements")
 }
 "#;
-    
+
     let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     let result = repl.eval(code);
-    assert!(result.is_ok(), "Array pattern matching should work: {result:?}");
+    assert!(
+        result.is_ok(),
+        "Array pattern matching should work: {result:?}"
+    );
 }
 
 #[test]
@@ -46,10 +52,13 @@ let person = {name: "Alice", age: 30, city: "Paris"}
 let {name, age} = person
 println(f"Name: {name}, Age: {age}")
 "#;
-    
+
     let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     let result = repl.eval(code);
-    assert!(result.is_ok(), "Object destructuring should work: {result:?}");
+    assert!(
+        result.is_ok(),
+        "Object destructuring should work: {result:?}"
+    );
 }
 
 #[test]
@@ -63,10 +72,13 @@ match data {
     _ => println("No users found")
 }
 "#;
-    
+
     let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     let result = repl.eval(code);
-    assert!(result.is_ok(), "Nested pattern matching should work: {result:?}");
+    assert!(
+        result.is_ok(),
+        "Nested pattern matching should work: {result:?}"
+    );
 }
 
 #[test]
@@ -80,7 +92,7 @@ match value {
     _ => println("Zero or negative")
 }
 "#;
-    
+
     let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     let result = repl.eval(code);
     assert!(result.is_ok(), "Pattern guards should work: {result:?}");
@@ -97,10 +109,13 @@ let result = match value {
 }
 println(result)
 "#;
-    
+
     let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     let result = repl.eval(code);
-    assert!(result.is_ok(), "Advanced match expressions should work: {result:?}");
+    assert!(
+        result.is_ok(),
+        "Advanced match expressions should work: {result:?}"
+    );
 }
 
 #[test]
@@ -116,7 +131,7 @@ let category = match grade {
 }
 println(f"Grade: {category}")
 "#;
-    
+
     let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     let result = repl.eval(code);
     assert!(result.is_ok(), "Range patterns should work: {result:?}");
@@ -133,7 +148,7 @@ let day_type = match day {
 }
 println(f"Day type: {day_type}")
 "#;
-    
+
     let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     let result = repl.eval(code);
     assert!(result.is_ok(), "Or patterns should work: {result:?}");

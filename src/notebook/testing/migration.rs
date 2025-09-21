@@ -63,46 +63,46 @@ struct NbvalCell {
     metadata: Option<serde_json::Value>,
 }
 impl MigrationTool {
-/// # Examples
-/// 
-/// ```
-/// use ruchy::notebook::testing::migration::MigrationTool;
-/// 
-/// let instance = MigrationTool::new();
-/// // Verify behavior
-/// ```
-pub fn new(source: TestFramework) -> Self {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::notebook::testing::migration::MigrationTool;
+    ///
+    /// let instance = MigrationTool::new();
+    /// // Verify behavior
+    /// ```
+    pub fn new(source: TestFramework) -> Self {
         Self {
             source_format: source,
             config: MigrationConfig::default(),
         }
     }
-/// # Examples
-/// 
-/// ```
-/// use ruchy::notebook::testing::migration::MigrationTool;
-/// 
-/// let mut instance = MigrationTool::new();
-/// let result = instance.with_config();
-/// // Verify behavior
-/// ```
-pub fn with_config(source: TestFramework, config: MigrationConfig) -> Self {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::notebook::testing::migration::MigrationTool;
+    ///
+    /// let mut instance = MigrationTool::new();
+    /// let result = instance.with_config();
+    /// // Verify behavior
+    /// ```
+    pub fn with_config(source: TestFramework, config: MigrationConfig) -> Self {
         Self {
             source_format: source,
             config,
         }
     }
     /// Convert a directory of test files
-/// # Examples
-/// 
-/// ```
-/// use ruchy::notebook::testing::migration::MigrationTool;
-/// 
-/// let mut instance = MigrationTool::new();
-/// let result = instance.migrate_directory();
-/// // Verify behavior
-/// ```
-pub fn migrate_directory(&self, input_dir: &Path, output_dir: &Path) -> MigrationResult {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::notebook::testing::migration::MigrationTool;
+    ///
+    /// let mut instance = MigrationTool::new();
+    /// let result = instance.migrate_directory();
+    /// // Verify behavior
+    /// ```
+    pub fn migrate_directory(&self, input_dir: &Path, output_dir: &Path) -> MigrationResult {
         let mut result = MigrationResult {
             converted_files: Vec::new(),
             warnings: Vec::new(),
@@ -125,7 +125,9 @@ pub fn migrate_directory(&self, input_dir: &Path, output_dir: &Path) -> Migratio
                     result.converted_files.push(converted);
                 }
                 Err(e) => {
-                    result.errors.push(format!("Failed to convert {}: {}", file_path.display(), e));
+                    result
+                        .errors
+                        .push(format!("Failed to convert {}: {}", file_path.display(), e));
                     result.stats.errors_encountered += 1;
                 }
             }
@@ -133,16 +135,20 @@ pub fn migrate_directory(&self, input_dir: &Path, output_dir: &Path) -> Migratio
         result
     }
     /// Convert a single file
-/// # Examples
-/// 
-/// ```
-/// use ruchy::notebook::testing::migration::MigrationTool;
-/// 
-/// let mut instance = MigrationTool::new();
-/// let result = instance.convert_file();
-/// // Verify behavior
-/// ```
-pub fn convert_file(&self, input_path: &Path, output_dir: &Path) -> Result<ConvertedFile, String> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::notebook::testing::migration::MigrationTool;
+    ///
+    /// let mut instance = MigrationTool::new();
+    /// let result = instance.convert_file();
+    /// // Verify behavior
+    /// ```
+    pub fn convert_file(
+        &self,
+        input_path: &Path,
+        output_dir: &Path,
+    ) -> Result<ConvertedFile, String> {
         match self.source_format {
             TestFramework::Nbval => self.convert_nbval_file(input_path, output_dir),
             TestFramework::Pytest => self.convert_pytest_file(input_path, output_dir),
@@ -150,11 +156,15 @@ pub fn convert_file(&self, input_path: &Path, output_dir: &Path) -> Result<Conve
             TestFramework::TestBook => self.convert_testbook_file(input_path, output_dir),
         }
     }
-    fn convert_nbval_file(&self, input_path: &Path, output_dir: &Path) -> Result<ConvertedFile, String> {
-        let content = std::fs::read_to_string(input_path)
-            .map_err(|e| format!("Failed to read file: {e}"))?;
-        let notebook: NbvalNotebook = serde_json::from_str(&content)
-            .map_err(|e| format!("Failed to parse notebook: {e}"))?;
+    fn convert_nbval_file(
+        &self,
+        input_path: &Path,
+        output_dir: &Path,
+    ) -> Result<ConvertedFile, String> {
+        let content =
+            std::fs::read_to_string(input_path).map_err(|e| format!("Failed to read file: {e}"))?;
+        let notebook: NbvalNotebook =
+            serde_json::from_str(&content).map_err(|e| format!("Failed to parse notebook: {e}"))?;
         let mut converted_cells = Vec::new();
         let mut test_count = 0;
         for cell in notebook.cells {
@@ -185,12 +195,11 @@ pub fn convert_file(&self, input_path: &Path, output_dir: &Path) -> Result<Conve
     fn convert_nbval_cell(&self, cell: &NbvalCell) -> Result<RuchyCell, String> {
         let source = match &cell.source {
             serde_json::Value::String(s) => s.clone(),
-            serde_json::Value::Array(arr) => {
-                arr.iter()
-                    .filter_map(|v| v.as_str())
-                    .collect::<Vec<_>>()
-                    .join("")
-            }
+            serde_json::Value::Array(arr) => arr
+                .iter()
+                .filter_map(|v| v.as_str())
+                .collect::<Vec<_>>()
+                .join(""),
             _ => return Err("Invalid cell source format".to_string()),
         };
         let cell_type = match cell.cell_type.as_str() {
@@ -214,10 +223,14 @@ pub fn convert_file(&self, input_path: &Path, output_dir: &Path) -> Result<Conve
             metadata: test_metadata,
         })
     }
-    fn convert_pytest_file(&self, input_path: &Path, output_dir: &Path) -> Result<ConvertedFile, String> {
+    fn convert_pytest_file(
+        &self,
+        input_path: &Path,
+        output_dir: &Path,
+    ) -> Result<ConvertedFile, String> {
         // Pytest files are Python - need to extract test functions
-        let content = std::fs::read_to_string(input_path)
-            .map_err(|e| format!("Failed to read file: {e}"))?;
+        let content =
+            std::fs::read_to_string(input_path).map_err(|e| format!("Failed to read file: {e}"))?;
         let test_functions = self.extract_pytest_functions(&content);
         let mut cells = Vec::new();
         for func in test_functions {
@@ -240,11 +253,19 @@ pub fn convert_file(&self, input_path: &Path, output_dir: &Path) -> Result<Conve
             cell_count: cells.len(),
         })
     }
-    fn convert_papermill_file(&self, _input_path: &Path, _output_dir: &Path) -> Result<ConvertedFile, String> {
+    fn convert_papermill_file(
+        &self,
+        _input_path: &Path,
+        _output_dir: &Path,
+    ) -> Result<ConvertedFile, String> {
         // PaperMill uses parameter injection - convert parameters to test cases
         Err("PaperMill conversion not yet implemented".to_string())
     }
-    fn convert_testbook_file(&self, _input_path: &Path, _output_dir: &Path) -> Result<ConvertedFile, String> {
+    fn convert_testbook_file(
+        &self,
+        _input_path: &Path,
+        _output_dir: &Path,
+    ) -> Result<ConvertedFile, String> {
         // TestBook uses pytest in notebooks - combine nbval + pytest logic
         Err("TestBook conversion not yet implemented".to_string())
     }
@@ -259,7 +280,8 @@ pub fn convert_file(&self, input_path: &Path, output_dir: &Path) -> Result<Conve
                         TestFramework::Nbval => extension == Some("ipynb"),
                         TestFramework::Pytest => {
                             let name = path.file_name().and_then(|s| s.to_str()).unwrap_or("");
-                            extension == Some("py") && (name.starts_with("test_") || name.ends_with("_test.py"))
+                            extension == Some("py")
+                                && (name.starts_with("test_") || name.ends_with("_test.py"))
                         }
                         _ => false,
                     };
@@ -292,7 +314,11 @@ pub fn convert_file(&self, input_path: &Path, output_dir: &Path) -> Result<Conve
         }
         result
     }
-    fn write_converted_notebook(&self, notebook: &RuchyNotebook, output_path: &Path) -> Result<(), String> {
+    fn write_converted_notebook(
+        &self,
+        notebook: &RuchyNotebook,
+        output_path: &Path,
+    ) -> Result<(), String> {
         // Ensure output directory exists
         if let Some(parent) = output_path.parent() {
             std::fs::create_dir_all(parent)
@@ -409,7 +435,7 @@ mod tests {
             generate_golden: false,
             output_format: OutputFormat::InlineMetadata,
         };
-        let tool = MigrationTool::with_config(TestFramework::Pytest, config.clone());
+        let tool = MigrationTool::with_config(TestFramework::Pytest, config);
         assert!(matches!(tool.source_format, TestFramework::Pytest));
         assert!(!tool.config.preserve_metadata);
     }
@@ -466,8 +492,16 @@ mod tests {
         let temp_dir = tempdir().unwrap();
 
         // Create test files
-        fs::write(temp_dir.path().join("test_example.py"), "def test_foo(): pass").unwrap();
-        fs::write(temp_dir.path().join("example_test.py"), "def test_bar(): pass").unwrap();
+        fs::write(
+            temp_dir.path().join("test_example.py"),
+            "def test_foo(): pass",
+        )
+        .unwrap();
+        fs::write(
+            temp_dir.path().join("example_test.py"),
+            "def test_bar(): pass",
+        )
+        .unwrap();
         fs::write(temp_dir.path().join("regular.py"), "print('hi')").unwrap();
 
         let files = tool.find_test_files(temp_dir.path());
@@ -544,7 +578,10 @@ mod tests {
 
         let result = tool.convert_file(input_path, output_dir);
         assert!(result.is_err());
-        assert_eq!(result.unwrap_err(), "PaperMill conversion not yet implemented");
+        assert_eq!(
+            result.unwrap_err(),
+            "PaperMill conversion not yet implemented"
+        );
     }
 
     #[test]
@@ -555,13 +592,16 @@ mod tests {
 
         let result = tool.convert_file(input_path, output_dir);
         assert!(result.is_err());
-        assert_eq!(result.unwrap_err(), "TestBook conversion not yet implemented");
+        assert_eq!(
+            result.unwrap_err(),
+            "TestBook conversion not yet implemented"
+        );
     }
 
     #[test]
     fn test_extract_pytest_functions() {
         let tool = MigrationTool::new(TestFramework::Pytest);
-        let content = "def test_foo(): assert True";
+        let _content = "def test_foo(): assert True";
 
         // This function is referenced but not implemented, would need impl
         // For now, just verify the struct exists

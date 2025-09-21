@@ -12,7 +12,7 @@ mod debug_tests {
         let mut offset = 8; // Skip magic and version
         while offset < bytes.len() {
             let section_id = bytes[offset];
-            println!("Section at {}: ID={} ({:02x})", offset, section_id, section_id);
+            println!("Section at {offset}: ID={section_id} ({section_id:02x})");
             offset += 1;
             // Read section size (LEB128)
             let mut size = 0u32;
@@ -20,19 +20,19 @@ mod debug_tests {
             loop {
                 let byte = bytes[offset];
                 offset += 1;
-                size |= ((byte & 0x7f) as u32) << shift;
+                size |= u32::from(byte & 0x7f) << shift;
                 if byte & 0x80 == 0 {
                     break;
                 }
                 shift += 7;
             }
-            println!("  Size: {}", size);
+            println!("  Size: {size}");
             offset += size as usize;
         }
         // Validate
         match wasmparser::validate(&bytes) {
             Ok(_types) => println!("✅ Valid WASM"),
-            Err(e) => panic!("❌ Invalid: {}", e),
+            Err(e) => panic!("❌ Invalid: {e}"),
         }
     }
 }

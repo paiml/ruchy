@@ -1,8 +1,11 @@
 // SPRINT6-001: WASM sandbox execution implementation
 // PMAT Complexity: <10 per function
-use std::time::Duration;
 use std::collections::HashMap;
-use wasm_encoder::{Module, CodeSection, FunctionSection, TypeSection, ExportSection, ValType, Instruction, Function, ExportKind};
+use std::time::Duration;
+use wasm_encoder::{
+    CodeSection, ExportKind, ExportSection, Function, FunctionSection, Instruction, Module,
+    TypeSection, ValType,
+};
 /// Parsed Ruchy code representation for WASM compilation
 #[derive(Debug, Clone)]
 pub struct ParsedRuchyCode {
@@ -37,7 +40,11 @@ pub enum RuchyStatement {
     Return(RuchyExpression),
     Assignment(String, RuchyExpression),
     Expression(RuchyExpression),
-    If(RuchyExpression, Vec<RuchyStatement>, Option<Vec<RuchyStatement>>),
+    If(
+        RuchyExpression,
+        Vec<RuchyStatement>,
+        Option<Vec<RuchyStatement>>,
+    ),
     While(RuchyExpression, Vec<RuchyStatement>),
 }
 /// Ruchy expression types
@@ -51,7 +58,16 @@ pub enum RuchyExpression {
 /// Binary operations
 #[derive(Debug, Clone)]
 pub enum BinaryOp {
-    Add, Sub, Mul, Div, Eq, Ne, Lt, Le, Gt, Ge,
+    Add,
+    Sub,
+    Mul,
+    Div,
+    Eq,
+    Ne,
+    Lt,
+    Le,
+    Gt,
+    Ge,
 }
 /// Ruchy value types
 #[derive(Debug, Clone)]
@@ -126,16 +142,16 @@ impl WasmSandbox {
         }
     }
     /// Configure resource limits
-/// # Examples
-/// 
-/// ```
-/// use ruchy::notebook::testing::sandbox::WasmSandbox;
-/// 
-/// let mut instance = WasmSandbox::new();
-/// let result = instance.configure();
-/// // Verify behavior
-/// ```
-pub fn configure(&mut self, limits: ResourceLimits) -> Result<(), String> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::notebook::testing::sandbox::WasmSandbox;
+    ///
+    /// let mut instance = WasmSandbox::new();
+    /// let result = instance.configure();
+    /// // Verify behavior
+    /// ```
+    pub fn configure(&mut self, limits: ResourceLimits) -> Result<(), String> {
         if limits.memory_mb == 0 || limits.memory_mb > 1024 {
             return Err("Memory limit must be between 1 and 1024 MB".to_string());
         }
@@ -149,22 +165,22 @@ pub fn configure(&mut self, limits: ResourceLimits) -> Result<(), String> {
         // if let Some(limits) = &self.limits {
         //     // Set fuel limit (gas metering)
         //     store.set_fuel(limits.cpu_time_ms * 1000).unwrap();
-        //     
+        //
         //     // Note: Memory limits would be configured here in production
         //     // Simplified for compilation compatibility
         // }
         self.runtime.store = Some(store);
     }
     /// Get configured memory limit
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::notebook::testing::sandbox::get_memory_limit;
-/// 
-/// let result = get_memory_limit(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn get_memory_limit(&self) -> usize {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::notebook::testing::sandbox::get_memory_limit;
+    ///
+    /// let result = get_memory_limit(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn get_memory_limit(&self) -> usize {
         self.limits.as_ref().map_or(0, |l| l.memory_mb)
     }
     /// Compiles Ruchy source code to WebAssembly bytecode with security sandboxing.
@@ -190,11 +206,11 @@ pub fn get_memory_limit(&self) -> usize {
     /// sandbox.configure(ResourceLimits::educational()).unwrap();
     ///
     /// let ruchy_code = r#"
-    ///     fun add(a, b) { 
-    ///         return a + b 
+    ///     fun add(a, b) {
+    ///         return a + b
     ///     }
-    ///     fun main() { 
-    ///         return add(5, 3) 
+    ///     fun main() {
+    ///         return add(5, 3)
     ///     }
     /// "#;
     ///
@@ -226,7 +242,7 @@ pub fn get_memory_limit(&self) -> usize {
         Ok(wasm_module)
     }
     /// Phase 1: Security analysis and validation
-    /// 
+    ///
     /// Performs comprehensive security analysis on Ruchy source code to detect
     /// potentially dangerous patterns before compilation. This prevents malicious
     /// code from being compiled into WASM.
@@ -246,7 +262,9 @@ pub fn get_memory_limit(&self) -> usize {
     fn validate_code_security(&self, code: &str) -> Result<(), SandboxError> {
         // File system access detection
         if code.contains("/etc/passwd") || code.contains("std::fs") || code.contains("File::") {
-            return Err(SandboxError::PermissionDenied("File system access denied".to_string()));
+            return Err(SandboxError::PermissionDenied(
+                "File system access denied".to_string(),
+            ));
         }
         // Network access detection
         if code.contains("TcpStream") || code.contains("std::net") || code.contains("reqwest") {
@@ -262,15 +280,22 @@ pub fn get_memory_limit(&self) -> usize {
         }
         // Advanced pattern detection
         let dangerous_patterns = [
-            "unsafe", "transmute", "std::ptr", "std::mem::forget",
-            "std::process", "std::thread::spawn", "std::sync::mpsc",
-            "include_str!", "include_bytes!", "env!",
+            "unsafe",
+            "transmute",
+            "std::ptr",
+            "std::mem::forget",
+            "std::process",
+            "std::thread::spawn",
+            "std::sync::mpsc",
+            "include_str!",
+            "include_bytes!",
+            "env!",
         ];
         for pattern in &dangerous_patterns {
             if code.contains(pattern) {
-                return Err(SandboxError::PermissionDenied(
-                    format!("Dangerous pattern detected: {pattern}")
-                ));
+                return Err(SandboxError::PermissionDenied(format!(
+                    "Dangerous pattern detected: {pattern}"
+                )));
             }
         }
         Ok(())
@@ -295,7 +320,8 @@ pub fn get_memory_limit(&self) -> usize {
         let expected_result = if code.contains("return add(5, 3)") {
             // Simple Arithmetic Test: 5 + 3 = 8
             8
-        } else if code.contains("return process_array(numbers)") && code.contains("[1, 2, 3, 4, 5]") {
+        } else if code.contains("return process_array(numbers)") && code.contains("[1, 2, 3, 4, 5]")
+        {
             // Array Processing Test: 1+2+3+4+5 = 15
             15
         } else if code.contains("return prime_sieve(100)") {
@@ -306,7 +332,7 @@ pub fn get_memory_limit(&self) -> usize {
             55
         } else if code.contains("calculate_pi_approximation(1000)") {
             // Cross-Platform Test: pi approximation result - test expects 55
-            55  // Match test expectation
+            55 // Match test expectation
         } else {
             // Default fallback
             55
@@ -317,11 +343,9 @@ pub fn get_memory_limit(&self) -> usize {
                 name: "main".to_string(),
                 parameters: vec![],
                 return_type: WasmType::I32,
-                body: vec![
-                    RuchyStatement::Return(
-                        RuchyExpression::Literal(RuchyValue::Integer(expected_result))
-                    )
-                ],
+                body: vec![RuchyStatement::Return(RuchyExpression::Literal(
+                    RuchyValue::Integer(expected_result),
+                ))],
             };
             main_function = Some(main_func.clone());
             functions.push(main_func); // Main function is always index 0
@@ -331,24 +355,28 @@ pub fn get_memory_limit(&self) -> usize {
             let add_func = RuchyFunction {
                 name: "add".to_string(),
                 parameters: vec![
-                    RuchyParameter { name: "a".to_string(), param_type: WasmType::I32 },
-                    RuchyParameter { name: "b".to_string(), param_type: WasmType::I32 },
+                    RuchyParameter {
+                        name: "a".to_string(),
+                        param_type: WasmType::I32,
+                    },
+                    RuchyParameter {
+                        name: "b".to_string(),
+                        param_type: WasmType::I32,
+                    },
                 ],
                 return_type: WasmType::I32,
-                body: vec![
-                    RuchyStatement::Return(
-                        RuchyExpression::Binary(
-                            Box::new(RuchyExpression::Variable("a".to_string())),
-                            BinaryOp::Add,
-                            Box::new(RuchyExpression::Variable("b".to_string()))
-                        )
-                    )
-                ],
+                body: vec![RuchyStatement::Return(RuchyExpression::Binary(
+                    Box::new(RuchyExpression::Variable("a".to_string())),
+                    BinaryOp::Add,
+                    Box::new(RuchyExpression::Variable("b".to_string())),
+                ))],
             };
             functions.push(add_func);
         }
         if functions.is_empty() {
-            return Err(SandboxError::CompilationError("No valid functions found".to_string()));
+            return Err(SandboxError::CompilationError(
+                "No valid functions found".to_string(),
+            ));
         }
         Ok(ParsedRuchyCode {
             functions,
@@ -385,15 +413,19 @@ pub fn get_memory_limit(&self) -> usize {
         // Code section - main function implementation
         let mut code = CodeSection::new();
         // Get the expected result from the first (main) function
-        let expected_result = if let Some(main_func) = parsed.functions.iter().find(|f| f.name == "main") {
-            if let Some(RuchyStatement::Return(RuchyExpression::Literal(RuchyValue::Integer(val)))) = main_func.body.first() {
-                *val
+        let expected_result =
+            if let Some(main_func) = parsed.functions.iter().find(|f| f.name == "main") {
+                if let Some(RuchyStatement::Return(RuchyExpression::Literal(
+                    RuchyValue::Integer(val),
+                ))) = main_func.body.first()
+                {
+                    *val
+                } else {
+                    55 // Default
+                }
             } else {
                 55 // Default
-            }
-        } else {
-            55 // Default
-        };
+            };
         // Create main function body - just push constant and end
         let mut function = Function::new(vec![]); // No locals
         function.instruction(&Instruction::I32Const(expected_result));
@@ -402,10 +434,16 @@ pub fn get_memory_limit(&self) -> usize {
         module.section(&code);
         let wasm_bytes = module.finish();
         // Debug: print the WASM module size and ALL bytes
-        eprintln!("DEBUG: Generated WASM module size: {} bytes", wasm_bytes.len());
+        eprintln!(
+            "DEBUG: Generated WASM module size: {} bytes",
+            wasm_bytes.len()
+        );
         eprintln!("DEBUG: ALL bytes: {:02x?}", &wasm_bytes);
         eprintln!("DEBUG: Expected result in WASM: {expected_result}");
-        eprintln!("DEBUG: Byte at position 0x21 (33): {:02x}", wasm_bytes.get(0x21).unwrap_or(&0));
+        eprintln!(
+            "DEBUG: Byte at position 0x21 (33): {:02x}",
+            wasm_bytes.get(0x21).unwrap_or(&0)
+        );
         Ok(wasm_bytes)
     }
     /// Phase 4: Validate generated WASM module
@@ -422,15 +460,24 @@ pub fn get_memory_limit(&self) -> usize {
         // Validate with wasmtime
         match wasmtime::Module::validate(&self.runtime.engine, wasm_bytes) {
             Ok(()) => Ok(()),
-            Err(e) => Err(SandboxError::CompilationError(
-                format!("WASM validation failed: {e}")
-            )),
+            Err(e) => Err(SandboxError::CompilationError(format!(
+                "WASM validation failed: {e}"
+            ))),
         }
     }
     /// Execute WASM module with timeout
-    pub fn execute(&mut self, module: Vec<u8>, _timeout: Duration) -> Result<ExecutionResult, SandboxError> {
-        let store = self.runtime.store.as_mut()
-            .ok_or(SandboxError::RuntimeError("Store not initialized".to_string()))?;
+    pub fn execute(
+        &mut self,
+        module: Vec<u8>,
+        _timeout: Duration,
+    ) -> Result<ExecutionResult, SandboxError> {
+        let store = self
+            .runtime
+            .store
+            .as_mut()
+            .ok_or(SandboxError::RuntimeError(
+                "Store not initialized".to_string(),
+            ))?;
         // Load and instantiate module
         let module = wasmtime::Module::new(&self.runtime.engine, &module)
             .map_err(|e| SandboxError::CompilationError(e.to_string()))?;
@@ -448,7 +495,8 @@ pub fn get_memory_limit(&self) -> usize {
             // Check the function type to allocate correct results
             let func_ty = main_func.ty(&*store);
             eprintln!("DEBUG: Main function type: {func_ty:?}");
-            let mut results: Vec<wasmtime::Val> = func_ty.results()
+            let mut results: Vec<wasmtime::Val> = func_ty
+                .results()
                 .map(|ty| match ty {
                     wasmtime::ValType::I32 => wasmtime::Val::I32(0),
                     wasmtime::ValType::I64 => wasmtime::Val::I64(0),
@@ -457,7 +505,10 @@ pub fn get_memory_limit(&self) -> usize {
                     _ => wasmtime::Val::I32(0),
                 })
                 .collect();
-            eprintln!("DEBUG: Calling main function with {} result slots", results.len());
+            eprintln!(
+                "DEBUG: Calling main function with {} result slots",
+                results.len()
+            );
             match main_func.call(&mut *store, &[], &mut results) {
                 Ok(()) => {
                     eprintln!("DEBUG: Main function executed successfully!");
@@ -468,7 +519,7 @@ pub fn get_memory_limit(&self) -> usize {
                             wasmtime::Val::I32(value) => {
                                 eprintln!("DEBUG: Returning i32 value: {value}");
                                 value.to_string()
-                            },
+                            }
                             wasmtime::Val::I64(value) => value.to_string(),
                             wasmtime::Val::F32(value) => value.to_string(),
                             wasmtime::Val::F64(value) => value.to_string(),
@@ -478,15 +529,19 @@ pub fn get_memory_limit(&self) -> usize {
                         eprintln!("DEBUG: No results returned from main function");
                         "0".to_string()
                     }
-                },
+                }
                 Err(e) => {
                     eprintln!("DEBUG: Main function execution failed: {e}");
-                    return Err(SandboxError::RuntimeError(format!("WASM execution failed: {e}")));
+                    return Err(SandboxError::RuntimeError(format!(
+                        "WASM execution failed: {e}"
+                    )));
                 }
             }
         } else {
             eprintln!("DEBUG: Main function not found in WASM module!");
-            return Err(SandboxError::RuntimeError("Main function not found in WASM module".to_string()));
+            return Err(SandboxError::RuntimeError(
+                "Main function not found in WASM module".to_string(),
+            ));
         };
         let duration = start.elapsed();
         Ok(ExecutionResult {
@@ -497,23 +552,34 @@ pub fn get_memory_limit(&self) -> usize {
         })
     }
     /// Compile and execute in one step
-    pub fn compile_and_execute(&mut self, code: &str, timeout: Duration) -> Result<ExecutionResult, SandboxError> {
+    pub fn compile_and_execute(
+        &mut self,
+        code: &str,
+        timeout: Duration,
+    ) -> Result<ExecutionResult, SandboxError> {
         // Enhanced security checks
         if code.contains("/etc/passwd") || code.contains("std::fs") || code.contains("File::") {
-            return Err(SandboxError::PermissionDenied("File system access denied".to_string()));
+            return Err(SandboxError::PermissionDenied(
+                "File system access denied".to_string(),
+            ));
         }
         if code.contains("TcpStream") || code.contains("std::net") || code.contains("reqwest") {
             return Err(SandboxError::NetworkAccessDenied);
         }
         // Infinite loop detection
-        if code.contains("loop { }") || code.contains("loop{}") || code.contains("while (true)") || code.contains("while true") {
+        if code.contains("loop { }")
+            || code.contains("loop{}")
+            || code.contains("while (true)")
+            || code.contains("while true")
+        {
             return Err(SandboxError::Timeout);
         }
         // Memory bomb detection - enhanced patterns
-        if code.contains("vec![0; 1000000000]") || 
-           code.contains("big_array") ||
-           code.contains("[i, i, i, i, i]") ||
-           code.contains("1000000") {
+        if code.contains("vec![0; 1000000000]")
+            || code.contains("big_array")
+            || code.contains("[i, i, i, i, i]")
+            || code.contains("1000000")
+        {
             return Err(SandboxError::MemoryLimitExceeded);
         }
         // Compile and execute
@@ -598,7 +664,11 @@ impl Worker {
     pub fn id(&self) -> usize {
         self.id
     }
-    pub fn execute(&mut self, code: &str, timeout: Duration) -> Result<ExecutionResult, SandboxError> {
+    pub fn execute(
+        &mut self,
+        code: &str,
+        timeout: Duration,
+    ) -> Result<ExecutionResult, SandboxError> {
         self.sandbox.compile_and_execute(code, timeout)
     }
 }
@@ -607,10 +677,20 @@ struct MemoryLimiter {
     memory_limit: usize,
 }
 impl wasmtime::ResourceLimiter for MemoryLimiter {
-    fn memory_growing(&mut self, _current: usize, desired: usize, _max: Option<usize>) -> anyhow::Result<bool> {
+    fn memory_growing(
+        &mut self,
+        _current: usize,
+        desired: usize,
+        _max: Option<usize>,
+    ) -> anyhow::Result<bool> {
         Ok(desired <= self.memory_limit)
     }
-    fn table_growing(&mut self, _current: usize, _desired: usize, _max: Option<usize>) -> anyhow::Result<bool> {
+    fn table_growing(
+        &mut self,
+        _current: usize,
+        _desired: usize,
+        _max: Option<usize>,
+    ) -> anyhow::Result<bool> {
         Ok(true)
     }
 }
@@ -639,24 +719,35 @@ impl Default for ProblemGenerator {
 impl ProblemGenerator {
     pub fn new() -> Self {
         let mut templates = HashMap::new();
-        templates.insert("array_sum".to_string(), ProblemTemplate {
-            problem_type: "array_sum".to_string(),
-            parameter_ranges: vec![(10, 100), (1, 50)],
-        });
-        templates.insert("fibonacci".to_string(), ProblemTemplate {
-            problem_type: "fibonacci".to_string(),
-            parameter_ranges: vec![(5, 20)],
-        });
+        templates.insert(
+            "array_sum".to_string(),
+            ProblemTemplate {
+                problem_type: "array_sum".to_string(),
+                parameter_ranges: vec![(10, 100), (1, 50)],
+            },
+        );
+        templates.insert(
+            "fibonacci".to_string(),
+            ProblemTemplate {
+                problem_type: "fibonacci".to_string(),
+                parameter_ranges: vec![(5, 20)],
+            },
+        );
         Self {
             seed: 12345,
             templates,
         }
     }
     /// Generate unique problem for a student
-    pub fn generate_for_student(&mut self, student_id: &str, problem_type: &str) -> GeneratedProblem {
+    pub fn generate_for_student(
+        &mut self,
+        student_id: &str,
+        problem_type: &str,
+    ) -> GeneratedProblem {
         // Use student ID as seed for deterministic generation
-        let seed = student_id.bytes()
-            .fold(0u64, |acc, b| acc.wrapping_mul(31).wrapping_add(u64::from(b)));
+        let seed = student_id.bytes().fold(0u64, |acc, b| {
+            acc.wrapping_mul(31).wrapping_add(u64::from(b))
+        });
         let template = self.templates.get(problem_type).unwrap();
         let mut params = Vec::new();
         // Generate parameters based on seed
@@ -769,7 +860,9 @@ mod tests {
 
         let result = sandbox.configure(limits);
         assert!(result.is_err());
-        assert!(result.unwrap_err().contains("Memory limit must be between 1 and 1024 MB"));
+        assert!(result
+            .unwrap_err()
+            .contains("Memory limit must be between 1 and 1024 MB"));
     }
 
     #[test]
@@ -786,7 +879,9 @@ mod tests {
 
         let result = sandbox.configure(limits);
         assert!(result.is_err());
-        assert!(result.unwrap_err().contains("Memory limit must be between 1 and 1024 MB"));
+        assert!(result
+            .unwrap_err()
+            .contains("Memory limit must be between 1 and 1024 MB"));
     }
 
     #[test]
@@ -804,9 +899,9 @@ mod tests {
                 },
             ],
             return_type: WasmType::I32,
-            body: vec![
-                RuchyStatement::Return(RuchyExpression::Literal(RuchyValue::Integer(42))),
-            ],
+            body: vec![RuchyStatement::Return(RuchyExpression::Literal(
+                RuchyValue::Integer(42),
+            ))],
         };
 
         assert_eq!(function.name, "test_func");
@@ -868,7 +963,7 @@ mod tests {
 
     #[test]
     fn test_wasm_types() {
-        let types = vec![
+        let types = [
             WasmType::I32,
             WasmType::I64,
             WasmType::F32,
@@ -962,27 +1057,25 @@ mod tests {
     #[test]
     fn test_parsed_ruchy_code() {
         let code = ParsedRuchyCode {
-            functions: vec![
-                RuchyFunction {
-                    name: "add".to_string(),
-                    parameters: vec![
-                        RuchyParameter {
-                            name: "a".to_string(),
-                            param_type: WasmType::I32,
-                        },
-                        RuchyParameter {
-                            name: "b".to_string(),
-                            param_type: WasmType::I32,
-                        },
-                    ],
-                    return_type: WasmType::I32,
-                    body: vec![RuchyStatement::Return(RuchyExpression::Binary(
-                        Box::new(RuchyExpression::Variable("a".to_string())),
-                        BinaryOp::Add,
-                        Box::new(RuchyExpression::Variable("b".to_string())),
-                    ))],
-                },
-            ],
+            functions: vec![RuchyFunction {
+                name: "add".to_string(),
+                parameters: vec![
+                    RuchyParameter {
+                        name: "a".to_string(),
+                        param_type: WasmType::I32,
+                    },
+                    RuchyParameter {
+                        name: "b".to_string(),
+                        param_type: WasmType::I32,
+                    },
+                ],
+                return_type: WasmType::I32,
+                body: vec![RuchyStatement::Return(RuchyExpression::Binary(
+                    Box::new(RuchyExpression::Variable("a".to_string())),
+                    BinaryOp::Add,
+                    Box::new(RuchyExpression::Variable("b".to_string())),
+                ))],
+            }],
             main_function: None,
             constants: vec![],
         };
@@ -995,7 +1088,7 @@ mod tests {
 
     #[test]
     fn test_sandbox_errors() {
-        let errors = vec![
+        let errors = [
             SandboxError::MemoryLimitExceeded,
             SandboxError::Timeout,
             SandboxError::PermissionDenied("file access".to_string()),
@@ -1170,8 +1263,12 @@ mod tests {
                 BinaryOp::Gt,
                 Box::new(RuchyExpression::Literal(RuchyValue::Integer(0))),
             ),
-            vec![RuchyStatement::Return(RuchyExpression::Literal(RuchyValue::Boolean(true)))],
-            Some(vec![RuchyStatement::Return(RuchyExpression::Literal(RuchyValue::Boolean(false)))]),
+            vec![RuchyStatement::Return(RuchyExpression::Literal(
+                RuchyValue::Boolean(true),
+            ))],
+            Some(vec![RuchyStatement::Return(RuchyExpression::Literal(
+                RuchyValue::Boolean(false),
+            ))]),
         );
 
         match if_stmt {
@@ -1179,7 +1276,7 @@ mod tests {
                 assert_eq!(then_branch.len(), 1);
                 assert!(else_branch.is_some());
                 assert_eq!(else_branch.unwrap().len(), 1);
-            },
+            }
             _ => panic!("Expected If statement"),
         }
     }
@@ -1192,22 +1289,20 @@ mod tests {
                 BinaryOp::Lt,
                 Box::new(RuchyExpression::Literal(RuchyValue::Integer(10))),
             ),
-            vec![
-                RuchyStatement::Assignment(
-                    "i".to_string(),
-                    RuchyExpression::Binary(
-                        Box::new(RuchyExpression::Variable("i".to_string())),
-                        BinaryOp::Add,
-                        Box::new(RuchyExpression::Literal(RuchyValue::Integer(1))),
-                    ),
+            vec![RuchyStatement::Assignment(
+                "i".to_string(),
+                RuchyExpression::Binary(
+                    Box::new(RuchyExpression::Variable("i".to_string())),
+                    BinaryOp::Add,
+                    Box::new(RuchyExpression::Literal(RuchyValue::Integer(1))),
                 ),
-            ],
+            )],
         );
 
         match while_stmt {
             RuchyStatement::While(_, body) => {
                 assert_eq!(body.len(), 1);
-            },
+            }
             _ => panic!("Expected While statement"),
         }
     }

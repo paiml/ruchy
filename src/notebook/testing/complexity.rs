@@ -1,6 +1,6 @@
 // SPRINT3-002: Complexity analysis implementation
 // PMAT Complexity: <10 per function
-use crate::notebook::testing::types::{Cell, Notebook, CellType};
+use crate::notebook::testing::types::{Cell, CellType, Notebook};
 #[derive(Debug, Clone)]
 pub struct ComplexityConfig {
     pub cyclomatic_threshold: usize,
@@ -18,20 +18,20 @@ impl Default for ComplexityConfig {
 }
 #[derive(Debug, Clone, PartialEq)]
 pub enum TimeComplexity {
-    O1,      // Constant
-    OLogN,   // Logarithmic  
-    ON,      // Linear
-    ONLogN,  // Linearithmic
-    ON2,     // Quadratic
-    ON3,     // Cubic
-    OExp,    // Exponential
+    O1,     // Constant
+    OLogN,  // Logarithmic
+    ON,     // Linear
+    ONLogN, // Linearithmic
+    ON2,    // Quadratic
+    ON3,    // Cubic
+    OExp,   // Exponential
 }
 #[derive(Debug, Clone, PartialEq)]
 pub enum SpaceComplexity {
-    O1,      // Constant
-    OLogN,   // Logarithmic
-    ON,      // Linear
-    ON2,     // Quadratic
+    O1,    // Constant
+    OLogN, // Logarithmic
+    ON,    // Linear
+    ON2,   // Quadratic
 }
 #[derive(Debug, Clone)]
 pub struct ComplexityResult {
@@ -67,54 +67,54 @@ impl Default for ComplexityAnalyzer {
 }
 
 impl ComplexityAnalyzer {
-/// # Examples
-/// 
-/// ```
-/// use ruchy::notebook::testing::complexity::ComplexityAnalyzer;
-/// 
-/// let instance = ComplexityAnalyzer::new();
-/// // Verify behavior
-/// ```
-pub fn new() -> Self {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::notebook::testing::complexity::ComplexityAnalyzer;
+    ///
+    /// let instance = ComplexityAnalyzer::new();
+    /// // Verify behavior
+    /// ```
+    pub fn new() -> Self {
         Self {
             config: ComplexityConfig::default(),
         }
     }
-/// # Examples
-/// 
-/// ```
-/// use ruchy::notebook::testing::complexity::ComplexityAnalyzer;
-/// 
-/// let mut instance = ComplexityAnalyzer::new();
-/// let result = instance.with_config();
-/// // Verify behavior
-/// ```
-pub fn with_config(config: ComplexityConfig) -> Self {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::notebook::testing::complexity::ComplexityAnalyzer;
+    ///
+    /// let mut instance = ComplexityAnalyzer::new();
+    /// let result = instance.with_config();
+    /// // Verify behavior
+    /// ```
+    pub fn with_config(config: ComplexityConfig) -> Self {
         Self { config }
     }
-/// # Examples
-/// 
-/// ```
-/// use ruchy::notebook::testing::complexity::ComplexityAnalyzer;
-/// 
-/// let mut instance = ComplexityAnalyzer::new();
-/// let result = instance.get_default_threshold();
-/// // Verify behavior
-/// ```
-pub fn get_default_threshold(&self) -> usize {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::notebook::testing::complexity::ComplexityAnalyzer;
+    ///
+    /// let mut instance = ComplexityAnalyzer::new();
+    /// let result = instance.get_default_threshold();
+    /// // Verify behavior
+    /// ```
+    pub fn get_default_threshold(&self) -> usize {
         self.config.cyclomatic_threshold
     }
     /// Analyze complexity of a cell
-/// # Examples
-/// 
-/// ```
-/// use ruchy::notebook::testing::complexity::ComplexityAnalyzer;
-/// 
-/// let mut instance = ComplexityAnalyzer::new();
-/// let result = instance.analyze();
-/// // Verify behavior
-/// ```
-pub fn analyze(&self, cell: &Cell) -> ComplexityResult {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::notebook::testing::complexity::ComplexityAnalyzer;
+    ///
+    /// let mut instance = ComplexityAnalyzer::new();
+    /// let result = instance.analyze();
+    /// // Verify behavior
+    /// ```
+    pub fn analyze(&self, cell: &Cell) -> ComplexityResult {
         let source = &cell.source;
         // Analyze time complexity
         let time_complexity = self.analyze_time_complexity(source);
@@ -165,7 +165,7 @@ pub fn analyze(&self, cell: &Cell) -> ComplexityResult {
     }
     fn calculate_cyclomatic(&self, source: &str) -> usize {
         let mut complexity = 1; // Base complexity
-        // Decision points
+                                // Decision points
         complexity += source.matches("if ").count();
         complexity += source.matches("else if").count();
         complexity += source.matches("for ").count();
@@ -196,13 +196,16 @@ pub fn analyze(&self, cell: &Cell) -> ComplexityResult {
                 nesting_level -= 1;
             }
         }
-        if complexity == 0 { complexity = 1; }
+        if complexity == 0 {
+            complexity = 1;
+        }
         complexity
     }
     fn calculate_halstead(&self, source: &str) -> HalsteadMetrics {
         // Simplified Halstead metrics
         let operators = source.matches(|c: char| "+-*/%=<>!&|".contains(c)).count();
-        let operands = source.split_whitespace()
+        let operands = source
+            .split_whitespace()
             .filter(|w| w.parse::<f64>().is_ok() || w.starts_with('"'))
             .count();
         let n1 = operators.max(1) as f64;
@@ -232,15 +235,15 @@ pub fn analyze(&self, cell: &Cell) -> ComplexityResult {
         max_depth
     }
     /// Find performance hotspots in a notebook
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::notebook::testing::complexity::find_hotspots;
-/// 
-/// let result = find_hotspots(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn find_hotspots(&self, notebook: &Notebook) -> Vec<Hotspot> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::notebook::testing::complexity::find_hotspots;
+    ///
+    /// let result = find_hotspots(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn find_hotspots(&self, notebook: &Notebook) -> Vec<Hotspot> {
         let mut hotspots = Vec::new();
         for cell in &notebook.cells {
             if matches!(cell.cell_type, CellType::Code) {
@@ -249,7 +252,8 @@ pub fn find_hotspots(&self, notebook: &Notebook) -> Vec<Hotspot> {
                 let is_hotspot = matches!(
                     result.time_complexity,
                     TimeComplexity::ON2 | TimeComplexity::ON3 | TimeComplexity::OExp
-                ) || result.cyclomatic_complexity > self.config.cyclomatic_threshold;
+                ) || result.cyclomatic_complexity
+                    > self.config.cyclomatic_threshold;
                 if is_hotspot {
                     let impact = self.calculate_impact(&result);
                     hotspots.push(Hotspot {
@@ -279,15 +283,15 @@ pub fn find_hotspots(&self, notebook: &Notebook) -> Vec<Hotspot> {
         time_weight * 0.7 + cyclo_weight * 0.3
     }
     /// Suggest optimizations for a cell
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::notebook::testing::complexity::suggest_optimizations;
-/// 
-/// let result = suggest_optimizations(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn suggest_optimizations(&self, cell: &Cell) -> Vec<String> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::notebook::testing::complexity::suggest_optimizations;
+    ///
+    /// let result = suggest_optimizations(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn suggest_optimizations(&self, cell: &Cell) -> Vec<String> {
         let mut suggestions = Vec::new();
         if !self.config.enable_suggestions {
             return suggestions;
@@ -300,15 +304,21 @@ pub fn suggest_optimizations(&self, cell: &Cell) -> Vec<String> {
                     suggestions.push("Consider using a hash map or index for O(1) lookups instead of nested loops".to_string());
                 }
                 if cell.source.contains("sort") {
-                    suggestions.push("If data is partially sorted, consider using insertion sort or TimSort".to_string());
+                    suggestions.push(
+                        "If data is partially sorted, consider using insertion sort or TimSort"
+                            .to_string(),
+                    );
                 }
             }
             TimeComplexity::OExp => {
-                suggestions.push("Exponential complexity detected - consider dynamic programming or memoization".to_string());
+                suggestions.push(
+                    "Exponential complexity detected - consider dynamic programming or memoization"
+                        .to_string(),
+                );
             }
             _ => {}
         }
-        // Cyclomatic complexity suggestions  
+        // Cyclomatic complexity suggestions
         if result.cyclomatic_complexity > self.config.cyclomatic_threshold {
             suggestions.push(format!(
                 "High cyclomatic complexity ({}) - consider breaking into smaller functions",
@@ -317,7 +327,9 @@ pub fn suggest_optimizations(&self, cell: &Cell) -> Vec<String> {
         }
         // Cognitive complexity suggestions
         if result.cognitive_complexity > self.config.cognitive_threshold {
-            suggestions.push("High cognitive complexity - reduce nesting and simplify control flow".to_string());
+            suggestions.push(
+                "High cognitive complexity - reduce nesting and simplify control flow".to_string(),
+            );
         }
         suggestions
     }

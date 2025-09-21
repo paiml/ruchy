@@ -18,15 +18,15 @@ pub struct MirBuilder {
 impl MirBuilder {
     /// Create a new MIR builder
     #[must_use]
-/// # Examples
-/// 
-/// ```
-/// use ruchy::middleend::mir::builder::new;
-/// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn new() -> Self {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::middleend::mir::builder::new;
+    ///
+    /// let result = new(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn new() -> Self {
         Self {
             current_function: None,
             next_local: 0,
@@ -35,17 +35,17 @@ pub fn new() -> Self {
         }
     }
     /// Start building a new function
-/// Start building a new function
-///
-/// # Examples
-///
-/// ```ignore
-/// use ruchy::middleend::mir::builder::MirBuilder;
-/// use ruchy::middleend::types::Type;
-/// let mut builder = MirBuilder::new();
-/// builder.start_function("main".to_string(), Type::Unit);
-/// ```
-pub fn start_function(&mut self, name: String, return_ty: Type) -> &mut Self {
+    /// Start building a new function
+    ///
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::middleend::mir::builder::MirBuilder;
+    /// use ruchy::middleend::types::Type;
+    /// let mut builder = MirBuilder::new();
+    /// builder.start_function("main".to_string(), Type::Unit);
+    /// ```
+    pub fn start_function(&mut self, name: String, return_ty: Type) -> &mut Self {
         self.current_function = Some(Function {
             name,
             params: Vec::new(),
@@ -67,7 +67,7 @@ pub fn start_function(&mut self, name: String, return_ty: Type) -> &mut Self {
     /// let mut builder = MirBuilder::new();
     /// // add_param requires parameters
     /// ```
-pub fn add_param(&mut self, name: String, ty: Type) -> Local {
+    pub fn add_param(&mut self, name: String, ty: Type) -> Local {
         let local = self.alloc_local(ty, true, Some(name.clone()));
         if let Some(ref mut func) = self.current_function {
             func.params.push(local);
@@ -76,15 +76,15 @@ pub fn add_param(&mut self, name: String, ty: Type) -> Local {
         local
     }
     /// Allocate a new local variable
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::middleend::mir::builder::alloc_local;
-/// 
-/// let result = alloc_local(true);
-/// assert_eq!(result, Ok(true));
-/// ```
-pub fn alloc_local(&mut self, ty: Type, mutable: bool, name: Option<String>) -> Local {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::middleend::mir::builder::alloc_local;
+    ///
+    /// let result = alloc_local(true);
+    /// assert_eq!(result, Ok(true));
+    /// ```
+    pub fn alloc_local(&mut self, ty: Type, mutable: bool, name: Option<String>) -> Local {
         let id = Local(self.next_local);
         self.next_local += 1;
         let decl = LocalDecl {
@@ -102,27 +102,27 @@ pub fn alloc_local(&mut self, ty: Type, mutable: bool, name: Option<String>) -> 
         id
     }
     /// Get a local by name
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::middleend::mir::builder::get_local;
-/// 
-/// let result = get_local("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn get_local(&self, name: &str) -> Option<Local> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::middleend::mir::builder::get_local;
+    ///
+    /// let result = get_local("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn get_local(&self, name: &str) -> Option<Local> {
         self.local_map.get(name).copied()
     }
     /// Create a new basic block
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::middleend::mir::builder::new_block;
-/// 
-/// let result = new_block(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn new_block(&mut self) -> BlockId {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::middleend::mir::builder::new_block;
+    ///
+    /// let result = new_block(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn new_block(&mut self) -> BlockId {
         let id = BlockId(self.next_block);
         self.next_block += 1;
         if let Some(ref mut func) = self.current_function {
@@ -135,117 +135,117 @@ pub fn new_block(&mut self) -> BlockId {
         id
     }
     /// Get a mutable reference to a block
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::middleend::mir::builder::block_mut;
-/// 
-/// let result = block_mut(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn block_mut(&mut self, id: BlockId) -> Option<&mut BasicBlock> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::middleend::mir::builder::block_mut;
+    ///
+    /// let result = block_mut(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn block_mut(&mut self, id: BlockId) -> Option<&mut BasicBlock> {
         self.current_function
             .as_mut()
             .and_then(|f| f.blocks.get_mut(id.0))
     }
     /// Add a statement to a block
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::middleend::mir::builder::push_statement;
-/// 
-/// let result = push_statement(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn push_statement(&mut self, block: BlockId, stmt: Statement) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::middleend::mir::builder::push_statement;
+    ///
+    /// let result = push_statement(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn push_statement(&mut self, block: BlockId, stmt: Statement) {
         if let Some(bb) = self.block_mut(block) {
             bb.statements.push(stmt);
         }
     }
     /// Set the terminator for a block
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::middleend::mir::builder::set_terminator;
-/// 
-/// let result = set_terminator(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn set_terminator(&mut self, block: BlockId, term: Terminator) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::middleend::mir::builder::set_terminator;
+    ///
+    /// let result = set_terminator(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn set_terminator(&mut self, block: BlockId, term: Terminator) {
         if let Some(bb) = self.block_mut(block) {
             bb.terminator = term;
         }
     }
     /// Finish building the current function
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::middleend::mir::builder::finish_function;
-/// 
-/// let result = finish_function(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn finish_function(&mut self) -> Option<Function> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::middleend::mir::builder::finish_function;
+    ///
+    /// let result = finish_function(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn finish_function(&mut self) -> Option<Function> {
         self.current_function.take()
     }
     /// Build an assignment statement
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::middleend::mir::builder::assign;
-/// 
-/// let result = assign(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn assign(&mut self, block: BlockId, place: Place, rvalue: Rvalue) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::middleend::mir::builder::assign;
+    ///
+    /// let result = assign(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn assign(&mut self, block: BlockId, place: Place, rvalue: Rvalue) {
         self.push_statement(block, Statement::Assign(place, rvalue));
     }
     /// Build a storage live statement
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::middleend::mir::builder::storage_live;
-/// 
-/// let result = storage_live(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn storage_live(&mut self, block: BlockId, local: Local) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::middleend::mir::builder::storage_live;
+    ///
+    /// let result = storage_live(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn storage_live(&mut self, block: BlockId, local: Local) {
         self.push_statement(block, Statement::StorageLive(local));
     }
     /// Build a storage dead statement
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::middleend::mir::builder::storage_dead;
-/// 
-/// let result = storage_dead(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn storage_dead(&mut self, block: BlockId, local: Local) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::middleend::mir::builder::storage_dead;
+    ///
+    /// let result = storage_dead(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn storage_dead(&mut self, block: BlockId, local: Local) {
         self.push_statement(block, Statement::StorageDead(local));
     }
     /// Build a goto terminator
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::middleend::mir::builder::goto;
-/// 
-/// let result = goto(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn goto(&mut self, block: BlockId, target: BlockId) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::middleend::mir::builder::goto;
+    ///
+    /// let result = goto(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn goto(&mut self, block: BlockId, target: BlockId) {
         self.set_terminator(block, Terminator::Goto(target));
     }
     /// Build an if terminator
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::middleend::mir::builder::branch;
-/// 
-/// let result = branch(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn branch(
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::middleend::mir::builder::branch;
+    ///
+    /// let result = branch(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn branch(
         &mut self,
         block: BlockId,
         cond: Operand,
@@ -262,27 +262,27 @@ pub fn branch(
         );
     }
     /// Build a return terminator
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::middleend::mir::builder::return_;
-/// 
-/// let result = return_(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn return_(&mut self, block: BlockId, value: Option<Operand>) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::middleend::mir::builder::return_;
+    ///
+    /// let result = return_(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn return_(&mut self, block: BlockId, value: Option<Operand>) {
         self.set_terminator(block, Terminator::Return(value));
     }
     /// Build a call terminator
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::middleend::mir::builder::call_term;
-/// 
-/// let result = call_term(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn call_term(
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::middleend::mir::builder::call_term;
+    ///
+    /// let result = call_term(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn call_term(
         &mut self,
         block: BlockId,
         func: Operand,
@@ -299,15 +299,15 @@ pub fn call_term(
         );
     }
     /// Build a switch terminator
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::middleend::mir::builder::switch;
-/// 
-/// let result = switch(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn switch(
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::middleend::mir::builder::switch;
+    ///
+    /// let result = switch(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn switch(
         &mut self,
         block: BlockId,
         discriminant: Operand,
@@ -327,15 +327,15 @@ pub fn switch(
 /// Helper functions for creating common patterns
 impl MirBuilder {
     /// Create a binary operation and assign to a local
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::middleend::mir::builder::binary_op;
-/// 
-/// let result = binary_op(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn binary_op(
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::middleend::mir::builder::binary_op;
+    ///
+    /// let result = binary_op(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn binary_op(
         &mut self,
         block: BlockId,
         dest: Local,
@@ -347,28 +347,28 @@ pub fn binary_op(
         self.assign(block, Place::Local(dest), rvalue);
     }
     /// Create a unary operation and assign to a local
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::middleend::mir::builder::unary_op;
-/// 
-/// let result = unary_op(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn unary_op(&mut self, block: BlockId, dest: Local, op: UnOp, operand: Operand) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::middleend::mir::builder::unary_op;
+    ///
+    /// let result = unary_op(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn unary_op(&mut self, block: BlockId, dest: Local, op: UnOp, operand: Operand) {
         let rvalue = Rvalue::UnaryOp(op, operand);
         self.assign(block, Place::Local(dest), rvalue);
     }
     /// Create a function call and assign result to a local
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::middleend::mir::builder::call;
-/// 
-/// let result = call(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn call(
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::middleend::mir::builder::call;
+    ///
+    /// let result = call(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn call(
         &mut self,
         block: BlockId,
         dest: Local,
@@ -380,15 +380,15 @@ pub fn call(
         next_block
     }
     /// Create a cast and assign to a local
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::middleend::mir::builder::cast;
-/// 
-/// let result = cast(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn cast(
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::middleend::mir::builder::cast;
+    ///
+    /// let result = cast(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn cast(
         &mut self,
         block: BlockId,
         dest: Local,
@@ -400,54 +400,54 @@ pub fn cast(
         self.assign(block, Place::Local(dest), rvalue);
     }
     /// Create a reference and assign to a local
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::middleend::mir::builder::ref_;
-/// 
-/// let result = ref_(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn ref_(&mut self, block: BlockId, dest: Local, mutability: Mutability, place: Place) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::middleend::mir::builder::ref_;
+    ///
+    /// let result = ref_(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn ref_(&mut self, block: BlockId, dest: Local, mutability: Mutability, place: Place) {
         let rvalue = Rvalue::Ref(mutability, place);
         self.assign(block, Place::Local(dest), rvalue);
     }
     /// Move a value from one place to another
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::middleend::mir::builder::move_;
-/// 
-/// let result = move_(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn move_(&mut self, block: BlockId, dest: Place, source: Place) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::middleend::mir::builder::move_;
+    ///
+    /// let result = move_(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn move_(&mut self, block: BlockId, dest: Place, source: Place) {
         let rvalue = Rvalue::Use(Operand::Move(source));
         self.assign(block, dest, rvalue);
     }
     /// Copy a value from one place to another
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::middleend::mir::builder::copy;
-/// 
-/// let result = copy(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn copy(&mut self, block: BlockId, dest: Place, source: Place) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::middleend::mir::builder::copy;
+    ///
+    /// let result = copy(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn copy(&mut self, block: BlockId, dest: Place, source: Place) {
         let rvalue = Rvalue::Use(Operand::Copy(source));
         self.assign(block, dest, rvalue);
     }
     /// Assign a constant to a place
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::middleend::mir::builder::const_;
-/// 
-/// let result = const_(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn const_(&mut self, block: BlockId, dest: Place, constant: Constant) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::middleend::mir::builder::const_;
+    ///
+    /// let result = const_(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn const_(&mut self, block: BlockId, dest: Place, constant: Constant) {
         let rvalue = Rvalue::Use(Operand::Constant(constant));
         self.assign(block, dest, rvalue);
     }
@@ -462,7 +462,7 @@ impl Default for MirBuilder {
 mod tests {
     use super::*;
 
-    /// Test basic MirBuilder creation and initialization
+    /// Test basic `MirBuilder` creation and initialization
     #[test]
     fn test_new_builder() {
         let builder = MirBuilder::new();
@@ -600,7 +600,10 @@ mod tests {
 
         let func = builder.current_function.as_ref().unwrap();
         assert_eq!(func.blocks[0].statements.len(), 1);
-        assert!(matches!(func.blocks[0].statements[0], Statement::StorageLive(_)));
+        assert!(matches!(
+            func.blocks[0].statements[0],
+            Statement::StorageLive(_)
+        ));
     }
 
     /// Test terminator setting
@@ -613,7 +616,10 @@ mod tests {
         builder.set_terminator(block, Terminator::Return(None));
 
         let func = builder.current_function.as_ref().unwrap();
-        assert!(matches!(func.blocks[0].terminator, Terminator::Return(None)));
+        assert!(matches!(
+            func.blocks[0].terminator,
+            Terminator::Return(None)
+        ));
     }
 
     /// Test function completion
@@ -645,7 +651,10 @@ mod tests {
 
         let func = builder.current_function.as_ref().unwrap();
         assert_eq!(func.blocks[0].statements.len(), 1);
-        assert!(matches!(func.blocks[0].statements[0], Statement::Assign(_, _)));
+        assert!(matches!(
+            func.blocks[0].statements[0],
+            Statement::Assign(_, _)
+        ));
     }
 
     /// Test storage live statement
@@ -659,7 +668,10 @@ mod tests {
         builder.storage_live(block, local);
 
         let func = builder.current_function.as_ref().unwrap();
-        assert!(matches!(func.blocks[0].statements[0], Statement::StorageLive(_)));
+        assert!(matches!(
+            func.blocks[0].statements[0],
+            Statement::StorageLive(_)
+        ));
     }
 
     /// Test storage dead statement
@@ -673,7 +685,10 @@ mod tests {
         builder.storage_dead(block, local);
 
         let func = builder.current_function.as_ref().unwrap();
-        assert!(matches!(func.blocks[0].statements[0], Statement::StorageDead(_)));
+        assert!(matches!(
+            func.blocks[0].statements[0],
+            Statement::StorageDead(_)
+        ));
     }
 
     /// Test goto terminator
@@ -706,7 +721,12 @@ mod tests {
         builder.branch(entry, cond, then_block, else_block);
 
         let func = builder.current_function.as_ref().unwrap();
-        if let Terminator::If { condition: _, then_block: tb, else_block: eb } = &func.blocks[0].terminator {
+        if let Terminator::If {
+            condition: _,
+            then_block: tb,
+            else_block: eb,
+        } = &func.blocks[0].terminator
+        {
             assert_eq!(*tb, then_block);
             assert_eq!(*eb, else_block);
         } else {
@@ -726,7 +746,10 @@ mod tests {
         builder.return_(block, Some(operand));
 
         let func = builder.current_function.as_ref().unwrap();
-        assert!(matches!(func.blocks[0].terminator, Terminator::Return(Some(_))));
+        assert!(matches!(
+            func.blocks[0].terminator,
+            Terminator::Return(Some(_))
+        ));
     }
 
     /// Test return terminator without value
@@ -739,7 +762,10 @@ mod tests {
         builder.return_(block, None);
 
         let func = builder.current_function.as_ref().unwrap();
-        assert!(matches!(func.blocks[0].terminator, Terminator::Return(None)));
+        assert!(matches!(
+            func.blocks[0].terminator,
+            Terminator::Return(None)
+        ));
     }
 
     /// Test call terminator
@@ -753,10 +779,20 @@ mod tests {
 
         let func_operand = Operand::Constant(Constant::String("callee".to_string()));
         let args = vec![Operand::Constant(Constant::Int(1, Type::I32))];
-        builder.call_term(block1, func_operand, args, Some((Place::Local(local), block2)));
+        builder.call_term(
+            block1,
+            func_operand,
+            args,
+            Some((Place::Local(local), block2)),
+        );
 
         let func = builder.current_function.as_ref().unwrap();
-        if let Terminator::Call { func: _, args, destination } = &func.blocks[0].terminator {
+        if let Terminator::Call {
+            func: _,
+            args,
+            destination,
+        } = &func.blocks[0].terminator
+        {
             assert_eq!(args.len(), 1);
             assert!(destination.is_some());
         } else {
@@ -782,7 +818,12 @@ mod tests {
         builder.switch(entry, discriminant, targets, Some(default));
 
         let func = builder.current_function.as_ref().unwrap();
-        if let Terminator::Switch { targets: t, default: d, .. } = &func.blocks[0].terminator {
+        if let Terminator::Switch {
+            targets: t,
+            default: d,
+            ..
+        } = &func.blocks[0].terminator
+        {
             assert_eq!(t.len(), 2);
             assert_eq!(*d, Some(default));
         } else {
@@ -886,7 +927,11 @@ mod tests {
         builder.start_function("test".to_string(), Type::Unit);
         let block = builder.new_block();
         let source = builder.alloc_local(Type::I32, true, None);
-        let dest = builder.alloc_local(Type::Ref(Box::new(Type::I32), Mutability::Mutable), false, None);
+        let dest = builder.alloc_local(
+            Type::Ref(Box::new(Type::I32), Mutability::Mutable),
+            false,
+            None,
+        );
 
         builder.ref_(block, dest, Mutability::Mutable, Place::Local(source));
 
@@ -952,7 +997,10 @@ mod tests {
         let func = builder.current_function.as_ref().unwrap();
         if let Statement::Assign(place, rvalue) = &func.blocks[0].statements[0] {
             assert_eq!(*place, Place::Local(dest));
-            assert!(matches!(rvalue, Rvalue::Use(Operand::Constant(Constant::Bool(true)))));
+            assert!(matches!(
+                rvalue,
+                Rvalue::Use(Operand::Constant(Constant::Bool(true)))
+            ));
         } else {
             panic!("Expected Assign statement");
         }
@@ -1059,13 +1107,21 @@ mod tests {
         builder.return_(case1, Some(Operand::Constant(Constant::Int(10, Type::I32))));
         builder.return_(case2, Some(Operand::Constant(Constant::Int(20, Type::I32))));
         builder.return_(case3, Some(Operand::Constant(Constant::Int(30, Type::I32))));
-        builder.return_(default, Some(Operand::Constant(Constant::Int(0, Type::I32))));
+        builder.return_(
+            default,
+            Some(Operand::Constant(Constant::Int(0, Type::I32))),
+        );
 
         let func = builder.finish_function().unwrap();
         assert_eq!(func.blocks.len(), 5);
 
         // Verify switch structure
-        if let Terminator::Switch { targets, default: d, .. } = &func.blocks[0].terminator {
+        if let Terminator::Switch {
+            targets,
+            default: d,
+            ..
+        } = &func.blocks[0].terminator
+        {
             assert_eq!(targets.len(), 3);
             assert_eq!(*d, Some(default));
         } else {
@@ -1081,10 +1137,26 @@ mod tests {
         let block = builder.new_block();
 
         let ops = vec![
-            BinOp::Add, BinOp::Sub, BinOp::Mul, BinOp::Div, BinOp::Rem, BinOp::Pow,
-            BinOp::BitAnd, BinOp::BitOr, BinOp::BitXor, BinOp::Shl, BinOp::Shr,
-            BinOp::Eq, BinOp::Ne, BinOp::Lt, BinOp::Le, BinOp::Gt, BinOp::Ge,
-            BinOp::And, BinOp::Or, BinOp::NullCoalesce,
+            BinOp::Add,
+            BinOp::Sub,
+            BinOp::Mul,
+            BinOp::Div,
+            BinOp::Rem,
+            BinOp::Pow,
+            BinOp::BitAnd,
+            BinOp::BitOr,
+            BinOp::BitXor,
+            BinOp::Shl,
+            BinOp::Shr,
+            BinOp::Eq,
+            BinOp::Ne,
+            BinOp::Lt,
+            BinOp::Le,
+            BinOp::Gt,
+            BinOp::Ge,
+            BinOp::And,
+            BinOp::Or,
+            BinOp::NullCoalesce,
         ];
 
         for (i, op) in ops.iter().enumerate() {
@@ -1145,11 +1217,24 @@ mod tests {
         let source = builder.alloc_local(Type::I32, true, None);
 
         // Test immutable reference
-        let immut_ref = builder.alloc_local(Type::Ref(Box::new(Type::I32), Mutability::Immutable), false, None);
-        builder.ref_(block, immut_ref, Mutability::Immutable, Place::Local(source));
+        let immut_ref = builder.alloc_local(
+            Type::Ref(Box::new(Type::I32), Mutability::Immutable),
+            false,
+            None,
+        );
+        builder.ref_(
+            block,
+            immut_ref,
+            Mutability::Immutable,
+            Place::Local(source),
+        );
 
         // Test mutable reference
-        let mut_ref = builder.alloc_local(Type::Ref(Box::new(Type::I32), Mutability::Mutable), false, None);
+        let mut_ref = builder.alloc_local(
+            Type::Ref(Box::new(Type::I32), Mutability::Mutable),
+            false,
+            None,
+        );
         builder.ref_(block, mut_ref, Mutability::Mutable, Place::Local(source));
 
         let func = builder.finish_function().unwrap();
@@ -1212,7 +1297,7 @@ mod property_tests_builder {
         fn test_function_name_preserved(name: String, return_type_idx: usize) {
             prop_assume!(!name.is_empty() && name.len() <= 100);
 
-            let types = vec![Type::Unit, Type::Bool, Type::I32, Type::F64, Type::String];
+            let types = [Type::Unit, Type::Bool, Type::I32, Type::F64, Type::String];
             let return_type = types[return_type_idx % types.len()].clone();
 
             let mut builder = MirBuilder::new();
@@ -1273,7 +1358,6 @@ mod property_tests_builder {
 
         /// Property: Parameters are correctly added and numbered
         #[test]
-        #[ignore] // Temporarily disabled - property test assumptions too restrictive
         fn test_params_numbered_correctly(param_names: Vec<String>) {
             prop_assume!(param_names.len() <= 10);
             prop_assume!(param_names.iter().all(|n| !n.is_empty() && n.len() <= 50));
@@ -1317,7 +1401,7 @@ mod property_tests_builder {
         /// Property: Binary operations preserve operator type
         #[test]
         fn test_binary_op_preserves_operator(op_idx: usize) {
-            let ops = vec![BinOp::Add, BinOp::Sub, BinOp::Mul, BinOp::Eq, BinOp::Lt];
+            let ops = [BinOp::Add, BinOp::Sub, BinOp::Mul, BinOp::Eq, BinOp::Lt];
             let op = ops[op_idx % ops.len()];
 
             let mut builder = MirBuilder::new();
@@ -1340,7 +1424,7 @@ mod property_tests_builder {
         /// Property: Unary operations preserve operator type
         #[test]
         fn test_unary_op_preserves_operator(op_idx: usize) {
-            let ops = vec![UnOp::Neg, UnOp::Not, UnOp::BitNot];
+            let ops = [UnOp::Neg, UnOp::Not, UnOp::BitNot];
             let op = ops[op_idx % ops.len()];
 
             let mut builder = MirBuilder::new();

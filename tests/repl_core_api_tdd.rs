@@ -2,8 +2,8 @@
 // Requirements: Complexity <10, Property tests 10,000+ iterations, Big O validation, Zero SATD
 // Target: Core REPL API functions with highest complexity and lowest coverage
 
-use ruchy::runtime::repl::{Repl, ReplConfig, ReplMode};
 use ruchy::runtime::repl::Value;
+use ruchy::runtime::repl::{Repl, ReplConfig, ReplMode};
 use std::path::PathBuf;
 use std::time::Duration;
 use tempfile::TempDir;
@@ -48,7 +48,10 @@ fn test_repl_sandboxed() {
 fn test_eval_simple_expression() {
     let mut repl = create_test_repl();
     let result = repl.eval("42");
-    assert!(result.is_ok(), "Simple expression evaluation should succeed");
+    assert!(
+        result.is_ok(),
+        "Simple expression evaluation should succeed"
+    );
     let output = result.unwrap();
     assert!(output.contains("42"), "Output should contain the result");
 }
@@ -59,7 +62,10 @@ fn test_eval_arithmetic() {
     let result = repl.eval("10 + 5 * 2");
     assert!(result.is_ok(), "Arithmetic expression should succeed");
     let output = result.unwrap();
-    assert!(output.contains("20"), "Arithmetic should follow order of operations");
+    assert!(
+        output.contains("20"),
+        "Arithmetic should follow order of operations"
+    );
 }
 
 #[test]
@@ -68,7 +74,10 @@ fn test_eval_string_literal() {
     let result = repl.eval("\"hello world\"");
     assert!(result.is_ok(), "String literal should succeed");
     let output = result.unwrap();
-    assert!(output.contains("hello world"), "String output should contain the literal");
+    assert!(
+        output.contains("hello world"),
+        "String output should contain the literal"
+    );
 }
 
 #[test]
@@ -92,7 +101,10 @@ fn test_eval_variable_assignment() {
     let result = repl.eval("x");
     assert!(result.is_ok(), "Variable reference should succeed");
     let output = result.unwrap();
-    assert!(output.contains("100"), "Variable should hold assigned value");
+    assert!(
+        output.contains("100"),
+        "Variable should hold assigned value"
+    );
 }
 
 #[test]
@@ -106,7 +118,10 @@ fn test_eval_function_definition() {
         let result = repl.eval("double(21)");
         if result.is_ok() {
             let output = result.unwrap();
-            assert!(output.contains("42"), "Function call should return correct result");
+            assert!(
+                output.contains("42"),
+                "Function call should return correct result"
+            );
         }
     }
     // Note: Functions may not be fully implemented, so this is a conditional test
@@ -125,7 +140,10 @@ fn test_process_line_empty() {
 fn test_process_line_whitespace() {
     let mut repl = create_test_repl();
     let result = repl.process_line("   \t  ");
-    assert!(result.is_ok(), "Whitespace-only line should be handled gracefully");
+    assert!(
+        result.is_ok(),
+        "Whitespace-only line should be handled gracefully"
+    );
     assert!(!result.unwrap(), "Whitespace line should not request exit");
 }
 
@@ -149,9 +167,18 @@ fn test_process_line_expression() {
 #[test]
 fn test_needs_continuation() {
     // Static function test
-    assert!(!Repl::needs_continuation("42"), "Complete expression doesn't need continuation");
-    assert!(!Repl::needs_continuation("2 + 2"), "Complete arithmetic doesn't need continuation");
-    assert!(!Repl::needs_continuation("\"hello\""), "Complete string doesn't need continuation");
+    assert!(
+        !Repl::needs_continuation("42"),
+        "Complete expression doesn't need continuation"
+    );
+    assert!(
+        !Repl::needs_continuation("2 + 2"),
+        "Complete arithmetic doesn't need continuation"
+    );
+    assert!(
+        !Repl::needs_continuation("\"hello\""),
+        "Complete string doesn't need continuation"
+    );
 }
 
 #[test]
@@ -163,10 +190,16 @@ fn test_memory_functions() {
     assert!(memory_used >= 0, "Memory used should be non-negative");
 
     let memory_pressure = repl.memory_pressure();
-    assert!(memory_pressure >= 0.0 && memory_pressure <= 1.0, "Memory pressure should be between 0 and 1");
+    assert!(
+        memory_pressure >= 0.0 && memory_pressure <= 1.0,
+        "Memory pressure should be between 0 and 1"
+    );
 
     let peak_memory = repl.peak_memory();
-    assert!(peak_memory >= memory_used, "Peak memory should be >= current memory");
+    assert!(
+        peak_memory >= memory_used,
+        "Peak memory should be >= current memory"
+    );
 }
 
 #[test]
@@ -228,8 +261,14 @@ fn test_state_queries() {
 
     // Test various state query functions
     assert!(repl.can_accept_input(), "Fresh REPL should accept input");
-    assert!(repl.bindings_valid(), "Fresh REPL should have valid bindings");
-    assert!(!repl.is_failed(), "Fresh REPL should not be in failed state");
+    assert!(
+        repl.bindings_valid(),
+        "Fresh REPL should have valid bindings"
+    );
+    assert!(
+        !repl.is_failed(),
+        "Fresh REPL should not be in failed state"
+    );
 
     let mode = repl.get_mode();
     assert!(!mode.is_empty(), "Mode should not be empty");
@@ -266,7 +305,10 @@ fn test_bounded_evaluation() {
 
     // Test eval_bounded with limits
     let result = repl.eval_bounded("42", 1024 * 1024, Duration::from_millis(1000));
-    assert!(result.is_ok(), "Bounded evaluation should succeed for simple expression");
+    assert!(
+        result.is_ok(),
+        "Bounded evaluation should succeed for simple expression"
+    );
 }
 
 #[test]
@@ -275,7 +317,10 @@ fn test_transactional_evaluation() {
 
     // Test eval_transactional
     let result = repl.eval_transactional("42");
-    assert!(result.is_ok(), "Transactional evaluation should succeed for simple expression");
+    assert!(
+        result.is_ok(),
+        "Transactional evaluation should succeed for simple expression"
+    );
 }
 
 // Property-based tests with 10,000+ iterations

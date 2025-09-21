@@ -1,7 +1,7 @@
 // SPRINT6-006: Progressive test disclosure implementation
 // PMAT Complexity: <10 per function
-use std::collections::HashMap;
 use chrono::{DateTime, Utc};
+use std::collections::HashMap;
 #[derive(Debug, Clone)]
 pub struct DisclosureConfig {
     pub min_attempts_before_hint: usize,
@@ -118,15 +118,15 @@ pub struct ProgressiveDisclosure {
 }
 
 impl ProgressiveDisclosure {
-/// # Examples
-/// 
-/// ```
-/// use ruchy::notebook::testing::progressive::ProgressiveDisclosure;
-/// 
-/// let instance = ProgressiveDisclosure::new();
-/// // Verify behavior
-/// ```
-pub fn new(config: DisclosureConfig, hierarchy: TestHierarchy) -> Self {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::notebook::testing::progressive::ProgressiveDisclosure;
+    ///
+    /// let instance = ProgressiveDisclosure::new();
+    /// // Verify behavior
+    /// ```
+    pub fn new(config: DisclosureConfig, hierarchy: TestHierarchy) -> Self {
         Self {
             config,
             student_progress: HashMap::new(),
@@ -134,16 +134,16 @@ pub fn new(config: DisclosureConfig, hierarchy: TestHierarchy) -> Self {
         }
     }
     /// Get tests and hints available to a student
-/// # Examples
-/// 
-/// ```
-/// use ruchy::notebook::testing::progressive::ProgressiveDisclosure;
-/// 
-/// let mut instance = ProgressiveDisclosure::new();
-/// let result = instance.get_available_content();
-/// // Verify behavior
-/// ```
-pub fn get_available_content(&mut self, student_id: &str) -> DisclosureResult {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::notebook::testing::progressive::ProgressiveDisclosure;
+    ///
+    /// let mut instance = ProgressiveDisclosure::new();
+    /// let result = instance.get_available_content();
+    /// // Verify behavior
+    /// ```
+    pub fn get_available_content(&mut self, student_id: &str) -> DisclosureResult {
         // First create/get progress without holding a reference
         let current_level_index = {
             let progress = self.get_or_create_progress(student_id);
@@ -164,19 +164,22 @@ pub fn get_available_content(&mut self, student_id: &str) -> DisclosureResult {
         }
     }
     /// Record a test attempt
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::notebook::testing::progressive::record_attempt;
-/// 
-/// let result = record_attempt("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn record_attempt(&mut self, student_id: &str, test_id: &str, score: f64) -> AttemptResult {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::notebook::testing::progressive::record_attempt;
+    ///
+    /// let result = record_attempt("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn record_attempt(&mut self, student_id: &str, test_id: &str, score: f64) -> AttemptResult {
         // Update progress without holding reference
         let attempt_number = {
             let progress = self.get_or_create_progress(student_id);
-            *progress.attempts_per_test.entry(test_id.to_string()).or_insert(0) += 1;
+            *progress
+                .attempts_per_test
+                .entry(test_id.to_string())
+                .or_insert(0) += 1;
             progress.total_score += score;
             progress.attempts_per_test[test_id]
         };
@@ -192,15 +195,15 @@ pub fn record_attempt(&mut self, student_id: &str, test_id: &str, score: f64) ->
         }
     }
     /// Use a hint
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::notebook::testing::progressive::use_hint;
-/// 
-/// let result = use_hint("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn use_hint(&mut self, student_id: &str, test_id: &str, hint_id: &str) -> HintResult {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::notebook::testing::progressive::use_hint;
+    ///
+    /// let result = use_hint("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn use_hint(&mut self, student_id: &str, test_id: &str, hint_id: &str) -> HintResult {
         // Simplified implementation to avoid borrow checker complexity
         let _ = (student_id, test_id, hint_id);
         HintResult {
@@ -215,19 +218,21 @@ pub fn use_hint(&mut self, student_id: &str, test_id: &str, hint_id: &str) -> Hi
         }
     }
     /// Get peer progress for collaborative unlocking
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::notebook::testing::progressive::get_peer_progress;
-/// 
-/// let result = get_peer_progress("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn get_peer_progress(&self, student_id: &str) -> PeerProgressInfo {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::notebook::testing::progressive::get_peer_progress;
+    ///
+    /// let result = get_peer_progress("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn get_peer_progress(&self, student_id: &str) -> PeerProgressInfo {
         let student_progress = self.student_progress.get(student_id);
         let current_level = student_progress.map_or(0, |p| p.current_level);
         // Calculate class statistics
-        let class_levels: Vec<usize> = self.student_progress.values()
+        let class_levels: Vec<usize> = self
+            .student_progress
+            .values()
             .map(|p| p.current_level)
             .collect();
         let avg_level = if class_levels.is_empty() {
@@ -235,10 +240,12 @@ pub fn get_peer_progress(&self, student_id: &str) -> PeerProgressInfo {
         } else {
             class_levels.iter().sum::<usize>() as f64 / class_levels.len() as f64
         };
-        let students_ahead = class_levels.iter()
+        let students_ahead = class_levels
+            .iter()
             .filter(|&&level| level > current_level)
             .count();
-        let students_behind = class_levels.iter()
+        let students_behind = class_levels
+            .iter()
             .filter(|&&level| level < current_level)
             .count();
         PeerProgressInfo {
@@ -250,19 +257,22 @@ pub fn get_peer_progress(&self, student_id: &str) -> PeerProgressInfo {
         }
     }
     fn get_or_create_progress(&mut self, student_id: &str) -> &mut StudentProgress {
-        self.student_progress.entry(student_id.to_string()).or_insert_with(|| {
-            StudentProgress {
+        self.student_progress
+            .entry(student_id.to_string())
+            .or_insert_with(|| StudentProgress {
                 student_id: student_id.to_string(),
                 current_level: 0,
                 total_score: 0.0,
                 attempts_per_test: HashMap::new(),
                 hints_used: HashMap::new(),
                 unlock_history: Vec::new(),
-            }
-        })
+            })
     }
     fn get_current_level(&self, progress: &StudentProgress) -> &TestLevel {
-        self.test_hierarchy.levels.get(progress.current_level).unwrap_or(&self.test_hierarchy.levels[0])
+        self.test_hierarchy
+            .levels
+            .get(progress.current_level)
+            .unwrap_or(&self.test_hierarchy.levels[0])
     }
     fn get_available_hints(&self, student_id: &str, level: &TestLevel) -> Vec<Hint> {
         let progress = self.student_progress.get(student_id);
@@ -276,8 +286,9 @@ pub fn get_peer_progress(&self, student_id: &str) -> PeerProgressInfo {
                 .unwrap_or(&0);
             // Add hints that are unlocked and not yet used
             for hint in &test.hints {
-                if *attempts >= hint.unlock_after_attempts 
-                    && *hints_used < self.config.max_hints_per_test {
+                if *attempts >= hint.unlock_after_attempts
+                    && *hints_used < self.config.max_hints_per_test
+                {
                     available_hints.push(hint.clone());
                 }
             }
@@ -317,16 +328,28 @@ pub fn get_peer_progress(&self, student_id: &str) -> PeerProgressInfo {
         let mut requirements_pending = Vec::new();
         // Check score requirement
         if progress.total_score >= requirements.min_score {
-            requirements_met.push(format!("Score: {:.1}/{:.1}", progress.total_score, requirements.min_score));
+            requirements_met.push(format!(
+                "Score: {:.1}/{:.1}",
+                progress.total_score, requirements.min_score
+            ));
         } else {
-            requirements_pending.push(format!("Score: {:.1}/{:.1}", progress.total_score, requirements.min_score));
+            requirements_pending.push(format!(
+                "Score: {:.1}/{:.1}",
+                progress.total_score, requirements.min_score
+            ));
         }
         // Check tests passed requirement
         let tests_passed = self.count_tests_passed(student_id);
         if tests_passed >= requirements.required_tests_passed {
-            requirements_met.push(format!("Tests passed: {}/{}", tests_passed, requirements.required_tests_passed));
+            requirements_met.push(format!(
+                "Tests passed: {}/{}",
+                tests_passed, requirements.required_tests_passed
+            ));
         } else {
-            requirements_pending.push(format!("Tests passed: {}/{}", tests_passed, requirements.required_tests_passed));
+            requirements_pending.push(format!(
+                "Tests passed: {}/{}",
+                tests_passed, requirements.required_tests_passed
+            ));
         }
         Some(NextUnlockInfo {
             description: format!("Unlock {}", next_level.name),
@@ -347,7 +370,9 @@ pub fn get_peer_progress(&self, student_id: &str) -> PeerProgressInfo {
         let current_level = progress.map_or(0, |p| p.current_level);
         let level = &self.test_hierarchy.levels[current_level];
         if let Some(test) = level.visible_tests.iter().find(|t| t.id == test_id) {
-            return test.hints.iter()
+            return test
+                .hints
+                .iter()
                 .filter(|hint| hint.unlock_after_attempts == *attempts)
                 .cloned()
                 .collect();
@@ -362,18 +387,24 @@ pub fn get_peer_progress(&self, student_id: &str) -> PeerProgressInfo {
         } else if score >= 50.0 {
             "You're on the right track. Consider using a hint if you're stuck.".to_string()
         } else {
-            "Don't give up! Learning takes practice. Try breaking the problem into smaller parts.".to_string()
+            "Don't give up! Learning takes practice. Try breaking the problem into smaller parts."
+                .to_string()
         }
     }
     fn count_tests_passed(&self, student_id: &str) -> usize {
         // Simplified: count attempts as passes
-        self.student_progress.get(student_id)
+        self.student_progress
+            .get(student_id)
             .map_or(0, |p| p.attempts_per_test.len())
     }
     fn calculate_percentile(&self, student_id: &str) -> f64 {
-        let student_score = self.student_progress.get(student_id)
+        let student_score = self
+            .student_progress
+            .get(student_id)
             .map_or(0.0, |p| p.total_score);
-        let all_scores: Vec<f64> = self.student_progress.values()
+        let all_scores: Vec<f64> = self
+            .student_progress
+            .values()
             .map(|p| p.total_score)
             .collect();
         if all_scores.is_empty() {
@@ -387,13 +418,17 @@ pub fn get_peer_progress(&self, student_id: &str) -> PeerProgressInfo {
             return false;
         }
         let class_avg = self.calculate_class_average();
-        let student_score = self.student_progress.get(student_id)
+        let student_score = self
+            .student_progress
+            .get(student_id)
             .map_or(0.0, |p| p.total_score);
         // Allow unlock if student is close to class average
         student_score >= class_avg * 0.8
     }
     fn calculate_class_average(&self) -> f64 {
-        let scores: Vec<f64> = self.student_progress.values()
+        let scores: Vec<f64> = self
+            .student_progress
+            .values()
             .map(|p| p.total_score)
             .collect();
         if scores.is_empty() {

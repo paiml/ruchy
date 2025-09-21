@@ -2,7 +2,7 @@
 //! Extracted to maintain ≤10 complexity per function
 use anyhow::{Context, Result};
 use ruchy::proving::{InteractiveProver, ProverSession, SmtBackend};
-use ruchy::utils::{read_file_with_context, write_file_with_context, add_success_indicator};
+use ruchy::utils::{add_success_indicator, read_file_with_context, write_file_with_context};
 /// Parse SMT backend from string
 pub fn parse_smt_backend(backend: &str, verbose: bool) -> SmtBackend {
     match backend.to_lowercase().as_str() {
@@ -33,14 +33,18 @@ pub fn configure_prover(
     }
 }
 /// Load and parse file for proof checking
-pub fn load_proof_file(file_path: &std::path::Path, verbose: bool) -> Result<ruchy::frontend::ast::Expr> {
+pub fn load_proof_file(
+    file_path: &std::path::Path,
+    verbose: bool,
+) -> Result<ruchy::frontend::ast::Expr> {
     use ruchy::Parser as RuchyParser;
     if verbose {
         println!("📂 Loading file: {}", file_path.display());
     }
     let source = read_file_with_context(file_path)?;
     let mut parser = RuchyParser::new(&source);
-    let ast = parser.parse()
+    let ast = parser
+        .parse()
         .with_context(|| format!("Failed to parse file: {}", file_path.display()))?;
     if verbose {
         println!("📋 Extracted proof goals from source");
@@ -204,8 +208,12 @@ fn show_ml_suggestions(prover: &mut InteractiveProver, goal: &ruchy::proving::Pr
         if !suggestions.is_empty() {
             println!("\nSuggested tactics:");
             for (i, sugg) in suggestions.iter().take(3).enumerate() {
-                println!("  {}. {} (confidence: {:.2})", 
-                    i + 1, sugg.tactic_name, sugg.confidence);
+                println!(
+                    "  {}. {} (confidence: {:.2})",
+                    i + 1,
+                    sugg.tactic_name,
+                    sugg.confidence
+                );
             }
         }
     }
@@ -232,11 +240,11 @@ pub fn export_proof(
 }
 /// Verify proofs extracted from AST
 pub fn verify_proofs_from_ast(
-    ast: &ruchy::frontend::ast::Expr, 
-    file_path: &std::path::Path, 
+    ast: &ruchy::frontend::ast::Expr,
+    file_path: &std::path::Path,
     format: &str,
-    counterexample: bool, 
-    verbose: bool
+    counterexample: bool,
+    verbose: bool,
 ) -> Result<()> {
     use ruchy::proving::{extract_assertions_from_ast, verify_assertions_batch};
     let assertions = extract_assertions_from_ast(ast);
@@ -253,11 +261,7 @@ pub fn verify_proofs_from_ast(
     Ok(())
 }
 /// Handle case when no assertions found
-fn handle_no_assertions(
-    file_path: &std::path::Path,
-    format: &str,
-    verbose: bool,
-) -> Result<()> {
+fn handle_no_assertions(file_path: &std::path::Path, format: &str, verbose: bool) -> Result<()> {
     if verbose {
         println!("No assertions found in {}", file_path.display());
     }
@@ -331,8 +335,12 @@ fn output_text_results(
         println!("✅ All {} proofs verified successfully", total);
         if verbose {
             for (i, result) in results.iter().enumerate() {
-                println!("  ✅ Proof {}: {} ({:.1}ms)", 
-                    i + 1, result.assertion, result.verification_time_ms);
+                println!(
+                    "  ✅ Proof {}: {} ({:.1}ms)",
+                    i + 1,
+                    result.assertion,
+                    result.verification_time_ms
+                );
             }
         }
     } else {
@@ -366,8 +374,12 @@ fn print_passed_proofs(results: &[ruchy::proving::ProofVerificationResult]) {
     println!("\nPassed proofs:");
     for (i, result) in results.iter().enumerate() {
         if result.is_verified {
-            println!("  ✅ Proof {}: {} ({:.1}ms)", 
-                i + 1, result.assertion, result.verification_time_ms);
+            println!(
+                "  ✅ Proof {}: {} ({:.1}ms)",
+                i + 1,
+                result.assertion,
+                result.verification_time_ms
+            );
         }
     }
 }
@@ -382,9 +394,9 @@ fn check_verification_failures(results: &[ruchy::proving::ProofVerificationResul
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::fs;
     use std::path::PathBuf;
     use tempfile::NamedTempFile;
-    use std::fs;
 
     #[test]
     fn test_parse_smt_backend_z3() {
@@ -754,10 +766,7 @@ mod tests {
 
     #[test]
     fn test_print_assertions_non_empty() {
-        let assertions = vec![
-            "x > 0".to_string(),
-            "x + 1 > 1".to_string(),
-        ];
+        let assertions = vec!["x > 0".to_string(), "x + 1 > 1".to_string()];
         print_assertions(&assertions);
     }
 }

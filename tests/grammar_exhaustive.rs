@@ -18,7 +18,10 @@
 use ruchy::frontend::parser::Parser;
 use ruchy::runtime::grammar_coverage::{GrammarCoverageMatrix, GRAMMAR_PRODUCTIONS};
 use ruchy::runtime::Repl;
-use std::{env, time::{Duration, Instant}};
+use std::{
+    env,
+    time::{Duration, Instant},
+};
 
 #[test]
 fn test_grammar_complete() {

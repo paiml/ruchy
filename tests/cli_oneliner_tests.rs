@@ -128,14 +128,7 @@ fn test_stdin_pipe() {
 fn test_json_output_format() {
     let output = Command::new("cargo")
         .args([
-            "run",
-            "--bin",
-            "ruchy",
-            "--",
-            "-e",
-            "42",
-            "--format",
-            "json",
+            "run", "--bin", "ruchy", "--", "-e", "42", "--format", "json",
         ])
         .output()
         .expect("Failed to execute command");
@@ -143,8 +136,11 @@ fn test_json_output_format() {
     assert!(output.status.success());
     let stdout = String::from_utf8_lossy(&output.stdout);
     let stdout_str = stdout.trim();
-    assert!(stdout_str.contains(r#""success":true"#) && stdout_str.contains(r#""result":"42""#), 
-           "Expected JSON with success:true and result:42, got: {}", stdout_str);
+    assert!(
+        stdout_str.contains(r#""success":true"#) && stdout_str.contains(r#""result":"42""#),
+        "Expected JSON with success:true and result:42, got: {}",
+        stdout_str
+    );
 }
 
 #[test]
@@ -166,8 +162,11 @@ fn test_json_output_string() {
     assert!(output.status.success());
     let stdout = String::from_utf8_lossy(&output.stdout);
     let stdout_str = stdout.trim();
-    assert!(stdout_str.contains(r#""success":true"#) && stdout_str.contains(r#""result":"\"hello\"""#), 
-           "Expected JSON with success:true and result:\"hello\", got: {}", stdout_str);
+    assert!(
+        stdout_str.contains(r#""success":true"#) && stdout_str.contains(r#""result":"\"hello\"""#),
+        "Expected JSON with success:true and result:\"hello\", got: {}",
+        stdout_str
+    );
 }
 
 #[test]

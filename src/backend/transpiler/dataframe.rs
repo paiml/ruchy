@@ -9,16 +9,16 @@ use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 impl Transpiler {
     /// Transpiles DataFrame literals (df![] syntax)
-/// # Examples
-/// 
-/// ```
-/// use ruchy::backend::transpiler::Transpiler;
-///
-/// let transpiler = Transpiler::new();
-/// let result = transpiler.transpile_dataframe(&[]);
-/// assert!(result.is_ok());
-/// ```
-pub fn transpile_dataframe(&self, columns: &[DataFrameColumn]) -> Result<TokenStream> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::backend::transpiler::Transpiler;
+    ///
+    /// let transpiler = Transpiler::new();
+    /// let result = transpiler.transpile_dataframe(&[]);
+    /// assert!(result.is_ok());
+    /// ```
+    pub fn transpile_dataframe(&self, columns: &[DataFrameColumn]) -> Result<TokenStream> {
         if columns.is_empty() {
             // Empty DataFrame
             return Ok(quote! {
@@ -54,19 +54,19 @@ pub fn transpile_dataframe(&self, columns: &[DataFrameColumn]) -> Result<TokenSt
         })
     }
     /// Transpiles DataFrame operations
-/// # Examples
-/// 
-/// ```
-/// use ruchy::backend::transpiler::Transpiler;
-/// use ruchy::frontend::ast::Expr;
-///
-/// let transpiler = Transpiler::new();
-/// let df = Expr::literal(42.into());
-/// let operation = Expr::literal("filter".into());
-/// let result = transpiler.transpile_dataframe_operation(&df, &operation);
-/// assert!(result.is_ok());
-/// ```
-pub fn transpile_dataframe_operation(
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::backend::transpiler::Transpiler;
+    /// use ruchy::frontend::ast::Expr;
+    ///
+    /// let transpiler = Transpiler::new();
+    /// let df = Expr::literal(42.into());
+    /// let operation = Expr::literal("filter".into());
+    /// let result = transpiler.transpile_dataframe_operation(&df, &operation);
+    /// assert!(result.is_ok());
+    /// ```
+    pub fn transpile_dataframe_operation(
         &self,
         df: &Expr,
         op: &DataFrameOp,
@@ -151,20 +151,20 @@ pub fn transpile_dataframe_operation(
         }
     }
     /// Transpiles DataFrame method calls (alternative to operation enum)
-/// # Examples
-/// 
-/// ```
-/// use ruchy::backend::transpiler::Transpiler;
-/// use ruchy::frontend::ast::Expr;
-///
-/// let transpiler = Transpiler::new();
-/// let df_expr = Expr::literal(42.into());
-/// let method = "select";
-/// let args = vec![];
-/// let result = transpiler.transpile_dataframe_method(&df_expr, method, &args);
-/// assert!(result.is_ok());
-/// ```
-pub fn transpile_dataframe_method(
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::backend::transpiler::Transpiler;
+    /// use ruchy::frontend::ast::Expr;
+    ///
+    /// let transpiler = Transpiler::new();
+    /// let df_expr = Expr::literal(42.into());
+    /// let method = "select";
+    /// let args = vec![];
+    /// let result = transpiler.transpile_dataframe_method(&df_expr, method, &args);
+    /// assert!(result.is_ok());
+    /// ```
+    pub fn transpile_dataframe_method(
         &self,
         df_expr: &Expr,
         method: &str,
@@ -176,24 +176,23 @@ pub fn transpile_dataframe_method(
         // Map Ruchy DataFrame methods to correct Polars API
         match method {
             // Builder pattern methods
-            "column" | "build" => 
-                self.transpile_builder_method(&df_tokens, method, &arg_tokens),
+            "column" | "build" => self.transpile_builder_method(&df_tokens, method, &arg_tokens),
             // Inspection methods
-            "rows" | "columns" | "get" => 
-                self.transpile_inspection_method(&df_tokens, method, &arg_tokens),
+            "rows" | "columns" | "get" => {
+                self.transpile_inspection_method(&df_tokens, method, &arg_tokens)
+            }
             // DataFrame operations
-            "select" | "filter" | "sort" => 
-                self.transpile_lazy_operation(&df_tokens, method, &arg_tokens),
-            "groupby" | "group_by" => 
-                self.transpile_groupby(&df_tokens, &arg_tokens),
-            "agg" | "join" => 
-                self.transpile_simple_operation(&df_tokens, method, &arg_tokens),
+            "select" | "filter" | "sort" => {
+                self.transpile_lazy_operation(&df_tokens, method, &arg_tokens)
+            }
+            "groupby" | "group_by" => self.transpile_groupby(&df_tokens, &arg_tokens),
+            "agg" | "join" => self.transpile_simple_operation(&df_tokens, method, &arg_tokens),
             // Statistical methods
-            "mean" | "std" | "min" | "max" | "sum" | "count" => 
-                self.transpile_statistical_method(&df_tokens, method),
+            "mean" | "std" | "min" | "max" | "sum" | "count" => {
+                self.transpile_statistical_method(&df_tokens, method)
+            }
             // Head/tail methods
-            "head" | "tail" => 
-                self.transpile_head_tail(&df_tokens, method, &arg_tokens),
+            "head" | "tail" => self.transpile_head_tail(&df_tokens, method, &arg_tokens),
             // Default case
             _ => self.transpile_default_method(&df_tokens, method, &arg_tokens),
         }
@@ -307,18 +306,18 @@ pub fn transpile_dataframe_method(
         })
     }
     /// Check if an expression is a DataFrame type
-/// # Examples
-/// 
-/// ```
-/// use ruchy::backend::transpiler::Transpiler;
-/// use ruchy::frontend::ast::Expr;
-///
-/// let transpiler = Transpiler::new();
-/// let expr = Expr::literal(42.into());
-/// let result = transpiler.is_dataframe_expr(&expr);
-/// // Returns boolean, not Result
-/// ```
-pub fn is_dataframe_expr(&self, expr: &Expr) -> bool {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::backend::transpiler::Transpiler;
+    /// use ruchy::frontend::ast::Expr;
+    ///
+    /// let transpiler = Transpiler::new();
+    /// let expr = Expr::literal(42.into());
+    /// let result = transpiler.is_dataframe_expr(&expr);
+    /// // Returns boolean, not Result
+    /// ```
+    pub fn is_dataframe_expr(&self, expr: &Expr) -> bool {
         use crate::frontend::ast::ExprKind;
         match &expr.kind {
             // Variable named "df" is likely a DataFrame
@@ -326,17 +325,31 @@ pub fn is_dataframe_expr(&self, expr: &Expr) -> bool {
             // DataFrame constructor calls
             ExprKind::Call { func, .. } => {
                 if let ExprKind::QualifiedName { module, name } = &func.kind {
-                    module == "DataFrame" && (name == "new" || name == "from_csv" || name == "from_json" || name == "from_csv_string")
+                    module == "DataFrame"
+                        && (name == "new"
+                            || name == "from_csv"
+                            || name == "from_json"
+                            || name == "from_csv_string")
                 } else {
                     false
                 }
             }
             // Method calls that return DataFrames
-            ExprKind::MethodCall { receiver, method, .. } => {
+            ExprKind::MethodCall {
+                receiver, method, ..
+            } => {
                 // Check if it's a DataFrame method chain
-                matches!(method.as_str(), 
-                    "column" | "build" | "select" | "filter" | "sort" | 
-                    "head" | "tail" | "drop_nulls" | "fill_null"
+                matches!(
+                    method.as_str(),
+                    "column"
+                        | "build"
+                        | "select"
+                        | "filter"
+                        | "sort"
+                        | "head"
+                        | "tail"
+                        | "drop_nulls"
+                        | "fill_null"
                 ) || self.is_dataframe_expr(receiver)
             }
             // DataFrame literals
@@ -392,7 +405,9 @@ mod tests {
         let transpiler = make_test_transpiler();
         let df_expr = make_literal_expr(0); // Placeholder
         let op = DataFrameOp::Select(vec!["col1".to_string(), "col2".to_string()]);
-        let result = transpiler.transpile_dataframe_operation(&df_expr, &op).unwrap();
+        let result = transpiler
+            .transpile_dataframe_operation(&df_expr, &op)
+            .unwrap();
         let output = result.to_string();
         assert!(output.contains("select"));
         assert!(output.contains("col1"));
@@ -404,7 +419,9 @@ mod tests {
         let df_expr = make_literal_expr(0);
         let condition = make_literal_expr(1);
         let op = DataFrameOp::Filter(Box::new(condition));
-        let result = transpiler.transpile_dataframe_operation(&df_expr, &op).unwrap();
+        let result = transpiler
+            .transpile_dataframe_operation(&df_expr, &op)
+            .unwrap();
         let output = result.to_string();
         assert!(output.contains("filter"));
     }
@@ -413,7 +430,9 @@ mod tests {
         let transpiler = make_test_transpiler();
         let df_expr = make_literal_expr(0);
         let op = DataFrameOp::GroupBy(vec!["group_col".to_string()]);
-        let result = transpiler.transpile_dataframe_operation(&df_expr, &op).unwrap();
+        let result = transpiler
+            .transpile_dataframe_operation(&df_expr, &op)
+            .unwrap();
         let output = result.to_string();
         assert!(output.contains("groupby"));
         assert!(output.contains("group_col"));
@@ -423,7 +442,9 @@ mod tests {
         let transpiler = make_test_transpiler();
         let df_expr = make_literal_expr(0);
         let op = DataFrameOp::Sort(vec!["sort_col".to_string()]);
-        let result = transpiler.transpile_dataframe_operation(&df_expr, &op).unwrap();
+        let result = transpiler
+            .transpile_dataframe_operation(&df_expr, &op)
+            .unwrap();
         let output = result.to_string();
         assert!(output.contains("sort"));
         assert!(output.contains("sort_col"));
@@ -444,7 +465,9 @@ mod tests {
                 on: vec!["id".to_string()],
                 how: join_type,
             };
-            let result = transpiler.transpile_dataframe_operation(&df_expr, &op).unwrap();
+            let result = transpiler
+                .transpile_dataframe_operation(&df_expr, &op)
+                .unwrap();
             let output = result.to_string();
             assert!(output.contains("join"));
             assert!(output.contains(expected));
@@ -463,7 +486,9 @@ mod tests {
             AggregateOp::Std("col6".to_string()),
         ];
         let op = DataFrameOp::Aggregate(agg_ops);
-        let result = transpiler.transpile_dataframe_operation(&df_expr, &op).unwrap();
+        let result = transpiler
+            .transpile_dataframe_operation(&df_expr, &op)
+            .unwrap();
         let output = result.to_string();
         // Check that it produces some output
         assert!(!output.is_empty());
@@ -474,29 +499,33 @@ mod tests {
         let df_expr = make_literal_expr(0);
         // Test Limit
         let op = DataFrameOp::Limit(10);
-        let result = transpiler.transpile_dataframe_operation(&df_expr, &op).unwrap();
+        let result = transpiler
+            .transpile_dataframe_operation(&df_expr, &op)
+            .unwrap();
         let output = result.to_string();
         assert!(output.contains("limit"));
         // Test Head
         let op = DataFrameOp::Head(5);
-        let result = transpiler.transpile_dataframe_operation(&df_expr, &op).unwrap();
+        let result = transpiler
+            .transpile_dataframe_operation(&df_expr, &op)
+            .unwrap();
         let output = result.to_string();
         assert!(output.contains("head"));
         // Test Tail
         let op = DataFrameOp::Tail(5);
-        let result = transpiler.transpile_dataframe_operation(&df_expr, &op).unwrap();
+        let result = transpiler
+            .transpile_dataframe_operation(&df_expr, &op)
+            .unwrap();
         let output = result.to_string();
         assert!(output.contains("tail"));
     }
     #[test]
     fn test_dataframe_with_empty_column_values() {
         let transpiler = make_test_transpiler();
-        let columns = vec![
-            DataFrameColumn {
-                name: "empty_col".to_string(),
-                values: vec![],
-            },
-        ];
+        let columns = vec![DataFrameColumn {
+            name: "empty_col".to_string(),
+            values: vec![],
+        }];
         let result = transpiler.transpile_dataframe(&columns).unwrap();
         let output = result.to_string();
         assert!(output.contains("Series"));
@@ -518,19 +547,23 @@ mod property_tests_dataframe {
         let result = std::panic::catch_unwind(|| {
             let _ = transpiler.transpile_dataframe(&[]);
         });
-        assert!(result.is_ok(), "transpile_dataframe should not panic on empty input");
+        assert!(
+            result.is_ok(),
+            "transpile_dataframe should not panic on empty input"
+        );
 
         // Test with malformed column data (should handle gracefully)
         let result = std::panic::catch_unwind(|| {
-            let bad_columns = vec![
-                DataFrameColumn {
-                    name: String::new(), // Empty name
-                    values: vec![],      // Empty values
-                }
-            ];
+            let bad_columns = vec![DataFrameColumn {
+                name: String::new(), // Empty name
+                values: vec![],      // Empty values
+            }];
             let _ = transpiler.transpile_dataframe(&bad_columns);
         });
-        assert!(result.is_ok(), "transpile_dataframe should handle malformed data gracefully");
+        assert!(
+            result.is_ok(),
+            "transpile_dataframe should handle malformed data gracefully"
+        );
     }
 
     #[test]

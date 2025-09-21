@@ -2,9 +2,9 @@
 // Sprint 80 Phase 29: Deep type checking coverage
 // ALL NIGHT MARATHON - NO STOPPING!
 
-use ruchy::frontend::type_checker::{TypeChecker, Type, TypeEnvironment};
-use ruchy::frontend::semantic_analyzer::SemanticAnalyzer;
 use ruchy::frontend::ast::*;
+use ruchy::frontend::semantic_analyzer::SemanticAnalyzer;
+use ruchy::frontend::type_checker::{Type, TypeChecker, TypeEnvironment};
 use ruchy::Parser;
 use std::collections::HashMap;
 
@@ -65,10 +65,7 @@ fn test_type_tuple() {
 
 #[test]
 fn test_type_function() {
-    let t = Type::Function(
-        vec![Type::Integer, Type::Integer],
-        Box::new(Type::Integer)
-    );
+    let t = Type::Function(vec![Type::Integer, Type::Integer], Box::new(Type::Integer));
     assert!(matches!(t, Type::Function(_, _)));
 }
 
@@ -80,10 +77,7 @@ fn test_type_option() {
 
 #[test]
 fn test_type_result() {
-    let t = Type::Result(
-        Box::new(Type::Integer),
-        Box::new(Type::String)
-    );
+    let t = Type::Result(Box::new(Type::Integer), Box::new(Type::String));
     assert!(matches!(t, Type::Result(_, _)));
 }
 
@@ -125,10 +119,7 @@ fn test_type_enum() {
 
 #[test]
 fn test_type_alias() {
-    let t = Type::Alias(
-        "MyInt".to_string(),
-        Box::new(Type::Integer)
-    );
+    let t = Type::Alias("MyInt".to_string(), Box::new(Type::Integer));
     assert!(matches!(t, Type::Alias(_, _)));
 }
 
@@ -365,10 +356,7 @@ fn test_type_checker_unify_mismatch() {
 #[test]
 fn test_type_checker_unify_generic() {
     let mut checker = TypeChecker::new();
-    let result = checker.unify(
-        Type::Generic("T".to_string()),
-        Type::Integer
-    );
+    let result = checker.unify(Type::Generic("T".to_string()), Type::Integer);
     assert!(result.is_ok());
 }
 
@@ -377,7 +365,7 @@ fn test_type_checker_unify_list() {
     let mut checker = TypeChecker::new();
     let result = checker.unify(
         Type::List(Box::new(Type::Integer)),
-        Type::List(Box::new(Type::Integer))
+        Type::List(Box::new(Type::Integer)),
     );
     assert!(result.is_ok());
 }
@@ -520,10 +508,7 @@ fn test_semantic_analyzer_analyze_call() {
     let mut analyzer = SemanticAnalyzer::new();
     analyzer.define_function(
         "add",
-        Type::Function(
-            vec![Type::Integer, Type::Integer],
-            Box::new(Type::Integer)
-        )
+        Type::Function(vec![Type::Integer, Type::Integer], Box::new(Type::Integer)),
     );
     let expr = Expr {
         kind: ExprKind::Call {

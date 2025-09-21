@@ -4,9 +4,9 @@
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
-use std::path::Path;
-use std::fs;
 use std::fmt;
+use std::fs;
+use std::path::Path;
 /// WIT interface definition
 #[derive(Debug, Clone)]
 pub struct WitInterface {
@@ -294,15 +294,15 @@ impl Default for WitGenerator {
 }
 impl WitGenerator {
     /// Create a new WIT generator with default config
-/// # Examples
-/// 
-/// ```
-/// use ruchy::wasm::wit::WitGenerator;
-/// 
-/// let instance = WitGenerator::new();
-/// // Verify behavior
-/// ```
-pub fn new() -> Self {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::wasm::wit::WitGenerator;
+    ///
+    /// let instance = WitGenerator::new();
+    /// // Verify behavior
+    /// ```
+    pub fn new() -> Self {
         Self {
             config: WitConfig::default(),
             _type_registry: TypeRegistry::new(),
@@ -310,16 +310,16 @@ pub fn new() -> Self {
         }
     }
     /// Create a new WIT generator with specific config
-/// # Examples
-/// 
-/// ```
-/// use ruchy::wasm::wit::WitGenerator;
-/// 
-/// let mut instance = WitGenerator::new();
-/// let result = instance.new_with_config();
-/// // Verify behavior
-/// ```
-pub fn new_with_config(config: WitConfig) -> Self {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::wasm::wit::WitGenerator;
+    ///
+    /// let mut instance = WitGenerator::new();
+    /// let result = instance.new_with_config();
+    /// // Verify behavior
+    /// ```
+    pub fn new_with_config(config: WitConfig) -> Self {
         Self {
             config,
             _type_registry: TypeRegistry::new(),
@@ -327,54 +327,60 @@ pub fn new_with_config(config: WitConfig) -> Self {
         }
     }
     /// Set the world name
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::wit::with_world;
-/// 
-/// let result = with_world("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn with_world(&mut self, world: &str) -> &mut Self {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::wit::with_world;
+    ///
+    /// let result = with_world("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn with_world(&mut self, world: &str) -> &mut Self {
         self.config.world_name = Some(world.to_string());
         self
     }
     /// Generate WIT interface from component
-/// # Examples
-/// 
-/// ```
-/// use ruchy::wasm::wit::WitGenerator;
-/// 
-/// let mut instance = WitGenerator::new();
-/// let result = instance.generate();
-/// // Verify behavior
-/// ```
-pub fn generate(&mut self, component: &super::component::WasmComponent) -> Result<WitInterface> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::wasm::wit::WitGenerator;
+    ///
+    /// let mut instance = WitGenerator::new();
+    /// let result = instance.generate();
+    /// // Verify behavior
+    /// ```
+    pub fn generate(
+        &mut self,
+        component: &super::component::WasmComponent,
+    ) -> Result<WitInterface> {
         self.generate_from_component(component)
     }
     /// Generate WIT interface from component
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::wit::generate_from_component;
-/// 
-/// let result = generate_from_component(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn generate_from_component(&mut self, _component: &super::component::WasmComponent) -> Result<WitInterface> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::wit::generate_from_component;
+    ///
+    /// let result = generate_from_component(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn generate_from_component(
+        &mut self,
+        _component: &super::component::WasmComponent,
+    ) -> Result<WitInterface> {
         // In a real implementation, analyze the component's exports and imports
         self.generate_default()
     }
     /// Generate WIT interface from Ruchy source
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::wit::generate_from_source;
-/// 
-/// let result = generate_from_source("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn generate_from_source(&mut self, _source: &str) -> Result<WitInterface> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::wit::generate_from_source;
+    ///
+    /// let result = generate_from_source("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn generate_from_source(&mut self, _source: &str) -> Result<WitInterface> {
         // In a real implementation, this would:
         // 1. Parse Ruchy source code
         // 2. Extract type definitions
@@ -389,48 +395,40 @@ pub fn generate_from_source(&mut self, _source: &str) -> Result<WitInterface> {
                 name: "component".to_string(),
                 version: "0.1.0".to_string(),
             },
-            types: vec![
-                TypeDefinition {
-                    name: "request".to_string(),
-                    kind: TypeKind::Record(vec![
-                        Field {
-                            name: "method".to_string(),
-                            field_type: WitType::String,
-                            documentation: Some("HTTP method".to_string()),
-                        },
-                        Field {
-                            name: "path".to_string(),
-                            field_type: WitType::String,
-                            documentation: Some("Request path".to_string()),
-                        },
-                    ]),
-                    documentation: Some("HTTP request type".to_string()),
-                },
-            ],
-            functions: vec![
-                FunctionDefinition {
-                    name: "handle-request".to_string(),
-                    params: vec![
-                        Parameter {
-                            name: "req".to_string(),
-                            param_type: WitType::Named("request".to_string()),
-                        },
-                    ],
-                    return_type: Some(WitType::String),
-                    is_async: false,
-                    documentation: Some("Handle an HTTP request".to_string()),
-                },
-            ],
+            types: vec![TypeDefinition {
+                name: "request".to_string(),
+                kind: TypeKind::Record(vec![
+                    Field {
+                        name: "method".to_string(),
+                        field_type: WitType::String,
+                        documentation: Some("HTTP method".to_string()),
+                    },
+                    Field {
+                        name: "path".to_string(),
+                        field_type: WitType::String,
+                        documentation: Some("Request path".to_string()),
+                    },
+                ]),
+                documentation: Some("HTTP request type".to_string()),
+            }],
+            functions: vec![FunctionDefinition {
+                name: "handle-request".to_string(),
+                params: vec![Parameter {
+                    name: "req".to_string(),
+                    param_type: WitType::Named("request".to_string()),
+                }],
+                return_type: Some(WitType::String),
+                is_async: false,
+                documentation: Some("Handle an HTTP request".to_string()),
+            }],
             resources: vec![],
             world: Some(WorldDefinition {
                 name: "http-handler".to_string(),
                 imports: vec![],
-                exports: vec![
-                    WorldExport {
-                        name: "handler".to_string(),
-                        interface: "ruchy:component/handler".to_string(),
-                    },
-                ],
+                exports: vec![WorldExport {
+                    name: "handler".to_string(),
+                    interface: "ruchy:component/handler".to_string(),
+                }],
                 documentation: Some("HTTP handler world".to_string()),
             }),
         };
@@ -441,36 +439,33 @@ pub fn generate_from_source(&mut self, _source: &str) -> Result<WitInterface> {
         self.generate_from_source("")
     }
     /// Add a custom type mapping
-/// # Examples
-/// 
-/// ```
-/// use ruchy::wasm::wit::WitGenerator;
-/// 
-/// let mut instance = WitGenerator::new();
-/// let result = instance.add_type_mapping();
-/// // Verify behavior
-/// ```
-pub fn add_type_mapping(&mut self, ruchy_type: String, wit_type: String) {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::wasm::wit::WitGenerator;
+    ///
+    /// let mut instance = WitGenerator::new();
+    /// let result = instance.add_type_mapping();
+    /// // Verify behavior
+    /// ```
+    pub fn add_type_mapping(&mut self, ruchy_type: String, wit_type: String) {
         self.config.type_mappings.insert(ruchy_type, wit_type);
     }
     /// Generate WIT file content
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::wit::generate_wit_file;
-/// 
-/// let result = generate_wit_file(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn generate_wit_file(&self, interface: &WitInterface) -> String {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::wit::generate_wit_file;
+    ///
+    /// let result = generate_wit_file(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn generate_wit_file(&self, interface: &WitInterface) -> String {
         let mut wit = String::new();
         // Package declaration
         wit.push_str(&format!(
             "package {}:{}/{}@{};\n\n",
-            interface.package.namespace,
-            interface.package.name,
-            interface.name,
-            interface.version
+            interface.package.namespace, interface.package.name, interface.name, interface.version
         ));
         // Interface declaration
         wit.push_str(&format!("interface {} {{\n", interface.name));
@@ -503,7 +498,11 @@ pub fn generate_wit_file(&self, interface: &WitInterface) -> String {
                     if let Some(doc) = &field.documentation {
                         s.push_str(&format!("    /// {doc}\n"));
                     }
-                    s.push_str(&format!("    {}: {},\n", field.name, self.format_wit_type(&field.field_type)));
+                    s.push_str(&format!(
+                        "    {}: {},\n",
+                        field.name,
+                        self.format_wit_type(&field.field_type)
+                    ));
                 }
                 s.push_str("  }");
                 s
@@ -515,7 +514,11 @@ pub fn generate_wit_file(&self, interface: &WitInterface) -> String {
                         s.push_str(&format!("    /// {doc}\n"));
                     }
                     if let Some(payload) = &case.payload {
-                        s.push_str(&format!("    {}({}),\n", case.name, self.format_wit_type(payload)));
+                        s.push_str(&format!(
+                            "    {}({}),\n",
+                            case.name,
+                            self.format_wit_type(payload)
+                        ));
                     } else {
                         s.push_str(&format!("    {},\n", case.name));
                     }
@@ -532,13 +535,19 @@ pub fn generate_wit_file(&self, interface: &WitInterface) -> String {
                 s
             }
             TypeKind::Alias(wit_type) => {
-                format!("type {} = {}", type_def.name, self.format_wit_type(wit_type))
+                format!(
+                    "type {} = {}",
+                    type_def.name,
+                    self.format_wit_type(wit_type)
+                )
             }
             _ => format!("type {}", type_def.name),
         }
     }
     fn format_function(&self, func: &FunctionDefinition) -> String {
-        let params = func.params.iter()
+        let params = func
+            .params
+            .iter()
             .map(|p| format!("{}: {}", p.name, self.format_wit_type(&p.param_type)))
             .collect::<Vec<_>>()
             .join(", ");
@@ -568,12 +577,17 @@ pub fn generate_wit_file(&self, interface: &WitInterface) -> String {
             WitType::List(inner) => format!("list<{}>", self.format_wit_type(inner)),
             WitType::Option(inner) => format!("option<{}>", self.format_wit_type(inner)),
             WitType::Result { ok, err } => {
-                let ok_str = ok.as_ref().map_or_else(|| "_".to_string(), |t| self.format_wit_type(t));
-                let err_str = err.as_ref().map_or_else(|| "_".to_string(), |t| self.format_wit_type(t));
+                let ok_str = ok
+                    .as_ref()
+                    .map_or_else(|| "_".to_string(), |t| self.format_wit_type(t));
+                let err_str = err
+                    .as_ref()
+                    .map_or_else(|| "_".to_string(), |t| self.format_wit_type(t));
                 format!("result<{ok_str}, {err_str}>")
             }
             WitType::Tuple(types) => {
-                let types_str = types.iter()
+                let types_str = types
+                    .iter()
                     .map(|t| self.format_wit_type(t))
                     .collect::<Vec<_>>()
                     .join(", ");
@@ -589,11 +603,17 @@ pub fn generate_wit_file(&self, interface: &WitInterface) -> String {
         s.push_str(&format!("world {} {{\n", world.name));
         // Imports
         for import in &world.imports {
-            s.push_str(&format!("  import {}: {};\n", import.name, import.interface));
+            s.push_str(&format!(
+                "  import {}: {};\n",
+                import.name, import.interface
+            ));
         }
         // Exports
         for export in &world.exports {
-            s.push_str(&format!("  export {}: {};\n", export.name, export.interface));
+            s.push_str(&format!(
+                "  export {}: {};\n",
+                export.name, export.interface
+            ));
         }
         s.push_str("}\n");
         s
@@ -607,15 +627,15 @@ impl fmt::Display for WitInterface {
 }
 impl WitInterface {
     /// Save the WIT interface to a file
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::wit::save;
-/// 
-/// let result = save(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn save(&self, path: impl AsRef<Path>) -> Result<()> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::wit::save;
+    ///
+    /// let result = save(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn save(&self, path: impl AsRef<Path>) -> Result<()> {
         let generator = WitGenerator::new();
         let wit_content = generator.generate_wit_file(self);
         fs::write(path.as_ref(), wit_content)
@@ -687,7 +707,7 @@ mod tests {
             world_name: Some("custom".to_string()),
         };
 
-        let generator = WitGenerator::new_with_config(config.clone());
+        let generator = WitGenerator::new_with_config(config);
         assert!(!generator.config.include_docs);
         assert_eq!(generator.config.world_name, Some("custom".to_string()));
     }

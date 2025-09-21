@@ -14,7 +14,7 @@ fn test_repl_creation() {
     // Default creation
     let repl = Repl::new(std::env::temp_dir());
     assert!(repl.is_ok());
-    
+
     // With custom config
     let config = ReplConfig {
         max_memory: 10_000_000,
@@ -30,15 +30,15 @@ fn test_repl_creation() {
 #[test]
 fn test_evaluate_expr_str() {
     let mut repl = Repl::new(std::env::temp_dir()).unwrap();
-    
+
     // Simple arithmetic
     let result = repl.evaluate_expr_str("2 + 3", None).unwrap();
     assert_eq!(result, Value::Integer(5));
-    
+
     // With None context
     let result = repl.evaluate_expr_str("5 * 6", None).unwrap();
     assert_eq!(result, Value::Integer(30));
-    
+
     // String expression
     let result = repl.evaluate_expr_str("\"hello\"", None).unwrap();
     if let Value::String(s) = result {
@@ -46,11 +46,11 @@ fn test_evaluate_expr_str() {
     } else {
         panic!("Expected string");
     }
-    
+
     // Boolean expression
     let result = repl.evaluate_expr_str("true && false", None).unwrap();
     assert_eq!(result, Value::Bool(false));
-    
+
     // Array expression
     let result = repl.evaluate_expr_str("[1, 2, 3]", None).unwrap();
     if let Value::Array(arr) = result {
@@ -64,22 +64,22 @@ fn test_evaluate_expr_str() {
 #[test]
 fn test_eval_method() {
     let mut repl = Repl::new(std::env::temp_dir()).unwrap();
-    
+
     // Simple expressions
     assert_eq!(repl.eval("42").unwrap(), "42");
     assert_eq!(repl.eval("true").unwrap(), "true");
     assert_eq!(repl.eval("\"test\"").unwrap(), "\"test\"");
-    
+
     // Arithmetic
     assert_eq!(repl.eval("10 + 5").unwrap(), "15");
     assert_eq!(repl.eval("20 - 8").unwrap(), "12");
     assert_eq!(repl.eval("3 * 7").unwrap(), "21");
     assert_eq!(repl.eval("15 / 3").unwrap(), "5");
-    
+
     // Variables
     repl.eval("let x = 100").unwrap();
     assert_eq!(repl.eval("x").unwrap(), "100");
-    
+
     // Functions
     repl.eval("fun double(n) { n * 2 }").unwrap();
     assert_eq!(repl.eval("double(21)").unwrap(), "42");
@@ -89,7 +89,7 @@ fn test_eval_method() {
 #[test]
 fn test_repl_commands() {
     let mut repl = Repl::new(std::env::temp_dir()).unwrap();
-    
+
     // Test :help command
     let output = repl.handle_command(":help");
     assert!(!output.is_empty());
@@ -97,7 +97,7 @@ fn test_repl_commands() {
     // Test :clear command
     let output = repl.handle_command(":clear");
     assert!(!output.is_empty());
-    
+
     // Test :reset command
     repl.eval("let x = 42").unwrap();
     let output = repl.handle_command(":reset");
@@ -128,7 +128,7 @@ fn test_needs_continuation() {
     assert!(Repl::needs_continuation("match x {"));
     assert!(Repl::needs_continuation("[1, 2,"));
     assert!(Repl::needs_continuation("let x ="));
-    
+
     // Should not need continuation
     assert!(!Repl::needs_continuation("42"));
     assert!(!Repl::needs_continuation("fun test() { 42 }"));
@@ -141,10 +141,10 @@ fn test_needs_continuation() {
 #[test]
 fn test_multiline_input() {
     let mut repl = Repl::new(std::env::temp_dir()).unwrap();
-    
+
     // Multiline function
     repl.eval("fun factorial(n) {").unwrap_err(); // Should need continuation
-    
+
     // This would need interactive input handling, so we test complete multiline
     let multiline = "fun factorial(n) {
         if n <= 1 {
@@ -154,7 +154,7 @@ fn test_multiline_input() {
         }
     }";
     repl.eval(multiline).unwrap();
-    
+
     assert_eq!(repl.eval("factorial(5)").unwrap(), "120");
 }
 
@@ -162,19 +162,19 @@ fn test_multiline_input() {
 #[test]
 fn test_error_handling() {
     let mut repl = Repl::new(std::env::temp_dir()).unwrap();
-    
+
     // Undefined variable
     assert!(repl.eval("undefined_var").is_err());
-    
+
     // Syntax error
     assert!(repl.eval("fun (").is_err());
-    
+
     // Type error
     assert!(repl.eval("true + 5").is_err());
-    
+
     // Division by zero
     assert!(repl.eval("5 / 0").is_err());
-    
+
     // Invalid command returns error message
     let output = repl.handle_command(":invalid");
     assert!(output.contains("Unknown command"));
@@ -184,22 +184,22 @@ fn test_error_handling() {
 #[test]
 fn test_complex_expressions() {
     let mut repl = Repl::new(std::env::temp_dir()).unwrap();
-    
+
     // Nested expressions
     assert_eq!(repl.eval("(1 + 2) * (3 + 4)").unwrap(), "21");
-    
+
     // String operations
     let result = repl.eval("\"hello\" + \" \" + \"world\"").unwrap();
     assert!(result.contains("hello world"));
-    
+
     // Array operations
     let result = repl.eval("[1, 2, 3]").unwrap();
     assert!(result.contains("1") && result.contains("3"));
-    
+
     // Object/struct (if supported)
     let _obj_result = repl.eval("{ x: 10, y: 20 }");
     // May or may not be supported
-    
+
     // Lambda expressions
     repl.eval("let add = |a, b| a + b").unwrap();
     assert_eq!(repl.eval("add(15, 27)").unwrap(), "42");
@@ -209,11 +209,11 @@ fn test_complex_expressions() {
 #[test]
 fn test_control_flow() {
     let mut repl = Repl::new(std::env::temp_dir()).unwrap();
-    
+
     // If-else
     assert_eq!(repl.eval("if true { 1 } else { 0 }").unwrap(), "1");
     assert_eq!(repl.eval("if false { 1 } else { 0 }").unwrap(), "0");
-    
+
     // Match
     repl.eval("let x = 2").unwrap();
     let match_expr = "match x {
@@ -222,12 +222,12 @@ fn test_control_flow() {
         _ => \"other\"
     }";
     assert_eq!(repl.eval(match_expr).unwrap(), "\"two\"");
-    
+
     // For loop
     repl.eval("let mut sum = 0").unwrap();
     repl.eval("for i in 1..=5 { sum = sum + i }").unwrap();
     assert_eq!(repl.eval("sum").unwrap(), "15");
-    
+
     // While loop
     repl.eval("let mut count = 0").unwrap();
     repl.eval("while count < 3 { count = count + 1 }").unwrap();
@@ -238,21 +238,21 @@ fn test_control_flow() {
 #[test]
 fn test_special_values() {
     let mut repl = Repl::new(std::env::temp_dir()).unwrap();
-    
+
     // nil/null
     assert_eq!(repl.eval("nil").unwrap(), "nil");
-    
+
     // Infinity (if supported)
     let _inf_result = repl.eval("1.0 / 0.0");
     // May be inf or error
-    
+
     // NaN (if supported)
     let _nan_result = repl.eval("0.0 / 0.0");
     // May be NaN or error
-    
+
     // Very large numbers
     assert!(repl.eval("999999999999999999").is_ok());
-    
+
     // Very small numbers
     assert!(repl.eval("0.000000000000001").is_ok());
 }
@@ -261,19 +261,19 @@ fn test_special_values() {
 #[test]
 fn test_state_management() {
     let mut repl = Repl::new(std::env::temp_dir()).unwrap();
-    
+
     // Define multiple variables
     repl.eval("let a = 1").unwrap();
     repl.eval("let b = 2").unwrap();
     repl.eval("let c = 3").unwrap();
-    
+
     // They should all be accessible
     assert_eq!(repl.eval("a + b + c").unwrap(), "6");
-    
+
     // Redefine variable
     repl.eval("let a = 10").unwrap();
     assert_eq!(repl.eval("a").unwrap(), "10");
-    
+
     // Mutable variables
     repl.eval("let mut counter = 0").unwrap();
     repl.eval("counter = counter + 1").unwrap();
@@ -285,20 +285,21 @@ fn test_state_management() {
 #[test]
 fn test_function_definitions() {
     let mut repl = Repl::new(std::env::temp_dir()).unwrap();
-    
+
     // Simple function
     repl.eval("fun greet(name) { \"Hello, \" + name }").unwrap();
     assert_eq!(repl.eval("greet(\"World\")").unwrap(), "\"Hello, World\"");
-    
+
     // Recursive function
-    repl.eval("fun fib(n) { if n <= 1 { n } else { fib(n-1) + fib(n-2) } }").unwrap();
+    repl.eval("fun fib(n) { if n <= 1 { n } else { fib(n-1) + fib(n-2) } }")
+        .unwrap();
     assert_eq!(repl.eval("fib(10)").unwrap(), "55");
-    
+
     // Higher-order function
     repl.eval("fun apply(f, x) { f(x) }").unwrap();
     repl.eval("fun square(x) { x * x }").unwrap();
     assert_eq!(repl.eval("apply(square, 6)").unwrap(), "36");
-    
+
     // Closure
     repl.eval("fun make_adder(x) { |y| x + y }").unwrap();
     repl.eval("let add5 = make_adder(5)").unwrap();
@@ -309,28 +310,28 @@ fn test_function_definitions() {
 #[test]
 fn test_edge_cases() {
     let mut repl = Repl::new(std::env::temp_dir()).unwrap();
-    
+
     // Empty input
     assert!(repl.eval("").is_err() || repl.eval("").unwrap() == "");
-    
+
     // Just whitespace
     assert!(repl.eval("   \n\t  ").is_err() || repl.eval("   \n\t  ").unwrap() == "");
-    
+
     // Very long identifier
     let long_name = "a".repeat(1000);
     let _result = repl.eval(&format!("let {} = 42", long_name));
     // Should either work or fail gracefully
-    
+
     // Very deep nesting
     let nested = "(".repeat(100) + "42" + &")".repeat(100);
     let nested_result = repl.eval(&nested);
     if nested_result.is_ok() {
         assert_eq!(nested_result.unwrap(), "42");
     }
-    
+
     // Unicode in strings
     assert_eq!(repl.eval("\"Hello 世界 🌍\"").unwrap(), "\"Hello 世界 🌍\"");
-    
+
     // Comments (if supported)
     let _with_comment = repl.eval("42 // this is a comment");
     // Should either parse as 42 or fail
@@ -340,7 +341,7 @@ fn test_edge_cases() {
 #[test]
 fn test_deadline_handling() {
     let mut repl = Repl::new(std::env::temp_dir()).unwrap();
-    
+
     // Context should be None for evaluate_expr_str
     let _result = repl.evaluate_expr_str("1 + 1", None);
     // Should complete normally
@@ -348,7 +349,7 @@ fn test_deadline_handling() {
     // Test with None context
     let result = repl.evaluate_expr_str("2 + 2", None).unwrap();
     assert_eq!(result, Value::Integer(4));
-    
+
     // No deadline
     let result = repl.evaluate_expr_str("3 + 3", None).unwrap();
     assert_eq!(result, Value::Integer(6));
@@ -358,11 +359,13 @@ fn test_deadline_handling() {
 #[test]
 fn test_string_interpolation() {
     let mut repl = Repl::new(std::env::temp_dir()).unwrap();
-    
+
     repl.eval("let name = \"Ruchy\"").unwrap();
     repl.eval("let age = 1").unwrap();
-    
-    let result = repl.eval("f\"Hello, {name}! You are {age} year old.\"").unwrap();
+
+    let result = repl
+        .eval("f\"Hello, {name}! You are {age} year old.\"")
+        .unwrap();
     assert!(result.contains("Ruchy"));
     assert!(result.contains("1"));
 }
@@ -371,17 +374,17 @@ fn test_string_interpolation() {
 #[test]
 fn test_type_features() {
     let mut repl = Repl::new(std::env::temp_dir()).unwrap();
-    
+
     // Type annotations (if supported)
     let result = repl.eval("let x: i32 = 42");
     if result.is_ok() {
         assert_eq!(repl.eval("x").unwrap(), "42");
     }
-    
+
     // Generic types (if supported)
     let _result = repl.eval("let list: Vec<i32> = [1, 2, 3]");
     // May or may not be supported
-    
+
     // Type inference
     repl.eval("let inferred = 3.14").unwrap();
     // Should infer as float
@@ -391,11 +394,11 @@ fn test_type_features() {
 #[test]
 fn test_imports() {
     let mut repl = Repl::new(std::env::temp_dir()).unwrap();
-    
+
     // Try to import something
     let _result = repl.eval("import { sqrt } from \"math\"");
     // May or may not be supported
-    
+
     let _result = repl.eval("use std::{env, collections::HashMap}");
     // May or may not be supported
 }

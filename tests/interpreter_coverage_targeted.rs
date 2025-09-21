@@ -1,9 +1,9 @@
 // EXTREME TDD: Targeted interpreter coverage tests
 // Requirements: Complexity <10, Property tests 10,000+ iterations, Big O validation, Zero SATD
 
+use ruchy::frontend::ast::{BinaryOp, Expr, ExprKind, Literal, Pattern, UnaryOp};
 use ruchy::runtime::interpreter::Interpreter;
 use ruchy::runtime::repl::Value;
-use ruchy::frontend::ast::{Expr, ExprKind, Literal, BinaryOp, UnaryOp, Pattern};
 use std::rc::Rc;
 
 #[cfg(test)]
@@ -46,7 +46,9 @@ fn test_eval_function_call() {
     let mut interpreter = Interpreter::new();
     let expr = make_expr(ExprKind::Call {
         function: Box::new(make_expr(ExprKind::Identifier("println".to_string()))),
-        args: vec![make_expr(ExprKind::Literal(Literal::String("test".to_string())))],
+        args: vec![make_expr(ExprKind::Literal(Literal::String(
+            "test".to_string(),
+        )))],
     });
     // This tests the function call evaluation path
     let _ = interpreter.eval_expr(&expr);
@@ -56,7 +58,9 @@ fn test_eval_function_call() {
 fn test_eval_method_call() {
     let mut interpreter = Interpreter::new();
     let expr = make_expr(ExprKind::MethodCall {
-        receiver: Box::new(make_expr(ExprKind::Literal(Literal::String("hello".to_string())))),
+        receiver: Box::new(make_expr(ExprKind::Literal(Literal::String(
+            "hello".to_string(),
+        )))),
         method: "length".to_string(),
         args: vec![],
     });
@@ -136,7 +140,11 @@ fn test_eval_match() {
     let expr = make_expr(ExprKind::Match {
         expr: Box::new(make_literal(42)),
         arms: vec![
-            (Pattern::Literal(Literal::Integer(42)), None, make_literal(1)),
+            (
+                Pattern::Literal(Literal::Integer(42)),
+                None,
+                make_literal(1),
+            ),
             (Pattern::Wildcard, None, make_literal(0)),
         ],
     });
@@ -165,7 +173,9 @@ fn test_eval_error_handling() {
     let mut interpreter = Interpreter::new();
     let expr = make_expr(ExprKind::TryCatch {
         try_block: Box::new(make_expr(ExprKind::Throw {
-            expr: Box::new(make_expr(ExprKind::Literal(Literal::String("error".to_string())))),
+            expr: Box::new(make_expr(ExprKind::Literal(Literal::String(
+                "error".to_string(),
+            )))),
         })),
         catch_clauses: vec![],
         finally_block: Some(Box::new(make_literal(42))),
@@ -185,14 +195,14 @@ fn test_eval_option_handling() {
             if let Value::Integer(n) = *val {
                 assert_eq!(n, 42);
             }
-        },
+        }
         _ => {}
     }
 
     let expr_none = make_expr(ExprKind::None);
     let result = interpreter.eval_expr(&expr_none).unwrap_or(Value::Nil);
     match result {
-        Value::Option(None) => {},
+        Value::Option(None) => {}
         _ => {}
     }
 }
@@ -206,7 +216,9 @@ fn test_eval_result_handling() {
     let _ = interpreter.eval_expr(&expr_ok);
 
     let expr_err = make_expr(ExprKind::Err {
-        error: Box::new(make_expr(ExprKind::Literal(Literal::String("error".to_string())))),
+        error: Box::new(make_expr(ExprKind::Literal(Literal::String(
+            "error".to_string(),
+        )))),
     });
     let _ = interpreter.eval_expr(&expr_err);
 }

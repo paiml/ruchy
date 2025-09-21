@@ -7,18 +7,18 @@
 //! - <50ms response time (MEASURED)
 
 pub mod commands;
-pub mod state;
-pub mod evaluation;
 pub mod completion;
+pub mod evaluation;
 pub mod formatting;
 mod minimal_test;
+pub mod state;
 
 // Re-export main types for easy access
-pub use self::commands::{CommandRegistry, CommandResult, CommandContext};
-pub use self::state::{ReplState, ReplMode};
-pub use self::evaluation::{Evaluator, EvalResult};
+pub use self::commands::{CommandContext, CommandRegistry, CommandResult};
 pub use self::completion::CompletionEngine;
-pub use self::formatting::{format_value, format_error, format_ast};
+pub use self::evaluation::{EvalResult, Evaluator};
+pub use self::formatting::{format_ast, format_error, format_value};
+pub use self::state::{ReplMode, ReplState};
 
 // Re-export Value from interpreter
 pub use crate::runtime::interpreter::Value;
@@ -47,7 +47,7 @@ pub struct ReplConfig {
 impl Default for ReplConfig {
     fn default() -> Self {
         Self {
-            max_memory: 1024 * 1024, // 1MB
+            max_memory: 1024 * 1024,              // 1MB
             timeout: Duration::from_millis(5000), // 5 seconds
             maxdepth: 100,
             debug: false,
@@ -95,9 +95,9 @@ impl Repl {
     /// Create a sandboxed REPL instance (complexity: 2)
     pub fn sandboxed() -> Result<Self> {
         let config = ReplConfig {
-            max_memory: 512 * 1024, // 512KB limit for sandbox
+            max_memory: 512 * 1024,               // 512KB limit for sandbox
             timeout: Duration::from_millis(1000), // 1 second timeout
-            maxdepth: 50, // Lower recursion limit
+            maxdepth: 50,                         // Lower recursion limit
             debug: false,
         };
         Self::with_config(config)
@@ -157,9 +157,7 @@ impl Repl {
             EvalResult::NeedMoreInput => {
                 Ok(String::new()) // Multiline mode
             }
-            EvalResult::Error(msg) => {
-                Err(anyhow::anyhow!("Evaluation error: {}", msg))
-            }
+            EvalResult::Error(msg) => Err(anyhow::anyhow!("Evaluation error: {}", msg)),
         }
     }
 
@@ -186,7 +184,10 @@ impl Repl {
         // Performance monitoring (target <50ms)
         let elapsed = start_time.elapsed();
         if elapsed.as_millis() > 50 {
-            eprintln!("Warning: REPL response took {}ms (target: <50ms)", elapsed.as_millis());
+            eprintln!(
+                "Warning: REPL response took {}ms (target: <50ms)",
+                elapsed.as_millis()
+            );
         }
 
         Ok(should_exit)
@@ -248,7 +249,9 @@ impl Repl {
         // Serialize current state bindings as checkpoint
         use std::collections::HashMap;
 
-        let bindings: HashMap<String, String> = self.state.get_bindings()
+        let bindings: HashMap<String, String> = self
+            .state
+            .get_bindings()
             .iter()
             .map(|(k, v)| (k.clone(), format!("{v}")))
             .collect();
@@ -276,14 +279,16 @@ impl Repl {
                 } else if value_str == "nil" {
                     Value::Nil
                 } else if value_str.starts_with('"') && value_str.ends_with('"') {
-                    let content = &value_str[1..value_str.len()-1];
+                    let content = &value_str[1..value_str.len() - 1];
                     Value::String(std::rc::Rc::new(content.to_string()))
                 } else {
                     continue; // Skip unknown types
                 };
 
                 // Restore to both REPL state and interpreter
-                self.state.get_bindings_mut().insert(name.clone(), value.clone());
+                self.state
+                    .get_bindings_mut()
+                    .insert(name.clone(), value.clone());
                 self.evaluator.set_variable(name, value);
             }
         }
@@ -359,7 +364,8 @@ impl Repl {
     fn load_history(&self, editor: &mut DefaultEditor) -> Result<()> {
         let history_file = self.work_dir.join("repl_history.txt");
         if history_file.exists() {
-            editor.load_history(&history_file)
+            editor
+                .load_history(&history_file)
                 .context("Failed to load history")?;
         }
         Ok(())
@@ -368,7 +374,8 @@ impl Repl {
     /// Save history to file (complexity: 3)
     fn save_history(&self, editor: &mut DefaultEditor) -> Result<()> {
         let history_file = self.work_dir.join("repl_history.txt");
-        editor.save_history(&history_file)
+        editor
+            .save_history(&history_file)
             .context("Failed to save history")
     }
 
@@ -420,7 +427,12 @@ impl Repl {
     }
 
     /// Evaluate with memory and time bounds (complexity: 4)
-    pub fn eval_bounded(&mut self, line: &str, _memory_limit: usize, _timeout: Duration) -> Result<String> {
+    pub fn eval_bounded(
+        &mut self,
+        line: &str,
+        _memory_limit: usize,
+        _timeout: Duration,
+    ) -> Result<String> {
         // For now, just delegate to regular eval
         // TODO: Implement actual memory and timeout enforcement
         self.eval(line)
@@ -644,8 +656,8 @@ mod tests {
             let _ = repl.process_line("println(\"test\")");
             let _ = repl.process_line(":help");
             let _ = repl.process_line(":clear");
-            let _ = repl.process_line("");  // Empty line
-            let _ = repl.process_line("   ");  // Whitespace
+            let _ = repl.process_line(""); // Empty line
+            let _ = repl.process_line("   "); // Whitespace
         }
     }
 
@@ -657,23 +669,8 @@ mod tests {
 
         // Test all built-in commands systematically
         let commands = vec![
-            ":help",
-            ":clear",
-            ":history",
-            ":vars",
-            ":reset",
-            ":load",
-            ":save",
-            ":quit",
-            ":exit",
-            ":debug",
-            ":time",
-            ":memory",
-            ":gc",
-            ":type",
-            ":inspect",
-            ":version",
-            ":about",
+            ":help", ":clear", ":history", ":vars", ":reset", ":load", ":save", ":quit", ":exit",
+            ":debug", ":time", ":memory", ":gc", ":type", ":inspect", ":version", ":about",
         ];
 
         for cmd in commands {
@@ -713,57 +710,46 @@ mod tests {
             "\"hello world\"",
             "'c'",
             "()",
-
             // Arithmetic
             "1 + 2 * 3",
             "10 / 2 - 1",
             "7 % 3",
             "2 ** 8",
-
             // Comparisons
             "5 > 3",
             "2 <= 4",
             "1 == 1",
             "3 != 2",
-
             // Logical
             "true && false",
             "true || false",
             "!true",
-
             // Variables and assignments
             "let x = 5",
             "let mut y = 10",
             "x + y",
             "y = 20",
-
             // Collections
             "[1, 2, 3, 4, 5]",
             "(1, \"hello\", true)",
             "{x: 1, y: 2, z: 3}",
             "#{1, 2, 3, 4}",
-
             // Functions
             "fn add(a, b) { a + b }",
             "add(5, 3)",
             "x => x * 2",
             "(a, b) => a + b",
-
             // Control flow
             "if x > 0 { \"positive\" } else { \"negative\" }",
             "match x { 1 => \"one\", 2 => \"two\", _ => \"other\" }",
-
             // Method calls
             "[1, 2, 3].len()",
             "\"hello\".to_uppercase()",
-
             // Complex expressions
             "[1, 2, 3].map(x => x * 2).filter(x => x > 2)",
             "range(1, 10).sum()",
-
             // String interpolation
             "f\"The value is {x}\"",
-
             // Error cases (should be handled gracefully)
             "undefined_variable",
             "1 / 0",
@@ -817,22 +803,18 @@ mod tests {
             "match {",
             "1 +",
             "+ 2",
-
             // Type errors
             "true + 5",
             "\"string\" * false",
-
             // Runtime errors
             "1 / 0",
             "undefined_function()",
             "let x; x.method()",
-
             // Invalid commands
             ":invalid_command",
             ":help invalid_arg extra_arg",
             ":load", // Missing argument
             ":save", // Missing argument
-
             // Edge cases
             "",
             "   ",
@@ -840,11 +822,9 @@ mod tests {
             "\t",
             ";;;",
             "{}{}{}",
-
             // Very long input
             &long_input,
             &long_variable,
-
             // Special characters and unicode
             "let 🚀 = 42",
             "let 变量 = \"unicode\"",
@@ -884,10 +864,10 @@ mod tests {
 
         // Test invalid file paths
         let invalid_paths = vec![
-            ":load",  // No path
-            ":save",  // No path
-            ":load /dev/null/invalid",  // Invalid path
-            ":save /root/no_permission",  // No permission (usually)
+            ":load",                     // No path
+            ":save",                     // No path
+            ":load /dev/null/invalid",   // Invalid path
+            ":save /root/no_permission", // No permission (usually)
         ];
 
         for invalid in invalid_paths {
@@ -907,26 +887,20 @@ mod tests {
             "let nested = [[1, 2], [3, 4], [5, 6]]",
             "let mixed = [(1, \"a\"), (2, \"b\"), (3, \"c\")]",
             "let deep = {a: {b: {c: 42}}}",
-
             // Higher-order functions
             "let add_one = x => x + 1",
             "[1, 2, 3].map(add_one)",
             "let compose = (f, g) => x => f(g(x))",
-
             // Pattern matching
             "match Some(42) { Some(x) => x, None => 0 }",
             "match (1, 2) { (a, b) => a + b }",
-
             // Async operations (if supported)
             "async { 42 }",
-
             // DataFrames (if supported)
             "df![x: [1, 2, 3], y: [4, 5, 6]]",
-
             // Macros and special forms
             "vec![1, 2, 3, 4, 5]",
             "println!(\"Hello, {}!\", \"world\")",
-
             // Type annotations
             "let typed: i32 = 42",
             "let array: [i32; 3] = [1, 2, 3]",
@@ -949,14 +923,11 @@ mod tests {
             // Large collections
             "range(1, 1000).to_vec()",
             "\"x\".repeat(1000)",
-
             // Deep recursion (should be handled safely)
             "fn factorial(n) { if n <= 1 { 1 } else { n * factorial(n - 1) } }",
             "factorial(10)", // Safe recursion depth
-
             // Complex computations
             "range(1, 100).map(x => x * x).sum()",
-
             // Memory intensive operations
             "let big_string = \"hello \".repeat(100)",
             "let big_array = range(1, 100).to_vec()",

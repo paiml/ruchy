@@ -1,44 +1,69 @@
 //! Sprint 80: Coverage boost - simpler tests that compile
 
-use ruchy::frontend::parser::Parser;
 use ruchy::backend::transpiler::Transpiler;
+use ruchy::frontend::parser::Parser;
 
 #[test]
 fn test_parser_comprehensive() {
     let test_cases = vec![
         // Basic expressions
-        "42", "3.14", "true", "false", "nil", "'c'",
-        r#""string""#, r#""string with spaces""#,
-
+        "42",
+        "3.14",
+        "true",
+        "false",
+        "nil",
+        "'c'",
+        r#""string""#,
+        r#""string with spaces""#,
         // Binary operations
-        "1 + 2", "3 - 4", "5 * 6", "7 / 8", "9 % 10",
-        "true && false", "true || false", "!true",
-        "1 < 2", "3 <= 4", "5 > 6", "7 >= 8", "9 == 10", "11 != 12",
-
+        "1 + 2",
+        "3 - 4",
+        "5 * 6",
+        "7 / 8",
+        "9 % 10",
+        "true && false",
+        "true || false",
+        "!true",
+        "1 < 2",
+        "3 <= 4",
+        "5 > 6",
+        "7 >= 8",
+        "9 == 10",
+        "11 != 12",
         // Arrays and tuples
-        "[1, 2, 3]", "[]", "[1]",
-        "(1, 2, 3)", "()", "(1,)",
-
+        "[1, 2, 3]",
+        "[]",
+        "[1]",
+        "(1, 2, 3)",
+        "()",
+        "(1,)",
         // Objects
-        "{ }", r#"{ "key": "value" }"#, "{ x: 1, y: 2 }",
-
+        "{ }",
+        r#"{ "key": "value" }"#,
+        "{ x: 1, y: 2 }",
         // Functions
-        "fn() { }", "fn(x) { x }", "fn(x, y) { x + y }",
-        "x => x", "(x, y) => x + y",
-
+        "fn() { }",
+        "fn(x) { x }",
+        "fn(x, y) { x + y }",
+        "x => x",
+        "(x, y) => x + y",
         // Control flow
-        "if true { 1 }", "if x { 1 } else { 2 }",
-        "while true { }", "for x in 1..10 { }",
+        "if true { 1 }",
+        "if x { 1 } else { 2 }",
+        "while true { }",
+        "for x in 1..10 { }",
         "match x { 1 => 'a', 2 => 'b', _ => 'c' }",
-
         // Let bindings
-        "let x = 5", "let mut y = 10", "const PI = 3.14",
-
+        "let x = 5",
+        "let mut y = 10",
+        "const PI = 3.14",
         // Method calls
-        "obj.method()", "arr[0]", "obj.field",
-
+        "obj.method()",
+        "arr[0]",
+        "obj.field",
         // Complex expressions
-        "1 + 2 * 3", "(1 + 2) * 3",
+        "1 + 2 * 3",
+        "(1 + 2) * 3",
         "f(g(h(i())))",
         "[1, 2, 3].map(x => x * 2)",
     ];
@@ -82,14 +107,33 @@ fn test_transpiler_comprehensive() {
 fn test_parser_error_recovery() {
     // These should not panic even with invalid input
     let error_cases = vec![
-        "", " ", "\n", "\t",
-        "let", "fn", "if", "while",
-        "(", ")", "[", "]", "{", "}",
-        "+", "-", "*", "/",
-        "let x =", "fn (", "if {",
+        "",
+        " ",
+        "\n",
+        "\t",
+        "let",
+        "fn",
+        "if",
+        "while",
+        "(",
+        ")",
+        "[",
+        "]",
+        "{",
+        "}",
+        "+",
+        "-",
+        "*",
+        "/",
+        "let x =",
+        "fn (",
+        "if {",
         "unterminated string",
-        "1 + + 2", "3 * * 4",
-        "((()))", "[[[]]]", "{{{}}}",
+        "1 + + 2",
+        "3 * * 4",
+        "((()))",
+        "[[[]]]",
+        "{{{}}}",
     ];
 
     for code in error_cases {
@@ -122,19 +166,16 @@ fn test_parser_edge_cases() {
         "((((((((((x))))))))))",
         "[[[[[[[[[[x]]]]]]]]]]",
         "{{{{{{{{{{x}}}}}}}}}}",
-
         // Long identifiers
         "let very_long_identifier_name_that_goes_on_and_on = 42",
-
         // Large numbers
         "999999999999999999999999999999",
         "0.000000000000000000000001",
-        "1e308", "-1e308",
-
+        "1e308",
+        "-1e308",
         // Many arguments
         "fn(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p) { }",
         "f(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16)",
-
         // Complex expressions
         "a + b * c - d / e % f & g | h ^ i << j >> k",
         "x.y.z.w.v.u.t.s.r.q.p.o.n.m.l.k.j.i.h.g.f.e.d.c.b.a",
@@ -153,20 +194,42 @@ fn test_transpiler_all_expr_kinds() {
     // Create expressions for each ExprKind variant
     let test_cases = vec![
         // Literals
-        "42", "3.14", "true", "'c'", r#""string""#, "nil",
-
+        "42",
+        "3.14",
+        "true",
+        "'c'",
+        r#""string""#,
+        "nil",
         // Identifiers and operators
-        "x", "x + y", "x - y", "x * y", "x / y", "x % y",
-        "x == y", "x != y", "x < y", "x <= y", "x > y", "x >= y",
-        "x && y", "x || y", "!x",
-        "x & y", "x | y", "x ^ y", "~x", "x << y", "x >> y",
-
+        "x",
+        "x + y",
+        "x - y",
+        "x * y",
+        "x / y",
+        "x % y",
+        "x == y",
+        "x != y",
+        "x < y",
+        "x <= y",
+        "x > y",
+        "x >= y",
+        "x && y",
+        "x || y",
+        "!x",
+        "x & y",
+        "x | y",
+        "x ^ y",
+        "~x",
+        "x << y",
+        "x >> y",
         // Collections
-        "[1, 2, 3]", "(1, 2, 3)", "{ x: 1, y: 2 }",
-
+        "[1, 2, 3]",
+        "(1, 2, 3)",
+        "{ x: 1, y: 2 }",
         // Functions and calls
-        "fn(x) { x }", "f(x)", "x => x",
-
+        "fn(x) { x }",
+        "f(x)",
+        "x => x",
         // Control flow
         "if x { 1 } else { 2 }",
         "while x { }",
@@ -175,23 +238,23 @@ fn test_transpiler_all_expr_kinds() {
         "return x",
         "break",
         "continue",
-
         // Assignments and declarations
         "let x = 5",
         "x = 5",
         "x += 5",
-
         // Member access and indexing
-        "x.y", "x[0]", "x[0..10]",
-
+        "x.y",
+        "x[0]",
+        "x[0..10]",
         // Type annotations
-        "x as int", "x is int",
-
+        "x as int",
+        "x is int",
         // Async
-        "await x", "async { x }",
-
+        "await x",
+        "async { x }",
         // Ranges
-        "1..10", "1..=10",
+        "1..10",
+        "1..=10",
     ];
 
     for code in test_cases {
@@ -213,25 +276,20 @@ fn test_parser_statement_types() {
         "let x = 5",
         "let mut y = 10",
         "const Z = 15",
-
         // Function declarations
         "fn test() { }",
         "fn add(a, b) { a + b }",
         "async fn fetch() { }",
-
         // Class declarations
         "class Point { }",
         "class Circle extends Shape { }",
-
         // Import/export
         "import foo",
         "export fn bar() { }",
-
         // Expression statements
         "print('hello')",
         "x + y",
         "obj.method()",
-
         // Control flow statements
         "if x { }",
         "while true { }",
@@ -257,15 +315,12 @@ fn test_transpiler_statements() {
         "x = 10",
         "print(x)",
         "return x",
-
         // Control flow
         "if x { y }",
         "while x { y }",
         "for x in arr { }",
-
         // Functions
         "fn test() { 42 }",
-
         // Classes
         "class Test { }",
     ];

@@ -2,15 +2,12 @@
 //! Target: Increase coverage for src/backend/transpiler/statements.rs
 
 use ruchy::backend::Transpiler;
-use ruchy::frontend::ast::{Expr, ExprKind, Literal, Span, Pattern, BinaryOp, UnaryOp};
+use ruchy::frontend::ast::{BinaryOp, Expr, ExprKind, Literal, Pattern, Span, UnaryOp};
 
 #[test]
 fn test_transpile_simple_literal() {
     let transpiler = Transpiler::new();
-    let expr = Expr::new(
-        ExprKind::Literal(Literal::Integer(42)),
-        Span::new(0, 0),
-    );
+    let expr = Expr::new(ExprKind::Literal(Literal::Integer(42)), Span::new(0, 0));
     let result = transpiler.transpile(&expr).unwrap();
     assert!(result.to_string().contains("42"));
 }
@@ -30,17 +27,11 @@ fn test_transpile_string_literal() {
 fn test_transpile_boolean_literals() {
     let transpiler = Transpiler::new();
 
-    let true_expr = Expr::new(
-        ExprKind::Literal(Literal::Bool(true)),
-        Span::new(0, 0),
-    );
+    let true_expr = Expr::new(ExprKind::Literal(Literal::Bool(true)), Span::new(0, 0));
     let result = transpiler.transpile(&true_expr).unwrap();
     assert!(result.to_string().contains("true"));
 
-    let false_expr = Expr::new(
-        ExprKind::Literal(Literal::Bool(false)),
-        Span::new(0, 0),
-    );
+    let false_expr = Expr::new(ExprKind::Literal(Literal::Bool(false)), Span::new(0, 0));
     let result = transpiler.transpile(&false_expr).unwrap();
     assert!(result.to_string().contains("false"));
 }
@@ -48,10 +39,7 @@ fn test_transpile_boolean_literals() {
 #[test]
 fn test_transpile_identifier() {
     let transpiler = Transpiler::new();
-    let expr = Expr::new(
-        ExprKind::Identifier("my_var".to_string()),
-        Span::new(0, 0),
-    );
+    let expr = Expr::new(ExprKind::Identifier("my_var".to_string()), Span::new(0, 0));
     let result = transpiler.transpile(&expr).unwrap();
     assert!(result.to_string().contains("my_var"));
 }
@@ -75,7 +63,7 @@ fn test_transpile_binary_addition() {
     );
     let result = transpiler.transpile(&expr).unwrap();
     let output = result.to_string();
-    assert!(output.contains("1") && output.contains("2"));
+    assert!(output.contains('1') && output.contains('2'));
 }
 
 #[test]
@@ -109,7 +97,7 @@ fn test_transpile_binary_operations() {
             Span::new(0, 0),
         );
         let result = transpiler.transpile(&expr);
-        assert!(result.is_ok(), "Failed to transpile {:?}", op);
+        assert!(result.is_ok(), "Failed to transpile {op:?}");
     }
 }
 
@@ -141,7 +129,7 @@ fn test_transpile_unary_operations() {
         Span::new(0, 0),
     );
     let result = transpiler.transpile(&not_expr).unwrap();
-    assert!(result.to_string().contains("!"));
+    assert!(result.to_string().contains('!'));
 }
 
 #[test]
@@ -149,20 +137,14 @@ fn test_transpile_block_expression() {
     let transpiler = Transpiler::new();
     let expr = Expr::new(
         ExprKind::Block(vec![
-            Expr::new(
-                ExprKind::Literal(Literal::Integer(1)),
-                Span::new(0, 0),
-            ),
-            Expr::new(
-                ExprKind::Literal(Literal::Integer(2)),
-                Span::new(0, 0),
-            ),
+            Expr::new(ExprKind::Literal(Literal::Integer(1)), Span::new(0, 0)),
+            Expr::new(ExprKind::Literal(Literal::Integer(2)), Span::new(0, 0)),
         ]),
         Span::new(0, 0),
     );
     let result = transpiler.transpile(&expr).unwrap();
     let output = result.to_string();
-    assert!(output.contains("1") && output.contains("2"));
+    assert!(output.contains('1') && output.contains('2'));
 }
 
 #[test]
@@ -211,7 +193,7 @@ fn test_transpile_let_binding() {
     );
     let result = transpiler.transpile(&expr).unwrap();
     let output = result.to_string();
-    assert!(output.contains("let") && output.contains("x"));
+    assert!(output.contains("let") && output.contains('x'));
 }
 
 #[test]
@@ -247,12 +229,10 @@ fn test_transpile_function_call() {
                 ExprKind::Identifier("println".to_string()),
                 Span::new(0, 0),
             )),
-            args: vec![
-                Expr::new(
-                    ExprKind::Literal(Literal::String("Hello".to_string())),
-                    Span::new(0, 0),
-                ),
-            ],
+            args: vec![Expr::new(
+                ExprKind::Literal(Literal::String("Hello".to_string())),
+                Span::new(0, 0),
+            )],
         },
         Span::new(0, 0),
     );
@@ -266,25 +246,16 @@ fn test_transpile_list_literal() {
     let transpiler = Transpiler::new();
     let expr = Expr::new(
         ExprKind::List(vec![
-            Expr::new(
-                ExprKind::Literal(Literal::Integer(1)),
-                Span::new(0, 0),
-            ),
-            Expr::new(
-                ExprKind::Literal(Literal::Integer(2)),
-                Span::new(0, 0),
-            ),
-            Expr::new(
-                ExprKind::Literal(Literal::Integer(3)),
-                Span::new(0, 0),
-            ),
+            Expr::new(ExprKind::Literal(Literal::Integer(1)), Span::new(0, 0)),
+            Expr::new(ExprKind::Literal(Literal::Integer(2)), Span::new(0, 0)),
+            Expr::new(ExprKind::Literal(Literal::Integer(3)), Span::new(0, 0)),
         ]),
         Span::new(0, 0),
     );
     let result = transpiler.transpile(&expr).unwrap();
     let output = result.to_string();
     // Lists are transpiled as vec![] or similar
-    assert!(output.contains("1") && output.contains("2") && output.contains("3"));
+    assert!(output.contains('1') && output.contains('2') && output.contains('3'));
 }
 
 #[test]
@@ -292,10 +263,7 @@ fn test_transpile_tuple_literal() {
     let transpiler = Transpiler::new();
     let expr = Expr::new(
         ExprKind::Tuple(vec![
-            Expr::new(
-                ExprKind::Literal(Literal::Integer(1)),
-                Span::new(0, 0),
-            ),
+            Expr::new(ExprKind::Literal(Literal::Integer(1)), Span::new(0, 0)),
             Expr::new(
                 ExprKind::Literal(Literal::String("test".to_string())),
                 Span::new(0, 0),
@@ -305,7 +273,7 @@ fn test_transpile_tuple_literal() {
     );
     let result = transpiler.transpile(&expr).unwrap();
     let output = result.to_string();
-    assert!(output.contains("(") && output.contains(")"));
+    assert!(output.contains('(') && output.contains(')'));
 }
 
 #[test]
@@ -326,7 +294,7 @@ fn test_transpile_assignment() {
     );
     let result = transpiler.transpile(&expr).unwrap();
     let output = result.to_string();
-    assert!(output.contains("x") && output.contains("100"));
+    assert!(output.contains('x') && output.contains("100"));
 }
 
 #[test]
@@ -338,10 +306,7 @@ fn test_transpile_while_loop() {
                 ExprKind::Literal(Literal::Bool(true)),
                 Span::new(0, 0),
             )),
-            body: Box::new(Expr::new(
-                ExprKind::Block(vec![]),
-                Span::new(0, 0),
-            )),
+            body: Box::new(Expr::new(ExprKind::Block(vec![]), Span::new(0, 0))),
         },
         Span::new(0, 0),
     );
@@ -360,10 +325,7 @@ fn test_transpile_for_loop() {
                 ExprKind::Identifier("range".to_string()),
                 Span::new(0, 0),
             )),
-            body: Box::new(Expr::new(
-                ExprKind::Block(vec![]),
-                Span::new(0, 0),
-            )),
+            body: Box::new(Expr::new(ExprKind::Block(vec![]), Span::new(0, 0))),
         },
         Span::new(0, 0),
     );
@@ -391,17 +353,11 @@ fn test_transpile_return_statement() {
 fn test_transpile_break_continue() {
     let transpiler = Transpiler::new();
 
-    let break_expr = Expr::new(
-        ExprKind::Break { label: None },
-        Span::new(0, 0),
-    );
+    let break_expr = Expr::new(ExprKind::Break { label: None }, Span::new(0, 0));
     let result = transpiler.transpile(&break_expr).unwrap();
     assert!(result.to_string().contains("break"));
 
-    let continue_expr = Expr::new(
-        ExprKind::Continue { label: None },
-        Span::new(0, 0),
-    );
+    let continue_expr = Expr::new(ExprKind::Continue { label: None }, Span::new(0, 0));
     let result = transpiler.transpile(&continue_expr).unwrap();
     assert!(result.to_string().contains("continue"));
 }

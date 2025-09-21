@@ -1,27 +1,27 @@
 use anyhow::{Context, Result};
 mod commands;
 mod handlers_modules;
-use ruchy::{Parser as RuchyParser, Transpiler, WasmEmitter};
 use ruchy::frontend::ast::Expr;
-use ruchy::runtime::Repl;
 use ruchy::runtime::replay_converter::ConversionConfig;
+use ruchy::runtime::Repl;
+use ruchy::{Parser as RuchyParser, Transpiler, WasmEmitter};
 // Replay functionality imports removed - not needed in handler, used directly in REPL
 use std::fs;
 use std::io::{self, Read};
 use std::path::{Path, PathBuf};
 /// Handle eval command - evaluate a one-liner expression with -e flag
-/// 
+///
 /// # Arguments
 /// * `expr` - The expression to evaluate
 /// * `verbose` - Enable verbose output
 /// * `format` - Output format ("json" or default text)
-/// 
+///
 /// # Examples
 /// ```
 /// // This function is typically called by the CLI with parsed arguments
 /// // handle_eval_command("2 + 2", false, "text");
 /// ```
-/// 
+///
 /// # Errors
 /// Returns error if expression cannot be parsed or evaluated
 pub fn handle_eval_command(expr: &str, verbose: bool, format: &str) -> Result<()> {
@@ -67,16 +67,16 @@ pub fn handle_eval_command(expr: &str, verbose: bool, format: &str) -> Result<()
     }
 }
 /// Handle file execution - run a Ruchy script file directly (not via subcommand)
-/// 
+///
 /// # Arguments
 /// * `file` - Path to the Ruchy file to execute
-/// 
+///
 /// # Examples
 /// ```
 /// // This function is typically called by the CLI
 /// // handle_file_execution(&Path::new("script.ruchy"));
 /// ```
-/// 
+///
 /// # Errors
 /// Returns error if file cannot be read, parsed, or executed
 pub fn handle_file_execution(file: &Path) -> Result<()> {
@@ -109,16 +109,16 @@ pub fn handle_file_execution(file: &Path) -> Result<()> {
     }
 }
 /// Handle stdin/piped input - evaluate input from standard input
-/// 
+///
 /// # Arguments
 /// * `input` - The input string to evaluate
-/// 
+///
 /// # Examples
 /// ```
 /// // This function is typically called when input is piped to the CLI
 /// // handle_stdin_input("2 + 2");
 /// ```
-/// 
+///
 /// # Errors
 /// Returns error if input cannot be parsed or evaluated
 pub fn handle_stdin_input(input: &str) -> Result<()> {
@@ -155,10 +155,10 @@ pub fn handle_parse_command(file: &Path, verbose: bool) -> Result<()> {
 }
 /// Handle transpile command - convert Ruchy to Rust
 pub fn handle_transpile_command(
-    file: &Path, 
-    output: Option<&Path>, 
+    file: &Path,
+    output: Option<&Path>,
     minimal: bool,
-    verbose: bool
+    verbose: bool,
 ) -> Result<()> {
     log_transpile_start(file, minimal, verbose);
     let source = read_source_file(file, verbose)?;
@@ -187,24 +187,24 @@ fn read_source_file(file: &Path, verbose: bool) -> Result<String> {
         io::stdin().read_to_string(&mut input)?;
         Ok(input)
     } else {
-        fs::read_to_string(file)
-            .with_context(|| format!("Failed to read file: {}", file.display()))
+        fs::read_to_string(file).with_context(|| format!("Failed to read file: {}", file.display()))
     }
 }
 /// Parse source code to AST (complexity: 2)
 fn parse_source(source: &str) -> Result<Expr> {
     let mut parser = RuchyParser::new(source);
-    parser.parse()
-        .with_context(|| "Failed to parse input")
+    parser.parse().with_context(|| "Failed to parse input")
 }
 /// Transpile AST to Rust code (complexity: 4)
 fn transpile_ast(ast: &Expr, minimal: bool) -> Result<String> {
     let mut transpiler = Transpiler::new();
     if minimal {
-        transpiler.transpile_minimal(ast)
+        transpiler
+            .transpile_minimal(ast)
             .with_context(|| "Failed to transpile to Rust (minimal)")
     } else {
-        transpiler.transpile_to_program(ast)
+        transpiler
+            .transpile_to_program(ast)
             .map(|tokens| tokens.to_string())
             .with_context(|| "Failed to transpile to Rust")
     }
@@ -245,16 +245,19 @@ fn log_run_start(file: &Path, verbose: bool) {
 /// Transpile AST for execution with context (complexity: 3)
 fn transpile_for_execution(ast: &Expr, file: &Path) -> Result<String> {
     let transpiler = Transpiler::new();
-    transpiler.transpile_to_program_with_context(ast, Some(file))
+    transpiler
+        .transpile_to_program_with_context(ast, Some(file))
         .map(|tokens| tokens.to_string())
         .with_context(|| "Failed to transpile to Rust")
 }
 /// Prepare compilation artifacts (complexity: 4)
-fn prepare_compilation(rust_code: &str, verbose: bool) -> Result<(tempfile::NamedTempFile, PathBuf)> {
-    let temp_source = tempfile::NamedTempFile::new()
-        .with_context(|| "Failed to create temporary file")?;
-    fs::write(temp_source.path(), rust_code)
-        .with_context(|| "Failed to write temporary file")?;
+fn prepare_compilation(
+    rust_code: &str,
+    verbose: bool,
+) -> Result<(tempfile::NamedTempFile, PathBuf)> {
+    let temp_source =
+        tempfile::NamedTempFile::new().with_context(|| "Failed to create temporary file")?;
+    fs::write(temp_source.path(), rust_code).with_context(|| "Failed to write temporary file")?;
     if verbose {
         eprintln!("Temporary Rust file: {}", temp_source.path().display());
         eprintln!("Compiling and running...");
@@ -344,13 +347,13 @@ fn print_prover_help() {
     println!("  apply simplify\n");
 }
 /// Handle REPL command - start the interactive Read-Eval-Print Loop
-/// 
+///
 /// # Examples
 /// ```
 /// // This function is typically called when no command or when repl command is specified
 /// // handle_repl_command();
 /// ```
-/// 
+///
 /// # Errors
 /// Returns error if REPL fails to initialize or run
 pub fn handle_repl_command(record_file: Option<PathBuf>) -> Result<()> {
@@ -370,7 +373,7 @@ pub fn handle_repl_command(record_file: Option<PathBuf>) -> Result<()> {
     }
 }
 /// Handle compile command - compile Ruchy file to native binary
-/// 
+///
 /// # Arguments
 /// * `file` - Path to the Ruchy file to compile
 /// * `output` - Output binary path
@@ -378,13 +381,13 @@ pub fn handle_repl_command(record_file: Option<PathBuf>) -> Result<()> {
 /// * `strip` - Strip debug symbols
 /// * `static_link` - Use static linking
 /// * `target` - Target triple for cross-compilation
-/// 
+///
 /// # Examples
 /// ```
 /// // This function is typically called by the CLI compile command
 /// // handle_compile_command(&Path::new("app.ruchy"), PathBuf::from("app"), "2".to_string(), true, false, None);
 /// ```
-/// 
+///
 /// # Errors
 /// Returns error if compilation fails or rustc is not available
 pub fn handle_compile_command(
@@ -395,8 +398,8 @@ pub fn handle_compile_command(
     static_link: bool,
     target: Option<String>,
 ) -> Result<()> {
-    use ruchy::backend::{CompileOptions, compile_to_binary as backend_compile};
     use colored::Colorize;
+    use ruchy::backend::{compile_to_binary as backend_compile, CompileOptions};
     use std::fs;
     // Check if rustc is available
     if let Err(e) = ruchy::backend::compiler::check_rustc_available() {
@@ -442,17 +445,17 @@ pub fn handle_compile_command(
     Ok(())
 }
 /// Handle check command - check syntax of a Ruchy file
-/// 
+///
 /// # Arguments
 /// * `file` - Path to the Ruchy file to check
 /// * `watch` - Enable file watching mode
-/// 
+///
 /// # Examples
 /// ```
 /// // This function is typically called by the CLI check command
 /// // handle_check_command(&Path::new("script.ruchy"), false);
 /// ```
-/// 
+///
 /// # Errors
 /// Returns error if file cannot be read or has syntax errors
 pub fn handle_check_command(file: &Path, watch: bool) -> Result<()> {
@@ -509,7 +512,7 @@ fn handle_watch_and_check(file: &Path) -> Result<()> {
     }
 }
 /// Handle test command - run tests with various options (delegated to refactored module)
-/// 
+///
 /// # Arguments
 /// * `path` - Optional path to test directory
 /// * `watch` - Enable watch mode
@@ -520,13 +523,13 @@ fn handle_watch_and_check(file: &Path) -> Result<()> {
 /// * `parallel` - Number of parallel test threads
 /// * `threshold` - Coverage threshold
 /// * `format` - Output format
-/// 
+///
 /// # Examples
 /// ```
 /// // This function is typically called by the CLI test command
 /// // handle_test_command(None, false, false, None, false, &"text".to_string(), 1, 80.0, &"text".to_string());
 /// ```
-/// 
+///
 /// # Errors
 /// Returns error if tests fail to run or coverage threshold is not met
 pub fn handle_test_command(
@@ -641,11 +644,11 @@ fn run_ruchy_test_file(test_file: &Path, verbose: bool) -> Result<()> {
 }
 /// Verify proofs extracted from AST - delegated to `prove_helpers` module
 fn verify_proofs_from_ast(
-    ast: &ruchy::frontend::ast::Expr, 
-    file_path: &std::path::Path, 
+    ast: &ruchy::frontend::ast::Expr,
+    file_path: &std::path::Path,
     format: &str,
-    counterexample: bool, 
-    verbose: bool
+    counterexample: bool,
+    verbose: bool,
 ) -> Result<()> {
     handlers_modules::prove_helpers::verify_proofs_from_ast(
         ast,
@@ -655,83 +658,77 @@ fn verify_proofs_from_ast(
         verbose,
     )
 }
-/// 
+///
 /// # Arguments
 /// * `command` - The command to execute
-/// 
+///
 /// # Examples
 /// ```
 /// // This function is typically called by the main dispatcher for complex commands
 /// ```
-/// 
+///
 /// # Errors
 /// Returns error if command execution fails
 #[allow(clippy::unnecessary_wraps)]
 pub fn handle_complex_command(command: crate::Commands) -> Result<()> {
     match command {
-        crate::Commands::Ast { 
-            file, 
-            json, 
-            graph, 
-            metrics, 
-            symbols, 
-            deps, 
-            verbose, 
-            output 
-        } => {
-            commands::handle_ast_command(
-                &file,
-                json,
-                graph,
-                metrics,
-                symbols,
-                deps,
-                verbose,
-                output.as_deref(),
-            )
-        }
-        crate::Commands::Provability { 
-            file, 
-            verify, 
-            contracts, 
-            invariants, 
-            termination, 
-            bounds, 
-            verbose, 
-            output 
-        } => {
-            commands::handle_provability_command(
-                &file,
-                verify,
-                contracts,
-                invariants,
-                termination,
-                bounds,
-                verbose,
-                output.as_deref(),
-            )
-        }
-        crate::Commands::Runtime { 
-            file, 
-            profile, 
-            bigo, 
-            bench, 
-            compare, 
-            memory, 
-            verbose, 
-            output 
-        } => {
-            commands::handle_runtime_command(
-                &file,
-                profile,
-                bigo,
-                bench,
-                compare.as_deref(),
-                memory,
-                verbose,
-                output.as_deref(),
-            )
-        }
+        crate::Commands::Ast {
+            file,
+            json,
+            graph,
+            metrics,
+            symbols,
+            deps,
+            verbose,
+            output,
+        } => commands::handle_ast_command(
+            &file,
+            json,
+            graph,
+            metrics,
+            symbols,
+            deps,
+            verbose,
+            output.as_deref(),
+        ),
+        crate::Commands::Provability {
+            file,
+            verify,
+            contracts,
+            invariants,
+            termination,
+            bounds,
+            verbose,
+            output,
+        } => commands::handle_provability_command(
+            &file,
+            verify,
+            contracts,
+            invariants,
+            termination,
+            bounds,
+            verbose,
+            output.as_deref(),
+        ),
+        crate::Commands::Runtime {
+            file,
+            profile,
+            bigo,
+            bench,
+            compare,
+            memory,
+            verbose,
+            output,
+        } => commands::handle_runtime_command(
+            &file,
+            profile,
+            bigo,
+            bench,
+            compare.as_deref(),
+            memory,
+            verbose,
+            output.as_deref(),
+        ),
         crate::Commands::Score {
             path,
             depth,
@@ -745,22 +742,20 @@ pub fn handle_complex_command(command: crate::Commands) -> Result<()> {
             format,
             verbose,
             output,
-        } => {
-            commands::handle_score_command(
-                &path,
-                &depth,
-                fast,
-                deep,
-                watch,
-                explain,
-                baseline.as_deref(),
-                min,
-                config.as_deref(),
-                &format,
-                verbose,
-                output.as_deref(),
-            )
-        }
+        } => commands::handle_score_command(
+            &path,
+            &depth,
+            fast,
+            deep,
+            watch,
+            explain,
+            baseline.as_deref(),
+            min,
+            config.as_deref(),
+            &format,
+            verbose,
+            output.as_deref(),
+        ),
         crate::Commands::QualityGate {
             path,
             config,
@@ -775,11 +770,11 @@ pub fn handle_complex_command(command: crate::Commands) -> Result<()> {
             commands::handle_quality_gate_command(
                 &path,
                 config.as_deref(),
-                fail_fast,    // Use as strict
-                !verbose,     // Use as quiet
+                fail_fast, // Use as strict
+                !verbose,  // Use as quiet
                 format == "json",
                 verbose,
-                None,         // No output field
+                None, // No output field
                 export.as_deref(),
             )
         }
@@ -798,12 +793,12 @@ pub fn handle_complex_command(command: crate::Commands) -> Result<()> {
             commands::handle_fmt_command(
                 &file,
                 check,
-                !check && !stdout,  // write if not check or stdout
+                !check && !stdout, // write if not check or stdout
                 config.as_deref(),
                 all,
                 diff,
                 stdout,
-                false,  // verbose not available
+                false, // verbose not available
             )
         }
         crate::Commands::Lint {
@@ -831,7 +826,7 @@ pub fn handle_complex_command(command: crate::Commands) -> Result<()> {
                     rules.as_deref(),
                     format == "json",
                     verbose,
-                    None,  // ignore not available
+                    None, // ignore not available
                     config.as_deref(),
                 )
             } else {
@@ -850,64 +845,73 @@ pub fn handle_complex_command(command: crate::Commands) -> Result<()> {
             counterexample,
             verbose,
             format,
-        } => {
-            handle_prove_command(
-                file.as_deref(),
-                &backend,
-                ml_suggestions,
-                timeout,
-                script.as_deref(),
-                export.as_deref(),
-                check,
-                counterexample,
-                verbose,
-                &format,
-            )
-        }
-        crate::Commands::Coverage { path, threshold, format, verbose } => {
-            handle_coverage_command(&path, threshold.unwrap_or(80.0), &format, verbose)
-        }
+        } => handle_prove_command(
+            file.as_deref(),
+            &backend,
+            ml_suggestions,
+            timeout,
+            script.as_deref(),
+            export.as_deref(),
+            check,
+            counterexample,
+            verbose,
+            &format,
+        ),
+        crate::Commands::Coverage {
+            path,
+            threshold,
+            format,
+            verbose,
+        } => handle_coverage_command(&path, threshold.unwrap_or(80.0), &format, verbose),
         crate::Commands::Notebook { port, open, host } => {
             handle_notebook_command(port, open, &host)
         }
-        crate::Commands::ReplayToTests { input, output, property_tests, benchmarks, timeout } => {
-            handle_replay_to_tests_command(&input, output.as_deref(), property_tests, benchmarks, timeout)
-        }
-        crate::Commands::Wasm { 
-            file, 
-            output, 
-            target, 
-            wit, 
-            deploy, 
-            deploy_target, 
-            portability, 
-            opt_level, 
-            debug, 
-            simd, 
-            threads, 
-            component_model, 
-            name, 
-            version, 
-            verbose 
-        } => {
-            handle_wasm_command(
-                &file, 
-                output.as_deref(), 
-                &target, 
-                wit, 
-                deploy, 
-                deploy_target.as_deref(), 
-                portability, 
-                &opt_level, 
-                debug, 
-                simd, 
-                threads, 
-                component_model, 
-                name.as_deref(), 
-                &version, 
-                verbose
-            )
-        }
+        crate::Commands::ReplayToTests {
+            input,
+            output,
+            property_tests,
+            benchmarks,
+            timeout,
+        } => handle_replay_to_tests_command(
+            &input,
+            output.as_deref(),
+            property_tests,
+            benchmarks,
+            timeout,
+        ),
+        crate::Commands::Wasm {
+            file,
+            output,
+            target,
+            wit,
+            deploy,
+            deploy_target,
+            portability,
+            opt_level,
+            debug,
+            simd,
+            threads,
+            component_model,
+            name,
+            version,
+            verbose,
+        } => handle_wasm_command(
+            &file,
+            output.as_deref(),
+            &target,
+            wit,
+            deploy,
+            deploy_target.as_deref(),
+            portability,
+            &opt_level,
+            debug,
+            simd,
+            threads,
+            component_model,
+            name.as_deref(),
+            &version,
+            verbose,
+        ),
         _ => {
             // Other commands not yet implemented
             eprintln!("Command not yet implemented");
@@ -917,43 +921,43 @@ pub fn handle_complex_command(command: crate::Commands) -> Result<()> {
     /*
     // Original complex command handling - commented out until handlers implemented
     match command {
-        crate::Commands::Ast { 
-            file, 
-            json, 
-            graph, 
-            metrics, 
-            symbols, 
-            deps, 
-            verbose, 
-            output 
+        crate::Commands::Ast {
+            file,
+            json,
+            graph,
+            metrics,
+            symbols,
+            deps,
+            verbose,
+            output
         } => {
             // AST analysis implementation planned
             eprintln!("AST analysis not yet implemented");
             Ok(())
         }
-        crate::Commands::Provability { 
-            file, 
-            verify, 
-            contracts, 
-            invariants, 
-            termination, 
-            bounds, 
-            verbose, 
-            output 
+        crate::Commands::Provability {
+            file,
+            verify,
+            contracts,
+            invariants,
+            termination,
+            bounds,
+            verbose,
+            output
         } => {
             // Provability analysis implementation planned
             eprintln!("Provability analysis not yet implemented");
             Ok(())
         }
-        crate::Commands::Runtime { 
-            file, 
-            profile, 
-            bigo, 
-            bench, 
-            compare, 
-            memory, 
-            verbose, 
-            output 
+        crate::Commands::Runtime {
+            file,
+            profile,
+            bigo,
+            bench,
+            compare,
+            memory,
+            verbose,
+            output
         } => {
             // Runtime analysis implementation planned
             eprintln!("Runtime analysis not yet implemented");
@@ -1221,7 +1225,7 @@ pub fn handle_complex_command(command: crate::Commands) -> Result<()> {
                 &start_mode,
             )
         }
-        crate::Commands::Wasm { 
+        crate::Commands::Wasm {
             file,
             output,
             target,
@@ -1284,10 +1288,11 @@ pub fn handle_notebook_command(port: u16, open_browser: bool, host: &str) -> Res
         Command::new("cmd").args(["/C", "start", &url]).spawn()?;
     }
     // Start the notebook server
-    println!("🔧 DEBUG: About to call ruchy::notebook::start_server({})", port);
-    let result = runtime.block_on(async {
-        ruchy::notebook::start_server(port).await
-    });
+    println!(
+        "🔧 DEBUG: About to call ruchy::notebook::start_server({})",
+        port
+    );
+    let result = runtime.block_on(async { ruchy::notebook::start_server(port).await });
     println!("🔧 DEBUG: Server returned: {:?}", result);
     result.map_err(|e| anyhow::anyhow!("Notebook server error: {}", e))
 }
@@ -1297,27 +1302,31 @@ pub fn handle_notebook_command(_port: u16, _open_browser: bool, _host: &str) -> 
     std::process::exit(1)
 }
 /// Handle replay-to-tests command - convert .replay files to regression tests
-/// 
+///
 /// # Arguments
 /// * `input` - Input replay file or directory containing .replay files
 /// * `output` - Optional output test file path
 /// * `property_tests` - Whether to include property tests
 /// * `benchmarks` - Whether to include benchmarks
 /// * `timeout` - Test timeout in milliseconds
-/// 
+///
 /// # Examples
 /// ```
 /// // Convert single replay file
 /// handle_replay_to_tests_command(Path::new("demo.replay"), None, true, false, 5000);
-/// 
+///
 /// // Convert directory of replay files
 /// handle_replay_to_tests_command(Path::new("demos/"), Some(Path::new("tests/replays.rs")), true, true, 10000);
 /// ```
-/// 
+///
 /// # Errors
 /// Returns error if replay files can't be read or test files can't be written
 /// Setup conversion configuration for replay-to-test conversion (complexity: 4)
-fn setup_conversion_config(property_tests: bool, benchmarks: bool, timeout: u64) -> ConversionConfig {
+fn setup_conversion_config(
+    property_tests: bool,
+    benchmarks: bool,
+    timeout: u64,
+) -> ConversionConfig {
     ConversionConfig {
         test_module_prefix: "replay_generated".to_string(),
         include_property_tests: property_tests,
@@ -1341,10 +1350,10 @@ fn validate_replay_file(path: &Path) -> Result<()> {
 }
 /// Process a single .replay file (complexity: 8)
 fn process_single_file(
-    input: &Path, 
+    input: &Path,
     converter: &ruchy::runtime::replay_converter::ReplayConverter,
     all_tests: &mut Vec<ruchy::runtime::replay_converter::GeneratedTest>,
-    processed_files: &mut usize
+    processed_files: &mut usize,
 ) -> Result<()> {
     validate_replay_file(input)?;
     println!("📄 Processing replay file: {}", input.display());
@@ -1364,9 +1373,9 @@ fn process_single_file(
 /// Process directory containing .replay files (complexity: 10)
 fn process_directory(
     input: &Path,
-    converter: &ruchy::runtime::replay_converter::ReplayConverter, 
+    converter: &ruchy::runtime::replay_converter::ReplayConverter,
     all_tests: &mut Vec<ruchy::runtime::replay_converter::GeneratedTest>,
-    processed_files: &mut usize
+    processed_files: &mut usize,
 ) -> Result<()> {
     use std::fs;
     println!("📁 Processing replay directory: {}", input.display());
@@ -1407,23 +1416,24 @@ fn process_directory(
 fn write_test_output(
     converter: &ruchy::runtime::replay_converter::ReplayConverter,
     all_tests: &[ruchy::runtime::replay_converter::GeneratedTest],
-    output_path: &Path
+    output_path: &Path,
 ) -> Result<()> {
-    use std::fs;
     use anyhow::Context;
+    use std::fs;
     // Create output directory if needed
     if let Some(parent) = output_path.parent() {
         fs::create_dir_all(parent)?;
     }
     println!("📝 Writing tests to: {}", output_path.display());
-    converter.write_tests(all_tests, output_path)
+    converter
+        .write_tests(all_tests, output_path)
         .context("Failed to write test file")?;
     Ok(())
 }
 /// Generate comprehensive summary report of conversion results (complexity: 8)
 fn generate_summary_report(
     all_tests: &[ruchy::runtime::replay_converter::GeneratedTest],
-    processed_files: usize
+    processed_files: usize,
 ) {
     use colored::Colorize;
     use std::collections::{HashMap, HashSet};
@@ -1446,7 +1456,8 @@ fn generate_summary_report(
     if !coverage_areas.is_empty() {
         let mut areas: Vec<_> = coverage_areas.into_iter().collect();
         areas.sort();
-        for area in areas.iter().take(10) {  // Show first 10
+        for area in areas.iter().take(10) {
+            // Show first 10
             println!("   • {}", area);
         }
         if areas.len() > 10 {
@@ -1457,14 +1468,17 @@ fn generate_summary_report(
     println!("   1. Run tests: cargo test");
     println!("   2. Measure coverage: cargo test -- --test-threads=1");
     println!("   3. Validate replay determinism");
-    println!("\n🚀 {}", "Replay-to-test conversion complete!".bright_green());
+    println!(
+        "\n🚀 {}",
+        "Replay-to-test conversion complete!".bright_green()
+    );
 }
 /// Process input path (file or directory) with replay files (complexity: 5)
 fn process_input_path(
     input: &Path,
     converter: &ruchy::runtime::replay_converter::ReplayConverter,
     all_tests: &mut Vec<ruchy::runtime::replay_converter::GeneratedTest>,
-    processed_files: &mut usize
+    processed_files: &mut usize,
 ) -> Result<()> {
     if input.is_file() {
         process_single_file(input, converter, all_tests, processed_files)
@@ -1485,7 +1499,12 @@ pub fn handle_replay_to_tests_command(
 ) -> Result<()> {
     use colored::Colorize;
     use ruchy::runtime::replay_converter::ReplayConverter;
-    println!("{}", "🔄 Converting REPL replay files to regression tests".bright_cyan().bold());
+    println!(
+        "{}",
+        "🔄 Converting REPL replay files to regression tests"
+            .bright_cyan()
+            .bold()
+    );
     println!("Input: {}", input.display());
     let config = setup_conversion_config(property_tests, benchmarks, timeout);
     let converter = ReplayConverter::with_config(config);
@@ -1502,7 +1521,7 @@ pub fn handle_replay_to_tests_command(
     Ok(())
 }
 /// Handle wasm command - compile Ruchy source to WebAssembly
-/// 
+///
 /// # Arguments
 /// * `file` - Path to the Ruchy source file
 /// * `output` - Optional output file path
@@ -1519,12 +1538,16 @@ pub fn handle_replay_to_tests_command(
 /// * `name` - Module name
 /// * `version` - Module version
 /// * `verbose` - Enable verbose output
-/// 
+///
 /// Print verbose compilation status and configuration
 fn print_wasm_compilation_status(file: &Path, target: &str, wit: bool, verbose: bool) {
     use colored::Colorize;
     if verbose {
-        println!("{} Compiling {} to WebAssembly", "→".bright_cyan(), file.display());
+        println!(
+            "{} Compiling {} to WebAssembly",
+            "→".bright_cyan(),
+            file.display()
+        );
         println!("  Target: {}", target);
         if wit {
             println!("  WIT: enabled");
@@ -1532,27 +1555,26 @@ fn print_wasm_compilation_status(file: &Path, target: &str, wit: bool, verbose: 
     }
 }
 /// Parse Ruchy source file into AST
-/// 
+///
 /// # Errors
 /// Returns error if file reading or parsing fails
 fn parse_ruchy_source(file: &Path) -> Result<ruchy::frontend::ast::Expr> {
     let source = fs::read_to_string(file)
         .with_context(|| format!("Failed to read file: {}", file.display()))?;
     let mut parser = RuchyParser::new(&source);
-    parser.parse()
+    parser
+        .parse()
         .with_context(|| format!("Failed to parse {}", file.display()))
 }
 /// Generate and validate WASM bytecode with enterprise-grade analysis
-/// 
-/// # Errors 
+///
+/// # Errors
 /// Returns error if WASM generation or validation fails
-fn generate_and_validate_wasm(
-    ast: &ruchy::frontend::ast::Expr, 
-    verbose: bool
-) -> Result<Vec<u8>> {
+fn generate_and_validate_wasm(ast: &ruchy::frontend::ast::Expr, verbose: bool) -> Result<Vec<u8>> {
     use colored::Colorize;
     let emitter = WasmEmitter::new();
-    let wasm_bytes = emitter.emit(ast)
+    let wasm_bytes = emitter
+        .emit(ast)
         .map_err(|e| anyhow::anyhow!("Failed to generate WASM: {}", e))?;
     if verbose {
         println!("{} Validating WASM module...", "→".bright_cyan());
@@ -1586,14 +1608,14 @@ fn determine_wasm_output_path(file: &Path, output: Option<&Path>) -> PathBuf {
     }
 }
 /// Write WASM file and display success information
-/// 
+///
 /// # Errors
 /// Returns error if file writing fails  
 fn write_wasm_output(
     wasm_bytes: &[u8],
-    output_path: &Path, 
+    output_path: &Path,
     target: &str,
-    verbose: bool
+    verbose: bool,
 ) -> Result<()> {
     use colored::Colorize;
     fs::write(output_path, wasm_bytes)
@@ -1616,17 +1638,24 @@ fn handle_optimization_and_deployment(
     opt_level: &str,
     deploy: bool,
     deploy_target: Option<&str>,
-    verbose: bool
+    verbose: bool,
 ) {
     use colored::Colorize;
-    if opt_level != "0"
-        && verbose {
-            println!("{} Optimization level {} requested (enterprise streaming analysis)", "ℹ".bright_blue(), opt_level);
-        }
+    if opt_level != "0" && verbose {
+        println!(
+            "{} Optimization level {} requested (enterprise streaming analysis)",
+            "ℹ".bright_blue(),
+            opt_level
+        );
+    }
     if deploy {
         let platform = deploy_target.unwrap_or("default");
         if verbose {
-            println!("{} Deployment to {} with formal verification", "ℹ".bright_blue(), platform);
+            println!(
+                "{} Deployment to {} with formal verification",
+                "ℹ".bright_blue(),
+                platform
+            );
         }
     }
 }
@@ -1694,7 +1723,10 @@ mod tests {
         let file_path = temp_dir.path().join("test.ruchy");
         fs::write(&file_path, "2 + 2").unwrap();
         let ast = parse_ruchy_source(&file_path).unwrap();
-        assert!(matches!(ast.kind, ruchy::frontend::ast::ExprKind::Binary { .. }));
+        assert!(matches!(
+            ast.kind,
+            ruchy::frontend::ast::ExprKind::Binary { .. }
+        ));
     }
 
     #[test]
@@ -1702,9 +1734,12 @@ mod tests {
         let temp_dir = TempDir::new().unwrap();
         let file_path = temp_dir.path().join("test.ruchy");
         fs::write(&file_path, "let x = 42").unwrap();
-        
+
         let ast = parse_ruchy_source(&file_path).unwrap();
-        assert!(matches!(ast.kind, ruchy::frontend::ast::ExprKind::Let { .. }));
+        assert!(matches!(
+            ast.kind,
+            ruchy::frontend::ast::ExprKind::Let { .. }
+        ));
     }
 
     #[test]
@@ -1713,7 +1748,7 @@ mod tests {
         let file_path = temp_dir.path().join("test.ruchy");
         let content = "fun hello() { 42 }";
         fs::write(&file_path, content).unwrap();
-        
+
         let result = read_source_file(&file_path, false).unwrap();
         assert_eq!(result, content);
     }
@@ -1733,13 +1768,13 @@ mod tests {
     #[test]
     fn test_determine_output_path_default() {
         let output = determine_output_path(None);
-        assert_eq!(output, PathBuf::from("input.rs"));
+        assert_eq!(output, Path::new("tests/generated_from_replays.rs"));
     }
 
     #[test]
     fn test_determine_output_path_no_extension() {
         let output = determine_output_path(None);
-        assert_eq!(output, PathBuf::from("input.rs"));
+        assert_eq!(output, Path::new("tests/generated_from_replays.rs"));
     }
 
     // #[test]  // Commented out - format_transpilation_result function doesn't exist
@@ -1782,17 +1817,18 @@ mod tests {
     fn test_write_transpiled_output_to_file() {
         let temp_dir = TempDir::new().unwrap();
         let output_path = temp_dir.path().join("output.rs");
-        
+
         // write_transpiled_output("let x = 42;", &output_path).unwrap(); // Function doesn't exist
         fs::write(&output_path, "let x = 42;").unwrap(); // Direct file write for testing
-        
+
         let content = fs::read_to_string(&output_path).unwrap();
         assert_eq!(content, "let x = 42;");
     }
 
     #[test]
     fn test_determine_wasm_output_path_explicit() {
-        let output = determine_wasm_output_path(Path::new("input.ruchy"), Some(Path::new("output.wasm")));
+        let output =
+            determine_wasm_output_path(Path::new("input.ruchy"), Some(Path::new("output.wasm")));
         assert_eq!(output, PathBuf::from("output.wasm"));
     }
 
@@ -1813,7 +1849,7 @@ mod tests {
         let temp_dir = TempDir::new().unwrap();
         let file_path = temp_dir.path().join("test.ruchy");
         fs::write(&file_path, "test basic { assert(1 == 1) }").unwrap();
-        
+
         // This would need proper test runner setup
         // let result = handle_test_command(file_path.to_str().unwrap(), false, None, None, false);
         // assert!(result.is_ok());
@@ -1824,7 +1860,7 @@ mod tests {
         // This just prints to stderr, hard to test
         // print_transpilation_status("test.ruchy", false); // Function doesn't exist
         println!("test.ruchy: transpilation completed"); // Simple replacement for testing
-        // If it doesn't panic, it passes
+                                                         // If it doesn't panic, it passes
         assert!(true);
     }
 }

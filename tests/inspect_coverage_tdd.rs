@@ -1,7 +1,9 @@
 //! TDD tests for inspect.rs module  
 //! Target: Improve inspect.rs from 0% to 90%+ coverage
 
-use ruchy::runtime::inspect::{Inspect, Inspector, InspectStyle, DisplayForm, CompositeForm, OpaqueHandle};
+use ruchy::runtime::inspect::{
+    CompositeForm, DisplayForm, Inspect, InspectStyle, Inspector, OpaqueHandle,
+};
 use std::collections::HashMap;
 use std::fmt::Write;
 
@@ -30,7 +32,7 @@ fn test_inspector_with_style() {
         use_colors: true,
         indent: "    ".to_string(),
     };
-    
+
     let inspector = Inspector::with_style(style.clone());
     assert_eq!(inspector.style.max_elements, 5);
     assert_eq!(inspector.style.max_string_len, 20);
@@ -51,13 +53,13 @@ fn test_inspect_style_default() {
 fn test_inspector_enter_exit() {
     let mut inspector = Inspector::new();
     let value = 42;
-    
+
     assert_eq!(inspector.depth(), 0);
-    
+
     // Enter should succeed
     assert!(inspector.enter(&value));
     assert_eq!(inspector.depth(), 1);
-    
+
     // Exit should decrease depth
     inspector.exit();
     assert_eq!(inspector.depth(), 0);
@@ -67,10 +69,10 @@ fn test_inspector_enter_exit() {
 fn test_inspector_cycle_detection() {
     let mut inspector = Inspector::new();
     let value = 42;
-    
+
     // First enter should succeed
     assert!(inspector.enter(&value));
-    
+
     // Second enter with same address should fail (cycle detected)
     assert!(!inspector.enter(&value));
 }
@@ -79,14 +81,14 @@ fn test_inspector_cycle_detection() {
 fn test_inspector_budget_tracking() {
     let mut inspector = Inspector::new();
     let initial_budget = inspector.budget;
-    
+
     assert!(inspector.has_budget());
-    
+
     // Consume some budget
     inspector.consume_budget(100);
     assert_eq!(inspector.budget, initial_budget - 100);
     assert!(inspector.has_budget());
-    
+
     // Consume all budget
     inspector.consume_budget(inspector.budget);
     assert_eq!(inspector.budget, 0);
@@ -96,7 +98,7 @@ fn test_inspector_budget_tracking() {
 #[test]
 fn test_inspector_budget_saturation() {
     let mut inspector = Inspector::new();
-    
+
     // Consuming more than available should saturate at 0
     inspector.consume_budget(inspector.budget + 1000);
     assert_eq!(inspector.budget, 0);
@@ -106,7 +108,7 @@ fn test_inspector_budget_saturation() {
 fn test_inspector_max_depth() {
     let mut inspector = Inspector::new();
     inspector.max_depth = 2;
-    
+
     assert!(!inspector.at_max_depth());
     inspector.depth = 1;
     assert!(!inspector.at_max_depth());
@@ -120,11 +122,11 @@ fn test_inspector_max_depth() {
 fn test_inspector_write_trait() {
     let mut inspector = Inspector::new();
     let initial_budget = inspector.budget;
-    
+
     write!(inspector, "hello").unwrap();
     assert_eq!(inspector.output, "hello");
     assert_eq!(inspector.budget, initial_budget - 5); // "hello" is 5 chars
-    
+
     write!(inspector, " world").unwrap();
     assert_eq!(inspector.output, "hello world");
     assert_eq!(inspector.budget, initial_budget - 11);
@@ -134,7 +136,7 @@ fn test_inspector_write_trait() {
 fn test_inspect_i32() {
     let value = 42i32;
     let mut inspector = Inspector::new();
-    
+
     value.inspect(&mut inspector).unwrap();
     assert_eq!(inspector.output, "42");
 }
@@ -143,7 +145,7 @@ fn test_inspect_i32() {
 fn test_inspect_i64() {
     let value = 1234567890i64;
     let mut inspector = Inspector::new();
-    
+
     value.inspect(&mut inspector).unwrap();
     assert_eq!(inspector.output, "1234567890");
 }
@@ -152,7 +154,7 @@ fn test_inspect_i64() {
 fn test_inspect_f64() {
     let value = 3.14159f64;
     let mut inspector = Inspector::new();
-    
+
     value.inspect(&mut inspector).unwrap();
     assert_eq!(inspector.output, "3.14159");
 }
@@ -161,7 +163,7 @@ fn test_inspect_f64() {
 fn test_inspect_bool_true() {
     let value = true;
     let mut inspector = Inspector::new();
-    
+
     value.inspect(&mut inspector).unwrap();
     assert_eq!(inspector.output, "true");
 }
@@ -170,7 +172,7 @@ fn test_inspect_bool_true() {
 fn test_inspect_bool_false() {
     let value = false;
     let mut inspector = Inspector::new();
-    
+
     value.inspect(&mut inspector).unwrap();
     assert_eq!(inspector.output, "false");
 }
@@ -179,7 +181,7 @@ fn test_inspect_bool_false() {
 fn test_inspect_string_short() {
     let value = "hello".to_string();
     let mut inspector = Inspector::new();
-    
+
     value.inspect(&mut inspector).unwrap();
     assert_eq!(inspector.output, "\"hello\"");
 }
@@ -189,7 +191,7 @@ fn test_inspect_string_long() {
     let long_string = "a".repeat(150);
     let mut inspector = Inspector::new();
     inspector.style.max_string_len = 10;
-    
+
     long_string.inspect(&mut inspector).unwrap();
     assert!(inspector.output.starts_with("\"aaaaaaaaaa...\""));
     assert!(inspector.output.contains("(150 chars)"));
@@ -199,7 +201,7 @@ fn test_inspect_string_long() {
 fn test_inspect_str_short() {
     let value = "world";
     let mut inspector = Inspector::new();
-    
+
     value.inspect(&mut inspector).unwrap();
     assert_eq!(inspector.output, "\"world\"");
 }
@@ -209,7 +211,7 @@ fn test_inspect_str_long() {
     let long_str = &"b".repeat(80);
     let mut inspector = Inspector::new();
     inspector.style.max_string_len = 5;
-    
+
     long_str.inspect(&mut inspector).unwrap();
     assert!(inspector.output.starts_with("\"bbbbb...\""));
     assert!(inspector.output.contains("(80 chars)"));
@@ -219,7 +221,7 @@ fn test_inspect_str_long() {
 fn test_inspect_vec_empty() {
     let vec: Vec<i32> = vec![];
     let mut inspector = Inspector::new();
-    
+
     vec.inspect(&mut inspector).unwrap();
     assert_eq!(inspector.output, "[]");
 }
@@ -228,7 +230,7 @@ fn test_inspect_vec_empty() {
 fn test_inspect_vec_single_element() {
     let vec = vec![42];
     let mut inspector = Inspector::new();
-    
+
     vec.inspect(&mut inspector).unwrap();
     assert_eq!(inspector.output, "[42]");
 }
@@ -237,7 +239,7 @@ fn test_inspect_vec_single_element() {
 fn test_inspect_vec_multiple_elements() {
     let vec = vec![1, 2, 3, 4, 5];
     let mut inspector = Inspector::new();
-    
+
     vec.inspect(&mut inspector).unwrap();
     assert_eq!(inspector.output, "[1, 2, 3, 4, 5]");
 }
@@ -247,7 +249,7 @@ fn test_inspect_vec_max_elements_limit() {
     let vec = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
     let mut inspector = Inspector::new();
     inspector.style.max_elements = 5;
-    
+
     vec.inspect(&mut inspector).unwrap();
     assert!(inspector.output.contains("[1, 2, 3, 4, 5, ...7 more]"));
 }
@@ -257,7 +259,7 @@ fn test_inspect_vec_at_max_depth() {
     let vec = vec![1, 2, 3];
     let mut inspector = Inspector::new();
     inspector.max_depth = 0; // At max depth immediately
-    
+
     vec.inspect(&mut inspector).unwrap();
     assert_eq!(inspector.output, "[3 elements]");
 }
@@ -267,7 +269,7 @@ fn test_inspect_vec_budget_exhausted() {
     let vec = vec![1, 2, 3, 4, 5];
     let mut inspector = Inspector::new();
     inspector.budget = 5; // Very small budget
-    
+
     vec.inspect(&mut inspector).unwrap();
     assert!(inspector.output.contains("..."));
 }
@@ -276,7 +278,7 @@ fn test_inspect_vec_budget_exhausted() {
 fn test_inspect_hashmap_empty() {
     let map: HashMap<i32, String> = HashMap::new();
     let mut inspector = Inspector::new();
-    
+
     map.inspect(&mut inspector).unwrap();
     assert_eq!(inspector.output, "{}");
 }
@@ -286,7 +288,7 @@ fn test_inspect_hashmap_single_entry() {
     let mut map = HashMap::new();
     map.insert(1, "one".to_string());
     let mut inspector = Inspector::new();
-    
+
     map.inspect(&mut inspector).unwrap();
     assert!(inspector.output.contains("1: \"one\""));
     assert!(inspector.output.starts_with('{'));
@@ -299,7 +301,7 @@ fn test_inspect_hashmap_multiple_entries() {
     map.insert(1, "one".to_string());
     map.insert(2, "two".to_string());
     let mut inspector = Inspector::new();
-    
+
     map.inspect(&mut inspector).unwrap();
     // Order is not guaranteed in HashMap, but should contain both entries
     assert!(inspector.output.contains("1: \"one\"") || inspector.output.contains("2: \"two\""));
@@ -316,7 +318,7 @@ fn test_inspect_hashmap_max_elements_limit() {
     }
     let mut inspector = Inspector::new();
     inspector.style.max_elements = 3;
-    
+
     map.inspect(&mut inspector).unwrap();
     assert!(inspector.output.contains("...12 more"));
 }
@@ -327,7 +329,7 @@ fn test_inspect_hashmap_at_max_depth() {
     map.insert(1, "one".to_string());
     let mut inspector = Inspector::new();
     inspector.max_depth = 0;
-    
+
     map.inspect(&mut inspector).unwrap();
     assert_eq!(inspector.output, "{1 entries}");
 }
@@ -337,7 +339,7 @@ fn test_inspect_option_some() {
     use ruchy::runtime::inspect::Inspect as InspectTrait;
     let opt = Some(42);
     let mut inspector = Inspector::new();
-    
+
     InspectTrait::inspect(&opt, &mut inspector).unwrap();
     assert_eq!(inspector.output, "Some(42)");
 }
@@ -347,7 +349,7 @@ fn test_inspect_option_none() {
     use ruchy::runtime::inspect::Inspect as InspectTrait;
     let opt: Option<i32> = None;
     let mut inspector = Inspector::new();
-    
+
     InspectTrait::inspect(&opt, &mut inspector).unwrap();
     assert_eq!(inspector.output, "None");
 }
@@ -357,7 +359,7 @@ fn test_inspect_option_nested() {
     use ruchy::runtime::inspect::Inspect as InspectTrait;
     let opt = Some(Some(42));
     let mut inspector = Inspector::new();
-    
+
     InspectTrait::inspect(&opt, &mut inspector).unwrap();
     assert_eq!(inspector.output, "Some(Some(42))");
 }
@@ -367,7 +369,7 @@ fn test_inspect_result_ok() {
     use ruchy::runtime::inspect::Inspect as InspectTrait;
     let res: Result<i32, String> = Ok(42);
     let mut inspector = Inspector::new();
-    
+
     InspectTrait::inspect(&res, &mut inspector).unwrap();
     assert_eq!(inspector.output, "Ok(42)");
 }
@@ -377,7 +379,7 @@ fn test_inspect_result_err() {
     use ruchy::runtime::inspect::Inspect as InspectTrait;
     let res: Result<i32, String> = Err("error message".to_string());
     let mut inspector = Inspector::new();
-    
+
     InspectTrait::inspect(&res, &mut inspector).unwrap();
     assert_eq!(inspector.output, "Err(\"error message\")");
 }
@@ -387,7 +389,7 @@ fn test_inspect_result_nested() {
     use ruchy::runtime::inspect::Inspect as InspectTrait;
     let res: Result<Result<i32, String>, String> = Ok(Ok(42));
     let mut inspector = Inspector::new();
-    
+
     InspectTrait::inspect(&res, &mut inspector).unwrap();
     assert_eq!(inspector.output, "Ok(Ok(42))");
 }
@@ -410,7 +412,7 @@ fn test_display_form_composite() {
         elided: None,
     };
     let form = DisplayForm::Composite(composite);
-    
+
     match form {
         DisplayForm::Composite(comp) => {
             assert_eq!(comp.opener, "[");
@@ -426,14 +428,15 @@ fn test_display_form_composite() {
 fn test_display_form_composite_with_elided() {
     let composite = CompositeForm {
         opener: "{",
-        elements: vec![
-            (Some("key".to_string()), DisplayForm::Atomic("value".to_string()))
-        ],
+        elements: vec![(
+            Some("key".to_string()),
+            DisplayForm::Atomic("value".to_string()),
+        )],
         closer: "}",
         elided: Some(5),
     };
     let form = DisplayForm::Composite(composite);
-    
+
     match form {
         DisplayForm::Composite(comp) => {
             assert_eq!(comp.elided, Some(5));
@@ -448,7 +451,7 @@ fn test_display_form_composite_with_elided() {
 fn test_display_form_reference() {
     let inner = DisplayForm::Atomic("referenced".to_string());
     let form = DisplayForm::Reference(0x1000, Box::new(inner));
-    
+
     match form {
         DisplayForm::Reference(addr, boxed) => {
             assert_eq!(addr, 0x1000);
@@ -468,7 +471,7 @@ fn test_display_form_opaque() {
         id: Some("main".to_string()),
     };
     let form = DisplayForm::Opaque(handle);
-    
+
     match form {
         DisplayForm::Opaque(h) => {
             assert_eq!(h.type_name, "Function");
@@ -484,7 +487,7 @@ fn test_opaque_handle_without_id() {
         type_name: "Thread".to_string(),
         id: None,
     };
-    
+
     assert_eq!(handle.type_name, "Thread");
     assert!(handle.id.is_none());
 }
@@ -493,12 +496,12 @@ fn test_opaque_handle_without_id() {
 fn test_visit_set_inline_storage() {
     let mut inspector = Inspector::new();
     let values = [1, 2, 3, 4, 5];
-    
+
     // All should succeed with inline storage
     for value in &values {
         assert!(inspector.enter(value));
     }
-    
+
     // All should be detected as cycles
     for value in &values {
         assert!(!inspector.enter(value));
@@ -509,17 +512,17 @@ fn test_visit_set_inline_storage() {
 fn test_visit_set_overflow_storage() {
     let mut inspector = Inspector::new();
     let mut values = Vec::new();
-    
+
     // Create enough values to trigger overflow
     for i in 0..12 {
         values.push(i);
     }
-    
+
     // All should succeed, triggering overflow storage
     for value in &values {
         assert!(inspector.enter(value));
     }
-    
+
     // All should be detected as cycles
     for value in &values {
         assert!(!inspector.enter(value));
@@ -534,7 +537,7 @@ fn test_inspect_depth_default() {
             write!(inspector, "TestStruct")
         }
     }
-    
+
     let test_struct = TestStruct;
     assert_eq!(test_struct.inspect_depth(), 1); // Default implementation
 }
@@ -546,12 +549,12 @@ fn test_inspect_depth_custom() {
         fn inspect(&self, inspector: &mut Inspector) -> std::fmt::Result {
             write!(inspector, "DeepStruct")
         }
-        
+
         fn inspect_depth(&self) -> usize {
             5 // Custom depth
         }
     }
-    
+
     let deep_struct = DeepStruct;
     assert_eq!(deep_struct.inspect_depth(), 5);
 }
@@ -560,7 +563,7 @@ fn test_inspect_depth_custom() {
 fn test_nested_vec_inspection() {
     let nested = vec![vec![1, 2], vec![3, 4, 5]];
     let mut inspector = Inspector::new();
-    
+
     nested.inspect(&mut inspector).unwrap();
     assert!(inspector.output.contains("[["));
     assert!(inspector.output.contains("1, 2"));
@@ -573,7 +576,7 @@ fn test_nested_option_inspection() {
     use ruchy::runtime::inspect::Inspect as InspectTrait;
     let nested = Some(Some(Some(42)));
     let mut inspector = Inspector::new();
-    
+
     InspectTrait::inspect(&nested, &mut inspector).unwrap();
     assert_eq!(inspector.output, "Some(Some(Some(42)))");
 }
@@ -583,10 +586,10 @@ fn test_complex_nested_structures() {
     let mut map = HashMap::new();
     map.insert("numbers".to_string(), vec![1, 2, 3]);
     map.insert("empty".to_string(), vec![]);
-    
+
     let mut inspector = Inspector::new();
     map.inspect(&mut inspector).unwrap();
-    
+
     assert!(inspector.output.contains("numbers"));
     assert!(inspector.output.contains("empty"));
     assert!(inspector.output.contains("[1, 2, 3]"));
@@ -597,7 +600,7 @@ fn test_complex_nested_structures() {
 fn test_inspector_saturating_exit() {
     let mut inspector = Inspector::new();
     assert_eq!(inspector.depth(), 0);
-    
+
     // Exit when already at depth 0 should stay at 0
     inspector.exit();
     assert_eq!(inspector.depth(), 0);
@@ -611,7 +614,7 @@ fn test_style_clone() {
         use_colors: true,
         indent: "\t".to_string(),
     };
-    
+
     let cloned = style.clone();
     assert_eq!(cloned.max_elements, 15);
     assert_eq!(cloned.max_string_len, 200);
@@ -623,11 +626,14 @@ fn test_style_clone() {
 fn test_composite_form_clone() {
     let composite = CompositeForm {
         opener: "(",
-        elements: vec![(Some("label".to_string()), DisplayForm::Atomic("value".to_string()))],
+        elements: vec![(
+            Some("label".to_string()),
+            DisplayForm::Atomic("value".to_string()),
+        )],
         closer: ")",
         elided: Some(10),
     };
-    
+
     let cloned = composite.clone();
     assert_eq!(cloned.opener, "(");
     assert_eq!(cloned.closer, ")");
@@ -641,7 +647,7 @@ fn test_opaque_handle_clone() {
         type_name: "CustomType".to_string(),
         id: Some("instance_42".to_string()),
     };
-    
+
     let cloned = handle.clone();
     assert_eq!(cloned.type_name, "CustomType");
     assert_eq!(cloned.id, Some("instance_42".to_string()));
@@ -649,11 +655,8 @@ fn test_opaque_handle_clone() {
 
 #[test]
 fn test_display_form_clone() {
-    let form = DisplayForm::Reference(
-        0x2000,
-        Box::new(DisplayForm::Atomic("test".to_string()))
-    );
-    
+    let form = DisplayForm::Reference(0x2000, Box::new(DisplayForm::Atomic("test".to_string())));
+
     let cloned = form.clone();
     match cloned {
         DisplayForm::Reference(addr, boxed) => {

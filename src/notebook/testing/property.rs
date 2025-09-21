@@ -1,6 +1,6 @@
 // SPRINT2-001: Property-based testing implementation
 // PMAT Complexity: <10 per function
-use crate::notebook::testing::types::{Notebook, Cell, CellType, CellMetadata};
+use crate::notebook::testing::types::{Cell, CellMetadata, CellType, Notebook};
 /// Property-based testing for notebooks
 pub struct PropertyTester {
     config: PropertyTestConfig,
@@ -27,43 +27,43 @@ impl Default for PropertyTester {
 }
 
 impl PropertyTester {
-/// # Examples
-/// 
-/// ```
-/// use ruchy::notebook::testing::property::PropertyTester;
-/// 
-/// let instance = PropertyTester::new();
-/// // Verify behavior
-/// ```
-pub fn new() -> Self {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::notebook::testing::property::PropertyTester;
+    ///
+    /// let instance = PropertyTester::new();
+    /// // Verify behavior
+    /// ```
+    pub fn new() -> Self {
         Self {
             config: PropertyTestConfig::default(),
         }
     }
-/// # Examples
-/// 
-/// ```
-/// use ruchy::notebook::testing::property::PropertyTester;
-/// 
-/// let mut instance = PropertyTester::new();
-/// let result = instance.with_config();
-/// // Verify behavior
-/// ```
-pub fn with_config(config: PropertyTestConfig) -> Self {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::notebook::testing::property::PropertyTester;
+    ///
+    /// let mut instance = PropertyTester::new();
+    /// let result = instance.with_config();
+    /// // Verify behavior
+    /// ```
+    pub fn with_config(config: PropertyTestConfig) -> Self {
         Self { config }
     }
     /// Generate arbitrary notebook for property testing
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::notebook::testing::property::arbitrary_notebook;
-/// 
-/// let result = arbitrary_notebook(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn arbitrary_notebook(seed: u64, size: usize) -> Notebook {
-        use rand::{Rng, SeedableRng};
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::notebook::testing::property::arbitrary_notebook;
+    ///
+    /// let result = arbitrary_notebook(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn arbitrary_notebook(seed: u64, size: usize) -> Notebook {
         use rand::rngs::StdRng;
+        use rand::{Rng, SeedableRng};
         let mut rng = StdRng::seed_from_u64(seed);
         let mut cells = Vec::new();
         for i in 0..size {
@@ -85,7 +85,10 @@ pub fn arbitrary_notebook(seed: u64, size: usize) -> Notebook {
             };
             cells.push(cell);
         }
-        Notebook { cells, metadata: None }
+        Notebook {
+            cells,
+            metadata: None,
+        }
     }
     /// Test determinism property
     pub fn test_determinism(&self, notebook: &Notebook) -> bool {
@@ -137,7 +140,8 @@ fn sanitize_source(source: String) -> String {
     if source.is_empty() {
         "1 + 1".to_string()
     } else {
-        source.chars()
+        source
+            .chars()
             .take(100)
             .filter(|c| c.is_ascii() && !c.is_control())
             .collect()
@@ -166,7 +170,7 @@ fn extract_variables(source: &str) -> std::collections::HashSet<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::notebook::testing::types::{Cell, CellType, CellMetadata, Notebook};
+    use crate::notebook::testing::types::{Cell, CellMetadata, CellType, Notebook};
 
     #[test]
     fn test_property_tester_new() {
@@ -183,7 +187,7 @@ mod tests {
             max_iterations: 2000,
             seed: Some(42),
         };
-        let tester = PropertyTester::with_config(config.clone());
+        let tester = PropertyTester::with_config(config);
         assert_eq!(tester.config.max_cells, 50);
         assert_eq!(tester.config.max_iterations, 2000);
         assert_eq!(tester.config.seed, Some(42));
@@ -204,7 +208,7 @@ mod tests {
         assert!(notebook.metadata.is_none());
 
         // Check that cells have proper IDs
-        for (i, cell) in notebook.cells.iter().enumerate() {
+        for cell in notebook.cells.iter() {
             assert!(!cell.id.is_empty());
             if matches!(cell.cell_type, CellType::Code) {
                 assert!(cell.id.starts_with("cell_"));
@@ -222,8 +226,8 @@ mod tests {
 
     #[test]
     fn test_generate_random_code() {
-        use rand::SeedableRng;
         use rand::rngs::StdRng;
+        use rand::SeedableRng;
         let mut rng = StdRng::seed_from_u64(42);
 
         // Test various patterns
@@ -287,7 +291,7 @@ mod tests {
             cell_type: CellType::Code,
             metadata: CellMetadata::default(),
         };
-        let cell2 = Cell {
+        let _cell2 = Cell {
             id: "2".to_string(),
             source: "let y = b".to_string(),
             cell_type: CellType::Code,
@@ -323,14 +327,12 @@ mod tests {
     fn test_test_determinism_markdown_only() {
         let tester = PropertyTester::new();
         let notebook = Notebook {
-            cells: vec![
-                Cell {
-                    id: "md1".to_string(),
-                    source: "# Title".to_string(),
-                    cell_type: CellType::Markdown,
-                    metadata: CellMetadata::default(),
-                },
-            ],
+            cells: vec![Cell {
+                id: "md1".to_string(),
+                source: "# Title".to_string(),
+                cell_type: CellType::Markdown,
+                metadata: CellMetadata::default(),
+            }],
             metadata: None,
         };
         // Markdown cells are skipped, so this should pass
@@ -399,10 +401,10 @@ mod tests {
 
         assert_eq!(notebook1.cells.len(), notebook2.cells.len());
         // Content should differ (with high probability)
-        let mut any_different = false;
+        let mut _any_different = false;
         for (cell1, cell2) in notebook1.cells.iter().zip(notebook2.cells.iter()) {
             if cell1.source != cell2.source {
-                any_different = true;
+                _any_different = true;
                 break;
             }
         }

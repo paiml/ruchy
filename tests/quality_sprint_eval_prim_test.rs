@@ -262,37 +262,37 @@ mod eval_prim_property_tests {
         fn test_add_commutative(a: i32, b: i32) {
             let mut interp1 = setup_interpreter();
             let mut interp2 = setup_interpreter();
-            
+
             let result1 = interp1.eval_prim(
-                Prim::Add, 
+                Prim::Add,
                 vec![int_lit(a as i64), int_lit(b as i64)]
             );
             let result2 = interp2.eval_prim(
                 Prim::Add,
                 vec![int_lit(b as i64), int_lit(a as i64)]
             );
-            
+
             prop_assert_eq!(result1, result2);
         }
 
         #[test]
         fn test_add_associative(a: i8, b: i8, c: i8) {
             let mut interp = setup_interpreter();
-            
+
             // (a + b) + c
             let ab = match interp.eval_prim(Prim::Add, vec![int_lit(a as i64), int_lit(b as i64)]) {
                 Ok(Value::Integer(n)) => n,
                 _ => return Ok(()),
             };
             let result1 = interp.eval_prim(Prim::Add, vec![int_lit(ab), int_lit(c as i64)]);
-            
+
             // a + (b + c)
             let bc = match interp.eval_prim(Prim::Add, vec![int_lit(b as i64), int_lit(c as i64)]) {
                 Ok(Value::Integer(n)) => n,
                 _ => return Ok(()),
             };
             let result2 = interp.eval_prim(Prim::Add, vec![int_lit(a as i64), int_lit(bc)]);
-            
+
             prop_assert_eq!(result1, result2);
         }
 
@@ -319,31 +319,31 @@ mod eval_prim_property_tests {
         #[test]
         fn test_comparison_trichotomy(a: i32, b: i32) {
             let mut interp = setup_interpreter();
-            
+
             let lt = interp.eval_prim(Prim::Lt, vec![int_lit(a as i64), int_lit(b as i64)]);
             let eq = interp.eval_prim(Prim::Eq, vec![int_lit(a as i64), int_lit(b as i64)]);
             let gt = interp.eval_prim(Prim::Gt, vec![int_lit(a as i64), int_lit(b as i64)]);
-            
+
             // Exactly one should be true
             let results = vec![lt, eq, gt];
             let true_count = results.iter()
                 .filter(|r| matches!(r, Ok(Value::Bool(true))))
                 .count();
-            
+
             prop_assert_eq!(true_count, 1);
         }
 
         #[test]
         fn test_boolean_operations_consistency(a: bool, b: bool) {
             let mut interp = setup_interpreter();
-            
+
             // De Morgan's law: !(a && b) == !a || !b
             let and_result = interp.eval_prim(Prim::And, vec![bool_lit(a), bool_lit(b)]);
             let not_and = match and_result {
                 Ok(Value::Bool(v)) => interp.eval_prim(Prim::Not, vec![bool_lit(v)]),
                 _ => return Ok(()),
             };
-            
+
             let not_a = match interp.eval_prim(Prim::Not, vec![bool_lit(a)]) {
                 Ok(Value::Bool(v)) => v,
                 _ => return Ok(()),
@@ -353,7 +353,7 @@ mod eval_prim_property_tests {
                 _ => return Ok(()),
             };
             let or_not = interp.eval_prim(Prim::Or, vec![bool_lit(not_a), bool_lit(not_b)]);
-            
+
             prop_assert_eq!(not_and, or_not);
         }
 
@@ -368,15 +368,15 @@ mod eval_prim_property_tests {
                 Prim::Eq, Prim::Ne, Prim::Lt, Prim::Le, Prim::Gt, Prim::Ge,
                 Prim::And, Prim::Or, Prim::Not,
             ];
-            
+
             let prim = &primitives[prim_idx as usize % primitives.len()];
             let mut interp = setup_interpreter();
-            
+
             let exprs: Vec<Box<Expr>> = args.iter()
                 .take(3) // Limit to reasonable number of args
                 .map(|&n| int_lit(n as i64))
                 .collect();
-            
+
             // Should not panic, may return error
             let _ = interp.eval_prim(prim.clone(), exprs);
         }

@@ -15,7 +15,11 @@ pub struct TestResult {
     pub error: Option<String>,
 }
 /// Discover .ruchy test files in a path
-pub fn discover_test_files(path: &Path, filter: Option<&str>, verbose: bool) -> Result<Vec<PathBuf>> {
+pub fn discover_test_files(
+    path: &Path,
+    filter: Option<&str>,
+    verbose: bool,
+) -> Result<Vec<PathBuf>> {
     if verbose {
         println!("🔍 Discovering .ruchy test files in {}", path.display());
     }
@@ -34,7 +38,10 @@ fn validate_and_add_file(path: &Path, test_files: &mut Vec<PathBuf>) -> Result<(
     if path.extension().is_some_and(|ext| ext == "ruchy") {
         test_files.push(path.to_path_buf());
     } else {
-        return Err(anyhow::anyhow!("File {} is not a .ruchy file", path.display()));
+        return Err(anyhow::anyhow!(
+            "File {} is not a .ruchy file",
+            path.display()
+        ));
     }
     Ok(())
 }
@@ -58,7 +65,9 @@ fn should_include_file(entry: &walkdir::DirEntry, filter: Option<&str>) -> bool 
         return false;
     }
     if let Some(filter_pattern) = filter {
-        let file_name = entry.path().file_stem()
+        let file_name = entry
+            .path()
+            .file_stem()
             .and_then(|s| s.to_str())
             .unwrap_or("");
         file_name.contains(filter_pattern)
@@ -75,7 +84,8 @@ pub fn run_test_file(test_file: &Path, verbose: bool) -> Result<()> {
         println!("   🏃 Executing test...");
     }
     let mut repl = Repl::new(std::env::temp_dir())?;
-    let result = repl.evaluate_expr_str(&test_content, None)
+    let result = repl
+        .evaluate_expr_str(&test_content, None)
         .with_context(|| format!("Test execution failed for: {}", test_file.display()))?;
     if verbose {
         println!("   📤 Test result: {:?}", result);
@@ -83,10 +93,7 @@ pub fn run_test_file(test_file: &Path, verbose: bool) -> Result<()> {
     Ok(())
 }
 /// Execute all test files
-pub fn execute_tests(
-    test_files: &[PathBuf],
-    verbose: bool,
-) -> Vec<TestResult> {
+pub fn execute_tests(test_files: &[PathBuf], verbose: bool) -> Vec<TestResult> {
     let mut test_results = Vec::new();
     for test_file in test_files {
         if verbose {
@@ -95,13 +102,7 @@ pub fn execute_tests(
         let test_start = Instant::now();
         let result = run_test_file(test_file, verbose);
         let test_duration = test_start.elapsed();
-        handle_test_result(
-            test_file,
-            result,
-            test_duration,
-            verbose,
-            &mut test_results,
-        );
+        handle_test_result(test_file, result, test_duration, verbose, &mut test_results);
     }
     test_results
 }
@@ -116,9 +117,15 @@ fn handle_test_result(
     match result {
         Ok(()) => {
             if verbose {
-                println!("   ✅ {} ({:.2}ms)", 
-                    test_file.file_name().unwrap().to_str().expect("Failed to convert to str"), 
-                    duration.as_secs_f64() * 1000.0);
+                println!(
+                    "   ✅ {} ({:.2}ms)",
+                    test_file
+                        .file_name()
+                        .unwrap()
+                        .to_str()
+                        .expect("Failed to convert to str"),
+                    duration.as_secs_f64() * 1000.0
+                );
             } else {
                 print!(".");
                 let _ = std::io::Write::flush(&mut std::io::stdout());
@@ -133,10 +140,16 @@ fn handle_test_result(
         Err(e) => {
             let error_msg = format!("{}", e);
             if verbose {
-                println!("   ❌ {} ({:.2}ms): {}", 
-                    test_file.file_name().unwrap().to_str().expect("Failed to convert to str"), 
-                    duration.as_secs_f64() * 1000.0, 
-                    error_msg);
+                println!(
+                    "   ❌ {} ({:.2}ms): {}",
+                    test_file
+                        .file_name()
+                        .unwrap()
+                        .to_str()
+                        .expect("Failed to convert to str"),
+                    duration.as_secs_f64() * 1000.0,
+                    error_msg
+                );
             } else {
                 print!("F");
                 let _ = std::io::Write::flush(&mut std::io::stdout());
@@ -151,11 +164,7 @@ fn handle_test_result(
     }
 }
 /// Print test summary
-pub fn print_test_summary(
-    test_results: &[TestResult],
-    total_duration: Duration,
-    verbose: bool,
-) {
+pub fn print_test_summary(test_results: &[TestResult], total_duration: Duration, verbose: bool) {
     if !verbose {
         println!(); // New line after dots/F's
     }
@@ -178,9 +187,14 @@ fn print_failed_tests(test_results: &[TestResult], verbose: bool) {
     println!("\n❌ Failed Tests:");
     for result in test_results {
         if !result.success {
-            println!("   {} - {}", 
-                result.file.display(), 
-                result.error.as_ref().unwrap_or(&"Unknown error".to_string()));
+            println!(
+                "   {} - {}",
+                result.file.display(),
+                result
+                    .error
+                    .as_ref()
+                    .unwrap_or(&"Unknown error".to_string())
+            );
         }
     }
 }
@@ -226,8 +240,11 @@ pub fn generate_coverage_report(
     for result in test_results {
         if result.success {
             if let Err(e) = collector.execute_with_coverage(&result.file) {
-                eprintln!("Warning: Failed to collect runtime coverage for {}: {}", 
-                    result.file.display(), e);
+                eprintln!(
+                    "Warning: Failed to collect runtime coverage for {}: {}",
+                    result.file.display(),
+                    e
+                );
             }
         }
     }
@@ -259,7 +276,10 @@ fn save_html_report(html_report: &str) -> Result<String> {
     fs::create_dir_all(coverage_dir)?;
     let html_path = coverage_dir.join("index.html");
     fs::write(&html_path, html_report)?;
-    Ok(format!("\n📈 HTML Coverage Report written to: {}", html_path.display()))
+    Ok(format!(
+        "\n📈 HTML Coverage Report written to: {}",
+        html_path.display()
+    ))
 }
 /// Check if coverage meets threshold
 fn check_coverage_threshold(
@@ -380,7 +400,12 @@ mod tests {
         assert!(result.is_ok() || result.is_err()); // Tests that function doesn't panic
         let files = result.unwrap();
         assert_eq!(files.len(), 1);
-        assert!(files[0].file_name().unwrap().to_str().unwrap().contains("another"));
+        assert!(files[0]
+            .file_name()
+            .unwrap()
+            .to_str()
+            .unwrap()
+            .contains("another"));
     }
 
     #[test]
@@ -399,7 +424,10 @@ mod tests {
 
         let result = discover_test_files(&txt_file, None, false);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("not a .ruchy file"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("not a .ruchy file"));
     }
 
     #[test]
@@ -438,7 +466,10 @@ mod tests {
 
         assert!(result.is_err());
         assert_eq!(test_files.len(), 0);
-        assert!(result.unwrap_err().to_string().contains("not a .ruchy file"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("not a .ruchy file"));
     }
 
     // ========== Directory Discovery Tests ==========
@@ -460,7 +491,12 @@ mod tests {
         let result = discover_files_in_directory(temp_dir.path(), Some("test"), &mut test_files);
         assert!(result.is_ok() || result.is_err()); // Tests that function doesn't panic
         assert_eq!(test_files.len(), 1); // Only test.ruchy should match
-        assert!(test_files[0].file_name().unwrap().to_str().unwrap().contains("test"));
+        assert!(test_files[0]
+            .file_name()
+            .unwrap()
+            .to_str()
+            .unwrap()
+            .contains("test"));
     }
 
     // ========== File Filtering Tests ==========
@@ -534,7 +570,7 @@ mod tests {
         let result = run_test_file(&test_file, false);
         // Note: This may fail due to Ruchy interpreter not being available in test environment
         // The test verifies the function doesn't panic and returns a Result
-        assert!(!result.is_empty() || result.is_empty()); // Always true, but tests that function doesn't panic // Either is acceptable
+        assert!(result.is_ok() || result.is_err()); // Always true, but tests that function doesn't panic
     }
 
     #[test]
@@ -545,7 +581,7 @@ mod tests {
 
         let result = run_test_file(&test_file, true);
         // Function should handle verbose mode without crashing
-        assert!(!result.is_empty() || result.is_empty()); // Always true, but tests that function doesn't panic
+        assert!(result.is_ok() || result.is_err()); // Always true, but tests that function doesn't panic
     }
 
     // ========== Test Summary Tests ==========
@@ -593,14 +629,12 @@ mod tests {
 
     #[test]
     fn test_print_test_summary_verbose() {
-        let results = vec![
-            TestResult {
-                file: PathBuf::from("test.ruchy"),
-                success: true,
-                duration: Duration::from_millis(100),
-                error: None,
-            },
-        ];
+        let results = vec![TestResult {
+            file: PathBuf::from("test.ruchy"),
+            success: true,
+            duration: Duration::from_millis(100),
+            error: None,
+        }];
 
         // Function should handle verbose mode
         print_test_summary(&results, Duration::from_millis(200), true);

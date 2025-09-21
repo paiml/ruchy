@@ -132,7 +132,10 @@ pub enum BreakpointCondition {
     /// Always break at this stage
     Always,
     /// Break if row count meets criteria
-    RowCount { operator: ComparisonOp, value: usize },
+    RowCount {
+        operator: ComparisonOp,
+        value: usize,
+    },
     /// Break if execution time exceeds threshold
     ExecutionTime { threshold_ms: u64 },
     /// Break if memory usage exceeds threshold
@@ -343,7 +346,8 @@ impl DataflowDebugger {
     }
     /// Start a new debugging session
     pub fn start_session(&self) -> Result<()> {
-        let mut state = self.session_state
+        let mut state = self
+            .session_state
             .lock()
             .map_err(|_| anyhow::anyhow!("Failed to acquire session state lock"))?;
         state.active = true;
@@ -351,12 +355,17 @@ impl DataflowDebugger {
         state.total_execution_time = Duration::from_secs(0);
         state.breakpoints_hit = 0;
         state.current_stage = None;
-        self.record_event(EventType::StageStarted, "session".to_string(), HashMap::new())?;
+        self.record_event(
+            EventType::StageStarted,
+            "session".to_string(),
+            HashMap::new(),
+        )?;
         Ok(())
     }
     /// Add a breakpoint to the debugger
     pub fn add_breakpoint(&self, breakpoint: Breakpoint) -> Result<()> {
-        let mut breakpoints = self.breakpoints
+        let mut breakpoints = self
+            .breakpoints
             .lock()
             .map_err(|_| anyhow::anyhow!("Failed to acquire breakpoints lock"))?;
         breakpoints.insert(breakpoint.stage_id.clone(), breakpoint);
@@ -364,18 +373,23 @@ impl DataflowDebugger {
     }
     /// Remove a breakpoint by stage ID
     pub fn remove_breakpoint(&self, stage_id: &str) -> Result<bool> {
-        let mut breakpoints = self.breakpoints
+        let mut breakpoints = self
+            .breakpoints
             .lock()
             .map_err(|_| anyhow::anyhow!("Failed to acquire breakpoints lock"))?;
         Ok(breakpoints.remove(stage_id).is_some())
     }
     /// Execute a pipeline stage with debugging support
-    pub fn execute_stage(&self, pipeline_stage: &mut PipelineStage) -> Result<StageExecutionResult> {
+    pub fn execute_stage(
+        &self,
+        pipeline_stage: &mut PipelineStage,
+    ) -> Result<StageExecutionResult> {
         let start_time = Instant::now();
         pipeline_stage.status = StageStatus::Running;
         // Update session state
         {
-            let mut state = self.session_state
+            let mut state = self
+                .session_state
                 .lock()
                 .map_err(|_| anyhow::anyhow!("Failed to acquire session state lock"))?;
             state.current_stage = Some(pipeline_stage.stage_id.clone());
@@ -390,7 +404,7 @@ impl DataflowDebugger {
         }
         // Simulate stage execution (in real implementation, this would execute actual DataFrame operations)
         std::thread::sleep(Duration::from_millis(10)); // Simulate work
-        // Record execution metrics
+                                                       // Record execution metrics
         let execution_time = start_time.elapsed();
         pipeline_stage.execution_time = Some(execution_time);
         pipeline_stage.status = StageStatus::Completed;
@@ -401,7 +415,7 @@ impl DataflowDebugger {
             execution_count: 1,
             total_execution_time: execution_time,
             average_execution_time: execution_time,
-            peak_memory: 1024 * 1024, // 1MB simulated
+            peak_memory: 1024 * 1024,       // 1MB simulated
             peak_memory_usage: 1024 * 1024, // 1MB simulated
             input_rows: pipeline_stage.rows_processed.unwrap_or(0),
             output_rows: pipeline_stage.rows_processed.unwrap_or(0),
@@ -412,7 +426,8 @@ impl DataflowDebugger {
             cache_hit_ratio: Some(0.85),
             last_execution: std::time::SystemTime::now(),
         };
-        let mut stage_metrics = self.stage_metrics
+        let mut stage_metrics = self
+            .stage_metrics
             .lock()
             .map_err(|_| anyhow::anyhow!("Failed to acquire stage metrics lock"))?;
         stage_metrics.insert(pipeline_stage.stage_id.clone(), metrics);
@@ -423,7 +438,10 @@ impl DataflowDebugger {
         self.record_event(
             EventType::StageCompleted,
             pipeline_stage.stage_id.clone(),
-            HashMap::from([("duration_ms".to_string(), execution_time.as_millis().to_string())])
+            HashMap::from([(
+                "duration_ms".to_string(),
+                execution_time.as_millis().to_string(),
+            )]),
         )?;
         Ok(StageExecutionResult::Completed)
     }
@@ -449,7 +467,10 @@ impl DataflowDebugger {
             },
             sample_data: vec![
                 DataRow {
-                    values: vec![DataValue::Integer(1), DataValue::String("Alice".to_string())],
+                    values: vec![
+                        DataValue::Integer(1),
+                        DataValue::String("Alice".to_string()),
+                    ],
                 },
                 DataRow {
                     values: vec![DataValue::Integer(2), DataValue::String("Bob".to_string())],
@@ -459,25 +480,29 @@ impl DataflowDebugger {
             timestamp: std::time::SystemTime::now(),
             memory_size: 1024 * 50, // 50KB
         };
-        let mut materialized_data = self.materialized_data
+        let mut materialized_data = self
+            .materialized_data
             .lock()
             .map_err(|_| anyhow::anyhow!("Failed to acquire materialized data lock"))?;
         materialized_data.insert(stage_id.to_string(), materialized.clone());
         self.record_event(
             EventType::DataMaterialized,
             stage_id.to_string(),
-            HashMap::from([("rows".to_string(), materialized.total_rows.to_string())])
+            HashMap::from([("rows".to_string(), materialized.total_rows.to_string())]),
         )?;
         Ok(materialized)
     }
     /// Compute diff between two pipeline stages
     pub fn compute_stage_diff(&self, stage1_id: &str, stage2_id: &str) -> Result<StageDiff> {
-        let materialized_data = self.materialized_data
+        let materialized_data = self
+            .materialized_data
             .lock()
             .map_err(|_| anyhow::anyhow!("Failed to acquire materialized data lock"))?;
-        let stage1_data = materialized_data.get(stage1_id)
+        let stage1_data = materialized_data
+            .get(stage1_id)
             .ok_or_else(|| anyhow::anyhow!("Stage {} not materialized", stage1_id))?;
-        let stage2_data = materialized_data.get(stage2_id)
+        let stage2_data = materialized_data
+            .get(stage2_id)
             .ok_or_else(|| anyhow::anyhow!("Stage {} not materialized", stage2_id))?;
         // Compute basic diff metrics
         let row_count_diff = stage2_data.total_rows as i64 - stage1_data.total_rows as i64;
@@ -488,32 +513,36 @@ impl DataflowDebugger {
             row_count_diff,
             schema_changed,
             column_changes: self.compute_column_changes(&stage1_data.schema, &stage2_data.schema),
-            data_changes: self.compute_data_changes(&stage1_data.sample_data, &stage2_data.sample_data),
+            data_changes: self
+                .compute_data_changes(&stage1_data.sample_data, &stage2_data.sample_data),
         };
         self.record_event(
             EventType::DiffComputed,
             format!("{stage1_id}:{stage2_id}"),
-            HashMap::from([("row_diff".to_string(), row_count_diff.to_string())])
+            HashMap::from([("row_diff".to_string(), row_count_diff.to_string())]),
         )?;
         Ok(diff)
     }
     /// Get current debugging session status
     pub fn get_session_status(&self) -> Result<SessionState> {
-        let state = self.session_state
+        let state = self
+            .session_state
             .lock()
             .map_err(|_| anyhow::anyhow!("Failed to acquire session state lock"))?;
         Ok(state.clone())
     }
     /// Get execution history
     pub fn get_execution_history(&self) -> Result<Vec<ExecutionEvent>> {
-        let history = self.execution_history
+        let history = self
+            .execution_history
             .lock()
             .map_err(|_| anyhow::anyhow!("Failed to acquire execution history lock"))?;
         Ok(history.iter().cloned().collect())
     }
     /// Get performance metrics for all stages
     pub fn get_stage_metrics(&self) -> Result<HashMap<String, StageMetrics>> {
-        let metrics = self.stage_metrics
+        let metrics = self
+            .stage_metrics
             .lock()
             .map_err(|_| anyhow::anyhow!("Failed to acquire stage metrics lock"))?;
         Ok(metrics.clone())
@@ -528,7 +557,8 @@ impl DataflowDebugger {
             execution_history: history,
             stage_metrics: metrics,
             materialized_data: {
-                let data = self.materialized_data
+                let data = self
+                    .materialized_data
                     .lock()
                     .map_err(|_| anyhow::anyhow!("Failed to acquire materialized data lock"))?;
                 data.clone()
@@ -544,14 +574,18 @@ impl DataflowDebugger {
                 std::fs::write(output_path, debug_str)?;
             }
             _ => {
-                return Err(anyhow::anyhow!("Export format {:?} not yet implemented", format));
+                return Err(anyhow::anyhow!(
+                    "Export format {:?} not yet implemented",
+                    format
+                ));
             }
         }
         Ok(())
     }
     // Helper methods
     fn check_breakpoint(&self, stage_id: &str) -> Result<Option<Breakpoint>> {
-        let breakpoints = self.breakpoints
+        let breakpoints = self
+            .breakpoints
             .lock()
             .map_err(|_| anyhow::anyhow!("Failed to acquire breakpoints lock"))?;
         Ok(breakpoints.get(stage_id).cloned())
@@ -562,7 +596,10 @@ impl DataflowDebugger {
         }
         match &breakpoint.condition {
             None | Some(BreakpointCondition::Always) => Ok(true),
-            Some(BreakpointCondition::RowCount { operator: _, value: _ }) => {
+            Some(BreakpointCondition::RowCount {
+                operator: _,
+                value: _,
+            }) => {
                 // In real implementation, would check actual row count
                 Ok(true)
             }
@@ -574,7 +611,10 @@ impl DataflowDebugger {
                 // In real implementation, would check memory usage
                 Ok(false)
             }
-            Some(BreakpointCondition::DataValue { column: _, value: _ }) => {
+            Some(BreakpointCondition::DataValue {
+                column: _,
+                value: _,
+            }) => {
                 // In real implementation, would inspect actual data
                 Ok(false)
             }
@@ -583,7 +623,8 @@ impl DataflowDebugger {
     }
     fn handle_breakpoint_hit(&self, stage_id: &str, breakpoint: &Breakpoint) -> Result<()> {
         // Update breakpoint hit count
-        let mut breakpoints = self.breakpoints
+        let mut breakpoints = self
+            .breakpoints
             .lock()
             .map_err(|_| anyhow::anyhow!("Failed to acquire breakpoints lock"))?;
         if let Some(bp) = breakpoints.get_mut(stage_id) {
@@ -591,7 +632,8 @@ impl DataflowDebugger {
         }
         // Update session state
         {
-            let mut state = self.session_state
+            let mut state = self
+                .session_state
                 .lock()
                 .map_err(|_| anyhow::anyhow!("Failed to acquire session state lock"))?;
             state.breakpoints_hit += 1;
@@ -619,18 +661,24 @@ impl DataflowDebugger {
         self.record_event(
             EventType::BreakpointHit,
             stage_id.to_string(),
-            HashMap::from([("hit_count".to_string(), breakpoint.hit_count.to_string())])
+            HashMap::from([("hit_count".to_string(), breakpoint.hit_count.to_string())]),
         )?;
         Ok(())
     }
-    fn record_event(&self, event_type: EventType, stage_id: String, data: HashMap<String, String>) -> Result<()> {
+    fn record_event(
+        &self,
+        event_type: EventType,
+        stage_id: String,
+        data: HashMap<String, String>,
+    ) -> Result<()> {
         let event = ExecutionEvent {
             timestamp: std::time::SystemTime::now(),
             event_type,
             stage_id,
             data,
         };
-        let mut history = self.execution_history
+        let mut history = self
+            .execution_history
             .lock()
             .map_err(|_| anyhow::anyhow!("Failed to acquire execution history lock"))?;
         history.push_back(event);
@@ -640,7 +688,11 @@ impl DataflowDebugger {
         }
         Ok(())
     }
-    fn compute_column_changes(&self, schema1: &DataSchema, schema2: &DataSchema) -> Vec<ColumnChange> {
+    fn compute_column_changes(
+        &self,
+        schema1: &DataSchema,
+        schema2: &DataSchema,
+    ) -> Vec<ColumnChange> {
         let mut changes = Vec::new();
         // Find added/removed columns (simplified implementation)
         let cols1: Vec<&str> = schema1.columns.iter().map(|c| c.name.as_str()).collect();
@@ -664,17 +716,23 @@ impl DataflowDebugger {
 
     /// Stop the debugging session
     pub fn stop_session(&self) -> Result<()> {
-        let mut state = self.session_state
+        let mut state = self
+            .session_state
             .lock()
             .map_err(|_| anyhow::anyhow!("Failed to acquire session state lock"))?;
         state.active = false;
-        self.record_event(EventType::StageCompleted, "session".to_string(), HashMap::new())?;
+        self.record_event(
+            EventType::StageCompleted,
+            "session".to_string(),
+            HashMap::new(),
+        )?;
         Ok(())
     }
 
     /// Add a stage to the pipeline
     pub fn add_stage(&self, stage: PipelineStage) -> Result<()> {
-        let mut stages = self.pipeline_stages
+        let mut stages = self
+            .pipeline_stages
             .lock()
             .map_err(|_| anyhow::anyhow!("Failed to acquire pipeline stages lock"))?;
         stages.push(stage);
@@ -682,7 +740,11 @@ impl DataflowDebugger {
     }
 
     /// Set a breakpoint at a specific stage
-    pub fn set_breakpoint(&self, stage_id: String, condition: Option<BreakpointCondition>) -> Result<()> {
+    pub fn set_breakpoint(
+        &self,
+        stage_id: String,
+        condition: Option<BreakpointCondition>,
+    ) -> Result<()> {
         let breakpoint = Breakpoint {
             stage_id,
             condition,
@@ -808,7 +870,9 @@ impl fmt::Display for DataType {
             Self::Struct(fields) => {
                 write!(f, "Struct{{")?;
                 for (i, (name, dtype)) in fields.iter().enumerate() {
-                    if i > 0 { write!(f, ", ")?; }
+                    if i > 0 {
+                        write!(f, ", ")?;
+                    }
                     write!(f, "{name}: {dtype}")?;
                 }
                 write!(f, "}}")
@@ -827,7 +891,9 @@ impl fmt::Display for DataValue {
             Self::Array(values) => {
                 write!(f, "[")?;
                 for (i, value) in values.iter().enumerate() {
-                    if i > 0 { write!(f, ", ")?; }
+                    if i > 0 {
+                        write!(f, ", ")?;
+                    }
                     write!(f, "{value}")?;
                 }
                 write!(f, "]")
@@ -968,7 +1034,7 @@ mod tests {
         let config = create_test_config();
         let debugger = DataflowDebugger::new(config);
 
-        let breakpoint = Breakpoint {
+        let _breakpoint = Breakpoint {
             stage_id: "stage_1".to_string(),
             condition: Some(BreakpointCondition::Always),
             active: true,
@@ -994,7 +1060,10 @@ mod tests {
         assert_eq!(format!("{}", StageType::Sort), "Sort");
         assert_eq!(format!("{}", StageType::Window), "Window");
         assert_eq!(format!("{}", StageType::Union), "Union");
-        assert_eq!(format!("{}", StageType::Custom("test".to_string())), "Custom(test)");
+        assert_eq!(
+            format!("{}", StageType::Custom("test".to_string())),
+            "Custom(test)"
+        );
     }
 
     #[test]
@@ -1002,7 +1071,10 @@ mod tests {
         assert_eq!(format!("{}", StageStatus::Pending), "Pending");
         assert_eq!(format!("{}", StageStatus::Running), "Running");
         assert_eq!(format!("{}", StageStatus::Completed), "Completed");
-        assert_eq!(format!("{}", StageStatus::Failed("error".to_string())), "Failed: error");
+        assert_eq!(
+            format!("{}", StageStatus::Failed("error".to_string())),
+            "Failed: error"
+        );
         assert_eq!(format!("{}", StageStatus::Cancelled), "Cancelled");
         assert_eq!(format!("{}", StageStatus::Paused), "Paused");
     }
@@ -1014,13 +1086,19 @@ mod tests {
         assert_eq!(format!("{}", DataType::Float), "Float");
         assert_eq!(format!("{}", DataType::String), "String");
         assert_eq!(format!("{}", DataType::DateTime), "DateTime");
-        assert_eq!(format!("{}", DataType::Array(Box::new(DataType::Integer))), "Array<Integer>");
+        assert_eq!(
+            format!("{}", DataType::Array(Box::new(DataType::Integer))),
+            "Array<Integer>"
+        );
 
         let struct_fields = vec![
             ("id".to_string(), DataType::Integer),
             ("name".to_string(), DataType::String),
         ];
-        assert_eq!(format!("{}", DataType::Struct(struct_fields)), "Struct{id: Integer, name: String}");
+        assert_eq!(
+            format!("{}", DataType::Struct(struct_fields)),
+            "Struct{id: Integer, name: String}"
+        );
     }
 
     #[test]
@@ -1028,10 +1106,17 @@ mod tests {
         assert_eq!(format!("{}", DataValue::Boolean(true)), "true");
         assert_eq!(format!("{}", DataValue::Integer(42)), "42");
         assert_eq!(format!("{}", DataValue::Float(3.14)), "3.14");
-        assert_eq!(format!("{}", DataValue::String("hello".to_string())), "\"hello\"");
+        assert_eq!(
+            format!("{}", DataValue::String("hello".to_string())),
+            "\"hello\""
+        );
         assert_eq!(format!("{}", DataValue::Null), "null");
 
-        let array_values = vec![DataValue::Integer(1), DataValue::Integer(2), DataValue::Integer(3)];
+        let array_values = vec![
+            DataValue::Integer(1),
+            DataValue::Integer(2),
+            DataValue::Integer(3),
+        ];
         assert_eq!(format!("{}", DataValue::Array(array_values)), "[1, 2, 3]");
     }
 
@@ -1056,16 +1141,16 @@ mod tests {
 
     #[test]
     fn test_breakpoint_condition_execution_time() {
-        let condition = BreakpointCondition::ExecutionTime {
-            threshold_ms: 5000,
-        };
+        let condition = BreakpointCondition::ExecutionTime { threshold_ms: 5000 };
 
         let breakpoint = Breakpoint {
             stage_id: "stage_1".to_string(),
             condition: Some(condition),
             active: true,
             hit_count: 0,
-            actions: vec![BreakpointAction::Print("Slow execution detected".to_string())],
+            actions: vec![BreakpointAction::Print(
+                "Slow execution detected".to_string(),
+            )],
         };
 
         assert_eq!(breakpoint.actions.len(), 1);
@@ -1073,9 +1158,7 @@ mod tests {
 
     #[test]
     fn test_breakpoint_condition_memory_usage() {
-        let condition = BreakpointCondition::MemoryUsage {
-            threshold_mb: 100,
-        };
+        let condition = BreakpointCondition::MemoryUsage { threshold_mb: 100 };
 
         let breakpoint = Breakpoint {
             stage_id: "stage_1".to_string(),
@@ -1135,10 +1218,7 @@ mod tests {
                 ],
             },
             DataRow {
-                values: vec![
-                    DataValue::Integer(2),
-                    DataValue::String("Bob".to_string()),
-                ],
+                values: vec![DataValue::Integer(2), DataValue::String("Bob".to_string())],
             },
         ];
 
@@ -1244,12 +1324,15 @@ mod tests {
 
         assert_eq!(event.stage_id, "stage_1");
         assert!(matches!(event.event_type, EventType::StageFailed));
-        assert_eq!(event.data.get("error_message"), Some(&"Division by zero".to_string()));
+        assert_eq!(
+            event.data.get("error_message"),
+            Some(&"Division by zero".to_string())
+        );
     }
 
     #[test]
     fn test_comparison_operators() {
-        let operators = vec![
+        let operators = [
             ComparisonOp::Equal,
             ComparisonOp::NotEqual,
             ComparisonOp::GreaterThan,
@@ -1263,7 +1346,7 @@ mod tests {
 
     #[test]
     fn test_export_formats() {
-        let formats = vec![
+        let formats = [
             ExportFormat::Json,
             ExportFormat::Csv,
             ExportFormat::Parquet,
@@ -1277,14 +1360,17 @@ mod tests {
     fn test_complex_data_type_struct() {
         let fields = vec![
             ("user_id".to_string(), DataType::Integer),
-            ("profile".to_string(), DataType::Struct(vec![
-                ("name".to_string(), DataType::String),
-                ("age".to_string(), DataType::Integer),
-            ])),
+            (
+                "profile".to_string(),
+                DataType::Struct(vec![
+                    ("name".to_string(), DataType::String),
+                    ("age".to_string(), DataType::Integer),
+                ]),
+            ),
         ];
 
         let struct_type = DataType::Struct(fields);
-        let display_str = format!("{}", struct_type);
+        let display_str = format!("{struct_type}");
         assert!(display_str.contains("user_id: Integer"));
         assert!(display_str.contains("profile: Struct"));
     }
@@ -1296,7 +1382,7 @@ mod tests {
             DataValue::Array(vec![DataValue::Integer(3), DataValue::Integer(4)]),
         ]);
 
-        let display_str = format!("{}", nested_array);
+        let display_str = format!("{nested_array}");
         assert_eq!(display_str, "[[1, 2], [3, 4]]");
     }
 

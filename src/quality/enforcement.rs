@@ -1,14 +1,10 @@
 //! Quality gate enforcement implementation for CLI
-use std::path::Path;
+use crate::quality::gates::{QualityGateConfig, QualityGateEnforcer};
+use crate::quality::scoring::{AnalysisDepth, ScoreEngine};
 use anyhow::Result;
-use crate::quality::gates::{QualityGateEnforcer, QualityGateConfig};
-use crate::quality::scoring::{ScoreEngine, AnalysisDepth};
+use std::path::Path;
 /// Load and configure quality gate enforcer (complexity: 6)
-fn load_gate_config(
-    path: &Path, 
-    config: Option<&Path>, 
-    ci: bool
-) -> Result<QualityGateEnforcer> {
+fn load_gate_config(path: &Path, config: Option<&Path>, ci: bool) -> Result<QualityGateEnforcer> {
     // Load configuration
     let project_root = find_project_root(path)?;
     let mut gate_config = if let Some(config_path) = config {
@@ -37,7 +33,7 @@ fn process_path(
     enforcer: &QualityGateEnforcer,
     analysis_depth: AnalysisDepth,
     fail_fast: bool,
-    verbose: bool
+    verbose: bool,
 ) -> Result<Vec<crate::quality::gates::GateResult>> {
     let mut all_results = Vec::new();
     if path.is_file() {
@@ -55,7 +51,7 @@ fn process_path(
 fn output_results(
     results: &[crate::quality::gates::GateResult],
     format: &str,
-    verbose: bool
+    verbose: bool,
 ) -> Result<()> {
     match format {
         "console" => print_console_results(results, verbose)?,
@@ -69,7 +65,7 @@ fn output_results(
 fn handle_export(
     enforcer: &QualityGateEnforcer,
     results: &[crate::quality::gates::GateResult],
-    export: Option<&Path>
+    export: Option<&Path>,
 ) -> Result<()> {
     if let Some(export_path) = export {
         std::fs::create_dir_all(export_path)?;
@@ -91,10 +87,10 @@ fn check_gate_results(results: &[crate::quality::gates::GateResult]) -> Result<(
 }
 /// Enforce quality gates on a file or directory (complexity: 6)
 /// # Examples
-/// 
+///
 /// ```ignore
 /// use ruchy::quality::enforcement::enforce_quality_gates;
-/// 
+///
 /// let result = enforce_quality_gates("example");
 /// assert_eq!(result, Ok(()));
 /// ```
@@ -175,13 +171,7 @@ fn process_directory(
     for entry in std::fs::read_dir(dir_path)? {
         let entry = entry?;
         let path = entry.path();
-        let entry_results = process_directory_entry(
-            enforcer,
-            &path,
-            depth,
-            fail_fast,
-            verbose,
-        )?;
+        let entry_results = process_directory_entry(enforcer, &path, depth, fail_fast, verbose)?;
         // Handle fail-fast mode
         if should_fail_fast(&entry_results, fail_fast) {
             return Ok(entry_results);
@@ -212,10 +202,12 @@ fn is_ruchy_file(path: &Path) -> bool {
 }
 /// Check if directory should be processed (complexity: 3)
 fn is_processable_directory(path: &Path) -> bool {
-    path.is_dir() && !path.file_name()
-        .unwrap_or_default()
-        .to_string_lossy()
-        .starts_with('.')
+    path.is_dir()
+        && !path
+            .file_name()
+            .unwrap_or_default()
+            .to_string_lossy()
+            .starts_with('.')
 }
 /// Process a Ruchy file and handle errors (complexity: 5)
 fn process_ruchy_file(
@@ -246,9 +238,20 @@ fn process_ruchy_file(
 fn should_fail_fast(results: &[crate::quality::gates::GateResult], fail_fast: bool) -> bool {
     fail_fast && results.iter().any(|r| !r.passed)
 }
-fn print_console_results(results: &[crate::quality::gates::GateResult], verbose: bool) -> Result<()> {
+fn print_console_results(
+    results: &[crate::quality::gates::GateResult],
+    verbose: bool,
+) -> Result<()> {
     for (i, result) in results.iter().enumerate() {
-        println!("\n📋 Quality Gate #{}: {}", i + 1, if result.passed { "✅ PASSED" } else { "❌ FAILED" });
+        println!(
+            "\n📋 Quality Gate #{}: {}",
+            i + 1,
+            if result.passed {
+                "✅ PASSED"
+            } else {
+                "❌ FAILED"
+            }
+        );
         println!("   Score: {:.1}% ({})", result.score * 100.0, result.grade);
         println!("   Confidence: {:.1}%", result.confidence * 100.0);
         if !result.violations.is_empty() {
@@ -256,8 +259,14 @@ fn print_console_results(results: &[crate::quality::gates::GateResult], verbose:
             for violation in &result.violations {
                 println!("     • {}", violation.message);
                 if verbose {
-                    println!("       Type: {:?}, Severity: {:?}", violation.violation_type, violation.severity);
-                    println!("       Required: {:.3}, Actual: {:.3}", violation.required, violation.actual);
+                    println!(
+                        "       Type: {:?}, Severity: {:?}",
+                        violation.violation_type, violation.severity
+                    );
+                    println!(
+                        "       Required: {:.3}, Actual: {:.3}",
+                        violation.required, violation.actual
+                    );
                 }
             }
         }
@@ -282,15 +291,20 @@ fn print_junit_results(results: &[crate::quality::gates::GateResult]) -> Result<
     let total = results.len();
     let failures = results.iter().filter(|r| !r.passed).count();
     println!(r#"<?xml version="1.0" encoding="UTF-8"?>"#);
-    println!(r#"<testsuite name="Quality Gates" tests="{total}" failures="{failures}" time="0.0">"#);
+    println!(
+        r#"<testsuite name="Quality Gates" tests="{total}" failures="{failures}" time="0.0">"#
+    );
     for (i, result) in results.iter().enumerate() {
         let test_name = format!("quality-gate-{i}");
         if result.passed {
             println!(r#"  <testcase name="{test_name}" classname="QualityGate" time="0.0"/>"#);
         } else {
             println!(r#"  <testcase name="{test_name}" classname="QualityGate" time="0.0">"#);
-            println!(r#"    <failure message="Quality gate violation">Score: {:.1}%, Grade: {}</failure>"#, 
-                result.score * 100.0, result.grade);
+            println!(
+                r#"    <failure message="Quality gate violation">Score: {:.1}%, Grade: {}</failure>"#,
+                result.score * 100.0,
+                result.grade
+            );
             println!(r"  </testcase>");
         }
     }
@@ -300,9 +314,9 @@ fn print_junit_results(results: &[crate::quality::gates::GateResult]) -> Result<
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tempfile::TempDir;
-    use std::fs;
     use crate::quality::gates::QualityGateConfig;
+    use std::fs;
+    use tempfile::TempDir;
     fn create_test_ruchy_file(dir: &Path, filename: &str, content: &str) -> std::path::PathBuf {
         let file_path = dir.join(filename);
         fs::write(&file_path, content).unwrap();
@@ -310,7 +324,11 @@ mod tests {
     }
     fn create_test_project_structure(dir: &Path) -> std::path::PathBuf {
         // Create Cargo.toml to mark as project root
-        fs::write(dir.join("Cargo.toml"), "[package]\nname = \"test\"\nversion = \"0.1.0\"").unwrap();
+        fs::write(
+            dir.join("Cargo.toml"),
+            "[package]\nname = \"test\"\nversion = \"0.1.0\"",
+        )
+        .unwrap();
         // Create .ruchy directory
         fs::create_dir_all(dir.join(".ruchy")).unwrap();
         // Create some test Ruchy files
@@ -413,40 +431,40 @@ mod tests {
         // Test all valid depth values
         let depths = vec![
             ("shallow", true),
-            ("standard", true), 
+            ("standard", true),
             ("deep", true),
             ("invalid", false),
             ("", false),
         ];
         for (depth_str, should_succeed) in depths {
             let result = enforce_quality_gates(
-                &file_path,
-                None,
-                depth_str,
-                false,
-                "console",
-                None,
-                false,
-                false,
+                &file_path, None, depth_str, false, "console", None, false, false,
             );
             if should_succeed {
                 // For valid depths, should not fail on depth parsing
                 // May fail on other quality issues, but not depth parsing
                 if let Err(e) = &result {
-                    assert!(!e.to_string().contains("Invalid depth"), 
-                        "Should not fail on depth parsing for '{depth_str}'");
+                    assert!(
+                        !e.to_string().contains("Invalid depth"),
+                        "Should not fail on depth parsing for '{depth_str}'"
+                    );
                 }
             } else {
-                assert!(result.is_err(), "Should fail for invalid depth: '{depth_str}'");
+                assert!(
+                    result.is_err(),
+                    "Should fail for invalid depth: '{depth_str}'"
+                );
                 if let Err(e) = result {
-                    assert!(e.to_string().contains("Invalid depth"), 
-                        "Should fail with depth error for '{depth_str}'");
+                    assert!(
+                        e.to_string().contains("Invalid depth"),
+                        "Should fail with depth error for '{depth_str}'"
+                    );
                 }
             }
         }
     }
     // Test 4: Format Validation
-    #[test] 
+    #[test]
     fn test_format_validation() {
         let temp_dir = TempDir::new().unwrap();
         let project_dir = create_test_project_structure(temp_dir.path());
@@ -460,26 +478,26 @@ mod tests {
         ];
         for (format, should_succeed) in formats {
             let result = enforce_quality_gates(
-                &file_path,
-                None,
-                "standard",
-                false,
-                format,
-                None,
-                false,
-                false,
+                &file_path, None, "standard", false, format, None, false, false,
             );
             if should_succeed {
                 // Valid formats shouldn't fail on format parsing
                 if let Err(e) = &result {
-                    assert!(!e.to_string().contains("Invalid format"), 
-                        "Should not fail on format parsing for '{format}'");
+                    assert!(
+                        !e.to_string().contains("Invalid format"),
+                        "Should not fail on format parsing for '{format}'"
+                    );
                 }
             } else {
-                assert!(result.is_err(), "Should fail for invalid format: '{format}'");
+                assert!(
+                    result.is_err(),
+                    "Should fail for invalid format: '{format}'"
+                );
                 if let Err(e) = result {
-                    assert!(e.to_string().contains("Invalid format"), 
-                        "Should fail with format error for '{format}'");
+                    assert!(
+                        e.to_string().contains("Invalid format"),
+                        "Should fail with format error for '{format}'"
+                    );
                 }
             }
         }
@@ -492,17 +510,13 @@ mod tests {
         let file_path = create_test_ruchy_file(&project_dir, "single.ruchy", "println(\"test\")");
         // This should not crash and should process the single file
         let result = enforce_quality_gates(
-            &file_path,
-            None,
-            "standard", 
-            false,
-            "console",
-            None,
-            false,
-            false,
+            &file_path, None, "standard", false, "console", None, false, false,
         );
         // May fail due to quality issues, but should not crash
-        assert!(result.is_ok() || result.is_err(), "Should complete processing");
+        assert!(
+            result.is_ok() || result.is_err(),
+            "Should complete processing"
+        );
     }
     #[test]
     fn test_directory_processing() {
@@ -517,13 +531,16 @@ mod tests {
             None,
             "standard",
             false,
-            "console", 
+            "console",
             None,
             false,
             false,
         );
         // May fail due to quality issues, but should not crash
-        assert!(result.is_ok() || result.is_err(), "Should complete directory processing");
+        assert!(
+            result.is_ok() || result.is_err(),
+            "Should complete directory processing"
+        );
     }
     #[test]
     fn test_nonexistent_path() {
@@ -575,7 +592,10 @@ idiomaticity = 0.4
             false,
         );
         // Should use custom config (may pass due to lower thresholds)
-        assert!(result.is_ok() || result.is_err(), "Should process with custom config");
+        assert!(
+            result.is_ok() || result.is_err(),
+            "Should process with custom config"
+        );
     }
     // Test 7: Export Functionality
     #[test]
@@ -603,16 +623,13 @@ idiomaticity = 0.4
         let temp_dir = TempDir::new().unwrap();
         let project_dir = create_test_project_structure(temp_dir.path());
         // Create file with invalid syntax
-        let bad_file = create_test_ruchy_file(&project_dir, "bad_syntax.ruchy", "let = = invalid syntax here");
+        let bad_file = create_test_ruchy_file(
+            &project_dir,
+            "bad_syntax.ruchy",
+            "let = = invalid syntax here",
+        );
         let result = enforce_quality_gates(
-            &bad_file,
-            None,
-            "standard",
-            false,
-            "console",
-            None,
-            false,
-            false,
+            &bad_file, None, "standard", false, "console", None, false, false,
         );
         // Should handle parsing errors gracefully
         assert!(result.is_err(), "Should fail gracefully on invalid syntax");
@@ -626,20 +643,16 @@ idiomaticity = 0.4
         // Test both verbose modes (this mainly tests that verbose flag is accepted)
         for verbose in [true, false] {
             let result = enforce_quality_gates(
-                &file_path,
-                None,
-                "standard",
-                false,
-                "console",
-                None,
-                false,
-                verbose,
+                &file_path, None, "standard", false, "console", None, false, verbose,
             );
             // Should accept verbose flag without crashing
-            assert!(result.is_ok() || result.is_err(), "Should handle verbose flag");
+            assert!(
+                result.is_ok() || result.is_err(),
+                "Should handle verbose flag"
+            );
         }
     }
-    // Test 10: Fail Fast Mode  
+    // Test 10: Fail Fast Mode
     #[test]
     fn test_fail_fast_mode() {
         let temp_dir = TempDir::new().unwrap();
@@ -659,15 +672,17 @@ idiomaticity = 0.4
                 false,
             );
             // Should handle fail_fast flag without crashing
-            assert!(result.is_ok() || result.is_err(), "Should handle fail_fast flag");
+            assert!(
+                result.is_ok() || result.is_err(),
+                "Should handle fail_fast flag"
+            );
         }
     }
 }
 #[cfg(test)]
 mod property_tests_enforcement {
     use proptest::proptest;
-    
-    
+
     proptest! {
         /// Property: Function never panics on any input
         #[test]

@@ -1,9 +1,9 @@
 //! Basic TDD tests for backend/transpiler - achieving coverage
 //! Focus on simple, core functionality that doesn't require complex AST construction
 
+use ruchy::frontend::ast::Span;
 use ruchy::Transpiler;
 use ruchy::{Expr, ExprKind, Literal};
-use ruchy::frontend::ast::Span;
 
 // Helper to create a simple literal expression
 fn make_literal(val: i64) -> Expr {
@@ -169,11 +169,7 @@ fn test_transpile_block_single_expr() {
 fn test_transpile_block_multiple_exprs() {
     let transpiler = Transpiler::new();
     let expr = Expr {
-        kind: ExprKind::Block(vec![
-            make_literal(1),
-            make_literal(2),
-            make_literal(3),
-        ]),
+        kind: ExprKind::Block(vec![make_literal(1), make_literal(2), make_literal(3)]),
         span: Span::default(),
         attributes: vec![],
     };
@@ -200,10 +196,7 @@ fn test_transpile_empty_list() {
 fn test_transpile_list_with_elements() {
     let transpiler = Transpiler::new();
     let expr = Expr {
-        kind: ExprKind::List(vec![
-            make_literal(10),
-            make_literal(20),
-        ]),
+        kind: ExprKind::List(vec![make_literal(10), make_literal(20)]),
         span: Span::default(),
         attributes: vec![],
     };
@@ -246,7 +239,7 @@ fn test_transpile_minimal() {
 }
 
 // ============================================================================
-// Mutability Analysis Tests  
+// Mutability Analysis Tests
 // ============================================================================
 
 #[test]

@@ -2,8 +2,8 @@
 //! Target: 68% → 80%+ coverage
 //! Focus on interpreter core functions with property tests
 
-use ruchy::runtime::interpreter::{Interpreter, Value, InterpreterError};
 use ruchy::frontend::parser::Parser;
+use ruchy::runtime::interpreter::{Interpreter, InterpreterError, Value};
 use std::rc::Rc;
 
 #[cfg(test)]

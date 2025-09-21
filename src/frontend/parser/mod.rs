@@ -53,18 +53,34 @@ mod types;
 mod utils;
 
 // Re-export the main parser
-pub use core::Parser;
 use crate::frontend::arena::{Arena, StringInterner};
-use std::collections::VecDeque;
 use crate::frontend::ast::{
-    Attribute, BinaryOp, Expr, ExprKind, Literal, Param,
-    Pattern, PipelineStage, Span, Type, UnaryOp,
     // Additional types for re-export to submodules
-    ActorHandler, DataFrameColumn, EnumVariant, MatchArm, StringPart, StructField, TraitMethod, TypeKind,
+    ActorHandler,
+    Attribute,
+    BinaryOp,
+    DataFrameColumn,
+    EnumVariant,
+    Expr,
+    ExprKind,
+    Literal,
+    MatchArm,
+    Param,
+    Pattern,
+    PipelineStage,
+    Span,
+    StringPart,
+    StructField,
+    TraitMethod,
+    Type,
+    TypeKind,
+    UnaryOp,
 };
 use crate::frontend::lexer::{Token, TokenStream};
 use crate::parser::error_recovery::ErrorNode;
 use anyhow::{bail, Result};
+pub use core::Parser;
+use std::collections::VecDeque;
 /// Internal parser state containing tokens, errors, and memory management.
 ///
 /// This structure maintains all mutable state during parsing including:
@@ -246,7 +262,7 @@ fn handle_try_operator(state: &mut ParserState, left: Expr) -> Result<Expr> {
 /// Handle array indexing and slicing syntax `[expr]` or `[start:end]`
 fn handle_array_indexing(state: &mut ParserState, left: Expr) -> Result<Expr> {
     state.tokens.advance(); // consume [
-    // Check for empty slice [:end] 
+                            // Check for empty slice [:end]
     if is_colon_next(state) {
         return parse_empty_start_slice(state, left);
     }
@@ -377,7 +393,7 @@ fn try_type_cast_operator(
         return Ok(None);
     }
     state.tokens.advance(); // consume 'as'
-    // Get the target type
+                            // Get the target type
     let target_type = match state.tokens.peek() {
         Some((Token::Identifier(t), _)) => {
             let type_name = t.clone();
@@ -411,10 +427,13 @@ fn try_new_actor_operators(
             }
             state.tokens.advance();
             let message = parse_expr_with_precedence_recursive(state, prec)?;
-            (ExprKind::ActorSend {
-                actor: Box::new(left),
-                message: Box::new(message),
-            }, prec)
+            (
+                ExprKind::ActorSend {
+                    actor: Box::new(left),
+                    message: Box::new(message),
+                },
+                prec,
+            )
         }
         Token::ActorQuery => {
             // Parse actor <? message
@@ -424,10 +443,13 @@ fn try_new_actor_operators(
             }
             state.tokens.advance();
             let message = parse_expr_with_precedence_recursive(state, prec)?;
-            (ExprKind::ActorQuery {
-                actor: Box::new(left),
-                message: Box::new(message),
-            }, prec)
+            (
+                ExprKind::ActorQuery {
+                    actor: Box::new(left),
+                    message: Box::new(message),
+                },
+                prec,
+            )
         }
         _ => return Ok(None),
     };
@@ -660,60 +682,132 @@ mod tests {
     fn test_parser_binary_operations() {
         let mut state = ParserState::new("1 + 2");
         let expr = parse_expr_recursive(&mut state).unwrap();
-        assert!(matches!(expr.kind, ExprKind::Binary { op: BinaryOp::Add, .. }));
+        assert!(matches!(
+            expr.kind,
+            ExprKind::Binary {
+                op: BinaryOp::Add,
+                ..
+            }
+        ));
 
         let mut state = ParserState::new("10 - 5");
         let expr = parse_expr_recursive(&mut state).unwrap();
-        assert!(matches!(expr.kind, ExprKind::Binary { op: BinaryOp::Subtract, .. }));
+        assert!(matches!(
+            expr.kind,
+            ExprKind::Binary {
+                op: BinaryOp::Subtract,
+                ..
+            }
+        ));
 
         let mut state = ParserState::new("3 * 4");
         let expr = parse_expr_recursive(&mut state).unwrap();
-        assert!(matches!(expr.kind, ExprKind::Binary { op: BinaryOp::Multiply, .. }));
+        assert!(matches!(
+            expr.kind,
+            ExprKind::Binary {
+                op: BinaryOp::Multiply,
+                ..
+            }
+        ));
 
         let mut state = ParserState::new("8 / 2");
         let expr = parse_expr_recursive(&mut state).unwrap();
-        assert!(matches!(expr.kind, ExprKind::Binary { op: BinaryOp::Divide, .. }));
+        assert!(matches!(
+            expr.kind,
+            ExprKind::Binary {
+                op: BinaryOp::Divide,
+                ..
+            }
+        ));
     }
 
     #[test]
     fn test_parser_comparison_operations() {
         let mut state = ParserState::new("5 > 3");
         let expr = parse_expr_recursive(&mut state).unwrap();
-        assert!(matches!(expr.kind, ExprKind::Binary { op: BinaryOp::Greater, .. }));
+        assert!(matches!(
+            expr.kind,
+            ExprKind::Binary {
+                op: BinaryOp::Greater,
+                ..
+            }
+        ));
 
         let mut state = ParserState::new("3 < 5");
         let expr = parse_expr_recursive(&mut state).unwrap();
-        assert!(matches!(expr.kind, ExprKind::Binary { op: BinaryOp::Less, .. }));
+        assert!(matches!(
+            expr.kind,
+            ExprKind::Binary {
+                op: BinaryOp::Less,
+                ..
+            }
+        ));
 
         let mut state = ParserState::new("5 == 5");
         let expr = parse_expr_recursive(&mut state).unwrap();
-        assert!(matches!(expr.kind, ExprKind::Binary { op: BinaryOp::Equal, .. }));
+        assert!(matches!(
+            expr.kind,
+            ExprKind::Binary {
+                op: BinaryOp::Equal,
+                ..
+            }
+        ));
 
         let mut state = ParserState::new("5 != 3");
         let expr = parse_expr_recursive(&mut state).unwrap();
-        assert!(matches!(expr.kind, ExprKind::Binary { op: BinaryOp::NotEqual, .. }));
+        assert!(matches!(
+            expr.kind,
+            ExprKind::Binary {
+                op: BinaryOp::NotEqual,
+                ..
+            }
+        ));
     }
 
     #[test]
     fn test_parser_logical_operations() {
         let mut state = ParserState::new("true && false");
         let expr = parse_expr_recursive(&mut state).unwrap();
-        assert!(matches!(expr.kind, ExprKind::Binary { op: BinaryOp::And, .. }));
+        assert!(matches!(
+            expr.kind,
+            ExprKind::Binary {
+                op: BinaryOp::And,
+                ..
+            }
+        ));
 
         let mut state = ParserState::new("true || false");
         let expr = parse_expr_recursive(&mut state).unwrap();
-        assert!(matches!(expr.kind, ExprKind::Binary { op: BinaryOp::Or, .. }));
+        assert!(matches!(
+            expr.kind,
+            ExprKind::Binary {
+                op: BinaryOp::Or,
+                ..
+            }
+        ));
     }
 
     #[test]
     fn test_parser_unary_operations() {
         let mut state = ParserState::new("-42");
         let expr = parse_expr_recursive(&mut state).unwrap();
-        assert!(matches!(expr.kind, ExprKind::Unary { op: UnaryOp::Negate, .. }));
+        assert!(matches!(
+            expr.kind,
+            ExprKind::Unary {
+                op: UnaryOp::Negate,
+                ..
+            }
+        ));
 
         let mut state = ParserState::new("!true");
         let expr = parse_expr_recursive(&mut state).unwrap();
-        assert!(matches!(expr.kind, ExprKind::Unary { op: UnaryOp::Not, .. }));
+        assert!(matches!(
+            expr.kind,
+            ExprKind::Unary {
+                op: UnaryOp::Not,
+                ..
+            }
+        ));
     }
 
     #[test]
@@ -725,7 +819,13 @@ mod tests {
 
         let mut state = ParserState::new("(1 + 2) * 3");
         let expr = parse_expr_recursive(&mut state).unwrap();
-        assert!(matches!(expr.kind, ExprKind::Binary { op: BinaryOp::Multiply, .. }));
+        assert!(matches!(
+            expr.kind,
+            ExprKind::Binary {
+                op: BinaryOp::Multiply,
+                ..
+            }
+        ));
     }
 
     #[test]
@@ -805,26 +905,41 @@ mod tests {
         let mut state = ParserState::new("1 + 2 * 3");
         let expr = parse_expr_recursive(&mut state).unwrap();
         // Should parse as 1 + (2 * 3), not (1 + 2) * 3
-        assert!(matches!(expr.kind, ExprKind::Binary { op: BinaryOp::Add, .. }));
+        assert!(matches!(
+            expr.kind,
+            ExprKind::Binary {
+                op: BinaryOp::Add,
+                ..
+            }
+        ));
     }
 
     #[test]
-    #[ignore = "Assignment parsing needs investigation"]
+
     fn test_parser_assignment_operators() {
         // Assignment is parsed as a binary operation in this AST
         let mut state = ParserState::new("x = 5");
         let expr = parse_expr_recursive(&mut state).unwrap();
         // Assignment might be parsed differently, just check it's an expression
         // The AST doesn't have an Assign binary op
-        assert!(matches!(expr.kind, ExprKind::Let { .. }) || matches!(expr.kind, ExprKind::Binary { .. }));
+        assert!(
+            matches!(expr.kind, ExprKind::Let { .. })
+                || matches!(expr.kind, ExprKind::Binary { .. })
+        );
 
         let mut state = ParserState::new("x += 5");
         let expr = parse_expr_recursive(&mut state).unwrap();
-        assert!(matches!(expr.kind, ExprKind::Binary { op: BinaryOp::Add, .. }));
+        assert!(matches!(
+            expr.kind,
+            ExprKind::Binary {
+                op: BinaryOp::Add,
+                ..
+            }
+        ));
     }
 
     #[test]
-    #[ignore = "Pipeline parsing needs investigation"]
+
     fn test_parser_pipeline_operator() {
         let mut state = ParserState::new("data >> transform");
         let expr = parse_expr_recursive(&mut state).unwrap();
@@ -878,7 +993,13 @@ mod tests {
         let mut state = ParserState::new("(a + b) * (c - d) / 2");
         let expr = parse_expr_recursive(&mut state).unwrap();
         // Should parse successfully as a division operation at the top level
-        assert!(matches!(expr.kind, ExprKind::Binary { op: BinaryOp::Divide, .. }));
+        assert!(matches!(
+            expr.kind,
+            ExprKind::Binary {
+                op: BinaryOp::Divide,
+                ..
+            }
+        ));
     }
 
     #[test]
@@ -901,17 +1022,19 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "Safe navigation parsing needs investigation"]
+
     fn test_parser_safe_navigation() {
         let mut state = ParserState::new("obj?.method()");
         let expr = parse_expr_recursive(&mut state).unwrap();
         // Safe navigation might use OptionalFieldAccess or similar
-        assert!(matches!(expr.kind, ExprKind::OptionalFieldAccess { .. }) ||
-                matches!(expr.kind, ExprKind::MethodCall { .. }));
+        assert!(
+            matches!(expr.kind, ExprKind::OptionalFieldAccess { .. })
+                || matches!(expr.kind, ExprKind::MethodCall { .. })
+        );
     }
 
     #[test]
-    #[ignore = "Macro parsing needs investigation"]
+
     fn test_parser_macro_call() {
         let mut state = ParserState::new("println!(\"hello\")");
         let expr = parse_expr_recursive(&mut state).unwrap();
@@ -927,22 +1050,46 @@ mod tests {
     fn test_parser_bitwise_operations() {
         let mut state = ParserState::new("a & b");
         let expr = parse_expr_recursive(&mut state).unwrap();
-        assert!(matches!(expr.kind, ExprKind::Binary { op: BinaryOp::BitwiseAnd, .. }));
+        assert!(matches!(
+            expr.kind,
+            ExprKind::Binary {
+                op: BinaryOp::BitwiseAnd,
+                ..
+            }
+        ));
 
         let mut state = ParserState::new("a | b");
         let expr = parse_expr_recursive(&mut state).unwrap();
-        assert!(matches!(expr.kind, ExprKind::Binary { op: BinaryOp::BitwiseOr, .. }));
+        assert!(matches!(
+            expr.kind,
+            ExprKind::Binary {
+                op: BinaryOp::BitwiseOr,
+                ..
+            }
+        ));
 
         let mut state = ParserState::new("a ^ b");
         let expr = parse_expr_recursive(&mut state).unwrap();
-        assert!(matches!(expr.kind, ExprKind::Binary { op: BinaryOp::BitwiseXor, .. }));
+        assert!(matches!(
+            expr.kind,
+            ExprKind::Binary {
+                op: BinaryOp::BitwiseXor,
+                ..
+            }
+        ));
     }
 
     #[test]
     fn test_parser_shift_operations() {
         let mut state = ParserState::new("a << 2");
         let expr = parse_expr_recursive(&mut state).unwrap();
-        assert!(matches!(expr.kind, ExprKind::Binary { op: BinaryOp::LeftShift, .. }));
+        assert!(matches!(
+            expr.kind,
+            ExprKind::Binary {
+                op: BinaryOp::LeftShift,
+                ..
+            }
+        ));
 
         // Right shift doesn't exist in BinaryOp, skip this test
         // The language may not support right shift or use a different representation
@@ -952,7 +1099,13 @@ mod tests {
     fn test_parser_modulo_operation() {
         let mut state = ParserState::new("10 % 3");
         let expr = parse_expr_recursive(&mut state).unwrap();
-        assert!(matches!(expr.kind, ExprKind::Binary { op: BinaryOp::Modulo, .. }));
+        assert!(matches!(
+            expr.kind,
+            ExprKind::Binary {
+                op: BinaryOp::Modulo,
+                ..
+            }
+        ));
     }
 
     #[test]
@@ -966,7 +1119,13 @@ mod tests {
     fn test_parser_power_operation() {
         let mut state = ParserState::new("2 ** 8");
         let expr = parse_expr_recursive(&mut state).unwrap();
-        assert!(matches!(expr.kind, ExprKind::Binary { op: BinaryOp::Power, .. }));
+        assert!(matches!(
+            expr.kind,
+            ExprKind::Binary {
+                op: BinaryOp::Power,
+                ..
+            }
+        ));
     }
 
     #[test]

@@ -185,9 +185,7 @@ mod async_runtime_tests {
     async fn test_runtime_execution() {
         let runtime = AsyncRuntime::new();
 
-        let future = runtime.spawn(async {
-            42
-        });
+        let future = runtime.spawn(async { 42 });
 
         let result = future.await;
         assert_eq!(result, 42);

@@ -67,15 +67,15 @@ impl SnapshotRunner {
     /// # Errors
     ///
     /// Returns an error if the operation fails
-/// # Examples
-/// 
-/// ```
-/// use ruchy::testing::snapshot::load;
-/// 
-/// let result = load(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn load(config: SnapshotConfig) -> Result<Self> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::testing::snapshot::load;
+    ///
+    /// let result = load(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn load(config: SnapshotConfig) -> Result<Self> {
         let snapshot_file = config.snapshot_dir.join("snapshots.toml");
         let suite = if snapshot_file.exists() {
             let contents = fs::read_to_string(&snapshot_file)?;
@@ -218,15 +218,15 @@ pub struct SnapshotBisector {
 }
 impl SnapshotBisector {
     #[must_use]
-/// # Examples
-/// 
-/// ```
-/// use ruchy::testing::snapshot::new;
-/// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn new(snapshots: Vec<SnapshotTest>) -> Self {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::testing::snapshot::new;
+    ///
+    /// let result = new(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn new(snapshots: Vec<SnapshotTest>) -> Self {
         Self { snapshots }
     }
     /// Find the commit that introduced a regression
@@ -243,10 +243,10 @@ pub fn new(snapshots: Vec<SnapshotTest>) -> Self {
 /// Snapshot test definitions for core Ruchy features
 #[must_use]
 /// # Examples
-/// 
+///
 /// ```
 /// use ruchy::testing::snapshot::core_snapshot_tests;
-/// 
+///
 /// let result = core_snapshot_tests(());
 /// assert_eq!(result, Ok(()));
 /// ```
@@ -406,7 +406,7 @@ mod tests {
         for input in inputs {
             let hash1 = SnapshotRunner::hash(input);
             let hash2 = SnapshotRunner::hash(input);
-            assert_eq!(hash1, hash2, "Hash inconsistency for input: {}", input);
+            assert_eq!(hash1, hash2, "Hash inconsistency for input: {input}");
         }
     }
 
@@ -439,7 +439,9 @@ mod tests {
         let mut runner = SnapshotRunner::load(config).unwrap();
 
         // First test - creates snapshot
-        runner.test("test1", "input1", |_| Ok("output1".to_string())).unwrap();
+        runner
+            .test("test1", "input1", |_| Ok("output1".to_string()))
+            .unwrap();
         assert_eq!(runner.suite.tests.len(), 1);
 
         // Second test with different output - should fail because auto_update is false
@@ -461,11 +463,15 @@ mod tests {
         let mut runner = SnapshotRunner::load(config).unwrap();
 
         // First test - creates snapshot
-        runner.test("test1", "input1", |_| Ok("output1".to_string())).unwrap();
+        runner
+            .test("test1", "input1", |_| Ok("output1".to_string()))
+            .unwrap();
         let original_hash = runner.suite.tests[0].output_hash.clone();
 
         // Second test with different output - should update because auto_update is true
-        runner.test("test1", "input1", |_| Ok("output2".to_string())).unwrap();
+        runner
+            .test("test1", "input1", |_| Ok("output2".to_string()))
+            .unwrap();
         let new_hash = &runner.suite.tests[0].output_hash;
 
         assert_ne!(original_hash, *new_hash);
@@ -505,10 +511,18 @@ mod tests {
         let mut runner = SnapshotRunner::load(config).unwrap();
 
         // Create initial snapshot
-        runner.test("match_test", "input", |_| Ok("consistent_output".to_string())).unwrap();
+        runner
+            .test("match_test", "input", |_| {
+                Ok("consistent_output".to_string())
+            })
+            .unwrap();
 
         // Test with same output - should pass
-        runner.test("match_test", "input", |_| Ok("consistent_output".to_string())).unwrap();
+        runner
+            .test("match_test", "input", |_| {
+                Ok("consistent_output".to_string())
+            })
+            .unwrap();
 
         assert_eq!(runner.suite.tests.len(), 1);
     }
@@ -527,16 +541,18 @@ mod tests {
         let mut runner = SnapshotRunner::load(config).unwrap();
 
         // Add some test snapshots
-        runner.test("test1", "input1", |_| Ok("output1".to_string())).unwrap();
-        runner.test("test2", "input2", |_| Ok("output2".to_string())).unwrap();
+        runner
+            .test("test1", "input1", |_| Ok("output1".to_string()))
+            .unwrap();
+        runner
+            .test("test2", "input2", |_| Ok("output2".to_string()))
+            .unwrap();
 
         // Run all tests with consistent transform
-        let result = runner.run_all(|input| {
-            match input {
-                "input1" => Ok("output1".to_string()),
-                "input2" => Ok("output2".to_string()),
-                _ => Ok("default".to_string()),
-            }
+        let result = runner.run_all(|input| match input {
+            "input1" => Ok("output1".to_string()),
+            "input2" => Ok("output2".to_string()),
+            _ => Ok("default".to_string()),
         });
 
         assert!(result.is_ok());
@@ -555,7 +571,9 @@ mod tests {
 
         let mut runner = SnapshotRunner::load(config).unwrap();
 
-        runner.test("metadata_test", "input", |_| Ok("output".to_string())).unwrap();
+        runner
+            .test("metadata_test", "input", |_| Ok("output".to_string()))
+            .unwrap();
 
         assert_eq!(runner.suite.tests.len(), 1);
         let test = &runner.suite.tests[0];
@@ -582,9 +600,15 @@ mod tests {
         let mut runner = SnapshotRunner::load(config).unwrap();
 
         // Create multiple snapshots
-        runner.test("test_a", "input_a", |_| Ok("output_a".to_string())).unwrap();
-        runner.test("test_b", "input_b", |_| Ok("output_b".to_string())).unwrap();
-        runner.test("test_c", "input_c", |_| Ok("output_c".to_string())).unwrap();
+        runner
+            .test("test_a", "input_a", |_| Ok("output_a".to_string()))
+            .unwrap();
+        runner
+            .test("test_b", "input_b", |_| Ok("output_b".to_string()))
+            .unwrap();
+        runner
+            .test("test_c", "input_c", |_| Ok("output_c".to_string()))
+            .unwrap();
 
         assert_eq!(runner.suite.tests.len(), 3);
 
@@ -598,8 +622,7 @@ mod tests {
 #[cfg(test)]
 mod property_tests_snapshot {
     use proptest::proptest;
-    use super::*;
-    
+
     proptest! {
         /// Property: Function never panics on any input
         #[test]

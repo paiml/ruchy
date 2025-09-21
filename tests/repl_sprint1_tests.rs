@@ -2,10 +2,14 @@
 //! Following TDD protocol with PMAT A+ standards
 //! Maximum complexity: 10 per function
 
-use ruchy::runtime::{Repl, ReplConfig, ReplState, Value};
 use ruchy::frontend::ast::{Expr, ExprKind, Literal, Span};
+use ruchy::runtime::{Repl, ReplConfig, ReplState, Value};
 use std::rc::Rc;
-use std::{env, collections::{HashMap, HashSet}, time::{Duration, Instant}};
+use std::{
+    collections::{HashMap, HashSet},
+    env,
+    time::{Duration, Instant},
+};
 
 // REPL-001: Core REPL loop with 50+ test cases
 
@@ -134,7 +138,7 @@ fn test_repl_eval_bounded() {
     let result = repl.eval_bounded(
         "1 + 2 + 3",
         1024 * 1024, // 1MB memory limit
-        Duration::from_millis(100)
+        Duration::from_millis(100),
     );
     assert!(result.is_ok());
     assert_eq!(result.unwrap(), "6");
@@ -146,7 +150,7 @@ fn test_repl_eval_bounded_timeout() {
     let result = repl.eval_bounded(
         "let x = 1",
         1024 * 1024,
-        Duration::from_nanos(1) // Very short timeout
+        Duration::from_nanos(1), // Very short timeout
     );
     // May or may not timeout depending on system
     // Just ensure it doesn't panic
@@ -344,7 +348,10 @@ fn test_value_range_inclusive() {
 #[test]
 fn test_value_object() {
     let mut object = HashMap::new();
-    object.insert("name".to_string(), Value::String(Rc::new("Alice".to_string())));
+    object.insert(
+        "name".to_string(),
+        Value::String(Rc::new("Alice".to_string())),
+    );
     object.insert("age".to_string(), Value::Integer(30));
 
     let value = Value::Object(object);
@@ -363,7 +370,10 @@ fn test_value_empty_object() {
 #[test]
 fn test_value_hashmap() {
     let mut map = HashMap::new();
-    map.insert(Value::String(Rc::new("key".to_string())), Value::Integer(42));
+    map.insert(
+        Value::String(Rc::new("key".to_string())),
+        Value::Integer(42),
+    );
 
     let value = Value::HashMap(map);
     assert!(value.to_string().contains("key"));

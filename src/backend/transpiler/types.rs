@@ -15,12 +15,12 @@ impl Transpiler {
     ///
     /// ```
     /// use ruchy::{Transpiler, Parser};
-    /// 
+    ///
     /// // Basic types
     /// let transpiler = Transpiler::new();
     /// let mut parser = Parser::new("let x: i32 = 42");
     /// let ast = parser.parse().expect("Failed to parse");
-    /// 
+    ///
     /// let result = transpiler.transpile(&ast).unwrap();
     /// let code = result.to_string();
     /// assert!(code.contains("i32"));
@@ -29,12 +29,12 @@ impl Transpiler {
     ///
     /// ```
     /// use ruchy::{Transpiler, Parser};
-    /// 
+    ///
     /// // Generic types
     /// let mut transpiler = Transpiler::new();
     /// let mut parser = Parser::new("let v = [1, 2, 3]");
     /// let ast = parser.parse().unwrap();
-    /// 
+    ///
     /// let result = transpiler.transpile(&ast).unwrap();
     /// // Basic transpilation test - just check it compiles
     /// assert!(!result.to_string().is_empty());
@@ -42,12 +42,12 @@ impl Transpiler {
     ///
     /// ```
     /// use ruchy::{Transpiler, Parser};
-    /// 
+    ///
     /// // Optional types
     /// let mut transpiler = Transpiler::new();
     /// let mut parser = Parser::new("let opt = Some(42)");
     /// let ast = parser.parse().unwrap();
-    /// 
+    ///
     /// let result = transpiler.transpile(&ast).unwrap();
     /// let code = result.to_string();
     /// assert!(code.contains("Some"));
@@ -73,10 +73,10 @@ impl Transpiler {
             "int" => quote! { i64 },
             "float" => quote! { f64 },
             "bool" => quote! { bool },
-            "str" => quote! { str },  // Plain str type (will be used with & for references)
+            "str" => quote! { str }, // Plain str type (will be used with & for references)
             "string" | "String" => quote! { String },
             "char" => quote! { char },
-            "_" | "Any" => quote! { _ },  // Use Rust type inference
+            "_" | "Any" => quote! { _ }, // Use Rust type inference
             _ => {
                 let type_ident = format_ident!("{}", name);
                 quote! { #type_ident }
@@ -87,9 +87,7 @@ impl Transpiler {
     /// Transpile generic types with type parameters
     fn transpile_generic_type(&self, base: &str, params: &[Type]) -> Result<TokenStream> {
         let base_ident = format_ident!("{}", base);
-        let param_tokens: Result<Vec<_>> = params.iter()
-            .map(|p| self.transpile_type(p))
-            .collect();
+        let param_tokens: Result<Vec<_>> = params.iter().map(|p| self.transpile_type(p)).collect();
         let param_tokens = param_tokens?;
         Ok(quote! { #base_ident<#(#param_tokens),*> })
     }
@@ -111,17 +109,13 @@ impl Transpiler {
     }
     /// Transpile tuple types
     fn transpile_tuple_type(&self, types: &[Type]) -> Result<TokenStream> {
-        let type_tokens: Result<Vec<_>> = types.iter()
-            .map(|t| self.transpile_type(t))
-            .collect();
+        let type_tokens: Result<Vec<_>> = types.iter().map(|t| self.transpile_type(t)).collect();
         let type_tokens = type_tokens?;
         Ok(quote! { (#(#type_tokens),*) })
     }
     /// Transpile function types
     fn transpile_function_type(&self, params: &[Type], ret: &Type) -> Result<TokenStream> {
-        let param_tokens: Result<Vec<_>> = params.iter()
-            .map(|p| self.transpile_type(p))
-            .collect();
+        let param_tokens: Result<Vec<_>> = params.iter().map(|p| self.transpile_type(p)).collect();
         let param_tokens = param_tokens?;
         let ret_tokens = self.transpile_type(ret)?;
         Ok(quote! { fn(#(#param_tokens),*) -> #ret_tokens })
@@ -171,7 +165,11 @@ impl Transpiler {
                 }
             })
             .collect();
-        let visibility = if is_pub { quote! { pub } } else { quote! {} };
+        let visibility = if is_pub {
+            quote! { pub }
+        } else {
+            quote! {}
+        };
         if type_params.is_empty() {
             Ok(quote! {
                 #visibility struct #struct_name {
@@ -221,7 +219,11 @@ impl Transpiler {
                 }
             })
             .collect();
-        let visibility = if is_pub { quote! { pub } } else { quote! {} };
+        let visibility = if is_pub {
+            quote! { pub }
+        } else {
+            quote! {}
+        };
         // Add #[repr(i32)] attribute if enum has discriminant values
         let repr_attr = if has_discriminants {
             quote! { #[repr(i32)] }
@@ -286,7 +288,11 @@ impl Transpiler {
                     quote! {}
                 };
                 // Process method visibility
-                let visibility = if method.is_pub { quote! { pub } } else { quote! {} };
+                let visibility = if method.is_pub {
+                    quote! { pub }
+                } else {
+                    quote! {}
+                };
                 // Process method body (if default implementation)
                 if let Some(ref body) = method.body {
                     let body_tokens = self.transpile_expr(body)?;
@@ -305,7 +311,11 @@ impl Transpiler {
         let method_tokens = method_tokens?;
         let type_param_tokens: Vec<_> =
             type_params.iter().map(|p| format_ident!("{}", p)).collect();
-        let visibility = if is_pub { quote! { pub } } else { quote! {} };
+        let visibility = if is_pub {
+            quote! { pub }
+        } else {
+            quote! {}
+        };
         if type_params.is_empty() {
             Ok(quote! {
                 #visibility trait #trait_name {
@@ -369,7 +379,11 @@ impl Transpiler {
                 // Process method body (always present in ImplMethod)
                 let body_tokens = self.transpile_expr(&method.body)?;
                 // Process method visibility
-                let visibility = if method.is_pub { quote! { pub } } else { quote! {} };
+                let visibility = if method.is_pub {
+                    quote! { pub }
+                } else {
+                    quote! {}
+                };
                 Ok(quote! {
                     #visibility fn #method_name(#(#param_tokens),*) #return_type_tokens {
                         #body_tokens
@@ -464,7 +478,7 @@ impl Transpiler {
     ) -> Result<TokenStream> {
         let target_ident = format_ident!("{}", target_type);
         let trait_name = format_ident!("{}Ext", target_type); // e.g., StringExt
-        // Generate trait definition
+                                                              // Generate trait definition
         let trait_method_tokens: Result<Vec<_>> = methods
             .iter()
             .map(|method| {
@@ -684,7 +698,7 @@ mod tests {
         let code = result.to_string();
         assert!(code.contains("i64"));
         assert!(code.contains("bool"));
-        assert!(code.contains("(") && code.contains(")"));
+        assert!(code.contains('(') && code.contains(')'));
     }
 
     #[test]
@@ -706,7 +720,7 @@ mod tests {
 
         let result = transpiler.transpile_type(&array_type).unwrap();
         let code = result.to_string();
-        assert!(code.contains("["));
+        assert!(code.contains('['));
         assert!(code.contains("i64"));
         assert!(code.contains("10"));
     }
@@ -731,7 +745,7 @@ mod tests {
 
         let result = transpiler.transpile_type(&ref_type).unwrap();
         let code = result.to_string();
-        assert!(code.contains("&"));
+        assert!(code.contains('&'));
         assert!(code.contains("String"));
         assert!(!code.contains("mut"));
 
@@ -746,7 +760,7 @@ mod tests {
 
         let result = transpiler.transpile_type(&mut_ref_type).unwrap();
         let code = result.to_string();
-        assert!(code.contains("&"));
+        assert!(code.contains('&'));
         assert!(code.contains("mut"));
         assert!(code.contains("String"));
     }
@@ -757,9 +771,7 @@ mod tests {
 
         // DataFrame type
         let df_type = Type {
-            kind: crate::frontend::ast::TypeKind::DataFrame {
-                columns: vec![],
-            },
+            kind: crate::frontend::ast::TypeKind::DataFrame { columns: vec![] },
             span: crate::frontend::ast::Span::new(0, 10),
         };
 
@@ -785,12 +797,10 @@ mod tests {
     fn test_transpile_generic_type() {
         let transpiler = Transpiler::new();
 
-        let params = vec![
-            Type {
-                kind: crate::frontend::ast::TypeKind::Named("int".to_string()),
-                span: crate::frontend::ast::Span::new(0, 3),
-            },
-        ];
+        let params = vec![Type {
+            kind: crate::frontend::ast::TypeKind::Named("int".to_string()),
+            span: crate::frontend::ast::Span::new(0, 3),
+        }];
 
         let generic_type = Type {
             kind: crate::frontend::ast::TypeKind::Generic {
@@ -804,11 +814,11 @@ mod tests {
         let code = result.to_string();
         assert!(code.contains("Vec"));
         assert!(code.contains("i64"));
-        assert!(code.contains("<") && code.contains(">"));
+        assert!(code.contains('<') && code.contains('>'));
     }
 
     #[test]
-    #[ignore = "Function type transpilation needs adjustment"]
+
     fn test_transpile_function_type() {
         let transpiler = Transpiler::new();
 

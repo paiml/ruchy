@@ -7,8 +7,8 @@
 // - Variable binding validation
 // - Type consistency checks
 
-use ruchy::frontend::semantic_analyzer::{SemanticAnalyzer, SemanticError, Symbol, SymbolTable};
 use ruchy::frontend::ast::{Expr, ExprKind, Literal};
+use ruchy::frontend::semantic_analyzer::{SemanticAnalyzer, SemanticError, Symbol, SymbolTable};
 
 // Helper to create expressions
 fn make_literal(val: i64) -> Expr {
@@ -206,11 +206,7 @@ fn test_analyze_if_expression() {
 fn test_analyze_block() {
     let mut analyzer = SemanticAnalyzer::new();
     let expr = Expr {
-        kind: ExprKind::Block(vec![
-            make_literal(1),
-            make_literal(2),
-            make_literal(3),
-        ]),
+        kind: ExprKind::Block(vec![make_literal(1), make_literal(2), make_literal(3)]),
         span: Default::default(),
         attributes: vec![],
     };

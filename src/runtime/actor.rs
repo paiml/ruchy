@@ -33,16 +33,16 @@ impl ActorRef {
     /// # Errors
     ///
     /// Returns an error if the operation fails
-/// # Examples
-/// 
-/// ```
-/// use ruchy::runtime::actor::ActorRef;
-/// 
-/// let mut instance = ActorRef::new();
-/// let result = instance.send();
-/// // Verify behavior
-/// ```
-pub fn send(&self, message: Message) -> Result<()> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::actor::ActorRef;
+    ///
+    /// let mut instance = ActorRef::new();
+    /// let result = instance.send();
+    /// // Verify behavior
+    /// ```
+    pub fn send(&self, message: Message) -> Result<()> {
         self.sender
             .send(ActorMessage::UserMessage(message))
             .map_err(|_| anyhow!("Actor {} is no longer running", self.id))?;
@@ -58,16 +58,16 @@ pub fn send(&self, message: Message) -> Result<()> {
     /// # Errors
     ///
     /// Returns an error if the operation fails
-/// # Examples
-/// 
-/// ```
-/// use ruchy::runtime::actor::ActorRef;
-/// 
-/// let mut instance = ActorRef::new();
-/// let result = instance.ask();
-/// // Verify behavior
-/// ```
-pub fn ask(&self, message: Message, timeout: Duration) -> Result<Message> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::actor::ActorRef;
+    ///
+    /// let mut instance = ActorRef::new();
+    /// let result = instance.ask();
+    /// // Verify behavior
+    /// ```
+    pub fn ask(&self, message: Message, timeout: Duration) -> Result<Message> {
         let (response_tx, response_rx) = mpsc::channel();
         self.sender
             .send(ActorMessage::AskMessage {
@@ -199,16 +199,16 @@ impl ActorContext {
     /// # Errors
     ///
     /// Returns an error if the operation fails
-/// # Examples
-/// 
-/// ```
-/// use ruchy::runtime::actor::ActorContext;
-/// 
-/// let mut instance = ActorContext::new();
-/// let result = instance.stop_child();
-/// // Verify behavior
-/// ```
-pub fn stop_child(&mut self, child_id: ActorId) -> Result<()> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::actor::ActorContext;
+    ///
+    /// let mut instance = ActorContext::new();
+    /// let result = instance.stop_child();
+    /// // Verify behavior
+    /// ```
+    pub fn stop_child(&mut self, child_id: ActorId) -> Result<()> {
         if let Some(child_ref) = self.children.remove(&child_id) {
             child_ref.send(Message::Stop)?;
         }
@@ -222,15 +222,15 @@ pub fn stop_child(&mut self, child_id: ActorId) -> Result<()> {
     /// # Errors
     ///
     /// Returns an error if the operation fails
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::runtime::actor::get_self;
-/// 
-/// let result = get_self(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn get_self(&self) -> Result<ActorRef> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::runtime::actor::get_self;
+    ///
+    /// let result = get_self(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn get_self(&self) -> Result<ActorRef> {
         let system = self
             .system
             .lock()
@@ -240,16 +240,16 @@ pub fn get_self(&self) -> Result<ActorRef> {
             .ok_or_else(|| anyhow!("Actor not found"))
     }
     /// Find actor by name
-/// # Examples
-/// 
-/// ```
-/// use ruchy::runtime::actor::ActorContext;
-/// 
-/// let mut instance = ActorContext::new();
-/// let result = instance.find_actor();
-/// // Verify behavior
-/// ```
-pub fn find_actor(&self, name: &str) -> Option<ActorRef> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::actor::ActorContext;
+    ///
+    /// let mut instance = ActorContext::new();
+    /// let result = instance.find_actor();
+    /// // Verify behavior
+    /// ```
+    pub fn find_actor(&self, name: &str) -> Option<ActorRef> {
         let system = self.system.lock().ok()?;
         system.find_actor_by_name(name)
     }
@@ -382,23 +382,23 @@ pub struct ActorSystem {
 }
 impl ActorSystem {
     /// Create a new actor system
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::runtime::actor::new;
-/// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
-/// ```
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::runtime::actor::new;
-/// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn new() -> Arc<Mutex<Self>> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::runtime::actor::new;
+    ///
+    /// let result = new(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::runtime::actor::new;
+    ///
+    /// let result = new(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn new() -> Arc<Mutex<Self>> {
         Arc::new(Mutex::new(Self {
             actors: HashMap::new(),
             actor_names: HashMap::new(),
@@ -423,15 +423,15 @@ pub fn new() -> Arc<Mutex<Self>> {
     /// Returns an error if:
     /// - An actor with the same name already exists
     /// - The supervisor doesn't exist (if specified)
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::runtime::actor::spawn_supervised;
-/// 
-/// let result = spawn_supervised(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn spawn_supervised(
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::runtime::actor::spawn_supervised;
+    ///
+    /// let result = spawn_supervised(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn spawn_supervised(
         &mut self,
         name: String,
         behavior: Box<dyn ActorBehavior>,
@@ -454,15 +454,15 @@ pub fn spawn_supervised(
         Ok(actor_ref)
     }
     /// Get actor reference by ID
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::runtime::actor::get_actor_ref;
-/// 
-/// let result = get_actor_ref(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn get_actor_ref(&self, id: ActorId) -> Option<ActorRef> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::runtime::actor::get_actor_ref;
+    ///
+    /// let result = get_actor_ref(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn get_actor_ref(&self, id: ActorId) -> Option<ActorRef> {
         self.actors.get(&id).map(|runtime| ActorRef {
             id: runtime.id,
             name: runtime.name.clone(),
@@ -470,15 +470,15 @@ pub fn get_actor_ref(&self, id: ActorId) -> Option<ActorRef> {
         })
     }
     /// Find actor by name
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::runtime::actor::find_actor_by_name;
-/// 
-/// let result = find_actor_by_name("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn find_actor_by_name(&self, name: &str) -> Option<ActorRef> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::runtime::actor::find_actor_by_name;
+    ///
+    /// let result = find_actor_by_name("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn find_actor_by_name(&self, name: &str) -> Option<ActorRef> {
         self.actor_names
             .get(name)
             .and_then(|&id| self.get_actor_ref(id))
@@ -487,15 +487,15 @@ pub fn find_actor_by_name(&self, name: &str) -> Option<ActorRef> {
     /// # Errors
     ///
     /// Returns an error if the operation fails
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::runtime::actor::stop_actor;
-/// 
-/// let result = stop_actor(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn stop_actor(&mut self, id: ActorId) -> Result<()> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::runtime::actor::stop_actor;
+    ///
+    /// let result = stop_actor(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn stop_actor(&mut self, id: ActorId) -> Result<()> {
         if let Some(mut runtime) = self.actors.remove(&id) {
             self.actor_names.retain(|_, &mut v| v != id);
             runtime.stop();
@@ -503,15 +503,15 @@ pub fn stop_actor(&mut self, id: ActorId) -> Result<()> {
         Ok(())
     }
     /// Shutdown the entire actor system
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::runtime::actor::shutdown;
-/// 
-/// let result = shutdown(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn shutdown(&mut self) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::runtime::actor::shutdown;
+    ///
+    /// let result = shutdown(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn shutdown(&mut self) {
         let actor_ids: Vec<ActorId> = self.actors.keys().copied().collect();
         for id in actor_ids {
             let _ = self.stop_actor(id);
@@ -613,7 +613,11 @@ mod tests {
     #[test]
     fn test_actor_system_creation() {
         let system = ActorSystem::new();
-        assert!(system.lock().expect("Failed to acquire lock").actors.is_empty());
+        assert!(system
+            .lock()
+            .expect("Failed to acquire lock")
+            .actors
+            .is_empty());
     }
 
     #[test]
@@ -621,13 +625,16 @@ mod tests {
         let system = ActorSystem::new();
         let actor_ref = {
             let mut sys = system.lock().expect("Failed to acquire lock");
-            sys.spawn("echo".to_string(), EchoActor).expect("Failed to spawn echo actor")
+            sys.spawn("echo".to_string(), EchoActor)
+                .expect("Failed to spawn echo actor")
         };
         let message = Message::User(
             "test".to_string(),
             vec![MessageValue::String("hello".to_string())],
         );
-        let response = actor_ref.ask(message, Duration::from_millis(100)).expect("Failed to get response from actor");
+        let response = actor_ref
+            .ask(message, Duration::from_millis(100))
+            .expect("Failed to get response from actor");
         match response {
             Message::User(msg, _) => assert!(msg.contains("Echo: test")),
             _ => panic!("Unexpected response type"),
@@ -656,7 +663,7 @@ mod tests {
     #[test]
     fn test_actor_id_display() {
         let id = ActorId(42);
-        assert_eq!(format!("{}", id), "actor-42");
+        assert_eq!(format!("{id}"), "actor-42");
     }
 
     #[test]
@@ -674,8 +681,8 @@ mod tests {
     fn test_message_value_types() {
         let string_val = MessageValue::String("test".to_string());
         let int_val = MessageValue::Integer(42);
-        let float_val = MessageValue::Float(3.14);
-        let bool_val = MessageValue::Bool(true);
+        let _float_val = MessageValue::Float(3.14);
+        let _bool_val = MessageValue::Bool(true);
         let actor_ref_val = MessageValue::ActorRef(ActorId(123));
 
         match string_val {
@@ -709,7 +716,7 @@ mod tests {
                     MessageValue::Integer(i) => assert_eq!(*i, 1),
                     _ => panic!("Expected integer"),
                 }
-            },
+            }
             _ => panic!("Expected list"),
         }
     }
@@ -718,7 +725,10 @@ mod tests {
     fn test_message_value_map() {
         let mut map = std::collections::HashMap::new();
         map.insert("key1".to_string(), MessageValue::Integer(10));
-        map.insert("key2".to_string(), MessageValue::String("value".to_string()));
+        map.insert(
+            "key2".to_string(),
+            MessageValue::String("value".to_string()),
+        );
 
         let map_val = MessageValue::Map(map);
         match map_val {
@@ -726,7 +736,7 @@ mod tests {
                 assert_eq!(m.len(), 2);
                 assert!(m.contains_key("key1"));
                 assert!(m.contains_key("key2"));
-            },
+            }
             _ => panic!("Expected map"),
         }
     }
@@ -738,17 +748,17 @@ mod tests {
         let restart = Message::Restart;
 
         match start {
-            Message::Start => {},
+            Message::Start => {}
             _ => panic!("Expected Start message"),
         }
 
         match stop {
-            Message::Stop => {},
+            Message::Stop => {}
             _ => panic!("Expected Stop message"),
         }
 
         match restart {
-            Message::Restart => {},
+            Message::Restart => {}
             _ => panic!("Expected Restart message"),
         }
     }
@@ -764,7 +774,7 @@ mod tests {
             Message::User(msg_type, values) => {
                 assert_eq!(msg_type, "greet");
                 assert_eq!(values.len(), 1);
-            },
+            }
             _ => panic!("Expected User message"),
         }
     }
@@ -789,7 +799,7 @@ mod tests {
             Message::ChildFailed(id, reason) => {
                 assert_eq!(id, child_id);
                 assert_eq!(reason, "Crash");
-            },
+            }
             _ => panic!("Expected ChildFailed message"),
         }
 
@@ -802,14 +812,14 @@ mod tests {
     #[test]
     fn test_supervisor_directive() {
         let restart = SupervisorDirective::Restart;
-        let stop = SupervisorDirective::Stop;
-        let escalate = SupervisorDirective::Escalate;
-        let resume = SupervisorDirective::Resume;
+        let _stop = SupervisorDirective::Stop;
+        let _escalate = SupervisorDirective::Escalate;
+        let _resume = SupervisorDirective::Resume;
 
         // Test cloning
-        let restart_clone = restart.clone();
+        let restart_clone = restart;
         match restart_clone {
-            SupervisorDirective::Restart => {},
+            SupervisorDirective::Restart => {}
             _ => panic!("Expected Restart directive"),
         }
     }
@@ -849,7 +859,7 @@ mod tests {
         // First failure should restart
         let strategy = supervisor.supervisor_strategy(child_id, "error");
         match strategy {
-            SupervisorDirective::Restart => {},
+            SupervisorDirective::Restart => {}
             _ => panic!("Expected Restart directive"),
         }
 
@@ -857,7 +867,7 @@ mod tests {
         supervisor.restart_count.insert(child_id, 3);
         let strategy = supervisor.supervisor_strategy(child_id, "error");
         match strategy {
-            SupervisorDirective::Stop => {},
+            SupervisorDirective::Stop => {}
             _ => panic!("Expected Stop directive"),
         }
     }
@@ -877,7 +887,7 @@ mod tests {
             Some(Message::User(msg, values)) => {
                 assert!(msg.contains("Echo: hello"));
                 assert_eq!(values.len(), 1);
-            },
+            }
             _ => panic!("Expected echo response"),
         }
 
@@ -1043,7 +1053,7 @@ mod tests {
             actor_name: "searcher".to_string(),
             supervisor: None,
             children: std::collections::HashMap::new(),
-            system: system.clone(),
+            system: system,
         };
 
         let found = context.find_actor("findable");
@@ -1081,8 +1091,7 @@ mod tests {
 #[cfg(test)]
 mod property_tests_actor {
     use proptest::proptest;
-    
-    
+
     proptest! {
         /// Property: Function never panics on any input
         #[test]

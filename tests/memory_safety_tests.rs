@@ -2,8 +2,8 @@
 // Target: Verify memory safety in all components
 // Sprint 80: ALL NIGHT Coverage Marathon Phase 22 - FINAL PUSH!
 
-use ruchy::runtime::{Environment, Value, TransactionalState};
 use ruchy::backend::SafeArena;
+use ruchy::runtime::{Environment, TransactionalState, Value};
 use std::rc::Rc;
 use std::sync::Arc;
 use std::thread;
@@ -68,7 +68,7 @@ fn test_environment_cleanup() {
         env.define(
             &format!("var{}", i),
             Value::String(Rc::new(format!("value{}", i))),
-            false
+            false,
         );
     }
 
@@ -87,11 +87,7 @@ fn test_scope_memory_management() {
     for _ in 0..100 {
         env.push_scope();
         for i in 0..10 {
-            env.define(
-                &format!("scoped{}", i),
-                Value::Integer(i),
-                false
-            );
+            env.define(&format!("scoped{}", i), Value::Integer(i), false);
         }
     }
 
@@ -115,7 +111,7 @@ fn test_transaction_rollback_frees_memory() {
         state.insert_binding(
             format!("tx_var{}", i),
             Value::String(Rc::new("x".repeat(100))),
-            false
+            false,
         );
     }
 
@@ -211,11 +207,7 @@ fn test_memory_pressure_handling() {
             // Hit limit, that's ok
             break;
         }
-        state.insert_binding(
-            format!("var{}", i),
-            Value::Integer(i),
-            false
-        );
+        state.insert_binding(format!("var{}", i), Value::Integer(i), false);
     }
 
     // Should still be functional

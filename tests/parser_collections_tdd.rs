@@ -1,19 +1,27 @@
 //! TDD tests for parser collections functionality
 //! Target: Improve coverage from 28.3% to 80%+
 
-use std::process::Command;
 use std::fs;
+use std::process::Command;
 use tempfile::NamedTempFile;
 
 fn run_test_file(code: &str) -> Result<String, String> {
     let temp_file = NamedTempFile::new().expect("Failed to create temp file");
     fs::write(temp_file.path(), code).expect("Failed to write test code");
-    
+
     let output = Command::new("cargo")
-        .args(&["run", "--quiet", "--bin", "ruchy", "--", "run", temp_file.path().to_str().unwrap()])
+        .args(&[
+            "run",
+            "--quiet",
+            "--bin",
+            "ruchy",
+            "--",
+            "run",
+            temp_file.path().to_str().unwrap(),
+        ])
         .output()
         .expect("Failed to run ruchy");
-    
+
     if output.status.success() {
         Ok(String::from_utf8_lossy(&output.stdout).to_string())
     } else {

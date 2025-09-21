@@ -3,8 +3,7 @@
 //! Provides an interactive terminal interface for debugging `DataFrame` pipelines,
 //! displaying breakpoints, materialized data, and execution flow.
 use crate::runtime::dataflow_debugger::{
-    DataflowDebugger, PipelineStage, SessionState, StageStatus,
-    MaterializedFrame,
+    DataflowDebugger, MaterializedFrame, PipelineStage, SessionState, StageStatus,
 };
 use anyhow::Result;
 use std::collections::HashMap;
@@ -134,7 +133,8 @@ impl DataflowUI {
     /// Render pipeline overview
     fn render_overview(&self) -> Result<()> {
         self.print_title("📊 Dataflow Pipeline Overview")?;
-        let debugger = self.debugger
+        let debugger = self
+            .debugger
             .lock()
             .map_err(|_| anyhow::anyhow!("Failed to acquire debugger lock"))?;
         let session_status = debugger.get_session_status()?;
@@ -145,11 +145,15 @@ impl DataflowUI {
         self.print_section_header("Pipeline Stages")?;
         self.print_separator()?;
         if self.colors_enabled {
-            println!("{:<4} {:<20} {:<12} {:<10} {:<15} {:<10}", 
-                     "#", "Stage Name", "Type", "Status", "Rows", "Time");
+            println!(
+                "{:<4} {:<20} {:<12} {:<10} {:<15} {:<10}",
+                "#", "Stage Name", "Type", "Status", "Rows", "Time"
+            );
         } else {
-            println!("{:<4} {:<20} {:<12} {:<10} {:<15} {:<10}", 
-                     "#", "Stage Name", "Type", "Status", "Rows", "Time");
+            println!(
+                "{:<4} {:<20} {:<12} {:<10} {:<15} {:<10}",
+                "#", "Stage Name", "Type", "Status", "Rows", "Time"
+            );
         }
         self.print_separator()?;
         for (i, stage) in sample_stages.iter().enumerate() {
@@ -165,17 +169,23 @@ impl DataflowUI {
                 ""
             };
             let reset_color = if self.colors_enabled { "\x1b[0m" } else { "" };
-            let time_str = stage.execution_time.map_or_else(|| "-".to_string(), |t| format!("{}ms", t.as_millis()));
-            let rows_str = stage.rows_processed.map_or_else(|| "-".to_string(), |r| format!("{r}"));
-            println!("{:<4} {:<20} {:<12} {}{:<10}{} {:<15} {:<10}", 
-                     i + 1,
-                     stage.stage_name,
-                     stage.stage_type,
-                     status_color,
-                     stage.status,
-                     reset_color,
-                     rows_str,
-                     time_str);
+            let time_str = stage
+                .execution_time
+                .map_or_else(|| "-".to_string(), |t| format!("{}ms", t.as_millis()));
+            let rows_str = stage
+                .rows_processed
+                .map_or_else(|| "-".to_string(), |r| format!("{r}"));
+            println!(
+                "{:<4} {:<20} {:<12} {}{:<10}{} {:<15} {:<10}",
+                i + 1,
+                stage.stage_name,
+                stage.stage_type,
+                status_color,
+                stage.status,
+                reset_color,
+                rows_str,
+                time_str
+            );
         }
         Ok(())
     }
@@ -203,14 +213,20 @@ impl DataflowUI {
             println!();
             self.print_section_header("Input Schema")?;
             for col in &input_schema.columns {
-                println!("  {}: {} (nullable: {})", col.name, col.data_type, col.nullable);
+                println!(
+                    "  {}: {} (nullable: {})",
+                    col.name, col.data_type, col.nullable
+                );
             }
         }
         if let Some(output_schema) = &stage.output_schema {
             println!();
             self.print_section_header("Output Schema")?;
             for col in &output_schema.columns {
-                println!("  {}: {} (nullable: {})", col.name, col.data_type, col.nullable);
+                println!(
+                    "  {}: {} (nullable: {})",
+                    col.name, col.data_type, col.nullable
+                );
             }
         }
         // Show metadata
@@ -228,11 +244,20 @@ impl DataflowUI {
         self.print_title("🔴 Breakpoint Management")?;
         println!("Active Breakpoints:");
         self.print_separator()?;
-        println!("{:<20} {:<10} {:<15} {:<8}", "Stage ID", "Condition", "Actions", "Hit Count");
+        println!(
+            "{:<20} {:<10} {:<15} {:<8}",
+            "Stage ID", "Condition", "Actions", "Hit Count"
+        );
         self.print_separator()?;
         // In a real implementation, we would get actual breakpoints
-        println!("{:<20} {:<10} {:<15} {:<8}", "load_data", "Always", "Pause,Print", "3");
-        println!("{:<20} {:<10} {:<15} {:<8}", "filter_stage", "RowCount>1000", "Materialize", "1");
+        println!(
+            "{:<20} {:<10} {:<15} {:<8}",
+            "load_data", "Always", "Pause,Print", "3"
+        );
+        println!(
+            "{:<20} {:<10} {:<15} {:<8}",
+            "filter_stage", "RowCount>1000", "Materialize", "1"
+        );
         println!();
         println!("Commands:");
         println!("  add <stage_id> [condition] - Add breakpoint");
@@ -244,7 +269,8 @@ impl DataflowUI {
     /// Render data viewer
     fn render_data_viewer(&self, stage_id: &str) -> Result<()> {
         self.print_title(&format!("📋 Data Viewer: {stage_id}"))?;
-        let _debugger = self.debugger
+        let _debugger = self
+            .debugger
             .lock()
             .map_err(|_| anyhow::anyhow!("Failed to acquire debugger lock"))?;
         // In a real implementation, we would get actual materialized data
@@ -256,8 +282,11 @@ impl DataflowUI {
             println!("  {}: {}", col.name, col.data_type);
         }
         println!();
-        println!("Data Preview (showing {} of {} rows):", 
-                 sample_data.sample_data.len(), sample_data.total_rows);
+        println!(
+            "Data Preview (showing {} of {} rows):",
+            sample_data.sample_data.len(),
+            sample_data.total_rows
+        );
         self.print_separator()?;
         // Print column headers
         for col in &sample_data.schema.columns {
@@ -279,14 +308,21 @@ impl DataflowUI {
             println!();
         }
         println!();
-        println!("Memory Size: {}", self.format_bytes(sample_data.memory_size));
-        println!("Materialized: {}", self.format_timestamp(sample_data.timestamp));
+        println!(
+            "Memory Size: {}",
+            self.format_bytes(sample_data.memory_size)
+        );
+        println!(
+            "Materialized: {}",
+            self.format_timestamp(sample_data.timestamp)
+        );
         Ok(())
     }
     /// Render performance metrics
     fn render_metrics(&self) -> Result<()> {
         self.print_title("⚡ Performance Metrics")?;
-        let debugger = self.debugger
+        let debugger = self
+            .debugger
             .lock()
             .map_err(|_| anyhow::anyhow!("Failed to acquire debugger lock"))?;
         let metrics = debugger.get_stage_metrics()?;
@@ -296,18 +332,24 @@ impl DataflowUI {
         }
         self.print_section_header("Stage Performance")?;
         self.print_separator()?;
-        println!("{:<20} {:<10} {:<12} {:<12} {:<10} {:<10}", 
-                 "Stage", "Time (ms)", "Memory (MB)", "Input Rows", "Output Rows", "Cache Hit");
+        println!(
+            "{:<20} {:<10} {:<12} {:<12} {:<10} {:<10}",
+            "Stage", "Time (ms)", "Memory (MB)", "Input Rows", "Output Rows", "Cache Hit"
+        );
         self.print_separator()?;
         for (stage_id, metric) in &metrics {
-            let cache_hit = metric.cache_hit_ratio.map_or_else(|| "-".to_string(), |r| format!("{:.1}%", r * 100.0));
-            println!("{:<20} {:<10} {:<12} {:<12} {:<10} {:<10}", 
-                     stage_id,
-                     metric.execution_time.as_millis(),
-                     metric.peak_memory / (1024 * 1024),
-                     metric.input_rows,
-                     metric.output_rows,
-                     cache_hit);
+            let cache_hit = metric
+                .cache_hit_ratio
+                .map_or_else(|| "-".to_string(), |r| format!("{:.1}%", r * 100.0));
+            println!(
+                "{:<20} {:<10} {:<12} {:<12} {:<10} {:<10}",
+                stage_id,
+                metric.execution_time.as_millis(),
+                metric.peak_memory / (1024 * 1024),
+                metric.input_rows,
+                metric.output_rows,
+                cache_hit
+            );
         }
         // Summary metrics
         let total_time: Duration = metrics.values().map(|m| m.execution_time).sum();
@@ -323,32 +365,41 @@ impl DataflowUI {
     /// Render execution history
     fn render_history(&self) -> Result<()> {
         self.print_title("📜 Execution History")?;
-        let debugger = self.debugger
+        let debugger = self
+            .debugger
             .lock()
             .map_err(|_| anyhow::anyhow!("Failed to acquire debugger lock"))?;
         let history = debugger.get_execution_history()?;
         let recent_events = history.iter().rev().take(self.config.max_history_events);
         self.print_separator()?;
-        println!("{:<20} {:<15} {:<20} {:<30}", "Timestamp", "Event Type", "Stage", "Details");
+        println!(
+            "{:<20} {:<15} {:<20} {:<30}",
+            "Timestamp", "Event Type", "Stage", "Details"
+        );
         self.print_separator()?;
         for event in recent_events {
             let timestamp_str = self.format_timestamp(event.timestamp);
-            let details = event.data.iter()
+            let details = event
+                .data
+                .iter()
                 .map(|(k, v)| format!("{k}:{v}"))
                 .collect::<Vec<_>>()
                 .join(", ");
-            println!("{:<20} {:<15} {:<20} {:<30}", 
-                     timestamp_str,
-                     format!("{:?}", event.event_type),
-                     event.stage_id,
-                     details);
+            println!(
+                "{:<20} {:<15} {:<20} {:<30}",
+                timestamp_str,
+                format!("{:?}", event.event_type),
+                event.stage_id,
+                details
+            );
         }
         Ok(())
     }
     /// Render stage diff comparison
     fn render_diff(&self, stage1: &str, stage2: &str) -> Result<()> {
         self.print_title(&format!("🔄 Stage Diff: {stage1} → {stage2}"))?;
-        let debugger = self.debugger
+        let debugger = self
+            .debugger
             .lock()
             .map_err(|_| anyhow::anyhow!("Failed to acquire debugger lock"))?;
         // In a real implementation, we would compute actual diff
@@ -452,7 +503,8 @@ impl DataflowUI {
             }
             "diff" => {
                 if parts.len() > 2 {
-                    self.display_mode = DisplayMode::Diff(parts[1].to_string(), parts[2].to_string());
+                    self.display_mode =
+                        DisplayMode::Diff(parts[1].to_string(), parts[2].to_string());
                 } else {
                     println!("Usage: diff <stage1> <stage2>");
                 }
@@ -460,7 +512,9 @@ impl DataflowUI {
             }
             "refresh" | "r" => {
                 // Force refresh on next loop
-                self.last_refresh = Instant::now().checked_sub(self.refresh_interval).expect("Subtraction underflow");
+                self.last_refresh = Instant::now()
+                    .checked_sub(self.refresh_interval)
+                    .expect("Subtraction underflow");
                 Ok(UIAction::Continue)
             }
             "colors" => {
@@ -475,7 +529,8 @@ impl DataflowUI {
             }
             "materialize" => {
                 if parts.len() > 1 {
-                    let debugger = self.debugger
+                    let debugger = self
+                        .debugger
                         .lock()
                         .map_err(|_| anyhow::anyhow!("Failed to acquire debugger lock"))?;
                     match debugger.materialize_stage(parts[1]) {
@@ -488,7 +543,10 @@ impl DataflowUI {
                 Ok(UIAction::Continue)
             }
             _ => {
-                println!("Unknown command: {}. Type 'help' for available commands.", parts[0]);
+                println!(
+                    "Unknown command: {}. Type 'help' for available commands.",
+                    parts[0]
+                );
                 Ok(UIAction::Continue)
             }
         }
@@ -516,9 +574,15 @@ impl DataflowUI {
             println!("\x1b[1;34m║                        RUCHY DATAFLOW DEBUGGER                              ║\x1b[0m");
             println!("\x1b[1;34m╚══════════════════════════════════════════════════════════════════════════════╝\x1b[0m");
         } else {
-            println!("===============================================================================");
-            println!("                        RUCHY DATAFLOW DEBUGGER                              ");
-            println!("===============================================================================");
+            println!(
+                "==============================================================================="
+            );
+            println!(
+                "                        RUCHY DATAFLOW DEBUGGER                              "
+            );
+            println!(
+                "==============================================================================="
+            );
         }
         Ok(())
     }
@@ -550,10 +614,10 @@ impl DataflowUI {
         Ok(())
     }
     fn print_status_bar(&self) -> Result<()> {
-        let status = format!("Mode: {:?} | Auto-refresh: {} | Colors: {}", 
-                           self.display_mode, 
-                           self.config.auto_refresh,
-                           self.colors_enabled);
+        let status = format!(
+            "Mode: {:?} | Auto-refresh: {} | Colors: {}",
+            self.display_mode, self.config.auto_refresh, self.colors_enabled
+        );
         if self.colors_enabled {
             println!("\n\x1b[7m{status:<80}\x1b[0m");
         } else {
@@ -587,7 +651,13 @@ impl DataflowUI {
     }
     fn format_timestamp(&self, timestamp: std::time::SystemTime) -> String {
         // Simplified timestamp formatting
-        format!("{}", timestamp.duration_since(std::time::UNIX_EPOCH).unwrap_or_else(|_| std::time::Duration::from_secs(0)).as_secs())
+        format!(
+            "{}",
+            timestamp
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap_or_else(|_| std::time::Duration::from_secs(0))
+                .as_secs()
+        )
     }
     fn render_session_info(&self, session: &SessionState) -> Result<()> {
         self.print_section_header("Session Status")?;
@@ -601,7 +671,7 @@ impl DataflowUI {
     }
     // Sample data methods (in real implementation, these would come from actual debugger state)
     fn get_sample_stages(&self) -> Vec<PipelineStage> {
-        use crate::runtime::dataflow_debugger::{StageType, StageStatus};
+        use crate::runtime::dataflow_debugger::{StageStatus, StageType};
         vec![
             PipelineStage {
                 stage_id: "load_data".to_string(),
@@ -642,7 +712,9 @@ impl DataflowUI {
         ]
     }
     fn get_sample_stage(&self, _stage_id: &str) -> PipelineStage {
-        use crate::runtime::dataflow_debugger::{StageType, StageStatus, DataSchema, ColumnDef, DataType};
+        use crate::runtime::dataflow_debugger::{
+            ColumnDef, DataSchema, DataType, StageStatus, StageType,
+        };
         PipelineStage {
             stage_id: "load_data".to_string(),
             stage_name: "Load CSV Data".to_string(),
@@ -685,7 +757,7 @@ impl DataflowUI {
     }
     fn get_sample_materialized_data(&self, _stage_id: &str) -> MaterializedFrame {
         use crate::runtime::dataflow_debugger::{
-            MaterializedFrame, DataSchema, ColumnDef, DataType, DataRow, DataValue
+            ColumnDef, DataRow, DataSchema, DataType, DataValue, MaterializedFrame,
         };
         MaterializedFrame {
             stage_id: "load_data".to_string(),
@@ -749,9 +821,7 @@ pub enum UIAction {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::runtime::dataflow_debugger::{
-        DataflowDebugger, DataflowConfig
-    };
+    use crate::runtime::dataflow_debugger::{DataflowConfig, DataflowDebugger};
     use std::sync::{Arc, Mutex};
     use std::time::{Duration, Instant};
     // Helper functions for consistent test setup
@@ -778,7 +848,7 @@ mod tests {
         create_test_ui_with_config(create_test_ui_config())
     }
     fn create_test_pipeline_stage() -> PipelineStage {
-        use crate::runtime::dataflow_debugger::{StageType, StageStatus};
+        use crate::runtime::dataflow_debugger::{StageStatus, StageType};
         PipelineStage {
             stage_id: "test_stage".to_string(),
             stage_name: "Test Stage".to_string(),
@@ -793,7 +863,9 @@ mod tests {
         }
     }
     fn create_test_materialized_frame() -> MaterializedFrame {
-        use crate::runtime::dataflow_debugger::{DataSchema, ColumnDef, DataType, DataRow, DataValue};
+        use crate::runtime::dataflow_debugger::{
+            ColumnDef, DataRow, DataSchema, DataType, DataValue,
+        };
         use std::time::SystemTime;
         MaterializedFrame {
             stage_id: "test_stage".to_string(),
@@ -812,14 +884,12 @@ mod tests {
                 ],
                 schema_hash: 54321,
             },
-            sample_data: vec![
-                DataRow {
-                    values: vec![
-                        DataValue::Integer(1),
-                        DataValue::String("Test User".to_string()),
-                    ],
-                },
-            ],
+            sample_data: vec![DataRow {
+                values: vec![
+                    DataValue::Integer(1),
+                    DataValue::String("Test User".to_string()),
+                ],
+            }],
             total_rows: 100,
             timestamp: SystemTime::now(),
             memory_size: 1024 * 8, // 8KB
@@ -855,7 +925,7 @@ mod tests {
     // ========== DisplayMode Tests ==========
     #[test]
     fn test_display_mode_variants() {
-        let modes = vec![
+        let modes = [
             DisplayMode::Overview,
             DisplayMode::StageDetail("test_stage".to_string()),
             DisplayMode::Breakpoints,
@@ -952,7 +1022,10 @@ mod tests {
         ui.display_mode = DisplayMode::Metrics;
         assert_eq!(ui.display_mode, DisplayMode::Metrics);
         ui.display_mode = DisplayMode::StageDetail("test".to_string());
-        assert_eq!(ui.display_mode, DisplayMode::StageDetail("test".to_string()));
+        assert_eq!(
+            ui.display_mode,
+            DisplayMode::StageDetail("test".to_string())
+        );
     }
     #[test]
     fn test_get_current_display_mode() {
@@ -1047,7 +1120,10 @@ mod tests {
     #[test]
     fn test_handle_command_breakpoints() {
         let mut ui = create_test_ui();
-        assert_eq!(ui.handle_command("breakpoints").unwrap(), UIAction::Continue);
+        assert_eq!(
+            ui.handle_command("breakpoints").unwrap(),
+            UIAction::Continue
+        );
         assert_eq!(ui.display_mode, DisplayMode::Breakpoints);
     }
     #[test]
@@ -1104,7 +1180,7 @@ mod tests {
     fn test_format_bytes() {
         let ui = create_test_ui();
         assert_eq!(ui.format_bytes(512), "512B");
-        assert_eq!(ui.format_bytes(1536), "1.50KB");  // 1.5 * 1024
+        assert_eq!(ui.format_bytes(1536), "1.50KB"); // 1.5 * 1024
         assert_eq!(ui.format_bytes(1024 * 1024), "1.00MB");
         assert_eq!(ui.format_bytes(1024 * 1024 * 1024), "1.00GB");
     }
@@ -1118,7 +1194,7 @@ mod tests {
         // Should be numeric
         assert!(formatted.parse::<u64>().is_ok());
     }
-    #[test] 
+    #[test]
     fn test_sample_data_creation() {
         let ui = create_test_ui();
         let stages = ui.get_sample_stages();
@@ -1149,10 +1225,16 @@ mod tests {
     // ========== Color Support Tests ==========
     #[test]
     fn test_colors_enabled() {
-        let config_with_colors = UIConfig { enable_colors: true, ..create_test_ui_config() };
+        let config_with_colors = UIConfig {
+            enable_colors: true,
+            ..create_test_ui_config()
+        };
         let ui_with_colors = create_test_ui_with_config(config_with_colors);
         assert!(ui_with_colors.colors_enabled);
-        let config_without_colors = UIConfig { enable_colors: false, ..create_test_ui_config() };
+        let config_without_colors = UIConfig {
+            enable_colors: false,
+            ..create_test_ui_config()
+        };
         let ui_without_colors = create_test_ui_with_config(config_without_colors);
         assert!(!ui_without_colors.colors_enabled);
     }
@@ -1161,7 +1243,7 @@ mod tests {
         // Test that color setting from config is properly applied
         let mut ui = create_test_ui();
         assert!(!ui.colors_enabled); // Test config has colors disabled
-        // Test that color setting can be changed
+                                     // Test that color setting can be changed
         ui.colors_enabled = true;
         assert!(ui.colors_enabled);
     }
@@ -1238,7 +1320,10 @@ mod tests {
         assert_eq!(ui.display_mode, DisplayMode::Metrics);
         assert_eq!(ui.handle_command("overview").unwrap(), UIAction::Continue);
         assert_eq!(ui.display_mode, DisplayMode::Overview);
-        assert_eq!(ui.handle_command("breakpoints").unwrap(), UIAction::Continue);
+        assert_eq!(
+            ui.handle_command("breakpoints").unwrap(),
+            UIAction::Continue
+        );
         assert_eq!(ui.display_mode, DisplayMode::Breakpoints);
         assert_eq!(ui.handle_command("quit").unwrap(), UIAction::Exit);
     }

@@ -27,7 +27,7 @@ mod lsp_initialization {
             }
         });
 
-        let response = server.handle_request(init_request).await;
+        let response = server.handle_request(init_request);
         assert!(response.is_ok());
 
         let resp_value = response.unwrap();
@@ -47,7 +47,7 @@ mod lsp_initialization {
             "method": "initialize",
             "params": {}
         });
-        let _ = server.handle_request(init_request).await;
+        let _ = server.handle_request(init_request);
 
         // Then send initialized notification
         let initialized = json!({
@@ -71,7 +71,7 @@ mod lsp_initialization {
             "params": null
         });
 
-        let response = server.handle_request(shutdown_request).await;
+        let response = server.handle_request(shutdown_request);
         assert!(response.is_ok());
 
         let resp_value = response.unwrap();
@@ -89,7 +89,7 @@ mod lsp_initialization {
             "method": "shutdown",
             "params": null
         });
-        let _ = server.handle_request(shutdown).await;
+        let _ = server.handle_request(shutdown);
 
         // Then exit
         let exit = json!({
@@ -312,7 +312,7 @@ mod lsp_hover {
             }
         });
 
-        let response = server.handle_request(hover_request).await;
+        let response = server.handle_request(hover_request);
         assert!(response.is_ok());
 
         let resp = response.unwrap();
@@ -354,7 +354,7 @@ mod lsp_hover {
             }
         });
 
-        let response = server.handle_request(hover_request).await;
+        let response = server.handle_request(hover_request);
         assert!(response.is_ok());
     }
 }
@@ -398,7 +398,7 @@ mod lsp_completion {
             }
         });
 
-        let response = server.handle_request(completion_request).await;
+        let response = server.handle_request(completion_request);
         assert!(response.is_ok());
 
         let resp = response.unwrap();
@@ -406,9 +406,10 @@ mod lsp_completion {
         assert!(items.is_some());
 
         // Should have completion items like "println"
-        let has_println = items.unwrap().iter().any(|item| {
-            item["label"].as_str() == Some("println")
-        });
+        let has_println = items
+            .unwrap()
+            .iter()
+            .any(|item| item["label"].as_str() == Some("println"));
         assert!(has_println);
     }
 
@@ -447,7 +448,7 @@ mod lsp_completion {
             }
         });
 
-        let response = server.handle_request(completion_request).await;
+        let response = server.handle_request(completion_request);
         assert!(response.is_ok());
 
         let resp = response.unwrap();
@@ -494,7 +495,7 @@ mod lsp_goto_definition {
             }
         });
 
-        let response = server.handle_request(goto_def_request).await;
+        let response = server.handle_request(goto_def_request);
         assert!(response.is_ok());
 
         let resp = response.unwrap();
@@ -538,7 +539,7 @@ mod lsp_goto_definition {
             }
         });
 
-        let response = server.handle_request(goto_def_request).await;
+        let response = server.handle_request(goto_def_request);
         assert!(response.is_ok());
     }
 }
@@ -558,7 +559,7 @@ mod lsp_error_handling {
             "params": {}
         });
 
-        let response = server.handle_request(invalid_request).await;
+        let response = server.handle_request(invalid_request);
         assert!(response.is_ok());
 
         let resp = response.unwrap();
@@ -587,7 +588,7 @@ mod lsp_error_handling {
             // Missing params
         });
 
-        let response = server.handle_request(request_missing_params).await;
+        let response = server.handle_request(request_missing_params);
         assert!(response.is_ok());
 
         let resp = response.unwrap();

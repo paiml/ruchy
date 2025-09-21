@@ -2,7 +2,7 @@
 // Target: Basic coverage for optimizer
 // Sprint 80: ALL NIGHT Coverage Marathon Phase 7
 
-use ruchy::compile::optimization::{Optimizer, OptimizationLevel, OptimizationPass};
+use ruchy::compile::optimization::{OptimizationLevel, OptimizationPass, Optimizer};
 use ruchy::frontend::ast::{Expr, ExprKind, Literal};
 
 // Helper to create expressions

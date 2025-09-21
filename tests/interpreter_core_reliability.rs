@@ -12,7 +12,10 @@
 #![allow(clippy::unwrap_used)]
 
 use ruchy::runtime::Repl;
-use std::{env, time::{Duration, Instant}};
+use std::{
+    env,
+    time::{Duration, Instant},
+};
 
 /// Helper macro for testing REPL evaluation
 macro_rules! assert_eval {

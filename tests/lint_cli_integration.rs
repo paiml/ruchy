@@ -1,6 +1,5 @@
 /// CLI integration tests for lint command
 /// Tests all flags and options work correctly
-
 use assert_cmd::Command;
 use predicates::prelude::*;
 use std::fs;
@@ -10,9 +9,9 @@ use tempfile::TempDir;
 fn test_lint_basic_file() {
     let dir = TempDir::new().unwrap();
     let file_path = dir.path().join("test.ruchy");
-    
+
     fs::write(&file_path, "fn test() { let x = 1; }").unwrap();
-    
+
     Command::cargo_bin("ruchy")
         .unwrap()
         .args(["lint", file_path.to_str().unwrap()])
@@ -25,9 +24,9 @@ fn test_lint_basic_file() {
 fn test_lint_json_format() {
     let dir = TempDir::new().unwrap();
     let file_path = dir.path().join("test.ruchy");
-    
+
     fs::write(&file_path, "fn test() { let unused = 1; }").unwrap();
-    
+
     Command::cargo_bin("ruchy")
         .unwrap()
         .args(["lint", file_path.to_str().unwrap(), "--format", "json"])
@@ -42,7 +41,7 @@ fn test_lint_json_format() {
 fn test_lint_strict_mode() {
     let dir = TempDir::new().unwrap();
     let file_path = dir.path().join("test.ruchy");
-    
+
     // Complex function that should trigger complexity warning
     let complex_code = r"
 fn complex() {
@@ -59,9 +58,9 @@ fn complex() {
     }
 }
 ";
-    
+
     fs::write(&file_path, complex_code).unwrap();
-    
+
     Command::cargo_bin("ruchy")
         .unwrap()
         .args(["lint", file_path.to_str().unwrap(), "--strict"])
@@ -74,14 +73,18 @@ fn complex() {
 fn test_lint_rules_filter() {
     let dir = TempDir::new().unwrap();
     let file_path = dir.path().join("test.ruchy");
-    
-    fs::write(&file_path, r"
+
+    fs::write(
+        &file_path,
+        r"
 fn test() {
     let unused = 1;
     println(undefined);
 }
-").unwrap();
-    
+",
+    )
+    .unwrap();
+
     // Only check for undefined variables
     Command::cargo_bin("ruchy")
         .unwrap()
@@ -96,9 +99,9 @@ fn test() {
 fn test_lint_verbose_output() {
     let dir = TempDir::new().unwrap();
     let file_path = dir.path().join("test.ruchy");
-    
+
     fs::write(&file_path, "fn test() { let x = 1; }").unwrap();
-    
+
     Command::cargo_bin("ruchy")
         .unwrap()
         .args(["lint", file_path.to_str().unwrap(), "--verbose"])
@@ -111,10 +114,10 @@ fn test_lint_verbose_output() {
 fn test_lint_clean_file() {
     let dir = TempDir::new().unwrap();
     let file_path = dir.path().join("test.ruchy");
-    
+
     // Clean code with no issues
     fs::write(&file_path, "fn test() { let x = 1; println(x); }").unwrap();
-    
+
     Command::cargo_bin("ruchy")
         .unwrap()
         .args(["lint", file_path.to_str().unwrap()])
@@ -127,8 +130,10 @@ fn test_lint_clean_file() {
 fn test_lint_multiple_issues() {
     let dir = TempDir::new().unwrap();
     let file_path = dir.path().join("test.ruchy");
-    
-    fs::write(&file_path, r"
+
+    fs::write(
+        &file_path,
+        r"
 fn test() {
     let unused1 = 1;
     let unused2 = 2;
@@ -136,8 +141,10 @@ fn test() {
     let x = 4;  // Shadowing
     println(x);
 }
-").unwrap();
-    
+",
+    )
+    .unwrap();
+
     Command::cargo_bin("ruchy")
         .unwrap()
         .args(["lint", file_path.to_str().unwrap()])
@@ -150,14 +157,18 @@ fn test() {
 fn test_lint_errors_and_warnings() {
     let dir = TempDir::new().unwrap();
     let file_path = dir.path().join("test.ruchy");
-    
-    fs::write(&file_path, r"
+
+    fs::write(
+        &file_path,
+        r"
 fn test() {
     let unused = 1;  // Warning
     println(undefined);  // Error
 }
-").unwrap();
-    
+",
+    )
+    .unwrap();
+
     Command::cargo_bin("ruchy")
         .unwrap()
         .args(["lint", file_path.to_str().unwrap()])

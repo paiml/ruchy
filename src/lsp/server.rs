@@ -1,5 +1,7 @@
 //! Core LSP server implementation
 use super::{Formatter, SemanticAnalyzer, Workspace, SEMANTIC_TOKEN_LEGEND};
+#[cfg(test)]
+use proptest::prelude::*;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use tower_lsp::jsonrpc::Result;
@@ -14,8 +16,6 @@ use tower_lsp::lsp_types::{
     Url, WorkDoneProgressOptions,
 };
 use tower_lsp::{Client, LanguageServer};
-#[cfg(test)]
-use proptest::prelude::*;
 pub struct RuchyLanguageServer {
     client: Client,
     workspace: Arc<Mutex<Workspace>>,
@@ -23,15 +23,15 @@ pub struct RuchyLanguageServer {
     formatter: Arc<Formatter>,
 }
 impl RuchyLanguageServer {
-/// # Examples
-/// 
-/// ```
-/// use ruchy::lsp::server::new;
-/// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn new(client: Client) -> Self {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::lsp::server::new;
+    ///
+    /// let result = new(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn new(client: Client) -> Self {
         Self {
             client,
             workspace: Arc::new(Mutex::new(Workspace::new())),
@@ -184,9 +184,8 @@ impl RuchyLanguageServer {
 }
 #[cfg(test)]
 mod property_tests_server {
-    use proptest::proptest;
-    use super::*;
     use proptest::prelude::*;
+    use proptest::proptest;
     proptest! {
         /// Property: Function never panics on any input
         #[test]

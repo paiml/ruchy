@@ -1,8 +1,8 @@
 // Code linter for Ruchy with comprehensive variable tracking
 // Toyota Way: Catch issues early through static analysis
-use anyhow::Result;
 use crate::frontend::ast::{Expr, ExprKind, Pattern};
-use serde::{Serialize, Deserialize};
+use anyhow::Result;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LintIssue {
@@ -62,11 +62,14 @@ impl Scope {
         }
     }
     fn define(&mut self, name: String, line: usize, column: usize, var_type: VarType) {
-        self.variables.insert(name, VariableInfo {
-            defined_at: (line, column),
-            used: false,
-            var_type,
-        });
+        self.variables.insert(
+            name,
+            VariableInfo {
+                defined_at: (line, column),
+                used: false,
+                var_type,
+            },
+        );
     }
     fn mark_used(&mut self, name: &str) -> bool {
         if let Some(info) = self.variables.get_mut(name) {
@@ -79,8 +82,8 @@ impl Scope {
         }
     }
     fn is_defined(&self, name: &str) -> bool {
-        self.variables.contains_key(name) || 
-        self.parent.as_ref().is_some_and(|p| p.is_defined(name))
+        self.variables.contains_key(name)
+            || self.parent.as_ref().is_some_and(|p| p.is_defined(name))
     }
     fn is_shadowing(&self, name: &str) -> bool {
         self.parent.as_ref().is_some_and(|p| p.is_defined(name))
@@ -92,15 +95,15 @@ pub struct Linter {
     max_complexity: usize,
 }
 impl Linter {
-/// # Examples
-/// 
-/// ```
-/// use ruchy::quality::linter::Linter;
-/// 
-/// let instance = Linter::new();
-/// // Verify behavior
-/// ```
-pub fn new() -> Self {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::quality::linter::Linter;
+    ///
+    /// let instance = Linter::new();
+    /// // Verify behavior
+    /// ```
+    pub fn new() -> Self {
         Self {
             rules: vec![
                 LintRule::UnusedVariable,
@@ -116,16 +119,16 @@ pub fn new() -> Self {
             max_complexity: 10,
         }
     }
-/// # Examples
-/// 
-/// ```
-/// use ruchy::quality::linter::Linter;
-/// 
-/// let mut instance = Linter::new();
-/// let result = instance.set_rules();
-/// // Verify behavior
-/// ```
-pub fn set_rules(&mut self, rule_filter: &str) {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::quality::linter::Linter;
+    ///
+    /// let mut instance = Linter::new();
+    /// let result = instance.set_rules();
+    /// // Verify behavior
+    /// ```
+    pub fn set_rules(&mut self, rule_filter: &str) {
         self.rules.clear();
         for rule in rule_filter.split(',') {
             match rule.trim() {
@@ -145,27 +148,27 @@ pub fn set_rules(&mut self, rule_filter: &str) {
             }
         }
     }
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::quality::linter::set_strict_mode;
-/// 
-/// let result = set_strict_mode(true);
-/// assert_eq!(result, Ok(true));
-/// ```
-pub fn set_strict_mode(&mut self, strict: bool) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::quality::linter::set_strict_mode;
+    ///
+    /// let result = set_strict_mode(true);
+    /// assert_eq!(result, Ok(true));
+    /// ```
+    pub fn set_strict_mode(&mut self, strict: bool) {
         self.strict_mode = strict;
     }
-/// # Examples
-/// 
-/// ```
-/// use ruchy::quality::linter::Linter;
-/// 
-/// let mut instance = Linter::new();
-/// let result = instance.lint();
-/// // Verify behavior
-/// ```
-pub fn lint(&self, ast: &Expr, _source: &str) -> Result<Vec<LintIssue>> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::quality::linter::Linter;
+    ///
+    /// let mut instance = Linter::new();
+    /// let result = instance.lint();
+    /// // Verify behavior
+    /// ```
+    pub fn lint(&self, ast: &Expr, _source: &str) -> Result<Vec<LintIssue>> {
         let mut issues = Vec::new();
         let mut scope = Scope::new();
         // Analyze the AST with variable tracking
@@ -173,19 +176,26 @@ pub fn lint(&self, ast: &Expr, _source: &str) -> Result<Vec<LintIssue>> {
         // Check for unused variables
         self.check_unused_in_scope(&scope, &mut issues);
         // Check complexity
-        if self.rules.iter().any(|r| matches!(r, LintRule::ComplexityLimit))
-            && self.calculate_complexity(ast) > self.max_complexity {
-                issues.push(LintIssue {
-                    line: 1,
-                    column: 1,
-                    severity: if self.strict_mode { "error" } else { "warning" }.to_string(),
-                    rule: "complexity".to_string(),
-                    message: format!("Function complexity exceeds limit of {}", self.max_complexity),
-                    suggestion: "Consider breaking this into smaller functions".to_string(),
-                    issue_type: "complexity".to_string(),
-                    name: String::new(),
-                });
-            }
+        if self
+            .rules
+            .iter()
+            .any(|r| matches!(r, LintRule::ComplexityLimit))
+            && self.calculate_complexity(ast) > self.max_complexity
+        {
+            issues.push(LintIssue {
+                line: 1,
+                column: 1,
+                severity: if self.strict_mode { "error" } else { "warning" }.to_string(),
+                rule: "complexity".to_string(),
+                message: format!(
+                    "Function complexity exceeds limit of {}",
+                    self.max_complexity
+                ),
+                suggestion: "Consider breaking this into smaller functions".to_string(),
+                issue_type: "complexity".to_string(),
+                name: String::new(),
+            });
+        }
         // Return empty if clean
         if issues.is_empty() {
             // For JSON format compatibility
@@ -195,25 +205,31 @@ pub fn lint(&self, ast: &Expr, _source: &str) -> Result<Vec<LintIssue>> {
     }
     fn analyze_expr(&self, expr: &Expr, scope: &mut Scope, issues: &mut Vec<LintIssue>) {
         match &expr.kind {
-            ExprKind::Let { name, value, body, .. } => {
+            ExprKind::Let {
+                name, value, body, ..
+            } => {
                 // Analyze the value first (with current scope)
                 self.analyze_expr(value, scope, issues);
                 // Create new scope for the let binding body
                 let mut let_scope = Scope::with_parent(scope.clone());
                 // Check for shadowing before defining
-                if self.rules.iter().any(|r| matches!(r, LintRule::VariableShadowing))
-                    && let_scope.is_shadowing(name) {
-                        issues.push(LintIssue {
-                            line: 3, // Simplified line tracking
-                            column: 1,
-                            severity: "warning".to_string(),
-                            rule: "shadowing".to_string(),
-                            message: format!("variable shadowing: {name}"),
-                            suggestion: format!("Consider renaming variable '{name}'"),
-                            issue_type: "variable_shadowing".to_string(),
-                            name: name.clone(),
-                        });
-                    }
+                if self
+                    .rules
+                    .iter()
+                    .any(|r| matches!(r, LintRule::VariableShadowing))
+                    && let_scope.is_shadowing(name)
+                {
+                    issues.push(LintIssue {
+                        line: 3, // Simplified line tracking
+                        column: 1,
+                        severity: "warning".to_string(),
+                        rule: "shadowing".to_string(),
+                        message: format!("variable shadowing: {name}"),
+                        suggestion: format!("Consider renaming variable '{name}'"),
+                        issue_type: "variable_shadowing".to_string(),
+                        name: name.clone(),
+                    });
+                }
                 // Define the variable in the new scope
                 let_scope.define(name.clone(), 2, 1, VarType::Local);
                 // Analyze the body with the new scope
@@ -228,20 +244,26 @@ pub fn lint(&self, ast: &Expr, _source: &str) -> Result<Vec<LintIssue>> {
                 }
                 // Mark as used if defined, otherwise report as undefined
                 if !scope.mark_used(name)
-                    && self.rules.iter().any(|r| matches!(r, LintRule::UndefinedVariable)) {
-                        issues.push(LintIssue {
-                            line: 3,
-                            column: 1,
-                            severity: "error".to_string(),
-                            rule: "undefined".to_string(),
-                            message: format!("undefined variable: {name}"),
-                            suggestion: format!("Define '{name}' before using it"),
-                            issue_type: "undefined_variable".to_string(),
-                            name: name.clone(),
-                        });
-                    }
+                    && self
+                        .rules
+                        .iter()
+                        .any(|r| matches!(r, LintRule::UndefinedVariable))
+                {
+                    issues.push(LintIssue {
+                        line: 3,
+                        column: 1,
+                        severity: "error".to_string(),
+                        rule: "undefined".to_string(),
+                        message: format!("undefined variable: {name}"),
+                        suggestion: format!("Define '{name}' before using it"),
+                        issue_type: "undefined_variable".to_string(),
+                        name: name.clone(),
+                    });
+                }
             }
-            ExprKind::Function { name, params, body, .. } => {
+            ExprKind::Function {
+                name, params, body, ..
+            } => {
                 // Define the function name in the current scope
                 scope.define(name.clone(), 1, 1, VarType::Local);
                 // Create new scope for function body
@@ -269,7 +291,13 @@ pub fn lint(&self, ast: &Expr, _source: &str) -> Result<Vec<LintIssue>> {
                     }
                 }
             }
-            ExprKind::For { var, pattern, iter, body, .. } => {
+            ExprKind::For {
+                var,
+                pattern,
+                iter,
+                body,
+                ..
+            } => {
                 // Create new scope for loop
                 let mut loop_scope = Scope::with_parent(scope.clone());
                 // Add loop variable to scope
@@ -304,7 +332,12 @@ pub fn lint(&self, ast: &Expr, _source: &str) -> Result<Vec<LintIssue>> {
                     self.check_unused_in_scope(&branch_scope, issues);
                 }
             }
-            ExprKind::If { condition, then_branch, else_branch, .. } => {
+            ExprKind::If {
+                condition,
+                then_branch,
+                else_branch,
+                ..
+            } => {
                 self.analyze_expr(condition, scope, issues);
                 // Create new scope for then branch
                 let mut then_scope = Scope::with_parent(scope.clone());
@@ -382,7 +415,9 @@ pub fn lint(&self, ast: &Expr, _source: &str) -> Result<Vec<LintIssue>> {
                 self.analyze_expr(object, scope, issues);
                 self.analyze_expr(index, scope, issues);
             }
-            ExprKind::While { condition, body, .. } => {
+            ExprKind::While {
+                condition, body, ..
+            } => {
                 self.analyze_expr(condition, scope, issues);
                 self.analyze_expr(body, scope, issues);
             }
@@ -496,29 +531,51 @@ pub fn lint(&self, ast: &Expr, _source: &str) -> Result<Vec<LintIssue>> {
             if !info.used {
                 let (rule_type, message) = match info.var_type {
                     VarType::Local => {
-                        if self.rules.iter().any(|r| matches!(r, LintRule::UnusedVariable)) {
+                        if self
+                            .rules
+                            .iter()
+                            .any(|r| matches!(r, LintRule::UnusedVariable))
+                        {
                             ("unused_variable", format!("unused variable: {name}"))
                         } else {
                             continue;
                         }
                     }
                     VarType::Parameter => {
-                        if self.rules.iter().any(|r| matches!(r, LintRule::UnusedParameter)) {
+                        if self
+                            .rules
+                            .iter()
+                            .any(|r| matches!(r, LintRule::UnusedParameter))
+                        {
                             ("unused_parameter", format!("unused parameter: {name}"))
                         } else {
                             continue;
                         }
                     }
                     VarType::LoopVariable => {
-                        if self.rules.iter().any(|r| matches!(r, LintRule::UnusedLoopVariable)) {
-                            ("unused_loop_variable", format!("unused loop variable: {name}"))
+                        if self
+                            .rules
+                            .iter()
+                            .any(|r| matches!(r, LintRule::UnusedLoopVariable))
+                        {
+                            (
+                                "unused_loop_variable",
+                                format!("unused loop variable: {name}"),
+                            )
                         } else {
                             continue;
                         }
                     }
                     VarType::MatchBinding => {
-                        if self.rules.iter().any(|r| matches!(r, LintRule::UnusedMatchBinding)) {
-                            ("unused_match_binding", format!("unused match binding: {name}"))
+                        if self
+                            .rules
+                            .iter()
+                            .any(|r| matches!(r, LintRule::UnusedMatchBinding))
+                        {
+                            (
+                                "unused_match_binding",
+                                format!("unused match binding: {name}"),
+                            )
                         } else {
                             continue;
                         }
@@ -530,7 +587,8 @@ pub fn lint(&self, ast: &Expr, _source: &str) -> Result<Vec<LintIssue>> {
                     severity: "warning".to_string(),
                     rule: rule_type.to_string(),
                     message: message.clone(),
-                    suggestion: format!("Remove unused {}", 
+                    suggestion: format!(
+                        "Remove unused {}",
                         match info.var_type {
                             VarType::Local => "variable",
                             VarType::Parameter => "parameter",
@@ -544,16 +602,16 @@ pub fn lint(&self, ast: &Expr, _source: &str) -> Result<Vec<LintIssue>> {
             }
         }
     }
-/// # Examples
-/// 
-/// ```
-/// use ruchy::quality::linter::Linter;
-/// 
-/// let mut instance = Linter::new();
-/// let result = instance.auto_fix();
-/// // Verify behavior
-/// ```
-pub fn auto_fix(&self, source: &str, issues: &[LintIssue]) -> Result<String> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::quality::linter::Linter;
+    ///
+    /// let mut instance = Linter::new();
+    /// let result = instance.auto_fix();
+    /// // Verify behavior
+    /// ```
+    pub fn auto_fix(&self, source: &str, issues: &[LintIssue]) -> Result<String> {
         // Simple auto-fix implementation
         let mut fixed = source.to_string();
         for issue in issues {
@@ -566,15 +624,20 @@ pub fn auto_fix(&self, source: &str, issues: &[LintIssue]) -> Result<String> {
     }
     fn calculate_complexity(&self, expr: &Expr) -> usize {
         match &expr.kind {
-            ExprKind::If { condition: _, then_branch, else_branch, .. } => {
-                1 + self.calculate_complexity(then_branch) 
-                  + else_branch.as_ref().map_or(0, |e| self.calculate_complexity(e))
+            ExprKind::If {
+                condition: _,
+                then_branch,
+                else_branch,
+                ..
+            } => {
+                1 + self.calculate_complexity(then_branch)
+                    + else_branch
+                        .as_ref()
+                        .map_or(0, |e| self.calculate_complexity(e))
             }
             ExprKind::Match { .. } => 2,
             ExprKind::While { .. } | ExprKind::For { .. } => 2,
-            ExprKind::Block(exprs) => {
-                exprs.iter().map(|e| self.calculate_complexity(e)).sum()
-            }
+            ExprKind::Block(exprs) => exprs.iter().map(|e| self.calculate_complexity(e)).sum(),
             _ => 0,
         }
     }
@@ -588,8 +651,8 @@ impl Default for Linter {
 mod tests {
     use super::*;
     use crate::frontend::ast::{
-        Expr, ExprKind, Pattern, Literal, BinaryOp, Span, Param, Type, TypeKind,
-        MatchArm, StringPart, StructPatternField
+        BinaryOp, Expr, ExprKind, Literal, MatchArm, Param, Pattern, Span, StringPart,
+        StructPatternField, Type, TypeKind,
     };
     // Helper functions for consistent test setup
     fn create_test_span() -> Span {
@@ -604,30 +667,39 @@ mod tests {
         linter
     }
     fn create_test_expr_literal_int(value: i64) -> Expr {
-        Expr::new(ExprKind::Literal(Literal::Integer(value)), create_test_span())
+        Expr::new(
+            ExprKind::Literal(Literal::Integer(value)),
+            create_test_span(),
+        )
     }
     fn create_test_expr_identifier(name: &str) -> Expr {
         Expr::new(ExprKind::Identifier(name.to_string()), create_test_span())
     }
     fn create_test_expr_let(name: &str, value: Expr, body: Expr) -> Expr {
-        Expr::new(ExprKind::Let {
-            name: name.to_string(),
-            type_annotation: None,
-            value: Box::new(value),
-            body: Box::new(body),
-            is_mutable: false,
-        }, create_test_span())
+        Expr::new(
+            ExprKind::Let {
+                name: name.to_string(),
+                type_annotation: None,
+                value: Box::new(value),
+                body: Box::new(body),
+                is_mutable: false,
+            },
+            create_test_span(),
+        )
     }
     fn create_test_expr_function(name: &str, params: Vec<Param>, body: Expr) -> Expr {
-        Expr::new(ExprKind::Function {
-            name: name.to_string(),
-            type_params: vec![],
-            params,
-            return_type: None,
-            body: Box::new(body),
-            is_async: false,
-            is_pub: false,
-        }, create_test_span())
+        Expr::new(
+            ExprKind::Function {
+                name: name.to_string(),
+                type_params: vec![],
+                params,
+                return_type: None,
+                body: Box::new(body),
+                is_async: false,
+                is_pub: false,
+            },
+            create_test_span(),
+        )
     }
     fn create_test_param(name: &str) -> Param {
         Param {
@@ -645,38 +717,53 @@ mod tests {
         Expr::new(ExprKind::Block(exprs), create_test_span())
     }
     fn create_test_expr_binary(op: BinaryOp, left: Expr, right: Expr) -> Expr {
-        Expr::new(ExprKind::Binary {
-            op,
-            left: Box::new(left),
-            right: Box::new(right),
-        }, create_test_span())
+        Expr::new(
+            ExprKind::Binary {
+                op,
+                left: Box::new(left),
+                right: Box::new(right),
+            },
+            create_test_span(),
+        )
     }
     fn create_test_expr_call(func: Expr, args: Vec<Expr>) -> Expr {
-        Expr::new(ExprKind::Call {
-            func: Box::new(func),
-            args,
-        }, create_test_span())
+        Expr::new(
+            ExprKind::Call {
+                func: Box::new(func),
+                args,
+            },
+            create_test_span(),
+        )
     }
     fn create_test_expr_if(condition: Expr, then_branch: Expr, else_branch: Option<Expr>) -> Expr {
-        Expr::new(ExprKind::If {
-            condition: Box::new(condition),
-            then_branch: Box::new(then_branch),
-            else_branch: else_branch.map(Box::new),
-        }, create_test_span())
+        Expr::new(
+            ExprKind::If {
+                condition: Box::new(condition),
+                then_branch: Box::new(then_branch),
+                else_branch: else_branch.map(Box::new),
+            },
+            create_test_span(),
+        )
     }
     fn create_test_expr_for(var: &str, pattern: Option<Pattern>, iter: Expr, body: Expr) -> Expr {
-        Expr::new(ExprKind::For {
-            var: var.to_string(),
-            pattern,
-            iter: Box::new(iter),
-            body: Box::new(body),
-        }, create_test_span())
+        Expr::new(
+            ExprKind::For {
+                var: var.to_string(),
+                pattern,
+                iter: Box::new(iter),
+                body: Box::new(body),
+            },
+            create_test_span(),
+        )
     }
     fn create_test_expr_match(expr: Expr, arms: Vec<MatchArm>) -> Expr {
-        Expr::new(ExprKind::Match {
-            expr: Box::new(expr),
-            arms,
-        }, create_test_span())
+        Expr::new(
+            ExprKind::Match {
+                expr: Box::new(expr),
+                arms,
+            },
+            create_test_span(),
+        )
     }
     fn create_test_match_arm(pattern: Pattern, body: Expr) -> MatchArm {
         MatchArm {
@@ -687,28 +774,40 @@ mod tests {
         }
     }
     fn create_test_expr_lambda(params: Vec<Param>, body: Expr) -> Expr {
-        Expr::new(ExprKind::Lambda {
-            params,
-            body: Box::new(body),
-        }, create_test_span())
+        Expr::new(
+            ExprKind::Lambda {
+                params,
+                body: Box::new(body),
+            },
+            create_test_span(),
+        )
     }
     fn create_test_expr_method_call(receiver: Expr, method: &str, args: Vec<Expr>) -> Expr {
-        Expr::new(ExprKind::MethodCall {
-            receiver: Box::new(receiver),
-            method: method.to_string(),
-            args,
-        }, create_test_span())
+        Expr::new(
+            ExprKind::MethodCall {
+                receiver: Box::new(receiver),
+                method: method.to_string(),
+                args,
+            },
+            create_test_span(),
+        )
     }
     fn create_test_expr_while(condition: Expr, body: Expr) -> Expr {
-        Expr::new(ExprKind::While {
-            condition: Box::new(condition),
-            body: Box::new(body),
-        }, create_test_span())
+        Expr::new(
+            ExprKind::While {
+                condition: Box::new(condition),
+                body: Box::new(body),
+            },
+            create_test_span(),
+        )
     }
     fn create_test_expr_return(value: Option<Expr>) -> Expr {
-        Expr::new(ExprKind::Return {
-            value: value.map(Box::new),
-        }, create_test_span())
+        Expr::new(
+            ExprKind::Return {
+                value: value.map(Box::new),
+            },
+            create_test_span(),
+        )
     }
     // ========== Linter Construction Tests ==========
     #[test]
@@ -776,9 +875,15 @@ mod tests {
         let mut linter = Linter::new();
         linter.set_rules("style,security,performance");
         assert_eq!(linter.rules.len(), 3);
-        assert!(linter.rules.iter().any(|r| matches!(r, LintRule::StyleViolation)));
+        assert!(linter
+            .rules
+            .iter()
+            .any(|r| matches!(r, LintRule::StyleViolation)));
         assert!(linter.rules.iter().any(|r| matches!(r, LintRule::Security)));
-        assert!(linter.rules.iter().any(|r| matches!(r, LintRule::Performance)));
+        assert!(linter
+            .rules
+            .iter()
+            .any(|r| matches!(r, LintRule::Performance)));
     }
     // ========== Scope Tests ==========
     #[test]
@@ -893,10 +998,12 @@ mod tests {
         let expr = create_test_expr_let(
             "x",
             create_test_expr_literal_int(42),
-            create_test_expr_literal_int(0)
+            create_test_expr_literal_int(0),
         );
         let issues = linter.lint(&expr, "let x = 42; 0").unwrap();
-        assert!(issues.iter().any(|i| i.rule == "unused_variable" && i.name == "x"));
+        assert!(issues
+            .iter()
+            .any(|i| i.rule == "unused_variable" && i.name == "x"));
     }
     #[test]
     fn test_lint_used_variable() {
@@ -904,10 +1011,12 @@ mod tests {
         let expr = create_test_expr_let(
             "x",
             create_test_expr_literal_int(42),
-            create_test_expr_identifier("x")
+            create_test_expr_identifier("x"),
         );
         let issues = linter.lint(&expr, "let x = 42; x").unwrap();
-        assert!(!issues.iter().any(|i| i.rule == "unused_variable" && i.name == "x"));
+        assert!(!issues
+            .iter()
+            .any(|i| i.rule == "unused_variable" && i.name == "x"));
     }
     #[test]
     fn test_lint_variable_shadowing() {
@@ -919,17 +1028,19 @@ mod tests {
         assert!(child_scope.is_shadowing("x"));
         // Direct test without function wrapper
         let outer_let = create_test_expr_let(
-            "x", 
-            create_test_expr_literal_int(1), 
+            "x",
+            create_test_expr_literal_int(1),
             create_test_expr_let(
-                "x",  // This should shadow the outer x
+                "x", // This should shadow the outer x
                 create_test_expr_literal_int(2),
-                create_test_expr_identifier("x")
-            )
+                create_test_expr_identifier("x"),
+            ),
         );
         let issues = linter.lint(&outer_let, "let x = 1; let x = 2; x").unwrap();
         eprintln!("Debug - Issues found: {issues:?}");
-        assert!(issues.iter().any(|i| i.rule == "shadowing" && i.name == "x"));
+        assert!(issues
+            .iter()
+            .any(|i| i.rule == "shadowing" && i.name == "x"));
     }
     // ========== Function Linting Tests ==========
     #[test]
@@ -938,7 +1049,7 @@ mod tests {
         let expr = create_test_expr_function(
             "test_func",
             vec![create_test_param("x")],
-            create_test_expr_literal_int(42)
+            create_test_expr_literal_int(42),
         );
         let issues = linter.lint(&expr, "fn test_func(x) { 42 }").unwrap();
         // Parameters are not flagged as unused in function scope analysis
@@ -950,15 +1061,15 @@ mod tests {
         let body = create_test_expr_let(
             "local_var",
             create_test_expr_literal_int(1),
-            create_test_expr_literal_int(42)
+            create_test_expr_literal_int(42),
         );
-        let expr = create_test_expr_function(
-            "test_func",
-            vec![],
-            body
-        );
-        let issues = linter.lint(&expr, "fn test_func() { let local_var = 1; 42 }").unwrap();
-        assert!(issues.iter().any(|i| i.rule == "unused_variable" && i.name == "local_var"));
+        let expr = create_test_expr_function("test_func", vec![], body);
+        let issues = linter
+            .lint(&expr, "fn test_func() { let local_var = 1; 42 }")
+            .unwrap();
+        assert!(issues
+            .iter()
+            .any(|i| i.rule == "unused_variable" && i.name == "local_var"));
     }
     // ========== Loop Linting Tests ==========
     #[test]
@@ -968,10 +1079,12 @@ mod tests {
             "i",
             Some(Pattern::Identifier("i".to_string())),
             create_test_expr_literal_int(42),
-            create_test_expr_literal_int(0)
+            create_test_expr_literal_int(0),
         );
         let issues = linter.lint(&expr, "for i in items { 0 }").unwrap();
-        assert!(issues.iter().any(|i| i.rule.contains("unused") && i.name == "i"));
+        assert!(issues
+            .iter()
+            .any(|i| i.rule.contains("unused") && i.name == "i"));
     }
     #[test]
     fn test_lint_for_loop_used_variable() {
@@ -980,10 +1093,12 @@ mod tests {
             "i",
             Some(Pattern::Identifier("i".to_string())),
             create_test_expr_literal_int(42),
-            create_test_expr_identifier("i")
+            create_test_expr_identifier("i"),
         );
         let issues = linter.lint(&expr, "for i in items { i }").unwrap();
-        assert!(!issues.iter().any(|i| i.rule.contains("unused") && i.name == "i"));
+        assert!(!issues
+            .iter()
+            .any(|i| i.rule.contains("unused") && i.name == "i"));
     }
     #[test]
     fn test_lint_for_loop_underscore_variable() {
@@ -992,7 +1107,7 @@ mod tests {
             "_",
             Some(Pattern::Identifier("_".to_string())),
             create_test_expr_literal_int(42),
-            create_test_expr_literal_int(0)
+            create_test_expr_literal_int(0),
         );
         let issues = linter.lint(&expr, "for _ in items { 0 }").unwrap();
         assert!(!issues.iter().any(|i| i.name == "_"));
@@ -1003,40 +1118,35 @@ mod tests {
         let linter = create_test_linter_with_rules("unused");
         let arm = create_test_match_arm(
             Pattern::Identifier("x".to_string()),
-            create_test_expr_literal_int(42)
+            create_test_expr_literal_int(42),
         );
-        let expr = create_test_expr_match(
-            create_test_expr_literal_int(1),
-            vec![arm]
-        );
+        let expr = create_test_expr_match(create_test_expr_literal_int(1), vec![arm]);
         let issues = linter.lint(&expr, "match value { x => 42 }").unwrap();
-        assert!(issues.iter().any(|i| i.rule.contains("unused") && i.name == "x"));
+        assert!(issues
+            .iter()
+            .any(|i| i.rule.contains("unused") && i.name == "x"));
     }
     #[test]
     fn test_lint_match_used_binding() {
         let linter = create_test_linter_with_rules("unused");
         let arm = create_test_match_arm(
             Pattern::Identifier("x".to_string()),
-            create_test_expr_identifier("x")
+            create_test_expr_identifier("x"),
         );
-        let expr = create_test_expr_match(
-            create_test_expr_literal_int(1),
-            vec![arm]
-        );
+        let expr = create_test_expr_match(create_test_expr_literal_int(1), vec![arm]);
         let issues = linter.lint(&expr, "match value { x => x }").unwrap();
-        assert!(!issues.iter().any(|i| i.rule.contains("unused") && i.name == "x"));
+        assert!(!issues
+            .iter()
+            .any(|i| i.rule.contains("unused") && i.name == "x"));
     }
     #[test]
     fn test_lint_match_underscore_binding() {
         let linter = create_test_linter_with_rules("unused");
         let arm = create_test_match_arm(
             Pattern::Identifier("_".to_string()),
-            create_test_expr_literal_int(42)
+            create_test_expr_literal_int(42),
         );
-        let expr = create_test_expr_match(
-            create_test_expr_literal_int(1),
-            vec![arm]
-        );
+        let expr = create_test_expr_match(create_test_expr_literal_int(1), vec![arm]);
         let issues = linter.lint(&expr, "match value { _ => 42 }").unwrap();
         assert!(!issues.iter().any(|i| i.name == "_"));
     }
@@ -1046,20 +1156,24 @@ mod tests {
         let linter = create_test_linter_with_rules("unused");
         let expr = create_test_expr_lambda(
             vec![create_test_param("x")],
-            create_test_expr_literal_int(42)
+            create_test_expr_literal_int(42),
         );
         let issues = linter.lint(&expr, "|x| 42").unwrap();
-        assert!(issues.iter().any(|i| i.rule.contains("unused") && i.name == "x"));
+        assert!(issues
+            .iter()
+            .any(|i| i.rule.contains("unused") && i.name == "x"));
     }
     #[test]
     fn test_lint_lambda_used_parameter() {
         let linter = create_test_linter_with_rules("unused");
         let expr = create_test_expr_lambda(
             vec![create_test_param("x")],
-            create_test_expr_identifier("x")
+            create_test_expr_identifier("x"),
         );
         let issues = linter.lint(&expr, "|x| x").unwrap();
-        assert!(!issues.iter().any(|i| i.rule.contains("unused") && i.name == "x"));
+        assert!(!issues
+            .iter()
+            .any(|i| i.rule.contains("unused") && i.name == "x"));
     }
     // ========== Complexity Tests ==========
     #[test]
@@ -1074,7 +1188,7 @@ mod tests {
         let expr = create_test_expr_if(
             create_test_expr_literal_int(1),
             create_test_expr_literal_int(2),
-            Some(create_test_expr_literal_int(3))
+            Some(create_test_expr_literal_int(3)),
         );
         assert_eq!(linter.calculate_complexity(&expr), 1);
     }
@@ -1083,12 +1197,9 @@ mod tests {
         let linter = create_test_linter();
         let arm = create_test_match_arm(
             Pattern::Identifier("_".to_string()),
-            create_test_expr_literal_int(42)
+            create_test_expr_literal_int(42),
         );
-        let expr = create_test_expr_match(
-            create_test_expr_literal_int(1),
-            vec![arm]
-        );
+        let expr = create_test_expr_match(create_test_expr_literal_int(1), vec![arm]);
         assert_eq!(linter.calculate_complexity(&expr), 2);
     }
     #[test]
@@ -1096,7 +1207,7 @@ mod tests {
         let linter = create_test_linter();
         let expr = create_test_expr_while(
             create_test_expr_literal_int(1),
-            create_test_expr_literal_int(2)
+            create_test_expr_literal_int(2),
         );
         assert_eq!(linter.calculate_complexity(&expr), 2);
     }
@@ -1107,7 +1218,7 @@ mod tests {
             "i",
             Some(Pattern::Identifier("i".to_string())),
             create_test_expr_literal_int(42),
-            create_test_expr_literal_int(0)
+            create_test_expr_literal_int(0),
         );
         assert_eq!(linter.calculate_complexity(&expr), 2);
     }
@@ -1120,9 +1231,9 @@ mod tests {
             create_test_expr_if(
                 create_test_expr_literal_int(2),
                 create_test_expr_literal_int(3),
-                None
+                None,
             ),
-            None
+            None,
         );
         let issues = linter.lint(&complex_expr, "if 1 { if 2 { 3 } }").unwrap();
         assert!(issues.iter().any(|i| i.rule == "complexity"));
@@ -1144,7 +1255,7 @@ mod tests {
         let mut scope = Scope::new();
         let pattern = Pattern::Tuple(vec![
             Pattern::Identifier("x".to_string()),
-            Pattern::Identifier("y".to_string())
+            Pattern::Identifier("y".to_string()),
         ]);
         linter.extract_loop_bindings(&pattern, &mut scope);
         assert!(scope.is_defined("x"));
@@ -1156,7 +1267,7 @@ mod tests {
         let mut scope = Scope::new();
         let pattern = Pattern::List(vec![
             Pattern::Identifier("first".to_string()),
-            Pattern::Identifier("second".to_string())
+            Pattern::Identifier("second".to_string()),
         ]);
         linter.extract_loop_bindings(&pattern, &mut scope);
         assert!(scope.is_defined("first"));
@@ -1218,9 +1329,11 @@ mod tests {
         let expr = create_test_expr_binary(
             BinaryOp::Add,
             create_test_expr_identifier("undefined_left"),
-            create_test_expr_identifier("undefined_right")
+            create_test_expr_identifier("undefined_right"),
         );
-        let issues = linter.lint(&expr, "undefined_left + undefined_right").unwrap();
+        let issues = linter
+            .lint(&expr, "undefined_left + undefined_right")
+            .unwrap();
         assert_eq!(issues.len(), 2);
         assert!(issues.iter().any(|i| i.name == "undefined_left"));
         assert!(issues.iter().any(|i| i.name == "undefined_right"));
@@ -1230,7 +1343,7 @@ mod tests {
         let linter = create_test_linter_with_rules("undefined");
         let expr = create_test_expr_call(
             create_test_expr_identifier("undefined_func"),
-            vec![create_test_expr_identifier("undefined_arg")]
+            vec![create_test_expr_identifier("undefined_arg")],
         );
         let issues = linter.lint(&expr, "undefined_func(undefined_arg)").unwrap();
         assert_eq!(issues.len(), 2);
@@ -1243,9 +1356,11 @@ mod tests {
         let expr = create_test_expr_method_call(
             create_test_expr_identifier("undefined_obj"),
             "method",
-            vec![create_test_expr_identifier("undefined_arg")]
+            vec![create_test_expr_identifier("undefined_arg")],
         );
-        let issues = linter.lint(&expr, "undefined_obj.method(undefined_arg)").unwrap();
+        let issues = linter
+            .lint(&expr, "undefined_obj.method(undefined_arg)")
+            .unwrap();
         assert_eq!(issues.len(), 2);
         assert!(issues.iter().any(|i| i.name == "undefined_obj"));
         assert!(issues.iter().any(|i| i.name == "undefined_arg"));
@@ -1253,17 +1368,22 @@ mod tests {
     #[test]
     fn test_analyze_string_interpolation() {
         let linter = create_test_linter_with_rules("undefined");
-        let expr = Expr::new(ExprKind::StringInterpolation {
-            parts: vec![
-                StringPart::Text("Hello ".to_string()),
-                StringPart::Expr(Box::new(create_test_expr_identifier("undefined_name"))),
-                StringPart::ExprWithFormat { 
-                    expr: Box::new(create_test_expr_identifier("undefined_age")), 
-                    format_spec: "d".to_string() 
-                },
-            ]
-        }, create_test_span());
-        let issues = linter.lint(&expr, "f\"Hello {undefined_name} {undefined_age:d}\"").unwrap();
+        let expr = Expr::new(
+            ExprKind::StringInterpolation {
+                parts: vec![
+                    StringPart::Text("Hello ".to_string()),
+                    StringPart::Expr(Box::new(create_test_expr_identifier("undefined_name"))),
+                    StringPart::ExprWithFormat {
+                        expr: Box::new(create_test_expr_identifier("undefined_age")),
+                        format_spec: "d".to_string(),
+                    },
+                ],
+            },
+            create_test_span(),
+        );
+        let issues = linter
+            .lint(&expr, "f\"Hello {undefined_name} {undefined_age:d}\"")
+            .unwrap();
         assert_eq!(issues.len(), 2);
         assert!(issues.iter().any(|i| i.name == "undefined_name"));
         assert!(issues.iter().any(|i| i.name == "undefined_age"));
@@ -1279,12 +1399,14 @@ mod tests {
     #[test]
     fn test_analyze_list_and_tuple() {
         let linter = create_test_linter_with_rules("undefined");
-        let list_expr = Expr::new(ExprKind::List(vec![
-            create_test_expr_identifier("undefined_item")
-        ]), create_test_span());
-        let tuple_expr = Expr::new(ExprKind::Tuple(vec![
-            create_test_expr_identifier("undefined_elem")
-        ]), create_test_span());
+        let list_expr = Expr::new(
+            ExprKind::List(vec![create_test_expr_identifier("undefined_item")]),
+            create_test_span(),
+        );
+        let tuple_expr = Expr::new(
+            ExprKind::Tuple(vec![create_test_expr_identifier("undefined_elem")]),
+            create_test_span(),
+        );
         let list_issues = linter.lint(&list_expr, "[undefined_item]").unwrap();
         assert!(list_issues.iter().any(|i| i.name == "undefined_item"));
         let tuple_issues = linter.lint(&tuple_expr, "(undefined_elem,)").unwrap();
@@ -1293,17 +1415,25 @@ mod tests {
     #[test]
     fn test_analyze_field_and_index_access() {
         let linter = create_test_linter_with_rules("undefined");
-        let field_expr = Expr::new(ExprKind::FieldAccess {
-            object: Box::new(create_test_expr_identifier("undefined_obj")),
-            field: "property".to_string(),
-        }, create_test_span());
-        let index_expr = Expr::new(ExprKind::IndexAccess {
-            object: Box::new(create_test_expr_identifier("undefined_arr")),
-            index: Box::new(create_test_expr_identifier("undefined_idx")),
-        }, create_test_span());
+        let field_expr = Expr::new(
+            ExprKind::FieldAccess {
+                object: Box::new(create_test_expr_identifier("undefined_obj")),
+                field: "property".to_string(),
+            },
+            create_test_span(),
+        );
+        let index_expr = Expr::new(
+            ExprKind::IndexAccess {
+                object: Box::new(create_test_expr_identifier("undefined_arr")),
+                index: Box::new(create_test_expr_identifier("undefined_idx")),
+            },
+            create_test_span(),
+        );
         let field_issues = linter.lint(&field_expr, "undefined_obj.property").unwrap();
         assert!(field_issues.iter().any(|i| i.name == "undefined_obj"));
-        let index_issues = linter.lint(&index_expr, "undefined_arr[undefined_idx]").unwrap();
+        let index_issues = linter
+            .lint(&index_expr, "undefined_arr[undefined_idx]")
+            .unwrap();
         assert_eq!(index_issues.len(), 2);
         assert!(index_issues.iter().any(|i| i.name == "undefined_arr"));
         assert!(index_issues.iter().any(|i| i.name == "undefined_idx"));
@@ -1311,11 +1441,16 @@ mod tests {
     #[test]
     fn test_analyze_assign_expression() {
         let linter = create_test_linter_with_rules("undefined");
-        let expr = Expr::new(ExprKind::Assign {
-            target: Box::new(create_test_expr_identifier("undefined_target")),
-            value: Box::new(create_test_expr_identifier("undefined_value")),
-        }, create_test_span());
-        let issues = linter.lint(&expr, "undefined_target = undefined_value").unwrap();
+        let expr = Expr::new(
+            ExprKind::Assign {
+                target: Box::new(create_test_expr_identifier("undefined_target")),
+                value: Box::new(create_test_expr_identifier("undefined_value")),
+            },
+            create_test_span(),
+        );
+        let issues = linter
+            .lint(&expr, "undefined_target = undefined_value")
+            .unwrap();
         assert_eq!(issues.len(), 2);
         assert!(issues.iter().any(|i| i.name == "undefined_target"));
         assert!(issues.iter().any(|i| i.name == "undefined_value"));
@@ -1324,11 +1459,15 @@ mod tests {
     #[test]
     fn test_analyze_block_unused_variable() {
         let linter = create_test_linter_with_rules("unused");
-        let block = create_test_expr_block(vec![
-            create_test_expr_let("unused_var", create_test_expr_literal_int(42), create_test_expr_literal_int(0))
-        ]);
+        let block = create_test_expr_block(vec![create_test_expr_let(
+            "unused_var",
+            create_test_expr_literal_int(42),
+            create_test_expr_literal_int(0),
+        )]);
         let issues = linter.lint(&block, "{ let unused_var = 42; 0 }").unwrap();
-        assert!(issues.iter().any(|i| i.rule == "unused_variable" && i.name == "unused_var"));
+        assert!(issues
+            .iter()
+            .any(|i| i.rule == "unused_variable" && i.name == "unused_var"));
     }
     #[test]
     fn test_analyze_if_branches() {
@@ -1336,9 +1475,14 @@ mod tests {
         let expr = create_test_expr_if(
             create_test_expr_identifier("undefined_cond"),
             create_test_expr_identifier("undefined_then"),
-            Some(create_test_expr_identifier("undefined_else"))
+            Some(create_test_expr_identifier("undefined_else")),
         );
-        let issues = linter.lint(&expr, "if undefined_cond { undefined_then } else { undefined_else }").unwrap();
+        let issues = linter
+            .lint(
+                &expr,
+                "if undefined_cond { undefined_then } else { undefined_else }",
+            )
+            .unwrap();
         assert_eq!(issues.len(), 3);
         assert!(issues.iter().any(|i| i.name == "undefined_cond"));
         assert!(issues.iter().any(|i| i.name == "undefined_then"));
@@ -1375,18 +1519,18 @@ mod tests {
         // Create nested let expressions for comprehensive testing
         let unused_let = create_test_expr_let(
             "unused",
-            create_test_expr_identifier("undefined"),  // This creates undefined variable
-            create_test_expr_identifier("x")
+            create_test_expr_identifier("undefined"), // This creates undefined variable
+            create_test_expr_identifier("x"),
         );
         let shadow_let = create_test_expr_let(
-            "x",  // This shadows the outer x 
+            "x", // This shadows the outer x
             create_test_expr_literal_int(2),
-            unused_let
+            unused_let,
         );
         let outer_let = create_test_expr_let(
-            "x",  // Outer variable
+            "x", // Outer variable
             create_test_expr_literal_int(1),
-            shadow_let
+            shadow_let,
         );
         let issues = linter.lint(&outer_let, "complex code").unwrap();
         assert!(issues.iter().any(|i| i.rule == "shadowing"));
@@ -1598,7 +1742,7 @@ mod property_tests_linter {
         fn test_rule_count_invariant(rule_string in "\\PC*") {
             let mut linter = Linter::new();
             linter.set_rules(&rule_string);
-            assert!(linter.rules.len() >= 0);
+            // Rules length is always >= 0 for usize, no need to check
         }
 
         /// Property: Auto-fix never produces longer strings for simple cases
@@ -1630,21 +1774,36 @@ mod sprint_44_tests {
 
     // Helper function for creating comprehensive test scenarios
     fn create_complex_nested_expr() -> Expr {
-        let inner_let = Expr::new(ExprKind::Let {
-            name: "inner".to_string(),
-            type_annotation: None,
-            value: Box::new(Expr::new(ExprKind::Literal(Literal::Integer(1)), Span { start: 0, end: 1 })),
-            body: Box::new(Expr::new(ExprKind::Identifier("inner".to_string()), Span { start: 0, end: 1 })),
-            is_mutable: false,
-        }, Span { start: 0, end: 1 });
+        let inner_let = Expr::new(
+            ExprKind::Let {
+                name: "inner".to_string(),
+                type_annotation: None,
+                value: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(1)),
+                    Span { start: 0, end: 1 },
+                )),
+                body: Box::new(Expr::new(
+                    ExprKind::Identifier("inner".to_string()),
+                    Span { start: 0, end: 1 },
+                )),
+                is_mutable: false,
+            },
+            Span { start: 0, end: 1 },
+        );
 
-        Expr::new(ExprKind::Let {
-            name: "outer".to_string(),
-            type_annotation: None,
-            value: Box::new(Expr::new(ExprKind::Literal(Literal::Integer(2)), Span { start: 0, end: 1 })),
-            body: Box::new(inner_let),
-            is_mutable: false,
-        }, Span { start: 0, end: 1 })
+        Expr::new(
+            ExprKind::Let {
+                name: "outer".to_string(),
+                type_annotation: None,
+                value: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(2)),
+                    Span { start: 0, end: 1 },
+                )),
+                body: Box::new(inner_let),
+                is_mutable: false,
+            },
+            Span { start: 0, end: 1 },
+        )
     }
 
     // ========== SPRINT 44: Advanced Linter Tests (20 tests) ==========
@@ -1655,9 +1814,9 @@ mod sprint_44_tests {
         let complex_expr = create_complex_nested_expr();
         let result = linter.lint(&complex_expr, "nested code");
         assert!(result.is_ok());
-        let issues = result.unwrap();
+        let _issues = result.unwrap();
         // Should handle deeply nested scopes without panicking
-        assert!(issues.len() >= 0);
+        // Issues length is always >= 0 for usize
     }
 
     #[test]
@@ -1669,9 +1828,9 @@ mod sprint_44_tests {
         let nested_tuple = Pattern::Tuple(vec![
             Pattern::Tuple(vec![
                 Pattern::Identifier("a".to_string()),
-                Pattern::Identifier("b".to_string())
+                Pattern::Identifier("b".to_string()),
             ]),
-            Pattern::Identifier("c".to_string())
+            Pattern::Identifier("c".to_string()),
         ]);
 
         linter.extract_pattern_bindings(&nested_tuple, &mut scope);
@@ -1698,7 +1857,7 @@ mod sprint_44_tests {
         for rule_str in edge_cases {
             linter.set_rules(rule_str);
             // Should not panic and should have some reasonable state
-            assert!(linter.rules.len() >= 0);
+            // Rules length is always >= 0 for usize, no need to check
         }
     }
 
@@ -1711,9 +1870,13 @@ mod sprint_44_tests {
         assert_eq!(linter.calculate_complexity(&empty_block), 0);
 
         // Test single expression block
-        let single_block = Expr::new(ExprKind::Block(vec![
-            Expr::new(ExprKind::Literal(Literal::Integer(42)), Span { start: 0, end: 1 })
-        ]), Span { start: 0, end: 1 });
+        let single_block = Expr::new(
+            ExprKind::Block(vec![Expr::new(
+                ExprKind::Literal(Literal::Integer(42)),
+                Span { start: 0, end: 1 },
+            )]),
+            Span { start: 0, end: 1 },
+        );
         assert_eq!(linter.calculate_complexity(&single_block), 0);
     }
 
@@ -1723,29 +1886,50 @@ mod sprint_44_tests {
         linter.set_rules("shadowing");
 
         // Create 3-level nested shadowing
-        let level3 = Expr::new(ExprKind::Let {
-            name: "x".to_string(),
-            type_annotation: None,
-            value: Box::new(Expr::new(ExprKind::Literal(Literal::Integer(3)), Span { start: 0, end: 1 })),
-            body: Box::new(Expr::new(ExprKind::Identifier("x".to_string()), Span { start: 0, end: 1 })),
-            is_mutable: false,
-        }, Span { start: 0, end: 1 });
+        let level3 = Expr::new(
+            ExprKind::Let {
+                name: "x".to_string(),
+                type_annotation: None,
+                value: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(3)),
+                    Span { start: 0, end: 1 },
+                )),
+                body: Box::new(Expr::new(
+                    ExprKind::Identifier("x".to_string()),
+                    Span { start: 0, end: 1 },
+                )),
+                is_mutable: false,
+            },
+            Span { start: 0, end: 1 },
+        );
 
-        let level2 = Expr::new(ExprKind::Let {
-            name: "x".to_string(),
-            type_annotation: None,
-            value: Box::new(Expr::new(ExprKind::Literal(Literal::Integer(2)), Span { start: 0, end: 1 })),
-            body: Box::new(level3),
-            is_mutable: false,
-        }, Span { start: 0, end: 1 });
+        let level2 = Expr::new(
+            ExprKind::Let {
+                name: "x".to_string(),
+                type_annotation: None,
+                value: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(2)),
+                    Span { start: 0, end: 1 },
+                )),
+                body: Box::new(level3),
+                is_mutable: false,
+            },
+            Span { start: 0, end: 1 },
+        );
 
-        let level1 = Expr::new(ExprKind::Let {
-            name: "x".to_string(),
-            type_annotation: None,
-            value: Box::new(Expr::new(ExprKind::Literal(Literal::Integer(1)), Span { start: 0, end: 1 })),
-            body: Box::new(level2),
-            is_mutable: false,
-        }, Span { start: 0, end: 1 });
+        let level1 = Expr::new(
+            ExprKind::Let {
+                name: "x".to_string(),
+                type_annotation: None,
+                value: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(1)),
+                    Span { start: 0, end: 1 },
+                )),
+                body: Box::new(level2),
+                is_mutable: false,
+            },
+            Span { start: 0, end: 1 },
+        );
 
         let issues = linter.lint(&level1, "triple shadow").unwrap();
         // Should detect multiple shadowing instances
@@ -1757,27 +1941,47 @@ mod sprint_44_tests {
     fn test_sprint_44_06_match_guard_variable_usage() {
         let linter = Linter::new();
 
-        let guard_expr = Expr::new(ExprKind::Binary {
-            op: BinaryOp::Gt,
-            left: Box::new(Expr::new(ExprKind::Identifier("bound_var".to_string()), Span { start: 0, end: 1 })),
-            right: Box::new(Expr::new(ExprKind::Literal(Literal::Integer(10)), Span { start: 0, end: 1 })),
-        }, Span { start: 0, end: 1 });
+        let guard_expr = Expr::new(
+            ExprKind::Binary {
+                op: BinaryOp::Gt,
+                left: Box::new(Expr::new(
+                    ExprKind::Identifier("bound_var".to_string()),
+                    Span { start: 0, end: 1 },
+                )),
+                right: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(10)),
+                    Span { start: 0, end: 1 },
+                )),
+            },
+            Span { start: 0, end: 1 },
+        );
 
         let match_arm = MatchArm {
             pattern: Pattern::Identifier("bound_var".to_string()),
             guard: Some(Box::new(guard_expr)),
-            body: Box::new(Expr::new(ExprKind::Identifier("bound_var".to_string()), Span { start: 0, end: 1 })),
+            body: Box::new(Expr::new(
+                ExprKind::Identifier("bound_var".to_string()),
+                Span { start: 0, end: 1 },
+            )),
             span: Span { start: 0, end: 1 },
         };
 
-        let match_expr = Expr::new(ExprKind::Match {
-            expr: Box::new(Expr::new(ExprKind::Literal(Literal::Integer(42)), Span { start: 0, end: 1 })),
-            arms: vec![match_arm],
-        }, Span { start: 0, end: 1 });
+        let match_expr = Expr::new(
+            ExprKind::Match {
+                expr: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(42)),
+                    Span { start: 0, end: 1 },
+                )),
+                arms: vec![match_arm],
+            },
+            Span { start: 0, end: 1 },
+        );
 
         let issues = linter.lint(&match_expr, "match with guard").unwrap();
         // Variable should be properly tracked through guard and body
-        assert!(!issues.iter().any(|i| i.name == "bound_var" && i.rule.contains("unused")));
+        assert!(!issues
+            .iter()
+            .any(|i| i.name == "bound_var" && i.rule.contains("unused")));
     }
 
     #[test]
@@ -1788,7 +1992,7 @@ mod sprint_44_tests {
         let tuple_param = Param {
             pattern: Pattern::Tuple(vec![
                 Pattern::Identifier("x".to_string()),
-                Pattern::Identifier("y".to_string())
+                Pattern::Identifier("y".to_string()),
             ]),
             ty: Type {
                 kind: TypeKind::Named("Tuple".to_string()),
@@ -1799,20 +2003,34 @@ mod sprint_44_tests {
             default_value: None,
         };
 
-        let lambda_body = Expr::new(ExprKind::Binary {
-            op: BinaryOp::Add,
-            left: Box::new(Expr::new(ExprKind::Identifier("x".to_string()), Span { start: 0, end: 1 })),
-            right: Box::new(Expr::new(ExprKind::Identifier("y".to_string()), Span { start: 0, end: 1 })),
-        }, Span { start: 0, end: 1 });
+        let lambda_body = Expr::new(
+            ExprKind::Binary {
+                op: BinaryOp::Add,
+                left: Box::new(Expr::new(
+                    ExprKind::Identifier("x".to_string()),
+                    Span { start: 0, end: 1 },
+                )),
+                right: Box::new(Expr::new(
+                    ExprKind::Identifier("y".to_string()),
+                    Span { start: 0, end: 1 },
+                )),
+            },
+            Span { start: 0, end: 1 },
+        );
 
-        let lambda = Expr::new(ExprKind::Lambda {
-            params: vec![tuple_param],
-            body: Box::new(lambda_body),
-        }, Span { start: 0, end: 1 });
+        let lambda = Expr::new(
+            ExprKind::Lambda {
+                params: vec![tuple_param],
+                body: Box::new(lambda_body),
+            },
+            Span { start: 0, end: 1 },
+        );
 
         let issues = linter.lint(&lambda, "|(x, y)| x + y").unwrap();
         // Both x and y should be marked as used
-        assert!(!issues.iter().any(|i| (i.name == "x" || i.name == "y") && i.rule.contains("unused")));
+        assert!(!issues
+            .iter()
+            .any(|i| (i.name == "x" || i.name == "y") && i.rule.contains("unused")));
     }
 
     #[test]
@@ -1820,25 +2038,45 @@ mod sprint_44_tests {
         let mut linter = Linter::new();
         linter.set_rules("undefined");
 
-        let complex_interpolation = Expr::new(ExprKind::StringInterpolation {
-            parts: vec![
-                StringPart::Text("Value: ".to_string()),
-                StringPart::Expr(Box::new(Expr::new(ExprKind::Binary {
-                    op: BinaryOp::Add,
-                    left: Box::new(Expr::new(ExprKind::Identifier("undefined_a".to_string()), Span { start: 0, end: 1 })),
-                    right: Box::new(Expr::new(ExprKind::Identifier("undefined_b".to_string()), Span { start: 0, end: 1 })),
-                }, Span { start: 0, end: 1 }))),
-                StringPart::ExprWithFormat {
-                    expr: Box::new(Expr::new(ExprKind::Call {
-                        func: Box::new(Expr::new(ExprKind::Identifier("undefined_func".to_string()), Span { start: 0, end: 1 })),
-                        args: vec![],
-                    }, Span { start: 0, end: 1 })),
-                    format_spec: ":.2f".to_string(),
-                },
-            ]
-        }, Span { start: 0, end: 1 });
+        let complex_interpolation = Expr::new(
+            ExprKind::StringInterpolation {
+                parts: vec![
+                    StringPart::Text("Value: ".to_string()),
+                    StringPart::Expr(Box::new(Expr::new(
+                        ExprKind::Binary {
+                            op: BinaryOp::Add,
+                            left: Box::new(Expr::new(
+                                ExprKind::Identifier("undefined_a".to_string()),
+                                Span { start: 0, end: 1 },
+                            )),
+                            right: Box::new(Expr::new(
+                                ExprKind::Identifier("undefined_b".to_string()),
+                                Span { start: 0, end: 1 },
+                            )),
+                        },
+                        Span { start: 0, end: 1 },
+                    ))),
+                    StringPart::ExprWithFormat {
+                        expr: Box::new(Expr::new(
+                            ExprKind::Call {
+                                func: Box::new(Expr::new(
+                                    ExprKind::Identifier("undefined_func".to_string()),
+                                    Span { start: 0, end: 1 },
+                                )),
+                                args: vec![],
+                            },
+                            Span { start: 0, end: 1 },
+                        )),
+                        format_spec: ":.2f".to_string(),
+                    },
+                ],
+            },
+            Span { start: 0, end: 1 },
+        );
 
-        let issues = linter.lint(&complex_interpolation, "complex f-string").unwrap();
+        let issues = linter
+            .lint(&complex_interpolation, "complex f-string")
+            .unwrap();
         assert!(issues.iter().any(|i| i.name == "undefined_a"));
         assert!(issues.iter().any(|i| i.name == "undefined_b"));
         assert!(issues.iter().any(|i| i.name == "undefined_func"));
@@ -1865,17 +2103,32 @@ mod sprint_44_tests {
             has_rest: false,
         };
 
-        let for_loop = Expr::new(ExprKind::For {
-            var: "item".to_string(),
-            pattern: Some(struct_pattern),
-            iter: Box::new(Expr::new(ExprKind::Identifier("points".to_string()), Span { start: 0, end: 1 })),
-            body: Box::new(Expr::new(ExprKind::Identifier("x".to_string()), Span { start: 0, end: 1 })), // Only use x
-        }, Span { start: 0, end: 1 });
+        let for_loop = Expr::new(
+            ExprKind::For {
+                var: "item".to_string(),
+                pattern: Some(struct_pattern),
+                iter: Box::new(Expr::new(
+                    ExprKind::Identifier("points".to_string()),
+                    Span { start: 0, end: 1 },
+                )),
+                body: Box::new(Expr::new(
+                    ExprKind::Identifier("x".to_string()),
+                    Span { start: 0, end: 1 },
+                )), // Only use x
+            },
+            Span { start: 0, end: 1 },
+        );
 
-        let issues = linter.lint(&for_loop, "for {x, y: y_coord} in points { x }").unwrap();
+        let issues = linter
+            .lint(&for_loop, "for {x, y: y_coord} in points { x }")
+            .unwrap();
         // x should be used, y_coord should be unused
-        assert!(!issues.iter().any(|i| i.name == "x" && i.rule.contains("unused")));
-        assert!(issues.iter().any(|i| i.name == "y_coord" && i.rule.contains("unused")));
+        assert!(!issues
+            .iter()
+            .any(|i| i.name == "x" && i.rule.contains("unused")));
+        assert!(issues
+            .iter()
+            .any(|i| i.name == "y_coord" && i.rule.contains("unused")));
     }
 
     #[test]
@@ -1885,26 +2138,47 @@ mod sprint_44_tests {
         let ok_arm = MatchArm {
             pattern: Pattern::Ok(Box::new(Pattern::Identifier("success".to_string()))),
             guard: None,
-            body: Box::new(Expr::new(ExprKind::Identifier("success".to_string()), Span { start: 0, end: 1 })),
+            body: Box::new(Expr::new(
+                ExprKind::Identifier("success".to_string()),
+                Span { start: 0, end: 1 },
+            )),
             span: Span { start: 0, end: 1 },
         };
 
         let err_arm = MatchArm {
             pattern: Pattern::Err(Box::new(Pattern::Identifier("error".to_string()))),
             guard: None,
-            body: Box::new(Expr::new(ExprKind::Literal(Literal::Integer(0)), Span { start: 0, end: 1 })),
+            body: Box::new(Expr::new(
+                ExprKind::Literal(Literal::Integer(0)),
+                Span { start: 0, end: 1 },
+            )),
             span: Span { start: 0, end: 1 },
         };
 
-        let result_match = Expr::new(ExprKind::Match {
-            expr: Box::new(Expr::new(ExprKind::Identifier("result".to_string()), Span { start: 0, end: 1 })),
-            arms: vec![ok_arm, err_arm],
-        }, Span { start: 0, end: 1 });
+        let result_match = Expr::new(
+            ExprKind::Match {
+                expr: Box::new(Expr::new(
+                    ExprKind::Identifier("result".to_string()),
+                    Span { start: 0, end: 1 },
+                )),
+                arms: vec![ok_arm, err_arm],
+            },
+            Span { start: 0, end: 1 },
+        );
 
-        let issues = linter.lint(&result_match, "match result { Ok(success) => success, Err(error) => 0 }").unwrap();
+        let issues = linter
+            .lint(
+                &result_match,
+                "match result { Ok(success) => success, Err(error) => 0 }",
+            )
+            .unwrap();
         // success is used, error is unused
-        assert!(!issues.iter().any(|i| i.name == "success" && i.rule.contains("unused")));
-        assert!(issues.iter().any(|i| i.name == "error" && i.rule.contains("unused")));
+        assert!(!issues
+            .iter()
+            .any(|i| i.name == "success" && i.rule.contains("unused")));
+        assert!(issues
+            .iter()
+            .any(|i| i.name == "error" && i.rule.contains("unused")));
     }
 
     #[test]
@@ -1912,12 +2186,12 @@ mod sprint_44_tests {
         let linter = Linter::new();
 
         let test_cases = vec![
-            ("let x = 42", "let x = 42"), // No change for non-style issues
-            ("let  x  =  42", "let x = 42"), // Style fix
+            ("let x = 42", "let x = 42"),       // No change for non-style issues
+            ("let  x  =  42", "let x = 42"),    // Style fix
             ("fn test() { }", "fn test() { }"), // Preserve function structure
         ];
 
-        for (input, expected_pattern) in test_cases {
+        for (input, _expected_pattern) in test_cases {
             let style_issue = LintIssue {
                 line: 1,
                 column: 1,
@@ -1933,13 +2207,16 @@ mod sprint_44_tests {
             if input.contains("  ") {
                 assert!(!fixed.contains("  "), "Double spaces should be fixed");
             }
-            assert!(fixed.len() <= input.len(), "Fix should not increase length significantly");
+            assert!(
+                fixed.len() <= input.len(),
+                "Fix should not increase length significantly"
+            );
         }
     }
 
     #[test]
     fn test_sprint_44_12_concurrent_scope_modification() {
-        let linter = Linter::new();
+        let _linter = Linter::new();
         let mut scope = Scope::new();
 
         // Test multiple rapid modifications to scope
@@ -2014,14 +2291,26 @@ mod sprint_44_tests {
         let linter = Linter::new();
 
         // Create deeply nested if-else chain
-        let mut nested_expr = Expr::new(ExprKind::Literal(Literal::Integer(0)), Span { start: 0, end: 1 });
+        let mut nested_expr = Expr::new(
+            ExprKind::Literal(Literal::Integer(0)),
+            Span { start: 0, end: 1 },
+        );
 
         for i in 0..5 {
-            nested_expr = Expr::new(ExprKind::If {
-                condition: Box::new(Expr::new(ExprKind::Literal(Literal::Bool(true)), Span { start: 0, end: 1 })),
-                then_branch: Box::new(Expr::new(ExprKind::Literal(Literal::Integer(i)), Span { start: 0, end: 1 })),
-                else_branch: Some(Box::new(nested_expr)),
-            }, Span { start: 0, end: 1 });
+            nested_expr = Expr::new(
+                ExprKind::If {
+                    condition: Box::new(Expr::new(
+                        ExprKind::Literal(Literal::Bool(true)),
+                        Span { start: 0, end: 1 },
+                    )),
+                    then_branch: Box::new(Expr::new(
+                        ExprKind::Literal(Literal::Integer(i)),
+                        Span { start: 0, end: 1 },
+                    )),
+                    else_branch: Some(Box::new(nested_expr)),
+                },
+                Span { start: 0, end: 1 },
+            );
         }
 
         let complexity = linter.calculate_complexity(&nested_expr);
@@ -2045,7 +2334,13 @@ mod sprint_44_tests {
 
         for (rule_name, expected_count) in rule_tests {
             linter.set_rules(rule_name);
-            assert_eq!(linter.rules.len(), expected_count, "Rule '{}' should add {} rules", rule_name, expected_count);
+            assert_eq!(
+                linter.rules.len(),
+                expected_count,
+                "Rule '{}' should add {} rules",
+                rule_name,
+                expected_count
+            );
         }
 
         // Test combination
@@ -2061,13 +2356,24 @@ mod sprint_44_tests {
         let builtins = vec!["println", "print", "eprintln"];
 
         for builtin in builtins {
-            let expr = Expr::new(ExprKind::Identifier(builtin.to_string()), Span { start: 0, end: 1 });
+            let expr = Expr::new(
+                ExprKind::Identifier(builtin.to_string()),
+                Span { start: 0, end: 1 },
+            );
             let issues = linter.lint(&expr, builtin).unwrap();
-            assert_eq!(issues.len(), 0, "Builtin '{}' should not be flagged as undefined", builtin);
+            assert_eq!(
+                issues.len(),
+                0,
+                "Builtin '{}' should not be flagged as undefined",
+                builtin
+            );
         }
 
         // Test that non-builtins are still caught
-        let non_builtin = Expr::new(ExprKind::Identifier("definitely_undefined".to_string()), Span { start: 0, end: 1 });
+        let non_builtin = Expr::new(
+            ExprKind::Identifier("definitely_undefined".to_string()),
+            Span { start: 0, end: 1 },
+        );
         let issues = linter.lint(&non_builtin, "definitely_undefined").unwrap();
         assert_eq!(issues.len(), 1);
         assert_eq!(issues[0].rule, "undefined");
@@ -2075,7 +2381,7 @@ mod sprint_44_tests {
 
     #[test]
     fn test_sprint_44_18_variable_type_usage_patterns() {
-        let linter = Linter::new();
+        let _linter = Linter::new();
 
         // Test all VarType variants have correct behavior
         let mut scope = Scope::new();
@@ -2107,20 +2413,32 @@ mod sprint_44_tests {
         let linter = Linter::new();
 
         // Test with potentially problematic AST structures
-        let empty_call = Expr::new(ExprKind::Call {
-            func: Box::new(Expr::new(ExprKind::Identifier("func".to_string()), Span { start: 0, end: 1 })),
-            args: vec![],
-        }, Span { start: 0, end: 1 });
+        let empty_call = Expr::new(
+            ExprKind::Call {
+                func: Box::new(Expr::new(
+                    ExprKind::Identifier("func".to_string()),
+                    Span { start: 0, end: 1 },
+                )),
+                args: vec![],
+            },
+            Span { start: 0, end: 1 },
+        );
 
         let result = linter.lint(&empty_call, "func()");
         assert!(result.is_ok()); // Should handle gracefully
 
         // Test with empty method call
-        let empty_method = Expr::new(ExprKind::MethodCall {
-            receiver: Box::new(Expr::new(ExprKind::Identifier("obj".to_string()), Span { start: 0, end: 1 })),
-            method: "".to_string(), // Empty method name
-            args: vec![],
-        }, Span { start: 0, end: 1 });
+        let empty_method = Expr::new(
+            ExprKind::MethodCall {
+                receiver: Box::new(Expr::new(
+                    ExprKind::Identifier("obj".to_string()),
+                    Span { start: 0, end: 1 },
+                )),
+                method: "".to_string(), // Empty method name
+                args: vec![],
+            },
+            Span { start: 0, end: 1 },
+        );
 
         let result = linter.lint(&empty_method, "obj.()");
         assert!(result.is_ok()); // Should handle gracefully
@@ -2134,21 +2452,33 @@ mod sprint_44_tests {
         let start_time = std::time::Instant::now();
 
         // Create a moderately complex expression tree
-        let mut complex_expr = Expr::new(ExprKind::Literal(Literal::Integer(1)), Span { start: 0, end: 1 });
+        let mut complex_expr = Expr::new(
+            ExprKind::Literal(Literal::Integer(1)),
+            Span { start: 0, end: 1 },
+        );
 
         for i in 1..50 {
-            complex_expr = Expr::new(ExprKind::Binary {
-                op: BinaryOp::Add,
-                left: Box::new(complex_expr),
-                right: Box::new(Expr::new(ExprKind::Literal(Literal::Integer(i)), Span { start: 0, end: 1 })),
-            }, Span { start: 0, end: 1 });
+            complex_expr = Expr::new(
+                ExprKind::Binary {
+                    op: BinaryOp::Add,
+                    left: Box::new(complex_expr),
+                    right: Box::new(Expr::new(
+                        ExprKind::Literal(Literal::Integer(i)),
+                        Span { start: 0, end: 1 },
+                    )),
+                },
+                Span { start: 0, end: 1 },
+            );
         }
 
         let result = linter.lint(&complex_expr, "large expression");
         let elapsed = start_time.elapsed();
 
         assert!(result.is_ok());
-        assert!(elapsed.as_millis() < 1000, "Linting should complete quickly even for complex expressions");
+        assert!(
+            elapsed.as_millis() < 1000,
+            "Linting should complete quickly even for complex expressions"
+        );
 
         // Test complexity calculation performance
         let complexity = linter.calculate_complexity(&complex_expr);

@@ -43,62 +43,62 @@ impl Default for Environment {
 }
 impl Environment {
     #[must_use]
-/// # Examples
-/// 
-/// ```
-/// use ruchy::transpiler::reference_interpreter::Environment;
-/// 
-/// let instance = Environment::new();
-/// // Verify behavior
-/// ```
-/// # Examples
-/// 
-/// ```
-/// use ruchy::transpiler::reference_interpreter::Environment;
-/// 
-/// let instance = Environment::new();
-/// // Verify behavior
-/// ```
-pub fn new() -> Self {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::transpiler::reference_interpreter::Environment;
+    ///
+    /// let instance = Environment::new();
+    /// // Verify behavior
+    /// ```
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::transpiler::reference_interpreter::Environment;
+    ///
+    /// let instance = Environment::new();
+    /// // Verify behavior
+    /// ```
+    pub fn new() -> Self {
         Self {
             bindings: Vec::new(),
         }
     }
-/// # Examples
-/// 
-/// ```
-/// use ruchy::transpiler::reference_interpreter::Environment;
-/// 
-/// let mut instance = Environment::new();
-/// let result = instance.push();
-/// // Verify behavior
-/// ```
-pub fn push(&mut self, value: Value) {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::transpiler::reference_interpreter::Environment;
+    ///
+    /// let mut instance = Environment::new();
+    /// let result = instance.push();
+    /// // Verify behavior
+    /// ```
+    pub fn push(&mut self, value: Value) {
         self.bindings.push(value);
     }
-/// # Examples
-/// 
-/// ```
-/// use ruchy::transpiler::reference_interpreter::Environment;
-/// 
-/// let mut instance = Environment::new();
-/// let result = instance.pop();
-/// // Verify behavior
-/// ```
-pub fn pop(&mut self) {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::transpiler::reference_interpreter::Environment;
+    ///
+    /// let mut instance = Environment::new();
+    /// let result = instance.pop();
+    /// // Verify behavior
+    /// ```
+    pub fn pop(&mut self) {
         self.bindings.pop();
     }
     #[must_use]
-/// # Examples
-/// 
-/// ```
-/// use ruchy::transpiler::reference_interpreter::Environment;
-/// 
-/// let mut instance = Environment::new();
-/// let result = instance.lookup();
-/// // Verify behavior
-/// ```
-pub fn lookup(&self, index: &DeBruijnIndex) -> Option<&Value> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::transpiler::reference_interpreter::Environment;
+    ///
+    /// let mut instance = Environment::new();
+    /// let result = instance.lookup();
+    /// // Verify behavior
+    /// ```
+    pub fn lookup(&self, index: &DeBruijnIndex) -> Option<&Value> {
         // De Bruijn indices count from the end
         let pos = self.bindings.len().checked_sub(index.0 + 1)?;
         self.bindings.get(pos)
@@ -130,15 +130,15 @@ impl ReferenceInterpreter {
     /// # Errors
     ///
     /// Returns an error if the operation fails
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::transpiler::reference_interpreter::eval;
-/// 
-/// let result = eval(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn eval(&mut self, expr: &CoreExpr) -> Result<Value, String> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::transpiler::reference_interpreter::eval;
+    ///
+    /// let result = eval(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn eval(&mut self, expr: &CoreExpr) -> Result<Value, String> {
         self.trace.push(format!("Evaluating: {expr:?}"));
         match expr {
             CoreExpr::Var(idx) => self
@@ -304,14 +304,17 @@ pub fn eval(&mut self, expr: &CoreExpr) -> Result<Value, String> {
             },
             PrimOp::NullCoalesce => {
                 if values.len() != 2 {
-                    return Err(format!("NullCoalesce expects 2 arguments, got {}", values.len()));
+                    return Err(format!(
+                        "NullCoalesce expects 2 arguments, got {}",
+                        values.len()
+                    ));
                 }
                 // Return left if not nil, otherwise right
                 match &values[0] {
                     Value::Nil => Ok(values[1].clone()),
                     _ => Ok(values[0].clone()),
                 }
-            },
+            }
             PrimOp::Not => {
                 if values.len() != 1 {
                     return Err(format!("NOT expects 1 argument, got {}", values.len()));
@@ -368,27 +371,27 @@ pub fn eval(&mut self, expr: &CoreExpr) -> Result<Value, String> {
     }
     /// Get execution trace for debugging
     #[must_use]
-/// # Examples
-/// 
-/// ```
-/// use ruchy::transpiler::reference_interpreter::get_trace;
-/// 
-/// let result = get_trace(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn get_trace(&self) -> &[String] {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::transpiler::reference_interpreter::get_trace;
+    ///
+    /// let result = get_trace(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn get_trace(&self) -> &[String] {
         &self.trace
     }
     /// Clear the trace
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::transpiler::reference_interpreter::clear_trace;
-/// 
-/// let result = clear_trace(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn clear_trace(&mut self) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::transpiler::reference_interpreter::clear_trace;
+    ///
+    /// let result = clear_trace(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn clear_trace(&mut self) {
         self.trace.clear();
     }
 }
@@ -430,8 +433,7 @@ mod tests {
 #[cfg(test)]
 mod property_tests_reference_interpreter {
     use proptest::proptest;
-    
-    
+
     proptest! {
         /// Property: Function never panics on any input
         #[test]

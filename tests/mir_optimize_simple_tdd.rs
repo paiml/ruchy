@@ -9,7 +9,7 @@
 // - Toyota Way: Root cause analysis and systematic defect prevention
 
 use ruchy::middleend::mir::{
-    DeadCodeElimination, ConstantPropagation, CommonSubexpressionElimination,
+    CommonSubexpressionElimination, ConstantPropagation, DeadCodeElimination,
 };
 
 // Test DeadCodeElimination

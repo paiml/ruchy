@@ -21,15 +21,15 @@ pub struct LoweringContext {
 impl LoweringContext {
     /// Create a new lowering context
     #[must_use]
-/// # Examples
-/// 
-/// ```
-/// use ruchy::middleend::mir::lower::new;
-/// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn new() -> Self {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::middleend::mir::lower::new;
+    ///
+    /// let result = new(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn new() -> Self {
         Self {
             builder: MirBuilder::new(),
             type_env: HashMap::new(),
@@ -44,17 +44,17 @@ pub fn new() -> Self {
     /// # Errors
     ///
     /// Returns an error if the operation fails
-/// Lower a Ruchy expression to MIR
-///
-/// # Examples
-///
-/// ```ignore
-/// use ruchy::middleend::mir::lower::LoweringContext;
-/// use ruchy::frontend::ast::Expr;
-/// let mut ctx = LoweringContext::new();
-/// // ctx.lower_expr(&expr)?;
-/// ```
-pub fn lower_expr(&mut self, expr: &Expr) -> Result<Program> {
+    /// Lower a Ruchy expression to MIR
+    ///
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::middleend::mir::lower::LoweringContext;
+    /// use ruchy::frontend::ast::Expr;
+    /// let mut ctx = LoweringContext::new();
+    /// // ctx.lower_expr(&expr)?;
+    /// ```
+    pub fn lower_expr(&mut self, expr: &Expr) -> Result<Program> {
         match &expr.kind {
             ExprKind::Function {
                 name,
@@ -445,8 +445,7 @@ mod tests {
 #[cfg(test)]
 mod property_tests_lower {
     use proptest::proptest;
-    
-    
+
     proptest! {
         /// Property: Function never panics on any input
         #[test]

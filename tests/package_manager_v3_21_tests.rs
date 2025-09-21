@@ -1,7 +1,7 @@
 //! TDD Tests for Package Manager
 //! Sprint v3.21.0 - Package management system for Ruchy
 
-use ruchy::package::{Package, PackageManager, Manifest, Dependency, Registry};
+use ruchy::package::{Dependency, Manifest, Package, PackageManager, Registry};
 use std::path::PathBuf;
 
 #[cfg(test)]
@@ -142,8 +142,7 @@ mod dependency_resolution {
         let mut pm = PackageManager::new();
 
         // Package A depends on B, B depends on C
-        let package_a = Package::new("a", "1.0.0")
-            .with_dependency(Dependency::new("b", "1.0.0"));
+        let package_a = Package::new("a", "1.0.0").with_dependency(Dependency::new("b", "1.0.0"));
 
         pm.add_package(package_a);
 
@@ -161,10 +160,8 @@ mod dependency_resolution {
         let mut pm = PackageManager::new();
 
         // A depends on B, B depends on A
-        let package_a = Package::new("a", "1.0.0")
-            .with_dependency(Dependency::new("b", "1.0.0"));
-        let package_b = Package::new("b", "1.0.0")
-            .with_dependency(Dependency::new("a", "1.0.0"));
+        let package_a = Package::new("a", "1.0.0").with_dependency(Dependency::new("b", "1.0.0"));
+        let package_b = Package::new("b", "1.0.0").with_dependency(Dependency::new("a", "1.0.0"));
 
         pm.add_package(package_a);
         pm.add_package(package_b);
@@ -194,7 +191,8 @@ mod package_installation {
 
     #[test]
     fn test_install_with_dependencies() {
-        let temp_dir = std::env::temp_dir().join(format!("test_ruchy_install_deps_{}", std::process::id()));
+        let temp_dir =
+            std::env::temp_dir().join(format!("test_ruchy_install_deps_{}", std::process::id()));
         // Clean up if exists
         let _ = std::fs::remove_dir_all(&temp_dir);
         std::fs::create_dir_all(&temp_dir).unwrap();
@@ -456,7 +454,14 @@ mod workspace_management {
         let packages_dir = &temp_dir.join("packages");
         let common_installs = std::fs::read_dir(packages_dir)
             .unwrap()
-            .filter(|e| e.as_ref().unwrap().file_name().to_str().unwrap().starts_with("common"))
+            .filter(|e| {
+                e.as_ref()
+                    .unwrap()
+                    .file_name()
+                    .to_str()
+                    .unwrap()
+                    .starts_with("common")
+            })
             .count();
 
         assert_eq!(common_installs, 1);

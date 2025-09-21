@@ -1,6 +1,6 @@
 //! Execution Transpilation Tests
 //! Toyota Way: Test the actual execution path that `ruchy run` uses
-//! 
+//!
 //! These tests target the specific transpilation path used by CLI execution
 //! to ensure method name mapping works in the real execution environment.
 
@@ -14,7 +14,7 @@
 #![allow(clippy::single_char_pattern)]
 #![allow(clippy::expect_fun_call)]
 
-use ruchy::{Transpiler, Parser};
+use ruchy::{Parser, Transpiler};
 use std::fs;
 use tempfile::TempDir;
 
@@ -22,25 +22,27 @@ use tempfile::TempDir;
 #[test]
 fn test_cli_execution_transpilation_path() {
     let mut transpiler = Transpiler::new();
-    
+
     // Test the exact same path that `ruchy run` uses
     let code = r#""hello".to_upper()"#;
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Failed to parse");
-    
+
     // Use the same method that CLI uses for program transpilation
-    let result = transpiler.transpile_to_program(&ast).expect("Failed to transpile to program");
+    let result = transpiler
+        .transpile_to_program(&ast)
+        .expect("Failed to transpile to program");
     let transpiled_code = result.to_string();
-    
+
     println!("Transpiled code from CLI path: {}", transpiled_code);
-    
+
     // This should contain the correct Rust method name
     assert!(
         transpiled_code.contains("to_uppercase"),
         "CLI transpilation path failed to map to_upper -> to_uppercase: {}",
         transpiled_code
     );
-    
+
     // Should not contain the wrong method name
     assert!(
         !transpiled_code.contains("to_upper()"),
@@ -50,24 +52,26 @@ fn test_cli_execution_transpilation_path() {
 }
 
 /// Test that program transpilation creates valid main function wrapper
-#[test]  
+#[test]
 fn test_program_transpilation_structure() {
     let mut transpiler = Transpiler::new();
-    
+
     let code = r#""hello".to_upper()"#;
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Failed to parse");
-    
-    let result = transpiler.transpile_to_program(&ast).expect("Failed to transpile to program");
+
+    let result = transpiler
+        .transpile_to_program(&ast)
+        .expect("Failed to transpile to program");
     let transpiled_code = result.to_string();
-    
+
     // Should have proper program structure
     assert!(
         transpiled_code.contains("fn main"),
         "Program transpilation should create main function: {}",
         transpiled_code
     );
-    
+
     // Should be valid Rust
     assert!(
         transpiled_code.contains("{") && transpiled_code.contains("}"),
@@ -80,27 +84,30 @@ fn test_program_transpilation_structure() {
 #[test]
 fn test_various_expressions_cli_transpilation() {
     let mut transpiler = Transpiler::new();
-    
+
     let test_cases = [
         (r#""hello".to_upper()"#, "to_uppercase"),
-        (r#""WORLD".to_lower()"#, "to_lowercase"), 
+        (r#""WORLD".to_lower()"#, "to_lowercase"),
         (r#""test".len()"#, "len"),
     ];
-    
+
     for (code, expected_method) in test_cases {
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect(&format!("Failed to parse: {}", code));
-        
-        let result = transpiler.transpile_to_program(&ast)
+
+        let result = transpiler
+            .transpile_to_program(&ast)
             .expect(&format!("Failed to transpile to program: {}", code));
         let transpiled_code = result.to_string();
-        
+
         println!("Code: {} -> {}", code, transpiled_code);
-        
+
         assert!(
             transpiled_code.contains(expected_method),
             "Expected method '{}' in transpiled code for '{}': {}",
-            expected_method, code, transpiled_code
+            expected_method,
+            code,
+            transpiled_code
         );
     }
 }
@@ -111,43 +118,48 @@ fn test_temp_file_compilation_cycle() {
     let temp_dir = TempDir::new().expect("Failed to create temp dir");
     let source_file = temp_dir.path().join("test.ruchy");
     let rust_file = temp_dir.path().join("test.rs");
-    
+
     // Write Ruchy source
     fs::write(&source_file, r#""hello".to_upper()"#).expect("Failed to write source");
-    
+
     // Transpile to Rust using the CLI path
     let mut transpiler = Transpiler::new();
     let source_content = fs::read_to_string(&source_file).unwrap();
     let mut parser = Parser::new(&source_content);
     let ast = parser.parse().expect("Failed to parse");
-    
-    let result = transpiler.transpile_to_program(&ast).expect("Failed to transpile");
+
+    let result = transpiler
+        .transpile_to_program(&ast)
+        .expect("Failed to transpile");
     let rust_code = result.to_string();
-    
-    // Write Rust code 
+
+    // Write Rust code
     fs::write(&rust_file, &rust_code).expect("Failed to write Rust");
-    
+
     println!("Generated Rust code:\n{}", rust_code);
-    
+
     // The generated Rust should be compilable and contain correct method
     assert!(
         rust_code.contains("to_uppercase"),
         "Generated Rust code should contain 'to_uppercase': {}",
         rust_code
     );
-    
+
     // Try to compile the Rust code with rustc to verify it's valid
     let output = std::process::Command::new("rustc")
         .args(["--edition", "2021", "-o", "/tmp/test_exec"])
         .arg(&rust_file)
         .output();
-        
+
     if let Ok(compilation) = output {
         if !compilation.status.success() {
-            println!("Rustc compilation failed: {}", String::from_utf8_lossy(&compilation.stderr));
+            println!(
+                "Rustc compilation failed: {}",
+                String::from_utf8_lossy(&compilation.stderr)
+            );
             println!("Rust code that failed:\n{}", rust_code);
         }
-        
+
         // This assertion will help us understand if the generated Rust is valid
         assert!(
             compilation.status.success(),

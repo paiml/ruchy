@@ -4,8 +4,8 @@
 
 #[cfg(feature = "dataframe")]
 mod dataframe_tests {
-    use ruchy::dataframe::{DataFrame, Series, Column};
     use polars::prelude::*;
+    use ruchy::dataframe::{Column, DataFrame, Series};
 
     #[test]
     fn test_dataframe_new() {
@@ -83,12 +83,14 @@ mod dataframe_tests {
         let df1 = df![
             "a" => [1, 2, 3],
             "b" => [4, 5, 6]
-        ].unwrap();
+        ]
+        .unwrap();
 
         let df2 = df![
             "a" => [1, 2, 3],
             "c" => [7, 8, 9]
-        ].unwrap();
+        ]
+        .unwrap();
 
         let joined = df1.join(&df2, &["a"], &["a"], JoinArgs::default()).unwrap();
         assert_eq!(joined.width(), 3);
@@ -99,9 +101,12 @@ mod dataframe_tests {
         let df = df![
             "group" => ["A", "B", "A", "B"],
             "value" => [1, 2, 3, 4]
-        ].unwrap();
+        ]
+        .unwrap();
 
-        let grouped = df.group_by(&["group"]).unwrap()
+        let grouped = df
+            .group_by(&["group"])
+            .unwrap()
             .agg(&[col("value").sum()])
             .unwrap();
 
@@ -114,7 +119,8 @@ mod dataframe_tests {
             "a" => [1, 2],
             "b" => [3, 4],
             "c" => [5, 6]
-        ].unwrap();
+        ]
+        .unwrap();
 
         let melted = df.melt(MeltArgs::default()).unwrap();
         assert!(melted.height() > df.height());
@@ -126,14 +132,17 @@ mod dataframe_tests {
             "foo" => ["A", "A", "B", "B"],
             "bar" => ["X", "Y", "X", "Y"],
             "value" => [1, 2, 3, 4]
-        ].unwrap();
+        ]
+        .unwrap();
 
-        let pivoted = df.pivot(PivotArgs {
-            values: &["value"],
-            index: &["foo"],
-            columns: &["bar"],
-            ..Default::default()
-        }).unwrap();
+        let pivoted = df
+            .pivot(PivotArgs {
+                values: &["value"],
+                index: &["foo"],
+                columns: &["bar"],
+                ..Default::default()
+            })
+            .unwrap();
 
         assert_eq!(pivoted.height(), 2);
     }

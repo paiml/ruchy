@@ -24,9 +24,9 @@ use std::io::{self, IsTerminal, Read};
 use std::path::{Path, PathBuf};
 mod handlers;
 use handlers::{
-    handle_parse_command, handle_transpile_command, handle_run_command,
-    handle_eval_command, handle_file_execution, handle_stdin_input, handle_repl_command,
-    handle_compile_command, handle_check_command, handle_test_command, handle_complex_command
+    handle_check_command, handle_compile_command, handle_complex_command, handle_eval_command,
+    handle_file_execution, handle_parse_command, handle_repl_command, handle_run_command,
+    handle_stdin_input, handle_test_command, handle_transpile_command,
 };
 /// Configuration for code formatting
 #[derive(Debug, Clone)]
@@ -753,17 +753,42 @@ fn handle_command_dispatch(command: Option<Commands>, verbose: bool) -> Result<(
         Some(Commands::Repl { record }) => handle_repl_command(record),
         None => handle_repl_command(None),
         Some(Commands::Parse { file }) => handle_parse_command(&file, verbose),
-        Some(Commands::Transpile { file, output, minimal }) => {
-            handle_transpile_command(&file, output.as_deref(), minimal, verbose)
-        }
+        Some(Commands::Transpile {
+            file,
+            output,
+            minimal,
+        }) => handle_transpile_command(&file, output.as_deref(), minimal, verbose),
         Some(Commands::Run { file }) => handle_run_command(&file, verbose),
-        Some(Commands::Compile { file, output, opt_level, strip, static_link, target }) => {
-            handle_compile_command(&file, output, opt_level, strip, static_link, target)
-        }
+        Some(Commands::Compile {
+            file,
+            output,
+            opt_level,
+            strip,
+            static_link,
+            target,
+        }) => handle_compile_command(&file, output, opt_level, strip, static_link, target),
         Some(Commands::Check { file, watch }) => handle_check_command(&file, watch),
-        Some(Commands::Test { path, watch, verbose, filter, coverage, coverage_format, parallel, threshold, format }) => {
-            handle_test_dispatch(path, watch, verbose, filter.as_ref(), coverage, &coverage_format, parallel, threshold, &format)
-        }
+        Some(Commands::Test {
+            path,
+            watch,
+            verbose,
+            filter,
+            coverage,
+            coverage_format,
+            parallel,
+            threshold,
+            format,
+        }) => handle_test_dispatch(
+            path,
+            watch,
+            verbose,
+            filter.as_ref(),
+            coverage,
+            &coverage_format,
+            parallel,
+            threshold,
+            &format,
+        ),
         Some(command) => handle_advanced_command(command),
     }
 }
@@ -946,17 +971,8 @@ mod tests {
 
     #[test]
     fn test_handle_test_dispatch_basic() {
-        let result = handle_test_dispatch(
-            None,
-            false,
-            false,
-            None,
-            false,
-            "text",
-            false,
-            None,
-            "text",
-        );
+        let result =
+            handle_test_dispatch(None, false, false, None, false, "text", false, None, "text");
         assert!(result.is_ok());
     }
 

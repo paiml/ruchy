@@ -1,15 +1,15 @@
 //! Binary compilation support for Ruchy
-//! 
+//!
 //! This module provides functionality to compile Ruchy code to standalone binaries
 //! via Rust compilation toolchain (rustc).
-use anyhow::{Context, Result, bail};
 use crate::utils::common_patterns::ResultContextExt;
+use crate::{Parser, Transpiler};
+use anyhow::{bail, Context, Result};
+use proc_macro2::TokenStream;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use tempfile::TempDir;
-use proc_macro2::TokenStream;
-use crate::{Parser, Transpiler};
 /// Binary compilation options
 #[derive(Debug, Clone)]
 pub struct CompileOptions {
@@ -54,12 +54,12 @@ impl Default for CompileOptions {
 ///     target: None,
 ///     rustc_flags: Vec::new(),
 /// };
-/// 
+///
 /// let result = compile_to_binary(&PathBuf::from("program.ruchy"), &options);
 /// ```
 ///
 /// # Errors
-/// 
+///
 /// Returns an error if:
 /// - The source file cannot be read
 /// - The source code fails to parse
@@ -67,8 +67,7 @@ impl Default for CompileOptions {
 /// - The rustc compilation fails
 pub fn compile_to_binary(source_path: &Path, options: &CompileOptions) -> Result<PathBuf> {
     // Read source file
-    let source = fs::read_to_string(source_path)
-        .file_context("read", source_path)?;
+    let source = fs::read_to_string(source_path).file_context("read", source_path)?;
     compile_source_to_binary(&source, options)
 }
 /// Compile Ruchy source code to a standalone binary
@@ -112,35 +111,32 @@ pub fn compile_source_to_binary(source: &str, options: &CompileOptions) -> Resul
 fn parse_and_transpile(source: &str) -> Result<TokenStream> {
     eprintln!("DEBUG: About to call transpile_to_program");
     let mut parser = Parser::new(source);
-    let ast = parser.parse()
-        .parse_context("Ruchy source")?;
+    let ast = parser.parse().parse_context("Ruchy source")?;
     let mut transpiler = Transpiler::new();
-    let rust_code = transpiler.transpile_to_program(&ast)
+    let rust_code = transpiler
+        .transpile_to_program(&ast)
         .compile_context("transpile to Rust")?;
     eprintln!("DEBUG: transpile_to_program completed");
     Ok(rust_code)
 }
 /// Prepare temporary Rust file for compilation (complexity: 4)
 fn prepare_rust_file(rust_code: &TokenStream) -> Result<(TempDir, PathBuf)> {
-    let temp_dir = TempDir::new()
-        .compile_context("create temporary directory")?;
+    let temp_dir = TempDir::new().compile_context("create temporary directory")?;
     let rust_file = temp_dir.path().join("main.rs");
     let rust_code_str = rust_code.to_string();
     // Debug: Also write to /tmp/debug_rust_output.rs for inspection
     fs::write("/tmp/debug_rust_output.rs", &rust_code_str)
         .context("Failed to write debug Rust code")?;
-    fs::write(&rust_file, &rust_code_str)
-        .context("Failed to write Rust code to temporary file")?;
+    fs::write(&rust_file, &rust_code_str).context("Failed to write Rust code to temporary file")?;
     Ok((temp_dir, rust_file))
 }
 /// Build rustc command with options (complexity: 7)
 fn build_rustc_command(rust_file: &Path, options: &CompileOptions) -> Command {
     let mut cmd = Command::new("rustc");
-    cmd.arg(rust_file)
-        .arg("-o")
-        .arg(&options.output);
+    cmd.arg(rust_file).arg("-o").arg(&options.output);
     // Add optimization level
-    cmd.arg("-C").arg(format!("opt-level={}", options.opt_level));
+    cmd.arg("-C")
+        .arg(format!("opt-level={}", options.opt_level));
     // Add optional flags
     apply_optional_flags(&mut cmd, options);
     cmd
@@ -162,8 +158,7 @@ fn apply_optional_flags(cmd: &mut Command, options: &CompileOptions) {
 }
 /// Execute compilation command (complexity: 3)
 fn execute_compilation(mut cmd: Command) -> Result<()> {
-    let output = cmd.output()
-        .context("Failed to execute rustc")?;
+    let output = cmd.output().context("Failed to execute rustc")?;
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
         bail!("Compilation failed:\n{}", stderr);
@@ -173,7 +168,10 @@ fn execute_compilation(mut cmd: Command) -> Result<()> {
 /// Verify output file exists (complexity: 2)
 fn verify_output_exists(output_path: &Path) -> Result<()> {
     if !output_path.exists() {
-        bail!("Expected output file not created: {}", output_path.display());
+        bail!(
+            "Expected output file not created: {}",
+            output_path.display()
+        );
     }
     Ok(())
 }
@@ -282,7 +280,10 @@ mod tests {
         assert_eq!(options.opt_level, "3");
         assert!(options.strip);
         assert!(options.static_link);
-        assert_eq!(options.target, Some("x86_64-unknown-linux-musl".to_string()));
+        assert_eq!(
+            options.target,
+            Some("x86_64-unknown-linux-musl".to_string())
+        );
         assert_eq!(options.rustc_flags.len(), 2);
     }
 
@@ -295,7 +296,7 @@ mod tests {
             ..Default::default()
         };
 
-        let cmd = build_rustc_command(rust_file, &options);
+        let _cmd = build_rustc_command(rust_file, &options);
 
         // Can't easily test Command internals, but verify it doesn't panic
         // The function returns a Command which we can't easily inspect
@@ -482,12 +483,7 @@ mod tests {
     // Test 18: Strip and static link combinations
     #[test]
     fn test_strip_and_static_combinations() {
-        let combinations = vec![
-            (false, false),
-            (true, false),
-            (false, true),
-            (true, true),
-        ];
+        let combinations = vec![(false, false), (true, false), (false, true), (true, true)];
 
         for (strip, static_link) in combinations {
             let options = CompileOptions {
@@ -537,7 +533,7 @@ mod tests {
         let rust_code = TokenStream::new();
 
         // Test multiple temp file creations
-        for i in 0..5 {
+        for _i in 0..5 {
             let result = prepare_rust_file(&rust_code);
             assert!(result.is_ok());
 
@@ -595,7 +591,7 @@ mod tests {
             // These may fail due to parser limitations, but shouldn't panic
             let result = compile_source_to_binary(source, &options);
             match result {
-                Ok(_) => assert!(true), // Success is good
+                Ok(_) => assert!(true),  // Success is good
                 Err(_) => assert!(true), // Expected failure is also fine
             }
         }
@@ -605,15 +601,15 @@ mod tests {
     #[test]
     fn test_parse_and_transpile_error_handling() {
         let invalid_sources = vec![
-            "{{{[[[@#$%",           // Invalid syntax
-            "fun(",                 // Incomplete function
+            "{{{[[[@#$%",            // Invalid syntax
+            "fun(",                  // Incomplete function
             "\"unterminated string", // Unterminated string
         ];
 
         for source in invalid_sources {
             let result = compile_source_to_binary(source, &CompileOptions::default());
             // Should return error, not panic
-            assert!(result.is_err(), "Expected error for source: '{}'", source);
+            assert!(result.is_err(), "Expected error for source: '{source}'");
         }
     }
 
@@ -703,7 +699,7 @@ mod tests {
         let debug_str = format!("{options:?}");
         assert!(debug_str.contains("CompileOptions"));
         assert!(debug_str.contains("test_binary"));
-        assert!(debug_str.contains("2"));
+        assert!(debug_str.contains('2'));
     }
 
     // Test 28: Integration with file system operations
@@ -734,7 +730,7 @@ mod tests {
         // This may fail due to parser/transpiler limitations, but should not panic
         let result = compile_to_binary(&source_file, &options);
         match result {
-            Ok(_) => assert!(true), // Success is good
+            Ok(_) => assert!(true),  // Success is good
             Err(_) => assert!(true), // Expected failure due to incomplete implementation
         }
     }
@@ -747,12 +743,9 @@ mod tests {
             assert!(version.contains("rustc"));
 
             // Should contain a version number pattern (X.Y.Z)
-            let has_version_pattern = version
-                .split_whitespace()
-                .any(|part| {
-                    part.split('.').count() >= 2 &&
-                    part.chars().any(|c| c.is_ascii_digit())
-                });
+            let has_version_pattern = version.split_whitespace().any(|part| {
+                part.split('.').count() >= 2 && part.chars().any(|c| c.is_ascii_digit())
+            });
             assert!(has_version_pattern);
         }
     }
@@ -765,9 +758,9 @@ mod tests {
         let result = parse_and_transpile(invalid_source);
 
         if let Err(error) = result {
-            let error_str = format!("{}", error);
+            let error_str = format!("{error}");
             // Should contain context information
-            assert!(error_str.len() > 0); // At least some error message
+            assert!(!error_str.is_empty()); // At least some error message
         }
 
         // Test compile context for invalid paths
@@ -783,9 +776,9 @@ mod tests {
 }
 #[cfg(test)]
 mod property_tests_compiler {
-    use proptest::proptest;
     use super::*;
-    
+    use proptest::proptest;
+
     proptest! {
         /// Property: compile_source_to_binary never panics on any string input
         #[test]
@@ -798,7 +791,7 @@ mod property_tests_compiler {
                 let _ = compile_source_to_binary(&input, &options);
             });
             // Assert that no panic occurred (Result can be Ok or Err, but no panic)
-            assert!(result.is_ok(), "compile_source_to_binary panicked on input: {:?}", input);
+            assert!(result.is_ok(), "compile_source_to_binary panicked on input: {input:?}");
         }
     }
 }

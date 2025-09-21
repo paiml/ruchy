@@ -186,20 +186,24 @@ mod tests {
     }
     #[test]
     fn test_compatibility_issue_severity_levels() {
-        let severities = [IssueSeverity::Error,
+        let severities = [
+            IssueSeverity::Error,
             IssueSeverity::Warning,
-            IssueSeverity::Info];
+            IssueSeverity::Info,
+        ];
         assert_eq!(severities.len(), 3);
         assert_ne!(severities[0], severities[1]);
     }
     #[test]
     fn test_compatibility_issue_categories() {
-        let categories = [IssueCategory::ApiIncompatibility,
+        let categories = [
+            IssueCategory::ApiIncompatibility,
             IssueCategory::FeatureNotSupported,
             IssueCategory::Performance,
             IssueCategory::SizeConstraint,
             IssueCategory::Security,
-            IssueCategory::Configuration];
+            IssueCategory::Configuration,
+        ];
         assert_eq!(categories.len(), 6);
     }
     // ========== Recommendation Tests ==========
@@ -219,9 +223,11 @@ mod tests {
     }
     #[test]
     fn test_recommendation_priorities() {
-        let priorities = [RecommendationPriority::Low,
+        let priorities = [
+            RecommendationPriority::Low,
             RecommendationPriority::Medium,
-            RecommendationPriority::High];
+            RecommendationPriority::High,
+        ];
         assert_eq!(priorities.len(), 3);
     }
     #[test]
@@ -362,9 +368,18 @@ mod tests {
         let analyzer = create_test_analyzer_with_config();
         // Verify custom config is applied
         assert_eq!(analyzer.config.target_platforms.len(), 3);
-        assert!(analyzer.config.target_platforms.contains(&"wasmtime".to_string()));
-        assert!(analyzer.config.target_platforms.contains(&"wasmer".to_string()));
-        assert!(analyzer.config.target_platforms.contains(&"browser".to_string()));
+        assert!(analyzer
+            .config
+            .target_platforms
+            .contains(&"wasmtime".to_string()));
+        assert!(analyzer
+            .config
+            .target_platforms
+            .contains(&"wasmer".to_string()));
+        assert!(analyzer
+            .config
+            .target_platforms
+            .contains(&"browser".to_string()));
     }
     #[test]
     fn test_analyzer_strict_mode() {
@@ -475,24 +490,20 @@ mod tests {
         let report = PortabilityReport {
             component_info: create_test_component_info(),
             score: create_test_portability_score(),
-            issues: vec![
-                CompatibilityIssue {
-                    severity: IssueSeverity::Info,
-                    category: IssueCategory::Performance,
-                    affected_platforms: vec!["browser".to_string()],
-                    description: "Performance may vary".to_string(),
-                    fix_suggestion: None,
-                },
-            ],
-            recommendations: vec![
-                Recommendation {
-                    priority: RecommendationPriority::Low,
-                    title: "Consider optimization".to_string(),
-                    description: "Optimize for browser platform".to_string(),
-                    impact: 0.05,
-                    platforms: vec!["browser".to_string()],
-                },
-            ],
+            issues: vec![CompatibilityIssue {
+                severity: IssueSeverity::Info,
+                category: IssueCategory::Performance,
+                affected_platforms: vec!["browser".to_string()],
+                description: "Performance may vary".to_string(),
+                fix_suggestion: None,
+            }],
+            recommendations: vec![Recommendation {
+                priority: RecommendationPriority::Low,
+                title: "Consider optimization".to_string(),
+                description: "Optimize for browser platform".to_string(),
+                impact: 0.05,
+                platforms: vec!["browser".to_string()],
+            }],
             platform_support: HashMap::new(),
             feature_usage: FeatureUsage {
                 core_features: HashSet::new(),
@@ -525,25 +536,34 @@ mod tests {
             IssueSeverity::Info,
         ];
         for s in &severities {
-            assert!(matches!(s, IssueSeverity::Error | IssueSeverity::Warning | IssueSeverity::Info));
+            assert!(matches!(
+                s,
+                IssueSeverity::Error | IssueSeverity::Warning | IssueSeverity::Info
+            ));
         }
         // Test all IssueCategory variants
-        let categories = [IssueCategory::ApiIncompatibility,
+        let categories = [
+            IssueCategory::ApiIncompatibility,
             IssueCategory::FeatureNotSupported,
             IssueCategory::SizeConstraint,
             IssueCategory::Performance,
             IssueCategory::Security,
-            IssueCategory::Configuration];
+            IssueCategory::Configuration,
+        ];
         assert_eq!(categories.len(), 6);
         // Test RecommendationPriority variants
-        let priorities = [RecommendationPriority::Low,
+        let priorities = [
+            RecommendationPriority::Low,
             RecommendationPriority::Medium,
-            RecommendationPriority::High];
+            RecommendationPriority::High,
+        ];
         assert_eq!(priorities.len(), 3);
         // Test SupportLevel variants
-        let levels = [SupportLevel::Full,
+        let levels = [
+            SupportLevel::Full,
             SupportLevel::Partial,
-            SupportLevel::None];
+            SupportLevel::None,
+        ];
         assert_eq!(levels.len(), 3);
     }
     #[test]
@@ -633,7 +653,7 @@ mod tests {
     }
     #[test]
     fn test_platform_support_variations() {
-        let support_variations = vec![
+        let support_variations = [
             PlatformSupport {
                 platform: "wasmtime".to_string(),
                 support_level: SupportLevel::Full,
@@ -718,11 +738,11 @@ mod tests {
         assert_eq!(*analysis.platform_limits.get("browser").unwrap(), 4_194_304);
     }
 }
+use super::component::WasmComponent;
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use std::fmt;
-use super::component::WasmComponent;
 /// Portability analyzer for WASM components
 pub struct PortabilityAnalyzer {
     /// Analysis configuration
@@ -972,15 +992,15 @@ impl Default for PortabilityAnalyzer {
 }
 impl PortabilityAnalyzer {
     /// Create a new portability analyzer with default config
-/// # Examples
-/// 
-/// ```
-/// use ruchy::wasm::portability::PortabilityAnalyzer;
-/// 
-/// let instance = PortabilityAnalyzer::new();
-/// // Verify behavior
-/// ```
-pub fn new() -> Self {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::wasm::portability::PortabilityAnalyzer;
+    ///
+    /// let instance = PortabilityAnalyzer::new();
+    /// // Verify behavior
+    /// ```
+    pub fn new() -> Self {
         Self {
             config: AnalysisConfig::default(),
             compatibility_matrix: Self::build_compatibility_matrix(),
@@ -988,16 +1008,16 @@ pub fn new() -> Self {
         }
     }
     /// Create a new portability analyzer with specific config
-/// # Examples
-/// 
-/// ```
-/// use ruchy::wasm::portability::PortabilityAnalyzer;
-/// 
-/// let mut instance = PortabilityAnalyzer::new();
-/// let result = instance.new_with_config();
-/// // Verify behavior
-/// ```
-pub fn new_with_config(config: AnalysisConfig) -> Self {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::wasm::portability::PortabilityAnalyzer;
+    ///
+    /// let mut instance = PortabilityAnalyzer::new();
+    /// let result = instance.new_with_config();
+    /// // Verify behavior
+    /// ```
+    pub fn new_with_config(config: AnalysisConfig) -> Self {
         Self {
             config,
             compatibility_matrix: Self::build_compatibility_matrix(),
@@ -1005,15 +1025,15 @@ pub fn new_with_config(config: AnalysisConfig) -> Self {
         }
     }
     /// Analyze a WASM component's portability
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::wasm::portability::analyze;
-/// 
-/// let result = analyze(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn analyze(&self, component: &WasmComponent) -> Result<PortabilityReport> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::wasm::portability::analyze;
+    ///
+    /// let result = analyze(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn analyze(&self, component: &WasmComponent) -> Result<PortabilityReport> {
         // Extract component information
         let component_info = self.extract_component_info(component)?;
         // Calculate portability scores
@@ -1101,7 +1121,9 @@ pub fn analyze(&self, component: &WasmComponent) -> Result<PortabilityReport> {
             for feature in &info.features {
                 if reqs.incompatible_features.contains(feature) {
                     score *= 0.0; // Incompatible feature
-                } else if !reqs.required_features.contains(feature) && !reqs.optional_features.contains(feature) {
+                } else if !reqs.required_features.contains(feature)
+                    && !reqs.optional_features.contains(feature)
+                {
                     score *= 0.8; // Unknown feature
                 }
             }
@@ -1177,12 +1199,12 @@ pub fn analyze(&self, component: &WasmComponent) -> Result<PortabilityReport> {
             feature_scores.values().sum::<f64>() / feature_scores.len() as f64
         };
         // Weighted average
-        platform_avg * 0.3 +
-         feature_avg * 0.2 +
-         api_compatibility * 0.2 +
-         size_efficiency * 0.1 +
-         performance_portability * 0.1 +
-         security_compliance * 0.1
+        platform_avg * 0.3
+            + feature_avg * 0.2
+            + api_compatibility * 0.2
+            + size_efficiency * 0.1
+            + performance_portability * 0.1
+            + security_compliance * 0.1
     }
     fn find_issues(&self, info: &ComponentInfo) -> Result<Vec<CompatibilityIssue>> {
         let mut issues = Vec::new();
@@ -1201,7 +1223,10 @@ pub fn analyze(&self, component: &WasmComponent) -> Result<PortabilityReport> {
                                 platform,
                                 limit / 1024
                             ),
-                            fix_suggestion: Some("Consider optimizing component size or splitting functionality".to_string()),
+                            fix_suggestion: Some(
+                                "Consider optimizing component size or splitting functionality"
+                                    .to_string(),
+                            ),
                         });
                     }
                 }
@@ -1209,14 +1234,19 @@ pub fn analyze(&self, component: &WasmComponent) -> Result<PortabilityReport> {
         }
         Ok(issues)
     }
-    fn generate_recommendations(&self, info: &ComponentInfo, issues: &[CompatibilityIssue]) -> Result<Vec<Recommendation>> {
+    fn generate_recommendations(
+        &self,
+        info: &ComponentInfo,
+        issues: &[CompatibilityIssue],
+    ) -> Result<Vec<Recommendation>> {
         let mut recommendations = Vec::new();
         // Size optimization recommendation
         if info.size > 100 * 1024 {
             recommendations.push(Recommendation {
                 priority: RecommendationPriority::High,
                 title: "Optimize component size".to_string(),
-                description: "Component size can be reduced through optimization techniques".to_string(),
+                description: "Component size can be reduced through optimization techniques"
+                    .to_string(),
                 impact: 0.2,
                 platforms: self.config.target_platforms.clone(),
             });
@@ -1235,7 +1265,10 @@ pub fn analyze(&self, component: &WasmComponent) -> Result<PortabilityReport> {
         }
         Ok(recommendations)
     }
-    fn analyze_platform_support(&self, info: &ComponentInfo) -> Result<HashMap<String, PlatformSupport>> {
+    fn analyze_platform_support(
+        &self,
+        info: &ComponentInfo,
+    ) -> Result<HashMap<String, PlatformSupport>> {
         let mut support = HashMap::new();
         for platform in &self.config.target_platforms {
             let score = self.calculate_platform_score(info, platform)?;
@@ -1248,13 +1281,16 @@ pub fn analyze(&self, component: &WasmComponent) -> Result<PortabilityReport> {
             } else {
                 SupportLevel::None
             };
-            support.insert(platform.clone(), PlatformSupport {
-                platform: platform.clone(),
-                support_level,
-                compatibility_score: score,
-                required_modifications: Vec::new(),
-                runtime_requirements: None,
-            });
+            support.insert(
+                platform.clone(),
+                PlatformSupport {
+                    platform: platform.clone(),
+                    support_level,
+                    compatibility_score: score,
+                    required_modifications: Vec::new(),
+                    runtime_requirements: None,
+                },
+            );
         }
         Ok(support)
     }
@@ -1272,7 +1308,11 @@ pub fn analyze(&self, component: &WasmComponent) -> Result<PortabilityReport> {
         for (name, data) in &component.custom_sections {
             section_sizes.insert(name.clone(), data.len());
         }
-        let custom_sections_size: usize = component.custom_sections.values().map(std::vec::Vec::len).sum();
+        let custom_sections_size: usize = component
+            .custom_sections
+            .values()
+            .map(std::vec::Vec::len)
+            .sum();
         Ok(SizeAnalysis {
             total_size: component.bytecode.len(),
             code_size: component.bytecode.len() - custom_sections_size,
@@ -1285,9 +1325,9 @@ pub fn analyze(&self, component: &WasmComponent) -> Result<PortabilityReport> {
     fn get_platform_limits(&self) -> HashMap<String, usize> {
         let mut limits = HashMap::new();
         limits.insert("cloudflare-workers".to_string(), 10 * 1024 * 1024); // 10MB
-        limits.insert("fastly-compute".to_string(), 50 * 1024 * 1024);    // 50MB
-        limits.insert("aws-lambda".to_string(), 250 * 1024 * 1024);       // 250MB
-        limits.insert("browser".to_string(), 100 * 1024 * 1024);          // 100MB
+        limits.insert("fastly-compute".to_string(), 50 * 1024 * 1024); // 50MB
+        limits.insert("aws-lambda".to_string(), 250 * 1024 * 1024); // 250MB
+        limits.insert("browser".to_string(), 100 * 1024 * 1024); // 100MB
         limits
     }
     fn build_compatibility_matrix() -> CompatibilityMatrix {
@@ -1311,29 +1351,37 @@ pub fn analyze(&self, component: &WasmComponent) -> Result<PortabilityReport> {
     fn build_platform_requirements() -> HashMap<String, PlatformRequirements> {
         let mut requirements = HashMap::new();
         // Cloudflare Workers requirements
-        requirements.insert("cloudflare-workers".to_string(), PlatformRequirements {
-            required_features: HashSet::new(),
-            optional_features: HashSet::from(["bulk-memory".to_string(), "reference-types".to_string()]),
-            incompatible_features: HashSet::from(["threads".to_string()]),
-            size_limit: Some(10 * 1024 * 1024),
-            _api_requirements: HashSet::new(),
-        });
+        requirements.insert(
+            "cloudflare-workers".to_string(),
+            PlatformRequirements {
+                required_features: HashSet::new(),
+                optional_features: HashSet::from([
+                    "bulk-memory".to_string(),
+                    "reference-types".to_string(),
+                ]),
+                incompatible_features: HashSet::from(["threads".to_string()]),
+                size_limit: Some(10 * 1024 * 1024),
+                _api_requirements: HashSet::new(),
+            },
+        );
         // Browser requirements
-        requirements.insert("browser".to_string(), PlatformRequirements {
-            required_features: HashSet::new(),
-            optional_features: HashSet::from(["simd".to_string(), "threads".to_string()]),
-            incompatible_features: HashSet::new(),
-            size_limit: Some(100 * 1024 * 1024),
-            _api_requirements: HashSet::new(),
-        });
+        requirements.insert(
+            "browser".to_string(),
+            PlatformRequirements {
+                required_features: HashSet::new(),
+                optional_features: HashSet::from(["simd".to_string(), "threads".to_string()]),
+                incompatible_features: HashSet::new(),
+                size_limit: Some(100 * 1024 * 1024),
+                _api_requirements: HashSet::new(),
+            },
+        );
         requirements
     }
 }
 #[cfg(test)]
 mod property_tests_portability {
     use proptest::proptest;
-    
-    
+
     proptest! {
         /// Property: Function never panics on any input
         #[test]

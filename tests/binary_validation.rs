@@ -21,9 +21,7 @@ use tempfile::NamedTempFile;
 #[test]
 fn test_binary_execution_all_examples() {
     // Only test simple files that our transpiler can handle
-    let simple_examples = vec![
-        "examples/hello.ruchy",
-    ];
+    let simple_examples = vec!["examples/hello.ruchy"];
 
     for example in simple_examples {
         let ruchy_file = Path::new(example);
@@ -133,7 +131,7 @@ fn test_compilation_performance() {
         "examples/test_blocks.ruchy",
         "examples/test_strings.ruchy",
     ];
-    
+
     let ruchy_files: Vec<PathBuf> = test_files
         .iter()
         .map(PathBuf::from)

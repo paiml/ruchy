@@ -1,8 +1,8 @@
 //! Tests for type system modules
 //! Focus on type inference and checking
 
-use ruchy::middleend::types::{MonoType, TypeScheme, TyVar};
 use ruchy::middleend::environment::TypeEnv;
+use ruchy::middleend::types::{MonoType, TyVar, TypeScheme};
 
 #[test]
 fn test_type_creation() {
@@ -11,7 +11,7 @@ fn test_type_creation() {
     let bool_type = MonoType::Bool;
     let string_type = MonoType::String;
     let float_type = MonoType::Float;
-    
+
     assert_eq!(format!("{:?}", int_type), "Int");
     assert_eq!(format!("{:?}", bool_type), "Bool");
     assert_eq!(format!("{:?}", string_type), "String");
@@ -23,8 +23,11 @@ fn test_function_type() {
     // Test function type creation
     let param_types = vec![MonoType::Int, MonoType::Int];
     let return_type = MonoType::Int;
-    let func_type = MonoType::Function(Box::new(MonoType::Tuple(param_types)), Box::new(return_type));
-    
+    let func_type = MonoType::Function(
+        Box::new(MonoType::Tuple(param_types)),
+        Box::new(return_type),
+    );
+
     match func_type {
         MonoType::Function(params, ret) => {
             match *params {
@@ -45,7 +48,7 @@ fn test_function_type() {
 fn test_array_type() {
     let elem_type = MonoType::Int;
     let array_type = MonoType::List(Box::new(elem_type));
-    
+
     match array_type {
         MonoType::List(elem) => {
             assert!(matches!(*elem, MonoType::Int));
@@ -58,7 +61,7 @@ fn test_array_type() {
 fn test_option_type() {
     let inner_type = MonoType::String;
     let option_type = MonoType::Optional(Box::new(inner_type));
-    
+
     match option_type {
         MonoType::Optional(inner) => {
             assert!(matches!(*inner, MonoType::String));
@@ -72,7 +75,7 @@ fn test_result_type() {
     let ok_type = MonoType::Int;
     let err_type = MonoType::String;
     let result_type = MonoType::Result(Box::new(ok_type), Box::new(err_type));
-    
+
     match result_type {
         MonoType::Result(ok, err) => {
             assert!(matches!(*ok, MonoType::Int));
@@ -86,7 +89,7 @@ fn test_result_type() {
 fn test_tuple_type() {
     let types = vec![MonoType::Int, MonoType::Bool, MonoType::String];
     let tuple_type = MonoType::Tuple(types);
-    
+
     match tuple_type {
         MonoType::Tuple(elems) => {
             assert_eq!(elems.len(), 3);
@@ -101,7 +104,7 @@ fn test_tuple_type() {
 #[test]
 fn test_type_variable() {
     let type_var = MonoType::Var(TyVar(42));
-    
+
     match type_var {
         MonoType::Var(id) => {
             assert_eq!(id, TyVar(42));
@@ -115,7 +118,7 @@ fn test_type_scheme_creation() {
     // Test TypeScheme with no quantified variables
     let ty = MonoType::Int;
     let scheme = TypeScheme::mono(ty.clone());
-    
+
     assert_eq!(scheme.vars.len(), 0);
     assert!(matches!(scheme.ty, MonoType::Int));
 }
@@ -126,7 +129,7 @@ fn test_type_scheme_with_vars() {
     let var = TyVar(0);
     let ty = MonoType::Function(
         Box::new(MonoType::Var(var.clone())),
-        Box::new(MonoType::Var(var.clone()))
+        Box::new(MonoType::Var(var.clone())),
     );
     let scheme = TypeScheme {
         vars: vec![var.clone()],
@@ -140,7 +143,7 @@ fn test_type_scheme_with_vars() {
 #[test]
 fn test_environment_creation() {
     let env = TypeEnv::new();
-    
+
     // Check that environment is empty by trying to lookup a non-existent key
     assert!(env.lookup("nonexistent").is_none());
 }
@@ -148,7 +151,7 @@ fn test_environment_creation() {
 #[test]
 fn test_environment_insert_lookup() {
     let mut env = TypeEnv::new();
-    
+
     // Insert a binding
     let scheme = TypeScheme::mono(MonoType::Int);
     env.bind("x", scheme.clone());
@@ -157,7 +160,7 @@ fn test_environment_insert_lookup() {
     let retrieved = env.lookup("x");
     assert!(retrieved.is_some());
     assert_eq!(&retrieved.unwrap().ty, &MonoType::Int);
-    
+
     // Lookup non-existent binding
     let missing = env.lookup("y");
     assert!(missing.is_none());
@@ -182,11 +185,11 @@ fn test_type_equality() {
     assert_eq!(MonoType::Int, MonoType::Int);
     assert_eq!(MonoType::Bool, MonoType::Bool);
     assert_ne!(MonoType::Int, MonoType::Bool);
-    
+
     let array1 = MonoType::List(Box::new(MonoType::Int));
     let array2 = MonoType::List(Box::new(MonoType::Int));
     let array3 = MonoType::List(Box::new(MonoType::Bool));
-    
+
     assert_eq!(array1, array2);
     assert_ne!(array1, array3);
 }
@@ -194,19 +197,15 @@ fn test_type_equality() {
 #[test]
 fn test_nested_types() {
     // Test Option<Array<Int>>
-    let nested = MonoType::Optional(Box::new(
-        MonoType::List(Box::new(MonoType::Int))
-    ));
-    
+    let nested = MonoType::Optional(Box::new(MonoType::List(Box::new(MonoType::Int))));
+
     match nested {
-        MonoType::Optional(inner) => {
-            match *inner {
-                MonoType::List(elem) => {
-                    assert!(matches!(*elem, MonoType::Int));
-                }
-                _ => panic!("Expected array inside option"),
+        MonoType::Optional(inner) => match *inner {
+            MonoType::List(elem) => {
+                assert!(matches!(*elem, MonoType::Int));
             }
-        }
+            _ => panic!("Expected array inside option"),
+        },
         _ => panic!("Expected option type"),
     }
 }
@@ -229,7 +228,7 @@ fn test_generic_type() {
 mod property_tests {
     use super::*;
     use proptest::prelude::*;
-    
+
     proptest! {
         #[test]
         fn prop_type_var_roundtrip(id in 0u32..10000) {
@@ -239,7 +238,7 @@ mod property_tests {
                 _ => prop_assert!(false, "Expected type variable"),
             }
         }
-        
+
         // #[test]
         // fn prop_environment_insert_retrieve(key in "[a-z]{1,10}", val in 0u32..100) {
         //     let mut env = TypeEnv::new();
@@ -248,7 +247,7 @@ mod property_tests {
         //     let retrieved = env.lookup(&key);
         //     prop_assert!(retrieved.is_some());
         // }
-        
+
         #[test]
         fn prop_type_scheme_preserves_vars(vars in prop::collection::vec(0u32..100, 0..10)) {
             let ty = MonoType::Int; // Simple type for testing

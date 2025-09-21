@@ -189,7 +189,9 @@ fn test_repl_file_operations() {
     std::fs::write(&script_path, "let x = 42\nx * 2").unwrap();
 
     // Test load command
-    let should_exit = repl.process_line(&format!(":load {}", script_path.display())).unwrap_or(false);
+    let should_exit = repl
+        .process_line(&format!(":load {}", script_path.display()))
+        .unwrap_or(false);
     assert!(!should_exit);
 
     // Test save command (may not be implemented)

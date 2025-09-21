@@ -1,7 +1,7 @@
 //! Tests for error handling and recovery
 //! Focus on parser and interpreter error cases
 
-use ruchy::frontend::{Parser, ParseError};
+use ruchy::frontend::{ParseError, Parser};
 use ruchy::runtime::interpreter::{Interpreter, InterpreterError};
 
 #[test]
@@ -80,14 +80,14 @@ fn test_parser_mismatched_brackets() {
 #[test]
 fn test_interpreter_undefined_variable() {
     use ruchy::frontend::ast::*;
-    
+
     let mut interpreter = Interpreter::new();
     let expr = Expr {
         kind: ExprKind::Identifier("undefined_var".to_string()),
         span: Span::new(0, 1),
         attributes: vec![],
     };
-    
+
     let result = interpreter.eval_expr(&expr);
     assert!(result.is_err());
 }
@@ -95,7 +95,7 @@ fn test_interpreter_undefined_variable() {
 #[test]
 fn test_interpreter_division_by_zero() {
     use ruchy::frontend::ast::*;
-    
+
     let mut interpreter = Interpreter::new();
     let expr = Expr {
         kind: ExprKind::Binary {
@@ -114,7 +114,7 @@ fn test_interpreter_division_by_zero() {
         span: Span::new(0, 5),
         attributes: vec![],
     };
-    
+
     let result = interpreter.eval_expr(&expr);
     assert!(result.is_err());
 }
@@ -122,7 +122,7 @@ fn test_interpreter_division_by_zero() {
 #[test]
 fn test_interpreter_type_mismatch_add() {
     use ruchy::frontend::ast::*;
-    
+
     let mut interpreter = Interpreter::new();
     let expr = Expr {
         kind: ExprKind::Binary {
@@ -141,7 +141,7 @@ fn test_interpreter_type_mismatch_add() {
         span: Span::new(0, 8),
         attributes: vec![],
     };
-    
+
     let result = interpreter.eval_expr(&expr);
     assert!(result.is_err());
 }
@@ -149,7 +149,7 @@ fn test_interpreter_type_mismatch_add() {
 #[test]
 fn test_interpreter_invalid_unary_op() {
     use ruchy::frontend::ast::*;
-    
+
     let mut interpreter = Interpreter::new();
     let expr = Expr {
         kind: ExprKind::Unary {
@@ -163,7 +163,7 @@ fn test_interpreter_invalid_unary_op() {
         span: Span::new(0, 5),
         attributes: vec![],
     };
-    
+
     let result = interpreter.eval_expr(&expr);
     // Negating a boolean might be allowed or not
     let _ = result;
@@ -183,30 +183,30 @@ fn test_parser_recovery_after_error() {
 mod property_tests {
     use super::*;
     use proptest::prelude::*;
-    
+
     proptest! {
         #[test]
         fn prop_parser_never_panics_on_invalid(input in ".*") {
             let input = if input.len() > 1000 { &input[..1000] } else { &input };
-            
+
             // Parser should never panic, only return errors
             let _ = std::panic::catch_unwind(|| {
                 let mut parser = Parser::new(input);
                 let _ = parser.parse();
             });
         }
-        
+
         #[test]
         fn prop_parser_handles_random_operators(left in "[0-9]+", op in "[!@#$%^&*+=]+", right in "[0-9]+") {
             let input = format!("{} {} {}", left, op, right);
-            
+
             // Should not panic
             let _ = std::panic::catch_unwind(|| {
                 let mut parser = Parser::new(&input);
                 let _ = parser.parse();
             });
         }
-        
+
         #[test]
         fn prop_parser_handles_nested_errors(depth in 1usize..20) {
             let mut input = String::new();
@@ -218,7 +218,7 @@ mod property_tests {
             for _ in 0..depth/2 {
                 input.push(')');
             }
-            
+
             // Should not panic
             let _ = std::panic::catch_unwind(|| {
                 let mut parser = Parser::new(&input);

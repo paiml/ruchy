@@ -10,7 +10,7 @@ use ruchy::frontend::parser::Parser;
 fn transpile(code: &str) -> String {
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Should parse");
-    
+
     let mut transpiler = Transpiler::new();
     let result = transpiler.transpile(&ast).expect("Should transpile");
     result.to_string()
@@ -22,7 +22,7 @@ fn compile_and_run(code: &str) -> bool {
     if parser.parse().is_err() {
         return false;
     }
-    
+
     // For now, just test that it parses and transpiles
     // In a full implementation, we'd actually compile and run
     let mut transpiler = Transpiler::new();
@@ -48,11 +48,20 @@ fn test_basic_inline_module() {
             println(result);
         }
     ";
-    
+
     let transpiled = transpile(code);
-    assert!(transpiled.contains("mod math"), "Should contain module declaration");
-    assert!(transpiled.contains("pub fn add"), "Should contain public function");
-    assert!(transpiled.contains("math :: add"), "Should contain scope resolution");
+    assert!(
+        transpiled.contains("mod math"),
+        "Should contain module declaration"
+    );
+    assert!(
+        transpiled.contains("pub fn add"),
+        "Should contain public function"
+    );
+    assert!(
+        transpiled.contains("math :: add"),
+        "Should contain scope resolution"
+    );
 }
 
 #[test]
@@ -73,8 +82,11 @@ fn test_multiple_functions_in_module() {
             utils::farewell();
         }
     "#;
-    
-    assert!(compile_and_run(code), "Multiple functions in module should work");
+
+    assert!(
+        compile_and_run(code),
+        "Multiple functions in module should work"
+    );
 }
 
 #[test]
@@ -96,7 +108,7 @@ fn test_nested_modules() {
             outer::call_inner();
         }
     "#;
-    
+
     assert!(compile_and_run(code), "Nested modules should work");
 }
 
@@ -118,19 +130,25 @@ fn test_module_with_private_function() {
             println(result);
         }
     ";
-    
-    assert!(compile_and_run(code), "Module with private/public functions should work");
+
+    assert!(
+        compile_and_run(code),
+        "Module with private/public functions should work"
+    );
 }
 
 // ============================================================================
-// PHASE 2: Import/Use Statement Tests  
+// PHASE 2: Import/Use Statement Tests
 // ============================================================================
 
 #[test]
 fn test_basic_use_statement() {
     let code = r"use std::collections;";
     let transpiled = transpile(code);
-    assert!(transpiled.contains("use std :: collections"), "Should transpile use statement");
+    assert!(
+        transpiled.contains("use std :: collections"),
+        "Should transpile use statement"
+    );
 }
 
 #[test]
@@ -191,7 +209,7 @@ fn test_module_with_types() {
             println(dist);
         }
     ";
-    
+
     assert!(compile_and_run(code), "Module with structs should work");
 }
 
@@ -208,7 +226,7 @@ fn test_module_constants() {
             println(constants::E);
         }
     ";
-    
+
     // This might not work yet - constants aren't fully implemented
     // But we test if it parses without crashing
     let mut parser = Parser::new(code);
@@ -239,8 +257,11 @@ fn test_math_library_pattern() {
             println(result);
         }
     ";
-    
-    assert!(compile_and_run(code), "Math library module pattern should work");
+
+    assert!(
+        compile_and_run(code),
+        "Math library module pattern should work"
+    );
 }
 
 #[test]
@@ -277,8 +298,11 @@ fn test_utilities_module_pattern() {
             }
         }
     "#;
-    
-    assert!(compile_and_run(code), "Multiple utility modules should work");
+
+    assert!(
+        compile_and_run(code),
+        "Multiple utility modules should work"
+    );
 }
 
 // ============================================================================
@@ -295,7 +319,7 @@ fn test_empty_module() {
             println("Empty module test");
         }
     "#;
-    
+
     assert!(compile_and_run(code), "Empty module should be allowed");
 }
 
@@ -315,8 +339,11 @@ fn test_module_name_variations() {
             CamelCaseModule::test();
         }
     "#;
-    
-    assert!(compile_and_run(code), "Different module naming styles should work");
+
+    assert!(
+        compile_and_run(code),
+        "Different module naming styles should work"
+    );
 }
 
 // ============================================================================
@@ -340,10 +367,13 @@ fn test_documented_module() {
             println(result);
         }
     ";
-    
+
     // Documentation comments might not be fully supported yet
     // Test if it at least parses without crashing
     let mut parser = Parser::new(code);
     let parse_result = parser.parse();
-    println!("Documentation test - parse result: {:?}", parse_result.is_ok());
+    println!(
+        "Documentation test - parse result: {:?}",
+        parse_result.is_ok()
+    );
 }

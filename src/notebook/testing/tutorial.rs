@@ -43,23 +43,23 @@ pub struct InteractiveTutorial {
 }
 
 impl InteractiveTutorial {
-/// # Examples
-/// 
-/// ```
-/// use ruchy::notebook::testing::tutorial::InteractiveTutorial;
-/// 
-/// let instance = InteractiveTutorial::new();
-/// // Verify behavior
-/// ```
-/// # Examples
-/// 
-/// ```
-/// use ruchy::notebook::testing::tutorial::InteractiveTutorial;
-/// 
-/// let instance = InteractiveTutorial::new();
-/// // Verify behavior
-/// ```
-pub fn new(id: &str) -> Self {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::notebook::testing::tutorial::InteractiveTutorial;
+    ///
+    /// let instance = InteractiveTutorial::new();
+    /// // Verify behavior
+    /// ```
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::notebook::testing::tutorial::InteractiveTutorial;
+    ///
+    /// let instance = InteractiveTutorial::new();
+    /// // Verify behavior
+    /// ```
+    pub fn new(id: &str) -> Self {
         Self {
             id: id.to_string(),
             title: String::new(),
@@ -69,41 +69,46 @@ pub fn new(id: &str) -> Self {
         }
     }
     /// Add a step to the tutorial
-/// # Examples
-/// 
-/// ```
-/// use ruchy::notebook::testing::tutorial::InteractiveTutorial;
-/// 
-/// let mut instance = InteractiveTutorial::new();
-/// let result = instance.add_step();
-/// // Verify behavior
-/// ```
-pub fn add_step(&mut self, step: TutorialStep) {
-        self.progress.insert(step.id.clone(), StepProgress {
-            completed: false,
-            attempts: 0,
-            hints_used: 0,
-            time_spent_ms: 0,
-        });
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::notebook::testing::tutorial::InteractiveTutorial;
+    ///
+    /// let mut instance = InteractiveTutorial::new();
+    /// let result = instance.add_step();
+    /// // Verify behavior
+    /// ```
+    pub fn add_step(&mut self, step: TutorialStep) {
+        self.progress.insert(
+            step.id.clone(),
+            StepProgress {
+                completed: false,
+                attempts: 0,
+                hints_used: 0,
+                time_spent_ms: 0,
+            },
+        );
         self.steps.push(step);
     }
     /// Validate a step submission
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::notebook::testing::tutorial::validate_step;
-/// 
-/// let result = validate_step("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn validate_step(&mut self, step_id: &str, submission: &str) -> StepResult {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::notebook::testing::tutorial::validate_step;
+    ///
+    /// let result = validate_step("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn validate_step(&mut self, step_id: &str, submission: &str) -> StepResult {
         // Find step and clone what we need
         let (validation_rule, hint_opt) = match self.steps.iter().find(|s| s.id == step_id) {
             Some(s) => (s.validation.clone(), s.hint.clone()),
-            None => return StepResult {
-                is_correct: false,
-                feedback: "Step not found".to_string(),
-                hint: None,
+            None => {
+                return StepResult {
+                    is_correct: false,
+                    feedback: "Step not found".to_string(),
+                    hint: None,
+                }
             }
         };
         // Update progress
@@ -152,29 +157,31 @@ pub fn validate_step(&mut self, step_id: &str, submission: &str) -> StepResult {
             1 => "Not quite right. Try again!".to_string(),
             2 => "Still not correct. Check the instruction carefully.".to_string(),
             3 => "Consider using the hint if you're stuck.".to_string(),
-            _ => format!("Attempt {}. The solution should {}", 
-                        progress.attempts, 
-                        self.get_step(step_id).map_or("...", |s| &s.instruction[..20]))
+            _ => format!(
+                "Attempt {}. The solution should {}",
+                progress.attempts,
+                self.get_step(step_id)
+                    .map_or("...", |s| &s.instruction[..20])
+            ),
         }
     }
     fn should_show_hint(&self, step_id: &str) -> bool {
-        self.progress.get(step_id)
-            .is_some_and(|p| p.attempts >= 2)
+        self.progress.get(step_id).is_some_and(|p| p.attempts >= 2)
     }
     fn get_step(&self, step_id: &str) -> Option<&TutorialStep> {
         self.steps.iter().find(|s| s.id == step_id)
     }
     /// Get tutorial completion percentage
-/// # Examples
-/// 
-/// ```
-/// use ruchy::notebook::testing::tutorial::InteractiveTutorial;
-/// 
-/// let mut instance = InteractiveTutorial::new();
-/// let result = instance.get_completion();
-/// // Verify behavior
-/// ```
-pub fn get_completion(&self) -> f64 {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::notebook::testing::tutorial::InteractiveTutorial;
+    ///
+    /// let mut instance = InteractiveTutorial::new();
+    /// let result = instance.get_completion();
+    /// // Verify behavior
+    /// ```
+    pub fn get_completion(&self) -> f64 {
         let completed = self.progress.values().filter(|p| p.completed).count();
         let total = self.progress.len();
         if total > 0 {
@@ -219,30 +226,33 @@ impl AdaptiveHintSystem {
     }
     fn default_strategies() -> HashMap<String, HintStrategy> {
         let mut strategies = HashMap::new();
-        strategies.insert("problem1".to_string(), HintStrategy {
-            problem_id: "problem1".to_string(),
-            base_hints: vec![
-                "Start by declaring a variable with 'let'".to_string(),
-                "Variables need a name and a value".to_string(),
-            ],
-            progressive_hints: vec![
-                "The syntax is: let <name> = <value>".to_string(),
-                "Don't forget the semicolon at the end".to_string(),
-                "The complete solution is: let x = 42;".to_string(),
-            ],
-        });
+        strategies.insert(
+            "problem1".to_string(),
+            HintStrategy {
+                problem_id: "problem1".to_string(),
+                base_hints: vec![
+                    "Start by declaring a variable with 'let'".to_string(),
+                    "Variables need a name and a value".to_string(),
+                ],
+                progressive_hints: vec![
+                    "The syntax is: let <name> = <value>".to_string(),
+                    "Don't forget the semicolon at the end".to_string(),
+                    "The complete solution is: let x = 42;".to_string(),
+                ],
+            },
+        );
         strategies
     }
     /// Record a student attempt
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::notebook::testing::tutorial::record_attempt;
-/// 
-/// let result = record_attempt("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn record_attempt(&mut self, student: &str, problem: &str, attempt: &str, success: bool) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::notebook::testing::tutorial::record_attempt;
+    ///
+    /// let result = record_attempt("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn record_attempt(&mut self, student: &str, problem: &str, attempt: &str, success: bool) {
         self.attempts.push(AttemptRecord {
             student_id: student.to_string(),
             problem_id: problem.to_string(),
@@ -252,64 +262,73 @@ pub fn record_attempt(&mut self, student: &str, problem: &str, attempt: &str, su
         });
     }
     /// Get adaptive hint based on student history
-/// # Examples
-/// 
-/// ```
-/// use ruchy::notebook::testing::tutorial::AdaptiveHintSystem;
-/// 
-/// let mut instance = AdaptiveHintSystem::new();
-/// let result = instance.get_hint();
-/// // Verify behavior
-/// ```
-pub fn get_hint(&self, student: &str, problem: &str) -> String {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::notebook::testing::tutorial::AdaptiveHintSystem;
+    ///
+    /// let mut instance = AdaptiveHintSystem::new();
+    /// let result = instance.get_hint();
+    /// // Verify behavior
+    /// ```
+    pub fn get_hint(&self, student: &str, problem: &str) -> String {
         let student_attempts = self.get_student_attempts(student, problem);
         let attempt_count = student_attempts.len();
         // Get strategy for this problem
         let strategy = self.hint_strategies.get(problem);
         match attempt_count {
             0 => "Try to solve the problem first!".to_string(),
-            1..=2 => {
-                strategy.and_then(|s| s.base_hints.get(attempt_count - 1))
-                    .cloned()
-                    .unwrap_or_else(|| "Review the problem statement".to_string())
-            }
+            1..=2 => strategy
+                .and_then(|s| s.base_hints.get(attempt_count - 1))
+                .cloned()
+                .unwrap_or_else(|| "Review the problem statement".to_string()),
             _ => {
                 let progressive_index = (attempt_count - 3).min(2);
-                strategy.and_then(|s| s.progressive_hints.get(progressive_index))
+                strategy
+                    .and_then(|s| s.progressive_hints.get(progressive_index))
                     .cloned()
                     .unwrap_or_else(|| "Ask for help from an instructor".to_string())
             }
         }
     }
     fn get_student_attempts(&self, student: &str, problem: &str) -> Vec<&AttemptRecord> {
-        self.attempts.iter()
+        self.attempts
+            .iter()
             .filter(|a| a.student_id == student && a.problem_id == problem)
             .collect()
     }
     /// Analyze common mistakes
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::notebook::testing::tutorial::analyze_mistakes;
-/// 
-/// let result = analyze_mistakes("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn analyze_mistakes(&self, problem: &str) -> MistakeAnalysis {
-        let problem_attempts: Vec<_> = self.attempts.iter()
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::notebook::testing::tutorial::analyze_mistakes;
+    ///
+    /// let result = analyze_mistakes("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn analyze_mistakes(&self, problem: &str) -> MistakeAnalysis {
+        let problem_attempts: Vec<_> = self
+            .attempts
+            .iter()
             .filter(|a| a.problem_id == problem && !a.success)
             .collect();
         let mut common_errors = HashMap::new();
         for attempt in &problem_attempts {
             // Analyze attempt for common patterns
             if attempt.attempt.is_empty() {
-                *common_errors.entry("Empty submission".to_string()).or_insert(0) += 1;
+                *common_errors
+                    .entry("Empty submission".to_string())
+                    .or_insert(0) += 1;
             }
             if !attempt.attempt.contains(';') {
-                *common_errors.entry("Missing semicolon".to_string()).or_insert(0) += 1;
+                *common_errors
+                    .entry("Missing semicolon".to_string())
+                    .or_insert(0) += 1;
             }
             if !attempt.attempt.contains("let") && problem.contains("variable") {
-                *common_errors.entry("Missing 'let' keyword".to_string()).or_insert(0) += 1;
+                *common_errors
+                    .entry("Missing 'let' keyword".to_string())
+                    .or_insert(0) += 1;
             }
         }
         MistakeAnalysis {
@@ -319,7 +338,9 @@ pub fn analyze_mistakes(&self, problem: &str) -> MistakeAnalysis {
         }
     }
     fn calculate_success_rate(&self, problem: &str) -> f64 {
-        let problem_attempts: Vec<_> = self.attempts.iter()
+        let problem_attempts: Vec<_> = self
+            .attempts
+            .iter()
             .filter(|a| a.problem_id == problem)
             .collect();
         if problem_attempts.is_empty() {

@@ -1,10 +1,10 @@
 //! Multi-file module system implementation
-//! 
-//! Enables `use external_file;` imports for larger Ruchy programs while preserving 
+//!
+//! Enables `use external_file;` imports for larger Ruchy programs while preserving
 //! 100% compatibility with existing inline modules.
 //!
 //! # Architecture
-//! 
+//!
 //! - **`ModuleLoader`**: Core component handling file discovery, parsing, and caching
 //! - **`ParsedModule`**: Represents a loaded module with metadata and dependencies  
 //! - **Search Path Resolution**: Multiple directory support with fallback patterns
@@ -15,27 +15,27 @@
 //!
 //! ```rust
 //! use ruchy::backend::module_loader::ModuleLoader;
-//! 
+//!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! let mut loader = ModuleLoader::new();
 //! loader.add_search_path("./src");
 //! loader.add_search_path("./modules");
-//! 
+//!
 //! // Would load math.ruchy if it existed
-//! // let module = loader.load_module("math")?; 
+//! // let module = loader.load_module("math")?;
 //! # Ok(())
 //! # }
 //! ```
-use std::collections::HashMap;
-use std::path::{Path, PathBuf};
-use std::fs;
-use std::time::SystemTime;
-use anyhow::{Result, bail, Context};
-use crate::frontend::parser::Parser;
 use crate::frontend::ast::{Expr, ExprKind};
+use crate::frontend::parser::Parser;
 use crate::utils::common_patterns::ResultContextExt;
+use anyhow::{bail, Context, Result};
+use std::collections::HashMap;
+use std::fs;
+use std::path::{Path, PathBuf};
+use std::time::SystemTime;
 /// Core module loading and caching system
-/// 
+///
 /// Handles file discovery, parsing, dependency resolution, and caching
 /// for multi-file Ruchy programs.
 pub struct ModuleLoader {
@@ -52,27 +52,27 @@ pub struct ModuleLoader {
 }
 impl ModuleLoader {
     /// Create a new `ModuleLoader` with default search paths
-    /// 
+    ///
     /// Default search paths:
     /// - `.` (current directory)
     /// - `./src` (source directory)
     /// - `./modules` (modules directory)
     #[must_use]
-/// # Examples
-///
-/// ```
-/// use ruchy::backend::module_loader::ModuleLoader;
-///
-/// let loader = ModuleLoader::new();
-/// assert_eq!(loader.stats().files_loaded, 0);
-/// ```
-pub fn new() -> Self {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::backend::module_loader::ModuleLoader;
+    ///
+    /// let loader = ModuleLoader::new();
+    /// assert_eq!(loader.stats().files_loaded, 0);
+    /// ```
+    pub fn new() -> Self {
         Self {
             cache: HashMap::new(),
             search_paths: vec![
-                PathBuf::from("."),           // Current directory
-                PathBuf::from("./src"),       // Source directory  
-                PathBuf::from("./modules"),   // Modules directory
+                PathBuf::from("."),         // Current directory
+                PathBuf::from("./src"),     // Source directory
+                PathBuf::from("./modules"), // Modules directory
             ],
             loading_stack: Vec::new(),
             files_loaded: 0,
@@ -80,47 +80,47 @@ pub fn new() -> Self {
         }
     }
     /// Add a directory to the module search path
-    /// 
+    ///
     /// Modules will be searched in the order paths were added.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `path` - Directory to search for modules
     pub fn add_search_path<P: AsRef<Path>>(&mut self, path: P) {
         self.search_paths.push(path.as_ref().to_path_buf());
     }
     /// Load a module from the file system
-    /// 
+    ///
     /// Supports these patterns:
     /// - `module_name.ruchy` - Direct file
     /// - `module_name/mod.ruchy` - Directory module  
     /// - `module_name.rchy` - Short extension
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `module_name` - Name of the module to load
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// Clone of the parsed module with AST and metadata
-    /// 
+    ///
     /// # Errors
-    /// 
+    ///
     /// Returns an error if:
     /// - Module file not found in any search path
     /// - Circular dependency detected
     /// - File parsing fails
     /// - I/O errors reading the file
-/// # Examples
-/// 
-/// ```
-/// use ruchy::backend::module_loader::ModuleLoader;
-///
-/// let mut loader = ModuleLoader::new();
-/// // Loading a module would require actual module files
-/// // let module = loader.load_module("example");
-/// ```
-pub fn load_module(&mut self, module_name: &str) -> Result<ParsedModule> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::backend::module_loader::ModuleLoader;
+    ///
+    /// let mut loader = ModuleLoader::new();
+    /// // Loading a module would require actual module files
+    /// // let module = loader.load_module("example");
+    /// ```
+    pub fn load_module(&mut self, module_name: &str) -> Result<ParsedModule> {
         // Check circular dependencies first
         if self.loading_stack.contains(&module_name.to_string()) {
             let stack = self.loading_stack.join(" -> ");
@@ -135,17 +135,16 @@ pub fn load_module(&mut self, module_name: &str) -> Result<ParsedModule> {
             }
         }
         // Find the module file in search paths
-        let file_path = self.resolve_module_path(module_name)
+        let file_path = self
+            .resolve_module_path(module_name)
             .module_context("find", module_name)?;
-        // Read and parse the module file  
-        let content = fs::read_to_string(&file_path)
-            .file_context("read", &file_path)?;
+        // Read and parse the module file
+        let content = fs::read_to_string(&file_path).file_context("read", &file_path)?;
         // Track loading for circular dependency detection
         self.loading_stack.push(module_name.to_string());
         // Parse the module content
         let mut parser = Parser::new(&content);
-        let ast = parser.parse()
-            .module_context("parse", module_name)?;
+        let ast = parser.parse().module_context("parse", module_name)?;
         // Extract dependencies from the parsed AST
         let dependencies = self.extract_dependencies(&ast)?;
         // Create parsed module metadata
@@ -157,24 +156,26 @@ pub fn load_module(&mut self, module_name: &str) -> Result<ParsedModule> {
         };
         // Load dependencies recursively - check for circular dependencies first
         for dep in &dependencies {
-            if self.loading_stack.contains(&dep.to_string()) {
+            if self.loading_stack.contains(&dep.clone()) {
                 let stack = self.loading_stack.join(" -> ");
                 let cycle_path = format!("{stack} -> {module_name} -> {dep}");
                 bail!("Circular dependency detected: {}", cycle_path);
             }
-            self.load_module(dep)
-                .with_context(|| format!("Failed to load dependency '{dep}' for module '{module_name}'"))?;
+            self.load_module(dep).with_context(|| {
+                format!("Failed to load dependency '{dep}' for module '{module_name}'")
+            })?;
         }
         // Remove from loading stack and cache the result
         self.loading_stack.pop();
         // Cache invalid entry removal and insertion
         self.cache.remove(module_name);
-        self.cache.insert(module_name.to_string(), parsed_module.clone());
+        self.cache
+            .insert(module_name.to_string(), parsed_module.clone());
         self.files_loaded += 1;
         Ok(parsed_module)
     }
     /// Resolve module name to file system path
-    /// 
+    ///
     /// Tries these patterns in each search path:
     /// 1. `{module_name}.ruchy`
     /// 2. `{module_name}/mod.ruchy`  
@@ -196,7 +197,8 @@ pub fn load_module(&mut self, module_name: &str) -> Result<ParsedModule> {
         bail!(
             "Module '{}' not found. Searched in: {}\nLooked for: {}",
             module_name,
-            self.search_paths.iter()
+            self.search_paths
+                .iter()
                 .map(|p| p.display().to_string())
                 .collect::<Vec<_>>()
                 .join(", "),
@@ -209,7 +211,7 @@ pub fn load_module(&mut self, module_name: &str) -> Result<ParsedModule> {
         Ok(current_modified <= module.last_modified)
     }
     /// Extract module dependencies from AST
-    /// 
+    ///
     /// Traverses the AST looking for Import nodes that reference other files
     /// (not inline modules or standard library imports).
     fn extract_dependencies(&self, ast: &Expr) -> Result<Vec<String>> {
@@ -224,13 +226,19 @@ pub fn load_module(&mut self, module_name: &str) -> Result<ParsedModule> {
             | ExprKind::ImportAll { module, .. }
             | ExprKind::ImportDefault { module, .. } => {
                 // Only treat simple names (no ::) as potential file imports
-                if !module.contains("::") && !module.starts_with("std::") && !module.starts_with("http") {
+                if !module.contains("::")
+                    && !module.starts_with("std::")
+                    && !module.starts_with("http")
+                {
                     dependencies.push(module.clone());
                 }
             }
             ExprKind::ReExport { module, .. } => {
                 // Re-exports also create dependencies
-                if !module.contains("::") && !module.starts_with("std::") && !module.starts_with("http") {
+                if !module.contains("::")
+                    && !module.starts_with("std::")
+                    && !module.starts_with("http")
+                {
                     dependencies.push(module.clone());
                 }
             }
@@ -254,16 +262,16 @@ pub fn load_module(&mut self, module_name: &str) -> Result<ParsedModule> {
     }
     /// Get module loading statistics for performance monitoring
     #[must_use]
-/// # Examples
-/// 
-/// ```
-/// use ruchy::backend::module_loader::{ModuleLoader, ModuleLoaderStats};
-///
-/// let loader = ModuleLoader::new();
-/// let stats = loader.stats();
-/// assert_eq!(stats.files_loaded, 0);
-/// ```
-pub fn stats(&self) -> ModuleLoaderStats {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::backend::module_loader::{ModuleLoader, ModuleLoaderStats};
+    ///
+    /// let loader = ModuleLoader::new();
+    /// let stats = loader.stats();
+    /// assert_eq!(stats.files_loaded, 0);
+    /// ```
+    pub fn stats(&self) -> ModuleLoaderStats {
         ModuleLoaderStats {
             cached_modules: self.cache.len(),
             files_loaded: self.files_loaded,
@@ -272,34 +280,34 @@ pub fn stats(&self) -> ModuleLoaderStats {
         }
     }
     /// Clear the module cache
-    /// 
+    ///
     /// Forces all modules to be reloaded from disk on next access.
     /// Useful for development when module files are frequently changing.
-/// # Examples
-/// 
-/// ```
-/// use ruchy::backend::module_loader::ModuleLoader;
-///
-/// let mut loader = ModuleLoader::new();
-/// loader.clear_cache();
-/// assert_eq!(loader.stats().cached_modules, 0);
-/// ```
-pub fn clear_cache(&mut self) {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::backend::module_loader::ModuleLoader;
+    ///
+    /// let mut loader = ModuleLoader::new();
+    /// loader.clear_cache();
+    /// assert_eq!(loader.stats().cached_modules, 0);
+    /// ```
+    pub fn clear_cache(&mut self) {
         self.cache.clear();
         self.files_loaded = 0;
         self.cache_hits = 0;
     }
     /// Check if a module is currently being loaded (for debugging)
     #[must_use]
-/// # Examples
-/// 
-/// ```
-/// use ruchy::backend::module_loader::ModuleLoader;
-///
-/// let loader = ModuleLoader::new();
-/// assert_eq!(loader.is_loading("example"), false);
-/// ```
-pub fn is_loading(&self, module_name: &str) -> bool {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::backend::module_loader::ModuleLoader;
+    ///
+    /// let loader = ModuleLoader::new();
+    /// assert_eq!(loader.is_loading("example"), false);
+    /// ```
+    pub fn is_loading(&self, module_name: &str) -> bool {
         self.loading_stack.contains(&module_name.to_string())
     }
 }
@@ -323,23 +331,23 @@ pub struct ParsedModule {
 impl ParsedModule {
     /// Get the module name from the file path
     #[must_use]
-/// # Examples
-/// 
-/// ```
-/// use ruchy::backend::module_loader::ParsedModule;
-/// use ruchy::ast::Expr;
-/// use std::path::PathBuf;
-/// use std::time::SystemTime;
-///
-/// let module = ParsedModule {
-///     ast: Expr::literal(42.into()),
-///     file_path: PathBuf::from("test.ruchy"),
-///     dependencies: Vec::new(),
-///     last_modified: SystemTime::now(),
-/// };
-/// assert_eq!(module.name(), Some("test".to_string()));
-/// ```
-pub fn name(&self) -> Option<String> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::backend::module_loader::ParsedModule;
+    /// use ruchy::ast::Expr;
+    /// use std::path::PathBuf;
+    /// use std::time::SystemTime;
+    ///
+    /// let module = ParsedModule {
+    ///     ast: Expr::literal(42.into()),
+    ///     file_path: PathBuf::from("test.ruchy"),
+    ///     dependencies: Vec::new(),
+    ///     last_modified: SystemTime::now(),
+    /// };
+    /// assert_eq!(module.name(), Some("test".to_string()));
+    /// ```
+    pub fn name(&self) -> Option<String> {
         self.file_path
             .file_stem()
             .and_then(|stem| stem.to_str())
@@ -347,23 +355,23 @@ pub fn name(&self) -> Option<String> {
     }
     /// Check if this module has any dependencies
     #[must_use]
-/// # Examples
-/// 
-/// ```
-/// use ruchy::backend::module_loader::ParsedModule;
-/// use ruchy::ast::Expr;
-/// use std::path::PathBuf;
-/// use std::time::SystemTime;
-///
-/// let module = ParsedModule {
-///     ast: Expr::literal(42.into()),
-///     file_path: PathBuf::from("test.ruchy"),
-///     dependencies: Vec::new(),
-///     last_modified: SystemTime::now(),
-/// };
-/// assert_eq!(module.has_dependencies(), false);
-/// ```
-pub fn has_dependencies(&self) -> bool {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::backend::module_loader::ParsedModule;
+    /// use ruchy::ast::Expr;
+    /// use std::path::PathBuf;
+    /// use std::time::SystemTime;
+    ///
+    /// let module = ParsedModule {
+    ///     ast: Expr::literal(42.into()),
+    ///     file_path: PathBuf::from("test.ruchy"),
+    ///     dependencies: Vec::new(),
+    ///     last_modified: SystemTime::now(),
+    /// };
+    /// assert_eq!(module.has_dependencies(), false);
+    /// ```
+    pub fn has_dependencies(&self) -> bool {
         !self.dependencies.is_empty()
     }
 }
@@ -382,32 +390,34 @@ pub struct ModuleLoaderStats {
 impl ModuleLoaderStats {
     /// Calculate cache hit ratio as a percentage
     #[must_use]
-/// # Examples
-/// 
-/// ```
-/// use ruchy::backend::module_loader::ModuleLoaderStats;
-///
-/// let stats = ModuleLoaderStats {
-///     cached_modules: 5,
-///     files_loaded: 10,
-///     cache_hits: 10,
-///     search_paths: 1,
-/// };
-/// assert_eq!(stats.cache_hit_ratio(), 50.0);
-/// ```
-pub fn cache_hit_ratio(&self) -> f64 {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::backend::module_loader::ModuleLoaderStats;
+    ///
+    /// let stats = ModuleLoaderStats {
+    ///     cached_modules: 5,
+    ///     files_loaded: 10,
+    ///     cache_hits: 10,
+    ///     search_paths: 1,
+    /// };
+    /// assert_eq!(stats.cache_hit_ratio(), 50.0);
+    /// ```
+    pub fn cache_hit_ratio(&self) -> f64 {
         if self.files_loaded + self.cache_hits == 0 {
             0.0
         } else {
-            f64::from(self.cache_hits as u32) / f64::from((self.files_loaded + self.cache_hits) as u32) * 100.0
+            f64::from(self.cache_hits as u32)
+                / f64::from((self.files_loaded + self.cache_hits) as u32)
+                * 100.0
         }
     }
 }
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tempfile::TempDir;
     use std::fs;
+    use tempfile::TempDir;
     fn create_test_module(temp_dir: &TempDir, name: &str, content: &str) -> Result<()> {
         let file_path = temp_dir.path().join(format!("{name}.ruchy"));
         fs::write(file_path, content)?;
@@ -450,7 +460,7 @@ mod tests {
         assert!(error_msg.contains("Module 'nonexistent' not found"));
     }
     #[test]
-    #[ignore = "Module system changed in Sprint v3.8.0"]
+
     fn test_circular_dependency_detection() -> Result<()> {
         let temp_dir = TempDir::new()?;
         let mut loader = ModuleLoader::new();
@@ -462,10 +472,13 @@ mod tests {
         assert!(result.is_err());
         let error = result.unwrap_err();
         let error_msg = format!("{error:?}"); // Use Debug formatting to get full error chain
-        // Check if the full error chain contains circular dependency
-        let found_circular_dep = error_msg.contains("Circular dependency detected") 
-                               || error_msg.contains("circular dependency");
-        assert!(found_circular_dep, "Expected circular dependency error, got: {error_msg}");
+                                              // Check if the full error chain contains circular dependency
+        let found_circular_dep = error_msg.contains("Circular dependency detected")
+            || error_msg.contains("circular dependency");
+        assert!(
+            found_circular_dep,
+            "Expected circular dependency error, got: {error_msg}"
+        );
         Ok(())
     }
     #[test]
@@ -488,7 +501,7 @@ mod tests {
         loader.load_module("test")?;
         let after_cache = loader.stats();
         assert_eq!(after_cache.files_loaded, 1); // Same as before
-        assert_eq!(after_cache.cache_hits, 1);   // Incremented
+        assert_eq!(after_cache.cache_hits, 1); // Incremented
         Ok(())
     }
     #[test]
@@ -524,8 +537,10 @@ mod tests {
         let temp_dir = TempDir::new()?;
         let path = temp_dir.path().join("math.ruchy");
         let module = ParsedModule {
-            ast: Expr::new(crate::frontend::ast::ExprKind::Literal(crate::frontend::ast::Literal::Unit),
-                          crate::frontend::ast::Span { start: 0, end: 0 }),
+            ast: Expr::new(
+                crate::frontend::ast::ExprKind::Literal(crate::frontend::ast::Literal::Unit),
+                crate::frontend::ast::Span { start: 0, end: 0 },
+            ),
             file_path: path,
             dependencies: Vec::new(),
             last_modified: SystemTime::now(),
@@ -620,14 +635,18 @@ mod tests {
     #[test]
     fn test_default_search_paths() {
         let loader = ModuleLoader::new();
-        let paths: Vec<String> = loader.search_paths.iter()
+        let paths: Vec<String> = loader
+            .search_paths
+            .iter()
             .map(|p| p.to_string_lossy().to_string())
             .collect();
 
         // Should have default paths
         assert!(!paths.is_empty());
         // Usually includes current dir
-        assert!(paths.iter().any(|p| p == "." || p.ends_with("/.") || p == ""));
+        assert!(paths
+            .iter()
+            .any(|p| p == "." || p.ends_with("/.") || p.is_empty()));
     }
 
     #[test]
@@ -639,7 +658,7 @@ mod tests {
 
         // Create a file with invalid UTF-8
         let path = temp_dir.path().join("invalid.ruchy");
-        fs::write(&path, &[0xFF, 0xFE, 0x00])?;
+        fs::write(&path, [0xFF, 0xFE, 0x00])?;
 
         let result = loader.load_module("invalid");
         assert!(result.is_err());
@@ -680,8 +699,10 @@ mod tests {
         let path = temp_dir.path().join("with_deps.ruchy");
 
         let module = ParsedModule {
-            ast: Expr::new(crate::frontend::ast::ExprKind::Literal(crate::frontend::ast::Literal::Unit),
-                          crate::frontend::ast::Span { start: 0, end: 0 }),
+            ast: Expr::new(
+                crate::frontend::ast::ExprKind::Literal(crate::frontend::ast::Literal::Unit),
+                crate::frontend::ast::Span { start: 0, end: 0 },
+            ),
             file_path: path,
             dependencies: vec!["math".to_string(), "utils".to_string()],
             last_modified: SystemTime::now(),
@@ -712,9 +733,9 @@ mod tests {
 }
 #[cfg(test)]
 mod property_tests_module_loader {
-    use proptest::proptest;
     use super::*;
-    
+    use proptest::proptest;
+
     proptest! {
         /// Property: ModuleLoader::new never panics and always creates valid loader
         #[test]

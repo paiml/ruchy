@@ -1,5 +1,5 @@
 //! Core parser implementation with main entry points
-use super::{ParserState, Result, Expr, bail, Token, ExprKind, Span, ErrorNode, utils};
+use super::{bail, utils, ErrorNode, Expr, ExprKind, ParserState, Result, Span, Token};
 pub struct Parser<'a> {
     state: ParserState<'a>,
 }
@@ -252,13 +252,10 @@ mod tests {
         assert!(result.is_ok());
 
         if let Ok(expr) = result {
-            match expr.kind {
-                ExprKind::Block(exprs) => {
-                    assert_eq!(exprs.len(), 3);
-                },
-                _ => {
-                    // Single expression is also valid
-                }
+            if let ExprKind::Block(exprs) = expr.kind {
+                assert_eq!(exprs.len(), 3);
+            } else {
+                // Single expression is also valid
             }
         }
     }
@@ -293,34 +290,23 @@ mod tests {
 
     #[test]
     fn test_parse_comparison_operators() {
-        let expressions = vec![
-            "1 == 2",
-            "1 != 2",
-            "1 < 2",
-            "1 <= 2",
-            "1 > 2",
-            "1 >= 2",
-        ];
+        let expressions = vec!["1 == 2", "1 != 2", "1 < 2", "1 <= 2", "1 > 2", "1 >= 2"];
 
         for expr in expressions {
             let mut parser = Parser::new(expr);
             let result = parser.parse();
-            assert!(result.is_ok(), "Failed to parse: {}", expr);
+            assert!(result.is_ok(), "Failed to parse: {expr}");
         }
     }
 
     #[test]
     fn test_parse_logical_operators() {
-        let expressions = vec![
-            "true && false",
-            "true || false",
-            "!true",
-        ];
+        let expressions = vec!["true && false", "true || false", "!true"];
 
         for expr in expressions {
             let mut parser = Parser::new(expr);
             let result = parser.parse();
-            assert!(result.is_ok(), "Failed to parse: {}", expr);
+            assert!(result.is_ok(), "Failed to parse: {expr}");
         }
     }
 
@@ -424,17 +410,12 @@ mod tests {
 
     #[test]
     fn test_parse_compound_assignment() {
-        let expressions = vec![
-            "x += 1",
-            "x -= 1",
-            "x *= 2",
-            "x /= 2",
-        ];
+        let expressions = vec!["x += 1", "x -= 1", "x *= 2", "x /= 2"];
 
         for expr in expressions {
             let mut parser = Parser::new(expr);
             let result = parser.parse();
-            assert!(result.is_ok(), "Failed to parse: {}", expr);
+            assert!(result.is_ok(), "Failed to parse: {expr}");
         }
     }
 

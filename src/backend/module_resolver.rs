@@ -4,11 +4,11 @@
 //! by pre-processing the AST to inline external modules before transpilation.
 //!
 //! # Architecture
-//! 
+//!
 //! The module resolver works as a pre-processing step before transpilation:
 //! 1. Parse the main file into an AST
 //! 2. Scan for file imports (`use module_name;` where `module_name` has no `::`)
-//! 3. Load and parse external module files 
+//! 3. Load and parse external module files
 //! 4. Replace Import nodes with inline Module nodes
 //! 5. Pass the resolved AST to the transpiler
 //!
@@ -16,17 +16,17 @@
 //!
 //! ```rust
 //! use ruchy::{ModuleResolver, Parser, Transpiler};
-//! 
+//!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! let mut resolver = ModuleResolver::new();
 //! resolver.add_search_path("./src");
-//! 
+//!
 //! let mut parser = Parser::new("2 + 2");
 //! let ast = parser.parse()?;
-//! 
+//!
 //! // Would resolve imports if there were any
 //! // let resolved_ast = resolver.resolve_imports(ast)?;
-//! 
+//!
 //! let mut transpiler = Transpiler::new();
 //! let rust_code = transpiler.transpile(&ast)?;
 //! # Ok(())
@@ -38,7 +38,7 @@ use crate::backend::module_loader::ModuleLoader;
 use crate::utils::common_patterns::ResultContextExt;
 use anyhow::Result;
 /// Module resolver for processing file imports
-/// 
+///
 /// Resolves file imports by loading external modules and inlining them
 /// as Module declarations in the AST before transpilation.
 pub struct ModuleResolver {
@@ -47,64 +47,64 @@ pub struct ModuleResolver {
 }
 impl ModuleResolver {
     /// Create a new module resolver with default search paths
-    /// 
+    ///
     /// Default search paths:
     /// - `.` (current directory)
     /// - `./src` (source directory)
     /// - `./modules` (modules directory)
     #[must_use]
-/// # Examples
-/// 
-/// ```
-/// use ruchy::backend::module_resolver::ModuleResolver;
-///
-/// let resolver = ModuleResolver::new();
-/// // ModuleResolver created successfully
-/// ```
-pub fn new() -> Self {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::backend::module_resolver::ModuleResolver;
+    ///
+    /// let resolver = ModuleResolver::new();
+    /// // ModuleResolver created successfully
+    /// ```
+    pub fn new() -> Self {
         Self {
             module_loader: ModuleLoader::new(),
         }
     }
     /// Add a directory to the module search path
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `path` - Directory to search for modules
     pub fn add_search_path<P: AsRef<std::path::Path>>(&mut self, path: P) {
         self.module_loader.add_search_path(path);
     }
     /// Resolve all file imports in an AST
-    /// 
+    ///
     /// Recursively processes the AST to find file imports, loads the corresponding
     /// modules, and replaces Import nodes with inline Module nodes.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `ast` - The AST to process
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// A new AST with all file imports resolved to inline modules
-    /// 
+    ///
     /// # Errors
-    /// 
+    ///
     /// Returns an error if:
     /// - Module files cannot be found or loaded
     /// - Module files contain invalid syntax  
     /// - Circular dependencies are detected
-/// # Examples
-/// 
-/// ```
-/// use ruchy::backend::module_resolver::ModuleResolver;
-/// use ruchy::ast::Expr;
-///
-/// let mut resolver = ModuleResolver::new();
-/// let ast = Expr::literal(42.into());
-/// let result = resolver.resolve_imports(ast);
-/// assert!(result.is_ok());
-/// ```
-pub fn resolve_imports(&mut self, ast: Expr) -> Result<Expr> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::backend::module_resolver::ModuleResolver;
+    /// use ruchy::ast::Expr;
+    ///
+    /// let mut resolver = ModuleResolver::new();
+    /// let ast = Expr::literal(42.into());
+    /// let result = resolver.resolve_imports(ast);
+    /// assert!(result.is_ok());
+    /// ```
+    pub fn resolve_imports(&mut self, ast: Expr) -> Result<Expr> {
         self.resolve_expr(ast)
     }
     /// Recursively resolve imports in an expression
@@ -122,42 +122,43 @@ pub fn resolve_imports(&mut self, ast: Expr) -> Result<Expr> {
             ExprKind::ReExport { items, module } => {
                 self.resolve_reexport(expr.span, &items, &module)
             }
-            ExprKind::Block(exprs) => {
-                self.resolve_block_expr(exprs, expr.span)
-            }
-            ExprKind::Module { name, body } => {
-                self.resolve_module_expr(name, *body, expr.span)
-            }
-            ExprKind::Function { 
-                name, 
-                type_params, 
-                params, 
-                body, 
+            ExprKind::Block(exprs) => self.resolve_block_expr(exprs, expr.span),
+            ExprKind::Module { name, body } => self.resolve_module_expr(name, *body, expr.span),
+            ExprKind::Function {
+                name,
+                type_params,
+                params,
+                body,
                 is_async,
                 return_type,
                 is_pub,
-            } => {
-                self.resolve_function_expr(
-                    name,
-                    type_params,
-                    params,
-                    *body,
-                    is_async,
-                    return_type,
-                    is_pub,
-                    expr.span,
-                )
-            }
-            ExprKind::If { condition, then_branch, else_branch } => {
-                self.resolve_if_expr(*condition, *then_branch, else_branch, expr.span)
-            }
+            } => self.resolve_function_expr(
+                name,
+                type_params,
+                params,
+                *body,
+                is_async,
+                return_type,
+                is_pub,
+                expr.span,
+            ),
+            ExprKind::If {
+                condition,
+                then_branch,
+                else_branch,
+            } => self.resolve_if_expr(*condition, *then_branch, else_branch, expr.span),
             // For other expression types, recursively process children as needed
             // For now, just return the expression as-is
             _ => Ok(expr),
         }
     }
     /// Resolve import expressions
-    fn resolve_simple_import(&mut self, span: Span, module: &str, items: Option<&[String]>) -> Result<Expr> {
+    fn resolve_simple_import(
+        &mut self,
+        span: Span,
+        module: &str,
+        items: Option<&[String]>,
+    ) -> Result<Expr> {
         if self.is_file_import(module) {
             self.resolve_file_module(span, module)?;
         }
@@ -211,7 +212,9 @@ pub fn resolve_imports(&mut self, ast: Expr) -> Result<Expr> {
 
     fn resolve_file_module(&mut self, _span: Span, module: &str) -> Result<()> {
         // Load and parse the module file
-        let _ = self.module_loader.load_module(module)
+        let _ = self
+            .module_loader
+            .load_module(module)
             .module_context("resolve import", module)?;
         // Module integration is handled by the module loader
         // The exports are made available through the loader's cache
@@ -225,10 +228,10 @@ pub fn resolve_imports(&mut self, ast: Expr) -> Result<Expr> {
             .module_context("resolve import", path)?;
         // Recursively resolve imports in the loaded module
         let resolved_module_ast = self.resolve_expr(parsed_module.ast)?;
-        
+
         let module_expr = self.create_inline_module(path, resolved_module_ast, span);
         let use_statement = self.create_use_statement(path, items);
-        
+
         Ok(Expr::new(
             ExprKind::Block(vec![module_expr, use_statement]),
             span,
@@ -280,10 +283,8 @@ pub fn resolve_imports(&mut self, ast: Expr) -> Result<Expr> {
     /// Resolve block expressions
     fn resolve_block_expr(&mut self, exprs: Vec<Expr>, span: Span) -> Result<Expr> {
         // Resolve imports in all block expressions
-        let resolved_exprs: Result<Vec<_>> = exprs
-            .into_iter()
-            .map(|e| self.resolve_expr(e))
-            .collect();
+        let resolved_exprs: Result<Vec<_>> =
+            exprs.into_iter().map(|e| self.resolve_expr(e)).collect();
         Ok(Expr::new(ExprKind::Block(resolved_exprs?), span))
     }
     /// Resolve module expressions
@@ -378,31 +379,31 @@ pub fn resolve_imports(&mut self, ast: Expr) -> Result<Expr> {
 
     /// Get module loading statistics
     #[must_use]
-/// # Examples
-/// 
-/// ```
-/// use ruchy::backend::module_resolver::ModuleResolver;
-///
-/// let resolver = ModuleResolver::new();
-/// let stats = resolver.stats();
-/// assert!(stats.cached_modules >= 0);
-/// ```
-pub fn stats(&self) -> crate::backend::module_loader::ModuleLoaderStats {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::backend::module_resolver::ModuleResolver;
+    ///
+    /// let resolver = ModuleResolver::new();
+    /// let stats = resolver.stats();
+    /// assert!(stats.cached_modules >= 0);
+    /// ```
+    pub fn stats(&self) -> crate::backend::module_loader::ModuleLoaderStats {
         self.module_loader.stats()
     }
     /// Clear the module cache
-    /// 
+    ///
     /// Forces all modules to be reloaded from disk on next access.
-/// # Examples
-/// 
-/// ```
-/// use ruchy::backend::module_resolver::ModuleResolver;
-///
-/// let mut resolver = ModuleResolver::new();
-/// resolver.clear_cache();
-/// // Cache cleared successfully
-/// ```
-pub fn clear_cache(&mut self) {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::backend::module_resolver::ModuleResolver;
+    ///
+    /// let mut resolver = ModuleResolver::new();
+    /// resolver.clear_cache();
+    /// // Cache cleared successfully
+    /// ```
+    pub fn clear_cache(&mut self) {
         self.module_loader.clear_cache();
     }
 }
@@ -411,15 +412,13 @@ impl Default for ModuleResolver {
         Self::new()
     }
 }
-// Module resolver tests disabled - awaiting AST structure stabilization
-// Tests require Import { module: String, items: Option<Vec<String>> } structure
+// Module resolver tests for Import AST structure
 #[cfg(test)]
 mod tests {
-    /* DISABLED - All tests need update for new Import AST structure
     use super::*;
-    use tempfile::TempDir;
-    use std::fs;
     use crate::frontend::ast::Literal;
+    use std::fs;
+    use tempfile::TempDir;
     fn create_test_module(temp_dir: &TempDir, name: &str, content: &str) -> Result<()> {
         let file_path = temp_dir.path().join(format!("{name}.ruchy"));
         fs::write(file_path, content)?;
@@ -431,7 +430,7 @@ mod tests {
         let stats = resolver.stats();
         assert_eq!(stats.cached_modules, 0);
     }
-    #[test] 
+    #[test]
     fn test_add_search_path() {
         let mut resolver = ModuleResolver::new();
         resolver.add_search_path("/custom/path");
@@ -458,11 +457,15 @@ mod tests {
         let mut resolver = ModuleResolver::new();
         resolver.add_search_path(temp_dir.path());
         // Create a simple math module
-        create_test_module(&temp_dir, "math", r"
+        create_test_module(
+            &temp_dir,
+            "math",
+            r"
             pub fun add(a: i32, b: i32) -> i32 {
                 a + b
             }
-        ")?;
+        ",
+        )?;
         // Create an import expression
         let import_expr = Expr::new(
             ExprKind::Import {
@@ -482,7 +485,10 @@ mod tests {
                     ExprKind::Module { name, .. } => {
                         assert_eq!(name, "math");
                     }
-                    _ => unreachable!("Expected first element to be Module, got {:?}", exprs[0].kind),
+                    _ => unreachable!(
+                        "Expected first element to be Module, got {:?}",
+                        exprs[0].kind
+                    ),
                 }
                 // Second should be use statement
                 match &exprs[1].kind {
@@ -490,7 +496,10 @@ mod tests {
                         assert_eq!(module, "math");
                         assert!(items.is_none()); // Wildcard import
                     }
-                    _ => unreachable!("Expected second element to be Import, got {:?}", exprs[1].kind),
+                    _ => unreachable!(
+                        "Expected second element to be Import, got {:?}",
+                        exprs[1].kind
+                    ),
                 }
             }
             _ => unreachable!("Expected Block expression, got {:?}", resolved_expr.kind),
@@ -530,15 +539,15 @@ mod tests {
             ExprKind::Block(vec![
                 Expr::new(
                     ExprKind::Import {
-                        path: "math".to_string(),
-                        items: vec![ImportItem::Wildcard],
+                        module: "math".to_string(),
+                        items: Some(vec!["*".to_string()]),
                     },
                     Span { start: 0, end: 0 },
                 ),
                 Expr::new(
                     ExprKind::Import {
-                        path: "std::io".to_string(),
-                        items: vec![ImportItem::Named("Read".to_string())],
+                        module: "std::io".to_string(),
+                        items: Some(vec!["Read".to_string()]),
                     },
                     Span { start: 0, end: 0 },
                 ),
@@ -559,12 +568,18 @@ mod tests {
                     assert!(matches!(inner_exprs[0].kind, ExprKind::Module { .. }));
                     assert!(matches!(inner_exprs[1].kind, ExprKind::Import { .. }));
                 }
-                _ => unreachable!("Expected first element to be Block, got {:?}", exprs[0].kind),
+                _ => unreachable!(
+                    "Expected first element to be Block, got {:?}",
+                    exprs[0].kind
+                ),
             }
             // Second should remain as Import (std::io - not a file import)
             assert!(matches!(exprs[1].kind, ExprKind::Import { .. }));
             // Third should remain as Literal
-            assert!(matches!(exprs[2].kind, ExprKind::Literal(Literal::Integer(42))));
+            assert!(matches!(
+                exprs[2].kind,
+                ExprKind::Literal(Literal::Integer(42))
+            ));
         } else {
             unreachable!("Expected Block expression");
         }
@@ -579,7 +594,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "Error message format doesn't match"]
+
     fn test_resolve_imports_error_handling() -> Result<()> {
         let mut resolver = ModuleResolver::new();
         resolver.module_loader.search_paths.clear();
@@ -587,8 +602,8 @@ mod tests {
         // Try to import non-existent module
         let import_expr = Expr::new(
             ExprKind::Import {
-                path: "nonexistent".to_string(),
-                items: vec![ImportItem::Wildcard],
+                module: "nonexistent".to_string(),
+                items: Some(vec!["*".to_string()]),
             },
             Span { start: 0, end: 0 },
         );
@@ -635,11 +650,8 @@ mod tests {
         // Import specific items
         let import_expr = Expr::new(
             ExprKind::Import {
-                path: "math".to_string(),
-                items: vec![
-                    ImportItem::Named("add".to_string()),
-                    ImportItem::Named("sub".to_string()),
-                ],
+                module: "math".to_string(),
+                items: Some(vec!["add".to_string(), "sub".to_string()]),
             },
             Span { start: 0, end: 0 },
         );
@@ -666,8 +678,8 @@ mod tests {
         // Load a module
         let import_expr = Expr::new(
             ExprKind::Import {
-                path: "test".to_string(),
-                items: vec![ImportItem::Wildcard],
+                module: "test".to_string(),
+                items: Some(vec!["*".to_string()]),
             },
             Span { start: 0, end: 0 },
         );
@@ -684,11 +696,9 @@ mod tests {
     }
 }
 #[cfg(test)]
-#[ignore]
 mod property_tests_module_resolver {
-    use proptest::{proptest, prop_assert_eq};
-    
-    
+    use proptest::{prop_assert_eq, proptest};
+
     proptest! {
         /// Property: is_file_import never panics on any input
         #[test]
@@ -702,27 +712,25 @@ mod property_tests_module_resolver {
         #[test]
         fn test_resolve_preserves_non_file_imports(module_name: String) {
             use crate::frontend::ast::{Expr, ExprKind, Span};
-// ImportItem removed - Import now uses Option<Vec<String>> instead of Vec<ImportItem>
 
             let mut resolver = super::ModuleResolver::new();
 
             // Create an import that's not a file (contains ::)
-            let path = format!("std::{}", module_name);
+            let module = format!("std::{module_name}");
             let import_expr = Expr::new(
                 ExprKind::Import {
-                    path: path.clone(),
-                    items: vec![ImportItem::Wildcard],
+                    module: module.clone(),
+                    items: None,
                 },
                 Span { start: 0, end: 0 },
             );
 
             // Should preserve the import unchanged
             if let Ok(resolved) = resolver.resolve_imports(import_expr) {
-                if let ExprKind::Import { path: resolved_path, .. } = resolved.kind {
-                    prop_assert_eq!(resolved_path, path);
+                if let ExprKind::Import { module: resolved_module, .. } = resolved.kind {
+                    prop_assert_eq!(resolved_module, module);
                 }
             }
         }
     }
-    */
 }

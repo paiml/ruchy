@@ -1,7 +1,7 @@
 //! Comprehensive tests for frontend modules (parser, lexer, AST)
 //! Target: Increase frontend coverage
 
-use ruchy::frontend::{Parser, ast::*};
+use ruchy::frontend::{ast::*, Parser};
 
 #[test]
 fn test_parser_integer_literals() {
@@ -45,7 +45,7 @@ fn test_parser_boolean_literals() {
     assert!(result.is_ok());
     let expr = result.unwrap();
     assert!(matches!(expr.kind, ExprKind::Literal(Literal::Bool(true))));
-    
+
     let mut parser = Parser::new("false");
     let result = parser.parse();
     assert!(result.is_ok());
@@ -62,18 +62,18 @@ fn test_parser_binary_operations() {
         ("6 / 2", BinaryOp::Divide),
         ("7 % 3", BinaryOp::Modulo),
     ];
-    
+
     for (input, expected_op) in test_cases {
         let mut parser = Parser::new(input);
         let result = parser.parse();
-        assert!(result.is_ok(), "Failed to parse: {}", input);
-        
+        assert!(result.is_ok(), "Failed to parse: {input}");
+
         let expr = result.unwrap();
         match &expr.kind {
             ExprKind::Binary { op, .. } => {
                 assert_eq!(*op, expected_op);
             }
-            _ => panic!("Expected binary operation for: {}", input),
+            _ => panic!("Expected binary operation for: {input}"),
         }
     }
 }
@@ -88,18 +88,18 @@ fn test_parser_comparison_operations() {
         ("5 == 5", BinaryOp::Equal),
         ("6 != 7", BinaryOp::NotEqual),
     ];
-    
+
     for (input, expected_op) in test_cases {
         let mut parser = Parser::new(input);
         let result = parser.parse();
-        assert!(result.is_ok(), "Failed to parse: {}", input);
-        
+        assert!(result.is_ok(), "Failed to parse: {input}");
+
         let expr = result.unwrap();
         match &expr.kind {
             ExprKind::Binary { op, .. } => {
                 assert_eq!(*op, expected_op);
             }
-            _ => panic!("Expected comparison for: {}", input),
+            _ => panic!("Expected comparison for: {input}"),
         }
     }
 }
@@ -110,18 +110,18 @@ fn test_parser_logical_operations() {
         ("true && false", BinaryOp::And),
         ("true || false", BinaryOp::Or),
     ];
-    
+
     for (input, expected_op) in test_cases {
         let mut parser = Parser::new(input);
         let result = parser.parse();
-        assert!(result.is_ok(), "Failed to parse: {}", input);
-        
+        assert!(result.is_ok(), "Failed to parse: {input}");
+
         let expr = result.unwrap();
         match &expr.kind {
             ExprKind::Binary { op, .. } => {
                 assert_eq!(*op, expected_op);
             }
-            _ => panic!("Expected logical operation for: {}", input),
+            _ => panic!("Expected logical operation for: {input}"),
         }
     }
 }
@@ -133,7 +133,7 @@ fn test_parser_unary_operations() {
     assert!(result.is_ok());
     let expr = result.unwrap();
     assert!(matches!(expr.kind, ExprKind::Unary { .. }));
-    
+
     let mut parser = Parser::new("!true");
     let result = parser.parse();
     assert!(result.is_ok());
@@ -148,7 +148,13 @@ fn test_parser_parentheses() {
     assert!(result.is_ok());
     let expr = result.unwrap();
     // Should parse as multiplication with grouped addition
-    assert!(matches!(expr.kind, ExprKind::Binary { op: BinaryOp::Multiply, .. }));
+    assert!(matches!(
+        expr.kind,
+        ExprKind::Binary {
+            op: BinaryOp::Multiply,
+            ..
+        }
+    ));
 }
 
 #[test]
@@ -367,8 +373,18 @@ fn test_parser_operator_precedence() {
     let expr = result.unwrap();
     // Should parse as 1 + (2 * 3) due to precedence
     match &expr.kind {
-        ExprKind::Binary { op: BinaryOp::Add, right, .. } => {
-            assert!(matches!(right.kind, ExprKind::Binary { op: BinaryOp::Multiply, .. }));
+        ExprKind::Binary {
+            op: BinaryOp::Add,
+            right,
+            ..
+        } => {
+            assert!(matches!(
+                right.kind,
+                ExprKind::Binary {
+                    op: BinaryOp::Multiply,
+                    ..
+                }
+            ));
         }
         _ => panic!("Incorrect precedence parsing"),
     }
@@ -379,7 +395,7 @@ fn test_parser_operator_precedence() {
 mod property_tests {
     use super::*;
     use proptest::prelude::*;
-    
+
     proptest! {
         #[test]
         fn prop_parser_integer_roundtrip(n in 0i64..i64::MAX) {
@@ -403,13 +419,13 @@ mod property_tests {
                 }
             }
         }
-        
+
         #[test]
         fn prop_parser_string_roundtrip(s in "[a-zA-Z0-9 ]{0,50}") {
-            let input = format!(r#""{}""#, s);
+            let input = format!(r#""{s}""#);
             let mut parser = Parser::new(&input);
             let result = parser.parse();
-            
+
             if result.is_ok() {
                 let expr = result.unwrap();
                 match expr.kind {
@@ -420,7 +436,7 @@ mod property_tests {
                 }
             }
         }
-        
+
         #[test]
         fn prop_parser_never_panics(input in ".*") {
             let input = if input.len() > 1000 { &input[..1000] } else { &input };

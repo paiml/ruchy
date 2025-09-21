@@ -1,8 +1,8 @@
 //! Proof tactics library with ML-powered suggestions
+use super::prover::{ProofContext, ProofGoal, StepResult};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use super::prover::{ProofGoal, ProofContext, StepResult};
 /// A proof tactic
 pub trait Tactic: Send + Sync {
     /// Get tactic name
@@ -39,70 +39,108 @@ pub struct TacticSuggestion {
 }
 impl TacticLibrary {
     /// Create default tactic library
-/// # Examples
-/// 
-/// ```
-/// use ruchy::proving::tactics::TacticLibrary;
-/// 
-/// let mut instance = TacticLibrary::new();
-/// let result = instance.default();
-/// // Verify behavior
-/// ```
-pub fn default() -> Self {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::proving::tactics::TacticLibrary;
+    ///
+    /// let mut instance = TacticLibrary::new();
+    /// let result = instance.default();
+    /// // Verify behavior
+    /// ```
+    pub fn default() -> Self {
         let mut tactics = HashMap::new();
         // Add basic tactics
-        tactics.insert("intro".to_string(), Box::new(IntroTactic) as Box<dyn Tactic>);
-        tactics.insert("split".to_string(), Box::new(SplitTactic) as Box<dyn Tactic>);
-        tactics.insert("induction".to_string(), Box::new(InductionTactic) as Box<dyn Tactic>);
-        tactics.insert("contradiction".to_string(), Box::new(ContradictionTactic) as Box<dyn Tactic>);
-        tactics.insert("reflexivity".to_string(), Box::new(ReflexivityTactic) as Box<dyn Tactic>);
-        tactics.insert("simplify".to_string(), Box::new(SimplifyTactic) as Box<dyn Tactic>);
-        tactics.insert("unfold".to_string(), Box::new(UnfoldTactic) as Box<dyn Tactic>);
-        tactics.insert("rewrite".to_string(), Box::new(RewriteTactic) as Box<dyn Tactic>);
-        tactics.insert("apply".to_string(), Box::new(ApplyTactic) as Box<dyn Tactic>);
-        tactics.insert("assumption".to_string(), Box::new(AssumptionTactic) as Box<dyn Tactic>);
+        tactics.insert(
+            "intro".to_string(),
+            Box::new(IntroTactic) as Box<dyn Tactic>,
+        );
+        tactics.insert(
+            "split".to_string(),
+            Box::new(SplitTactic) as Box<dyn Tactic>,
+        );
+        tactics.insert(
+            "induction".to_string(),
+            Box::new(InductionTactic) as Box<dyn Tactic>,
+        );
+        tactics.insert(
+            "contradiction".to_string(),
+            Box::new(ContradictionTactic) as Box<dyn Tactic>,
+        );
+        tactics.insert(
+            "reflexivity".to_string(),
+            Box::new(ReflexivityTactic) as Box<dyn Tactic>,
+        );
+        tactics.insert(
+            "simplify".to_string(),
+            Box::new(SimplifyTactic) as Box<dyn Tactic>,
+        );
+        tactics.insert(
+            "unfold".to_string(),
+            Box::new(UnfoldTactic) as Box<dyn Tactic>,
+        );
+        tactics.insert(
+            "rewrite".to_string(),
+            Box::new(RewriteTactic) as Box<dyn Tactic>,
+        );
+        tactics.insert(
+            "apply".to_string(),
+            Box::new(ApplyTactic) as Box<dyn Tactic>,
+        );
+        tactics.insert(
+            "assumption".to_string(),
+            Box::new(AssumptionTactic) as Box<dyn Tactic>,
+        );
         Self {
             tactics,
             _suggestion_model: SuggestionModel {},
         }
     }
     /// Get all tactics
-/// # Examples
-/// 
-/// ```
-/// use ruchy::proving::tactics::TacticLibrary;
-/// 
-/// let mut instance = TacticLibrary::new();
-/// let result = instance.all_tactics();
-/// // Verify behavior
-/// ```
-pub fn all_tactics(&self) -> Vec<&dyn Tactic> {
-        self.tactics.values().map(std::convert::AsRef::as_ref).collect()
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::proving::tactics::TacticLibrary;
+    ///
+    /// let mut instance = TacticLibrary::new();
+    /// let result = instance.all_tactics();
+    /// // Verify behavior
+    /// ```
+    pub fn all_tactics(&self) -> Vec<&dyn Tactic> {
+        self.tactics
+            .values()
+            .map(std::convert::AsRef::as_ref)
+            .collect()
     }
     /// Get a specific tactic
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::proving::tactics::get_tactic;
-/// 
-/// let result = get_tactic("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn get_tactic(&self, name: &str) -> Result<&dyn Tactic> {
-        self.tactics.get(name)
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::proving::tactics::get_tactic;
+    ///
+    /// let result = get_tactic("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn get_tactic(&self, name: &str) -> Result<&dyn Tactic> {
+        self.tactics
+            .get(name)
             .map(std::convert::AsRef::as_ref)
             .ok_or_else(|| anyhow::anyhow!("Unknown tactic: {}", name))
     }
     /// Suggest tactics for a goal
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::proving::tactics::suggest_tactics;
-/// 
-/// let result = suggest_tactics(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn suggest_tactics(&self, goal: &ProofGoal, context: &ProofContext) -> Result<Vec<TacticSuggestion>> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::proving::tactics::suggest_tactics;
+    ///
+    /// let result = suggest_tactics(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn suggest_tactics(
+        &self,
+        goal: &ProofGoal,
+        context: &ProofContext,
+    ) -> Result<Vec<TacticSuggestion>> {
         let mut suggestions = Vec::new();
         // Check each tactic's applicability
         for (name, tactic) in &self.tactics {
@@ -124,10 +162,10 @@ pub fn suggest_tactics(&self, goal: &ProofGoal, context: &ProofContext) -> Resul
     fn calculate_confidence(&self, goal: &ProofGoal, _tactic: &dyn Tactic) -> f64 {
         // Simple heuristic-based confidence
         match &goal.statement {
-            s if s.contains("->") => 0.8,  // Implication
-            s if s.contains("&&") => 0.7,  // Conjunction
-            s if s.contains("||") => 0.6,  // Disjunction
-            s if s.contains("==") => 0.9,  // Equality
+            s if s.contains("->") => 0.8, // Implication
+            s if s.contains("&&") => 0.7, // Conjunction
+            s if s.contains("||") => 0.6, // Disjunction
+            s if s.contains("==") => 0.9, // Equality
             _ => 0.5,
         }
     }
@@ -136,9 +174,18 @@ pub fn suggest_tactics(&self, goal: &ProofGoal, context: &ProofContext) -> Resul
 /// Introduction tactic (for implications)
 struct IntroTactic;
 impl Tactic for IntroTactic {
-    fn name(&self) -> &'static str { "intro" }
-    fn description(&self) -> &'static str { "Introduce hypothesis from implication" }
-    fn apply(&self, goal: &ProofGoal, _args: &[&str], _context: &ProofContext) -> Result<StepResult> {
+    fn name(&self) -> &'static str {
+        "intro"
+    }
+    fn description(&self) -> &'static str {
+        "Introduce hypothesis from implication"
+    }
+    fn apply(
+        &self,
+        goal: &ProofGoal,
+        _args: &[&str],
+        _context: &ProofContext,
+    ) -> Result<StepResult> {
         if goal.statement.contains("->") {
             let parts: Vec<&str> = goal.statement.split("->").collect();
             if parts.len() == 2 {
@@ -154,9 +201,18 @@ impl Tactic for IntroTactic {
 /// Split tactic (for conjunctions)
 struct SplitTactic;
 impl Tactic for SplitTactic {
-    fn name(&self) -> &'static str { "split" }
-    fn description(&self) -> &'static str { "Split conjunction into subgoals" }
-    fn apply(&self, goal: &ProofGoal, _args: &[&str], _context: &ProofContext) -> Result<StepResult> {
+    fn name(&self) -> &'static str {
+        "split"
+    }
+    fn description(&self) -> &'static str {
+        "Split conjunction into subgoals"
+    }
+    fn apply(
+        &self,
+        goal: &ProofGoal,
+        _args: &[&str],
+        _context: &ProofContext,
+    ) -> Result<StepResult> {
         if goal.statement.contains("&&") {
             let parts: Vec<&str> = goal.statement.split("&&").collect();
             let subgoals: Vec<String> = parts.iter().map(|p| p.trim().to_string()).collect();
@@ -171,16 +227,28 @@ impl Tactic for SplitTactic {
 /// Induction tactic
 struct InductionTactic;
 impl Tactic for InductionTactic {
-    fn name(&self) -> &'static str { "induction" }
-    fn description(&self) -> &'static str { "Proof by induction" }
-    fn apply(&self, goal: &ProofGoal, args: &[&str], _context: &ProofContext) -> Result<StepResult> {
+    fn name(&self) -> &'static str {
+        "induction"
+    }
+    fn description(&self) -> &'static str {
+        "Proof by induction"
+    }
+    fn apply(
+        &self,
+        goal: &ProofGoal,
+        args: &[&str],
+        _context: &ProofContext,
+    ) -> Result<StepResult> {
         if args.is_empty() {
-            return Ok(StepResult::Failed("Induction requires a variable".to_string()));
+            return Ok(StepResult::Failed(
+                "Induction requires a variable".to_string(),
+            ));
         }
         let var = args[0];
         Ok(StepResult::Subgoals(vec![
             format!("Base case: {} when {} = 0", goal.statement, var),
-            format!("Inductive step: {} implies {}", 
+            format!(
+                "Inductive step: {} implies {}",
                 goal.statement.replace(var, &var.to_string()),
                 goal.statement.replace(var, &format!("{var}+1"))
             ),
@@ -193,9 +261,18 @@ impl Tactic for InductionTactic {
 /// Contradiction tactic
 struct ContradictionTactic;
 impl Tactic for ContradictionTactic {
-    fn name(&self) -> &'static str { "contradiction" }
-    fn description(&self) -> &'static str { "Proof by contradiction" }
-    fn apply(&self, _goal: &ProofGoal, _args: &[&str], context: &ProofContext) -> Result<StepResult> {
+    fn name(&self) -> &'static str {
+        "contradiction"
+    }
+    fn description(&self) -> &'static str {
+        "Proof by contradiction"
+    }
+    fn apply(
+        &self,
+        _goal: &ProofGoal,
+        _args: &[&str],
+        context: &ProofContext,
+    ) -> Result<StepResult> {
         // Check for contradictory assumptions
         for assumption in &context.assumptions {
             if assumption.contains('!') {
@@ -214,9 +291,18 @@ impl Tactic for ContradictionTactic {
 /// Reflexivity tactic
 struct ReflexivityTactic;
 impl Tactic for ReflexivityTactic {
-    fn name(&self) -> &'static str { "reflexivity" }
-    fn description(&self) -> &'static str { "Prove equality by reflexivity" }
-    fn apply(&self, goal: &ProofGoal, _args: &[&str], _context: &ProofContext) -> Result<StepResult> {
+    fn name(&self) -> &'static str {
+        "reflexivity"
+    }
+    fn description(&self) -> &'static str {
+        "Prove equality by reflexivity"
+    }
+    fn apply(
+        &self,
+        goal: &ProofGoal,
+        _args: &[&str],
+        _context: &ProofContext,
+    ) -> Result<StepResult> {
         if goal.statement.contains("==") {
             let parts: Vec<&str> = goal.statement.split("==").collect();
             if parts.len() == 2 && parts[0].trim() == parts[1].trim() {
@@ -232,9 +318,18 @@ impl Tactic for ReflexivityTactic {
 /// Simplify tactic
 struct SimplifyTactic;
 impl Tactic for SimplifyTactic {
-    fn name(&self) -> &'static str { "simplify" }
-    fn description(&self) -> &'static str { "Simplify expression" }
-    fn apply(&self, goal: &ProofGoal, _args: &[&str], _context: &ProofContext) -> Result<StepResult> {
+    fn name(&self) -> &'static str {
+        "simplify"
+    }
+    fn description(&self) -> &'static str {
+        "Simplify expression"
+    }
+    fn apply(
+        &self,
+        goal: &ProofGoal,
+        _args: &[&str],
+        _context: &ProofContext,
+    ) -> Result<StepResult> {
         let mut simplified = goal.statement.clone();
         // Basic simplifications
         simplified = simplified.replace("true && ", "");
@@ -256,18 +351,26 @@ impl Tactic for SimplifyTactic {
 /// Unfold tactic
 struct UnfoldTactic;
 impl Tactic for UnfoldTactic {
-    fn name(&self) -> &'static str { "unfold" }
-    fn description(&self) -> &'static str { "Unfold definition" }
+    fn name(&self) -> &'static str {
+        "unfold"
+    }
+    fn description(&self) -> &'static str {
+        "Unfold definition"
+    }
     fn apply(&self, goal: &ProofGoal, args: &[&str], context: &ProofContext) -> Result<StepResult> {
         if args.is_empty() {
-            return Ok(StepResult::Failed("Unfold requires a definition name".to_string()));
+            return Ok(StepResult::Failed(
+                "Unfold requires a definition name".to_string(),
+            ));
         }
         let def_name = args[0];
         if let Some(definition) = context.definitions.get(def_name) {
             let unfolded = goal.statement.replace(def_name, definition);
             Ok(StepResult::Simplified(unfolded))
         } else {
-            Ok(StepResult::Failed(format!("Unknown definition: {def_name}")))
+            Ok(StepResult::Failed(format!(
+                "Unknown definition: {def_name}"
+            )))
         }
     }
     fn is_applicable(&self, _goal: &ProofGoal, context: &ProofContext) -> bool {
@@ -277,11 +380,17 @@ impl Tactic for UnfoldTactic {
 /// Rewrite tactic
 struct RewriteTactic;
 impl Tactic for RewriteTactic {
-    fn name(&self) -> &'static str { "rewrite" }
-    fn description(&self) -> &'static str { "Rewrite using equality" }
+    fn name(&self) -> &'static str {
+        "rewrite"
+    }
+    fn description(&self) -> &'static str {
+        "Rewrite using equality"
+    }
     fn apply(&self, goal: &ProofGoal, args: &[&str], context: &ProofContext) -> Result<StepResult> {
         if args.is_empty() {
-            return Ok(StepResult::Failed("Rewrite requires an equality".to_string()));
+            return Ok(StepResult::Failed(
+                "Rewrite requires an equality".to_string(),
+            ));
         }
         // Find equality in assumptions
         for assumption in &context.assumptions {
@@ -297,7 +406,9 @@ impl Tactic for RewriteTactic {
                 }
             }
         }
-        Ok(StepResult::Failed("No applicable rewrite found".to_string()))
+        Ok(StepResult::Failed(
+            "No applicable rewrite found".to_string(),
+        ))
     }
     fn is_applicable(&self, _goal: &ProofGoal, context: &ProofContext) -> bool {
         context.assumptions.iter().any(|a| a.contains("=="))
@@ -306,14 +417,28 @@ impl Tactic for RewriteTactic {
 /// Apply tactic
 struct ApplyTactic;
 impl Tactic for ApplyTactic {
-    fn name(&self) -> &'static str { "apply" }
-    fn description(&self) -> &'static str { "Apply theorem or lemma" }
-    fn apply(&self, _goal: &ProofGoal, args: &[&str], _context: &ProofContext) -> Result<StepResult> {
+    fn name(&self) -> &'static str {
+        "apply"
+    }
+    fn description(&self) -> &'static str {
+        "Apply theorem or lemma"
+    }
+    fn apply(
+        &self,
+        _goal: &ProofGoal,
+        args: &[&str],
+        _context: &ProofContext,
+    ) -> Result<StepResult> {
         if args.is_empty() {
-            return Ok(StepResult::Failed("Apply requires a theorem name".to_string()));
+            return Ok(StepResult::Failed(
+                "Apply requires a theorem name".to_string(),
+            ));
         }
         // In a real implementation, this would look up theorems
-        Ok(StepResult::Failed(format!("Cannot apply theorem: {}", args[0])))
+        Ok(StepResult::Failed(format!(
+            "Cannot apply theorem: {}",
+            args[0]
+        )))
     }
     fn is_applicable(&self, _goal: &ProofGoal, _context: &ProofContext) -> bool {
         true
@@ -322,9 +447,18 @@ impl Tactic for ApplyTactic {
 /// Assumption tactic
 struct AssumptionTactic;
 impl Tactic for AssumptionTactic {
-    fn name(&self) -> &'static str { "assumption" }
-    fn description(&self) -> &'static str { "Prove using an assumption" }
-    fn apply(&self, goal: &ProofGoal, _args: &[&str], context: &ProofContext) -> Result<StepResult> {
+    fn name(&self) -> &'static str {
+        "assumption"
+    }
+    fn description(&self) -> &'static str {
+        "Prove using an assumption"
+    }
+    fn apply(
+        &self,
+        goal: &ProofGoal,
+        _args: &[&str],
+        context: &ProofContext,
+    ) -> Result<StepResult> {
         if context.assumptions.contains(&goal.statement) {
             Ok(StepResult::Solved)
         } else {
@@ -349,7 +483,9 @@ mod tests {
         let mut context = ProofContext::new();
         context.assumptions.push("x > 0".to_string());
         context.assumptions.push("y < 10".to_string());
-        context.definitions.insert("double".to_string(), "x * 2".to_string());
+        context
+            .definitions
+            .insert("double".to_string(), "x * 2".to_string());
         context
     }
 
@@ -418,7 +554,7 @@ mod tests {
 
         let result = tactic.apply(&goal, &[], &context).unwrap();
         match result {
-            StepResult::Failed(_) => {},
+            StepResult::Failed(_) => {}
             _ => panic!("Expected failed result"),
         }
     }
@@ -447,7 +583,7 @@ mod tests {
                 assert_eq!(subgoals.len(), 2);
                 assert_eq!(subgoals[0], "A");
                 assert_eq!(subgoals[1], "B");
-            },
+            }
             _ => panic!("Expected subgoals result"),
         }
     }
@@ -465,7 +601,7 @@ mod tests {
                 assert_eq!(subgoals[0], "A");
                 assert_eq!(subgoals[1], "B");
                 assert_eq!(subgoals[2], "C");
-            },
+            }
             _ => panic!("Expected subgoals result"),
         }
     }
@@ -495,7 +631,7 @@ mod tests {
                 assert_eq!(subgoals.len(), 2);
                 assert!(subgoals[0].contains("Base case"));
                 assert!(subgoals[1].contains("Inductive step"));
-            },
+            }
             _ => panic!("Expected subgoals result"),
         }
     }
@@ -535,7 +671,7 @@ mod tests {
 
         let result = tactic.apply(&goal, &[], &context).unwrap();
         match result {
-            StepResult::Solved => {},
+            StepResult::Solved => {}
             _ => panic!("Expected solved result"),
         }
     }
@@ -559,7 +695,7 @@ mod tests {
 
         let result = tactic.apply(&goal, &[], &context).unwrap();
         match result {
-            StepResult::Solved => {},
+            StepResult::Solved => {}
             _ => panic!("Expected solved result"),
         }
     }
@@ -572,7 +708,7 @@ mod tests {
 
         let result = tactic.apply(&goal, &[], &context).unwrap();
         match result {
-            StepResult::Failed(_) => {},
+            StepResult::Failed(_) => {}
             _ => panic!("Expected failed result"),
         }
     }
@@ -633,7 +769,7 @@ mod tests {
 
         let result = tactic.apply(&goal, &[], &context).unwrap();
         match result {
-            StepResult::Failed(_) => {},
+            StepResult::Failed(_) => {}
             _ => panic!("Expected failed result when no simplification possible"),
         }
     }
@@ -745,7 +881,7 @@ mod tests {
 
         let result = tactic.apply(&goal, &[], &context).unwrap();
         match result {
-            StepResult::Solved => {},
+            StepResult::Solved => {}
             _ => panic!("Expected solved result"),
         }
     }
@@ -758,7 +894,7 @@ mod tests {
 
         let result = tactic.apply(&goal, &[], &context).unwrap();
         match result {
-            StepResult::Failed(_) => {},
+            StepResult::Failed(_) => {}
             _ => panic!("Expected failed result"),
         }
     }
@@ -787,8 +923,7 @@ mod tests {
         assert!(!suggestions.is_empty());
 
         // Should suggest intro for implication
-        let intro_suggestion = suggestions.iter()
-            .find(|s| s.tactic_name == "intro");
+        let intro_suggestion = suggestions.iter().find(|s| s.tactic_name == "intro");
         assert!(intro_suggestion.is_some());
     }
 
@@ -802,7 +937,7 @@ mod tests {
 
         // Should be sorted by confidence (highest first)
         for i in 1..suggestions.len() {
-            assert!(suggestions[i-1].confidence >= suggestions[i].confidence);
+            assert!(suggestions[i - 1].confidence >= suggestions[i].confidence);
         }
     }
 

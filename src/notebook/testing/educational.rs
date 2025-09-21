@@ -74,23 +74,23 @@ impl Default for EducationalPlatform {
 }
 
 impl EducationalPlatform {
-/// # Examples
-/// 
-/// ```
-/// use ruchy::notebook::testing::educational::EducationalPlatform;
-/// 
-/// let instance = EducationalPlatform::new();
-/// // Verify behavior
-/// ```
-/// # Examples
-/// 
-/// ```
-/// use ruchy::notebook::testing::educational::EducationalPlatform;
-/// 
-/// let instance = EducationalPlatform::new();
-/// // Verify behavior
-/// ```
-pub fn new() -> Self {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::notebook::testing::educational::EducationalPlatform;
+    ///
+    /// let instance = EducationalPlatform::new();
+    /// // Verify behavior
+    /// ```
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::notebook::testing::educational::EducationalPlatform;
+    ///
+    /// let instance = EducationalPlatform::new();
+    /// // Verify behavior
+    /// ```
+    pub fn new() -> Self {
         Self {
             assignments: Vec::new(),
             submissions: HashMap::new(),
@@ -99,16 +99,16 @@ pub fn new() -> Self {
         }
     }
     /// Create a new assignment
-/// # Examples
-/// 
-/// ```
-/// use ruchy::notebook::testing::educational::EducationalPlatform;
-/// 
-/// let mut instance = EducationalPlatform::new();
-/// let result = instance.create_assignment();
-/// // Verify behavior
-/// ```
-pub fn create_assignment(&mut self, assignment: Assignment) -> Result<(), String> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::notebook::testing::educational::EducationalPlatform;
+    ///
+    /// let mut instance = EducationalPlatform::new();
+    /// let result = instance.create_assignment();
+    /// // Verify behavior
+    /// ```
+    pub fn create_assignment(&mut self, assignment: Assignment) -> Result<(), String> {
         if self.assignments.iter().any(|a| a.id == assignment.id) {
             return Err("Assignment ID already exists".to_string());
         }
@@ -116,33 +116,45 @@ pub fn create_assignment(&mut self, assignment: Assignment) -> Result<(), String
         Ok(())
     }
     /// Get all assignments
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::notebook::testing::educational::get_assignments;
-/// 
-/// let result = get_assignments(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn get_assignments(&self) -> &[Assignment] {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::notebook::testing::educational::get_assignments;
+    ///
+    /// let result = get_assignments(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn get_assignments(&self) -> &[Assignment] {
         &self.assignments
     }
     /// Submit an assignment
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::notebook::testing::educational::submit_assignment;
-/// 
-/// let result = submit_assignment("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn submit_assignment(&mut self, student_id: &str, mut submission: StudentSubmission) -> Result<(), String> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::notebook::testing::educational::submit_assignment;
+    ///
+    /// let result = submit_assignment("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn submit_assignment(
+        &mut self,
+        student_id: &str,
+        mut submission: StudentSubmission,
+    ) -> Result<(), String> {
         // Validate assignment exists
-        if !self.assignments.iter().any(|a| a.id == submission.assignment_id) {
+        if !self
+            .assignments
+            .iter()
+            .any(|a| a.id == submission.assignment_id)
+        {
             return Err("Assignment not found".to_string());
         }
         // Auto-grade if test cases exist
-        if let Some(assignment) = self.assignments.iter().find(|a| a.id == submission.assignment_id) {
+        if let Some(assignment) = self
+            .assignments
+            .iter()
+            .find(|a| a.id == submission.assignment_id)
+        {
             if !assignment.test_cases.is_empty() {
                 submission.grade = Some(self.auto_grade(&submission));
             }
@@ -164,24 +176,31 @@ pub fn submit_assignment(&mut self, student_id: &str, mut submission: StudentSub
         Ok(())
     }
     /// Auto-grade a submission
-/// # Examples
-/// 
-/// ```
-/// use ruchy::notebook::testing::educational::EducationalPlatform;
-/// 
-/// let mut instance = EducationalPlatform::new();
-/// let result = instance.auto_grade();
-/// // Verify behavior
-/// ```
-pub fn auto_grade(&self, submission: &StudentSubmission) -> Grade {
-        let assignment = self.assignments.iter()
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::notebook::testing::educational::EducationalPlatform;
+    ///
+    /// let mut instance = EducationalPlatform::new();
+    /// let result = instance.auto_grade();
+    /// // Verify behavior
+    /// ```
+    pub fn auto_grade(&self, submission: &StudentSubmission) -> Grade {
+        let assignment = self
+            .assignments
+            .iter()
             .find(|a| a.id == submission.assignment_id)
             .unwrap();
         let mut total_points = 0;
         let mut feedback = Vec::new();
         // Run test cases
         for test_case in &assignment.test_cases {
-            if let Some(cell) = submission.notebook.cells.iter().find(|c| c.id == test_case.cell_id) {
+            if let Some(cell) = submission
+                .notebook
+                .cells
+                .iter()
+                .find(|c| c.id == test_case.cell_id)
+            {
                 // Simplified test execution
                 if cell.source.contains(&test_case.expected_output) {
                     total_points += test_case.points;
@@ -208,28 +227,28 @@ pub fn auto_grade(&self, submission: &StudentSubmission) -> Grade {
         }
     }
     /// Submit a peer review
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::notebook::testing::educational::submit_peer_review;
-/// 
-/// let result = submit_peer_review(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn submit_peer_review(&mut self, review: PeerReview) -> Result<(), String> {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::notebook::testing::educational::submit_peer_review;
+    ///
+    /// let result = submit_peer_review(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn submit_peer_review(&mut self, review: PeerReview) -> Result<(), String> {
         self.peer_reviews.push(review);
         Ok(())
     }
     /// Get analytics for the platform
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::notebook::testing::educational::get_analytics;
-/// 
-/// let result = get_analytics(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn get_analytics(&self) -> &LearningAnalytics {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::notebook::testing::educational::get_analytics;
+    ///
+    /// let result = get_analytics(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn get_analytics(&self) -> &LearningAnalytics {
         &self.analytics
     }
 }
@@ -280,33 +299,36 @@ impl LearningAnalytics {
         Self { events: Vec::new() }
     }
     /// Track a learning event
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::notebook::testing::educational::track_event;
-/// 
-/// let result = track_event(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn track_event(&mut self, event: LearningEvent) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::notebook::testing::educational::track_event;
+    ///
+    /// let result = track_event(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn track_event(&mut self, event: LearningEvent) {
         self.events.push(event);
     }
     /// Get metrics for a specific student
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::notebook::testing::educational::get_student_metrics;
-/// 
-/// let result = get_student_metrics("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn get_student_metrics(&self, student_id: &str) -> StudentMetrics {
-        let student_events: Vec<_> = self.events.iter()
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::notebook::testing::educational::get_student_metrics;
+    ///
+    /// let result = get_student_metrics("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn get_student_metrics(&self, student_id: &str) -> StudentMetrics {
+        let student_events: Vec<_> = self
+            .events
+            .iter()
             .filter(|e| e.student_id == student_id)
             .collect();
         let total = student_events.len();
         let successful = student_events.iter().filter(|e| e.success).count();
-        let completions = student_events.iter()
+        let completions = student_events
+            .iter()
             .filter(|e| matches!(e.event_type, EventType::AssignmentComplete))
             .count();
         let avg_time = if total > 0 {
@@ -317,24 +339,30 @@ pub fn get_student_metrics(&self, student_id: &str) -> StudentMetrics {
         };
         StudentMetrics {
             total_executions: total,
-            success_rate: if total > 0 { successful as f64 / total as f64 } else { 0.0 },
+            success_rate: if total > 0 {
+                successful as f64 / total as f64
+            } else {
+                0.0
+            },
             avg_execution_time_ms: avg_time,
             assignments_completed: completions,
         }
     }
     /// Get metrics for the entire class
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::notebook::testing::educational::get_class_metrics;
-/// 
-/// let result = get_class_metrics(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn get_class_metrics(&self) -> ClassMetrics {
-        let unique_students: std::collections::HashSet<_> = 
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::notebook::testing::educational::get_class_metrics;
+    ///
+    /// let result = get_class_metrics(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn get_class_metrics(&self) -> ClassMetrics {
+        let unique_students: std::collections::HashSet<_> =
             self.events.iter().map(|e| &e.student_id).collect();
-        let completions = self.events.iter()
+        let completions = self
+            .events
+            .iter()
             .filter(|e| matches!(e.event_type, EventType::AssignmentComplete))
             .count();
         ClassMetrics {

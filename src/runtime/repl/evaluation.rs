@@ -34,7 +34,11 @@ impl Evaluator {
     }
 
     /// Evaluate a line of input with state synchronization (complexity: 9)
-    pub fn evaluate_line(&mut self, line: &str, state: &mut crate::runtime::repl::state::ReplState) -> Result<EvalResult> {
+    pub fn evaluate_line(
+        &mut self,
+        line: &str,
+        state: &mut crate::runtime::repl::state::ReplState,
+    ) -> Result<EvalResult> {
         // Handle multiline continuation
         if self.multiline_buffer.is_empty() {
             self.multiline_buffer = line.to_string();
@@ -93,9 +97,9 @@ impl Evaluator {
 
     /// Check if error indicates incomplete input (complexity: 3)
     fn is_incomplete_error(&self, error_msg: &str) -> bool {
-        error_msg.contains("unexpected end of input") ||
-        error_msg.contains("expected") ||
-        error_msg.contains("incomplete")
+        error_msg.contains("unexpected end of input")
+            || error_msg.contains("expected")
+            || error_msg.contains("incomplete")
     }
 }
 
@@ -121,8 +125,8 @@ mod tests {
         let mut state = crate::runtime::repl::state::ReplState::new();
 
         match evaluator.evaluate_line("2 + 2", &mut state).unwrap() {
-            EvalResult::Value(Value::Integer(4)) => {},
-            result => panic!("Expected Integer(4), got {:?}", result),
+            EvalResult::Value(Value::Integer(4)) => {}
+            result => panic!("Expected Integer(4), got {result:?}"),
         }
     }
 
@@ -131,9 +135,12 @@ mod tests {
         let mut evaluator = Evaluator::new();
         let mut state = crate::runtime::repl::state::ReplState::new();
 
-        match evaluator.evaluate_line("undefined_variable", &mut state).unwrap() {
-            EvalResult::Error(_) => {},
-            result => panic!("Expected Error, got {:?}", result),
+        match evaluator
+            .evaluate_line("undefined_variable", &mut state)
+            .unwrap()
+        {
+            EvalResult::Error(_) => {}
+            result => panic!("Expected Error, got {result:?}"),
         }
     }
 }

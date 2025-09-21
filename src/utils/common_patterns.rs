@@ -4,10 +4,10 @@ use anyhow::{Context, Result};
 use std::path::Path;
 /// Standard error handling pattern for file operations
 /// # Examples
-/// 
+///
 /// ```ignore
 /// use ruchy::utils::common_patterns::read_file_with_context;
-/// 
+///
 /// let result = read_file_with_context(());
 /// assert_eq!(result, Ok(()));
 /// ```
@@ -17,10 +17,10 @@ pub fn read_file_with_context(path: &Path) -> Result<String> {
 }
 /// Standard error handling pattern for writing files  
 /// # Examples
-/// 
+///
 /// ```ignore
 /// use ruchy::utils::common_patterns::write_file_with_context;
-/// 
+///
 /// let result = write_file_with_context("example");
 /// assert_eq!(result, Ok(()));
 /// ```
@@ -30,28 +30,33 @@ pub fn write_file_with_context(path: &Path, content: &str) -> Result<()> {
 }
 /// Standard pattern for parsing Ruchy code
 /// # Examples
-/// 
+///
 /// ```ignore
 /// use ruchy::utils::common_patterns::parse_ruchy_code;
-/// 
+///
 /// let result = parse_ruchy_code("example");
 /// assert_eq!(result, Ok(()));
 /// ```
 pub fn parse_ruchy_code(source: &str) -> Result<crate::frontend::ast::Expr> {
     let mut parser = crate::frontend::parser::Parser::new(source);
-    parser.parse()
+    parser
+        .parse()
         .map_err(|e| anyhow::anyhow!("Parse error: {:?}", e))
 }
 /// Standard pattern for success response creation  
 /// # Examples
-/// 
+///
 /// ```ignore
 /// use ruchy::utils::common_patterns::create_success_response;
-/// 
+///
 /// let result = create_success_response(());
 /// assert_eq!(result, Ok(()));
 /// ```
-pub fn create_success_response(value: String, cell_id: String, execution_time: f64) -> crate::wasm::shared_session::ExecuteResponse {
+pub fn create_success_response(
+    value: String,
+    cell_id: String,
+    execution_time: f64,
+) -> crate::wasm::shared_session::ExecuteResponse {
     crate::wasm::shared_session::ExecuteResponse {
         success: true,
         cell_id,
@@ -63,14 +68,17 @@ pub fn create_success_response(value: String, cell_id: String, execution_time: f
 }
 /// Standard pattern for error response creation
 /// # Examples
-/// 
+///
 /// ```ignore
 /// use ruchy::utils::common_patterns::create_error_response;
-/// 
+///
 /// let result = create_error_response(());
 /// assert_eq!(result, Ok(()));
 /// ```
-pub fn create_error_response(error: String, cell_id: String) -> crate::wasm::shared_session::ExecuteResponse {
+pub fn create_error_response(
+    error: String,
+    cell_id: String,
+) -> crate::wasm::shared_session::ExecuteResponse {
     crate::wasm::shared_session::ExecuteResponse {
         success: false,
         cell_id,
@@ -82,10 +90,10 @@ pub fn create_error_response(error: String, cell_id: String) -> crate::wasm::sha
 }
 /// Format a module operation error
 /// # Examples
-/// 
+///
 /// ```ignore
 /// use ruchy::utils::common_patterns::format_module_error;
-/// 
+///
 /// let result = format_module_error("example");
 /// assert_eq!(result, Ok(()));
 /// ```
@@ -94,10 +102,10 @@ pub fn format_module_error(operation: &str, module_name: &str) -> String {
 }
 /// Format a parsing error
 /// # Examples
-/// 
+///
 /// ```ignore
 /// use ruchy::utils::common_patterns::format_parse_error;
-/// 
+///
 /// let result = format_parse_error("example");
 /// assert_eq!(result, Ok(()));
 /// ```
@@ -106,10 +114,10 @@ pub fn format_parse_error(target: &str) -> String {
 }
 /// Format a compilation error  
 /// # Examples
-/// 
+///
 /// ```ignore
 /// use ruchy::utils::common_patterns::format_compile_error;
-/// 
+///
 /// let result = format_compile_error("example");
 /// assert_eq!(result, Ok(()));
 /// ```
@@ -149,9 +157,9 @@ where
     }
 }
 /// Standard timing pattern for operations
-pub fn time_operation<F, R>(operation: F) -> (R, f64) 
-where 
-    F: FnOnce() -> R
+pub fn time_operation<F, R>(operation: F) -> (R, f64)
+where
+    F: FnOnce() -> R,
 {
     let start = std::time::Instant::now();
     let result = operation();
@@ -160,24 +168,27 @@ where
 }
 /// Standard validation pattern for identifiers
 /// # Examples
-/// 
+///
 /// ```ignore
 /// use ruchy::utils::common_patterns::is_valid_identifier;
-/// 
+///
 /// let result = is_valid_identifier("example");
 /// assert_eq!(result, Ok(()));
 /// ```
 pub fn is_valid_identifier(name: &str) -> bool {
-    !name.is_empty() && 
-    name.chars().next().is_some_and(|c| c.is_alphabetic() || c == '_') &&
-    name.chars().all(|c| c.is_alphanumeric() || c == '_')
+    !name.is_empty()
+        && name
+            .chars()
+            .next()
+            .is_some_and(|c| c.is_alphabetic() || c == '_')
+        && name.chars().all(|c| c.is_alphanumeric() || c == '_')
 }
 /// Standard pattern for creating section headers in output
 /// # Examples
-/// 
+///
 /// ```ignore
 /// use ruchy::utils::common_patterns::create_section_header;
-/// 
+///
 /// let result = create_section_header("example");
 /// assert_eq!(result, Ok(()));
 /// ```
@@ -186,10 +197,10 @@ pub fn create_section_header(title: &str) -> String {
 }
 /// Standard pattern for adding checkmarks to output  
 /// # Examples
-/// 
+///
 /// ```ignore
 /// use ruchy::utils::common_patterns::add_success_indicator;
-/// 
+///
 /// let result = add_success_indicator("example");
 /// assert_eq!(result, Ok(()));
 /// ```
@@ -198,10 +209,10 @@ pub fn add_success_indicator(message: &str) -> String {
 }
 /// Standard pattern for adding error indicators to output
 /// # Examples
-/// 
+///
 /// ```ignore
 /// use ruchy::utils::common_patterns::add_error_indicator;
-/// 
+///
 /// let result = add_error_indicator("example");
 /// assert_eq!(result, Ok(()));
 /// ```
@@ -210,10 +221,10 @@ pub fn add_error_indicator(message: &str) -> String {
 }
 /// Standard pattern for handling optional output file writing
 /// # Examples
-/// 
+///
 /// ```ignore
 /// use ruchy::utils::common_patterns::write_output_or_print;
-/// 
+///
 /// let result = write_output_or_print(());
 /// assert_eq!(result, Ok(()));
 /// ```
@@ -234,42 +245,49 @@ pub struct ProgressIndicator {
     pub label: String,
 }
 impl ProgressIndicator {
-/// # Examples
-/// 
-/// ```
-/// use ruchy::utils::common_patterns::ProgressIndicator;
-/// 
-/// let progress = ProgressIndicator::new(100, "Processing".to_string());
-/// // progress.update(50);
-/// ```
-pub fn new(total: usize, label: String) -> Self {
-        Self { total, current: 0, label }
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::utils::common_patterns::ProgressIndicator;
+    ///
+    /// let progress = ProgressIndicator::new(100, "Processing".to_string());
+    /// // progress.update(50);
+    /// ```
+    pub fn new(total: usize, label: String) -> Self {
+        Self {
+            total,
+            current: 0,
+            label,
+        }
     }
-/// # Examples
-///
-/// ```ignore
-/// use ruchy::utils::common_patterns::ProgressIndicator;
-///
-/// let mut progress = ProgressIndicator::new(100, "Processing".to_string());
-/// progress.increment();
-/// ```
-pub fn increment(&mut self) {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::utils::common_patterns::ProgressIndicator;
+    ///
+    /// let mut progress = ProgressIndicator::new(100, "Processing".to_string());
+    /// progress.increment();
+    /// ```
+    pub fn increment(&mut self) {
         self.current += 1;
-        if self.current % 10 == 0 || self.current == self.total {
+        if self.current.is_multiple_of(10) || self.current == self.total {
             println!("📊 {}: {}/{}", self.label, self.current, self.total);
         }
     }
-/// # Examples
-/// 
-/// ```
-/// use ruchy::utils::common_patterns::ProgressIndicator;
-/// 
-/// let mut instance = ProgressIndicator::new();
-/// let result = instance.finish();
-/// // Verify behavior
-/// ```
-pub fn finish(&self) {
-        println!("✅ {} completed: {}/{}", self.label, self.current, self.total);
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::utils::common_patterns::ProgressIndicator;
+    ///
+    /// let mut instance = ProgressIndicator::new();
+    /// let result = instance.finish();
+    /// // Verify behavior
+    /// ```
+    pub fn finish(&self) {
+        println!(
+            "✅ {} completed: {}/{}",
+            self.label, self.current, self.total
+        );
     }
 }
 /// Standard pattern for retry logic with exponential backoff
@@ -292,10 +310,10 @@ where
 }
 /// Standard pattern for conditional compilation features
 /// # Examples
-/// 
+///
 /// ```ignore
 /// use ruchy::utils::common_patterns::check_feature_enabled;
-/// 
+///
 /// let result = check_feature_enabled("example");
 /// assert_eq!(result, Ok(()));
 /// ```
@@ -309,10 +327,10 @@ pub fn check_feature_enabled(feature: &str) -> bool {
 }
 /// Standard pattern for memory size formatting
 /// # Examples
-/// 
+///
 /// ```ignore
 /// use ruchy::utils::common_patterns::format_memory_size;
-/// 
+///
 /// let result = format_memory_size(());
 /// assert_eq!(result, Ok(()));
 /// ```
@@ -332,38 +350,46 @@ pub fn format_memory_size(bytes: u64) -> String {
 }
 /// Standard pattern for version string formatting
 /// # Examples
-/// 
+///
 /// ```ignore
 /// use ruchy::utils::common_patterns::format_version_info;
-/// 
+///
 /// let result = format_version_info(());
 /// assert_eq!(result, Ok(()));
 /// ```
 pub fn format_version_info() -> String {
-    format!("Ruchy v{} ({})", 
-            env!("CARGO_PKG_VERSION"),
-            if cfg!(debug_assertions) { "debug" } else { "release" })
+    format!(
+        "Ruchy v{} ({})",
+        env!("CARGO_PKG_VERSION"),
+        if cfg!(debug_assertions) {
+            "debug"
+        } else {
+            "release"
+        }
+    )
 }
 /// Standard pattern for test assertion with string conversion
 /// # Examples
-/// 
+///
 /// ```ignore
 /// use ruchy::utils::common_patterns::assert_output_contains;
-/// 
+///
 /// let result = assert_output_contains("example");
 /// assert_eq!(result, Ok(()));
 /// ```
 pub fn assert_output_contains(result: impl ToString, expected: &str) {
     let output = result.to_string();
-    assert!(output.contains(expected), 
-            "Output does not contain '{expected}'. Actual output: '{output}'");
+    assert!(
+        output.contains(expected),
+        "Output does not contain '{expected}'. Actual output: '{output}'"
+    );
 }
 /// Standard pattern for test assertion with exact match
 /// # Examples
-/// 
+///
 /// ```ignore
 /// use ruchy::utils::common_patterns::assert_output_equals;
-/// 
+///
 /// let result = assert_output_equals("example");
 /// assert_eq!(result, Ok(()));
 /// ```
@@ -373,10 +399,10 @@ pub fn assert_output_equals(result: impl ToString, expected: &str) {
 }
 /// Standard pattern for elapsed time formatting  
 /// # Examples
-/// 
+///
 /// ```ignore
 /// use ruchy::utils::common_patterns::format_duration;
-/// 
+///
 /// let result = format_duration(());
 /// assert_eq!(result, Ok(()));
 /// ```
@@ -397,18 +423,18 @@ pub fn unwrap_or_bail<T>(opt: Option<T>, msg: &str) -> Result<T> {
     opt.ok_or_else(|| anyhow::anyhow!("{}", msg))
 }
 /// Safe alternative to `unwrap()` for Result values  
-pub fn unwrap_result_or_bail<T, E>(res: std::result::Result<T, E>, msg: &str) -> Result<T> 
-where 
-    E: std::fmt::Display
+pub fn unwrap_result_or_bail<T, E>(res: std::result::Result<T, E>, msg: &str) -> Result<T>
+where
+    E: std::fmt::Display,
 {
     res.map_err(|e| anyhow::anyhow!("{}: {}", msg, e))
 }
 /// Standard pattern for error formatting with file operations
 /// # Examples
-/// 
+///
 /// ```ignore
 /// use ruchy::utils::common_patterns::format_file_error;
-/// 
+///
 /// let result = format_file_error("example");
 /// assert_eq!(result, Ok(()));
 /// ```
@@ -417,10 +443,10 @@ pub fn format_file_error(operation: &str, path: &std::path::Path) -> String {
 }
 /// Standard pattern for serialization error formatting
 /// # Examples
-/// 
+///
 /// ```ignore
 /// use ruchy::utils::common_patterns::format_serialize_error;
-/// 
+///
 /// let result = format_serialize_error("example");
 /// assert_eq!(result, Ok(()));
 /// ```
@@ -429,10 +455,10 @@ pub fn format_serialize_error(object_type: &str, error: impl std::fmt::Display) 
 }
 /// Standard pattern for deserialization error formatting  
 /// # Examples
-/// 
+///
 /// ```ignore
 /// use ruchy::utils::common_patterns::format_deserialize_error;
-/// 
+///
 /// let result = format_deserialize_error("example");
 /// assert_eq!(result, Ok(()));
 /// ```
@@ -441,10 +467,10 @@ pub fn format_deserialize_error(object_type: &str, error: impl std::fmt::Display
 }
 /// Standard pattern for operation error formatting
 /// # Examples
-/// 
+///
 /// ```ignore
 /// use ruchy::utils::common_patterns::format_operation_error;
-/// 
+///
 /// let result = format_operation_error("example");
 /// assert_eq!(result, Ok(()));
 /// ```
@@ -454,7 +480,43 @@ pub fn format_operation_error(operation: &str, error: impl std::fmt::Display) ->
 
 // String manipulation utilities
 pub fn is_keyword(word: &str) -> bool {
-    matches!(word, "let" | "if" | "else" | "while" | "for" | "return" | "fun" | "match" | "true" | "false" | "struct" | "enum" | "impl" | "trait" | "pub" | "mod" | "use" | "type" | "const" | "static" | "async" | "await" | "break" | "continue" | "loop" | "in" | "ref" | "mut" | "self" | "super" | "crate" | "where" | "as" | "fn")
+    matches!(
+        word,
+        "let"
+            | "if"
+            | "else"
+            | "while"
+            | "for"
+            | "return"
+            | "fun"
+            | "match"
+            | "true"
+            | "false"
+            | "struct"
+            | "enum"
+            | "impl"
+            | "trait"
+            | "pub"
+            | "mod"
+            | "use"
+            | "type"
+            | "const"
+            | "static"
+            | "async"
+            | "await"
+            | "break"
+            | "continue"
+            | "loop"
+            | "in"
+            | "ref"
+            | "mut"
+            | "self"
+            | "super"
+            | "crate"
+            | "where"
+            | "as"
+            | "fn"
+    )
 }
 
 pub fn escape_string(s: &str) -> String {
@@ -476,7 +538,7 @@ pub fn escape_string(s: &str) -> String {
 pub fn unescape_string(s: &str) -> Result<String> {
     let mut result = String::new();
     let mut chars = s.chars();
-    
+
     while let Some(ch) = chars.next() {
         if ch == '\\' {
             match chars.next() {
@@ -493,7 +555,7 @@ pub fn unescape_string(s: &str) -> Result<String> {
             result.push(ch);
         }
     }
-    
+
     Ok(result)
 }
 
@@ -501,13 +563,16 @@ pub fn capitalize(s: &str) -> String {
     if s.is_empty() {
         return String::new();
     }
-    
+
     let mut chars = s.chars();
     match chars.next() {
         None => String::new(),
         Some(first) => {
             if first.is_alphabetic() {
-                first.to_uppercase().chain(chars.as_str().to_lowercase().chars()).collect()
+                first
+                    .to_uppercase()
+                    .chain(chars.as_str().to_lowercase().chars())
+                    .collect()
             } else {
                 s.to_string()
             }
@@ -519,10 +584,10 @@ pub fn snake_to_camel(s: &str) -> String {
     if s.starts_with('_') || s.is_empty() {
         return s.to_string();
     }
-    
+
     let mut result = String::new();
     let mut capitalize_next = false;
-    
+
     for ch in s.chars() {
         if ch == '_' {
             capitalize_next = true;
@@ -533,19 +598,19 @@ pub fn snake_to_camel(s: &str) -> String {
             result.push(ch);
         }
     }
-    
+
     // Don't lose trailing underscores
     if s.ends_with('_') {
         result.push('_');
     }
-    
+
     result
 }
 
 pub fn camel_to_snake(s: &str) -> String {
     let mut result = String::new();
     let mut prev_was_upper = false;
-    
+
     for (i, ch) in s.chars().enumerate() {
         if ch.is_uppercase() {
             if i > 0 && !prev_was_upper {
@@ -558,7 +623,7 @@ pub fn camel_to_snake(s: &str) -> String {
             prev_was_upper = false;
         }
     }
-    
+
     result
 }
 
@@ -570,16 +635,16 @@ pub fn is_float(s: &str) -> bool {
     if s.is_empty() {
         return false;
     }
-    
+
     let parts: Vec<&str> = s.split('.').collect();
     if parts.len() != 2 {
         return false;
     }
-    
+
     let (before, after) = (parts[0], parts[1]);
-    
-    (before.is_empty() || before.chars().all(|c| c.is_ascii_digit())) &&
-    (after.is_empty() || after.chars().all(|c| c.is_ascii_digit()))
+
+    (before.is_empty() || before.chars().all(|c| c.is_ascii_digit()))
+        && (after.is_empty() || after.chars().all(|c| c.is_ascii_digit()))
 }
 
 pub fn strip_comments(s: &str) -> String {
@@ -604,7 +669,11 @@ pub fn count_lines(s: &str) -> usize {
     if s.is_empty() {
         0
     } else {
-        s.lines().count() + s.chars().filter(|&c| c == '\n').count().saturating_sub(s.lines().count() - 1)
+        s.lines().count()
+            + s.chars()
+                .filter(|&c| c == '\n')
+                .count()
+                .saturating_sub(s.lines().count() - 1)
     }
 }
 
@@ -630,17 +699,19 @@ pub fn trim_indent(s: &str) -> String {
 }
 
 pub fn split_at_delimiter(s: &str, delimiter: char) -> Vec<String> {
-    s.split(delimiter).map(std::string::ToString::to_string).collect()
+    s.split(delimiter)
+        .map(std::string::ToString::to_string)
+        .collect()
 }
 
 pub fn common_prefix(strings: &[&str]) -> String {
     if strings.is_empty() {
         return String::new();
     }
-    
+
     let mut prefix = String::new();
     let first = strings[0];
-    
+
     for (i, ch) in first.chars().enumerate() {
         if strings.iter().all(|s| s.chars().nth(i) == Some(ch)) {
             prefix.push(ch);
@@ -648,38 +719,35 @@ pub fn common_prefix(strings: &[&str]) -> String {
             break;
         }
     }
-    
+
     prefix
 }
 
 pub fn levenshtein_distance(s1: &str, s2: &str) -> usize {
     let len1 = s1.chars().count();
     let len2 = s2.chars().count();
-    
+
     let mut matrix = vec![vec![0; len2 + 1]; len1 + 1];
 
     #[allow(clippy::needless_range_loop)]
     for i in 0..=len1 {
         matrix[i][0] = i;
     }
-    
+
     for j in 0..=len2 {
         matrix[0][j] = j;
     }
-    
+
     for (i, ch1) in s1.chars().enumerate() {
         for (j, ch2) in s2.chars().enumerate() {
             let cost = usize::from(ch1 != ch2);
             matrix[i + 1][j + 1] = std::cmp::min(
                 matrix[i][j + 1] + 1,
-                std::cmp::min(
-                    matrix[i + 1][j] + 1,
-                    matrix[i][j] + cost
-                )
+                std::cmp::min(matrix[i + 1][j] + 1, matrix[i][j] + cost),
             );
         }
     }
-    
+
     matrix[len1][len2]
 }
 
@@ -724,11 +792,7 @@ mod tests {
 
     #[test]
     fn test_create_success_response() {
-        let response = create_success_response(
-            "value".to_string(),
-            "cell_1".to_string(),
-            100.5,
-        );
+        let response = create_success_response("value".to_string(), "cell_1".to_string(), 100.5);
         assert!(response.success);
         assert_eq!(response.cell_id, "cell_1");
         assert_eq!(response.value, "value");
@@ -739,10 +803,7 @@ mod tests {
 
     #[test]
     fn test_create_error_response() {
-        let response = create_error_response(
-            "error message".to_string(),
-            "cell_2".to_string(),
-        );
+        let response = create_error_response("error message".to_string(), "cell_2".to_string());
         assert!(!response.success);
         assert_eq!(response.cell_id, "cell_2");
         assert!(response.value.is_empty());
@@ -1036,14 +1097,8 @@ mod tests {
 
     #[test]
     fn test_split_at_delimiter() {
-        assert_eq!(
-            split_at_delimiter("a,b,c", ','),
-            vec!["a", "b", "c"]
-        );
-        assert_eq!(
-            split_at_delimiter("single", ','),
-            vec!["single"]
-        );
+        assert_eq!(split_at_delimiter("a,b,c", ','), vec!["a", "b", "c"]);
+        assert_eq!(split_at_delimiter("single", ','), vec!["single"]);
     }
 
     #[test]
@@ -1052,14 +1107,8 @@ mod tests {
             common_prefix(&["prefix_a", "prefix_b", "prefix_c"]),
             "prefix_"
         );
-        assert_eq!(
-            common_prefix(&["hello", "help", "hero"]),
-            "he"
-        );
-        assert_eq!(
-            common_prefix(&["abc", "xyz"]),
-            ""
-        );
+        assert_eq!(common_prefix(&["hello", "help", "hero"]), "he");
+        assert_eq!(common_prefix(&["abc", "xyz"]), "");
         assert_eq!(common_prefix(&[]), "");
     }
 

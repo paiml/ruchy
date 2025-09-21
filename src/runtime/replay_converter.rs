@@ -2,7 +2,7 @@
 //!
 //! Converts .replay files into comprehensive Rust test cases for regression testing.
 //! This enables automatic generation of test coverage from real usage patterns.
-use crate::runtime::replay::{ReplSession, Event, EvalResult, InputMode};
+use crate::runtime::replay::{EvalResult, Event, InputMode, ReplSession};
 use anyhow::{Context, Result};
 use std::fs;
 use std::path::Path;
@@ -71,16 +71,24 @@ impl ReplayConverter {
     }
     /// Convert a replay file to test cases
     pub fn convert_file(&self, replay_path: &Path) -> Result<Vec<GeneratedTest>> {
-        let replay_content = fs::read_to_string(replay_path)
-            .context("Failed to read replay file")?;
-        let session: ReplSession = serde_json::from_str(&replay_content)
-            .context("Failed to parse replay session")?;
-        self.convert_session(&session, replay_path.file_stem()
-            .and_then(|s| s.to_str())
-            .unwrap_or("unnamed"))
+        let replay_content =
+            fs::read_to_string(replay_path).context("Failed to read replay file")?;
+        let session: ReplSession =
+            serde_json::from_str(&replay_content).context("Failed to parse replay session")?;
+        self.convert_session(
+            &session,
+            replay_path
+                .file_stem()
+                .and_then(|s| s.to_str())
+                .unwrap_or("unnamed"),
+        )
     }
     /// Convert a replay session to test cases
-    pub fn convert_session(&self, session: &ReplSession, name_prefix: &str) -> Result<Vec<GeneratedTest>> {
+    pub fn convert_session(
+        &self,
+        session: &ReplSession,
+        name_prefix: &str,
+    ) -> Result<Vec<GeneratedTest>> {
         let mut tests = Vec::new();
         // Generate unit tests for each input/output pair
         tests.extend(self.generate_unit_tests(session, name_prefix)?);
@@ -95,7 +103,11 @@ impl ReplayConverter {
         Ok(tests)
     }
     /// Generate unit tests for individual input/output pairs
-    fn generate_unit_tests(&self, session: &ReplSession, name_prefix: &str) -> Result<Vec<GeneratedTest>> {
+    fn generate_unit_tests(
+        &self,
+        session: &ReplSession,
+        name_prefix: &str,
+    ) -> Result<Vec<GeneratedTest>> {
         let mut tests = Vec::new();
         let mut test_counter = 1;
         // Find input/output pairs
@@ -106,8 +118,9 @@ impl ReplayConverter {
                 if let Some(output_event) = timeline.get(i + 1) {
                     if let Event::Output { result, .. } = &output_event.event {
                         let sanitized_prefix = name_prefix.replace('-', "_");
-        let test_name = format!("{sanitized_prefix}_{test_counter:03}");
-                        let test = self.generate_single_unit_test(&test_name, text, mode, result)?;
+                        let test_name = format!("{sanitized_prefix}_{test_counter:03}");
+                        let test =
+                            self.generate_single_unit_test(&test_name, text, mode, result)?;
                         tests.push(test);
                         test_counter += 1;
                     }
@@ -118,11 +131,11 @@ impl ReplayConverter {
     }
     /// Generate a single unit test
     fn generate_single_unit_test(
-        &self, 
-        test_name: &str, 
-        input: &str, 
+        &self,
+        test_name: &str,
+        input: &str,
         mode: &InputMode,
-        expected_result: &EvalResult
+        expected_result: &EvalResult,
     ) -> Result<GeneratedTest> {
         let sanitized_input = input.replace('\"', "\\\"").replace('\n', "\\n");
         let timeout = self.config.timeout_ms;
@@ -147,12 +160,13 @@ impl ReplayConverter {
         };
         let mode_comment = match mode {
             InputMode::Interactive => "// Interactive REPL input",
-            InputMode::Paste => "// Pasted/multiline input", 
+            InputMode::Paste => "// Pasted/multiline input",
             InputMode::File => "// File-loaded input",
             InputMode::Script => "// Script execution",
         };
         let coverage_areas = self.identify_coverage_areas(input);
-        let code = format!(r#"
+        let code = format!(
+            r#"
 #[test]
 fn test_{test_name}() -> Result<()> {{
     {mode_comment}
@@ -162,7 +176,8 @@ fn test_{test_name}() -> Result<()> {{
     // Expected: {expected_output}
     {test_assertion}
     Ok(())
-}}"#);
+}}"#
+        );
         Ok(GeneratedTest {
             name: format!("test_{test_name}"),
             code,
@@ -171,7 +186,11 @@ fn test_{test_name}() -> Result<()> {{
         })
     }
     /// Generate integration test for complete session
-    fn generate_integration_test(&self, session: &ReplSession, name_prefix: &str) -> Result<GeneratedTest> {
+    fn generate_integration_test(
+        &self,
+        session: &ReplSession,
+        name_prefix: &str,
+    ) -> Result<GeneratedTest> {
         let sanitized_prefix = name_prefix.replace('-', "_");
         let mut session_code = String::new();
         let mut assertions = Vec::new();
@@ -184,15 +203,18 @@ fn test_{test_name}() -> Result<()> {{
                 // Find corresponding output
                 if let Some(output_event) = timeline.get(i + 1) {
                     if let Event::Output { result, .. } = &output_event.event {
-                        session_code.push_str(&format!("    let result_{i} = repl.eval(\"{sanitized_input}\");\n"));
+                        session_code.push_str(&format!(
+                            "    let result_{i} = repl.eval(\"{sanitized_input}\");\n"
+                        ));
                         let assertion = match result {
                             EvalResult::Success { value } => {
                                 // Extract actual value from String("...") format if present
-                                let actual_value = if value.starts_with("String(\"") && value.ends_with("\")") {
-                                    &value[8..value.len()-2]
-                                } else {
-                                    value.as_str()
-                                };
+                                let actual_value =
+                                    if value.starts_with("String(\"") && value.ends_with("\")") {
+                                        &value[8..value.len() - 2]
+                                    } else {
+                                        value.as_str()
+                                    };
                                 format!("    assert!(result_{i}.is_ok() && result_{i}.unwrap() == r#\"{actual_value}\"#);\n")
                             }
                             EvalResult::Error { message } => {
@@ -207,7 +229,8 @@ fn test_{test_name}() -> Result<()> {{
                 }
             }
         }
-        let code = format!(r"
+        let code = format!(
+            r"
 #[test]
 fn test_{sanitized_prefix}_session_integration() -> Result<()> {{
     // Integration test for complete REPL session
@@ -220,7 +243,9 @@ fn test_{sanitized_prefix}_session_integration() -> Result<()> {{
     // Verify all expected outputs
 {assertions}
     Ok(())
-}}", assertions = assertions.join(""));
+}}",
+            assertions = assertions.join("")
+        );
         // Identify comprehensive coverage areas
         let mut coverage_areas = vec![
             "session_state".to_string(),
@@ -244,13 +269,18 @@ fn test_{sanitized_prefix}_session_integration() -> Result<()> {{
         })
     }
     /// Generate property tests for invariants
-    fn generate_property_tests(&self, _session: &ReplSession, name_prefix: &str) -> Result<Vec<GeneratedTest>> {
+    fn generate_property_tests(
+        &self,
+        _session: &ReplSession,
+        name_prefix: &str,
+    ) -> Result<Vec<GeneratedTest>> {
         let mut tests = Vec::new();
         // Property: REPL state should be deterministic
         let sanitized_prefix = name_prefix.replace('-', "_");
         let determinism_test = GeneratedTest {
             name: format!("test_{sanitized_prefix}_determinism_property"),
-            code: format!(r#"
+            code: format!(
+                r#"
 #[test]
 fn test_{sanitized_prefix}_determinism_property() -> Result<()> {{
     // Property: Session should produce identical results on replay
@@ -271,7 +301,8 @@ fn test_{sanitized_prefix}_determinism_property() -> Result<()> {{
         }}
     }}
     Ok(())
-}}"#),
+}}"#
+            ),
             category: TestCategory::Property,
             coverage_areas: vec!["determinism".to_string(), "state_consistency".to_string()],
         };
@@ -279,7 +310,8 @@ fn test_{sanitized_prefix}_determinism_property() -> Result<()> {{
         // Property: Memory usage should be bounded
         let memory_test = GeneratedTest {
             name: format!("test_{sanitized_prefix}_memory_bounds"),
-            code: format!(r#"
+            code: format!(
+                r#"
 #[test] 
 fn test_{sanitized_prefix}_memory_bounds() -> Result<()> {{
     // Property: REPL should respect memory limits
@@ -291,19 +323,31 @@ fn test_{sanitized_prefix}_memory_bounds() -> Result<()> {{
     // Memory should not exceed reasonable bounds (100MB default)
     assert!(final_memory < 100 * 1024 * 1024, "Memory usage exceeded bounds: {{}} bytes", final_memory);
     Ok(())
-}}"#),
+}}"#
+            ),
             category: TestCategory::Property,
-            coverage_areas: vec!["memory_management".to_string(), "resource_bounds".to_string()],
+            coverage_areas: vec![
+                "memory_management".to_string(),
+                "resource_bounds".to_string(),
+            ],
         };
         tests.push(memory_test);
         Ok(tests)
     }
     /// Generate error handling tests
-    fn generate_error_tests(&self, session: &ReplSession, name_prefix: &str) -> Result<Vec<GeneratedTest>> {
+    fn generate_error_tests(
+        &self,
+        session: &ReplSession,
+        name_prefix: &str,
+    ) -> Result<Vec<GeneratedTest>> {
         let mut tests = Vec::new();
         // Find error cases in the session
         for (i, event) in session.timeline.iter().enumerate() {
-            if let Event::Output { result: EvalResult::Error { message }, .. } = &event.event {
+            if let Event::Output {
+                result: EvalResult::Error { message },
+                ..
+            } = &event.event
+            {
                 let sanitized_prefix = name_prefix.replace('-', "_");
                 let test_name = format!("{sanitized_prefix}_{i:03}_error_handling");
                 // Find the input that caused this error
@@ -313,7 +357,8 @@ fn test_{sanitized_prefix}_memory_bounds() -> Result<()> {{
                         let sanitized_message = message.replace('\"', "\\\"");
                         let test = GeneratedTest {
                             name: format!("test_{test_name}"),
-                            code: format!(r#"
+                            code: format!(
+                                r#"
 #[test]
 fn test_{test_name}() -> Result<()> {{
     // Error handling test: should gracefully handle invalid input
@@ -326,7 +371,8 @@ fn test_{test_name}() -> Result<()> {{
     let recovery = repl.eval("2 + 2");
     assert_eq!(recovery, Ok("4".to_string()));
     Ok(())
-}}"#),
+}}"#
+                            ),
                             category: TestCategory::ErrorHandling,
                             coverage_areas: vec![
                                 "error_handling".to_string(),
@@ -363,7 +409,7 @@ fn test_{test_name}() -> Result<()> {{
         if input.contains("for ") || input.contains("while ") {
             areas.push("iteration".to_string());
         }
-        // Data structures  
+        // Data structures
         if input.contains('[') && input.contains(']') {
             areas.push("array_operations".to_string());
         }
@@ -410,7 +456,8 @@ fn test_{test_name}() -> Result<()> {{
     pub fn write_tests(&self, tests: &[GeneratedTest], output_path: &Path) -> Result<()> {
         let mut content = String::new();
         // File header
-        content.push_str(&format!(r"
+        content.push_str(&format!(
+            r"
 //! Generated regression tests from REPL replay sessions
 //! 
 //! This file is auto-generated by the replay-to-test conversion pipeline.
@@ -420,8 +467,10 @@ fn test_{test_name}() -> Result<()> {{
 //! Coverage areas: {}
 use anyhow::Result;
 use crate::runtime::Repl;
-", tests.len(), 
-            tests.iter()
+",
+            tests.len(),
+            tests
+                .iter()
                 .flat_map(|t| &t.coverage_areas)
                 .collect::<std::collections::HashSet<_>>()
                 .len()
@@ -435,12 +484,13 @@ use crate::runtime::Repl;
             TestCategory::Benchmark,
         ];
         for category in categories {
-            let category_tests: Vec<_> = tests.iter()
-                .filter(|t| t.category == category)
-                .collect();
+            let category_tests: Vec<_> = tests.iter().filter(|t| t.category == category).collect();
             if !category_tests.is_empty() {
-                content.push_str(&format!("\n// {:?} Tests ({})\n", 
-                    category, category_tests.len()));
+                content.push_str(&format!(
+                    "\n// {:?} Tests ({})\n",
+                    category,
+                    category_tests.len()
+                ));
                 content.push_str("// ============================================================================\n\n");
                 for test in category_tests {
                     content.push_str(&test.code);
@@ -448,8 +498,7 @@ use crate::runtime::Repl;
                 }
             }
         }
-        fs::write(output_path, content)
-            .context("Failed to write test file")?;
+        fs::write(output_path, content).context("Failed to write test file")?;
         Ok(())
     }
 }
@@ -499,7 +548,9 @@ mod tests {
                     id: EventId(2),
                     timestamp_ns: 2000,
                     event: Event::Output {
-                        result: EvalResult::Success { value: "4".to_string() },
+                        result: EvalResult::Success {
+                            value: "4".to_string(),
+                        },
                         stdout: vec![],
                         stderr: vec![],
                     },
@@ -512,7 +563,9 @@ mod tests {
         // Should generate at least unit and integration tests
         assert!(tests.len() >= 2);
         assert!(tests.iter().any(|t| t.category == TestCategory::Unit));
-        assert!(tests.iter().any(|t| t.category == TestCategory::Integration));
+        assert!(tests
+            .iter()
+            .any(|t| t.category == TestCategory::Integration));
     }
     #[test]
     fn test_coverage_area_identification() {
@@ -520,7 +573,10 @@ mod tests {
         // Test various language constructs
         let test_cases = [
             ("let x = 42", vec!["variable_binding"]),
-            ("x.map(y => y * 2)", vec!["lambda_expressions", "higher_order_functions"]),
+            (
+                "x.map(y => y * 2)",
+                vec!["lambda_expressions", "higher_order_functions"],
+            ),
             ("[1, 2, 3]", vec!["array_operations"]),
             ("user?.name", vec!["optional_chaining"]),
             ("match x { 1 => \"one\" }", vec!["pattern_matching"]),
@@ -528,8 +584,10 @@ mod tests {
         for (input, expected_areas) in test_cases {
             let areas = converter.identify_coverage_areas(input);
             for expected in expected_areas {
-                assert!(areas.contains(&expected.to_string()), 
-                    "Expected coverage area '{expected}' not found for input: '{input}'");
+                assert!(
+                    areas.contains(&expected.to_string()),
+                    "Expected coverage area '{expected}' not found for input: '{input}'"
+                );
             }
         }
     }

@@ -6,7 +6,7 @@
 //! Integration tests for rosetta-ruchy examples
 //!
 //! These tests validate that the Ruchy compiler can successfully run all
-//! rosetta-ruchy algorithm implementations, preventing regressions in 
+//! rosetta-ruchy algorithm implementations, preventing regressions in
 //! language compatibility.
 
 use std::path::Path;
@@ -32,7 +32,13 @@ fn test_find_rosetta_ruchy_examples() {
     if let Ok(entries) = std::fs::read_dir(&examples_path) {
         for entry in entries.flatten() {
             let path = entry.path();
-            if path.is_dir() && path.file_name().unwrap().to_string_lossy().starts_with("00") {
+            if path.is_dir()
+                && path
+                    .file_name()
+                    .unwrap()
+                    .to_string_lossy()
+                    .starts_with("00")
+            {
                 algorithm_count += 1;
 
                 // Look for ruchy implementations
@@ -55,8 +61,14 @@ fn test_find_rosetta_ruchy_examples() {
     println!("Found {} .ruchy files", ruchy_files.len());
 
     // We expect at least 5 algorithms with ruchy implementations
-    assert!(algorithm_count >= 5, "Should have at least 5 algorithm examples");
-    assert!(ruchy_files.len() >= 10, "Should have at least 10 ruchy implementation files");
+    assert!(
+        algorithm_count >= 5,
+        "Should have at least 5 algorithm examples"
+    );
+    assert!(
+        ruchy_files.len() >= 10,
+        "Should have at least 10 ruchy implementation files"
+    );
 }
 
 /// Test that simple ruchy examples can be executed
@@ -97,12 +109,13 @@ fn test_fibonacci_simple_execution() {
             }
 
             println!("fibonacci_simple.ruchy output:\n{stdout}");
-            
+
             // Check for expected fibonacci outputs
             // The script calculates fibonacci(10) which should be 55
-            assert!(stdout.contains("55") || stderr.contains("55"), 
-                    "Output should contain fibonacci(10) = 55");
-
+            assert!(
+                stdout.contains("55") || stderr.contains("55"),
+                "Output should contain fibonacci(10) = 55"
+            );
         }
         Err(e) => {
             eprintln!("Failed to execute command: {e}");
@@ -126,7 +139,13 @@ fn test_parse_rosetta_ruchy_files() {
     if let Ok(entries) = std::fs::read_dir(&examples_path) {
         for entry in entries.flatten() {
             let path = entry.path();
-            if path.is_dir() && path.file_name().unwrap().to_string_lossy().starts_with("00") {
+            if path.is_dir()
+                && path
+                    .file_name()
+                    .unwrap()
+                    .to_string_lossy()
+                    .starts_with("00")
+            {
                 let ruchy_impl_path = path.join("implementations/ruchy");
                 if ruchy_impl_path.exists() {
                     if let Ok(ruchy_entries) = std::fs::read_dir(&ruchy_impl_path) {
@@ -162,23 +181,30 @@ fn test_parse_rosetta_ruchy_files() {
     }
 
     // We expect to be able to parse at least some files
-    assert!(parsed_files > 0, "Should be able to parse at least some ruchy files");
-    
+    assert!(
+        parsed_files > 0,
+        "Should be able to parse at least some ruchy files"
+    );
+
     // For now, allow some parsing failures as the language is still in development
     // In the future, this should require all files to parse successfully
     let success_rate = parsed_files as f64 / (parsed_files + failed_files.len()) as f64;
-    
+
     // Store baseline: Currently parsing 9/21 files (42.9%)
     // This test ensures we don't regress below this baseline
-    assert!(success_rate >= 0.40, "Parse success rate regression detected! Should be at least 40%, got {:.1}%", success_rate * 100.0);
-    
+    assert!(
+        success_rate >= 0.40,
+        "Parse success rate regression detected! Should be at least 40%, got {:.1}%",
+        success_rate * 100.0
+    );
+
     // Print specific parsing issues for future improvement
     if !failed_files.is_empty() {
         println!("\n=== Parsing Issues to Address ===");
         let mut comment_issues = 0;
-        let mut type_issues = 0; 
+        let mut type_issues = 0;
         let mut generic_issues = 0;
-        
+
         for (_file, error) in &failed_files {
             let error_str = error.to_string();
             if error_str.contains("Expected '[' after '#'") {
@@ -189,11 +215,14 @@ fn test_parse_rosetta_ruchy_files() {
                 generic_issues += 1;
             }
         }
-        
+
         println!("Comment syntax issues: {comment_issues}");
-        println!("Type annotation issues: {type_issues}"); 
+        println!("Type annotation issues: {type_issues}");
         println!("Generic type syntax issues: {generic_issues}");
-        println!("Other parsing issues: {}", failed_files.len() - comment_issues - type_issues - generic_issues);
+        println!(
+            "Other parsing issues: {}",
+            failed_files.len() - comment_issues - type_issues - generic_issues
+        );
     }
 }
 
@@ -216,7 +245,13 @@ fn test_all_rosetta_ruchy_examples() {
     if let Ok(entries) = std::fs::read_dir(&examples_path) {
         for entry in entries.flatten() {
             let path = entry.path();
-            if path.is_dir() && path.file_name().unwrap().to_string_lossy().starts_with("00") {
+            if path.is_dir()
+                && path
+                    .file_name()
+                    .unwrap()
+                    .to_string_lossy()
+                    .starts_with("00")
+            {
                 let ruchy_impl_path = path.join("implementations/ruchy");
                 if ruchy_impl_path.exists() {
                     if let Ok(ruchy_entries) = std::fs::read_dir(&ruchy_impl_path) {
@@ -284,10 +319,12 @@ fn test_all_rosetta_ruchy_examples() {
     if total_files > 0 {
         let parse_success_rate = f64::from(total_files - parsing_failures) / f64::from(total_files);
         println!("Parse success rate: {:.1}%", parse_success_rate * 100.0);
-        
+
         // For now, require at least 70% parsing success
-        assert!(parse_success_rate >= 0.7, 
-                "Parse success rate should be at least 70%, got {:.1}%", 
-                parse_success_rate * 100.0);
+        assert!(
+            parse_success_rate >= 0.7,
+            "Parse success rate should be at least 70%, got {:.1}%",
+            parse_success_rate * 100.0
+        );
     }
 }

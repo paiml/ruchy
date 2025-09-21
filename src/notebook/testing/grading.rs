@@ -1,7 +1,9 @@
 // SPRINT4-002: Grading system implementation
 // PMAT Complexity: <10 per function
-use crate::notebook::testing::types::{Notebook, CellType};
-use crate::notebook::testing::educational::{StudentSubmission, RubricItem, Grade, FeedbackSeverity, Feedback};
+use crate::notebook::testing::educational::{
+    Feedback, FeedbackSeverity, Grade, RubricItem, StudentSubmission,
+};
+use crate::notebook::testing::types::{CellType, Notebook};
 use std::collections::HashMap;
 #[derive(Debug, Clone)]
 pub struct GradingConfig {
@@ -31,50 +33,50 @@ impl Default for Grader {
 }
 
 impl Grader {
-/// # Examples
-/// 
-/// ```
-/// use ruchy::notebook::testing::grading::Grader;
-/// 
-/// let instance = Grader::new();
-/// // Verify behavior
-/// ```
-/// # Examples
-/// 
-/// ```
-/// use ruchy::notebook::testing::grading::Grader;
-/// 
-/// let instance = Grader::new();
-/// // Verify behavior
-/// ```
-pub fn new() -> Self {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::notebook::testing::grading::Grader;
+    ///
+    /// let instance = Grader::new();
+    /// // Verify behavior
+    /// ```
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::notebook::testing::grading::Grader;
+    ///
+    /// let instance = Grader::new();
+    /// // Verify behavior
+    /// ```
+    pub fn new() -> Self {
         Self {
             config: GradingConfig::default(),
         }
     }
-/// # Examples
-/// 
-/// ```
-/// use ruchy::notebook::testing::grading::Grader;
-/// 
-/// let mut instance = Grader::new();
-/// let result = instance.with_config();
-/// // Verify behavior
-/// ```
-pub fn with_config(config: GradingConfig) -> Self {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::notebook::testing::grading::Grader;
+    ///
+    /// let mut instance = Grader::new();
+    /// let result = instance.with_config();
+    /// // Verify behavior
+    /// ```
+    pub fn with_config(config: GradingConfig) -> Self {
         Self { config }
     }
     /// Grade with rubric
-/// # Examples
-/// 
-/// ```
-/// use ruchy::notebook::testing::grading::Grader;
-/// 
-/// let mut instance = Grader::new();
-/// let result = instance.grade_with_rubric();
-/// // Verify behavior
-/// ```
-pub fn grade_with_rubric(
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::notebook::testing::grading::Grader;
+    ///
+    /// let mut instance = Grader::new();
+    /// let result = instance.grade_with_rubric();
+    /// // Verify behavior
+    /// ```
+    pub fn grade_with_rubric(
         &self,
         _submission: &StudentSubmission,
         rubric: &[RubricItem],
@@ -100,7 +102,10 @@ pub fn grade_with_rubric(
                 };
                 feedback.push(Feedback {
                     cell_id: String::new(),
-                    message: format!("{}: {}/{} points", item.description, capped_score, item.points),
+                    message: format!(
+                        "{}: {}/{} points",
+                        item.description, capped_score, item.points
+                    ),
                     severity,
                 });
             }
@@ -115,16 +120,16 @@ pub fn grade_with_rubric(
         }
     }
     /// Apply late penalty
-/// # Examples
-/// 
-/// ```
-/// use ruchy::notebook::testing::grading::Grader;
-/// 
-/// let mut instance = Grader::new();
-/// let result = instance.apply_late_penalty();
-/// // Verify behavior
-/// ```
-pub fn apply_late_penalty(&self, grade: &mut Grade, hours_late: f64) {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::notebook::testing::grading::Grader;
+    ///
+    /// let mut instance = Grader::new();
+    /// let result = instance.apply_late_penalty();
+    /// // Verify behavior
+    /// ```
+    pub fn apply_late_penalty(&self, grade: &mut Grade, hours_late: f64) {
         if hours_late <= 0.0 {
             return;
         }
@@ -135,21 +140,24 @@ pub fn apply_late_penalty(&self, grade: &mut Grade, hours_late: f64) {
         grade.percentage = (f64::from(grade.total_points) / f64::from(grade.max_points)) * 100.0;
         grade.feedback.push(Feedback {
             cell_id: String::new(),
-            message: format!("Late penalty applied: -{:.0}% for {:.0} days late", 
-                           (1.0 - final_multiplier) * 100.0, days_late),
+            message: format!(
+                "Late penalty applied: -{:.0}% for {:.0} days late",
+                (1.0 - final_multiplier) * 100.0,
+                days_late
+            ),
             severity: FeedbackSeverity::Warning,
         });
     }
     /// Grade code quality
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::notebook::testing::grading::grade_code_quality;
-/// 
-/// let result = grade_code_quality(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn grade_code_quality(&self, notebook: &Notebook) -> QualityScore {
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::notebook::testing::grading::grade_code_quality;
+    ///
+    /// let result = grade_code_quality(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn grade_code_quality(&self, notebook: &Notebook) -> QualityScore {
         let mut score = QualityScore::default();
         for cell in &notebook.cells {
             if matches!(cell.cell_type, CellType::Code) {
@@ -177,8 +185,11 @@ pub fn grade_code_quality(&self, notebook: &Notebook) -> QualityScore {
         score.style_score = score.style_score.min(100);
         score.testing_score = score.testing_score.min(100);
         score.complexity_score = score.complexity_score.min(100);
-        score.overall = (score.documentation_score + score.style_score + 
-                        score.testing_score + score.complexity_score) / 4;
+        score.overall = (score.documentation_score
+            + score.style_score
+            + score.testing_score
+            + score.complexity_score)
+            / 4;
         score
     }
     fn count_nesting(&self, source: &str) -> usize {
@@ -222,16 +233,16 @@ impl ExerciseValidator {
         Self { timeout_ms: 5000 }
     }
     /// Validate an exercise solution
-/// # Examples
-/// 
-/// ```
-/// use ruchy::notebook::testing::grading::ExerciseValidator;
-/// 
-/// let mut instance = ExerciseValidator::new();
-/// let result = instance.validate();
-/// // Verify behavior
-/// ```
-pub fn validate(&self, exercise: &Exercise, solution: &str) -> ValidationResult {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::notebook::testing::grading::ExerciseValidator;
+    ///
+    /// let mut instance = ExerciseValidator::new();
+    /// let result = instance.validate();
+    /// // Verify behavior
+    /// ```
+    pub fn validate(&self, exercise: &Exercise, solution: &str) -> ValidationResult {
         let mut passed = 0;
         let total = exercise.test_cases.len();
         let mut feedback = Vec::new();
@@ -264,8 +275,7 @@ pub fn validate(&self, exercise: &Exercise, solution: &str) -> ValidationResult 
     }
     fn would_pass(&self, solution: &str, _input: &str, _expected: &str) -> bool {
         // Simplified validation - check for key patterns
-        solution.contains("fibonacci") && 
-        (solution.contains("n-1") || solution.contains("n - 1"))
+        solution.contains("fibonacci") && (solution.contains("n-1") || solution.contains("n - 1"))
     }
 }
 #[derive(Debug, Clone)]
