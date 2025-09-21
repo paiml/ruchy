@@ -1,0 +1,229 @@
+//! Import statement parsing with comprehensive support for various import syntax
+//!
+//! Supports:
+//! - `import std`
+//! - `import std.collections.HashMap`
+//! - `from std import println`
+//! - `from std.collections import HashMap, HashSet`
+//! - `import std.collections.HashMap as Map`
+//! - `from std.collections import *`
+//! - `import { readFile, writeFile } from fs`
+
+use super::{bail, Expr, ExprKind, ParserState, Result, Token};
+
+/// Parse import statement with dot notation support
+/// Handles: `import std`, `import std.collections.HashMap`, `import foo as bar`
+pub fn parse_import_statement(state: &mut ParserState) -> Result<Expr> {
+    // Import token has already been consumed by the caller
+    // Use a default span since we don't have access to the import token span
+    let start_span = crate::frontend::ast::Span { start: 0, end: 0 };
+
+    // Parse the module path (dot-separated identifiers)
+    let module = parse_module_path(state)?;
+
+    // Check for 'as' alias
+    let (final_module, items) = if matches!(state.tokens.peek(), Some((Token::As, _))) {
+        state.tokens.advance(); // consume 'as'
+        if let Some((Token::Identifier(alias), _)) = state.tokens.peek() {
+            let alias = alias.clone();
+            state.tokens.advance();
+
+            // For aliased imports, we need to handle the path correctly
+            // "import std.collections.HashMap as Map" should become "use std::collections::HashMap as Map"
+            // The alias applies to the entire import path
+
+            // Split the module path to separate the parent module from the item
+            let parts: Vec<&str> = module.split('.').collect();
+            if parts.len() > 1 {
+                // Has a parent module and an item
+                let parent_module = parts[..parts.len() - 1].join(".");
+                let item_name = parts[parts.len() - 1];
+                // Return the parent module and the aliased item
+                (
+                    parent_module,
+                    Some(vec![format!("{} as {}", item_name, alias)]),
+                )
+            } else {
+                // No parent module, the entire thing is aliased
+                (module.clone(), Some(vec![format!("self as {}", alias)]))
+            }
+        } else {
+            bail!("Expected identifier after 'as'");
+        }
+    } else {
+        // No alias
+        (module, None)
+    };
+
+    Ok(Expr::new(
+        ExprKind::Import {
+            module: final_module,
+            items,
+        },
+        start_span,
+    ))
+}
+
+/// Parse from...import statement
+/// Handles: `from std import println`, `from std.collections import HashMap, HashSet`
+pub fn parse_from_import_statement(state: &mut ParserState) -> Result<Expr> {
+    // From token has already been consumed by the caller
+    let start_span = crate::frontend::ast::Span { start: 0, end: 0 };
+
+    // Parse the module path
+    let module = parse_module_path(state)?;
+
+    // Expect 'import'
+    state.tokens.expect(&Token::Import)?;
+
+    // Parse the import items
+    let items = if matches!(state.tokens.peek(), Some((Token::Star, _))) {
+        // from module import *
+        state.tokens.advance();
+        // Use an empty vector to indicate wildcard import
+        // This distinguishes from None which means simple import
+        Some(vec![])
+    } else {
+        // from module import item1, item2, ...
+        let mut import_items = Vec::new();
+
+        loop {
+            if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
+                let mut item = name.clone();
+                state.tokens.advance();
+
+                // Check for 'as' alias
+                if matches!(state.tokens.peek(), Some((Token::As, _))) {
+                    state.tokens.advance();
+                    if let Some((Token::Identifier(alias), _)) = state.tokens.peek() {
+                        item = format!("{item} as {alias}");
+                        state.tokens.advance();
+                    } else {
+                        bail!("Expected identifier after 'as'");
+                    }
+                }
+
+                import_items.push(item);
+
+                // Check for more items
+                if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+                    state.tokens.advance();
+                } else {
+                    break;
+                }
+            } else {
+                bail!("Expected identifier in import list");
+            }
+        }
+
+        Some(import_items)
+    };
+
+    Ok(Expr::new(ExprKind::Import { module, items }, start_span))
+}
+
+/// Parse JS-style import statement
+/// Handles: `import { readFile, writeFile } from fs`
+pub fn parse_js_style_import(state: &mut ParserState) -> Result<Expr> {
+    // Import token has already been consumed by the caller
+    let start_span = crate::frontend::ast::Span { start: 0, end: 0 };
+
+    // Expect '{'
+    state.tokens.expect(&Token::LeftBrace)?;
+
+    // Parse import items
+    let mut items = Vec::new();
+    while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
+        if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
+            let mut item = name.clone();
+            state.tokens.advance();
+
+            // Check for 'as' alias
+            if matches!(state.tokens.peek(), Some((Token::As, _))) {
+                state.tokens.advance();
+                if let Some((Token::Identifier(alias), _)) = state.tokens.peek() {
+                    item = format!("{item} as {alias}");
+                    state.tokens.advance();
+                } else {
+                    bail!("Expected identifier after 'as'");
+                }
+            }
+
+            items.push(item);
+
+            if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+                state.tokens.advance();
+            }
+        } else {
+            bail!("Expected identifier in import list");
+        }
+    }
+
+    state.tokens.expect(&Token::RightBrace)?;
+    state.tokens.expect(&Token::From)?;
+
+    // Parse module path
+    let module = if let Some((Token::String(path), _)) = state.tokens.peek() {
+        let path = path.clone();
+        state.tokens.advance();
+        path
+    } else {
+        parse_module_path(state)?
+    };
+
+    Ok(Expr::new(
+        ExprKind::Import {
+            module,
+            items: Some(items),
+        },
+        start_span,
+    ))
+}
+
+/// Parse a dot-separated module path
+/// Handles: `std`, `std.collections`, `std.collections.HashMap`
+fn parse_module_path(state: &mut ParserState) -> Result<String> {
+    // Check for string literal first (for compatibility)
+    if let Some((Token::String(path), _)) = state.tokens.peek() {
+        let path = path.clone();
+        state.tokens.advance();
+        return Ok(path);
+    }
+
+    // Parse dot-separated identifiers
+    let mut parts = Vec::new();
+
+    // Special handling for keywords that can be module names
+    match state.tokens.peek() {
+        Some((Token::Identifier(name), _)) => {
+            parts.push(name.clone());
+            state.tokens.advance();
+        }
+        // Allow some keywords as module names
+        Some((token @ (Token::Self_ | Token::Super | Token::Crate), _)) => {
+            let name = match token {
+                Token::Self_ => "self",
+                Token::Super => "super",
+                Token::Crate => "crate",
+                _ => bail!("Unexpected token in module path"),
+            };
+            parts.push(name.to_string());
+            state.tokens.advance();
+        }
+        _ => bail!("Expected module path"),
+    }
+
+    // Parse additional dot-separated parts
+    while matches!(state.tokens.peek(), Some((Token::Dot, _))) {
+        state.tokens.advance(); // consume dot
+
+        if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
+            parts.push(name.clone());
+            state.tokens.advance();
+        } else {
+            bail!("Expected identifier after '.' in module path");
+        }
+    }
+
+    Ok(parts.join("."))
+}

@@ -397,10 +397,50 @@ impl ModuleResolver {
     }
     /// Check if an import path represents a file import
     fn is_file_import(&self, path: &str) -> bool {
+        // Keywords that refer to local modules, not files
+        if path == "self"
+            || path == "super"
+            || path == "crate"
+            || path.starts_with("self.")
+            || path.starts_with("super.")
+            || path.starts_with("crate.")
+        {
+            return false;
+        }
+
+        // Standard library and common modules are never file imports
+        // Recognize both :: and . notation for std
+        if path.starts_with("std")
+            || path.starts_with("core")
+            || path.starts_with("alloc")
+            || path.starts_with("tokio")  // Popular async runtime
+            || path.starts_with("async_std")  // Alternative async runtime
+            || path.starts_with("futures")  // Futures library
+            || path.starts_with("serde")  // Serialization
+            || path == "fs"  // File system module
+            || path == "os"  // Operating system module
+            || path == "path"  // Path module
+            || path == "process"  // Process module
+            || path == "http"  // HTTP module
+            || path == "net"  // Network module
+            || path == "crypto"
+        // Crypto module
+        {
+            return false;
+        }
+
+        // HTTP imports are not file imports
+        if path.starts_with("http") {
+            return false;
+        }
+
+        // Empty paths are not file imports
+        if path.is_empty() {
+            return false;
+        }
+
+        // Everything else that doesn't contain :: is a potential file import
         !path.contains("::")
-            && !path.starts_with("std::")
-            && !path.starts_with("http")
-            && !path.is_empty()
     }
     /// Create use statements for specific imports
     /* DISABLED - Needs update for new Import AST structure
@@ -493,7 +533,13 @@ mod tests {
         assert!(resolver.is_file_import("math"));
         assert!(resolver.is_file_import("utils"));
         assert!(resolver.is_file_import("snake_case_module"));
-        // Should NOT be file imports
+        // Should NOT be file imports (standard library)
+        assert!(!resolver.is_file_import("std"));
+        assert!(!resolver.is_file_import("std.collections"));
+        assert!(!resolver.is_file_import("std.collections.HashMap"));
+        assert!(!resolver.is_file_import("core"));
+        assert!(!resolver.is_file_import("core.mem"));
+        assert!(!resolver.is_file_import("alloc"));
         assert!(!resolver.is_file_import("std::collections"));
         assert!(!resolver.is_file_import("std::io::Read"));
         assert!(!resolver.is_file_import("https://example.com/module.ruchy"));

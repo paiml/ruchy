@@ -399,7 +399,7 @@ impl Transpiler {
             _ => bail!("Unsupported expression kind: {:?}", expr.kind),
         }
     }
-    fn transpile_type_decl_expr(&self, expr: &Expr) -> Result<TokenStream> {
+    pub(crate) fn transpile_type_decl_expr(&self, expr: &Expr) -> Result<TokenStream> {
         match &expr.kind {
             ExprKind::Trait {
                 name,

@@ -48,6 +48,7 @@ mod collections;
 mod core;
 mod expressions;
 mod functions;
+mod imports;
 mod operator_precedence;
 mod types;
 mod utils;

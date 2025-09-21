@@ -44,7 +44,9 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
             Ok(Expr::new(ExprKind::Literal(Literal::Null), span))
         }
         // Identifier tokens - delegated to focused helper
-        Token::Identifier(_) | Token::Underscore => parse_identifier_token(state, &token, span),
+        Token::Identifier(_) | Token::Underscore | Token::Self_ => {
+            parse_identifier_token(state, &token, span)
+        }
         // Unary operator tokens - inlined for performance
         Token::Minus => {
             state.tokens.advance();
@@ -108,7 +110,7 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
             parse_data_structure_token(state, token)
         }
         // Import/module tokens - delegated to focused helper
-        Token::Import => parse_import_token(state, token),
+        Token::Import | Token::From | Token::Use => parse_import_token(state, token),
         // Special definition tokens - delegated to focused helper
         Token::DataFrame | Token::Actor => parse_special_definition_token(state, token),
         // Control statement tokens - delegated to focused helper
@@ -217,6 +219,10 @@ fn parse_identifier_token(state: &mut ParserState, token: &Token, span: Span) ->
         Token::Underscore => {
             state.tokens.advance();
             Ok(Expr::new(ExprKind::Identifier("_".to_string()), span))
+        }
+        Token::Self_ => {
+            state.tokens.advance();
+            Ok(Expr::new(ExprKind::Identifier("self".to_string()), span))
         }
         _ => bail!("Expected identifier token, got: {:?}", token),
     }
@@ -517,11 +523,26 @@ fn parse_data_structure_token(state: &mut ParserState, token: Token) -> Result<E
 /// Extracted from `parse_prefix` to reduce complexity
 fn parse_import_token(state: &mut ParserState, token: Token) -> Result<Expr> {
     match token {
-        Token::Import => parse_import_statement(state),
-        Token::Use => bail!("'use' statements not yet supported, please use 'import'"),
+        Token::Import => {
+            // Consume the Import token first
+            state.tokens.advance();
+            // Check if this is JS-style import { ... } from
+            if matches!(state.tokens.peek(), Some((Token::LeftBrace, _))) {
+                super::imports::parse_js_style_import(state)
+            } else {
+                super::imports::parse_import_statement(state)
+            }
+        }
+        Token::From => {
+            // Consume the From token
+            state.tokens.advance();
+            super::imports::parse_from_import_statement(state)
+        }
+        Token::Use => parse_use_statement(state),
         _ => bail!("Expected import token, got: {:?}", token),
     }
 }
+
 /// Parse lambda expression tokens (Pipe, `OrOr`)\
 /// Extracted from `parse_prefix` to reduce complexity
 fn parse_lambda_token(state: &mut ParserState, token: Token) -> Result<Expr> {
@@ -2091,94 +2112,48 @@ fn skip_impl_body(state: &mut ParserState) -> Result<()> {
     }
     Ok(())
 }
-pub(super) fn parse_import_statement(state: &mut ParserState) -> Result<Expr> {
-    let start_span = state.tokens.expect(&Token::Import)?;
-
-    // Check for different import forms
-    // 1. import "module_path"
-    if let Some((Token::String(module), _)) = state.tokens.peek() {
-        let module = module.clone();
-        state.tokens.advance();
-        return Ok(Expr::new(
-            ExprKind::Import {
-                module,
-                items: None,
-            },
-            start_span,
-        ));
-    }
-
-    // 2. import { items } from "module"
-    if matches!(state.tokens.peek(), Some((Token::LeftBrace, _))) {
-        state.tokens.advance(); // consume {
-        let mut items = Vec::new();
-        while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
-            if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
-                items.push(name.clone());
-                state.tokens.advance();
-                if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
-                    state.tokens.advance();
-                }
-            } else {
-                bail!("Expected identifier in import list");
-            }
-        }
-        state.tokens.expect(&Token::RightBrace)?;
-        state.tokens.expect(&Token::From)?;
-        if let Some((Token::String(module), _)) = state.tokens.peek() {
-            let module = module.clone();
-            state.tokens.advance();
-            return Ok(Expr::new(
-                ExprKind::Import {
-                    module,
-                    items: Some(items),
-                },
-                start_span,
-            ));
-        }
-        bail!("Expected module path after 'from'");
-    }
-
-    // 3. import * as name from "module"
-    if matches!(state.tokens.peek(), Some((Token::Star, _))) {
-        state.tokens.advance();
-        state.tokens.expect(&Token::As)?;
-        if let Some((Token::Identifier(alias), _)) = state.tokens.peek() {
-            let alias = alias.clone();
-            state.tokens.advance();
-            state.tokens.expect(&Token::From)?;
-            if let Some((Token::String(module), _)) = state.tokens.peek() {
-                let module = module.clone();
-                state.tokens.advance();
-                return Ok(Expr::new(ExprKind::ImportAll { module, alias }, start_span));
-            }
-            bail!("Expected module path after 'from'");
-        }
-        bail!("Expected alias after 'as'");
-    }
-
-    // 4. import Name from "module" (default import)
-    if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
-        let name = name.clone();
-        state.tokens.advance();
-        state.tokens.expect(&Token::From)?;
-        if let Some((Token::String(module), _)) = state.tokens.peek() {
-            let module = module.clone();
-            state.tokens.advance();
-            return Ok(Expr::new(
-                ExprKind::ImportDefault { module, name },
-                start_span,
-            ));
-        }
-        bail!("Expected module path after 'from'");
-    }
-
-    bail!("Invalid import statement")
+// Removed old parse_import_statement - now in imports.rs
+pub(super) fn parse_from_import_statement(state: &mut ParserState) -> Result<Expr> {
+    // Delegate to the new imports module
+    super::imports::parse_from_import_statement(state)
 }
 // Legacy use statement parser - disabled in favor of new import syntax
-#[allow(dead_code)]
-fn parse_use_statement(_state: &mut ParserState) -> Result<Expr> {
-    bail!("'use' statements are deprecated. Please use 'import' syntax instead")
+fn parse_use_statement(state: &mut ParserState) -> Result<Expr> {
+    state.tokens.advance(); // consume 'use'
+    let start_span = crate::frontend::ast::Span { start: 0, end: 0 };
+
+    // Parse module path components with :: separators
+    let mut path_parts = vec![];
+
+    // First component
+    if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
+        path_parts.push(name.clone());
+        state.tokens.advance();
+    } else {
+        bail!("Expected module path after 'use'");
+    }
+
+    // Additional components separated by ::
+    while matches!(state.tokens.peek(), Some((Token::ColonColon, _))) {
+        state.tokens.advance(); // consume ::
+        if let Some((Token::Identifier(segment), _)) = state.tokens.peek() {
+            path_parts.push(segment.clone());
+            state.tokens.advance();
+        } else {
+            bail!("Expected identifier after '::'");
+        }
+    }
+
+    let module_path = path_parts.join("::");
+
+    // Create an import expression
+    Ok(Expr::new(
+        ExprKind::Import {
+            module: module_path,
+            items: None, // 'use' imports the whole path
+        },
+        start_span,
+    ))
 }
 fn parse_dataframe_literal(state: &mut ParserState) -> Result<Expr> {
     // Parse df![...] macro syntax - DataFrame token already consumed by caller

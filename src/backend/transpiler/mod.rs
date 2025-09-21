@@ -661,6 +661,10 @@ impl Transpiler {
                         statements.push(self.transpile_expr(expr)?);
                     }
                 }
+                ExprKind::Trait { .. } | ExprKind::Impl { .. } => {
+                    // Trait definitions and implementations are top-level items
+                    functions.push(self.transpile_type_decl_expr(expr)?);
+                }
                 _ => {
                     let stmt = self.transpile_expr(expr)?;
                     // Ensure statements have semicolons for proper separation
