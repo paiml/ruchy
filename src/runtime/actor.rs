@@ -1053,7 +1053,7 @@ mod tests {
             actor_name: "searcher".to_string(),
             supervisor: None,
             children: std::collections::HashMap::new(),
-            system: system,
+            system,
         };
 
         let found = context.find_actor("findable");

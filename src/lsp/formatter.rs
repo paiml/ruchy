@@ -80,8 +80,6 @@ impl Default for Formatter {
 #[cfg(test)]
 mod tests {
     use super::Formatter;
-    #[cfg(test)]
-    use proptest::prelude::*;
     #[test]
     fn test_basic_formatting() -> anyhow::Result<()> {
         let formatter = Formatter::new();
@@ -103,7 +101,6 @@ mod tests {
 #[cfg(test)]
 mod property_tests_formatter {
     use proptest::prelude::*;
-    use proptest::proptest;
     proptest! {
         /// Property: Function never panics on any input
         #[test]
