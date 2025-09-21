@@ -13,7 +13,7 @@ use std::rc::Rc;
 /// # Complexity
 /// Cyclomatic complexity: 9 (within Toyota Way limits)
 pub fn eval_string_method(
-    s: &Rc<String>,
+    s: &Rc<str>,
     method: &str,
     args: &[Value],
 ) -> Result<Value, InterpreterError> {
@@ -58,7 +58,7 @@ pub fn eval_string_method(
 /// Cyclomatic complexity: 3 (within Toyota Way limits)
 fn eval_string_contains(s: &str, needle: &Value) -> Result<Value, InterpreterError> {
     if let Value::String(needle_str) = needle {
-        Ok(Value::Bool(s.contains(needle_str.as_str())))
+        Ok(Value::Bool(s.contains(&**needle_str)))
     } else {
         Err(InterpreterError::RuntimeError(
             "contains expects string argument".to_string(),
@@ -72,7 +72,7 @@ fn eval_string_contains(s: &str, needle: &Value) -> Result<Value, InterpreterErr
 /// Cyclomatic complexity: 3 (within Toyota Way limits)
 fn eval_string_starts_with(s: &str, prefix: &Value) -> Result<Value, InterpreterError> {
     if let Value::String(prefix_str) = prefix {
-        Ok(Value::Bool(s.starts_with(prefix_str.as_str())))
+        Ok(Value::Bool(s.starts_with(&**prefix_str)))
     } else {
         Err(InterpreterError::RuntimeError(
             "starts_with expects string argument".to_string(),
@@ -86,7 +86,7 @@ fn eval_string_starts_with(s: &str, prefix: &Value) -> Result<Value, Interpreter
 /// Cyclomatic complexity: 3 (within Toyota Way limits)
 fn eval_string_ends_with(s: &str, suffix: &Value) -> Result<Value, InterpreterError> {
     if let Value::String(suffix_str) = suffix {
-        Ok(Value::Bool(s.ends_with(suffix_str.as_str())))
+        Ok(Value::Bool(s.ends_with(&**suffix_str)))
     } else {
         Err(InterpreterError::RuntimeError(
             "ends_with expects string argument".to_string(),
@@ -100,9 +100,7 @@ fn eval_string_ends_with(s: &str, suffix: &Value) -> Result<Value, InterpreterEr
 /// Cyclomatic complexity: 3 (within Toyota Way limits)
 fn eval_string_replace(s: &str, from: &Value, to: &Value) -> Result<Value, InterpreterError> {
     if let (Value::String(from_str), Value::String(to_str)) = (from, to) {
-        Ok(Value::from_string(
-            s.replace(from_str.as_str(), to_str.as_str()),
-        ))
+        Ok(Value::from_string(s.replace(&**from_str, to_str)))
     } else {
         Err(InterpreterError::RuntimeError(
             "replace expects two string arguments".to_string(),
@@ -117,10 +115,10 @@ fn eval_string_replace(s: &str, from: &Value, to: &Value) -> Result<Value, Inter
 fn eval_string_split(s: &str, separator: &Value) -> Result<Value, InterpreterError> {
     if let Value::String(sep_str) = separator {
         let parts: Vec<Value> = s
-            .split(sep_str.as_str())
+            .split(&**sep_str)
             .map(|part| Value::from_string(part.to_string()))
             .collect();
-        Ok(Value::Array(Rc::new(parts)))
+        Ok(Value::from_array(parts))
     } else {
         Err(InterpreterError::RuntimeError(
             "split expects string argument".to_string(),
@@ -206,7 +204,7 @@ fn eval_string_chars(s: &str) -> Result<Value, InterpreterError> {
         .chars()
         .map(|c| Value::from_string(c.to_string()))
         .collect();
-    Ok(Value::Array(Rc::new(chars)))
+    Ok(Value::from_array(chars))
 }
 
 /// Split string into lines
@@ -218,7 +216,7 @@ fn eval_string_lines(s: &str) -> Result<Value, InterpreterError> {
         .lines()
         .map(|line| Value::from_string(line.to_string()))
         .collect();
-    Ok(Value::Array(Rc::new(lines)))
+    Ok(Value::from_array(lines))
 }
 
 /// Evaluate primitive type methods (float, integer, generic)
@@ -307,14 +305,14 @@ mod tests {
 
     #[test]
     fn test_string_length() {
-        let s = Rc::new("hello".to_string());
+        let s = Rc::from("hello");
         let result = eval_string_method(&s, "len", &[]).unwrap();
         assert_eq!(result, Value::Integer(5));
     }
 
     #[test]
     fn test_string_case_conversion() {
-        let s = Rc::new("Hello World".to_string());
+        let s = Rc::from("Hello World");
 
         let upper = eval_string_method(&s, "to_upper", &[]).unwrap();
         assert_eq!(upper, Value::from_string("HELLO WORLD".to_string()));
@@ -325,7 +323,7 @@ mod tests {
 
     #[test]
     fn test_string_contains() {
-        let s = Rc::new("hello world".to_string());
+        let s = Rc::from("hello world");
         let needle = Value::from_string("world".to_string());
 
         let result = eval_string_method(&s, "contains", &[needle]).unwrap();
@@ -334,7 +332,7 @@ mod tests {
 
     #[test]
     fn test_string_split() {
-        let s = Rc::new("a,b,c".to_string());
+        let s = Rc::from("a,b,c");
         let sep = Value::from_string(",".to_string());
 
         let result = eval_string_method(&s, "split", &[sep]).unwrap();
@@ -350,7 +348,7 @@ mod tests {
 
     #[test]
     fn test_string_substring() {
-        let s = Rc::new("hello".to_string());
+        let s = Rc::from("hello");
         let start = Value::Integer(1);
         let end = Value::Integer(4);
 
@@ -360,7 +358,7 @@ mod tests {
 
     #[test]
     fn test_string_repeat() {
-        let s = Rc::new("hi".to_string());
+        let s = Rc::from("hi");
         let count = Value::Integer(3);
 
         let result = eval_string_method(&s, "repeat", &[count]).unwrap();

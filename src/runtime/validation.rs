@@ -120,7 +120,6 @@ pub fn validate_array(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::rc::Rc;
 
     #[test]
     fn test_validate_arg_count_exact() {
@@ -143,7 +142,7 @@ mod tests {
         assert!(validate_numeric("test", &Value::Float(3.14), "arg").is_ok());
         assert!(validate_numeric(
             "test",
-            &Value::String(Rc::new("not a number".to_string())),
+            &Value::from_string("not a number".to_string()),
             "arg"
         )
         .is_err());
@@ -157,7 +156,7 @@ mod property_tests {
 
     proptest! {
         #[test]
-        fn test_validation_is_constant_time(arg_count: usize, expected: usize) {
+        fn test_validation_is_constant_time(arg_count in 0..100usize, expected in 0..100usize) {
             let args: Vec<Value> = (0..arg_count).map(|i| Value::Integer(i as i64)).collect();
 
             // Validation should be O(1) - just comparing lengths
@@ -169,7 +168,7 @@ mod property_tests {
         }
 
         #[test]
-        fn test_error_messages_are_informative(func_name: String, expected: usize, actual: usize) {
+        fn test_error_messages_are_informative(func_name: String, expected in 0..100usize, actual in 0..100usize) {
             let args: Vec<Value> = (0..actual).map(|i| Value::Integer(i as i64)).collect();
 
             if expected != actual {

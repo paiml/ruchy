@@ -392,8 +392,7 @@ impl MagicCommand for WhosMagic {
                 Value::Object(_) => "Object",
                 Value::Range { .. } => "Range",
                 Value::EnumVariant { .. } => "EnumVariant",
-                // BuiltinFunction variant not in current Value enum
-                // Value::BuiltinFunction(_) => "BuiltinFunction",
+                Value::BuiltinFunction(_) => "BuiltinFunction",
             };
             let value_str = format!("{value:?}");
             let value_display = if value_str.len() > 40 {

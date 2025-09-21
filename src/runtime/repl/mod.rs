@@ -17,7 +17,7 @@ pub mod state;
 pub use self::commands::{CommandContext, CommandRegistry, CommandResult};
 pub use self::completion::CompletionEngine;
 pub use self::evaluation::{EvalResult, Evaluator};
-pub use self::formatting::{format_ast, format_error, format_value};
+pub use self::formatting::{format_ast, format_error};
 pub use self::state::{ReplMode, ReplState};
 
 // Re-export Value from interpreter
@@ -151,7 +151,7 @@ impl Repl {
             EvalResult::Value(value) => {
                 // Add result to history for tracking
                 self.add_result_to_history(value.clone());
-                let formatted = format_value(&value);
+                let formatted = value.to_string();
                 Ok(formatted)
             }
             EvalResult::NeedMoreInput => {
@@ -243,57 +243,6 @@ impl Repl {
         (used / max).min(1.0)
     }
 
-    /// Create checkpoint (compatibility method)
-    /// Complexity: 2
-    pub fn checkpoint(&self) -> String {
-        // Serialize current state bindings as checkpoint
-        use std::collections::HashMap;
-
-        let bindings: HashMap<String, String> = self
-            .state
-            .get_bindings()
-            .iter()
-            .map(|(k, v)| (k.clone(), format!("{v}")))
-            .collect();
-
-        serde_json::to_string(&bindings).unwrap_or_else(|_| "{}".to_string())
-    }
-
-    /// Restore checkpoint (compatibility method)
-    /// Complexity: 5
-    pub fn restore_checkpoint(&mut self, checkpoint: &str) {
-        use std::collections::HashMap;
-
-        // Deserialize checkpoint and restore bindings
-        if let Ok(saved_bindings) = serde_json::from_str::<HashMap<String, String>>(checkpoint) {
-            self.clear_bindings();
-
-            // Convert string representations back to Values and restore them
-            for (name, value_str) in saved_bindings {
-                let value = if let Ok(int_val) = value_str.parse::<i64>() {
-                    Value::Integer(int_val)
-                } else if value_str == "true" {
-                    Value::Bool(true)
-                } else if value_str == "false" {
-                    Value::Bool(false)
-                } else if value_str == "nil" {
-                    Value::Nil
-                } else if value_str.starts_with('"') && value_str.ends_with('"') {
-                    let content = &value_str[1..value_str.len() - 1];
-                    Value::String(std::rc::Rc::new(content.to_string()))
-                } else {
-                    continue; // Skip unknown types
-                };
-
-                // Restore to both REPL state and interpreter
-                self.state
-                    .get_bindings_mut()
-                    .insert(name.clone(), value.clone());
-                self.evaluator.set_variable(name, value);
-            }
-        }
-    }
-
     /// Process REPL commands (complexity: 6)
     fn process_command(&mut self, line: &str) -> Result<bool> {
         let parts: Vec<&str> = line.split_whitespace().collect();
@@ -322,7 +271,7 @@ impl Repl {
     fn process_evaluation(&mut self, line: &str) -> Result<()> {
         match self.evaluator.evaluate_line(line, &mut self.state)? {
             EvalResult::Value(value) => {
-                let formatted = format_value(&value);
+                let formatted = value.to_string();
                 if !formatted.is_empty() {
                     println!("{formatted}");
                 }
@@ -405,6 +354,11 @@ impl Repl {
     /// Clear all variable bindings (compatibility method)
     pub fn clear_bindings(&mut self) {
         self.state.clear_bindings();
+    }
+
+    /// Get mutable access to evaluator for checkpoint/restore
+    pub fn get_evaluator_mut(&mut self) -> Option<&mut Evaluator> {
+        Some(&mut self.evaluator)
     }
 
     /// Get result history length (complexity: 1)

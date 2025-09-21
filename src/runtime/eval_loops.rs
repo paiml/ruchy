@@ -205,7 +205,7 @@ mod tests {
 
     #[test]
     fn test_for_loop_array() {
-        let arr = Value::Array(Rc::new(vec![
+        let arr = Value::Array(Rc::from(vec![
             Value::Integer(1),
             Value::Integer(2),
             Value::Integer(3),
@@ -286,7 +286,7 @@ mod tests {
 
     #[test]
     fn test_for_loop_break() {
-        let arr = Value::Array(Rc::new(vec![
+        let arr = Value::Array(Rc::from(vec![
             Value::Integer(1),
             Value::Integer(2),
             Value::Integer(3),
@@ -321,22 +321,26 @@ mod tests {
     fn test_while_loop() {
         let condition = make_literal_expr(1);
         let body = make_literal_expr(42);
-        let mut iterations = 0;
+        let mut condition_checks = 0;
 
         let result = eval_while_loop(&condition, &body, |expr| {
-            iterations += 1;
-            if iterations > 3 {
-                Ok(Value::Bool(false)) // Stop after 3 iterations
-            } else if matches!(expr.kind, ExprKind::Literal(Literal::Integer(1))) {
-                Ok(Value::Bool(true)) // Continue
+            if matches!(expr.kind, ExprKind::Literal(Literal::Integer(1))) {
+                // This is the condition
+                condition_checks += 1;
+                if condition_checks > 3 {
+                    Ok(Value::Bool(false)) // Stop after 3 iterations
+                } else {
+                    Ok(Value::Bool(true)) // Continue
+                }
             } else {
+                // This is the body
                 Ok(Value::Integer(42)) // Body result
             }
         })
         .unwrap();
 
         assert_eq!(result, Value::Integer(42));
-        assert_eq!(iterations, 4); // 3 iterations + 1 final check
+        assert_eq!(condition_checks, 4); // 3 iterations + 1 final check
     }
 
     #[test]
@@ -348,6 +352,6 @@ mod tests {
         assert!(is_truthy(&Value::Integer(1)));
         assert!(!is_truthy(&Value::Float(0.0)));
         assert!(is_truthy(&Value::Float(1.0)));
-        assert!(is_truthy(&Value::String(Rc::new("test".to_string()))));
+        assert!(is_truthy(&Value::from_string("test".to_string())));
     }
 }

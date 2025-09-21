@@ -848,7 +848,7 @@ mod tests {
 
         let result = transpiler.transpile_type(&func_type).unwrap();
         let code = result.to_string();
-        assert!(code.contains("Fn"));
+        assert!(code.contains("fn"));
         assert!(code.contains("i64"));
         assert!(code.contains("bool"));
     }

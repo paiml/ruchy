@@ -160,15 +160,16 @@ impl ModuleResolver {
         items: Option<&[String]>,
     ) -> Result<Expr> {
         if self.is_file_import(module) {
-            self.resolve_file_module(span, module)?;
+            self.resolve_file_import(span, module, items)
+        } else {
+            Ok(Expr::new(
+                ExprKind::Import {
+                    module: module.to_string(),
+                    items: items.map(<[std::string::String]>::to_vec),
+                },
+                span,
+            ))
         }
-        Ok(Expr::new(
-            ExprKind::Import {
-                module: module.to_string(),
-                items: items.map(<[std::string::String]>::to_vec),
-            },
-            span,
-        ))
     }
 
     fn resolve_import_all(&mut self, span: Span, module: &str, alias: &str) -> Result<Expr> {
@@ -210,6 +211,33 @@ impl ModuleResolver {
         ))
     }
 
+    fn resolve_file_import(
+        &mut self,
+        span: Span,
+        module: &str,
+        items: Option<&[String]>,
+    ) -> Result<Expr> {
+        // Load the module file
+        let parsed_module = self
+            .module_loader
+            .load_module(module)
+            .module_context("resolve import", module)?;
+
+        // Recursively resolve imports in the loaded module
+        let resolved_module_ast = self.resolve_expr(parsed_module.ast)?;
+
+        // Create inline module
+        let module_expr = self.create_inline_module(module, resolved_module_ast, span);
+
+        // Create use statement
+        let use_statement = self.create_use_statement(module, items, span);
+
+        Ok(Expr::new(
+            ExprKind::Block(vec![module_expr, use_statement]),
+            span,
+        ))
+    }
+
     fn resolve_file_module(&mut self, _span: Span, module: &str) -> Result<()> {
         // Load and parse the module file
         let _ = self
@@ -219,6 +247,27 @@ impl ModuleResolver {
         // Module integration is handled by the module loader
         // The exports are made available through the loader's cache
         Ok(())
+    }
+
+    fn create_inline_module(&self, name: &str, resolved_ast: Expr, span: Span) -> Expr {
+        Expr::new(
+            ExprKind::Module {
+                name: name.to_string(),
+                body: Box::new(resolved_ast),
+            },
+            span,
+        )
+    }
+
+    fn create_use_statement(&self, module: &str, items: Option<&[String]>, span: Span) -> Expr {
+        // Always create Import expression - preserve the original import structure
+        Expr::new(
+            ExprKind::Import {
+                module: module.to_string(),
+                items: items.map(<[std::string::String]>::to_vec),
+            },
+            span,
+        )
     }
 
     /* DISABLED - Needs update for new Import AST structure
@@ -610,7 +659,8 @@ mod tests {
 
         let result = resolver.resolve_imports(import_expr);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("not found"));
+        let error_msg = result.unwrap_err().to_string();
+        assert!(error_msg.contains("Failed to resolve import module"));
 
         Ok(())
     }
@@ -656,8 +706,8 @@ mod tests {
             Span { start: 0, end: 0 },
         );
 
-        let resolved = resolver.resolve_imports(import_expr)?;
-        if let ExprKind::Block(exprs) = resolved.kind {
+        let result = resolver.resolve_imports(import_expr)?;
+        if let ExprKind::Block(exprs) = result.kind {
             assert_eq!(exprs.len(), 2);
             // Check that module was loaded
             assert!(matches!(exprs[0].kind, ExprKind::Module { .. }));

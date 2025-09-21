@@ -2,56 +2,6 @@
 //!
 //! Handles formatting of values, errors, and AST for display in the REPL.
 
-use crate::runtime::interpreter::Value;
-
-/// Format a value for display in the REPL (complexity: 9)
-pub fn format_value(value: &Value) -> String {
-    match value {
-        Value::Integer(n) => n.to_string(),
-        Value::Float(f) => f.to_string(),
-        Value::String(s) => format!("\"{s}\""),
-        Value::Bool(b) => b.to_string(),
-        Value::Nil => "nil".to_string(),
-        Value::Array(arr) => {
-            let elements: Vec<String> = arr.iter().map(format_value).collect();
-            format!("[{}]", elements.join(", "))
-        }
-        Value::Tuple(tuple) => {
-            let elements: Vec<String> = tuple.iter().map(format_value).collect();
-            format!("({})", elements.join(", "))
-        }
-        Value::Object(obj) => {
-            let pairs: Vec<String> = obj
-                .iter()
-                .map(|(k, v)| format!("{}: {}", k, format_value(v)))
-                .collect();
-            format!("{{{}}}", pairs.join(", "))
-        }
-        Value::Range {
-            start,
-            end,
-            inclusive,
-        } => {
-            if *inclusive {
-                format!("{}..={}", format_value(start), format_value(end))
-            } else {
-                format!("{}..{}", format_value(start), format_value(end))
-            }
-        }
-        Value::EnumVariant { variant_name, data } => match data {
-            Some(values) => {
-                let formatted: Vec<String> = values.iter().map(format_value).collect();
-                format!("{}({})", variant_name, formatted.join(", "))
-            }
-            None => variant_name.clone(),
-        },
-        Value::Closure { .. } => "<closure>".to_string(),
-        Value::DataFrame { .. } => "<dataframe>".to_string(),
-        // BuiltinFunction variant not in current Value enum
-        // Value::BuiltinFunction(name) => format!("<builtin function: {}>", name),
-    }
-}
-
 /// Format an error for display in the REPL (complexity: 2)
 pub fn format_error(error: &str) -> String {
     format!("Error: {error}")
@@ -66,49 +16,50 @@ pub fn format_ast(ast: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::runtime::Value;
     use std::rc::Rc;
 
     #[test]
     fn test_format_integer() {
         let value = Value::Integer(42);
-        assert_eq!(format_value(&value), "42");
+        assert_eq!(value.to_string(), "42");
     }
 
     #[test]
     fn test_format_string() {
-        let value = Value::String(Rc::new("hello".to_string()));
-        assert_eq!(format_value(&value), "\"hello\"");
+        let value = Value::from_string("hello".to_string());
+        assert_eq!(value.to_string(), "\"hello\"");
     }
 
     #[test]
     fn test_format_bool() {
         let value = Value::Bool(true);
-        assert_eq!(format_value(&value), "true");
+        assert_eq!(value.to_string(), "true");
     }
 
     #[test]
     fn test_format_nil() {
         let value = Value::Nil;
-        assert_eq!(format_value(&value), "nil");
+        assert_eq!(value.to_string(), "nil");
     }
 
     #[test]
     fn test_format_array() {
-        let value = Value::Array(Rc::new(vec![
+        let value = Value::Array(Rc::from(vec![
             Value::Integer(1),
             Value::Integer(2),
             Value::Integer(3),
         ]));
-        assert_eq!(format_value(&value), "[1, 2, 3]");
+        assert_eq!(value.to_string(), "[1, 2, 3]");
     }
 
     #[test]
     fn test_format_tuple() {
-        let value = Value::Tuple(Rc::new(vec![
+        let value = Value::Tuple(Rc::from(vec![
             Value::Integer(1),
-            Value::String(Rc::new("test".to_string())),
+            Value::from_string("test".to_string()),
         ]));
-        assert_eq!(format_value(&value), "(1, \"test\")");
+        assert_eq!(value.to_string(), "(1, \"test\")");
     }
 
     #[test]
@@ -123,7 +74,7 @@ mod tests {
             end: Box::new(Value::Integer(10)),
             inclusive: true,
         };
-        assert_eq!(format_value(&value), "1..=10");
+        assert_eq!(value.to_string(), "1..=10");
     }
 
     #[test]
@@ -133,6 +84,6 @@ mod tests {
             end: Box::new(Value::Integer(10)),
             inclusive: false,
         };
-        assert_eq!(format_value(&value), "1..10");
+        assert_eq!(value.to_string(), "1..10");
     }
 }

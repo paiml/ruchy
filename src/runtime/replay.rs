@@ -439,7 +439,6 @@ mod tests {
     #[cfg(test)]
     mod enabled_tests {
         use super::*;
-        use std::rc::Rc;
 
         // Test 1: SemVer Creation and Equality
         #[test]
@@ -719,7 +718,7 @@ mod tests {
 
             // Record some data
             recorder.record_input("test input".to_string(), InputMode::Interactive);
-            recorder.record_output(Ok(Value::String(Rc::new("test output".to_string()))));
+            recorder.record_output(Ok(Value::from_string("test output".to_string())));
 
             // Test borrowing session
             {

@@ -12,7 +12,7 @@ use std::rc::Rc;
 /// # Complexity
 /// Cyclomatic complexity: 15 (will be decomposed further into helper functions)
 pub fn eval_array_method<F>(
-    arr: &Rc<Vec<Value>>,
+    arr: &Rc<[Value]>,
     method: &str,
     args: &[Value],
     mut eval_function_call_value: F,
@@ -47,33 +47,33 @@ where
 
 // No-argument array methods (complexity <= 3 each)
 
-fn eval_array_len(arr: &Rc<Vec<Value>>) -> Result<Value, InterpreterError> {
+fn eval_array_len(arr: &Rc<[Value]>) -> Result<Value, InterpreterError> {
     Ok(Value::Integer(arr.len() as i64))
 }
 
-fn eval_array_first(arr: &Rc<Vec<Value>>) -> Result<Value, InterpreterError> {
+fn eval_array_first(arr: &Rc<[Value]>) -> Result<Value, InterpreterError> {
     Ok(arr.first().cloned().unwrap_or(Value::Nil))
 }
 
-fn eval_array_last(arr: &Rc<Vec<Value>>) -> Result<Value, InterpreterError> {
+fn eval_array_last(arr: &Rc<[Value]>) -> Result<Value, InterpreterError> {
     Ok(arr.last().cloned().unwrap_or(Value::Nil))
 }
 
 // Single-argument array methods (complexity <= 5 each)
 
-fn eval_array_push(arr: &Rc<Vec<Value>>, item: &Value) -> Result<Value, InterpreterError> {
-    let mut new_arr = (**arr).clone();
+fn eval_array_push(arr: &Rc<[Value]>, item: &Value) -> Result<Value, InterpreterError> {
+    let mut new_arr = arr.to_vec();
     new_arr.push(item.clone());
-    Ok(Value::Array(Rc::new(new_arr)))
+    Ok(Value::Array(Rc::from(new_arr)))
 }
 
-fn eval_array_pop(arr: &Rc<Vec<Value>>) -> Result<Value, InterpreterError> {
-    let mut new_arr = (**arr).clone();
+fn eval_array_pop(arr: &Rc<[Value]>) -> Result<Value, InterpreterError> {
+    let mut new_arr = arr.to_vec();
     new_arr.pop().unwrap_or(Value::nil());
-    Ok(Value::Array(Rc::new(new_arr)))
+    Ok(Value::Array(Rc::from(new_arr)))
 }
 
-fn eval_array_get(arr: &Rc<Vec<Value>>, index: &Value) -> Result<Value, InterpreterError> {
+fn eval_array_get(arr: &Rc<[Value]>, index: &Value) -> Result<Value, InterpreterError> {
     if let Value::Integer(idx) = index {
         if *idx < 0 {
             return Ok(Value::Nil);
@@ -95,7 +95,7 @@ fn eval_array_get(arr: &Rc<Vec<Value>>, index: &Value) -> Result<Value, Interpre
 // Higher-order array methods (complexity <= 8 each)
 
 fn eval_array_map<F>(
-    arr: &Rc<Vec<Value>>,
+    arr: &Rc<[Value]>,
     args: &[Value],
     eval_function_call_value: &mut F,
 ) -> Result<Value, InterpreterError>
@@ -108,11 +108,11 @@ where
         let func_result = eval_function_call_value(&args[0], std::slice::from_ref(item))?;
         result.push(func_result);
     }
-    Ok(Value::Array(Rc::new(result)))
+    Ok(Value::Array(Rc::from(result)))
 }
 
 fn eval_array_filter<F>(
-    arr: &Rc<Vec<Value>>,
+    arr: &Rc<[Value]>,
     args: &[Value],
     eval_function_call_value: &mut F,
 ) -> Result<Value, InterpreterError>
@@ -127,11 +127,11 @@ where
             result.push(item.clone());
         }
     }
-    Ok(Value::Array(Rc::new(result)))
+    Ok(Value::Array(Rc::from(result)))
 }
 
 fn eval_array_reduce<F>(
-    arr: &Rc<Vec<Value>>,
+    arr: &Rc<[Value]>,
     args: &[Value],
     eval_function_call_value: &mut F,
 ) -> Result<Value, InterpreterError>
@@ -157,7 +157,7 @@ where
 }
 
 fn eval_array_any<F>(
-    arr: &Rc<Vec<Value>>,
+    arr: &Rc<[Value]>,
     args: &[Value],
     eval_function_call_value: &mut F,
 ) -> Result<Value, InterpreterError>
@@ -175,7 +175,7 @@ where
 }
 
 fn eval_array_all<F>(
-    arr: &Rc<Vec<Value>>,
+    arr: &Rc<[Value]>,
     args: &[Value],
     eval_function_call_value: &mut F,
 ) -> Result<Value, InterpreterError>
@@ -193,7 +193,7 @@ where
 }
 
 fn eval_array_find<F>(
-    arr: &Rc<Vec<Value>>,
+    arr: &Rc<[Value]>,
     args: &[Value],
     eval_function_call_value: &mut F,
 ) -> Result<Value, InterpreterError>
@@ -235,7 +235,7 @@ mod tests {
 
     #[test]
     fn test_array_len() {
-        let arr = Rc::new(vec![
+        let arr = Rc::from(vec![
             Value::Integer(1),
             Value::Integer(2),
             Value::Integer(3),
@@ -246,7 +246,7 @@ mod tests {
 
     #[test]
     fn test_array_first() {
-        let arr = Rc::new(vec![
+        let arr = Rc::from(vec![
             Value::Integer(1),
             Value::Integer(2),
             Value::Integer(3),
@@ -257,7 +257,7 @@ mod tests {
 
     #[test]
     fn test_array_last() {
-        let arr = Rc::new(vec![
+        let arr = Rc::from(vec![
             Value::Integer(1),
             Value::Integer(2),
             Value::Integer(3),
@@ -268,7 +268,7 @@ mod tests {
 
     #[test]
     fn test_array_push() {
-        let arr = Rc::new(vec![Value::Integer(1), Value::Integer(2)]);
+        let arr = Rc::from(vec![Value::Integer(1), Value::Integer(2)]);
         let result = eval_array_push(&arr, &Value::Integer(3)).unwrap();
         if let Value::Array(new_arr) = result {
             assert_eq!(new_arr.len(), 3);
@@ -280,7 +280,7 @@ mod tests {
 
     #[test]
     fn test_array_get() {
-        let arr = Rc::new(vec![
+        let arr = Rc::from(vec![
             Value::Integer(1),
             Value::Integer(2),
             Value::Integer(3),

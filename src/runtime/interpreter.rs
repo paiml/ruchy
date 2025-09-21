@@ -58,11 +58,11 @@ pub enum Value {
     /// Nil/null value
     Nil,
     /// String value (reference-counted for efficiency)
-    String(Rc<String>),
+    String(Rc<str>),
     /// Array of values
-    Array(Rc<Vec<Value>>),
+    Array(Rc<[Value]>),
     /// Tuple of values
-    Tuple(Rc<Vec<Value>>),
+    Tuple(Rc<[Value]>),
     /// Function closure
     Closure {
         params: Vec<String>,
@@ -84,6 +84,8 @@ pub enum Value {
         variant_name: String,
         data: Option<Vec<Value>>,
     },
+    /// Built-in function reference
+    BuiltinFunction(String),
 }
 
 impl Value {
@@ -106,6 +108,7 @@ impl Value {
             Value::Object(_) => TypeId::of::<HashMap<String, Value>>(),
             Value::Range { .. } => TypeId::of::<std::ops::Range<i64>>(),
             Value::EnumVariant { .. } => TypeId::of::<(String, Option<Vec<Value>>)>(),
+            Value::BuiltinFunction(_) => TypeId::of::<fn()>(),
         }
     }
 }
@@ -1024,7 +1027,7 @@ impl Interpreter {
 
     fn eval_qualified_name(&self, module: &str, name: &str) -> Result<Value, InterpreterError> {
         if module == "HashMap" && name == "new" {
-            Ok(Value::String(Rc::new("__builtin_hashmap__".to_string())))
+            Ok(Value::from_string("__builtin_hashmap__".to_string()))
         } else {
             Err(InterpreterError::RuntimeError(format!(
                 "Unknown qualified name: {}::{}",
@@ -1108,7 +1111,7 @@ impl Interpreter {
         match func {
             Value::String(s) if s.starts_with("__builtin_") => {
                 // Delegate to extracted builtin module
-                match crate::runtime::eval_builtin::eval_builtin_function(s.as_str(), args)? {
+                match crate::runtime::eval_builtin::eval_builtin_function(&s, args)? {
                     Some(result) => Ok(result),
                     None => Err(InterpreterError::RuntimeError(format!(
                         "Unknown builtin function: {}",
@@ -1507,9 +1510,9 @@ impl Interpreter {
         match (obj, field_name) {
             // String methods
             (Value::String(s), "len") => Ok(Value::Integer(s.len().try_into().unwrap_or(i64::MAX))),
-            (Value::String(s), "to_upper") => Ok(Value::String(Rc::new(s.to_uppercase()))),
-            (Value::String(s), "to_lower") => Ok(Value::String(Rc::new(s.to_lowercase()))),
-            (Value::String(s), "trim") => Ok(Value::String(Rc::new(s.trim().to_string()))),
+            (Value::String(s), "to_upper") => Ok(Value::from_string(s.to_uppercase())),
+            (Value::String(s), "to_lower") => Ok(Value::from_string(s.to_lowercase())),
+            (Value::String(s), "trim") => Ok(Value::from_string(s.trim().to_string())),
 
             // Array methods
             (Value::Array(arr), "len") => {
@@ -1526,7 +1529,7 @@ impl Interpreter {
             (Value::Array(arr), "is_empty") => Ok(Value::from_bool(arr.is_empty())),
 
             // Type information
-            (obj, "type") => Ok(Value::String(Rc::new(obj.type_name().to_string()))),
+            (obj, "type") => Ok(Value::from_string(obj.type_name().to_string())),
 
             _ => Err(InterpreterError::RuntimeError(format!(
                 "Field '{}' not found on type '{}'",
@@ -1635,14 +1638,14 @@ impl Interpreter {
 
     /// Allocate a new array and track it in GC
     pub fn gc_alloc_array(&mut self, elements: Vec<Value>) -> Value {
-        let array_value = Value::Array(Rc::new(elements));
+        let array_value = Value::from_array(elements);
         self.gc.track_object(array_value.clone());
         array_value
     }
 
     /// Allocate a new string and track it in GC
     pub fn gc_alloc_string(&mut self, content: String) -> Value {
-        let string_value = Value::String(Rc::new(content));
+        let string_value = Value::from_string(content);
         self.gc.track_object(string_value.clone());
         string_value
     }
@@ -1679,6 +1682,14 @@ impl Interpreter {
         }
     }
 
+    /// Clear all user variables from global environment, keeping only builtins
+    pub fn clear_user_variables(&mut self) {
+        if let Some(global_env) = self.env_stack.first_mut() {
+            // Keep only builtin functions (those starting with "__builtin_") and nil
+            global_env.retain(|name, _| name.starts_with("__builtin_") || name == "nil");
+        }
+    }
+
     /// Get all bindings from the current environment (for `SharedSession` extraction)
     pub fn get_current_bindings(&self) -> HashMap<String, Value> {
         if let Some(current_env) = self.env_stack.last() {
@@ -1709,7 +1720,7 @@ impl Interpreter {
                     match self.eval_expr(body) {
                         Ok(value) => last_value = value,
                         Err(InterpreterError::Break(val)) => return Ok(val),
-                        Err(InterpreterError::Continue) => continue,
+                        Err(InterpreterError::Continue) => {}
                         Err(e) => return Err(e),
                     }
                 }
@@ -1730,7 +1741,7 @@ impl Interpreter {
                         match self.eval_expr(body) {
                             Ok(value) => last_value = value,
                             Err(InterpreterError::Break(val)) => return Ok(val),
-                            Err(InterpreterError::Continue) => continue,
+                            Err(InterpreterError::Continue) => {}
                             Err(e) => return Err(e),
                         }
                     }
@@ -1880,7 +1891,7 @@ impl Interpreter {
     /// Evaluate string methods
     fn eval_string_method(
         &mut self,
-        s: &Rc<String>,
+        s: &Rc<str>,
         method: &str,
         args: &[Value],
     ) -> Result<Value, InterpreterError> {
@@ -1891,7 +1902,7 @@ impl Interpreter {
     #[allow(clippy::rc_buffer)]
     fn eval_array_method(
         &mut self,
-        arr: &Rc<Vec<Value>>,
+        arr: &Rc<[Value]>,
         method: &str,
         args: &[Value],
     ) -> Result<Value, InterpreterError> {

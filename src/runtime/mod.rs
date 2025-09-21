@@ -59,7 +59,6 @@
 //! - **Educational Tools**: Assessment and grading systems
 pub mod actor;
 pub mod async_runtime;
-pub mod binary_ops;
 pub mod cache;
 pub mod completion;
 pub mod dataflow_debugger;
@@ -71,9 +70,7 @@ pub mod value_utils;
 pub mod builtin_init; // EXTREME TDD: Builtin functions initialization
 pub mod builtins;
 pub mod compilation; // EXTREME TDD: Direct-threaded interpreter compilation
-pub mod eval_arithmetic;
 pub mod eval_array;
-pub mod eval_binary;
 pub mod eval_builtin;
 pub mod eval_control_flow;
 pub mod eval_control_flow_new;
@@ -307,14 +304,16 @@ mod tests {
 
     #[test]
     fn test_repl_checkpoint_restore() {
+        use crate::runtime::replay::DeterministicRepl;
+
         let mut repl = Repl::new(std::env::temp_dir()).unwrap();
         repl.eval("let x = 10").unwrap();
 
-        let checkpoint = repl.checkpoint();
+        let checkpoint = DeterministicRepl::checkpoint(&repl);
         repl.eval("let x = 20").unwrap();
         assert_eq!(repl.eval("x").unwrap(), "20");
 
-        repl.restore_checkpoint(&checkpoint);
+        DeterministicRepl::restore(&mut repl, &checkpoint).unwrap();
         assert_eq!(repl.eval("x").unwrap(), "10");
     }
 
@@ -338,32 +337,28 @@ mod tests {
         assert_eq!(Value::Float(3.14).to_string(), "3.14");
         assert_eq!(Value::Bool(true).to_string(), "true");
         assert_eq!(
-            Value::String(Rc::new("hello".to_string())).to_string(),
+            Value::from_string("hello".to_string()).to_string(),
             "\"hello\""
         );
         assert_eq!(Value::Nil.to_string(), "nil");
-        assert_eq!(Value::Nil.to_string(), "()");
     }
 
     #[test]
     fn test_value_list() {
-        let list = Value::Array(Rc::new(vec![
-            Value::Integer(1),
-            Value::Integer(2),
-            Value::Integer(3),
-        ]));
+        let list = Value::Array(Rc::from(
+            vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)].as_slice(),
+        ));
         assert_eq!(list.to_string(), "[1, 2, 3]");
 
-        let empty = Value::Array(Rc::new(vec![]));
+        let empty = Value::from_array(vec![]);
         assert_eq!(empty.to_string(), "[]");
     }
 
     #[test]
     fn test_value_tuple() {
-        let tuple = Value::Tuple(Rc::new(vec![
-            Value::Integer(1),
-            Value::String(Rc::new("test".to_string())),
-        ]));
+        let tuple = Value::Tuple(Rc::from(
+            vec![Value::Integer(1), Value::from_string("test".to_string())].as_slice(),
+        ));
         assert_eq!(tuple.to_string(), "(1, \"test\")");
     }
 }

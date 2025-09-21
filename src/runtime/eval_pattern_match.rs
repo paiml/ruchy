@@ -270,7 +270,7 @@ mod tests {
         match lit {
             Literal::Integer(i) => Value::Integer(*i),
             Literal::Float(f) => Value::Float(*f),
-            Literal::String(s) => Value::String(Rc::new(s.clone())),
+            Literal::String(s) => Value::from_string(s.clone()),
             Literal::Bool(b) => Value::Bool(*b),
             Literal::Unit => Value::Nil,
             _ => Value::Nil,
@@ -321,7 +321,7 @@ mod tests {
             Pattern::Identifier("y".to_string()),
         ];
         let pattern = Pattern::Tuple(patterns);
-        let value = Value::Tuple(Rc::new(vec![Value::Integer(1), Value::Integer(2)]));
+        let value = Value::Tuple(Rc::from(vec![Value::Integer(1), Value::Integer(2)]));
 
         let result = try_pattern_match(&pattern, &value, &test_eval_literal).unwrap();
         assert!(result.is_some());

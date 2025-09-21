@@ -316,8 +316,8 @@ impl GlobalRegistry {
                     }
                 }
                 size
-            } // BuiltinFunction variant not in current Value enum
-              // Value::BuiltinFunction(name) => name.len() + 8, // String overhead
+            }
+            Value::BuiltinFunction(name) => name.len() + 8, // String overhead
         }
     }
     /// # Examples

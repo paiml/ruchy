@@ -12,7 +12,7 @@ use std::rc::Rc;
 /// # Complexity
 /// Cyclomatic complexity: 20 (will be decomposed further)
 pub fn eval_string_method(
-    s: &Rc<String>,
+    s: &Rc<str>,
     method: &str,
     args: &[Value],
 ) -> Result<Value, InterpreterError> {
@@ -49,59 +49,59 @@ pub fn eval_string_method(
 
 // No-argument string methods (complexity <= 3 each)
 
-fn eval_string_len(s: &Rc<String>) -> Result<Value, InterpreterError> {
+fn eval_string_len(s: &Rc<str>) -> Result<Value, InterpreterError> {
     Ok(Value::Integer(s.len() as i64))
 }
 
-fn eval_string_to_upper(s: &Rc<String>) -> Result<Value, InterpreterError> {
+fn eval_string_to_upper(s: &Rc<str>) -> Result<Value, InterpreterError> {
     Ok(Value::from_string(s.to_uppercase()))
 }
 
-fn eval_string_to_lower(s: &Rc<String>) -> Result<Value, InterpreterError> {
+fn eval_string_to_lower(s: &Rc<str>) -> Result<Value, InterpreterError> {
     Ok(Value::from_string(s.to_lowercase()))
 }
 
-fn eval_string_trim(s: &Rc<String>) -> Result<Value, InterpreterError> {
+fn eval_string_trim(s: &Rc<str>) -> Result<Value, InterpreterError> {
     Ok(Value::from_string(s.trim().to_string()))
 }
 
-fn eval_string_to_string(s: &Rc<String>) -> Result<Value, InterpreterError> {
+fn eval_string_to_string(s: &Rc<str>) -> Result<Value, InterpreterError> {
     Ok(Value::from_string(s.to_string()))
 }
 
-fn eval_string_trim_start(s: &Rc<String>) -> Result<Value, InterpreterError> {
+fn eval_string_trim_start(s: &Rc<str>) -> Result<Value, InterpreterError> {
     Ok(Value::from_string(s.trim_start().to_string()))
 }
 
-fn eval_string_trim_end(s: &Rc<String>) -> Result<Value, InterpreterError> {
+fn eval_string_trim_end(s: &Rc<str>) -> Result<Value, InterpreterError> {
     Ok(Value::from_string(s.trim_end().to_string()))
 }
 
-fn eval_string_is_empty(s: &Rc<String>) -> Result<Value, InterpreterError> {
+fn eval_string_is_empty(s: &Rc<str>) -> Result<Value, InterpreterError> {
     Ok(Value::Bool(s.is_empty()))
 }
 
-fn eval_string_chars(s: &Rc<String>) -> Result<Value, InterpreterError> {
+fn eval_string_chars(s: &Rc<str>) -> Result<Value, InterpreterError> {
     let chars: Vec<Value> = s
         .chars()
         .map(|c| Value::from_string(c.to_string()))
         .collect();
-    Ok(Value::Array(Rc::new(chars)))
+    Ok(Value::Array(Rc::from(chars)))
 }
 
-fn eval_string_lines(s: &Rc<String>) -> Result<Value, InterpreterError> {
+fn eval_string_lines(s: &Rc<str>) -> Result<Value, InterpreterError> {
     let lines: Vec<Value> = s
         .lines()
         .map(|line| Value::from_string(line.to_string()))
         .collect();
-    Ok(Value::Array(Rc::new(lines)))
+    Ok(Value::Array(Rc::from(lines)))
 }
 
 // Single-argument string methods (complexity <= 5 each)
 
-fn eval_string_contains(s: &Rc<String>, needle: &Value) -> Result<Value, InterpreterError> {
+fn eval_string_contains(s: &Rc<str>, needle: &Value) -> Result<Value, InterpreterError> {
     if let Value::String(needle_str) = needle {
-        Ok(Value::Bool(s.contains(needle_str.as_str())))
+        Ok(Value::Bool(s.contains(&**needle_str)))
     } else {
         Err(InterpreterError::RuntimeError(
             "contains expects string argument".to_string(),
@@ -109,9 +109,9 @@ fn eval_string_contains(s: &Rc<String>, needle: &Value) -> Result<Value, Interpr
     }
 }
 
-fn eval_string_starts_with(s: &Rc<String>, prefix: &Value) -> Result<Value, InterpreterError> {
+fn eval_string_starts_with(s: &Rc<str>, prefix: &Value) -> Result<Value, InterpreterError> {
     if let Value::String(prefix_str) = prefix {
-        Ok(Value::Bool(s.starts_with(prefix_str.as_str())))
+        Ok(Value::Bool(s.starts_with(&**prefix_str)))
     } else {
         Err(InterpreterError::RuntimeError(
             "starts_with expects string argument".to_string(),
@@ -119,9 +119,9 @@ fn eval_string_starts_with(s: &Rc<String>, prefix: &Value) -> Result<Value, Inte
     }
 }
 
-fn eval_string_ends_with(s: &Rc<String>, suffix: &Value) -> Result<Value, InterpreterError> {
+fn eval_string_ends_with(s: &Rc<str>, suffix: &Value) -> Result<Value, InterpreterError> {
     if let Value::String(suffix_str) = suffix {
-        Ok(Value::Bool(s.ends_with(suffix_str.as_str())))
+        Ok(Value::Bool(s.ends_with(&**suffix_str)))
     } else {
         Err(InterpreterError::RuntimeError(
             "ends_with expects string argument".to_string(),
@@ -129,13 +129,13 @@ fn eval_string_ends_with(s: &Rc<String>, suffix: &Value) -> Result<Value, Interp
     }
 }
 
-fn eval_string_split(s: &Rc<String>, separator: &Value) -> Result<Value, InterpreterError> {
+fn eval_string_split(s: &Rc<str>, separator: &Value) -> Result<Value, InterpreterError> {
     if let Value::String(sep_str) = separator {
         let parts: Vec<Value> = s
-            .split(sep_str.as_str())
+            .split(&**sep_str)
             .map(|part| Value::from_string(part.to_string()))
             .collect();
-        Ok(Value::Array(Rc::new(parts)))
+        Ok(Value::Array(Rc::from(parts)))
     } else {
         Err(InterpreterError::RuntimeError(
             "split expects string argument".to_string(),
@@ -143,7 +143,7 @@ fn eval_string_split(s: &Rc<String>, separator: &Value) -> Result<Value, Interpr
     }
 }
 
-fn eval_string_repeat(s: &Rc<String>, n: &Value) -> Result<Value, InterpreterError> {
+fn eval_string_repeat(s: &Rc<str>, n: &Value) -> Result<Value, InterpreterError> {
     if let Value::Integer(count) = n {
         if *count >= 0 {
             Ok(Value::from_string(s.repeat(*count as usize)))
@@ -159,7 +159,7 @@ fn eval_string_repeat(s: &Rc<String>, n: &Value) -> Result<Value, InterpreterErr
     }
 }
 
-fn eval_string_char_at(s: &Rc<String>, index: &Value) -> Result<Value, InterpreterError> {
+fn eval_string_char_at(s: &Rc<str>, index: &Value) -> Result<Value, InterpreterError> {
     if let Value::Integer(idx) = index {
         if *idx >= 0 {
             let chars: Vec<char> = s.chars().collect();
@@ -182,15 +182,9 @@ fn eval_string_char_at(s: &Rc<String>, index: &Value) -> Result<Value, Interpret
 
 // Two-argument string methods (complexity <= 8 each)
 
-fn eval_string_replace(
-    s: &Rc<String>,
-    from: &Value,
-    to: &Value,
-) -> Result<Value, InterpreterError> {
+fn eval_string_replace(s: &Rc<str>, from: &Value, to: &Value) -> Result<Value, InterpreterError> {
     if let (Value::String(from_str), Value::String(to_str)) = (from, to) {
-        Ok(Value::from_string(
-            s.replace(from_str.as_str(), to_str.as_str()),
-        ))
+        Ok(Value::from_string(s.replace(&**from_str, to_str)))
     } else {
         Err(InterpreterError::RuntimeError(
             "replace expects two string arguments".to_string(),
@@ -199,7 +193,7 @@ fn eval_string_replace(
 }
 
 fn eval_string_substring(
-    s: &Rc<String>,
+    s: &Rc<str>,
     start: &Value,
     end: &Value,
 ) -> Result<Value, InterpreterError> {
@@ -228,21 +222,21 @@ mod tests {
 
     #[test]
     fn test_string_len() {
-        let s = Rc::new("hello".to_string());
+        let s = Rc::from("hello");
         let result = eval_string_len(&s).unwrap();
         assert_eq!(result, Value::Integer(5));
     }
 
     #[test]
     fn test_string_to_upper() {
-        let s = Rc::new("hello".to_string());
+        let s = Rc::from("hello");
         let result = eval_string_to_upper(&s).unwrap();
         assert_eq!(result, Value::from_string("HELLO".to_string()));
     }
 
     #[test]
     fn test_string_contains() {
-        let s = Rc::new("hello world".to_string());
+        let s = Rc::from("hello world");
         let needle = Value::from_string("world".to_string());
         let result = eval_string_contains(&s, &needle).unwrap();
         assert_eq!(result, Value::Bool(true));
@@ -250,7 +244,7 @@ mod tests {
 
     #[test]
     fn test_string_split() {
-        let s = Rc::new("a,b,c".to_string());
+        let s = Rc::from("a,b,c");
         let separator = Value::from_string(",".to_string());
         let result = eval_string_split(&s, &separator).unwrap();
         if let Value::Array(parts) = result {
@@ -263,7 +257,7 @@ mod tests {
 
     #[test]
     fn test_string_replace() {
-        let s = Rc::new("hello world".to_string());
+        let s = Rc::from("hello world");
         let from = Value::from_string("world".to_string());
         let to = Value::from_string("Rust".to_string());
         let result = eval_string_replace(&s, &from, &to).unwrap();

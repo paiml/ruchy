@@ -11,7 +11,13 @@ impl fmt::Display for Value {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Value::Integer(i) => write!(f, "{i}"),
-            Value::Float(fl) => write!(f, "{fl}"),
+            Value::Float(fl) => {
+                if fl.fract() == 0.0 {
+                    write!(f, "{fl:.1}")
+                } else {
+                    write!(f, "{fl}")
+                }
+            }
             Value::Bool(b) => write!(f, "{b}"),
             Value::Nil => write!(f, "nil"),
             Value::String(s) => write!(f, "\"{s}\""),
@@ -25,7 +31,10 @@ impl fmt::Display for Value {
                 end,
                 inclusive,
             } => format_range(f, start, end, *inclusive),
-            Value::EnumVariant { variant_name, data } => format_enum_variant(f, variant_name, data),
+            Value::EnumVariant { variant_name, data } => {
+                format_enum_variant(f, variant_name, data.as_ref())
+            }
+            Value::BuiltinFunction(name) => write!(f, "<builtin function: {name}>"),
         }
     }
 }
@@ -114,7 +123,7 @@ fn format_range(
 fn format_enum_variant(
     f: &mut fmt::Formatter<'_>,
     variant_name: &str,
-    data: &Option<Vec<Value>>,
+    data: Option<&Vec<Value>>,
 ) -> fmt::Result {
     write!(f, "{variant_name}")?;
     if let Some(values) = data {
@@ -182,13 +191,13 @@ mod tests {
 
     #[test]
     fn test_display_string() {
-        let val = Value::String(Rc::new("hello".to_string()));
+        let val = Value::from_string("hello".to_string());
         assert_eq!(val.to_string(), "\"hello\"");
     }
 
     #[test]
     fn test_display_array() {
-        let val = Value::Array(Rc::new(vec![
+        let val = Value::Array(Rc::from(vec![
             Value::Integer(1),
             Value::Integer(2),
             Value::Integer(3),
@@ -198,9 +207,9 @@ mod tests {
 
     #[test]
     fn test_display_tuple() {
-        let val = Value::Tuple(Rc::new(vec![
+        let val = Value::Tuple(Rc::from(vec![
             Value::Integer(1),
-            Value::String(Rc::new("test".to_string())),
+            Value::from_string("test".to_string()),
         ]));
         assert_eq!(val.to_string(), "(1, \"test\")");
     }

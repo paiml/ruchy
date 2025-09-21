@@ -2,6 +2,8 @@
 //! Extracted to reduce duplication across interpreter and REPL
 use crate::frontend::ast::{Literal, Pattern};
 use crate::runtime::Value;
+
+#[cfg(test)]
 use std::rc::Rc;
 ///
 /// let value = `Value::Integer(42)`;
@@ -16,7 +18,7 @@ pub fn match_literal_pattern(value: &Value, literal: &Literal) -> bool {
         (Value::Nil, Literal::Unit) => true,
         (Value::Integer(v), Literal::Integer(p)) => v == p,
         (Value::Float(v), Literal::Float(p)) => (v - p).abs() < f64::EPSILON,
-        (Value::String(v), Literal::String(p)) => v.as_str() == p,
+        (Value::String(v), Literal::String(p)) => &**v == p,
         (Value::Bool(v), Literal::Bool(p)) => v == p,
         // Char variant not available in current Value enum
         _ => false,
@@ -67,7 +69,7 @@ fn match_patterns_with_rest(
     let rest_values = &values[rest_start..rest_end];
 
     if let Pattern::RestNamed(name) = &patterns[rest_idx] {
-        bindings.push((name.clone(), Value::Array(Rc::new(rest_values.to_vec()))));
+        bindings.push((name.clone(), Value::from_array(rest_values.to_vec())));
     }
     // Pattern::Rest doesn't bind anything
 
@@ -321,12 +323,12 @@ mod tests {
             Value::Nil,
             Value::Integer(42),
             Value::Float(3.14),
-            Value::String(Rc::new("test".to_string())),
+            Value::from_string("test".to_string()),
             Value::Bool(true),
             // Value::Char('a'), // Char variant not available in current Value enum
-            Value::Array(Rc::new(vec![Value::Integer(1), Value::Integer(2)])),
-            Value::Tuple(Rc::new(vec![
-                Value::String(Rc::new("hello".to_string())),
+            Value::Array(Rc::from(vec![Value::Integer(1), Value::Integer(2)])),
+            Value::Tuple(Rc::from(vec![
+                Value::from_string("hello".to_string()),
                 Value::Integer(10),
             ])),
         ]
@@ -361,11 +363,11 @@ mod tests {
 
         // String literal matching
         assert!(match_literal_pattern(
-            &Value::String(Rc::new("hello".to_string())),
+            &Value::from_string("hello".to_string()),
             &Literal::String("hello".to_string())
         ));
         assert!(!match_literal_pattern(
-            &Value::String(Rc::new("hello".to_string())),
+            &Value::from_string("hello".to_string()),
             &Literal::String("world".to_string())
         ));
 
@@ -392,7 +394,7 @@ mod tests {
             &Literal::String("42".to_string())
         ));
         assert!(!match_literal_pattern(
-            &Value::String(Rc::new("true".to_string())),
+            &Value::from_string("true".to_string()),
             &Literal::Bool(true)
         ));
     }
@@ -414,50 +416,50 @@ mod tests {
 
         // String equality
         assert!(values_equal(
-            &Value::String(Rc::new("test".to_string())),
-            &Value::String(Rc::new("test".to_string()))
+            &Value::from_string("test".to_string()),
+            &Value::from_string("test".to_string())
         ));
         assert!(!values_equal(
-            &Value::String(Rc::new("test".to_string())),
-            &Value::String(Rc::new("other".to_string()))
+            &Value::from_string("test".to_string()),
+            &Value::from_string("other".to_string())
         ));
 
         // List equality (recursive)
-        let list1 = Value::Array(Rc::new(vec![
+        let list1 = Value::Array(Rc::from(vec![
             Value::Integer(1),
-            Value::String(Rc::new("test".to_string())),
+            Value::from_string("test".to_string()),
         ]));
-        let list2 = Value::Array(Rc::new(vec![
+        let list2 = Value::Array(Rc::from(vec![
             Value::Integer(1),
-            Value::String(Rc::new("test".to_string())),
+            Value::from_string("test".to_string()),
         ]));
-        let list3 = Value::Array(Rc::new(vec![
+        let list3 = Value::Array(Rc::from(vec![
             Value::Integer(1),
-            Value::String(Rc::new("other".to_string())),
+            Value::from_string("other".to_string()),
         ]));
         assert!(values_equal(&list1, &list2));
         assert!(!values_equal(&list1, &list3));
 
         // Tuple equality (recursive)
-        let tuple1 = Value::Tuple(Rc::new(vec![Value::Bool(true), Value::Integer(42)]));
-        let tuple2 = Value::Tuple(Rc::new(vec![Value::Bool(true), Value::Integer(42)]));
-        let tuple3 = Value::Tuple(Rc::new(vec![Value::Bool(false), Value::Integer(42)]));
+        let tuple1 = Value::Tuple(Rc::from(vec![Value::Bool(true), Value::Integer(42)]));
+        let tuple2 = Value::Tuple(Rc::from(vec![Value::Bool(true), Value::Integer(42)]));
+        let tuple3 = Value::Tuple(Rc::from(vec![Value::Bool(false), Value::Integer(42)]));
         assert!(values_equal(&tuple1, &tuple2));
         assert!(!values_equal(&tuple1, &tuple3));
 
         // Different lengths should not be equal
-        let short_list = Value::Array(Rc::new(vec![Value::Integer(1)]));
-        let long_list = Value::Array(Rc::new(vec![Value::Integer(1), Value::Integer(2)]));
+        let short_list = Value::Array(Rc::from(vec![Value::Integer(1)]));
+        let long_list = Value::Array(Rc::from(vec![Value::Integer(1), Value::Integer(2)]));
         assert!(!values_equal(&short_list, &long_list));
 
         // Different types should not be equal
         assert!(!values_equal(
             &Value::Integer(42),
-            &Value::String(Rc::new("42".to_string()))
+            &Value::from_string("42".to_string())
         ));
         assert!(!values_equal(
-            &Value::Array(Rc::new(vec![])),
-            &Value::Tuple(Rc::new(vec![]))
+            &Value::from_array(vec![]),
+            &Value::Tuple(Rc::from(vec![]))
         ));
     }
 
@@ -466,11 +468,9 @@ mod tests {
     fn test_simple_pattern_matching() {
         // Wildcard pattern should match anything
         assert!(match_pattern(&Pattern::Wildcard, &Value::Integer(42)).is_some());
-        assert!(match_pattern(
-            &Pattern::Wildcard,
-            &Value::String(Rc::new("test".to_string()))
-        )
-        .is_some());
+        assert!(
+            match_pattern(&Pattern::Wildcard, &Value::from_string("test".to_string())).is_some()
+        );
         assert!(match_pattern(&Pattern::Wildcard, &Value::Nil).is_some());
 
         // Variable pattern should bind value
@@ -490,9 +490,9 @@ mod tests {
     // Test 4: Tuple Pattern Matching
     #[test]
     fn test_tuple_pattern_matching() {
-        let tuple_value = Value::Tuple(Rc::new(vec![
+        let tuple_value = Value::Tuple(Rc::from(vec![
             Value::Integer(1),
-            Value::String(Rc::new("test".to_string())),
+            Value::from_string("test".to_string()),
             Value::Bool(true),
         ]));
 
@@ -510,7 +510,7 @@ mod tests {
         assert_eq!(bindings[0].0, "s");
         assert!(values_equal(
             &bindings[0].1,
-            &Value::String(Rc::new("test".to_string()))
+            &Value::from_string("test".to_string())
         ));
 
         // Wrong tuple length should not match
@@ -532,7 +532,7 @@ mod tests {
     // Test 5: List Pattern Matching
     #[test]
     fn test_list_pattern_matching() {
-        let list_value = Value::Array(Rc::new(vec![
+        let list_value = Value::Array(Rc::from(vec![
             Value::Integer(1),
             Value::Integer(2),
             Value::Integer(3),
@@ -558,7 +558,7 @@ mod tests {
 
         // Empty list pattern
         let empty_pattern = Pattern::List(vec![]);
-        assert!(match_pattern(&empty_pattern, &Value::Array(Rc::new(vec![]))).is_some());
+        assert!(match_pattern(&empty_pattern, &Value::from_array(vec![])).is_some());
         assert!(match_pattern(&empty_pattern, &list_value).is_none());
 
         // Wrong list length should not match
@@ -569,7 +569,7 @@ mod tests {
     // Test 6: Rest Pattern Matching
     #[test]
     fn test_rest_pattern_matching() {
-        let list_value = Value::Array(Rc::new(vec![
+        let list_value = Value::Array(Rc::from(vec![
             Value::Integer(1),
             Value::Integer(2),
             Value::Integer(3),
@@ -633,11 +633,11 @@ mod tests {
         assert!(match_pattern(&or_pattern, &Value::Integer(2)).is_some());
 
         // Should match third option
-        assert!(match_pattern(&or_pattern, &Value::String(Rc::new("test".to_string()))).is_some());
+        assert!(match_pattern(&or_pattern, &Value::from_string("test".to_string())).is_some());
 
         // Should not match non-matching values
         assert!(match_pattern(&or_pattern, &Value::Integer(3)).is_none());
-        assert!(match_pattern(&or_pattern, &Value::String(Rc::new("other".to_string()))).is_none());
+        assert!(match_pattern(&or_pattern, &Value::from_string("other".to_string())).is_none());
     }
 
     // Test 8: Option Pattern Matching (Some/None)
@@ -674,10 +674,7 @@ mod tests {
     fn test_struct_pattern_matching() {
         let struct_value = Value::Object(Rc::new({
             let mut map = HashMap::new();
-            map.insert(
-                "name".to_string(),
-                Value::String(Rc::new("Alice".to_string())),
-            );
+            map.insert("name".to_string(), Value::from_string("Alice".to_string()));
             map.insert("age".to_string(), Value::Integer(30));
             map.insert("active".to_string(), Value::Bool(true));
             map
@@ -714,7 +711,7 @@ mod tests {
 
         assert!(values_equal(
             &name_binding.1,
-            &Value::String(Rc::new("Alice".to_string()))
+            &Value::from_string("Alice".to_string())
         ));
         assert!(values_equal(&age_binding.1, &Value::Integer(30)));
     }
@@ -745,18 +742,18 @@ mod tests {
         assert!(!values_equal(&range_value, &non_matching_range));
 
         // Test edge case with empty patterns/values
-        assert!(match_pattern(&Pattern::Wildcard, &Value::Array(Rc::new(vec![]))).is_some());
-        assert!(match_pattern(&Pattern::List(vec![]), &Value::Array(Rc::new(vec![]))).is_some());
+        assert!(match_pattern(&Pattern::Wildcard, &Value::from_array(vec![])).is_some());
+        assert!(match_pattern(&Pattern::List(vec![]), &Value::from_array(vec![])).is_some());
     }
 
     // Test 11: Complex Nested Pattern Matching
     #[test]
     fn test_nested_pattern_matching() {
         // Nested tuple with list
-        let complex_value = Value::Tuple(Rc::new(vec![
-            Value::String(Rc::new("outer".to_string())),
-            Value::Array(Rc::new(vec![Value::Integer(1), Value::Integer(2)])),
-            Value::Tuple(Rc::new(vec![Value::Bool(true)])),
+        let complex_value = Value::Tuple(Rc::from(vec![
+            Value::from_string("outer".to_string()),
+            Value::Array(Rc::from(vec![Value::Integer(1), Value::Integer(2)])),
+            Value::Tuple(Rc::from(vec![Value::Bool(true)])),
         ]));
 
         let nested_pattern = Pattern::Tuple(vec![
@@ -788,7 +785,7 @@ mod tests {
 
         assert!(values_equal(
             &outer_binding.1,
-            &Value::String(Rc::new("outer".to_string()))
+            &Value::from_string("outer".to_string())
         ));
         assert!(values_equal(&first_binding.1, &Value::Integer(1)));
         assert!(values_equal(&second_binding.1, &Value::Integer(2)));
@@ -803,9 +800,7 @@ mod tests {
 
         // Type mismatch: expecting list, got string
         let list_pattern = Pattern::List(vec![Pattern::Identifier("x".to_string())]);
-        assert!(
-            match_pattern(&list_pattern, &Value::String(Rc::new("test".to_string()))).is_none()
-        );
+        assert!(match_pattern(&list_pattern, &Value::from_string("test".to_string())).is_none());
 
         // Length mismatch: pattern expects 3 elements, value has 2
         let long_pattern = Pattern::Tuple(vec![
@@ -813,14 +808,12 @@ mod tests {
             Pattern::Identifier("b".to_string()),
             Pattern::Identifier("c".to_string()),
         ]);
-        let short_tuple = Value::Tuple(Rc::new(vec![Value::Integer(1), Value::Integer(2)]));
+        let short_tuple = Value::Tuple(Rc::from(vec![Value::Integer(1), Value::Integer(2)]));
         assert!(match_pattern(&long_pattern, &short_tuple).is_none());
 
         // Literal mismatch
         let literal_pattern = Pattern::Literal(Literal::Integer(42));
         assert!(match_pattern(&literal_pattern, &Value::Integer(43)).is_none());
-        assert!(
-            match_pattern(&literal_pattern, &Value::String(Rc::new("42".to_string()))).is_none()
-        );
+        assert!(match_pattern(&literal_pattern, &Value::from_string("42".to_string())).is_none());
     }
 }

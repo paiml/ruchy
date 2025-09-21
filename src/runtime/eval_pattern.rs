@@ -330,7 +330,7 @@ mod tests {
 
         let pattern = Pattern::List(patterns);
 
-        let value = Value::Array(Rc::new(vec![Value::Integer(1), Value::Integer(2)]));
+        let value = Value::Array(Rc::from(vec![Value::Integer(1), Value::Integer(2)]));
         let result = match_pattern(&pattern, &value).unwrap();
         assert!(result.matches);
         assert_eq!(result.bindings.get("x"), Some(&Value::Integer(1)));

@@ -936,6 +936,47 @@ Quality Metrics:
 3. Cell execution: <10ms
 4. Memory: <100MB for typical notebook
 
+## 🔮 **Language Features Roadmap**
+
+### Syntax Features Currently Ignored (From Test Coverage Fixes - 2025-01-21)
+**Note**: These tests were ignored during coverage cleanup to achieve clean test execution. Each represents a future language feature to implement.
+
+#### Operator Syntax
+- [ ] **LANG-001**: Optional chaining syntax: `x?.y`
+- [ ] **LANG-002**: Nullish coalescing operator: `x ?? y`
+
+#### Object-Oriented Programming
+- [ ] **LANG-003**: Class syntax: `class Calculator { fn add(x, y) { x + y } }`
+- [ ] **LANG-004**: Struct syntax: `struct Point { x: int, y: int }`
+- [ ] **LANG-005**: Decorator syntax: `@memoize\nfn expensive(n) { }`
+
+#### Import/Export System
+- [ ] **LANG-006**: Import statements: `import std`
+- [ ] **LANG-007**: From imports: `from std import println`
+- [ ] **LANG-008**: Dot notation imports: `import std.collections.HashMap`
+- [ ] **LANG-009**: Use syntax: `use std::collections::HashMap`
+
+#### Collection Operations
+- [ ] **LANG-010**: Set syntax: `{1, 2, 3}` (vs current array `[1, 2, 3]`)
+- [ ] **LANG-011**: List comprehensions: `[x * 2 for x in 0..10]`
+- [ ] **LANG-012**: Dict comprehensions: `{x: x*x for x in 0..5}`
+
+#### Error Handling
+- [ ] **LANG-013**: Try/catch syntax: `try { risky() } catch e { handle(e) }`
+
+#### Async Programming
+- [ ] **LANG-014**: Async function syntax: `async fn f() { await g() }`
+
+#### Pattern Matching Extensions
+- [ ] **LANG-015**: Rest patterns: `[head, ...tail]`
+- [ ] **LANG-016**: Struct patterns: `Point { x, y }`
+- [ ] **LANG-017**: Enum patterns: `Some(x)`, `None`
+
+### Implementation Priority
+1. **High Priority** (Core Language): LANG-001, LANG-002, LANG-013
+2. **Medium Priority** (OOP/Modules): LANG-003, LANG-004, LANG-006, LANG-007
+3. **Low Priority** (Advanced): LANG-010, LANG-011, LANG-014, LANG-015
+
 ## 📚 **Technical Debt Registry**
 
 ### High Priority

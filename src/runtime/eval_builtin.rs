@@ -6,6 +6,8 @@
 //! All functions maintain <10 cyclomatic complexity.
 
 use crate::runtime::{InterpreterError, Value};
+
+#[cfg(test)]
 use std::rc::Rc;
 
 /// Evaluate a builtin function call
@@ -90,7 +92,7 @@ fn eval_dbg(args: &[Value]) -> Result<Value, InterpreterError> {
         Ok(args[0].clone())
     } else {
         println!("[DEBUG] {args:?}");
-        Ok(Value::Array(Rc::new(args.to_vec())))
+        Ok(Value::from_array(args.to_vec()))
     }
 }
 
@@ -457,9 +459,9 @@ fn eval_reverse(args: &[Value]) -> Result<Value, InterpreterError> {
     }
     match &args[0] {
         Value::Array(arr) => {
-            let mut reversed = arr.as_ref().clone();
+            let mut reversed = arr.to_vec();
             reversed.reverse();
-            Ok(Value::Array(Rc::new(reversed)))
+            Ok(Value::from_array(reversed))
         }
         Value::String(s) => {
             let reversed: String = s.chars().rev().collect();
@@ -524,7 +526,7 @@ mod tests {
         let result = eval_len(&args).unwrap();
         assert_eq!(result, Value::Integer(5));
 
-        let args = vec![Value::Array(Rc::new(vec![
+        let args = vec![Value::Array(Rc::from(vec![
             Value::Integer(1),
             Value::Integer(2),
             Value::Integer(3),
@@ -560,7 +562,7 @@ mod tests {
 
     #[test]
     fn test_eval_reverse() {
-        let args = vec![Value::Array(Rc::new(vec![
+        let args = vec![Value::Array(Rc::from(vec![
             Value::Integer(1),
             Value::Integer(2),
             Value::Integer(3),

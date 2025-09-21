@@ -9,7 +9,6 @@
 
 use crate::runtime::Value;
 use std::collections::HashMap;
-use std::rc::Rc;
 
 /// Initialize global environment with all builtin functions and constants
 ///
@@ -49,27 +48,27 @@ fn add_builtin_constants(global_env: &mut HashMap<String, Value>) {
 fn add_basic_builtins(global_env: &mut HashMap<String, Value>) {
     global_env.insert(
         "format".to_string(),
-        Value::String(Rc::new("__builtin_format__".to_string())),
+        Value::from_string("__builtin_format__".to_string()),
     );
     global_env.insert(
         "HashMap".to_string(),
-        Value::String(Rc::new("__builtin_hashmap__".to_string())),
+        Value::from_string("__builtin_hashmap__".to_string()),
     );
     global_env.insert(
         "DataFrame".to_string(),
-        Value::String(Rc::new("__builtin_dataframe__".to_string())),
+        Value::from_string("__builtin_dataframe__".to_string()),
     );
     global_env.insert(
         "DataFrame::from_range".to_string(),
-        Value::String(Rc::new("__builtin_dataframe_from_range__".to_string())),
+        Value::from_string("__builtin_dataframe_from_range__".to_string()),
     );
     global_env.insert(
         "DataFrame::from_rows".to_string(),
-        Value::String(Rc::new("__builtin_dataframe_from_rows__".to_string())),
+        Value::from_string("__builtin_dataframe_from_rows__".to_string()),
     );
     global_env.insert(
         "col".to_string(),
-        Value::String(Rc::new("__builtin_col__".to_string())),
+        Value::from_string("__builtin_col__".to_string()),
     );
 }
 
@@ -84,10 +83,7 @@ fn add_math_functions(global_env: &mut HashMap<String, Value>) {
 
     for func_name in &math_functions {
         let builtin_name = format!("__builtin_{func_name}__");
-        global_env.insert(
-            (*func_name).to_string(),
-            Value::String(Rc::new(builtin_name)),
-        );
+        global_env.insert((*func_name).to_string(), Value::from_string(builtin_name));
     }
 }
 
@@ -98,15 +94,15 @@ fn add_math_functions(global_env: &mut HashMap<String, Value>) {
 fn add_io_functions(global_env: &mut HashMap<String, Value>) {
     global_env.insert(
         "println".to_string(),
-        Value::String(Rc::new("__builtin_println__".to_string())),
+        Value::from_string("__builtin_println__".to_string()),
     );
     global_env.insert(
         "print".to_string(),
-        Value::String(Rc::new("__builtin_print__".to_string())),
+        Value::from_string("__builtin_print__".to_string()),
     );
     global_env.insert(
         "dbg".to_string(),
-        Value::String(Rc::new("__builtin_dbg__".to_string())),
+        Value::from_string("__builtin_dbg__".to_string()),
     );
 }
 
@@ -117,15 +113,15 @@ fn add_io_functions(global_env: &mut HashMap<String, Value>) {
 fn add_utility_functions(global_env: &mut HashMap<String, Value>) {
     global_env.insert(
         "len".to_string(),
-        Value::String(Rc::new("__builtin_len__".to_string())),
+        Value::from_string("__builtin_len__".to_string()),
     );
     global_env.insert(
         "range".to_string(),
-        Value::String(Rc::new("__builtin_range__".to_string())),
+        Value::from_string("__builtin_range__".to_string()),
     );
     global_env.insert(
         "typeof".to_string(),
-        Value::String(Rc::new("__builtin_type__".to_string())),
+        Value::from_string("__builtin_type__".to_string()),
     );
 }
 
@@ -138,10 +134,7 @@ fn add_type_conversion_functions(global_env: &mut HashMap<String, Value>) {
 
     for func_name in &conversion_functions {
         let builtin_name = format!("__builtin_{func_name}__");
-        global_env.insert(
-            (*func_name).to_string(),
-            Value::String(Rc::new(builtin_name)),
-        );
+        global_env.insert((*func_name).to_string(), Value::from_string(builtin_name));
     }
 }
 
@@ -163,10 +156,7 @@ fn add_advanced_utility_functions(global_env: &mut HashMap<String, Value>) {
 
     for func_name in &advanced_functions {
         let builtin_name = format!("__builtin_{func_name}__");
-        global_env.insert(
-            (*func_name).to_string(),
-            Value::String(Rc::new(builtin_name)),
-        );
+        global_env.insert((*func_name).to_string(), Value::from_string(builtin_name));
     }
 }
 
@@ -177,11 +167,11 @@ fn add_advanced_utility_functions(global_env: &mut HashMap<String, Value>) {
 fn add_string_functions(global_env: &mut HashMap<String, Value>) {
     global_env.insert(
         "join".to_string(),
-        Value::String(Rc::new("__builtin_join__".to_string())),
+        Value::from_string("__builtin_join__".to_string()),
     );
     global_env.insert(
         "split".to_string(),
-        Value::String(Rc::new("__builtin_split__".to_string())),
+        Value::from_string("__builtin_split__".to_string()),
     );
 }
 
@@ -192,15 +182,15 @@ fn add_string_functions(global_env: &mut HashMap<String, Value>) {
 fn add_random_time_functions(global_env: &mut HashMap<String, Value>) {
     global_env.insert(
         "random".to_string(),
-        Value::String(Rc::new("__builtin_random__".to_string())),
+        Value::from_string("__builtin_random__".to_string()),
     );
     global_env.insert(
         "random_int".to_string(),
-        Value::String(Rc::new("__builtin_random_int__".to_string())),
+        Value::from_string("__builtin_random_int__".to_string()),
     );
     global_env.insert(
         "timestamp".to_string(),
-        Value::String(Rc::new("__builtin_timestamp__".to_string())),
+        Value::from_string("__builtin_timestamp__".to_string()),
     );
 }
 

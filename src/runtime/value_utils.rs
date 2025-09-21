@@ -49,12 +49,12 @@ impl Value {
 
     /// Create string value
     pub fn from_string(s: String) -> Self {
-        Value::String(Rc::new(s))
+        Value::String(Rc::from(s))
     }
 
     /// Create array value
     pub fn from_array(arr: Vec<Value>) -> Self {
-        Value::Array(Rc::new(arr))
+        Value::Array(Rc::from(arr))
     }
 
     /// Create object value
@@ -158,6 +158,7 @@ impl Value {
             Value::Object(_) => "object",
             Value::Range { .. } => "range",
             Value::EnumVariant { .. } => "enum_variant",
+            Value::BuiltinFunction(_) => "builtin_function",
         }
     }
 }
@@ -182,7 +183,7 @@ mod tests {
 
         let string_val = Value::from_string("test".to_string());
         match string_val {
-            Value::String(s) => assert_eq!(&**s, "test"),
+            Value::String(s) => assert_eq!(s.as_ref(), "test"),
             _ => panic!("Expected string"),
         }
     }
