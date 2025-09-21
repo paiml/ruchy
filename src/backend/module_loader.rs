@@ -466,8 +466,8 @@ mod tests {
         let mut loader = ModuleLoader::new();
         loader.add_search_path(temp_dir.path());
         // Create circular dependencies: a imports b, b imports a
-        create_test_module(&temp_dir, "a", "use b;")?;
-        create_test_module(&temp_dir, "b", "use a;")?;
+        create_test_module(&temp_dir, "a", "import \"b\"")?;
+        create_test_module(&temp_dir, "b", "import \"a\"")?;
         let result = loader.load_module("a");
         assert!(result.is_err());
         let error = result.unwrap_err();

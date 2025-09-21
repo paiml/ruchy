@@ -1,7 +1,6 @@
 use anyhow::Result;
 use ruchy::runtime::repl::Repl;
 use std::env;
-use std::env;
 
 #[test]
 fn test_test_attribute_compilation_regression() -> Result<()> {

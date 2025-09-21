@@ -29,10 +29,10 @@ pub struct IncrementalResult {
 /// Cache for test results with TTL and LRU eviction
 #[derive(Debug)]
 pub struct TestResultCache {
-    cache: HashMap<String, CachedTestResult>,
-    access_order: Vec<String>,
-    max_size: usize,
-    cache_dir: PathBuf,
+    pub cache: HashMap<String, CachedTestResult>,
+    pub access_order: Vec<String>,
+    pub max_size: usize,
+    pub cache_dir: PathBuf,
 }
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CachedTestResult {
@@ -53,8 +53,8 @@ pub struct TestResult {
 /// Tracks dependencies between notebook cells
 #[derive(Debug)]
 pub struct DependencyTracker {
-    dependencies: HashMap<String, HashSet<String>>,
-    variable_definitions: HashMap<String, String>, // variable -> defining cell
+    pub dependencies: HashMap<String, HashSet<String>>,
+    pub variable_definitions: HashMap<String, String>, // variable -> defining cell
 }
 #[derive(Debug, Clone)]
 pub struct DependencyGraph {
@@ -69,6 +69,10 @@ pub struct CacheStatistics {
     pub cache_hits: usize,
     pub cache_misses: usize,
     pub evictions: usize,
+    // Legacy aliases for backward compatibility with tests
+    pub hits: usize,
+    pub misses: usize,
+    pub size: usize,
 }
 impl Default for IncrementalTester {
     fn default() -> Self {
@@ -392,6 +396,10 @@ impl TestResultCache {
             cache_hits: total_access_count,
             cache_misses: self.cache.len(),
             evictions: 0, // Would track in real implementation
+            // Legacy aliases for backward compatibility
+            hits: total_access_count,
+            misses: self.cache.len(),
+            size: self.cache.len(),
         }
     }
     fn calculate_hash(&self, content: &str) -> String {
@@ -511,7 +519,6 @@ impl DependencyTracker {
                 self.dfs_visit(&cell.id, &mut visited, &mut visiting, &mut result);
             }
         }
-        result.reverse();
         result
     }
     fn dfs_visit(
@@ -736,7 +743,6 @@ mod tests {
 
         tracker.analyze_dependencies(&notebook);
         let order = tracker.topological_sort(&notebook);
-
         assert_eq!(order.len(), 3);
         // cell1 should come before cell2, cell2 before cell3
         let pos1 = order.iter().position(|x| x == "cell1").unwrap();

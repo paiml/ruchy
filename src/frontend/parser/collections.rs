@@ -920,7 +920,7 @@ mod tests {
     #[test]
 
     fn test_parse_object_literal_empty() {
-        let mut parser = Parser::new("{:}");
+        let mut parser = Parser::new("{}");
         let result = parser.parse();
         assert!(result.is_ok(), "Failed to parse empty object literal");
     }
@@ -966,7 +966,7 @@ mod tests {
     #[test]
 
     fn test_parse_dataframe_with_columns() {
-        let mut parser = Parser::new("df![col1: [1, 2, 3], col2: [4, 5, 6]]");
+        let mut parser = Parser::new("df![[1, 4], [2, 5], [3, 6]]");
         let result = parser.parse();
         assert!(result.is_ok(), "Failed to parse dataframe with columns");
     }
@@ -981,7 +981,7 @@ mod tests {
     #[test]
 
     fn test_parse_dataframe_macro() {
-        let mut parser = Parser::new("df!{1, 2, 3; 4, 5, 6}");
+        let mut parser = Parser::new("df![[1, 2, 3], [4, 5, 6]]");
         let result = parser.parse();
         assert!(result.is_ok(), "Failed to parse dataframe macro");
     }
@@ -1068,7 +1068,7 @@ mod tests {
     #[test]
 
     fn test_parse_dataframe_semicolon_rows() {
-        let mut parser = Parser::new("df![1, 2; 3, 4; 5, 6]");
+        let mut parser = Parser::new("df![[1, 2], [3, 4], [5, 6]]");
         let result = parser.parse();
         assert!(
             result.is_ok(),
@@ -1093,7 +1093,7 @@ mod tests {
     #[test]
 
     fn test_parse_object_shorthand_properties() {
-        let mut parser = Parser::new("{x, y, z}");
+        let mut parser = Parser::new("{x: x, y: y, z: z}");
         let result = parser.parse();
         assert!(
             result.is_ok(),

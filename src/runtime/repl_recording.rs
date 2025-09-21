@@ -10,7 +10,6 @@ use colored::Colorize;
 use rustyline::history::DefaultHistory;
 use rustyline::{CompletionType, Config, EditMode};
 use std::path::Path;
-use std::rc::Rc;
 use std::time::SystemTime;
 impl Repl {
     /// Create session metadata for recording (complexity: 3)
@@ -66,7 +65,7 @@ impl Repl {
             // Evaluate and record result
             let result = self.eval(input);
             let result_for_recording = match &result {
-                Ok(s) => Ok(Value::String(Rc::new(s.clone()))),
+                Ok(s) => Ok(Value::from_string(s.clone())),
                 Err(e) => Err(anyhow::anyhow!("{}", e)),
             };
             recorder.record_output(result_for_recording);
@@ -101,7 +100,7 @@ impl Repl {
                 // Evaluate and record result
                 let result = self.eval(&full_input);
                 let result_for_recording = match &result {
-                    Ok(s) => Ok(Value::String(Rc::new(s.clone()))),
+                    Ok(s) => Ok(Value::from_string(s.clone())),
                     Err(e) => Err(anyhow::anyhow!("{}", e)),
                 };
                 recorder.record_output(result_for_recording);

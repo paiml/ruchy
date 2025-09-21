@@ -1602,7 +1602,7 @@ mod tests {
     #[test]
 
     fn test_parse_import_simple() {
-        let mut state = ParserState::new("import std");
+        let mut state = ParserState::new("import \"std\"");
         let result = parse_import_legacy(&mut state);
         assert!(result.is_ok());
     }
@@ -1610,7 +1610,7 @@ mod tests {
     #[test]
 
     fn test_parse_import_with_items() {
-        let mut state = ParserState::new("import std.{HashMap, Vec}");
+        let mut state = ParserState::new("import { HashMap, Vec } from \"std\"");
         let result = parse_import_legacy(&mut state);
         assert!(result.is_ok());
     }

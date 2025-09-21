@@ -73,7 +73,7 @@ mod tests {
             Value::Integer(1),
             Value::Float(2.0),
             Value::Bool(true),
-            Value::String(Rc::new("test".to_string())),
+            Value::from_string("test".to_string()),
             Value::Nil,
         ];
 
@@ -88,7 +88,7 @@ mod tests {
     fn test_gc_collect_after_tracking() {
         let mut gc = ConservativeGC::new();
         gc.track(&Value::Integer(100));
-        gc.track(&Value::String(Rc::new("tracked".to_string())));
+        gc.track(&Value::from_string("tracked".to_string()));
         gc.collect();
         // Should collect after tracking without panic
         assert!(true);
@@ -112,17 +112,14 @@ mod tests {
         let mut gc = ConservativeGC::new();
 
         // Track array value
-        gc.track(&Value::Array(Rc::new(vec![
+        gc.track(&Value::Array(Rc::from(vec![
             Value::Integer(1),
             Value::Integer(2),
         ])));
 
         // Track object value
         let mut obj = std::collections::HashMap::new();
-        obj.insert(
-            "key".to_string(),
-            Value::String(Rc::new("value".to_string())),
-        );
+        obj.insert("key".to_string(), Value::from_string("value".to_string()));
         gc.track(&Value::Object(Rc::new(obj)));
 
         gc.collect();

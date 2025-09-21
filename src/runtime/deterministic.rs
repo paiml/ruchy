@@ -77,10 +77,10 @@ impl DeterministicRepl for Repl {
             } else if let Ok(n) = s.parse::<i64>() {
                 Value::Integer(n)
             } else if s.starts_with('"') && s.ends_with('"') {
-                Value::String(Rc::new(s[1..s.len() - 1].to_string()))
+                Value::String(Rc::from(&s[1..s.len() - 1]))
             } else {
                 // For complex types, we store as string representation
-                Value::String(Rc::new(s.to_string()))
+                Value::from_string(s.to_string())
             }
         });
         // Calculate resource usage
@@ -104,7 +104,7 @@ impl DeterministicRepl for Repl {
         let type_environment = HashMap::new();
         // Extract all variable bindings
         for (name, value) in self.get_bindings() {
-            bindings.insert(name.clone(), format!("{value:?}"));
+            bindings.insert(name.clone(), value.to_string());
         }
         // Extract type environment if available
         // Type tracking will be implemented when static analysis is added
@@ -120,13 +120,18 @@ impl DeterministicRepl for Repl {
         }
     }
     fn restore(&mut self, checkpoint: &StateCheckpoint) -> Result<()> {
-        // Clear current state
+        // Clear current state from BOTH REPL bindings AND evaluator interpreter
         self.clear_bindings();
-        // Restore bindings
-        let bindings = self.get_bindings_mut();
+
+        // Clear interpreter environment (the real variable storage)
+        if let Some(evaluator) = self.get_evaluator_mut() {
+            evaluator.clear_interpreter_variables();
+        }
+
+        // Restore bindings to both REPL state and interpreter
         for (name, value_str) in &checkpoint.bindings {
             // This is simplified - in production we'd properly deserialize the values
-            let value = if value_str == "Unit" {
+            let value = if value_str == "nil" {
                 Value::Nil
             } else if value_str == "true" {
                 Value::Bool(true)
@@ -134,10 +139,24 @@ impl DeterministicRepl for Repl {
                 Value::Bool(false)
             } else if let Ok(n) = value_str.parse::<i64>() {
                 Value::Integer(n)
+            } else if let Ok(f) = value_str.parse::<f64>() {
+                Value::Float(f)
+            } else if value_str.starts_with('"') && value_str.ends_with('"') {
+                // Remove quotes from string values
+                let content = &value_str[1..value_str.len() - 1];
+                Value::from_string(content.to_string())
             } else {
-                Value::String(Rc::new(value_str.clone()))
+                // Fallback: store as string (this should not happen with Display format)
+                Value::from_string(value_str.clone())
             };
-            bindings.insert(name.clone(), value);
+
+            // Restore to REPL bindings
+            self.get_bindings_mut().insert(name.clone(), value.clone());
+
+            // Also restore to interpreter environment
+            if let Some(evaluator) = self.get_evaluator_mut() {
+                evaluator.set_variable(name.clone(), value);
+            }
         }
         Ok(())
     }
@@ -187,7 +206,7 @@ impl Repl {
         for value in self.get_bindings().values() {
             total += std::mem::size_of_val(value);
             total += match value {
-                Value::String(s) => s.capacity(),
+                Value::String(s) => s.len(),
                 Value::Array(items) => items.len() * std::mem::size_of::<Value>(),
                 Value::Object(map) => map.len() * (32 + std::mem::size_of::<Value>()),
                 _ => 0,

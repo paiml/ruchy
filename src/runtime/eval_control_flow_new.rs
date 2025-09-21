@@ -84,7 +84,7 @@ where
                 match with_variable(var, item.clone(), &mut eval_expr) {
                     Ok(val) => last_val = val,
                     Err(InterpreterError::Break(val)) => return Ok(val),
-                    Err(InterpreterError::Continue) => continue,
+                    Err(InterpreterError::Continue) => {}
                     Err(e) => return Err(e),
                 }
             }
@@ -121,7 +121,7 @@ where
                 match with_variable(var, Value::Integer(i), &mut eval_expr) {
                     Ok(val) => last_val = val,
                     Err(InterpreterError::Break(val)) => return Ok(val),
-                    Err(InterpreterError::Continue) => continue,
+                    Err(InterpreterError::Continue) => {}
                     Err(e) => return Err(e),
                 }
             }
@@ -160,7 +160,7 @@ where
         match eval_expr(body) {
             Ok(val) => last_val = val,
             Err(InterpreterError::Break(val)) => return Ok(val),
-            Err(InterpreterError::Continue) => continue,
+            Err(InterpreterError::Continue) => {}
             Err(e) => return Err(e),
         }
     }
@@ -236,7 +236,7 @@ where
         values.push(eval_expr(element)?);
     }
 
-    Ok(Value::Array(Rc::new(values)))
+    Ok(Value::from_array(values))
 }
 
 /// Evaluate a tuple expression
@@ -253,7 +253,7 @@ where
         values.push(eval_expr(element)?);
     }
 
-    Ok(Value::Tuple(Rc::new(values)))
+    Ok(Value::Tuple(Rc::from(values.as_slice())))
 }
 
 /// Evaluate a range expression
@@ -300,7 +300,7 @@ where
             for _ in 0..size {
                 values.push(value.clone());
             }
-            Ok(Value::Array(Rc::new(values)))
+            Ok(Value::from_array(values))
         } else {
             Err(InterpreterError::RuntimeError(
                 "Array size must be non-negative".to_string(),

@@ -692,12 +692,33 @@ mod tests {
             port: 8888,
             host: "127.0.0.1".to_string(),
         };
-        let result = execute_notebook(cmd, false);
-        // Without notebook feature, returns error
+
+        // Test the command parsing works correctly
+        if let NotebookCommand::Serve { port, host } = cmd {
+            assert_eq!(port, 8888);
+            assert_eq!(host, "127.0.0.1");
+        } else {
+            panic!("Expected Serve command");
+        }
+
+        // Only test the error case without notebook feature to avoid hanging server
         #[cfg(not(feature = "notebook"))]
-        assert!(result.is_err());
+        {
+            let cmd = NotebookCommand::Serve {
+                port: 8888,
+                host: "127.0.0.1".to_string(),
+            };
+            let result = execute_notebook(cmd, false);
+            assert!(result.is_err());
+            assert!(result.unwrap_err().contains("Notebook feature not enabled"));
+        }
+
+        // Skip actual server execution when notebook feature is enabled to avoid hanging
         #[cfg(feature = "notebook")]
-        assert!(result.is_ok() || result.is_err()); // May fail to bind port
+        {
+            // Test passes - we just verify command structure above
+            // Starting actual server would hang the test indefinitely
+        }
     }
 
     #[test]

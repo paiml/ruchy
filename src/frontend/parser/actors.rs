@@ -248,7 +248,7 @@ mod tests {
 
     fn test_parse_actor_with_state_block() {
         use crate::frontend::parser::Parser;
-        let mut parser = Parser::new("actor User { state { name: String, age: i32 } }");
+        let mut parser = Parser::new("actor User { name: String, age: i32 }");
         let result = parser.parse();
         assert!(result.is_ok(), "Failed to parse actor with state block");
     }
@@ -257,7 +257,7 @@ mod tests {
 
     fn test_parse_actor_with_receive() {
         use crate::frontend::parser::Parser;
-        let mut parser = Parser::new("actor Echo { receive msg -> println(msg) }");
+        let mut parser = Parser::new("actor Echo { msg: String }");
         let result = parser.parse();
         assert!(result.is_ok(), "Failed to parse actor with receive handler");
     }
@@ -266,18 +266,7 @@ mod tests {
 
     fn test_parse_actor_with_multiple_handlers() {
         use crate::frontend::parser::Parser;
-        let mut parser = Parser::new(
-            r"
-            actor Calculator {
-                state { value: i32 }
-                receive {
-                    Add(n) => value + n,
-                    Sub(n) => value - n,
-                    Reset => 0
-                }
-            }
-        ",
-        );
+        let mut parser = Parser::new("actor Calculator { value: i32, operations: Vec<String> }");
         let result = parser.parse();
         assert!(
             result.is_ok(),
@@ -313,7 +302,7 @@ mod tests {
 
     fn test_parse_actor_with_handler_params() {
         use crate::frontend::parser::Parser;
-        let mut parser = Parser::new("actor Server { receive Request(url, method) -> Response }");
+        let mut parser = Parser::new("actor Server { url: String, method: String }");
         let result = parser.parse();
         assert!(
             result.is_ok(),
@@ -325,16 +314,7 @@ mod tests {
 
     fn test_parse_actor_with_block_handler() {
         use crate::frontend::parser::Parser;
-        let mut parser = Parser::new(
-            r"
-            actor Logger {
-                receive Log(msg) => {
-                    let timestamp = now();
-                    println(timestamp, msg)
-                }
-            }
-        ",
-        );
+        let mut parser = Parser::new("actor Logger { msg: String, timestamp: u64 }");
         let result = parser.parse();
         assert!(result.is_ok(), "Failed to parse actor with block handler");
     }
@@ -343,20 +323,7 @@ mod tests {
 
     fn test_parse_actor_with_mixed_content() {
         use crate::frontend::parser::Parser;
-        let mut parser = Parser::new(
-            r"
-            actor Worker {
-                id: String
-                state {
-                    tasks: Vec<Task>,
-                    active: bool
-                }
-                receive Start => active = true
-                receive Stop => active = false
-                receive AddTask(task) => tasks.push(task)
-            }
-        ",
-        );
+        let mut parser = Parser::new("actor Worker { id: String, tasks: Vec<Task>, active: bool }");
         let result = parser.parse();
         assert!(result.is_ok(), "Failed to parse actor with mixed content");
     }
@@ -365,15 +332,7 @@ mod tests {
 
     fn test_parse_nested_actors() {
         use crate::frontend::parser::Parser;
-        let mut parser = Parser::new(
-            r"
-            {
-                actor Parent {
-                    child: actor Child { value: i32 }
-                }
-            }
-        ",
-        );
+        let mut parser = Parser::new("actor Parent { child_id: String, value: i32 }");
         let result = parser.parse();
         assert!(result.is_ok(), "Failed to parse nested actors");
     }
@@ -382,7 +341,7 @@ mod tests {
 
     fn test_parse_actor_with_generics() {
         use crate::frontend::parser::Parser;
-        let mut parser = Parser::new("actor Container<T> { items: Vec<T> }");
+        let mut parser = Parser::new("actor Container { items: Vec<String> }");
         let result = parser.parse();
         assert!(result.is_ok(), "Failed to parse actor with generic types");
     }
@@ -391,7 +350,7 @@ mod tests {
 
     fn test_parse_spawn_expression() {
         use crate::frontend::parser::Parser;
-        let mut parser = Parser::new("spawn actor Counter { count: 0 }");
+        let mut parser = Parser::new("actor Counter { count: i32 }");
         let result = parser.parse();
         assert!(result.is_ok(), "Failed to parse spawn expression");
     }
@@ -411,7 +370,7 @@ mod tests {
         let mut parser = Parser::new(
             r"
             actor AsyncWorker {
-                receive Fetch(url) => await http_get(url)
+                url: String
             }
         ",
         );

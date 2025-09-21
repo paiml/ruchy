@@ -185,7 +185,11 @@ pub fn eval_unary_op(op: UnaryOp, operand: &Value) -> Result<Value, InterpreterE
 /// Cyclomatic complexity: 6 (within Toyota Way limits)
 fn add_values(left: &Value, right: &Value) -> Result<Value, InterpreterError> {
     match (left, right) {
-        (Value::Integer(a), Value::Integer(b)) => Ok(Value::Integer(a + b)),
+        (Value::Integer(a), Value::Integer(b)) => {
+            a.checked_add(*b).map(Value::Integer).ok_or_else(|| {
+                InterpreterError::RuntimeError("Integer overflow in addition".to_string())
+            })
+        }
         (Value::Float(a), Value::Float(b)) => Ok(Value::Float(a + b)),
         (Value::Integer(a), Value::Float(b)) =>
         {
@@ -199,6 +203,11 @@ fn add_values(left: &Value, right: &Value) -> Result<Value, InterpreterError> {
         }
         (Value::String(a), Value::String(b)) => {
             Ok(Value::from_string(format!("{}{}", a.as_ref(), b.as_ref())))
+        }
+        (Value::Array(a), Value::Array(b)) => {
+            let mut result = a.as_ref().to_vec();
+            result.extend_from_slice(b.as_ref());
+            Ok(Value::from_array(result))
         }
         _ => Err(InterpreterError::TypeError(format!(
             "Cannot add {} and {}",
@@ -214,7 +223,11 @@ fn add_values(left: &Value, right: &Value) -> Result<Value, InterpreterError> {
 /// Cyclomatic complexity: 5 (within Toyota Way limits)
 fn sub_values(left: &Value, right: &Value) -> Result<Value, InterpreterError> {
     match (left, right) {
-        (Value::Integer(a), Value::Integer(b)) => Ok(Value::Integer(a - b)),
+        (Value::Integer(a), Value::Integer(b)) => {
+            a.checked_sub(*b).map(Value::Integer).ok_or_else(|| {
+                InterpreterError::RuntimeError("Integer overflow in subtraction".to_string())
+            })
+        }
         (Value::Float(a), Value::Float(b)) => Ok(Value::Float(a - b)),
         (Value::Integer(a), Value::Float(b)) =>
         {
@@ -240,7 +253,11 @@ fn sub_values(left: &Value, right: &Value) -> Result<Value, InterpreterError> {
 /// Cyclomatic complexity: 5 (within Toyota Way limits)
 fn mul_values(left: &Value, right: &Value) -> Result<Value, InterpreterError> {
     match (left, right) {
-        (Value::Integer(a), Value::Integer(b)) => Ok(Value::Integer(a * b)),
+        (Value::Integer(a), Value::Integer(b)) => {
+            a.checked_mul(*b).map(Value::Integer).ok_or_else(|| {
+                InterpreterError::RuntimeError("Integer overflow in multiplication".to_string())
+            })
+        }
         (Value::Float(a), Value::Float(b)) => Ok(Value::Float(a * b)),
         (Value::Integer(a), Value::Float(b)) =>
         {
@@ -270,7 +287,9 @@ fn div_values(left: &Value, right: &Value) -> Result<Value, InterpreterError> {
             if *b == 0 {
                 return Err(InterpreterError::DivisionByZero);
             }
-            Ok(Value::Integer(a / b))
+            a.checked_div(*b).map(Value::Integer).ok_or_else(|| {
+                InterpreterError::RuntimeError("Integer overflow in division".to_string())
+            })
         }
         (Value::Float(a), Value::Float(b)) => {
             if *b == 0.0 {
@@ -310,7 +329,9 @@ fn modulo_values(left: &Value, right: &Value) -> Result<Value, InterpreterError>
             if *b == 0 {
                 return Err(InterpreterError::DivisionByZero);
             }
-            Ok(Value::Integer(a % b))
+            a.checked_rem(*b).map(Value::Integer).ok_or_else(|| {
+                InterpreterError::RuntimeError("Integer overflow in modulo".to_string())
+            })
         }
         (Value::Float(a), Value::Float(b)) => {
             if *b == 0.0 {
@@ -457,7 +478,6 @@ fn greater_than_values(left: &Value, right: &Value) -> Result<bool, InterpreterE
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::rc::Rc;
 
     #[test]
     fn test_add_values() {
@@ -470,11 +490,11 @@ mod tests {
             Value::Float(6.0)
         );
 
-        let s1 = Value::String(Rc::new("hello".to_string()));
-        let s2 = Value::String(Rc::new(" world".to_string()));
+        let s1 = Value::from_string("hello".to_string());
+        let s2 = Value::from_string(" world".to_string());
         let result = add_values(&s1, &s2).unwrap();
         match result {
-            Value::String(s) => assert_eq!(&**s, "hello world"),
+            Value::String(s) => assert_eq!(s.as_ref(), "hello world"),
             _ => panic!("Expected string result"),
         }
     }

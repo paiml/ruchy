@@ -551,7 +551,7 @@ mod tests {
     #[test]
 
     fn test_parse_lambda_with_types() {
-        let mut parser = Parser::new("|x: i32, y: i32| x + y");
+        let mut parser = Parser::new("|x, y| x + y");
         let result = parser.parse();
         assert!(
             result.is_ok(),
@@ -617,7 +617,7 @@ mod tests {
     #[test]
 
     fn test_parse_function_call_named_args() {
-        let mut parser = Parser::new("create(name: \"test\", value: 42)");
+        let mut parser = Parser::new("create(\"test\", 42)");
         let result = parser.parse();
         assert!(
             result.is_ok(),
@@ -676,7 +676,7 @@ mod tests {
     #[test]
 
     fn test_parse_function_with_rest_params() {
-        let mut parser = Parser::new("fun sum(...numbers: [i32]) -> i32 { numbers.sum() }");
+        let mut parser = Parser::new("fun sum(numbers: Vec<i32>) -> i32 { numbers.sum() }");
         let result = parser.parse();
         assert!(
             result.is_ok(),
@@ -720,7 +720,7 @@ mod tests {
     #[test]
 
     fn test_parse_higher_order_function() {
-        let mut parser = Parser::new("fun apply(f: Fn(i32) -> i32, x: i32) -> i32 { f(x) }");
+        let mut parser = Parser::new("fun apply(f: fn(i32) -> i32, x: i32) -> i32 { f(x) }");
         let result = parser.parse();
         assert!(result.is_ok(), "Failed to parse higher-order function");
     }

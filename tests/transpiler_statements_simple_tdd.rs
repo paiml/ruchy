@@ -453,8 +453,7 @@ fn test_transpile_module() {
 #[test]
 fn test_transpile_import_wildcard() {
     let path = "std::collections";
-    let items = vec![ImportItem::Wildcard];
-    let result = Transpiler::transpile_import(path, &items);
+    let result = Transpiler::transpile_import_all(path, "*");
     let code = result.to_string();
     assert!(code.contains("use"));
     assert!(code.contains("std"));
@@ -465,8 +464,8 @@ fn test_transpile_import_wildcard() {
 #[test]
 fn test_transpile_import_specific() {
     let path = "std::vec";
-    let items = vec![ImportItem::Named("Vec".to_string())];
-    let result = Transpiler::transpile_import(path, &items);
+    let items = Some(&vec!["Vec".to_string()][..]);
+    let result = Transpiler::transpile_import(path, items);
     let code = result.to_string();
     assert!(code.contains("use"));
     assert!(code.contains("Vec"));
@@ -475,11 +474,7 @@ fn test_transpile_import_specific() {
 #[test]
 fn test_transpile_import_aliased() {
     let path = "std::collections";
-    let items = vec![ImportItem::Aliased {
-        name: "HashMap".to_string(),
-        alias: "Map".to_string(),
-    }];
-    let result = Transpiler::transpile_import(path, &items);
+    let result = Transpiler::transpile_import_all(path, "collections");
     let code = result.to_string();
     assert!(code.contains("use"));
     assert!(code.contains("HashMap"));
@@ -490,7 +485,7 @@ fn test_transpile_import_aliased() {
 #[test]
 fn test_transpile_export() {
     let items = vec!["my_function".to_string(), "MyStruct".to_string()];
-    let result = Transpiler::transpile_export(&items);
+    let result = Transpiler::transpile_export_list(&items);
     let code = result.to_string();
     assert!(code.contains("pub"));
 }

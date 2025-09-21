@@ -4,7 +4,6 @@
 //! This module eliminates syntactic ambiguity by converting all surface syntax to a
 //! normalized core form before transpilation.
 #![allow(clippy::panic)] // Panics represent genuine errors in normalization
-#![allow(clippy::panic)]
 use crate::frontend::ast::{Expr, ExprKind, Literal};
 /// De Bruijn index for variables - eliminates variable capture bugs
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

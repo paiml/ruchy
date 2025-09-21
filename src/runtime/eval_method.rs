@@ -133,7 +133,7 @@ pub fn eval_generic_method(
 /// # Complexity
 /// Cyclomatic complexity: High - needs delegation to `eval_string_methods` module
 pub fn eval_string_method(
-    s: &Rc<String>,
+    s: &Rc<str>,
     method: &str,
     args: &[Value],
 ) -> Result<Value, InterpreterError> {
@@ -146,7 +146,7 @@ pub fn eval_string_method(
 /// # Complexity
 /// Cyclomatic complexity: 4 (within Toyota Way limits)
 pub fn eval_array_method_simple(
-    arr: &Rc<Vec<Value>>,
+    arr: &Rc<[Value]>,
     method: &str,
     args: &[Value],
 ) -> Result<Value, InterpreterError> {
@@ -195,10 +195,9 @@ pub fn eval_dataframe_method_simple(
             }
             let rows = columns.first().map_or(0, |c| c.values.len());
             let cols = columns.len();
-            Ok(Value::Tuple(Rc::new(vec![
-                Value::Integer(rows as i64),
-                Value::Integer(cols as i64),
-            ])))
+            Ok(Value::Tuple(Rc::from(
+                vec![Value::Integer(rows as i64), Value::Integer(cols as i64)].as_slice(),
+            )))
         }
         "columns" => {
             if !args.is_empty() {
@@ -210,7 +209,7 @@ pub fn eval_dataframe_method_simple(
                 .iter()
                 .map(|c| Value::from_string(c.name.clone()))
                 .collect();
-            Ok(Value::Array(Rc::new(col_names)))
+            Ok(Value::from_array(col_names))
         }
         _ => {
             // For complex DataFrame operations, delegate to eval_dataframe_ops
@@ -256,7 +255,7 @@ mod tests {
 
         let result = eval_integer_method(42, "to_string", true).unwrap();
         match result {
-            Value::String(s) => assert_eq!(&**s, "42"),
+            Value::String(s) => assert_eq!(s.as_ref(), "42"),
             _ => panic!("Expected string value"),
         }
     }
@@ -266,7 +265,7 @@ mod tests {
         let val = Value::Integer(42);
         let result = eval_generic_method(&val, "to_string", true).unwrap();
         match result {
-            Value::String(s) => assert_eq!(&**s, "42"),
+            Value::String(s) => assert_eq!(s.as_ref(), "42"),
             _ => panic!("Expected string value"),
         }
 

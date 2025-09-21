@@ -16,7 +16,6 @@
 
 use crate::frontend::ast::{Expr, ExprKind, Literal};
 use crate::runtime::{InterpreterError, Value};
-use std::rc::Rc;
 
 /// Result of instruction execution
 #[derive(Debug, Clone)]
@@ -253,7 +252,7 @@ impl DirectThreadedInterpreter {
     /// # Complexity
     /// Cyclomatic complexity: 1 (within Toyota Way limits)
     fn compile_identifier(&mut self, name: &str) -> Result<(), InterpreterError> {
-        let name_idx = self.add_constant(Value::String(Rc::new(name.to_string())));
+        let name_idx = self.add_constant(Value::from_string(name.to_string()));
         self.emit_instruction(op_load_var, name_idx);
         Ok(())
     }
@@ -329,7 +328,7 @@ impl DirectThreadedInterpreter {
     /// # Complexity
     /// Cyclomatic complexity: 1 (within Toyota Way limits)
     fn compile_fallback_expr(&mut self) -> Result<(), InterpreterError> {
-        let value_idx = self.add_constant(Value::String(Rc::new("AST_FALLBACK".to_string())));
+        let value_idx = self.add_constant(Value::from_string("AST_FALLBACK".to_string()));
         self.emit_instruction(op_ast_fallback, value_idx);
         Ok(())
     }
@@ -366,10 +365,10 @@ impl DirectThreadedInterpreter {
             Literal::Integer(n) => Value::Integer(*n),
             Literal::Float(f) => Value::Float(*f),
             Literal::Bool(b) => Value::Bool(*b),
-            Literal::String(s) => Value::String(Rc::new(s.clone())),
-            Literal::Char(c) => Value::String(Rc::new(c.to_string())), // Convert char to single-character string
-            Literal::Unit => Value::Nil,                               // Unit maps to Nil
-            Literal::Null => Value::Nil,                               // Null maps to Nil
+            Literal::String(s) => Value::from_string(s.clone()),
+            Literal::Char(c) => Value::from_string(c.to_string()), // Convert char to single-character string
+            Literal::Unit => Value::Nil,                           // Unit maps to Nil
+            Literal::Null => Value::Nil,                           // Null maps to Nil
         }
     }
 

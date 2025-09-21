@@ -1601,7 +1601,7 @@ mod tests {
 
         let score = QualityScore {
             value: 0.88,
-            components: components,
+            components,
             grade: Grade::BPlus,
             confidence: 0.95,
             cache_hit_rate: 0.2,
@@ -1671,11 +1671,11 @@ mod tests {
     #[test]
     fn test_grade_edge_cases() {
         // Test boundary values
-        assert_eq!(Grade::from_score(0.969999), Grade::A);
+        assert_eq!(Grade::from_score(0.969_999), Grade::A);
         assert_eq!(Grade::from_score(0.97), Grade::APlus);
-        assert_eq!(Grade::from_score(0.929999), Grade::AMinus);
+        assert_eq!(Grade::from_score(0.929_999), Grade::AMinus);
         assert_eq!(Grade::from_score(0.93), Grade::A);
-        assert_eq!(Grade::from_score(0.599999), Grade::F);
+        assert_eq!(Grade::from_score(0.599_999), Grade::F);
         assert_eq!(Grade::from_score(0.60), Grade::D);
 
         // Test negative and > 1.0 values

@@ -1196,7 +1196,7 @@ mod tests {
         let ast = parser.parse().expect("Failed to parse");
         let result = transpiler.transpile(&ast).unwrap();
         let rust_str = result.to_string();
-        assert!(rust_str.contains("vec!"));
+        assert!(rust_str.contains("vec !"));
         assert!(rust_str.contains("1"));
         assert!(rust_str.contains("2"));
         assert!(rust_str.contains("3"));

@@ -346,7 +346,7 @@ fn eval_dataframe_columns(
         .iter()
         .map(|col| Value::from_string(col.name.clone()))
         .collect();
-    Ok(Value::Array(Rc::new(column_names)))
+    Ok(Value::from_array(column_names))
 }
 
 fn eval_dataframe_shape(
@@ -366,10 +366,9 @@ fn eval_dataframe_shape(
     };
     let cols = columns.len();
 
-    Ok(Value::Array(Rc::new(vec![
-        Value::Integer(rows as i64),
-        Value::Integer(cols as i64),
-    ])))
+    Ok(Value::Array(Rc::from(
+        vec![Value::Integer(rows as i64), Value::Integer(cols as i64)].as_slice(),
+    )))
 }
 
 #[cfg(test)]

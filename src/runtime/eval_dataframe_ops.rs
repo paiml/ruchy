@@ -164,7 +164,7 @@ fn eval_dataframe_join(
 
     let other_df = &args[0];
     let join_column = match &args[1] {
-        Value::String(col_name) => col_name.as_str(),
+        Value::String(col_name) => &**col_name,
         _ => {
             return Err(InterpreterError::RuntimeError(
                 "DataFrame.join() expects 'on' as string column name".to_string(),
@@ -337,7 +337,7 @@ fn eval_dataframe_groupby(
     }
 
     let group_column = match &args[0] {
-        Value::String(col_name) => col_name.as_str(),
+        Value::String(col_name) => &**col_name,
         _ => {
             return Err(InterpreterError::RuntimeError(
                 "DataFrame.groupby() expects column name as string".to_string(),

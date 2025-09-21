@@ -90,6 +90,11 @@ impl Evaluator {
         !self.multiline_buffer.is_empty()
     }
 
+    /// Clear interpreter variables for checkpoint restore (complexity: 2)
+    pub fn clear_interpreter_variables(&mut self) {
+        self.interpreter.clear_user_variables();
+    }
+
     /// Set a variable in the interpreter (complexity: 1)
     pub fn set_variable(&mut self, name: String, value: Value) {
         self.interpreter.set_global_binding(name, value);

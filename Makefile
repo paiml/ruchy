@@ -1,4 +1,4 @@
-.PHONY: help all build test lint format clean clean-coverage coverage coverage-wasm-notebook examples bench install doc ci prepare-publish quality-gate test-examples test-fuzz test-fuzz-quick tdg-dashboard tdg-stop tdg-status tdg-restart
+.PHONY: help all build test test-fast lint format clean clean-coverage coverage coverage-wasm-notebook examples bench install doc ci prepare-publish quality-gate test-examples test-fuzz test-fuzz-quick tdg-dashboard tdg-stop tdg-status tdg-restart
 
 # Default target
 help:
@@ -7,6 +7,7 @@ help:
 	@echo "Core Commands:"
 	@echo "  make build       - Build the project in release mode"
 	@echo "  make test        - Run main test suite (lib + property + doc + examples + fuzz tests)"
+	@echo "  make test-fast   - Run fast tests with cargo-nextest (under 3 minutes)"
 	@echo "  make test-all    - Run ALL tests including slow ones"
 	@echo "  make test-property - Run property-based tests"
 	@echo "  make test-property-wasm - Run WASM property tests (>80% coverage)"
@@ -123,6 +124,19 @@ test-nextest:
 	@echo "Running tests with nextest..."
 	@cargo nextest run --lib --profile quick
 	@echo "✓ Nextest tests passed"
+
+# Fast tests without coverage (optimized for speed) - MUST complete under 3 minutes
+test-fast:
+	@echo "⚡ Running fast tests with cargo-nextest..."
+	@echo "   (Leveraging incremental compilation and optimal parallelism)"
+	@# This simplified target relies on .cargo/config.toml for optimizations
+	@# and lets nextest handle job management.
+	@if ! command -v cargo-nextest >/dev/null 2>&1; then \
+		echo "📦 Installing cargo-nextest for optimal performance..."; \
+		cargo install cargo-nextest; \
+	fi
+	@cargo nextest run --workspace --profile quick
+	@echo "✅ Fast tests completed!"
 
 # Run all tests comprehensively (including ignored/slow tests, doc tests)
 test-all:

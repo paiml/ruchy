@@ -6,6 +6,8 @@
 
 use crate::runtime::{InterpreterError, Value};
 use std::collections::HashMap;
+
+#[cfg(test)]
 use std::rc::Rc;
 
 /// Registry of built-in functions
@@ -139,7 +141,7 @@ fn builtin_dbg(args: &[Value]) -> Result<Value, InterpreterError> {
         Ok(args[0].clone())
     } else {
         println!("[DEBUG] {args:?}");
-        Ok(Value::Array(Rc::new(args.to_vec())))
+        Ok(Value::from_array(args.to_vec()))
     }
 }
 
@@ -185,7 +187,7 @@ fn builtin_type_of(args: &[Value]) -> Result<Value, InterpreterError> {
             args.len()
         )));
     }
-    Ok(Value::String(Rc::new(args[0].type_name().to_string())))
+    Ok(Value::from_string(args[0].type_name().to_string()))
 }
 
 /// Built-in `is_nil` function
@@ -407,7 +409,7 @@ fn builtin_to_string(args: &[Value]) -> Result<Value, InterpreterError> {
             args.len()
         )));
     }
-    Ok(Value::String(Rc::new(format!("{}", args[0]))))
+    Ok(Value::from_string(format!("{}", args[0])))
 }
 
 /// Built-in `parse_int` function
@@ -471,7 +473,7 @@ fn builtin_push(args: &[Value]) -> Result<Value, InterpreterError> {
         Value::Array(arr) => {
             let mut new_arr = arr.to_vec();
             new_arr.push(args[1].clone());
-            Ok(Value::Array(Rc::new(new_arr)))
+            Ok(Value::from_array(new_arr))
         }
         _ => Err(InterpreterError::RuntimeError(
             "push() expects an array as first argument".to_string(),
@@ -518,7 +520,7 @@ fn builtin_reverse(args: &[Value]) -> Result<Value, InterpreterError> {
         Value::Array(arr) => {
             let mut new_arr = arr.to_vec();
             new_arr.reverse();
-            Ok(Value::Array(Rc::new(new_arr)))
+            Ok(Value::from_array(new_arr))
         }
         _ => Err(InterpreterError::RuntimeError(
             "reverse() expects an array".to_string(),
@@ -547,7 +549,7 @@ fn builtin_sort(args: &[Value]) -> Result<Value, InterpreterError> {
                 (Value::String(x), Value::String(y)) => x.cmp(y),
                 _ => std::cmp::Ordering::Equal,
             });
-            Ok(Value::Array(Rc::new(new_arr)))
+            Ok(Value::from_array(new_arr))
         }
         _ => Err(InterpreterError::RuntimeError(
             "sort() expects an array".to_string(),
@@ -561,16 +563,16 @@ mod tests {
 
     #[test]
     fn test_builtin_println() {
-        let result = builtin_println(&[Value::String(Rc::new("test".to_string()))]).unwrap();
+        let result = builtin_println(&[Value::from_string("test".to_string())]).unwrap();
         assert_eq!(result, Value::nil());
     }
 
     #[test]
     fn test_builtin_len() {
-        let result = builtin_len(&[Value::String(Rc::new("hello".to_string()))]).unwrap();
+        let result = builtin_len(&[Value::from_string("hello".to_string())]).unwrap();
         assert_eq!(result, Value::Integer(5));
 
-        let arr = Value::Array(Rc::new(vec![Value::Integer(1), Value::Integer(2)]));
+        let arr = Value::Array(Rc::from(vec![Value::Integer(1), Value::Integer(2)]));
         let result = builtin_len(&[arr]).unwrap();
         assert_eq!(result, Value::Integer(2));
     }
@@ -578,7 +580,7 @@ mod tests {
     #[test]
     fn test_builtin_type_of() {
         let result = builtin_type_of(&[Value::Integer(42)]).unwrap();
-        assert_eq!(result, Value::String(Rc::new("integer".to_string())));
+        assert_eq!(result, Value::from_string("integer".to_string()));
     }
 
     #[test]
@@ -596,8 +598,8 @@ mod tests {
     #[test]
     fn test_builtin_registry() {
         let registry = BuiltinRegistry::new();
-        assert!(registry.is_builtin("__builtin_println__"));
-        assert!(registry.is_builtin("__builtin_len__"));
+        assert!(registry.is_builtin("println"));
+        assert!(registry.is_builtin("len"));
         assert!(!registry.is_builtin("not_a_builtin"));
     }
 }

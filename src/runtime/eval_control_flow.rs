@@ -69,7 +69,7 @@ impl<'a> ControlFlowEvaluator<'a> {
                     last_value = val;
                     break;
                 }
-                Err(InterpreterError::Continue) => continue,
+                Err(InterpreterError::Continue) => {}
                 Err(e) => return Err(e),
             }
         }
@@ -102,7 +102,7 @@ impl<'a> ControlFlowEvaluator<'a> {
                     last_value = val;
                     break;
                 }
-                Err(InterpreterError::Continue) => continue,
+                Err(InterpreterError::Continue) => {}
                 Err(e) => {
                     self.env.pop_scope();
                     return Err(e);

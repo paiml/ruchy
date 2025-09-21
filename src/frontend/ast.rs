@@ -1180,8 +1180,6 @@ impl fmt::Display for UnaryOp {
 }
 #[cfg(test)]
 #[allow(clippy::unwrap_used, clippy::panic, clippy::expect_used)]
-#[allow(clippy::unwrap_used)]
-#[allow(clippy::panic)]
 mod tests {
     use super::*;
     use proptest::prelude::*;

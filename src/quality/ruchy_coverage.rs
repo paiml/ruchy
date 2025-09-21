@@ -685,7 +685,7 @@ fn test_branches(x) {
         let coverage = collector.coverage_data.get("test.ruchy").unwrap();
         assert!(coverage.covered_functions.contains("main"));
         assert!(coverage.covered_functions.contains("helper"));
-        assert!((coverage.function_coverage() - 66.66666666666667).abs() < 1e-10);
+        assert!((coverage.function_coverage() - 66.666_666_666_666_67).abs() < 1e-10);
         // 2/3 with floating point tolerance
     }
 

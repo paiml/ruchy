@@ -246,7 +246,7 @@ where
     for elem in elements {
         values.push(eval_expr(elem)?);
     }
-    Ok(Value::Tuple(Rc::new(values)))
+    Ok(Value::Tuple(Rc::from(values.as_slice())))
 }
 
 /// Evaluate a range expression
@@ -296,7 +296,7 @@ mod tests {
 
         let s = eval_literal(&Literal::String("test".to_string()));
         match s {
-            Value::String(s) => assert_eq!(&**s, "test"),
+            Value::String(s) => assert_eq!(s.as_ref(), "test"),
             _ => panic!("Expected string value"),
         }
     }

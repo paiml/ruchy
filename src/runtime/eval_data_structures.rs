@@ -194,7 +194,7 @@ where
 
             if start_idx <= end_idx && start_idx <= arr.len() {
                 let sliced = arr[start_idx..end_idx].to_vec();
-                Ok(Value::Array(Rc::new(sliced)))
+                Ok(Value::from_array(sliced))
             } else {
                 Err(InterpreterError::RuntimeError(
                     "Invalid slice indices".to_string(),
@@ -270,7 +270,7 @@ where
                 let spread_value = eval_expr(expr)?;
                 match spread_value {
                     Value::Array(arr) => {
-                        result_elements.extend((*arr).clone());
+                        result_elements.extend(arr.iter().cloned());
                     }
                     _ => {
                         return Err(InterpreterError::TypeError(
@@ -282,7 +282,7 @@ where
         }
     }
 
-    Ok(Value::Array(Rc::new(result_elements)))
+    Ok(Value::from_array(result_elements))
 }
 
 /// Evaluate destructuring assignment
@@ -370,7 +370,7 @@ fn eval_dataframe_field_access(
 ) -> Result<Value, InterpreterError> {
     for column in columns {
         if column.name == field {
-            return Ok(Value::Array(Rc::new(column.values.clone())));
+            return Ok(Value::from_array(column.values.clone()));
         }
     }
     Err(InterpreterError::RuntimeError(format!(
@@ -467,7 +467,7 @@ mod tests {
 
     #[test]
     fn test_array_index_access() {
-        let arr = Value::Array(Rc::new(vec![
+        let arr = Value::Array(Rc::from(vec![
             Value::Integer(10),
             Value::Integer(20),
             Value::Integer(30),
@@ -487,7 +487,7 @@ mod tests {
 
     #[test]
     fn test_array_slice() {
-        let arr = Value::Array(Rc::new(vec![
+        let arr = Value::Array(Rc::from(vec![
             Value::Integer(1),
             Value::Integer(2),
             Value::Integer(3),

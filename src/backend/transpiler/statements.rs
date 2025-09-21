@@ -2952,8 +2952,8 @@ mod tests {
         let result = transpiler.transpile(&ast).unwrap();
         let rust_str = result.to_string();
         assert!(rust_str.contains("match"));
-        assert!(rust_str.contains("1 =>"));
-        assert!(rust_str.contains("2 =>"));
+        assert!(rust_str.contains("1i64 =>"));
+        assert!(rust_str.contains("2i64 =>"));
         assert!(rust_str.contains("_ =>"));
     }
 
@@ -2988,7 +2988,7 @@ mod tests {
 
     fn test_transpile_impl_block() {
         let transpiler = create_transpiler();
-        let code = "impl Point { fun new(x, y) { Point { x, y } } }";
+        let code = "impl Point { fun new(x: i32, y: i32) { Point { x: x, y: y } } }";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
         let result = transpiler.transpile(&ast).unwrap();
@@ -3296,7 +3296,7 @@ mod tests {
 
     fn test_import_statement() {
         let transpiler = create_transpiler();
-        let code = "import std::fs";
+        let code = "import \"std::fs\"";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
         let result = transpiler.transpile(&ast);

@@ -4,7 +4,6 @@
 //! This module centralizes transformation logic with O(1) complexity per operation.
 
 use crate::runtime::{InterpreterError, Value};
-use std::rc::Rc;
 
 /// Convert Value to i64 - O(1) complexity
 #[inline]
@@ -115,7 +114,7 @@ pub fn from_f64(f: f64) -> Value {
 
 #[inline]
 pub fn from_string(s: String) -> Value {
-    Value::String(Rc::new(s))
+    Value::from_string(s)
 }
 
 #[inline]
@@ -131,14 +130,14 @@ mod tests {
     fn test_to_i64_conversions() {
         assert_eq!(to_i64(&Value::Integer(42)).unwrap(), 42);
         assert_eq!(to_i64(&Value::Float(3.14)).unwrap(), 3);
-        assert!(to_i64(&Value::String(Rc::new("not a number".to_string()))).is_err());
+        assert!(to_i64(&Value::from_string("not a number".to_string())).is_err());
     }
 
     #[test]
     fn test_to_f64_conversions() {
         assert_eq!(to_f64(&Value::Integer(42)).unwrap(), 42.0);
         assert_eq!(to_f64(&Value::Float(3.14)).unwrap(), 3.14);
-        assert!(to_f64(&Value::String(Rc::new("not a number".to_string()))).is_err());
+        assert!(to_f64(&Value::from_string("not a number".to_string())).is_err());
     }
 
     #[test]
