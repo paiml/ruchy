@@ -2576,14 +2576,14 @@ mod tests {
         for pattern in patterns {
             // Test pattern construction and basic operations
             match pattern {
-                Pattern::Wildcard => src/frontend/ast.rs,
-                Pattern::Literal(_) => src/frontend/ast.rs,
+                Pattern::Wildcard => {},
+                Pattern::Literal(_) => {},
                 Pattern::Identifier(ref name) => assert!(!name.is_empty()),
                 Pattern::QualifiedName(ref names) => assert!(!names.is_empty()),
                 Pattern::Tuple(ref patterns) => assert!(!patterns.is_empty()),
                 Pattern::List(ref patterns) => assert!(!patterns.is_empty()),
                 Pattern::Struct { ref name, .. } => assert!(!name.is_empty()),
-                _ => src/frontend/ast.rs, // Handle all other pattern variants
+                _ => {}, // Handle all other pattern variants
             }
         }
     }

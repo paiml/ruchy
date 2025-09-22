@@ -591,8 +591,8 @@ mod tests {
             // These may fail due to parser limitations, but shouldn't panic
             let result = compile_source_to_binary(source, &options);
             match result {
-                Ok(_) => src/backend/compiler.rs,  // Success is good
-                Err(_) => src/backend/compiler.rs, // Expected failure is also fine
+                Ok(_) => {},  // Success is good
+                Err(_) => {}, // Expected failure is also fine
             }
         }
     }
@@ -730,8 +730,8 @@ mod tests {
         // This may fail due to parser/transpiler limitations, but should not panic
         let result = compile_to_binary(&source_file, &options);
         match result {
-            Ok(_) => src/backend/compiler.rs,  // Success is good
-            Err(_) => src/backend/compiler.rs, // Expected failure due to incomplete implementation
+            Ok(_) => {},  // Success is good
+            Err(_) => {}, // Expected failure due to incomplete implementation
         }
     }
 

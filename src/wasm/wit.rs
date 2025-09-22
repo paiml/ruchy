@@ -805,7 +805,7 @@ mod tests {
         // Test pattern matching works
         let wit_type = WitType::Bool;
         match wit_type {
-            WitType::Bool => src/wasm/wit.rs,
+            WitType::Bool => {},
             _ => assert!(false, "Expected Bool variant"),
         }
     }
