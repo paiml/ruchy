@@ -1,7 +1,7 @@
 //! Basic expression parsing - minimal version with only used functions
 use super::{
-    bail, ActorHandler, BinaryOp, DataFrameColumn, EnumVariant, Expr, ExprKind, Literal, MatchArm,
-    Param, ParserState, Pattern, Result, Span, StringPart, StructField, Token, TraitMethod, Type,
+    bail, ActorHandler, BinaryOp, EnumVariant, Expr, ExprKind, Literal, MatchArm, Param,
+    ParserState, Pattern, Result, Span, StringPart, StructField, Token, TraitMethod, Type,
     TypeKind, UnaryOp,
 };
 pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
@@ -578,7 +578,9 @@ fn parse_special_definition_token(state: &mut ParserState, token: Token) -> Resu
         Token::DataFrame => {
             // Check if this is df! (literal) or df (identifier)
             if matches!(state.tokens.peek(), Some((Token::Bang, _))) {
-                parse_dataframe_literal(state)
+                // Use the single DataFrame parser from collections module
+                // Don't consume DataFrame - collections::parse_dataframe will handle it
+                super::collections::parse_dataframe(state)
             } else {
                 // Treat 'df' as a regular identifier for method calls, etc.
                 // Consume the DataFrame token since we're handling it as identifier
@@ -2154,93 +2156,6 @@ fn parse_use_statement(state: &mut ParserState) -> Result<Expr> {
         },
         start_span,
     ))
-}
-fn parse_dataframe_literal(state: &mut ParserState) -> Result<Expr> {
-    // Parse df![...] macro syntax - DataFrame token already consumed by caller
-    let start_span = parse_dataframe_header(state)?;
-    let columns = parse_dataframe_columns(state)?;
-    state.tokens.expect(&Token::RightBracket)?;
-    // Convert to DataFrame expression
-    let df_columns = create_dataframe_columns(columns);
-    Ok(Expr::new(
-        ExprKind::DataFrame {
-            columns: df_columns,
-        },
-        start_span,
-    ))
-}
-/// Parse dataframe header: df![
-/// Complexity: 3
-fn parse_dataframe_header(state: &mut ParserState) -> Result<Span> {
-    let start_span = state.tokens.expect(&Token::DataFrame)?;
-    state.tokens.expect(&Token::Bang)?;
-    state.tokens.expect(&Token::LeftBracket)?;
-    Ok(start_span)
-}
-/// Parse all dataframe columns
-/// Complexity: <5
-fn parse_dataframe_columns(state: &mut ParserState) -> Result<Vec<(String, Expr)>> {
-    let mut columns = Vec::new();
-    while !matches!(state.tokens.peek(), Some((Token::RightBracket, _))) {
-        let column = parse_single_dataframe_column(state)?;
-        columns.push(column);
-        // Check for comma separator
-        if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
-            state.tokens.advance();
-        }
-    }
-    Ok(columns)
-}
-/// Parse a single dataframe column: "name" => [values]
-/// Complexity: <5
-fn parse_single_dataframe_column(state: &mut ParserState) -> Result<(String, Expr)> {
-    let col_name = parse_dataframe_column_name(state)?;
-    state.tokens.expect(&Token::FatArrow)?;
-    let values = parse_dataframe_column_values(state)?;
-    Ok((col_name, values))
-}
-/// Parse dataframe column name (string or identifier)
-/// Complexity: 3
-fn parse_dataframe_column_name(state: &mut ParserState) -> Result<String> {
-    match state.tokens.peek() {
-        Some((Token::String(name), _)) => {
-            let name = name.clone();
-            state.tokens.advance();
-            Ok(name)
-        }
-        Some((Token::Identifier(name), _)) => {
-            let name = name.clone();
-            state.tokens.advance();
-            Ok(name)
-        }
-        _ => bail!("Expected column name (string or identifier) in dataframe"),
-    }
-}
-/// Parse dataframe column values (must be a list)
-/// Complexity: 2
-fn parse_dataframe_column_values(state: &mut ParserState) -> Result<Expr> {
-    if matches!(state.tokens.peek(), Some((Token::LeftBracket, _))) {
-        parse_list_literal(state)
-    } else {
-        bail!("Expected list of values after => in dataframe column")
-    }
-}
-/// Convert parsed columns to `DataFrameColumn` structs
-/// Complexity: <5
-fn create_dataframe_columns(columns: Vec<(String, Expr)>) -> Vec<DataFrameColumn> {
-    columns
-        .into_iter()
-        .map(|(name, values)| {
-            let value_exprs = match values.kind {
-                ExprKind::List(exprs) => exprs,
-                _ => vec![values], // Fallback for non-list
-            };
-            DataFrameColumn {
-                name,
-                values: value_exprs,
-            }
-        })
-        .collect()
 }
 fn parse_enum_definition(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.expect(&Token::Enum)?;
