@@ -1469,7 +1469,7 @@ mod tests {
         assert!(result.is_ok());
         if let Ok(ty) = result {
             match ty.kind {
-                TypeKind::List(_) => src/frontend/parser/utils.rs,
+                TypeKind::List(_) => {},
                 _ => panic!("Expected list type"),
             }
         }
@@ -1482,7 +1482,7 @@ mod tests {
         assert!(result.is_ok());
         if let Ok(ty) = result {
             match ty.kind {
-                TypeKind::Function { .. } => src/frontend/parser/utils.rs,
+                TypeKind::Function { .. } => {},
                 _ => panic!("Expected function type"),
             }
         }
@@ -1495,7 +1495,7 @@ mod tests {
         assert!(result.is_ok());
         if let Ok(ty) = result {
             match ty.kind {
-                TypeKind::Reference { .. } => src/frontend/parser/utils.rs,
+                TypeKind::Reference { .. } => {},
                 _ => panic!("Expected reference type"),
             }
         }
@@ -1586,14 +1586,14 @@ mod tests {
         // Test simple identifier
         let part = parse_interpolated_expr("name");
         match part {
-            StringPart::Expr(_) => src/frontend/parser/utils.rs,
+            StringPart::Expr(_) => {},
             _ => panic!("Expected expr part"),
         }
 
         // Test with format specifier
         let part = parse_interpolated_expr("value:.2f");
         match part {
-            StringPart::ExprWithFormat { .. } => src/frontend/parser/utils.rs,
+            StringPart::ExprWithFormat { .. } => {},
             _ => panic!("Expected format expr with format"),
         }
     }

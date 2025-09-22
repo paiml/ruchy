@@ -196,7 +196,7 @@ mod property_tests {
             let _ = to_bool(&value);
 
             // All complete in constant time
-            prop_// Test passes without panic;
+            // Test passes without panic
         }
     }
 }
