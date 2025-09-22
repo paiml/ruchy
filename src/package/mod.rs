@@ -465,7 +465,7 @@ mod tests {
     fn test_package_manager_new() {
         let _manager = PackageManager::new();
         // Default constructor works
-        assert!(true);
+        // Test passes without panic;
     }
 
     #[test]
@@ -489,7 +489,7 @@ mod tests {
     fn test_dependency_creation() {
         let _dep = Dependency::new("test_dep", "^1.0.0");
         // Dependency created successfully
-        assert!(true);
+        // Test passes without panic;
     }
 
     #[test]
@@ -505,7 +505,7 @@ version = "0.1.0""#;
     fn test_registry_new() {
         let _registry = Registry::with_url("https://example.com");
         // Registry created with URL
-        assert!(true);
+        // Test passes without panic;
     }
 
     #[test]
@@ -513,7 +513,7 @@ version = "0.1.0""#;
         let mut registry = Registry::with_url("https://example.com");
         registry.authenticate("test_token");
         // Authentication successful
-        assert!(true);
+        // Test passes without panic;
     }
 
     #[test]
@@ -522,7 +522,7 @@ version = "0.1.0""#;
         let _range = Dependency::range("lib", ">=1.0, <2.0");
         let _caret = Dependency::caret("lib", "1.2.3");
         // All dependency types created successfully
-        assert!(true);
+        // Test passes without panic;
     }
 
     #[test]
@@ -546,7 +546,7 @@ version = "0.1.0""#;
         let dependency = Dependency::new("sub_dependency", "1.2.3");
         let _package = Package::new("main_package", "2.0.0").with_dependency(dependency);
         // Package with dependency created
-        assert!(true);
+        // Test passes without panic;
     }
 
     #[test]

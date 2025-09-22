@@ -74,14 +74,14 @@ mod tests {
     fn test_async_runtime_new() {
         let _runtime = AsyncRuntime::new();
         // Should create runtime
-        assert!(true);
+        // Test passes without panic;
     }
 
     #[test]
     fn test_async_runtime_default() {
         let _runtime = AsyncRuntime::default();
         // Should create runtime via default
-        assert!(true);
+        // Test passes without panic;
     }
 
     #[tokio::test]
@@ -89,7 +89,7 @@ mod tests {
         let runtime = AsyncRuntime::new();
         runtime.sleep(Duration::from_millis(1)).await;
         // Should sleep without panic
-        assert!(true);
+        // Test passes without panic;
     }
 
     #[tokio::test]

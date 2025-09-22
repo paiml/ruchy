@@ -31,7 +31,7 @@ fn create_test_cell(id: &str, source: &str) -> Cell {
 fn create_test_notebook(cells: Vec<Cell>) -> Notebook {
     Notebook {
         cells,
-        metadata: None
+        metadata: None,
     }
 }
 

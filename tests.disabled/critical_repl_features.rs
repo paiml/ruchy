@@ -9,8 +9,8 @@
 
 use ruchy::runtime::repl::Repl;
 use ruchy::runtime::Value;
-use std::rc::Rc;
 use std::env;
+use std::rc::Rc;
 
 #[test]
 fn test_one_liner_execution() {
@@ -35,10 +35,7 @@ fn test_function_definition_and_call() {
 fn test_match_expressions() {
     let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     let result = repl
-        .evaluate_expr_str(
-            r#"match 2 { 1 => "one", 2 => "two", _ => "other" }"#,
-            None,
-        )
+        .evaluate_expr_str(r#"match 2 { 1 => "one", 2 => "two", _ => "other" }"#, None)
         .unwrap();
     assert_eq!(result, Value::String(Rc::new("two".to_string())));
 }
@@ -77,9 +74,7 @@ fn test_string_interpolation() {
     let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     repl.evaluate_expr_str(r#"let name = "World""#, None)
         .unwrap();
-    let result = repl
-        .evaluate_expr_str(r#"f"Hello {name}""#, None)
-        .unwrap();
+    let result = repl.evaluate_expr_str(r#"f"Hello {name}""#, None).unwrap();
     assert_eq!(result, Value::String(Rc::new("Hello World".to_string())));
 }
 
@@ -89,11 +84,7 @@ fn test_list_display() {
     let result = repl.evaluate_expr_str("[1, 2, 3]", None).unwrap();
     assert_eq!(
         result,
-        Value::Array(vec![
-            Value::Integer(1),
-            Value::Integer(2),
-            Value::Integer(3)
-        ].into())
+        Value::Array(vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)].into())
     );
 }
 
@@ -111,11 +102,8 @@ fn test_nested_functions() {
     let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     repl.evaluate_expr_str("fun double(x: i32) -> i32 { x * 2 }", None)
         .unwrap();
-    repl.evaluate_expr_str(
-        "fun quadruple(x: i32) -> i32 { double(double(x)) }",
-        None,
-    )
-    .unwrap();
+    repl.evaluate_expr_str("fun quadruple(x: i32) -> i32 { double(double(x)) }", None)
+        .unwrap();
     let result = repl.evaluate_expr_str("quadruple(5)", None).unwrap();
     assert_eq!(result, Value::Integer(20));
 }

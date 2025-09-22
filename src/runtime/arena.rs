@@ -4,10 +4,10 @@
 //! Based on the REPL resource-bounded evaluation requirements.
 //!
 //! # Safety
-//! 
+//!
 //! This module uses unsafe code for manual memory management. All unsafe operations
 //! are carefully validated and encapsulated within safe abstractions.
-use anyhow::{Result, anyhow};
+use anyhow::{anyhow, Result};
 use std::alloc::{alloc, dealloc, Layout};
 use std::cell::RefCell;
 use std::marker::PhantomData;
@@ -51,31 +51,31 @@ pub struct ArenaStats {
 }
 impl Arena {
     /// Create a new arena with the given maximum size
-/// # Examples
-/// 
-/// ```
-/// use ruchy::runtime::arena::new;
-/// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
-/// ```
-/// # Examples
-/// 
-/// ```
-/// use ruchy::runtime::arena::new;
-/// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
-/// ```
-/// # Examples
-/// 
-/// ```
-/// use ruchy::runtime::arena::new;
-/// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn new(max_size: usize) -> Self {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::arena::new;
+    ///
+    /// let result = new(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::arena::new;
+    ///
+    /// let result = new(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::arena::new;
+    ///
+    /// let result = new(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn new(max_size: usize) -> Self {
         // Start with a 64KB chunk
         let initial_size = (64 * 1024).min(max_size);
         let chunk = Chunk::new(initial_size).expect("Failed to allocate initial chunk");
@@ -104,15 +104,15 @@ pub fn new(max_size: usize) -> Self {
         })
     }
     /// Allocate raw memory with the given layout
-/// # Examples
-/// 
-/// ```
-/// use ruchy::runtime::arena::alloc_raw;
-/// 
-/// let result = alloc_raw(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn alloc_raw(&self, layout: Layout) -> Result<NonNull<u8>> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::arena::alloc_raw;
+    ///
+    /// let result = alloc_raw(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn alloc_raw(&self, layout: Layout) -> Result<NonNull<u8>> {
         let size = layout.size();
         let align = layout.align();
         // Check if allocation would exceed limit
@@ -136,7 +136,8 @@ pub fn alloc_raw(&self, layout: Layout) -> Result<NonNull<u8>> {
         self.grow_arena(size)?;
         // Try again with new chunk
         let mut current = self.current_chunk.borrow_mut();
-        current.try_alloc(size, align)
+        current
+            .try_alloc(size, align)
             .ok_or_else(|| anyhow!("Failed to allocate after growing arena"))
     }
     /// Grow the arena by allocating a new chunk
@@ -160,23 +161,23 @@ pub fn alloc_raw(&self, layout: Layout) -> Result<NonNull<u8>> {
         Ok(())
     }
     /// Reset the arena, deallocating all memory
-/// # Examples
-/// 
-/// ```
-/// use ruchy::runtime::arena::reset;
-/// 
-/// let result = reset(());
-/// assert_eq!(result, Ok(()));
-/// ```
-/// # Examples
-/// 
-/// ```
-/// use ruchy::runtime::arena::reset;
-/// 
-/// let result = reset(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn reset(&self) {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::arena::reset;
+    ///
+    /// let result = reset(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::arena::reset;
+    ///
+    /// let result = reset(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn reset(&self) {
         // Clear current chunk
         self.current_chunk.borrow_mut().reset();
         // Clear all other chunks
@@ -186,21 +187,21 @@ pub fn reset(&self) {
         // Reset to initial chunk size
         let initial_size = (64 * 1024).min(self.max_size);
         if self.current_chunk.borrow().size != initial_size {
-            *self.current_chunk.borrow_mut() = 
+            *self.current_chunk.borrow_mut() =
                 Chunk::new(initial_size).expect("Failed to allocate chunk");
             *self.total_allocated.borrow_mut() = initial_size;
         }
     }
     /// Get current memory usage
-/// # Examples
-/// 
-/// ```
-/// use ruchy::runtime::arena::used;
-/// 
-/// let result = used(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn used(&self) -> usize {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::arena::used;
+    ///
+    /// let result = used(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn used(&self) -> usize {
         let mut total = self.current_chunk.borrow().pos;
         for chunk in self.chunks.borrow().iter() {
             total += chunk.pos;
@@ -208,15 +209,15 @@ pub fn used(&self) -> usize {
         total
     }
     /// Get statistics
-/// # Examples
-/// 
-/// ```
-/// use ruchy::runtime::arena::stats;
-/// 
-/// let result = stats(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn stats(&self) -> ArenaStats {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::arena::stats;
+    ///
+    /// let result = stats(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn stats(&self) -> ArenaStats {
         self.stats.borrow().clone()
     }
     fn update_peak_usage(&self) {
@@ -239,8 +240,8 @@ impl Drop for Arena {
 }
 impl Chunk {
     fn new(size: usize) -> Result<Self> {
-        let layout = Layout::from_size_align(size, 8)
-            .map_err(|e| anyhow!("Invalid layout: {}", e))?;
+        let layout =
+            Layout::from_size_align(size, 8).map_err(|e| anyhow!("Invalid layout: {}", e))?;
         let ptr = unsafe {
             let ptr = alloc(layout);
             if ptr.is_null() {
@@ -272,9 +273,7 @@ impl Chunk {
             return None;
         }
         // Calculate pointer
-        let ptr = unsafe {
-            NonNull::new_unchecked(self.ptr.as_ptr().add(aligned_pos))
-        };
+        let ptr = unsafe { NonNull::new_unchecked(self.ptr.as_ptr().add(aligned_pos)) };
         self.pos = aligned_pos + size;
         Some(ptr)
     }
@@ -302,27 +301,27 @@ pub struct ArenaBox<T> {
 }
 impl<T> ArenaBox<T> {
     /// Get a reference to the value
-/// # Examples
-/// 
-/// ```
-/// use ruchy::runtime::arena::get;
-/// 
-/// let result = get(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn get(&self) -> &T {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::arena::get;
+    ///
+    /// let result = get(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn get(&self) -> &T {
         unsafe { self.ptr.as_ref() }
     }
     /// Get a mutable reference to the value
-/// # Examples
-/// 
-/// ```
-/// use ruchy::runtime::arena::get_mut;
-/// 
-/// let result = get_mut(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn get_mut(&mut self) -> &mut T {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::arena::get_mut;
+    ///
+    /// let result = get_mut(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn get_mut(&mut self) -> &mut T {
         unsafe { self.ptr.as_mut() }
     }
 }
@@ -367,15 +366,15 @@ impl TransactionalArena {
         }
     }
     /// Create a checkpoint for later rollback
-/// # Examples
-/// 
-/// ```
-/// use ruchy::runtime::arena::checkpoint;
-/// 
-/// let result = checkpoint(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn checkpoint(&mut self) -> usize {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::arena::checkpoint;
+    ///
+    /// let result = checkpoint(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn checkpoint(&mut self) -> usize {
         let checkpoint = ArenaCheckpoint {
             chunk_pos: self.arena.current_chunk.borrow().pos,
             num_chunks: self.arena.chunks.borrow().len(),
@@ -386,15 +385,15 @@ pub fn checkpoint(&mut self) -> usize {
         self.checkpoints.len() - 1
     }
     /// Rollback to a specific checkpoint
-/// # Examples
-/// 
-/// ```
-/// use ruchy::runtime::arena::rollback;
-/// 
-/// let result = rollback(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn rollback(&mut self, checkpoint_id: usize) -> Result<()> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::arena::rollback;
+    ///
+    /// let result = rollback(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn rollback(&mut self, checkpoint_id: usize) -> Result<()> {
         if checkpoint_id >= self.checkpoints.len() {
             return Err(anyhow!("Invalid checkpoint ID"));
         }
@@ -413,15 +412,15 @@ pub fn rollback(&mut self, checkpoint_id: usize) -> Result<()> {
         Ok(())
     }
     /// Commit the current state, removing the last checkpoint
-/// # Examples
-/// 
-/// ```
-/// use ruchy::runtime::arena::commit;
-/// 
-/// let result = commit(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn commit(&mut self) -> Result<()> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::arena::commit;
+    ///
+    /// let result = commit(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn commit(&mut self) -> Result<()> {
         if self.checkpoints.is_empty() {
             return Err(anyhow!("No checkpoint to commit"));
         }
@@ -429,15 +428,15 @@ pub fn commit(&mut self) -> Result<()> {
         Ok(())
     }
     /// Get the underlying arena
-/// # Examples
-/// 
-/// ```
-/// use ruchy::runtime::arena::arena;
-/// 
-/// let result = arena(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn arena(&self) -> &Arena {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::arena::arena;
+    ///
+    /// let result = arena(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn arena(&self) -> &Arena {
         &self.arena
     }
     /// Reset the arena and all checkpoints
@@ -465,23 +464,23 @@ impl<T> Pool<T> {
         }
     }
     /// Allocate a value from the pool
-/// # Examples
-/// 
-/// ```
-/// use ruchy::runtime::arena::alloc;
-/// 
-/// let result = alloc(());
-/// assert_eq!(result, Ok(()));
-/// ```
-/// # Examples
-/// 
-/// ```
-/// use ruchy::runtime::arena::alloc;
-/// 
-/// let result = alloc(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn alloc(&self, value: T) -> Result<PoolBox<T>> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::arena::alloc;
+    ///
+    /// let result = alloc(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::arena::alloc;
+    ///
+    /// let result = alloc(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn alloc(&self, value: T) -> Result<PoolBox<T>> {
         // Try to reuse from free list
         if let Some(ptr) = self.free_list.borrow_mut().pop() {
             unsafe {
@@ -535,13 +534,13 @@ impl<T> std::ops::DerefMut for PoolBox<T> {
     }
 }
 #[cfg(test)]
-#[ignore]
+#[ignore = "Arena allocation tests not fully implemented"]
 mod tests {
     use super::*;
     #[test]
     fn test_arena_allocation() {
         let arena = Arena::new(1024 * 1024); // 1MB limit
-        // Allocate some values
+                                             // Allocate some values
         let v1 = arena.alloc(42i32).unwrap();
         let v2 = arena.alloc("hello".to_string()).unwrap();
         let v3 = arena.alloc(vec![1, 2, 3]).unwrap();
@@ -584,7 +583,7 @@ mod tests {
     #[test]
     fn test_memory_limit() {
         let arena = Arena::new(100); // Very small limit
-        // This should succeed
+                                     // This should succeed
         arena.alloc([0u8; 50]).unwrap();
         // This should fail - would exceed limit
         let result = arena.alloc([0u8; 60]);
@@ -599,20 +598,20 @@ mod tests {
             let v1 = pool.alloc(42).unwrap();
             assert_eq!(*v1, 42);
         } // v1 dropped, returned to pool
-        // Next allocation should reuse
+          // Next allocation should reuse
         let v2 = pool.alloc(100).unwrap();
-#[cfg(test)]
-#[ignore]
-use proptest::prelude::*;
+        #[cfg(test)]
+        #[ignore = "Property tests not fully configured"]
+        use proptest::prelude::*;
         assert_eq!(*v2, 100);
     }
 }
 #[cfg(test)]
-#[ignore]
+#[ignore = "Arena property tests not implemented"]
 mod property_tests_arena {
-    use proptest::proptest;
     use super::*;
     use proptest::prelude::*;
+    use proptest::proptest;
     proptest! {
         /// Property: Function never panics on any input
         #[test]
@@ -625,7 +624,5 @@ mod property_tests_arena {
                 // This is a template - adjust based on actual function signature
             });
         }
-    }
-}
     }
 }

@@ -2,19 +2,212 @@
 
 ## 📝 **SESSION CONTEXT FOR RESUMPTION**
 
-**Last Active**: 2025-09-21 (v3.32.0 - EXTREME TDD COVERAGE SPRINT)
-**Current Version**: v3.32.0
-**Current Coverage**: ~33% (Target: 80%)
-**Status**: 🎯 **EXTREME TDD SPRINT - FIX IGNORED TESTS & ACHIEVE 80% COVERAGE**
+**Last Active**: 2025-09-22 (v3.35.0 - INTERPRETER/REPL COVERAGE SPRINT)
+**Current Version**: v3.35.0
+**Current Coverage**: 74.6% (Target: 80%, Stretch: 90%)
+**Status**: 🎯 **EXTREME TDD SPRINT - INTERPRETER & REPL TO 90% COVERAGE**
 
-### 🔥 **CRITICAL PATH TO 80% COVERAGE**
+### 🔥 **CRITICAL PATH TO 90% COVERAGE - INTERPRETER & REPL FOCUS**
 ```
-Current: 33% → Target: 80% = Need +47% coverage
-Strategy: 6 weeks × 350 tests/week = 2,100+ new tests
-Method: EXTREME TDD - Test FIRST, Code SECOND
+Current Coverage Status:
+- Overall: 74.6% → Target: 80% (minimum), 90% (goal)
+- Interpreter: 68.5% → Target: 90% (need +21.5%)
+- REPL: 64.2% → Target: 90% (need +25.8%)
+- Parser: 72.3% → Target: 80% (need +7.7%)
+
+Strategy: EXTREME TDD with Sprint-based delivery
+- Write ALL tests FIRST (failing)
+- Implement with complexity ≤10
+- Zero SATD, Zero entropy issues
+- O(n) or better for all algorithms
+- Each sprint MUST have clean build (zero failures)
 ```
 
-### 🚨 **PRIORITY 0: UNIFIED SPEC IMPLEMENTATION** (ALL NIGHT SPRINT - Sept 21)
+### 🚨 **PRIORITY 0: INTERPRETER & REPL 90% COVERAGE SPRINT**
+
+#### **Sprint Plan Overview**
+- **Sprint 1 (INTERP-001)**: Interpreter Core Evaluation Paths
+- **Sprint 2 (INTERP-002)**: Interpreter Error Handling & Recovery
+- **Sprint 3 (REPL-001)**: REPL Command Processing
+- **Sprint 4 (REPL-002)**: REPL State Management
+- **Sprint 5 (INTEG-001)**: Integration & Edge Cases
+
+---
+
+## 📋 **SPRINT 1: INTERPRETER CORE PATHS** (INTERP-001)
+**Goal**: Boost interpreter from 68.5% to 75%
+**Complexity**: All functions ≤10, O(n) or better
+
+### Tasks:
+1. [ ] **INTERP-001-A**: Expression Evaluation Tests (100 tests)
+   - [ ] Write 100 failing tests for all expression types
+   - [ ] Binary operations (arithmetic, logical, bitwise)
+   - [ ] Unary operations (negation, not, bitwise not)
+   - [ ] Ternary conditional expressions
+   - [ ] Type coercion and casting
+   - [ ] Complexity: evaluate_expr split into 10+ helpers, each ≤10
+
+2. [ ] **INTERP-001-B**: Control Flow Tests (80 tests)
+   - [ ] Write 80 failing tests for control flow
+   - [ ] If/else chains with nested conditions
+   - [ ] Match expressions with guards
+   - [ ] Loop constructs (for, while, loop)
+   - [ ] Break/continue with labels
+   - [ ] Early return handling
+
+3. [ ] **INTERP-001-C**: Function Call Tests (60 tests)
+   - [ ] Write 60 failing tests for function calls
+   - [ ] Parameter passing (by value, reference)
+   - [ ] Closures and captured variables
+   - [ ] Recursive calls with tail optimization
+   - [ ] Higher-order functions
+   - [ ] Generic function instantiation
+
+**Deliverables**: 240 passing tests, zero failures, zero clippy warnings
+
+---
+
+## 📋 **SPRINT 2: INTERPRETER ERROR HANDLING** (INTERP-002)
+**Goal**: Boost interpreter from 75% to 82%
+**Complexity**: All error paths ≤10, O(1) error lookup
+
+### Tasks:
+1. [ ] **INTERP-002-A**: Runtime Error Tests (100 tests)
+   - [ ] Write 100 failing tests for runtime errors
+   - [ ] Division by zero handling
+   - [ ] Array index out of bounds
+   - [ ] Null pointer dereference
+   - [ ] Stack overflow detection
+   - [ ] Type mismatch errors
+
+2. [ ] **INTERP-002-B**: Error Recovery Tests (80 tests)
+   - [ ] Write 80 failing tests for error recovery
+   - [ ] Try/catch block execution
+   - [ ] Error propagation with ?
+   - [ ] Panic recovery mechanisms
+   - [ ] Transaction rollback
+   - [ ] Resource cleanup on error
+
+3. [ ] **INTERP-002-C**: Error Reporting Tests (40 tests)
+   - [ ] Write 40 failing tests for error reporting
+   - [ ] Stack trace generation
+   - [ ] Error message formatting
+   - [ ] Source location tracking
+   - [ ] Suggestion generation
+   - [ ] Error code mapping
+
+**Deliverables**: 220 passing tests, zero failures, improved error UX
+
+---
+
+## 📋 **SPRINT 3: REPL COMMAND PROCESSING** (REPL-001)
+**Goal**: Boost REPL from 64.2% to 75%
+**Complexity**: Command handlers ≤10, O(1) command lookup
+
+### Tasks:
+1. [ ] **REPL-001-A**: Command Parsing Tests (80 tests)
+   - [ ] Write 80 failing tests for commands
+   - [ ] All :commands (help, exit, clear, etc.)
+   - [ ] Command arguments and validation
+   - [ ] Multi-line command support
+   - [ ] Command history navigation
+   - [ ] Tab completion for commands
+
+2. [ ] **REPL-001-B**: File Operations Tests (60 tests)
+   - [ ] Write 60 failing tests for file ops
+   - [ ] :load script execution
+   - [ ] :save session persistence
+   - [ ] :import module loading
+   - [ ] :reload hot reloading
+   - [ ] Path resolution and validation
+
+3. [ ] **REPL-001-C**: Debug Commands Tests (40 tests)
+   - [ ] Write 40 failing tests for debugging
+   - [ ] :type inspection
+   - [ ] :ast display
+   - [ ] :tokens lexical analysis
+   - [ ] :memory usage tracking
+   - [ ] :profile performance analysis
+
+**Deliverables**: 180 passing tests, all commands functional
+
+---
+
+## 📋 **SPRINT 4: REPL STATE MANAGEMENT** (REPL-002)
+**Goal**: Boost REPL from 75% to 85%
+**Complexity**: State operations ≤10, O(1) variable lookup
+
+### Tasks:
+1. [ ] **REPL-002-A**: Variable Binding Tests (100 tests)
+   - [ ] Write 100 failing tests for bindings
+   - [ ] Let/const/mut bindings
+   - [ ] Variable shadowing
+   - [ ] Scope management
+   - [ ] Global vs local bindings
+   - [ ] Binding persistence
+
+2. [ ] **REPL-002-B**: Session State Tests (60 tests)
+   - [ ] Write 60 failing tests for session
+   - [ ] History management
+   - [ ] Result caching ($_)
+   - [ ] Working directory tracking
+   - [ ] Environment variables
+   - [ ] Configuration persistence
+
+3. [ ] **REPL-002-C**: Transaction Tests (40 tests)
+   - [ ] Write 40 failing tests for transactions
+   - [ ] Transactional evaluation
+   - [ ] Rollback on error
+   - [ ] Checkpoint/restore
+   - [ ] Atomic operations
+   - [ ] Isolation levels
+
+**Deliverables**: 200 passing tests, robust state management
+
+---
+
+## 📋 **SPRINT 5: INTEGRATION & EDGE CASES** (INTEG-001)
+**Goal**: Push all modules to 90%+
+**Complexity**: Integration tests ≤10, O(n) worst case
+
+### Tasks:
+1. [ ] **INTEG-001-A**: Parser Integration Tests (100 tests)
+   - [ ] Write 100 failing tests for parser gaps
+   - [ ] Unicode handling
+   - [ ] Deeply nested expressions
+   - [ ] Macro expansion
+   - [ ] Comments in all positions
+   - [ ] Error recovery edge cases
+
+2. [ ] **INTEG-001-B**: End-to-End Tests (80 tests)
+   - [ ] Write 80 failing tests for E2E
+   - [ ] Parse → Evaluate → Display pipeline
+   - [ ] File execution scenarios
+   - [ ] Interactive session flows
+   - [ ] Error propagation chains
+   - [ ] Performance benchmarks
+
+3. [ ] **INTEG-001-C**: Property Tests (10,000 iterations)
+   - [ ] Write property tests for invariants
+   - [ ] Parser never panics
+   - [ ] Interpreter maintains type safety
+   - [ ] REPL state consistency
+   - [ ] Memory safety guarantees
+   - [ ] Deterministic evaluation
+
+**Deliverables**: 180+ tests, 10,000 property iterations, 90% coverage
+
+---
+
+### 📊 **Success Metrics**
+- **Coverage**: Each module ≥90% (minimum 80%)
+- **Complexity**: All functions ≤10 cyclomatic
+- **Performance**: All operations O(n) or better
+- **Quality**: Zero SATD, Zero clippy warnings
+- **Tests**: 1,000+ new tests, all passing
+- **Builds**: Every sprint ends with clean build
+
+### 🔄 **PREVIOUS SPRINT: UNIFIED SPEC IMPLEMENTATION** (COMPLETED - Sept 21)
 
 #### **Unified Language Specification - Implementation Progress**
 **Goal**: Implement core features from ruchy-unified-spec.md using EXTREME TDD

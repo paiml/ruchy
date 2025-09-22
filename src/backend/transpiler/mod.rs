@@ -49,6 +49,8 @@ mod method_call_refactored;
 mod patterns;
 mod result_type;
 mod statements;
+#[cfg(test)]
+mod tests_compound_assignment;
 mod type_conversion_refactored;
 mod type_inference;
 mod types;
@@ -1675,7 +1677,7 @@ mod tests {
                 ExprKind::Literal(Literal::Integer(val)) => assert_eq!(val, 42),
                 _ => {
                     // Allow for different resolution behavior
-                    assert!(true);
+                    // Test passes without panic;
                 }
             }
         }

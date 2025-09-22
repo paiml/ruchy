@@ -2,10 +2,8 @@
 // Requirements: Complexity <10, Property tests 10,000+ iterations, Big O validation, Zero SATD
 // Target: Core REPL API functions with highest complexity and lowest coverage
 
-use ruchy::runtime::repl::Value;
-use ruchy::runtime::repl::{Repl, ReplConfig, ReplMode};
+use ruchy::runtime::repl::{Repl, ReplConfig};
 use ruchy::runtime::replay::DeterministicRepl;
-use std::path::PathBuf;
 use std::time::Duration;
 use tempfile::TempDir;
 
@@ -188,7 +186,7 @@ fn test_memory_functions() {
 
     // Test memory tracking functions
     let memory_used = repl.memory_used();
-    assert!(memory_used >= 0, "Memory used should be non-negative");
+    // memory_used is usize, always non-negative
 
     let memory_pressure = repl.memory_pressure();
     assert!(
@@ -209,7 +207,10 @@ fn test_checkpoint_restore() {
 
     // Create checkpoint
     let checkpoint = DeterministicRepl::checkpoint(&repl);
-    assert!(!checkpoint.bindings.is_empty() || !checkpoint.state_hash.is_empty(), "Checkpoint should not be empty");
+    assert!(
+        !checkpoint.bindings.is_empty() || !checkpoint.state_hash.is_empty(),
+        "Checkpoint should not be empty"
+    );
 
     // Test restore (may not modify state visibly)
     let mut repl_mut = repl;
@@ -227,9 +228,9 @@ fn test_get_prompt() {
 #[test]
 fn test_get_completions() {
     let repl = create_test_repl();
-    let completions = repl.get_completions("pr");
+    let _completions = repl.get_completions("pr");
     // Completions may be empty, but should not panic
-    assert!(completions.len() >= 0, "Completions should return a vector");
+    // completions.len() is usize, always non-negative
 }
 
 #[test]
@@ -238,13 +239,13 @@ fn test_bindings_management() {
 
     // Test initial state
     let bindings = repl.get_bindings();
-    let initial_count = bindings.len();
+    let _initial_count = bindings.len();
 
     // Add a binding through evaluation
     let _ = repl.eval("let test_var = 42");
 
     // Check if bindings changed (may depend on implementation)
-    let new_bindings = repl.get_bindings();
+    let _new_bindings = repl.get_bindings();
     // Don't assert on count change as implementation may vary
 
     // Test mutable access
@@ -252,13 +253,13 @@ fn test_bindings_management() {
 
     // Test clear
     repl.clear_bindings();
-    let cleared_bindings = repl.get_bindings();
+    let _cleared_bindings = repl.get_bindings();
     // Bindings should be cleared or reset
 }
 
 #[test]
 fn test_state_queries() {
-    let mut repl = create_test_repl();
+    let repl = create_test_repl();
 
     // Test various state query functions
     assert!(repl.can_accept_input(), "Fresh REPL should accept input");
@@ -274,8 +275,8 @@ fn test_state_queries() {
     let mode = repl.get_mode();
     assert!(!mode.is_empty(), "Mode should not be empty");
 
-    let history_len = repl.result_history_len();
-    assert!(history_len >= 0, "History length should be non-negative");
+    let _history_len = repl.result_history_len();
+    // history_len is usize, always non-negative
 }
 
 #[test]
@@ -283,11 +284,11 @@ fn test_error_handling() {
     let mut repl = create_test_repl();
 
     // Test malformed expression
-    let result = repl.eval("2 + + 2");
+    let _result = repl.eval("2 + + 2");
     // Should return error or handle gracefully
 
     // Test get_last_error
-    let error = repl.get_last_error();
+    let _error = repl.get_last_error();
     // Error may or may not be Some depending on implementation
 }
 
@@ -328,7 +329,6 @@ fn test_transactional_evaluation() {
 #[cfg(test)]
 mod property_tests {
     use super::*;
-    use proptest::prelude::*;
 
     proptest! {
         #![proptest_config(ProptestConfig::with_cases(10000))]
@@ -410,7 +410,7 @@ mod property_tests {
             let peak_memory = repl.peak_memory();
             let memory_pressure = repl.memory_pressure();
 
-            prop_assert!(memory_used >= 0, "Memory used should be non-negative");
+            // memory_used is usize, always non-negative
             prop_assert!(peak_memory >= memory_used, "Peak memory should be >= current memory");
             prop_assert!(memory_pressure >= 0.0 && memory_pressure <= 1.0,
                 "Memory pressure should be in valid range");

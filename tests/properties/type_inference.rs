@@ -12,18 +12,54 @@ use ruchy::{Parser, Transpiler};
 /// Generate valid function names
 fn function_name() -> impl Strategy<Value = String> {
     "[a-z][a-z0-9_]{0,10}".prop_filter("Not a reserved word", |s| {
-        !matches!(s.as_str(), "if" | "else" | "while" | "for" | "let" | "fun" | 
-                  "return" | "break" | "continue" | "match" | "struct" | "enum" |
-                  "impl" | "trait" | "type" | "const" | "static" | "mut" | "fn")
+        !matches!(
+            s.as_str(),
+            "if" | "else"
+                | "while"
+                | "for"
+                | "let"
+                | "fun"
+                | "return"
+                | "break"
+                | "continue"
+                | "match"
+                | "struct"
+                | "enum"
+                | "impl"
+                | "trait"
+                | "type"
+                | "const"
+                | "static"
+                | "mut"
+                | "fn"
+        )
     })
 }
 
 /// Generate valid parameter names  
 fn param_name() -> impl Strategy<Value = String> {
     "[a-z][a-z0-9_]{0,10}".prop_filter("Not a reserved word", |s| {
-        !matches!(s.as_str(), "if" | "else" | "while" | "for" | "let" | "fun" | 
-                  "return" | "break" | "continue" | "match" | "struct" | "enum" |
-                  "impl" | "trait" | "type" | "const" | "static" | "mut" | "fn")
+        !matches!(
+            s.as_str(),
+            "if" | "else"
+                | "while"
+                | "for"
+                | "let"
+                | "fun"
+                | "return"
+                | "break"
+                | "continue"
+                | "match"
+                | "struct"
+                | "enum"
+                | "impl"
+                | "trait"
+                | "type"
+                | "const"
+                | "static"
+                | "mut"
+                | "fn"
+        )
     })
 }
 
@@ -55,14 +91,14 @@ proptest! {
     #[test]
     fn main_never_has_return_type(body in function_body()) {
         let code = format!("fun main() {{ {} }}", body);
-        
+
         let mut parser = Parser::new(&code);
         if let Ok(ast) = parser.parse() {
             let mut transpiler = Transpiler::new();
             if let Ok(rust_code) = transpiler.transpile(&ast) {
                 let rust_str = rust_code.to_string();
                 // main should never have -> return type annotation
-                prop_assert!(!rust_str.contains("fn main ()"), 
+                prop_assert!(!rust_str.contains("fn main ()"),
                     "main() should not have return type, got: {}", rust_str);
                 prop_assert!(!rust_str.contains("fn main() ->"),
                     "main() should not have return type, got: {}", rust_str);
@@ -77,7 +113,7 @@ proptest! {
         param in param_name()
     ) {
         let code = format!("fun {}({}) {{ {} * 2 }}", name, param, param);
-        
+
         let mut parser = Parser::new(&code);
         if let Ok(ast) = parser.parse() {
             let mut transpiler = Transpiler::new();
@@ -98,7 +134,7 @@ proptest! {
         xparam in param_name().prop_filter("Different from f", move |x| x != &fparam),
     ) {
         let code = format!("fun {}({}, {}) {{ {}({}) }}", fname, fparam, xparam, fparam, xparam);
-        
+
         let mut parser = Parser::new(&code);
         if let Ok(ast) = parser.parse() {
             let mut transpiler = Transpiler::new();
@@ -121,14 +157,14 @@ proptest! {
     ) {
         // Try parsing as function
         let func_code = format!("fun test() {{ {} }}", code);
-        
+
         let mut parser1 = Parser::new(&func_code);
         let mut parser2 = Parser::new(&func_code);
-        
+
         if let (Ok(ast1), Ok(ast2)) = (parser1.parse(), parser2.parse()) {
             let transpiler1 = Transpiler::new();
             let transpiler2 = Transpiler::new();
-            
+
             if let (Ok(rust1), Ok(rust2)) = (transpiler1.transpile(&ast1), transpiler2.transpile(&ast2)) {
                 prop_assert_eq!(rust1.to_string(), rust2.to_string(),
                     "Type inference should be deterministic");
@@ -144,7 +180,7 @@ proptest! {
         str_val in "[a-zA-Z ]{1,20}"
     ) {
         let code = format!(r#"fun {}({}) {{ {} + "{}" }}"#, name, param, param, str_val);
-        
+
         let mut parser = Parser::new(&code);
         if let Ok(ast) = parser.parse() {
             let mut transpiler = Transpiler::new();
@@ -162,7 +198,7 @@ proptest! {
     }
 
     /// Property: Functions never get both String and numeric operations
-    #[test] 
+    #[test]
     fn no_mixed_type_operations(
         name in function_name(),
         p1 in param_name(),
@@ -170,7 +206,7 @@ proptest! {
     ) {
         // Try mixed operations - should fail to compile or use consistent types
         let code = format!("fun {}({}, {}) {{ {} * 2 + {} }}", name, p1, p2, p1, p2);
-        
+
         let mut parser = Parser::new(&code);
         if let Ok(ast) = parser.parse() {
             let mut transpiler = Transpiler::new();
@@ -183,7 +219,7 @@ proptest! {
                                    rust_str.contains(&format!("{} : i64", p1));
                 let p2_is_numeric = rust_str.contains(&format!("{} : i32", p2)) ||
                                    rust_str.contains(&format!("{} : i64", p2));
-                
+
                 if p1_is_string || p2_is_string {
                     prop_assert!(p1_is_string == p2_is_string,
                         "Mixed numeric/string types: {}", rust_str);
@@ -199,7 +235,7 @@ proptest! {
 /// Property tests for return type inference
 mod return_types {
     use super::*;
-    
+
     proptest! {
         /// Property: Functions with numeric operations infer numeric return
         #[test]
@@ -207,7 +243,7 @@ mod return_types {
             name in function_name().prop_filter("Not main", |s| s != "main")
         ) {
             let code = format!("fun {}() {{ 1 + 2 }}", name);
-            
+
             let mut parser = Parser::new(&code);
             if let Ok(ast) = parser.parse() {
                 let mut transpiler = Transpiler::new();
@@ -215,7 +251,7 @@ mod return_types {
                     let rust_str = rust_code.to_string();
                     // Numeric function should have numeric return or inferred
                     if rust_str.contains("-> String") {
-                        prop_assert!(false, 
+                        prop_assert!(false,
                             "Numeric function should not return String: {}", rust_str);
                     }
                 }
@@ -226,7 +262,7 @@ mod return_types {
         #[test]
         fn void_functions_no_return_type(name in function_name()) {
             let code = format!(r#"fun {}() {{ println("hello") }}"#, name);
-            
+
             let mut parser = Parser::new(&code);
             if let Ok(ast) = parser.parse() {
                 let mut transpiler = Transpiler::new();
@@ -251,7 +287,7 @@ mod return_types {
 /// Property tests for higher-order functions
 mod higher_order {
     use super::*;
-    
+
     proptest! {
         /// Property: apply(f, x) pattern types correctly
         #[test]
@@ -260,7 +296,7 @@ mod higher_order {
             x in param_name().prop_filter("Different", move |p| p != &f)
         ) {
             let code = format!("fun apply({}, {}) {{ {}({}) }}", f, x, f, x);
-            
+
             let mut parser = Parser::new(&code);
             if let Ok(ast) = parser.parse() {
                 let mut transpiler = Transpiler::new();
@@ -273,14 +309,14 @@ mod higher_order {
             }
         }
 
-        /// Property: map(f, list) pattern types correctly  
+        /// Property: map(f, list) pattern types correctly
         #[test]
         fn map_pattern_types_correctly(
             f in param_name(),
             list in param_name().prop_filter("Different", move |p| p != &f)
         ) {
             let code = format!("fun map({}, {}) {{ {}({}) }}", f, list, f, list);
-            
+
             let mut parser = Parser::new(&code);
             if let Ok(ast) = parser.parse() {
                 let mut transpiler = Transpiler::new();

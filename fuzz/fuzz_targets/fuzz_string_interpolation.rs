@@ -8,7 +8,7 @@ fuzz_target!(|data: &[u8]| {
         // Test that parsing strings with potential interpolation never panics
         let mut parser = Parser::new(s);
         let _ = parser.parse();
-        
+
         // Also test string interpolation parsing directly if it looks like a string
         if s.starts_with('"') && s.ends_with('"') && s.len() > 2 {
             let mut parser = Parser::new(s);

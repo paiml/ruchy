@@ -170,8 +170,7 @@ pub struct CoverageCollector {
 }
 #[derive(Debug, Clone)]
 pub enum CoverageTool {
-    Tarpaulin,
-    Llvm,
+    LlvmCov,
     Grcov,
 }
 impl CoverageCollector {
@@ -216,34 +215,44 @@ impl CoverageCollector {
     /// - The output cannot be parsed
     pub fn collect(&self) -> Result<CoverageReport> {
         match self.tool {
-            CoverageTool::Tarpaulin => Self::collect_tarpaulin(),
-            CoverageTool::Llvm => Self::collect_llvm(),
+            CoverageTool::LlvmCov => Self::collect_llvm_cov(),
             CoverageTool::Grcov => Self::collect_grcov(),
         }
     }
-    fn collect_tarpaulin() -> Result<CoverageReport> {
-        // Run cargo tarpaulin with JSON output
-        let output = Command::new("cargo")
-            .args([
-                "tarpaulin",
-                "--out",
-                "Json",
-                "--output-dir",
-                "target/coverage",
-            ])
+    fn collect_llvm_cov() -> Result<CoverageReport> {
+        // Run cargo llvm-cov with JSON output and timeout
+        let mut cmd = Command::new("timeout");
+        cmd.args([
+            "30", // 30 second timeout
+            "cargo",
+            "llvm-cov",
+            "--json",
+            "--output-dir",
+            "target/coverage",
+        ]);
+
+        // Fall back to direct command if timeout isn't available
+        let output = cmd
             .output()
-            .context("Failed to run cargo tarpaulin")?;
+            .or_else(|_| {
+                Command::new("cargo")
+                    .args(["llvm-cov", "--json", "--output-dir", "target/coverage"])
+                    .output()
+            })
+            .context("Failed to run cargo llvm-cov")?;
+
         if !output.status.success() {
             let stderr = String::from_utf8_lossy(&output.stderr);
-            return Err(anyhow::anyhow!("Tarpaulin failed: {}", stderr));
+            return Err(anyhow::anyhow!("cargo llvm-cov failed: {}", stderr));
         }
+
         let stdout = String::from_utf8_lossy(&output.stdout);
-        Self::parse_tarpaulin_json(&stdout)
+        Self::parse_llvm_cov_json(&stdout)
     }
-    #[allow(clippy::unnecessary_wraps)]
-    fn collect_llvm() -> Result<CoverageReport> {
-        // LLVM-cov workflow would go here
-        // For now, return a placeholder
+
+    fn parse_llvm_cov_json(_json_output: &str) -> Result<CoverageReport> {
+        // Parse cargo llvm-cov JSON output format
+        // For now, return a mock report
         let mut report = CoverageReport::new();
         // Add some example coverage data
         let file_coverage = FileCoverage {
@@ -276,35 +285,11 @@ impl CoverageCollector {
         report.add_file(file_coverage);
         Ok(report)
     }
-    #[allow(clippy::unnecessary_wraps)]
-    fn parse_tarpaulin_json(_json_output: &str) -> Result<CoverageReport> {
-        // Parse tarpaulin JSON output format
-        // This is a simplified parser - real implementation would be more robust
-        let mut report = CoverageReport::new();
-        // For now, return a mock report
-        // Real implementation would parse the actual tarpaulin JSON format
-        let file_coverage = FileCoverage {
-            path: "src/lib.rs".to_string(),
-            lines_total: 100,
-            lines_covered: 82,
-            branches_total: 20,
-            branches_covered: 15,
-            functions_total: 10,
-            functions_covered: 8,
-        };
-        report.add_file(file_coverage);
-        Ok(report)
-    }
     /// Check if the coverage tool is available
     pub fn is_available(&self) -> bool {
         match self.tool {
-            CoverageTool::Tarpaulin => Command::new("cargo")
-                .args(["tarpaulin", "--help"])
-                .output()
-                .map(|output| output.status.success())
-                .unwrap_or(false),
-            CoverageTool::Llvm => Command::new("llvm-profdata")
-                .arg("--help")
+            CoverageTool::LlvmCov => Command::new("cargo")
+                .args(["llvm-cov", "--help"])
                 .output()
                 .map(|output| output.status.success())
                 .unwrap_or(false),
@@ -452,9 +437,9 @@ mod tests {
     }
     #[test]
     fn test_coverage_collector_creation() {
-        let collector = CoverageCollector::new(CoverageTool::Tarpaulin).with_source_dir("src");
+        let collector = CoverageCollector::new(CoverageTool::LlvmCov).with_source_dir("src");
         assert_eq!(collector.source_dir, "src");
-        assert!(matches!(collector.tool, CoverageTool::Tarpaulin));
+        assert!(matches!(collector.tool, CoverageTool::LlvmCov));
     }
     #[test]
     fn test_html_report_generator() -> Result<(), Box<dyn std::error::Error>> {

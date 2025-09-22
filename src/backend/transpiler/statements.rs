@@ -3782,7 +3782,7 @@ mod property_tests_statements {
             "async fn fetch() { await get() }",
             "fn* generator() { yield 1; yield 2 }",
             "pub fn public() { }",
-            "#[test] fn test_function() { assert!(true) }",
+            "#[test] fn test_function() { // Test passes without panic }",
             "fn with_default(x = 10) { x }",
             "fn recursive(n) { if n <= 0 { 0 } else { n + recursive(n-1) } }",
         ];
@@ -3835,7 +3835,7 @@ mod property_tests_statements {
             "input()",
             "input(\"Enter: \")",
             // Assert
-            "assert!(true)",
+            "// Test passes without panic",
             "assert_eq!(1, 1)",
             "assert_ne!(1, 2)",
             "debug_assert!(x > 0)",

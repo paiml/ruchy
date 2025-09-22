@@ -200,7 +200,7 @@ impl ExtremeQualityRepl {
 }
 
 #[cfg(test)]
-#[ignore]
+#[ignore = "New REPL tests not completed"]
 mod tests {
     use super::*;
     use tempfile::TempDir;
@@ -285,11 +285,11 @@ mod tests {
     fn test_complexity_compliance() {
         // This test documents that all functions have complexity <10
         // Verified by PMAT analysis
-        assert!(true);
+        // Test passes without panic;
     }
 
     #[cfg(test)]
-    #[ignore]
+    #[ignore = "REPL property tests not implemented"]
     mod property_tests {
         use super::*;
         use proptest::prelude::*;

@@ -1,16 +1,16 @@
 //! Interactive theorem prover core functionality
+use super::counterexample::{Counterexample, CounterexampleGenerator};
+use super::refinement::{RefinementChecker, RefinementType};
+use super::smt::{SmtBackend, SmtQuery, SmtResult, SmtSolver};
+use super::tactics::{Tactic, TacticLibrary, TacticSuggestion};
 use anyhow::Result;
-use rustyline::DefaultEditor;
+#[cfg(test)]
+use proptest::prelude::*;
 use rustyline::error::ReadlineError;
+use rustyline::DefaultEditor;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
 use std::time::{Duration, Instant};
-use super::tactics::{Tactic, TacticLibrary, TacticSuggestion};
-use super::smt::{SmtSolver, SmtQuery, SmtResult, SmtBackend};
-use super::refinement::{RefinementType, RefinementChecker};
-use super::counterexample::{CounterexampleGenerator, Counterexample};
-#[cfg(test)]
-use proptest::prelude::*;
 /// Interactive prover session
 pub struct InteractiveProver {
     /// Current proof session
@@ -177,15 +177,15 @@ pub struct ProofResult {
 }
 impl InteractiveProver {
     /// Create a new interactive prover
-/// # Examples
-/// 
-/// ```
-/// use ruchy::proving::prover_complex::new;
-/// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn new(backend: SmtBackend) -> Self {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::proving::prover_complex::new;
+    ///
+    /// let result = new(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn new(backend: SmtBackend) -> Self {
         Self {
             session: ProverSession::new(),
             tactics: TacticLibrary::default(),
@@ -197,15 +197,15 @@ pub fn new(backend: SmtBackend) -> Self {
         }
     }
     /// Start an interactive proving session
-/// # Examples
-/// 
-/// ```
-/// use ruchy::proving::prover_complex::run_interactive;
-/// 
-/// let result = run_interactive(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn run_interactive(&mut self) -> Result<()> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::proving::prover_complex::run_interactive;
+    ///
+    /// let result = run_interactive(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn run_interactive(&mut self) -> Result<()> {
         let mut editor = DefaultEditor::new()?;
         println!("🔍 Ruchy Interactive Prover v0.1.0");
         println!("Type :help for commands, :quit to exit\n");
@@ -226,9 +226,10 @@ pub fn run_interactive(&mut self) -> Result<()> {
             if !suggestions.is_empty() {
                 println!("\n💡 Suggested tactics:");
                 for (i, suggestion) in suggestions.iter().enumerate().take(3) {
-                    println!("  {}. {} (confidence: {:.1}%)", 
-                        i + 1, 
-                        suggestion.tactic_name, 
+                    println!(
+                        "  {}. {} (confidence: {:.1}%)",
+                        i + 1,
+                        suggestion.tactic_name,
                         suggestion.confidence * 100.0
                     );
                 }
@@ -339,10 +340,11 @@ pub fn run_interactive(&mut self) -> Result<()> {
                 Priority::Low => "🟢",
                 Priority::Optional => "⚪",
             };
-            println!("  {}. {} {} - {}", 
-                i + 1, 
+            println!(
+                "  {}. {} {} - {}",
+                i + 1,
                 priority_icon,
-                goal.id, 
+                goal.id,
                 goal.statement
             );
         }
@@ -384,7 +386,9 @@ pub fn run_interactive(&mut self) -> Result<()> {
         if let Some(goal) = self.session.current_goal() {
             println!("Applying {} to: {}", tactic_name, goal.statement);
             // Find tactic
-            let tactic = self.tactics.get_tactic(tactic_name)
+            let tactic = self
+                .tactics
+                .get_tactic(tactic_name)
                 .ok_or_else(|| anyhow::anyhow!("Unknown tactic: {}", tactic_name))?;
             // Apply tactic
             let result = tactic.apply(goal, args, &self.session.context)?;
@@ -459,8 +463,11 @@ pub fn run_interactive(&mut self) -> Result<()> {
         }
         let duration = start.elapsed();
         if self.session.goals.is_empty() {
-            println!("✅ All goals proven in {:.2}s ({} steps)", 
-                duration.as_secs_f64(), steps);
+            println!(
+                "✅ All goals proven in {:.2}s ({} steps)",
+                duration.as_secs_f64(),
+                steps
+            );
         } else {
             println!("⚠️ Could not prove all goals automatically");
             println!("   {} goals remaining", self.session.goals.len());
@@ -495,7 +502,8 @@ pub fn run_interactive(&mut self) -> Result<()> {
         } else {
             println!("\n🎯 Tactic Suggestions:");
             for (i, suggestion) in suggestions.iter().enumerate() {
-                println!("  {}. {} (confidence: {:.1}%)", 
+                println!(
+                    "  {}. {} (confidence: {:.1}%)",
                     i + 1,
                     suggestion.tactic_name,
                     suggestion.confidence * 100.0
@@ -536,7 +544,10 @@ pub fn run_interactive(&mut self) -> Result<()> {
     fn find_counterexample(&mut self) -> Result<()> {
         if let Some(goal) = self.session.current_goal() {
             println!("Searching for counterexample...");
-            if let Some(counterexample) = self.counterexample_gen.generate(goal, &self.session.context)? {
+            if let Some(counterexample) = self
+                .counterexample_gen
+                .generate(goal, &self.session.context)?
+            {
                 println!("❌ Found counterexample:");
                 println!("{}", counterexample);
                 // Generate test case
@@ -959,16 +970,26 @@ mod tests {
     #[test]
     fn test_interactive_command_variants() {
         let commands = vec![
-            InteractiveCommand::Apply { tactic: "auto".to_string() },
+            InteractiveCommand::Apply {
+                tactic: "auto".to_string(),
+            },
             InteractiveCommand::Undo,
             InteractiveCommand::Show,
-            InteractiveCommand::Check { formula: "x > 0".to_string() },
-            InteractiveCommand::Assume { assumption: "y != 0".to_string() },
+            InteractiveCommand::Check {
+                formula: "x > 0".to_string(),
+            },
+            InteractiveCommand::Assume {
+                assumption: "y != 0".to_string(),
+            },
             InteractiveCommand::Split,
             InteractiveCommand::Simplify,
             InteractiveCommand::Hint,
-            InteractiveCommand::Save { file: "proof.rpf".to_string() },
-            InteractiveCommand::Load { file: "proof.rpf".to_string() },
+            InteractiveCommand::Save {
+                file: "proof.rpf".to_string(),
+            },
+            InteractiveCommand::Load {
+                file: "proof.rpf".to_string(),
+            },
             InteractiveCommand::Quit,
         ];
 
@@ -1031,7 +1052,10 @@ mod tests {
         context.assumptions.push("x > 0".to_string());
         context.assumptions.push("y = true".to_string());
 
-        context.definitions.insert("abs".to_string(), "fn(x) { if x >= 0 then x else -x }".to_string());
+        context.definitions.insert(
+            "abs".to_string(),
+            "fn(x) { if x >= 0 then x else -x }".to_string(),
+        );
 
         context.imports.push("std.math".to_string());
 
@@ -1044,9 +1068,9 @@ mod tests {
 
 #[cfg(test)]
 mod property_tests_prover_complex {
-    use proptest::proptest;
     use super::*;
     use proptest::prelude::*;
+    use proptest::proptest;
 
     proptest! {
         #[test]

@@ -7,7 +7,7 @@ use crate::backend::transpiler::Transpiler;
 use crate::frontend::ast::{Expr, ExprKind, Param, Type};
 use anyhow::Result;
 use proc_macro2::TokenStream;
-use quote::{quote, format_ident};
+use quote::{format_ident, quote};
 
 impl Transpiler {
     /// Refactored transpile_call with dispatch table - Complexity: 4 (was ~15)
@@ -22,7 +22,9 @@ impl Transpiler {
         let base_name = name.strip_suffix('!').unwrap_or(name);
 
         // Use dispatch helper to find handler
-        if let Some(handler_result) = self.dispatch_special_function(base_name, &func_tokens, args)? {
+        if let Some(handler_result) =
+            self.dispatch_special_function(base_name, &func_tokens, args)?
+        {
             return Ok(handler_result);
         }
 
@@ -89,9 +91,7 @@ impl Transpiler {
             "sqrt" | "pow" | "abs" | "min" | "max" | "floor" | "ceil" | "round" => {
                 self.try_transpile_math_function(name, args)
             }
-            "sin" | "cos" | "tan" | "log" | "exp" => {
-                self.try_transpile_math_functions(name, args)
-            }
+            "sin" | "cos" | "tan" | "log" | "exp" => self.try_transpile_math_functions(name, args),
             _ => Ok(None),
         }
     }
@@ -162,21 +162,14 @@ impl Transpiler {
         args: &[Expr],
     ) -> Result<Option<TokenStream>> {
         match name {
-            "df" | "DataFrame" | "Series" => {
-                self.try_transpile_dataframe_function(name, args)
-            }
+            "df" | "DataFrame" | "Series" => self.try_transpile_dataframe_function(name, args),
             _ => Ok(None),
         }
     }
 }
 
 // Type alias for function handlers
-type FunctionHandler = fn(
-    &Transpiler,
-    &str,
-    &TokenStream,
-    &[Expr],
-) -> Result<Option<TokenStream>>;
+type FunctionHandler = fn(&Transpiler, &str, &TokenStream, &[Expr]) -> Result<Option<TokenStream>>;
 
 /// Refactored transpile_let with pattern classification - Complexity: 6 (was ~12)
 impl Transpiler {
@@ -221,12 +214,22 @@ impl Transpiler {
         is_mutable: bool,
     ) -> Result<TokenStream> {
         match pattern_type {
-            PatternType::Simple => self.transpile_simple_pattern(pattern, value, type_hint, is_mutable),
-            PatternType::Tuple => self.transpile_tuple_pattern(pattern, value, type_hint, is_mutable),
-            PatternType::Array => self.transpile_array_pattern(pattern, value, type_hint, is_mutable),
-            PatternType::Struct => self.transpile_struct_pattern(pattern, value, type_hint, is_mutable),
+            PatternType::Simple => {
+                self.transpile_simple_pattern(pattern, value, type_hint, is_mutable)
+            }
+            PatternType::Tuple => {
+                self.transpile_tuple_pattern(pattern, value, type_hint, is_mutable)
+            }
+            PatternType::Array => {
+                self.transpile_array_pattern(pattern, value, type_hint, is_mutable)
+            }
+            PatternType::Struct => {
+                self.transpile_struct_pattern(pattern, value, type_hint, is_mutable)
+            }
             PatternType::Wildcard => self.transpile_wildcard_pattern(value, type_hint, is_mutable),
-            PatternType::Complex => self.transpile_complex_pattern(pattern, value, type_hint, is_mutable),
+            PatternType::Complex => {
+                self.transpile_complex_pattern(pattern, value, type_hint, is_mutable)
+            }
         }
     }
 
@@ -300,7 +303,8 @@ impl Transpiler {
             return_type
         };
 
-        let return_type_tokens = self.generate_return_type_tokens(name, effective_return_type, body)?;
+        let return_type_tokens =
+            self.generate_return_type_tokens(name, effective_return_type, body)?;
         let type_param_tokens = self.generate_type_param_tokens(type_params)?;
 
         self.generate_function_signature(

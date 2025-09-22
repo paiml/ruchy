@@ -5,8 +5,8 @@
 mod tab_completion_proof {
     use std::io::Write;
     use std::process::{Command, Stdio};
-    use std::time::Duration;
     use std::rc::Rc;
+    use std::time::Duration;
 
     /// MATHEMATICAL PROOF: Tab completion responds to input
     /// This test will FAIL if tab completion is broken

@@ -1288,7 +1288,7 @@ mod tests {
         let _parser = Parser::new("()");
         // Test would need proper ParserState setup
         // This is a placeholder to show intent
-        assert!(true); // Placeholder assertion
+        // Test passes without panic; // Placeholder assertion
     }
 
     #[test]
@@ -1299,7 +1299,7 @@ mod tests {
         // Demonstrating the function exists
         let mut stream = TokenStream::new("mut");
         if let Some((Token::Mut, _)) = stream.peek() {
-            assert!(true);
+            // Test passes without panic;
         }
     }
 
@@ -1469,7 +1469,7 @@ mod tests {
         assert!(result.is_ok());
         if let Ok(ty) = result {
             match ty.kind {
-                TypeKind::List(_) => assert!(true),
+                TypeKind::List(_) => src/frontend/parser/utils.rs,
                 _ => panic!("Expected list type"),
             }
         }
@@ -1482,7 +1482,7 @@ mod tests {
         assert!(result.is_ok());
         if let Ok(ty) = result {
             match ty.kind {
-                TypeKind::Function { .. } => assert!(true),
+                TypeKind::Function { .. } => src/frontend/parser/utils.rs,
                 _ => panic!("Expected function type"),
             }
         }
@@ -1495,7 +1495,7 @@ mod tests {
         assert!(result.is_ok());
         if let Ok(ty) = result {
             match ty.kind {
-                TypeKind::Reference { .. } => assert!(true),
+                TypeKind::Reference { .. } => src/frontend/parser/utils.rs,
                 _ => panic!("Expected reference type"),
             }
         }
@@ -1586,14 +1586,14 @@ mod tests {
         // Test simple identifier
         let part = parse_interpolated_expr("name");
         match part {
-            StringPart::Expr(_) => assert!(true),
+            StringPart::Expr(_) => src/frontend/parser/utils.rs,
             _ => panic!("Expected expr part"),
         }
 
         // Test with format specifier
         let part = parse_interpolated_expr("value:.2f");
         match part {
-            StringPart::ExprWithFormat { .. } => assert!(true),
+            StringPart::ExprWithFormat { .. } => src/frontend/parser/utils.rs,
             _ => panic!("Expected format expr with format"),
         }
     }

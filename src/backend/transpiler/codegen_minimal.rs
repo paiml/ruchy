@@ -30,6 +30,9 @@ impl MinimalCodeGen {
             ExprKind::Call { func, args } => Self::gen_call_expr(func, args),
             ExprKind::If { condition, then_branch, else_branch } =>
                 Self::gen_if_expr(condition, then_branch, else_branch.as_deref()),
+            ExprKind::Ternary { condition, true_expr, false_expr } =>
+                // Ternary is just syntactic sugar for if-else
+                Self::gen_if_expr(condition, true_expr, Some(false_expr)),
             ExprKind::Block(exprs) => Self::gen_block_expr(exprs),
             ExprKind::Match { expr, arms } => Self::gen_match_expr(expr, arms),
             ExprKind::List(elements) => Self::gen_list_expr(elements),

@@ -876,6 +876,20 @@ impl Interpreter {
                 then_branch,
                 else_branch,
             } => self.eval_if_expr(condition, then_branch, else_branch.as_deref()),
+            ExprKind::Ternary {
+                condition,
+                true_expr,
+                false_expr,
+            } => {
+                // Evaluate condition
+                let cond_value = self.eval_expr(condition)?;
+                // Check if condition is truthy
+                if cond_value.is_truthy() {
+                    self.eval_expr(true_expr)
+                } else {
+                    self.eval_expr(false_expr)
+                }
+            }
             ExprKind::Let {
                 name, value, body, ..
             } => self.eval_let_expr(name, value, body),

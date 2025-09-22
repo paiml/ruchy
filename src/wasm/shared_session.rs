@@ -1066,14 +1066,14 @@ mod tests {
             cell_cache,
             execution_mode: "Manual".to_string(),
             memory_counter: 100,
-            created_at: 1234567890,
+            created_at: 1_234_567_890,
         };
 
         assert_eq!(export_data.version.major, 1);
         assert_eq!(export_data.cell_cache.len(), 2);
         assert_eq!(export_data.execution_mode, "Manual");
         assert_eq!(export_data.memory_counter, 100);
-        assert_eq!(export_data.created_at, 1234567890);
+        assert_eq!(export_data.created_at, 1_234_567_890);
     }
 
     #[test]
@@ -1098,14 +1098,14 @@ mod tests {
             sequence: 42,
             cell_id: "cell_xyz".to_string(),
             code: "result = compute()".to_string(),
-            timestamp: 9876543210,
+            timestamp: 9_876_543_210,
             success: true,
         };
 
         assert_eq!(entry.sequence, 42);
         assert_eq!(entry.cell_id, "cell_xyz");
         assert_eq!(entry.code, "result = compute()");
-        assert_eq!(entry.timestamp, 9876543210);
+        assert_eq!(entry.timestamp, 9_876_543_210);
         assert!(entry.success);
     }
 

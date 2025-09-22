@@ -3,14 +3,14 @@
 //! This module exports the new high-quality REPL implementation
 
 pub mod commands;
-pub mod state;
-pub mod evaluation;
 pub mod completion;
+pub mod evaluation;
 pub mod formatting;
+pub mod state;
 
 // Re-export the main types
-pub use self::commands::{CommandRegistry, CommandResult, CommandContext};
-pub use self::state::{ReplState, ReplMode};
-pub use self::evaluation::{Evaluator, EvalResult};
+pub use self::commands::{CommandContext, CommandRegistry, CommandResult};
 pub use self::completion::CompletionEngine;
-pub use self::formatting::{format_value, format_error, format_ast};
+pub use self::evaluation::{EvalResult, Evaluator};
+pub use self::formatting::{format_ast, format_error, format_value};
+pub use self::state::{ReplMode, ReplState};

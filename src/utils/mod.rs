@@ -152,7 +152,8 @@ mod tests {
     #[test]
     fn test_large_values_in_response() {
         let large_string = "x".repeat(10000);
-        let response = create_success_response(large_string.clone(), "cell".to_string(), 999999.99);
+        let response =
+            create_success_response(large_string.clone(), "cell".to_string(), 999_999.99);
         assert_eq!(response.value.len(), 10000);
         assert_eq!(response.result, large_string);
     }

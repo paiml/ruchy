@@ -770,12 +770,12 @@ mod tests {
 
             // Should be valid expression kinds
             match &expr.kind {
-                ExprKind::Literal(_) => assert!(true),
-                ExprKind::Identifier(_) => assert!(true),
-                ExprKind::Binary { .. } => assert!(true),
-                ExprKind::Unary { .. } => assert!(true),
-                ExprKind::If { .. } => assert!(true),
-                _ => assert!(true), // Other kinds are valid too
+                ExprKind::Literal(_) => src/testing/generators.rs,
+                ExprKind::Identifier(_) => src/testing/generators.rs,
+                ExprKind::Binary { .. } => src/testing/generators.rs,
+                ExprKind::Unary { .. } => src/testing/generators.rs,
+                ExprKind::If { .. } => src/testing/generators.rs,
+                _ => src/testing/generators.rs, // Other kinds are valid too
             }
         }
     }
@@ -900,8 +900,8 @@ mod tests {
                 Literal::Bool(b) => assert!(*b),
                 Literal::String(s) => assert_eq!(s, "test"),
                 Literal::Char(c) => assert_eq!(*c, 'a'),
-                Literal::Unit => assert!(true),
-                Literal::Null => assert!(true),
+                Literal::Unit => src/testing/generators.rs,
+                Literal::Null => src/testing/generators.rs,
             }
         }
     }
@@ -918,7 +918,7 @@ mod tests {
         let _well_typed_strategy: BoxedStrategy<Expr> = arb_well_typed_expr();
 
         // If we get here, all strategies are properly typed
-        assert!(true);
+        // Test passes without panic;
     }
 
     #[test]

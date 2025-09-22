@@ -1,8 +1,8 @@
 #![no_main]
 
 use libfuzzer_sys::fuzz_target;
-use ruchy::frontend::parser::Parser;
 use ruchy::backend::transpiler::Transpiler;
+use ruchy::frontend::parser::Parser;
 
 fuzz_target!(|data: &[u8]| {
     if let Ok(input) = std::str::from_utf8(data) {

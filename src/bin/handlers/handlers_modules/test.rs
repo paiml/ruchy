@@ -69,7 +69,7 @@ fn run_tests(
         generate_coverage_report(&test_files, &test_results, coverage_format, threshold)?;
     }
     // Check for failures
-    check_test_failures(&test_results);
+    check_test_failures(&test_results)?;
     println!("\n✅ All tests passed!");
     Ok(())
 }
@@ -119,11 +119,16 @@ fn get_latest_modification(path: &Path) -> std::time::SystemTime {
     }
     latest
 }
-/// Check if any tests failed and exit if necessary
-fn check_test_failures(test_results: &[TestResult]) {
+/// Check if any tests failed and return error if necessary
+fn check_test_failures(test_results: &[TestResult]) -> Result<()> {
     let failed = test_results.iter().filter(|r| !r.success).count();
     if failed > 0 {
-        std::process::exit(1);
+        Err(anyhow::anyhow!(
+            "Test failures detected: {} tests failed",
+            failed
+        ))
+    } else {
+        Ok(())
     }
 }
 
@@ -131,9 +136,8 @@ fn check_test_failures(test_results: &[TestResult]) {
 mod tests {
     use super::*;
     use std::fs;
-    use std::io::Write;
     use std::time::Duration;
-    use tempfile::{NamedTempFile, TempDir};
+    use tempfile::TempDir;
 
     // Helper function to create a test directory with .ruchy files
     fn create_test_directory_with_files() -> Result<TempDir> {
@@ -378,7 +382,7 @@ mod tests {
     #[test]
 
     fn test_handle_watch_mode_setup() {
-        let temp_dir = create_test_directory_with_files().unwrap();
+        let _temp_dir = create_test_directory_with_files().unwrap();
 
         // We can't easily test the full watch mode (infinite loop),
         // but we can test that it doesn't panic on initial setup
@@ -451,10 +455,8 @@ mod tests {
             create_test_result("test3.ruchy", true, 200, None),
         ];
 
-        // Should not panic or exit for all passing tests
-        // Note: We can't easily test std::process::exit, so we test the logic
-        let failed_count = test_results.iter().filter(|r| !r.success).count();
-        assert_eq!(failed_count, 0);
+        // Should return Ok for all passing tests
+        assert!(check_test_failures(&test_results).is_ok());
     }
 
     #[test]
@@ -465,9 +467,10 @@ mod tests {
             create_test_result("test3.ruchy", true, 200, None),
         ];
 
-        // Test the logic without actually calling the function (to avoid exit)
-        let failed_count = test_results.iter().filter(|r| !r.success).count();
-        assert_eq!(failed_count, 1);
+        // Should return Err when there are failures
+        let result = check_test_failures(&test_results);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("1 tests failed"));
     }
 
     #[test]
@@ -478,18 +481,18 @@ mod tests {
             create_test_result("test3.ruchy", false, 70, Some("Error 3")),
         ];
 
-        // Test the logic without actually calling the function
-        let failed_count = test_results.iter().filter(|r| !r.success).count();
-        assert_eq!(failed_count, 3);
+        // Should return Err when all tests fail
+        let result = check_test_failures(&test_results);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("3 tests failed"));
     }
 
     #[test]
     fn test_check_test_failures_empty_results() {
         let test_results: Vec<TestResult> = vec![];
 
-        // Should handle empty results gracefully
-        let failed_count = test_results.iter().filter(|r| !r.success).count();
-        assert_eq!(failed_count, 0);
+        // Should return Ok for empty results (no failures)
+        assert!(check_test_failures(&test_results).is_ok());
     }
 
     // ========== Integration Tests ==========

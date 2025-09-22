@@ -1,8 +1,8 @@
 // Property-based tests for parser robustness
 // These ensure the parser handles various inputs without panicking
 
-use ruchy::compile;
 use quickcheck::{quickcheck, TestResult};
+use ruchy::compile;
 
 #[cfg(test)]
 mod parser_properties {
@@ -59,7 +59,10 @@ mod parser_properties {
             return TestResult::discard();
         }
 
-        let elements = (0..size).map(|i| i.to_string()).collect::<Vec<_>>().join(", ");
+        let elements = (0..size)
+            .map(|i| i.to_string())
+            .collect::<Vec<_>>()
+            .join(", ");
         let code = format!("fn main() {{ let arr = [{}]; }}", elements);
         let _result = compile(&code);
         TestResult::passed()
@@ -83,7 +86,9 @@ mod parser_properties {
 
     // Test binary operations with random operators
     fn prop_binary_ops(a: i8, b: i8, op: u8) -> TestResult {
-        let operators = ["+", "-", "*", "/", "%", "<", ">", "<=", ">=", "==", "!=", "&&", "||"];
+        let operators = [
+            "+", "-", "*", "/", "%", "<", ">", "<=", ">=", "==", "!=", "&&", "||",
+        ];
         let op_idx = (op as usize) % operators.len();
         let operator = operators[op_idx];
 

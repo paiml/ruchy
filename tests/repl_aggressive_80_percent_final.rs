@@ -1,4 +1,3 @@
-use std::env;
 // REPL Aggressive 80% Coverage - Final Systematic Push
 // Target remaining high-complexity functions to achieve 80% coverage
 

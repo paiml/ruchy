@@ -62,7 +62,8 @@ pub fn handle_eval_command(expr: &str, verbose: bool, format: &str) -> Result<()
                     eprintln!("Error: {e}");
                 }
             }
-            std::process::exit(1);
+            // Return an error instead of exiting - let the caller decide what to do
+            Err(e)
         }
     }
 }
@@ -104,7 +105,7 @@ pub fn handle_file_execution(file: &Path) -> Result<()> {
         }
         Err(e) => {
             eprintln!("Error: {e}");
-            std::process::exit(1);
+            return Err(e);
         }
     }
 }
@@ -130,7 +131,7 @@ pub fn handle_stdin_input(input: &str) -> Result<()> {
         }
         Err(e) => {
             eprintln!("Error: {e}");
-            std::process::exit(1);
+            return Err(e);
         }
     }
 }
@@ -149,7 +150,7 @@ pub fn handle_parse_command(file: &Path, verbose: bool) -> Result<()> {
         }
         Err(e) => {
             eprintln!("Parse error: {e}");
-            std::process::exit(1);
+            return Err(anyhow::anyhow!("Parse error: {}", e));
         }
     }
 }
@@ -279,7 +280,7 @@ fn compile_rust_code(source_path: &Path, binary_path: &Path) -> Result<()> {
     if !output.status.success() {
         eprintln!("Compilation failed:");
         eprintln!("{}", String::from_utf8_lossy(&output.stderr));
-        std::process::exit(1);
+        return Err(anyhow::anyhow!("Compilation failed"));
     }
     Ok(())
 }
@@ -293,7 +294,10 @@ fn execute_binary(binary_path: &Path) -> Result<()> {
         eprint!("{}", String::from_utf8_lossy(&run_output.stderr));
     }
     if !run_output.status.success() {
-        std::process::exit(run_output.status.code().unwrap_or(1));
+        return Err(anyhow::anyhow!(
+            "Program exited with code {}",
+            run_output.status.code().unwrap_or(1)
+        ));
     }
     Ok(())
 }
@@ -405,7 +409,7 @@ pub fn handle_compile_command(
     if let Err(e) = ruchy::backend::compiler::check_rustc_available() {
         eprintln!("{} {}", "Error:".bright_red(), e);
         eprintln!("Please install Rust toolchain from https://rustup.rs/");
-        std::process::exit(1);
+        return Err(e);
     }
     println!("{} Compiling {}...", "→".bright_blue(), file.display());
     let options = CompileOptions {
@@ -439,7 +443,7 @@ pub fn handle_compile_command(
         }
         Err(e) => {
             eprintln!("{} Compilation failed: {}", "✗".bright_red(), e);
-            std::process::exit(1);
+            return Err(e);
         }
     }
     Ok(())
@@ -477,7 +481,7 @@ fn handle_check_syntax(file: &Path) -> Result<()> {
         }
         Err(e) => {
             eprintln!("{}", format!("✗ Syntax error: {e}").red());
-            std::process::exit(1);
+            return Err(anyhow::anyhow!("Syntax error: {}", e));
         }
     }
 }
@@ -593,12 +597,18 @@ pub fn handle_coverage_command(
     if threshold > 0.0 {
         if collector.meets_threshold(threshold) {
             println!("\n✅ Coverage meets threshold of {:.1}%", threshold);
+            Ok(())
         } else {
             eprintln!("\n❌ Coverage below threshold of {:.1}%", threshold);
-            std::process::exit(1);
+            // Return an error instead of exiting - let the caller decide what to do
+            Err(anyhow::anyhow!(
+                "Coverage below threshold of {:.1}%",
+                threshold
+            ))
         }
+    } else {
+        Ok(())
     }
-    Ok(())
 }
 /// Watch and run tests on changes - delegated to refactored module
 fn handle_watch_and_test(path: &Path, verbose: bool, filter: Option<&str>) -> Result<()> {
@@ -830,8 +840,9 @@ pub fn handle_complex_command(command: crate::Commands) -> Result<()> {
                     config.as_deref(),
                 )
             } else {
-                eprintln!("Error: Either provide a file or use --all flag");
-                std::process::exit(1);
+                return Err(anyhow::anyhow!(
+                    "Error: Either provide a file or use --all flag"
+                ));
             }
         }
         crate::Commands::Prove {
@@ -1093,8 +1104,7 @@ pub fn handle_complex_command(command: crate::Commands) -> Result<()> {
                         &custom_rules,
                     )
                 } else {
-                    eprintln!("Error: Either provide a file or use --all flag");
-                    std::process::exit(1);
+                    return Err(anyhow::anyhow!("Error: Either provide a file or use --all flag"));
                 }
             }
         }
@@ -1298,8 +1308,9 @@ pub fn handle_notebook_command(port: u16, open_browser: bool, host: &str) -> Res
 }
 #[cfg(not(feature = "notebook"))]
 pub fn handle_notebook_command(_port: u16, _open_browser: bool, _host: &str) -> Result<()> {
-    eprintln!("Notebook feature not enabled. Rebuild with --features notebook");
-    std::process::exit(1)
+    Err(anyhow::anyhow!(
+        "Notebook feature not enabled. Rebuild with --features notebook"
+    ))
 }
 /// Handle replay-to-tests command - convert .replay files to regression tests
 ///
@@ -1861,6 +1872,6 @@ mod tests {
         // print_transpilation_status("test.ruchy", false); // Function doesn't exist
         println!("test.ruchy: transpilation completed"); // Simple replacement for testing
                                                          // If it doesn't panic, it passes
-        assert!(true);
+        // Test passes without panic;
     }
 }

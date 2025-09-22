@@ -164,7 +164,7 @@ mod property_tests {
             let _ = validate_arg_count("test", &args, expected);
 
             // This completes in constant time regardless of arg_count
-            prop_assert!(true);
+            prop_// Test passes without panic;
         }
 
         #[test]

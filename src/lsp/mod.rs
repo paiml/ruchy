@@ -142,6 +142,7 @@ mod tests {
         ruchy_token_to_lsp, Formatter, RuchyLanguageServer, RuchyTokenType, SemanticAnalyzer,
         Workspace, SEMANTIC_TOKEN_LEGEND,
     };
+    use tower_lsp::lsp_types::SemanticTokenType;
     use tower_lsp::lsp_types::Url;
 
     // Sprint 9: Comprehensive LSP module tests
@@ -321,14 +322,10 @@ mod tests {
     #[test]
     fn test_ruchy_token_type_variants() {
         // Test that token types exist
-        assert!(RuchyTokenType::Keyword as u32 >= 0);
-        assert!(RuchyTokenType::Function as u32 >= 0);
-        assert!(RuchyTokenType::Variable as u32 >= 0);
-        assert!(RuchyTokenType::Type as u32 >= 0);
-        assert!(RuchyTokenType::Number as u32 >= 0);
-        assert!(RuchyTokenType::String as u32 >= 0);
-        assert!(RuchyTokenType::Comment as u32 >= 0);
-        assert!(RuchyTokenType::Operator as u32 >= 0);
+        assert!(RuchyTokenType::Actor as u32 >= 0);
+        assert!(RuchyTokenType::DataFrame as u32 >= 0);
+        assert!(RuchyTokenType::Pipeline as u32 >= 0);
+        assert!(RuchyTokenType::Pattern as u32 >= 0);
     }
 
     #[test]
@@ -341,19 +338,16 @@ mod tests {
     #[test]
     fn test_ruchy_token_to_lsp_conversion() {
         // Test token conversion
-        let keyword_idx = ruchy_token_to_lsp(RuchyTokenType::Keyword);
-        let function_idx = ruchy_token_to_lsp(RuchyTokenType::Actor);
-        let variable_idx = ruchy_token_to_lsp(RuchyTokenType::Pattern);
+        let actor_token = ruchy_token_to_lsp(RuchyTokenType::Actor);
+        let dataframe_token = ruchy_token_to_lsp(RuchyTokenType::DataFrame);
+        let pipeline_token = ruchy_token_to_lsp(RuchyTokenType::Pipeline);
+        let pattern_token = ruchy_token_to_lsp(RuchyTokenType::Pattern);
 
-        // Indices should be different
-        assert_ne!(keyword_idx, function_idx);
-        assert_ne!(keyword_idx, variable_idx);
-        assert_ne!(function_idx, variable_idx);
-
-        // Indices should be valid
-        assert!((keyword_idx.0 as usize) < SEMANTIC_TOKEN_LEGEND.token_types.len());
-        assert!((function_idx.0 as usize) < SEMANTIC_TOKEN_LEGEND.token_types.len());
-        assert!((variable_idx.0 as usize) < SEMANTIC_TOKEN_LEGEND.token_types.len());
+        // Tokens should map to expected LSP types
+        assert_eq!(actor_token, SemanticTokenType::CLASS);
+        assert_eq!(dataframe_token, SemanticTokenType::TYPE);
+        assert_eq!(pipeline_token, SemanticTokenType::OPERATOR);
+        assert_eq!(pattern_token, SemanticTokenType::ENUM_MEMBER);
     }
 
     #[test]

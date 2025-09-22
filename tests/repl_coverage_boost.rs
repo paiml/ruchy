@@ -42,7 +42,7 @@ fn test_evaluate_expr_str() {
     // String expression
     let result = repl.evaluate_expr_str("\"hello\"", None).unwrap();
     if let Value::String(s) = result {
-        assert_eq!(&**s, "hello");
+        assert_eq!(s.as_ref(), "hello");
     } else {
         panic!("Expected string");
     }
