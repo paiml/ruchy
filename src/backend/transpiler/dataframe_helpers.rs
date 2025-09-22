@@ -9,6 +9,6 @@ mod tests {
     #[test]
     fn test_module_exists() {
         // Basic test to ensure module compiles
-        assert!(true);
+        // Test passes without panic;
     }
 }

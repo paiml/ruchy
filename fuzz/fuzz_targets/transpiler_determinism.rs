@@ -1,5 +1,5 @@
 //! Fuzz test for transpiler determinism
-//! 
+//!
 //! Property: The transpiler must produce identical output for identical input,
 //! regardless of environmental conditions or build configuration.
 
@@ -16,14 +16,14 @@ fuzz_target!(|data: &[u8]| {
         if input.len() > 10000 {
             return;
         }
-        
+
         // Test determinism by transpiling the same input multiple times
         let mut results = Vec::new();
-        
+
         for seed in 0..3 {
             // Perturb environment to test resilience
             perturb_environment(seed);
-            
+
             // Try to parse
             let mut parser = Parser::new(input);
             if let Ok(ast) = parser.parse() {
@@ -35,7 +35,7 @@ fuzz_target!(|data: &[u8]| {
                 }
             }
         }
-        
+
         // All results should be identical (deterministic)
         if results.len() > 1 {
             let first = &results[0];
@@ -54,7 +54,7 @@ fuzz_target!(|data: &[u8]| {
 fn perturb_environment(seed: u64) {
     // Change hash seed (if Rust uses it)
     env::set_var("RUST_HASH_SEED", seed.to_string());
-    
+
     // Could add more perturbations here:
     // - Thread pool size changes
     // - Memory allocation patterns

@@ -300,7 +300,7 @@ mod tests {
 
         // Can't easily test Command internals, but verify it doesn't panic
         // The function returns a Command which we can't easily inspect
-        assert!(true); // Just verify no panic
+        // Test passes without panic; // Just verify no panic
     }
 
     #[test]
@@ -316,7 +316,7 @@ mod tests {
 
         apply_optional_flags(&mut cmd, &options);
         // Can't easily inspect Command internals, but verify it doesn't panic
-        assert!(true);
+        // Test passes without panic;
     }
 
     #[test]
@@ -477,7 +477,7 @@ mod tests {
         let mut cmd = Command::new("rustc");
         apply_optional_flags(&mut cmd, &options);
         // Function shouldn't panic with multiple flags
-        assert!(true);
+        // Test passes without panic;
     }
 
     // Test 18: Strip and static link combinations
@@ -498,7 +498,7 @@ mod tests {
             let mut cmd = Command::new("rustc");
             apply_optional_flags(&mut cmd, &options);
             // Should handle all combinations without panic
-            assert!(true);
+            // Test passes without panic;
         }
     }
 
@@ -591,8 +591,8 @@ mod tests {
             // These may fail due to parser limitations, but shouldn't panic
             let result = compile_source_to_binary(source, &options);
             match result {
-                Ok(_) => assert!(true),  // Success is good
-                Err(_) => assert!(true), // Expected failure is also fine
+                Ok(_) => src/backend/compiler.rs,  // Success is good
+                Err(_) => src/backend/compiler.rs, // Expected failure is also fine
             }
         }
     }
@@ -730,8 +730,8 @@ mod tests {
         // This may fail due to parser/transpiler limitations, but should not panic
         let result = compile_to_binary(&source_file, &options);
         match result {
-            Ok(_) => assert!(true),  // Success is good
-            Err(_) => assert!(true), // Expected failure due to incomplete implementation
+            Ok(_) => src/backend/compiler.rs,  // Success is good
+            Err(_) => src/backend/compiler.rs, // Expected failure due to incomplete implementation
         }
     }
 

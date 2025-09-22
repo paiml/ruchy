@@ -332,6 +332,12 @@ pub enum ExprKind {
         expr: Box<Expr>,
         target_type: String,
     },
+    /// Ternary conditional expression (condition ? true_expr : false_expr)
+    Ternary {
+        condition: Box<Expr>,
+        true_expr: Box<Expr>,
+        false_expr: Box<Expr>,
+    },
     Try {
         expr: Box<Expr>,
     },
@@ -2570,14 +2576,14 @@ mod tests {
         for pattern in patterns {
             // Test pattern construction and basic operations
             match pattern {
-                Pattern::Wildcard => assert!(true),
-                Pattern::Literal(_) => assert!(true),
+                Pattern::Wildcard => src/frontend/ast.rs,
+                Pattern::Literal(_) => src/frontend/ast.rs,
                 Pattern::Identifier(ref name) => assert!(!name.is_empty()),
                 Pattern::QualifiedName(ref names) => assert!(!names.is_empty()),
                 Pattern::Tuple(ref patterns) => assert!(!patterns.is_empty()),
                 Pattern::List(ref patterns) => assert!(!patterns.is_empty()),
                 Pattern::Struct { ref name, .. } => assert!(!name.is_empty()),
-                _ => assert!(true), // Handle all other pattern variants
+                _ => src/frontend/ast.rs, // Handle all other pattern variants
             }
         }
     }

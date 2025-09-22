@@ -1,24 +1,24 @@
 //! Resource-bounded evaluation for the REPL
 //!
 //! Provides safe evaluation with memory and time limits, automatic rollback on failure.
-use anyhow::{Result, anyhow};
-use std::time::{Duration, Instant};
 use crate::runtime::repl::{Repl, Value};
-use crate::runtime::transaction::{TransactionMetadata, SavePoint};
+use crate::runtime::transaction::{SavePoint, TransactionMetadata};
+use anyhow::{anyhow, Result};
+use std::time::{Duration, Instant};
 // ============================================================================
 // Resource-Bounded Evaluation
 // ============================================================================
 impl Repl {
     /// Evaluate with resource bounds and automatic rollback on failure
-/// # Examples
-/// 
-/// ```
-/// use ruchy::runtime::resource_eval::eval_bounded;
-/// 
-/// let result = eval_bounded("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn eval_bounded(
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::resource_eval::eval_bounded;
+    ///
+    /// let result = eval_bounded("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn eval_bounded(
         &mut self,
         input: &str,
         memory_limit: Option<usize>,
@@ -52,15 +52,15 @@ pub fn eval_bounded(
         }
     }
     /// Try evaluation with speculative execution
-/// # Examples
-/// 
-/// ```
-/// use ruchy::runtime::resource_eval::try_eval;
-/// 
-/// let result = try_eval("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn try_eval(&mut self, input: &str) -> Result<String> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::resource_eval::try_eval;
+    ///
+    /// let result = try_eval("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn try_eval(&mut self, input: &str) -> Result<String> {
         // Use savepoint for automatic rollback
         let savepoint = self.tx_state.savepoint()?;
         match self.eval(input) {
@@ -77,15 +77,15 @@ pub fn try_eval(&mut self, input: &str) -> Result<String> {
         }
     }
     /// Evaluate multiple expressions atomically
-/// # Examples
-/// 
-/// ```
-/// use ruchy::runtime::resource_eval::eval_atomic;
-/// 
-/// let result = eval_atomic("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn eval_atomic(&mut self, inputs: &[&str]) -> Result<Vec<String>> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::resource_eval::eval_atomic;
+    ///
+    /// let result = eval_atomic("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn eval_atomic(&mut self, inputs: &[&str]) -> Result<Vec<String>> {
         let savepoint = self.tx_state.savepoint()?;
         let mut results = Vec::new();
         for input in inputs {
@@ -121,27 +121,27 @@ pub fn eval_atomic(&mut self, inputs: &[&str]) -> Result<Vec<String>> {
         self.eval(input)
     }
     /// Get current memory usage
-/// # Examples
-/// 
-/// ```
-/// use ruchy::runtime::resource_eval::memory_usage;
-/// 
-/// let result = memory_usage(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn memory_usage(&self) -> usize {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::resource_eval::memory_usage;
+    ///
+    /// let result = memory_usage(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn memory_usage(&self) -> usize {
         self.tx_state.memory_used()
     }
     /// Create a checkpoint for manual rollback
-/// # Examples
-/// 
-/// ```
-/// use ruchy::runtime::resource_eval::checkpoint;
-/// 
-/// let result = checkpoint(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn checkpoint(&mut self) -> Result<CheckpointHandle> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::resource_eval::checkpoint;
+    ///
+    /// let result = checkpoint(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn checkpoint(&mut self) -> Result<CheckpointHandle> {
         let savepoint = self.tx_state.savepoint()?;
         Ok(CheckpointHandle {
             savepoint: Some(savepoint),
@@ -157,30 +157,30 @@ pub struct CheckpointHandle {
 }
 impl CheckpointHandle {
     /// Commit the checkpoint
-/// # Examples
-/// 
-/// ```
-/// use ruchy::runtime::resource_eval::commit;
-/// 
-/// let result = commit(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn commit(mut self) -> Result<()> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::resource_eval::commit;
+    ///
+    /// let result = commit(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn commit(mut self) -> Result<()> {
         if let Some(sp) = self.savepoint.take() {
             sp.commit()?;
         }
         Ok(())
     }
     /// Rollback to the checkpoint
-/// # Examples
-/// 
-/// ```
-/// use ruchy::runtime::resource_eval::rollback;
-/// 
-/// let result = rollback(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn rollback(mut self) -> Result<()> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::resource_eval::rollback;
+    ///
+    /// let result = rollback(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn rollback(mut self) -> Result<()> {
         if let Some(sp) = self.savepoint.take() {
             sp.rollback()?;
         }
@@ -222,15 +222,15 @@ impl Default for ResourceLimits {
 }
 impl ResourceLimits {
     /// Create limits for untrusted code
-/// # Examples
-/// 
-/// ```
-/// use ruchy::runtime::resource_eval::untrusted;
-/// 
-/// let result = untrusted(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn untrusted() -> Self {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::resource_eval::untrusted;
+    ///
+    /// let result = untrusted(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn untrusted() -> Self {
         Self {
             max_memory: 10 * 1024 * 1024, // 10MB
             max_time: Duration::from_secs(1),
@@ -239,15 +239,15 @@ pub fn untrusted() -> Self {
         }
     }
     /// Create limits for testing
-/// # Examples
-/// 
-/// ```
-/// use ruchy::runtime::resource_eval::testing;
-/// 
-/// let result = testing(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn testing() -> Self {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::resource_eval::testing;
+    ///
+    /// let result = testing(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn testing() -> Self {
         Self {
             max_memory: 1024 * 1024, // 1MB
             max_time: Duration::from_millis(100),
@@ -266,15 +266,15 @@ pub struct Sandbox {
 }
 impl Sandbox {
     /// Create a new sandbox with the given limits
-/// # Examples
-/// 
-/// ```
-/// use ruchy::runtime::resource_eval::new;
-/// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn new(limits: ResourceLimits) -> Result<Self> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::resource_eval::new;
+    ///
+    /// let result = new(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn new(limits: ResourceLimits) -> Result<Self> {
         let mut config = crate::runtime::repl::ReplConfig::default();
         config.max_memory = limits.max_memory;
         config.max_depth = limits.max_depth;
@@ -284,15 +284,15 @@ pub fn new(limits: ResourceLimits) -> Result<Self> {
         })
     }
     /// Evaluate code in the sandbox
-/// # Examples
-/// 
-/// ```
-/// use ruchy::runtime::resource_eval::eval;
-/// 
-/// let result = eval("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn eval(&mut self, input: &str) -> Result<String> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::resource_eval::eval;
+    ///
+    /// let result = eval("example");
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn eval(&mut self, input: &str) -> Result<String> {
         self.repl.eval_bounded(
             input,
             Some(self.limits.max_memory),
@@ -300,35 +300,31 @@ pub fn eval(&mut self, input: &str) -> Result<String> {
         )
     }
     /// Reset the sandbox to initial state
-/// # Examples
-/// 
-/// ```
-/// use ruchy::runtime::resource_eval::reset;
-/// 
-/// let result = reset(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn reset(&mut self) -> Result<()> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::resource_eval::reset;
+    ///
+    /// let result = reset(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn reset(&mut self) -> Result<()> {
         self.repl.tx_state.clear();
         Ok(())
     }
 }
 #[cfg(test)]
-#[ignore]
+#[ignore = "Resource evaluation tests not fully implemented"]
 mod tests {
     use super::*;
-#[cfg(test)]
-#[ignore]
-use proptest::prelude::*;
+    #[cfg(test)]
+    #[ignore = "Property tests not fully implemented"]
+    use proptest::prelude::*;
     #[test]
     fn test_bounded_evaluation() {
         let mut repl = Repl::new().unwrap();
         // Should succeed within limits
-        let result = repl.eval_bounded(
-            "1 + 1",
-            Some(1024),
-            Some(Duration::from_secs(1)),
-        );
+        let result = repl.eval_bounded("1 + 1", Some(1024), Some(Duration::from_secs(1)));
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), "2");
     }
@@ -336,19 +332,13 @@ use proptest::prelude::*;
     fn test_atomic_evaluation() {
         let mut repl = Repl::new().unwrap();
         // All should succeed
-        let results = repl.eval_atomic(&[
-            "let x = 1",
-            "let y = 2",
-            "x + y",
-        ]).unwrap();
+        let results = repl
+            .eval_atomic(&["let x = 1", "let y = 2", "x + y"])
+            .unwrap();
         assert_eq!(results.len(), 3);
         assert_eq!(results[2], "3");
         // Failure should rollback all
-        let result = repl.eval_atomic(&[
-            "let z = 10",
-            "invalid syntax here",
-            "z + 1",
-        ]);
+        let result = repl.eval_atomic(&["let z = 10", "invalid syntax here", "z + 1"]);
         assert!(result.is_err());
         // z should not exist due to rollback
         assert!(repl.eval("z").is_err());
@@ -382,11 +372,11 @@ use proptest::prelude::*;
     }
 }
 #[cfg(test)]
-#[ignore]
+#[ignore = "Property tests for resource evaluation not implemented"]
 mod property_tests_resource_eval {
-    use proptest::proptest;
     use super::*;
     use proptest::prelude::*;
+    use proptest::proptest;
     proptest! {
         /// Property: Function never panics on any input
         #[test]
@@ -399,7 +389,5 @@ mod property_tests_resource_eval {
                 // This is a template - adjust based on actual function signature
             });
         }
-    }
-}
     }
 }

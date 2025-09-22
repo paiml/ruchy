@@ -1572,7 +1572,7 @@ mod tests {
         let _style_violation = LintRule::StyleViolation;
         let _security = LintRule::Security;
         let _performance = LintRule::Performance;
-        assert!(true); // All variants created successfully
+        // Test passes without panic; // All variants created successfully
     }
 
     #[test]
@@ -1582,7 +1582,7 @@ mod tests {
         let _parameter = VarType::Parameter;
         let _loop_variable = VarType::LoopVariable;
         let _match_binding = VarType::MatchBinding;
-        assert!(true); // All variants created successfully
+        // Test passes without panic; // All variants created successfully
     }
 
     #[test]

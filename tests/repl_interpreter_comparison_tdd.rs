@@ -38,7 +38,7 @@ fn test_check_repl_module_import() {
     // This will help us compare how REPL creates interpreters vs tests
 
     // First, let's verify builtin registry is correctly initialized in normal interpreter
-    let interpreter = Interpreter::new();
+    let _interpreter = Interpreter::new();
 
     // Access the builtin registry (if possible via internal methods)
     // We need to check if REPL might be creating interpreter differently

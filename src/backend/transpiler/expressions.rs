@@ -474,10 +474,16 @@ impl Transpiler {
         Ok(quote! { #target_tokens #op_tokens #value_tokens })
     }
     fn get_compound_op_token(op: BinaryOp) -> Result<TokenStream> {
-        use BinaryOp::{Add, Divide, Modulo, Multiply, Subtract};
+        use BinaryOp::{
+            Add, BitwiseAnd, BitwiseOr, BitwiseXor, Divide, LeftShift, Modulo, Multiply,
+            RightShift, Subtract,
+        };
         match op {
             Add | Subtract | Multiply => Ok(Self::get_basic_compound_token(op)),
             Divide | Modulo => Ok(Self::get_division_compound_token(op)),
+            BitwiseAnd | BitwiseOr | BitwiseXor | LeftShift | RightShift => {
+                Ok(Self::get_bitwise_compound_token(op))
+            }
             _ => {
                 use anyhow::bail;
                 bail!("Invalid operator for compound assignment: {:?}", op)
@@ -496,6 +502,17 @@ impl Transpiler {
         match op {
             BinaryOp::Divide => quote! { /= },
             BinaryOp::Modulo => quote! { %= },
+            _ => unreachable!(),
+        }
+    }
+
+    fn get_bitwise_compound_token(op: BinaryOp) -> TokenStream {
+        match op {
+            BinaryOp::BitwiseAnd => quote! { &= },
+            BinaryOp::BitwiseOr => quote! { |= },
+            BinaryOp::BitwiseXor => quote! { ^= },
+            BinaryOp::LeftShift => quote! { <<= },
+            BinaryOp::RightShift => quote! { >>= },
             _ => unreachable!(),
         }
     }

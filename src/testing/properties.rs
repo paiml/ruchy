@@ -309,7 +309,7 @@ mod tests {
         }
     }
     #[test]
-    #[ignore] // FIXME: This test hangs - parser has infinite loop on certain inputs
+    #[ignore = "Parser has infinite loop on certain inputs"]
     fn test_specific_recovery_cases() {
         // Test each case individually to identify which one hangs
 
@@ -512,7 +512,7 @@ mod tests {
         // Test boolean operations
         let bool_left = Expr::new(ExprKind::Literal(Literal::Bool(true)), Default::default());
         let bool_right = Expr::new(ExprKind::Literal(Literal::Bool(false)), Default::default());
-        let and_expr = Expr::new(
+        let boolean_and_expr = Expr::new(
             ExprKind::Binary {
                 left: Box::new(bool_left),
                 op: BinaryOp::And,
@@ -520,7 +520,7 @@ mod tests {
             },
             Default::default(),
         );
-        assert!(is_well_typed(&and_expr));
+        assert!(is_well_typed(&boolean_and_expr));
     }
 
     #[test]

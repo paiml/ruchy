@@ -252,28 +252,23 @@ clean-coverage:
 
 # Generate comprehensive test coverage using cargo-llvm-cov (Toyota Way)
 coverage:
-	@echo "📊 Running test coverage analysis..."
-	@echo "Tests: Running 2806 tests..."
-	@cargo test --lib --quiet 2>&1 | grep "test result:" || true
+	@echo "📊 Running REAL test coverage analysis (including ALL tests)..."
+	@cargo install cargo-llvm-cov 2>/dev/null || true
+	@echo "🧹 Cleaning old coverage data..."
+	@cargo llvm-cov clean --workspace
+	@echo "🧪 Running all tests with coverage instrumentation..."
+	@cargo llvm-cov --all-features --workspace --lib --bins --tests --html --output-dir target/coverage || true
 	@echo ""
-	@echo "Coverage Report:"
-	@echo "================"
-	@echo "Computing coverage statistics..."
+	@echo "📊 Coverage Report:"
+	@echo "=================="
+	@cargo llvm-cov report --ignore-filename-regex "tests/|benches/" 2>&1 | grep -E "TOTAL|src/frontend/parser|src/runtime/interpreter|src/runtime/repl|src/backend/transpiler|src/middleend/type_checker|src/lsp|src/wasm/compiler" | head -20 || echo "No coverage data available"
 	@echo ""
-	@echo "Module Coverage Summary:"
-	@echo "------------------------"
-	@echo "src/frontend/parser.rs:        72.3% (1245/1722 lines)"
-	@echo "src/runtime/interpreter.rs:    68.5% (892/1302 lines)"
-	@echo "src/runtime/repl.rs:          64.2% (445/693 lines)"
-	@echo "src/backend/transpiler.rs:     81.4% (1123/1379 lines)"
-	@echo "src/middleend/type_checker.rs: 76.8% (234/305 lines)"
-	@echo "src/lsp/mod.rs:               95.2% (380/399 lines)"
-	@echo "src/wasm/compiler.rs:         88.7% (567/639 lines)"
+	@echo "📈 Overall Coverage:"
+	@cargo llvm-cov report --summary-only 2>&1 | tail -3 || echo "Coverage data not available"
+	@echo "✅ HTML report: open target/coverage/index.html"
 	@echo ""
-	@echo "Overall Coverage: 74.6% (4886/6539 lines)"
-	@echo ""
-	@echo "📁 For detailed HTML report: cargo llvm-cov --lib --html"
-	@echo "📈 Coverage trend: Improving (+2.3% from last week)"
+	@echo "🎯 Coverage by module:"
+	@cargo llvm-cov report 2>&1 | grep -E "src/" | head -15 || true
 
 # Quick coverage check for development workflow
 coverage-quick:
@@ -385,17 +380,17 @@ coverage-legacy:
 	@echo "Coverage summary:"
 	@cargo llvm-cov report --summary-only 2>&1 | tail -1
 
-# Generate coverage with tarpaulin (alternative)
-coverage-tarpaulin:
-	@echo "Generating coverage report with tarpaulin..."
-	@cargo install cargo-tarpaulin 2>/dev/null || true
-	@cargo tarpaulin --config tarpaulin.toml
+# Generate coverage with llvm-cov (alternative)
+coverage-llvm:
+	@echo "Generating coverage report with llvm-cov..."
+	@cargo install cargo-llvm-cov 2>/dev/null || true
+	@cargo llvm-cov --html --output-dir target/coverage
 	@echo "✓ Coverage report generated in target/coverage/"
 
 # CI coverage check with minimum threshold
 coverage-ci:
 	@echo "Running coverage check for CI (80% minimum)..."
-	@cargo tarpaulin --fail-under 80 --print-summary
+	@cargo llvm-cov --fail-under-lines 80 --summary-only
 
 # CLI Testing Infrastructure (SPEC-CLI-TEST-001)
 test-ruchy-commands: test-cli-integration test-cli-properties test-cli-fuzz test-cli-examples

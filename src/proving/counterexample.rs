@@ -790,7 +790,7 @@ mod tests {
         let _ = Value::Null;
 
         // All variants covered
-        assert!(true);
+        // Test passes without panic;
     }
 }
 #[cfg(test)]

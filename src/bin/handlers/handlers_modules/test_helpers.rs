@@ -251,7 +251,7 @@ pub fn generate_coverage_report(
     // Generate and output report
     output_coverage_report(&collector, coverage_format)?;
     // Check threshold
-    check_coverage_threshold(&collector, threshold);
+    check_coverage_threshold(&collector, threshold)?;
     Ok(())
 }
 /// Output coverage report in requested format
@@ -285,14 +285,17 @@ fn save_html_report(html_report: &str) -> Result<String> {
 fn check_coverage_threshold(
     collector: &ruchy::quality::ruchy_coverage::RuchyCoverageCollector,
     threshold: f64,
-) {
+) -> Result<()> {
     if threshold > 0.0 {
         if collector.meets_threshold(threshold) {
             println!("\n✅ Coverage meets threshold of {:.1}%", threshold);
+            Ok(())
         } else {
             eprintln!("\n❌ Coverage below threshold of {:.1}%", threshold);
-            std::process::exit(1);
+            Err(anyhow::anyhow!("Coverage below threshold"))
         }
+    } else {
+        Ok(())
     }
 }
 
@@ -490,13 +493,11 @@ mod tests {
 
         let result = discover_files_in_directory(temp_dir.path(), Some("test"), &mut test_files);
         assert!(result.is_ok() || result.is_err()); // Tests that function doesn't panic
-        assert_eq!(test_files.len(), 1); // Only test.ruchy should match
-        assert!(test_files[0]
-            .file_name()
-            .unwrap()
-            .to_str()
-            .unwrap()
-            .contains("test"));
+                                                    // Both test.ruchy and another_test.ruchy match the filter "test"
+        assert_eq!(test_files.len(), 2); // Both files contain "test"
+        assert!(test_files
+            .iter()
+            .all(|f| { f.file_name().unwrap().to_str().unwrap().contains("test") }));
     }
 
     // ========== File Filtering Tests ==========

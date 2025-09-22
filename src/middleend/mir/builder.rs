@@ -1358,8 +1358,7 @@ mod property_tests_builder {
 
         /// Property: Parameters are correctly added and numbered
         #[test]
-        fn test_params_numbered_correctly(param_names: Vec<String>) {
-            prop_assume!(param_names.len() <= 10);
+        fn test_params_numbered_correctly(param_names in prop::collection::vec("[a-zA-Z0-9]+", 0..=10)) {
             prop_assume!(param_names.iter().all(|n| !n.is_empty() && n.len() <= 50));
 
             let mut builder = MirBuilder::new();

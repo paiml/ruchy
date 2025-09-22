@@ -1,12 +1,12 @@
 //! CLI Integration Tests for Ruchy
-//! 
+//!
 //! Tests all CLI commands: eval (-e), parse (-p), transpile (-t), check, run
 
 use assert_cmd::Command;
 use predicates::prelude::*;
 use std::fs;
-use tempfile::NamedTempFile;
 use std::io::Write;
+use tempfile::NamedTempFile;
 
 /// Test basic expression evaluation with -e flag
 #[test]
@@ -105,7 +105,7 @@ fn eval_invalid_syntax() {
 fn check_valid_file() {
     let mut file = NamedTempFile::new().unwrap();
     writeln!(file, r#"println("Hello, World!")"#).unwrap();
-    
+
     Command::cargo_bin("ruchy")
         .unwrap()
         .arg("check")
@@ -119,7 +119,7 @@ fn check_valid_file() {
 fn check_invalid_file() {
     let mut file = NamedTempFile::new().unwrap();
     writeln!(file, "let x = ").unwrap();
-    
+
     Command::cargo_bin("ruchy")
         .unwrap()
         .arg("check")
@@ -133,7 +133,7 @@ fn check_invalid_file() {
 fn transpile_function() {
     let mut file = NamedTempFile::new().unwrap();
     writeln!(file, "fun square(x: i32) -> i32 {{ x * x }}").unwrap();
-    
+
     Command::cargo_bin("ruchy")
         .unwrap()
         .arg("transpile")
@@ -147,7 +147,7 @@ fn transpile_function() {
 fn run_simple_program() {
     let mut file = NamedTempFile::new().unwrap();
     writeln!(file, r#"println("Running!")"#).unwrap();
-    
+
     Command::cargo_bin("ruchy")
         .unwrap()
         .arg("run")
@@ -161,7 +161,7 @@ fn run_simple_program() {
 fn run_with_calculations() {
     let mut file = NamedTempFile::new().unwrap();
     writeln!(file, "let x = 10\nlet y = 20\nprintln(x + y)").unwrap();
-    
+
     Command::cargo_bin("ruchy")
         .unwrap()
         .arg("run")
@@ -197,7 +197,7 @@ fn pipe_multiline_input() {
 fn ast_command() {
     let mut file = NamedTempFile::new().unwrap();
     writeln!(file, "1 + 2").unwrap();
-    
+
     Command::cargo_bin("ruchy")
         .unwrap()
         .arg("ast")

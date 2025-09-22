@@ -39,14 +39,14 @@ mod tests {
     fn test_gc_new() {
         let _gc = ConservativeGC::new();
         // Should create GC instance
-        assert!(true);
+        // Test passes without panic;
     }
 
     #[test]
     fn test_gc_default() {
         let _gc = ConservativeGC::default();
         // Should create GC instance via default
-        assert!(true);
+        // Test passes without panic;
     }
 
     #[test]
@@ -54,7 +54,7 @@ mod tests {
         let mut gc = ConservativeGC::new();
         gc.collect();
         // Should complete collection without panic
-        assert!(true);
+        // Test passes without panic;
     }
 
     #[test]
@@ -63,7 +63,7 @@ mod tests {
         let value = Value::Integer(42);
         gc.track(&value);
         // Should track value without panic
-        assert!(true);
+        // Test passes without panic;
     }
 
     #[test]
@@ -81,7 +81,7 @@ mod tests {
             gc.track(value);
         }
         // Should track all values without panic
-        assert!(true);
+        // Test passes without panic;
     }
 
     #[test]
@@ -91,7 +91,7 @@ mod tests {
         gc.track(&Value::from_string("tracked".to_string()));
         gc.collect();
         // Should collect after tracking without panic
-        assert!(true);
+        // Test passes without panic;
     }
 
     #[test]
@@ -104,7 +104,7 @@ mod tests {
             }
         }
         // Should handle multiple collection cycles
-        assert!(true);
+        // Test passes without panic;
     }
 
     #[test]
@@ -124,6 +124,6 @@ mod tests {
 
         gc.collect();
         // Should handle complex values
-        assert!(true);
+        // Test passes without panic;
     }
 }

@@ -1,5 +1,5 @@
 //! Refactored reference interpreter with reduced complexity
-//! 
+//!
 //! This module demonstrates the Extract Method pattern to reduce cyclomatic complexity
 //! from ~50 to <10 per function, following Toyota Way and PMAT standards.
 use crate::transpiler::core_ast::{CoreExpr, PrimOp};
@@ -18,30 +18,30 @@ pub struct Interpreter {
     env: HashMap<String, Value>,
 }
 impl Interpreter {
-/// # Examples
-/// 
-/// ```
-/// use ruchy::transpiler::reference_interpreter_refactored::new;
-/// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn new() -> Self {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::transpiler::reference_interpreter_refactored::new;
+    ///
+    /// let result = new(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn new() -> Self {
         Interpreter {
             env: HashMap::new(),
         }
     }
     /// Main eval_prim function - now with complexity <10
     /// Delegates to specialized handlers for each operation category
-/// # Examples
-/// 
-/// ```
-/// use ruchy::transpiler::reference_interpreter_refactored::eval_prim;
-/// 
-/// let result = eval_prim(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn eval_prim(&mut self, op: &PrimOp, args: &[CoreExpr]) -> Result<Value, String> {
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::transpiler::reference_interpreter_refactored::eval_prim;
+    ///
+    /// let result = eval_prim(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn eval_prim(&mut self, op: &PrimOp, args: &[CoreExpr]) -> Result<Value, String> {
         // Evaluate all arguments first (strict evaluation)
         let values = self.evaluate_arguments(args)?;
         // Dispatch to appropriate handler based on operation category
@@ -52,21 +52,13 @@ pub fn eval_prim(&mut self, op: &PrimOp, args: &[CoreExpr]) -> Result<Value, Str
             PrimOp::Eq | PrimOp::Ne | PrimOp::Lt | PrimOp::Le | PrimOp::Gt | PrimOp::Ge => {
                 self.eval_comparison(op, &values)
             }
-            PrimOp::And | PrimOp::Or | PrimOp::Not => {
-                self.eval_logical(op, &values)
-            }
-            PrimOp::Concat | PrimOp::Len | PrimOp::Substring => {
-                self.eval_string_ops(op, &values)
-            }
+            PrimOp::And | PrimOp::Or | PrimOp::Not => self.eval_logical(op, &values),
+            PrimOp::Concat | PrimOp::Len | PrimOp::Substring => self.eval_string_ops(op, &values),
             PrimOp::Head | PrimOp::Tail | PrimOp::Cons | PrimOp::IsEmpty => {
                 self.eval_list_ops(op, &values)
             }
-            PrimOp::Print => {
-                self.eval_print(&values)
-            }
-            PrimOp::TypeOf => {
-                self.eval_typeof(&values)
-            }
+            PrimOp::Print => self.eval_print(&values),
+            PrimOp::TypeOf => self.eval_typeof(&values),
         }
     }
     /// Helper: Evaluate all arguments
@@ -80,7 +72,11 @@ pub fn eval_prim(&mut self, op: &PrimOp, args: &[CoreExpr]) -> Result<Value, Str
     /// Handle arithmetic operations (complexity: 8)
     fn eval_arithmetic(&self, op: &PrimOp, values: &[Value]) -> Result<Value, String> {
         if values.len() != 2 {
-            return Err(format!("{:?} expects 2 arguments, got {}", op, values.len()));
+            return Err(format!(
+                "{:?} expects 2 arguments, got {}",
+                op,
+                values.len()
+            ));
         }
         match op {
             PrimOp::Add => self.eval_add(&values[0], &values[1]),
@@ -187,7 +183,11 @@ pub fn eval_prim(&mut self, op: &PrimOp, args: &[CoreExpr]) -> Result<Value, Str
     /// Handle comparison operations (complexity: 8)
     fn eval_comparison(&self, op: &PrimOp, values: &[Value]) -> Result<Value, String> {
         if values.len() != 2 {
-            return Err(format!("{:?} expects 2 arguments, got {}", op, values.len()));
+            return Err(format!(
+                "{:?} expects 2 arguments, got {}",
+                op,
+                values.len()
+            ));
         }
         match op {
             PrimOp::Eq => Ok(Value::Bool(self.values_equal(&values[0], &values[1]))),
@@ -318,7 +318,10 @@ pub fn eval_prim(&mut self, op: &PrimOp, args: &[CoreExpr]) -> Result<Value, Str
     /// Substring operation (complexity: 5)
     fn eval_substring(&self, values: &[Value]) -> Result<Value, String> {
         if values.len() != 3 {
-            return Err(format!("Substring expects 3 arguments, got {}", values.len()));
+            return Err(format!(
+                "Substring expects 3 arguments, got {}",
+                values.len()
+            ));
         }
         match (&values[0], &values[1], &values[2]) {
             (Value::String(s), Value::Integer(start), Value::Integer(end)) => {
@@ -422,8 +425,8 @@ pub fn eval_prim(&mut self, op: &PrimOp, args: &[CoreExpr]) -> Result<Value, Str
 #[cfg(test)]
 mod tests {
     use super::*;
-#[cfg(test)]
-use proptest::prelude::*;
+    #[cfg(test)]
+    use proptest::prelude::*;
     #[test]
     fn test_complexity_reduced() {
         // This test verifies that no function exceeds complexity of 10
@@ -433,14 +436,14 @@ use proptest::prelude::*;
         // - eval_divide: 6 (most complex due to zero checks)
         // - All other functions: ≤5
         // All functions now meet the ≤10 complexity requirement!
-        assert!(true);
+        // Test passes without panic;
     }
 }
 #[cfg(test)]
 mod property_tests_reference_interpreter_refactored {
-    use proptest::proptest;
     use super::*;
     use proptest::prelude::*;
+    use proptest::proptest;
     proptest! {
         /// Property: Function never panics on any input
         #[test]

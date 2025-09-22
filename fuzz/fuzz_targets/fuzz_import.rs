@@ -1,9 +1,9 @@
 #![no_main]
 
 use libfuzzer_sys::fuzz_target;
-use ruchy::frontend::parser::Parser;
-use ruchy::frontend::ast::{ExprKind, ImportItem};
 use ruchy::backend::transpiler::Transpiler;
+use ruchy::frontend::ast::{ExprKind, ImportItem};
+use ruchy::frontend::parser::Parser;
 
 fuzz_target!(|data: &[u8]| {
     // Convert fuzzer input to string
@@ -15,13 +15,13 @@ fuzz_target!(|data: &[u8]| {
             if let ExprKind::Import { path, items } = &expr.kind {
                 // Validate path is non-empty
                 assert!(!path.is_empty() || !items.is_empty());
-                
+
                 // Try transpiling it
                 let transpiler = Transpiler::new();
                 let _ = transpiler.transpile(&expr);
             }
         }
-        
+
         // Test 2: Try parsing as import with braces
         if input.contains("::") {
             let parts: Vec<&str> = input.rsplitn(2, "::").collect();
@@ -36,7 +36,7 @@ fuzz_target!(|data: &[u8]| {
                 }
             }
         }
-        
+
         // Test 3: Try parsing as module declaration
         let module_input = format!("module TestModule {{ {} }}", input);
         if let Ok(expr) = Parser::new(&module_input).parse() {
@@ -46,7 +46,7 @@ fuzz_target!(|data: &[u8]| {
                 assert!(body.span.start <= body.span.end);
             }
         }
-        
+
         // Test 4: Try parsing as export statement
         let export_input = format!("export {}", input);
         if let Ok(expr) = Parser::new(&export_input).parse() {
@@ -55,7 +55,7 @@ fuzz_target!(|data: &[u8]| {
                 assert!(!items.is_empty());
             }
         }
-        
+
         // Test 5: Try parsing wildcard import
         let wildcard_input = format!("import {}::*", input);
         if let Ok(expr) = Parser::new(&wildcard_input).parse() {
@@ -65,7 +65,7 @@ fuzz_target!(|data: &[u8]| {
                 assert!(matches!(items[0], ImportItem::Wildcard));
             }
         }
-        
+
         // Test 6: Try parsing aliased import
         if !input.is_empty() && !input.contains(char::is_whitespace) {
             let alias_input = format!("import {} as MyAlias", input);
@@ -78,11 +78,14 @@ fuzz_target!(|data: &[u8]| {
                 }
             }
         }
-        
+
         // Test 7: Round-trip test for valid imports
-        if input.chars().all(|c| c.is_alphanumeric() || c == '_' || c == ':') 
-           && !input.is_empty() 
-           && input.chars().next().unwrap().is_alphabetic() {
+        if input
+            .chars()
+            .all(|c| c.is_alphanumeric() || c == '_' || c == ':')
+            && !input.is_empty()
+            && input.chars().next().unwrap().is_alphabetic()
+        {
             let simple_import = format!("import {}", input);
             if let Ok(expr) = Parser::new(&simple_import).parse() {
                 // Try to transpile and ensure no panic

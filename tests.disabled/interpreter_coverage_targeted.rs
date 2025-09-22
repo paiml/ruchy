@@ -1,10 +1,11 @@
 // EXTREME TDD: Targeted interpreter coverage tests
 // Requirements: Complexity <10, Property tests 10,000+ iterations, Big O validation, Zero SATD
 
-use ruchy::frontend::ast::{BinaryOp, Expr, ExprKind, Literal, MatchArm, Pattern, PipelineStage, StructField, Type};
+use ruchy::frontend::ast::{
+    BinaryOp, Expr, ExprKind, Literal, MatchArm, Pattern, PipelineStage, StructField, Type,
+};
 use ruchy::runtime::interpreter::Interpreter;
 use ruchy::runtime::Value;
-
 
 // Helper to create expressions with proper span
 fn make_expr(kind: ExprKind) -> Expr {
@@ -22,19 +23,17 @@ fn test_eval_pipeline() {
     let mut interpreter = Interpreter::new();
     let expr = make_expr(ExprKind::Pipeline {
         expr: Box::new(make_literal(42)),
-        stages: vec![
-            PipelineStage {
-                op: Box::new(make_expr(ExprKind::Lambda {
-                    params: vec![],
-                    body: Box::new(make_expr(ExprKind::Binary {
-                        left: Box::new(make_expr(ExprKind::Identifier("_".to_string()))),
-                        op: BinaryOp::Add,
-                        right: Box::new(make_literal(1)),
-                    })),
+        stages: vec![PipelineStage {
+            op: Box::new(make_expr(ExprKind::Lambda {
+                params: vec![],
+                body: Box::new(make_expr(ExprKind::Binary {
+                    left: Box::new(make_expr(ExprKind::Identifier("_".to_string()))),
+                    op: BinaryOp::Add,
+                    right: Box::new(make_literal(1)),
                 })),
-                span: ruchy::frontend::ast::Span { start: 0, end: 0 },
-            },
-        ],
+            })),
+            span: ruchy::frontend::ast::Span { start: 0, end: 0 },
+        }],
     });
     // This may not fully work but tests the pipeline evaluation path
     let _ = interpreter.eval_expr(&expr);
@@ -99,12 +98,18 @@ fn test_eval_struct_literal() {
         fields: vec![
             StructField {
                 name: "x".to_string(),
-                ty: Type::new(ruchy::frontend::ast::TypeKind::Named("i64".to_string()), ruchy::frontend::ast::Span { start: 0, end: 0 }),
+                ty: Type::new(
+                    ruchy::frontend::ast::TypeKind::Named("i64".to_string()),
+                    ruchy::frontend::ast::Span { start: 0, end: 0 },
+                ),
                 is_pub: true,
             },
             StructField {
                 name: "y".to_string(),
-                ty: Type::new(ruchy::frontend::ast::TypeKind::Named("i64".to_string()), ruchy::frontend::ast::Span { start: 0, end: 0 }),
+                ty: Type::new(
+                    ruchy::frontend::ast::TypeKind::Named("i64".to_string()),
+                    ruchy::frontend::ast::Span { start: 0, end: 0 },
+                ),
                 is_pub: true,
             },
         ],
@@ -123,12 +128,18 @@ fn test_eval_field_access() {
             fields: vec![
                 StructField {
                     name: "x".to_string(),
-                    ty: Type::new(ruchy::frontend::ast::TypeKind::Named("i64".to_string()), ruchy::frontend::ast::Span { start: 0, end: 0 }),
+                    ty: Type::new(
+                        ruchy::frontend::ast::TypeKind::Named("i64".to_string()),
+                        ruchy::frontend::ast::Span { start: 0, end: 0 },
+                    ),
                     is_pub: true,
                 },
                 StructField {
                     name: "y".to_string(),
-                    ty: Type::new(ruchy::frontend::ast::TypeKind::Named("i64".to_string()), ruchy::frontend::ast::Span { start: 0, end: 0 }),
+                    ty: Type::new(
+                        ruchy::frontend::ast::TypeKind::Named("i64".to_string()),
+                        ruchy::frontend::ast::Span { start: 0, end: 0 },
+                    ),
                     is_pub: true,
                 },
             ],

@@ -194,6 +194,7 @@ fn try_handle_infix_operators(
     let handlers = [
         try_new_actor_operators,
         try_type_cast_operator,
+        try_ternary_operator, // Add ternary before binary (lower precedence)
         try_binary_operators,
         try_assignment_operators,
         try_pipeline_operators,
@@ -224,7 +225,14 @@ fn try_handle_single_postfix(state: &mut ParserState, left: Expr) -> Result<Opti
         Some((Token::LeftBrace, _)) => try_parse_struct_literal(state, &left),
         Some((Token::Increment, _)) => handle_increment_operator(state, left).map(Some),
         Some((Token::Decrement, _)) => handle_decrement_operator(state, left).map(Some),
-        Some((Token::Question, _)) => handle_try_operator(state, left).map(Some),
+        Some((Token::Question, _)) => {
+            // Check if this is ternary or try operator
+            if is_ternary_operator(state) {
+                Ok(None) // Let ternary handler in infix operators handle it
+            } else {
+                handle_try_operator(state, left).map(Some)
+            }
+        }
         Some((Token::Bang, _)) => try_parse_macro_call(state, &left),
         _ => Ok(None),
     }
@@ -249,6 +257,26 @@ fn handle_decrement_operator(state: &mut ParserState, left: Expr) -> Result<Expr
     state.tokens.advance();
     Ok(create_post_decrement(left))
 }
+/// Check if ? is for ternary operator (not try operator)
+fn is_ternary_operator(state: &mut ParserState) -> bool {
+    // Look ahead - if the next token after ? is not a postfix-able token,
+    // it's likely a ternary operator
+    if let Some((next_token, _)) = state.tokens.peek_nth(1) {
+        // These tokens indicate postfix try operator
+        !matches!(
+            next_token,
+            Token::Dot
+                | Token::Semicolon
+                | Token::RightParen
+                | Token::RightBracket
+                | Token::RightBrace
+                | Token::Comma
+        )
+    } else {
+        false // At end of input, treat as try
+    }
+}
+
 /// Handle try operator ?
 fn handle_try_operator(state: &mut ParserState, left: Expr) -> Result<Expr> {
     state.tokens.advance();
@@ -382,6 +410,52 @@ fn try_binary_operators(
         Ok(None)
     }
 }
+/// Try to parse ternary operator (? :) - complexity: 8
+fn try_ternary_operator(
+    state: &mut ParserState,
+    left: Expr,
+    token: &Token,
+    min_prec: i32,
+) -> Result<Option<Expr>> {
+    // Ternary has very low precedence (1)
+    const TERNARY_PRECEDENCE: i32 = 1;
+
+    if !matches!(token, Token::Question) || min_prec > TERNARY_PRECEDENCE {
+        return Ok(None);
+    }
+
+    // Check if this is a postfix try operator (no space, followed by dot or semicolon)
+    if let Some((next_token, _)) = state.tokens.peek_nth(1) {
+        if matches!(
+            next_token,
+            Token::Dot | Token::Semicolon | Token::RightParen | Token::RightBracket
+        ) {
+            return Ok(None); // This is a try operator, not ternary
+        }
+    }
+
+    state.tokens.advance(); // Consume '?'
+    let true_expr = parse_expr_with_precedence_recursive(state, TERNARY_PRECEDENCE + 1)?;
+
+    // Expect ':'
+    if !matches!(state.tokens.peek(), Some((Token::Colon, _))) {
+        bail!("Expected ':' in ternary expression");
+    }
+    state.tokens.advance(); // Consume ':'
+
+    let false_expr = parse_expr_with_precedence_recursive(state, TERNARY_PRECEDENCE)?;
+
+    Ok(Some(Expr {
+        kind: ExprKind::Ternary {
+            condition: Box::new(left),
+            true_expr: Box::new(true_expr),
+            false_expr: Box::new(false_expr),
+        },
+        span: Span { start: 0, end: 0 },
+        attributes: Vec::new(),
+    }))
+}
+
 /// Try to parse type cast operator (as) - complexity: 5
 fn try_type_cast_operator(
     state: &mut ParserState,

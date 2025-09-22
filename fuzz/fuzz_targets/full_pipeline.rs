@@ -3,8 +3,8 @@
 use libfuzzer_sys::fuzz_target;
 use ruchy::parser::Parser;
 use ruchy::transpiler::Transpiler;
-use std::process::Command;
 use std::io::Write;
+use std::process::Command;
 use tempfile::NamedTempFile;
 
 fuzz_target!(|data: &[u8]| {
@@ -13,7 +13,7 @@ fuzz_target!(|data: &[u8]| {
         if s.len() > 1_000 {
             return;
         }
-        
+
         // Parse
         let mut parser = Parser::new(s);
         if let Ok(ast) = parser.parse_module() {
@@ -28,7 +28,7 @@ fuzz_target!(|data: &[u8]| {
                         return; // Only compile every 100th input
                     }
                 }
-                
+
                 // Write to working file
                 if let Ok(mut temp_file) = NamedTempFile::new() {
                     if temp_file.write_all(rust_code.as_bytes()).is_ok() {
@@ -44,7 +44,7 @@ fuzz_target!(|data: &[u8]| {
                                 .arg(&output_binary)
                                 .arg(temp_file.path())
                                 .output();
-                            
+
                             // Clean up
                             if output_binary.exists() {
                                 std::fs::remove_file(output_binary).ok();

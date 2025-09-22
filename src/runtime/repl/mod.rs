@@ -535,7 +535,7 @@ mod tests {
         // get_completions() - complexity: 2
         //
         // MAX COMPLEXITY: 9 (PASSES requirement of <10)
-        assert!(true);
+        // Test passes without panic;
     }
 
     // Property tests for robustness
@@ -591,7 +591,7 @@ mod tests {
                 // Should handle any command-like input gracefully
                 let _ = repl.process_line(&full_cmd);
                 // If we get here, no panic occurred
-                assert!(true);
+                // Test passes without panic;
             }
         }
     }

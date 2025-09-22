@@ -10,7 +10,7 @@ fn parse_and_transpile(code: &str) -> String {
     let mut parser = Parser::new(code);
     let ast = parser.parse().unwrap();
     let transpiler = Transpiler::new();
-    transpiler.transpile(&ast).unwrap()
+    transpiler.transpile_to_string(&ast).unwrap()
 }
 
 fn benchmark_simple_transpilation(c: &mut Criterion) {
