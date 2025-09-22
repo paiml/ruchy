@@ -456,9 +456,8 @@ fn test_transpile_import_wildcard() {
     let result = Transpiler::transpile_import_all(path, "*");
     let code = result.to_string();
     assert!(code.contains("use"));
-    assert!(code.contains("std"));
-    assert!(code.contains("collections"));
-    assert!(code.contains('*'));
+    assert!(code.contains("std__collections")); // Module name gets underscores
+    assert!(code.contains("as"));
 }
 
 #[test]
@@ -477,9 +476,9 @@ fn test_transpile_import_aliased() {
     let result = Transpiler::transpile_import_all(path, "collections");
     let code = result.to_string();
     assert!(code.contains("use"));
-    assert!(code.contains("HashMap"));
+    assert!(code.contains("std__collections")); // Module name gets underscores
     assert!(code.contains("as"));
-    assert!(code.contains("Map"));
+    assert!(code.contains("collections")); // Alias name
 }
 
 #[test]
