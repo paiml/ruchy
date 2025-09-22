@@ -60,7 +60,6 @@ use crate::frontend::ast::{
     ActorHandler,
     Attribute,
     BinaryOp,
-    DataFrameColumn,
     EnumVariant,
     Expr,
     ExprKind,
