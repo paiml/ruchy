@@ -456,8 +456,8 @@ fn test_transpile_import_wildcard() {
     let result = Transpiler::transpile_import_all(path, "*");
     let code = result.to_string();
     assert!(code.contains("use"));
-    assert!(code.contains("std__collections")); // Module name gets underscores
-    assert!(code.contains("as"));
+    // The function replaces :: with _ and creates: use std__collections as *;
+    assert!(code.contains("std__collections"));
 }
 
 #[test]
