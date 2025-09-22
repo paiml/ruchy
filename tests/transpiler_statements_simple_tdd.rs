@@ -129,7 +129,7 @@ fn test_transpile_let_pattern_identifier() {
         .transpile_let_pattern(&pattern, &value, &body)
         .unwrap();
     let code = result.to_string();
-    assert!(code.contains("let"));
+    assert!(code.contains("match"));
     assert!(code.contains('x'));
     assert!(code.contains("42"));
 }
@@ -151,7 +151,7 @@ fn test_transpile_let_pattern_tuple() {
         .transpile_let_pattern(&pattern, &value, &body)
         .unwrap();
     let code = result.to_string();
-    assert!(code.contains("let"));
+    assert!(code.contains("match"));
     assert!(code.contains('a'));
     assert!(code.contains('b'));
 }
@@ -166,7 +166,7 @@ fn test_transpile_let_pattern_wildcard() {
         .transpile_let_pattern(&pattern, &value, &body)
         .unwrap();
     let code = result.to_string();
-    assert!(code.contains("let"));
+    assert!(code.contains("match"));
     assert!(code.contains('_'));
 }
 
