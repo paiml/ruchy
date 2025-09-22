@@ -925,7 +925,7 @@ mod tests {
         assert_eq!(format_memory_size(512), "512 B");
         assert_eq!(format_memory_size(1024), "1.00 KB");
         assert_eq!(format_memory_size(1536), "1.50 KB");
-        assert_eq!(format_memory_size(1048576), "1.00 MB");
+        assert_eq!(format_memory_size(1_048_576), "1.00 MB");
         assert_eq!(format_memory_size(1073741824), "1.00 GB");
     }
 
