@@ -2138,11 +2138,55 @@ fn parse_use_statement(state: &mut ParserState) -> Result<Expr> {
     // Additional components separated by ::
     while matches!(state.tokens.peek(), Some((Token::ColonColon, _))) {
         state.tokens.advance(); // consume ::
-        if let Some((Token::Identifier(segment), _)) = state.tokens.peek() {
+
+        // Check for {Item1, Item2} syntax
+        if matches!(state.tokens.peek(), Some((Token::LeftBrace, _))) {
+            state.tokens.advance(); // consume {
+            let mut items = Vec::new();
+
+            loop {
+                if let Some((Token::Identifier(item), _)) = state.tokens.peek() {
+                    items.push(item.clone());
+                    state.tokens.advance();
+
+                    // Check for optional alias
+                    if matches!(state.tokens.peek(), Some((Token::As, _))) {
+                        state.tokens.advance(); // consume 'as'
+                        if let Some((Token::Identifier(alias), _)) = state.tokens.peek() {
+                            let last_idx = items.len() - 1;
+                            items[last_idx] = format!("{} as {}", items[last_idx], alias);
+                            state.tokens.advance();
+                        }
+                    }
+
+                    // Check for comma
+                    if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+                        state.tokens.advance();
+                    } else if matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
+                        break;
+                    }
+                } else if matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
+                    break;
+                } else {
+                    bail!("Expected identifier in import list");
+                }
+            }
+
+            state.tokens.expect(&Token::RightBrace)?;
+
+            // Create import with items
+            return Ok(Expr::new(
+                ExprKind::Import {
+                    module: path_parts.join("::"),
+                    items: Some(items),
+                },
+                start_span,
+            ));
+        } else if let Some((Token::Identifier(segment), _)) = state.tokens.peek() {
             path_parts.push(segment.clone());
             state.tokens.advance();
         } else {
-            bail!("Expected identifier after '::'");
+            bail!("Expected identifier or '{{' after '::'");
         }
     }
 
