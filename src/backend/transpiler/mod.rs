@@ -60,11 +60,12 @@ use quote::{format_ident, quote};
 // Module exports are handled by the impl blocks in each module
 /// Block categorization result: (functions, statements, modules, `has_main`, `main_expr`)
 type BlockCategorization<'a> = (
-    Vec<TokenStream>,
-    Vec<TokenStream>,
-    Vec<TokenStream>,
-    bool,
-    Option<&'a Expr>,
+    Vec<TokenStream>, // functions
+    Vec<TokenStream>, // statements
+    Vec<TokenStream>, // modules
+    bool,             // has_main
+    Option<&'a Expr>, // main_expr
+    Vec<TokenStream>, // imports
 );
 /// Function signature information used for type coercion.
 ///
@@ -599,7 +600,7 @@ impl Transpiler {
         needs_polars: bool,
         needs_hashmap: bool,
     ) -> Result<TokenStream> {
-        let (functions, statements, modules, has_main, main_expr) =
+        let (functions, statements, modules, has_main, main_expr, imports) =
             self.categorize_block_expressions(exprs)?;
         if functions.is_empty() && !has_main && modules.is_empty() {
             self.transpile_statement_only_block(exprs, needs_polars, needs_hashmap)
@@ -611,6 +612,7 @@ impl Transpiler {
                 main_expr,
                 needs_polars,
                 needs_hashmap,
+                &imports,
             )
         } else {
             self.transpile_block_with_functions(
@@ -618,6 +620,7 @@ impl Transpiler {
                 &statements,
                 needs_polars,
                 needs_hashmap,
+                &imports,
             )
         }
     }
@@ -628,6 +631,7 @@ impl Transpiler {
         let mut functions = Vec::new();
         let mut statements = Vec::new();
         let mut modules = Vec::new();
+        let mut imports = Vec::new();
         let mut has_main_function = false;
         let mut main_function_expr = None;
         for expr in exprs {
@@ -665,6 +669,12 @@ impl Transpiler {
                     // Trait definitions and implementations are top-level items
                     functions.push(self.transpile_type_decl_expr(expr)?);
                 }
+                ExprKind::Import { .. }
+                | ExprKind::ImportAll { .. }
+                | ExprKind::ImportDefault { .. } => {
+                    // Extract imports for top-level placement
+                    imports.push(self.transpile_expr(expr)?);
+                }
                 _ => {
                     let stmt = self.transpile_expr(expr)?;
                     // Ensure statements have semicolons for proper separation
@@ -683,6 +693,7 @@ impl Transpiler {
             modules,
             has_main_function,
             main_function_expr,
+            imports,
         ))
     }
     fn transpile_module_declaration(&self, name: &str, body: &Expr) -> Result<TokenStream> {
@@ -825,6 +836,7 @@ impl Transpiler {
         main_expr: Option<&Expr>,
         needs_polars: bool,
         needs_hashmap: bool,
+        imports: &[TokenStream],
     ) -> Result<TokenStream> {
         if statements.is_empty() && main_expr.is_some() {
             // Only functions, just emit them normally (includes user's main)
@@ -837,23 +849,27 @@ impl Transpiler {
                 (true, true) => Ok(quote! {
                     use polars::prelude::*;
                     use std::collections::HashMap;
+                    #(#imports)*
                     #(#modules)*
                     #(#functions)*
                     #main_tokens
                 }),
                 (true, false) => Ok(quote! {
                     use polars::prelude::*;
+                    #(#imports)*
                     #(#modules)*
                     #(#functions)*
                     #main_tokens
                 }),
                 (false, true) => Ok(quote! {
                     use std::collections::HashMap;
+                    #(#imports)*
                     #(#modules)*
                     #(#functions)*
                     #main_tokens
                 }),
                 (false, false) => Ok(quote! {
+                    #(#imports)*
                     #(#modules)*
                     #(#functions)*
                     #main_tokens
@@ -871,6 +887,7 @@ impl Transpiler {
                 (true, true) => Ok(quote! {
                     use polars::prelude::*;
                     use std::collections::HashMap;
+                    #(#imports)*
                     #(#modules)*
                     #(#functions)*
                     fn main() {
@@ -882,6 +899,7 @@ impl Transpiler {
                 }),
                 (true, false) => Ok(quote! {
                     use polars::prelude::*;
+                    #(#imports)*
                     #(#modules)*
                     #(#functions)*
                     fn main() {
@@ -893,6 +911,7 @@ impl Transpiler {
                 }),
                 (false, true) => Ok(quote! {
                     use std::collections::HashMap;
+                    #(#imports)*
                     #(#modules)*
                     #(#functions)*
                     fn main() {
@@ -903,6 +922,7 @@ impl Transpiler {
                     }
                 }),
                 (false, false) => Ok(quote! {
+                    #(#imports)*
                     #(#modules)*
                     #(#functions)*
                     fn main() {
@@ -932,26 +952,31 @@ impl Transpiler {
         statements: &[TokenStream],
         needs_polars: bool,
         needs_hashmap: bool,
+        imports: &[TokenStream],
     ) -> Result<TokenStream> {
         // No main function among extracted functions - create one for statements
         match (needs_polars, needs_hashmap) {
             (true, true) => Ok(quote! {
                 use polars::prelude::*;
                 use std::collections::HashMap;
+                #(#imports)*
                 #(#functions)*
                 fn main() { #(#statements)* }
             }),
             (true, false) => Ok(quote! {
                 use polars::prelude::*;
+                #(#imports)*
                 #(#functions)*
                 fn main() { #(#statements)* }
             }),
             (false, true) => Ok(quote! {
                 use std::collections::HashMap;
+                #(#imports)*
                 #(#functions)*
                 fn main() { #(#statements)* }
             }),
             (false, false) => Ok(quote! {
+                #(#imports)*
                 #(#functions)*
                 fn main() { #(#statements)* }
             }),
