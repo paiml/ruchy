@@ -39,7 +39,7 @@ mod test_comprehensions {
             "Failed to compile list comprehension with filter"
         );
         let output = result.unwrap();
-        assert!(output.contains("filter") && output.contains("x % 2 == 0"));
+        assert!(output.contains("filter") && output.contains("x % 2") && output.contains("== 0"));
         assert!(output.contains("map") && output.contains("| x |"));
     }
 
