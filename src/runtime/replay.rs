@@ -523,7 +523,7 @@ mod tests {
 
             assert_eq!(usage.heap_bytes, 2048);
             assert_eq!(usage.stack_depth, 10);
-            assert_eq!(usage.cpu_ns, 5000000);
+            assert_eq!(usage.cpu_ns, 5_000_000);
 
             // Test serialization
             let json = serde_json::to_string(&usage).unwrap();

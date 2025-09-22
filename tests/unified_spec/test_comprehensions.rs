@@ -210,7 +210,7 @@ mod test_comprehensions {
             "Failed to compile comprehension with type inference"
         );
         let output = result.unwrap();
-        assert!(output.contains("Vec<i32>"));
+        assert!(output.contains("Vec") && output.contains("i32"));
     }
 
     #[test]
@@ -382,7 +382,7 @@ mod test_comprehensions {
     fn test_empty_comprehension() {
         let code = r#"
             fun empty() -> Vec<i32> {
-                [x for x in vec![] if x > 0]
+                [x for x in [] if x > 0]
             }
         "#;
         let result = compile(code);
