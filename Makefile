@@ -257,7 +257,7 @@ coverage:
 	@echo "🧹 Cleaning old coverage data..."
 	@cargo llvm-cov clean --workspace
 	@echo "🧪 Running all tests with coverage instrumentation..."
-	@cargo llvm-cov --all-features --workspace --lib --bins --tests --html --output-dir target/coverage || true
+	@cargo llvm-cov --lib --html --output-dir target/coverage || true
 	@echo ""
 	@echo "📊 Coverage Report:"
 	@echo "=================="

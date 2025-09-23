@@ -770,12 +770,12 @@ mod tests {
 
             // Should be valid expression kinds
             match &expr.kind {
-                ExprKind::Literal(_) => {},
-                ExprKind::Identifier(_) => {},
-                ExprKind::Binary { .. } => {},
-                ExprKind::Unary { .. } => {},
-                ExprKind::If { .. } => {},
-                _ => {}, // Other kinds are valid too
+                ExprKind::Literal(_) => {}
+                ExprKind::Identifier(_) => {}
+                ExprKind::Binary { .. } => {}
+                ExprKind::Unary { .. } => {}
+                ExprKind::If { .. } => {}
+                _ => {} // Other kinds are valid too
             }
         }
     }
@@ -900,8 +900,8 @@ mod tests {
                 Literal::Bool(b) => assert!(*b),
                 Literal::String(s) => assert_eq!(s, "test"),
                 Literal::Char(c) => assert_eq!(*c, 'a'),
-                Literal::Unit => {},
-                Literal::Null => {},
+                Literal::Unit => {}
+                Literal::Null => {}
             }
         }
     }

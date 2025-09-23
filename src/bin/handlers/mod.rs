@@ -1872,6 +1872,6 @@ mod tests {
         // print_transpilation_status("test.ruchy", false); // Function doesn't exist
         println!("test.ruchy: transpilation completed"); // Simple replacement for testing
                                                          // If it doesn't panic, it passes
-        // Test passes without panic;
+                                                         // Test passes without panic;
     }
 }
