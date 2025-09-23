@@ -635,6 +635,9 @@ fn eval_dataframe_groupby_multiple(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::frontend::ast::{DataFrameOp, Expr, ExprKind, Literal, Span};
+
+    // EXTREME TDD: Comprehensive test coverage for DataFrame operations evaluation
 
     #[test]
     fn test_dataframe_sum() {
@@ -651,6 +654,52 @@ mod tests {
 
         let result = eval_dataframe_sum(&columns, &[]).unwrap();
         assert_eq!(result, Value::Float(13.5));
+    }
+
+    #[test]
+    fn test_dataframe_sum_integer_only() {
+        let columns = vec![DataFrameColumn {
+            name: "integers".to_string(),
+            values: vec![Value::Integer(10), Value::Integer(20), Value::Integer(30)],
+        }];
+
+        let result = eval_dataframe_sum(&columns, &[]).unwrap();
+        assert_eq!(result, Value::Integer(60));
+    }
+
+    #[test]
+    fn test_dataframe_sum_with_non_numeric() {
+        let columns = vec![DataFrameColumn {
+            name: "mixed".to_string(),
+            values: vec![
+                Value::Integer(5),
+                Value::from_string("text".to_string()),
+                Value::Float(2.5),
+                Value::Bool(true),
+            ],
+        }];
+
+        let result = eval_dataframe_sum(&columns, &[]).unwrap();
+        assert_eq!(result, Value::Float(7.5));
+    }
+
+    #[test]
+    fn test_dataframe_sum_empty() {
+        let columns = vec![];
+        let result = eval_dataframe_sum(&columns, &[]).unwrap();
+        assert_eq!(result, Value::Integer(0));
+    }
+
+    #[test]
+    fn test_dataframe_sum_with_args_error() {
+        let columns = vec![];
+        let args = vec![Value::Integer(1)];
+        let result = eval_dataframe_sum(&columns, &args);
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("takes no arguments"));
     }
 
     #[test]
@@ -681,6 +730,46 @@ mod tests {
     }
 
     #[test]
+    fn test_dataframe_select_column_not_found() {
+        let columns = vec![DataFrameColumn {
+            name: "a".to_string(),
+            values: vec![Value::Integer(1)],
+        }];
+
+        let args = vec![Value::from_string("nonexistent".to_string())];
+        let result = eval_dataframe_select(&columns, &args);
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("not found in DataFrame"));
+    }
+
+    #[test]
+    fn test_dataframe_select_wrong_arg_count() {
+        let columns = vec![];
+        let args = vec![];
+        let result = eval_dataframe_select(&columns, &args);
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("requires exactly 1 argument"));
+    }
+
+    #[test]
+    fn test_dataframe_select_wrong_arg_type() {
+        let columns = vec![];
+        let args = vec![Value::Integer(1)];
+        let result = eval_dataframe_select(&columns, &args);
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("expects column name as string"));
+    }
+
+    #[test]
     fn test_dataframe_slice() {
         let columns = vec![DataFrameColumn {
             name: "a".to_string(),
@@ -705,5 +794,658 @@ mod tests {
         } else {
             panic!("Expected DataFrame result");
         }
+    }
+
+    #[test]
+    fn test_dataframe_slice_start_beyond_length() {
+        let columns = vec![DataFrameColumn {
+            name: "a".to_string(),
+            values: vec![Value::Integer(1), Value::Integer(2)],
+        }];
+
+        let args = vec![Value::Integer(5), Value::Integer(2)];
+        let result = eval_dataframe_slice(&columns, &args).unwrap();
+
+        if let Value::DataFrame {
+            columns: result_cols,
+        } = result
+        {
+            assert_eq!(result_cols[0].values.len(), 0);
+        } else {
+            panic!("Expected DataFrame result");
+        }
+    }
+
+    #[test]
+    fn test_dataframe_slice_length_beyond_data() {
+        let columns = vec![DataFrameColumn {
+            name: "a".to_string(),
+            values: vec![Value::Integer(1), Value::Integer(2)],
+        }];
+
+        let args = vec![Value::Integer(1), Value::Integer(10)];
+        let result = eval_dataframe_slice(&columns, &args).unwrap();
+
+        if let Value::DataFrame {
+            columns: result_cols,
+        } = result
+        {
+            assert_eq!(result_cols[0].values.len(), 1);
+            assert_eq!(result_cols[0].values[0], Value::Integer(2));
+        } else {
+            panic!("Expected DataFrame result");
+        }
+    }
+
+    #[test]
+    fn test_dataframe_slice_wrong_arg_count() {
+        let columns = vec![];
+        let args = vec![Value::Integer(1)];
+        let result = eval_dataframe_slice(&columns, &args);
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("requires exactly 2 arguments"));
+    }
+
+    #[test]
+    fn test_dataframe_slice_wrong_start_type() {
+        let columns = vec![];
+        let args = vec![Value::from_string("not_int".to_string()), Value::Integer(1)];
+        let result = eval_dataframe_slice(&columns, &args);
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("expects start as integer"));
+    }
+
+    #[test]
+    fn test_dataframe_slice_wrong_length_type() {
+        let columns = vec![];
+        let args = vec![Value::Integer(1), Value::from_string("not_int".to_string())];
+        let result = eval_dataframe_slice(&columns, &args);
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("expects length as integer"));
+    }
+
+    #[test]
+    fn test_dataframe_join_basic() {
+        let left_columns = vec![
+            DataFrameColumn {
+                name: "id".to_string(),
+                values: vec![Value::Integer(1), Value::Integer(2)],
+            },
+            DataFrameColumn {
+                name: "name".to_string(),
+                values: vec![
+                    Value::from_string("Alice".to_string()),
+                    Value::from_string("Bob".to_string()),
+                ],
+            },
+        ];
+
+        let right_columns = vec![
+            DataFrameColumn {
+                name: "id".to_string(),
+                values: vec![Value::Integer(1), Value::Integer(3)],
+            },
+            DataFrameColumn {
+                name: "age".to_string(),
+                values: vec![Value::Integer(25), Value::Integer(30)],
+            },
+        ];
+
+        let other_df = Value::DataFrame {
+            columns: right_columns,
+        };
+        let args = vec![other_df, Value::from_string("id".to_string())];
+
+        let result = eval_dataframe_join(&left_columns, &args).unwrap();
+
+        if let Value::DataFrame {
+            columns: result_cols,
+        } = result
+        {
+            assert_eq!(result_cols.len(), 3); // id, name, age_right
+            assert_eq!(result_cols[0].name, "id");
+            assert_eq!(result_cols[1].name, "name");
+            assert_eq!(result_cols[2].name, "age_right");
+            assert_eq!(result_cols[0].values.len(), 1); // Only one matching row
+        } else {
+            panic!("Expected DataFrame result");
+        }
+    }
+
+    #[test]
+    fn test_dataframe_join_wrong_arg_count() {
+        let columns = vec![];
+        let args = vec![Value::Integer(1)];
+        let result = eval_dataframe_join(&columns, &args);
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("requires exactly 2 arguments"));
+    }
+
+    #[test]
+    fn test_dataframe_join_wrong_on_type() {
+        let columns = vec![];
+        let other_df = Value::DataFrame { columns: vec![] };
+        let args = vec![other_df, Value::Integer(1)];
+        let result = eval_dataframe_join(&columns, &args);
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("expects 'on' as string"));
+    }
+
+    #[test]
+    fn test_dataframe_join_wrong_df_type() {
+        let columns = vec![];
+        let args = vec![Value::Integer(1), Value::from_string("id".to_string())];
+        let result = eval_dataframe_join(&columns, &args);
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("expects first argument to be a DataFrame"));
+    }
+
+    #[test]
+    fn test_validate_and_find_join_columns_missing_left() {
+        let left_cols = vec![DataFrameColumn {
+            name: "a".to_string(),
+            values: vec![],
+        }];
+        let right_cols = vec![DataFrameColumn {
+            name: "id".to_string(),
+            values: vec![],
+        }];
+
+        let result = validate_and_find_join_columns(&left_cols, &right_cols, "id");
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("not found in left DataFrame"));
+    }
+
+    #[test]
+    fn test_validate_and_find_join_columns_missing_right() {
+        let left_cols = vec![DataFrameColumn {
+            name: "id".to_string(),
+            values: vec![],
+        }];
+        let right_cols = vec![DataFrameColumn {
+            name: "a".to_string(),
+            values: vec![],
+        }];
+
+        let result = validate_and_find_join_columns(&left_cols, &right_cols, "id");
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("not found in right DataFrame"));
+    }
+
+    #[test]
+    fn test_initialize_result_columns() {
+        let left_cols = vec![
+            DataFrameColumn {
+                name: "id".to_string(),
+                values: vec![],
+            },
+            DataFrameColumn {
+                name: "name".to_string(),
+                values: vec![],
+            },
+        ];
+        let right_cols = vec![
+            DataFrameColumn {
+                name: "id".to_string(),
+                values: vec![],
+            },
+            DataFrameColumn {
+                name: "age".to_string(),
+                values: vec![],
+            },
+        ];
+
+        let result = initialize_result_columns(&left_cols, &right_cols, "id");
+        assert_eq!(result.len(), 3);
+        assert_eq!(result[0].name, "id");
+        assert_eq!(result[1].name, "name");
+        assert_eq!(result[2].name, "age_right");
+    }
+
+    #[test]
+    fn test_dataframe_groupby_basic() {
+        let columns = vec![
+            DataFrameColumn {
+                name: "group".to_string(),
+                values: vec![
+                    Value::from_string("A".to_string()),
+                    Value::from_string("A".to_string()),
+                    Value::from_string("B".to_string()),
+                ],
+            },
+            DataFrameColumn {
+                name: "value".to_string(),
+                values: vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)],
+            },
+        ];
+
+        let args = vec![Value::from_string("group".to_string())];
+        let result = eval_dataframe_groupby(&columns, &args).unwrap();
+
+        if let Value::DataFrame {
+            columns: result_cols,
+        } = result
+        {
+            assert_eq!(result_cols.len(), 2); // group, value_sum
+            assert_eq!(result_cols[0].name, "group");
+            assert_eq!(result_cols[1].name, "value_sum");
+        } else {
+            panic!("Expected DataFrame result");
+        }
+    }
+
+    #[test]
+    fn test_dataframe_groupby_wrong_arg_count() {
+        let columns = vec![];
+        let args = vec![];
+        let result = eval_dataframe_groupby(&columns, &args);
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("requires exactly 1 argument"));
+    }
+
+    #[test]
+    fn test_dataframe_groupby_wrong_arg_type() {
+        let columns = vec![];
+        let args = vec![Value::Integer(1)];
+        let result = eval_dataframe_groupby(&columns, &args);
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("expects column name as string"));
+    }
+
+    #[test]
+    fn test_dataframe_groupby_column_not_found() {
+        let columns = vec![DataFrameColumn {
+            name: "a".to_string(),
+            values: vec![],
+        }];
+        let args = vec![Value::from_string("nonexistent".to_string())];
+        let result = eval_dataframe_groupby(&columns, &args);
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("not found in DataFrame"));
+    }
+
+    #[test]
+    fn test_create_group_mapping_for_aggregation() {
+        let group_col = DataFrameColumn {
+            name: "group".to_string(),
+            values: vec![
+                Value::String("A".to_string().into()),
+                Value::String("B".to_string().into()),
+                Value::String("A".to_string().into()),
+            ],
+        };
+
+        let groups = create_group_mapping_for_aggregation(&group_col);
+        assert_eq!(groups.len(), 2);
+
+        // The to_string() method includes quotes, so we test for "A" and "B"
+        assert!(groups.contains_key("\"A\""));
+        assert!(groups.contains_key("\"B\""));
+        assert_eq!(groups.get("\"A\"").unwrap(), &vec![0, 2]);
+        assert_eq!(groups.get("\"B\"").unwrap(), &vec![1]);
+    }
+
+    #[test]
+    fn test_initialize_group_columns_for_aggregation() {
+        let mut groups = HashMap::new();
+        groups.insert("A".to_string(), vec![0, 2]);
+        groups.insert("B".to_string(), vec![1]);
+
+        let result = initialize_group_columns_for_aggregation(&groups, "group");
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].name, "group");
+        assert_eq!(result[0].values.len(), 2);
+    }
+
+    #[test]
+    fn test_is_numeric_column_for_aggregation() {
+        let numeric_col = DataFrameColumn {
+            name: "numbers".to_string(),
+            values: vec![Value::Integer(1), Value::Float(2.5)],
+        };
+        assert!(is_numeric_column_for_aggregation(&numeric_col));
+
+        let non_numeric_col = DataFrameColumn {
+            name: "strings".to_string(),
+            values: vec![Value::from_string("text".to_string())],
+        };
+        assert!(!is_numeric_column_for_aggregation(&non_numeric_col));
+
+        let mixed_col = DataFrameColumn {
+            name: "mixed".to_string(),
+            values: vec![Value::from_string("text".to_string()), Value::Integer(1)],
+        };
+        assert!(is_numeric_column_for_aggregation(&mixed_col));
+    }
+
+    #[test]
+    fn test_calculate_group_sum_for_aggregation() {
+        let col = DataFrameColumn {
+            name: "values".to_string(),
+            values: vec![
+                Value::Integer(1),
+                Value::Integer(2),
+                Value::Float(3.5),
+                Value::from_string("text".to_string()),
+            ],
+        };
+
+        let result = calculate_group_sum_for_aggregation(&col, &[0, 2]);
+        assert_eq!(result, Value::Float(4.5));
+
+        let result_no_numeric = calculate_group_sum_for_aggregation(&col, &[3]);
+        assert_eq!(result_no_numeric, Value::Nil);
+
+        let result_integer_only = calculate_group_sum_for_aggregation(&col, &[0, 1]);
+        assert_eq!(result_integer_only, Value::Integer(3));
+    }
+
+    #[test]
+    fn test_dataframe_filter() {
+        let columns = vec![
+            DataFrameColumn {
+                name: "age".to_string(),
+                values: vec![Value::Integer(25), Value::Integer(30), Value::Integer(35)],
+            },
+            DataFrameColumn {
+                name: "name".to_string(),
+                values: vec![
+                    Value::from_string("Alice".to_string()),
+                    Value::from_string("Bob".to_string()),
+                    Value::from_string("Charlie".to_string()),
+                ],
+            },
+        ];
+
+        let condition = Expr::new(ExprKind::Literal(Literal::Bool(true)), Span::new(0, 0));
+        let mut eval_calls = 0;
+        let eval_with_context = |_expr: &Expr, _cols: &[DataFrameColumn], _row: usize| {
+            eval_calls += 1;
+            Ok(Value::Bool(eval_calls % 2 == 1)) // True for odd calls (rows 0, 2)
+        };
+
+        let result = eval_dataframe_filter(&columns, &condition, eval_with_context).unwrap();
+
+        if let Value::DataFrame {
+            columns: result_cols,
+        } = result
+        {
+            assert_eq!(result_cols[0].values.len(), 2); // Rows 0 and 2 kept
+            assert_eq!(result_cols[0].values[0], Value::Integer(25));
+            assert_eq!(result_cols[0].values[1], Value::Integer(35));
+        } else {
+            panic!("Expected DataFrame result");
+        }
+    }
+
+    #[test]
+    fn test_dataframe_filter_empty() {
+        let columns = vec![];
+        let condition = Expr::new(ExprKind::Literal(Literal::Bool(true)), Span::new(0, 0));
+        let eval_with_context =
+            |_expr: &Expr, _cols: &[DataFrameColumn], _row: usize| Ok(Value::Bool(true));
+
+        let result = eval_dataframe_filter(&columns, &condition, eval_with_context).unwrap();
+
+        if let Value::DataFrame {
+            columns: result_cols,
+        } = result
+        {
+            assert_eq!(result_cols.len(), 0);
+        } else {
+            panic!("Expected DataFrame result");
+        }
+    }
+
+    #[test]
+    fn test_dataframe_filter_non_boolean_condition() {
+        let columns = vec![DataFrameColumn {
+            name: "test".to_string(),
+            values: vec![Value::Integer(1)],
+        }];
+
+        let condition = Expr::new(ExprKind::Literal(Literal::Bool(true)), Span::new(0, 0));
+        let eval_with_context = |_expr: &Expr, _cols: &[DataFrameColumn], _row: usize| {
+            Ok(Value::Integer(1)) // Non-boolean result
+        };
+
+        let result = eval_dataframe_filter(&columns, &condition, eval_with_context);
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("must evaluate to boolean"));
+    }
+
+    #[test]
+    fn test_eval_dataframe_method_unknown() {
+        let columns = vec![];
+        let result = eval_dataframe_method(&columns, "unknown_method", &[]);
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Unknown DataFrame method"));
+    }
+
+    #[test]
+    fn test_eval_dataframe_method_select() {
+        let columns = vec![DataFrameColumn {
+            name: "test".to_string(),
+            values: vec![Value::Integer(1)],
+        }];
+        let args = vec![Value::from_string("test".to_string())];
+        let result = eval_dataframe_method(&columns, "select", &args);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_eval_dataframe_method_sum() {
+        let columns = vec![DataFrameColumn {
+            name: "test".to_string(),
+            values: vec![Value::Integer(1)],
+        }];
+        let result = eval_dataframe_method(&columns, "sum", &[]);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_eval_dataframe_method_slice() {
+        let columns = vec![DataFrameColumn {
+            name: "test".to_string(),
+            values: vec![Value::Integer(1)],
+        }];
+        let args = vec![Value::Integer(0), Value::Integer(1)];
+        let result = eval_dataframe_method(&columns, "slice", &args);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_eval_dataframe_method_join() {
+        let columns = vec![DataFrameColumn {
+            name: "id".to_string(),
+            values: vec![Value::Integer(1)],
+        }];
+        let other_df = Value::DataFrame {
+            columns: vec![DataFrameColumn {
+                name: "id".to_string(),
+                values: vec![Value::Integer(1)],
+            }],
+        };
+        let args = vec![other_df, Value::from_string("id".to_string())];
+        let result = eval_dataframe_method(&columns, "join", &args);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_eval_dataframe_method_groupby() {
+        let columns = vec![DataFrameColumn {
+            name: "test".to_string(),
+            values: vec![Value::Integer(1)],
+        }];
+        let args = vec![Value::from_string("test".to_string())];
+        let result = eval_dataframe_method(&columns, "groupby", &args);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_eval_dataframe_operation_select() {
+        let columns = vec![DataFrameColumn {
+            name: "test".to_string(),
+            values: vec![Value::Integer(1)],
+        }];
+        let operation = DataFrameOp::Select(vec!["test".to_string()]);
+        let eval_with_context =
+            |_expr: &Expr, _cols: &[DataFrameColumn], _row: usize| Ok(Value::Bool(true));
+
+        let result = eval_dataframe_operation(columns, &operation, eval_with_context);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_eval_dataframe_operation_filter() {
+        let columns = vec![DataFrameColumn {
+            name: "test".to_string(),
+            values: vec![Value::Integer(1)],
+        }];
+        let condition = Expr::new(ExprKind::Literal(Literal::Bool(true)), Span::new(0, 0));
+        let operation = DataFrameOp::Filter(Box::new(condition));
+        let eval_with_context =
+            |_expr: &Expr, _cols: &[DataFrameColumn], _row: usize| Ok(Value::Bool(true));
+
+        let result = eval_dataframe_operation(columns, &operation, eval_with_context);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_eval_dataframe_operation_groupby() {
+        let columns = vec![DataFrameColumn {
+            name: "test".to_string(),
+            values: vec![Value::Integer(1)],
+        }];
+        let operation = DataFrameOp::GroupBy(vec!["test".to_string()]);
+        let eval_with_context =
+            |_expr: &Expr, _cols: &[DataFrameColumn], _row: usize| Ok(Value::Bool(true));
+
+        let result = eval_dataframe_operation(columns, &operation, eval_with_context);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_eval_dataframe_select_multiple() {
+        let columns = vec![
+            DataFrameColumn {
+                name: "a".to_string(),
+                values: vec![Value::Integer(1)],
+            },
+            DataFrameColumn {
+                name: "b".to_string(),
+                values: vec![Value::Integer(2)],
+            },
+        ];
+        let column_names = vec!["a".to_string(), "b".to_string()];
+
+        let result = eval_dataframe_select_multiple(&columns, &column_names).unwrap();
+
+        if let Value::DataFrame {
+            columns: result_cols,
+        } = result
+        {
+            assert_eq!(result_cols.len(), 2);
+            assert_eq!(result_cols[0].name, "a");
+            assert_eq!(result_cols[1].name, "b");
+        } else {
+            panic!("Expected DataFrame result");
+        }
+    }
+
+    #[test]
+    fn test_eval_dataframe_select_multiple_column_not_found() {
+        let columns = vec![DataFrameColumn {
+            name: "a".to_string(),
+            values: vec![Value::Integer(1)],
+        }];
+        let column_names = vec!["nonexistent".to_string()];
+
+        let result = eval_dataframe_select_multiple(&columns, &column_names);
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("not found in DataFrame"));
+    }
+
+    #[test]
+    fn test_eval_dataframe_groupby_multiple_empty_columns() {
+        let columns = vec![];
+        let group_columns = vec![];
+
+        let result = eval_dataframe_groupby_multiple(&columns, &group_columns);
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Cannot group by empty DataFrame"));
+    }
+
+    #[test]
+    fn test_eval_dataframe_groupby_multiple_default_first_column() {
+        let columns = vec![DataFrameColumn {
+            name: "test".to_string(),
+            values: vec![Value::Integer(1)],
+        }];
+        let group_columns = vec![];
+
+        let result = eval_dataframe_groupby_multiple(&columns, &group_columns);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_eval_dataframe_groupby_multiple_column_not_found() {
+        let columns = vec![DataFrameColumn {
+            name: "test".to_string(),
+            values: vec![Value::Integer(1)],
+        }];
+        let group_columns = vec!["nonexistent".to_string()];
+
+        let result = eval_dataframe_groupby_multiple(&columns, &group_columns);
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("not found in DataFrame"));
     }
 }

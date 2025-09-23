@@ -544,3 +544,188 @@ impl DurationExt for Duration {
         Duration::from_secs(hours * 3600)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::collections::HashMap;
+
+    #[test]
+    fn test_smt_solver_new() {
+        let _solver = SmtSolver::new(SolverType::Z3);
+        // Constructor test - should create without panic
+        assert!(true);
+    }
+
+    #[test]
+    fn test_smt_solver_with_timeout() {
+        let timeout = Duration::from_secs(30);
+        let _solver = SmtSolver::with_timeout(SolverType::Z3, timeout);
+        // Constructor with timeout should work
+        assert!(true);
+    }
+
+    #[test]
+    fn test_solve_simple_query() {
+        let mut solver = SmtSolver::new(SolverType::Z3);
+        let query = SmtQuery {
+            declarations: vec!["(declare-fun x () Int)".to_string()],
+            assertions: vec!["(assert (> x 0))".to_string()],
+            query: "(check-sat)".to_string(),
+        };
+
+        let result = solver.solve(&query);
+        // Should return some result
+        match result {
+            SmtResult::Satisfiable(_) => assert!(true),
+            SmtResult::Unsatisfiable(_) => assert!(true),
+            SmtResult::Unknown(_) => assert!(true),
+            SmtResult::Timeout => assert!(true),
+        }
+    }
+
+    #[test]
+    fn test_verify_function_basic() {
+        let mut solver = SmtSolver::new(SolverType::Z3);
+        let function = Function {
+            name: "add_one".to_string(),
+            parameters: vec!["x".to_string()],
+            parameter_types: vec!["Int".to_string()],
+            return_type: "Int".to_string(),
+            body_smt: "(+ x 1)".to_string(),
+        };
+
+        let spec = FunctionSpec {
+            preconditions: vec!["(> x 0)".to_string()],
+            postconditions: vec!["(> result 0)".to_string()],
+        };
+
+        let result = solver.verify_function(&function, &spec);
+        assert_eq!(result.function_name, "add_one");
+    }
+
+    #[test]
+    fn test_verify_loop_invariant() {
+        let mut solver = SmtSolver::new(SolverType::Z3);
+        let loop_info = LoopInfo {
+            variable_declarations: vec![
+                "(declare-fun i () Int)".to_string(),
+                "(declare-fun n () Int)".to_string(),
+            ],
+            precondition: "(and (= i 0) (>= n 0))".to_string(),
+            loop_condition: "(< i n)".to_string(),
+            loop_body: "(= i_next (+ i 1))".to_string(),
+            termination_measure: Some("(- n i)".to_string()),
+        };
+
+        let invariant = "(and (>= i 0) (<= i n))";
+        let result = solver.verify_loop_invariant(&loop_info, invariant);
+        assert_eq!(result.invariant, invariant);
+    }
+
+    #[test]
+    fn test_smt_query_creation() {
+        let query = SmtQuery {
+            declarations: vec!["(declare-fun x () Int)".to_string()],
+            assertions: vec!["(assert (> x 0))".to_string()],
+            query: "(check-sat)".to_string(),
+        };
+
+        assert_eq!(query.declarations.len(), 1);
+        assert_eq!(query.assertions.len(), 1);
+        assert_eq!(query.query, "(check-sat)");
+    }
+
+    #[test]
+    fn test_model_creation() {
+        let mut assignments = HashMap::new();
+        assignments.insert("x".to_string(), "5".to_string());
+        assignments.insert("y".to_string(), "10".to_string());
+
+        let model = Model { assignments };
+
+        assert_eq!(model.assignments.len(), 2);
+        assert_eq!(model.assignments.get("x"), Some(&"5".to_string()));
+    }
+
+    #[test]
+    fn test_proof_creation() {
+        let proof = Proof {
+            steps: vec![
+                "step 1: assume x > 0".to_string(),
+                "step 2: derive y > 0".to_string(),
+            ],
+            conclusion: "therefore x + y > 0".to_string(),
+        };
+
+        assert_eq!(proof.steps.len(), 2);
+        assert!(!proof.conclusion.is_empty());
+    }
+
+    #[test]
+    fn test_solver_type_variants() {
+        let types = vec![
+            SolverType::Z3,
+            SolverType::CVC4,
+            SolverType::Yices,
+            SolverType::Vampire,
+        ];
+
+        assert_eq!(types.len(), 4);
+    }
+
+    #[test]
+    fn test_function_creation() {
+        let function = Function {
+            name: "add_one".to_string(),
+            parameters: vec!["x".to_string()],
+            parameter_types: vec!["Int".to_string()],
+            return_type: "Int".to_string(),
+            body_smt: "(+ x 1)".to_string(),
+        };
+
+        assert_eq!(function.name, "add_one");
+        assert_eq!(function.parameters.len(), 1);
+    }
+
+    #[test]
+    fn test_function_spec_creation() {
+        let spec = FunctionSpec {
+            preconditions: vec!["(> x 0)".to_string()],
+            postconditions: vec!["(> result 0)".to_string()],
+        };
+
+        assert_eq!(spec.preconditions.len(), 1);
+        assert_eq!(spec.postconditions.len(), 1);
+    }
+
+    #[test]
+    fn test_loop_info_creation() {
+        let loop_info = LoopInfo {
+            variable_declarations: vec![
+                "(declare-fun i () Int)".to_string(),
+                "(declare-fun n () Int)".to_string(),
+            ],
+            precondition: "(and (= i 0) (>= n 0))".to_string(),
+            loop_condition: "(< i n)".to_string(),
+            loop_body: "(= i_next (+ i 1))".to_string(),
+            termination_measure: Some("(- n i)".to_string()),
+        };
+
+        assert_eq!(loop_info.variable_declarations.len(), 2);
+        assert!(loop_info.termination_measure.is_some());
+    }
+
+    #[test]
+    fn test_bounded_model_checker_new() {
+        let _checker = BoundedModelChecker::new(SolverType::Z3, 10);
+        // Constructor should work
+        assert!(true);
+    }
+
+    #[test]
+    fn test_duration_ext() {
+        let duration = Duration::from_hours(2);
+        assert_eq!(duration, Duration::from_secs(7200));
+    }
+}

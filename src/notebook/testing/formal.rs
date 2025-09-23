@@ -293,3 +293,461 @@ pub struct LoopVerificationResult {
     pub termination_valid: bool,
     pub iterations_bounded: bool,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::notebook::testing::types::{Cell, CellMetadata, CellType};
+
+    // EXTREME TDD: Comprehensive test coverage for formal verification system
+
+    #[test]
+    fn test_solver_backend_enum_variants() {
+        let backends = vec![
+            SolverBackend::Z3,
+            SolverBackend::SimpleSMT,
+            SolverBackend::Symbolic,
+        ];
+        assert_eq!(backends.len(), 3);
+    }
+
+    #[test]
+    fn test_solver_backend_debug_format() {
+        assert_eq!(format!("{:?}", SolverBackend::Z3), "Z3");
+        assert_eq!(format!("{:?}", SolverBackend::SimpleSMT), "SimpleSMT");
+        assert_eq!(format!("{:?}", SolverBackend::Symbolic), "Symbolic");
+    }
+
+    #[test]
+    fn test_constraint_severity_enum_variants() {
+        let severities = vec![
+            ConstraintSeverity::Error,
+            ConstraintSeverity::Warning,
+            ConstraintSeverity::Info,
+        ];
+        assert_eq!(severities.len(), 3);
+    }
+
+    #[test]
+    fn test_constraint_severity_debug_format() {
+        assert_eq!(format!("{:?}", ConstraintSeverity::Error), "Error");
+        assert_eq!(format!("{:?}", ConstraintSeverity::Warning), "Warning");
+        assert_eq!(format!("{:?}", ConstraintSeverity::Info), "Info");
+    }
+
+    #[test]
+    fn test_formal_config_default() {
+        let config = FormalConfig::default();
+        assert_eq!(config.timeout_ms, 5000);
+        assert_eq!(config.max_iterations, 1000);
+        assert!(config.enable_counterexamples);
+    }
+
+    #[test]
+    fn test_formal_config_custom() {
+        let config = FormalConfig {
+            timeout_ms: 10000,
+            max_iterations: 500,
+            enable_counterexamples: false,
+        };
+        assert_eq!(config.timeout_ms, 10000);
+        assert_eq!(config.max_iterations, 500);
+        assert!(!config.enable_counterexamples);
+    }
+
+    #[test]
+    fn test_formal_config_clone() {
+        let config = FormalConfig {
+            timeout_ms: 3000,
+            max_iterations: 2000,
+            enable_counterexamples: true,
+        };
+        let cloned = config.clone();
+        assert_eq!(cloned.timeout_ms, 3000);
+        assert_eq!(cloned.max_iterations, 2000);
+        assert!(cloned.enable_counterexamples);
+    }
+
+    #[test]
+    fn test_invariant_creation() {
+        let invariant = Invariant {
+            id: "inv1".to_string(),
+            expression: "x > 0".to_string(),
+            cell_ids: vec!["cell1".to_string(), "cell2".to_string()],
+        };
+        assert_eq!(invariant.id, "inv1");
+        assert_eq!(invariant.expression, "x > 0");
+        assert_eq!(invariant.cell_ids.len(), 2);
+    }
+
+    #[test]
+    fn test_constraint_creation() {
+        let constraint = Constraint {
+            id: "constraint1".to_string(),
+            expression: "0 <= i < arr.length".to_string(),
+            severity: ConstraintSeverity::Error,
+        };
+        assert_eq!(constraint.id, "constraint1");
+        assert_eq!(constraint.expression, "0 <= i < arr.length");
+        assert!(matches!(constraint.severity, ConstraintSeverity::Error));
+    }
+
+    #[test]
+    fn test_verification_result_valid() {
+        let result = VerificationResult {
+            is_valid: true,
+            counterexample: None,
+            proof_steps: vec!["Step 1".to_string(), "Step 2".to_string()],
+        };
+        assert!(result.is_valid);
+        assert!(result.counterexample.is_none());
+        assert_eq!(result.proof_steps.len(), 2);
+    }
+
+    #[test]
+    fn test_verification_result_invalid() {
+        let result = VerificationResult {
+            is_valid: false,
+            counterexample: Some("x = -1".to_string()),
+            proof_steps: vec!["Counterexample found".to_string()],
+        };
+        assert!(!result.is_valid);
+        assert_eq!(result.counterexample, Some("x = -1".to_string()));
+        assert_eq!(result.proof_steps.len(), 1);
+    }
+
+    #[test]
+    fn test_function_spec_creation() {
+        let spec = FunctionSpec {
+            name: "abs".to_string(),
+            preconditions: vec!["x is integer".to_string()],
+            postconditions: vec!["result >= 0".to_string()],
+            invariants: vec!["maintains sign convention".to_string()],
+        };
+        assert_eq!(spec.name, "abs");
+        assert_eq!(spec.preconditions.len(), 1);
+        assert_eq!(spec.postconditions.len(), 1);
+        assert_eq!(spec.invariants.len(), 1);
+    }
+
+    #[test]
+    fn test_execution_path_creation() {
+        let path = ExecutionPath {
+            id: "path1".to_string(),
+            conditions: vec!["x > 0".to_string(), "y < 10".to_string()],
+            is_feasible: true,
+        };
+        assert_eq!(path.id, "path1");
+        assert_eq!(path.conditions.len(), 2);
+        assert!(path.is_feasible);
+    }
+
+    #[test]
+    fn test_loop_invariant_creation() {
+        let invariant = LoopInvariant {
+            loop_id: "loop1".to_string(),
+            invariant: "i <= n".to_string(),
+            verified: true,
+        };
+        assert_eq!(invariant.loop_id, "loop1");
+        assert_eq!(invariant.invariant, "i <= n");
+        assert!(invariant.verified);
+    }
+
+    #[test]
+    fn test_formal_verifier_new() {
+        let verifier = FormalVerifier::new();
+        assert!(matches!(verifier.backend, SolverBackend::SimpleSMT));
+        assert_eq!(verifier.config.timeout_ms, 5000);
+    }
+
+    #[test]
+    fn test_formal_verifier_default() {
+        let verifier = FormalVerifier::default();
+        assert!(matches!(verifier.backend, SolverBackend::SimpleSMT));
+        assert_eq!(verifier.config.max_iterations, 1000);
+    }
+
+    #[test]
+    fn test_formal_verifier_with_config() {
+        let config = FormalConfig {
+            timeout_ms: 8000,
+            max_iterations: 1500,
+            enable_counterexamples: false,
+        };
+        let verifier = FormalVerifier::with_config(config);
+        assert_eq!(verifier.config.timeout_ms, 8000);
+        assert_eq!(verifier.config.max_iterations, 1500);
+        assert!(!verifier.config.enable_counterexamples);
+    }
+
+    #[test]
+    fn test_is_ready() {
+        let verifier = FormalVerifier::new();
+        assert!(verifier.is_ready());
+    }
+
+    #[test]
+    fn test_verify_invariant_additive_identity() {
+        let verifier = FormalVerifier::new();
+        let invariant = Invariant {
+            id: "add_identity".to_string(),
+            expression: "forall x: x + 0 == x".to_string(),
+            cell_ids: vec!["cell1".to_string()],
+        };
+        let cell = Cell {
+            id: "cell1".to_string(),
+            cell_type: CellType::Code,
+            source: "fn test() { let x = 5; assert!(x + 0 == x); }".to_string(),
+            metadata: CellMetadata { test: None },
+        };
+
+        let result = verifier.verify_invariant(&invariant, &cell);
+        assert!(result.is_valid);
+        assert!(result.counterexample.is_none());
+        assert!(result
+            .proof_steps
+            .contains(&"Additive identity verified".to_string()));
+    }
+
+    #[test]
+    fn test_verify_invariant_commutativity() {
+        let verifier = FormalVerifier::new();
+        let invariant = Invariant {
+            id: "add_comm".to_string(),
+            expression: "forall a, b: a + b == b + a".to_string(),
+            cell_ids: vec!["cell1".to_string()],
+        };
+        let cell = Cell {
+            id: "cell1".to_string(),
+            cell_type: CellType::Code,
+            source: "fn test() { assert!(3 + 4 == 4 + 3); }".to_string(),
+            metadata: CellMetadata { test: None },
+        };
+
+        let result = verifier.verify_invariant(&invariant, &cell);
+        assert!(result.is_valid);
+        assert!(result.counterexample.is_none());
+        assert!(result
+            .proof_steps
+            .contains(&"Commutativity of addition verified".to_string()));
+    }
+
+    #[test]
+    fn test_verify_invariant_false_for_negatives() {
+        let verifier = FormalVerifier::new();
+        let invariant = Invariant {
+            id: "mult_greater".to_string(),
+            expression: "forall x: x * 2 > x".to_string(),
+            cell_ids: vec!["cell1".to_string()],
+        };
+        let cell = Cell {
+            id: "cell1".to_string(),
+            cell_type: CellType::Code,
+            source: "fn test() { let x = -1; assert!(x * 2 > x); }".to_string(),
+            metadata: CellMetadata { test: None },
+        };
+
+        let result = verifier.verify_invariant(&invariant, &cell);
+        assert!(!result.is_valid);
+        assert!(result.counterexample.is_some());
+        assert!(result.counterexample.unwrap().contains("x = -1"));
+    }
+
+    #[test]
+    fn test_verify_constraint_array_bounds_safe() {
+        let verifier = FormalVerifier::new();
+        let constraint = Constraint {
+            id: "bounds_check".to_string(),
+            expression: "0 <= i < arr.length".to_string(),
+            severity: ConstraintSeverity::Error,
+        };
+        let cell = Cell {
+            id: "cell1".to_string(),
+            cell_type: CellType::Code,
+            source: "fn test() { let arr = [1, 2, 3]; let val = arr[1]; }".to_string(),
+            metadata: CellMetadata { test: None },
+        };
+
+        let result = verifier.verify_constraint(&constraint, &cell);
+        assert!(result.satisfied);
+        assert!(result.violations.is_empty());
+    }
+
+    #[test]
+    fn test_verify_constraint_array_bounds_violation() {
+        let verifier = FormalVerifier::new();
+        let constraint = Constraint {
+            id: "bounds_check".to_string(),
+            expression: "0 <= i < arr.length".to_string(),
+            severity: ConstraintSeverity::Error,
+        };
+        let cell = Cell {
+            id: "cell1".to_string(),
+            cell_type: CellType::Code,
+            source: "fn test() { let arr = [1, 2, 3]; let val = arr[-1]; }".to_string(),
+            metadata: CellMetadata { test: None },
+        };
+
+        let result = verifier.verify_constraint(&constraint, &cell);
+        assert!(!result.satisfied);
+        assert!(result
+            .violations
+            .contains(&"Negative array index detected".to_string()));
+    }
+
+    #[test]
+    fn test_prove_function_found() {
+        let verifier = FormalVerifier::new();
+        let spec = FunctionSpec {
+            name: "abs".to_string(),
+            preconditions: vec!["x is integer".to_string()],
+            postconditions: vec!["result >= 0".to_string()],
+            invariants: vec![],
+        };
+        let cell = Cell {
+            id: "cell1".to_string(),
+            cell_type: CellType::Code,
+            source: "fn abs(x: i32) -> i32 { if x >= 0 { x } else { -x } }".to_string(),
+            metadata: CellMetadata { test: None },
+        };
+
+        let result = verifier.prove_function(&spec, &cell);
+        assert!(result.is_valid);
+        assert!(result.unsatisfied_conditions.is_empty());
+    }
+
+    #[test]
+    fn test_prove_function_not_found() {
+        let verifier = FormalVerifier::new();
+        let spec = FunctionSpec {
+            name: "missing_func".to_string(),
+            preconditions: vec![],
+            postconditions: vec![],
+            invariants: vec![],
+        };
+        let cell = Cell {
+            id: "cell1".to_string(),
+            cell_type: CellType::Code,
+            source: "fn some_other_function() {}".to_string(),
+            metadata: CellMetadata { test: None },
+        };
+
+        let result = verifier.prove_function(&spec, &cell);
+        assert!(!result.is_valid);
+        assert!(result
+            .unsatisfied_conditions
+            .contains(&"Function not found".to_string()));
+    }
+
+    #[test]
+    fn test_symbolic_execute_no_branches() {
+        let verifier = FormalVerifier::new();
+        let cell = Cell {
+            id: "cell1".to_string(),
+            cell_type: CellType::Code,
+            source: "fn test() { let x = 5; let y = x * 2; }".to_string(),
+            metadata: CellMetadata { test: None },
+        };
+
+        let paths = verifier.symbolic_execute(&cell);
+        assert_eq!(paths.len(), 1);
+        assert_eq!(paths[0].id, "path_0");
+        assert!(paths[0].conditions.is_empty());
+        assert!(paths[0].is_feasible);
+    }
+
+    #[test]
+    fn test_symbolic_execute_with_branches() {
+        let verifier = FormalVerifier::new();
+        let cell = Cell {
+            id: "cell1".to_string(),
+            cell_type: CellType::Code,
+            source: "fn test(x: i32) { if x > 0 { println!(\"positive\"); } else { println!(\"negative\"); } }".to_string(),
+            metadata: CellMetadata { test: None },
+        };
+
+        let paths = verifier.symbolic_execute(&cell);
+        assert_eq!(paths.len(), 2);
+        assert_eq!(paths[0].id, "path_1");
+        assert_eq!(paths[1].id, "path_2");
+        assert!(paths[0].is_feasible);
+        assert!(paths[1].is_feasible);
+    }
+
+    #[test]
+    fn test_verify_loop_invariant() {
+        let verifier = FormalVerifier::new();
+        let invariant = LoopInvariant {
+            loop_id: "loop1".to_string(),
+            invariant: "i <= n".to_string(),
+            verified: false,
+        };
+        let cell = Cell {
+            id: "cell1".to_string(),
+            cell_type: CellType::Code,
+            source: "fn test() { for i in 0..n { /* loop body */ } }".to_string(),
+            metadata: CellMetadata { test: None },
+        };
+
+        let result = verifier.verify_loop_invariant(&invariant, &cell);
+        assert!(result.initialization_valid);
+        assert!(result.maintenance_valid);
+        assert!(result.termination_valid);
+        assert!(result.iterations_bounded);
+    }
+
+    #[test]
+    fn test_constraint_result_creation() {
+        let result = ConstraintResult {
+            satisfied: false,
+            violations: vec!["Error 1".to_string(), "Error 2".to_string()],
+        };
+        assert!(!result.satisfied);
+        assert_eq!(result.violations.len(), 2);
+    }
+
+    #[test]
+    fn test_proof_result_creation() {
+        let result = ProofResult {
+            is_valid: true,
+            unsatisfied_conditions: vec![],
+        };
+        assert!(result.is_valid);
+        assert!(result.unsatisfied_conditions.is_empty());
+    }
+
+    #[test]
+    fn test_loop_verification_result_creation() {
+        let result = LoopVerificationResult {
+            initialization_valid: true,
+            maintenance_valid: false,
+            termination_valid: true,
+            iterations_bounded: false,
+        };
+        assert!(result.initialization_valid);
+        assert!(!result.maintenance_valid);
+        assert!(result.termination_valid);
+        assert!(!result.iterations_bounded);
+    }
+
+    #[test]
+    fn test_all_structs_clone() {
+        let config = FormalConfig::default();
+        let invariant = Invariant {
+            id: "test".to_string(),
+            expression: "x > 0".to_string(),
+            cell_ids: vec!["cell1".to_string()],
+        };
+        let constraint = Constraint {
+            id: "test".to_string(),
+            expression: "bounds check".to_string(),
+            severity: ConstraintSeverity::Warning,
+        };
+
+        // Test that all structs can be cloned
+        let _config_clone = config.clone();
+        let _invariant_clone = invariant.clone();
+        let _constraint_clone = constraint.clone();
+    }
+}

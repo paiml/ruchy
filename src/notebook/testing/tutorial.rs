@@ -356,3 +356,226 @@ pub struct MistakeAnalysis {
     pub common_errors: HashMap<String, usize>,
     pub success_rate: f64,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // EXTREME TDD: Comprehensive test coverage for tutorial system
+
+    #[test]
+    fn test_tutorial_step_creation() {
+        let step = TutorialStep {
+            id: "step1".to_string(),
+            title: "Hello World".to_string(),
+            instruction: "Print 'Hello, World!'".to_string(),
+            hint: Some("Use println!".to_string()),
+            solution: "println!(\"Hello, World!\")".to_string(),
+            validation: ValidationRule::OutputEquals("Hello, World!".to_string()),
+            next_step: Some("step2".to_string()),
+        };
+
+        assert_eq!(step.id, "step1");
+        assert_eq!(step.title, "Hello World");
+        assert!(step.hint.is_some());
+        assert!(step.next_step.is_some());
+    }
+
+    #[test]
+    fn test_validation_rules() {
+        let rules = vec![
+            ValidationRule::OutputEquals("test".to_string()),
+            ValidationRule::OutputContains("partial".to_string()),
+            ValidationRule::TestCase {
+                input: "input".to_string(),
+                expected: "output".to_string(),
+            },
+            ValidationRule::Pattern("\\d+".to_string()),
+            ValidationRule::Custom("validate_function".to_string()),
+        ];
+
+        for rule in rules {
+            match rule {
+                ValidationRule::OutputEquals(s) => assert!(!s.is_empty()),
+                ValidationRule::OutputContains(s) => assert!(!s.is_empty()),
+                ValidationRule::TestCase { input, expected } => {
+                    assert!(!input.is_empty());
+                    assert!(!expected.is_empty());
+                }
+                ValidationRule::Pattern(p) => assert!(!p.is_empty()),
+                ValidationRule::Custom(f) => assert!(!f.is_empty()),
+            }
+        }
+    }
+
+    #[test]
+    fn test_step_progress_initialization() {
+        let progress = StepProgress {
+            completed: false,
+            attempts: 0,
+            hints_used: 0,
+            time_spent_ms: 0,
+        };
+
+        assert!(!progress.completed);
+        assert_eq!(progress.attempts, 0);
+        assert_eq!(progress.hints_used, 0);
+        assert_eq!(progress.time_spent_ms, 0);
+    }
+
+    #[test]
+    fn test_step_result() {
+        let result = StepResult {
+            is_correct: true,
+            feedback: "Great job!".to_string(),
+            hint: None,
+        };
+
+        assert!(result.is_correct);
+        assert_eq!(result.feedback, "Great job!");
+        assert!(result.hint.is_none());
+    }
+
+    #[test]
+    fn test_interactive_tutorial_new() {
+        let tutorial = InteractiveTutorial::new("tutorial1");
+
+        assert_eq!(tutorial.id, "tutorial1");
+        assert!(tutorial.title.is_empty());
+        assert!(tutorial.description.is_empty());
+        assert!(tutorial.steps.is_empty());
+        assert!(tutorial.progress.is_empty());
+    }
+
+    #[test]
+    fn test_tutorial_add_step() {
+        let mut tutorial = InteractiveTutorial::new("test");
+        let step = TutorialStep {
+            id: "step1".to_string(),
+            title: "Test Step".to_string(),
+            instruction: "Do something".to_string(),
+            hint: None,
+            solution: "solution".to_string(),
+            validation: ValidationRule::OutputEquals("expected".to_string()),
+            next_step: None,
+        };
+
+        tutorial.add_step(step.clone());
+
+        assert_eq!(tutorial.steps.len(), 1);
+        assert_eq!(tutorial.steps[0].id, "step1");
+        assert!(tutorial.progress.contains_key("step1"));
+        assert!(!tutorial.progress["step1"].completed);
+    }
+
+    #[test]
+    fn test_mistake_analysis() {
+        let mut common_errors = HashMap::new();
+        common_errors.insert("syntax_error".to_string(), 5);
+        common_errors.insert("logic_error".to_string(), 3);
+
+        let analysis = MistakeAnalysis {
+            total_attempts: 10,
+            common_errors,
+            success_rate: 75.0,
+        };
+
+        assert_eq!(analysis.total_attempts, 10);
+        assert_eq!(analysis.success_rate, 75.0);
+        assert_eq!(analysis.common_errors.len(), 2);
+        assert_eq!(analysis.common_errors["syntax_error"], 5);
+    }
+
+    #[test]
+    fn test_tutorial_step_with_next_step() {
+        let step = TutorialStep {
+            id: "step1".to_string(),
+            title: "Step 1".to_string(),
+            instruction: "Complete this step".to_string(),
+            hint: Some("Use variables".to_string()),
+            solution: "let x = 5;".to_string(),
+            validation: ValidationRule::OutputEquals("5".to_string()),
+            next_step: Some("step2".to_string()),
+        };
+        assert!(step.next_step.is_some());
+        assert_eq!(step.next_step.unwrap(), "step2");
+    }
+
+    #[test]
+    fn test_step_progress_creation() {
+        let progress = StepProgress {
+            completed: true,
+            attempts: 3,
+            hints_used: 1,
+            time_spent_ms: 120500,
+        };
+        assert!(progress.completed);
+        assert_eq!(progress.attempts, 3);
+        assert_eq!(progress.hints_used, 1);
+        assert_eq!(progress.time_spent_ms, 120500);
+    }
+
+    #[test]
+    fn test_interactive_tutorial_creation() {
+        use std::collections::HashMap;
+        let step1 = TutorialStep {
+            id: "step1".to_string(),
+            title: "Step 1".to_string(),
+            instruction: "First step".to_string(),
+            hint: None,
+            solution: "solution1".to_string(),
+            validation: ValidationRule::OutputEquals("result1".to_string()),
+            next_step: Some("step2".to_string()),
+        };
+        let tutorial = InteractiveTutorial {
+            id: "intro_tutorial".to_string(),
+            title: "Introduction Tutorial".to_string(),
+            description: "Learn the basics".to_string(),
+            steps: vec![step1],
+            progress: HashMap::new(),
+        };
+        assert_eq!(tutorial.id, "intro_tutorial");
+        assert_eq!(tutorial.title, "Introduction Tutorial");
+        assert_eq!(tutorial.steps.len(), 1);
+        assert!(tutorial.progress.is_empty());
+    }
+
+    #[test]
+    fn test_adaptive_hint_system_creation() {
+        use std::collections::HashMap;
+        let hints = AdaptiveHintSystem {
+            attempts: vec![],
+            hint_strategies: HashMap::new(),
+        };
+        assert!(hints.attempts.is_empty());
+        assert!(hints.hint_strategies.is_empty());
+    }
+
+    #[test]
+    fn test_clone_implementations() {
+        let step = TutorialStep {
+            id: "test".to_string(),
+            title: "Test".to_string(),
+            instruction: "Test instruction".to_string(),
+            hint: None,
+            solution: "solution".to_string(),
+            validation: ValidationRule::OutputEquals("test".to_string()),
+            next_step: None,
+        };
+
+        let cloned = step.clone();
+        assert_eq!(cloned.id, step.id);
+        assert_eq!(cloned.title, step.title);
+
+        let progress = StepProgress {
+            completed: true,
+            attempts: 3,
+            hints_used: 1,
+            time_spent_ms: 5000,
+        };
+
+        let cloned_progress = progress.clone();
+        assert_eq!(cloned_progress.completed, progress.completed);
+        assert_eq!(cloned_progress.attempts, progress.attempts);
+    }
+}

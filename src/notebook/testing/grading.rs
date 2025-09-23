@@ -302,3 +302,113 @@ pub struct ValidationResult {
     pub is_correct: bool,
     pub feedback: Vec<String>,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // EXTREME TDD: Comprehensive test coverage for grading system
+
+    #[test]
+    fn test_grading_config_default() {
+        let config = GradingConfig::default();
+        assert!(config.partial_credit);
+        assert_eq!(config.late_penalty_percent, 10.0);
+        assert_eq!(config.max_attempts, 3);
+    }
+
+    #[test]
+    fn test_grading_config_custom() {
+        let config = GradingConfig {
+            partial_credit: false,
+            late_penalty_percent: 5.0,
+            max_attempts: 5,
+        };
+        assert!(!config.partial_credit);
+        assert_eq!(config.late_penalty_percent, 5.0);
+        assert_eq!(config.max_attempts, 5);
+    }
+
+    #[test]
+    fn test_grader_new() {
+        let grader = Grader::new();
+        assert!(grader.config.partial_credit);
+        assert_eq!(grader.config.late_penalty_percent, 10.0);
+    }
+
+    #[test]
+    fn test_grader_default() {
+        let grader = Grader::default();
+        assert_eq!(grader.config.max_attempts, 3);
+    }
+
+    #[test]
+    fn test_grader_with_config() {
+        let config = GradingConfig {
+            partial_credit: false,
+            late_penalty_percent: 15.0,
+            max_attempts: 1,
+        };
+        let grader = Grader::with_config(config.clone());
+        assert!(!grader.config.partial_credit);
+        assert_eq!(grader.config.late_penalty_percent, 15.0);
+    }
+
+    #[test]
+    fn test_validation_result() {
+        let result = ValidationResult {
+            passed_tests: 8,
+            total_tests: 10,
+            is_correct: false,
+            feedback: vec!["Good job!".to_string()],
+        };
+        assert_eq!(result.passed_tests, 8);
+        assert_eq!(result.total_tests, 10);
+        assert!(!result.is_correct);
+        assert_eq!(result.feedback.len(), 1);
+    }
+
+    #[test]
+    fn test_validation_result_perfect() {
+        let result = ValidationResult {
+            passed_tests: 5,
+            total_tests: 5,
+            is_correct: true,
+            feedback: vec![],
+        };
+        assert_eq!(result.passed_tests, result.total_tests);
+        assert!(result.is_correct);
+        assert!(result.feedback.is_empty());
+    }
+
+    #[test]
+    fn test_grading_config_clone() {
+        let config = GradingConfig::default();
+        let cloned = config.clone();
+        assert_eq!(cloned.partial_credit, config.partial_credit);
+        assert_eq!(cloned.late_penalty_percent, config.late_penalty_percent);
+        assert_eq!(cloned.max_attempts, config.max_attempts);
+    }
+
+    #[test]
+    fn test_multiple_attempts_config() {
+        let config = GradingConfig {
+            partial_credit: true,
+            late_penalty_percent: 0.0,
+            max_attempts: 10,
+        };
+        assert_eq!(config.max_attempts, 10);
+        assert_eq!(config.late_penalty_percent, 0.0);
+    }
+
+    #[test]
+    fn test_no_partial_credit_config() {
+        let config = GradingConfig {
+            partial_credit: false,
+            late_penalty_percent: 20.0,
+            max_attempts: 1,
+        };
+        assert!(!config.partial_credit);
+        assert_eq!(config.max_attempts, 1);
+    }
+}

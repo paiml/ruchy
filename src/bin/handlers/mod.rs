@@ -105,7 +105,7 @@ pub fn handle_file_execution(file: &Path) -> Result<()> {
         }
         Err(e) => {
             eprintln!("Error: {e}");
-            return Err(e);
+            Err(e)
         }
     }
 }
@@ -131,7 +131,7 @@ pub fn handle_stdin_input(input: &str) -> Result<()> {
         }
         Err(e) => {
             eprintln!("Error: {e}");
-            return Err(e);
+            Err(e)
         }
     }
 }
@@ -150,7 +150,7 @@ pub fn handle_parse_command(file: &Path, verbose: bool) -> Result<()> {
         }
         Err(e) => {
             eprintln!("Parse error: {e}");
-            return Err(anyhow::anyhow!("Parse error: {}", e));
+            Err(anyhow::anyhow!("Parse error: {}", e))
         }
     }
 }
@@ -481,7 +481,7 @@ fn handle_check_syntax(file: &Path) -> Result<()> {
         }
         Err(e) => {
             eprintln!("{}", format!("✗ Syntax error: {e}").red());
-            return Err(anyhow::anyhow!("Syntax error: {}", e));
+            Err(anyhow::anyhow!("Syntax error: {}", e))
         }
     }
 }
@@ -840,9 +840,9 @@ pub fn handle_complex_command(command: crate::Commands) -> Result<()> {
                     config.as_deref(),
                 )
             } else {
-                return Err(anyhow::anyhow!(
+                Err(anyhow::anyhow!(
                     "Error: Either provide a file or use --all flag"
-                ));
+                ))
             }
         }
         crate::Commands::Prove {

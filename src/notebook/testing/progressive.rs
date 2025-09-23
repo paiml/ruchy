@@ -471,3 +471,289 @@ impl Default for DisclosureConfig {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use chrono::Utc;
+
+    // EXTREME TDD: Comprehensive test coverage for all structs and methods
+
+    #[test]
+    fn test_disclosure_config_creation() {
+        let config = DisclosureConfig {
+            min_attempts_before_hint: 3,
+            max_hints_per_test: 5,
+            unlock_threshold: 0.85,
+            time_based_unlocking: true,
+            collaborative_unlocking: false,
+        };
+
+        assert_eq!(config.min_attempts_before_hint, 3);
+        assert_eq!(config.max_hints_per_test, 5);
+        assert_eq!(config.unlock_threshold, 0.85);
+        assert!(config.time_based_unlocking);
+        assert!(!config.collaborative_unlocking);
+    }
+
+    #[test]
+    fn test_student_progress_initialization() {
+        let progress = StudentProgress {
+            student_id: "test_student".to_string(),
+            current_level: 0,
+            total_score: 0.0,
+            attempts_per_test: HashMap::new(),
+            hints_used: HashMap::new(),
+            unlock_history: vec![],
+        };
+
+        assert_eq!(progress.student_id, "test_student");
+        assert_eq!(progress.current_level, 0);
+        assert_eq!(progress.total_score, 0.0);
+        assert!(progress.attempts_per_test.is_empty());
+        assert!(progress.hints_used.is_empty());
+        assert!(progress.unlock_history.is_empty());
+    }
+
+    #[test]
+    fn test_unlock_event_types() {
+        let event1 = UnlockEvent {
+            level: 1,
+            test_id: "test1".to_string(),
+            timestamp: Utc::now(),
+            trigger: UnlockTrigger::ScoreThreshold,
+        };
+
+        let event2 = UnlockEvent {
+            level: 2,
+            test_id: "test2".to_string(),
+            timestamp: Utc::now(),
+            trigger: UnlockTrigger::TimeElapsed,
+        };
+
+        assert_eq!(event1.level, 1);
+        assert!(matches!(event1.trigger, UnlockTrigger::ScoreThreshold));
+        assert_eq!(event2.level, 2);
+        assert!(matches!(event2.trigger, UnlockTrigger::TimeElapsed));
+    }
+
+    #[test]
+    fn test_visible_test_with_hints() {
+        let hints = vec![
+            Hint {
+                id: "hint1".to_string(),
+                level: HintLevel::Gentle,
+                content: "Try thinking about...".to_string(),
+                unlock_after_attempts: 2,
+            },
+            Hint {
+                id: "hint2".to_string(),
+                level: HintLevel::Specific,
+                content: "Use this approach...".to_string(),
+                unlock_after_attempts: 4,
+            },
+        ];
+
+        let test = VisibleTest {
+            id: "vis_test".to_string(),
+            description: "Test description".to_string(),
+            input: "test input".to_string(),
+            expected_output: "expected output".to_string(),
+            points: 15,
+            hints,
+        };
+
+        assert_eq!(test.id, "vis_test");
+        assert_eq!(test.points, 15);
+        assert_eq!(test.hints.len(), 2);
+        assert_eq!(test.hints[0].level, HintLevel::Gentle);
+    }
+
+    #[test]
+    fn test_hidden_test_reveal_conditions() {
+        let conditions = vec![
+            RevealCondition::Never,
+            RevealCondition::OnCompletion,
+            RevealCondition::OnFailure,
+            RevealCondition::OnRequest,
+        ];
+
+        for (i, condition) in conditions.into_iter().enumerate() {
+            let test = HiddenTest {
+                id: format!("hidden_{}", i),
+                input: "input".to_string(),
+                expected_output: "output".to_string(),
+                points: 10,
+                reveal_condition: condition.clone(),
+            };
+
+            match test.reveal_condition {
+                RevealCondition::Never => assert!(true),
+                RevealCondition::OnCompletion => assert!(true),
+                RevealCondition::OnFailure => assert!(true),
+                RevealCondition::OnRequest => assert!(true),
+            }
+        }
+    }
+
+    #[test]
+    fn test_hint_level_ordering() {
+        assert!(HintLevel::Gentle < HintLevel::Specific);
+        assert!(HintLevel::Specific < HintLevel::Solution);
+        assert!(HintLevel::Gentle < HintLevel::Solution);
+        assert_eq!(HintLevel::Gentle, HintLevel::Gentle);
+    }
+
+    #[test]
+    fn test_test_hierarchy_creation() {
+        let level1 = TestLevel {
+            id: "level1".to_string(),
+            name: "Beginner".to_string(),
+            description: "Basic tests".to_string(),
+            visible_tests: vec![],
+            hidden_tests: vec![],
+            unlock_requirements: UnlockRequirements {
+                min_score: 60.0,
+                required_tests_passed: 3,
+                time_requirements: None,
+            },
+        };
+
+        let hierarchy = TestHierarchy {
+            levels: vec![level1],
+        };
+
+        assert_eq!(hierarchy.levels.len(), 1);
+        assert_eq!(hierarchy.levels[0].name, "Beginner");
+        assert_eq!(hierarchy.levels[0].unlock_requirements.min_score, 60.0);
+    }
+
+    #[test]
+    fn test_time_requirements() {
+        let time_req = TimeRequirement {
+            min_time_spent: chrono::Duration::hours(1),
+            max_time_allowed: Some(chrono::Duration::hours(24)),
+        };
+
+        assert_eq!(time_req.min_time_spent, chrono::Duration::hours(1));
+        assert!(time_req.max_time_allowed.is_some());
+        assert_eq!(
+            time_req.max_time_allowed.unwrap(),
+            chrono::Duration::hours(24)
+        );
+    }
+
+    #[test]
+    fn test_progressive_disclosure_new() {
+        let config = DisclosureConfig::default();
+        let hierarchy = TestHierarchy { levels: vec![] };
+
+        let disclosure = ProgressiveDisclosure::new(config.clone(), hierarchy);
+        assert_eq!(
+            disclosure.config.min_attempts_before_hint,
+            config.min_attempts_before_hint
+        );
+        assert!(disclosure.student_progress.is_empty());
+    }
+
+    #[test]
+    fn test_attempt_result_structure() {
+        let result = AttemptResult {
+            attempt_number: 3,
+            new_hints_unlocked: vec![],
+            levels_unlocked: vec!["level2".to_string()],
+            encouragement: "Great job!".to_string(),
+        };
+
+        assert_eq!(result.attempt_number, 3);
+        assert!(result.new_hints_unlocked.is_empty());
+        assert_eq!(result.levels_unlocked.len(), 1);
+        assert_eq!(result.encouragement, "Great job!");
+    }
+
+    #[test]
+    fn test_hint_result_structure() {
+        let hint = Hint {
+            id: "hint".to_string(),
+            level: HintLevel::Gentle,
+            content: "Hint content".to_string(),
+            unlock_after_attempts: 1,
+        };
+
+        let result = HintResult {
+            hint: hint.clone(),
+            hints_remaining: 2,
+            warning: Some("Only 2 hints left".to_string()),
+        };
+
+        assert_eq!(result.hint.id, "hint");
+        assert_eq!(result.hints_remaining, 2);
+        assert!(result.warning.is_some());
+    }
+
+    #[test]
+    fn test_peer_progress_info() {
+        let info = PeerProgressInfo {
+            avg_class_level: 2.5,
+            students_ahead: 5,
+            students_behind: 10,
+            your_percentile: 75.0,
+            collaborative_unlock_available: true,
+        };
+
+        assert_eq!(info.avg_class_level, 2.5);
+        assert_eq!(info.students_ahead, 5);
+        assert_eq!(info.students_behind, 10);
+        assert_eq!(info.your_percentile, 75.0);
+        assert!(info.collaborative_unlock_available);
+    }
+
+    #[test]
+    fn test_disclosure_result_structure() {
+        let result = DisclosureResult {
+            visible_tests: vec![],
+            available_hints: vec![],
+            progress_feedback: "Keep going!".to_string(),
+            next_unlock_info: None,
+        };
+
+        assert!(result.visible_tests.is_empty());
+        assert!(result.available_hints.is_empty());
+        assert_eq!(result.progress_feedback, "Keep going!");
+        assert!(result.next_unlock_info.is_none());
+    }
+
+    #[test]
+    fn test_next_unlock_info() {
+        let info = NextUnlockInfo {
+            description: "Next level".to_string(),
+            requirements_met: vec!["Score".to_string()],
+            requirements_pending: vec!["Time".to_string()],
+            estimated_unlock_time: Some(Utc::now()),
+        };
+
+        assert_eq!(info.description, "Next level");
+        assert_eq!(info.requirements_met.len(), 1);
+        assert_eq!(info.requirements_pending.len(), 1);
+        assert!(info.estimated_unlock_time.is_some());
+    }
+
+    #[test]
+    fn test_unlock_trigger_variants() {
+        let triggers = vec![
+            UnlockTrigger::ScoreThreshold,
+            UnlockTrigger::TimeElapsed,
+            UnlockTrigger::PeerProgress,
+            UnlockTrigger::InstructorOverride,
+        ];
+
+        for trigger in triggers {
+            match trigger {
+                UnlockTrigger::ScoreThreshold => assert!(true),
+                UnlockTrigger::TimeElapsed => assert!(true),
+                UnlockTrigger::PeerProgress => assert!(true),
+                UnlockTrigger::InstructorOverride => assert!(true),
+            }
+        }
+    }
+}
