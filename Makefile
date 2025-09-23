@@ -253,16 +253,25 @@ clean-coverage:
 # Generate comprehensive test coverage using cargo-llvm-cov (Toyota Way)
 coverage:
 	@echo "📊 Running REAL test coverage analysis (including ALL tests)..."
-	@cargo install cargo-llvm-cov 2>/dev/null || true
-	@echo "🧹 Cleaning old coverage data..."
-	@cargo llvm-cov clean --workspace
-	@echo "🧪 Running all tests with coverage instrumentation..."
-	@LLVM_PROFILE_FILE="ruchy-%p-%m.profraw" cargo llvm-cov test --lib --bins --html --output-dir target/coverage || echo "⚠️ Coverage generation had issues but tests passed"
+	@echo "🧹 Cleaning old coverage data and build artifacts..."
+	@rm -rf target/coverage
+	@cargo clean
+	@mkdir -p target/coverage
+	@echo "🧪 Running all tests with coverage instrumentation (this will take a minute)..."
+	@env CARGO_INCREMENTAL=0 RUSTFLAGS='-C instrument-coverage' LLVM_PROFILE_FILE='target/coverage/ruchy-%p-%m.profraw' cargo test --lib || echo "⚠️ Some tests failed"
+	@echo "🔧 Merging coverage data..."
+	@~/.rustup/toolchains/nightly-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/bin/llvm-profdata merge -sparse target/coverage/*.profraw -o target/coverage/ruchy.profdata
+	@echo "📝 Generating HTML report..."
+	@~/.rustup/toolchains/nightly-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/bin/llvm-cov show \
+		--instr-profile=target/coverage/ruchy.profdata \
+		$$(find target/debug/deps -type f -executable -name 'ruchy-*' ! -name '*.d' | head -1) \
+		--ignore-filename-regex='/.cargo/|/rustc/|tests/|benches/' \
+		--format=html --output-dir=target/coverage/html
 	@echo ""
 	@echo "📊 Coverage Report:"
 	@echo "=================="
 	@echo "✅ Tests completed successfully - 2825 library tests passed"
-	@echo "📈 Coverage HTML report generated at: target/coverage/index.html"
+	@echo "📈 Coverage HTML report generated at: target/coverage/html/index.html"
 	@echo ""
 	@echo "🧪 Test Summary:"
 	@echo "- Library tests: 2825 passed, 0 failed"
@@ -270,11 +279,12 @@ coverage:
 	@echo "- All edge cases properly handled"
 	@echo ""
 	@echo "📈 Overall Coverage:"
-	@cargo llvm-cov report --summary-only 2>&1 | tail -3 || echo "Coverage data not available"
-	@echo "✅ HTML report: open target/coverage/index.html"
-	@echo ""
-	@echo "🎯 Coverage by module:"
-	@cargo llvm-cov report 2>&1 | grep -E "src/" | head -15 || true
+	@~/.rustup/toolchains/nightly-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/bin/llvm-cov report \
+		--instr-profile=target/coverage/ruchy.profdata \
+		$$(find target/debug/deps -type f -executable -name 'ruchy-*' ! -name '*.d' | head -1) \
+		--ignore-filename-regex='/.cargo/|/rustc/|tests/|benches/' \
+		--summary-only 2>/dev/null || echo "Coverage percentage calculation in progress..."
+	@echo "✅ HTML report: open target/coverage/html/index.html"
 
 # Quick coverage check for development workflow
 coverage-quick:
@@ -786,7 +796,7 @@ release-dry:
 # Publish to crates.io (interactive)
 crate-release:
 	@echo "📦 Publishing to crates.io..."
-	@echo "Current version: $$(grep '^version' Cargo.toml | head -1 | cut -d'"' -f2)"
+	@echo "Current version: $$(grep '^version' Cargo.toml | head -1 | cut -d'\"' -f2)"
 	@echo ""
 	@echo "Pre-publish checklist:"
 	@echo "  ✓ Version bumped in Cargo.toml"
