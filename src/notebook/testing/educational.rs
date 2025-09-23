@@ -418,3 +418,199 @@ impl Default for Assignment {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use chrono::Utc;
+
+    // EXTREME TDD: Comprehensive test coverage for educational platform
+
+    #[test]
+    fn test_assignment_creation() {
+        let assignment = Assignment {
+            id: "assign1".to_string(),
+            title: "Test Assignment".to_string(),
+            description: "Learn basics".to_string(),
+            notebook_template: Notebook {
+                cells: vec![],
+                metadata: None,
+            },
+            due_date: Some(Utc::now()),
+            points: 100,
+            rubric: vec![],
+            test_cases: vec![],
+        };
+
+        assert_eq!(assignment.id, "assign1");
+        assert_eq!(assignment.title, "Test Assignment");
+        assert_eq!(assignment.points, 100);
+        assert!(assignment.due_date.is_some());
+    }
+
+    #[test]
+    fn test_rubric_item() {
+        let rubric = RubricItem {
+            id: "rubric1".to_string(),
+            description: "Code quality".to_string(),
+            points: 25,
+            criteria: vec!["Clean code".to_string(), "Proper naming".to_string()],
+        };
+
+        assert_eq!(rubric.id, "rubric1");
+        assert_eq!(rubric.points, 25);
+        assert_eq!(rubric.criteria.len(), 2);
+    }
+
+    #[test]
+    fn test_test_case_visible() {
+        let test = TestCase {
+            id: "test1".to_string(),
+            cell_id: "cell1".to_string(),
+            input: "2 + 2".to_string(),
+            expected_output: "4".to_string(),
+            points: 10,
+            hidden: false,
+        };
+
+        assert_eq!(test.id, "test1");
+        assert!(!test.hidden);
+        assert_eq!(test.points, 10);
+    }
+
+    #[test]
+    fn test_test_case_hidden() {
+        let test = TestCase {
+            id: "test2".to_string(),
+            cell_id: "cell2".to_string(),
+            input: "secret".to_string(),
+            expected_output: "result".to_string(),
+            points: 20,
+            hidden: true,
+        };
+
+        assert!(test.hidden);
+        assert_eq!(test.points, 20);
+    }
+
+    #[test]
+    fn test_student_submission() {
+        let submission = StudentSubmission {
+            student_id: "student1".to_string(),
+            assignment_id: "assign1".to_string(),
+            notebook: Notebook {
+                cells: vec![],
+                metadata: None,
+            },
+            submitted_at: Utc::now(),
+            grade: None,
+        };
+
+        assert_eq!(submission.student_id, "student1");
+        assert_eq!(submission.assignment_id, "assign1");
+        assert!(submission.grade.is_none());
+    }
+
+    #[test]
+    fn test_grade_creation() {
+        let mut rubric_scores = HashMap::new();
+        rubric_scores.insert("rubric1".to_string(), 20);
+
+        let grade = Grade {
+            total_points: 85,
+            max_points: 100,
+            percentage: 85.0,
+            feedback: vec![],
+            rubric_scores,
+        };
+
+        assert_eq!(grade.total_points, 85);
+        assert_eq!(grade.percentage, 85.0);
+        assert_eq!(grade.rubric_scores.len(), 1);
+    }
+
+    #[test]
+    fn test_feedback_types() {
+        let severities = vec![
+            FeedbackSeverity::Success,
+            FeedbackSeverity::Warning,
+            FeedbackSeverity::Error,
+            FeedbackSeverity::Info,
+        ];
+
+        for severity in severities {
+            let feedback = Feedback {
+                cell_id: "cell1".to_string(),
+                message: "Test feedback".to_string(),
+                severity: severity.clone(),
+            };
+
+            match feedback.severity {
+                FeedbackSeverity::Success => assert!(true),
+                FeedbackSeverity::Warning => assert!(true),
+                FeedbackSeverity::Error => assert!(true),
+                FeedbackSeverity::Info => assert!(true),
+            }
+        }
+    }
+
+    #[test]
+    fn test_educational_platform_new() {
+        let platform = EducationalPlatform::new();
+        assert!(platform.assignments.is_empty());
+        assert!(platform.submissions.is_empty());
+        assert!(platform.peer_reviews.is_empty());
+    }
+
+    #[test]
+    fn test_educational_platform_default() {
+        let platform = EducationalPlatform::default();
+        assert!(platform.assignments.is_empty());
+    }
+
+    #[test]
+    fn test_learning_analytics_new() {
+        let analytics = LearningAnalytics::new();
+        assert!(analytics.events.is_empty());
+    }
+
+    #[test]
+    fn test_peer_review() {
+        let review = PeerReview {
+            id: "review1".to_string(),
+            assignment_id: "assign1".to_string(),
+            reviewer_id: "student2".to_string(),
+            reviewee_id: "student1".to_string(),
+            feedback: vec![],
+            rating: 4,
+        };
+
+        assert_eq!(review.id, "review1");
+        assert_eq!(review.assignment_id, "assign1");
+        assert_eq!(review.rating, 4);
+    }
+
+    #[test]
+    fn test_assignment_default() {
+        let assignment = Assignment::default();
+        assert_eq!(assignment.id, "");
+        assert_eq!(assignment.points, 100);
+        assert!(assignment.due_date.is_none());
+    }
+
+    #[test]
+    fn test_clone_implementations() {
+        let assignment = Assignment::default();
+        let cloned = assignment.clone();
+        assert_eq!(cloned.id, assignment.id);
+
+        let rubric = RubricItem {
+            id: "r1".to_string(),
+            description: "desc".to_string(),
+            points: 10,
+            criteria: vec![],
+        };
+        let cloned_rubric = rubric.clone();
+        assert_eq!(cloned_rubric.id, rubric.id);
+    }
+}

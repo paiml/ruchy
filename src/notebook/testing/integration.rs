@@ -357,3 +357,500 @@ impl ContinuousMonitor {
         self.triggered.clear();
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // EXTREME TDD: Comprehensive test coverage for CI/CD integration system
+
+    #[test]
+    fn test_ci_provider_enum_variants() {
+        let providers = vec![
+            CiProvider::GitHub,
+            CiProvider::GitLab,
+            CiProvider::Jenkins,
+            CiProvider::CircleCI,
+        ];
+        assert_eq!(providers.len(), 4);
+    }
+
+    #[test]
+    fn test_ci_provider_debug_format() {
+        assert_eq!(format!("{:?}", CiProvider::GitHub), "GitHub");
+        assert_eq!(format!("{:?}", CiProvider::GitLab), "GitLab");
+        assert_eq!(format!("{:?}", CiProvider::Jenkins), "Jenkins");
+        assert_eq!(format!("{:?}", CiProvider::CircleCI), "CircleCI");
+    }
+
+    #[test]
+    fn test_cicd_config_creation() {
+        let config = CiCdConfig {
+            provider: CiProvider::GitHub,
+            trigger_on_push: true,
+            trigger_on_pr: true,
+            run_tests: true,
+            run_benchmarks: false,
+            coverage_threshold: 80.0,
+            complexity_threshold: 10,
+        };
+        assert!(matches!(config.provider, CiProvider::GitHub));
+        assert!(config.trigger_on_push);
+        assert!(config.trigger_on_pr);
+        assert!(config.run_tests);
+        assert!(!config.run_benchmarks);
+        assert_eq!(config.coverage_threshold, 80.0);
+        assert_eq!(config.complexity_threshold, 10);
+    }
+
+    #[test]
+    fn test_cicd_config_clone() {
+        let config = CiCdConfig {
+            provider: CiProvider::GitLab,
+            trigger_on_push: false,
+            trigger_on_pr: true,
+            run_tests: true,
+            run_benchmarks: true,
+            coverage_threshold: 90.0,
+            complexity_threshold: 15,
+        };
+        let cloned = config.clone();
+        assert!(matches!(cloned.provider, CiProvider::GitLab));
+        assert!(!cloned.trigger_on_push);
+        assert!(cloned.trigger_on_pr);
+        assert_eq!(cloned.coverage_threshold, 90.0);
+    }
+
+    #[test]
+    fn test_cicd_integrator_new() {
+        let integrator = CiCdIntegrator::new();
+        assert!(integrator.config.is_none());
+    }
+
+    #[test]
+    fn test_cicd_integrator_default() {
+        let integrator = CiCdIntegrator::default();
+        assert!(integrator.config.is_none());
+    }
+
+    #[test]
+    fn test_configure_valid_config() {
+        let mut integrator = CiCdIntegrator::new();
+        let config = CiCdConfig {
+            provider: CiProvider::GitHub,
+            trigger_on_push: true,
+            trigger_on_pr: true,
+            run_tests: true,
+            run_benchmarks: false,
+            coverage_threshold: 75.5,
+            complexity_threshold: 8,
+        };
+
+        let result = integrator.configure(config.clone());
+        assert!(result.is_ok());
+        assert!(integrator.config.is_some());
+        assert_eq!(integrator.config.unwrap().coverage_threshold, 75.5);
+    }
+
+    #[test]
+    fn test_configure_invalid_coverage_threshold_too_high() {
+        let mut integrator = CiCdIntegrator::new();
+        let config = CiCdConfig {
+            provider: CiProvider::GitHub,
+            trigger_on_push: true,
+            trigger_on_pr: true,
+            run_tests: true,
+            run_benchmarks: false,
+            coverage_threshold: 150.0,
+            complexity_threshold: 10,
+        };
+
+        let result = integrator.configure(config);
+        assert!(result.is_err());
+        assert_eq!(
+            result.unwrap_err(),
+            "Coverage threshold must be between 0 and 100"
+        );
+    }
+
+    #[test]
+    fn test_configure_invalid_coverage_threshold_negative() {
+        let mut integrator = CiCdIntegrator::new();
+        let config = CiCdConfig {
+            provider: CiProvider::GitHub,
+            trigger_on_push: true,
+            trigger_on_pr: true,
+            run_tests: true,
+            run_benchmarks: false,
+            coverage_threshold: -10.0,
+            complexity_threshold: 10,
+        };
+
+        let result = integrator.configure(config);
+        assert!(result.is_err());
+        assert_eq!(
+            result.unwrap_err(),
+            "Coverage threshold must be between 0 and 100"
+        );
+    }
+
+    #[test]
+    fn test_generate_workflow_no_config() {
+        let integrator = CiCdIntegrator::new();
+        let workflow = integrator.generate_workflow();
+        assert_eq!(workflow, "");
+    }
+
+    #[test]
+    fn test_generate_github_workflow() {
+        let mut integrator = CiCdIntegrator::new();
+        let config = CiCdConfig {
+            provider: CiProvider::GitHub,
+            trigger_on_push: true,
+            trigger_on_pr: true,
+            run_tests: true,
+            run_benchmarks: true,
+            coverage_threshold: 80.0,
+            complexity_threshold: 10,
+        };
+        integrator.configure(config).unwrap();
+
+        let workflow = integrator.generate_workflow();
+        assert!(workflow.contains("name: CI"));
+        assert!(workflow.contains("on:"));
+        assert!(workflow.contains("push:"));
+        assert!(workflow.contains("pull_request:"));
+        assert!(workflow.contains("cargo test"));
+        assert!(workflow.contains("cargo bench"));
+        assert!(workflow.contains("cargo llvm-cov"));
+    }
+
+    #[test]
+    fn test_generate_gitlab_workflow() {
+        let mut integrator = CiCdIntegrator::new();
+        let config = CiCdConfig {
+            provider: CiProvider::GitLab,
+            trigger_on_push: false,
+            trigger_on_pr: false,
+            run_tests: true,
+            run_benchmarks: true,
+            coverage_threshold: 0.0,
+            complexity_threshold: 5,
+        };
+        integrator.configure(config).unwrap();
+
+        let workflow = integrator.generate_workflow();
+        assert!(workflow.contains("stages:"));
+        assert!(workflow.contains("test:"));
+        assert!(workflow.contains("cargo test"));
+        assert!(workflow.contains("cargo bench"));
+    }
+
+    #[test]
+    fn test_generate_jenkins_workflow() {
+        let mut integrator = CiCdIntegrator::new();
+        let config = CiCdConfig {
+            provider: CiProvider::Jenkins,
+            trigger_on_push: true,
+            trigger_on_pr: false,
+            run_tests: true,
+            run_benchmarks: false,
+            coverage_threshold: 0.0,
+            complexity_threshold: 12,
+        };
+        integrator.configure(config).unwrap();
+
+        let workflow = integrator.generate_workflow();
+        assert!(workflow.contains("pipeline {"));
+        assert!(workflow.contains("agent any"));
+        assert!(workflow.contains("cargo test"));
+    }
+
+    #[test]
+    fn test_generate_circleci_workflow() {
+        let mut integrator = CiCdIntegrator::new();
+        let config = CiCdConfig {
+            provider: CiProvider::CircleCI,
+            trigger_on_push: false,
+            trigger_on_pr: true,
+            run_tests: true,
+            run_benchmarks: false,
+            coverage_threshold: 60.0,
+            complexity_threshold: 8,
+        };
+        integrator.configure(config).unwrap();
+
+        let workflow = integrator.generate_workflow();
+        assert!(workflow.contains("version: 2"));
+        assert!(workflow.contains("jobs:"));
+        assert!(workflow.contains("cargo test"));
+    }
+
+    #[test]
+    fn test_worker_status_enum_variants() {
+        let statuses = vec![
+            WorkerStatus::Active,
+            WorkerStatus::Busy,
+            WorkerStatus::Offline,
+            WorkerStatus::Unknown,
+        ];
+        assert_eq!(statuses.len(), 4);
+    }
+
+    #[test]
+    fn test_worker_status_debug_format() {
+        assert_eq!(format!("{:?}", WorkerStatus::Active), "Active");
+        assert_eq!(format!("{:?}", WorkerStatus::Busy), "Busy");
+        assert_eq!(format!("{:?}", WorkerStatus::Offline), "Offline");
+        assert_eq!(format!("{:?}", WorkerStatus::Unknown), "Unknown");
+    }
+
+    #[test]
+    fn test_distributed_test_coordinator_new() {
+        let coordinator = DistributedTestCoordinator::new();
+        assert!(coordinator.workers.is_empty());
+    }
+
+    #[test]
+    fn test_distributed_test_coordinator_default() {
+        let coordinator = DistributedTestCoordinator::default();
+        assert!(coordinator.workers.is_empty());
+    }
+
+    #[test]
+    fn test_register_worker() {
+        let mut coordinator = DistributedTestCoordinator::new();
+        coordinator.register_worker("worker1", "192.168.1.100:8080");
+        coordinator.register_worker("worker2", "192.168.1.101:8080");
+
+        assert_eq!(coordinator.workers.len(), 2);
+        assert_eq!(
+            coordinator.workers.get("worker1"),
+            Some(&"192.168.1.100:8080".to_string())
+        );
+        assert_eq!(
+            coordinator.workers.get("worker2"),
+            Some(&"192.168.1.101:8080".to_string())
+        );
+    }
+
+    #[test]
+    fn test_distribute_tests_no_workers() {
+        let coordinator = DistributedTestCoordinator::new();
+        let tests = vec!["test1".to_string(), "test2".to_string()];
+
+        let distribution = coordinator.distribute(&tests);
+        assert!(distribution.is_empty());
+    }
+
+    #[test]
+    fn test_distribute_tests_single_worker() {
+        let mut coordinator = DistributedTestCoordinator::new();
+        coordinator.register_worker("worker1", "localhost:8080");
+
+        let tests = vec![
+            "test1".to_string(),
+            "test2".to_string(),
+            "test3".to_string(),
+        ];
+        let distribution = coordinator.distribute(&tests);
+
+        assert_eq!(distribution.len(), 1);
+        assert_eq!(distribution.get("worker1").unwrap().len(), 3);
+        assert!(distribution
+            .get("worker1")
+            .unwrap()
+            .contains(&"test1".to_string()));
+    }
+
+    #[test]
+    fn test_distribute_tests_multiple_workers() {
+        let mut coordinator = DistributedTestCoordinator::new();
+        coordinator.register_worker("worker1", "host1:8080");
+        coordinator.register_worker("worker2", "host2:8080");
+
+        let tests = vec![
+            "test1".to_string(),
+            "test2".to_string(),
+            "test3".to_string(),
+        ];
+        let distribution = coordinator.distribute(&tests);
+
+        assert_eq!(distribution.len(), 2);
+        // Round-robin distribution: worker1 gets test1,test3; worker2 gets test2
+        assert_eq!(distribution.get("worker1").unwrap().len(), 2);
+        assert_eq!(distribution.get("worker2").unwrap().len(), 1);
+    }
+
+    #[test]
+    fn test_get_worker_status_existing() {
+        let mut coordinator = DistributedTestCoordinator::new();
+        coordinator.register_worker("worker1", "localhost:8080");
+
+        let status = coordinator.get_worker_status("worker1");
+        assert!(matches!(status, WorkerStatus::Active));
+    }
+
+    #[test]
+    fn test_get_worker_status_unknown() {
+        let coordinator = DistributedTestCoordinator::new();
+        let status = coordinator.get_worker_status("nonexistent");
+        assert!(matches!(status, WorkerStatus::Unknown));
+    }
+
+    #[test]
+    fn test_metric_enum_variants() {
+        let metrics = vec![
+            Metric::MemoryUsage,
+            Metric::CpuUsage,
+            Metric::TestDuration,
+            Metric::ErrorRate,
+        ];
+        assert_eq!(metrics.len(), 4);
+    }
+
+    #[test]
+    fn test_alert_action_enum_variants() {
+        let actions = vec![
+            AlertAction::Email("test@example.com".to_string()),
+            AlertAction::Slack("#alerts".to_string()),
+            AlertAction::PagerDuty("service123".to_string()),
+            AlertAction::Webhook("https://webhook.example.com".to_string()),
+        ];
+        assert_eq!(actions.len(), 4);
+    }
+
+    #[test]
+    fn test_alert_creation() {
+        let alert = Alert {
+            id: "alert1".to_string(),
+            metric: Metric::MemoryUsage,
+            threshold: 80.0,
+            action: AlertAction::Email("admin@example.com".to_string()),
+        };
+        assert_eq!(alert.id, "alert1");
+        assert!(matches!(alert.metric, Metric::MemoryUsage));
+        assert_eq!(alert.threshold, 80.0);
+    }
+
+    #[test]
+    fn test_continuous_monitor_new() {
+        let monitor = ContinuousMonitor::new();
+        assert!(monitor.alerts.is_empty());
+        assert!(monitor.triggered.is_empty());
+        assert!(monitor.metrics.is_empty());
+    }
+
+    #[test]
+    fn test_continuous_monitor_default() {
+        let monitor = ContinuousMonitor::default();
+        assert!(monitor.alerts.is_empty());
+        assert!(monitor.triggered.is_empty());
+        assert!(monitor.metrics.is_empty());
+    }
+
+    #[test]
+    fn test_add_alert() {
+        let mut monitor = ContinuousMonitor::new();
+        let alert = Alert {
+            id: "cpu_alert".to_string(),
+            metric: Metric::CpuUsage,
+            threshold: 90.0,
+            action: AlertAction::Slack("#alerts".to_string()),
+        };
+
+        monitor.add_alert(alert);
+        assert_eq!(monitor.alerts.len(), 1);
+        assert_eq!(monitor.alerts[0].id, "cpu_alert");
+    }
+
+    #[test]
+    fn test_record_metric_no_alert() {
+        let mut monitor = ContinuousMonitor::new();
+        monitor.record_metric(Metric::CpuUsage, 50.0);
+
+        assert_eq!(monitor.metrics.len(), 1);
+        assert_eq!(monitor.metrics.get(&Metric::CpuUsage), Some(&50.0));
+        assert!(monitor.triggered.is_empty());
+    }
+
+    #[test]
+    fn test_record_metric_triggers_alert() {
+        let mut monitor = ContinuousMonitor::new();
+        let alert = Alert {
+            id: "memory_alert".to_string(),
+            metric: Metric::MemoryUsage,
+            threshold: 80.0,
+            action: AlertAction::Email("ops@example.com".to_string()),
+        };
+        monitor.add_alert(alert);
+
+        monitor.record_metric(Metric::MemoryUsage, 85.0);
+
+        assert_eq!(monitor.metrics.get(&Metric::MemoryUsage), Some(&85.0));
+        assert_eq!(monitor.triggered.len(), 1);
+        assert!(monitor.triggered.contains(&"memory_alert".to_string()));
+    }
+
+    #[test]
+    fn test_record_metric_below_threshold() {
+        let mut monitor = ContinuousMonitor::new();
+        let alert = Alert {
+            id: "error_alert".to_string(),
+            metric: Metric::ErrorRate,
+            threshold: 5.0,
+            action: AlertAction::PagerDuty("incident123".to_string()),
+        };
+        monitor.add_alert(alert);
+
+        monitor.record_metric(Metric::ErrorRate, 2.0);
+
+        assert_eq!(monitor.metrics.get(&Metric::ErrorRate), Some(&2.0));
+        assert!(monitor.triggered.is_empty());
+    }
+
+    #[test]
+    fn test_get_triggered_alerts() {
+        let mut monitor = ContinuousMonitor::new();
+        monitor.triggered.push("alert1".to_string());
+        monitor.triggered.push("alert2".to_string());
+
+        let alerts = monitor.get_triggered_alerts();
+        assert_eq!(alerts.len(), 2);
+        assert!(alerts.contains(&"alert1".to_string()));
+        assert!(alerts.contains(&"alert2".to_string()));
+    }
+
+    #[test]
+    fn test_clear_alerts() {
+        let mut monitor = ContinuousMonitor::new();
+        monitor.triggered.push("alert1".to_string());
+        monitor.triggered.push("alert2".to_string());
+
+        assert_eq!(monitor.triggered.len(), 2);
+        monitor.clear_alerts();
+        assert!(monitor.triggered.is_empty());
+    }
+
+    #[test]
+    fn test_start_stop_monitor_methods() {
+        let monitor = ContinuousMonitor::new();
+        // These methods don't panic and return successfully
+        monitor.start();
+        monitor.stop();
+    }
+
+    #[test]
+    fn test_metric_hash_eq() {
+        use std::collections::HashSet;
+        let mut metrics = HashSet::new();
+
+        metrics.insert(Metric::CpuUsage);
+        metrics.insert(Metric::MemoryUsage);
+        metrics.insert(Metric::CpuUsage); // Duplicate
+
+        assert_eq!(metrics.len(), 2); // Verify Hash + Eq traits work
+        assert!(metrics.contains(&Metric::CpuUsage));
+        assert!(metrics.contains(&Metric::MemoryUsage));
+    }
+}

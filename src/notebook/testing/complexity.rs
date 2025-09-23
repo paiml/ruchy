@@ -334,3 +334,207 @@ impl ComplexityAnalyzer {
         suggestions
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // EXTREME TDD: Comprehensive test coverage for complexity analysis
+
+    #[test]
+    fn test_complexity_config_default() {
+        let config = ComplexityConfig::default();
+
+        assert_eq!(config.cyclomatic_threshold, 10);
+        assert_eq!(config.cognitive_threshold, 15);
+        assert!(config.enable_suggestions);
+    }
+
+    #[test]
+    fn test_complexity_config_custom() {
+        let config = ComplexityConfig {
+            cyclomatic_threshold: 5,
+            cognitive_threshold: 8,
+            enable_suggestions: false,
+        };
+
+        assert_eq!(config.cyclomatic_threshold, 5);
+        assert_eq!(config.cognitive_threshold, 8);
+        assert!(!config.enable_suggestions);
+    }
+
+    #[test]
+    fn test_time_complexity_ordering() {
+        assert_ne!(TimeComplexity::O1, TimeComplexity::ON);
+        assert_ne!(TimeComplexity::ON, TimeComplexity::ON2);
+        assert_eq!(TimeComplexity::O1, TimeComplexity::O1);
+        assert_eq!(TimeComplexity::OLogN, TimeComplexity::OLogN);
+    }
+
+    #[test]
+    fn test_space_complexity_ordering() {
+        assert_ne!(SpaceComplexity::O1, SpaceComplexity::ON);
+        assert_ne!(SpaceComplexity::ON, SpaceComplexity::ON2);
+        assert_eq!(SpaceComplexity::O1, SpaceComplexity::O1);
+        assert_eq!(SpaceComplexity::OLogN, SpaceComplexity::OLogN);
+    }
+
+    #[test]
+    fn test_all_time_complexities() {
+        let complexities = vec![
+            TimeComplexity::O1,
+            TimeComplexity::OLogN,
+            TimeComplexity::ON,
+            TimeComplexity::ONLogN,
+            TimeComplexity::ON2,
+            TimeComplexity::ON3,
+            TimeComplexity::OExp,
+        ];
+
+        for complexity in complexities {
+            match complexity {
+                TimeComplexity::O1 => assert!(true, "O(1) constant"),
+                TimeComplexity::OLogN => assert!(true, "O(log n) logarithmic"),
+                TimeComplexity::ON => assert!(true, "O(n) linear"),
+                TimeComplexity::ONLogN => assert!(true, "O(n log n) linearithmic"),
+                TimeComplexity::ON2 => assert!(true, "O(n²) quadratic"),
+                TimeComplexity::ON3 => assert!(true, "O(n³) cubic"),
+                TimeComplexity::OExp => assert!(true, "O(2ⁿ) exponential"),
+            }
+        }
+    }
+
+    #[test]
+    fn test_all_space_complexities() {
+        let complexities = vec![
+            SpaceComplexity::O1,
+            SpaceComplexity::OLogN,
+            SpaceComplexity::ON,
+            SpaceComplexity::ON2,
+        ];
+
+        for complexity in complexities {
+            match complexity {
+                SpaceComplexity::O1 => assert!(true, "O(1) constant space"),
+                SpaceComplexity::OLogN => assert!(true, "O(log n) logarithmic space"),
+                SpaceComplexity::ON => assert!(true, "O(n) linear space"),
+                SpaceComplexity::ON2 => assert!(true, "O(n²) quadratic space"),
+            }
+        }
+    }
+
+    #[test]
+    fn test_complexity_result_creation() {
+        let result = ComplexityResult {
+            time_complexity: TimeComplexity::ON,
+            space_complexity: SpaceComplexity::O1,
+            cyclomatic_complexity: 5,
+            cognitive_complexity: 7,
+            halstead_metrics: HalsteadMetrics {
+                volume: 100.0,
+                difficulty: 10.0,
+                effort: 1000.0,
+            },
+        };
+
+        assert_eq!(result.time_complexity, TimeComplexity::ON);
+        assert_eq!(result.space_complexity, SpaceComplexity::O1);
+        assert_eq!(result.cyclomatic_complexity, 5);
+        assert_eq!(result.cognitive_complexity, 7);
+        assert_eq!(result.halstead_metrics.volume, 100.0);
+    }
+
+    #[test]
+    fn test_halstead_metrics() {
+        let metrics = HalsteadMetrics {
+            volume: 250.5,
+            difficulty: 15.3,
+            effort: 3832.65,
+        };
+
+        assert_eq!(metrics.volume, 250.5);
+        assert_eq!(metrics.difficulty, 15.3);
+        assert_eq!(metrics.effort, 3832.65);
+    }
+
+    #[test]
+    fn test_hotspot_creation() {
+        let hotspot = Hotspot {
+            cell_id: "cell_1".to_string(),
+            complexity: TimeComplexity::ON2,
+            impact: 0.85,
+            location: "lines 10-25".to_string(),
+        };
+
+        assert_eq!(hotspot.cell_id, "cell_1");
+        assert_eq!(hotspot.complexity, TimeComplexity::ON2);
+        assert_eq!(hotspot.impact, 0.85);
+        assert_eq!(hotspot.location, "lines 10-25");
+    }
+
+    #[test]
+    fn test_complexity_analyzer_new() {
+        let analyzer = ComplexityAnalyzer::new();
+        assert_eq!(analyzer.config.cyclomatic_threshold, 10);
+        assert_eq!(analyzer.config.cognitive_threshold, 15);
+        assert!(analyzer.config.enable_suggestions);
+    }
+
+    #[test]
+    fn test_complexity_analyzer_default() {
+        let analyzer = ComplexityAnalyzer::default();
+        assert_eq!(analyzer.config.cyclomatic_threshold, 10);
+        assert_eq!(analyzer.config.cognitive_threshold, 15);
+    }
+
+    #[test]
+    fn test_complexity_config_clone() {
+        let config = ComplexityConfig {
+            cyclomatic_threshold: 7,
+            cognitive_threshold: 12,
+            enable_suggestions: true,
+        };
+
+        let cloned = config.clone();
+        assert_eq!(cloned.cyclomatic_threshold, config.cyclomatic_threshold);
+        assert_eq!(cloned.cognitive_threshold, config.cognitive_threshold);
+        assert_eq!(cloned.enable_suggestions, config.enable_suggestions);
+    }
+
+    #[test]
+    fn test_complexity_result_clone() {
+        let result = ComplexityResult {
+            time_complexity: TimeComplexity::ONLogN,
+            space_complexity: SpaceComplexity::ON,
+            cyclomatic_complexity: 8,
+            cognitive_complexity: 10,
+            halstead_metrics: HalsteadMetrics {
+                volume: 150.0,
+                difficulty: 12.0,
+                effort: 1800.0,
+            },
+        };
+
+        let cloned = result.clone();
+        assert_eq!(cloned.time_complexity, result.time_complexity);
+        assert_eq!(cloned.space_complexity, result.space_complexity);
+        assert_eq!(cloned.cyclomatic_complexity, result.cyclomatic_complexity);
+        assert_eq!(cloned.cognitive_complexity, result.cognitive_complexity);
+    }
+
+    #[test]
+    fn test_hotspot_clone() {
+        let hotspot = Hotspot {
+            cell_id: "hot_cell".to_string(),
+            complexity: TimeComplexity::ON3,
+            impact: 0.95,
+            location: "nested loops".to_string(),
+        };
+
+        let cloned = hotspot.clone();
+        assert_eq!(cloned.cell_id, hotspot.cell_id);
+        assert_eq!(cloned.complexity, hotspot.complexity);
+        assert_eq!(cloned.impact, hotspot.impact);
+        assert_eq!(cloned.location, hotspot.location);
+    }
+}

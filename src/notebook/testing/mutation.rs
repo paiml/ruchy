@@ -320,3 +320,235 @@ impl MutationTester {
         report
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // EXTREME TDD: Comprehensive test coverage for mutation testing
+
+    #[test]
+    fn test_mutation_config_default() {
+        let config = MutationConfig::default();
+
+        assert_eq!(config.timeout_ms, 5000);
+        assert_eq!(config.enabled_mutations.len(), 4);
+        assert!(config
+            .enabled_mutations
+            .contains(&MutationType::ArithmeticOperator));
+        assert!(config
+            .enabled_mutations
+            .contains(&MutationType::ComparisonOperator));
+        assert!(config
+            .enabled_mutations
+            .contains(&MutationType::BoundaryValue));
+        assert!(config
+            .enabled_mutations
+            .contains(&MutationType::LogicalOperator));
+    }
+
+    #[test]
+    fn test_mutation_config_custom() {
+        let config = MutationConfig {
+            enabled_mutations: vec![MutationType::ReturnValue, MutationType::ConditionalNegation],
+            timeout_ms: 10000,
+        };
+
+        assert_eq!(config.timeout_ms, 10000);
+        assert_eq!(config.enabled_mutations.len(), 2);
+        assert!(config
+            .enabled_mutations
+            .contains(&MutationType::ReturnValue));
+        assert!(config
+            .enabled_mutations
+            .contains(&MutationType::ConditionalNegation));
+    }
+
+    #[test]
+    fn test_mutation_type_equality() {
+        assert_eq!(
+            MutationType::ArithmeticOperator,
+            MutationType::ArithmeticOperator
+        );
+        assert_ne!(
+            MutationType::ArithmeticOperator,
+            MutationType::ComparisonOperator
+        );
+        assert_ne!(MutationType::BoundaryValue, MutationType::LogicalOperator);
+    }
+
+    #[test]
+    fn test_mutation_creation() {
+        let mutation = Mutation {
+            id: "mut_001".to_string(),
+            cell_id: "cell_1".to_string(),
+            mutation_type: MutationType::ArithmeticOperator,
+            line: 10,
+            column: 5,
+            original: "+".to_string(),
+            mutated: "-".to_string(),
+        };
+
+        assert_eq!(mutation.id, "mut_001");
+        assert_eq!(mutation.cell_id, "cell_1");
+        assert_eq!(mutation.mutation_type, MutationType::ArithmeticOperator);
+        assert_eq!(mutation.line, 10);
+        assert_eq!(mutation.column, 5);
+        assert_eq!(mutation.original, "+");
+        assert_eq!(mutation.mutated, "-");
+    }
+
+    #[test]
+    fn test_mutation_result_killed() {
+        let mutation = Mutation {
+            id: "mut_002".to_string(),
+            cell_id: "cell_2".to_string(),
+            mutation_type: MutationType::ComparisonOperator,
+            line: 20,
+            column: 10,
+            original: ">".to_string(),
+            mutated: "<".to_string(),
+        };
+
+        let result = MutationResult {
+            mutation: mutation.clone(),
+            killed: true,
+            killing_test: Some("test_comparison".to_string()),
+        };
+
+        assert_eq!(result.mutation.id, "mut_002");
+        assert!(result.killed);
+        assert_eq!(result.killing_test, Some("test_comparison".to_string()));
+    }
+
+    #[test]
+    fn test_mutation_result_survived() {
+        let mutation = Mutation {
+            id: "mut_003".to_string(),
+            cell_id: "cell_3".to_string(),
+            mutation_type: MutationType::LogicalOperator,
+            line: 30,
+            column: 15,
+            original: "&&".to_string(),
+            mutated: "||".to_string(),
+        };
+
+        let result = MutationResult {
+            mutation,
+            killed: false,
+            killing_test: None,
+        };
+
+        assert!(!result.killed);
+        assert!(result.killing_test.is_none());
+    }
+
+    #[test]
+    fn test_mutation_tester_new() {
+        let tester = MutationTester::new();
+        assert_eq!(tester.config.timeout_ms, 5000);
+        assert!(tester.results.is_empty());
+    }
+
+    #[test]
+    fn test_mutation_tester_with_config() {
+        let config = MutationConfig {
+            enabled_mutations: vec![MutationType::ReturnValue],
+            timeout_ms: 3000,
+        };
+
+        let tester = MutationTester::with_config(config.clone());
+        assert_eq!(tester.config.timeout_ms, 3000);
+        assert_eq!(tester.config.enabled_mutations.len(), 1);
+    }
+
+    #[test]
+    fn test_mutation_tester_default() {
+        let tester = MutationTester::default();
+        assert_eq!(tester.config.timeout_ms, 5000);
+        assert!(tester.results.is_empty());
+    }
+
+    #[test]
+    fn test_all_mutation_types() {
+        let types = vec![
+            MutationType::ArithmeticOperator,
+            MutationType::ComparisonOperator,
+            MutationType::BoundaryValue,
+            MutationType::LogicalOperator,
+            MutationType::ReturnValue,
+            MutationType::ConditionalNegation,
+        ];
+
+        for mutation_type in types {
+            let mutation = Mutation {
+                id: format!("mut_{:?}", mutation_type),
+                cell_id: "test_cell".to_string(),
+                mutation_type: mutation_type.clone(),
+                line: 1,
+                column: 1,
+                original: "original".to_string(),
+                mutated: "mutated".to_string(),
+            };
+
+            assert_eq!(mutation.mutation_type, mutation_type);
+        }
+    }
+
+    #[test]
+    fn test_mutation_clone() {
+        let mutation = Mutation {
+            id: "mut_clone".to_string(),
+            cell_id: "cell_clone".to_string(),
+            mutation_type: MutationType::BoundaryValue,
+            line: 5,
+            column: 10,
+            original: "0".to_string(),
+            mutated: "1".to_string(),
+        };
+
+        let cloned = mutation.clone();
+        assert_eq!(cloned.id, mutation.id);
+        assert_eq!(cloned.cell_id, mutation.cell_id);
+        assert_eq!(cloned.mutation_type, mutation.mutation_type);
+    }
+
+    #[test]
+    fn test_mutation_config_clone() {
+        let config = MutationConfig {
+            enabled_mutations: vec![MutationType::ArithmeticOperator],
+            timeout_ms: 7500,
+        };
+
+        let cloned = config.clone();
+        assert_eq!(cloned.timeout_ms, config.timeout_ms);
+        assert_eq!(
+            cloned.enabled_mutations.len(),
+            config.enabled_mutations.len()
+        );
+    }
+
+    #[test]
+    fn test_mutation_result_clone() {
+        let mutation = Mutation {
+            id: "mut_result".to_string(),
+            cell_id: "cell_result".to_string(),
+            mutation_type: MutationType::ConditionalNegation,
+            line: 15,
+            column: 20,
+            original: "if x > 0".to_string(),
+            mutated: "if x <= 0".to_string(),
+        };
+
+        let result = MutationResult {
+            mutation: mutation.clone(),
+            killed: true,
+            killing_test: Some("test_condition".to_string()),
+        };
+
+        let cloned = result.clone();
+        assert_eq!(cloned.mutation.id, result.mutation.id);
+        assert_eq!(cloned.killed, result.killed);
+        assert_eq!(cloned.killing_test, result.killing_test);
+    }
+}

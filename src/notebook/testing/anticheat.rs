@@ -419,3 +419,88 @@ pub struct PatternAnalysis {
     pub indicators: Vec<String>,
     pub submission_count: usize,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use chrono::Utc;
+
+    #[test]
+    fn test_anticheat_system_new() {
+        let system = AntiCheatSystem::new();
+        assert_eq!(system.similarity_threshold, 0.85);
+        assert!(system.submission_history.is_empty());
+        assert!(system.fingerprint_db.is_empty());
+    }
+
+    #[test]
+    fn test_anticheat_system_with_threshold() {
+        let system = AntiCheatSystem::with_threshold(0.9);
+        assert_eq!(system.similarity_threshold, 0.9);
+    }
+
+    #[test]
+    fn test_check_plagiarism_basic() {
+        let mut system = AntiCheatSystem::new();
+        let submission = Submission {
+            student_id: "student1".to_string(),
+            assignment_id: "assignment1".to_string(),
+            code: "fn main() { println!(\"Hello\"); }".to_string(),
+            timestamp: Utc::now(),
+            fingerprint: "test_fingerprint".to_string(),
+        };
+
+        let result = system.check_plagiarism(&submission);
+        assert!(!result.is_plagiarized);
+    }
+
+    #[test]
+    fn test_obfuscation_detector_new() {
+        let detector = ObfuscationDetector::new();
+        // Constructor should work
+        assert!(!detector.suspicious_patterns.is_empty());
+    }
+
+    #[test]
+    fn test_is_obfuscated_normal_code() {
+        let detector = ObfuscationDetector::new();
+        let code = "fn main() { println!(\"Hello\"); }";
+        let result = detector.is_obfuscated(code);
+        assert!(!result.is_likely_obfuscated);
+    }
+
+    #[test]
+    fn test_pattern_analyzer_new() {
+        let analyzer = PatternAnalyzer::new();
+        assert!(analyzer.patterns.is_empty());
+    }
+
+    #[test]
+    fn test_analyze_pattern_basic() {
+        let mut analyzer = PatternAnalyzer::new();
+        let result = analyzer.analyze_pattern("student1", Utc::now());
+        assert!(!result.is_suspicious);
+        assert_eq!(result.submission_count, 1);
+    }
+
+    #[test]
+    fn test_generate_fingerprint() {
+        let system = AntiCheatSystem::new();
+        let fingerprint1 = system.generate_fingerprint("hello world");
+        let fingerprint2 = system.generate_fingerprint("hello world");
+        let fingerprint3 = system.generate_fingerprint("different");
+
+        assert_eq!(fingerprint1, fingerprint2);
+        assert_ne!(fingerprint1, fingerprint3);
+    }
+
+    #[test]
+    fn test_calculate_similarity() {
+        let system = AntiCheatSystem::new();
+        let similarity1 = system.calculate_similarity("hello", "hello");
+        let similarity2 = system.calculate_similarity("hello", "world");
+
+        assert!(similarity1 > similarity2);
+        assert!(similarity1 > 0.8);
+    }
+}
