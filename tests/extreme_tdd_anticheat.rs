@@ -1,7 +1,7 @@
-use ruchy::notebook::testing::anticheat::{
-    AntiCheatSystem, ObfuscationDetector, Submission, PatternAnalyzer
-};
 use chrono::Utc;
+use ruchy::notebook::testing::anticheat::{
+    AntiCheatSystem, ObfuscationDetector, PatternAnalyzer, Submission,
+};
 
 /// TDD Test Suite for AntiCheat Module - Target: 100% Coverage
 /// These tests exercise every public function and critical path
@@ -183,7 +183,8 @@ mod obfuscation_detector_tests {
     #[test]
     fn test_is_obfuscated_very_long_variable_names() {
         let detector = ObfuscationDetector::new();
-        let obfuscated_code = "fn main() { let very_long_variable_name_that_might_be_obfuscated_12345 = 1; }";
+        let obfuscated_code =
+            "fn main() { let very_long_variable_name_that_might_be_obfuscated_12345 = 1; }";
 
         let result = detector.is_obfuscated(obfuscated_code);
         assert!(result.confidence >= 0.0); // Should analyze the code
@@ -281,7 +282,8 @@ mod pattern_analyzer_tests {
         let base_time = Utc::now();
 
         let _result1 = analyzer.analyze_pattern("student1", base_time);
-        let _result2 = analyzer.analyze_pattern("student1", base_time + chrono::Duration::seconds(1));
+        let _result2 =
+            analyzer.analyze_pattern("student1", base_time + chrono::Duration::seconds(1));
         let result3 = analyzer.analyze_pattern("student1", base_time + chrono::Duration::hours(2));
 
         assert!(result3.submission_count >= 3);
@@ -306,7 +308,11 @@ mod property_tests {
     }
 
     #[quickcheck]
-    fn test_plagiarism_check_never_panics(student_id: String, assignment_id: String, code: String) -> TestResult {
+    fn test_plagiarism_check_never_panics(
+        student_id: String,
+        assignment_id: String,
+        code: String,
+    ) -> TestResult {
         if student_id.is_empty() || assignment_id.is_empty() {
             return TestResult::discard();
         }

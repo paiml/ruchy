@@ -1,9 +1,9 @@
 use ruchy::notebook::testing::smt::{
-    SmtSolver, SolverType, SmtQuery, SmtResult, Model, Proof, ProofCache, BoundedModelChecker,
-    Function, FunctionSpec, VerificationResult, PostconditionResult, LoopInfo
+    BoundedModelChecker, Function, FunctionSpec, LoopInfo, Model, PostconditionResult, Proof,
+    ProofCache, SmtQuery, SmtResult, SmtSolver, SolverType, VerificationResult,
 };
-use std::time::Duration;
 use std::collections::HashMap;
+use std::time::Duration;
 
 /// TDD Test Suite for SMT Module - Target: 100% Coverage
 /// These tests exercise every public function and critical path
@@ -335,7 +335,12 @@ mod property_tests {
 
     #[quickcheck]
     fn test_smt_solver_new_never_panics(solver_idx: usize) -> TestResult {
-        let solver_types = [SolverType::Z3, SolverType::CVC4, SolverType::Yices, SolverType::Vampire];
+        let solver_types = [
+            SolverType::Z3,
+            SolverType::CVC4,
+            SolverType::Yices,
+            SolverType::Vampire,
+        ];
         let solver_type = &solver_types[solver_idx % solver_types.len()];
 
         let _solver = SmtSolver::new(solver_type.clone());
@@ -359,8 +364,12 @@ mod property_tests {
             return TestResult::discard(); // Avoid excessive sizes
         }
 
-        let declarations = (0..decl_count).map(|i| format!("(declare-fun x{} () Int)", i)).collect();
-        let assertions = (0..assert_count).map(|i| format!("(assert (> x{} 0))", i)).collect();
+        let declarations = (0..decl_count)
+            .map(|i| format!("(declare-fun x{} () Int)", i))
+            .collect();
+        let assertions = (0..assert_count)
+            .map(|i| format!("(assert (> x{} 0))", i))
+            .collect();
 
         let _query = SmtQuery {
             declarations,
@@ -392,7 +401,9 @@ mod property_tests {
             return TestResult::discard(); // Avoid excessive sizes
         }
 
-        let steps = (0..step_count).map(|i| format!("step {}: reasoning", i)).collect();
+        let steps = (0..step_count)
+            .map(|i| format!("step {}: reasoning", i))
+            .collect();
         let _proof = Proof {
             steps,
             conclusion: "conclusion reached".to_string(),
@@ -436,7 +447,12 @@ mod integration_tests {
 
     #[test]
     fn test_multiple_solver_types() {
-        let solver_types = [SolverType::Z3, SolverType::CVC4, SolverType::Yices, SolverType::Vampire];
+        let solver_types = [
+            SolverType::Z3,
+            SolverType::CVC4,
+            SolverType::Yices,
+            SolverType::Vampire,
+        ];
 
         for solver_type in &solver_types {
             let mut solver = SmtSolver::new(solver_type.clone());
