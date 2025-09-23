@@ -252,39 +252,39 @@ clean-coverage:
 
 # Generate comprehensive test coverage using cargo-llvm-cov (Toyota Way)
 coverage:
-	@echo "📊 Running REAL test coverage analysis (including ALL tests)..."
-	@echo "🧹 Cleaning old coverage data and build artifacts..."
+	@echo "📊 Running comprehensive test coverage analysis..."
+	@echo "🧹 Cleaning old coverage data..."
 	@rm -rf target/coverage
-	@cargo clean
 	@mkdir -p target/coverage
-	@echo "🧪 Running all tests with coverage instrumentation (this will take a minute)..."
-	@env CARGO_INCREMENTAL=0 RUSTFLAGS='-C instrument-coverage' LLVM_PROFILE_FILE='target/coverage/ruchy-%p-%m.profraw' cargo test --lib || echo "⚠️ Some tests failed"
+	@echo "🧪 Running tests with coverage instrumentation..."
+	@env CARGO_INCREMENTAL=0 \
+		RUSTFLAGS='-C instrument-coverage -C codegen-units=1 -C opt-level=0 -C link-dead-code -C overflow-checks=off' \
+		LLVM_PROFILE_FILE='$(PWD)/target/coverage/ruchy-%p-%m.profraw' \
+		cargo test --lib 2>&1 | tee target/coverage/test-output.txt
+	@echo "🔍 Finding test binary..."
+	@find target/debug/deps -name "ruchy-*" -type f -executable | grep -v "\.d$$" | head -1 > target/coverage/test-binary-path.txt
 	@echo "🔧 Merging coverage data..."
 	@~/.rustup/toolchains/nightly-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/bin/llvm-profdata merge -sparse target/coverage/*.profraw -o target/coverage/ruchy.profdata
-	@echo "📝 Generating HTML report..."
+	@echo "📝 Generating HTML coverage report..."
 	@~/.rustup/toolchains/nightly-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/bin/llvm-cov show \
+		$$(cat target/coverage/test-binary-path.txt) \
 		--instr-profile=target/coverage/ruchy.profdata \
-		$$(find target/debug/deps -type f -executable -name 'ruchy-*' ! -name '*.d' | head -1) \
-		--ignore-filename-regex='/.cargo/|/rustc/|tests/|benches/' \
-		--format=html --output-dir=target/coverage/html
+		--ignore-filename-regex='/.cargo/|/rustc/|tests/|benches/|target/debug/build/' \
+		--format=html \
+		--output-dir=target/coverage/html \
+		--show-instantiations=false
 	@echo ""
-	@echo "📊 Coverage Report:"
+	@echo "📊 Coverage Summary:"
 	@echo "=================="
-	@echo "✅ Tests completed successfully - 2825 library tests passed"
-	@echo "📈 Coverage HTML report generated at: target/coverage/html/index.html"
-	@echo ""
-	@echo "🧪 Test Summary:"
-	@echo "- Library tests: 2825 passed, 0 failed"
-	@echo "- Zero compilation warnings"
-	@echo "- All edge cases properly handled"
+	@grep "test result:" target/coverage/test-output.txt || echo "Tests completed"
 	@echo ""
 	@echo "📈 Overall Coverage:"
 	@~/.rustup/toolchains/nightly-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/bin/llvm-cov report \
+		$$(cat target/coverage/test-binary-path.txt) \
 		--instr-profile=target/coverage/ruchy.profdata \
-		$$(find target/debug/deps -type f -executable -name 'ruchy-*' ! -name '*.d' | head -1) \
-		--ignore-filename-regex='/.cargo/|/rustc/|tests/|benches/' \
-		--summary-only 2>/dev/null || echo "Coverage percentage calculation in progress..."
-	@echo "✅ HTML report: open target/coverage/html/index.html"
+		--ignore-filename-regex='/.cargo/|/rustc/|tests/|benches/|target/debug/build/' | tail -n 3
+	@echo ""
+	@echo "✅ Detailed HTML report: open target/coverage/html/index.html"
 
 # Quick coverage check for development workflow
 coverage-quick:
