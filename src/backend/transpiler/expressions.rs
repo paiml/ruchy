@@ -384,12 +384,9 @@ impl Transpiler {
                 Ok(quote! { #obj_tokens::#field_ident })
             }
             _ => {
-                // For other cases, assume HashMap access
-                Ok(quote! {
-                    #obj_tokens.get(#field)
-                        .cloned()
-                        .unwrap_or_else(|| panic!("Field '{}' not found", #field))
-                })
+                // For other cases, assume direct struct field access
+                let field_ident = format_ident!("{}", field);
+                Ok(quote! { #obj_tokens.#field_ident })
             }
         }
     }
