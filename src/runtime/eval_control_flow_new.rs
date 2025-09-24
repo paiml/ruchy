@@ -59,7 +59,7 @@ where
 /// Evaluate a for loop with iterator and body
 ///
 /// # Complexity
-/// Cyclomatic complexity: 8 (within Toyota Way limits)
+/// Cyclomatic complexity: 3 (reduced from 8, cognitive complexity from 42 → ≤10)
 pub fn eval_for_loop<F1, F2>(
     var: &str,
     iter: &Expr,
@@ -76,65 +76,17 @@ where
     ) -> Result<Value, InterpreterError>,
 {
     let iter_val = eval_expr(iter)?;
-    let mut last_val = Value::Nil;
 
-    match iter_val {
-        Value::Array(arr) => {
-            for item in arr.iter() {
-                match with_variable(var, item.clone(), &mut eval_expr) {
-                    Ok(val) => last_val = val,
-                    Err(InterpreterError::Break(val)) => return Ok(val),
-                    Err(InterpreterError::Continue) => {}
-                    Err(e) => return Err(e),
-                }
-            }
+    match &iter_val {
+        Value::Array(_) => eval_array_iteration(&iter_val, var, &mut with_variable, &mut eval_expr),
+        Value::Range { .. } => {
+            eval_range_iteration(&iter_val, var, &mut with_variable, &mut eval_expr)
         }
-        Value::Range {
-            start,
-            end,
-            inclusive,
-        } => {
-            let start_val = match *start {
-                Value::Integer(i) => i,
-                _ => {
-                    return Err(InterpreterError::TypeError(
-                        "Range start must be integer".to_string(),
-                    ))
-                }
-            };
-            let end_val = match *end {
-                Value::Integer(i) => i,
-                _ => {
-                    return Err(InterpreterError::TypeError(
-                        "Range end must be integer".to_string(),
-                    ))
-                }
-            };
-
-            let range: Box<dyn Iterator<Item = i64>> = if inclusive {
-                Box::new(start_val..=end_val)
-            } else {
-                Box::new(start_val..end_val)
-            };
-
-            for i in range {
-                match with_variable(var, Value::Integer(i), &mut eval_expr) {
-                    Ok(val) => last_val = val,
-                    Err(InterpreterError::Break(val)) => return Ok(val),
-                    Err(InterpreterError::Continue) => {}
-                    Err(e) => return Err(e),
-                }
-            }
-        }
-        _ => {
-            return Err(InterpreterError::TypeError(format!(
-                "Cannot iterate over {}",
-                iter_val.type_name()
-            )))
-        }
+        _ => Err(InterpreterError::TypeError(format!(
+            "Cannot iterate over {}",
+            iter_val.type_name()
+        ))),
     }
-
-    Ok(last_val)
 }
 
 /// Evaluate a while loop with condition and body
@@ -331,6 +283,148 @@ where
     };
 
     Err(InterpreterError::Return(return_value))
+}
+
+// =============================================================================
+// COMPLEXITY REFACTORING: For Loop Helper Functions
+// Target: Reduce eval_for_loop cognitive complexity from 42 → ≤10
+// =============================================================================
+
+/// Handle array iteration in for loops
+/// Complexity: ≤8
+pub fn eval_array_iteration<F1, F2>(
+    array: &Value,
+    var: &str,
+    with_variable: &mut F2,
+    eval_expr: &mut F1,
+) -> Result<Value, InterpreterError>
+where
+    F1: FnMut(&Expr) -> Result<Value, InterpreterError>,
+    F2: FnMut(
+        &str,
+        Value,
+        &mut dyn FnMut(&Expr) -> Result<Value, InterpreterError>,
+    ) -> Result<Value, InterpreterError>,
+{
+    if let Value::Array(arr) = array {
+        let mut last_val = Value::Nil;
+        for item in arr.iter() {
+            match with_variable(var, item.clone(), eval_expr) {
+                Ok(val) => last_val = val,
+                Err(InterpreterError::Break(val)) => return Ok(val),
+                Err(InterpreterError::Continue) => {}
+                Err(e) => return Err(e),
+            }
+        }
+        Ok(last_val)
+    } else {
+        Err(InterpreterError::TypeError(format!(
+            "Expected array, got {}",
+            array.type_name()
+        )))
+    }
+}
+
+/// Handle range iteration in for loops
+/// Complexity: ≤8
+pub fn eval_range_iteration<F1, F2>(
+    range: &Value,
+    var: &str,
+    with_variable: &mut F2,
+    eval_expr: &mut F1,
+) -> Result<Value, InterpreterError>
+where
+    F1: FnMut(&Expr) -> Result<Value, InterpreterError>,
+    F2: FnMut(
+        &str,
+        Value,
+        &mut dyn FnMut(&Expr) -> Result<Value, InterpreterError>,
+    ) -> Result<Value, InterpreterError>,
+{
+    if let Value::Range { .. } = range {
+        let (start_val, end_val, inclusive) = extract_range_bounds(range)?;
+        let iter = create_range_iterator(start_val, end_val, inclusive);
+
+        let mut last_val = Value::Nil;
+        for i in iter {
+            match with_variable(var, Value::Integer(i), eval_expr) {
+                Ok(val) => last_val = val,
+                Err(InterpreterError::Break(val)) => return Ok(val),
+                Err(InterpreterError::Continue) => {}
+                Err(e) => return Err(e),
+            }
+        }
+        Ok(last_val)
+    } else {
+        Err(InterpreterError::TypeError(format!(
+            "Expected range, got {}",
+            range.type_name()
+        )))
+    }
+}
+
+/// Extract integer bounds from a range value
+/// Complexity: ≤5
+pub fn extract_range_bounds(range: &Value) -> Result<(i64, i64, bool), InterpreterError> {
+    if let Value::Range {
+        start,
+        end,
+        inclusive,
+    } = range
+    {
+        let start_val = match **start {
+            Value::Integer(i) => i,
+            _ => {
+                return Err(InterpreterError::TypeError(
+                    "Range start must be integer".to_string(),
+                ))
+            }
+        };
+        let end_val = match **end {
+            Value::Integer(i) => i,
+            _ => {
+                return Err(InterpreterError::TypeError(
+                    "Range end must be integer".to_string(),
+                ))
+            }
+        };
+        Ok((start_val, end_val, *inclusive))
+    } else {
+        Err(InterpreterError::TypeError(
+            "Expected range value".to_string(),
+        ))
+    }
+}
+
+/// Handle loop control flow (break/continue)
+/// Complexity: ≤5
+pub fn handle_loop_control(
+    result: Result<Value, InterpreterError>,
+    last_val: &mut Value,
+) -> Result<Option<Value>, InterpreterError> {
+    match result {
+        Ok(val) => {
+            *last_val = val;
+            Ok(None)
+        }
+        Err(InterpreterError::Break(val)) => Ok(Some(val)),
+        Err(InterpreterError::Continue) => Ok(None),
+        Err(e) => Err(e),
+    }
+}
+
+/// Create an iterator from range bounds
+/// Complexity: ≤3
+pub fn create_range_iterator(
+    start: i64,
+    end: i64,
+    inclusive: bool,
+) -> Box<dyn Iterator<Item = i64>> {
+    if inclusive {
+        Box::new(start..=end)
+    } else {
+        Box::new(start..end)
+    }
 }
 
 // Additional control flow utilities
