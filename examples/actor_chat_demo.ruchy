@@ -1,0 +1,76 @@
+// Ruchy Actor System Demo - Multi-Agent Chat Simulation
+// This demo showcases Ruchy's actor-based concurrency model
+
+actor ChatAgent {
+    name: String,
+    message_count: i32,
+    personality: String,
+
+    receive introduce(other_name: String) {
+        self.message_count = self.message_count + 1;
+        println("Hi " + other_name + "! I'm " + self.name + " and I'm " + self.personality)
+    }
+
+    receive process_message(content: String, sender: String) {
+        self.message_count = self.message_count + 1;
+        println("[" + self.name + "] Received from " + sender + ": " + content);
+
+        // Simulate different personality responses
+        if self.personality == "helpful" {
+            println("[" + self.name + "] That's interesting! Let me help with that.")
+        } else if self.personality == "curious" {
+            println("[" + self.name + "] Tell me more about that!")
+        } else {
+            println("[" + self.name + "] Thanks for sharing.")
+        }
+    }
+
+    receive get_stats() -> String {
+        self.name + " has processed " + self.message_count.to_string() + " messages"
+    }
+
+    receive reset_stats() {
+        self.message_count = 0;
+        println("[" + self.name + "] Message count reset")
+    }
+}
+
+actor ChatRoom {
+    room_name: String,
+    participant_count: i32,
+    total_messages: i32,
+
+    receive add_participant(agent_name: String) {
+        self.participant_count = self.participant_count + 1;
+        println("🏢 [" + self.room_name + "] Welcome " + agent_name + "! (" + self.participant_count.to_string() + " participants)")
+    }
+
+    receive broadcast_message(message: String, sender: String) {
+        self.total_messages = self.total_messages + 1;
+        println("📢 [" + self.room_name + "] " + sender + ": " + message)
+    }
+
+    receive get_room_stats() -> String {
+        "Room " + self.room_name + ": " + self.participant_count.to_string() + " participants, " + self.total_messages.to_string() + " messages"
+    }
+}
+
+// Example usage (would work with proper runtime support):
+// fun main() {
+//     // Create agents with different personalities
+//     let alice = ChatAgent::new("Alice", "helpful");
+//     let bob = ChatAgent::new("Bob", "curious");
+//     let charlie = ChatAgent::new("Charlie", "analytical");
+//
+//     // Create chat room
+//     let main_room = ChatRoom::new("Main Lounge");
+//
+//     // Simulate conversation (these would be async sends in full implementation)
+//     alice.introduce("Bob");
+//     bob.process_message("Hello everyone!", "Alice");
+//     charlie.process_message("Interesting discussion!", "Bob");
+//
+//     // Get statistics
+//     println(alice.get_stats());
+//     println(main_room.get_room_stats());
+// }

@@ -1,0 +1,31 @@
+// Simple Counter Actor Example
+// Demonstrates basic actor message handling
+
+actor Counter {
+    count: i32,
+
+    receive increment() {
+        self.count = self.count + 1;
+        println("Counter incremented to: " + self.count.to_string())
+    }
+
+    receive decrement() {
+        self.count = self.count - 1;
+        println("Counter decremented to: " + self.count.to_string())
+    }
+
+    receive get_value() -> i32 {
+        self.count
+    }
+
+    receive reset() {
+        self.count = 0;
+        println("Counter reset to 0")
+    }
+}
+
+// Generated Rust code will include:
+// - Async message processing with Tokio MPSC channels
+// - Message enum: CounterMessage { increment, decrement, get_value, reset }
+// - Actor struct with receiver/sender for message passing
+// - Automatic state management and field access
