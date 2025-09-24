@@ -966,9 +966,7 @@ impl Interpreter {
                 catch_clauses,
                 finally_block.as_deref(),
             ),
-            ExprKind::Throw { expr } => {
-                crate::runtime::eval_try_catch::eval_throw(self, expr)
-            }
+            ExprKind::Throw { expr } => crate::runtime::eval_try_catch::eval_throw(self, expr),
             _ => unreachable!("Non-control-flow expression passed to eval_control_flow_expr"),
         }
     }
@@ -1498,7 +1496,11 @@ impl Interpreter {
     }
 
     /// Legacy method for backwards compatibility
-    fn pattern_matches_internal(&self, pattern: &Pattern, value: &Value) -> Result<bool, InterpreterError> {
+    fn pattern_matches_internal(
+        &self,
+        pattern: &Pattern,
+        value: &Value,
+    ) -> Result<bool, InterpreterError> {
         crate::runtime::eval_pattern_match::pattern_matches(pattern, value, &|lit| {
             self.eval_literal(lit)
         })
@@ -2348,14 +2350,16 @@ impl Interpreter {
     ///
     /// # Complexity
     /// Cyclomatic complexity: 8 (delegates to existing pattern matcher)
-    pub fn pattern_matches(&mut self, pattern: &Pattern, value: &Value) -> Result<bool, InterpreterError> {
+    pub fn pattern_matches(
+        &mut self,
+        pattern: &Pattern,
+        value: &Value,
+    ) -> Result<bool, InterpreterError> {
         // Simplified pattern matching for try/catch
         match pattern {
             Pattern::Identifier(_) => Ok(true), // Always matches
             Pattern::Wildcard => Ok(true),
-            Pattern::Literal(literal) => {
-                Ok(self.literal_matches(literal, value))
-            }
+            Pattern::Literal(literal) => Ok(self.literal_matches(literal, value)),
             _ => Ok(false), // Other patterns not yet supported
         }
     }

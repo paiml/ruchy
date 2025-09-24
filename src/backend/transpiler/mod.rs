@@ -539,6 +539,34 @@ impl Transpiler {
             ExprKind::Block(exprs) => {
                 self.transpile_program_block(exprs, needs_polars, needs_hashmap)
             }
+            ExprKind::Import { .. }
+            | ExprKind::ImportAll { .. }
+            | ExprKind::ImportDefault { .. } => {
+                // Single import - handle as top-level
+                let import_tokens = self.transpile_expr(&resolved_expr)?;
+                match (needs_polars, needs_hashmap) {
+                    (true, true) => Ok(quote! {
+                        use polars::prelude::*;
+                        use std::collections::HashMap;
+                        #import_tokens
+                        fn main() {}
+                    }),
+                    (true, false) => Ok(quote! {
+                        use polars::prelude::*;
+                        #import_tokens
+                        fn main() {}
+                    }),
+                    (false, true) => Ok(quote! {
+                        use std::collections::HashMap;
+                        #import_tokens
+                        fn main() {}
+                    }),
+                    (false, false) => Ok(quote! {
+                        #import_tokens
+                        fn main() {}
+                    }),
+                }
+            }
             _ => self.transpile_expression_program(&resolved_expr, needs_polars, needs_hashmap),
         }
     }
@@ -605,7 +633,18 @@ impl Transpiler {
         let (functions, statements, modules, has_main, main_expr, imports) =
             self.categorize_block_expressions(exprs)?;
         if functions.is_empty() && !has_main && modules.is_empty() {
-            self.transpile_statement_only_block(exprs, needs_polars, needs_hashmap)
+            if imports.is_empty() {
+                self.transpile_statement_only_block(exprs, needs_polars, needs_hashmap)
+            } else {
+                // Use the block with imports path even if no functions
+                self.transpile_block_with_functions(
+                    &functions,
+                    &statements,
+                    needs_polars,
+                    needs_hashmap,
+                    &imports,
+                )
+            }
         } else if has_main || !modules.is_empty() {
             self.transpile_block_with_main_function(
                 &functions,
