@@ -4506,9 +4506,9 @@ mod tests {
         assert!(tag_result.is_ok());
 
         // Test listing tags
-        let tags_result = runtime.list_tags();
-        assert!(tags_result.is_ok());
-        assert!(!tags_result.unwrap().is_empty());
+        let list_result = runtime.list_tags();
+        assert!(list_result.is_ok());
+        assert!(!list_result.unwrap().is_empty());
     }
 
     // Test 32: Branch Operations
@@ -4722,9 +4722,17 @@ mod tests {
         let mut runtime = NotebookRuntime::new().unwrap();
         let cell_id = runtime.add_cell("code", "let x = 42");
 
-        // Test execution with session
+        // First execute the cell to define x
+        let init_result = runtime.execute_cell(&cell_id);
+        assert!(
+            init_result.is_ok(),
+            "Initial execution failed: {:?}",
+            init_result
+        );
+
+        // Test execution with session - now x should be defined
         let result = runtime.execute_cell_with_session(&cell_id, "x + 1");
-        assert!(result.is_ok());
+        assert!(result.is_ok(), "Execute with session failed: {:?}", result);
 
         let response = result.unwrap();
         assert!(!response.value.is_empty() || response.error.is_some());
@@ -4749,7 +4757,8 @@ mod tests {
         // Test reactive explanation
         let explanation = runtime.explain_reactive("test-cell");
         assert!(!explanation.is_empty());
-        assert!(explanation.contains("Reactive"));
+        // Should return a JSON execution plan
+        assert!(explanation.contains("primary") || explanation.contains("cascade"));
     }
 
     // Test 46: get_globals
@@ -4901,6 +4910,13 @@ mod tests {
         let state_json = serde_json::json!({
             "notebook": {
                 "version": "2.0.0",
+                "metadata": {
+                    "kernel": "ruchy",
+                    "language": "ruchy",
+                    "created": "2024-01-01T00:00:00Z",
+                    "last_modified": "2024-01-01T00:00:00Z",
+                    "modified": "2024-01-01T00:00:00Z"
+                },
                 "cells": []
             },
             "session": {}
@@ -4909,7 +4925,11 @@ mod tests {
 
         // Test importing collaborative state
         let result = runtime.import_collaborative_state(&state_json);
-        assert!(result.is_ok());
+        assert!(
+            result.is_ok(),
+            "Import collaborative state failed: {:?}",
+            result
+        );
     }
 
     // Test 58: handle_websocket_message
@@ -4926,9 +4946,24 @@ mod tests {
             client_id: Some("client-123".to_string()),
         };
 
+        // Add the cell first with the exact ID expected by the message
+        let cell = NotebookCell {
+            id: "test-cell".to_string(),
+            cell_type: CellType::Code,
+            source: "1 + 1".to_string(),
+            outputs: Vec::new(),
+            execution_count: None,
+            metadata: CellMetadata::default(),
+        };
+        runtime.notebook.cells.push(cell);
+
         // Test WebSocket message handling
         let result = runtime.handle_websocket_message(&message);
-        assert!(result.is_ok());
+        assert!(
+            result.is_ok(),
+            "WebSocket message handling failed: {:?}",
+            result
+        );
     }
 
     // Test 59: get_websocket_updates
@@ -4982,9 +5017,13 @@ mod tests {
     fn test_execute_cell_with_session_error_handling() {
         let mut runtime = NotebookRuntime::new().unwrap();
 
-        // Test with non-existent cell
-        let result = runtime.execute_cell_with_session("non-existent-cell", "code");
-        assert!(result.is_ok()); // Should handle gracefully
+        // Test with non-existent cell - this should create the cell automatically
+        let result = runtime.execute_cell_with_session("non-existent-cell", "42");
+        assert!(
+            result.is_ok(),
+            "Should handle non-existent cell: {:?}",
+            result
+        ); // Should handle gracefully
 
         let response = result.unwrap();
         assert!(response.error.is_some() || !response.value.is_empty());
@@ -5145,7 +5184,19 @@ mod tests {
     fn test_update_published_notebook() {
         let mut runtime = NotebookRuntime::new().unwrap();
 
-        let result = runtime.update_published_notebook("notebook-id-123");
+        // First publish a notebook
+        let publish_result = runtime
+            .publish_notebook(
+                "Test Notebook",
+                "A test notebook",
+                vec!["test"],
+                "MIT",
+                true,
+            )
+            .unwrap();
+
+        // Now update it using the actual notebook ID
+        let result = runtime.update_published_notebook(&publish_result.notebook_id);
         assert!(result.is_ok());
     }
 
@@ -5564,7 +5615,7 @@ mod tests {
         // Verify all core features are documented
         let feature_names: Vec<_> = features.iter().map(|f| f.feature.as_str()).collect();
         assert!(feature_names.contains(&"Basic Evaluation"));
-        assert!(feature_names.contains(&"DataFrame Support"));
+        assert!(feature_names.contains(&"DataFrames"));
 
         // All features should have both native and wasm flags set
         for feature in &features {

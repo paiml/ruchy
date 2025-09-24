@@ -8,7 +8,7 @@ fn benchmark_suite(c: &mut Criterion) {
     let mut group = c.benchmark_group("wasm_operations");
 
     // Test various payload sizes as specified in the framework
-    for size in [1024, 10240, 102400, 1048576].iter() {
+    for size in [1024, 10_240, 102_400, 1_048_576].iter() {
         group.bench_with_input(BenchmarkId::new("allocation", size), size, |b, &size| {
             b.iter(|| {
                 let data = vec![0u8; size];

@@ -19,13 +19,13 @@ mod edge_cases {
     }
 
     #[test]
-    #[ignore] // Parser needs fix for comment-only files
+    #[ignore = "Parser needs fix for comment-only files"]
     fn test_comment_only() {
         assert!(compile("// Just a comment").is_ok());
     }
 
     #[test]
-    #[ignore] // Parser needs fix for comment-only files
+    #[ignore = "Parser needs fix for comment-only files"]
     fn test_multiline_comment_only() {
         assert!(compile("/* Just a \n multiline \n comment */").is_ok());
     }
@@ -156,7 +156,7 @@ mod edge_cases {
     }
 
     #[test]
-    #[ignore] // Parser needs fix for underscore identifier
+    #[ignore = "Parser needs fix for underscore identifier"]
     fn test_underscore_identifier() {
         assert!(compile("fn main() { let _ = 42; }").is_ok());
     }

@@ -425,7 +425,7 @@ mod tests {
         assert_eq!(array.value(4), 7);
     }
     #[test]
-    #[ignore] // Performance test - can be flaky
+    #[ignore = "Performance test - can be flaky"]
     fn test_zero_copy_performance() {
         // Create large DataFrame
         let size = 1_000_000;
@@ -650,7 +650,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore] // Performance test - can be flaky
+    #[ignore = "Performance test - can be flaky"]
     fn test_df004_1m_row_performance_target() {
         // DF-004: Verify all operations meet 1M row <100ms performance target
         let size = 1_000_000;
@@ -762,7 +762,7 @@ mod property_tests_arrow_integration {
 
         /// Property: Concatenation preserves total row count
         #[test]
-        #[ignore] // Property test - can be flaky
+        #[ignore = "Property test - can be flaky"]
         fn test_concat_preserves_row_count(
             sizes in prop::collection::vec(1..20usize, 1..5)
         ) {
