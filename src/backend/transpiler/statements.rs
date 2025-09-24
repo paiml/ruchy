@@ -285,6 +285,93 @@ impl Transpiler {
             })
         }
     }
+
+    /// Transpiles let bindings with optional type annotations
+    ///
+    /// # Complexity
+    /// Cyclomatic complexity: ≤7 (within Toyota Way limits)
+    pub fn transpile_let_with_type(
+        &self,
+        name: &str,
+        type_annotation: Option<&crate::frontend::ast::Type>,
+        value: &Expr,
+        body: &Expr,
+        is_mutable: bool,
+    ) -> Result<TokenStream> {
+        // Handle Rust reserved keywords by prefixing with r#
+        let safe_name = if Self::is_rust_reserved_keyword(name) {
+            format!("r#{name}")
+        } else {
+            name.to_string()
+        };
+        let name_ident = format_ident!("{}", safe_name);
+
+        let mut_keyword = if is_mutable || Self::is_variable_mutated(name, body) {
+            quote! { mut }
+        } else {
+            quote! {}
+        };
+
+        let value_tokens = self.transpile_expr(value)?;
+        let body_tokens = self.transpile_expr(body)?;
+
+        // Generate type annotation if present
+        let type_tokens = if let Some(type_ann) = type_annotation {
+            let type_part = self.transpile_type(type_ann)?;
+            quote! { : #type_part }
+        } else {
+            quote! {}
+        };
+
+        Ok(quote! {
+            {
+                let #mut_keyword #name_ident #type_tokens = #value_tokens;
+                #body_tokens
+            }
+        })
+    }
+
+    /// Transpiles let pattern bindings with optional type annotations
+    ///
+    /// # Complexity
+    /// Cyclomatic complexity: ≤6 (within Toyota Way limits)
+    pub fn transpile_let_pattern_with_type(
+        &self,
+        pattern: &crate::frontend::ast::Pattern,
+        type_annotation: Option<&crate::frontend::ast::Type>,
+        value: &Expr,
+        body: &Expr,
+    ) -> Result<TokenStream> {
+        let pattern_tokens = self.transpile_pattern(pattern)?;
+        let mut value_tokens = self.transpile_expr(value)?;
+
+        // Check if we're pattern matching on a list that needs to be converted to a slice
+        if self.pattern_needs_slice(pattern) && self.value_creates_vec(value) {
+            value_tokens = quote! { (#value_tokens).as_slice() };
+        }
+
+        let body_tokens = self.transpile_expr(body)?;
+
+        // Type annotations on patterns are more complex - for now, ignore them
+        // Future enhancement: support typed destructuring patterns
+        if type_annotation.is_some() {
+            // Add a comment about the type annotation
+            Ok(quote! {
+                match #value_tokens {
+                    #pattern_tokens => #body_tokens,
+                    _ => panic!("Pattern did not match")
+                }
+            })
+        } else {
+            Ok(quote! {
+                match #value_tokens {
+                    #pattern_tokens => #body_tokens,
+                    _ => panic!("Pattern did not match")
+                }
+            })
+        }
+    }
+
     /// Check if a pattern requires a slice (for list pattern matching)
     fn pattern_needs_slice(&self, pattern: &crate::frontend::ast::Pattern) -> bool {
         matches!(pattern, crate::frontend::ast::Pattern::List(_))

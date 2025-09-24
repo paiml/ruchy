@@ -111,7 +111,7 @@ fn eval_finally_block(
     Ok(Value::Nil)
 }
 
-/// Convert an InterpreterError to a Value for pattern matching
+/// Convert an `InterpreterError` to a Value for pattern matching
 ///
 /// # Complexity
 /// Cyclomatic complexity: ≤5
@@ -140,11 +140,11 @@ fn error_to_value(error: InterpreterError) -> Value {
             .into_iter()
             .collect(),
         )),
-        _ => Value::String(format!("{:?}", error).into()),
+        _ => Value::String(format!("{error:?}").into()),
     }
 }
 
-/// Convert a Value back to an InterpreterError for re-throwing
+/// Convert a Value back to an `InterpreterError` for re-throwing
 ///
 /// # Complexity
 /// Cyclomatic complexity: ≤2
@@ -214,7 +214,6 @@ pub fn eval_throw(interp: &mut Interpreter, expr: &Expr) -> Result<Value, Interp
 
 #[cfg(test)]
 mod tests {
-    use super::*;
 
     #[test]
     fn test_complexity_compliance() {

@@ -362,18 +362,18 @@ impl Transpiler {
         match &expr.kind {
             ExprKind::Let {
                 name,
-                type_annotation: _,
+                type_annotation,
                 value,
                 body,
                 is_mutable,
-            } => self.transpile_let(name, value, body, *is_mutable),
+            } => self.transpile_let_with_type(name, type_annotation.as_ref(), value, body, *is_mutable),
             ExprKind::LetPattern {
                 pattern,
-                type_annotation: _,
+                type_annotation,
                 value,
                 body,
                 is_mutable: _,
-            } => self.transpile_let_pattern(pattern, value, body),
+            } => self.transpile_let_pattern_with_type(pattern, type_annotation.as_ref(), value, body),
             ExprKind::Block(exprs) => self.transpile_block(exprs),
             ExprKind::Pipeline { expr, stages } => self.transpile_pipeline(expr, stages),
             ExprKind::Import { module, items } => {
