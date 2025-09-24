@@ -96,7 +96,7 @@ mod simple_repl_tests {
         assert!(memory == memory); // Memory is usize, always >= 0
 
         let pressure = repl.memory_pressure();
-        assert!(pressure >= 0.0 && pressure <= 1.0);
+        assert!((0.0..=1.0).contains(&pressure));
 
         let peak = repl.peak_memory();
         assert!(peak == peak); // Peak is usize, always >= 0

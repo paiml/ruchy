@@ -460,7 +460,7 @@ mod tests {
             next_step: None,
         };
 
-        tutorial.add_step(step.clone());
+        tutorial.add_step(step);
 
         assert_eq!(tutorial.steps.len(), 1);
         assert_eq!(tutorial.steps[0].id, "step1");
@@ -507,12 +507,12 @@ mod tests {
             completed: true,
             attempts: 3,
             hints_used: 1,
-            time_spent_ms: 120500,
+            time_spent_ms: 120_500,
         };
         assert!(progress.completed);
         assert_eq!(progress.attempts, 3);
         assert_eq!(progress.hints_used, 1);
-        assert_eq!(progress.time_spent_ms, 120500);
+        assert_eq!(progress.time_spent_ms, 120_500);
     }
 
     #[test]

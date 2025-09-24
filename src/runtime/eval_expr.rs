@@ -69,6 +69,7 @@ pub fn is_control_flow_expr(expr_kind: &ExprKind) -> bool {
     matches!(
         expr_kind,
         ExprKind::If { .. }
+            | ExprKind::Ternary { .. }
             | ExprKind::Let { .. }
             | ExprKind::For { .. }
             | ExprKind::While { .. }

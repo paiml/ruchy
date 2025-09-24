@@ -278,7 +278,7 @@ mod tests {
     fn test_save_golden_large_content() {
         let temp_dir = TempDir::new().unwrap();
         let manager = GoldenManager::new(temp_dir.path());
-        let large_content = "x".repeat(100000);
+        let large_content = "x".repeat(100_000);
         let output = CellOutput::Value(large_content.clone());
 
         let result = manager.save_golden(&PathBuf::from("large.golden"), &output);

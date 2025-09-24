@@ -1987,7 +1987,7 @@ mod tests {
         let metrics = collect_quality_metrics(&expr, "42");
         // function_count is usize, always >= 0
         // total_identifiers is usize, always >= 0
-        assert_eq!(metrics.has_satd, false);
+        assert!(!metrics.has_satd);
     }
 
     #[test]

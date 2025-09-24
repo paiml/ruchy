@@ -10,13 +10,13 @@ mod test_use_imports {
     // Basic use statement tests
     #[test]
     fn test_use_single_module() {
-        let code = r#"
+        let code = r"
             use std::collections;
 
             fun main() {
                 let map = collections::HashMap::new();
             }
-        "#;
+        ";
         let result = compile(code);
         assert!(result.is_ok(), "Failed to compile use statement");
         let output = result.unwrap();
@@ -25,13 +25,13 @@ mod test_use_imports {
 
     #[test]
     fn test_use_specific_type() {
-        let code = r#"
+        let code = r"
             use std::collections::HashMap;
 
             fun main() {
                 let map = HashMap::new();
             }
-        "#;
+        ";
         let result = compile(code);
         assert!(result.is_ok(), "Failed to compile use with specific type");
         let output = result.unwrap();
@@ -44,7 +44,7 @@ mod test_use_imports {
 
     #[test]
     fn test_use_multiple_items() {
-        let code = r#"
+        let code = r"
             use std::collections::{HashMap, BTreeMap, HashSet};
 
             fun main() {
@@ -52,7 +52,7 @@ mod test_use_imports {
                 let tree = BTreeMap::new();
                 let set = HashSet::new();
             }
-        "#;
+        ";
         let result = compile(code);
         assert!(result.is_ok(), "Failed to compile use with multiple items");
         let output = result.unwrap();
@@ -67,13 +67,13 @@ mod test_use_imports {
     // Aliasing tests
     #[test]
     fn test_use_with_alias() {
-        let code = r#"
+        let code = r"
             use numpy as np;
 
             fun main() {
                 let arr = np::array([1, 2, 3]);
             }
-        "#;
+        ";
         let result = compile(code);
         assert!(result.is_ok(), "Failed to compile use with alias");
         let output = result.unwrap();
@@ -82,13 +82,13 @@ mod test_use_imports {
 
     #[test]
     fn test_use_specific_item_with_alias() {
-        let code = r#"
+        let code = r"
             use std::collections::HashMap as Map;
 
             fun main() {
                 let m = Map::new();
             }
-        "#;
+        ";
         let result = compile(code);
         assert!(result.is_ok(), "Failed to compile use item with alias");
         let output = result.unwrap();
@@ -98,13 +98,13 @@ mod test_use_imports {
     // Nested imports
     #[test]
     fn test_use_nested_modules() {
-        let code = r#"
+        let code = r"
             use tokio::time::{sleep, timeout};
 
             async fun delay() {
                 sleep(Duration::from_secs(1)).await;
             }
-        "#;
+        ";
         let result = compile(code);
         assert!(result.is_ok(), "Failed to compile nested use");
         let output = result.unwrap();
@@ -116,13 +116,13 @@ mod test_use_imports {
     // Wildcard imports
     #[test]
     fn test_use_wildcard() {
-        let code = r#"
+        let code = r"
             use rayon::prelude::*;
 
             fun parallel_sum(data: Vec<i32>) -> i32 {
                 data.par_iter().sum()
             }
-        "#;
+        ";
         let result = compile(code);
         assert!(result.is_ok(), "Failed to compile use with wildcard");
         let output = result.unwrap();
@@ -132,7 +132,7 @@ mod test_use_imports {
     // Self and super imports
     #[test]
     fn test_use_self() {
-        let code = r#"
+        let code = r"
             mod math {
                 pub fun add(x: i32, y: i32) -> i32 { x + y }
             }
@@ -142,7 +142,7 @@ mod test_use_imports {
             fun main() {
                 let sum = add(1, 2);
             }
-        "#;
+        ";
         let result = compile(code);
         assert!(result.is_ok(), "Failed to compile use self");
         let output = result.unwrap();
@@ -151,7 +151,7 @@ mod test_use_imports {
 
     #[test]
     fn test_use_super() {
-        let code = r#"
+        let code = r"
             mod outer {
                 pub fun helper() -> i32 { 42 }
 
@@ -163,7 +163,7 @@ mod test_use_imports {
                     }
                 }
             }
-        "#;
+        ";
         let result = compile(code);
         assert!(result.is_ok(), "Failed to compile use super");
         let output = result.unwrap();
@@ -173,13 +173,13 @@ mod test_use_imports {
     // Crate imports
     #[test]
     fn test_use_crate() {
-        let code = r#"
+        let code = r"
             use crate::utils::helper;
 
             fun main() {
                 helper();
             }
-        "#;
+        ";
         let result = compile(code);
         assert!(result.is_ok(), "Failed to compile use crate");
         let output = result.unwrap();
@@ -191,14 +191,14 @@ mod test_use_imports {
     // External crate imports
     #[test]
     fn test_use_external_crate() {
-        let code = r#"
+        let code = r"
             use serde::{Serialize, Deserialize};
 
             #[derive(Serialize, Deserialize)]
             struct Config {
                 name: String,
             }
-        "#;
+        ";
         let result = compile(code);
         assert!(result.is_ok(), "Failed to compile external crate use");
         let output = result.unwrap();
@@ -226,13 +226,13 @@ mod test_use_imports {
     // Multiple use statements
     #[test]
     fn test_multiple_use_statements() {
-        let code = r#"
+        let code = r"
             use std::collections::HashMap;
             use std::io::{Read, Write};
             use tokio::time::Duration;
 
             fun main() {}
-        "#;
+        ";
         let result = compile(code);
         assert!(result.is_ok(), "Failed to compile multiple use statements");
         let output = result.unwrap();
@@ -253,13 +253,13 @@ mod test_use_imports {
     // Grouped imports
     #[test]
     fn test_use_grouped() {
-        let code = r#"
+        let code = r"
             use std::{
                 collections::{HashMap, HashSet},
                 io::{Read, Write},
                 fmt::Display,
             };
-        "#;
+        ";
         let result = compile(code);
         assert!(result.is_ok(), "Failed to compile grouped use");
     }
@@ -267,13 +267,13 @@ mod test_use_imports {
     // Renaming in grouped imports
     #[test]
     fn test_use_grouped_with_rename() {
-        let code = r#"
+        let code = r"
             use std::collections::{
                 HashMap as Map,
                 HashSet as Set,
                 BTreeMap,
             };
-        "#;
+        ";
         let result = compile(code);
         assert!(result.is_ok(), "Failed to compile grouped use with rename");
     }
@@ -281,13 +281,13 @@ mod test_use_imports {
     // Pub use for re-export
     #[test]
     fn test_pub_use() {
-        let code = r#"
+        let code = r"
             pub use std::collections::HashMap;
 
             pub mod prelude {
                 pub use super::HashMap;
             }
-        "#;
+        ";
         let result = compile(code);
         assert!(result.is_ok(), "Failed to compile pub use");
         let output = result.unwrap();
@@ -326,7 +326,7 @@ mod test_use_imports {
                 return TestResult::discard();
             }
 
-            let code = format!("use {};", module);
+            let code = format!("use {module};");
             let result = compile(&code);
             TestResult::from_bool(result.is_ok() || result.is_err())
         }

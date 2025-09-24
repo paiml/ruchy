@@ -2221,7 +2221,7 @@ mod sprint_44_tests {
 
         // Test multiple rapid modifications to scope
         for i in 0..100 {
-            let var_name = format!("var_{}", i);
+            let var_name = format!("var_{i}");
             scope.define(var_name.clone(), i, i, VarType::Local);
             scope.mark_used(&var_name);
             assert!(scope.is_defined(&var_name));
@@ -2337,9 +2337,7 @@ mod sprint_44_tests {
             assert_eq!(
                 linter.rules.len(),
                 expected_count,
-                "Rule '{}' should add {} rules",
-                rule_name,
-                expected_count
+                "Rule '{rule_name}' should add {expected_count} rules"
             );
         }
 
@@ -2364,8 +2362,7 @@ mod sprint_44_tests {
             assert_eq!(
                 issues.len(),
                 0,
-                "Builtin '{}' should not be flagged as undefined",
-                builtin
+                "Builtin '{builtin}' should not be flagged as undefined"
             );
         }
 
@@ -2434,7 +2431,7 @@ mod sprint_44_tests {
                     ExprKind::Identifier("obj".to_string()),
                     Span { start: 0, end: 1 },
                 )),
-                method: "".to_string(), // Empty method name
+                method: String::new(), // Empty method name
                 args: vec![],
             },
             Span { start: 0, end: 1 },

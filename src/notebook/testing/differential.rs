@@ -225,14 +225,14 @@ mod tests {
             performance_threshold_ms: 250,
             track_performance: true,
         };
-        let cloned = config.clone();
+        let cloned = config;
         assert_eq!(cloned.performance_threshold_ms, 250);
         assert!(cloned.track_performance);
     }
 
     #[test]
     fn test_divergence_type_enum_variants() {
-        let variants = vec![
+        let variants = [
             DivergenceType::None,
             DivergenceType::OutputMismatch,
             DivergenceType::TypeMismatch,
@@ -301,7 +301,7 @@ mod tests {
             candidate_time: Duration::from_millis(200),
         };
 
-        let cloned = result.clone();
+        let cloned = result;
         assert_eq!(cloned.cell_id, "clone_test");
         assert_eq!(cloned.divergence, DivergenceType::TypeMismatch);
     }

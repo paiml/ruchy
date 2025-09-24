@@ -15,7 +15,7 @@ mod final_tests {
 
     #[test]
     fn test_print_with_variable() {
-        let code = r#"fn main() { let x = 42; println(x); }"#;
+        let code = r"fn main() { let x = 42; println(x); }";
         assert!(compile(code).is_ok());
     }
 

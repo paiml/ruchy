@@ -12,9 +12,9 @@ mod test_examples {
     fn compile_example(filename: &str) -> Result<String, String> {
         let path = Path::new("examples").join(filename);
         let code =
-            fs::read_to_string(&path).map_err(|e| format!("Failed to read {}: {}", filename, e))?;
+            fs::read_to_string(&path).map_err(|e| format!("Failed to read {filename}: {e}"))?;
 
-        compile(&code).map_err(|e| format!("Failed to compile {}: {}", filename, e))
+        compile(&code).map_err(|e| format!("Failed to compile {filename}: {e}"))
     }
 
     #[test]
@@ -164,7 +164,7 @@ mod test_examples {
     fn test_collections_has_vec_or_array() {
         if let Ok(output) = compile_example("04_collections.ruchy") {
             assert!(
-                output.contains("Vec") || output.contains("vec!") || output.contains("["),
+                output.contains("Vec") || output.contains("vec!") || output.contains('['),
                 "Output should contain collections"
             );
         }
@@ -174,7 +174,7 @@ mod test_examples {
     fn test_strings_has_string_operations() {
         if let Ok(output) = compile_example("05_strings.ruchy") {
             assert!(
-                output.contains("String") || output.contains("str") || output.contains("\""),
+                output.contains("String") || output.contains("str") || output.contains('"'),
                 "Output should contain string operations"
             );
         }

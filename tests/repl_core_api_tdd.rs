@@ -190,7 +190,7 @@ fn test_memory_functions() {
 
     let memory_pressure = repl.memory_pressure();
     assert!(
-        memory_pressure >= 0.0 && memory_pressure <= 1.0,
+        (0.0..=1.0).contains(&memory_pressure),
         "Memory pressure should be between 0 and 1"
     );
 
@@ -360,7 +360,7 @@ mod property_tests {
         #[test]
         fn test_integer_evaluation_correctness(n in -1000i64..1000i64) {
             let mut repl = create_test_repl();
-            let input = format!("{}", n);
+            let input = format!("{n}");
 
             if let Ok(result) = repl.eval(&input) {
                 // If evaluation succeeds, result should contain the number
@@ -373,7 +373,7 @@ mod property_tests {
         #[test]
         fn test_string_evaluation_correctness(s in "[a-zA-Z0-9 ]{0,50}") {
             let mut repl = create_test_repl();
-            let input = format!("\"{}\"", s);
+            let input = format!("\"{s}\"");
 
             if let Ok(result) = repl.eval(&input) {
                 // If evaluation succeeds, result should contain the string
@@ -386,8 +386,8 @@ mod property_tests {
         fn test_arithmetic_commutativity(a in -100i64..100i64, b in -100i64..100i64) {
             let mut repl = create_test_repl();
 
-            let expr1 = format!("{} + {}", a, b);
-            let expr2 = format!("{} + {}", b, a);
+            let expr1 = format!("{a} + {b}");
+            let expr2 = format!("{b} + {a}");
 
             let result1 = repl.eval(&expr1);
             let result2 = repl.eval(&expr2);
@@ -403,7 +403,7 @@ mod property_tests {
 
             // Perform some operations
             for i in 0..iterations {
-                let _ = repl.eval(&format!("let var{} = {}", i, i));
+                let _ = repl.eval(&format!("let var{i} = {i}"));
             }
 
             let memory_used = repl.memory_used();
@@ -412,7 +412,7 @@ mod property_tests {
 
             // memory_used is usize, always non-negative
             prop_assert!(peak_memory >= memory_used, "Peak memory should be >= current memory");
-            prop_assert!(memory_pressure >= 0.0 && memory_pressure <= 1.0,
+            prop_assert!((0.0..=1.0).contains(&memory_pressure),
                 "Memory pressure should be in valid range");
         }
 

@@ -13,7 +13,7 @@ mod transpiler_compound_assignment_tests {
 
     fn make_literal(n: i32) -> Expr {
         Expr::new(
-            ExprKind::Literal(Literal::Integer(n as i64)),
+            ExprKind::Literal(Literal::Integer(i64::from(n))),
             Default::default(),
         )
     }

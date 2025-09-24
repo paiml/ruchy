@@ -349,7 +349,7 @@ mod tests {
             late_penalty_percent: 15.0,
             max_attempts: 1,
         };
-        let grader = Grader::with_config(config.clone());
+        let grader = Grader::with_config(config);
         assert!(!grader.config.partial_credit);
         assert_eq!(grader.config.late_penalty_percent, 15.0);
     }

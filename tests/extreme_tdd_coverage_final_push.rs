@@ -285,7 +285,7 @@ mod repl_edge_cases {
         let result = repl.eval("counter");
 
         if let Ok(output) = result {
-            assert!(output.contains("1") || output.contains("counter"));
+            assert!(output.contains('1') || output.contains("counter"));
         }
     }
 
@@ -301,7 +301,7 @@ mod repl_edge_cases {
         let result = repl.eval("2 + 2");
         assert!(result.is_ok());
         if let Ok(output) = result {
-            assert!(output.contains("4"));
+            assert!(output.contains('4'));
         }
     }
 
@@ -321,7 +321,7 @@ mod repl_edge_cases {
 
         // Rapid-fire evaluations
         for i in 0..10 {
-            let code = format!("{} + {}", i, i);
+            let code = format!("{i} + {i}");
             let _ = repl.eval(&code);
         }
 

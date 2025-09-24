@@ -169,7 +169,7 @@ mod tests {
             file: PathBuf::from(file),
             success,
             duration: Duration::from_millis(duration_ms),
-            error: error.map(|s| s.to_string()),
+            error: error.map(std::string::ToString::to_string),
         }
     }
 
@@ -180,7 +180,7 @@ mod tests {
 
         // Change to the temp directory for the test
         let original_dir = std::env::current_dir().unwrap();
-        std::env::set_current_dir(&temp_dir.path()).unwrap();
+        std::env::set_current_dir(temp_dir.path()).unwrap();
 
         let result = handle_test_command(
             None,   // Use default path (current directory)

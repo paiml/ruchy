@@ -23,11 +23,11 @@ mod test_fun_keyword {
 
     #[test]
     fn test_fun_with_parameters() {
-        let code = r#"
+        let code = r"
             fun add(x: i32, y: i32) -> i32 {
                 x + y
             }
-        "#;
+        ";
         let result = compile(code);
         assert!(result.is_ok(), "Failed to compile fun with parameters");
         let output = result.unwrap();
@@ -39,11 +39,11 @@ mod test_fun_keyword {
 
     #[test]
     fn test_fun_with_return_type() {
-        let code = r#"
+        let code = r"
             fun calculate(data: Vec<f64>) -> f64 {
                 data.iter().sum()
             }
-        "#;
+        ";
         let result = compile(code);
         assert!(result.is_ok(), "Failed to compile fun with return type");
         let output = result.unwrap();
@@ -53,12 +53,12 @@ mod test_fun_keyword {
     // Type inference tests
     #[test]
     fn test_fun_with_local_inference() {
-        let code = r#"
+        let code = r"
             fun process(data: Vec<f64>) -> Vec<f64> {
                 let result = data.iter().map(|x| x * 2.0).collect();
                 result
             }
-        "#;
+        ";
         let result = compile(code);
         assert!(
             result.is_ok(),
@@ -69,12 +69,12 @@ mod test_fun_keyword {
     // Async function tests
     #[test]
     fn test_async_fun() {
-        let code = r#"
+        let code = r"
             async fun fetch_data(url: &str) -> Result<String> {
                 let response = http::get(url).await?;
                 Ok(response.body())
             }
-        "#;
+        ";
         let result = compile(code);
         assert!(result.is_ok(), "Failed to compile async fun");
         let output = result.unwrap();
@@ -84,11 +84,11 @@ mod test_fun_keyword {
     // Generic function tests
     #[test]
     fn test_fun_with_generics() {
-        let code = r#"
+        let code = r"
             fun identity<T>(value: T) -> T {
                 value
             }
-        "#;
+        ";
         let result = compile(code);
         assert!(result.is_ok(), "Failed to compile generic fun");
         let output = result.unwrap();
@@ -97,11 +97,11 @@ mod test_fun_keyword {
 
     #[test]
     fn test_fun_with_multiple_generics() {
-        let code = r#"
+        let code = r"
             fun swap<T, U>(pair: (T, U)) -> (U, T) {
                 (pair.1, pair.0)
             }
-        "#;
+        ";
         let result = compile(code);
         assert!(
             result.is_ok(),
@@ -112,11 +112,11 @@ mod test_fun_keyword {
     // Lifetime tests
     #[test]
     fn test_fun_with_lifetime() {
-        let code = r#"
+        let code = r"
             fun get_first<'a>(data: &'a [i32]) -> &'a i32 {
                 &data[0]
             }
-        "#;
+        ";
         let result = compile(code);
         assert!(result.is_ok(), "Failed to compile fun with lifetime");
         let output = result.unwrap();
@@ -126,7 +126,7 @@ mod test_fun_keyword {
     // Impl block tests
     #[test]
     fn test_fun_in_impl_block() {
-        let code = r#"
+        let code = r"
             struct Point { x: f64, y: f64 }
 
             impl Point {
@@ -138,7 +138,7 @@ mod test_fun_keyword {
                     ((self.x - other.x).powi(2) + (self.y - other.y).powi(2)).sqrt()
                 }
             }
-        "#;
+        ";
         let result = compile(code);
         assert!(result.is_ok(), "Failed to compile fun in impl block");
         let output = result.unwrap();
@@ -167,11 +167,11 @@ mod test_fun_keyword {
     // Const function tests
     #[test]
     fn test_const_fun() {
-        let code = r#"
+        let code = r"
             const fun max(a: i32, b: i32) -> i32 {
                 if a > b { a } else { b }
             }
-        "#;
+        ";
         let result = compile(code);
         assert!(result.is_ok(), "Failed to compile const fun");
         let output = result.unwrap();
@@ -181,11 +181,11 @@ mod test_fun_keyword {
     // Unsafe function tests
     #[test]
     fn test_unsafe_fun() {
-        let code = r#"
+        let code = r"
             unsafe fun raw_access(ptr: *const i32) -> i32 {
                 *ptr
             }
-        "#;
+        ";
         let result = compile(code);
         assert!(result.is_ok(), "Failed to compile unsafe fun");
         let output = result.unwrap();
@@ -195,11 +195,11 @@ mod test_fun_keyword {
     // Pub function tests
     #[test]
     fn test_pub_fun() {
-        let code = r#"
+        let code = r"
             pub fun public_api(data: String) -> String {
                 data.to_uppercase()
             }
-        "#;
+        ";
         let result = compile(code);
         assert!(result.is_ok(), "Failed to compile pub fun");
         let output = result.unwrap();
@@ -209,11 +209,11 @@ mod test_fun_keyword {
     // Multiple modifiers
     #[test]
     fn test_pub_async_fun() {
-        let code = r#"
+        let code = r"
             pub async fun fetch_public_data() -> Result<Vec<u8>> {
                 Ok(vec![])
             }
-        "#;
+        ";
         let result = compile(code);
         assert!(result.is_ok(), "Failed to compile pub async fun");
         let output = result.unwrap();
@@ -223,7 +223,7 @@ mod test_fun_keyword {
     // Recursive function
     #[test]
     fn test_recursive_fun() {
-        let code = r#"
+        let code = r"
             fun factorial(n: u64) -> u64 {
                 if n <= 1 {
                     1
@@ -231,7 +231,7 @@ mod test_fun_keyword {
                     n * factorial(n - 1)
                 }
             }
-        "#;
+        ";
         let result = compile(code);
         assert!(result.is_ok(), "Failed to compile recursive fun");
     }
@@ -239,14 +239,14 @@ mod test_fun_keyword {
     // Closure interaction
     #[test]
     fn test_fun_with_closure() {
-        let code = r#"
+        let code = r"
             fun apply_twice<F>(f: F, x: i32) -> i32
             where
                 F: Fn(i32) -> i32
             {
                 f(f(x))
             }
-        "#;
+        ";
         let result = compile(code);
         assert!(
             result.is_ok(),
@@ -257,11 +257,11 @@ mod test_fun_keyword {
     // Pattern matching in parameters
     #[test]
     fn test_fun_with_pattern_params() {
-        let code = r#"
+        let code = r"
             fun process_tuple((x, y): (i32, i32)) -> i32 {
                 x + y
             }
-        "#;
+        ";
         let result = compile(code);
         assert!(result.is_ok(), "Failed to compile fun with pattern params");
     }
@@ -269,11 +269,11 @@ mod test_fun_keyword {
     // Variadic-like with slice
     #[test]
     fn test_fun_with_slice_param() {
-        let code = r#"
+        let code = r"
             fun sum(numbers: &[i32]) -> i32 {
                 numbers.iter().sum()
             }
-        "#;
+        ";
         let result = compile(code);
         assert!(result.is_ok(), "Failed to compile fun with slice param");
     }
@@ -281,13 +281,13 @@ mod test_fun_keyword {
     // Associated function
     #[test]
     fn test_associated_fun() {
-        let code = r#"
+        let code = r"
             impl Vec<T> {
                 fun with_capacity(capacity: usize) -> Self {
                     Vec::with_capacity(capacity)
                 }
             }
-        "#;
+        ";
         let result = compile(code);
         assert!(result.is_ok(), "Failed to compile associated fun");
     }
@@ -295,13 +295,13 @@ mod test_fun_keyword {
     // Function pointer type
     #[test]
     fn test_fun_pointer_type() {
-        let code = r#"
+        let code = r"
             type Operation = fun(i32, i32) -> i32;
 
             fun apply(op: Operation, a: i32, b: i32) -> i32 {
                 op(a, b)
             }
-        "#;
+        ";
         let result = compile(code);
         assert!(result.is_ok(), "Failed to compile function pointer type");
     }
@@ -317,7 +317,7 @@ mod test_fun_keyword {
                 return TestResult::discard();
             }
 
-            let code = format!("fun {}() {{ }}", name);
+            let code = format!("fun {name}() {{ }}");
             let result = compile(&code);
             TestResult::from_bool(result.is_ok())
         }

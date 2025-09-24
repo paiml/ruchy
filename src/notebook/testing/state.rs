@@ -175,7 +175,7 @@ mod tests {
     #[test]
     fn test_empty_variable_name() {
         let mut state = TestState::new();
-        state.set_variable("".to_string(), "empty_name".to_string());
+        state.set_variable(String::new(), "empty_name".to_string());
 
         assert_eq!(state.get_variable(""), Some(&"empty_name".to_string()));
         assert!(!state.is_empty());
@@ -184,9 +184,9 @@ mod tests {
     #[test]
     fn test_empty_variable_value() {
         let mut state = TestState::new();
-        state.set_variable("empty_value".to_string(), "".to_string());
+        state.set_variable("empty_value".to_string(), String::new());
 
-        assert_eq!(state.get_variable("empty_value"), Some(&"".to_string()));
+        assert_eq!(state.get_variable("empty_value"), Some(&String::new()));
         assert!(!state.is_empty());
     }
 

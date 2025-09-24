@@ -100,7 +100,7 @@ mod test_dataframe {
     // SQL macro tests
     #[test]
     fn test_sql_macro_simple() {
-        let code = r#"
+        let code = r"
             fun query_data(df: DataFrame) -> DataFrame {
                 sql! {
                     SELECT name, age
@@ -108,7 +108,7 @@ mod test_dataframe {
                     WHERE age > 18
                 }
             }
-        "#;
+        ";
         let result = compile(code);
         assert!(result.is_ok(), "Failed to compile SQL macro");
         let output = result.unwrap();
@@ -117,7 +117,7 @@ mod test_dataframe {
 
     #[test]
     fn test_sql_macro_with_aggregation() {
-        let code = r#"
+        let code = r"
             fun aggregate_data(df: DataFrame) -> DataFrame {
                 sql! {
                     SELECT category, AVG(value) as avg_value
@@ -127,7 +127,7 @@ mod test_dataframe {
                     ORDER BY avg_value DESC
                 }
             }
-        "#;
+        ";
         let result = compile(code);
         assert!(
             result.is_ok(),
@@ -137,7 +137,7 @@ mod test_dataframe {
 
     #[test]
     fn test_sql_macro_with_join() {
-        let code = r#"
+        let code = r"
             fun join_tables(df1: DataFrame, df2: DataFrame) -> DataFrame {
                 sql! {
                     SELECT a.*, b.score
@@ -146,7 +146,7 @@ mod test_dataframe {
                     WHERE b.score > 80
                 }
             }
-        "#;
+        ";
         let result = compile(code);
         assert!(result.is_ok(), "Failed to compile SQL macro with join");
     }
@@ -194,22 +194,22 @@ mod test_dataframe {
     // DataFrame statistics
     #[test]
     fn test_dataframe_describe() {
-        let code = r#"
+        let code = r"
             fun get_statistics(df: DataFrame) -> DataFrame {
                 df.describe()
             }
-        "#;
+        ";
         let result = compile(code);
         assert!(result.is_ok(), "Failed to compile DataFrame describe");
     }
 
     #[test]
     fn test_dataframe_correlation() {
-        let code = r#"
+        let code = r"
             fun correlation_matrix(df: DataFrame) -> DataFrame {
                 df.select_numeric().corr()
             }
-        "#;
+        ";
         let result = compile(code);
         assert!(result.is_ok(), "Failed to compile DataFrame correlation");
     }
@@ -217,35 +217,35 @@ mod test_dataframe {
     // DataFrame I/O
     #[test]
     fn test_dataframe_to_csv() {
-        let code = r#"
+        let code = r"
             fun save_results(df: DataFrame, path: &str) -> Result<()> {
                 df.to_csv(path)?;
                 Ok(())
             }
-        "#;
+        ";
         let result = compile(code);
         assert!(result.is_ok(), "Failed to compile DataFrame to CSV");
     }
 
     #[test]
     fn test_dataframe_to_parquet() {
-        let code = r#"
+        let code = r"
             fun save_compressed(df: DataFrame, path: &str) -> Result<()> {
                 df.to_parquet(path)?;
                 Ok(())
             }
-        "#;
+        ";
         let result = compile(code);
         assert!(result.is_ok(), "Failed to compile DataFrame to Parquet");
     }
 
     #[test]
     fn test_dataframe_from_json() {
-        let code = r#"
+        let code = r"
             fun load_json_data(path: &str) -> Result<DataFrame> {
                 DataFrame::from_json(path)
             }
-        "#;
+        ";
         let result = compile(code);
         assert!(result.is_ok(), "Failed to compile DataFrame from JSON");
     }
@@ -373,11 +373,11 @@ mod test_dataframe {
     // DataFrame sampling
     #[test]
     fn test_dataframe_sample() {
-        let code = r#"
+        let code = r"
             fun sample_data(df: DataFrame) -> DataFrame {
                 df.sample(n=1000, seed=42)
             }
-        "#;
+        ";
         let result = compile(code);
         assert!(result.is_ok(), "Failed to compile DataFrame sample");
     }
@@ -393,7 +393,7 @@ mod test_dataframe {
                 return TestResult::discard();
             }
 
-            let code = format!("fun test(df: DataFrame) -> DataFrame {{ df.limit({}) }}", n);
+            let code = format!("fun test(df: DataFrame) -> DataFrame {{ df.limit({n}) }}");
             let result = compile(&code);
             TestResult::from_bool(result.is_ok() || result.is_err())
         }

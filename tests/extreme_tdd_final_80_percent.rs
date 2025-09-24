@@ -52,7 +52,7 @@ mod repl_comprehensive_coverage {
         // Test expression evaluation
         let result = repl.eval("2 + 3");
         assert!(result.is_ok());
-        assert!(result.unwrap().contains("5"));
+        assert!(result.unwrap().contains('5'));
 
         // Test string evaluation
         let result = repl.eval("\"hello\"");

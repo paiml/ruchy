@@ -10,12 +10,12 @@ mod test_quality_attrs {
     // Complexity attribute tests
     #[test]
     fn test_complexity_attribute() {
-        let code = r#"
+        let code = r"
             #[complexity(max = 10)]
             fun process_data(data: Vec<i32>) -> i32 {
                 data.iter().sum()
             }
-        "#;
+        ";
         let result = compile(code);
         assert!(
             result.is_ok(),
@@ -25,7 +25,7 @@ mod test_quality_attrs {
 
     #[test]
     fn test_complexity_violation() {
-        let code = r#"
+        let code = r"
             #[complexity(max = 5)]
             fun complex_function(data: Vec<i32>) -> i32 {
                 // This function has complexity > 5
@@ -45,7 +45,7 @@ mod test_quality_attrs {
                 }
                 result
             }
-        "#;
+        ";
         let result = compile(code);
         assert!(
             result.is_err(),
@@ -59,12 +59,12 @@ mod test_quality_attrs {
     // Coverage attribute tests
     #[test]
     fn test_coverage_attribute() {
-        let code = r#"
+        let code = r"
             #[coverage(min = 95)]
             fun critical_function(x: i32) -> i32 {
                 x * 2
             }
-        "#;
+        ";
         let result = compile(code);
         assert!(
             result.is_ok(),
@@ -74,13 +74,13 @@ mod test_quality_attrs {
 
     #[test]
     fn test_module_coverage_attribute() {
-        let code = r#"
+        let code = r"
             #[coverage(min = 90)]
             mod critical_module {
                 fun operation1(x: i32) -> i32 { x + 1 }
                 fun operation2(x: i32) -> i32 { x - 1 }
             }
-        "#;
+        ";
         let result = compile(code);
         assert!(
             result.is_ok(),
@@ -110,12 +110,12 @@ mod test_quality_attrs {
 
     #[test]
     fn test_no_panic_violation() {
-        let code = r#"
+        let code = r"
             #[no_panic]
             fun unsafe_function(data: Vec<i32>) -> i32 {
                 data[0]  // This can panic on empty vec
             }
-        "#;
+        ";
         let result = compile(code);
         assert!(result.is_err(), "Should reject function that can panic");
         if let Err(e) = result {
@@ -125,12 +125,12 @@ mod test_quality_attrs {
 
     #[test]
     fn test_no_panic_with_unwrap() {
-        let code = r#"
+        let code = r"
             #[no_panic]
             fun bad_unwrap(opt: Option<i32>) -> i32 {
                 opt.unwrap()  // This can panic
             }
-        "#;
+        ";
         let result = compile(code);
         assert!(result.is_err(), "Should reject function with unwrap");
     }
@@ -138,25 +138,25 @@ mod test_quality_attrs {
     // Property test attribute tests
     #[test]
     fn test_property_test_attribute() {
-        let code = r#"
+        let code = r"
             #[property_test]
             fun test_commutative(a: i32, b: i32) {
                 assert_eq!(add(a, b), add(b, a));
             }
-        "#;
+        ";
         let result = compile(code);
         assert!(result.is_ok(), "Failed to compile property test");
     }
 
     #[test]
     fn test_property_test_with_iterations() {
-        let code = r#"
+        let code = r"
             #[property_test(iterations = 10000)]
             fun test_associative(a: f64, b: f64, c: f64) {
                 let diff = ((a + b) + c) - (a + (b + c));
                 assert!(diff.abs() < 1e-10);
             }
-        "#;
+        ";
         let result = compile(code);
         assert!(
             result.is_ok(),
@@ -167,13 +167,13 @@ mod test_quality_attrs {
     // Mutation score attribute tests
     #[test]
     fn test_mutation_score_attribute() {
-        let code = r#"
+        let code = r"
             #[mutation_score(min = 90)]
             fun calculate_average(data: &[f64]) -> f64 {
                 let sum: f64 = data.iter().sum();
                 sum / data.len() as f64
             }
-        "#;
+        ";
         let result = compile(code);
         assert!(
             result.is_ok(),
@@ -236,12 +236,12 @@ mod test_quality_attrs {
     // Pure function attribute
     #[test]
     fn test_pure_function_attribute() {
-        let code = r#"
+        let code = r"
             #[pure]
             fun add(a: i32, b: i32) -> i32 {
                 a + b
             }
-        "#;
+        ";
         let result = compile(code);
         assert!(result.is_ok(), "Failed to compile pure function");
     }
@@ -265,13 +265,13 @@ mod test_quality_attrs {
     // Benchmark attribute
     #[test]
     fn test_benchmark_attribute() {
-        let code = r#"
+        let code = r"
             #[benchmark]
             fun bench_sort() {
                 let mut data = vec![3, 1, 4, 1, 5, 9, 2, 6];
                 data.sort();
             }
-        "#;
+        ";
         let result = compile(code);
         assert!(result.is_ok(), "Failed to compile benchmark function");
     }
@@ -279,24 +279,24 @@ mod test_quality_attrs {
     // Inline attributes
     #[test]
     fn test_inline_attribute() {
-        let code = r#"
+        let code = r"
             #[inline(always)]
             fun hot_path(x: i32) -> i32 {
                 x * 2
             }
-        "#;
+        ";
         let result = compile(code);
         assert!(result.is_ok(), "Failed to compile inline function");
     }
 
     #[test]
     fn test_inline_never_attribute() {
-        let code = r#"
+        let code = r"
             #[inline(never)]
             fun cold_path(x: i32) -> i32 {
                 expensive_computation(x)
             }
-        "#;
+        ";
         let result = compile(code);
         assert!(result.is_ok(), "Failed to compile inline(never) function");
     }
@@ -304,12 +304,12 @@ mod test_quality_attrs {
     // Test attribute
     #[test]
     fn test_test_attribute() {
-        let code = r#"
+        let code = r"
             #[test]
             fun test_addition() {
                 assert_eq!(2 + 2, 4);
             }
-        "#;
+        ";
         let result = compile(code);
         assert!(result.is_ok(), "Failed to compile test function");
     }
@@ -343,12 +343,12 @@ mod test_quality_attrs {
     // Actor supervision attribute
     #[test]
     fn test_actor_supervisor_attribute() {
-        let code = r#"
+        let code = r"
             #[supervisor(strategy = RestartOnFailure, max_restarts = 3)]
             struct DataPipeline {
                 workers: Vec<ActorHandle<Worker>>,
             }
-        "#;
+        ";
         let result = compile(code);
         assert!(result.is_ok(), "Failed to compile actor with supervisor");
     }
@@ -380,7 +380,7 @@ mod test_quality_attrs {
                 return TestResult::discard();
             }
 
-            let code = format!("#[complexity(max = {})]\nfun test() -> i32 {{ 42 }}", limit);
+            let code = format!("#[complexity(max = {limit})]\nfun test() -> i32 {{ 42 }}");
             let result = compile(&code);
             TestResult::from_bool(result.is_ok() || result.is_err())
         }
@@ -390,7 +390,7 @@ mod test_quality_attrs {
                 return TestResult::discard();
             }
 
-            let code = format!("#[coverage(min = {})]\nfun test() -> i32 {{ 42 }}", percent);
+            let code = format!("#[coverage(min = {percent})]\nfun test() -> i32 {{ 42 }}");
             let result = compile(&code);
             TestResult::from_bool(result.is_ok() || result.is_err())
         }

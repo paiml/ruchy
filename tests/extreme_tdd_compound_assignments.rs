@@ -98,9 +98,9 @@ mod compound_assignment_tests {
         ];
 
         for (op, _name) in operators {
-            let code = format!("let mut x = 1; x {} 2", op);
+            let code = format!("let mut x = 1; x {op} 2");
             let result = compile(&code);
-            assert!(result.is_ok(), "Failed to compile: {}", code);
+            assert!(result.is_ok(), "Failed to compile: {code}");
         }
     }
 
@@ -159,7 +159,7 @@ mod property_tests {
             delta in 0..100i32,
             op in "[+\\-*/%&|^]="
         ) {
-            let code = format!("let mut x = {}; x {} {}", initial, op, delta);
+            let code = format!("let mut x = {initial}; x {op} {delta}");
             // Should not panic, either succeeds or returns error
             let _ = compile(&code);
         }
@@ -169,9 +169,9 @@ mod property_tests {
             var_name in "[a-z][a-z0-9]*",
             value in 0..100i32
         ) {
-            let code = format!("let mut {} = 1; {} += {}", var_name, var_name, value);
+            let code = format!("let mut {var_name} = 1; {var_name} += {value}");
             if let Ok(transpiled) = compile(&code) {
-                assert!(transpiled.contains(&format!("{} +=", var_name)));
+                assert!(transpiled.contains(&format!("{var_name} +=")));
             }
         }
     }

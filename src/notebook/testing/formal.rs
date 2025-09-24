@@ -303,7 +303,7 @@ mod tests {
 
     #[test]
     fn test_solver_backend_enum_variants() {
-        let backends = vec![
+        let backends = [
             SolverBackend::Z3,
             SolverBackend::SimpleSMT,
             SolverBackend::Symbolic,
@@ -320,7 +320,7 @@ mod tests {
 
     #[test]
     fn test_constraint_severity_enum_variants() {
-        let severities = vec![
+        let severities = [
             ConstraintSeverity::Error,
             ConstraintSeverity::Warning,
             ConstraintSeverity::Info,
@@ -362,7 +362,7 @@ mod tests {
             max_iterations: 2000,
             enable_counterexamples: true,
         };
-        let cloned = config.clone();
+        let cloned = config;
         assert_eq!(cloned.timeout_ms, 3000);
         assert_eq!(cloned.max_iterations, 2000);
         assert!(cloned.enable_counterexamples);
@@ -746,8 +746,8 @@ mod tests {
         };
 
         // Test that all structs can be cloned
-        let _config_clone = config.clone();
-        let _invariant_clone = invariant.clone();
-        let _constraint_clone = constraint.clone();
+        let _config_clone = config;
+        let _invariant_clone = invariant;
+        let _constraint_clone = constraint;
     }
 }

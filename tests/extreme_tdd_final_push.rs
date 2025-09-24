@@ -27,7 +27,7 @@ mod final_parser_tests {
         ];
         for case in cases {
             let mut parser = Parser::new(case);
-            assert!(parser.parse().is_ok(), "Failed to parse: {}", case);
+            assert!(parser.parse().is_ok(), "Failed to parse: {case}");
         }
     }
 
@@ -43,7 +43,7 @@ mod final_parser_tests {
         ];
         for case in cases {
             let mut parser = Parser::new(case);
-            assert!(parser.parse().is_ok(), "Failed to parse: {}", case);
+            assert!(parser.parse().is_ok(), "Failed to parse: {case}");
         }
     }
 
@@ -73,7 +73,7 @@ mod final_parser_tests {
         ];
         for case in cases {
             let mut parser = Parser::new(case);
-            assert!(parser.parse().is_ok(), "Failed to parse: {}", case);
+            assert!(parser.parse().is_ok(), "Failed to parse: {case}");
         }
     }
 
@@ -95,7 +95,7 @@ mod final_parser_tests {
         ];
         for case in cases {
             let mut parser = Parser::new(case);
-            assert!(parser.parse().is_ok(), "Failed to parse: {}", case);
+            assert!(parser.parse().is_ok(), "Failed to parse: {case}");
         }
     }
 
@@ -111,18 +111,14 @@ mod final_parser_tests {
         ];
         for case in supported_cases {
             let mut parser = Parser::new(case);
-            assert!(parser.parse().is_ok(), "Failed to parse: {}", case);
+            assert!(parser.parse().is_ok(), "Failed to parse: {case}");
         }
 
         // Test unsupported syntax (const keyword not implemented)
         let unsupported_cases = vec!["const Z = 3"];
         for case in unsupported_cases {
             let mut parser = Parser::new(case);
-            assert!(
-                parser.parse().is_err(),
-                "Expected to fail parsing: {}",
-                case
-            );
+            assert!(parser.parse().is_err(), "Expected to fail parsing: {case}");
         }
     }
 
@@ -140,7 +136,7 @@ mod final_parser_tests {
         ];
         for case in cases {
             let mut parser = Parser::new(case);
-            assert!(parser.parse().is_ok(), "Failed to parse: {}", case);
+            assert!(parser.parse().is_ok(), "Failed to parse: {case}");
         }
     }
 
@@ -159,7 +155,7 @@ mod final_parser_tests {
         ];
         for case in cases {
             let mut parser = Parser::new(case);
-            assert!(parser.parse().is_ok(), "Failed to parse: {}", case);
+            assert!(parser.parse().is_ok(), "Failed to parse: {case}");
         }
     }
 
@@ -182,7 +178,7 @@ mod final_parser_tests {
         ];
         for case in cases {
             let mut parser = Parser::new(case);
-            assert!(parser.parse().is_ok(), "Failed to parse: {}", case);
+            assert!(parser.parse().is_ok(), "Failed to parse: {case}");
         }
     }
 
@@ -199,25 +195,21 @@ mod final_parser_tests {
         ];
         for case in supported_cases {
             let mut parser = Parser::new(case);
-            assert!(parser.parse().is_ok(), "Failed to parse: {}", case);
+            assert!(parser.parse().is_ok(), "Failed to parse: {case}");
         }
 
         // Test supported list comprehensions
         let more_supported_cases = vec!["[x for x in 0..10]", "[x for x in 0..10 if x % 2 == 0]"];
         for case in more_supported_cases {
             let mut parser = Parser::new(case);
-            assert!(parser.parse().is_ok(), "Failed to parse: {}", case);
+            assert!(parser.parse().is_ok(), "Failed to parse: {case}");
         }
 
         // Test unsupported syntax (dict comprehensions, spread, destructuring not implemented)
         let unsupported_cases = vec!["{x: x*2 for x in 0..5}", "...arr", "obj.{x, y}"];
         for case in unsupported_cases {
             let mut parser = Parser::new(case);
-            assert!(
-                parser.parse().is_err(),
-                "Expected to fail parsing: {}",
-                case
-            );
+            assert!(parser.parse().is_err(), "Expected to fail parsing: {case}");
         }
     }
 
@@ -244,18 +236,14 @@ mod final_parser_tests {
         ];
         for case in supported_cases {
             let mut parser = Parser::new(case);
-            assert!(parser.parse().is_ok(), "Failed to parse: {}", case);
+            assert!(parser.parse().is_ok(), "Failed to parse: {case}");
         }
 
         // Test unsupported operators (>>= not implemented)
         let unsupported_cases = vec!["x >>= 1"];
         for case in unsupported_cases {
             let mut parser = Parser::new(case);
-            assert!(
-                parser.parse().is_err(),
-                "Expected to fail parsing: {}",
-                case
-            );
+            assert!(parser.parse().is_err(), "Expected to fail parsing: {case}");
         }
     }
 }
@@ -280,7 +268,7 @@ mod final_transpiler_tests {
             let mut parser = Parser::new(case);
             if let Ok(ast) = parser.parse() {
                 let result = transpiler.transpile_expr(&ast);
-                assert!(result.is_ok(), "Failed to transpile: {}", case);
+                assert!(result.is_ok(), "Failed to transpile: {case}");
             }
         }
     }
@@ -302,7 +290,7 @@ mod final_transpiler_tests {
             let mut parser = Parser::new(case);
             if let Ok(ast) = parser.parse() {
                 let result = transpiler.transpile_expr(&ast);
-                assert!(result.is_ok(), "Failed to transpile: {}", case);
+                assert!(result.is_ok(), "Failed to transpile: {case}");
             }
         }
     }
@@ -315,7 +303,7 @@ mod final_transpiler_tests {
             let mut parser = Parser::new(case);
             if let Ok(ast) = parser.parse() {
                 let result = transpiler.transpile_expr(&ast);
-                assert!(result.is_ok(), "Failed to transpile: {}", case);
+                assert!(result.is_ok(), "Failed to transpile: {case}");
             }
         }
     }
@@ -332,7 +320,7 @@ mod final_transpiler_tests {
             let mut parser = Parser::new(case);
             if let Ok(ast) = parser.parse() {
                 let result = transpiler.transpile_expr(&ast);
-                assert!(result.is_ok(), "Failed to transpile: {}", case);
+                assert!(result.is_ok(), "Failed to transpile: {case}");
             }
         }
     }
@@ -354,7 +342,7 @@ mod final_transpiler_tests {
             let mut parser = Parser::new(case);
             if let Ok(ast) = parser.parse() {
                 let result = transpiler.transpile_expr(&ast);
-                assert!(result.is_ok(), "Failed to transpile: {}", case);
+                assert!(result.is_ok(), "Failed to transpile: {case}");
             }
         }
     }
@@ -383,14 +371,14 @@ mod integration_tests {
             let mut parser = Parser::new(prog);
             if let Ok(ast) = parser.parse() {
                 let result = transpiler.transpile_expr(&ast);
-                assert!(result.is_ok(), "Failed to compile: {}", prog);
+                assert!(result.is_ok(), "Failed to compile: {prog}");
             }
         }
     }
 
     #[test]
     fn test_comprehensive_features() {
-        let code = r#"
+        let code = r"
             fun factorial(n) {
                 if n <= 1 {
                     1
@@ -400,7 +388,7 @@ mod integration_tests {
             }
 
             let result = factorial(5)
-        "#;
+        ";
 
         let mut parser = Parser::new(code);
         let ast = parser.parse();
