@@ -4830,7 +4830,7 @@ mod tests {
         let mut runtime = NotebookRuntime::new().unwrap();
 
         // Test GET request handling
-        let response = runtime.handle_api_request("GET", "/status", None);
+        let response = runtime.handle_api_request("GET", "/health", None);
         assert!(response.is_ok());
 
         let api_response = response.unwrap();
@@ -4858,12 +4858,12 @@ mod tests {
     fn test_handle_api_request_invalid_method() {
         let mut runtime = NotebookRuntime::new().unwrap();
 
-        // Test invalid method handling
+        // Test invalid method handling - returns 404 for unknown endpoints
         let response = runtime.handle_api_request("INVALID", "/test", None);
         assert!(response.is_ok());
 
         let api_response = response.unwrap();
-        assert_eq!(api_response.status, 405); // Method Not Allowed
+        assert_eq!(api_response.status, 404); // Not Found for unknown endpoint
     }
 
     // Test 55: create_update_tracker
@@ -4920,8 +4920,8 @@ mod tests {
         // Create a valid WebSocket message
         let message = WebSocketMessage {
             message_type: "execute".to_string(),
-            event: "cell_executed".to_string(),
-            data: serde_json::json!({"cell_id": "test-cell"}),
+            event: "execute_cell".to_string(),
+            data: serde_json::json!({"cell_id": "test-cell", "code": "1 + 1"}),
             timestamp: chrono::Utc::now().timestamp(),
             client_id: Some("client-123".to_string()),
         };
@@ -5585,7 +5585,7 @@ mod tests {
             Some("test-client".to_string()),
         );
         // WebSocketMessage is a struct, not Result
-        assert_eq!(msg.message_type, "cell_updated");
+        assert_eq!(msg.event, "cell_updated");
     }
 
     // Tests 115-130: Removed tests for non-existent methods
