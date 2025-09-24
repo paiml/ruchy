@@ -76,6 +76,45 @@ let processors = urls.map(async |url| await fetch_data(url))
 let transformer = async |x, y| x + await compute(y)
 ```
 
+### Actor System (NEW in v3.46.0)
+```ruchy
+// Define actors with state and message handlers
+actor ChatAgent {
+    name: String,
+    message_count: i32,
+
+    receive process_message(content: String, sender: String) {
+        self.message_count = self.message_count + 1;
+        println("[" + self.name + "] From " + sender + ": " + content)
+    }
+
+    receive get_stats() -> String {
+        self.name + " processed " + self.message_count.to_string() + " messages"
+    }
+}
+
+actor BankAccount {
+    balance: i32,
+    account_number: String,
+
+    receive deposit(amount: i32) {
+        self.balance = self.balance + amount;
+        println("Deposited " + amount.to_string() + ". Balance: " + self.balance.to_string())
+    }
+
+    receive withdraw(amount: i32) {
+        if amount <= self.balance {
+            self.balance = self.balance - amount;
+            println("Withdrew " + amount.to_string() + ". Balance: " + self.balance.to_string())
+        }
+    }
+
+    receive get_balance() -> i32 {
+        self.balance
+    }
+}
+```
+
 ### Data Science Features
 ```ruchy
 // DataFrame operations
