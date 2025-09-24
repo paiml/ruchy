@@ -3,8 +3,8 @@
 //! Measures performance of the Ruchy parser on various code patterns.
 
 use criterion::{criterion_group, criterion_main, Criterion};
-use std::hint::black_box;
 use ruchy::frontend::parser::Parser;
+use std::hint::black_box;
 
 fn benchmark_literals(c: &mut Criterion) {
     c.bench_function("parse_integer", |b| {
@@ -81,14 +81,14 @@ fn benchmark_control_flow(c: &mut Criterion) {
     });
 
     c.bench_function("parse_match", |b| {
-        let code = r#"
+        let code = r"
             match value {
                 Some(x) if x > 0 => x * 2,
                 Some(x) => x,
                 None => 0,
                 _ => -1
             }
-        "#;
+        ";
         b.iter(|| {
             let mut parser = Parser::new(black_box(code));
             parser.parse().unwrap()
@@ -216,7 +216,7 @@ fn benchmark_patterns(c: &mut Criterion) {
 
 fn benchmark_real_world(c: &mut Criterion) {
     c.bench_function("parse_fibonacci", |b| {
-        let code = r#"
+        let code = r"
             fn fibonacci(n: int) -> int {
                 if n <= 1 {
                     n
@@ -224,7 +224,7 @@ fn benchmark_real_world(c: &mut Criterion) {
                     fibonacci(n - 1) + fibonacci(n - 2)
                 }
             }
-        "#;
+        ";
         b.iter(|| {
             let mut parser = Parser::new(black_box(code));
             parser.parse().unwrap()
@@ -232,7 +232,7 @@ fn benchmark_real_world(c: &mut Criterion) {
     });
 
     c.bench_function("parse_quicksort", |b| {
-        let code = r#"
+        let code = r"
             fn quicksort(arr: List<int>) -> List<int> {
                 if arr.len() <= 1 {
                     arr
@@ -243,7 +243,7 @@ fn benchmark_real_world(c: &mut Criterion) {
                     quicksort(less) + [pivot] + quicksort(greater)
                 }
             }
-        "#;
+        ";
         b.iter(|| {
             let mut parser = Parser::new(black_box(code));
             parser.parse().unwrap()
@@ -279,7 +279,7 @@ fn benchmark_real_world(c: &mut Criterion) {
     });
 
     c.bench_function("parse_async_function", |b| {
-        let code = r#"
+        let code = r"
             async fn fetch_data(url: string) -> Result<Data, Error> {
                 let response = await http::get(url)
                 if response.status == 200 {
@@ -289,7 +289,7 @@ fn benchmark_real_world(c: &mut Criterion) {
                     Err(Error::HttpError(response.status))
                 }
             }
-        "#;
+        ";
         b.iter(|| {
             let mut parser = Parser::new(black_box(code));
             parser.parse().unwrap()

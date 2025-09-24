@@ -347,8 +347,8 @@ mod tests {
             "42"
         );
         assert_eq!(
-            MinimalCodeGen::gen_literal(&Literal::Float(3.14)).unwrap(),
-            "3.14"
+            MinimalCodeGen::gen_literal(&Literal::Float(3.14159)).unwrap(),
+            "3.14159"
         );
         assert_eq!(
             MinimalCodeGen::gen_literal(&Literal::String("test".into())).unwrap(),
@@ -661,8 +661,7 @@ mod tests {
     fn test_match_expression_simple() {
         let input = "match x { 1 => \"one\", 2 => \"two\", _ => \"other\" }";
         let result = gen_str(input);
-        if result.is_ok() {
-            let code = result.unwrap();
+        if let Ok(code) = result {
             assert!(code.contains("match x {"));
             assert!(code.contains("1 => \"one\""));
             assert!(code.contains("2 => \"two\""));
@@ -675,8 +674,7 @@ mod tests {
     fn test_struct_definition() {
         let input = "struct Point { x: i32, y: i32 }";
         let result = gen_str(input);
-        if result.is_ok() {
-            let code = result.unwrap();
+        if let Ok(code) = result {
             assert!(code.contains("struct Point"));
             assert!(code.contains("x: String"));
             assert!(code.contains("y: String"));

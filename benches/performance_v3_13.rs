@@ -29,7 +29,7 @@ fn bench_parser_simple(c: &mut Criterion) {
 }
 
 fn bench_parser_complex(c: &mut Criterion) {
-    let complex_program = r"
+    let complex_program = r#"
     fn fibonacci(n) {
         if n <= 1 {
             n
@@ -37,20 +37,20 @@ fn bench_parser_complex(c: &mut Criterion) {
             fibonacci(n - 1) + fibonacci(n - 2)
         }
     }
-    
+
     fn main() {
         let result = fibonacci(10);
-        println("Result: {}", result);
-        
+        println("Result: " + result.to_string());
+
         let list = [1, 2, 3, 4, 5];
         let sum = list.reduce(|a, b| a + b);
-        
+
         match sum {
             15 => println("Correct sum"),
             _ => println("Wrong sum")
         }
     }
-    ";
+    "#;
 
     c.bench_function("parser_complex_program", |b| {
         b.iter(|| {

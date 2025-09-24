@@ -58,7 +58,7 @@ fn test_builtin_println_works() {
     match result {
         Ok(Value::Nil) => {
             // println should return nil and print to stdout
-            assert!(true, "println works correctly");
+            // println works correctly
         }
         Ok(other) => {
             panic!("Expected Nil from println, got: {other:?}");
@@ -80,7 +80,7 @@ fn test_builtin_len_works() {
     let result = interpreter.eval_expr(&ast);
     match result {
         Ok(Value::Integer(3)) => {
-            assert!(true, "len works correctly");
+            // len works correctly
         }
         Ok(other) => {
             panic!("Expected Integer(3) from len([1,2,3]), got: {other:?}");

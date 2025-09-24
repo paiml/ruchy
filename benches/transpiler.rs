@@ -1,7 +1,7 @@
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
-use std::hint::black_box;
 use ruchy::frontend::ast::{Expr, ExprKind, Literal, Span};
 use ruchy::{Parser, Transpiler};
+use std::hint::black_box;
 
 fn transpile_literals(c: &mut Criterion) {
     let mut group = c.benchmark_group("transpile_literals");

@@ -5,7 +5,7 @@
 //! Extracted for maintainability and following Toyota Way principles.
 //! All functions maintain <10 cyclomatic complexity.
 
-use crate::frontend::ast::{Expr, MatchArm, Pattern};
+use crate::frontend::ast::{Expr, Literal, MatchArm, Pattern};
 use crate::runtime::{InterpreterError, Value};
 use std::rc::Rc;
 
@@ -339,44 +339,75 @@ where
 ///
 /// # Complexity
 /// Cyclomatic complexity: 8 (within Toyota Way limits)
+// =============================================================================
+// COMPLEXITY REFACTORING: Pattern Matching Helper Functions
+// Target: Reduce pattern_matches_simple complexity from 12 → ≤10
+// =============================================================================
+
+/// Match wildcard patterns (always matches)
+/// Complexity: 1
+pub fn match_wildcard_pattern(_value: &Value) -> bool {
+    true // Wildcard always matches
+}
+
+/// Match literal patterns
+/// Complexity: 3
+pub fn match_literal_pattern(lit: &Literal, value: &Value) -> Result<bool, InterpreterError> {
+    let pattern_val = crate::runtime::eval_literal::eval_literal(lit);
+    Ok(pattern_val == *value)
+}
+
+/// Match identifier patterns (always matches, binds variable)
+/// Complexity: 1
+pub fn match_identifier_pattern(_name: &str, _value: &Value) -> bool {
+    true // Identifier always matches, binds the variable
+}
+
+/// Match list patterns recursively
+/// Complexity: 6
+pub fn match_list_pattern(patterns: &[Pattern], value: &Value) -> Result<bool, InterpreterError> {
+    if let Value::Array(arr) = value {
+        if patterns.len() != arr.len() {
+            return Ok(false);
+        }
+        for (pat, val) in patterns.iter().zip(arr.iter()) {
+            if !pattern_matches_simple(pat, val)? {
+                return Ok(false);
+            }
+        }
+        Ok(true)
+    } else {
+        Ok(false)
+    }
+}
+
+/// Match tuple patterns recursively
+/// Complexity: 6
+pub fn match_tuple_pattern(patterns: &[Pattern], value: &Value) -> Result<bool, InterpreterError> {
+    if let Value::Tuple(elements) = value {
+        if patterns.len() != elements.len() {
+            return Ok(false);
+        }
+        for (pat, val) in patterns.iter().zip(elements.iter()) {
+            if !pattern_matches_simple(pat, val)? {
+                return Ok(false);
+            }
+        }
+        Ok(true)
+    } else {
+        Ok(false)
+    }
+}
+
+/// Pattern matching with complexity reduced from 12 → 5
+/// Complexity: 5 (down from 12)
 pub fn pattern_matches_simple(pattern: &Pattern, value: &Value) -> Result<bool, InterpreterError> {
     match pattern {
-        Pattern::Wildcard => Ok(true),
-        Pattern::Literal(lit) => {
-            let pattern_val = crate::runtime::eval_literal::eval_literal(lit);
-            Ok(pattern_val == *value)
-        }
-        Pattern::Identifier(_) => Ok(true), // Always matches, binds variable
-        Pattern::List(patterns) => {
-            if let Value::Array(arr) = value {
-                if patterns.len() != arr.len() {
-                    return Ok(false);
-                }
-                for (pat, val) in patterns.iter().zip(arr.iter()) {
-                    if !pattern_matches_simple(pat, val)? {
-                        return Ok(false);
-                    }
-                }
-                Ok(true)
-            } else {
-                Ok(false)
-            }
-        }
-        Pattern::Tuple(patterns) => {
-            if let Value::Tuple(elements) = value {
-                if patterns.len() != elements.len() {
-                    return Ok(false);
-                }
-                for (pat, val) in patterns.iter().zip(elements.iter()) {
-                    if !pattern_matches_simple(pat, val)? {
-                        return Ok(false);
-                    }
-                }
-                Ok(true)
-            } else {
-                Ok(false)
-            }
-        }
+        Pattern::Wildcard => Ok(match_wildcard_pattern(value)),
+        Pattern::Literal(lit) => match_literal_pattern(lit, value),
+        Pattern::Identifier(name) => Ok(match_identifier_pattern(name, value)),
+        Pattern::List(patterns) => match_list_pattern(patterns, value),
+        Pattern::Tuple(patterns) => match_tuple_pattern(patterns, value),
         _ => Ok(false), // Other patterns not implemented yet
     }
 }

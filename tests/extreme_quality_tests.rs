@@ -213,7 +213,7 @@ mod variable_declarations {
     }
 
     #[test]
-    #[ignore] // static keyword not yet supported
+    #[ignore = "static keyword not yet supported"]
     fn test_static_declaration() {
         let code = "static COUNT: i32 = 0;";
         let result = compile(code);

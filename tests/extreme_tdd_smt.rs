@@ -14,7 +14,7 @@ mod smt_solver_tests {
 
     #[test]
     fn test_smt_solver_new_z3() {
-        let solver = SmtSolver::new(SolverType::Z3);
+        let _solver = SmtSolver::new(SolverType::Z3);
         // Basic constructor test - verifies the object can be created
         // Constructor test passes if no panic
     }
@@ -34,7 +34,7 @@ mod smt_solver_tests {
     #[test]
     fn test_smt_solver_with_timeout() {
         let timeout = Duration::from_secs(30);
-        let solver = SmtSolver::with_timeout(SolverType::Z3, timeout);
+        let _solver = SmtSolver::with_timeout(SolverType::Z3, timeout);
         // Test constructor with timeout works
         // Test passes if no panic occurs
     }
@@ -44,8 +44,8 @@ mod smt_solver_tests {
         let zero_timeout = Duration::from_secs(0);
         let long_timeout = Duration::from_secs(3600);
 
-        let solver1 = SmtSolver::with_timeout(SolverType::Z3, zero_timeout);
-        let solver2 = SmtSolver::with_timeout(SolverType::CVC4, long_timeout);
+        let _solver1 = SmtSolver::with_timeout(SolverType::Z3, zero_timeout);
+        let _solver2 = SmtSolver::with_timeout(SolverType::CVC4, long_timeout);
 
         // Test passes if no panic occurs // Both constructors should work
     }
@@ -162,7 +162,7 @@ mod smt_solver_tests {
             postconditions: vec![],
         };
 
-        let result1 = solver.verify_function(&empty_function, &empty_spec);
+        let _result1 = solver.verify_function(&empty_function, &empty_spec);
 
         // Test with contradictory conditions
         let contradictory_spec = FunctionSpec {
@@ -178,7 +178,7 @@ mod smt_solver_tests {
             body_smt: "x".to_string(),
         };
 
-        let result2 = solver.verify_function(&simple_function, &contradictory_spec);
+        let _result2 = solver.verify_function(&simple_function, &contradictory_spec);
 
         // Both should handle gracefully
         // Test passes if no panic occurs
@@ -244,16 +244,16 @@ mod bounded_model_checker_tests {
 
     #[test]
     fn test_bounded_model_checker_new() {
-        let checker = BoundedModelChecker::new(SolverType::Z3, 10);
+        let _checker = BoundedModelChecker::new(SolverType::Z3, 10);
         // Test constructor works
         // Test passes if no panic occurs
     }
 
     #[test]
     fn test_bounded_model_checker_various_depths() {
-        let checker1 = BoundedModelChecker::new(SolverType::Z3, 0);
-        let checker2 = BoundedModelChecker::new(SolverType::Z3, 1);
-        let checker3 = BoundedModelChecker::new(SolverType::Z3, 100);
+        let _checker1 = BoundedModelChecker::new(SolverType::Z3, 0);
+        let _checker2 = BoundedModelChecker::new(SolverType::Z3, 1);
+        let _checker3 = BoundedModelChecker::new(SolverType::Z3, 100);
 
         // All depth values should work
         // Test passes if no panic occurs
@@ -261,7 +261,7 @@ mod bounded_model_checker_tests {
 
     #[test]
     fn test_check_bounded_constructor() {
-        let checker = BoundedModelChecker::new(SolverType::Z3, 5);
+        let _checker = BoundedModelChecker::new(SolverType::Z3, 5);
 
         // Test that the bounded model checker can be constructed
         // The check_bounded method requires Program type which isn't accessible
@@ -471,7 +471,7 @@ mod integration_tests {
 
     #[test]
     fn test_bounded_model_checker_integration() {
-        let checker = BoundedModelChecker::new(SolverType::Z3, 3);
+        let _checker = BoundedModelChecker::new(SolverType::Z3, 3);
 
         // Test the constructor integration with different solver types
         // (Program struct is not accessible so we can't test check_bounded)
