@@ -1306,7 +1306,7 @@ mod property_tests_expressions {
 
                 // Test common literal types (should never panic)
                 let _ = Transpiler::transpile_literal(&Literal::Integer(42));
-                let _ = Transpiler::transpile_literal(&Literal::Float(3.14));
+                let _ = Transpiler::transpile_literal(&Literal::Float(3.141));
                 let _ = Transpiler::transpile_literal(&Literal::Bool(true));
                 let _ = Transpiler::transpile_literal(&Literal::String(input.clone()));
                 let _ = Transpiler::transpile_literal(&Literal::Char('a'));
