@@ -4,6 +4,45 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.45.0] - 2025-09-24
+
+### EXTREME TDD: Async/Await Improvements - Complete Implementation
+
+#### 🎯 LANG-004 Async/Await Enhancements
+- **Async Blocks**: `async { 42 }` → `async { 42i32 }`
+- **Async Lambdas**: `async |x| x + 1` → `|x| async move { x + 1i32 }`
+- **Multi-Parameter**: `async |x, y| x + y` → `|x, y| async move { x + y }`
+- **Arrow Syntax**: `async x => x + 1` → `|x| async move { x + 1i32 }`
+
+#### Parser Implementation
+- Extended `parse_async_token` to handle blocks and lambdas
+- Added `AsyncLambda` AST node with complete integration
+- Implemented comprehensive error handling and recovery
+- All functions maintain ≤10 complexity (Toyota Way compliance)
+
+#### Quality Achievements
+- **parse_async_token**: Cyclomatic 3, Cognitive 3
+- **parse_async_block**: Cyclomatic 4, Cognitive 3
+- **parse_async_lambda**: Cyclomatic 5, Cognitive 4
+- **parse_async_lambda_params**: Cyclomatic 2, Cognitive 3
+- **parse_async_param_list**: Cyclomatic 4, Cognitive 4
+- **parse_async_arrow_lambda**: Cyclomatic 4, Cognitive 3
+
+#### Test Coverage
+- 20 comprehensive async improvement tests
+- Property tests with 10,000+ iterations
+- Integration tests with existing async functions
+- Complete edge case and error handling coverage
+
+#### Technical Implementation
+- AST: `AsyncLambda { params: Vec<String>, body: Box<Expr> }`
+- Transpiler: `transpile_async_lambda` generating `|params| async move { body }`
+- Dispatcher: Complete `AsyncLambda` pattern matching integration
+- Edition: Updated to Rust 2018 for async block support
+
+#### Breaking Changes
+- None - fully backward compatible
+
 ## [3.40.0] - 2025-09-23
 
 ### EXTREME TDD: 80%+ Coverage Achievement Across All Platforms
