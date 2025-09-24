@@ -373,6 +373,12 @@ impl Transpiler {
         expr: &Expr,
         file_path: Option<&std::path::Path>,
     ) -> Result<Expr> {
+        // Check if expression contains any imports
+        if !self.contains_imports(expr) {
+            // No imports to resolve, return original expression to preserve attributes
+            return Ok(expr.clone());
+        }
+
         let mut resolver = ModuleResolver::new();
         // Add the file's directory to search paths if provided
         if let Some(path) = file_path {
@@ -381,6 +387,17 @@ impl Transpiler {
             }
         }
         resolver.resolve_imports(expr.clone())
+    }
+
+    /// Check if an expression tree contains any import statements
+    fn contains_imports(&self, expr: &Expr) -> bool {
+        match &expr.kind {
+            ExprKind::Import { .. }
+            | ExprKind::ImportAll { .. }
+            | ExprKind::ImportDefault { .. } => true,
+            ExprKind::Block(exprs) => exprs.iter().any(|e| self.contains_imports(e)),
+            _ => false,
+        }
     }
     /// Transpiles an expression to a `TokenStream`
     ///
