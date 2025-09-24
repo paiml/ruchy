@@ -43,7 +43,7 @@ fn test_check_repl_module_import() {
     // We need to check if REPL might be creating interpreter differently
 
     // This test ensures we can at least create an interpreter
-    assert!(true, "Interpreter creation succeeds");
+    // Interpreter creation succeeds - no assertion needed as unwrap() would panic
 }
 
 #[test]

@@ -3,7 +3,7 @@
 //! This example demonstrates how to programmatically start a Ruchy notebook server
 //! for interactive data science workflows.
 //!
-//! Run with: cargo run --example notebook_server
+//! Run with: cargo run --example `notebook_server`
 
 // NOTE: ruchy_notebook crate doesn't exist, so this example is disabled
 // TODO: Implement ruchy_notebook crate or remove this example

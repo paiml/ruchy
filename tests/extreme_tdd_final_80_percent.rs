@@ -367,8 +367,8 @@ mod repl_comprehensive_coverage {
         // Test function call
         let result = repl.eval("add(10, 20)");
         assert!(result.is_ok());
-        if result.is_ok() {
-            assert!(result.unwrap().contains("30"));
+        if let Ok(value) = result {
+            assert!(value.contains("30"));
         }
     }
 

@@ -29,7 +29,7 @@ fn bench_parser_simple(c: &mut Criterion) {
 }
 
 fn bench_parser_complex(c: &mut Criterion) {
-    let complex_program = r#"
+    let complex_program = r"
     fn fibonacci(n) {
         if n <= 1 {
             n
@@ -50,7 +50,7 @@ fn bench_parser_complex(c: &mut Criterion) {
             _ => println("Wrong sum")
         }
     }
-    "#;
+    ";
 
     c.bench_function("parser_complex_program", |b| {
         b.iter(|| {
@@ -124,7 +124,7 @@ fn bench_memory_allocation(c: &mut Criterion) {
 }
 
 fn bench_recursive_compilation(c: &mut Criterion) {
-    let factorial = r#"
+    let factorial = r"
     fn factorial(n) {
         if n <= 1 {
             1
@@ -133,7 +133,7 @@ fn bench_recursive_compilation(c: &mut Criterion) {
         }
     }
     factorial(10)
-    "#;
+    ";
 
     c.bench_function("compile_recursive_factorial", |b| {
         b.iter(|| {

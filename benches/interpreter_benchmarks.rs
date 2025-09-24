@@ -2,7 +2,8 @@
 //!
 //! Measures execution performance of the Ruchy interpreter.
 
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{criterion_group, criterion_main, Criterion};
+use std::hint::black_box;
 use ruchy::runtime::interpreter::Interpreter;
 
 fn benchmark_arithmetic(c: &mut Criterion) {
@@ -61,7 +62,7 @@ fn benchmark_variables(c: &mut Criterion) {
         b.iter(|| {
             interpreter
                 .eval_string(black_box(
-                    r#"
+                    r"
                 let x = 1;
                 let result = {
                     let y = 2;
@@ -153,7 +154,7 @@ fn benchmark_control_flow(c: &mut Criterion) {
         b.iter(|| {
             interpreter
                 .eval_string(black_box(
-                    r#"
+                    r"
                 let x = 5;
                 if x > 10 {
                     "large"
@@ -174,7 +175,7 @@ fn benchmark_control_flow(c: &mut Criterion) {
         b.iter(|| {
             interpreter
                 .eval_string(black_box(
-                    r#"
+                    r"
                 let x = 2;
                 match x {
                     1 => "one",
@@ -192,7 +193,7 @@ fn benchmark_control_flow(c: &mut Criterion) {
         b.iter(|| {
             interpreter
                 .eval_string(black_box(
-                    r#"
+                    r"
                 let sum = 0;
                 for i in [1, 2, 3, 4, 5] {
                     sum = sum + i
@@ -208,7 +209,7 @@ fn benchmark_control_flow(c: &mut Criterion) {
         b.iter(|| {
             interpreter
                 .eval_string(black_box(
-                    r#"
+                    r"
                 let x = 1;
                 let count = 0;
                 while x < 100 {
