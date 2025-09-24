@@ -6,9 +6,10 @@
 #![allow(clippy::expect_used)]
 
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
-use std::hint::black_box;
 use ruchy::runtime::repl::Repl;
 use ruchy::{Parser, Transpiler};
+use std::hint::black_box;
+use std::path::PathBuf;
 use std::time::Duration;
 
 fn benchmark_eval_simple(c: &mut Criterion) {
@@ -23,7 +24,7 @@ fn benchmark_eval_simple(c: &mut Criterion) {
 
     for (name, expr) in expressions {
         group.bench_with_input(BenchmarkId::from_parameter(name), &expr, |b, &expr| {
-            let mut repl = Repl::new().expect("Failed to create REPL");
+            let mut repl = Repl::new(PathBuf::from(".")).expect("Failed to create REPL");
             b.iter(|| {
                 let _ = repl.eval(black_box(expr));
             });
@@ -50,7 +51,7 @@ fn benchmark_eval_complex(c: &mut Criterion) {
 
     for (name, expr) in expressions {
         group.bench_with_input(BenchmarkId::from_parameter(name), &expr, |b, &expr| {
-            let mut repl = Repl::new().expect("Failed to create REPL");
+            let mut repl = Repl::new(PathBuf::from(".")).expect("Failed to create REPL");
             b.iter(|| {
                 let _ = repl.eval(black_box(expr));
             });
@@ -110,7 +111,7 @@ fn benchmark_transpile(c: &mut Criterion) {
 fn benchmark_repl_startup(c: &mut Criterion) {
     c.bench_function("repl_startup", |b| {
         b.iter(|| {
-            let _ = Repl::new();
+            let _ = Repl::new(PathBuf::from("."));
         });
     });
 }
@@ -131,7 +132,7 @@ fn benchmark_fibonacci(c: &mut Criterion) {
         let expr = format!("{fib_code}\nfib({n})");
 
         group.bench_with_input(BenchmarkId::from_parameter(n), &expr, |b, expr| {
-            let mut repl = Repl::new().expect("Failed to create REPL");
+            let mut repl = Repl::new(PathBuf::from(".")).expect("Failed to create REPL");
             b.iter(|| {
                 let _ = repl.eval(black_box(expr));
             });

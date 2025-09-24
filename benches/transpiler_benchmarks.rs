@@ -3,9 +3,9 @@
 //! Measures performance of transpiling Ruchy code to Rust.
 
 use criterion::{criterion_group, criterion_main, Criterion};
-use std::hint::black_box;
 use ruchy::backend::transpiler::Transpiler;
 use ruchy::frontend::parser::Parser;
+use std::hint::black_box;
 
 fn parse_and_transpile(code: &str) -> String {
     let mut parser = Parser::new(code);

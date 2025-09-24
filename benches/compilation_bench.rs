@@ -6,8 +6,8 @@
 )]
 
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
-use std::hint::black_box;
 use ruchy::{Parser, Transpiler};
+use std::hint::black_box;
 use std::time::Duration;
 
 fn parse_benchmark(c: &mut Criterion) {

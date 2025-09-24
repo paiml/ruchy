@@ -213,7 +213,7 @@ mod pattern_analyzer_tests {
 
     #[test]
     fn test_timing_analyzer_new() {
-        let analyzer = PatternAnalyzer::new();
+        let _analyzer = PatternAnalyzer::new();
         // Test that constructor works
         // Test passes if constructor doesn't panic
     }
@@ -308,6 +308,7 @@ mod property_tests {
     }
 
     #[quickcheck]
+    #[allow(clippy::needless_pass_by_value)]
     fn test_plagiarism_check_never_panics(
         student_id: String,
         assignment_id: String,
@@ -343,6 +344,7 @@ fn create_test_submission(student_id: &str, assignment_id: &str, code: &str) -> 
     }
 }
 
+#[allow(dead_code)]
 fn create_test_submission_with_time(
     student_id: &str,
     assignment_id: &str,
