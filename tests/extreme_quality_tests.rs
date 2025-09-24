@@ -205,7 +205,7 @@ mod variable_declarations {
     }
 
     #[test]
-    #[ignore] // const keyword not yet supported
+    #[ignore = "const keyword not yet supported"]
     fn test_const_declaration() {
         let code = "const PI: f64 = 3.14159;";
         let result = compile(code);

@@ -17,12 +17,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Example 2: Function definition
     compile_example(
         "Function Definition",
-        r#"
+        r"
         fun add(a, b) {
             a + b
         }
         add(10, 20)
-        "#,
+        ",
         "function.wasm",
     )?;
 

@@ -148,7 +148,7 @@ mod obfuscation_detector_tests {
 
     #[test]
     fn test_obfuscation_detector_new() {
-        let detector = ObfuscationDetector::new();
+        let _detector = ObfuscationDetector::new();
         // Test that constructor works
         assert!(true); // Placeholder - actual struct fields not visible
     }

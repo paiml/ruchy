@@ -2,7 +2,8 @@
 //!
 //! Measures performance of transpiling Ruchy code to Rust.
 
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{criterion_group, criterion_main, Criterion};
+use std::hint::black_box;
 use ruchy::backend::transpiler::Transpiler;
 use ruchy::frontend::parser::Parser;
 

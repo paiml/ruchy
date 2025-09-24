@@ -39,19 +39,19 @@ mod compiler_features {
 
     // Ownership tests
     #[test]
-    #[ignore] // Not yet implemented
+    #[ignore = "Not yet implemented"]
     fn test_move_semantics() {
         assert!(compile("fn main() { let x = vec![1,2,3]; let y = x; }").is_ok());
     }
 
     #[test]
-    #[ignore] // Not yet implemented
+    #[ignore = "Not yet implemented"]
     fn test_borrowing() {
         assert!(compile("fn main() { let x = 42; let y = &x; }").is_ok());
     }
 
     #[test]
-    #[ignore] // Not yet implemented
+    #[ignore = "Not yet implemented"]
     fn test_mutable_borrow() {
         assert!(compile("fn main() { let mut x = 42; let y = &mut x; }").is_ok());
     }
@@ -68,13 +68,13 @@ mod compiler_features {
     }
 
     #[test]
-    #[ignore] // Not yet implemented
+    #[ignore = "Not yet implemented"]
     fn test_impl_block() {
         assert!(compile("struct S; impl S { fn new() -> S { S } }").is_ok());
     }
 
     #[test]
-    #[ignore] // Not yet implemented
+    #[ignore = "Not yet implemented"]
     fn test_trait_definition() {
         assert!(compile("trait Display { fn fmt(&self); }").is_ok());
     }
@@ -86,7 +86,7 @@ mod compiler_features {
     }
 
     #[test]
-    #[ignore] // Not yet implemented
+    #[ignore = "Not yet implemented"]
     fn test_vec_macro() {
         assert!(compile("fn main() { let v = vec![1, 2, 3]; }").is_ok());
     }
@@ -109,13 +109,13 @@ mod compiler_features {
 
     // Async tests
     #[test]
-    #[ignore] // Not yet implemented
+    #[ignore = "Not yet implemented"]
     fn test_async_function() {
         assert!(compile("async fn test() {}").is_ok());
     }
 
     #[test]
-    #[ignore] // Not yet implemented
+    #[ignore = "Not yet implemented"]
     fn test_await_expression() {
         assert!(compile("async fn test() { other().await; }").is_ok());
     }
