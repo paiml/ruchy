@@ -277,10 +277,11 @@ impl Transpiler {
         } else {
             // Traditional let-in expression with proper scoping
             let body_tokens = self.transpile_expr(body)?;
+            // Generate a proper let binding with a scope, like regular let
             Ok(quote! {
-                match #value_tokens {
-                    #pattern_tokens => #body_tokens,
-                    _ => panic!("Pattern did not match")
+                {
+                    let #pattern_tokens = #value_tokens;
+                    #body_tokens
                 }
             })
         }
@@ -357,16 +358,17 @@ impl Transpiler {
         if type_annotation.is_some() {
             // Add a comment about the type annotation
             Ok(quote! {
-                match #value_tokens {
-                    #pattern_tokens => #body_tokens,
-                    _ => panic!("Pattern did not match")
+                {
+                    // Type annotation would be applied here if supported
+                    let #pattern_tokens = #value_tokens;
+                    #body_tokens
                 }
             })
         } else {
             Ok(quote! {
-                match #value_tokens {
-                    #pattern_tokens => #body_tokens,
-                    _ => panic!("Pattern did not match")
+                {
+                    let #pattern_tokens = #value_tokens;
+                    #body_tokens
                 }
             })
         }
