@@ -580,7 +580,7 @@ mod tests {
 
         for (i, condition) in conditions.into_iter().enumerate() {
             let test = HiddenTest {
-                id: format!("hidden_{}", i),
+                id: format!("hidden_{i}"),
                 input: "input".to_string(),
                 expected_output: "output".to_string(),
                 points: 10,
@@ -681,7 +681,7 @@ mod tests {
         };
 
         let result = HintResult {
-            hint: hint.clone(),
+            hint,
             hints_remaining: 2,
             warning: Some("Only 2 hints left".to_string()),
         };

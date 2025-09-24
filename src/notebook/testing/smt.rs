@@ -664,7 +664,7 @@ mod tests {
 
     #[test]
     fn test_solver_type_variants() {
-        let types = vec![
+        let types = [
             SolverType::Z3,
             SolverType::CVC4,
             SolverType::Yices,

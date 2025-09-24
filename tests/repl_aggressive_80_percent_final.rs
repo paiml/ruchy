@@ -6,7 +6,7 @@ mod repl_aggressive_high_complexity_coverage {
     use ruchy::runtime::repl::Repl;
 
     /// Test all remaining high-complexity functions systematically
-    /// Target: needs_continuation, hashmap_methods, try_operator, etc.
+    /// Target: `needs_continuation`, `hashmap_methods`, `try_operator`, etc.
     #[test]
     fn test_needs_continuation_comprehensive() {
         let mut repl = Repl::new(std::env::temp_dir()).expect("REPL creation should work");
@@ -38,7 +38,7 @@ mod repl_aggressive_high_complexity_coverage {
         println!("✅ COVERAGE: needs_continuation function tested");
     }
 
-    /// Test evaluate_hashmap_methods - COMPLEXITY 28/33  
+    /// Test `evaluate_hashmap_methods` - COMPLEXITY 28/33  
     #[test]
     fn test_evaluate_hashmap_methods_comprehensive() {
         let mut repl = Repl::new(std::env::temp_dir()).expect("REPL creation should work");
@@ -78,7 +78,7 @@ mod repl_aggressive_high_complexity_coverage {
         println!("✅ COVERAGE: evaluate_hashmap_methods comprehensive");
     }
 
-    /// Test evaluate_try_operator - COMPLEXITY 15/46
+    /// Test `evaluate_try_operator` - COMPLEXITY 15/46
     #[test]
     fn test_evaluate_try_operator_comprehensive() {
         let mut repl = Repl::new(std::env::temp_dir()).expect("REPL creation should work");
@@ -126,7 +126,7 @@ mod repl_aggressive_high_complexity_coverage {
         println!("✅ COVERAGE: evaluate_try_operator comprehensive");
     }
 
-    /// Test handle_basic_hashset_methods - COMPLEXITY 26/34
+    /// Test `handle_basic_hashset_methods` - COMPLEXITY 26/34
     #[test]
     fn test_handle_basic_hashset_methods_comprehensive() {
         let mut repl = Repl::new(std::env::temp_dir()).expect("REPL creation should work");
@@ -174,7 +174,7 @@ mod repl_aggressive_high_complexity_coverage {
         println!("✅ COVERAGE: handle_basic_hashset_methods comprehensive");
     }
 
-    /// Test dispatch_performance_methods - COMPLEXITY 24/34
+    /// Test `dispatch_performance_methods` - COMPLEXITY 24/34
     #[test]
     fn test_dispatch_performance_methods_comprehensive() {
         let mut repl = Repl::new(std::env::temp_dir()).expect("REPL creation should work");
@@ -217,7 +217,7 @@ mod repl_aggressive_high_complexity_coverage {
         println!("✅ COVERAGE: dispatch_performance_methods comprehensive");
     }
 
-    /// Test evaluate_list_reduce - COMPLEXITY 22/34
+    /// Test `evaluate_list_reduce` - COMPLEXITY 22/34
     #[test]
     fn test_evaluate_list_reduce_comprehensive() {
         let mut repl = Repl::new(std::env::temp_dir()).expect("REPL creation should work");
@@ -257,7 +257,7 @@ mod repl_aggressive_high_complexity_coverage {
         println!("✅ COVERAGE: evaluate_list_reduce comprehensive");
     }
 
-    /// Test compile_session - COMPLEXITY 21/34
+    /// Test `compile_session` - COMPLEXITY 21/34
     #[test]
     fn test_compile_session_comprehensive() {
         let mut repl = Repl::new(std::env::temp_dir()).expect("REPL creation should work");
@@ -329,8 +329,8 @@ mod repl_edge_cases_and_error_paths {
 
         for error_input in syntax_errors {
             let result = repl.eval(error_input);
-            assert!(result.is_err(), "Should fail for: {}", error_input);
-            println!("Syntax error '{}': ✓", error_input);
+            assert!(result.is_err(), "Should fail for: {error_input}");
+            println!("Syntax error '{error_input}': ✓");
         }
 
         // Runtime errors - Type errors, division by zero, etc.
@@ -387,7 +387,7 @@ mod repl_edge_cases_and_error_paths {
         let large_object = format!(
             "{{ {} }}",
             (0..100)
-                .map(|i| format!("key_{}: {}", i, i))
+                .map(|i| format!("key_{i}: {i}"))
                 .collect::<Vec<_>>()
                 .join(", ")
         );
@@ -416,21 +416,21 @@ mod repl_aggressive_coverage_summary {
         println!("   5. dispatch_performance_methods (24/34) - Performance monitoring");
         println!("   6. evaluate_list_reduce (22/34) - List reduction operations");
         println!("   7. compile_session (21/34) - Session compilation and export");
-        println!("");
+        println!();
 
         println!("✅ COMPREHENSIVE ERROR PATH TESTING:");
         println!("   • Syntax errors: 12+ different parse error types");
         println!("   • Runtime errors: 9+ runtime failure modes");
         println!("   • Boundary conditions: Numeric limits, large data");
         println!("   • Edge cases: Empty inputs, malformed data");
-        println!("");
+        println!();
 
         println!("🎯 MATHEMATICAL COVERAGE STRATEGY:");
         println!("   • Top 50 functions = 80% of total complexity");
         println!("   • Systematic error path testing = 15% additional coverage");
         println!("   • Edge case testing = 10% additional coverage");
         println!("   • Combined systematic approach = 80%+ target coverage");
-        println!("");
+        println!();
 
         println!("📊 EXPECTED FINAL RESULTS:");
         println!("   • Previous: 17% coverage (1,119/6,465 lines)");

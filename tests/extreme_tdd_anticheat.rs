@@ -3,7 +3,7 @@ use ruchy::notebook::testing::anticheat::{
     AntiCheatSystem, ObfuscationDetector, PatternAnalyzer, Submission,
 };
 
-/// TDD Test Suite for AntiCheat Module - Target: 100% Coverage
+/// TDD Test Suite for `AntiCheat` Module - Target: 100% Coverage
 /// These tests exercise every public function and critical path
 
 #[cfg(test)]
@@ -244,7 +244,7 @@ mod pattern_analyzer_tests {
         let base_time = Utc::now();
 
         for i in 0..5 {
-            let timestamp = base_time + chrono::Duration::seconds(i as i64);
+            let timestamp = base_time + chrono::Duration::seconds(i64::from(i));
             let _result = analyzer.analyze_pattern("student1", timestamp);
         }
 
@@ -339,7 +339,7 @@ fn create_test_submission(student_id: &str, assignment_id: &str, code: &str) -> 
         assignment_id: assignment_id.to_string(),
         code: code.to_string(),
         timestamp: Utc::now(),
-        fingerprint: format!("fingerprint_{}", student_id),
+        fingerprint: format!("fingerprint_{student_id}"),
     }
 }
 
@@ -354,6 +354,6 @@ fn create_test_submission_with_time(
         assignment_id: assignment_id.to_string(),
         code: code.to_string(),
         timestamp,
-        fingerprint: format!("fingerprint_{}", student_id),
+        fingerprint: format!("fingerprint_{student_id}"),
     }
 }

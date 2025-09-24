@@ -19,15 +19,14 @@ fn test_normal_interpreter_builtin_functions() {
         Ok(Value::String(type_name)) => {
             assert!(
                 type_name.contains("integer") || type_name.contains("int"),
-                "type_of(42) should return 'integer', got: {}",
-                type_name
+                "type_of(42) should return 'integer', got: {type_name}"
             );
         }
         Ok(other) => {
-            panic!("Expected String containing 'integer', got: {:?}", other);
+            panic!("Expected String containing 'integer', got: {other:?}");
         }
         Err(e) => {
-            panic!("type_of(42) should succeed, got error: {:?}", e);
+            panic!("type_of(42) should succeed, got error: {e:?}");
         }
     }
 }
@@ -62,10 +61,10 @@ fn test_builtin_println_works() {
             assert!(true, "println works correctly");
         }
         Ok(other) => {
-            panic!("Expected Nil from println, got: {:?}", other);
+            panic!("Expected Nil from println, got: {other:?}");
         }
         Err(e) => {
-            panic!("println should succeed, got error: {:?}", e);
+            panic!("println should succeed, got error: {e:?}");
         }
     }
 }
@@ -84,10 +83,10 @@ fn test_builtin_len_works() {
             assert!(true, "len works correctly");
         }
         Ok(other) => {
-            panic!("Expected Integer(3) from len([1,2,3]), got: {:?}", other);
+            panic!("Expected Integer(3) from len([1,2,3]), got: {other:?}");
         }
         Err(e) => {
-            panic!("len should succeed, got error: {:?}", e);
+            panic!("len should succeed, got error: {e:?}");
         }
     }
 }
@@ -106,12 +105,12 @@ fn test_direct_identifier_lookup() {
             assert_eq!(name, "type_of", "Should return BuiltinFunction(type_of)");
         }
         Ok(other) => {
-            panic!("Expected BuiltinFunction(type_of), got: {:?}", other);
+            panic!("Expected BuiltinFunction(type_of), got: {other:?}");
         }
         Err(e) => {
             // This is the error we see in REPL - let's debug it
-            eprintln!("ERROR looking up 'type_of' identifier: {:?}", e);
-            panic!("type_of identifier lookup failed: {:?}", e);
+            eprintln!("ERROR looking up 'type_of' identifier: {e:?}");
+            panic!("type_of identifier lookup failed: {e:?}");
         }
     }
 }

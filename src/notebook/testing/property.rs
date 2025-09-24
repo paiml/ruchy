@@ -208,7 +208,7 @@ mod tests {
         assert!(notebook.metadata.is_none());
 
         // Check that cells have proper IDs
-        for cell in notebook.cells.iter() {
+        for cell in &notebook.cells {
             assert!(!cell.id.is_empty());
             if matches!(cell.cell_type, CellType::Code) {
                 assert!(cell.id.starts_with("cell_"));

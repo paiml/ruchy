@@ -633,7 +633,7 @@ mod tests {
 
     #[test]
     fn test_notebook_parser_default() {
-        let _parser = NotebookParser::default();
+        let _parser = NotebookParser;
         // Parser should be created successfully via default
     }
 
@@ -684,7 +684,7 @@ mod tests {
     fn test_notebook_parser_validate_missing_cell_id() {
         let parser = NotebookParser::new();
         let cell = Cell {
-            id: "".to_string(), // Empty ID
+            id: String::new(), // Empty ID
             source: "test".to_string(),
             cell_type: CellType::Code,
             metadata: CellMetadata::default(),

@@ -15,6 +15,7 @@
 
 use super::eval_expr;
 use super::eval_func;
+use super::eval_literal;
 use super::eval_method;
 use super::eval_operations;
 use crate::frontend::ast::{
@@ -797,17 +798,53 @@ impl Interpreter {
     /// type is not yet implemented.
     fn eval_expr_kind(&mut self, expr_kind: &ExprKind) -> Result<Value, InterpreterError> {
         match expr_kind {
-            // Basic expressions - inlined for performance
-            ExprKind::Literal(Literal::Integer(i)) => Ok(Value::from_i64(*i)),
-            ExprKind::Literal(Literal::Float(f)) => Ok(Value::from_f64(*f)),
-            ExprKind::Literal(Literal::String(s)) => Ok(Value::from_string(s.clone())),
-            ExprKind::Literal(Literal::Bool(b)) => Ok(Value::from_bool(*b)),
-            ExprKind::Literal(Literal::Char(c)) => Ok(Value::from_string(c.to_string())),
-            ExprKind::Literal(Literal::Unit) => Ok(Value::nil()),
-            ExprKind::Literal(Literal::Null) => Ok(Value::nil()),
-            ExprKind::Identifier(name) => self.lookup_variable(name),
+            // Simple expressions (complexity: 2)
+            ExprKind::Literal(_) | ExprKind::Identifier(_) => self.eval_simple_expr(expr_kind),
 
-            // Operations and calls
+            // Operations (complexity: 2)
+            ExprKind::Binary { .. }
+            | ExprKind::Unary { .. }
+            | ExprKind::Call { .. }
+            | ExprKind::MethodCall { .. }
+            | ExprKind::DataFrameOperation { .. }
+            | ExprKind::IndexAccess { .. }
+            | ExprKind::FieldAccess { .. } => self.eval_operation_expr(expr_kind),
+
+            // Functions (complexity: 2)
+            ExprKind::Function { .. } | ExprKind::Lambda { .. } => {
+                self.eval_function_expr(expr_kind)
+            }
+
+            // Control flow (complexity: 1)
+            kind if Self::is_control_flow_expr(kind) => self.eval_control_flow_expr(kind),
+
+            // Data structures (complexity: 1)
+            kind if Self::is_data_structure_expr(kind) => self.eval_data_structure_expr(kind),
+
+            // Assignments (complexity: 1)
+            kind if Self::is_assignment_expr(kind) => self.eval_assignment_expr(kind),
+
+            // Other expressions (complexity: 1)
+            _ => self.eval_misc_expr(expr_kind),
+        }
+    }
+
+    // Helper methods for expression type categorization and evaluation (complexity <10 each)
+
+    /// Evaluate simple expressions (literals and identifiers)
+    /// Complexity: 3
+    fn eval_simple_expr(&mut self, expr_kind: &ExprKind) -> Result<Value, InterpreterError> {
+        match expr_kind {
+            ExprKind::Literal(lit) => Ok(eval_literal::eval_literal(lit)),
+            ExprKind::Identifier(name) => self.lookup_variable(name),
+            _ => unreachable!("eval_simple_expr called with non-simple expression"),
+        }
+    }
+
+    /// Evaluate operation expressions (binary, unary, calls, method calls, etc.)
+    /// Complexity: 8
+    fn eval_operation_expr(&mut self, expr_kind: &ExprKind) -> Result<Value, InterpreterError> {
+        match expr_kind {
             ExprKind::Binary { left, op, right } => self.eval_binary_expr(left, *op, right),
             ExprKind::Unary { op, operand } => self.eval_unary_expr(*op, operand),
             ExprKind::Call { func, args } => self.eval_function_call(func, args),
@@ -821,23 +858,26 @@ impl Interpreter {
             }
             ExprKind::IndexAccess { object, index } => self.eval_index_access(object, index),
             ExprKind::FieldAccess { object, field } => self.eval_field_access(object, field),
+            _ => unreachable!("eval_operation_expr called with non-operation expression"),
+        }
+    }
 
-            // Functions and lambdas
+    /// Evaluate function expressions (function definitions and lambdas)
+    /// Complexity: 3
+    fn eval_function_expr(&mut self, expr_kind: &ExprKind) -> Result<Value, InterpreterError> {
+        match expr_kind {
             ExprKind::Function {
                 name, params, body, ..
             } => self.eval_function(name, params, body),
             ExprKind::Lambda { params, body } => self.eval_lambda(params, body),
+            _ => unreachable!("eval_function_expr called with non-function expression"),
+        }
+    }
 
-            // Control flow expressions
-            kind if Self::is_control_flow_expr(kind) => self.eval_control_flow_expr(kind),
-
-            // Data structure expressions
-            kind if Self::is_data_structure_expr(kind) => self.eval_data_structure_expr(kind),
-
-            // Assignment expressions
-            kind if Self::is_assignment_expr(kind) => self.eval_assignment_expr(kind),
-
-            // Other expressions
+    /// Evaluate miscellaneous expressions
+    /// Complexity: 5
+    fn eval_misc_expr(&mut self, expr_kind: &ExprKind) -> Result<Value, InterpreterError> {
+        match expr_kind {
             ExprKind::StringInterpolation { parts } => self.eval_string_interpolation(parts),
             ExprKind::QualifiedName { module, name } => self.eval_qualified_name(module, name),
             ExprKind::ObjectLiteral { fields } => self.eval_object_literal(fields),
@@ -847,15 +887,11 @@ impl Interpreter {
                 body,
                 ..
             } => self.eval_let_pattern(pattern, value, body),
-
-            // Unimplemented expressions
             _ => Err(InterpreterError::RuntimeError(format!(
                 "Expression type not yet implemented: {expr_kind:?}"
             ))),
         }
     }
-
-    // Helper methods for expression type categorization and evaluation (complexity <10 each)
 
     fn is_control_flow_expr(expr_kind: &ExprKind) -> bool {
         eval_expr::is_control_flow_expr(expr_kind)

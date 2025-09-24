@@ -706,19 +706,19 @@ mod property_tests_tool_discovery {
 
                 // Descriptions should never be empty
                 assert!(!description.is_empty(),
-                       "Tool '{}' should have non-empty description", name);
+                       "Tool '{name}' should have non-empty description");
 
                 // Descriptions should be reasonably long
                 assert!(description.len() >= 10,
-                       "Tool '{}' description should be at least 10 characters", name);
+                       "Tool '{name}' description should be at least 10 characters");
 
                 // Descriptions should not contain development artifacts
                 assert!(!description.contains("TODO"),
-                       "Tool '{}' description should not contain TODO", name);
+                       "Tool '{name}' description should not contain TODO");
                 assert!(!description.contains("FIXME"),
-                       "Tool '{}' description should not contain FIXME", name);
+                       "Tool '{name}' description should not contain FIXME");
                 assert!(!description.contains("XXX"),
-                       "Tool '{}' description should not contain XXX", name);
+                       "Tool '{name}' description should not contain XXX");
             }
         }
 
@@ -753,9 +753,9 @@ mod property_tests_tool_discovery {
             let category = discovery.get_tool_category(&tool_name);
 
             // Categories should be one of the expected values
-            let valid_categories = vec!["parsing", "transpilation", "execution", "quality", "analysis"];
+            let valid_categories = ["parsing", "transpilation", "execution", "quality", "analysis"];
             assert!(valid_categories.contains(&category),
-                   "Category '{}' should be valid for tool '{}'", category, tool_name);
+                   "Category '{category}' should be valid for tool '{tool_name}'");
         }
 
         /// Property: Tool aliases are consistent and non-empty for known tools
@@ -774,12 +774,12 @@ mod property_tests_tool_discovery {
 
                 // Known tools should have at least one alias
                 assert!(!aliases.is_empty(),
-                       "Known tool '{}' should have at least one alias", tool_name);
+                       "Known tool '{tool_name}' should have at least one alias");
 
                 // Aliases should be non-empty strings
                 for alias in aliases {
                     assert!(!alias.is_empty(),
-                           "Alias for tool '{}' should not be empty", tool_name);
+                           "Alias for tool '{tool_name}' should not be empty");
                 }
             }
         }
@@ -796,7 +796,7 @@ mod property_tests_tool_discovery {
 
             let aliases = discovery.get_tool_aliases(&unknown_tool);
             assert!(aliases.is_empty(),
-                   "Unknown tool '{}' should have empty aliases", unknown_tool);
+                   "Unknown tool '{unknown_tool}' should have empty aliases");
         }
 
         /// Property: Default instance is identical to new()

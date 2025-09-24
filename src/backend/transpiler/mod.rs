@@ -1673,12 +1673,11 @@ mod tests {
         assert!(result.is_ok() || result.is_err());
 
         if let Ok(resolved) = result {
-            match resolved.kind {
-                ExprKind::Literal(Literal::Integer(val)) => assert_eq!(val, 42),
-                _ => {
-                    // Allow for different resolution behavior
-                    // Test passes without panic;
-                }
+            if let ExprKind::Literal(Literal::Integer(val)) = resolved.kind {
+                assert_eq!(val, 42);
+            } else {
+                // Allow for different resolution behavior
+                // Test passes without panic;
             }
         }
     }

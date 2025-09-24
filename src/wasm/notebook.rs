@@ -4760,7 +4760,7 @@ mod tests {
         // Test getting global variables
         let globals = runtime.get_globals();
         assert!(!globals.is_empty());
-        assert!(globals.contains("{") || globals == "{}");
+        assert!(globals.contains('{') || globals == "{}");
     }
 
     // Test 47: get_dependency_graph
@@ -4941,7 +4941,7 @@ mod tests {
         assert!(updates_result.is_ok());
 
         let updates = updates_result.unwrap();
-        assert!(updates.contains("[") || updates == "[]"); // Should be JSON array
+        assert!(updates.contains('[') || updates == "[]"); // Should be JSON array
     }
 
     // Test 60: Complex integration test - Full notebook lifecycle

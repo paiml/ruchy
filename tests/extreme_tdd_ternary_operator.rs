@@ -147,9 +147,9 @@ mod ternary_transpiler_tests {
         let result = transpile("true ? 1 : 0").unwrap();
         assert!(result.contains("if"));
         assert!(result.contains("true"));
-        assert!(result.contains("1"));
+        assert!(result.contains('1'));
         assert!(result.contains("else"));
-        assert!(result.contains("0"));
+        assert!(result.contains('0'));
     }
 
     #[test]

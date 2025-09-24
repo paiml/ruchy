@@ -366,7 +366,7 @@ mod tests {
 
     #[test]
     fn test_ci_provider_enum_variants() {
-        let providers = vec![
+        let providers = [
             CiProvider::GitHub,
             CiProvider::GitLab,
             CiProvider::Jenkins,
@@ -414,7 +414,7 @@ mod tests {
             coverage_threshold: 90.0,
             complexity_threshold: 15,
         };
-        let cloned = config.clone();
+        let cloned = config;
         assert!(matches!(cloned.provider, CiProvider::GitLab));
         assert!(!cloned.trigger_on_push);
         assert!(cloned.trigger_on_pr);
@@ -446,7 +446,7 @@ mod tests {
             complexity_threshold: 8,
         };
 
-        let result = integrator.configure(config.clone());
+        let result = integrator.configure(config);
         assert!(result.is_ok());
         assert!(integrator.config.is_some());
         assert_eq!(integrator.config.unwrap().coverage_threshold, 75.5);
@@ -588,7 +588,7 @@ mod tests {
 
     #[test]
     fn test_worker_status_enum_variants() {
-        let statuses = vec![
+        let statuses = [
             WorkerStatus::Active,
             WorkerStatus::Busy,
             WorkerStatus::Offline,
@@ -700,7 +700,7 @@ mod tests {
 
     #[test]
     fn test_metric_enum_variants() {
-        let metrics = vec![
+        let metrics = [
             Metric::MemoryUsage,
             Metric::CpuUsage,
             Metric::TestDuration,
@@ -711,7 +711,7 @@ mod tests {
 
     #[test]
     fn test_alert_action_enum_variants() {
-        let actions = vec![
+        let actions = [
             AlertAction::Email("test@example.com".to_string()),
             AlertAction::Slack("#alerts".to_string()),
             AlertAction::PagerDuty("service123".to_string()),

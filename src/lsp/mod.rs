@@ -281,7 +281,7 @@ mod tests {
         let mut workspace = Workspace::new();
         let uri = Url::parse("file:///empty.ruchy").unwrap();
 
-        workspace.add_document(uri.clone(), "".to_string());
+        workspace.add_document(uri.clone(), String::new());
         assert_eq!(workspace.get_document(&uri).unwrap(), "");
     }
 
@@ -357,7 +357,7 @@ mod tests {
 
         // Simulate multiple updates
         for i in 0..10 {
-            workspace.update_document(&uri, format!("version {}", i));
+            workspace.update_document(&uri, format!("version {i}"));
         }
 
         // Should have the last update
@@ -372,7 +372,7 @@ mod tests {
         let uri1 = Url::parse("file:///home/user/test.ruchy").unwrap();
         let uri2 = Url::parse("file:///home/user/test.ruchy").unwrap();
 
-        workspace.add_document(uri1.clone(), "content".to_string());
+        workspace.add_document(uri1, "content".to_string());
 
         // Should retrieve with equivalent URI
         assert_eq!(workspace.get_document(&uri2).unwrap(), "content");

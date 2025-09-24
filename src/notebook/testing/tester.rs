@@ -385,7 +385,7 @@ mod tests {
         assert_eq!(config.capture_output, cloned.capture_output);
         assert_eq!(config.allow_errors, cloned.allow_errors);
 
-        let debug_str = format!("{:?}", config);
+        let debug_str = format!("{config:?}");
         assert!(debug_str.contains("timeout_ms: 5000"));
         assert!(debug_str.contains("capture_output: true"));
         assert!(debug_str.contains("allow_errors: false"));
@@ -950,7 +950,7 @@ mod tests {
 
     #[test]
     fn test_notebook_parser_default() {
-        let parser = NotebookParser::default();
+        let parser = NotebookParser;
         // Should create successfully
         let _ = parser;
     }

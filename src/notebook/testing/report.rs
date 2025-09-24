@@ -62,7 +62,7 @@ mod tests {
     #[test]
     fn test_test_report_clone() {
         let report = TestReport::new(50, 40, 10, 60.0);
-        let cloned = report.clone();
+        let cloned = report;
 
         assert_eq!(cloned.total_tests, 50);
         assert_eq!(cloned.passed_tests, 40);
@@ -97,7 +97,7 @@ mod tests {
     #[test]
     fn test_debug_format() {
         let report = TestReport::new(10, 8, 2, 80.0);
-        let debug_str = format!("{:?}", report);
+        let debug_str = format!("{report:?}");
         assert!(debug_str.contains("total_tests: 10"));
         assert!(debug_str.contains("passed_tests: 8"));
         assert!(debug_str.contains("failed_tests: 2"));

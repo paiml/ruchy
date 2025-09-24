@@ -32,14 +32,14 @@ mod parser_properties {
             return TestResult::discard();
         }
 
-        let code = format!("fn main() {{ let {} = 42; }}", clean_name);
+        let code = format!("fn main() {{ let {clean_name} = 42; }}");
         let _result = compile(&code);
         TestResult::passed()
     }
 
     // Test that numbers compile correctly
     fn prop_numbers_compile(n: i32) -> TestResult {
-        let code = format!("fn main() {{ let x = {}; }}", n);
+        let code = format!("fn main() {{ let x = {n}; }}");
         let result = compile(&code);
         TestResult::from_bool(result.is_ok())
     }
@@ -48,7 +48,7 @@ mod parser_properties {
     fn prop_string_literals(s: String) -> TestResult {
         // Escape the string properly
         let escaped = s.replace('\\', "\\\\").replace('"', "\\\"");
-        let code = format!("fn main() {{ let s = \"{}\"; }}", escaped);
+        let code = format!("fn main() {{ let s = \"{escaped}\"; }}");
         let _result = compile(&code);
         TestResult::passed()
     }
@@ -63,7 +63,7 @@ mod parser_properties {
             .map(|i| i.to_string())
             .collect::<Vec<_>>()
             .join(", ");
-        let code = format!("fn main() {{ let arr = [{}]; }}", elements);
+        let code = format!("fn main() {{ let arr = [{elements}]; }}");
         let _result = compile(&code);
         TestResult::passed()
     }
@@ -75,11 +75,11 @@ mod parser_properties {
         }
 
         let params = (0..param_count)
-            .map(|i| format!("p{}: i32", i))
+            .map(|i| format!("p{i}: i32"))
             .collect::<Vec<_>>()
             .join(", ");
 
-        let code = format!("fn test({}) -> i32 {{ 42 }}", params);
+        let code = format!("fn test({params}) -> i32 {{ 42 }}");
         let _result = compile(&code);
         TestResult::passed()
     }
@@ -97,17 +97,14 @@ mod parser_properties {
             return TestResult::discard();
         }
 
-        let code = format!("fn main() {{ let x = {} {} {}; }}", a, operator, b);
+        let code = format!("fn main() {{ let x = {a} {operator} {b}; }}");
         let _result = compile(&code);
         TestResult::passed()
     }
 
     // Test if-else with various conditions
     fn prop_if_else(condition: bool, a: i32, b: i32) -> TestResult {
-        let code = format!(
-            "fn main() {{ let x = if {} {{ {} }} else {{ {} }}; }}",
-            condition, a, b
-        );
+        let code = format!("fn main() {{ let x = if {condition} {{ {a} }} else {{ {b} }}; }}");
         let result = compile(&code);
         TestResult::from_bool(result.is_ok())
     }
@@ -127,11 +124,10 @@ mod parser_properties {
             "fn main() {{
                 let x = 5;
                 let y = match x {{
-{}
+{arms}
                     _ => 999,
                 }};
-            }}",
-            arms
+            }}"
         );
         let _result = compile(&code);
         TestResult::passed()

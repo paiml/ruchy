@@ -1,6 +1,6 @@
 use ruchy::notebook::testing::smt::{
-    BoundedModelChecker, Function, FunctionSpec, LoopInfo, Model, PostconditionResult, Proof,
-    ProofCache, SmtQuery, SmtResult, SmtSolver, SolverType, VerificationResult,
+    BoundedModelChecker, Function, FunctionSpec, LoopInfo, Model, Proof, SmtQuery, SmtResult,
+    SmtSolver, SolverType,
 };
 use std::collections::HashMap;
 use std::time::Duration;
@@ -21,7 +21,7 @@ mod smt_solver_tests {
 
     #[test]
     fn test_smt_solver_new_all_solver_types() {
-        let solvers = vec![
+        let solvers = [
             SmtSolver::new(SolverType::Z3),
             SmtSolver::new(SolverType::CVC4),
             SmtSolver::new(SolverType::Yices),
@@ -204,8 +204,9 @@ mod smt_solver_tests {
         let result = solver.verify_loop_invariant(&loop_info, invariant);
 
         // Loop invariant verification should return a LoopVerificationResult
-        assert!(result.initialization_valid || !result.initialization_valid);
-        assert!(result.maintenance_valid || !result.maintenance_valid);
+        // Test that these fields exist (they may be true or false)
+        let _ = result.initialization_valid;
+        let _ = result.maintenance_valid;
         assert_eq!(result.invariant, invariant);
     }
 
@@ -229,8 +230,8 @@ mod smt_solver_tests {
 
         let result = solver.verify_loop_invariant(&loop_info, invariant);
 
-        // Complex loop invariant should be handled
-        assert!(result.initialization_valid || !result.initialization_valid);
+        // Complex loop invariant should be handled - check field exists
+        let _ = result.initialization_valid;
     }
 }
 
@@ -314,7 +315,7 @@ mod smt_data_structures_tests {
 
     #[test]
     fn test_solver_type_variants() {
-        let types = vec![
+        let types = [
             SolverType::Z3,
             SolverType::CVC4,
             SolverType::Yices,
@@ -365,10 +366,10 @@ mod property_tests {
         }
 
         let declarations = (0..decl_count)
-            .map(|i| format!("(declare-fun x{} () Int)", i))
+            .map(|i| format!("(declare-fun x{i} () Int)"))
             .collect();
         let assertions = (0..assert_count)
-            .map(|i| format!("(assert (> x{} 0))", i))
+            .map(|i| format!("(assert (> x{i} 0))"))
             .collect();
 
         let _query = SmtQuery {
@@ -388,7 +389,7 @@ mod property_tests {
 
         let mut assignments = HashMap::new();
         for i in 0..assignment_count {
-            assignments.insert(format!("var{}", i), format!("value{}", i));
+            assignments.insert(format!("var{i}"), format!("value{i}"));
         }
 
         let _model = Model { assignments };
@@ -402,7 +403,7 @@ mod property_tests {
         }
 
         let steps = (0..step_count)
-            .map(|i| format!("step {}: reasoning", i))
+            .map(|i| format!("step {i}: reasoning"))
             .collect();
         let _proof = Proof {
             steps,

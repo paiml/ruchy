@@ -278,7 +278,7 @@ mod tests {
         let mut rl = repl.setup_recording_editor()?;
 
         // Test empty input
-        let should_exit = repl.process_recorded_input("".to_string(), &mut recorder, &mut rl)?;
+        let should_exit = repl.process_recorded_input(String::new(), &mut recorder, &mut rl)?;
         assert!(!should_exit);
 
         // Test whitespace-only input
@@ -330,7 +330,7 @@ mod tests {
 
         // Test empty line ending multiline input
         repl.process_multiline_recorded_input(
-            "".to_string(),
+            String::new(),
             &mut multiline_buffer,
             &mut in_multiline,
             &mut recorder,
@@ -376,7 +376,7 @@ mod tests {
 
         // Test empty line that triggers evaluation
         repl.process_multiline_recorded_input(
-            "".to_string(),
+            String::new(),
             &mut multiline_buffer,
             &mut in_multiline,
             &mut recorder,
@@ -527,7 +527,7 @@ mod tests {
 
         // Test empty line with invalid syntax in buffer
         repl.process_multiline_recorded_input(
-            "".to_string(),
+            String::new(),
             &mut multiline_buffer,
             &mut in_multiline,
             &mut recorder,

@@ -293,8 +293,8 @@ mod tests {
         let _notebook_tester = NotebookTester::new();
 
         // Verify enum variants are accessible
-        let _cell_type_variants = vec![CellType::Code, CellType::Markdown];
-        let _divergence_variants = vec![
+        let _cell_type_variants = [CellType::Code, CellType::Markdown];
+        let _divergence_variants = [
             DivergenceType::None,
             DivergenceType::OutputMismatch,
             DivergenceType::TypeMismatch,

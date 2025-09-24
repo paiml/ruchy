@@ -30,8 +30,7 @@ mod import_syntax_tests {
             output.contains("use std::collections") || output.contains("use std :: collections");
         assert!(
             has_import,
-            "Should transpile to 'use std::collections', got: {}",
-            output
+            "Should transpile to 'use std::collections', got: {output}"
         );
     }
 
@@ -48,8 +47,7 @@ mod import_syntax_tests {
             || output.contains("use std :: collections :: HashMap");
         assert!(
             has_import,
-            "Should transpile to 'use std::collections::HashMap', got: {}",
-            output
+            "Should transpile to 'use std::collections::HashMap', got: {output}"
         );
     }
 
@@ -59,7 +57,7 @@ mod import_syntax_tests {
         let result = compile("from std import println");
         assert!(result.is_ok(), "Failed to compile: from std import println");
         let output = result.unwrap();
-        println!("from std import println output: {}", output);
+        println!("from std import println output: {output}");
         // Check with or without spaces
         let has_import = output.contains("use std::println")
             || output.contains("use std :: println")
@@ -67,8 +65,7 @@ mod import_syntax_tests {
             || output.contains("use std :: { println }");
         assert!(
             has_import,
-            "Should transpile to 'use std::println', got: {}",
-            output
+            "Should transpile to 'use std::println', got: {output}"
         );
     }
 
@@ -93,14 +90,13 @@ mod import_syntax_tests {
         let result = compile("import std.collections.HashMap as Map");
         assert!(result.is_ok(), "Failed to compile: import...as");
         let output = result.unwrap();
-        println!("Import with alias output: {}", output);
+        println!("Import with alias output: {output}");
         // Check with or without spaces
         let has_alias = output.contains("use std::collections::HashMap as Map")
             || output.contains("use std :: collections :: HashMap as Map");
         assert!(
             has_alias,
-            "Should transpile to 'use std::collections::HashMap as Map', got: {}",
-            output
+            "Should transpile to 'use std::collections::HashMap as Map', got: {output}"
         );
     }
 
@@ -121,14 +117,13 @@ mod import_syntax_tests {
         let result = compile("from std.collections import *");
         assert!(result.is_ok(), "Failed to compile: from...import *");
         let output = result.unwrap();
-        println!("Wildcard import output: {}", output);
+        println!("Wildcard import output: {output}");
         // Check with or without spaces
         let has_wildcard = output.contains("use std::collections::*")
             || output.contains("use std :: collections :: *");
         assert!(
             has_wildcard,
-            "Should transpile to 'use std::collections::*', got: {}",
-            output
+            "Should transpile to 'use std::collections::*', got: {output}"
         );
     }
 
@@ -143,8 +138,7 @@ mod import_syntax_tests {
             || output.contains("use tokio :: sync :: mpsc");
         assert!(
             has_import,
-            "Should transpile nested module paths, got: {}",
-            output
+            "Should transpile nested module paths, got: {output}"
         );
     }
 
@@ -153,31 +147,27 @@ mod import_syntax_tests {
     fn test_import_braces_syntax() {
         let result = compile("import { readFile, writeFile } from fs");
         if let Err(e) = &result {
-            println!("JS-style import error: {}", e);
+            println!("JS-style import error: {e}");
         }
         assert!(result.is_ok(), "Failed to compile: import {{...}} from");
         let output = result.unwrap();
-        println!("JS-style import output: {}", output);
+        println!("JS-style import output: {output}");
         // Check with or without spaces
         let has_import = output.contains("use fs::{readFile, writeFile}")
             || output.contains("use fs :: { readFile , writeFile }");
-        assert!(
-            has_import,
-            "Should support JS-style imports, got: {}",
-            output
-        );
+        assert!(has_import, "Should support JS-style imports, got: {output}");
     }
 
     // Multiple imports in one file
     #[test]
     #[ignore = "Import feature not fully implemented yet"]
     fn test_multiple_imports() {
-        let code = r#"
+        let code = r"
 import std
 import std.collections.HashMap
 from std.io import println, eprintln
 import tokio.sync as sync
-        "#;
+        ";
         let result = compile(code);
         assert!(result.is_ok(), "Failed to compile multiple imports");
         let output = result.unwrap();
@@ -199,26 +189,26 @@ import tokio.sync as sync
     // Import in different contexts
     #[test]
     fn test_import_in_function() {
-        let code = r#"
+        let code = r"
 fn main() {
     import std.collections.HashMap
     let map = HashMap::new()
 }
-        "#;
+        ";
         let result = compile(code);
         assert!(result.is_ok(), "Failed to compile import inside function");
     }
 
     #[test]
     fn test_import_in_module() {
-        let code = r#"
+        let code = r"
 mod utils {
     import std.fs
     fn read_file(path: String) -> String {
         fs::read_to_string(path)
     }
 }
-        "#;
+        ";
         let result = compile(code);
         assert!(result.is_ok(), "Failed to compile import inside module");
     }
@@ -228,7 +218,7 @@ mod utils {
     fn test_import_self() {
         let result = compile("import self");
         if let Err(e) = &result {
-            println!("Import self error: {}", e);
+            println!("Import self error: {e}");
         }
         assert!(result.is_ok(), "Failed to compile: import self");
         let output = result.unwrap();
@@ -253,18 +243,17 @@ mod utils {
     fn test_import_crate() {
         let result = compile("import crate.utils");
         if let Err(e) = &result {
-            println!("Import crate.utils error: {}", e);
+            println!("Import crate.utils error: {e}");
         }
         assert!(result.is_ok(), "Failed to compile: import crate.utils");
         let output = result.unwrap();
-        println!("Import crate.utils output: {}", output);
+        println!("Import crate.utils output: {output}");
         // Check with or without spaces
         let has_import =
             output.contains("use crate::utils") || output.contains("use crate :: utils");
         assert!(
             has_import,
-            "Should transpile to 'use crate::utils', got: {}",
-            output
+            "Should transpile to 'use crate::utils', got: {output}"
         );
     }
 
@@ -296,7 +285,7 @@ mod import_property_tests {
     proptest! {
         #[test]
         fn test_import_paths_never_panic(path in "[a-zA-Z_][a-zA-Z0-9_]{0,20}(\\.[a-zA-Z_][a-zA-Z0-9_]{0,20}){0,5}") {
-            let code = format!("import {}", path);
+            let code = format!("import {path}");
             let _ = compile(&code); // Should not panic
         }
 
@@ -305,7 +294,7 @@ mod import_property_tests {
             module in "[a-zA-Z_][a-zA-Z0-9_]{0,20}(\\.[a-zA-Z_][a-zA-Z0-9_]{0,20}){0,3}",
             item in "[a-zA-Z_][a-zA-Z0-9_]{0,20}"
         ) {
-            let code = format!("from {} import {}", module, item);
+            let code = format!("from {module} import {item}");
             let _ = compile(&code); // Should not panic
         }
 
@@ -314,7 +303,7 @@ mod import_property_tests {
             path in "[a-zA-Z_][a-zA-Z0-9_]{0,20}(\\.[a-zA-Z_][a-zA-Z0-9_]{0,20}){0,3}",
             alias in "[a-zA-Z_][a-zA-Z0-9_]{0,20}"
         ) {
-            let code = format!("import {} as {}", path, alias);
+            let code = format!("import {path} as {alias}");
             let _ = compile(&code); // Should not panic
         }
 
@@ -323,17 +312,17 @@ mod import_property_tests {
             items in prop::collection::vec("[a-zA-Z_][a-zA-Z0-9_]{0,20}", 1..10)
         ) {
             let imports = items.join(", ");
-            let code = format!("from std.collections import {}", imports);
+            let code = format!("from std.collections import {imports}");
             let _ = compile(&code); // Should not panic
         }
 
         #[test]
         fn test_deeply_nested_imports(depth in 1..20usize) {
             let path = (0..depth)
-                .map(|i| format!("mod{}", i))
+                .map(|i| format!("mod{i}"))
                 .collect::<Vec<_>>()
                 .join(".");
-            let code = format!("import {}", path);
+            let code = format!("import {path}");
             let _ = compile(&code); // Should not panic
         }
     }
@@ -371,7 +360,7 @@ fn main() {
     #[test]
     #[ignore = "Import feature not fully implemented yet"]
     fn test_selective_imports() {
-        let code = r#"
+        let code = r"
 from std.collections import HashMap, HashSet
 from std.sync import Arc, Mutex
 
@@ -381,7 +370,7 @@ fn main() {
     let arc = Arc::new(42)
     let mutex = Mutex::new(0)
 }
-        "#;
+        ";
         let result = compile(code);
         assert!(result.is_ok(), "Failed to compile selective imports");
         let output = result.unwrap();
@@ -391,7 +380,7 @@ fn main() {
 
     #[test]
     fn test_import_resolution_order() {
-        let code = r#"
+        let code = r"
 import std
 import std.collections.HashMap
 
@@ -399,7 +388,7 @@ fn main() {
     // Should resolve to most specific import
     let map = HashMap::new()
 }
-        "#;
+        ";
         let result = compile(code);
         assert!(result.is_ok(), "Failed to compile with import resolution");
     }

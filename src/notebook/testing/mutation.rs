@@ -411,7 +411,7 @@ mod tests {
         };
 
         let result = MutationResult {
-            mutation: mutation.clone(),
+            mutation,
             killed: true,
             killing_test: Some("test_comparison".to_string()),
         };
@@ -457,7 +457,7 @@ mod tests {
             timeout_ms: 3000,
         };
 
-        let tester = MutationTester::with_config(config.clone());
+        let tester = MutationTester::with_config(config);
         assert_eq!(tester.config.timeout_ms, 3000);
         assert_eq!(tester.config.enabled_mutations.len(), 1);
     }
@@ -482,7 +482,7 @@ mod tests {
 
         for mutation_type in types {
             let mutation = Mutation {
-                id: format!("mut_{:?}", mutation_type),
+                id: format!("mut_{mutation_type:?}"),
                 cell_id: "test_cell".to_string(),
                 mutation_type: mutation_type.clone(),
                 line: 1,
@@ -541,7 +541,7 @@ mod tests {
         };
 
         let result = MutationResult {
-            mutation: mutation.clone(),
+            mutation,
             killed: true,
             killing_test: Some("test_condition".to_string()),
         };

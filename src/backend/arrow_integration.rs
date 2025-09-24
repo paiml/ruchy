@@ -441,8 +441,7 @@ mod tests {
         // Verify it's fast (less than 100ms for 1M rows)
         assert!(
             duration.as_millis() < 100,
-            "Conversion took too long: {:?}",
-            duration
+            "Conversion took too long: {duration:?}"
         );
         assert_eq!(batch.num_rows(), size as usize);
     }
@@ -656,7 +655,7 @@ mod tests {
         // DF-004: Verify all operations meet 1M row <100ms performance target
         let size = 1_000_000;
         let int_values: Vec<i32> = (0..size).collect();
-        let float_values: Vec<f64> = (0..size).map(|i| i as f64 * 1.5).collect();
+        let float_values: Vec<f64> = (0..size).map(|i| f64::from(i) * 1.5).collect();
         let bool_values: Vec<bool> = (0..size).map(|i| i % 2 == 0).collect();
 
         // Create multi-column DataFrame for comprehensive testing

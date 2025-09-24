@@ -8,7 +8,7 @@ use ruchy::frontend::parser::Parser;
 
 fn main() {
     // Example Ruchy code
-    let source = r#"
+    let source = r"
         fun factorial(n: Int) -> Int {
             if n <= 1 {
                 1
@@ -16,7 +16,7 @@ fn main() {
                 n * factorial(n - 1)
             }
         }
-    "#;
+    ";
 
     // Parse the code
     let mut parser = Parser::new(source);
@@ -30,15 +30,15 @@ fn main() {
                 Ok(rust_code) => {
                     println!("Transpilation successful!");
                     println!("Generated Rust code:");
-                    println!("{}", rust_code);
+                    println!("{rust_code}");
                 }
                 Err(e) => {
-                    eprintln!("Transpilation error: {}", e);
+                    eprintln!("Transpilation error: {e}");
                 }
             }
         }
         Err(e) => {
-            eprintln!("Parse error: {}", e);
+            eprintln!("Parse error: {e}");
         }
     }
 }
