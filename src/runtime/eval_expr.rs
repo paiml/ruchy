@@ -77,6 +77,8 @@ pub fn is_control_flow_expr(expr_kind: &ExprKind) -> bool {
             | ExprKind::Break { .. }
             | ExprKind::Continue { .. }
             | ExprKind::Return { .. }
+            | ExprKind::TryCatch { .. }
+            | ExprKind::Throw { .. }
     )
 }
 

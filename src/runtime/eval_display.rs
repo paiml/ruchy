@@ -154,6 +154,7 @@ impl fmt::Display for InterpreterError {
             InterpreterError::Break(_) => write!(f, "Break outside of loop"),
             InterpreterError::Continue => write!(f, "Continue outside of loop"),
             InterpreterError::Return(_) => write!(f, "Return outside of function"),
+            InterpreterError::Throw(value) => write!(f, "Uncaught exception: {value:?}"),
         }
     }
 }

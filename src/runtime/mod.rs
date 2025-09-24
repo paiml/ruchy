@@ -91,6 +91,7 @@ pub mod eval_pattern_match;
 pub mod eval_string;
 pub mod eval_string_interpolation;
 pub mod eval_string_methods;
+pub mod eval_try_catch; // EXTREME TDD: Try/catch error handling
 pub mod gc;
 pub mod gc_impl; // EXTREME TDD: Full GC implementation with tests
 pub mod transformation;
