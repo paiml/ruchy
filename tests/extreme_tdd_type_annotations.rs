@@ -37,7 +37,10 @@ mod type_annotation_tests {
         println!("String type output: {output}");
 
         let has_type = output.contains("let name: String") || output.contains("let name : String");
-        assert!(has_type, "Should include String type annotation, got: {output}");
+        assert!(
+            has_type,
+            "Should include String type annotation, got: {output}"
+        );
     }
 
     #[test]
@@ -48,7 +51,10 @@ mod type_annotation_tests {
         let output = result.unwrap();
 
         let has_type = output.contains("let pi: f64") || output.contains("let pi : f64");
-        assert!(has_type, "Should include f64 type annotation, got: {output}");
+        assert!(
+            has_type,
+            "Should include f64 type annotation, got: {output}"
+        );
     }
 
     #[test]
@@ -59,7 +65,10 @@ mod type_annotation_tests {
         let output = result.unwrap();
 
         let has_type = output.contains("let flag: bool") || output.contains("let flag : bool");
-        assert!(has_type, "Should include bool type annotation, got: {output}");
+        assert!(
+            has_type,
+            "Should include bool type annotation, got: {output}"
+        );
     }
 
     // =============================================================================
@@ -75,7 +84,10 @@ mod type_annotation_tests {
         let output = result.unwrap();
 
         let has_type = output.contains("Vec<i32>") || output.contains("Vec < i32 >");
-        assert!(has_type, "Should include Vec<i32> type annotation, got: {output}");
+        assert!(
+            has_type,
+            "Should include Vec<i32> type annotation, got: {output}"
+        );
     }
 
     #[test]
@@ -87,7 +99,10 @@ mod type_annotation_tests {
         let output = result.unwrap();
 
         let has_type = output.contains("(f64, f64)") || output.contains("( f64 , f64 )");
-        assert!(has_type, "Should include tuple type annotation, got: {output}");
+        assert!(
+            has_type,
+            "Should include tuple type annotation, got: {output}"
+        );
     }
 
     #[test]
@@ -95,11 +110,17 @@ mod type_annotation_tests {
     fn test_let_with_option_type() {
         let code = "let maybe: Option<i32> = Some(42)";
         let result = compile(code);
-        assert!(result.is_ok(), "Failed to compile Option<i32> type annotation");
+        assert!(
+            result.is_ok(),
+            "Failed to compile Option<i32> type annotation"
+        );
         let output = result.unwrap();
 
         let has_type = output.contains("Option<i32>") || output.contains("Option < i32 >");
-        assert!(has_type, "Should include Option<i32> type annotation, got: {output}");
+        assert!(
+            has_type,
+            "Should include Option<i32> type annotation, got: {output}"
+        );
     }
 
     // =============================================================================
@@ -111,7 +132,10 @@ mod type_annotation_tests {
     fn test_function_with_parameter_types() {
         let code = "fn add(x: i32, y: i32) -> i32 { x + y }";
         let result = compile(code);
-        assert!(result.is_ok(), "Failed to compile function with parameter types");
+        assert!(
+            result.is_ok(),
+            "Failed to compile function with parameter types"
+        );
         let output = result.unwrap();
 
         let has_params = output.contains("x: i32") && output.contains("y: i32");
@@ -126,14 +150,23 @@ mod type_annotation_tests {
     fn test_function_with_string_parameter() {
         let code = r#"fn greet(name: String) -> String { "Hello, " + name }"#;
         let result = compile(code);
-        assert!(result.is_ok(), "Failed to compile function with String parameter");
+        assert!(
+            result.is_ok(),
+            "Failed to compile function with String parameter"
+        );
         let output = result.unwrap();
 
         let has_param = output.contains("name: String");
-        assert!(has_param, "Should include String parameter type, got: {output}");
+        assert!(
+            has_param,
+            "Should include String parameter type, got: {output}"
+        );
 
         let has_return = output.contains("-> String");
-        assert!(has_return, "Should include String return type, got: {output}");
+        assert!(
+            has_return,
+            "Should include String return type, got: {output}"
+        );
     }
 
     // =============================================================================
@@ -161,7 +194,10 @@ mod type_annotation_tests {
         let output = result.unwrap();
 
         let has_mut_ref = output.contains("&mut [i32]") || output.contains("& mut [ i32 ]");
-        assert!(has_mut_ref, "Should include mutable reference type, got: {output}");
+        assert!(
+            has_mut_ref,
+            "Should include mutable reference type, got: {output}"
+        );
     }
 
     // =============================================================================
@@ -198,7 +234,10 @@ mod type_annotation_tests {
         let code = "let x: i32 = \"hello\"";
         let result = compile(code);
         // Should compile successfully (type checker is separate concern)
-        assert!(result.is_ok(), "Compilation should succeed even with type mismatches");
+        assert!(
+            result.is_ok(),
+            "Compilation should succeed even with type mismatches"
+        );
     }
 
     // =============================================================================
@@ -216,10 +255,12 @@ mod type_annotation_tests {
         assert!(result.is_ok(), "Failed to compile mixed type annotations");
         let output = result.unwrap();
 
-        let has_all_types = output.contains("i32") &&
-                           output.contains("String") &&
-                           output.contains("bool");
-        assert!(has_all_types, "Should include all type annotations, got: {output}");
+        let has_all_types =
+            output.contains("i32") && output.contains("String") && output.contains("bool");
+        assert!(
+            has_all_types,
+            "Should include all type annotations, got: {output}"
+        );
     }
 
     #[test]
@@ -233,11 +274,17 @@ mod type_annotation_tests {
             }
         "#;
         let result = compile(code);
-        assert!(result.is_ok(), "Failed to compile function with typed variables");
+        assert!(
+            result.is_ok(),
+            "Failed to compile function with typed variables"
+        );
         let output = result.unwrap();
 
         let has_types = output.contains("let x: i32") && output.contains("let y: i32");
-        assert!(has_types, "Should preserve variable type annotations in function, got: {output}");
+        assert!(
+            has_types,
+            "Should preserve variable type annotations in function, got: {output}"
+        );
     }
 }
 

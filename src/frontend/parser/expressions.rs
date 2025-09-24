@@ -3275,16 +3275,26 @@ fn parse_export_token(state: &mut ParserState) -> Result<Expr> {
     super::utils::parse_export(state)
 }
 
-/// Parse async function declaration - modifies following function
+/// Parse async function declaration, async block, or async lambda
 fn parse_async_token(state: &mut ParserState) -> Result<Expr> {
     state.tokens.advance(); // consume 'async'
 
-    // After 'async', we expect 'fun' for async function
-    if matches!(state.tokens.peek(), Some((Token::Fun, _))) {
-        // Parse the async function
-        parse_async_function(state, false)
-    } else {
-        bail!("Expected 'fun' after 'async'")
+    match state.tokens.peek() {
+        // async fun declaration
+        Some((Token::Fun, _)) => parse_async_function(state, false),
+        // async { ... } block
+        Some((Token::LeftBrace, _)) => parse_async_block(state),
+        // async |x| ... lambda
+        Some((Token::Pipe, _)) => parse_async_lambda(state),
+        // async x => ... lambda (arrow syntax)
+        Some((Token::Identifier(_), _)) => {
+            if let Some((Token::Arrow, _)) = state.tokens.peek_ahead(1) {
+                parse_async_arrow_lambda(state)
+            } else {
+                bail!("Expected 'fun', '{{', '|', or arrow lambda after 'async'")
+            }
+        }
+        _ => bail!("Expected 'fun', '{{', '|', or identifier after 'async'"),
     }
 }
 
@@ -3334,6 +3344,102 @@ fn parse_async_function(state: &mut ParserState, is_pub: bool) -> Result<Expr> {
             is_pub,
         },
         start_span,
+    ))
+}
+
+/// Parse async block: async { ... }
+fn parse_async_block(state: &mut ParserState) -> Result<Expr> {
+    let start_span = state.tokens.expect(&Token::LeftBrace)?; // consume '{'
+
+    let body = super::parse_expr_recursive(state)?;
+
+    state.tokens.expect(&Token::RightBrace)?; // consume '}'
+
+    Ok(Expr::new(
+        ExprKind::AsyncBlock {
+            body: Box::new(body),
+        },
+        start_span,
+    ))
+}
+
+/// Parse async lambda: async |x| ...
+fn parse_async_lambda(state: &mut ParserState) -> Result<Expr> {
+    let start_span = state.tokens.expect(&Token::Pipe)?; // consume '|'
+
+    let params = parse_async_lambda_params(state)?;
+
+    state.tokens.expect(&Token::Pipe)?; // consume closing '|'
+
+    let body = super::parse_expr_recursive(state)?;
+
+    Ok(Expr::new(
+        ExprKind::AsyncLambda {
+            params,
+            body: Box::new(body),
+        },
+        start_span,
+    ))
+}
+
+/// Parse async lambda parameters with ≤5 complexity
+fn parse_async_lambda_params(state: &mut ParserState) -> Result<Vec<String>> {
+    if matches!(state.tokens.peek(), Some((Token::Pipe, _))) {
+        return Ok(Vec::new()); // Empty parameter list
+    }
+
+    parse_async_param_list(state)
+}
+
+/// Parse comma-separated async parameter list with ≤5 complexity
+fn parse_async_param_list(state: &mut ParserState) -> Result<Vec<String>> {
+    let mut params = Vec::new();
+    let first_param = parse_single_async_param(state)?;
+    params.push(first_param);
+
+    while matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+        state.tokens.advance(); // consume ','
+        let param = parse_single_async_param(state)?;
+        params.push(param);
+    }
+
+    Ok(params)
+}
+
+/// Parse single async lambda parameter with ≤3 complexity
+fn parse_single_async_param(state: &mut ParserState) -> Result<String> {
+    if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
+        let param_name = name.clone();
+        state.tokens.advance();
+        Ok(param_name)
+    } else {
+        bail!("Expected parameter name in async lambda");
+    }
+}
+
+/// Parse async arrow lambda: async x => ...
+fn parse_async_arrow_lambda(state: &mut ParserState) -> Result<Expr> {
+    // Parse single parameter
+    let param = if let Some((Token::Identifier(name), span)) = state.tokens.peek() {
+        let name = name.clone();
+        let span = *span;
+        state.tokens.advance();
+        (name, span)
+    } else {
+        bail!("Expected parameter name in async arrow lambda");
+    };
+
+    state.tokens.expect(&Token::Arrow)?; // consume '=>'
+
+    // Parse body
+    let body = super::parse_expr_recursive(state)?;
+
+    Ok(Expr::new(
+        ExprKind::AsyncLambda {
+            params: vec![param.0],
+            body: Box::new(body),
+        },
+        param.1,
     ))
 }
 

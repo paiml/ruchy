@@ -318,6 +318,24 @@ impl Transpiler {
         let body_tokens = self.transpile_expr(body)?;
         Ok(quote! { async { #body_tokens } })
     }
+
+    /// Transpiles async lambda expressions to Rust async closures
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::backend::transpiler::expressions::transpile_async_lambda;
+    ///
+    /// let result = transpile_async_lambda(());
+    /// assert_eq!(result, Ok(()));
+    /// ```
+    pub fn transpile_async_lambda(&self, params: &[String], body: &Expr) -> Result<TokenStream> {
+        let param_idents: Vec<proc_macro2::Ident> =
+            params.iter().map(|p| format_ident!("{}", p)).collect();
+
+        let body_tokens = self.transpile_expr(body)?;
+
+        Ok(quote! { |#(#param_idents),*| async move { #body_tokens } })
+    }
     /// Transpiles throw expressions (panic in Rust)
     /// # Examples
     ///

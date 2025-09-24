@@ -109,7 +109,8 @@ impl Transpiler {
             | ExprKind::PreDecrement { .. }
             | ExprKind::PostDecrement { .. }
             | ExprKind::Await { .. }
-            | ExprKind::AsyncBlock { .. } => self.transpile_operator_only_expr(expr),
+            | ExprKind::AsyncBlock { .. }
+            | ExprKind::AsyncLambda { .. } => self.transpile_operator_only_expr(expr),
             // Control flow
             ExprKind::If { .. }
             | ExprKind::IfLet { .. }
@@ -136,6 +137,7 @@ impl Transpiler {
             ExprKind::PostDecrement { target } => self.transpile_post_decrement(target),
             ExprKind::Await { expr } => self.transpile_await(expr),
             ExprKind::AsyncBlock { body } => self.transpile_async_block(body),
+            ExprKind::AsyncLambda { params, body } => self.transpile_async_lambda(params, body),
             _ => unreachable!(),
         }
     }
@@ -366,14 +368,22 @@ impl Transpiler {
                 value,
                 body,
                 is_mutable,
-            } => self.transpile_let_with_type(name, type_annotation.as_ref(), value, body, *is_mutable),
+            } => self.transpile_let_with_type(
+                name,
+                type_annotation.as_ref(),
+                value,
+                body,
+                *is_mutable,
+            ),
             ExprKind::LetPattern {
                 pattern,
                 type_annotation,
                 value,
                 body,
                 is_mutable: _,
-            } => self.transpile_let_pattern_with_type(pattern, type_annotation.as_ref(), value, body),
+            } => {
+                self.transpile_let_pattern_with_type(pattern, type_annotation.as_ref(), value, body)
+            }
             ExprKind::Block(exprs) => self.transpile_block(exprs),
             ExprKind::Pipeline { expr, stages } => self.transpile_pipeline(expr, stages),
             ExprKind::Import { module, items } => {

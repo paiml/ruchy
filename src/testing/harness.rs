@@ -139,7 +139,7 @@ impl RuchyTestHarness {
             OptLevel::Full => "opt-level=3",
         };
         let compile_result = Command::new("rustc")
-            .arg("--edition=2021")
+            .arg("--edition=2018")
             .arg("-C")
             .arg(opt_level)
             .arg("-o")
