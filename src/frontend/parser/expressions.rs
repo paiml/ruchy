@@ -2358,17 +2358,8 @@ fn parse_generic_params(state: &mut ParserState) -> Result<Vec<String>> {
     Ok(params)
 }
 fn parse_actor_definition(state: &mut ParserState) -> Result<Expr> {
-    // Parse actor Name { state: fields, receive handlers }
-    let start_span = state.tokens.expect(&Token::Actor)?;
-    // Get actor name
-    let name = parse_actor_name(state)?;
-    // Parse { body }
-    state.tokens.expect(&Token::LeftBrace)?;
-    // Parse actor body components
-    let (state_fields, handlers) = parse_actor_body(state)?;
-    state.tokens.expect(&Token::RightBrace)?;
-    // Create the actor expression
-    create_actor_expression(name, state_fields, handlers, start_span)
+    // Use the proper actor parsing from actors module
+    super::actors::parse_actor(state)
 }
 /// Parse actor name
 /// Extracted from `parse_actor_definition` to reduce complexity
