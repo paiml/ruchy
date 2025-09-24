@@ -2,7 +2,8 @@
 // WebAssembly Extreme Quality Assurance Framework v3.0
 // WASM Performance Benchmark Suite
 
-use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
+use std::hint::black_box;
 
 fn benchmark_suite(c: &mut Criterion) {
     let mut group = c.benchmark_group("wasm_operations");

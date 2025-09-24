@@ -150,7 +150,7 @@ mod obfuscation_detector_tests {
     fn test_obfuscation_detector_new() {
         let _detector = ObfuscationDetector::new();
         // Test that constructor works
-        assert!(true); // Placeholder - actual struct fields not visible
+        // Test passes if constructor doesn't panic
     }
 
     #[test]
@@ -215,7 +215,7 @@ mod pattern_analyzer_tests {
     fn test_timing_analyzer_new() {
         let analyzer = PatternAnalyzer::new();
         // Test that constructor works
-        assert!(true); // Placeholder - actual struct fields not visible
+        // Test passes if constructor doesn't panic
     }
 
     #[test]

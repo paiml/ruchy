@@ -3,7 +3,7 @@
 //! This example demonstrates how to use the Ruchy compiler to generate
 //! WebAssembly modules from Ruchy source code.
 //!
-//! Run with: cargo run --example wasm_compile
+//! Run with: cargo run --example `wasm_compile`
 
 use ruchy::{Parser, WasmEmitter};
 use std::fs;
@@ -29,24 +29,24 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Example 3: Multiple operations
     compile_example(
         "Multiple Operations",
-        r#"
+        r"
         fun multiply(x, y) {
             x * y
         }
         
         multiply(8, 8)
-        "#,
+        ",
         "multiple.wasm",
     )?;
 
     // Example 4: Mathematical expression
     compile_example(
         "Mathematical Expression",
-        r#"
+        r"
         let x = 10
         let y = 20
         x * y + 50
-        "#,
+        ",
         "math.wasm",
     )?;
 

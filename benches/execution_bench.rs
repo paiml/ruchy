@@ -5,7 +5,8 @@
 #![allow(clippy::unwrap_used)]
 #![allow(clippy::expect_used)]
 
-use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
+use std::hint::black_box;
 use ruchy::runtime::repl::Repl;
 use ruchy::{Parser, Transpiler};
 use std::time::Duration;

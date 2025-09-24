@@ -4915,7 +4915,8 @@ mod tests {
                     "language": "ruchy",
                     "created": "2024-01-01T00:00:00Z",
                     "last_modified": "2024-01-01T00:00:00Z",
-                    "modified": "2024-01-01T00:00:00Z"
+                    "modified": "2024-01-01T00:00:00Z",
+                    "ruchy_version": "1.0.0"
                 },
                 "cells": []
             },

@@ -2,7 +2,8 @@
 //!
 //! Measures performance of the Ruchy parser on various code patterns.
 
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{criterion_group, criterion_main, Criterion};
+use std::hint::black_box;
 use ruchy::frontend::parser::Parser;
 
 fn benchmark_literals(c: &mut Criterion) {

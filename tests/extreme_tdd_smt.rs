@@ -16,7 +16,7 @@ mod smt_solver_tests {
     fn test_smt_solver_new_z3() {
         let solver = SmtSolver::new(SolverType::Z3);
         // Basic constructor test - verifies the object can be created
-        assert!(true); // Constructor test passes
+        // Constructor test passes if no panic
     }
 
     #[test]
@@ -36,7 +36,7 @@ mod smt_solver_tests {
         let timeout = Duration::from_secs(30);
         let solver = SmtSolver::with_timeout(SolverType::Z3, timeout);
         // Test constructor with timeout works
-        assert!(true);
+        // Test passes if no panic occurs
     }
 
     #[test]
@@ -47,7 +47,7 @@ mod smt_solver_tests {
         let solver1 = SmtSolver::with_timeout(SolverType::Z3, zero_timeout);
         let solver2 = SmtSolver::with_timeout(SolverType::CVC4, long_timeout);
 
-        assert!(true); // Both constructors should work
+        // Test passes if no panic occurs // Both constructors should work
     }
 
     #[test]
@@ -64,10 +64,10 @@ mod smt_solver_tests {
 
         // Should return some result (may be timeout/unknown without actual Z3)
         match result {
-            SmtResult::Satisfiable(_) => assert!(true),
-            SmtResult::Unsatisfiable(_) => assert!(true),
-            SmtResult::Unknown(_) => assert!(true),
-            SmtResult::Timeout => assert!(true),
+            SmtResult::Satisfiable(_) => { /* satisfiable result */ }
+            SmtResult::Unsatisfiable(_) => { /* unsatisfiable result */ }
+            SmtResult::Unknown(_) => { /* unknown result */ }
+            SmtResult::Timeout => { /* timeout result */ }
         }
     }
 
@@ -85,10 +85,10 @@ mod smt_solver_tests {
 
         // Empty query should still return a valid result
         match result {
-            SmtResult::Satisfiable(_) => assert!(true),
-            SmtResult::Unsatisfiable(_) => assert!(true),
-            SmtResult::Unknown(_) => assert!(true),
-            SmtResult::Timeout => assert!(true),
+            SmtResult::Satisfiable(_) => { /* satisfiable result */ }
+            SmtResult::Unsatisfiable(_) => { /* unsatisfiable result */ }
+            SmtResult::Unknown(_) => { /* unknown result */ }
+            SmtResult::Timeout => { /* timeout result */ }
         }
     }
 
@@ -113,10 +113,10 @@ mod smt_solver_tests {
 
         // Complex query should be handled
         match result {
-            SmtResult::Satisfiable(_) => assert!(true),
-            SmtResult::Unsatisfiable(_) => assert!(true),
-            SmtResult::Unknown(_) => assert!(true),
-            SmtResult::Timeout => assert!(true),
+            SmtResult::Satisfiable(_) => { /* satisfiable result */ }
+            SmtResult::Unsatisfiable(_) => { /* unsatisfiable result */ }
+            SmtResult::Unknown(_) => { /* unknown result */ }
+            SmtResult::Timeout => { /* timeout result */ }
         }
     }
 
@@ -181,7 +181,7 @@ mod smt_solver_tests {
         let result2 = solver.verify_function(&simple_function, &contradictory_spec);
 
         // Both should handle gracefully
-        assert!(true);
+        // Test passes if no panic occurs
     }
 
     #[test]
@@ -246,7 +246,7 @@ mod bounded_model_checker_tests {
     fn test_bounded_model_checker_new() {
         let checker = BoundedModelChecker::new(SolverType::Z3, 10);
         // Test constructor works
-        assert!(true);
+        // Test passes if no panic occurs
     }
 
     #[test]
@@ -256,7 +256,7 @@ mod bounded_model_checker_tests {
         let checker3 = BoundedModelChecker::new(SolverType::Z3, 100);
 
         // All depth values should work
-        assert!(true);
+        // Test passes if no panic occurs
     }
 
     #[test]
@@ -266,7 +266,7 @@ mod bounded_model_checker_tests {
         // Test that the bounded model checker can be constructed
         // The check_bounded method requires Program type which isn't accessible
         // So we just test the constructor works
-        assert!(true);
+        // Test passes if no panic occurs
     }
 }
 
@@ -392,7 +392,7 @@ mod property_tests {
             assignments.insert(format!("var{i}"), format!("value{i}"));
         }
 
-        let _model = Model { assignments };
+        let _model = Model { assignments }; // Used for test coverage
         TestResult::passed()
     }
 
@@ -441,8 +441,8 @@ mod integration_tests {
             SmtResult::Unsatisfiable(proof) => {
                 assert!(!proof.steps.is_empty() || proof.steps.is_empty());
             }
-            SmtResult::Unknown(_) => assert!(true),
-            SmtResult::Timeout => assert!(true),
+            SmtResult::Unknown(_) => { /* unknown result */ }
+            SmtResult::Timeout => { /* timeout result */ }
         }
     }
 
@@ -475,6 +475,6 @@ mod integration_tests {
 
         // Test the constructor integration with different solver types
         // (Program struct is not accessible so we can't test check_bounded)
-        assert!(true);
+        // Test passes if no panic occurs
     }
 }

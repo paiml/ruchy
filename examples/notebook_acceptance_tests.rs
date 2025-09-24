@@ -3,7 +3,7 @@
 //! This example runs comprehensive TDD acceptance tests for the Ruchy notebook
 //! functionality, demonstrating extreme quality assurance practices.
 //!
-//! Run with: cargo run --example notebook_acceptance_tests
+//! Run with: cargo run --example `notebook_acceptance_tests`
 
 #[cfg(feature = "notebook")]
 use std::process::Command;
