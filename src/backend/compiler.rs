@@ -109,14 +109,12 @@ pub fn compile_source_to_binary(source: &str, options: &CompileOptions) -> Resul
 }
 /// Parse Ruchy source and transpile to Rust (complexity: 4)
 fn parse_and_transpile(source: &str) -> Result<TokenStream> {
-    eprintln!("DEBUG: About to call transpile_to_program");
     let mut parser = Parser::new(source);
     let ast = parser.parse().parse_context("Ruchy source")?;
     let mut transpiler = Transpiler::new();
     let rust_code = transpiler
         .transpile_to_program(&ast)
         .compile_context("transpile to Rust")?;
-    eprintln!("DEBUG: transpile_to_program completed");
     Ok(rust_code)
 }
 /// Prepare temporary Rust file for compilation (complexity: 4)
