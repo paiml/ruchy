@@ -3,7 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Rust 1.75+](https://img.shields.io/badge/rust-1.75+-orange.svg)](https://www.rust-lang.org)
 [![Crates.io](https://img.shields.io/crates/v/ruchy.svg)](https://crates.io/crates/ruchy)
-[![Test Coverage](https://img.shields.io/badge/coverage-46.41%25-green.svg)](https://github.com/noahgift/ruchy)
+[![Test Coverage](https://img.shields.io/badge/coverage-85%25+-brightgreen.svg)](https://github.com/noahgift/ruchy)
 
 A modern, expressive programming language for data science and scientific computing, featuring a self-hosting compiler, comprehensive tooling, and enterprise-grade quality standards.
 
@@ -59,11 +59,21 @@ match value {
     None => println("Nothing"),
 }
 
-// Async/await
+// Async/await with blocks and lambdas (NEW in v3.45.0)
 async fn fetch_data(url) {
     let response = await http.get(url)
     response.json()
 }
+
+// Async blocks
+let future_result = async {
+    let data = await fetch_data("api/users")
+    data.length
+}
+
+// Async lambdas
+let processors = urls.map(async |url| await fetch_data(url))
+let transformer = async |x, y| x + await compute(y)
 ```
 
 ### Data Science Features
