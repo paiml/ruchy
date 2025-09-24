@@ -385,6 +385,10 @@ pub enum ExprKind {
         params: Vec<Param>,
         body: Box<Expr>,
     },
+    AsyncLambda {
+        params: Vec<String>,
+        body: Box<Expr>,
+    },
     Struct {
         name: String,
         type_params: Vec<String>,

@@ -270,7 +270,7 @@ fn prepare_compilation(
 /// Compile Rust code using rustc (complexity: 5)
 fn compile_rust_code(source_path: &Path, binary_path: &Path) -> Result<()> {
     let output = std::process::Command::new("rustc")
-        .arg("--edition=2021")
+        .arg("--edition=2018")
         .arg("--crate-name=ruchy_temp")
         .arg("-o")
         .arg(binary_path)
