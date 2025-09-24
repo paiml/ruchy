@@ -89,10 +89,70 @@ where
     }
 }
 
+// =============================================================================
+// COMPLEXITY REFACTORING: While Loop Helper Functions
+// Target: Reduce eval_while_loop cognitive complexity from 16 → ≤10
+// =============================================================================
+
+/// Evaluate loop condition
+/// Complexity: ≤3
+pub fn eval_loop_condition<F>(condition: &Expr, eval_expr: &mut F) -> Result<bool, InterpreterError>
+where
+    F: FnMut(&Expr) -> Result<Value, InterpreterError>,
+{
+    Ok(eval_expr(condition)?.is_truthy())
+}
+
+/// Evaluate loop body and handle control flow
+/// Complexity: ≤5
+pub fn eval_loop_body<F>(
+    body: &Expr,
+    last_val: &mut Value,
+    eval_expr: &mut F,
+) -> Result<Option<Value>, InterpreterError>
+where
+    F: FnMut(&Expr) -> Result<Value, InterpreterError>,
+{
+    match eval_expr(body) {
+        Ok(val) => {
+            *last_val = val;
+            Ok(None)
+        }
+        Err(InterpreterError::Break(val)) => Ok(Some(val)),
+        Err(InterpreterError::Continue) => Ok(None),
+        Err(e) => Err(e),
+    }
+}
+
+/// Run the while loop with separated concerns
+/// Complexity: ≤8
+pub fn run_while_loop<F>(
+    condition: &Expr,
+    body: &Expr,
+    eval_expr: &mut F,
+) -> Result<Value, InterpreterError>
+where
+    F: FnMut(&Expr) -> Result<Value, InterpreterError>,
+{
+    let mut last_val = Value::Nil;
+
+    loop {
+        if !eval_loop_condition(condition, eval_expr)? {
+            break;
+        }
+
+        if let Some(break_val) = eval_loop_body(body, &mut last_val, eval_expr)? {
+            return Ok(break_val);
+        }
+    }
+
+    Ok(last_val)
+}
+
 /// Evaluate a while loop with condition and body
 ///
 /// # Complexity
-/// Cyclomatic complexity: 5 (within Toyota Way limits)
+/// Cyclomatic complexity: 1 (reduced from 5, cognitive from 16 → ≤3)
 pub fn eval_while_loop<F>(
     condition: &Expr,
     body: &Expr,
@@ -101,29 +161,75 @@ pub fn eval_while_loop<F>(
 where
     F: FnMut(&Expr) -> Result<Value, InterpreterError>,
 {
-    let mut last_val = Value::Nil;
+    run_while_loop(condition, body, &mut eval_expr)
+}
 
-    loop {
-        let condition_val = eval_expr(condition)?;
-        if !condition_val.is_truthy() {
-            break;
-        }
+// =============================================================================
+// COMPLEXITY REFACTORING: Match Expression Helper Functions
+// Target: Reduce eval_match cognitive complexity from 25 → ≤10
+// =============================================================================
 
-        match eval_expr(body) {
-            Ok(val) => last_val = val,
-            Err(InterpreterError::Break(val)) => return Ok(val),
-            Err(InterpreterError::Continue) => {}
-            Err(e) => return Err(e),
+/// Evaluate a single match arm
+/// Complexity: ≤5
+pub fn eval_match_arm<F1, F2>(
+    arm: &MatchArm,
+    value: &Value,
+    pattern_matches: &mut F2,
+    eval_expr: &mut F1,
+) -> Result<Option<Value>, InterpreterError>
+where
+    F1: FnMut(&Expr) -> Result<Value, InterpreterError>,
+    F2: FnMut(&Pattern, &Value) -> Result<bool, InterpreterError>,
+{
+    if pattern_matches(&arm.pattern, value)? && eval_match_guard(arm.guard.as_deref(), eval_expr)? {
+        return Ok(Some(eval_expr(&arm.body)?));
+    }
+    Ok(None)
+}
+
+/// Evaluate guard expression if present
+/// Complexity: ≤3
+pub fn eval_match_guard<F>(
+    guard: Option<&Expr>,
+    eval_expr: &mut F,
+) -> Result<bool, InterpreterError>
+where
+    F: FnMut(&Expr) -> Result<Value, InterpreterError>,
+{
+    if let Some(guard_expr) = guard {
+        Ok(eval_expr(guard_expr)?.is_truthy())
+    } else {
+        Ok(true) // No guard means always pass
+    }
+}
+
+/// Find the first matching arm and evaluate it
+/// Complexity: ≤8
+pub fn find_matching_arm<F1, F2>(
+    arms: &[MatchArm],
+    value: &Value,
+    pattern_matches: &mut F2,
+    eval_expr: &mut F1,
+) -> Result<Value, InterpreterError>
+where
+    F1: FnMut(&Expr) -> Result<Value, InterpreterError>,
+    F2: FnMut(&Pattern, &Value) -> Result<bool, InterpreterError>,
+{
+    for arm in arms {
+        if let Some(result) = eval_match_arm(arm, value, pattern_matches, eval_expr)? {
+            return Ok(result);
         }
     }
 
-    Ok(last_val)
+    Err(InterpreterError::RuntimeError(
+        "No matching pattern found in match expression".to_string(),
+    ))
 }
 
 /// Evaluate a match expression with pattern matching
 ///
 /// # Complexity
-/// Cyclomatic complexity: 6 (within Toyota Way limits)
+/// Cyclomatic complexity: 2 (reduced from 6, cognitive from 25 → ≤5)
 pub fn eval_match<F1, F2>(
     expr: &Expr,
     arms: &[MatchArm],
@@ -135,22 +241,7 @@ where
     F2: FnMut(&Pattern, &Value) -> Result<bool, InterpreterError>,
 {
     let value = eval_expr(expr)?;
-
-    for arm in arms {
-        if pattern_matches(&arm.pattern, &value)? {
-            if let Some(ref guard) = arm.guard {
-                let guard_val = eval_expr(guard)?;
-                if !guard_val.is_truthy() {
-                    continue;
-                }
-            }
-            return eval_expr(&arm.body);
-        }
-    }
-
-    Err(InterpreterError::RuntimeError(
-        "No matching pattern found in match expression".to_string(),
-    ))
+    find_matching_arm(arms, &value, &mut pattern_matches, &mut eval_expr)
 }
 
 /// Evaluate a block expression (sequence of statements)
