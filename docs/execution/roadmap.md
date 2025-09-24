@@ -7,6 +7,49 @@
 **Current Coverage**: 🎯 **85%+ CONFIRMED** via systematic TDD approach
 **Status**: ✅ **LANG-004 ASYNC/AWAIT IMPROVEMENTS SUCCESS**
 
+## 🎯 **NEXT PRIORITY: ACTOR-001 to ACTOR-012 - DEMO-DRIVEN ACTOR CHAT SYSTEM**
+
+**Target**: EXTREME TDD implementation of Actor System for Ruchy with demo chat application
+**Timeline**: 12 days - 100% test-first development
+**Complexity Standard**: ≤5 cyclomatic, ≤8 cognitive per function (Toyota Way)
+**Coverage Requirement**: 95% minimum, 100% for critical paths
+
+### **📋 ACTOR SYSTEM TICKETS (Test-First Implementation)**
+
+#### **Phase 0: Test Infrastructure (Day 1)**
+- **ACTOR-001**: Test framework setup with property testing and mutation testing
+- **ACTOR-002**: Quality gates configuration with 95% coverage enforcement
+
+#### **Phase 1: Grammar & Parser (Days 2-3)**
+- **ACTOR-003**: Grammar tests for actor definitions, receive blocks, hooks
+- **ACTOR-004**: Parser tests for all actor syntax with 100% edge case coverage
+
+#### **Phase 2: Type System (Days 4-5)**
+- **ACTOR-005**: Type system tests for ActorRef, message type safety, intrinsics
+- **ACTOR-006**: Supervision constraint tests and trait implementation validation
+
+#### **Phase 3: Transpiler (Days 6-7)**
+- **ACTOR-007**: Transpiler tests for Rust code generation with Tokio integration
+- **ACTOR-008**: Supervision code generation tests and pipeline operator tests
+
+#### **Phase 4: Runtime (Days 8-9)**
+- **ACTOR-009**: Runtime behavior tests for message processing and concurrency
+- **ACTOR-010**: Supervision restart tests and fault tolerance validation
+
+#### **Phase 5: Quality Assurance (Days 10-11)**
+- **ACTOR-011**: Property-based tests and mutation testing with 95% kill rate
+- **ACTOR-012**: Performance benchmarks and demo integration testing
+
+#### **Phase 6: Demo Delivery (Day 12)**
+- **DEMO-CHAT**: Multi-agent chat system with LLM integration and supervision
+
+### **🏆 SUCCESS CRITERIA**
+- **Coverage**: 95% overall, 100% for critical paths
+- **Complexity**: All functions ≤5 cyclomatic, ≤8 cognitive
+- **Testing**: 3:1 test-to-code ratio, property tests, mutation score ≥95%
+- **Performance**: Actor spawn <100µs p99, message send <1µs p99
+- **Demo**: 4 agents discuss autonomously for 1 hour without crashes
+
 ### 🏆 **LATEST SPRINT COMPLETION (2025-09-24 - LANG-004)**
 ```
 ✅ EXTREME TDD ASYNC/AWAIT IMPROVEMENTS - ALL TARGETS MET
