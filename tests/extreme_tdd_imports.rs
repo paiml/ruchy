@@ -70,7 +70,6 @@ mod import_syntax_tests {
     }
 
     #[test]
-    #[ignore = "Import feature not fully implemented yet"]
     fn test_from_collections_import_multiple() {
         let result = compile("from std.collections import HashMap, HashSet, BTreeMap");
         assert!(
@@ -78,9 +77,13 @@ mod import_syntax_tests {
             "Failed to compile: from std.collections import multiple"
         );
         let output = result.unwrap();
+        println!("Multiple import output: {output}");
+        // Check for the import with flexible spacing
+        let has_import = output.contains("use std::collections::{HashMap, HashSet, BTreeMap}")
+            || output.contains("use std :: collections :: { HashMap , HashSet , BTreeMap }");
         assert!(
-            output.contains("use std::collections::{HashMap, HashSet, BTreeMap}"),
-            "Should transpile to 'use std::collections::{{HashMap, HashSet, BTreeMap}}'"
+            has_import,
+            "Should transpile to 'use std::collections::{{HashMap, HashSet, BTreeMap}}', got: {output}"
         );
     }
 
@@ -160,7 +163,6 @@ mod import_syntax_tests {
 
     // Multiple imports in one file
     #[test]
-    #[ignore = "Import feature not fully implemented yet"]
     fn test_multiple_imports() {
         let code = r"
 import std
@@ -171,19 +173,19 @@ import tokio.sync as sync
         let result = compile(code);
         assert!(result.is_ok(), "Failed to compile multiple imports");
         let output = result.unwrap();
-        assert!(output.contains("use std;"), "Should have use std");
-        assert!(
-            output.contains("use std::collections::HashMap;"),
-            "Should have HashMap import"
-        );
-        assert!(
-            output.contains("use std::io::{println, eprintln}"),
-            "Should have io imports"
-        );
-        assert!(
-            output.contains("use tokio::sync as sync"),
-            "Should have aliased import"
-        );
+        println!("Multiple imports output: {output}");
+        // Check for imports with flexible spacing
+        let has_std = output.contains("use std;") || output.contains("use std ;");
+        assert!(has_std, "Should have use std, got: {output}");
+        let has_hashmap = output.contains("use std::collections::HashMap;")
+            || output.contains("use std :: collections :: HashMap ;");
+        assert!(has_hashmap, "Should have HashMap import, got: {output}");
+        let has_io = output.contains("use std::io::{println, eprintln}")
+            || output.contains("use std :: io :: { println , eprintln }");
+        assert!(has_io, "Should have io imports, got: {output}");
+        let has_alias = output.contains("use tokio::sync as sync")
+            || output.contains("use tokio :: sync as sync");
+        assert!(has_alias, "Should have aliased import, got: {output}");
     }
 
     // Import in different contexts
@@ -333,7 +335,6 @@ mod import_integration_tests {
     use super::*;
 
     #[test]
-    #[ignore = "Import feature not fully implemented yet"]
     fn test_import_with_code() {
         let code = r#"
 import std.collections.HashMap
@@ -347,18 +348,15 @@ fn main() {
         let result = compile(code);
         assert!(result.is_ok(), "Failed to compile import with usage");
         let output = result.unwrap();
-        assert!(
-            output.contains("use std::collections::HashMap"),
-            "Should have import"
-        );
-        assert!(
-            output.contains("HashMap::new()"),
-            "Should use imported type"
-        );
+        println!("Import with code output: {output}");
+        let has_import = output.contains("use std::collections::HashMap")
+            || output.contains("use std :: collections :: HashMap");
+        assert!(has_import, "Should have import, got: {output}");
+        let has_usage = output.contains("HashMap::new()") || output.contains("HashMap :: new ()");
+        assert!(has_usage, "Should use imported type, got: {output}");
     }
 
     #[test]
-    #[ignore = "Import feature not fully implemented yet"]
     fn test_selective_imports() {
         let code = r"
 from std.collections import HashMap, HashSet
@@ -374,8 +372,16 @@ fn main() {
         let result = compile(code);
         assert!(result.is_ok(), "Failed to compile selective imports");
         let output = result.unwrap();
-        assert!(output.contains("use std::collections::{HashMap, HashSet}"));
-        assert!(output.contains("use std::sync::{Arc, Mutex}"));
+        println!("Selective imports output: {output}");
+        let has_collections = output.contains("use std::collections::{HashMap, HashSet}")
+            || output.contains("use std :: collections :: { HashMap , HashSet }");
+        assert!(
+            has_collections,
+            "Should have collections import, got: {output}"
+        );
+        let has_sync = output.contains("use std::sync::{Arc, Mutex}")
+            || output.contains("use std :: sync :: { Arc , Mutex }");
+        assert!(has_sync, "Should have sync import, got: {output}");
     }
 
     #[test]

@@ -38,10 +38,7 @@ pub fn eval_try_catch(
 ///
 /// # Complexity
 /// Cyclomatic complexity: ≤3
-fn eval_try_block(
-    interp: &mut Interpreter,
-    try_block: &Expr,
-) -> Result<Value, InterpreterError> {
+fn eval_try_block(interp: &mut Interpreter, try_block: &Expr) -> Result<Value, InterpreterError> {
     // Push error handler scope
     interp.push_error_scope();
 
@@ -121,14 +118,28 @@ fn eval_finally_block(
 fn error_to_value(error: InterpreterError) -> Value {
     match error {
         InterpreterError::Throw(value) => value,
-        InterpreterError::TypeError(msg) => Value::Object(Rc::new(vec![
-            ("type".to_string(), Value::String("TypeError".to_string().into())),
-            ("message".to_string(), Value::String(msg.into())),
-        ].into_iter().collect())),
-        InterpreterError::RuntimeError(msg) => Value::Object(Rc::new(vec![
-            ("type".to_string(), Value::String("RuntimeError".to_string().into())),
-            ("message".to_string(), Value::String(msg.into())),
-        ].into_iter().collect())),
+        InterpreterError::TypeError(msg) => Value::Object(Rc::new(
+            vec![
+                (
+                    "type".to_string(),
+                    Value::String("TypeError".to_string().into()),
+                ),
+                ("message".to_string(), Value::String(msg.into())),
+            ]
+            .into_iter()
+            .collect(),
+        )),
+        InterpreterError::RuntimeError(msg) => Value::Object(Rc::new(
+            vec![
+                (
+                    "type".to_string(),
+                    Value::String("RuntimeError".to_string().into()),
+                ),
+                ("message".to_string(), Value::String(msg.into())),
+            ]
+            .into_iter()
+            .collect(),
+        )),
         _ => Value::String(format!("{:?}", error).into()),
     }
 }
@@ -168,7 +179,11 @@ fn bind_pattern_variables(
             interp.set_variable(name, value.clone());
             Ok(())
         }
-        Pattern::Struct { name: _, fields, has_rest: _ } => {
+        Pattern::Struct {
+            name: _,
+            fields,
+            has_rest: _,
+        } => {
             if let Value::Object(obj) = value {
                 for field in fields {
                     if let Some(val) = obj.get(&field.name) {
@@ -192,10 +207,7 @@ fn bind_pattern_variables(
 ///
 /// # Complexity
 /// Cyclomatic complexity: ≤2
-pub fn eval_throw(
-    interp: &mut Interpreter,
-    expr: &Expr,
-) -> Result<Value, InterpreterError> {
+pub fn eval_throw(interp: &mut Interpreter, expr: &Expr) -> Result<Value, InterpreterError> {
     let value = interp.eval_expr(expr)?;
     Err(InterpreterError::Throw(value))
 }
