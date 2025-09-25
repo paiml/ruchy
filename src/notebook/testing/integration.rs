@@ -182,7 +182,8 @@ impl DistributedTestCoordinator {
         if self.workers.is_empty() {
             return distribution;
         }
-        let workers: Vec<_> = self.workers.keys().collect();
+        let mut workers: Vec<_> = self.workers.keys().collect();
+        workers.sort(); // Ensure deterministic order
         for (i, test) in tests.iter().enumerate() {
             let worker = workers[i % workers.len()].clone();
             distribution
