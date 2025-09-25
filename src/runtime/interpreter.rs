@@ -26,6 +26,14 @@ use smallvec::{smallvec, SmallVec};
 use std::collections::HashMap;
 use std::rc::Rc;
 
+/// Control flow for loop iterations or error
+#[derive(Debug)]
+enum LoopControlOrError {
+    Break(Value),
+    Continue,
+    Error(InterpreterError),
+}
+
 /// `DataFrame` column representation for the interpreter
 #[derive(Debug, Clone, PartialEq)]
 pub struct DataFrameColumn {
@@ -1786,52 +1794,110 @@ impl Interpreter {
     ) -> Result<Value, InterpreterError> {
         let iter_value = self.eval_expr(iter)?;
 
-        // Delegate to eval_loops but we need to handle the borrowing issue
-        // For now, keep a simplified version here
-        let mut last_value = Value::nil();
-
         match iter_value {
-            Value::Array(ref arr) => {
-                for item in arr.iter() {
-                    self.set_variable(var, item.clone());
-                    match self.eval_expr(body) {
-                        Ok(value) => last_value = value,
-                        Err(InterpreterError::Break(val)) => return Ok(val),
-                        Err(InterpreterError::Continue) => {}
-                        Err(e) => return Err(e),
-                    }
-                }
-            }
+            Value::Array(ref arr) => self.eval_for_array_iteration(var, arr, body),
             Value::Range {
                 ref start,
                 ref end,
                 inclusive,
-            } => {
-                if let (Value::Integer(s), Value::Integer(e)) = (start.as_ref(), end.as_ref()) {
-                    let range: Box<dyn Iterator<Item = i64>> = if inclusive {
-                        Box::new(*s..=*e)
-                    } else {
-                        Box::new(*s..*e)
-                    };
-                    for i in range {
-                        self.set_variable(var, Value::Integer(i));
-                        match self.eval_expr(body) {
-                            Ok(value) => last_value = value,
-                            Err(InterpreterError::Break(val)) => return Ok(val),
-                            Err(InterpreterError::Continue) => {}
-                            Err(e) => return Err(e),
-                        }
-                    }
-                }
-            }
-            _ => {
-                return Err(InterpreterError::TypeError(
-                    "For loop requires an iterable".to_string(),
-                ))
+            } => self.eval_for_range_iteration(var, start, end, inclusive, body),
+            _ => Err(InterpreterError::TypeError(
+                "For loop requires an iterable".to_string(),
+            )),
+        }
+    }
+
+    /// Evaluate for loop iteration over an array
+    /// Complexity: ≤8
+    fn eval_for_array_iteration(
+        &mut self,
+        var: &str,
+        arr: &[Value],
+        body: &Expr,
+    ) -> Result<Value, InterpreterError> {
+        let mut last_value = Value::nil();
+
+        for item in arr {
+            self.set_variable(var, item.clone());
+            match self.eval_loop_body_with_control_flow(body) {
+                Ok(value) => last_value = value,
+                Err(LoopControlOrError::Break(val)) => return Ok(val),
+                Err(LoopControlOrError::Continue) => {}
+                Err(LoopControlOrError::Error(e)) => return Err(e),
             }
         }
 
         Ok(last_value)
+    }
+
+    /// Evaluate for loop iteration over a range
+    /// Complexity: ≤9
+    fn eval_for_range_iteration(
+        &mut self,
+        var: &str,
+        start: &Value,
+        end: &Value,
+        inclusive: bool,
+        body: &Expr,
+    ) -> Result<Value, InterpreterError> {
+        let (start_val, end_val) = self.extract_range_bounds(start, end)?;
+        let mut last_value = Value::nil();
+
+        for i in self.create_range_iterator(start_val, end_val, inclusive) {
+            self.set_variable(var, Value::Integer(i));
+            match self.eval_loop_body_with_control_flow(body) {
+                Ok(value) => last_value = value,
+                Err(LoopControlOrError::Break(val)) => return Ok(val),
+                Err(LoopControlOrError::Continue) => {}
+                Err(LoopControlOrError::Error(e)) => return Err(e),
+            }
+        }
+
+        Ok(last_value)
+    }
+
+    /// Extract integer bounds from range values
+    /// Complexity: ≤3
+    fn extract_range_bounds(
+        &self,
+        start: &Value,
+        end: &Value,
+    ) -> Result<(i64, i64), InterpreterError> {
+        match (start, end) {
+            (Value::Integer(s), Value::Integer(e)) => Ok((*s, *e)),
+            _ => Err(InterpreterError::TypeError(
+                "Range bounds must be integers".to_string(),
+            )),
+        }
+    }
+
+    /// Create range iterator based on inclusive flag
+    /// Complexity: ≤2
+    fn create_range_iterator(
+        &self,
+        start: i64,
+        end: i64,
+        inclusive: bool,
+    ) -> Box<dyn Iterator<Item = i64>> {
+        if inclusive {
+            Box::new(start..=end)
+        } else {
+            Box::new(start..end)
+        }
+    }
+
+    /// Evaluate loop body with control flow handling
+    /// Complexity: ≤5
+    fn eval_loop_body_with_control_flow(
+        &mut self,
+        body: &Expr,
+    ) -> Result<Value, LoopControlOrError> {
+        match self.eval_expr(body) {
+            Ok(value) => Ok(value),
+            Err(InterpreterError::Break(val)) => Err(LoopControlOrError::Break(val)),
+            Err(InterpreterError::Continue) => Err(LoopControlOrError::Continue),
+            Err(e) => Err(LoopControlOrError::Error(e)),
+        }
     }
 
     /// Evaluate a while loop

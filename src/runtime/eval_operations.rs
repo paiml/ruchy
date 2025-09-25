@@ -292,22 +292,16 @@ fn div_values(left: &Value, right: &Value) -> Result<Value, InterpreterError> {
             })
         }
         (Value::Float(a), Value::Float(b)) => {
-            if *b == 0.0 {
-                return Err(InterpreterError::DivisionByZero);
-            }
+            // Float division by zero returns infinity per IEEE 754
             Ok(Value::Float(a / b))
         }
         (Value::Integer(a), Value::Float(b)) => {
-            if *b == 0.0 {
-                return Err(InterpreterError::DivisionByZero);
-            }
+            // Float division by zero returns infinity per IEEE 754
             #[allow(clippy::cast_precision_loss)]
             Ok(Value::Float(*a as f64 / b))
         }
         (Value::Float(a), Value::Integer(b)) => {
-            if *b == 0 {
-                return Err(InterpreterError::DivisionByZero);
-            }
+            // Float division by zero returns infinity per IEEE 754
             #[allow(clippy::cast_precision_loss)]
             Ok(Value::Float(a / *b as f64))
         }
@@ -410,10 +404,14 @@ fn power_values(left: &Value, right: &Value) -> Result<Value, InterpreterError> 
 ///
 /// # Complexity
 /// Cyclomatic complexity: 8 (within Toyota Way limits)
+#[allow(clippy::cast_precision_loss)]
 fn equal_values(left: &Value, right: &Value) -> bool {
     match (left, right) {
         (Value::Integer(a), Value::Integer(b)) => a == b,
         (Value::Float(a), Value::Float(b)) => a == b,
+        // Mixed integer/float comparison
+        (Value::Integer(a), Value::Float(b)) => (*a as f64) == *b,
+        (Value::Float(a), Value::Integer(b)) => *a == (*b as f64),
         (Value::Bool(a), Value::Bool(b)) => a == b,
         (Value::String(a), Value::String(b)) => a == b,
         (Value::Nil, Value::Nil) => true,
