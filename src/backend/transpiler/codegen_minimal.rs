@@ -347,7 +347,7 @@ mod tests {
             "42"
         );
         assert_eq!(
-            MinimalCodeGen::gen_literal(&Literal::Float(3.14159)).unwrap(),
+            MinimalCodeGen::gen_literal(&Literal::Float(std::f64::consts::PI)).unwrap(),
             "3.14159"
         );
         assert_eq!(

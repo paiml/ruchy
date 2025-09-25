@@ -478,7 +478,11 @@ mod tests {
     #[test]
     fn test_analyze_pattern_basic() {
         let mut analyzer = PatternAnalyzer::new();
-        let result = analyzer.analyze_pattern("student1", Utc::now());
+        // Use a fixed timestamp during normal hours (10 AM) to avoid late-night detection
+        let normal_hour_timestamp = chrono::DateTime::parse_from_rfc3339("2024-01-15T10:00:00Z")
+            .unwrap()
+            .with_timezone(&Utc);
+        let result = analyzer.analyze_pattern("student1", normal_hour_timestamp);
         assert!(!result.is_suspicious);
         assert_eq!(result.submission_count, 1);
     }

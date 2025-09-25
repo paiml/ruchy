@@ -721,7 +721,7 @@ mod tests {
 
     #[test]
     fn test_transpile_literal_float() {
-        let result = Transpiler::transpile_literal(&Literal::Float(3.14));
+        let result = Transpiler::transpile_literal(&Literal::Float(std::f64::consts::PI));
         let expected = quote! { 3.14f64 };
         assert_eq!(result.to_string(), expected.to_string());
     }

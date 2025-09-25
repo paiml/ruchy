@@ -4,6 +4,7 @@
 // Coverage target: 100% invariant validation
 
 use proptest::prelude::*;
+use proptest::strategy::BoxedStrategy;
 use quickcheck::{Arbitrary, Gen, QuickCheck};
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
@@ -536,7 +537,7 @@ proptest! {
 
             // Within 10% of target
             prop_assert!(processed as f64 > expected as f64 * 0.9);
-            prop_assert!(processed as f64 < expected as f64 * 1.1);
+            prop_assert!((processed as f64) < (expected as f64 * 1.1));
         });
     }
 }
@@ -663,7 +664,9 @@ proptest! {
             // Workload should complete despite chaos
             let workload_result = workload_handle.await;
             prop_assert!(workload_result.is_ok());
-        });
+
+            Ok(()) as Result<(), proptest::test_runner::TestCaseError>
+        })?;
     }
 }
 
@@ -797,10 +800,36 @@ fn generate_actor_code(name: &str, state: usize, receives: usize, hooks: usize) 
 
 // Placeholder types for compilation
 #[derive(Clone, Debug, PartialEq)]
-struct Message;
+enum Message {
+    Empty,
+    Text(String),
+    Number(i64),
+    Data(String, Value),
+}
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 struct ActorId(usize);
+
+#[derive(Clone, Debug, PartialEq)]
+enum Value {
+    String(String),
+    Number(i64),
+    Boolean(bool),
+}
+
+impl Arbitrary for Value {
+    type Parameters = ();
+    type Strategy = BoxedStrategy<Value>;
+
+    fn arbitrary_with(_args: Self::Parameters) -> Self::Strategy {
+        prop_oneof![
+            any::<String>().prop_map(Value::String),
+            any::<i64>().prop_map(Value::Number),
+            any::<bool>().prop_map(Value::Boolean),
+        ]
+        .boxed()
+    }
+}
 
 struct SupervisorConfig {
     strategy: RestartStrategy,
@@ -827,6 +856,7 @@ enum Failure {
     Custom(String),
 }
 
+#[derive(Debug, Clone)]
 enum ChaosEvent {
     KillRandomActor,
     PartitionNetwork,
@@ -837,11 +867,36 @@ enum ChaosEvent {
     Delay(u64),
 }
 
+#[derive(Debug, Clone)]
 struct Workload {
     actors: usize,
     operations: Vec<Operation>,
 }
 
+// Mock implementations for missing functions
+async fn spawn_production_like_system() -> MockActorSystem {
+    MockActorSystem::new()
+}
+
+async fn execute_workload(
+    _system: std::sync::Arc<MockActorSystem>,
+    _workload: Workload,
+) -> Result<(), String> {
+    Ok(())
+}
+
+#[derive(Debug, Clone)]
+struct MockActorSystem;
+
+impl MockActorSystem {
+    fn new() -> std::sync::Arc<Self> {
+        std::sync::Arc::new(MockActorSystem)
+    }
+
+    async fn inject_chaos(&self, _event: ChaosEvent) {}
+}
+
+#[derive(Debug, Clone)]
 enum Operation {
     Send(ActorId, Message),
     Query(ActorId),

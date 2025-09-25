@@ -3,20 +3,18 @@
 // Test-first: Complete test coverage for multi-agent chat demo
 // Coverage target: 100% functionality before implementation
 
-use serde_json::json;
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
-use tokio::sync::{mpsc, RwLock};
 
 // ================================
 // Chat Demo Architecture Tests
 // ================================
 
-#[ignore]
+#[ignore = "Integration test"]
 #[tokio::test]
 async fn test_chat_supervisor_spawns_four_agents() {
-    let chat_code = r#"
+    let chat_code = r"
         supervisor ChatDemo {
             strategy: OneForOne,
             max_restarts: 5,
@@ -29,7 +27,7 @@ async fn test_chat_supervisor_spawns_four_agents() {
                 actor Diana: ChatAgent
             }
         }
-    "#;
+    ";
 
     let runtime = ActorRuntime::new();
     let chat = runtime.spawn_supervisor(chat_code).await;
@@ -44,10 +42,10 @@ async fn test_chat_supervisor_spawns_four_agents() {
     assert!(names.contains("Diana"));
 }
 
-#[ignore]
+#[ignore = "Integration test"]
 #[tokio::test]
 async fn test_chat_agent_structure() {
-    let agent_code = r#"
+    let agent_code = r"
         actor ChatAgent {
             name: String,
             conversation_history: Vec<Message>,
@@ -80,7 +78,7 @@ async fn test_chat_agent_structure() {
                 supervisor ! broadcast_message(self.name, response)
             }
         }
-    "#;
+    ";
 
     let runtime = ActorRuntime::new();
     let agent = runtime.spawn_from_code(agent_code).await;
@@ -97,7 +95,7 @@ async fn test_chat_agent_structure() {
 // Conversation Flow Tests
 // ================================
 
-#[ignore]
+#[ignore = "Integration test"]
 #[tokio::test]
 async fn test_conversation_initiation() {
     let runtime = ActorRuntime::new();
@@ -125,7 +123,7 @@ async fn test_conversation_initiation() {
     assert_eq!(speakers.len(), 4);
 }
 
-#[ignore]
+#[ignore = "Integration test"]
 #[tokio::test]
 async fn test_turn_taking_mechanism() {
     let runtime = ActorRuntime::new();
@@ -155,7 +153,7 @@ async fn test_turn_taking_mechanism() {
     }
 }
 
-#[ignore]
+#[ignore = "Integration test"]
 #[tokio::test]
 async fn test_contextual_responses() {
     let runtime = ActorRuntime::new();
@@ -193,7 +191,7 @@ async fn test_contextual_responses() {
 // MCP Integration Tests
 // ================================
 
-#[ignore]
+#[ignore = "Integration test"]
 #[tokio::test]
 async fn test_mcp_llm_integration() {
     let runtime = ActorRuntime::new();
@@ -219,7 +217,7 @@ async fn test_mcp_llm_integration() {
     assert!(response.unwrap().as_string().unwrap().len() > 10);
 }
 
-#[ignore]
+#[ignore = "Integration test"]
 #[tokio::test]
 async fn test_mcp_timeout_handling() {
     let runtime = ActorRuntime::new();
@@ -251,7 +249,7 @@ async fn test_mcp_timeout_handling() {
     }
 }
 
-#[ignore]
+#[ignore = "Integration test"]
 #[tokio::test]
 async fn test_mcp_retry_mechanism() {
     let runtime = ActorRuntime::new();
@@ -286,7 +284,7 @@ async fn test_mcp_retry_mechanism() {
 // Personality & Behavior Tests
 // ================================
 
-#[ignore]
+#[ignore = "Integration test"]
 #[tokio::test]
 async fn test_agent_personalities() {
     let personalities = vec![
@@ -307,7 +305,7 @@ async fn test_agent_personalities() {
     }
 }
 
-#[ignore]
+#[ignore = "Integration test"]
 #[tokio::test]
 async fn test_personality_affects_responses() {
     let runtime = ActorRuntime::new();
@@ -347,7 +345,7 @@ async fn test_personality_affects_responses() {
 // Supervision & Fault Tolerance Tests
 // ================================
 
-#[ignore]
+#[ignore = "Integration test"]
 #[tokio::test]
 async fn test_agent_crash_recovery() {
     let runtime = ActorRuntime::new();
@@ -374,7 +372,7 @@ async fn test_agent_crash_recovery() {
     assert_eq!(can_respond, Ok(Value::Bool(true)));
 }
 
-#[ignore]
+#[ignore = "Integration test"]
 #[tokio::test]
 async fn test_conversation_continuity_after_failure() {
     let runtime = ActorRuntime::new();
@@ -416,7 +414,7 @@ async fn test_conversation_continuity_after_failure() {
     assert!(speakers.iter().any(|s| s.as_string() == Some("Charlie")));
 }
 
-#[ignore]
+#[ignore = "Integration test"]
 #[tokio::test]
 async fn test_supervisor_max_restart_limit() {
     let runtime = ActorRuntime::new();
@@ -443,7 +441,7 @@ async fn test_supervisor_max_restart_limit() {
 // Performance Tests
 // ================================
 
-#[ignore]
+#[ignore = "Integration test"]
 #[tokio::test]
 async fn test_message_broadcast_performance() {
     let runtime = ActorRuntime::new();
@@ -466,7 +464,7 @@ async fn test_message_broadcast_performance() {
     assert!(elapsed < Duration::from_millis(100));
 }
 
-#[ignore]
+#[ignore = "Integration test"]
 #[tokio::test]
 async fn test_conversation_memory_usage() {
     let runtime = ActorRuntime::new();
@@ -489,7 +487,7 @@ async fn test_conversation_memory_usage() {
     assert!(mem_growth < 10_000_000);
 }
 
-#[ignore]
+#[ignore = "Integration test"]
 #[tokio::test]
 async fn test_concurrent_conversation_handling() {
     let runtime = ActorRuntime::new();
@@ -523,7 +521,7 @@ async fn test_concurrent_conversation_handling() {
 // Integration Tests
 // ================================
 
-#[ignore]
+#[ignore = "Integration test"]
 #[tokio::test]
 async fn test_full_demo_scenario() {
     let runtime = ActorRuntime::new();
@@ -583,7 +581,7 @@ async fn test_full_demo_scenario() {
     assert!(on_topic as f64 > messages.len() as f64 * 0.5);
 }
 
-#[ignore]
+#[ignore = "Integration test"]
 #[tokio::test]
 async fn test_demo_graceful_shutdown() {
     let runtime = ActorRuntime::new();
@@ -618,7 +616,7 @@ async fn test_demo_graceful_shutdown() {
 // Monitoring & Observability Tests
 // ================================
 
-#[ignore]
+#[ignore = "Integration test"]
 #[tokio::test]
 async fn test_conversation_metrics() {
     let runtime = ActorRuntime::new();
@@ -639,7 +637,7 @@ async fn test_conversation_metrics() {
     assert!(metrics_data.contains_key("restarts"));
 }
 
-#[ignore]
+#[ignore = "Integration test"]
 #[tokio::test]
 async fn test_conversation_export() {
     let runtime = ActorRuntime::new();
@@ -669,7 +667,7 @@ async fn test_conversation_export() {
 // Edge Cases & Error Handling
 // ================================
 
-#[ignore]
+#[ignore = "Integration test"]
 #[tokio::test]
 async fn test_empty_conversation_handling() {
     let runtime = ActorRuntime::new();
@@ -684,7 +682,7 @@ async fn test_empty_conversation_handling() {
     assert!(export.is_ok());
 }
 
-#[ignore]
+#[ignore = "Integration test"]
 #[tokio::test]
 async fn test_malformed_message_handling() {
     let runtime = ActorRuntime::new();
@@ -708,7 +706,7 @@ async fn test_malformed_message_handling() {
     assert!(chat.is_alive().await);
 }
 
-#[ignore]
+#[ignore = "Integration test"]
 #[tokio::test]
 async fn test_conversation_overflow_protection() {
     let runtime = ActorRuntime::new();

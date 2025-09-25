@@ -332,7 +332,7 @@ mod quality_gates_tests {
     fn test_property_test_detection() {
         let test_analyzer = PropertyTestAnalyzer::new();
 
-        let test_with_properties = r#"
+        let test_with_properties = r"
             #[test]
             fn regular_test() { assert_eq!(1, 1); }
 
@@ -342,7 +342,7 @@ mod quality_gates_tests {
                     assert!(x >= 0);
                 }
             }
-        "#;
+        ";
 
         let analysis = test_analyzer.analyze(test_with_properties);
 
@@ -359,13 +359,13 @@ mod quality_gates_tests {
     fn test_property_test_validation_fails_missing_properties() {
         let test_analyzer = PropertyTestAnalyzer::new();
 
-        let test_without_properties = r#"
+        let test_without_properties = r"
             #[test]
             fn test1() { assert_eq!(1, 1); }
 
             #[test]
             fn test2() { assert_eq!(2, 2); }
-        "#;
+        ";
 
         let analysis = test_analyzer.analyze(test_without_properties);
 
@@ -404,7 +404,7 @@ mod quality_gates_tests {
     #[test]
     #[ignore = "Documentation requirements need implementation"]
     fn test_documentation_validation_passes_good_docs() {
-        let code_with_docs = r#"
+        let code_with_docs = r"
             /// Counter actor maintains a mutable count.
             ///
             /// # Example
@@ -424,7 +424,7 @@ mod quality_gates_tests {
                     self.value += 1
                 }
             }
-        "#;
+        ";
 
         let validator = DocumentationValidator::new();
         let result = validator.validate(code_with_docs);
@@ -435,14 +435,14 @@ mod quality_gates_tests {
     #[test]
     #[ignore = "Documentation requirements need implementation"]
     fn test_documentation_validation_fails_missing_docs() {
-        let code_without_docs = r#"
+        let code_without_docs = r"
             actor Counter {
                 value: i32,
                 receive increment() {
                     self.value += 1
                 }
             }
-        "#;
+        ";
 
         let validator = DocumentationValidator::new();
         let result = validator.validate(code_without_docs);
