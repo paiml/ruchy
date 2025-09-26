@@ -54,7 +54,8 @@ impl<'a> Parser<'a> {
         while self.state.tokens.peek().is_some() {
             let attributes = utils::parse_attributes(&mut self.state)?;
             let mut expr = super::parse_expr_recursive(&mut self.state)?;
-            expr.attributes = attributes;
+            // Append parsed attributes to existing ones (don't overwrite modifier attributes)
+            expr.attributes.extend(attributes);
             exprs.push(expr);
             // Skip optional semicolons
             if let Some((Token::Semicolon, _)) = self.state.tokens.peek() {
@@ -64,7 +65,8 @@ impl<'a> Parser<'a> {
         if exprs.is_empty() {
             bail!("Empty program");
         } else if exprs.len() == 1 {
-            Ok(exprs.into_iter().next().expect("checked: non-empty vec"))
+            let expr = exprs.into_iter().next().expect("checked: non-empty vec");
+            Ok(expr)
         } else {
             Ok(Expr {
                 kind: ExprKind::Block(exprs),

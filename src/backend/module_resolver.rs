@@ -109,21 +109,22 @@ impl ModuleResolver {
     }
     /// Recursively resolve imports in an expression
     fn resolve_expr(&mut self, expr: Expr) -> Result<Expr> {
-        match expr.kind {
+        match &expr.kind {
             ExprKind::Import { module, items } => {
-                self.resolve_simple_import(expr.span, &module, items.as_deref())
+                // Pass the full expression to preserve attributes
+                self.resolve_simple_import_with_attrs(&expr, module, items.as_deref())
             }
             ExprKind::ImportAll { module, alias } => {
-                self.resolve_import_all(expr.span, &module, &alias)
+                self.resolve_import_all(expr.span, module, alias)
             }
             ExprKind::ImportDefault { module, name } => {
-                self.resolve_import_default(expr.span, &module, &name)
+                self.resolve_import_default(expr.span, module, name)
             }
-            ExprKind::ReExport { items, module } => {
-                self.resolve_reexport(expr.span, &items, &module)
+            ExprKind::ReExport { items, module } => self.resolve_reexport(expr.span, items, module),
+            ExprKind::Block(exprs) => self.resolve_block_expr(exprs.clone(), expr.span),
+            ExprKind::Module { name, body } => {
+                self.resolve_module_expr(name.clone(), body.as_ref().clone(), expr.span)
             }
-            ExprKind::Block(exprs) => self.resolve_block_expr(exprs, expr.span),
-            ExprKind::Module { name, body } => self.resolve_module_expr(name, *body, expr.span),
             ExprKind::Function {
                 name,
                 type_params,
@@ -133,20 +134,25 @@ impl ModuleResolver {
                 return_type,
                 is_pub,
             } => self.resolve_function_expr(
-                name,
-                type_params,
-                params,
-                *body,
-                is_async,
-                return_type,
-                is_pub,
+                name.clone(),
+                type_params.clone(),
+                params.clone(),
+                body.as_ref().clone(),
+                *is_async,
+                return_type.clone(),
+                *is_pub,
                 expr.span,
             ),
             ExprKind::If {
                 condition,
                 then_branch,
                 else_branch,
-            } => self.resolve_if_expr(*condition, *then_branch, else_branch, expr.span),
+            } => self.resolve_if_expr(
+                condition.as_ref().clone(),
+                then_branch.as_ref().clone(),
+                else_branch.as_ref().map(|e| Box::new(e.as_ref().clone())),
+                expr.span,
+            ),
             // For other expression types, recursively process children as needed
             // For now, just return the expression as-is
             _ => Ok(expr),
@@ -169,6 +175,31 @@ impl ModuleResolver {
                 },
                 span,
             ))
+        }
+    }
+
+    /// Resolve simple import with attributes preservation
+    fn resolve_simple_import_with_attrs(
+        &mut self,
+        expr: &Expr,
+        module: &str,
+        items: Option<&[String]>,
+    ) -> Result<Expr> {
+        if self.is_file_import(module) {
+            // For file imports, we need to preserve attributes on the resolved expression
+            let mut resolved = self.resolve_file_import(expr.span, module, items)?;
+            resolved.attributes = expr.attributes.clone();
+            Ok(resolved)
+        } else {
+            // Standard import - preserve attributes
+            Ok(Expr {
+                kind: ExprKind::Import {
+                    module: module.to_string(),
+                    items: items.map(<[std::string::String]>::to_vec),
+                },
+                span: expr.span,
+                attributes: expr.attributes.clone(),
+            })
         }
     }
 

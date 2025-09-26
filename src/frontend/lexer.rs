@@ -78,7 +78,7 @@ pub enum Token {
         num_part.parse::<i64>().ok()
     })]
     Integer(i64),
-    #[regex(r"[0-9]+\.[0-9]+([eE][+-]?[0-9]+)?", |lex| lex.slice().parse::<f64>().ok())]
+    #[regex(r"[0-9]+\.[0-9]+([eE][+-]?[0-9]+)?|[0-9]+[eE][+-]?[0-9]+", |lex| lex.slice().parse::<f64>().ok())]
     Float(f64),
     #[regex(r#""([^"\\]|\\.)*""#, |lex| {
         let s = lex.slice();
@@ -205,8 +205,10 @@ pub enum Token {
     Type,
     #[token("where")]
     Where,
-    #[token("const")]
+    #[token("const", priority = 2)]
     Const,
+    #[token("unsafe", priority = 2)]
+    Unsafe,
     #[token("static")]
     Static,
     #[token("mut")]

@@ -146,7 +146,10 @@ fn parse_backslash_lambda(state: &mut ParserState) -> Result<Vec<Param>> {
     state.tokens.advance(); // consume \
     let params = parse_simple_params(state)?;
     // Expect arrow
-    state.tokens.expect(&Token::Arrow)?;
+    state
+        .tokens
+        .expect(&Token::Arrow)
+        .map_err(|e| anyhow::anyhow!("In backslash lambda after params: {}", e))?;
     Ok(params)
 }
 /// Parse pipe-style lambda: |x, y| body (complexity: 5)

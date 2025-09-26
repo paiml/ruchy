@@ -131,7 +131,11 @@ fn check_and_consume_mut(state: &mut ParserState) -> bool {
 /// Parse parameter pattern (complexity: 8 - increased to support destructuring)
 fn parse_param_pattern(state: &mut ParserState) -> Result<Pattern> {
     match state.tokens.peek() {
-        Some((Token::Ampersand, _)) => parse_reference_pattern(state),
+        Some((Token::Ampersand, _)) => {
+            // This must be &self or &mut self
+            // We don't support other reference patterns in function parameters
+            parse_reference_pattern(state)
+        }
         Some((Token::Identifier(name), _)) => {
             let name = name.clone();
             state.tokens.advance();
@@ -169,14 +173,28 @@ fn parse_reference_pattern(state: &mut ParserState) -> Result<Pattern> {
     if is_mut_ref {
         state.tokens.advance(); // consume mut
     }
+
     match state.tokens.peek() {
-        Some((Token::Identifier(n), _)) if n == "self" => {
+        Some((Token::Self_, _)) => {
             state.tokens.advance();
             if is_mut_ref {
                 Ok(Pattern::Identifier("&mut self".to_string()))
             } else {
                 Ok(Pattern::Identifier("&self".to_string()))
             }
+        }
+        Some((Token::Identifier(n), _)) => {
+            // For regular identifiers after &, we need to handle them differently
+            // This is for parameters like "other: &Type"
+            // The & is part of the type, not the parameter pattern
+            // So we should not have consumed the & yet
+            // This is a design issue - we need to refactor
+            let expected = if is_mut_ref {
+                "'self' after '&mut'"
+            } else {
+                "'self' after '&'"
+            };
+            bail!("Expected {} (got identifier '{}')", expected, n)
         }
         _ => {
             let expected = if is_mut_ref {
@@ -228,19 +246,50 @@ fn should_continue_param_list(state: &mut ParserState) -> Result<bool> {
 pub fn parse_type_parameters(state: &mut ParserState) -> Result<Vec<String>> {
     state.tokens.expect(&Token::Less)?;
     let mut type_params = Vec::new();
+
     // Parse first type parameter
     if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
         type_params.push(name.clone());
         state.tokens.advance();
+
+        // Skip trait bounds if present (T: Display + Clone)
+        if matches!(state.tokens.peek(), Some((Token::Colon, _))) {
+            state.tokens.advance(); // consume :
+                                    // Skip trait bounds until comma or >
+            while let Some((token, _)) = state.tokens.peek() {
+                match token {
+                    Token::Comma | Token::Greater => break,
+                    _ => {
+                        state.tokens.advance();
+                    }
+                }
+            }
+        }
     }
+
     // Parse additional type parameters
     while matches!(state.tokens.peek(), Some((Token::Comma, _))) {
         state.tokens.advance(); // consume comma
         if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
             type_params.push(name.clone());
             state.tokens.advance();
+
+            // Skip trait bounds if present
+            if matches!(state.tokens.peek(), Some((Token::Colon, _))) {
+                state.tokens.advance(); // consume :
+                                        // Skip trait bounds until comma or >
+                while let Some((token, _)) = state.tokens.peek() {
+                    match token {
+                        Token::Comma | Token::Greater => break,
+                        _ => {
+                            state.tokens.advance();
+                        }
+                    }
+                }
+            }
         }
     }
+
     state.tokens.expect(&Token::Greater)?;
     Ok(type_params)
 }
@@ -252,6 +301,7 @@ pub fn parse_type(state: &mut ParserState) -> Result<Type> {
     match state.tokens.peek() {
         Some((Token::Ampersand, _)) => parse_reference_type(state, span),
         Some((Token::Fn, _)) => parse_fn_type(state, span),
+        Some((Token::Fun, _)) => parse_fn_type(state, span),
         Some((Token::LeftBracket, _)) => parse_list_type(state, span),
         Some((Token::LeftParen, _)) => parse_paren_type(state, span),
         Some((
@@ -289,7 +339,7 @@ fn parse_reference_type(state: &mut ParserState, span: Span) -> Result<Type> {
 }
 // Helper: Parse function type fn(T1, T2) -> T3 (complexity: 5)
 fn parse_fn_type(state: &mut ParserState, span: Span) -> Result<Type> {
-    state.tokens.advance(); // consume fn
+    state.tokens.advance(); // consume fn/fun
     state.tokens.expect(&Token::LeftParen)?;
     let param_types = parse_type_list(state)?;
     state.tokens.expect(&Token::RightParen)?;
@@ -451,40 +501,39 @@ fn parse_qualified_name(state: &mut ParserState) -> Result<String> {
 // Helper: Parse generic type Vec<T, U> (complexity: 4)
 fn parse_generic_type(state: &mut ParserState, base: String, span: Span) -> Result<Type> {
     state.tokens.advance(); // consume <
+
     let type_params = parse_type_list(state)?;
 
+    // Check if any of the type parameters are generic types
+    let has_generic_param = type_params
+        .iter()
+        .any(|t| matches!(t.kind, TypeKind::Generic { .. }));
+
     // Now we need exactly one > to close this generic
-    // If we see >>, only consume it if this is the innermost generic (last one)
     match state.tokens.peek() {
         Some((Token::Greater, _)) => {
             state.tokens.advance(); // consume >
         }
         Some((Token::RightShift, _)) => {
-            // Consume >> - this handles nested generics ending like Vec<i32>>
-            state.tokens.advance(); // consume >>
+            // This is >> which means we're in a nested generic like Result<Vec<T>>
+            // If we have a generic parameter (like Vec<u8> inside Result<Vec<u8>>),
+            // then we're the outer generic and should consume the >>
+            // Otherwise, we're the inner generic and shouldn't consume it
+            if has_generic_param {
+                // This is the outer generic (e.g., Result in Result<Vec<T>>)
+                // The inner generic saw >> but didn't consume it, so we consume it now
+                state.tokens.advance(); // consume >>
+            } else {
+                // This is an inner generic (e.g., Vec in Result<Vec<T>>)
+                // Don't consume >>, let the outer generic handle it
+            }
         }
         _ => {
-            // Handle cases where >> was already consumed by nested generic parsing
-            match state.tokens.peek() {
-                Some((Token::RightBrace, _)) | None => {
-                    // Either we hit } (actor case) or end of input (direct test case)
-                    // This means the >> was already consumed by the inner parser
-                    // Just return without consuming anything more
-                    return Ok(Type {
-                        kind: TypeKind::Generic {
-                            base,
-                            params: type_params,
-                        },
-                        span,
-                    });
-                }
-                _ => {
-                    bail!(
-                        "Expected > to close generic type, found {:?}",
-                        state.tokens.peek()
-                    );
-                }
-            }
+            bail!(
+                "Expected > or >> to close generic type {}, found {:?}",
+                base,
+                state.tokens.peek()
+            );
         }
     }
 
@@ -773,27 +822,73 @@ pub fn parse_attributes(state: &mut ParserState) -> Result<Vec<Attribute>> {
             bail!("Expected '[' after '#'");
         }
         state.tokens.advance(); // consume [
-        let name = if let Some((Token::Identifier(n), _)) = state.tokens.peek() {
-            let name = n.clone();
-            state.tokens.advance();
-            name
-        } else {
-            bail!("Expected attribute name");
+        let name = match state.tokens.peek() {
+            Some((Token::Identifier(n), _)) => {
+                let name = n.clone();
+                state.tokens.advance();
+                name
+            }
+            Some((Token::Crate, _)) => {
+                state.tokens.advance();
+                "crate".to_string()
+            }
+            _ => {
+                bail!("Expected attribute name");
+            }
         };
         let mut args = Vec::new();
         if matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
             state.tokens.advance(); // consume (
             while !matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
                 if let Some((Token::Identifier(arg), _)) = state.tokens.peek() {
-                    args.push(arg.clone());
+                    let mut arg_str = arg.clone();
                     state.tokens.advance();
+
+                    // Check for key=value syntax
+                    if matches!(state.tokens.peek(), Some((Token::Equal, _))) {
+                        state.tokens.advance(); // consume =
+                                                // Parse the value (could be identifier, number, string, etc.)
+                        if let Some((token, _)) = state.tokens.peek() {
+                            let value = match token {
+                                Token::Identifier(v) => v.clone(),
+                                Token::Integer(v) => v.to_string(),
+                                Token::Float(v) => v.to_string(),
+                                Token::String(v) => format!("\"{v}\""),
+                                Token::Bool(v) => v.to_string(),
+                                _ => {
+                                    bail!("Unsupported attribute value type: {:?}", token);
+                                }
+                            };
+                            state.tokens.advance();
+                            arg_str = format!("{arg_str} = {value}");
+                        }
+                    }
+
+                    args.push(arg_str);
+
                     if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
                         state.tokens.advance();
-                    } else {
+                    } else if matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
+                        // End of arguments, will be consumed by the while loop condition check
                         break;
+                    } else {
+                        bail!("Expected ',' or ')' after attribute argument");
+                    }
+                } else if let Some((Token::String(s), _)) = state.tokens.peek() {
+                    // Support string literals directly as arguments
+                    let arg_str = format!("\"{s}\"");
+                    state.tokens.advance();
+                    args.push(arg_str);
+
+                    if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+                        state.tokens.advance();
+                    } else if matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
+                        break;
+                    } else {
+                        bail!("Expected ',' or ')' after attribute argument");
                     }
                 } else {
-                    break;
+                    bail!("Expected identifier or string in attribute arguments");
                 }
             }
             state.tokens.advance(); // consume )
@@ -1608,6 +1703,27 @@ mod tests {
             assert_eq!(params[0], "T");
             assert_eq!(params[1], "U");
             assert_eq!(params[2], "V");
+        }
+    }
+
+    #[test]
+    fn test_parse_type_parameters_with_bounds() {
+        let mut state = ParserState::new("<T: Display>");
+        let result = parse_type_parameters(&mut state);
+        assert!(result.is_ok());
+        if let Ok(params) = result {
+            assert_eq!(params.len(), 1);
+            assert_eq!(params[0], "T");
+        }
+
+        // Test multiple parameters with bounds
+        let mut state2 = ParserState::new("<T: Display, U: Clone>");
+        let result2 = parse_type_parameters(&mut state2);
+        assert!(result2.is_ok());
+        if let Ok(params) = result2 {
+            assert_eq!(params.len(), 2);
+            assert_eq!(params[0], "T");
+            assert_eq!(params[1], "U");
         }
     }
 

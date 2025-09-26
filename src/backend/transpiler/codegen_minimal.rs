@@ -260,6 +260,7 @@ impl MinimalCodeGen {
             UnaryOp::Negate => "-",
             UnaryOp::BitwiseNot => "~",
             UnaryOp::Reference => "&",
+            UnaryOp::Deref => "*",
         }
     }
     fn gen_pattern(pattern: &Pattern) -> Result<String> {

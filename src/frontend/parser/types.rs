@@ -16,9 +16,14 @@ pub fn parse_struct_literal(
         } else {
             bail!("Expected field name");
         };
-        // Parse colon and value
-        state.tokens.expect(&Token::Colon)?;
-        let value = super::parse_expr_recursive(state)?;
+        // Parse colon and value, or use field shorthand
+        let value = if matches!(state.tokens.peek(), Some((Token::Colon, _))) {
+            state.tokens.advance(); // consume :
+            super::parse_expr_recursive(state)?
+        } else {
+            // Field shorthand: use field name as identifier expression
+            Expr::new(ExprKind::Identifier(field_name.clone()), start_span)
+        };
         fields.push((field_name, value));
         // Handle comma or end of struct literal
         if matches!(state.tokens.peek(), Some((Token::Comma, _))) {

@@ -319,6 +319,10 @@ impl WasmEmitter {
                         // Reference operator not supported in WASM (needs memory)
                         return Ok(instructions);
                     }
+                    crate::frontend::ast::UnaryOp::Deref => {
+                        // Dereference operator not supported in WASM (needs memory)
+                        return Ok(instructions);
+                    }
                 }
                 Ok(instructions)
             }

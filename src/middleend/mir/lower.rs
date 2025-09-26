@@ -285,6 +285,7 @@ impl LoweringContext {
             AstUnOp::Not => UnOp::Not,
             AstUnOp::BitwiseNot => UnOp::BitNot,
             AstUnOp::Reference => UnOp::Ref,
+            AstUnOp::Deref => UnOp::Deref,
         }
     }
     /// Convert AST Type to MIR Type
@@ -386,6 +387,7 @@ impl LoweringContext {
             AstUnOp::Negate | AstUnOp::BitwiseNot => Type::I32,
             AstUnOp::Not => Type::Bool,
             AstUnOp::Reference => Type::Ref(Box::new(Type::I32), Mutability::Immutable), // Reference creates an immutable reference
+            AstUnOp::Deref => Type::I32, // Dereference returns the inner type
         }
     }
 }

@@ -76,6 +76,7 @@ impl Transpiler {
             "str" => quote! { str }, // Plain str type (will be used with & for references)
             "string" | "String" => quote! { String },
             "char" => quote! { char },
+            "()" => quote! { () },       // Unit type
             "_" | "Any" => quote! { _ }, // Use Rust type inference
             _ => {
                 let type_ident = format_ident!("{}", name);
