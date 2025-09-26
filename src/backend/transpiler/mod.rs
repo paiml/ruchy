@@ -373,9 +373,9 @@ impl Transpiler {
         expr: &Expr,
         file_path: Option<&std::path::Path>,
     ) -> Result<Expr> {
-        // Check if expression contains any imports
-        if !self.contains_imports(expr) {
-            // No imports to resolve, return original expression to preserve attributes
+        // Check if expression contains any file imports that need resolution
+        if !self.contains_file_imports(expr) {
+            // No file imports to resolve, return original expression to preserve attributes
             return Ok(expr.clone());
         }
 
@@ -398,6 +398,49 @@ impl Transpiler {
             ExprKind::Block(exprs) => exprs.iter().any(|e| self.contains_imports(e)),
             _ => false,
         }
+    }
+
+    /// Check if an expression tree contains any file imports (local .ruchy files)
+    fn contains_file_imports(&self, expr: &Expr) -> bool {
+        match &expr.kind {
+            ExprKind::Import { module, .. }
+            | ExprKind::ImportAll { module, .. }
+            | ExprKind::ImportDefault { module, .. } => {
+                // File imports typically start with ./ or ../ or are single identifiers
+                // Standard library imports contain :: or are known std libs
+                module.starts_with("./")
+                    || module.starts_with("../")
+                    || (!module.contains("::")
+                        && !module.contains('.')
+                        && !Self::is_standard_library(module))
+            }
+            ExprKind::Block(exprs) => exprs.iter().any(|e| self.contains_file_imports(e)),
+            _ => false,
+        }
+    }
+
+    /// Check if a module is a standard library
+    fn is_standard_library(module: &str) -> bool {
+        matches!(
+            module,
+            "std"
+                | "core"
+                | "alloc"
+                | "numpy"
+                | "pandas"
+                | "polars"
+                | "serde"
+                | "serde_json"
+                | "tokio"
+                | "async_std"
+                | "futures"
+                | "rayon"
+                | "regex"
+                | "chrono"
+                | "rand"
+                | "log"
+                | "env_logger"
+        )
     }
     /// Transpiles an expression to a `TokenStream`
     ///
@@ -727,6 +770,10 @@ impl Transpiler {
                     // Trait definitions and implementations are top-level items
                     functions.push(self.transpile_type_decl_expr(expr)?);
                 }
+                ExprKind::Struct { .. } | ExprKind::Actor { .. } => {
+                    // Struct definitions and actor definitions are top-level items
+                    functions.push(self.transpile_expr(expr)?);
+                }
                 ExprKind::Import { .. }
                 | ExprKind::ImportAll { .. }
                 | ExprKind::ImportDefault { .. } => {
@@ -1046,14 +1093,45 @@ impl Transpiler {
         needs_polars: bool,
         needs_hashmap: bool,
     ) -> Result<TokenStream> {
-        let body = self.transpile_expr(expr)?;
-        // Check if this is a statement vs expression
-        if self.is_statement_expr(expr) {
-            // For statements, execute directly without result wrapping
-            self.wrap_statement_in_main(body, needs_polars, needs_hashmap)
-        } else {
-            // For expressions, wrap with result printing
-            self.wrap_in_main_with_result_printing(body, needs_polars, needs_hashmap)
+        // Check if this is a top-level item that should not be wrapped in main
+        match &expr.kind {
+            ExprKind::Struct { .. } | ExprKind::Actor { .. } | ExprKind::Impl { .. } => {
+                // Structs, actors, and impl blocks should be top-level items
+                let item_tokens = self.transpile_expr(expr)?;
+                match (needs_polars, needs_hashmap) {
+                    (true, true) => Ok(quote! {
+                        use polars::prelude::*;
+                        use std::collections::HashMap;
+                        #item_tokens
+                        fn main() {}
+                    }),
+                    (true, false) => Ok(quote! {
+                        use polars::prelude::*;
+                        #item_tokens
+                        fn main() {}
+                    }),
+                    (false, true) => Ok(quote! {
+                        use std::collections::HashMap;
+                        #item_tokens
+                        fn main() {}
+                    }),
+                    (false, false) => Ok(quote! {
+                        #item_tokens
+                        fn main() {}
+                    }),
+                }
+            }
+            _ => {
+                let body = self.transpile_expr(expr)?;
+                // Check if this is a statement vs expression
+                if self.is_statement_expr(expr) {
+                    // For statements, execute directly without result wrapping
+                    self.wrap_statement_in_main(body, needs_polars, needs_hashmap)
+                } else {
+                    // For expressions, wrap with result printing
+                    self.wrap_in_main_with_result_printing(body, needs_polars, needs_hashmap)
+                }
+            }
         }
     }
     fn wrap_statement_in_main(
@@ -1212,12 +1290,12 @@ impl Transpiler {
     pub fn transpile_expr(&self, expr: &Expr) -> Result<TokenStream> {
         use ExprKind::{
             Actor, ActorQuery, ActorSend, ArrayInit, Ask, Assign, AsyncBlock, AsyncLambda, Await,
-            Binary, Call, Command, CompoundAssign, DataFrame, DataFrameOperation, Err, FieldAccess,
-            For, Function, Identifier, If, IfLet, IndexAccess, Lambda, List, ListComprehension,
-            Literal, Loop, Macro, Match, MethodCall, None, ObjectLiteral, Ok, PostDecrement,
-            PostIncrement, PreDecrement, PreIncrement, QualifiedName, Range, Send, Slice, Some,
-            StringInterpolation, Struct, StructLiteral, Throw, Try, TryCatch, Tuple, TypeCast,
-            Unary, While, WhileLet,
+            Binary, Call, Command, CompoundAssign, DataFrame, DataFrameOperation,
+            DictComprehension, Err, FieldAccess, For, Function, Identifier, If, IfLet, IndexAccess,
+            Lambda, List, ListComprehension, Literal, Loop, Macro, Match, MethodCall, None,
+            ObjectLiteral, Ok, PostDecrement, PostIncrement, PreDecrement, PreIncrement,
+            QualifiedName, Range, Send, SetComprehension, Slice, Some, StringInterpolation, Struct,
+            StructLiteral, Throw, Try, TryCatch, Tuple, TypeCast, Unary, While, WhileLet,
         };
         // Dispatch to specialized handlers to keep complexity below 10
         match &expr.kind {
@@ -1265,6 +1343,8 @@ impl Transpiler {
             | ArrayInit { .. }
             | Tuple(_)
             | ListComprehension { .. }
+            | SetComprehension { .. }
+            | DictComprehension { .. }
             | Range { .. }
             | Throw { .. }
             | Ok { .. }

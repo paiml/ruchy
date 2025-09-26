@@ -251,7 +251,7 @@ fn is_well_typed(expr: &Expr) -> bool {
         ExprKind::Unary { operand, op } => match op {
             UnaryOp::Not => is_boolean(operand),
             UnaryOp::Negate | UnaryOp::BitwiseNot => is_numeric(operand),
-            UnaryOp::Reference => true, // Reference can be applied to any type
+            UnaryOp::Reference | UnaryOp::Deref => true, // Reference/Deref can be applied to any type
         },
         ExprKind::If {
             condition,

@@ -369,6 +369,13 @@ impl InferenceContext {
                 // Reference operator &x: T -> &T
                 Ok(MonoType::Reference(Box::new(operand_ty)))
             }
+            UnaryOp::Deref => {
+                // Dereference operator *x: &T -> T
+                match operand_ty {
+                    MonoType::Reference(ref inner) => Ok((**inner).clone()),
+                    _ => Err(anyhow::anyhow!("Cannot dereference non-reference type")),
+                }
+            }
         }
     }
     fn infer_throw(&mut self, expr: &Expr) -> Result<MonoType> {
@@ -1364,12 +1371,19 @@ impl InferenceContext {
                     elements.iter().map(|e| self.infer_expr(e)).collect();
                 Ok(MonoType::Tuple(element_types?))
             }
-            ExprKind::ListComprehension {
-                element,
-                variable,
-                iterable,
-                condition,
-            } => self.infer_list_comprehension(element, variable, iterable, condition.as_deref()),
+            ExprKind::ListComprehension { element, clauses } => {
+                // For now, use the first clause for type inference
+                if let Some(first_clause) = clauses.first() {
+                    self.infer_list_comprehension(
+                        element,
+                        &first_clause.variable,
+                        &first_clause.iterable,
+                        first_clause.condition.as_deref(),
+                    )
+                } else {
+                    bail!("List comprehension must have at least one clause")
+                }
+            }
             _ => bail!("Unexpected expression type in collection handler"),
         }
     }

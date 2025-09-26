@@ -37,6 +37,11 @@ impl Transpiler {
                 quote! { #field_name: #field_type }
             })
             .collect();
+        // Generate field names for initialization
+        let field_names: Vec<_> = state
+            .iter()
+            .map(|field| format_ident!("{}", field.name))
+            .collect();
         // Generate message enum variants
         let mut message_variants = Vec::new();
         let mut handler_arms = Vec::new();
@@ -106,7 +111,7 @@ impl Transpiler {
                 fn new() -> Self {
                     let (sender, receiver) = tokio::sync::mpsc::channel(100);
                     Self {
-                        #(#state_fields: Default::default(),)*
+                        #(#field_names: Default::default(),)*
                         receiver,
                         sender,
                     }

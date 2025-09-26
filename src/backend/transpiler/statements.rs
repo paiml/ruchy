@@ -640,45 +640,53 @@ impl Transpiler {
         } else {
             quote! {}
         };
-        // Generate attribute tokens
-        let attr_tokens: Vec<TokenStream> = attributes
-            .iter()
-            .map(|attr| {
-                let attr_name = format_ident!("{}", attr.name);
-                if attr.args.is_empty() {
-                    quote! { #[#attr_name] }
-                } else {
-                    let args: Vec<TokenStream> = attr
-                        .args
-                        .iter()
-                        .map(|arg| arg.parse().unwrap_or_else(|_| quote! { #arg }))
-                        .collect();
-                    quote! { #[#attr_name(#(#args),*)] }
+        // Separate modifiers from attributes
+        let mut regular_attrs = Vec::new();
+        let mut modifiers = Vec::new();
+
+        for attr in attributes {
+            match attr.name.as_str() {
+                "unsafe" => modifiers.push(quote! { unsafe }),
+                "const" => modifiers.push(quote! { const }),
+                _ => {
+                    let attr_name = format_ident!("{}", attr.name);
+                    if attr.args.is_empty() {
+                        regular_attrs.push(quote! { #[#attr_name] });
+                    } else {
+                        let args: Vec<TokenStream> = attr
+                            .args
+                            .iter()
+                            .map(|arg| arg.parse().unwrap_or_else(|_| quote! { #arg }))
+                            .collect();
+                        regular_attrs.push(quote! { #[#attr_name(#(#args),*)] });
+                    }
                 }
-            })
-            .collect();
+            }
+        }
+
+        let modifiers_tokens = quote! { #(#modifiers)* };
         Ok(match (type_param_tokens.is_empty(), is_async) {
             (true, false) => quote! {
-                #(#attr_tokens)*
-                #visibility fn #fn_name(#(#param_tokens),*) #final_return_type {
+                #(#regular_attrs)*
+                #visibility #modifiers_tokens fn #fn_name(#(#param_tokens),*) #final_return_type {
                     #body_tokens
                 }
             },
             (true, true) => quote! {
-                #(#attr_tokens)*
-                #visibility async fn #fn_name(#(#param_tokens),*) #final_return_type {
+                #(#regular_attrs)*
+                #visibility #modifiers_tokens async fn #fn_name(#(#param_tokens),*) #final_return_type {
                     #body_tokens
                 }
             },
             (false, false) => quote! {
-                #(#attr_tokens)*
-                #visibility fn #fn_name<#(#type_param_tokens),*>(#(#param_tokens),*) #final_return_type {
+                #(#regular_attrs)*
+                #visibility #modifiers_tokens fn #fn_name<#(#type_param_tokens),*>(#(#param_tokens),*) #final_return_type {
                     #body_tokens
                 }
             },
             (false, true) => quote! {
-                #(#attr_tokens)*
-                #visibility async fn #fn_name<#(#type_param_tokens),*>(#(#param_tokens),*) #final_return_type {
+                #(#regular_attrs)*
+                #visibility #modifiers_tokens async fn #fn_name<#(#type_param_tokens),*>(#(#param_tokens),*) #final_return_type {
                     #body_tokens
                 }
             },
@@ -1363,6 +1371,97 @@ impl Transpiler {
         };
         Ok(result)
     }
+    /// Check if a variable string is a complex pattern
+    fn is_complex_pattern(var: &str) -> bool {
+        var.contains('(') || var.contains(',') || var == "_"
+    }
+
+    /// Parse variable pattern into `TokenStream`
+    fn parse_var_pattern(var: &str) -> Result<proc_macro2::TokenStream> {
+        if Self::is_complex_pattern(var) {
+            // Complex pattern - parse as TokenStream
+            var.parse()
+                .map_err(|e| anyhow::anyhow!("Invalid pattern '{}': {}", var, e))
+        } else {
+            // Simple identifier
+            let var_ident = format_ident!("{}", var);
+            Ok(quote! { #var_ident })
+        }
+    }
+
+    /// Transpile list comprehension with nested clauses
+    pub fn transpile_list_comprehension_new(
+        &self,
+        element: &Expr,
+        clauses: &[crate::frontend::ast::ComprehensionClause],
+    ) -> Result<TokenStream> {
+        if clauses.is_empty() {
+            bail!("List comprehension must have at least one for clause");
+        }
+
+        let element_tokens = self.transpile_expr(element)?;
+
+        // Build the nested iterator chain from inside out
+        let mut result_tokens = None;
+
+        for (i, clause) in clauses.iter().enumerate() {
+            let iter_tokens = self.transpile_expr(&clause.iterable)?;
+
+            // Parse the variable pattern
+            let var_pattern = Self::parse_var_pattern(&clause.variable)?;
+
+            if i == 0 {
+                // First clause: start the chain
+                if let Some(ref cond) = clause.condition {
+                    let cond_tokens = self.transpile_expr(cond)?;
+                    result_tokens = Some(quote! {
+                        #iter_tokens
+                            .into_iter()
+                            .filter(|#var_pattern| #cond_tokens)
+                    });
+                } else {
+                    result_tokens = Some(quote! {
+                        #iter_tokens.into_iter()
+                    });
+                }
+            } else {
+                // Nested clauses: use flat_map to the previous
+                let prev_chain = result_tokens.unwrap();
+                let outer_var = &clauses[i - 1].variable;
+                let outer_pattern = Self::parse_var_pattern(outer_var)?;
+
+                if let Some(ref cond) = clause.condition {
+                    let cond_tokens = self.transpile_expr(cond)?;
+                    result_tokens = Some(quote! {
+                        #prev_chain
+                            .flat_map(|#outer_pattern| {
+                                #iter_tokens
+                                    .into_iter()
+                                    .filter(|#var_pattern| #cond_tokens)
+                            })
+                    });
+                } else {
+                    result_tokens = Some(quote! {
+                        #prev_chain
+                            .flat_map(|#outer_pattern| #iter_tokens.into_iter())
+                    });
+                }
+            }
+        }
+
+        // Get the final variable pattern for the map
+        let final_var = &clauses.last().unwrap().variable;
+        let final_pattern = Self::parse_var_pattern(final_var)?;
+
+        // Add the final map to produce the element
+        let final_chain = result_tokens.unwrap();
+        Ok(quote! {
+            #final_chain
+                .map(|#final_pattern| #element_tokens)
+                .collect::<Vec<_>>()
+        })
+    }
+
     /// Transpiles list comprehensions
     pub fn transpile_list_comprehension(
         &self,
@@ -1371,27 +1470,314 @@ impl Transpiler {
         iter: &Expr,
         filter: Option<&Expr>,
     ) -> Result<TokenStream> {
-        let var_ident = format_ident!("{}", var);
         let iter_tokens = self.transpile_expr(iter)?;
         let expr_tokens = self.transpile_expr(expr)?;
+
+        // Check if var looks like a pattern (contains parentheses)
+        let is_pattern = var.contains('(') && var.contains(')');
+
+        if is_pattern {
+            // Handle pattern matching using filter_map
+            // For patterns like "Some(value)", we need to extract the inner variable
+            let inner_var = if let Some(start) = var.find('(') {
+                if let Some(end) = var.rfind(')') {
+                    &var[start + 1..end]
+                } else {
+                    var
+                }
+            } else {
+                var
+            };
+
+            let inner_var_ident = format_ident!("{}", inner_var);
+            let pattern_tokens: TokenStream = var.parse().unwrap_or_else(|_| {
+                // Fallback: treat as simple identifier
+                let ident = format_ident!("{}", var);
+                quote! { #ident }
+            });
+
+            if let Some(filter_expr) = filter {
+                let filter_tokens = self.transpile_expr(filter_expr)?;
+                Ok(quote! {
+                    #iter_tokens
+                        .into_iter()
+                        .filter_map(|item| if let #pattern_tokens = item { Some(#inner_var_ident) } else { None })
+                        .filter(|#inner_var_ident| #filter_tokens)
+                        .map(|#inner_var_ident| #expr_tokens)
+                        .collect::<Vec<_>>()
+                })
+            } else {
+                Ok(quote! {
+                    #iter_tokens
+                        .into_iter()
+                        .filter_map(|item| if let #pattern_tokens = item { Some(#inner_var_ident) } else { None })
+                        .map(|#inner_var_ident| #expr_tokens)
+                        .collect::<Vec<_>>()
+                })
+            }
+        } else {
+            // Simple variable case
+            let var_ident = format_ident!("{}", var);
+            if let Some(filter_expr) = filter {
+                let filter_tokens = self.transpile_expr(filter_expr)?;
+                Ok(quote! {
+                    #iter_tokens
+                        .into_iter()
+                        .filter(|#var_ident| #filter_tokens)
+                        .map(|#var_ident| #expr_tokens)
+                        .collect::<Vec<_>>()
+                })
+            } else {
+                Ok(quote! {
+                    #iter_tokens
+                        .into_iter()
+                        .map(|#var_ident| #expr_tokens)
+                        .collect::<Vec<_>>()
+                })
+            }
+        }
+    }
+
+    /// Transpile set comprehension with nested clauses
+    pub fn transpile_set_comprehension_new(
+        &self,
+        element: &Expr,
+        clauses: &[crate::frontend::ast::ComprehensionClause],
+    ) -> Result<TokenStream> {
+        if clauses.is_empty() {
+            bail!("Set comprehension must have at least one for clause");
+        }
+
+        let element_tokens = self.transpile_expr(element)?;
+
+        // Build the nested iterator chain
+        let mut result_tokens = None;
+
+        for (i, clause) in clauses.iter().enumerate() {
+            let iter_tokens = self.transpile_expr(&clause.iterable)?;
+
+            // Parse the variable pattern
+            let var_pattern = Self::parse_var_pattern(&clause.variable)?;
+
+            if i == 0 {
+                // First clause: start the chain
+                if let Some(ref cond) = clause.condition {
+                    let cond_tokens = self.transpile_expr(cond)?;
+                    result_tokens = Some(quote! {
+                        #iter_tokens
+                            .into_iter()
+                            .filter(|#var_pattern| #cond_tokens)
+                    });
+                } else {
+                    result_tokens = Some(quote! {
+                        #iter_tokens.into_iter()
+                    });
+                }
+            } else {
+                // Nested clauses: use flat_map
+                let prev_chain = result_tokens.unwrap();
+                let outer_var = &clauses[i - 1].variable;
+                let outer_pattern = Self::parse_var_pattern(outer_var)?;
+
+                if let Some(ref cond) = clause.condition {
+                    let cond_tokens = self.transpile_expr(cond)?;
+                    result_tokens = Some(quote! {
+                        #prev_chain
+                            .flat_map(|#outer_pattern| {
+                                #iter_tokens
+                                    .into_iter()
+                                    .filter(|#var_pattern| #cond_tokens)
+                            })
+                    });
+                } else {
+                    result_tokens = Some(quote! {
+                        #prev_chain
+                            .flat_map(|#outer_pattern| #iter_tokens.into_iter())
+                    });
+                }
+            }
+        }
+
+        // Get the final variable pattern for the map
+        let final_var = &clauses.last().unwrap().variable;
+        let final_pattern = Self::parse_var_pattern(final_var)?;
+
+        // Add the final map to produce the element and collect as HashSet
+        let final_chain = result_tokens.unwrap();
+        Ok(quote! {
+            #final_chain
+                .map(|#final_pattern| #element_tokens)
+                .collect::<std::collections::HashSet<_>>()
+        })
+    }
+
+    /// Transpile set comprehension to Rust iterator chain with `HashSet`
+    pub fn transpile_set_comprehension(
+        &self,
+        expr: &Expr,
+        var: &str,
+        iter: &Expr,
+        filter: Option<&Expr>,
+    ) -> Result<TokenStream> {
+        // Handle tuple patterns like "(k, v)"
+        let var_pattern = if var.starts_with('(') && var.ends_with(')') {
+            // It's a tuple pattern, parse it properly
+            let pattern_str = var;
+            // Use proc_macro2::TokenStream to parse the pattern
+            let pattern: proc_macro2::TokenStream = pattern_str
+                .parse()
+                .map_err(|e| anyhow::anyhow!("Invalid pattern in set comprehension: {}", e))?;
+            pattern
+        } else {
+            // Simple identifier
+            let var_ident = format_ident!("{}", var);
+            quote! { #var_ident }
+        };
+
+        let iter_tokens = self.transpile_expr(iter)?;
+        let expr_tokens = self.transpile_expr(expr)?;
+
         if let Some(filter_expr) = filter {
             let filter_tokens = self.transpile_expr(filter_expr)?;
             Ok(quote! {
                 #iter_tokens
                     .into_iter()
-                    .filter(|#var_ident| #filter_tokens)
-                    .map(|#var_ident| #expr_tokens)
-                    .collect::<Vec<_>>()
+                    .filter(|#var_pattern| #filter_tokens)
+                    .map(|#var_pattern| #expr_tokens)
+                    .collect::<std::collections::HashSet<_>>()
             })
         } else {
             Ok(quote! {
                 #iter_tokens
                     .into_iter()
-                    .map(|#var_ident| #expr_tokens)
-                    .collect::<Vec<_>>()
+                    .map(|#var_pattern| #expr_tokens)
+                    .collect::<std::collections::HashSet<_>>()
             })
         }
     }
+
+    /// Transpile dict comprehension with nested clauses
+    pub fn transpile_dict_comprehension_new(
+        &self,
+        key: &Expr,
+        value: &Expr,
+        clauses: &[crate::frontend::ast::ComprehensionClause],
+    ) -> Result<TokenStream> {
+        if clauses.is_empty() {
+            bail!("Dict comprehension must have at least one for clause");
+        }
+
+        let key_tokens = self.transpile_expr(key)?;
+        let value_tokens = self.transpile_expr(value)?;
+
+        // Build the nested iterator chain
+        let mut result_tokens = None;
+
+        for (i, clause) in clauses.iter().enumerate() {
+            let iter_tokens = self.transpile_expr(&clause.iterable)?;
+
+            // Parse the variable pattern
+            let var_pattern = Self::parse_var_pattern(&clause.variable)?;
+
+            if i == 0 {
+                // First clause: start the chain
+                if let Some(ref cond) = clause.condition {
+                    let cond_tokens = self.transpile_expr(cond)?;
+                    result_tokens = Some(quote! {
+                        #iter_tokens
+                            .into_iter()
+                            .filter(|#var_pattern| #cond_tokens)
+                    });
+                } else {
+                    result_tokens = Some(quote! {
+                        #iter_tokens.into_iter()
+                    });
+                }
+            } else {
+                // Nested clauses: use flat_map
+                let prev_chain = result_tokens.unwrap();
+                let outer_var = &clauses[i - 1].variable;
+                let outer_pattern = Self::parse_var_pattern(outer_var)?;
+
+                if let Some(ref cond) = clause.condition {
+                    let cond_tokens = self.transpile_expr(cond)?;
+                    result_tokens = Some(quote! {
+                        #prev_chain
+                            .flat_map(|#outer_pattern| {
+                                #iter_tokens
+                                    .into_iter()
+                                    .filter(|#var_pattern| #cond_tokens)
+                            })
+                    });
+                } else {
+                    result_tokens = Some(quote! {
+                        #prev_chain
+                            .flat_map(|#outer_pattern| #iter_tokens.into_iter())
+                    });
+                }
+            }
+        }
+
+        // Get the final variable pattern for the map
+        let final_var = &clauses.last().unwrap().variable;
+        let final_pattern = Self::parse_var_pattern(final_var)?;
+
+        // Add the final map to produce key-value pairs and collect as HashMap
+        let final_chain = result_tokens.unwrap();
+        Ok(quote! {
+            #final_chain
+                .map(|#final_pattern| (#key_tokens, #value_tokens))
+                .collect::<std::collections::HashMap<_, _>>()
+        })
+    }
+
+    /// Transpile dict comprehension to Rust iterator chain with `HashMap`
+    pub fn transpile_dict_comprehension(
+        &self,
+        key: &Expr,
+        value: &Expr,
+        var: &str,
+        iter: &Expr,
+        filter: Option<&Expr>,
+    ) -> Result<TokenStream> {
+        // Handle tuple patterns like "(k, v)"
+        let var_pattern = if var.starts_with('(') && var.ends_with(')') {
+            // It's a tuple pattern, parse it properly
+            let pattern_str = var;
+            // Use proc_macro2::TokenStream to parse the pattern
+            let pattern: proc_macro2::TokenStream = pattern_str
+                .parse()
+                .map_err(|e| anyhow::anyhow!("Invalid pattern in dict comprehension: {}", e))?;
+            pattern
+        } else {
+            // Simple identifier
+            let var_ident = format_ident!("{}", var);
+            quote! { #var_ident }
+        };
+
+        let iter_tokens = self.transpile_expr(iter)?;
+        let key_tokens = self.transpile_expr(key)?;
+        let value_tokens = self.transpile_expr(value)?;
+
+        if let Some(filter_expr) = filter {
+            let filter_tokens = self.transpile_expr(filter_expr)?;
+            Ok(quote! {
+                #iter_tokens
+                    .into_iter()
+                    .filter(|#var_pattern| #filter_tokens)
+                    .map(|#var_pattern| (#key_tokens, #value_tokens))
+                    .collect::<std::collections::HashMap<_, _>>()
+            })
+        } else {
+            Ok(quote! {
+                #iter_tokens
+                    .into_iter()
+                    .map(|#var_pattern| (#key_tokens, #value_tokens))
+                    .collect::<std::collections::HashMap<_, _>>()
+            })
+        }
+    }
+
     /// Transpiles module declarations
     pub fn transpile_module(&self, name: &str, body: &Expr) -> Result<TokenStream> {
         let module_name = format_ident!("{}", name);
@@ -1453,11 +1839,34 @@ impl Transpiler {
         Self::transpile_import_inline(&rust_module, &import_items)
     }
 
+    /// Build a module path from segments for use in quote! macro
+    fn build_module_path(segments: &[&str]) -> proc_macro2::TokenStream {
+        let idents: Vec<_> = segments.iter().map(|s| format_ident!("{}", s)).collect();
+        quote! { #(#idents)::* }
+    }
+
     pub fn transpile_import_all(module: &str, alias: &str) -> TokenStream {
-        // import * as alias from "module" => use module as alias
-        let module_ident = format_ident!("{}", module.replace(['/', '.'], "_"));
-        let alias_ident = format_ident!("{}", alias);
-        quote! { use #module_ident as #alias_ident; }
+        if alias == "*" {
+            // Wildcard import: use rayon::prelude::*
+            // Parse the module path and generate the proper use statement
+            let module_segments: Vec<_> = module.split("::").collect();
+            let module_path = Self::build_module_path(&module_segments);
+            quote! { use #module_path::*; }
+        } else {
+            // Handle module path aliases: use std::collections::HashMap as Map
+            if module.contains("::") {
+                // Split the module path and build it properly
+                let module_segments: Vec<_> = module.split("::").collect();
+                let module_path = Self::build_module_path(&module_segments);
+                let alias_ident = format_ident!("{}", alias);
+                quote! { use #module_path as #alias_ident; }
+            } else {
+                // Simple module alias
+                let module_ident = format_ident!("{}", module.replace(['/', '.'], "_"));
+                let alias_ident = format_ident!("{}", alias);
+                quote! { use #module_ident as #alias_ident; }
+            }
+        }
     }
 
     pub fn transpile_import_default(_module: &str, name: &str) -> TokenStream {

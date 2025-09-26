@@ -70,6 +70,37 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
                 span,
             ))
         }
+        Token::Star => {
+            state.tokens.advance();
+            let expr = super::parse_expr_with_precedence_recursive(state, 13)?; // High precedence for unary
+            Ok(Expr::new(
+                ExprKind::Unary {
+                    op: UnaryOp::Deref,
+                    operand: Box::new(expr),
+                },
+                span,
+            ))
+        }
+        Token::Power => {
+            // Handle ** as double dereference in prefix position
+            state.tokens.advance();
+            let expr = super::parse_expr_with_precedence_recursive(state, 13)?; // High precedence for unary
+                                                                                // Create double dereference: *(*expr)
+            let inner_deref = Expr::new(
+                ExprKind::Unary {
+                    op: UnaryOp::Deref,
+                    operand: Box::new(expr),
+                },
+                span,
+            );
+            Ok(Expr::new(
+                ExprKind::Unary {
+                    op: UnaryOp::Deref,
+                    operand: Box::new(inner_deref),
+                },
+                span,
+            ))
+        }
         Token::Await => {
             state.tokens.advance();
             let expr = super::parse_expr_with_precedence_recursive(state, 13)?;
@@ -115,6 +146,8 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
         Token::DataFrame | Token::Actor => parse_special_definition_token(state, token),
         // Control statement tokens - delegated to focused helper
         Token::Pub
+        | Token::Const
+        | Token::Unsafe
         | Token::Break
         | Token::Continue
         | Token::Return
@@ -182,8 +215,12 @@ fn parse_identifier_token(state: &mut ParserState, token: &Token, span: Span) ->
                     if let Some((Token::Identifier(segment), _)) = state.tokens.peek() {
                         path.push(segment.clone());
                         state.tokens.advance();
+                    } else if matches!(state.tokens.peek(), Some((Token::Star, _))) {
+                        // Handle wildcard in qualified names (for use statements)
+                        path.push("*".to_string());
+                        state.tokens.advance();
                     } else {
-                        bail!("Expected identifier after '::'");
+                        bail!("Expected identifier or '*' after '::'");
                     }
                 }
                 // Create a qualified name expression
@@ -205,14 +242,8 @@ fn parse_identifier_token(state: &mut ParserState, token: &Token, span: Span) ->
                     span,
                 }];
                 Ok(Expr::new(ExprKind::Lambda { params, body }, span))
-            // Check for macro syntax: println! etc.
-            } else if matches!(state.tokens.peek(), Some((Token::Bang, _))) {
-                // This is a macro call like println!
-                state.tokens.advance(); // consume !
-                                        // Convert macro syntax to regular function call
-                                        // println! -> println, assert! -> assert, etc.
-                Ok(Expr::new(ExprKind::Identifier(name.clone()), span))
             } else {
+                // Don't consume ! here - let postfix handle macro calls
                 Ok(Expr::new(ExprKind::Identifier(name.clone()), span))
             }
         }
@@ -249,6 +280,37 @@ fn parse_unary_operator_token(state: &mut ParserState, token: &Token, span: Span
                 ExprKind::Unary {
                     op: UnaryOp::Not,
                     operand: Box::new(expr),
+                },
+                span,
+            ))
+        }
+        Token::Star => {
+            state.tokens.advance();
+            let expr = super::parse_expr_with_precedence_recursive(state, 13)?; // High precedence for unary
+            Ok(Expr::new(
+                ExprKind::Unary {
+                    op: UnaryOp::Deref,
+                    operand: Box::new(expr),
+                },
+                span,
+            ))
+        }
+        Token::Power => {
+            // Handle ** as double dereference in prefix position
+            state.tokens.advance();
+            let expr = super::parse_expr_with_precedence_recursive(state, 13)?; // High precedence for unary
+                                                                                // Create double dereference: *(*expr)
+            let inner_deref = Expr::new(
+                ExprKind::Unary {
+                    op: UnaryOp::Deref,
+                    operand: Box::new(expr),
+                },
+                span,
+            );
+            Ok(Expr::new(
+                ExprKind::Unary {
+                    op: UnaryOp::Deref,
+                    operand: Box::new(inner_deref),
                 },
                 span,
             ))
@@ -323,9 +385,57 @@ fn parse_parentheses_token(state: &mut ParserState, span: Span) -> Result<Expr> 
 /// Parse pub token - handles public declarations for functions, structs, traits, impl blocks
 /// Extracted from `parse_prefix` to reduce complexity
 fn parse_pub_token(state: &mut ParserState) -> Result<Expr> {
-    state.tokens.advance();
-    // Get the next token to determine what follows pub
-    let mut expr = parse_prefix(state)?;
+    state.tokens.advance(); // consume 'pub'
+
+    // Check next token for special handling
+    let mut expr = match state.tokens.peek() {
+        Some((Token::Use, _)) => {
+            // Handle pub use specially
+            // Note: parse_use_statement will consume the 'use' token
+            let mut expr = parse_use_statement(state)?;
+            // Add pub attribute to the import
+            expr.attributes.push(crate::frontend::ast::Attribute {
+                name: "pub".to_string(),
+                args: vec![],
+                span: expr.span,
+            });
+            return Ok(expr);
+        }
+        Some((Token::Const, _)) => {
+            state.tokens.advance(); // consume 'const'
+            if !matches!(state.tokens.peek(), Some((Token::Fun | Token::Fn, _))) {
+                bail!("Expected 'fun' or 'fn' after 'pub const'");
+            }
+            let mut expr = parse_prefix(state)?;
+            // Add const attribute
+            if let ExprKind::Function { .. } = &expr.kind {
+                expr.attributes.push(crate::frontend::ast::Attribute {
+                    name: "const".to_string(),
+                    args: vec![],
+                    span: expr.span,
+                });
+            }
+            expr
+        }
+        Some((Token::Unsafe, _)) => {
+            state.tokens.advance(); // consume 'unsafe'
+            if !matches!(state.tokens.peek(), Some((Token::Fun | Token::Fn, _))) {
+                bail!("Expected 'fun' or 'fn' after 'pub unsafe'");
+            }
+            let mut expr = parse_prefix(state)?;
+            // Add unsafe attribute
+            if let ExprKind::Function { .. } = &expr.kind {
+                expr.attributes.push(crate::frontend::ast::Attribute {
+                    name: "unsafe".to_string(),
+                    args: vec![],
+                    span: expr.span,
+                });
+            }
+            expr
+        }
+        _ => parse_prefix(state)?,
+    };
+
     // Mark the expression as public if it supports it
     match &mut expr.kind {
         ExprKind::Function { is_pub, .. } => *is_pub = true,
@@ -336,6 +446,53 @@ fn parse_pub_token(state: &mut ParserState) -> Result<Expr> {
     }
     Ok(expr)
 }
+
+/// Parse const token - handles const declarations for functions
+/// Similar to `parse_pub_token` but for const modifier
+fn parse_const_token(state: &mut ParserState) -> Result<Expr> {
+    state.tokens.advance(); // consume 'const'
+
+    // Check if next token is 'fun' or 'fn'
+    match state.tokens.peek() {
+        Some((Token::Fun | Token::Fn, _)) => {
+            let mut expr = parse_prefix(state)?;
+            // Mark the function as const by adding an attribute
+            if let ExprKind::Function { .. } = &expr.kind {
+                expr.attributes.push(crate::frontend::ast::Attribute {
+                    name: "const".to_string(),
+                    args: vec![],
+                    span: expr.span,
+                });
+            }
+            Ok(expr)
+        }
+        _ => bail!("Expected 'fun' or 'fn' after 'const'"),
+    }
+}
+
+/// Parse unsafe token - handles unsafe declarations for functions
+/// Similar to `parse_pub_token` but for unsafe modifier
+fn parse_unsafe_token(state: &mut ParserState) -> Result<Expr> {
+    state.tokens.advance(); // consume 'unsafe'
+
+    // Check if next token is 'fun' or 'fn'
+    match state.tokens.peek() {
+        Some((Token::Fun | Token::Fn, _)) => {
+            let mut expr = parse_prefix(state)?;
+            // Mark the function as unsafe by adding an attribute
+            if let ExprKind::Function { .. } = &expr.kind {
+                expr.attributes.push(crate::frontend::ast::Attribute {
+                    name: "unsafe".to_string(),
+                    args: vec![],
+                    span: expr.span,
+                });
+            }
+            Ok(expr)
+        }
+        _ => bail!("Expected 'fun' or 'fn' after 'unsafe'"),
+    }
+}
+
 /// Parse break token with optional label
 /// Extracted from `parse_prefix` to reduce complexity
 fn parse_break_token(state: &mut ParserState, span: Span) -> Result<Expr> {
@@ -493,8 +650,12 @@ fn parse_module_body(state: &mut ParserState) -> Result<Expr> {
         // Parse the item with visibility
         let expr = if matches!(state.tokens.peek(), Some((Token::Fun, _))) {
             super::functions::parse_function_with_visibility(state, is_pub)?
+        } else if is_pub && matches!(state.tokens.peek(), Some((Token::Use, _))) {
+            // Handle pub use statements
+            state.tokens.advance(); // consume 'use'
+            super::parse_use_statement_with_visibility(state, true)?
         } else if is_pub {
-            bail!("'pub' can only be used with function declarations in modules");
+            bail!("'pub' can only be used with function declarations or use statements in modules");
         } else {
             // Regular expression without visibility
             super::parse_expr_recursive(state)?
@@ -579,7 +740,7 @@ fn parse_special_definition_token(state: &mut ParserState, token: Token) -> Resu
             // Check if this is df! (literal) or df (identifier)
             if matches!(state.tokens.peek(), Some((Token::Bang, _))) {
                 // Use the single DataFrame parser from collections module
-                // Don't consume DataFrame - collections::parse_dataframe will handle it
+                // parse_dataframe will handle consuming the DataFrame token
                 super::collections::parse_dataframe(state)
             } else {
                 // Treat 'df' as a regular identifier for method calls, etc.
@@ -604,6 +765,8 @@ fn parse_control_statement_token(
 ) -> Result<Expr> {
     match token {
         Token::Pub => parse_pub_token(state),
+        Token::Const => parse_const_token(state),
+        Token::Unsafe => parse_unsafe_token(state),
         Token::Break => parse_break_token(state, span),
         Token::Continue => parse_continue_token(state, span),
         Token::Return => parse_return_token(state, span),
@@ -672,6 +835,11 @@ fn parse_let_pattern(state: &mut ParserState, is_mutable: bool) -> Result<Patter
             // Allow 'df' as a variable name (common in data science)
             state.tokens.advance();
             Ok(Pattern::Identifier("df".to_string()))
+        }
+        Some((Token::Underscore, _)) => {
+            // Allow wildcard pattern
+            state.tokens.advance();
+            Ok(Pattern::Identifier("_".to_string()))
         }
         Some((Token::LeftParen, _)) => {
             // Parse tuple destructuring: (x, y) = (1, 2)
@@ -805,6 +973,11 @@ fn parse_var_pattern(state: &mut ParserState) -> Result<Pattern> {
             // Allow 'df' as a variable name (common in data science)
             state.tokens.advance();
             Ok(Pattern::Identifier("df".to_string()))
+        }
+        Some((Token::Underscore, _)) => {
+            // Allow wildcard pattern in var statements too
+            state.tokens.advance();
+            Ok(Pattern::Identifier("_".to_string()))
         }
         Some((Token::LeftParen, _)) => parse_tuple_pattern(state),
         Some((Token::LeftBracket, _)) => parse_list_pattern(state),
@@ -1720,36 +1893,8 @@ fn parse_list_comprehension_body(
     expr: Expr,
     start_span: Span,
 ) -> Result<Expr> {
-    // Parse: for var in iter [if cond]
-    state.tokens.expect(&Token::For)?;
-    // Parse variable
-    let var = if let Some((Token::Identifier(n), _)) = state.tokens.peek() {
-        let name = n.clone();
-        state.tokens.advance();
-        name
-    } else {
-        bail!("Expected variable name in list comprehension");
-    };
-    state.tokens.expect(&Token::In)?;
-    // Parse iterator
-    let iter = super::parse_expr_recursive(state)?;
-    // Parse optional condition
-    let condition = if matches!(state.tokens.peek(), Some((Token::If, _))) {
-        state.tokens.advance();
-        Some(Box::new(super::parse_expr_recursive(state)?))
-    } else {
-        None
-    };
-    state.tokens.expect(&Token::RightBracket)?;
-    Ok(Expr::new(
-        ExprKind::ListComprehension {
-            element: Box::new(expr),
-            variable: var,
-            iterable: Box::new(iter),
-            condition,
-        },
-        start_span,
-    ))
+    // Delegate to the collections module which handles nested comprehensions properly
+    super::collections::parse_list_comprehension(state, start_span, expr)
 }
 fn parse_lambda_no_params(state: &mut ParserState) -> Result<Expr> {
     // Parse || body
@@ -2124,15 +2269,39 @@ fn parse_use_statement(state: &mut ParserState) -> Result<Expr> {
     state.tokens.advance(); // consume 'use'
     let start_span = crate::frontend::ast::Span { start: 0, end: 0 };
 
-    // Parse module path components with :: separators
+    // Parse the use statement recursively to handle nested grouped imports
+    parse_use_path(state, start_span)
+}
+
+/// Recursively parse use statement paths with support for nested grouped imports
+/// Handles: `std::collections::{HashMap`, `BTreeMap`}
+/// Handles: `std::{collections::{HashMap`, `HashSet`}, `io::{Read`, Write}}
+pub(super) fn parse_use_path(
+    state: &mut ParserState,
+    start_span: crate::frontend::ast::Span,
+) -> Result<Expr> {
+    // Parse initial module path
     let mut path_parts = vec![];
 
-    // First component
-    if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
-        path_parts.push(name.clone());
-        state.tokens.advance();
-    } else {
-        bail!("Expected module path after 'use'");
+    // First component - can be identifier, super, self, or crate
+    match state.tokens.peek() {
+        Some((Token::Identifier(name), _)) => {
+            path_parts.push(name.clone());
+            state.tokens.advance();
+        }
+        Some((Token::Super, _)) => {
+            path_parts.push("super".to_string());
+            state.tokens.advance();
+        }
+        Some((Token::Self_, _)) => {
+            path_parts.push("self".to_string());
+            state.tokens.advance();
+        }
+        Some((Token::Crate, _)) => {
+            path_parts.push("crate".to_string());
+            state.tokens.advance();
+        }
+        _ => bail!("Expected module path after 'use'"),
     }
 
     // Additional components separated by ::
@@ -2141,66 +2310,237 @@ fn parse_use_statement(state: &mut ParserState) -> Result<Expr> {
 
         // Check for {Item1, Item2} syntax
         if matches!(state.tokens.peek(), Some((Token::LeftBrace, _))) {
-            state.tokens.advance(); // consume {
-            let mut items = Vec::new();
-
-            loop {
-                if let Some((Token::Identifier(item), _)) = state.tokens.peek() {
-                    items.push(item.clone());
-                    state.tokens.advance();
-
-                    // Check for optional alias
-                    if matches!(state.tokens.peek(), Some((Token::As, _))) {
-                        state.tokens.advance(); // consume 'as'
-                        if let Some((Token::Identifier(alias), _)) = state.tokens.peek() {
-                            let last_idx = items.len() - 1;
-                            items[last_idx] = format!("{} as {}", items[last_idx], alias);
-                            state.tokens.advance();
-                        }
-                    }
-
-                    // Check for comma
-                    if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
-                        state.tokens.advance();
-                    } else if matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
-                        break;
-                    }
-                } else if matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
-                    break;
-                } else {
-                    bail!("Expected identifier in import list");
-                }
-            }
-
-            state.tokens.expect(&Token::RightBrace)?;
-
-            // Create import with items
+            return parse_nested_grouped_imports(state, path_parts, start_span);
+        } else if matches!(state.tokens.peek(), Some((Token::Star, _))) {
+            // Handle wildcard import: use std::collections::*
+            state.tokens.advance(); // consume *
+            let module_path = path_parts.join("::");
             return Ok(Expr::new(
-                ExprKind::Import {
-                    module: path_parts.join("::"),
-                    items: Some(items),
+                ExprKind::ImportAll {
+                    module: module_path,
+                    alias: "*".to_string(), // Use "*" to indicate wildcard import
                 },
                 start_span,
             ));
-        } else if let Some((Token::Identifier(segment), _)) = state.tokens.peek() {
-            path_parts.push(segment.clone());
-            state.tokens.advance();
-        } else {
-            bail!("Expected identifier or '{{' after '::'");
+        }
+        // After :: we can have identifier, super, or self
+        match state.tokens.peek() {
+            Some((Token::Identifier(segment), _)) => {
+                path_parts.push(segment.clone());
+                state.tokens.advance();
+            }
+            Some((Token::Super, _)) => {
+                path_parts.push("super".to_string());
+                state.tokens.advance();
+            }
+            Some((Token::Self_, _)) => {
+                path_parts.push("self".to_string());
+                state.tokens.advance();
+            }
+            _ => bail!("Expected identifier, 'super', 'self', '*', or '{{' after '::'"),
         }
     }
 
     let module_path = path_parts.join("::");
 
-    // Create an import expression
-    Ok(Expr::new(
-        ExprKind::Import {
-            module: module_path,
-            items: None, // 'use' imports the whole path
-        },
-        start_span,
-    ))
+    // Check for 'as' alias
+    if matches!(state.tokens.peek(), Some((Token::As, _))) {
+        state.tokens.advance(); // consume 'as'
+        if let Some((Token::Identifier(alias), _)) = state.tokens.peek() {
+            let alias = alias.clone();
+            state.tokens.advance();
+            // For aliased imports, we use ImportAll with the alias
+            Ok(Expr::new(
+                ExprKind::ImportAll {
+                    module: module_path,
+                    alias,
+                },
+                start_span,
+            ))
+        } else {
+            bail!("Expected alias name after 'as'");
+        }
+    } else {
+        // Create simple import expression
+        Ok(Expr::new(
+            ExprKind::Import {
+                module: module_path,
+                items: None,
+            },
+            start_span,
+        ))
+    }
 }
+
+/// Parse nested grouped imports and expand them into a Block of multiple Import expressions
+/// For: `std::{collections::{HashMap`, `HashSet`}, `io::{Read`, Write}}
+/// Creates: Block([`Import(std::collections`, [`HashMap`, `HashSet`]), `Import(std::io`, [Read, Write])])
+fn parse_nested_grouped_imports(
+    state: &mut ParserState,
+    base_path: Vec<String>,
+    start_span: crate::frontend::ast::Span,
+) -> Result<Expr> {
+    state.tokens.advance(); // consume {
+    let mut import_exprs = Vec::new();
+
+    loop {
+        if matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
+            break;
+        }
+
+        // Parse each item in the group
+        let expanded_imports = parse_grouped_import_item(state, &base_path, start_span)?;
+        import_exprs.extend(expanded_imports);
+
+        // Check for comma
+        if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+            state.tokens.advance();
+        } else if matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
+            break;
+        } else {
+            bail!("Expected ',' or '}}' in import list");
+        }
+    }
+
+    state.tokens.expect(&Token::RightBrace)?;
+
+    // If we only have one import, return it directly
+    if import_exprs.len() == 1 {
+        Ok(import_exprs.into_iter().next().unwrap())
+    } else {
+        // Return a Block containing all the import expressions
+        Ok(Expr::new(ExprKind::Block(import_exprs), start_span))
+    }
+}
+
+/// Parse a single item within a grouped import, handling nesting
+/// Returns Vec<Expr> to handle cases where one item expands to multiple imports
+fn parse_grouped_import_item(
+    state: &mut ParserState,
+    base_path: &[String],
+    start_span: crate::frontend::ast::Span,
+) -> Result<Vec<Expr>> {
+    if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
+        let identifier = name.clone();
+        state.tokens.advance();
+
+        // Check if this is a nested path: collections::{HashMap, HashSet}
+        if matches!(state.tokens.peek(), Some((Token::ColonColon, _))) {
+            state.tokens.advance(); // consume ::
+
+            if matches!(state.tokens.peek(), Some((Token::LeftBrace, _))) {
+                // Nested grouping: collections::{HashMap, HashSet}
+                // Parse the grouped items for this sub-module
+                state.tokens.advance(); // consume {
+                let mut items = Vec::new();
+
+                loop {
+                    if matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
+                        break;
+                    }
+
+                    if let Some((Token::Identifier(item), _)) = state.tokens.peek() {
+                        let mut item_name = item.clone();
+                        state.tokens.advance();
+
+                        // Check for alias
+                        if matches!(state.tokens.peek(), Some((Token::As, _))) {
+                            state.tokens.advance(); // consume 'as'
+                            if let Some((Token::Identifier(alias), _)) = state.tokens.peek() {
+                                item_name = format!("{item_name} as {alias}");
+                                state.tokens.advance();
+                            }
+                        }
+
+                        items.push(item_name);
+                    } else {
+                        bail!("Expected identifier in nested import list");
+                    }
+
+                    if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+                        state.tokens.advance();
+                    } else if matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
+                        break;
+                    } else {
+                        bail!("Expected ',' or '}}' in nested import list");
+                    }
+                }
+
+                state.tokens.expect(&Token::RightBrace)?;
+
+                // Create a single import for the sub-module with its items
+                let full_module_path = [base_path, &[identifier]].concat().join("::");
+                Ok(vec![Expr::new(
+                    ExprKind::Import {
+                        module: full_module_path,
+                        items: Some(items),
+                    },
+                    start_span,
+                )])
+            } else {
+                // Simple path extension: fmt::Display
+                // Parse the full path after ::
+                let mut path_parts = vec![identifier];
+
+                // Continue parsing the path
+                while matches!(state.tokens.peek(), Some((Token::Identifier(_), _))) {
+                    if let Some((Token::Identifier(segment), _)) = state.tokens.peek() {
+                        path_parts.push(segment.clone());
+                        state.tokens.advance();
+
+                        // Check for more :: segments
+                        if matches!(state.tokens.peek(), Some((Token::ColonColon, _))) {
+                            state.tokens.advance(); // consume ::
+                        } else {
+                            break;
+                        }
+                    }
+                }
+
+                // For compound paths like fmt::Display within a group,
+                // expand to a separate import: std::fmt::Display
+                let full_module_path = [base_path, &path_parts[..path_parts.len() - 1]]
+                    .concat()
+                    .join("::");
+                let item_name = path_parts.last().unwrap().clone();
+
+                Ok(vec![Expr::new(
+                    ExprKind::Import {
+                        module: full_module_path,
+                        items: Some(vec![item_name]),
+                    },
+                    start_span,
+                )])
+            }
+        } else {
+            // Check for alias: HashMap as Map
+            let item_name = if matches!(state.tokens.peek(), Some((Token::As, _))) {
+                state.tokens.advance(); // consume 'as'
+                if let Some((Token::Identifier(alias), _)) = state.tokens.peek() {
+                    let aliased = format!("{identifier} as {alias}");
+                    state.tokens.advance();
+                    aliased
+                } else {
+                    bail!("Expected identifier after 'as'");
+                }
+            } else {
+                identifier
+            };
+
+            // Create a simple import for this item
+            Ok(vec![Expr::new(
+                ExprKind::Import {
+                    module: base_path.join("::"),
+                    items: Some(vec![item_name]),
+                },
+                start_span,
+            )])
+        }
+    } else {
+        bail!("Expected identifier in import list");
+    }
+}
+
 fn parse_enum_definition(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.expect(&Token::Enum)?;
     let name = parse_enum_name(state)?;

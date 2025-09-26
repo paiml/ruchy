@@ -81,6 +81,24 @@ use crate::parser::error_recovery::ErrorNode;
 use anyhow::{bail, Result};
 pub use core::Parser;
 use std::collections::VecDeque;
+
+/// Parse use statement with visibility modifier
+pub(crate) fn parse_use_statement_with_visibility(
+    state: &mut ParserState,
+    is_pub: bool,
+) -> Result<Expr> {
+    // The 'use' token has already been consumed by the caller
+    let start_span = Span { start: 0, end: 0 };
+    let mut expr = expressions::parse_use_path(state, start_span)?;
+    if is_pub {
+        expr.attributes.push(crate::frontend::ast::Attribute {
+            name: "pub".to_string(),
+            args: vec![],
+            span: expr.span,
+        });
+    }
+    Ok(expr)
+}
 /// Internal parser state containing tokens, errors, and memory management.
 ///
 /// This structure maintains all mutable state during parsing including:
@@ -180,7 +198,7 @@ pub(crate) fn parse_expr_with_precedence_recursive(
 /// # Returns
 ///
 /// `Some(expr)` if an infix operator was parsed, `None` otherwise.
-fn try_handle_infix_operators(
+pub(crate) fn try_handle_infix_operators(
     state: &mut ParserState,
     left: Expr,
     min_prec: i32,
@@ -208,7 +226,7 @@ fn try_handle_infix_operators(
     Ok(None)
 }
 /// Handle all postfix operators in a loop
-fn handle_postfix_operators(state: &mut ParserState, mut left: Expr) -> Result<Expr> {
+pub(crate) fn handle_postfix_operators(state: &mut ParserState, mut left: Expr) -> Result<Expr> {
     while let Some(new_left) = try_handle_single_postfix(state, left.clone())? {
         left = new_left;
     }
@@ -656,30 +674,147 @@ fn try_range_operators(
         attributes: Vec::new(),
     }))
 }
-/// Try to parse a macro call: identifier!( args )
+/// Try to parse a macro call: identifier!( args ) or identifier![ args ]
 fn try_parse_macro_call(state: &mut ParserState, left: &Expr) -> Result<Option<Expr>> {
     if let ExprKind::Identifier(name) = &left.kind {
-        state.tokens.advance(); // consume !
-        if matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
-            state.tokens.advance(); // consume (
-            let mut args = Vec::new();
-            while !matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
-                args.push(parse_expr_recursive(state)?);
-                if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
-                    state.tokens.advance(); // consume comma
-                } else {
-                    break;
+        // Special case: Handle df![] as DataFrame literal
+        if name == "df" {
+            state.tokens.advance(); // consume !
+            if matches!(state.tokens.peek(), Some((Token::LeftBracket, _))) {
+                // Parse DataFrame arguments manually
+                state.tokens.advance(); // consume [
+
+                // Check for empty DataFrame df![]
+                if matches!(state.tokens.peek(), Some((Token::RightBracket, _))) {
+                    state.tokens.advance(); // consume ]
+                    return Ok(Some(Expr::new(
+                        ExprKind::DataFrame {
+                            columns: Vec::new(),
+                        },
+                        Span::default(),
+                    )));
                 }
+
+                // Parse DataFrame columns using the existing parser logic
+                let columns = collections::parse_dataframe_column_definitions(state)?;
+                state.tokens.expect(&Token::RightBracket)?;
+
+                return Ok(Some(Expr::new(
+                    ExprKind::DataFrame { columns },
+                    Span::default(),
+                )));
             }
-            state.tokens.expect(&Token::RightParen)?;
-            return Ok(Some(Expr::new(
-                ExprKind::Macro {
-                    name: name.clone(),
-                    args,
-                },
-                Span { start: 0, end: 0 },
-            )));
+            // If not df![], fall through to regular macro parsing
+        } else {
+            state.tokens.advance(); // consume !
         }
+
+        // Handle parentheses, square brackets, and curly braces for macros
+        let (_style, closing_token) = match state.tokens.peek() {
+            Some((Token::LeftParen, _)) => {
+                state.tokens.advance(); // consume (
+                ("paren", Token::RightParen)
+            }
+            Some((Token::LeftBracket, _)) => {
+                state.tokens.advance(); // consume [
+                ("bracket", Token::RightBracket)
+            }
+            Some((Token::LeftBrace, _)) => {
+                // For SQL macro, we need special handling of the content
+                if name == "sql" {
+                    state.tokens.advance(); // consume {
+                                            // Collect all tokens as raw SQL until closing brace
+                    let mut sql_content = String::new();
+                    let mut depth = 1;
+                    while depth > 0 {
+                        if let Some((token, _)) = state.tokens.peek() {
+                            match token {
+                                Token::LeftBrace => depth += 1,
+                                Token::RightBrace => {
+                                    depth -= 1;
+                                    if depth == 0 {
+                                        state.tokens.advance(); // consume final }
+                                        break;
+                                    }
+                                }
+                                _ => {}
+                            }
+                            // Add the token to the SQL string
+                            if depth > 0 {
+                                if !sql_content.is_empty() {
+                                    sql_content.push(' ');
+                                }
+                                // Convert token to its SQL text representation
+                                let token_text = match token {
+                                    Token::Identifier(s) => s.clone(),
+                                    Token::Integer(n) => n.to_string(),
+                                    Token::Float(f) => f.to_string(),
+                                    Token::String(s) => format!("'{s}'"),
+                                    Token::Star => "*".to_string(),
+                                    Token::Greater => ">".to_string(),
+                                    Token::Less => "<".to_string(),
+                                    Token::GreaterEqual => ">=".to_string(),
+                                    Token::LessEqual => "<=".to_string(),
+                                    Token::EqualEqual => "=".to_string(),
+                                    Token::NotEqual => "!=".to_string(),
+                                    Token::Comma => ",".to_string(),
+                                    Token::LeftParen => "(".to_string(),
+                                    Token::RightParen => ")".to_string(),
+                                    Token::Dot => ".".to_string(),
+                                    Token::Plus => "+".to_string(),
+                                    Token::Minus => "-".to_string(),
+                                    Token::Slash => "/".to_string(),
+                                    _ => format!("{token:?}"), // Fallback for unhandled tokens
+                                };
+                                sql_content.push_str(&token_text);
+                                state.tokens.advance();
+                            }
+                        } else {
+                            bail!("Unclosed SQL macro");
+                        }
+                    }
+                    // Return SQL macro with the raw content as a string literal
+                    return Ok(Some(Expr::new(
+                        ExprKind::Macro {
+                            name: name.clone(),
+                            args: vec![Expr::new(
+                                ExprKind::Literal(crate::frontend::ast::Literal::String(
+                                    sql_content,
+                                )),
+                                Span::default(),
+                            )],
+                        },
+                        Span::default(),
+                    )));
+                }
+                state.tokens.advance(); // consume {
+                ("brace", Token::RightBrace)
+            }
+            _ => return Ok(None),
+        };
+
+        let mut args = Vec::new();
+
+        // Parse arguments until closing token
+        while !matches!(state.tokens.peek(), Some((token, _)) if token == &closing_token) {
+            args.push(parse_expr_recursive(state)?);
+            if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+                state.tokens.advance(); // consume comma
+            } else {
+                break;
+            }
+        }
+
+        state.tokens.expect(&closing_token)?;
+
+        // For bracket-style macros, the args are already parsed correctly
+        return Ok(Some(Expr::new(
+            ExprKind::Macro {
+                name: name.clone(),
+                args,
+            },
+            Span { start: 0, end: 0 },
+        )));
     }
     Ok(None)
 }

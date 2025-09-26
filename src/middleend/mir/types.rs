@@ -208,6 +208,8 @@ pub enum UnOp {
     BitNot,
     /// Reference (borrow)
     Ref,
+    /// Dereference
+    Deref,
 }
 /// Aggregate kinds
 #[derive(Debug, Clone)]

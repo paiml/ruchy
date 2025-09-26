@@ -230,6 +230,13 @@ impl Transpiler {
             "assert" => self.transpile_assert_macro(args),
             "assert_eq" => self.transpile_assert_eq_macro(args),
             "assert_ne" => self.transpile_assert_ne_macro(args),
+            // External macros (pass through)
+            "json" | "sql" | "format" | "dbg" | "include_str" | "include_bytes" | "todo"
+            | "unimplemented" | "unreachable" | "compile_error" | "concat" | "env"
+            | "option_env" | "cfg" | "column" | "file" | "line" | "module_path" | "stringify"
+            | "write" | "writeln" | "eprintln" | "eprint" => {
+                self.transpile_passthrough_macro(name, args)
+            }
             _ => bail!("Unknown macro: {}", name),
         }
     }
@@ -261,6 +268,8 @@ impl Transpiler {
             | ExprKind::ArrayInit { .. }
             | ExprKind::Tuple(_)
             | ExprKind::ListComprehension { .. }
+            | ExprKind::SetComprehension { .. }
+            | ExprKind::DictComprehension { .. }
             | ExprKind::Range { .. } => self.transpile_data_only_expr(expr),
             ExprKind::Throw { .. }
             | ExprKind::Ok { .. }
@@ -280,14 +289,17 @@ impl Transpiler {
             ExprKind::List(elements) => self.transpile_list(elements),
             ExprKind::ArrayInit { value, size } => self.transpile_array_init(value, size),
             ExprKind::Tuple(elements) => self.transpile_tuple(elements),
-            ExprKind::ListComprehension {
-                element,
-                variable,
-                iterable,
-                condition,
-            } => {
-                self.transpile_list_comprehension(element, variable, iterable, condition.as_deref())
+            ExprKind::ListComprehension { element, clauses } => {
+                self.transpile_list_comprehension_new(element, clauses)
             }
+            ExprKind::SetComprehension { element, clauses } => {
+                self.transpile_set_comprehension_new(element, clauses)
+            }
+            ExprKind::DictComprehension {
+                key,
+                value,
+                clauses,
+            } => self.transpile_dict_comprehension_new(key, value, clauses),
             ExprKind::Range {
                 start,
                 end,
@@ -387,9 +399,26 @@ impl Transpiler {
             ExprKind::Block(exprs) => self.transpile_block(exprs),
             ExprKind::Pipeline { expr, stages } => self.transpile_pipeline(expr, stages),
             ExprKind::Import { module, items } => {
-                Ok(Self::transpile_import(module, items.as_deref()))
+                // Check if this import has a "pub" attribute
+                let has_pub = expr.attributes.iter().any(|attr| attr.name == "pub");
+                let import_tokens = Self::transpile_import(module, items.as_deref());
+                if has_pub {
+                    // Add pub prefix to the use statement
+                    Ok(quote! { pub #import_tokens })
+                } else {
+                    Ok(import_tokens)
+                }
             }
-            ExprKind::ImportAll { module, alias } => Ok(Self::transpile_import_all(module, alias)),
+            ExprKind::ImportAll { module, alias } => {
+                // Check if this import has a "pub" attribute
+                let has_pub = expr.attributes.iter().any(|attr| attr.name == "pub");
+                let import_tokens = Self::transpile_import_all(module, alias);
+                if has_pub {
+                    Ok(quote! { pub #import_tokens })
+                } else {
+                    Ok(import_tokens)
+                }
+            }
             ExprKind::ImportDefault { module, name } => {
                 Ok(Self::transpile_import_default(module, name))
             }
@@ -645,6 +674,50 @@ impl Transpiler {
             args.iter().map(|arg| self.transpile_expr(arg)).collect();
         let arg_tokens = arg_tokens?;
         Ok(quote! { assert_ne!(#(#arg_tokens),*) })
+    }
+
+    /// Pass through external macros without modification
+    fn transpile_passthrough_macro(&self, name: &str, args: &[Expr]) -> Result<TokenStream> {
+        let macro_ident = format_ident!("{}", name);
+
+        // Special handling for json! macro - needs raw JSON syntax
+        if name == "json" && args.len() == 1 {
+            if let ExprKind::ObjectLiteral { fields } = &args[0].kind {
+                return self.transpile_json_macro_object(fields);
+            }
+        }
+
+        let arg_tokens: Result<Vec<_>, _> =
+            args.iter().map(|arg| self.transpile_expr(arg)).collect();
+        let arg_tokens = arg_tokens?;
+        Ok(quote! { #macro_ident!(#(#arg_tokens),*) })
+    }
+
+    /// Transpile object literal for json! macro
+    fn transpile_json_macro_object(
+        &self,
+        fields: &[crate::frontend::ast::ObjectField],
+    ) -> Result<TokenStream> {
+        use crate::frontend::ast::ObjectField;
+        let mut json_fields = Vec::new();
+        for field in fields {
+            match field {
+                ObjectField::KeyValue { key, value } => {
+                    let value_tokens = match &value.kind {
+                        ExprKind::Literal(Literal::String(s)) => {
+                            quote! { #s }
+                        }
+                        _ => self.transpile_expr(value)?,
+                    };
+                    json_fields.push(quote! { #key: #value_tokens });
+                }
+                ObjectField::Spread { .. } => {
+                    // JSON doesn't support spread, skip for now
+                    continue;
+                }
+            }
+        }
+        Ok(quote! { json!({ #(#json_fields),* }) })
     }
     fn transpile_control_misc_expr(expr: &Expr) -> Result<TokenStream> {
         match &expr.kind {

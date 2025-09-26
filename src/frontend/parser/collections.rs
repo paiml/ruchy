@@ -33,10 +33,17 @@ use crate::frontend::ast::{DataFrameColumn, Literal, ObjectField};
 /// Handles both regular blocks and let-statement conversion to let-expressions
 pub fn parse_block(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume {
-                                                                                 // Check if this might be an object literal
+
+    // Check if this might be a comprehension (set or dict)
+    if let Ok(comprehension) = try_parse_comprehension(state, start_span) {
+        return Ok(comprehension);
+    }
+
+    // Check if this might be an object literal
     if is_object_literal(state) {
         return parse_object_literal_body(state, start_span);
     }
+
     let exprs = parse_block_expressions(state, start_span)?;
     state.tokens.expect(&Token::RightBrace)?;
     Ok(create_block_result(exprs, start_span))
@@ -204,6 +211,39 @@ fn is_object_literal(state: &mut ParserState) -> bool {
                 state.tokens.peek(),
                 Some((Token::Colon | Token::FatArrow, _))
             );
+
+            // If we found a colon, check if this might be a dict comprehension
+            // by looking further ahead for a 'for' keyword
+            if has_separator && matches!(state.tokens.peek(), Some((Token::Colon, _))) {
+                // This could be either {key: value} (object literal) or {key: expr for ...} (dict comprehension)
+                // Look ahead to see if there's a 'for' keyword within reasonable distance
+                let mut token_count = 0;
+                state.tokens.advance(); // consume the colon
+                let mut found_for = false;
+
+                while token_count < 20 && !found_for {
+                    match state.tokens.peek() {
+                        Some((Token::For, _)) => {
+                            found_for = true;
+                            break;
+                        }
+                        Some((Token::RightBrace, _)) => break, // End of block
+                        Some((Token::Comma, _)) => break,      // Object literal comma separator
+                        Some(_) => {
+                            state.tokens.advance();
+                            token_count += 1;
+                        }
+                        None => break,
+                    }
+                }
+                state.tokens.set_position(saved_pos.clone()); // restore position
+
+                // If we found 'for', this is likely a dict comprehension, not an object literal
+                if found_for {
+                    return false;
+                }
+            }
+
             state.tokens.set_position(saved_pos); // restore position
             has_separator
         }
@@ -500,6 +540,66 @@ fn parse_list_element(state: &mut ParserState) -> Result<Expr> {
 /// - Failed to parse condition expression (when present)
 /// - Missing closing bracket
 ///
+/// Parse comprehension expression, handling ranges but stopping at comprehension keywords
+fn parse_comprehension_expr(state: &mut ParserState) -> Result<Expr> {
+    // Parse left side
+    let mut left = parse_condition_term(state)?;
+
+    // Handle binary operators including ranges, but stop at comprehension keywords
+    while let Some((token, _)) = state.tokens.peek() {
+        match token {
+            // Stop at comprehension keywords
+            Token::For | Token::If | Token::RightBracket => break,
+
+            // Handle range operators specially
+            Token::DotDot | Token::DotDotEqual => {
+                let is_inclusive = matches!(token, Token::DotDotEqual);
+                state.tokens.advance(); // consume .. or ..=
+                let end = parse_condition_term(state)?;
+                left = Expr::new(
+                    ExprKind::Range {
+                        start: Box::new(left),
+                        end: Box::new(end),
+                        inclusive: is_inclusive,
+                    },
+                    Span::default(),
+                );
+            }
+
+            // Handle other binary operators
+            Token::Greater
+            | Token::Less
+            | Token::GreaterEqual
+            | Token::LessEqual
+            | Token::EqualEqual
+            | Token::NotEqual
+            | Token::AndAnd
+            | Token::OrOr
+            | Token::Plus
+            | Token::Minus
+            | Token::Star
+            | Token::Slash
+            | Token::Percent => {
+                let op = expressions::token_to_binary_op(token).expect("checked: valid op");
+                state.tokens.advance(); // consume operator
+                let right = parse_condition_term(state)?;
+                left = Expr::new(
+                    ExprKind::Binary {
+                        left: Box::new(left),
+                        op,
+                        right: Box::new(right),
+                    },
+                    Span::default(),
+                );
+            }
+
+            _ => break, // Stop at unknown tokens
+        }
+    }
+
+    Ok(left)
+}
+
 /// Parse a condition expression for list comprehension that stops at ]
 fn parse_condition_expr(state: &mut ParserState) -> Result<Expr> {
     // Save the current position in case we need to backtrack
@@ -517,7 +617,12 @@ fn parse_condition_expr(state: &mut ParserState) -> Result<Expr> {
             | Token::EqualEqual
             | Token::NotEqual
             | Token::AndAnd
-            | Token::OrOr => {
+            | Token::OrOr
+            | Token::Plus
+            | Token::Minus
+            | Token::Star
+            | Token::Slash
+            | Token::Percent => {
                 let op = expressions::token_to_binary_op(token).expect("checked: valid op");
                 state.tokens.advance(); // consume operator
                 let right = parse_condition_term(state)?;
@@ -606,40 +711,95 @@ pub fn parse_list_comprehension(
     start_span: Span,
     element: Expr,
 ) -> Result<Expr> {
+    use crate::frontend::ast::ComprehensionClause;
+
     // We've already parsed the element expression
-    // Now expect: for variable in iterable [if condition]
+    // Now parse all for clauses with their optional conditions
+    let mut clauses = Vec::new();
+
+    // Parse the first for clause (required)
     state.tokens.expect(&Token::For)?;
-    // Parse variable name
-    let variable = if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
-        let name = name.clone();
-        state.tokens.advance();
-        name
-    } else {
-        bail!("Expected variable name in list comprehension");
-    };
+    let variable = parse_comprehension_variable(state)?;
     state.tokens.expect(&Token::In)?;
-    // Parse iterable expression
-    let iterable = super::parse_expr_recursive(state)?;
-    // Check for optional if condition
-    let condition = if matches!(state.tokens.peek(), Some((Token::If, _))) {
+    let iterable = parse_comprehension_iterable(state)?;
+
+    // Check for condition after first for clause
+    let mut condition = None;
+    if matches!(state.tokens.peek(), Some((Token::If, _))) {
         state.tokens.advance(); // consume 'if'
-                                // Parse condition expression - this needs to stop at the closing bracket
-                                // We'll parse a simple expression that stops at ]
-        let cond = parse_condition_expr(state)?;
-        Some(Box::new(cond))
-    } else {
-        None
-    };
+        condition = Some(Box::new(parse_condition_expr(state)?));
+    }
+
+    clauses.push(ComprehensionClause {
+        variable,
+        iterable: Box::new(iterable),
+        condition,
+    });
+
+    // Parse additional for clauses
+    while matches!(state.tokens.peek(), Some((Token::For, _))) {
+        state.tokens.advance(); // consume 'for'
+        let var = parse_comprehension_variable(state)?;
+        state.tokens.expect(&Token::In)?;
+        let iter = parse_comprehension_iterable(state)?;
+
+        // Check for condition after this for clause
+        let mut cond = None;
+        if matches!(state.tokens.peek(), Some((Token::If, _))) {
+            state.tokens.advance(); // consume 'if'
+            cond = Some(Box::new(parse_condition_expr(state)?));
+        }
+
+        clauses.push(ComprehensionClause {
+            variable: var,
+            iterable: Box::new(iter),
+            condition: cond,
+        });
+    }
+
     state.tokens.expect(&Token::RightBracket)?;
+
     Ok(Expr::new(
         ExprKind::ListComprehension {
             element: Box::new(element),
-            variable,
-            iterable: Box::new(iterable),
-            condition,
+            clauses,
         },
         start_span,
     ))
+}
+
+/// Parse comprehension iterable, stopping at 'for', 'if', or ']'
+fn parse_comprehension_iterable(state: &mut ParserState) -> Result<Expr> {
+    // Parse an expression but stop at keywords that end the iterable
+    // We need to handle ranges (0..100) but stop at 'if', 'for', or ']'
+    let mut expr = parse_comprehension_expr(state)?;
+
+    // Check for method calls or field access
+    while let Some((token, _)) = state.tokens.peek() {
+        match token {
+            Token::For | Token::If | Token::RightBracket => break,
+            Token::Dot => {
+                // Allow method chaining
+                // Just consume the dot and parse the next part manually
+                state.tokens.advance(); // consume dot
+                if let Some((Token::Identifier(method), _)) = state.tokens.peek() {
+                    let method_name = method.clone();
+                    state.tokens.advance();
+                    // For now, just treat it as a field access
+                    expr = Expr::new(
+                        ExprKind::FieldAccess {
+                            object: Box::new(expr),
+                            field: method_name,
+                        },
+                        Span::default(),
+                    );
+                }
+            }
+            _ => break,
+        }
+    }
+
+    Ok(expr)
 }
 /// Parse a `DataFrame` literal expression
 ///
@@ -678,12 +838,18 @@ fn parse_dataframe_header(state: &mut ParserState) -> Result<Span> {
 }
 /// Parse column name identifier (complexity: 3)
 fn parse_dataframe_column_name(state: &mut ParserState) -> Result<String> {
-    if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
-        let name = name.clone();
-        state.tokens.advance();
-        Ok(name)
-    } else {
-        bail!("Expected column name in DataFrame literal");
+    match state.tokens.peek() {
+        Some((Token::Identifier(name), _)) => {
+            let name = name.clone();
+            state.tokens.advance();
+            Ok(name)
+        }
+        Some((Token::String(name), _)) => {
+            let name = name.clone();
+            state.tokens.advance();
+            Ok(name)
+        }
+        _ => bail!("Expected column name (identifier or string) in DataFrame literal"),
     }
 }
 /// Parse column values after => (complexity: 4)
@@ -713,9 +879,14 @@ fn handle_dataframe_legacy_syntax_column(col_name: String) -> DataFrameColumn {
     }
 }
 /// Parse column definitions loop (complexity: 6)
-fn parse_dataframe_column_definitions(state: &mut ParserState) -> Result<Vec<DataFrameColumn>> {
+pub fn parse_dataframe_column_definitions(state: &mut ParserState) -> Result<Vec<DataFrameColumn>> {
     let mut columns = Vec::new();
     loop {
+        // Check for trailing comma (empty item after comma)
+        if matches!(state.tokens.peek(), Some((Token::RightBracket, _))) {
+            break;
+        }
+
         let col_name = parse_dataframe_column_name(state)?;
         parse_single_dataframe_column(state, col_name, &mut columns)?;
         if !handle_dataframe_column_continuation(state, &mut columns)? {
@@ -864,6 +1035,362 @@ fn populate_dataframe_columns(columns: &mut [DataFrameColumn], rows: &[Vec<Expr>
                 column.values.push(row[col_idx].clone());
             }
         }
+    }
+}
+
+/// Parse an expression but stop at 'for' keyword (for comprehensions)
+fn parse_comprehension_element(state: &mut ParserState) -> Result<Expr> {
+    // Parse the expression but stop at 'for' keyword
+    // We can't use parse_expr_recursive directly because it will consume 'for'
+    // as part of a for loop
+
+    // Start with a prefix expression
+    let mut expr = super::expressions::parse_prefix(state)?;
+
+    // Continue parsing operators but stop at 'for'
+    loop {
+        // Check for 'for' keyword - stop here for comprehensions
+        if matches!(state.tokens.peek(), Some((Token::For, _))) {
+            break;
+        }
+
+        // Try to parse postfix operators
+        let prev_expr = expr.clone();
+        expr = super::handle_postfix_operators(state, expr)?;
+        if expr != prev_expr {
+            continue; // Made progress with postfix
+        }
+
+        // Try to parse infix operators with precedence 0
+        if let Some(new_expr) = super::try_handle_infix_operators(state, expr.clone(), 0)? {
+            expr = new_expr;
+            continue;
+        }
+
+        // No more operators to parse
+        break;
+    }
+
+    Ok(expr)
+}
+
+/// Try to parse set or dict comprehension from { ... } syntax
+/// Returns Ok(comprehension) if successful, Err if not a comprehension
+fn try_parse_comprehension(state: &mut ParserState, start_span: Span) -> Result<Expr> {
+    // Quick lookahead check to see if this might be a comprehension
+    // Look for patterns like: identifier for, identifier: identifier for
+    if !looks_like_comprehension(state) {
+        bail!("Not a comprehension - doesn't match comprehension pattern");
+    }
+
+    // Save parser state for backtracking
+    let saved_position = state.tokens.position();
+
+    // Parse the first expression more carefully
+    // We need to parse a full expression that could include operators,
+    // but we need to stop at 'for' keyword
+    let first_expr = match parse_comprehension_element(state) {
+        Ok(expr) => expr,
+        Err(e) => {
+            state.tokens.set_position(saved_position);
+            bail!(
+                "Not a comprehension - failed to parse first expression: {}",
+                e
+            );
+        }
+    };
+
+    // Check what comes next to determine comprehension type
+    match state.tokens.peek() {
+        Some((Token::For, _)) => {
+            // This is a set comprehension: {expr for x in iter}
+            parse_set_comprehension_continuation(state, first_expr, start_span)
+        }
+        Some((Token::Colon, _)) => {
+            // This might be a dict comprehension: {key: value for x in iter}
+            state.tokens.advance(); // consume :
+            let value_expr = match parse_comprehension_element(state) {
+                Ok(expr) => expr,
+                Err(e) => {
+                    state.tokens.set_position(saved_position);
+                    bail!("Not a dict comprehension - failed to parse value: {}", e);
+                }
+            };
+
+            // Check for 'for' keyword
+            if matches!(state.tokens.peek(), Some((Token::For, _))) {
+                parse_dict_comprehension_continuation(state, first_expr, value_expr, start_span)
+            } else {
+                // Not a comprehension, restore state
+                state.tokens.set_position(saved_position);
+                bail!("Not a dict comprehension - no 'for' keyword");
+            }
+        }
+        _ => {
+            // Not a comprehension, restore state
+            state.tokens.set_position(saved_position);
+            bail!("Not a comprehension - no 'for' or ':' after first expression");
+        }
+    }
+}
+
+/// Quick lookahead to determine if this might be a comprehension
+/// Looks for patterns: x for, x: y for, etc.
+fn looks_like_comprehension(state: &mut ParserState) -> bool {
+    let saved_pos = state.tokens.position();
+    let mut token_count = 0;
+    let mut found_for = false;
+
+    // Look ahead more tokens to account for complex expressions like method calls
+    // Increased from 6 to 20 to handle cases like "word.len() for word in ..."
+    while token_count < 20 && !found_for {
+        match state.tokens.peek() {
+            Some((Token::For, _)) => {
+                found_for = true;
+                break;
+            }
+            Some((Token::RightBrace, _)) => break, // End of block
+            Some(_) => {
+                state.tokens.advance();
+                token_count += 1;
+            }
+            None => break,
+        }
+    }
+
+    state.tokens.set_position(saved_pos);
+    found_for
+}
+
+/// Parse the continuation of a set comprehension after detecting {expr for
+fn parse_set_comprehension_continuation(
+    state: &mut ParserState,
+    element: Expr,
+    start_span: Span,
+) -> Result<Expr> {
+    use crate::frontend::ast::ComprehensionClause;
+
+    let mut clauses = Vec::new();
+
+    // Parse the first for clause (required)
+    state.tokens.expect(&Token::For)?;
+    let variable = parse_comprehension_variable(state)?;
+    state.tokens.expect(&Token::In)?;
+    let iterable = parse_comprehension_iterable(state)?;
+
+    // Check for condition after first for clause
+    let mut condition = None;
+    if matches!(state.tokens.peek(), Some((Token::If, _))) {
+        state.tokens.advance(); // consume 'if'
+        condition = Some(Box::new(parse_condition_expr(state)?));
+    }
+
+    clauses.push(ComprehensionClause {
+        variable,
+        iterable: Box::new(iterable),
+        condition,
+    });
+
+    // Parse additional for clauses
+    while matches!(state.tokens.peek(), Some((Token::For, _))) {
+        state.tokens.advance(); // consume 'for'
+        let var = parse_comprehension_variable(state)?;
+        state.tokens.expect(&Token::In)?;
+        let iter = parse_comprehension_iterable(state)?;
+
+        // Check for condition after this for clause
+        let mut cond = None;
+        if matches!(state.tokens.peek(), Some((Token::If, _))) {
+            state.tokens.advance(); // consume 'if'
+            cond = Some(Box::new(parse_condition_expr(state)?));
+        }
+
+        clauses.push(ComprehensionClause {
+            variable: var,
+            iterable: Box::new(iter),
+            condition: cond,
+        });
+    }
+
+    state.tokens.expect(&Token::RightBrace)?;
+
+    Ok(Expr::new(
+        crate::frontend::ast::ExprKind::SetComprehension {
+            element: Box::new(element),
+            clauses,
+        },
+        start_span,
+    ))
+}
+
+/// Parse the continuation of a dict comprehension after detecting {key: value for
+fn parse_dict_comprehension_continuation(
+    state: &mut ParserState,
+    key: Expr,
+    value: Expr,
+    start_span: Span,
+) -> Result<Expr> {
+    use crate::frontend::ast::ComprehensionClause;
+
+    let mut clauses = Vec::new();
+
+    // Parse the first for clause (required)
+    state.tokens.expect(&Token::For)?;
+    let variable = parse_comprehension_variable(state)?;
+    state.tokens.expect(&Token::In)?;
+    let iterable = parse_comprehension_iterable(state)?;
+
+    // Check for condition after first for clause
+    let mut condition = None;
+    if matches!(state.tokens.peek(), Some((Token::If, _))) {
+        state.tokens.advance(); // consume 'if'
+        condition = Some(Box::new(parse_condition_expr(state)?));
+    }
+
+    clauses.push(ComprehensionClause {
+        variable,
+        iterable: Box::new(iterable),
+        condition,
+    });
+
+    // Parse additional for clauses
+    while matches!(state.tokens.peek(), Some((Token::For, _))) {
+        state.tokens.advance(); // consume 'for'
+        let var = parse_comprehension_variable(state)?;
+        state.tokens.expect(&Token::In)?;
+        let iter = parse_comprehension_iterable(state)?;
+
+        // Check for condition after this for clause
+        let mut cond = None;
+        if matches!(state.tokens.peek(), Some((Token::If, _))) {
+            state.tokens.advance(); // consume 'if'
+            cond = Some(Box::new(parse_condition_expr(state)?));
+        }
+
+        clauses.push(ComprehensionClause {
+            variable: var,
+            iterable: Box::new(iter),
+            condition: cond,
+        });
+    }
+
+    state.tokens.expect(&Token::RightBrace)?;
+
+    Ok(Expr::new(
+        crate::frontend::ast::ExprKind::DictComprehension {
+            key: Box::new(key),
+            value: Box::new(value),
+            clauses,
+        },
+        start_span,
+    ))
+}
+
+/// Parse comprehension variable - supports patterns like Some(x), (a, b), or simple identifiers (complexity: 8)
+pub fn parse_comprehension_variable(state: &mut ParserState) -> Result<String> {
+    match state.tokens.peek() {
+        Some((Token::LeftParen, _)) => {
+            // Handle tuple patterns like (k, v)
+            state.tokens.advance(); // consume (
+            let mut pattern_str = String::from("(");
+
+            // Parse first element
+            if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
+                pattern_str.push_str(name);
+                state.tokens.advance();
+            } else {
+                bail!("Expected identifier in tuple pattern");
+            }
+
+            // Parse remaining elements
+            while matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+                state.tokens.advance(); // consume comma
+                pattern_str.push_str(", ");
+
+                if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
+                    pattern_str.push_str(name);
+                    state.tokens.advance();
+                } else {
+                    bail!("Expected identifier after comma in tuple pattern");
+                }
+            }
+
+            state.tokens.expect(&Token::RightParen)?;
+            pattern_str.push(')');
+            Ok(pattern_str)
+        }
+        Some((Token::Identifier(name), _)) => {
+            let name = name.clone();
+            state.tokens.advance();
+
+            // Check if it's followed by parentheses (constructor pattern)
+            if matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
+                state.tokens.advance(); // consume (
+                let mut pattern_str = format!("{name}(");
+
+                // Parse the inner pattern (for now, just simple identifiers)
+                if let Some((Token::Identifier(inner), _)) = state.tokens.peek() {
+                    pattern_str.push_str(inner);
+                    state.tokens.advance();
+                }
+
+                state.tokens.expect(&Token::RightParen)?;
+                pattern_str.push(')');
+                Ok(pattern_str)
+            } else {
+                Ok(name)
+            }
+        }
+        Some((Token::Some, _)) => {
+            state.tokens.advance(); // consume Some
+            state.tokens.expect(&Token::LeftParen)?;
+
+            let inner = if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
+                let name = name.clone();
+                state.tokens.advance();
+                name
+            } else {
+                bail!("Expected identifier inside Some pattern");
+            };
+
+            state.tokens.expect(&Token::RightParen)?;
+            Ok(format!("Some({inner})"))
+        }
+        Some((Token::None, _)) => {
+            state.tokens.advance();
+            Ok("None".to_string())
+        }
+        Some((Token::Ok, _)) => {
+            state.tokens.advance(); // consume Ok
+            state.tokens.expect(&Token::LeftParen)?;
+
+            let inner = if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
+                let name = name.clone();
+                state.tokens.advance();
+                name
+            } else {
+                bail!("Expected identifier inside Ok pattern");
+            };
+
+            state.tokens.expect(&Token::RightParen)?;
+            Ok(format!("Ok({inner})"))
+        }
+        Some((Token::Err, _)) => {
+            state.tokens.advance(); // consume Err
+            state.tokens.expect(&Token::LeftParen)?;
+
+            let inner = if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
+                let name = name.clone();
+                state.tokens.advance();
+                name
+            } else {
+                bail!("Expected identifier inside Err pattern");
+            };
+
+            state.tokens.expect(&Token::RightParen)?;
+            Ok(format!("Err({inner})"))
+        }
+        _ => bail!("Expected pattern in comprehension variable"),
     }
 }
 

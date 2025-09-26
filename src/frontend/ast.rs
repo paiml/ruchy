@@ -135,6 +135,18 @@ pub struct CatchClause {
     /// The expression to execute when this pattern matches.
     pub body: Box<Expr>,
 }
+
+/// A single clause in a comprehension (for and optional if).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ComprehensionClause {
+    /// The variable or pattern to bind
+    pub variable: String,
+    /// The iterable to iterate over
+    pub iterable: Box<Expr>,
+    /// Optional filter condition (if clause)
+    pub condition: Option<Box<Expr>>,
+}
+
 /// The primary AST node representing an expression in Ruchy.
 ///
 /// `Expr` is the fundamental building block of Ruchy's AST. Nearly all language
@@ -506,9 +518,16 @@ pub enum ExprKind {
     },
     ListComprehension {
         element: Box<Expr>,
-        variable: String,
-        iterable: Box<Expr>,
-        condition: Option<Box<Expr>>,
+        clauses: Vec<ComprehensionClause>,
+    },
+    SetComprehension {
+        element: Box<Expr>,
+        clauses: Vec<ComprehensionClause>,
+    },
+    DictComprehension {
+        key: Box<Expr>,
+        value: Box<Expr>,
+        clauses: Vec<ComprehensionClause>,
     },
     DataFrame {
         columns: Vec<DataFrameColumn>,
@@ -757,6 +776,7 @@ pub enum UnaryOp {
     Negate,
     BitwiseNot,
     Reference,
+    Deref,
 }
 /// A function or method parameter.
 ///
@@ -1185,6 +1205,7 @@ impl fmt::Display for UnaryOp {
             Self::Negate => write!(f, "-"),
             Self::BitwiseNot => write!(f, "~"),
             Self::Reference => write!(f, "&"),
+            Self::Deref => write!(f, "*"),
         }
     }
 }

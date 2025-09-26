@@ -44,11 +44,11 @@ impl Transpiler {
         // Integer literals in Rust need proper type handling
         // Use i32 for values that fit, i64 otherwise
         if let Ok(i32_val) = i32::try_from(i) {
-            // Use i32 suffix for clarity and to match struct field types
-            let literal = proc_macro2::Literal::i32_suffixed(i32_val);
+            // Use unsuffixed for cleaner output - Rust can infer the type
+            let literal = proc_macro2::Literal::i32_unsuffixed(i32_val);
             quote! { #literal }
         } else {
-            // For large integers, we need i64 suffix
+            // For large integers, we need i64 suffix to avoid overflow
             let literal = proc_macro2::Literal::i64_suffixed(i);
             quote! { #literal }
         }
@@ -290,6 +290,7 @@ impl Transpiler {
             UnaryOp::Not | UnaryOp::BitwiseNot => quote! { !#operand_tokens },
             UnaryOp::Negate => quote! { -#operand_tokens },
             UnaryOp::Reference => quote! { &#operand_tokens },
+            UnaryOp::Deref => quote! { *#operand_tokens },
         })
     }
     /// Transpiles await expressions
@@ -384,9 +385,17 @@ impl Transpiler {
                 Ok(quote! { #obj_tokens::#field_ident })
             }
             _ => {
-                // For other cases, assume direct struct field access
-                let field_ident = format_ident!("{}", field);
-                Ok(quote! { #obj_tokens.#field_ident })
+                // Check if field is numeric (tuple field access)
+                if field.chars().all(|c| c.is_ascii_digit()) {
+                    // Tuple field access - use numeric index
+                    let index: usize = field.parse().unwrap();
+                    let index = syn::Index::from(index);
+                    Ok(quote! { #obj_tokens.#index })
+                } else {
+                    // Regular struct field access
+                    let field_ident = format_ident!("{}", field);
+                    Ok(quote! { #obj_tokens.#field_ident })
+                }
             }
         }
     }

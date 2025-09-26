@@ -174,6 +174,7 @@ pub fn eval_unary_op(op: UnaryOp, operand: &Value) -> Result<Value, InterpreterE
         UnaryOp::Reference => Err(InterpreterError::RuntimeError(format!(
             "Unary operator not yet implemented: {op:?}"
         ))),
+        UnaryOp::Deref => Err(InterpreterError::RuntimeError("Dereference operator not yet implemented in interpreter".to_string())),
     }
 }
 
