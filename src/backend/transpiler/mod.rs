@@ -1294,8 +1294,8 @@ impl Transpiler {
             DictComprehension, Err, FieldAccess, For, Function, Identifier, If, IfLet, IndexAccess,
             Lambda, List, ListComprehension, Literal, Loop, Macro, Match, MethodCall, None,
             ObjectLiteral, Ok, PostDecrement, PostIncrement, PreDecrement, PreIncrement,
-            QualifiedName, Range, Send, SetComprehension, Slice, Some, StringInterpolation, Struct,
-            StructLiteral, Throw, Try, TryCatch, Tuple, TypeCast, Unary, While, WhileLet,
+            QualifiedName, Range, Send, Set, SetComprehension, Slice, Some, StringInterpolation,
+            Struct, StructLiteral, Throw, Try, TryCatch, Tuple, TypeCast, Unary, While, WhileLet,
         };
         // Dispatch to specialized handlers to keep complexity below 10
         match &expr.kind {
@@ -1340,6 +1340,7 @@ impl Transpiler {
             DataFrame { .. }
             | DataFrameOperation { .. }
             | List(_)
+            | Set(_)
             | ArrayInit { .. }
             | Tuple(_)
             | ListComprehension { .. }
