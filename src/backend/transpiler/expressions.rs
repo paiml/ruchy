@@ -657,6 +657,49 @@ impl Transpiler {
             Ok(quote! { vec![#(#element_tokens),*] })
         }
     }
+
+    /// Transpiles set literals into HashSet
+    pub fn transpile_set(&self, elements: &[Expr]) -> Result<TokenStream> {
+        // Check if any elements are spread expressions
+        let has_spread = elements
+            .iter()
+            .any(|e| matches!(e.kind, crate::frontend::ast::ExprKind::Spread { .. }));
+
+        if has_spread {
+            // Handle spread expressions by building hashset with extends
+            let mut statements = Vec::new();
+            statements.push(quote! { let mut __temp_set = std::collections::HashSet::new(); });
+
+            for element in elements {
+                if let crate::frontend::ast::ExprKind::Spread { expr } = &element.kind {
+                    let expr_tokens = self.transpile_expr(expr)?;
+                    statements.push(quote! { __temp_set.extend(#expr_tokens); });
+                } else {
+                    let expr_tokens = self.transpile_expr(element)?;
+                    statements.push(quote! { __temp_set.insert(#expr_tokens); });
+                }
+            }
+
+            statements.push(quote! { __temp_set });
+            Ok(quote! { { #(#statements)* } })
+        } else if elements.is_empty() {
+            // Empty set literal
+            Ok(quote! { std::collections::HashSet::new() })
+        } else {
+            // No spread expressions, build HashSet with inserts
+            let mut statements = Vec::new();
+            statements.push(quote! { let mut __temp_set = std::collections::HashSet::new(); });
+
+            for element in elements {
+                let expr_tokens = self.transpile_expr(element)?;
+                statements.push(quote! { __temp_set.insert(#expr_tokens); });
+            }
+
+            statements.push(quote! { __temp_set });
+            Ok(quote! { { #(#statements)* } })
+        }
+    }
+
     /// Transpiles tuple literals
     /// # Examples
     ///

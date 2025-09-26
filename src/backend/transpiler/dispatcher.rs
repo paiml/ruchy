@@ -265,6 +265,7 @@ impl Transpiler {
             ExprKind::DataFrame { .. }
             | ExprKind::DataFrameOperation { .. }
             | ExprKind::List(_)
+            | ExprKind::Set(_)
             | ExprKind::ArrayInit { .. }
             | ExprKind::Tuple(_)
             | ExprKind::ListComprehension { .. }
@@ -287,6 +288,7 @@ impl Transpiler {
                 self.transpile_dataframe_operation(source, operation)
             }
             ExprKind::List(elements) => self.transpile_list(elements),
+            ExprKind::Set(elements) => self.transpile_set(elements),
             ExprKind::ArrayInit { value, size } => self.transpile_array_init(value, size),
             ExprKind::Tuple(elements) => self.transpile_tuple(elements),
             ExprKind::ListComprehension { element, clauses } => {

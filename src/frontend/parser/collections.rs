@@ -39,6 +39,11 @@ pub fn parse_block(state: &mut ParserState) -> Result<Expr> {
         return Ok(comprehension);
     }
 
+    // Check if this might be a set literal (simple comma-separated values)
+    if let Ok(set_literal) = try_parse_set_literal(state, start_span) {
+        return Ok(set_literal);
+    }
+
     // Check if this might be an object literal
     if is_object_literal(state) {
         return parse_object_literal_body(state, start_span);
@@ -1392,6 +1397,94 @@ pub fn parse_comprehension_variable(state: &mut ParserState) -> Result<String> {
         }
         _ => bail!("Expected pattern in comprehension variable"),
     }
+}
+
+/// Try to parse a set literal: {expr, expr, ...}
+fn try_parse_set_literal(state: &mut ParserState, start_span: Span) -> Result<Expr> {
+    // Save position for backtracking
+    let saved_position = state.tokens.position();
+
+    // Check for empty set {}
+    if matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
+        state.tokens.advance();
+        return Ok(Expr::new(ExprKind::Set(Vec::new()), start_span));
+    }
+
+    // Try to parse comma-separated expressions
+    let mut elements = Vec::new();
+
+    loop {
+        // Check if we've reached the end
+        if matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
+            break;
+        }
+
+        // Try to parse an expression, but stop at certain keywords that indicate
+        // this is not a set literal
+        match state.tokens.peek() {
+            Some((Token::Let | Token::If | Token::For | Token::While | Token::Return, _)) => {
+                // This looks like a block, not a set literal
+                state.tokens.set_position(saved_position);
+                bail!("Not a set literal - contains statements");
+            }
+            _ => {}
+        }
+
+        // Parse the expression
+        let expr = match super::parse_expr_recursive(state) {
+            Ok(expr) => expr,
+            Err(_) => {
+                // Failed to parse expression, this is not a set literal
+                state.tokens.set_position(saved_position);
+                bail!("Not a set literal - failed to parse expression");
+            }
+        };
+
+        // Check what comes after the expression
+        match state.tokens.peek() {
+            Some((Token::Comma, _)) => {
+                elements.push(expr);
+                state.tokens.advance(); // consume comma
+
+                // Check for trailing comma before }
+                if matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
+                    break;
+                }
+            }
+            Some((Token::RightBrace, _)) => {
+                // Last element
+                elements.push(expr);
+                break;
+            }
+            Some((Token::Semicolon, _)) => {
+                // Semicolon indicates this is a block, not a set
+                state.tokens.set_position(saved_position);
+                bail!("Not a set literal - contains semicolon");
+            }
+            Some((Token::For, _)) => {
+                // This might be a set comprehension, let the comprehension parser handle it
+                state.tokens.set_position(saved_position);
+                bail!("Not a set literal - looks like comprehension");
+            }
+            _ => {
+                // Unexpected token, not a valid set literal
+                state.tokens.set_position(saved_position);
+                bail!("Not a set literal - unexpected token after expression");
+            }
+        }
+    }
+
+    // Must have at least one element for a set literal
+    // (empty {} is allowed but handled earlier)
+    if elements.is_empty() {
+        state.tokens.set_position(saved_position);
+        bail!("Not a set literal - no elements");
+    }
+
+    // Consume the closing brace
+    state.tokens.expect(&Token::RightBrace)?;
+
+    Ok(Expr::new(ExprKind::Set(elements), start_span))
 }
 
 #[cfg(test)]

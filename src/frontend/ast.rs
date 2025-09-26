@@ -508,6 +508,7 @@ pub enum ExprKind {
         arms: Vec<MatchArm>,
     },
     List(Vec<Expr>),
+    Set(Vec<Expr>),
     ArrayInit {
         value: Box<Expr>,
         size: Box<Expr>,
