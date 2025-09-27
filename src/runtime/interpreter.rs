@@ -948,6 +948,12 @@ impl Interpreter {
                 }
                 Ok(result)
             }
+            ExprKind::None => Ok(Value::Nil), // None maps to Nil for now
+            ExprKind::Some { value } => {
+                // Some(x) wraps a value - for now just return the value
+                // In a full Option implementation, we'd have a Value::Option variant
+                self.eval_expr(value)
+            }
             _ => Err(InterpreterError::RuntimeError(format!(
                 "Expression type not yet implemented: {expr_kind:?}"
             ))),
@@ -2169,6 +2175,36 @@ impl Interpreter {
             ExprKind::Identifier(name) => {
                 self.set_variable(name, val.clone());
                 Ok(val)
+            }
+            ExprKind::FieldAccess { object, field } => {
+                // Handle field assignment like: obj.field = value
+                // We need to get the object, update it, and reassign it
+                match &object.kind {
+                    ExprKind::Identifier(obj_name) => {
+                        // Get the object
+                        let obj = self.lookup_variable(&obj_name)?;
+
+                        // Update the field in a mutable copy
+                        match obj {
+                            Value::Object(ref map) => {
+                                let mut new_map = (**map).clone();
+                                new_map.insert(field.clone(), val.clone());
+                                let new_obj = Value::Object(Rc::new(new_map));
+
+                                // Update the variable with the modified object
+                                self.set_variable(&obj_name, new_obj);
+                                Ok(val)
+                            }
+                            _ => Err(InterpreterError::RuntimeError(format!(
+                                "Cannot access field '{}' on non-object",
+                                field
+                            ))),
+                        }
+                    }
+                    _ => Err(InterpreterError::RuntimeError(
+                        "Complex assignment targets not yet supported".to_string(),
+                    )),
+                }
             }
             _ => Err(InterpreterError::RuntimeError(
                 "Invalid assignment target".to_string(),
