@@ -2,17 +2,50 @@
 
 ## 📝 **SESSION CONTEXT FOR RESUMPTION**
 
-**Last Active**: 2025-09-27 (v3.51.0 - CRITICAL TRANSPILER REGRESSION INVESTIGATION)
-**Current Version**: v3.51.0 (BROKEN - EMERGENCY HOTFIX NEEDED)
-**Integration Status**: 🚨 **CRITICAL REGRESSION: 74% → 38% pass rate**
-**Status**: 🔥 **EMERGENCY: Function transpilation broken - generates HashSet instead of return values**
+**Last Active**: 2025-09-27 (v3.51.2 - EXTREME TDD P0 ENFORCEMENT)
+**Current Version**: v3.51.2 (Fixed transpiler regression, P0 enforcement active)
+**Integration Status**: ✅ **Restored to 74% pass rate (emergency fix applied)**
+**Status**: 🚨 **P0 CRITICAL: 6 core features failing - MUST FIX**
 
-## 🚨 **CRITICAL TRANSPILER REGRESSION - v3.51.0**
+## 🚨 **P0 CRITICAL FEATURES - EXTREME TDD ENFORCEMENT**
 
-**Status**: 🔥 **EMERGENCY HOTFIX REQUIRED**
+**Status**: 🔴 **BLOCKING: 6/19 P0 features failing**
+**Enforcement**: Pre-commit hooks now BLOCK commits with P0 failures
+**Principle**: "If it's advertised, it MUST work" - No exceptions
+
+### **P0 Test Results (tests/p0_critical_features.rs)**
+- ✅ **Working**: 7/19 tests (functions, match, recursion, transpiler)
+- ❌ **FAILING**: 6/19 tests (runtime issues)
+  - `p0_string_concatenation` - Scope issues, variables not accessible
+  - `p0_for_loop` - For loops broken in runtime
+  - `p0_array_operations` - Array indexing fails
+  - `p0_while_loop` - While loops not working
+  - `p0_if_else` - If-else runtime issues
+  - `p0_all_comparison_operators` - Comparison ops failing
+- ⚠️ **Not Implemented**: 6/19 (actors, structs, classes)
+
+### **Root Cause: Scope/Block Problem**
+Each statement wrapped in own block `{ ... }`, causing variables to go out of scope:
+```rust
+// Generated (WRONG):
+fn main() {
+    { let name = "World"; () };  // name goes out of scope!
+    { let greeting = ...; () };   // Can't access name
+}
+```
+
+### **P0 Enforcement Infrastructure**
+- ✅ **Test Suite**: tests/p0_critical_features.rs (19 tests)
+- ✅ **Validation Script**: scripts/p0-validation.sh
+- ✅ **Pre-commit Hook**: .git/hooks/pre-commit blocks P0 failures
+- ✅ **Documentation**: P0_CRITICAL_ISSUES.md tracking all failures
+
+## ✅ **COMPLETED: TRANSPILER REGRESSION FIX - v3.51.1**
+
+**Status**: ✅ **FIXED - Emergency hotfix applied**
 **Root Cause**: Function bodies `{ a + b }` parsed as `ExprKind::Set([a + b])` instead of `ExprKind::Block([a + b])`
 **Impact**: All function return values generate HashSet code instead of direct returns
-**Test Evidence**: ruchy-book pass rate dropped from 74% to 38%
+**Test Evidence**: ruchy-book pass rate dropped from 74% to 38%, now restored
 
 ### **Five Whys Investigation Results**
 1. **Why HashSet?** → Function body transpiled as Set literal
@@ -101,6 +134,26 @@
 - **ACTOR-011**: ✅ Property-based tests with 35+ properties (855 lines)
 - **ACTOR-012**: ✅ Chat demo integration tests (878 lines)
 
+## 🚑 **URGENT: P0 CRITICAL FIXES REQUIRED**
+
+### **P0-FIX-001: Fix Scope/Block Issues in Transpiler**
+**Priority**: 🔴 CRITICAL - Blocking all development
+**Problem**: Each statement wrapped in own block causing variables to go out of scope
+**Impact**: 6 P0 features failing (strings, loops, arrays, conditionals)
+**Solution**: Stop wrapping every statement in `{ ... ; () }` blocks
+
+### **P0-FIX-002: Implement Actor Runtime**
+**Priority**: 🟡 HIGH - Core advertised feature
+**Problem**: Actor syntax parses but has no runtime implementation
+**Impact**: All actor tests ignored/failing
+**Solution**: Implement actor spawn, message passing, receive blocks
+
+### **P0-FIX-003: Implement Struct/Class Runtime**
+**Priority**: 🟡 HIGH - Core advertised feature
+**Problem**: Struct/class definitions parse but runtime incomplete
+**Impact**: Method persistence, inheritance not working
+**Solution**: Complete runtime implementation with proper method dispatch
+
 ### **🎯 CURRENT STATE: POST-ACTOR IMPLEMENTATION**
 
 **v3.46.0 Completed**: Full actor system with state management, message handlers
@@ -108,6 +161,7 @@
 **v3.48.0 Completed**: EXTR-004 Complete class/struct implementation with all OOP features
 **v3.49.0 Completed**: ✅ EXTR-002 Class/Struct Runtime Implementation with EXTREME TDD
   - **Final Results**: 32/43 tests passing (74% success rate)
+**v3.51.2 Current**: P0 enforcement active, 6 critical features failing
   - ✅ Struct tests: 21/26 passing (81%)
     - Struct definitions, instantiation, field access: 100%
     - Struct methods: 0% (impl blocks not supported)
