@@ -162,6 +162,7 @@ impl Transpiler {
             body.kind,
             crate::frontend::ast::ExprKind::Literal(crate::frontend::ast::Literal::Unit)
         ) {
+            // Standalone let statement - no wrapping needed
             if effective_mutability {
                 Ok(quote! { let mut #name_ident = #value_tokens; })
             } else {
@@ -314,7 +315,6 @@ impl Transpiler {
         };
 
         let value_tokens = self.transpile_expr(value)?;
-        let body_tokens = self.transpile_expr(body)?;
 
         // Generate type annotation if present
         let type_tokens = if let Some(type_ann) = type_annotation {
@@ -324,12 +324,25 @@ impl Transpiler {
             quote! {}
         };
 
-        Ok(quote! {
-            {
+        // Check if body is Unit - if so, this is a standalone let statement
+        if matches!(
+            body.kind,
+            crate::frontend::ast::ExprKind::Literal(crate::frontend::ast::Literal::Unit)
+        ) {
+            // Standalone let statement - no wrapping needed
+            Ok(quote! {
                 let #mut_keyword #name_ident #type_tokens = #value_tokens;
-                #body_tokens
-            }
-        })
+            })
+        } else {
+            // Traditional let-in expression with scoping
+            let body_tokens = self.transpile_expr(body)?;
+            Ok(quote! {
+                {
+                    let #mut_keyword #name_ident #type_tokens = #value_tokens;
+                    #body_tokens
+                }
+            })
+        }
     }
 
     /// Transpiles let pattern bindings with optional type annotations
@@ -351,26 +364,37 @@ impl Transpiler {
             value_tokens = quote! { (#value_tokens).as_slice() };
         }
 
-        let body_tokens = self.transpile_expr(body)?;
-
-        // Type annotations on patterns are more complex - for now, ignore them
-        // Future enhancement: support typed destructuring patterns
-        if type_annotation.is_some() {
-            // Add a comment about the type annotation
+        // Check if body is Unit - if so, this is a standalone let pattern statement
+        if matches!(
+            body.kind,
+            crate::frontend::ast::ExprKind::Literal(crate::frontend::ast::Literal::Unit)
+        ) {
+            // Standalone let pattern - no wrapping needed
             Ok(quote! {
-                {
-                    // Type annotation would be applied here if supported
-                    let #pattern_tokens = #value_tokens;
-                    #body_tokens
-                }
+                let #pattern_tokens = #value_tokens;
             })
         } else {
-            Ok(quote! {
-                {
-                    let #pattern_tokens = #value_tokens;
-                    #body_tokens
-                }
-            })
+            let body_tokens = self.transpile_expr(body)?;
+
+            // Type annotations on patterns are more complex - for now, ignore them
+            // Future enhancement: support typed destructuring patterns
+            if type_annotation.is_some() {
+                // Add a comment about the type annotation
+                Ok(quote! {
+                    {
+                        // Type annotation would be applied here if supported
+                        let #pattern_tokens = #value_tokens;
+                        #body_tokens
+                    }
+                })
+            } else {
+                Ok(quote! {
+                    {
+                        let #pattern_tokens = #value_tokens;
+                        #body_tokens
+                    }
+                })
+            }
         }
     }
 
