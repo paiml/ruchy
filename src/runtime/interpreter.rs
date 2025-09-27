@@ -2532,7 +2532,7 @@ impl Interpreter {
         }
         class_info.insert("__fields".to_string(), Value::Object(Rc::new(field_defs)));
 
-        // Store constructors
+        // Store constructors as closures
         let mut constructor_info = HashMap::new();
         for constructor in constructors {
             // Store constructor by name (default name is "new")
@@ -2542,18 +2542,24 @@ impl Interpreter {
                 .unwrap_or(&"new".to_string())
                 .clone();
 
-            // Create constructor metadata
-            let mut ctor_meta = HashMap::new();
-            ctor_meta.insert(
-                "params".to_string(),
-                Value::from_string(format!("{:?}", constructor.params)),
-            );
-            ctor_meta.insert(
-                "body".to_string(),
-                Value::from_string(format!("{:?}", constructor.body)),
-            );
+            // Extract parameter names from the constructor params
+            let param_names: Vec<String> = constructor
+                .params
+                .iter()
+                .map(|p| match &p.pattern {
+                    crate::frontend::ast::Pattern::Identifier(name) => name.clone(),
+                    _ => "_".to_string(),
+                })
+                .collect();
 
-            constructor_info.insert(ctor_name, Value::Object(Rc::new(ctor_meta)));
+            // Create a closure for the constructor
+            let ctor_closure = Value::Closure {
+                params: param_names,
+                body: Rc::new((*constructor.body).clone()),
+                env: Rc::new(HashMap::new()), // Empty env for now
+            };
+
+            constructor_info.insert(ctor_name, ctor_closure);
         }
         class_info.insert(
             "__constructors".to_string(),
@@ -2590,7 +2596,7 @@ impl Interpreter {
     fn instantiate_class(
         &mut self,
         class_name: &str,
-        _args: &[Value],
+        args: &[Value],
     ) -> Result<Value, InterpreterError> {
         // Look up the class definition
         let class_def = self.lookup_variable(class_name)?;
@@ -2613,7 +2619,7 @@ impl Interpreter {
                 Value::from_string(class_name.to_string()),
             );
 
-            // Initialize fields with default values or provided arguments
+            // Initialize fields with default values
             if let Some(Value::Object(ref fields)) = class_info.get("__fields") {
                 for (field_name, field_info) in fields.iter() {
                     if let Value::Object(ref field_meta) = field_info {
@@ -2621,15 +2627,52 @@ impl Interpreter {
                         if let Some(default) = field_meta.get("default") {
                             instance.insert(field_name.clone(), default.clone());
                         } else {
-                            // For now, initialize with nil
+                            // Initialize with nil
                             instance.insert(field_name.clone(), Value::Nil);
                         }
                     }
                 }
             }
 
-            // TODO: Execute the constructor (init method) with provided arguments
-            // For now, we're just creating the instance with default values
+            // Execute the constructor if present
+            if let Some(Value::Object(ref constructors)) = class_info.get("__constructors") {
+                // Look for the "new" constructor
+                if let Some(constructor) = constructors.get("new") {
+                    if let Value::Closure { params, .. } = constructor {
+                        // Check argument count
+                        if args.len() != params.len() {
+                            return Err(InterpreterError::RuntimeError(format!(
+                                "Constructor expects {} arguments, got {}",
+                                params.len(),
+                                args.len()
+                            )));
+                        }
+
+                        // For simplicity, let's just map arguments to fields directly
+                        // based on parameter names matching field names
+                        // This is a simplified implementation
+
+                        // Create environment for constructor
+                        let mut ctor_env = HashMap::new();
+
+                        // Bind constructor parameters
+                        for (param, arg) in params.iter().zip(args) {
+                            ctor_env.insert(param.clone(), arg.clone());
+
+                            // If the parameter name matches a field name, set it
+                            if instance.contains_key(param) {
+                                instance.insert(param.clone(), arg.clone());
+                            }
+                        }
+
+                        // For now, we'll use a simple heuristic:
+                        // If constructor has parameters that match field names,
+                        // assign them directly
+                        // This handles the common pattern: new(name: String, age: i32)
+                        // where parameters match field names
+                    }
+                }
+            }
 
             Ok(Value::Object(Rc::new(instance)))
         } else {
