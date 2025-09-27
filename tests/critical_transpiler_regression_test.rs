@@ -15,7 +15,11 @@ fn test_simple_function_add_transpilation() {
     "#;
 
     let result = compile(code);
-    assert!(result.is_ok(), "Failed to compile simple add function: {:?}", result);
+    assert!(
+        result.is_ok(),
+        "Failed to compile simple add function: {:?}",
+        result
+    );
 }
 
 #[test]
@@ -27,7 +31,11 @@ fn test_function_with_arithmetic_expression() {
     "#;
 
     let result = compile(code);
-    assert!(result.is_ok(), "Failed to compile arithmetic function: {:?}", result);
+    assert!(
+        result.is_ok(),
+        "Failed to compile arithmetic function: {:?}",
+        result
+    );
 }
 
 #[test]
@@ -43,7 +51,11 @@ fn test_factorial_function() {
     "#;
 
     let result = compile(code);
-    assert!(result.is_ok(), "Failed to compile factorial function: {:?}", result);
+    assert!(
+        result.is_ok(),
+        "Failed to compile factorial function: {:?}",
+        result
+    );
 }
 
 #[test]
@@ -56,7 +68,11 @@ fn test_function_with_block_return() {
     "#;
 
     let result = compile(code);
-    assert!(result.is_ok(), "Failed to compile function with block: {:?}", result);
+    assert!(
+        result.is_ok(),
+        "Failed to compile function with block: {:?}",
+        result
+    );
 }
 
 #[test]
@@ -66,7 +82,11 @@ fn test_function_with_single_expression() {
     "#;
 
     let result = compile(code);
-    assert!(result.is_ok(), "Failed to compile single-expression function: {:?}", result);
+    assert!(
+        result.is_ok(),
+        "Failed to compile single-expression function: {:?}",
+        result
+    );
 }
 
 #[test]
@@ -78,7 +98,11 @@ fn test_function_with_string_return() {
     "#;
 
     let result = compile(code);
-    assert!(result.is_ok(), "Failed to compile string function: {:?}", result);
+    assert!(
+        result.is_ok(),
+        "Failed to compile string function: {:?}",
+        result
+    );
 }
 
 #[test]
@@ -94,7 +118,11 @@ fn test_fibonacci_function() {
     "#;
 
     let result = compile(code);
-    assert!(result.is_ok(), "Failed to compile fibonacci function: {:?}", result);
+    assert!(
+        result.is_ok(),
+        "Failed to compile fibonacci function: {:?}",
+        result
+    );
 }
 
 #[test]
@@ -106,7 +134,11 @@ fn test_function_with_conditionals() {
     "#;
 
     let result = compile(code);
-    assert!(result.is_ok(), "Failed to compile max function: {:?}", result);
+    assert!(
+        result.is_ok(),
+        "Failed to compile max function: {:?}",
+        result
+    );
 }
 
 #[test]
@@ -118,7 +150,11 @@ fn test_real_set_literal_still_works() {
     "#;
 
     let result = compile(code);
-    assert!(result.is_ok(), "Failed to compile set literal: {:?}", result);
+    assert!(
+        result.is_ok(),
+        "Failed to compile set literal: {:?}",
+        result
+    );
 }
 
 #[test]
@@ -128,7 +164,11 @@ fn test_empty_function_body() {
     "#;
 
     let result = compile(code);
-    assert!(result.is_ok(), "Failed to compile empty function: {:?}", result);
+    assert!(
+        result.is_ok(),
+        "Failed to compile empty function: {:?}",
+        result
+    );
 }
 
 /// Property test: ANY function with a return type and simple expression should compile
@@ -165,7 +205,11 @@ fn test_deeply_nested_expression() {
     "#;
 
     let result = compile(code);
-    assert!(result.is_ok(), "Failed to compile nested expression: {:?}", result);
+    assert!(
+        result.is_ok(),
+        "Failed to compile nested expression: {:?}",
+        result
+    );
 }
 
 /// Test the exact example from the book that was failing
@@ -180,14 +224,18 @@ fn test_book_example_chapter_5_2() {
     "#;
 
     let result = compile(code);
-    assert!(result.is_ok(), "Book example 5.2 failed to compile: {:?}", result);
+    assert!(
+        result.is_ok(),
+        "Book example 5.2 failed to compile: {:?}",
+        result
+    );
 }
 
 /// Test that the transpiler doesn't generate HashSet code
 #[test]
 fn test_transpiler_output_no_hashset() {
-    use ruchy::frontend::parser::Parser;
     use ruchy::backend::transpiler::Transpiler;
+    use ruchy::frontend::parser::Parser;
 
     let code = "fun add(a: i32, b: i32) -> i32 { a + b }";
     let mut parser = Parser::new(code);
