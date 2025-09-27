@@ -1222,11 +1222,36 @@ impl Interpreter {
                             // Check if it's a class or struct
                             if let Some(Value::String(ref type_str)) = info.get("__type") {
                                 if type_str.as_ref() == "Class" {
-                                    // Return marker for class constructor/method
-                                    return Ok(Value::from_string(format!(
-                                        "__class_constructor__:{}:{}",
-                                        type_name, method_name
-                                    )));
+                                    // Check if it's a static method
+                                    if let Some(Value::Object(ref methods)) = info.get("__methods")
+                                    {
+                                        if let Some(Value::Object(ref method_meta)) =
+                                            methods.get(method_name)
+                                        {
+                                            if let Some(Value::Bool(true)) =
+                                                method_meta.get("is_static")
+                                            {
+                                                // Return marker for static method
+                                                return Ok(Value::from_string(format!(
+                                                    "__class_static_method__:{}:{}",
+                                                    type_name, method_name
+                                                )));
+                                            }
+                                        }
+                                    }
+
+                                    // Check if it's a constructor
+                                    if let Some(Value::Object(ref constructors)) =
+                                        info.get("__constructors")
+                                    {
+                                        if constructors.contains_key(method_name) {
+                                            // Return marker for class constructor
+                                            return Ok(Value::from_string(format!(
+                                                "__class_constructor__:{}:{}",
+                                                type_name, method_name
+                                            )));
+                                        }
+                                    }
                                 } else if type_str.as_ref() == "Struct" && method_name == "new" {
                                     return Ok(Value::from_string(format!(
                                         "__struct_constructor__:{}",
@@ -1301,7 +1326,8 @@ impl Interpreter {
         match func {
             Value::String(ref s) if s.starts_with("__class_constructor__:") => {
                 // Extract class name and constructor name from the marker
-                let parts: Vec<&str> = s.strip_prefix("__class_constructor__:")
+                let parts: Vec<&str> = s
+                    .strip_prefix("__class_constructor__:")
                     .unwrap()
                     .split(':')
                     .collect();
@@ -1313,6 +1339,24 @@ impl Interpreter {
                 } else {
                     // Legacy format for backward compatibility
                     self.instantiate_class_with_constructor(parts[0], "new", args)
+                }
+            }
+            Value::String(ref s) if s.starts_with("__class_static_method__:") => {
+                // Extract class name and method name from the marker
+                let parts: Vec<&str> = s
+                    .strip_prefix("__class_static_method__:")
+                    .unwrap()
+                    .split(':')
+                    .collect();
+
+                if parts.len() == 2 {
+                    let class_name = parts[0];
+                    let method_name = parts[1];
+                    self.call_static_method(class_name, method_name, args)
+                } else {
+                    Err(InterpreterError::RuntimeError(
+                        "Invalid static method marker".to_string(),
+                    ))
                 }
             }
             Value::String(ref s) if s.starts_with("__struct_constructor__:") => {
@@ -2223,12 +2267,7 @@ impl Interpreter {
             Value::Object(obj) => {
                 // Check if this is a class instance
                 if let Some(Value::String(class_name)) = obj.get("__class") {
-                    self.eval_class_instance_method(
-                        obj,
-                        class_name.as_ref(),
-                        method,
-                        arg_values,
-                    )
+                    self.eval_class_instance_method(obj, class_name.as_ref(), method, arg_values)
                 } else {
                     self.eval_object_method(obj, method, arg_values, args_empty)
                 }
@@ -2502,8 +2541,21 @@ impl Interpreter {
         Ok(Value::Object(std::rc::Rc::new(instance)))
     }
 
-    /// Evaluate class definition (placeholder for now)
-    /// Complexity: 5
+    /// Evaluate class definition
+    ///
+    /// Supports:
+    /// - Class fields with types and defaults
+    /// - Multiple constructors (including named constructors)
+    /// - Instance methods with self binding
+    /// - Static methods (no self binding)
+    /// - Inheritance metadata (superclass stored but not fully implemented)
+    ///
+    /// Limitations:
+    /// - Instance mutations don't persist between method calls (needs `RefCell`)
+    /// - Inheritance not fully implemented (no `super()` calls or field merging)
+    /// - Method overriding not implemented
+    ///
+    /// Complexity: 8
     fn eval_class_definition(
         &mut self,
         name: &str,
@@ -2803,20 +2855,28 @@ impl Interpreter {
                         // Check if it's a static method
                         let is_static = method_meta
                             .get("is_static")
-                            .and_then(|v| if let Value::Bool(b) = v { Some(*b) } else { None })
+                            .and_then(|v| {
+                                if let Value::Bool(b) = v {
+                                    Some(*b)
+                                } else {
+                                    None
+                                }
+                            })
                             .unwrap_or(false);
 
                         if is_static {
-                            return Err(InterpreterError::RuntimeError(
-                                format!("Cannot call static method {} on instance", method)
-                            ));
+                            return Err(InterpreterError::RuntimeError(format!(
+                                "Cannot call static method {} on instance",
+                                method
+                            )));
                         }
 
                         // Create environment for method execution
                         let mut method_env = HashMap::new();
 
                         // Add 'self' to the environment
-                        method_env.insert("self".to_string(), Value::Object(Rc::new(instance.clone())));
+                        method_env
+                            .insert("self".to_string(), Value::Object(Rc::new(instance.clone())));
 
                         // Bind method parameters to arguments
                         // Note: We're not including 'self' in params count here
@@ -2851,6 +2911,84 @@ impl Interpreter {
             Err(InterpreterError::RuntimeError(format!(
                 "Class {} has no method named {}",
                 class_name, method
+            )))
+        } else {
+            Err(InterpreterError::RuntimeError(format!(
+                "{} is not a class",
+                class_name
+            )))
+        }
+    }
+
+    fn call_static_method(
+        &mut self,
+        class_name: &str,
+        method_name: &str,
+        args: &[Value],
+    ) -> Result<Value, InterpreterError> {
+        // Look up the class definition
+        let class_def = self.lookup_variable(class_name)?;
+
+        if let Value::Object(ref class_info) = class_def {
+            // Look for the method in the class definition
+            if let Some(Value::Object(ref methods)) = class_info.get("__methods") {
+                if let Some(Value::Object(ref method_meta)) = methods.get(method_name) {
+                    // Verify it's a static method
+                    let is_static = method_meta
+                        .get("is_static")
+                        .and_then(|v| {
+                            if let Value::Bool(b) = v {
+                                Some(*b)
+                            } else {
+                                None
+                            }
+                        })
+                        .unwrap_or(false);
+
+                    if !is_static {
+                        return Err(InterpreterError::RuntimeError(format!(
+                            "{} is not a static method",
+                            method_name
+                        )));
+                    }
+
+                    // Get the method closure
+                    if let Some(Value::Closure { params, body, .. }) = method_meta.get("closure") {
+                        // Check parameter count
+                        if args.len() != params.len() {
+                            return Err(InterpreterError::RuntimeError(format!(
+                                "Static method {} expects {} arguments, got {}",
+                                method_name,
+                                params.len(),
+                                args.len()
+                            )));
+                        }
+
+                        // Create environment for static method execution
+                        let mut method_env = HashMap::new();
+
+                        // Bind parameters to arguments (no self for static methods)
+                        for (i, param) in params.iter().enumerate() {
+                            method_env.insert(param.clone(), args[i].clone());
+                        }
+
+                        // Push the method environment
+                        self.env_stack.push(method_env);
+
+                        // Execute the method body
+                        let result = self.eval_expr(body);
+
+                        // Pop the method environment
+                        self.env_stack.pop();
+
+                        return result;
+                    }
+                }
+            }
+
+            Err(InterpreterError::RuntimeError(format!(
+                "Static method {} not found in class {}",
+                method_name, class_name
             )))
         } else {
             Err(InterpreterError::RuntimeError(format!(

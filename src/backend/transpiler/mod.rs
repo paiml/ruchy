@@ -1520,8 +1520,9 @@ mod tests {
 
         // Object literals typically indicate hashmap usage
         // Literals typically do not indicate hashmap usage
-        assert!(has_hashmap_obj || !has_hashmap_obj); // Test doesn't panic
-        assert!(!has_hashmap_literal || has_hashmap_literal); // Test doesn't panic
+        // These assertions are just checking the functions don't panic
+        let _ = has_hashmap_obj;
+        let _ = has_hashmap_literal;
     }
 
     // Test 5: DataFrame Detection in Expressions
@@ -1543,8 +1544,9 @@ mod tests {
 
         // DataFrame expressions typically indicate dataframe usage
         // Literals typically do not indicate dataframe usage
-        assert!(has_dataframe_df || !has_dataframe_df); // Test doesn't panic
-        assert!(!has_dataframe_literal || has_dataframe_literal); // Test doesn't panic
+        // These assertions are just checking the functions don't panic
+        let _ = has_dataframe_df;
+        let _ = has_dataframe_literal;
     }
 
     // Test 6: Mutability Analysis for Variables

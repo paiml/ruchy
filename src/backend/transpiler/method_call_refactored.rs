@@ -246,11 +246,11 @@ mod tests {
         let arg = make_ident_expr("x");
 
         // Test map method
-        let result = t.transpile_method_call_refactored(&obj, "map", &[arg.clone()]);
+        let result = t.transpile_method_call_refactored(&obj, "map", std::slice::from_ref(&arg));
         assert!(result.is_ok());
 
         // Test filter method
-        let result = t.transpile_method_call_refactored(&obj, "filter", &[arg.clone()]);
+        let result = t.transpile_method_call_refactored(&obj, "filter", std::slice::from_ref(&arg));
         assert!(result.is_ok());
 
         // Test reduce method
@@ -265,7 +265,7 @@ mod tests {
         let key = make_string_expr("key");
 
         // Test get method
-        let result = t.transpile_method_call_refactored(&obj, "get", &[key.clone()]);
+        let result = t.transpile_method_call_refactored(&obj, "get", std::slice::from_ref(&key));
         assert!(result.is_ok());
 
         // Test contains_key method
