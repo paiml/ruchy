@@ -1,8 +1,8 @@
 //! Basic expression parsing - minimal version with only used functions
 use super::{
-    bail, ActorHandler, BinaryOp, EnumVariant, Expr, ExprKind, Literal, MatchArm, Param,
-    ParserState, Pattern, Result, Span, StringPart, StructField, Token, TraitMethod, Type,
-    TypeKind, UnaryOp,
+    bail, ActorHandler, BinaryOp, ClassMethod, Constructor, EnumVariant, Expr, ExprKind, Literal,
+    MatchArm, Param, ParserState, Pattern, Result, SelfType, Span, StringPart, StructField, Token,
+    TraitMethod, Type, TypeKind, UnaryOp,
 };
 pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
     let Some((token, span)) = state.tokens.peek() else {
@@ -137,7 +137,7 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
         // Parentheses tokens - delegated to focused helper (unit, grouping, tuples, lambdas)
         Token::LeftParen => parse_parentheses_token(state, span),
         // Data structure definition tokens - delegated to focused helper
-        Token::Struct | Token::Trait | Token::Impl | Token::Type => {
+        Token::Struct | Token::Class | Token::Trait | Token::Impl | Token::Type => {
             parse_data_structure_token(state, token)
         }
         // Import/module tokens - delegated to focused helper
@@ -440,6 +440,7 @@ fn parse_pub_token(state: &mut ParserState) -> Result<Expr> {
     match &mut expr.kind {
         ExprKind::Function { is_pub, .. } => *is_pub = true,
         ExprKind::Struct { is_pub, .. } => *is_pub = true,
+        ExprKind::Class { is_pub, .. } => *is_pub = true,
         ExprKind::Trait { is_pub, .. } => *is_pub = true,
         ExprKind::Impl { is_pub, .. } => *is_pub = true,
         _ => {} // Other expressions don't have is_pub
@@ -674,6 +675,7 @@ fn parse_module_body(state: &mut ParserState) -> Result<Expr> {
 fn parse_data_structure_token(state: &mut ParserState, token: Token) -> Result<Expr> {
     match token {
         Token::Struct => parse_struct_definition(state),
+        Token::Class => parse_struct_definition(state), // Class transpiles to struct
         Token::Trait => parse_trait_definition(state),
         Token::Impl => parse_impl_block(state),
         Token::Type => parse_type_alias(state),
@@ -2016,20 +2018,86 @@ fn parse_type_alias(state: &mut ParserState) -> Result<Expr> {
 }
 
 fn parse_struct_definition(state: &mut ParserState) -> Result<Expr> {
-    // Parse struct Name<T> { field: Type, ... }
-    let start_span = state.tokens.expect(&Token::Struct)?;
+    // Parse struct/class Name<T> { ... }
+    let (is_class, start_span) = match state
+        .tokens
+        .peek()
+        .map(|(token, span)| (token.clone(), *span))
+    {
+        Some((Token::Struct, span)) => {
+            state.tokens.advance();
+            (false, span)
+        }
+        Some((Token::Class, span)) => {
+            state.tokens.advance();
+            (true, span)
+        }
+        _ => bail!("Expected 'struct' or 'class' keyword"),
+    };
+
     let name = parse_struct_name(state)?;
     let type_params = parse_optional_generics(state)?;
-    let struct_fields = parse_struct_fields(state)?;
-    Ok(Expr::new(
-        ExprKind::Struct {
-            name,
-            type_params,
-            fields: struct_fields,
-            is_pub: false,
-        },
-        start_span,
-    ))
+
+    if is_class {
+        // Parse optional inheritance: ": SuperClass" or ": SuperClass + Trait1 + Trait2"
+        let (superclass, traits) = if matches!(state.tokens.peek(), Some((Token::Colon, _))) {
+            state.tokens.advance(); // consume ':'
+
+            // Parse the superclass name
+            let superclass_name = if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
+                let name = name.clone();
+                state.tokens.advance();
+                Some(name)
+            } else {
+                None
+            };
+
+            // Parse optional trait mixing with "+" operator
+            let mut trait_list = Vec::new();
+            while matches!(state.tokens.peek(), Some((Token::Plus, _))) {
+                state.tokens.advance(); // consume '+'
+                if let Some((Token::Identifier(trait_name), _)) = state.tokens.peek() {
+                    trait_list.push(trait_name.clone());
+                    state.tokens.advance();
+                } else {
+                    bail!("Expected trait name after '+'");
+                }
+            }
+
+            (superclass_name, trait_list)
+        } else {
+            (None, Vec::new())
+        };
+
+        // Parse class body (fields, constructors, methods)
+        let (fields, constructors, methods) = parse_class_body(state)?;
+        Ok(Expr::new(
+            ExprKind::Class {
+                name,
+                type_params,
+                superclass,
+                traits,
+                fields,
+                constructors,
+                methods,
+                derives: Vec::new(), // Will be populated by parse_attributed_expression
+                is_pub: false,
+            },
+            start_span,
+        ))
+    } else {
+        // Parse struct fields only
+        let struct_fields = parse_struct_fields(state)?;
+        Ok(Expr::new(
+            ExprKind::Struct {
+                name,
+                type_params,
+                fields: struct_fields,
+                is_pub: false,
+            },
+            start_span,
+        ))
+    }
 }
 /// Parse struct name identifier - complexity: 4
 fn parse_struct_name(state: &mut ParserState) -> Result<String> {
@@ -2046,8 +2114,8 @@ fn parse_struct_fields(state: &mut ParserState) -> Result<Vec<StructField>> {
     state.tokens.expect(&Token::LeftBrace)?;
     let mut fields = Vec::new();
     while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
-        let (field_name, field_type) = parse_single_struct_field(state)?;
-        fields.push((field_name, field_type));
+        let (field_name, field_type, default_value) = parse_single_struct_field(state)?;
+        fields.push((field_name, field_type, default_value));
         if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
             state.tokens.advance();
         }
@@ -2056,15 +2124,17 @@ fn parse_struct_fields(state: &mut ParserState) -> Result<Vec<StructField>> {
     // Convert to proper Struct variant with StructField
     Ok(fields
         .into_iter()
-        .map(|(name, ty)| StructField {
+        .map(|(name, ty, default_value)| StructField {
             name,
             ty,
             is_pub: false,
+            is_mut: false,
+            default_value,
         })
         .collect())
 }
 /// Parse a single struct field (name: Type) - complexity: 5
-fn parse_single_struct_field(state: &mut ParserState) -> Result<(String, Type)> {
+fn parse_single_struct_field(state: &mut ParserState) -> Result<(String, Type, Option<Expr>)> {
     let field_name = if let Some((Token::Identifier(n), _)) = state.tokens.peek() {
         let name = n.clone();
         state.tokens.advance();
@@ -2074,8 +2144,246 @@ fn parse_single_struct_field(state: &mut ParserState) -> Result<(String, Type)> 
     };
     state.tokens.expect(&Token::Colon)?;
     let field_type = super::utils::parse_type(state)?;
-    Ok((field_name, field_type))
+
+    // Parse optional default value: field: Type = value
+    let default_value = if matches!(state.tokens.peek(), Some((Token::Equal, _))) {
+        state.tokens.advance(); // consume =
+        Some(super::parse_expr_recursive(state)?)
+    } else {
+        None
+    };
+
+    Ok((field_name, field_type, default_value))
 }
+
+/// Parse class body containing fields, constructors, and methods - complexity: <10
+fn parse_class_body(
+    state: &mut ParserState,
+) -> Result<(Vec<StructField>, Vec<Constructor>, Vec<ClassMethod>)> {
+    state.tokens.expect(&Token::LeftBrace)?;
+    let mut fields = Vec::new();
+    let mut constructors = Vec::new();
+    let mut methods = Vec::new();
+
+    while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
+        // Parse visibility modifiers first
+        let (is_pub, is_mut) = parse_visibility_modifiers(state)?;
+
+        // Check for static keyword
+        let is_static = if matches!(state.tokens.peek(), Some((Token::Static, _))) {
+            state.tokens.advance();
+            true
+        } else {
+            false
+        };
+
+        // Check for override keyword
+        let is_override = if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
+            if name == "override" {
+                state.tokens.advance();
+                true
+            } else {
+                false
+            }
+        } else {
+            false
+        };
+
+        match state.tokens.peek() {
+            Some((Token::Identifier(name), _)) if name == "new" => {
+                // Parse constructor: [pub] new(params) { body }
+                if is_static {
+                    bail!("Constructors cannot be static");
+                }
+                if is_override {
+                    bail!("Constructors cannot be override");
+                }
+                let mut constructor = parse_constructor(state)?;
+                constructor.is_pub = is_pub;
+                constructors.push(constructor);
+            }
+            Some((Token::Fun | Token::Fn, _)) => {
+                // Parse method: [pub] [static] [override] fun method_name(params) { body }
+                let mut method = parse_class_method(state)?;
+                method.is_pub = is_pub;
+                method.is_static = is_static;
+                method.is_override = is_override;
+                if is_static {
+                    method.self_type = SelfType::None;
+                }
+                if is_static && is_override {
+                    bail!("Static methods cannot be override");
+                }
+                methods.push(method);
+            }
+            Some((Token::Identifier(_), _)) if !is_static => {
+                // Parse field: [pub] [mut] field_name: Type [= default_value]
+                let (field_name, field_type, default_value) = parse_single_struct_field(state)?;
+                fields.push(StructField {
+                    name: field_name,
+                    ty: field_type,
+                    is_pub,
+                    is_mut,
+                    default_value,
+                });
+            }
+            _ => bail!("Expected field, constructor, or method in class body"),
+        }
+
+        // Handle optional comma/semicolon separators
+        if matches!(
+            state.tokens.peek(),
+            Some((Token::Comma | Token::Semicolon, _))
+        ) {
+            state.tokens.advance();
+        }
+    }
+
+    state.tokens.expect(&Token::RightBrace)?;
+    Ok((fields, constructors, methods))
+}
+
+/// Parse constructor: new [name](params) { body } - complexity: <10
+/// Supports named constructors like: new square(size)
+fn parse_constructor(state: &mut ParserState) -> Result<Constructor> {
+    // Expect 'new' keyword
+    if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
+        if name == "new" {
+            state.tokens.advance();
+        } else {
+            bail!("Expected 'new' keyword");
+        }
+    } else {
+        bail!("Expected 'new' keyword");
+    }
+
+    // Check for optional constructor name (for named constructors)
+    let constructor_name = if matches!(state.tokens.peek(), Some((Token::Identifier(_), _))) {
+        // Peek ahead to see if next is identifier followed by (
+        let saved_pos = state.tokens.position();
+        if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
+            let name = name.clone();
+            state.tokens.advance();
+            // Check if followed by (
+            if matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
+                // This is a named constructor
+                Some(name)
+            } else {
+                // Not a named constructor, restore position
+                state.tokens.set_position(saved_pos);
+                None
+            }
+        } else {
+            None
+        }
+    } else {
+        None
+    };
+
+    // Parse parameter list (params)
+    let params = super::utils::parse_params(state)?;
+
+    // Parse optional return type (usually omitted for constructors)
+    let return_type = if matches!(state.tokens.peek(), Some((Token::Arrow, _))) {
+        state.tokens.advance();
+        Some(super::utils::parse_type(state)?)
+    } else {
+        None
+    };
+
+    // Parse body { ... }
+    let body = Box::new(super::parse_expr_recursive(state)?);
+
+    Ok(Constructor {
+        name: constructor_name,
+        params,
+        return_type,
+        body,
+        is_pub: false, // Will be set by class body parsing
+    })
+}
+
+/// Parse visibility modifiers (pub, mut) - complexity: <10
+/// Handles: pub, mut, pub mut (both orders)
+fn parse_visibility_modifiers(state: &mut ParserState) -> Result<(bool, bool)> {
+    let mut is_pub = false;
+    let mut is_mut = false;
+
+    // First pass: check for pub
+    if matches!(state.tokens.peek(), Some((Token::Pub, _))) {
+        state.tokens.advance();
+        is_pub = true;
+    }
+
+    // Second pass: check for mut (after pub if present)
+    if matches!(state.tokens.peek(), Some((Token::Mut, _))) {
+        state.tokens.advance();
+        is_mut = true;
+    }
+
+    Ok((is_pub, is_mut))
+}
+
+/// Parse class method: fn `method_name(self_param`, `other_params`) -> `return_type` { body } - complexity: <10
+fn parse_class_method(state: &mut ParserState) -> Result<ClassMethod> {
+    // Expect 'fun' or 'fn' keyword
+    match state.tokens.peek() {
+        Some((Token::Fun, _)) => {
+            state.tokens.advance();
+        }
+        Some((Token::Fn, _)) => {
+            state.tokens.advance();
+        }
+        _ => bail!("Expected 'fun' or 'fn' keyword for method definition"),
+    }
+
+    // Parse method name
+    let method_name = if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
+        let name = name.clone();
+        state.tokens.advance();
+        name
+    } else {
+        bail!("Expected method name after 'fn'");
+    };
+
+    // Parse parameter list starting with self parameter
+    let params = super::utils::parse_params(state)?;
+
+    // Determine self type from first parameter
+    let self_type = if !params.is_empty() && params[0].name() == "self" {
+        use crate::frontend::ast::TypeKind;
+        match &params[0].ty.kind {
+            TypeKind::Reference { is_mut: true, .. } => SelfType::MutBorrowed,
+            TypeKind::Reference { is_mut: false, .. } => SelfType::Borrowed,
+            _ => SelfType::Owned,
+        }
+    } else {
+        SelfType::None // No self parameter = static method
+    };
+
+    // Parse optional return type
+    let return_type = if matches!(state.tokens.peek(), Some((Token::Arrow, _))) {
+        state.tokens.advance();
+        Some(super::utils::parse_type(state)?)
+    } else {
+        None
+    };
+
+    // Parse method body
+    let body = Box::new(super::parse_expr_recursive(state)?);
+
+    Ok(ClassMethod {
+        name: method_name,
+        params,
+        return_type,
+        body,
+        is_pub: false, // Will be set by class body parsing
+        is_static: matches!(self_type, SelfType::None),
+        is_override: false, // Will be set by class body parsing
+        self_type,
+    })
+}
+
 fn parse_trait_definition(state: &mut ParserState) -> Result<Expr> {
     // Parse trait Name { fun method(self) -> Type ... }
     let start_span = state.tokens.expect(&Token::Trait)?;
@@ -2820,6 +3128,8 @@ fn create_actor_expression(
             name,
             ty,
             is_pub: false,
+            is_mut: false,
+            default_value: None,
         })
         .collect();
     // For now, create simple handlers

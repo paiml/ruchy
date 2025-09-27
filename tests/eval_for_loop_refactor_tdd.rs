@@ -1,7 +1,7 @@
-//! EXTREME TDD: eval_for_loop Complexity Refactoring
-//! Target: Reduce eval_for_loop cognitive complexity from 42 → ≤10
+//! EXTREME TDD: `eval_for_loop` Complexity Refactoring
+//! Target: Reduce `eval_for_loop` cognitive complexity from 42 → ≤10
 //!
-//! This test-driven refactoring decomposes eval_for_loop into focused helper functions,
+//! This test-driven refactoring decomposes `eval_for_loop` into focused helper functions,
 //! each with single responsibility and complexity ≤10.
 
 use ruchy::frontend::ast::{Expr, ExprKind, Literal, Span};
@@ -352,7 +352,7 @@ mod eval_for_loop_refactor_tests {
             let array = Value::Array(
                 values
                     .iter()
-                    .map(|&i| Value::Integer(i as i64))
+                    .map(|&i| Value::Integer(i64::from(i)))
                     .collect::<Vec<_>>()
                     .into(),
             );
@@ -373,8 +373,8 @@ mod eval_for_loop_refactor_tests {
         #[quickcheck]
         fn test_range_iteration_correctness(start: i8, end: i8) -> TestResult {
             // Limit range to prevent huge iterations
-            let start = start as i64;
-            let end = end as i64;
+            let start = i64::from(start);
+            let end = i64::from(end);
 
             if (end - start).abs() > 100 {
                 return TestResult::discard();

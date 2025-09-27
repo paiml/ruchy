@@ -4726,13 +4726,12 @@ mod tests {
         let init_result = runtime.execute_cell(&cell_id);
         assert!(
             init_result.is_ok(),
-            "Initial execution failed: {:?}",
-            init_result
+            "Initial execution failed: {init_result:?}"
         );
 
         // Test execution with session - now x should be defined
         let result = runtime.execute_cell_with_session(&cell_id, "x + 1");
-        assert!(result.is_ok(), "Execute with session failed: {:?}", result);
+        assert!(result.is_ok(), "Execute with session failed: {result:?}");
 
         let response = result.unwrap();
         assert!(!response.value.is_empty() || response.error.is_some());
@@ -4928,8 +4927,7 @@ mod tests {
         let result = runtime.import_collaborative_state(&state_json);
         assert!(
             result.is_ok(),
-            "Import collaborative state failed: {:?}",
-            result
+            "Import collaborative state failed: {result:?}"
         );
     }
 
@@ -4962,8 +4960,7 @@ mod tests {
         let result = runtime.handle_websocket_message(&message);
         assert!(
             result.is_ok(),
-            "WebSocket message handling failed: {:?}",
-            result
+            "WebSocket message handling failed: {result:?}"
         );
     }
 
@@ -5022,8 +5019,7 @@ mod tests {
         let result = runtime.execute_cell_with_session("non-existent-cell", "42");
         assert!(
             result.is_ok(),
-            "Should handle non-existent cell: {:?}",
-            result
+            "Should handle non-existent cell: {result:?}"
         ); // Should handle gracefully
 
         let response = result.unwrap();

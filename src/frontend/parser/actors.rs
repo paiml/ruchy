@@ -59,6 +59,8 @@ fn parse_state_block(state: &mut ParserState, state_fields: &mut Vec<StructField
             name: field_name,
             ty,
             is_pub: false,
+            is_mut: false,
+            default_value: None,
         });
         consume_optional_separator(state);
     }
@@ -131,6 +133,8 @@ fn parse_inline_state_field(
         name: field_name,
         ty,
         is_pub: false,
+        is_mut: false,
+        default_value: None,
     });
     consume_optional_separator(state);
     Ok(())
@@ -227,6 +231,8 @@ mod tests {
                 span: Span::new(0, 3),
             },
             is_pub: false,
+            is_mut: false,
+            default_value: None,
         };
 
         assert_eq!(field.name, "test_field");

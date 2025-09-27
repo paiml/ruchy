@@ -30,7 +30,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Run the acceptance tests
     let test_output = Command::new("cargo")
-        .args(&[
+        .args([
             "test",
             "--manifest-path",
             "ruchy-notebook/Cargo.toml",

@@ -112,7 +112,7 @@ fn test_nested_comprehension_with_expression() -> Result<()> {
     let output = transpiler.transpile(&expr)?.to_string();
 
     // Should produce cartesian product with multiplication
-    assert!(output.contains("*"));
+    assert!(output.contains('*'));
     Ok(())
 }
 
@@ -139,6 +139,6 @@ fn test_nested_comprehension_with_tuple_unpacking() -> Result<()> {
     let output = transpiler.transpile(&expr)?.to_string();
 
     // Should handle tuple unpacking in nested loop
-    assert!(output.contains("("));
+    assert!(output.contains('('));
     Ok(())
 }

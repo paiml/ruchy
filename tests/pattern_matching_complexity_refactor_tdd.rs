@@ -1,7 +1,7 @@
 //! EXTREME TDD: Pattern Matching Complexity Refactoring
-//! Target: Reduce pattern_matches_simple complexity from 12 → ≤10
+//! Target: Reduce `pattern_matches_simple` complexity from 12 → ≤10
 //!
-//! This test-driven refactoring decomposes pattern_matches_simple into focused helper functions,
+//! This test-driven refactoring decomposes `pattern_matches_simple` into focused helper functions,
 //! each with single responsibility and complexity ≤10.
 
 use ruchy::frontend::ast::{Literal, Pattern};

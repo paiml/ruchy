@@ -1,0 +1,10 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc 1737eb03c9bb5e259229629349c574678a60f1db24cfb26c3944f2ad7b8b5ee7 # shrinks to class_name = "A", derive_combo = "Debug"
+cc 7f3fc9b5145b15b127293797de5ea2cd56d85f8ad46a84ec22b14d40eb4ce237 # shrinks to class_name = "A", field_count = 1
+cc 9a7bf7b5f67c9444a0215d11d822209da980ac3144cb36f5e379e0e124b68219 # shrinks to class_name = "A", field_name = "a", derives = ["Debug"]
+cc fd6efc3cfc158fab6bf73540e073289a0b7a6ab910f7ca07b4084fee58386ba4 # shrinks to class_name = "A", field_name = "a", default_value = 1, derives = ["Debug"]

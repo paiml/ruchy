@@ -4,7 +4,9 @@
 #![allow(clippy::collapsible_else_if)]
 #![allow(clippy::only_used_in_recursion)]
 use super::*;
-use crate::frontend::ast::{EnumVariant, ImplMethod, StructField, TraitMethod, Type};
+use crate::frontend::ast::{
+    ClassMethod, Constructor, EnumVariant, ImplMethod, StructField, TraitMethod, Type,
+};
 use anyhow::{bail, Result};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
@@ -185,6 +187,193 @@ impl Transpiler {
             })
         }
     }
+
+    /// Transpiles class definitions to struct + impl blocks following Ruchy class sugar specification
+    pub fn transpile_class(
+        &self,
+        name: &str,
+        type_params: &[String],
+        _traits: &[String],
+        fields: &[StructField],
+        constructors: &[Constructor],
+        methods: &[ClassMethod],
+        derives: &[String],
+        is_pub: bool,
+    ) -> Result<TokenStream> {
+        // 1. Generate the struct definition
+        let struct_tokens = self.transpile_struct(name, type_params, fields, is_pub)?;
+
+        // 2. Generate derive attributes from derives
+        let derive_tokens = if derives.is_empty() {
+            quote! {}
+        } else {
+            let derive_idents: Vec<_> = derives.iter().map(|d| format_ident!("{}", d)).collect();
+            quote! { #[derive(#(#derive_idents),*)] }
+        };
+
+        // 3. Generate impl block with constructors and methods
+        let struct_name = format_ident!("{}", name);
+        let type_param_tokens: Vec<_> =
+            type_params.iter().map(|p| format_ident!("{}", p)).collect();
+
+        // Convert constructors to methods (primary is "new", named constructors keep their names)
+        let constructor_tokens: Result<Vec<_>> = constructors
+            .iter()
+            .map(|ctor| -> Result<TokenStream> {
+                let params = self.transpile_params(&ctor.params)?;
+                let body = self.transpile_expr(&ctor.body)?;
+                let visibility = if ctor.is_pub {
+                    quote! { pub }
+                } else {
+                    quote! {}
+                };
+
+                // Use constructor name if provided, otherwise default to "new"
+                let method_name = match &ctor.name {
+                    Some(name) => format_ident!("{}", name),
+                    None => format_ident!("new"),
+                };
+
+                // Use custom return type if specified, otherwise default to Self
+                let return_type = if let Some(ref ret_ty) = ctor.return_type {
+                    let ret_tokens = self.transpile_type(ret_ty)?;
+                    quote! { -> #ret_tokens }
+                } else {
+                    quote! { -> Self }
+                };
+
+                Ok(quote! {
+                    #visibility fn #method_name(#(#params),*) #return_type {
+                        #body
+                    }
+                })
+            })
+            .collect();
+        let constructor_tokens = constructor_tokens?;
+
+        // Convert methods
+        let method_tokens: Result<Vec<_>> = methods
+            .iter()
+            .map(|method| -> Result<TokenStream> {
+                let method_name = format_ident!("{}", method.name);
+                let params = self.transpile_params(&method.params)?;
+                let return_type = if let Some(ref ret_ty) = method.return_type {
+                    let ret_tokens = self.transpile_type(ret_ty)?;
+                    quote! { -> #ret_tokens }
+                } else {
+                    quote! {}
+                };
+                let body = self.transpile_expr(&method.body)?;
+                let visibility = if method.is_pub {
+                    quote! { pub }
+                } else {
+                    quote! {}
+                };
+
+                Ok(quote! {
+                    #visibility fn #method_name(#(#params),*) #return_type {
+                        #body
+                    }
+                })
+            })
+            .collect();
+        let method_tokens = method_tokens?;
+
+        // 4. Generate impl block
+        let impl_tokens = if type_params.is_empty() {
+            quote! {
+                impl #struct_name {
+                    #(#constructor_tokens)*
+                    #(#method_tokens)*
+                }
+            }
+        } else {
+            quote! {
+                impl<#(#type_param_tokens),*> #struct_name<#(#type_param_tokens),*> {
+                    #(#constructor_tokens)*
+                    #(#method_tokens)*
+                }
+            }
+        };
+
+        // 5. Generate Default impl if there are field defaults
+        let has_defaults = fields.iter().any(|f| f.default_value.is_some());
+        let default_impl = if has_defaults {
+            let default_field_tokens: Result<Vec<_>> = fields
+                .iter()
+                .map(|field| -> Result<TokenStream> {
+                    let field_name = format_ident!("{}", field.name);
+                    if let Some(ref default_expr) = field.default_value {
+                        let default_value = self.transpile_expr(default_expr)?;
+                        Ok(quote! { #field_name: #default_value })
+                    } else {
+                        Ok(quote! { #field_name: Default::default() })
+                    }
+                })
+                .collect();
+            let default_field_tokens = default_field_tokens?;
+
+            if type_params.is_empty() {
+                quote! {
+                    impl Default for #struct_name {
+                        fn default() -> Self {
+                            Self {
+                                #(#default_field_tokens,)*
+                            }
+                        }
+                    }
+                }
+            } else {
+                quote! {
+                    impl<#(#type_param_tokens),*> Default for #struct_name<#(#type_param_tokens),*> {
+                        fn default() -> Self {
+                            Self {
+                                #(#default_field_tokens,)*
+                            }
+                        }
+                    }
+                }
+            }
+        } else {
+            quote! {}
+        };
+
+        // Combine everything
+        Ok(quote! {
+            #derive_tokens
+            #struct_tokens
+
+            #impl_tokens
+
+            #default_impl
+        })
+    }
+
+    /// Simple parameter transpilation for class methods (no body analysis needed)
+    fn transpile_params(&self, params: &[crate::frontend::ast::Param]) -> Result<Vec<TokenStream>> {
+        params
+            .iter()
+            .map(|param| -> Result<TokenStream> {
+                let param_name = param.name();
+
+                // Handle self parameters specially
+                if param_name == "self" {
+                    use crate::frontend::ast::TypeKind;
+                    match &param.ty.kind {
+                        TypeKind::Reference { is_mut: true, .. } => Ok(quote! { &mut self }),
+                        TypeKind::Reference { is_mut: false, .. } => Ok(quote! { &self }),
+                        _ => Ok(quote! { self }),
+                    }
+                } else {
+                    // Regular parameter
+                    let param_ident = format_ident!("{}", param_name);
+                    let type_tokens = self.transpile_type(&param.ty)?;
+                    Ok(quote! { #param_ident: #type_tokens })
+                }
+            })
+            .collect()
+    }
+
     /// Transpiles trait definitions
     pub fn transpile_enum(
         &self,

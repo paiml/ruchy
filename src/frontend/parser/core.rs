@@ -54,6 +54,16 @@ impl<'a> Parser<'a> {
         while self.state.tokens.peek().is_some() {
             let attributes = utils::parse_attributes(&mut self.state)?;
             let mut expr = super::parse_expr_recursive(&mut self.state)?;
+
+            // Extract derive attributes for classes
+            if let ExprKind::Class { derives, .. } = &mut expr.kind {
+                for attr in &attributes {
+                    if attr.name == "derive" {
+                        derives.extend(attr.args.clone());
+                    }
+                }
+            }
+
             // Append parsed attributes to existing ones (don't overwrite modifier attributes)
             expr.attributes.extend(attributes);
             exprs.push(expr);

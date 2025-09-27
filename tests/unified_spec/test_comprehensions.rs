@@ -166,7 +166,7 @@ mod test_comprehensions {
         let output = result.unwrap();
         assert!(output.contains("HashMap") || output.contains("collect"));
         // Check for filter with or without spaces
-        let normalized_output = output.replace(" ", "");
+        let normalized_output = output.replace(' ', "");
         assert!(normalized_output.contains("filter") && normalized_output.contains("word.len()>5"));
     }
 
