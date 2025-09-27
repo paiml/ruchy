@@ -67,7 +67,7 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
             ))
         }
         // Identifier tokens - delegated to focused helper
-        Token::Identifier(_) | Token::Underscore | Token::Self_ => {
+        Token::Identifier(_) | Token::Underscore | Token::Self_ | Token::Super => {
             parse_identifier_token(state, &token, span)
         }
         // Unary operator tokens - inlined for performance
@@ -277,6 +277,10 @@ fn parse_identifier_token(state: &mut ParserState, token: &Token, span: Span) ->
         Token::Self_ => {
             state.tokens.advance();
             Ok(Expr::new(ExprKind::Identifier("self".to_string()), span))
+        }
+        Token::Super => {
+            state.tokens.advance();
+            Ok(Expr::new(ExprKind::Identifier("super".to_string()), span))
         }
         _ => bail!("Expected identifier token, got: {:?}", token),
     }
@@ -2533,7 +2537,9 @@ fn parse_impl_methods(state: &mut ParserState) -> Result<Vec<crate::frontend::as
         }
 
         // Parse method
-        if matches!(state.tokens.peek(), Some((Token::Fun, _))) {
+        if matches!(state.tokens.peek(), Some((Token::Fun, _)))
+            || matches!(state.tokens.peek(), Some((Token::Fn, _)))
+        {
             let method = parse_impl_method(state)?;
             methods.push(method);
         } else {
@@ -2547,7 +2553,12 @@ fn parse_impl_methods(state: &mut ParserState) -> Result<Vec<crate::frontend::as
 
 /// Parse a single impl method (complexity: 8)
 fn parse_impl_method(state: &mut ParserState) -> Result<crate::frontend::ast::ImplMethod> {
-    state.tokens.expect(&Token::Fun)?;
+    // Accept both 'fun' and 'fn' for method definitions
+    if matches!(state.tokens.peek(), Some((Token::Fun, _))) {
+        state.tokens.expect(&Token::Fun)?;
+    } else {
+        state.tokens.expect(&Token::Fn)?;
+    }
 
     // Parse method name
     let name = parse_required_identifier(state, "method name")?;

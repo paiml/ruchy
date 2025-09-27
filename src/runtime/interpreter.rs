@@ -954,6 +954,12 @@ impl Interpreter {
                 // In a full Option implementation, we'd have a Value::Option variant
                 self.eval_expr(value)
             }
+            ExprKind::Impl {
+                trait_name: _,
+                for_type,
+                methods,
+                ..
+            } => self.eval_impl_block(for_type, methods),
             _ => Err(InterpreterError::RuntimeError(format!(
                 "Expression type not yet implemented: {expr_kind:?}"
             ))),
@@ -2182,7 +2188,7 @@ impl Interpreter {
                 match &object.kind {
                     ExprKind::Identifier(obj_name) => {
                         // Get the object
-                        let obj = self.lookup_variable(&obj_name)?;
+                        let obj = self.lookup_variable(obj_name)?;
 
                         // Update the field in a mutable copy
                         match obj {
@@ -2192,7 +2198,7 @@ impl Interpreter {
                                 let new_obj = Value::Object(Rc::new(new_map));
 
                                 // Update the variable with the modified object
-                                self.set_variable(&obj_name, new_obj);
+                                self.set_variable(obj_name, new_obj);
                                 Ok(val)
                             }
                             _ => Err(InterpreterError::RuntimeError(format!(
@@ -2304,6 +2310,12 @@ impl Interpreter {
                 // Check if this is a class instance
                 if let Some(Value::String(class_name)) = obj.get("__class") {
                     self.eval_class_instance_method(obj, class_name.as_ref(), method, arg_values)
+                }
+                // Check if this is a struct instance with impl methods
+                else if let Some(Value::String(struct_name)) =
+                    obj.get("__struct_type").or_else(|| obj.get("__struct"))
+                {
+                    self.eval_struct_instance_method(obj, struct_name.as_ref(), method, arg_values)
                 } else {
                     self.eval_object_method(obj, method, arg_values, args_empty)
                 }
@@ -2337,6 +2349,72 @@ impl Interpreter {
         args_empty: bool,
     ) -> Result<Value, InterpreterError> {
         eval_method::eval_generic_method(receiver, method, args_empty)
+    }
+
+    fn eval_struct_instance_method(
+        &mut self,
+        instance: &std::collections::HashMap<String, Value>,
+        struct_name: &str,
+        method: &str,
+        arg_values: &[Value],
+    ) -> Result<Value, InterpreterError> {
+        // Look up impl method with qualified name
+        let qualified_method_name = format!("{}::{}", struct_name, method);
+
+        if let Ok(method_closure) = self.lookup_variable(&qualified_method_name) {
+            if let Value::Closure { params, body, env } = method_closure {
+                // Check argument count (including self)
+                let expected_args = params.len();
+                let provided_args = arg_values.len() + 1; // +1 for self
+
+                if provided_args != expected_args {
+                    return Err(InterpreterError::RuntimeError(format!(
+                        "Method {} expects {} arguments, got {}",
+                        method,
+                        expected_args - 1, // -1 because self is implicit
+                        arg_values.len()
+                    )));
+                }
+
+                // Create new environment with method's captured environment as base
+                let mut new_env = (*env).clone();
+
+                // Bind self parameter (first parameter)
+                if let Some(self_param) = params.first() {
+                    new_env.insert(
+                        self_param.clone(),
+                        Value::Object(std::rc::Rc::new(instance.clone())),
+                    );
+                }
+
+                // Bind other parameters
+                for (i, arg_value) in arg_values.iter().enumerate() {
+                    if let Some(param_name) = params.get(i + 1) {
+                        // +1 to skip self
+                        new_env.insert(param_name.clone(), arg_value.clone());
+                    }
+                }
+
+                // Execute method body with new environment
+                self.env_stack.push(new_env);
+                let result = self.eval_expr(&body);
+                self.env_stack.pop();
+
+                result
+            } else {
+                Err(InterpreterError::RuntimeError(format!(
+                    "Found {} but it's not a method closure",
+                    qualified_method_name
+                )))
+            }
+        } else {
+            // Fall back to generic method handling
+            self.eval_generic_method(
+                &Value::Object(std::rc::Rc::new(instance.clone())),
+                method,
+                arg_values.is_empty(),
+            )
+        }
     }
 
     fn eval_object_method(
@@ -2681,6 +2759,24 @@ impl Interpreter {
 
             constructor_info.insert(ctor_name, ctor_closure);
         }
+
+        // If no constructors defined, create a default "new" constructor
+        if constructor_info.is_empty() {
+            // Create a default constructor that initializes fields with defaults
+            let default_body = Expr::new(
+                ExprKind::Block(Vec::new()), // Empty block - fields get initialized with defaults
+                crate::frontend::ast::Span::new(0, 0),
+            );
+
+            let default_constructor = Value::Closure {
+                params: Vec::new(), // No parameters
+                body: Rc::new(default_body),
+                env: Rc::new(HashMap::new()),
+            };
+
+            constructor_info.insert("new".to_string(), default_constructor);
+        }
+
         class_info.insert(
             "__constructors".to_string(),
             Value::Object(Rc::new(constructor_info)),
@@ -2724,6 +2820,48 @@ impl Interpreter {
         self.set_variable(name, class_value.clone());
 
         Ok(class_value)
+    }
+
+    fn eval_impl_block(
+        &mut self,
+        for_type: &str,
+        methods: &[crate::frontend::ast::ImplMethod],
+    ) -> Result<Value, InterpreterError> {
+        use std::collections::HashMap;
+        use std::rc::Rc;
+
+        // For struct impl blocks, we need to register methods that can be called on instances
+        // We'll store them in a special registry keyed by type name
+        let mut impl_methods = HashMap::new();
+
+        for method in methods {
+            // Extract parameter names from Param structs
+            let param_names: Vec<String> = method
+                .params
+                .iter()
+                .map(|p| match &p.pattern {
+                    crate::frontend::ast::Pattern::Identifier(name) => name.clone(),
+                    _ => "_".to_string(), // For other patterns, use placeholder
+                })
+                .collect();
+
+            // Convert ImplMethod to a Value::Closure
+            let closure = Value::Closure {
+                params: param_names,
+                body: Rc::new(*method.body.clone()),
+                env: Rc::new(HashMap::new()),
+            };
+            impl_methods.insert(method.name.clone(), closure);
+        }
+
+        // Store the impl methods in a global registry
+        // For now, we'll just add them to the environment with qualified names
+        for (method_name, method_closure) in impl_methods {
+            let qualified_name = format!("{}::{}", for_type, method_name);
+            self.set_variable(&qualified_name, method_closure);
+        }
+
+        Ok(Value::Nil) // impl blocks don't return values
     }
 
     fn instantiate_class_with_constructor(
