@@ -1919,6 +1919,46 @@ Quality Metrics:
 3. Cell execution: <10ms
 4. Memory: <100MB for typical notebook
 
+## 🚀 **Current Sprint: Language Features from Ignored Tests**
+
+### Sprint 90: DataFrame and Macro Implementation
+**Goal**: Implement features currently marked as ignored in test suite
+**Duration**: 1 week
+**Status**: 🔵 Planning
+**Methodology**: Extreme TDD with PMAT quality gates
+
+#### Phase 1 - DataFrame Support (Days 1-2)
+- [ ] **DF-001**: Implement `df!` macro parser support
+- [ ] **DF-002**: Parse empty dataframe: `df![]`
+- [ ] **DF-003**: Parse dataframe with columns: `df![[1, 4], [2, 5], [3, 6]]`
+- [ ] **DF-004**: Parse dataframe with rows: `df![[1, 2, 3], [4, 5, 6]]`
+- [ ] **DF-005**: Transpile to polars DataFrame operations
+- **Tests**: 5 ignored tests in `frontend::parser::collections`
+
+#### Phase 2 - Macro Call Support (Day 3)
+- [ ] **MACRO-001**: Parse macro calls: `println!("hello")`
+- [ ] **MACRO-002**: Distinguish macros from functions
+- [ ] **MACRO-003**: Support macro arguments
+- [ ] **MACRO-004**: Transpile to Rust macro calls
+- **Tests**: 1 ignored test in `frontend::parser::tests`
+
+#### Phase 3 - List Comprehension (Days 4-5)
+- [ ] **LC-001**: Parse list comprehensions: `[x for x in range(10)]`
+- [ ] **LC-002**: Support filters: `[x for x in range(10) if x % 2 == 0]`
+- [ ] **LC-003**: Transpile to Rust iterators
+- **Tests**: From `test_complex_programs` ignored test
+
+#### Phase 4 - Type Inference (Day 6)
+- [ ] **INFER-001**: DataFrame type inference
+- [ ] **INFER-002**: DataFrame operation type checking
+- **Tests**: 2 ignored tests in `middleend::infer`
+
+#### Success Criteria
+- All 19 ignored tests passing
+- Zero new complexity violations (≤10)
+- TDG grade maintained at A-
+- Full Toyota Way compliance
+
 ## 🔮 **Language Features Roadmap**
 
 ### Syntax Features Currently Ignored (From Test Coverage Fixes - 2025-01-21)
