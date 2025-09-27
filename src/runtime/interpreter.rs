@@ -1200,28 +1200,29 @@ impl Interpreter {
 
     /// Look up a variable in the environment (searches from innermost to outermost)
     fn lookup_variable(&self, name: &str) -> Result<Value, InterpreterError> {
-        // Check if this is a qualified name (e.g., "Point::new")
+        // Check if this is a qualified name (e.g., "Point::new" or "Rectangle::square")
         if name.contains("::") {
             let parts: Vec<&str> = name.split("::").collect();
-            if parts.len() == 2 && parts[1] == "new" {
-                // This is a constructor call pattern
-                let class_or_struct_name = parts[0];
+            if parts.len() == 2 {
+                let type_name = parts[0];
+                let method_name = parts[1];
 
                 // Look up the class or struct
                 for env in self.env_stack.iter().rev() {
-                    if let Some(value) = env.get(class_or_struct_name) {
+                    if let Some(value) = env.get(type_name) {
                         if let Value::Object(ref info) = value {
                             // Check if it's a class or struct
                             if let Some(Value::String(ref type_str)) = info.get("__type") {
                                 if type_str.as_ref() == "Class" {
+                                    // Return marker for class constructor/method
                                     return Ok(Value::from_string(format!(
-                                        "__class_constructor__:{}",
-                                        class_or_struct_name
+                                        "__class_constructor__:{}:{}",
+                                        type_name, method_name
                                     )));
-                                } else if type_str.as_ref() == "Struct" {
+                                } else if type_str.as_ref() == "Struct" && method_name == "new" {
                                     return Ok(Value::from_string(format!(
                                         "__struct_constructor__:{}",
-                                        class_or_struct_name
+                                        type_name
                                     )));
                                 }
                             }
@@ -1291,9 +1292,20 @@ impl Interpreter {
     fn call_function(&mut self, func: Value, args: &[Value]) -> Result<Value, InterpreterError> {
         match func {
             Value::String(ref s) if s.starts_with("__class_constructor__:") => {
-                // Extract class name from the marker
-                let class_name = s.strip_prefix("__class_constructor__:").unwrap();
-                self.instantiate_class(class_name, args)
+                // Extract class name and constructor name from the marker
+                let parts: Vec<&str> = s.strip_prefix("__class_constructor__:")
+                    .unwrap()
+                    .split(':')
+                    .collect();
+
+                if parts.len() == 2 {
+                    let class_name = parts[0];
+                    let constructor_name = parts[1];
+                    self.instantiate_class_with_constructor(class_name, constructor_name, args)
+                } else {
+                    // Legacy format for backward compatibility
+                    self.instantiate_class_with_constructor(parts[0], "new", args)
+                }
             }
             Value::String(ref s) if s.starts_with("__struct_constructor__:") => {
                 // Extract struct name from the marker
@@ -2593,9 +2605,10 @@ impl Interpreter {
         Ok(class_value)
     }
 
-    fn instantiate_class(
+    fn instantiate_class_with_constructor(
         &mut self,
         class_name: &str,
+        constructor_name: &str,
         args: &[Value],
     ) -> Result<Value, InterpreterError> {
         // Look up the class definition
@@ -2636,8 +2649,8 @@ impl Interpreter {
 
             // Execute the constructor if present
             if let Some(Value::Object(ref constructors)) = class_info.get("__constructors") {
-                // Look for the "new" constructor
-                if let Some(constructor) = constructors.get("new") {
+                // Look for the specified constructor
+                if let Some(constructor) = constructors.get(constructor_name) {
                     if let Value::Closure { params, .. } = constructor {
                         // Check argument count
                         if args.len() != params.len() {
