@@ -56,7 +56,11 @@ impl Transpiler {
                 // Transpile literal to tokens
                 use quote::quote;
                 match lit {
-                    crate::frontend::ast::Literal::Integer(i) => Ok(quote! { #i }),
+                    crate::frontend::ast::Literal::Integer(_) => {
+                        // Use Transpiler::transpile_literal to ensure consistent integer handling
+                        let tokens = Self::transpile_literal(lit);
+                        Ok(tokens)
+                    }
                     crate::frontend::ast::Literal::Float(f) => Ok(quote! { #f }),
                     crate::frontend::ast::Literal::String(s) => Ok(quote! { #s }),
                     crate::frontend::ast::Literal::Bool(b) => Ok(quote! { #b }),
