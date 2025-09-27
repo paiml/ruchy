@@ -573,6 +573,7 @@ mod runtime_errors {
     }
 
     #[test]
+    #[allow(clippy::string_add)]
     fn test_stack_overflow_nested_arrays() {
         let mut interp = Interpreter::new();
         let nested = (0..10000).map(|_| "[").collect::<String>()

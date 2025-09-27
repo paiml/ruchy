@@ -19,7 +19,6 @@ fn test_single_field_with_integer_default() {
         .transpile(&ast)
         .expect("Should transpile successfully");
     let result_str = result.to_string();
-    let result_str = result.to_string();
 
     // Should generate struct with field
     assert!(result_str.contains("struct Point"));
