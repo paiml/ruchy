@@ -336,8 +336,8 @@ proptest! {
     #[test]
     fn prop_set_with_range(start: i32, end: i32) {
         let (start, end) = if start <= end { (start, end) } else { (end, start) };
-        let start = start.max(-100).min(100);
-        let end = end.max(-100).min(100);
+        let start = start.clamp(-100, 100);
+        let end = end.clamp(-100, 100);
 
         // Try to create a set from range elements
         let elements = (start..=end.min(start + 10))

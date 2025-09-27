@@ -115,8 +115,7 @@ fn test_eval_function_definition() {
     if result.is_ok() {
         // Call function
         let result = repl.eval("double(21)");
-        if result.is_ok() {
-            let output = result.unwrap();
+        if let Ok(output) = result {
             assert!(
                 output.contains("42"),
                 "Function call should return correct result"

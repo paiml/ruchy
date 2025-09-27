@@ -16,7 +16,7 @@ prop_compose! {
             0 => var,
             1 => format!("{var}.len()"),
             2 => format!("{var} * 2"),
-            _ => var,
+            _ => unreachable!("choice is 0..3"),
         }
     }
 }
