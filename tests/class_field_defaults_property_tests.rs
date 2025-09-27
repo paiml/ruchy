@@ -13,7 +13,7 @@ proptest! {
         class_name in "[A-Z][a-zA-Z0-9]{0,10}",
         field_name in "[a-z][a-zA-Z0-9]{0,10}",
         field_type in prop::sample::select(vec!["i32", "f64", "String", "bool"]),
-        default_value in prop::sample::select(vec!["42", "3.14", "\"test\"", "true"])
+        _default_value in prop::sample::select(vec!["42", "3.14", "\"test\"", "true"])
     ) {
         let default = match field_type {
             "i32" => "42",
@@ -105,7 +105,7 @@ proptest! {
         }
 
         let field_str = fields.join(",\n            ");
-        let constructor_str = constructor_fields.join(", ");
+        let _constructor_str = constructor_fields.join(", ");
 
         let code = format!(
             r"

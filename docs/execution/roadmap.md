@@ -46,6 +46,7 @@
 **v3.46.0 Completed**: Full actor system with state management, message handlers
 **v3.47.0 Completed**: Coverage boost to 75.88%, unified spec 100% passing
 **v3.48.0 Completed**: EXTR-004 Complete class/struct implementation with all OOP features
+**v3.49.0 Completed**: 🎭 Actor interpreter support - BUG_REPORT.md resolved with EXTREME TDD
 **Outstanding**: Message passing syntax (`!`, `?`), supervision trees, distributed actors
 **Next Focus**: EXTR-001 Set literals, EXTR-002 List comprehensions, or EXTR-003 Try/catch
 

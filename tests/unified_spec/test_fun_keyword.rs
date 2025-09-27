@@ -319,6 +319,7 @@ mod test_fun_keyword {
         use super::*;
         use quickcheck::{quickcheck, TestResult};
 
+        #[allow(clippy::needless_pass_by_value)]
         fn prop_fun_with_random_name(name: String) -> TestResult {
             // Only accept valid identifiers: ASCII alphanumeric and underscore,
             // not starting with digit, and not just underscore alone

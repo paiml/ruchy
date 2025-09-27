@@ -1,6 +1,8 @@
 // EXTREME TDD: Actor Implementation Tests
 // Following CLAUDE.md Toyota Way - ALL tests written FIRST before implementation
 
+#![allow(clippy::needless_raw_string_hashes)]
+
 use ruchy::frontend::parser::Parser;
 use ruchy::runtime::interpreter::{Interpreter, Value};
 

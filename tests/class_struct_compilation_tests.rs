@@ -108,10 +108,7 @@ mod class_struct_compilation {
         ";
 
         let result = compile(code);
-        assert!(
-            result.is_ok(),
-            "Failed to compile simple class: {result:?}"
-        );
+        assert!(result.is_ok(), "Failed to compile simple class: {result:?}");
         let output = result.unwrap();
         // Class should transpile to struct
         assert!(output.contains("struct Point"));

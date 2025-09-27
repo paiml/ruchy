@@ -84,6 +84,7 @@ fn benchmark_compilation_pipeline(c: &mut Criterion) {
     group.finish();
 }
 
+#[allow(clippy::cast_possible_truncation)]
 fn benchmark_memory_patterns(c: &mut Criterion) {
     let mut group = c.benchmark_group("wasm_memory");
 
