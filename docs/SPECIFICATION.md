@@ -418,7 +418,7 @@ pub struct Transpiler {
 }
 
 impl Transpiler {
-    pub fn transpile(source: &str) -> Result<String, Error> {
+    pub fun transpile(source: &str) -> Result<String, Error> {
         // Parse to AST
         let ast = self.parser.parse(source)?;
         
@@ -440,7 +440,7 @@ impl Transpiler {
     }
     
     // MIR-based transformation pipeline
-    fn transform_mir(&self, mir: MirNode) -> MirNode {
+    fun transform_mir(&self, mir: MirNode) -> MirNode {
         match mir {
             // DataFrame operations get lazy evaluation
             MirNode::DataFrameOp { op, input } => {
@@ -488,14 +488,14 @@ pub enum CollectionType {
 
 // Transformation rules
 impl CollectionTransform {
-    fn array_to_series(elements: Vec<Expr>) -> TokenStream {
+    fun array_to_series(elements: Vec<Expr>) -> TokenStream {
         // [1, 2, 3] becomes Series
         quote! {
             ::polars::prelude::Series::new("", &[#(#elements),*])
         }
     }
     
-    fn nested_array_to_dataframe(rows: Vec<Vec<Expr>>) -> TokenStream {
+    fun nested_array_to_dataframe(rows: Vec<Vec<Expr>>) -> TokenStream {
         // [[1, 2], [3, 4]] becomes DataFrame
         quote! {
             ::polars::prelude::df![
@@ -532,7 +532,7 @@ pub struct Parser<'src> {
 
 impl Parser<'_> {
     // Pratt parsing for expressions
-    fn parse_expr_bp(&mut self, min_bp: u8) -> Result<Expr> {
+    fun parse_expr_bp(&mut self, min_bp: u8) -> Result<Expr> {
         let mut left = self.parse_unary()?;
         
         loop {
@@ -568,7 +568,7 @@ Synchronization points for graceful error recovery:
 
 ```rust
 impl Parser<'_> {
-    fn synchronize(&mut self) {
+    fun synchronize(&mut self) {
         self.panic_mode = false;
         
         while !self.is_at_end() {
@@ -584,7 +584,7 @@ impl Parser<'_> {
         }
     }
     
-    fn is_sync_point(&self) -> bool {
+    fun is_sync_point(&self) -> bool {
         matches!(
             self.current.kind,
             Fun | Let | Type | Import | Export | If | For | Match
@@ -599,7 +599,7 @@ Pipeline operators expand during AST transformation:
 
 ```rust
 impl AstDesugarer {
-    fn visit_expr(&mut self, expr: &mut Expr) {
+    fun visit_expr(&mut self, expr: &mut Expr) {
         match expr {
             Expr::Pipeline { left, op, right } => {
                 // x |> f becomes f(x)
@@ -659,7 +659,7 @@ pub enum TokenKind {
 
 ```rust
 impl Lexer<'src> {
-    pub fn new(input: &'src str) -> Self {
+    pub fun new(input: &'src str) -> Self {
         Lexer {
             input: input.as_bytes(),
             position: 0,
@@ -669,7 +669,7 @@ impl Lexer<'src> {
         }
     }
     
-    fn next_token(&mut self) -> Token {
+    fun next_token(&mut self) -> Token {
         self.skip_whitespace();
         
         if self.is_at_end() {
@@ -715,7 +715,7 @@ impl Lexer<'src> {
 
 ```rust
 impl Lexer<'_> {
-    fn string(&mut self) -> Token {
+    fun string(&mut self) -> Token {
         let mut parts = Vec::new();
         
         while !self.is_at_end() && !self.check(b'"') {
@@ -761,7 +761,7 @@ pub enum ExecutionMode {
 
 // Mode detection
 impl Runtime {
-    fn detect_mode(args: &Args) -> ExecutionMode {
+    fun detect_mode(args: &Args) -> ExecutionMode {
         match args {
             Args { eval: Some(_), .. } => ExecutionMode::OneLiner,
             Args { file: Some(f), .. } if f.ends_with(".ruchy") => ExecutionMode::Script,
@@ -789,7 +789,7 @@ pub struct Repl {
 }
 
 impl Repl {
-    pub async fn run(&mut self) -> Result<()> {
+    pub async fun run(&mut self) -> Result<()> {
         loop {
             let input = self.read_line("ruchy> ")?;
             
@@ -810,29 +810,190 @@ impl Repl {
 }
 ```
 
-## 7. Classes Specification
+## 7. Classes and Structs Specification
 
-### 7.1 Class Model
+### 7.0 Value Types vs Reference Types (Swift Model)
 
-Ruchy classes transpile directly to Rust structs with impl blocks. No inheritance hierarchy—composition via traits.
+Ruchy follows Swift's model exactly: **structs are value types**, **classes are reference types**.
+
+#### Key Distinctions
+
+| Feature | Struct (Value Type) | Class (Reference Type) |
+|---------|--------------------|-----------------------|
+| **Semantics** | Copied on assignment | Reference shared on assignment |
+| **Mutability** | Requires `mutating` keyword for methods that modify | Methods can modify by default |
+| **Inheritance** | ❌ Not supported | ✅ Single inheritance |
+| **Initialization** | Automatic memberwise init | Must define init explicitly |
+| **Deinitializer** | ❌ Not supported | ✅ `deinit` supported |
+| **Memory** | Stack allocated (usually) | Heap allocated |
+| **Equality** | Value equality (==) | Reference identity (===) or value equality (==) |
+| **Thread Safety** | Inherently safer (copies) | Requires synchronization |
+| **Performance** | Faster allocation/deallocation | Reference counting overhead |
+
+#### Struct Semantics (Value Type)
+```ruchy
+struct Point {
+    x: float,
+    y: float
+
+    // Methods that modify must be marked 'mutating'
+    mutating fun move(dx: float, dy: float) {
+        self.x += dx
+        self.y += dy
+    }
+
+    // Non-mutating methods don't need special marking
+    fun distance_from_origin() -> float {
+        sqrt(self.x * self.x + self.y * self.y)
+    }
+}
+
+// Value semantics - assignment creates a copy
+var p1 = Point { x: 0.0, y: 0.0 }
+var p2 = p1  // p2 is a COPY of p1
+p2.x = 10.0
+assert(p1.x == 0.0)  // p1 unchanged
+assert(p2.x == 10.0) // p2 modified
+
+// Structs get automatic memberwise initializer
+var p3 = Point(x: 5.0, y: 3.0)  // Free init
+```
+
+#### Class Semantics (Reference Type)
+```ruchy
+class Person {
+    name: String
+    age: i32
+
+    // Must define initializer
+    init(name: String, age: i32) {
+        self.name = name
+        self.age = age
+    }
+
+    // Methods can modify without 'mutating'
+    fun have_birthday() {
+        self.age += 1
+    }
+
+    // Optional deinitializer
+    deinit {
+        println(f"Person {self.name} being deallocated")
+    }
+}
+
+// Reference semantics - assignment shares reference
+let person1 = Person(name: "Alice", age: 30)
+let person2 = person1  // person2 references SAME object
+person2.age = 31
+assert(person1.age == 31)  // Both see the change
+
+// Identity comparison
+assert(person1 === person2)  // Same instance
+let person3 = Person(name: "Alice", age: 31)
+assert(person1 !== person3)  // Different instances
+```
+
+### 7.0.1 Implementation Status
+
+#### Structs - Runtime Status
+**Current Implementation: 73% Complete (19/26 tests passing)**
+
+✅ **Implemented**:
+- Struct definitions with fields and types
+- Struct instantiation using literal syntax
+- Field access (dot notation)
+- Nested structs
+- String interpolation with struct fields
+- Error handling for missing/extra fields
+
+❌ **Not Implemented**:
+- Value semantics (currently using reference semantics)
+- Mutating keyword for methods
+- Automatic memberwise initializer
+- Copy-on-write optimization
+- Stack allocation
+
+#### Classes - Runtime Status
+**Current Implementation: 35% Complete (6/17 tests passing)**
+
+✅ **Implemented**:
+- Class definition parsing and metadata storage
+- Field declarations with types and defaults
+- Constructor and method metadata storage
+
+❌ **Not Implemented**:
+- Reference semantics
+- Class instantiation with `init`
+- Instance methods
+- Static methods
+- Class inheritance with `super` calls
+- Method overriding
+- Deinitializers
+- Reference identity (===) operator
+
+### 7.1 Design Principles
+
+Following Swift's model provides clear mental models:
+
+1. **Use structs for value semantics**: Points, vectors, colors, most data models
+2. **Use classes for reference semantics**: Shared state, inheritance hierarchies, identity matters
+3. **Prefer structs by default**: Simpler, safer, more performant
+4. **Classes when needed**: Inheritance, shared mutable state, Objective-C interop
+
+### 7.2 Memory Model
+
+#### Struct Memory (Value Types)
+- Stack allocated when possible
+- Inline storage in containers
+- Copy-on-write for large values
+- No reference counting
+
+#### Class Memory (Reference Types)
+- Always heap allocated
+- Reference counted (ARC)
+- Weak/unowned references supported
+- Deinit called when count reaches zero
+
+### 7.3 Transpilation Strategy
+
+#### Structs → Rust
+```rust
+// Ruchy struct becomes Rust struct with Clone
+#[derive(Clone, Copy)] // if all fields are Copy
+#[derive(Clone)]       // otherwise
+struct Point {
+    x: f64,
+    y: f64,
+}
+```
+
+#### Classes → Rust
+```rust
+// Ruchy class becomes Rc/Arc wrapped struct
+struct PersonData {
+    name: String,
+    age: i32,
+}
+type Person = Rc<RefCell<PersonData>>;  // single-threaded
+type Person = Arc<Mutex<PersonData>>;   // multi-threaded
+```
 
 ```rust
-// Ruchy class syntax
+// Ruchy class syntax (reference type)
 class DataProcessor {
-    buffer: Vec<u8>,
-    capacity: usize = 1024,  // Default value
-    
-    // Constructor
-    new(capacity: usize = 1024) {
-        Self { 
-            buffer: Vec::with_capacity(capacity),
-            capacity 
-        }
+    buffer: Vec<u8>
+    capacity: usize
+
+    // Constructor (Swift-style init)
+    init(capacity: usize = 1024) {
+        self.buffer = Vec::with_capacity(capacity)
+        self.capacity = capacity
     }
-    
-    // Methods
-    fun process(&mut self, data: &[u8]) -> Result<()> {
-        self.buffer.extend_from_slice(data);
+
+    // Instance method (can modify without 'mutating')
+    fun process(data: &[u8]) -> Result<()> {
+        self.buffer.extend_from_slice(data)
         Ok(())
     }
     
@@ -852,19 +1013,19 @@ pub struct DataProcessor {
 }
 
 impl DataProcessor {
-    pub fn new(capacity: usize) -> Self {
+    pub fun new(capacity: usize) -> Self {
         Self {
             buffer: Vec::with_capacity(capacity),
             capacity,
         }
     }
     
-    pub fn process(&mut self, data: &[u8]) -> Result<()> {
+    pub fun process(&mut self, data: &[u8]) -> Result<()> {
         self.buffer.extend_from_slice(data);
         Ok(())
     }
     
-    pub fn from_file(path: &str) -> Result<Self> {
+    pub fun from_file(path: &str) -> Result<Self> {
         let data = std::fs::read(path)?;
         let mut proc = Self::new(data.len());
         proc.process(&data)?;
@@ -873,7 +1034,7 @@ impl DataProcessor {
 }
 
 impl Default for DataProcessor {
-    fn default() -> Self {
+    fun default() -> Self {
         Self::new(1024)
     }
 }
@@ -929,15 +1090,15 @@ class Temperature {
 
 // Transpiles to:
 impl Temperature {
-    pub fn fahrenheit(&self) -> f64 {
+    pub fun fahrenheit(&self) -> f64 {
         self.celsius * 9.0/5.0 + 32.0
     }
     
-    pub fn set_fahrenheit(&mut self, value: f64) {
+    pub fun set_fahrenheit(&mut self, value: f64) {
         self.celsius = (value - 32.0) * 5.0/9.0
     }
     
-    pub fn kelvin(&self) -> f64 {
+    pub fun kelvin(&self) -> f64 {
         self.celsius + 273.15
     }
 }
@@ -986,11 +1147,11 @@ extension String {
 
 // Transpiles to trait with blanket impl
 trait StringExt {
-    fn is_palindrome(&self) -> bool;
+    fun is_palindrome(&self) -> bool;
 }
 
 impl StringExt for String {
-    fn is_palindrome(&self) -> bool {
+    fun is_palindrome(&self) -> bool {
         let clean = self.chars()
             .filter(|c| c.is_alphanumeric())
             .map(|c| c.to_lowercase().to_string())
@@ -1074,7 +1235,7 @@ enum Shape {
 }
 
 impl Shape {
-    fn area(&self) -> f64 {
+    fun area(&self) -> f64 {
         match self {
             Shape::Circle { radius } => std::f64::consts::PI * radius * radius,
             Shape::Rectangle { width, height } => width * height,
@@ -1160,7 +1321,7 @@ class Resource {
 
 ```rust
 impl ClassTranspiler {
-    fn transpile_class(&self, class: &ClassDef) -> TokenStream {
+    fun transpile_class(&self, class: &ClassDef) -> TokenStream {
         let struct_def = self.generate_struct(class);
         let impl_blocks = self.generate_impls(class);
         let trait_impls = self.generate_trait_impls(class);
@@ -1172,7 +1333,7 @@ impl ClassTranspiler {
         }
     }
     
-    fn handle_constructor(&self, class: &ClassDef) -> TokenStream {
+    fun handle_constructor(&self, class: &ClassDef) -> TokenStream {
         // 'new' method becomes associated function
         if let Some(ctor) = class.find_method("new") {
             self.transform_constructor(ctor)
@@ -1182,7 +1343,7 @@ impl ClassTranspiler {
         }
     }
     
-    fn handle_properties(&self, prop: &Property) -> TokenStream {
+    fun handle_properties(&self, prop: &Property) -> TokenStream {
         let getter = self.generate_getter(prop);
         let setter = prop.setter.as_ref()
             .map(|s| self.generate_setter(prop, s));
@@ -1565,10 +1726,10 @@ let result = transduce(xform, vec::push, vec![], input)
 
 ```rust
 impl FunctionalTranspiler {
-    fn transpile_closure(&self, closure: &Closure) -> TokenStream {
+    fun transpile_closure(&self, closure: &Closure) -> TokenStream {
         match closure.captures.len() {
             0 => {
-                // Zero captures: fn pointer
+                // Zero captures: fun pointer
                 quote! { #body }
             }
             n if n <= 3 => {
@@ -1582,7 +1743,7 @@ impl FunctionalTranspiler {
         }
     }
     
-    fn optimize_tail_call(&self, func: &Function) -> TokenStream {
+    fun optimize_tail_call(&self, func: &Function) -> TokenStream {
         if func.is_tail_recursive() {
             // Transform to loop
             self.generate_loop_form(func)
@@ -1591,7 +1752,7 @@ impl FunctionalTranspiler {
         }
     }
     
-    fn inline_hof(&self, call: &HigherOrderCall) -> TokenStream {
+    fun inline_hof(&self, call: &HigherOrderCall) -> TokenStream {
         if call.is_monomorphic() && call.closure.is_small() {
             // Inline closure at call site
             self.inline_expansion(call)
@@ -1641,7 +1802,7 @@ pub enum Value {
 
 ```rust
 impl Interpreter {
-    pub fn eval(&mut self, node: &AstNode) -> Result<Value> {
+    pub fun eval(&mut self, node: &AstNode) -> Result<Value> {
         match node {
             // Direct evaluation - no allocation
             AstNode::Literal(lit) => Ok(self.eval_literal(lit)),
@@ -1676,7 +1837,7 @@ impl Interpreter {
         }
     }
     
-    fn call_function(&mut self, func: Value, args: Vec<Value>) -> Result<Value> {
+    fun call_function(&mut self, func: Value, args: Vec<Value>) -> Result<Value> {
         match func {
             Value::Function(closure_ref) => {
                 let closure = self.heap.get(closure_ref);
@@ -1717,7 +1878,7 @@ pub struct Arena<T> {
 }
 
 impl<T> Arena<T> {
-    pub fn alloc(&mut self, value: T) -> ArenaRef<T> {
+    pub fun alloc(&mut self, value: T) -> ArenaRef<T> {
         if self.should_gc() {
             self.collect_garbage();
         }
@@ -1727,7 +1888,7 @@ impl<T> Arena<T> {
         ref_
     }
     
-    fn collect_garbage(&mut self) {
+    fun collect_garbage(&mut self) {
         // Mark phase - trace from roots
         let mut marked = BitSet::new(self.capacity());
         self.mark_roots(&mut marked);
@@ -1749,7 +1910,7 @@ pub struct OptimizingInterpreter {
 }
 
 impl OptimizingInterpreter {
-    fn eval_with_optimizations(&mut self, node: &AstNode) -> Result<Value> {
+    fun eval_with_optimizations(&mut self, node: &AstNode) -> Result<Value> {
         // Inline caching for method dispatch
         if let AstNode::MethodCall { receiver, method, .. } = node {
             if let Some(cached) = self.inline_cache.get(&(receiver, method)) {
@@ -1776,7 +1937,7 @@ impl OptimizingInterpreter {
 
 ```rust
 impl Interpreter {
-    fn eval_dataframe_ops(&mut self, df: &DataFrame, ops: &[DfOp]) -> Result<Value> {
+    fun eval_dataframe_ops(&mut self, df: &DataFrame, ops: &[DfOp]) -> Result<Value> {
         let mut result = df.clone();
         
         for op in ops {
@@ -1813,7 +1974,7 @@ pub struct ReplInterpreter {
 }
 
 impl ReplInterpreter {
-    pub fn eval_line(&mut self, input: &str) -> Result<ReplOutput> {
+    pub fun eval_line(&mut self, input: &str) -> Result<ReplOutput> {
         // Parse with error recovery
         let ast = match parse_with_recovery(input) {
             Ok(ast) => ast,
@@ -1838,11 +1999,11 @@ impl ReplInterpreter {
         })
     }
     
-    pub fn snapshot(&self) -> Environment {
+    pub fun snapshot(&self) -> Environment {
         self.interpreter.globals.clone()
     }
     
-    pub fn restore(&mut self, snapshot: Environment) {
+    pub fun restore(&mut self, snapshot: Environment) {
         self.interpreter.globals = snapshot;
     }
 }
@@ -1851,7 +2012,7 @@ impl ReplInterpreter {
 ### 9.7 Native Function Interface
 
 ```rust
-pub fn register_native_functions(interpreter: &mut Interpreter) {
+pub fun register_native_functions(interpreter: &mut Interpreter) {
     // Math functions
     interpreter.define_native("sin", |_, args| {
         match args.as_slice() {
@@ -1895,7 +2056,7 @@ pub enum RuntimeError {
 }
 
 impl Interpreter {
-    fn capture_stack_trace(&self) -> Vec<StackFrame> {
+    fun capture_stack_trace(&self) -> Vec<StackFrame> {
         self.call_stack.iter().map(|frame| {
             StackFrame {
                 function: frame.function_name.clone(),
@@ -1932,13 +2093,13 @@ pub struct MemoryProfile {
 
 ```rust
 impl Interpreter {
-    pub fn should_compile(&self, metrics: &ExecutionMetrics) -> bool {
+    pub fun should_compile(&self, metrics: &ExecutionMetrics) -> bool {
         metrics.execution_count > 100 ||
         metrics.total_time > Duration::from_millis(10) ||
         metrics.contains_hot_loop
     }
     
-    pub fn extract_type_profile(&self) -> TypeProfile {
+    pub fun extract_type_profile(&self) -> TypeProfile {
         // Collect runtime type information for optimization
         TypeProfile {
             monomorphic_calls: self.collect_monomorphic_sites(),
@@ -2018,7 +2179,7 @@ x?[0]  parses as  (x?)[0]
 
 ```rust
 impl UnaryOp {
-    fn type_check(&self, operand: Type) -> Result<Type, TypeError> {
+    fun type_check(&self, operand: Type) -> Result<Type, TypeError> {
         match (self, operand) {
             // Arithmetic negation
             (Negate, Type::Int(n)) => Ok(Type::Int(n)),
@@ -2041,7 +2202,7 @@ impl UnaryOp {
 
 ```rust
 impl UnaryTranspiler {
-    fn transpile(&self, op: UnaryOp, operand: &Expr) -> TokenStream {
+    fun transpile(&self, op: UnaryOp, operand: &Expr) -> TokenStream {
         let operand_tokens = self.transpile_expr(operand);
         
         match op {
@@ -2051,7 +2212,7 @@ impl UnaryTranspiler {
         }
     }
     
-    fn transpile_postfix(&self, op: PostfixOp, operand: &Expr) -> TokenStream {
+    fun transpile_postfix(&self, op: PostfixOp, operand: &Expr) -> TokenStream {
         let operand_tokens = self.transpile_expr(operand);
         
         match op {
@@ -2068,7 +2229,7 @@ Compiler internally adds borrowing based on usage analysis:
 
 ```rust
 impl EscapeAnalyzer {
-    fn infer_borrowing(&self, expr: &Expr, context: &Context) -> BorrowKind {
+    fun infer_borrowing(&self, expr: &Expr, context: &Context) -> BorrowKind {
         match self.analyze_lifetime(expr, context) {
             Lifetime::Local => BorrowKind::None,        // Move/copy
             Lifetime::Escapes => BorrowKind::Shared,    // &
@@ -2086,7 +2247,7 @@ impl EscapeAnalyzer {
 
 ```rust
 impl ConstantFolder {
-    fn fold_unary(&self, op: UnaryOp, val: &Value) -> Option<Value> {
+    fun fold_unary(&self, op: UnaryOp, val: &Value) -> Option<Value> {
         match (op, val) {
             (Negate, Value::Int(n)) => Some(Value::Int(-n)),
             (Negate, Value::Float(f)) => Some(Value::Float(-f)),
@@ -2101,7 +2262,7 @@ impl ConstantFolder {
 
 ```rust
 impl UnaryError {
-    fn diagnostic(&self) -> Diagnostic {
+    fun diagnostic(&self) -> Diagnostic {
         match self {
             Self::UnsignedNegation { type_ } => {
                 Diagnostic::error("cannot negate unsigned type")
@@ -2122,7 +2283,7 @@ impl UnaryError {
 
 ```rust
 impl MirOptimizer {
-    fn optimize_unary(&mut self, op: UnaryOp, operand: MirExpr) -> MirExpr {
+    fun optimize_unary(&mut self, op: UnaryOp, operand: MirExpr) -> MirExpr {
         match (op, &operand) {
             // Double negation elimination
             (Negate, MirExpr::Unary(Negate, inner)) => *inner.clone(),
@@ -2397,7 +2558,7 @@ let random_int = random::range(1, 100)
 
 ```rust
 impl SystemsTranspiler {
-    fn transpile_io(&self, op: IoOp) -> TokenStream {
+    fun transpile_io(&self, op: IoOp) -> TokenStream {
         match op {
             IoOp::ReadFile(path) => quote! {
                 std::fs::read_to_string(#path)
@@ -2419,7 +2580,7 @@ impl SystemsTranspiler {
         }
     }
     
-    fn transpile_command(&self, cmd: Command) -> TokenStream {
+    fun transpile_command(&self, cmd: Command) -> TokenStream {
         quote! {
             std::process::Command::new(#cmd.program)
                 #(.arg(#cmd.args))*
@@ -2444,14 +2605,14 @@ pub enum SystemError {
 }
 
 impl SystemError {
-    fn is_transient(&self) -> bool {
+    fun is_transient(&self) -> bool {
         matches!(self, 
             SystemError::Network(_) | 
             SystemError::Timeout(_)
         )
     }
     
-    fn should_retry(&self) -> bool {
+    fun should_retry(&self) -> bool {
         self.is_transient()
     }
 }
@@ -2487,7 +2648,7 @@ fun process_buffer(data: [u8]) {
 }
 
 // Transpiles to safe Rust
-fn process_buffer(data: &[u8]) -> Vec<u8> {
+fun process_buffer(data: &[u8]) -> Vec<u8> {
     data.iter().map(|b| b ^ 0xFF).collect()
 }
 
@@ -2510,7 +2671,7 @@ pub struct InputValidator {
 }
 
 impl InputValidator {
-    fn validate_string(&self, s: &str) -> Result<(), SecurityError> {
+    fun validate_string(&self, s: &str) -> Result<(), SecurityError> {
         if s.len() > self.max_string_length {
             return Err(SecurityError::StringTooLarge);
         }
@@ -2520,7 +2681,7 @@ impl InputValidator {
         Ok(())
     }
     
-    fn validate_regex(&self, pattern: &str) -> Result<(), SecurityError> {
+    fun validate_regex(&self, pattern: &str) -> Result<(), SecurityError> {
         // Prevent ReDoS attacks
         let complexity = self.calculate_regex_complexity(pattern);
         if complexity > MAX_REGEX_COMPLEXITY {
@@ -2544,7 +2705,7 @@ pub struct SecuritySandbox {
 }
 
 impl SecuritySandbox {
-    pub fn execute<T>(&self, code: impl FnOnce() -> T) -> Result<T> {
+    pub fun execute<T>(&self, code: impl FnOnce() -> T) -> Result<T> {
         // Apply seccomp filter
         self.syscall_filter.apply()?;
         
@@ -2572,7 +2733,7 @@ pub struct DependencyScanner {
 }
 
 impl DependencyScanner {
-    pub fn scan(&self, manifest: &Cargo.toml) -> SecurityReport {
+    pub fun scan(&self, manifest: &Cargo.toml) -> SecurityReport {
         let mut vulnerabilities = Vec::new();
         
         for dependency in manifest.dependencies() {
@@ -2608,17 +2769,17 @@ pub struct CryptoProvider {
 }
 
 impl CryptoProvider {
-    pub fn generate_key(&self) -> Key {
+    pub fun generate_key(&self) -> Key {
         let mut key = [0u8; 32];
         self.rng.fill(&mut key).expect("RNG failure");
         Key::from(key)
     }
     
-    pub fn constant_time_compare(&self, a: &[u8], b: &[u8]) -> bool {
+    pub fun constant_time_compare(&self, a: &[u8], b: &[u8]) -> bool {
         ring::constant_time::verify_slices_are_equal(a, b).is_ok()
     }
     
-    pub fn hash_password(&self, password: &str) -> String {
+    pub fun hash_password(&self, password: &str) -> String {
         // Argon2id with secure defaults
         argon2::hash_encoded(
             password.as_bytes(),
@@ -2648,7 +2809,7 @@ pub enum TaintLevel {
 }
 
 impl<T> TaintedValue<T> {
-    pub fn propagate<U>(&self, f: impl FnOnce(&T) -> U) -> TaintedValue<U> {
+    pub fun propagate<U>(&self, f: impl FnOnce(&T) -> U) -> TaintedValue<U> {
         TaintedValue {
             value: f(&self.value),
             taint: self.taint.clone(),
@@ -2656,7 +2817,7 @@ impl<T> TaintedValue<T> {
         }
     }
     
-    pub fn assert_trusted(self) -> Result<T, SecurityError> {
+    pub fun assert_trusted(self) -> Result<T, SecurityError> {
         match self.taint {
             TaintLevel::Trusted => Ok(self.value),
             _ => Err(SecurityError::UntrustedValue),
@@ -2697,7 +2858,7 @@ pub struct SecurityAuditLog {
 }
 
 impl SecurityAuditLog {
-    pub fn log_event(&self, event: SecurityEvent) {
+    pub fun log_event(&self, event: SecurityEvent) {
         let entry = AuditEntry {
             timestamp: SystemTime::now(),
             event,
@@ -2733,7 +2894,7 @@ pub struct SupplyChainValidator {
 }
 
 impl SupplyChainValidator {
-    pub fn validate_dependency(&self, dep: &Dependency) -> Result<()> {
+    pub fun validate_dependency(&self, dep: &Dependency) -> Result<()> {
         // Registry validation
         if !self.allowed_registries.contains(&dep.registry()) {
             return Err(SecurityError::UntrustedRegistry);
@@ -2782,7 +2943,7 @@ pub enum ThreatVector {
 }
 
 impl ThreatModel {
-    pub fn assess_risk(&self, code: &Ast) -> RiskAssessment {
+    pub fun assess_risk(&self, code: &Ast) -> RiskAssessment {
         let mut risks = Vec::new();
         
         // Static analysis passes
@@ -2835,9 +2996,9 @@ pub trait Actor: Send + Sync {
     type Message: McpSerializable;
     type Response: McpSerializable;
     
-    async fn receive(&mut self, msg: Self::Message) -> Option<Self::Response>;
+    async fun receive(&mut self, msg: Self::Message) -> Option<Self::Response>;
     
-    fn spawn(self) -> ActorHandle<Self::Message, Self::Response> {
+    fun spawn(self) -> ActorHandle<Self::Message, Self::Response> {
         let (tx, rx) = mpsc::channel(100);
         tokio::spawn(async move {
             while let Some(msg) = rx.recv().await {
@@ -2861,7 +3022,7 @@ impl Actor for McpActor {
     type Message = McpMessage;
     type Response = McpResponse;
     
-    async fn receive(&mut self, msg: McpMessage) -> Option<McpResponse> {
+    async fun receive(&mut self, msg: McpMessage) -> Option<McpResponse> {
         match msg.method.as_str() {
             "tools/list" => self.list_tools().await,
             "tools/call" => self.call_tool(msg.params).await,
@@ -2886,13 +3047,13 @@ pub enum SupervisionStrategy {
 }
 
 impl<A: Actor> Supervisor<A> {
-    pub fn supervise(&mut self, child: A) {
+    pub fun supervise(&mut self, child: A) {
         let handle = child.spawn();
         self.monitor(handle.clone());
         self.children.push(handle);
     }
     
-    async fn monitor(&mut self, handle: ActorHandle<_, _>) {
+    async fun monitor(&mut self, handle: ActorHandle<_, _>) {
         loop {
             if handle.is_failed().await {
                 match self.strategy {
@@ -2920,7 +3081,7 @@ pub struct RuchyLanguageServer {
 
 #[tower_lsp::async_trait]
 impl LanguageServer for RuchyLanguageServer {
-    async fn initialize(&self, params: InitializeParams) -> Result<InitializeResult> {
+    async fun initialize(&self, params: InitializeParams) -> Result<InitializeResult> {
         Ok(InitializeResult {
             capabilities: ServerCapabilities {
                 text_document_sync: Some(TextDocumentSyncCapability::Full),
@@ -2944,7 +3105,7 @@ impl LanguageServer for RuchyLanguageServer {
         })
     }
     
-    async fn completion(&self, params: CompletionParams) -> Result<CompletionResponse> {
+    async fun completion(&self, params: CompletionParams) -> Result<CompletionResponse> {
         let position = params.text_document_position;
         let document = self.workspace.get_document(&position.text_document.uri)?;
         
@@ -2968,7 +3129,7 @@ pub struct SemanticAnalyzer {
 }
 
 impl SemanticAnalyzer {
-    pub fn analyze(&mut self, ast: &Ast) -> Result<TypedAst> {
+    pub fun analyze(&mut self, ast: &Ast) -> Result<TypedAst> {
         // Phase 1: Name resolution
         self.resolve_names(ast)?;
         
@@ -3012,7 +3173,7 @@ pub struct Component {
 
 // Current missing components (CORRECTED)
 impl ComponentTracker {
-    fn critical_missing() -> Vec<Component> {
+    fun critical_missing() -> Vec<Component> {
         vec![
             Component {
                 name: "Type Inference Engine".into(),
@@ -3058,11 +3219,11 @@ pub struct CompilationPipeline {
 }
 
 pub trait CompilationStage {
-    fn process(&self, input: CompilerInput) -> Result<CompilerOutput>;
+    fun process(&self, input: CompilerInput) -> Result<CompilerOutput>;
 }
 
 impl CompilationPipeline {
-    pub fn standard() -> Self {
+    pub fun standard() -> Self {
         CompilationPipeline {
             stages: vec![
                 Box::new(Lexer),
@@ -3078,7 +3239,7 @@ impl CompilationPipeline {
         }
     }
     
-    pub fn compile(&self, source: &str) -> Result<Binary> {
+    pub fun compile(&self, source: &str) -> Result<Binary> {
         let mut output = CompilerInput::Source(source.to_string());
         
         for stage in &self.stages {
@@ -3112,7 +3273,7 @@ pub struct RuchyBinary {
 }
 
 impl RuchyBinary {
-    pub fn write(&self, path: &Path) -> Result<()> {
+    pub fun write(&self, path: &Path) -> Result<()> {
         let mut file = File::create(path)?;
         
         // Write header
@@ -3141,20 +3302,20 @@ impl RuchyBinary {
 #[cfg(test)]
 mod edge_case_tests {
     #[test]
-    fn test_unicode_identifiers() {
+    fun test_unicode_identifiers() {
         let source = "let 你好 = 42";
         assert!(parse(source).is_ok());
     }
     
     #[test]
-    fn test_nested_string_interpolation() {
+    fun test_nested_string_interpolation() {
         let source = r#""outer {"{inner}"} text""#;
         let ast = parse(source).unwrap();
         assert_matches!(ast, Expr::String { parts, .. } if parts.len() == 3);
     }
     
     #[test]
-    fn test_pipeline_precedence() {
+    fun test_pipeline_precedence() {
         let source = "1 + 2 |> f |> g * 3";
         // Should parse as: (g(f(1 + 2))) * 3
         let ast = parse(source).unwrap();
@@ -3162,7 +3323,7 @@ mod edge_case_tests {
     }
     
     #[test]
-    fn test_actor_message_pattern_exhaustiveness() {
+    fun test_actor_message_pattern_exhaustiveness() {
         let source = r#"
             actor Counter {
                 receive {
@@ -3183,8 +3344,8 @@ mod edge_case_tests {
 ```rust
 // Variance edge cases
 trait Container<T> {
-    fn put(&mut self, item: T);
-    fn get(&self) -> &T;
+    fun put(&mut self, item: T);
+    fun get(&self) -> &T;
 }
 
 // Lifetime edge cases
@@ -3218,7 +3379,7 @@ pub struct TestStep {
 }
 
 impl ReplTester {
-    pub fn test_transcript(&mut self, script: &str) -> TestResult {
+    pub fun test_transcript(&mut self, script: &str) -> TestResult {
         let steps = self.parse_transcript(script)?;
         
         for step in steps {
@@ -3243,13 +3404,13 @@ impl ReplTester {
 
 ```rust
 #[proptest]
-fn repl_doesnt_crash(input: String) {
+fun repl_doesnt_crash(input: String) {
     let mut repl = Repl::new();
     let _ = repl.eval(&input); // Must not panic
 }
 
 #[proptest]
-fn repl_state_consistency(
+fun repl_state_consistency(
     commands: Vec<ReplCommand>
 ) {
     let mut repl = Repl::new();
@@ -3297,7 +3458,7 @@ pub struct DisplayEngine {
 
 impl DisplayEngine {
     // Automatic rich display for DataFrames
-    fn display_dataframe(&self, df: &DataFrame) -> String {
+    fun display_dataframe(&self, df: &DataFrame) -> String {
         let shape = df.shape();
         let preview_rows = 10.min(shape.0);
         
@@ -3331,7 +3492,7 @@ impl DisplayEngine {
     }
     
     // Syntax-highlighted code display
-    fn display_code(&self, code: &str, lang: Language) -> String {
+    fun display_code(&self, code: &str, lang: Language) -> String {
         let theme = &self.color_scheme;
         let ps = SyntaxSet::load_defaults_newlines();
         let ts = ThemeSet::load_defaults();
@@ -3356,7 +3517,7 @@ pub struct CompletionEngine {
 }
 
 impl CompletionEngine {
-    fn complete(&self, partial: &str, cursor: usize) -> Vec<Completion> {
+    fun complete(&self, partial: &str, cursor: usize) -> Vec<Completion> {
         let context = self.extract_context(partial, cursor);
         
         match context {
@@ -3409,7 +3570,7 @@ pub struct HelpSystem {
 
 impl HelpSystem {
     // Context-aware help
-    fn help(&self, query: Option<&str>) -> HelpResponse {
+    fun help(&self, query: Option<&str>) -> HelpResponse {
         match query {
             None => self.general_help(),
             Some(topic) => {
@@ -3425,7 +3586,7 @@ impl HelpSystem {
     }
     
     // Live examples in REPL
-    fn example(&self, topic: &str) -> Option<Example> {
+    fun example(&self, topic: &str) -> Option<Example> {
         self.examples.get(topic).map(|ex| Example {
             description: ex.description.clone(),
             code: ex.code.clone(),
@@ -3435,7 +3596,7 @@ impl HelpSystem {
     }
     
     // Interactive tutorials
-    fn tutorial(&self, name: Option<&str>) -> Tutorial {
+    fun tutorial(&self, name: Option<&str>) -> Tutorial {
         match name {
             None => self.list_tutorials(),
             Some("dataframes") => Tutorial::dataframes(),
@@ -3458,7 +3619,7 @@ pub struct HistoryManager {
 
 impl HistoryManager {
     // Fuzzy history search
-    fn search(&self, pattern: &str) -> Vec<&HistoryEntry> {
+    fun search(&self, pattern: &str) -> Vec<&HistoryEntry> {
         if pattern.starts_with("!") {
             // Bash-style history expansion
             self.expand_history(pattern)
@@ -3473,7 +3634,7 @@ impl HistoryManager {
     }
     
     // Semantic deduplication
-    fn add_entry(&mut self, input: String, output: Value) {
+    fun add_entry(&mut self, input: String, output: Value) {
         // Don't add duplicate semantic entries
         if !self.is_semantic_duplicate(&input) {
             let entry = HistoryEntry {
@@ -3504,7 +3665,7 @@ pub struct ErrorRecovery {
 }
 
 impl ErrorRecovery {
-    fn handle_error(&self, error: ReplError) -> ErrorResponse {
+    fun handle_error(&self, error: ReplError) -> ErrorResponse {
         let suggestions = self.suggestion_engine.suggest(&error);
         let similar_errors = self.error_db.find_similar(&error);
         
@@ -3518,7 +3679,7 @@ impl ErrorRecovery {
     }
     
     // Intelligent error messages
-    fn format_error_message(&self, error: &ReplError) -> String {
+    fun format_error_message(&self, error: &ReplError) -> String {
         match error {
             ReplError::TypeError { expected, found, span } => {
                 let context = self.extract_context(span);
@@ -3564,14 +3725,14 @@ pub struct MultilineInput {
 }
 
 impl MultilineInput {
-    fn should_continue(&self, input: &str) -> bool {
+    fun should_continue(&self, input: &str) -> bool {
         // Smart continuation detection
         self.bracket_matcher.has_unclosed(input) ||
         input.ends_with("\\") ||
         self.is_incomplete_statement(input)
     }
     
-    fn is_incomplete_statement(&self, input: &str) -> bool {
+    fun is_incomplete_statement(&self, input: &str) -> bool {
         match self.parse_partial(input) {
             Ok(_) => false,
             Err(ParseError::UnexpectedEof) => true,
@@ -3580,7 +3741,7 @@ impl MultilineInput {
     }
     
     // Visual feedback for multi-line mode
-    fn prompt(&self, line_number: usize) -> String {
+    fun prompt(&self, line_number: usize) -> String {
         match self.mode {
             InputMode::Normal => "ruchy> ".to_string(),
             InputMode::Continuation => format!("  ...{} ", line_number),
@@ -3601,7 +3762,7 @@ pub struct ReplPerformance {
 
 impl ReplPerformance {
     // Automatic performance warnings
-    fn monitor_execution(&mut self, input: &str) -> TimingReport {
+    fun monitor_execution(&mut self, input: &str) -> TimingReport {
         let start = Instant::now();
         
         let parse_time = self.measure(|| parse(input));
@@ -3625,7 +3786,7 @@ impl ReplPerformance {
         }
     }
     
-    fn analyze_bottleneck(&self, parse: Duration, compile: Duration, execute: Duration) {
+    fun analyze_bottleneck(&self, parse: Duration, compile: Duration, execute: Duration) {
         let total = parse + compile + execute;
         
         if parse > total * 0.5 {
@@ -3743,7 +3904,7 @@ volumes:
 // build.rs
 use ruchy_compiler::Transpiler;
 
-fn main() {
+fun main() {
     println!("cargo:rerun-if-changed=src/");
     
     let ruchy_files = glob::glob("src/**/*.ruchy")
@@ -3801,7 +3962,7 @@ pub struct DepylerPatternMapper {
 }
 
 impl DepylerPatternMapper {
-    pub fn new() -> Self {
+    pub fun new() -> Self {
         let mut patterns = HashMap::new();
         
         // NumPy/Pandas → Polars mappings (~20 patterns)
@@ -3833,7 +3994,7 @@ impl DepylerPatternMapper {
         DepylerPatternMapper { patterns }
     }
     
-    pub fn map_snippet(&self, python: &str) -> Option<String> {
+    pub fun map_snippet(&self, python: &str) -> Option<String> {
         // Only handles specific patterns, not arbitrary Python
         for (pattern, transform) in &self.patterns {
             if pattern.matches(python) {
@@ -3890,7 +4051,7 @@ fun process_data(df: DataFrame) -> DataFrame {
 // Can be used from Rust:
 use my_ruchy_lib::process_data;
 
-fn main() {
+fun main() {
     let df = DataFrame::read_csv("data.csv")?;
     let result = process_data(df);
     println!("{}", result);
@@ -3934,7 +4095,7 @@ pub struct Cli {
 }
 
 impl Cli {
-    pub fn execute(self) -> Result<()> {
+    pub fun execute(self) -> Result<()> {
         match self {
             Cli { eval: Some(code), .. } => {
                 // One-liner execution
@@ -4007,24 +4168,24 @@ fun main() {
 ```rust
 pub trait Disassembler<Input> {
     type Output;
-    fn disassemble(&self, input: &Input) -> Self::Output;
+    fun disassemble(&self, input: &Input) -> Self::Output;
 }
 
 // Primary representations
 impl Disassembler<TypedAst> for JsonAstDisassembler {
-    fn disassemble(&self, ast: &TypedAst) -> String {
+    fun disassemble(&self, ast: &TypedAst) -> String {
         serde_json::to_string_pretty(ast).unwrap()
     }
 }
 
 impl Disassembler<TypedAst> for BytecodeDisassembler {
-    fn disassemble(&self, ast: &TypedAst) -> Vec<Instruction> {
+    fun disassemble(&self, ast: &TypedAst) -> Vec<Instruction> {
         self.compile_to_bytecode(ast)
     }
 }
 
 impl Disassembler<TypedAst> for RustDisassembler {
-    fn disassemble(&self, ast: &TypedAst) -> String {
+    fun disassemble(&self, ast: &TypedAst) -> String {
         let rust_ast = self.transform_to_rust(ast);
         quote!(#rust_ast).to_string()
     }
@@ -4070,7 +4231,7 @@ pub enum Instruction {
     DfSort,
 }
 
-pub fn disassemble_bytecode(instructions: &[Instruction]) -> String {
+pub fun disassemble_bytecode(instructions: &[Instruction]) -> String {
     instructions.iter().enumerate()
         .map(|(i, inst)| format!("{:04}: {:?}", i, inst))
         .collect::<Vec<_>>()
@@ -4090,7 +4251,7 @@ pub struct MathRepl {
 }
 
 impl MathRepl {
-    pub fn eval_math(&mut self, expr: &str) -> Result<MathResult> {
+    pub fun eval_math(&mut self, expr: &str) -> Result<MathResult> {
         let parsed = self.parse_math_expr(expr)?;
         
         match parsed {
@@ -4120,7 +4281,7 @@ impl MathRepl {
 
 // Mathematical syntax extensions
 impl MathRepl {
-    fn parse_special_syntax(&self, input: &str) -> Option<MathExpr> {
+    fun parse_special_syntax(&self, input: &str) -> Option<MathExpr> {
         // LaTeX-like syntax
         if input.starts_with("\\") {
             return Some(self.parse_latex(input));
@@ -4202,7 +4363,7 @@ pub struct QualityThresholds {
 }
 
 impl QualityGates {
-    pub fn check(&self) -> Result<QualityReport> {
+    pub fun check(&self) -> Result<QualityReport> {
         let mut violations = Vec::new();
         
         if self.metrics.test_coverage < self.thresholds.min_test_coverage {
@@ -4244,7 +4405,7 @@ pub struct CiQualityEnforcer {
 }
 
 impl CiQualityEnforcer {
-    pub async fn run_checks(&self) -> ExitCode {
+    pub async fun run_checks(&self) -> ExitCode {
         // Collect metrics
         let coverage = self.measure_coverage().await;
         let complexity = self.analyze_complexity().await;
@@ -4321,7 +4482,7 @@ pub struct SmtVerifier {
 }
 
 impl SmtVerifier {
-    pub fn verify_refinement(&self, constraint: Constraint) -> VerificationResult {
+    pub fun verify_refinement(&self, constraint: Constraint) -> VerificationResult {
         let formula = self.translate_to_smt(constraint);
         
         match self.solver.check_sat(formula) {
@@ -4403,7 +4564,7 @@ pub enum LintCategory {
 ```rust
 impl MirLintPass {
     // DataFrame operation fusion opportunities
-    fn lint_unfused_operations(&self, mir: &Mir) -> Vec<LintDiagnostic> {
+    fun lint_unfused_operations(&self, mir: &Mir) -> Vec<LintDiagnostic> {
         let mut diagnostics = vec![];
         
         for block in mir.blocks() {
@@ -4423,7 +4584,7 @@ impl MirLintPass {
     }
     
     // Actor message flow analysis
-    fn lint_message_patterns(&self, mir: &Mir) -> Vec<LintDiagnostic> {
+    fun lint_message_patterns(&self, mir: &Mir) -> Vec<LintDiagnostic> {
         self.analyze_actor_messages(mir)
             .filter(|flow| flow.has_race_condition())
             .map(|flow| LintDiagnostic {
@@ -4442,7 +4603,7 @@ impl MirLintPass {
 ```rust
 impl AstLintPass {
     // Naming conventions
-    fn lint_naming(&self, item: &Item) -> Option<LintDiagnostic> {
+    fun lint_naming(&self, item: &Item) -> Option<LintDiagnostic> {
         match item {
             Item::Function(f) if !f.name.is_snake_case() => {
                 Some(LintDiagnostic {
@@ -4465,7 +4626,7 @@ impl AstLintPass {
     }
     
     // Pipeline opportunities
-    fn lint_pipeline_opportunity(&self, expr: &Expr) -> Option<LintDiagnostic> {
+    fun lint_pipeline_opportunity(&self, expr: &Expr) -> Option<LintDiagnostic> {
         if let Expr::MethodChain(chain) = expr {
             if chain.length() >= 3 && !chain.uses_pipeline() {
                 return Some(LintDiagnostic {
@@ -4491,7 +4652,7 @@ pub struct IncrementalLinter {
 }
 
 impl IncrementalLinter {
-    pub fn lint_changed(&mut self, changes: &[FileChange]) -> LintResults {
+    pub fun lint_changed(&mut self, changes: &[FileChange]) -> LintResults {
         // Only re-lint affected modules
         let affected = self.dependency_graph.affected_modules(changes);
         
@@ -4558,7 +4719,7 @@ pub struct AutoFixer {
 }
 
 impl AutoFixer {
-    pub fn apply_fixes(&mut self, diagnostics: &[LintDiagnostic]) -> Result<()> {
+    pub fun apply_fixes(&mut self, diagnostics: &[LintDiagnostic]) -> Result<()> {
         // Collect machine-applicable fixes
         let applicable: Vec<_> = diagnostics
             .iter()
@@ -4578,7 +4739,7 @@ impl AutoFixer {
         Ok(())
     }
     
-    fn organize_fixes(&self, diagnostics: &[&LintDiagnostic]) -> Result<Vec<Fix>> {
+    fun organize_fixes(&self, diagnostics: &[&LintDiagnostic]) -> Result<Vec<Fix>> {
         // Detect and resolve conflicts
         let mut fixes = Vec::new();
         let mut occupied_spans = IntervalTree::new();
@@ -4602,7 +4763,7 @@ impl AutoFixer {
 
 ```rust
 impl QualityGate for LintEngine {
-    fn check(&self, results: &LintResults) -> GateStatus {
+    fun check(&self, results: &LintResults) -> GateStatus {
         // Any deny-level lint fails the gate
         if results.has_errors() {
             return GateStatus::Failed {
@@ -4638,7 +4799,7 @@ impl QualityGate for LintEngine {
 ```rust
 // User-defined lints via procedural macros
 #[ruchy_lint]
-pub fn no_magic_numbers(expr: &Expr) -> Option<LintDiagnostic> {
+pub fun no_magic_numbers(expr: &Expr) -> Option<LintDiagnostic> {
     if let Expr::Literal(Literal::Integer(n)) = expr {
         if *n != 0 && *n != 1 && !expr.in_const_context() {
             return Some(LintDiagnostic {
@@ -4654,7 +4815,7 @@ pub fn no_magic_numbers(expr: &Expr) -> Option<LintDiagnostic> {
 
 // Register custom lints
 impl LintRegistry {
-    pub fn register_plugin(&mut self, plugin: LintPlugin) {
+    pub fun register_plugin(&mut self, plugin: LintPlugin) {
         for rule in plugin.rules() {
             self.rules.insert(rule.id.clone(), rule);
         }
@@ -4787,7 +4948,7 @@ pub struct PerformanceProfile {
 
 // Benchmark suite
 #[bench]
-fn bench_fibonacci(b: &mut Bencher) {
+fun bench_fibonacci(b: &mut Bencher) {
     let ruchy = "fun fib(n) = if n < 2 { n } else { fib(n-1) + fib(n-2) }";
     let rust = compile_to_rust(ruchy);
     
@@ -4808,7 +4969,7 @@ pub struct PmatIntegration {
 }
 
 impl PmatIntegration {
-    pub async fn validate_code(&self, code: &str) -> ValidationResult {
+    pub async fun validate_code(&self, code: &str) -> ValidationResult {
         let metrics = self.analyzer.analyze(code).await?;
         
         // Enforce Toyota Way standards
@@ -4835,7 +4996,7 @@ impl PmatIntegration {
         Ok(ValidationResult::Pass)
     }
     
-    pub async fn suggest_improvements(&self, code: &str) -> Vec<Suggestion> {
+    pub async fun suggest_improvements(&self, code: &str) -> Vec<Suggestion> {
         self.quality_proxy.analyze_and_suggest(code).await
     }
 }
@@ -4851,7 +5012,7 @@ pub struct PmatMcpServer {
 }
 
 impl PmatMcpServer {
-    pub fn new() -> Self {
+    pub fun new() -> Self {
         let tools = vec![
             // Analysis tools
             McpTool::new("analyze_complexity", analyze_complexity_handler),
@@ -4881,7 +5042,7 @@ impl PmatMcpServer {
 }
 
 // Example: Complexity analysis with composition
-async fn analyze_complexity_handler(params: Value) -> Result<Value> {
+async fun analyze_complexity_handler(params: Value) -> Result<Value> {
     let path = params["path"].as_str().unwrap();
     let include_cognitive = params["include_cognitive"].as_bool().unwrap_or(true);
     

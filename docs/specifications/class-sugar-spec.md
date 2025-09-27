@@ -1,169 +1,270 @@
-# Ruchy Class Sugar Specification
-Version 1.0.0
+# Ruchy Class and Struct Specification (Swift Model)
+Version 2.0.0
 
 ## Abstract
 
-This specification defines syntactic sugar for class-like constructs in Ruchy that provide familiar object-oriented syntax while transpiling to idiomatic Rust code with zero runtime overhead.
+This specification defines the exact Swift model for structs (value types) and classes (reference types) in Ruchy, providing clear semantics that developers already understand while transpiling to idiomatic Rust code.
+
+## Core Principle
+
+**Structs are value types. Classes are reference types.** This fundamental distinction, borrowed directly from Swift, drives all design decisions.
 
 ## Motivation
 
-- Lower barrier to entry for developers from OOP backgrounds
-- Provide progressive disclosure path from familiar to idiomatic
-- Maintain zero-cost abstraction principle
-- Enable gradual migration from class-based codebases
+- Adopt proven semantics from Swift that millions of developers understand
+- Clear mental model: value vs reference semantics
+- Performance by default with structs (stack allocation, no ARC)
+- Flexibility when needed with classes (inheritance, shared state)
+- Zero surprises for developers coming from Swift/modern languages
 
 ## Syntax Grammar
 
 ```ebnf
-class_decl = [visibility] "class" ident [inheritance] [traits] "{" class_body "}"
+// Struct declaration (value type)
+struct_decl = [visibility] "struct" ident [generic_params] "{" struct_body "}"
+struct_body = (field_decl | method_impl)*
 
+// Class declaration (reference type)
+class_decl = [visibility] "class" ident [inheritance] "{" class_body "}"
+class_body = (field_decl | init_decl | method_decl | deinit_decl)*
+
+// Common elements
 visibility = "pub" | "pub(crate)" | "pub(super)"
+field_decl = [visibility] ident ":" type ["=" expr]
 
+// Struct-specific
+method_impl = ["mutating"] "fn" ident "(" [self_param] ["," params] ")" ["->" type] block
+
+// Class-specific
 inheritance = ":" ident
+init_decl = "init" "(" params ")" block
+deinit_decl = "deinit" block
+method_decl = [visibility] ["override"] "fn" ident "(" [params] ")" ["->" type] block
 
-traits = "+" ident ("+" ident)*
-
-class_body = (field_decl | constructor | method_decl | static_decl)*
-
-field_decl = [visibility] ["mut"] ident ":" type ["=" expr]
-
-constructor = "new" "(" params ")" ["->" "Self"] block
-
-method_decl = [visibility] ["override"] "fn" ident "(" self_param ["," params] ")" ["->" type] block
-
-self_param = "&self" | "&mut self" | "self"
-
-static_decl = [visibility] "static" "fn" ident "(" params ")" ["->" type] block
+// Self parameters
+self_param = "self" | "&self" | "&mut self"  // structs
+// Classes don't need explicit self param in method signature
 ```
 
 ## Core Semantics
 
-### 1. Fields
+### 1. Value Types (Structs)
 
-Fields are struct members with controlled mutability:
+Structs have value semantics - assignment copies the value:
 
 ```ruchy
-class Point {
-    x: f64           # Private, immutable
-    mut y: f64       # Private, mutable
-    pub z: f64       # Public, immutable
-    pub mut w: f64   # Public, mutable
-    
-    # With defaults
-    name: String = "origin"
-    mut counter: i32 = 0
+struct Point {
+    x: f64
+    y: f64
+}
+
+// Automatic memberwise initializer
+let p1 = Point(x: 3.0, y: 4.0)
+
+// Assignment creates a COPY
+var p2 = p1
+p2.x = 5.0
+assert(p1.x == 3.0)  // p1 unchanged
+assert(p2.x == 5.0)  // p2 modified
+
+// Methods that modify need 'mutating'
+impl Point {
+    mutating fun move_by(dx: f64, dy: f64) {
+        self.x += dx
+        self.y += dy
+    }
+
+    fun distance_to(other: Point) -> f64 {
+        let dx = self.x - other.x
+        let dy = self.y - other.y
+        sqrt(dx * dx + dy * dy)
+    }
 }
 ```
 
-**Rules:**
-- Fields without `mut` cannot be modified after construction
-- Default visibility is private
-- Defaults must be const expressions or `Default::default()`
+### 2. Reference Types (Classes)
 
-### 2. Constructors
-
-Constructors use the `new` keyword:
+Classes have reference semantics - assignment shares the reference:
 
 ```ruchy
-class Rectangle {
+class Person {
+    name: String
+    age: i32
+
+    init(name: String, age: i32) {
+        self.name = name
+        self.age = age
+    }
+
+    fun have_birthday() {
+        self.age += 1  // Can mutate without 'mutating'
+    }
+}
+
+// Assignment shares reference
+let person1 = Person(name: "Alice", age: 30)
+let person2 = person1  // Same object
+person2.age = 31
+assert(person1.age == 31)  // Both see change
+
+// Identity comparison
+assert(person1 === person2)  // Same instance
+```
+
+### 3. Initialization
+
+#### Struct Initialization
+Structs get automatic memberwise initializers:
+
+```ruchy
+struct Rectangle {
     width: f64
     height: f64
-    
-    # Primary constructor
-    new(width: f64, height: f64) {
-        self.width = width
-        self.height = height
+}
+
+// Automatic memberwise init
+let r1 = Rectangle(width: 10.0, height: 5.0)
+
+// Can add custom initializers
+impl Rectangle {
+    static fun square(size: f64) -> Rectangle {
+        Rectangle(width: size, height: size)
     }
-    
-    # Overloaded constructor
-    new square(size: f64) {
-        self.width = size
-        self.height = size
+}
+
+let r2 = Rectangle::square(7.0)
+```
+
+#### Class Initialization
+Classes require explicit `init`:
+
+```ruchy
+class BankAccount {
+    owner: String
+    balance: f64
+
+    // Primary initializer
+    init(owner: String, initialDeposit: f64) {
+        self.owner = owner
+        self.balance = initialDeposit
     }
-    
-    # Constructor with validation
-    new safe(width: f64, height: f64) -> Result<Self> {
-        if width <= 0.0 || height <= 0.0 {
-            return Err("Dimensions must be positive")
+
+    // Convenience initializer
+    convenience init(owner: String) {
+        self.init(owner: owner, initialDeposit: 0.0)
+    }
+
+    // Failable initializer
+    init?(owner: String, initialDeposit: f64) {
+        if initialDeposit < 0 {
+            return nil
         }
-        Ok(Self { width, height })
+        self.owner = owner
+        self.balance = initialDeposit
     }
 }
 ```
 
 **Rules:**
-- Multiple constructors allowed via name overloading
-- Must initialize all fields without defaults
-- Cannot access methods during construction
-- `self` refers to fields being constructed, not instance
+- Classes must have at least one designated `init`
+- Convenience initializers must call designated init
+- All stored properties must be initialized
+- Failable initializers return Optional
 
-### 3. Methods
+### 4. Methods
 
-Three borrowing modes for self:
+#### Struct Methods
+Structs need `mutating` for methods that modify:
+
+```ruchy
+struct Counter {
+    count: i32
+}
+
+impl Counter {
+    // Immutable method
+    fun get() -> i32 {
+        self.count
+    }
+
+    // Mutating method
+    mutating fun increment() {
+        self.count += 1
+    }
+
+    // Static method
+    static fun zero() -> Counter {
+        Counter(count: 0)
+    }
+}
+
+var c = Counter(count: 0)
+c.increment()  // OK because c is var
+let c2 = Counter(count: 5)
+// c2.increment()  // ERROR: cannot mutate let
+```
+
+#### Class Methods
+Classes don't need `mutating`:
 
 ```ruchy
 class Counter {
-    mut count: i32 = 0
-    
-    # Immutable borrow
-    fn get(&self) -> i32 {
-        self.count
+    count: i32
+
+    init(count: i32 = 0) {
+        self.count = count
     }
-    
-    # Mutable borrow
-    fn increment(&mut self) {
-        self.count += 1
+
+    fun increment() {
+        self.count += 1  // Always allowed
     }
-    
-    # Move/consume
-    fn into_value(self) -> i32 {
-        self.count
-    }
-    
-    # Static (no self)
-    static fn new_zero() -> Self {
-        Counter { count: 0 }
+
+    class fun zero() -> Counter {
+        Counter(count: 0)
     }
 }
+
+let c = Counter()
+c.increment()  // OK even though c is let
 ```
 
-### 4. Inheritance
+### 5. Inheritance (Classes Only)
 
 Single inheritance with explicit super calls:
 
 ```ruchy
 class Vehicle {
-    wheels: u32
-    
-    new(wheels: u32) {
+    wheels: i32
+
+    init(wheels: i32) {
         self.wheels = wheels
     }
-    
-    fn description(&self) -> String {
-        format!("Vehicle with {} wheels", self.wheels)
+
+    fun description() -> String {
+        "Vehicle with \(wheels) wheels"
     }
 }
 
 class Car : Vehicle {
     brand: String
-    
-    new(brand: String) {
-        super(wheels: 4)  # Must be first statement
+
+    init(brand: String) {
         self.brand = brand
+        super.init(wheels: 4)  // Must call super.init
     }
-    
-    override fn description(&self) -> String {
-        format!("{} car with {} wheels", self.brand, self.wheels)
+
+    override fun description() -> String {
+        "\(brand) car with \(wheels) wheels"
     }
 }
 ```
 
 **Rules:**
 - Single inheritance only
-- `super()` must be first statement in constructor
-- `override` required for method overriding
-- No access to parent private fields
+- Must call `super.init()` in initializer
+- `override` required for overriding
 - `final` prevents further overriding
+- Structs do NOT support inheritance
 
 ### 5. Trait Implementation
 
@@ -179,7 +280,7 @@ class Point3D : Point + Debug + Display {
     }
     
     # Implement Display
-    fn fmt(&self, f: &mut Formatter) -> Result {
+    fun fmt(&self, f: &mut Formatter) -> Result {
         write!(f, "({}, {}, {})", self.x, self.y, self.z)
     }
 }
@@ -187,59 +288,112 @@ class Point3D : Point + Debug + Display {
 
 ## Transpilation Rules
 
-### Basic Class
+### Struct (Value Type)
 
 **Ruchy:**
 ```ruchy
-pub class Person {
-    name: String
-    mut age: u32 = 0
-    
-    new(name: String) {
-        self.name = name
+struct Point {
+    x: f64
+    y: f64
+}
+
+impl Point {
+    mutating fun move_by(dx: f64, dy: f64) {
+        self.x += dx
+        self.y += dy
     }
-    
-    fn greet(&self) -> String {
-        format!("Hello, I'm {}", self.name)
-    }
-    
-    fn birthday(&mut self) {
-        self.age += 1
+
+    fun distance() -> f64 {
+        sqrt(self.x * self.x + self.y * self.y)
     }
 }
 ```
 
 **Generated Rust:**
 ```rust
-#[derive(Clone)]
-pub struct Person {
-    name: String,
-    age: u32,
+#[derive(Clone, Copy, Debug, PartialEq)]  // Copy if all fields are Copy
+pub struct Point {
+    pub x: f64,
+    pub y: f64,
 }
+
+impl Point {
+    // Automatic memberwise init
+    pub fun new(x: f64, y: f64) -> Self {
+        Self { x, y }
+    }
+
+    pub fun move_by(&mut self, dx: f64, dy: f64) {
+        self.x += dx;
+        self.y += dy;
+    }
+
+    pub fun distance(&self) -> f64 {
+        (self.x * self.x + self.y * self.y).sqrt()
+    }
+}
+```
+
+### Class (Reference Type)
+
+**Ruchy:**
+```ruchy
+class Person {
+    name: String
+    age: i32
+
+    init(name: String, age: i32) {
+        self.name = name
+        self.age = age
+    }
+
+    fun have_birthday() {
+        self.age += 1
+    }
+
+    deinit {
+        println("Person {} deallocated", self.name)
+    }
+}
+```
+
+**Generated Rust:**
+```rust
+use std::rc::Rc;
+use std::cell::RefCell;
+
+struct PersonData {
+    name: String,
+    age: i32,
+}
+
+#[derive(Clone)]
+pub struct Person(Rc<RefCell<PersonData>>);
 
 impl Person {
-    pub fn new(name: String) -> Self {
-        Self { 
-            name,
-            age: 0,
-        }
+    pub fun new(name: String, age: i32) -> Self {
+        Person(Rc::new(RefCell::new(PersonData { name, age })))
     }
-    
-    pub fn greet(&self) -> String {
-        format!("Hello, I'm {}", self.name)
+
+    pub fun have_birthday(&self) {
+        self.0.borrow_mut().age += 1;
     }
-    
-    pub fn birthday(&mut self) {
-        self.age += 1;
+
+    pub fun name(&self) -> String {
+        self.0.borrow().name.clone()
     }
 }
 
-impl Default for Person {
-    fn default() -> Self {
-        Self {
-            name: Default::default(),
-            age: 0,
-        }
+impl Drop for PersonData {
+    fun drop(&mut self) {
+        println!("Person {} deallocated", self.name);
+    }
+}
+
+// Reference equality
+impl PartialEq for Person {
+    fun eq(&self, other: &Self) -> bool {
+        Rc::ptr_eq(&self.0, &other.0)  // Identity comparison
     }
 }
 ```
@@ -250,25 +404,25 @@ impl Default for Person {
 ```ruchy
 class Animal {
     name: String
-    
-    new(name: String) {
+
+    init(name: String) {
         self.name = name
     }
-    
-    fn speak(&self) -> String {
+
+    fun speak() -> String {
         "..."
     }
 }
 
 class Dog : Animal {
     breed: String
-    
-    new(name: String, breed: String) {
-        super(name)
+
+    init(name: String, breed: String) {
         self.breed = breed
+        super.init(name: name)
     }
-    
-    override fn speak(&self) -> String {
+
+    override fun speak() -> String {
         "Woof!"
     }
 }
@@ -277,7 +431,7 @@ class Dog : Animal {
 **Generated Rust:**
 ```rust
 trait Animal: AnimalBase {
-    fn speak(&self) -> String {
+    fun speak(&self) -> String {
         "..."
     }
 }
@@ -292,7 +446,7 @@ struct Dog {
 }
 
 impl Dog {
-    pub fn new(name: String, breed: String) -> Self {
+    pub fun new(name: String, breed: String) -> Self {
         Self {
             _base: AnimalBase { name },
             breed,
@@ -301,13 +455,13 @@ impl Dog {
 }
 
 impl Animal for Dog {
-    fn speak(&self) -> String {
+    fun speak(&self) -> String {
         "Woof!"
     }
 }
 
 impl AnimalBase for Dog {
-    fn name(&self) -> &String {
+    fun name(&self) -> &String {
         &self._base.name
     }
 }
@@ -361,12 +515,12 @@ class Vector {
 class Box<T> {
     value: T
     
-    new(value: T) {
+    init(value: T) {
         self.value = value
     }
     
-    fn map<U>(&self, f: impl Fn(&T) -> U) -> Box<U> {
-        Box::new(f(&self.value))
+    fun map<U>(&self, f: impl Fn(&T) -> U) -> Box<U> {
+        Box(value: f(&self.value))
     }
 }
 ```
@@ -401,11 +555,11 @@ class MyClass:  # Python-style colon
 Class sugar provides specialized error messages:
 
 ```
-Error: Field 'name' not initialized in constructor
+Error: Field 'name' not initialized in init
   --> src/main.ruchy:8:5
    |
- 8 |     new(age: u32) {
-   |     ^^^
+ 8 |     init(age: u32) {
+   |     ^^^^
    |
 help: Initialize field 'name' or provide a default value
    |
@@ -432,12 +586,12 @@ class Point {
     x: f64
     y: f64
     
-    new(x: f64, y: f64) {
+    init(x: f64, y: f64) {
         self.x = x
         self.y = y
     }
     
-    fn distance(&self) -> f64 {
+    fun distance(&self) -> f64 {
         (self.x.pow(2) + self.y.pow(2)).sqrt()
     }
 }
@@ -448,7 +602,7 @@ class Point {
 type Point = { x: f64, y: f64 }
 
 extend Point {
-    fn distance(&self) -> f64 {
+    fun distance(&self) -> f64 {
         (self.x.pow(2) + self.y.pow(2)).sqrt()
     }
 }
@@ -476,24 +630,24 @@ extend Point {
 
 ```ruchy
 abstract class Shape {
-    fn area(&self) -> f64
-    fn perimeter(&self) -> f64
+    fun area(&self) -> f64
+    fun perimeter(&self) -> f64
 }
 
 class Rectangle : Shape {
     width: f64
     height: f64
     
-    new(width: f64, height: f64) {
+    init(width: f64, height: f64) {
         self.width = width
         self.height = height
     }
     
-    override fn area(&self) -> f64 {
+    override fun area(&self) -> f64 {
         self.width * self.height
     }
     
-    override fn perimeter(&self) -> f64 {
+    override fun perimeter(&self) -> f64 {
         2.0 * (self.width + self.height)
     }
 }
@@ -501,23 +655,23 @@ class Rectangle : Shape {
 class Circle : Shape {
     radius: f64
     
-    new(radius: f64) {
+    init(radius: f64) {
         self.radius = radius
     }
     
-    override fn area(&self) -> f64 {
+    override fun area(&self) -> f64 {
         PI * self.radius * self.radius
     }
     
-    override fn perimeter(&self) -> f64 {
+    override fun perimeter(&self) -> f64 {
         2.0 * PI * self.radius
     }
 }
 
 # Usage
 let shapes: Vec<dyn Shape> = vec![
-    Rectangle::new(10.0, 5.0),
-    Circle::new(3.0),
+    Rectangle(width: 10.0, height: 5.0),
+    Circle(radius: 3.0),
 ]
 
 for shape in shapes {

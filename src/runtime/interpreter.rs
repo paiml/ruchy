@@ -912,6 +912,34 @@ impl Interpreter {
                 state,
                 handlers,
             } => self.eval_actor_definition(name, state, handlers),
+            ExprKind::Struct {
+                name,
+                type_params,
+                fields,
+                is_pub,
+            } => self.eval_struct_definition(name, type_params, fields, *is_pub),
+            ExprKind::Class {
+                name,
+                type_params,
+                superclass,
+                traits,
+                fields,
+                constructors,
+                methods,
+                derives,
+                is_pub,
+            } => self.eval_class_definition(
+                name,
+                type_params,
+                superclass.as_ref(),
+                traits,
+                fields,
+                constructors,
+                methods,
+                derives,
+                *is_pub,
+            ),
+            ExprKind::StructLiteral { name, fields } => self.eval_struct_literal(name, fields),
             _ => Err(InterpreterError::RuntimeError(format!(
                 "Expression type not yet implemented: {expr_kind:?}"
             ))),
@@ -1114,6 +1142,41 @@ impl Interpreter {
     fn eval_qualified_name(&self, module: &str, name: &str) -> Result<Value, InterpreterError> {
         if module == "HashMap" && name == "new" {
             Ok(Value::from_string("__builtin_hashmap__".to_string()))
+        } else if name == "new" {
+            // Check if this is a class constructor call
+            if let Ok(class_value) = self.lookup_variable(module) {
+                if let Value::Object(ref class_info) = class_value {
+                    // Check if it's a class definition
+                    if let Some(Value::String(ref type_str)) = class_info.get("__type") {
+                        if type_str.as_ref() == "Class" {
+                            // Return a special marker for class instantiation
+                            return Ok(Value::from_string(format!(
+                                "__class_constructor__:{}",
+                                module
+                            )));
+                        }
+                    }
+                }
+            }
+            // Check if this is a struct constructor call
+            if let Ok(struct_value) = self.lookup_variable(module) {
+                if let Value::Object(ref struct_info) = struct_value {
+                    // Check if it's a struct definition
+                    if let Some(Value::String(ref type_str)) = struct_info.get("__type") {
+                        if type_str.as_ref() == "Struct" {
+                            // Return a special marker for struct instantiation
+                            return Ok(Value::from_string(format!(
+                                "__struct_constructor__:{}",
+                                module
+                            )));
+                        }
+                    }
+                }
+            }
+            Err(InterpreterError::RuntimeError(format!(
+                "Unknown qualified name: {}::{}",
+                module, name
+            )))
         } else {
             Err(InterpreterError::RuntimeError(format!(
                 "Unknown qualified name: {}::{}",
@@ -1137,6 +1200,38 @@ impl Interpreter {
 
     /// Look up a variable in the environment (searches from innermost to outermost)
     fn lookup_variable(&self, name: &str) -> Result<Value, InterpreterError> {
+        // Check if this is a qualified name (e.g., "Point::new")
+        if name.contains("::") {
+            let parts: Vec<&str> = name.split("::").collect();
+            if parts.len() == 2 && parts[1] == "new" {
+                // This is a constructor call pattern
+                let class_or_struct_name = parts[0];
+
+                // Look up the class or struct
+                for env in self.env_stack.iter().rev() {
+                    if let Some(value) = env.get(class_or_struct_name) {
+                        if let Value::Object(ref info) = value {
+                            // Check if it's a class or struct
+                            if let Some(Value::String(ref type_str)) = info.get("__type") {
+                                if type_str.as_ref() == "Class" {
+                                    return Ok(Value::from_string(format!(
+                                        "__class_constructor__:{}",
+                                        class_or_struct_name
+                                    )));
+                                } else if type_str.as_ref() == "Struct" {
+                                    return Ok(Value::from_string(format!(
+                                        "__struct_constructor__:{}",
+                                        class_or_struct_name
+                                    )));
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Normal variable lookup
         for env in self.env_stack.iter().rev() {
             if let Some(value) = env.get(name) {
                 return Ok(value.clone());
@@ -1195,6 +1290,16 @@ impl Interpreter {
     /// Call a function with given arguments
     fn call_function(&mut self, func: Value, args: &[Value]) -> Result<Value, InterpreterError> {
         match func {
+            Value::String(ref s) if s.starts_with("__class_constructor__:") => {
+                // Extract class name from the marker
+                let class_name = s.strip_prefix("__class_constructor__:").unwrap();
+                self.instantiate_class(class_name, args)
+            }
+            Value::String(ref s) if s.starts_with("__struct_constructor__:") => {
+                // Extract struct name from the marker
+                let struct_name = s.strip_prefix("__struct_constructor__:").unwrap();
+                self.instantiate_struct_with_args(struct_name, args)
+            }
             Value::String(s) if s.starts_with("__builtin_") => {
                 // Delegate to extracted builtin module
                 match crate::runtime::eval_builtin::eval_builtin_function(&s, args)? {
@@ -2214,6 +2319,380 @@ impl Interpreter {
         self.set_variable(name, actor_obj.clone());
 
         Ok(actor_obj)
+    }
+
+    /// Evaluate struct definition
+    /// Creates a struct type descriptor that can be used for instantiation
+    /// Complexity: 7
+    fn eval_struct_definition(
+        &mut self,
+        name: &str,
+        _type_params: &[String], // TODO: Generic type parameters
+        fields: &[crate::frontend::ast::StructField],
+        _is_pub: bool,
+    ) -> Result<Value, InterpreterError> {
+        use std::collections::HashMap;
+
+        // Create a struct type object
+        let mut struct_type = HashMap::new();
+
+        // Store struct metadata
+        struct_type.insert(
+            "__type".to_string(),
+            Value::from_string("Struct".to_string()),
+        );
+        struct_type.insert("__name".to_string(), Value::from_string(name.to_string()));
+
+        // Store field definitions
+        let mut field_defs = HashMap::new();
+        for field in fields {
+            // Store field type information
+            let type_name = match &field.ty.kind {
+                crate::frontend::ast::TypeKind::Named(n) => n.clone(),
+                crate::frontend::ast::TypeKind::Array { .. } => "Array".to_string(),
+                crate::frontend::ast::TypeKind::Optional(_) => "Option".to_string(),
+                crate::frontend::ast::TypeKind::List(_) => "List".to_string(),
+                crate::frontend::ast::TypeKind::Tuple(_) => "Tuple".to_string(),
+                _ => "Any".to_string(),
+            };
+
+            let mut field_info = HashMap::new();
+            field_info.insert("type".to_string(), Value::from_string(type_name));
+            field_info.insert("is_pub".to_string(), Value::from_bool(field.is_pub));
+            field_info.insert("is_mut".to_string(), Value::from_bool(field.is_mut));
+
+            field_defs.insert(
+                field.name.clone(),
+                Value::Object(std::rc::Rc::new(field_info)),
+            );
+        }
+
+        struct_type.insert(
+            "__fields".to_string(),
+            Value::Object(std::rc::Rc::new(field_defs)),
+        );
+
+        // Register this struct type in the environment
+        let struct_obj = Value::Object(std::rc::Rc::new(struct_type));
+        self.set_variable(name, struct_obj.clone());
+
+        Ok(struct_obj)
+    }
+
+    /// Evaluate struct literal (instantiation)
+    /// Creates an instance of a struct with provided field values
+    /// Complexity: 8
+    fn eval_struct_literal(
+        &mut self,
+        name: &str,
+        fields: &[(String, crate::frontend::ast::Expr)],
+    ) -> Result<Value, InterpreterError> {
+        use std::collections::HashMap;
+
+        // Look up the struct type definition
+        let struct_type = self.lookup_variable(name).map_err(|_| {
+            InterpreterError::RuntimeError(format!("Undefined struct type: {name}"))
+        })?;
+
+        // Verify it's actually a struct type
+        let struct_type_obj = if let Value::Object(obj) = &struct_type {
+            obj
+        } else {
+            return Err(InterpreterError::RuntimeError(format!(
+                "{name} is not a struct type"
+            )));
+        };
+
+        // Verify it's a struct type (not actor or other type)
+        let type_name = struct_type_obj
+            .get("__type")
+            .and_then(|v| {
+                if let Value::String(s) = v {
+                    Some(s.as_ref())
+                } else {
+                    None
+                }
+            })
+            .unwrap_or("");
+
+        if type_name != "Struct" {
+            return Err(InterpreterError::RuntimeError(format!(
+                "{name} is not a struct type (it's a {type_name})"
+            )));
+        }
+
+        // Get field definitions
+        let field_defs = struct_type_obj
+            .get("__fields")
+            .and_then(|v| {
+                if let Value::Object(obj) = v {
+                    Some(obj)
+                } else {
+                    None
+                }
+            })
+            .ok_or_else(|| {
+                InterpreterError::RuntimeError(format!("Invalid struct type definition for {name}"))
+            })?;
+
+        // Create struct instance
+        let mut instance = HashMap::new();
+
+        // Add metadata
+        instance.insert(
+            "__struct_type".to_string(),
+            Value::from_string(name.to_string()),
+        );
+
+        // Evaluate and set field values
+        for (field_name, field_expr) in fields {
+            // Verify field exists in struct definition
+            if !field_defs.contains_key(field_name) {
+                return Err(InterpreterError::RuntimeError(format!(
+                    "Struct {name} does not have field '{field_name}'"
+                )));
+            }
+
+            // Evaluate field value
+            let field_value = self.eval_expr(field_expr)?;
+            instance.insert(field_name.clone(), field_value);
+        }
+
+        // Check that all required fields are provided
+        for field_name in field_defs.keys() {
+            if !instance.contains_key(field_name) && field_name != "__struct_type" {
+                return Err(InterpreterError::RuntimeError(format!(
+                    "Missing required field '{field_name}' for struct {name}"
+                )));
+            }
+        }
+
+        Ok(Value::Object(std::rc::Rc::new(instance)))
+    }
+
+    /// Evaluate class definition (placeholder for now)
+    /// Complexity: 5
+    fn eval_class_definition(
+        &mut self,
+        name: &str,
+        _type_params: &[String],
+        superclass: Option<&String>,
+        _traits: &[String],
+        fields: &[crate::frontend::ast::StructField],
+        constructors: &[crate::frontend::ast::Constructor],
+        methods: &[crate::frontend::ast::ClassMethod],
+        _derives: &[String],
+        _is_pub: bool,
+    ) -> Result<Value, InterpreterError> {
+        use std::collections::HashMap;
+        use std::rc::Rc;
+
+        // Create class metadata object
+        let mut class_info = HashMap::new();
+
+        // Mark as class type
+        class_info.insert(
+            "__type".to_string(),
+            Value::from_string("Class".to_string()),
+        );
+        class_info.insert("__name".to_string(), Value::from_string(name.to_string()));
+
+        // Store superclass if present
+        if let Some(parent) = superclass {
+            class_info.insert(
+                "__superclass".to_string(),
+                Value::from_string(parent.clone()),
+            );
+        }
+
+        // Store field definitions (similar to struct)
+        let mut field_defs = HashMap::new();
+        for field in fields {
+            let mut field_info = HashMap::new();
+
+            // Store field type
+            let type_str = format!("{:?}", field.ty);
+            field_info.insert("type".to_string(), Value::from_string(type_str));
+
+            // Store visibility
+            field_info.insert("is_pub".to_string(), Value::Bool(field.is_pub));
+            field_info.insert("is_mut".to_string(), Value::Bool(field.is_mut));
+
+            // Store default value if present
+            if let Some(ref default) = field.default_value {
+                // Evaluate default value
+                let default_val = self.eval_expr(default)?;
+                field_info.insert("default".to_string(), default_val);
+            }
+
+            field_defs.insert(
+                field.name.clone(),
+                Value::Object(std::rc::Rc::new(field_info)),
+            );
+        }
+        class_info.insert("__fields".to_string(), Value::Object(Rc::new(field_defs)));
+
+        // Store constructors
+        let mut constructor_info = HashMap::new();
+        for constructor in constructors {
+            // Store constructor by name (default name is "new")
+            let ctor_name = constructor
+                .name
+                .as_ref()
+                .unwrap_or(&"new".to_string())
+                .clone();
+
+            // Create constructor metadata
+            let mut ctor_meta = HashMap::new();
+            ctor_meta.insert(
+                "params".to_string(),
+                Value::from_string(format!("{:?}", constructor.params)),
+            );
+            ctor_meta.insert(
+                "body".to_string(),
+                Value::from_string(format!("{:?}", constructor.body)),
+            );
+
+            constructor_info.insert(ctor_name, Value::Object(Rc::new(ctor_meta)));
+        }
+        class_info.insert(
+            "__constructors".to_string(),
+            Value::Object(Rc::new(constructor_info)),
+        );
+
+        // Store methods
+        let mut method_info = HashMap::new();
+        for method in methods {
+            let mut method_meta = HashMap::new();
+            method_meta.insert("name".to_string(), Value::from_string(method.name.clone()));
+            method_meta.insert("is_static".to_string(), Value::Bool(method.is_static));
+            method_meta.insert("is_override".to_string(), Value::Bool(method.is_override));
+            method_meta.insert(
+                "params".to_string(),
+                Value::from_string(format!("{:?}", method.params)),
+            );
+            method_meta.insert(
+                "body".to_string(),
+                Value::from_string(format!("{:?}", method.body)),
+            );
+
+            method_info.insert(method.name.clone(), Value::Object(Rc::new(method_meta)));
+        }
+        class_info.insert("__methods".to_string(), Value::Object(Rc::new(method_info)));
+
+        // Store the class definition in the environment
+        let class_value = Value::Object(Rc::new(class_info));
+        self.set_variable(name, class_value.clone());
+
+        Ok(class_value)
+    }
+
+    fn instantiate_class(
+        &mut self,
+        class_name: &str,
+        _args: &[Value],
+    ) -> Result<Value, InterpreterError> {
+        // Look up the class definition
+        let class_def = self.lookup_variable(class_name)?;
+
+        if let Value::Object(ref class_info) = class_def {
+            // Verify this is a class
+            if let Some(Value::String(ref type_str)) = class_info.get("__type") {
+                if type_str.as_ref() != "Class" {
+                    return Err(InterpreterError::RuntimeError(format!(
+                        "{} is not a class",
+                        class_name
+                    )));
+                }
+            }
+
+            // Create instance object
+            let mut instance = HashMap::new();
+            instance.insert(
+                "__class".to_string(),
+                Value::from_string(class_name.to_string()),
+            );
+
+            // Initialize fields with default values or provided arguments
+            if let Some(Value::Object(ref fields)) = class_info.get("__fields") {
+                for (field_name, field_info) in fields.iter() {
+                    if let Value::Object(ref field_meta) = field_info {
+                        // Use default value if present
+                        if let Some(default) = field_meta.get("default") {
+                            instance.insert(field_name.clone(), default.clone());
+                        } else {
+                            // For now, initialize with nil
+                            instance.insert(field_name.clone(), Value::Nil);
+                        }
+                    }
+                }
+            }
+
+            // TODO: Execute the constructor (init method) with provided arguments
+            // For now, we're just creating the instance with default values
+
+            Ok(Value::Object(Rc::new(instance)))
+        } else {
+            Err(InterpreterError::RuntimeError(format!(
+                "{} is not a class definition",
+                class_name
+            )))
+        }
+    }
+
+    fn instantiate_struct_with_args(
+        &mut self,
+        struct_name: &str,
+        args: &[Value],
+    ) -> Result<Value, InterpreterError> {
+        // Look up the struct definition
+        let struct_def = self.lookup_variable(struct_name)?;
+
+        if let Value::Object(ref struct_info) = struct_def {
+            // Verify this is a struct
+            if let Some(Value::String(ref type_str)) = struct_info.get("__type") {
+                if type_str.as_ref() != "Struct" {
+                    return Err(InterpreterError::RuntimeError(format!(
+                        "{} is not a struct",
+                        struct_name
+                    )));
+                }
+            }
+
+            // For structs with positional arguments, we need to map them to fields
+            // This is a simplified version - real implementation would need parameter names
+            // For now, create an empty struct instance
+            let mut instance = HashMap::new();
+            instance.insert(
+                "__struct".to_string(),
+                Value::from_string(struct_name.to_string()),
+            );
+
+            // Initialize fields with default values
+            if let Some(Value::Object(ref fields)) = struct_info.get("__fields") {
+                // Map positional arguments to fields (assuming order matches definition)
+                for (i, (field_name, field_info)) in fields.iter().enumerate() {
+                    if i < args.len() {
+                        instance.insert(field_name.clone(), args[i].clone());
+                    } else if let Value::Object(ref field_meta) = field_info {
+                        // Use default value if present
+                        if let Some(default) = field_meta.get("default") {
+                            instance.insert(field_name.clone(), default.clone());
+                        } else {
+                            // Initialize with default for type
+                            instance.insert(field_name.clone(), Value::Nil);
+                        }
+                    }
+                }
+            }
+
+            Ok(Value::Object(Rc::new(instance)))
+        } else {
+            Err(InterpreterError::RuntimeError(format!(
+                "{} is not a struct definition",
+                struct_name
+            )))
+        }
     }
 
     fn eval_dataframe_method(
