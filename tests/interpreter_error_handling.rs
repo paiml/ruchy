@@ -1054,7 +1054,7 @@ mod error_reporting {
         interp.eval_expect_success("fn add(a, b) { a + b }");
         let err = interp.eval_expect_error("add(1)");
         if let InterpreterError::RuntimeError(msg) = err {
-            assert!(msg.contains("argument") || msg.contains("parameter") || msg.contains("2"));
+            assert!(msg.contains("argument") || msg.contains("parameter") || msg.contains('2'));
         } else {
             panic!("Expected RuntimeError");
         }

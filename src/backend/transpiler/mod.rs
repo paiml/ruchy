@@ -770,7 +770,7 @@ impl Transpiler {
                     // Trait definitions and implementations are top-level items
                     functions.push(self.transpile_type_decl_expr(expr)?);
                 }
-                ExprKind::Struct { .. } | ExprKind::Actor { .. } => {
+                ExprKind::Struct { .. } | ExprKind::Class { .. } | ExprKind::Actor { .. } => {
                     // Struct definitions and actor definitions are top-level items
                     functions.push(self.transpile_expr(expr)?);
                 }
@@ -1095,7 +1095,10 @@ impl Transpiler {
     ) -> Result<TokenStream> {
         // Check if this is a top-level item that should not be wrapped in main
         match &expr.kind {
-            ExprKind::Struct { .. } | ExprKind::Actor { .. } | ExprKind::Impl { .. } => {
+            ExprKind::Struct { .. }
+            | ExprKind::Class { .. }
+            | ExprKind::Actor { .. }
+            | ExprKind::Impl { .. } => {
                 // Structs, actors, and impl blocks should be top-level items
                 let item_tokens = self.transpile_expr(expr)?;
                 match (needs_polars, needs_hashmap) {
@@ -1290,7 +1293,7 @@ impl Transpiler {
     pub fn transpile_expr(&self, expr: &Expr) -> Result<TokenStream> {
         use ExprKind::{
             Actor, ActorQuery, ActorSend, ArrayInit, Ask, Assign, AsyncBlock, AsyncLambda, Await,
-            Binary, Call, Command, CompoundAssign, DataFrame, DataFrameOperation,
+            Binary, Call, Class, Command, CompoundAssign, DataFrame, DataFrameOperation,
             DictComprehension, Err, FieldAccess, For, Function, Identifier, If, IfLet, IndexAccess,
             Lambda, List, ListComprehension, Literal, Loop, Macro, Match, MethodCall, None,
             ObjectLiteral, Ok, PostDecrement, PostIncrement, PreDecrement, PreIncrement,
@@ -1331,6 +1334,7 @@ impl Transpiler {
             }
             // Structures
             Struct { .. }
+            | Class { .. }
             | StructLiteral { .. }
             | ObjectLiteral { .. }
             | FieldAccess { .. }

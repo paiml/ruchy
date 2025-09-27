@@ -658,7 +658,7 @@ impl Transpiler {
         }
     }
 
-    /// Transpiles set literals into HashSet
+    /// Transpiles set literals into `HashSet`
     pub fn transpile_set(&self, elements: &[Expr]) -> Result<TokenStream> {
         // Check if any elements are spread expressions
         let has_spread = elements

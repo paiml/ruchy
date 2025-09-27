@@ -279,22 +279,22 @@ mod test_dataframe {
     // DataFrame joins
     #[test]
     fn test_dataframe_inner_join() {
-        let code = r#"
+        let code = r"
             fun join_datasets(df1: DataFrame, df2: DataFrame) -> DataFrame {
                 df1.join(df2)
             }
-        "#;
+        ";
         let result = compile(code);
         assert!(result.is_ok(), "Failed to compile DataFrame inner join");
     }
 
     #[test]
     fn test_dataframe_left_join() {
-        let code = r#"
+        let code = r"
             fun left_merge(df1: DataFrame, df2: DataFrame) -> DataFrame {
                 df1.join(df2)
             }
-        "#;
+        ";
         let result = compile(code);
         assert!(result.is_ok(), "Failed to compile DataFrame left join");
     }

@@ -237,7 +237,7 @@ mod control_flow_refactor_tests {
                 ExprKind::Literal(Literal::Integer(2)) => {
                     // Body: decrement and return counter
                     counter -= 1;
-                    Ok(Value::Integer(counter as i64))
+                    Ok(Value::Integer(i64::from(counter)))
                 }
                 _ => Ok(Value::Nil),
             }
@@ -423,7 +423,7 @@ mod control_flow_refactor_tests {
 
         #[quickcheck]
         fn test_match_never_panics(value: i32) -> TestResult {
-            let expr = make_literal_expr(value as i64);
+            let expr = make_literal_expr(i64::from(value));
             let arms = vec![MatchArm {
                 pattern: Pattern::Wildcard,
                 guard: None,
@@ -434,7 +434,7 @@ mod control_flow_refactor_tests {
             let result = eval_match(
                 &expr,
                 &arms,
-                |_| Ok(Value::Integer(value as i64)),
+                |_| Ok(Value::Integer(i64::from(value))),
                 |_, _| Ok(true),
             );
 
@@ -446,7 +446,7 @@ mod control_flow_refactor_tests {
         fn test_while_terminates(iterations: u8) -> TestResult {
             let condition = make_literal_expr(1);
             let body = make_literal_expr(2);
-            let mut count = iterations as i32;
+            let mut count = i32::from(iterations);
 
             let result = eval_while_loop(&condition, &body, |expr| {
                 match &expr.kind {
@@ -458,7 +458,7 @@ mod control_flow_refactor_tests {
                     ExprKind::Literal(Literal::Integer(2)) => {
                         // Body
                         count -= 1;
-                        Ok(Value::Integer(count as i64))
+                        Ok(Value::Integer(i64::from(count)))
                     }
                     _ => Ok(Value::Nil),
                 }

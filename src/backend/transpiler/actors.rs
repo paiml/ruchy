@@ -258,6 +258,8 @@ mod tests {
             name: "count".to_string(),
             ty: make_type("i32"),
             is_pub: false,
+            is_mut: false,
+            default_value: None,
         }];
         let handlers = vec![];
 
@@ -451,11 +453,15 @@ mod tests {
                 name: "value".to_string(),
                 ty: make_type("String"),
                 is_pub: false,
+                is_mut: false,
+                default_value: None,
             },
             StructField {
                 name: "count".to_string(),
                 ty: make_type("usize"),
                 is_pub: false,
+                is_mut: false,
+                default_value: None,
             },
         ];
         let handlers = vec![];

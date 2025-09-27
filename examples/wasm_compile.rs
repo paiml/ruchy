@@ -61,21 +61,21 @@ fn compile_example(
     source: &str,
     output_file: &str,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    println!("📝 Compiling: {}", name);
+    println!("📝 Compiling: {name}");
     println!("   Source: {}", source.lines().next().unwrap_or("").trim());
 
     // Parse the source
     let mut parser = Parser::new(source);
-    let ast = parser.parse().map_err(|e| format!("Parse error: {}", e))?;
+    let ast = parser.parse().map_err(|e| format!("Parse error: {e}"))?;
 
     // Generate WASM
     let emitter = WasmEmitter::new();
     let wasm_bytes = emitter
         .emit(&ast)
-        .map_err(|e| format!("WASM generation error: {}", e))?;
+        .map_err(|e| format!("WASM generation error: {e}"))?;
 
     // Validate WASM
-    wasmparser::validate(&wasm_bytes).map_err(|e| format!("WASM validation error: {}", e))?;
+    wasmparser::validate(&wasm_bytes).map_err(|e| format!("WASM validation error: {e}"))?;
 
     // Save to file
     fs::write(output_file, &wasm_bytes)?;

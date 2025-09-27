@@ -16,7 +16,7 @@ impl InterpreterExt for Interpreter {
         let mut parser = Parser::new(code);
         let expr = parser
             .parse()
-            .map_err(|e| InterpreterError::RuntimeError(format!("Parse error: {:?}", e)))?;
+            .map_err(|e| InterpreterError::RuntimeError(format!("Parse error: {e:?}")))?;
 
         self.eval_expr(&expr)
     }
@@ -384,13 +384,13 @@ mod control_flow_tests {
     #[test]
     fn test_nested_if() {
         let mut interp = Interpreter::new();
-        let code = r#"
+        let code = r"
             if true {
                 if false { 1 } else { 2 }
             } else {
                 3
             }
-        "#;
+        ";
         let result = interp.eval_string(code);
         assert_eq!(result, Ok(Value::Integer(2)));
     }
@@ -398,13 +398,13 @@ mod control_flow_tests {
     #[test]
     fn test_for_loop_array() {
         let mut interp = Interpreter::new();
-        let code = r#"
+        let code = r"
             let sum = 0
             for x in [1, 2, 3] {
                 sum = sum + x
             }
             sum
-        "#;
+        ";
         let result = interp.eval_string(code);
         assert_eq!(result, Ok(Value::Integer(6)));
     }
@@ -412,13 +412,13 @@ mod control_flow_tests {
     #[test]
     fn test_for_loop_range_exclusive() {
         let mut interp = Interpreter::new();
-        let code = r#"
+        let code = r"
             let sum = 0
             for i in 0..5 {
                 sum = sum + i
             }
             sum
-        "#;
+        ";
         let result = interp.eval_string(code);
         assert_eq!(result, Ok(Value::Integer(10))); // 0 + 1 + 2 + 3 + 4
     }
@@ -426,13 +426,13 @@ mod control_flow_tests {
     #[test]
     fn test_for_loop_range_inclusive() {
         let mut interp = Interpreter::new();
-        let code = r#"
+        let code = r"
             let sum = 0
             for i in 0..=5 {
                 sum = sum + i
             }
             sum
-        "#;
+        ";
         let result = interp.eval_string(code);
         assert_eq!(result, Ok(Value::Integer(15))); // 0 + 1 + 2 + 3 + 4 + 5
     }
@@ -440,14 +440,14 @@ mod control_flow_tests {
     #[test]
     fn test_for_loop_break() {
         let mut interp = Interpreter::new();
-        let code = r#"
+        let code = r"
             let sum = 0
             for i in 0..10 {
                 if i == 5 { break }
                 sum = sum + i
             }
             sum
-        "#;
+        ";
         let result = interp.eval_string(code);
         assert_eq!(result, Ok(Value::Integer(10))); // 0 + 1 + 2 + 3 + 4
     }
@@ -455,14 +455,14 @@ mod control_flow_tests {
     #[test]
     fn test_for_loop_continue() {
         let mut interp = Interpreter::new();
-        let code = r#"
+        let code = r"
             let sum = 0
             for i in 0..5 {
                 if i == 2 { continue }
                 sum = sum + i
             }
             sum
-        "#;
+        ";
         let result = interp.eval_string(code);
         assert_eq!(result, Ok(Value::Integer(8))); // 0 + 1 + 3 + 4
     }
@@ -470,7 +470,7 @@ mod control_flow_tests {
     #[test]
     fn test_while_loop() {
         let mut interp = Interpreter::new();
-        let code = r#"
+        let code = r"
             let i = 0
             let sum = 0
             while i < 5 {
@@ -478,7 +478,7 @@ mod control_flow_tests {
                 i = i + 1
             }
             sum
-        "#;
+        ";
         let result = interp.eval_string(code);
         assert_eq!(result, Ok(Value::Integer(10)));
     }
@@ -486,14 +486,14 @@ mod control_flow_tests {
     #[test]
     fn test_while_loop_break() {
         let mut interp = Interpreter::new();
-        let code = r#"
+        let code = r"
             let i = 0
             while true {
                 if i == 5 { break }
                 i = i + 1
             }
             i
-        "#;
+        ";
         let result = interp.eval_string(code);
         assert_eq!(result, Ok(Value::Integer(5)));
     }
@@ -501,7 +501,7 @@ mod control_flow_tests {
     #[test]
     fn test_while_loop_continue() {
         let mut interp = Interpreter::new();
-        let code = r#"
+        let code = r"
             let i = 0
             let sum = 0
             while i < 5 {
@@ -510,7 +510,7 @@ mod control_flow_tests {
                 sum = sum + i
             }
             sum
-        "#;
+        ";
         let result = interp.eval_string(code);
         assert_eq!(result, Ok(Value::Integer(12))); // 1 + 2 + 4 + 5
     }
@@ -547,7 +547,7 @@ mod control_flow_tests {
     #[test]
     fn test_nested_loops() {
         let mut interp = Interpreter::new();
-        let code = r#"
+        let code = r"
             let sum = 0
             for i in 0..3 {
                 for j in 0..3 {
@@ -555,7 +555,7 @@ mod control_flow_tests {
                 }
             }
             sum
-        "#;
+        ";
         let result = interp.eval_string(code);
         assert_eq!(result, Ok(Value::Integer(9))); // 0 + 0 + 0 + 0 + 1 + 2 + 0 + 2 + 4
     }
@@ -571,12 +571,12 @@ mod function_tests {
     #[test]
     fn test_simple_function() {
         let mut interp = Interpreter::new();
-        let code = r#"
+        let code = r"
             fn add(a, b) {
                 a + b
             }
             add(3, 4)
-        "#;
+        ";
         let result = interp.eval_string(code);
         assert_eq!(result, Ok(Value::Integer(7)));
     }
@@ -584,12 +584,12 @@ mod function_tests {
     #[test]
     fn test_recursive_factorial() {
         let mut interp = Interpreter::new();
-        let code = r#"
+        let code = r"
             fn factorial(n) {
                 if n <= 1 { 1 } else { n * factorial(n - 1) }
             }
             factorial(5)
-        "#;
+        ";
         let result = interp.eval_string(code);
         assert_eq!(result, Ok(Value::Integer(120)));
     }
@@ -597,11 +597,11 @@ mod function_tests {
     #[test]
     fn test_closure_capture() {
         let mut interp = Interpreter::new();
-        let code = r#"
+        let code = r"
             let x = 10
             let add_x = fn(y) { x + y }
             add_x(5)
-        "#;
+        ";
         let result = interp.eval_string(code);
         assert_eq!(result, Ok(Value::Integer(15)));
     }
@@ -609,13 +609,13 @@ mod function_tests {
     #[test]
     fn test_higher_order_function() {
         let mut interp = Interpreter::new();
-        let code = r#"
+        let code = r"
             fn apply_twice(f, x) {
                 f(f(x))
             }
             fn double(n) { n * 2 }
             apply_twice(double, 3)
-        "#;
+        ";
         let result = interp.eval_string(code);
         assert_eq!(result, Ok(Value::Integer(12)));
     }
@@ -623,10 +623,10 @@ mod function_tests {
     #[test]
     fn test_lambda_expression() {
         let mut interp = Interpreter::new();
-        let code = r#"
+        let code = r"
             let double = |x| x * 2
             double(5)
-        "#;
+        ";
         let result = interp.eval_string(code);
         assert_eq!(result, Ok(Value::Integer(10)));
     }
@@ -634,7 +634,7 @@ mod function_tests {
     #[test]
     fn test_nested_function() {
         let mut interp = Interpreter::new();
-        let code = r#"
+        let code = r"
             fn outer(x) {
                 fn inner(y) {
                     x + y
@@ -642,7 +642,7 @@ mod function_tests {
                 inner(10)
             }
             outer(5)
-        "#;
+        ";
         let result = interp.eval_string(code);
         assert_eq!(result, Ok(Value::Integer(15)));
     }
@@ -658,12 +658,12 @@ mod edge_case_tests {
     #[test]
     fn test_deep_recursion_limit() {
         let mut interp = Interpreter::new();
-        let code = r#"
+        let code = r"
             fn recurse(n) {
                 if n == 0 { 0 } else { recurse(n - 1) }
             }
             recurse(100)
-        "#;
+        ";
         let result = interp.eval_string(code);
         // Should succeed with reasonable recursion depth
         assert_eq!(result, Ok(Value::Integer(0)));
@@ -753,10 +753,10 @@ mod edge_case_tests {
     #[test]
     fn test_function_wrong_arity() {
         let mut interp = Interpreter::new();
-        let code = r#"
+        let code = r"
             fn add(a, b) { a + b }
             add(1)
-        "#;
+        ";
         let result = interp.eval_string(code);
         assert!(matches!(result, Err(InterpreterError::RuntimeError(_))));
     }
@@ -764,8 +764,8 @@ mod edge_case_tests {
     #[test]
     fn test_nil_operations() {
         let mut interp = Interpreter::new();
-        assert!(matches!(interp.eval_string("nil + 1"), Err(_)));
-        assert!(matches!(interp.eval_string("nil * 2"), Err(_)));
+        assert!(interp.eval_string("nil + 1").is_err());
+        assert!(interp.eval_string("nil * 2").is_err());
         assert_eq!(interp.eval_string("nil == nil"), Ok(Value::Bool(true)));
     }
 
@@ -780,11 +780,11 @@ mod edge_case_tests {
     #[test]
     fn test_comment_handling() {
         let mut interp = Interpreter::new();
-        let code = r#"
+        let code = r"
             // This is a comment
             42 // Another comment
             /* Block comment */
-        "#;
+        ";
         let result = interp.eval_string(code);
         assert_eq!(result, Ok(Value::Integer(42)));
     }

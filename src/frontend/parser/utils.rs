@@ -105,11 +105,31 @@ pub fn parse_params(state: &mut ParserState) -> Result<Vec<Param>> {
     state.tokens.expect(&Token::RightParen)?;
     Ok(params)
 }
-/// Parse a single parameter (complexity: 7)
+/// Parse a single parameter (complexity: 9)
 fn parse_single_param(state: &mut ParserState) -> Result<Param> {
     let is_mutable = check_and_consume_mut(state);
-    let pattern = parse_param_pattern(state)?;
-    let ty = parse_optional_type_annotation(state)?;
+    let (pattern, (is_reference, is_ref_mut)) = parse_param_pattern(state)?;
+    let mut ty = parse_optional_type_annotation(state)?;
+
+    // For self parameters with references, create the appropriate reference type
+    if is_reference {
+        if let Pattern::Identifier(name) = &pattern {
+            if name == "self" {
+                // Create reference type for self parameter
+                ty = Type {
+                    kind: TypeKind::Reference {
+                        is_mut: is_ref_mut,
+                        inner: Box::new(Type {
+                            kind: TypeKind::Named("Self".to_string()),
+                            span: Span { start: 0, end: 0 },
+                        }),
+                    },
+                    span: ty.span,
+                };
+            }
+        }
+    }
+
     let default_value = parse_optional_default_value(state)?;
     Ok(Param {
         pattern,
@@ -129,7 +149,8 @@ fn check_and_consume_mut(state: &mut ParserState) -> bool {
     }
 }
 /// Parse parameter pattern (complexity: 8 - increased to support destructuring)
-fn parse_param_pattern(state: &mut ParserState) -> Result<Pattern> {
+/// Returns (pattern, `reference_info`) where `reference_info` is (`is_reference`, `is_mut`)
+fn parse_param_pattern(state: &mut ParserState) -> Result<(Pattern, (bool, bool))> {
     match state.tokens.peek() {
         Some((Token::Ampersand, _)) => {
             // This must be &self or &mut self
@@ -139,35 +160,39 @@ fn parse_param_pattern(state: &mut ParserState) -> Result<Pattern> {
         Some((Token::Identifier(name), _)) => {
             let name = name.clone();
             state.tokens.advance();
-            Ok(Pattern::Identifier(name))
+            Ok((Pattern::Identifier(name), (false, false)))
         }
         Some((Token::DataFrame, _)) => {
             // Handle "df" parameter name (tokenized as DataFrame)
             state.tokens.advance();
-            Ok(Pattern::Identifier("df".to_string()))
+            Ok((Pattern::Identifier("df".to_string()), (false, false)))
         }
         Some((Token::Self_, _)) => {
             // Handle "self" parameter name
             state.tokens.advance();
-            Ok(Pattern::Identifier("self".to_string()))
+            Ok((Pattern::Identifier("self".to_string()), (false, false)))
         }
         Some((Token::LeftParen, _)) => {
             // Parse tuple destructuring: fun f((x, y)) {}
-            super::expressions::parse_tuple_pattern(state)
+            let pattern = super::expressions::parse_tuple_pattern(state)?;
+            Ok((pattern, (false, false)))
         }
         Some((Token::LeftBracket, _)) => {
             // Parse list destructuring: fun f([x, y]) {}
-            super::expressions::parse_list_pattern(state)
+            let pattern = super::expressions::parse_list_pattern(state)?;
+            Ok((pattern, (false, false)))
         }
         Some((Token::LeftBrace, _)) => {
             // Parse struct destructuring: fun f({x, y}) {}
-            super::expressions::parse_struct_pattern(state)
+            let pattern = super::expressions::parse_struct_pattern(state)?;
+            Ok((pattern, (false, false)))
         }
         _ => bail!("Function parameters must be simple identifiers or destructuring patterns"),
     }
 }
 /// Parse reference patterns (&self, &mut self) (complexity: 8)
-fn parse_reference_pattern(state: &mut ParserState) -> Result<Pattern> {
+/// Returns (pattern, `reference_info`) where `reference_info` is (`is_reference`, `is_mut`)
+fn parse_reference_pattern(state: &mut ParserState) -> Result<(Pattern, (bool, bool))> {
     state.tokens.advance(); // consume &
     let is_mut_ref = matches!(state.tokens.peek(), Some((Token::Mut, _)));
     if is_mut_ref {
@@ -177,11 +202,8 @@ fn parse_reference_pattern(state: &mut ParserState) -> Result<Pattern> {
     match state.tokens.peek() {
         Some((Token::Self_, _)) => {
             state.tokens.advance();
-            if is_mut_ref {
-                Ok(Pattern::Identifier("&mut self".to_string()))
-            } else {
-                Ok(Pattern::Identifier("&self".to_string()))
-            }
+            // Return "self" as pattern with reference info
+            Ok((Pattern::Identifier("self".to_string()), (true, is_mut_ref)))
         }
         Some((Token::Identifier(n), _)) => {
             // For regular identifiers after &, we need to handle them differently

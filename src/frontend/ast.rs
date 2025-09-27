@@ -407,6 +407,17 @@ pub enum ExprKind {
         fields: Vec<StructField>,
         is_pub: bool,
     },
+    Class {
+        name: String,
+        type_params: Vec<String>,
+        superclass: Option<String>, // inheritance
+        traits: Vec<String>,        // + Trait1 + Trait2
+        fields: Vec<StructField>,
+        constructors: Vec<Constructor>, // new() methods
+        methods: Vec<ClassMethod>,
+        derives: Vec<String>, // #[derive(Debug, Clone, ...)]
+        is_pub: bool,
+    },
     Enum {
         name: String,
         type_params: Vec<String>,
@@ -820,6 +831,8 @@ pub struct StructField {
     pub name: String,
     pub ty: Type,
     pub is_pub: bool,
+    pub is_mut: bool,                // mut field modifier
+    pub default_value: Option<Expr>, // Default value for class fields
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct EnumVariant {
@@ -853,6 +866,35 @@ pub struct ActorHandler {
     pub message_type: String,
     pub params: Vec<Param>,
     pub body: Box<Expr>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ClassMethod {
+    pub name: String,
+    pub params: Vec<Param>,
+    pub return_type: Option<Type>,
+    pub body: Box<Expr>,
+    pub is_pub: bool,
+    pub is_static: bool,     // static method (no self)
+    pub is_override: bool,   // override keyword for explicit overriding
+    pub self_type: SelfType, // &self, &mut self, or self (move)
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum SelfType {
+    None,        // static method
+    Owned,       // self (move)
+    Borrowed,    // &self
+    MutBorrowed, // &mut self
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Constructor {
+    pub name: Option<String>, // None for primary constructor, Some(name) for named constructors
+    pub params: Vec<Param>,
+    pub return_type: Option<Type>, // Optional return type for named constructors (e.g., Result<Self>)
+    pub body: Box<Expr>,
+    pub is_pub: bool,
 }
 /// Type annotations in the AST.
 ///

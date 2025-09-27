@@ -1421,23 +1421,17 @@ fn try_parse_set_literal(state: &mut ParserState, start_span: Span) -> Result<Ex
 
         // Try to parse an expression, but stop at certain keywords that indicate
         // this is not a set literal
-        match state.tokens.peek() {
-            Some((Token::Let | Token::If | Token::For | Token::While | Token::Return, _)) => {
-                // This looks like a block, not a set literal
-                state.tokens.set_position(saved_position);
-                bail!("Not a set literal - contains statements");
-            }
-            _ => {}
+        if let Some((Token::Let | Token::If | Token::For | Token::While | Token::Return, _)) = state.tokens.peek() {
+            // This looks like a block, not a set literal
+            state.tokens.set_position(saved_position);
+            bail!("Not a set literal - contains statements");
         }
 
         // Parse the expression
-        let expr = match super::parse_expr_recursive(state) {
-            Ok(expr) => expr,
-            Err(_) => {
-                // Failed to parse expression, this is not a set literal
-                state.tokens.set_position(saved_position);
-                bail!("Not a set literal - failed to parse expression");
-            }
+        let expr = if let Ok(expr) = super::parse_expr_recursive(state) { expr } else {
+            // Failed to parse expression, this is not a set literal
+            state.tokens.set_position(saved_position);
+            bail!("Not a set literal - failed to parse expression");
         };
 
         // Check what comes after the expression

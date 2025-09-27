@@ -13,9 +13,9 @@ prop_compose! {
 prop_compose! {
     fn valid_expr()(choice in 0..3, var in valid_var_name()) -> String {
         match choice {
-            0 => var.clone(),
-            1 => format!("{}.len()", var),
-            2 => format!("{} * 2", var),
+            0 => var,
+            1 => format!("{var}.len()"),
+            2 => format!("{var} * 2"),
             _ => var,
         }
     }
@@ -50,8 +50,7 @@ proptest! {
         iterable in valid_iterable()
     ) {
         let input = format!(
-            "{{{}: {} for {} in {}}}",
-            key_var, value_var, iter_var, iterable
+            "{{{key_var}: {value_var} for {iter_var} in {iterable}}}"
         );
         let mut parser = Parser::new(&input);
         // Should not panic
@@ -67,8 +66,7 @@ proptest! {
         condition in valid_condition()
     ) {
         let input = format!(
-            "{{{}: {} for {} in {} if {}}}",
-            key_expr, value_expr, var, iterable, condition
+            "{{{key_expr}: {value_expr} for {var} in {iterable} if {condition}}}"
         );
         let mut parser = Parser::new(&input);
         // Should not panic
@@ -82,8 +80,7 @@ proptest! {
         iterable in valid_iterable()
     ) {
         let input = format!(
-            "{{{}: {} for ({}, {}) in {}}}",
-            k_var, v_var, k_var, v_var, iterable
+            "{{{k_var}: {v_var} for ({k_var}, {v_var}) in {iterable}}}"
         );
         let mut parser = Parser::new(&input);
         let result = parser.parse();
@@ -91,7 +88,7 @@ proptest! {
         if result.is_ok() {
             let ast = result.unwrap();
             // Should contain DictComprehension node
-            let ast_str = format!("{:?}", ast);
+            let ast_str = format!("{ast:?}");
             prop_assert!(ast_str.contains("DictComprehension"));
         }
     }
@@ -102,19 +99,15 @@ proptest! {
         iterable in valid_iterable()
     ) {
         let code = format!(
-            "fun main() {{ let m = {{{0}: {0}.len() for {0} in {1}}}; }}",
-            var, iterable
+            "fun main() {{ let m = {{{var}: {var}.len() for {var} in {iterable}}}; }}"
         );
 
-        match compile(&code) {
-            Ok(output) => {
-                // Should generate HashMap collection
-                prop_assert!(output.contains("HashMap") || output.contains("collect"));
-                prop_assert!(output.contains("map"));
-            }
-            Err(_) => {
-                // Some combinations might not compile, that's ok
-            }
+        if let Ok(output) = compile(&code) {
+            // Should generate HashMap collection
+            prop_assert!(output.contains("HashMap") || output.contains("collect"));
+            prop_assert!(output.contains("map"));
+        } else {
+            // Some combinations might not compile, that's ok
         }
     }
 
@@ -124,24 +117,20 @@ proptest! {
         threshold in 1..100i32
     ) {
         let code = format!(
-            "fun main() {{ let m = {{{0}: {0} for {0} in nums if {0} > {1}}}; }}",
-            var, threshold
+            "fun main() {{ let m = {{{var}: {var} for {var} in nums if {var} > {threshold}}}; }}"
         );
 
-        match compile(&code) {
-            Ok(output) => {
-                // Should generate filter before map
-                prop_assert!(output.contains("filter"));
-                prop_assert!(output.contains("HashMap"));
-                // Filter should come before map in the chain
-                if let (Some(filter_pos), Some(map_pos)) =
-                    (output.find("filter"), output.find("map")) {
-                    prop_assert!(filter_pos < map_pos);
-                }
+        if let Ok(output) = compile(&code) {
+            // Should generate filter before map
+            prop_assert!(output.contains("filter"));
+            prop_assert!(output.contains("HashMap"));
+            // Filter should come before map in the chain
+            if let (Some(filter_pos), Some(map_pos)) =
+                (output.find("filter"), output.find("map")) {
+                prop_assert!(filter_pos < map_pos);
             }
-            Err(_) => {
-                // Some combinations might not compile, that's ok
-            }
+        } else {
+            // Some combinations might not compile, that's ok
         }
     }
 
@@ -156,19 +145,15 @@ proptest! {
         prop_assume!(value_var != iter_var);
 
         let code = format!(
-            "fun main() {{ let m = {{{}: {} for {} in items}}; }}",
-            key_var, value_var, iter_var
+            "fun main() {{ let m = {{{key_var}: {value_var} for {iter_var} in items}}; }}"
         );
 
-        match compile(&code) {
-            Ok(output) => {
-                // Both key and value should appear in the output
-                prop_assert!(output.contains(&key_var) || key_var == iter_var);
-                prop_assert!(output.contains(&value_var) || value_var == iter_var);
-            }
-            Err(_) => {
-                // Some combinations might not compile, that's ok
-            }
+        if let Ok(output) = compile(&code) {
+            // Both key and value should appear in the output
+            prop_assert!(output.contains(&key_var) || key_var == iter_var);
+            prop_assert!(output.contains(&value_var) || value_var == iter_var);
+        } else {
+            // Some combinations might not compile, that's ok
         }
     }
 
@@ -180,8 +165,7 @@ proptest! {
         prop_assume!(var1 != var2);
 
         let input = format!(
-            "{{{0}: {{{1}: {1} for {1} in inner}} for {0} in outer}}",
-            var1, var2
+            "{{{var1}: {{{var2}: {var2} for {var2} in inner}} for {var1} in outer}}"
         );
 
         let mut parser = Parser::new(&input);
@@ -195,20 +179,16 @@ proptest! {
         method in prop::sample::select(vec!["len()", "to_string()", "clone()"])
     ) {
         let code = format!(
-            "fun main() {{ let m = {{{0}: {0}.{1} for {0} in items}}; }}",
-            var, method
+            "fun main() {{ let m = {{{var}: {var}.{method} for {var} in items}}; }}"
         );
 
-        match compile(&code) {
-            Ok(output) => {
-                prop_assert!(output.contains("HashMap"));
-                // Method should be preserved in output
-                let method_name = method.trim_end_matches("()");
-                prop_assert!(output.contains(method_name));
-            }
-            Err(_) => {
-                // Some method calls might not compile, that's ok
-            }
+        if let Ok(output) = compile(&code) {
+            prop_assert!(output.contains("HashMap"));
+            // Method should be preserved in output
+            let method_name = method.trim_end_matches("()");
+            prop_assert!(output.contains(method_name));
+        } else {
+            // Some method calls might not compile, that's ok
         }
     }
 }
@@ -239,8 +219,8 @@ fn test_dict_comprehension_edge_cases() {
         let result = parser.parse();
         // Should either parse successfully or give clear error
         match result {
-            Ok(_) => println!("✓ Parsed: {}", case),
-            Err(e) => println!("✗ Failed: {} - {}", case, e),
+            Ok(_) => println!("✓ Parsed: {case}"),
+            Err(e) => println!("✗ Failed: {case} - {e}"),
         }
     }
 }
@@ -256,11 +236,11 @@ fn test_dict_comprehension_regression_suite() {
     let code2 = "fun main() { let m = {w: w.len() for w in words if w.len() > 5}; }";
     match compile(code2) {
         Ok(output) => {
-            let normalized = output.replace(" ", "");
+            let normalized = output.replace(' ', "");
             assert!(normalized.contains("filter"));
             assert!(normalized.contains("len()"));
         }
-        Err(e) => panic!("Filter with method calls failed: {}", e),
+        Err(e) => panic!("Filter with method calls failed: {e}"),
     }
 
     // Bug 3: Enumerate pattern

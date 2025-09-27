@@ -6,12 +6,12 @@ fn test_attribute_preservation_in_compilation() {
     use ruchy::backend::transpiler::Transpiler;
     use ruchy::frontend::parser::Parser;
 
-    let source = r#"
+    let source = r"
         #[test]
         fun test_simple() {
             assert_eq!(2, 2)
         }
-    "#;
+    ";
 
     let mut parser = Parser::new(source);
     let ast = parser.parse().expect("Failed to parse");
@@ -26,8 +26,7 @@ fn test_attribute_preservation_in_compilation() {
     // Verify test attribute is preserved (with or without spaces)
     assert!(
         generated.contains("# [test]") || generated.contains("#[test]"),
-        "Test attribute was not preserved in transpilation. Generated: {}",
-        generated
+        "Test attribute was not preserved in transpilation. Generated: {generated}"
     );
 
     // Verify no return type for test functions
@@ -48,13 +47,13 @@ fn test_multiple_attributes() {
     use ruchy::backend::transpiler::Transpiler;
     use ruchy::frontend::parser::Parser;
 
-    let source = r#"
+    let source = r"
         #[test]
         #[ignore]
         fun test_with_multiple_attrs() {
             assert!(true)
         }
-    "#;
+    ";
 
     let mut parser = Parser::new(source);
     let ast = parser.parse().expect("Failed to parse");
@@ -69,13 +68,11 @@ fn test_multiple_attributes() {
     // Both attributes should be preserved (with or without spaces)
     assert!(
         generated.contains("# [test]") || generated.contains("#[test]"),
-        "Test attribute was not preserved. Generated: {}",
-        generated
+        "Test attribute was not preserved. Generated: {generated}"
     );
     assert!(
         generated.contains("# [ignore]") || generated.contains("#[ignore]"),
-        "Ignore attribute was not preserved. Generated: {}",
-        generated
+        "Ignore attribute was not preserved. Generated: {generated}"
     );
 }
 
@@ -108,15 +105,13 @@ fn test_test_attribute_with_main_function() {
     // Test attribute should be preserved (with or without spaces)
     assert!(
         generated.contains("# [test]") || generated.contains("#[test]"),
-        "Test attribute was not preserved. Generated: {}",
-        generated
+        "Test attribute was not preserved. Generated: {generated}"
     );
 
     // Main function should exist
     assert!(
         generated.contains("fn main"),
-        "Main function should be present. Generated: {}",
-        generated
+        "Main function should be present. Generated: {generated}"
     );
 }
 
@@ -127,12 +122,12 @@ fn test_no_imports_preserves_attributes() {
 
     // This test ensures that when there are no imports,
     // the optimization to skip module resolution still preserves attributes
-    let source = r#"
+    let source = r"
         #[derive(Debug)]
         struct TestStruct {
             field: i32
         }
-    "#;
+    ";
 
     let mut parser = Parser::new(source);
     let ast = parser.parse().expect("Failed to parse");
@@ -147,7 +142,6 @@ fn test_no_imports_preserves_attributes() {
     // Derive attribute should be preserved (with or without spaces)
     assert!(
         generated.contains("# [derive") || generated.contains("#[derive"),
-        "Derive attribute was not preserved when no imports present. Generated: {}",
-        generated
+        "Derive attribute was not preserved when no imports present. Generated: {generated}"
     );
 }

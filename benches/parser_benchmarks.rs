@@ -11,21 +11,21 @@ fn benchmark_literals(c: &mut Criterion) {
         b.iter(|| {
             let mut parser = Parser::new(black_box("42"));
             parser.parse().unwrap()
-        })
+        });
     });
 
     c.bench_function("parse_float", |b| {
         b.iter(|| {
             let mut parser = Parser::new(black_box("3.14159"));
             parser.parse().unwrap()
-        })
+        });
     });
 
     c.bench_function("parse_string", |b| {
         b.iter(|| {
             let mut parser = Parser::new(black_box(r#""hello world""#));
             parser.parse().unwrap()
-        })
+        });
     });
 
     c.bench_function("parse_interpolated_string", |b| {
@@ -33,7 +33,7 @@ fn benchmark_literals(c: &mut Criterion) {
         b.iter(|| {
             let mut parser = Parser::new(black_box(code));
             parser.parse().unwrap()
-        })
+        });
     });
 }
 
@@ -43,7 +43,7 @@ fn benchmark_expressions(c: &mut Criterion) {
         b.iter(|| {
             let mut parser = Parser::new(black_box(code));
             parser.parse().unwrap()
-        })
+        });
     });
 
     c.bench_function("parse_nested_arithmetic", |b| {
@@ -51,7 +51,7 @@ fn benchmark_expressions(c: &mut Criterion) {
         b.iter(|| {
             let mut parser = Parser::new(black_box(code));
             parser.parse().unwrap()
-        })
+        });
     });
 
     c.bench_function("parse_method_chain", |b| {
@@ -59,7 +59,7 @@ fn benchmark_expressions(c: &mut Criterion) {
         b.iter(|| {
             let mut parser = Parser::new(black_box(code));
             parser.parse().unwrap()
-        })
+        });
     });
 
     c.bench_function("parse_pipeline", |b| {
@@ -67,7 +67,7 @@ fn benchmark_expressions(c: &mut Criterion) {
         b.iter(|| {
             let mut parser = Parser::new(black_box(code));
             parser.parse().unwrap()
-        })
+        });
     });
 }
 
@@ -77,7 +77,7 @@ fn benchmark_control_flow(c: &mut Criterion) {
         b.iter(|| {
             let mut parser = Parser::new(black_box(code));
             parser.parse().unwrap()
-        })
+        });
     });
 
     c.bench_function("parse_match", |b| {
@@ -92,7 +92,7 @@ fn benchmark_control_flow(c: &mut Criterion) {
         b.iter(|| {
             let mut parser = Parser::new(black_box(code));
             parser.parse().unwrap()
-        })
+        });
     });
 
     c.bench_function("parse_for_loop", |b| {
@@ -100,7 +100,7 @@ fn benchmark_control_flow(c: &mut Criterion) {
         b.iter(|| {
             let mut parser = Parser::new(black_box(code));
             parser.parse().unwrap()
-        })
+        });
     });
 
     c.bench_function("parse_while_loop", |b| {
@@ -108,7 +108,7 @@ fn benchmark_control_flow(c: &mut Criterion) {
         b.iter(|| {
             let mut parser = Parser::new(black_box(code));
             parser.parse().unwrap()
-        })
+        });
     });
 }
 
@@ -118,7 +118,7 @@ fn benchmark_functions(c: &mut Criterion) {
         b.iter(|| {
             let mut parser = Parser::new(black_box(code));
             parser.parse().unwrap()
-        })
+        });
     });
 
     c.bench_function("parse_lambda", |b| {
@@ -126,7 +126,7 @@ fn benchmark_functions(c: &mut Criterion) {
         b.iter(|| {
             let mut parser = Parser::new(black_box(code));
             parser.parse().unwrap()
-        })
+        });
     });
 
     c.bench_function("parse_nested_lambda", |b| {
@@ -134,7 +134,7 @@ fn benchmark_functions(c: &mut Criterion) {
         b.iter(|| {
             let mut parser = Parser::new(black_box(code));
             parser.parse().unwrap()
-        })
+        });
     });
 
     c.bench_function("parse_generic_function", |b| {
@@ -142,7 +142,7 @@ fn benchmark_functions(c: &mut Criterion) {
         b.iter(|| {
             let mut parser = Parser::new(black_box(code));
             parser.parse().unwrap()
-        })
+        });
     });
 }
 
@@ -152,7 +152,7 @@ fn benchmark_data_structures(c: &mut Criterion) {
         b.iter(|| {
             let mut parser = Parser::new(black_box(code));
             parser.parse().unwrap()
-        })
+        });
     });
 
     c.bench_function("parse_nested_list", |b| {
@@ -160,7 +160,7 @@ fn benchmark_data_structures(c: &mut Criterion) {
         b.iter(|| {
             let mut parser = Parser::new(black_box(code));
             parser.parse().unwrap()
-        })
+        });
     });
 
     c.bench_function("parse_object", |b| {
@@ -168,7 +168,7 @@ fn benchmark_data_structures(c: &mut Criterion) {
         b.iter(|| {
             let mut parser = Parser::new(black_box(code));
             parser.parse().unwrap()
-        })
+        });
     });
 
     c.bench_function("parse_tuple", |b| {
@@ -176,7 +176,7 @@ fn benchmark_data_structures(c: &mut Criterion) {
         b.iter(|| {
             let mut parser = Parser::new(black_box(code));
             parser.parse().unwrap()
-        })
+        });
     });
 }
 
@@ -186,7 +186,7 @@ fn benchmark_patterns(c: &mut Criterion) {
         b.iter(|| {
             let mut parser = Parser::new(black_box(code));
             parser.parse().unwrap()
-        })
+        });
     });
 
     c.bench_function("parse_destructuring", |b| {
@@ -194,7 +194,7 @@ fn benchmark_patterns(c: &mut Criterion) {
         b.iter(|| {
             let mut parser = Parser::new(black_box(code));
             parser.parse().unwrap()
-        })
+        });
     });
 
     c.bench_function("parse_object_destructuring", |b| {
@@ -202,7 +202,7 @@ fn benchmark_patterns(c: &mut Criterion) {
         b.iter(|| {
             let mut parser = Parser::new(black_box(code));
             parser.parse().unwrap()
-        })
+        });
     });
 
     c.bench_function("parse_nested_destructuring", |b| {
@@ -210,7 +210,7 @@ fn benchmark_patterns(c: &mut Criterion) {
         b.iter(|| {
             let mut parser = Parser::new(black_box(code));
             parser.parse().unwrap()
-        })
+        });
     });
 }
 
@@ -228,7 +228,7 @@ fn benchmark_real_world(c: &mut Criterion) {
         b.iter(|| {
             let mut parser = Parser::new(black_box(code));
             parser.parse().unwrap()
-        })
+        });
     });
 
     c.bench_function("parse_quicksort", |b| {
@@ -247,7 +247,7 @@ fn benchmark_real_world(c: &mut Criterion) {
         b.iter(|| {
             let mut parser = Parser::new(black_box(code));
             parser.parse().unwrap()
-        })
+        });
     });
 
     c.bench_function("parse_class_definition", |b| {
@@ -275,7 +275,7 @@ fn benchmark_real_world(c: &mut Criterion) {
         b.iter(|| {
             let mut parser = Parser::new(black_box(code));
             parser.parse().unwrap()
-        })
+        });
     });
 
     c.bench_function("parse_async_function", |b| {
@@ -293,7 +293,7 @@ fn benchmark_real_world(c: &mut Criterion) {
         b.iter(|| {
             let mut parser = Parser::new(black_box(code));
             parser.parse().unwrap()
-        })
+        });
     });
 }
 
@@ -310,18 +310,18 @@ fn benchmark_stress_test(c: &mut Criterion) {
         b.iter(|| {
             let mut parser = Parser::new(black_box(&code));
             parser.parse().unwrap()
-        })
+        });
     });
 
     c.bench_function("parse_long_chain", |b| {
         let mut code = String::from("x");
         for i in 0..50 {
-            code.push_str(&format!(".method{}()", i));
+            code.push_str(&format!(".method{i}()"));
         }
         b.iter(|| {
             let mut parser = Parser::new(black_box(&code));
             parser.parse().unwrap()
-        })
+        });
     });
 
     c.bench_function("parse_large_list", |b| {
@@ -336,7 +336,7 @@ fn benchmark_stress_test(c: &mut Criterion) {
         b.iter(|| {
             let mut parser = Parser::new(black_box(&code));
             parser.parse().unwrap()
-        })
+        });
     });
 }
 
