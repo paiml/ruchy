@@ -188,7 +188,7 @@ impl ModuleResolver {
         if self.is_file_import(module) {
             // For file imports, we need to preserve attributes on the resolved expression
             let mut resolved = self.resolve_file_import(expr.span, module, items)?;
-            resolved.attributes = expr.attributes.clone();
+            resolved.attributes.clone_from(&expr.attributes);
             Ok(resolved)
         } else {
             // Standard import - preserve attributes

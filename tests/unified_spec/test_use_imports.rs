@@ -317,6 +317,7 @@ mod test_use_imports {
         use super::*;
         use quickcheck::{quickcheck, TestResult};
 
+        #[allow(clippy::needless_pass_by_value)]
         fn prop_use_with_valid_path(module: String) -> TestResult {
             if module.is_empty()
                 || !module

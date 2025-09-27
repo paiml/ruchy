@@ -185,7 +185,7 @@ fn test_derive_common_traits() {
         let spaced_derive = expected_derive
             .replace("#[", "# [")
             .replace('(', " (")
-            .replace(')', ")");
+            .replace(')', " )");
         assert!(
             result_str.contains(expected_derive) || result_str.contains(&spaced_derive),
             "Should contain {expected_derive} or {spaced_derive} for trait {trait_name}"

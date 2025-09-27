@@ -342,6 +342,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::approx_constant)]
     fn test_all_literals() {
         assert_eq!(
             MinimalCodeGen::gen_literal(&Literal::Integer(42)).unwrap(),

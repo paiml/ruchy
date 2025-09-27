@@ -535,6 +535,7 @@ mod runtime_errors {
     }
 
     #[test]
+    #[allow(clippy::string_add)]
     fn test_stack_overflow_deep_nesting() {
         let mut interp = Interpreter::new();
         let deep_expr = (0..10000).map(|_| "(").collect::<String>()

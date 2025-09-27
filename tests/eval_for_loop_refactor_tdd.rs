@@ -348,6 +348,7 @@ mod eval_for_loop_refactor_tests {
         use quickcheck_macros::quickcheck;
 
         #[quickcheck]
+        #[allow(clippy::needless_pass_by_value)]
         fn test_for_loop_never_panics_on_valid_arrays(values: Vec<i32>) -> TestResult {
             let array = Value::Array(
                 values
@@ -371,6 +372,7 @@ mod eval_for_loop_refactor_tests {
         }
 
         #[quickcheck]
+        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
         fn test_range_iteration_correctness(start: i8, end: i8) -> TestResult {
             // Limit range to prevent huge iterations
             let start = i64::from(start);

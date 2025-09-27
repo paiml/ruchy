@@ -1346,6 +1346,7 @@ mod property_tests_expressions {
     proptest! {
         /// Property: transpile_literal never panics on any literal input
         #[test]
+        #[allow(clippy::approx_constant)]
         fn test_transpile_literal_never_panics(input: String) {
             // Limit input size to avoid timeout
             let _input = if input.len() > 100 { &input[..100] } else { &input[..] };

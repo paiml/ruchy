@@ -9,6 +9,7 @@ mod parser_properties {
     use super::*;
 
     // Test that parser doesn't panic on random strings
+    #[allow(clippy::needless_pass_by_value)]
     fn prop_parser_no_panic(s: String) -> TestResult {
         // Limit string size to avoid excessive test times
         if s.len() > 1000 {
@@ -21,6 +22,7 @@ mod parser_properties {
     }
 
     // Test that valid identifiers compile
+    #[allow(clippy::needless_pass_by_value)]
     fn prop_valid_identifier(name: String) -> TestResult {
         // Create a valid identifier
         let clean_name = name
@@ -45,6 +47,7 @@ mod parser_properties {
     }
 
     // Test that string literals compile
+    #[allow(clippy::needless_pass_by_value)]
     fn prop_string_literals(s: String) -> TestResult {
         // Escape the string properly
         let escaped = s.replace('\\', "\\\\").replace('"', "\\\"");

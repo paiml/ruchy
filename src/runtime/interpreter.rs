@@ -2140,9 +2140,21 @@ impl Interpreter {
             method,
             arg_values,
             args_empty,
-            |_receiver, _args| Err(InterpreterError::RuntimeError("Function call not implemented in actor context".to_string())),
-            |_receiver, _args| Err(InterpreterError::RuntimeError("DataFrame filter not implemented in actor context".to_string())),
-            |_expr, _columns, _index| Err(InterpreterError::RuntimeError("Column context not implemented in actor context".to_string())),
+            |_receiver, _args| {
+                Err(InterpreterError::RuntimeError(
+                    "Function call not implemented in actor context".to_string(),
+                ))
+            },
+            |_receiver, _args| {
+                Err(InterpreterError::RuntimeError(
+                    "DataFrame filter not implemented in actor context".to_string(),
+                ))
+            },
+            |_expr, _columns, _index| {
+                Err(InterpreterError::RuntimeError(
+                    "Column context not implemented in actor context".to_string(),
+                ))
+            },
         )
     }
 
@@ -2162,7 +2174,10 @@ impl Interpreter {
         let mut actor_type = HashMap::new();
 
         // Store actor metadata
-        actor_type.insert("__type".to_string(), Value::from_string("Actor".to_string()));
+        actor_type.insert(
+            "__type".to_string(),
+            Value::from_string("Actor".to_string()),
+        );
         actor_type.insert("__name".to_string(), Value::from_string(name.to_string()));
 
         // Store state field definitions
@@ -2175,7 +2190,10 @@ impl Interpreter {
             };
             fields.insert(field.name.clone(), Value::from_string(type_name));
         }
-        actor_type.insert("__fields".to_string(), Value::Object(std::rc::Rc::new(fields)));
+        actor_type.insert(
+            "__fields".to_string(),
+            Value::Object(std::rc::Rc::new(fields)),
+        );
 
         // Store message handlers
         let mut handlers_map = HashMap::new();
@@ -2183,10 +2201,13 @@ impl Interpreter {
             // Store handler information for later use
             handlers_map.insert(
                 handler.message_type.clone(),
-                Value::from_string("handler".to_string()) // Placeholder for now
+                Value::from_string("handler".to_string()), // Placeholder for now
             );
         }
-        actor_type.insert("__handlers".to_string(), Value::Object(std::rc::Rc::new(handlers_map)));
+        actor_type.insert(
+            "__handlers".to_string(),
+            Value::Object(std::rc::Rc::new(handlers_map)),
+        );
 
         // Register this actor type in the environment
         let actor_obj = Value::Object(std::rc::Rc::new(actor_type));

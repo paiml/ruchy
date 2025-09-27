@@ -156,10 +156,7 @@ mod try_catch_compilation {
         "#;
 
         let result = compile(code);
-        assert!(
-            result.is_ok(),
-            "Failed to compile throw string: {result:?}"
-        );
+        assert!(result.is_ok(), "Failed to compile throw string: {result:?}");
         let output = result.unwrap();
         // Throw should transpile to panic!
         assert!(output.contains("panic !"));
@@ -190,10 +187,7 @@ mod try_catch_compilation {
         "#;
 
         let result = compile(code);
-        assert!(
-            result.is_ok(),
-            "Failed to compile throw object: {result:?}"
-        );
+        assert!(result.is_ok(), "Failed to compile throw object: {result:?}");
     }
 
     // =============================================================================

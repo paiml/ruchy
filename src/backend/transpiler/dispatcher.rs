@@ -735,7 +735,6 @@ impl Transpiler {
                 }
                 ObjectField::Spread { .. } => {
                     // JSON doesn't support spread, skip for now
-                    continue;
                 }
             }
         }
@@ -815,6 +814,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::approx_constant)]
     fn test_transpile_literal_float() {
         let result = Transpiler::transpile_literal(&Literal::Float(3.14));
         let expected = quote! { 3.14f64 };
