@@ -940,6 +940,14 @@ impl Interpreter {
                 *is_pub,
             ),
             ExprKind::StructLiteral { name, fields } => self.eval_struct_literal(name, fields),
+            ExprKind::Set(statements) => {
+                // Evaluate each statement in the set, return the last one
+                let mut result = Value::Nil;
+                for stmt in statements {
+                    result = self.eval_expr(stmt)?;
+                }
+                Ok(result)
+            }
             _ => Err(InterpreterError::RuntimeError(format!(
                 "Expression type not yet implemented: {expr_kind:?}"
             ))),
@@ -2212,7 +2220,19 @@ impl Interpreter {
             Value::Float(f) => self.eval_float_method(*f, method, args_empty),
             Value::Integer(n) => self.eval_integer_method(*n, method, args_empty),
             Value::DataFrame { columns } => self.eval_dataframe_method(columns, method, arg_values),
-            Value::Object(obj) => self.eval_object_method(obj, method, arg_values, args_empty),
+            Value::Object(obj) => {
+                // Check if this is a class instance
+                if let Some(Value::String(class_name)) = obj.get("__class") {
+                    self.eval_class_instance_method(
+                        obj,
+                        class_name.as_ref(),
+                        method,
+                        arg_values,
+                    )
+                } else {
+                    self.eval_object_method(obj, method, arg_values, args_empty)
+                }
+            }
             _ => self.eval_generic_method(receiver, method, args_empty),
         }
     }
@@ -2578,21 +2598,34 @@ impl Interpreter {
             Value::Object(Rc::new(constructor_info)),
         );
 
-        // Store methods
+        // Store methods as closures with metadata
         let mut method_info = HashMap::new();
         for method in methods {
+            // Extract parameter names from the method params (excluding 'self')
+            let param_names: Vec<String> = method
+                .params
+                .iter()
+                .filter_map(|p| match &p.pattern {
+                    crate::frontend::ast::Pattern::Identifier(name) if name != "self" => {
+                        Some(name.clone())
+                    }
+                    crate::frontend::ast::Pattern::Identifier(_) => None, // Skip 'self'
+                    _ => Some("_".to_string()),
+                })
+                .collect();
+
+            // Create a closure for the method
+            let method_closure = Value::Closure {
+                params: param_names,
+                body: Rc::new((*method.body).clone()),
+                env: Rc::new(HashMap::new()),
+            };
+
+            // Store method with metadata
             let mut method_meta = HashMap::new();
-            method_meta.insert("name".to_string(), Value::from_string(method.name.clone()));
+            method_meta.insert("closure".to_string(), method_closure);
             method_meta.insert("is_static".to_string(), Value::Bool(method.is_static));
             method_meta.insert("is_override".to_string(), Value::Bool(method.is_override));
-            method_meta.insert(
-                "params".to_string(),
-                Value::from_string(format!("{:?}", method.params)),
-            );
-            method_meta.insert(
-                "body".to_string(),
-                Value::from_string(format!("{:?}", method.body)),
-            );
 
             method_info.insert(method.name.clone(), Value::Object(Rc::new(method_meta)));
         }
@@ -2747,6 +2780,82 @@ impl Interpreter {
             Err(InterpreterError::RuntimeError(format!(
                 "{} is not a struct definition",
                 struct_name
+            )))
+        }
+    }
+
+    fn eval_class_instance_method(
+        &mut self,
+        instance: &HashMap<String, Value>,
+        class_name: &str,
+        method: &str,
+        arg_values: &[Value],
+    ) -> Result<Value, InterpreterError> {
+        // Look up the class definition
+        let class_def = self.lookup_variable(class_name)?;
+
+        if let Value::Object(ref class_info) = class_def {
+            // Look for the method in the class definition
+            if let Some(Value::Object(ref methods)) = class_info.get("__methods") {
+                if let Some(Value::Object(ref method_meta)) = methods.get(method) {
+                    // Get the method closure
+                    if let Some(Value::Closure { params, body, .. }) = method_meta.get("closure") {
+                        // Check if it's a static method
+                        let is_static = method_meta
+                            .get("is_static")
+                            .and_then(|v| if let Value::Bool(b) = v { Some(*b) } else { None })
+                            .unwrap_or(false);
+
+                        if is_static {
+                            return Err(InterpreterError::RuntimeError(
+                                format!("Cannot call static method {} on instance", method)
+                            ));
+                        }
+
+                        // Create environment for method execution
+                        let mut method_env = HashMap::new();
+
+                        // Add 'self' to the environment
+                        method_env.insert("self".to_string(), Value::Object(Rc::new(instance.clone())));
+
+                        // Bind method parameters to arguments
+                        // Note: We're not including 'self' in params count here
+                        if arg_values.len() != params.len() {
+                            return Err(InterpreterError::RuntimeError(format!(
+                                "Method {} expects {} arguments, got {}",
+                                method,
+                                params.len(),
+                                arg_values.len()
+                            )));
+                        }
+
+                        for (param, arg) in params.iter().zip(arg_values) {
+                            method_env.insert(param.clone(), arg.clone());
+                        }
+
+                        // Push method environment
+                        self.env_push(method_env);
+
+                        // Execute method body
+                        let result = self.eval_expr(body)?;
+
+                        // Pop environment
+                        self.env_pop();
+
+                        return Ok(result);
+                    }
+                }
+            }
+
+            // Method not found
+            Err(InterpreterError::RuntimeError(format!(
+                "Class {} has no method named {}",
+                class_name, method
+            )))
+        } else {
+            Err(InterpreterError::RuntimeError(format!(
+                "{} is not a class",
+                class_name
             )))
         }
     }
