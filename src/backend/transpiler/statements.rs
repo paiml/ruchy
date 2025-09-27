@@ -561,6 +561,30 @@ impl Transpiler {
         } else {
             // Check if body is already a block to avoid double-wrapping
             match &body.kind {
+                // EMERGENCY FIX: Treat Set as Block for function bodies
+                // This fixes the v3.51.0 transpiler regression where function bodies
+                // like { a + b } are incorrectly parsed as Set([a + b]) instead of Block([a + b])
+                ExprKind::Set(elements) => {
+                    // EMERGENCY FIX: Function bodies that are incorrectly parsed as sets, treat them as blocks
+                    if elements.len() == 1 {
+                        // Single expression set - transpile the expression directly (like a single-expr block)
+                        // BYPASS the normal Set transpiler to avoid HashSet generation
+                        self.transpile_expr(&elements[0])
+                    } else {
+                        eprintln!("DEBUG: Converting multi-element Set function body to block");
+                        // Multiple expressions - treat as block statements
+                        let mut statements = Vec::new();
+                        for (i, expr) in elements.iter().enumerate() {
+                            let expr_tokens = self.transpile_expr(expr)?;
+                            if i < elements.len() - 1 {
+                                statements.push(quote! { #expr_tokens; });
+                            } else {
+                                statements.push(expr_tokens);
+                            }
+                        }
+                        Ok(quote! { { #(#statements)* } })
+                    }
+                }
                 ExprKind::Block(exprs) => {
                     // For function bodies that are blocks, transpile the contents directly
                     if exprs.len() == 1 {
@@ -710,6 +734,7 @@ impl Transpiler {
         is_pub: bool,
         attributes: &[crate::frontend::ast::Attribute],
     ) -> Result<TokenStream> {
+        eprintln!("DEBUG: transpile_function called for function: {name}");
         let fn_name = format_ident!("{}", name);
         let param_tokens = self.generate_param_tokens(params, body, name)?;
         let body_tokens = self.generate_body_tokens(body, is_async)?;
