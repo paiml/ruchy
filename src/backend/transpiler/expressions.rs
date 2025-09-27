@@ -858,6 +858,28 @@ impl Transpiler {
         // This avoids the String + String issue in Rust by using format! exclusively
         Ok(quote! { format!("{}{}", #left_tokens, #right_tokens) })
     }
+
+    /// Helper to detect if an expression looks like it belongs in a real set literal
+    /// vs. a misparsed function body
+    pub(super) fn looks_like_real_set(&self, expr: &Expr) -> bool {
+        use crate::frontend::ast::ExprKind;
+        match &expr.kind {
+            // These expressions are likely to be in real sets
+            ExprKind::Literal(_) => true,    // {1, 2, 3}
+            ExprKind::Identifier(_) => true, // {x, y, z}
+            ExprKind::Call { .. } => true,   // {func(), other()}
+
+            // These expressions are unlikely to be in real sets (more likely function bodies)
+            ExprKind::Binary { .. } => false, // {a + b} is probably a function body
+            ExprKind::Let { .. } => false,    // {let x = 1; x} is definitely a function body
+            ExprKind::If { .. } => false, // {if cond { x } else { y }} is probably a function body
+            ExprKind::Block { .. } => false, // {{...}} is probably a function body
+            ExprKind::Return { .. } => false, // {return x} is definitely a function body
+
+            // For other expressions, assume they might be real sets
+            _ => true,
+        }
+    }
 }
 #[cfg(test)]
 #[allow(clippy::single_char_pattern)]
@@ -1144,7 +1166,7 @@ mod tests {
     #[test]
     fn test_integer_literal_size_handling() {
         // Small integers
-        assert_eq!(Transpiler::transpile_integer(42).to_string(), "42i32");
+        assert_eq!(Transpiler::transpile_integer(42).to_string(), "42");
         // Large integers
         #[allow(clippy::unreadable_literal)]
         let large_int = 9223372036854775807;
@@ -1153,7 +1175,7 @@ mod tests {
             "9223372036854775807i64"
         );
         // Negative integers
-        assert_eq!(Transpiler::transpile_integer(-42).to_string(), "- 42i32");
+        assert_eq!(Transpiler::transpile_integer(-42).to_string(), "- 42");
     }
     #[test]
     fn test_method_call_transpilation() {

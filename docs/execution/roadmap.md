@@ -2,10 +2,41 @@
 
 ## 📝 **SESSION CONTEXT FOR RESUMPTION**
 
-**Last Active**: 2025-09-27 (v3.50.0 - PERFECTION ACHIEVED)
-**Current Version**: v3.50.0
-**Current Coverage**: 🎯 **75.88%** (up from 33.34% - +42.54% improvement!)
-**Status**: ✅ **PERFECTION: Class/Struct Runtime 79% Complete** | Classes: 10/17 tests (59%) | Structs: 24/26 tests (92%)
+**Last Active**: 2025-09-27 (v3.51.0 - CRITICAL TRANSPILER REGRESSION INVESTIGATION)
+**Current Version**: v3.51.0 (BROKEN - EMERGENCY HOTFIX NEEDED)
+**Integration Status**: 🚨 **CRITICAL REGRESSION: 74% → 38% pass rate**
+**Status**: 🔥 **EMERGENCY: Function transpilation broken - generates HashSet instead of return values**
+
+## 🚨 **CRITICAL TRANSPILER REGRESSION - v3.51.0**
+
+**Status**: 🔥 **EMERGENCY HOTFIX REQUIRED**
+**Root Cause**: Function bodies `{ a + b }` parsed as `ExprKind::Set([a + b])` instead of `ExprKind::Block([a + b])`
+**Impact**: All function return values generate HashSet code instead of direct returns
+**Test Evidence**: ruchy-book pass rate dropped from 74% to 38%
+
+### **Five Whys Investigation Results**
+1. **Why HashSet?** → Function body transpiled as Set literal
+2. **Why as Set?** → Parser ambiguity: `{x}` treated as Set not Block
+3. **Why ambiguity?** → Collections parser precedence over block parser
+4. **Why not resolved?** → EXTR-001 ticket identified but not fixed
+5. **Why blocking?** → Function syntax requires block parsing for return values
+
+### **Technical Discovery**
+- **Transpilation Flow**: `transpile_expr` → `transpile_data_error_expr` → `transpile_data_only_expr` → `transpile_set`
+- **Parser Issue**: `{a + b}` becomes `ExprKind::Set([Binary { a + b }])`
+- **Ignored Test**: `test_block_expression` disabled with note "Parser ambiguity: {x} parsed as Set instead of Block - waiting for EXTR-001"
+- **Fix Attempts**: Tried dispatcher-level detection with `looks_like_real_set` helper but debug output not appearing
+
+### **Current Status**
+- **Emergency Fix Added**: Modified `transpile_data_only_expr` to detect misparsed blocks
+- **Helper Function**: `looks_like_real_set` identifies Binary expressions as non-Set
+- **Debug Issue**: Changes not appearing in transpiler output (rebuild needed)
+- **Next Steps**: Complete rebuild and test emergency fix
+
+### **Files Modified**
+- `/dispatcher.rs:311` - Emergency Set→Block detection
+- `/expressions.rs:865` - Made `looks_like_real_set` public
+- Multiple debug statements added for investigation
 
 ## 🏆 **COMPLETED: PERFECTION RELEASE - v3.50.0**
 

@@ -321,11 +321,11 @@ mod tests {
 
     #[test]
     fn test_ruchy_token_type_variants() {
-        // Test that token types exist
-        assert!(RuchyTokenType::Actor as u32 >= 0);
-        assert!(RuchyTokenType::DataFrame as u32 >= 0);
-        assert!(RuchyTokenType::Pipeline as u32 >= 0);
-        assert!(RuchyTokenType::Pattern as u32 >= 0);
+        // Test that token types exist and have valid u32 values
+        let _actor = RuchyTokenType::Actor as u32;
+        let _dataframe = RuchyTokenType::DataFrame as u32;
+        let _pipeline = RuchyTokenType::Pipeline as u32;
+        let _pattern = RuchyTokenType::Pattern as u32;
     }
 
     #[test]

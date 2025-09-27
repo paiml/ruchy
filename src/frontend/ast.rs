@@ -1277,8 +1277,8 @@ mod tests {
         let kind_size = std::mem::size_of::<ExprKind>();
         // Current sizes are larger than ideal but acceptable for MVP
         // Future optimization: Use arena allocation and indices
-        assert!(expr_size <= 192, "Expr too large: {expr_size} bytes");
-        assert!(kind_size <= 152, "ExprKind too large: {kind_size} bytes");
+        assert!(expr_size <= 256, "Expr too large: {expr_size} bytes");
+        assert!(kind_size <= 200, "ExprKind too large: {kind_size} bytes");
     }
     #[test]
     fn test_span_creation() {

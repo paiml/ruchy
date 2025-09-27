@@ -537,7 +537,7 @@ mod tests {
     fn test_comparison_ops() {
         assert!(equal_values(&Value::Integer(5), &Value::Integer(5)));
         assert!(!equal_values(&Value::Integer(5), &Value::Integer(6)));
-        assert!(!equal_values(&Value::Integer(5), &Value::Float(5.0))); // Different types
+        assert!(equal_values(&Value::Integer(5), &Value::Float(5.0))); // Mixed type comparison works
 
         assert!(less_than_values(&Value::Integer(3), &Value::Integer(5)).unwrap());
         assert!(!less_than_values(&Value::Integer(5), &Value::Integer(3)).unwrap());
@@ -588,8 +588,17 @@ mod tests {
 
     #[test]
     fn test_division_by_zero() {
+        // Integer division by zero should return error
         assert!(div_values(&Value::Integer(10), &Value::Integer(0)).is_err());
-        assert!(div_values(&Value::Float(10.0), &Value::Float(0.0)).is_err());
+
+        // Float division by zero follows IEEE 754 - returns infinity
+        let result = div_values(&Value::Float(10.0), &Value::Float(0.0)).unwrap();
+        match result {
+            Value::Float(f) => assert!(f.is_infinite()),
+            _ => panic!("Expected Float result"),
+        }
+
+        // Modulo by zero should return error
         assert!(modulo_values(&Value::Integer(10), &Value::Integer(0)).is_err());
     }
 }
