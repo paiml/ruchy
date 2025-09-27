@@ -418,6 +418,39 @@ fn equal_values(left: &Value, right: &Value) -> bool {
         (Value::Bool(a), Value::Bool(b)) => a == b,
         (Value::String(a), Value::String(b)) => a == b,
         (Value::Nil, Value::Nil) => true,
+        // Object/struct equality - compare all fields
+        (Value::Object(a), Value::Object(b)) => {
+            // Check if both have same number of fields
+            if a.len() != b.len() {
+                return false;
+            }
+            // Check if all fields match
+            for (key, val_a) in a.iter() {
+                match b.get(key) {
+                    Some(val_b) => {
+                        if !equal_values(val_a, val_b) {
+                            return false;
+                        }
+                    }
+                    None => return false,
+                }
+            }
+            true
+        }
+        // Array equality
+        (Value::Array(a), Value::Array(b)) => {
+            if a.len() != b.len() {
+                return false;
+            }
+            a.iter().zip(b.iter()).all(|(x, y)| equal_values(x, y))
+        }
+        // Tuple equality
+        (Value::Tuple(a), Value::Tuple(b)) => {
+            if a.len() != b.len() {
+                return false;
+            }
+            a.iter().zip(b.iter()).all(|(x, y)| equal_values(x, y))
+        }
         _ => false,
     }
 }

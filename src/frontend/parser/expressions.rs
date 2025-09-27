@@ -43,6 +43,29 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
             state.tokens.advance();
             Ok(Expr::new(ExprKind::Literal(Literal::Null), span))
         }
+        Token::None => {
+            state.tokens.advance();
+            Ok(Expr::new(ExprKind::None, span))
+        }
+        Token::Some => {
+            state.tokens.advance();
+            // Some requires a value in parentheses
+            if !matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
+                bail!("Expected '(' after Some");
+            }
+            state.tokens.advance(); // consume (
+            let value = super::parse_expr_with_precedence_recursive(state, 0)?;
+            if !matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
+                bail!("Expected ')' after Some value");
+            }
+            state.tokens.advance(); // consume )
+            Ok(Expr::new(
+                ExprKind::Some {
+                    value: Box::new(value),
+                },
+                span,
+            ))
+        }
         // Identifier tokens - delegated to focused helper
         Token::Identifier(_) | Token::Underscore | Token::Self_ => {
             parse_identifier_token(state, &token, span)
@@ -159,7 +182,7 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
         // Collection/enum definition tokens - delegated to focused helper
         Token::LeftBracket | Token::Enum => parse_collection_enum_token(state, token),
         // Constructor tokens - delegated to focused helper
-        Token::Some | Token::None | Token::Ok | Token::Err | Token::Result | Token::Option => {
+        Token::Ok | Token::Err | Token::Result | Token::Option => {
             parse_constructor_token(state, token, span)
         }
         _ => bail!("Unexpected token: {:?}", token),
