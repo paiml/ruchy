@@ -1,0 +1,114 @@
+name: P0 Critical Features Validation
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  p0-validation:
+    name: P0 Critical Features Must Pass
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        components: rustfmt, clippy
+
+    - name: Cache cargo registry
+      uses: actions/cache@v4
+      with:
+        path: ~/.cargo/registry
+        key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+
+    - name: Cache cargo index
+      uses: actions/cache@v4
+      with:
+        path: ~/.cargo/git
+        key: ${{ runner.os }}-cargo-git-${{ hashFiles('**/Cargo.lock') }}
+
+    - name: Cache cargo build
+      uses: actions/cache@v4
+      with:
+        path: target
+        key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
+
+    - name: Build Release Binary
+      run: cargo build --release --bin ruchy
+
+    - name: Run P0 Critical Features Tests
+      run: |
+        echo "🚨 P0 CRITICAL FEATURES VALIDATION"
+        echo "==================================="
+        echo "Principle: If it's advertised, it MUST work"
+        echo ""
+        cargo test --test p0_critical_features --release
+      continue-on-error: true
+      id: p0_tests
+
+    - name: Run Transpiler Regression Tests
+      run: cargo test --test critical_transpiler_regression_test --release
+      continue-on-error: true
+      id: transpiler_tests
+
+    - name: Check HashSet Regression
+      run: |
+        echo "fn test_func(a: i32, b: i32) -> i32 { a + b }" > /tmp/test.ruchy
+        echo "println(test_func(1, 2))" >> /tmp/test.ruchy
+        if cargo run --release --bin ruchy -- transpile /tmp/test.ruchy 2>/dev/null | grep -q "HashSet"; then
+          echo "❌ HASHSET REGRESSION DETECTED!"
+          echo "Functions generating HashSet code instead of direct returns!"
+          exit 1
+        else
+          echo "✅ No HashSet regression detected"
+        fi
+      id: hashset_check
+
+    - name: Generate P0 Report
+      if: always()
+      run: |
+        echo "## P0 Critical Features Report" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+
+        if [ "${{ steps.p0_tests.outcome }}" == "success" ]; then
+          echo "✅ **P0 Critical Features**: All tests passing" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ **P0 Critical Features**: Tests failing" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Failed Tests:" >> $GITHUB_STEP_SUMMARY
+          cargo test --test p0_critical_features 2>&1 | grep "FAILED" | head -10 >> $GITHUB_STEP_SUMMARY || true
+        fi
+
+        echo "" >> $GITHUB_STEP_SUMMARY
+
+        if [ "${{ steps.transpiler_tests.outcome }}" == "success" ]; then
+          echo "✅ **Transpiler Regression**: No regression detected" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ **Transpiler Regression**: Tests failing" >> $GITHUB_STEP_SUMMARY
+        fi
+
+        echo "" >> $GITHUB_STEP_SUMMARY
+
+        if [ "${{ steps.hashset_check.outcome }}" == "success" ]; then
+          echo "✅ **HashSet Check**: No HashSet generation in functions" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ **HashSet Check**: Functions generating incorrect HashSet code" >> $GITHUB_STEP_SUMMARY
+        fi
+
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Enforcement Status:" >> $GITHUB_STEP_SUMMARY
+        echo "P0 tests are currently **non-blocking** to allow fixing critical issues." >> $GITHUB_STEP_SUMMARY
+        echo "Once fixed, this workflow will become **mandatory** for all PRs." >> $GITHUB_STEP_SUMMARY
+
+    # Currently non-blocking to allow fixes to land
+    # Uncomment the following lines once P0 tests are passing:
+    # - name: Enforce P0 Tests
+    #   if: steps.p0_tests.outcome != 'success' || steps.transpiler_tests.outcome != 'success'
+    #   run: |
+    #     echo "❌ P0 CRITICAL TESTS FAILED - BLOCKING MERGE"
+    #     echo "Fix all P0 issues before merging!"
+    #     exit 1
