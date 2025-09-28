@@ -203,6 +203,10 @@ pub enum Token {
     Private,
     #[token("protected")]
     Protected,
+    #[token("sealed")]
+    Sealed,
+    #[token("final")]
+    Final,
     #[token("receive")]
     Receive,
     #[token("send")]

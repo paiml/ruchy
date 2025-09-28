@@ -187,6 +187,8 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
         // Control statement tokens - delegated to focused helper
         Token::Pub
         | Token::Const
+        | Token::Sealed
+        | Token::Final
         | Token::Unsafe
         | Token::Break
         | Token::Continue
@@ -525,6 +527,56 @@ fn parse_const_token(state: &mut ParserState) -> Result<Expr> {
     }
 }
 
+/// Parse sealed token - handles sealed modifier for classes
+fn parse_sealed_token(state: &mut ParserState) -> Result<Expr> {
+    state.tokens.advance(); // consume 'sealed'
+                            // Check if next token is 'class'
+    match state.tokens.peek() {
+        Some((Token::Class, _)) => {
+            let mut expr = parse_prefix(state)?;
+            // Mark the class as sealed
+            if let ExprKind::Class { is_sealed, .. } = &mut expr.kind {
+                *is_sealed = true;
+            }
+            Ok(expr)
+        }
+        _ => bail!("Expected 'class' after 'sealed'"),
+    }
+}
+
+/// Parse final token - used for final methods and classes
+fn parse_final_token(state: &mut ParserState) -> Result<Expr> {
+    state.tokens.advance(); // consume 'final'
+                            // Could be final class or final method
+    match state.tokens.peek() {
+        Some((Token::Class, _)) => {
+            let mut expr = parse_prefix(state)?;
+            // Mark the class as final (no inheritance)
+            if let ExprKind::Class { .. } = &expr.kind {
+                expr.attributes.push(crate::frontend::ast::Attribute {
+                    name: "final".to_string(),
+                    args: vec![],
+                    span: expr.span,
+                });
+            }
+            Ok(expr)
+        }
+        Some((Token::Fun | Token::Fn, _)) => {
+            let mut expr = parse_prefix(state)?;
+            // Mark the method as final
+            if let ExprKind::Function { .. } = &expr.kind {
+                expr.attributes.push(crate::frontend::ast::Attribute {
+                    name: "final".to_string(),
+                    args: vec![],
+                    span: expr.span,
+                });
+            }
+            Ok(expr)
+        }
+        _ => bail!("Expected 'class' or 'fn' after 'final'"),
+    }
+}
+
 /// Parse unsafe token - handles unsafe declarations for functions
 /// Similar to `parse_pub_token` but for unsafe modifier
 fn parse_unsafe_token(state: &mut ParserState) -> Result<Expr> {
@@ -822,6 +874,8 @@ fn parse_control_statement_token(
     match token {
         Token::Pub => parse_pub_token(state),
         Token::Const => parse_const_token(state),
+        Token::Sealed => parse_sealed_token(state),
+        Token::Final => parse_final_token(state),
         Token::Unsafe => parse_unsafe_token(state),
         Token::Break => parse_break_token(state, span),
         Token::Continue => parse_continue_token(state, span),
@@ -2189,6 +2243,7 @@ fn parse_struct_definition(state: &mut ParserState) -> Result<Expr> {
                 properties,
                 derives: Vec::new(), // Will be populated by parse_attributed_expression
                 is_pub: false,
+                is_sealed: false, // Will be set by parse_sealed_token if needed
             },
             start_span,
         ))
@@ -2449,7 +2504,7 @@ fn parse_class_member(
 
     // Parse modifiers
     let (visibility, is_mut) = parse_class_modifiers(state)?;
-    let (is_static, is_override) = parse_member_flags(state)?;
+    let (is_static, is_override, is_final) = parse_member_flags(state)?;
 
     // Determine member type and parse accordingly
     match state.tokens.peek() {
@@ -2461,7 +2516,13 @@ fn parse_class_member(
         }
         Some((Token::Fun | Token::Fn, _)) => {
             let mut method = parse_class_method(state)?;
-            apply_method_modifiers(&mut method, visibility.is_public(), is_static, is_override)?;
+            apply_method_modifiers(
+                &mut method,
+                visibility.is_public(),
+                is_static,
+                is_override,
+                is_final,
+            )?;
             methods.push(method);
         }
         Some((Token::Identifier(_), _)) if !is_static => {
@@ -2683,7 +2744,7 @@ fn parse_class_modifiers(state: &mut ParserState) -> Result<(Visibility, bool)> 
 }
 
 /// Parse member flags (static, override) - complexity: 4
-fn parse_member_flags(state: &mut ParserState) -> Result<(bool, bool)> {
+fn parse_member_flags(state: &mut ParserState) -> Result<(bool, bool, bool)> {
     let is_static = matches!(state.tokens.peek(), Some((Token::Static, _)));
     if is_static {
         state.tokens.advance();
@@ -2698,7 +2759,12 @@ fn parse_member_flags(state: &mut ParserState) -> Result<(bool, bool)> {
         state.tokens.advance();
     }
 
-    Ok((is_static, is_override))
+    let is_final = matches!(state.tokens.peek(), Some((Token::Final, _)));
+    if is_final {
+        state.tokens.advance();
+    }
+
+    Ok((is_static, is_override, is_final))
 }
 
 /// Validate constructor modifiers - complexity: 2
@@ -2713,21 +2779,27 @@ fn validate_constructor_modifiers(is_static: bool, is_override: bool) -> Result<
 }
 
 /// Apply modifiers to method - complexity: 3
+#[allow(clippy::too_many_arguments, clippy::fn_params_excessive_bools)]
 fn apply_method_modifiers(
     method: &mut ClassMethod,
     is_pub: bool,
     is_static: bool,
     is_override: bool,
+    is_final: bool,
 ) -> Result<()> {
     method.is_pub = is_pub;
     method.is_static = is_static;
     method.is_override = is_override;
+    method.is_final = is_final;
 
     if is_static {
         method.self_type = SelfType::None;
         if is_override {
             bail!("Static methods cannot be override");
         }
+    }
+    if is_final && is_override {
+        bail!("Methods cannot be both final and override");
     }
     Ok(())
 }
@@ -2858,6 +2930,7 @@ fn parse_class_method(state: &mut ParserState) -> Result<ClassMethod> {
         is_pub: false, // Will be set by class body parsing
         is_static: matches!(self_type, SelfType::None),
         is_override: false, // Will be set by class body parsing
+        is_final: false,    // Will be set by class body parsing
         self_type,
     })
 }

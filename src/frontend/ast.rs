@@ -430,6 +430,7 @@ pub enum ExprKind {
         properties: Vec<ClassProperty>, // property NAME: TYPE { get => ..., set(v) => ... }
         derives: Vec<String>,           // #[derive(Debug, Clone, ...)]
         is_pub: bool,
+        is_sealed: bool, // sealed class (no external subclassing)
     },
     Enum {
         name: String,
@@ -910,6 +911,7 @@ pub struct ClassMethod {
     pub is_pub: bool,
     pub is_static: bool,     // static method (no self)
     pub is_override: bool,   // override keyword for explicit overriding
+    pub is_final: bool,      // final method (cannot be overridden)
     pub self_type: SelfType, // &self, &mut self, or self (move)
 }
 
