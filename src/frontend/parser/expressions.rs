@@ -1095,40 +1095,86 @@ fn parse_single_tuple_pattern_element(state: &mut ParserState) -> Result<Pattern
 }
 pub fn parse_struct_pattern(state: &mut ParserState) -> Result<Pattern> {
     state.tokens.advance(); // consume '{'
+    parse_struct_pattern_fields(state, String::new())
+}
+
+/// Parse struct pattern with a specific name: Point { x, y }
+fn parse_struct_pattern_with_name(state: &mut ParserState, name: String) -> Result<Pattern> {
+    state.tokens.advance(); // consume '{'
+    parse_struct_pattern_fields(state, name)
+}
+
+/// Parse struct pattern fields (shared logic for both named and anonymous patterns)
+fn parse_struct_pattern_fields(state: &mut ParserState, name: String) -> Result<Pattern> {
     let mut fields = Vec::new();
+    let mut has_rest = false;
     let mut is_first = true;
+
     while let Some((token, _)) = state.tokens.peek() {
         if matches!(token, Token::RightBrace) {
             state.tokens.advance(); // consume '}'
             break;
         }
+
         if !is_first {
             if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
                 state.tokens.advance(); // consume ','
+                // Check for trailing comma
+                if matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
+                    state.tokens.advance(); // consume '}'
+                    break;
+                }
             } else {
                 bail!("Expected comma between struct pattern fields");
             }
         }
         is_first = false;
+
+        // Check for rest pattern (..)
+        if matches!(state.tokens.peek(), Some((Token::DotDot, _))) {
+            state.tokens.advance(); // consume '..'
+            has_rest = true;
+            // Rest must be last, so expect closing brace
+            if !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
+                // Allow trailing comma after ..
+                if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+                    state.tokens.advance(); // consume ','
+                }
+                if !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
+                    bail!("Rest pattern (..) must be the last field in struct pattern");
+                }
+            }
+            state.tokens.advance(); // consume '}'
+            break;
+        }
+
         // Parse field name
-        if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
-            let field_name = name.clone();
+        if let Some((Token::Identifier(field_name), _)) = state.tokens.peek() {
+            let field_name = field_name.clone();
             state.tokens.advance();
-            // For now, support shorthand syntax only: {name, age}
-            // Note: Support full syntax: {name: pattern, age: other_pattern}
+
+            // Check for field pattern: field_name: pattern
+            let pattern = if matches!(state.tokens.peek(), Some((Token::Colon, _))) {
+                state.tokens.advance(); // consume ':'
+                Some(parse_match_pattern(state)?)
+            } else {
+                None // Shorthand syntax: field name is the variable name
+            };
+
             let field = crate::frontend::ast::StructPatternField {
-                name: field_name.clone(),
-                pattern: None, // Shorthand means field name is the variable name
+                name: field_name,
+                pattern,
             };
             fields.push(field);
         } else {
             bail!("Expected identifier in struct pattern");
         }
     }
+
     Ok(Pattern::Struct {
-        name: String::new(), // Anonymous struct pattern (empty name)
+        name,
         fields,
-        has_rest: false, // No rest patterns in basic struct destructuring
+        has_rest,
     })
 }
 pub fn parse_list_pattern(state: &mut ParserState) -> Result<Pattern> {
@@ -1581,8 +1627,12 @@ fn parse_identifier_or_constructor_pattern(state: &mut ParserState) -> Result<Pa
         });
     }
 
+    // Check for struct patterns: Point { x, y }
+    if matches!(state.tokens.peek(), Some((Token::LeftBrace, _))) {
+        parse_struct_pattern_with_name(state, name)
+    }
     // Check for enum-like patterns: Ok(x), Err(e), etc.
-    if matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
+    else if matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
         parse_constructor_pattern(state, name)
     } else {
         Ok(Pattern::Identifier(name))
@@ -2120,6 +2170,7 @@ fn parse_struct_definition(state: &mut ParserState) -> Result<Expr> {
                 name,
                 type_params,
                 fields: struct_fields,
+                derives: Vec::new(), // Will be populated by parse_attributed_expression
                 is_pub: false,
             },
             start_span,

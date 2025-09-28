@@ -149,6 +149,7 @@ impl Transpiler {
         name: &str,
         type_params: &[String],
         fields: &[StructField],
+        derives: &[String],
         is_pub: bool,
     ) -> Result<TokenStream> {
         let struct_name = format_ident!("{}", name);
@@ -174,15 +175,25 @@ impl Transpiler {
             quote! {}
         };
 
+        // Generate derive attributes
+        let derive_attrs = if derives.is_empty() {
+            quote! {}
+        } else {
+            let derive_idents: Vec<_> = derives.iter().map(|d| format_ident!("{}", d)).collect();
+            quote! { #[derive(#(#derive_idents),*)] }
+        };
+
         // Generate struct definition
         let struct_def = if type_params.is_empty() {
             quote! {
+                #derive_attrs
                 #visibility struct #struct_name {
                     #(#field_tokens,)*
                 }
             }
         } else {
             quote! {
+                #derive_attrs
                 #visibility struct #struct_name<#(#type_param_tokens),*> {
                     #(#field_tokens,)*
                 }
@@ -264,8 +275,8 @@ impl Transpiler {
         derives: &[String],
         is_pub: bool,
     ) -> Result<TokenStream> {
-        // 1. Generate the struct definition
-        let struct_tokens = self.transpile_struct(name, type_params, fields, is_pub)?;
+        // 1. Generate the struct definition with derives
+        let struct_tokens = self.transpile_struct(name, type_params, fields, derives, is_pub)?;
 
         // 2. Generate derive attributes from derives
         let derive_tokens = if derives.is_empty() {
