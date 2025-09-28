@@ -2136,29 +2136,91 @@ fn parse_struct_name(state: &mut ParserState) -> Result<String> {
         bail!("Expected struct name after 'struct'");
     }
 }
-/// Parse struct field definitions - complexity: 6
+/// Parse struct field definitions - complexity: 7
 fn parse_struct_fields(state: &mut ParserState) -> Result<Vec<StructField>> {
     state.tokens.expect(&Token::LeftBrace)?;
     let mut fields = Vec::new();
     while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
+        // Parse visibility modifiers for struct fields
+        let (is_pub, is_mut) = parse_struct_field_modifiers(state)?;
+
         let (field_name, field_type, default_value) = parse_single_struct_field(state)?;
-        fields.push((field_name, field_type, default_value));
+        fields.push(StructField {
+            name: field_name,
+            ty: field_type,
+            is_pub,
+            is_mut,
+            default_value,
+        });
+
         if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
             state.tokens.advance();
         }
     }
     state.tokens.expect(&Token::RightBrace)?;
-    // Convert to proper Struct variant with StructField
-    Ok(fields
-        .into_iter()
-        .map(|(name, ty, default_value)| StructField {
-            name,
-            ty,
-            is_pub: false,
-            is_mut: false,
-            default_value,
-        })
-        .collect())
+    Ok(fields)
+}
+
+/// Parse struct field visibility modifiers - complexity: 6
+fn parse_struct_field_modifiers(state: &mut ParserState) -> Result<(bool, bool)> {
+    let mut is_pub = false;
+    let mut is_mut = false;
+
+    // Check for pub or pub(crate)
+    if matches!(state.tokens.peek(), Some((Token::Pub, _))) {
+        state.tokens.advance();
+        is_pub = true;
+
+        // Check for pub(crate) syntax
+        if matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
+            state.tokens.advance();
+            match state.tokens.peek() {
+                Some((Token::Crate, _)) => {
+                    state.tokens.advance();
+                    state.tokens.expect(&Token::RightParen)?;
+                    // For now, we'll treat pub(crate) as pub
+                    // TODO: Implement proper visibility scopes
+                }
+                Some((Token::Super, _)) => {
+                    state.tokens.advance();
+                    state.tokens.expect(&Token::RightParen)?;
+                    bail!("Unsupported visibility scope: pub(super) - only pub(crate) is currently supported");
+                }
+                Some((Token::Identifier(scope), _)) => {
+                    let scope = scope.clone();
+                    state.tokens.advance();
+                    state.tokens.expect(&Token::RightParen)?;
+                    bail!("Unsupported visibility scope: pub({}) - only pub(crate) is currently supported", scope);
+                }
+                _ => {
+                    bail!("Expected 'crate', 'super', or identifier after 'pub('");
+                }
+            }
+        }
+    }
+
+    // Check for mut modifier
+    if matches!(state.tokens.peek(), Some((Token::Mut, _))) {
+        state.tokens.advance();
+        is_mut = true;
+    }
+
+    // Also check reverse order: mut pub
+    if !is_pub && matches!(state.tokens.peek(), Some((Token::Pub, _))) {
+        state.tokens.advance();
+        is_pub = true;
+    }
+
+    // Check for "private" keyword (special Ruchy extension)
+    // Note: private is the default, but we parse it for explicit specification
+    if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
+        if name == "private" {
+            state.tokens.advance();
+            // is_pub remains false
+        }
+    }
+
+    Ok((is_pub, is_mut))
 }
 /// Parse a single struct field (name: Type) - complexity: 5
 fn parse_single_struct_field(state: &mut ParserState) -> Result<(String, Type, Option<Expr>)> {
@@ -2250,6 +2312,33 @@ fn parse_class_modifiers(state: &mut ParserState) -> Result<(bool, bool)> {
     if matches!(state.tokens.peek(), Some((Token::Pub, _))) {
         state.tokens.advance();
         is_pub = true;
+
+        // Check for pub(crate) syntax
+        if matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
+            state.tokens.advance();
+            match state.tokens.peek() {
+                Some((Token::Crate, _)) => {
+                    state.tokens.advance();
+                    state.tokens.expect(&Token::RightParen)?;
+                    // For now, we'll treat pub(crate) as pub
+                    // TODO: Implement proper visibility scopes
+                }
+                Some((Token::Super, _)) => {
+                    state.tokens.advance();
+                    state.tokens.expect(&Token::RightParen)?;
+                    bail!("Unsupported visibility scope: pub(super) - only pub(crate) is currently supported");
+                }
+                Some((Token::Identifier(scope), _)) => {
+                    let scope = scope.clone();
+                    state.tokens.advance();
+                    state.tokens.expect(&Token::RightParen)?;
+                    bail!("Unsupported visibility scope: pub({}) - only pub(crate) is currently supported", scope);
+                }
+                _ => {
+                    bail!("Expected 'crate', 'super', or identifier after 'pub('");
+                }
+            }
+        }
     }
 
     if matches!(state.tokens.peek(), Some((Token::Mut, _))) {
@@ -2261,6 +2350,33 @@ fn parse_class_modifiers(state: &mut ParserState) -> Result<(bool, bool)> {
     if !is_pub && matches!(state.tokens.peek(), Some((Token::Pub, _))) {
         state.tokens.advance();
         is_pub = true;
+
+        // Check for pub(crate) syntax in reverse order too
+        if matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
+            state.tokens.advance();
+            match state.tokens.peek() {
+                Some((Token::Crate, _)) => {
+                    state.tokens.advance();
+                    state.tokens.expect(&Token::RightParen)?;
+                    // For now, we'll treat pub(crate) as pub
+                    // TODO: Implement proper visibility scopes
+                }
+                Some((Token::Super, _)) => {
+                    state.tokens.advance();
+                    state.tokens.expect(&Token::RightParen)?;
+                    bail!("Unsupported visibility scope: pub(super) - only pub(crate) is currently supported");
+                }
+                Some((Token::Identifier(scope), _)) => {
+                    let scope = scope.clone();
+                    state.tokens.advance();
+                    state.tokens.expect(&Token::RightParen)?;
+                    bail!("Unsupported visibility scope: pub({}) - only pub(crate) is currently supported", scope);
+                }
+                _ => {
+                    bail!("Expected 'crate', 'super', or identifier after 'pub('");
+                }
+            }
+        }
     }
 
     Ok((is_pub, is_mut))

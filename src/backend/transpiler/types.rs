@@ -173,18 +173,82 @@ impl Transpiler {
         } else {
             quote! {}
         };
-        if type_params.is_empty() {
-            Ok(quote! {
+
+        // Generate struct definition
+        let struct_def = if type_params.is_empty() {
+            quote! {
                 #visibility struct #struct_name {
                     #(#field_tokens,)*
                 }
-            })
+            }
         } else {
-            Ok(quote! {
+            quote! {
                 #visibility struct #struct_name<#(#type_param_tokens),*> {
                     #(#field_tokens,)*
                 }
+            }
+        };
+
+        // Check if any fields have default values
+        let has_defaults = fields.iter().any(|f| f.default_value.is_some());
+
+        // Generate Default impl if there are default values
+        if has_defaults {
+            let default_field_tokens: Result<Vec<_>> = fields
+                .iter()
+                .map(|field| -> Result<TokenStream> {
+                    let field_name = format_ident!("{}", field.name);
+                    if let Some(ref default_expr) = field.default_value {
+                        let default_value = self.transpile_expr(default_expr)?;
+                        Ok(quote! { #field_name: #default_value })
+                    } else {
+                        Ok(quote! { #field_name: Default::default() })
+                    }
+                })
+                .collect();
+            let default_field_tokens = default_field_tokens?;
+
+            let default_impl = if type_params.is_empty() {
+                quote! {
+                    impl Default for #struct_name {
+                        fn default() -> Self {
+                            Self {
+                                #(#default_field_tokens,)*
+                            }
+                        }
+                    }
+                }
+            } else {
+                // For generic structs, we need to add Default bounds
+                let where_clause_tokens: Vec<_> = type_params
+                    .iter()
+                    .map(|p| {
+                        let param_ident = format_ident!("{}", p);
+                        quote! { #param_ident: Default }
+                    })
+                    .collect();
+
+                quote! {
+                    impl<#(#type_param_tokens),*> Default for #struct_name<#(#type_param_tokens),*>
+                    where
+                        #(#where_clause_tokens),*
+                    {
+                        fn default() -> Self {
+                            Self {
+                                #(#default_field_tokens,)*
+                            }
+                        }
+                    }
+                }
+            };
+
+            Ok(quote! {
+                #struct_def
+
+                #default_impl
             })
+        } else {
+            Ok(struct_def)
         }
     }
 
