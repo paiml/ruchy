@@ -61,6 +61,7 @@ fn parse_state_block(state: &mut ParserState, state_fields: &mut Vec<StructField
             visibility: Visibility::Private,
             is_mut: false,
             default_value: None,
+            decorators: Vec::new(),
         });
         consume_optional_separator(state);
     }
@@ -135,6 +136,7 @@ fn parse_inline_state_field(
         visibility: Visibility::Private,
         is_mut: false,
         default_value: None,
+        decorators: Vec::new(),
     });
     consume_optional_separator(state);
     Ok(())
