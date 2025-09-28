@@ -405,6 +405,7 @@ pub enum ExprKind {
         name: String,
         type_params: Vec<String>,
         fields: Vec<StructField>,
+        derives: Vec<String>, // #[derive(Debug, Clone, ...)]
         is_pub: bool,
     },
     Class {

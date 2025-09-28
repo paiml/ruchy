@@ -916,6 +916,7 @@ impl Interpreter {
                 name,
                 type_params,
                 fields,
+                derives: _,  // Derives are handled at transpile time, not runtime
                 is_pub,
             } => self.eval_struct_definition(name, type_params, fields, *is_pub),
             ExprKind::Class {
