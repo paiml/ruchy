@@ -178,7 +178,7 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
         // Parentheses tokens - delegated to focused helper (unit, grouping, tuples, lambdas)
         Token::LeftParen => parse_parentheses_token(state, span),
         // Data structure definition tokens - delegated to focused helper
-        Token::Struct | Token::Class | Token::Trait | Token::Impl | Token::Type => {
+        Token::Struct | Token::Class | Token::Trait | Token::Interface | Token::Impl | Token::Type => {
             parse_data_structure_token(state, token)
         }
         // Import/module tokens - delegated to focused helper
@@ -829,6 +829,7 @@ fn parse_data_structure_token(state: &mut ParserState, token: Token) -> Result<E
         Token::Struct => parse_struct_definition(state),
         Token::Class => parse_struct_definition(state), // Class transpiles to struct
         Token::Trait => parse_trait_definition(state),
+        Token::Interface => parse_trait_definition(state), // Interface is just a trait
         Token::Impl => parse_impl_block(state),
         Token::Type => parse_type_alias(state),
         _ => bail!("Expected data structure token, got: {:?}", token),
@@ -3159,8 +3160,21 @@ fn parse_class_method(state: &mut ParserState) -> Result<ClassMethod> {
 }
 
 fn parse_trait_definition(state: &mut ParserState) -> Result<Expr> {
-    // Parse trait Name { fun method(self) -> Type ... }
-    let start_span = state.tokens.expect(&Token::Trait)?;
+    // Parse trait/interface Name { fun method(self) -> Type ... }
+    // Check if we're parsing a trait or interface and consume the token
+    let start_span = match state.tokens.peek() {
+        Some((Token::Trait, span)) => {
+            let span = *span;
+            state.tokens.advance();
+            span
+        }
+        Some((Token::Interface, span)) => {
+            let span = *span;
+            state.tokens.advance();
+            span
+        }
+        _ => bail!("Expected 'trait' or 'interface' keyword"),
+    };
     // Get trait name
     let name = if let Some((Token::Identifier(n), _)) = state.tokens.peek() {
         let name = n.clone();
@@ -3174,8 +3188,13 @@ fn parse_trait_definition(state: &mut ParserState) -> Result<Expr> {
     let mut methods = Vec::new();
     // Parse methods
     while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
-        // Expect 'fun' keyword
-        state.tokens.expect(&Token::Fun)?;
+        // Expect 'fun' or 'fn' keyword
+        match state.tokens.peek() {
+            Some((Token::Fun, _)) | Some((Token::Fn, _)) => {
+                state.tokens.advance();
+            }
+            _ => bail!("Expected 'fun' or 'fn' keyword in trait/interface"),
+        }
         // Parse method name
         let method_name = if let Some((Token::Identifier(n), _)) = state.tokens.peek() {
             let name = n.clone();
