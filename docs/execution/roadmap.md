@@ -5,16 +5,16 @@
 **Last Active**: 2025-09-28 (v3.54.0 - OOP Implementation Advancing)
 **Current Sprint**: v3.54.0 - Complete Classes, Actors, and Structs with Extreme TDD
 **Integration Status**: ✅ **100% P0 pass rate (15/15 implemented features)**
-**Status**: 🚧 **Phase 2: Implementation - 38.4% test coverage achieved (28/73 passing)**
+**Status**: 🚧 **Phase 2: Implementation - 39.7% test coverage achieved (29/73 passing)**
 **Progress Milestone**: ✅ Approaching 40% coverage!
-**Latest Update**: [OOP-005] Visibility enum, spawn keyword, class constants
+**Latest Update**: [OOP-006] Fixed for loops in class methods
 
 ## 🚧 **IN PROGRESS: v3.54.0 - OOP COMPLETE IMPLEMENTATION SPRINT**
 
 **Sprint Goal**: 100% working classes, actors, and structs
 **Methodology**: Extreme TDD - Tests written FIRST
 **Target Release**: End of sprint to crates.io
-**Current Coverage**: **38.4% (28/73 tests passing) - Approaching 40%!**
+**Current Coverage**: **39.7% (29/73 tests passing) - Nearly at 40%!**
 
 ### **Phase 1: Test Suite Creation ✅ COMPLETE**
 - Total: 73 tests written as baseline
@@ -40,7 +40,8 @@
   - Mutable self in methods (fixed)
   - Class constants (const NAME: TYPE = VALUE) implemented
   - Transpilation to Rust associated constants
-  - **Current**: 6/25 passing (24%)
+  - For loops in class methods (fixed comprehension detection issue)
+  - **Current**: 7/25 passing (28%)
 
 - ✅ **Actor System Progress**:
   - spawn keyword added to lexer and parser
