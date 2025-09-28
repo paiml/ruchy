@@ -859,7 +859,13 @@ fn parse_let_pattern(state: &mut ParserState, is_mutable: bool) -> Result<Patter
         Some((Token::Identifier(name), _)) => {
             let name = name.clone();
             state.tokens.advance();
-            Ok(Pattern::Identifier(name))
+
+            // Check if this is a struct pattern: Name { ... }
+            if matches!(state.tokens.peek(), Some((Token::LeftBrace, _))) {
+                parse_struct_pattern_with_name(state, name)
+            } else {
+                Ok(Pattern::Identifier(name))
+            }
         }
         Some((Token::DataFrame, _)) => {
             // Allow 'df' as a variable name (common in data science)
@@ -2164,7 +2170,7 @@ fn parse_struct_definition(state: &mut ParserState) -> Result<Expr> {
             start_span,
         ))
     } else {
-        // Check for tuple struct (parentheses) or regular struct (braces)
+        // Check for tuple struct (parentheses), regular struct (braces), or unit struct (no body)
         if matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
             // Parse tuple struct
             let field_types = parse_tuple_struct_fields(state)?;
@@ -2178,7 +2184,7 @@ fn parse_struct_definition(state: &mut ParserState) -> Result<Expr> {
                 },
                 start_span,
             ))
-        } else {
+        } else if matches!(state.tokens.peek(), Some((Token::LeftBrace, _))) {
             // Parse regular struct fields
             let struct_fields = parse_struct_fields(state)?;
             Ok(Expr::new(
@@ -2187,6 +2193,18 @@ fn parse_struct_definition(state: &mut ParserState) -> Result<Expr> {
                     type_params,
                     fields: struct_fields,
                     derives: Vec::new(), // Will be populated by parse_attributed_expression
+                    is_pub: false,
+                },
+                start_span,
+            ))
+        } else {
+            // Unit struct (no fields)
+            Ok(Expr::new(
+                ExprKind::Struct {
+                    name,
+                    type_params,
+                    fields: Vec::new(),
+                    derives: Vec::new(),
                     is_pub: false,
                 },
                 start_span,
