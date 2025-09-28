@@ -227,6 +227,8 @@ pub enum Token {
     Static,
     #[token("mut")]
     Mut,
+    #[regex("'[a-zA-Z_][a-zA-Z0-9_]*", |lex| lex.slice().to_string())]
+    Lifetime(String),
     #[token("pub")]
     Pub,
     #[token("import")]

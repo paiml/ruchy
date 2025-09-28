@@ -3596,25 +3596,24 @@ fn parse_generic_params(state: &mut ParserState) -> Result<Vec<String>> {
     state.tokens.expect(&Token::Less)?;
     let mut params = Vec::new();
     while !matches!(state.tokens.peek(), Some((Token::Greater, _))) {
-        if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
-            params.push(name.clone());
-            state.tokens.advance();
-            // Check for comma
-            if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+        match state.tokens.peek() {
+            Some((Token::Lifetime(lt), _)) => {
+                params.push(lt.clone());
                 state.tokens.advance();
             }
-        } else {
-            // For now, skip lifetime parameters by ignoring character literals in generic position
-            // This is a temporary workaround until proper lifetime support is added
-            if matches!(state.tokens.peek(), Some((Token::Char(_), _))) {
-                state.tokens.advance(); // skip the lifetime
-                                        // Check for identifier after the quote (e.g., 'a becomes Char('a'))
-                if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
-                    state.tokens.advance();
-                }
-            } else {
-                bail!("Expected type parameter name");
+            Some((Token::Identifier(name), _)) => {
+                params.push(name.clone());
+                state.tokens.advance();
             }
+            Some((Token::Char(_), _)) => {
+                // Legacy handling for char literals as lifetimes
+                state.tokens.advance();
+            }
+            _ => bail!("Expected type parameter or lifetime"),
+        }
+        // Check for comma
+        if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+            state.tokens.advance();
         }
     }
     state.tokens.expect(&Token::Greater)?;
