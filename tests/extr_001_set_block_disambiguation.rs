@@ -196,7 +196,7 @@ mod set_block_tests {
 
         // Verify AST has Block, not Set
         if let Ok(ast) = ast {
-            let s = format!("{:?}", ast);
+            let s = format!("{ast:?}");
             assert!(
                 s.contains("Block") || !s.contains("Set"),
                 "Function body should be Block in AST"
@@ -212,7 +212,7 @@ mod set_block_tests {
         assert!(ast.is_ok(), "Should parse set literal");
 
         if let Ok(ast) = ast {
-            let s = format!("{:?}", ast);
+            let s = format!("{ast:?}");
             assert!(
                 s.contains("Set") || s.contains("[1, 2]"),
                 "Comma-separated should be Set in AST"
@@ -228,7 +228,7 @@ mod set_block_tests {
         assert!(ast.is_ok(), "Should parse block with let");
 
         if let Ok(ast) = ast {
-            let s = format!("{:?}", ast);
+            let s = format!("{ast:?}");
             assert!(
                 s.contains("Block") || s.contains("Let"),
                 "Let statement means Block in AST"
@@ -241,11 +241,11 @@ mod set_block_tests {
     #[test]
     fn test_factorial_still_works() {
         // From P0 tests - must continue working
-        let code = r#"
+        let code = r"
             fn factorial(n: i32) -> i32 {
                 if n <= 1 { 1 } else { n * factorial(n - 1) }
             }
-        "#;
+        ";
         let result = compile(code);
         assert!(result.is_ok(), "Factorial should still compile after fix");
 

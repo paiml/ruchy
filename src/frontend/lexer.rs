@@ -193,6 +193,8 @@ pub enum Token {
     Extend,
     #[token("actor")]
     Actor,
+    #[token("spawn")]
+    Spawn,
     #[token("state")]
     State,
     #[token("receive")]

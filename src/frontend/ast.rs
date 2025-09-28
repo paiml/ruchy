@@ -356,6 +356,9 @@ pub enum ExprKind {
     Await {
         expr: Box<Expr>,
     },
+    Spawn {
+        actor: Box<Expr>,
+    },
     AsyncBlock {
         body: Box<Expr>,
     },
@@ -423,7 +426,8 @@ pub enum ExprKind {
         fields: Vec<StructField>,
         constructors: Vec<Constructor>, // new() methods
         methods: Vec<ClassMethod>,
-        derives: Vec<String>, // #[derive(Debug, Clone, ...)]
+        constants: Vec<ClassConstant>, // const NAME: TYPE = VALUE
+        derives: Vec<String>,          // #[derive(Debug, Clone, ...)]
         is_pub: bool,
     },
     Enum {
@@ -835,11 +839,30 @@ impl Param {
         self.pattern.primary_name()
     }
 }
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum Visibility {
+    Private,
+    Public,
+    PubCrate,
+    PubSuper,
+    Protected, // For future inheritance support
+}
+
+impl Visibility {
+    pub fn is_public(&self) -> bool {
+        matches!(
+            self,
+            Visibility::Public | Visibility::PubCrate | Visibility::PubSuper
+        )
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct StructField {
     pub name: String,
     pub ty: Type,
-    pub is_pub: bool,
+    pub visibility: Visibility,
     pub is_mut: bool,                // mut field modifier
     pub default_value: Option<Expr>, // Default value for class fields
 }
@@ -887,6 +910,14 @@ pub struct ClassMethod {
     pub is_static: bool,     // static method (no self)
     pub is_override: bool,   // override keyword for explicit overriding
     pub self_type: SelfType, // &self, &mut self, or self (move)
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ClassConstant {
+    pub name: String,
+    pub ty: Type,
+    pub value: Expr,
+    pub is_pub: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

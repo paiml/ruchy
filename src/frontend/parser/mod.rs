@@ -61,6 +61,7 @@ use crate::frontend::ast::{
     ActorHandler,
     Attribute,
     BinaryOp,
+    ClassConstant,
     ClassMethod,
     Constructor,
     EnumVariant,
@@ -79,6 +80,7 @@ use crate::frontend::ast::{
     Type,
     TypeKind,
     UnaryOp,
+    Visibility,
 };
 use crate::frontend::lexer::{Token, TokenStream};
 use crate::parser::error_recovery::ErrorNode;

@@ -916,11 +916,11 @@ impl Interpreter {
                 name,
                 type_params,
                 fields,
-                derives: _,  // Derives are handled at transpile time, not runtime
+                derives: _, // Derives are handled at transpile time, not runtime
                 is_pub,
             } => self.eval_struct_definition(name, type_params, fields, *is_pub),
             ExprKind::TupleStruct {
-                name,
+                name: _,
                 type_params: _,
                 fields: _,
                 derives: _,
@@ -938,6 +938,7 @@ impl Interpreter {
                 fields,
                 constructors,
                 methods,
+                constants,
                 derives,
                 is_pub,
             } => self.eval_class_definition(
@@ -948,11 +949,15 @@ impl Interpreter {
                 fields,
                 constructors,
                 methods,
+                constants,
                 derives,
                 *is_pub,
             ),
-            ExprKind::StructLiteral { name, fields, base: _ } =>
-                self.eval_struct_literal(name, fields),
+            ExprKind::StructLiteral {
+                name,
+                fields,
+                base: _,
+            } => self.eval_struct_literal(name, fields),
             ExprKind::Set(statements) => {
                 // Evaluate each statement in the set, return the last one
                 let mut result = Value::Nil;
@@ -973,6 +978,13 @@ impl Interpreter {
                 methods,
                 ..
             } => self.eval_impl_block(for_type, methods),
+            ExprKind::Spawn { actor } => {
+                // Evaluate the actor expression to spawn
+                let actor_value = self.eval_expr(actor)?;
+                // For now, spawn just returns the actor instance
+                // In a full actor system, this would create a mailbox and thread
+                Ok(actor_value)
+            }
             _ => Err(InterpreterError::RuntimeError(format!(
                 "Expression type not yet implemented: {expr_kind:?}"
             ))),
@@ -2556,7 +2568,10 @@ impl Interpreter {
 
             let mut field_info = HashMap::new();
             field_info.insert("type".to_string(), Value::from_string(type_name));
-            field_info.insert("is_pub".to_string(), Value::from_bool(field.is_pub));
+            field_info.insert(
+                "is_pub".to_string(),
+                Value::from_bool(field.visibility.is_public()),
+            );
             field_info.insert("is_mut".to_string(), Value::from_bool(field.is_mut));
 
             field_defs.insert(
@@ -2692,6 +2707,7 @@ impl Interpreter {
         fields: &[crate::frontend::ast::StructField],
         constructors: &[crate::frontend::ast::Constructor],
         methods: &[crate::frontend::ast::ClassMethod],
+        constants: &[crate::frontend::ast::ClassConstant],
         _derives: &[String],
         _is_pub: bool,
     ) -> Result<Value, InterpreterError> {
@@ -2726,7 +2742,10 @@ impl Interpreter {
             field_info.insert("type".to_string(), Value::from_string(type_str));
 
             // Store visibility
-            field_info.insert("is_pub".to_string(), Value::Bool(field.is_pub));
+            field_info.insert(
+                "is_pub".to_string(),
+                Value::Bool(field.visibility.is_public()),
+            );
             field_info.insert("is_mut".to_string(), Value::Bool(field.is_mut));
 
             // Store default value if present
@@ -2827,6 +2846,33 @@ impl Interpreter {
             method_info.insert(method.name.clone(), Value::Object(Rc::new(method_meta)));
         }
         class_info.insert("__methods".to_string(), Value::Object(Rc::new(method_info)));
+
+        // Store class constants
+        let mut constants_info = HashMap::new();
+        for constant in constants {
+            // Evaluate the constant value
+            let const_value = self.eval_expr(&constant.value)?;
+
+            // Store constant with metadata
+            let mut const_meta = HashMap::new();
+            const_meta.insert("value".to_string(), const_value.clone());
+            const_meta.insert(
+                "type".to_string(),
+                Value::from_string(format!("{:?}", constant.ty)),
+            );
+            const_meta.insert("is_pub".to_string(), Value::Bool(constant.is_pub));
+
+            constants_info.insert(constant.name.clone(), Value::Object(Rc::new(const_meta)));
+
+            // Also store the constant directly on the class for easy access
+            // e.g., MyClass::CONSTANT_NAME
+            let qualified_name = format!("{}::{}", name, constant.name);
+            self.set_variable(&qualified_name, const_value);
+        }
+        class_info.insert(
+            "__constants".to_string(),
+            Value::Object(Rc::new(constants_info)),
+        );
 
         // Store the class definition in the environment
         let class_value = Value::Object(Rc::new(class_info));

@@ -770,11 +770,12 @@ impl Transpiler {
                     // Trait definitions and implementations are top-level items
                     functions.push(self.transpile_type_decl_expr(expr)?);
                 }
-                ExprKind::Struct { .. }
-                | ExprKind::TupleStruct { .. }
-                | ExprKind::Class { .. }
-                | ExprKind::Actor { .. } => {
-                    // Struct definitions and actor definitions are top-level items
+                ExprKind::Struct { .. } | ExprKind::TupleStruct { .. } => {
+                    // Struct definitions are top-level items - use proper struct transpiler
+                    functions.push(self.transpile_struct_expr(expr)?);
+                }
+                ExprKind::Class { .. } | ExprKind::Actor { .. } => {
+                    // Class and actor definitions are top-level items
                     functions.push(self.transpile_expr(expr)?);
                 }
                 ExprKind::Import { .. }
@@ -1313,8 +1314,9 @@ impl Transpiler {
             DictComprehension, Err, FieldAccess, For, Function, Identifier, If, IfLet, IndexAccess,
             Lambda, List, ListComprehension, Literal, Loop, Macro, Match, MethodCall, None,
             ObjectLiteral, Ok, PostDecrement, PostIncrement, PreDecrement, PreIncrement,
-            QualifiedName, Range, Send, Set, SetComprehension, Slice, Some, StringInterpolation,
-            Struct, StructLiteral, Throw, Try, TryCatch, Tuple, TupleStruct, TypeCast, Unary, While, WhileLet,
+            QualifiedName, Range, Send, Set, SetComprehension, Slice, Some, Spawn,
+            StringInterpolation, Struct, StructLiteral, Throw, Try, TryCatch, Tuple, TupleStruct,
+            TypeCast, Unary, While, WhileLet,
         };
         // Dispatch to specialized handlers to keep complexity below 10
         match &expr.kind {
@@ -1334,6 +1336,7 @@ impl Transpiler {
             | PreDecrement { .. }
             | PostDecrement { .. }
             | Await { .. }
+            | Spawn { .. }
             | AsyncBlock { .. }
             | AsyncLambda { .. }
             | If { .. }

@@ -26,8 +26,7 @@ fn test_actual_set_literal() {
             rust_code.contains("HashSet")
                 || rust_code.contains("vec![")
                 || rust_code.contains("[1, 2, 3]"),
-            "Should generate collection code for set literal, got: {}",
-            rust_code
+            "Should generate collection code for set literal, got: {rust_code}"
         );
     }
 }
@@ -63,14 +62,14 @@ fn test_empty_braces_as_unit() {
 #[test]
 fn test_set_with_variables() {
     // {x, y, z} with commas should be a set
-    let code = r#"
+    let code = r"
         fn test() {
             let x = 1;
             let y = 2;
             let z = 3;
             let s = {x, y, z};
         }
-    "#;
+    ";
     let result = compile(code);
     assert!(result.is_ok(), "Set with variables should compile");
 }
@@ -139,33 +138,25 @@ fn test_disambiguation_in_different_contexts() {
     for (code, should_have_set, context) in test_cases {
         let full_code =
             if code.starts_with("fn") || code.starts_with("if") || code.starts_with("match") {
-                format!("fn test() {{ {} }}", code)
+                format!("fn test() {{ {code} }}")
             } else {
-                format!("fn test() {{ {} }}", code)
+                format!("fn test() {{ {code} }}")
             };
 
         let result = compile(&full_code);
-        assert!(
-            result.is_ok(),
-            "Code should compile for context: {}",
-            context
-        );
+        assert!(result.is_ok(), "Code should compile for context: {context}");
 
         let rust_code = result.unwrap();
         if should_have_set {
             // We expect set-like code (HashSet or vec)
             assert!(
                 rust_code.contains("HashSet") || rust_code.contains("vec!["),
-                "Expected set code for context: {}, got: {}",
-                context,
-                rust_code
+                "Expected set code for context: {context}, got: {rust_code}"
             );
         } else {
             assert!(
                 !rust_code.contains("HashSet"),
-                "Should not have HashSet for context: {}, got: {}",
-                context,
-                rust_code
+                "Should not have HashSet for context: {context}, got: {rust_code}"
             );
         }
     }

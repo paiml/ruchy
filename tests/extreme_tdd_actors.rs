@@ -8,7 +8,7 @@ use ruchy::compile;
 
 #[test]
 fn test_actor_basic_definition() {
-    let code = r#"
+    let code = r"
         actor Counter {
             count: i32 = 0
         }
@@ -17,9 +17,12 @@ fn test_actor_basic_definition() {
             let counter = spawn Counter {}
             assert(counter.is_alive())
         }
-    "#;
+    ";
     let result = compile(code);
-    assert!(result.is_ok(), "Basic actor definition and spawn should work");
+    assert!(
+        result.is_ok(),
+        "Basic actor definition and spawn should work"
+    );
 }
 
 #[test]
@@ -60,7 +63,10 @@ fn test_actor_spawn_with_initial_state() {
         }
     "#;
     let result = compile(code);
-    assert!(result.is_ok(), "Spawning actor with initial state should work");
+    assert!(
+        result.is_ok(),
+        "Spawning actor with initial state should work"
+    );
 }
 
 // ==================== MESSAGE PASSING ====================
@@ -88,7 +94,7 @@ fn test_actor_send_message() {
 
 #[test]
 fn test_actor_send_and_receive_response() {
-    let code = r#"
+    let code = r"
         actor Calculator {
             receive {
                 Add(a: i32, b: i32) => {
@@ -107,14 +113,14 @@ fn test_actor_send_and_receive_response() {
             let product = calc ? Multiply(4, 7)
             assert(product == 28)
         }
-    "#;
+    ";
     let result = compile(code);
     assert!(result.is_ok(), "Send and receive pattern should work");
 }
 
 #[test]
 fn test_actor_pattern_matching_messages() {
-    let code = r#"
+    let code = r"
         enum Message {
             Increment,
             Decrement,
@@ -149,7 +155,7 @@ fn test_actor_pattern_matching_messages() {
             let count = counter ? Message::GetCount
             assert(count == 1)
         }
-    "#;
+    ";
     let result = compile(code);
     assert!(result.is_ok(), "Pattern matching on messages should work");
 }
@@ -352,7 +358,7 @@ fn test_actor_supervision_basic() {
 
 #[test]
 fn test_actor_supervision_strategies() {
-    let code = r#"
+    let code = r"
         enum SupervisionStrategy {
             Restart,
             Resume,
@@ -376,7 +382,7 @@ fn test_actor_supervision_strategies() {
                 }
             }
         }
-    "#;
+    ";
     let result = compile(code);
     assert!(result.is_ok(), "Supervision strategies should work");
 }
@@ -699,7 +705,7 @@ fn test_actor_behavior_switching() {
 
 #[test]
 fn test_actor_stream_processing() {
-    let code = r#"
+    let code = r"
         actor StreamProcessor {
             receive stream {
                 data: Vec<i32> => {
@@ -716,7 +722,7 @@ fn test_actor_stream_processing() {
             let result = processor ? vec![1, -2, 3, -4, 5]
             assert(result == 18)  // (1*2 + 3*2 + 5*2)
         }
-    "#;
+    ";
     let result = compile(code);
     assert!(result.is_ok(), "Stream processing in actors should work");
 }
@@ -725,7 +731,7 @@ fn test_actor_stream_processing() {
 
 #[test]
 fn test_actor_test_probe() {
-    let code = r#"
+    let code = r"
         #[test]
         fn test_counter_actor() {
             let probe = TestProbe::new()
@@ -738,7 +744,7 @@ fn test_actor_test_probe() {
             probe.expect_message(2, timeout: 1000)
             probe.assert_no_more_messages()
         }
-    "#;
+    ";
     let result = compile(code);
     assert!(result.is_ok(), "Actor test utilities should work");
 }

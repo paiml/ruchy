@@ -1,6 +1,6 @@
 //! Tests for macro parsing after complexity reduction refactoring
 //!
-//! Ensures that the refactoring of try_parse_macro_call from complexity 105 to <10
+//! Ensures that the refactoring of `try_parse_macro_call` from complexity 105 to <10
 //! doesn't break existing functionality.
 
 use ruchy::compile;
@@ -14,7 +14,7 @@ fn test_println_macro() {
     assert!(ast.is_ok(), "println! macro should parse");
 
     let ast = ast.unwrap();
-    let ast_str = format!("{:?}", ast);
+    let ast_str = format!("{ast:?}");
     assert!(ast_str.contains("Macro"));
     assert!(ast_str.contains("println"));
 }
@@ -27,7 +27,7 @@ fn test_df_empty_macro() {
     assert!(ast.is_ok(), "Empty df![] macro should parse");
 
     let ast = ast.unwrap();
-    let ast_str = format!("{:?}", ast);
+    let ast_str = format!("{ast:?}");
     assert!(ast_str.contains("DataFrame"));
 }
 
@@ -53,7 +53,7 @@ fn test_sql_macro() {
     assert!(ast.is_ok(), "sql!{{}} macro should parse");
 
     let ast = ast.unwrap();
-    let ast_str = format!("{:?}", ast);
+    let ast_str = format!("{ast:?}");
     assert!(ast_str.contains("Macro"));
     assert!(ast_str.contains("sql"));
 }
@@ -66,7 +66,7 @@ fn test_sql_macro_complex() {
     assert!(ast.is_ok(), "Complex sql!{{}} macro should parse");
 
     let ast = ast.unwrap();
-    let ast_str = format!("{:?}", ast);
+    let ast_str = format!("{ast:?}");
     assert!(ast_str.contains("SELECT"));
 }
 
@@ -78,7 +78,7 @@ fn test_macro_with_parentheses() {
     assert!(ast.is_ok(), "Macro with parentheses should parse");
 
     let ast = ast.unwrap();
-    let ast_str = format!("{:?}", ast);
+    let ast_str = format!("{ast:?}");
     assert!(ast_str.contains("Macro"));
     assert!(ast_str.contains("vec"));
 }
@@ -91,7 +91,7 @@ fn test_macro_with_brackets() {
     assert!(ast.is_ok(), "Macro with brackets should parse");
 
     let ast = ast.unwrap();
-    let ast_str = format!("{:?}", ast);
+    let ast_str = format!("{ast:?}");
     assert!(ast_str.contains("Macro"));
     assert!(ast_str.contains("vec"));
 }
@@ -134,7 +134,7 @@ fn test_multiple_macro_args() {
     assert!(ast.is_ok(), "Macro with multiple arguments should parse");
 
     let ast = ast.unwrap();
-    let ast_str = format!("{:?}", ast);
+    let ast_str = format!("{ast:?}");
     assert!(ast_str.contains("println"));
     // Should have multiple args
     assert!(ast_str.matches("Expr").count() > 2);
@@ -148,7 +148,7 @@ fn test_empty_macro_args() {
     assert!(ast.is_ok(), "Macro with no arguments should parse");
 
     let ast = ast.unwrap();
-    let ast_str = format!("{:?}", ast);
+    let ast_str = format!("{ast:?}");
     assert!(ast_str.contains("assert"));
 }
 
