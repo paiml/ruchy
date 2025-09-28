@@ -1172,16 +1172,37 @@ fn looks_like_comprehension(state: &mut ParserState) -> bool {
     let saved_pos = state.tokens.position();
     let mut token_count = 0;
     let mut found_for = false;
+    let mut nesting_depth = 0;
 
     // Look ahead more tokens to account for complex expressions like method calls
     // Increased from 6 to 20 to handle cases like "word.len() for word in ..."
     while token_count < 20 && !found_for {
         match state.tokens.peek() {
-            Some((Token::For, _)) => {
+            Some((Token::For, _)) if nesting_depth == 0 => {
+                // Only consider 'for' at the same nesting level
                 found_for = true;
                 break;
             }
-            Some((Token::RightBrace, _)) => break, // End of block
+            Some((Token::LeftBrace | Token::LeftParen | Token::LeftBracket, _)) => {
+                // Entering nested context
+                nesting_depth += 1;
+                state.tokens.advance();
+                token_count += 1;
+            }
+            Some((Token::RightBrace | Token::RightParen | Token::RightBracket, _)) => {
+                if nesting_depth > 0 {
+                    nesting_depth -= 1;
+                    state.tokens.advance();
+                    token_count += 1;
+                } else {
+                    // End of our block
+                    break;
+                }
+            }
+            Some((Token::Semicolon | Token::Let | Token::Var, _)) if nesting_depth == 0 => {
+                // These tokens indicate we're in a statement context, not a comprehension
+                break;
+            }
             Some(_) => {
                 state.tokens.advance();
                 token_count += 1;

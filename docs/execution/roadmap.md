@@ -2,25 +2,25 @@
 
 ## 📝 **SESSION CONTEXT FOR RESUMPTION**
 
-**Last Active**: 2025-09-28 (v3.54.0 - OOP Implementation Ongoing)
+**Last Active**: 2025-09-28 (v3.54.0 - OOP Implementation Advancing)
 **Current Sprint**: v3.54.0 - Complete Classes, Actors, and Structs with Extreme TDD
 **Integration Status**: ✅ **100% P0 pass rate (15/15 implemented features)**
-**Status**: 🚧 **Phase 2: Implementation - 32.9% test coverage achieved (24/73 passing)**
-**Progress Milestone**: ✅ Breaking 30% barrier achieved!
-**Latest Update**: Fixed derive test, improved to 32.9% coverage
+**Status**: 🚧 **Phase 2: Implementation - 38.4% test coverage achieved (28/73 passing)**
+**Progress Milestone**: ✅ Approaching 40% coverage!
+**Latest Update**: [OOP-005] Visibility enum, spawn keyword, class constants
 
 ## 🚧 **IN PROGRESS: v3.54.0 - OOP COMPLETE IMPLEMENTATION SPRINT**
 
 **Sprint Goal**: 100% working classes, actors, and structs
 **Methodology**: Extreme TDD - Tests written FIRST
 **Target Release**: End of sprint to crates.io
-**Current Coverage**: **31.5% (23/73 tests passing) - Breaking 30% barrier!**
+**Current Coverage**: **38.4% (28/73 tests passing) - Approaching 40%!**
 
 ### **Phase 1: Test Suite Creation ✅ COMPLETE**
 - Total: 73 tests written as baseline
 
 ### **Phase 2: Parser & Feature Implementation 🚧 IN PROGRESS**
-#### Latest Progress (Session 2025-09-28):
+#### Latest Progress (Session 2025-09-28 - [OOP-005]):
 - ✅ **Struct Features Implemented**:
   - Pattern matching in match expressions (working)
   - Derive attributes (#[derive(Debug, Clone)]) (functional, cosmetic spacing in output)
@@ -29,29 +29,37 @@
   - Struct update syntax (..default) (fixed with keyword handling)
   - Field init shorthand (working)
   - Mutable methods (mut self) (fixed)
-  - **Current**: 16/24 passing (66.7%)
+  - Visibility modifiers (pub/private/pub(crate)/pub(super)) via Visibility enum
+  - Pattern guards in match expressions (fixed fat arrow conflict)
+  - **Current**: 20/24 passing (83.3%)
 
 - ✅ **Class Improvements**:
   - Static methods visibility fixed (pub added for static)
   - Multiple constructors working
   - Inheritance with super working
   - Mutable self in methods (fixed)
-  - **Current**: 5/25 passing (20%)
+  - Class constants (const NAME: TYPE = VALUE) implemented
+  - Transpilation to Rust associated constants
+  - **Current**: 6/25 passing (24%)
+
+- ✅ **Actor System Progress**:
+  - spawn keyword added to lexer and parser
+  - ExprKind::Spawn variant added to AST
+  - Basic transpilation to Arc<Mutex<>> for thread safety
+  - **Current**: 2/24 passing (8.3%)
 
 - ✅ **Parser Improvements**:
   - "default" keyword can now be used as variable name
   - F-string format specifiers (`:?`, `:x`, etc.) now preserved
   - Struct update syntax parsing fixed
+  - Fat arrow lambda vs match guard conflict resolved
 
 - **Known Issues & Blockers**:
-  - Pattern guards with multi-field structs (parsing error with misleading error message)
-  - "exp" parameter in for loops (specific parser bug)
-  - Advanced features not implemented:
-    - Lifetime parameters (`'a`, `'b`)
-    - Const generics (`const N: usize`)
-    - Visibility modifiers (`pub(crate)`, `protected`, `private`)
-    - Trait bounds (`T: Display`)
-    - Class properties with getters/setters
+  - Lifetime parameters (`'a`, `'b`) - parser support needed
+  - Const generics (`const N: usize`) - not yet implemented
+  - Actor message passing (send/receive) - core functionality missing
+  - Class property getters/setters - requires property keyword
+  - Trait bounds (`T: Display`) - generic constraints incomplete
     - Actor message passing system
 
 ### **Phase 3: Remaining Implementation**

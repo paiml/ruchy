@@ -379,7 +379,7 @@ fn p0_all_comparison_operators() {
 #[test]
 fn p0_book_examples_compile() {
     // Examples that MUST work from the book
-    let examples = vec![
+    let examples = [
         // Chapter 5: Functions
         r#"
         fun greet(name: String) -> String {
