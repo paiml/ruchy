@@ -19,7 +19,7 @@ fn run(code: &str) -> Result<String, String> {
     fs::write(&tmp_file, code).map_err(|e| e.to_string())?;
 
     let output = Command::new("cargo")
-        .args(&["run", "--release", "--bin", "ruchy", "--", "run", &tmp_file])
+        .args(["run", "--release", "--bin", "ruchy", "--", "run", &tmp_file])
         .output()
         .map_err(|e| e.to_string())?;
 
@@ -33,18 +33,17 @@ fn run(code: &str) -> Result<String, String> {
 /// CRITICAL: Basic function compilation must work
 #[test]
 fn p0_basic_function_compilation() {
-    let code = r#"
+    let code = r"
         fn add(a: i32, b: i32) -> i32 {
             a + b
         }
         println(add(5, 3))
-    "#;
+    ";
 
     let result = compile(code);
     assert!(
         result.is_ok(),
-        "CRITICAL: Basic function compilation failed: {:?}",
-        result
+        "CRITICAL: Basic function compilation failed: {result:?}"
     );
 }
 
@@ -65,33 +64,31 @@ fn p0_match_with_integers() {
     let result = compile(code);
     assert!(
         result.is_ok(),
-        "CRITICAL: Match with integers failed: {:?}",
-        result
+        "CRITICAL: Match with integers failed: {result:?}"
     );
 }
 
 /// CRITICAL: Factorial (recursive functions)
 #[test]
 fn p0_recursive_factorial() {
-    let code = r#"
+    let code = r"
         fn factorial(n: i32) -> i32 {
             if n <= 1 { 1 } else { n * factorial(n - 1) }
         }
         println(factorial(5))
-    "#;
+    ";
 
     let result = compile(code);
     assert!(
         result.is_ok(),
-        "CRITICAL: Recursive factorial failed: {:?}",
-        result
+        "CRITICAL: Recursive factorial failed: {result:?}"
     );
 }
 
 /// CRITICAL: Fibonacci (pattern matching recursion)
 #[test]
 fn p0_fibonacci_pattern_match() {
-    let code = r#"
+    let code = r"
         fn fib(n: i32) -> i32 {
             match n {
                 0 => 0
@@ -100,13 +97,12 @@ fn p0_fibonacci_pattern_match() {
             }
         }
         println(fib(10))
-    "#;
+    ";
 
     let result = compile(code);
     assert!(
         result.is_ok(),
-        "CRITICAL: Fibonacci pattern match failed: {:?}",
-        result
+        "CRITICAL: Fibonacci pattern match failed: {result:?}"
     );
 }
 
@@ -122,8 +118,7 @@ fn p0_string_concatenation() {
     let result = run(code);
     assert!(
         result.is_ok(),
-        "CRITICAL: String concatenation failed: {:?}",
-        result
+        "CRITICAL: String concatenation failed: {result:?}"
     );
     assert!(
         result.unwrap().contains("Hello, World"),
@@ -134,49 +129,48 @@ fn p0_string_concatenation() {
 /// CRITICAL: For loops
 #[test]
 fn p0_for_loop() {
-    let code = r#"
+    let code = r"
         for i in 1..=3 {
             println(i)
         }
-    "#;
+    ";
 
     let result = run(code);
-    assert!(result.is_ok(), "CRITICAL: For loop failed: {:?}", result);
+    assert!(result.is_ok(), "CRITICAL: For loop failed: {result:?}");
     let output = result.unwrap();
-    assert!(output.contains("1") && output.contains("2") && output.contains("3"));
+    assert!(output.contains('1') && output.contains('2') && output.contains('3'));
 }
 
 /// CRITICAL: Arrays
 #[test]
 fn p0_array_operations() {
-    let code = r#"
+    let code = r"
         let arr = [1, 2, 3, 4, 5]
         println(arr[2])
-    "#;
+    ";
 
     let result = run(code);
     assert!(
         result.is_ok(),
-        "CRITICAL: Array operations failed: {:?}",
-        result
+        "CRITICAL: Array operations failed: {result:?}"
     );
-    assert!(result.unwrap().contains("3"));
+    assert!(result.unwrap().contains('3'));
 }
 
 /// CRITICAL: While loops
 #[test]
 fn p0_while_loop() {
-    let code = r#"
+    let code = r"
         let mut count = 0
         while count < 3 {
             count = count + 1
         }
         println(count)
-    "#;
+    ";
 
     let result = run(code);
-    assert!(result.is_ok(), "CRITICAL: While loop failed: {:?}", result);
-    assert!(result.unwrap().contains("3"));
+    assert!(result.is_ok(), "CRITICAL: While loop failed: {result:?}");
+    assert!(result.unwrap().contains('3'));
 }
 
 /// CRITICAL: If-else statements
@@ -192,11 +186,11 @@ fn p0_if_else() {
     "#;
 
     let result = run(code);
-    assert!(result.is_ok(), "CRITICAL: If-else failed: {:?}", result);
+    assert!(result.is_ok(), "CRITICAL: If-else failed: {result:?}");
     assert!(result.unwrap().contains("big"));
 }
 
-/// CRITICAL: Function with no return value should not generate HashSet
+/// CRITICAL: Function with no return value should not generate `HashSet`
 #[test]
 fn p0_no_hashset_in_functions() {
     use ruchy::backend::transpiler::Transpiler;
@@ -212,8 +206,7 @@ fn p0_no_hashset_in_functions() {
 
     assert!(
         !rust_str.contains("HashSet"),
-        "CRITICAL: Functions generating HashSet code! Generated: {}",
-        rust_str
+        "CRITICAL: Functions generating HashSet code! Generated: {rust_str}"
     );
 }
 
@@ -222,20 +215,19 @@ fn p0_no_hashset_in_functions() {
 #[test]
 #[ignore = "Actor runtime not implemented - tracking issue"]
 fn p0_actor_definition() {
-    let code = r#"
+    let code = r"
         actor Counter {
             count: i32
         }
 
         let c = Counter { count: 0 }
         println(c.count)
-    "#;
+    ";
 
     let result = run(code);
     assert!(
         result.is_ok(),
-        "CRITICAL: Actor definition failed: {:?}",
-        result
+        "CRITICAL: Actor definition failed: {result:?}"
     );
 }
 
@@ -256,8 +248,7 @@ fn p0_actor_messages() {
     let result = run(code);
     assert!(
         result.is_ok(),
-        "CRITICAL: Actor messaging failed: {:?}",
-        result
+        "CRITICAL: Actor messaging failed: {result:?}"
     );
 }
 
@@ -266,7 +257,7 @@ fn p0_actor_messages() {
 #[test]
 #[ignore = "Struct runtime not implemented - tracking issue"]
 fn p0_struct_definition() {
-    let code = r#"
+    let code = r"
         struct Point {
             x: i32,
             y: i32
@@ -274,13 +265,12 @@ fn p0_struct_definition() {
 
         let p = Point { x: 10, y: 20 }
         println(p.x)
-    "#;
+    ";
 
     let result = run(code);
     assert!(
         result.is_ok(),
-        "CRITICAL: Struct definition failed: {:?}",
-        result
+        "CRITICAL: Struct definition failed: {result:?}"
     );
     assert!(result.unwrap().contains("10"));
 }
@@ -288,7 +278,7 @@ fn p0_struct_definition() {
 #[test]
 #[ignore = "Class runtime not implemented - tracking issue"]
 fn p0_class_definition() {
-    let code = r#"
+    let code = r"
         class Rectangle {
             width: i32,
             height: i32
@@ -300,13 +290,12 @@ fn p0_class_definition() {
 
         let r = Rectangle { width: 5, height: 10 }
         println(r.area())
-    "#;
+    ";
 
     let result = run(code);
     assert!(
         result.is_ok(),
-        "CRITICAL: Class definition failed: {:?}",
-        result
+        "CRITICAL: Class definition failed: {result:?}"
     );
     assert!(result.unwrap().contains("50"));
 }
@@ -352,18 +341,13 @@ fn p0_all_arithmetic_operators() {
     ];
 
     for (op, name) in operators {
-        let code = format!(
-            "fn compute(a: i32, b: i32) -> i32 {{ a {} b }}\nprintln(compute(10, 3))",
-            op
-        );
+        let code =
+            format!("fn compute(a: i32, b: i32) -> i32 {{ a {op} b }}\nprintln(compute(10, 3))");
 
         let result = compile(&code);
         assert!(
             result.is_ok(),
-            "CRITICAL: {} operator ({}) failed: {:?}",
-            name,
-            op,
-            result
+            "CRITICAL: {name} operator ({op}) failed: {result:?}"
         );
     }
 }
@@ -381,15 +365,12 @@ fn p0_all_comparison_operators() {
     ];
 
     for (op, name) in operators {
-        let code = format!("let result = 5 {} 3\nprintln(result)", op);
+        let code = format!("let result = 5 {op} 3\nprintln(result)");
 
         let result = run(&code);
         assert!(
             result.is_ok(),
-            "CRITICAL: {} operator ({}) failed: {:?}",
-            name,
-            op,
-            result
+            "CRITICAL: {name} operator ({op}) failed: {result:?}"
         );
     }
 }
@@ -442,7 +423,7 @@ fn p0_book_examples_compile() {
     }
 }
 
-/// Test to ensure we catch HashSet generation early
+/// Test to ensure we catch `HashSet` generation early
 #[test]
 fn p0_detect_hashset_regression() {
     use ruchy::backend::transpiler::Transpiler;
@@ -462,25 +443,23 @@ fn p0_detect_hashset_regression() {
 
     for (code, name) in test_cases {
         let mut parser = Parser::new(code);
-        let ast = parser.parse().expect(&format!("Parse failed for {}", name));
+        let ast = parser
+            .parse()
+            .unwrap_or_else(|_| panic!("Parse failed for {name}"));
 
         let transpiler = Transpiler::new();
         let rust_code = transpiler
             .transpile(&ast)
-            .expect(&format!("Transpile failed for {}", name));
+            .unwrap_or_else(|_| panic!("Transpile failed for {name}"));
         let rust_str = rust_code.to_string();
 
         assert!(
             !rust_str.contains("HashSet"),
-            "CRITICAL: {} function generated HashSet! Code: {}",
-            name,
-            rust_str
+            "CRITICAL: {name} function generated HashSet! Code: {rust_str}"
         );
         assert!(
             !rust_str.contains("__temp_set"),
-            "CRITICAL: {} function has temp set! Code: {}",
-            name,
-            rust_str
+            "CRITICAL: {name} function has temp set! Code: {rust_str}"
         );
     }
 }

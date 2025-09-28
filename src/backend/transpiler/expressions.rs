@@ -306,6 +306,35 @@ impl Transpiler {
         let expr_tokens = self.transpile_expr(expr)?;
         Ok(quote! { #expr_tokens.await })
     }
+
+    /// Transpiles spawn expressions for actor creation
+    pub fn transpile_spawn(&self, actor: &Expr) -> Result<TokenStream> {
+        // Check if it's a struct literal (actor instantiation)
+        if let ExprKind::StructLiteral { name, fields, .. } = &actor.kind {
+            // Actors transpile to structs with Arc<Mutex<>> for thread safety
+            let actor_name = format_ident!("{}", name);
+            let field_tokens = fields
+                .iter()
+                .map(|(name, value)| {
+                    let field_name = format_ident!("{}", name);
+                    let value_tokens = self.transpile_expr(value)?;
+                    Ok(quote! { #field_name: #value_tokens })
+                })
+                .collect::<Result<Vec<_>>>()?;
+
+            // Create the actor wrapped in Arc<Mutex<>> for thread-safe access
+            Ok(quote! {
+                std::sync::Arc::new(std::sync::Mutex::new(#actor_name {
+                    #(#field_tokens),*
+                }))
+            })
+        } else {
+            // For other expressions (e.g., function calls), just evaluate them
+            let actor_tokens = self.transpile_expr(actor)?;
+            Ok(quote! { #actor_tokens })
+        }
+    }
+
     /// Transpiles async blocks
     /// # Examples
     ///

@@ -8,7 +8,7 @@ use ruchy::compile;
 
 #[test]
 fn test_class_property_basic() {
-    let code = r#"
+    let code = r"
         class Temperature {
             celsius: f64,
 
@@ -28,14 +28,17 @@ fn test_class_property_basic() {
             t.fahrenheit = 212.0
             println(t.celsius)     // Should print 100.0
         }
-    "#;
+    ";
     let result = compile(code);
-    assert!(result.is_ok(), "Class properties with getters/setters should work");
+    assert!(
+        result.is_ok(),
+        "Class properties with getters/setters should work"
+    );
 }
 
 #[test]
 fn test_class_readonly_property() {
-    let code = r#"
+    let code = r"
         class Circle {
             radius: f64,
 
@@ -57,7 +60,7 @@ fn test_class_readonly_property() {
             println(c.area)
             println(c.circumference)
         }
-    "#;
+    ";
     let result = compile(code);
     assert!(result.is_ok(), "Readonly properties should work");
 }
@@ -85,14 +88,17 @@ fn test_class_property_validation() {
         }
     "#;
     let result = compile(code);
-    assert!(result.is_ok(), "Property setters with validation should work");
+    assert!(
+        result.is_ok(),
+        "Property setters with validation should work"
+    );
 }
 
 // ==================== STATIC METHODS AND CONSTANTS ====================
 
 #[test]
 fn test_class_static_methods() {
-    let code = r#"
+    let code = r"
         class Math {
             static fn square(x: f64) -> f64 {
                 x * x
@@ -116,14 +122,14 @@ fn test_class_static_methods() {
             println(Math::cube(3.0))
             println(Math::power(2.0, 10))
         }
-    "#;
+    ";
     let result = compile(code);
     assert!(result.is_ok(), "Static methods should work");
 }
 
 #[test]
 fn test_class_constants() {
-    let code = r#"
+    let code = r"
         class Physics {
             const SPEED_OF_LIGHT: f64 = 299792458.0
             const PLANCK_CONSTANT: f64 = 6.626e-34
@@ -143,14 +149,14 @@ fn test_class_constants() {
             println(Physics::GRAVITY)
             println(Physics::kinetic_energy(10.0, 5.0))
         }
-    "#;
+    ";
     let result = compile(code);
     assert!(result.is_ok(), "Class constants should work");
 }
 
 #[test]
 fn test_class_static_factory_methods() {
-    let code = r#"
+    let code = r"
         class Point {
             x: f64,
             y: f64,
@@ -172,7 +178,7 @@ fn test_class_static_factory_methods() {
             let p1 = Point::origin()
             let p2 = Point::from_polar(5.0, 3.14159/4.0)
         }
-    "#;
+    ";
     let result = compile(code);
     assert!(result.is_ok(), "Static factory methods should work");
 }
@@ -181,7 +187,7 @@ fn test_class_static_factory_methods() {
 
 #[test]
 fn test_class_generic_methods() {
-    let code = r#"
+    let code = r"
         class Container<T> {
             items: Vec<T>,
 
@@ -214,14 +220,14 @@ fn test_class_generic_methods() {
             c.add(42)
             c.add(100)
         }
-    "#;
+    ";
     let result = compile(code);
     assert!(result.is_ok(), "Generic methods should work");
 }
 
 #[test]
 fn test_class_associated_types() {
-    let code = r#"
+    let code = r"
         class Iterator<T> {
             data: Vec<T>,
             index: usize,
@@ -242,7 +248,7 @@ fn test_class_associated_types() {
                 }
             }
         }
-    "#;
+    ";
     let result = compile(code);
     assert!(result.is_ok(), "Associated types should work");
 }
@@ -438,7 +444,7 @@ fn test_class_interface_implementation() {
 
 #[test]
 fn test_class_multiple_constructors() {
-    let code = r#"
+    let code = r"
         class Rectangle {
             width: f64,
             height: f64,
@@ -463,7 +469,7 @@ fn test_class_multiple_constructors() {
             let r2 = Rectangle::square(15.0)
             let r3 = Rectangle::from_area(100.0, 1.5)
         }
-    "#;
+    ";
     let result = compile(code);
     assert!(result.is_ok(), "Multiple named constructors should work");
 }
@@ -489,14 +495,17 @@ fn test_class_constructor_with_defaults() {
         }
     "#;
     let result = compile(code);
-    assert!(result.is_ok(), "Constructor with default parameters should work");
+    assert!(
+        result.is_ok(),
+        "Constructor with default parameters should work"
+    );
 }
 
 // ==================== VISIBILITY MODIFIERS ====================
 
 #[test]
 fn test_class_member_visibility() {
-    let code = r#"
+    let code = r"
         pub class BankAccount {
             pub owner: String,
             pub(crate) account_number: String,
@@ -519,14 +528,14 @@ fn test_class_member_visibility() {
                 self.balance
             }
         }
-    "#;
+    ";
     let result = compile(code);
     assert!(result.is_ok(), "Member visibility modifiers should work");
 }
 
 #[test]
 fn test_class_method_visibility_inheritance() {
-    let code = r#"
+    let code = r"
         class Base {
             protected fn helper(self) -> i32 {
                 42
@@ -542,16 +551,19 @@ fn test_class_method_visibility_inheritance() {
                 self.helper() * 2  // Can access protected method
             }
         }
-    "#;
+    ";
     let result = compile(code);
-    assert!(result.is_ok(), "Protected methods accessible in derived classes");
+    assert!(
+        result.is_ok(),
+        "Protected methods accessible in derived classes"
+    );
 }
 
 // ==================== OPERATOR OVERLOADING ====================
 
 #[test]
 fn test_class_operator_overloading() {
-    let code = r#"
+    let code = r"
         class Vector {
             x: f64,
             y: f64,
@@ -576,7 +588,7 @@ fn test_class_operator_overloading() {
             let v4 = v1 * 2.0
             assert(v3 == Vector { x: 4.0, y: 6.0 })
         }
-    "#;
+    ";
     let result = compile(code);
     assert!(result.is_ok(), "Operator overloading should work");
 }
@@ -585,7 +597,7 @@ fn test_class_operator_overloading() {
 
 #[test]
 fn test_inner_classes() {
-    let code = r#"
+    let code = r"
         class Outer {
             value: i32,
 
@@ -607,7 +619,7 @@ fn test_inner_classes() {
             let inner = outer.create_inner(20)
             println(inner.access_outer(outer))
         }
-    "#;
+    ";
     let result = compile(code);
     assert!(result.is_ok(), "Inner classes should work");
 }
@@ -616,7 +628,7 @@ fn test_inner_classes() {
 
 #[test]
 fn test_sealed_class() {
-    let code = r#"
+    let code = r"
         sealed class Option<T> {
             class Some(value: T)
             class None
@@ -626,14 +638,14 @@ fn test_sealed_class() {
             let opt1: Option<i32> = Option::Some(42)
             let opt2: Option<i32> = Option::None
         }
-    "#;
+    ";
     let result = compile(code);
     assert!(result.is_ok(), "Sealed classes should work");
 }
 
 #[test]
 fn test_final_class() {
-    let code = r#"
+    let code = r"
         final class SecurityManager {
             fn validate(self, token: String) -> bool {
                 token.len() > 10
@@ -642,7 +654,7 @@ fn test_final_class() {
 
         // This should fail at compile time:
         // class ExtendedManager : SecurityManager { }
-    "#;
+    ";
     let result = compile(code);
     assert!(result.is_ok(), "Final classes should work");
 }

@@ -1,8 +1,8 @@
 //! Basic expression parsing - minimal version with only used functions
 use super::{
-    bail, ActorHandler, BinaryOp, ClassMethod, Constructor, EnumVariant, Expr, ExprKind, Literal,
-    MatchArm, Param, ParserState, Pattern, Result, SelfType, Span, StringPart, StructField, Token,
-    TraitMethod, Type, TypeKind, UnaryOp,
+    bail, ActorHandler, BinaryOp, ClassConstant, ClassMethod, Constructor, EnumVariant, Expr,
+    ExprKind, Literal, MatchArm, Param, ParserState, Pattern, Result, SelfType, Span, StringPart,
+    StructField, Token, TraitMethod, Type, TypeKind, UnaryOp, Visibility,
 };
 pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
     let Some((token, span)) = state.tokens.peek() else {
@@ -69,6 +69,11 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
         // Identifier tokens - delegated to focused helper
         Token::Identifier(_) | Token::Underscore | Token::Self_ | Token::Super => {
             parse_identifier_token(state, &token, span)
+        }
+        // Handle reserved keywords that can be used as identifiers in expression context
+        Token::Default => {
+            state.tokens.advance();
+            Ok(Expr::new(ExprKind::Identifier("default".to_string()), span))
         }
         // Unary operator tokens - inlined for performance
         Token::Minus => {
@@ -141,6 +146,17 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
                 ExprKind::Unary {
                     op: UnaryOp::BitwiseNot,
                     operand: Box::new(expr),
+                },
+                span,
+            ))
+        }
+        Token::Spawn => {
+            state.tokens.advance();
+            // Parse the actor to spawn (e.g., Counter {} or Worker::new("id"))
+            let expr = super::parse_expr_with_precedence_recursive(state, 13)?;
+            Ok(Expr::new(
+                ExprKind::Spawn {
+                    actor: Box::new(expr),
                 },
                 span,
             ))
@@ -251,21 +267,9 @@ fn parse_identifier_token(state: &mut ParserState, token: &Token, span: Span) ->
                 Ok(Expr::new(ExprKind::Identifier(qualified_name), span))
             }
             // Check for fat arrow lambda: x => x * 2
-            else if matches!(state.tokens.peek(), Some((Token::FatArrow, _))) {
-                state.tokens.advance(); // consume =>
-                let body = Box::new(super::parse_expr_recursive(state)?);
-                let params = vec![Param {
-                    pattern: Pattern::Identifier(name.clone()),
-                    ty: Type {
-                        kind: TypeKind::Named("_".to_string()),
-                        span,
-                    },
-                    default_value: None,
-                    is_mutable: false,
-                    span,
-                }];
-                Ok(Expr::new(ExprKind::Lambda { params, body }, span))
-            } else {
+            // TEMPORARILY DISABLED: This causes issues with pattern guards
+            // TODO: Re-enable with context to prevent lambdas in match guards
+            else {
                 // Don't consume ! here - let postfix handle macro calls
                 Ok(Expr::new(ExprKind::Identifier(name.clone()), span))
             }
@@ -413,6 +417,27 @@ fn parse_parentheses_token(state: &mut ParserState, span: Span) -> Result<Expr> 
 /// Extracted from `parse_prefix` to reduce complexity
 fn parse_pub_token(state: &mut ParserState) -> Result<Expr> {
     state.tokens.advance(); // consume 'pub'
+
+    // Check for pub(crate) or pub(super) syntax
+    let mut _visibility_scope = "pub".to_string();
+    if matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
+        state.tokens.advance(); // consume '('
+        match state.tokens.peek() {
+            Some((Token::Crate, _)) => {
+                state.tokens.advance();
+                state.tokens.expect(&Token::RightParen)?;
+                _visibility_scope = "pub_crate".to_string();
+            }
+            Some((Token::Super, _)) => {
+                state.tokens.advance();
+                state.tokens.expect(&Token::RightParen)?;
+                _visibility_scope = "pub_super".to_string();
+            }
+            _ => {
+                bail!("Expected 'crate' or 'super' after 'pub('");
+            }
+        }
+    }
 
     // Check next token for special handling
     let mut expr = match state.tokens.peek() {
@@ -872,6 +897,11 @@ fn parse_let_pattern(state: &mut ParserState, is_mutable: bool) -> Result<Patter
             state.tokens.advance();
             Ok(Pattern::Identifier("df".to_string()))
         }
+        Some((Token::Default, _)) => {
+            // Allow 'default' as a variable name (common in configurations)
+            state.tokens.advance();
+            Ok(Pattern::Identifier("default".to_string()))
+        }
         Some((Token::Underscore, _)) => {
             // Allow wildcard pattern
             state.tokens.advance();
@@ -1115,43 +1145,19 @@ fn parse_struct_pattern_with_name(state: &mut ParserState, name: String) -> Resu
 fn parse_struct_pattern_fields(state: &mut ParserState, name: String) -> Result<Pattern> {
     let mut fields = Vec::new();
     let mut has_rest = false;
-    let mut is_first = true;
 
-    while let Some((token, _)) = state.tokens.peek() {
-        if matches!(token, Token::RightBrace) {
-            state.tokens.advance(); // consume '}'
-            break;
-        }
-
-        if !is_first {
-            if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
-                state.tokens.advance(); // consume ','
-                // Check for trailing comma
-                if matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
-                    state.tokens.advance(); // consume '}'
-                    break;
-                }
-            } else {
-                bail!("Expected comma between struct pattern fields");
-            }
-        }
-        is_first = false;
-
+    while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
         // Check for rest pattern (..)
         if matches!(state.tokens.peek(), Some((Token::DotDot, _))) {
             state.tokens.advance(); // consume '..'
             has_rest = true;
-            // Rest must be last, so expect closing brace
-            if !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
-                // Allow trailing comma after ..
-                if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
-                    state.tokens.advance(); // consume ','
-                }
-                if !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
-                    bail!("Rest pattern (..) must be the last field in struct pattern");
-                }
+            // Rest must be last, allow optional trailing comma
+            if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+                state.tokens.advance(); // consume ','
             }
-            state.tokens.advance(); // consume '}'
+            if !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
+                bail!("Rest pattern (..) must be the last field in struct pattern");
+            }
             break;
         }
 
@@ -1173,10 +1179,24 @@ fn parse_struct_pattern_fields(state: &mut ParserState, name: String) -> Result<
                 pattern,
             };
             fields.push(field);
+
+            // After parsing a field, check for comma or end
+            if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+                state.tokens.advance(); // consume ','
+                                        // If we see RightBrace after comma, it's a trailing comma - that's ok
+                if matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
+                    break;
+                }
+            } else if !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
+                bail!("Expected comma or closing brace after struct pattern field");
+            }
         } else {
-            bail!("Expected identifier in struct pattern");
+            bail!("Expected identifier or '..' in struct pattern");
         }
     }
+
+    // Consume the closing brace
+    state.tokens.expect(&Token::RightBrace)?;
 
     Ok(Pattern::Struct {
         name,
@@ -2153,8 +2173,8 @@ fn parse_struct_definition(state: &mut ParserState) -> Result<Expr> {
             (None, Vec::new())
         };
 
-        // Parse class body (fields, constructors, methods)
-        let (fields, constructors, methods) = parse_class_body(state)?;
+        // Parse class body (fields, constructors, methods, constants)
+        let (fields, constructors, methods, constants) = parse_class_body(state)?;
         Ok(Expr::new(
             ExprKind::Class {
                 name,
@@ -2164,6 +2184,7 @@ fn parse_struct_definition(state: &mut ParserState) -> Result<Expr> {
                 fields,
                 constructors,
                 methods,
+                constants,
                 derives: Vec::new(), // Will be populated by parse_attributed_expression
                 is_pub: false,
             },
@@ -2241,7 +2262,7 @@ fn parse_tuple_struct_fields(state: &mut ParserState) -> Result<Vec<Type>> {
         // Check for more fields
         if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
             state.tokens.advance(); // consume comma
-            // Check for trailing comma
+                                    // Check for trailing comma
             if matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
                 break;
             }
@@ -2260,13 +2281,13 @@ fn parse_struct_fields(state: &mut ParserState) -> Result<Vec<StructField>> {
     let mut fields = Vec::new();
     while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
         // Parse visibility modifiers for struct fields
-        let (is_pub, is_mut) = parse_struct_field_modifiers(state)?;
+        let (visibility, is_mut) = parse_struct_field_modifiers(state)?;
 
         let (field_name, field_type, default_value) = parse_single_struct_field(state)?;
         fields.push(StructField {
             name: field_name,
             ty: field_type,
-            is_pub,
+            visibility,
             is_mut,
             default_value,
         });
@@ -2280,14 +2301,14 @@ fn parse_struct_fields(state: &mut ParserState) -> Result<Vec<StructField>> {
 }
 
 /// Parse struct field visibility modifiers - complexity: 6
-fn parse_struct_field_modifiers(state: &mut ParserState) -> Result<(bool, bool)> {
-    let mut is_pub = false;
+fn parse_struct_field_modifiers(state: &mut ParserState) -> Result<(Visibility, bool)> {
+    let mut visibility = Visibility::Private;
     let mut is_mut = false;
 
     // Check for pub or pub(crate)
     if matches!(state.tokens.peek(), Some((Token::Pub, _))) {
         state.tokens.advance();
-        is_pub = true;
+        visibility = Visibility::Public;
 
         // Check for pub(crate) syntax
         if matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
@@ -2296,19 +2317,18 @@ fn parse_struct_field_modifiers(state: &mut ParserState) -> Result<(bool, bool)>
                 Some((Token::Crate, _)) => {
                     state.tokens.advance();
                     state.tokens.expect(&Token::RightParen)?;
-                    // For now, we'll treat pub(crate) as pub
-                    // TODO: Implement proper visibility scopes
+                    visibility = Visibility::PubCrate;
                 }
                 Some((Token::Super, _)) => {
                     state.tokens.advance();
                     state.tokens.expect(&Token::RightParen)?;
-                    bail!("Unsupported visibility scope: pub(super) - only pub(crate) is currently supported");
+                    visibility = Visibility::PubSuper;
                 }
                 Some((Token::Identifier(scope), _)) => {
                     let scope = scope.clone();
                     state.tokens.advance();
                     state.tokens.expect(&Token::RightParen)?;
-                    bail!("Unsupported visibility scope: pub({}) - only pub(crate) is currently supported", scope);
+                    bail!("Unsupported visibility scope: pub({}) - only pub(crate) and pub(super) are supported", scope);
                 }
                 _ => {
                     bail!("Expected 'crate', 'super', or identifier after 'pub('");
@@ -2324,9 +2344,11 @@ fn parse_struct_field_modifiers(state: &mut ParserState) -> Result<(bool, bool)>
     }
 
     // Also check reverse order: mut pub
-    if !is_pub && matches!(state.tokens.peek(), Some((Token::Pub, _))) {
+    if matches!(visibility, Visibility::Private)
+        && matches!(state.tokens.peek(), Some((Token::Pub, _)))
+    {
         state.tokens.advance();
-        is_pub = true;
+        visibility = Visibility::Public;
     }
 
     // Check for "private" keyword (special Ruchy extension)
@@ -2334,11 +2356,11 @@ fn parse_struct_field_modifiers(state: &mut ParserState) -> Result<(bool, bool)>
     if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
         if name == "private" {
             state.tokens.advance();
-            // is_pub remains false
+            // visibility remains Private
         }
     }
 
-    Ok((is_pub, is_mut))
+    Ok((visibility, is_mut))
 }
 /// Parse a single struct field (name: Type) - complexity: 5
 fn parse_single_struct_field(state: &mut ParserState) -> Result<(String, Type, Option<Expr>)> {
@@ -2367,31 +2389,52 @@ fn parse_single_struct_field(state: &mut ParserState) -> Result<(String, Type, O
 /// Refactored to reduce complexity from 20/44 to <10
 fn parse_class_body(
     state: &mut ParserState,
-) -> Result<(Vec<StructField>, Vec<Constructor>, Vec<ClassMethod>)> {
+) -> Result<(
+    Vec<StructField>,
+    Vec<Constructor>,
+    Vec<ClassMethod>,
+    Vec<ClassConstant>,
+)> {
     state.tokens.expect(&Token::LeftBrace)?;
 
     let mut fields = Vec::new();
     let mut constructors = Vec::new();
     let mut methods = Vec::new();
+    let mut constants = Vec::new();
 
     while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
-        parse_class_member(state, &mut fields, &mut constructors, &mut methods)?;
+        parse_class_member(
+            state,
+            &mut fields,
+            &mut constructors,
+            &mut methods,
+            &mut constants,
+        )?;
         consume_optional_separator(state);
     }
 
     state.tokens.expect(&Token::RightBrace)?;
-    Ok((fields, constructors, methods))
+    Ok((fields, constructors, methods, constants))
 }
 
-/// Parse a single class member (field, constructor, or method) - complexity: 9
+/// Parse a single class member (field, constructor, method, or constant) - complexity: 9
 fn parse_class_member(
     state: &mut ParserState,
     fields: &mut Vec<StructField>,
     constructors: &mut Vec<Constructor>,
     methods: &mut Vec<ClassMethod>,
+    constants: &mut Vec<ClassConstant>,
 ) -> Result<()> {
+    // Check for const first
+    if matches!(state.tokens.peek(), Some((Token::Const, _))) {
+        state.tokens.advance(); // consume 'const'
+        let constant = parse_class_constant(state)?;
+        constants.push(constant);
+        return Ok(());
+    }
+
     // Parse modifiers
-    let (is_pub, is_mut) = parse_class_modifiers(state)?;
+    let (visibility, is_mut) = parse_class_modifiers(state)?;
     let (is_static, is_override) = parse_member_flags(state)?;
 
     // Determine member type and parse accordingly
@@ -2399,12 +2442,12 @@ fn parse_class_member(
         Some((Token::Identifier(name), _)) if name == "new" => {
             validate_constructor_modifiers(is_static, is_override)?;
             let mut constructor = parse_constructor(state)?;
-            constructor.is_pub = is_pub;
+            constructor.is_pub = visibility.is_public();
             constructors.push(constructor);
         }
         Some((Token::Fun | Token::Fn, _)) => {
             let mut method = parse_class_method(state)?;
-            apply_method_modifiers(&mut method, is_pub, is_static, is_override)?;
+            apply_method_modifiers(&mut method, visibility.is_public(), is_static, is_override)?;
             methods.push(method);
         }
         Some((Token::Identifier(_), _)) if !is_static => {
@@ -2412,24 +2455,56 @@ fn parse_class_member(
             fields.push(StructField {
                 name: field_name,
                 ty: field_type,
-                is_pub,
+                visibility,
                 is_mut,
                 default_value,
             });
         }
-        _ => bail!("Expected field, constructor, or method in class body"),
+        _ => bail!("Expected field, constructor, method, or constant in class body"),
     }
     Ok(())
 }
 
+/// Parse class constant: const NAME: TYPE = VALUE
+fn parse_class_constant(state: &mut ParserState) -> Result<ClassConstant> {
+    // Parse name
+    let name = match state.tokens.peek() {
+        Some((Token::Identifier(n), _)) => {
+            let name = n.clone();
+            state.tokens.advance();
+            name
+        }
+        _ => bail!("Expected constant name after 'const'"),
+    };
+
+    // Expect colon
+    state.tokens.expect(&Token::Colon)?;
+
+    // Parse type
+    let ty = super::utils::parse_type(state)?;
+
+    // Expect equals
+    state.tokens.expect(&Token::Equal)?;
+
+    // Parse value expression
+    let value = super::parse_expr_recursive(state)?;
+
+    Ok(ClassConstant {
+        name,
+        ty,
+        value,
+        is_pub: true, // Constants are public by default in classes
+    })
+}
+
 /// Parse visibility modifiers (pub, mut) - complexity: 4
-fn parse_class_modifiers(state: &mut ParserState) -> Result<(bool, bool)> {
-    let mut is_pub = false;
+fn parse_class_modifiers(state: &mut ParserState) -> Result<(Visibility, bool)> {
+    let mut visibility = Visibility::Private;
     let mut is_mut = false;
 
     if matches!(state.tokens.peek(), Some((Token::Pub, _))) {
         state.tokens.advance();
-        is_pub = true;
+        visibility = Visibility::Public;
 
         // Check for pub(crate) syntax
         if matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
@@ -2438,19 +2513,18 @@ fn parse_class_modifiers(state: &mut ParserState) -> Result<(bool, bool)> {
                 Some((Token::Crate, _)) => {
                     state.tokens.advance();
                     state.tokens.expect(&Token::RightParen)?;
-                    // For now, we'll treat pub(crate) as pub
-                    // TODO: Implement proper visibility scopes
+                    visibility = Visibility::PubCrate;
                 }
                 Some((Token::Super, _)) => {
                     state.tokens.advance();
                     state.tokens.expect(&Token::RightParen)?;
-                    bail!("Unsupported visibility scope: pub(super) - only pub(crate) is currently supported");
+                    visibility = Visibility::PubSuper;
                 }
                 Some((Token::Identifier(scope), _)) => {
                     let scope = scope.clone();
                     state.tokens.advance();
                     state.tokens.expect(&Token::RightParen)?;
-                    bail!("Unsupported visibility scope: pub({}) - only pub(crate) is currently supported", scope);
+                    bail!("Unsupported visibility scope: pub({}) - only pub(crate) and pub(super) are supported", scope);
                 }
                 _ => {
                     bail!("Expected 'crate', 'super', or identifier after 'pub('");
@@ -2465,9 +2539,11 @@ fn parse_class_modifiers(state: &mut ParserState) -> Result<(bool, bool)> {
     }
 
     // Also check reverse order: mut pub
-    if !is_pub && matches!(state.tokens.peek(), Some((Token::Pub, _))) {
+    if matches!(visibility, Visibility::Private)
+        && matches!(state.tokens.peek(), Some((Token::Pub, _)))
+    {
         state.tokens.advance();
-        is_pub = true;
+        visibility = Visibility::Public;
 
         // Check for pub(crate) syntax in reverse order too
         if matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
@@ -2476,19 +2552,18 @@ fn parse_class_modifiers(state: &mut ParserState) -> Result<(bool, bool)> {
                 Some((Token::Crate, _)) => {
                     state.tokens.advance();
                     state.tokens.expect(&Token::RightParen)?;
-                    // For now, we'll treat pub(crate) as pub
-                    // TODO: Implement proper visibility scopes
+                    visibility = Visibility::PubCrate;
                 }
                 Some((Token::Super, _)) => {
                     state.tokens.advance();
                     state.tokens.expect(&Token::RightParen)?;
-                    bail!("Unsupported visibility scope: pub(super) - only pub(crate) is currently supported");
+                    visibility = Visibility::PubSuper;
                 }
                 Some((Token::Identifier(scope), _)) => {
                     let scope = scope.clone();
                     state.tokens.advance();
                     state.tokens.expect(&Token::RightParen)?;
-                    bail!("Unsupported visibility scope: pub({}) - only pub(crate) is currently supported", scope);
+                    bail!("Unsupported visibility scope: pub({}) - only pub(crate) and pub(super) are supported", scope);
                 }
                 _ => {
                     bail!("Expected 'crate', 'super', or identifier after 'pub('");
@@ -2497,7 +2572,7 @@ fn parse_class_modifiers(state: &mut ParserState) -> Result<(bool, bool)> {
         }
     }
 
-    Ok((is_pub, is_mut))
+    Ok((visibility, is_mut))
 }
 
 /// Parse member flags (static, override) - complexity: 4
@@ -2552,7 +2627,10 @@ fn apply_method_modifiers(
 
 /// Consume optional separator - complexity: 1
 fn consume_optional_separator(state: &mut ParserState) {
-    if matches!(state.tokens.peek(), Some((Token::Comma | Token::Semicolon, _))) {
+    if matches!(
+        state.tokens.peek(),
+        Some((Token::Comma | Token::Semicolon, _))
+    ) {
         state.tokens.advance();
     }
 }
@@ -2616,7 +2694,6 @@ fn parse_constructor(state: &mut ParserState) -> Result<Constructor> {
         is_pub: false, // Will be set by class body parsing
     })
 }
-
 
 /// Parse class method: fn `method_name(self_param`, `other_params`) -> `return_type` { body } - complexity: <10
 fn parse_class_method(state: &mut ParserState) -> Result<ClassMethod> {
@@ -3288,7 +3365,7 @@ fn parse_variant_fields(state: &mut ParserState) -> Result<Option<Vec<Type>>> {
     Ok(Some(field_types))
 }
 fn parse_generic_params(state: &mut ParserState) -> Result<Vec<String>> {
-    // Parse <T, U, ...>
+    // Parse <T, U, ...> (lifetimes like 'a are not yet fully supported)
     state.tokens.expect(&Token::Less)?;
     let mut params = Vec::new();
     while !matches!(state.tokens.peek(), Some((Token::Greater, _))) {
@@ -3300,7 +3377,17 @@ fn parse_generic_params(state: &mut ParserState) -> Result<Vec<String>> {
                 state.tokens.advance();
             }
         } else {
-            bail!("Expected type parameter name");
+            // For now, skip lifetime parameters by ignoring character literals in generic position
+            // This is a temporary workaround until proper lifetime support is added
+            if matches!(state.tokens.peek(), Some((Token::Char(_), _))) {
+                state.tokens.advance(); // skip the lifetime
+                                        // Check for identifier after the quote (e.g., 'a becomes Char('a'))
+                if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+                    state.tokens.advance();
+                }
+            } else {
+                bail!("Expected type parameter name");
+            }
         }
     }
     state.tokens.expect(&Token::Greater)?;
@@ -3428,7 +3515,7 @@ fn create_actor_expression(
         .map(|(name, ty, _init)| StructField {
             name,
             ty,
-            is_pub: false,
+            visibility: Visibility::Private,
             is_mut: false,
             default_value: None,
         })
@@ -3547,9 +3634,21 @@ fn parse_fstring_into_parts(input: &str) -> Result<Vec<StringPart>> {
                 }
                 // Extract and parse expression
                 let expr_str = extract_fstring_expr(&mut chars)?;
-                let mut parser = Parser::new(&expr_str);
-                let expr = parser.parse_expr()?;
-                parts.push(StringPart::Expr(Box::new(expr)));
+                // Check for format specifier
+                if let Some(colon_pos) = expr_str.find(':') {
+                    let expr_part = &expr_str[..colon_pos];
+                    let format_spec = &expr_str[colon_pos..];
+                    let mut parser = Parser::new(expr_part);
+                    let expr = parser.parse_expr()?;
+                    parts.push(StringPart::ExprWithFormat {
+                        expr: Box::new(expr),
+                        format_spec: format_spec.to_string(),
+                    });
+                } else {
+                    let mut parser = Parser::new(&expr_str);
+                    let expr = parser.parse_expr()?;
+                    parts.push(StringPart::Expr(Box::new(expr)));
+                }
             }
         } else if ch == '}' {
             if chars.peek() == Some(&'}') {

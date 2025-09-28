@@ -24,7 +24,7 @@ fn test_simple_list_comprehension() {
         assert_eq!(arr[3], Value::Integer(6));
         assert_eq!(arr[4], Value::Integer(8));
     } else {
-        panic!("Expected array, got {:?}", result);
+        panic!("Expected array, got {result:?}");
     }
 }
 
@@ -42,7 +42,7 @@ fn test_list_comprehension_with_filter() {
         assert_eq!(arr[3], Value::Integer(6));
         assert_eq!(arr[4], Value::Integer(8));
     } else {
-        panic!("Expected array, got {:?}", result);
+        panic!("Expected array, got {result:?}");
     }
 }
 
@@ -65,7 +65,7 @@ fn test_nested_list_comprehension() {
         assert_eq!(arr[7], Value::Integer(3)); // 2+1
         assert_eq!(arr[8], Value::Integer(4)); // 2+2
     } else {
-        panic!("Expected array, got {:?}", result);
+        panic!("Expected array, got {result:?}");
     }
 }
 
@@ -132,7 +132,7 @@ fn test_comprehension_over_array() {
         assert_eq!(arr[3], Value::Integer(16));
         assert_eq!(arr[4], Value::Integer(25));
     } else {
-        panic!("Expected array, got {:?}", result);
+        panic!("Expected array, got {result:?}");
     }
 }
 
@@ -148,7 +148,7 @@ fn test_comprehension_with_complex_expression() {
         assert_eq!(arr[1], Value::Integer(7)); // 3*2+1
         assert_eq!(arr[2], Value::Integer(9)); // 4*2+1
     } else {
-        panic!("Expected array, got {:?}", result);
+        panic!("Expected array, got {result:?}");
     }
 }
 
@@ -161,7 +161,7 @@ fn test_empty_comprehension() {
     if let Value::Array(arr) = result {
         assert_eq!(arr.len(), 0);
     } else {
-        panic!("Expected empty array, got {:?}", result);
+        panic!("Expected empty array, got {result:?}");
     }
 }
 
@@ -188,7 +188,7 @@ fn test_comprehension_with_tuple_result() {
             panic!("Expected tuple at index 3");
         }
     } else {
-        panic!("Expected array, got {:?}", result);
+        panic!("Expected array, got {result:?}");
     }
 }
 
@@ -208,6 +208,6 @@ fn test_nested_comprehension_with_filter() {
         assert_eq!(arr[4], Value::Integer(3)); // 3*1
         assert_eq!(arr[5], Value::Integer(6)); // 3*2
     } else {
-        panic!("Expected array, got {:?}", result);
+        panic!("Expected array, got {result:?}");
     }
 }

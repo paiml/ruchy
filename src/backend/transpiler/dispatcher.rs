@@ -109,6 +109,7 @@ impl Transpiler {
             | ExprKind::PreDecrement { .. }
             | ExprKind::PostDecrement { .. }
             | ExprKind::Await { .. }
+            | ExprKind::Spawn { .. }
             | ExprKind::AsyncBlock { .. }
             | ExprKind::AsyncLambda { .. } => self.transpile_operator_only_expr(expr),
             // Control flow
@@ -136,6 +137,7 @@ impl Transpiler {
             ExprKind::PreDecrement { target } => self.transpile_pre_decrement(target),
             ExprKind::PostDecrement { target } => self.transpile_post_decrement(target),
             ExprKind::Await { expr } => self.transpile_await(expr),
+            ExprKind::Spawn { actor } => self.transpile_spawn(actor),
             ExprKind::AsyncBlock { body } => self.transpile_async_block(body),
             ExprKind::AsyncLambda { params, body } => self.transpile_async_lambda(params, body),
             _ => unreachable!(),
@@ -265,6 +267,7 @@ impl Transpiler {
                 fields,
                 constructors,
                 methods,
+                constants,
                 derives,
                 is_pub,
             } => self.transpile_class(
@@ -274,11 +277,13 @@ impl Transpiler {
                 fields,
                 constructors,
                 methods,
+                constants,
                 derives,
                 *is_pub,
             ),
-            ExprKind::StructLiteral { name, fields, base } =>
-                self.transpile_struct_literal(name, fields, base.as_deref()),
+            ExprKind::StructLiteral { name, fields, base } => {
+                self.transpile_struct_literal(name, fields, base.as_deref())
+            }
             ExprKind::ObjectLiteral { fields } => self.transpile_object_literal(fields),
             ExprKind::FieldAccess { object, field } => self.transpile_field_access(object, field),
             ExprKind::IndexAccess { object, index } => self.transpile_index_access(object, index),

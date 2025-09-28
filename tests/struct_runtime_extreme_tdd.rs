@@ -30,12 +30,12 @@ mod struct_definition_tests {
     #[test]
     fn test_basic_struct_definition() {
         let mut interpreter = Interpreter::new();
-        let code = r#"
+        let code = r"
             struct Point {
                 x: float,
                 y: float
             }
-        "#;
+        ";
         // EXTREME TDD: This MUST fail initially (runtime not implemented)
         let result = eval_code(&mut interpreter, code);
         assert!(result.is_ok(), "Struct definition should succeed");
@@ -51,14 +51,14 @@ mod struct_definition_tests {
     #[test]
     fn test_struct_with_different_field_types() {
         let mut interpreter = Interpreter::new();
-        let code = r#"
+        let code = r"
             struct Person {
                 name: string,
                 age: i32,
                 height: float,
                 active: bool
             }
-        "#;
+        ";
         let result = eval_code(&mut interpreter, code).expect("Should parse and evaluate");
         assert!(matches!(result, Value::Object(_)));
     }
@@ -66,11 +66,11 @@ mod struct_definition_tests {
     #[test]
     fn test_struct_with_single_field() {
         let mut interpreter = Interpreter::new();
-        let code = r#"
+        let code = r"
             struct Wrapper {
                 value: i32
             }
-        "#;
+        ";
         let result = eval_code(&mut interpreter, code).expect("Should parse and evaluate");
         assert!(matches!(result, Value::Object(_)));
     }
@@ -78,10 +78,10 @@ mod struct_definition_tests {
     #[test]
     fn test_empty_struct() {
         let mut interpreter = Interpreter::new();
-        let code = r#"
+        let code = r"
             struct Empty {
             }
-        "#;
+        ";
         let result = eval_code(&mut interpreter, code).expect("Should parse and evaluate");
         assert!(matches!(result, Value::Object(_)));
     }
@@ -89,11 +89,11 @@ mod struct_definition_tests {
     #[test]
     fn test_public_struct() {
         let mut interpreter = Interpreter::new();
-        let code = r#"
+        let code = r"
             pub struct PublicStruct {
                 field: i32
             }
-        "#;
+        ";
         let result = eval_code(&mut interpreter, code).expect("Should parse and evaluate");
         assert!(matches!(result, Value::Object(_)));
     }
@@ -106,7 +106,7 @@ mod struct_instantiation_tests {
     #[test]
     fn test_basic_struct_instantiation() {
         let mut interpreter = Interpreter::new();
-        let code = r#"
+        let code = r"
             struct Point {
                 x: float,
                 y: float
@@ -116,7 +116,7 @@ mod struct_instantiation_tests {
                 let p = Point { x: 3.0, y: 4.0 }
                 p
             }
-        "#;
+        ";
         // EXTREME TDD: This MUST fail initially (struct instantiation not implemented)
         let result = eval_code(&mut interpreter, code);
         assert!(result.is_ok(), "Struct instantiation should succeed");
@@ -154,7 +154,7 @@ mod struct_instantiation_tests {
     #[test]
     fn test_nested_struct_instantiation() {
         let mut interpreter = Interpreter::new();
-        let code = r#"
+        let code = r"
             struct Point {
                 x: float,
                 y: float
@@ -172,7 +172,7 @@ mod struct_instantiation_tests {
                 }
                 line
             }
-        "#;
+        ";
         let result = eval_code(&mut interpreter, code).expect("Should parse and evaluate");
         assert!(matches!(result, Value::Object(_)));
     }
@@ -180,7 +180,7 @@ mod struct_instantiation_tests {
     #[test]
     fn test_struct_field_access() {
         let mut interpreter = Interpreter::new();
-        let code = r#"
+        let code = r"
             struct Point {
                 x: float,
                 y: float
@@ -190,7 +190,7 @@ mod struct_instantiation_tests {
                 let p = Point { x: 3.0, y: 4.0 }
                 p.x
             }
-        "#;
+        ";
         let result = eval_code(&mut interpreter, code).expect("Should parse and evaluate");
         assert!(matches!(result, Value::Float(_)));
 
@@ -202,7 +202,7 @@ mod struct_instantiation_tests {
     #[test]
     fn test_struct_field_mutation() {
         let mut interpreter = Interpreter::new();
-        let code = r#"
+        let code = r"
             struct Counter {
                 value: i32
             }
@@ -212,7 +212,7 @@ mod struct_instantiation_tests {
                 counter.value = 42
                 counter.value
             }
-        "#;
+        ";
         let result = eval_code(&mut interpreter, code).expect("Should parse and evaluate");
         assert!(matches!(result, Value::Integer(42)));
     }
@@ -225,7 +225,7 @@ mod struct_function_integration_tests {
     #[test]
     fn test_struct_as_function_parameter() {
         let mut interpreter = Interpreter::new();
-        let code = r#"
+        let code = r"
             struct Point {
                 x: float,
                 y: float
@@ -239,7 +239,7 @@ mod struct_function_integration_tests {
                 let p = Point { x: 3.0, y: 4.0 }
                 distance_from_origin(p)
             }
-        "#;
+        ";
         let result = eval_code(&mut interpreter, code).expect("Should parse and evaluate");
         assert!(matches!(result, Value::Float(_)));
 
@@ -251,7 +251,7 @@ mod struct_function_integration_tests {
     #[test]
     fn test_function_returning_struct() {
         let mut interpreter = Interpreter::new();
-        let code = r#"
+        let code = r"
             struct Point {
                 x: float,
                 y: float
@@ -265,7 +265,7 @@ mod struct_function_integration_tests {
                 let p = make_point(5.0, 10.0)
                 p.x + p.y
             }
-        "#;
+        ";
         let result = eval_code(&mut interpreter, code).expect("Should parse and evaluate");
         assert!(matches!(result, Value::Float(15.0)));
     }
@@ -273,7 +273,7 @@ mod struct_function_integration_tests {
     #[test]
     fn test_struct_method_calls() {
         let mut interpreter = Interpreter::new();
-        let code = r#"
+        let code = r"
             struct Point {
                 x: float,
                 y: float
@@ -293,7 +293,7 @@ mod struct_function_integration_tests {
                 let p = Point::new(3.0, 4.0)
                 p.distance_from_origin()
             }
-        "#;
+        ";
         let result = eval_code(&mut interpreter, code).expect("Should parse and evaluate");
         assert!(matches!(result, Value::Float(_)));
 
@@ -310,11 +310,11 @@ mod struct_error_handling_tests {
     #[test]
     fn test_struct_with_undefined_field_type() {
         let mut interpreter = Interpreter::new();
-        let code = r#"
+        let code = r"
             struct Bad {
                 field: UndefinedType
             }
-        "#;
+        ";
         let result = eval_code(&mut interpreter, code);
         assert!(result.is_err(), "Should fail with undefined type");
     }
@@ -322,7 +322,7 @@ mod struct_error_handling_tests {
     #[test]
     fn test_struct_instantiation_missing_field() {
         let mut interpreter = Interpreter::new();
-        let code = r#"
+        let code = r"
             struct Point {
                 x: float,
                 y: float
@@ -332,7 +332,7 @@ mod struct_error_handling_tests {
                 let p = Point { x: 3.0 }  // Missing y field
                 p
             }
-        "#;
+        ";
         let result = eval_code(&mut interpreter, code);
         assert!(result.is_err(), "Should fail with missing field");
     }
@@ -340,7 +340,7 @@ mod struct_error_handling_tests {
     #[test]
     fn test_struct_instantiation_extra_field() {
         let mut interpreter = Interpreter::new();
-        let code = r#"
+        let code = r"
             struct Point {
                 x: float,
                 y: float
@@ -350,7 +350,7 @@ mod struct_error_handling_tests {
                 let p = Point { x: 3.0, y: 4.0, z: 5.0 }  // Extra z field
                 p
             }
-        "#;
+        ";
         let result = eval_code(&mut interpreter, code);
         assert!(result.is_err(), "Should fail with extra field");
     }
@@ -358,7 +358,7 @@ mod struct_error_handling_tests {
     #[test]
     fn test_access_nonexistent_field() {
         let mut interpreter = Interpreter::new();
-        let code = r#"
+        let code = r"
             struct Point {
                 x: float,
                 y: float
@@ -368,7 +368,7 @@ mod struct_error_handling_tests {
                 let p = Point { x: 3.0, y: 4.0 }
                 p.z  // Nonexistent field
             }
-        "#;
+        ";
         let result = eval_code(&mut interpreter, code);
         assert!(result.is_err(), "Should fail accessing nonexistent field");
     }
@@ -381,7 +381,7 @@ mod struct_advanced_tests {
     #[test]
     fn test_recursive_struct_definition() {
         let mut interpreter = Interpreter::new();
-        let code = r#"
+        let code = r"
             struct Node {
                 value: i32,
                 next: Option<Node>
@@ -394,7 +394,7 @@ mod struct_advanced_tests {
                 }
                 node.value
             }
-        "#;
+        ";
         let result = eval_code(&mut interpreter, code).expect("Should parse and evaluate");
         assert!(matches!(result, Value::Integer(42)));
     }
@@ -402,7 +402,7 @@ mod struct_advanced_tests {
     #[test]
     fn test_struct_with_array_field() {
         let mut interpreter = Interpreter::new();
-        let code = r#"
+        let code = r"
             struct Container {
                 items: [i32]
             }
@@ -413,7 +413,7 @@ mod struct_advanced_tests {
                 }
                 container.items.length()
             }
-        "#;
+        ";
         let result = eval_code(&mut interpreter, code).expect("Should parse and evaluate");
         assert!(matches!(result, Value::Integer(5)));
     }
@@ -421,7 +421,7 @@ mod struct_advanced_tests {
     #[test]
     fn test_struct_equality() {
         let mut interpreter = Interpreter::new();
-        let code = r#"
+        let code = r"
             struct Point {
                 x: float,
                 y: float
@@ -432,7 +432,7 @@ mod struct_advanced_tests {
                 let p2 = Point { x: 3.0, y: 4.0 }
                 p1 == p2
             }
-        "#;
+        ";
         let result = eval_code(&mut interpreter, code).expect("Should parse and evaluate");
         assert!(matches!(result, Value::Bool(true)));
     }
@@ -440,7 +440,7 @@ mod struct_advanced_tests {
     #[test]
     fn test_struct_string_representation() {
         let mut interpreter = Interpreter::new();
-        let code = r#"
+        let code = r"
             struct Point {
                 x: float,
                 y: float
@@ -450,7 +450,7 @@ mod struct_advanced_tests {
                 let p = Point { x: 3.0, y: 4.0 }
                 p.to_string()
             }
-        "#;
+        ";
         let result = eval_code(&mut interpreter, code).expect("Should parse and evaluate");
         assert!(matches!(result, Value::String(_)));
     }
@@ -463,7 +463,7 @@ mod struct_real_world_tests {
     #[test]
     fn test_point_and_rectangle_example() {
         let mut interpreter = Interpreter::new();
-        let code = r#"
+        let code = r"
             struct Point {
                 x: float,
                 y: float
@@ -484,7 +484,7 @@ mod struct_real_world_tests {
                 let height = rect.bottom_right.y - rect.top_left.y
                 width * height  // Area calculation
             }
-        "#;
+        ";
         let result = eval_code(&mut interpreter, code).expect("Should parse and evaluate");
         assert!(matches!(result, Value::Float(50.0)));
     }
@@ -521,7 +521,7 @@ mod struct_edge_cases {
     #[test]
     fn test_large_struct_with_many_fields() {
         let mut interpreter = Interpreter::new();
-        let code = r#"
+        let code = r"
             struct LargeStruct {
                 f1: i32, f2: i32, f3: i32, f4: i32, f5: i32,
                 f6: i32, f7: i32, f8: i32, f9: i32, f10: i32
@@ -534,7 +534,7 @@ mod struct_edge_cases {
                 }
                 large.f1 + large.f10
             }
-        "#;
+        ";
         let result = eval_code(&mut interpreter, code).expect("Should parse and evaluate");
         assert!(matches!(result, Value::Integer(11)));
     }
@@ -542,7 +542,7 @@ mod struct_edge_cases {
     #[test]
     fn test_deeply_nested_struct_access() {
         let mut interpreter = Interpreter::new();
-        let code = r#"
+        let code = r"
             struct A { b: B }
             struct B { c: C }
             struct C { d: D }
@@ -558,7 +558,7 @@ mod struct_edge_cases {
                 }
                 a.b.c.d.value
             }
-        "#;
+        ";
         let result = eval_code(&mut interpreter, code).expect("Should parse and evaluate");
         assert!(matches!(result, Value::Integer(42)));
     }
@@ -566,7 +566,7 @@ mod struct_edge_cases {
     #[test]
     fn test_struct_with_zero_sized_fields() {
         let mut interpreter = Interpreter::new();
-        let code = r#"
+        let code = r"
             struct Unit {}
             struct WithUnit {
                 unit: Unit,
@@ -580,7 +580,7 @@ mod struct_edge_cases {
                 }
                 with_unit.value
             }
-        "#;
+        ";
         let result = eval_code(&mut interpreter, code).expect("Should parse and evaluate");
         assert!(matches!(result, Value::Integer(123)));
     }

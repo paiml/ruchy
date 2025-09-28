@@ -1,6 +1,6 @@
 //! Actor system parsing
 use super::{bail, collections, utils, Expr, ExprKind, Param, ParserState, Result, Token};
-use crate::frontend::ast::{ActorHandler, StructField};
+use crate::frontend::ast::{ActorHandler, StructField, Visibility};
 /// # Errors
 ///
 /// Returns an error if the operation fails
@@ -58,7 +58,7 @@ fn parse_state_block(state: &mut ParserState, state_fields: &mut Vec<StructField
         state_fields.push(StructField {
             name: field_name,
             ty,
-            is_pub: false,
+            visibility: Visibility::Private,
             is_mut: false,
             default_value: None,
         });
@@ -132,7 +132,7 @@ fn parse_inline_state_field(
     state_fields.push(StructField {
         name: field_name,
         ty,
-        is_pub: false,
+        visibility: Visibility::Private,
         is_mut: false,
         default_value: None,
     });
@@ -230,14 +230,17 @@ mod tests {
                 kind: TypeKind::Named("Int".to_string()),
                 span: Span::new(0, 3),
             },
-            is_pub: false,
+            visibility: Visibility::Private,
             is_mut: false,
             default_value: None,
         };
 
         assert_eq!(field.name, "test_field");
         assert_eq!(field.ty.kind, TypeKind::Named("Int".to_string()));
-        assert!(!field.is_pub);
+        assert!(matches!(
+            field.visibility,
+            crate::frontend::ast::Visibility::Private
+        ));
     }
 
     // Additional comprehensive parser tests

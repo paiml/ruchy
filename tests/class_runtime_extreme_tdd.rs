@@ -30,12 +30,12 @@ mod class_definition_tests {
     #[test]
     fn test_basic_class_definition() {
         let mut interpreter = Interpreter::new();
-        let code = r#"
+        let code = r"
             class Person {
                 name: String,
                 age: i32
             }
-        "#;
+        ";
         // EXTREME TDD: This MUST fail initially (runtime not implemented)
         let result = eval_code(&mut interpreter, code);
         assert!(result.is_ok(), "Class definition should succeed");
@@ -64,12 +64,12 @@ mod class_definition_tests {
     #[test]
     fn test_class_with_mutable_fields() {
         let mut interpreter = Interpreter::new();
-        let code = r#"
+        let code = r"
             class State {
                 mut value: i32,
                 readonly: String
             }
-        "#;
+        ";
         let result = eval_code(&mut interpreter, code).expect("Should parse and evaluate");
         assert!(matches!(result, Value::Object(_)));
     }
@@ -77,11 +77,11 @@ mod class_definition_tests {
     #[test]
     fn test_public_class() {
         let mut interpreter = Interpreter::new();
-        let code = r#"
+        let code = r"
             pub class PublicClass {
                 field: i32
             }
-        "#;
+        ";
         let result = eval_code(&mut interpreter, code).expect("Should parse and evaluate");
         assert!(matches!(result, Value::Object(_)));
     }
@@ -94,7 +94,7 @@ mod class_instantiation_tests {
     #[test]
     fn test_class_instantiation_with_new() {
         let mut interpreter = Interpreter::new();
-        let code = r#"
+        let code = r"
             class Point {
                 x: float,
                 y: float
@@ -109,11 +109,11 @@ mod class_instantiation_tests {
                 let p = Point::new(3.0, 4.0)
                 p
             }
-        "#;
+        ";
         // EXTREME TDD: This MUST fail initially (class instantiation not implemented)
         let result = eval_code(&mut interpreter, code);
         if let Err(ref e) = result {
-            eprintln!("Error: {}", e);
+            eprintln!("Error: {e}");
         }
         assert!(result.is_ok(), "Class instantiation should succeed");
 
@@ -127,7 +127,7 @@ mod class_instantiation_tests {
     #[test]
     fn test_class_with_multiple_constructors() {
         let mut interpreter = Interpreter::new();
-        let code = r#"
+        let code = r"
             class Rectangle {
                 width: float,
                 height: float
@@ -148,7 +148,7 @@ mod class_instantiation_tests {
                 let square = Rectangle::square(7.0)
                 rect
             }
-        "#;
+        ";
         let result = eval_code(&mut interpreter, code).expect("Should parse and evaluate");
         assert!(matches!(result, Value::Object(_)));
     }
@@ -188,7 +188,7 @@ mod class_method_tests {
     #[test]
     fn test_class_with_instance_method() {
         let mut interpreter = Interpreter::new();
-        let code = r#"
+        let code = r"
             class Counter {
                 mut count: i32 = 0
 
@@ -206,7 +206,7 @@ mod class_method_tests {
                 counter.increment()
                 counter.get()
             }
-        "#;
+        ";
         let result = eval_code(&mut interpreter, code).expect("Should parse and evaluate");
         assert!(matches!(result, Value::Integer(1)));
     }
@@ -214,7 +214,7 @@ mod class_method_tests {
     #[test]
     fn test_class_method_with_parameters() {
         let mut interpreter = Interpreter::new();
-        let code = r#"
+        let code = r"
             class Calculator {
                 fn add(&self, a: i32, b: i32) -> i32 {
                     a + b
@@ -229,7 +229,7 @@ mod class_method_tests {
                 let calc = Calculator::new()
                 calc.add(5, 3)
             }
-        "#;
+        ";
         let result = eval_code(&mut interpreter, code).expect("Should parse and evaluate");
         assert!(matches!(result, Value::Integer(8)));
     }
@@ -237,7 +237,7 @@ mod class_method_tests {
     #[test]
     fn test_static_method() {
         let mut interpreter = Interpreter::new();
-        let code = r#"
+        let code = r"
             class Math {
                 static fn square(x: i32) -> i32 {
                     x * x
@@ -251,7 +251,7 @@ mod class_method_tests {
             fn main() {
                 Math::square(5)
             }
-        "#;
+        ";
         let result = eval_code(&mut interpreter, code).expect("Should parse and evaluate");
         assert!(matches!(result, Value::Integer(25)));
     }
@@ -341,11 +341,11 @@ mod class_error_handling_tests {
     #[test]
     fn test_class_with_undefined_field_type() {
         let mut interpreter = Interpreter::new();
-        let code = r#"
+        let code = r"
             class Bad {
                 field: UndefinedType
             }
-        "#;
+        ";
         let result = eval_code(&mut interpreter, code);
         assert!(result.is_err(), "Should fail with undefined type");
     }
@@ -353,7 +353,7 @@ mod class_error_handling_tests {
     #[test]
     fn test_accessing_private_field() {
         let mut interpreter = Interpreter::new();
-        let code = r#"
+        let code = r"
             class Encapsulated {
                 private_field: i32
 
@@ -366,7 +366,7 @@ mod class_error_handling_tests {
                 let obj = Encapsulated::new(42)
                 obj.private_field  // Should fail - private access
             }
-        "#;
+        ";
         // In current implementation, this might pass as we don't have visibility yet
         let result = eval_code(&mut interpreter, code);
         // For now, just check if it evaluates
@@ -376,7 +376,7 @@ mod class_error_handling_tests {
     #[test]
     fn test_missing_constructor_parameters() {
         let mut interpreter = Interpreter::new();
-        let code = r#"
+        let code = r"
             class RequiresParams {
                 x: i32,
                 y: i32
@@ -391,7 +391,7 @@ mod class_error_handling_tests {
                 let obj = RequiresParams::new(10)  // Missing y parameter
                 obj
             }
-        "#;
+        ";
         let result = eval_code(&mut interpreter, code);
         assert!(result.is_err(), "Should fail with missing parameter");
     }

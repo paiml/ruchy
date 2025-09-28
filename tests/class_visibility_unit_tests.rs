@@ -220,19 +220,25 @@ fn test_visibility_ast_structure() {
         assert_eq!(fields.len(), 4, "Should have 4 fields");
 
         // field1: pub, not mut
-        assert!(fields[0].is_pub, "field1 should be public");
+        assert!(fields[0].visibility.is_public(), "field1 should be public");
         assert!(!fields[0].is_mut, "field1 should not be mutable");
 
         // field2: not pub, mut
-        assert!(!fields[1].is_pub, "field2 should not be public");
+        assert!(
+            !fields[1].visibility.is_public(),
+            "field2 should not be public"
+        );
         assert!(fields[1].is_mut, "field2 should be mutable");
 
         // field3: pub and mut
-        assert!(fields[2].is_pub, "field3 should be public");
+        assert!(fields[2].visibility.is_public(), "field3 should be public");
         assert!(fields[2].is_mut, "field3 should be mutable");
 
         // field4: neither pub nor mut
-        assert!(!fields[3].is_pub, "field4 should not be public");
+        assert!(
+            !fields[3].visibility.is_public(),
+            "field4 should not be public"
+        );
         assert!(!fields[3].is_mut, "field4 should not be mutable");
     } else {
         panic!("AST should be a class");

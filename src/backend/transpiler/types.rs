@@ -211,10 +211,15 @@ impl Transpiler {
                 let field_type = self
                     .transpile_type(&field.ty)
                     .unwrap_or_else(|_| quote! { _ });
-                if field.is_pub {
-                    quote! { pub #field_name: #field_type }
-                } else {
-                    quote! { #field_name: #field_type }
+
+                use crate::frontend::ast::Visibility;
+                match &field.visibility {
+                    Visibility::Public => quote! { pub #field_name: #field_type },
+                    Visibility::PubCrate => quote! { pub(crate) #field_name: #field_type },
+                    Visibility::PubSuper => quote! { pub(super) #field_name: #field_type },
+                    Visibility::Private | Visibility::Protected => {
+                        quote! { #field_name: #field_type }
+                    }
                 }
             })
             .collect();
@@ -321,6 +326,7 @@ impl Transpiler {
         fields: &[StructField],
         constructors: &[Constructor],
         methods: &[ClassMethod],
+        constants: &[crate::frontend::ast::ClassConstant],
         derives: &[String],
         is_pub: bool,
     ) -> Result<TokenStream> {
@@ -388,7 +394,8 @@ impl Transpiler {
                     quote! {}
                 };
                 let body = self.transpile_expr(&method.body)?;
-                let visibility = if method.is_pub {
+                // Static methods should be public by default to be accessible
+                let visibility = if method.is_pub || method.is_static {
                     quote! { pub }
                 } else {
                     quote! {}
@@ -403,10 +410,31 @@ impl Transpiler {
             .collect();
         let method_tokens = method_tokens?;
 
+        // Convert constants to associated constants
+        let constant_tokens: Result<Vec<_>> = constants
+            .iter()
+            .map(|constant| -> Result<TokenStream> {
+                let const_name = format_ident!("{}", constant.name);
+                let const_type = self.transpile_type(&constant.ty)?;
+                let const_value = self.transpile_expr(&constant.value)?;
+                let visibility = if constant.is_pub {
+                    quote! { pub }
+                } else {
+                    quote! {}
+                };
+
+                Ok(quote! {
+                    #visibility const #const_name: #const_type = #const_value;
+                })
+            })
+            .collect();
+        let constant_tokens = constant_tokens?;
+
         // 4. Generate impl block
         let impl_tokens = if type_params.is_empty() {
             quote! {
                 impl #struct_name {
+                    #(#constant_tokens)*
                     #(#constructor_tokens)*
                     #(#method_tokens)*
                 }
@@ -414,6 +442,7 @@ impl Transpiler {
         } else {
             quote! {
                 impl<#(#type_param_tokens),*> #struct_name<#(#type_param_tokens),*> {
+                    #(#constant_tokens)*
                     #(#constructor_tokens)*
                     #(#method_tokens)*
                 }
@@ -486,7 +515,14 @@ impl Transpiler {
                     match &param.ty.kind {
                         TypeKind::Reference { is_mut: true, .. } => Ok(quote! { &mut self }),
                         TypeKind::Reference { is_mut: false, .. } => Ok(quote! { &self }),
-                        _ => Ok(quote! { self }),
+                        _ => {
+                            // Check if it's a mutable move (mut self)
+                            if param.is_mutable {
+                                Ok(quote! { mut self })
+                            } else {
+                                Ok(quote! { self })
+                            }
+                        }
                     }
                 } else {
                     // Regular parameter

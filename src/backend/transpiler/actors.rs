@@ -254,10 +254,11 @@ mod tests {
     #[test]
     fn test_actor_with_state() {
         let transpiler = make_transpiler();
+        use crate::frontend::ast::Visibility;
         let state = vec![StructField {
             name: "count".to_string(),
             ty: make_type("i32"),
-            is_pub: false,
+            visibility: Visibility::Private,
             is_mut: false,
             default_value: None,
         }];
@@ -452,14 +453,14 @@ mod tests {
             StructField {
                 name: "value".to_string(),
                 ty: make_type("String"),
-                is_pub: false,
+                visibility: crate::frontend::ast::Visibility::Private,
                 is_mut: false,
                 default_value: None,
             },
             StructField {
                 name: "count".to_string(),
                 ty: make_type("usize"),
-                is_pub: false,
+                visibility: crate::frontend::ast::Visibility::Private,
                 is_mut: false,
                 default_value: None,
             },
