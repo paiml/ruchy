@@ -939,6 +939,7 @@ impl Interpreter {
                 constructors,
                 methods,
                 constants,
+                properties: _, // TODO: implement property evaluation
                 derives,
                 is_pub,
             } => self.eval_class_definition(

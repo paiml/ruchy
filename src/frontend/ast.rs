@@ -426,8 +426,9 @@ pub enum ExprKind {
         fields: Vec<StructField>,
         constructors: Vec<Constructor>, // new() methods
         methods: Vec<ClassMethod>,
-        constants: Vec<ClassConstant>, // const NAME: TYPE = VALUE
-        derives: Vec<String>,          // #[derive(Debug, Clone, ...)]
+        constants: Vec<ClassConstant>,  // const NAME: TYPE = VALUE
+        properties: Vec<ClassProperty>, // property NAME: TYPE { get => ..., set(v) => ... }
+        derives: Vec<String>,           // #[derive(Debug, Clone, ...)]
         is_pub: bool,
     },
     Enum {
@@ -918,6 +919,21 @@ pub struct ClassConstant {
     pub ty: Type,
     pub value: Expr,
     pub is_pub: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ClassProperty {
+    pub name: String,
+    pub ty: Type,
+    pub getter: Option<Box<Expr>>,
+    pub setter: Option<PropertySetter>,
+    pub is_pub: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PropertySetter {
+    pub param_name: String,
+    pub body: Box<Expr>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

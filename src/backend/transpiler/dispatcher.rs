@@ -268,6 +268,7 @@ impl Transpiler {
                 constructors,
                 methods,
                 constants,
+                properties: _, // TODO: implement property transpilation
                 derives,
                 is_pub,
             } => self.transpile_class(
