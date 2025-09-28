@@ -429,6 +429,7 @@ pub enum ExprKind {
         constants: Vec<ClassConstant>,  // const NAME: TYPE = VALUE
         properties: Vec<ClassProperty>, // property NAME: TYPE { get => ..., set(v) => ... }
         derives: Vec<String>,           // #[derive(Debug, Clone, ...)]
+        decorators: Vec<Decorator>,     // @Serializable, @Table("users"), etc.
         is_pub: bool,
         is_sealed: bool,   // sealed class (no external subclassing)
         is_abstract: bool, // abstract class (cannot be instantiated)
@@ -868,6 +869,7 @@ pub struct StructField {
     pub visibility: Visibility,
     pub is_mut: bool,                // mut field modifier
     pub default_value: Option<Expr>, // Default value for class fields
+    pub decorators: Vec<Decorator>,  // @PrimaryKey, @Column("name"), etc.
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct EnumVariant {
@@ -1206,6 +1208,13 @@ pub struct Attribute {
     pub name: String,
     pub args: Vec<String>,
     pub span: Span,
+}
+
+/// Represents a decorator (@name or @name(...))
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Decorator {
+    pub name: String,
+    pub args: Vec<String>,
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DataFrameColumn {

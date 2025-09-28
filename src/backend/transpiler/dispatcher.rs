@@ -273,6 +273,7 @@ impl Transpiler {
                 is_pub,
                 is_sealed: _,   // TODO: implement sealed classes
                 is_abstract: _, // TODO: implement abstract classes
+                decorators: _, // TODO: implement decorators
             } => self.transpile_class(
                 name,
                 type_params,

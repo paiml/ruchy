@@ -1,10 +1,11 @@
 //! Basic expression parsing - minimal version with only used functions
 use super::{
     bail, ActorHandler, BinaryOp, ClassConstant, ClassMethod, ClassProperty, Constructor,
-    EnumVariant, Expr, ExprKind, Literal, MatchArm, Param, ParserState, Pattern, PropertySetter,
-    Result, SelfType, Span, StringPart, StructField, Token, TraitMethod, Type, TypeKind, UnaryOp,
-    Visibility,
+    EnumVariant, Expr, ExprKind, Literal, MatchArm, Param, ParserState, Pattern,
+    PropertySetter, Result, SelfType, Span, StringPart, StructField, Token, TraitMethod, Type,
+    TypeKind, UnaryOp, Visibility,
 };
+use crate::frontend::ast::Decorator;
 pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
     let Some((token, span)) = state.tokens.peek() else {
         bail!("Unexpected end of input - expected expression");
@@ -184,6 +185,21 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
         Token::Import | Token::From | Token::Use => parse_import_token(state, token),
         // Special definition tokens - delegated to focused helper
         Token::DataFrame | Token::Actor => parse_special_definition_token(state, token),
+        // Decorator token - parse decorators and apply to following definition
+        Token::At => {
+            // Parse decorators
+            let decorators = parse_decorators(state)?;
+
+            // Now parse the decorated class/struct
+            let mut expr = parse_prefix(state)?;
+
+            // Apply decorators to class
+            if let ExprKind::Class { decorators: ref mut class_decorators, .. } = &mut expr.kind {
+                *class_decorators = decorators;
+            }
+
+            Ok(expr)
+        }
         // Control statement tokens - delegated to focused helper
         Token::Pub
         | Token::Const
@@ -2273,6 +2289,7 @@ fn parse_struct_definition(state: &mut ParserState) -> Result<Expr> {
                 constants,
                 properties,
                 derives: Vec::new(), // Will be populated by parse_attributed_expression
+                decorators: Vec::new(), // Will be populated by parse_decorator
                 is_pub: false,
                 is_sealed: false,   // Will be set by parse_sealed_token if needed
                 is_abstract: false, // Will be set by parse_abstract_token if needed
@@ -2379,6 +2396,7 @@ fn parse_struct_fields(state: &mut ParserState) -> Result<Vec<StructField>> {
             visibility,
             is_mut,
             default_value,
+            decorators: Vec::new(), // TODO: parse field decorators
         });
 
         if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
@@ -2518,6 +2536,13 @@ fn parse_class_member(
     constants: &mut Vec<ClassConstant>,
     properties: &mut Vec<ClassProperty>,
 ) -> Result<()> {
+    // Check for decorators on the member
+    let decorators = if matches!(state.tokens.peek(), Some((Token::At, _))) {
+        parse_decorators(state)?
+    } else {
+        Vec::new()
+    };
+
     // Check for const first
     if matches!(state.tokens.peek(), Some((Token::Const, _))) {
         state.tokens.advance(); // consume 'const'
@@ -2574,6 +2599,7 @@ fn parse_class_member(
                 visibility,
                 is_mut,
                 default_value,
+                decorators, // Apply parsed decorators
             });
         }
         _ => bail!("Expected field, constructor, method, or constant in class body"),
@@ -2667,6 +2693,64 @@ fn parse_operator_method(state: &mut ParserState) -> Result<ClassMethod> {
         is_abstract: false,
         self_type: SelfType::Borrowed, // Most operators take &self
     })
+}
+
+/// Parse decorator: @Name or @Name("args", ...)
+fn parse_decorator(state: &mut ParserState) -> Result<Decorator> {
+    // Expect @ token
+    state.tokens.expect(&Token::At)?;
+
+    // Parse decorator name
+    let name = match state.tokens.peek() {
+        Some((Token::Identifier(n), _)) => {
+            let name = n.clone();
+            state.tokens.advance();
+            name
+        }
+        _ => bail!("Expected decorator name after '@'"),
+    };
+
+    // Check for arguments
+    let args = if matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
+        state.tokens.advance(); // consume (
+        let mut args = Vec::new();
+
+        while !matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
+            // For now, only support string literal arguments
+            match state.tokens.peek() {
+                Some((Token::String(s), _)) => {
+                    args.push(s.clone());
+                    state.tokens.advance();
+                }
+                _ => bail!("Expected string literal in decorator arguments"),
+            }
+
+            // Check for comma
+            if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+                state.tokens.advance();
+            } else if !matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
+                bail!("Expected ',' or ')' in decorator arguments");
+            }
+        }
+
+        state.tokens.expect(&Token::RightParen)?;
+        args
+    } else {
+        Vec::new()
+    };
+
+    Ok(Decorator { name, args })
+}
+
+/// Parse decorators for classes/fields
+fn parse_decorators(state: &mut ParserState) -> Result<Vec<Decorator>> {
+    let mut decorators = Vec::new();
+
+    while matches!(state.tokens.peek(), Some((Token::At, _))) {
+        decorators.push(parse_decorator(state)?);
+    }
+
+    Ok(decorators)
 }
 
 /// Parse class constant: const NAME: TYPE = VALUE
@@ -3836,6 +3920,7 @@ fn create_actor_expression(
             visibility: Visibility::Private,
             is_mut: false,
             default_value: None,
+            decorators: Vec::new(),
         })
         .collect();
     // For now, create simple handlers

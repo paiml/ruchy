@@ -944,6 +944,7 @@ impl Interpreter {
                 is_pub,
                 is_sealed: _,   // TODO: implement sealed classes
                 is_abstract: _, // TODO: implement abstract classes
+                decorators: _, // TODO: implement decorators
             } => self.eval_class_definition(
                 name,
                 type_params,
