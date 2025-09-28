@@ -347,6 +347,11 @@ impl InferenceContext {
                 self.unifier.unify(&right_ty, &MonoType::Int)?;
                 Ok(MonoType::Int)
             }
+            // Actor message passing
+            BinaryOp::Send => {
+                // For now, return unit type for actor send
+                Ok(MonoType::Unit)
+            }
         }
     }
     fn infer_unary(&mut self, op: UnaryOp, operand: &Expr) -> Result<MonoType> {
@@ -1181,6 +1186,10 @@ impl InferenceContext {
                 self.unifier.unify(left_ty, &MonoType::Int)?;
                 self.unifier.unify(right_ty, &MonoType::Int)?;
                 Ok(MonoType::Int)
+            }
+            BinaryOp::Send => {
+                // Actor message passing: return unit type
+                Ok(MonoType::Unit)
             }
         }
     }

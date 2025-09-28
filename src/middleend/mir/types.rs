@@ -196,6 +196,8 @@ pub enum BinOp {
     And,
     Or,
     NullCoalesce,
+    // Actor operations
+    Send,
 }
 /// Unary operations
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

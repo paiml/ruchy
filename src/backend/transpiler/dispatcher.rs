@@ -268,12 +268,14 @@ impl Transpiler {
                 constructors,
                 methods,
                 constants,
-                properties: _, // TODO: implement property transpilation
+                properties: _,     // TODO: implement property transpilation
+                impl_blocks: _,    // TODO: implement impl blocks in classes
+                nested_classes: _, // TODO: implement nested classes
                 derives,
                 is_pub,
                 is_sealed: _,   // TODO: implement sealed classes
                 is_abstract: _, // TODO: implement abstract classes
-                decorators: _, // TODO: implement decorators
+                decorators: _,  // TODO: implement decorators
             } => self.transpile_class(
                 name,
                 type_params,

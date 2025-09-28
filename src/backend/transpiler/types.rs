@@ -67,9 +67,11 @@ impl Transpiler {
             TypeKind::Function { params, ret } => self.transpile_function_type(params, ret),
             TypeKind::DataFrame { .. } => Ok(quote! { polars::prelude::DataFrame }),
             TypeKind::Series { .. } => Ok(quote! { polars::prelude::Series }),
-            TypeKind::Reference { is_mut, lifetime, inner } => {
-                self.transpile_reference_type(*is_mut, lifetime.as_deref(), inner)
-            }
+            TypeKind::Reference {
+                is_mut,
+                lifetime,
+                inner,
+            } => self.transpile_reference_type(*is_mut, lifetime.as_deref(), inner),
         }
     }
     /// Transpile named types with built-in type mapping
@@ -1141,6 +1143,7 @@ mod tests {
         let ref_type = Type {
             kind: crate::frontend::ast::TypeKind::Reference {
                 is_mut: false,
+                lifetime: None,
                 inner: Box::new(inner_type.clone()),
             },
             span: crate::frontend::ast::Span::new(0, 10),
@@ -1156,6 +1159,7 @@ mod tests {
         let mut_ref_type = Type {
             kind: crate::frontend::ast::TypeKind::Reference {
                 is_mut: true,
+                lifetime: None,
                 inner: Box::new(inner_type),
             },
             span: crate::frontend::ast::Span::new(0, 10),

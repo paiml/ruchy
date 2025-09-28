@@ -177,6 +177,10 @@ impl AstNormalizer {
                     | BinaryOp::RightShift => {
                         panic!("Bitwise operations not yet supported in core language")
                     }
+                    // Actor operations not yet in core language
+                    BinaryOp::Send => {
+                        panic!("Actor operations not yet supported in core language")
+                    }
                 };
                 CoreExpr::Prim(prim, vec![l, r])
             }

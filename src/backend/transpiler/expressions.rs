@@ -3,7 +3,7 @@
 #![allow(clippy::needless_pass_by_value)] // TokenStream by value is intentional for quote! macro
 use super::Transpiler;
 use crate::frontend::ast::{
-    BinaryOp::{self, NullCoalesce},
+    BinaryOp::{self},
     Expr, ExprKind, Literal, StringPart, UnaryOp,
 };
 use anyhow::{bail, Result};
@@ -158,7 +158,8 @@ impl Transpiler {
             BinaryOp::Add | BinaryOp::Subtract => 50,
             BinaryOp::Multiply | BinaryOp::Divide | BinaryOp::Modulo => 60,
             BinaryOp::Power => 70,
-            _ => 0, // Default for other operators
+            BinaryOp::Send => 15, // Actor message passing
+            _ => 0,               // Default for other operators
         }
     }
     /// Check if operator is right-associative
@@ -168,8 +169,8 @@ impl Transpiler {
     fn transpile_binary_op(left: TokenStream, op: BinaryOp, right: TokenStream) -> TokenStream {
         use BinaryOp::{
             Add, And, BitwiseAnd, BitwiseOr, BitwiseXor, Divide, Equal, Greater, GreaterEqual,
-            LeftShift, Less, LessEqual, Modulo, Multiply, NotEqual, Or, Power, RightShift,
-            Subtract,
+            LeftShift, Less, LessEqual, Modulo, Multiply, NotEqual, NullCoalesce, Or, Power,
+            RightShift, Send, Subtract,
         };
         match op {
             // Arithmetic operations
@@ -187,6 +188,8 @@ impl Transpiler {
             // Shift operations
             LeftShift => Self::transpile_shift_ops(left, op, right),
             RightShift => Self::transpile_shift_ops(left, op, right),
+            // Actor operations
+            Send => quote! { #left.send(#right) },
         }
     }
     fn transpile_arithmetic_op(left: TokenStream, op: BinaryOp, right: TokenStream) -> TokenStream {

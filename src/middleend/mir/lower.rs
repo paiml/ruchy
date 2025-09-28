@@ -276,6 +276,7 @@ impl LoweringContext {
             AstBinOp::BitwiseXor => BinOp::BitXor,
             AstBinOp::LeftShift => BinOp::Shl,
             AstBinOp::RightShift => BinOp::Shr,
+            AstBinOp::Send => BinOp::Send,
         }
     }
     /// Lower unary operator
@@ -379,6 +380,7 @@ impl LoweringContext {
             | AstBinOp::And
             | AstBinOp::Or => Type::Bool,
             AstBinOp::NullCoalesce => Type::I32, // For now, assume Int (could be improved)
+            AstBinOp::Send => Type::Unit,        // Actor message passing returns unit
         }
     }
     /// Infer result type for unary operations

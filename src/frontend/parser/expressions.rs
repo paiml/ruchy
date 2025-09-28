@@ -1,9 +1,9 @@
 //! Basic expression parsing - minimal version with only used functions
 use super::{
     bail, ActorHandler, BinaryOp, ClassConstant, ClassMethod, ClassProperty, Constructor,
-    EnumVariant, Expr, ExprKind, Literal, MatchArm, Param, ParserState, Pattern,
-    PropertySetter, Result, SelfType, Span, StringPart, StructField, Token, TraitMethod, Type,
-    TypeKind, UnaryOp, Visibility,
+    EnumVariant, Expr, ExprKind, Literal, MatchArm, Param, ParserState, Pattern, PropertySetter,
+    Result, SelfType, Span, StringPart, StructField, Token, TraitMethod, Type, TypeKind, UnaryOp,
+    Visibility,
 };
 use crate::frontend::ast::Decorator;
 pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
@@ -178,9 +178,12 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
         // Parentheses tokens - delegated to focused helper (unit, grouping, tuples, lambdas)
         Token::LeftParen => parse_parentheses_token(state, span),
         // Data structure definition tokens - delegated to focused helper
-        Token::Struct | Token::Class | Token::Trait | Token::Interface | Token::Impl | Token::Type => {
-            parse_data_structure_token(state, token)
-        }
+        Token::Struct
+        | Token::Class
+        | Token::Trait
+        | Token::Interface
+        | Token::Impl
+        | Token::Type => parse_data_structure_token(state, token),
         // Import/module tokens - delegated to focused helper
         Token::Import | Token::From | Token::Use => parse_import_token(state, token),
         // Special definition tokens - delegated to focused helper
@@ -194,7 +197,11 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
             let mut expr = parse_prefix(state)?;
 
             // Apply decorators to class
-            if let ExprKind::Class { decorators: ref mut class_decorators, .. } = &mut expr.kind {
+            if let ExprKind::Class {
+                decorators: ref mut class_decorators,
+                ..
+            } = &mut expr.kind
+            {
                 *class_decorators = decorators;
             }
 
@@ -2276,8 +2283,9 @@ fn parse_struct_definition(state: &mut ParserState) -> Result<Expr> {
             (None, Vec::new())
         };
 
-        // Parse class body (fields, constructors, methods, constants, properties)
-        let (fields, constructors, methods, constants, properties) = parse_class_body(state)?;
+        // Parse class body (fields, constructors, methods, constants, properties, impl_blocks, nested_classes)
+        let (fields, constructors, methods, constants, properties, impl_blocks, nested_classes) =
+            parse_class_body(state)?;
         Ok(Expr::new(
             ExprKind::Class {
                 name,
@@ -2289,6 +2297,8 @@ fn parse_struct_definition(state: &mut ParserState) -> Result<Expr> {
                 methods,
                 constants,
                 properties,
+                impl_blocks,
+                nested_classes,
                 derives: Vec::new(), // Will be populated by parse_attributed_expression
                 decorators: Vec::new(), // Will be populated by parse_decorator
                 is_pub: false,
@@ -2503,6 +2513,8 @@ fn parse_class_body(
     Vec<ClassMethod>,
     Vec<ClassConstant>,
     Vec<ClassProperty>,
+    Vec<Expr>,
+    Vec<Expr>,
 )> {
     state.tokens.expect(&Token::LeftBrace)?;
 
@@ -2511,6 +2523,8 @@ fn parse_class_body(
     let mut methods = Vec::new();
     let mut constants = Vec::new();
     let mut properties = Vec::new();
+    let mut impl_blocks = Vec::new();
+    let mut nested_classes = Vec::new();
 
     while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
         parse_class_member(
@@ -2520,12 +2534,22 @@ fn parse_class_body(
             &mut methods,
             &mut constants,
             &mut properties,
+            &mut impl_blocks,
+            &mut nested_classes,
         )?;
         consume_optional_separator(state);
     }
 
     state.tokens.expect(&Token::RightBrace)?;
-    Ok((fields, constructors, methods, constants, properties))
+    Ok((
+        fields,
+        constructors,
+        methods,
+        constants,
+        properties,
+        impl_blocks,
+        nested_classes,
+    ))
 }
 
 /// Parse a single class member (field, constructor, method, constant, or property) - complexity: 9
@@ -2536,6 +2560,8 @@ fn parse_class_member(
     methods: &mut Vec<ClassMethod>,
     constants: &mut Vec<ClassConstant>,
     properties: &mut Vec<ClassProperty>,
+    impl_blocks: &mut Vec<Expr>,
+    nested_classes: &mut Vec<Expr>,
 ) -> Result<()> {
     // Check for decorators on the member
     let decorators = if matches!(state.tokens.peek(), Some((Token::At, _))) {
@@ -2557,6 +2583,20 @@ fn parse_class_member(
         state.tokens.advance(); // consume 'property'
         let property = parse_class_property(state)?;
         properties.push(property);
+        return Ok(());
+    }
+
+    // Check for impl blocks inside class
+    if matches!(state.tokens.peek(), Some((Token::Impl, _))) {
+        let impl_block = parse_impl_block(state)?;
+        impl_blocks.push(impl_block);
+        return Ok(());
+    }
+
+    // Check for nested class
+    if matches!(state.tokens.peek(), Some((Token::Class, _))) {
+        let nested_class = parse_struct_definition(state)?; // Reuse the same parser
+        nested_classes.push(nested_class);
         return Ok(());
     }
 
@@ -3190,7 +3230,7 @@ fn parse_trait_definition(state: &mut ParserState) -> Result<Expr> {
     while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
         // Expect 'fun' or 'fn' keyword
         match state.tokens.peek() {
-            Some((Token::Fun, _)) | Some((Token::Fn, _)) => {
+            Some((Token::Fun | Token::Fn, _)) => {
                 state.tokens.advance();
             }
             _ => bail!("Expected 'fun' or 'fn' keyword in trait/interface"),
@@ -3787,7 +3827,7 @@ fn parse_variant_fields(state: &mut ParserState) -> Result<Option<Vec<Type>>> {
     Ok(Some(field_types))
 }
 fn parse_generic_params(state: &mut ParserState) -> Result<Vec<String>> {
-    // Parse <T, U, ...> (lifetimes like 'a are not yet fully supported)
+    // Parse <T, U, ...> or <T: Display, U: Debug + Clone>
     state.tokens.expect(&Token::Less)?;
     let mut params = Vec::new();
     while !matches!(state.tokens.peek(), Some((Token::Greater, _))) {
@@ -3797,8 +3837,17 @@ fn parse_generic_params(state: &mut ParserState) -> Result<Vec<String>> {
                 state.tokens.advance();
             }
             Some((Token::Identifier(name), _)) => {
-                params.push(name.clone());
+                let param_name = name.clone();
                 state.tokens.advance();
+
+                // Check for constraints with ':'
+                if matches!(state.tokens.peek(), Some((Token::Colon, _))) {
+                    state.tokens.advance();
+                    // Parse bounds: Trait1 + Trait2 + ...
+                    parse_type_bounds(state)?;
+                }
+
+                params.push(param_name);
             }
             Some((Token::Char(_), _)) => {
                 // Legacy handling for char literals as lifetimes
@@ -3813,6 +3862,27 @@ fn parse_generic_params(state: &mut ParserState) -> Result<Vec<String>> {
     }
     state.tokens.expect(&Token::Greater)?;
     Ok(params)
+}
+
+fn parse_type_bounds(state: &mut ParserState) -> Result<Vec<String>> {
+    let mut bounds = Vec::new();
+
+    // Parse first bound
+    if let Some((Token::Identifier(bound), _)) = state.tokens.peek() {
+        bounds.push(bound.clone());
+        state.tokens.advance();
+    }
+
+    // Parse additional bounds with '+'
+    while matches!(state.tokens.peek(), Some((Token::Plus, _))) {
+        state.tokens.advance();
+        if let Some((Token::Identifier(bound), _)) = state.tokens.peek() {
+            bounds.push(bound.clone());
+            state.tokens.advance();
+        }
+    }
+
+    Ok(bounds)
 }
 fn parse_actor_definition(state: &mut ParserState) -> Result<Expr> {
     // Use the proper actor parsing from actors module
@@ -4034,6 +4104,7 @@ pub fn get_precedence(op: BinaryOp) -> i32 {
         BinaryOp::Add | BinaryOp::Subtract => 10,
         BinaryOp::Multiply | BinaryOp::Divide | BinaryOp::Modulo => 11,
         BinaryOp::Power => 12,
+        BinaryOp::Send => 2, // Actor message passing precedence
     }
 }
 /// Parse f-string content into interpolation parts

@@ -551,6 +551,23 @@ fn try_new_actor_operators(
                 prec,
             )
         }
+        Token::Bang => {
+            // Parse actor ! message (actor message passing)
+            let prec = 1; // Same as assignment
+            if prec < min_prec {
+                return Ok(None);
+            }
+            state.tokens.advance();
+            let message = parse_expr_with_precedence_recursive(state, prec)?;
+            (
+                ExprKind::Binary {
+                    op: BinaryOp::Send,
+                    left: Box::new(left),
+                    right: Box::new(message),
+                },
+                prec,
+            )
+        }
         _ => return Ok(None),
     };
     Ok(Some(Expr {
