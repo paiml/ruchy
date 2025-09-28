@@ -433,7 +433,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "Parser ambiguity: {x} parsed as Set instead of Block - waiting for EXTR-001"]
     fn test_block_expression() {
         assert_eq!(gen_str("{ x }").unwrap(), "{ x }");
         assert_eq!(gen_str("{ x; y }").unwrap(), "{ x; y }");
