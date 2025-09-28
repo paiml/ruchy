@@ -199,6 +199,10 @@ pub enum Token {
     State,
     #[token("property")]
     Property,
+    #[token("private")]
+    Private,
+    #[token("protected")]
+    Protected,
     #[token("receive")]
     Receive,
     #[token("send")]

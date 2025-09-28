@@ -2587,12 +2587,23 @@ fn parse_class_property(state: &mut ParserState) -> Result<ClassProperty> {
     })
 }
 
-/// Parse visibility modifiers (pub, mut) - complexity: 4
+/// Parse visibility modifiers (pub, private, protected, mut) - complexity: 4
 fn parse_class_modifiers(state: &mut ParserState) -> Result<(Visibility, bool)> {
     let mut visibility = Visibility::Private;
     let mut is_mut = false;
 
-    if matches!(state.tokens.peek(), Some((Token::Pub, _))) {
+    // Check for private keyword
+    if matches!(state.tokens.peek(), Some((Token::Private, _))) {
+        state.tokens.advance();
+        visibility = Visibility::Private;
+    }
+    // Check for protected keyword
+    else if matches!(state.tokens.peek(), Some((Token::Protected, _))) {
+        state.tokens.advance();
+        visibility = Visibility::Protected;
+    }
+    // Check for pub keyword
+    else if matches!(state.tokens.peek(), Some((Token::Pub, _))) {
         state.tokens.advance();
         visibility = Visibility::Public;
 
@@ -2628,15 +2639,21 @@ fn parse_class_modifiers(state: &mut ParserState) -> Result<(Visibility, bool)> 
         is_mut = true;
     }
 
-    // Also check reverse order: mut pub
-    if matches!(visibility, Visibility::Private)
-        && matches!(state.tokens.peek(), Some((Token::Pub, _)))
-    {
-        state.tokens.advance();
-        visibility = Visibility::Public;
+    // Also check reverse order: mut pub/private/protected
+    if matches!(visibility, Visibility::Private) {
+        if matches!(state.tokens.peek(), Some((Token::Pub, _))) {
+            state.tokens.advance();
+            visibility = Visibility::Public;
+        } else if matches!(state.tokens.peek(), Some((Token::Protected, _))) {
+            state.tokens.advance();
+            visibility = Visibility::Protected;
+        }
+        // private is already the default, no need to check for it
 
         // Check for pub(crate) syntax in reverse order too
-        if matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
+        if matches!(visibility, Visibility::Public)
+            && matches!(state.tokens.peek(), Some((Token::LeftParen, _)))
+        {
             state.tokens.advance();
             match state.tokens.peek() {
                 Some((Token::Crate, _)) => {
