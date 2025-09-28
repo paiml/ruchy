@@ -213,6 +213,12 @@ pub enum Token {
     Mixin,
     #[token("operator")]
     Operator,
+    #[token("interface")]
+    Interface,
+    #[token("implements")]
+    Implements,
+    #[token("override")]
+    Override,
     #[token("receive")]
     Receive,
     #[token("send")]
