@@ -250,6 +250,13 @@ impl Transpiler {
                 derives,
                 is_pub,
             } => self.transpile_struct(name, type_params, fields, derives, *is_pub),
+            ExprKind::TupleStruct {
+                name,
+                type_params,
+                fields,
+                derives,
+                is_pub,
+            } => self.transpile_tuple_struct(name, type_params, fields, derives, *is_pub),
             ExprKind::Class {
                 name,
                 type_params,

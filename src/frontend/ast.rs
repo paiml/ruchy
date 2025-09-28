@@ -408,6 +408,13 @@ pub enum ExprKind {
         derives: Vec<String>, // #[derive(Debug, Clone, ...)]
         is_pub: bool,
     },
+    TupleStruct {
+        name: String,
+        type_params: Vec<String>,
+        fields: Vec<Type>, // Just types, no names
+        derives: Vec<String>,
+        is_pub: bool,
+    },
     Class {
         name: String,
         type_params: Vec<String>,
