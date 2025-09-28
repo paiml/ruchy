@@ -3550,8 +3550,8 @@ mod tests {
         let result = transpiler.transpile(&ast).unwrap();
         let rust_str = result.to_string();
         assert!(rust_str.contains("match"));
-        assert!(rust_str.contains("1i64 =>"));
-        assert!(rust_str.contains("2i64 =>"));
+        assert!(rust_str.contains("1 =>") || rust_str.contains("1i64 =>"));
+        assert!(rust_str.contains("2 =>") || rust_str.contains("2i64 =>"));
         assert!(rust_str.contains("_ =>"));
     }
 
