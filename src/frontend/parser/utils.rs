@@ -341,9 +341,23 @@ pub fn parse_type(state: &mut ParserState) -> Result<Type> {
         _ => bail!("Expected type"),
     }
 }
-// Helper: Parse reference type &T or &mut T (complexity: 4)
+// Helper: Parse reference type &T or &mut T or &'a T (complexity: 5)
 fn parse_reference_type(state: &mut ParserState, span: Span) -> Result<Type> {
     state.tokens.advance(); // consume &
+
+    // Check for lifetime parameter
+    let _lifetime = if matches!(state.tokens.peek(), Some((Token::Lifetime(_), _))) {
+        if let Some((Token::Lifetime(lt), _)) = state.tokens.peek() {
+            let lifetime = lt.clone();
+            state.tokens.advance();
+            Some(lifetime)
+        } else {
+            None
+        }
+    } else {
+        None
+    };
+
     let is_mut = if matches!(state.tokens.peek(), Some((Token::Mut, _))) {
         state.tokens.advance(); // consume mut
         true
