@@ -942,7 +942,8 @@ impl Interpreter {
                 properties: _, // TODO: implement property evaluation
                 derives,
                 is_pub,
-                is_sealed: _, // TODO: implement sealed classes
+                is_sealed: _,   // TODO: implement sealed classes
+                is_abstract: _, // TODO: implement abstract classes
             } => self.eval_class_definition(
                 name,
                 type_params,

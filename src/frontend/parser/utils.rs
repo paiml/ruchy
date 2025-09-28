@@ -838,6 +838,59 @@ fn create_import_expression(
 /// Returns an error if the operation fails
 pub fn parse_attributes(state: &mut ParserState) -> Result<Vec<Attribute>> {
     let mut attributes = Vec::new();
+
+    // Parse @ decorators (Python/Java style)
+    while matches!(state.tokens.peek(), Some((Token::At, _))) {
+        let span = state.tokens.peek().unwrap().1;
+        state.tokens.advance(); // consume @
+
+        // Parse decorator name
+        let name = match state.tokens.peek() {
+            Some((Token::Identifier(n), _)) => {
+                let name = n.clone();
+                state.tokens.advance();
+                name
+            }
+            _ => bail!("Expected identifier after '@'"),
+        };
+
+        // Parse optional arguments
+        let args = if matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
+            state.tokens.advance(); // consume (
+            let mut args = Vec::new();
+
+            while !matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
+                // Parse string literal arguments
+                match state.tokens.peek() {
+                    Some((Token::String(s), _)) => {
+                        args.push(s.clone());
+                        state.tokens.advance();
+                    }
+                    Some((Token::Identifier(id), _)) => {
+                        args.push(id.clone());
+                        state.tokens.advance();
+                    }
+                    _ => bail!("Expected string or identifier in decorator arguments"),
+                }
+
+                // Check for comma
+                if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+                    state.tokens.advance();
+                } else if !matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
+                    bail!("Expected ',' or ')' in decorator arguments");
+                }
+            }
+
+            state.tokens.expect(&Token::RightParen)?;
+            args
+        } else {
+            Vec::new()
+        };
+
+        attributes.push(Attribute { name, args, span });
+    }
+
+    // Parse #[...] attributes (Rust style)
     while matches!(state.tokens.peek(), Some((Token::Hash, _))) {
         state.tokens.advance(); // consume #
         if !matches!(state.tokens.peek(), Some((Token::LeftBracket, _))) {

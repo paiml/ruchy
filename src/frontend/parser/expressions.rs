@@ -189,6 +189,7 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
         | Token::Const
         | Token::Sealed
         | Token::Final
+        | Token::Abstract
         | Token::Unsafe
         | Token::Break
         | Token::Continue
@@ -577,6 +578,35 @@ fn parse_final_token(state: &mut ParserState) -> Result<Expr> {
     }
 }
 
+/// Parse abstract token - used for abstract classes and methods
+fn parse_abstract_token(state: &mut ParserState) -> Result<Expr> {
+    state.tokens.advance(); // consume 'abstract'
+    // Could be abstract class or abstract method
+    match state.tokens.peek() {
+        Some((Token::Class, _)) => {
+            let mut expr = parse_prefix(state)?;
+            // Mark the class as abstract
+            if let ExprKind::Class { is_abstract, .. } = &mut expr.kind {
+                *is_abstract = true;
+            }
+            Ok(expr)
+        }
+        Some((Token::Fun | Token::Fn, _)) => {
+            // Abstract method
+            let mut expr = parse_prefix(state)?;
+            if let ExprKind::Function { .. } = &expr.kind {
+                expr.attributes.push(crate::frontend::ast::Attribute {
+                    name: "abstract".to_string(),
+                    args: vec![],
+                    span: expr.span,
+                });
+            }
+            Ok(expr)
+        }
+        _ => bail!("Expected 'class' or 'fn' after 'abstract'"),
+    }
+}
+
 /// Parse unsafe token - handles unsafe declarations for functions
 /// Similar to `parse_pub_token` but for unsafe modifier
 fn parse_unsafe_token(state: &mut ParserState) -> Result<Expr> {
@@ -876,6 +906,7 @@ fn parse_control_statement_token(
         Token::Const => parse_const_token(state),
         Token::Sealed => parse_sealed_token(state),
         Token::Final => parse_final_token(state),
+        Token::Abstract => parse_abstract_token(state),
         Token::Unsafe => parse_unsafe_token(state),
         Token::Break => parse_break_token(state, span),
         Token::Continue => parse_continue_token(state, span),
@@ -2244,6 +2275,7 @@ fn parse_struct_definition(state: &mut ParserState) -> Result<Expr> {
                 derives: Vec::new(), // Will be populated by parse_attributed_expression
                 is_pub: false,
                 is_sealed: false, // Will be set by parse_sealed_token if needed
+                is_abstract: false, // Will be set by parse_abstract_token if needed
             },
             start_span,
         ))
@@ -2504,7 +2536,7 @@ fn parse_class_member(
 
     // Parse modifiers
     let (visibility, is_mut) = parse_class_modifiers(state)?;
-    let (is_static, is_override, is_final) = parse_member_flags(state)?;
+    let (is_static, is_override, is_final, is_abstract) = parse_member_flags(state)?;
 
     // Determine member type and parse accordingly
     match state.tokens.peek() {
@@ -2522,6 +2554,7 @@ fn parse_class_member(
                 is_static,
                 is_override,
                 is_final,
+                is_abstract,
             )?;
             methods.push(method);
         }
@@ -2744,7 +2777,7 @@ fn parse_class_modifiers(state: &mut ParserState) -> Result<(Visibility, bool)> 
 }
 
 /// Parse member flags (static, override) - complexity: 4
-fn parse_member_flags(state: &mut ParserState) -> Result<(bool, bool, bool)> {
+fn parse_member_flags(state: &mut ParserState) -> Result<(bool, bool, bool, bool)> {
     let is_static = matches!(state.tokens.peek(), Some((Token::Static, _)));
     if is_static {
         state.tokens.advance();
@@ -2764,7 +2797,12 @@ fn parse_member_flags(state: &mut ParserState) -> Result<(bool, bool, bool)> {
         state.tokens.advance();
     }
 
-    Ok((is_static, is_override, is_final))
+    let is_abstract = matches!(state.tokens.peek(), Some((Token::Abstract, _)));
+    if is_abstract {
+        state.tokens.advance();
+    }
+
+    Ok((is_static, is_override, is_final, is_abstract))
 }
 
 /// Validate constructor modifiers - complexity: 2
@@ -2786,11 +2824,13 @@ fn apply_method_modifiers(
     is_static: bool,
     is_override: bool,
     is_final: bool,
+    is_abstract: bool,
 ) -> Result<()> {
     method.is_pub = is_pub;
     method.is_static = is_static;
     method.is_override = is_override;
     method.is_final = is_final;
+    method.is_abstract = is_abstract;
 
     if is_static {
         method.self_type = SelfType::None;
@@ -2800,6 +2840,12 @@ fn apply_method_modifiers(
     }
     if is_final && is_override {
         bail!("Methods cannot be both final and override");
+    }
+    if is_abstract && is_final {
+        bail!("Methods cannot be both abstract and final");
+    }
+    if is_abstract && is_static {
+        bail!("Static methods cannot be abstract");
     }
     Ok(())
 }
@@ -2931,6 +2977,7 @@ fn parse_class_method(state: &mut ParserState) -> Result<ClassMethod> {
         is_static: matches!(self_type, SelfType::None),
         is_override: false, // Will be set by class body parsing
         is_final: false,    // Will be set by class body parsing
+        is_abstract: false, // Will be set by class body parsing
         self_type,
     })
 }
