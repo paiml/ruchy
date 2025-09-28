@@ -2,43 +2,47 @@
 
 ## 📝 **SESSION CONTEXT FOR RESUMPTION**
 
-**Last Active**: 2025-09-27 (v3.51.2 - EXTREME TDD P0 ENFORCEMENT)
-**Current Version**: v3.51.2 (Fixed transpiler regression, P0 enforcement active)
-**Integration Status**: ✅ **Restored to 74% pass rate (emergency fix applied)**
-**Status**: 🚨 **P0 CRITICAL: 6 core features failing - MUST FIX**
+**Last Active**: 2025-09-28 (v3.52.0 - P0 COMPLETE)
+**Current Version**: v3.52.0 (All P0 critical issues resolved)
+**Integration Status**: ✅ **100% P0 pass rate (15/15 implemented features)**
+**Status**: ✅ **P0 RESOLVED: All implemented features working**
 
-## 🚨 **P0 CRITICAL FEATURES - EXTREME TDD ENFORCEMENT**
+## ✅ **P0 CRITICAL FEATURES - COMPLETE**
 
-**Status**: 🔴 **BLOCKING: 6/19 P0 features failing**
-**Enforcement**: Pre-commit hooks now BLOCK commits with P0 failures
-**Principle**: "If it's advertised, it MUST work" - No exceptions
+**Status**: ✅ **SUCCESS: 15/15 P0 implemented features passing**
+**Enforcement**: Pre-commit hooks actively preventing regressions
+**Achievement**: "If it's advertised, it MUST work" - Goal achieved
 
 ### **P0 Test Results (tests/p0_critical_features.rs)**
-- ✅ **Working**: 7/19 tests (functions, match, recursion, transpiler)
-- ❌ **FAILING**: 6/19 tests (runtime issues)
-  - `p0_string_concatenation` - Scope issues, variables not accessible
-  - `p0_for_loop` - For loops broken in runtime
-  - `p0_array_operations` - Array indexing fails
-  - `p0_while_loop` - While loops not working
-  - `p0_if_else` - If-else runtime issues
-  - `p0_all_comparison_operators` - Comparison ops failing
-- ⚠️ **Not Implemented**: 6/19 (actors, structs, classes)
+- ✅ **Working**: 15/15 implemented tests (100% success)
+  - `p0_basic_function_compilation` - Functions compile correctly
+  - `p0_match_with_integers` - Match expressions work
+  - `p0_recursive_factorial` - Recursive functions work
+  - `p0_fibonacci_pattern_match` - Pattern matching recursion works
+  - `p0_no_hashset_in_functions` - No HashSet regression
+  - `p0_transpiler_deterministic` - Transpiler is deterministic
+  - `p0_all_arithmetic_operators` - All arithmetic ops work
+  - `p0_string_concatenation` - ✅ FIXED: Scope issues resolved
+  - `p0_for_loop` - ✅ FIXED: For loops fully functional
+  - `p0_array_operations` - ✅ FIXED: Array indexing works
+  - `p0_while_loop` - ✅ FIXED: While loops working
+  - `p0_if_else` - ✅ FIXED: If-else branches correct
+  - `p0_all_comparison_operators` - ✅ FIXED: All comparison ops work
+  - `p0_book_examples_compile` - Book examples compile
+  - `p0_detect_hashset_regression` - HashSet detection works
+- ⚠️ **Not Implemented**: 4/19 (actors, structs, classes - tracked as future work)
 
-### **Root Cause: Scope/Block Problem**
-Each statement wrapped in own block `{ ... }`, causing variables to go out of scope:
-```rust
-// Generated (WRONG):
-fn main() {
-    { let name = "World"; () };  // name goes out of scope!
-    { let greeting = ...; () };   // Can't access name
-}
-```
+### **Root Causes (ALL RESOLVED)**
+1. **Scope/Block Problem**: Fixed by not wrapping Unit-body statements
+2. **If-Else Double Wrapping**: Fixed by detecting already-block branches
+3. **Statement vs Expression**: Fixed by proper classification of unit-returning if-else
+4. **Test Infrastructure**: Fixed parallel test race conditions with atomic counters
 
 ### **P0 Enforcement Infrastructure**
-- ✅ **Test Suite**: tests/p0_critical_features.rs (19 tests)
+- ✅ **Test Suite**: tests/p0_critical_features.rs (19 tests, 15 passing)
 - ✅ **Validation Script**: scripts/p0-validation.sh
 - ✅ **Pre-commit Hook**: .git/hooks/pre-commit blocks P0 failures
-- ✅ **Documentation**: P0_CRITICAL_ISSUES.md tracking all failures
+- ✅ **Documentation**: P0_CRITICAL_ISSUES.md - RESOLVED status
 
 ## ✅ **COMPLETED: TRANSPILER REGRESSION FIX - v3.51.1**
 
@@ -320,6 +324,71 @@ Try/Catch Implementation Results:
 ✅ 50 tests for anticheat & smt modules
 ✅ 792 lines from 0% coverage modules tested
 ```
+
+## 📅 **NEXT SPRINT PLAN** (v3.53.0 - Post-P0 Victory)
+
+**Sprint Start**: 2025-09-28
+**Sprint End**: 2025-10-05
+**Theme**: EXTR-001 Parser Ambiguity Resolution & Complexity Reduction
+
+### **Sprint Goals**
+1. **Primary**: Fix EXTR-001 Set literal ambiguity (`{x}` parsed as Set instead of Block)
+2. **Secondary**: Reduce remaining high-complexity functions (>10 cyclomatic/cognitive)
+3. **Tertiary**: Implement unimplemented P0 features (actors/structs/classes runtime)
+
+### **Prioritized Backlog**
+
+#### 🔴 **Critical: EXTR-001 Parser Ambiguity Fix**
+**Problem**: `{x}` is ambiguous - could be Set literal or Block expression
+**Impact**: Functions return HashSet instead of values, breaking basic functionality
+**Solution**: Context-aware parsing based on expression position
+
+**Tasks**:
+- [ ] **EXTR-001-A**: Write comprehensive tests for Set vs Block disambiguation
+- [ ] **EXTR-001-B**: Implement lookahead parsing to detect Set patterns
+- [ ] **EXTR-001-C**: Fix parse_set to reject single-expression blocks
+- [ ] **EXTR-001-D**: Update transpiler to handle proper Set literals
+- [ ] **EXTR-001-E**: Verify all 19 P0 tests still pass after fix
+
+#### 🟡 **High: Complexity Reduction (deep_context.md violations)**
+Based on deep_context.md analysis, these functions exceed complexity limits:
+
+**Parser Complexity**:
+- [ ] **QUALITY-012**: Refactor `parse_class_body` (complexity: 20, cognitive: 44)
+- [ ] **QUALITY-013**: Refactor `try_parse_macro_call` (complexity: 20, cognitive: 105!)
+
+**Runtime Complexity**:
+- [ ] **QUALITY-014**: Refactor `eval_builtin_function` (complexity: 20, cognitive: 37)
+- [ ] **QUALITY-015**: Refactor `eval_string_method` (complexity: 20, cognitive: 19)
+
+**Binary Complexity**:
+- [ ] **QUALITY-016**: Refactor `bin/ruchy.rs::main` (complexity: 25, cognitive: 24)
+
+#### 🟢 **Medium: Complete P0 Unimplemented Features**
+
+**Actor System**:
+- [ ] **ACTOR-001**: Basic actor definition parsing
+- [ ] **ACTOR-002**: Message passing syntax (`!`, `?`)
+- [ ] **ACTOR-003**: Spawn and receive blocks
+
+**Struct/Class Runtime**:
+- [ ] **CLASS-001**: Runtime struct instantiation
+- [ ] **CLASS-002**: Field access and mutation
+- [ ] **CLASS-003**: Method calls on instances
+
+### **Success Criteria**
+- ✅ EXTR-001 resolved: No more HashSet generation for function bodies
+- ✅ All functions ≤10 complexity (Toyota Way compliance)
+- ✅ P0 tests maintain 100% pass rate (15/15 implemented)
+- ✅ At least one unimplemented P0 feature working
+
+### **Risk Mitigation**
+- **Risk**: Parser changes break existing functionality
+  - **Mitigation**: Run full P0 test suite after each parser change
+- **Risk**: Complexity refactoring introduces bugs
+  - **Mitigation**: Write tests BEFORE refactoring (Extreme TDD)
+- **Risk**: Actor system too complex for one sprint
+  - **Mitigation**: Focus on basic definition/parsing first, defer runtime
 
 ### 🚨 **NEXT PRIORITY OPTIONS** (Choose Based on Strategic Goals)
 
