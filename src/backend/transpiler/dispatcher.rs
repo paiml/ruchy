@@ -277,7 +277,8 @@ impl Transpiler {
                 derives,
                 *is_pub,
             ),
-            ExprKind::StructLiteral { name, fields } => self.transpile_struct_literal(name, fields),
+            ExprKind::StructLiteral { name, fields, base } =>
+                self.transpile_struct_literal(name, fields, base.as_deref()),
             ExprKind::ObjectLiteral { fields } => self.transpile_object_literal(fields),
             ExprKind::FieldAccess { object, field } => self.transpile_field_access(object, field),
             ExprKind::IndexAccess { object, index } => self.transpile_index_access(object, index),

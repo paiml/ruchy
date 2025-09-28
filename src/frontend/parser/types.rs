@@ -7,7 +7,20 @@ pub fn parse_struct_literal(
 ) -> Result<Expr> {
     state.tokens.expect(&Token::LeftBrace)?;
     let mut fields = Vec::new();
+    let mut base = None;
+
     while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
+        // Check for update syntax ..expr
+        if matches!(state.tokens.peek(), Some((Token::DotDot, _))) {
+            state.tokens.advance(); // consume ..
+            base = Some(Box::new(super::parse_expr_recursive(state)?));
+            // After base expression, we should only have optional comma and closing brace
+            if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+                state.tokens.advance();
+            }
+            break;
+        }
+
         // Parse field name
         let field_name = if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
             let name = name.clone();
@@ -34,7 +47,7 @@ pub fn parse_struct_literal(
     }
     state.tokens.expect(&Token::RightBrace)?;
     Ok(Expr::new(
-        ExprKind::StructLiteral { name, fields },
+        ExprKind::StructLiteral { name, fields, base },
         start_span,
     ))
 }

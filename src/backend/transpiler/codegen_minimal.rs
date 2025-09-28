@@ -37,7 +37,8 @@ impl MinimalCodeGen {
             ExprKind::Match { expr, arms } => Self::gen_match_expr(expr, arms),
             ExprKind::List(elements) => Self::gen_list_expr(elements),
             ExprKind::Struct { name, fields, .. } => Self::gen_struct_def(name, fields),
-            ExprKind::StructLiteral { name, fields } => Self::gen_struct_literal(name, fields),
+            ExprKind::StructLiteral { name, fields, base: _ } =>
+                Self::gen_struct_literal(name, fields),
             ExprKind::MethodCall { receiver, method, args } =>
                 Self::gen_method_call(receiver, method, args),
             ExprKind::Macro { name, args } => Self::gen_macro_call(name, args),
