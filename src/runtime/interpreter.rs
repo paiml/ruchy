@@ -939,12 +939,14 @@ impl Interpreter {
                 constructors,
                 methods,
                 constants,
-                properties: _, // TODO: implement property evaluation
+                properties: _,     // TODO: implement property evaluation
+                impl_blocks: _,    // TODO: implement impl blocks in classes
+                nested_classes: _, // TODO: implement nested classes
                 derives,
                 is_pub,
                 is_sealed: _,   // TODO: implement sealed classes
                 is_abstract: _, // TODO: implement abstract classes
-                decorators: _, // TODO: implement decorators
+                decorators: _,  // TODO: implement decorators
             } => self.eval_class_definition(
                 name,
                 type_params,

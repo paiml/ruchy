@@ -261,6 +261,7 @@ mod tests {
             visibility: Visibility::Private,
             is_mut: false,
             default_value: None,
+            decorators: Vec::new(),
         }];
         let handlers = vec![];
 
@@ -456,6 +457,7 @@ mod tests {
                 visibility: crate::frontend::ast::Visibility::Private,
                 is_mut: false,
                 default_value: None,
+                decorators: Vec::new(),
             },
             StructField {
                 name: "count".to_string(),
@@ -463,6 +465,7 @@ mod tests {
                 visibility: crate::frontend::ast::Visibility::Private,
                 is_mut: false,
                 default_value: None,
+                decorators: Vec::new(),
             },
         ];
         let handlers = vec![];

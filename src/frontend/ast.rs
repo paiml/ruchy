@@ -248,6 +248,27 @@ impl Expr {
         }
     }
 }
+
+/// Type parameter with optional constraints
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct TypeParam {
+    pub name: String,
+    pub bounds: Vec<String>, // e.g., ["Display", "Debug"] for T: Display + Debug
+}
+
+impl TypeParam {
+    pub fn new(name: String) -> Self {
+        Self {
+            name,
+            bounds: Vec::new(),
+        }
+    }
+
+    pub fn with_bounds(name: String, bounds: Vec<String>) -> Self {
+        Self { name, bounds }
+    }
+}
+
 /// The specific type of expression represented by an AST node.
 ///
 /// `ExprKind` is a comprehensive enumeration of all expression types supported
@@ -428,6 +449,8 @@ pub enum ExprKind {
         methods: Vec<ClassMethod>,
         constants: Vec<ClassConstant>,  // const NAME: TYPE = VALUE
         properties: Vec<ClassProperty>, // property NAME: TYPE { get => ..., set(v) => ... }
+        impl_blocks: Vec<Expr>,         // impl blocks defined inside the class
+        nested_classes: Vec<Expr>,      // nested class definitions
         derives: Vec<String>,           // #[derive(Debug, Clone, ...)]
         decorators: Vec<Decorator>,     // @Serializable, @Table("users"), etc.
         is_pub: bool,
@@ -779,6 +802,8 @@ pub enum BinaryOp {
     BitwiseXor,
     LeftShift,
     RightShift,
+    // Actor
+    Send, // ! operator for sending messages to actors
 }
 /// Unary operators for single-operand expressions.
 ///
@@ -998,14 +1023,27 @@ pub struct Type {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum TypeKind {
     Named(String),
-    Generic { base: String, params: Vec<Type> },
+    Generic {
+        base: String,
+        params: Vec<Type>,
+    },
     Optional(Box<Type>),
     List(Box<Type>),
-    Array { elem_type: Box<Type>, size: usize },
+    Array {
+        elem_type: Box<Type>,
+        size: usize,
+    },
     Tuple(Vec<Type>),
-    Function { params: Vec<Type>, ret: Box<Type> },
-    DataFrame { columns: Vec<(String, Type)> },
-    Series { dtype: Box<Type> },
+    Function {
+        params: Vec<Type>,
+        ret: Box<Type>,
+    },
+    DataFrame {
+        columns: Vec<(String, Type)>,
+    },
+    Series {
+        dtype: Box<Type>,
+    },
     Reference {
         is_mut: bool,
         lifetime: Option<String>,
@@ -1311,6 +1349,7 @@ impl fmt::Display for BinaryOp {
             Self::LeftShift => write!(f, "<<"),
             Self::RightShift => write!(f, ">>"),
             Self::Gt => write!(f, ">"),
+            Self::Send => write!(f, "!"),
         }
     }
 }
@@ -1967,6 +2006,7 @@ mod tests {
                 TypeKind::Reference {
                     is_mut: _,
                     ref inner,
+                    lifetime: _,
                 } => {
                     // Reference types should have a valid inner type
                     if let TypeKind::Named(ref name) = inner.kind {
@@ -2442,6 +2482,7 @@ mod tests {
         let ref_type = Type {
             kind: TypeKind::Reference {
                 is_mut: false,
+                lifetime: None,
                 inner: Box::new(Type {
                     kind: TypeKind::Named("String".to_string()),
                     span: Span::new(1, 7),
@@ -2453,6 +2494,7 @@ mod tests {
         let mut_ref_type = Type {
             kind: TypeKind::Reference {
                 is_mut: true,
+                lifetime: None,
                 inner: Box::new(Type {
                     kind: TypeKind::Named("Vec".to_string()),
                     span: Span::new(4, 7),
@@ -2461,7 +2503,7 @@ mod tests {
             span: Span::new(0, 7),
         };
 
-        if let TypeKind::Reference { is_mut, inner } = ref_type.kind {
+        if let TypeKind::Reference { is_mut, inner, .. } = ref_type.kind {
             assert!(!is_mut);
             if let TypeKind::Named(name) = inner.kind {
                 assert_eq!(name, "String");
@@ -2618,6 +2660,7 @@ mod tests {
             },
             TypeKind::Reference {
                 is_mut: false,
+                lifetime: None,
                 inner: Box::new(Type {
                     kind: TypeKind::Named("String".to_string()),
                     span: Span::new(1, 7),
@@ -2625,6 +2668,7 @@ mod tests {
             },
             TypeKind::Reference {
                 is_mut: true,
+                lifetime: None,
                 inner: Box::new(Type {
                     kind: TypeKind::Named("String".to_string()),
                     span: Span::new(5, 11),

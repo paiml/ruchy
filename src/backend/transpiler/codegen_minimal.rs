@@ -253,6 +253,7 @@ impl MinimalCodeGen {
             BinaryOp::LeftShift => "<<",
             BinaryOp::RightShift => ">>",
             BinaryOp::Power => "pow", // Will need function call wrapper
+            BinaryOp::Send => "!",    // Actor message passing
         }
     }
     fn gen_unary_op(op: UnaryOp) -> &'static str {

@@ -232,6 +232,7 @@ mod tests {
                 kind: TypeKind::Named("Int".to_string()),
                 span: Span::new(0, 3),
             },
+            decorators: Vec::new(),
             visibility: Visibility::Private,
             is_mut: false,
             default_value: None,
