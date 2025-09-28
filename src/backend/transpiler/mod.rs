@@ -927,6 +927,18 @@ impl Transpiler {
                     false
                 }
             }
+            // If expressions where both branches are statements (return unit)
+            ExprKind::If {
+                then_branch,
+                else_branch,
+                ..
+            } => {
+                // If both branches are statements, the whole if is a statement
+                self.is_statement_expr(then_branch)
+                    && else_branch
+                        .as_ref()
+                        .is_none_or(|e| self.is_statement_expr(e))
+            }
             // Blocks containing statements
             ExprKind::Block(exprs) => exprs.iter().any(|e| self.is_statement_expr(e)),
             // Most other expressions are not statements

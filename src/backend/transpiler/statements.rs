@@ -106,21 +106,33 @@ impl Transpiler {
         else_branch: Option<&Expr>,
     ) -> Result<TokenStream> {
         let cond_tokens = self.transpile_expr(condition)?;
-        let then_tokens = self.transpile_expr(then_branch)?;
+
+        // Check if then_branch is already a Block to avoid double-wrapping
+        let then_tokens = if let crate::frontend::ast::ExprKind::Block(stmts) = &then_branch.kind {
+            // Directly transpile the block contents without extra wrapping
+            self.transpile_block(stmts)?
+        } else {
+            // Single expression, wrap it
+            let expr_tokens = self.transpile_expr(then_branch)?;
+            quote! { { #expr_tokens } }
+        };
+
         if let Some(else_expr) = else_branch {
-            let else_tokens = self.transpile_expr(else_expr)?;
+            // Same treatment for else branch
+            let else_tokens = if let crate::frontend::ast::ExprKind::Block(stmts) = &else_expr.kind
+            {
+                self.transpile_block(stmts)?
+            } else {
+                let expr_tokens = self.transpile_expr(else_expr)?;
+                quote! { { #expr_tokens } }
+            };
+
             Ok(quote! {
-                if #cond_tokens {
-                    #then_tokens
-                } else {
-                    #else_tokens
-                }
+                if #cond_tokens #then_tokens else #else_tokens
             })
         } else {
             Ok(quote! {
-                if #cond_tokens {
-                    #then_tokens
-                }
+                if #cond_tokens #then_tokens
             })
         }
     }

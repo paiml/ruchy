@@ -11,11 +11,15 @@ use std::process::Command;
 
 /// Helper to run Ruchy code and get output
 fn run(code: &str) -> Result<String, String> {
-    let tmp_file = "/tmp/p0_test.ruchy";
-    fs::write(tmp_file, code).map_err(|e| e.to_string())?;
+    // Use unique temp file per test to avoid parallel test interference
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    static COUNTER: AtomicUsize = AtomicUsize::new(0);
+    let id = COUNTER.fetch_add(1, Ordering::SeqCst);
+    let tmp_file = format!("/tmp/p0_test_{}_{}.ruchy", std::process::id(), id);
+    fs::write(&tmp_file, code).map_err(|e| e.to_string())?;
 
     let output = Command::new("cargo")
-        .args(&["run", "--release", "--bin", "ruchy", "--", "run", tmp_file])
+        .args(&["run", "--release", "--bin", "ruchy", "--", "run", &tmp_file])
         .output()
         .map_err(|e| e.to_string())?;
 
