@@ -98,8 +98,8 @@ fn test_object_literal_not_set() {
     if let Ok(ast) = ast {
         let transpiler = Transpiler::new();
         let result = transpiler.transpile(&ast);
-        if result.is_ok() {
-            let rust_code = result.unwrap().to_string();
+        if let Ok(transpiled) = result {
+            let rust_code = transpiled.to_string();
             // Object literals should not generate HashSet
             assert!(
                 !rust_code.contains("HashSet"),
@@ -136,12 +136,7 @@ fn test_disambiguation_in_different_contexts() {
     ];
 
     for (code, should_have_set, context) in test_cases {
-        let full_code =
-            if code.starts_with("fn") || code.starts_with("if") || code.starts_with("match") {
-                format!("fn test() {{ {code} }}")
-            } else {
-                format!("fn test() {{ {code} }}")
-            };
+        let full_code = format!("fn test() {{ {code} }}");
 
         let result = compile(&full_code);
         assert!(result.is_ok(), "Code should compile for context: {context}");

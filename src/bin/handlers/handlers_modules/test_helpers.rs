@@ -736,8 +736,7 @@ mod tests {
         let html_content = "<html><body>Coverage Report</body></html>";
         let result = save_html_report(html_content);
 
-        if result.is_ok() {
-            let message = result.unwrap();
+        if let Ok(message) = result {
             assert!(message.contains("HTML Coverage Report written to"));
             assert!(message.contains("target/coverage/index.html"));
         }
