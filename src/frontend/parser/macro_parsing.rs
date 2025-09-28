@@ -1,12 +1,12 @@
 //! Macro parsing utilities - Extracted to reduce complexity
 //!
 //! This module contains helper functions for parsing various macro types,
-//! extracted from try_parse_macro_call to reduce its complexity from 105 to <10.
+//! extracted from `try_parse_macro_call` to reduce its complexity from 105 to <10.
 
 use super::{bail, parse_expr_recursive, Expr, ExprKind, ParserState, Result, Span, Token};
 use crate::frontend::ast::Literal;
 
-/// Parse df![] DataFrame macro (complexity: 7)
+/// Parse df![] `DataFrame` macro (complexity: 7)
 pub fn parse_dataframe_macro(state: &mut ParserState) -> Result<Option<Expr>> {
     state.tokens.advance(); // consume !
 
