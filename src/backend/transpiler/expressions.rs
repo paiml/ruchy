@@ -799,6 +799,7 @@ impl Transpiler {
         &self,
         name: &str,
         fields: &[(String, Expr)],
+        base: Option<&Expr>,
     ) -> Result<TokenStream> {
         let struct_name = format_ident!("{}", name);
         let mut field_tokens = Vec::new();
@@ -813,11 +814,23 @@ impl Transpiler {
             };
             field_tokens.push(quote! { #field_ident: #value_tokens });
         }
-        Ok(quote! {
-            #struct_name {
-                #(#field_tokens,)*
-            }
-        })
+
+        // Handle struct update syntax
+        if let Some(base_expr) = base {
+            let base_tokens = self.transpile_expr(base_expr)?;
+            Ok(quote! {
+                #struct_name {
+                    #(#field_tokens,)*
+                    ..#base_tokens
+                }
+            })
+        } else {
+            Ok(quote! {
+                #struct_name {
+                    #(#field_tokens,)*
+                }
+            })
+        }
     }
     /// Check if an expression is definitely a string (conservative detection)
     fn is_definitely_string(expr: &Expr) -> bool {

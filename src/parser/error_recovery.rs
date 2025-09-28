@@ -416,6 +416,7 @@ impl RecoveryRules {
                         ExprKind::StructLiteral {
                             name: name.clone(),
                             fields: fields.clone(),
+                            base: None,
                         },
                         default_span,
                     )

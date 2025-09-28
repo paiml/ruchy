@@ -435,6 +435,7 @@ pub enum ExprKind {
     StructLiteral {
         name: String,
         fields: Vec<(String, Expr)>,
+        base: Option<Box<Expr>>, // For ..expr update syntax
     },
     ObjectLiteral {
         fields: Vec<ObjectField>,

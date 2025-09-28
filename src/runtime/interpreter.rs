@@ -951,7 +951,8 @@ impl Interpreter {
                 derives,
                 *is_pub,
             ),
-            ExprKind::StructLiteral { name, fields } => self.eval_struct_literal(name, fields),
+            ExprKind::StructLiteral { name, fields, base: _ } =>
+                self.eval_struct_literal(name, fields),
             ExprKind::Set(statements) => {
                 // Evaluate each statement in the set, return the last one
                 let mut result = Value::Nil;
