@@ -2183,91 +2183,144 @@ fn parse_single_struct_field(state: &mut ParserState) -> Result<(String, Type, O
     Ok((field_name, field_type, default_value))
 }
 
-/// Parse class body containing fields, constructors, and methods - complexity: <10
+/// Parse class body containing fields, constructors, and methods
+/// Refactored to reduce complexity from 20/44 to <10
 fn parse_class_body(
     state: &mut ParserState,
 ) -> Result<(Vec<StructField>, Vec<Constructor>, Vec<ClassMethod>)> {
     state.tokens.expect(&Token::LeftBrace)?;
+
     let mut fields = Vec::new();
     let mut constructors = Vec::new();
     let mut methods = Vec::new();
 
     while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
-        // Parse visibility modifiers first
-        let (is_pub, is_mut) = parse_visibility_modifiers(state)?;
-
-        // Check for static keyword
-        let is_static = if matches!(state.tokens.peek(), Some((Token::Static, _))) {
-            state.tokens.advance();
-            true
-        } else {
-            false
-        };
-
-        // Check for override keyword
-        let is_override = if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
-            if name == "override" {
-                state.tokens.advance();
-                true
-            } else {
-                false
-            }
-        } else {
-            false
-        };
-
-        match state.tokens.peek() {
-            Some((Token::Identifier(name), _)) if name == "new" => {
-                // Parse constructor: [pub] new(params) { body }
-                if is_static {
-                    bail!("Constructors cannot be static");
-                }
-                if is_override {
-                    bail!("Constructors cannot be override");
-                }
-                let mut constructor = parse_constructor(state)?;
-                constructor.is_pub = is_pub;
-                constructors.push(constructor);
-            }
-            Some((Token::Fun | Token::Fn, _)) => {
-                // Parse method: [pub] [static] [override] fun method_name(params) { body }
-                let mut method = parse_class_method(state)?;
-                method.is_pub = is_pub;
-                method.is_static = is_static;
-                method.is_override = is_override;
-                if is_static {
-                    method.self_type = SelfType::None;
-                }
-                if is_static && is_override {
-                    bail!("Static methods cannot be override");
-                }
-                methods.push(method);
-            }
-            Some((Token::Identifier(_), _)) if !is_static => {
-                // Parse field: [pub] [mut] field_name: Type [= default_value]
-                let (field_name, field_type, default_value) = parse_single_struct_field(state)?;
-                fields.push(StructField {
-                    name: field_name,
-                    ty: field_type,
-                    is_pub,
-                    is_mut,
-                    default_value,
-                });
-            }
-            _ => bail!("Expected field, constructor, or method in class body"),
-        }
-
-        // Handle optional comma/semicolon separators
-        if matches!(
-            state.tokens.peek(),
-            Some((Token::Comma | Token::Semicolon, _))
-        ) {
-            state.tokens.advance();
-        }
+        parse_class_member(state, &mut fields, &mut constructors, &mut methods)?;
+        consume_optional_separator(state);
     }
 
     state.tokens.expect(&Token::RightBrace)?;
     Ok((fields, constructors, methods))
+}
+
+/// Parse a single class member (field, constructor, or method) - complexity: 9
+fn parse_class_member(
+    state: &mut ParserState,
+    fields: &mut Vec<StructField>,
+    constructors: &mut Vec<Constructor>,
+    methods: &mut Vec<ClassMethod>,
+) -> Result<()> {
+    // Parse modifiers
+    let (is_pub, is_mut) = parse_class_modifiers(state)?;
+    let (is_static, is_override) = parse_member_flags(state)?;
+
+    // Determine member type and parse accordingly
+    match state.tokens.peek() {
+        Some((Token::Identifier(name), _)) if name == "new" => {
+            validate_constructor_modifiers(is_static, is_override)?;
+            let mut constructor = parse_constructor(state)?;
+            constructor.is_pub = is_pub;
+            constructors.push(constructor);
+        }
+        Some((Token::Fun | Token::Fn, _)) => {
+            let mut method = parse_class_method(state)?;
+            apply_method_modifiers(&mut method, is_pub, is_static, is_override)?;
+            methods.push(method);
+        }
+        Some((Token::Identifier(_), _)) if !is_static => {
+            let (field_name, field_type, default_value) = parse_single_struct_field(state)?;
+            fields.push(StructField {
+                name: field_name,
+                ty: field_type,
+                is_pub,
+                is_mut,
+                default_value,
+            });
+        }
+        _ => bail!("Expected field, constructor, or method in class body"),
+    }
+    Ok(())
+}
+
+/// Parse visibility modifiers (pub, mut) - complexity: 4
+fn parse_class_modifiers(state: &mut ParserState) -> Result<(bool, bool)> {
+    let mut is_pub = false;
+    let mut is_mut = false;
+
+    if matches!(state.tokens.peek(), Some((Token::Pub, _))) {
+        state.tokens.advance();
+        is_pub = true;
+    }
+
+    if matches!(state.tokens.peek(), Some((Token::Mut, _))) {
+        state.tokens.advance();
+        is_mut = true;
+    }
+
+    // Also check reverse order: mut pub
+    if !is_pub && matches!(state.tokens.peek(), Some((Token::Pub, _))) {
+        state.tokens.advance();
+        is_pub = true;
+    }
+
+    Ok((is_pub, is_mut))
+}
+
+/// Parse member flags (static, override) - complexity: 4
+fn parse_member_flags(state: &mut ParserState) -> Result<(bool, bool)> {
+    let is_static = matches!(state.tokens.peek(), Some((Token::Static, _)));
+    if is_static {
+        state.tokens.advance();
+    }
+
+    let is_override = if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
+        name == "override"
+    } else {
+        false
+    };
+    if is_override {
+        state.tokens.advance();
+    }
+
+    Ok((is_static, is_override))
+}
+
+/// Validate constructor modifiers - complexity: 2
+fn validate_constructor_modifiers(is_static: bool, is_override: bool) -> Result<()> {
+    if is_static {
+        bail!("Constructors cannot be static");
+    }
+    if is_override {
+        bail!("Constructors cannot be override");
+    }
+    Ok(())
+}
+
+/// Apply modifiers to method - complexity: 3
+fn apply_method_modifiers(
+    method: &mut ClassMethod,
+    is_pub: bool,
+    is_static: bool,
+    is_override: bool,
+) -> Result<()> {
+    method.is_pub = is_pub;
+    method.is_static = is_static;
+    method.is_override = is_override;
+
+    if is_static {
+        method.self_type = SelfType::None;
+        if is_override {
+            bail!("Static methods cannot be override");
+        }
+    }
+    Ok(())
+}
+
+/// Consume optional separator - complexity: 1
+fn consume_optional_separator(state: &mut ParserState) {
+    if matches!(state.tokens.peek(), Some((Token::Comma | Token::Semicolon, _))) {
+        state.tokens.advance();
+    }
 }
 
 /// Parse constructor: new [name](params) { body } - complexity: <10
@@ -2330,26 +2383,6 @@ fn parse_constructor(state: &mut ParserState) -> Result<Constructor> {
     })
 }
 
-/// Parse visibility modifiers (pub, mut) - complexity: <10
-/// Handles: pub, mut, pub mut (both orders)
-fn parse_visibility_modifiers(state: &mut ParserState) -> Result<(bool, bool)> {
-    let mut is_pub = false;
-    let mut is_mut = false;
-
-    // First pass: check for pub
-    if matches!(state.tokens.peek(), Some((Token::Pub, _))) {
-        state.tokens.advance();
-        is_pub = true;
-    }
-
-    // Second pass: check for mut (after pub if present)
-    if matches!(state.tokens.peek(), Some((Token::Mut, _))) {
-        state.tokens.advance();
-        is_mut = true;
-    }
-
-    Ok((is_pub, is_mut))
-}
 
 /// Parse class method: fn `method_name(self_param`, `other_params`) -> `return_type` { body } - complexity: <10
 fn parse_class_method(state: &mut ParserState) -> Result<ClassMethod> {
