@@ -1006,7 +1006,11 @@ pub enum TypeKind {
     Function { params: Vec<Type>, ret: Box<Type> },
     DataFrame { columns: Vec<(String, Type)> },
     Series { dtype: Box<Type> },
-    Reference { is_mut: bool, inner: Box<Type> },
+    Reference {
+        is_mut: bool,
+        lifetime: Option<String>,
+        inner: Box<Type>,
+    },
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct PipelineStage {
