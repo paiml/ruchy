@@ -770,7 +770,10 @@ impl Transpiler {
                     // Trait definitions and implementations are top-level items
                     functions.push(self.transpile_type_decl_expr(expr)?);
                 }
-                ExprKind::Struct { .. } | ExprKind::Class { .. } | ExprKind::Actor { .. } => {
+                ExprKind::Struct { .. }
+                | ExprKind::TupleStruct { .. }
+                | ExprKind::Class { .. }
+                | ExprKind::Actor { .. } => {
                     // Struct definitions and actor definitions are top-level items
                     functions.push(self.transpile_expr(expr)?);
                 }
@@ -1108,6 +1111,7 @@ impl Transpiler {
         // Check if this is a top-level item that should not be wrapped in main
         match &expr.kind {
             ExprKind::Struct { .. }
+            | ExprKind::TupleStruct { .. }
             | ExprKind::Class { .. }
             | ExprKind::Actor { .. }
             | ExprKind::Impl { .. } => {
@@ -1310,7 +1314,7 @@ impl Transpiler {
             Lambda, List, ListComprehension, Literal, Loop, Macro, Match, MethodCall, None,
             ObjectLiteral, Ok, PostDecrement, PostIncrement, PreDecrement, PreIncrement,
             QualifiedName, Range, Send, Set, SetComprehension, Slice, Some, StringInterpolation,
-            Struct, StructLiteral, Throw, Try, TryCatch, Tuple, TypeCast, Unary, While, WhileLet,
+            Struct, StructLiteral, Throw, Try, TryCatch, Tuple, TupleStruct, TypeCast, Unary, While, WhileLet,
         };
         // Dispatch to specialized handlers to keep complexity below 10
         match &expr.kind {
@@ -1346,6 +1350,7 @@ impl Transpiler {
             }
             // Structures
             Struct { .. }
+            | TupleStruct { .. }
             | Class { .. }
             | StructLiteral { .. }
             | ObjectLiteral { .. }

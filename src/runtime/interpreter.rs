@@ -919,6 +919,17 @@ impl Interpreter {
                 derives: _,  // Derives are handled at transpile time, not runtime
                 is_pub,
             } => self.eval_struct_definition(name, type_params, fields, *is_pub),
+            ExprKind::TupleStruct {
+                name,
+                type_params: _,
+                fields: _,
+                derives: _,
+                is_pub: _,
+            } => {
+                // Tuple structs are primarily a transpilation feature
+                // Just return nil since this is handled at compile time
+                Ok(Value::Nil)
+            }
             ExprKind::Class {
                 name,
                 type_params,

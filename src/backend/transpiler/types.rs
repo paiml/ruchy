@@ -143,6 +143,55 @@ impl Transpiler {
             Ok(quote! { &#inner_tokens })
         }
     }
+    /// Transpiles tuple struct definitions
+    pub fn transpile_tuple_struct(
+        &self,
+        name: &str,
+        type_params: &[String],
+        fields: &[Type],
+        derives: &[String],
+        is_pub: bool,
+    ) -> Result<TokenStream> {
+        let struct_name = format_ident!("{}", name);
+        let type_param_tokens: Vec<_> =
+            type_params.iter().map(|p| format_ident!("{}", p)).collect();
+
+        // Convert field types to tokens
+        let field_tokens: Vec<TokenStream> = fields
+            .iter()
+            .map(|ty| self.transpile_type(ty).unwrap_or_else(|_| quote! { _ }))
+            .collect();
+
+        let visibility = if is_pub {
+            quote! { pub }
+        } else {
+            quote! {}
+        };
+
+        // Generate derive attributes
+        let derive_attrs = if derives.is_empty() {
+            quote! {}
+        } else {
+            let derive_idents: Vec<_> = derives.iter().map(|d| format_ident!("{}", d)).collect();
+            quote! { #[derive(#(#derive_idents),*)] }
+        };
+
+        // Generate tuple struct definition
+        let struct_def = if type_params.is_empty() {
+            quote! {
+                #derive_attrs
+                #visibility struct #struct_name(#(pub #field_tokens),*);
+            }
+        } else {
+            quote! {
+                #derive_attrs
+                #visibility struct #struct_name<#(#type_param_tokens),*>(#(pub #field_tokens),*);
+            }
+        };
+
+        Ok(struct_def)
+    }
+
     /// Transpiles struct definitions
     pub fn transpile_struct(
         &self,

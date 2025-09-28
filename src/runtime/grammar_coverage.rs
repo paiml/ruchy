@@ -78,6 +78,7 @@ impl GrammarCoverageMatrix {
             ExprKind::While { .. } => "While",
             ExprKind::For { .. } => "For",
             ExprKind::Struct { .. } => "Struct",
+            ExprKind::TupleStruct { .. } => "TupleStruct",
             ExprKind::StructLiteral { .. } => "StructLiteral",
             ExprKind::ObjectLiteral { .. } => "ObjectLiteral",
             ExprKind::FieldAccess { .. } => "FieldAccess",

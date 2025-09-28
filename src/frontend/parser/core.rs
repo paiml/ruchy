@@ -55,9 +55,11 @@ impl<'a> Parser<'a> {
             let attributes = utils::parse_attributes(&mut self.state)?;
             let mut expr = super::parse_expr_recursive(&mut self.state)?;
 
-            // Extract derive attributes for classes and structs
+            // Extract derive attributes for classes, structs, and tuple structs
             match &mut expr.kind {
-                ExprKind::Class { derives, .. } | ExprKind::Struct { derives, .. } => {
+                ExprKind::Class { derives, .. }
+                | ExprKind::Struct { derives, .. }
+                | ExprKind::TupleStruct { derives, .. } => {
                     for attr in &attributes {
                         if attr.name == "derive" {
                             derives.extend(attr.args.clone());

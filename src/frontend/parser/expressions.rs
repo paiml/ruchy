@@ -467,6 +467,7 @@ fn parse_pub_token(state: &mut ParserState) -> Result<Expr> {
     match &mut expr.kind {
         ExprKind::Function { is_pub, .. } => *is_pub = true,
         ExprKind::Struct { is_pub, .. } => *is_pub = true,
+        ExprKind::TupleStruct { is_pub, .. } => *is_pub = true,
         ExprKind::Class { is_pub, .. } => *is_pub = true,
         ExprKind::Trait { is_pub, .. } => *is_pub = true,
         ExprKind::Impl { is_pub, .. } => *is_pub = true,
@@ -2163,18 +2164,34 @@ fn parse_struct_definition(state: &mut ParserState) -> Result<Expr> {
             start_span,
         ))
     } else {
-        // Parse struct fields only
-        let struct_fields = parse_struct_fields(state)?;
-        Ok(Expr::new(
-            ExprKind::Struct {
-                name,
-                type_params,
-                fields: struct_fields,
-                derives: Vec::new(), // Will be populated by parse_attributed_expression
-                is_pub: false,
-            },
-            start_span,
-        ))
+        // Check for tuple struct (parentheses) or regular struct (braces)
+        if matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
+            // Parse tuple struct
+            let field_types = parse_tuple_struct_fields(state)?;
+            Ok(Expr::new(
+                ExprKind::TupleStruct {
+                    name,
+                    type_params,
+                    fields: field_types,
+                    derives: Vec::new(), // Will be populated by parse_attributed_expression
+                    is_pub: false,
+                },
+                start_span,
+            ))
+        } else {
+            // Parse regular struct fields
+            let struct_fields = parse_struct_fields(state)?;
+            Ok(Expr::new(
+                ExprKind::Struct {
+                    name,
+                    type_params,
+                    fields: struct_fields,
+                    derives: Vec::new(), // Will be populated by parse_attributed_expression
+                    is_pub: false,
+                },
+                start_span,
+            ))
+        }
     }
 }
 /// Parse struct name identifier - complexity: 4
@@ -2187,6 +2204,38 @@ fn parse_struct_name(state: &mut ParserState) -> Result<String> {
         bail!("Expected struct name after 'struct'");
     }
 }
+/// Parse tuple struct field types - complexity: 5
+fn parse_tuple_struct_fields(state: &mut ParserState) -> Result<Vec<Type>> {
+    state.tokens.expect(&Token::LeftParen)?;
+    let mut types = Vec::new();
+
+    // Check for empty tuple struct
+    if matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
+        state.tokens.advance();
+        return Ok(types);
+    }
+
+    // Parse field types
+    loop {
+        let field_type = super::utils::parse_type(state)?;
+        types.push(field_type);
+
+        // Check for more fields
+        if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+            state.tokens.advance(); // consume comma
+            // Check for trailing comma
+            if matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
+                break;
+            }
+        } else {
+            break;
+        }
+    }
+
+    state.tokens.expect(&Token::RightParen)?;
+    Ok(types)
+}
+
 /// Parse struct field definitions - complexity: 7
 fn parse_struct_fields(state: &mut ParserState) -> Result<Vec<StructField>> {
     state.tokens.expect(&Token::LeftBrace)?;
