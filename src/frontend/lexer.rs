@@ -197,6 +197,8 @@ pub enum Token {
     Spawn,
     #[token("state")]
     State,
+    #[token("property")]
+    Property,
     #[token("receive")]
     Receive,
     #[token("send")]

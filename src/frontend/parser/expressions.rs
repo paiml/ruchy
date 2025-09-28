@@ -1,8 +1,9 @@
 //! Basic expression parsing - minimal version with only used functions
 use super::{
-    bail, ActorHandler, BinaryOp, ClassConstant, ClassMethod, Constructor, EnumVariant, Expr,
-    ExprKind, Literal, MatchArm, Param, ParserState, Pattern, Result, SelfType, Span, StringPart,
-    StructField, Token, TraitMethod, Type, TypeKind, UnaryOp, Visibility,
+    bail, ActorHandler, BinaryOp, ClassConstant, ClassMethod, ClassProperty, Constructor,
+    EnumVariant, Expr, ExprKind, Literal, MatchArm, Param, ParserState, Pattern, PropertySetter,
+    Result, SelfType, Span, StringPart, StructField, Token, TraitMethod, Type, TypeKind, UnaryOp,
+    Visibility,
 };
 pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
     let Some((token, span)) = state.tokens.peek() else {
@@ -2173,8 +2174,8 @@ fn parse_struct_definition(state: &mut ParserState) -> Result<Expr> {
             (None, Vec::new())
         };
 
-        // Parse class body (fields, constructors, methods, constants)
-        let (fields, constructors, methods, constants) = parse_class_body(state)?;
+        // Parse class body (fields, constructors, methods, constants, properties)
+        let (fields, constructors, methods, constants, properties) = parse_class_body(state)?;
         Ok(Expr::new(
             ExprKind::Class {
                 name,
@@ -2185,6 +2186,7 @@ fn parse_struct_definition(state: &mut ParserState) -> Result<Expr> {
                 constructors,
                 methods,
                 constants,
+                properties,
                 derives: Vec::new(), // Will be populated by parse_attributed_expression
                 is_pub: false,
             },
@@ -2394,6 +2396,7 @@ fn parse_class_body(
     Vec<Constructor>,
     Vec<ClassMethod>,
     Vec<ClassConstant>,
+    Vec<ClassProperty>,
 )> {
     state.tokens.expect(&Token::LeftBrace)?;
 
@@ -2401,6 +2404,7 @@ fn parse_class_body(
     let mut constructors = Vec::new();
     let mut methods = Vec::new();
     let mut constants = Vec::new();
+    let mut properties = Vec::new();
 
     while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
         parse_class_member(
@@ -2409,27 +2413,37 @@ fn parse_class_body(
             &mut constructors,
             &mut methods,
             &mut constants,
+            &mut properties,
         )?;
         consume_optional_separator(state);
     }
 
     state.tokens.expect(&Token::RightBrace)?;
-    Ok((fields, constructors, methods, constants))
+    Ok((fields, constructors, methods, constants, properties))
 }
 
-/// Parse a single class member (field, constructor, method, or constant) - complexity: 9
+/// Parse a single class member (field, constructor, method, constant, or property) - complexity: 9
 fn parse_class_member(
     state: &mut ParserState,
     fields: &mut Vec<StructField>,
     constructors: &mut Vec<Constructor>,
     methods: &mut Vec<ClassMethod>,
     constants: &mut Vec<ClassConstant>,
+    properties: &mut Vec<ClassProperty>,
 ) -> Result<()> {
     // Check for const first
     if matches!(state.tokens.peek(), Some((Token::Const, _))) {
         state.tokens.advance(); // consume 'const'
         let constant = parse_class_constant(state)?;
         constants.push(constant);
+        return Ok(());
+    }
+
+    // Check for property keyword
+    if matches!(state.tokens.peek(), Some((Token::Property, _))) {
+        state.tokens.advance(); // consume 'property'
+        let property = parse_class_property(state)?;
+        properties.push(property);
         return Ok(());
     }
 
@@ -2494,6 +2508,82 @@ fn parse_class_constant(state: &mut ParserState) -> Result<ClassConstant> {
         ty,
         value,
         is_pub: true, // Constants are public by default in classes
+    })
+}
+
+/// Parse class property: property NAME: TYPE { get => expr, set(param) => expr }
+fn parse_class_property(state: &mut ParserState) -> Result<ClassProperty> {
+    // Parse property name
+    let name = match state.tokens.peek() {
+        Some((Token::Identifier(n), _)) => {
+            let name = n.clone();
+            state.tokens.advance();
+            name
+        }
+        _ => bail!("Expected property name after 'property'"),
+    };
+
+    // Expect colon
+    state.tokens.expect(&Token::Colon)?;
+
+    // Parse type
+    let ty = super::utils::parse_type(state)?;
+
+    // Expect opening brace
+    state.tokens.expect(&Token::LeftBrace)?;
+
+    let mut getter = None;
+    let mut setter = None;
+
+    // Parse getter and setter
+    while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
+        match state.tokens.peek() {
+            Some((Token::Identifier(keyword), _)) if keyword == "get" => {
+                state.tokens.advance();
+                state.tokens.expect(&Token::FatArrow)?;
+                let body = super::parse_expr_recursive(state)?;
+                getter = Some(Box::new(body));
+            }
+            Some((Token::Identifier(keyword), _)) if keyword == "set" => {
+                state.tokens.advance();
+
+                // Parse setter parameter
+                state.tokens.expect(&Token::LeftParen)?;
+                let param_name = match state.tokens.peek() {
+                    Some((Token::Identifier(n), _)) => {
+                        let name = n.clone();
+                        state.tokens.advance();
+                        name
+                    }
+                    _ => bail!("Expected parameter name for setter"),
+                };
+                state.tokens.expect(&Token::RightParen)?;
+
+                state.tokens.expect(&Token::FatArrow)?;
+                let body = super::parse_expr_recursive(state)?;
+                setter = Some(PropertySetter {
+                    param_name,
+                    body: Box::new(body),
+                });
+            }
+            _ => bail!("Expected 'get' or 'set' in property body"),
+        }
+
+        // Check for comma
+        if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+            state.tokens.advance();
+        }
+    }
+
+    // Expect closing brace
+    state.tokens.expect(&Token::RightBrace)?;
+
+    Ok(ClassProperty {
+        name,
+        ty,
+        getter,
+        setter,
+        is_pub: true, // Properties are public by default
     })
 }
 
