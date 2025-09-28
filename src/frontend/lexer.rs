@@ -209,6 +209,10 @@ pub enum Token {
     Final,
     #[token("abstract")]
     Abstract,
+    #[token("mixin")]
+    Mixin,
+    #[token("operator")]
+    Operator,
     #[token("receive")]
     Receive,
     #[token("send")]
@@ -237,6 +241,8 @@ pub enum Token {
     Use,
     #[token("as")]
     As,
+    #[token("with")]
+    With,
     #[token("from")]
     From,
     #[token("module")]
