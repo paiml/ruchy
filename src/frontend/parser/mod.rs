@@ -49,6 +49,7 @@ mod core;
 mod expressions;
 mod functions;
 mod imports;
+mod macro_parsing;
 mod operator_precedence;
 mod types;
 mod utils;
@@ -678,148 +679,37 @@ fn try_range_operators(
     }))
 }
 /// Try to parse a macro call: identifier!( args ) or identifier![ args ]
+/// Refactored to reduce complexity from 105 to <10
 fn try_parse_macro_call(state: &mut ParserState, left: &Expr) -> Result<Option<Expr>> {
-    if let ExprKind::Identifier(name) = &left.kind {
-        // Special case: Handle df![] as DataFrame literal
-        if name == "df" {
-            state.tokens.advance(); // consume !
-            if matches!(state.tokens.peek(), Some((Token::LeftBracket, _))) {
-                // Parse DataFrame arguments manually
-                state.tokens.advance(); // consume [
+    let ExprKind::Identifier(name) = &left.kind else {
+        return Ok(None);
+    };
 
-                // Check for empty DataFrame df![]
-                if matches!(state.tokens.peek(), Some((Token::RightBracket, _))) {
-                    state.tokens.advance(); // consume ]
-                    return Ok(Some(Expr::new(
-                        ExprKind::DataFrame {
-                            columns: Vec::new(),
-                        },
-                        Span::default(),
-                    )));
-                }
-
-                // Parse DataFrame columns using the existing parser logic
-                let columns = collections::parse_dataframe_column_definitions(state)?;
-                state.tokens.expect(&Token::RightBracket)?;
-
-                return Ok(Some(Expr::new(
-                    ExprKind::DataFrame { columns },
-                    Span::default(),
-                )));
-            }
-            // If not df![], fall through to regular macro parsing
-        } else {
-            state.tokens.advance(); // consume !
+    // Handle special case macros first
+    if name == "df" {
+        if let Some(result) = macro_parsing::parse_dataframe_macro(state)? {
+            return Ok(Some(result));
         }
-
-        // Handle parentheses, square brackets, and curly braces for macros
-        let (_style, closing_token) = match state.tokens.peek() {
-            Some((Token::LeftParen, _)) => {
-                state.tokens.advance(); // consume (
-                ("paren", Token::RightParen)
-            }
-            Some((Token::LeftBracket, _)) => {
-                state.tokens.advance(); // consume [
-                ("bracket", Token::RightBracket)
-            }
-            Some((Token::LeftBrace, _)) => {
-                // For SQL macro, we need special handling of the content
-                if name == "sql" {
-                    state.tokens.advance(); // consume {
-                                            // Collect all tokens as raw SQL until closing brace
-                    let mut sql_content = String::new();
-                    let mut depth = 1;
-                    while depth > 0 {
-                        if let Some((token, _)) = state.tokens.peek() {
-                            match token {
-                                Token::LeftBrace => depth += 1,
-                                Token::RightBrace => {
-                                    depth -= 1;
-                                    if depth == 0 {
-                                        state.tokens.advance(); // consume final }
-                                        break;
-                                    }
-                                }
-                                _ => {}
-                            }
-                            // Add the token to the SQL string
-                            if depth > 0 {
-                                if !sql_content.is_empty() {
-                                    sql_content.push(' ');
-                                }
-                                // Convert token to its SQL text representation
-                                let token_text = match token {
-                                    Token::Identifier(s) => s.clone(),
-                                    Token::Integer(n) => n.to_string(),
-                                    Token::Float(f) => f.to_string(),
-                                    Token::String(s) => format!("'{s}'"),
-                                    Token::Star => "*".to_string(),
-                                    Token::Greater => ">".to_string(),
-                                    Token::Less => "<".to_string(),
-                                    Token::GreaterEqual => ">=".to_string(),
-                                    Token::LessEqual => "<=".to_string(),
-                                    Token::EqualEqual => "=".to_string(),
-                                    Token::NotEqual => "!=".to_string(),
-                                    Token::Comma => ",".to_string(),
-                                    Token::LeftParen => "(".to_string(),
-                                    Token::RightParen => ")".to_string(),
-                                    Token::Dot => ".".to_string(),
-                                    Token::Plus => "+".to_string(),
-                                    Token::Minus => "-".to_string(),
-                                    Token::Slash => "/".to_string(),
-                                    _ => format!("{token:?}"), // Fallback for unhandled tokens
-                                };
-                                sql_content.push_str(&token_text);
-                                state.tokens.advance();
-                            }
-                        } else {
-                            bail!("Unclosed SQL macro");
-                        }
-                    }
-                    // Return SQL macro with the raw content as a string literal
-                    return Ok(Some(Expr::new(
-                        ExprKind::Macro {
-                            name: name.clone(),
-                            args: vec![Expr::new(
-                                ExprKind::Literal(crate::frontend::ast::Literal::String(
-                                    sql_content,
-                                )),
-                                Span::default(),
-                            )],
-                        },
-                        Span::default(),
-                    )));
-                }
-                state.tokens.advance(); // consume {
-                ("brace", Token::RightBrace)
-            }
-            _ => return Ok(None),
-        };
-
-        let mut args = Vec::new();
-
-        // Parse arguments until closing token
-        while !matches!(state.tokens.peek(), Some((token, _)) if token == &closing_token) {
-            args.push(parse_expr_recursive(state)?);
-            if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
-                state.tokens.advance(); // consume comma
-            } else {
-                break;
-            }
-        }
-
-        state.tokens.expect(&closing_token)?;
-
-        // For bracket-style macros, the args are already parsed correctly
-        return Ok(Some(Expr::new(
-            ExprKind::Macro {
-                name: name.clone(),
-                args,
-            },
-            Span { start: 0, end: 0 },
-        )));
+        // If not df![], already consumed !, continue to regular macro parsing
+    } else {
+        state.tokens.advance(); // consume !
     }
-    Ok(None)
+
+    // Handle SQL macro specially
+    if name == "sql" && matches!(state.tokens.peek(), Some((Token::LeftBrace, _))) {
+        return Ok(Some(macro_parsing::parse_sql_macro(state, name)?));
+    }
+
+    // Get macro delimiters
+    let Some((_style, closing_token)) = macro_parsing::get_macro_delimiters(state) else {
+        return Ok(None);
+    };
+
+    // Parse macro arguments
+    let args = macro_parsing::parse_macro_arguments(state, closing_token)?;
+
+    // Create and return macro expression
+    Ok(Some(macro_parsing::create_macro_expr(name.clone(), args)))
 }
 
 #[cfg(test)]
