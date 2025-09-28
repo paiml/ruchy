@@ -207,6 +207,8 @@ pub enum Token {
     Sealed,
     #[token("final")]
     Final,
+    #[token("abstract")]
+    Abstract,
     #[token("receive")]
     Receive,
     #[token("send")]

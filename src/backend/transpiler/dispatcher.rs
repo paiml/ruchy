@@ -271,7 +271,8 @@ impl Transpiler {
                 properties: _, // TODO: implement property transpilation
                 derives,
                 is_pub,
-                is_sealed: _, // TODO: implement sealed classes
+                is_sealed: _,   // TODO: implement sealed classes
+                is_abstract: _, // TODO: implement abstract classes
             } => self.transpile_class(
                 name,
                 type_params,
