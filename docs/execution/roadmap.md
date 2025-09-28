@@ -2,25 +2,36 @@
 
 ## 📝 **SESSION CONTEXT FOR RESUMPTION**
 
-**Last Active**: 2025-09-28 (v3.54.0 - OOP Implementation Advancing)
+**Last Active**: 2025-09-28 (v3.54.0 - OOP Implementation Sprint)
 **Current Sprint**: v3.54.0 - Complete Classes, Actors, and Structs with Extreme TDD
 **Integration Status**: ✅ **100% P0 pass rate (15/15 implemented features)**
-**Status**: 🚧 **Phase 2: Implementation - 39.7% test coverage achieved (29/73 passing)**
-**Progress Milestone**: ✅ Approaching 40% coverage!
-**Latest Update**: [OOP-006] Fixed for loops in class methods
+**Status**: 🚧 **Phase 2: Implementation - 39.7% test coverage (29/73 passing)**
+**Progress Milestone**: ✅ **Nearly 40% coverage achieved!**
+**Latest Updates**:
+- [OOP-006] Fixed for loops in class methods - comprehension lookahead corrected
+- [OOP-005] Visibility enum, spawn keyword, class constants implemented
+- [OOP-004] Pattern guards, struct update syntax fixed
 
 ## 🚧 **IN PROGRESS: v3.54.0 - OOP COMPLETE IMPLEMENTATION SPRINT**
 
 **Sprint Goal**: 100% working classes, actors, and structs
 **Methodology**: Extreme TDD - Tests written FIRST
 **Target Release**: End of sprint to crates.io
-**Current Coverage**: **39.7% (29/73 tests passing) - Nearly at 40%!**
+**Current Coverage**: **39.7% (29/73 tests passing)**
+
+### 📊 **Coverage Breakdown**
+| Component | Passing | Total | Coverage | Status |
+|-----------|---------|-------|----------|---------|
+| **Structs** | 20 | 24 | **83.3%** | 🟢 Nearly complete |
+| **Classes** | 7 | 25 | **28.0%** | 🟡 Property support needed |
+| **Actors** | 2 | 24 | **8.3%** | 🔴 Message passing critical |
+| **TOTAL** | **29** | **73** | **39.7%** | 🚧 Approaching 40% |
 
 ### **Phase 1: Test Suite Creation ✅ COMPLETE**
 - Total: 73 tests written as baseline
 
 ### **Phase 2: Parser & Feature Implementation 🚧 IN PROGRESS**
-#### Latest Progress (Session 2025-09-28 - [OOP-005]):
+#### Latest Progress (Session 2025-09-28):
 - ✅ **Struct Features Implemented**:
   - Pattern matching in match expressions (working)
   - Derive attributes (#[derive(Debug, Clone)]) (functional, cosmetic spacing in output)
@@ -55,28 +66,47 @@
   - Struct update syntax parsing fixed
   - Fat arrow lambda vs match guard conflict resolved
 
-- **Known Issues & Blockers**:
-  - Lifetime parameters (`'a`, `'b`) - parser support needed
-  - Const generics (`const N: usize`) - not yet implemented
-  - Actor message passing (send/receive) - core functionality missing
-  - Class property getters/setters - requires property keyword
-  - Trait bounds (`T: Display`) - generic constraints incomplete
-    - Actor message passing system
+#### **Priority Blockers for 100% Coverage**:
+1. **Property Keyword** (7 class tests blocked):
+   - Syntax: `property name: Type { get => expr, set(value) => expr }`
+   - Needed for: test_class_property_basic, test_class_property_validation, test_class_readonly_property
 
-### **Phase 3: Remaining Implementation**
-- Struct lifetimes and const generics
-- Class properties with getters/setters
-- Actor message passing system
+2. **Actor Message Passing** (20+ actor tests blocked):
+   - `receive` blocks for message handling
+   - `!` operator for sending messages
+   - Pattern matching on message types
 
-### **Phase 3: Runtime Implementation**
-- Struct pattern matching and derives
-- Class property getters/setters
-- Actor message passing system
+3. **Lifetime Parameters** (3 struct tests blocked):
+   - Basic lifetime syntax: `struct Foo<'a> { field: &'a T }`
+   - Multiple lifetimes: `<'a, 'b>`
 
-### **Phase 4: Integration & Release**
+4. **Generic Constraints** (2 tests blocked):
+   - Trait bounds: `T: Display + Clone`
+   - Const generics: `const N: usize`
+
+5. **Method Visibility** (2 class tests blocked):
+   - `private fn` and `protected fn` keywords needed
+   - Currently only field visibility supported
+
+### **Phase 3: High-Impact Features**
+**Target**: Reach 60% coverage by implementing:
+- Property keyword and getter/setter transpilation
+- Basic actor message passing (receive blocks, ! operator)
+- Method visibility modifiers
+
+### **Phase 4: Advanced Features**
+**Target**: Reach 80% coverage with:
+- Lifetime parameters and bounds
+- Generic trait constraints
+- Const generics
+- Actor supervision and advanced patterns
+
+### **Phase 5: Final Push & Release**
+**Target**: 100% coverage and v3.54.0 release:
+- Complete all 73 tests passing
 - Property testing with 10,000 iterations
 - Full validation suite
-- Publish v3.54.0 to crates.io
+- Publish to crates.io
 
 ## ✅ **COMPLETED: v3.53.0 - COMPLEXITY REDUCTION SPRINT**
 
