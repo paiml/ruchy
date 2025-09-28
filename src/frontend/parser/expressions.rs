@@ -581,7 +581,7 @@ fn parse_final_token(state: &mut ParserState) -> Result<Expr> {
 /// Parse abstract token - used for abstract classes and methods
 fn parse_abstract_token(state: &mut ParserState) -> Result<Expr> {
     state.tokens.advance(); // consume 'abstract'
-    // Could be abstract class or abstract method
+                            // Could be abstract class or abstract method
     match state.tokens.peek() {
         Some((Token::Class, _)) => {
             let mut expr = parse_prefix(state)?;
@@ -2274,7 +2274,7 @@ fn parse_struct_definition(state: &mut ParserState) -> Result<Expr> {
                 properties,
                 derives: Vec::new(), // Will be populated by parse_attributed_expression
                 is_pub: false,
-                is_sealed: false, // Will be set by parse_sealed_token if needed
+                is_sealed: false,   // Will be set by parse_sealed_token if needed
                 is_abstract: false, // Will be set by parse_abstract_token if needed
             },
             start_span,
@@ -2783,11 +2783,7 @@ fn parse_member_flags(state: &mut ParserState) -> Result<(bool, bool, bool, bool
         state.tokens.advance();
     }
 
-    let is_override = if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
-        name == "override"
-    } else {
-        false
-    };
+    let is_override = matches!(state.tokens.peek(), Some((Token::Override, _)));
     if is_override {
         state.tokens.advance();
     }
