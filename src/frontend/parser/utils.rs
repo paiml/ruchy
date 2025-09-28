@@ -119,6 +119,7 @@ fn parse_single_param(state: &mut ParserState) -> Result<Param> {
                 ty = Type {
                     kind: TypeKind::Reference {
                         is_mut: is_ref_mut,
+                        lifetime: None, // TODO: support lifetimes on self references
                         inner: Box::new(Type {
                             kind: TypeKind::Named("Self".to_string()),
                             span: Span { start: 0, end: 0 },
@@ -346,7 +347,7 @@ fn parse_reference_type(state: &mut ParserState, span: Span) -> Result<Type> {
     state.tokens.advance(); // consume &
 
     // Check for lifetime parameter
-    let _lifetime = if matches!(state.tokens.peek(), Some((Token::Lifetime(_), _))) {
+    let lifetime = if matches!(state.tokens.peek(), Some((Token::Lifetime(_), _))) {
         if let Some((Token::Lifetime(lt), _)) = state.tokens.peek() {
             let lifetime = lt.clone();
             state.tokens.advance();
@@ -368,6 +369,7 @@ fn parse_reference_type(state: &mut ParserState, span: Span) -> Result<Type> {
     Ok(Type {
         kind: TypeKind::Reference {
             is_mut,
+            lifetime,
             inner: Box::new(inner_type),
         },
         span,

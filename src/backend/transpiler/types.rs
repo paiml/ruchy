@@ -10,6 +10,7 @@ use crate::frontend::ast::{
 use anyhow::{bail, Result};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
+use syn::Lifetime;
 impl Transpiler {
     /// Transpiles type annotations
     ///
@@ -66,7 +67,9 @@ impl Transpiler {
             TypeKind::Function { params, ret } => self.transpile_function_type(params, ret),
             TypeKind::DataFrame { .. } => Ok(quote! { polars::prelude::DataFrame }),
             TypeKind::Series { .. } => Ok(quote! { polars::prelude::Series }),
-            TypeKind::Reference { is_mut, inner } => self.transpile_reference_type(*is_mut, inner),
+            TypeKind::Reference { is_mut, lifetime, inner } => {
+                self.transpile_reference_type(*is_mut, lifetime.as_deref(), inner)
+            }
         }
     }
     /// Transpile named types with built-in type mapping
@@ -123,24 +126,38 @@ impl Transpiler {
         let ret_tokens = self.transpile_type(ret)?;
         Ok(quote! { fn(#(#param_tokens),*) -> #ret_tokens })
     }
-    /// Transpile reference types with special handling for &str
-    fn transpile_reference_type(&self, is_mut: bool, inner: &Type) -> Result<TokenStream> {
+    /// Transpile reference types with special handling for &str and lifetimes
+    fn transpile_reference_type(
+        &self,
+        is_mut: bool,
+        lifetime: Option<&str>,
+        inner: &Type,
+    ) -> Result<TokenStream> {
         use crate::frontend::ast::TypeKind;
+
+        // Create lifetime token if provided
+        let lifetime_token = if let Some(lt) = lifetime {
+            let lifetime = Lifetime::new(lt, proc_macro2::Span::call_site());
+            quote! { #lifetime }
+        } else {
+            quote! {}
+        };
+
         // Special case: &str should not become &&str
         if let TypeKind::Named(name) = &inner.kind {
             if name == "str" {
                 return if is_mut {
-                    Ok(quote! { &mut str })
+                    Ok(quote! { &#lifetime_token mut str })
                 } else {
-                    Ok(quote! { &str })
+                    Ok(quote! { &#lifetime_token str })
                 };
             }
         }
         let inner_tokens = self.transpile_type(inner)?;
         if is_mut {
-            Ok(quote! { &mut #inner_tokens })
+            Ok(quote! { &#lifetime_token mut #inner_tokens })
         } else {
-            Ok(quote! { &#inner_tokens })
+            Ok(quote! { &#lifetime_token #inner_tokens })
         }
     }
     /// Transpiles tuple struct definitions
@@ -153,8 +170,20 @@ impl Transpiler {
         is_pub: bool,
     ) -> Result<TokenStream> {
         let struct_name = format_ident!("{}", name);
-        let type_param_tokens: Vec<_> =
-            type_params.iter().map(|p| format_ident!("{}", p)).collect();
+        let type_param_tokens: Vec<TokenStream> = type_params
+            .iter()
+            .map(|p| {
+                if p.starts_with('\'') {
+                    // It's a lifetime parameter, use Lifetime type
+                    let lifetime = Lifetime::new(p, proc_macro2::Span::call_site());
+                    quote! { #lifetime }
+                } else {
+                    // It's a type parameter
+                    let ident = format_ident!("{}", p);
+                    quote! { #ident }
+                }
+            })
+            .collect();
 
         // Convert field types to tokens
         let field_tokens: Vec<TokenStream> = fields
@@ -202,8 +231,20 @@ impl Transpiler {
         is_pub: bool,
     ) -> Result<TokenStream> {
         let struct_name = format_ident!("{}", name);
-        let type_param_tokens: Vec<_> =
-            type_params.iter().map(|p| format_ident!("{}", p)).collect();
+        let type_param_tokens: Vec<TokenStream> = type_params
+            .iter()
+            .map(|p| {
+                if p.starts_with('\'') {
+                    // It's a lifetime parameter, use Lifetime type
+                    let lifetime = Lifetime::new(p, proc_macro2::Span::call_site());
+                    quote! { #lifetime }
+                } else {
+                    // It's a type parameter
+                    let ident = format_ident!("{}", p);
+                    quote! { #ident }
+                }
+            })
+            .collect();
         let field_tokens: Vec<TokenStream> = fields
             .iter()
             .map(|field| {
@@ -343,8 +384,20 @@ impl Transpiler {
 
         // 3. Generate impl block with constructors and methods
         let struct_name = format_ident!("{}", name);
-        let type_param_tokens: Vec<_> =
-            type_params.iter().map(|p| format_ident!("{}", p)).collect();
+        let type_param_tokens: Vec<TokenStream> = type_params
+            .iter()
+            .map(|p| {
+                if p.starts_with('\'') {
+                    // It's a lifetime parameter, use Lifetime type
+                    let lifetime = Lifetime::new(p, proc_macro2::Span::call_site());
+                    quote! { #lifetime }
+                } else {
+                    // It's a type parameter
+                    let ident = format_ident!("{}", p);
+                    quote! { #ident }
+                }
+            })
+            .collect();
 
         // Convert constructors to methods (primary is "new", named constructors keep their names)
         let constructor_tokens: Result<Vec<_>> = constructors
