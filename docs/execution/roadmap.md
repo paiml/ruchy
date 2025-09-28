@@ -52,9 +52,13 @@
   - Inheritance with super working
   - Mutable self in methods (fixed)
   - Class constants (const NAME: TYPE = VALUE) implemented
-  - Transpilation to Rust associated constants
-  - For loops in class methods (fixed comprehension detection issue)
-  - **Current**: 7/25 passing (28%)
+  - Property keyword with getter/setter support
+  - Private/protected visibility modifiers
+  - Sealed and final keywords (final classes working)
+  - Abstract keyword for classes and methods
+  - @ decorator parsing (partial)
+  - Override as proper token
+  - **Current**: 13/25 passing (52%)
 
 - ✅ **Actor System Progress**:
   - spawn keyword added to lexer and parser
@@ -68,27 +72,25 @@
   - Struct update syntax parsing fixed
   - Fat arrow lambda vs match guard conflict resolved
 
-#### **Priority Blockers for 100% Coverage**:
-1. **Property Keyword** (7 class tests blocked):
-   - Syntax: `property name: Type { get => expr, set(value) => expr }`
-   - Needed for: test_class_property_basic, test_class_property_validation, test_class_readonly_property
+#### **Remaining Tasks for 100% Coverage**:
 
-2. **Actor Message Passing** (20+ actor tests blocked):
-   - `receive` blocks for message handling
-   - `!` operator for sending messages
-   - Pattern matching on message types
+**Immediate Tasks (Next 2 hours)**:
+1. **[TASK-014]** Complete operator overloading parsing - 1 class test
+2. **[TASK-015]** Fix decorator field support - 1 class test
+3. **[TASK-016]** Complete lifetime integration - 3 struct tests
+4. **[TASK-017]** Implement interface parsing - 1 class test
 
-3. **Lifetime Parameters** (3 struct tests blocked):
-   - Basic lifetime syntax: `struct Foo<'a> { field: &'a T }`
-   - Multiple lifetimes: `<'a, 'b>`
+**Core Features (Next 4 hours)**:
+5. **[TASK-018]** Actor message passing (`!` operator) - 10+ actor tests
+6. **[TASK-019]** Generic constraints (`T: Display`) - 1 struct test
+7. **[TASK-020]** Impl blocks in classes - 2 class tests
+8. **[TASK-021]** Nested class support - 2 class tests
 
-4. **Generic Constraints** (2 tests blocked):
-   - Trait bounds: `T: Display + Clone`
-   - Const generics: `const N: usize`
-
-5. **Method Visibility** (2 class tests blocked):
-   - `private fn` and `protected fn` keywords needed
-   - Currently only field visibility supported
+**Advanced Features (Next 2 hours)**:
+9. **[TASK-022]** Complete actor receive blocks - 10+ actor tests
+10. **[TASK-023]** Const generics - 1 struct test
+11. **[TASK-024]** Mixin implementation - 1 class test
+12. **[TASK-025]** Where clauses - Final polish
 
 ### **Phase 3: High-Impact Features**
 **Target**: Reach 60% coverage by implementing:

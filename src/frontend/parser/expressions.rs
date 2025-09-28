@@ -2534,6 +2534,14 @@ fn parse_class_member(
         return Ok(());
     }
 
+    // Check for operator overloading first
+    if matches!(state.tokens.peek(), Some((Token::Operator, _))) {
+        state.tokens.advance(); // consume 'operator'
+        let operator_method = parse_operator_method(state)?;
+        methods.push(operator_method);
+        return Ok(());
+    }
+
     // Parse modifiers
     let (visibility, is_mut) = parse_class_modifiers(state)?;
     let (is_static, is_override, is_final, is_abstract) = parse_member_flags(state)?;
@@ -2571,6 +2579,94 @@ fn parse_class_member(
         _ => bail!("Expected field, constructor, method, or constant in class body"),
     }
     Ok(())
+}
+
+/// Parse operator overloading: operator+(self, other: T) -> R { ... }
+fn parse_operator_method(state: &mut ParserState) -> Result<ClassMethod> {
+    // Parse the operator symbol (+, -, *, /, ==, etc.)
+    let operator_name = match state.tokens.peek() {
+        Some((Token::Plus, _)) => {
+            state.tokens.advance();
+            "add"
+        }
+        Some((Token::Minus, _)) => {
+            state.tokens.advance();
+            "sub"
+        }
+        Some((Token::Star, _)) => {
+            state.tokens.advance();
+            "mul"
+        }
+        Some((Token::Slash, _)) => {
+            state.tokens.advance();
+            "div"
+        }
+        Some((Token::EqualEqual, _)) => {
+            state.tokens.advance();
+            "eq"
+        }
+        Some((Token::NotEqual, _)) => {
+            state.tokens.advance();
+            "ne"
+        }
+        Some((Token::Less, _)) => {
+            state.tokens.advance();
+            "lt"
+        }
+        Some((Token::Greater, _)) => {
+            state.tokens.advance();
+            "gt"
+        }
+        Some((Token::LessEqual, _)) => {
+            state.tokens.advance();
+            "le"
+        }
+        Some((Token::GreaterEqual, _)) => {
+            state.tokens.advance();
+            "ge"
+        }
+        Some((Token::Percent, _)) => {
+            state.tokens.advance();
+            "rem"
+        }
+        Some((Token::LeftBracket, _)) => {
+            state.tokens.advance();
+            state.tokens.expect(&Token::RightBracket)?;
+            "index"
+        }
+        _ => bail!("Expected operator symbol after 'operator' keyword"),
+    };
+
+    // Parse parameters
+    let params = super::utils::parse_params(state)?;
+
+    // Parse return type
+    let return_type = if matches!(state.tokens.peek(), Some((Token::Arrow, _))) {
+        state.tokens.advance();
+        Some(super::utils::parse_type(state)?)
+    } else {
+        None
+    };
+
+    // Parse method body
+    let body = if matches!(state.tokens.peek(), Some((Token::LeftBrace, _))) {
+        Box::new(super::collections::parse_block(state)?)
+    } else {
+        bail!("Expected method body after operator signature")
+    };
+
+    Ok(ClassMethod {
+        name: format!("op_{operator_name}"),
+        params,
+        return_type,
+        body,
+        is_pub: true,
+        is_static: false,
+        is_override: false,
+        is_final: false,
+        is_abstract: false,
+        self_type: SelfType::Borrowed, // Most operators take &self
+    })
 }
 
 /// Parse class constant: const NAME: TYPE = VALUE
