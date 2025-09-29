@@ -1,0 +1,4 @@
+fn main() -> i32 {
+    println("Hello from main")
+    42
+}

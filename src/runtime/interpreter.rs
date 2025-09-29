@@ -3271,19 +3271,45 @@ impl Interpreter {
                 Value::from_string(class_name.to_string()),
             );
 
-            // Initialize fields with default values
-            if let Some(Value::Object(ref fields)) = class_info.get("__fields") {
-                for (field_name, field_info) in fields.iter() {
-                    if let Value::Object(ref field_meta) = field_info {
-                        // Use default value if present
-                        if let Some(default) = field_meta.get("default") {
-                            instance.insert(field_name.clone(), default.clone());
-                        } else {
-                            // Initialize with nil
-                            instance.insert(field_name.clone(), Value::Nil);
+            // Helper function to collect fields from class and its parents
+            fn collect_all_fields(
+                class_info: &HashMap<String, Value>,
+                interpreter: &Interpreter,
+            ) -> HashMap<String, Value> {
+                let mut all_fields = HashMap::new();
+
+                // First, get parent fields if there's a superclass
+                if let Some(Value::String(ref parent_name)) = class_info.get("__superclass") {
+                    if let Ok(Value::Object(ref parent_info)) =
+                        interpreter.lookup_variable(parent_name)
+                    {
+                        let parent_fields = collect_all_fields(parent_info, interpreter);
+                        all_fields.extend(parent_fields);
+                    }
+                }
+
+                // Then add this class's fields (overriding parent fields if they exist)
+                if let Some(Value::Object(ref fields)) = class_info.get("__fields") {
+                    for (field_name, field_info) in fields.iter() {
+                        if let Value::Object(ref field_meta) = field_info {
+                            // Use default value if present
+                            if let Some(default) = field_meta.get("default") {
+                                all_fields.insert(field_name.clone(), default.clone());
+                            } else {
+                                // Initialize with nil
+                                all_fields.insert(field_name.clone(), Value::Nil);
+                            }
                         }
                     }
                 }
+
+                all_fields
+            }
+
+            // Initialize fields with default values from this class and all parent classes
+            let all_fields = collect_all_fields(class_info, self);
+            for (field_name, field_value) in all_fields {
+                instance.insert(field_name, field_value);
             }
 
             // Execute the constructor if present

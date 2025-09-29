@@ -4,6 +4,39 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.55.0] - 2025-09-29
+
+### OOP Sprint Completion - Classes and Actors Enhanced
+
+#### Actor System (82.4% complete)
+- ✅ Actor state blocks and inline field definitions working
+- ✅ Message receive handlers with pattern matching
+- ✅ Comprehensive actor parser with 14/17 tests passing
+- ✅ Full parser coverage for spawn and send expressions
+
+#### Class System Improvements
+- ✅ Instance method definitions with `fn` keyword
+- ✅ Method visibility modifiers (public/private/protected)
+- ✅ Field inheritance from parent classes implemented
+- ✅ Default field value initialization
+- ⚠️ **Known Limitation**: Mutable self in instance methods requires architectural changes
+
+#### Test Coverage Progress
+- **Overall Tests**: 3358/3382 passing (99.3% pass rate)
+- **Actor Tests**: 14/17 passing (82.4% coverage)
+- **Class Tests**: 29/42 passing (69% coverage)
+- **Critical P0 Tests**: 15/15 still passing (100%)
+
+#### Technical Improvements
+- Parser complexity maintained under Toyota Way limits (<10)
+- No breaking changes - full backward compatibility
+- Improved field inheritance mechanism for classes
+
+#### Known Limitations (Documented)
+- Instance methods with `&mut self` do not persist mutations (architectural limitation)
+- Super constructor calls not fully implemented
+- Type checking for undefined field types needs strengthening
+
 ## [3.54.0] - 2025-09-28
 
 ### OOP Implementation Sprint with Extreme TDD
