@@ -2,6 +2,7 @@
 //!
 //! This module provides the runtime support for actors with proper message queues,
 //! state persistence, and message processing.
+#![allow(clippy::non_std_lazy_statics)] // LazyLock requires Rust 1.80+
 
 use crate::runtime::InterpreterError;
 use std::collections::{HashMap, VecDeque};
@@ -70,7 +71,7 @@ pub enum ActorFieldValue {
 }
 
 impl ActorFieldValue {
-    /// Convert from interpreter Value to ActorFieldValue
+    /// Convert from interpreter Value to `ActorFieldValue`
     pub fn from_value(value: &crate::runtime::Value) -> Self {
         use crate::runtime::Value;
         match value {
@@ -141,7 +142,7 @@ impl ActorInstance {
     pub fn send(&mut self, message: ActorMessage) -> Result<(), InterpreterError> {
         self.mailbox
             .enqueue(message)
-            .map_err(|e| InterpreterError::RuntimeError(e))
+            .map_err(InterpreterError::RuntimeError)
     }
 
     /// Process all pending messages in the mailbox
@@ -162,6 +163,12 @@ pub struct ActorRuntime {
     next_actor_id: Arc<Mutex<u64>>,
 }
 
+impl Default for ActorRuntime {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ActorRuntime {
     pub fn new() -> Self {
         Self {
@@ -174,7 +181,7 @@ impl ActorRuntime {
     pub fn generate_actor_id(&self) -> String {
         let mut id = self.next_actor_id.lock().unwrap();
         *id += 1;
-        format!("actor_{}", id)
+        format!("actor_{id}")
     }
 
     /// Spawn a new actor instance
@@ -209,8 +216,7 @@ impl ActorRuntime {
             Ok(())
         } else {
             Err(InterpreterError::RuntimeError(format!(
-                "Actor not found: {}",
-                actor_id
+                "Actor not found: {actor_id}"
             )))
         }
     }
@@ -226,8 +232,7 @@ impl ActorRuntime {
             Ok(instance.state.clone())
         } else {
             Err(InterpreterError::RuntimeError(format!(
-                "Actor not found: {}",
-                actor_id
+                "Actor not found: {actor_id}"
             )))
         }
     }
@@ -248,8 +253,7 @@ impl ActorRuntime {
                 .unwrap_or(ActorFieldValue::Nil))
         } else {
             Err(InterpreterError::RuntimeError(format!(
-                "Actor not found: {}",
-                actor_id
+                "Actor not found: {actor_id}"
             )))
         }
     }

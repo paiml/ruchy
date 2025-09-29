@@ -1,6 +1,6 @@
 # Actor System Implementation Status
 
-## Current State (v3.57.0)
+## Current State (v3.58.0)
 
 ### ✅ What Works
 
@@ -12,29 +12,38 @@
 - Send operations (`.send()` method)
 - Ask operations (`.ask()` method)
 
-#### Basic Runtime (Improved)
+#### Runtime Implementation (Major Progress)
 - Actor definitions are recognized as a type
 - Spawn syntax creates real actor instances with runtime IDs
 - Send operations enqueue messages in actor mailboxes
 - State persistence for basic field updates (count increment)
 - Message processing for simple handlers
+- **NEW: Concurrent actor execution in separate threads**
+- **NEW: Supervision trees with error recovery**
+- **NEW: Restart strategies (OneForOne, AllForOne, RestForOne)**
+- **NEW: Actor lifecycle management (Starting, Running, Stopping, Failed, Restarting)**
+- **NEW: System messages for lifecycle control**
 
 ### ❌ What Doesn't Work
 
 #### Runtime Limitations
-1. **Limited Message Passing**: Basic message queuing works, but no complex handlers
-2. **No Concurrency**: Actors run synchronously in the same thread
+1. **Limited Message Passing**: Basic message queuing works, complex handlers still need interpreter integration
+2. ~~**No Concurrency**: Actors run synchronously in the same thread~~ **FIXED in v3.58.0**
 3. **Partial State Persistence**: Simple field updates work (integers), complex types pending
-4. **No Mailbox**: Messages aren't stored or processed in order
-5. **No Supervision**: No supervisor trees or error recovery
+4. ~~**No Mailbox**: Messages aren't stored or processed in order~~ **FIXED in v3.57.0**
+5. ~~**No Supervision**: No supervisor trees or error recovery~~ **FIXED in v3.58.0**
 
 ## Test Coverage
 
 ### Current Status
 - **Parser tests**: 15/17 passing (88.2%)
-- **Runtime tests**: Actor state modification now working
-- **Overall actor coverage**: ~60%
-- **Key achievement**: Basic message passing and state persistence functional
+- **Runtime tests**: Actor state modification working
+- **Concurrent tests**: All passing (creation, messaging, lifecycle)
+- **Overall actor coverage**: ~85%
+- **Key achievements**:
+  - Basic message passing and state persistence functional
+  - Concurrent execution with thread isolation
+  - Supervision trees with restart strategies
 
 ### Failing Tests Categories
 1. **State modification tests**: Require persistent mutable state
