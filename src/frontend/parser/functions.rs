@@ -209,8 +209,38 @@ fn create_simple_param(name: String) -> Param {
 pub fn parse_call(state: &mut ParserState, func: Expr) -> Result<Expr> {
     state.tokens.advance(); // consume (
     let mut args = Vec::new();
+    let mut named_args = Vec::new();
+
     while !matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
-        args.push(super::parse_expr_recursive(state)?);
+        // Check if this is a named argument (identifier followed by colon)
+        let maybe_name = if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
+            Some(name.clone())
+        } else {
+            None
+        };
+
+        let is_named = if let Some(name) = maybe_name {
+            let saved_pos = state.tokens.position();
+            state.tokens.advance();
+            if matches!(state.tokens.peek(), Some((Token::Colon, _))) {
+                state.tokens.advance(); // consume :
+                let value = super::parse_expr_recursive(state)?;
+                named_args.push((name, value));
+                true
+            } else {
+                // Not a named arg, restore position
+                state.tokens.set_position(saved_pos);
+                false
+            }
+        } else {
+            false
+        };
+
+        if !is_named {
+            // Regular positional argument
+            args.push(super::parse_expr_recursive(state)?);
+        }
+
         if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
             state.tokens.advance(); // consume comma
         } else {
@@ -218,14 +248,43 @@ pub fn parse_call(state: &mut ParserState, func: Expr) -> Result<Expr> {
         }
     }
     state.tokens.expect(&Token::RightParen)?;
-    Ok(Expr {
-        kind: ExprKind::Call {
-            func: Box::new(func),
-            args,
-        },
-        span: Span { start: 0, end: 0 },
-        attributes: Vec::new(),
-    })
+
+    // If we have named arguments, convert to a struct literal call
+    if named_args.is_empty() {
+        Ok(Expr {
+            kind: ExprKind::Call {
+                func: Box::new(func),
+                args,
+            },
+            span: Span { start: 0, end: 0 },
+            attributes: Vec::new(),
+        })
+    } else {
+        // This is actually a constructor call with named arguments
+        // Convert func(name: value) to func { name: value }
+        if let ExprKind::Identifier(name) = &func.kind {
+            let fields = named_args.into_iter().collect();
+            Ok(Expr {
+                kind: ExprKind::StructLiteral {
+                    name: name.clone(),
+                    fields,
+                    base: None,
+                },
+                span: Span { start: 0, end: 0 },
+                attributes: Vec::new(),
+            })
+        } else {
+            // For now, only support named args with simple identifiers
+            Ok(Expr {
+                kind: ExprKind::Call {
+                    func: Box::new(func),
+                    args,
+                },
+                span: Span { start: 0, end: 0 },
+                attributes: Vec::new(),
+            })
+        }
+    }
 }
 /// # Errors
 ///
@@ -329,14 +388,64 @@ fn parse_method_call_access(
 /// Parse method arguments (complexity: 5)
 fn parse_method_arguments(state: &mut ParserState) -> Result<Vec<Expr>> {
     let mut args = Vec::new();
+    let mut named_args = Vec::new();
+
     while !matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
-        args.push(super::parse_expr_recursive(state)?);
+        // Check if this is a named argument (identifier followed by colon)
+        let maybe_name = if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
+            Some(name.clone())
+        } else {
+            None
+        };
+
+        let is_named = if let Some(name) = maybe_name {
+            let saved_pos = state.tokens.position();
+            state.tokens.advance();
+            if matches!(state.tokens.peek(), Some((Token::Colon, _))) {
+                state.tokens.advance(); // consume :
+                let value = super::parse_expr_recursive(state)?;
+                named_args.push((name, value));
+                true
+            } else {
+                // Not a named arg, restore position
+                state.tokens.set_position(saved_pos);
+                false
+            }
+        } else {
+            false
+        };
+
+        if !is_named {
+            // Regular positional argument
+            args.push(super::parse_expr_recursive(state)?);
+        }
+
         if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
             state.tokens.advance(); // consume comma
         } else {
             break;
         }
     }
+
+    // If we have named arguments, convert them to object literal
+    if !named_args.is_empty() {
+        // Convert named args to object literal fields
+        use crate::frontend::ast::ObjectField;
+        let fields = named_args
+            .into_iter()
+            .map(|(name, value)| ObjectField::KeyValue { key: name, value })
+            .collect();
+
+        // Get the current position's span for the object literal
+        let span = if let Some((_, span)) = state.tokens.peek() {
+            *span
+        } else {
+            crate::frontend::ast::Span::new(0, 0)
+        };
+
+        args.push(Expr::new(ExprKind::ObjectLiteral { fields }, span));
+    }
+
     Ok(args)
 }
 /// Check if method is DataFrame-specific (complexity: 1)

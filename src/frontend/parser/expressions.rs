@@ -2283,9 +2283,8 @@ fn parse_struct_definition(state: &mut ParserState) -> Result<Expr> {
             (None, Vec::new())
         };
 
-        // Parse class body (fields, constructors, methods, constants, properties, impl_blocks, nested_classes)
-        let (fields, constructors, methods, constants, properties, impl_blocks, nested_classes) =
-            parse_class_body(state)?;
+        // Parse class body (fields, constructors, methods, constants, properties)
+        let (fields, constructors, methods, constants, properties) = parse_class_body(state)?;
         Ok(Expr::new(
             ExprKind::Class {
                 name,
@@ -2297,8 +2296,6 @@ fn parse_struct_definition(state: &mut ParserState) -> Result<Expr> {
                 methods,
                 constants,
                 properties,
-                impl_blocks,
-                nested_classes,
                 derives: Vec::new(), // Will be populated by parse_attributed_expression
                 decorators: Vec::new(), // Will be populated by parse_decorator
                 is_pub: false,
@@ -2513,8 +2510,6 @@ fn parse_class_body(
     Vec<ClassMethod>,
     Vec<ClassConstant>,
     Vec<ClassProperty>,
-    Vec<Expr>,
-    Vec<Expr>,
 )> {
     state.tokens.expect(&Token::LeftBrace)?;
 
@@ -2523,8 +2518,6 @@ fn parse_class_body(
     let mut methods = Vec::new();
     let mut constants = Vec::new();
     let mut properties = Vec::new();
-    let mut impl_blocks = Vec::new();
-    let mut nested_classes = Vec::new();
 
     while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
         parse_class_member(
@@ -2534,22 +2527,12 @@ fn parse_class_body(
             &mut methods,
             &mut constants,
             &mut properties,
-            &mut impl_blocks,
-            &mut nested_classes,
         )?;
         consume_optional_separator(state);
     }
 
     state.tokens.expect(&Token::RightBrace)?;
-    Ok((
-        fields,
-        constructors,
-        methods,
-        constants,
-        properties,
-        impl_blocks,
-        nested_classes,
-    ))
+    Ok((fields, constructors, methods, constants, properties))
 }
 
 /// Parse a single class member (field, constructor, method, constant, or property) - complexity: 9
@@ -2560,8 +2543,6 @@ fn parse_class_member(
     methods: &mut Vec<ClassMethod>,
     constants: &mut Vec<ClassConstant>,
     properties: &mut Vec<ClassProperty>,
-    impl_blocks: &mut Vec<Expr>,
-    nested_classes: &mut Vec<Expr>,
 ) -> Result<()> {
     // Check for decorators on the member
     let decorators = if matches!(state.tokens.peek(), Some((Token::At, _))) {
@@ -2586,18 +2567,13 @@ fn parse_class_member(
         return Ok(());
     }
 
-    // Check for impl blocks inside class
+    // TODO: Add support for impl blocks and nested classes in future
+    // For now, skip these tokens if encountered
     if matches!(state.tokens.peek(), Some((Token::Impl, _))) {
-        let impl_block = parse_impl_block(state)?;
-        impl_blocks.push(impl_block);
-        return Ok(());
+        bail!("Impl blocks inside classes are not yet supported");
     }
-
-    // Check for nested class
     if matches!(state.tokens.peek(), Some((Token::Class, _))) {
-        let nested_class = parse_struct_definition(state)?; // Reuse the same parser
-        nested_classes.push(nested_class);
-        return Ok(());
+        bail!("Nested classes are not yet supported");
     }
 
     // Check for operator overloading first

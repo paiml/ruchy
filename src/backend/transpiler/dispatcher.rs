@@ -268,9 +268,7 @@ impl Transpiler {
                 constructors,
                 methods,
                 constants,
-                properties: _,     // TODO: implement property transpilation
-                impl_blocks: _,    // TODO: implement impl blocks in classes
-                nested_classes: _, // TODO: implement nested classes
+                properties: _, // TODO: implement property transpilation
                 derives,
                 is_pub,
                 is_sealed: _,   // TODO: implement sealed classes
