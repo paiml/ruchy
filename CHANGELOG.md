@@ -4,6 +4,31 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.56.0] - 2025-09-29
+
+### Documentation and Status Update Release
+
+#### Actor System Status Documentation
+- Comprehensive documentation of actor system limitations
+- Clear delineation between working parser and incomplete runtime
+- Test coverage analysis: 82.4% parser tests passing
+- Identified architectural requirements for completion
+
+#### Known Limitations Documented
+- **Actor System**: Message passing not implemented, no concurrency
+- **Classes**: Mutable self methods don't persist state
+- **Both Systems**: Share same architectural limitation - state mutations lost
+
+#### Technical Status
+- Overall test coverage remains at 99.3% (3358/3382)
+- Actor parser fully functional for syntax validation
+- Runtime requires architectural refactoring similar to class mutable self
+
+#### Documentation Improvements
+- Created ACTOR_SYSTEM_STATUS.md with detailed analysis
+- Updated roadmap with current implementation status
+- Clear warnings about incomplete features
+
 ## [3.55.0] - 2025-09-29
 
 ### OOP Sprint Completion - Classes and Actors Enhanced
