@@ -248,27 +248,6 @@ impl Expr {
         }
     }
 }
-
-/// Type parameter with optional constraints
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct TypeParam {
-    pub name: String,
-    pub bounds: Vec<String>, // e.g., ["Display", "Debug"] for T: Display + Debug
-}
-
-impl TypeParam {
-    pub fn new(name: String) -> Self {
-        Self {
-            name,
-            bounds: Vec::new(),
-        }
-    }
-
-    pub fn with_bounds(name: String, bounds: Vec<String>) -> Self {
-        Self { name, bounds }
-    }
-}
-
 /// The specific type of expression represented by an AST node.
 ///
 /// `ExprKind` is a comprehensive enumeration of all expression types supported
@@ -449,8 +428,6 @@ pub enum ExprKind {
         methods: Vec<ClassMethod>,
         constants: Vec<ClassConstant>,  // const NAME: TYPE = VALUE
         properties: Vec<ClassProperty>, // property NAME: TYPE { get => ..., set(v) => ... }
-        impl_blocks: Vec<Expr>,         // impl blocks defined inside the class
-        nested_classes: Vec<Expr>,      // nested class definitions
         derives: Vec<String>,           // #[derive(Debug, Clone, ...)]
         decorators: Vec<Decorator>,     // @Serializable, @Table("users"), etc.
         is_pub: bool,
@@ -802,8 +779,8 @@ pub enum BinaryOp {
     BitwiseXor,
     LeftShift,
     RightShift,
-    // Actor
-    Send, // ! operator for sending messages to actors
+    // Actor operations
+    Send, // Actor message passing: actor ! message
 }
 /// Unary operators for single-operand expressions.
 ///
@@ -2005,8 +1982,8 @@ mod tests {
                 TypeKind::Tuple(ref types) => assert!(!types.is_empty()),
                 TypeKind::Reference {
                     is_mut: _,
-                    ref inner,
                     lifetime: _,
+                    ref inner,
                 } => {
                     // Reference types should have a valid inner type
                     if let TypeKind::Named(ref name) = inner.kind {
@@ -2503,7 +2480,12 @@ mod tests {
             span: Span::new(0, 7),
         };
 
-        if let TypeKind::Reference { is_mut, inner, .. } = ref_type.kind {
+        if let TypeKind::Reference {
+            is_mut,
+            lifetime: _,
+            inner,
+        } = ref_type.kind
+        {
             assert!(!is_mut);
             if let TypeKind::Named(name) = inner.kind {
                 assert_eq!(name, "String");

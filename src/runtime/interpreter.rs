@@ -939,9 +939,7 @@ impl Interpreter {
                 constructors,
                 methods,
                 constants,
-                properties: _,     // TODO: implement property evaluation
-                impl_blocks: _,    // TODO: implement impl blocks in classes
-                nested_classes: _, // TODO: implement nested classes
+                properties: _, // TODO: implement property evaluation
                 derives,
                 is_pub,
                 is_sealed: _,   // TODO: implement sealed classes
@@ -1150,6 +1148,36 @@ impl Interpreter {
 
         match object_value {
             Value::Object(ref object_map) => {
+                // Check if this is accessing .new on a type (for constructors)
+                if field == "new" {
+                    // Check if this is an Actor, Struct, or Class type definition
+                    if let Some(Value::String(ref type_str)) = object_map.get("__type") {
+                        if let Some(Value::String(ref name)) = object_map.get("__name") {
+                            match type_str.as_ref() {
+                                "Actor" => {
+                                    return Ok(Value::from_string(format!(
+                                        "__actor_constructor__:{}",
+                                        name
+                                    )));
+                                }
+                                "Struct" => {
+                                    return Ok(Value::from_string(format!(
+                                        "__struct_constructor__:{}",
+                                        name
+                                    )));
+                                }
+                                "Class" => {
+                                    return Ok(Value::from_string(format!(
+                                        "__class_constructor__:{}:new",
+                                        name
+                                    )));
+                                }
+                                _ => {}
+                            }
+                        }
+                    }
+                }
+
                 if let Some(value) = object_map.get(field) {
                     Ok(value.clone())
                 } else {
@@ -1218,6 +1246,21 @@ impl Interpreter {
                             // Return a special marker for struct instantiation
                             return Ok(Value::from_string(format!(
                                 "__struct_constructor__:{}",
+                                module
+                            )));
+                        }
+                    }
+                }
+            }
+            // Check if this is an actor constructor call
+            if let Ok(actor_value) = self.lookup_variable(module) {
+                if let Value::Object(ref actor_info) = actor_value {
+                    // Check if it's an actor definition
+                    if let Some(Value::String(ref type_str)) = actor_info.get("__type") {
+                        if type_str.as_ref() == "Actor" {
+                            // Return a special marker for actor instantiation
+                            return Ok(Value::from_string(format!(
+                                "__actor_constructor__:{}",
                                 module
                             )));
                         }
@@ -1298,6 +1341,11 @@ impl Interpreter {
                                 } else if type_str.as_ref() == "Struct" && method_name == "new" {
                                     return Ok(Value::from_string(format!(
                                         "__struct_constructor__:{}",
+                                        type_name
+                                    )));
+                                } else if type_str.as_ref() == "Actor" && method_name == "new" {
+                                    return Ok(Value::from_string(format!(
+                                        "__actor_constructor__:{}",
                                         type_name
                                     )));
                                 }
@@ -1406,6 +1454,11 @@ impl Interpreter {
                 // Extract struct name from the marker
                 let struct_name = s.strip_prefix("__struct_constructor__:").unwrap();
                 self.instantiate_struct_with_args(struct_name, args)
+            }
+            Value::String(ref s) if s.starts_with("__actor_constructor__:") => {
+                // Extract actor name from the marker
+                let actor_name = s.strip_prefix("__actor_constructor__:").unwrap();
+                self.instantiate_actor_with_args(actor_name, args)
             }
             Value::String(s) if s.starts_with("__builtin_") => {
                 // Delegate to extracted builtin module
@@ -2338,6 +2391,28 @@ impl Interpreter {
             Value::Integer(n) => self.eval_integer_method(*n, method, args_empty),
             Value::DataFrame { columns } => self.eval_dataframe_method(columns, method, arg_values),
             Value::Object(obj) => {
+                // Check if this is a type definition with constructor
+                if method == "new" {
+                    if let Some(Value::String(ref type_str)) = obj.get("__type") {
+                        if let Some(Value::String(ref name)) = obj.get("__name") {
+                            match type_str.as_ref() {
+                                "Actor" => {
+                                    return self.instantiate_actor_with_args(name, arg_values);
+                                }
+                                "Struct" => {
+                                    return self.instantiate_struct_with_args(name, arg_values);
+                                }
+                                "Class" => {
+                                    return self.instantiate_class_with_constructor(
+                                        name, "new", arg_values,
+                                    );
+                                }
+                                _ => {}
+                            }
+                        }
+                    }
+                }
+
                 // Check if this is a class instance
                 if let Some(Value::String(class_name)) = obj.get("__class") {
                     self.eval_class_instance_method(obj, class_name.as_ref(), method, arg_values)
@@ -2634,9 +2709,9 @@ impl Interpreter {
             })
             .unwrap_or("");
 
-        if type_name != "Struct" {
+        if type_name != "Struct" && type_name != "Actor" {
             return Err(InterpreterError::RuntimeError(format!(
-                "{name} is not a struct type (it's a {type_name})"
+                "{name} is not a struct or actor type (it's a {type_name})"
             )));
         }
 
@@ -3071,6 +3146,91 @@ impl Interpreter {
             Err(InterpreterError::RuntimeError(format!(
                 "{} is not a struct definition",
                 struct_name
+            )))
+        }
+    }
+
+    fn instantiate_actor_with_args(
+        &mut self,
+        actor_name: &str,
+        args: &[Value],
+    ) -> Result<Value, InterpreterError> {
+        // Look up the actor definition
+        let actor_def = self.lookup_variable(actor_name)?;
+
+        if let Value::Object(ref actor_info) = actor_def {
+            // Verify this is an actor
+            if let Some(Value::String(ref type_str)) = actor_info.get("__type") {
+                if type_str.as_ref() != "Actor" {
+                    return Err(InterpreterError::RuntimeError(format!(
+                        "{} is not an actor",
+                        actor_name
+                    )));
+                }
+            }
+
+            // Create actor instance
+            let mut instance = HashMap::new();
+            instance.insert(
+                "__actor".to_string(),
+                Value::from_string(actor_name.to_string()),
+            );
+
+            // Check if args is a single object literal (named arguments)
+            let named_args = if args.len() == 1 {
+                if let Value::Object(ref obj) = args[0] {
+                    Some(obj)
+                } else {
+                    None
+                }
+            } else {
+                None
+            };
+
+            // Initialize state fields with default values
+            // Actors use __fields just like structs
+            if let Some(Value::Object(ref fields)) = actor_info.get("__fields") {
+                if let Some(named) = named_args {
+                    // Use named arguments
+                    for (field_name, _field_info) in fields.iter() {
+                        if let Some(value) = named.get(field_name) {
+                            instance.insert(field_name.clone(), value.clone());
+                        } else {
+                            // Initialize with default for type
+                            instance.insert(field_name.clone(), Value::Nil);
+                        }
+                    }
+                } else {
+                    // Map positional arguments to fields (assuming order matches definition)
+                    for (i, (field_name, field_info)) in fields.iter().enumerate() {
+                        if i < args.len() {
+                            instance.insert(field_name.clone(), args[i].clone());
+                        } else if let Value::Object(ref field_meta) = field_info {
+                            // Use default value if present
+                            if let Some(default) = field_meta.get("default") {
+                                instance.insert(field_name.clone(), default.clone());
+                            } else {
+                                // Initialize with default for type
+                                instance.insert(field_name.clone(), Value::Nil);
+                            }
+                        } else {
+                            // Simple field without metadata
+                            instance.insert(field_name.clone(), Value::Nil);
+                        }
+                    }
+                }
+            }
+
+            // Store the actor's handlers for later message processing
+            if let Some(handlers) = actor_info.get("__handlers") {
+                instance.insert("__handlers".to_string(), handlers.clone());
+            }
+
+            Ok(Value::Object(Rc::new(instance)))
+        } else {
+            Err(InterpreterError::RuntimeError(format!(
+                "{} is not an actor definition",
+                actor_name
             )))
         }
     }
