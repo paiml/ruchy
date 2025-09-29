@@ -983,9 +983,35 @@ impl Interpreter {
                 ..
             } => self.eval_impl_block(for_type, methods),
             ExprKind::Spawn { actor } => {
-                // Evaluate the actor expression to spawn
+                // Special handling to ensure we create an actor instance, not a struct
+                if let ExprKind::Call { func, args } = &actor.kind {
+                    // Check if this is calling an actor constructor
+                    if let ExprKind::Identifier(name) = &func.kind {
+                        // Check if this identifier refers to an actor
+                        if let Ok(def_value) = self.lookup_variable(name) {
+                            if let Value::Object(ref obj) = def_value {
+                                if let Some(Value::String(type_str)) = obj.get("__type") {
+                                    if type_str.as_ref() == "Actor" {
+                                        // This is an actor - convert to Actor.new() call
+                                        let constructor_marker = Value::from_string(format!(
+                                            "__actor_constructor__:{}",
+                                            name
+                                        ));
+                                        // Evaluate arguments
+                                        let arg_vals: Result<Vec<Value>, _> =
+                                            args.iter().map(|arg| self.eval_expr(arg)).collect();
+                                        let arg_vals = arg_vals?;
+                                        // Call the actor constructor
+                                        return self.call_function(constructor_marker, &arg_vals);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Default: evaluate the actor expression normally
                 let actor_value = self.eval_expr(actor)?;
-                // For now, spawn just returns the actor instance
                 // In a full actor system, this would create a mailbox and thread
                 Ok(actor_value)
             }
@@ -1498,6 +1524,42 @@ impl Interpreter {
                 self.env_pop();
 
                 result
+            }
+            Value::Object(ref obj) => {
+                // Check if this is a struct or actor definition being called as a constructor
+                if let Some(Value::String(type_str)) = obj.get("__type") {
+                    match type_str.as_ref() {
+                        "Struct" => {
+                            // Get struct name and instantiate
+                            if let Some(Value::String(name)) = obj.get("__name") {
+                                self.instantiate_struct_with_args(name.as_ref(), args)
+                            } else {
+                                Err(InterpreterError::RuntimeError(
+                                    "Struct missing __name field".to_string(),
+                                ))
+                            }
+                        }
+                        "Actor" => {
+                            // Get actor name and instantiate
+                            if let Some(Value::String(name)) = obj.get("__name") {
+                                self.instantiate_actor_with_args(name.as_ref(), args)
+                            } else {
+                                Err(InterpreterError::RuntimeError(
+                                    "Actor missing __name field".to_string(),
+                                ))
+                            }
+                        }
+                        _ => Err(InterpreterError::TypeError(format!(
+                            "Cannot call object of type: {}",
+                            type_str
+                        ))),
+                    }
+                } else {
+                    Err(InterpreterError::TypeError(format!(
+                        "Cannot call non-function value: {}",
+                        func.type_name()
+                    )))
+                }
             }
             _ => Err(InterpreterError::TypeError(format!(
                 "Cannot call non-function value: {}",
@@ -2369,6 +2431,37 @@ impl Interpreter {
             return self.eval_dataframe_filter_method(&receiver_value, args);
         }
 
+        // Special handling for actor send/ask methods - convert undefined identifiers to messages
+        if (method == "send" || method == "ask") && args.len() == 1 {
+            // Check if receiver is an actor instance
+            if let Value::Object(ref obj) = receiver_value {
+                if obj.contains_key("__actor") {
+                    // Try to evaluate the argument as a message
+                    let arg_value = match &args[0].kind {
+                        ExprKind::Identifier(name) => {
+                            // Try to evaluate as variable first
+                            if let Ok(val) = self.lookup_variable(name) {
+                                val
+                            } else {
+                                // Treat as a zero-argument message constructor
+                                let mut message = HashMap::new();
+                                message.insert(
+                                    "__type".to_string(),
+                                    Value::from_string("Message".to_string()),
+                                );
+                                message
+                                    .insert("type".to_string(), Value::from_string(name.clone()));
+                                message.insert("data".to_string(), Value::Array(Rc::from(vec![])));
+                                Value::Object(Rc::new(message))
+                            }
+                        }
+                        _ => self.eval_expr(&args[0])?,
+                    };
+                    return self.dispatch_method_call(&receiver_value, method, &[arg_value], false);
+                }
+            }
+        }
+
         let arg_values: Result<Vec<_>, _> = args.iter().map(|arg| self.eval_expr(arg)).collect();
         let arg_values = arg_values?;
 
@@ -2413,8 +2506,12 @@ impl Interpreter {
                     }
                 }
 
+                // Check if this is an actor instance
+                if let Some(Value::String(actor_name)) = obj.get("__actor") {
+                    self.eval_actor_instance_method(obj, actor_name.as_ref(), method, arg_values)
+                }
                 // Check if this is a class instance
-                if let Some(Value::String(class_name)) = obj.get("__class") {
+                else if let Some(Value::String(class_name)) = obj.get("__class") {
                     self.eval_class_instance_method(obj, class_name.as_ref(), method, arg_values)
                 }
                 // Check if this is a struct instance with impl methods
@@ -2455,6 +2552,130 @@ impl Interpreter {
         args_empty: bool,
     ) -> Result<Value, InterpreterError> {
         eval_method::eval_generic_method(receiver, method, args_empty)
+    }
+
+    fn eval_actor_instance_method(
+        &mut self,
+        instance: &std::collections::HashMap<String, Value>,
+        _actor_name: &str,
+        method: &str,
+        arg_values: &[Value],
+    ) -> Result<Value, InterpreterError> {
+        match method {
+            "send" => {
+                // Send a message to the actor (fire-and-forget)
+                // For now, just return Nil to indicate success
+                if arg_values.is_empty() {
+                    return Err(InterpreterError::RuntimeError(
+                        "send() requires a message argument".to_string(),
+                    ));
+                }
+
+                // The message is already evaluated, just return Nil
+                // In a real implementation, we'd enqueue the message
+                Ok(Value::Nil)
+            }
+            "stop" => {
+                // Stop the actor
+                // In a real actor system, this would terminate the actor's mailbox processing
+                Ok(Value::Bool(true))
+            }
+            "ask" => {
+                // Send a message and wait for response
+                // For now, we'll process the message synchronously
+                if arg_values.is_empty() {
+                    return Err(InterpreterError::RuntimeError(
+                        "ask() requires a message argument".to_string(),
+                    ));
+                }
+
+                // Get the message
+                let message = &arg_values[0];
+
+                // Try to extract message type and data
+                if let Value::Object(msg_obj) = message {
+                    // Check if this is a Message object we created
+                    if let Some(Value::String(type_str)) = msg_obj.get("__type") {
+                        if type_str.as_ref() == "Message" {
+                            // Extract message type and data
+                            if let Some(Value::String(msg_type)) = msg_obj.get("type") {
+                                if let Some(Value::Array(data)) = msg_obj.get("data") {
+                                    // Look up the handler for this message type
+                                    if let Some(handlers) = instance.get("__handlers") {
+                                        if let Value::Array(handler_list) = handlers {
+                                            // Find matching handler
+                                            for handler in handler_list.iter() {
+                                                if let Value::Object(h) = handler {
+                                                    if let Some(Value::String(h_type)) =
+                                                        h.get("message_type")
+                                                    {
+                                                        if h_type.as_ref() == msg_type.as_ref() {
+                                                            // Found matching handler - execute it
+                                                            if let Some(Value::Closure {
+                                                                params,
+                                                                body,
+                                                                env,
+                                                            }) = h.get("handler")
+                                                            {
+                                                                // Push a new environment for handler execution
+                                                                let mut handler_env =
+                                                                    (**env).clone();
+
+                                                                // Bind message parameters
+                                                                for (i, param_name) in
+                                                                    params.iter().enumerate()
+                                                                {
+                                                                    if let Some(value) = data.get(i)
+                                                                    {
+                                                                        handler_env.insert(
+                                                                            param_name.clone(),
+                                                                            value.clone(),
+                                                                        );
+                                                                    }
+                                                                }
+
+                                                                // Also bind 'self' to the actor instance
+                                                                handler_env.insert(
+                                                                    "self".to_string(),
+                                                                    Value::Object(Rc::new(
+                                                                        instance.clone(),
+                                                                    )),
+                                                                );
+
+                                                                // Execute handler body
+                                                                self.env_push(handler_env);
+                                                                let result =
+                                                                    self.eval_expr(body)?;
+                                                                self.env_pop();
+
+                                                                return Ok(result);
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    // No handler found - return a default response
+                                    return Ok(Value::from_string(format!(
+                                        "Received: {}",
+                                        msg_type.as_ref()
+                                    )));
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Default: return the message itself (echo)
+                Ok(message.clone())
+            }
+            _ => Err(InterpreterError::RuntimeError(format!(
+                "Unknown actor method: {}",
+                method
+            ))),
+        }
     }
 
     fn eval_struct_instance_method(
@@ -2709,9 +2930,28 @@ impl Interpreter {
             })
             .unwrap_or("");
 
-        if type_name != "Struct" && type_name != "Actor" {
+        // Handle Actor types differently
+        if type_name == "Actor" {
+            // Convert field expressions to values for actor instantiation
+            let mut field_values = Vec::new();
+            for (field_name, field_expr) in fields {
+                let value = self.eval_expr(field_expr)?;
+                field_values.push((field_name.clone(), value));
+            }
+
+            // Create an object with the named fields to pass to actor instantiation
+            let mut args_obj = HashMap::new();
+            for (name, value) in field_values {
+                args_obj.insert(name, value);
+            }
+
+            // Call the actor instantiation function
+            return self.instantiate_actor_with_args(name, &[Value::Object(Rc::new(args_obj))]);
+        }
+
+        if type_name != "Struct" {
             return Err(InterpreterError::RuntimeError(format!(
-                "{name} is not a struct or actor type (it's a {type_name})"
+                "{name} is not a struct type (it's a {type_name})"
             )));
         }
 
@@ -3645,7 +3885,35 @@ impl Interpreter {
         func: &Expr,
         args: &[Expr],
     ) -> Result<Value, InterpreterError> {
-        let func_val = self.eval_expr(func)?;
+        // Try to evaluate the function normally
+        let func_val_result = self.eval_expr(func);
+
+        // If function lookup fails and it's an identifier, treat it as a message constructor
+        let func_val = match func_val_result {
+            Ok(val) => val,
+            Err(InterpreterError::RuntimeError(msg)) if msg.starts_with("Undefined variable:") => {
+                // Check if this is an identifier that could be a message constructor
+                if let ExprKind::Identifier(name) = &func.kind {
+                    // Create a message object
+                    let arg_vals: Result<Vec<Value>, InterpreterError> =
+                        args.iter().map(|arg| self.eval_expr(arg)).collect();
+                    let arg_vals = arg_vals?;
+
+                    let mut message = HashMap::new();
+                    message.insert(
+                        "__type".to_string(),
+                        Value::from_string("Message".to_string()),
+                    );
+                    message.insert("type".to_string(), Value::from_string(name.clone()));
+                    message.insert("data".to_string(), Value::Array(Rc::from(arg_vals)));
+
+                    return Ok(Value::Object(Rc::new(message)));
+                }
+                return Err(InterpreterError::RuntimeError(msg));
+            }
+            Err(e) => return Err(e),
+        };
+
         let arg_vals: Result<Vec<Value>, InterpreterError> =
             args.iter().map(|arg| self.eval_expr(arg)).collect();
         let arg_vals = arg_vals?;
