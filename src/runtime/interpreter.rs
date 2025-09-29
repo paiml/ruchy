@@ -1204,6 +1204,15 @@ impl Interpreter {
                     }
                 }
 
+                // Check if this is an actor instance with runtime state
+                if let Some(Value::String(actor_id)) = object_map.get("__actor_id") {
+                    // This is an actor - get the field from the runtime
+                    use crate::runtime::actor_runtime::ACTOR_RUNTIME;
+                    let field_value = ACTOR_RUNTIME.get_actor_field(actor_id.as_ref(), field)?;
+                    return Ok(field_value.to_value());
+                }
+
+                // Regular object field access
                 if let Some(value) = object_map.get(field) {
                     Ok(value.clone())
                 } else {
@@ -2564,16 +2573,69 @@ impl Interpreter {
         match method {
             "send" => {
                 // Send a message to the actor (fire-and-forget)
-                // For now, just return Nil to indicate success
                 if arg_values.is_empty() {
                     return Err(InterpreterError::RuntimeError(
                         "send() requires a message argument".to_string(),
                     ));
                 }
 
-                // The message is already evaluated, just return Nil
-                // In a real implementation, we'd enqueue the message
-                Ok(Value::Nil)
+                // Get the actor ID from the instance
+                if let Some(Value::String(actor_id)) = instance.get("__actor_id") {
+                    use crate::runtime::actor_runtime::{ActorMessage, ACTOR_RUNTIME};
+
+                    // Extract message type and data
+                    let message = &arg_values[0];
+                    let (msg_type, msg_data) = if let Value::Object(msg_obj) = message {
+                        if let Some(Value::String(type_str)) = msg_obj.get("__type") {
+                            if type_str.as_ref() == "Message" {
+                                let msg_type = msg_obj
+                                    .get("type")
+                                    .and_then(|v| {
+                                        if let Value::String(s) = v {
+                                            Some(s.to_string())
+                                        } else {
+                                            None
+                                        }
+                                    })
+                                    .unwrap_or_else(|| "Unknown".to_string());
+                                let msg_data = msg_obj
+                                    .get("data")
+                                    .and_then(|v| {
+                                        if let Value::Array(arr) = v {
+                                            Some(arr.to_vec())
+                                        } else {
+                                            None
+                                        }
+                                    })
+                                    .unwrap_or_else(Vec::new);
+                                (msg_type, msg_data)
+                            } else {
+                                ("Unknown".to_string(), vec![])
+                            }
+                        } else {
+                            ("Unknown".to_string(), vec![])
+                        }
+                    } else {
+                        // Simple message value
+                        ("Message".to_string(), vec![message.clone()])
+                    };
+
+                    // Convert data to strings for thread safety
+                    let str_data: Vec<String> =
+                        msg_data.iter().map(|v| format!("{:?}", v)).collect();
+
+                    // Send the message to the actor
+                    let actor_msg = ActorMessage {
+                        message_type: msg_type,
+                        data: str_data,
+                    };
+
+                    ACTOR_RUNTIME.send_message(actor_id.as_ref(), actor_msg)?;
+                    Ok(Value::Nil)
+                } else {
+                    // Old-style actor without runtime ID
+                    Ok(Value::Nil)
+                }
             }
             "stop" => {
                 // Stop the actor
@@ -3491,6 +3553,39 @@ impl Interpreter {
             if let Some(handlers) = actor_info.get("__handlers") {
                 instance.insert("__handlers".to_string(), handlers.clone());
             }
+
+            // Create the actor in the runtime and get its ID
+            use crate::runtime::actor_runtime::{ActorFieldValue, ACTOR_RUNTIME};
+            let mut initial_state = HashMap::new();
+
+            // Copy the state fields (excluding metadata fields)
+            for (key, value) in instance.iter() {
+                if !key.starts_with("__") {
+                    initial_state.insert(key.clone(), ActorFieldValue::from_value(value));
+                }
+            }
+
+            // Extract receive handlers (just handler names for now)
+            let receive_handlers =
+                if let Some(Value::Object(handlers)) = actor_info.get("__handlers") {
+                    let mut handler_map = HashMap::new();
+                    for (msg_type, _handler) in handlers.iter() {
+                        handler_map.insert(msg_type.clone(), msg_type.clone());
+                    }
+                    handler_map
+                } else {
+                    HashMap::new()
+                };
+
+            // Spawn the actor in the runtime
+            let actor_id = ACTOR_RUNTIME.spawn_actor(
+                actor_name.to_string(),
+                initial_state,
+                receive_handlers,
+            )?;
+
+            // Add the runtime actor ID to the instance
+            instance.insert("__actor_id".to_string(), Value::from_string(actor_id));
 
             Ok(Value::Object(Rc::new(instance)))
         } else {

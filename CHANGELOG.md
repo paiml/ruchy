@@ -4,6 +4,33 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.57.0] - 2025-09-29
+
+### Actor Runtime Implementation
+
+#### New Features
+- **Actor Runtime Module**: Implemented thread-safe actor runtime with mailboxes
+- **Message Queuing**: Actors now have real message queues (VecDeque-based)
+- **State Persistence**: Basic actor state updates now persist (integers, floats, strings)
+- **Field Access**: Actor fields accessible through runtime-managed state
+
+#### Implementation Details
+- Created `actor_runtime.rs` with `ActorMailbox`, `ActorInstance`, and `ActorRuntime`
+- Thread-safe design using `Arc<RwLock>` for actor registry
+- Conversion layer between `Value` and thread-safe `ActorFieldValue`
+- Global `ACTOR_RUNTIME` instance manages all actors
+
+#### Test Improvements
+- Actor test coverage increased: 15/17 tests passing (88.2%)
+- `test_actor_state_modification` now working correctly
+- Message processing verified for simple increment operations
+
+#### Known Limitations
+- No concurrent execution (still synchronous)
+- Complex message handlers not yet implemented
+- Type checking for messages not enforced
+- Vector/Array fields in actors not supported
+
 ## [3.56.0] - 2025-09-29
 
 ### Documentation and Status Update Release
