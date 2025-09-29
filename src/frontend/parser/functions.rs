@@ -312,6 +312,16 @@ pub fn parse_method_call(state: &mut ParserState, receiver: Expr) -> Result<Expr
             state.tokens.advance();
             parse_method_or_field_access(state, receiver, method)
         }
+        Some((Token::Send, _)) => {
+            // Handle 'send' as a method name (for actors)
+            state.tokens.advance();
+            parse_method_or_field_access(state, receiver, "send".to_string())
+        }
+        Some((Token::Ask, _)) => {
+            // Handle 'ask' as a method name (for actors)
+            state.tokens.advance();
+            parse_method_or_field_access(state, receiver, "ask".to_string())
+        }
         Some((Token::Integer(index), _)) => {
             // Handle tuple access like t.0, t.1, etc.
             let index = *index;
@@ -337,6 +347,16 @@ pub fn parse_optional_method_call(state: &mut ParserState, receiver: Expr) -> Re
             let method = name.clone();
             state.tokens.advance();
             parse_optional_method_or_field_access(state, receiver, method)
+        }
+        Some((Token::Send, _)) => {
+            // Handle 'send' as a method name (for actors)
+            state.tokens.advance();
+            parse_optional_method_or_field_access(state, receiver, "send".to_string())
+        }
+        Some((Token::Ask, _)) => {
+            // Handle 'ask' as a method name (for actors)
+            state.tokens.advance();
+            parse_optional_method_or_field_access(state, receiver, "ask".to_string())
         }
         Some((Token::Integer(index), _)) => {
             // Handle optional tuple access like t?.0, t?.1, etc.

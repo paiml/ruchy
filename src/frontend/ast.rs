@@ -2505,7 +2505,7 @@ mod tests {
         // Test Literal variants
         let literals = vec![
             ExprKind::Literal(Literal::Integer(42)),
-            ExprKind::Literal(Literal::Float(3.14)),
+            ExprKind::Literal(Literal::Float(3.14159)),
             ExprKind::Literal(Literal::Bool(true)),
             ExprKind::Literal(Literal::Bool(false)),
             ExprKind::Literal(Literal::String("test".to_string())),

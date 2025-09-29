@@ -270,7 +270,7 @@ mod tests {
         let _f4: fn(&mut ParserState) = consume_optional_separator;
 
         // If this compiles, the signatures are correct
-        assert!(true, "Helper functions exist with correct signatures");
+        // Test passes if compilation succeeds
     }
 
     #[test]
@@ -305,7 +305,6 @@ mod tests {
             visibility: Visibility::Private,
             is_mut: false,
             default_value: None,
-            decorators: vec![],
         };
 
         assert_eq!(field.name, "test_field");
