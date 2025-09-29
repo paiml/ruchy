@@ -132,6 +132,8 @@ fn prepare_rust_file(rust_code: &TokenStream) -> Result<(TempDir, PathBuf)> {
 fn build_rustc_command(rust_file: &Path, options: &CompileOptions) -> Command {
     let mut cmd = Command::new("rustc");
     cmd.arg(rust_file).arg("-o").arg(&options.output);
+    // Set Rust edition to 2021 for async support
+    cmd.arg("--edition").arg("2021");
     // Add optimization level
     cmd.arg("-C")
         .arg(format!("opt-level={}", options.opt_level));

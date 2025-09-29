@@ -1,0 +1,44 @@
+// Actor supervision example
+// Demonstrates parent-child relationships and error handling
+
+actor Supervisor {
+    workers: Vec<String> = vec![]
+    restart_count: i32 = 0
+
+    receive StartWorker => {
+        // Spawn a child worker
+        self.workers.push("worker")
+    }
+
+    receive WorkerFailed => {
+        // Handle worker failure with restart strategy
+        self.restart_count = self.restart_count + 1
+        if self.restart_count < 3 {
+            // Restart the worker
+            self.workers.push("restarted_worker")
+        }
+    }
+}
+
+actor Worker {
+    tasks_completed: i32 = 0
+
+    receive DoWork => {
+        self.tasks_completed = self.tasks_completed + 1
+    }
+
+    receive Fail => {
+        // Simulate failure
+        self.tasks_completed = 0
+    }
+}
+
+fn main() {
+    let supervisor = spawn Supervisor {}
+
+    // Start some workers
+    supervisor.send(StartWorker)
+    supervisor.send(StartWorker)
+
+    println("Supervisor with workers spawned")
+}

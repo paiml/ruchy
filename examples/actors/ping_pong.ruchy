@@ -1,0 +1,30 @@
+// Ping-pong actor example
+// Demonstrates actor communication patterns
+
+actor Ping {
+    pongs: i32 = 0
+
+    receive StartPing => {
+        // In a real implementation, would send to Pong actor
+        self.pongs = self.pongs + 1
+    }
+}
+
+actor Pong {
+    pings: i32 = 0
+
+    receive Ping => {
+        self.pings = self.pings + 1
+        // Would send Pong message back
+    }
+}
+
+fn main() {
+    let ping_actor = spawn Ping {}
+    let pong_actor = spawn Pong {}
+
+    // Start the ping-pong sequence
+    ping_actor.send(StartPing)
+
+    println("Ping-pong actors spawned and message sent")
+}
