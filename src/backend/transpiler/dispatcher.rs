@@ -1,3 +1,4 @@
+#![allow(clippy::approx_constant)]
 //! Dispatcher functions to reduce complexity in transpiler
 //!
 //! This module contains delegated transpilation functions to keep
