@@ -58,6 +58,7 @@
 //! - **Memory Safety**: Arena allocation without unsafe code
 //! - **Educational Tools**: Assessment and grading systems
 pub mod actor;
+pub mod actor_concurrent;
 pub mod actor_runtime;
 pub mod async_runtime;
 pub mod cache;
@@ -125,6 +126,11 @@ pub use interpreter::{DataFrameColumn, Interpreter, InterpreterError, Interprete
 pub use actor::{
     ActorBehavior, ActorContext, ActorId, ActorRef, ActorSystem, EchoActor, Message, MessageValue,
     SupervisorActor, SupervisorDirective,
+};
+// Export concurrent actor system
+pub use actor_concurrent::{
+    ActorState as ConcurrentActorState, ConcurrentActor, ConcurrentActorSystem, Envelope,
+    SupervisionStrategy, SystemMessage, CONCURRENT_ACTOR_SYSTEM,
 };
 // Export observatory components
 pub use observatory::{

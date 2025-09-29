@@ -4,6 +4,39 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.58.0] - 2025-09-29
+
+### Concurrent Actor System Implementation
+
+#### New Features
+- **Concurrent Actor Runtime**: True multi-threaded actor execution with thread pools
+- **Supervision Trees**: Full supervisor-child relationships with error recovery
+- **Restart Strategies**: OneForOne, AllForOne, and RestForOne supervision strategies
+- **Actor Lifecycle Management**: Starting, Running, Stopping, Failed, Restarting states
+- **System Messages**: Dedicated system message channel for lifecycle control
+- **Thread-Safe State**: Actor state managed with Arc<RwLock> for concurrent access
+- **Message Envelopes**: Typed message system with sender tracking
+
+#### Implementation Details
+- Created `actor_concurrent.rs` with full concurrent actor implementation
+- Each actor runs in its own OS thread with event loop
+- Message passing via MPSC channels with timeout support
+- Supervision tree with configurable restart strategies and limits
+- Global `CONCURRENT_ACTOR_SYSTEM` manages all concurrent actors
+- UUID-based actor identification for uniqueness
+
+#### Architecture Improvements
+- Separated system messages from user messages
+- Implemented actor event loop with graceful shutdown
+- Added restart counters and time windows for supervision
+- Thread join on actor stop for clean resource cleanup
+
+#### Test Coverage
+- All concurrent actor tests passing
+- Message sending with thread safety verified
+- Actor creation and lifecycle transitions tested
+- Supervision tree relationships validated
+
 ## [3.57.0] - 2025-09-29
 
 ### Actor Runtime Implementation

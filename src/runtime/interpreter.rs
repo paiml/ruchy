@@ -3559,7 +3559,7 @@ impl Interpreter {
             let mut initial_state = HashMap::new();
 
             // Copy the state fields (excluding metadata fields)
-            for (key, value) in instance.iter() {
+            for (key, value) in &instance {
                 if !key.starts_with("__") {
                     initial_state.insert(key.clone(), ActorFieldValue::from_value(value));
                 }
