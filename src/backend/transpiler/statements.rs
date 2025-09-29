@@ -3378,13 +3378,16 @@ mod tests {
     #[test]
     fn test_reserved_keyword_handling() {
         let transpiler = create_transpiler();
-        let code = "let final = 5; final"; // Use regular keyword, not r# syntax
+        let code = "let move = 5; move"; // Use 'move' which is reserved in Rust but not Ruchy
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
         let result = transpiler.transpile(&ast).unwrap();
         let rust_str = result.to_string();
         // Should handle Rust reserved keywords by prefixing with r#
-        assert!(rust_str.contains("r#final") || rust_str.contains("final"));
+        assert!(
+            rust_str.contains("r#move"),
+            "Expected r#move in: {rust_str}"
+        );
     }
     #[test]
     fn test_generic_function() {
@@ -3965,12 +3968,12 @@ mod tests {
     #[test]
     fn test_method_chaining() {
         let transpiler = create_transpiler();
-        let code = "[1, 2, 3].map(x => x * 2).filter(x => x > 2)";
+        let code = "[1, 2, 3].iter().sum()"; // Use simpler method chain without fat arrow
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
         let result = transpiler.transpile(&ast);
-        // Method chaining might have special handling
-        assert!(result.is_ok() || result.is_err());
+        // Method chaining should work
+        assert!(result.is_ok(), "Failed to transpile method chaining");
     }
 
     // Test 53: String Interpolation
