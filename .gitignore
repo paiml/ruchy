@@ -6,6 +6,7 @@ target
 # Debug test binaries and executables (ZERO TOLERANCE FOR CRUFT)
 test_*
 debug_*
+a.out
 !*.rs
 !*.toml
 
