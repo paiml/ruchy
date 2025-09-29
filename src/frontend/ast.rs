@@ -1966,6 +1966,7 @@ mod tests {
                 TypeKind::Tuple(ref types) => assert!(!types.is_empty()),
                 TypeKind::Reference {
                     is_mut: _,
+                    lifetime: _,
                     ref inner,
                 } => {
                     // Reference types should have a valid inner type
@@ -2442,6 +2443,7 @@ mod tests {
         let ref_type = Type {
             kind: TypeKind::Reference {
                 is_mut: false,
+                lifetime: None,
                 inner: Box::new(Type {
                     kind: TypeKind::Named("String".to_string()),
                     span: Span::new(1, 7),
@@ -2453,6 +2455,7 @@ mod tests {
         let mut_ref_type = Type {
             kind: TypeKind::Reference {
                 is_mut: true,
+                lifetime: None,
                 inner: Box::new(Type {
                     kind: TypeKind::Named("Vec".to_string()),
                     span: Span::new(4, 7),
@@ -2461,7 +2464,7 @@ mod tests {
             span: Span::new(0, 7),
         };
 
-        if let TypeKind::Reference { is_mut, inner } = ref_type.kind {
+        if let TypeKind::Reference { is_mut, lifetime: _, inner } = ref_type.kind {
             assert!(!is_mut);
             if let TypeKind::Named(name) = inner.kind {
                 assert_eq!(name, "String");
@@ -2618,6 +2621,7 @@ mod tests {
             },
             TypeKind::Reference {
                 is_mut: false,
+                lifetime: None,
                 inner: Box::new(Type {
                     kind: TypeKind::Named("String".to_string()),
                     span: Span::new(1, 7),
@@ -2625,6 +2629,7 @@ mod tests {
             },
             TypeKind::Reference {
                 is_mut: true,
+                lifetime: None,
                 inner: Box::new(Type {
                     kind: TypeKind::Named("String".to_string()),
                     span: Span::new(5, 11),

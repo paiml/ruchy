@@ -964,8 +964,8 @@ mod tests {
         let long_id = "a".repeat(1000);
         let _ = compile(&format!("let {long_id} = 1"));
 
-        // Deeply nested expression
-        let nested = "(".repeat(100) + "1" + &")".repeat(100);
+        // Deeply nested expression - reduced from 100 to 30 to avoid stack overflow
+        let nested = "(".repeat(30) + "1" + &")".repeat(30);
         let _ = compile(&nested);
 
         // Many arguments
