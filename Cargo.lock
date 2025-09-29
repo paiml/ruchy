@@ -4331,7 +4331,7 @@ dependencies = [
 
 [[package]]
 name = "ruchy"
-version = "3.56.0"
+version = "3.57.0"
 dependencies = [
  "anyhow",
  "arbitrary",
@@ -4351,6 +4351,7 @@ dependencies = [
  "im",
  "insta",
  "js-sys",
+ "lazy_static",
  "logos",
  "notify",
  "num_cpus",

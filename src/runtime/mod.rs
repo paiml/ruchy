@@ -58,6 +58,7 @@
 //! - **Memory Safety**: Arena allocation without unsafe code
 //! - **Educational Tools**: Assessment and grading systems
 pub mod actor;
+pub mod actor_runtime;
 pub mod async_runtime;
 pub mod cache;
 pub mod completion;
