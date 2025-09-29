@@ -235,6 +235,7 @@ mod tests {
             visibility: Visibility::Private,
             is_mut: false,
             default_value: None,
+            decorators: vec![],
         };
 
         assert_eq!(field.name, "test_field");

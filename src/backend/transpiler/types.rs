@@ -1141,6 +1141,7 @@ mod tests {
         let ref_type = Type {
             kind: crate::frontend::ast::TypeKind::Reference {
                 is_mut: false,
+                lifetime: None,
                 inner: Box::new(inner_type.clone()),
             },
             span: crate::frontend::ast::Span::new(0, 10),
@@ -1156,6 +1157,7 @@ mod tests {
         let mut_ref_type = Type {
             kind: crate::frontend::ast::TypeKind::Reference {
                 is_mut: true,
+                lifetime: None,
                 inner: Box::new(inner_type),
             },
             span: crate::frontend::ast::Span::new(0, 10),
