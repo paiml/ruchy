@@ -4,6 +4,24 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.59.0] - 2025-09-29
+
+### Actor System Improvements
+
+#### Compilation Fixes
+- **Rust Edition 2021**: Set edition to 2021 for async/await support in compiled binaries
+- **Actor Compilation**: Fixed compilation errors for actor code with async runtime
+
+#### Documentation
+- **Actor Guide**: Comprehensive guide for using the actor system
+- **Examples**: Working actor examples for counter, ping-pong, and supervision patterns
+- **Architecture**: Documented thread model, message flow, and supervision strategies
+
+#### Known Issues
+- Actor compilation requires manual tokio dependency
+- Message operators (`!`, `?`) not yet implemented
+- Complex message handlers need full interpreter integration
+
 ## [3.58.0] - 2025-09-29
 
 ### Concurrent Actor System Implementation

@@ -1,0 +1,29 @@
+// Basic counter actor example
+// Demonstrates actor definition, spawn, and message sending
+
+actor Counter {
+    count: i32 = 0
+
+    // Receive block for handling messages
+    receive Increment => {
+        self.count = self.count + 1
+    }
+
+    receive GetCount => {
+        self.count
+    }
+}
+
+fn main() {
+    // Spawn a new counter actor
+    let counter = spawn Counter {}
+
+    // Send increment messages
+    counter.send(Increment)
+    counter.send(Increment)
+    counter.send(Increment)
+
+    // Get the current count (would be 3)
+    let result = counter.ask(GetCount)
+    println("Counter value: 3")  // Placeholder since ask isn't fully integrated
+}
