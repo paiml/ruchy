@@ -857,12 +857,15 @@ impl Transpiler {
                 .iter()
                 .map(|expr| {
                     let tokens = self.transpile_expr(expr)?;
-                    let tokens_str = tokens.to_string();
-                    // If the statement already ends with a semicolon, don't add another
-                    if tokens_str.trim().ends_with(';') {
+                    // Let expressions already include semicolons in their transpilation
+                    // Don't add another semicolon for them
+                    if matches!(
+                        expr.kind,
+                        ExprKind::Let { .. } | ExprKind::LetPattern { .. }
+                    ) {
                         Ok(tokens)
                     } else {
-                        // Add semicolon for statements that need them
+                        // Add semicolon for other statement types
                         Ok(quote! { #tokens; })
                     }
                 })
