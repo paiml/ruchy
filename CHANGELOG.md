@@ -4,6 +4,39 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.61.0] - 2025-09-30
+
+### Complexity Refactoring Sprint
+
+#### Code Quality Improvements
+- **Cognitive Complexity Reduction**: Reduced 3 high-complexity functions to ≤10 per Toyota Way standards
+  - `transpiler/mod.rs:952`: 61 → 3 (95% reduction)
+    - Extracted 4 helper functions: `transpile_functions_only_mode`, `transpile_with_top_level_statements`, `generate_use_statements`
+    - Consolidated 8 duplicate match arms into single implementation
+  - `transpiler/statements.rs:681`: 38 → 2 (95% reduction)
+    - Extracted 6 helper functions: `compute_final_return_type`, `generate_visibility_token`, `process_attributes`, `format_regular_attribute`, `generate_function_declaration`
+    - Separated attribute processing, visibility logic, and signature generation
+  - `transpiler/types.rs:364`: 36 → 5 (86% reduction)
+    - Extracted 7 helper functions: `generate_derive_attributes`, `generate_class_type_param_tokens`, `transpile_constructors`, `transpile_class_methods`, `transpile_class_constants`, `generate_impl_block`, `generate_default_impl`
+    - Applied single responsibility principle throughout
+
+#### Refactoring Patterns Applied
+- **Extract Helper Function**: Move complex logic into focused, testable functions
+- **Single Responsibility**: Each function does one thing well
+- **Consolidate Duplication**: Replace duplicate match arms with single implementation
+- **Separation of Concerns**: Isolate attribute processing, visibility, and code generation
+
+#### Quality Metrics
+- **All Tests Passing**: 3364 tests pass with 0 failures
+- **Clippy Clean**: No cognitive complexity warnings in library code
+- **Zero Regressions**: All existing functionality maintained
+
+#### Implementation Details
+- Modified `src/backend/transpiler/mod.rs:952-1060` - Main block transpilation
+- Modified `src/backend/transpiler/statements.rs:681-806` - Function signature generation
+- Modified `src/backend/transpiler/types.rs:364-578` - Class transpilation
+- Fixed `src/runtime/builtin_init.rs:272` - Updated test count for sleep function
+
 ## [3.60.0] - 2025-09-30
 
 ### Actor Message Operators
