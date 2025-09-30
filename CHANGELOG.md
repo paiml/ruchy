@@ -4,6 +4,32 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.62.1] - 2025-09-30
+
+### Actor Message Handler Improvements
+
+#### RefCell-Dependent Actor Tests Enabled
+- **Removed `#[ignore]` from 8 actor tests** that were marked as requiring RefCell
+- **1 new passing test**: `test_actor_state_modification` validates actor state mutations persist
+- **Actor tests**: 20 passing (was 19), 7 failing
+- **Total tests**: 3417 passing (3373 library + 20 actor + 24 class)
+
+#### Technical Implementation
+- **Added `process_actor_message_sync_mut()`**: New function that passes `ObjectMut` as `self` to message handlers
+- **Updated `eval_actor_instance_method_mut()`**: Intercepts `send()` calls to use mutable state handler
+- **Result**: Actor state mutations in `receive` blocks now persist correctly
+
+#### Documentation
+- **Created `actor_test_requirements.md`**: Comprehensive analysis of 7 remaining test failures
+- **Requirements documented**: Vec methods, actor cross-refs, async runtime, type validation
+- **Estimated effort**: 25-34 hours for remaining features
+
+#### Quality Metrics
+- Zero regressions in 3373 library tests ✅
+- All new code ≤10 complexity (Toyota Way compliant) ✅
+- Clippy clean ✅
+- TDG Grade: A+ ✅
+
 ## [3.62.0] - 2025-09-30
 
 ### RefCell Architecture for Mutable State
