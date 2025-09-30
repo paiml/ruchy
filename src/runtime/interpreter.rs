@@ -3545,15 +3545,36 @@ impl Interpreter {
         );
         actor_type.insert("__name".to_string(), Value::from_string(name.to_string()));
 
-        // Store state field definitions
+        // Store state field definitions with default values
         let mut fields = HashMap::new();
         for field in state {
-            // For now, just store field names and types as strings
             let type_name = match &field.ty.kind {
                 crate::frontend::ast::TypeKind::Named(n) => n.clone(),
                 _ => "Any".to_string(),
             };
-            fields.insert(field.name.clone(), Value::from_string(type_name));
+
+            // Create field metadata object
+            let mut field_meta = HashMap::new();
+            field_meta.insert("type".to_string(), Value::from_string(type_name));
+            field_meta.insert("is_mut".to_string(), Value::Bool(field.is_mut));
+
+            // Evaluate default value if present
+            if let Some(ref default_expr) = field.default_value {
+                match self.eval_expr(default_expr) {
+                    Ok(default_val) => {
+                        field_meta.insert("default".to_string(), default_val);
+                    }
+                    Err(_) => {
+                        // If evaluation fails, use type default
+                        field_meta.insert("default".to_string(), Value::Nil);
+                    }
+                }
+            } else {
+                // No default value specified, use Nil
+                field_meta.insert("default".to_string(), Value::Nil);
+            }
+
+            fields.insert(field.name.clone(), Value::Object(Rc::new(field_meta)));
         }
         actor_type.insert(
             "__fields".to_string(),

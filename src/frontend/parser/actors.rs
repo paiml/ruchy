@@ -205,17 +205,21 @@ fn parse_inline_state_field(
     let field_name = parse_field_name(state, "Expected field name")?;
     state.tokens.expect(&Token::Colon)?;
     let ty = utils::parse_type(state)?;
+
     // Parse optional default value
-    if matches!(state.tokens.peek(), Some((Token::Equal, _))) {
+    let default_value = if matches!(state.tokens.peek(), Some((Token::Equal, _))) {
         state.tokens.advance(); // consume =
-        let _default_value = super::parse_expr_recursive(state)?;
-    }
+        Some(super::parse_expr_recursive(state)?)
+    } else {
+        None
+    };
+
     state_fields.push(StructField {
         name: field_name,
         ty,
         visibility: Visibility::Private,
         is_mut,
-        default_value: None,
+        default_value,
         decorators: Vec::new(),
     });
     consume_optional_separator(state);
