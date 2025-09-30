@@ -195,14 +195,14 @@ impl Transpiler {
                 // Add all the block expressions
                 for (i, expr) in exprs.iter().enumerate() {
                     let expr_tokens = self.transpile_expr(expr)?;
-                    // Check if this is a Let expression with Unit body (standalone let statement)
-                    // These already have semicolons from transpile_let
-                    let is_standalone_let = matches!(&expr.kind,
-                        crate::frontend::ast::ExprKind::Let { body, .. }
-                        if matches!(body.kind, crate::frontend::ast::ExprKind::Literal(crate::frontend::ast::Literal::Unit))
+                    // Check if this is ANY Let expression (all Lets include semicolons)
+                    let is_let = matches!(
+                        &expr.kind,
+                        crate::frontend::ast::ExprKind::Let { .. }
+                            | crate::frontend::ast::ExprKind::LetPattern { .. }
                     );
-                    if is_standalone_let {
-                        // Standalone let statements already have semicolons
+                    if is_let {
+                        // Let expressions already have semicolons
                         statements.push(expr_tokens);
                     } else if i < exprs.len() - 1 {
                         // Not the last statement - add semicolon
@@ -216,6 +216,27 @@ impl Transpiler {
                         }
                     }
                 }
+                Ok(quote! { #(#statements)* })
+            } else if let crate::frontend::ast::ExprKind::Let {
+                name: inner_name,
+                value: inner_value,
+                body: inner_body,
+                is_mutable: inner_mutable,
+                type_annotation: _,
+            } = &body.kind
+            {
+                // Body is another Let - flatten nested let expressions into sequential statements
+                let mut statements = Vec::new();
+                // Add the current let statement
+                if effective_mutability {
+                    statements.push(quote! { let mut #name_ident = #value_tokens; });
+                } else {
+                    statements.push(quote! { let #name_ident = #value_tokens; });
+                }
+                // Recursively flatten the inner Let expression
+                let inner_tokens =
+                    self.transpile_let(inner_name, inner_value, inner_body, *inner_mutable)?;
+                statements.push(inner_tokens);
                 Ok(quote! { #(#statements)* })
             } else {
                 // Traditional let-in expression with proper scoping
@@ -607,7 +628,6 @@ impl Transpiler {
                         // BYPASS the normal Set transpiler to avoid HashSet generation
                         self.transpile_expr(&elements[0])
                     } else {
-                        eprintln!("DEBUG: Converting multi-element Set function body to block");
                         // Multiple expressions - treat as block statements
                         let mut statements = Vec::new();
                         for (i, expr) in elements.iter().enumerate() {
@@ -631,16 +651,33 @@ impl Transpiler {
                         let mut statements = Vec::new();
                         for (i, expr) in exprs.iter().enumerate() {
                             let expr_tokens = self.transpile_expr(expr)?;
+                            // Check if this is a Let/LetPattern expression (already has semicolon)
+                            let is_let = matches!(
+                                &expr.kind,
+                                ExprKind::Let { .. } | ExprKind::LetPattern { .. }
+                            );
+
                             // Add semicolons to all statements except the last one
                             // (unless it's a void expression that needs a semicolon)
                             if i < exprs.len() - 1 {
-                                // Not the last statement - always add semicolon
-                                statements.push(quote! { #expr_tokens; });
+                                // Not the last statement
+                                if is_let {
+                                    // Let expressions already have semicolons
+                                    statements.push(expr_tokens);
+                                } else {
+                                    // Other statements need semicolons
+                                    statements.push(quote! { #expr_tokens; });
+                                }
                             } else {
                                 // Last statement - check if it's void
                                 if self.is_void_expression(expr) {
                                     // Void expressions should have semicolons
-                                    statements.push(quote! { #expr_tokens; });
+                                    if is_let {
+                                        // Let already has semicolon
+                                        statements.push(expr_tokens);
+                                    } else {
+                                        statements.push(quote! { #expr_tokens; });
+                                    }
                                 } else {
                                     // Non-void last expression - no semicolon (it's the return value)
                                     statements.push(expr_tokens);
@@ -822,7 +859,6 @@ impl Transpiler {
         is_pub: bool,
         attributes: &[crate::frontend::ast::Attribute],
     ) -> Result<TokenStream> {
-        eprintln!("DEBUG: transpile_function called for function: {name}");
         let fn_name = format_ident!("{}", name);
         let param_tokens = self.generate_param_tokens(params, body, name)?;
         let body_tokens = self.generate_body_tokens(body, is_async)?;
@@ -1299,9 +1335,20 @@ impl Transpiler {
         let mut statements = Vec::new();
         for (i, expr) in exprs.iter().enumerate() {
             let expr_tokens = self.transpile_expr(expr)?;
+            // Check if this is a Let or LetPattern expression (they include their own semicolons)
+            let is_let = matches!(
+                &expr.kind,
+                ExprKind::Let { .. } | ExprKind::LetPattern { .. }
+            );
+
             // HOTFIX: Never add semicolon to the last expression in a block (it should be the return value)
             if i < exprs.len() - 1 {
-                statements.push(quote! { #expr_tokens; });
+                // Not the last statement - add semicolon unless it's a Let (which has its own)
+                if is_let {
+                    statements.push(expr_tokens);
+                } else {
+                    statements.push(quote! { #expr_tokens; });
+                }
             } else {
                 statements.push(expr_tokens);
             }
