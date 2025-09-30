@@ -569,8 +569,9 @@ fn parse_sealed_token(state: &mut ParserState) -> Result<Expr> {
     }
 }
 
-/// Parse final token - used for final methods and classes
+/// Parse final token - used for final methods and classes, or as identifier
 fn parse_final_token(state: &mut ParserState) -> Result<Expr> {
+    let start = state.tokens.current_position();
     state.tokens.advance(); // consume 'final'
                             // Could be final class or final method
     match state.tokens.peek() {
@@ -598,7 +599,15 @@ fn parse_final_token(state: &mut ParserState) -> Result<Expr> {
             }
             Ok(expr)
         }
-        _ => bail!("Expected 'class' or 'fn' after 'final'"),
+        _ => {
+            // Not followed by class/fn - treat 'final' as a regular identifier
+            // This allows using 'final' as a variable name (Rust keyword, needs r# in transpiler)
+            // Use a simple span (exact position doesn't matter for identifiers in this context)
+            Ok(Expr::new(
+                ExprKind::Identifier("final".to_string()),
+                Span::new(start.0, start.1 + 5), // 'final' is 5 characters
+            ))
+        }
     }
 }
 
@@ -1012,6 +1021,11 @@ fn parse_let_pattern(state: &mut ParserState, is_mutable: bool) -> Result<Patter
             // Allow 'default' as a variable name (common in configurations)
             state.tokens.advance();
             Ok(Pattern::Identifier("default".to_string()))
+        }
+        Some((Token::Final, _)) => {
+            // Allow 'final' as a variable name (Rust keyword, needs r# prefix in transpiler)
+            state.tokens.advance();
+            Ok(Pattern::Identifier("final".to_string()))
         }
         Some((Token::Underscore, _)) => {
             // Allow wildcard pattern
