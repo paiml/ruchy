@@ -681,12 +681,17 @@ impl Transpiler {
             }
             statements.push(quote! { __temp_vec });
             Ok(quote! { { #(#statements)* } })
+        } else if elements.is_empty() {
+            // Empty arrays need vec![] to avoid type ambiguity ([] requires type annotation)
+            Ok(quote! { vec![] })
         } else {
-            // No spread expressions, use simple vec![] macro
+            // No spread expressions, use fixed-size array syntax [elem1, elem2, ...]
+            // This preserves array type and matches Rust's array literal syntax
+            // Rust will infer the type as [T; N] automatically
             let element_tokens: Result<Vec<_>> =
                 elements.iter().map(|e| self.transpile_expr(e)).collect();
             let element_tokens = element_tokens?;
-            Ok(quote! { vec![#(#element_tokens),*] })
+            Ok(quote! { [#(#element_tokens),*] })
         }
     }
 
@@ -1347,7 +1352,12 @@ mod tests {
         let ast = parser.parse().expect("Failed to parse");
         let result = transpiler.transpile(&ast).unwrap();
         let rust_str = result.to_string();
-        assert!(rust_str.contains("vec !"));
+        // Should use fixed-size array syntax, not vec![]
+        assert!(
+            rust_str.contains("[") && !rust_str.contains("vec !"),
+            "Expected fixed-size array [1, 2, 3], got: {}",
+            rust_str
+        );
         assert!(rust_str.contains("1"));
         assert!(rust_str.contains("2"));
         assert!(rust_str.contains("3"));
