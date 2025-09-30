@@ -4,6 +4,34 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.60.0] - 2025-09-30
+
+### Actor Message Operators
+
+#### New Features
+- **Send Operator (`!`)**: Actor message sending operator now functional
+  - Syntax: `actor ! message` transpiles to `actor.send(message)`
+  - Fixed parser to distinguish between macro calls and binary operators
+  - Improved `try_parse_macro_call` to peek ahead for delimiters before consuming `!`
+
+- **Query Operator (`<?`)**: Actor ask pattern already implemented
+  - Syntax: `actor <? message` transpiles to `actor.ask(message, timeout).await`
+  - Default 5-second timeout for actor queries
+
+- **Sleep Function**: Added sleep builtin for actor timing control
+  - `sleep(milliseconds)` - blocks current thread
+  - Accepts integer or float milliseconds
+  - Useful for actor demonstration and testing
+
+#### Bug Fixes
+- **Parser Fix**: `!` operator no longer consumed by macro parser when not followed by `(`, `[`, or `{`
+- **Bash Issues**: Documented bash history expansion with `!` character requiring file-based testing
+
+#### Implementation Details
+- Modified `src/frontend/parser/mod.rs:704-746` - Enhanced macro call detection
+- Added `src/runtime/builtin_init.rs:196-198` - Sleep builtin registration
+- Added `src/runtime/eval_builtin.rs:479-502` - Sleep function implementation
+
 ## [3.59.0] - 2025-09-29
 
 ### Actor System Improvements
