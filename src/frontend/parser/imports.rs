@@ -122,7 +122,48 @@ pub fn parse_from_import_statement(state: &mut ParserState) -> Result<Expr> {
     Ok(Expr::new(ExprKind::Import { module, items }, start_span))
 }
 
-/// Parse JS-style import statement
+// Helper: Parse single import item with optional alias (complexity: 3)
+fn parse_import_item(state: &mut ParserState) -> Result<String> {
+    if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
+        let mut item = name.clone();
+        state.tokens.advance();
+
+        // Check for 'as' alias
+        if matches!(state.tokens.peek(), Some((Token::As, _))) {
+            state.tokens.advance();
+            if let Some((Token::Identifier(alias), _)) = state.tokens.peek() {
+                item = format!("{item} as {alias}");
+                state.tokens.advance();
+            } else {
+                bail!("Expected identifier after 'as'");
+            }
+        }
+
+        Ok(item)
+    } else {
+        bail!("Expected identifier in import list");
+    }
+}
+
+// Helper: Consume optional trailing comma (complexity: 2)
+fn consume_import_comma(state: &mut ParserState) {
+    if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+        state.tokens.advance();
+    }
+}
+
+// Helper: Parse module source (string or path) (complexity: 2)
+fn parse_module_source(state: &mut ParserState) -> Result<String> {
+    if let Some((Token::String(path), _)) = state.tokens.peek() {
+        let path = path.clone();
+        state.tokens.advance();
+        Ok(path)
+    } else {
+        parse_module_path(state)
+    }
+}
+
+/// Parse JS-style import statement (complexity: 3)
 /// Handles: `import { readFile, writeFile } from fs`
 pub fn parse_js_style_import(state: &mut ParserState) -> Result<Expr> {
     // Import token has already been consumed by the caller
@@ -134,42 +175,16 @@ pub fn parse_js_style_import(state: &mut ParserState) -> Result<Expr> {
     // Parse import items
     let mut items = Vec::new();
     while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
-        if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
-            let mut item = name.clone();
-            state.tokens.advance();
-
-            // Check for 'as' alias
-            if matches!(state.tokens.peek(), Some((Token::As, _))) {
-                state.tokens.advance();
-                if let Some((Token::Identifier(alias), _)) = state.tokens.peek() {
-                    item = format!("{item} as {alias}");
-                    state.tokens.advance();
-                } else {
-                    bail!("Expected identifier after 'as'");
-                }
-            }
-
-            items.push(item);
-
-            if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
-                state.tokens.advance();
-            }
-        } else {
-            bail!("Expected identifier in import list");
-        }
+        let item = parse_import_item(state)?;
+        items.push(item);
+        consume_import_comma(state);
     }
 
     state.tokens.expect(&Token::RightBrace)?;
     state.tokens.expect(&Token::From)?;
 
-    // Parse module path
-    let module = if let Some((Token::String(path), _)) = state.tokens.peek() {
-        let path = path.clone();
-        state.tokens.advance();
-        path
-    } else {
-        parse_module_path(state)?
-    };
+    // Parse module source
+    let module = parse_module_source(state)?;
 
     Ok(Expr::new(
         ExprKind::Import {

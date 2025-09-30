@@ -4208,7 +4208,7 @@ impl Interpreter {
                         let _result = self.eval_expr(body)?;
 
                         // Extract updated self from environment after constructor execution
-                        // This is a workaround for the immutability issue
+                        // Note: Handles immutability by copying updated fields back to instance
                         let updated_self = self.lookup_variable("self")?;
                         if let Value::Object(ref updated_instance) = updated_self {
                             // Copy all non-metadata fields from updated self back to instance
