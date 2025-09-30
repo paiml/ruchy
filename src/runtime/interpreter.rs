@@ -986,7 +986,25 @@ impl Interpreter {
                 ..
             } => self.eval_impl_block(for_type, methods),
             ExprKind::Spawn { actor } => {
-                // Special handling to ensure we create an actor instance, not a struct
+                // Handle: spawn ActorName (no args)
+                if let ExprKind::Identifier(name) = &actor.kind {
+                    if let Ok(def_value) = self.lookup_variable(name) {
+                        if let Value::Object(ref obj) = def_value {
+                            if let Some(Value::String(type_str)) = obj.get("__type") {
+                                if type_str.as_ref() == "Actor" {
+                                    // This is an actor - convert to Actor.new() call with no args
+                                    let constructor_marker = Value::from_string(format!(
+                                        "__actor_constructor__:{}",
+                                        name
+                                    ));
+                                    return self.call_function(constructor_marker, &[]);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Handle: spawn ActorName(args...)
                 if let ExprKind::Call { func, args } = &actor.kind {
                     // Check if this is calling an actor constructor
                     if let ExprKind::Identifier(name) = &func.kind {
@@ -1017,6 +1035,40 @@ impl Interpreter {
                 let actor_value = self.eval_expr(actor)?;
                 // In a full actor system, this would create a mailbox and thread
                 Ok(actor_value)
+            }
+            ExprKind::ActorSend { actor, message } => {
+                // Fire-and-forget message send: actor ! Message(args)
+                let actor_value = self.eval_expr(actor)?;
+                let message_value = self.eval_expr(message)?;
+
+                // Extract the ObjectMut from the actor
+                if let Value::ObjectMut(cell_rc) = actor_value {
+                    // Process the message synchronously
+                    self.process_actor_message_sync_mut(&cell_rc, &message_value)?;
+                    // Fire-and-forget returns Nil
+                    Ok(Value::Nil)
+                } else {
+                    Err(InterpreterError::RuntimeError(format!(
+                        "ActorSend requires an actor instance, got {}",
+                        actor_value.type_name()
+                    )))
+                }
+            }
+            ExprKind::ActorQuery { actor, message } => {
+                // Ask pattern with reply: actor <? Message(args)
+                let actor_value = self.eval_expr(actor)?;
+                let message_value = self.eval_expr(message)?;
+
+                // Extract the ObjectMut from the actor
+                if let Value::ObjectMut(cell_rc) = actor_value {
+                    // Process the message synchronously and return the result
+                    self.process_actor_message_sync_mut(&cell_rc, &message_value)
+                } else {
+                    Err(InterpreterError::RuntimeError(format!(
+                        "ActorQuery requires an actor instance, got {}",
+                        actor_value.type_name()
+                    )))
+                }
             }
             _ => Err(InterpreterError::RuntimeError(format!(
                 "Expression type not yet implemented: {expr_kind:?}"
