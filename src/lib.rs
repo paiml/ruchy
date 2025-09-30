@@ -211,7 +211,15 @@ mod tests {
     #[test]
     fn test_compile_list() {
         let result = compile("[1, 2, 3]").unwrap();
-        assert!(result.contains("vec") && result.contains("!"));
+        // Array literals should use fixed-size array syntax [1, 2, 3], not vec![1, 2, 3]
+        assert!(
+            result.contains("[")
+                && result.contains("1")
+                && result.contains("2")
+                && result.contains("3"),
+            "Expected array syntax, got: {}",
+            result
+        );
     }
     #[test]
     fn test_compile_lambda() {

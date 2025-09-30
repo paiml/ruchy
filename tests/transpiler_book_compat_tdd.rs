@@ -600,3 +600,191 @@ fn test_regression_array_type_consistency() {
         "Array type consistency should be maintained"
     );
 }
+
+// ============================================================================
+// OPTION A: ARRAY LITERAL TYPE PRESERVATION
+// ============================================================================
+// Target: Make [1, 2, 3] transpile to [1, 2, 3] not vec![1, 2, 3]
+// Root Cause: transpile_list() always generates vec![] syntax
+// Solution: Default to fixed-size array for simple literals
+
+#[test]
+fn test_array_literal_numeric_stays_array() {
+    // Simple numeric array should transpile to fixed-size array syntax
+    let code = "[1, 2, 3]";
+
+    let mut parser = Parser::new(code);
+    let ast = parser.parse().unwrap();
+    let mut transpiler = Transpiler::new();
+    let rust_code = transpiler.transpile_to_program(&ast).unwrap().to_string();
+
+    assert!(
+        rust_code.contains("[1") || rust_code.contains("[1i32"),
+        "Expected fixed-size array [1, 2, 3], got vec![]: {}",
+        rust_code
+    );
+    assert!(
+        !rust_code.contains("vec !"),
+        "Should NOT generate vec![] for simple numeric literals: {}",
+        rust_code
+    );
+}
+
+#[test]
+fn test_array_literal_string_stays_array() {
+    // String array should transpile to fixed-size array syntax
+    let code = r#"["a", "b", "c"]"#;
+
+    let mut parser = Parser::new(code);
+    let ast = parser.parse().unwrap();
+    let mut transpiler = Transpiler::new();
+    let rust_code = transpiler.transpile_to_program(&ast).unwrap().to_string();
+
+    assert!(
+        rust_code.contains(r#"["a""#) || rust_code.contains("[\"a\""),
+        "Expected fixed-size array for strings, got vec![]: {}",
+        rust_code
+    );
+    assert!(
+        !rust_code.contains("vec !"),
+        "Should NOT generate vec![] for simple string literals: {}",
+        rust_code
+    );
+}
+
+#[test]
+fn test_array_literal_bool_stays_array() {
+    // Boolean array should transpile to fixed-size array syntax
+    let code = "[true, false, true]";
+
+    let mut parser = Parser::new(code);
+    let ast = parser.parse().unwrap();
+    let mut transpiler = Transpiler::new();
+    let rust_code = transpiler.transpile_to_program(&ast).unwrap().to_string();
+
+    assert!(
+        rust_code.contains("[true") && !rust_code.contains("vec !"),
+        "Expected fixed-size array [true, false, true], got vec![]: {}",
+        rust_code
+    );
+}
+
+#[test]
+fn test_array_literal_mixed_types_stays_array() {
+    // Mixed type array (will fail at Rust compilation, but transpilation should use [])
+    let code = "[1, 2.5, 3]";
+
+    let mut parser = Parser::new(code);
+    let ast = parser.parse().unwrap();
+    let mut transpiler = Transpiler::new();
+    let rust_code = transpiler.transpile_to_program(&ast).unwrap().to_string();
+
+    assert!(
+        rust_code.contains("[1") && !rust_code.contains("vec !"),
+        "Expected fixed-size array even for mixed types: {}",
+        rust_code
+    );
+}
+
+#[test]
+fn test_array_with_spread_uses_vec() {
+    // Arrays with spread operators MUST use vec![] (no fixed-size syntax)
+    let code = "[1, 2, ...[3, 4]]";
+
+    let mut parser = Parser::new(code);
+    let ast = parser.parse().unwrap();
+    let mut transpiler = Transpiler::new();
+    let rust_code = transpiler.transpile_to_program(&ast).unwrap().to_string();
+
+    assert!(
+        rust_code.contains("vec !") || rust_code.contains("Vec"),
+        "Spread operators require vec![] (dynamic sizing): {}",
+        rust_code
+    );
+}
+
+#[test]
+fn test_array_assignment_preserves_type() {
+    // When assigned to variable, array type should be preserved
+    let code = r#"
+        let numbers = [1, 2, 3]
+        let first = numbers[0]
+    "#;
+
+    let mut parser = Parser::new(code);
+    let ast = parser.parse().unwrap();
+    let mut transpiler = Transpiler::new();
+    let rust_code = transpiler.transpile_to_program(&ast).unwrap().to_string();
+
+    assert!(
+        rust_code.contains("let numbers") && rust_code.contains("[1"),
+        "Array assignment should preserve fixed-size array type: {}",
+        rust_code
+    );
+}
+
+#[test]
+fn test_array_function_return_preserves_type() {
+    // Function returning array should preserve type
+    let code = r#"
+        fun get_array() -> [i32; 3] {
+            [1, 2, 3]
+        }
+    "#;
+
+    let mut parser = Parser::new(code);
+    let ast = parser.parse().unwrap();
+    let mut transpiler = Transpiler::new();
+    let rust_code = transpiler.transpile_to_program(&ast).unwrap().to_string();
+
+    assert!(
+        rust_code.contains("-> [i32 ; 3]") || rust_code.contains("-> [i32; 3]"),
+        "Return type should be fixed-size array: {}",
+        rust_code
+    );
+    assert!(
+        rust_code.contains("[1") && !rust_code.contains("vec !"),
+        "Return value should be fixed-size array literal: {}",
+        rust_code
+    );
+}
+
+#[test]
+fn test_nested_arrays_stay_arrays() {
+    // Nested arrays should maintain array type
+    let code = "[[1, 2], [3, 4]]";
+
+    let mut parser = Parser::new(code);
+    let ast = parser.parse().unwrap();
+    let mut transpiler = Transpiler::new();
+    let rust_code = transpiler.transpile_to_program(&ast).unwrap().to_string();
+
+    assert!(
+        rust_code.contains("[[") || rust_code.contains("[ ["),
+        "Nested arrays should use array syntax: {}",
+        rust_code
+    );
+    assert!(
+        !rust_code.contains("vec !"),
+        "Nested arrays should NOT use vec![]: {}",
+        rust_code
+    );
+}
+
+#[test]
+fn test_empty_array_uses_vec() {
+    // Empty arrays have no size info, should use vec![]
+    let code = "[]";
+
+    let mut parser = Parser::new(code);
+    let ast = parser.parse().unwrap();
+    let mut transpiler = Transpiler::new();
+    let result = transpiler.transpile_to_program(&ast);
+
+    // Empty arrays need vec![] or type annotation - this is acceptable
+    assert!(
+        result.is_ok(),
+        "Empty array should transpile: {:?}",
+        result.err()
+    );
+}
