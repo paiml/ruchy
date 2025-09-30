@@ -85,6 +85,57 @@ fn test_no_redundant_semicolon_after_assignments() {
 }
 
 // ============================================================================
+// BUG 5: WHILE LOOP MUTABILITY INFERENCE (Affects 1 example)
+// ============================================================================
+
+#[test]
+fn test_while_loop_mutability_inference() {
+    // Bug: let i = 0 followed by i = i + 1 in while loop doesn't detect mutation
+    // This causes: cannot assign twice to immutable variable
+    let code = r#"
+let i = 0
+while i < 3 {
+    println(i)
+    i = i + 1
+}
+"#;
+
+    let mut parser = Parser::new(code);
+    let ast = parser.parse().unwrap();
+    let mut transpiler = Transpiler::new();
+    let rust_code = transpiler.transpile_to_program(&ast).unwrap().to_string();
+
+    // Should auto-detect mutation and generate let mut
+    assert!(
+        rust_code.contains("let mut i"),
+        "While loop mutation should be detected: expected 'let mut i' but got:\n{}",
+        rust_code
+    );
+}
+
+#[test]
+fn test_block_level_mutability_detection() {
+    // Test that mutations anywhere in the block are detected
+    let code = r#"
+fun test() {
+    let x = 0
+    x = 5
+    x
+}
+"#;
+
+    let mut parser = Parser::new(code);
+    let ast = parser.parse().unwrap();
+    let mut transpiler = Transpiler::new();
+    let rust_code = transpiler.transpile_to_program(&ast).unwrap().to_string();
+
+    assert!(
+        rust_code.contains("let mut x"),
+        "Block-level mutation should be detected"
+    );
+}
+
+// ============================================================================
 // BUG 2: ARRAY LITERAL VS VEC! MISMATCH (Affects 3 examples)
 // ============================================================================
 
