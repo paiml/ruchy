@@ -341,7 +341,11 @@ impl Transpiler {
         };
         let name_ident = format_ident!("{}", safe_name);
 
-        let mut_keyword = if is_mutable || Self::is_variable_mutated(name, body) {
+        // Check mutability: explicit mut, detected in body, or tracked in mutable_vars
+        let mut_keyword = if is_mutable
+            || self.mutable_vars.contains(name)
+            || Self::is_variable_mutated(name, body)
+        {
             quote! { mut }
         } else {
             quote! {}

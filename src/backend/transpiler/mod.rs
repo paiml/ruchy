@@ -584,12 +584,23 @@ impl Transpiler {
     }
     /// Transpile with file context for module resolution
     pub fn transpile_to_program_with_context(
-        &self,
+        &mut self,
         expr: &Expr,
         file_path: Option<&std::path::Path>,
     ) -> Result<TokenStream> {
         // First, resolve any file imports using the module resolver
         let resolved_expr = self.resolve_imports_with_context(expr, file_path)?;
+
+        // CRITICAL: Analyze mutability BEFORE transpiling (like transpile_to_program does)
+        // This populates self.mutable_vars which is checked during Let transpilation
+        if let ExprKind::Block(exprs) = &resolved_expr.kind {
+            self.analyze_mutability(exprs);
+            self.collect_function_signatures(exprs);
+        } else {
+            self.analyze_expr_mutability(&resolved_expr);
+            self.collect_signatures_from_expr(&resolved_expr);
+        }
+
         let needs_polars = Self::contains_dataframe(&resolved_expr);
         let needs_hashmap = Self::contains_hashmap(&resolved_expr);
         match &resolved_expr.kind {
