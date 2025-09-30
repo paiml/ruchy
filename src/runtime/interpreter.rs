@@ -1039,7 +1039,9 @@ impl Interpreter {
             ExprKind::ActorSend { actor, message } => {
                 // Fire-and-forget message send: actor ! Message(args)
                 let actor_value = self.eval_expr(actor)?;
-                let message_value = self.eval_expr(message)?;
+
+                // Evaluate message - if it's an undefined identifier, treat as message name
+                let message_value = self.eval_message_expr(message)?;
 
                 // Extract the ObjectMut from the actor
                 if let Value::ObjectMut(cell_rc) = actor_value {
@@ -1057,7 +1059,9 @@ impl Interpreter {
             ExprKind::ActorQuery { actor, message } => {
                 // Ask pattern with reply: actor <? Message(args)
                 let actor_value = self.eval_expr(actor)?;
-                let message_value = self.eval_expr(message)?;
+
+                // Evaluate message - if it's an undefined identifier, treat as message name
+                let message_value = self.eval_message_expr(message)?;
 
                 // Extract the ObjectMut from the actor
                 if let Value::ObjectMut(cell_rc) = actor_value {
@@ -1692,8 +1696,26 @@ impl Interpreter {
         op: crate::frontend::ast::BinaryOp,
         right: &Expr,
     ) -> Result<Value, InterpreterError> {
-        // Handle short-circuit operators
+        // Handle short-circuit operators and special operators
         match op {
+            crate::frontend::ast::BinaryOp::Send => {
+                // Actor send operator: actor ! message
+                let left_val = self.eval_expr(left)?;
+                let message_val = self.eval_message_expr(right)?;
+
+                // Extract the ObjectMut from the actor
+                if let Value::ObjectMut(cell_rc) = left_val {
+                    // Process the message synchronously
+                    self.process_actor_message_sync_mut(&cell_rc, &message_val)?;
+                    // Fire-and-forget returns Nil
+                    Ok(Value::Nil)
+                } else {
+                    Err(InterpreterError::RuntimeError(format!(
+                        "Send operator requires an actor instance, got {}",
+                        left_val.type_name()
+                    )))
+                }
+            }
             crate::frontend::ast::BinaryOp::NullCoalesce => {
                 let left_val = self.eval_expr(left)?;
                 if matches!(left_val, Value::Nil) {
@@ -2629,6 +2651,30 @@ impl Interpreter {
     }
 
     // Helper methods for method dispatch (complexity <10 each)
+
+    /// Evaluate a message expression - if it's an undefined identifier, treat as message name
+    /// Complexity: ≤5
+    fn eval_message_expr(&mut self, message: &Expr) -> Result<Value, InterpreterError> {
+        match &message.kind {
+            ExprKind::Identifier(name) => {
+                // Try to evaluate as variable first
+                if let Ok(val) = self.lookup_variable(name) {
+                    Ok(val)
+                } else {
+                    // Treat as a zero-argument message constructor
+                    let mut msg_obj = HashMap::new();
+                    msg_obj.insert(
+                        "__type".to_string(),
+                        Value::from_string("Message".to_string()),
+                    );
+                    msg_obj.insert("type".to_string(), Value::from_string(name.clone()));
+                    msg_obj.insert("data".to_string(), Value::Array(Rc::from(vec![])));
+                    Ok(Value::Object(Rc::new(msg_obj)))
+                }
+            }
+            _ => self.eval_expr(message),
+        }
+    }
 
     fn dispatch_method_call(
         &mut self,

@@ -49,6 +49,9 @@ fn parse_actor_body(state: &mut ParserState) -> Result<(Vec<StructField>, Vec<Ac
         // Parse state field
         if matches!(state.tokens.peek(), Some((Token::State, _))) {
             parse_state_block(state, &mut state_fields)?;
+        } else if matches!(state.tokens.peek(), Some((Token::Mut, _))) {
+            // Handle: mut field_name: Type = value
+            parse_inline_state_field(state, &mut state_fields)?;
         } else if matches!(state.tokens.peek(), Some((Token::Identifier(_), _))) {
             // We have an identifier, so this should be a field
             parse_inline_state_field(state, &mut state_fields)?;
@@ -191,6 +194,14 @@ fn parse_inline_state_field(
     state: &mut ParserState,
     state_fields: &mut Vec<StructField>,
 ) -> Result<()> {
+    // Check for 'mut' keyword
+    let is_mut = if matches!(state.tokens.peek(), Some((Token::Mut, _))) {
+        state.tokens.advance(); // consume 'mut'
+        true
+    } else {
+        false
+    };
+
     let field_name = parse_field_name(state, "Expected field name")?;
     state.tokens.expect(&Token::Colon)?;
     let ty = utils::parse_type(state)?;
@@ -203,7 +214,7 @@ fn parse_inline_state_field(
         name: field_name,
         ty,
         visibility: Visibility::Private,
-        is_mut: false,
+        is_mut,
         default_value: None,
         decorators: Vec::new(),
     });
