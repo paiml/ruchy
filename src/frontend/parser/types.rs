@@ -28,11 +28,7 @@ fn parse_field_name(state: &mut ParserState) -> Result<String> {
 }
 
 // Helper: Parse field value with shorthand support (complexity: 2)
-fn parse_field_value(
-    state: &mut ParserState,
-    field_name: &str,
-    start_span: Span,
-) -> Result<Expr> {
+fn parse_field_value(state: &mut ParserState, field_name: &str, start_span: Span) -> Result<Expr> {
     if matches!(state.tokens.peek(), Some((Token::Colon, _))) {
         state.tokens.advance(); // consume :
         super::parse_expr_recursive(state)
