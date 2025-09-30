@@ -48,15 +48,22 @@ impl Transpiler {
             let parts: Vec<&str> = name.split("::").collect();
             let mut tokens = Vec::new();
             for (i, part) in parts.iter().enumerate() {
-                let safe_part = if matches!(*part, "self" | "Self" | "super" | "crate") {
-                    (*part).to_string()
-                } else if Self::is_rust_reserved_keyword(part) {
-                    format!("r#{part}")
+                // Check if this is a turbofish segment like "<i32>"
+                if part.starts_with('<') && part.ends_with('>') {
+                    // Parse turbofish generics: "<i32>" or "<String, i32>"
+                    let turbofish_tokens = Self::transpile_turbofish(part);
+                    tokens.push(turbofish_tokens);
                 } else {
-                    (*part).to_string()
-                };
-                let ident = format_ident!("{}", safe_part);
-                tokens.push(quote! { #ident });
+                    let safe_part = if matches!(*part, "self" | "Self" | "super" | "crate") {
+                        (*part).to_string()
+                    } else if Self::is_rust_reserved_keyword(part) {
+                        format!("r#{part}")
+                    } else {
+                        (*part).to_string()
+                    };
+                    let ident = format_ident!("{}", safe_part);
+                    tokens.push(quote! { #ident });
+                }
                 if i < parts.len() - 1 {
                     tokens.push(quote! { :: });
                 }
@@ -75,6 +82,32 @@ impl Transpiler {
             let ident = format_ident!("{}", safe_name);
             quote! { #ident }
         }
+    }
+
+    /// Transpile turbofish generics like "<i32>" or "<String, i32>"
+    fn transpile_turbofish(turbofish: &str) -> TokenStream {
+        // Remove < and > brackets
+        let inner = &turbofish[1..turbofish.len() - 1];
+
+        // Split by comma to get individual type arguments
+        let type_args: Vec<&str> = inner.split(',').map(str::trim).collect();
+
+        // Build token stream for each type argument
+        let type_tokens: Vec<TokenStream> = type_args
+            .iter()
+            .map(|type_arg| {
+                // Handle qualified type names like std::string::String
+                if type_arg.contains("::") {
+                    Self::transpile_identifier(type_arg)
+                } else {
+                    let ident = format_ident!("{}", type_arg);
+                    quote! { #ident }
+                }
+            })
+            .collect();
+
+        // Build <Type1, Type2, ...> token stream
+        quote! { < #(#type_tokens),* > }
     }
     fn transpile_qualified_name(module: &str, name: &str) -> TokenStream {
         // Handle nested qualified names like "net::TcpListener"

@@ -788,3 +788,156 @@ fn test_empty_array_uses_vec() {
         result.err()
     );
 }
+
+// ============================================================================
+// OPTION B: :: SYNTAX SUPPORT (TURBOFISH GENERICS)
+// ============================================================================
+// Basic :: syntax already works (String::new(), Option::Some, etc.)
+// Target: Add turbofish support for Vec::<i32>::new()
+
+#[test]
+fn test_basic_coloncolon_syntax_works() {
+    // Verify basic :: syntax is functional (regression test)
+    let code = "let s = String::new()";
+
+    let mut parser = Parser::new(code);
+    let ast = parser.parse().unwrap();
+    let mut transpiler = Transpiler::new();
+    let rust_code = transpiler.transpile_to_program(&ast).unwrap().to_string();
+
+    assert!(
+        rust_code.contains("String :: new ()"),
+        "Basic :: syntax should work: {}",
+        rust_code
+    );
+}
+
+#[test]
+fn test_module_path_coloncolon() {
+    // Module paths should work with ::
+    let code = "let hm = std::collections::HashMap::new()";
+
+    let mut parser = Parser::new(code);
+    let ast = parser.parse().unwrap();
+    let mut transpiler = Transpiler::new();
+    let rust_code = transpiler.transpile_to_program(&ast).unwrap().to_string();
+
+    assert!(
+        rust_code.contains("std :: collections :: HashMap :: new ()"),
+        "Module paths should work: {}",
+        rust_code
+    );
+}
+
+#[test]
+fn test_enum_variant_coloncolon() {
+    // Enum variants should work with ::
+    let code = "let opt = Option::Some(42)";
+
+    let mut parser = Parser::new(code);
+    let ast = parser.parse().unwrap();
+    let mut transpiler = Transpiler::new();
+    let rust_code = transpiler.transpile_to_program(&ast).unwrap().to_string();
+
+    assert!(
+        rust_code.contains("Option :: Some") && rust_code.contains("42"),
+        "Enum variants should work: {}",
+        rust_code
+    );
+}
+
+#[test]
+fn test_turbofish_vec_new() {
+    // Turbofish syntax for Vec::<i32>::new()
+    let code = "let v = Vec::<i32>::new()";
+
+    let mut parser = Parser::new(code);
+    let ast = parser.parse().unwrap();
+    let mut transpiler = Transpiler::new();
+    let rust_code = transpiler.transpile_to_program(&ast).unwrap().to_string();
+
+    assert!(
+        rust_code.contains("Vec :: < i32 > :: new ()") || rust_code.contains("Vec::<i32>::new"),
+        "Turbofish syntax should work: {}",
+        rust_code
+    );
+}
+
+#[test]
+fn test_turbofish_hashmap_new() {
+    // Turbofish with multiple type parameters
+    let code = "let hm = HashMap::<String, i32>::new()";
+
+    let mut parser = Parser::new(code);
+    let ast = parser.parse().unwrap();
+    let mut transpiler = Transpiler::new();
+    let rust_code = transpiler.transpile_to_program(&ast).unwrap().to_string();
+
+    assert!(
+        rust_code.contains("HashMap")
+            && rust_code.contains("String")
+            && rust_code.contains("i32")
+            && rust_code.contains("new"),
+        "Turbofish with multiple params should work: {}",
+        rust_code
+    );
+}
+
+#[test]
+fn test_turbofish_collect() {
+    // Turbofish in method chains
+    let code = "let v = vec![1, 2, 3].iter().collect::<Vec<i32>>()";
+
+    let mut parser = Parser::new(code);
+    let ast = parser.parse().unwrap();
+    let mut transpiler = Transpiler::new();
+    let rust_code = transpiler.transpile_to_program(&ast).unwrap().to_string();
+
+    assert!(
+        rust_code.contains("collect") && rust_code.contains("Vec") && rust_code.contains("i32"),
+        "Turbofish in method chains should work: {}",
+        rust_code
+    );
+}
+
+#[test]
+fn test_nested_turbofish() {
+    // Nested generics with turbofish
+    let code = "let v = Vec::<Vec<i32>>::new()";
+
+    let mut parser = Parser::new(code);
+    let ast = parser.parse().unwrap();
+    let mut transpiler = Transpiler::new();
+    let rust_code = transpiler.transpile_to_program(&ast).unwrap().to_string();
+
+    assert!(
+        rust_code.contains("Vec") && rust_code.contains("i32"),
+        "Nested turbofish should work: {}",
+        rust_code
+    );
+}
+
+#[test]
+fn test_turbofish_vs_less_than_disambiguation() {
+    // Ensure parser distinguishes Vec::<T> from comparisons
+    let code = r#"
+        let v = Vec::<i32>::new()
+        let b = 3 < 5
+    "#;
+
+    let mut parser = Parser::new(code);
+    let ast = parser.parse().unwrap();
+    let mut transpiler = Transpiler::new();
+    let rust_code = transpiler.transpile_to_program(&ast).unwrap().to_string();
+
+    assert!(
+        rust_code.contains("Vec") && rust_code.contains("i32"),
+        "Turbofish should not be confused with < operator: {}",
+        rust_code
+    );
+    assert!(
+        rust_code.contains("3 < 5"),
+        "Less-than operator should still work: {}",
+        rust_code
+    );
+}

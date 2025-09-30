@@ -278,7 +278,14 @@ fn parse_identifier_token(state: &mut ParserState, token: &Token, span: Span) ->
                 let mut path = vec![name.clone()];
                 while matches!(state.tokens.peek(), Some((Token::ColonColon, _))) {
                     state.tokens.advance(); // consume ::
-                    if let Some((Token::Identifier(segment), _)) = state.tokens.peek() {
+
+                    // Check for turbofish syntax: Vec::<i32>
+                    if matches!(state.tokens.peek(), Some((Token::Less, _))) {
+                        // Parse turbofish generic arguments
+                        let turbofish = parse_turbofish_generics(state)?;
+                        path.push(turbofish);
+                        // After turbofish, loop continues to check for more :: segments
+                    } else if let Some((Token::Identifier(segment), _)) = state.tokens.peek() {
                         path.push(segment.clone());
                         state.tokens.advance();
                     } else if matches!(state.tokens.peek(), Some((Token::Star, _))) {
@@ -317,6 +324,84 @@ fn parse_identifier_token(state: &mut ParserState, token: &Token, span: Span) ->
         _ => bail!("Expected identifier token, got: {:?}", token),
     }
 }
+
+/// Parse turbofish generic arguments: ::<i32> or ::<String, i32>
+/// Returns a string representation of the turbofish for path construction
+fn parse_turbofish_generics(state: &mut ParserState) -> Result<String> {
+    // Consume the < token
+    state.tokens.advance();
+
+    let mut type_args = Vec::new();
+
+    // Parse comma-separated type list
+    loop {
+        // Parse single type argument
+        let type_str = parse_turbofish_type(state)?;
+        type_args.push(type_str);
+
+        // Check for comma (more types) or > (end of list)
+        match state.tokens.peek() {
+            Some((Token::Comma, _)) => {
+                state.tokens.advance(); // consume comma
+                                        // Continue to next type
+            }
+            Some((Token::Greater, _)) => {
+                state.tokens.advance(); // consume >
+                break;
+            }
+            Some((Token::GreaterEqual, _)) => {
+                // Handle >> as two > tokens (for nested generics like Vec<Vec<i32>>)
+                // This is a simplification - proper handling would require token splitting
+                state.tokens.advance();
+                break;
+            }
+            _ => bail!("Expected ',' or '>' in turbofish generics"),
+        }
+    }
+
+    // Build string representation
+    Ok(format!("<{}>", type_args.join(", ")))
+}
+
+/// Parse a single type in turbofish context
+/// Returns a string representation of the type
+fn parse_turbofish_type(state: &mut ParserState) -> Result<String> {
+    let mut type_str = String::new();
+
+    // Parse type name (could be qualified path like std::string::String)
+    loop {
+        match state.tokens.peek() {
+            Some((Token::Identifier(name), _)) => {
+                type_str.push_str(name);
+                state.tokens.advance();
+
+                // Check for :: (qualified path)
+                if matches!(state.tokens.peek(), Some((Token::ColonColon, _))) {
+                    type_str.push_str("::");
+                    state.tokens.advance();
+                    continue;
+                }
+                break;
+            }
+            Some((Token::Integer(n), _)) => {
+                // For array sizes like [i32; 10]
+                type_str.push_str(&n.to_string());
+                state.tokens.advance();
+                break;
+            }
+            _ => break,
+        }
+    }
+
+    // Check for nested generics: Vec<i32>
+    if matches!(state.tokens.peek(), Some((Token::Less, _))) {
+        let nested = parse_turbofish_generics(state)?;
+        type_str.push_str(&nested);
+    }
+
+    Ok(type_str)
+}
+
 /// Parse unary operator tokens (Minus, Bang)
 /// Extracted from `parse_prefix` to reduce complexity
 fn parse_unary_operator_token(state: &mut ParserState, token: &Token, span: Span) -> Result<Expr> {
