@@ -51,7 +51,7 @@ impl Evaluator {
         use crate::frontend::parser::Parser;
 
         let mut parser = Parser::new(&self.multiline_buffer);
-        match parser.parse_expr() {
+        match parser.parse() {
             Ok(expr) => {
                 match self.interpreter.eval_expr(&expr) {
                     Ok(value) => {
