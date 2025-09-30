@@ -2025,8 +2025,8 @@ fn parse_for_loop(state: &mut ParserState) -> Result<Expr> {
         start_span,
     ))
 }
-/// Parse for loop pattern (simple version)
-/// Complexity: <3
+/// Parse for loop pattern (supports bare tuple destructuring)
+/// Complexity: <8
 fn parse_for_pattern(state: &mut ParserState) -> Result<Pattern> {
     let Some((token, _)) = state.tokens.peek() else {
         bail!("Expected pattern in for loop");
@@ -2035,14 +2035,32 @@ fn parse_for_pattern(state: &mut ParserState) -> Result<Pattern> {
         Token::Identifier(name) => {
             let name = name.clone();
             state.tokens.advance();
-            Ok(Pattern::Identifier(name))
+            // Check if this is a bare tuple pattern: key, value (without parens)
+            if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+                // Parse as bare tuple: key, value, ...
+                let mut patterns = vec![Pattern::Identifier(name)];
+                while matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+                    state.tokens.advance(); // consume comma
+                                            // Parse next pattern element
+                    if let Some((Token::Identifier(next_name), _)) = state.tokens.peek() {
+                        let next_name = next_name.clone();
+                        state.tokens.advance();
+                        patterns.push(Pattern::Identifier(next_name));
+                    } else {
+                        bail!("Expected identifier after comma in tuple pattern");
+                    }
+                }
+                Ok(Pattern::Tuple(patterns))
+            } else {
+                Ok(Pattern::Identifier(name))
+            }
         }
         Token::Underscore => {
             state.tokens.advance();
             Ok(Pattern::Wildcard)
         }
         Token::LeftParen => {
-            // Parse tuple pattern: (x, y)
+            // Parse tuple pattern with parens: (x, y)
             parse_tuple_pattern(state)
         }
         Token::LeftBracket => {
