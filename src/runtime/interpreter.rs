@@ -897,19 +897,48 @@ impl Interpreter {
         }
     }
 
-    /// Evaluate miscellaneous expressions
-    /// Complexity: 5
-    fn eval_misc_expr(&mut self, expr_kind: &ExprKind) -> Result<Value, InterpreterError> {
+    /// Helper: Check if expression is a type definition
+    /// Complexity: 2
+    fn is_type_definition(expr_kind: &ExprKind) -> bool {
+        matches!(
+            expr_kind,
+            ExprKind::Actor { .. }
+                | ExprKind::Struct { .. }
+                | ExprKind::TupleStruct { .. }
+                | ExprKind::Class { .. }
+                | ExprKind::Impl { .. }
+        )
+    }
+
+    /// Helper: Check if expression is an actor operation
+    /// Complexity: 2
+    fn is_actor_operation(expr_kind: &ExprKind) -> bool {
+        matches!(
+            expr_kind,
+            ExprKind::Spawn { .. } | ExprKind::ActorSend { .. } | ExprKind::ActorQuery { .. }
+        )
+    }
+
+    /// Helper: Check if expression is a special form
+    /// Complexity: 2
+    fn is_special_form(expr_kind: &ExprKind) -> bool {
+        matches!(
+            expr_kind,
+            ExprKind::None
+                | ExprKind::Some { .. }
+                | ExprKind::Set(_)
+                | ExprKind::LetPattern { .. }
+                | ExprKind::StringInterpolation { .. }
+                | ExprKind::QualifiedName { .. }
+                | ExprKind::ObjectLiteral { .. }
+                | ExprKind::StructLiteral { .. }
+        )
+    }
+
+    /// Evaluate type definition expressions (Actor, Struct, Class, Impl)
+    /// Complexity: 6
+    fn eval_type_definition(&mut self, expr_kind: &ExprKind) -> Result<Value, InterpreterError> {
         match expr_kind {
-            ExprKind::StringInterpolation { parts } => self.eval_string_interpolation(parts),
-            ExprKind::QualifiedName { module, name } => self.eval_qualified_name(module, name),
-            ExprKind::ObjectLiteral { fields } => self.eval_object_literal(fields),
-            ExprKind::LetPattern {
-                pattern,
-                value,
-                body,
-                ..
-            } => self.eval_let_pattern(pattern, value, body),
             ExprKind::Actor {
                 name,
                 state,
@@ -919,18 +948,11 @@ impl Interpreter {
                 name,
                 type_params,
                 fields,
-                derives: _, // Derives are handled at transpile time, not runtime
+                derives: _,
                 is_pub,
             } => self.eval_struct_definition(name, type_params, fields, *is_pub),
-            ExprKind::TupleStruct {
-                name: _,
-                type_params: _,
-                fields: _,
-                derives: _,
-                is_pub: _,
-            } => {
-                // Tuple structs are primarily a transpilation feature
-                // Just return nil since this is handled at compile time
+            ExprKind::TupleStruct { .. } => {
+                // Tuple structs are transpilation feature, return Nil at runtime
                 Ok(Value::Nil)
             }
             ExprKind::Class {
@@ -942,12 +964,12 @@ impl Interpreter {
                 constructors,
                 methods,
                 constants,
-                properties: _, // TODO: implement property evaluation
+                properties: _,
                 derives,
                 is_pub,
-                is_sealed: _,   // TODO: implement sealed classes
-                is_abstract: _, // TODO: implement abstract classes
-                decorators: _,  // TODO: implement decorators
+                is_sealed: _,
+                is_abstract: _,
+                decorators: _,
             } => self.eval_class_definition(
                 name,
                 type_params,
@@ -960,123 +982,154 @@ impl Interpreter {
                 derives,
                 *is_pub,
             ),
-            ExprKind::StructLiteral {
-                name,
-                fields,
-                base: _,
-            } => self.eval_struct_literal(name, fields),
-            ExprKind::Set(statements) => {
-                // Evaluate each statement in the set, return the last one
-                let mut result = Value::Nil;
-                for stmt in statements {
-                    result = self.eval_expr(stmt)?;
-                }
-                Ok(result)
-            }
-            ExprKind::None => Ok(Value::Nil), // None maps to Nil for now
-            ExprKind::Some { value } => {
-                // Some(x) wraps a value - for now just return the value
-                // In a full Option implementation, we'd have a Value::Option variant
-                self.eval_expr(value)
-            }
             ExprKind::Impl {
                 trait_name: _,
                 for_type,
                 methods,
                 ..
             } => self.eval_impl_block(for_type, methods),
-            ExprKind::Spawn { actor } => {
-                // Handle: spawn ActorName (no args)
-                if let ExprKind::Identifier(name) = &actor.kind {
-                    if let Ok(def_value) = self.lookup_variable(name) {
-                        if let Value::Object(ref obj) = def_value {
-                            if let Some(Value::String(type_str)) = obj.get("__type") {
-                                if type_str.as_ref() == "Actor" {
-                                    // This is an actor - convert to Actor.new() call with no args
-                                    let constructor_marker = Value::from_string(format!(
-                                        "__actor_constructor__:{}",
-                                        name
-                                    ));
-                                    return self.call_function(constructor_marker, &[]);
-                                }
+            _ => unreachable!("eval_type_definition called with non-type-definition"),
+        }
+    }
+
+    /// Evaluate actor operation expressions (Spawn, `ActorSend`, `ActorQuery`)
+    /// Complexity: 4
+    fn eval_actor_operation(&mut self, expr_kind: &ExprKind) -> Result<Value, InterpreterError> {
+        match expr_kind {
+            ExprKind::Spawn { actor } => self.eval_spawn_actor(actor),
+            ExprKind::ActorSend { actor, message } => self.eval_actor_send(actor, message),
+            ExprKind::ActorQuery { actor, message } => self.eval_actor_query(actor, message),
+            _ => unreachable!("eval_actor_operation called with non-actor-operation"),
+        }
+    }
+
+    /// Evaluate special form expressions (None, Some, Set, patterns, literals)
+    /// Complexity: 9
+    fn eval_special_form(&mut self, expr_kind: &ExprKind) -> Result<Value, InterpreterError> {
+        match expr_kind {
+            ExprKind::None => Ok(Value::Nil),
+            ExprKind::Some { value } => self.eval_expr(value),
+            ExprKind::Set(statements) => {
+                let mut result = Value::Nil;
+                for stmt in statements {
+                    result = self.eval_expr(stmt)?;
+                }
+                Ok(result)
+            }
+            ExprKind::LetPattern {
+                pattern,
+                value,
+                body,
+                ..
+            } => self.eval_let_pattern(pattern, value, body),
+            ExprKind::StringInterpolation { parts } => self.eval_string_interpolation(parts),
+            ExprKind::QualifiedName { module, name } => self.eval_qualified_name(module, name),
+            ExprKind::ObjectLiteral { fields } => self.eval_object_literal(fields),
+            ExprKind::StructLiteral {
+                name,
+                fields,
+                base: _,
+            } => self.eval_struct_literal(name, fields),
+            _ => unreachable!("eval_special_form called with non-special-form"),
+        }
+    }
+
+    /// Evaluate miscellaneous expressions
+    /// Complexity: 5 (reduced from ~17)
+    fn eval_misc_expr(&mut self, expr_kind: &ExprKind) -> Result<Value, InterpreterError> {
+        if Self::is_type_definition(expr_kind) {
+            return self.eval_type_definition(expr_kind);
+        }
+        if Self::is_actor_operation(expr_kind) {
+            return self.eval_actor_operation(expr_kind);
+        }
+        if Self::is_special_form(expr_kind) {
+            return self.eval_special_form(expr_kind);
+        }
+
+        // Fallback for unimplemented expressions
+        Err(InterpreterError::RuntimeError(format!(
+            "Expression type not yet implemented: {expr_kind:?}"
+        )))
+    }
+
+    /// Helper: Evaluate spawn actor expression with proper nesting handling
+    /// Complexity: 10 (extracted from inline code)
+    fn eval_spawn_actor(&mut self, actor: &Expr) -> Result<Value, InterpreterError> {
+        // Handle: spawn ActorName (no args)
+        if let ExprKind::Identifier(name) = &actor.kind {
+            if let Ok(def_value) = self.lookup_variable(name) {
+                if let Value::Object(ref obj) = def_value {
+                    if let Some(Value::String(type_str)) = obj.get("__type") {
+                        if type_str.as_ref() == "Actor" {
+                            let constructor_marker =
+                                Value::from_string(format!("__actor_constructor__:{}", name));
+                            return self.call_function(constructor_marker, &[]);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Handle: spawn ActorName(args...)
+        if let ExprKind::Call { func, args } = &actor.kind {
+            if let ExprKind::Identifier(name) = &func.kind {
+                if let Ok(def_value) = self.lookup_variable(name) {
+                    if let Value::Object(ref obj) = def_value {
+                        if let Some(Value::String(type_str)) = obj.get("__type") {
+                            if type_str.as_ref() == "Actor" {
+                                let constructor_marker =
+                                    Value::from_string(format!("__actor_constructor__:{}", name));
+                                let arg_vals: Result<Vec<Value>, _> =
+                                    args.iter().map(|arg| self.eval_expr(arg)).collect();
+                                let arg_vals = arg_vals?;
+                                return self.call_function(constructor_marker, &arg_vals);
                             }
                         }
                     }
                 }
-
-                // Handle: spawn ActorName(args...)
-                if let ExprKind::Call { func, args } = &actor.kind {
-                    // Check if this is calling an actor constructor
-                    if let ExprKind::Identifier(name) = &func.kind {
-                        // Check if this identifier refers to an actor
-                        if let Ok(def_value) = self.lookup_variable(name) {
-                            if let Value::Object(ref obj) = def_value {
-                                if let Some(Value::String(type_str)) = obj.get("__type") {
-                                    if type_str.as_ref() == "Actor" {
-                                        // This is an actor - convert to Actor.new() call
-                                        let constructor_marker = Value::from_string(format!(
-                                            "__actor_constructor__:{}",
-                                            name
-                                        ));
-                                        // Evaluate arguments
-                                        let arg_vals: Result<Vec<Value>, _> =
-                                            args.iter().map(|arg| self.eval_expr(arg)).collect();
-                                        let arg_vals = arg_vals?;
-                                        // Call the actor constructor
-                                        return self.call_function(constructor_marker, &arg_vals);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // Default: evaluate the actor expression normally
-                let actor_value = self.eval_expr(actor)?;
-                // In a full actor system, this would create a mailbox and thread
-                Ok(actor_value)
             }
-            ExprKind::ActorSend { actor, message } => {
-                // Fire-and-forget message send: actor ! Message(args)
-                let actor_value = self.eval_expr(actor)?;
+        }
 
-                // Evaluate message - if it's an undefined identifier, treat as message name
-                let message_value = self.eval_message_expr(message)?;
+        // Default: evaluate the actor expression normally
+        let actor_value = self.eval_expr(actor)?;
+        Ok(actor_value)
+    }
 
-                // Extract the ObjectMut from the actor
-                if let Value::ObjectMut(cell_rc) = actor_value {
-                    // Process the message synchronously
-                    self.process_actor_message_sync_mut(&cell_rc, &message_value)?;
-                    // Fire-and-forget returns Nil
-                    Ok(Value::Nil)
-                } else {
-                    Err(InterpreterError::RuntimeError(format!(
-                        "ActorSend requires an actor instance, got {}",
-                        actor_value.type_name()
-                    )))
-                }
-            }
-            ExprKind::ActorQuery { actor, message } => {
-                // Ask pattern with reply: actor <? Message(args)
-                let actor_value = self.eval_expr(actor)?;
+    /// Helper: Evaluate actor send expression (fire-and-forget)
+    /// Complexity: 4
+    fn eval_actor_send(&mut self, actor: &Expr, message: &Expr) -> Result<Value, InterpreterError> {
+        let actor_value = self.eval_expr(actor)?;
+        let message_value = self.eval_message_expr(message)?;
 
-                // Evaluate message - if it's an undefined identifier, treat as message name
-                let message_value = self.eval_message_expr(message)?;
+        if let Value::ObjectMut(cell_rc) = actor_value {
+            self.process_actor_message_sync_mut(&cell_rc, &message_value)?;
+            Ok(Value::Nil)
+        } else {
+            Err(InterpreterError::RuntimeError(format!(
+                "ActorSend requires an actor instance, got {}",
+                actor_value.type_name()
+            )))
+        }
+    }
 
-                // Extract the ObjectMut from the actor
-                if let Value::ObjectMut(cell_rc) = actor_value {
-                    // Process the message synchronously and return the result
-                    self.process_actor_message_sync_mut(&cell_rc, &message_value)
-                } else {
-                    Err(InterpreterError::RuntimeError(format!(
-                        "ActorQuery requires an actor instance, got {}",
-                        actor_value.type_name()
-                    )))
-                }
-            }
-            _ => Err(InterpreterError::RuntimeError(format!(
-                "Expression type not yet implemented: {expr_kind:?}"
-            ))),
+    /// Helper: Evaluate actor query expression (ask pattern)
+    /// Complexity: 4
+    fn eval_actor_query(
+        &mut self,
+        actor: &Expr,
+        message: &Expr,
+    ) -> Result<Value, InterpreterError> {
+        let actor_value = self.eval_expr(actor)?;
+        let message_value = self.eval_message_expr(message)?;
+
+        if let Value::ObjectMut(cell_rc) = actor_value {
+            self.process_actor_message_sync_mut(&cell_rc, &message_value)
+        } else {
+            Err(InterpreterError::RuntimeError(format!(
+                "ActorQuery requires an actor instance, got {}",
+                actor_value.type_name()
+            )))
         }
     }
 

@@ -922,17 +922,10 @@ mod tests {
             10_000, // 10KB limit
             Duration::from_secs(1),
         );
-        assert!(
-            result.is_err(),
-            "Should fail when exceeding memory limit"
-        );
+        assert!(result.is_err(), "Should fail when exceeding memory limit");
 
         // Should enforce timeout
-        let result = repl.eval_bounded(
-            "loop { }",
-            100_000_000,
-            Duration::from_millis(100),
-        );
+        let result = repl.eval_bounded("loop { }", 100_000_000, Duration::from_millis(100));
         assert!(result.is_err(), "Should timeout on infinite loop");
     }
 }
