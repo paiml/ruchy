@@ -303,6 +303,15 @@ impl GlobalRegistry {
                 }
                 size
             }
+            Value::ObjectMut(cell) => {
+                let map = cell.borrow();
+                let mut size = 32; // HashMap + RefCell overhead
+                for (key, value) in map.iter() {
+                    size += key.len(); // Key size
+                    size += self.estimate_value_size(value); // Value size
+                }
+                size
+            }
             Value::Range { start, end, .. } => {
                 // Size of start value + end value + metadata
                 self.estimate_value_size(start) + self.estimate_value_size(end) + 8

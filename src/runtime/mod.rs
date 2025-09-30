@@ -67,6 +67,7 @@ pub mod dataflow_debugger;
 pub mod dataflow_ui;
 pub mod grammar_coverage;
 pub mod interpreter;
+pub mod object_helpers; // EXTREME TDD: RefCell-based mutable objects
 pub mod value_utils;
 // Decomposed interpreter modules
 pub mod builtin_init; // EXTREME TDD: Builtin functions initialization

@@ -26,6 +26,10 @@ impl fmt::Display for Value {
             Value::Closure { .. } => write!(f, "<function>"),
             Value::DataFrame { columns } => format_dataframe(f, columns),
             Value::Object(obj) => format_object(f, obj),
+            Value::ObjectMut(cell) => {
+                let obj = cell.borrow();
+                format_object(f, &obj)
+            }
             Value::Range {
                 start,
                 end,

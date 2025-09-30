@@ -156,6 +156,7 @@ impl Value {
             Value::Closure { .. } => "function",
             Value::DataFrame { .. } => "dataframe",
             Value::Object(_) => "object",
+            Value::ObjectMut(_) => "object",
             Value::Range { .. } => "range",
             Value::EnumVariant { .. } => "enum_variant",
             Value::BuiltinFunction(_) => "builtin_function",

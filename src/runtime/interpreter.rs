@@ -80,8 +80,10 @@ pub enum Value {
     },
     /// `DataFrame` value
     DataFrame { columns: Vec<DataFrameColumn> },
-    /// Object/HashMap value for key-value mappings
+    /// Object/HashMap value for key-value mappings (immutable)
     Object(Rc<HashMap<String, Value>>),
+    /// Mutable object with interior mutability (for actors and classes)
+    ObjectMut(Rc<std::cell::RefCell<HashMap<String, Value>>>),
     /// Range value for representing ranges
     Range {
         start: Box<Value>,
@@ -115,6 +117,7 @@ impl Value {
             Value::Closure { .. } => TypeId::of::<fn()>(), // Generic closure marker
             Value::DataFrame { .. } => TypeId::of::<crate::runtime::DataFrameColumn>(),
             Value::Object(_) => TypeId::of::<HashMap<String, Value>>(),
+            Value::ObjectMut(_) => TypeId::of::<HashMap<String, Value>>(),
             Value::Range { .. } => TypeId::of::<std::ops::Range<i64>>(),
             Value::EnumVariant { .. } => TypeId::of::<(String, Option<Vec<Value>>)>(),
             Value::BuiltinFunction(_) => TypeId::of::<fn()>(),
@@ -1204,9 +1207,32 @@ impl Interpreter {
                     }
                 }
 
-                // Check if this is an actor instance with runtime state
+                // Check if this is an actor instance with runtime state (async actors)
                 if let Some(Value::String(actor_id)) = object_map.get("__actor_id") {
-                    // This is an actor - get the field from the runtime
+                    // This is an async actor - get the field from the runtime
+                    use crate::runtime::actor_runtime::ACTOR_RUNTIME;
+                    let field_value = ACTOR_RUNTIME.get_actor_field(actor_id.as_ref(), field)?;
+                    return Ok(field_value.to_value());
+                }
+
+                // Regular object field access (including synchronous actors)
+                if let Some(value) = object_map.get(field) {
+                    Ok(value.clone())
+                } else {
+                    Err(InterpreterError::RuntimeError(format!(
+                        "Object has no field named '{}'",
+                        field
+                    )))
+                }
+            }
+            Value::ObjectMut(ref cell) => {
+                // Mutable object field access
+                // Safe borrow: We clone the result, so borrow is released immediately
+                let object_map = cell.borrow();
+
+                // Check if this is an actor instance with runtime state (async actors)
+                if let Some(Value::String(actor_id)) = object_map.get("__actor_id") {
+                    // This is an async actor - get the field from the runtime
                     use crate::runtime::actor_runtime::ACTOR_RUNTIME;
                     let field_value = ACTOR_RUNTIME.get_actor_field(actor_id.as_ref(), field)?;
                     return Ok(field_value.to_value());
@@ -2328,6 +2354,42 @@ impl Interpreter {
     }
 
     /// Evaluate an assignment
+    /// Evaluates assignment expressions including field assignments.
+    ///
+    /// This method handles variable assignments (`x = value`) and field assignments (`obj.field = value`).
+    /// For field assignments, it creates a new object with the updated field value.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::frontend::parser::Parser;
+    /// use ruchy::runtime::interpreter::{Interpreter, Value};
+    ///
+    /// let mut interpreter = Interpreter::new();
+    /// let code = r#"
+    ///     class Point {
+    ///         x: i32,
+    ///         y: i32
+    ///
+    ///         new(x: i32, y: i32) {
+    ///             self.x = x
+    ///             self.y = y
+    ///         }
+    ///     }
+    ///
+    ///     fn main() {
+    ///         let p = Point::new(10, 20)
+    ///         p.x
+    ///     }
+    /// "#;
+    ///
+    /// let mut parser = Parser::new(code);
+    /// let expr = parser.parse().unwrap();
+    /// interpreter.eval_expr(&expr).unwrap();
+    /// let main_call = Parser::new("main()").parse().unwrap();
+    /// let result = interpreter.eval_expr(&main_call).unwrap();
+    /// assert!(matches!(result, Value::Integer(10)));
+    /// ```
     fn eval_assign(&mut self, target: &Expr, value: &Expr) -> Result<Value, InterpreterError> {
         let val = self.eval_expr(value)?;
 
@@ -2345,15 +2407,21 @@ impl Interpreter {
                         // Get the object
                         let obj = self.lookup_variable(obj_name)?;
 
-                        // Update the field in a mutable copy
+                        // Update the field based on object type
                         match obj {
                             Value::Object(ref map) => {
+                                // Immutable object: create new copy with updated field
                                 let mut new_map = (**map).clone();
                                 new_map.insert(field.clone(), val.clone());
                                 let new_obj = Value::Object(Rc::new(new_map));
 
                                 // Update the variable with the modified object
                                 self.set_variable(obj_name, new_obj);
+                                Ok(val)
+                            }
+                            Value::ObjectMut(ref cell) => {
+                                // Mutable object: update in place via RefCell
+                                cell.borrow_mut().insert(field.clone(), val.clone());
                                 Ok(val)
                             }
                             _ => Err(InterpreterError::RuntimeError(format!(
@@ -2442,32 +2510,35 @@ impl Interpreter {
 
         // Special handling for actor send/ask methods - convert undefined identifiers to messages
         if (method == "send" || method == "ask") && args.len() == 1 {
-            // Check if receiver is an actor instance
-            if let Value::Object(ref obj) = receiver_value {
-                if obj.contains_key("__actor") {
-                    // Try to evaluate the argument as a message
-                    let arg_value = match &args[0].kind {
-                        ExprKind::Identifier(name) => {
-                            // Try to evaluate as variable first
-                            if let Ok(val) = self.lookup_variable(name) {
-                                val
-                            } else {
-                                // Treat as a zero-argument message constructor
-                                let mut message = HashMap::new();
-                                message.insert(
-                                    "__type".to_string(),
-                                    Value::from_string("Message".to_string()),
-                                );
-                                message
-                                    .insert("type".to_string(), Value::from_string(name.clone()));
-                                message.insert("data".to_string(), Value::Array(Rc::from(vec![])));
-                                Value::Object(Rc::new(message))
-                            }
+            // Check if receiver is an actor instance (immutable or mutable)
+            let is_actor = match &receiver_value {
+                Value::Object(ref obj) => obj.contains_key("__actor"),
+                Value::ObjectMut(ref cell) => cell.borrow().contains_key("__actor"),
+                _ => false,
+            };
+
+            if is_actor {
+                // Try to evaluate the argument as a message
+                let arg_value = match &args[0].kind {
+                    ExprKind::Identifier(name) => {
+                        // Try to evaluate as variable first
+                        if let Ok(val) = self.lookup_variable(name) {
+                            val
+                        } else {
+                            // Treat as a zero-argument message constructor
+                            let mut message = HashMap::new();
+                            message.insert(
+                                "__type".to_string(),
+                                Value::from_string("Message".to_string()),
+                            );
+                            message.insert("type".to_string(), Value::from_string(name.clone()));
+                            message.insert("data".to_string(), Value::Array(Rc::from(vec![])));
+                            Value::Object(Rc::new(message))
                         }
-                        _ => self.eval_expr(&args[0])?,
-                    };
-                    return self.dispatch_method_call(&receiver_value, method, &[arg_value], false);
-                }
+                    }
+                    _ => self.eval_expr(&args[0])?,
+                };
+                return self.dispatch_method_call(&receiver_value, method, &[arg_value], false);
             }
         }
 
@@ -2532,6 +2603,50 @@ impl Interpreter {
                     self.eval_object_method(obj, method, arg_values, args_empty)
                 }
             }
+            Value::ObjectMut(cell_rc) => {
+                // Dispatch mutable objects the same way as immutable ones
+                // Safe borrow: We only read metadata fields to determine dispatch
+                let obj = cell_rc.borrow();
+
+                // Check if this is an actor instance
+                if let Some(Value::String(actor_name)) = obj.get("__actor") {
+                    let actor_name = actor_name.clone();
+                    drop(obj); // Release borrow before recursive call
+                    self.eval_actor_instance_method_mut(
+                        cell_rc,
+                        actor_name.as_ref(),
+                        method,
+                        arg_values,
+                    )
+                }
+                // Check if this is a class instance
+                else if let Some(Value::String(class_name)) = obj.get("__class") {
+                    let class_name = class_name.clone();
+                    drop(obj); // Release borrow before recursive call
+                    self.eval_class_instance_method_mut(
+                        cell_rc,
+                        class_name.as_ref(),
+                        method,
+                        arg_values,
+                    )
+                }
+                // Check if this is a struct instance with impl methods
+                else if let Some(Value::String(struct_name)) =
+                    obj.get("__struct_type").or_else(|| obj.get("__struct"))
+                {
+                    let struct_name = struct_name.clone();
+                    drop(obj); // Release borrow before recursive call
+                    self.eval_struct_instance_method_mut(
+                        cell_rc,
+                        struct_name.as_ref(),
+                        method,
+                        arg_values,
+                    )
+                } else {
+                    drop(obj); // Release borrow before recursive call
+                    self.eval_object_method_mut(cell_rc, method, arg_values, args_empty)
+                }
+            }
             _ => self.eval_generic_method(receiver, method, args_empty),
         }
     }
@@ -2563,6 +2678,162 @@ impl Interpreter {
         eval_method::eval_generic_method(receiver, method, args_empty)
     }
 
+    // ObjectMut adapter methods - delegate to immutable versions via borrow
+    // Complexity: 2 each (simple delegation)
+
+    fn eval_actor_instance_method_mut(
+        &mut self,
+        cell_rc: &Rc<std::cell::RefCell<std::collections::HashMap<String, Value>>>,
+        actor_name: &str,
+        method: &str,
+        arg_values: &[Value],
+    ) -> Result<Value, InterpreterError> {
+        let instance = cell_rc.borrow();
+        self.eval_actor_instance_method(&instance, actor_name, method, arg_values)
+    }
+
+    fn eval_class_instance_method_mut(
+        &mut self,
+        cell_rc: &Rc<std::cell::RefCell<std::collections::HashMap<String, Value>>>,
+        class_name: &str,
+        method: &str,
+        arg_values: &[Value],
+    ) -> Result<Value, InterpreterError> {
+        // For mutable instances, we need to pass ObjectMut as self (not a copy)
+        // This allows &mut self methods to mutate the instance in place
+
+        // Look up the class definition
+        let class_def = self.lookup_variable(class_name)?;
+
+        if let Value::Object(ref class_info) = class_def {
+            // Look for the method in the class definition
+            if let Some(Value::Object(ref methods)) = class_info.get("__methods") {
+                if let Some(Value::Object(ref method_meta)) = methods.get(method) {
+                    // Get the method closure
+                    if let Some(Value::Closure { params, body, .. }) = method_meta.get("closure") {
+                        // Check if it's a static method
+                        let is_static = method_meta
+                            .get("is_static")
+                            .and_then(|v| {
+                                if let Value::Bool(b) = v {
+                                    Some(*b)
+                                } else {
+                                    None
+                                }
+                            })
+                            .unwrap_or(false);
+
+                        if is_static {
+                            return Err(InterpreterError::RuntimeError(format!(
+                                "Cannot call static method {} on instance",
+                                method
+                            )));
+                        }
+
+                        // Create environment for method execution
+                        let mut method_env = HashMap::new();
+
+                        // CRITICAL: Pass ObjectMut as self, using the SAME Rc<RefCell<>>
+                        // This enables &mut self methods to mutate the shared instance
+                        method_env.insert("self".to_string(), Value::ObjectMut(Rc::clone(cell_rc)));
+
+                        // Bind method parameters to arguments
+                        if arg_values.len() != params.len() {
+                            return Err(InterpreterError::RuntimeError(format!(
+                                "Method {} expects {} arguments, got {}",
+                                method,
+                                params.len(),
+                                arg_values.len()
+                            )));
+                        }
+
+                        for (param, arg) in params.iter().zip(arg_values) {
+                            method_env.insert(param.clone(), arg.clone());
+                        }
+
+                        // Push method environment
+                        self.env_push(method_env);
+
+                        // Execute method body
+                        let result = self.eval_expr(body)?;
+
+                        // Pop environment
+                        self.env_pop();
+
+                        return Ok(result);
+                    }
+                }
+            }
+
+            // Method not found
+            Err(InterpreterError::RuntimeError(format!(
+                "Class {} has no method named {}",
+                class_name, method
+            )))
+        } else {
+            Err(InterpreterError::RuntimeError(format!(
+                "{} is not a class",
+                class_name
+            )))
+        }
+    }
+
+    fn eval_struct_instance_method_mut(
+        &mut self,
+        cell_rc: &Rc<std::cell::RefCell<std::collections::HashMap<String, Value>>>,
+        struct_name: &str,
+        method: &str,
+        arg_values: &[Value],
+    ) -> Result<Value, InterpreterError> {
+        let instance = cell_rc.borrow();
+        self.eval_struct_instance_method(&instance, struct_name, method, arg_values)
+    }
+
+    fn eval_object_method_mut(
+        &mut self,
+        cell_rc: &Rc<std::cell::RefCell<std::collections::HashMap<String, Value>>>,
+        method: &str,
+        arg_values: &[Value],
+        args_empty: bool,
+    ) -> Result<Value, InterpreterError> {
+        let instance = cell_rc.borrow();
+        self.eval_object_method(&instance, method, arg_values, args_empty)
+    }
+
+    /// Evaluates actor instance methods like `send()` and `ask()`.
+    ///
+    /// This method handles message passing to actors using the `!` (send) and `<?` (ask) operators.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::frontend::parser::Parser;
+    /// use ruchy::runtime::interpreter::Interpreter;
+    ///
+    /// let mut interpreter = Interpreter::new();
+    /// let code = r#"
+    ///     actor Counter {
+    ///         count: i32 = 0
+    ///
+    ///         receive {
+    ///             Increment => 42
+    ///         }
+    ///     }
+    ///
+    ///     fn main() {
+    ///         let counter = spawn Counter
+    ///         counter ! Increment
+    ///         counter
+    ///     }
+    /// "#;
+    ///
+    /// let mut parser = Parser::new(code);
+    /// let expr = parser.parse().unwrap();
+    /// interpreter.eval_expr(&expr).unwrap();
+    /// let main_call = Parser::new("main()").parse().unwrap();
+    /// let result = interpreter.eval_expr(&main_call).unwrap();
+    /// // Actor instance returned
+    /// ```
     fn eval_actor_instance_method(
         &mut self,
         instance: &std::collections::HashMap<String, Value>,
@@ -2579,7 +2850,7 @@ impl Interpreter {
                     ));
                 }
 
-                // Get the actor ID from the instance
+                // Check if this is an async actor with runtime ID
                 if let Some(Value::String(actor_id)) = instance.get("__actor_id") {
                     use crate::runtime::actor_runtime::{ActorMessage, ACTOR_RUNTIME};
 
@@ -2631,11 +2902,11 @@ impl Interpreter {
                     };
 
                     ACTOR_RUNTIME.send_message(actor_id.as_ref(), actor_msg)?;
-                    Ok(Value::Nil)
-                } else {
-                    // Old-style actor without runtime ID
-                    Ok(Value::Nil)
+                    return Ok(Value::Nil);
                 }
+
+                // Synchronous actor - process message immediately
+                self.process_actor_message_sync(instance, &arg_values[0])
             }
             "stop" => {
                 // Stop the actor
@@ -2738,6 +3009,141 @@ impl Interpreter {
                 method
             ))),
         }
+    }
+
+    /// Process a message for a synchronous (interpreted) actor.
+    ///
+    /// This method executes the appropriate message handler based on the message type.
+    /// Complexity: 9
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::frontend::parser::Parser;
+    /// use ruchy::runtime::interpreter::Interpreter;
+    ///
+    /// let mut interpreter = Interpreter::new();
+    /// let code = r#"
+    ///     actor Greeter {
+    ///         greeting: String = "Hello"
+    ///
+    ///         receive {
+    ///             Greet(name: String) => {
+    ///                 "Hello, World!"
+    ///             }
+    ///         }
+    ///     }
+    ///
+    ///     fn main() {
+    ///         let greeter = spawn Greeter
+    ///         greeter ! Greet("Alice")
+    ///         greeter
+    ///     }
+    /// "#;
+    ///
+    /// let mut parser = Parser::new(code);
+    /// let expr = parser.parse().unwrap();
+    /// interpreter.eval_expr(&expr).unwrap();
+    /// let main_call = Parser::new("main()").parse().unwrap();
+    /// let result = interpreter.eval_expr(&main_call);
+    /// assert!(result.is_ok());
+    /// ```
+    fn process_actor_message_sync(
+        &mut self,
+        instance: &std::collections::HashMap<String, Value>,
+        message: &Value,
+    ) -> Result<Value, InterpreterError> {
+        // Parse the message to extract type and arguments
+        // Messages come as function calls like Push(1) or SetCount(5)
+        let (msg_type, msg_args) = if let Value::Object(msg_obj) = message {
+            // Check if it's a Message object
+            if let Some(Value::String(type_str)) = msg_obj.get("__type") {
+                if type_str.as_ref() == "Message" {
+                    let msg_type = msg_obj
+                        .get("type")
+                        .and_then(|v| {
+                            if let Value::String(s) = v {
+                                Some(s.to_string())
+                            } else {
+                                None
+                            }
+                        })
+                        .unwrap_or_else(|| "Unknown".to_string());
+                    let msg_args = msg_obj
+                        .get("data")
+                        .and_then(|v| {
+                            if let Value::Array(arr) = v {
+                                Some(arr.to_vec())
+                            } else {
+                                None
+                            }
+                        })
+                        .unwrap_or_else(Vec::new);
+                    (msg_type, msg_args)
+                } else {
+                    return Err(InterpreterError::RuntimeError(
+                        "Invalid message format".to_string(),
+                    ));
+                }
+            } else {
+                return Err(InterpreterError::RuntimeError(
+                    "Invalid message format".to_string(),
+                ));
+            }
+        } else {
+            return Err(InterpreterError::RuntimeError(
+                "Message must be an object".to_string(),
+            ));
+        };
+
+        // Find the matching handler
+        if let Some(Value::Array(handlers)) = instance.get("__handlers") {
+            for handler in handlers.iter() {
+                if let Value::Object(handler_obj) = handler {
+                    if let Some(Value::String(handler_type)) = handler_obj.get("message_type") {
+                        if handler_type.as_ref() == msg_type {
+                            // Found matching handler - execute it
+                            if let Some(Value::Closure { params, body, env }) =
+                                handler_obj.get("body")
+                            {
+                                // Create a new environment for handler execution
+                                let mut handler_env = (**env).clone();
+
+                                // Bind message parameters
+                                for (i, param_name) in params.iter().enumerate() {
+                                    if let Some(value) = msg_args.get(i) {
+                                        handler_env.insert(param_name.clone(), value.clone());
+                                    }
+                                }
+
+                                // Bind 'self' to the actor instance
+                                // Create a mutable object for self that includes all fields
+                                let mut self_obj = HashMap::new();
+                                for (key, value) in instance {
+                                    if !key.starts_with("__") {
+                                        self_obj.insert(key.clone(), value.clone());
+                                    }
+                                }
+                                handler_env
+                                    .insert("self".to_string(), Value::Object(Rc::new(self_obj)));
+
+                                // Execute the handler body
+                                self.env_stack.push(handler_env);
+                                let result = self.eval_expr(body);
+                                self.env_stack.pop();
+
+                                return result;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        Err(InterpreterError::RuntimeError(format!(
+            "No handler found for message type: {}",
+            msg_type
+        )))
     }
 
     fn eval_struct_instance_method(
@@ -2874,18 +3280,48 @@ impl Interpreter {
             Value::Object(std::rc::Rc::new(fields)),
         );
 
-        // Store message handlers
-        let mut handlers_map = HashMap::new();
+        // Store message handlers as closures
+        let mut handlers_array = Vec::new();
         for handler in handlers {
-            // Store handler information for later use
-            handlers_map.insert(
-                handler.message_type.clone(),
-                Value::from_string("handler".to_string()), // Placeholder for now
+            // Create a closure for each handler
+            let mut handler_obj = HashMap::new();
+            handler_obj.insert(
+                "message_type".to_string(),
+                Value::from_string(handler.message_type.clone()),
             );
+
+            // Store params as strings
+            let param_names: Vec<String> = handler
+                .params
+                .iter()
+                .map(crate::frontend::ast::Param::name)
+                .collect();
+            handler_obj.insert(
+                "params".to_string(),
+                Value::Array(Rc::from(
+                    param_names
+                        .iter()
+                        .map(|n| Value::from_string(n.clone()))
+                        .collect::<Vec<_>>(),
+                )),
+            );
+
+            // Store the handler body AST node (we'll evaluate it later)
+            // For now, store as a closure with the current environment
+            handler_obj.insert(
+                "body".to_string(),
+                Value::Closure {
+                    params: param_names,
+                    body: Rc::new(*handler.body.clone()),
+                    env: Rc::new(self.current_env().clone()),
+                },
+            );
+
+            handlers_array.push(Value::Object(Rc::new(handler_obj)));
         }
         actor_type.insert(
             "__handlers".to_string(),
-            Value::Object(std::rc::Rc::new(handlers_map)),
+            Value::Array(Rc::from(handlers_array)),
         );
 
         // Register this actor type in the environment
@@ -3306,6 +3742,46 @@ impl Interpreter {
         Ok(Value::Nil) // impl blocks don't return values
     }
 
+    /// Instantiates a class by calling its constructor.
+    ///
+    /// This method creates a new class instance, initializes fields with default values,
+    /// and executes the constructor body to set field values from arguments.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::frontend::parser::Parser;
+    /// use ruchy::runtime::interpreter::{Interpreter, Value};
+    ///
+    /// let mut interpreter = Interpreter::new();
+    /// let code = r#"
+    ///     class Point {
+    ///         x: i32,
+    ///         y: i32
+    ///
+    ///         new(x: i32, y: i32) {
+    ///             self.x = x
+    ///             self.y = y
+    ///         }
+    ///
+    ///         fn get_x(&self) -> i32 {
+    ///             self.x
+    ///         }
+    ///     }
+    ///
+    ///     fn main() {
+    ///         let p = Point::new(3, 4)
+    ///         p.get_x()
+    ///     }
+    /// "#;
+    ///
+    /// let mut parser = Parser::new(code);
+    /// let expr = parser.parse().unwrap();
+    /// interpreter.eval_expr(&expr).unwrap();
+    /// let main_call = Parser::new("main()").parse().unwrap();
+    /// let result = interpreter.eval_expr(&main_call).unwrap();
+    /// assert!(matches!(result, Value::Integer(3)));
+    /// ```
     fn instantiate_class_with_constructor(
         &mut self,
         class_name: &str,
@@ -3378,7 +3854,12 @@ impl Interpreter {
             if let Some(Value::Object(ref constructors)) = class_info.get("__constructors") {
                 // Look for the specified constructor
                 if let Some(constructor) = constructors.get(constructor_name) {
-                    if let Value::Closure { params, .. } = constructor {
+                    if let Value::Closure {
+                        params,
+                        body,
+                        env: _,
+                    } = constructor
+                    {
                         // Check argument count
                         if args.len() != params.len() {
                             return Err(InterpreterError::RuntimeError(format!(
@@ -3388,33 +3869,44 @@ impl Interpreter {
                             )));
                         }
 
-                        // For simplicity, let's just map arguments to fields directly
-                        // based on parameter names matching field names
-                        // This is a simplified implementation
-
                         // Create environment for constructor
                         let mut ctor_env = HashMap::new();
+
+                        // Bind 'self' to mutable instance for constructor
+                        ctor_env
+                            .insert("self".to_string(), Value::Object(Rc::new(instance.clone())));
 
                         // Bind constructor parameters
                         for (param, arg) in params.iter().zip(args) {
                             ctor_env.insert(param.clone(), arg.clone());
+                        }
 
-                            // If the parameter name matches a field name, set it
-                            if instance.contains_key(param) {
-                                instance.insert(param.clone(), arg.clone());
+                        // Push constructor environment
+                        self.env_stack.push(ctor_env);
+
+                        // Execute constructor body
+                        let _result = self.eval_expr(body)?;
+
+                        // Extract updated self from environment after constructor execution
+                        // This is a workaround for the immutability issue
+                        let updated_self = self.lookup_variable("self")?;
+                        if let Value::Object(ref updated_instance) = updated_self {
+                            // Copy all non-metadata fields from updated self back to instance
+                            for (key, value) in updated_instance.iter() {
+                                if !key.starts_with("__") {
+                                    instance.insert(key.clone(), value.clone());
+                                }
                             }
                         }
 
-                        // For now, we'll use a simple heuristic:
-                        // If constructor has parameters that match field names,
-                        // assign them directly
-                        // This handles the common pattern: new(name: String, age: i32)
-                        // where parameters match field names
+                        // Pop environment
+                        self.env_stack.pop();
                     }
                 }
             }
 
-            Ok(Value::Object(Rc::new(instance)))
+            // Return ObjectMut for mutable class instances (support &mut self methods)
+            Ok(crate::runtime::object_helpers::new_mutable_object(instance))
         } else {
             Err(InterpreterError::RuntimeError(format!(
                 "{} is not a class definition",
@@ -3478,6 +3970,40 @@ impl Interpreter {
         }
     }
 
+    /// Instantiates an actor with initial field values.
+    ///
+    /// This method creates a new actor instance, initializes fields with default or provided values,
+    /// and stores the message handlers for later use.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::frontend::parser::Parser;
+    /// use ruchy::runtime::interpreter::Interpreter;
+    ///
+    /// let mut interpreter = Interpreter::new();
+    /// let code = r#"
+    ///     actor Counter {
+    ///         count: i32 = 0
+    ///
+    ///         receive {
+    ///             Increment => 42
+    ///         }
+    ///     }
+    ///
+    ///     fn main() {
+    ///         let counter = spawn Counter
+    ///         counter
+    ///     }
+    /// "#;
+    ///
+    /// let mut parser = Parser::new(code);
+    /// let expr = parser.parse().unwrap();
+    /// interpreter.eval_expr(&expr).unwrap();
+    /// let main_call = Parser::new("main()").parse().unwrap();
+    /// let result = interpreter.eval_expr(&main_call);
+    /// assert!(result.is_ok());
+    /// ```
     fn instantiate_actor_with_args(
         &mut self,
         actor_name: &str,
@@ -3554,40 +4080,10 @@ impl Interpreter {
                 instance.insert("__handlers".to_string(), handlers.clone());
             }
 
-            // Create the actor in the runtime and get its ID
-            use crate::runtime::actor_runtime::{ActorFieldValue, ACTOR_RUNTIME};
-            let mut initial_state = HashMap::new();
-
-            // Copy the state fields (excluding metadata fields)
-            for (key, value) in &instance {
-                if !key.starts_with("__") {
-                    initial_state.insert(key.clone(), ActorFieldValue::from_value(value));
-                }
-            }
-
-            // Extract receive handlers (just handler names for now)
-            let receive_handlers =
-                if let Some(Value::Object(handlers)) = actor_info.get("__handlers") {
-                    let mut handler_map = HashMap::new();
-                    for (msg_type, _handler) in handlers.iter() {
-                        handler_map.insert(msg_type.clone(), msg_type.clone());
-                    }
-                    handler_map
-                } else {
-                    HashMap::new()
-                };
-
-            // Spawn the actor in the runtime
-            let actor_id = ACTOR_RUNTIME.spawn_actor(
-                actor_name.to_string(),
-                initial_state,
-                receive_handlers,
-            )?;
-
-            // Add the runtime actor ID to the instance
-            instance.insert("__actor_id".to_string(), Value::from_string(actor_id));
-
-            Ok(Value::Object(Rc::new(instance)))
+            // For simple interpreted actors, don't use async runtime - just store state directly
+            // This allows synchronous message processing which is simpler and works for tests
+            // Return ObjectMut for mutable actor state
+            Ok(crate::runtime::object_helpers::new_mutable_object(instance))
         } else {
             Err(InterpreterError::RuntimeError(format!(
                 "{} is not an actor definition",

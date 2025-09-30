@@ -70,6 +70,12 @@ pub fn eval_field_access(object: &Value, field: &str) -> Result<Value, Interpret
         Value::Object(fields) => fields.get(field).cloned().ok_or_else(|| {
             InterpreterError::RuntimeError(format!("Field '{field}' not found in object"))
         }),
+        Value::ObjectMut(cell) => {
+            // Safe borrow: We clone the result, so borrow is released immediately
+            cell.borrow().get(field).cloned().ok_or_else(|| {
+                InterpreterError::RuntimeError(format!("Field '{field}' not found in object"))
+            })
+        }
         // Note: Struct variant not implemented in Value enum yet
         Value::DataFrame { columns } => eval_dataframe_field_access(columns, field),
         Value::Tuple(elements) => eval_tuple_field_access(elements, field),
