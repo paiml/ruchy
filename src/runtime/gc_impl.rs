@@ -249,6 +249,14 @@ impl ConservativeGC {
                         .map(|(k, v)| k.len() + self.estimate_object_size(v))
                         .sum::<usize>()
             }
+            Value::ObjectMut(cell) => {
+                let map = cell.borrow();
+                56 + map.len() * 32 // Extra 8 bytes for RefCell borrow counter
+                    + map
+                        .iter()
+                        .map(|(k, v)| k.len() + self.estimate_object_size(v))
+                        .sum::<usize>()
+            }
             Value::Range { .. } => 24,
             Value::EnumVariant { variant_name, data } => {
                 24 + variant_name.len() + data.as_ref().map_or(0, |d| d.len() * 8)

@@ -376,7 +376,6 @@ impl Transpiler {
         is_pub: bool,
     ) -> Result<TokenStream> {
         let struct_tokens = self.transpile_struct(name, type_params, fields, derives, is_pub)?;
-        let derive_tokens = self.generate_derive_attributes(derives);
         let type_param_tokens = self.generate_class_type_param_tokens(type_params);
         let struct_name = format_ident!("{}", name);
 
@@ -395,7 +394,6 @@ impl Transpiler {
         let default_impl = self.generate_default_impl(fields, &struct_name, &type_param_tokens)?;
 
         Ok(quote! {
-            #derive_tokens
             #struct_tokens
             #impl_tokens
             #default_impl
@@ -478,7 +476,7 @@ impl Transpiler {
                     quote! {}
                 };
                 let body = self.transpile_expr(&method.body)?;
-                let visibility = if method.is_pub || method.is_static {
+                let visibility = if method.is_pub {
                     quote! { pub }
                 } else {
                     quote! {}

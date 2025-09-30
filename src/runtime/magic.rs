@@ -390,6 +390,7 @@ impl MagicCommand for WhosMagic {
                 Value::Nil => "Nil",
                 Value::DataFrame { .. } => "DataFrame",
                 Value::Object(_) => "Object",
+                Value::ObjectMut(_) => "Object",
                 Value::Range { .. } => "Range",
                 Value::EnumVariant { .. } => "EnumVariant",
                 Value::BuiltinFunction(_) => "BuiltinFunction",

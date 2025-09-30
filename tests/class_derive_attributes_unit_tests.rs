@@ -181,14 +181,21 @@ fn test_derive_common_traits() {
             .unwrap_or_else(|_| panic!("Should transpile {trait_name} derive"));
         let result_str = result.to_string();
 
-        // Check for both spaced and non-spaced versions
-        let spaced_derive = expected_derive
-            .replace("#[", "# [")
-            .replace('(', " (")
-            .replace(')', " )");
+        // Check for various formatting versions from quote! macro
+        let variations = vec![
+            expected_derive.to_string(), // #[derive(Debug)]
+            expected_derive
+                .replace("#[", "# [")
+                .replace('(', " (")
+                .replace(')', " )"), // # [derive (Debug )]
+            expected_derive.replace("#[", "# [").replace('(', " ("), // # [derive (Debug)]
+        ];
+
+        let contains_derive = variations.iter().any(|v| result_str.contains(v));
         assert!(
-            result_str.contains(expected_derive) || result_str.contains(&spaced_derive),
-            "Should contain {expected_derive} or {spaced_derive} for trait {trait_name}"
+            contains_derive,
+            "Should contain derive attribute for trait {trait_name}\nExpected one of: {:?}\nActual output:\n{}",
+            variations, result_str
         );
     }
 }

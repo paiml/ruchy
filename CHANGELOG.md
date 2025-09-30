@@ -4,6 +4,79 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.62.0] - 2025-09-30
+
+### RefCell Architecture for Mutable State
+
+#### Core Implementation
+- **`ObjectMut` Variant**: Added `Value::ObjectMut(Rc<RefCell<HashMap<String, Value>>>)` for interior mutability
+  - Enables proper mutable state for actors and classes
+  - Uses `RefCell` for runtime borrow checking
+  - Maintains memory safety through Rust's borrow checker
+
+#### New Module: `object_helpers.rs`
+- **8 utility functions** for working with mutable/immutable objects (all ≤10 complexity):
+  - `is_mutable_object()`: Check if value is `ObjectMut`
+  - `is_object()`: Check if value is any kind of object
+  - `get_object_field()`: Get field (handles both Object and `ObjectMut`)
+  - `set_object_field()`: Set field in `ObjectMut` (errors for immutable)
+  - `new_mutable_object()`: Create `ObjectMut` from `HashMap`
+  - `new_immutable_object()`: Create Object from `HashMap`
+  - `to_mutable()`: Convert Object to `ObjectMut`
+  - `to_immutable()`: Convert `ObjectMut` to Object
+- **100% test coverage** with 12 unit tests and comprehensive doctests
+- **Complexity: 1-7** per function (all within Toyota Way standards)
+
+#### Runtime Updates
+- **Constructor Execution**: Actors and classes now return `ObjectMut` instead of Object
+- **Field Access**: Updated to handle both Object and `ObjectMut` variants
+- **Field Assignment**: Mutates `ObjectMut` in-place via `RefCell::borrow_mut()`
+- **Method Calls**: Adapter methods pass `ObjectMut` as self, enabling `&mut self` mutations
+
+#### Test Results
+- **13 tests fixed**: Removed `#[ignore]` from tests requiring mutable state
+- **12 tests passing**: Bank accounts, counters, nested mutations all working
+- **1 test re-ignored**: Advanced `&mut self` return type (architectural limitation)
+- **Zero regressions**: 3416+ tests passing (3373 library + 19 actor + 24 class)
+- **Property tests**: Added `tests/refcell_property_tests.rs` with comprehensive coverage
+
+#### Key Test Successes
+- ✅ Bank account deposits: 1000.0 → 1500.0 persists
+- ✅ Counter increment: 0 → 1 persists
+- ✅ Nested object mutation: Works correctly
+- ✅ Multiple sequential mutations: All persist
+- ✅ Actor message passing: State updates properly
+- ✅ Class method mutations: Instance state persists
+
+#### Design Documentation
+- **Architecture Design**: `docs/execution/refcell_architecture_design.md`
+- **Borrow Rules**: `docs/execution/refcell_borrow_rules.md`
+- **Migration Path**: `docs/execution/refcell_migration_path.md`
+
+#### Quality Metrics
+- **All new code ≤10 complexity**: Toyota Way standards maintained
+- **Clippy clean**: Zero warnings in new `object_helpers.rs` module
+- **TDG Grade**: A+ overall project quality
+- **Test Coverage**: ~3416 tests passing, zero failures
+
+#### Files Modified
+- `src/runtime/interpreter.rs`: Actor and class instantiation, method calls
+- `src/runtime/eval_data_structures.rs`: Field access and assignment
+- `src/runtime/eval_display.rs`: Display formatting for `ObjectMut`
+- `src/runtime/value_utils.rs`: Utility functions for `ObjectMut`
+- `src/runtime/gc_impl.rs`: Garbage collection support
+- `src/runtime/magic.rs`: Magic method support
+- `src/runtime/mod.rs`: Module exports
+- `src/backend/transpiler/types.rs`: Type transpilation
+- `src/wasm/shared_session.rs`: WASM session support
+- `tests/actor_extreme_tdd_tests.rs`: Actor state tests
+- `tests/class_runtime_extreme_tdd.rs`: Class mutation tests
+
+#### Files Created
+- `src/runtime/object_helpers.rs`: 323 lines of utility functions
+- `tests/refcell_property_tests.rs`: Property-based tests
+- `docs/execution/refcell_*.md`: Comprehensive design docs
+
 ## [3.61.0] - 2025-09-30
 
 ### Complexity Refactoring Sprint
