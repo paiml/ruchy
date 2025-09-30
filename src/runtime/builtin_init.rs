@@ -192,6 +192,10 @@ fn add_random_time_functions(global_env: &mut HashMap<String, Value>) {
         "timestamp".to_string(),
         Value::from_string("__builtin_timestamp__".to_string()),
     );
+    global_env.insert(
+        "sleep".to_string(),
+        Value::from_string("__builtin_sleep__".to_string()),
+    );
 }
 
 #[cfg(test)]
