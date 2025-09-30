@@ -400,11 +400,10 @@ where
     if let Value::Array(arr) = array {
         let mut last_val = Value::Nil;
         for item in arr.iter() {
-            match with_variable(var, item.clone(), eval_expr) {
-                Ok(val) => last_val = val,
-                Err(InterpreterError::Break(val)) => return Ok(val),
-                Err(InterpreterError::Continue) => {}
-                Err(e) => return Err(e),
+            let should_continue =
+                execute_iteration_step(var, item.clone(), with_variable, eval_expr, &mut last_val)?;
+            if !should_continue {
+                break;
             }
         }
         Ok(last_val)
@@ -416,8 +415,39 @@ where
     }
 }
 
+/// Execute iteration body with loop control handling
+/// Complexity: ≤5
+fn execute_iteration_step<F1, F2>(
+    var: &str,
+    value: Value,
+    with_variable: &mut F2,
+    eval_expr: &mut F1,
+    last_val: &mut Value,
+) -> Result<bool, InterpreterError>
+where
+    F1: FnMut(&Expr) -> Result<Value, InterpreterError>,
+    F2: FnMut(
+        &str,
+        Value,
+        &mut dyn FnMut(&Expr) -> Result<Value, InterpreterError>,
+    ) -> Result<Value, InterpreterError>,
+{
+    match with_variable(var, value, eval_expr) {
+        Ok(val) => {
+            *last_val = val;
+            Ok(true) // Continue iteration
+        }
+        Err(InterpreterError::Break(val)) => {
+            *last_val = val;
+            Ok(false) // Stop iteration
+        }
+        Err(InterpreterError::Continue) => Ok(true), // Continue iteration
+        Err(e) => Err(e),
+    }
+}
+
 /// Handle range iteration in for loops
-/// Complexity: ≤8
+/// Complexity: ≤5
 pub fn eval_range_iteration<F1, F2>(
     range: &Value,
     var: &str,
@@ -438,11 +468,15 @@ where
 
         let mut last_val = Value::Nil;
         for i in iter {
-            match with_variable(var, Value::Integer(i), eval_expr) {
-                Ok(val) => last_val = val,
-                Err(InterpreterError::Break(val)) => return Ok(val),
-                Err(InterpreterError::Continue) => {}
-                Err(e) => return Err(e),
+            let should_continue = execute_iteration_step(
+                var,
+                Value::Integer(i),
+                with_variable,
+                eval_expr,
+                &mut last_val,
+            )?;
+            if !should_continue {
+                break;
             }
         }
         Ok(last_val)
@@ -451,6 +485,17 @@ where
             "Expected range, got {}",
             range.type_name()
         )))
+    }
+}
+
+/// Extract integer from a value
+/// Complexity: ≤2
+fn value_to_integer(value: &Value, context: &str) -> Result<i64, InterpreterError> {
+    match value {
+        Value::Integer(i) => Ok(*i),
+        _ => Err(InterpreterError::TypeError(format!(
+            "{context} must be integer"
+        ))),
     }
 }
 
@@ -463,22 +508,8 @@ pub fn extract_range_bounds(range: &Value) -> Result<(i64, i64, bool), Interpret
         inclusive,
     } = range
     {
-        let start_val = match **start {
-            Value::Integer(i) => i,
-            _ => {
-                return Err(InterpreterError::TypeError(
-                    "Range start must be integer".to_string(),
-                ))
-            }
-        };
-        let end_val = match **end {
-            Value::Integer(i) => i,
-            _ => {
-                return Err(InterpreterError::TypeError(
-                    "Range end must be integer".to_string(),
-                ))
-            }
-        };
+        let start_val = value_to_integer(start, "Range start")?;
+        let end_val = value_to_integer(end, "Range end")?;
         Ok((start_val, end_val, *inclusive))
     } else {
         Err(InterpreterError::TypeError(
@@ -548,39 +579,35 @@ pub fn match_identifier_pattern(_name: &str, _value: &Value) -> bool {
     true // Identifier always matches, binds the variable
 }
 
-/// Match list patterns recursively
-/// Complexity: 6
-pub fn match_list_pattern(patterns: &[Pattern], value: &Value) -> Result<bool, InterpreterError> {
-    if let Value::Array(arr) = value {
-        if patterns.len() != arr.len() {
+/// Check if patterns match values element-wise
+/// Complexity: ≤5
+fn patterns_match_values(patterns: &[Pattern], values: &[Value]) -> Result<bool, InterpreterError> {
+    if patterns.len() != values.len() {
+        return Ok(false);
+    }
+    for (pat, val) in patterns.iter().zip(values.iter()) {
+        if !pattern_matches_simple(pat, val)? {
             return Ok(false);
         }
-        for (pat, val) in patterns.iter().zip(arr.iter()) {
-            if !pattern_matches_simple(pat, val)? {
-                return Ok(false);
-            }
-        }
-        Ok(true)
-    } else {
-        Ok(false)
+    }
+    Ok(true)
+}
+
+/// Match list patterns recursively
+/// Complexity: ≤3
+pub fn match_list_pattern(patterns: &[Pattern], value: &Value) -> Result<bool, InterpreterError> {
+    match value {
+        Value::Array(arr) => patterns_match_values(patterns, arr),
+        _ => Ok(false),
     }
 }
 
 /// Match tuple patterns recursively
-/// Complexity: 6
+/// Complexity: ≤3
 pub fn match_tuple_pattern(patterns: &[Pattern], value: &Value) -> Result<bool, InterpreterError> {
-    if let Value::Tuple(elements) = value {
-        if patterns.len() != elements.len() {
-            return Ok(false);
-        }
-        for (pat, val) in patterns.iter().zip(elements.iter()) {
-            if !pattern_matches_simple(pat, val)? {
-                return Ok(false);
-            }
-        }
-        Ok(true)
-    } else {
-        Ok(false)
+    match value {
+        Value::Tuple(elements) => patterns_match_values(patterns, elements),
+        _ => Ok(false),
     }
 }
 
