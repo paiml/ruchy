@@ -706,6 +706,19 @@ fn try_parse_macro_call(state: &mut ParserState, left: &Expr) -> Result<Option<E
         return Ok(None);
     };
 
+    // Check if this looks like a macro call (peek ahead for macro delimiters)
+    // We need to check BEFORE consuming the ! to avoid breaking binary operators
+    let next_after_bang = state.tokens.peek_nth(1);
+    let is_macro_call = matches!(
+        next_after_bang,
+        Some((Token::LeftParen | Token::LeftBracket | Token::LeftBrace, _))
+    );
+
+    // If it doesn't look like a macro call, don't consume the ! token
+    if !is_macro_call && name != "df" {
+        return Ok(None);
+    }
+
     // Handle special case macros first
     if name == "df" {
         if let Some(result) = macro_parsing::parse_dataframe_macro(state)? {

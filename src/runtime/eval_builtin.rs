@@ -45,6 +45,9 @@ pub fn eval_builtin_function(
         "__builtin_type__" => Ok(Some(eval_type(args)?)),
         "__builtin_reverse__" => Ok(Some(eval_reverse(args)?)),
 
+        // Time functions
+        "__builtin_sleep__" => Ok(Some(eval_sleep(args)?)),
+
         // Unknown builtin
         _ => Ok(None),
     }
@@ -471,6 +474,31 @@ fn eval_reverse(args: &[Value]) -> Result<Value, InterpreterError> {
             "reverse() expects an array or string".to_string(),
         )),
     }
+}
+
+/// Sleep for a duration in milliseconds
+///
+/// # Complexity
+/// Cyclomatic complexity: 3 (within Toyota Way limits)
+fn eval_sleep(args: &[Value]) -> Result<Value, InterpreterError> {
+    if args.len() != 1 {
+        return Err(InterpreterError::RuntimeError(
+            "sleep() expects exactly 1 argument (milliseconds)".to_string(),
+        ));
+    }
+
+    let millis = match &args[0] {
+        Value::Integer(n) => *n as u64,
+        Value::Float(f) => *f as u64,
+        _ => {
+            return Err(InterpreterError::RuntimeError(
+                "sleep() expects a numeric argument".to_string(),
+            ))
+        }
+    };
+
+    std::thread::sleep(std::time::Duration::from_millis(millis));
+    Ok(Value::Nil)
 }
 
 #[cfg(test)]
