@@ -173,7 +173,6 @@ mod ping_pong_integration_tests {
     use super::*;
 
     #[test]
-    #[ignore] // TODO: Requires mutable actor state with RefCell
     fn test_ping_pong_actors() {
         let mut interpreter = Interpreter::new();
 
@@ -243,7 +242,6 @@ mod actor_state_tests {
     }
 
     #[test]
-    #[ignore] // TODO: Requires mutable actor state with RefCell
     fn test_actor_state_modification() {
         let mut interpreter = Interpreter::new();
 
@@ -322,7 +320,6 @@ mod error_handling_tests {
     }
 
     #[test]
-    #[ignore] // TODO: Requires mutable actor state with RefCell
     fn test_actor_type_safety() {
         let mut interpreter = Interpreter::new();
 
@@ -351,7 +348,6 @@ mod property_tests {
     use super::*;
 
     #[test]
-    #[ignore] // TODO: Requires mutable actor state with RefCell
     fn test_actor_message_ordering() {
         let mut interpreter = Interpreter::new();
 
@@ -446,7 +442,6 @@ mod actor_edge_case_tests {
     }
 
     #[test]
-    #[ignore] // TODO: Requires RefCell for mutable state
     fn test_actor_state_overflow() {
         // Edge case: Actor state grows very large (memory bounds)
         let mut interpreter = Interpreter::new();
@@ -508,7 +503,6 @@ mod actor_edge_case_tests {
     }
 
     #[test]
-    #[ignore] // TODO: Requires RefCell for mutable state
     fn test_nested_actor_method_calls() {
         // Edge case: Actor method calling another method on same actor
         let mut interpreter = Interpreter::new();
@@ -586,7 +580,6 @@ mod actor_edge_case_tests {
     }
 
     #[test]
-    #[ignore] // TODO: Requires RefCell for mutable state
     fn test_rapid_fire_messages() {
         // Edge case: Many messages sent in quick succession
         let mut interpreter = Interpreter::new();
@@ -642,7 +635,6 @@ mod actor_edge_case_tests {
     }
 
     #[test]
-    #[ignore] // TODO: Requires RefCell for mutable state
     fn test_actor_conditional_state_update() {
         // Edge case: Conditional mutation (guards)
         let mut interpreter = Interpreter::new();

@@ -2688,6 +2688,17 @@ impl Interpreter {
         method: &str,
         arg_values: &[Value],
     ) -> Result<Value, InterpreterError> {
+        // Special handling for send method - needs mutable state access
+        if method == "send" {
+            if arg_values.is_empty() {
+                return Err(InterpreterError::RuntimeError(
+                    "send() requires a message argument".to_string(),
+                ));
+            }
+            return self.process_actor_message_sync_mut(cell_rc, &arg_values[0]);
+        }
+
+        // For other methods, delegate to non-mut version
         let instance = cell_rc.borrow();
         self.eval_actor_instance_method(&instance, actor_name, method, arg_values)
     }
@@ -3130,6 +3141,110 @@ impl Interpreter {
                                 // Execute the handler body
                                 self.env_stack.push(handler_env);
                                 let result = self.eval_expr(body);
+                                self.env_stack.pop();
+
+                                return result;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        Err(InterpreterError::RuntimeError(format!(
+            "No handler found for message type: {}",
+            msg_type
+        )))
+    }
+
+    /// Process a message for a synchronous (interpreted) actor with mutable state.
+    ///
+    /// This version accepts `Rc<RefCell<HashMap>>` and passes `ObjectMut` as self to enable mutations.
+    /// Complexity: 9
+    fn process_actor_message_sync_mut(
+        &mut self,
+        cell_rc: &Rc<std::cell::RefCell<std::collections::HashMap<String, Value>>>,
+        message: &Value,
+    ) -> Result<Value, InterpreterError> {
+        let instance = cell_rc.borrow();
+
+        // Parse the message to extract type and arguments
+        let (msg_type, msg_args) = if let Value::Object(msg_obj) = message {
+            if let Some(Value::String(type_str)) = msg_obj.get("__type") {
+                if type_str.as_ref() == "Message" {
+                    let msg_type = msg_obj
+                        .get("type")
+                        .and_then(|v| {
+                            if let Value::String(s) = v {
+                                Some(s.to_string())
+                            } else {
+                                None
+                            }
+                        })
+                        .unwrap_or_else(|| "Unknown".to_string());
+                    let msg_args = msg_obj
+                        .get("data")
+                        .and_then(|v| {
+                            if let Value::Array(arr) = v {
+                                Some(arr.to_vec())
+                            } else {
+                                None
+                            }
+                        })
+                        .unwrap_or_else(Vec::new);
+                    (msg_type, msg_args)
+                } else {
+                    return Err(InterpreterError::RuntimeError(
+                        "Invalid message format".to_string(),
+                    ));
+                }
+            } else {
+                return Err(InterpreterError::RuntimeError(
+                    "Invalid message format".to_string(),
+                ));
+            }
+        } else {
+            return Err(InterpreterError::RuntimeError(
+                "Message must be an object".to_string(),
+            ));
+        };
+
+        // Find the matching handler
+        if let Some(Value::Array(handlers)) = instance.get("__handlers") {
+            for handler in handlers.iter() {
+                if let Value::Object(handler_obj) = handler {
+                    if let Some(Value::String(handler_type)) = handler_obj.get("message_type") {
+                        if handler_type.as_ref() == msg_type {
+                            // Found matching handler - execute it
+                            if let Some(Value::Closure { params, body, env }) =
+                                handler_obj.get("body")
+                            {
+                                // Clone data before dropping instance borrow
+                                let params_clone = params.clone();
+                                let body_clone = body.clone();
+                                let env_clone = env.clone();
+                                drop(instance); // Release borrow before executing handler
+
+                                // Create a new environment for handler execution
+                                let mut handler_env = (*env_clone).clone();
+
+                                // Bind message parameters
+                                for (i, param_name) in params_clone.iter().enumerate() {
+                                    if let Some(value) = msg_args.get(i) {
+                                        handler_env.insert(param_name.clone(), value.clone());
+                                    }
+                                }
+
+                                // CRITICAL: Bind 'self' to ObjectMut (not immutable Object)
+                                // This allows mutations in the handler to persist
+                                handler_env.insert(
+                                    "self".to_string(),
+                                    Value::ObjectMut(Rc::clone(cell_rc)),
+                                );
+
+                                // Execute the handler body
+                                self.env_stack.push(handler_env);
+                                let result = self.eval_expr(&body_clone);
                                 self.env_stack.pop();
 
                                 return result;
