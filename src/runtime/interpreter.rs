@@ -3223,7 +3223,46 @@ impl Interpreter {
                                 let params_clone = params.clone();
                                 let body_clone = body.clone();
                                 let env_clone = env.clone();
+
+                                // Get parameter types for validation
+                                let param_types = handler_obj.get("param_types").and_then(|v| {
+                                    if let Value::Array(types) = v {
+                                        Some(types.clone())
+                                    } else {
+                                        None
+                                    }
+                                });
+
                                 drop(instance); // Release borrow before executing handler
+
+                                // Validate parameter types before execution
+                                if let Some(types) = param_types {
+                                    for (i, expected_type_val) in types.iter().enumerate() {
+                                        if let Value::String(expected_type) = expected_type_val {
+                                            if let Some(actual_value) = msg_args.get(i) {
+                                                let actual_type = actual_value.type_name();
+                                                // Map Ruchy type names to runtime type names
+                                                let expected_runtime_type =
+                                                    match expected_type.as_ref() {
+                                                        "i32" | "i64" | "int" => "integer",
+                                                        "f32" | "f64" | "float" => "float",
+                                                        "String" | "string" | "str" => "string",
+                                                        "bool" => "boolean",
+                                                        _ => expected_type.as_ref(),
+                                                    };
+
+                                                if actual_type != expected_runtime_type
+                                                    && expected_runtime_type != "Any"
+                                                {
+                                                    return Err(InterpreterError::RuntimeError(format!(
+                                                        "Type error in message {}: parameter {} expects type '{}', got '{}'",
+                                                        msg_type, i, expected_runtime_type, actual_type
+                                                    )));
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
 
                                 // Create a new environment for handler execution
                                 let mut handler_env = (*env_clone).clone();
@@ -3417,6 +3456,25 @@ impl Interpreter {
                     param_names
                         .iter()
                         .map(|n| Value::from_string(n.clone()))
+                        .collect::<Vec<_>>(),
+                )),
+            );
+
+            // Store parameter types for runtime type checking
+            let param_types: Vec<String> = handler
+                .params
+                .iter()
+                .map(|p| match &p.ty.kind {
+                    crate::frontend::ast::TypeKind::Named(name) => name.clone(),
+                    _ => "Any".to_string(),
+                })
+                .collect();
+            handler_obj.insert(
+                "param_types".to_string(),
+                Value::Array(Rc::from(
+                    param_types
+                        .iter()
+                        .map(|t| Value::from_string(t.clone()))
                         .collect::<Vec<_>>(),
                 )),
             );
