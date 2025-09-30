@@ -2501,6 +2501,34 @@ impl Interpreter {
         method: &str,
         args: &[Expr],
     ) -> Result<Value, InterpreterError> {
+        // Special handling for mutating array methods on ObjectMut fields
+        // e.g., self.messages.push(item)
+        if let ExprKind::FieldAccess { object, field } = &receiver.kind {
+            if let Ok(object_value) = self.eval_expr(object) {
+                if let Value::ObjectMut(cell_rc) = object_value {
+                    // Check if this is a mutating array method
+                    if method == "push" && args.len() == 1 {
+                        // Evaluate the argument
+                        let arg_value = self.eval_expr(&args[0])?;
+
+                        // Get mutable access to the object
+                        let mut obj = cell_rc.borrow_mut();
+
+                        // Get the field value
+                        if let Some(field_value) = obj.get(field) {
+                            // If it's an array, push to it
+                            if let Value::Array(arr) = field_value {
+                                let mut new_arr = arr.to_vec();
+                                new_arr.push(arg_value);
+                                obj.insert(field.clone(), Value::Array(Rc::from(new_arr)));
+                                return Ok(Value::Nil); // push returns nil
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         let receiver_value = self.eval_expr(receiver)?;
 
         // Special handling for DataFrame filter method - don't pre-evaluate the condition
