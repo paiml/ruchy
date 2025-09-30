@@ -294,9 +294,10 @@ fn parse_identifier_token(state: &mut ParserState, token: &Token, span: Span) ->
                 Ok(Expr::new(ExprKind::Identifier(qualified_name), span))
             }
             // Check for fat arrow lambda: x => x * 2
-            // TEMPORARILY DISABLED: This causes issues with pattern guards
-            // TODO: Re-enable with context to prevent lambdas in match guards
-            else {
+            else if matches!(state.tokens.peek(), Some((Token::FatArrow, _))) {
+                let ident_expr = Expr::new(ExprKind::Identifier(name.clone()), span);
+                parse_lambda_from_expr(state, ident_expr, span)
+            } else {
                 // Don't consume ! here - let postfix handle macro calls
                 Ok(Expr::new(ExprKind::Identifier(name.clone()), span))
             }
@@ -4573,7 +4574,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "Fat arrow lambdas not yet implemented"]
     fn test_parse_fat_arrow_lambda() {
         let mut parser = Parser::new("x => x * 2");
         let result = parser.parse();
