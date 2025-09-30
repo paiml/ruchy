@@ -678,6 +678,8 @@ impl Transpiler {
             .collect())
     }
     /// Generate complete function signature
+    /// Generate function signature
+    /// Complexity: 2 (within Toyota Way limits)
     fn generate_function_signature(
         &self,
         is_pub: bool,
@@ -689,18 +691,53 @@ impl Transpiler {
         body_tokens: &TokenStream,
         attributes: &[crate::frontend::ast::Attribute],
     ) -> Result<TokenStream> {
-        // Override return type for test functions
-        let final_return_type = if fn_name.to_string().starts_with("test_") {
+        let final_return_type = self.compute_final_return_type(fn_name, return_type_tokens);
+        let visibility = self.generate_visibility_token(is_pub);
+        let (regular_attrs, modifiers_tokens) = self.process_attributes(attributes);
+
+        self.generate_function_declaration(
+            is_async,
+            type_param_tokens,
+            &regular_attrs,
+            &visibility,
+            &modifiers_tokens,
+            fn_name,
+            param_tokens,
+            &final_return_type,
+            body_tokens,
+        )
+    }
+
+    /// Compute final return type (test functions have unit type)
+    /// Complexity: 1 (within Toyota Way limits)
+    fn compute_final_return_type(
+        &self,
+        fn_name: &proc_macro2::Ident,
+        return_type_tokens: &TokenStream,
+    ) -> TokenStream {
+        if fn_name.to_string().starts_with("test_") {
             quote! {}
         } else {
             return_type_tokens.clone()
-        };
-        let visibility = if is_pub {
+        }
+    }
+
+    /// Generate visibility token
+    /// Complexity: 1 (within Toyota Way limits)
+    fn generate_visibility_token(&self, is_pub: bool) -> TokenStream {
+        if is_pub {
             quote! { pub }
         } else {
             quote! {}
-        };
-        // Separate modifiers from attributes
+        }
+    }
+
+    /// Process attributes into regular attributes and modifiers
+    /// Complexity: 4 (within Toyota Way limits)
+    fn process_attributes(
+        &self,
+        attributes: &[crate::frontend::ast::Attribute],
+    ) -> (Vec<TokenStream>, TokenStream) {
         let mut regular_attrs = Vec::new();
         let mut modifiers = Vec::new();
 
@@ -709,47 +746,62 @@ impl Transpiler {
                 "unsafe" => modifiers.push(quote! { unsafe }),
                 "const" => modifiers.push(quote! { const }),
                 _ => {
-                    let attr_name = format_ident!("{}", attr.name);
-                    if attr.args.is_empty() {
-                        regular_attrs.push(quote! { #[#attr_name] });
-                    } else {
-                        let args: Vec<TokenStream> = attr
-                            .args
-                            .iter()
-                            .map(|arg| arg.parse().unwrap_or_else(|_| quote! { #arg }))
-                            .collect();
-                        regular_attrs.push(quote! { #[#attr_name(#(#args),*)] });
-                    }
+                    regular_attrs.push(self.format_regular_attribute(attr));
                 }
             }
         }
 
         let modifiers_tokens = quote! { #(#modifiers)* };
-        Ok(match (type_param_tokens.is_empty(), is_async) {
-            (true, false) => quote! {
-                #(#regular_attrs)*
-                #visibility #modifiers_tokens fn #fn_name(#(#param_tokens),*) #final_return_type {
-                    #body_tokens
-                }
-            },
-            (true, true) => quote! {
-                #(#regular_attrs)*
-                #visibility #modifiers_tokens async fn #fn_name(#(#param_tokens),*) #final_return_type {
-                    #body_tokens
-                }
-            },
-            (false, false) => quote! {
-                #(#regular_attrs)*
-                #visibility #modifiers_tokens fn #fn_name<#(#type_param_tokens),*>(#(#param_tokens),*) #final_return_type {
-                    #body_tokens
-                }
-            },
-            (false, true) => quote! {
-                #(#regular_attrs)*
-                #visibility #modifiers_tokens async fn #fn_name<#(#type_param_tokens),*>(#(#param_tokens),*) #final_return_type {
-                    #body_tokens
-                }
-            },
+        (regular_attrs, modifiers_tokens)
+    }
+
+    /// Format a regular attribute
+    /// Complexity: 2 (within Toyota Way limits)
+    fn format_regular_attribute(&self, attr: &crate::frontend::ast::Attribute) -> TokenStream {
+        let attr_name = format_ident!("{}", attr.name);
+        if attr.args.is_empty() {
+            quote! { #[#attr_name] }
+        } else {
+            let args: Vec<TokenStream> = attr
+                .args
+                .iter()
+                .map(|arg| arg.parse().unwrap_or_else(|_| quote! { #arg }))
+                .collect();
+            quote! { #[#attr_name(#(#args),*)] }
+        }
+    }
+
+    /// Generate function declaration based on async/generic flags
+    /// Complexity: 1 (within Toyota Way limits)
+    fn generate_function_declaration(
+        &self,
+        is_async: bool,
+        type_param_tokens: &[TokenStream],
+        regular_attrs: &[TokenStream],
+        visibility: &TokenStream,
+        modifiers_tokens: &TokenStream,
+        fn_name: &proc_macro2::Ident,
+        param_tokens: &[TokenStream],
+        final_return_type: &TokenStream,
+        body_tokens: &TokenStream,
+    ) -> Result<TokenStream> {
+        let async_keyword = if is_async {
+            quote! { async }
+        } else {
+            quote! {}
+        };
+
+        let type_params = if type_param_tokens.is_empty() {
+            quote! {}
+        } else {
+            quote! { <#(#type_param_tokens),*> }
+        };
+
+        Ok(quote! {
+            #(#regular_attrs)*
+            #visibility #modifiers_tokens #async_keyword fn #fn_name #type_params(#(#param_tokens),*) #final_return_type {
+                #body_tokens
+            }
         })
     }
     /// # Examples

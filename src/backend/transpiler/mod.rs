@@ -949,6 +949,8 @@ impl Transpiler {
             _ => false,
         }
     }
+    /// Transpile block with main function wrapper
+    /// Complexity: 3 (within Toyota Way limits)
     fn transpile_block_with_main_function(
         &self,
         functions: &[TokenStream],
@@ -960,100 +962,100 @@ impl Transpiler {
         imports: &[TokenStream],
     ) -> Result<TokenStream> {
         if statements.is_empty() && main_expr.is_some() {
-            // Only functions, just emit them normally (includes user's main)
-            let main_tokens = if let Some(main) = main_expr {
-                self.transpile_expr(main)?
-            } else {
-                return Err(anyhow::anyhow!("Expected main function expression"));
-            };
-            match (needs_polars, needs_hashmap) {
-                (true, true) => Ok(quote! {
-                    use polars::prelude::*;
-                    use std::collections::HashMap;
-                    #(#imports)*
-                    #(#modules)*
-                    #(#functions)*
-                    #main_tokens
-                }),
-                (true, false) => Ok(quote! {
-                    use polars::prelude::*;
-                    #(#imports)*
-                    #(#modules)*
-                    #(#functions)*
-                    #main_tokens
-                }),
-                (false, true) => Ok(quote! {
-                    use std::collections::HashMap;
-                    #(#imports)*
-                    #(#modules)*
-                    #(#functions)*
-                    #main_tokens
-                }),
-                (false, false) => Ok(quote! {
-                    #(#imports)*
-                    #(#modules)*
-                    #(#functions)*
-                    #main_tokens
-                }),
-            }
+            self.transpile_functions_only_mode(
+                functions,
+                modules,
+                main_expr,
+                needs_polars,
+                needs_hashmap,
+                imports,
+            )
         } else {
-            // TOP-LEVEL STATEMENTS: Extract main body and combine with statements
-            let main_body = if let Some(main) = main_expr {
-                self.extract_main_function_body(main)?
-            } else {
-                // No user main function, just use empty body
-                quote! {}
-            };
-            match (needs_polars, needs_hashmap) {
-                (true, true) => Ok(quote! {
-                    use polars::prelude::*;
-                    use std::collections::HashMap;
-                    #(#imports)*
-                    #(#modules)*
-                    #(#functions)*
-                    fn main() {
-                        // Top-level statements execute first
-                        #(#statements)*
-                        // Then user's main function body
-                        #main_body
-                    }
-                }),
-                (true, false) => Ok(quote! {
-                    use polars::prelude::*;
-                    #(#imports)*
-                    #(#modules)*
-                    #(#functions)*
-                    fn main() {
-                        // Top-level statements execute first
-                        #(#statements)*
-                        // Then user's main function body
-                        #main_body
-                    }
-                }),
-                (false, true) => Ok(quote! {
-                    use std::collections::HashMap;
-                    #(#imports)*
-                    #(#modules)*
-                    #(#functions)*
-                    fn main() {
-                        // Top-level statements execute first
-                        #(#statements)*
-                        // Then user's main function body
-                        #main_body
-                    }
-                }),
-                (false, false) => Ok(quote! {
-                    #(#imports)*
-                    #(#modules)*
-                    #(#functions)*
-                    fn main() {
-                        // Top-level statements execute first
-                        #(#statements)*
-                        // Then user's main function body
-                        #main_body
-                    }
-                }),
+            self.transpile_with_top_level_statements(
+                functions,
+                statements,
+                modules,
+                main_expr,
+                needs_polars,
+                needs_hashmap,
+                imports,
+            )
+        }
+    }
+
+    /// Transpile in functions-only mode (no top-level statements)
+    /// Complexity: 2 (within Toyota Way limits)
+    fn transpile_functions_only_mode(
+        &self,
+        functions: &[TokenStream],
+        modules: &[TokenStream],
+        main_expr: Option<&Expr>,
+        needs_polars: bool,
+        needs_hashmap: bool,
+        imports: &[TokenStream],
+    ) -> Result<TokenStream> {
+        let main_tokens = if let Some(main) = main_expr {
+            self.transpile_expr(main)?
+        } else {
+            return Err(anyhow::anyhow!("Expected main function expression"));
+        };
+
+        let use_statements = self.generate_use_statements(needs_polars, needs_hashmap);
+        Ok(quote! {
+            #use_statements
+            #(#imports)*
+            #(#modules)*
+            #(#functions)*
+            #main_tokens
+        })
+    }
+
+    /// Transpile with top-level statements
+    /// Complexity: 2 (within Toyota Way limits)
+    fn transpile_with_top_level_statements(
+        &self,
+        functions: &[TokenStream],
+        statements: &[TokenStream],
+        modules: &[TokenStream],
+        main_expr: Option<&Expr>,
+        needs_polars: bool,
+        needs_hashmap: bool,
+        imports: &[TokenStream],
+    ) -> Result<TokenStream> {
+        let main_body = if let Some(main) = main_expr {
+            self.extract_main_function_body(main)?
+        } else {
+            quote! {}
+        };
+
+        let use_statements = self.generate_use_statements(needs_polars, needs_hashmap);
+        Ok(quote! {
+            #use_statements
+            #(#imports)*
+            #(#modules)*
+            #(#functions)*
+            fn main() {
+                #(#statements)*
+                #main_body
             }
+        })
+    }
+
+    /// Generate use statements based on feature flags
+    /// Complexity: 1 (within Toyota Way limits)
+    fn generate_use_statements(&self, needs_polars: bool, needs_hashmap: bool) -> TokenStream {
+        match (needs_polars, needs_hashmap) {
+            (true, true) => quote! {
+                use polars::prelude::*;
+                use std::collections::HashMap;
+            },
+            (true, false) => quote! {
+                use polars::prelude::*;
+            },
+            (false, true) => quote! {
+                use std::collections::HashMap;
+            },
+            (false, false) => quote! {},
         }
     }
     /// Extracts the body of a main function for inlining with top-level statements

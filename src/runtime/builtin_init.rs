@@ -268,8 +268,8 @@ mod tests {
 
         // Should have all builtin functions
         // 1 constant + 6 basic + 11 math + 3 I/O + 3 utility
-        // + 4 conversion + 8 advanced + 2 string + 3 random/time = 41 total
-        assert_eq!(env.len(), 41);
+        // + 4 conversion + 8 advanced + 2 string + 3 random/time + 1 sleep = 42 total
+        assert_eq!(env.len(), 42);
     }
 
     #[test]
