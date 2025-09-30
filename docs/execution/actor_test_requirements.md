@@ -177,7 +177,21 @@ actor TypedActor {
 
 **Total Estimated Effort**: 25-34 hours
 
-## Current Status
-- **Passing**: 20/27 actor tests (74%)
-- **Failing**: 7/27 actor tests (26%)
+## Current Status (Updated 2025-09-30)
+- **Passing**: 22/27 actor tests (81%)
+- **Failing**: 5/27 actor tests (19%)
 - **All failures are missing features, not bugs**
+
+## Completed Features (2025-09-30)
+
+### ✅ Feature 1: Message Type Validation (COMPLETE)
+- **Implementation**: [ACTOR-TYPE-001]
+- **Effort**: ~15 minutes (estimated 3-4h)
+- **Test**: test_actor_type_safety now passing
+- **Impact**: Runtime type checking prevents invalid message parameters
+
+### ✅ Feature 4: Vec Method Calls (COMPLETE)
+- **Implementation**: [ACTOR-VEC-001]
+- **Effort**: ~15 minutes (estimated 4-6h)
+- **Test**: test_actor_message_ordering now passing
+- **Impact**: Enables `self.messages.push(n)` in actor handlers
