@@ -557,7 +557,10 @@ impl Transpiler {
         {
             quote! { i32 }
         } else {
-            quote! { String }
+            // Default to &str instead of String for zero-cost string literals
+            // String literals in Rust are &str, so this avoids unnecessary allocations
+            // and matches idiomatic Rust where functions accept &str for flexibility
+            quote! { &str }
         }
     }
     /// Generate parameter tokens with proper type inference
@@ -3563,13 +3566,17 @@ mod tests {
         let result2 = transpiler.transpile(&ast2).unwrap();
         let rust_str2 = result2.to_string();
         assert!(rust_str2.contains("n : i32") || rust_str2.contains("n: i32"));
-        // Test string parameter
+        // Test string parameter (now defaults to &str for zero-cost literals)
         let code3 = "fun greet(name) { \"Hello \" + name }";
         let mut parser3 = Parser::new(code3);
         let ast3 = parser3.parse().expect("Failed to parse");
         let result3 = transpiler.transpile(&ast3).unwrap();
         let rust_str3 = result3.to_string();
-        assert!(rust_str3.contains("name : String") || rust_str3.contains("name: String"));
+        assert!(
+            rust_str3.contains("name : & str") || rust_str3.contains("name: &str"),
+            "Expected &str parameter type, got: {}",
+            rust_str3
+        );
     }
     #[test]
     fn test_return_type_inference() {
