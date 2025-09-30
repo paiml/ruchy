@@ -384,8 +384,13 @@ impl Transpiler {
         let method_tokens = self.transpile_class_methods(methods)?;
         let constant_tokens = self.transpile_class_constants(constants)?;
 
-        let impl_tokens =
-            self.generate_impl_block(&struct_name, &type_param_tokens, &constant_tokens, &constructor_tokens, &method_tokens);
+        let impl_tokens = self.generate_impl_block(
+            &struct_name,
+            &type_param_tokens,
+            &constant_tokens,
+            &constructor_tokens,
+            &method_tokens,
+        );
 
         let default_impl = self.generate_default_impl(fields, &struct_name, &type_param_tokens)?;
 
@@ -433,8 +438,15 @@ impl Transpiler {
             .map(|ctor| {
                 let params = self.transpile_params(&ctor.params)?;
                 let body = self.transpile_expr(&ctor.body)?;
-                let visibility = if ctor.is_pub { quote! { pub } } else { quote! {} };
-                let method_name = ctor.name.as_ref().map_or_else(|| format_ident!("new"), |n| format_ident!("{}", n));
+                let visibility = if ctor.is_pub {
+                    quote! { pub }
+                } else {
+                    quote! {}
+                };
+                let method_name = ctor
+                    .name
+                    .as_ref()
+                    .map_or_else(|| format_ident!("new"), |n| format_ident!("{}", n));
                 let return_type = if let Some(ref ret_ty) = ctor.return_type {
                     let ret_tokens = self.transpile_type(ret_ty)?;
                     quote! { -> #ret_tokens }
@@ -466,7 +478,11 @@ impl Transpiler {
                     quote! {}
                 };
                 let body = self.transpile_expr(&method.body)?;
-                let visibility = if method.is_pub || method.is_static { quote! { pub } } else { quote! {} };
+                let visibility = if method.is_pub || method.is_static {
+                    quote! { pub }
+                } else {
+                    quote! {}
+                };
 
                 Ok(quote! {
                     #visibility fn #method_name(#(#params),*) #return_type {
@@ -489,7 +505,11 @@ impl Transpiler {
                 let const_name = format_ident!("{}", constant.name);
                 let const_type = self.transpile_type(&constant.ty)?;
                 let const_value = self.transpile_expr(&constant.value)?;
-                let visibility = if constant.is_pub { quote! { pub } } else { quote! {} };
+                let visibility = if constant.is_pub {
+                    quote! { pub }
+                } else {
+                    quote! {}
+                };
 
                 Ok(quote! {
                     #visibility const #const_name: #const_type = #const_value;
