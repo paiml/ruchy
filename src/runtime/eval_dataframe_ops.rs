@@ -28,6 +28,7 @@ pub fn eval_dataframe_method(
         "columns" => eval_dataframe_columns_count(columns, arg_values),
         "column_names" => eval_dataframe_column_names(columns, arg_values),
         "sort_by" => eval_dataframe_sort_by(columns, arg_values),
+        "get" => eval_dataframe_get(columns, arg_values),
         _ => Err(InterpreterError::RuntimeError(format!(
             "Unknown DataFrame method: {method}"
         ))),
@@ -1604,4 +1605,65 @@ mod tests {
             .to_string()
             .contains("not found in DataFrame"));
     }
+}
+
+/// Get a specific value from `DataFrame` by column name and row index
+///
+/// Usage: `df.get("column_name", row_index)`
+///
+/// # Complexity
+/// Cyclomatic complexity: 7 (within Toyota Way limits)
+fn eval_dataframe_get(
+    columns: &[DataFrameColumn],
+    args: &[Value],
+) -> Result<Value, InterpreterError> {
+    if args.len() != 2 {
+        return Err(InterpreterError::RuntimeError(
+            "DataFrame.get() requires exactly 2 arguments: column name and row index".to_string(),
+        ));
+    }
+
+    // Extract column name (first argument)
+    let column_name = match &args[0] {
+        Value::String(s) => s.clone(),
+        _ => {
+            return Err(InterpreterError::RuntimeError(
+                "DataFrame.get() first argument must be a string (column name)".to_string(),
+            ))
+        }
+    };
+
+    // Extract row index (second argument)
+    let row_index = match &args[1] {
+        Value::Integer(i) => {
+            if *i < 0 {
+                return Err(InterpreterError::RuntimeError(
+                    "DataFrame.get() row index must be non-negative".to_string(),
+                ));
+            }
+            *i as usize
+        }
+        _ => {
+            return Err(InterpreterError::RuntimeError(
+                "DataFrame.get() second argument must be an integer (row index)".to_string(),
+            ))
+        }
+    };
+
+    // Find the column
+    let column = columns
+        .iter()
+        .find(|col| col.name == *column_name)
+        .ok_or_else(|| {
+            InterpreterError::RuntimeError(format!("Column '{column_name}' not found"))
+        })?;
+
+    // Get the value at the row index
+    column.values.get(row_index).cloned().ok_or_else(|| {
+        InterpreterError::RuntimeError(format!(
+            "Row index {} out of bounds (DataFrame has {} rows)",
+            row_index,
+            column.values.len()
+        ))
+    })
 }

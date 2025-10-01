@@ -4,6 +4,37 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.64.1] - 2025-10-01 - DataFrame Book Integration (DF-BOOK-001)
+
+### ✅ New Feature: DataFrame .get() Accessor
+
+Implemented `.get(column, row)` method for DataFrame value access (15 TDD tests):
+
+**Usage**:
+```ruchy
+let df = DataFrame::from_csv_string("name,age\nAlice,25\nBob,30");
+df.get("name", 0)  // Returns "Alice"
+df.get("age", 1)   // Returns 30
+```
+
+**Features**:
+- Access any DataFrame value by column name and row index
+- Works with all DataFrame construction methods (builder, CSV, JSON, literals)
+- Comprehensive error handling:
+  - Column not found
+  - Row index out of bounds
+  - Negative index validation
+  - Type validation for arguments
+- Integration with DataFrame operations (sort_by, with_column, transform)
+
+**Tests**: 15 new tests in `tests/dataframe_get_tests.rs`
+- 6 basic functionality tests
+- 6 edge case / error handling tests
+- 3 integration tests with other DataFrame methods
+
+**Total DataFrame Tests**: 54 passing (39 + 15)
+**Complexity**: `eval_dataframe_get` = 7 (Toyota Way <10 limit) ✅
+
 ## [3.64.0] - 2025-10-01 - DataFrame Sprint (60% Complete)
 
 ### 🎉 Major Feature: Production-Ready DataFrames
