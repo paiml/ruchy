@@ -4130,6 +4130,7 @@ pub fn token_to_binary_op(token: &Token) -> Option<BinaryOp> {
         .or_else(|| map_comparison_operator(token))
         .or_else(|| map_logical_operator(token))
         .or_else(|| map_bitwise_operator(token))
+        .or_else(|| map_actor_operator(token))
 }
 /// Map arithmetic tokens to binary operators
 /// Extracted from `token_to_binary_op` to reduce complexity
@@ -4176,6 +4177,13 @@ fn map_bitwise_operator(token: &Token) -> Option<BinaryOp> {
         Token::Caret => Some(BinaryOp::BitwiseXor),
         Token::LeftShift => Some(BinaryOp::LeftShift),
         Token::RightShift => Some(BinaryOp::RightShift),
+        _ => None,
+    }
+}
+/// Map actor message passing tokens to binary operators
+fn map_actor_operator(token: &Token) -> Option<BinaryOp> {
+    match token {
+        Token::Bang => Some(BinaryOp::Send), // actor ! Message
         _ => None,
     }
 }
