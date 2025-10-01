@@ -4,6 +4,64 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.62.12] - 2025-10-01
+
+### 🔧 Critical Bug Fix: Array Mutations
+
+**Problem**: Array.push() and Array.pop() had no effect on mutable arrays, causing actor message collection and other mutation-based code to fail.
+
+```ruchy
+let mut messages = []
+messages.push("item")
+messages.len()  // Was returning 0, now returns 1 ✅
+```
+
+#### Root Cause (Toyota Way - Five Whys Analysis)
+
+**First Analysis - Why push() doesn't mutate**:
+1. `eval_array_push` returns NEW array instead of mutating
+2. Arrays are `Rc<[Value]>` which is immutable by design
+3. Variable binding not updated after method call
+4. Method calls had no special handling for mutations
+5. Design assumed immutability, mutation was never implemented
+
+**Second Analysis - Why tests pass but files fail**:
+1. Tests use `eval_expr()` directly, files use same path
+2. `env_set()` only updated CURRENT scope
+3. Didn't search parent scopes like `lookup_variable()` does
+4. Original implementation only handled NEW variables, not updates
+5. No other code path needed cross-scope variable updates
+
+#### Solution (Dual Fix)
+
+**Fix 1: Mutation Interception** (src/runtime/interpreter.rs:2637-2667)
+- Intercept `push()` and `pop()` calls on identifier expressions
+- Evaluate argument, create new array with modification
+- Update variable binding with `env_set()`
+- Return appropriate value (Nil for push, popped item for pop)
+
+**Fix 2: Scope Search** (src/runtime/interpreter.rs:1556-1575)
+- Modified `env_set()` to search parent scopes (like `lookup_variable()`)
+- Updates variable where it exists in scope stack
+- Only creates new binding if variable doesn't exist
+- Maintains consistency with variable resolution
+
+#### Verification
+
+**TDD Tests**: 4/4 passing (tests/book_compat_interpreter_tdd.rs:1079-1172)
+- ✅ test_array_push_mutation
+- ✅ test_array_push_with_values
+- ✅ test_array_push_multiple_types
+- ✅ test_array_push_in_loop
+
+**Real-World Test**: Ping-pong actor example (../agentic-ai/ruchy-actors/ping_pong_actors.ruchy)
+```
+✅ Exchanged 6 messages
+1: ping 1, 2: pong 1, 3: ping 2, 4: pong 2, 5: ping 3, 6: pong 3
+```
+
+**Impact**: Enables actor message collection, data accumulation patterns, and all mutation-based array operations.
+
 ## [3.62.9] - 2025-09-30
 
 ### 🎉 100% Language Compatibility Achievement

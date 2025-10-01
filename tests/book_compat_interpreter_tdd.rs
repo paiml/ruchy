@@ -1073,6 +1073,105 @@ fn test_match_void_with_single_expression() {
 }
 
 // ============================================================================
+// ARRAY MUTATION TESTS
+// ============================================================================
+
+#[test]
+fn test_array_push_mutation() {
+    // Test: Array.push() should mutate the array
+    let code = r#"
+        let mut messages = []
+        messages.push("first")
+        messages.push("second")
+        messages.push("third")
+        messages.len()
+    "#;
+
+    let mut interpreter = Interpreter::new();
+    let mut parser = Parser::new(code);
+    let ast = parser.parse().expect("Parse failed");
+    let result = interpreter.eval_expr(&ast).expect("Eval failed");
+
+    match result {
+        Value::Integer(n) => {
+            assert_eq!(n, 3, "Array should have 3 items after 3 pushes");
+        }
+        _ => panic!("Expected Integer(3), got {:?}", result),
+    }
+}
+
+#[test]
+fn test_array_push_with_values() {
+    // Test: Array.push() should actually add items
+    let code = r#"
+        let mut arr = []
+        arr.push("hello")
+        arr.push("world")
+        arr[0]
+    "#;
+
+    let mut interpreter = Interpreter::new();
+    let mut parser = Parser::new(code);
+    let ast = parser.parse().expect("Parse failed");
+    let result = interpreter.eval_expr(&ast).expect("Eval failed");
+
+    match result {
+        Value::String(s) => {
+            assert_eq!(s.as_ref(), "hello", "First item should be 'hello'");
+        }
+        _ => panic!("Expected String('hello'), got {:?}", result),
+    }
+}
+
+#[test]
+fn test_array_push_multiple_types() {
+    // Test: Array.push() with different value types
+    let code = r#"
+        let mut items = []
+        items.push(42)
+        items.push("text")
+        items.push(true)
+        items.len()
+    "#;
+
+    let mut interpreter = Interpreter::new();
+    let mut parser = Parser::new(code);
+    let ast = parser.parse().expect("Parse failed");
+    let result = interpreter.eval_expr(&ast).expect("Eval failed");
+
+    match result {
+        Value::Integer(n) => {
+            assert_eq!(n, 3, "Array should have 3 items of different types");
+        }
+        _ => panic!("Expected Integer(3), got {:?}", result),
+    }
+}
+
+#[test]
+fn test_array_push_in_loop() {
+    // Test: Array.push() inside a loop (realistic use case)
+    let code = r#"
+        let mut results = []
+        for i in 1..=5 {
+            results.push(i * 2)
+        }
+        results.len()
+    "#;
+
+    let mut interpreter = Interpreter::new();
+    let mut parser = Parser::new(code);
+    let ast = parser.parse().expect("Parse failed");
+    let result = interpreter.eval_expr(&ast).expect("Eval failed");
+
+    match result {
+        Value::Integer(n) => {
+            assert_eq!(n, 5, "Array should have 5 items after loop");
+        }
+        _ => panic!("Expected Integer(5), got {:?}", result),
+    }
+}
+
+// ============================================================================
 // PROPERTY-BASED TESTS: String Multiplication
 // ============================================================================
 
