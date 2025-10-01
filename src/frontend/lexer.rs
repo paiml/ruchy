@@ -461,8 +461,23 @@ pub struct TokenStreamPosition<'a> {
 impl<'a> TokenStream<'a> {
     #[must_use]
     pub fn new(input: &'a str) -> Self {
+        // Handle shebang: Skip first line if it starts with #!
+        // This allows executable scripts like: #!/usr/bin/env ruchy
+        let processed_input = if input.starts_with("#!") {
+            // Find the end of the first line
+            if let Some(newline_pos) = input.find('\n') {
+                // Skip the shebang line (including the newline)
+                &input[newline_pos + 1..]
+            } else {
+                // Entire file is just a shebang, treat as empty
+                ""
+            }
+        } else {
+            input
+        };
+
         Self {
-            lexer: Token::lexer(input),
+            lexer: Token::lexer(processed_input),
             peeked: None,
             input,
             current_position: 0,

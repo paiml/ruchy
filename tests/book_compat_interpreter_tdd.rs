@@ -158,6 +158,133 @@ fn test_string_multiply_with_variable() {
 }
 
 // ============================================================================
+// BOOK-002: SHEBANG SUPPORT
+// ============================================================================
+
+#[test]
+fn test_shebang_basic() {
+    // Test: #!/usr/bin/env ruchy at start of file
+    let code = r#"#!/usr/bin/env ruchy
+println("Hello")"#;
+
+    let mut interpreter = Interpreter::new();
+    let mut parser = Parser::new(code);
+    let ast = parser.parse().expect("Parse should succeed with shebang");
+    let result = interpreter.eval_expr(&ast).expect("Eval failed");
+
+    // Should execute the code after shebang
+    match result {
+        Value::String(s) => {
+            assert_eq!(s.as_ref(), "Hello");
+        }
+        Value::Nil => {
+            // println returns nil in some implementations
+        }
+        _ => panic!("Expected String or Nil, got {:?}", result),
+    }
+}
+
+#[test]
+fn test_shebang_with_args() {
+    // Test: Shebang with arguments
+    let code = r#"#!/usr/bin/env ruchy --some-flag
+let x = 42
+x"#;
+
+    let mut interpreter = Interpreter::new();
+    let mut parser = Parser::new(code);
+    let ast = parser.parse().expect("Parse should succeed with shebang");
+    let result = interpreter.eval_expr(&ast).expect("Eval failed");
+
+    match result {
+        Value::Integer(n) => {
+            assert_eq!(n, 42);
+        }
+        _ => panic!("Expected Integer(42), got {:?}", result),
+    }
+}
+
+#[test]
+fn test_shebang_empty_line_after() {
+    // Test: Shebang with empty line following
+    let code = r#"#!/usr/bin/env ruchy
+
+let x = 10
+x * 2"#;
+
+    let mut interpreter = Interpreter::new();
+    let mut parser = Parser::new(code);
+    let ast = parser.parse().expect("Parse should succeed");
+    let result = interpreter.eval_expr(&ast).expect("Eval failed");
+
+    match result {
+        Value::Integer(n) => {
+            assert_eq!(n, 20);
+        }
+        _ => panic!("Expected Integer(20), got {:?}", result),
+    }
+}
+
+#[test]
+fn test_shebang_with_comments() {
+    // Test: Shebang followed by regular comments
+    let code = r#"#!/usr/bin/env ruchy
+// This is a comment
+let x = 5
+x"#;
+
+    let mut interpreter = Interpreter::new();
+    let mut parser = Parser::new(code);
+    let ast = parser.parse().expect("Parse should succeed");
+    let result = interpreter.eval_expr(&ast).expect("Eval failed");
+
+    match result {
+        Value::Integer(n) => {
+            assert_eq!(n, 5);
+        }
+        _ => panic!("Expected Integer(5), got {:?}", result),
+    }
+}
+
+#[test]
+fn test_shebang_must_be_first_line() {
+    // Test: Shebang NOT at start should fail
+    let code = r#"
+#!/usr/bin/env ruchy
+let x = 1"#;
+
+    let mut parser = Parser::new(code);
+    let result = parser.parse();
+
+    // Should fail because shebang is not on first line
+    assert!(
+        result.is_err(),
+        "Shebang not at start of file should be parse error"
+    );
+}
+
+#[test]
+fn test_no_shebang_still_works() {
+    // Test: Code without shebang continues to work
+    let code = r#"let x = 100
+x + 1"#;
+
+    let mut interpreter = Interpreter::new();
+    let mut parser = Parser::new(code);
+    let ast = parser
+        .parse()
+        .expect("Parse should succeed without shebang");
+    let result = interpreter.eval_expr(&ast).expect("Eval failed");
+
+    match result {
+        Value::Integer(n) => {
+            assert_eq!(n, 101);
+        }
+        _ => panic!("Expected Integer(101), got {:?}", result),
+    }
+}
+
+// ============================================================================
 // PROPERTY-BASED TESTS: String Multiplication
 // ============================================================================
 
