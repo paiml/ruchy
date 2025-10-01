@@ -27,6 +27,7 @@ pub fn eval_dataframe_method(
         "rows" => eval_dataframe_rows(columns, arg_values),
         "columns" => eval_dataframe_columns_count(columns, arg_values),
         "column_names" => eval_dataframe_column_names(columns, arg_values),
+        "sort_by" => eval_dataframe_sort_by(columns, arg_values),
         _ => Err(InterpreterError::RuntimeError(format!(
             "Unknown DataFrame method: {method}"
         ))),
@@ -91,6 +92,98 @@ fn eval_dataframe_column_names(
         .collect();
 
     Ok(Value::from_array(names))
+}
+
+/// Sort `DataFrame` by column values
+///
+/// # Complexity
+/// Cyclomatic complexity: 9 (within Toyota Way limits)
+fn eval_dataframe_sort_by(
+    columns: &[DataFrameColumn],
+    args: &[Value],
+) -> Result<Value, InterpreterError> {
+    if args.is_empty() || args.len() > 2 {
+        return Err(InterpreterError::RuntimeError(
+            "DataFrame.sort_by() requires 1-2 arguments (column, [descending])".to_string(),
+        ));
+    }
+
+    // Get column name
+    let col_name = match &args[0] {
+        Value::String(s) => s.as_ref(),
+        _ => {
+            return Err(InterpreterError::RuntimeError(
+                "DataFrame.sort_by() expects column name as string".to_string(),
+            ))
+        }
+    };
+
+    // Check for descending flag
+    let descending = if args.len() == 2 {
+        match &args[1] {
+            Value::Bool(b) => *b,
+            _ => {
+                return Err(InterpreterError::RuntimeError(
+                    "DataFrame.sort_by() descending flag must be boolean".to_string(),
+                ))
+            }
+        }
+    } else {
+        false
+    };
+
+    // Find the sort column
+    let sort_col_idx = columns
+        .iter()
+        .position(|c| c.name == col_name)
+        .ok_or_else(|| {
+            InterpreterError::RuntimeError(format!("Column '{col_name}' not found in DataFrame"))
+        })?;
+
+    // Create indices and sort them based on column values
+    let mut indices: Vec<usize> = (0..columns[sort_col_idx].values.len()).collect();
+    indices.sort_by(|&a, &b| {
+        let val_a = &columns[sort_col_idx].values[a];
+        let val_b = &columns[sort_col_idx].values[b];
+        let cmp = compare_values_for_sort(val_a, val_b);
+        if descending {
+            cmp.reverse()
+        } else {
+            cmp
+        }
+    });
+
+    // Reorder all columns based on sorted indices
+    let mut sorted_columns = Vec::new();
+    for col in columns {
+        let sorted_values: Vec<Value> = indices.iter().map(|&i| col.values[i].clone()).collect();
+        sorted_columns.push(DataFrameColumn {
+            name: col.name.clone(),
+            values: sorted_values,
+        });
+    }
+
+    Ok(Value::DataFrame {
+        columns: sorted_columns,
+    })
+}
+
+/// Compare two values for sorting
+/// Complexity: 5 (within Toyota Way limits)
+fn compare_values_for_sort(a: &Value, b: &Value) -> std::cmp::Ordering {
+    use std::cmp::Ordering;
+
+    match (a, b) {
+        (Value::Integer(ia), Value::Integer(ib)) => ia.cmp(ib),
+        (Value::Float(fa), Value::Float(fb)) => fa.partial_cmp(fb).unwrap_or(Ordering::Equal),
+        (Value::Integer(i), Value::Float(f)) | (Value::Float(f), Value::Integer(i)) => {
+            let i_as_f = *i as f64;
+            i_as_f.partial_cmp(f).unwrap_or(Ordering::Equal)
+        }
+        (Value::String(sa), Value::String(sb)) => sa.cmp(sb),
+        (Value::Bool(ba), Value::Bool(bb)) => ba.cmp(bb),
+        _ => Ordering::Equal, // Default for incomparable types
+    }
 }
 
 /// Select specific columns by name
