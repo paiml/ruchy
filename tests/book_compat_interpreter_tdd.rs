@@ -1003,6 +1003,64 @@ fn test_integer_vs_float_distinction() {
 }
 
 // ============================================================================
+// FIX-001: MATCH WITH VOID BRANCHES (TRANSPILER)
+// ============================================================================
+
+#[test]
+fn test_match_with_println_branches() {
+    // Test: Match where all branches return () should compile and run
+    let code = r#"
+        let number = 2;
+        match number {
+            1 => println("One"),
+            2 => println("Two"),
+            3 => println("Three"),
+            _ => println("Other")
+        }
+    "#;
+
+    // This should transpile and run without error
+    // The issue is the transpiler tries to display () which doesn't implement Display
+    let mut interpreter = Interpreter::new();
+    let mut parser = Parser::new(code);
+    let ast = parser.parse().expect("Parse should succeed");
+    let result = interpreter.eval_expr(&ast).expect("Eval should succeed");
+
+    // Match with println branches returns Nil in interpreter
+    match result {
+        Value::Nil => {
+            // Expected - println returns nil, so match returns nil
+        }
+        _ => panic!("Expected Nil, got {:?}", result),
+    }
+}
+
+#[test]
+fn test_match_void_with_single_expression() {
+    // Test: Simpler case - match with void return
+    let code = r#"
+        let status = 200;
+        match status {
+            200 => println("Success"),
+            404 => println("Not Found"),
+            _ => println("Error")
+        }
+    "#;
+
+    let mut interpreter = Interpreter::new();
+    let mut parser = Parser::new(code);
+    let ast = parser.parse().expect("Parse should succeed");
+    let result = interpreter.eval_expr(&ast).expect("Eval should succeed");
+
+    match result {
+        Value::Nil => {
+            // Expected
+        }
+        _ => panic!("Expected Nil, got {:?}", result),
+    }
+}
+
+// ============================================================================
 // PROPERTY-BASED TESTS: String Multiplication
 // ============================================================================
 

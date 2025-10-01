@@ -154,15 +154,16 @@ impl Transpiler {
     }
     /// Centralized result printing logic - ONE PLACE FOR ALL RESULT PRINTING
     /// This eliminates code duplication and ensures consistent Unit type handling
+    /// FIX-001: Use {:?} for all types to avoid Display trait requirement on ()
     fn generate_result_printing_tokens(&self) -> TokenStream {
         quote! {
-            // Check the type name first to avoid Unit type Display error
+            // Check the type name first to avoid printing Unit type
+            // Use {:?} for all types since () implements Debug but not Display
             if std::any::type_name_of_val(&result) == "()" {
                 // Don't print Unit type
-            } else if std::any::type_name_of_val(&result).contains("String") ||
-                      std::any::type_name_of_val(&result).contains("&str") {
-                println!("{}", result);
             } else {
+                // Use Debug formatting for all types to handle ()
+                // This works for String, &str, and all other types
                 println!("{:?}", result);
             }
         }
