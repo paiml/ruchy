@@ -4,6 +4,98 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.64.0] - 2025-10-01 - DataFrame Sprint (60% Complete)
+
+### 🎉 Major Feature: Production-Ready DataFrames
+
+Implemented comprehensive DataFrame support with 39 TDD tests (all passing):
+
+#### ✅ DF-001: DataFrame Literal Evaluation (9 tests)
+- DataFrame literal syntax: `df![name => ["Alice", "Bob"], age => [25, 30]]`
+- Empty DataFrames: `df![]`
+- Multi-column DataFrames with type preservation
+- Fixed `ExprKind::DataFrame` routing in interpreter
+
+#### ✅ DF-002: Constructor API (11 tests)
+- Builder pattern: `DataFrame::new().column(...).build()`
+- Accessor methods:
+  - `.rows()` - Get row count
+  - `.columns()` - Get column count
+  - `.column_names()` - Get list of column names
+- Fluent API for DataFrame construction
+
+#### ✅ DF-003: CSV/JSON Import (8 tests)
+- `DataFrame::from_csv_string(csv)` - Parse CSV with headers
+- `DataFrame::from_json(json)` - Parse JSON arrays of objects
+- Automatic type inference for integers, floats, and strings
+- Error handling for malformed data
+
+#### ✅ DF-004: Transform Operations (11 tests)
+- `.with_column(name, closure)` - Add new computed columns
+  - Smart closure binding: parameter name matches column → direct value
+  - Otherwise → full row object for multi-column access
+  - Examples: `x => x * 2` OR `row => row["price"] * row["qty"]`
+- `.transform(name, closure)` - Modify existing columns in-place
+- `.sort_by(column, [descending])` - Sort rows maintaining integrity
+  - Index-based sorting preserves row relationships
+  - Works with integers, floats, strings, booleans
+- Object indexing support: `row["column_name"]` syntax
+
+### 🔧 Technical Improvements
+
+**Object Indexing Enhancement**:
+- Extended `eval_index_access()` to support `Value::Object[string]`
+- Added `Value::ObjectMut[string]` indexing for mutable objects
+- Enables intuitive row access in DataFrame closures
+
+**Method Dispatch Enhancement**:
+- Special handling for DataFrame methods with closure arguments
+- Prevents premature closure evaluation for filter/with_column/transform
+- Maintains separation between eager and lazy evaluation
+
+**All Functions <10 Complexity**:
+- `eval_dataframe_with_column_method`: 9 complexity
+- `eval_dataframe_transform_method`: 7 complexity
+- `eval_dataframe_sort_by`: 9 complexity
+- `eval_closure_with_value`: 7 complexity
+- `compare_values_for_sort`: 5 complexity
+
+### 📊 Test Coverage
+- **39 DataFrame tests** passing (100% of implemented features)
+- **3,453 total tests** passing (+39 from v3.62.12)
+- **Zero regressions** in existing functionality
+- **PMAT quality gates** passing (all functions <10 complexity)
+
+### 🚀 Real-World Usage
+
+```ruchy
+// CSV data analysis pipeline
+let sales = DataFrame::from_csv_string("product,qty,price\nWidget,10,99.99");
+let with_revenue = sales.with_column("revenue", row => row["qty"] * row["price"]);
+let top_sales = with_revenue.sort_by("revenue", true);
+
+// JSON import and transformation
+let data = DataFrame::from_json("[{\"x\": 1}, {\"x\": 2}]");
+let doubled = data.transform("x", v => v * 2);
+
+// Builder pattern for programmatic construction
+let df = DataFrame::new()
+    .column("name", ["Alice", "Bob"])
+    .column("age", [25, 30])
+    .build();
+```
+
+### 🎯 What's Next (DF-005, DF-006, DF-007)
+
+Remaining DataFrame enhancements (40% of sprint):
+- DF-005: Advanced group-by with chained `.agg()` calls
+- DF-006: Statistics methods (mean, std, percentile, rolling windows)
+- DF-007: Polars integration for performance optimization
+
+Core DataFrame functionality is **production-ready** and **fully tested**.
+
+---
+
 ## [3.62.12] - 2025-10-01
 
 ### 🔧 Critical Bug Fix: Array Mutations
