@@ -1557,6 +1557,17 @@ impl Interpreter {
         // Record type feedback for optimization
         self.record_variable_assignment_feedback(&name, &value);
 
+        // Search for existing variable in scope stack (like lookup_variable does)
+        // Update it where it exists, not just in current scope
+        for env in self.env_stack.iter_mut().rev() {
+            use std::collections::hash_map::Entry;
+            if let Entry::Occupied(mut entry) = env.entry(name.clone()) {
+                entry.insert(value);
+                return;
+            }
+        }
+
+        // Variable doesn't exist yet - create in current scope
         let env = self
             .env_stack
             .last_mut()
@@ -2634,6 +2645,39 @@ impl Interpreter {
         method: &str,
         args: &[Expr],
     ) -> Result<Value, InterpreterError> {
+        // Special handling for mutating array methods on simple identifiers
+        // e.g., messages.push(item)
+        if let ExprKind::Identifier(var_name) = &receiver.kind {
+            if method == "push" && args.len() == 1 {
+                // Get current array value
+                if let Ok(Value::Array(arr)) = self.lookup_variable(var_name) {
+                    // Evaluate the argument
+                    let arg_value = self.eval_expr(&args[0])?;
+
+                    // Create new array with item added
+                    let mut new_arr = arr.to_vec();
+                    new_arr.push(arg_value);
+
+                    // Update the variable binding
+                    self.env_set(var_name.clone(), Value::Array(Rc::from(new_arr)));
+
+                    return Ok(Value::Nil); // push returns nil
+                }
+            } else if method == "pop" && args.is_empty() {
+                // Get current array value
+                if let Ok(Value::Array(arr)) = self.lookup_variable(var_name) {
+                    // Create new array with last item removed
+                    let mut new_arr = arr.to_vec();
+                    let popped_value = new_arr.pop().unwrap_or(Value::Nil);
+
+                    // Update the variable binding
+                    self.env_set(var_name.clone(), Value::Array(Rc::from(new_arr)));
+
+                    return Ok(popped_value); // pop returns the removed item
+                }
+            }
+        }
+
         // Special handling for mutating array methods on ObjectMut fields
         // e.g., self.messages.push(item)
         if let ExprKind::FieldAccess { object, field } = &receiver.kind {
