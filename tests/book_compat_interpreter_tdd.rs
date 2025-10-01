@@ -618,10 +618,17 @@ fn test_option_some_variant() {
     let result = interpreter.eval_expr(&ast).expect("Eval failed");
 
     match result {
-        Value::Integer(n) => {
-            assert_eq!(n, 42, "Some(42) should unwrap to 42");
+        Value::EnumVariant { variant_name, data } => {
+            assert_eq!(variant_name, "Some", "Should be Some variant");
+            assert!(data.is_some(), "Some should have data");
+            let values = data.unwrap();
+            assert_eq!(values.len(), 1, "Some should have one value");
+            match &values[0] {
+                Value::Integer(n) => assert_eq!(*n, 42, "Some should contain 42"),
+                _ => panic!("Expected Integer(42), got {:?}", values[0]),
+            }
         }
-        _ => panic!("Expected Integer(42), got {:?}", result),
+        _ => panic!("Expected EnumVariant Some(42), got {:?}", result),
     }
 }
 
@@ -636,10 +643,11 @@ fn test_option_none_variant() {
     let result = interpreter.eval_expr(&ast).expect("Eval failed");
 
     match result {
-        Value::Nil => {
-            // None maps to Nil - expected
+        Value::EnumVariant { variant_name, data } => {
+            assert_eq!(variant_name, "None", "Should be None variant");
+            assert!(data.is_none(), "None should have no data");
         }
-        _ => panic!("Expected Nil (None), got {:?}", result),
+        _ => panic!("Expected EnumVariant None, got {:?}", result),
     }
 }
 
@@ -656,10 +664,17 @@ fn test_option_some_string() {
     let result = interpreter.eval_expr(&ast).expect("Eval failed");
 
     match result {
-        Value::String(s) => {
-            assert_eq!(s.as_ref(), "Alice", "Should return Alice");
+        Value::EnumVariant { variant_name, data } => {
+            assert_eq!(variant_name, "Some", "Should be Some variant");
+            assert!(data.is_some(), "Some should have data");
+            let values = data.unwrap();
+            assert_eq!(values.len(), 1, "Some should have one value");
+            match &values[0] {
+                Value::String(s) => assert_eq!(s.as_ref(), "Alice", "Should return Alice"),
+                _ => panic!("Expected String(\"Alice\"), got {:?}", values[0]),
+            }
         }
-        _ => panic!("Expected String(\"Alice\"), got {:?}", result),
+        _ => panic!("Expected EnumVariant Some(\"Alice\"), got {:?}", result),
     }
 }
 
@@ -676,10 +691,11 @@ fn test_option_none_branch() {
     let result = interpreter.eval_expr(&ast).expect("Eval failed");
 
     match result {
-        Value::Nil => {
-            // None maps to Nil - expected
+        Value::EnumVariant { variant_name, data } => {
+            assert_eq!(variant_name, "None", "Should be None variant");
+            assert!(data.is_none(), "None should have no data");
         }
-        _ => panic!("Expected Nil (None), got {:?}", result),
+        _ => panic!("Expected EnumVariant None, got {:?}", result),
     }
 }
 
@@ -688,10 +704,8 @@ fn test_option_none_branch() {
 // The transpiler correctly handles: let opt = Some(10); match opt { Some(n) => n * 2, None => 0 }
 
 #[test]
-#[ignore] // TODO: Fix interpreter pattern matching for Option<T>
 fn test_option_pattern_matching() {
-    // Test: Pattern matching on Option
-    // KNOWN ISSUE: Interpreter returns 0 instead of 20 (always matches None first?)
+    // Test: Pattern matching on Option with Some variant
     let code = r#"
         let opt = Some(10);
         match opt {

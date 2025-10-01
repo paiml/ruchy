@@ -1007,8 +1007,14 @@ impl Interpreter {
     /// Complexity: 9
     fn eval_special_form(&mut self, expr_kind: &ExprKind) -> Result<Value, InterpreterError> {
         match expr_kind {
-            ExprKind::None => Ok(Value::Nil),
-            ExprKind::Some { value } => self.eval_expr(value),
+            ExprKind::None => Ok(Value::EnumVariant {
+                variant_name: "None".to_string(),
+                data: None,
+            }),
+            ExprKind::Some { value } => Ok(Value::EnumVariant {
+                variant_name: "Some".to_string(),
+                data: Some(vec![self.eval_expr(value)?]),
+            }),
             ExprKind::Set(statements) => {
                 let mut result = Value::Nil;
                 for stmt in statements {
