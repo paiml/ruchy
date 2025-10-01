@@ -119,6 +119,57 @@ mod message_passing_tests {
     use super::*;
 
     #[test]
+    fn test_send_message_with_bang_operator() {
+        // ACTOR-001: Message passing with ! operator
+        let mut interpreter = Interpreter::new();
+
+        eval_code(
+            &mut interpreter,
+            r#"
+            actor Counter {
+                count: i32
+                receive Increment => { self.count = self.count + 1; }
+            }
+        "#,
+        )
+        .expect("Should define");
+
+        eval_code(&mut interpreter, "let counter = Counter.new(count: 0)").expect("Should create");
+
+        // Send message using ! operator (THIS SHOULD WORK)
+        let result =
+            eval_code(&mut interpreter, "counter ! Increment").expect("Should send with !");
+        assert!(
+            matches!(result, Value::Nil) || matches!(result, Value::Bool(true)),
+            "! operator should return Nil or true"
+        );
+    }
+
+    #[test]
+    fn test_send_message_with_payload() {
+        // ACTOR-001: Message passing with payload
+        let mut interpreter = Interpreter::new();
+
+        eval_code(
+            &mut interpreter,
+            r#"
+            actor Echo {
+                value: i32
+                receive Set(n) => { self.value = n; }
+            }
+        "#,
+        )
+        .expect("Should define");
+
+        eval_code(&mut interpreter, "let echo = Echo.new(value: 0)").expect("Should create");
+
+        // Send message with payload using ! operator
+        let result =
+            eval_code(&mut interpreter, "echo ! Set(42)").expect("Should send with payload");
+        assert!(matches!(result, Value::Nil) || matches!(result, Value::Bool(true)));
+    }
+
+    #[test]
     fn test_send_message_to_actor() {
         let mut interpreter = Interpreter::new();
 

@@ -16,6 +16,7 @@ pub struct Precedence(pub i32);
 impl Precedence {
     // Precedence levels from lowest to highest
     pub const ASSIGNMENT: Precedence = Precedence(10);
+    pub const MESSAGE_SEND: Precedence = Precedence(15); // actor ! Message
     pub const PIPELINE: Precedence = Precedence(20);
     pub const LOGICAL_OR: Precedence = Precedence(30);
     pub const LOGICAL_AND: Precedence = Precedence(40);
@@ -51,6 +52,8 @@ pub fn get_operator_info(token: &Token) -> Option<(Precedence, Associativity)> {
         | Token::LeftShiftEqual
         | Token::LeftArrow
         | Token::ActorQuery => Option::Some((Precedence::ASSIGNMENT, Right)),
+        // Message send operator (left-associative: actor ! Message)
+        Token::Bang => Option::Some((Precedence::MESSAGE_SEND, Left)),
         // Pipeline operator (left-associative)
         Token::Pipeline => Option::Some((Precedence::PIPELINE, Left)),
         // Logical operators
