@@ -41,7 +41,45 @@
 
 ## 🎯 **PRIORITY OPTIONS FOR NEXT SPRINT**
 
-### **OPTION 1: Push to 100% Book Compatibility** ⭐ RECOMMENDED
+### **OPTION 1: Complete Actor Runtime Support** ⭐⭐⭐ HIGHEST PRIORITY
+**Objective**: Implement full actor runtime with message passing, receive handlers, and concurrency
+**Current Status**: 40% (syntax only, no runtime)
+**Effort**: 5-7 days
+**Impact**: 🚀 CRITICAL - Actor support is advertised but non-functional
+
+**Gap Analysis**:
+- ✅ Actor syntax/definitions (working)
+- ✅ Actor instantiation (working)
+- ✅ Field access (working)
+- ❌ Async message passing (0%)
+- ❌ Receive handlers (0%)
+- ❌ Concurrent execution (0%)
+- ❌ Mailboxes/channels (0%)
+
+**Tickets**:
+1. **ACTOR-001**: Message passing with `!` operator
+2. **ACTOR-002**: Actor mailbox implementation
+3. **ACTOR-003**: Receive handler pattern matching
+4. **ACTOR-004**: Spawn actor instances with concurrency
+5. **ACTOR-005**: Actor state isolation and synchronization
+6. **ACTOR-006**: Property tests (10K+ messages)
+
+**Success Metrics**:
+- Actor support: 40% → 100%
+- Ping-pong demo works with real concurrency
+- Message passing working
+- Receive handlers functional
+- Actor demos in agentic-ai repo fully operational
+
+**Why Highest Priority**:
+- Advertised feature that's currently broken (40% functional)
+- Demo repo exists but uses workarounds
+- Critical for concurrent programming use cases
+- Major differentiator feature
+
+---
+
+### **OPTION 2: Push to 100% Book Compatibility** ⭐ RECOMMENDED
 **Objective**: Fix remaining 5 examples to achieve perfect 100% book compatibility (67/67)
 **Effort**: 2-3 days
 **Impact**: 🏆 Complete book compatibility milestone, demonstrate production readiness
