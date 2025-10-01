@@ -707,10 +707,16 @@ impl Transpiler {
     }
     /// Generate type parameter tokens with trait bound support
     fn generate_type_param_tokens(&self, type_params: &[String]) -> Result<Vec<TokenStream>> {
+        use proc_macro2::Span;
+        use syn::Lifetime;
         Ok(type_params
             .iter()
             .map(|p| {
-                if p.contains(':') {
+                if p.starts_with('\'') {
+                    // Lifetime parameter - use Lifetime token
+                    let lifetime = Lifetime::new(p, Span::call_site());
+                    quote! { #lifetime }
+                } else if p.contains(':') {
                     // Complex trait bound - parse as TokenStream
                     p.parse().unwrap_or_else(|_| quote! { T })
                 } else {
@@ -848,6 +854,102 @@ impl Transpiler {
             }
         })
     }
+
+    /// Determines if a function needs explicit lifetime parameter
+    /// Returns true if:
+    /// - Function has 2+ reference parameters AND
+    /// - Function returns a reference type
+    fn needs_lifetime_parameter(&self, params: &[Param], return_type: Option<&Type>) -> bool {
+        // Count parameters with reference types
+        let ref_param_count = params
+            .iter()
+            .filter(|p| self.is_reference_type(&p.ty))
+            .count();
+
+        // Check if return type is a reference
+        let returns_reference = return_type.is_some_and(|rt| self.is_reference_type(rt));
+
+        // Need lifetime if 2+ ref params and ref return
+        ref_param_count >= 2 && returns_reference
+    }
+
+    /// Check if a type is a reference type (&T, &str, &[T], etc.)
+    fn is_reference_type(&self, ty: &Type) -> bool {
+        use crate::frontend::ast::TypeKind;
+        matches!(ty.kind, TypeKind::Reference { .. })
+    }
+
+    /// Generate param tokens with lifetime annotations
+    fn generate_param_tokens_with_lifetime(
+        &self,
+        params: &[Param],
+        body: &Expr,
+        func_name: &str,
+    ) -> Result<Vec<TokenStream>> {
+        params
+            .iter()
+            .map(|p| {
+                let param_name = format_ident!("{}", p.name());
+                let type_tokens = if let Ok(tokens) = self.transpile_type_with_lifetime(&p.ty) {
+                    let token_str = tokens.to_string();
+                    if token_str == "_" {
+                        self.infer_param_type(p, body, func_name)
+                    } else {
+                        tokens
+                    }
+                } else {
+                    self.infer_param_type(p, body, func_name)
+                };
+                Ok(quote! { #param_name: #type_tokens })
+            })
+            .collect()
+    }
+
+    /// Transpile type with lifetime annotation (&T becomes &'a T)
+    fn transpile_type_with_lifetime(&self, ty: &Type) -> Result<TokenStream> {
+        use crate::frontend::ast::TypeKind;
+        match &ty.kind {
+            TypeKind::Reference {
+                is_mut,
+                inner,
+                lifetime: _,
+            } => {
+                let inner_tokens = self.transpile_type(inner)?;
+                let mut_token = if *is_mut {
+                    quote! { mut }
+                } else {
+                    quote! {}
+                };
+                Ok(quote! { &'a #mut_token #inner_tokens })
+            }
+            _ => self.transpile_type(ty),
+        }
+    }
+
+    /// Generate return type tokens with lifetime annotation
+    fn generate_return_type_tokens_with_lifetime(
+        &self,
+        name: &str,
+        return_type: Option<&Type>,
+        body: &Expr,
+    ) -> Result<TokenStream> {
+        if name.starts_with("test_") {
+            return Ok(quote! {});
+        }
+        if let Some(ty) = return_type {
+            let ty_tokens = self.transpile_type_with_lifetime(ty)?;
+            Ok(quote! { -> #ty_tokens })
+        } else if name == "main" {
+            Ok(quote! {})
+        } else if self.looks_like_numeric_function(name) {
+            Ok(quote! { -> i32 })
+        } else if self.has_non_unit_expression(body) {
+            Ok(quote! { -> i32 })
+        } else {
+            Ok(quote! {})
+        }
+    }
+
     /// # Examples
     ///
     /// ```ignore
@@ -867,8 +969,24 @@ impl Transpiler {
         attributes: &[crate::frontend::ast::Attribute],
     ) -> Result<TokenStream> {
         let fn_name = format_ident!("{}", name);
-        let param_tokens = self.generate_param_tokens(params, body, name)?;
+
+        // Check if we need to add lifetime parameter
+        let needs_lifetime = self.needs_lifetime_parameter(params, return_type);
+
+        // If lifetime needed, add 'a to type params and modify param/return types
+        let mut modified_type_params = type_params.to_vec();
+        if needs_lifetime {
+            modified_type_params.insert(0, "'a".to_string());
+        }
+
+        let param_tokens = if needs_lifetime {
+            self.generate_param_tokens_with_lifetime(params, body, name)?
+        } else {
+            self.generate_param_tokens(params, body, name)?
+        };
+
         let body_tokens = self.generate_body_tokens(body, is_async)?;
+
         // Check for #[test] attribute and override return type if found
         let has_test_attribute = attributes.iter().any(|attr| attr.name == "test");
         let effective_return_type = if has_test_attribute {
@@ -876,9 +994,14 @@ impl Transpiler {
         } else {
             return_type
         };
-        let return_type_tokens =
-            self.generate_return_type_tokens(name, effective_return_type, body)?;
-        let type_param_tokens = self.generate_type_param_tokens(type_params)?;
+
+        let return_type_tokens = if needs_lifetime {
+            self.generate_return_type_tokens_with_lifetime(name, effective_return_type, body)?
+        } else {
+            self.generate_return_type_tokens(name, effective_return_type, body)?
+        };
+
+        let type_param_tokens = self.generate_type_param_tokens(&modified_type_params)?;
         self.generate_function_signature(
             is_pub,
             is_async,
@@ -3578,8 +3701,7 @@ mod tests {
         let rust_str3 = result3.to_string();
         assert!(
             rust_str3.contains("name : & str") || rust_str3.contains("name: &str"),
-            "Expected &str parameter type, got: {}",
-            rust_str3
+            "Expected &str parameter type, got: {rust_str3}"
         );
     }
     #[test]

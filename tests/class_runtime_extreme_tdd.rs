@@ -2,6 +2,9 @@
 // Following CLAUDE.md Toyota Way - ALL tests written FIRST before implementation
 // This addresses RUCHY_RUNTIME_BUG_REPORT.md critical issues for classes
 
+#![allow(clippy::needless_raw_string_hashes)]
+#![allow(clippy::uninlined_format_args)]
+
 use ruchy::frontend::parser::Parser;
 use ruchy::runtime::interpreter::{Interpreter, Value};
 
@@ -305,7 +308,7 @@ mod class_inheritance_tests {
     }
 
     #[test]
-    #[ignore] // TODO: Requires super() constructor calls - known limitation per roadmap
+    #[ignore = "TODO: Requires super() constructor calls - known limitation per roadmap"]
     fn test_accessing_parent_fields() {
         let mut interpreter = Interpreter::new();
         let code = r#"
@@ -342,7 +345,7 @@ mod class_error_handling_tests {
     use super::*;
 
     #[test]
-    #[ignore] // TODO: Requires type checking for undefined types - known limitation per roadmap
+    #[ignore = "TODO: Requires type checking for undefined types - known limitation per roadmap"]
     fn test_class_with_undefined_field_type() {
         let mut interpreter = Interpreter::new();
         let code = r"
@@ -556,7 +559,7 @@ mod class_edge_case_tests {
     fn test_class_with_single_field() {
         // Edge case: Minimal class with one field
         let mut interpreter = Interpreter::new();
-        let code = r#"
+        let code = r"
             class Wrapper {
                 value: i32
 
@@ -573,13 +576,13 @@ mod class_edge_case_tests {
                 let w = Wrapper::new(42)
                 w.get()
             }
-        "#;
+        ";
         let result = eval_code(&mut interpreter, code).expect("Should parse and evaluate");
         assert!(matches!(result, Value::Integer(42)));
     }
 
     #[test]
-    #[ignore] // TODO: Requires returning &mut self from methods - advanced feature
+    #[ignore = "TODO: Requires returning &mut self from methods - advanced feature"]
     fn test_method_chaining_with_mutations() {
         // Edge case: Fluent interface with mutable state
         let mut interpreter = Interpreter::new();
