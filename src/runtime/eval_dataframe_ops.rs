@@ -12,7 +12,7 @@ use std::collections::HashMap;
 /// Evaluate a `DataFrame` method call
 ///
 /// # Complexity
-/// Cyclomatic complexity: 9 (within Toyota Way limits)
+/// Cyclomatic complexity: 8 (within Toyota Way limits)
 pub fn eval_dataframe_method(
     columns: &[DataFrameColumn],
     method: &str,
@@ -24,10 +24,73 @@ pub fn eval_dataframe_method(
         "slice" => eval_dataframe_slice(columns, arg_values),
         "join" => eval_dataframe_join(columns, arg_values),
         "groupby" => eval_dataframe_groupby(columns, arg_values),
+        "rows" => eval_dataframe_rows(columns, arg_values),
+        "columns" => eval_dataframe_columns_count(columns, arg_values),
+        "column_names" => eval_dataframe_column_names(columns, arg_values),
         _ => Err(InterpreterError::RuntimeError(format!(
             "Unknown DataFrame method: {method}"
         ))),
     }
+}
+
+/// Get the number of rows in the `DataFrame`
+///
+/// # Complexity
+/// Cyclomatic complexity: 3 (within Toyota Way limits)
+fn eval_dataframe_rows(
+    columns: &[DataFrameColumn],
+    args: &[Value],
+) -> Result<Value, InterpreterError> {
+    if !args.is_empty() {
+        return Err(InterpreterError::RuntimeError(
+            "DataFrame.rows() takes no arguments".to_string(),
+        ));
+    }
+
+    // Return the number of rows (length of first column, or 0 if no columns)
+    let row_count = columns.first().map_or(0, |col| col.values.len());
+
+    Ok(Value::Integer(row_count as i64))
+}
+
+/// Get the number of columns in the `DataFrame`
+///
+/// # Complexity
+/// Cyclomatic complexity: 2 (within Toyota Way limits)
+fn eval_dataframe_columns_count(
+    columns: &[DataFrameColumn],
+    args: &[Value],
+) -> Result<Value, InterpreterError> {
+    if !args.is_empty() {
+        return Err(InterpreterError::RuntimeError(
+            "DataFrame.columns() takes no arguments".to_string(),
+        ));
+    }
+
+    Ok(Value::Integer(columns.len() as i64))
+}
+
+/// Get the column names as an array of strings
+///
+/// # Complexity
+/// Cyclomatic complexity: 2 (within Toyota Way limits)
+fn eval_dataframe_column_names(
+    columns: &[DataFrameColumn],
+    args: &[Value],
+) -> Result<Value, InterpreterError> {
+    if !args.is_empty() {
+        return Err(InterpreterError::RuntimeError(
+            "DataFrame.column_names() takes no arguments".to_string(),
+        ));
+    }
+
+    // Return array of column names as strings
+    let names: Vec<Value> = columns
+        .iter()
+        .map(|col| Value::from_string(col.name.clone()))
+        .collect();
+
+    Ok(Value::from_array(names))
 }
 
 /// Select specific columns by name
