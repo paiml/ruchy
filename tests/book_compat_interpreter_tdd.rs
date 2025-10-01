@@ -285,6 +285,167 @@ x + 1"#;
 }
 
 // ============================================================================
+// BOOK-003: MULTI-VARIABLE EXPRESSION EVALUATION
+// ============================================================================
+
+#[test]
+fn test_multi_let_with_final_expression() {
+    // Test: let x = 1; let y = 2; x + y should return 3 (not 1 or 2)
+    let code = r#"let x = 1; let y = 2; x + y"#;
+
+    let mut interpreter = Interpreter::new();
+    let mut parser = Parser::new(code);
+    let ast = parser.parse().expect("Parse failed");
+    let result = interpreter.eval_expr(&ast).expect("Eval failed");
+
+    match result {
+        Value::Integer(n) => {
+            assert_eq!(
+                n, 3,
+                "Should return final expression (x + y = 3), not x or y"
+            );
+        }
+        _ => panic!("Expected Integer(3), got {:?}", result),
+    }
+}
+
+#[test]
+fn test_multi_let_with_float_arithmetic() {
+    // Test: Price calculation from book examples
+    let code = r#"let price = 99.99; let tax = 0.08; price * (1.0 + tax)"#;
+
+    let mut interpreter = Interpreter::new();
+    let mut parser = Parser::new(code);
+    let ast = parser.parse().expect("Parse failed");
+    let result = interpreter.eval_expr(&ast).expect("Eval failed");
+
+    match result {
+        Value::Float(f) => {
+            let expected = 99.99 * 1.08;
+            assert!(
+                (f - expected).abs() < 0.01,
+                "Should return price * (1 + tax) = {}, got {}",
+                expected,
+                f
+            );
+        }
+        _ => panic!("Expected Float(~107.99), got {:?}", result),
+    }
+}
+
+#[test]
+fn test_multi_let_with_variable_dependencies() {
+    // Test: Variables depend on each other
+    let code = r#"let x = 5; let y = x * 2; let z = y + 3; z"#;
+
+    let mut interpreter = Interpreter::new();
+    let mut parser = Parser::new(code);
+    let ast = parser.parse().expect("Parse failed");
+    let result = interpreter.eval_expr(&ast).expect("Eval failed");
+
+    match result {
+        Value::Integer(n) => {
+            assert_eq!(n, 13, "Should return z = (x * 2) + 3 = (5 * 2) + 3 = 13");
+        }
+        _ => panic!("Expected Integer(13), got {:?}", result),
+    }
+}
+
+#[test]
+fn test_multi_let_with_nested_expressions() {
+    // Test: Complex nested expression after multiple lets
+    let code = r#"let a = 2; let b = 3; let c = 4; (a + b) * c"#;
+
+    let mut interpreter = Interpreter::new();
+    let mut parser = Parser::new(code);
+    let ast = parser.parse().expect("Parse failed");
+    let result = interpreter.eval_expr(&ast).expect("Eval failed");
+
+    match result {
+        Value::Integer(n) => {
+            assert_eq!(n, 20, "Should return (a + b) * c = (2 + 3) * 4 = 20");
+        }
+        _ => panic!("Expected Integer(20), got {:?}", result),
+    }
+}
+
+#[test]
+fn test_multi_let_string_variables() {
+    // Test: Multiple string variables with final expression
+    let code = r#"let first = "Hello"; let last = "World"; first"#;
+
+    let mut interpreter = Interpreter::new();
+    let mut parser = Parser::new(code);
+    let ast = parser.parse().expect("Parse failed");
+    let result = interpreter.eval_expr(&ast).expect("Eval failed");
+
+    match result {
+        Value::String(s) => {
+            assert_eq!(
+                s.as_ref(),
+                "Hello",
+                "Should return final expression (first)"
+            );
+        }
+        _ => panic!("Expected String(\"Hello\"), got {:?}", result),
+    }
+}
+
+#[test]
+fn test_three_lets_final_calculation() {
+    // Test: Three variable bindings with calculation
+    let code = r#"let x = 10; let y = 20; let z = 30; x + y + z"#;
+
+    let mut interpreter = Interpreter::new();
+    let mut parser = Parser::new(code);
+    let ast = parser.parse().expect("Parse failed");
+    let result = interpreter.eval_expr(&ast).expect("Eval failed");
+
+    match result {
+        Value::Integer(n) => {
+            assert_eq!(n, 60, "Should return x + y + z = 10 + 20 + 30 = 60");
+        }
+        _ => panic!("Expected Integer(60), got {:?}", result),
+    }
+}
+
+#[test]
+fn test_multi_let_boolean_expression() {
+    // Test: Multiple lets with boolean final expression
+    let code = r#"let x = 5; let y = 10; x < y"#;
+
+    let mut interpreter = Interpreter::new();
+    let mut parser = Parser::new(code);
+    let ast = parser.parse().expect("Parse failed");
+    let result = interpreter.eval_expr(&ast).expect("Eval failed");
+
+    match result {
+        Value::Bool(b) => {
+            assert!(b, "Should return true (5 < 10)");
+        }
+        _ => panic!("Expected Bool(true), got {:?}", result),
+    }
+}
+
+#[test]
+fn test_single_let_with_expression() {
+    // Test: Baseline - single let with expression should work
+    let code = r#"let x = 42; x * 2"#;
+
+    let mut interpreter = Interpreter::new();
+    let mut parser = Parser::new(code);
+    let ast = parser.parse().expect("Parse failed");
+    let result = interpreter.eval_expr(&ast).expect("Eval failed");
+
+    match result {
+        Value::Integer(n) => {
+            assert_eq!(n, 84, "Should return x * 2 = 42 * 2 = 84");
+        }
+        _ => panic!("Expected Integer(84), got {:?}", result),
+    }
+}
+
+// ============================================================================
 // PROPERTY-BASED TESTS: String Multiplication
 // ============================================================================
 
