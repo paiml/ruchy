@@ -4837,8 +4837,9 @@ impl Interpreter {
     ) -> Result<Value, InterpreterError> {
         crate::runtime::eval_dataframe_ops::eval_dataframe_method(columns, method, arg_values)
     }
+
     /// Special handler for `DataFrame` filter method
-    /// Special handler for `DataFrame` filter method
+    /// Complexity: 8 (within Toyota Way limits)
     fn eval_dataframe_filter_method(
         &mut self,
         receiver: &Value,
@@ -4846,17 +4847,70 @@ impl Interpreter {
     ) -> Result<Value, InterpreterError> {
         if args.len() != 1 {
             return Err(InterpreterError::RuntimeError(
-                "DataFrame.filter() requires exactly 1 argument (condition)".to_string(),
+                "DataFrame.filter() requires exactly 1 argument (closure)".to_string(),
             ));
         }
 
         if let Value::DataFrame { columns } = receiver {
-            let condition = &args[0];
-            crate::runtime::eval_dataframe_ops::eval_dataframe_filter(
-                columns,
-                condition,
-                |expr, cols, idx| self.eval_expr_with_column_context(expr, cols, idx),
-            )
+            let closure = &args[0];
+
+            // Validate closure structure
+            if !matches!(closure.kind, ExprKind::Lambda { .. }) {
+                return Err(InterpreterError::RuntimeError(
+                    "DataFrame.filter() expects a lambda expression".to_string(),
+                ));
+            }
+
+            // Build keep_mask by evaluating closure for each row
+            let num_rows = columns.first().map_or(0, |c| c.values.len());
+            let mut keep_mask = Vec::with_capacity(num_rows);
+
+            for row_idx in 0..num_rows {
+                // Create row object with all column values for this row
+                let mut row = HashMap::new();
+                for col in columns {
+                    if let Some(value) = col.values.get(row_idx) {
+                        row.insert(col.name.clone(), value.clone());
+                    }
+                }
+                let row_value = Value::Object(std::rc::Rc::new(row));
+
+                // Evaluate closure with row object
+                let result = self.eval_closure_with_value(closure, &row_value)?;
+
+                // Check if result is boolean
+                let keep = match result {
+                    Value::Bool(b) => b,
+                    _ => {
+                        return Err(InterpreterError::RuntimeError(
+                            "DataFrame.filter() closure must return boolean".to_string(),
+                        ))
+                    }
+                };
+
+                keep_mask.push(keep);
+            }
+
+            // Create new DataFrame with filtered rows
+            let mut new_columns = Vec::new();
+            for col in columns {
+                let mut filtered_values = Vec::new();
+                for (idx, &keep) in keep_mask.iter().enumerate() {
+                    if keep {
+                        if let Some(val) = col.values.get(idx) {
+                            filtered_values.push(val.clone());
+                        }
+                    }
+                }
+                new_columns.push(DataFrameColumn {
+                    name: col.name.clone(),
+                    values: filtered_values,
+                });
+            }
+
+            Ok(Value::DataFrame {
+                columns: new_columns,
+            })
         } else {
             Err(InterpreterError::RuntimeError(
                 "filter method can only be called on DataFrame".to_string(),
