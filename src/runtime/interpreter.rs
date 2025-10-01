@@ -1219,6 +1219,7 @@ impl Interpreter {
                 inclusive,
             } => self.eval_range_expr(start, end, *inclusive),
             ExprKind::ArrayInit { value, size } => self.eval_array_init_expr(value, size),
+            ExprKind::DataFrame { columns } => self.eval_dataframe_literal(columns),
             _ => unreachable!("Non-data-structure expression passed to eval_data_structure_expr"),
         }
     }
@@ -1889,6 +1890,33 @@ impl Interpreter {
     /// Evaluate tuple expression
     fn eval_tuple_expr(&mut self, elements: &[Expr]) -> Result<Value, InterpreterError> {
         eval_expr::eval_tuple_expr(elements, |e| self.eval_expr(e))
+    }
+
+    /// Evaluate `DataFrame` literal expression
+    /// Complexity: 5 (within Toyota Way limits)
+    fn eval_dataframe_literal(
+        &mut self,
+        columns: &[crate::frontend::ast::DataFrameColumn],
+    ) -> Result<Value, InterpreterError> {
+        let mut evaluated_columns = Vec::new();
+
+        for col in columns {
+            // Evaluate each value expression in the column
+            let mut evaluated_values = Vec::new();
+            for value_expr in &col.values {
+                evaluated_values.push(self.eval_expr(value_expr)?);
+            }
+
+            // Create runtime DataFrameColumn
+            evaluated_columns.push(DataFrameColumn {
+                name: col.name.clone(),
+                values: evaluated_values,
+            });
+        }
+
+        Ok(Value::DataFrame {
+            columns: evaluated_columns,
+        })
     }
 
     /// Evaluate range expression
