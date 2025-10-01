@@ -271,9 +271,9 @@ mod tests {
         let env = init_global_environment();
 
         // Should have all builtin functions
-        // 1 constant + 6 basic + 11 math + 3 I/O + 3 utility
-        // + 4 conversion + 8 advanced + 2 string + 3 random/time + 1 sleep = 42 total
-        assert_eq!(env.len(), 42);
+        // 1 constant + 7 basic + 11 math + 3 I/O + 3 utility
+        // + 4 conversion + 8 advanced + 2 string + 4 random/time = 43 total
+        assert_eq!(env.len(), 43);
     }
 
     #[test]

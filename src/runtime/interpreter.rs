@@ -2856,6 +2856,14 @@ impl Interpreter {
                     obj.get("__struct_type").or_else(|| obj.get("__struct"))
                 {
                     self.eval_struct_instance_method(obj, struct_name.as_ref(), method, arg_values)
+                }
+                // Check if this is a `DataFrame` builder
+                else if let Some(Value::String(type_str)) = obj.get("__type") {
+                    if type_str.as_ref() == "DataFrameBuilder" {
+                        self.eval_dataframe_builder_method(obj, method, arg_values)
+                    } else {
+                        self.eval_object_method(obj, method, arg_values, args_empty)
+                    }
                 } else {
                     self.eval_object_method(obj, method, arg_values, args_empty)
                 }
@@ -4702,6 +4710,105 @@ impl Interpreter {
                 "{} is not a class",
                 class_name
             )))
+        }
+    }
+
+    /// Evaluate `DataFrame` builder methods (.column, .build)
+    /// Complexity: 8 (within Toyota Way limits)
+    fn eval_dataframe_builder_method(
+        &self,
+        builder: &std::collections::HashMap<String, Value>,
+        method: &str,
+        arg_values: &[Value],
+    ) -> Result<Value, InterpreterError> {
+        match method {
+            "column" => {
+                // .column(name, values) - add a column to the builder
+                if arg_values.len() != 2 {
+                    return Err(InterpreterError::RuntimeError(
+                        "DataFrame builder .column() requires 2 arguments (name, values)"
+                            .to_string(),
+                    ));
+                }
+
+                // Extract column name
+                let name = match &arg_values[0] {
+                    Value::String(s) => s.to_string(),
+                    _ => {
+                        return Err(InterpreterError::RuntimeError(
+                            "Column name must be a string".to_string(),
+                        ))
+                    }
+                };
+
+                // Extract values array
+                let values = match &arg_values[1] {
+                    Value::Array(arr) => arr.to_vec(),
+                    _ => {
+                        return Err(InterpreterError::RuntimeError(
+                            "Column values must be an array".to_string(),
+                        ))
+                    }
+                };
+
+                // Get current columns
+                let current_columns = match builder.get("__columns") {
+                    Some(Value::Array(cols)) => cols.to_vec(),
+                    _ => vec![],
+                };
+
+                // Create new column object
+                let mut col_obj = std::collections::HashMap::new();
+                col_obj.insert("name".to_string(), Value::from_string(name));
+                col_obj.insert("values".to_string(), Value::from_array(values));
+
+                // Add to columns array
+                let mut new_columns = current_columns;
+                new_columns.push(Value::Object(std::rc::Rc::new(col_obj)));
+
+                // Create new builder with updated columns
+                let mut new_builder = builder.clone();
+                new_builder.insert("__columns".to_string(), Value::from_array(new_columns));
+
+                Ok(Value::Object(std::rc::Rc::new(new_builder)))
+            }
+            "build" => {
+                // .build() - convert builder to `DataFrame`
+                if !arg_values.is_empty() {
+                    return Err(InterpreterError::RuntimeError(
+                        "DataFrame builder .build() takes no arguments".to_string(),
+                    ));
+                }
+
+                // Extract columns from builder
+                let columns_array = match builder.get("__columns") {
+                    Some(Value::Array(cols)) => cols,
+                    _ => return Ok(Value::DataFrame { columns: vec![] }),
+                };
+
+                // Convert column objects to `DataFrameColumn` structs
+                let mut df_columns = Vec::new();
+                for col_val in columns_array.as_ref() {
+                    if let Value::Object(col_obj) = col_val {
+                        let name = match col_obj.get("name") {
+                            Some(Value::String(s)) => s.to_string(),
+                            _ => continue,
+                        };
+                        let values = match col_obj.get("values") {
+                            Some(Value::Array(vals)) => vals.to_vec(),
+                            _ => vec![],
+                        };
+                        df_columns.push(DataFrameColumn { name, values });
+                    }
+                }
+
+                Ok(Value::DataFrame {
+                    columns: df_columns,
+                })
+            }
+            _ => Err(InterpreterError::RuntimeError(format!(
+                "Unknown builder method: {method}"
+            ))),
         }
     }
 
