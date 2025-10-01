@@ -882,10 +882,8 @@ fn test_struct_field_access() {
 }
 
 #[test]
-#[ignore] // TODO: Fix impl block constructors - currently assigns incorrectly
 fn test_impl_block_constructor() {
-    // Test: impl block with constructor
-    // KNOWN ISSUE: Constructor assigns last parameter to all fields
+    // Test: impl block with constructor working correctly
     let code = r#"
         struct Point { x: i32, y: i32 };
         impl Point {
