@@ -8,6 +8,10 @@
 //!
 //! Target: Book compatibility 77% → 85% (10 examples fixed)
 
+// Test code uses r#"..."# consistently for multiline Ruchy examples
+#![allow(clippy::needless_raw_string_hashes)]
+#![allow(clippy::uninlined_format_args)]
+
 use ruchy::backend::transpiler::Transpiler;
 use ruchy::frontend::parser::Parser;
 
@@ -229,7 +233,8 @@ fn test_array_with_type_annotation() {
 
 #[test]
 fn test_lifetime_inference_single_str_param() {
-    // Bug: fn create_profile(name: &str) -> &str needs <'a> lifetime
+    // Single param &str -> &str works via Rust lifetime elision
+    // No explicit lifetime needed: fn f(x: &str) -> &str
     let code = r#"
         fun create_profile(name: &str) -> &str {
             name
@@ -239,24 +244,26 @@ fn test_lifetime_inference_single_str_param() {
     let mut parser = Parser::new(code);
     let ast = parser.parse().unwrap();
     let mut transpiler = Transpiler::new();
-    let rust_code = transpiler.transpile_to_program(&ast).unwrap().to_string();
+    let result = transpiler.transpile_to_program(&ast);
 
-    // Should add lifetime parameter automatically
-    // Either: fn create_profile<'a>(name: &'a str) -> &'a str
-    // Or handle it another way that compiles
-    if rust_code.contains("-> & str") {
-        // If returning borrowed str, needs lifetime
-        assert!(
-            rust_code.contains("<") || rust_code.contains("'"),
-            "Functions returning &str should have lifetime annotations: {}",
-            rust_code
-        );
-    }
+    // Should compile successfully without explicit lifetimes
+    assert!(
+        result.is_ok(),
+        "Single-param &str -> &str should work via lifetime elision: {:?}",
+        result.err()
+    );
+
+    let rust_code = result.unwrap().to_string();
+    assert!(
+        rust_code.contains("fn create_profile"),
+        "Function should be transpiled: {}",
+        rust_code
+    );
 }
 
 #[test]
 fn test_lifetime_inference_multiple_str_params() {
-    // Bug: fn process(a: &str, b: &str) -> &str is ambiguous
+    // Multi-param &str -> &str needs explicit lifetime: fn f<'a>(a: &'a str, b: &'a str) -> &'a str
     let code = r#"
         fun choose_first(a: &str, b: &str) -> &str {
             a
@@ -268,13 +275,17 @@ fn test_lifetime_inference_multiple_str_params() {
     let mut transpiler = Transpiler::new();
     let rust_code = transpiler.transpile_to_program(&ast).unwrap().to_string();
 
-    // With multiple &str params, lifetime needed
-    if rust_code.contains("-> & str") {
-        assert!(
-            rust_code.contains("<") || rust_code.contains("'"),
-            "Functions with multiple &str params returning &str need lifetimes"
-        );
-    }
+    // Should add explicit lifetime annotations
+    assert!(
+        rust_code.contains("< 'a >") || rust_code.contains("<'a>"),
+        "Multi-param &str -> &str needs explicit lifetime <'a>: {}",
+        rust_code
+    );
+    assert!(
+        rust_code.contains("& 'a str") || rust_code.contains("&'a str"),
+        "Parameters and return should have 'a lifetime: {}",
+        rust_code
+    );
 }
 
 #[test]
@@ -381,7 +392,7 @@ mod property_tests {
             for i in 0..stmt_count {
                 code.push_str(&format!("    let var{} = {};\n", i, i * 10));
             }
-            code.push_str("}");
+            code.push('}');
 
             let mut parser = Parser::new(&code);
             if let Ok(ast) = parser.parse() {
@@ -939,5 +950,140 @@ fn test_turbofish_vs_less_than_disambiguation() {
         rust_code.contains("3 < 5"),
         "Less-than operator should still work: {}",
         rust_code
+    );
+}
+
+// ============================================================================
+// OPTION C: LIFETIME INFERENCE FOR BORROWED REFERENCES
+// ============================================================================
+// Target: Auto-add <'a> lifetime for multi-param functions with & return
+
+#[test]
+fn test_no_lifetime_needed_for_owned_types() {
+    // Functions with owned types don't need lifetimes
+    let code = r#"
+        fun add(a: i32, b: i32) -> i32 {
+            a + b
+        }
+    "#;
+
+    let mut parser = Parser::new(code);
+    let ast = parser.parse().unwrap();
+    let mut transpiler = Transpiler::new();
+    let rust_code = transpiler.transpile_to_program(&ast).unwrap().to_string();
+
+    assert!(
+        !rust_code.contains("'a"),
+        "Owned types should not get lifetime annotations: {}",
+        rust_code
+    );
+}
+
+#[test]
+fn test_lifetime_single_ref_return_borrowed() {
+    // Single & param with & return: lifetime elision works
+    let code = r#"
+        fun identity(x: &i32) -> &i32 {
+            x
+        }
+    "#;
+
+    let mut parser = Parser::new(code);
+    let ast = parser.parse().unwrap();
+    let mut transpiler = Transpiler::new();
+    let result = transpiler.transpile_to_program(&ast);
+
+    // Should compile without explicit lifetimes (elision)
+    assert!(
+        result.is_ok(),
+        "Single-param elision should work: {:?}",
+        result.err()
+    );
+}
+
+#[test]
+fn test_lifetime_multi_ref_same_type() {
+    // Multiple &i32 params returning &i32 needs explicit lifetime
+    let code = r#"
+        fun choose_max(a: &i32, b: &i32) -> &i32 {
+            if a > b { a } else { b }
+        }
+    "#;
+
+    let mut parser = Parser::new(code);
+    let ast = parser.parse().unwrap();
+    let mut transpiler = Transpiler::new();
+    let rust_code = transpiler.transpile_to_program(&ast).unwrap().to_string();
+
+    assert!(
+        rust_code.contains("< 'a >") || rust_code.contains("<'a>"),
+        "Multi-ref params need lifetime: {}",
+        rust_code
+    );
+}
+
+#[test]
+fn test_lifetime_three_params() {
+    // Three & params returning & needs lifetime
+    let code = r#"
+        fun pick_first(a: &str, b: &str, c: &str) -> &str {
+            a
+        }
+    "#;
+
+    let mut parser = Parser::new(code);
+    let ast = parser.parse().unwrap();
+    let mut transpiler = Transpiler::new();
+    let rust_code = transpiler.transpile_to_program(&ast).unwrap().to_string();
+
+    assert!(
+        rust_code.contains("'a"),
+        "Three-param function needs lifetimes: {}",
+        rust_code
+    );
+}
+
+#[test]
+fn test_lifetime_mixed_owned_and_ref() {
+    // Mixed param types: owned + &ref returning &ref
+    let code = r#"
+        fun process(count: i32, text: &str) -> &str {
+            text
+        }
+    "#;
+
+    let mut parser = Parser::new(code);
+    let ast = parser.parse().unwrap();
+    let mut transpiler = Transpiler::new();
+    let result = transpiler.transpile_to_program(&ast);
+
+    // Single & param, so elision works even with owned param
+    assert!(
+        result.is_ok(),
+        "Mixed params with single & should work: {:?}",
+        result.err()
+    );
+}
+
+#[test]
+fn test_lifetime_slice_params() {
+    // Slices [T] also need lifetime handling
+    // Note: Using simpler return that doesn't require & in body
+    let code = r#"
+        fun first_slice(arr: &[i32]) -> &[i32] {
+            arr
+        }
+    "#;
+
+    let mut parser = Parser::new(code);
+    let ast = parser.parse().unwrap();
+    let mut transpiler = Transpiler::new();
+    let result = transpiler.transpile_to_program(&ast);
+
+    // Single slice param, elision should work
+    assert!(
+        result.is_ok(),
+        "Slice elision should work: {:?}",
+        result.err()
     );
 }

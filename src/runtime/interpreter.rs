@@ -5055,10 +5055,10 @@ mod tests {
 
     #[test]
     fn test_lambda_variable_assignment_and_call() {
-        let code = r#"
+        let code = r"
             let double = x => x * 2
             double(5)
-        "#;
+        ";
         let mut parser = crate::frontend::parser::Parser::new(code);
         let ast = parser.parse().expect("Parse failed");
         let mut interpreter = Interpreter::new();
@@ -5068,10 +5068,10 @@ mod tests {
 
     #[test]
     fn test_lambda_pipe_syntax_variable_call() {
-        let code = r#"
+        let code = r"
             let triple = |x| x * 3
             triple(4)
-        "#;
+        ";
         let mut parser = crate::frontend::parser::Parser::new(code);
         let ast = parser.parse().expect("Parse failed");
         let mut interpreter = Interpreter::new();

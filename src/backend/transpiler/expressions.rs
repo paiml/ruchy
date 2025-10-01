@@ -1355,8 +1355,7 @@ mod tests {
         // Should use fixed-size array syntax, not vec![]
         assert!(
             rust_str.contains("[") && !rust_str.contains("vec !"),
-            "Expected fixed-size array [1, 2, 3], got: {}",
-            rust_str
+            "Expected fixed-size array [1, 2, 3], got: {rust_str}"
         );
         assert!(rust_str.contains("1"));
         assert!(rust_str.contains("2"));
