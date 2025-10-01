@@ -71,6 +71,14 @@ fn add_basic_builtins(global_env: &mut HashMap<String, Value>) {
         Value::from_string("__builtin_dataframe_from_rows__".to_string()),
     );
     global_env.insert(
+        "DataFrame::from_csv_string".to_string(),
+        Value::from_string("__builtin_dataframe_from_csv_string__".to_string()),
+    );
+    global_env.insert(
+        "DataFrame::from_json".to_string(),
+        Value::from_string("__builtin_dataframe_from_json__".to_string()),
+    );
+    global_env.insert(
         "col".to_string(),
         Value::from_string("__builtin_col__".to_string()),
     );
@@ -271,9 +279,9 @@ mod tests {
         let env = init_global_environment();
 
         // Should have all builtin functions
-        // 1 constant + 7 basic + 11 math + 3 I/O + 3 utility
-        // + 4 conversion + 8 advanced + 2 string + 4 random/time = 43 total
-        assert_eq!(env.len(), 43);
+        // 1 constant + 9 basic + 11 math + 3 I/O + 3 utility
+        // + 4 conversion + 8 advanced + 2 string + 4 random/time = 45 total
+        assert_eq!(env.len(), 45);
     }
 
     #[test]

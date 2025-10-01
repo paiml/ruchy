@@ -50,6 +50,8 @@ pub fn eval_builtin_function(
 
         // DataFrame functions
         "__builtin_dataframe_new__" => Ok(Some(eval_dataframe_new(args)?)),
+        "__builtin_dataframe_from_csv_string__" => Ok(Some(eval_dataframe_from_csv_string(args)?)),
+        "__builtin_dataframe_from_json__" => Ok(Some(eval_dataframe_from_json(args)?)),
 
         // Unknown builtin
         _ => Ok(None),
@@ -529,6 +531,245 @@ fn eval_dataframe_new(args: &[Value]) -> Result<Value, InterpreterError> {
     builder.insert("__columns".to_string(), Value::from_array(vec![]));
 
     Ok(Value::Object(std::rc::Rc::new(builder)))
+}
+
+/// `DataFrame::from_csv_string()` - Parse CSV data into `DataFrame`
+/// Performs type inference for integers, floats, and strings
+/// Complexity: 9 (within Toyota Way limits)
+fn eval_dataframe_from_csv_string(args: &[Value]) -> Result<Value, InterpreterError> {
+    if args.len() != 1 {
+        return Err(InterpreterError::RuntimeError(
+            "DataFrame::from_csv_string() requires 1 argument (csv_string)".to_string(),
+        ));
+    }
+
+    let csv_string = match &args[0] {
+        Value::String(s) => s.as_ref(),
+        _ => {
+            return Err(InterpreterError::RuntimeError(
+                "DataFrame::from_csv_string() expects string argument".to_string(),
+            ))
+        }
+    };
+
+    parse_csv_to_dataframe(csv_string)
+}
+
+/// `DataFrame::from_json()` - Parse JSON array into `DataFrame`
+/// Expects array of objects with consistent keys
+/// Complexity: 8 (within Toyota Way limits)
+fn eval_dataframe_from_json(args: &[Value]) -> Result<Value, InterpreterError> {
+    if args.len() != 1 {
+        return Err(InterpreterError::RuntimeError(
+            "DataFrame::from_json() requires 1 argument (json_string)".to_string(),
+        ));
+    }
+
+    let json_string = match &args[0] {
+        Value::String(s) => s.as_ref(),
+        _ => {
+            return Err(InterpreterError::RuntimeError(
+                "DataFrame::from_json() expects string argument".to_string(),
+            ))
+        }
+    };
+
+    parse_json_to_dataframe(json_string)
+}
+
+/// Parse CSV string into `DataFrame` with type inference
+/// Complexity: 9 (within Toyota Way limits)
+fn parse_csv_to_dataframe(csv: &str) -> Result<Value, InterpreterError> {
+    let lines: Vec<&str> = csv.trim().lines().collect();
+
+    if lines.is_empty() {
+        return Ok(Value::DataFrame { columns: vec![] });
+    }
+
+    // Parse header
+    let headers: Vec<String> = lines[0].split(',').map(|s| s.trim().to_string()).collect();
+
+    // Initialize columns
+    let mut columns: Vec<crate::runtime::DataFrameColumn> = headers
+        .iter()
+        .map(|name| crate::runtime::DataFrameColumn {
+            name: name.clone(),
+            values: Vec::new(),
+        })
+        .collect();
+
+    // Parse data rows with type inference
+    for line in lines.iter().skip(1) {
+        let values: Vec<&str> = line.split(',').map(str::trim).collect();
+
+        for (col_idx, value_str) in values.iter().enumerate() {
+            if col_idx < columns.len() {
+                let value = infer_value_type(value_str);
+                columns[col_idx].values.push(value);
+            }
+        }
+    }
+
+    Ok(Value::DataFrame { columns })
+}
+
+/// Parse JSON array into `DataFrame`
+/// Complexity: 9 (within Toyota Way limits)
+fn parse_json_to_dataframe(json_str: &str) -> Result<Value, InterpreterError> {
+    use std::collections::HashMap;
+
+    // Parse JSON (simple implementation - in production would use serde_json)
+    let json_str = json_str.trim();
+
+    if json_str == "[]" {
+        return Ok(Value::DataFrame { columns: vec![] });
+    }
+
+    if !json_str.starts_with('[') || !json_str.ends_with(']') {
+        return Err(InterpreterError::RuntimeError(
+            "DataFrame::from_json() expects JSON array".to_string(),
+        ));
+    }
+
+    // Extract objects from array (simple parser for now)
+    let objects = extract_json_objects(json_str)?;
+
+    if objects.is_empty() {
+        return Ok(Value::DataFrame { columns: vec![] });
+    }
+
+    // Collect all column names from first object
+    let column_names = extract_json_keys(&objects[0])?;
+
+    // Initialize columns
+    let mut columns_map: HashMap<String, Vec<Value>> = HashMap::new();
+    for name in &column_names {
+        columns_map.insert(name.clone(), Vec::new());
+    }
+
+    // Parse each object
+    for obj_str in &objects {
+        let key_values = parse_json_object(obj_str)?;
+        for (key, value) in key_values {
+            if let Some(col_values) = columns_map.get_mut(&key) {
+                col_values.push(value);
+            }
+        }
+    }
+
+    // Convert to DataFrame columns
+    let mut columns = Vec::new();
+    for name in column_names {
+        if let Some(values) = columns_map.remove(&name) {
+            columns.push(crate::runtime::DataFrameColumn { name, values });
+        }
+    }
+
+    Ok(Value::DataFrame { columns })
+}
+
+/// Infer Value type from string (int, float, or string)
+/// Complexity: 4 (within Toyota Way limits)
+fn infer_value_type(s: &str) -> Value {
+    // Try integer first
+    if let Ok(i) = s.parse::<i64>() {
+        return Value::Integer(i);
+    }
+
+    // Try float
+    if let Ok(f) = s.parse::<f64>() {
+        return Value::Float(f);
+    }
+
+    // Default to string
+    Value::from_string(s.to_string())
+}
+
+/// Extract JSON objects from array string (simplified parser)
+/// Complexity: 6 (within Toyota Way limits)
+fn extract_json_objects(json_str: &str) -> Result<Vec<String>, InterpreterError> {
+    let inner = &json_str[1..json_str.len() - 1].trim();
+
+    if inner.is_empty() {
+        return Ok(vec![]);
+    }
+
+    let mut objects = Vec::new();
+    let mut current = String::new();
+    let mut brace_count = 0;
+    let mut in_string = false;
+
+    for ch in inner.chars() {
+        match ch {
+            '"' => in_string = !in_string,
+            '{' if !in_string => brace_count += 1,
+            '}' if !in_string => {
+                brace_count -= 1;
+                current.push(ch);
+                if brace_count == 0 {
+                    objects.push(current.trim().to_string());
+                    current = String::new();
+                    continue;
+                }
+            }
+            ',' if !in_string && brace_count == 0 => continue,
+            _ => {}
+        }
+        if brace_count > 0 || ch == '{' {
+            current.push(ch);
+        }
+    }
+
+    Ok(objects)
+}
+
+/// Extract keys from a JSON object string
+/// Complexity: 5 (within Toyota Way limits)
+fn extract_json_keys(obj_str: &str) -> Result<Vec<String>, InterpreterError> {
+    let mut keys = Vec::new();
+    let inner = obj_str.trim().trim_start_matches('{').trim_end_matches('}');
+
+    for pair in inner.split(',') {
+        if let Some(colon_pos) = pair.find(':') {
+            let key = pair[..colon_pos].trim().trim_matches('"');
+            keys.push(key.to_string());
+        }
+    }
+
+    Ok(keys)
+}
+
+/// Parse JSON object into key-value pairs
+/// Complexity: 7 (within Toyota Way limits)
+fn parse_json_object(obj_str: &str) -> Result<Vec<(String, Value)>, InterpreterError> {
+    let mut pairs = Vec::new();
+    let inner = obj_str.trim().trim_start_matches('{').trim_end_matches('}');
+
+    for pair in inner.split(',') {
+        if let Some(colon_pos) = pair.find(':') {
+            let key = pair[..colon_pos].trim().trim_matches('"').to_string();
+            let value_str = pair[colon_pos + 1..].trim();
+
+            let value = if value_str.starts_with('"') {
+                // String value
+                let unquoted = value_str.trim_matches('"');
+                Value::from_string(unquoted.to_string())
+            } else if let Ok(i) = value_str.parse::<i64>() {
+                // Integer value
+                Value::Integer(i)
+            } else if let Ok(f) = value_str.parse::<f64>() {
+                // Float value
+                Value::Float(f)
+            } else {
+                // Default to string
+                Value::from_string(value_str.to_string())
+            };
+
+            pairs.push((key, value));
+        }
+    }
+
+    Ok(pairs)
 }
 
 #[cfg(test)]
