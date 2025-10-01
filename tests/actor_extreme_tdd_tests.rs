@@ -120,7 +120,7 @@ mod message_passing_tests {
 
     #[test]
     fn test_send_message_with_bang_operator() {
-        // ACTOR-001: Message passing with ! operator
+        // ACTOR-001: Message passing with ! operator (fire-and-forget)
         let mut interpreter = Interpreter::new();
 
         eval_code(
@@ -143,6 +143,33 @@ mod message_passing_tests {
             matches!(result, Value::Nil) || matches!(result, Value::Bool(true)),
             "! operator should return Nil or true"
         );
+    }
+
+    #[test]
+    fn test_query_message_with_actor_query_operator() {
+        // ACTOR-001: Query with <? operator (request-reply)
+        let mut interpreter = Interpreter::new();
+
+        eval_code(
+            &mut interpreter,
+            r#"
+            actor Counter {
+                count: i32
+                receive {
+                    Increment => { self.count = self.count + 1; }
+                    Get => { self.count }
+                }
+            }
+        "#,
+        )
+        .expect("Should define");
+
+        eval_code(&mut interpreter, "let counter = Counter.new(count: 0)").expect("Should create");
+        eval_code(&mut interpreter, "counter ! Increment").expect("Should increment");
+
+        // Query using <? operator
+        let result = eval_code(&mut interpreter, "counter <? Get").expect("Should query");
+        assert_eq!(result, Value::Integer(1), "<? operator should return value");
     }
 
     #[test]
