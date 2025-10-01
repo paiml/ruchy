@@ -1280,6 +1280,16 @@ impl Interpreter {
                     )))
                 }
             }
+            (Value::Object(ref fields), Value::String(ref key)) => {
+                fields.get(&**key).cloned().ok_or_else(|| {
+                    InterpreterError::RuntimeError(format!("Key '{key}' not found in object"))
+                })
+            }
+            (Value::ObjectMut(ref cell), Value::String(ref key)) => {
+                cell.borrow().get(&**key).cloned().ok_or_else(|| {
+                    InterpreterError::RuntimeError(format!("Key '{key}' not found in object"))
+                })
+            }
             _ => Err(InterpreterError::RuntimeError(format!(
                 "Cannot index {} with {}",
                 object_value.type_name(),
@@ -2736,9 +2746,16 @@ impl Interpreter {
 
         let receiver_value = self.eval_expr(receiver)?;
 
-        // Special handling for DataFrame filter method - don't pre-evaluate the condition
-        if matches!(receiver_value, Value::DataFrame { .. }) && method == "filter" {
-            return self.eval_dataframe_filter_method(&receiver_value, args);
+        // Special handling for DataFrame methods with closures - don't pre-evaluate the closure argument
+        if matches!(receiver_value, Value::DataFrame { .. }) {
+            match method {
+                "filter" => return self.eval_dataframe_filter_method(&receiver_value, args),
+                "with_column" => {
+                    return self.eval_dataframe_with_column_method(&receiver_value, args)
+                }
+                "transform" => return self.eval_dataframe_transform_method(&receiver_value, args),
+                _ => {}
+            }
         }
 
         // Special handling for actor send/ask methods - convert undefined identifiers to messages
@@ -4844,6 +4861,199 @@ impl Interpreter {
             Err(InterpreterError::RuntimeError(
                 "filter method can only be called on DataFrame".to_string(),
             ))
+        }
+    }
+
+    /// Special handler for `DataFrame` `with_column` method
+    /// Complexity: 9 (within Toyota Way limits)
+    fn eval_dataframe_with_column_method(
+        &mut self,
+        receiver: &Value,
+        args: &[Expr],
+    ) -> Result<Value, InterpreterError> {
+        if args.len() != 2 {
+            return Err(InterpreterError::RuntimeError(
+                "DataFrame.with_column() requires exactly 2 arguments (name, closure)".to_string(),
+            ));
+        }
+
+        // Evaluate the column name
+        let col_name = match self.eval_expr(&args[0])? {
+            Value::String(s) => s.to_string(),
+            _ => {
+                return Err(InterpreterError::RuntimeError(
+                    "DataFrame.with_column() expects string column name".to_string(),
+                ))
+            }
+        };
+
+        if let Value::DataFrame { columns } = receiver {
+            let closure = &args[1];
+
+            // Extract parameter name from closure
+            let param_name = if let ExprKind::Lambda { params, .. } = &closure.kind {
+                if params.len() != 1 {
+                    return Err(InterpreterError::RuntimeError(
+                        "with_column closure must have exactly 1 parameter".to_string(),
+                    ));
+                }
+                match &params[0].pattern {
+                    crate::frontend::ast::Pattern::Identifier(name) => name.clone(),
+                    _ => {
+                        return Err(InterpreterError::RuntimeError(
+                            "with_column closure must have simple identifier parameter".to_string(),
+                        ))
+                    }
+                }
+            } else {
+                return Err(InterpreterError::RuntimeError(
+                    "Expected lambda expression".to_string(),
+                ));
+            };
+
+            // Check if parameter name matches a column
+            let matching_col = columns.iter().find(|c| c.name == param_name);
+
+            let mut new_values = Vec::new();
+            let num_rows = columns.first().map_or(0, |c| c.values.len());
+
+            for row_idx in 0..num_rows {
+                let value_to_bind = if let Some(col) = matching_col {
+                    // Parameter name matches a column - bind that column's value
+                    col.values.get(row_idx).cloned().unwrap_or(Value::Nil)
+                } else {
+                    // Parameter name doesn't match - bind full row object
+                    let mut row = HashMap::new();
+                    for col in columns {
+                        if let Some(value) = col.values.get(row_idx) {
+                            row.insert(col.name.clone(), value.clone());
+                        }
+                    }
+                    Value::Object(std::rc::Rc::new(row))
+                };
+
+                // Evaluate closure with the appropriate value
+                let result = self.eval_closure_with_value(closure, &value_to_bind)?;
+                new_values.push(result);
+            }
+
+            // Create new DataFrame with additional column
+            let mut new_columns = columns.clone();
+            new_columns.push(crate::runtime::DataFrameColumn {
+                name: col_name,
+                values: new_values,
+            });
+
+            Ok(Value::DataFrame {
+                columns: new_columns,
+            })
+        } else {
+            Err(InterpreterError::RuntimeError(
+                "with_column method can only be called on DataFrame".to_string(),
+            ))
+        }
+    }
+
+    /// Special handler for `DataFrame` transform method
+    /// Complexity: 9 (within Toyota Way limits)
+    fn eval_dataframe_transform_method(
+        &mut self,
+        receiver: &Value,
+        args: &[Expr],
+    ) -> Result<Value, InterpreterError> {
+        if args.len() != 2 {
+            return Err(InterpreterError::RuntimeError(
+                "DataFrame.transform() requires exactly 2 arguments (column, closure)".to_string(),
+            ));
+        }
+
+        // Evaluate the column name
+        let col_name = match self.eval_expr(&args[0])? {
+            Value::String(s) => s.to_string(),
+            _ => {
+                return Err(InterpreterError::RuntimeError(
+                    "DataFrame.transform() expects string column name".to_string(),
+                ))
+            }
+        };
+
+        if let Value::DataFrame { columns } = receiver {
+            // Find the column to transform
+            let col_idx = columns
+                .iter()
+                .position(|c| c.name == col_name)
+                .ok_or_else(|| {
+                    InterpreterError::RuntimeError(format!(
+                        "Column '{col_name}' not found in DataFrame"
+                    ))
+                })?;
+
+            let closure = &args[1];
+            let mut new_columns = columns.clone();
+
+            // Transform each value in the column
+            let mut transformed_values = Vec::new();
+            for value in &columns[col_idx].values {
+                // Create a temporary environment with the value bound to the parameter
+                let result = self.eval_closure_with_value(closure, value)?;
+                transformed_values.push(result);
+            }
+
+            new_columns[col_idx].values = transformed_values;
+
+            Ok(Value::DataFrame {
+                columns: new_columns,
+            })
+        } else {
+            Err(InterpreterError::RuntimeError(
+                "transform method can only be called on DataFrame".to_string(),
+            ))
+        }
+    }
+
+    /// Evaluate a closure with a single value argument
+    /// Complexity: 7 (within Toyota Way limits)
+    fn eval_closure_with_value(
+        &mut self,
+        closure_expr: &Expr,
+        value: &Value,
+    ) -> Result<Value, InterpreterError> {
+        match &closure_expr.kind {
+            ExprKind::Lambda { params, body, .. } => {
+                if params.len() != 1 {
+                    return Err(InterpreterError::RuntimeError(
+                        "Transform closure must have exactly 1 parameter".to_string(),
+                    ));
+                }
+
+                // Extract parameter name from pattern
+                let param_name = match &params[0].pattern {
+                    crate::frontend::ast::Pattern::Identifier(name) => name.clone(),
+                    _ => {
+                        return Err(InterpreterError::RuntimeError(
+                            "Transform closure must have simple identifier parameter".to_string(),
+                        ))
+                    }
+                };
+
+                // Create new environment with parameter binding
+                let mut new_env = HashMap::new();
+                new_env.insert(param_name, value.clone());
+
+                // Push environment
+                self.env_push(new_env);
+
+                // Evaluate the body
+                let result = self.eval_expr(body)?;
+
+                // Pop environment
+                self.env_pop();
+
+                Ok(result)
+            }
+            _ => Err(InterpreterError::RuntimeError(
+                "Expected lambda expression".to_string(),
+            )),
         }
     }
 
