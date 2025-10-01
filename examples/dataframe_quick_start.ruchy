@@ -1,0 +1,21 @@
+// DataFrame Quick Start - Ruchy v3.64.0
+// Simple examples that work in REPL
+
+// Example 1: CSV Import and Analysis
+let csv = "product,units,price\nWidget,10,99\nGadget,5,149\nTool,15,79";
+let sales = DataFrame::from_csv_string(csv);
+let revenue = sales.with_column("revenue", row => row["units"] * row["price"]);
+let sorted = revenue.sort_by("revenue", true);
+
+// Example 2: Builder Pattern
+let df = DataFrame::new().column("name", ["Alice", "Bob"]).column("age", [25, 30]).build();
+let older = df.transform("age", a => a + 1);
+
+// Example 3: JSON Import
+let json = '[{"city": "NYC", "temp": 72}, {"city": "SF", "temp": 65}]';
+let weather = DataFrame::from_json(json);
+
+// Example 4: Method Chaining
+let pipeline = DataFrame::new().column("x", [3, 1, 2]).build().with_column("y", x => x * 10).sort_by("x");
+
+println("All DataFrame examples completed successfully!");

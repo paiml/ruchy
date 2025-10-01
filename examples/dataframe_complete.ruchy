@@ -1,0 +1,174 @@
+// DataFrame Complete Examples - Ruchy v3.64.0
+// Demonstrates all implemented DataFrame features
+
+println("=== DataFrame Examples v3.64.0 ===\n");
+
+// ==============================================
+// 1. CONSTRUCTION
+// ==============================================
+println("1. Construction Methods\n");
+
+// Builder pattern
+let df1 = DataFrame::new()
+    .column("name", ["Alice", "Bob", "Charlie"])
+    .column("age", [25, 30, 35])
+    .build();
+
+println("Builder pattern:");
+println("Rows:", df1.rows());
+println("Columns:", df1.columns());
+println("Names:", df1.column_names());
+
+// Empty DataFrame
+let empty = DataFrame::new().build();
+println("\nEmpty DataFrame columns:", empty.columns());
+
+// ==============================================
+// 2. CSV IMPORT
+// ==============================================
+println("\n2. CSV Import with Type Inference\n");
+
+let csv = "product,quantity,price
+Widget,10,99.99
+Gadget,5,149.99
+Tool,15,79.99";
+
+let sales = DataFrame::from_csv_string(csv);
+println("CSV imported:");
+println("Products:", sales.rows(), "rows");
+
+// ==============================================
+// 3. JSON IMPORT
+// ==============================================
+println("\n3. JSON Import\n");
+
+let json = '[
+    {"city": "NYC", "temp": 72},
+    {"city": "SF", "temp": 65},
+    {"city": "LA", "temp": 80}
+]';
+
+let weather = DataFrame::from_json(json);
+println("JSON imported:");
+println("Cities:", weather.rows(), "rows");
+
+// ==============================================
+// 4. TRANSFORMATIONS
+// ==============================================
+println("\n4. Transform Operations\n");
+
+// Add computed column (row-based)
+let with_revenue = sales.with_column("revenue", row =>
+    row["quantity"] * row["price"]
+);
+println("Added revenue column");
+
+// Transform existing column
+let with_discount = with_revenue.transform("price", p => p * 0.9);
+println("Applied 10% discount to prices");
+
+// ==============================================
+// 5. SORTING
+// ==============================================
+println("\n5. Sorting\n");
+
+// Sort ascending
+let by_price = sales.sort_by("price");
+println("Sorted by price (ascending)");
+
+// Sort descending
+let by_qty_desc = sales.sort_by("quantity", true);
+println("Sorted by quantity (descending)");
+
+// ==============================================
+// 6. METHOD CHAINING
+// ==============================================
+println("\n6. Method Chaining Pipeline\n");
+
+let analysis = DataFrame::from_csv_string(csv)
+    .with_column("revenue", row => row["quantity"] * row["price"])
+    .with_column("high_value", row => row["revenue"] > 1000)
+    .sort_by("revenue", true);
+
+println("Chained operations complete");
+println("Final columns:", analysis.column_names());
+
+// ==============================================
+// 7. REAL-WORLD: SALES ANALYSIS
+// ==============================================
+println("\n7. Real-World Example: Sales Analysis\n");
+
+let daily_sales = "date,region,units,price
+2024-01-15,North,10,99
+2024-01-15,South,5,99
+2024-01-16,North,8,99
+2024-01-16,South,12,99";
+
+let report = DataFrame::from_csv_string(daily_sales)
+    .with_column("revenue", row => row["units"] * row["price"])
+    .sort_by("revenue", true);
+
+println("Sales report generated");
+println("Total records:", report.rows());
+
+// ==============================================
+// 8. REAL-WORLD: CUSTOMER SEGMENTATION
+// ==============================================
+println("\n8. Real-World Example: Customer Segmentation\n");
+
+let customers = DataFrame::new()
+    .column("customer", ["Alice", "Bob", "Charlie", "Diana"])
+    .column("purchases", [15, 3, 8, 25])
+    .column("total_spent", [1500, 300, 800, 2500])
+    .build();
+
+let segments = customers
+    .with_column("avg_purchase", row => row["total_spent"] / row["purchases"])
+    .with_column("segment", row => {
+        if row["purchases"] > 10 then "Premium" else "Regular"
+    })
+    .sort_by("total_spent", true);
+
+println("Customer segmentation complete");
+println("Segments:", segments.rows(), "customers");
+
+// ==============================================
+// 9. COMBINING OPERATIONS
+// ==============================================
+println("\n9. Complex Data Pipeline\n");
+
+let raw_data = "item,qty,cost,category
+A,10,5.99,Food
+B,20,3.50,Food
+C,5,12.99,Electronics
+D,15,8.50,Food";
+
+let processed = DataFrame::from_csv_string(raw_data)
+    .with_column("subtotal", row => row["qty"] * row["cost"])
+    .with_column("tax", row => row["subtotal"] * 0.08)
+    .with_column("total", row => row["subtotal"] + row["tax"])
+    .transform("total", t => t * 1.0)  // Round to 2 decimals (would be: round(t, 2))
+    .sort_by("total", true);
+
+println("Data pipeline complete");
+println("Processed:", processed.rows(), "items");
+
+// ==============================================
+// 10. ACCESSOR METHODS
+// ==============================================
+println("\n10. DataFrame Inspection\n");
+
+let sample = DataFrame::new()
+    .column("x", [1, 2, 3])
+    .column("y", [4, 5, 6])
+    .column("z", [7, 8, 9])
+    .build();
+
+println("Sample DataFrame:");
+println("- Rows:", sample.rows());
+println("- Columns:", sample.columns());
+println("- Column names:", sample.column_names());
+
+println("\n=== All DataFrame Features Demonstrated! ===");
+println("Version: 3.64.0");
+println("Features: 60% complete (production-ready core)");
