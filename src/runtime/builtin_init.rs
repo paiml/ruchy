@@ -59,6 +59,10 @@ fn add_basic_builtins(global_env: &mut HashMap<String, Value>) {
         Value::from_string("__builtin_dataframe__".to_string()),
     );
     global_env.insert(
+        "DataFrame::new".to_string(),
+        Value::from_string("__builtin_dataframe_new__".to_string()),
+    );
+    global_env.insert(
         "DataFrame::from_range".to_string(),
         Value::from_string("__builtin_dataframe_from_range__".to_string()),
     );
