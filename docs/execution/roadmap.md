@@ -37,7 +37,16 @@
   - Chapter 15 (Binary Compilation): 1/4 working (25%)
   - Chapter 5 (Control Flow): 11/17 working (65%)
 
-**🎯 NEXT PRIORITIES - CHOOSE ONE** (See Priority Options below)
+**🎯 NEXT PRIORITIES - CHOOSE ONE**
+
+**See [NEXT_SPRINT_OPTIONS.md](./NEXT_SPRINT_OPTIONS.md) for detailed analysis of 5 priority options.**
+
+Quick Summary:
+1. **DataFrames** (5-7 days) - Highest value, 0% → 100%, data science use cases
+2. **Error Handling** (3-5 days) - Achieves 100% book compatibility!
+3. **Control Flow** (2-4 days) - Quick wins, fundamental features
+4. **WASM Enhancement** (4-6 days) - Strategic, browser deployment
+5. **Performance** (5-8 days) - 2-5x speed improvement
 
 ---
 
