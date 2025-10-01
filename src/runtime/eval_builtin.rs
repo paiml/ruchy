@@ -48,6 +48,9 @@ pub fn eval_builtin_function(
         // Time functions
         "__builtin_sleep__" => Ok(Some(eval_sleep(args)?)),
 
+        // DataFrame functions
+        "__builtin_dataframe_new__" => Ok(Some(eval_dataframe_new(args)?)),
+
         // Unknown builtin
         _ => Ok(None),
     }
@@ -499,6 +502,33 @@ fn eval_sleep(args: &[Value]) -> Result<Value, InterpreterError> {
 
     std::thread::sleep(std::time::Duration::from_millis(millis));
     Ok(Value::Nil)
+}
+
+/// `DataFrame::new()` - Create a new `DataFrame` builder
+///
+/// Returns a builder object that accumulates columns via `.column()` calls
+/// and finalizes with `.build()` to create the `DataFrame`.
+///
+/// # Complexity
+/// Cyclomatic complexity: 2 (within Toyota Way limits)
+fn eval_dataframe_new(args: &[Value]) -> Result<Value, InterpreterError> {
+    if !args.is_empty() {
+        return Err(InterpreterError::RuntimeError(
+            "DataFrame::new() takes no arguments".to_string(),
+        ));
+    }
+
+    // Create a builder object with:
+    // - __type: "DataFrameBuilder" marker
+    // - __columns: empty array to accumulate columns
+    let mut builder = std::collections::HashMap::new();
+    builder.insert(
+        "__type".to_string(),
+        Value::from_string("DataFrameBuilder".to_string()),
+    );
+    builder.insert("__columns".to_string(), Value::from_array(vec![]));
+
+    Ok(Value::Object(std::rc::Rc::new(builder)))
 }
 
 #[cfg(test)]
