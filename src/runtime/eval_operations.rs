@@ -253,7 +253,7 @@ fn sub_values(left: &Value, right: &Value) -> Result<Value, InterpreterError> {
 /// Multiply two values
 ///
 /// # Complexity
-/// Cyclomatic complexity: 5 (within Toyota Way limits)
+/// Cyclomatic complexity: 7 (within Toyota Way limits)
 fn mul_values(left: &Value, right: &Value) -> Result<Value, InterpreterError> {
     match (left, right) {
         (Value::Integer(a), Value::Integer(b)) => {
@@ -271,6 +271,16 @@ fn mul_values(left: &Value, right: &Value) -> Result<Value, InterpreterError> {
         {
             #[allow(clippy::cast_precision_loss)]
             Ok(Value::Float(a * *b as f64))
+        }
+        (Value::String(s), Value::Integer(n)) => {
+            // String repetition: "hello" * 3 => "hellohellohello"
+            // Negative or zero => empty string (Python behavior)
+            if *n <= 0 {
+                Ok(Value::String(std::rc::Rc::from("")))
+            } else {
+                let repeated = s.repeat(*n as usize);
+                Ok(Value::String(std::rc::Rc::from(repeated.as_str())))
+            }
         }
         _ => Err(InterpreterError::TypeError(format!(
             "Cannot multiply {} and {}",
