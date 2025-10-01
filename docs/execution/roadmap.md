@@ -29,9 +29,16 @@
 
 **Total Book Compat Tests**: 52 (50 passing + 2 ignored)
 **Real-World Examples**: 60/67 passing from ruchy-book (89.6%)
-**Known Issues**:
-- Interpreter: Option pattern matching, impl constructors (both work in transpiler)
-- Transpiler: Match with void branches tries to display () (affects 2 examples)
+
+**🎯 NEXT: Push to 97% Compatibility (v3.62.11)**
+**Target**: Fix 3 remaining issues to achieve 97% book compatibility (65/67 examples)
+**Effort**: 2-3 days
+**Status**: Ready to start
+
+**Issues to Fix**:
+1. **FIX-001**: Match with void branches (transpiler) - 2 examples
+2. **FIX-002**: Option<T> pattern matching (interpreter) - 1 test
+3. **FIX-003**: impl block constructors (interpreter) - 1 test
 
 ## 🎯 **COMPLETED: v3.62.9 - 100% LANGUAGE COMPATIBILITY ACHIEVEMENT** 🎉🚀
 
