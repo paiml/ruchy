@@ -229,6 +229,13 @@ make qa-help
 - [Contributing Guide](CONTRIBUTING.md)
 - [Architecture Overview](docs/architecture/README.md)
 
+## Related Resources
+
+- **[Ruchy Book](https://github.com/noahgift/ruchy-book)** - Comprehensive language guide with 259 examples
+- **[Rosetta Ruchy](https://github.com/noahgift/rosetta-ruchy)** - 100+ algorithm implementations showcasing language features
+- **[Ruchy REPL Demos](https://github.com/noahgift/ruchy-repl-demos)** - 180+ interactive REPL examples and tutorials
+- **[Ruchy Ruchy](https://github.com/noahgift/ruchyruchy)** - Self-hosting compiler demos and integration tests
+
 ## Contributing
 
 We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details on our code of conduct and development process.
