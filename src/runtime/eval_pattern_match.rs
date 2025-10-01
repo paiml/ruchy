@@ -11,7 +11,7 @@ use crate::runtime::{InterpreterError, Value};
 /// Try to match a pattern against a value, returning bindings if successful
 ///
 /// # Complexity
-/// Cyclomatic complexity: 9 (within Toyota Way limits)
+/// Cyclomatic complexity: 10 (at Toyota Way limit - added Some/None support)
 pub fn try_pattern_match(
     pattern: &Pattern,
     value: &Value,
@@ -52,6 +52,8 @@ pub fn try_pattern_match(
                 Ok(None)
             }
         }
+        Pattern::Some(inner_pattern) => try_match_some_pattern(inner_pattern, value, eval_literal),
+        Pattern::None => try_match_none_pattern(value),
         _ => Ok(None), // Other patterns not yet implemented
     }
 }
@@ -136,6 +138,40 @@ fn try_match_or_pattern(
     for pattern in patterns {
         if let Some(bindings) = try_pattern_match(pattern, value, &eval_literal)? {
             return Ok(Some(bindings));
+        }
+    }
+    Ok(None)
+}
+
+/// Try to match a Some pattern
+///
+/// # Complexity
+/// Cyclomatic complexity: 5 (within Toyota Way limits)
+fn try_match_some_pattern(
+    inner_pattern: &Pattern,
+    value: &Value,
+    eval_literal: &dyn Fn(&Literal) -> Value,
+) -> Result<Option<Vec<(String, Value)>>, InterpreterError> {
+    if let Value::EnumVariant { variant_name, data } = value {
+        if variant_name == "Some" {
+            if let Some(values) = data {
+                if values.len() == 1 {
+                    return try_pattern_match(inner_pattern, &values[0], eval_literal);
+                }
+            }
+        }
+    }
+    Ok(None)
+}
+
+/// Try to match a None pattern
+///
+/// # Complexity
+/// Cyclomatic complexity: 3 (within Toyota Way limits)
+fn try_match_none_pattern(value: &Value) -> Result<Option<Vec<(String, Value)>>, InterpreterError> {
+    if let Value::EnumVariant { variant_name, data } = value {
+        if variant_name == "None" && data.is_none() {
+            return Ok(Some(vec![]));
         }
     }
     Ok(None)
@@ -368,6 +404,60 @@ mod tests {
         assert!(result.is_some());
 
         let value = Value::Integer(4);
+        let result = try_pattern_match(&pattern, &value, &test_eval_literal).unwrap();
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_some_pattern_match() {
+        let pattern = Pattern::Some(Box::new(Pattern::Identifier("x".to_string())));
+        let value = Value::EnumVariant {
+            variant_name: "Some".to_string(),
+            data: Some(vec![Value::Integer(42)]),
+        };
+
+        let result = try_pattern_match(&pattern, &value, &test_eval_literal).unwrap();
+        assert!(result.is_some());
+        let bindings = result.unwrap();
+        assert_eq!(bindings.len(), 1);
+        assert_eq!(bindings[0].0, "x");
+        assert_eq!(bindings[0].1, Value::Integer(42));
+    }
+
+    #[test]
+    fn test_some_pattern_no_match_on_none() {
+        let pattern = Pattern::Some(Box::new(Pattern::Identifier("x".to_string())));
+        let value = Value::EnumVariant {
+            variant_name: "None".to_string(),
+            data: None,
+        };
+
+        let result = try_pattern_match(&pattern, &value, &test_eval_literal).unwrap();
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_none_pattern_match() {
+        let pattern = Pattern::None;
+        let value = Value::EnumVariant {
+            variant_name: "None".to_string(),
+            data: None,
+        };
+
+        let result = try_pattern_match(&pattern, &value, &test_eval_literal).unwrap();
+        assert!(result.is_some());
+        let bindings = result.unwrap();
+        assert!(bindings.is_empty());
+    }
+
+    #[test]
+    fn test_none_pattern_no_match_on_some() {
+        let pattern = Pattern::None;
+        let value = Value::EnumVariant {
+            variant_name: "Some".to_string(),
+            data: Some(vec![Value::Integer(42)]),
+        };
+
         let result = try_pattern_match(&pattern, &value, &test_eval_literal).unwrap();
         assert!(result.is_none());
     }
