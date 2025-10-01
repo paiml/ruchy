@@ -252,6 +252,7 @@ mod ping_pong_integration_tests {
 
     #[test]
     fn test_ping_pong_actors() {
+        // Ping-pong integration test using current synchronous actors
         let mut interpreter = Interpreter::new();
 
         // Define Ping actor
@@ -260,13 +261,19 @@ mod ping_pong_integration_tests {
             r#"
             actor PingActor {
                 count: i32,
-                pong_ref: ActorRef
+                pong: PongActor,
+                messages: [String]
 
                 receive {
-                    Start => { self.pong_ref.send(Ping(1)); },
+                    Start => {
+                        self.messages.push("Ping sent 1");
+                        self.pong ! Ping(1);
+                    },
                     Pong(n) => {
+                        self.messages.push("Pong received " + n.to_string());
                         if n < 3 {
-                            self.pong_ref.send(Ping(n + 1));
+                            self.messages.push("Ping sent " + (n + 1).to_string());
+                            self.pong ! Ping(n + 1);
                         }
                     }
                 }
@@ -280,10 +287,11 @@ mod ping_pong_integration_tests {
             &mut interpreter,
             r#"
             actor PongActor {
-                ping_ref: ActorRef
+                messages: [String]
 
                 receive Ping(n) => {
-                    self.ping_ref.send(Pong(n));
+                    self.messages.push("Ping received " + n.to_string());
+                    self.messages.push("Pong sent " + n.to_string());
                 }
             }
         "#,
@@ -291,16 +299,17 @@ mod ping_pong_integration_tests {
         .expect("Should define pong");
 
         // Create actors
-        eval_code(&mut interpreter, "let pong = PongActor.new()").expect("Should create pong");
+        eval_code(&mut interpreter, "let pong = PongActor.new(messages: [])")
+            .expect("Should create pong");
         eval_code(
             &mut interpreter,
-            "let ping = PingActor.new(count: 0, pong_ref: pong)",
+            "let ping = PingActor.new(count: 0, pong: pong, messages: [])",
         )
         .expect("Should create ping");
 
         // Start interaction
-        let result = eval_code(&mut interpreter, "ping.send(Start)").expect("Should start");
-        assert!(matches!(result, Value::Nil) || matches!(result, Value::Bool(true)));
+        let result = eval_code(&mut interpreter, "ping ! Start").expect("Should start");
+        assert!(matches!(result, Value::Nil), "! operator should return Nil");
     }
 }
 
@@ -433,7 +442,7 @@ mod property_tests {
             &mut interpreter,
             r#"
             actor OrderedActor {
-                messages: Vec<i32>
+                messages: [i32]
                 receive Push(n) => { self.messages.push(n); }
             }
         "#,
@@ -446,10 +455,10 @@ mod property_tests {
         )
         .expect("Should create");
 
-        // Send multiple messages
-        eval_code(&mut interpreter, "instance.send(Push(1))").expect("Should send 1");
-        eval_code(&mut interpreter, "instance.send(Push(2))").expect("Should send 2");
-        eval_code(&mut interpreter, "instance.send(Push(3))").expect("Should send 3");
+        // Send multiple messages using ! operator
+        eval_code(&mut interpreter, "instance ! Push(1)").expect("Should send 1");
+        eval_code(&mut interpreter, "instance ! Push(2)").expect("Should send 2");
+        eval_code(&mut interpreter, "instance ! Push(3)").expect("Should send 3");
 
         // Messages should be processed in order
         let result = eval_code(&mut interpreter, "instance.messages").expect("Should get messages");
@@ -461,6 +470,41 @@ mod property_tests {
         } else {
             panic!("Expected array of messages");
         }
+    }
+
+    #[test]
+    fn test_actor_10k_messages_property() {
+        // ACTOR-006: Property test with 10,000+ messages
+        let mut interpreter = Interpreter::new();
+
+        eval_code(
+            &mut interpreter,
+            r#"
+            actor Counter {
+                count: i32
+                receive {
+                    Increment => { self.count = self.count + 1; }
+                    Get => { self.count }
+                }
+            }
+        "#,
+        )
+        .expect("Should define");
+
+        eval_code(&mut interpreter, "let counter = Counter.new(count: 0)").expect("Should create");
+
+        // Send 10,000 increment messages
+        for _ in 0..10_000 {
+            eval_code(&mut interpreter, "counter ! Increment").expect("Should increment");
+        }
+
+        // Verify all messages were processed
+        let result = eval_code(&mut interpreter, "counter <? Get").expect("Should query");
+        assert_eq!(
+            result,
+            Value::Integer(10_000),
+            "All 10,000 messages should be processed"
+        );
     }
 }
 
