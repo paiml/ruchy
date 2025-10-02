@@ -265,7 +265,9 @@ impl WasmEmitter {
             ExprKind::Function { body, .. } => {
                 self.build_symbol_table(body);
             }
-            ExprKind::While { condition, body } => {
+            ExprKind::While {
+                condition, body, ..
+            } => {
                 self.build_symbol_table(condition);
                 self.build_symbol_table(body);
             }
@@ -474,7 +476,9 @@ impl WasmEmitter {
                 instructions.push(Instruction::End);
                 Ok(instructions)
             }
-            ExprKind::While { condition, body } => {
+            ExprKind::While {
+                condition, body, ..
+            } => {
                 let mut instructions = vec![];
                 // Loop instruction
                 instructions.push(Instruction::Loop(wasm_encoder::BlockType::Empty));
@@ -709,9 +713,9 @@ impl WasmEmitter {
                         .as_ref()
                         .is_some_and(|e| self.has_return_with_value(e))
             }
-            ExprKind::While { condition, body } => {
-                self.has_return_with_value(condition) || self.has_return_with_value(body)
-            }
+            ExprKind::While {
+                condition, body, ..
+            } => self.has_return_with_value(condition) || self.has_return_with_value(body),
             ExprKind::Function { .. } => false, // Functions are compiled separately
             ExprKind::Let { value, body, .. } => {
                 self.has_return_with_value(value) || self.has_return_with_value(body)
@@ -738,9 +742,9 @@ impl WasmEmitter {
                     || self.needs_locals(then_branch)
                     || else_branch.as_ref().is_some_and(|e| self.needs_locals(e))
             }
-            ExprKind::While { condition, body } => {
-                self.needs_locals(condition) || self.needs_locals(body)
-            }
+            ExprKind::While {
+                condition, body, ..
+            } => self.needs_locals(condition) || self.needs_locals(body),
             ExprKind::Binary { left, right, .. } => {
                 self.needs_locals(left) || self.needs_locals(right)
             }

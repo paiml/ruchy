@@ -1079,7 +1079,9 @@ fn calculate_complexity(ast: &ruchy::frontend::ast::Expr) -> usize {
                 }
                 complexity
             }
-            ExprKind::While { condition, body } => {
+            ExprKind::While {
+                condition, body, ..
+            } => {
                 // Loops add 1 to complexity
                 1 + count_branches(condition) + count_branches(body)
             }
@@ -1088,6 +1090,7 @@ fn calculate_complexity(ast: &ruchy::frontend::ast::Expr) -> usize {
                 pattern: _,
                 iter,
                 body,
+                ..
             } => {
                 // Loops add 1 to complexity
                 1 + count_branches(iter) + count_branches(body)
@@ -1259,11 +1262,14 @@ fn calculate_max_nesting(expr: &ruchy::frontend::ast::Expr) -> usize {
                 pattern: _,
                 iter: _,
                 body,
+                ..
             } => {
                 // For loop increases nesting by 1
                 nesting_helper(body, current_depth + 1)
             }
-            ExprKind::While { condition: _, body } => {
+            ExprKind::While {
+                condition: _, body, ..
+            } => {
                 // While loop increases nesting by 1
                 nesting_helper(body, current_depth + 1)
             }

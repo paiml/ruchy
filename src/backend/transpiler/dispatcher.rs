@@ -190,8 +190,11 @@ impl Transpiler {
                 pattern,
                 iter,
                 body,
+                ..
             } => self.transpile_for(var, pattern.as_ref(), iter, body),
-            ExprKind::While { condition, body } => self.transpile_while(condition, body),
+            ExprKind::While {
+                condition, body, ..
+            } => self.transpile_while(condition, body),
             ExprKind::IfLet {
                 pattern,
                 expr,
@@ -202,8 +205,9 @@ impl Transpiler {
                 pattern,
                 expr,
                 body,
+                ..
             } => self.transpile_while_let(pattern, expr, body),
-            ExprKind::Loop { body } => self.transpile_loop(body),
+            ExprKind::Loop { body, .. } => self.transpile_loop(body),
             ExprKind::TryCatch {
                 try_block,
                 catch_clauses,

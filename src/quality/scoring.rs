@@ -570,7 +570,9 @@ fn analyze_expr(
                 analyze_expr(else_expr, metrics, depth + 1, nesting + 1);
             }
         }
-        ExprKind::While { condition, body } => {
+        ExprKind::While {
+            condition, body, ..
+        } => {
             metrics.cyclomatic_complexity += 1;
             analyze_expr(condition, metrics, depth + 1, nesting + 1);
             analyze_expr(body, metrics, depth + 1, nesting + 1);
@@ -870,7 +872,9 @@ fn is_diverging_expr(expr: &crate::frontend::ast::Expr) -> bool {
 }
 fn has_potential_infinite_loops(ast: &crate::frontend::ast::Expr) -> bool {
     match &ast.kind {
-        ExprKind::While { condition, body } => {
+        ExprKind::While {
+            condition, body, ..
+        } => {
             // Check for trivial infinite loops: while true { ... }
             if let ExprKind::Literal(crate::frontend::ast::Literal::Bool(true)) = &condition.kind {
                 // Check if body has break statement
@@ -963,6 +967,7 @@ fn analyze_complexity_recursive(
         | ExprKind::While {
             condition: iter,
             body,
+            ..
         } => {
             if current_nesting > 0 {
                 *nested_loops += 1;

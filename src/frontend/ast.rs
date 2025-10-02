@@ -566,21 +566,25 @@ pub enum ExprKind {
         operation: DataFrameOp,
     },
     For {
+        label: Option<String>,
         var: String,              // Keep for backward compatibility
         pattern: Option<Pattern>, // New: Support destructuring patterns
         iter: Box<Expr>,
         body: Box<Expr>,
     },
     While {
+        label: Option<String>,
         condition: Box<Expr>,
         body: Box<Expr>,
     },
     WhileLet {
+        label: Option<String>,
         pattern: Pattern,
         expr: Box<Expr>,
         body: Box<Expr>,
     },
     Loop {
+        label: Option<String>,
         body: Box<Expr>,
     },
     Range {

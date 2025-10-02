@@ -1183,9 +1183,12 @@ impl Interpreter {
                 pattern,
                 iter,
                 body,
+                ..
             } => self.eval_for_loop(var, pattern.as_ref(), iter, body),
-            ExprKind::While { condition, body } => self.eval_while_loop(condition, body),
-            ExprKind::Loop { body } => self.eval_loop(body),
+            ExprKind::While {
+                condition, body, ..
+            } => self.eval_while_loop(condition, body),
+            ExprKind::Loop { body, .. } => self.eval_loop(body),
             ExprKind::Match { expr, arms } => self.eval_match(expr, arms),
             ExprKind::Break { label: _, value } => {
                 // Evaluate the break value (default to Nil if not provided)
