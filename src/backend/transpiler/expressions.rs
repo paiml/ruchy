@@ -6,7 +6,7 @@ use crate::frontend::ast::{
     BinaryOp::{self},
     Expr, ExprKind, Literal, StringPart, UnaryOp,
 };
-use anyhow::{bail, Result};
+use anyhow::Result;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 impl Transpiler {
