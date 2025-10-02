@@ -256,7 +256,8 @@ coverage:
 	@echo "🔍 Checking for cargo-llvm-cov..."
 	@which cargo-llvm-cov > /dev/null 2>&1 || (echo "❌ cargo-llvm-cov not found. Installing..." && cargo install cargo-llvm-cov --locked)
 	@echo "🧹 Cleaning old coverage data..."
-	@cargo llvm-cov clean
+	@rm -rf target/llvm-cov target/llvm-cov-target 2>/dev/null || true
+	@cargo llvm-cov clean --workspace 2>/dev/null || true
 	@mkdir -p target/llvm-cov
 	@echo "🧪 Running tests with coverage instrumentation..."
 	@cargo llvm-cov --all-features --workspace --ignore-filename-regex 'tests?\.rs' 2>&1 | tee target/llvm-cov/test-output.txt || true
