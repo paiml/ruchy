@@ -2,14 +2,23 @@
 
 ## 📝 **SESSION CONTEXT FOR RESUMPTION**
 
-**Last Active**: 2025-10-02 (v3.66.0 - WASM SPRINT COMPLETE! 🎉)
-**Current Sprint**: WASM Compiler 100% - All 26 Tests Passing! ✨
-**Integration Status**: 📊 **Chapter 17: 100%, Chapter 5: 91%, WASM: 100%** 🚀
-**Overall Test Status**: 🎉 **3409 tests passing (26 WASM + 3383 base), zero regressions**
+**Last Active**: 2025-10-02 (v3.66.0 - CONTROL FLOW PROGRESS! 🎉)
+**Current Sprint**: Control Flow Completion - 42/44 Tests Passing! ✨
+**Integration Status**: 📊 **Chapter 17: 100%, Chapter 5: 95.5%, WASM: 100%** 🚀
+**Overall Test Status**: 🎉 **3411 tests passing (42 control flow, 26 WASM + 3343 base)**
 **Quality Status**: Production pforge coverage pattern (mold linker fix), clippy warnings fixed ✅
-**Critical Issues**: Flaky test_impl_block_constructor (HashMap ordering) 🔧
+**Critical Issues**: 2 control flow tests remaining (labeled loops, Result patterns) 🔧
 
-**Latest Updates** (Session 2025-10-02 v3.66.0 - WASM COMPLETE):
+**Latest Updates** (Session 2025-10-02 v3.66.0 - CONTROL FLOW PROGRESS):
+- [CONTROL-003] ✅ **COMPLETE**: Loop expression and break with value - 40→42 tests (95.5%)
+  - Implemented `loop { ... }` infinite loop expression
+  - Added `break <expr>` value support to AST
+  - Updated parser to parse break values
+  - Updated interpreter to evaluate break values
+  - eval_loop complexity: 5 (within Toyota Way limits)
+  - Remaining: 2 tests (labeled loops, Result pattern matching)
+
+**Previous Updates** (Session 2025-10-02 v3.66.0 - WASM COMPLETE):
 - [WASM-003] ✅ **COMPLETE**: Multi-local variable tracking - 100% (26/26 tests)
   - Extended SymbolTable to track both type AND local index
   - Variable name → local index mapping (pi→0, radius→1, area→2)
