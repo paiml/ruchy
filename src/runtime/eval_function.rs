@@ -163,7 +163,11 @@ where
     }
 
     // Evaluate function body with bound environment
-    eval_with_env(body, &call_env)
+    // Catch InterpreterError::Return and extract the value (early return support)
+    match eval_with_env(body, &call_env) {
+        Err(InterpreterError::Return(val)) => Ok(val),
+        other => other,
+    }
 }
 
 /// Evaluate a closure call with parameter binding
@@ -212,7 +216,11 @@ where
     }
 
     // Evaluate function body with bound environment
-    eval_with_env(&closure.body, &call_env)
+    // Catch InterpreterError::Return and extract the value (early return support)
+    match eval_with_env(&closure.body, &call_env) {
+        Err(InterpreterError::Return(val)) => Ok(val),
+        other => other,
+    }
 }
 
 /// Bind a parameter pattern to an argument value

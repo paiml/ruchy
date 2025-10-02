@@ -94,6 +94,9 @@ where
         // Execute body
         match eval_expr(body) {
             Ok(value) => last_value = value,
+            Err(InterpreterError::Break(_)) => break,
+            Err(InterpreterError::Continue) => {}
+            Err(InterpreterError::Return(_)) => return eval_expr(body), // Propagate Return
             Err(InterpreterError::RuntimeError(msg)) if msg == "break" => break,
             Err(InterpreterError::RuntimeError(msg)) if msg == "continue" => {}
             Err(e) => return Err(e),
@@ -142,6 +145,9 @@ where
         // Execute body
         match eval_expr(body) {
             Ok(value) => last_value = value,
+            Err(InterpreterError::Break(_)) => break,
+            Err(InterpreterError::Continue) => {}
+            Err(InterpreterError::Return(_)) => return eval_expr(body), // Propagate Return
             Err(InterpreterError::RuntimeError(msg)) if msg == "break" => break,
             Err(InterpreterError::RuntimeError(msg)) if msg == "continue" => {}
             Err(e) => return Err(e),
@@ -171,6 +177,9 @@ where
 
         match eval_expr(body) {
             Ok(value) => last_value = value,
+            Err(InterpreterError::Break(_)) => break,
+            Err(InterpreterError::Continue) => {}
+            Err(InterpreterError::Return(_)) => return eval_expr(body), // Propagate Return
             Err(InterpreterError::RuntimeError(msg)) if msg == "break" => break,
             Err(InterpreterError::RuntimeError(msg)) if msg == "continue" => {}
             Err(e) => return Err(e),
