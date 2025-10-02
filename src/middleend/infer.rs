@@ -1034,6 +1034,11 @@ impl InferenceContext {
                 // The default value will be used if the actual value doesn't match
                 self.infer_pattern(pattern, expected_ty)
             }
+            Pattern::Mut(inner) => {
+                // Mut patterns have the same type as their inner pattern
+                // Mutability is a runtime concern, not a type concern
+                self.infer_pattern(inner, expected_ty)
+            }
         }
     }
     fn infer_for(&mut self, var: &str, iter: &Expr, body: &Expr) -> Result<MonoType> {

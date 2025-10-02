@@ -1586,6 +1586,13 @@ impl Interpreter {
         env.insert(name, value);
     }
 
+    /// Set a mutable variable in the environment
+    /// Currently an alias for `env_set` as Ruchy's dynamic runtime doesn't enforce immutability
+    /// The mut keyword is primarily for documentation and future static analysis
+    fn env_set_mut(&mut self, name: String, value: Value) {
+        self.env_set(name, value);
+    }
+
     /// Push a new environment onto the stack
     fn env_push(&mut self, env: HashMap<String, Value>) {
         self.env_stack.push(env);
@@ -2506,6 +2513,44 @@ impl Interpreter {
     }
 
     /// Evaluate a let pattern expression (array/tuple destructuring)
+    /// Extract names of identifiers marked as mutable in a pattern
+    /// Complexity: 4 (within Toyota Way limits)
+    fn extract_mut_names(pattern: &Pattern) -> std::collections::HashSet<String> {
+        let mut mut_names = std::collections::HashSet::new();
+
+        fn walk_pattern(
+            p: &Pattern,
+            mut_names: &mut std::collections::HashSet<String>,
+            is_mut: bool,
+        ) {
+            match p {
+                Pattern::Mut(inner) => walk_pattern(inner, mut_names, true),
+                Pattern::Identifier(name) if is_mut => {
+                    mut_names.insert(name.clone());
+                }
+                Pattern::Tuple(patterns) | Pattern::List(patterns) => {
+                    for pat in patterns {
+                        walk_pattern(pat, mut_names, is_mut);
+                    }
+                }
+                Pattern::Struct { fields, .. } => {
+                    for field in fields {
+                        if let Some(ref pat) = field.pattern {
+                            walk_pattern(pat, mut_names, is_mut);
+                        }
+                    }
+                }
+                Pattern::AtBinding { pattern, .. } => walk_pattern(pattern, mut_names, is_mut),
+                _ => {}
+            }
+        }
+
+        walk_pattern(pattern, &mut mut_names, false);
+        mut_names
+    }
+
+    /// Evaluate let pattern with support for mut destructuring
+    /// Complexity: 6 (within Toyota Way limits)
     fn eval_let_pattern(
         &mut self,
         pattern: &Pattern,
@@ -2515,11 +2560,18 @@ impl Interpreter {
         // Evaluate the right-hand side value
         let rhs_value = self.eval_expr(value)?;
 
+        // Extract names marked as mutable in the pattern
+        let mut_names = Self::extract_mut_names(pattern);
+
         // Try to match the pattern against the value
         if let Some(bindings) = self.try_pattern_match(pattern, &rhs_value)? {
-            // Bind pattern variables directly to current scope (like regular let)
+            // Bind pattern variables, using mutable binding for names wrapped in Pattern::Mut
             for (name, val) in bindings {
-                self.env_set(name, val);
+                if mut_names.contains(&name) {
+                    self.env_set_mut(name.clone(), val);
+                } else {
+                    self.env_set(name, val);
+                }
             }
 
             // If body is unit (empty), return the value like REPL does
