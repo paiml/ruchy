@@ -2,7 +2,9 @@ use ruchy::Parser;
 
 #[allow(clippy::print_stdout)]
 fn main() {
-    let code = r#"println("Result: {}", x)"#;
+    let code = r#"fun test() {
+    return "hello";
+}"#;
     let mut parser = Parser::new(code);
     match parser.parse() {
         Ok(ast) => {
