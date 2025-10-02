@@ -1933,7 +1933,8 @@ mod tests {
                 | Pattern::None
                 | Pattern::QualifiedName(_)
                 | Pattern::AtBinding { .. }
-                | Pattern::WithDefault { .. } => {} // Simple patterns
+                | Pattern::WithDefault { .. }
+                | Pattern::Mut(_) => {} // Simple patterns
             }
         }
     }
