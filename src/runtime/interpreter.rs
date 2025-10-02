@@ -2406,19 +2406,21 @@ impl Interpreter {
     /// Complexity: ≤8
     fn eval_for_array_iteration(
         &mut self,
-        var: &str,
+        loop_var: &str,
         arr: &[Value],
         body: &Expr,
     ) -> Result<Value, InterpreterError> {
         let mut last_value = Value::nil();
 
         for item in arr {
-            self.set_variable(var, item.clone());
+            self.set_variable(loop_var, item.clone());
             match self.eval_loop_body_with_control_flow(body) {
                 Ok(value) => last_value = value,
-                Err(LoopControlOrError::Break(val)) => return Ok(val),
+                Err(LoopControlOrError::Break(break_val)) => return Ok(break_val),
                 Err(LoopControlOrError::Continue) => {}
-                Err(LoopControlOrError::Return(val)) => return Err(InterpreterError::Return(val)),
+                Err(LoopControlOrError::Return(return_val)) => {
+                    return Err(InterpreterError::Return(return_val))
+                }
                 Err(LoopControlOrError::Error(e)) => return Err(e),
             }
         }
@@ -2430,7 +2432,7 @@ impl Interpreter {
     /// Complexity: ≤9
     fn eval_for_range_iteration(
         &mut self,
-        var: &str,
+        loop_var: &str,
         start: &Value,
         end: &Value,
         inclusive: bool,
@@ -2440,12 +2442,14 @@ impl Interpreter {
         let mut last_value = Value::nil();
 
         for i in self.create_range_iterator(start_val, end_val, inclusive) {
-            self.set_variable(var, Value::Integer(i));
+            self.set_variable(loop_var, Value::Integer(i));
             match self.eval_loop_body_with_control_flow(body) {
                 Ok(value) => last_value = value,
-                Err(LoopControlOrError::Break(val)) => return Ok(val),
+                Err(LoopControlOrError::Break(break_val)) => return Ok(break_val),
                 Err(LoopControlOrError::Continue) => {}
-                Err(LoopControlOrError::Return(val)) => return Err(InterpreterError::Return(val)),
+                Err(LoopControlOrError::Return(return_val)) => {
+                    return Err(InterpreterError::Return(return_val))
+                }
                 Err(LoopControlOrError::Error(e)) => return Err(e),
             }
         }
