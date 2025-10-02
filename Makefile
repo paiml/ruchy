@@ -250,63 +250,45 @@ clean-coverage:
 	@$(MAKE) coverage
 	@echo "✅ Fresh coverage report generated"
 
-# Generate comprehensive test coverage using cargo-llvm-cov (Canonical Approach - COVERAGE.md)
+# Generate comprehensive test coverage using cargo-llvm-cov (Proven pforge pattern - COVERAGE.md)
+# Note: Temporarily moves ~/.cargo/config.toml to avoid mold linker interference
 coverage:
-	@echo "📊 Running comprehensive test coverage analysis (production two-phase pattern)..."
-	@echo "🔍 Checking for cargo-llvm-cov..."
-	@which cargo-llvm-cov > /dev/null 2>&1 || (echo "❌ cargo-llvm-cov not found. Installing..." && cargo install cargo-llvm-cov --locked)
-	@echo "🔍 Checking for cargo-nextest..."
-	@which cargo-nextest > /dev/null 2>&1 || (echo "❌ cargo-nextest not found. Installing..." && cargo install cargo-nextest --locked)
+	@echo "📊 Running comprehensive test coverage analysis..."
+	@echo "🔍 Checking for cargo-llvm-cov and cargo-nextest..."
+	@which cargo-llvm-cov > /dev/null 2>&1 || (echo "📦 Installing cargo-llvm-cov..." && cargo install cargo-llvm-cov --locked)
+	@which cargo-nextest > /dev/null 2>&1 || (echo "📦 Installing cargo-nextest..." && cargo install cargo-nextest --locked)
 	@echo "🧹 Cleaning old coverage data..."
-	@cargo llvm-cov clean --workspace 2>/dev/null || true
-	@mkdir -p target/llvm-cov
-	@echo "🧪 Phase 1: Running tests with coverage instrumentation (--no-report)..."
-	@cargo llvm-cov --no-report nextest --all-features --workspace 2>&1 | tee target/llvm-cov/test-output.txt || true
-	@echo ""
-	@echo "📊 Phase 2: Generating coverage reports from collected .profraw data..."
-	@cargo llvm-cov report --lcov --output-path target/llvm-cov/lcov.info 2>/dev/null || true
+	@cargo llvm-cov clean --workspace
+	@mkdir -p target/coverage
+	@echo "⚙️  Temporarily disabling global cargo config (mold breaks coverage)..."
+	@test -f ~/.cargo/config.toml && mv ~/.cargo/config.toml ~/.cargo/config.toml.cov-backup || true
+	@echo "🧪 Phase 1: Running tests with instrumentation (no report)..."
+	@cargo llvm-cov --no-report nextest --no-tests=warn --all-features --workspace 2>&1 | tee target/coverage/test-output.txt
+	@echo "📊 Phase 2: Generating coverage reports..."
+	@cargo llvm-cov report --html --output-dir target/coverage/html
+	@cargo llvm-cov report --lcov --output-path target/coverage/lcov.info
+	@echo "⚙️  Restoring global cargo config..."
+	@test -f ~/.cargo/config.toml.cov-backup && mv ~/.cargo/config.toml.cov-backup ~/.cargo/config.toml || true
 	@echo ""
 	@echo "📊 Coverage Summary:"
 	@echo "=================="
-	@cargo llvm-cov report --summary-only 2>/dev/null || echo "Unable to generate summary"
+	@cargo llvm-cov report --summary-only
 	@echo ""
 	@echo "💡 COVERAGE INSIGHTS:"
-	@echo "- HTML report: cargo llvm-cov report --html --open (no test re-run!)"
-	@echo "- LCOV file: target/llvm-cov/lcov.info (for CI/CD integration)"
-	@echo "- Two-phase pattern allows multiple report formats without re-running tests"
+	@echo "- HTML report: target/coverage/html/index.html"
+	@echo "- LCOV file: target/coverage/lcov.info"
+	@echo "- Open HTML: make coverage-open"
 	@echo ""
 
-# Quick coverage check for development workflow
-coverage-quick:
-	@./scripts/quick-coverage.sh
-
-# Generate HTML coverage report
-coverage-html:
-	@echo "📊 Generating HTML coverage report..."
-	@rm -rf target/coverage-html
-	@mkdir -p target/coverage-html
-	@CARGO_INCREMENTAL=0 \
-	RUSTFLAGS="-C instrument-coverage" \
-	LLVM_PROFILE_FILE="target/coverage-html/ruchy-%p-%m.profraw" \
-	cargo test --lib --quiet
-	@grcov target/coverage-html \
-		--binary-path ./target/debug/deps \
-		--source-dir . \
-		--output-type html \
-		--output-path ./target/coverage-html/report \
-		--ignore-not-existing \
-		--ignore "/*" \
-		--ignore "tests/*" \
-		--ignore "benches/*" \
-		--ignore "examples/*"
-	@echo "✅ HTML report generated: target/coverage-html/report/index.html"
-	@echo "📂 Open with: xdg-open target/coverage-html/report/index.html"
-
 # Open coverage report in browser
-coverage-open: coverage-html
-	@xdg-open target/coverage-html/report/index.html 2>/dev/null || \
-		open target/coverage-html/report/index.html 2>/dev/null || \
-		echo "Please open: target/coverage-html/report/index.html"
+coverage-open:
+	@if [ -f target/coverage/html/index.html ]; then \
+		xdg-open target/coverage/html/index.html 2>/dev/null || \
+		open target/coverage/html/index.html 2>/dev/null || \
+		echo "Please open: target/coverage/html/index.html"; \
+	else \
+		echo "❌ Run 'make coverage' first to generate the HTML report"; \
+	fi
 
 # WASM and Notebook Coverage Analysis (LLVM-based, >80% target, A+ TDG)
 coverage-wasm-notebook:
