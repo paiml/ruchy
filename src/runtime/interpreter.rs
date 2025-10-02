@@ -1187,11 +1187,10 @@ impl Interpreter {
             ExprKind::While { condition, body } => self.eval_while_loop(condition, body),
             ExprKind::Match { expr, arms } => self.eval_match(expr, arms),
             ExprKind::Break { label: _ } => {
-                Err(InterpreterError::RuntimeError("break".to_string()))
+                // Break with nil value (Rust-style loop expressions support break with value)
+                Err(InterpreterError::Break(Value::Nil))
             }
-            ExprKind::Continue { label: _ } => {
-                Err(InterpreterError::RuntimeError("continue".to_string()))
-            }
+            ExprKind::Continue { label: _ } => Err(InterpreterError::Continue),
             ExprKind::Return { value } => self.eval_return_expr(value.as_deref()),
             ExprKind::TryCatch {
                 try_block,
