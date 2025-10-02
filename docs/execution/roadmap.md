@@ -2,28 +2,30 @@
 
 ## 📝 **SESSION CONTEXT FOR RESUMPTION**
 
-**Last Active**: 2025-10-02 (v3.65.0 - SPRINTS 1-2 COMPLETE! 🎉)
-**Current Sprint**: Sprint 1-2 Complete - Planning Next Sprint ⏭️
-**Integration Status**: 📊 **Chapter 17: 100%, Chapter 5: 91%**
-**Overall Test Status**: 🎉 **+13 tests passing, zero regressions**
-**Quality Status**: All functions <10 complexity, PMAT quality gates passing ✅
-**Critical Issues**: #27 WASM (P0), #26 Turbofish Lambda (Parser) 🚨
+**Last Active**: 2025-10-02 (v3.65.3 - QUALITY + COVERAGE SPRINT COMPLETE! 🎉)
+**Current Sprint**: Quality Infrastructure Complete - WASM Completion Ready ⏭️
+**Integration Status**: 📊 **Chapter 17: 100%, Chapter 5: 91%, WASM: 88.5%**
+**Overall Test Status**: 🎉 **3383 tests passing, zero regressions**
+**Quality Status**: Production pforge coverage pattern (mold linker fix), clippy warnings fixed ✅
+**Critical Issues**: Flaky test_impl_block_constructor (HashMap ordering), WASM multi-local (3 tests) 🔧
 
-**Latest Updates** (Session 2025-10-02 v3.65.0 - ERROR HANDLING + CONTROL FLOW COMPLETE):
+**Latest Updates** (Session 2025-10-02 v3.65.3 - QUALITY + COVERAGE COMPLETE):
+- [QUALITY-008] ✅ **COMPLETE**: Production two-phase coverage (actix-web/tokio)
+- [QUALITY-009] ✅ **COMPLETE**: Fixed 6 clippy similar_names warnings
+- [QUALITY-010] ✅ **COMPLETE**: Adopted proven pforge coverage pattern
+  - Handles mold linker interference (temporarily moves ~/.cargo/config.toml)
+  - Generates HTML (target/coverage/html) and LCOV outputs
+  - Updated COVERAGE.md with Five Whys analysis and troubleshooting
+  - Added coverage-open target
+- [WASM-002] ✅ **PARTIAL**: Symbol table implementation - 88.5% (23/26 tests)
+- [BUG-INVESTIGATION] 🔍 **IN PROGRESS**: Flaky test_impl_block_constructor
+  - Non-deterministic: Point::new(3, 4) sometimes returns p.x = 4 instead of 3
+  - Suspected HashMap iteration order in struct field shorthand
+  - Needs investigation of closure parameter binding and field evaluation order
+
+**Previous Updates** (Session 2025-10-02 v3.65.0 - ERROR HANDLING + CONTROL FLOW COMPLETE):
 - [SPRINT-1] ✅ **COMPLETE**: Chapter 17 Error Handling - 100% (commit 5accb2a4)
-  - Early return statements with InterpreterError::Return
-  - Type casting operator (as i32, as f64, etc.)
-  - Parser enhancement for 'from' keyword
-  - 11/11 Chapter 17 tests passing
-  - 6 new TDD test files created
 - [SPRINT-2] ✅ **COMPLETE**: Chapter 5 Control Flow - 91% (commit 6da317d2)
-  - Break/continue in for loops fixed
-  - Proper InterpreterError variant usage
-  - 40/44 control flow tests passing
-  - Simple 2-line fix with major impact
-- 🚨 **NEW ISSUES OPENED**:
-  - #27 [CRITICAL] WASM Compiler - 100% failure rate, invalid modules (P0)
-  - #26 [BUG] Turbofish syntax fails in lambda blocks (parser limitation)
 
 **Previous Updates** (Session 2025-10-02 v3.64.1 - DATAFRAME COMPLETE + PARSER FIXES):
 - [DF-006] ✅ **COMPLETE**: Aggregation methods (commit 34f8fa53)
