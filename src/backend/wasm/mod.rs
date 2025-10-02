@@ -17,8 +17,50 @@ enum WasmType {
     F64,
 }
 
+/// Symbol table for tracking variable types across scopes
+/// Complexity: <10 per method (Toyota Way)
+#[derive(Debug, Clone)]
+struct SymbolTable {
+    scopes: Vec<std::collections::HashMap<String, WasmType>>,
+}
+
+impl SymbolTable {
+    fn new() -> Self {
+        Self {
+            scopes: vec![std::collections::HashMap::new()],
+        }
+    }
+
+    fn push_scope(&mut self) {
+        self.scopes.push(std::collections::HashMap::new());
+    }
+
+    fn pop_scope(&mut self) {
+        if self.scopes.len() > 1 {
+            self.scopes.pop();
+        }
+    }
+
+    fn insert(&mut self, name: String, ty: WasmType) {
+        if let Some(scope) = self.scopes.last_mut() {
+            scope.insert(name, ty);
+        }
+    }
+
+    fn lookup(&self, name: &str) -> Option<WasmType> {
+        // Search from innermost to outermost scope
+        for scope in self.scopes.iter().rev() {
+            if let Some(&ty) = scope.get(name) {
+                return Some(ty);
+            }
+        }
+        None
+    }
+}
+
 pub struct WasmEmitter {
     module: Module,
+    symbols: std::cell::RefCell<SymbolTable>,
 }
 impl WasmEmitter {
     /// # Examples
@@ -30,6 +72,7 @@ impl WasmEmitter {
     pub fn new() -> Self {
         Self {
             module: Module::new(),
+            symbols: std::cell::RefCell::new(SymbolTable::new()),
         }
     }
     /// Emit a complete WASM module from a Ruchy AST expression
@@ -43,6 +86,9 @@ impl WasmEmitter {
     /// let result = instance.emit(&expr);
     /// ```
     pub fn emit(&self, expr: &Expr) -> Result<Vec<u8>, String> {
+        // Build symbol table from entire expression tree
+        self.build_symbol_table(expr);
+
         let mut module = Module::new();
         // Collect all function definitions
         let func_defs = self.collect_functions(expr);
@@ -58,14 +104,33 @@ impl WasmEmitter {
             }
             // Also add a type for the main function if there's non-function code
             let main_expr = self.get_non_function_code(expr);
-            if main_expr.is_some() {
-                types.function(vec![], vec![]); // Main function type
+            if let Some(ref main_expr_val) = main_expr {
+                // Infer the actual return type for main
+                if self.expression_produces_value(main_expr_val) {
+                    let return_ty = self.infer_type(main_expr_val);
+                    let wasm_ty = match return_ty {
+                        WasmType::I32 => wasm_encoder::ValType::I32,
+                        WasmType::F32 => wasm_encoder::ValType::F32,
+                        WasmType::I64 => wasm_encoder::ValType::I64,
+                        WasmType::F64 => wasm_encoder::ValType::F64,
+                    };
+                    types.function(vec![], vec![wasm_ty]);
+                } else {
+                    types.function(vec![], vec![]);
+                }
             }
         } else {
             // Single implicit main function
-            let has_return_value = self.has_return_with_value(expr);
-            if has_return_value {
-                types.function(vec![], vec![wasm_encoder::ValType::I32]);
+            // Infer the actual return type
+            if self.expression_produces_value(expr) {
+                let return_ty = self.infer_type(expr);
+                let wasm_ty = match return_ty {
+                    WasmType::I32 => wasm_encoder::ValType::I32,
+                    WasmType::F32 => wasm_encoder::ValType::F32,
+                    WasmType::I64 => wasm_encoder::ValType::I64,
+                    WasmType::F64 => wasm_encoder::ValType::F64,
+                };
+                types.function(vec![], vec![wasm_ty]);
             } else {
                 types.function(vec![], vec![]);
             }
@@ -110,7 +175,15 @@ impl WasmEmitter {
             // Compile each function
             for (_name, _params, body) in &func_defs {
                 let locals = if self.needs_locals(body) {
-                    vec![(1, wasm_encoder::ValType::I32)]
+                    // Infer the type of the first local based on the first Let expression
+                    let local_ty = self.infer_first_local_type(body);
+                    let wasm_ty = match local_ty {
+                        WasmType::I32 => wasm_encoder::ValType::I32,
+                        WasmType::F32 => wasm_encoder::ValType::F32,
+                        WasmType::I64 => wasm_encoder::ValType::I64,
+                        WasmType::F64 => wasm_encoder::ValType::F64,
+                    };
+                    vec![(1, wasm_ty)]
                 } else {
                     vec![]
                 };
@@ -129,45 +202,115 @@ impl WasmEmitter {
             let main_expr = self.get_non_function_code(expr);
             if let Some(main_expr) = main_expr {
                 let locals = if self.needs_locals(&main_expr) {
-                    vec![(1, wasm_encoder::ValType::I32)]
+                    // Infer the type of the first local based on the first Let expression
+                    let local_ty = self.infer_first_local_type(&main_expr);
+                    let wasm_ty = match local_ty {
+                        WasmType::I32 => wasm_encoder::ValType::I32,
+                        WasmType::F32 => wasm_encoder::ValType::F32,
+                        WasmType::I64 => wasm_encoder::ValType::I64,
+                        WasmType::F64 => wasm_encoder::ValType::F64,
+                    };
+                    vec![(1, wasm_ty)]
                 } else {
                     vec![]
                 };
                 let mut func = Function::new(locals);
                 let instructions = self.lower_expression(&main_expr)?;
-                let has_instructions = !instructions.is_empty();
                 for instr in instructions {
                     func.instruction(&instr);
                 }
-                if has_instructions && self.expression_produces_value(&main_expr) {
-                    func.instruction(&Instruction::Drop);
-                }
+                // No Drop needed - type signature matches return type
                 func.instruction(&Instruction::End);
                 codes.function(&func);
             }
         } else {
             // Single implicit main function
             let locals = if self.needs_locals(expr) {
-                vec![(1, wasm_encoder::ValType::I32)]
+                // Infer the type of the first local based on the first Let expression
+                let local_ty = self.infer_first_local_type(expr);
+                let wasm_ty = match local_ty {
+                    WasmType::I32 => wasm_encoder::ValType::I32,
+                    WasmType::F32 => wasm_encoder::ValType::F32,
+                    WasmType::I64 => wasm_encoder::ValType::I64,
+                    WasmType::F64 => wasm_encoder::ValType::F64,
+                };
+                vec![(1, wasm_ty)]
             } else {
                 vec![]
             };
             let mut func = Function::new(locals);
             let instructions = self.lower_expression(expr)?;
-            let has_instructions = !instructions.is_empty();
-            let has_return_value = self.has_return_with_value(expr);
             for instr in instructions {
                 func.instruction(&instr);
             }
-            if has_instructions && self.expression_produces_value(expr) && !has_return_value {
-                func.instruction(&Instruction::Drop);
-            }
+            // No Drop needed - type signature matches return type
             func.instruction(&Instruction::End);
             codes.function(&func);
         }
         module.section(&codes);
         Ok(module.finish())
     }
+
+    /// Build symbol table by scanning expression tree for let bindings
+    /// Complexity: 7 (within <10 limit)
+    fn build_symbol_table(&self, expr: &Expr) {
+        match &expr.kind {
+            ExprKind::Let {
+                name, value, body, ..
+            } => {
+                let value_ty = self.infer_type(value);
+                self.symbols.borrow_mut().insert(name.clone(), value_ty);
+                self.build_symbol_table(body);
+            }
+            ExprKind::Block(exprs) => {
+                for e in exprs {
+                    self.build_symbol_table(e);
+                }
+            }
+            ExprKind::Binary { left, right, .. } => {
+                self.build_symbol_table(left);
+                self.build_symbol_table(right);
+            }
+            ExprKind::If {
+                condition,
+                then_branch,
+                else_branch,
+            } => {
+                self.build_symbol_table(condition);
+                self.build_symbol_table(then_branch);
+                if let Some(else_expr) = else_branch {
+                    self.build_symbol_table(else_expr);
+                }
+            }
+            ExprKind::Function { body, .. } => {
+                self.build_symbol_table(body);
+            }
+            ExprKind::While { condition, body } => {
+                self.build_symbol_table(condition);
+                self.build_symbol_table(body);
+            }
+            _ => {} // Other expression types don't introduce bindings
+        }
+    }
+
+    /// Infer the type of the first local variable (simplified for single-local approach)
+    /// Complexity: 4 (within <10 limit)
+    fn infer_first_local_type(&self, expr: &Expr) -> WasmType {
+        match &expr.kind {
+            ExprKind::Let { value, .. } => self.infer_type(value),
+            ExprKind::Block(exprs) => {
+                // Find first Let in block
+                for e in exprs {
+                    if matches!(e.kind, ExprKind::Let { .. }) {
+                        return self.infer_first_local_type(e);
+                    }
+                }
+                WasmType::I32 // Default
+            }
+            _ => WasmType::I32, // Default if no Let found
+        }
+    }
+
     /// Infer the WASM type of an expression
     /// Complexity: 9 (within <10 limit)
     fn infer_type(&self, expr: &Expr) -> WasmType {
@@ -175,14 +318,27 @@ impl WasmEmitter {
             ExprKind::Literal(Literal::Integer(_)) => WasmType::I32,
             ExprKind::Literal(Literal::Float(_)) => WasmType::F32,
             ExprKind::Literal(Literal::Bool(_)) => WasmType::I32,
-            ExprKind::Binary { left, right, .. } => {
-                let left_ty = self.infer_type(left);
-                let right_ty = self.infer_type(right);
-                // Type promotion: f32 > i32 (promote to float if either operand is float)
-                if left_ty == WasmType::F32 || right_ty == WasmType::F32 {
-                    WasmType::F32
-                } else {
-                    WasmType::I32
+            ExprKind::Binary { op, left, right } => {
+                // Comparison operations always return i32 (boolean)
+                use crate::frontend::ast::BinaryOp;
+                match op {
+                    BinaryOp::Equal
+                    | BinaryOp::NotEqual
+                    | BinaryOp::Less
+                    | BinaryOp::LessEqual
+                    | BinaryOp::Greater
+                    | BinaryOp::GreaterEqual
+                    | BinaryOp::Gt => WasmType::I32,
+                    _ => {
+                        // Arithmetic: Type promotion (f32 > i32)
+                        let left_ty = self.infer_type(left);
+                        let right_ty = self.infer_type(right);
+                        if left_ty == WasmType::F32 || right_ty == WasmType::F32 {
+                            WasmType::F32
+                        } else {
+                            WasmType::I32
+                        }
+                    }
                 }
             }
             ExprKind::Let { body, .. } => {
@@ -193,23 +349,17 @@ impl WasmEmitter {
                 }
             }
             ExprKind::Identifier(name) => {
-                // Try to infer from context - look for let bindings in parent scope
-                // For now, default to i32 (proper solution needs symbol table)
-                self.infer_identifier_type(name, expr)
+                // Look up in global symbol table
+                self.symbols.borrow().lookup(name).unwrap_or(WasmType::I32)
+            }
+            ExprKind::Block(exprs) => {
+                // Return type of last expression in block
+                exprs.last().map_or(WasmType::I32, |e| self.infer_type(e))
             }
             ExprKind::Call { .. } => WasmType::I32, // Default to i32
             ExprKind::Unary { operand, .. } => self.infer_type(operand),
             _ => WasmType::I32, // Default to i32
         }
-    }
-
-    /// Infer identifier type by searching for let binding
-    /// Complexity: 6 (within <10 limit)
-    fn infer_identifier_type(&self, _name: &str, _expr: &Expr) -> WasmType {
-        // TODO: Implement proper symbol table
-        // For now, this is a placeholder that returns i32
-        // A full implementation would track variable bindings
-        WasmType::I32
     }
 
     /// Lower a Ruchy expression to WASM instructions
@@ -393,9 +543,24 @@ impl WasmEmitter {
                 // Emit unary operation
                 match op {
                     crate::frontend::ast::UnaryOp::Negate => {
-                        // Negate by subtracting from 0
-                        instructions.insert(0, Instruction::I32Const(0));
-                        instructions.push(Instruction::I32Sub);
+                        // Type-aware negation
+                        let operand_ty = self.infer_type(operand);
+                        match operand_ty {
+                            WasmType::I32 => {
+                                instructions.insert(0, Instruction::I32Const(0));
+                                instructions.push(Instruction::I32Sub);
+                            }
+                            WasmType::F32 => {
+                                instructions.push(Instruction::F32Neg);
+                            }
+                            WasmType::I64 => {
+                                instructions.insert(0, Instruction::I64Const(0));
+                                instructions.push(Instruction::I64Sub);
+                            }
+                            WasmType::F64 => {
+                                instructions.push(Instruction::F64Neg);
+                            }
+                        }
                     }
                     crate::frontend::ast::UnaryOp::Not => {
                         // Logical not: compare with 0
@@ -555,7 +720,7 @@ impl WasmEmitter {
     }
     /// Check if an expression needs local variables
     fn needs_locals(&self, expr: &Expr) -> bool {
-        match &expr.kind {
+        let result = match &expr.kind {
             ExprKind::Let { .. } => true,
             ExprKind::Identifier(_) => true,
             ExprKind::Function { .. } => true,
@@ -576,7 +741,8 @@ impl WasmEmitter {
                 self.needs_locals(left) || self.needs_locals(right)
             }
             _ => false,
-        }
+        };
+        result
     }
     /// Check if an expression produces a value on the stack
     fn expression_produces_value(&self, expr: &Expr) -> bool {
