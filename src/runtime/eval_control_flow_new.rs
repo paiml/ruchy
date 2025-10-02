@@ -418,7 +418,7 @@ where
 /// Execute iteration body with loop control handling
 /// Complexity: ≤5
 fn execute_iteration_step<F1, F2>(
-    var: &str,
+    loop_var: &str,
     value: Value,
     with_variable: &mut F2,
     eval_expr: &mut F1,
@@ -432,13 +432,13 @@ where
         &mut dyn FnMut(&Expr) -> Result<Value, InterpreterError>,
     ) -> Result<Value, InterpreterError>,
 {
-    match with_variable(var, value, eval_expr) {
-        Ok(val) => {
-            *last_val = val;
+    match with_variable(loop_var, value, eval_expr) {
+        Ok(result_val) => {
+            *last_val = result_val;
             Ok(true) // Continue iteration
         }
-        Err(InterpreterError::Break(val)) => {
-            *last_val = val;
+        Err(InterpreterError::Break(break_val)) => {
+            *last_val = break_val;
             Ok(false) // Stop iteration
         }
         Err(InterpreterError::Continue) => Ok(true), // Continue iteration
