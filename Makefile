@@ -252,24 +252,28 @@ clean-coverage:
 
 # Generate comprehensive test coverage using cargo-llvm-cov (Canonical Approach - COVERAGE.md)
 coverage:
-	@echo "📊 Running comprehensive test coverage analysis with cargo-llvm-cov..."
+	@echo "📊 Running comprehensive test coverage analysis (production two-phase pattern)..."
 	@echo "🔍 Checking for cargo-llvm-cov..."
 	@which cargo-llvm-cov > /dev/null 2>&1 || (echo "❌ cargo-llvm-cov not found. Installing..." && cargo install cargo-llvm-cov --locked)
+	@echo "🔍 Checking for cargo-nextest..."
+	@which cargo-nextest > /dev/null 2>&1 || (echo "❌ cargo-nextest not found. Installing..." && cargo install cargo-nextest --locked)
 	@echo "🧹 Cleaning old coverage data..."
-	@rm -rf target/llvm-cov target/llvm-cov-target 2>/dev/null || true
 	@cargo llvm-cov clean --workspace 2>/dev/null || true
 	@mkdir -p target/llvm-cov
-	@echo "🧪 Running tests with coverage instrumentation..."
-	@cargo llvm-cov --all-features --workspace --ignore-filename-regex 'tests?\.rs' 2>&1 | tee target/llvm-cov/test-output.txt || true
+	@echo "🧪 Phase 1: Running tests with coverage instrumentation (--no-report)..."
+	@cargo llvm-cov --no-report nextest --all-features --workspace 2>&1 | tee target/llvm-cov/test-output.txt || true
+	@echo ""
+	@echo "📊 Phase 2: Generating coverage reports from collected .profraw data..."
+	@cargo llvm-cov report --lcov --output-path target/llvm-cov/lcov.info 2>/dev/null || true
 	@echo ""
 	@echo "📊 Coverage Summary:"
 	@echo "=================="
-	@cargo llvm-cov --all-features --workspace --ignore-filename-regex 'tests?\.rs' --summary-only 2>/dev/null || echo "Unable to generate summary"
+	@cargo llvm-cov report --summary-only 2>/dev/null || echo "Unable to generate summary"
 	@echo ""
 	@echo "💡 COVERAGE INSIGHTS:"
-	@echo "- HTML report: Run 'cargo llvm-cov --html --open' for detailed analysis"
-	@echo "- LCOV export: Run 'cargo llvm-cov --lcov --output-path lcov.info' for CI/CD"
-	@echo "- Focus on modules with <70% coverage"
+	@echo "- HTML report: cargo llvm-cov report --html --open (no test re-run!)"
+	@echo "- LCOV file: target/llvm-cov/lcov.info (for CI/CD integration)"
+	@echo "- Two-phase pattern allows multiple report formats without re-running tests"
 	@echo ""
 
 # Quick coverage check for development workflow

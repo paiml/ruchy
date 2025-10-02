@@ -30,12 +30,12 @@ quick-check = """sh -c '
     cargo clippy -- -D warnings -W clippy::cognitive_complexity
 '"""
 
-# Coverage aliases - Toyota Way: Easy access to quality metrics
-cov = "llvm-cov --html"
-cov-report = "llvm-cov report"
-cov-json = "llvm-cov --json"
-cov-lcov = "llvm-cov --lcov --output-path lcov.info"
-cov-open = "llvm-cov --html --open"
+# Coverage aliases - Production two-phase pattern (actix-web/tokio/serde)
+cov = "llvm-cov --no-report nextest"
+cov-report = "llvm-cov report --html --open"
+cov-lcov = "llvm-cov report --lcov --output-path lcov.info"
+cov-clean = "llvm-cov clean --workspace"
+cov-summary = "llvm-cov report --summary-only"
 
 [build]
 # Optimize build for test runs
