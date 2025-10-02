@@ -4,7 +4,163 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
-## [3.64.1] - 2025-10-01 - DataFrame Book Integration (DF-BOOK-001)
+## [3.64.1] - 2025-10-02 - DataFrame Sprint Complete + Parser Fixes
+
+### 🎉 Major Milestone: DataFrame Implementation 100% Complete
+
+Completed the final DataFrame tickets (DF-006, DF-007) with 34 new TDD tests:
+
+#### ✅ DF-006: DataFrame Aggregation Methods (20 tests)
+Implemented statistical aggregation methods:
+
+**New Methods**:
+- `.mean()` - Calculate average of all numeric values
+- `.max()` - Find maximum numeric value
+- `.min()` - Find minimum numeric value
+- `.sum()` - Sum all numeric values (already existed, verified)
+
+**Features**:
+- All methods skip non-numeric values (strings, booleans)
+- Return integers when result is whole number, floats otherwise
+- Empty DataFrame `.mean()` returns 0 (avoid division by zero)
+- `.max()` and `.min()` return error if no numeric values found
+- Consistent zero-argument API
+
+**Examples**:
+```ruchy
+let df = DataFrame::new()
+    .column("age", [25, 30, 35])
+    .column("score", [85.5, 90.0, 92.5])
+    .build();
+
+df.mean()  // Returns 59.66666... (average of all values)
+df.max()   // Returns 92.5
+df.min()   // Returns 25
+df.sum()   // Returns 358
+```
+
+**Tests**: 20 tests in `tests/dataframe_aggregation_tests.rs`
+- 3 sum verification tests
+- 5 mean tests (basic, decimals, multiple columns, skip non-numeric, empty)
+- 5 max tests (basic, floats, multiple columns, negatives, skip non-numeric)
+- 5 min tests (basic, floats, multiple columns, negatives, skip non-numeric)
+- 2 edge case tests (single value, identical values)
+
+**Complexity**: All functions ≤8 (Toyota Way <10 limit) ✅
+
+#### ✅ DF-007: DataFrame Export Methods (14 tests)
+Implemented data export functionality:
+
+**New Methods**:
+- `.to_csv()` - Export to CSV format (header + data rows)
+- `.to_json()` - Export to JSON array of objects
+
+**Features**:
+- CSV format: Comma-separated with header row
+- JSON format: Array of objects `[{"col1": val1, ...}, ...]`
+- Empty DataFrames: CSV returns `""`, JSON returns `"[]"`
+- Both methods take zero arguments
+- Proper numeric formatting (integers, floats)
+
+**Examples**:
+```ruchy
+let df = DataFrame::new()
+    .column("name", ["Alice", "Bob"])
+    .column("age", [25, 30])
+    .build();
+
+df.to_csv()   // Returns "name,age\nAlice,25\nBob,30\n"
+df.to_json()  // Returns '[{"name":"Alice","age":25},{"name":"Bob","age":30}]'
+```
+
+**Tests**: 14 tests in `tests/dataframe_export_tests.rs`
+- 7 CSV tests (basic, numeric, floats, empty, single col/row, special chars)
+- 6 JSON tests (basic, numeric, floats, empty, single col/row)
+- 1 consistency test
+
+**Complexity**: All functions ≤8 (Toyota Way <10 limit) ✅
+
+### 🐛 Parser Bug Fixes
+
+Fixed critical parser issues improving language compatibility:
+
+#### ✅ Issue #23: 'from' Reserved Keyword - Breaking Change
+**Problem**: `from` became reserved for future import syntax but had poor error messages
+
+**Solution**:
+- Enhanced parser error with actionable migration guidance
+- Created comprehensive migration guide (`docs/migration/FROM_KEYWORD_MIGRATION.md`)
+- Provides context-specific alternatives (source, from_vertex, start_node, sender, etc.)
+
+**Error Message Improvement**:
+```
+Before: "Function parameters must be simple identifiers"
+
+After: 'from' is a reserved keyword (for future import syntax).
+Suggestion: Use 'from_vertex', 'source', 'start_node', or similar instead.
+
+Example:
+✗ fun shortest_path(from, to) { ... }  // Error
+✓ fun shortest_path(source, target) { ... }  // OK
+
+See: https://github.com/paiml/ruchy/issues/23
+```
+
+**Tests**: 13 regression tests in `tests/from_keyword_regression.rs`
+
+#### ✅ Issue #25: mut in Tuple Destructuring
+**Problem**: Parser didn't support `let (mut x, mut y) = ...` syntax
+
+**Solution**:
+- Added `Pattern::Mut(Box<Pattern>)` to AST
+- Updated parser to consume `Token::Mut` in tuple patterns
+- Implemented mutable binding tracking in interpreter
+- Added transpiler support for Rust `mut` keyword
+
+**Now Working**:
+```ruchy
+let (mut x, mut y) = (10, 20);
+x = x + 5;
+y = y + 10;
+[x, y]  // Returns [15, 30]
+```
+
+**Tests**: 9 tests in `tests/mut_destructuring_regression.rs` (7 passing, 2 ignored for future list/struct patterns)
+
+**Complexity**: All new functions ≤9 (Toyota Way <10 limit) ✅
+
+### 📊 DataFrame Sprint Summary
+
+**Total Implementation**: 7/7 tickets complete (100%)
+- DF-001: DataFrame literal evaluation (9 tests) ✅
+- DF-002: Constructor API (11 tests) ✅
+- DF-003: CSV/JSON import (8 tests) ✅
+- DF-004: Transform operations (11 tests) ✅
+- DF-005: Filter method (10 tests) ✅
+- DF-006: Aggregation methods (20 tests) ✅
+- DF-007: Export methods (14 tests) ✅
+
+**Total DataFrame Tests**: 83 passing (previous 49 + new 34)
+
+**DataFrame Methods Available**:
+- **Construction**: `DataFrame::new()`, `.column()`, `.build()`, `from_csv_string()`, `from_json()`
+- **Accessors**: `.rows()`, `.columns()`, `.column_names()`, `.get()`
+- **Transforms**: `.with_column()`, `.transform()`, `.sort_by()`, `.filter()`
+- **Aggregations**: `.sum()`, `.mean()`, `.max()`, `.min()`
+- **Export**: `.to_csv()`, `.to_json()`
+- **Advanced**: `.select()`, `.slice()`, `.join()`, `.groupby()`
+
+**Quality Metrics**:
+- All functions maintain <10 cyclomatic complexity (Toyota Way) ✅
+- 100% TDD methodology (tests first, then implementation) ✅
+- Comprehensive edge case coverage ✅
+- PMAT quality gates passing ✅
+
+### 📚 Book Compatibility Impact
+
+DataFrame implementation enables Chapter 18 examples, improving overall book compatibility.
+
+## [3.64.0] - 2025-10-01 - DataFrame Book Integration (DF-BOOK-001)
 
 ### ✅ New Feature: DataFrame .get() Accessor
 
