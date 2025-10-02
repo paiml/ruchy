@@ -137,6 +137,11 @@ pub fn match_pattern(pattern: &Pattern, value: &Value) -> Option<Vec<(String, Va
             // Default handling is done at the destructuring level
             match_pattern(pattern, value)
         }
+        Pattern::Mut(inner_pattern) => {
+            // Mut patterns match the inner pattern
+            // Mutability is handled at the environment binding level
+            match_pattern(inner_pattern, value)
+        }
     }
 }
 /// Check if two values are equal (for pattern matching)

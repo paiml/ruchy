@@ -1207,7 +1207,8 @@ fn create_let_expression(
         | Pattern::Ok(_)
         | Pattern::Err(_)
         | Pattern::Some(_)
-        | Pattern::None => {
+        | Pattern::None
+        | Pattern::Mut(_) => {
             // For other pattern types, use LetPattern variant
             Ok(Expr::new(
                 ExprKind::LetPattern {
@@ -1323,8 +1324,18 @@ pub fn parse_tuple_pattern(state: &mut ParserState) -> Result<Pattern> {
 }
 /// Parse a single element in a tuple pattern
 /// Extracted to reduce complexity of `parse_tuple_pattern`
+/// Complexity: 7 (within Toyota Way limits)
 fn parse_single_tuple_pattern_element(state: &mut ParserState) -> Result<Pattern> {
-    match state.tokens.peek() {
+    // Check for 'mut' modifier
+    let is_mut = if matches!(state.tokens.peek(), Some((Token::Mut, _))) {
+        state.tokens.advance(); // consume 'mut'
+        true
+    } else {
+        false
+    };
+
+    // Parse the pattern element
+    let pattern = match state.tokens.peek() {
         Some((Token::Identifier(name), _)) => {
             let name = name.clone();
             state.tokens.advance();
@@ -1338,6 +1349,13 @@ fn parse_single_tuple_pattern_element(state: &mut ParserState) -> Result<Pattern
             Ok(Pattern::Wildcard)
         }
         _ => bail!("Expected identifier, tuple, list, struct, or wildcard in tuple pattern"),
+    }?;
+
+    // Wrap in Mut pattern if mut modifier was present
+    if is_mut {
+        Ok(Pattern::Mut(Box::new(pattern)))
+    } else {
+        Ok(pattern)
     }
 }
 pub fn parse_struct_pattern(state: &mut ParserState) -> Result<Pattern> {

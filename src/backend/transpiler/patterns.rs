@@ -130,6 +130,11 @@ impl Transpiler {
                 Ok(quote! { Some(#inner) })
             }
             Pattern::None => Ok(quote! { None }),
+            Pattern::Mut(inner) => {
+                // Transpile mut patterns as `mut inner_pattern`
+                let inner_tokens = self.transpile_pattern(inner)?;
+                Ok(quote! { mut #inner_tokens })
+            }
         }
     }
     fn transpile_array_pattern(

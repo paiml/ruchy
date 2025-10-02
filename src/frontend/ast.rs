@@ -1115,6 +1115,7 @@ pub enum Pattern {
         pattern: Box<Pattern>,
         default: Box<Expr>,
     }, // For patterns with default values like a = 10
+    Mut(Box<Pattern>), // For mutable bindings in destructuring like (mut x, mut y)
     Ok(Box<Pattern>),
     Err(Box<Pattern>),
     Some(Box<Pattern>),
@@ -1163,6 +1164,7 @@ impl Pattern {
             Pattern::RestNamed(name) => name.clone(),
             Pattern::AtBinding { name, .. } => name.clone(),
             Pattern::WithDefault { pattern, .. } => pattern.primary_name(),
+            Pattern::Mut(inner) => inner.primary_name(),
             Pattern::Literal(lit) => format!("_literal_{lit:?}"),
             Pattern::Range { .. } => "_range".to_string(),
         }
