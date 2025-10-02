@@ -31,6 +31,7 @@ use std::rc::Rc;
 enum LoopControlOrError {
     Break(Value),
     Continue,
+    Return(Value), // Early return from function (exits both loop and function)
     Error(InterpreterError),
 }
 
@@ -1697,7 +1698,11 @@ impl Interpreter {
                 self.env_push(new_env);
 
                 // Evaluate function body
-                let result = self.eval_expr(&body);
+                // Catch InterpreterError::Return and extract value (early return support)
+                let result = match self.eval_expr(&body) {
+                    Err(InterpreterError::Return(val)) => Ok(val),
+                    other => other,
+                };
 
                 // Pop environment
                 self.env_pop();
@@ -2379,6 +2384,7 @@ impl Interpreter {
                 Ok(value) => last_value = value,
                 Err(LoopControlOrError::Break(val)) => return Ok(val),
                 Err(LoopControlOrError::Continue) => {}
+                Err(LoopControlOrError::Return(val)) => return Err(InterpreterError::Return(val)),
                 Err(LoopControlOrError::Error(e)) => return Err(e),
             }
         }
@@ -2405,6 +2411,7 @@ impl Interpreter {
                 Ok(value) => last_value = value,
                 Err(LoopControlOrError::Break(val)) => return Ok(val),
                 Err(LoopControlOrError::Continue) => {}
+                Err(LoopControlOrError::Return(val)) => return Err(InterpreterError::Return(val)),
                 Err(LoopControlOrError::Error(e)) => return Err(e),
             }
         }
@@ -2452,6 +2459,7 @@ impl Interpreter {
             Ok(value) => Ok(value),
             Err(InterpreterError::Break(val)) => Err(LoopControlOrError::Break(val)),
             Err(InterpreterError::Continue) => Err(LoopControlOrError::Continue),
+            Err(InterpreterError::Return(val)) => Err(LoopControlOrError::Return(val)),
             Err(e) => Err(LoopControlOrError::Error(e)),
         }
     }

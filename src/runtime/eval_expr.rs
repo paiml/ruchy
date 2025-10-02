@@ -159,6 +159,8 @@ where
 
 /// Evaluate a return expression
 ///
+/// Returns an `InterpreterError::Return` variant which is caught by function call evaluation.
+///
 /// # Complexity
 /// Cyclomatic complexity: 3 (within Toyota Way limits)
 pub fn eval_return_expr<F>(
@@ -170,9 +172,9 @@ where
 {
     if let Some(expr) = value {
         let val = eval_expr(expr)?;
-        Err(InterpreterError::RuntimeError(format!("return {val:?}")))
+        Err(InterpreterError::Return(val))
     } else {
-        Err(InterpreterError::RuntimeError("return".to_string()))
+        Err(InterpreterError::Return(Value::Nil))
     }
 }
 
