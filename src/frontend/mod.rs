@@ -391,12 +391,12 @@ mod tests {
 
     #[test]
     fn test_parse_float_literal() {
-        let mut parser = Parser::new("3.14");
+        let mut parser = Parser::new("3.15");
         let result = parser.parse();
         assert!(result.is_ok());
         let expr = result.unwrap();
         if let ExprKind::Literal(Literal::Float(f)) = expr.kind {
-            assert!((f - 3.14).abs() < 0.001);
+            assert!((f - 3.15).abs() < 0.001);
         } else {
             panic!("Expected float literal");
         }

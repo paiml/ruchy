@@ -588,10 +588,10 @@ mod tests {
             };
 
             match test.reveal_condition {
-                RevealCondition::Never => assert!(true),
-                RevealCondition::OnCompletion => assert!(true),
-                RevealCondition::OnFailure => assert!(true),
-                RevealCondition::OnRequest => assert!(true),
+                RevealCondition::Never => {}
+                RevealCondition::OnCompletion => {}
+                RevealCondition::OnFailure => {}
+                RevealCondition::OnRequest => {}
             }
         }
     }
@@ -749,10 +749,10 @@ mod tests {
 
         for trigger in triggers {
             match trigger {
-                UnlockTrigger::ScoreThreshold => assert!(true),
-                UnlockTrigger::TimeElapsed => assert!(true),
-                UnlockTrigger::PeerProgress => assert!(true),
-                UnlockTrigger::InstructorOverride => assert!(true),
+                UnlockTrigger::ScoreThreshold => {}
+                UnlockTrigger::TimeElapsed => {}
+                UnlockTrigger::PeerProgress => {}
+                UnlockTrigger::InstructorOverride => {}
             }
         }
     }

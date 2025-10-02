@@ -448,7 +448,7 @@ mod tests {
             Constant::Unit,
             Constant::Bool(true),
             Constant::Int(123, Type::I64),
-            Constant::Float(3.14, Type::F64),
+            Constant::Float(3.15, Type::F64),
             Constant::String("hello".to_string()),
         ];
         for c in constants {

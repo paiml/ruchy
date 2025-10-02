@@ -759,10 +759,10 @@ mod tests {
         let expr = parse_expr_recursive(&mut state).unwrap();
         assert!(matches!(expr.kind, ExprKind::Literal(Literal::Integer(42))));
 
-        let mut state = ParserState::new("3.14");
+        let mut state = ParserState::new("3.15");
         let expr = parse_expr_recursive(&mut state).unwrap();
         if let ExprKind::Literal(Literal::Float(f)) = expr.kind {
-            assert!((f - 3.14).abs() < 0.001);
+            assert!((f - 3.15).abs() < 0.001);
         } else {
             panic!("Expected float literal");
         }
