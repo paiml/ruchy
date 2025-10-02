@@ -263,7 +263,7 @@ coverage:
 	@echo "⚙️  Temporarily disabling global cargo config (mold breaks coverage)..."
 	@test -f ~/.cargo/config.toml && mv ~/.cargo/config.toml ~/.cargo/config.toml.cov-backup || true
 	@echo "🧪 Phase 1: Running tests with instrumentation (no report)..."
-	@cargo llvm-cov --no-report nextest --no-tests=warn --all-features --workspace 2>&1 | tee target/coverage/test-output.txt
+	@cargo llvm-cov --no-report test --lib --all-features 2>&1 | tee target/coverage/test-output.txt
 	@echo "📊 Phase 2: Generating coverage reports..."
 	@cargo llvm-cov report --html --output-dir target/coverage/html
 	@cargo llvm-cov report --lcov --output-path target/coverage/lcov.info
