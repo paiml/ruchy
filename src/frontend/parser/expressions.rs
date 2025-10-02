@@ -292,6 +292,10 @@ fn parse_identifier_token(state: &mut ParserState, token: &Token, span: Span) ->
                         // Handle wildcard in qualified names (for use statements)
                         path.push("*".to_string());
                         state.tokens.advance();
+                    } else if let Some((Token::From, _)) = state.tokens.peek() {
+                        // Allow 'from' keyword as method name (e.g., String::from)
+                        path.push("from".to_string());
+                        state.tokens.advance();
                     } else {
                         bail!("Expected identifier or '*' after '::'");
                     }
