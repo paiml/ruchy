@@ -188,6 +188,27 @@ where
     Ok(last_value)
 }
 
+/// Evaluate an infinite loop (loop { ... })
+///
+/// # Complexity
+/// Cyclomatic complexity: 5 (within Toyota Way limits)
+pub fn eval_loop<F>(body: &Expr, mut eval_expr: F) -> Result<Value, InterpreterError>
+where
+    F: FnMut(&Expr) -> Result<Value, InterpreterError>,
+{
+    loop {
+        match eval_expr(body) {
+            Ok(_) => {}                                                 // Continue looping
+            Err(InterpreterError::Break(value)) => return Ok(value),    // Break with value
+            Err(InterpreterError::Continue) => {}                       // Continue looping
+            Err(InterpreterError::Return(_)) => return eval_expr(body), // Propagate Return
+            Err(InterpreterError::RuntimeError(msg)) if msg == "break" => return Ok(Value::Nil),
+            Err(InterpreterError::RuntimeError(msg)) if msg == "continue" => {}
+            Err(e) => return Err(e),
+        }
+    }
+}
+
 /// Check if a value is truthy
 ///
 /// # Complexity

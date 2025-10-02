@@ -803,7 +803,7 @@ impl Transpiler {
     }
     fn transpile_control_misc_expr(expr: &Expr) -> Result<TokenStream> {
         match &expr.kind {
-            ExprKind::Break { label } => Ok(Self::make_break_continue(true, label.as_ref())),
+            ExprKind::Break { label, .. } => Ok(Self::make_break_continue(true, label.as_ref())),
             ExprKind::Continue { label } => Ok(Self::make_break_continue(false, label.as_ref())),
             ExprKind::Return { value } => {
                 if let Some(val) = value {

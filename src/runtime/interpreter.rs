@@ -1185,10 +1185,16 @@ impl Interpreter {
                 body,
             } => self.eval_for_loop(var, pattern.as_ref(), iter, body),
             ExprKind::While { condition, body } => self.eval_while_loop(condition, body),
+            ExprKind::Loop { body } => self.eval_loop(body),
             ExprKind::Match { expr, arms } => self.eval_match(expr, arms),
-            ExprKind::Break { label: _ } => {
-                // Break with nil value (Rust-style loop expressions support break with value)
-                Err(InterpreterError::Break(Value::Nil))
+            ExprKind::Break { label: _, value } => {
+                // Evaluate the break value (default to Nil if not provided)
+                let break_val = if let Some(expr) = value {
+                    self.eval_expr(expr)?
+                } else {
+                    Value::Nil
+                };
+                Err(InterpreterError::Break(break_val))
             }
             ExprKind::Continue { label: _ } => Err(InterpreterError::Continue),
             ExprKind::Return { value } => self.eval_return_expr(value.as_deref()),
@@ -2509,6 +2515,11 @@ impl Interpreter {
         body: &Expr,
     ) -> Result<Value, InterpreterError> {
         crate::runtime::eval_loops::eval_while_loop(condition, body, |expr| self.eval_expr(expr))
+    }
+
+    /// Evaluate an infinite loop (loop { ... })
+    fn eval_loop(&mut self, body: &Expr) -> Result<Value, InterpreterError> {
+        crate::runtime::eval_loops::eval_loop(body, |expr| self.eval_expr(expr))
     }
 
     /// Evaluate a match expression
