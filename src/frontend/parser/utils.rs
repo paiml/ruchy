@@ -188,6 +188,18 @@ fn parse_param_pattern(state: &mut ParserState) -> Result<(Pattern, (bool, bool)
             let pattern = super::expressions::parse_struct_pattern(state)?;
             Ok((pattern, (false, false)))
         }
+        Some((Token::From, _)) => {
+            bail!(
+                "'from' is a reserved keyword (for future import syntax).\n\
+                 Suggestion: Use 'from_vertex', 'source', 'start_node', or similar instead.\n\
+                 \n\
+                 Example:\n\
+                 ✗ fun shortest_path(from, to) {{ ... }}  // Error\n\
+                 ✓ fun shortest_path(source, target) {{ ... }}  // OK\n\
+                 \n\
+                 See: https://github.com/paiml/ruchy/issues/23"
+            )
+        }
         _ => bail!("Function parameters must be simple identifiers or destructuring patterns"),
     }
 }
