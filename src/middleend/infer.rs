@@ -1331,8 +1331,10 @@ impl InferenceContext {
             ExprKind::For {
                 var, iter, body, ..
             } => self.infer_for(var, iter, body),
-            ExprKind::While { condition, body } => self.infer_while(condition, body),
-            ExprKind::Loop { body } => self.infer_loop(body),
+            ExprKind::While {
+                condition, body, ..
+            } => self.infer_while(condition, body),
+            ExprKind::Loop { body, .. } => self.infer_loop(body),
             ExprKind::IfLet {
                 pattern: _,
                 expr,
@@ -1353,6 +1355,7 @@ impl InferenceContext {
                 pattern: _,
                 expr,
                 body,
+                ..
             } => {
                 let _expr_ty = self.infer_expr(expr)?;
                 let _body_ty = self.infer_expr(body)?;

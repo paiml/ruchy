@@ -77,9 +77,9 @@ impl ComplexityRule {
                         .map(|arm| self.calculate_complexity(&arm.body))
                         .sum::<usize>()
             }
-            ExprKind::While { condition, body } => {
-                1 + self.calculate_complexity(condition) + self.calculate_complexity(body)
-            }
+            ExprKind::While {
+                condition, body, ..
+            } => 1 + self.calculate_complexity(condition) + self.calculate_complexity(body),
             ExprKind::For { iter, body, .. } => {
                 1 + self.calculate_complexity(iter) + self.calculate_complexity(body)
             }

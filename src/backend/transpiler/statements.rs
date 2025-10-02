@@ -59,7 +59,9 @@ impl Transpiler {
                         .is_some_and(|e| Self::is_variable_mutated(name, e))
             }
             // Check in while loops
-            ExprKind::While { condition, body } => {
+            ExprKind::While {
+                condition, body, ..
+            } => {
                 Self::is_variable_mutated(name, condition) || Self::is_variable_mutated(name, body)
             }
             // Check in for loops

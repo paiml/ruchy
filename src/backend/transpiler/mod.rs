@@ -310,7 +310,9 @@ impl Transpiler {
                     self.analyze_expr_mutability(else_expr);
                 }
             }
-            ExprKind::While { condition, body } => {
+            ExprKind::While {
+                condition, body, ..
+            } => {
                 self.analyze_expr_mutability(condition);
                 self.analyze_expr_mutability(body);
             }

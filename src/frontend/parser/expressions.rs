@@ -2092,6 +2092,7 @@ fn parse_while_loop(state: &mut ParserState) -> Result<Expr> {
         );
         Ok(Expr::new(
             ExprKind::WhileLet {
+                label: None, // TODO: Parse loop labels
                 pattern,
                 expr,
                 body,
@@ -2110,7 +2111,14 @@ fn parse_while_loop(state: &mut ParserState) -> Result<Expr> {
             super::parse_expr_recursive(state)
                 .map_err(|e| anyhow::anyhow!("Expected body after while condition: {}", e))?,
         );
-        Ok(Expr::new(ExprKind::While { condition, body }, start_span))
+        Ok(Expr::new(
+            ExprKind::While {
+                label: None, // TODO: Parse loop labels
+                condition,
+                body,
+            },
+            start_span,
+        ))
     }
 }
 /// Parse for loop: for pattern in iterator { body }
@@ -2138,6 +2146,7 @@ fn parse_for_loop(state: &mut ParserState) -> Result<Expr> {
     let var = pattern.primary_name();
     Ok(Expr::new(
         ExprKind::For {
+            label: None, // TODO: Parse loop labels
             var,
             pattern: Some(pattern),
             iter: iterator,
@@ -5120,7 +5129,13 @@ fn parse_loop(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.expect(&Token::Loop)?;
     let body = Box::new(super::parse_expr_recursive(state)?);
 
-    Ok(Expr::new(ExprKind::Loop { body }, start_span))
+    Ok(Expr::new(
+        ExprKind::Loop {
+            label: None, // TODO: Parse loop labels
+            body,
+        },
+        start_span,
+    ))
 }
 
 /// Parse increment operator (++var or var++)
