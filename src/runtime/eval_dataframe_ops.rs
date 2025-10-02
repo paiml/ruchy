@@ -21,6 +21,9 @@ pub fn eval_dataframe_method(
     match method {
         "select" => eval_dataframe_select(columns, arg_values),
         "sum" => eval_dataframe_sum(columns, arg_values),
+        "mean" => eval_dataframe_mean(columns, arg_values),
+        "max" => eval_dataframe_max(columns, arg_values),
+        "min" => eval_dataframe_min(columns, arg_values),
         "slice" => eval_dataframe_slice(columns, arg_values),
         "join" => eval_dataframe_join(columns, arg_values),
         "groupby" => eval_dataframe_groupby(columns, arg_values),
@@ -250,6 +253,150 @@ fn eval_dataframe_sum(
         Ok(Value::Integer(total as i64))
     } else {
         Ok(Value::Float(total))
+    }
+}
+
+/// Calculate mean (average) of all numeric values in all columns
+///
+/// # Complexity
+/// Cyclomatic complexity: 8 (within Toyota Way limits)
+fn eval_dataframe_mean(
+    columns: &[DataFrameColumn],
+    args: &[Value],
+) -> Result<Value, InterpreterError> {
+    if !args.is_empty() {
+        return Err(InterpreterError::RuntimeError(
+            "DataFrame.mean() takes no arguments".to_string(),
+        ));
+    }
+
+    let mut total = 0.0;
+    let mut count = 0;
+
+    for col in columns {
+        for val in &col.values {
+            match val {
+                Value::Integer(i) => {
+                    total += *i as f64;
+                    count += 1;
+                }
+                Value::Float(f) => {
+                    total += f;
+                    count += 1;
+                }
+                _ => {} // Skip non-numeric values
+            }
+        }
+    }
+
+    // Avoid division by zero
+    if count == 0 {
+        return Ok(Value::Integer(0));
+    }
+
+    let mean = total / f64::from(count);
+
+    // Return as integer if it's a whole number, otherwise as float
+    if mean.fract() == 0.0 {
+        Ok(Value::Integer(mean as i64))
+    } else {
+        Ok(Value::Float(mean))
+    }
+}
+
+/// Find maximum numeric value across all columns
+///
+/// # Complexity
+/// Cyclomatic complexity: 8 (within Toyota Way limits)
+fn eval_dataframe_max(
+    columns: &[DataFrameColumn],
+    args: &[Value],
+) -> Result<Value, InterpreterError> {
+    if !args.is_empty() {
+        return Err(InterpreterError::RuntimeError(
+            "DataFrame.max() takes no arguments".to_string(),
+        ));
+    }
+
+    let mut max_value: Option<f64> = None;
+
+    for col in columns {
+        for val in &col.values {
+            let numeric_val = match val {
+                Value::Integer(i) => Some(*i as f64),
+                Value::Float(f) => Some(*f),
+                _ => None, // Skip non-numeric values
+            };
+
+            if let Some(v) = numeric_val {
+                max_value = Some(match max_value {
+                    Some(current_max) => current_max.max(v),
+                    None => v,
+                });
+            }
+        }
+    }
+
+    // Return the max value or error if no numeric values found
+    match max_value {
+        Some(max) => {
+            if max.fract() == 0.0 {
+                Ok(Value::Integer(max as i64))
+            } else {
+                Ok(Value::Float(max))
+            }
+        }
+        None => Err(InterpreterError::RuntimeError(
+            "DataFrame.max() found no numeric values".to_string(),
+        )),
+    }
+}
+
+/// Find minimum numeric value across all columns
+///
+/// # Complexity
+/// Cyclomatic complexity: 8 (within Toyota Way limits)
+fn eval_dataframe_min(
+    columns: &[DataFrameColumn],
+    args: &[Value],
+) -> Result<Value, InterpreterError> {
+    if !args.is_empty() {
+        return Err(InterpreterError::RuntimeError(
+            "DataFrame.min() takes no arguments".to_string(),
+        ));
+    }
+
+    let mut min_value: Option<f64> = None;
+
+    for col in columns {
+        for val in &col.values {
+            let numeric_val = match val {
+                Value::Integer(i) => Some(*i as f64),
+                Value::Float(f) => Some(*f),
+                _ => None, // Skip non-numeric values
+            };
+
+            if let Some(v) = numeric_val {
+                min_value = Some(match min_value {
+                    Some(current_min) => current_min.min(v),
+                    None => v,
+                });
+            }
+        }
+    }
+
+    // Return the min value or error if no numeric values found
+    match min_value {
+        Some(min) => {
+            if min.fract() == 0.0 {
+                Ok(Value::Integer(min as i64))
+            } else {
+                Ok(Value::Float(min))
+            }
+        }
+        None => Err(InterpreterError::RuntimeError(
+            "DataFrame.min() found no numeric values".to_string(),
+        )),
     }
 }
 
