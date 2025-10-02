@@ -546,10 +546,10 @@ mod tests {
             };
 
             match feedback.severity {
-                FeedbackSeverity::Success => assert!(true),
-                FeedbackSeverity::Warning => assert!(true),
-                FeedbackSeverity::Error => assert!(true),
-                FeedbackSeverity::Info => assert!(true),
+                FeedbackSeverity::Success => {}
+                FeedbackSeverity::Warning => {}
+                FeedbackSeverity::Error => {}
+                FeedbackSeverity::Info => {}
             }
         }
     }

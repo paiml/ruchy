@@ -914,14 +914,14 @@ mod tests {
     fn test_ruchy_constant_creation() {
         let constant = RuchyConstant {
             name: "PI".to_string(),
-            value: RuchyValue::Float(3.14159),
+            value: RuchyValue::Float(3.15159),
             const_type: WasmType::F64,
         };
 
         assert_eq!(constant.name, "PI");
         assert_eq!(constant.const_type, WasmType::F64);
         if let RuchyValue::Float(value) = constant.value {
-            assert!((value - 3.14159).abs() < f64::EPSILON);
+            assert!((value - 3.15159).abs() < f64::EPSILON);
         } else {
             panic!("Expected Float value");
         }

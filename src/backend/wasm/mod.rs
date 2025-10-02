@@ -17,17 +17,19 @@ enum WasmType {
     F64,
 }
 
-/// Symbol table for tracking variable types across scopes
+/// Symbol table for tracking variable types and local indices across scopes
 /// Complexity: <10 per method (Toyota Way)
 #[derive(Debug, Clone)]
 struct SymbolTable {
-    scopes: Vec<std::collections::HashMap<String, WasmType>>,
+    scopes: Vec<std::collections::HashMap<String, (WasmType, u32)>>,
+    next_local_index: u32,
 }
 
 impl SymbolTable {
     fn new() -> Self {
         Self {
             scopes: vec![std::collections::HashMap::new()],
+            next_local_index: 0,
         }
     }
 
@@ -42,19 +44,33 @@ impl SymbolTable {
     }
 
     fn insert(&mut self, name: String, ty: WasmType) {
+        let index = self.next_local_index;
+        self.next_local_index += 1;
         if let Some(scope) = self.scopes.last_mut() {
-            scope.insert(name, ty);
+            scope.insert(name, (ty, index));
         }
     }
 
-    fn lookup(&self, name: &str) -> Option<WasmType> {
+    fn lookup(&self, name: &str) -> Option<(WasmType, u32)> {
         // Search from innermost to outermost scope
         for scope in self.scopes.iter().rev() {
-            if let Some(&ty) = scope.get(name) {
-                return Some(ty);
+            if let Some(&(ty, index)) = scope.get(name) {
+                return Some((ty, index));
             }
         }
         None
+    }
+
+    fn lookup_type(&self, name: &str) -> Option<WasmType> {
+        self.lookup(name).map(|(ty, _)| ty)
+    }
+
+    fn lookup_index(&self, name: &str) -> Option<u32> {
+        self.lookup(name).map(|(_, index)| index)
+    }
+
+    fn local_count(&self) -> u32 {
+        self.next_local_index
     }
 }
 
@@ -174,19 +190,7 @@ impl WasmEmitter {
         if has_functions {
             // Compile each function
             for (_name, _params, body) in &func_defs {
-                let locals = if self.needs_locals(body) {
-                    // Infer the type of the first local based on the first Let expression
-                    let local_ty = self.infer_first_local_type(body);
-                    let wasm_ty = match local_ty {
-                        WasmType::I32 => wasm_encoder::ValType::I32,
-                        WasmType::F32 => wasm_encoder::ValType::F32,
-                        WasmType::I64 => wasm_encoder::ValType::I64,
-                        WasmType::F64 => wasm_encoder::ValType::F64,
-                    };
-                    vec![(1, wasm_ty)]
-                } else {
-                    vec![]
-                };
+                let locals = self.collect_local_types(body);
                 let mut func = Function::new(locals);
                 // Compile function body
                 let instructions = self.lower_expression(body)?;
@@ -201,19 +205,7 @@ impl WasmEmitter {
             // Also compile the main code (non-function expressions)
             let main_expr = self.get_non_function_code(expr);
             if let Some(main_expr) = main_expr {
-                let locals = if self.needs_locals(&main_expr) {
-                    // Infer the type of the first local based on the first Let expression
-                    let local_ty = self.infer_first_local_type(&main_expr);
-                    let wasm_ty = match local_ty {
-                        WasmType::I32 => wasm_encoder::ValType::I32,
-                        WasmType::F32 => wasm_encoder::ValType::F32,
-                        WasmType::I64 => wasm_encoder::ValType::I64,
-                        WasmType::F64 => wasm_encoder::ValType::F64,
-                    };
-                    vec![(1, wasm_ty)]
-                } else {
-                    vec![]
-                };
+                let locals = self.collect_local_types(&main_expr);
                 let mut func = Function::new(locals);
                 let instructions = self.lower_expression(&main_expr)?;
                 for instr in instructions {
@@ -225,19 +217,7 @@ impl WasmEmitter {
             }
         } else {
             // Single implicit main function
-            let locals = if self.needs_locals(expr) {
-                // Infer the type of the first local based on the first Let expression
-                let local_ty = self.infer_first_local_type(expr);
-                let wasm_ty = match local_ty {
-                    WasmType::I32 => wasm_encoder::ValType::I32,
-                    WasmType::F32 => wasm_encoder::ValType::F32,
-                    WasmType::I64 => wasm_encoder::ValType::I64,
-                    WasmType::F64 => wasm_encoder::ValType::F64,
-                };
-                vec![(1, wasm_ty)]
-            } else {
-                vec![]
-            };
+            let locals = self.collect_local_types(expr);
             let mut func = Function::new(locals);
             let instructions = self.lower_expression(expr)?;
             for instr in instructions {
@@ -293,22 +273,42 @@ impl WasmEmitter {
         }
     }
 
-    /// Infer the type of the first local variable (simplified for single-local approach)
-    /// Complexity: 4 (within <10 limit)
-    fn infer_first_local_type(&self, expr: &Expr) -> WasmType {
-        match &expr.kind {
-            ExprKind::Let { value, .. } => self.infer_type(value),
-            ExprKind::Block(exprs) => {
-                // Find first Let in block
-                for e in exprs {
-                    if matches!(e.kind, ExprKind::Let { .. }) {
-                        return self.infer_first_local_type(e);
-                    }
-                }
-                WasmType::I32 // Default
-            }
-            _ => WasmType::I32, // Default if no Let found
+    /// Collect all local variable types from expression tree
+    /// Returns vector of (count, type) for WASM function locals section
+    /// Complexity: 8 (within <10 limit)
+    fn collect_local_types(&self, _expr: &Expr) -> Vec<(u32, wasm_encoder::ValType)> {
+        let symbols = self.symbols.borrow();
+        let local_count = symbols.local_count();
+
+        if local_count == 0 {
+            return vec![];
         }
+
+        // Collect all unique (type, index) pairs
+        let mut locals: Vec<(WasmType, u32)> = vec![];
+        for scope in &symbols.scopes {
+            for &(ty, index) in scope.values() {
+                locals.push((ty, index));
+            }
+        }
+
+        // Sort by index
+        locals.sort_by_key(|(_, index)| *index);
+
+        // Convert to (count, ValType) format
+        // For now, just declare each local individually
+        locals
+            .into_iter()
+            .map(|(ty, _)| {
+                let val_type = match ty {
+                    WasmType::I32 => wasm_encoder::ValType::I32,
+                    WasmType::F32 => wasm_encoder::ValType::F32,
+                    WasmType::I64 => wasm_encoder::ValType::I64,
+                    WasmType::F64 => wasm_encoder::ValType::F64,
+                };
+                (1, val_type)
+            })
+            .collect()
     }
 
     /// Infer the WASM type of an expression
@@ -350,7 +350,10 @@ impl WasmEmitter {
             }
             ExprKind::Identifier(name) => {
                 // Look up in global symbol table
-                self.symbols.borrow().lookup(name).unwrap_or(WasmType::I32)
+                self.symbols
+                    .borrow()
+                    .lookup_type(name)
+                    .unwrap_or(WasmType::I32)
             }
             ExprKind::Block(exprs) => {
                 // Return type of last expression in block
@@ -510,16 +513,15 @@ impl WasmEmitter {
                 Ok(instructions)
             }
             ExprKind::Let {
-                name: _,
-                value,
-                body,
-                ..
+                name, value, body, ..
             } => {
                 let mut instructions = vec![];
                 // Compile the value
                 instructions.extend(self.lower_expression(value)?);
-                // Store in local (simplified - would need local index tracking)
-                instructions.push(Instruction::LocalSet(0));
+                // Get the local index for this variable
+                let local_index = self.symbols.borrow().lookup_index(name).unwrap_or(0);
+                // Store in local
+                instructions.push(Instruction::LocalSet(local_index));
                 // Compile the body if it's not Unit
                 match &body.kind {
                     ExprKind::Literal(Literal::Unit) => {
@@ -532,9 +534,11 @@ impl WasmEmitter {
                 }
                 Ok(instructions)
             }
-            ExprKind::Identifier(_name) => {
-                // Load from local (simplified - would need local index tracking)
-                Ok(vec![Instruction::LocalGet(0)])
+            ExprKind::Identifier(name) => {
+                // Get the local index for this variable
+                let local_index = self.symbols.borrow().lookup_index(name).unwrap_or(0);
+                // Load from local
+                Ok(vec![Instruction::LocalGet(local_index)])
             }
             ExprKind::Unary { op, operand } => {
                 let mut instructions = vec![];

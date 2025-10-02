@@ -52,21 +52,18 @@ fn test_integer_variables() {
 // ===== FLOAT OPERATIONS (Currently Broken) =====
 
 #[test]
-#[ignore] // Enable when type inference implemented
 fn test_pure_float_operations() {
     let code = "3.14 + 2.71";
     compile_and_validate(code).expect("Pure float operations should validate");
 }
 
 #[test]
-#[ignore] // Enable when type inference implemented
 fn test_float_multiplication() {
     let code = "3.14 * 2.0";
     compile_and_validate(code).expect("Float multiplication should validate");
 }
 
 #[test]
-#[ignore] // Enable when type inference implemented
 fn test_float_variables() {
     let code = r#"
         let pi = 3.14159
@@ -76,10 +73,9 @@ fn test_float_variables() {
     compile_and_validate(code).expect("Float variables should validate");
 }
 
-// ===== MIXED INT/FLOAT OPERATIONS (Currently Broken) =====
+// ===== MIXED INT/FLOAT OPERATIONS (Now Working!) =====
 
 #[test]
-#[ignore] // Enable when type inference implemented
 fn test_mixed_int_float_multiplication() {
     // This is the EXACT failure case from Issue #27
     let code = r#"
@@ -91,21 +87,18 @@ fn test_mixed_int_float_multiplication() {
 }
 
 #[test]
-#[ignore] // Enable when type inference implemented
 fn test_float_times_int() {
     let code = "3.14 * 10";
     compile_and_validate(code).expect("Float * int should validate (promote to f32)");
 }
 
 #[test]
-#[ignore] // Enable when type inference implemented
 fn test_int_times_float() {
     let code = "10 * 3.14";
     compile_and_validate(code).expect("Int * float should validate (promote to f32)");
 }
 
 #[test]
-#[ignore] // Enable when type inference implemented
 fn test_mixed_addition() {
     let code = "10 + 3.14";
     compile_and_validate(code).expect("Int + float should validate (promote to f32)");
@@ -114,7 +107,6 @@ fn test_mixed_addition() {
 // ===== COMPLEX EXPRESSIONS =====
 
 #[test]
-#[ignore] // Enable when type inference implemented
 fn test_area_calculation() {
     let code = r#"
         let pi = 3.14159
@@ -126,7 +118,6 @@ fn test_area_calculation() {
 }
 
 #[test]
-#[ignore] // Enable when type inference implemented
 fn test_nested_mixed_operations() {
     let code = "(3.14 + 1.0) * (10 + 5)";
     compile_and_validate(code).expect("Nested mixed operations should validate");
@@ -141,14 +132,12 @@ fn test_integer_division() {
 }
 
 #[test]
-#[ignore] // Enable when type inference implemented
 fn test_float_division() {
     let code = "10.0 / 3.0";
     compile_and_validate(code).expect("Float division should validate");
 }
 
 #[test]
-#[ignore] // Enable when type inference implemented
 fn test_mixed_division() {
     let code = "10.0 / 2";
     compile_and_validate(code).expect("Mixed division should validate");
@@ -163,14 +152,12 @@ fn test_integer_comparison() {
 }
 
 #[test]
-#[ignore] // Enable when type inference implemented
 fn test_float_comparison() {
     let code = "3.14 > 2.71";
     compile_and_validate(code).expect("Float comparison should validate");
 }
 
 #[test]
-#[ignore] // Enable when type inference implemented
 fn test_mixed_comparison() {
     let code = "3.14 > 3";
     compile_and_validate(code).expect("Mixed comparison should validate");
@@ -179,7 +166,6 @@ fn test_mixed_comparison() {
 // ===== TYPE INFERENCE SCENARIOS =====
 
 #[test]
-#[ignore] // Enable when type inference implemented
 fn test_type_promotion_in_let() {
     let code = r#"
         let x = 10
@@ -191,7 +177,6 @@ fn test_type_promotion_in_let() {
 }
 
 #[test]
-#[ignore] // Enable when type inference implemented
 fn test_chained_operations() {
     let code = "1 + 2.0 + 3 + 4.0";
     compile_and_validate(code).expect("Chained mixed operations should validate");
@@ -211,7 +196,6 @@ fn test_multi_expression_integer_block() {
 }
 
 #[test]
-#[ignore] // Enable when type inference implemented
 fn test_multi_expression_float_block() {
     let code = r#"
         2.5 + 2.5
@@ -222,7 +206,6 @@ fn test_multi_expression_float_block() {
 }
 
 #[test]
-#[ignore] // Enable when type inference implemented
 fn test_multi_expression_mixed_block() {
     let code = r#"
         2 + 2
@@ -235,21 +218,18 @@ fn test_multi_expression_mixed_block() {
 // ===== EDGE CASES =====
 
 #[test]
-#[ignore] // Enable when type inference implemented
 fn test_zero_float() {
     let code = "0.0 + 1.0";
     compile_and_validate(code).expect("Zero float should work");
 }
 
 #[test]
-#[ignore] // Enable when type inference implemented
 fn test_negative_float() {
     let code = "-3.14 + 1.0";
     compile_and_validate(code).expect("Negative float should work");
 }
 
 #[test]
-#[ignore] // Enable when type inference implemented
 fn test_float_in_if_condition() {
     let code = r#"
         if 3.14 > 2.71 {
