@@ -764,7 +764,21 @@ fn parse_break_token(state: &mut ParserState, span: Span) -> Result<Expr> {
     } else {
         None
     };
-    Ok(Expr::new(ExprKind::Break { label }, span))
+
+    // Parse optional break value: break <expr> or break 'label <expr>
+    let value = if matches!(
+        state.tokens.peek(),
+        Some((Token::Semicolon | Token::RightBrace | Token::RightParen, _))
+    ) || state.tokens.peek().is_none()
+    {
+        // No value if followed by terminator or EOF
+        None
+    } else {
+        // Parse the value expression
+        Some(Box::new(super::parse_expr_recursive(state)?))
+    };
+
+    Ok(Expr::new(ExprKind::Break { label, value }, span))
 }
 /// Parse continue token with optional label
 /// Extracted from `parse_prefix` to reduce complexity

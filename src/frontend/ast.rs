@@ -594,6 +594,7 @@ pub enum ExprKind {
     },
     Break {
         label: Option<String>,
+        value: Option<Box<Expr>>,
     },
     Continue {
         label: Option<String>,

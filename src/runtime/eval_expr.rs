@@ -73,6 +73,7 @@ pub fn is_control_flow_expr(expr_kind: &ExprKind) -> bool {
             | ExprKind::Let { .. }
             | ExprKind::For { .. }
             | ExprKind::While { .. }
+            | ExprKind::Loop { .. }
             | ExprKind::Match { .. }
             | ExprKind::Break { .. }
             | ExprKind::Continue { .. }
