@@ -832,7 +832,8 @@ impl Interpreter {
             | ExprKind::MethodCall { .. }
             | ExprKind::DataFrameOperation { .. }
             | ExprKind::IndexAccess { .. }
-            | ExprKind::FieldAccess { .. } => self.eval_operation_expr(expr_kind),
+            | ExprKind::FieldAccess { .. }
+            | ExprKind::TypeCast { .. } => self.eval_operation_expr(expr_kind),
 
             // Functions (complexity: 2)
             ExprKind::Function { .. } | ExprKind::Lambda { .. } => {
@@ -865,8 +866,8 @@ impl Interpreter {
         }
     }
 
-    /// Evaluate operation expressions (binary, unary, calls, method calls, etc.)
-    /// Complexity: 8
+    /// Evaluate operation expressions (binary, unary, calls, method calls, type casts, etc.)
+    /// Complexity: 9
     fn eval_operation_expr(&mut self, expr_kind: &ExprKind) -> Result<Value, InterpreterError> {
         match expr_kind {
             ExprKind::Binary { left, op, right } => self.eval_binary_expr(left, *op, right),
@@ -882,6 +883,7 @@ impl Interpreter {
             }
             ExprKind::IndexAccess { object, index } => self.eval_index_access(object, index),
             ExprKind::FieldAccess { object, field } => self.eval_field_access(object, field),
+            ExprKind::TypeCast { expr, target_type } => self.eval_type_cast(expr, target_type),
             _ => unreachable!("eval_operation_expr called with non-operation expression"),
         }
     }
@@ -1855,6 +1857,39 @@ impl Interpreter {
     ) -> Result<Value, InterpreterError> {
         let operand_val = self.eval_expr(operand)?;
         self.eval_unary_op(op, &operand_val)
+    }
+
+    /// Evaluate type cast expression (as operator)
+    ///
+    /// # Complexity
+    /// Cyclomatic complexity: 8 (within Toyota Way limits)
+    fn eval_type_cast(
+        &mut self,
+        expr: &Expr,
+        target_type: &str,
+    ) -> Result<Value, InterpreterError> {
+        let value = self.eval_expr(expr)?;
+
+        match (value, target_type) {
+            // Integer to Float
+            (Value::Integer(i), "f64" | "f32") => Ok(Value::Float(i as f64)),
+
+            // Float to Integer (truncation)
+            (Value::Float(f), "i32" | "i64" | "isize") => Ok(Value::Integer(f as i64)),
+
+            // Integer to Integer (identity for i32/i64)
+            (Value::Integer(i), "i32" | "i64" | "isize") => Ok(Value::Integer(i)),
+
+            // Float to Float (identity)
+            (Value::Float(f), "f64" | "f32") => Ok(Value::Float(f)),
+
+            // Unsupported cast
+            (val, target) => Err(InterpreterError::TypeError(format!(
+                "Cannot cast {} to {}",
+                val.type_name(),
+                target
+            ))),
+        }
     }
 
     /// Evaluate if expression
