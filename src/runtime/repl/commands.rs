@@ -66,6 +66,20 @@ impl CommandRegistry {
                 // Return a placeholder - will be implemented in execute_type_command
                 self.execute_type_command(&expr, context)
             }
+            ":inspect" => {
+                // Get the expression from args
+                if context.args.is_empty() {
+                    return Ok(CommandResult::Success(
+                        "Usage: :inspect <expression>".to_string(),
+                    ));
+                }
+
+                // Join all args to reconstruct the expression
+                let expr = context.args.join(" ");
+
+                // Execute inspect command
+                self.execute_inspect_command(&expr, context)
+            }
             ":mode" => {
                 if let Some(&mode_arg) = context.args.first() {
                     match mode_arg {
@@ -103,7 +117,8 @@ impl CommandRegistry {
     /// Get list of available commands (complexity: 1)
     pub fn available_commands(&self) -> Vec<&'static str> {
         vec![
-            ":help", ":h", ":quit", ":exit", ":q", ":clear", ":reset", ":mode", ":history", ":vars",
+            ":help", ":h", ":quit", ":exit", ":q", ":clear", ":reset", ":mode", ":history",
+            ":vars", ":type", ":inspect",
         ]
     }
 
@@ -118,6 +133,7 @@ impl CommandRegistry {
   :history           Show command history
   :vars              Show variable bindings
   :type <expr>       Show type of expression
+  :inspect <expr>    Detailed inspection of value
 
 Enter expressions to evaluate them.
 "
@@ -186,6 +202,130 @@ Enter expressions to evaluate them.
             }
             Err(e) => Ok(CommandResult::Success(format!("Error: {e}"))),
         }
+    }
+
+    /// Execute :inspect command to show detailed value info (complexity: 8)
+    fn execute_inspect_command(
+        &self,
+        expr: &str,
+        context: &mut CommandContext,
+    ) -> Result<CommandResult> {
+        use super::EvalResult;
+
+        // Get evaluator from context
+        let evaluator = match &mut context.evaluator {
+            Some(eval) => eval,
+            None => {
+                return Ok(CommandResult::Success(
+                    "Error: Evaluator not available".to_string(),
+                ))
+            }
+        };
+
+        // Evaluate the expression to get its value
+        match evaluator.evaluate_line(expr, context.state) {
+            Ok(EvalResult::Value(value)) => {
+                // Generate detailed inspection output
+                let inspection = Self::inspect_value(&value);
+                Ok(CommandResult::Success(inspection))
+            }
+            Ok(EvalResult::Error(msg)) => Ok(CommandResult::Success(format!(
+                "Error evaluating expression: {msg}"
+            ))),
+            Ok(EvalResult::NeedMoreInput) => {
+                Ok(CommandResult::Success("Incomplete expression".to_string()))
+            }
+            Err(e) => Ok(CommandResult::Success(format!("Error: {e}"))),
+        }
+    }
+
+    /// Generate detailed inspection output for a value (complexity: 9)
+    fn inspect_value(value: &super::Value) -> String {
+        use super::Value;
+
+        let type_name = Self::value_type_name(value);
+        let mut output = format!("Type: {type_name}\n");
+
+        match value {
+            Value::Integer(n) => {
+                output.push_str(&format!("Value: {n}\n"));
+            }
+            Value::Float(f) => {
+                output.push_str(&format!("Value: {f}\n"));
+            }
+            Value::Bool(b) => {
+                output.push_str(&format!("Value: {b}\n"));
+            }
+            Value::Byte(b) => {
+                output.push_str(&format!("Value: {b}\n"));
+                output.push_str(&format!("Character: {}\n", char::from(*b)));
+            }
+            Value::String(s) => {
+                output.push_str(&format!("Value: \"{s}\"\n"));
+                output.push_str(&format!("Length: {}\n", s.len()));
+            }
+            Value::Array(arr) => {
+                output.push_str(&format!("Length: {}\n", arr.len()));
+                output.push_str("Elements:\n");
+                for (i, elem) in arr.iter().enumerate().take(10) {
+                    output.push_str(&format!("  [{i}]: {elem}\n"));
+                }
+                if arr.len() > 10 {
+                    output.push_str(&format!("  ... and {} more\n", arr.len() - 10));
+                }
+            }
+            Value::Tuple(items) => {
+                output.push_str(&format!("Length: {}\n", items.len()));
+                output.push_str("Items:\n");
+                for (i, item) in items.iter().enumerate() {
+                    output.push_str(&format!("  [{i}]: {item}\n"));
+                }
+            }
+            Value::Object(obj) => {
+                output.push_str(&format!("Fields: {}\n", obj.len()));
+                output.push_str("Properties:\n");
+                for (key, val) in obj.iter() {
+                    output.push_str(&format!("  {key}: {val}\n"));
+                }
+            }
+            Value::ObjectMut(obj) => {
+                let borrowed = obj.borrow();
+                output.push_str(&format!("Fields: {}\n", borrowed.len()));
+                output.push_str("Properties:\n");
+                for (key, val) in borrowed.iter() {
+                    output.push_str(&format!("  {key}: {val}\n"));
+                }
+            }
+            Value::DataFrame { columns } => {
+                output.push_str(&format!("Columns: {}\n", columns.len()));
+                if let Some(first_col) = columns.first() {
+                    output.push_str(&format!("Rows: {}\n", first_col.values.len()));
+                }
+            }
+            Value::Nil => {
+                output.push_str("Value: nil\n");
+            }
+            Value::Closure { .. } => {
+                output.push_str("Value: <function>\n");
+            }
+            Value::BuiltinFunction(name) => {
+                output.push_str(&format!("Value: <builtin: {name}>\n"));
+            }
+            Value::Range {
+                start,
+                end,
+                inclusive,
+            } => {
+                output.push_str(&format!("Start: {start}\n"));
+                output.push_str(&format!("End: {end}\n"));
+                output.push_str(&format!("Inclusive: {inclusive}\n"));
+            }
+            Value::EnumVariant { variant_name, .. } => {
+                output.push_str(&format!("Variant: {variant_name}\n"));
+            }
+        }
+
+        output
     }
 
     /// Get human-readable type name from Value (complexity: 10)
