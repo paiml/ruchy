@@ -103,8 +103,10 @@ impl Evaluator {
     /// Check if error indicates incomplete input (complexity: 3)
     fn is_incomplete_error(&self, error_msg: &str) -> bool {
         error_msg.contains("unexpected end of input")
-            || error_msg.contains("expected")
             || error_msg.contains("incomplete")
+            || (error_msg.contains("Expected") && error_msg.contains("EOF"))
+            || (error_msg.contains("expected") && error_msg.contains("EOF"))
+            || error_msg.contains("found EOF")
     }
 }
 

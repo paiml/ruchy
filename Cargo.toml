@@ -310,6 +310,7 @@ reqwest = { version = "0.12", features = ["json"] }
 serde_json = "1.0"
 assert_cmd = "2.0"
 predicates = "3.1"
+rexpect = "0.5"
 tempfile = "3.21"
 quickcheck_macros = { workspace = true }
 walkdir = "2.5"
