@@ -353,57 +353,64 @@ impl WasmEmitter {
     }
 
     /// Infer the WASM type of an expression
-    /// Complexity: 9 (within <10 limit)
+    /// Complexity: 7 (Toyota Way: <10 ✓)
     fn infer_type(&self, expr: &Expr) -> WasmType {
         match &expr.kind {
             ExprKind::Literal(Literal::Integer(_)) => WasmType::I32,
             ExprKind::Literal(Literal::Float(_)) => WasmType::F32,
             ExprKind::Literal(Literal::Bool(_)) => WasmType::I32,
-            ExprKind::Binary { op, left, right } => {
-                // Comparison operations always return i32 (boolean)
-                use crate::frontend::ast::BinaryOp;
-                match op {
-                    BinaryOp::Equal
-                    | BinaryOp::NotEqual
-                    | BinaryOp::Less
-                    | BinaryOp::LessEqual
-                    | BinaryOp::Greater
-                    | BinaryOp::GreaterEqual
-                    | BinaryOp::Gt => WasmType::I32,
-                    _ => {
-                        // Arithmetic: Type promotion (f32 > i32)
-                        let left_ty = self.infer_type(left);
-                        let right_ty = self.infer_type(right);
-                        if left_ty == WasmType::F32 || right_ty == WasmType::F32 {
-                            WasmType::F32
-                        } else {
-                            WasmType::I32
-                        }
-                    }
-                }
-            }
-            ExprKind::Let { body, .. } => {
-                // Let expression type is the body type
-                match &body.kind {
-                    ExprKind::Literal(Literal::Unit) => WasmType::I32, // Statement-style let
-                    _ => self.infer_type(body),
-                }
-            }
-            ExprKind::Identifier(name) => {
-                // Look up in global symbol table
-                self.symbols
-                    .borrow()
-                    .lookup_type(name)
-                    .unwrap_or(WasmType::I32)
-            }
-            ExprKind::Block(exprs) => {
-                // Return type of last expression in block
-                exprs.last().map_or(WasmType::I32, |e| self.infer_type(e))
-            }
-            ExprKind::Call { .. } => WasmType::I32, // Default to i32
+            ExprKind::Binary { op, left, right } => self.infer_binary_type(op, left, right),
+            ExprKind::Let { body, .. } => self.infer_let_type(body),
+            ExprKind::Identifier(name) => self.infer_identifier_type(name),
+            ExprKind::Block(exprs) => exprs.last().map_or(WasmType::I32, |e| self.infer_type(e)),
+            ExprKind::Call { .. } => WasmType::I32,
             ExprKind::Unary { operand, .. } => self.infer_type(operand),
-            _ => WasmType::I32, // Default to i32
+            _ => WasmType::I32,
         }
+    }
+
+    /// Infer type for binary expression
+    /// Complexity: 3 (Toyota Way: <10 ✓)
+    fn infer_binary_type(&self, op: &BinaryOp, left: &Expr, right: &Expr) -> WasmType {
+        use crate::frontend::ast::BinaryOp;
+        if matches!(
+            op,
+            BinaryOp::Equal
+                | BinaryOp::NotEqual
+                | BinaryOp::Less
+                | BinaryOp::LessEqual
+                | BinaryOp::Greater
+                | BinaryOp::GreaterEqual
+                | BinaryOp::Gt
+        ) {
+            return WasmType::I32;
+        }
+        // Arithmetic: Type promotion (f32 > i32)
+        let left_ty = self.infer_type(left);
+        let right_ty = self.infer_type(right);
+        if left_ty == WasmType::F32 || right_ty == WasmType::F32 {
+            WasmType::F32
+        } else {
+            WasmType::I32
+        }
+    }
+
+    /// Infer type for let expression
+    /// Complexity: 2 (Toyota Way: <10 ✓)
+    fn infer_let_type(&self, body: &Expr) -> WasmType {
+        match &body.kind {
+            ExprKind::Literal(Literal::Unit) => WasmType::I32,
+            _ => self.infer_type(body),
+        }
+    }
+
+    /// Infer type for identifier
+    /// Complexity: 1 (Toyota Way: <10 ✓)
+    fn infer_identifier_type(&self, name: &str) -> WasmType {
+        self.symbols
+            .borrow()
+            .lookup_type(name)
+            .unwrap_or(WasmType::I32)
     }
 
     /// Lower a binary operation to WASM instructions
