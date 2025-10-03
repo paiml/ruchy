@@ -196,7 +196,7 @@ mod control_flow_refactor_tests {
 
         // Break with value
         let result = eval_loop_body(&body, &mut last_val, &mut |_expr| {
-            Err(InterpreterError::Break(Value::Integer(99)))
+            Err(InterpreterError::Break(None, Value::Integer(99)))
         });
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), Some(Value::Integer(99)));
@@ -204,7 +204,7 @@ mod control_flow_refactor_tests {
         // Continue
         let mut last_val = Value::Integer(10);
         let result = eval_loop_body(&body, &mut last_val, &mut |_expr| {
-            Err(InterpreterError::Continue)
+            Err(InterpreterError::Continue(None))
         });
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), None);
@@ -344,7 +344,7 @@ mod control_flow_refactor_tests {
                     // Body
                     iterations += 1;
                     if iterations == 3 {
-                        Err(InterpreterError::Break(Value::Integer(42)))
+                        Err(InterpreterError::Break(None, Value::Integer(42)))
                     } else {
                         Ok(Value::Integer(iterations))
                     }
