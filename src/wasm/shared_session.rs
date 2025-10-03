@@ -258,6 +258,7 @@ impl GlobalRegistry {
             Value::Integer(_) => 8,
             Value::Float(_) => 8,
             Value::Bool(_) => 1,
+            Value::Byte(_) => 1,
             Value::Nil => 0,
             Value::String(s) => s.len(),
             Value::Array(arr) => {

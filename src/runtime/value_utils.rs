@@ -149,6 +149,7 @@ impl Value {
             Value::Integer(_) => "integer",
             Value::Float(_) => "float",
             Value::Bool(_) => "boolean",
+            Value::Byte(_) => "byte",
             Value::Nil => "nil",
             Value::String(_) => "string",
             Value::Array(_) => "array",

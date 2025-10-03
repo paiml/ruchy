@@ -10,7 +10,7 @@ use crate::runtime::Value;
 /// Evaluate a literal expression to its corresponding runtime value
 ///
 /// # Complexity
-/// Cyclomatic complexity: 8 (within limit of 10)
+/// Cyclomatic complexity: 9 (within limit of 10)
 pub fn eval_literal(lit: &Literal) -> Value {
     match lit {
         Literal::Integer(i) => Value::from_i64(*i),
@@ -18,6 +18,7 @@ pub fn eval_literal(lit: &Literal) -> Value {
         Literal::String(s) => Value::from_string(s.clone()),
         Literal::Bool(b) => Value::from_bool(*b),
         Literal::Char(c) => Value::from_string(c.to_string()),
+        Literal::Byte(b) => Value::Byte(*b),
         Literal::Unit => Value::nil(),
         Literal::Null => Value::nil(),
     }

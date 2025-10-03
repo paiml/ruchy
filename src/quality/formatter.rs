@@ -57,6 +57,7 @@ impl Formatter {
                 }
                 crate::frontend::ast::Literal::Bool(b) => b.to_string(),
                 crate::frontend::ast::Literal::Char(c) => format!("'{c}'"),
+                crate::frontend::ast::Literal::Byte(b) => format!("b'{}'", *b as char),
                 crate::frontend::ast::Literal::Unit => "()".to_string(),
                 crate::frontend::ast::Literal::Null => "null".to_string(),
             },

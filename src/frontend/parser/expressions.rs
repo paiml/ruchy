@@ -37,6 +37,10 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
             state.tokens.advance();
             Ok(Expr::new(ExprKind::Literal(Literal::Char(value)), span))
         }
+        Token::Byte(value) => {
+            state.tokens.advance();
+            Ok(Expr::new(ExprKind::Literal(Literal::Byte(value)), span))
+        }
         Token::Bool(value) => {
             state.tokens.advance();
             Ok(Expr::new(ExprKind::Literal(Literal::Bool(value)), span))
@@ -111,6 +115,17 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
                 span,
             ))
         }
+        Token::Ampersand => {
+            state.tokens.advance();
+            let expr = super::parse_expr_with_precedence_recursive(state, 13)?; // High precedence for unary
+            Ok(Expr::new(
+                ExprKind::Unary {
+                    op: UnaryOp::Reference,
+                    operand: Box::new(expr),
+                },
+                span,
+            ))
+        }
         Token::Power => {
             // Handle ** as double dereference in prefix position
             state.tokens.advance();
@@ -162,6 +177,19 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
                 },
                 span,
             ))
+        }
+        // Loop label: 'label: for/while/loop
+        Token::Lifetime(label_name) => {
+            state.tokens.advance();
+            // Expect colon
+            state.tokens.expect(&Token::Colon)?;
+            // Next must be a loop keyword
+            match state.tokens.peek() {
+                Some((Token::For, _)) => parse_labeled_for_loop(state, Some(label_name)),
+                Some((Token::While, _)) => parse_labeled_while_loop(state, Some(label_name)),
+                Some((Token::Loop, _)) => parse_labeled_loop(state, Some(label_name)),
+                _ => bail!("Expected loop keyword after label"),
+            }
         }
         // Function/block tokens - delegated to focused helper
         Token::Fun | Token::Fn | Token::LeftBrace => parse_function_block_token(state, token),
@@ -259,6 +287,10 @@ fn parse_literal_token(state: &mut ParserState, token: &Token, span: Span) -> Re
         Token::Char(value) => {
             state.tokens.advance();
             Ok(Expr::new(ExprKind::Literal(Literal::Char(*value)), span))
+        }
+        Token::Byte(value) => {
+            state.tokens.advance();
+            Ok(Expr::new(ExprKind::Literal(Literal::Byte(*value)), span))
         }
         Token::Bool(value) => {
             state.tokens.advance();
@@ -756,8 +788,8 @@ fn parse_unsafe_token(state: &mut ParserState) -> Result<Expr> {
 /// Extracted from `parse_prefix` to reduce complexity
 fn parse_break_token(state: &mut ParserState, span: Span) -> Result<Expr> {
     state.tokens.advance();
-    // Optional label
-    let label = if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
+    // Optional label (lifetime syntax 'label)
+    let label = if let Some((Token::Lifetime(name), _)) = state.tokens.peek() {
         let label = Some(name.clone());
         state.tokens.advance();
         label
@@ -784,8 +816,8 @@ fn parse_break_token(state: &mut ParserState, span: Span) -> Result<Expr> {
 /// Extracted from `parse_prefix` to reduce complexity
 fn parse_continue_token(state: &mut ParserState, span: Span) -> Result<Expr> {
     state.tokens.advance();
-    // Optional label
-    let label = if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
+    // Optional label (lifetime syntax 'label)
+    let label = if let Some((Token::Lifetime(name), _)) = state.tokens.peek() {
         let label = Some(name.clone());
         state.tokens.advance();
         label
@@ -1756,6 +1788,7 @@ fn parse_literal_pattern(state: &mut ParserState) -> Result<Pattern> {
         Token::Float(val) => parse_simple_literal_pattern(state, Literal::Float(val))?,
         Token::String(s) => parse_simple_literal_pattern(state, Literal::String(s))?,
         Token::Char(c) => parse_char_literal_pattern(state, c)?,
+        Token::Byte(b) => parse_simple_literal_pattern(state, Literal::Byte(b))?,
         Token::Bool(b) => parse_simple_literal_pattern(state, Literal::Bool(b))?,
         _ => bail!("Expected literal pattern, got: {:?}", token),
     };
@@ -2068,6 +2101,10 @@ fn parse_or_pattern(state: &mut ParserState, first: Pattern) -> Result<Pattern> 
 /// Parse while loop: while condition { body }
 /// Complexity: <5 (simple structure)
 fn parse_while_loop(state: &mut ParserState) -> Result<Expr> {
+    parse_labeled_while_loop(state, None)
+}
+
+fn parse_labeled_while_loop(state: &mut ParserState, label: Option<String>) -> Result<Expr> {
     let start_span = state.tokens.expect(&Token::While)?;
     // Check for while-let syntax
     if matches!(state.tokens.peek(), Some((Token::Let, _))) {
@@ -2092,7 +2129,7 @@ fn parse_while_loop(state: &mut ParserState) -> Result<Expr> {
         );
         Ok(Expr::new(
             ExprKind::WhileLet {
-                label: None, // TODO: Parse loop labels
+                label,
                 pattern,
                 expr,
                 body,
@@ -2113,7 +2150,7 @@ fn parse_while_loop(state: &mut ParserState) -> Result<Expr> {
         );
         Ok(Expr::new(
             ExprKind::While {
-                label: None, // TODO: Parse loop labels
+                label,
                 condition,
                 body,
             },
@@ -2121,9 +2158,14 @@ fn parse_while_loop(state: &mut ParserState) -> Result<Expr> {
         ))
     }
 }
-/// Parse for loop: for pattern in iterator { body }
+/// Parse for loop with optional label: ['label:] for pattern in iterator { body }
 /// Complexity: <5 (simple structure)
 fn parse_for_loop(state: &mut ParserState) -> Result<Expr> {
+    parse_labeled_for_loop(state, None)
+}
+
+/// Parse for loop with provided label
+fn parse_labeled_for_loop(state: &mut ParserState, label: Option<String>) -> Result<Expr> {
     let start_span = state.tokens.expect(&Token::For)?;
     // Parse pattern (e.g., "i" in "for i in ...")
     let pattern = parse_for_pattern(state)?;
@@ -2146,7 +2188,7 @@ fn parse_for_loop(state: &mut ParserState) -> Result<Expr> {
     let var = pattern.primary_name();
     Ok(Expr::new(
         ExprKind::For {
-            label: None, // TODO: Parse loop labels
+            label,
             var,
             pattern: Some(pattern),
             iter: iterator,
@@ -5126,16 +5168,14 @@ fn parse_async_arrow_lambda(state: &mut ParserState) -> Result<Expr> {
 
 /// Parse loop statement - infinite loop with break/continue
 fn parse_loop(state: &mut ParserState) -> Result<Expr> {
+    parse_labeled_loop(state, None)
+}
+
+fn parse_labeled_loop(state: &mut ParserState, label: Option<String>) -> Result<Expr> {
     let start_span = state.tokens.expect(&Token::Loop)?;
     let body = Box::new(super::parse_expr_recursive(state)?);
 
-    Ok(Expr::new(
-        ExprKind::Loop {
-            label: None, // TODO: Parse loop labels
-            body,
-        },
-        start_span,
-    ))
+    Ok(Expr::new(ExprKind::Loop { label, body }, start_span))
 }
 
 /// Parse increment operator (++var or var++)

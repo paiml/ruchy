@@ -131,7 +131,8 @@ pub fn match_pattern(pattern: &Pattern, value: &Value) -> Option<Vec<(String, Va
         Pattern::QualifiedName(_) => None,
         Pattern::Some(inner_pattern) => match_some_pattern_helper(inner_pattern, value),
         Pattern::None => match_none_pattern_helper(value),
-        Pattern::Ok(_) | Pattern::Err(_) => None,
+        Pattern::Ok(inner_pattern) => match_ok_pattern_helper(inner_pattern, value),
+        Pattern::Err(inner_pattern) => match_err_pattern_helper(inner_pattern, value),
         Pattern::WithDefault { pattern, .. } => {
             // For default patterns, we match the inner pattern
             // Default handling is done at the destructuring level
@@ -311,6 +312,57 @@ fn match_none_pattern_helper(value: &Value) -> Option<Vec<(String, Value)>> {
     if let Value::EnumVariant { variant_name, .. } = value {
         if variant_name == "None" {
             return Some(Vec::new());
+        }
+    }
+    None
+}
+
+/// Helper for matching Ok patterns (complexity: 6)
+fn match_ok_pattern_helper(inner_pattern: &Pattern, value: &Value) -> Option<Vec<(String, Value)>> {
+    // Ok(x) creates an Object: {data: [x], __type: "Message", type: "Ok"}
+    if let Value::Object(fields) = value {
+        eprintln!(
+            "DEBUG: Matching Ok pattern against Object with {} fields",
+            fields.len()
+        );
+        if let Some(type_value) = fields.get("type") {
+            eprintln!("DEBUG: Found 'type' field: {type_value:?}");
+            if let Value::String(type_str) = type_value {
+                eprintln!("DEBUG: Type is String: {type_str}");
+                if &**type_str == "Ok" {
+                    eprintln!("DEBUG: Type matches 'Ok'");
+                    if let Some(data_value) = fields.get("data") {
+                        eprintln!("DEBUG: Found 'data' field: {data_value:?}");
+                        if let Value::Array(data) = data_value {
+                            eprintln!("DEBUG: Data is Array with {} elements", data.len());
+                            if !data.is_empty() {
+                                eprintln!("DEBUG: Matching inner pattern against data[0]");
+                                return match_pattern(inner_pattern, &data[0]);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    None
+}
+
+/// Helper for matching Err patterns (complexity: 6)
+fn match_err_pattern_helper(
+    inner_pattern: &Pattern,
+    value: &Value,
+) -> Option<Vec<(String, Value)>> {
+    // Err(x) creates an Object: {data: [x], __type: "Message", type: "Err"}
+    if let Value::Object(fields) = value {
+        if let Some(Value::String(type_str)) = fields.get("type") {
+            if &**type_str == "Err" {
+                if let Some(Value::Array(data)) = fields.get("data") {
+                    if !data.is_empty() {
+                        return match_pattern(inner_pattern, &data[0]);
+                    }
+                }
+            }
         }
     }
     None

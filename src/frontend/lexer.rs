@@ -119,6 +119,26 @@ pub enum Token {
         }
     })]
     Char(char),
+    #[regex(r"b'([^'\\]|\\.)'", |lex| {
+        let s = lex.slice();
+        let inner = &s[2..s.len()-1];  // Skip b' prefix
+        if inner.len() == 1 {
+            Some(inner.as_bytes()[0])
+        } else if inner.starts_with('\\') && inner.len() == 2 {
+            match inner.chars().nth(1) {
+                Some('n') => Some(b'\n'),
+                Some('t') => Some(b'\t'),
+                Some('r') => Some(b'\r'),
+                Some('\\') => Some(b'\\'),
+                Some('\'') => Some(b'\''),
+                Some('0') => Some(b'\0'),
+                _ => None,
+            }
+        } else {
+            None
+        }
+    })]
+    Byte(u8),
     #[token("true", |_| true)]
     #[token("false", |_| false)]
     Bool(bool),

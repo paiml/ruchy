@@ -24,6 +24,8 @@ pub struct CommandContext<'a> {
     pub args: Vec<&'a str>,
     /// REPL state (mutable)
     pub state: &'a mut ReplState,
+    /// Evaluator for executing expressions (optional for backward compatibility)
+    pub evaluator: Option<&'a mut super::evaluation::Evaluator>,
 }
 
 /// Registry of available commands
@@ -49,6 +51,20 @@ impl CommandRegistry {
             ":reset" => {
                 context.state.clear_bindings();
                 Ok(CommandResult::Success("Bindings reset".to_string()))
+            }
+            ":type" => {
+                // Get the expression from args
+                if context.args.is_empty() {
+                    return Ok(CommandResult::Success(
+                        "Usage: :type <expression>".to_string(),
+                    ));
+                }
+
+                // Join all args to reconstruct the expression
+                let expr = context.args.join(" ");
+
+                // Return a placeholder - will be implemented in execute_type_command
+                self.execute_type_command(&expr, context)
             }
             ":mode" => {
                 if let Some(&mode_arg) = context.args.first() {
@@ -101,6 +117,7 @@ impl CommandRegistry {
   :mode [mode]       Show/set REPL mode (normal, debug, ast, transpile)
   :history           Show command history
   :vars              Show variable bindings
+  :type <expr>       Show type of expression
 
 Enter expressions to evaluate them.
 "
@@ -135,6 +152,63 @@ Enter expressions to evaluate them.
                 .join("\n")
         }
     }
+
+    /// Execute :type command to show type of expression (complexity: 6)
+    fn execute_type_command(
+        &self,
+        expr: &str,
+        context: &mut CommandContext,
+    ) -> Result<CommandResult> {
+        use super::EvalResult;
+
+        // Get evaluator from context or create a new one
+        let evaluator = match &mut context.evaluator {
+            Some(eval) => eval,
+            None => {
+                return Ok(CommandResult::Success(
+                    "Error: Evaluator not available".to_string(),
+                ))
+            }
+        };
+
+        // Evaluate the expression to get its value
+        match evaluator.evaluate_line(expr, context.state) {
+            Ok(EvalResult::Value(value)) => {
+                // Get type name from value
+                let type_name = Self::value_type_name(&value);
+                Ok(CommandResult::Success(format!("Type: {type_name}")))
+            }
+            Ok(EvalResult::Error(msg)) => Ok(CommandResult::Success(format!(
+                "Error evaluating expression: {msg}"
+            ))),
+            Ok(EvalResult::NeedMoreInput) => {
+                Ok(CommandResult::Success("Incomplete expression".to_string()))
+            }
+            Err(e) => Ok(CommandResult::Success(format!("Error: {e}"))),
+        }
+    }
+
+    /// Get human-readable type name from Value (complexity: 10)
+    fn value_type_name(value: &super::Value) -> &'static str {
+        use super::Value;
+        match value {
+            Value::Integer(_) => "Integer",
+            Value::Float(_) => "Float",
+            Value::Bool(_) => "Bool",
+            Value::Byte(_) => "Byte",
+            Value::Nil => "Nil",
+            Value::String(_) => "String",
+            Value::Array(_) => "Array",
+            Value::Tuple(_) => "Tuple",
+            Value::Closure { .. } => "Function",
+            Value::DataFrame { .. } => "DataFrame",
+            Value::Object(_) => "Object",
+            Value::ObjectMut(_) => "Object",
+            Value::Range { .. } => "Range",
+            Value::EnumVariant { .. } => "Enum",
+            Value::BuiltinFunction(_) => "BuiltinFunction",
+        }
+    }
 }
 
 impl Default for CommandRegistry {
@@ -159,6 +233,7 @@ mod tests {
         let registry = CommandRegistry::new();
         let mut state = ReplState::new();
         let mut context = CommandContext {
+            evaluator: None,
             args: vec![],
             state: &mut state,
         };
@@ -178,6 +253,7 @@ mod tests {
         let registry = CommandRegistry::new();
         let mut state = ReplState::new();
         let mut context = CommandContext {
+            evaluator: None,
             args: vec![],
             state: &mut state,
         };
@@ -193,6 +269,7 @@ mod tests {
         let registry = CommandRegistry::new();
         let mut state = ReplState::new();
         let mut context = CommandContext {
+            evaluator: None,
             args: vec!["debug"],
             state: &mut state,
         };

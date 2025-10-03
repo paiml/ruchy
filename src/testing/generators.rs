@@ -474,6 +474,7 @@ mod tests {
                 | Literal::String(_)
                 | Literal::Unit
                 | Literal::Char(_)
+                | Literal::Byte(_)
                 | Literal::Null => {}
             }
         }
@@ -588,7 +589,10 @@ mod tests {
         let _ = ExprKind::Identifier("x".to_string());
         let _ = ExprKind::Block(vec![]);
         let _ = ExprKind::Return { value: None };
-        let _ = ExprKind::Break { label: None };
+        let _ = ExprKind::Break {
+            label: None,
+            value: None,
+        };
         let _ = ExprKind::Continue { label: None };
     }
 
@@ -645,6 +649,9 @@ mod tests {
                 }
                 Literal::Char(_) => {
                     found_variants.insert("Char");
+                }
+                Literal::Byte(_) => {
+                    found_variants.insert("Byte");
                 }
                 Literal::Null => {
                     found_variants.insert("Null");
@@ -900,6 +907,7 @@ mod tests {
                 Literal::Bool(b) => assert!(*b),
                 Literal::String(s) => assert_eq!(s, "test"),
                 Literal::Char(c) => assert_eq!(*c, 'a'),
+                Literal::Byte(_) => {} // Byte literal not in test set
                 Literal::Unit => {}
                 Literal::Null => {}
             }

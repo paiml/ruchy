@@ -65,6 +65,10 @@ impl Transpiler {
                     crate::frontend::ast::Literal::String(s) => Ok(quote! { #s }),
                     crate::frontend::ast::Literal::Bool(b) => Ok(quote! { #b }),
                     crate::frontend::ast::Literal::Char(c) => Ok(quote! { #c }),
+                    crate::frontend::ast::Literal::Byte(b) => {
+                        let byte_val = *b;
+                        Ok(quote! { #byte_val })
+                    }
                     crate::frontend::ast::Literal::Unit => Ok(quote! { () }),
                     crate::frontend::ast::Literal::Null => Ok(quote! { None }),
                 }

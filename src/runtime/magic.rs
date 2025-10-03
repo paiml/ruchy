@@ -380,6 +380,7 @@ impl MagicCommand for WhosMagic {
                 Value::Float(_) => "Float",
                 Value::String(_) => "String",
                 Value::Bool(_) => "Bool",
+                Value::Byte(_) => "Byte",
                 // Value::Char not in current enum
                 Value::Array(_) => "Array",
                 Value::Tuple(_) => "Tuple",
