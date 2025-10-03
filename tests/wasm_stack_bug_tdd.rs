@@ -17,7 +17,7 @@ fn validate_wasm(bytes: &[u8]) -> Result<(), String> {
     let mut validator = Validator::new_with_features(WasmFeatures::all());
     validator
         .validate_all(bytes)
-        .map_err(|e| format!("WASM validation failed: {}", e))?;
+        .map_err(|e| format!("WASM validation failed: {e}"))?;
     Ok(())
 }
 
@@ -25,13 +25,13 @@ fn validate_wasm(bytes: &[u8]) -> Result<(), String> {
 fn test_issue_27_example_1_arithmetic_stack_overflow() {
     // From Issue #27 Example 1: Multi-expression code should validate
     // The WASM emitter correctly handles stack management with Drop instructions
-    let code = r#"
+    let code = r"
 2 + 2
 10 * 5
 100 - 25
 50 / 2
 17 % 5
-    "#;
+    ";
 
     let bytes = compile_to_wasm(code).expect("Compilation should succeed");
 
@@ -46,7 +46,7 @@ fn test_issue_27_example_1_arithmetic_stack_overflow() {
 fn test_issue_27_example_2_type_inference() {
     // From Issue #27 Example 2: Mixed int/float operations with proper type coercion
     // The WASM emitter handles automatic type conversion (i32 -> f32)
-    let code = r#"
+    let code = r"
 let x = 10
 let y = 20
 x + y
@@ -54,7 +54,7 @@ let pi = 3.14159
 let radius = 5
 let area = pi * radius * radius
 area
-    "#;
+    ";
 
     let bytes = compile_to_wasm(code).expect("Compilation should succeed");
 
@@ -68,12 +68,12 @@ area
 #[test]
 fn test_issue_27_working_example() {
     // From Issue #27: Only trivial code works
-    let code = r#"
+    let code = r"
 fun add(a, b) {
     a + b
 }
 add(2, 3)
-    "#;
+    ";
 
     let bytes = compile_to_wasm(code).expect("Compilation should succeed");
 

@@ -18,8 +18,7 @@ fn test_debug_mode_activation() {
     let result = repl.eval(":mode debug").unwrap();
     assert!(
         result.contains("Debug") || result.contains("debug"),
-        "Expected debug mode confirmation but got: {}",
-        result
+        "Expected debug mode confirmation but got: {result}"
     );
 }
 
@@ -36,8 +35,7 @@ fn test_debug_mode_shows_ast() {
     // Should contain AST information
     assert!(
         result.contains("Binary") || result.contains("Add") || result.contains("AST"),
-        "Expected AST output in debug mode but got: {}",
-        result
+        "Expected AST output in debug mode but got: {result}"
     );
 }
 
@@ -54,8 +52,7 @@ fn test_debug_mode_shows_transpiled_code() {
     // Should contain transpiled Rust code markers
     assert!(
         result.contains("Rust") || result.contains("transpiled") || result.contains("fn "),
-        "Expected transpiled code in debug mode but got: {}",
-        result
+        "Expected transpiled code in debug mode but got: {result}"
     );
 }
 
@@ -71,9 +68,8 @@ fn test_debug_mode_shows_result() {
 
     // Should still contain the actual result
     assert!(
-        result.contains("5") || result.contains("Result"),
-        "Expected result in debug mode but got: {}",
-        result
+        result.contains('5') || result.contains("Result"),
+        "Expected result in debug mode but got: {result}"
     );
 }
 
@@ -87,15 +83,13 @@ fn test_normal_mode_no_debug_output() {
     // Should NOT contain debug information
     assert!(
         !result.contains("Binary") && !result.contains("AST") && !result.contains("transpiled"),
-        "Expected no debug output in normal mode but got: {}",
-        result
+        "Expected no debug output in normal mode but got: {result}"
     );
 
     // Should just show result
     assert!(
-        result.contains("5"),
-        "Expected simple result but got: {}",
-        result
+        result.contains('5'),
+        "Expected simple result but got: {result}"
     );
 }
 
@@ -117,8 +111,7 @@ fn test_debug_mode_persistence() {
     let result2 = repl.eval("10 * 5").unwrap();
     assert!(
         result2.contains("Binary") || result2.contains("AST") || result2.contains("Multiply"),
-        "Expected debug output to persist in second eval but got: {}",
-        result2
+        "Expected debug output to persist in second eval but got: {result2}"
     );
 }
 
@@ -140,7 +133,6 @@ fn test_mode_switch_back_to_normal() {
     let normal_result = repl.eval("1 + 1").unwrap();
     assert!(
         !normal_result.contains("Binary") && !normal_result.contains("AST"),
-        "Expected normal output after mode switch but got: {}",
-        normal_result
+        "Expected normal output after mode switch but got: {normal_result}"
     );
 }

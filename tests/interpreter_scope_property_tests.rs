@@ -24,10 +24,10 @@ proptest! {
         let mut repl = Repl::new(PathBuf::from("/tmp")).unwrap();
 
         // Define variable in outer scope
-        repl.eval(&format!("let x = {}", outer_val)).unwrap();
+        repl.eval(&format!("let x = {outer_val}")).unwrap();
 
         // Define function with local variable of same name
-        repl.eval(&format!("fn test() {{ let x = {}; x }}", inner_val)).unwrap();
+        repl.eval(&format!("fn test() {{ let x = {inner_val}; x }}")).unwrap();
 
         // Call function should return inner value
         let func_result = repl.eval("test()").unwrap();
@@ -52,8 +52,7 @@ proptest! {
 
         // Test that blocks can access outer variables
         let code = format!(
-            "let x = {}; {{ x }}",
-            outer_val
+            "let x = {outer_val}; {{ x }}"
         );
         let block_result = repl.eval(&code).unwrap();
 
@@ -72,7 +71,7 @@ proptest! {
         let mut repl = Repl::new(PathBuf::from("/tmp")).unwrap();
 
         // Define outer variable
-        repl.eval(&format!("let x = {}", outer_val)).unwrap();
+        repl.eval(&format!("let x = {outer_val}")).unwrap();
 
         // Nested block should access outer variable
         let code = "{ { x } }";
@@ -87,7 +86,7 @@ proptest! {
         let mut repl = Repl::new(PathBuf::from("/tmp")).unwrap();
 
         // Define global variable
-        repl.eval(&format!("let g = {}", global_val)).unwrap();
+        repl.eval(&format!("let g = {global_val}")).unwrap();
 
         // Function should access global
         repl.eval("fn test() { g }").unwrap();
@@ -109,8 +108,7 @@ proptest! {
 
         // Test that loop variables work correctly within loop
         let code = format!(
-            "let mut sum = 0; for i in 0..{} {{ sum = sum + i }}; sum",
-            n
+            "let mut sum = 0; for i in 0..{n} {{ sum = sum + i }}; sum"
         );
         let result = repl.eval(&code).unwrap();
 
@@ -131,13 +129,13 @@ proptest! {
         let mut repl = Repl::new(PathBuf::from("/tmp")).unwrap();
 
         // Define outer variable
-        repl.eval(&format!("let x = {}", outer_val)).unwrap();
+        repl.eval(&format!("let x = {outer_val}")).unwrap();
 
         // Define function with parameter 'x'
         repl.eval("fn test(x) { x }").unwrap();
 
         // Call function with different value
-        let result = repl.eval(&format!("test({})", param_val)).unwrap();
+        let result = repl.eval(&format!("test({param_val})")).unwrap();
 
         prop_assert!(result.contains(&param_val.to_string()),
             "Function parameter should shadow outer x: {} not {}", param_val, outer_val);
@@ -159,7 +157,7 @@ proptest! {
         let mut repl = Repl::new(PathBuf::from("/tmp")).unwrap();
 
         // Define variable
-        repl.eval(&format!("let x = {}", captured_val)).unwrap();
+        repl.eval(&format!("let x = {captured_val}")).unwrap();
 
         // Create closure that captures x
         repl.eval("let f = || x").unwrap();
@@ -170,7 +168,7 @@ proptest! {
             "Closure should capture x: {}", captured_val);
 
         // Update x
-        repl.eval(&format!("let x = {}", new_val)).unwrap();
+        repl.eval(&format!("let x = {new_val}")).unwrap();
 
         // New closure should see new value
         let result2 = repl.eval("x").unwrap();
@@ -193,13 +191,13 @@ proptest! {
         let mut repl = Repl::new(PathBuf::from("/tmp")).unwrap();
 
         // First scope
-        repl.eval(&format!("{{ let x = {} }}", val1)).unwrap();
+        repl.eval(&format!("{{ let x = {val1} }}")).unwrap();
 
         // Second scope - should not see x from first scope
-        repl.eval(&format!("{{ let x = {} }}", val2)).unwrap();
+        repl.eval(&format!("{{ let x = {val2} }}")).unwrap();
 
         // Third scope - should not see x from previous scopes
-        let code = format!("{{ let x = {}; x }}", val3);
+        let code = format!("{{ let x = {val3}; x }}");
         let result = repl.eval(&code).unwrap();
 
         prop_assert!(result.contains(&val3.to_string()),

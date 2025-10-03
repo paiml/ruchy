@@ -23,12 +23,10 @@ fn spawn_repl(timeout_ms: u64) -> Result<rexpect::session::PtySession, Error> {
     // Build binary first if needed to ensure it exists
     let binary_path = std::path::PathBuf::from("target/debug/ruchy");
 
-    if !binary_path.exists() {
-        panic!(
-            "Binary not found at {:?}. Run 'cargo build' first.",
-            binary_path
-        );
-    }
+    assert!(
+        binary_path.exists(),
+        "Binary not found at {binary_path:?}. Run 'cargo build' first."
+    );
 
     let mut cmd = Command::new(&binary_path);
     cmd.arg("repl");

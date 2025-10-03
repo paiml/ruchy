@@ -1,7 +1,7 @@
 #![cfg(test)]
-//! DataFrame literal evaluation tests (DF-001)
+//! `DataFrame` literal evaluation tests (DF-001)
 //!
-//! TDD tests for DataFrame literal syntax: df![...]
+//! TDD tests for `DataFrame` literal syntax: df![...]
 //! These tests must pass before implementation is considered complete.
 
 use ruchy::frontend::Parser;
@@ -29,7 +29,7 @@ fn test_empty_dataframe_literal() {
         Value::DataFrame { columns } => {
             assert_eq!(columns.len(), 0, "Empty DataFrame should have 0 columns");
         }
-        other => panic!("Expected DataFrame, got: {:?}", other),
+        other => panic!("Expected DataFrame, got: {other:?}"),
     }
 }
 
@@ -50,7 +50,7 @@ fn test_single_column_dataframe_integers() {
             assert_eq!(col.values[1], Value::Integer(30));
             assert_eq!(col.values[2], Value::Integer(35));
         }
-        other => panic!("Expected DataFrame, got: {:?}", other),
+        other => panic!("Expected DataFrame, got: {other:?}"),
     }
 }
 
@@ -74,7 +74,7 @@ fn test_single_column_dataframe_strings() {
                 panic!("Expected String value");
             }
         }
-        other => panic!("Expected DataFrame, got: {:?}", other),
+        other => panic!("Expected DataFrame, got: {other:?}"),
     }
 }
 
@@ -103,7 +103,7 @@ fn test_multi_column_dataframe() {
             assert_eq!(age_col.values[0], Value::Integer(25));
             assert_eq!(age_col.values[1], Value::Integer(30));
         }
-        other => panic!("Expected DataFrame, got: {:?}", other),
+        other => panic!("Expected DataFrame, got: {other:?}"),
     }
 }
 
@@ -131,16 +131,16 @@ fn test_dataframe_mixed_types() {
             let score_col = &columns[2];
             assert!(matches!(score_col.values[0], Value::Float(_)));
         }
-        other => panic!("Expected DataFrame, got: {:?}", other),
+        other => panic!("Expected DataFrame, got: {other:?}"),
     }
 }
 
 #[test]
 fn test_dataframe_with_variables() {
-    let code = r#"
+    let code = r"
         let ages = [20, 25, 30];
         df![age => ages]
-    "#;
+    ";
 
     let result = eval(code).expect("DataFrame with variable should evaluate");
 
@@ -152,7 +152,7 @@ fn test_dataframe_with_variables() {
             // The single value should be an array
             assert!(matches!(columns[0].values[0], Value::Array(_)));
         }
-        other => panic!("Expected DataFrame, got: {:?}", other),
+        other => panic!("Expected DataFrame, got: {other:?}"),
     }
 }
 
@@ -164,18 +164,17 @@ fn test_dataframe_display() {
 
     // Should have some reasonable string representation
     assert!(
-        display.contains("DataFrame") || display.contains("x"),
-        "Display should mention DataFrame or column name, got: {}",
-        display
+        display.contains("DataFrame") || display.contains('x'),
+        "Display should mention DataFrame or column name, got: {display}"
     );
 }
 
 #[test]
 fn test_dataframe_assignment() {
-    let code = r#"
+    let code = r"
         let data = df![x => [1, 2, 3]];
         data
-    "#;
+    ";
 
     let result = eval(code).expect("DataFrame assignment should work");
 
@@ -184,6 +183,6 @@ fn test_dataframe_assignment() {
             assert_eq!(columns.len(), 1);
             assert_eq!(columns[0].name, "x");
         }
-        other => panic!("Expected DataFrame, got: {:?}", other),
+        other => panic!("Expected DataFrame, got: {other:?}"),
     }
 }

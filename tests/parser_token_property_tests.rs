@@ -20,7 +20,7 @@ use ruchy::frontend::parser::Parser;
 proptest! {
     #[test]
     fn prop_simple_expressions_consume_all_tokens(value in 1i64..1000) {
-        let code = format!("{}", value);
+        let code = format!("{value}");
         let mut parser = Parser::new(&code);
         let result = parser.parse();
 
@@ -34,7 +34,7 @@ proptest! {
         b in 1i64..100,
         c in 1i64..100
     ) {
-        let code = format!("{} + {} * {}", a, b, c);
+        let code = format!("{a} + {b} * {c}");
         let mut parser = Parser::new(&code);
         let result = parser.parse();
 
@@ -56,7 +56,7 @@ proptest! {
     ) {
         let spaces_before = " ".repeat(leading_spaces);
         let spaces_after = " ".repeat(trailing_spaces);
-        let code = format!("{}{}{}", spaces_before, value, spaces_after);
+        let code = format!("{spaces_before}{value}{spaces_after}");
         let mut parser = Parser::new(&code);
         let result = parser.parse();
 
@@ -78,7 +78,7 @@ proptest! {
     ) {
         let ws = " ".repeat(spaces);
         // Test: a + b with varying whitespace
-        let code = format!("{}{ws}+{ws}{}", a, b, ws = ws);
+        let code = format!("{a}{ws}+{ws}{b}");
         let mut parser = Parser::new(&code);
         let result = parser.parse();
 
@@ -93,7 +93,7 @@ proptest! {
 proptest! {
     #[test]
     fn prop_line_comments_ignored(value in 1i64..1000) {
-        let code = format!("// comment\n{}", value);
+        let code = format!("// comment\n{value}");
         let mut parser = Parser::new(&code);
         let result = parser.parse();
 
@@ -109,7 +109,7 @@ proptest! {
 
     #[test]
     fn prop_trailing_line_comments_ignored(value in 1i64..1000) {
-        let code = format!("{} // trailing comment", value);
+        let code = format!("{value} // trailing comment");
         let mut parser = Parser::new(&code);
         let result = parser.parse();
 
@@ -138,7 +138,7 @@ proptest! {
         let operators = vec!["+", "-", "*", "/", "%", "==", "!=", "<", ">", "<=", ">="];
 
         for op in operators {
-            let code = format!("{}{}{}", a, op, b);
+            let code = format!("{a}{op}{b}");
             let mut parser = Parser::new(&code);
             let result = parser.parse();
 
@@ -156,7 +156,7 @@ proptest! {
             return Ok(());
         }
 
-        let ident = format!("{}{}", prefix, suffix);
+        let ident = format!("{prefix}{suffix}");
         let mut parser = Parser::new(&ident);
         let result = parser.parse();
 
@@ -179,7 +179,7 @@ proptest! {
     #[test]
     fn prop_string_with_escaped_quotes(s in "[a-zA-Z0-9 ]{1,10}") {
         // Test strings containing text (escapes tested separately due to complexity)
-        let code = format!("\"{}\"", s);
+        let code = format!("\"{s}\"");
         let mut parser = Parser::new(&code);
         let result = parser.parse();
 
@@ -217,7 +217,7 @@ fn prop_empty_strings_parse() {
 proptest! {
     #[test]
     fn prop_decimal_integers_parse(value in 0i64..10000) {
-        let code = format!("{}", value);
+        let code = format!("{value}");
         let mut parser = Parser::new(&code);
         let result = parser.parse();
 
@@ -256,7 +256,7 @@ proptest! {
 
     #[test]
     fn prop_hex_integers_parse(value in 0u32..0xFFFF) {
-        let code = format!("0x{:X}", value);
+        let code = format!("0x{value:X}");
         let mut parser = Parser::new(&code);
         let result = parser.parse();
 
@@ -266,7 +266,7 @@ proptest! {
 
     #[test]
     fn prop_binary_integers_parse(value in 0u32..0xFF) {
-        let code = format!("0b{:b}", value);
+        let code = format!("0b{value:b}");
         let mut parser = Parser::new(&code);
         let result = parser.parse();
 

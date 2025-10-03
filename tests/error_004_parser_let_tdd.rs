@@ -1,7 +1,7 @@
 /// ERROR-004: TDD tests for parser issues with let statements in function bodies
 ///
 /// Tests that functions containing multiple let statements and early returns
-/// parse correctly without "Expected RightBrace" errors.
+/// parse correctly without "Expected `RightBrace`" errors.
 use ruchy::frontend::Parser;
 use ruchy::runtime::Interpreter;
 
@@ -25,35 +25,31 @@ fn eval(code: &str) -> Result<String, String> {
 
 #[test]
 fn test_function_with_single_let_mut() {
-    let code = r#"
+    let code = r"
         fun test() -> i32 {
             let mut x = 5;
             x
         }
         test()
-    "#;
+    ";
 
     let result = parse(code);
-    assert!(result.is_ok(), "Single let mut should parse: {:?}", result);
+    assert!(result.is_ok(), "Single let mut should parse: {result:?}");
 }
 
 #[test]
 fn test_function_with_multiple_let_mut() {
-    let code = r#"
+    let code = r"
         fun test() -> i32 {
             let mut result = 0;
             let mut i = 0;
             result
         }
         test()
-    "#;
+    ";
 
     let result = parse(code);
-    assert!(
-        result.is_ok(),
-        "Multiple let mut should parse: {:?}",
-        result
-    );
+    assert!(result.is_ok(), "Multiple let mut should parse: {result:?}");
 }
 
 #[test]
@@ -72,7 +68,7 @@ fn test_function_with_let_and_if() {
     "#;
 
     let result = parse(code);
-    assert!(result.is_ok(), "Let with if should parse: {:?}", result);
+    assert!(result.is_ok(), "Let with if should parse: {result:?}");
 }
 
 #[test]
@@ -96,8 +92,7 @@ fn test_function_with_multiple_lets_and_if() {
     let result = parse(code);
     assert!(
         result.is_ok(),
-        "Multiple lets with if should parse: {:?}",
-        result
+        "Multiple lets with if should parse: {result:?}"
     );
 }
 
@@ -127,7 +122,7 @@ fn test_simplified_ex08() {
     "#;
 
     let result = parse(code);
-    assert!(result.is_ok(), "Simplified ex08 should parse: {:?}", result);
+    assert!(result.is_ok(), "Simplified ex08 should parse: {result:?}");
 }
 
 #[test]
@@ -175,8 +170,7 @@ fn test_ex08_with_while_loop() {
     let result = parse(code);
     assert!(
         result.is_ok(),
-        "Full ex08 parse_positive_integer should parse: {:?}",
-        result
+        "Full ex08 parse_positive_integer should parse: {result:?}"
     );
 }
 
@@ -242,7 +236,6 @@ fn test_ex08_full_with_two_functions() {
     let result = parse(code);
     assert!(
         result.is_ok(),
-        "Full ex08 with both functions should parse: {:?}",
-        result
+        "Full ex08 with both functions should parse: {result:?}"
     );
 }

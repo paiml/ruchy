@@ -17,7 +17,7 @@ fn eval(repl: &mut Repl, code: &str) -> Result<String, String> {
 #[test]
 fn test_function_with_early_return_called() {
     let mut repl = create_repl();
-    let code = r#"
+    let code = r"
         fun safe_divide(a: i32, b: i32) -> i32 {
             if b == 0 {
                 return 0;
@@ -25,7 +25,7 @@ fn test_function_with_early_return_called() {
             a / b
         }
         safe_divide(10, 0)
-    "#;
+    ";
     let result = eval(&mut repl, code).expect("Should execute early return in function");
     assert_eq!(result, "0", "Early return should work in called functions");
 }
@@ -42,13 +42,11 @@ fn test_return_statement_at_top_level() {
     let error = result.unwrap_err();
     assert!(
         !error.contains("Runtime error: return"),
-        "Error message should not contain 'Runtime error: return', got: {}",
-        error
+        "Error message should not contain 'Runtime error: return', got: {error}"
     );
     assert!(
         error.contains("return") || error.contains("top-level") || error.contains("function"),
-        "Error should indicate return is not valid at top level, got: {}",
-        error
+        "Error should indicate return is not valid at top level, got: {error}"
     );
 }
 
@@ -65,8 +63,7 @@ fn test_function_definition_with_return() {
     // Function definition should succeed (returns Unit or function value)
     assert!(
         result.is_ok(),
-        "Function definition with return should work: {:?}",
-        result
+        "Function definition with return should work: {result:?}"
     );
 }
 
@@ -110,7 +107,7 @@ fn test_nested_function_with_early_return() {
 #[test]
 fn test_return_in_loop_inside_function() {
     let mut repl = create_repl();
-    let code = r#"
+    let code = r"
         fun find_first_positive(numbers: Vec<i32>) -> i32 {
             for n in numbers {
                 if n > 0 {
@@ -120,7 +117,7 @@ fn test_return_in_loop_inside_function() {
             return -1;
         }
         find_first_positive([-1, -2, 3, 4])
-    "#;
+    ";
     let result = eval(&mut repl, code).expect("Return in loop should work");
     assert_eq!(result, "3", "Should return first positive number");
 }

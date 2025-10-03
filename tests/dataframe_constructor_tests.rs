@@ -1,8 +1,8 @@
 #![cfg(test)]
-//! DataFrame constructor API tests (DF-002)
+//! `DataFrame` constructor API tests (DF-002)
 //!
-//! TDD tests for DataFrame builder pattern:
-//! DataFrame::new().column(...).build()
+//! TDD tests for `DataFrame` builder pattern:
+//! `DataFrame::new().column(...).build()`
 
 use ruchy::frontend::Parser;
 use ruchy::runtime::{Interpreter, Value};
@@ -22,9 +22,9 @@ fn eval(code: &str) -> Result<Value, String> {
 
 #[test]
 fn test_dataframe_new_empty() {
-    let code = r#"
+    let code = r"
         DataFrame::new().build()
-    "#;
+    ";
 
     let result = eval(code).expect("DataFrame::new().build() should work");
 
@@ -33,7 +33,7 @@ fn test_dataframe_new_empty() {
         Value::DataFrame { columns } => {
             assert_eq!(columns.len(), 0, "Empty DataFrame should have 0 columns");
         }
-        other => panic!("Expected DataFrame, got: {:?}", other),
+        other => panic!("Expected DataFrame, got: {other:?}"),
     }
 }
 
@@ -54,7 +54,7 @@ fn test_dataframe_single_column_builder() {
             assert_eq!(columns[0].values.len(), 3);
             assert_eq!(columns[0].values[0], Value::Integer(1));
         }
-        other => panic!("Expected DataFrame, got: {:?}", other),
+        other => panic!("Expected DataFrame, got: {other:?}"),
     }
 }
 
@@ -82,7 +82,7 @@ fn test_dataframe_multi_column_builder() {
             assert_eq!(columns[1].values.len(), 2);
             assert_eq!(columns[1].values[0], Value::Integer(25));
         }
-        other => panic!("Expected DataFrame, got: {:?}", other),
+        other => panic!("Expected DataFrame, got: {other:?}"),
     }
 }
 
@@ -140,16 +140,16 @@ fn test_dataframe_column_names_accessor() {
                 panic!("Expected string column name");
             }
         }
-        other => panic!("Expected array of names, got: {:?}", other),
+        other => panic!("Expected array of names, got: {other:?}"),
     }
 }
 
 #[test]
 fn test_dataframe_empty_rows_columns() {
-    let code = r#"
+    let code = r"
         let df = DataFrame::new().build();
         [df.rows(), df.columns()]
-    "#;
+    ";
 
     let result = eval(code).expect("Empty DataFrame accessors should work");
 
@@ -159,7 +159,7 @@ fn test_dataframe_empty_rows_columns() {
             assert_eq!(arr[0], Value::Integer(0), "Empty DataFrame has 0 rows");
             assert_eq!(arr[1], Value::Integer(0), "Empty DataFrame has 0 columns");
         }
-        other => panic!("Expected array, got: {:?}", other),
+        other => panic!("Expected array, got: {other:?}"),
     }
 }
 
@@ -182,7 +182,7 @@ fn test_dataframe_builder_chaining() {
             assert_eq!(columns[0].name, "a");
             assert_eq!(columns[3].name, "d");
         }
-        other => panic!("Expected DataFrame, got: {:?}", other),
+        other => panic!("Expected DataFrame, got: {other:?}"),
     }
 }
 
@@ -207,6 +207,6 @@ fn test_dataframe_mixed_types_builder() {
             assert!(matches!(columns[1].values[0], Value::Integer(_)));
             assert!(matches!(columns[2].values[0], Value::Float(_)));
         }
-        other => panic!("Expected DataFrame, got: {:?}", other),
+        other => panic!("Expected DataFrame, got: {other:?}"),
     }
 }

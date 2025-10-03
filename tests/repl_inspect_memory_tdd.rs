@@ -18,9 +18,8 @@ fn test_inspect_integer_shows_memory() {
 
     // Should show memory estimation
     assert!(
-        result.contains("Memory") || result.contains("~") || result.contains("bytes"),
-        "Expected memory information but got: {}",
-        result
+        result.contains("Memory") || result.contains('~') || result.contains("bytes"),
+        "Expected memory information but got: {result}"
     );
 }
 
@@ -33,9 +32,8 @@ fn test_inspect_string_shows_memory() {
 
     // Should show memory estimation
     assert!(
-        result.contains("Memory") || result.contains("~") || result.contains("bytes"),
-        "Expected memory information but got: {}",
-        result
+        result.contains("Memory") || result.contains('~') || result.contains("bytes"),
+        "Expected memory information but got: {result}"
     );
 }
 
@@ -48,9 +46,8 @@ fn test_inspect_array_shows_memory() {
 
     // Should show memory estimation
     assert!(
-        result.contains("Memory") || result.contains("~") || result.contains("bytes"),
-        "Expected memory information but got: {}",
-        result
+        result.contains("Memory") || result.contains('~') || result.contains("bytes"),
+        "Expected memory information but got: {result}"
     );
 }
 
@@ -64,9 +61,8 @@ fn test_inspect_object_shows_memory() {
 
     // Should show memory estimation
     assert!(
-        result.contains("Memory") || result.contains("~") || result.contains("bytes"),
-        "Expected memory information but got: {}",
-        result
+        result.contains("Memory") || result.contains('~') || result.contains("bytes"),
+        "Expected memory information but got: {result}"
     );
 }
 
@@ -80,9 +76,8 @@ fn test_memory_estimation_reasonable() {
 
     // Should show a small memory size (integers are 8 bytes)
     assert!(
-        result.contains("8") || result.contains("16"), // Allow some overhead
-        "Expected reasonable memory size for integer, got: {}",
-        result
+        result.contains('8') || result.contains("16"), // Allow some overhead
+        "Expected reasonable memory size for integer, got: {result}"
     );
 }
 
@@ -95,8 +90,7 @@ fn test_memory_format_human_readable() {
 
     // Should show memory in human-readable format (~X bytes)
     assert!(
-        result.contains("~") && result.contains("bytes"),
-        "Expected '~X bytes' format, got: {}",
-        result
+        result.contains('~') && result.contains("bytes"),
+        "Expected '~X bytes' format, got: {result}"
     );
 }

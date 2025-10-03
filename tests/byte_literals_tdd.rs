@@ -18,8 +18,7 @@ fn test_byte_literal_basic() {
     let result = repl.eval("b'A'").unwrap();
     assert!(
         result.contains("65") || result.contains("Byte"),
-        "Expected byte value but got: {}",
-        result
+        "Expected byte value but got: {result}"
     );
 }
 
@@ -31,8 +30,7 @@ fn test_byte_literal_space() {
     let result = repl.eval("b' '").unwrap();
     assert!(
         result.contains("32") || result.contains("Byte"),
-        "Expected byte value but got: {}",
-        result
+        "Expected byte value but got: {result}"
     );
 }
 
@@ -44,8 +42,7 @@ fn test_byte_literal_newline_escape() {
     let result = repl.eval("b'\\n'").unwrap();
     assert!(
         result.contains("10") || result.contains("Byte"),
-        "Expected byte value but got: {}",
-        result
+        "Expected byte value but got: {result}"
     );
 }
 
@@ -56,9 +53,8 @@ fn test_byte_literal_tab_escape() {
     // Test tab escape sequence (ASCII 9)
     let result = repl.eval("b'\\t'").unwrap();
     assert!(
-        result.contains("9") || result.contains("Byte"),
-        "Expected byte value but got: {}",
-        result
+        result.contains('9') || result.contains("Byte"),
+        "Expected byte value but got: {result}"
     );
 }
 

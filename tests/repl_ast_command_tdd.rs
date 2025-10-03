@@ -18,8 +18,7 @@ fn test_ast_command_simple_literal() {
     let result = repl.eval(":ast 42").unwrap();
     assert!(
         result.contains("Literal") || result.contains("Integer"),
-        "Expected AST with Literal/Integer but got: {}",
-        result
+        "Expected AST with Literal/Integer but got: {result}"
     );
 }
 
@@ -30,9 +29,8 @@ fn test_ast_command_binary_expression() {
     // Test binary expression
     let result = repl.eval(":ast 2 + 3").unwrap();
     assert!(
-        result.contains("Binary") || result.contains("Add") || result.contains("+"),
-        "Expected AST with Binary/Add but got: {}",
-        result
+        result.contains("Binary") || result.contains("Add") || result.contains('+'),
+        "Expected AST with Binary/Add but got: {result}"
     );
 }
 
@@ -44,8 +42,7 @@ fn test_ast_command_function_call() {
     let result = repl.eval(":ast println(42)").unwrap();
     assert!(
         result.contains("Call") || result.contains("println"),
-        "Expected AST with Call/println but got: {}",
-        result
+        "Expected AST with Call/println but got: {result}"
     );
 }
 
@@ -56,9 +53,8 @@ fn test_ast_command_variable() {
     // Test variable reference
     let result = repl.eval(":ast x").unwrap();
     assert!(
-        result.contains("Identifier") || result.contains("x"),
-        "Expected AST with Identifier but got: {}",
-        result
+        result.contains("Identifier") || result.contains('x'),
+        "Expected AST with Identifier but got: {result}"
     );
 }
 
@@ -69,9 +65,8 @@ fn test_ast_command_complex_expression() {
     // Test complex nested expression
     let result = repl.eval(":ast (2 + 3) * 4").unwrap();
     assert!(
-        result.contains("Binary") || result.contains("Multiply") || result.contains("*"),
-        "Expected AST with Binary operations but got: {}",
-        result
+        result.contains("Binary") || result.contains("Multiply") || result.contains('*'),
+        "Expected AST with Binary operations but got: {result}"
     );
 }
 
@@ -83,8 +78,7 @@ fn test_ast_command_no_args() {
     let result = repl.eval(":ast").unwrap();
     assert!(
         result.contains("Usage") || result.contains("ast <expression>"),
-        "Expected usage message but got: {}",
-        result
+        "Expected usage message but got: {result}"
     );
 }
 
@@ -96,8 +90,7 @@ fn test_ast_command_string() {
     let result = repl.eval(":ast \"hello\"").unwrap();
     assert!(
         result.contains("Literal") || result.contains("String") || result.contains("hello"),
-        "Expected AST with String literal but got: {}",
-        result
+        "Expected AST with String literal but got: {result}"
     );
 }
 
@@ -108,8 +101,7 @@ fn test_ast_command_array() {
     // Test array literal
     let result = repl.eval(":ast [1, 2, 3]").unwrap();
     assert!(
-        result.contains("List") || result.contains("Array") || result.contains("["),
-        "Expected AST with List/Array but got: {}",
-        result
+        result.contains("List") || result.contains("Array") || result.contains('['),
+        "Expected AST with List/Array but got: {result}"
     );
 }

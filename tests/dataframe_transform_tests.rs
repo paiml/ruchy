@@ -1,10 +1,10 @@
 #![cfg(test)]
-//! DataFrame transformation operation tests (DF-004)
+//! `DataFrame` transformation operation tests (DF-004)
 //!
-//! TDD tests for DataFrame transformation methods:
-//! - .with_column(name, closure) - Add new computed column
+//! TDD tests for `DataFrame` transformation methods:
+//! - .`with_column(name`, closure) - Add new computed column
 //! - .transform(name, closure) - Modify existing column
-//! - .sort_by(column) - Sort by column values
+//! - .`sort_by(column)` - Sort by column values
 
 use ruchy::frontend::Parser;
 use ruchy::runtime::{Interpreter, Value};
@@ -44,7 +44,7 @@ fn test_with_column_simple() {
             assert_eq!(columns[1].values[1], Value::Integer(4));
             assert_eq!(columns[1].values[2], Value::Integer(6));
         }
-        other => panic!("Expected DataFrame, got: {:?}", other),
+        other => panic!("Expected DataFrame, got: {other:?}"),
     }
 }
 
@@ -69,7 +69,7 @@ fn test_with_column_using_row_context() {
             assert_eq!(total_col.values[1], Value::Integer(60)); // 20 * 3
             assert_eq!(total_col.values[2], Value::Integer(30)); // 30 * 1
         }
-        other => panic!("Expected DataFrame, got: {:?}", other),
+        other => panic!("Expected DataFrame, got: {other:?}"),
     }
 }
 
@@ -93,7 +93,7 @@ fn test_with_column_chaining() {
             assert_eq!(z_col.values[0], Value::Integer(12)); // (1*2) + 10
             assert_eq!(z_col.values[2], Value::Integer(16)); // (3*2) + 10
         }
-        other => panic!("Expected DataFrame, got: {:?}", other),
+        other => panic!("Expected DataFrame, got: {other:?}"),
     }
 }
 
@@ -118,7 +118,7 @@ fn test_transform_simple() {
             assert_eq!(columns[0].values[1], Value::Integer(20));
             assert_eq!(columns[0].values[2], Value::Integer(30));
         }
-        other => panic!("Expected DataFrame, got: {:?}", other),
+        other => panic!("Expected DataFrame, got: {other:?}"),
     }
 }
 
@@ -154,7 +154,7 @@ fn test_transform_multiple_columns() {
                 panic!("Expected float");
             }
         }
-        other => panic!("Expected DataFrame, got: {:?}", other),
+        other => panic!("Expected DataFrame, got: {other:?}"),
     }
 }
 
@@ -205,7 +205,7 @@ fn test_sort_by_ascending() {
                 assert_eq!(s.as_ref(), "c");
             }
         }
-        other => panic!("Expected DataFrame, got: {:?}", other),
+        other => panic!("Expected DataFrame, got: {other:?}"),
     }
 }
 
@@ -230,7 +230,7 @@ fn test_sort_by_descending() {
             assert_eq!(score_col.values[1], Value::Integer(85));
             assert_eq!(score_col.values[2], Value::Integer(78));
         }
-        other => panic!("Expected DataFrame, got: {:?}", other),
+        other => panic!("Expected DataFrame, got: {other:?}"),
     }
 }
 
@@ -261,7 +261,7 @@ fn test_sort_by_strings() {
                 assert_eq!(s.as_ref(), "Charlie");
             }
         }
-        other => panic!("Expected DataFrame, got: {:?}", other),
+        other => panic!("Expected DataFrame, got: {other:?}"),
     }
 }
 
@@ -304,6 +304,6 @@ fn test_combined_operations() {
             assert_eq!(y_col.values[0], Value::Integer(15)); // (1*10) + 5
             assert_eq!(y_col.values[2], Value::Integer(35)); // (3*10) + 5
         }
-        other => panic!("Expected DataFrame, got: {:?}", other),
+        other => panic!("Expected DataFrame, got: {other:?}"),
     }
 }

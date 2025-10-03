@@ -1,9 +1,9 @@
 #![cfg(test)]
-//! DataFrame CSV/JSON import tests (DF-003)
+//! `DataFrame` CSV/JSON import tests (DF-003)
 //!
-//! TDD tests for DataFrame data import functionality:
-//! - DataFrame::from_csv_string() - Parse CSV with headers
-//! - DataFrame::from_json() - Parse JSON array of objects
+//! TDD tests for `DataFrame` data import functionality:
+//! - `DataFrame::from_csv_string()` - Parse CSV with headers
+//! - `DataFrame::from_json()` - Parse JSON array of objects
 //! - Type inference for numeric/string columns
 
 use ruchy::frontend::Parser;
@@ -47,7 +47,7 @@ Bob,30";
             );
             assert_eq!(columns[1].values[0], Value::Integer(25));
         }
-        other => panic!("Expected DataFrame, got: {:?}", other),
+        other => panic!("Expected DataFrame, got: {other:?}"),
     }
 }
 
@@ -78,7 +78,7 @@ Banana,0.75,150";
             assert!(matches!(columns[1].values[0], Value::Float(_)));
             assert!(matches!(columns[2].values[0], Value::Integer(_)));
         }
-        other => panic!("Expected DataFrame, got: {:?}", other),
+        other => panic!("Expected DataFrame, got: {other:?}"),
     }
 }
 
@@ -95,7 +95,7 @@ fn test_from_csv_empty() {
             assert_eq!(columns.len(), 2, "Should have 2 columns");
             assert_eq!(columns[0].values.len(), 0, "Should have 0 rows");
         }
-        other => panic!("Expected DataFrame, got: {:?}", other),
+        other => panic!("Expected DataFrame, got: {other:?}"),
     }
 }
 
@@ -118,7 +118,7 @@ fn test_from_csv_type_inference_integers() {
             assert_eq!(columns[1].values[0], Value::Integer(100));
             assert_eq!(columns[0].values[2], Value::Integer(3));
         }
-        other => panic!("Expected DataFrame, got: {:?}", other),
+        other => panic!("Expected DataFrame, got: {other:?}"),
     }
 }
 
@@ -144,7 +144,7 @@ fn test_from_csv_type_inference_floats() {
                 assert!((f - 19.99).abs() < 0.01);
             }
         }
-        other => panic!("Expected DataFrame, got: {:?}", other),
+        other => panic!("Expected DataFrame, got: {other:?}"),
     }
 }
 
@@ -173,7 +173,7 @@ fn test_from_json_array_simple() {
             // Each column should have 2 values
             assert_eq!(columns[0].values.len(), 2);
         }
-        other => panic!("Expected DataFrame, got: {:?}", other),
+        other => panic!("Expected DataFrame, got: {other:?}"),
     }
 }
 
@@ -191,7 +191,7 @@ fn test_from_json_single_row() {
             assert_eq!(columns.len(), 2);
             assert_eq!(columns[0].values.len(), 1);
         }
-        other => panic!("Expected DataFrame, got: {:?}", other),
+        other => panic!("Expected DataFrame, got: {other:?}"),
     }
 }
 
@@ -207,7 +207,7 @@ fn test_from_json_empty_array() {
         Value::DataFrame { columns } => {
             assert_eq!(columns.len(), 0, "Empty JSON should create empty DataFrame");
         }
-        other => panic!("Expected DataFrame, got: {:?}", other),
+        other => panic!("Expected DataFrame, got: {other:?}"),
     }
 }
 
@@ -237,7 +237,7 @@ fn test_from_json_type_preservation() {
             assert!(matches!(price_col.values[0], Value::Float(_)));
             assert!(matches!(name_col.values[0], Value::String(_)));
         }
-        other => panic!("Expected DataFrame, got: {:?}", other),
+        other => panic!("Expected DataFrame, got: {other:?}"),
     }
 }
 
@@ -260,7 +260,7 @@ Charlie,92";
             assert_eq!(arr[0], Value::Integer(3), "Should have 3 rows");
             assert_eq!(arr[1], Value::Integer(2), "Should have 2 columns");
         }
-        other => panic!("Expected array, got: {:?}", other),
+        other => panic!("Expected array, got: {other:?}"),
     }
 }
 

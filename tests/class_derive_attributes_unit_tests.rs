@@ -194,8 +194,7 @@ fn test_derive_common_traits() {
         let contains_derive = variations.iter().any(|v| result_str.contains(v));
         assert!(
             contains_derive,
-            "Should contain derive attribute for trait {trait_name}\nExpected one of: {:?}\nActual output:\n{}",
-            variations, result_str
+            "Should contain derive attribute for trait {trait_name}\nExpected one of: {variations:?}\nActual output:\n{result_str}"
         );
     }
 }

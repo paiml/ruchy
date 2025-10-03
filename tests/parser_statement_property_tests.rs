@@ -26,7 +26,7 @@ proptest! {
     fn prop_let_declarations_parse_with_value(
         value in 1i64..1000
     ) {
-        let code = format!("let x = {}", value);
+        let code = format!("let x = {value}");
         let mut parser = Parser::new(&code);
         let result = parser.parse();
 
@@ -44,7 +44,7 @@ proptest! {
     fn prop_mut_declarations_parse(
         value in 1i64..1000
     ) {
-        let code = format!("let mut x = {}", value);
+        let code = format!("let mut x = {value}");
         let mut parser = Parser::new(&code);
         let result = parser.parse();
 
@@ -74,7 +74,7 @@ proptest! {
             return Ok(());
         }
 
-        let code = format!("fn test({}) {{ {} }}", param_name, return_val);
+        let code = format!("fn test({param_name}) {{ {return_val} }}");
         let mut parser = Parser::new(&code);
         let result = parser.parse();
 
@@ -115,7 +115,7 @@ proptest! {
         // Generate { { { 42 } } }
         let mut code = "42".to_string();
         for _ in 0..depth {
-            code = format!("{{ {} }}", code);
+            code = format!("{{ {code} }}");
         }
 
         let mut parser = Parser::new(&code);
@@ -137,7 +137,7 @@ proptest! {
         then_val in 1i64..100,
         else_val in 1i64..100
     ) {
-        let code = format!("if {} {{ {} }} else {{ {} }}", condition, then_val, else_val);
+        let code = format!("if {condition} {{ {then_val} }} else {{ {else_val} }}");
         let mut parser = Parser::new(&code);
         let result = parser.parse();
 
@@ -156,7 +156,7 @@ proptest! {
         condition in 1i64..100,
         body_val in 1i64..100
     ) {
-        let code = format!("while {} {{ {} }}", condition, body_val);
+        let code = format!("while {condition} {{ {body_val} }}");
         let mut parser = Parser::new(&code);
         let result = parser.parse();
 
@@ -175,7 +175,7 @@ proptest! {
         start in 1i64..50,
         end in 51i64..100
     ) {
-        let code = format!("for i in {}..{} {{ i }}", start, end);
+        let code = format!("for i in {start}..{end} {{ i }}");
         let mut parser = Parser::new(&code);
         let result = parser.parse();
 
@@ -197,7 +197,7 @@ proptest! {
 proptest! {
     #[test]
     fn prop_return_statements_preserve_values(value in 1i64..1000) {
-        let code = format!("return {}", value);
+        let code = format!("return {value}");
         let mut parser = Parser::new(&code);
         let result = parser.parse();
 
@@ -244,7 +244,7 @@ proptest! {
     fn prop_simple_assignments_parse(
         value in 1i64..1000
     ) {
-        let code = format!("x = {}", value);
+        let code = format!("x = {value}");
         let mut parser = Parser::new(&code);
         let result = parser.parse();
 
@@ -262,7 +262,7 @@ proptest! {
     fn prop_field_assignments_parse(
         value in 1i64..1000
     ) {
-        let code = format!("obj.field = {}", value);
+        let code = format!("obj.field = {value}");
         let mut parser = Parser::new(&code);
         let result = parser.parse();
 
@@ -284,7 +284,7 @@ proptest! {
 proptest! {
     #[test]
     fn prop_expression_statements_parse(value in 1i64..1000) {
-        let code = format!("{}", value);
+        let code = format!("{value}");
         let mut parser = Parser::new(&code);
         let result = parser.parse();
 
@@ -296,7 +296,7 @@ proptest! {
     fn prop_method_call_expressions_parse(
         value in 1i64..1000
     ) {
-        let code = format!("{}.to_string()", value);
+        let code = format!("{value}.to_string()");
         let mut parser = Parser::new(&code);
         let result = parser.parse();
 
@@ -325,7 +325,7 @@ proptest! {
             return Ok(());
         }
 
-        let code = format!("import {}", module_name);
+        let code = format!("import {module_name}");
         let mut parser = Parser::new(&code);
         let result = parser.parse();
 
@@ -354,7 +354,7 @@ proptest! {
             return Ok(());
         }
 
-        let code = format!("struct Test {{ {}: i32 }}", field_name);
+        let code = format!("struct Test {{ {field_name}: i32 }}");
         let mut parser = Parser::new(&code);
         let result = parser.parse();
 
@@ -395,7 +395,7 @@ proptest! {
         pattern_val in 1i64..100,
         arm_val in 1i64..100
     ) {
-        let code = format!("match x {{ {} => {} }}", pattern_val, arm_val);
+        let code = format!("match x {{ {pattern_val} => {arm_val} }}");
         let mut parser = Parser::new(&code);
         let result = parser.parse();
 
@@ -415,7 +415,7 @@ proptest! {
         val2 in 31i64..60,
         val3 in 61i64..100
     ) {
-        let code = format!("match x {{ {} => {}, {} => {}, _ => {} }}", val1, val1, val2, val2, val3);
+        let code = format!("match x {{ {val1} => {val1}, {val2} => {val2}, _ => {val3} }}");
         let mut parser = Parser::new(&code);
         let result = parser.parse();
 

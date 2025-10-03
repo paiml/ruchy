@@ -42,11 +42,11 @@ fn test_reference_type_after_multilet_function() {
 #[test]
 fn test_simple_reference_type_parameter() {
     // Simple case: single function with &i32 parameter
-    let code = r#"
+    let code = r"
         fun helper(x: &i32) -> i32 {
             42
         }
-    "#;
+    ";
 
     let mut parser = Parser::new(code);
     let result = parser.parse();
@@ -84,7 +84,7 @@ fn test_reference_type_after_simple_function() {
 #[test]
 fn test_reference_vec_type() {
     // Specific case from Chapter 15: &Vec<i32>
-    let code = r#"
+    let code = r"
         fun calculate_sum(data: &Vec<i32>) -> i32 {
             let mut total = 0;
             let mut i = 0;
@@ -94,7 +94,7 @@ fn test_reference_vec_type() {
             }
             total
         }
-    "#;
+    ";
 
     let mut parser = Parser::new(code);
     let result = parser.parse();

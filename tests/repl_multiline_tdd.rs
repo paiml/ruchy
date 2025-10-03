@@ -21,7 +21,7 @@ fn test_multiline_function_definition() {
 
     // Call function
     let result = repl.eval("add(2, 3)").unwrap();
-    assert!(result.contains("5"), "Expected 5 but got: {}", result);
+    assert!(result.contains('5'), "Expected 5 but got: {result}");
 }
 
 #[test]
@@ -35,8 +35,7 @@ fn test_multiline_incomplete_expression() {
     // The evaluator returns NeedMoreInput for incomplete expressions
     assert!(
         result.is_empty() || result.contains("NeedMoreInput") || result.contains("Incomplete"),
-        "Expected multiline continuation but got: {}",
-        result
+        "Expected multiline continuation but got: {result}"
     );
 }
 
@@ -46,7 +45,7 @@ fn test_multiline_array_literal() {
 
     // Single-line array
     let result = repl.eval("[1, 2, 3]").unwrap();
-    assert!(result.contains("[") || result.contains("1"));
+    assert!(result.contains('[') || result.contains('1'));
 }
 
 #[test]
@@ -65,7 +64,7 @@ fn test_multiline_if_expression() {
 
     // Single-line if
     let result = repl.eval("if true { 42 } else { 0 }").unwrap();
-    assert!(result.contains("42"), "Expected 42 but got: {}", result);
+    assert!(result.contains("42"), "Expected 42 but got: {result}");
 }
 
 #[test]
@@ -103,9 +102,8 @@ fn test_multiline_prompt_indicator() {
     // Normal prompt
     let prompt = repl.get_prompt();
     assert!(
-        prompt.contains(">"),
-        "Expected normal prompt but got: {}",
-        prompt
+        prompt.contains('>'),
+        "Expected normal prompt but got: {prompt}"
     );
     assert!(
         !prompt.contains("..."),

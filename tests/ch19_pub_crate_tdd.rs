@@ -16,11 +16,11 @@ fn test_public_field_accessible() {
 
     // Define struct with public field
     repl.eval(
-        r#"
+        r"
 struct User {
     pub name: String
 }
-"#,
+",
     )
     .unwrap();
 
@@ -31,8 +31,7 @@ struct User {
     let result = repl.eval("u.name").unwrap();
     assert!(
         result.contains("Alice"),
-        "Expected 'Alice' but got: {}",
-        result
+        "Expected 'Alice' but got: {result}"
     );
 }
 
@@ -42,12 +41,12 @@ fn test_private_field_not_accessible() {
 
     // Define struct with private field (no modifier)
     repl.eval(
-        r#"
+        r"
 struct BankAccount {
     pub owner: String,
     balance: f64
 }
-"#,
+",
     )
     .unwrap();
 
@@ -57,7 +56,7 @@ struct BankAccount {
 
     // Access public field works
     let result = repl.eval("account.owner").unwrap();
-    assert!(result.contains("Bob"), "Expected 'Bob' but got: {}", result);
+    assert!(result.contains("Bob"), "Expected 'Bob' but got: {result}");
 
     // Access private field should fail
     let result = repl.eval("account.balance");
@@ -66,8 +65,7 @@ struct BankAccount {
         Ok(msg) => {
             assert!(
                 msg.contains("private") || msg.contains("not accessible"),
-                "Expected error accessing private field but got: {}",
-                msg
+                "Expected error accessing private field but got: {msg}"
             );
         }
     }
@@ -79,13 +77,13 @@ fn test_pub_crate_field_accessible() {
 
     // Define struct with pub(crate) field
     repl.eval(
-        r#"
+        r"
 struct Config {
     pub name: String,
     pub(crate) id: i32,
     secret: String
 }
-"#,
+",
     )
     .unwrap();
 
@@ -95,15 +93,11 @@ struct Config {
 
     // Access pub field
     let result = repl.eval("cfg.name").unwrap();
-    assert!(
-        result.contains("prod"),
-        "Expected 'prod' but got: {}",
-        result
-    );
+    assert!(result.contains("prod"), "Expected 'prod' but got: {result}");
 
     // Access pub(crate) field - should work in REPL context
     let result = repl.eval("cfg.id").unwrap();
-    assert!(result.contains("42"), "Expected 42 but got: {}", result);
+    assert!(result.contains("42"), "Expected 42 but got: {result}");
 
     // Access private field should fail
     let result = repl.eval("cfg.secret");
@@ -112,8 +106,7 @@ struct Config {
         Ok(msg) => {
             assert!(
                 msg.contains("private") || msg.contains("not accessible"),
-                "Expected error accessing private field but got: {}",
-                msg
+                "Expected error accessing private field but got: {msg}"
             );
         }
     }
@@ -124,13 +117,13 @@ fn test_mixed_visibility_fields() {
     let mut repl = Repl::new(PathBuf::from("/tmp")).unwrap();
 
     repl.eval(
-        r#"
+        r"
 struct Person {
     pub name: String,
     pub(crate) age: i32,
     ssn: String
 }
-"#,
+",
     )
     .unwrap();
 
@@ -141,13 +134,12 @@ struct Person {
     let name = repl.eval("p.name").unwrap();
     assert!(
         name.contains("Charlie"),
-        "Expected 'Charlie' but got: {}",
-        name
+        "Expected 'Charlie' but got: {name}"
     );
 
     // Crate-visible field accessible in REPL
     let age = repl.eval("p.age").unwrap();
-    assert!(age.contains("30"), "Expected 30 but got: {}", age);
+    assert!(age.contains("30"), "Expected 30 but got: {age}");
 }
 
 #[test]
@@ -156,11 +148,11 @@ fn test_default_visibility_is_private() {
 
     // Fields without modifier should be private
     repl.eval(
-        r#"
+        r"
 struct Secret {
     data: String
 }
-"#,
+",
     )
     .unwrap();
 
@@ -173,8 +165,7 @@ struct Secret {
         Ok(msg) => {
             assert!(
                 msg.contains("private") || msg.contains("not accessible"),
-                "Expected error accessing private field by default but got: {}",
-                msg
+                "Expected error accessing private field by default but got: {msg}"
             );
         }
     }
@@ -201,11 +192,11 @@ struct Settings {
 
     // Access public field with default
     let theme = repl.eval("s.theme").unwrap();
-    assert!(theme.contains("dark"), "Expected 'dark' but got: {}", theme);
+    assert!(theme.contains("dark"), "Expected 'dark' but got: {theme}");
 
     // Access pub(crate) field with default
     let version = repl.eval("s.version").unwrap();
-    assert!(version.contains("1"), "Expected 1 but got: {}", version);
+    assert!(version.contains('1'), "Expected 1 but got: {version}");
 
     // Private field with default should still be private
     let result = repl.eval("s.internal_id");
@@ -214,8 +205,7 @@ struct Settings {
         Ok(msg) => {
             assert!(
                 msg.contains("private") || msg.contains("not accessible"),
-                "Expected error accessing private field even with default but got: {}",
-                msg
+                "Expected error accessing private field even with default but got: {msg}"
             );
         }
     }

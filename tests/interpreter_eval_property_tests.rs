@@ -31,7 +31,7 @@ proptest! {
     fn prop_variable_binding_preserves_integer(n in -1000i64..1000) {
         let mut repl = Repl::new(PathBuf::from("/tmp")).unwrap();
 
-        repl.eval(&format!("let x = {}", n)).unwrap();
+        repl.eval(&format!("let x = {n}")).unwrap();
         let result = repl.eval("x").unwrap();
 
         prop_assert!(result.contains(&n.to_string()),
@@ -42,7 +42,7 @@ proptest! {
     fn prop_variable_binding_preserves_string(s in "[a-zA-Z]{1,20}") {
         let mut repl = Repl::new(PathBuf::from("/tmp")).unwrap();
 
-        repl.eval(&format!("let x = \"{}\"", s)).unwrap();
+        repl.eval(&format!("let x = \"{s}\"")).unwrap();
         let result = repl.eval("x").unwrap();
 
         prop_assert!(result.contains(&s),
@@ -59,8 +59,8 @@ proptest! {
     fn prop_variable_shadowing(a in 1i64..100, b in 101i64..200) {
         let mut repl = Repl::new(PathBuf::from("/tmp")).unwrap();
 
-        repl.eval(&format!("let x = {}", a)).unwrap();
-        repl.eval(&format!("let x = {}", b)).unwrap();
+        repl.eval(&format!("let x = {a}")).unwrap();
+        repl.eval(&format!("let x = {b}")).unwrap();
         let result = repl.eval("x").unwrap();
 
         prop_assert!(result.contains(&b.to_string()),
@@ -77,7 +77,7 @@ proptest! {
     fn prop_if_then_branch(then_val in 1i64..1000, else_val in 1001i64..2000) {
         let mut repl = Repl::new(PathBuf::from("/tmp")).unwrap();
 
-        let code = format!("if true {{ {} }} else {{ {} }}", then_val, else_val);
+        let code = format!("if true {{ {then_val} }} else {{ {else_val} }}");
         let result = repl.eval(&code).unwrap();
 
         prop_assert!(result.contains(&then_val.to_string()),
@@ -88,7 +88,7 @@ proptest! {
     fn prop_if_else_branch(then_val in 1i64..1000, else_val in 1001i64..2000) {
         let mut repl = Repl::new(PathBuf::from("/tmp")).unwrap();
 
-        let code = format!("if false {{ {} }} else {{ {} }}", then_val, else_val);
+        let code = format!("if false {{ {then_val} }} else {{ {else_val} }}");
         let result = repl.eval(&code).unwrap();
 
         prop_assert!(result.contains(&else_val.to_string()),
@@ -107,8 +107,7 @@ proptest! {
 
         let end = start + count;
         let code = format!(
-            "let mut sum = 0; for i in {}..{} {{ sum = sum + 1 }}; sum",
-            start, end
+            "let mut sum = 0; for i in {start}..{end} {{ sum = sum + 1 }}; sum"
         );
         let result = repl.eval(&code).unwrap();
 
@@ -127,8 +126,7 @@ proptest! {
         let mut repl = Repl::new(PathBuf::from("/tmp")).unwrap();
 
         let code = format!(
-            "let mut i = 0; while i < {} {{ i = i + 1 }}; i",
-            n
+            "let mut i = 0; while i < {n} {{ i = i + 1 }}; i"
         );
         let result = repl.eval(&code).unwrap();
 
@@ -146,7 +144,7 @@ proptest! {
     fn prop_function_call_returns_value(return_val in 1i64..1000) {
         let mut repl = Repl::new(PathBuf::from("/tmp")).unwrap();
 
-        repl.eval(&format!("fn test() {{ {} }}", return_val)).unwrap();
+        repl.eval(&format!("fn test() {{ {return_val} }}")).unwrap();
         let result = repl.eval("test()").unwrap();
 
         prop_assert!(result.contains(&return_val.to_string()),
@@ -158,7 +156,7 @@ proptest! {
         let mut repl = Repl::new(PathBuf::from("/tmp")).unwrap();
 
         repl.eval("fn double(x) { x * 2 }").unwrap();
-        let result = repl.eval(&format!("double({})", param_val)).unwrap();
+        let result = repl.eval(&format!("double({param_val})")).unwrap();
 
         let expected = param_val * 2;
         prop_assert!(result.contains(&expected.to_string()),
@@ -179,7 +177,7 @@ proptest! {
     ) {
         let mut repl = Repl::new(PathBuf::from("/tmp")).unwrap();
 
-        repl.eval(&format!("let arr = [{}, {}, {}]", elem1, elem2, elem3)).unwrap();
+        repl.eval(&format!("let arr = [{elem1}, {elem2}, {elem3}]")).unwrap();
 
         // Test each index
         let result0 = repl.eval("arr[0]").unwrap();
@@ -199,7 +197,7 @@ proptest! {
         let elements = vec!["0"; len];
         let array_code = format!("[{}]", elements.join(", "));
 
-        repl.eval(&format!("let arr = {}", array_code)).unwrap();
+        repl.eval(&format!("let arr = {array_code}")).unwrap();
         let result = repl.eval("arr.len()").unwrap();
 
         prop_assert!(result.contains(&len.to_string()),
@@ -216,7 +214,7 @@ proptest! {
     fn prop_string_indexing(s in "[a-z]{5,10}") {
         let mut repl = Repl::new(PathBuf::from("/tmp")).unwrap();
 
-        repl.eval(&format!("let s = \"{}\"", s)).unwrap();
+        repl.eval(&format!("let s = \"{s}\"")).unwrap();
 
         // Test first character
         let result = repl.eval("s[0]").unwrap();
@@ -239,8 +237,7 @@ proptest! {
         let end = start + count;
         // Use range in for loop to verify it generates correct iterations
         let code = format!(
-            "let mut sum = 0; for i in {}..{} {{ sum = sum + 1 }}; sum",
-            start, end
+            "let mut sum = 0; for i in {start}..{end} {{ sum = sum + 1 }}; sum"
         );
         let result = repl.eval(&code).unwrap();
 
@@ -263,7 +260,7 @@ fn prop_and_short_circuit_false() {
     let result = repl.eval("x").unwrap();
 
     assert!(
-        result.contains("0"),
+        result.contains('0'),
         "AND should short-circuit on false, x should remain 0"
     );
 }
@@ -278,7 +275,7 @@ fn prop_or_short_circuit_true() {
     let result = repl.eval("x").unwrap();
 
     assert!(
-        result.contains("0"),
+        result.contains('0'),
         "OR should short-circuit on true, x should remain 0"
     );
 }
@@ -297,7 +294,7 @@ proptest! {
         let mut repl = Repl::new(PathBuf::from("/tmp")).unwrap();
 
         // a + b * c should be a + (b * c)
-        let code = format!("{} + {} * {}", a, b, c);
+        let code = format!("{a} + {b} * {c}");
         let result = repl.eval(&code).unwrap();
 
         let expected = a + (b * c);
@@ -321,7 +318,7 @@ proptest! {
         let mut repl = Repl::new(PathBuf::from("/tmp")).unwrap();
 
         // Since a < b < c by construction, a < c should be true
-        let code = format!("{} < {} && {} < {}", a, b, b, c);
+        let code = format!("{a} < {b} && {b} < {c}");
         let result = repl.eval(&code).unwrap();
 
         prop_assert!(result.contains("true"),

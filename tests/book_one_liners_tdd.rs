@@ -59,8 +59,7 @@ fn test_multi_step_calculation() {
     let value = result.to_string().parse::<f64>().unwrap();
     assert!(
         (value - 107.9892).abs() < 0.0001,
-        "Expected ~107.9892, got {}",
-        value
+        "Expected ~107.9892, got {value}"
     );
 }
 
@@ -157,8 +156,7 @@ fn test_pythagorean_theorem() {
     let value = result.to_string().parse::<f64>().unwrap();
     assert!(
         (value - 22.360679774997898).abs() < 0.0001,
-        "Expected ~22.36, got {}",
-        value
+        "Expected ~22.36, got {value}"
     );
 }
 
@@ -177,8 +175,7 @@ fn test_physics_emc2() {
     let value = result.to_string().parse::<f64>().unwrap();
     assert!(
         (value - 8987551787368176.0).abs() < 1000.0,
-        "Expected ~8.99e15, got {}",
-        value
+        "Expected ~8.99e15, got {value}"
     );
 }
 
@@ -191,11 +188,7 @@ fn test_electrical_power() {
     let ast = parser.parse().unwrap();
     let result = interp.eval_expr(&ast).unwrap();
     let value = result.to_string().parse::<f64>().unwrap();
-    assert!(
-        (value - 1200.0).abs() < 0.01,
-        "Expected 1200, got {}",
-        value
-    );
+    assert!((value - 1200.0).abs() < 0.01, "Expected 1200, got {value}");
 }
 
 #[test]
@@ -209,7 +202,7 @@ fn test_investment_return() {
     let ast = parser.parse().unwrap();
     let result = interp.eval_expr(&ast).unwrap();
     let value = result.to_string().parse::<f64>().unwrap();
-    assert!((value - 50.0).abs() < 0.01, "Expected 50, got {}", value);
+    assert!((value - 50.0).abs() < 0.01, "Expected 50, got {value}");
 }
 
 // ============================================================================
