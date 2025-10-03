@@ -47,6 +47,7 @@ pub fn eval_builtin_function(
 
         // Time functions
         "__builtin_sleep__" => Ok(Some(eval_sleep(args)?)),
+        "__builtin_timestamp__" => Ok(Some(eval_timestamp(args)?)),
 
         // DataFrame functions
         "__builtin_dataframe_new__" => Ok(Some(eval_dataframe_new(args)?)),
@@ -525,6 +526,32 @@ fn eval_sleep(args: &[Value]) -> Result<Value, InterpreterError> {
 
     std::thread::sleep(std::time::Duration::from_millis(millis));
     Ok(Value::Nil)
+}
+
+/// `timestamp()` - Get current time in milliseconds since Unix epoch
+///
+/// # Examples
+/// ```
+/// let start = timestamp();
+/// // ... some operation ...
+/// let end = timestamp();
+/// let duration = end - start;
+/// ```
+///
+/// # Complexity
+/// Cyclomatic complexity: 2
+fn eval_timestamp(args: &[Value]) -> Result<Value, InterpreterError> {
+    if !args.is_empty() {
+        return Err(InterpreterError::RuntimeError(
+            "timestamp() expects no arguments".to_string(),
+        ));
+    }
+
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_err(|e| InterpreterError::RuntimeError(format!("System time error: {e}")))?;
+
+    Ok(Value::Integer(now.as_millis() as i64))
 }
 
 /// `DataFrame::new()` - Create a new `DataFrame` builder

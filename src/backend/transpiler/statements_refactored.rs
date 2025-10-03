@@ -92,6 +92,7 @@ impl Transpiler {
                 self.try_transpile_math_function(name, args)
             }
             "sin" | "cos" | "tan" | "log" | "exp" => self.try_transpile_math_functions(name, args),
+            "timestamp" | "get_time_ms" => self.try_transpile_time_functions(name, args),
             _ => Ok(None),
         }
     }
