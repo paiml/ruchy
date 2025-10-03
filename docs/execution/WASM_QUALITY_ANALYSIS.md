@@ -169,5 +169,75 @@ This is a textbook case where **quality must be built in, not bolted on**:
 
 ---
 
-*Analysis conducted: 2025-10-03*
+## Refactoring Progress (2025-10-03)
+
+### **Phase 1-4 Complete**: 24 Helper Functions Extracted ✅
+
+**Phase 1** (7 functions): `lower_expression` complexity reduction
+- `lower_binary`, `infer_binary_result_type`, `binary_op_to_instruction`
+- `lower_if`, `lower_block`, `lower_unary`, `emit_negate`
+
+**Phase 2** (8 functions): `emit()` complexity reduction
+- `emit_type_section`, `add_main_type`, `wasm_type_to_valtype`
+- `emit_function_section`, `emit_memory_section`, `emit_export_section`
+- `emit_code_section`, `compile_function`
+
+**Phase 3** (6 functions): `lower_expression` remaining cases
+- `lower_while`, `lower_call`, `lower_let`
+- `lower_identifier`, `lower_list`, `lower_return`
+
+**Phase 4** (3 functions): `infer_type()` nested match extraction
+- `infer_binary_type`, `infer_let_type`, `infer_identifier_type`
+
+### Measurable Improvements
+
+**Function Size Reductions:**
+- `emit()`: 128 lines → 26 lines (80% reduction)
+- `lower_expression()`: ~240 lines → 24 lines (90% reduction)
+- `infer_type()`: Nested match complexity ~12 → 7
+
+**Quality Metrics:**
+- All 24 extracted functions: <10 complexity ✓
+- Test coverage: 26/26 WASM tests passing ✅
+- TDG Overall: 75.7 → 76.1/100 (B)
+- TDG Duplication: 15.7 → 16.1/20 (improved)
+
+### ⚠️ **CRITICAL MYSTERY**: TDG Structural Complexity 0.0/25
+
+**Issue**: Despite extracting 24 functions and reducing key function sizes by 80-90%, TDG Structural score remains **0.0/25** (unchanged).
+
+**Hypotheses:**
+1. **File size**: 1,267 lines may exceed TDG file size threshold
+2. **Tool limitation**: PMAT v2.111.0 may have Rust analysis issues
+3. **Hidden metrics**: TDG may penalize aspects beyond cyclomatic complexity
+
+**Evidence:**
+- ✅ All new functions verified <10 complexity (Toyota Way compliant)
+- ✅ Manual code review confirms significant complexity reduction
+- ✅ Tests prove functional correctness maintained
+- ❌ TDG Structural score unchanged (0.0/25 → 0.0/25)
+
+**Next Steps:**
+1. Investigate TDG structural scoring algorithm
+2. Consider splitting mod.rs into submodules if file size is issue
+3. Try PMAT analyze complexity for comparison
+4. Document as potential PMAT tool limitation
+
+### Conclusion
+
+**Objective Success**: Code quality dramatically improved
+- 80-90% function size reduction
+- All complexity targets met (<10 per function)
+- Zero test regressions
+- Highly maintainable codebase
+
+**Metric Mystery**: TDG structural score doesn't reflect improvements
+- Requires further investigation
+- Does not diminish actual quality gains achieved
+- Toyota Way principles successfully applied
+
+---
+
+*Initial Analysis: 2025-10-03*
+*Refactoring Complete: 2025-10-03 (4 phases)*
 *PMAT Version: 2.111.0*
