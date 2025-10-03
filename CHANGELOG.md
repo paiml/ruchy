@@ -4,6 +4,56 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.67.0] - 2025-10-03 - WASM Backend Quality Refactoring
+
+### 🏆 Major Achievement: WASM Backend Systematic Refactoring
+
+Completed 4-phase systematic refactoring of WASM backend following Toyota Way principles:
+
+#### ✅ Quality Improvements
+**24 Helper Functions Extracted** across 4 phases:
+- Phase 1 (7 functions): `lower_expression` dispatch optimization
+- Phase 2 (8 functions): `emit()` section extraction
+- Phase 3 (6 functions): Remaining lower cases
+- Phase 4 (3 functions): `infer_type()` nested match reduction
+
+**Measurable Results**:
+- `emit()`: 128 → 26 lines (80% reduction)
+- `lower_expression()`: ~240 → 24 lines (90% reduction)
+- `infer_type()`: Complexity ~12 → 7 (42% reduction)
+- All 24 functions: <10 cyclomatic complexity ✓ (Toyota Way compliant)
+- Test coverage: 26/26 WASM tests passing (zero regressions)
+
+#### ✅ Code Quality Metrics
+- **Coverage**: 71.18% overall
+- **SATD**: 0 violations in src/ (all in disabled tests)
+- **Clippy**: Clean (zero warnings)
+- **Tests**: 3383 library tests passing
+
+#### 📊 Quality Investigation
+- Filed upstream bug report with PMAT project (#62)
+- Documented TDG structural score mystery (0.0/25 despite refactoring)
+- Created comprehensive analysis: `docs/execution/WASM_QUALITY_ANALYSIS.md`
+
+#### 🎯 Toyota Way Principles Applied
+- **Jidoka**: Automated quality gates detected issues
+- **Genchi Genbutsu**: Direct code inspection confirmed violations
+- **Kaizen**: Systematic improvement through 4 phases
+- **Hansei**: Filed bug report to improve tooling
+
+**Commits**:
+- `162570b7`: Phase 1 - Extract lower_* helper functions
+- `e3030a7f`: Phase 2 - Extract emit_* section helpers
+- `e9834ce9`: Phase 3 - Extract remaining lower cases
+- `ec0e784b`: Phase 4 - Extract infer_type helpers
+- `a9bb88c6`: Prepare PMAT bug report
+- `70a4c262`: Filed upstream issue #62
+
+**Documentation**:
+- WASM_QUALITY_ANALYSIS.md - Complete refactoring analysis
+- PMAT_BUG_REPORT.md - Upstream bug report
+- SUBMIT_PMAT_BUG.md - Submission guide
+
 ## [3.64.1] - 2025-10-02 - DataFrame Sprint Complete + Parser Fixes
 
 ### 🎉 Major Milestone: DataFrame Implementation 100% Complete
