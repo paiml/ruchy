@@ -1316,7 +1316,11 @@ impl Interpreter {
 
     /// Check if a field is accessible based on visibility rules
     /// Complexity: 5
-    fn check_field_visibility(&self, struct_name: &str, field: &str) -> Result<(), InterpreterError> {
+    fn check_field_visibility(
+        &self,
+        struct_name: &str,
+        field: &str,
+    ) -> Result<(), InterpreterError> {
         // Look up struct type definition
         let struct_type = self.lookup_variable(struct_name).ok();
         if let Some(Value::Object(struct_obj)) = struct_type {
@@ -4098,7 +4102,10 @@ impl Interpreter {
                 crate::frontend::ast::Visibility::Private => "private",
                 crate::frontend::ast::Visibility::Protected => "protected",
             };
-            field_info.insert("visibility".to_string(), Value::from_string(visibility_str.to_string()));
+            field_info.insert(
+                "visibility".to_string(),
+                Value::from_string(visibility_str.to_string()),
+            );
 
             // Store default value if present
             if let Some(default_expr) = &field.default_value {
