@@ -834,7 +834,9 @@ impl Transpiler {
         };
         match label {
             Some(l) if !l.is_empty() => {
-                let label_ident = format_ident!("{}", l);
+                // Strip leading ' from label (Ruchy uses 'label, Rust uses label)
+                let label_name = l.strip_prefix('\'').unwrap_or(l);
+                let label_ident = format_ident!("{}", label_name);
                 quote! { #keyword #label_ident }
             }
             _ => keyword, // Handle both None and empty string cases

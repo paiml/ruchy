@@ -54,6 +54,8 @@ pub fn try_pattern_match(
         }
         Pattern::Some(inner_pattern) => try_match_some_pattern(inner_pattern, value, eval_literal),
         Pattern::None => try_match_none_pattern(value),
+        Pattern::Ok(inner_pattern) => try_match_ok_pattern(inner_pattern, value, eval_literal),
+        Pattern::Err(inner_pattern) => try_match_err_pattern(inner_pattern, value, eval_literal),
         _ => Ok(None), // Other patterns not yet implemented
     }
 }
@@ -172,6 +174,54 @@ fn try_match_none_pattern(value: &Value) -> Result<Option<Vec<(String, Value)>>,
     if let Value::EnumVariant { variant_name, data } = value {
         if variant_name == "None" && data.is_none() {
             return Ok(Some(vec![]));
+        }
+    }
+    Ok(None)
+}
+
+/// Try to match an Ok pattern
+///
+/// # Complexity
+/// Cyclomatic complexity: 6 (within Toyota Way limits)
+fn try_match_ok_pattern(
+    inner_pattern: &Pattern,
+    value: &Value,
+    eval_literal: &dyn Fn(&Literal) -> Value,
+) -> Result<Option<Vec<(String, Value)>>, InterpreterError> {
+    // Ok(x) creates an Object: {data: [x], __type: "Message", type: "Ok"}
+    if let Value::Object(fields) = value {
+        if let Some(Value::String(type_str)) = fields.get("type") {
+            if &**type_str == "Ok" {
+                if let Some(Value::Array(data)) = fields.get("data") {
+                    if !data.is_empty() {
+                        return try_pattern_match(inner_pattern, &data[0], eval_literal);
+                    }
+                }
+            }
+        }
+    }
+    Ok(None)
+}
+
+/// Try to match an Err pattern
+///
+/// # Complexity
+/// Cyclomatic complexity: 6 (within Toyota Way limits)
+fn try_match_err_pattern(
+    inner_pattern: &Pattern,
+    value: &Value,
+    eval_literal: &dyn Fn(&Literal) -> Value,
+) -> Result<Option<Vec<(String, Value)>>, InterpreterError> {
+    // Err(x) creates an Object: {data: [x], __type: "Message", type: "Err"}
+    if let Value::Object(fields) = value {
+        if let Some(Value::String(type_str)) = fields.get("type") {
+            if &**type_str == "Err" {
+                if let Some(Value::Array(data)) = fields.get("data") {
+                    if !data.is_empty() {
+                        return try_pattern_match(inner_pattern, &data[0], eval_literal);
+                    }
+                }
+            }
         }
     }
     Ok(None)

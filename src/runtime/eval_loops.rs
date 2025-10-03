@@ -94,8 +94,8 @@ where
         // Execute body
         match eval_expr(body) {
             Ok(value) => last_value = value,
-            Err(InterpreterError::Break(_)) => break,
-            Err(InterpreterError::Continue) => {}
+            Err(InterpreterError::Break(None, _)) => break,
+            Err(InterpreterError::Continue(_)) => {}
             Err(InterpreterError::Return(_)) => return eval_expr(body), // Propagate Return
             Err(InterpreterError::RuntimeError(msg)) if msg == "break" => break,
             Err(InterpreterError::RuntimeError(msg)) if msg == "continue" => {}
@@ -145,8 +145,8 @@ where
         // Execute body
         match eval_expr(body) {
             Ok(value) => last_value = value,
-            Err(InterpreterError::Break(_)) => break,
-            Err(InterpreterError::Continue) => {}
+            Err(InterpreterError::Break(None, _)) => break,
+            Err(InterpreterError::Continue(_)) => {}
             Err(InterpreterError::Return(_)) => return eval_expr(body), // Propagate Return
             Err(InterpreterError::RuntimeError(msg)) if msg == "break" => break,
             Err(InterpreterError::RuntimeError(msg)) if msg == "continue" => {}
@@ -177,8 +177,8 @@ where
 
         match eval_expr(body) {
             Ok(value) => last_value = value,
-            Err(InterpreterError::Break(_)) => break,
-            Err(InterpreterError::Continue) => {}
+            Err(InterpreterError::Break(None, _)) => break,
+            Err(InterpreterError::Continue(_)) => {}
             Err(InterpreterError::Return(_)) => return eval_expr(body), // Propagate Return
             Err(InterpreterError::RuntimeError(msg)) if msg == "break" => break,
             Err(InterpreterError::RuntimeError(msg)) if msg == "continue" => {}
@@ -198,10 +198,10 @@ where
 {
     loop {
         match eval_expr(body) {
-            Ok(_) => {}                                                 // Continue looping
-            Err(InterpreterError::Break(value)) => return Ok(value),    // Break with value
-            Err(InterpreterError::Continue) => {}                       // Continue looping
-            Err(InterpreterError::Return(_)) => return eval_expr(body), // Propagate Return
+            Ok(_) => {}                                                    // Continue looping
+            Err(InterpreterError::Break(None, value)) => return Ok(value), // Break with value
+            Err(InterpreterError::Continue(_)) => {}                       // Continue looping
+            Err(InterpreterError::Return(_)) => return eval_expr(body),    // Propagate Return
             Err(InterpreterError::RuntimeError(msg)) if msg == "break" => return Ok(Value::Nil),
             Err(InterpreterError::RuntimeError(msg)) if msg == "continue" => {}
             Err(e) => return Err(e),

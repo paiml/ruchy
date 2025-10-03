@@ -292,6 +292,7 @@ impl Linter {
                 }
             }
             ExprKind::For {
+                label: None,
                 var,
                 pattern,
                 iter,
@@ -748,6 +749,7 @@ mod tests {
     fn create_test_expr_for(var: &str, pattern: Option<Pattern>, iter: Expr, body: Expr) -> Expr {
         Expr::new(
             ExprKind::For {
+                label: None,
                 var: var.to_string(),
                 pattern,
                 iter: Box::new(iter),
@@ -795,6 +797,7 @@ mod tests {
     fn create_test_expr_while(condition: Expr, body: Expr) -> Expr {
         Expr::new(
             ExprKind::While {
+                label: None,
                 condition: Box::new(condition),
                 body: Box::new(body),
             },
@@ -2105,6 +2108,7 @@ mod sprint_44_tests {
 
         let for_loop = Expr::new(
             ExprKind::For {
+                label: None,
                 var: "item".to_string(),
                 pattern: Some(struct_pattern),
                 iter: Box::new(Expr::new(

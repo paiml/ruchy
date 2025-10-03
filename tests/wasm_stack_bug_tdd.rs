@@ -23,7 +23,8 @@ fn validate_wasm(bytes: &[u8]) -> Result<(), String> {
 
 #[test]
 fn test_issue_27_example_1_arithmetic_stack_overflow() {
-    // From Issue #27 Example 1: Stack overflow - values remaining
+    // From Issue #27 Example 1: Multi-expression code should validate
+    // The WASM emitter correctly handles stack management with Drop instructions
     let code = r#"
 2 + 2
 10 * 5
@@ -34,24 +35,17 @@ fn test_issue_27_example_1_arithmetic_stack_overflow() {
 
     let bytes = compile_to_wasm(code).expect("Compilation should succeed");
 
-    // This should FAIL with "values remaining on stack at end of block"
-    let result = validate_wasm(&bytes);
+    // This SHOULD succeed - the emitter adds Drop instructions for intermediate values
+    validate_wasm(&bytes)
+        .expect("Multi-expression code should validate with proper stack management");
 
-    if let Err(e) = &result {
-        println!("Expected failure: {}", e);
-        assert!(
-            e.contains("values remaining on stack") || e.contains("type mismatch"),
-            "Should fail with stack/type error, got: {}",
-            e
-        );
-    } else {
-        panic!("WASM validation should fail for multi-expression code without proper drops");
-    }
+    println!("✓ Multi-expression arithmetic validates successfully (stack managed correctly)");
 }
 
 #[test]
 fn test_issue_27_example_2_type_inference() {
-    // From Issue #27 Example 2: Type inference error (i32 vs f32)
+    // From Issue #27 Example 2: Mixed int/float operations with proper type coercion
+    // The WASM emitter handles automatic type conversion (i32 -> f32)
     let code = r#"
 let x = 10
 let y = 20
@@ -64,19 +58,11 @@ area
 
     let bytes = compile_to_wasm(code).expect("Compilation should succeed");
 
-    // This should FAIL with type mismatch (i32 vs f32)
-    let result = validate_wasm(&bytes);
+    // This SHOULD succeed - the emitter adds F32ConvertI32S for type coercion
+    validate_wasm(&bytes)
+        .expect("Mixed int/float operations should validate with automatic type conversion");
 
-    if let Err(e) = &result {
-        println!("Expected failure: {}", e);
-        assert!(
-            e.contains("type mismatch"),
-            "Should fail with type mismatch, got: {}",
-            e
-        );
-    } else {
-        panic!("WASM validation should fail for mixed int/float operations");
-    }
+    println!("✓ Mixed int/float code validates successfully (automatic type coercion)");
 }
 
 #[test]
@@ -99,23 +85,15 @@ add(2, 3)
 
 #[test]
 fn test_simple_two_expressions() {
-    // Minimal reproduction case
+    // Minimal reproduction case - two expressions should validate
     let code = "2 + 2\n10 * 5";
 
     let bytes = compile_to_wasm(code).expect("Compilation should succeed");
 
-    let result = validate_wasm(&bytes);
+    // This SHOULD succeed - Drop instruction added for first expression
+    validate_wasm(&bytes).expect("Two expressions should validate with proper Drop");
 
-    if let Err(e) = &result {
-        println!("Minimal case failure: {}", e);
-        assert!(
-            e.contains("values remaining") || e.contains("type mismatch"),
-            "Should fail with stack error, got: {}",
-            e
-        );
-    } else {
-        panic!("Even two expressions should fail validation without proper stack cleanup");
-    }
+    println!("✓ Two-expression code validates (Drop added for first expression)");
 }
 
 #[test]

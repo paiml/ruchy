@@ -78,7 +78,10 @@ impl ComplexityRule {
                         .sum::<usize>()
             }
             ExprKind::While {
-                condition, body, ..
+                label: None,
+                condition,
+                body,
+                ..
             } => 1 + self.calculate_complexity(condition) + self.calculate_complexity(body),
             ExprKind::For { iter, body, .. } => {
                 1 + self.calculate_complexity(iter) + self.calculate_complexity(body)
@@ -264,6 +267,7 @@ mod tests {
     fn test_complexity_rule_while_loop() {
         let rule = ComplexityRule { max_complexity: 5 };
         let while_expr = make_test_expr(ExprKind::While {
+            label: None,
             condition: Box::new(make_test_expr(ExprKind::Literal(Literal::Bool(true)))),
             body: Box::new(make_test_expr(ExprKind::Literal(Literal::Integer(42)))),
         });
@@ -274,6 +278,7 @@ mod tests {
     fn test_complexity_rule_for_loop() {
         let rule = ComplexityRule { max_complexity: 5 };
         let for_expr = make_test_expr(ExprKind::For {
+            label: None,
             var: "i".to_string(),
             pattern: None,
             iter: Box::new(make_test_expr(ExprKind::Range {
