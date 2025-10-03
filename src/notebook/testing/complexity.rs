@@ -393,13 +393,27 @@ mod tests {
 
         for complexity in complexities {
             match complexity {
-                TimeComplexity::O1 => assert!(true, "O(1) constant"),
-                TimeComplexity::OLogN => assert!(true, "O(log n) logarithmic"),
-                TimeComplexity::ON => assert!(true, "O(n) linear"),
-                TimeComplexity::ONLogN => assert!(true, "O(n log n) linearithmic"),
-                TimeComplexity::ON2 => assert!(true, "O(n²) quadratic"),
-                TimeComplexity::ON3 => assert!(true, "O(n³) cubic"),
-                TimeComplexity::OExp => assert!(true, "O(2ⁿ) exponential"),
+                TimeComplexity::O1 => {
+                    // O(1) constant - validation passed
+                }
+                TimeComplexity::OLogN => {
+                    // O(log n) logarithmic - validation passed
+                }
+                TimeComplexity::ON => {
+                    // O(n) linear - validation passed
+                }
+                TimeComplexity::ONLogN => {
+                    // O(n log n) linearithmic - validation passed
+                }
+                TimeComplexity::ON2 => {
+                    // O(n²) quadratic - validation passed
+                }
+                TimeComplexity::ON3 => {
+                    // O(n³) cubic - validation passed
+                }
+                TimeComplexity::OExp => {
+                    // O(2ⁿ) exponential - validation passed
+                }
             }
         }
     }

@@ -130,13 +130,13 @@ mod eval_for_loop_refactor_tests {
 
         // Test break
         let result = handle_loop_control(
-            Err(InterpreterError::Break(Value::Integer(99))),
+            Err(InterpreterError::Break(None, Value::Integer(99))),
             &mut Value::Nil,
         );
         assert_eq!(result, Ok(Some(Value::Integer(99))));
 
         // Test continue
-        let result = handle_loop_control(Err(InterpreterError::Continue), &mut Value::Nil);
+        let result = handle_loop_control(Err(InterpreterError::Continue(None)), &mut Value::Nil);
         assert_eq!(result, Ok(None));
 
         // Test other errors
@@ -251,7 +251,7 @@ mod eval_for_loop_refactor_tests {
             |_var, val, _eval| {
                 iteration_count += 1;
                 if let Value::Integer(2) = val {
-                    Err(InterpreterError::Break(Value::Integer(99)))
+                    Err(InterpreterError::Break(None, Value::Integer(99)))
                 } else {
                     Ok(val)
                 }
@@ -281,7 +281,7 @@ mod eval_for_loop_refactor_tests {
             |_var, val, _eval| {
                 if let Value::Integer(i) = val {
                     if i == 2 {
-                        return Err(InterpreterError::Continue);
+                        return Err(InterpreterError::Continue(None));
                     }
                     sum += i;
                 }

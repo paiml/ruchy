@@ -217,8 +217,7 @@ mod tests {
                 && result.contains("1")
                 && result.contains("2")
                 && result.contains("3"),
-            "Expected array syntax, got: {}",
-            result
+            "Expected array syntax, got: {result}"
         );
     }
     #[test]

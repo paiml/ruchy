@@ -6,7 +6,7 @@
 
 ## Executive Summary
 
-**Overall Progress**: 118/141 examples (84%) → **125.5/141 (89%)** with v3.66.5 + CH19/CH23 fixes ✅
+**Overall Progress**: 118/141 examples (84%) → **126/141 (89.4%)** with v3.66.5 + CH19/CH23 memory estimation ✅
 
 **Session Achievement**: +13 examples fixed, +21 examples discovered via audits (+11% gain)
 
@@ -35,7 +35,7 @@
 | **Ch 19** | Structs & OOP | N/A | ✅ **100% (8/8)** | 8 | ✅ Complete |
 | **Ch 21** | Professional Tooling | 100% (1/1) | ✅ 100% (1/1) | 1 | ✅ Complete |
 | **Ch 22** | Compiler Development | N/A | ✅ **100% (8/8)** | 8 | ✅ Complete |
-| **Ch 23** | REPL & Inspection | N/A | ✅ **85% (8.5/10)** | 10 | ✅ Nearly complete |
+| **Ch 23** | REPL & Inspection | N/A | ✅ **90% (9/10)** | 10 | ✅ Complete |
 
 **Legend**:
 - ✅ Complete (≥90%) - No action needed
