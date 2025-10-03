@@ -313,6 +313,7 @@ impl AstNormalizer {
             Literal::String(s) => CoreLiteral::String(s.clone()),
             Literal::Bool(b) => CoreLiteral::Bool(*b),
             Literal::Char(c) => CoreLiteral::Char(*c),
+            Literal::Byte(b) => CoreLiteral::Integer(i64::from(*b)), // Represent byte as integer in canonical AST
             Literal::Unit => CoreLiteral::Unit,
             Literal::Null => CoreLiteral::Unit, // Represent null as unit in canonical AST
         })

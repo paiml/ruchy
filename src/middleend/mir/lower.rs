@@ -248,6 +248,7 @@ impl LoweringContext {
             Literal::String(s) => Constant::String(s.clone()),
             Literal::Bool(b) => Constant::Bool(*b),
             Literal::Char(c) => Constant::Char(*c),
+            Literal::Byte(b) => Constant::Int(i128::from(*b), Type::U8),
             Literal::Unit => Constant::Unit,
             Literal::Null => Constant::Unit, // Null represented as Unit in MIR
         }

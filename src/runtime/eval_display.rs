@@ -19,6 +19,7 @@ impl fmt::Display for Value {
                 }
             }
             Value::Bool(b) => write!(f, "{b}"),
+            Value::Byte(b) => write!(f, "{b}"),
             Value::Nil => write!(f, "nil"),
             Value::String(s) => write!(f, "\"{s}\""),
             Value::Array(arr) => format_array(f, arr),
@@ -155,8 +156,14 @@ impl fmt::Display for InterpreterError {
             InterpreterError::InvalidInstruction => write!(f, "Invalid instruction"),
             InterpreterError::DivisionByZero => write!(f, "Division by zero"),
             InterpreterError::IndexOutOfBounds => write!(f, "Index out of bounds"),
-            InterpreterError::Break(_) => write!(f, "Break outside of loop"),
-            InterpreterError::Continue => write!(f, "Continue outside of loop"),
+            InterpreterError::Break(Some(label), _) => {
+                write!(f, "Break '{label}' outside of matching loop")
+            }
+            InterpreterError::Break(None, _) => write!(f, "Break outside of loop"),
+            InterpreterError::Continue(Some(label)) => {
+                write!(f, "Continue '{label}' outside of matching loop")
+            }
+            InterpreterError::Continue(None) => write!(f, "Continue outside of loop"),
             InterpreterError::Return(_) => write!(f, "Return outside of function"),
             InterpreterError::Throw(value) => write!(f, "Uncaught exception: {value:?}"),
         }

@@ -359,7 +359,7 @@ impl DirectThreadedInterpreter {
     /// Convert literal to value
     ///
     /// # Complexity
-    /// Cyclomatic complexity: 7 (within Toyota Way limits)
+    /// Cyclomatic complexity: 8 (within Toyota Way limits)
     fn literal_to_value(&self, lit: &Literal) -> Value {
         match lit {
             Literal::Integer(n) => Value::Integer(*n),
@@ -367,8 +367,9 @@ impl DirectThreadedInterpreter {
             Literal::Bool(b) => Value::Bool(*b),
             Literal::String(s) => Value::from_string(s.clone()),
             Literal::Char(c) => Value::from_string(c.to_string()), // Convert char to single-character string
-            Literal::Unit => Value::Nil,                           // Unit maps to Nil
-            Literal::Null => Value::Nil,                           // Null maps to Nil
+            Literal::Byte(b) => Value::Byte(*b),
+            Literal::Unit => Value::Nil, // Unit maps to Nil
+            Literal::Null => Value::Nil, // Null maps to Nil
         }
     }
 

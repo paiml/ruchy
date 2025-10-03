@@ -219,6 +219,7 @@ impl ConservativeGC {
             Value::Integer(_) => 8,
             Value::Float(_) => 8,
             Value::Bool(_) => 1,
+            Value::Byte(_) => 1,
             Value::Nil => 0,
             Value::String(s) => 24 + s.len(), // Rc overhead + string data
             Value::Array(arr) => {

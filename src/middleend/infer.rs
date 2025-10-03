@@ -274,6 +274,7 @@ impl InferenceContext {
             Literal::String(_) => MonoType::String,
             Literal::Bool(_) => MonoType::Bool,
             Literal::Char(_) => MonoType::Char,
+            Literal::Byte(_) => MonoType::Int, // Treat byte as int for now
             Literal::Unit => MonoType::Unit,
             Literal::Null => MonoType::Unit, // Treat null as unit type for now
         }

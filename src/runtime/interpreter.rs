@@ -29,8 +29,8 @@ use std::rc::Rc;
 /// Control flow for loop iterations or error
 #[derive(Debug)]
 enum LoopControlOrError {
-    Break(Value),
-    Continue,
+    Break(Option<String>, Value),
+    Continue(Option<String>),
     Return(Value), // Early return from function (exits both loop and function)
     Error(InterpreterError),
 }
@@ -65,6 +65,8 @@ pub enum Value {
     Float(f64),
     /// Boolean value
     Bool(bool),
+    /// Byte value (0-255)
+    Byte(u8),
     /// Nil/null value
     Nil,
     /// String value (reference-counted for efficiency)
@@ -111,6 +113,7 @@ impl Value {
             Value::Integer(_) => TypeId::of::<i64>(),
             Value::Float(_) => TypeId::of::<f64>(),
             Value::Bool(_) => TypeId::of::<bool>(),
+            Value::Byte(_) => TypeId::of::<u8>(),
             Value::String(_) => TypeId::of::<String>(),
             Value::Nil => TypeId::of::<()>(),
             Value::Array(_) => TypeId::of::<Vec<Value>>(),
@@ -228,8 +231,8 @@ pub enum InterpreterError {
     InvalidInstruction,
     DivisionByZero,
     IndexOutOfBounds,
-    Break(Value),
-    Continue,
+    Break(Option<String>, Value),
+    Continue(Option<String>),
     Return(Value),
     Throw(Value), // EXTREME TDD: Exception handling
 }
@@ -1179,27 +1182,29 @@ impl Interpreter {
                 name, value, body, ..
             } => self.eval_let_expr(name, value, body),
             ExprKind::For {
+                label,
                 var,
                 pattern,
                 iter,
                 body,
-                ..
-            } => self.eval_for_loop(var, pattern.as_ref(), iter, body),
+            } => self.eval_for_loop(label.as_ref(), var, pattern.as_ref(), iter, body),
             ExprKind::While {
-                condition, body, ..
-            } => self.eval_while_loop(condition, body),
-            ExprKind::Loop { body, .. } => self.eval_loop(body),
+                label,
+                condition,
+                body,
+            } => self.eval_while_loop(label.as_ref(), condition, body),
+            ExprKind::Loop { label, body } => self.eval_loop(label.as_ref(), body),
             ExprKind::Match { expr, arms } => self.eval_match(expr, arms),
-            ExprKind::Break { label: _, value } => {
+            ExprKind::Break { label, value } => {
                 // Evaluate the break value (default to Nil if not provided)
                 let break_val = if let Some(expr) = value {
                     self.eval_expr(expr)?
                 } else {
                     Value::Nil
                 };
-                Err(InterpreterError::Break(break_val))
+                Err(InterpreterError::Break(label.clone(), break_val))
             }
-            ExprKind::Continue { label: _ } => Err(InterpreterError::Continue),
+            ExprKind::Continue { label } => Err(InterpreterError::Continue(label.clone())),
             ExprKind::Return { value } => self.eval_return_expr(value.as_deref()),
             ExprKind::TryCatch {
                 try_block,
@@ -1485,6 +1490,7 @@ impl Interpreter {
             Literal::String(s) => Value::from_string(s.clone()),
             Literal::Bool(b) => Value::from_bool(*b),
             Literal::Char(c) => Value::from_string(c.to_string()),
+            Literal::Byte(b) => Value::Byte(*b),
             Literal::Unit => Value::nil(),
             Literal::Null => Value::nil(),
         }
@@ -2391,6 +2397,7 @@ impl Interpreter {
     /// Evaluate a for loop
     fn eval_for_loop(
         &mut self,
+        label: Option<&String>,
         var: &str,
         _pattern: Option<&Pattern>,
         iter: &Expr,
@@ -2399,12 +2406,12 @@ impl Interpreter {
         let iter_value = self.eval_expr(iter)?;
 
         match iter_value {
-            Value::Array(ref arr) => self.eval_for_array_iteration(var, arr, body),
+            Value::Array(ref arr) => self.eval_for_array_iteration(label, var, arr, body),
             Value::Range {
                 ref start,
                 ref end,
                 inclusive,
-            } => self.eval_for_range_iteration(var, start, end, inclusive, body),
+            } => self.eval_for_range_iteration(label, var, start, end, inclusive, body),
             _ => Err(InterpreterError::TypeError(
                 "For loop requires an iterable".to_string(),
             )),
@@ -2415,6 +2422,7 @@ impl Interpreter {
     /// Complexity: ≤8
     fn eval_for_array_iteration(
         &mut self,
+        label: Option<&String>,
         loop_var: &str,
         arr: &[Value],
         body: &Expr,
@@ -2425,8 +2433,25 @@ impl Interpreter {
             self.set_variable(loop_var, item.clone());
             match self.eval_loop_body_with_control_flow(body) {
                 Ok(value) => last_value = value,
-                Err(LoopControlOrError::Break(break_val)) => return Ok(break_val),
-                Err(LoopControlOrError::Continue) => {}
+                Err(LoopControlOrError::Break(break_label, break_val)) => {
+                    // If break has no label or matches this loop's label, break here
+                    if break_label.is_none() || break_label.as_deref() == label.map(String::as_str)
+                    {
+                        return Ok(break_val);
+                    }
+                    // Otherwise, propagate to outer loop
+                    return Err(InterpreterError::Break(break_label, break_val));
+                }
+                Err(LoopControlOrError::Continue(continue_label)) => {
+                    // If continue has no label or matches this loop's label, continue here
+                    if continue_label.is_none()
+                        || continue_label.as_deref() == label.map(String::as_str)
+                    {
+                        continue;
+                    }
+                    // Otherwise, propagate to outer loop
+                    return Err(InterpreterError::Continue(continue_label));
+                }
                 Err(LoopControlOrError::Return(return_val)) => {
                     return Err(InterpreterError::Return(return_val))
                 }
@@ -2441,6 +2466,7 @@ impl Interpreter {
     /// Complexity: ≤9
     fn eval_for_range_iteration(
         &mut self,
+        label: Option<&String>,
         loop_var: &str,
         start: &Value,
         end: &Value,
@@ -2454,8 +2480,21 @@ impl Interpreter {
             self.set_variable(loop_var, Value::Integer(i));
             match self.eval_loop_body_with_control_flow(body) {
                 Ok(value) => last_value = value,
-                Err(LoopControlOrError::Break(break_val)) => return Ok(break_val),
-                Err(LoopControlOrError::Continue) => {}
+                Err(LoopControlOrError::Break(break_label, break_val)) => {
+                    if break_label.is_none() || break_label.as_deref() == label.map(String::as_str)
+                    {
+                        return Ok(break_val);
+                    }
+                    return Err(InterpreterError::Break(break_label, break_val));
+                }
+                Err(LoopControlOrError::Continue(continue_label)) => {
+                    if continue_label.is_none()
+                        || continue_label.as_deref() == label.map(String::as_str)
+                    {
+                        continue;
+                    }
+                    return Err(InterpreterError::Continue(continue_label));
+                }
                 Err(LoopControlOrError::Return(return_val)) => {
                     return Err(InterpreterError::Return(return_val))
                 }
@@ -2504,8 +2543,8 @@ impl Interpreter {
     ) -> Result<Value, LoopControlOrError> {
         match self.eval_expr(body) {
             Ok(value) => Ok(value),
-            Err(InterpreterError::Break(val)) => Err(LoopControlOrError::Break(val)),
-            Err(InterpreterError::Continue) => Err(LoopControlOrError::Continue),
+            Err(InterpreterError::Break(label, val)) => Err(LoopControlOrError::Break(label, val)),
+            Err(InterpreterError::Continue(label)) => Err(LoopControlOrError::Continue(label)),
             Err(InterpreterError::Return(val)) => Err(LoopControlOrError::Return(val)),
             Err(e) => Err(LoopControlOrError::Error(e)),
         }
@@ -2514,15 +2553,73 @@ impl Interpreter {
     /// Evaluate a while loop
     fn eval_while_loop(
         &mut self,
+        label: Option<&String>,
         condition: &Expr,
         body: &Expr,
     ) -> Result<Value, InterpreterError> {
-        crate::runtime::eval_loops::eval_while_loop(condition, body, |expr| self.eval_expr(expr))
+        let mut last_value = Value::Nil;
+        loop {
+            let cond_value = self.eval_expr(condition)?;
+            if !matches!(cond_value, Value::Bool(true)) && cond_value != Value::Integer(1) {
+                break;
+            }
+
+            match self.eval_loop_body_with_control_flow(body) {
+                Ok(value) => last_value = value,
+                Err(LoopControlOrError::Break(break_label, break_val)) => {
+                    if break_label.is_none() || break_label.as_deref() == label.map(String::as_str)
+                    {
+                        return Ok(break_val);
+                    }
+                    return Err(InterpreterError::Break(break_label, break_val));
+                }
+                Err(LoopControlOrError::Continue(continue_label)) => {
+                    if continue_label.is_none()
+                        || continue_label.as_deref() == label.map(String::as_str)
+                    {
+                        continue;
+                    }
+                    return Err(InterpreterError::Continue(continue_label));
+                }
+                Err(LoopControlOrError::Return(return_val)) => {
+                    return Err(InterpreterError::Return(return_val))
+                }
+                Err(LoopControlOrError::Error(e)) => return Err(e),
+            }
+        }
+        Ok(last_value)
     }
 
     /// Evaluate an infinite loop (loop { ... })
-    fn eval_loop(&mut self, body: &Expr) -> Result<Value, InterpreterError> {
-        crate::runtime::eval_loops::eval_loop(body, |expr| self.eval_expr(expr))
+    fn eval_loop(
+        &mut self,
+        label: Option<&String>,
+        body: &Expr,
+    ) -> Result<Value, InterpreterError> {
+        loop {
+            match self.eval_loop_body_with_control_flow(body) {
+                Ok(_) => {}
+                Err(LoopControlOrError::Break(break_label, break_val)) => {
+                    if break_label.is_none() || break_label.as_deref() == label.map(String::as_str)
+                    {
+                        return Ok(break_val);
+                    }
+                    return Err(InterpreterError::Break(break_label, break_val));
+                }
+                Err(LoopControlOrError::Continue(continue_label)) => {
+                    if continue_label.is_none()
+                        || continue_label.as_deref() == label.map(String::as_str)
+                    {
+                        continue;
+                    }
+                    return Err(InterpreterError::Continue(continue_label));
+                }
+                Err(LoopControlOrError::Return(return_val)) => {
+                    return Err(InterpreterError::Return(return_val))
+                }
+                Err(LoopControlOrError::Error(e)) => return Err(e),
+            }
+        }
     }
 
     /// Evaluate a match expression

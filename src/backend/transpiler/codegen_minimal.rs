@@ -226,6 +226,7 @@ impl MinimalCodeGen {
             Literal::String(s) => Ok(format!("\"{}\"", s.replace('"', "\\\""))),
             Literal::Bool(b) => Ok(b.to_string()),
             Literal::Char(c) => Ok(format!("'{c}'")),
+            Literal::Byte(b) => Ok(format!("b'{}'", *b as char)),
             Literal::Unit => Ok("()".to_string()),
             Literal::Null => Ok("None".to_string()),
         }

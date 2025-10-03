@@ -60,19 +60,40 @@ pub fn eval_builtin_function(
 
 /// Print values to stdout with newline
 ///
+/// Supports printf-style formatting with {} placeholders:
+/// - `println("Count: {}", 42)` → "Count: 42"
+/// - `println("Name: {}, Age: {}", "Alice", 30)` → "Name: Alice, Age: 30"
+///
 /// # Complexity
-/// Cyclomatic complexity: 3 (within Toyota Way limits)
+/// Cyclomatic complexity: 6 (within Toyota Way limits)
 fn eval_println(args: &[Value]) -> Result<Value, InterpreterError> {
     if args.is_empty() {
         println!();
-    } else {
-        let output = args
-            .iter()
-            .map(|v| format!("{v}"))
-            .collect::<Vec<_>>()
-            .join(" ");
-        println!("{output}");
+        return Ok(Value::Nil);
     }
+
+    // Check if first arg is a format string with {} placeholders
+    if let Value::String(fmt_str) = &args[0] {
+        if fmt_str.contains("{}") {
+            // Perform string interpolation
+            let mut result = fmt_str.to_string();
+            for arg in &args[1..] {
+                if let Some(pos) = result.find("{}") {
+                    result.replace_range(pos..pos + 2, &format!("{arg}"));
+                }
+            }
+            println!("{result}");
+            return Ok(Value::Nil);
+        }
+    }
+
+    // Fallback: join all args with spaces (backward compatibility)
+    let output = args
+        .iter()
+        .map(|v| format!("{v}"))
+        .collect::<Vec<_>>()
+        .join(" ");
+    println!("{output}");
     Ok(Value::Nil)
 }
 

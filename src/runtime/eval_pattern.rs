@@ -72,6 +72,8 @@ pub fn match_pattern(
         Pattern::List(patterns) => match_array_pattern(patterns, value),
         Pattern::Tuple(patterns) => match_tuple_pattern(patterns, value),
         Pattern::Struct { name, fields, .. } => match_struct_pattern(name, fields, value),
+        Pattern::Ok(inner_pattern) => match_ok_pattern(inner_pattern, value),
+        Pattern::Err(inner_pattern) => match_err_pattern(inner_pattern, value),
         _ => Ok(PatternMatchResult::failure()), // Other patterns not implemented yet
     }
 }
@@ -151,7 +153,7 @@ fn match_struct_pattern(
 /// Evaluate a literal pattern to its runtime value
 ///
 /// # Complexity
-/// Cyclomatic complexity: 6 (within Toyota Way limits)
+/// Cyclomatic complexity: 7 (within Toyota Way limits)
 fn eval_pattern_literal(literal: &Literal) -> Result<Value, InterpreterError> {
     match literal {
         Literal::Integer(n) => Ok(Value::Integer(*n)),
@@ -159,6 +161,7 @@ fn eval_pattern_literal(literal: &Literal) -> Result<Value, InterpreterError> {
         Literal::String(s) => Ok(Value::from_string(s.clone())),
         Literal::Bool(b) => Ok(Value::Bool(*b)),
         Literal::Char(c) => Ok(Value::from_string(c.to_string())),
+        Literal::Byte(b) => Ok(Value::Byte(*b)),
         Literal::Unit => Ok(Value::Nil),
         Literal::Null => Ok(Value::Nil),
     }
@@ -281,6 +284,66 @@ pub fn check_pattern_exhaustiveness(
             Ok(patterns.len() >= 2)
         }
     }
+}
+
+/// Match Ok pattern - Result success case
+///
+/// # Complexity
+/// Cyclomatic complexity: 6 (within Toyota Way limits)
+fn match_ok_pattern(
+    inner_pattern: &Pattern,
+    value: &Value,
+) -> Result<PatternMatchResult, InterpreterError> {
+    // Ok(x) creates an Object: {data: [x], __type: "Message", type: "Ok"}
+    eprintln!("DEBUG: match_ok_pattern called");
+    if let Value::Object(fields) = value {
+        eprintln!("DEBUG: Value is Object with {} fields", fields.len());
+        if let Some(type_value) = fields.get("type") {
+            eprintln!("DEBUG: Found 'type' field: {type_value:?}");
+            if let Value::String(type_str) = type_value {
+                eprintln!("DEBUG: Type is String: {type_str}");
+                if &**type_str == "Ok" {
+                    eprintln!("DEBUG: Type matches 'Ok'");
+                    if let Some(data_value) = fields.get("data") {
+                        eprintln!("DEBUG: Found 'data' field");
+                        if let Value::Array(data) = data_value {
+                            eprintln!("DEBUG: Data is Array with {} elements", data.len());
+                            if !data.is_empty() {
+                                eprintln!("DEBUG: Matching inner pattern");
+                                return match_pattern(inner_pattern, &data[0]);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    } else {
+        eprintln!("DEBUG: Value is NOT an Object: {value:?}");
+    }
+    Ok(PatternMatchResult::failure())
+}
+
+/// Match Err pattern - Result error case
+///
+/// # Complexity
+/// Cyclomatic complexity: 6 (within Toyota Way limits)
+fn match_err_pattern(
+    inner_pattern: &Pattern,
+    value: &Value,
+) -> Result<PatternMatchResult, InterpreterError> {
+    // Err(x) creates an Object: {data: [x], __type: "Message", type: "Err"}
+    if let Value::Object(fields) = value {
+        if let Some(Value::String(type_str)) = fields.get("type") {
+            if &**type_str == "Err" {
+                if let Some(Value::Array(data)) = fields.get("data") {
+                    if !data.is_empty() {
+                        return match_pattern(inner_pattern, &data[0]);
+                    }
+                }
+            }
+        }
+    }
+    Ok(PatternMatchResult::failure())
 }
 
 #[cfg(test)]

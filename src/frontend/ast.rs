@@ -705,6 +705,8 @@ pub enum Literal {
     Bool(bool),
     /// A character literal.
     Char(char),
+    /// A byte literal (0-255).
+    Byte(u8),
     /// The unit value `()`.
     Unit,
     /// A null value.
@@ -1728,6 +1730,7 @@ mod tests {
         ));
         let expr = Expr::new(
             ExprKind::For {
+                label: None,
                 var: "i".to_string(),
                 pattern: None,
                 iter,
@@ -1737,6 +1740,7 @@ mod tests {
         );
         match expr.kind {
             ExprKind::For {
+                label: None,
                 var,
                 iter: it,
                 body: b,

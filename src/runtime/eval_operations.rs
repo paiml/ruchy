@@ -426,6 +426,7 @@ fn equal_values(left: &Value, right: &Value) -> bool {
         (Value::Integer(a), Value::Float(b)) => (*a as f64) == *b,
         (Value::Float(a), Value::Integer(b)) => *a == (*b as f64),
         (Value::Bool(a), Value::Bool(b)) => a == b,
+        (Value::Byte(a), Value::Byte(b)) => a == b,
         (Value::String(a), Value::String(b)) => a == b,
         (Value::Nil, Value::Nil) => true,
         // Object/struct equality - compare all fields

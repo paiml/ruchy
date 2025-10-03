@@ -48,7 +48,7 @@ where
 /// Evaluate a literal value
 ///
 /// # Complexity
-/// Cyclomatic complexity: 8 (within Toyota Way limits)
+/// Cyclomatic complexity: 9 (within Toyota Way limits)
 pub fn eval_literal(lit: &Literal) -> Value {
     match lit {
         Literal::Integer(i) => Value::Integer(*i),
@@ -56,6 +56,7 @@ pub fn eval_literal(lit: &Literal) -> Value {
         Literal::String(s) => Value::from_string(s.clone()),
         Literal::Bool(b) => Value::Bool(*b),
         Literal::Char(c) => Value::from_string(c.to_string()),
+        Literal::Byte(b) => Value::Byte(*b),
         Literal::Unit => Value::Nil,
         Literal::Null => Value::Nil,
     }
