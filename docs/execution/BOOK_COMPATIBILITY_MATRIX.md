@@ -1,12 +1,12 @@
 # Ruchy Book Compatibility Matrix v3.66.2
 
-**Last Updated**: 2025-10-03 (BYTE-001 Implementation Complete)
-**Ruchy Version**: v3.66.2 (with byte literals)
-**Previous Report**: v3.66.1 (post-audits)
+**Last Updated**: 2025-10-03 (CH23-DEBUG + Property Testing Sprint Complete)
+**Ruchy Version**: v3.66.5 (with Ch23 REPL commands + 91 property tests)
+**Previous Report**: v3.66.2 (byte literals)
 
 ## Executive Summary
 
-**Overall Progress**: 118/141 examples (84%) → **119/141 (85%)** with v3.66.2 + BYTE-001 ✅
+**Overall Progress**: 118/141 examples (84%) → **125.5/141 (89%)** with v3.66.5 + CH19/CH23 fixes ✅
 
 **Session Achievement**: +13 examples fixed, +21 examples discovered via audits (+11% gain)
 
@@ -32,10 +32,10 @@
 | **Ch 16** | Testing & QA | 63% (5/8) | ✅ **88% (7/8)** | 8 | ✅ Complete |
 | **Ch 17** | Error Handling | 45% (5/11) | ✅ **100% (11/11)** | 11 | ✅ Complete |
 | **Ch 18** | DataFrames | 0% (0/4) | ✅ **100% (4/4)** | 4 | ✅ Complete |
-| **Ch 19** | Structs & OOP | N/A | ⚠️ **75% (6/8)** | 8 | ⚠️ 2 issues |
+| **Ch 19** | Structs & OOP | N/A | ✅ **100% (8/8)** | 8 | ✅ Complete |
 | **Ch 21** | Professional Tooling | 100% (1/1) | ✅ 100% (1/1) | 1 | ✅ Complete |
 | **Ch 22** | Compiler Development | N/A | ✅ **100% (8/8)** | 8 | ✅ Complete |
-| **Ch 23** | REPL & Inspection | N/A | ⚠️ **30% (3/10)** | 10 | ⚠️ 7 missing |
+| **Ch 23** | REPL & Inspection | N/A | ✅ **85% (8.5/10)** | 10 | ✅ Nearly complete |
 
 **Legend**:
 - ✅ Complete (≥90%) - No action needed
@@ -88,18 +88,19 @@
    - Advanced features not implemented (:type, :inspect, :ast, :debug)
    - **Result**: 3/10 feature groups working
 
-## Actual v3.66.1 Totals
+## Actual v3.66.5 Totals
 
 **Total Examples Discovered**: 141 (120 original + 21 from Ch19/22/23 audits)
-**Total Passing**: 118/141 examples (84%)
+**Total Passing**: 125.5/141 examples (89%)
 
 **Breakdown**:
 - Original 120 examples: 105 passing (87%)
-- Ch19: 6/8 passing (75%)
+- Ch19: 8/8 passing (100%) ⬆️ **+2 from default fields & pub(crate)**
 - Ch22: 8/8 passing (100%)
-- Ch23: 3/10 passing (30%)
+- Ch23: 8.5/10 passing (85%) ⬆️ **+5.5 from debug mode fix**
 
-**Result**: 118/141 = **84% overall compatibility**
+**Result**: 125.5/141 = **89% overall compatibility** 🎉
+**Target**: 90% (127/141) - **Only 1.5 examples away!**
 
 ## Sprint Results
 
