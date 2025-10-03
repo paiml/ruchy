@@ -169,7 +169,14 @@ impl Repl {
             EvalResult::Value(value) => {
                 // Add result to history for tracking
                 self.add_result_to_history(value.clone());
-                let formatted = value.to_string();
+
+                // Format output based on current mode
+                let formatted = match self.state.get_mode() {
+                    ReplMode::Debug => self.format_debug_output(line, &value)?,
+                    ReplMode::Ast => self.format_ast_output(line)?,
+                    ReplMode::Transpile => self.format_transpile_output(line)?,
+                    ReplMode::Normal => value.to_string(),
+                };
                 Ok(formatted)
             }
             EvalResult::NeedMoreInput => {
@@ -303,6 +310,62 @@ impl Repl {
             }
         }
         Ok(())
+    }
+
+    /// Format output in debug mode (complexity: 5)
+    fn format_debug_output(&self, line: &str, value: &Value) -> Result<String> {
+        use crate::frontend::Parser;
+
+        let mut output = String::new();
+
+        // Show AST
+        output.push_str("=== AST ===\n");
+        let mut parser = Parser::new(line);
+        match parser.parse() {
+            Ok(ast) => output.push_str(&format!("{ast:#?}\n")),
+            Err(e) => output.push_str(&format!("Parse error: {e}\n")),
+        }
+
+        // Show transpiled Rust code
+        output.push_str("\n=== Transpiled Rust ===\n");
+        match self.format_transpile_output(line) {
+            Ok(transpiled) => output.push_str(&format!("{transpiled}\n")),
+            Err(e) => output.push_str(&format!("Transpile error: {e}\n")),
+        }
+
+        // Show result
+        output.push_str(&format!("\n=== Result ===\n{value}"));
+
+        Ok(output)
+    }
+
+    /// Format AST output (complexity: 4)
+    fn format_ast_output(&self, line: &str) -> Result<String> {
+        use crate::frontend::Parser;
+
+        let mut parser = Parser::new(line);
+        match parser.parse() {
+            Ok(ast) => Ok(format!("{ast:#?}")),
+            Err(e) => Ok(format!("Parse error: {e}")),
+        }
+    }
+
+    /// Format transpiled Rust output (complexity: 4)
+    fn format_transpile_output(&self, line: &str) -> Result<String> {
+        use crate::backend::transpiler::Transpiler;
+        use crate::frontend::Parser;
+
+        let mut parser = Parser::new(line);
+        match parser.parse() {
+            Ok(ast) => {
+                let transpiler = Transpiler::new();
+                match transpiler.transpile(&ast) {
+                    Ok(rust_code) => Ok(rust_code.to_string()),
+                    Err(e) => Ok(format!("Transpile error: {e}")),
+                }
+            }
+            Err(e) => Ok(format!("Parse error: {e}")),
+        }
     }
 
     /// Get current prompt string (complexity: 4)
