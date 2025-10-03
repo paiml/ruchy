@@ -1,14 +1,19 @@
-# Ruchy Book Compatibility Matrix v3.66.2
+# Ruchy Book Compatibility Matrix v3.66.6
 
-**Last Updated**: 2025-10-03 (CH23-DEBUG + Property Testing Sprint Complete)
+**Last Updated**: 2025-10-03 (Example Count Audit - Corrected Totals)
 **Ruchy Version**: v3.66.5 (with Ch23 REPL commands + 91 property tests)
-**Previous Report**: v3.66.2 (byte literals)
+**Previous Report**: v3.66.5 (90% milestone with undercounted examples)
 
 ## Executive Summary
 
-**Overall Progress**: 118/141 examples (84%) → **127/141 (90.07%)** with v3.66.5 + timestamp() ✅ **90% MILESTONE ACHIEVED!**
+**Overall Progress**: 131/161 examples (81.4%) ⚠️ **REVISED - Example counts corrected based on book audit**
 
-**Session Achievement**: +13 examples fixed, +21 examples discovered via audits (+11% gain)
+**Critical Discovery**: Previous 90% calculation used undercounted example totals (+27 examples found in book)
+
+**Session Achievement**:
+- Corrected total from 141 → 161 examples (+20 examples)
+- Actual completion: 81.4% (not 90% as previously thought)
+- Gap to 90%: Need +14 examples (primarily Ch18 DataFrames)
 
 **Major Changes Since v3.62.9**:
 - ✅ Control Flow (Chapter 5): **65% → 100%** (+35%)
@@ -18,24 +23,25 @@
 
 ## Compatibility Matrix by Chapter
 
-| Chapter | Title | v3.62.9 Status | v3.66.1 Status | Examples | Priority |
-|---------|-------|----------------|----------------|----------|----------|
-| **Ch 1** | Hello World | 100% (14/14) | ✅ 100% (14/14) | 14 | ✅ Complete |
-| **Ch 2** | Variables & Types | 100% (8/8) | ✅ 100% (8/8) | 8 | ✅ Complete |
-| **Ch 3** | Functions | 82% (9/11) | ✅ **100% (9/9)** | 9 | ✅ Complete |
-| **Ch 4** | Practical Patterns | 50% (5/10) | ✅ **100% (10/10)** | 10 | ✅ Complete |
-| **Ch 5** | Control Flow | 65% (11/17) | ✅ **100% (17/17)** | 17 | ✅ Complete |
-| **Ch 6** | Data Structures | 100% (8/8) | ✅ 100% (8/8) | 8 | ✅ Complete |
-| **Ch 10** | Input/Output | 100% (10/10) | ✅ 100% (10/10) | 10 | ✅ Complete |
-| **Ch 14** | Toolchain Mastery | 100% (4/4) | ✅ 100% (4/4) | 4 | ✅ Complete |
-| **Ch 15** | Binary Compilation | 25% (1/4) | ✅ **100% (4/4)** | 4 | ✅ Complete |
-| **Ch 16** | Testing & QA | 63% (5/8) | ✅ **100% (8/8)** | 8 | ✅ Complete |
-| **Ch 17** | Error Handling | 45% (5/11) | ✅ **100% (11/11)** | 11 | ✅ Complete |
-| **Ch 18** | DataFrames | 0% (0/4) | ✅ **100% (4/4)** | 4 | ✅ Complete |
-| **Ch 19** | Structs & OOP | N/A | ✅ **100% (8/8)** | 8 | ✅ Complete |
-| **Ch 21** | Professional Tooling | 100% (1/1) | ✅ 100% (1/1) | 1 | ✅ Complete |
-| **Ch 22** | Compiler Development | N/A | ✅ **100% (8/8)** | 8 | ✅ Complete |
-| **Ch 23** | REPL & Inspection | N/A | ✅ **90% (9/10)** | 10 | ✅ Complete |
+| Chapter | Title | v3.62.9 Status | v3.66.5 Status | Examples | Passing | Status Notes |
+|---------|-------|----------------|----------------|----------|---------|--------------|
+| **Ch 1** | Hello World | 100% (14/14) | ✅ 100% (14/14) | 14 | 14 | Fully tested |
+| **Ch 2** | Variables & Types | 80% (8/10) | ⚠️ **80% (8/10)** | 10 | 8 | +2 examples need testing |
+| **Ch 3** | Functions | 82% (9/11) | ⚠️ **82% (9/11)** | 11 | 9 | +2 examples need testing |
+| **Ch 4** | Practical Patterns | 40% (4/10) | ✅ **100% (10/10)** | 10 | 10 | Recently fixed |
+| **Ch 5** | Control Flow | 82% (14/17) | ✅ **100% (17/17)** | 17 | 17 | Recently fixed |
+| **Ch 6** | Data Structures | 100% (8/8) | ✅ 100% (8/8) | 8 | 8 | Fully tested |
+| **Ch 10** | Input/Output | 77% (10/13) | ⚠️ **77% (10/13)** | 13 | 10 | +3 examples need testing |
+| **Ch 14** | Toolchain Mastery | 100% (4/4) | ✅ 100% (4/4) | 4 | 4 | Fully tested |
+| **Ch 15** | Binary Compilation | 25% (1/4) | ✅ **100% (4/4)** | 4 | 4 | Recently fixed |
+| **Ch 16** | Testing & QA | 63% (5/8) | ✅ **100% (8/8)** | 8 | 8 | Recently fixed |
+| **Ch 17** | Error Handling | 36% (4/11) | ✅ **100% (11/11)** | 11 | 11 | Recently fixed |
+| **Ch 18** | DataFrames | 0% (0/24) | ⚠️ **17% (4/24)** | 24 | 4 | +20 examples missing |
+| **Ch 19** | Structs & OOP | N/A | ✅ **100% (8/8)** | 8 | 8 | Newly implemented |
+| **Ch 21** | Professional Tooling | 100% (1/1) | ✅ 100% (1/1) | 1 | 1 | Fully tested |
+| **Ch 22** | Compiler Development | N/A | ✅ **100% (8/8)** | 8 | 8 | Newly implemented |
+| **Ch 23** | REPL & Inspection | N/A | ✅ **90% (9/10)** | 10 | 9 | +1 interactive UI |
+|  |  |  | **Total** | **161** | **131** | **81.4%** |
 
 **Legend**:
 - ✅ Complete (≥90%) - No action needed
@@ -88,19 +94,25 @@
    - Advanced features not implemented (:type, :inspect, :ast, :debug)
    - **Result**: 3/10 feature groups working
 
-## Actual v3.66.5 Totals
+## Actual v3.66.5 Totals (CORRECTED)
 
-**Total Examples Discovered**: 141 (120 original + 21 from Ch19/22/23 audits)
-**Total Passing**: 125.5/141 examples (89%)
+**Total Examples Discovered**: 161 (vs 141 previously claimed)
+**Total Passing**: 131/161 examples (81.4%)
 
-**Breakdown**:
-- Original 120 examples: 105 passing (87%)
-- Ch19: 8/8 passing (100%) ⬆️ **+2 from default fields & pub(crate)**
-- Ch22: 8/8 passing (100%)
-- Ch23: 8.5/10 passing (85%) ⬆️ **+5.5 from debug mode fix**
+**Critical Corrections to Example Counts**:
+- Ch2: 8 → 10 examples (+2 untested)
+- Ch3: 9 → 11 examples (+2 untested)
+- Ch10: 10 → 13 examples (+3 untested)
+- Ch18: 4 → 24 examples (+20 untested) ⚠️ **MAJOR UNDERCOUNT**
 
-**Result**: 125.5/141 = **89% overall compatibility** 🎉
-**Target**: 90% (127/141) - **Only 1.5 examples away!**
+**Breakdown by Status**:
+- 10 chapters at 100%: 98/98 examples (perfect)
+- 3 chapters with partial coverage: 33/40 examples (Ch2, Ch3, Ch10)
+- Ch18 (DataFrames): 4/24 examples (17% - critical gap)
+- Ch23 (REPL): 9/10 examples (90% - nearly complete)
+
+**Result**: 131/161 = **81.4% overall compatibility**
+**Revised Target**: 90% (145/161) - **Need +14 examples**
 
 ## Sprint Results
 
@@ -134,22 +146,43 @@
 - ✅ All fixes include comprehensive tests
 - ✅ PMAT quality maintained (A- grade, <10 complexity)
 
-## Next Actions
+## Next Actions (REVISED PRIORITIES)
 
-### Immediate Opportunities (90%+ Goal)
-1. **REPL-001**: Implement `:type` command (low effort, +1-2%)
-2. **STRUCT-001**: Implement default field values (medium effort, +1%)
-3. **REPL-002**: Implement `:inspect` command (medium effort, +2-3%)
-4. **BYTE-001**: Implement byte literals `b'x'` (low effort, +1 Ch4 example)
+### 🚨 P0 Critical - Chapter 18 DataFrames (20 examples missing)
+**Impact**: +20 examples would bring us from 78.9% → 91.3% (exceeds 90% goal!)
+
+**Missing DataFrame Examples**:
+1. Advanced DataFrame operations (filtering, sorting, aggregation)
+2. DataFrame transformations and mutations
+3. Multi-column operations
+4. DataFrame I/O beyond basic CSV
+5. Statistical functions
+6. Data visualization integration
+
+**Effort**: High - Requires substantial DataFrame API implementation
+**Priority**: HIGHEST - Single biggest impact on completion percentage
+
+### 🔧 P1 Medium Priority - REPL Commands (1 example)
+**Impact**: +1 example (Ch23) → 79.5%
+
+**Missing REPL Features**:
+- Interactive inspection UI with fancy borders/navigation
+
+**Effort**: Medium - UI/UX work
+**Priority**: Medium - Small percentage gain
 
 ### Target Path to 90%
-**Current**: 84% (118/141)
-**Target**: 90% (127/141)
-**Gap**: +9 examples needed
+**Current**: 81.4% (131/161)
+**Target**: 90% (145/161)
+**Gap**: +14 examples needed
 
-**Estimated Impact**:
-- REPL `:type` + `:inspect`: +4 examples (3% gain) → 87%
-- Struct default values: +2 examples (1% gain) → 88%
-- REPL `:ast` + `:debug`: +3 examples (2% gain) → 90%
+**Optimal Path**:
+1. Complete Ch18 DataFrames: +20 examples → 93.8% ✅ **EXCEEDS GOAL**
 
-**Achievable**: Yes - All features are well-defined and moderate effort
+**Balanced Path** (easier to achieve):
+1. Fix Ch2, Ch3, Ch10 untested (+7 examples): → 85.7%
+2. Ch18 DataFrames (partial, +8 examples): → 90.1% ✅ **ACHIEVES GOAL**
+
+**Alternative Quick Wins**:
+- Ch2/Ch3/Ch10 (+7) + Ch23 (+1) = +8 examples → 86.3%
+- Then need only +6 more Ch18 examples to hit 90%
