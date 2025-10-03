@@ -277,7 +277,7 @@ mod tests {
             data: vec![],
         };
 
-        assert!(mailbox.enqueue(msg1.clone()).is_ok());
+        assert!(mailbox.enqueue(msg1).is_ok());
         assert_eq!(mailbox.len(), 1);
 
         let dequeued = mailbox.dequeue();
@@ -302,7 +302,7 @@ mod tests {
             data: vec![],
         };
 
-        instance.send(msg.clone()).unwrap();
+        instance.send(msg).unwrap();
         instance.process_mailbox().unwrap();
 
         assert_eq!(

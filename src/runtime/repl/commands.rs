@@ -313,7 +313,9 @@ Enter expressions to evaluate them.
         use super::Value;
 
         let type_name = Self::value_type_name(value);
+        let memory_size = Self::estimate_value_memory(value);
         let mut output = format!("Type: {type_name}\n");
+        output.push_str(&format!("Memory: ~{memory_size} bytes\n"));
 
         match value {
             Value::Integer(n) => {
@@ -395,6 +397,70 @@ Enter expressions to evaluate them.
         }
 
         output
+    }
+
+    /// Estimate memory usage of a Value in bytes (complexity: 10)
+    fn estimate_value_memory(value: &super::Value) -> usize {
+        use super::Value;
+        use std::mem::size_of;
+
+        match value {
+            Value::Integer(_) => size_of::<i64>(),
+            Value::Float(_) => size_of::<f64>(),
+            Value::Bool(_) => size_of::<bool>(),
+            Value::Byte(_) => size_of::<u8>(),
+            Value::Nil => 0,
+            Value::String(s) => size_of::<String>() + s.len(),
+            Value::Array(arr) => {
+                size_of::<Vec<Value>>() + arr.iter().map(Self::estimate_value_memory).sum::<usize>()
+            }
+            Value::Tuple(items) => {
+                size_of::<Vec<Value>>()
+                    + items.iter().map(Self::estimate_value_memory).sum::<usize>()
+            }
+            Value::Object(obj) => {
+                size_of::<std::collections::HashMap<String, Value>>()
+                    + obj
+                        .iter()
+                        .map(|(k, v)| k.len() + Self::estimate_value_memory(v))
+                        .sum::<usize>()
+            }
+            Value::ObjectMut(obj) => {
+                size_of::<std::collections::HashMap<String, Value>>()
+                    + obj
+                        .borrow()
+                        .iter()
+                        .map(|(k, v)| k.len() + Self::estimate_value_memory(v))
+                        .sum::<usize>()
+            }
+            Value::DataFrame { columns } => columns
+                .iter()
+                .map(|col| {
+                    col.name.len()
+                        + col
+                            .values
+                            .iter()
+                            .map(Self::estimate_value_memory)
+                            .sum::<usize>()
+                })
+                .sum(),
+            Value::Range { start, end, .. } => {
+                size_of::<bool>()
+                    + Self::estimate_value_memory(start)
+                    + Self::estimate_value_memory(end)
+            }
+            Value::EnumVariant { variant_name, data } => {
+                variant_name.len()
+                    + data
+                        .as_ref()
+                        .map_or(0, |vals| vals.iter().map(Self::estimate_value_memory).sum())
+            }
+            Value::Closure { params, .. } => {
+                // Approximate: params + environment overhead
+                params.iter().map(std::string::String::len).sum::<usize>() + 128
+            }
+            Value::BuiltinFunction(name) => name.len() + size_of::<usize>(),
+        }
     }
 
     /// Get human-readable type name from Value (complexity: 10)

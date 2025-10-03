@@ -311,7 +311,10 @@ fn test_transpile_loop() {
     let body = make_block(vec![
         make_literal(42),
         Expr {
-            kind: ExprKind::Break { label: None },
+            kind: ExprKind::Break {
+                label: None,
+                value: None,
+            },
             span: Span::default(),
             attributes: vec![],
         },

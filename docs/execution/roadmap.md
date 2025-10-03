@@ -2,16 +2,22 @@
 
 ## 📝 **SESSION CONTEXT FOR RESUMPTION**
 
-**Last Active**: 2025-10-03 (v3.66.5 - Book Compatibility: 89% achieved! 🎉)
-**Current Sprint**: Book Compatibility ✅ NEARLY COMPLETE (89%) → Target: 90%+ 🎯
-**Integration Status**: 📊 **Overall: 89% (125.5/141) - Only 1.5 examples from 90% goal!** 🚀
+**Last Active**: 2025-10-03 (v3.66.5 - Book Compatibility: 89.4% achieved! 🎉)
+**Current Sprint**: Book Compatibility ✅ NEARLY COMPLETE (89.4%) → Target: 90%+ 🎯
+**Integration Status**: 📊 **Overall: 89.4% (126/141) - Only 0.6 points from 90% goal!** 🚀
 **Overall Test Status**: 🎉 **3612 tests passing (91 property + 30 REPL + 12 Ch19 + 96 REPL + 3383 regression)**
 **Quality Status**: TDG A- maintained, zero regressions, <10 complexity ✅
 **Testing Achievement**: 🏆 **Property test sprint: 91 tests added (112% of goal), 85%+ coverage** 🏆
 **Critical Issues**: None! All quality gates passing ✅
 **Next Priority**: Book compatibility improvements (84.7% → 90%+) 🎯
 
-**Latest Updates** (Session 2025-10-03 v3.66.5 - 89% BOOK COMPATIBILITY ACHIEVED!):
+**Latest Updates** (Session 2025-10-03 v3.66.5 - 89.4% BOOK COMPATIBILITY ACHIEVED!):
+- [CH23-MEMORY] ✅ **NEW FEATURE**: Memory estimation in :inspect command
+  - Added estimate_value_memory() function to calculate memory usage
+  - Displays "Memory: ~X bytes" for all value types (Integer, String, Array, Object, etc.)
+  - 6/6 TDD tests passing for memory estimation
+  - Ch23: 85% → 90% (+0.5 examples)
+  - Overall: 89% → 89.4% (126/141 examples)
 - [COMPAT-89] ✅ **MILESTONE**: 89% overall book compatibility achieved!
   - Ch19: 75% → 100% (+2 examples: default fields & pub(crate))
   - Ch23: 30% → 85% (+5.5 examples: REPL commands & debug mode)

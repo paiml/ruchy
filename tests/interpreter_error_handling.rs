@@ -767,7 +767,7 @@ mod runtime_errors {
     fn test_continue_outside_loop() {
         let mut interp = Interpreter::new();
         let err = interp.eval_expect_error("continue");
-        assert!(matches!(err, InterpreterError::Continue));
+        assert!(matches!(err, InterpreterError::Continue(..)));
     }
 
     #[test]
@@ -797,7 +797,7 @@ mod runtime_errors {
         let mut interp = Interpreter::new();
         interp.eval_expect_success("fn test() { continue }");
         let err = interp.eval_expect_error("while true { test() }");
-        assert!(matches!(err, InterpreterError::Continue));
+        assert!(matches!(err, InterpreterError::Continue(..)));
     }
 
     #[test]
