@@ -14,13 +14,13 @@ use std::path::PathBuf;
 fn test_struct_with_all_defaults() {
     let mut repl = Repl::new(PathBuf::from("/tmp")).unwrap();
 
-    // Define struct with default values
+    // Define struct with default values (public fields for testing)
     repl.eval(
         r#"
 struct Settings {
-    theme: String = "dark",
-    font_size: i32 = 14,
-    auto_save: bool = true
+    pub theme: String = "dark",
+    pub font_size: i32 = 14,
+    pub auto_save: bool = true
 }
 "#,
     )
@@ -56,9 +56,9 @@ fn test_struct_override_one_default() {
     repl.eval(
         r#"
 struct Settings {
-    theme: String = "dark",
-    font_size: i32 = 14,
-    auto_save: bool = true
+    pub theme: String = "dark",
+    pub font_size: i32 = 14,
+    pub auto_save: bool = true
 }
 "#,
     )
@@ -88,9 +88,9 @@ fn test_struct_override_all_defaults() {
     repl.eval(
         r#"
 struct Settings {
-    theme: String = "dark",
-    font_size: i32 = 14,
-    auto_save: bool = true
+    pub theme: String = "dark",
+    pub font_size: i32 = 14,
+    pub auto_save: bool = true
 }
 "#,
     )
@@ -129,13 +129,13 @@ struct Settings {
 fn test_struct_mixed_defaults_and_required() {
     let mut repl = Repl::new(PathBuf::from("/tmp")).unwrap();
 
-    // Mix of fields with and without defaults
+    // Mix of fields with and without defaults (all public for testing)
     repl.eval(
         r#"
 struct User {
-    name: String,           // Required (no default)
-    role: String = "user",  // Optional (has default)
-    active: bool = true     // Optional (has default)
+    pub name: String,           // Required (no default)
+    pub role: String = "user",  // Optional (has default)
+    pub active: bool = true     // Optional (has default)
 }
 "#,
     )
@@ -164,9 +164,9 @@ fn test_struct_numeric_defaults() {
     repl.eval(
         r#"
 struct Config {
-    port: i32 = 8080,
-    timeout: f64 = 30.0,
-    retries: i32 = 3
+    pub port: i32 = 8080,
+    pub timeout: f64 = 30.0,
+    pub retries: i32 = 3
 }
 "#,
     )
@@ -192,9 +192,9 @@ fn test_struct_boolean_defaults() {
     repl.eval(
         r#"
 struct Flags {
-    debug: bool = false,
-    verbose: bool = true,
-    strict: bool = false
+    pub debug: bool = false,
+    pub verbose: bool = true,
+    pub strict: bool = false
 }
 "#,
     )
