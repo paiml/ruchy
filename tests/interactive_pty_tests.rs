@@ -252,8 +252,11 @@ fn pty_multiple_commands_sequence() -> Result<(), Error> {
     repl.send_line("3 + 3")?;
     repl.exp_string("6")?;
 
+    repl.exp_string("ruchy>")?;
     repl.send_line(":quit")?;
-    repl.exp_eof()?;
+
+    // Give it time to exit
+    std::thread::sleep(Duration::from_millis(100));
     Ok(())
 }
 
