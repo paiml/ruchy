@@ -1111,6 +1111,9 @@ impl Transpiler {
             if let Some(result) = self.try_transpile_math_functions(base_name, args)? {
                 return Ok(result);
             }
+            if let Some(result) = self.try_transpile_time_functions(base_name, args)? {
+                return Ok(result);
+            }
             if let Some(result) = self.try_transpile_collection_constructor(base_name, args)? {
                 return Ok(result);
             }
@@ -3289,6 +3292,35 @@ impl Transpiler {
             _ => Ok(None),
         }
     }
+
+    /// Handle time functions (timestamp, `get_time_ms`)
+    ///
+    /// # Complexity
+    /// Cyclomatic complexity: 3
+    fn try_transpile_time_functions(
+        &self,
+        base_name: &str,
+        args: &[Expr],
+    ) -> Result<Option<TokenStream>> {
+        match base_name {
+            "timestamp" | "get_time_ms" => {
+                if !args.is_empty() {
+                    bail!("{}() expects no arguments", base_name);
+                }
+                // Get current time in milliseconds since Unix epoch
+                Ok(Some(quote! {
+                    {
+                        std::time::SystemTime::now()
+                            .duration_since(std::time::UNIX_EPOCH)
+                            .expect("System time before Unix epoch")
+                            .as_millis() as i64
+                    }
+                }))
+            }
+            _ => Ok(None),
+        }
+    }
+
     /// Handle assert functions (assert, `assert_eq`, `assert_ne`)
     ///
     /// # Examples

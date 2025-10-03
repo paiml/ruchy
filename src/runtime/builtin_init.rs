@@ -205,6 +205,10 @@ fn add_random_time_functions(global_env: &mut HashMap<String, Value>) {
         Value::from_string("__builtin_timestamp__".to_string()),
     );
     global_env.insert(
+        "get_time_ms".to_string(),
+        Value::from_string("__builtin_timestamp__".to_string()),
+    );
+    global_env.insert(
         "sleep".to_string(),
         Value::from_string("__builtin_sleep__".to_string()),
     );
@@ -280,8 +284,9 @@ mod tests {
 
         // Should have all builtin functions
         // 1 constant + 9 basic + 11 math + 3 I/O + 3 utility
-        // + 4 conversion + 8 advanced + 2 string + 4 random/time = 45 total
-        assert_eq!(env.len(), 45);
+        // + 4 conversion + 8 advanced + 2 string + 5 random/time = 46 total
+        // (timestamp + get_time_ms + sleep + random + random_int)
+        assert_eq!(env.len(), 46);
     }
 
     #[test]
