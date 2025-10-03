@@ -2,10 +2,12 @@
 
 **Date**: 2025-10-03
 **Reporter**: Ruchy Compiler Project
-**PMAT Version**: 2.111.0
+**PMAT Version**: 2.111.0 → 2.112.0 (tested fix)
 **Language**: Rust
 **Severity**: Medium (Metric Accuracy Issue)
-**Status**: ✅ **FILED** - https://github.com/paiml/paiml-mcp-agent-toolkit/issues/62
+**Status**: 🔄 **ISSUE CLOSED BUT NOT RESOLVED** - https://github.com/paiml/paiml-mcp-agent-toolkit/issues/62
+
+**Update (2025-10-03)**: Issue was closed and marked as fixed in v2.112.0, but testing confirms **Structural score still 0.0/25** with the new version. Follow-up comment posted: https://github.com/paiml/paiml-mcp-agent-toolkit/issues/62#issuecomment-3366364820
 
 ## Summary
 
@@ -214,6 +216,38 @@ Please investigate why TDG Structural Complexity score remains static at 0.0/25 
 
 GitHub: https://github.com/yourusername/ruchy
 Issue: (to be filed)
+
+---
+
+## v2.112.0 Testing Results (2025-10-03)
+
+**Maintainer Response**: Issue was closed and marked as "fixed in v2.112.0" with detailed explanation of improvements:
+- Per-function complexity analysis implemented
+- Decomposition bonuses for >10 functions with avg <8 complexity
+- Expected score: 23-25/25 for our refactored code
+
+**Testing with v2.112.0**:
+```bash
+$ pmat --version
+pmat 2.112.0
+
+$ pmat tdg src/backend/wasm/mod.rs --include-components
+Overall Score: 76.1/100 (B)
+  ├─ Structural:     0.0/25    ⚠️ STILL 0.0/25
+  ├─ Semantic:       20.0/20
+  ├─ Duplication:    16.1/20
+  ├─ Coupling:       15.0/15
+  ├─ Documentation:  10.0/10
+  └─ Consistency:    10.0/10
+```
+
+**Function Detection Test**:
+```bash
+$ pmat analyze complexity --path src/backend/wasm/mod.rs
+Functions: 0    ⚠️ Not detecting any functions
+```
+
+**Conclusion**: The fix did not resolve the issue. Rust function extraction still returns 0 functions, suggesting the AST parsing for Rust may still have issues. Follow-up comment posted to issue #62.
 
 ---
 
