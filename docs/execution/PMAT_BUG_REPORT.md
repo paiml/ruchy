@@ -5,6 +5,7 @@
 **PMAT Version**: 2.111.0
 **Language**: Rust
 **Severity**: Medium (Metric Accuracy Issue)
+**Status**: ✅ **FILED** - https://github.com/paiml/paiml-mcp-agent-toolkit/issues/62
 
 ## Summary
 
