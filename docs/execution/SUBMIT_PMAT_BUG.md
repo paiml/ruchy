@@ -179,5 +179,6 @@ For questions about this bug report:
 
 ---
 
-**Status**: Ready to submit (2025-10-03)
+**Status**: ✅ **FILED** (2025-10-03)
+**Issue**: https://github.com/paiml/paiml-mcp-agent-toolkit/issues/62
 **Priority**: Medium (affects metric confidence, not code quality)
