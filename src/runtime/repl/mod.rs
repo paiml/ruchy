@@ -293,11 +293,17 @@ impl Repl {
         }
     }
 
-    /// Process expression evaluation (complexity: 7)
+    /// Process expression evaluation (complexity: 8)
     fn process_evaluation(&mut self, line: &str) -> Result<()> {
         match self.evaluator.evaluate_line(line, &mut self.state)? {
             EvalResult::Value(value) => {
-                let formatted = value.to_string();
+                // Format output based on current mode (respects debug/ast/transpile modes)
+                let formatted = match self.state.get_mode() {
+                    ReplMode::Debug => self.format_debug_output(line, &value)?,
+                    ReplMode::Ast => self.format_ast_output(line)?,
+                    ReplMode::Transpile => self.format_transpile_output(line)?,
+                    ReplMode::Normal => value.to_string(),
+                };
                 if !formatted.is_empty() {
                     println!("{formatted}");
                 }

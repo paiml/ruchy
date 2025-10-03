@@ -760,7 +760,7 @@ mod runtime_errors {
     fn test_break_outside_loop() {
         let mut interp = Interpreter::new();
         let err = interp.eval_expect_error("break");
-        assert!(matches!(err, InterpreterError::Break(_)));
+        assert!(matches!(err, InterpreterError::Break(..)));
     }
 
     #[test]
@@ -789,7 +789,7 @@ mod runtime_errors {
         let mut interp = Interpreter::new();
         interp.eval_expect_success("fn test() { break }");
         let err = interp.eval_expect_error("for i in 0..5 { test() }");
-        assert!(matches!(err, InterpreterError::Break(_)));
+        assert!(matches!(err, InterpreterError::Break(..)));
     }
 
     #[test]
@@ -804,7 +804,7 @@ mod runtime_errors {
     fn test_multiple_breaks() {
         let mut interp = Interpreter::new();
         let err = interp.eval_expect_error("{ break; break; }");
-        assert!(matches!(err, InterpreterError::Break(_)));
+        assert!(matches!(err, InterpreterError::Break(..)));
     }
 
     #[test]
