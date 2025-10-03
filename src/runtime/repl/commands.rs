@@ -122,6 +122,9 @@ impl CommandRegistry {
             }
             ":history" => Ok(CommandResult::Success(self.format_history(context.state))),
             ":vars" => Ok(CommandResult::Success(self.format_bindings(context.state))),
+            ":env" => Ok(CommandResult::Success(
+                self.format_environment(context.state),
+            )),
             _ => Ok(CommandResult::Success(format!(
                 "Unknown command: {command}"
             ))),
@@ -132,7 +135,7 @@ impl CommandRegistry {
     pub fn available_commands(&self) -> Vec<&'static str> {
         vec![
             ":help", ":h", ":quit", ":exit", ":q", ":clear", ":reset", ":mode", ":history",
-            ":vars", ":type", ":inspect", ":ast",
+            ":vars", ":env", ":type", ":inspect", ":ast",
         ]
     }
 
@@ -146,6 +149,7 @@ impl CommandRegistry {
   :mode [mode]       Show/set REPL mode (normal, debug, ast, transpile)
   :history           Show command history
   :vars              Show variable bindings
+  :env               Show comprehensive environment info
   :type <expr>       Show type of expression
   :inspect <expr>    Detailed inspection of value
   :ast <expr>        Show AST structure
@@ -182,6 +186,36 @@ Enter expressions to evaluate them.
                 .collect::<Vec<_>>()
                 .join("\n")
         }
+    }
+
+    /// Format comprehensive environment information (complexity: 8)
+    fn format_environment(&self, state: &ReplState) -> String {
+        let mut output = String::new();
+
+        // Header
+        output.push_str("=== REPL Environment ===\n\n");
+
+        // Mode information
+        output.push_str(&format!("Mode: {:?}\n\n", state.get_mode()));
+
+        // Variables section
+        output.push_str("--- Variables ---\n");
+        let bindings = state.get_bindings();
+        if bindings.is_empty() {
+            output.push_str("No variables defined\n");
+        } else {
+            for (name, value) in bindings {
+                let type_name = Self::value_type_name(value);
+                output.push_str(&format!("{name}: {type_name} = {value}\n"));
+            }
+        }
+
+        // History section
+        output.push_str("\n--- History ---\n");
+        let history = state.get_history();
+        output.push_str(&format!("Commands executed: {}\n", history.len()));
+
+        output
     }
 
     /// Execute :type command to show type of expression (complexity: 6)
