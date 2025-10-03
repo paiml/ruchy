@@ -330,12 +330,12 @@ fn cli_batch_execution_sequence() {
     repl_cmd()
         .arg("repl")
         .write_stdin(
-            r#"
+            r"
 let x = 10
 let y = 20
 x + y
 :quit
-"#,
+",
         )
         .assert()
         .success()

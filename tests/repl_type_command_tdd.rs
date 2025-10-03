@@ -17,8 +17,7 @@ fn test_type_command_integer() {
     let result = repl.eval(":type 42").unwrap();
     assert!(
         result.contains("Integer"),
-        "Expected 'Integer' but got: {}",
-        result
+        "Expected 'Integer' but got: {result}"
     );
 }
 
@@ -30,8 +29,7 @@ fn test_type_command_float() {
     let result = repl.eval(":type 3.14").unwrap();
     assert!(
         result.contains("Float"),
-        "Expected 'Float' but got: {}",
-        result
+        "Expected 'Float' but got: {result}"
     );
 }
 
@@ -43,8 +41,7 @@ fn test_type_command_string() {
     let result = repl.eval(":type \"hello\"").unwrap();
     assert!(
         result.contains("String"),
-        "Expected 'String' but got: {}",
-        result
+        "Expected 'String' but got: {result}"
     );
 }
 
@@ -54,11 +51,7 @@ fn test_type_command_bool() {
 
     // Test boolean
     let result = repl.eval(":type true").unwrap();
-    assert!(
-        result.contains("Bool"),
-        "Expected 'Bool' but got: {}",
-        result
-    );
+    assert!(result.contains("Bool"), "Expected 'Bool' but got: {result}");
 }
 
 #[test]
@@ -69,8 +62,7 @@ fn test_type_command_array() {
     let result = repl.eval(":type [1, 2, 3]").unwrap();
     assert!(
         result.contains("Array"),
-        "Expected 'Array' but got: {}",
-        result
+        "Expected 'Array' but got: {result}"
     );
 }
 
@@ -85,8 +77,7 @@ fn test_type_command_variable() {
     let result = repl.eval(":type x").unwrap();
     assert!(
         result.contains("Integer"),
-        "Expected 'Integer' but got: {}",
-        result
+        "Expected 'Integer' but got: {result}"
     );
 }
 
@@ -98,8 +89,7 @@ fn test_type_command_expression() {
     let result = repl.eval(":type 2 + 3").unwrap();
     assert!(
         result.contains("Integer"),
-        "Expected 'Integer' but got: {}",
-        result
+        "Expected 'Integer' but got: {result}"
     );
 }
 
@@ -111,7 +101,6 @@ fn test_type_command_format() {
     let result = repl.eval(":type 42").unwrap();
     assert!(
         result.starts_with("Type:"),
-        "Expected format 'Type: <typename>' but got: {}",
-        result
+        "Expected format 'Type: <typename>' but got: {result}"
     );
 }

@@ -1,14 +1,14 @@
 //! TDD Test for BOOK-CH15-002: Multi-statement function body parsing
 //!
-//! Root Cause: parse_function uses parse_expr_recursive which only handles single expressions
-//! Solution: Use parse_block when function body starts with {
+//! Root Cause: `parse_function` uses `parse_expr_recursive` which only handles single expressions
+//! Solution: Use `parse_block` when function body starts with {
 
 use ruchy::Parser;
 
 #[test]
 fn test_function_with_multiple_let_statements() {
     // Example 3 from Chapter 15: Data Processor
-    let code = r#"
+    let code = r"
         fun calculate_sum(data: Vec<i32>) -> i32 {
             let mut total = 0;
             let mut i = 0;
@@ -18,7 +18,7 @@ fn test_function_with_multiple_let_statements() {
             }
             total
         }
-    "#;
+    ";
 
     let mut parser = Parser::new(code);
     let result = parser.parse();
@@ -85,9 +85,9 @@ fn test_function_with_multiple_statements() {
 #[test]
 fn test_single_expression_function_still_works() {
     // Ensure backward compatibility with single expression functions
-    let code = r#"
+    let code = r"
         fun add(x: i32, y: i32) -> i32 { x + y }
-    "#;
+    ";
 
     let mut parser = Parser::new(code);
     let result = parser.parse();

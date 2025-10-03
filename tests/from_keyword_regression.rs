@@ -32,8 +32,7 @@ fn test_from_as_parameter_name_fails() {
     let result = parse_ok(code);
     assert!(
         result.is_err(),
-        "'from' should not be allowed as parameter name (reserved keyword), got: {:?}",
-        result
+        "'from' should not be allowed as parameter name (reserved keyword), got: {result:?}"
     );
 
     // Verify it fails with some error (various possible error messages)
@@ -50,8 +49,7 @@ fn test_from_as_parameter_name_fails() {
 
     assert!(
         is_keyword_error,
-        "Should fail with keyword-related error, got: {}",
-        err_str
+        "Should fail with keyword-related error, got: {err_str}"
     );
 }
 
@@ -68,12 +66,12 @@ fn test_from_as_variable_name_fails() {
 
 #[test]
 fn test_from_in_struct_field_fails() {
-    let code = r#"
+    let code = r"
         struct Edge {
             from: String,
             to: String
         }
-    "#;
+    ";
 
     let result = parse_ok(code);
     assert!(
@@ -107,8 +105,7 @@ fn test_workaround_from_vertex() {
     let result = parse_ok(code);
     assert!(
         result.is_ok(),
-        "Workaround 'from_vertex' should work: {:?}",
-        result
+        "Workaround 'from_vertex' should work: {result:?}"
     );
 }
 
@@ -120,8 +117,7 @@ fn test_workaround_source() {
     let result = parse_ok(code);
     assert!(
         result.is_ok(),
-        "Workaround 'source' should work: {:?}",
-        result
+        "Workaround 'source' should work: {result:?}"
     );
 }
 
@@ -131,11 +127,7 @@ fn test_workaround_start() {
     let code = "fun date_range(start, end) { start }";
 
     let result = parse_ok(code);
-    assert!(
-        result.is_ok(),
-        "Workaround 'start' should work: {:?}",
-        result
-    );
+    assert!(result.is_ok(), "Workaround 'start' should work: {result:?}");
 }
 
 /// Test that 'from' might be intended for import syntax
@@ -156,12 +148,12 @@ fn test_from_in_import_statement() {
 #[test]
 fn test_graph_algorithm_pattern_broken() {
     // Graph algorithms commonly use 'from' and 'to'
-    let code = r#"
+    let code = r"
         fun dijkstra(graph, from, to) {
             // Dijkstra's algorithm implementation
             from
         }
-    "#;
+    ";
 
     let result = parse_ok(code);
     assert!(
@@ -189,12 +181,12 @@ fn test_networking_pattern_broken() {
 #[test]
 fn test_date_range_pattern_broken() {
     // Date ranges commonly use 'from' and 'to'
-    let code = r#"
+    let code = r"
         struct DateRange {
             from: String,
             to: String
         }
-    "#;
+    ";
 
     let result = parse_ok(code);
     assert!(
@@ -206,12 +198,12 @@ fn test_date_range_pattern_broken() {
 /// Verify workarounds for all common patterns
 #[test]
 fn test_graph_algorithm_with_workaround() {
-    let code = r#"
+    let code = r"
         fun dijkstra(graph, source, target) {
             // Dijkstra's algorithm implementation
             source
         }
-    "#;
+    ";
 
     let result = parse_ok(code);
     assert!(
@@ -237,12 +229,12 @@ fn test_networking_with_workaround() {
 
 #[test]
 fn test_date_range_with_workaround() {
-    let code = r#"
+    let code = r"
         struct DateRange {
             start_date: String,
             end_date: String
         }
-    "#;
+    ";
 
     let result = parse_ok(code);
     assert!(

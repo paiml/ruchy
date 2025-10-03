@@ -15,7 +15,7 @@ fn eval(code: &str) -> Result<Value, String> {
 // Test 1: Simple early return in function
 #[test]
 fn test_simple_early_return() {
-    let code = r#"
+    let code = r"
         fun safe_divide(a: i32, b: i32) -> i32 {
             if b == 0 {
                 return 0;
@@ -24,7 +24,7 @@ fn test_simple_early_return() {
         }
 
         safe_divide(10, 0)
-    "#;
+    ";
 
     let result = eval(code).expect("Should execute early return");
     assert_eq!(result.to_string(), "0");
@@ -33,7 +33,7 @@ fn test_simple_early_return() {
 // Test 2: Early return with value
 #[test]
 fn test_early_return_with_value() {
-    let code = r#"
+    let code = r"
         fun validate_age(age: i32) -> i32 {
             if age < 0 {
                 return 0;
@@ -45,7 +45,7 @@ fn test_early_return_with_value() {
         }
 
         validate_age(-5)
-    "#;
+    ";
 
     let result = eval(code).expect("Should execute early return with value");
     assert_eq!(result.to_string(), "0");
@@ -78,13 +78,13 @@ fn test_multiple_early_returns() {
 // Test 4: Normal return at end still works
 #[test]
 fn test_normal_return_at_end() {
-    let code = r#"
+    let code = r"
         fun add(a: i32, b: i32) -> i32 {
             a + b
         }
 
         add(5, 3)
-    "#;
+    ";
 
     let result = eval(code).expect("Should execute normal return");
     assert_eq!(result.to_string(), "8");
@@ -93,7 +93,7 @@ fn test_normal_return_at_end() {
 // Test 5: Early return in nested if
 #[test]
 fn test_early_return_nested_if() {
-    let code = r#"
+    let code = r"
         fun check_range(x: i32) -> bool {
             if x < 0 {
                 if x < -100 {
@@ -108,7 +108,7 @@ fn test_early_return_nested_if() {
         }
 
         check_range(-5)
-    "#;
+    ";
 
     let result = eval(code).expect("Should handle nested if with early return");
     assert_eq!(result.to_string(), "false");
@@ -157,7 +157,7 @@ fn test_guard_clause_pattern() {
 // Test 8: Early return with boolean
 #[test]
 fn test_early_return_boolean() {
-    let code = r#"
+    let code = r"
         fun is_valid(x: i32) -> bool {
             if x <= 0 {
                 return false;
@@ -169,7 +169,7 @@ fn test_early_return_boolean() {
         }
 
         is_valid(-1)
-    "#;
+    ";
 
     let result = eval(code).expect("Should handle early return with boolean");
     assert_eq!(result.to_string(), "false");
@@ -178,7 +178,7 @@ fn test_early_return_boolean() {
 // Test 9: Early return vs final expression
 #[test]
 fn test_early_return_vs_final_expression() {
-    let code = r#"
+    let code = r"
         fun example(flag: bool) -> i32 {
             if flag {
                 return 42;
@@ -187,7 +187,7 @@ fn test_early_return_vs_final_expression() {
         }
 
         example(true)
-    "#;
+    ";
 
     let result = eval(code).expect("Should pick early return over final expression");
     assert_eq!(result.to_string(), "42");
@@ -196,7 +196,7 @@ fn test_early_return_vs_final_expression() {
 // Test 10: Early return in while loop (should exit function, not loop)
 #[test]
 fn test_early_return_in_while() {
-    let code = r#"
+    let code = r"
         fun find_limit() -> i32 {
             let mut i = 0;
             while i < 100 {
@@ -209,7 +209,7 @@ fn test_early_return_in_while() {
         }
 
         find_limit()
-    "#;
+    ";
 
     let result = eval(code).expect("Should return from function, not just exit loop");
     assert_eq!(result.to_string(), "5");

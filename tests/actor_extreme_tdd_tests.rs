@@ -217,7 +217,7 @@ mod message_passing_tests {
 
         // Send message
         let result = eval_code(&mut interpreter, "ping.send(Ping(42))").expect("Should send");
-        println!("Result: {:?}", result);
+        println!("Result: {result:?}");
         assert!(
             matches!(result, Value::Nil)
                 || matches!(result, Value::Bool(true))
@@ -537,8 +537,7 @@ mod actor_edge_case_tests {
         let result = eval_code(&mut interpreter, code);
         assert!(
             result.is_ok(),
-            "Empty message should be handled: {:?}",
-            result
+            "Empty message should be handled: {result:?}"
         );
     }
 
@@ -558,8 +557,7 @@ mod actor_edge_case_tests {
         let result = eval_code(&mut interpreter, code);
         assert!(
             result.is_ok(),
-            "Actor with no handlers should instantiate: {:?}",
-            result
+            "Actor with no handlers should instantiate: {result:?}"
         );
     }
 
@@ -619,8 +617,7 @@ mod actor_edge_case_tests {
         let result = eval_code(&mut interpreter, code);
         assert!(
             result.is_ok(),
-            "Multiple field types should work: {:?}",
-            result
+            "Multiple field types should work: {result:?}"
         );
     }
 
@@ -698,7 +695,7 @@ mod actor_edge_case_tests {
             }
         ";
         let result = eval_code(&mut interpreter, code);
-        assert!(result.is_ok(), "Boolean fields should work: {:?}", result);
+        assert!(result.is_ok(), "Boolean fields should work: {result:?}");
     }
 
     #[test]
@@ -753,7 +750,7 @@ mod actor_edge_case_tests {
             }
         "#;
         let result = eval_code(&mut interpreter, code);
-        assert!(result.is_ok(), "Read-only access should work: {:?}", result);
+        assert!(result.is_ok(), "Read-only access should work: {result:?}");
     }
 
     #[test]

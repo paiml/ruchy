@@ -1,6 +1,6 @@
-//! DataFrame aggregation method tests (TDD for DF-006)
+//! `DataFrame` aggregation method tests (TDD for DF-006)
 //!
-//! Tests for DataFrame aggregation operations: .sum(), .mean(), .max(), .min()
+//! Tests for `DataFrame` aggregation operations: .`sum()`, .`mean()`, .`max()`, .`min()`
 //! Following Toyota Way: Write tests FIRST, then implementation
 
 use ruchy::frontend::Parser;
@@ -120,10 +120,10 @@ fn test_mean_skips_non_numeric() {
 
 #[test]
 fn test_mean_empty_dataframe() {
-    let code = r#"
+    let code = r"
         let df = DataFrame::new().build();
         df.mean()
-    "#;
+    ";
 
     let result = eval(code).expect("Should handle empty DataFrame");
     assert_eq!(result.to_string(), "0"); // No values = 0

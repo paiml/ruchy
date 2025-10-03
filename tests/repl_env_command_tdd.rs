@@ -18,13 +18,11 @@ fn test_env_command_empty_environment() {
     let result = repl.eval(":env").unwrap();
     assert!(
         result.contains("Environment") || result.contains("Variables"),
-        "Expected environment header but got: {}",
-        result
+        "Expected environment header but got: {result}"
     );
     assert!(
-        result.contains("0") || result.contains("empty") || result.contains("No variables"),
-        "Expected indication of empty environment but got: {}",
-        result
+        result.contains('0') || result.contains("empty") || result.contains("No variables"),
+        "Expected indication of empty environment but got: {result}"
     );
 }
 
@@ -39,14 +37,12 @@ fn test_env_command_shows_variables() {
     // Check environment
     let result = repl.eval(":env").unwrap();
     assert!(
-        result.contains("x") && result.contains("42"),
-        "Expected variable x=42 but got: {}",
-        result
+        result.contains('x') && result.contains("42"),
+        "Expected variable x=42 but got: {result}"
     );
     assert!(
         result.contains("name") && result.contains("Alice"),
-        "Expected variable name=Alice but got: {}",
-        result
+        "Expected variable name=Alice but got: {result}"
     );
 }
 
@@ -63,18 +59,15 @@ fn test_env_command_shows_types() {
     let result = repl.eval(":env").unwrap();
     assert!(
         result.contains("Integer") || result.contains("Int") || result.contains("42"),
-        "Expected type info for integer but got: {}",
-        result
+        "Expected type info for integer but got: {result}"
     );
     assert!(
         result.contains("String") || result.contains("Str") || result.contains("hello"),
-        "Expected type info for string but got: {}",
-        result
+        "Expected type info for string but got: {result}"
     );
     assert!(
         result.contains("Bool") || result.contains("true"),
-        "Expected type info for boolean but got: {}",
-        result
+        "Expected type info for boolean but got: {result}"
     );
 }
 
@@ -86,8 +79,7 @@ fn test_env_command_shows_mode() {
     let result1 = repl.eval(":env").unwrap();
     assert!(
         result1.contains("Mode") || result1.contains("Normal"),
-        "Expected mode information but got: {}",
-        result1
+        "Expected mode information but got: {result1}"
     );
 
     // Switch to debug mode
@@ -97,8 +89,7 @@ fn test_env_command_shows_mode() {
     let result2 = repl.eval(":env").unwrap();
     assert!(
         result2.contains("Debug"),
-        "Expected Debug mode in env but got: {}",
-        result2
+        "Expected Debug mode in env but got: {result2}"
     );
 }
 
@@ -114,9 +105,8 @@ fn test_env_command_shows_history_count() {
     // Check history count
     let result = repl.eval(":env").unwrap();
     assert!(
-        result.contains("History") || result.contains("3") || result.contains("4"),
-        "Expected history count but got: {}",
-        result
+        result.contains("History") || result.contains('3') || result.contains('4'),
+        "Expected history count but got: {result}"
     );
 }
 
@@ -131,9 +121,8 @@ fn test_env_command_structured_output() {
 
     // Should have section headers
     assert!(
-        result.contains("===") || result.contains("---") || result.contains(":"),
-        "Expected structured sections but got: {}",
-        result
+        result.contains("===") || result.contains("---") || result.contains(':'),
+        "Expected structured sections but got: {result}"
     );
 }
 
@@ -148,13 +137,12 @@ fn test_env_command_shows_all_metadata() {
     let result = repl.eval(":env").unwrap();
 
     // Should show multiple pieces of information
-    let has_vars = result.contains("x") || result.contains("Variables");
+    let has_vars = result.contains('x') || result.contains("Variables");
     let has_mode = result.contains("Mode") || result.contains("Debug");
     let has_metadata = result.contains("History") || result.contains("Environment");
 
     assert!(
         has_vars && has_mode && has_metadata,
-        "Expected comprehensive environment info but got: {}",
-        result
+        "Expected comprehensive environment info but got: {result}"
     );
 }

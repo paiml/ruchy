@@ -54,8 +54,7 @@ fn test_just_first_function() {
     let result = parse(code);
     assert!(
         result.is_ok(),
-        "Just first function should parse: {:?}",
-        result
+        "Just first function should parse: {result:?}"
     );
 }
 
@@ -121,7 +120,6 @@ fn test_first_two_functions() {
     let result = parse(code);
     assert!(
         result.is_ok(),
-        "First two functions should parse: {:?}",
-        result
+        "First two functions should parse: {result:?}"
     );
 }

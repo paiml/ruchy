@@ -65,11 +65,11 @@ fn test_multiple_array_refs() {
 
 #[test]
 fn test_array_ref_different_sizes() {
-    let code = r#"
+    let code = r"
         fun process_small(arr: &[i32; 5]) -> i32 { 1 }
         fun process_medium(arr: &[i32; 100]) -> i32 { 2 }
         fun process_large(arr: &[i32; 1000]) -> i32 { 3 }
-    "#;
+    ";
     assert!(
         parse_ok(code).is_ok(),
         "Parser should accept array refs of various sizes"

@@ -27,7 +27,7 @@ fn test_string_multiply_positive() {
                 "String * 3 should repeat string 3 times"
             );
         }
-        _ => panic!("Expected String, got {:?}", result),
+        _ => panic!("Expected String, got {result:?}"),
     }
 }
 
@@ -43,7 +43,7 @@ fn test_string_multiply_zero() {
         Value::String(s) => {
             assert_eq!(s.as_ref(), "", "String * 0 should produce empty string");
         }
-        _ => panic!("Expected String, got {:?}", result),
+        _ => panic!("Expected String, got {result:?}"),
     }
 }
 
@@ -59,7 +59,7 @@ fn test_string_multiply_one() {
         Value::String(s) => {
             assert_eq!(s.as_ref(), "hello", "String * 1 should produce same string");
         }
-        _ => panic!("Expected String, got {:?}", result),
+        _ => panic!("Expected String, got {result:?}"),
     }
 }
 
@@ -76,7 +76,7 @@ fn test_string_multiply_separator() {
             assert_eq!(s.len(), 50, "String * 50 should have length 50");
             assert!(s.chars().all(|c| c == '='), "All characters should be '='");
         }
-        _ => panic!("Expected String, got {:?}", result),
+        _ => panic!("Expected String, got {result:?}"),
     }
 }
 
@@ -96,7 +96,7 @@ fn test_string_multiply_empty() {
                 "Empty string * n should produce empty string"
             );
         }
-        _ => panic!("Expected String, got {:?}", result),
+        _ => panic!("Expected String, got {result:?}"),
     }
 }
 
@@ -116,7 +116,7 @@ fn test_string_multiply_negative() {
                 "String * negative should produce empty string"
             );
         }
-        _ => panic!("Expected String, got {:?}", result),
+        _ => panic!("Expected String, got {result:?}"),
     }
 }
 
@@ -132,7 +132,7 @@ fn test_string_multiply_large() {
         Value::String(s) => {
             assert_eq!(s.len(), 1000, "String * 1000 should have length 1000");
         }
-        _ => panic!("Expected String, got {:?}", result),
+        _ => panic!("Expected String, got {result:?}"),
     }
 }
 
@@ -153,7 +153,7 @@ fn test_string_multiply_with_variable() {
         Value::String(s) => {
             assert_eq!(s.as_ref(), "==========", "Variable * 10 should work");
         }
-        _ => panic!("Expected String, got {:?}", result),
+        _ => panic!("Expected String, got {result:?}"),
     }
 }
 
@@ -180,16 +180,16 @@ println("Hello")"#;
         Value::Nil => {
             // println returns nil in some implementations
         }
-        _ => panic!("Expected String or Nil, got {:?}", result),
+        _ => panic!("Expected String or Nil, got {result:?}"),
     }
 }
 
 #[test]
 fn test_shebang_with_args() {
     // Test: Shebang with arguments
-    let code = r#"#!/usr/bin/env ruchy --some-flag
+    let code = r"#!/usr/bin/env ruchy --some-flag
 let x = 42
-x"#;
+x";
 
     let mut interpreter = Interpreter::new();
     let mut parser = Parser::new(code);
@@ -200,17 +200,17 @@ x"#;
         Value::Integer(n) => {
             assert_eq!(n, 42);
         }
-        _ => panic!("Expected Integer(42), got {:?}", result),
+        _ => panic!("Expected Integer(42), got {result:?}"),
     }
 }
 
 #[test]
 fn test_shebang_empty_line_after() {
     // Test: Shebang with empty line following
-    let code = r#"#!/usr/bin/env ruchy
+    let code = r"#!/usr/bin/env ruchy
 
 let x = 10
-x * 2"#;
+x * 2";
 
     let mut interpreter = Interpreter::new();
     let mut parser = Parser::new(code);
@@ -221,17 +221,17 @@ x * 2"#;
         Value::Integer(n) => {
             assert_eq!(n, 20);
         }
-        _ => panic!("Expected Integer(20), got {:?}", result),
+        _ => panic!("Expected Integer(20), got {result:?}"),
     }
 }
 
 #[test]
 fn test_shebang_with_comments() {
     // Test: Shebang followed by regular comments
-    let code = r#"#!/usr/bin/env ruchy
+    let code = r"#!/usr/bin/env ruchy
 // This is a comment
 let x = 5
-x"#;
+x";
 
     let mut interpreter = Interpreter::new();
     let mut parser = Parser::new(code);
@@ -242,16 +242,16 @@ x"#;
         Value::Integer(n) => {
             assert_eq!(n, 5);
         }
-        _ => panic!("Expected Integer(5), got {:?}", result),
+        _ => panic!("Expected Integer(5), got {result:?}"),
     }
 }
 
 #[test]
 fn test_shebang_must_be_first_line() {
     // Test: Shebang NOT at start should fail
-    let code = r#"
+    let code = r"
 #!/usr/bin/env ruchy
-let x = 1"#;
+let x = 1";
 
     let mut parser = Parser::new(code);
     let result = parser.parse();
@@ -266,8 +266,8 @@ let x = 1"#;
 #[test]
 fn test_no_shebang_still_works() {
     // Test: Code without shebang continues to work
-    let code = r#"let x = 100
-x + 1"#;
+    let code = r"let x = 100
+x + 1";
 
     let mut interpreter = Interpreter::new();
     let mut parser = Parser::new(code);
@@ -280,7 +280,7 @@ x + 1"#;
         Value::Integer(n) => {
             assert_eq!(n, 101);
         }
-        _ => panic!("Expected Integer(101), got {:?}", result),
+        _ => panic!("Expected Integer(101), got {result:?}"),
     }
 }
 
@@ -291,7 +291,7 @@ x + 1"#;
 #[test]
 fn test_multi_let_with_final_expression() {
     // Test: let x = 1; let y = 2; x + y should return 3 (not 1 or 2)
-    let code = r#"let x = 1; let y = 2; x + y"#;
+    let code = r"let x = 1; let y = 2; x + y";
 
     let mut interpreter = Interpreter::new();
     let mut parser = Parser::new(code);
@@ -305,14 +305,14 @@ fn test_multi_let_with_final_expression() {
                 "Should return final expression (x + y = 3), not x or y"
             );
         }
-        _ => panic!("Expected Integer(3), got {:?}", result),
+        _ => panic!("Expected Integer(3), got {result:?}"),
     }
 }
 
 #[test]
 fn test_multi_let_with_float_arithmetic() {
     // Test: Price calculation from book examples
-    let code = r#"let price = 99.99; let tax = 0.08; price * (1.0 + tax)"#;
+    let code = r"let price = 99.99; let tax = 0.08; price * (1.0 + tax)";
 
     let mut interpreter = Interpreter::new();
     let mut parser = Parser::new(code);
@@ -324,19 +324,17 @@ fn test_multi_let_with_float_arithmetic() {
             let expected = 99.99 * 1.08;
             assert!(
                 (f - expected).abs() < 0.01,
-                "Should return price * (1 + tax) = {}, got {}",
-                expected,
-                f
+                "Should return price * (1 + tax) = {expected}, got {f}"
             );
         }
-        _ => panic!("Expected Float(~107.99), got {:?}", result),
+        _ => panic!("Expected Float(~107.99), got {result:?}"),
     }
 }
 
 #[test]
 fn test_multi_let_with_variable_dependencies() {
     // Test: Variables depend on each other
-    let code = r#"let x = 5; let y = x * 2; let z = y + 3; z"#;
+    let code = r"let x = 5; let y = x * 2; let z = y + 3; z";
 
     let mut interpreter = Interpreter::new();
     let mut parser = Parser::new(code);
@@ -347,14 +345,14 @@ fn test_multi_let_with_variable_dependencies() {
         Value::Integer(n) => {
             assert_eq!(n, 13, "Should return z = (x * 2) + 3 = (5 * 2) + 3 = 13");
         }
-        _ => panic!("Expected Integer(13), got {:?}", result),
+        _ => panic!("Expected Integer(13), got {result:?}"),
     }
 }
 
 #[test]
 fn test_multi_let_with_nested_expressions() {
     // Test: Complex nested expression after multiple lets
-    let code = r#"let a = 2; let b = 3; let c = 4; (a + b) * c"#;
+    let code = r"let a = 2; let b = 3; let c = 4; (a + b) * c";
 
     let mut interpreter = Interpreter::new();
     let mut parser = Parser::new(code);
@@ -365,7 +363,7 @@ fn test_multi_let_with_nested_expressions() {
         Value::Integer(n) => {
             assert_eq!(n, 20, "Should return (a + b) * c = (2 + 3) * 4 = 20");
         }
-        _ => panic!("Expected Integer(20), got {:?}", result),
+        _ => panic!("Expected Integer(20), got {result:?}"),
     }
 }
 
@@ -387,14 +385,14 @@ fn test_multi_let_string_variables() {
                 "Should return final expression (first)"
             );
         }
-        _ => panic!("Expected String(\"Hello\"), got {:?}", result),
+        _ => panic!("Expected String(\"Hello\"), got {result:?}"),
     }
 }
 
 #[test]
 fn test_three_lets_final_calculation() {
     // Test: Three variable bindings with calculation
-    let code = r#"let x = 10; let y = 20; let z = 30; x + y + z"#;
+    let code = r"let x = 10; let y = 20; let z = 30; x + y + z";
 
     let mut interpreter = Interpreter::new();
     let mut parser = Parser::new(code);
@@ -405,14 +403,14 @@ fn test_three_lets_final_calculation() {
         Value::Integer(n) => {
             assert_eq!(n, 60, "Should return x + y + z = 10 + 20 + 30 = 60");
         }
-        _ => panic!("Expected Integer(60), got {:?}", result),
+        _ => panic!("Expected Integer(60), got {result:?}"),
     }
 }
 
 #[test]
 fn test_multi_let_boolean_expression() {
     // Test: Multiple lets with boolean final expression
-    let code = r#"let x = 5; let y = 10; x < y"#;
+    let code = r"let x = 5; let y = 10; x < y";
 
     let mut interpreter = Interpreter::new();
     let mut parser = Parser::new(code);
@@ -423,14 +421,14 @@ fn test_multi_let_boolean_expression() {
         Value::Bool(b) => {
             assert!(b, "Should return true (5 < 10)");
         }
-        _ => panic!("Expected Bool(true), got {:?}", result),
+        _ => panic!("Expected Bool(true), got {result:?}"),
     }
 }
 
 #[test]
 fn test_single_let_with_expression() {
     // Test: Baseline - single let with expression should work
-    let code = r#"let x = 42; x * 2"#;
+    let code = r"let x = 42; x * 2";
 
     let mut interpreter = Interpreter::new();
     let mut parser = Parser::new(code);
@@ -441,7 +439,7 @@ fn test_single_let_with_expression() {
         Value::Integer(n) => {
             assert_eq!(n, 84, "Should return x * 2 = 42 * 2 = 84");
         }
-        _ => panic!("Expected Integer(84), got {:?}", result),
+        _ => panic!("Expected Integer(84), got {result:?}"),
     }
 }
 
@@ -452,7 +450,7 @@ fn test_single_let_with_expression() {
 #[test]
 fn test_method_call_on_expression_result() {
     // Test: (x*x + y*y).sqrt() - method call on arithmetic expression
-    let code = r#"let x = 3.0; let y = 4.0; (x * x + y * y).sqrt()"#;
+    let code = r"let x = 3.0; let y = 4.0; (x * x + y * y).sqrt()";
 
     let mut interpreter = Interpreter::new();
     let mut parser = Parser::new(code);
@@ -461,9 +459,9 @@ fn test_method_call_on_expression_result() {
 
     match result {
         Value::Float(f) => {
-            assert!((f - 5.0).abs() < 0.001, "Should return 5.0, got {}", f);
+            assert!((f - 5.0).abs() < 0.001, "Should return 5.0, got {f}");
         }
-        _ => panic!("Expected Float(5.0), got {:?}", result),
+        _ => panic!("Expected Float(5.0), got {result:?}"),
     }
 }
 
@@ -481,7 +479,7 @@ fn test_string_len_method() {
         Value::Integer(n) => {
             assert_eq!(n, 5, "String length should be 5");
         }
-        _ => panic!("Expected Integer(5), got {:?}", result),
+        _ => panic!("Expected Integer(5), got {result:?}"),
     }
 }
 
@@ -499,14 +497,14 @@ fn test_string_variable_len_method() {
         Value::Integer(n) => {
             assert_eq!(n, 5, "String length should be 5");
         }
-        _ => panic!("Expected Integer(5), got {:?}", result),
+        _ => panic!("Expected Integer(5), got {result:?}"),
     }
 }
 
 #[test]
 fn test_array_len_method() {
     // Test: [1, 2, 3].len() - method call on array literal
-    let code = r#"[1, 2, 3].len()"#;
+    let code = r"[1, 2, 3].len()";
 
     let mut interpreter = Interpreter::new();
     let mut parser = Parser::new(code);
@@ -517,14 +515,14 @@ fn test_array_len_method() {
         Value::Integer(n) => {
             assert_eq!(n, 3, "Array length should be 3");
         }
-        _ => panic!("Expected Integer(3), got {:?}", result),
+        _ => panic!("Expected Integer(3), got {result:?}"),
     }
 }
 
 #[test]
 fn test_array_variable_len_method() {
     // Test: arr.len() - method call on array variable
-    let code = r#"let arr = [1, 2, 3, 4]; arr.len()"#;
+    let code = r"let arr = [1, 2, 3, 4]; arr.len()";
 
     let mut interpreter = Interpreter::new();
     let mut parser = Parser::new(code);
@@ -535,14 +533,14 @@ fn test_array_variable_len_method() {
         Value::Integer(n) => {
             assert_eq!(n, 4, "Array length should be 4");
         }
-        _ => panic!("Expected Integer(4), got {:?}", result),
+        _ => panic!("Expected Integer(4), got {result:?}"),
     }
 }
 
 #[test]
 fn test_array_map_method() {
     // Test: [1, 2, 3].map(|x| x * 2) - method call with lambda
-    let code = r#"[1, 2, 3].map(|x| x * 2)"#;
+    let code = r"[1, 2, 3].map(|x| x * 2)";
 
     let mut interpreter = Interpreter::new();
     let mut parser = Parser::new(code);
@@ -563,7 +561,7 @@ fn test_array_map_method() {
                 assert_eq!(n, 6);
             }
         }
-        _ => panic!("Expected Array([2, 4, 6]), got {:?}", result),
+        _ => panic!("Expected Array([2, 4, 6]), got {result:?}"),
     }
 }
 
@@ -581,14 +579,14 @@ fn test_chained_method_calls() {
         Value::Integer(n) => {
             assert_eq!(n, 10, "Repeated string length should be 10");
         }
-        _ => panic!("Expected Integer(10), got {:?}", result),
+        _ => panic!("Expected Integer(10), got {result:?}"),
     }
 }
 
 #[test]
 fn test_float_method_calls() {
     // Test: 16.0.sqrt() - method call on float literal
-    let code = r#"16.0.sqrt()"#;
+    let code = r"16.0.sqrt()";
 
     let mut interpreter = Interpreter::new();
     let mut parser = Parser::new(code);
@@ -597,9 +595,9 @@ fn test_float_method_calls() {
 
     match result {
         Value::Float(f) => {
-            assert!((f - 4.0).abs() < 0.001, "sqrt(16) should be 4.0, got {}", f);
+            assert!((f - 4.0).abs() < 0.001, "sqrt(16) should be 4.0, got {f}");
         }
-        _ => panic!("Expected Float(4.0), got {:?}", result),
+        _ => panic!("Expected Float(4.0), got {result:?}"),
     }
 }
 
@@ -610,7 +608,7 @@ fn test_float_method_calls() {
 #[test]
 fn test_option_some_variant() {
     // Test: Option<i32> with Some variant
-    let code = r#"fun test() -> Option<i32> { Some(42) }; test()"#;
+    let code = r"fun test() -> Option<i32> { Some(42) }; test()";
 
     let mut interpreter = Interpreter::new();
     let mut parser = Parser::new(code);
@@ -628,14 +626,14 @@ fn test_option_some_variant() {
                 _ => panic!("Expected Integer(42), got {:?}", values[0]),
             }
         }
-        _ => panic!("Expected EnumVariant Some(42), got {:?}", result),
+        _ => panic!("Expected EnumVariant Some(42), got {result:?}"),
     }
 }
 
 #[test]
 fn test_option_none_variant() {
     // Test: Option<i32> with None variant
-    let code = r#"fun test() -> Option<i32> { None }; test()"#;
+    let code = r"fun test() -> Option<i32> { None }; test()";
 
     let mut interpreter = Interpreter::new();
     let mut parser = Parser::new(code);
@@ -647,7 +645,7 @@ fn test_option_none_variant() {
             assert_eq!(variant_name, "None", "Should be None variant");
             assert!(data.is_none(), "None should have no data");
         }
-        _ => panic!("Expected EnumVariant None, got {:?}", result),
+        _ => panic!("Expected EnumVariant None, got {result:?}"),
     }
 }
 
@@ -674,7 +672,7 @@ fn test_option_some_string() {
                 _ => panic!("Expected String(\"Alice\"), got {:?}", values[0]),
             }
         }
-        _ => panic!("Expected EnumVariant Some(\"Alice\"), got {:?}", result),
+        _ => panic!("Expected EnumVariant Some(\"Alice\"), got {result:?}"),
     }
 }
 
@@ -695,7 +693,7 @@ fn test_option_none_branch() {
             assert_eq!(variant_name, "None", "Should be None variant");
             assert!(data.is_none(), "None should have no data");
         }
-        _ => panic!("Expected EnumVariant None, got {:?}", result),
+        _ => panic!("Expected EnumVariant None, got {result:?}"),
     }
 }
 
@@ -706,13 +704,13 @@ fn test_option_none_branch() {
 #[test]
 fn test_option_pattern_matching() {
     // Test: Pattern matching on Option with Some variant
-    let code = r#"
+    let code = r"
         let opt = Some(10);
         match opt {
             Some(n) => n * 2,
             None => 0,
         }
-    "#;
+    ";
 
     let mut interpreter = Interpreter::new();
     let mut parser = Parser::new(code);
@@ -723,20 +721,20 @@ fn test_option_pattern_matching() {
         Value::Integer(n) => {
             assert_eq!(n, 20, "Some(10) matched should return 20");
         }
-        _ => panic!("Expected Integer(20), got {:?}", result),
+        _ => panic!("Expected Integer(20), got {result:?}"),
     }
 }
 
 #[test]
 fn test_option_none_pattern_matching() {
     // Test: Pattern matching on None - this one works correctly
-    let code = r#"
+    let code = r"
         let opt: Option<i32> = None;
         match opt {
             Some(n) => n * 2,
             None => 0,
         }
-    "#;
+    ";
 
     let mut interpreter = Interpreter::new();
     let mut parser = Parser::new(code);
@@ -747,7 +745,7 @@ fn test_option_none_pattern_matching() {
         Value::Integer(n) => {
             assert_eq!(n, 0, "None matched should return 0");
         }
-        _ => panic!("Expected Integer(0), got {:?}", result),
+        _ => panic!("Expected Integer(0), got {result:?}"),
     }
 }
 
@@ -758,7 +756,7 @@ fn test_option_none_pattern_matching() {
 #[test]
 fn test_result_ok_variant() {
     // Test: Result<i32, String> with Ok variant
-    let code = r#"fun test() -> Result<i32, String> { Ok(42) }; test()"#;
+    let code = r"fun test() -> Result<i32, String> { Ok(42) }; test()";
 
     let mut interpreter = Interpreter::new();
     let mut parser = Parser::new(code);
@@ -770,7 +768,7 @@ fn test_result_ok_variant() {
         Value::Object(_) | Value::ObjectMut(_) => {
             // Expected - Result is an object in interpreter
         }
-        _ => panic!("Expected Object (Result), got {:?}", result),
+        _ => panic!("Expected Object (Result), got {result:?}"),
     }
 }
 
@@ -789,7 +787,7 @@ fn test_result_err_variant() {
         Value::Object(_) | Value::ObjectMut(_) => {
             // Expected - Result is an object in interpreter
         }
-        _ => panic!("Expected Object (Result), got {:?}", result),
+        _ => panic!("Expected Object (Result), got {result:?}"),
     }
 }
 
@@ -813,7 +811,7 @@ fn test_result_division_ok() {
         Value::Object(_) | Value::ObjectMut(_) => {
             // Expected - Result is an object
         }
-        _ => panic!("Expected Object (Result), got {:?}", result),
+        _ => panic!("Expected Object (Result), got {result:?}"),
     }
 }
 
@@ -837,7 +835,7 @@ fn test_result_division_err() {
         Value::Object(_) | Value::ObjectMut(_) => {
             // Expected - Result is an object
         }
-        _ => panic!("Expected Object (Result), got {:?}", result),
+        _ => panic!("Expected Object (Result), got {result:?}"),
     }
 }
 
@@ -848,7 +846,7 @@ fn test_result_division_err() {
 #[test]
 fn test_struct_basic_definition() {
     // Test: Basic struct definition and instantiation
-    let code = r#"struct Point { x: i32, y: i32 }; let p = Point { x: 3, y: 4 }; p.x"#;
+    let code = r"struct Point { x: i32, y: i32 }; let p = Point { x: 3, y: 4 }; p.x";
 
     let mut interpreter = Interpreter::new();
     let mut parser = Parser::new(code);
@@ -859,14 +857,14 @@ fn test_struct_basic_definition() {
         Value::Integer(n) => {
             assert_eq!(n, 3, "Point.x should be 3");
         }
-        _ => panic!("Expected Integer(3), got {:?}", result),
+        _ => panic!("Expected Integer(3), got {result:?}"),
     }
 }
 
 #[test]
 fn test_struct_field_access() {
     // Test: Accessing multiple fields
-    let code = r#"struct Point { x: i32, y: i32 }; let p = Point { x: 10, y: 20 }; p.y"#;
+    let code = r"struct Point { x: i32, y: i32 }; let p = Point { x: 10, y: 20 }; p.y";
 
     let mut interpreter = Interpreter::new();
     let mut parser = Parser::new(code);
@@ -877,14 +875,14 @@ fn test_struct_field_access() {
         Value::Integer(n) => {
             assert_eq!(n, 20, "Point.y should be 20");
         }
-        _ => panic!("Expected Integer(20), got {:?}", result),
+        _ => panic!("Expected Integer(20), got {result:?}"),
     }
 }
 
 #[test]
 fn test_impl_block_constructor() {
     // Test: impl block with constructor working correctly
-    let code = r#"
+    let code = r"
         struct Point { x: i32, y: i32 };
         impl Point {
             fun new(x: i32, y: i32) -> Point {
@@ -893,7 +891,7 @@ fn test_impl_block_constructor() {
         };
         let p = Point::new(3, 4);
         p.x
-    "#;
+    ";
 
     let mut interpreter = Interpreter::new();
     let mut parser = Parser::new(code);
@@ -904,7 +902,7 @@ fn test_impl_block_constructor() {
         Value::Integer(n) => {
             assert_eq!(n, 3, "Point.x should be 3");
         }
-        _ => panic!("Expected Integer(3), got {:?}", result),
+        _ => panic!("Expected Integer(3), got {result:?}"),
     }
 }
 
@@ -926,7 +924,7 @@ fn test_struct_with_string_fields() {
         Value::String(s) => {
             assert_eq!(s.as_ref(), "Alice", "Person.name should be Alice");
         }
-        _ => panic!("Expected String(\"Alice\"), got {:?}", result),
+        _ => panic!("Expected String(\"Alice\"), got {result:?}"),
     }
 }
 
@@ -937,7 +935,7 @@ fn test_struct_with_string_fields() {
 #[test]
 fn test_float_display_basic() {
     // Test: Float displays with decimal point
-    let code = r#"5.0"#;
+    let code = r"5.0";
 
     let mut interpreter = Interpreter::new();
     let mut parser = Parser::new(code);
@@ -946,16 +944,16 @@ fn test_float_display_basic() {
 
     match result {
         Value::Float(f) => {
-            assert!((f - 5.0).abs() < 0.001, "Float should be 5.0, got {}", f);
+            assert!((f - 5.0).abs() < 0.001, "Float should be 5.0, got {f}");
         }
-        _ => panic!("Expected Float(5.0), got {:?}", result),
+        _ => panic!("Expected Float(5.0), got {result:?}"),
     }
 }
 
 #[test]
 fn test_float_display_with_decimals() {
     // Test: Float with actual decimal values
-    let code = r#"3.14159"#;
+    let code = r"3.14159";
 
     let mut interpreter = Interpreter::new();
     let mut parser = Parser::new(code);
@@ -966,18 +964,17 @@ fn test_float_display_with_decimals() {
         Value::Float(f) => {
             assert!(
                 (f - 3.14159).abs() < 0.00001,
-                "Float should be 3.14159, got {}",
-                f
+                "Float should be 3.14159, got {f}"
             );
         }
-        _ => panic!("Expected Float(3.14159), got {:?}", result),
+        _ => panic!("Expected Float(3.14159), got {result:?}"),
     }
 }
 
 #[test]
 fn test_float_arithmetic_result() {
     // Test: Arithmetic producing float
-    let code = r#"10.0 / 3.0"#;
+    let code = r"10.0 / 3.0";
 
     let mut interpreter = Interpreter::new();
     let mut parser = Parser::new(code);
@@ -988,18 +985,17 @@ fn test_float_arithmetic_result() {
         Value::Float(f) => {
             assert!(
                 (f - 3.333333).abs() < 0.001,
-                "Float should be ~3.333, got {}",
-                f
+                "Float should be ~3.333, got {f}"
             );
         }
-        _ => panic!("Expected Float, got {:?}", result),
+        _ => panic!("Expected Float, got {result:?}"),
     }
 }
 
 #[test]
 fn test_integer_vs_float_distinction() {
     // Test: Integers remain integers, floats remain floats
-    let code = r#"let i = 5; let f = 5.0; i"#;
+    let code = r"let i = 5; let f = 5.0; i";
 
     let mut interpreter = Interpreter::new();
     let mut parser = Parser::new(code);
@@ -1010,7 +1006,7 @@ fn test_integer_vs_float_distinction() {
         Value::Integer(n) => {
             assert_eq!(n, 5, "Integer should be 5");
         }
-        _ => panic!("Expected Integer(5), got {:?}", result),
+        _ => panic!("Expected Integer(5), got {result:?}"),
     }
 }
 
@@ -1043,7 +1039,7 @@ fn test_match_with_println_branches() {
         Value::Nil => {
             // Expected - println returns nil, so match returns nil
         }
-        _ => panic!("Expected Nil, got {:?}", result),
+        _ => panic!("Expected Nil, got {result:?}"),
     }
 }
 
@@ -1068,7 +1064,7 @@ fn test_match_void_with_single_expression() {
         Value::Nil => {
             // Expected
         }
-        _ => panic!("Expected Nil, got {:?}", result),
+        _ => panic!("Expected Nil, got {result:?}"),
     }
 }
 
@@ -1096,7 +1092,7 @@ fn test_array_push_mutation() {
         Value::Integer(n) => {
             assert_eq!(n, 3, "Array should have 3 items after 3 pushes");
         }
-        _ => panic!("Expected Integer(3), got {:?}", result),
+        _ => panic!("Expected Integer(3), got {result:?}"),
     }
 }
 
@@ -1119,7 +1115,7 @@ fn test_array_push_with_values() {
         Value::String(s) => {
             assert_eq!(s.as_ref(), "hello", "First item should be 'hello'");
         }
-        _ => panic!("Expected String('hello'), got {:?}", result),
+        _ => panic!("Expected String('hello'), got {result:?}"),
     }
 }
 
@@ -1143,20 +1139,20 @@ fn test_array_push_multiple_types() {
         Value::Integer(n) => {
             assert_eq!(n, 3, "Array should have 3 items of different types");
         }
-        _ => panic!("Expected Integer(3), got {:?}", result),
+        _ => panic!("Expected Integer(3), got {result:?}"),
     }
 }
 
 #[test]
 fn test_array_push_in_loop() {
     // Test: Array.push() inside a loop (realistic use case)
-    let code = r#"
+    let code = r"
         let mut results = []
         for i in 1..=5 {
             results.push(i * 2)
         }
         results.len()
-    "#;
+    ";
 
     let mut interpreter = Interpreter::new();
     let mut parser = Parser::new(code);
@@ -1167,7 +1163,7 @@ fn test_array_push_in_loop() {
         Value::Integer(n) => {
             assert_eq!(n, 5, "Array should have 5 items after loop");
         }
-        _ => panic!("Expected Integer(5), got {:?}", result),
+        _ => panic!("Expected Integer(5), got {result:?}"),
     }
 }
 
@@ -1187,7 +1183,7 @@ mod string_multiply_properties {
             n in 0..100i64
         ) {
             // Property: (s * n).len() == s.len() * n for non-negative n
-            let code = format!(r#""{}" * {}"#, s, n);
+            let code = format!(r#""{s}" * {n}"#);
             let mut interpreter = Interpreter::new();
             let mut parser = Parser::new(&code);
 
@@ -1206,7 +1202,7 @@ mod string_multiply_properties {
             n in 1..20i64
         ) {
             // Property: Result consists only of repetitions of original string
-            let code = format!(r#""{}" * {}"#, s, n);
+            let code = format!(r#""{s}" * {n}"#);
             let mut interpreter = Interpreter::new();
             let mut parser = Parser::new(&code);
 
@@ -1229,7 +1225,7 @@ mod string_multiply_properties {
         #[test]
         fn test_string_multiply_zero_always_empty(s in "[a-z]{0,10}") {
             // Property: Any string * 0 = ""
-            let code = format!(r#""{}" * 0"#, s);
+            let code = format!(r#""{s}" * 0"#);
             let mut interpreter = Interpreter::new();
             let mut parser = Parser::new(&code);
 
@@ -1244,7 +1240,7 @@ mod string_multiply_properties {
         #[test]
         fn test_string_multiply_one_identity(s in "[a-z]{0,10}") {
             // Property: Any string * 1 = original string
-            let code = format!(r#""{}" * 1"#, s);
+            let code = format!(r#""{s}" * 1"#);
             let mut interpreter = Interpreter::new();
             let mut parser = Parser::new(&code);
 

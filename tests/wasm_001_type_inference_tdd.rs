@@ -4,7 +4,7 @@
 /// when mixing integer and float operations.
 ///
 /// Solution: Implement type inference to choose correct WASM instructions
-/// (I32Add vs F32Add, I32Mul vs F32Mul, etc.)
+/// (`I32Add` vs `F32Add`, `I32Mul` vs `F32Mul`, etc.)
 use ruchy::backend::wasm::WasmEmitter;
 use ruchy::frontend::Parser;
 use wasmparser::{Validator, WasmFeatures};
@@ -19,7 +19,7 @@ fn compile_and_validate(code: &str) -> Result<Vec<u8>, String> {
     let mut validator = Validator::new_with_features(WasmFeatures::all());
     validator
         .validate_all(&bytes)
-        .map_err(|e| format!("WASM validation failed: {}", e))?;
+        .map_err(|e| format!("WASM validation failed: {e}"))?;
 
     Ok(bytes)
 }
@@ -41,11 +41,11 @@ fn test_integer_multiplication() {
 
 #[test]
 fn test_integer_variables() {
-    let code = r#"
+    let code = r"
         let x = 10
         let y = 20
         x + y
-    "#;
+    ";
     compile_and_validate(code).expect("Integer variables should validate");
 }
 
@@ -65,11 +65,11 @@ fn test_float_multiplication() {
 
 #[test]
 fn test_float_variables() {
-    let code = r#"
+    let code = r"
         let pi = 3.14159
         let radius = 2.5
         pi * radius
-    "#;
+    ";
     compile_and_validate(code).expect("Float variables should validate");
 }
 
@@ -78,11 +78,11 @@ fn test_float_variables() {
 #[test]
 fn test_mixed_int_float_multiplication() {
     // This is the EXACT failure case from Issue #27
-    let code = r#"
+    let code = r"
         let pi = 3.14159
         let radius = 5
         pi * radius * radius
-    "#;
+    ";
     compile_and_validate(code).expect("Mixed int/float should validate with type promotion");
 }
 
@@ -108,12 +108,12 @@ fn test_mixed_addition() {
 
 #[test]
 fn test_area_calculation() {
-    let code = r#"
+    let code = r"
         let pi = 3.14159
         let radius = 5
         let area = pi * radius * radius
         area
-    "#;
+    ";
     compile_and_validate(code).expect("Area calculation should validate");
 }
 
@@ -167,12 +167,12 @@ fn test_mixed_comparison() {
 
 #[test]
 fn test_type_promotion_in_let() {
-    let code = r#"
+    let code = r"
         let x = 10
         let y = 3.14
         let result = x + y
         result
-    "#;
+    ";
     compile_and_validate(code).expect("Type promotion in let binding should work");
 }
 
@@ -187,31 +187,31 @@ fn test_chained_operations() {
 #[test]
 fn test_multi_expression_integer_block() {
     // Ensure stack management still works after type inference changes
-    let code = r#"
+    let code = r"
         2 + 2
         10 * 5
         100 - 25
-    "#;
+    ";
     compile_and_validate(code).expect("Multi-expression integer block should still work");
 }
 
 #[test]
 fn test_multi_expression_float_block() {
-    let code = r#"
+    let code = r"
         2.5 + 2.5
         10.0 * 5.0
         100.0 - 25.0
-    "#;
+    ";
     compile_and_validate(code).expect("Multi-expression float block should work");
 }
 
 #[test]
 fn test_multi_expression_mixed_block() {
-    let code = r#"
+    let code = r"
         2 + 2
         10.0 * 5.0
         100 - 25.5
-    "#;
+    ";
     compile_and_validate(code).expect("Multi-expression mixed block should work");
 }
 
@@ -231,12 +231,12 @@ fn test_negative_float() {
 
 #[test]
 fn test_float_in_if_condition() {
-    let code = r#"
+    let code = r"
         if 3.14 > 2.71 {
             1
         } else {
             0
         }
-    "#;
+    ";
     compile_and_validate(code).expect("Float comparison in if condition should work");
 }

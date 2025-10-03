@@ -1,4 +1,4 @@
-//! DataFrame .filter() method tests (DF-005)
+//! `DataFrame` .`filter()` method tests (DF-005)
 //!
 //! Tests for the DataFrame.filter(closure) method.
 //! Follows EXTREME TDD methodology with <10 cyclomatic complexity.
@@ -6,7 +6,7 @@
 //! Expected behavior:
 //! - Accepts a closure that receives a row object
 //! - Row object supports dictionary-style access: row["column"]
-//! - Returns new DataFrame with only rows matching predicate
+//! - Returns new `DataFrame` with only rows matching predicate
 //! - Preserves column order and structure
 
 use ruchy::frontend::Parser;

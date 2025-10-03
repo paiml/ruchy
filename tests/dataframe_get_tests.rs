@@ -1,4 +1,4 @@
-//! DataFrame .get() method tests
+//! `DataFrame` .`get()` method tests
 //!
 //! Tests for the DataFrame.get(column, row) accessor method.
 //! Follows EXTREME TDD methodology with <10 cyclomatic complexity.
@@ -95,7 +95,6 @@ fn test_dataframe_get_column_not_found() {
     assert!(result.is_err());
     assert!(result
         .unwrap_err()
-        .to_string()
         .contains("Column 'nonexistent' not found"));
 }
 
@@ -107,7 +106,7 @@ fn test_dataframe_get_row_out_of_bounds() {
     "#;
     let result = eval(code);
     assert!(result.is_err());
-    assert!(result.unwrap_err().to_string().contains("out of bounds"));
+    assert!(result.unwrap_err().contains("out of bounds"));
 }
 
 #[test]
@@ -118,10 +117,7 @@ fn test_dataframe_get_negative_index() {
     "#;
     let result = eval(code);
     assert!(result.is_err());
-    assert!(result
-        .unwrap_err()
-        .to_string()
-        .contains("must be non-negative"));
+    assert!(result.unwrap_err().contains("must be non-negative"));
 }
 
 #[test]
@@ -132,10 +128,7 @@ fn test_dataframe_get_wrong_arg_count() {
     "#;
     let result = eval(code);
     assert!(result.is_err());
-    assert!(result
-        .unwrap_err()
-        .to_string()
-        .contains("exactly 2 arguments"));
+    assert!(result.unwrap_err().contains("exactly 2 arguments"));
 }
 
 #[test]
@@ -146,7 +139,7 @@ fn test_dataframe_get_non_string_column() {
     "#;
     let result = eval(code);
     assert!(result.is_err());
-    assert!(result.unwrap_err().to_string().contains("must be a string"));
+    assert!(result.unwrap_err().contains("must be a string"));
 }
 
 #[test]
@@ -157,10 +150,7 @@ fn test_dataframe_get_non_integer_index() {
     "#;
     let result = eval(code);
     assert!(result.is_err());
-    assert!(result
-        .unwrap_err()
-        .to_string()
-        .contains("must be an integer"));
+    assert!(result.unwrap_err().contains("must be an integer"));
 }
 
 // Integration tests with other DataFrame methods

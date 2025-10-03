@@ -1,6 +1,6 @@
-//! DataFrame export method tests (TDD for DF-007)
+//! `DataFrame` export method tests (TDD for DF-007)
 //!
-//! Tests for DataFrame export operations: .to_csv(), .to_json()
+//! Tests for `DataFrame` export operations: .`to_csv()`, .`to_json()`
 //! Following Toyota Way: Write tests FIRST, then implementation
 
 use ruchy::frontend::Parser;
@@ -32,19 +32,14 @@ fn test_to_csv_basic() {
     let csv = result.to_string();
 
     // Should contain header
-    assert!(csv.contains("name,age"), "CSV should have header: {}", csv);
+    assert!(csv.contains("name,age"), "CSV should have header: {csv}");
 
     // Should contain data rows
-    assert!(
-        csv.contains("Alice,25"),
-        "CSV should have Alice row: {}",
-        csv
-    );
-    assert!(csv.contains("Bob,30"), "CSV should have Bob row: {}", csv);
+    assert!(csv.contains("Alice,25"), "CSV should have Alice row: {csv}");
+    assert!(csv.contains("Bob,30"), "CSV should have Bob row: {csv}");
     assert!(
         csv.contains("Charlie,35"),
-        "CSV should have Charlie row: {}",
-        csv
+        "CSV should have Charlie row: {csv}"
     );
 }
 
@@ -86,10 +81,10 @@ fn test_to_csv_with_floats() {
 
 #[test]
 fn test_to_csv_empty_dataframe() {
-    let code = r#"
+    let code = r"
         let df = DataFrame::new().build();
         df.to_csv()
-    "#;
+    ";
 
     let result = eval(code).expect("Should handle empty DataFrame");
     let csv = result.to_string();
@@ -97,8 +92,7 @@ fn test_to_csv_empty_dataframe() {
     // Empty DataFrame should just be empty string or newline
     assert!(
         csv.is_empty() || csv == "\n" || csv == "\"\"",
-        "Empty DataFrame CSV: {}",
-        csv
+        "Empty DataFrame CSV: {csv}"
     );
 }
 
@@ -115,7 +109,7 @@ fn test_to_csv_single_column() {
     let csv = result.to_string();
 
     assert!(csv.contains("values"), "CSV should have header");
-    assert!(csv.contains("1"), "CSV should have values");
+    assert!(csv.contains('1'), "CSV should have values");
 }
 
 #[test]
@@ -170,7 +164,7 @@ fn test_to_json_basic() {
     let json = result.to_string();
 
     // Should be array of objects
-    assert!(json.contains("["), "JSON should start with array");
+    assert!(json.contains('['), "JSON should start with array");
     assert!(json.contains("name"), "JSON should have name field");
     assert!(json.contains("Alice"), "JSON should have Alice value");
     assert!(json.contains("age"), "JSON should have age field");
@@ -190,7 +184,7 @@ fn test_to_json_numeric_only() {
     let result = eval(code).expect("Should export numeric to JSON");
     let json = result.to_string();
 
-    assert!(json.contains("["), "JSON should be array");
+    assert!(json.contains('['), "JSON should be array");
     assert!(json.contains("\"x\""), "JSON should have x field");
     assert!(json.contains("\"y\""), "JSON should have y field");
 }
@@ -213,10 +207,10 @@ fn test_to_json_with_floats() {
 
 #[test]
 fn test_to_json_empty_dataframe() {
-    let code = r#"
+    let code = r"
         let df = DataFrame::new().build();
         df.to_json()
-    "#;
+    ";
 
     let result = eval(code).expect("Should handle empty DataFrame");
     let json = result.to_string();
@@ -224,8 +218,7 @@ fn test_to_json_empty_dataframe() {
     // Empty DataFrame should be empty array
     assert!(
         json.contains("[]") || json == "\"[]\"",
-        "Empty DataFrame JSON: {}",
-        json
+        "Empty DataFrame JSON: {json}"
     );
 }
 
@@ -282,7 +275,7 @@ fn test_export_formats_consistency() {
     let result = eval(code).expect("Should export in both formats");
     // Just verify both formats can be generated
     assert!(
-        result.to_string().contains("["),
+        result.to_string().contains('['),
         "Should return array of exports"
     );
 }

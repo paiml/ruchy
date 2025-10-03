@@ -1,4 +1,4 @@
-//! EXTREME TDD: RefCell Property Tests
+//! EXTREME TDD: `RefCell` Property Tests
 //! Following paiml-mcp-agent-toolkit Sprint 88 pattern: 80% property test coverage
 //!
 //! These tests verify RefCell-based mutable state behavior with 10,000+ random operations
@@ -22,10 +22,10 @@ fn eval_code(interpreter: &mut Interpreter, code: &str) -> Result<Value, String>
     }
 }
 
-/// Property: Actor state mutations always persist after send() operations
+/// Property: Actor state mutations always persist after `send()` operations
 ///
 /// Invariant: For any sequence of Push operations, final stack size equals operation count
-/// Mathematical proof: |stack| = Σ(push_operations)
+/// Mathematical proof: |stack| = `Σ(push_operations)`
 #[cfg(test)]
 mod actor_mutation_properties {
     use super::*;
@@ -59,7 +59,7 @@ mod actor_mutation_properties {
             ";
 
             let result = eval_code(&mut interpreter, code);
-            assert!(result.is_ok(), "Actor instantiation should succeed: {:?}", result);
+            assert!(result.is_ok(), "Actor instantiation should succeed: {result:?}");
 
             // Property: After N push operations, stack size should be N
             // This will FAIL until RefCell is implemented (state doesn't persist)
@@ -159,7 +159,7 @@ mod nested_mutation_properties {
     }
 }
 
-/// Property: Type safety maintained with RefCell interior mutability
+/// Property: Type safety maintained with `RefCell` interior mutability
 #[cfg(test)]
 mod type_safety_properties {
     use super::*;
@@ -219,7 +219,7 @@ mod message_ordering_properties {
 
             // FIFO property: First in, first out
             let mut sorted = messages.clone();
-            sorted.sort();
+            sorted.sort_unstable();
 
             // Note: This doesn't test actual ordering, just validates input
             // Actual ordering test requires RefCell implementation

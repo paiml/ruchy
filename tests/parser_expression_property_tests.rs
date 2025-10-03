@@ -26,7 +26,7 @@ proptest! {
     fn prop_integer_literal_parsing_preserves_value(n in 0i64..1000i64) {
         // NOTE: Negative literals are parsed as Unary(Negate, Literal(positive))
         // This is expected parser behavior, so we test only non-negative integers here
-        let code = format!("{}", n);
+        let code = format!("{n}");
         let mut parser = Parser::new(&code);
         let result = parser.parse();
 
@@ -44,7 +44,7 @@ proptest! {
     fn prop_float_literal_parsing_preserves_value(n in 0.1f64..1000.0f64) {
         // NOTE: Use explicit .1 precision to ensure decimal point in format
         // Avoid 0.0 which formats as "0" and parses as integer
-        let code = format!("{:.1}", n);  // Force decimal point
+        let code = format!("{n:.1}");  // Force decimal point
         let mut parser = Parser::new(&code);
         let result = parser.parse();
 
@@ -61,7 +61,7 @@ proptest! {
 
     #[test]
     fn prop_bool_literal_parsing_preserves_value(b: bool) {
-        let code = format!("{}", b);
+        let code = format!("{b}");
         let mut parser = Parser::new(&code);
         let result = parser.parse();
 
@@ -85,7 +85,7 @@ proptest! {
     fn prop_addition_has_lower_precedence_than_multiplication(a in 1i64..100, b in 1i64..100, c in 1i64..100) {
         // Parse: a + b * c
         // Should be: a + (b * c), not (a + b) * c
-        let code = format!("{} + {} * {}", a, b, c);
+        let code = format!("{a} + {b} * {c}");
         let mut parser = Parser::new(&code);
         let result = parser.parse();
 
@@ -108,7 +108,7 @@ proptest! {
     fn prop_comparison_has_lower_precedence_than_arithmetic(a in 1i64..100, b in 1i64..100, c in 1i64..100) {
         // Parse: a + b < c
         // Should be: (a + b) < c, not a + (b < c)
-        let code = format!("{} + {} < {}", a, b, c);
+        let code = format!("{a} + {b} < {c}");
         let mut parser = Parser::new(&code);
         let result = parser.parse();
 
@@ -135,7 +135,7 @@ proptest! {
 proptest! {
     #[test]
     fn prop_unary_negation_binds_tightly(n in 1i64..1000) {
-        let code = format!("-{}", n);
+        let code = format!("-{n}");
         let mut parser = Parser::new(&code);
         let result = parser.parse();
 
@@ -151,7 +151,7 @@ proptest! {
 
     #[test]
     fn prop_logical_not_binds_tightly(b: bool) {
-        let code = format!("!{}", b);
+        let code = format!("!{b}");
         let mut parser = Parser::new(&code);
         let result = parser.parse();
 
@@ -175,7 +175,7 @@ proptest! {
     fn prop_parentheses_override_multiplication_precedence(a in 1i64..100, b in 1i64..100, c in 1i64..100) {
         // Parse: (a + b) * c
         // Should force addition to happen first
-        let code = format!("({} + {}) * {}", a, b, c);
+        let code = format!("({a} + {b}) * {c}");
         let mut parser = Parser::new(&code);
         let result = parser.parse();
 
@@ -205,7 +205,7 @@ proptest! {
         // Generate ((((42))))
         let mut code = "42".to_string();
         for _ in 0..depth {
-            code = format!("({})", code);
+            code = format!("({code})");
         }
 
         let mut parser = Parser::new(&code);
@@ -237,7 +237,7 @@ fn extract_innermost(expr: &Expr) -> &Expr {
 proptest! {
     #[test]
     fn prop_string_literals_preserve_content(s in "[a-zA-Z0-9 ]{1,20}") {
-        let code = format!("\"{}\"", s);
+        let code = format!("\"{s}\"");
         let mut parser = Parser::new(&code);
         let result = parser.parse();
 
@@ -263,7 +263,7 @@ proptest! {
         elem2 in 1i64..100,
         elem3 in 1i64..100
     ) {
-        let code = format!("[{}, {}, {}]", elem1, elem2, elem3);
+        let code = format!("[{elem1}, {elem2}, {elem3}]");
         let mut parser = Parser::new(&code);
         let result = parser.parse();
 
@@ -299,7 +299,7 @@ proptest! {
         elem1 in 1i64..100,
         elem2 in 1i64..100
     ) {
-        let code = format!("({}, {})", elem1, elem2);
+        let code = format!("({elem1}, {elem2})");
         let mut parser = Parser::new(&code);
         let result = parser.parse();
 
@@ -321,7 +321,7 @@ proptest! {
 proptest! {
     #[test]
     fn prop_exclusive_range_parses(start in 1i64..100, end in 101i64..200) {
-        let code = format!("{}..{}", start, end);
+        let code = format!("{start}..{end}");
         let mut parser = Parser::new(&code);
         let result = parser.parse();
 
@@ -337,7 +337,7 @@ proptest! {
 
     #[test]
     fn prop_inclusive_range_parses(start in 1i64..100, end in 101i64..200) {
-        let code = format!("{}..={}", start, end);
+        let code = format!("{start}..={end}");
         let mut parser = Parser::new(&code);
         let result = parser.parse();
 
@@ -362,7 +362,7 @@ proptest! {
         first in "[a-zA-Z_]",
         rest in "[a-zA-Z0-9_]{0,19}"
     ) {
-        let ident = format!("{}{}", first, rest);
+        let ident = format!("{first}{rest}");
 
         // Skip reserved keywords
         if is_reserved_keyword(&ident) {
