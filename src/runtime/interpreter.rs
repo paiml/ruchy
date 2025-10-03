@@ -1314,6 +1314,28 @@ impl Interpreter {
         }
     }
 
+    /// Check if a field is accessible based on visibility rules
+    /// Complexity: 5
+    fn check_field_visibility(&self, struct_name: &str, field: &str) -> Result<(), InterpreterError> {
+        // Look up struct type definition
+        let struct_type = self.lookup_variable(struct_name).ok();
+        if let Some(Value::Object(struct_obj)) = struct_type {
+            if let Some(Value::Object(fields)) = struct_obj.get("__fields") {
+                if let Some(Value::Object(field_info)) = fields.get(field) {
+                    if let Some(Value::String(visibility)) = field_info.get("visibility") {
+                        if visibility.as_ref() == "private" {
+                            return Err(InterpreterError::RuntimeError(format!(
+                                "Field '{}' is private and cannot be accessed outside the struct",
+                                field
+                            )));
+                        }
+                    }
+                }
+            }
+        }
+        Ok(())
+    }
+
     fn eval_field_access(&mut self, object: &Expr, field: &str) -> Result<Value, InterpreterError> {
         let object_value = self.eval_expr(object)?;
 
@@ -1357,6 +1379,11 @@ impl Interpreter {
                     return Ok(field_value.to_value());
                 }
 
+                // Check visibility for struct instances
+                if let Some(Value::String(struct_name)) = object_map.get("__struct_type") {
+                    self.check_field_visibility(struct_name.as_ref(), field)?;
+                }
+
                 // Regular object field access (including synchronous actors)
                 if let Some(value) = object_map.get(field) {
                     Ok(value.clone())
@@ -1378,6 +1405,11 @@ impl Interpreter {
                     use crate::runtime::actor_runtime::ACTOR_RUNTIME;
                     let field_value = ACTOR_RUNTIME.get_actor_field(actor_id.as_ref(), field)?;
                     return Ok(field_value.to_value());
+                }
+
+                // Check visibility for struct instances
+                if let Some(Value::String(struct_name)) = object_map.get("__struct_type") {
+                    self.check_field_visibility(struct_name.as_ref(), field)?;
                 }
 
                 // Regular object field access
@@ -4058,6 +4090,15 @@ impl Interpreter {
                 Value::from_bool(field.visibility.is_public()),
             );
             field_info.insert("is_mut".to_string(), Value::from_bool(field.is_mut));
+            // Store visibility for access control
+            let visibility_str = match field.visibility {
+                crate::frontend::ast::Visibility::Public => "pub",
+                crate::frontend::ast::Visibility::PubCrate => "pub(crate)",
+                crate::frontend::ast::Visibility::PubSuper => "pub(super)",
+                crate::frontend::ast::Visibility::Private => "private",
+                crate::frontend::ast::Visibility::Protected => "protected",
+            };
+            field_info.insert("visibility".to_string(), Value::from_string(visibility_str.to_string()));
 
             // Store default value if present
             if let Some(default_expr) = &field.default_value {
