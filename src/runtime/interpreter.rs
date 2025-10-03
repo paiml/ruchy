@@ -4059,6 +4059,12 @@ impl Interpreter {
             );
             field_info.insert("is_mut".to_string(), Value::from_bool(field.is_mut));
 
+            // Store default value if present
+            if let Some(default_expr) = &field.default_value {
+                let default_val = self.eval_expr(default_expr)?;
+                field_info.insert("default".to_string(), default_val);
+            }
+
             field_defs.insert(
                 field.name.clone(),
                 Value::Object(std::rc::Rc::new(field_info)),
@@ -4175,12 +4181,25 @@ impl Interpreter {
             instance.insert(field_name.clone(), field_value);
         }
 
-        // Check that all required fields are provided
-        for field_name in field_defs.keys() {
+        // Check that all required fields are provided or have defaults
+        for (field_name, field_def_value) in field_defs.iter() {
             if !instance.contains_key(field_name) && field_name != "__struct_type" {
-                return Err(InterpreterError::RuntimeError(format!(
-                    "Missing required field '{field_name}' for struct {name}"
-                )));
+                // Check if this field has a default value
+                if let Value::Object(field_info) = field_def_value {
+                    if let Some(default_val) = field_info.get("default") {
+                        // Use default value
+                        instance.insert(field_name.clone(), default_val.clone());
+                    } else {
+                        // No default, field is required
+                        return Err(InterpreterError::RuntimeError(format!(
+                            "Missing required field '{field_name}' for struct {name}"
+                        )));
+                    }
+                } else {
+                    return Err(InterpreterError::RuntimeError(format!(
+                        "Invalid field definition for '{field_name}' in struct {name}"
+                    )));
+                }
             }
         }
 
