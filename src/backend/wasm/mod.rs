@@ -367,115 +367,208 @@ impl WasmEmitter {
         }
     }
 
+    /// Lower a binary operation to WASM instructions
+    /// Complexity: 8 (Toyota Way: <10 ✓)
+    fn lower_binary(
+        &self,
+        op: &BinaryOp,
+        left: &Expr,
+        right: &Expr,
+    ) -> Result<Vec<Instruction<'static>>, String> {
+        let mut instructions = vec![];
+
+        // Infer result type based on operands
+        let result_type = self.infer_binary_result_type(left, right);
+
+        // Emit left operand with type conversion
+        instructions.extend(self.lower_expression(left)?);
+        if self.infer_type(left) == WasmType::I32 && result_type == WasmType::F32 {
+            instructions.push(Instruction::F32ConvertI32S);
+        }
+
+        // Emit right operand with type conversion
+        instructions.extend(self.lower_expression(right)?);
+        if self.infer_type(right) == WasmType::I32 && result_type == WasmType::F32 {
+            instructions.push(Instruction::F32ConvertI32S);
+        }
+
+        // Emit operation instruction
+        let op_instr = self.binary_op_to_instruction(op, result_type)?;
+        instructions.push(op_instr);
+        Ok(instructions)
+    }
+
+    /// Infer result type for binary operation
+    /// Complexity: 2 (Toyota Way: <10 ✓)
+    fn infer_binary_result_type(&self, left: &Expr, right: &Expr) -> WasmType {
+        let left_ty = self.infer_type(left);
+        let right_ty = self.infer_type(right);
+        if left_ty == WasmType::F32 || right_ty == WasmType::F32 {
+            WasmType::F32
+        } else {
+            WasmType::I32
+        }
+    }
+
+    /// Map binary operation to WASM instruction
+    /// Complexity: 1 (Toyota Way: <10 ✓)
+    fn binary_op_to_instruction(
+        &self,
+        op: &BinaryOp,
+        ty: WasmType,
+    ) -> Result<Instruction<'static>, String> {
+        match (op, ty) {
+            (BinaryOp::Add, WasmType::I32) => Ok(Instruction::I32Add),
+            (BinaryOp::Add, WasmType::F32) => Ok(Instruction::F32Add),
+            (BinaryOp::Subtract, WasmType::I32) => Ok(Instruction::I32Sub),
+            (BinaryOp::Subtract, WasmType::F32) => Ok(Instruction::F32Sub),
+            (BinaryOp::Multiply, WasmType::I32) => Ok(Instruction::I32Mul),
+            (BinaryOp::Multiply, WasmType::F32) => Ok(Instruction::F32Mul),
+            (BinaryOp::Divide, WasmType::I32) => Ok(Instruction::I32DivS),
+            (BinaryOp::Divide, WasmType::F32) => Ok(Instruction::F32Div),
+            (BinaryOp::Modulo, WasmType::I32) => Ok(Instruction::I32RemS),
+            (BinaryOp::Modulo, WasmType::F32) => Err("Modulo not supported for floats".to_string()),
+            (BinaryOp::Equal, WasmType::I32) => Ok(Instruction::I32Eq),
+            (BinaryOp::Equal, WasmType::F32) => Ok(Instruction::F32Eq),
+            (BinaryOp::NotEqual, WasmType::I32) => Ok(Instruction::I32Ne),
+            (BinaryOp::NotEqual, WasmType::F32) => Ok(Instruction::F32Ne),
+            (BinaryOp::Less, WasmType::I32) => Ok(Instruction::I32LtS),
+            (BinaryOp::Less, WasmType::F32) => Ok(Instruction::F32Lt),
+            (BinaryOp::Greater, WasmType::I32) => Ok(Instruction::I32GtS),
+            (BinaryOp::Greater, WasmType::F32) => Ok(Instruction::F32Gt),
+            (BinaryOp::LessEqual, WasmType::I32) => Ok(Instruction::I32LeS),
+            (BinaryOp::LessEqual, WasmType::F32) => Ok(Instruction::F32Le),
+            (BinaryOp::GreaterEqual, WasmType::I32) => Ok(Instruction::I32GeS),
+            (BinaryOp::GreaterEqual, WasmType::F32) => Ok(Instruction::F32Ge),
+            (BinaryOp::And, _) => Ok(Instruction::I32And),
+            (BinaryOp::Or, _) => Ok(Instruction::I32Or),
+            _ => Err(format!("Unsupported binary operation: {op:?}")),
+        }
+    }
+
+    /// Lower an if expression to WASM instructions
+    /// Complexity: 4 (Toyota Way: <10 ✓)
+    fn lower_if(
+        &self,
+        condition: &Expr,
+        then_branch: &Expr,
+        else_branch: Option<&Expr>,
+    ) -> Result<Vec<Instruction<'static>>, String> {
+        let mut instructions = vec![];
+
+        // Emit condition
+        instructions.extend(self.lower_expression(condition)?);
+
+        // Determine block type based on whether branches produce values
+        let block_type = if self.expression_produces_value(then_branch) {
+            wasm_encoder::BlockType::Result(wasm_encoder::ValType::I32)
+        } else {
+            wasm_encoder::BlockType::Empty
+        };
+
+        // If instruction
+        instructions.push(Instruction::If(block_type));
+
+        // Then branch
+        instructions.extend(self.lower_expression(then_branch)?);
+
+        // Else branch (if present)
+        if let Some(else_expr) = else_branch {
+            instructions.push(Instruction::Else);
+            instructions.extend(self.lower_expression(else_expr)?);
+        } else if self.expression_produces_value(then_branch) {
+            // If no else branch but we expect a value, push a default
+            instructions.push(Instruction::Else);
+            instructions.push(Instruction::I32Const(0));
+        }
+
+        // End if
+        instructions.push(Instruction::End);
+        Ok(instructions)
+    }
+
+    /// Lower a unary operation to WASM instructions
+    /// Complexity: 6 (Toyota Way: <10 ✓)
+    fn lower_unary(
+        &self,
+        op: &crate::frontend::ast::UnaryOp,
+        operand: &Expr,
+    ) -> Result<Vec<Instruction<'static>>, String> {
+        let mut instructions = vec![];
+
+        // Emit operand
+        instructions.extend(self.lower_expression(operand)?);
+
+        // Emit unary operation
+        match op {
+            crate::frontend::ast::UnaryOp::Negate => {
+                self.emit_negate(&mut instructions, operand);
+            }
+            crate::frontend::ast::UnaryOp::Not => {
+                // Logical not: compare with 0
+                instructions.push(Instruction::I32Eqz);
+            }
+            crate::frontend::ast::UnaryOp::BitwiseNot => {
+                // Bitwise not: XOR with -1
+                instructions.push(Instruction::I32Const(-1));
+                instructions.push(Instruction::I32Xor);
+            }
+            crate::frontend::ast::UnaryOp::Reference | crate::frontend::ast::UnaryOp::Deref => {
+                // Reference/dereference operators not supported in WASM (needs memory)
+                // Keep operand value on stack
+            }
+        }
+        Ok(instructions)
+    }
+
+    /// Emit type-aware negation instruction
+    /// Complexity: 1 (Toyota Way: <10 ✓)
+    fn emit_negate(&self, instructions: &mut Vec<Instruction<'static>>, operand: &Expr) {
+        let operand_ty = self.infer_type(operand);
+        match operand_ty {
+            WasmType::I32 => {
+                instructions.insert(0, Instruction::I32Const(0));
+                instructions.push(Instruction::I32Sub);
+            }
+            WasmType::F32 => {
+                instructions.push(Instruction::F32Neg);
+            }
+            WasmType::I64 => {
+                instructions.insert(0, Instruction::I64Const(0));
+                instructions.push(Instruction::I64Sub);
+            }
+            WasmType::F64 => {
+                instructions.push(Instruction::F64Neg);
+            }
+        }
+    }
+
+    /// Lower a block expression to WASM instructions
+    /// Complexity: 3 (Toyota Way: <10 ✓)
+    fn lower_block(&self, exprs: &[Expr]) -> Result<Vec<Instruction<'static>>, String> {
+        let mut instructions = vec![];
+        for (i, expr) in exprs.iter().enumerate() {
+            instructions.extend(self.lower_expression(expr)?);
+            // Drop intermediate values (keep only last if block produces value)
+            let is_last = i == exprs.len() - 1;
+            if !is_last && self.expression_produces_value(expr) {
+                instructions.push(Instruction::Drop);
+            }
+        }
+        Ok(instructions)
+    }
+
     /// Lower a Ruchy expression to WASM instructions
     fn lower_expression(&self, expr: &Expr) -> Result<Vec<Instruction<'static>>, String> {
         match &expr.kind {
             ExprKind::Literal(literal) => self.lower_literal(literal),
-            ExprKind::Binary { op, left, right } => {
-                let mut instructions = vec![];
-
-                // Infer result type based on operands
-                let result_type = {
-                    let left_ty = self.infer_type(left);
-                    let right_ty = self.infer_type(right);
-                    if left_ty == WasmType::F32 || right_ty == WasmType::F32 {
-                        WasmType::F32
-                    } else {
-                        WasmType::I32
-                    }
-                };
-
-                // Emit left operand
-                instructions.extend(self.lower_expression(left)?);
-
-                // Emit type conversion if needed
-                if self.infer_type(left) == WasmType::I32 && result_type == WasmType::F32 {
-                    instructions.push(Instruction::F32ConvertI32S);
-                }
-
-                // Emit right operand
-                instructions.extend(self.lower_expression(right)?);
-
-                // Emit type conversion if needed
-                if self.infer_type(right) == WasmType::I32 && result_type == WasmType::F32 {
-                    instructions.push(Instruction::F32ConvertI32S);
-                }
-
-                // Emit operation with correct type
-                let op_instr = match (op, result_type) {
-                    (BinaryOp::Add, WasmType::I32) => Instruction::I32Add,
-                    (BinaryOp::Add, WasmType::F32) => Instruction::F32Add,
-                    (BinaryOp::Subtract, WasmType::I32) => Instruction::I32Sub,
-                    (BinaryOp::Subtract, WasmType::F32) => Instruction::F32Sub,
-                    (BinaryOp::Multiply, WasmType::I32) => Instruction::I32Mul,
-                    (BinaryOp::Multiply, WasmType::F32) => Instruction::F32Mul,
-                    (BinaryOp::Divide, WasmType::I32) => Instruction::I32DivS,
-                    (BinaryOp::Divide, WasmType::F32) => Instruction::F32Div,
-                    (BinaryOp::Modulo, WasmType::I32) => Instruction::I32RemS,
-                    (BinaryOp::Modulo, WasmType::F32) => {
-                        return Err("Modulo not supported for floats".to_string())
-                    }
-                    (BinaryOp::Equal, WasmType::I32) => Instruction::I32Eq,
-                    (BinaryOp::Equal, WasmType::F32) => Instruction::F32Eq,
-                    (BinaryOp::NotEqual, WasmType::I32) => Instruction::I32Ne,
-                    (BinaryOp::NotEqual, WasmType::F32) => Instruction::F32Ne,
-                    (BinaryOp::Less, WasmType::I32) => Instruction::I32LtS,
-                    (BinaryOp::Less, WasmType::F32) => Instruction::F32Lt,
-                    (BinaryOp::Greater, WasmType::I32) => Instruction::I32GtS,
-                    (BinaryOp::Greater, WasmType::F32) => Instruction::F32Gt,
-                    (BinaryOp::LessEqual, WasmType::I32) => Instruction::I32LeS,
-                    (BinaryOp::LessEqual, WasmType::F32) => Instruction::F32Le,
-                    (BinaryOp::GreaterEqual, WasmType::I32) => Instruction::I32GeS,
-                    (BinaryOp::GreaterEqual, WasmType::F32) => Instruction::F32Ge,
-                    _ => return Ok(instructions), // Skip unsupported ops for now
-                };
-                instructions.push(op_instr);
-                Ok(instructions)
-            }
-            ExprKind::Block(exprs) => {
-                // Handle block expressions (e.g., from parse())
-                let mut instructions = vec![];
-                for (i, expr) in exprs.iter().enumerate() {
-                    instructions.extend(self.lower_expression(expr)?);
-                    // Drop intermediate values (keep only last if block produces value)
-                    let is_last = i == exprs.len() - 1;
-                    if !is_last && self.expression_produces_value(expr) {
-                        instructions.push(Instruction::Drop);
-                    }
-                }
-                Ok(instructions)
-            }
+            ExprKind::Binary { op, left, right } => self.lower_binary(op, left, right),
+            ExprKind::Block(exprs) => self.lower_block(exprs),
             ExprKind::If {
                 condition,
                 then_branch,
                 else_branch,
-            } => {
-                let mut instructions = vec![];
-                // Emit condition
-                instructions.extend(self.lower_expression(condition)?);
-                // Determine block type based on whether branches produce values
-                let block_type = if self.expression_produces_value(then_branch) {
-                    wasm_encoder::BlockType::Result(wasm_encoder::ValType::I32)
-                } else {
-                    wasm_encoder::BlockType::Empty
-                };
-                // If instruction
-                instructions.push(Instruction::If(block_type));
-                // Then branch
-                instructions.extend(self.lower_expression(then_branch)?);
-                // Else branch (if present)
-                if let Some(else_expr) = else_branch {
-                    instructions.push(Instruction::Else);
-                    instructions.extend(self.lower_expression(else_expr)?);
-                } else if self.expression_produces_value(then_branch) {
-                    // If no else branch but we expect a value, push a default
-                    instructions.push(Instruction::Else);
-                    instructions.push(Instruction::I32Const(0));
-                }
-                // End if
-                instructions.push(Instruction::End);
-                Ok(instructions)
-            }
+            } => self.lower_if(condition, then_branch, else_branch.as_deref()),
             ExprKind::While {
                 condition, body, ..
             } => {
@@ -544,52 +637,7 @@ impl WasmEmitter {
                 // Load from local
                 Ok(vec![Instruction::LocalGet(local_index)])
             }
-            ExprKind::Unary { op, operand } => {
-                let mut instructions = vec![];
-                // Emit operand
-                instructions.extend(self.lower_expression(operand)?);
-                // Emit unary operation
-                match op {
-                    crate::frontend::ast::UnaryOp::Negate => {
-                        // Type-aware negation
-                        let operand_ty = self.infer_type(operand);
-                        match operand_ty {
-                            WasmType::I32 => {
-                                instructions.insert(0, Instruction::I32Const(0));
-                                instructions.push(Instruction::I32Sub);
-                            }
-                            WasmType::F32 => {
-                                instructions.push(Instruction::F32Neg);
-                            }
-                            WasmType::I64 => {
-                                instructions.insert(0, Instruction::I64Const(0));
-                                instructions.push(Instruction::I64Sub);
-                            }
-                            WasmType::F64 => {
-                                instructions.push(Instruction::F64Neg);
-                            }
-                        }
-                    }
-                    crate::frontend::ast::UnaryOp::Not => {
-                        // Logical not: compare with 0
-                        instructions.push(Instruction::I32Eqz);
-                    }
-                    crate::frontend::ast::UnaryOp::BitwiseNot => {
-                        // Bitwise not: XOR with -1
-                        instructions.push(Instruction::I32Const(-1));
-                        instructions.push(Instruction::I32Xor);
-                    }
-                    crate::frontend::ast::UnaryOp::Reference => {
-                        // Reference operator not supported in WASM (needs memory)
-                        return Ok(instructions);
-                    }
-                    crate::frontend::ast::UnaryOp::Deref => {
-                        // Dereference operator not supported in WASM (needs memory)
-                        return Ok(instructions);
-                    }
-                }
-                Ok(instructions)
-            }
+            ExprKind::Unary { op, operand } => self.lower_unary(op, operand),
             ExprKind::List(_items) => {
                 // For now, just allocate space and return a pointer
                 // Real implementation would store items in memory
