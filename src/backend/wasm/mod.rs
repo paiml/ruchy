@@ -106,129 +106,168 @@ impl WasmEmitter {
         self.build_symbol_table(expr);
 
         let mut module = Module::new();
-        // Collect all function definitions
         let func_defs = self.collect_functions(expr);
-        let has_functions = !func_defs.is_empty();
-        // Add type section
+
+        // Add sections to module
+        let types = self.emit_type_section(expr, &func_defs);
+        module.section(&types);
+
+        let functions = self.emit_function_section(&func_defs, expr);
+        module.section(&functions);
+
+        if let Some(memories) = self.emit_memory_section(expr) {
+            module.section(&memories);
+        }
+
+        if let Some(exports) = self.emit_export_section(expr) {
+            module.section(&exports);
+        }
+
+        let codes = self.emit_code_section(expr, &func_defs)?;
+        module.section(&codes);
+
+        Ok(module.finish())
+    }
+
+    /// Emit type section with function signatures
+    /// Complexity: 6 (Toyota Way: <10 ✓)
+    fn emit_type_section(
+        &self,
+        expr: &Expr,
+        func_defs: &[(String, Vec<crate::frontend::ast::Param>, Box<Expr>)],
+    ) -> TypeSection {
         let mut types = TypeSection::new();
+        let has_functions = !func_defs.is_empty();
+
         if has_functions {
             // Add a type for each function
-            for (_name, params, _body) in &func_defs {
-                // For now, assume all functions take i32 params and return i32
+            for (_name, params, _body) in func_defs {
                 let param_types = vec![wasm_encoder::ValType::I32; params.len()];
                 types.function(param_types, vec![wasm_encoder::ValType::I32]);
             }
             // Also add a type for the main function if there's non-function code
-            let main_expr = self.get_non_function_code(expr);
-            if let Some(ref main_expr_val) = main_expr {
-                // Infer the actual return type for main
-                if self.expression_produces_value(main_expr_val) {
-                    let return_ty = self.infer_type(main_expr_val);
-                    let wasm_ty = match return_ty {
-                        WasmType::I32 => wasm_encoder::ValType::I32,
-                        WasmType::F32 => wasm_encoder::ValType::F32,
-                        WasmType::I64 => wasm_encoder::ValType::I64,
-                        WasmType::F64 => wasm_encoder::ValType::F64,
-                    };
-                    types.function(vec![], vec![wasm_ty]);
-                } else {
-                    types.function(vec![], vec![]);
-                }
+            if let Some(main_expr) = self.get_non_function_code(expr) {
+                self.add_main_type(&mut types, &main_expr);
             }
         } else {
             // Single implicit main function
-            // Infer the actual return type
-            if self.expression_produces_value(expr) {
-                let return_ty = self.infer_type(expr);
-                let wasm_ty = match return_ty {
-                    WasmType::I32 => wasm_encoder::ValType::I32,
-                    WasmType::F32 => wasm_encoder::ValType::F32,
-                    WasmType::I64 => wasm_encoder::ValType::I64,
-                    WasmType::F64 => wasm_encoder::ValType::F64,
-                };
-                types.function(vec![], vec![wasm_ty]);
-            } else {
-                types.function(vec![], vec![]);
-            }
+            self.add_main_type(&mut types, expr);
         }
-        module.section(&types);
-        // Add function section
+        types
+    }
+
+    /// Add main function type based on expression
+    /// Complexity: 3 (Toyota Way: <10 ✓)
+    fn add_main_type(&self, types: &mut TypeSection, expr: &Expr) {
+        if self.expression_produces_value(expr) {
+            let wasm_ty = self.wasm_type_to_valtype(self.infer_type(expr));
+            types.function(vec![], vec![wasm_ty]);
+        } else {
+            types.function(vec![], vec![]);
+        }
+    }
+
+    /// Convert `WasmType` to `wasm_encoder::ValType`
+    /// Complexity: 1 (Toyota Way: <10 ✓)
+    fn wasm_type_to_valtype(&self, ty: WasmType) -> wasm_encoder::ValType {
+        match ty {
+            WasmType::I32 => wasm_encoder::ValType::I32,
+            WasmType::F32 => wasm_encoder::ValType::F32,
+            WasmType::I64 => wasm_encoder::ValType::I64,
+            WasmType::F64 => wasm_encoder::ValType::F64,
+        }
+    }
+
+    /// Emit function section
+    /// Complexity: 4 (Toyota Way: <10 ✓)
+    fn emit_function_section(
+        &self,
+        func_defs: &[(String, Vec<crate::frontend::ast::Param>, Box<Expr>)],
+        expr: &Expr,
+    ) -> FunctionSection {
         let mut functions = FunctionSection::new();
+        let has_functions = !func_defs.is_empty();
+
         if has_functions {
             for i in 0..func_defs.len() {
                 functions.function(i as u32);
             }
-            // Add main function if there's non-function code
-            let main_expr = self.get_non_function_code(expr);
-            if main_expr.is_some() {
-                functions.function(func_defs.len() as u32); // Main uses the last type
+            if self.get_non_function_code(expr).is_some() {
+                functions.function(func_defs.len() as u32);
             }
         } else {
             functions.function(0);
         }
-        module.section(&functions);
-        // Add memory section if we need memory (for arrays/strings)
+        functions
+    }
+
+    /// Emit memory section if needed
+    /// Complexity: 2 (Toyota Way: <10 ✓)
+    fn emit_memory_section(&self, expr: &Expr) -> Option<MemorySection> {
         if self.needs_memory(expr) {
             let mut memories = MemorySection::new();
             memories.memory(MemoryType {
-                minimum: 1, // 1 page (64KB)
+                minimum: 1,
                 maximum: None,
                 memory64: false,
                 shared: false,
-                page_size_log2: None, // Use default page size
+                page_size_log2: None,
             });
-            module.section(&memories);
+            Some(memories)
+        } else {
+            None
         }
-        // Add export section if we have a main function (must come before code section)
+    }
+
+    /// Emit export section if needed
+    /// Complexity: 2 (Toyota Way: <10 ✓)
+    fn emit_export_section(&self, expr: &Expr) -> Option<ExportSection> {
         if self.has_main_function(expr) {
             let mut exports = ExportSection::new();
             exports.export("main", wasm_encoder::ExportKind::Func, 0);
-            module.section(&exports);
+            Some(exports)
+        } else {
+            None
         }
-        // Add code section
+    }
+
+    /// Emit code section with compiled functions
+    /// Complexity: 8 (Toyota Way: <10 ✓)
+    fn emit_code_section(
+        &self,
+        expr: &Expr,
+        func_defs: &[(String, Vec<crate::frontend::ast::Param>, Box<Expr>)],
+    ) -> Result<CodeSection, String> {
         let mut codes = CodeSection::new();
+        let has_functions = !func_defs.is_empty();
+
         if has_functions {
-            // Compile each function
-            for (_name, _params, body) in &func_defs {
-                let locals = self.collect_local_types(body);
-                let mut func = Function::new(locals);
-                // Compile function body
-                let instructions = self.lower_expression(body)?;
-                for instr in instructions {
-                    func.instruction(&instr);
-                }
-                // Functions with explicit returns don't need Drop
-                // All our test functions return values
-                func.instruction(&Instruction::End);
+            for (_name, _params, body) in func_defs {
+                let func = self.compile_function(body.as_ref())?;
                 codes.function(&func);
             }
-            // Also compile the main code (non-function expressions)
-            let main_expr = self.get_non_function_code(expr);
-            if let Some(main_expr) = main_expr {
-                let locals = self.collect_local_types(&main_expr);
-                let mut func = Function::new(locals);
-                let instructions = self.lower_expression(&main_expr)?;
-                for instr in instructions {
-                    func.instruction(&instr);
-                }
-                // No Drop needed - type signature matches return type
-                func.instruction(&Instruction::End);
+            if let Some(main_expr) = self.get_non_function_code(expr) {
+                let func = self.compile_function(&main_expr)?;
                 codes.function(&func);
             }
         } else {
-            // Single implicit main function
-            let locals = self.collect_local_types(expr);
-            let mut func = Function::new(locals);
-            let instructions = self.lower_expression(expr)?;
-            for instr in instructions {
-                func.instruction(&instr);
-            }
-            // No Drop needed - type signature matches return type
-            func.instruction(&Instruction::End);
+            let func = self.compile_function(expr)?;
             codes.function(&func);
         }
-        module.section(&codes);
-        Ok(module.finish())
+        Ok(codes)
+    }
+
+    /// Compile a single function body
+    /// Complexity: 4 (Toyota Way: <10 ✓)
+    fn compile_function(&self, body: &Expr) -> Result<Function, String> {
+        let locals = self.collect_local_types(body);
+        let mut func = Function::new(locals);
+        let instructions = self.lower_expression(body)?;
+        for instr in instructions {
+            func.instruction(&instr);
+        }
+        func.instruction(&Instruction::End);
+        Ok(func)
     }
 
     /// Build symbol table by scanning expression tree for let bindings
