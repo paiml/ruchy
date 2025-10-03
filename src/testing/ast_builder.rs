@@ -523,6 +523,7 @@ impl AstBuilder {
     pub fn for_loop(&self, var: String, iter: Expr, body: Expr) -> Expr {
         Expr {
             kind: ExprKind::For {
+                label: None,
                 var,
                 iter: Box::new(iter),
                 body: Box::new(body),
@@ -544,6 +545,7 @@ impl AstBuilder {
     pub fn while_loop(&self, condition: Expr, body: Expr) -> Expr {
         Expr {
             kind: ExprKind::While {
+                label: None,
                 condition: Box::new(condition),
                 body: Box::new(body),
             },
@@ -563,6 +565,7 @@ impl AstBuilder {
     pub fn loop_expr(&self, body: Expr) -> Expr {
         Expr {
             kind: ExprKind::Loop {
+                label: None,
                 body: Box::new(body),
             },
             span: self.span,
@@ -580,7 +583,7 @@ impl AstBuilder {
     /// ```
     pub fn break_expr(&self, label: Option<String>) -> Expr {
         Expr {
-            kind: ExprKind::Break { label },
+            kind: ExprKind::Break { label, value: None },
             span: self.span,
             attributes: vec![],
         }
@@ -1079,6 +1082,7 @@ mod tests {
         );
 
         if let ExprKind::For {
+            label: _,
             var,
             iter,
             body,
@@ -1109,7 +1113,10 @@ mod tests {
         let builder = AstBuilder::new();
         let while_loop = builder.while_loop(builder.bool(true), builder.string("body"));
 
-        if let ExprKind::While { condition, body } = while_loop.kind {
+        if let ExprKind::While {
+            condition, body, ..
+        } = while_loop.kind
+        {
             if let ExprKind::Literal(Literal::Bool(val)) = condition.kind {
                 assert!(val);
             } else {
@@ -1131,7 +1138,7 @@ mod tests {
         let builder = AstBuilder::new();
         let loop_expr = builder.loop_expr(builder.string("infinite"));
 
-        if let ExprKind::Loop { body } = loop_expr.kind {
+        if let ExprKind::Loop { body, .. } = loop_expr.kind {
             if let ExprKind::Literal(Literal::String(val)) = body.kind {
                 assert_eq!(val, "infinite");
             } else {
@@ -1148,7 +1155,7 @@ mod tests {
 
         // Break without label
         let break_expr = builder.break_expr(None);
-        if let ExprKind::Break { label } = break_expr.kind {
+        if let ExprKind::Break { label, .. } = break_expr.kind {
             assert!(label.is_none());
         } else {
             panic!("Expected break expression");
@@ -1156,7 +1163,7 @@ mod tests {
 
         // Break with label
         let labeled_break = builder.break_expr(Some("outer".to_string()));
-        if let ExprKind::Break { label } = labeled_break.kind {
+        if let ExprKind::Break { label, .. } = labeled_break.kind {
             assert_eq!(label, Some("outer".to_string()));
         } else {
             panic!("Expected labeled break expression");

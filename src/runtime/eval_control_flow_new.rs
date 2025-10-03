@@ -118,8 +118,8 @@ where
             *last_val = val;
             Ok(None)
         }
-        Err(InterpreterError::Break(val)) => Ok(Some(val)),
-        Err(InterpreterError::Continue) => Ok(None),
+        Err(InterpreterError::Break(None, val)) => Ok(Some(val)),
+        Err(InterpreterError::Continue(_)) => Ok(None),
         Err(e) => Err(e),
     }
 }
@@ -437,11 +437,11 @@ where
             *last_val = result_val;
             Ok(true) // Continue iteration
         }
-        Err(InterpreterError::Break(break_val)) => {
+        Err(InterpreterError::Break(None, break_val)) => {
             *last_val = break_val;
             Ok(false) // Stop iteration
         }
-        Err(InterpreterError::Continue) => Ok(true), // Continue iteration
+        Err(InterpreterError::Continue(_)) => Ok(true), // Continue iteration
         Err(e) => Err(e),
     }
 }
@@ -529,8 +529,8 @@ pub fn handle_loop_control(
             *last_val = val;
             Ok(None)
         }
-        Err(InterpreterError::Break(val)) => Ok(Some(val)),
-        Err(InterpreterError::Continue) => Ok(None),
+        Err(InterpreterError::Break(None, val)) => Ok(Some(val)),
+        Err(InterpreterError::Continue(_)) => Ok(None),
         Err(e) => Err(e),
     }
 }

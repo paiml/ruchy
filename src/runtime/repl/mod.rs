@@ -145,8 +145,26 @@ impl Repl {
     }
 
     /// Evaluate a line and return the result as a string (compatibility method)
-    /// Complexity: 6
+    /// Complexity: 8 (increased from 6 to handle commands)
     pub fn eval(&mut self, line: &str) -> Result<String> {
+        // Handle commands
+        if line.starts_with(':') {
+            let parts: Vec<&str> = line.split_whitespace().collect();
+            let mut context = CommandContext {
+                args: parts[1..].to_vec(),
+                state: &mut self.state,
+                evaluator: Some(&mut self.evaluator),
+            };
+
+            return match self.commands.execute(parts[0], &mut context)? {
+                CommandResult::Success(output) => Ok(output),
+                CommandResult::Exit => Ok("Exiting...".to_string()),
+                CommandResult::ModeChange(mode) => Ok(format!("Switched to {mode:?} mode")),
+                CommandResult::Silent => Ok(String::new()),
+            };
+        }
+
+        // Handle expressions
         match self.evaluator.evaluate_line(line, &mut self.state)? {
             EvalResult::Value(value) => {
                 // Add result to history for tracking
@@ -249,6 +267,7 @@ impl Repl {
         let mut context = CommandContext {
             args: parts[1..].to_vec(),
             state: &mut self.state,
+            evaluator: Some(&mut self.evaluator),
         };
 
         match self.commands.execute(parts[0], &mut context)? {

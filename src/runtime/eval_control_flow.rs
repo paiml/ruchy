@@ -65,11 +65,11 @@ impl<'a> ControlFlowEvaluator<'a> {
 
             match (self.eval_expr)(body) {
                 Ok(val) => last_value = val,
-                Err(InterpreterError::Break(val)) => {
+                Err(InterpreterError::Break(None, val)) => {
                     last_value = val;
                     break;
                 }
-                Err(InterpreterError::Continue) => {}
+                Err(InterpreterError::Continue(_)) => {}
                 Err(e) => return Err(e),
             }
         }
@@ -98,11 +98,11 @@ impl<'a> ControlFlowEvaluator<'a> {
 
             match (self.eval_expr)(body) {
                 Ok(val) => last_value = val,
-                Err(InterpreterError::Break(val)) => {
+                Err(InterpreterError::Break(None, val)) => {
                     last_value = val;
                     break;
                 }
-                Err(InterpreterError::Continue) => {}
+                Err(InterpreterError::Continue(_)) => {}
                 Err(e) => {
                     self.env.pop_scope();
                     return Err(e);
@@ -199,7 +199,7 @@ impl<'a> ControlFlowEvaluator<'a> {
         } else {
             Value::nil()
         };
-        Err(InterpreterError::Break(val))
+        Err(InterpreterError::Break(None, val))
     }
 
     /// Evaluate continue expression
@@ -207,7 +207,7 @@ impl<'a> ControlFlowEvaluator<'a> {
     /// # Complexity
     /// Cyclomatic complexity: 1 (within limit of 10)
     pub fn eval_continue(&mut self) -> Result<Value, InterpreterError> {
-        Err(InterpreterError::Continue)
+        Err(InterpreterError::Continue(None))
     }
 
     /// Evaluate return expression
