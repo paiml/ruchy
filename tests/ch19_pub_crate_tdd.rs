@@ -95,7 +95,11 @@ struct Config {
 
     // Access pub field
     let result = repl.eval("cfg.name").unwrap();
-    assert!(result.contains("prod"), "Expected 'prod' but got: {}", result);
+    assert!(
+        result.contains("prod"),
+        "Expected 'prod' but got: {}",
+        result
+    );
 
     // Access pub(crate) field - should work in REPL context
     let result = repl.eval("cfg.id").unwrap();
@@ -201,11 +205,7 @@ struct Settings {
 
     // Access pub(crate) field with default
     let version = repl.eval("s.version").unwrap();
-    assert!(
-        version.contains("1"),
-        "Expected 1 but got: {}",
-        version
-    );
+    assert!(version.contains("1"), "Expected 1 but got: {}", version);
 
     // Private field with default should still be private
     let result = repl.eval("s.internal_id");
