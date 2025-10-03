@@ -80,6 +80,20 @@ impl CommandRegistry {
                 // Execute inspect command
                 self.execute_inspect_command(&expr, context)
             }
+            ":ast" => {
+                // Get the expression from args
+                if context.args.is_empty() {
+                    return Ok(CommandResult::Success(
+                        "Usage: :ast <expression>".to_string(),
+                    ));
+                }
+
+                // Join all args to reconstruct the expression
+                let expr = context.args.join(" ");
+
+                // Execute AST command
+                self.execute_ast_command(&expr, context)
+            }
             ":mode" => {
                 if let Some(&mode_arg) = context.args.first() {
                     match mode_arg {
@@ -118,7 +132,7 @@ impl CommandRegistry {
     pub fn available_commands(&self) -> Vec<&'static str> {
         vec![
             ":help", ":h", ":quit", ":exit", ":q", ":clear", ":reset", ":mode", ":history",
-            ":vars", ":type", ":inspect",
+            ":vars", ":type", ":inspect", ":ast",
         ]
     }
 
@@ -134,6 +148,7 @@ impl CommandRegistry {
   :vars              Show variable bindings
   :type <expr>       Show type of expression
   :inspect <expr>    Detailed inspection of value
+  :ast <expr>        Show AST structure
 
 Enter expressions to evaluate them.
 "
@@ -236,6 +251,26 @@ Enter expressions to evaluate them.
                 Ok(CommandResult::Success("Incomplete expression".to_string()))
             }
             Err(e) => Ok(CommandResult::Success(format!("Error: {e}"))),
+        }
+    }
+
+    /// Execute :ast command to show AST structure (complexity: 4)
+    fn execute_ast_command(
+        &self,
+        expr: &str,
+        _context: &mut CommandContext,
+    ) -> Result<CommandResult> {
+        use crate::frontend::Parser;
+
+        // Parse the expression to get AST
+        let mut parser = Parser::new(expr);
+        match parser.parse() {
+            Ok(ast) => {
+                // Format AST as debug output
+                let ast_output = format!("{ast:#?}");
+                Ok(CommandResult::Success(ast_output))
+            }
+            Err(e) => Ok(CommandResult::Success(format!("Parse error: {e}"))),
         }
     }
 
