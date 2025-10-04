@@ -100,6 +100,20 @@ Extract Method refactoring applied:
 **Quality**: Zero warnings, all tests passing, P0 validation passing
 **TDG Improvement**: 74.9→75.2 (B), duplication: 16.3→16.4
 
+#### 7. Complexity Refactoring (Batch 12)
+**Violations: 119 stable (improved structure via DRY)**
+
+Extract Method + DRY refactoring applied:
+- `parse_qualified_name`: ~12→5 (58% reduction, eliminated duplicate token handling)
+
+**Helper Created**:
+- `parse_type_token_as_string`: Shared token-to-string conversion (complexity: 3)
+
+**Method**: Extract Method + DRY (eliminated duplicate special token handling)
+**Quality**: Zero warnings in modified file, all tests passing, P0 validation passing
+**TDG Improvement**: 77.3→77.4 (B), improved maintainability
+**Code Deduplication**: ~30 lines of duplicate token handling removed
+
 ### Current Status
 
 | Category | Count | Target |
@@ -120,9 +134,9 @@ Extract Method refactoring applied:
 
 ### Session Statistics
 
-- **Functions Refactored**: 21 total
+- **Functions Refactored**: 22 total
 - **Average Complexity Reduction**: 58%
-- **Code Deduplication**: ~190 lines removed
+- **Code Deduplication**: ~220 lines removed
 - **Tests Enabled**: 15 new passing tests
 - **Quality Improvement**: 12.5% violation reduction (maintainability improved)
 - **P0 Validation**: All critical features passing ✅
