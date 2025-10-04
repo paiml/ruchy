@@ -2,7 +2,7 @@
 
 ## Session Achievements (2025-10-04)
 
-### Violations Eliminated: 136 → 130 (6 total, 4.4% reduction)
+### Violations Eliminated: 136 → 128 (8 total, 5.9% reduction)
 
 #### 1. Complexity Refactoring (Batch 1)
 **Violations reduced: 57 → 54 (3 eliminated)**
@@ -28,15 +28,29 @@ Completed TDD cycles (RED→GREEN→REFACTOR):
 **Method**: Implement features, not hide comments
 **Tests**: 15 new passing tests enabled
 
+#### 3. Complexity Refactoring (Batch 2)
+**Violations reduced: 54 → 52 (2 eliminated)**
+
+Extract Method refactoring applied:
+- `parse_comprehension_variable`: 18→8 (56% reduction)
+  * Extracted 6 pattern-specific helpers (tuple, identifier, Some, None, Ok, Err)
+- `parse_list_comprehension`: 14→7 (50% reduction)
+  * Extracted parse_for_clause helper
+- `parse_struct_definition`: 14→7 (50% reduction)
+  * Extracted parse_class_definition, parse_inheritance, parse_struct_variant
+
+**Method**: Extract Method + Single Responsibility
+**Quality**: Zero warnings, all tests passing
+
 ### Current Status
 
 | Category | Count | Target |
 |----------|-------|--------|
-| Complexity | 54 | 0 |
+| Complexity | 52 | 0 |
 | SATD | 23 | 0 |
 | Entropy | 50 | 0 |
 | Other | 3 | 0 |
-| **TOTAL** | **130** | **0** |
+| **TOTAL** | **128** | **0** |
 
 ### Methodology Applied
 
@@ -47,9 +61,10 @@ Completed TDD cycles (RED→GREEN→REFACTOR):
 
 ### Next Session Priorities
 
-1. **54 Complexity violations** - Continue Extract Method
-2. **23 SATD violations** - Complete Extreme TDD implementation
+1. **52 Complexity violations** - Continue Extract Method refactoring
+2. **23 SATD violations** - Extreme TDD (mostly parser features)
 3. **50 Entropy violations** - Pattern consolidation
-4. **3 Minor violations** - Final cleanup
+4. **3 Minor violations** - Coverage/docs/provability cleanup
 
 **Sprint 6 Target**: ZERO violations (quality gate GREEN)
+**Progress**: 136→128 violations (5.9% reduction, 128 remaining)
