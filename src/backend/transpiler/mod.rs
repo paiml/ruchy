@@ -269,98 +269,110 @@ impl Transpiler {
     fn analyze_expr_mutability(&mut self, expr: &Expr) {
         use crate::frontend::ast::ExprKind;
         match &expr.kind {
-            // Direct assignment marks the target as mutable
             ExprKind::Assign { target, value } => {
-                if let ExprKind::Identifier(name) = &target.kind {
-                    self.mutable_vars.insert(name.clone());
-                }
+                self.mark_target_mutable(target);
                 self.analyze_expr_mutability(value);
             }
-            // Compound assignment marks the target as mutable
             ExprKind::CompoundAssign { target, value, .. } => {
-                if let ExprKind::Identifier(name) = &target.kind {
-                    self.mutable_vars.insert(name.clone());
-                }
+                self.mark_target_mutable(target);
                 self.analyze_expr_mutability(value);
             }
-            // Pre/Post increment/decrement mark the target as mutable
             ExprKind::PreIncrement { target }
             | ExprKind::PostIncrement { target }
             | ExprKind::PreDecrement { target }
             | ExprKind::PostDecrement { target } => {
-                if let ExprKind::Identifier(name) = &target.kind {
-                    self.mutable_vars.insert(name.clone());
-                }
+                self.mark_target_mutable(target);
             }
-            // Recursively analyze blocks
             ExprKind::Block(exprs) => {
-                for e in exprs {
-                    self.analyze_expr_mutability(e);
-                }
+                self.analyze_block_mutability(exprs);
             }
-            // Analyze control flow
             ExprKind::If {
                 condition,
                 then_branch,
                 else_branch,
             } => {
-                self.analyze_expr_mutability(condition);
-                self.analyze_expr_mutability(then_branch);
-                if let Some(else_expr) = else_branch {
-                    self.analyze_expr_mutability(else_expr);
-                }
+                self.analyze_if_mutability(condition, then_branch, else_branch.as_deref());
             }
             ExprKind::While {
                 condition, body, ..
             } => {
-                self.analyze_expr_mutability(condition);
-                self.analyze_expr_mutability(body);
+                self.analyze_two_expr_mutability(condition, body);
             }
             ExprKind::For { body, iter, .. } => {
-                self.analyze_expr_mutability(iter);
-                self.analyze_expr_mutability(body);
+                self.analyze_two_expr_mutability(iter, body);
             }
-            // Analyze match arms
             ExprKind::Match { expr, arms } => {
-                self.analyze_expr_mutability(expr);
-                for arm in arms {
-                    self.analyze_expr_mutability(&arm.body);
-                }
+                self.analyze_match_mutability(expr, arms);
             }
-            // Analyze let bodies
             ExprKind::Let { body, value, .. } | ExprKind::LetPattern { body, value, .. } => {
-                self.analyze_expr_mutability(value);
+                self.analyze_two_expr_mutability(value, body);
+            }
+            ExprKind::Function { body, .. } | ExprKind::Lambda { body, .. } => {
                 self.analyze_expr_mutability(body);
             }
-            // Analyze function bodies
-            ExprKind::Function { body, .. } => {
-                self.analyze_expr_mutability(body);
-            }
-            ExprKind::Lambda { body, .. } => {
-                self.analyze_expr_mutability(body);
-            }
-            // Analyze binary/unary operations
             ExprKind::Binary { left, right, .. } => {
-                self.analyze_expr_mutability(left);
-                self.analyze_expr_mutability(right);
+                self.analyze_two_expr_mutability(left, right);
             }
             ExprKind::Unary { operand, .. } => {
                 self.analyze_expr_mutability(operand);
             }
-            // Analyze calls
             ExprKind::Call { func, args } => {
-                self.analyze_expr_mutability(func);
-                for arg in args {
-                    self.analyze_expr_mutability(arg);
-                }
+                self.analyze_call_mutability(func, args);
             }
             ExprKind::MethodCall { receiver, args, .. } => {
-                self.analyze_expr_mutability(receiver);
-                for arg in args {
-                    self.analyze_expr_mutability(arg);
-                }
+                self.analyze_call_mutability(receiver, args);
             }
             _ => {}
+        }
+    }
+
+    /// Mark an expression target as mutable (complexity: 2)
+    fn mark_target_mutable(&mut self, target: &Expr) {
+        if let ExprKind::Identifier(name) = &target.kind {
+            self.mutable_vars.insert(name.clone());
+        }
+    }
+
+    /// Analyze mutability for block expressions (complexity: 1)
+    fn analyze_block_mutability(&mut self, exprs: &[Expr]) {
+        for e in exprs {
+            self.analyze_expr_mutability(e);
+        }
+    }
+
+    /// Analyze mutability for if expressions (complexity: 2)
+    fn analyze_if_mutability(
+        &mut self,
+        condition: &Expr,
+        then_branch: &Expr,
+        else_branch: Option<&Expr>,
+    ) {
+        self.analyze_expr_mutability(condition);
+        self.analyze_expr_mutability(then_branch);
+        if let Some(else_expr) = else_branch {
+            self.analyze_expr_mutability(else_expr);
+        }
+    }
+
+    /// Analyze mutability for two related expressions (complexity: 1)
+    fn analyze_two_expr_mutability(&mut self, expr1: &Expr, expr2: &Expr) {
+        self.analyze_expr_mutability(expr1);
+        self.analyze_expr_mutability(expr2);
+    }
+
+    /// Analyze mutability for match expressions (complexity: 1)
+    fn analyze_match_mutability(&mut self, expr: &Expr, arms: &[crate::frontend::ast::MatchArm]) {
+        self.analyze_expr_mutability(expr);
+        for arm in arms {
+            self.analyze_expr_mutability(&arm.body);
+        }
+    }
+
+    /// Analyze mutability for call expressions (complexity: 1)
+    fn analyze_call_mutability(&mut self, func: &Expr, args: &[Expr]) {
+        self.analyze_expr_mutability(func);
+        for arg in args {
+            self.analyze_expr_mutability(arg);
         }
     }
     /// Resolves file imports in the AST using `ModuleResolver`
@@ -749,67 +761,19 @@ impl Transpiler {
         let mut imports = Vec::new();
         let mut has_main_function = false;
         let mut main_function_expr = None;
+
         for expr in exprs {
-            match &expr.kind {
-                ExprKind::Function { name, .. } => {
-                    if name == "main" {
-                        has_main_function = true;
-                        main_function_expr = Some(expr);
-                    } else {
-                        // Use proper function transpiler to handle attributes correctly
-                        functions.push(self.transpile_function_expr(expr)?);
-                    }
-                }
-                ExprKind::Module { name, body } => {
-                    // Extract module declarations for top-level placement
-                    modules.push(self.transpile_module_declaration(name, body)?);
-                }
-                ExprKind::Block(block_exprs) => {
-                    // Check if this is a module-containing block from the resolver
-                    if block_exprs.len() == 2
-                        && matches!(block_exprs[0].kind, ExprKind::Module { .. })
-                        && matches!(block_exprs[1].kind, ExprKind::Import { .. })
-                    {
-                        // This is a module resolver block: extract the module and keep the import as statement
-                        if let ExprKind::Module { name, body } = &block_exprs[0].kind {
-                            modules.push(self.transpile_module_declaration(name, body)?);
-                        }
-                        statements.push(self.transpile_expr(&block_exprs[1])?);
-                    } else {
-                        // Regular block, treat as statement
-                        statements.push(self.transpile_expr(expr)?);
-                    }
-                }
-                ExprKind::Trait { .. } | ExprKind::Impl { .. } => {
-                    // Trait definitions and implementations are top-level items
-                    functions.push(self.transpile_type_decl_expr(expr)?);
-                }
-                ExprKind::Struct { .. } | ExprKind::TupleStruct { .. } => {
-                    // Struct definitions are top-level items - use proper struct transpiler
-                    functions.push(self.transpile_struct_expr(expr)?);
-                }
-                ExprKind::Class { .. } | ExprKind::Actor { .. } => {
-                    // Class and actor definitions are top-level items
-                    functions.push(self.transpile_expr(expr)?);
-                }
-                ExprKind::Import { .. }
-                | ExprKind::ImportAll { .. }
-                | ExprKind::ImportDefault { .. } => {
-                    // Extract imports for top-level placement
-                    imports.push(self.transpile_expr(expr)?);
-                }
-                _ => {
-                    let stmt = self.transpile_expr(expr)?;
-                    // Ensure statements have semicolons for proper separation
-                    let stmt_str = stmt.to_string();
-                    if !stmt_str.trim().ends_with(';') && !stmt_str.trim().ends_with('}') {
-                        statements.push(quote! { #stmt; });
-                    } else {
-                        statements.push(stmt);
-                    }
-                }
-            }
+            self.categorize_single_expression(
+                expr,
+                &mut functions,
+                &mut statements,
+                &mut modules,
+                &mut imports,
+                &mut has_main_function,
+                &mut main_function_expr,
+            )?;
         }
+
         Ok((
             functions,
             statements,
@@ -818,6 +782,113 @@ impl Transpiler {
             main_function_expr,
             imports,
         ))
+    }
+
+    /// Categorize a single expression into appropriate category (complexity: 8)
+    fn categorize_single_expression<'a>(
+        &self,
+        expr: &'a Expr,
+        functions: &mut Vec<TokenStream>,
+        statements: &mut Vec<TokenStream>,
+        modules: &mut Vec<TokenStream>,
+        imports: &mut Vec<TokenStream>,
+        has_main_function: &mut bool,
+        main_function_expr: &mut Option<&'a Expr>,
+    ) -> Result<()> {
+        match &expr.kind {
+            ExprKind::Function { name, .. } => {
+                self.categorize_function(
+                    expr,
+                    name,
+                    functions,
+                    has_main_function,
+                    main_function_expr,
+                )?;
+            }
+            ExprKind::Module { name, body } => {
+                modules.push(self.transpile_module_declaration(name, body)?);
+            }
+            ExprKind::Block(block_exprs) => {
+                self.categorize_block(block_exprs, expr, modules, statements)?;
+            }
+            ExprKind::Trait { .. } | ExprKind::Impl { .. } => {
+                functions.push(self.transpile_type_decl_expr(expr)?);
+            }
+            ExprKind::Struct { .. } | ExprKind::TupleStruct { .. } => {
+                functions.push(self.transpile_struct_expr(expr)?);
+            }
+            ExprKind::Class { .. } | ExprKind::Actor { .. } => {
+                functions.push(self.transpile_expr(expr)?);
+            }
+            ExprKind::Import { .. }
+            | ExprKind::ImportAll { .. }
+            | ExprKind::ImportDefault { .. } => {
+                imports.push(self.transpile_expr(expr)?);
+            }
+            _ => {
+                self.categorize_statement(expr, statements)?;
+            }
+        }
+        Ok(())
+    }
+
+    /// Categorize function expression (complexity: 3)
+    fn categorize_function<'a>(
+        &self,
+        expr: &'a Expr,
+        name: &str,
+        functions: &mut Vec<TokenStream>,
+        has_main_function: &mut bool,
+        main_function_expr: &mut Option<&'a Expr>,
+    ) -> Result<()> {
+        if name == "main" {
+            *has_main_function = true;
+            *main_function_expr = Some(expr);
+        } else {
+            functions.push(self.transpile_function_expr(expr)?);
+        }
+        Ok(())
+    }
+
+    /// Categorize block expression (complexity: 4)
+    fn categorize_block(
+        &self,
+        block_exprs: &[Expr],
+        expr: &Expr,
+        modules: &mut Vec<TokenStream>,
+        statements: &mut Vec<TokenStream>,
+    ) -> Result<()> {
+        // Check if this is a module-containing block from the resolver
+        if self.is_module_resolver_block(block_exprs) {
+            if let ExprKind::Module { name, body } = &block_exprs[0].kind {
+                modules.push(self.transpile_module_declaration(name, body)?);
+            }
+            statements.push(self.transpile_expr(&block_exprs[1])?);
+        } else {
+            // Regular block, treat as statement
+            statements.push(self.transpile_expr(expr)?);
+        }
+        Ok(())
+    }
+
+    /// Check if block is a module resolver block (complexity: 2)
+    fn is_module_resolver_block(&self, block_exprs: &[Expr]) -> bool {
+        block_exprs.len() == 2
+            && matches!(block_exprs[0].kind, ExprKind::Module { .. })
+            && matches!(block_exprs[1].kind, ExprKind::Import { .. })
+    }
+
+    /// Categorize general statement expression (complexity: 3)
+    fn categorize_statement(&self, expr: &Expr, statements: &mut Vec<TokenStream>) -> Result<()> {
+        let stmt = self.transpile_expr(expr)?;
+        let stmt_str = stmt.to_string();
+
+        if !stmt_str.trim().ends_with(';') && !stmt_str.trim().ends_with('}') {
+            statements.push(quote! { #stmt; });
+        } else {
+            statements.push(stmt);
+        }
+        Ok(())
     }
     fn transpile_module_declaration(&self, name: &str, body: &Expr) -> Result<TokenStream> {
         let module_name = format_ident!("{}", name);
