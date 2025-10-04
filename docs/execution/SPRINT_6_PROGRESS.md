@@ -2,7 +2,7 @@
 
 ## Session Achievements (2025-10-04)
 
-### Violations Eliminated: 136 → 128 (8 total, 5.9% reduction)
+### Violations Eliminated: 136 → 127 (9 total, 6.6% reduction)
 
 #### 1. Complexity Refactoring (Batch 1)
 **Violations reduced: 57 → 54 (3 eliminated)**
@@ -28,29 +28,30 @@ Completed TDD cycles (RED→GREEN→REFACTOR):
 **Method**: Implement features, not hide comments
 **Tests**: 15 new passing tests enabled
 
-#### 3. Complexity Refactoring (Batch 2)
-**Violations reduced: 54 → 52 (2 eliminated)**
+#### 3. Complexity Refactoring (Batches 2-5)
+**Violations reduced: 54 → 51 (3 eliminated)**
 
 Extract Method refactoring applied:
-- `parse_comprehension_variable`: 18→8 (56% reduction)
-  * Extracted 6 pattern-specific helpers (tuple, identifier, Some, None, Ok, Err)
-- `parse_list_comprehension`: 14→7 (50% reduction)
-  * Extracted parse_for_clause helper
-- `parse_struct_definition`: 14→7 (50% reduction)
-  * Extracted parse_class_definition, parse_inheritance, parse_struct_variant
+- `parse_comprehension_variable`: 18→8 (56% reduction, 6 helpers)
+- `parse_list_comprehension`: 14→7 (50% reduction, parse_for_clause)
+- `parse_struct_definition`: 14→7 (50% reduction, 3 helpers)
+- `parse_set_comprehension_continuation`: 14→7 (50% reduction, DRY)
+- `parse_dict_comprehension_continuation`: 14→7 (50% reduction, DRY)
+- `parse_export`: 13→5 (62% reduction, 4 helpers)
 
-**Method**: Extract Method + Single Responsibility
+**Method**: Extract Method + Single Responsibility + DRY
 **Quality**: Zero warnings, all tests passing
+**Code Deduplication**: ~72 lines eliminated
 
 ### Current Status
 
 | Category | Count | Target |
 |----------|-------|--------|
-| Complexity | 52 | 0 |
+| Complexity | 51 | 0 |
 | SATD | 23 | 0 |
 | Entropy | 50 | 0 |
 | Other | 3 | 0 |
-| **TOTAL** | **128** | **0** |
+| **TOTAL** | **127** | **0** |
 
 ### Methodology Applied
 
@@ -59,12 +60,20 @@ Extract Method refactoring applied:
 ✅ **Extract Method** (Complexity ≤10)
 ✅ **Zero Tolerance** (All clippy warnings fixed)
 
+### Session Statistics
+
+- **Functions Refactored**: 11 total
+- **Average Complexity Reduction**: 53%
+- **Code Deduplication**: ~72 lines removed
+- **Tests Enabled**: 15 new passing tests
+- **Quality Improvement**: 6.6% violation reduction
+
 ### Next Session Priorities
 
-1. **52 Complexity violations** - Continue Extract Method refactoring
+1. **51 Complexity violations** - Continue Extract Method refactoring
 2. **23 SATD violations** - Extreme TDD (mostly parser features)
 3. **50 Entropy violations** - Pattern consolidation
 4. **3 Minor violations** - Coverage/docs/provability cleanup
 
 **Sprint 6 Target**: ZERO violations (quality gate GREEN)
-**Progress**: 136→128 violations (5.9% reduction, 128 remaining)
+**Progress**: 136→127 violations (6.6% reduction, 127 remaining)
