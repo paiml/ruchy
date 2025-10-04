@@ -64,3 +64,9 @@ test-results/
 
 # WASM build artifacts
 pkg/
+
+# MCP Registry tokens (sensitive)
+.mcpregistry_*_token
+
+# Backup files
+*.old
