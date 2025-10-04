@@ -23,11 +23,61 @@ A modern, expressive programming language for data science and scientific comput
 # Install from crates.io
 cargo install ruchy
 
+# Install with MCP server support
+cargo install ruchy --features mcp
+
 # Or build from source
 git clone https://github.com/noahgift/ruchy
 cd ruchy
 cargo build --release
 ```
+
+## MCP Server
+
+Ruchy provides a Model Context Protocol (MCP) server that exposes code analysis, scoring, linting, and transpilation capabilities to Claude and other MCP clients.
+
+### Installation
+
+```bash
+# Install Ruchy with MCP support
+cargo install ruchy --features mcp
+```
+
+### Configuration
+
+Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_desktop_config.json` on macOS):
+
+```json
+{
+  "mcpServers": {
+    "ruchy": {
+      "command": "ruchy",
+      "args": ["mcp"]
+    }
+  }
+}
+```
+
+### Available Tools
+
+The Ruchy MCP server provides 7 tools:
+
+- **ruchy-score**: Analyze code quality with unified 0.0-1.0 scoring system
+- **ruchy-lint**: Real-time code linting with auto-fix suggestions
+- **ruchy-format**: Format Ruchy source code with configurable style
+- **ruchy-analyze**: Comprehensive code analysis with AST, metrics, and insights
+- **ruchy-eval**: Evaluate Ruchy expressions with type safety
+- **ruchy-transpile**: Transpile Ruchy code to Rust
+- **ruchy-type-check**: Type check Ruchy expressions
+
+### Usage
+
+```bash
+# Start MCP server (typically called by Claude Desktop)
+ruchy mcp --verbose
+```
+
+For more details, see [docs/mcp-registry-publish.md](docs/mcp-registry-publish.md).
 
 ## Quick Start
 
