@@ -127,6 +127,7 @@ pub mod formatter;
 pub mod gates;
 pub mod instrumentation;
 pub mod linter;
+#[cfg(not(target_arch = "wasm32"))]
 pub mod ruchy_coverage;
 pub mod scoring;
 pub use coverage::{

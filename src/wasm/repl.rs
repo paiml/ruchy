@@ -1,7 +1,6 @@
 //! WebAssembly REPL implementation for browser-based evaluation
 //!
 //! Provides interactive Ruchy evaluation in the browser with progressive enhancement.
-#[cfg(not(target_arch = "wasm32"))]
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 #[cfg(target_arch = "wasm32")]
@@ -13,8 +12,7 @@ pub struct JsValue;
 // ============================================================================
 // REPL Output Types
 // ============================================================================
-#[derive(Debug, Clone)]
-#[cfg_attr(not(target_arch = "wasm32"), derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ReplOutput {
     pub success: bool,
     pub display: Option<String>,
@@ -23,8 +21,7 @@ pub struct ReplOutput {
     pub error: Option<String>,
     pub timing: TimingInfo,
 }
-#[derive(Debug, Clone)]
-#[cfg_attr(not(target_arch = "wasm32"), derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TimingInfo {
     pub parse_ms: f64,
     pub typecheck_ms: f64,

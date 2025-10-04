@@ -52,6 +52,7 @@ pub fn parse_ruchy_code(source: &str) -> Result<crate::frontend::ast::Expr> {
 /// let result = create_success_response(());
 /// assert_eq!(result, Ok(()));
 /// ```
+#[cfg(feature = "notebook")]
 pub fn create_success_response(
     value: String,
     cell_id: String,
@@ -75,6 +76,7 @@ pub fn create_success_response(
 /// let result = create_error_response(());
 /// assert_eq!(result, Ok(()));
 /// ```
+#[cfg(feature = "notebook")]
 pub fn create_error_response(
     error: String,
     cell_id: String,

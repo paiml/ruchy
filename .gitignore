@@ -61,3 +61,6 @@ package-lock.json
 playwright-report/
 test-results/
 .playwright/
+
+# WASM build artifacts
+pkg/
