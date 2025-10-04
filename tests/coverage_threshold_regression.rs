@@ -26,10 +26,7 @@ fn test_coverage_threshold_100_percent() {
     println!("STDOUT: {stdout}");
     println!("STDERR: {stderr}");
 
-    // The bug: it should report "Coverage meets threshold of 100.0%"
-    // but instead reports "Coverage meets threshold of 70.0%"
-
-    // This will FAIL initially (reproducing the bug)
+    // Verify correct threshold is reported
     assert!(
         stdout.contains("Coverage meets threshold of 100.0%"),
         "Expected to see 100.0% threshold but got: {stdout}{stderr}"
@@ -41,7 +38,7 @@ fn test_coverage_threshold_100_percent() {
 
 #[test]
 fn test_coverage_threshold_80_percent() {
-    // Check another threshold value to verify the bug affects all thresholds
+    // Verify 80% threshold works correctly
     let mut temp_file = NamedTempFile::with_suffix(".ruchy").expect("Failed to create temp file");
     writeln!(
         temp_file,
@@ -63,7 +60,7 @@ println(f"Grade: {{grade}}")
 
     let stdout = String::from_utf8_lossy(&output.stdout);
 
-    // Should report 80.0% threshold, not 70.0%
+    // Verify correct threshold is reported
     assert!(
         stdout.contains("Coverage meets threshold of 80.0%"),
         "Expected 80.0% threshold but got: {stdout}"

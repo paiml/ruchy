@@ -1,6 +1,5 @@
 // TDD Test Suite for ARRAY-SYNTAX-001
-// Known bug: Array type syntax [i32; 5] not parsing in function parameters
-// Target: Fix 4+ examples in Ch04, Ch15
+// Array type syntax [i32; 5] parsing in function parameters
 
 use ruchy::runtime::repl::Repl;
 use std::env;
@@ -50,7 +49,7 @@ fn test_multiple_array_parameters() {
         
         dot_product([1.0, 2.0, 3.0], [4.0, 5.0, 6.0])
     "#;
-    assert_eq!(eval(code), "32"); // 1*4 + 2*5 + 3*6 = 4 + 10 + 18 = 32
+    assert_eq!(eval(code), "32.0"); // 1*4 + 2*5 + 3*6 = 32.0 (f64 result)
 }
 
 #[test]
