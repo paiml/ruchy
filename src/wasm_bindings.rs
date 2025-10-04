@@ -48,11 +48,11 @@ impl RuchyWasm {
         let mut parser = Parser::new(source);
         let ast = parser
             .parse()
-            .map_err(|e| JsValue::from_str(&format!("Parse error: {}", e)))?;
+            .map_err(|e| js_sys::Error::new(&format!("Parse error: {}", e)).into())?;
         let rust_code = self
             .transpiler
             .transpile(&ast)
-            .map_err(|e| JsValue::from_str(&format!("Transpile error: {}", e)))?;
+            .map_err(|e| js_sys::Error::new(&format!("Transpile error: {}", e)).into())?;
         Ok(rust_code.to_string())
     }
     /// Validate Ruchy syntax
@@ -92,10 +92,10 @@ impl RuchyWasm {
             let mut parser = Parser::new(&source);
             let ast = parser
                 .parse()
-                .map_err(|e| JsValue::from_str(&format!("Parse error: {}", e)))?;
+                .map_err(|e| js_sys::Error::new(&format!("Parse error: {}", e)).into())?;
             let rust_code = transpiler
                 .transpile(&ast)
-                .map_err(|e| JsValue::from_str(&format!("Transpile error: {}", e)))?;
+                .map_err(|e| js_sys::Error::new(&format!("Transpile error: {}", e)).into())?;
             Ok(JsValue::from_str(&rust_code.to_string()))
         })
     }
