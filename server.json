@@ -1,65 +1,27 @@
 {
-  "$schema": "https://modelcontextprotocol.io/schemas/server.json",
-  "identifier": "io.github.paiml.ruchy-mcp",
-  "name": "Ruchy MCP Server",
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-09-29/server.schema.json",
+  "name": "io.github.noahgift/ruchy-mcp",
+  "displayName": "Ruchy MCP Server",
+  "description": "MCP server for Ruchy: code analysis, scoring, linting, formatting, and transpilation tools",
   "version": "3.67.0",
-  "description": "Model Context Protocol server for Ruchy - A systems scripting language that transpiles to idiomatic Rust with extreme quality engineering. Provides tools for code analysis, scoring, linting, formatting, transpilation, and type checking.",
+  "homepage": "https://github.com/paiml/ruchy",
+  "sourceUrl": "https://github.com/paiml/ruchy/tree/main",
   "author": {
-    "name": "Noah Gift",
+    "name": "PAIML Team",
+    "email": "team@paiml.com",
     "url": "https://github.com/paiml"
   },
-  "homepage": "https://github.com/paiml/ruchy",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/paiml/ruchy"
-  },
-  "capabilities": {
-    "tools": [
-      {
-        "name": "ruchy-score",
-        "description": "Analyze code quality with unified 0.0-1.0 scoring system"
-      },
-      {
-        "name": "ruchy-lint",
-        "description": "Real-time code linting with auto-fix suggestions"
-      },
-      {
-        "name": "ruchy-format",
-        "description": "Format Ruchy source code with configurable style"
-      },
-      {
-        "name": "ruchy-analyze",
-        "description": "Comprehensive code analysis with AST, metrics, and insights"
-      },
-      {
-        "name": "ruchy-eval",
-        "description": "Evaluate Ruchy expressions with type safety"
-      },
-      {
-        "name": "ruchy-transpile",
-        "description": "Transpile Ruchy code to Rust"
-      },
-      {
-        "name": "ruchy-type-check",
-        "description": "Type check Ruchy expressions"
-      }
-    ]
-  },
+  "license": "MIT",
+  "readme": "https://raw.githubusercontent.com/paiml/ruchy/main/README.md",
+  "categories": ["development-tools", "code-analysis"],
+  "tags": ["rust", "ruchy", "code-analysis", "linting", "transpiler"],
   "deployment": {
-    "cargo": {
-      "package": "ruchy",
-      "features": ["mcp"],
-      "command": "ruchy",
-      "args": ["mcp"]
+    "type": "package",
+    "package": {
+      "type": "cargo",
+      "name": "ruchy",
+      "binaryName": "ruchy",
+      "features": ["mcp"]
     }
-  },
-  "license": "MIT OR Apache-2.0",
-  "tags": [
-    "compiler",
-    "transpiler",
-    "rust",
-    "scripting",
-    "code-analysis",
-    "quality-engineering"
-  ]
+  }
 }
