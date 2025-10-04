@@ -283,50 +283,48 @@ pub fn parse_type_parameters(state: &mut ParserState) -> Result<Vec<String>> {
     let mut type_params = Vec::new();
 
     // Parse first type parameter
-    if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
-        type_params.push(name.clone());
-        state.tokens.advance();
-
-        // Skip trait bounds if present (T: Display + Clone)
-        if matches!(state.tokens.peek(), Some((Token::Colon, _))) {
-            state.tokens.advance(); // consume :
-                                    // Skip trait bounds until comma or >
-            while let Some((token, _)) = state.tokens.peek() {
-                match token {
-                    Token::Comma | Token::Greater => break,
-                    _ => {
-                        state.tokens.advance();
-                    }
-                }
-            }
-        }
+    if matches!(state.tokens.peek(), Some((Token::Identifier(_), _))) {
+        type_params.push(parse_single_type_parameter(state)?);
     }
 
     // Parse additional type parameters
     while matches!(state.tokens.peek(), Some((Token::Comma, _))) {
-        state.tokens.advance(); // consume comma
-        if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
-            type_params.push(name.clone());
-            state.tokens.advance();
-
-            // Skip trait bounds if present
-            if matches!(state.tokens.peek(), Some((Token::Colon, _))) {
-                state.tokens.advance(); // consume :
-                                        // Skip trait bounds until comma or >
-                while let Some((token, _)) = state.tokens.peek() {
-                    match token {
-                        Token::Comma | Token::Greater => break,
-                        _ => {
-                            state.tokens.advance();
-                        }
-                    }
-                }
-            }
+        state.tokens.advance();
+        if matches!(state.tokens.peek(), Some((Token::Identifier(_), _))) {
+            type_params.push(parse_single_type_parameter(state)?);
         }
     }
 
     state.tokens.expect(&Token::Greater)?;
     Ok(type_params)
+}
+
+fn parse_single_type_parameter(state: &mut ParserState) -> Result<String> {
+    let name = if let Some((Token::Identifier(n), _)) = state.tokens.peek() {
+        n.clone()
+    } else {
+        bail!("Expected type parameter identifier")
+    };
+    state.tokens.advance();
+
+    // Skip trait bounds if present (T: Display + Clone)
+    if matches!(state.tokens.peek(), Some((Token::Colon, _))) {
+        state.tokens.advance();
+        skip_trait_bounds(state);
+    }
+
+    Ok(name)
+}
+
+fn skip_trait_bounds(state: &mut ParserState) {
+    while let Some((token, _)) = state.tokens.peek() {
+        match token {
+            Token::Comma | Token::Greater => break,
+            _ => {
+                state.tokens.advance();
+            }
+        }
+    }
 }
 /// Parse type expressions with complexity ≤10
 /// # Errors
