@@ -300,7 +300,7 @@ fn parse_identifier_prefix(state: &mut ParserState, token: Token, span: Span) ->
     }
 }
 
-fn parse_declaration_prefix(state: &mut ParserState, token: Token, span: Span) -> Result<Expr> {
+fn parse_declaration_prefix(state: &mut ParserState, token: Token, _span: Span) -> Result<Expr> {
     match token {
         Token::Fun | Token::Fn | Token::LeftBrace => parse_function_block_token(state, token),
         Token::Let | Token::Var => parse_variable_declaration_token(state, token),
@@ -323,7 +323,7 @@ fn parse_decorator_prefix(state: &mut ParserState) -> Result<Expr> {
     Ok(expr)
 }
 
-fn parse_control_prefix(state: &mut ParserState, token: Token, span: Span) -> Result<Expr> {
+fn parse_control_prefix(state: &mut ParserState, token: Token, _span: Span) -> Result<Expr> {
     match token {
         Token::If | Token::Match | Token::While | Token::For | Token::Try | Token::Loop => {
             parse_control_flow_token(state, token)
@@ -696,7 +696,7 @@ fn skip_visibility_scope(state: &mut ParserState) -> Result<()> {
 
     state.tokens.advance(); // consume '('
     match state.tokens.peek() {
-        Some((Token::Crate, _)) | Some((Token::Super, _)) => {
+        Some((Token::Crate | Token::Super, _)) => {
             state.tokens.advance();
             state.tokens.expect(&Token::RightParen)?;
             Ok(())
@@ -2963,11 +2963,13 @@ fn parse_member_and_dispatch(
         Some((Token::Fun | Token::Fn, _)) => parse_and_add_method(
             state,
             methods,
-            visibility.is_public(),
-            is_static,
-            is_override,
-            is_final,
-            is_abstract,
+            MethodModifiers {
+                is_pub: visibility.is_public(),
+                is_static,
+                is_override,
+                is_final,
+                is_abstract,
+            },
         ),
         Some((Token::Identifier(_), _)) if !is_static => {
             parse_and_add_field(state, fields, visibility, is_mut, decorators)
@@ -2988,24 +2990,21 @@ fn parse_and_add_constructor(
     Ok(())
 }
 
-fn parse_and_add_method(
-    state: &mut ParserState,
-    methods: &mut Vec<ClassMethod>,
+struct MethodModifiers {
     is_pub: bool,
     is_static: bool,
     is_override: bool,
     is_final: bool,
     is_abstract: bool,
+}
+
+fn parse_and_add_method(
+    state: &mut ParserState,
+    methods: &mut Vec<ClassMethod>,
+    modifiers: MethodModifiers,
 ) -> Result<()> {
     let mut method = parse_class_method(state)?;
-    apply_method_modifiers(
-        &mut method,
-        is_pub,
-        is_static,
-        is_override,
-        is_final,
-        is_abstract,
-    )?;
+    apply_method_modifiers(&mut method, modifiers)?;
     methods.push(method);
     Ok(())
 }
@@ -3296,7 +3295,7 @@ fn parse_property_setter(state: &mut ParserState) -> Result<PropertySetter> {
 /// Parse visibility modifiers (pub, private, protected, mut) - complexity: 4
 fn parse_class_modifiers(state: &mut ParserState) -> Result<(Visibility, bool)> {
     let mut visibility = try_parse_visibility_modifier(state)?;
-    let mut is_mut = try_parse_mut_modifier(state);
+    let is_mut = try_parse_mut_modifier(state);
 
     // Also check reverse order: mut pub/private/protected
     if matches!(visibility, Visibility::Private) {
@@ -3400,34 +3399,26 @@ fn validate_constructor_modifiers(is_static: bool, is_override: bool) -> Result<
 }
 
 /// Apply modifiers to method - complexity: 3
-#[allow(clippy::too_many_arguments, clippy::fn_params_excessive_bools)]
-fn apply_method_modifiers(
-    method: &mut ClassMethod,
-    is_pub: bool,
-    is_static: bool,
-    is_override: bool,
-    is_final: bool,
-    is_abstract: bool,
-) -> Result<()> {
-    method.is_pub = is_pub;
-    method.is_static = is_static;
-    method.is_override = is_override;
-    method.is_final = is_final;
-    method.is_abstract = is_abstract;
+fn apply_method_modifiers(method: &mut ClassMethod, modifiers: MethodModifiers) -> Result<()> {
+    method.is_pub = modifiers.is_pub;
+    method.is_static = modifiers.is_static;
+    method.is_override = modifiers.is_override;
+    method.is_final = modifiers.is_final;
+    method.is_abstract = modifiers.is_abstract;
 
-    if is_static {
+    if modifiers.is_static {
         method.self_type = SelfType::None;
-        if is_override {
+        if modifiers.is_override {
             bail!("Static methods cannot be override");
         }
     }
-    if is_final && is_override {
+    if modifiers.is_final && modifiers.is_override {
         bail!("Methods cannot be both final and override");
     }
-    if is_abstract && is_final {
+    if modifiers.is_abstract && modifiers.is_final {
         bail!("Methods cannot be both abstract and final");
     }
-    if is_abstract && is_static {
+    if modifiers.is_abstract && modifiers.is_static {
         bail!("Static methods cannot be abstract");
     }
     Ok(())
