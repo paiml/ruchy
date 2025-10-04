@@ -61,7 +61,7 @@ fn extract_assertions_recursive(expr: &Expr, assertions: &mut Vec<String>) {
             condition,
             then_branch,
             else_branch,
-        } => extract_from_if(condition, then_branch, else_branch, assertions),
+        } => extract_from_if(condition, then_branch, else_branch.as_deref(), assertions),
         ExprKind::Match { expr, arms } => extract_from_match(expr, arms, assertions),
         ExprKind::Lambda { body, .. } => extract_assertions_recursive(body, assertions),
         _ => {}
@@ -95,7 +95,7 @@ fn extract_from_let(value: &Expr, body: &Expr, assertions: &mut Vec<String>) {
 fn extract_from_if(
     condition: &Expr,
     then_branch: &Expr,
-    else_branch: &Option<Box<Expr>>,
+    else_branch: Option<&Expr>,
     assertions: &mut Vec<String>,
 ) {
     extract_assertions_recursive(condition, assertions);

@@ -64,7 +64,7 @@ fn parse_single_state_field(
 ) -> Result<()> {
     match state.tokens.peek() {
         Some((Token::State, _)) => parse_state_block(state, state_fields),
-        Some((Token::Mut, _)) | Some((Token::Identifier(_), _)) => {
+        Some((Token::Mut | Token::Identifier(_), _)) => {
             parse_inline_state_field(state, state_fields)
         }
         _ => Ok(()), // Exit loop on unexpected token

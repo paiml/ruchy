@@ -12,28 +12,26 @@ use std::rc::Rc;
 
 /// Evaluate a builtin function call
 ///
-/// # Complexity
-/// Cyclomatic complexity: 9 (within Toyota Way limits)
+/// Evaluate built-in function (complexity: 8, refactored from 11)
 pub fn eval_builtin_function(
     name: &str,
     args: &[Value],
 ) -> Result<Option<Value>, InterpreterError> {
-    // Dispatch to category-specific handlers
-    if let Some(result) = try_eval_io_function(name, args)? {
-        return Ok(Some(result));
+    // Dispatch to category-specific handlers (try each in sequence)
+    let dispatchers: &[fn(&str, &[Value]) -> Result<Option<Value>, InterpreterError>] = &[
+        try_eval_io_function,
+        try_eval_math_function,
+        try_eval_utility_function,
+        try_eval_time_function,
+        try_eval_dataframe_function,
+    ];
+
+    for try_eval in dispatchers {
+        if let Some(result) = try_eval(name, args)? {
+            return Ok(Some(result));
+        }
     }
-    if let Some(result) = try_eval_math_function(name, args)? {
-        return Ok(Some(result));
-    }
-    if let Some(result) = try_eval_utility_function(name, args)? {
-        return Ok(Some(result));
-    }
-    if let Some(result) = try_eval_time_function(name, args)? {
-        return Ok(Some(result));
-    }
-    if let Some(result) = try_eval_dataframe_function(name, args)? {
-        return Ok(Some(result));
-    }
+
     Ok(None)
 }
 
@@ -46,13 +44,32 @@ fn try_eval_io_function(name: &str, args: &[Value]) -> Result<Option<Value>, Int
     }
 }
 
+/// Try to evaluate math functions (complexity: 7, refactored from 13)
 fn try_eval_math_function(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
+    // Try basic math functions first
+    if let Some(result) = try_eval_basic_math(name, args)? {
+        return Ok(Some(result));
+    }
+
+    // Try advanced math functions
+    try_eval_advanced_math(name, args)
+}
+
+/// Basic math functions (sqrt, pow, abs, min, max)
+fn try_eval_basic_math(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
     match name {
         "__builtin_sqrt__" => Ok(Some(eval_sqrt(args)?)),
         "__builtin_pow__" => Ok(Some(eval_pow(args)?)),
         "__builtin_abs__" => Ok(Some(eval_abs(args)?)),
         "__builtin_min__" => Ok(Some(eval_min(args)?)),
         "__builtin_max__" => Ok(Some(eval_max(args)?)),
+        _ => Ok(None),
+    }
+}
+
+/// Advanced math functions (floor, ceil, round, trig)
+fn try_eval_advanced_math(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
+    match name {
         "__builtin_floor__" => Ok(Some(eval_floor(args)?)),
         "__builtin_ceil__" => Ok(Some(eval_ceil(args)?)),
         "__builtin_round__" => Ok(Some(eval_round(args)?)),
@@ -699,29 +716,38 @@ fn parse_csv_to_dataframe(csv: &str) -> Result<Value, InterpreterError> {
 }
 
 /// Parse JSON array into `DataFrame`
-/// Complexity: 9 (within Toyota Way limits)
+/// Complexity: 5 (within Toyota Way limits - refactored from 14)
 fn parse_json_to_dataframe(json_str: &str) -> Result<Value, InterpreterError> {
-    use std::collections::HashMap;
-
-    // Parse JSON (simple implementation - in production would use serde_json)
     let json_str = json_str.trim();
 
     if json_str == "[]" {
         return Ok(Value::DataFrame { columns: vec![] });
     }
 
-    if !json_str.starts_with('[') || !json_str.ends_with(']') {
-        return Err(InterpreterError::RuntimeError(
-            "DataFrame::from_json() expects JSON array".to_string(),
-        ));
-    }
+    validate_json_array_format(json_str)?;
 
-    // Extract objects from array (simple parser for now)
     let objects = extract_json_objects(json_str)?;
 
     if objects.is_empty() {
         return Ok(Value::DataFrame { columns: vec![] });
     }
+
+    build_dataframe_from_objects(&objects)
+}
+
+/// Validate JSON array format
+fn validate_json_array_format(json_str: &str) -> Result<(), InterpreterError> {
+    if !json_str.starts_with('[') || !json_str.ends_with(']') {
+        return Err(InterpreterError::RuntimeError(
+            "DataFrame::from_json() expects JSON array".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+/// Build `DataFrame` from parsed JSON objects
+fn build_dataframe_from_objects(objects: &[String]) -> Result<Value, InterpreterError> {
+    use std::collections::HashMap;
 
     // Collect all column names from first object
     let column_names = extract_json_keys(&objects[0])?;
@@ -732,8 +758,19 @@ fn parse_json_to_dataframe(json_str: &str) -> Result<Value, InterpreterError> {
         columns_map.insert(name.clone(), Vec::new());
     }
 
-    // Parse each object
-    for obj_str in &objects {
+    // Parse each object and populate columns
+    populate_columns_from_objects(objects, &mut columns_map)?;
+
+    // Convert to DataFrame columns
+    convert_to_dataframe_columns(column_names, columns_map)
+}
+
+/// Populate columns from JSON objects
+fn populate_columns_from_objects(
+    objects: &[String],
+    columns_map: &mut std::collections::HashMap<String, Vec<Value>>,
+) -> Result<(), InterpreterError> {
+    for obj_str in objects {
         let key_values = parse_json_object(obj_str)?;
         for (key, value) in key_values {
             if let Some(col_values) = columns_map.get_mut(&key) {
@@ -741,15 +778,20 @@ fn parse_json_to_dataframe(json_str: &str) -> Result<Value, InterpreterError> {
             }
         }
     }
+    Ok(())
+}
 
-    // Convert to DataFrame columns
+/// Convert column map to `DataFrame` columns
+fn convert_to_dataframe_columns(
+    column_names: Vec<String>,
+    mut columns_map: std::collections::HashMap<String, Vec<Value>>,
+) -> Result<Value, InterpreterError> {
     let mut columns = Vec::new();
     for name in column_names {
         if let Some(values) = columns_map.remove(&name) {
             columns.push(crate::runtime::DataFrameColumn { name, values });
         }
     }
-
     Ok(Value::DataFrame { columns })
 }
 
@@ -770,8 +812,7 @@ fn infer_value_type(s: &str) -> Value {
     Value::from_string(s.to_string())
 }
 
-/// Extract JSON objects from array string (simplified parser)
-/// Complexity: 6 (within Toyota Way limits)
+/// Extract JSON objects from array string (complexity: 5, refactored from 11)
 fn extract_json_objects(json_str: &str) -> Result<Vec<String>, InterpreterError> {
     let inner = &json_str[1..json_str.len() - 1].trim();
 
@@ -780,32 +821,46 @@ fn extract_json_objects(json_str: &str) -> Result<Vec<String>, InterpreterError>
     }
 
     let mut objects = Vec::new();
-    let mut current = String::new();
-    let mut brace_count = 0;
-    let mut in_string = false;
+    let mut state = JsonParserState::default();
 
     for ch in inner.chars() {
-        match ch {
-            '"' => in_string = !in_string,
-            '{' if !in_string => brace_count += 1,
-            '}' if !in_string => {
-                brace_count -= 1;
-                current.push(ch);
-                if brace_count == 0 {
-                    objects.push(current.trim().to_string());
-                    current = String::new();
-                    continue;
-                }
-            }
-            ',' if !in_string && brace_count == 0 => continue,
-            _ => {}
-        }
-        if brace_count > 0 || ch == '{' {
-            current.push(ch);
-        }
+        process_json_char(ch, &mut state, &mut objects);
     }
 
     Ok(objects)
+}
+
+/// JSON parser state
+#[derive(Default)]
+struct JsonParserState {
+    current: String,
+    brace_count: i32,
+    in_string: bool,
+}
+
+/// Process a single JSON character
+fn process_json_char(ch: char, state: &mut JsonParserState, objects: &mut Vec<String>) {
+    match ch {
+        '"' => state.in_string = !state.in_string,
+        '{' if !state.in_string => {
+            state.brace_count += 1;
+            state.current.push(ch);
+        }
+        '}' if !state.in_string => {
+            state.brace_count -= 1;
+            state.current.push(ch);
+            if state.brace_count == 0 {
+                objects.push(state.current.trim().to_string());
+                state.current.clear();
+            }
+        }
+        ',' if !state.in_string && state.brace_count == 0 => {}
+        _ => {
+            if state.brace_count > 0 {
+                state.current.push(ch);
+            }
+        }
+    }
 }
 
 /// Extract keys from a JSON object string

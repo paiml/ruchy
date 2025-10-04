@@ -555,7 +555,14 @@ fn analyze_expr(
             condition,
             then_branch,
             else_branch,
-        } => analyze_if(condition, then_branch, else_branch, metrics, depth, nesting),
+        } => analyze_if(
+            condition,
+            then_branch,
+            else_branch.as_deref(),
+            metrics,
+            depth,
+            nesting,
+        ),
         ExprKind::While {
             condition, body, ..
         } => analyze_while(condition, body, metrics, depth, nesting),
@@ -587,7 +594,7 @@ fn analyze_block(
 fn analyze_if(
     condition: &crate::frontend::ast::Expr,
     then_branch: &crate::frontend::ast::Expr,
-    else_branch: &Option<Box<crate::frontend::ast::Expr>>,
+    else_branch: Option<&crate::frontend::ast::Expr>,
     metrics: &mut AstMetrics,
     depth: usize,
     nesting: usize,
@@ -878,7 +885,7 @@ fn has_unreachable_code(ast: &crate::frontend::ast::Expr) -> bool {
             condition,
             then_branch,
             else_branch,
-        } => check_if_unreachable(condition, then_branch, else_branch),
+        } => check_if_unreachable(condition, then_branch, else_branch.as_deref()),
         _ => false,
     }
 }
@@ -898,7 +905,7 @@ fn check_block_unreachable(exprs: &[crate::frontend::ast::Expr]) -> bool {
 fn check_if_unreachable(
     condition: &crate::frontend::ast::Expr,
     then_branch: &crate::frontend::ast::Expr,
-    else_branch: &Option<Box<crate::frontend::ast::Expr>>,
+    else_branch: Option<&crate::frontend::ast::Expr>,
 ) -> bool {
     has_unreachable_code(condition)
         || has_unreachable_code(then_branch)
@@ -1019,13 +1026,13 @@ fn analyze_complexity_recursive(
             ..
         } => analyze_loop_complexity(iter, body, nested_loops, recursive_calls, current_nesting),
         ExprKind::Call { func, args } => {
-            analyze_call_complexity(func, args, nested_loops, recursive_calls, current_nesting)
+            analyze_call_complexity(func, args, nested_loops, recursive_calls, current_nesting);
         }
         ExprKind::Block(exprs) => {
-            analyze_block_complexity(exprs, nested_loops, recursive_calls, current_nesting)
+            analyze_block_complexity(exprs, nested_loops, recursive_calls, current_nesting);
         }
         ExprKind::Function { body, .. } => {
-            analyze_complexity_recursive(body, nested_loops, recursive_calls, 0)
+            analyze_complexity_recursive(body, nested_loops, recursive_calls, 0);
         }
         ExprKind::If {
             condition,
@@ -1034,7 +1041,7 @@ fn analyze_complexity_recursive(
         } => analyze_if_complexity(
             condition,
             then_branch,
-            else_branch,
+            else_branch.as_deref(),
             nested_loops,
             recursive_calls,
             current_nesting,
@@ -1087,7 +1094,7 @@ fn analyze_block_complexity(
 fn analyze_if_complexity(
     condition: &crate::frontend::ast::Expr,
     then_branch: &crate::frontend::ast::Expr,
-    else_branch: &Option<Box<crate::frontend::ast::Expr>>,
+    else_branch: Option<&crate::frontend::ast::Expr>,
     nested_loops: &mut i32,
     recursive_calls: &mut i32,
     current_nesting: i32,
