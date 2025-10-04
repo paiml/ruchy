@@ -349,6 +349,7 @@ fn test_transpile_while() {
                 attributes: vec![],
             }),
             body: Box::new(make_literal(1)),
+            label: None,
         },
         span: Span::default(),
         attributes: vec![],
@@ -468,7 +469,10 @@ fn test_transpile_not() {
 fn test_transpile_break() {
     let transpiler = Transpiler::new();
     let expr = Expr {
-        kind: ExprKind::Break { label: None },
+        kind: ExprKind::Break {
+            label: None,
+            value: None,
+        },
         span: Span::default(),
         attributes: vec![],
     };
@@ -482,6 +486,7 @@ fn test_transpile_break_with_label() {
     let expr = Expr {
         kind: ExprKind::Break {
             label: Some("outer".to_string()),
+            value: None,
         },
         span: Span::default(),
         attributes: vec![],
