@@ -216,4 +216,76 @@ test.describe('Ruchy REPL WASM E2E Tests', () => {
       await expect(output).toContainText(`command${i}`);
     }
   });
+
+  test('should parse simple expressions', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.locator('#status')).toHaveClass(/status-ready/, { timeout: 10000 });
+
+    const input = page.locator('#repl-input');
+    const output = page.locator('#output');
+
+    // Test arithmetic expression
+    await input.fill('2 + 2');
+    await input.press('Enter');
+
+    // Should show the expression and parsed AST
+    await expect(output).toContainText('2 + 2');
+    // Should show Binary operation in AST (current WASM REPL behavior)
+    await expect(output).toContainText('Binary', { timeout: 2000 });
+    await expect(output).toContainText('Integer(2)');
+  });
+
+  test('should parse variable declarations', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.locator('#status')).toHaveClass(/status-ready/, { timeout: 10000 });
+
+    const input = page.locator('#repl-input');
+    const output = page.locator('#output');
+
+    // Declare a variable
+    await input.fill('let x = 42');
+    await input.press('Enter');
+
+    // Should show the declaration and parsed AST
+    await expect(output).toContainText('let x = 42');
+    // Should show parsed structure (current WASM REPL behavior)
+    await expect(output).toContainText('Let');
+    await expect(output).toContainText('name: "x"');
+    await expect(output).toContainText('Integer(42)');
+  });
+
+  test('should parse function definitions', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.locator('#status')).toHaveClass(/status-ready/, { timeout: 10000 });
+
+    const input = page.locator('#repl-input');
+    const output = page.locator('#output');
+
+    // Define a function
+    await input.fill('fun double(n) { n * 2 }');
+    await input.press('Enter');
+
+    // Should show the function definition and parsed AST
+    await expect(output).toContainText('fun double');
+    // Should show Function in parsed structure (current WASM REPL behavior)
+    await expect(output).toContainText('Function');
+    await expect(output).toContainText('name: "double"');
+  });
+
+  test('should handle parse errors gracefully', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.locator('#status')).toHaveClass(/status-ready/, { timeout: 10000 });
+
+    const input = page.locator('#repl-input');
+    const output = page.locator('#output');
+
+    // Execute invalid syntax
+    await input.fill('let x = ');
+    await input.press('Enter');
+
+    // The REPL should show the input and an error
+    await expect(output).toContainText('let x = ');
+    // Should show some form of error indication
+    await expect(output).toContainText('Error', { timeout: 2000 });
+  });
 });
