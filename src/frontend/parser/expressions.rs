@@ -417,39 +417,45 @@ fn parse_literal_token(state: &mut ParserState, token: &Token, span: Span) -> Re
 }
 /// Parse identifier tokens (Identifier, Underscore, fat arrow lambdas)
 /// Extracted from `parse_prefix` to reduce complexity
+/// Parse a single path segment after :: (complexity: 5)
+fn parse_path_segment(state: &mut ParserState) -> Result<String> {
+    if matches!(state.tokens.peek(), Some((Token::Less, _))) {
+        // Parse turbofish generic arguments
+        parse_turbofish_generics(state)
+    } else if let Some((Token::Identifier(segment), _)) = state.tokens.peek() {
+        let segment = segment.clone();
+        state.tokens.advance();
+        Ok(segment)
+    } else if matches!(state.tokens.peek(), Some((Token::Star, _))) {
+        // Handle wildcard in qualified names (for use statements)
+        state.tokens.advance();
+        Ok("*".to_string())
+    } else if let Some((Token::From, _)) = state.tokens.peek() {
+        // Allow 'from' keyword as method name (e.g., String::from)
+        state.tokens.advance();
+        Ok("from".to_string())
+    } else {
+        bail!("Expected identifier or '*' after '::'")
+    }
+}
+
+/// Parse module path segments separated by :: (complexity: 3)
+fn parse_module_path_segments(state: &mut ParserState, initial: String) -> Result<String> {
+    let mut path = vec![initial];
+    while matches!(state.tokens.peek(), Some((Token::ColonColon, _))) {
+        state.tokens.advance(); // consume ::
+        path.push(parse_path_segment(state)?);
+    }
+    Ok(path.join("::"))
+}
+
 fn parse_identifier_token(state: &mut ParserState, token: &Token, span: Span) -> Result<Expr> {
     match token {
         Token::Identifier(name) => {
             state.tokens.advance();
             // Check for module path: math::add
             if matches!(state.tokens.peek(), Some((Token::ColonColon, _))) {
-                let mut path = vec![name.clone()];
-                while matches!(state.tokens.peek(), Some((Token::ColonColon, _))) {
-                    state.tokens.advance(); // consume ::
-
-                    // Check for turbofish syntax: Vec::<i32>
-                    if matches!(state.tokens.peek(), Some((Token::Less, _))) {
-                        // Parse turbofish generic arguments
-                        let turbofish = parse_turbofish_generics(state)?;
-                        path.push(turbofish);
-                        // After turbofish, loop continues to check for more :: segments
-                    } else if let Some((Token::Identifier(segment), _)) = state.tokens.peek() {
-                        path.push(segment.clone());
-                        state.tokens.advance();
-                    } else if matches!(state.tokens.peek(), Some((Token::Star, _))) {
-                        // Handle wildcard in qualified names (for use statements)
-                        path.push("*".to_string());
-                        state.tokens.advance();
-                    } else if let Some((Token::From, _)) = state.tokens.peek() {
-                        // Allow 'from' keyword as method name (e.g., String::from)
-                        path.push("from".to_string());
-                        state.tokens.advance();
-                    } else {
-                        bail!("Expected identifier or '*' after '::'");
-                    }
-                }
-                // Create a qualified name expression
-                let qualified_name = path.join("::");
+                let qualified_name = parse_module_path_segments(state, name.clone())?;
                 Ok(Expr::new(ExprKind::Identifier(qualified_name), span))
             }
             // Check for fat arrow lambda: x => x * 2
