@@ -1552,55 +1552,18 @@ fn parse_struct_pattern_fields(state: &mut ParserState, name: String) -> Result<
     let mut has_rest = false;
 
     while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
-        // Check for rest pattern (..)
         if matches!(state.tokens.peek(), Some((Token::DotDot, _))) {
-            state.tokens.advance(); // consume '..'
-            has_rest = true;
-            // Rest must be last, allow optional trailing comma
-            if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
-                state.tokens.advance(); // consume ','
-            }
-            if !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
-                bail!("Rest pattern (..) must be the last field in struct pattern");
-            }
+            has_rest = parse_struct_rest_pattern(state)?;
             break;
         }
 
-        // Parse field name
-        if let Some((Token::Identifier(field_name), _)) = state.tokens.peek() {
-            let field_name = field_name.clone();
-            state.tokens.advance();
+        fields.push(parse_struct_field_pattern(state)?);
 
-            // Check for field pattern: field_name: pattern
-            let pattern = if matches!(state.tokens.peek(), Some((Token::Colon, _))) {
-                state.tokens.advance(); // consume ':'
-                Some(parse_match_pattern(state)?)
-            } else {
-                None // Shorthand syntax: field name is the variable name
-            };
-
-            let field = crate::frontend::ast::StructPatternField {
-                name: field_name,
-                pattern,
-            };
-            fields.push(field);
-
-            // After parsing a field, check for comma or end
-            if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
-                state.tokens.advance(); // consume ','
-                                        // If we see RightBrace after comma, it's a trailing comma - that's ok
-                if matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
-                    break;
-                }
-            } else if !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
-                bail!("Expected comma or closing brace after struct pattern field");
-            }
-        } else {
-            bail!("Expected identifier or '..' in struct pattern");
+        if !handle_struct_field_separator(state)? {
+            break;
         }
     }
 
-    // Consume the closing brace
     state.tokens.expect(&Token::RightBrace)?;
 
     Ok(Pattern::Struct {
@@ -1608,6 +1571,55 @@ fn parse_struct_pattern_fields(state: &mut ParserState, name: String) -> Result<
         fields,
         has_rest,
     })
+}
+
+fn parse_struct_rest_pattern(state: &mut ParserState) -> Result<bool> {
+    state.tokens.advance(); // consume '..'
+
+    if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+        state.tokens.advance();
+    }
+
+    if !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
+        bail!("Rest pattern (..) must be the last field in struct pattern");
+    }
+
+    Ok(true)
+}
+
+fn parse_struct_field_pattern(
+    state: &mut ParserState,
+) -> Result<crate::frontend::ast::StructPatternField> {
+    let field_name = if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
+        name.clone()
+    } else {
+        bail!("Expected identifier or '..' in struct pattern")
+    };
+    state.tokens.advance();
+
+    let pattern = if matches!(state.tokens.peek(), Some((Token::Colon, _))) {
+        state.tokens.advance();
+        Some(parse_match_pattern(state)?)
+    } else {
+        None
+    };
+
+    Ok(crate::frontend::ast::StructPatternField {
+        name: field_name,
+        pattern,
+    })
+}
+
+fn handle_struct_field_separator(state: &mut ParserState) -> Result<bool> {
+    if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+        state.tokens.advance();
+        // Trailing comma before closing brace is ok
+        Ok(!matches!(state.tokens.peek(), Some((Token::RightBrace, _))))
+    } else if matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
+        Ok(false)
+    } else {
+        bail!("Expected comma or closing brace after struct pattern field")
+    }
 }
 pub fn parse_list_pattern(state: &mut ParserState) -> Result<Pattern> {
     state.tokens.expect(&Token::LeftBracket)?;
