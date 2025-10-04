@@ -114,6 +114,20 @@ Extract Method + DRY refactoring applied:
 **TDG Improvement**: 77.3→77.4 (B), improved maintainability
 **Code Deduplication**: ~30 lines of duplicate token handling removed
 
+#### 8. Complexity Refactoring (Batch 13)
+**Violations: 119 stable (improved structure)**
+
+Extract Method refactoring applied:
+- `parse_identifier_token`: ~12→5 (58% reduction, extracted module path logic)
+
+**Helpers Created**:
+- `parse_path_segment`: Parse single path segment after :: (complexity: 5)
+- `parse_module_path_segments`: Build qualified paths from segments (complexity: 3)
+
+**Method**: Extract Method + Single Responsibility
+**Quality**: Zero warnings in modified file, all tests passing, P0 validation passing
+**TDG Improvement**: 74.7→74.7 (C+), improved maintainability
+
 ### Current Status
 
 | Category | Count | Target |
@@ -134,7 +148,8 @@ Extract Method + DRY refactoring applied:
 
 ### Session Statistics
 
-- **Functions Refactored**: 22 total
+- **Functions Refactored**: 23 total
+- **Helpers Created**: 30 total
 - **Average Complexity Reduction**: 58%
 - **Code Deduplication**: ~220 lines removed
 - **Tests Enabled**: 15 new passing tests
