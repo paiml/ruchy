@@ -489,60 +489,37 @@ fn parse_named_type(state: &mut ParserState, span: Span) -> Result<Type> {
     }
 }
 // Helper: Parse qualified name like std::collections::HashMap (complexity: 6)
-fn parse_qualified_name(state: &mut ParserState) -> Result<String> {
-    let mut name = match state.tokens.peek() {
-        Some((Token::Identifier(n), _)) => {
-            let name = n.clone();
-            state.tokens.advance();
-            name
-        }
-        // Handle special tokens that can be type names
-        Some((Token::Result, _)) => {
-            state.tokens.advance();
-            "Result".to_string()
-        }
-        Some((Token::Option, _)) => {
-            state.tokens.advance();
-            "Option".to_string()
-        }
-        Some((Token::Ok, _)) => {
-            state.tokens.advance();
-            "Ok".to_string()
-        }
-        Some((Token::Err, _)) => {
-            state.tokens.advance();
-            "Err".to_string()
-        }
-        Some((Token::Some, _)) => {
-            state.tokens.advance();
-            "Some".to_string()
-        }
-        Some((Token::DataFrame, _)) => {
-            state.tokens.advance();
-            "DataFrame".to_string()
-        }
-        Some((Token::None | Token::Null, _)) => {
-            state.tokens.advance();
-            "None".to_string()
-        }
-        _ => bail!("Expected identifier"),
+/// Parse special tokens as type name strings (complexity: 3)
+fn parse_type_token_as_string(state: &mut ParserState) -> Option<String> {
+    let token_str = match state.tokens.peek() {
+        Some((Token::Identifier(n), _)) => Some(n.clone()),
+        Some((Token::Result, _)) => Some("Result".to_string()),
+        Some((Token::Option, _)) => Some("Option".to_string()),
+        Some((Token::Ok, _)) => Some("Ok".to_string()),
+        Some((Token::Err, _)) => Some("Err".to_string()),
+        Some((Token::Some, _)) => Some("Some".to_string()),
+        Some((Token::DataFrame, _)) => Some("DataFrame".to_string()),
+        Some((Token::None | Token::Null, _)) => Some("None".to_string()),
+        _ => None,
     };
+
+    if token_str.is_some() {
+        state.tokens.advance();
+    }
+
+    token_str
+}
+
+fn parse_qualified_name(state: &mut ParserState) -> Result<String> {
+    let mut name =
+        parse_type_token_as_string(state).ok_or_else(|| anyhow::anyhow!("Expected identifier"))?;
+
     while matches!(state.tokens.peek(), Some((Token::ColonColon, _))) {
         state.tokens.advance(); // consume ::
-        let next_name = match state.tokens.peek() {
-            Some((Token::Identifier(next), _)) => next.clone(),
-            // Handle special tokens that can be type names
-            Some((Token::Result, _)) => "Result".to_string(),
-            Some((Token::Option, _)) => "Option".to_string(),
-            Some((Token::Ok, _)) => "Ok".to_string(),
-            Some((Token::Err, _)) => "Err".to_string(),
-            Some((Token::Some, _)) => "Some".to_string(),
-            Some((Token::None | Token::Null, _)) => "None".to_string(),
-            _ => bail!("Expected identifier after :: in type name"),
-        };
+        let next_name = parse_type_token_as_string(state)
+            .ok_or_else(|| anyhow::anyhow!("Expected identifier after :: in type name"))?;
         name.push_str("::");
         name.push_str(&next_name);
-        state.tokens.advance();
     }
     Ok(name)
 }
