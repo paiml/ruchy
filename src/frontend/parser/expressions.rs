@@ -2772,48 +2772,10 @@ fn parse_struct_fields(state: &mut ParserState) -> Result<Vec<StructField>> {
 
 /// Parse struct field visibility modifiers - complexity: 6
 fn parse_struct_field_modifiers(state: &mut ParserState) -> Result<(Visibility, bool)> {
-    let mut visibility = Visibility::Private;
-    let mut is_mut = false;
+    let mut visibility = parse_pub_visibility(state)?;
+    let is_mut = parse_mut_modifier(state);
 
-    // Check for pub or pub(crate)
-    if matches!(state.tokens.peek(), Some((Token::Pub, _))) {
-        state.tokens.advance();
-        visibility = Visibility::Public;
-
-        // Check for pub(crate) syntax
-        if matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
-            state.tokens.advance();
-            match state.tokens.peek() {
-                Some((Token::Crate, _)) => {
-                    state.tokens.advance();
-                    state.tokens.expect(&Token::RightParen)?;
-                    visibility = Visibility::PubCrate;
-                }
-                Some((Token::Super, _)) => {
-                    state.tokens.advance();
-                    state.tokens.expect(&Token::RightParen)?;
-                    visibility = Visibility::PubSuper;
-                }
-                Some((Token::Identifier(scope), _)) => {
-                    let scope = scope.clone();
-                    state.tokens.advance();
-                    state.tokens.expect(&Token::RightParen)?;
-                    bail!("Unsupported visibility scope: pub({}) - only pub(crate) and pub(super) are supported", scope);
-                }
-                _ => {
-                    bail!("Expected 'crate', 'super', or identifier after 'pub('");
-                }
-            }
-        }
-    }
-
-    // Check for mut modifier
-    if matches!(state.tokens.peek(), Some((Token::Mut, _))) {
-        state.tokens.advance();
-        is_mut = true;
-    }
-
-    // Also check reverse order: mut pub
+    // Check reverse order: mut pub
     if matches!(visibility, Visibility::Private)
         && matches!(state.tokens.peek(), Some((Token::Pub, _)))
     {
@@ -2821,16 +2783,65 @@ fn parse_struct_field_modifiers(state: &mut ParserState) -> Result<(Visibility, 
         visibility = Visibility::Public;
     }
 
-    // Check for "private" keyword (special Ruchy extension)
-    // Note: private is the default, but we parse it for explicit specification
+    parse_private_keyword(state);
+
+    Ok((visibility, is_mut))
+}
+
+fn parse_pub_visibility(state: &mut ParserState) -> Result<Visibility> {
+    if !matches!(state.tokens.peek(), Some((Token::Pub, _))) {
+        return Ok(Visibility::Private);
+    }
+
+    state.tokens.advance();
+
+    if matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
+        parse_scoped_visibility(state)
+    } else {
+        Ok(Visibility::Public)
+    }
+}
+
+fn parse_scoped_visibility(state: &mut ParserState) -> Result<Visibility> {
+    state.tokens.advance(); // consume (
+
+    let visibility = match state.tokens.peek() {
+        Some((Token::Crate, _)) => {
+            state.tokens.advance();
+            Visibility::PubCrate
+        }
+        Some((Token::Super, _)) => {
+            state.tokens.advance();
+            Visibility::PubSuper
+        }
+        Some((Token::Identifier(scope), _)) => {
+            let scope = scope.clone();
+            state.tokens.advance();
+            state.tokens.expect(&Token::RightParen)?;
+            bail!("Unsupported visibility scope: pub({}) - only pub(crate) and pub(super) are supported", scope);
+        }
+        _ => bail!("Expected 'crate', 'super', or identifier after 'pub('"),
+    };
+
+    state.tokens.expect(&Token::RightParen)?;
+    Ok(visibility)
+}
+
+fn parse_mut_modifier(state: &mut ParserState) -> bool {
+    if matches!(state.tokens.peek(), Some((Token::Mut, _))) {
+        state.tokens.advance();
+        true
+    } else {
+        false
+    }
+}
+
+fn parse_private_keyword(state: &mut ParserState) {
     if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
         if name == "private" {
             state.tokens.advance();
-            // visibility remains Private
         }
     }
-
-    Ok((visibility, is_mut))
 }
 /// Parse a single struct field (name: Type) - complexity: 5
 fn parse_single_struct_field(state: &mut ParserState) -> Result<(String, Type, Option<Expr>)> {
@@ -4535,57 +4546,78 @@ pub fn get_precedence(op: BinaryOp) -> i32 {
 }
 /// Parse f-string content into interpolation parts
 fn parse_fstring_into_parts(input: &str) -> Result<Vec<StringPart>> {
-    use crate::frontend::parser::Parser;
     let mut parts = Vec::new();
     let mut current = String::new();
     let mut chars = input.chars().peekable();
+
     while let Some(ch) = chars.next() {
-        if ch == '{' {
-            if chars.peek() == Some(&'{') {
-                // Escaped brace
-                chars.next();
-                current.push('{');
-            } else {
-                // Save text part if any
-                if !current.is_empty() {
-                    parts.push(StringPart::Text(current.clone()));
-                    current.clear();
-                }
-                // Extract and parse expression
-                let expr_str = extract_fstring_expr(&mut chars)?;
-                // Check for format specifier
-                if let Some(colon_pos) = expr_str.find(':') {
-                    let expr_part = &expr_str[..colon_pos];
-                    let format_spec = &expr_str[colon_pos..];
-                    let mut parser = Parser::new(expr_part);
-                    let expr = parser.parse_expr()?;
-                    parts.push(StringPart::ExprWithFormat {
-                        expr: Box::new(expr),
-                        format_spec: format_spec.to_string(),
-                    });
-                } else {
-                    let mut parser = Parser::new(&expr_str);
-                    let expr = parser.parse_expr()?;
-                    parts.push(StringPart::Expr(Box::new(expr)));
-                }
-            }
-        } else if ch == '}' {
-            if chars.peek() == Some(&'}') {
-                // Escaped brace
-                chars.next();
-                current.push('}');
-            } else {
-                bail!("Unmatched '}}' in f-string");
-            }
-        } else {
-            current.push(ch);
+        match ch {
+            '{' => handle_opening_brace(&mut chars, &mut parts, &mut current)?,
+            '}' => handle_closing_brace(&mut chars, &mut current)?,
+            _ => current.push(ch),
         }
     }
-    // Add remaining text
+
     if !current.is_empty() {
         parts.push(StringPart::Text(current));
     }
+
     Ok(parts)
+}
+
+fn handle_opening_brace(
+    chars: &mut std::iter::Peekable<std::str::Chars>,
+    parts: &mut Vec<StringPart>,
+    current: &mut String,
+) -> Result<()> {
+    if chars.peek() == Some(&'{') {
+        chars.next();
+        current.push('{');
+    } else {
+        flush_text_part(parts, current);
+        let expr_str = extract_fstring_expr(chars)?;
+        parts.push(parse_interpolation(&expr_str)?);
+    }
+    Ok(())
+}
+
+fn handle_closing_brace(
+    chars: &mut std::iter::Peekable<std::str::Chars>,
+    current: &mut String,
+) -> Result<()> {
+    if chars.peek() == Some(&'}') {
+        chars.next();
+        current.push('}');
+        Ok(())
+    } else {
+        bail!("Unmatched '}}' in f-string")
+    }
+}
+
+fn flush_text_part(parts: &mut Vec<StringPart>, current: &mut String) {
+    if !current.is_empty() {
+        parts.push(StringPart::Text(current.clone()));
+        current.clear();
+    }
+}
+
+fn parse_interpolation(expr_str: &str) -> Result<StringPart> {
+    use crate::frontend::parser::Parser;
+
+    if let Some(colon_pos) = expr_str.find(':') {
+        let expr_part = &expr_str[..colon_pos];
+        let format_spec = &expr_str[colon_pos..];
+        let mut parser = Parser::new(expr_part);
+        let expr = parser.parse_expr()?;
+        Ok(StringPart::ExprWithFormat {
+            expr: Box::new(expr),
+            format_spec: format_spec.to_string(),
+        })
+    } else {
+        let mut parser = Parser::new(expr_str);
+        let expr = parser.parse_expr()?;
+        Ok(StringPart::Expr(Box::new(expr)))
+    }
 }
 /// Extract expression from f-string between braces
 fn extract_fstring_expr(chars: &mut std::iter::Peekable<std::str::Chars>) -> Result<String> {
