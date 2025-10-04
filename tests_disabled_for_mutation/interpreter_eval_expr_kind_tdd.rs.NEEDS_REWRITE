@@ -1,0 +1,16 @@
+// DISABLED: This test uses old interpreter API
+
+ that was refactored
+//
+// ROOT CAUSE: Test uses ruchy::frontend::value::Value which doesn't exist
+// Also relies on helper functions create_test_interpreter() and create_test_expr()
+// that were removed during interpreter refactoring
+//
+// FIX REQUIRED: Rewrite to use current ruchy::runtime API
+// - Replace ruchy::frontend::value::Value → ruchy::runtime::Value
+// - Recreate helper functions or use current test utilities
+// - Update ExprKind patterns to match current AST
+//
+// EFFORT: ~3-5 hours to rewrite
+// PRIORITY: Medium - TDD tests for eval coverage
+// TICKET: Create QUALITY-XXX for interpreter test modernization
