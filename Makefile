@@ -1049,22 +1049,28 @@ tdd-quality:
 
 .PHONY: e2e-install e2e-install-deps wasm-build test-e2e test-e2e-ui test-e2e-debug test-e2e-headed wasm-quality-gate
 
-# Install Playwright and browsers
+# Install Playwright and browsers (Step 1: npm packages and browsers)
 e2e-install:
-	@echo "📦 Installing Playwright and dependencies..."
+	@echo "📦 Installing Playwright and browsers..."
 	@if [ ! -f "package.json" ]; then \
 		echo "❌ Error: package.json not found"; \
 		exit 1; \
 	fi
 	npm ci
-	npx playwright install --with-deps
-	@echo "✅ E2E dependencies installed"
+	npx playwright install
+	@echo "✅ Browsers installed"
+	@echo ""
+	@echo "⚠️  IMPORTANT: System dependencies required for WebKit"
+	@echo "Run: make e2e-install-deps (requires sudo)"
+	@echo "Or manually: sudo npx playwright install-deps"
 
-# Install only system dependencies (if browsers already installed)
+# Install system dependencies for WebKit (Step 2: requires sudo)
 e2e-install-deps:
 	@echo "📦 Installing system dependencies for Playwright..."
-	sudo npx playwright install-deps
+	@echo "⚠️  This requires sudo access"
+	sudo env "PATH=$$PATH" npx playwright install-deps
 	@echo "✅ System dependencies installed"
+	@echo "✅ E2E setup complete - ready to run: make test-e2e"
 
 # Build WASM module (placeholder - will be implemented)
 wasm-build:
