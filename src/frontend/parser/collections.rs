@@ -747,50 +747,16 @@ pub fn parse_list_comprehension(
     start_span: Span,
     element: Expr,
 ) -> Result<Expr> {
-    use crate::frontend::ast::ComprehensionClause;
-
-    // We've already parsed the element expression
-    // Now parse all for clauses with their optional conditions
     let mut clauses = Vec::new();
 
-    // Parse the first for clause (required)
+    // Parse first for clause (required)
     state.tokens.expect(&Token::For)?;
-    let variable = parse_comprehension_variable(state)?;
-    state.tokens.expect(&Token::In)?;
-    let iterable = parse_comprehension_iterable(state)?;
-
-    // Check for condition after first for clause
-    let mut condition = None;
-    if matches!(state.tokens.peek(), Some((Token::If, _))) {
-        state.tokens.advance(); // consume 'if'
-        condition = Some(Box::new(parse_condition_expr(state)?));
-    }
-
-    clauses.push(ComprehensionClause {
-        variable,
-        iterable: Box::new(iterable),
-        condition,
-    });
+    clauses.push(parse_for_clause(state)?);
 
     // Parse additional for clauses
     while matches!(state.tokens.peek(), Some((Token::For, _))) {
-        state.tokens.advance(); // consume 'for'
-        let var = parse_comprehension_variable(state)?;
-        state.tokens.expect(&Token::In)?;
-        let iter = parse_comprehension_iterable(state)?;
-
-        // Check for condition after this for clause
-        let mut cond = None;
-        if matches!(state.tokens.peek(), Some((Token::If, _))) {
-            state.tokens.advance(); // consume 'if'
-            cond = Some(Box::new(parse_condition_expr(state)?));
-        }
-
-        clauses.push(ComprehensionClause {
-            variable: var,
-            iterable: Box::new(iter),
-            condition: cond,
-        });
+        state.tokens.advance();
+        clauses.push(parse_for_clause(state)?);
     }
 
     state.tokens.expect(&Token::RightBracket)?;
@@ -802,6 +768,25 @@ pub fn parse_list_comprehension(
         },
         start_span,
     ))
+}
+
+fn parse_for_clause(state: &mut ParserState) -> Result<crate::frontend::ast::ComprehensionClause> {
+    let variable = parse_comprehension_variable(state)?;
+    state.tokens.expect(&Token::In)?;
+    let iterable = parse_comprehension_iterable(state)?;
+
+    let condition = if matches!(state.tokens.peek(), Some((Token::If, _))) {
+        state.tokens.advance();
+        Some(Box::new(parse_condition_expr(state)?))
+    } else {
+        None
+    };
+
+    Ok(crate::frontend::ast::ComprehensionClause {
+        variable,
+        iterable: Box::new(iterable),
+        condition,
+    })
 }
 
 /// Parse comprehension iterable, stopping at 'for', 'if', or ']'
@@ -1346,109 +1331,126 @@ fn parse_dict_comprehension_continuation(
 /// Parse comprehension variable - supports patterns like Some(x), (a, b), or simple identifiers (complexity: 8)
 pub fn parse_comprehension_variable(state: &mut ParserState) -> Result<String> {
     match state.tokens.peek() {
-        Some((Token::LeftParen, _)) => {
-            // Handle tuple patterns like (k, v)
-            state.tokens.advance(); // consume (
-            let mut pattern_str = String::from("(");
-
-            // Parse first element
-            if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
-                pattern_str.push_str(name);
-                state.tokens.advance();
-            } else {
-                bail!("Expected identifier in tuple pattern");
-            }
-
-            // Parse remaining elements
-            while matches!(state.tokens.peek(), Some((Token::Comma, _))) {
-                state.tokens.advance(); // consume comma
-                pattern_str.push_str(", ");
-
-                if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
-                    pattern_str.push_str(name);
-                    state.tokens.advance();
-                } else {
-                    bail!("Expected identifier after comma in tuple pattern");
-                }
-            }
-
-            state.tokens.expect(&Token::RightParen)?;
-            pattern_str.push(')');
-            Ok(pattern_str)
-        }
-        Some((Token::Identifier(name), _)) => {
-            let name = name.clone();
-            state.tokens.advance();
-
-            // Check if it's followed by parentheses (constructor pattern)
-            if matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
-                state.tokens.advance(); // consume (
-                let mut pattern_str = format!("{name}(");
-
-                // Parse the inner pattern (for now, just simple identifiers)
-                if let Some((Token::Identifier(inner), _)) = state.tokens.peek() {
-                    pattern_str.push_str(inner);
-                    state.tokens.advance();
-                }
-
-                state.tokens.expect(&Token::RightParen)?;
-                pattern_str.push(')');
-                Ok(pattern_str)
-            } else {
-                Ok(name)
-            }
-        }
-        Some((Token::Some, _)) => {
-            state.tokens.advance(); // consume Some
-            state.tokens.expect(&Token::LeftParen)?;
-
-            let inner = if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
-                let name = name.clone();
-                state.tokens.advance();
-                name
-            } else {
-                bail!("Expected identifier inside Some pattern");
-            };
-
-            state.tokens.expect(&Token::RightParen)?;
-            Ok(format!("Some({inner})"))
-        }
-        Some((Token::None, _)) => {
-            state.tokens.advance();
-            Ok("None".to_string())
-        }
-        Some((Token::Ok, _)) => {
-            state.tokens.advance(); // consume Ok
-            state.tokens.expect(&Token::LeftParen)?;
-
-            let inner = if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
-                let name = name.clone();
-                state.tokens.advance();
-                name
-            } else {
-                bail!("Expected identifier inside Ok pattern");
-            };
-
-            state.tokens.expect(&Token::RightParen)?;
-            Ok(format!("Ok({inner})"))
-        }
-        Some((Token::Err, _)) => {
-            state.tokens.advance(); // consume Err
-            state.tokens.expect(&Token::LeftParen)?;
-
-            let inner = if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
-                let name = name.clone();
-                state.tokens.advance();
-                name
-            } else {
-                bail!("Expected identifier inside Err pattern");
-            };
-
-            state.tokens.expect(&Token::RightParen)?;
-            Ok(format!("Err({inner})"))
-        }
+        Some((Token::LeftParen, _)) => parse_tuple_pattern(state),
+        Some((Token::Identifier(_), _)) => parse_identifier_pattern(state),
+        Some((Token::Some, _)) => parse_option_some_pattern(state),
+        Some((Token::None, _)) => parse_option_none_pattern(state),
+        Some((Token::Ok, _)) => parse_result_ok_pattern(state),
+        Some((Token::Err, _)) => parse_result_err_pattern(state),
         _ => bail!("Expected pattern in comprehension variable"),
     }
+}
+
+fn parse_tuple_pattern(state: &mut ParserState) -> Result<String> {
+    state.tokens.advance(); // consume (
+    let mut pattern_str = String::from("(");
+
+    // Parse first element
+    if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
+        pattern_str.push_str(name);
+        state.tokens.advance();
+    } else {
+        bail!("Expected identifier in tuple pattern");
+    }
+
+    // Parse remaining elements
+    while matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+        state.tokens.advance();
+        pattern_str.push_str(", ");
+
+        if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
+            pattern_str.push_str(name);
+            state.tokens.advance();
+        } else {
+            bail!("Expected identifier after comma in tuple pattern");
+        }
+    }
+
+    state.tokens.expect(&Token::RightParen)?;
+    pattern_str.push(')');
+    Ok(pattern_str)
+}
+
+fn parse_identifier_pattern(state: &mut ParserState) -> Result<String> {
+    let name = if let Some((Token::Identifier(n), _)) = state.tokens.peek() {
+        n.clone()
+    } else {
+        bail!("Expected identifier")
+    };
+    state.tokens.advance();
+
+    if matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
+        parse_constructor_pattern(state, &name)
+    } else {
+        Ok(name)
+    }
+}
+
+fn parse_constructor_pattern(state: &mut ParserState, name: &str) -> Result<String> {
+    state.tokens.advance(); // consume (
+    let mut pattern_str = format!("{name}(");
+
+    if let Some((Token::Identifier(inner), _)) = state.tokens.peek() {
+        pattern_str.push_str(inner);
+        state.tokens.advance();
+    }
+
+    state.tokens.expect(&Token::RightParen)?;
+    pattern_str.push(')');
+    Ok(pattern_str)
+}
+
+fn parse_option_some_pattern(state: &mut ParserState) -> Result<String> {
+    state.tokens.advance(); // consume Some
+    state.tokens.expect(&Token::LeftParen)?;
+
+    let inner = if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
+        let name = name.clone();
+        state.tokens.advance();
+        name
+    } else {
+        bail!("Expected identifier inside Some pattern");
+    };
+
+    state.tokens.expect(&Token::RightParen)?;
+    Ok(format!("Some({inner})"))
+}
+
+fn parse_option_none_pattern(state: &mut ParserState) -> Result<String> {
+    state.tokens.advance();
+    Ok("None".to_string())
+}
+
+fn parse_result_ok_pattern(state: &mut ParserState) -> Result<String> {
+    state.tokens.advance(); // consume Ok
+    state.tokens.expect(&Token::LeftParen)?;
+
+    let inner = if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
+        let name = name.clone();
+        state.tokens.advance();
+        name
+    } else {
+        bail!("Expected identifier inside Ok pattern");
+    };
+
+    state.tokens.expect(&Token::RightParen)?;
+    Ok(format!("Ok({inner})"))
+}
+
+fn parse_result_err_pattern(state: &mut ParserState) -> Result<String> {
+    state.tokens.advance(); // consume Err
+    state.tokens.expect(&Token::LeftParen)?;
+
+    let inner = if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
+        let name = name.clone();
+        state.tokens.advance();
+        name
+    } else {
+        bail!("Expected identifier inside Err pattern");
+    };
+
+    state.tokens.expect(&Token::RightParen)?;
+    Ok(format!("Err({inner})"))
 }
 
 /// Try to parse a set literal: {expr, expr, ...}

@@ -630,8 +630,9 @@ mod tests {
         assert!(compile("x -= 5").is_ok());
         assert!(compile("x *= 5").is_ok());
         assert!(compile("x /= 5").is_ok());
-        // Special - TODO: implement optional chaining and nullish coalescing
-        // assert!(compile("x ?? y").is_ok());
+        // Nullish coalescing works (v1.9.0+)
+        assert!(compile("x ?? y").is_ok());
+        // TODO: implement optional chaining
         // assert!(compile("x?.y").is_ok());
     }
     #[test]
