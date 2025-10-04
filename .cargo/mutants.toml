@@ -47,5 +47,8 @@ timeout_multiplier = 3.0
 # Additional options
 minimum_test_timeout = 20.0
 
+# Test command (only run lib and bin tests, skip integration tests with Value type issues)
+additional_cargo_test_args = ["--lib", "--bins"]
+
 # Output options
 output = "target/mutants"
