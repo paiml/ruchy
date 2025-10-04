@@ -53,3 +53,11 @@ deep_context.md
 
 /target
 coverage-report/
+# NPM dependencies
+node_modules/
+package-lock.json
+
+# Playwright artifacts
+playwright-report/
+test-results/
+.playwright/
