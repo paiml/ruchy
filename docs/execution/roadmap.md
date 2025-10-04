@@ -115,23 +115,31 @@
 - ✅ Zero property violations found
 - ✅ Mathematical invariants verified
 
-#### Phase 4: Mutation Testing (Weeks 7-8) - ⏳ **INFRASTRUCTURE READY** (same session)
+#### Phase 4: Mutation Testing (Weeks 7-8) - ⛔ **BLOCKED** (Value type migration issue)
 - [x] Install and configure cargo-mutants (v25.3.1)
 - [x] Create .cargo/mutants.toml configuration
 - [x] Verify infrastructure with sample test (34 mutants identified)
-- [ ] Run mutation tests on parser (target: ≥90% kill rate)
-- [ ] Run mutation tests on transpiler (target: ≥90% kill rate)
-- [ ] Run mutation tests on interpreter (target: ≥90% kill rate)
-- [ ] Run mutation tests on WASM REPL (target: ≥90% kill rate)
+- [ ] ⛔ BLOCKED: Run mutation tests on parser (Value type issue)
+- [ ] ⛔ BLOCKED: Run mutation tests on transpiler (Value type issue)
+- [ ] ⛔ BLOCKED: Run mutation tests on interpreter (Value type issue)
+- [ ] ⛔ BLOCKED: Run mutation tests on WASM REPL (Value type issue)
 - [ ] Achieve overall ≥90% mutation kill rate
 
-**Success Criteria Phase 4**: ⏳ **IN PROGRESS**
+**Status**: ⛔ **BLOCKED** - See [SPRINT_7_PHASE_4_BLOCKED.md](./SPRINT_7_PHASE_4_BLOCKED.md)
+
+**Blocking Issue**: Value enum migration from `Rc<Vec<T>>` → `Rc<[T]>` broke all integration tests
+- 3,383 lib/bin tests passing ✅
+- All integration tests failing compilation ❌
+- cargo-mutants requires baseline build success
+- See detailed analysis and solutions in blocking document
+
+**Success Criteria Phase 4**: ⛔ **BLOCKED** - Prerequisites not met
 - ✅ cargo-mutants installed and configured
 - ✅ Configuration file created (.cargo/mutants.toml)
 - ✅ Sample test verified (34+ mutants found)
-- ⏳ ≥90% mutation kill rate overall (infrastructure ready)
-- ⏳ Per-module mutation scores documented (ready to execute)
-- ⏳ Survivor mutants analyzed and tests added (methodology established)
+- ⛔ Baseline compilation blocked (integration test type errors)
+- ⛔ Cannot run mutation tests until baseline succeeds
+- ⛔ Requires Value type migration across all test files
 
 #### Phase 5: Integration & Documentation (Weeks 9-10)
 - [ ] CI/CD workflows for all quality gates
