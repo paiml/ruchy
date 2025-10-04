@@ -1,4 +1,4 @@
-.PHONY: help all build test lint format clean clean-coverage coverage coverage-wasm-notebook examples bench install doc ci prepare-publish quality-gate test-examples test-fuzz test-fuzz-quick tdg-dashboard tdg-stop tdg-status tdg-restart
+.PHONY: help all build test lint format clean clean-coverage coverage coverage-wasm-notebook examples bench install doc ci prepare-publish quality-gate test-examples test-fuzz test-fuzz-quick tdg-dashboard tdg-stop tdg-status tdg-restart e2e-install e2e-install-deps wasm-build test-e2e test-e2e-ui test-e2e-debug test-e2e-headed wasm-quality-gate test-e2e-quick clean-e2e
 
 # Default target
 help:
@@ -45,6 +45,16 @@ help:
 	@echo ""
 	@echo "Language Compatibility:"
 	@echo "  make compatibility - Run comprehensive language feature compatibility tests"
+	@echo ""
+	@echo "WASM E2E Testing (Sprint 7):"
+	@echo "  make e2e-install     - Install Playwright and browsers"
+	@echo "  make e2e-install-deps - Install system dependencies only"
+	@echo "  make test-e2e        - Run E2E tests (all 3 browsers)"
+	@echo "  make test-e2e-ui     - Run E2E tests with Playwright UI"
+	@echo "  make test-e2e-debug  - Run E2E tests in debug mode"
+	@echo "  make test-e2e-quick  - Quick E2E test (Chromium only)"
+	@echo "  make wasm-quality-gate - Comprehensive WASM quality checks"
+	@echo "  make clean-e2e       - Clean E2E test artifacts"
 	@echo ""
 	@echo "Publishing:"
 	@echo "  make prepare-publish - Prepare for crates.io publication"
@@ -1033,3 +1043,88 @@ tdd-wasm:
 tdd-quality:
 	@echo "🔄 TDD Mode: Quality (Ctrl+C to stop)"
 	@cargo watch -x "test testing" -x "test generators"
+# ==========================================
+# WASM E2E Testing Targets (Sprint 7)
+# ==========================================
+
+.PHONY: e2e-install e2e-install-deps wasm-build test-e2e test-e2e-ui test-e2e-debug test-e2e-headed wasm-quality-gate
+
+# Install Playwright and browsers
+e2e-install:
+	@echo "📦 Installing Playwright and dependencies..."
+	@if [ ! -f "package.json" ]; then \
+		echo "❌ Error: package.json not found"; \
+		exit 1; \
+	fi
+	npm ci
+	npx playwright install --with-deps
+	@echo "✅ E2E dependencies installed"
+
+# Install only system dependencies (if browsers already installed)
+e2e-install-deps:
+	@echo "📦 Installing system dependencies for Playwright..."
+	sudo npx playwright install-deps
+	@echo "✅ System dependencies installed"
+
+# Build WASM module (placeholder - will be implemented)
+wasm-build:
+	@echo "🔨 Building WASM module..."
+	@echo "⚠️  WASM build not yet implemented - placeholder"
+	@echo "TODO: wasm-pack build --target web --out-dir pkg"
+	@echo "✅ WASM build placeholder complete"
+
+# Run E2E tests (all 3 browsers)
+test-e2e: wasm-build
+	@echo "🌐 Running E2E tests (3 browsers × scenarios)..."
+	@if [ ! -d "node_modules" ]; then \
+		echo "❌ Error: node_modules not found. Run: make e2e-install"; \
+		exit 1; \
+	fi
+	npm run test:e2e
+	@echo "✅ E2E tests passed"
+
+# Run E2E tests with UI (interactive debugging)
+test-e2e-ui: wasm-build
+	@echo "🌐 Opening Playwright UI..."
+	npm run test:e2e:ui
+
+# Run E2E tests in debug mode
+test-e2e-debug: wasm-build
+	@echo "🐛 Running E2E tests in debug mode..."
+	npm run test:e2e:debug
+
+# Run E2E tests headed (visible browser)
+test-e2e-headed: wasm-build
+	@echo "🌐 Running E2E tests in headed mode..."
+	npm run test:e2e:headed
+
+# Show E2E test report
+test-e2e-report:
+	@echo "📊 Opening E2E test report..."
+	npm run test:e2e:report
+
+# WASM Quality Gate (comprehensive)
+wasm-quality-gate: test test-e2e
+	@echo "🔒 WASM Quality Gate - Comprehensive Checks"
+	@echo "==========================================="
+	@echo ""
+	@echo "✅ Unit tests: PASSED"
+	@echo "✅ E2E tests: PASSED"
+	@echo ""
+	@echo "TODO: Add property tests (Phase 3)"
+	@echo "TODO: Add mutation tests (Phase 4)"
+	@echo "TODO: Add coverage checks (≥85%)"
+	@echo ""
+	@echo "🎯 Current Phase: Phase 1 Foundation"
+	@echo "📋 Next: Implement WASM eval(), verify 3 browsers"
+
+# Quick E2E check (Chromium only, faster feedback)
+test-e2e-quick:
+	@echo "⚡ Running quick E2E test (Chromium only)..."
+	npx playwright test --project=chromium
+
+# Clean E2E artifacts
+clean-e2e:
+	@echo "🧹 Cleaning E2E artifacts..."
+	rm -rf playwright-report/ test-results/ .playwright/
+	@echo "✅ E2E artifacts cleaned"
