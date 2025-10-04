@@ -1062,35 +1062,44 @@ fn parse_module_body(state: &mut ParserState) -> Result<Expr> {
         .peek()
         .map_or(Span { start: 0, end: 0 }, |t| t.1);
     let mut exprs = Vec::new();
+
     while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
-        // Check for visibility modifier
-        let is_pub = if matches!(state.tokens.peek(), Some((Token::Pub, _))) {
-            state.tokens.advance();
-            true
-        } else {
-            false
-        };
-        // Parse the item with visibility
-        let expr = if matches!(state.tokens.peek(), Some((Token::Fun, _))) {
-            super::functions::parse_function_with_visibility(state, is_pub)?
-        } else if is_pub && matches!(state.tokens.peek(), Some((Token::Use, _))) {
-            // Handle pub use statements
-            state.tokens.advance(); // consume 'use'
-            super::parse_use_statement_with_visibility(state, true)?
-        } else if is_pub {
-            bail!("'pub' can only be used with function declarations or use statements in modules");
-        } else {
-            // Regular expression without visibility
-            super::parse_expr_recursive(state)?
-        };
-        exprs.push(expr);
-        // Skip optional semicolons
-        if matches!(state.tokens.peek(), Some((Token::Semicolon, _))) {
-            state.tokens.advance();
-        }
+        let is_pub = parse_visibility_modifier(state);
+        exprs.push(parse_module_item(state, is_pub)?);
+        skip_optional_semicolon(state);
     }
+
     state.tokens.expect(&Token::RightBrace)?;
     Ok(Expr::new(ExprKind::Block(exprs), start_span))
+}
+
+fn parse_visibility_modifier(state: &mut ParserState) -> bool {
+    if matches!(state.tokens.peek(), Some((Token::Pub, _))) {
+        state.tokens.advance();
+        true
+    } else {
+        false
+    }
+}
+
+fn parse_module_item(state: &mut ParserState, is_pub: bool) -> Result<Expr> {
+    match state.tokens.peek() {
+        Some((Token::Fun, _)) => super::functions::parse_function_with_visibility(state, is_pub),
+        Some((Token::Use, _)) if is_pub => {
+            state.tokens.advance();
+            super::parse_use_statement_with_visibility(state, true)
+        }
+        _ if is_pub => {
+            bail!("'pub' can only be used with function declarations or use statements in modules")
+        }
+        _ => super::parse_expr_recursive(state),
+    }
+}
+
+fn skip_optional_semicolon(state: &mut ParserState) {
+    if matches!(state.tokens.peek(), Some((Token::Semicolon, _))) {
+        state.tokens.advance();
+    }
 }
 /// Parse data structure definition tokens (Struct, Trait, Impl)
 /// Extracted from `parse_prefix` to reduce complexity
