@@ -2,7 +2,7 @@
 
 ## Session Achievements (2025-10-04)
 
-### Violations Eliminated: 136 → 120 (16 total, 11.8% reduction)
+### Violations Eliminated: 136 → 119 (17 total, 12.5% reduction)
 
 #### 1. Complexity Refactoring (Batch 1)
 **Violations reduced: 57 → 54 (3 eliminated)**
@@ -65,15 +65,32 @@ Extract Method + DRY refactoring applied:
 **Quality**: Zero warnings, all tests passing, P0 validation passing
 **Code Deduplication**: ~170 lines total eliminated
 
+#### 5. Complexity Refactoring (Batch 10)
+**Violations reduced: 44 → 43 (1 complexity + 1 entropy eliminated)**
+
+Extract Method refactoring applied:
+- `categorize_block_expressions`: ~16→3 (extracted 5 helpers)
+- `analyze_expr_mutability`: ~18→8 (extracted 5 helpers)
+
+**Helpers Created** (all ≤3 complexity):
+- `categorize_single_expression`: Dispatch logic
+- `categorize_function`, `categorize_block`, `categorize_statement`: Categorization
+- `is_module_resolver_block`: Pattern checking
+- `mark_target_mutable`, `analyze_*_mutability`: Mutability analysis (5 helpers)
+
+**Method**: Extract Method (reduced transpiler complexity)
+**Quality**: Zero warnings, all tests passing, P0 validation passing
+**TDG Improvement**: 75.3→75.5 (B), duplication: 15.3→15.5
+
 ### Current Status
 
 | Category | Count | Target |
 |----------|-------|--------|
-| Complexity | 44 | 0 |
+| Complexity | 43 | 0 |
 | SATD | 23 | 0 |
-| Entropy | 50 | 0 |
+| Entropy | 49 | 0 |
 | Other | 3 | 0 |
-| **TOTAL** | **120** | **0** |
+| **TOTAL** | **119** | **0** |
 
 ### Methodology Applied
 
@@ -85,19 +102,19 @@ Extract Method + DRY refactoring applied:
 
 ### Session Statistics
 
-- **Functions Refactored**: 17 total
-- **Average Complexity Reduction**: 55%
-- **Code Deduplication**: ~170 lines removed
+- **Functions Refactored**: 19 total
+- **Average Complexity Reduction**: 56%
+- **Code Deduplication**: ~180 lines removed
 - **Tests Enabled**: 15 new passing tests
-- **Quality Improvement**: 11.8% violation reduction
+- **Quality Improvement**: 12.5% violation reduction
 - **P0 Validation**: All critical features passing ✅
 
 ### Next Session Priorities
 
-1. **44 Complexity violations** - Continue Extract Method refactoring
+1. **43 Complexity violations** - Continue Extract Method refactoring
 2. **23 SATD violations** - Extreme TDD (mostly parser features)
-3. **50 Entropy violations** - Pattern consolidation
+3. **49 Entropy violations** - Pattern consolidation
 4. **3 Minor violations** - Coverage/docs/provability cleanup
 
 **Sprint 6 Target**: ZERO violations (quality gate GREEN)
-**Progress**: 136→120 violations (11.8% reduction, 120 remaining)
+**Progress**: 136→119 violations (12.5% reduction, 119 remaining)
