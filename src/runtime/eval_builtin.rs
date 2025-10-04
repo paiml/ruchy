@@ -18,13 +18,36 @@ pub fn eval_builtin_function(
     name: &str,
     args: &[Value],
 ) -> Result<Option<Value>, InterpreterError> {
+    // Dispatch to category-specific handlers
+    if let Some(result) = try_eval_io_function(name, args)? {
+        return Ok(Some(result));
+    }
+    if let Some(result) = try_eval_math_function(name, args)? {
+        return Ok(Some(result));
+    }
+    if let Some(result) = try_eval_utility_function(name, args)? {
+        return Ok(Some(result));
+    }
+    if let Some(result) = try_eval_time_function(name, args)? {
+        return Ok(Some(result));
+    }
+    if let Some(result) = try_eval_dataframe_function(name, args)? {
+        return Ok(Some(result));
+    }
+    Ok(None)
+}
+
+fn try_eval_io_function(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
     match name {
-        // I/O functions
         "__builtin_println__" => Ok(Some(eval_println(args)?)),
         "__builtin_print__" => Ok(Some(eval_print(args)?)),
         "__builtin_dbg__" => Ok(Some(eval_dbg(args)?)),
+        _ => Ok(None),
+    }
+}
 
-        // Math functions
+fn try_eval_math_function(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
+    match name {
         "__builtin_sqrt__" => Ok(Some(eval_sqrt(args)?)),
         "__builtin_pow__" => Ok(Some(eval_pow(args)?)),
         "__builtin_abs__" => Ok(Some(eval_abs(args)?)),
@@ -33,28 +56,42 @@ pub fn eval_builtin_function(
         "__builtin_floor__" => Ok(Some(eval_floor(args)?)),
         "__builtin_ceil__" => Ok(Some(eval_ceil(args)?)),
         "__builtin_round__" => Ok(Some(eval_round(args)?)),
-
-        // Trigonometric functions
         "__builtin_sin__" => Ok(Some(eval_sin(args)?)),
         "__builtin_cos__" => Ok(Some(eval_cos(args)?)),
         "__builtin_tan__" => Ok(Some(eval_tan(args)?)),
+        _ => Ok(None),
+    }
+}
 
-        // Utility functions
+fn try_eval_utility_function(
+    name: &str,
+    args: &[Value],
+) -> Result<Option<Value>, InterpreterError> {
+    match name {
         "__builtin_len__" => Ok(Some(eval_len(args)?)),
         "__builtin_range__" => Ok(Some(eval_range(args)?)),
         "__builtin_type__" => Ok(Some(eval_type(args)?)),
         "__builtin_reverse__" => Ok(Some(eval_reverse(args)?)),
+        _ => Ok(None),
+    }
+}
 
-        // Time functions
+fn try_eval_time_function(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
+    match name {
         "__builtin_sleep__" => Ok(Some(eval_sleep(args)?)),
         "__builtin_timestamp__" => Ok(Some(eval_timestamp(args)?)),
+        _ => Ok(None),
+    }
+}
 
-        // DataFrame functions
+fn try_eval_dataframe_function(
+    name: &str,
+    args: &[Value],
+) -> Result<Option<Value>, InterpreterError> {
+    match name {
         "__builtin_dataframe_new__" => Ok(Some(eval_dataframe_new(args)?)),
         "__builtin_dataframe_from_csv_string__" => Ok(Some(eval_dataframe_from_csv_string(args)?)),
         "__builtin_dataframe_from_json__" => Ok(Some(eval_dataframe_from_json(args)?)),
-
-        // Unknown builtin
         _ => Ok(None),
     }
 }

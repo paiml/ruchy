@@ -1,208 +1,345 @@
-// Edge case tests for the Ruchy compiler
-// These test boundary conditions and unusual but valid inputs
+#![cfg(test)]
+#![allow(warnings)]
+#![allow(clippy::assertions_on_constants)]
+#![allow(clippy::unreadable_literal)]
+#![allow(clippy::unwrap_used)]
+#![allow(clippy::unwrap_used, clippy::panic)]
+//! Edge case tests to improve coverage
 
-use ruchy::compile;
+use anyhow::Result;
+use ruchy::{compile, get_parse_error, is_valid_syntax, Parser};
 
-#[cfg(test)]
-mod edge_cases {
-    use super::*;
+#[test]
+fn test_empty_list() -> Result<()> {
+    let mut parser = Parser::new("[]");
+    let ast = parser.parse()?;
+    assert!(matches!(ast.kind, ruchy::ExprKind::List(ref v) if v.is_empty()));
+    Ok(())
+}
 
-    // Empty program tests
-    #[test]
-    fn test_empty_program() {
-        assert!(compile("").is_ok() || compile("").is_err());
+#[test]
+fn test_nested_lists() -> Result<()> {
+    let mut parser = Parser::new("[[1, 2], [3, 4]]");
+    let ast = parser.parse()?;
+    assert!(matches!(ast.kind, ruchy::ExprKind::List(_)));
+    Ok(())
+}
+
+#[test]
+fn test_deeply_nested_expressions() -> Result<()> {
+    let mut parser = Parser::new("((((1))))");
+    let ast = parser.parse()?;
+    assert!(matches!(ast.kind, ruchy::ExprKind::Literal(_)));
+    Ok(())
+}
+
+#[test]
+fn test_complex_precedence() -> Result<()> {
+    let mut parser = Parser::new("1 + 2 * 3 - 4 / 2");
+    let ast = parser.parse()?;
+    assert!(matches!(ast.kind, ruchy::ExprKind::Binary { .. }));
+    Ok(())
+}
+
+#[test]
+fn test_chained_comparisons() -> Result<()> {
+    let mut parser = Parser::new("a < b && b < c");
+    let ast = parser.parse()?;
+    assert!(matches!(ast.kind, ruchy::ExprKind::Binary { .. }));
+    Ok(())
+}
+
+#[test]
+fn test_multiple_let_bindings() -> Result<()> {
+    let mut parser = Parser::new("let x = 1 in let y = 2 in x + y");
+    let ast = parser.parse()?;
+    assert!(matches!(ast.kind, ruchy::ExprKind::Let { .. }));
+    Ok(())
+}
+
+#[test]
+fn test_empty_block() -> Result<()> {
+    let mut parser = Parser::new("{ }");
+    let ast = parser.parse()?;
+    // Empty block should be unit literal
+    assert!(matches!(
+        ast.kind,
+        ruchy::ExprKind::Literal(ruchy::Literal::Unit)
+    ));
+    Ok(())
+}
+
+#[test]
+fn test_single_expression_block() -> Result<()> {
+    let mut parser = Parser::new("{ 42 }");
+    let ast = parser.parse()?;
+    // Single expression block should be a Block with one expression
+    assert!(matches!(ast.kind, ruchy::ExprKind::Block(_)));
+    if let ruchy::ExprKind::Block(exprs) = &ast.kind {
+        assert_eq!(exprs.len(), 1);
+        assert!(matches!(exprs[0].kind, ruchy::ExprKind::Literal(_)));
+    }
+    Ok(())
+}
+
+#[test]
+fn test_multi_expression_block() -> Result<()> {
+    let mut parser = Parser::new("{ 1; 2; 3 }");
+    let ast = parser.parse()?;
+    assert!(matches!(ast.kind, ruchy::ExprKind::Block(_)));
+    Ok(())
+}
+
+#[test]
+fn test_if_without_else() -> Result<()> {
+    let mut parser = Parser::new("if true { 42 }");
+    let ast = parser.parse()?;
+    match ast.kind {
+        ruchy::ExprKind::If { else_branch, .. } => {
+            assert!(else_branch.is_none());
+        }
+        _ => panic!("Expected if expression"),
+    }
+    Ok(())
+}
+
+#[test]
+fn test_if_else_if_chain() -> Result<()> {
+    let mut parser = Parser::new("if x { 1 } else if y { 2 } else { 3 }");
+    let ast = parser.parse()?;
+    assert!(matches!(ast.kind, ruchy::ExprKind::If { .. }));
+    Ok(())
+}
+
+#[test]
+fn test_match_single_arm() -> Result<()> {
+    let mut parser = Parser::new("match x { _ => 42 }");
+    let ast = parser.parse()?;
+    match ast.kind {
+        ruchy::ExprKind::Match { arms, .. } => {
+            assert_eq!(arms.len(), 1);
+        }
+        _ => panic!("Expected match expression"),
+    }
+    Ok(())
+}
+
+#[test]
+fn test_function_no_params() -> Result<()> {
+    let mut parser = Parser::new("fun test() { 42 }");
+    let ast = parser.parse()?;
+    match ast.kind {
+        ruchy::ExprKind::Function { params, .. } => {
+            assert!(params.is_empty());
+        }
+        _ => panic!("Expected function"),
+    }
+    Ok(())
+}
+
+#[test]
+fn test_function_single_param() -> Result<()> {
+    let mut parser = Parser::new("fun inc(x: i32) -> i32 { x + 1 }");
+    let ast = parser.parse()?;
+    match ast.kind {
+        ruchy::ExprKind::Function { params, .. } => {
+            assert_eq!(params.len(), 1);
+        }
+        _ => panic!("Expected function"),
+    }
+    Ok(())
+}
+
+#[test]
+fn test_lambda_no_params() -> Result<()> {
+    let mut parser = Parser::new("|| 42");
+    let ast = parser.parse()?;
+    assert!(matches!(ast.kind, ruchy::ExprKind::Lambda { .. }));
+    Ok(())
+}
+
+#[test]
+fn test_call_no_args() -> Result<()> {
+    let mut parser = Parser::new("func()");
+    let ast = parser.parse()?;
+    match ast.kind {
+        ruchy::ExprKind::Call { args, .. } => {
+            assert!(args.is_empty());
+        }
+        _ => panic!("Expected call expression"),
+    }
+    Ok(())
+}
+
+#[test]
+fn test_call_single_arg() -> Result<()> {
+    let mut parser = Parser::new("func(42)");
+    let ast = parser.parse()?;
+    match ast.kind {
+        ruchy::ExprKind::Call { args, .. } => {
+            assert_eq!(args.len(), 1);
+        }
+        _ => panic!("Expected call expression"),
+    }
+    Ok(())
+}
+
+#[test]
+fn test_struct_empty() -> Result<()> {
+    let mut parser = Parser::new("struct Empty { }");
+    let ast = parser.parse()?;
+    match ast.kind {
+        ruchy::ExprKind::Struct { fields, .. } => {
+            assert!(fields.is_empty());
+        }
+        _ => panic!("Expected struct"),
+    }
+    Ok(())
+}
+
+#[test]
+fn test_struct_single_field() -> Result<()> {
+    let mut parser = Parser::new("struct Wrapper { value: i32 }");
+    let ast = parser.parse()?;
+    match ast.kind {
+        ruchy::ExprKind::Struct { fields, .. } => {
+            assert_eq!(fields.len(), 1);
+        }
+        _ => panic!("Expected struct"),
+    }
+    Ok(())
+}
+
+#[test]
+fn test_pattern_wildcard() -> Result<()> {
+    let mut parser = Parser::new("match x { _ => 0 }");
+    let ast = parser.parse()?;
+    match ast.kind {
+        ruchy::ExprKind::Match { arms, .. } => {
+            assert!(matches!(arms[0].pattern, ruchy::Pattern::Wildcard));
+        }
+        _ => panic!("Expected match"),
+    }
+    Ok(())
+}
+
+#[test]
+fn test_pattern_literal() -> Result<()> {
+    let mut parser = Parser::new("match x { 42 => \"found\" }");
+    let ast = parser.parse()?;
+    match ast.kind {
+        ruchy::ExprKind::Match { arms, .. } => {
+            assert!(matches!(arms[0].pattern, ruchy::Pattern::Literal(_)));
+        }
+        _ => panic!("Expected match"),
+    }
+    Ok(())
+}
+
+#[test]
+fn test_pattern_identifier() -> Result<()> {
+    let mut parser = Parser::new("match x { y => y }");
+    let ast = parser.parse()?;
+    match ast.kind {
+        ruchy::ExprKind::Match { arms, .. } => {
+            assert!(matches!(arms[0].pattern, ruchy::Pattern::Identifier(_)));
+        }
+        _ => panic!("Expected match"),
+    }
+    Ok(())
+}
+
+#[test]
+fn test_list_with_trailing_comma() -> Result<()> {
+    let mut parser = Parser::new("[1, 2, 3,]");
+    let ast = parser.parse()?;
+    match ast.kind {
+        ruchy::ExprKind::List(ref items) => {
+            assert_eq!(items.len(), 3);
+        }
+        _ => panic!("Expected list"),
+    }
+    Ok(())
+}
+
+#[test]
+fn test_compile_valid_program() {
+    let result = compile("let x = 42 in x");
+    assert!(result.is_ok());
+}
+
+#[test]
+fn test_is_valid_syntax_edge_cases() {
+    assert!(is_valid_syntax("42"));
+    assert!(is_valid_syntax("()"));
+    assert!(is_valid_syntax("{ }"));
+    assert!(!is_valid_syntax(""));
+    assert!(!is_valid_syntax("   "));
+}
+
+#[test]
+fn test_get_parse_error_cases() {
+    assert!(get_parse_error("let x =").is_some());
+    assert!(get_parse_error("if").is_some());
+    assert!(get_parse_error("42").is_none());
+}
+
+#[test]
+fn test_parse_all_literal_types() -> Result<()> {
+    let literals = vec![
+        ("42", ruchy::Literal::Integer(42)),
+        ("2.71", ruchy::Literal::Float(2.71)),
+        ("true", ruchy::Literal::Bool(true)),
+        ("false", ruchy::Literal::Bool(false)),
+    ];
+
+    for (input, expected) in literals {
+        let mut parser = Parser::new(input);
+        let ast = parser.parse()?;
+        match ast.kind {
+            ruchy::ExprKind::Literal(ref lit) => {
+                assert_eq!(*lit, expected, "Failed for input: {input}");
+            }
+            _ => panic!("Expected literal for input: {input}"),
+        }
     }
 
-    #[test]
-    fn test_whitespace_only() {
-        assert!(compile("   \n\t\r\n   ").is_ok() || compile("   \n\t\r\n   ").is_err());
+    Ok(())
+}
+
+#[test]
+fn test_parse_all_binary_operators() -> Result<()> {
+    let operators = vec![
+        "+", "-", "*", "/", "%", "**", "==", "!=", "<", "<=", ">", ">=", "&&", "||", "&", "|", "^",
+        "<<", // Note: >> is now pipeline operator, not right shift
+    ];
+
+    for op in operators {
+        let input = format!("a {op} b");
+        let mut parser = Parser::new(&input);
+        let ast = parser.parse()?;
+        assert!(
+            matches!(ast.kind, ruchy::ExprKind::Binary { .. }),
+            "Failed for operator: {op}"
+        );
     }
 
-    #[test]
-    #[ignore = "Parser needs fix for comment-only files"]
-    fn test_comment_only() {
-        assert!(compile("// Just a comment").is_ok());
+    Ok(())
+}
+
+#[test]
+fn test_parse_all_unary_operators() -> Result<()> {
+    let operators = vec!["-", "!"];
+
+    for op in operators {
+        let input = format!("{op}x");
+        let mut parser = Parser::new(&input);
+        let ast = parser.parse()?;
+        assert!(
+            matches!(ast.kind, ruchy::ExprKind::Unary { .. }),
+            "Failed for operator: {op}"
+        );
     }
 
-    #[test]
-    #[ignore = "Parser needs fix for comment-only files"]
-    fn test_multiline_comment_only() {
-        assert!(compile("/* Just a \n multiline \n comment */").is_ok());
-    }
-
-    // Edge case numbers
-    #[test]
-    fn test_zero() {
-        assert!(compile("fn main() { let x = 0; }").is_ok());
-    }
-
-    #[test]
-    fn test_negative_numbers() {
-        assert!(compile("fn main() { let x = -42; }").is_ok());
-    }
-
-    #[test]
-    fn test_large_numbers() {
-        assert!(compile("fn main() { let x = 2147483647; }").is_ok());
-    }
-
-    #[test]
-    fn test_float_numbers() {
-        assert!(compile("fn main() { let x = 3.14159; }").is_ok());
-    }
-
-    #[test]
-    fn test_scientific_notation() {
-        assert!(compile("fn main() { let x = 1.5e10; }").is_ok());
-    }
-
-    // Edge case strings
-    #[test]
-    fn test_empty_string() {
-        assert!(compile(r#"fn main() { let s = ""; }"#).is_ok());
-    }
-
-    #[test]
-    fn test_string_with_escapes() {
-        assert!(compile(r#"fn main() { let s = "Hello\nWorld\t!"; }"#).is_ok());
-    }
-
-    #[test]
-    fn test_unicode_string() {
-        assert!(compile(r#"fn main() { let s = "Hello 世界 🦀"; }"#).is_ok());
-    }
-
-    // Edge case arrays
-    #[test]
-    fn test_empty_array() {
-        assert!(compile("fn main() { let arr = []; }").is_ok());
-    }
-
-    #[test]
-    fn test_single_element_array() {
-        assert!(compile("fn main() { let arr = [42]; }").is_ok());
-    }
-
-    #[test]
-    fn test_nested_arrays() {
-        assert!(compile("fn main() { let arr = [[1, 2], [3, 4]]; }").is_ok());
-    }
-
-    // Edge case functions
-    #[test]
-    fn test_empty_function() {
-        assert!(compile("fn empty() {}").is_ok());
-    }
-
-    #[test]
-    fn test_function_no_params() {
-        assert!(compile("fn no_params() -> i32 { 42 }").is_ok());
-    }
-
-    #[test]
-    fn test_function_many_params() {
-        assert!(compile(
-            "fn many(a: i32, b: i32, c: i32, d: i32, e: i32) -> i32 { a + b + c + d + e }"
-        )
-        .is_ok());
-    }
-
-    // Edge case control flow
-    #[test]
-    fn test_empty_if() {
-        assert!(compile("fn main() { if true {} }").is_ok());
-    }
-
-    #[test]
-    fn test_nested_if() {
-        assert!(compile("fn main() { if true { if false {} } }").is_ok());
-    }
-
-    #[test]
-    fn test_empty_for_loop() {
-        assert!(compile("fn main() { for _ in 0..0 {} }").is_ok());
-    }
-
-    #[test]
-    fn test_infinite_loop() {
-        assert!(compile("fn main() { loop { break; } }").is_ok());
-    }
-
-    // Edge case operators
-    #[test]
-    fn test_chained_operators() {
-        assert!(compile("fn main() { let x = 1 + 2 + 3 + 4 + 5; }").is_ok());
-    }
-
-    #[test]
-    fn test_parenthesized_expressions() {
-        assert!(compile("fn main() { let x = ((1 + 2) * 3) / 4; }").is_ok());
-    }
-
-    #[test]
-    fn test_unary_operators() {
-        assert!(compile("fn main() { let x = -(-42); }").is_ok());
-    }
-
-    #[test]
-    fn test_boolean_operators() {
-        assert!(compile("fn main() { let x = true && false || true; }").is_ok());
-    }
-
-    // Edge case identifiers
-    #[test]
-    fn test_single_letter_identifier() {
-        assert!(compile("fn main() { let a = 1; }").is_ok());
-    }
-
-    #[test]
-    #[ignore = "Parser needs fix for underscore identifier"]
-    fn test_underscore_identifier() {
-        assert!(compile("fn main() { let _ = 42; }").is_ok());
-    }
-
-    #[test]
-    fn test_identifier_with_numbers() {
-        assert!(compile("fn main() { let var123 = 42; }").is_ok());
-    }
-
-    #[test]
-    fn test_long_identifier() {
-        assert!(compile(
-            "fn main() { let this_is_a_very_long_identifier_name_that_should_still_work = 42; }"
-        )
-        .is_ok());
-    }
-
-    // Edge case tuples
-    #[test]
-    fn test_unit_tuple() {
-        assert!(compile("fn main() { let t = (); }").is_ok());
-    }
-
-    #[test]
-    fn test_single_element_tuple() {
-        assert!(compile("fn main() { let t = (42,); }").is_ok());
-    }
-
-    #[test]
-    fn test_large_tuple() {
-        assert!(compile("fn main() { let t = (1, 2, 3, 4, 5, 6, 7, 8); }").is_ok());
-    }
-
-    // Edge case returns
-    #[test]
-    fn test_early_return() {
-        assert!(compile("fn test() -> i32 { return 42; 0 }").is_ok());
-    }
-
-    #[test]
-    fn test_implicit_return() {
-        assert!(compile("fn test() -> i32 { 42 }").is_ok());
-    }
-
-    #[test]
-    fn test_unit_return() {
-        assert!(compile("fn test() { return; }").is_ok());
-    }
+    Ok(())
 }

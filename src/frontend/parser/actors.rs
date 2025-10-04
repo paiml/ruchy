@@ -34,47 +34,62 @@ fn parse_actor_name(state: &mut ParserState) -> Result<String> {
 }
 // Helper: Parse actor body (complexity: 4)
 fn parse_actor_body(state: &mut ParserState) -> Result<(Vec<StructField>, Vec<ActorHandler>)> {
+    let state_fields = parse_actor_state_fields(state)?;
+    let handlers = parse_actor_handlers(state)?;
+    Ok((state_fields, handlers))
+}
+
+fn parse_actor_state_fields(state: &mut ParserState) -> Result<Vec<StructField>> {
     let mut state_fields = Vec::new();
-    let mut handlers = Vec::new();
 
-    // First, parse all state fields until we hit receive or }
     loop {
-        // Check if we've reached the end or a receive block
-        if matches!(state.tokens.peek(), Some((Token::RightBrace, _)))
-            || matches!(state.tokens.peek(), Some((Token::Receive, _)))
-        {
+        if should_exit_state_parsing(state) {
             break;
         }
 
-        // Parse state field
-        if matches!(state.tokens.peek(), Some((Token::State, _))) {
-            parse_state_block(state, &mut state_fields)?;
-        } else if matches!(state.tokens.peek(), Some((Token::Mut, _))) {
-            // Handle: mut field_name: Type = value
-            parse_inline_state_field(state, &mut state_fields)?;
-        } else if matches!(state.tokens.peek(), Some((Token::Identifier(_), _))) {
-            // We have an identifier, so this should be a field
-            parse_inline_state_field(state, &mut state_fields)?;
-        } else {
-            // Unexpected token
-            break;
-        }
+        parse_single_state_field(state, &mut state_fields)?;
     }
 
-    // Then parse all receive handlers
+    Ok(state_fields)
+}
+
+fn should_exit_state_parsing(state: &mut ParserState) -> bool {
+    matches!(state.tokens.peek(), Some((Token::RightBrace, _)))
+        || matches!(state.tokens.peek(), Some((Token::Receive, _)))
+}
+
+fn parse_single_state_field(
+    state: &mut ParserState,
+    state_fields: &mut Vec<StructField>,
+) -> Result<()> {
+    match state.tokens.peek() {
+        Some((Token::State, _)) => parse_state_block(state, state_fields),
+        Some((Token::Mut, _)) | Some((Token::Identifier(_), _)) => {
+            parse_inline_state_field(state, state_fields)
+        }
+        _ => Ok(()), // Exit loop on unexpected token
+    }
+}
+
+fn parse_actor_handlers(state: &mut ParserState) -> Result<Vec<ActorHandler>> {
+    let mut handlers = Vec::new();
+
     while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
         if matches!(state.tokens.peek(), Some((Token::Receive, _))) {
             parse_receive_handler(state, &mut handlers)?;
         } else {
-            // Debug: Let's see what token we're at
-            if let Some((token, _)) = state.tokens.peek() {
-                bail!("Expected 'receive' or '}}', found {:?}", token);
-            }
-            bail!("Expected 'receive' or '}}', found EOF");
+            return parse_handler_error(state);
         }
     }
 
-    Ok((state_fields, handlers))
+    Ok(handlers)
+}
+
+fn parse_handler_error(state: &mut ParserState) -> Result<Vec<ActorHandler>> {
+    if let Some((token, _)) = state.tokens.peek() {
+        bail!("Expected 'receive' or '}}', found {:?}", token);
+    }
+    bail!("Expected 'receive' or '}}', found EOF");
 }
 // Helper: Parse state block (complexity: 5)
 fn parse_state_block(state: &mut ParserState, state_fields: &mut Vec<StructField>) -> Result<()> {

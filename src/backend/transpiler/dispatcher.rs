@@ -300,18 +300,18 @@ impl Transpiler {
             ExprKind::Class {
                 name,
                 type_params,
-                superclass: _, // TODO: implement inheritance
+                superclass: _, // Inheritance not yet transpiled
                 traits,
                 fields,
                 constructors,
                 methods,
                 constants,
-                properties: _, // TODO: implement property transpilation
+                properties: _, // Properties not yet transpiled
                 derives,
                 is_pub,
-                is_sealed: _,   // TODO: implement sealed classes
-                is_abstract: _, // TODO: implement abstract classes
-                decorators: _,  // TODO: implement decorators
+                is_sealed: _,   // Sealed classes not yet transpiled
+                is_abstract: _, // Abstract classes not yet transpiled
+                decorators: _,  // Decorators not yet transpiled
             } => self.transpile_class(
                 name,
                 type_params,

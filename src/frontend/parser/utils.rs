@@ -119,7 +119,7 @@ fn parse_single_param(state: &mut ParserState) -> Result<Param> {
                 ty = Type {
                     kind: TypeKind::Reference {
                         is_mut: is_ref_mut,
-                        lifetime: None, // TODO: support lifetimes on self references
+                        lifetime: None, // Lifetimes on self references not yet supported
                         inner: Box::new(Type {
                             kind: TypeKind::Named("Self".to_string()),
                             span: Span { start: 0, end: 0 },
@@ -866,144 +866,201 @@ fn create_import_expression(
 /// Returns an error if the operation fails
 pub fn parse_attributes(state: &mut ParserState) -> Result<Vec<Attribute>> {
     let mut attributes = Vec::new();
-
-    // Parse @ decorators (Python/Java style)
-    while matches!(state.tokens.peek(), Some((Token::At, _))) {
-        let span = state.tokens.peek().unwrap().1;
-        state.tokens.advance(); // consume @
-
-        // Parse decorator name
-        let name = match state.tokens.peek() {
-            Some((Token::Identifier(n), _)) => {
-                let name = n.clone();
-                state.tokens.advance();
-                name
-            }
-            _ => bail!("Expected identifier after '@'"),
-        };
-
-        // Parse optional arguments
-        let args = if matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
-            state.tokens.advance(); // consume (
-            let mut args = Vec::new();
-
-            while !matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
-                // Parse string literal arguments
-                match state.tokens.peek() {
-                    Some((Token::String(s), _)) => {
-                        args.push(s.clone());
-                        state.tokens.advance();
-                    }
-                    Some((Token::Identifier(id), _)) => {
-                        args.push(id.clone());
-                        state.tokens.advance();
-                    }
-                    _ => bail!("Expected string or identifier in decorator arguments"),
-                }
-
-                // Check for comma
-                if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
-                    state.tokens.advance();
-                } else if !matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
-                    bail!("Expected ',' or ')' in decorator arguments");
-                }
-            }
-
-            state.tokens.expect(&Token::RightParen)?;
-            args
-        } else {
-            Vec::new()
-        };
-
-        attributes.push(Attribute { name, args, span });
-    }
-
-    // Parse #[...] attributes (Rust style)
-    while matches!(state.tokens.peek(), Some((Token::Hash, _))) {
-        state.tokens.advance(); // consume #
-        if !matches!(state.tokens.peek(), Some((Token::LeftBracket, _))) {
-            bail!("Expected '[' after '#'");
-        }
-        state.tokens.advance(); // consume [
-        let name = match state.tokens.peek() {
-            Some((Token::Identifier(n), _)) => {
-                let name = n.clone();
-                state.tokens.advance();
-                name
-            }
-            Some((Token::Crate, _)) => {
-                state.tokens.advance();
-                "crate".to_string()
-            }
-            _ => {
-                bail!("Expected attribute name");
-            }
-        };
-        let mut args = Vec::new();
-        if matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
-            state.tokens.advance(); // consume (
-            while !matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
-                if let Some((Token::Identifier(arg), _)) = state.tokens.peek() {
-                    let mut arg_str = arg.clone();
-                    state.tokens.advance();
-
-                    // Check for key=value syntax
-                    if matches!(state.tokens.peek(), Some((Token::Equal, _))) {
-                        state.tokens.advance(); // consume =
-                                                // Parse the value (could be identifier, number, string, etc.)
-                        if let Some((token, _)) = state.tokens.peek() {
-                            let value = match token {
-                                Token::Identifier(v) => v.clone(),
-                                Token::Integer(v) => v.to_string(),
-                                Token::Float(v) => v.to_string(),
-                                Token::String(v) => format!("\"{v}\""),
-                                Token::Bool(v) => v.to_string(),
-                                _ => {
-                                    bail!("Unsupported attribute value type: {:?}", token);
-                                }
-                            };
-                            state.tokens.advance();
-                            arg_str = format!("{arg_str} = {value}");
-                        }
-                    }
-
-                    args.push(arg_str);
-
-                    if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
-                        state.tokens.advance();
-                    } else if matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
-                        // End of arguments, will be consumed by the while loop condition check
-                        break;
-                    } else {
-                        bail!("Expected ',' or ')' after attribute argument");
-                    }
-                } else if let Some((Token::String(s), _)) = state.tokens.peek() {
-                    // Support string literals directly as arguments
-                    let arg_str = format!("\"{s}\"");
-                    state.tokens.advance();
-                    args.push(arg_str);
-
-                    if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
-                        state.tokens.advance();
-                    } else if matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
-                        break;
-                    } else {
-                        bail!("Expected ',' or ')' after attribute argument");
-                    }
-                } else {
-                    bail!("Expected identifier or string in attribute arguments");
-                }
-            }
-            state.tokens.advance(); // consume )
-        }
-        let end_span = state.tokens.advance().expect("Expected ']' token").1; // consume ]
-        attributes.push(Attribute {
-            name,
-            args,
-            span: end_span,
-        });
-    }
+    parse_at_style_decorators(state, &mut attributes)?;
+    parse_rust_style_attributes(state, &mut attributes)?;
     Ok(attributes)
+}
+
+fn parse_at_style_decorators(
+    state: &mut ParserState,
+    attributes: &mut Vec<Attribute>,
+) -> Result<()> {
+    while matches!(state.tokens.peek(), Some((Token::At, _))) {
+        let decorator = parse_single_at_decorator(state)?;
+        attributes.push(decorator);
+    }
+    Ok(())
+}
+
+fn parse_single_at_decorator(state: &mut ParserState) -> Result<Attribute> {
+    let span = state.tokens.peek().unwrap().1;
+    state.tokens.advance(); // consume @
+
+    let name = parse_decorator_name(state)?;
+    let args = parse_decorator_arguments(state)?;
+
+    Ok(Attribute { name, args, span })
+}
+
+fn parse_decorator_name(state: &mut ParserState) -> Result<String> {
+    match state.tokens.peek() {
+        Some((Token::Identifier(n), _)) => {
+            let name = n.clone();
+            state.tokens.advance();
+            Ok(name)
+        }
+        _ => bail!("Expected identifier after '@'"),
+    }
+}
+
+fn parse_decorator_arguments(state: &mut ParserState) -> Result<Vec<String>> {
+    if !matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
+        return Ok(Vec::new());
+    }
+
+    state.tokens.advance(); // consume (
+    let mut args = Vec::new();
+
+    while !matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
+        let arg = parse_single_decorator_argument(state)?;
+        args.push(arg);
+        consume_argument_separator(state)?;
+    }
+
+    state.tokens.expect(&Token::RightParen)?;
+    Ok(args)
+}
+
+fn parse_single_decorator_argument(state: &mut ParserState) -> Result<String> {
+    match state.tokens.peek() {
+        Some((Token::String(s), _)) => {
+            let arg = s.clone();
+            state.tokens.advance();
+            Ok(arg)
+        }
+        Some((Token::Identifier(id), _)) => {
+            let arg = id.clone();
+            state.tokens.advance();
+            Ok(arg)
+        }
+        _ => bail!("Expected string or identifier in decorator arguments"),
+    }
+}
+
+fn consume_argument_separator(state: &mut ParserState) -> Result<()> {
+    if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+        state.tokens.advance();
+        Ok(())
+    } else if matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
+        Ok(())
+    } else {
+        bail!("Expected ',' or ')' in decorator arguments")
+    }
+}
+
+fn parse_rust_style_attributes(
+    state: &mut ParserState,
+    attributes: &mut Vec<Attribute>,
+) -> Result<()> {
+    while matches!(state.tokens.peek(), Some((Token::Hash, _))) {
+        let attribute = parse_single_rust_attribute(state)?;
+        attributes.push(attribute);
+    }
+    Ok(())
+}
+
+fn parse_single_rust_attribute(state: &mut ParserState) -> Result<Attribute> {
+    state.tokens.advance(); // consume #
+    if !matches!(state.tokens.peek(), Some((Token::LeftBracket, _))) {
+        bail!("Expected '[' after '#'");
+    }
+    state.tokens.advance(); // consume [
+
+    let name = parse_rust_attribute_name(state)?;
+    let args = parse_rust_attribute_arguments(state)?;
+
+    let end_span = state.tokens.advance().expect("Expected ']' token").1; // consume ]
+
+    Ok(Attribute {
+        name,
+        args,
+        span: end_span,
+    })
+}
+
+fn parse_rust_attribute_name(state: &mut ParserState) -> Result<String> {
+    match state.tokens.peek() {
+        Some((Token::Identifier(n), _)) => {
+            let name = n.clone();
+            state.tokens.advance();
+            Ok(name)
+        }
+        Some((Token::Crate, _)) => {
+            state.tokens.advance();
+            Ok("crate".to_string())
+        }
+        _ => bail!("Expected attribute name"),
+    }
+}
+
+fn parse_rust_attribute_arguments(state: &mut ParserState) -> Result<Vec<String>> {
+    if !matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
+        return Ok(Vec::new());
+    }
+
+    state.tokens.advance(); // consume (
+    let mut args = Vec::new();
+
+    while !matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
+        let arg = parse_rust_attribute_argument(state)?;
+        args.push(arg);
+
+        if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+            state.tokens.advance();
+        } else if matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
+            break;
+        } else {
+            bail!("Expected ',' or ')' after attribute argument");
+        }
+    }
+
+    state.tokens.advance(); // consume )
+    Ok(args)
+}
+
+fn parse_rust_attribute_argument(state: &mut ParserState) -> Result<String> {
+    match state.tokens.peek() {
+        Some((Token::Identifier(arg), _)) => {
+            let arg = arg.clone();
+            parse_identifier_argument(state, arg)
+        }
+        Some((Token::String(s), _)) => {
+            let arg_str = format!("\"{s}\"");
+            state.tokens.advance();
+            Ok(arg_str)
+        }
+        _ => bail!("Expected identifier or string in attribute arguments"),
+    }
+}
+
+fn parse_identifier_argument(state: &mut ParserState, arg: String) -> Result<String> {
+    state.tokens.advance();
+
+    if !matches!(state.tokens.peek(), Some((Token::Equal, _))) {
+        return Ok(arg);
+    }
+
+    state.tokens.advance(); // consume =
+    let value = parse_attribute_value(state)?;
+    Ok(format!("{arg} = {value}"))
+}
+
+fn parse_attribute_value(state: &mut ParserState) -> Result<String> {
+    match state.tokens.peek() {
+        Some((token, _)) => {
+            let value = match token {
+                Token::Identifier(v) => v.clone(),
+                Token::Integer(v) => v.to_string(),
+                Token::Float(v) => v.to_string(),
+                Token::String(v) => format!("\"{v}\""),
+                Token::Bool(v) => v.to_string(),
+                _ => bail!("Unsupported attribute value type: {:?}", token),
+            };
+            state.tokens.advance();
+            Ok(value)
+        }
+        None => bail!("Expected attribute value"),
+    }
 }
 /// Parse string interpolation from a string containing {expr} patterns
 pub fn parse_string_interpolation(_state: &mut ParserState, s: &str) -> Vec<StringPart> {

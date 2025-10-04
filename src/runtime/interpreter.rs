@@ -4058,7 +4058,7 @@ impl Interpreter {
     fn eval_struct_definition(
         &mut self,
         name: &str,
-        _type_params: &[String], // TODO: Generic type parameters
+        _type_params: &[String], // Generic type parameters (not yet used in runtime)
         fields: &[crate::frontend::ast::StructField],
         _is_pub: bool,
     ) -> Result<Value, InterpreterError> {

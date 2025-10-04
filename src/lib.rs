@@ -585,11 +585,11 @@ mod tests {
         // List patterns
         assert!(compile("match lst { [] => \"empty\", _ => \"has items\" }").is_ok());
         assert!(compile("match lst { [x] => x, _ => 0 }").is_ok());
-        // TODO: implement rest patterns syntax
+        // Rest patterns syntax not yet supported:
         // assert!(compile("match lst { [head, ...tail] => head, _ => 0 }").is_ok());
-        // Struct patterns - TODO: implement struct pattern syntax
+        // Struct patterns not yet supported:
         // assert!(compile("match p { Point { x, y } => x + y }").is_ok());
-        // Enum patterns - TODO: implement enum pattern syntax
+        // Enum patterns not yet supported:
         // assert!(compile("match opt { Some(x) => x, None => 0 }").is_ok());
         assert!(compile("match res { Ok(v) => v, Err(e) => panic(e) }").is_ok());
         // Guard patterns

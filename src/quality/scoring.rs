@@ -549,51 +549,92 @@ fn analyze_expr(
     metrics.max_depth = metrics.max_depth.max(depth);
     metrics.max_nesting = metrics.max_nesting.max(nesting);
     match &expr.kind {
-        ExprKind::Function { body, .. } => {
-            metrics.function_count += 1;
-            analyze_expr(body, metrics, depth + 1, 0);
-        }
-        ExprKind::Block(exprs) => {
-            for e in exprs {
-                analyze_expr(e, metrics, depth + 1, nesting);
-            }
-        }
+        ExprKind::Function { body, .. } => analyze_function(body, metrics, depth),
+        ExprKind::Block(exprs) => analyze_block(exprs, metrics, depth, nesting),
         ExprKind::If {
             condition,
             then_branch,
             else_branch,
-        } => {
-            metrics.cyclomatic_complexity += 1;
-            analyze_expr(condition, metrics, depth + 1, nesting + 1);
-            analyze_expr(then_branch, metrics, depth + 1, nesting + 1);
-            if let Some(else_expr) = else_branch {
-                analyze_expr(else_expr, metrics, depth + 1, nesting + 1);
-            }
-        }
+        } => analyze_if(condition, then_branch, else_branch, metrics, depth, nesting),
         ExprKind::While {
             condition, body, ..
-        } => {
-            metrics.cyclomatic_complexity += 1;
-            analyze_expr(condition, metrics, depth + 1, nesting + 1);
-            analyze_expr(body, metrics, depth + 1, nesting + 1);
-        }
-        ExprKind::For { iter, body, .. } => {
-            metrics.cyclomatic_complexity += 1;
-            analyze_expr(iter, metrics, depth + 1, nesting + 1);
-            analyze_expr(body, metrics, depth + 1, nesting + 1);
-        }
+        } => analyze_while(condition, body, metrics, depth, nesting),
+        ExprKind::For { iter, body, .. } => analyze_for(iter, body, metrics, depth, nesting),
         ExprKind::Match {
             expr: match_expr,
             arms,
-        } => {
-            analyze_expr(match_expr, metrics, depth + 1, nesting);
-            for arm in arms {
-                metrics.cyclomatic_complexity += 1;
-                // Guards have been removed from the grammar
-                analyze_expr(&arm.body, metrics, depth + 1, nesting + 1);
-            }
-        }
+        } => analyze_match(match_expr, arms, metrics, depth, nesting),
         _ => {}
+    }
+}
+
+fn analyze_function(body: &crate::frontend::ast::Expr, metrics: &mut AstMetrics, depth: usize) {
+    metrics.function_count += 1;
+    analyze_expr(body, metrics, depth + 1, 0);
+}
+
+fn analyze_block(
+    exprs: &[crate::frontend::ast::Expr],
+    metrics: &mut AstMetrics,
+    depth: usize,
+    nesting: usize,
+) {
+    for e in exprs {
+        analyze_expr(e, metrics, depth + 1, nesting);
+    }
+}
+
+fn analyze_if(
+    condition: &crate::frontend::ast::Expr,
+    then_branch: &crate::frontend::ast::Expr,
+    else_branch: &Option<Box<crate::frontend::ast::Expr>>,
+    metrics: &mut AstMetrics,
+    depth: usize,
+    nesting: usize,
+) {
+    metrics.cyclomatic_complexity += 1;
+    analyze_expr(condition, metrics, depth + 1, nesting + 1);
+    analyze_expr(then_branch, metrics, depth + 1, nesting + 1);
+    if let Some(else_expr) = else_branch {
+        analyze_expr(else_expr, metrics, depth + 1, nesting + 1);
+    }
+}
+
+fn analyze_while(
+    condition: &crate::frontend::ast::Expr,
+    body: &crate::frontend::ast::Expr,
+    metrics: &mut AstMetrics,
+    depth: usize,
+    nesting: usize,
+) {
+    metrics.cyclomatic_complexity += 1;
+    analyze_expr(condition, metrics, depth + 1, nesting + 1);
+    analyze_expr(body, metrics, depth + 1, nesting + 1);
+}
+
+fn analyze_for(
+    iter: &crate::frontend::ast::Expr,
+    body: &crate::frontend::ast::Expr,
+    metrics: &mut AstMetrics,
+    depth: usize,
+    nesting: usize,
+) {
+    metrics.cyclomatic_complexity += 1;
+    analyze_expr(iter, metrics, depth + 1, nesting + 1);
+    analyze_expr(body, metrics, depth + 1, nesting + 1);
+}
+
+fn analyze_match(
+    match_expr: &crate::frontend::ast::Expr,
+    arms: &[crate::frontend::ast::MatchArm],
+    metrics: &mut AstMetrics,
+    depth: usize,
+    nesting: usize,
+) {
+    analyze_expr(match_expr, metrics, depth + 1, nesting);
+    for arm in arms {
+        metrics.cyclomatic_complexity += 1;
+        analyze_expr(&arm.body, metrics, depth + 1, nesting + 1);
     }
 }
 impl QualityScore {
@@ -832,30 +873,38 @@ fn analyze_logical_soundness(ast: &crate::frontend::ast::Expr) -> f64 {
 }
 fn has_unreachable_code(ast: &crate::frontend::ast::Expr) -> bool {
     match &ast.kind {
-        ExprKind::Block(exprs) => {
-            for (i, expr) in exprs.iter().enumerate() {
-                if i < exprs.len() - 1 && is_diverging_expr(expr) {
-                    return true; // Code after diverging expression
-                }
-                if has_unreachable_code(expr) {
-                    return true;
-                }
-            }
-            false
-        }
+        ExprKind::Block(exprs) => check_block_unreachable(exprs),
         ExprKind::If {
             condition,
             then_branch,
             else_branch,
-        } => {
-            has_unreachable_code(condition)
-                || has_unreachable_code(then_branch)
-                || else_branch
-                    .as_ref()
-                    .is_some_and(|e| has_unreachable_code(e))
-        }
+        } => check_if_unreachable(condition, then_branch, else_branch),
         _ => false,
     }
+}
+
+fn check_block_unreachable(exprs: &[crate::frontend::ast::Expr]) -> bool {
+    for (i, expr) in exprs.iter().enumerate() {
+        if i < exprs.len() - 1 && is_diverging_expr(expr) {
+            return true; // Code after diverging expression
+        }
+        if has_unreachable_code(expr) {
+            return true;
+        }
+    }
+    false
+}
+
+fn check_if_unreachable(
+    condition: &crate::frontend::ast::Expr,
+    then_branch: &crate::frontend::ast::Expr,
+    else_branch: &Option<Box<crate::frontend::ast::Expr>>,
+) -> bool {
+    has_unreachable_code(condition)
+        || has_unreachable_code(then_branch)
+        || else_branch
+            .as_ref()
+            .is_some_and(|e| has_unreachable_code(e))
 }
 fn is_diverging_expr(expr: &crate::frontend::ast::Expr) -> bool {
     match &expr.kind {
@@ -968,53 +1017,85 @@ fn analyze_complexity_recursive(
             condition: iter,
             body,
             ..
-        } => {
-            if current_nesting > 0 {
-                *nested_loops += 1;
-            }
-            analyze_complexity_recursive(iter, nested_loops, recursive_calls, current_nesting);
-            analyze_complexity_recursive(body, nested_loops, recursive_calls, current_nesting + 1);
-        }
+        } => analyze_loop_complexity(iter, body, nested_loops, recursive_calls, current_nesting),
         ExprKind::Call { func, args } => {
-            // Check for potential recursive calls (heuristic)
-            if let ExprKind::Identifier(_) = &func.kind {
-                *recursive_calls += 1;
-            }
-            analyze_complexity_recursive(func, nested_loops, recursive_calls, current_nesting);
-            for arg in args {
-                analyze_complexity_recursive(arg, nested_loops, recursive_calls, current_nesting);
-            }
+            analyze_call_complexity(func, args, nested_loops, recursive_calls, current_nesting)
         }
         ExprKind::Block(exprs) => {
-            for e in exprs {
-                analyze_complexity_recursive(e, nested_loops, recursive_calls, current_nesting);
-            }
+            analyze_block_complexity(exprs, nested_loops, recursive_calls, current_nesting)
         }
         ExprKind::Function { body, .. } => {
-            analyze_complexity_recursive(body, nested_loops, recursive_calls, 0);
+            analyze_complexity_recursive(body, nested_loops, recursive_calls, 0)
         }
         ExprKind::If {
             condition,
             then_branch,
             else_branch,
-        } => {
-            analyze_complexity_recursive(condition, nested_loops, recursive_calls, current_nesting);
-            analyze_complexity_recursive(
-                then_branch,
-                nested_loops,
-                recursive_calls,
-                current_nesting,
-            );
-            if let Some(else_expr) = else_branch {
-                analyze_complexity_recursive(
-                    else_expr,
-                    nested_loops,
-                    recursive_calls,
-                    current_nesting,
-                );
-            }
-        }
+        } => analyze_if_complexity(
+            condition,
+            then_branch,
+            else_branch,
+            nested_loops,
+            recursive_calls,
+            current_nesting,
+        ),
         _ => {}
+    }
+}
+
+fn analyze_loop_complexity(
+    iter: &crate::frontend::ast::Expr,
+    body: &crate::frontend::ast::Expr,
+    nested_loops: &mut i32,
+    recursive_calls: &mut i32,
+    current_nesting: i32,
+) {
+    if current_nesting > 0 {
+        *nested_loops += 1;
+    }
+    analyze_complexity_recursive(iter, nested_loops, recursive_calls, current_nesting);
+    analyze_complexity_recursive(body, nested_loops, recursive_calls, current_nesting + 1);
+}
+
+fn analyze_call_complexity(
+    func: &crate::frontend::ast::Expr,
+    args: &[crate::frontend::ast::Expr],
+    nested_loops: &mut i32,
+    recursive_calls: &mut i32,
+    current_nesting: i32,
+) {
+    if let ExprKind::Identifier(_) = &func.kind {
+        *recursive_calls += 1;
+    }
+    analyze_complexity_recursive(func, nested_loops, recursive_calls, current_nesting);
+    for arg in args {
+        analyze_complexity_recursive(arg, nested_loops, recursive_calls, current_nesting);
+    }
+}
+
+fn analyze_block_complexity(
+    exprs: &[crate::frontend::ast::Expr],
+    nested_loops: &mut i32,
+    recursive_calls: &mut i32,
+    current_nesting: i32,
+) {
+    for e in exprs {
+        analyze_complexity_recursive(e, nested_loops, recursive_calls, current_nesting);
+    }
+}
+
+fn analyze_if_complexity(
+    condition: &crate::frontend::ast::Expr,
+    then_branch: &crate::frontend::ast::Expr,
+    else_branch: &Option<Box<crate::frontend::ast::Expr>>,
+    nested_loops: &mut i32,
+    recursive_calls: &mut i32,
+    current_nesting: i32,
+) {
+    analyze_complexity_recursive(condition, nested_loops, recursive_calls, current_nesting);
+    analyze_complexity_recursive(then_branch, nested_loops, recursive_calls, current_nesting);
+    if let Some(else_expr) = else_branch {
+        analyze_complexity_recursive(else_expr, nested_loops, recursive_calls, current_nesting);
     }
 }
 /// Analyze allocation patterns (GC pressure)

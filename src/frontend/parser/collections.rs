@@ -220,67 +220,71 @@ struct LetBindingInfo {
 ///
 /// Returns an error if token stream operations fail during lookahead.
 fn is_object_literal(state: &mut ParserState) -> bool {
-    // Peek at the next few tokens to determine if this is an object literal
-    // Object literal patterns:
-    // 1. { key: value, ... }
-    // 2. { ...spread }
-    // 3. { } (empty)
-    // Empty braces could be either - default to block
-    if matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
+    if is_empty_braces(state) {
         return false;
     }
-    // Check for spread operator
-    if matches!(state.tokens.peek(), Some((Token::DotDotDot, _))) {
+    if is_spread_operator(state) {
         return true;
     }
-    // Check for identifier/string followed by colon or fat arrow (book compatibility)
+    check_for_object_key_separator(state)
+}
+
+fn is_empty_braces(state: &mut ParserState) -> bool {
+    matches!(state.tokens.peek(), Some((Token::RightBrace, _)))
+}
+
+fn is_spread_operator(state: &mut ParserState) -> bool {
+    matches!(state.tokens.peek(), Some((Token::DotDotDot, _)))
+}
+
+fn check_for_object_key_separator(state: &mut ParserState) -> bool {
     match state.tokens.peek() {
         Some((Token::Identifier(_) | Token::String(_) | Token::RawString(_), _)) => {
-            // Look ahead for colon or fat arrow
             let saved_pos = state.tokens.position();
             state.tokens.advance(); // skip identifier/string
+
             let has_separator = matches!(
                 state.tokens.peek(),
                 Some((Token::Colon | Token::FatArrow, _))
             );
 
-            // If we found a colon, check if this might be a dict comprehension
-            // by looking further ahead for a 'for' keyword
-            if has_separator && matches!(state.tokens.peek(), Some((Token::Colon, _))) {
-                // This could be either {key: value} (object literal) or {key: expr for ...} (dict comprehension)
-                // Look ahead to see if there's a 'for' keyword within reasonable distance
-                let mut token_count = 0;
-                state.tokens.advance(); // consume the colon
-                let mut found_for = false;
+            let is_dict_comprehension = has_separator
+                && matches!(state.tokens.peek(), Some((Token::Colon, _)))
+                && lookahead_for_comprehension(state);
 
-                while token_count < 20 && !found_for {
-                    match state.tokens.peek() {
-                        Some((Token::For, _)) => {
-                            found_for = true;
-                            break;
-                        }
-                        Some((Token::RightBrace, _)) => break, // End of block
-                        Some((Token::Comma, _)) => break,      // Object literal comma separator
-                        Some(_) => {
-                            state.tokens.advance();
-                            token_count += 1;
-                        }
-                        None => break,
-                    }
-                }
-                state.tokens.set_position(saved_pos.clone()); // restore position
-
-                // If we found 'for', this is likely a dict comprehension, not an object literal
-                if found_for {
-                    return false;
-                }
-            }
-
-            state.tokens.set_position(saved_pos); // restore position
-            has_separator
+            state.tokens.set_position(saved_pos);
+            has_separator && !is_dict_comprehension
         }
         _ => false,
     }
+}
+
+fn lookahead_for_comprehension(state: &mut ParserState) -> bool {
+    let saved_pos = state.tokens.position();
+    state.tokens.advance(); // consume the colon
+
+    let found_for = scan_for_comprehension_keyword(state);
+
+    state.tokens.set_position(saved_pos);
+    found_for
+}
+
+fn scan_for_comprehension_keyword(state: &mut ParserState) -> bool {
+    let mut token_count = 0;
+
+    while token_count < 20 {
+        match state.tokens.peek() {
+            Some((Token::For, _)) => return true,
+            Some((Token::RightBrace, _)) => return false,
+            Some((Token::Comma, _)) => return false,
+            Some(_) => {
+                state.tokens.advance();
+                token_count += 1;
+            }
+            None => return false,
+        }
+    }
+    false
 }
 /// Parse an object key, handling identifiers, strings, and reserved words
 /// Complexity: 8 (extracted from `parse_object_literal_body`)

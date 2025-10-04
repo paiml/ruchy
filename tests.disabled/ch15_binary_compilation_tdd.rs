@@ -36,7 +36,7 @@ fun main() {
     let result = compile_to_binary(Path::new(test_file), &options);
     assert!(result.is_ok(), "Compilation should succeed");
 
-    // Verify binary exists and is executable
+    // Check binary exists and is executable
     assert!(Path::new(binary_path).exists(), "Binary should exist");
 
     // Execute binary and check output
@@ -341,7 +341,7 @@ fun main() {
 /// Test Ch15 specific examples from the book
 #[test]
 fn test_ch15_book_examples() {
-    // Test the simple calculator from Ch15
+    // Check the simple calculator from Ch15
     let test_file = "/tmp/test_ch15_calc.ruchy";
     let binary_path = "/tmp/test_ch15_calc_bin";
 
@@ -381,11 +381,11 @@ fun multiply_numbers(a: i32, b: i32) -> i32 {
     let stdout = String::from_utf8(output.stdout).expect("Invalid UTF-8 output");
     let lines: Vec<&str> = stdout.trim().split('\n').collect();
 
-    // This is the CURRENT BUG - we expect proper format strings but get malformed output
+    // This is the current bug - we expect proper format strings but get malformed output
     // Once fixed, these assertions should pass:
     assert_eq!(lines.len(), 2, "Should have two output lines");
 
-    // TODO: These will initially fail due to the format string bug
+ // Planned feature: These will initially fail due to the format string bug
     // After fix, these should pass:
     if !lines[0].contains("{}") {
         // Only check if format strings are fixed

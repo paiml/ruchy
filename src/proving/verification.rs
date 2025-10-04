@@ -1,7 +1,7 @@
 //! Proof Verification Engine for Ruchy
 //!
 //! Implements actual mathematical proof verification using TDD methodology
-use crate::frontend::ast::{Expr, ExprKind};
+use crate::frontend::ast::{Expr, ExprKind, MatchArm};
 use serde::{Deserialize, Serialize};
 use std::time::Instant;
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -54,53 +54,61 @@ fn extract_assert_sequence_from_block(exprs: &[Expr], assertions: &mut Vec<Strin
 }
 fn extract_assertions_recursive(expr: &Expr, assertions: &mut Vec<String>) {
     match &expr.kind {
-        ExprKind::Call { func, args } => {
-            // Check if this is an assert call
-            if let ExprKind::Identifier(name) = &func.kind {
-                if name == "assert" && !args.is_empty() {
-                    // Convert the assertion expression to string
-                    let assertion_text = expr_to_assertion_string(&args[0]);
-                    assertions.push(assertion_text);
-                }
-            }
-            // Recursively search in function and arguments
-            extract_assertions_recursive(func, assertions);
-            for arg in args {
-                extract_assertions_recursive(arg, assertions);
-            }
-        }
-        ExprKind::Block(exprs) => {
-            for expr in exprs {
-                extract_assertions_recursive(expr, assertions);
-            }
-        }
-        ExprKind::Let { value, body, .. } => {
-            extract_assertions_recursive(value, assertions);
-            extract_assertions_recursive(body, assertions);
-        }
+        ExprKind::Call { func, args } => extract_from_call(func, args, assertions),
+        ExprKind::Block(exprs) => extract_from_block(exprs, assertions),
+        ExprKind::Let { value, body, .. } => extract_from_let(value, body, assertions),
         ExprKind::If {
             condition,
             then_branch,
             else_branch,
-        } => {
-            extract_assertions_recursive(condition, assertions);
-            extract_assertions_recursive(then_branch, assertions);
-            if let Some(else_br) = else_branch {
-                extract_assertions_recursive(else_br, assertions);
-            }
+        } => extract_from_if(condition, then_branch, else_branch, assertions),
+        ExprKind::Match { expr, arms } => extract_from_match(expr, arms, assertions),
+        ExprKind::Lambda { body, .. } => extract_assertions_recursive(body, assertions),
+        _ => {}
+    }
+}
+
+fn extract_from_call(func: &Expr, args: &[Expr], assertions: &mut Vec<String>) {
+    if let ExprKind::Identifier(name) = &func.kind {
+        if name == "assert" && !args.is_empty() {
+            let assertion_text = expr_to_assertion_string(&args[0]);
+            assertions.push(assertion_text);
         }
-        ExprKind::Match { expr, arms } => {
-            extract_assertions_recursive(expr, assertions);
-            for arm in arms {
-                extract_assertions_recursive(&arm.body, assertions);
-            }
-        }
-        ExprKind::Lambda { body, .. } => {
-            extract_assertions_recursive(body, assertions);
-        }
-        _ => {
-            // For other expression types, no recursive search needed
-        }
+    }
+    extract_assertions_recursive(func, assertions);
+    for arg in args {
+        extract_assertions_recursive(arg, assertions);
+    }
+}
+
+fn extract_from_block(exprs: &[Expr], assertions: &mut Vec<String>) {
+    for expr in exprs {
+        extract_assertions_recursive(expr, assertions);
+    }
+}
+
+fn extract_from_let(value: &Expr, body: &Expr, assertions: &mut Vec<String>) {
+    extract_assertions_recursive(value, assertions);
+    extract_assertions_recursive(body, assertions);
+}
+
+fn extract_from_if(
+    condition: &Expr,
+    then_branch: &Expr,
+    else_branch: &Option<Box<Expr>>,
+    assertions: &mut Vec<String>,
+) {
+    extract_assertions_recursive(condition, assertions);
+    extract_assertions_recursive(then_branch, assertions);
+    if let Some(else_br) = else_branch {
+        extract_assertions_recursive(else_br, assertions);
+    }
+}
+
+fn extract_from_match(expr: &Expr, arms: &[MatchArm], assertions: &mut Vec<String>) {
+    extract_assertions_recursive(expr, assertions);
+    for arm in arms {
+        extract_assertions_recursive(&arm.body, assertions);
     }
 }
 fn expr_to_assertion_string(expr: &Expr) -> String {

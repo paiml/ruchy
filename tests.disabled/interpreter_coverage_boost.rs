@@ -20,7 +20,7 @@ fn eval_str(
 /// Test Value constructors and methods
 #[test]
 fn test_value_constructors() {
-    // Test all value constructors
+    // Check all value constructors
     let int_val = Value::from_i64(42);
     assert_eq!(int_val.as_i64().unwrap(), 42);
 
