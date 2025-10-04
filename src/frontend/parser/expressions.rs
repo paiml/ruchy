@@ -2555,12 +2555,7 @@ fn parse_type_alias(state: &mut ParserState) -> Result<Expr> {
 }
 
 fn parse_struct_definition(state: &mut ParserState) -> Result<Expr> {
-    // Parse struct/class Name<T> { ... }
-    let (is_class, start_span) = match state
-        .tokens
-        .peek()
-        .map(|(token, span)| (token.clone(), *span))
-    {
+    let (is_class, start_span) = match state.tokens.peek().map(|(t, s)| (t.clone(), *s)) {
         Some((Token::Struct, span)) => {
             state.tokens.advance();
             (false, span)
@@ -2576,98 +2571,114 @@ fn parse_struct_definition(state: &mut ParserState) -> Result<Expr> {
     let type_params = parse_optional_generics(state)?;
 
     if is_class {
-        // Parse optional inheritance: ": SuperClass" or ": SuperClass + Trait1 + Trait2"
-        let (superclass, traits) = if matches!(state.tokens.peek(), Some((Token::Colon, _))) {
-            state.tokens.advance(); // consume ':'
-
-            // Parse the superclass name
-            let superclass_name = if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
-                let name = name.clone();
-                state.tokens.advance();
-                Some(name)
-            } else {
-                None
-            };
-
-            // Parse optional trait mixing with "+" operator
-            let mut trait_list = Vec::new();
-            while matches!(state.tokens.peek(), Some((Token::Plus, _))) {
-                state.tokens.advance(); // consume '+'
-                if let Some((Token::Identifier(trait_name), _)) = state.tokens.peek() {
-                    trait_list.push(trait_name.clone());
-                    state.tokens.advance();
-                } else {
-                    bail!("Expected trait name after '+'");
-                }
-            }
-
-            (superclass_name, trait_list)
-        } else {
-            (None, Vec::new())
-        };
-
-        // Parse class body (fields, constructors, methods, constants, properties)
-        let (fields, constructors, methods, constants, properties) = parse_class_body(state)?;
-        Ok(Expr::new(
-            ExprKind::Class {
-                name,
-                type_params,
-                superclass,
-                traits,
-                fields,
-                constructors,
-                methods,
-                constants,
-                properties,
-                derives: Vec::new(), // Will be populated by parse_attributed_expression
-                decorators: Vec::new(), // Will be populated by parse_decorator
-                is_pub: false,
-                is_sealed: false,   // Will be set by parse_sealed_token if needed
-                is_abstract: false, // Will be set by parse_abstract_token if needed
-            },
-            start_span,
-        ))
+        parse_class_definition(state, name, type_params, start_span)
     } else {
-        // Check for tuple struct (parentheses), regular struct (braces), or unit struct (no body)
-        if matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
-            // Parse tuple struct
-            let field_types = parse_tuple_struct_fields(state)?;
+        parse_struct_variant(state, name, type_params, start_span)
+    }
+}
+
+fn parse_class_definition(
+    state: &mut ParserState,
+    name: String,
+    type_params: Vec<String>,
+    start_span: Span,
+) -> Result<Expr> {
+    let (superclass, traits) = parse_inheritance(state)?;
+    let (fields, constructors, methods, constants, properties) = parse_class_body(state)?;
+
+    Ok(Expr::new(
+        ExprKind::Class {
+            name,
+            type_params,
+            superclass,
+            traits,
+            fields,
+            constructors,
+            methods,
+            constants,
+            properties,
+            derives: Vec::new(),
+            decorators: Vec::new(),
+            is_pub: false,
+            is_sealed: false,
+            is_abstract: false,
+        },
+        start_span,
+    ))
+}
+
+fn parse_inheritance(state: &mut ParserState) -> Result<(Option<String>, Vec<String>)> {
+    if !matches!(state.tokens.peek(), Some((Token::Colon, _))) {
+        return Ok((None, Vec::new()));
+    }
+
+    state.tokens.advance(); // consume ':'
+
+    let superclass = if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
+        let name = name.clone();
+        state.tokens.advance();
+        Some(name)
+    } else {
+        None
+    };
+
+    let mut traits = Vec::new();
+    while matches!(state.tokens.peek(), Some((Token::Plus, _))) {
+        state.tokens.advance();
+        if let Some((Token::Identifier(trait_name), _)) = state.tokens.peek() {
+            traits.push(trait_name.clone());
+            state.tokens.advance();
+        } else {
+            bail!("Expected trait name after '+'");
+        }
+    }
+
+    Ok((superclass, traits))
+}
+
+fn parse_struct_variant(
+    state: &mut ParserState,
+    name: String,
+    type_params: Vec<String>,
+    start_span: Span,
+) -> Result<Expr> {
+    match state.tokens.peek() {
+        Some((Token::LeftParen, _)) => {
+            let fields = parse_tuple_struct_fields(state)?;
             Ok(Expr::new(
                 ExprKind::TupleStruct {
                     name,
                     type_params,
-                    fields: field_types,
-                    derives: Vec::new(), // Will be populated by parse_attributed_expression
-                    is_pub: false,
-                },
-                start_span,
-            ))
-        } else if matches!(state.tokens.peek(), Some((Token::LeftBrace, _))) {
-            // Parse regular struct fields
-            let struct_fields = parse_struct_fields(state)?;
-            Ok(Expr::new(
-                ExprKind::Struct {
-                    name,
-                    type_params,
-                    fields: struct_fields,
-                    derives: Vec::new(), // Will be populated by parse_attributed_expression
-                    is_pub: false,
-                },
-                start_span,
-            ))
-        } else {
-            // Unit struct (no fields)
-            Ok(Expr::new(
-                ExprKind::Struct {
-                    name,
-                    type_params,
-                    fields: Vec::new(),
+                    fields,
                     derives: Vec::new(),
                     is_pub: false,
                 },
                 start_span,
             ))
         }
+        Some((Token::LeftBrace, _)) => {
+            let fields = parse_struct_fields(state)?;
+            Ok(Expr::new(
+                ExprKind::Struct {
+                    name,
+                    type_params,
+                    fields,
+                    derives: Vec::new(),
+                    is_pub: false,
+                },
+                start_span,
+            ))
+        }
+        _ => Ok(Expr::new(
+            ExprKind::Struct {
+                name,
+                type_params,
+                fields: Vec::new(),
+                derives: Vec::new(),
+                is_pub: false,
+            },
+            start_span,
+        )),
     }
 }
 /// Parse struct name identifier - complexity: 4
