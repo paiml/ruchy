@@ -1259,52 +1259,12 @@ impl Interpreter {
         let index_value = self.eval_expr(index)?;
 
         match (&object_value, &index_value) {
-            (Value::Array(ref array), Value::Integer(idx)) => {
-                let index = *idx as usize;
-                if index < array.len() {
-                    Ok(array[index].clone())
-                } else {
-                    Err(InterpreterError::RuntimeError(format!(
-                        "Index {} out of bounds for array of length {}",
-                        index,
-                        array.len()
-                    )))
-                }
-            }
-            (Value::String(ref s), Value::Integer(idx)) => {
-                let index = *idx as usize;
-                let chars: Vec<char> = s.chars().collect();
-                if index < chars.len() {
-                    Ok(Value::from_string(chars[index].to_string()))
-                } else {
-                    Err(InterpreterError::RuntimeError(format!(
-                        "Index {} out of bounds for string of length {}",
-                        index,
-                        chars.len()
-                    )))
-                }
-            }
-            (Value::Tuple(ref tuple), Value::Integer(idx)) => {
-                let index = *idx as usize;
-                if index < tuple.len() {
-                    Ok(tuple[index].clone())
-                } else {
-                    Err(InterpreterError::RuntimeError(format!(
-                        "Index {} out of bounds for tuple of length {}",
-                        index,
-                        tuple.len()
-                    )))
-                }
-            }
-            (Value::Object(ref fields), Value::String(ref key)) => {
-                fields.get(&**key).cloned().ok_or_else(|| {
-                    InterpreterError::RuntimeError(format!("Key '{key}' not found in object"))
-                })
-            }
+            (Value::Array(ref array), Value::Integer(idx)) => Self::index_array(array, *idx),
+            (Value::String(ref s), Value::Integer(idx)) => Self::index_string(s, *idx),
+            (Value::Tuple(ref tuple), Value::Integer(idx)) => Self::index_tuple(tuple, *idx),
+            (Value::Object(ref fields), Value::String(ref key)) => Self::index_object(fields, key),
             (Value::ObjectMut(ref cell), Value::String(ref key)) => {
-                cell.borrow().get(&**key).cloned().ok_or_else(|| {
-                    InterpreterError::RuntimeError(format!("Key '{key}' not found in object"))
-                })
+                Self::index_object_mut(cell, key)
             }
             _ => Err(InterpreterError::RuntimeError(format!(
                 "Cannot index {} with {}",
@@ -1312,6 +1272,63 @@ impl Interpreter {
                 index_value.type_name()
             ))),
         }
+    }
+
+    /// Index into an array (complexity: 2)
+    fn index_array(array: &[Value], idx: i64) -> Result<Value, InterpreterError> {
+        let index = idx as usize;
+        if index < array.len() {
+            Ok(array[index].clone())
+        } else {
+            Err(InterpreterError::RuntimeError(format!(
+                "Index {index} out of bounds for array of length {}",
+                array.len()
+            )))
+        }
+    }
+
+    /// Index into a string (complexity: 2)
+    fn index_string(s: &str, idx: i64) -> Result<Value, InterpreterError> {
+        let index = idx as usize;
+        let chars: Vec<char> = s.chars().collect();
+        if index < chars.len() {
+            Ok(Value::from_string(chars[index].to_string()))
+        } else {
+            Err(InterpreterError::RuntimeError(format!(
+                "Index {index} out of bounds for string of length {}",
+                chars.len()
+            )))
+        }
+    }
+
+    /// Index into a tuple (complexity: 2)
+    fn index_tuple(tuple: &[Value], idx: i64) -> Result<Value, InterpreterError> {
+        let index = idx as usize;
+        if index < tuple.len() {
+            Ok(tuple[index].clone())
+        } else {
+            Err(InterpreterError::RuntimeError(format!(
+                "Index {index} out of bounds for tuple of length {}",
+                tuple.len()
+            )))
+        }
+    }
+
+    /// Index into an object with string key (complexity: 1)
+    fn index_object(fields: &HashMap<String, Value>, key: &str) -> Result<Value, InterpreterError> {
+        fields.get(key).cloned().ok_or_else(|| {
+            InterpreterError::RuntimeError(format!("Key '{key}' not found in object"))
+        })
+    }
+
+    /// Index into a mutable object with string key (complexity: 1)
+    fn index_object_mut(
+        cell: &std::cell::RefCell<HashMap<String, Value>>,
+        key: &str,
+    ) -> Result<Value, InterpreterError> {
+        cell.borrow().get(key).cloned().ok_or_else(|| {
+            InterpreterError::RuntimeError(format!("Key '{key}' not found in object"))
+        })
     }
 
     /// Check if a field is accessible based on visibility rules
@@ -1344,94 +1361,114 @@ impl Interpreter {
         let object_value = self.eval_expr(object)?;
 
         match object_value {
-            Value::Object(ref object_map) => {
-                // Check if this is accessing .new on a type (for constructors)
-                if field == "new" {
-                    // Check if this is an Actor, Struct, or Class type definition
-                    if let Some(Value::String(ref type_str)) = object_map.get("__type") {
-                        if let Some(Value::String(ref name)) = object_map.get("__name") {
-                            match type_str.as_ref() {
-                                "Actor" => {
-                                    return Ok(Value::from_string(format!(
-                                        "__actor_constructor__:{}",
-                                        name
-                                    )));
-                                }
-                                "Struct" => {
-                                    return Ok(Value::from_string(format!(
-                                        "__struct_constructor__:{}",
-                                        name
-                                    )));
-                                }
-                                "Class" => {
-                                    return Ok(Value::from_string(format!(
-                                        "__class_constructor__:{}:new",
-                                        name
-                                    )));
-                                }
-                                _ => {}
-                            }
-                        }
-                    }
-                }
-
-                // Check if this is an actor instance with runtime state (async actors)
-                if let Some(Value::String(actor_id)) = object_map.get("__actor_id") {
-                    // This is an async actor - get the field from the runtime
-                    use crate::runtime::actor_runtime::ACTOR_RUNTIME;
-                    let field_value = ACTOR_RUNTIME.get_actor_field(actor_id.as_ref(), field)?;
-                    return Ok(field_value.to_value());
-                }
-
-                // Check visibility for struct instances
-                if let Some(Value::String(struct_name)) = object_map.get("__struct_type") {
-                    self.check_field_visibility(struct_name.as_ref(), field)?;
-                }
-
-                // Regular object field access (including synchronous actors)
-                if let Some(value) = object_map.get(field) {
-                    Ok(value.clone())
-                } else {
-                    Err(InterpreterError::RuntimeError(format!(
-                        "Object has no field named '{}'",
-                        field
-                    )))
-                }
-            }
-            Value::ObjectMut(ref cell) => {
-                // Mutable object field access
-                // Safe borrow: We clone the result, so borrow is released immediately
-                let object_map = cell.borrow();
-
-                // Check if this is an actor instance with runtime state (async actors)
-                if let Some(Value::String(actor_id)) = object_map.get("__actor_id") {
-                    // This is an async actor - get the field from the runtime
-                    use crate::runtime::actor_runtime::ACTOR_RUNTIME;
-                    let field_value = ACTOR_RUNTIME.get_actor_field(actor_id.as_ref(), field)?;
-                    return Ok(field_value.to_value());
-                }
-
-                // Check visibility for struct instances
-                if let Some(Value::String(struct_name)) = object_map.get("__struct_type") {
-                    self.check_field_visibility(struct_name.as_ref(), field)?;
-                }
-
-                // Regular object field access
-                if let Some(value) = object_map.get(field) {
-                    Ok(value.clone())
-                } else {
-                    Err(InterpreterError::RuntimeError(format!(
-                        "Object has no field named '{}'",
-                        field
-                    )))
-                }
-            }
+            Value::Object(ref object_map) => self.access_object_field(object_map, field),
+            Value::ObjectMut(ref cell) => self.access_object_mut_field(cell, field),
             _ => Err(InterpreterError::RuntimeError(format!(
                 "Cannot access field '{}' on type {}",
                 field,
                 object_value.type_name()
             ))),
         }
+    }
+
+    /// Access field on immutable object (complexity: 5)
+    fn access_object_field(
+        &self,
+        object_map: &HashMap<String, Value>,
+        field: &str,
+    ) -> Result<Value, InterpreterError> {
+        // Check for constructor access (.new)
+        if let Some(constructor) = Self::check_constructor_access(object_map, field) {
+            return Ok(constructor);
+        }
+
+        // Check for actor field access
+        if let Some(actor_field) = Self::check_actor_field_access(object_map, field)? {
+            return Ok(actor_field);
+        }
+
+        // Check struct visibility
+        self.check_struct_visibility(object_map, field)?;
+
+        // Regular field access
+        Self::get_object_field(object_map, field)
+    }
+
+    /// Access field on mutable object (complexity: 4)
+    fn access_object_mut_field(
+        &self,
+        cell: &std::cell::RefCell<HashMap<String, Value>>,
+        field: &str,
+    ) -> Result<Value, InterpreterError> {
+        let object_map = cell.borrow();
+
+        // Check for actor field access
+        if let Some(actor_field) = Self::check_actor_field_access(&object_map, field)? {
+            return Ok(actor_field);
+        }
+
+        // Check struct visibility
+        self.check_struct_visibility(&object_map, field)?;
+
+        // Regular field access
+        Self::get_object_field(&object_map, field)
+    }
+
+    /// Check for constructor access (.new on type definitions) (complexity: 4)
+    fn check_constructor_access(object_map: &HashMap<String, Value>, field: &str) -> Option<Value> {
+        if field != "new" {
+            return None;
+        }
+
+        if let Some(Value::String(ref type_str)) = object_map.get("__type") {
+            if let Some(Value::String(ref name)) = object_map.get("__name") {
+                return match type_str.as_ref() {
+                    "Actor" => Some(Value::from_string(format!("__actor_constructor__:{name}"))),
+                    "Struct" => Some(Value::from_string(format!("__struct_constructor__:{name}"))),
+                    "Class" => Some(Value::from_string(format!(
+                        "__class_constructor__:{name}:new"
+                    ))),
+                    _ => None,
+                };
+            }
+        }
+        None
+    }
+
+    /// Check for actor field access (complexity: 2)
+    fn check_actor_field_access(
+        object_map: &HashMap<String, Value>,
+        field: &str,
+    ) -> Result<Option<Value>, InterpreterError> {
+        if let Some(Value::String(actor_id)) = object_map.get("__actor_id") {
+            use crate::runtime::actor_runtime::ACTOR_RUNTIME;
+            let field_value = ACTOR_RUNTIME.get_actor_field(actor_id.as_ref(), field)?;
+            Ok(Some(field_value.to_value()))
+        } else {
+            Ok(None)
+        }
+    }
+
+    /// Check struct field visibility (complexity: 2)
+    fn check_struct_visibility(
+        &self,
+        object_map: &HashMap<String, Value>,
+        field: &str,
+    ) -> Result<(), InterpreterError> {
+        if let Some(Value::String(struct_name)) = object_map.get("__struct_type") {
+            self.check_field_visibility(struct_name.as_ref(), field)?;
+        }
+        Ok(())
+    }
+
+    /// Get field from object map (complexity: 2)
+    fn get_object_field(
+        object_map: &HashMap<String, Value>,
+        field: &str,
+    ) -> Result<Value, InterpreterError> {
+        object_map.get(field).cloned().ok_or_else(|| {
+            InterpreterError::RuntimeError(format!("Object has no field named '{field}'"))
+        })
     }
 
     fn eval_object_literal(
