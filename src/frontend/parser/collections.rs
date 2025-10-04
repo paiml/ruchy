@@ -1210,48 +1210,16 @@ fn parse_set_comprehension_continuation(
     element: Expr,
     start_span: Span,
 ) -> Result<Expr> {
-    use crate::frontend::ast::ComprehensionClause;
-
     let mut clauses = Vec::new();
 
-    // Parse the first for clause (required)
+    // Parse first for clause (required)
     state.tokens.expect(&Token::For)?;
-    let variable = parse_comprehension_variable(state)?;
-    state.tokens.expect(&Token::In)?;
-    let iterable = parse_comprehension_iterable(state)?;
-
-    // Check for condition after first for clause
-    let mut condition = None;
-    if matches!(state.tokens.peek(), Some((Token::If, _))) {
-        state.tokens.advance(); // consume 'if'
-        condition = Some(Box::new(parse_condition_expr(state)?));
-    }
-
-    clauses.push(ComprehensionClause {
-        variable,
-        iterable: Box::new(iterable),
-        condition,
-    });
+    clauses.push(parse_for_clause(state)?);
 
     // Parse additional for clauses
     while matches!(state.tokens.peek(), Some((Token::For, _))) {
-        state.tokens.advance(); // consume 'for'
-        let var = parse_comprehension_variable(state)?;
-        state.tokens.expect(&Token::In)?;
-        let iter = parse_comprehension_iterable(state)?;
-
-        // Check for condition after this for clause
-        let mut cond = None;
-        if matches!(state.tokens.peek(), Some((Token::If, _))) {
-            state.tokens.advance(); // consume 'if'
-            cond = Some(Box::new(parse_condition_expr(state)?));
-        }
-
-        clauses.push(ComprehensionClause {
-            variable: var,
-            iterable: Box::new(iter),
-            condition: cond,
-        });
+        state.tokens.advance();
+        clauses.push(parse_for_clause(state)?);
     }
 
     state.tokens.expect(&Token::RightBrace)?;
@@ -1272,48 +1240,16 @@ fn parse_dict_comprehension_continuation(
     value: Expr,
     start_span: Span,
 ) -> Result<Expr> {
-    use crate::frontend::ast::ComprehensionClause;
-
     let mut clauses = Vec::new();
 
-    // Parse the first for clause (required)
+    // Parse first for clause (required)
     state.tokens.expect(&Token::For)?;
-    let variable = parse_comprehension_variable(state)?;
-    state.tokens.expect(&Token::In)?;
-    let iterable = parse_comprehension_iterable(state)?;
-
-    // Check for condition after first for clause
-    let mut condition = None;
-    if matches!(state.tokens.peek(), Some((Token::If, _))) {
-        state.tokens.advance(); // consume 'if'
-        condition = Some(Box::new(parse_condition_expr(state)?));
-    }
-
-    clauses.push(ComprehensionClause {
-        variable,
-        iterable: Box::new(iterable),
-        condition,
-    });
+    clauses.push(parse_for_clause(state)?);
 
     // Parse additional for clauses
     while matches!(state.tokens.peek(), Some((Token::For, _))) {
-        state.tokens.advance(); // consume 'for'
-        let var = parse_comprehension_variable(state)?;
-        state.tokens.expect(&Token::In)?;
-        let iter = parse_comprehension_iterable(state)?;
-
-        // Check for condition after this for clause
-        let mut cond = None;
-        if matches!(state.tokens.peek(), Some((Token::If, _))) {
-            state.tokens.advance(); // consume 'if'
-            cond = Some(Box::new(parse_condition_expr(state)?));
-        }
-
-        clauses.push(ComprehensionClause {
-            variable: var,
-            iterable: Box::new(iter),
-            condition: cond,
-        });
+        state.tokens.advance();
+        clauses.push(parse_for_clause(state)?);
     }
 
     state.tokens.expect(&Token::RightBrace)?;
