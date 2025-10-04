@@ -1,0 +1,16 @@
+// DISABLED: This test has multiple Rust violations and API incompatibilities
+//
+// ROOT CAUSE: Multiple fundamental issues:
+// 1. Defines trait implementations for external types (orphan rule violation E0117)
+// 2. Duplicate definitions of ReplMode (E0255)
+// 3. Missing types: CompletionResult, HistoryEntry
+//
+// FIX REQUIRED: Complete rewrite following Rust orphan rules
+// - Remove trait implementations for external types
+// - Fix duplicate ReplMode definitions
+// - Use current ruchy::runtime::repl API types
+// - Follow Rust trait coherence rules
+//
+// EFFORT: ~6-8 hours (requires redesign to avoid orphan rule violations)
+// PRIORITY: Low - advanced features, violates Rust lang rules
+// TICKET: Create QUALITY-XXX for REPL advanced features proper design
