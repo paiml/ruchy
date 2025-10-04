@@ -213,7 +213,7 @@ mod eval_prim_tdd_tests {
         fn test_string_concat() {
             let mut interp = setup_interpreter();
             let result = interp.eval_prim(Prim::Concat, vec![string_lit("Hello, "), string_lit("World!")]);
-            assert_eq!(result, Ok(Value::String(Rc::new("Hello, World!".to_string()))));
+            assert_eq!(result, Ok(Value::String(Rc::from("Hello, World!"))));
         }
 
         #[test]

@@ -49,9 +49,9 @@ mod environment_tests {
         assert_eq!(float1, float2);
 
         // Test string operations
-        let str1 = Value::String(Rc::new("hello".to_string()));
-        let str2 = Value::String(Rc::new("hello".to_string()));
-        let str3 = Value::String(Rc::new("world".to_string()));
+        let str1 = Value::String(Rc::from("hello"));
+        let str2 = Value::String(Rc::from("hello"));
+        let str3 = Value::String(Rc::from("world"));
         assert_eq!(str1, str2);
         assert_ne!(str1, str3);
 
@@ -76,7 +76,7 @@ mod environment_tests {
         assert_eq!(format!("{}", Value::Bool(false)), "false");
         assert_eq!(format!("{}", Value::Nil), "nil");
         assert_eq!(
-            format!("{}", Value::String(Rc::new("test".to_string()))),
+            format!("{}", Value::String(Rc::from("test"))),
             "test"
         );
     }
@@ -115,7 +115,7 @@ mod environment_tests {
         let tuple = Value::Tuple(Rc::new(vec![
             Value::Integer(42),
             Value::Bool(true),
-            Value::String(Rc::new("test".to_string())),
+            Value::String(Rc::from("test")),
         ]));
 
         if let Value::Tuple(tup) = &tuple {
@@ -134,7 +134,7 @@ mod environment_tests {
         map.insert("y".to_string(), Value::Integer(20));
         map.insert(
             "name".to_string(),
-            Value::String(Rc::new("test".to_string())),
+            Value::String(Rc::from("test")),
         );
 
         let obj = Value::Object(Rc::new(map));
@@ -145,7 +145,7 @@ mod environment_tests {
             assert_eq!(o.get("y"), Some(&Value::Integer(20)));
             assert_eq!(
                 o.get("name"),
-                Some(&Value::String(Rc::new("test".to_string())))
+                Some(&Value::String(Rc::from("test")))
             );
         } else {
             panic!("Expected Object");
@@ -156,8 +156,8 @@ mod environment_tests {
     fn test_nested_values() {
         // Nested arrays
         let nested_array = Value::Array(Rc::new(vec![
-            Value::Array(Rc::new(vec![Value::Integer(1), Value::Integer(2)])),
-            Value::Array(Rc::new(vec![Value::Integer(3), Value::Integer(4)])),
+            Value::Array(vec![Value::Integer(1), Value::Integer(2)].into()),
+            Value::Array(vec![Value::Integer(3), Value::Integer(4)].into()),
         ]));
 
         if let Value::Array(outer) = &nested_array {
@@ -172,7 +172,7 @@ mod environment_tests {
             Value::Integer(42),
             Value::Array(Rc::new(vec![
                 Value::Bool(true),
-                Value::String(Rc::new("nested".to_string())),
+                Value::String(Rc::from("nested")),
             ])),
         ]));
 
@@ -267,7 +267,7 @@ mod environment_tests {
         assert_eq!(Rc::strong_count(&s1), 1);
 
         // Test with Value types
-        let val = Value::String(Rc::new("test".to_string()));
+        let val = Value::String(Rc::from("test"));
         let val2 = val.clone();
 
         match (&val, &val2) {
@@ -318,10 +318,10 @@ mod environment_tests {
             Value::Integer(42),
             Value::Float(3.14),
             Value::Bool(true),
-            Value::String(Rc::new("test".to_string())),
+            Value::String(Rc::from("test")),
             Value::Nil,
-            Value::Array(Rc::new(vec![Value::Integer(1)])),
-            Value::Tuple(Rc::new(vec![Value::Integer(1)])),
+            Value::Array(vec![Value::Integer(1)].into()),
+            Value::Tuple(vec![Value::Integer(1)].into()),
         ];
 
         for v in &values {
@@ -432,7 +432,7 @@ mod runtime_stress_tests {
         let mut value = Value::Integer(0);
 
         for i in 1..100 {
-            value = Value::Array(Rc::new(vec![value, Value::Integer(i)]));
+            value = Value::Array(vec![value, Value::Integer(i)].into());
         }
 
         // Should not stack overflow

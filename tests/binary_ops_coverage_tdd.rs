@@ -31,16 +31,16 @@ fn test_add_floats() {
 
 #[test]
 fn test_add_strings() {
-    let lhs = Value::String(Rc::new("Hello ".to_string()));
-    let rhs = Value::String(Rc::new("World".to_string()));
+    let lhs = Value::String(Rc::from("Hello "));
+    let rhs = Value::String(Rc::from("World"));
     let result = eval_binary_op(BinaryOp::Add, &lhs, &rhs).unwrap();
-    assert_eq!(result, Value::String(Rc::new("Hello World".to_string())));
+    assert_eq!(result, Value::String(Rc::from("Hello World")));
 }
 
 #[test]
 fn test_add_lists() {
-    let lhs = Value::Array(Rc::new(vec![Value::Integer(1), Value::Integer(2)]));
-    let rhs = Value::Array(Rc::new(vec![Value::Integer(3), Value::Integer(4)]));
+    let lhs = Value::Array(vec![Value::Integer(1), Value::Integer(2)].into());
+    let rhs = Value::Array(vec![Value::Integer(3), Value::Integer(4)].into());
     let result = eval_binary_op(BinaryOp::Add, &lhs, &rhs).unwrap();
     assert_eq!(
         result,
@@ -56,7 +56,7 @@ fn test_add_lists() {
 #[test]
 fn test_add_incompatible_types() {
     let lhs = Value::Integer(5);
-    let rhs = Value::String(Rc::new("test".to_string()));
+    let rhs = Value::String(Rc::from("test"));
     let result = eval_binary_op(BinaryOp::Add, &lhs, &rhs);
     assert!(result.is_err());
     assert!(result.unwrap_err().to_string().contains("Cannot add"));
@@ -88,7 +88,7 @@ fn test_subtract_negative_result() {
 
 #[test]
 fn test_subtract_incompatible() {
-    let lhs = Value::String(Rc::new("test".to_string()));
+    let lhs = Value::String(Rc::from("test"));
     let rhs = Value::Integer(1);
     let result = eval_binary_op(BinaryOp::Subtract, &lhs, &rhs);
     assert!(result.is_err());
@@ -112,23 +112,23 @@ fn test_multiply_floats() {
 
 #[test]
 fn test_multiply_string_by_int() {
-    let lhs = Value::String(Rc::new("ab".to_string()));
+    let lhs = Value::String(Rc::from("ab"));
     let rhs = Value::Integer(3);
     let result = eval_binary_op(BinaryOp::Multiply, &lhs, &rhs).unwrap();
-    assert_eq!(result, Value::String(Rc::new("ababab".to_string())));
+    assert_eq!(result, Value::String(Rc::from("ababab")));
 }
 
 #[test]
 fn test_multiply_int_by_string() {
     let lhs = Value::Integer(2);
-    let rhs = Value::String(Rc::new("xy".to_string()));
+    let rhs = Value::String(Rc::from("xy"));
     let result = eval_binary_op(BinaryOp::Multiply, &lhs, &rhs).unwrap();
-    assert_eq!(result, Value::String(Rc::new("xyxy".to_string())));
+    assert_eq!(result, Value::String(Rc::from("xyxy")));
 }
 
 #[test]
 fn test_multiply_string_negative_times() {
-    let lhs = Value::String(Rc::new("test".to_string()));
+    let lhs = Value::String(Rc::from("test"));
     let rhs = Value::Integer(-1);
     let result = eval_binary_op(BinaryOp::Multiply, &lhs, &rhs);
     assert!(result.is_err());
@@ -187,7 +187,7 @@ fn test_divide_by_zero_float() {
 
 #[test]
 fn test_divide_incompatible() {
-    let lhs = Value::String(Rc::new("test".to_string()));
+    let lhs = Value::String(Rc::from("test"));
     let rhs = Value::Integer(2);
     let result = eval_binary_op(BinaryOp::Divide, &lhs, &rhs);
     assert!(result.is_err());
@@ -272,7 +272,7 @@ fn test_power_float_negative_exponent() {
 
 #[test]
 fn test_power_incompatible() {
-    let lhs = Value::String(Rc::new("test".to_string()));
+    let lhs = Value::String(Rc::from("test"));
     let rhs = Value::Integer(2);
     let result = eval_binary_op(BinaryOp::Power, &lhs, &rhs);
     assert!(result.is_err());
@@ -304,8 +304,8 @@ fn test_equal_floats() {
 
 #[test]
 fn test_equal_strings() {
-    let lhs = Value::String(Rc::new("hello".to_string()));
-    let rhs = Value::String(Rc::new("hello".to_string()));
+    let lhs = Value::String(Rc::from("hello"));
+    let rhs = Value::String(Rc::from("hello"));
     let result = eval_binary_op(BinaryOp::Equal, &lhs, &rhs).unwrap();
     assert_eq!(result, Value::Bool(true));
 }
@@ -320,24 +320,24 @@ fn test_equal_bools() {
 
 #[test]
 fn test_equal_chars() {
-    let lhs = Value::String(Rc::new("a".to_string()));
-    let rhs = Value::String(Rc::new("a".to_string()));
+    let lhs = Value::String(Rc::from("a"));
+    let rhs = Value::String(Rc::from("a"));
     let result = eval_binary_op(BinaryOp::Equal, &lhs, &rhs).unwrap();
     assert_eq!(result, Value::Bool(true));
 }
 
 #[test]
 fn test_equal_lists() {
-    let lhs = Value::Array(Rc::new(vec![Value::Integer(1), Value::Integer(2)]));
-    let rhs = Value::Array(Rc::new(vec![Value::Integer(1), Value::Integer(2)]));
+    let lhs = Value::Array(vec![Value::Integer(1), Value::Integer(2)].into());
+    let rhs = Value::Array(vec![Value::Integer(1), Value::Integer(2)].into());
     let result = eval_binary_op(BinaryOp::Equal, &lhs, &rhs).unwrap();
     assert_eq!(result, Value::Bool(true));
 }
 
 #[test]
 fn test_equal_lists_different() {
-    let lhs = Value::Array(Rc::new(vec![Value::Integer(1), Value::Integer(2)]));
-    let rhs = Value::Array(Rc::new(vec![Value::Integer(1), Value::Integer(3)]));
+    let lhs = Value::Array(vec![Value::Integer(1), Value::Integer(2)].into());
+    let rhs = Value::Array(vec![Value::Integer(1), Value::Integer(3)].into());
     let result = eval_binary_op(BinaryOp::Equal, &lhs, &rhs).unwrap();
     assert_eq!(result, Value::Bool(false));
 }
@@ -346,11 +346,11 @@ fn test_equal_lists_different() {
 fn test_equal_tuples() {
     let lhs = Value::Tuple(Rc::new(vec![
         Value::Integer(1),
-        Value::String(Rc::new("a".to_string())),
+        Value::String(Rc::from("a")),
     ]));
     let rhs = Value::Tuple(Rc::new(vec![
         Value::Integer(1),
-        Value::String(Rc::new("a".to_string())),
+        Value::String(Rc::from("a")),
     ]));
     let result = eval_binary_op(BinaryOp::Equal, &lhs, &rhs).unwrap();
     assert_eq!(result, Value::Bool(true));
@@ -367,7 +367,7 @@ fn test_equal_unit() {
 #[test]
 fn test_equal_different_types() {
     let lhs = Value::Integer(42);
-    let rhs = Value::String(Rc::new("42".to_string()));
+    let rhs = Value::String(Rc::from("42"));
     let result = eval_binary_op(BinaryOp::Equal, &lhs, &rhs).unwrap();
     assert_eq!(result, Value::Bool(false));
 }
@@ -407,8 +407,8 @@ fn test_less_floats() {
 
 #[test]
 fn test_less_strings() {
-    let lhs = Value::String(Rc::new("apple".to_string()));
-    let rhs = Value::String(Rc::new("banana".to_string()));
+    let lhs = Value::String(Rc::from("apple"));
+    let rhs = Value::String(Rc::from("banana"));
     let result = eval_binary_op(BinaryOp::Less, &lhs, &rhs).unwrap();
     assert_eq!(result, Value::Bool(true));
 }
@@ -523,7 +523,7 @@ fn test_or_true_true() {
 
 #[test]
 fn test_or_incompatible() {
-    let lhs = Value::String(Rc::new("test".to_string()));
+    let lhs = Value::String(Rc::from("test"));
     let rhs = Value::Bool(false);
     let result = eval_binary_op(BinaryOp::Or, &lhs, &rhs);
     assert!(result.is_err());
@@ -631,7 +631,7 @@ fn test_left_shift_too_large() {
 
 #[test]
 fn test_left_shift_incompatible() {
-    let lhs = Value::String(Rc::new("test".to_string()));
+    let lhs = Value::String(Rc::from("test"));
     let rhs = Value::Integer(2);
     let result = eval_binary_op(BinaryOp::LeftShift, &lhs, &rhs);
     assert!(result.is_err());
@@ -659,10 +659,10 @@ fn test_null_coalesce_with_value() {
 
 #[test]
 fn test_null_coalesce_string() {
-    let lhs = Value::String(Rc::new("present".to_string()));
-    let rhs = Value::String(Rc::new("default".to_string()));
+    let lhs = Value::String(Rc::from("present"));
+    let rhs = Value::String(Rc::from("default"));
     let result = eval_binary_op(BinaryOp::NullCoalesce, &lhs, &rhs).unwrap();
-    assert_eq!(result, Value::String(Rc::new("present".to_string())));
+    assert_eq!(result, Value::String(Rc::from("present")));
 }
 
 #[test]
@@ -687,15 +687,15 @@ fn test_add_empty_strings() {
 
 #[test]
 fn test_add_empty_lists() {
-    let lhs = Value::Array(Rc::new(vec![]));
-    let rhs = Value::Array(Rc::new(vec![]));
+    let lhs = Value::Array(vec![].into());
+    let rhs = Value::Array(vec![].into());
     let result = eval_binary_op(BinaryOp::Add, &lhs, &rhs).unwrap();
-    assert_eq!(result, Value::Array(Rc::new(vec![])));
+    assert_eq!(result, Value::Array(vec![].into()));
 }
 
 #[test]
 fn test_multiply_string_by_zero() {
-    let lhs = Value::String(Rc::new("test".to_string()));
+    let lhs = Value::String(Rc::from("test"));
     let rhs = Value::Integer(0);
     let result = eval_binary_op(BinaryOp::Multiply, &lhs, &rhs).unwrap();
     assert_eq!(result, Value::String(Rc::new("".to_string())));
@@ -721,12 +721,12 @@ fn test_float_equality_epsilon() {
 #[test]
 fn test_nested_list_equality() {
     let lhs = Value::Array(Rc::new(vec![
-        Value::Array(Rc::new(vec![Value::Integer(1), Value::Integer(2)])),
-        Value::Array(Rc::new(vec![Value::Integer(3)])),
+        Value::Array(vec![Value::Integer(1), Value::Integer(2)].into()),
+        Value::Array(vec![Value::Integer(3)].into()),
     ]));
     let rhs = Value::Array(Rc::new(vec![
-        Value::Array(Rc::new(vec![Value::Integer(1), Value::Integer(2)])),
-        Value::Array(Rc::new(vec![Value::Integer(3)])),
+        Value::Array(vec![Value::Integer(1), Value::Integer(2)].into()),
+        Value::Array(vec![Value::Integer(3)].into()),
     ]));
     let result = eval_binary_op(BinaryOp::Equal, &lhs, &rhs).unwrap();
     assert_eq!(result, Value::Bool(true));
@@ -734,16 +734,16 @@ fn test_nested_list_equality() {
 
 #[test]
 fn test_list_length_mismatch() {
-    let lhs = Value::Array(Rc::new(vec![Value::Integer(1), Value::Integer(2)]));
-    let rhs = Value::Array(Rc::new(vec![Value::Integer(1)]));
+    let lhs = Value::Array(vec![Value::Integer(1), Value::Integer(2)].into());
+    let rhs = Value::Array(vec![Value::Integer(1)].into());
     let result = eval_binary_op(BinaryOp::Equal, &lhs, &rhs).unwrap();
     assert_eq!(result, Value::Bool(false));
 }
 
 #[test]
 fn test_tuple_length_mismatch() {
-    let lhs = Value::Tuple(Rc::new(vec![Value::Integer(1), Value::Integer(2)]));
-    let rhs = Value::Tuple(Rc::new(vec![Value::Integer(1)]));
+    let lhs = Value::Tuple(vec![Value::Integer(1), Value::Integer(2)].into());
+    let rhs = Value::Tuple(vec![Value::Integer(1)].into());
     let result = eval_binary_op(BinaryOp::Equal, &lhs, &rhs).unwrap();
     assert_eq!(result, Value::Bool(false));
 }
@@ -759,8 +759,8 @@ fn test_large_integer_add() {
 
 #[test]
 fn test_all_comparison_ops_with_strings() {
-    let apple = Value::String(Rc::new("apple".to_string()));
-    let banana = Value::String(Rc::new("banana".to_string()));
+    let apple = Value::String(Rc::from("apple"));
+    let banana = Value::String(Rc::from("banana"));
 
     let less = eval_binary_op(BinaryOp::Less, &apple, &banana).unwrap();
     assert_eq!(less, Value::Bool(true));

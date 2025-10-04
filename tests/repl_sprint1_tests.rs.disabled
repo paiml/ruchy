@@ -256,7 +256,7 @@ fn test_value_float() {
 
 #[test]
 fn test_value_string() {
-    let value = Value::String(Rc::new("hello".to_string()));
+    let value = Value::String(Rc::from("hello"));
     assert_eq!(value.to_string(), "\"hello\"");
     // Value is truthy based on its representation
 }
@@ -301,7 +301,7 @@ fn test_value_empty_list() {
 fn test_value_tuple() {
     let value = Value::Tuple(vec![
         Value::Integer(1),
-        Value::String(Rc::new("hello".to_string())),
+        Value::String(Rc::from("hello")),
     ]);
     assert_eq!(value.to_string(), "(1, \"hello\")");
     // Value is truthy based on its representation
@@ -348,7 +348,7 @@ fn test_value_object() {
     let mut object = HashMap::new();
     object.insert(
         "name".to_string(),
-        Value::String(Rc::new("Alice".to_string())),
+        Value::String(Rc::from("Alice")),
     );
     object.insert("age".to_string(), Value::Integer(30));
 
@@ -369,7 +369,7 @@ fn test_value_empty_object() {
 fn test_value_hashmap() {
     let mut map = HashMap::new();
     map.insert(
-        Value::String(Rc::new("key".to_string())),
+        Value::String(Rc::from("key")),
         Value::Integer(42),
     );
 

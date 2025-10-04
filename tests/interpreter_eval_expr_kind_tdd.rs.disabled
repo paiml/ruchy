@@ -34,7 +34,7 @@ mod eval_expr_kind_tdd {
         
         // String literal
         let str_result = interpreter.eval_expr_kind(&ExprKind::Literal(Literal::String("hello".to_string()))).unwrap();
-        assert_eq!(str_result, Value::String(Rc::new("hello".to_string())));
+        assert_eq!(str_result, Value::String(Rc::from("hello")));
         
         // Boolean literals
         let true_result = interpreter.eval_expr_kind(&ExprKind::Literal(Literal::Bool(true))).unwrap();
@@ -92,7 +92,7 @@ mod eval_expr_kind_tdd {
             right: Box::new(create_test_expr(ExprKind::Literal(Literal::String("World".to_string())))),
         };
         let result = interpreter.eval_expr_kind(&concat_expr).unwrap();
-        assert_eq!(result, Value::String(Rc::new("Hello World".to_string())));
+        assert_eq!(result, Value::String(Rc::from("Hello World")));
     }
 
     #[test]
@@ -123,7 +123,7 @@ mod eval_expr_kind_tdd {
         // Empty list
         let empty_list = ExprKind::List(vec![]);
         let result = interpreter.eval_expr_kind(&empty_list).unwrap();
-        assert_eq!(result, Value::Array(Rc::new(vec![])));
+        assert_eq!(result, Value::Array(vec![].into()));
         
         // List with elements
         let list_expr = ExprKind::List(vec![
@@ -157,7 +157,7 @@ mod eval_expr_kind_tdd {
         let result = interpreter.eval_expr_kind(&tuple_expr).unwrap();
         assert_eq!(result, Value::Tuple(vec![
             Value::Integer(42),
-            Value::String(Rc::new("hello".to_string())),
+            Value::String(Rc::from("hello")),
             Value::Bool(true),
         ]));
     }
@@ -232,7 +232,7 @@ mod eval_expr_kind_tdd {
         let mut interpreter = create_test_interpreter();
         
         // Set up variables
-        interpreter.env.insert("name".to_string(), Value::String(Rc::new("World".to_string())));
+        interpreter.env.insert("name".to_string(), Value::String(Rc::from("World")));
         interpreter.env.insert("count".to_string(), Value::Integer(5));
         
         let interp_expr = ExprKind::StringInterpolation {
@@ -244,7 +244,7 @@ mod eval_expr_kind_tdd {
             ],
         };
         let result = interpreter.eval_expr_kind(&interp_expr).unwrap();
-        assert_eq!(result, Value::String(Rc::new("Hello World! Count: 5".to_string())));
+        assert_eq!(result, Value::String(Rc::from("Hello World! Count: 5")));
     }
 
     #[test]
@@ -293,7 +293,7 @@ mod eval_expr_kind_tdd {
             name: "new".to_string(),
         };
         let result = interpreter.eval_expr_kind(&qualified_expr).unwrap();
-        assert_eq!(result, Value::String(Rc::new("__builtin_hashmap__".to_string())));
+        assert_eq!(result, Value::String(Rc::from("__builtin_hashmap__")));
         
         // Test unknown qualified name
         let unknown_expr = ExprKind::QualifiedName {

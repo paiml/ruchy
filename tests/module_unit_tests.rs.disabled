@@ -476,7 +476,7 @@ mod value_unit_tests {
 
     #[test]
     fn test_value_string() {
-        let val = Value::String(Rc::new("hello".to_string()));
+        let val = Value::String(Rc::from("hello"));
         assert_eq!(format!("{}", val), "hello");
     }
 
@@ -503,7 +503,7 @@ mod value_unit_tests {
     fn test_value_tuple() {
         let val = Value::Tuple(Rc::new(vec![
             Value::Integer(42),
-            Value::String(Rc::new("test".to_string())),
+            Value::String(Rc::from("test")),
         ]));
         if let Value::Tuple(tuple) = &val {
             assert_eq!(tuple.len(), 2);

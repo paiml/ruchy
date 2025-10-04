@@ -117,7 +117,7 @@ fn test_string_concatenation_placeholder() {
     let mut interpreter = Interpreter::new();
     let result = interpreter.eval_expr(&expr).expect("Failed to evaluate");
 
-    assert_eq!(result, Value::String(Rc::new("hello".to_string())));
+    assert_eq!(result, Value::String(Rc::from("hello")));
 }
 
 #[test]

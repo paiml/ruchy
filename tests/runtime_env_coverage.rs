@@ -39,7 +39,7 @@ fn test_binding_immutable() {
 #[test]
 fn test_binding_mutable() {
     let binding = Binding {
-        value: Value::String(Rc::new("hello".to_string())),
+        value: Value::String(Rc::from("hello")),
         mutable: true,
     };
     assert!(binding.mutable);
@@ -176,8 +176,8 @@ fn test_value_float() {
 
 #[test]
 fn test_value_string() {
-    let val = Value::String(Rc::new("hello".to_string()));
-    assert_eq!(val, Value::String(Rc::new("hello".to_string())));
+    let val = Value::String(Rc::from("hello"));
+    assert_eq!(val, Value::String(Rc::from("hello")));
 }
 
 #[test]
@@ -220,7 +220,7 @@ fn test_value_function() {
 fn test_value_equality() {
     assert_eq!(Value::Integer(42), Value::Integer(42));
     assert_ne!(Value::Integer(42), Value::Integer(43));
-    assert_ne!(Value::Integer(42), Value::String(Rc::new("42".to_string())));
+    assert_ne!(Value::Integer(42), Value::String(Rc::from("42")));
 }
 
 #[test]
@@ -261,7 +261,7 @@ fn test_shadowing() {
 fn test_clear_environment() {
     let mut env = Environment::new();
     env.define("x", Value::Integer(42), false);
-    env.define("y", Value::String(Rc::new("hello".to_string())), false);
+    env.define("y", Value::String(Rc::from("hello")), false);
 
     env.clear();
 

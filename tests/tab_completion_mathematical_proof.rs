@@ -144,7 +144,7 @@ mod tab_completion_proof {
         );
         bindings.insert(
             "println_test".to_string(),
-            ruchy::runtime::repl::Value::String(Rc::new("test".to_string())),
+            ruchy::runtime::repl::Value::String(Rc::from("test")),
         );
 
         // QUANTITATIVE MEASUREMENT: Completion results

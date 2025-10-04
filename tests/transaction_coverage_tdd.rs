@@ -239,16 +239,12 @@ fn test_insert_binding() {
     let mut state = TransactionalState::new(1024 * 1024);
 
     state.insert_binding("x".to_string(), Value::Integer(42), false);
-    state.insert_binding(
-        "y".to_string(),
-        Value::String(Rc::new("hello".to_string())),
-        true,
-    );
+    state.insert_binding("y".to_string(), Value::String(Rc::from("hello")), true);
 
     assert_eq!(state.bindings().get("x"), Some(&Value::Integer(42)));
     assert_eq!(
         state.bindings().get("y"),
-        Some(&Value::String(Rc::new("hello".to_string())))
+        Some(&Value::String(Rc::from("hello")))
     );
     assert!(!state.is_mutable("x"));
     assert!(state.is_mutable("y"));
@@ -677,11 +673,7 @@ fn test_transactional_workflow() {
         .unwrap();
 
     state.insert_binding("counter".to_string(), Value::Integer(2), true);
-    state.insert_binding(
-        "temp".to_string(),
-        Value::String(Rc::new("test".to_string())),
-        false,
-    );
+    state.insert_binding("temp".to_string(), Value::String(Rc::from("test")), false);
 
     state.rollback_transaction(tx2).unwrap();
 

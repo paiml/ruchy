@@ -37,7 +37,7 @@ fn test_match_expressions() {
     let result = repl
         .evaluate_expr_str(r#"match 2 { 1 => "one", 2 => "two", _ => "other" }"#, None)
         .unwrap();
-    assert_eq!(result, Value::String(Rc::new("two".to_string())));
+    assert_eq!(result, Value::String(Rc::from("two")));
 }
 
 #[test]
@@ -75,7 +75,7 @@ fn test_string_interpolation() {
     repl.evaluate_expr_str(r#"let name = "World""#, None)
         .unwrap();
     let result = repl.evaluate_expr_str(r#"f"Hello {name}""#, None).unwrap();
-    assert_eq!(result, Value::String(Rc::new("Hello World".to_string())));
+    assert_eq!(result, Value::String(Rc::from("Hello World")));
 }
 
 #[test]
