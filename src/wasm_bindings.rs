@@ -48,11 +48,11 @@ impl RuchyWasm {
         let mut parser = Parser::new(source);
         let ast = parser
             .parse()
-            .map_err(|e| js_sys::Error::new(&format!("Parse error: {}", e)).into())?;
+            .map_err(|e| JsValue::from(js_sys::Error::new(&format!("Parse error: {}", e))))?;
         let rust_code = self
             .transpiler
             .transpile(&ast)
-            .map_err(|e| js_sys::Error::new(&format!("Transpile error: {}", e)).into())?;
+            .map_err(|e| JsValue::from(js_sys::Error::new(&format!("Transpile error: {}", e))))?;
         Ok(rust_code.to_string())
     }
     /// Validate Ruchy syntax
@@ -92,10 +92,10 @@ impl RuchyWasm {
             let mut parser = Parser::new(&source);
             let ast = parser
                 .parse()
-                .map_err(|e| js_sys::Error::new(&format!("Parse error: {}", e)).into())?;
-            let rust_code = transpiler
-                .transpile(&ast)
-                .map_err(|e| js_sys::Error::new(&format!("Transpile error: {}", e)).into())?;
+                .map_err(|e| JsValue::from(js_sys::Error::new(&format!("Parse error: {}", e))))?;
+            let rust_code = transpiler.transpile(&ast).map_err(|e| {
+                JsValue::from(js_sys::Error::new(&format!("Transpile error: {}", e)))
+            })?;
             Ok(JsValue::from_str(&rust_code.to_string()))
         })
     }
@@ -378,11 +378,16 @@ impl RuchyWasm {
     #[wasm_bindgen]
     pub fn call_js_callback(&self, callback: &js_sys::Function) -> JsValue {
         match callback.call0(&JsValue::NULL) {
-            Ok(result) => serde_wasm_bindgen::to_value(&serde_json::json!({
-                "is_err": false,
-                "value": result
-            }))
-            .unwrap_or(JsValue::NULL),
+            Ok(result) => {
+                let result_str = result
+                    .as_string()
+                    .unwrap_or_else(|| format!("{:?}", result));
+                serde_wasm_bindgen::to_value(&serde_json::json!({
+                    "is_err": false,
+                    "value": result_str
+                }))
+                .unwrap_or(JsValue::NULL)
+            }
             Err(e) => serde_wasm_bindgen::to_value(&serde_json::json!({
                 "is_err": true,
                 "error": format!("{:?}", e)

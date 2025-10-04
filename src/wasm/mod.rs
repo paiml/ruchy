@@ -5,9 +5,11 @@
 pub mod component;
 pub mod demo_converter;
 pub mod deployment;
+#[cfg(feature = "notebook")]
 pub mod notebook;
 pub mod portability;
 pub mod repl;
+#[cfg(feature = "notebook")]
 pub mod shared_session;
 pub mod wit;
 
@@ -17,9 +19,11 @@ pub use demo_converter::{
     NotebookCell as DemoNotebookCell,
 };
 pub use deployment::{Deployer, DeploymentConfig, DeploymentTarget};
+#[cfg(feature = "notebook")]
 pub use notebook::{CellOutput, CellType, Notebook, NotebookCell, NotebookRuntime};
 pub use portability::{PortabilityAnalyzer, PortabilityReport, PortabilityScore};
 pub use repl::{ReplOutput, TimingInfo, WasmRepl};
+#[cfg(feature = "notebook")]
 pub use shared_session::{DefId, ExecuteResponse, ExecutionMode, GlobalRegistry, SharedSession};
 pub use wit::{InterfaceDefinition, WitGenerator, WitInterface};
 

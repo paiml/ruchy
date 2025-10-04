@@ -246,9 +246,6 @@ quickcheck = "1.0"
 smallvec = "1.15"
 proc-macro2 = { workspace = true }
 prettyplease = { workspace = true }
-rustyline = { workspace = true }
-colored = "3.0"
-walkdir = "2.5"
 clap = { version = "4.5", features = ["derive"] }
 regex = "1.11"
 # DataFrame support
@@ -258,7 +255,7 @@ arrow-array = { version = "54.0", optional = true }
 arrow-buffer = { version = "54.0", optional = true }
 arrow-schema = { version = "54.0", optional = true }
 # WebAssembly support
-uuid = { version = "1.18", features = ["v4"] }
+uuid = { version = "1.18", features = ["v4", "js"] }
 wasm-bindgen = "0.2"
 serde-wasm-bindgen = "0.6"
 js-sys = "0.3"
@@ -275,7 +272,6 @@ async-trait = { version = "0.1", optional = true }
 sha2 = "0.10"
 toml = "0.9"
 chrono = { version = "0.4", features = ["serde"] }
-notify = "8.2"
 # LSP support (optional for WASM compatibility)
 tower-lsp = { version = "0.20", optional = true }
 # Notebook support (optional)
@@ -291,6 +287,14 @@ proptest = { version = "1.7", optional = true }
 wasmparser = { version = "0.239.0", optional = true }
 wasmtime = { version = "36.0.2", optional = true }
 
+# Platform-specific dependencies for non-WASM targets
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+rustyline = { workspace = true }
+colored = "3.0"
+walkdir = "2.5"
+notify = "8.2"
+
+# WASM-specific dependencies
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 getrandom = { version = "0.2", features = ["js"] }
 js-sys = "0.3"

@@ -162,7 +162,9 @@ Type expressions to evaluate, or commands:
     </div>
 
     <script type="module">
-        let wasm = null;
+        import initWasm, { WasmRepl } from './pkg/ruchy.js';
+
+        let wasmRepl = null;
         let history = [];
         let historyIndex = -1;
 
@@ -237,6 +239,7 @@ Type expressions to evaluate, or commands:
 
             if (code === ':clear') {
                 output.innerHTML = 'Welcome to Ruchy REPL v3.67.0 WASM Edition\n\n';
+                appendOutput('<span class="success">Output cleared</span>');
                 history.push({ input: code, output: 'Output cleared' });
                 saveHistory();
                 return;
@@ -244,12 +247,16 @@ Type expressions to evaluate, or commands:
 
             // Execute via WASM
             try {
-                // TODO: Replace with actual WASM call when implemented
-                // const result = wasm.eval(code);
-                const result = `TODO: Implement WASM eval for: ${code}`;
+                const resultJson = wasmRepl.eval(code);
+                const result = JSON.parse(resultJson);
 
-                appendOutput(`<span class="result">${result}</span>`);
-                history.push({ input: code, output: result });
+                if (result.success) {
+                    appendOutput(`<span class="result">${result.display || 'OK'}</span>`);
+                    history.push({ input: code, output: result.display });
+                } else {
+                    appendOutput(`<span class="error">Error: ${result.error}</span>`);
+                    history.push({ input: code, error: result.error });
+                }
                 saveHistory();
             } catch (err) {
                 const errorMsg = err.message || String(err);
@@ -300,7 +307,8 @@ Type expressions to evaluate, or commands:
 
         // Reset environment button
         resetEnvBtn.addEventListener('click', () => {
-            // TODO: Reset WASM instance when implemented
+            // Reset WASM instance (JavaScript constructor)
+            wasmRepl = new WasmRepl();
             output.innerHTML = 'Welcome to Ruchy REPL v3.67.0 WASM Edition\n\n';
             appendOutput('<span class="success">Environment reset</span>');
         });
@@ -310,9 +318,11 @@ Type expressions to evaluate, or commands:
             try {
                 setStatus('loading', 'Loading WASM module...');
 
-                // TODO: Load actual WASM module
-                // For now, just simulate loading
-                await new Promise(resolve => setTimeout(resolve, 500));
+                // Load WASM module
+                await initWasm();
+
+                // Create REPL instance (JavaScript constructor, not Rust .new())
+                wasmRepl = new WasmRepl();
 
                 // Load history
                 loadHistory();

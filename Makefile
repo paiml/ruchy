@@ -1072,12 +1072,11 @@ e2e-install-deps:
 	@echo "✅ System dependencies installed"
 	@echo "✅ E2E setup complete - ready to run: make test-e2e"
 
-# Build WASM module (placeholder - will be implemented)
+# Build WASM module for browser (with minimal features - no tokio)
 wasm-build:
 	@echo "🔨 Building WASM module..."
-	@echo "⚠️  WASM build not yet implemented - placeholder"
-	@echo "TODO: wasm-pack build --target web --out-dir pkg"
-	@echo "✅ WASM build placeholder complete"
+	wasm-pack build --target web --out-dir pkg -- --no-default-features --features wasm-compile
+	@echo "✅ WASM module built: pkg/ruchy_bg.wasm"
 
 # Run E2E tests (all 3 browsers)
 test-e2e: wasm-build

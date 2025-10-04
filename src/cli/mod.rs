@@ -150,7 +150,10 @@ impl Cli {
     /// ```
     pub fn execute(self) -> Result<(), String> {
         match self.command {
+            #[cfg(not(target_arch = "wasm32"))]
             Command::Repl => execute_repl(self.verbose, self.quiet),
+            #[cfg(target_arch = "wasm32")]
+            Command::Repl => Err("REPL not available in WASM build".to_string()),
             Command::Run { path } => execute_run(path, self.verbose),
             Command::Format { path, check } => execute_format(path, check),
             Command::Notebook(cmd) => execute_notebook(cmd, self.verbose),
@@ -159,6 +162,7 @@ impl Cli {
         }
     }
 }
+#[cfg(not(target_arch = "wasm32"))]
 fn execute_repl(_verbose: bool, quiet: bool) -> Result<(), String> {
     if !quiet {
         println!("Starting Ruchy REPL v3.4.1...");

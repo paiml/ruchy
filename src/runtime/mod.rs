@@ -60,8 +60,10 @@
 pub mod actor;
 pub mod actor_concurrent;
 pub mod actor_runtime;
+#[cfg(not(target_arch = "wasm32"))]
 pub mod async_runtime;
 pub mod cache;
+#[cfg(not(target_arch = "wasm32"))]
 pub mod completion;
 pub mod dataflow_debugger;
 pub mod dataflow_ui;
@@ -104,12 +106,17 @@ pub mod lazy;
 pub mod observatory;
 pub mod observatory_ui;
 pub mod pattern_matching;
+#[cfg(not(target_arch = "wasm32"))]
 pub mod repl; // New EXTREME Quality REPL
               // pub mod repl_legacy; // Old REPL (backup) - temporarily disabled for integration
               // pub mod repl_modules;  // Temporarily disabled - compilation errors
+#[cfg(not(target_arch = "wasm32"))]
 pub mod assessment;
+#[cfg(not(target_arch = "wasm32"))]
 pub mod deterministic;
+#[cfg(not(target_arch = "wasm32"))]
 pub mod magic;
+#[cfg(not(target_arch = "wasm32"))]
 pub mod repl_recording;
 pub mod replay;
 pub mod replay_converter;
@@ -119,6 +126,7 @@ pub mod safe_arena;
 pub mod transaction;
 // pub mod resource_eval;  // Temporarily disabled - causes duplicate impl
 // Export the unified REPL
+#[cfg(not(target_arch = "wasm32"))]
 pub use repl::{Repl, ReplConfig};
 // pub use repl_legacy::{ReplConfig, ReplState as LegacyReplState}; // Temporarily disabled
 // Export interpreter components
@@ -139,11 +147,13 @@ pub use observatory::{
     MessageTrace, ObservatoryConfig, SystemMetrics,
 };
 // Export assessment components
+#[cfg(not(target_arch = "wasm32"))]
 pub use assessment::{
     Assignment, AssignmentSetup, ExpectedBehavior, GradeReport, GradingEngine, GradingRubric,
     PlagiarismDetector, SecureSandbox, Task, TaskGrade, TestCase,
 };
 // Export magic commands
+#[cfg(not(target_arch = "wasm32"))]
 pub use magic::{MagicCommand, MagicRegistry, MagicResult, ProfileData, UnicodeExpander};
 // Export inspection protocol
 pub use inspect::{CompositeForm, DisplayForm, Inspect, InspectStyle, Inspector, OpaqueHandle};
