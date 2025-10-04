@@ -2,6 +2,7 @@
 //! Extracted to reduce duplication across interpreter and REPL
 use crate::frontend::ast::{Literal, Pattern};
 use crate::runtime::Value;
+use std::collections::HashMap;
 
 #[cfg(test)]
 use std::rc::Rc;
@@ -319,30 +320,51 @@ fn match_none_pattern_helper(value: &Value) -> Option<Vec<(String, Value)>> {
 
 /// Helper for matching Ok patterns (complexity: 6)
 fn match_ok_pattern_helper(inner_pattern: &Pattern, value: &Value) -> Option<Vec<(String, Value)>> {
-    // Ok(x) creates an Object: {data: [x], __type: "Message", type: "Ok"}
+    let fields = extract_object_fields(value)?;
+    eprintln!(
+        "DEBUG: Matching Ok pattern against Object with {} fields",
+        fields.len()
+    );
+
+    if !is_ok_type(fields) {
+        return None;
+    }
+    eprintln!("DEBUG: Type matches 'Ok'");
+
+    let data = extract_ok_data(fields)?;
+    eprintln!("DEBUG: Data is Array with {} elements", data.len());
+
+    if data.is_empty() {
+        return None;
+    }
+    eprintln!("DEBUG: Matching inner pattern against data[0]");
+    match_pattern(inner_pattern, &data[0])
+}
+
+fn extract_object_fields(value: &Value) -> Option<&HashMap<String, Value>> {
     if let Value::Object(fields) = value {
-        eprintln!(
-            "DEBUG: Matching Ok pattern against Object with {} fields",
-            fields.len()
-        );
-        if let Some(type_value) = fields.get("type") {
-            eprintln!("DEBUG: Found 'type' field: {type_value:?}");
-            if let Value::String(type_str) = type_value {
-                eprintln!("DEBUG: Type is String: {type_str}");
-                if &**type_str == "Ok" {
-                    eprintln!("DEBUG: Type matches 'Ok'");
-                    if let Some(data_value) = fields.get("data") {
-                        eprintln!("DEBUG: Found 'data' field: {data_value:?}");
-                        if let Value::Array(data) = data_value {
-                            eprintln!("DEBUG: Data is Array with {} elements", data.len());
-                            if !data.is_empty() {
-                                eprintln!("DEBUG: Matching inner pattern against data[0]");
-                                return match_pattern(inner_pattern, &data[0]);
-                            }
-                        }
-                    }
-                }
-            }
+        Some(fields)
+    } else {
+        None
+    }
+}
+
+fn is_ok_type(fields: &HashMap<String, Value>) -> bool {
+    if let Some(type_value) = fields.get("type") {
+        eprintln!("DEBUG: Found 'type' field: {type_value:?}");
+        if let Value::String(type_str) = type_value {
+            eprintln!("DEBUG: Type is String: {type_str}");
+            return &**type_str == "Ok";
+        }
+    }
+    false
+}
+
+fn extract_ok_data(fields: &HashMap<String, Value>) -> Option<&[Value]> {
+    if let Some(data_value) = fields.get("data") {
+        eprintln!("DEBUG: Found 'data' field: {data_value:?}");
+        if let Value::Array(data) = data_value {
+            return Some(data);
         }
     }
     None

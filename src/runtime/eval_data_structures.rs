@@ -298,49 +298,69 @@ where
 pub fn eval_destructuring_assignment<F>(
     pattern: &DestructuringPattern,
     value: &Value,
-    mut assign_var: F,
+    assign_var: F,
 ) -> Result<(), InterpreterError>
 where
     F: FnMut(&str, Value) -> Result<(), InterpreterError>,
 {
     match pattern {
         DestructuringPattern::Object(field_patterns) => {
-            if let Value::Object(fields) = value {
-                for (field_name, var_name) in field_patterns {
-                    if let Some(field_value) = fields.get(field_name) {
-                        assign_var(var_name, field_value.clone())?;
-                    } else {
-                        return Err(InterpreterError::RuntimeError(format!(
-                            "Field '{field_name}' not found in object"
-                        )));
-                    }
-                }
-                Ok(())
+            destructure_object(field_patterns, value, assign_var)
+        }
+        DestructuringPattern::Array(var_names) => destructure_array(var_names, value, assign_var),
+    }
+}
+
+fn destructure_object<F>(
+    field_patterns: &[(String, String)],
+    value: &Value,
+    mut assign_var: F,
+) -> Result<(), InterpreterError>
+where
+    F: FnMut(&str, Value) -> Result<(), InterpreterError>,
+{
+    if let Value::Object(fields) = value {
+        for (field_name, var_name) in field_patterns {
+            if let Some(field_value) = fields.get(field_name) {
+                assign_var(var_name, field_value.clone())?;
             } else {
-                Err(InterpreterError::TypeError(
-                    "Cannot destructure non-object value as object".to_string(),
-                ))
+                return Err(InterpreterError::RuntimeError(format!(
+                    "Field '{field_name}' not found in object"
+                )));
             }
         }
-        DestructuringPattern::Array(var_names) => {
-            if let Value::Array(arr) = value {
-                if var_names.len() != arr.len() {
-                    return Err(InterpreterError::RuntimeError(format!(
-                        "Array destructuring length mismatch: {} variables, {} values",
-                        var_names.len(),
-                        arr.len()
-                    )));
-                }
-                for (var_name, array_value) in var_names.iter().zip(arr.iter()) {
-                    assign_var(var_name, array_value.clone())?;
-                }
-                Ok(())
-            } else {
-                Err(InterpreterError::TypeError(
-                    "Cannot destructure non-array value as array".to_string(),
-                ))
-            }
+        Ok(())
+    } else {
+        Err(InterpreterError::TypeError(
+            "Cannot destructure non-object value as object".to_string(),
+        ))
+    }
+}
+
+fn destructure_array<F>(
+    var_names: &[String],
+    value: &Value,
+    mut assign_var: F,
+) -> Result<(), InterpreterError>
+where
+    F: FnMut(&str, Value) -> Result<(), InterpreterError>,
+{
+    if let Value::Array(arr) = value {
+        if var_names.len() != arr.len() {
+            return Err(InterpreterError::RuntimeError(format!(
+                "Array destructuring length mismatch: {} variables, {} values",
+                var_names.len(),
+                arr.len()
+            )));
         }
+        for (var_name, array_value) in var_names.iter().zip(arr.iter()) {
+            assign_var(var_name, array_value.clone())?;
+        }
+        Ok(())
+    } else {
+        Err(InterpreterError::TypeError(
+            "Cannot destructure non-array value as array".to_string(),
+        ))
     }
 }
 

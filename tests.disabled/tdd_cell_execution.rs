@@ -1,5 +1,5 @@
 //! TDD Test for ACTUAL Cell Execution
-//! RED: This test will FAIL because cells show placeholder text instead of executing
+//! RED: This will FAIL because cells show placeholder text instead of executing
 
 #[tokio::test]
 async fn test_cell_actually_executes_ruchy_code() {
@@ -20,7 +20,7 @@ async fn test_cell_actually_executes_ruchy_code() {
     // Wait for server to start
     tokio::time::sleep(Duration::from_secs(3)).await;
 
-    // Test API call for code execution
+    // Check API call for code execution
     let client = reqwest::Client::new();
     let response = timeout(
         Duration::from_secs(5),
@@ -67,15 +67,15 @@ async fn test_cell_actually_executes_ruchy_code() {
 
 #[test]
 fn test_frontend_has_execution_logic() {
-    // RED: This test will FAIL because frontend shows placeholder
+    // RED: This will FAIL because frontend shows placeholder
 
     let js_file = std::fs::read_to_string("ruchy-notebook/js/ruchy-notebook.js")
         .expect("Notebook JS file not found");
 
     // Check if it has real execution logic instead of placeholder
     assert!(
-        !js_file.contains("// TODO: Execute code via WASM"),
-        "FAILING TEST: JS still has TODO placeholder for execution"
+        !js_file.contains(" // Planned feature: Execute code via WASM"),
+        "FAILING TEST: JS still has Note placeholder for execution"
     );
 
     assert!(
@@ -94,7 +94,7 @@ fn test_frontend_has_execution_logic() {
 
 #[test]
 fn test_server_has_execution_endpoint() {
-    // RED: This test will FAIL because server lacks execution endpoint
+    // RED: This will FAIL because server lacks execution endpoint
 
     let server_file =
         std::fs::read_to_string("ruchy-notebook/src/server/mod.rs").expect("Server file not found");

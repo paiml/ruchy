@@ -16,33 +16,63 @@ pub fn eval_string_method(
     method: &str,
     args: &[Value],
 ) -> Result<Value, InterpreterError> {
-    match method {
-        // Simple no-argument methods
-        "len" | "length" if args.is_empty() => eval_string_len(s),
-        "to_upper" if args.is_empty() => eval_string_to_upper(s),
-        "to_lower" if args.is_empty() => eval_string_to_lower(s),
-        "trim" if args.is_empty() => eval_string_trim(s),
-        "to_string" if args.is_empty() => eval_string_to_string(s),
-        "trim_start" if args.is_empty() => eval_string_trim_start(s),
-        "trim_end" if args.is_empty() => eval_string_trim_end(s),
-        "is_empty" if args.is_empty() => eval_string_is_empty(s),
-        "chars" if args.is_empty() => eval_string_chars(s),
-        "lines" if args.is_empty() => eval_string_lines(s),
-
-        // Single-argument methods
-        "contains" if args.len() == 1 => eval_string_contains(s, &args[0]),
-        "starts_with" if args.len() == 1 => eval_string_starts_with(s, &args[0]),
-        "ends_with" if args.len() == 1 => eval_string_ends_with(s, &args[0]),
-        "split" if args.len() == 1 => eval_string_split(s, &args[0]),
-        "repeat" if args.len() == 1 => eval_string_repeat(s, &args[0]),
-        "char_at" if args.len() == 1 => eval_string_char_at(s, &args[0]),
-
-        // Two-argument methods
-        "replace" if args.len() == 2 => eval_string_replace(s, &args[0], &args[1]),
-        "substring" if args.len() == 2 => eval_string_substring(s, &args[0], &args[1]),
-
+    match args.len() {
+        0 => dispatch_zero_arg_string_method(s, method),
+        1 => dispatch_single_arg_string_method(s, method, &args[0]),
+        2 => dispatch_two_arg_string_method(s, method, &args[0], &args[1]),
         _ => Err(InterpreterError::RuntimeError(format!(
-            "Unknown string method: {method}"
+            "Invalid argument count for string method: {method}"
+        ))),
+    }
+}
+
+fn dispatch_zero_arg_string_method(s: &Rc<str>, method: &str) -> Result<Value, InterpreterError> {
+    match method {
+        "len" | "length" => eval_string_len(s),
+        "to_upper" => eval_string_to_upper(s),
+        "to_lower" => eval_string_to_lower(s),
+        "trim" => eval_string_trim(s),
+        "to_string" => eval_string_to_string(s),
+        "trim_start" => eval_string_trim_start(s),
+        "trim_end" => eval_string_trim_end(s),
+        "is_empty" => eval_string_is_empty(s),
+        "chars" => eval_string_chars(s),
+        "lines" => eval_string_lines(s),
+        _ => Err(InterpreterError::RuntimeError(format!(
+            "Unknown zero-argument string method: {method}"
+        ))),
+    }
+}
+
+fn dispatch_single_arg_string_method(
+    s: &Rc<str>,
+    method: &str,
+    arg: &Value,
+) -> Result<Value, InterpreterError> {
+    match method {
+        "contains" => eval_string_contains(s, arg),
+        "starts_with" => eval_string_starts_with(s, arg),
+        "ends_with" => eval_string_ends_with(s, arg),
+        "split" => eval_string_split(s, arg),
+        "repeat" => eval_string_repeat(s, arg),
+        "char_at" => eval_string_char_at(s, arg),
+        _ => Err(InterpreterError::RuntimeError(format!(
+            "Unknown single-argument string method: {method}"
+        ))),
+    }
+}
+
+fn dispatch_two_arg_string_method(
+    s: &Rc<str>,
+    method: &str,
+    arg1: &Value,
+    arg2: &Value,
+) -> Result<Value, InterpreterError> {
+    match method {
+        "replace" => eval_string_replace(s, arg1, arg2),
+        "substring" => eval_string_substring(s, arg1, arg2),
+        _ => Err(InterpreterError::RuntimeError(format!(
+            "Unknown two-argument string method: {method}"
         ))),
     }
 }

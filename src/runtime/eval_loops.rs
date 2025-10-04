@@ -67,7 +67,7 @@ where
 /// Evaluate a for loop over an array
 ///
 /// # Complexity
-/// Cyclomatic complexity: 8 (within Toyota Way limits)
+/// Cyclomatic complexity: 4 (within Toyota Way limits)
 fn eval_for_array<F>(
     var: &str,
     pattern: Option<&Pattern>,
@@ -81,34 +81,54 @@ where
 {
     let mut last_value = Value::Nil;
     for item in arr {
-        // Handle pattern matching if present
-        if let Some(_pat) = pattern {
-            // Pattern matching for destructuring would go here
-            // For now, just bind to var
-            set_variable(var.to_string(), item.clone());
-        } else {
-            // Simple variable binding
-            set_variable(var.to_string(), item.clone());
-        }
+        bind_loop_variable(&mut set_variable, var, pattern, item);
 
-        // Execute body
-        match eval_expr(body) {
-            Ok(value) => last_value = value,
-            Err(InterpreterError::Break(None, _)) => break,
-            Err(InterpreterError::Continue(_)) => {}
-            Err(InterpreterError::Return(_)) => return eval_expr(body), // Propagate Return
-            Err(InterpreterError::RuntimeError(msg)) if msg == "break" => break,
-            Err(InterpreterError::RuntimeError(msg)) if msg == "continue" => {}
-            Err(e) => return Err(e),
+        match handle_loop_iteration(body, &mut eval_expr)? {
+            LoopAction::Continue(value) => last_value = value,
+            LoopAction::Break => break,
+            LoopAction::Return => return eval_expr(body),
         }
     }
     Ok(last_value)
 }
 
+fn bind_loop_variable(
+    set_variable: &mut impl FnMut(String, Value),
+    var: &str,
+    _pattern: Option<&Pattern>,
+    item: &Value,
+) {
+    // Pattern matching for destructuring would go here in the future
+    set_variable(var.to_string(), item.clone());
+}
+
+enum LoopAction {
+    Continue(Value),
+    Break,
+    Return,
+}
+
+fn handle_loop_iteration<F>(body: &Expr, eval_expr: &mut F) -> Result<LoopAction, InterpreterError>
+where
+    F: FnMut(&Expr) -> Result<Value, InterpreterError>,
+{
+    match eval_expr(body) {
+        Ok(value) => Ok(LoopAction::Continue(value)),
+        Err(InterpreterError::Break(None, _)) => Ok(LoopAction::Break),
+        Err(InterpreterError::Continue(_)) => Ok(LoopAction::Continue(Value::Nil)),
+        Err(InterpreterError::Return(_)) => Ok(LoopAction::Return),
+        Err(InterpreterError::RuntimeError(msg)) if msg == "break" => Ok(LoopAction::Break),
+        Err(InterpreterError::RuntimeError(msg)) if msg == "continue" => {
+            Ok(LoopAction::Continue(Value::Nil))
+        }
+        Err(e) => Err(e),
+    }
+}
+
 /// Evaluate a for loop over a range
 ///
 /// # Complexity
-/// Cyclomatic complexity: 9 (within Toyota Way limits)
+/// Cyclomatic complexity: 5 (within Toyota Way limits)
 fn eval_for_range<F>(
     var: &str,
     pattern: Option<&Pattern>,
@@ -123,43 +143,33 @@ where
     F: FnMut(&Expr) -> Result<Value, InterpreterError>,
 {
     let mut last_value = Value::Nil;
-
-    let range_iter: Box<dyn Iterator<Item = i64>> = if inclusive {
-        Box::new(start..=end)
-    } else {
-        Box::new(start..end)
-    };
+    let range_iter = create_range_iterator(start, end, inclusive);
 
     for i in range_iter {
         let item = Value::Integer(i);
-        // Handle pattern matching if present
-        if let Some(_pat) = pattern {
-            // Pattern matching for destructuring would go here
-            // For now, just bind to var
-            set_variable(var.to_string(), item);
-        } else {
-            // Simple variable binding
-            set_variable(var.to_string(), item);
-        }
+        bind_loop_variable(&mut set_variable, var, pattern, &item);
 
-        // Execute body
-        match eval_expr(body) {
-            Ok(value) => last_value = value,
-            Err(InterpreterError::Break(None, _)) => break,
-            Err(InterpreterError::Continue(_)) => {}
-            Err(InterpreterError::Return(_)) => return eval_expr(body), // Propagate Return
-            Err(InterpreterError::RuntimeError(msg)) if msg == "break" => break,
-            Err(InterpreterError::RuntimeError(msg)) if msg == "continue" => {}
-            Err(e) => return Err(e),
+        match handle_loop_iteration(body, &mut eval_expr)? {
+            LoopAction::Continue(value) => last_value = value,
+            LoopAction::Break => break,
+            LoopAction::Return => return eval_expr(body),
         }
     }
     Ok(last_value)
 }
 
+fn create_range_iterator(start: i64, end: i64, inclusive: bool) -> Box<dyn Iterator<Item = i64>> {
+    if inclusive {
+        Box::new(start..=end)
+    } else {
+        Box::new(start..end)
+    }
+}
+
 /// Evaluate a while loop
 ///
 /// # Complexity
-/// Cyclomatic complexity: 6 (within Toyota Way limits)
+/// Cyclomatic complexity: 4 (within Toyota Way limits)
 pub fn eval_while_loop<F>(
     condition: &Expr,
     body: &Expr,
@@ -170,42 +180,69 @@ where
 {
     let mut last_value = Value::Nil;
     loop {
-        let cond_value = eval_expr(condition)?;
-        if !is_truthy(&cond_value) {
+        if !eval_condition(condition, &mut eval_expr)? {
             break;
         }
 
-        match eval_expr(body) {
-            Ok(value) => last_value = value,
-            Err(InterpreterError::Break(None, _)) => break,
-            Err(InterpreterError::Continue(_)) => {}
-            Err(InterpreterError::Return(_)) => return eval_expr(body), // Propagate Return
-            Err(InterpreterError::RuntimeError(msg)) if msg == "break" => break,
-            Err(InterpreterError::RuntimeError(msg)) if msg == "continue" => {}
-            Err(e) => return Err(e),
+        match handle_loop_iteration(body, &mut eval_expr)? {
+            LoopAction::Continue(value) => last_value = value,
+            LoopAction::Break => break,
+            LoopAction::Return => return eval_expr(body),
         }
     }
     Ok(last_value)
 }
 
+fn eval_condition<F>(condition: &Expr, eval_expr: &mut F) -> Result<bool, InterpreterError>
+where
+    F: FnMut(&Expr) -> Result<Value, InterpreterError>,
+{
+    let cond_value = eval_expr(condition)?;
+    Ok(is_truthy(&cond_value))
+}
+
 /// Evaluate an infinite loop (loop { ... })
 ///
 /// # Complexity
-/// Cyclomatic complexity: 5 (within Toyota Way limits)
+/// Cyclomatic complexity: 3 (within Toyota Way limits)
 pub fn eval_loop<F>(body: &Expr, mut eval_expr: F) -> Result<Value, InterpreterError>
 where
     F: FnMut(&Expr) -> Result<Value, InterpreterError>,
 {
     loop {
-        match eval_expr(body) {
-            Ok(_) => {}                                                    // Continue looping
-            Err(InterpreterError::Break(None, value)) => return Ok(value), // Break with value
-            Err(InterpreterError::Continue(_)) => {}                       // Continue looping
-            Err(InterpreterError::Return(_)) => return eval_expr(body),    // Propagate Return
-            Err(InterpreterError::RuntimeError(msg)) if msg == "break" => return Ok(Value::Nil),
-            Err(InterpreterError::RuntimeError(msg)) if msg == "continue" => {}
-            Err(e) => return Err(e),
+        match handle_infinite_loop_iteration(body, &mut eval_expr)? {
+            InfiniteLoopAction::Continue => {}
+            InfiniteLoopAction::Break(value) => return Ok(value),
+            InfiniteLoopAction::Return => return eval_expr(body),
         }
+    }
+}
+
+enum InfiniteLoopAction {
+    Continue,
+    Break(Value),
+    Return,
+}
+
+fn handle_infinite_loop_iteration<F>(
+    body: &Expr,
+    eval_expr: &mut F,
+) -> Result<InfiniteLoopAction, InterpreterError>
+where
+    F: FnMut(&Expr) -> Result<Value, InterpreterError>,
+{
+    match eval_expr(body) {
+        Ok(_) => Ok(InfiniteLoopAction::Continue),
+        Err(InterpreterError::Break(None, value)) => Ok(InfiniteLoopAction::Break(value)),
+        Err(InterpreterError::Continue(_)) => Ok(InfiniteLoopAction::Continue),
+        Err(InterpreterError::Return(_)) => Ok(InfiniteLoopAction::Return),
+        Err(InterpreterError::RuntimeError(msg)) if msg == "break" => {
+            Ok(InfiniteLoopAction::Break(Value::Nil))
+        }
+        Err(InterpreterError::RuntimeError(msg)) if msg == "continue" => {
+            Ok(InfiniteLoopAction::Continue)
+        }
+        Err(e) => Err(e),
     }
 }
 

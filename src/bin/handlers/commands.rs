@@ -583,7 +583,7 @@ pub fn handle_score_command(
         // Handle directory (new functionality)
         handle_directory_score(path, depth, min, format, output)
     } else {
-        anyhow::bail!("Path {} does not exist", path.display());
+        anyhow::bail!("Failed to read file: {}", path.display());
     }
 }
 /// Handle scoring for a single file
@@ -597,7 +597,9 @@ fn handle_single_file_score(
     let source = fs::read_to_string(path)
         .with_context(|| format!("Failed to read file: {}", path.display()))?;
     let mut parser = RuchyParser::new(&source);
-    let ast = parser.parse()?;
+    let ast = parser
+        .parse()
+        .with_context(|| format!("Failed to parse file: {}", path.display()))?;
     // Calculate quality score
     let score = calculate_quality_score(&ast, &source);
     let output_content = if format == "json" {
@@ -687,10 +689,7 @@ fn format_empty_directory_output(path: &Path, depth: &str, format: &str) -> Resu
         .map_err(Into::into)
     } else {
         Ok(format!(
-            "=== Quality Score ===\n\
-             Directory: {}\n\
-             Files: 0\n\
-             Average Score: N/A\n\
+            "No .ruchy files found in {}\n\
              Analysis Depth: {}\n",
             path.display(),
             depth
@@ -735,7 +734,7 @@ fn format_score_output(
     if format == "json" {
         serde_json::to_string_pretty(&serde_json::json!({
             "directory": path.display().to_string(),
-            "files": file_scores.len(),
+            "files_analyzed": file_scores.len(),
             "average_score": average_score,
             "depth": depth,
             "passed": min.is_none_or(|m| average_score >= m),
@@ -746,9 +745,9 @@ fn format_score_output(
         .map_err(Into::into)
     } else {
         Ok(format!(
-            "=== Quality Score ===\n\
+            "=== Project Quality Score ===\n\
              Directory: {}\n\
-             Files: {}\n\
+             Files analyzed: {}\n\
              Average Score: {:.2}/1.0\n\
              Analysis Depth: {}\n",
             path.display(),

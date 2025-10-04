@@ -31,7 +31,7 @@ fn test_notebook_usage_analytics() {
     runtime.execute_cell(&cell1).unwrap();
     runtime.execute_cell(&cell2).unwrap();
 
-    // TODO: Add usage analytics collection
+ // Planned feature: Add usage analytics collection
     // let analytics = runtime.get_usage_analytics().unwrap();
     // assert!(analytics.total_executions >= 2, "Should track cell executions");
     // assert!(analytics.execution_time_ms > 0, "Should track execution time");
@@ -61,14 +61,14 @@ fn test_execution_metrics_collection() {
     runtime.execute_cell(&cell3).unwrap();
     let total_time = start.elapsed();
 
-    // TODO: Add detailed execution metrics
+ // Planned feature: Add detailed execution metrics
     // let metrics = runtime.get_execution_metrics().unwrap();
     // assert!(metrics.average_execution_time_ms > 0, "Should track average execution time");
     // assert!(metrics.slowest_cell_time_ms <= total_time.as_millis() as u64, "Should track slowest cell");
     // assert!(metrics.memory_peak_mb > 0, "Should track peak memory usage");
     // assert!(metrics.dataframe_operations >= 2, "Should count DataFrame operations");
 
-    // Verify basic execution tracking
+    // Check basic execution tracking
     let memory_usage = runtime.get_memory_usage();
     let memory_obj: JsonValue = serde_json::from_str(&memory_usage).unwrap();
     assert!(memory_obj.is_object(), "Should track memory metrics");
@@ -94,13 +94,13 @@ fn test_user_behavior_analytics() {
 
     runtime.execute_cell(&cell2).unwrap();
 
-    // TODO: Add user behavior analytics
+ // Planned feature: Add user behavior analytics
     // let behavior = runtime.get_user_behavior_analytics().unwrap();
     // assert_eq!(behavior.cell_reexecutions, 3, "Should track cell re-executions");
     // assert!(behavior.average_time_between_cells_ms > 0, "Should track timing patterns");
     // assert!(behavior.common_patterns.contains("sequential_execution"), "Should identify patterns");
 
-    // Verify session tracking
+    // Check session tracking
     let notebook_json = runtime.to_json();
     assert!(
         notebook_json.contains("cells"),
@@ -128,14 +128,14 @@ fn test_advanced_performance_profiling() {
     runtime.execute_cell(&dataframe_cell).unwrap();
     runtime.execute_cell(&compute_cell).unwrap();
 
-    // TODO: Add advanced profiling
+ // Planned feature: Add advanced profiling
     // let profile = runtime.get_performance_profile().unwrap();
     // assert!(profile.cells.len() >= 3, "Should profile all executed cells");
     // assert!(profile.memory_allocations > 0, "Should track memory allocations");
     // assert!(profile.execution_breakdown.contains_key("parsing"), "Should break down execution phases");
     // assert!(profile.hotspots.len() > 0, "Should identify performance hotspots");
 
-    // Verify basic profiling data available
+    // Check basic profiling data available
     let memory_usage = runtime.get_memory_usage();
     let memory_obj: JsonValue = serde_json::from_str(&memory_usage).unwrap();
     assert!(
@@ -162,14 +162,14 @@ fn test_performance_optimization_suggestions() {
     runtime.execute_cell(&inefficient2).unwrap();
     runtime.execute_cell(&good_cell).unwrap();
 
-    // TODO: Add optimization suggestions
+ // Planned feature: Add optimization suggestions
     // let suggestions = runtime.get_optimization_suggestions().unwrap();
     // assert!(!suggestions.is_empty(), "Should provide optimization suggestions");
     // assert!(suggestions.iter().any(|s| s.suggestion_type == "duplicate_computation"), "Should detect duplicates");
     // assert!(suggestions.iter().any(|s| s.suggestion_type == "inefficient_filter"), "Should detect inefficiencies");
     // assert!(suggestions.iter().any(|s| s.estimated_improvement_ms > 0), "Should estimate improvements");
 
-    // Verify suggestion framework
+    // Check suggestion framework
     let cells_json = runtime.get_cells();
     assert!(
         !cells_json.is_empty(),
@@ -193,13 +193,13 @@ fn test_resource_usage_profiling() {
     runtime.execute_cell(&cpu_cell).unwrap();
     let end_memory = runtime.get_memory_usage();
 
-    // TODO: Add detailed resource profiling
+ // Planned feature: Add detailed resource profiling
     // let resource_profile = runtime.get_resource_profile().unwrap();
     // assert!(resource_profile.peak_memory_mb > resource_profile.baseline_memory_mb, "Should track memory peaks");
     // assert!(resource_profile.cpu_time_ms > 0, "Should track CPU time");
     // assert!(resource_profile.allocations.len() > 0, "Should track individual allocations");
 
-    // Verify resource tracking basics
+    // Check resource tracking basics
     let start_obj: JsonValue = serde_json::from_str(&start_memory).unwrap();
     let end_obj: JsonValue = serde_json::from_str(&end_memory).unwrap();
     let start_total = start_obj["total_allocated"].as_u64().unwrap_or(0);
@@ -230,14 +230,14 @@ fn test_code_improvement_recommendations() {
     runtime.execute_cell(&inefficient_cell).unwrap();
     runtime.execute_cell(&good_cell).unwrap();
 
-    // TODO: Add recommendation engine
+ // Planned feature: Add recommendation engine
     // let recommendations = runtime.get_code_recommendations().unwrap();
     // assert!(!recommendations.is_empty(), "Should provide code recommendations");
     // assert!(recommendations.iter().any(|r| r.recommendation_type == "simplify_chain"), "Should recommend chain simplification");
     // assert!(recommendations.iter().any(|r| r.confidence_score > 0.5), "Should have confident recommendations");
     // assert!(recommendations.iter().any(|r| !r.suggested_code.is_empty()), "Should provide suggested code");
 
-    // Verify recommendation framework
+    // Check recommendation framework
     let notebook_json = runtime.to_json();
     assert!(
         notebook_json.contains("cells"),
@@ -264,13 +264,13 @@ fn test_best_practices_suggestions() {
     runtime.execute_cell(&long_chain).unwrap();
     runtime.execute_cell(&good_code).unwrap();
 
-    // TODO: Add best practices engine
+ // Planned feature: Add best practices engine
     // let practices = runtime.get_best_practices_suggestions().unwrap();
     // assert!(practices.iter().any(|p| p.practice_type == "add_documentation"), "Should suggest documentation");
     // assert!(practices.iter().any(|p| p.practice_type == "break_long_chains"), "Should suggest breaking chains");
     // assert!(practices.iter().any(|p| p.severity == "medium"), "Should categorize severity");
 
-    // Verify best practices framework
+    // Check best practices framework
     let cells_json = runtime.get_cells();
     let cells: Vec<JsonValue> = serde_json::from_str(&cells_json).unwrap();
     assert!(cells.len() >= 4, "Should have multiple cells to analyze");
@@ -290,7 +290,7 @@ fn test_notebook_version_control() {
     let cell1 = runtime.add_cell("code", "let version1 = 'initial'");
     runtime.execute_cell(&cell1).unwrap();
 
-    // TODO: Add Git-like versioning
+ // Planned feature: Add Git-like versioning
     // let commit1 = runtime.commit_notebook("Initial notebook version").unwrap();
     // assert!(!commit1.commit_hash.is_empty(), "Should generate commit hash");
     // assert_eq!(commit1.message, "Initial notebook version", "Should store commit message");
@@ -299,13 +299,13 @@ fn test_notebook_version_control() {
     let cell2 = runtime.add_cell("code", "let version2 = 'updated'");
     runtime.execute_cell(&cell2).unwrap();
 
-    // TODO: Test branching and merging
+ // Planned feature: Test branching and merging
     // let branch = runtime.create_branch("feature-branch").unwrap();
     // runtime.switch_branch(&branch.name).unwrap();
     // let cell3 = runtime.add_cell("code", "let feature = 'new_feature'");
     // let commit2 = runtime.commit_notebook("Add new feature").unwrap();
 
-    // Verify basic versioning structure
+    // Check basic versioning structure
     let notebook_json = runtime.to_json();
     assert!(
         notebook_json.contains("version"),
@@ -332,7 +332,7 @@ fn test_notebook_diff_and_merge() {
     let feature_b = runtime2.add_cell("code", "let feature_b = 'different'");
     runtime2.execute_cell(&feature_b).unwrap();
 
-    // TODO: Add diff and merge capabilities
+ // Planned feature: Add diff and merge capabilities
     // let notebook1_state = runtime1.export_for_collaboration().unwrap();
     // let notebook2_state = runtime2.export_for_collaboration().unwrap();
     // let diff = runtime1.diff_notebooks(&notebook2_state).unwrap();
@@ -342,7 +342,7 @@ fn test_notebook_diff_and_merge() {
     // let merged = runtime1.merge_notebooks(&notebook2_state).unwrap();
     // assert!(merged.success, "Should successfully merge non-conflicting changes");
 
-    // Verify diff framework
+    // Check diff framework
     let state1 = runtime1.export_for_collaboration().unwrap();
     let state2 = runtime2.export_for_collaboration().unwrap();
     assert_ne!(
@@ -369,7 +369,7 @@ fn test_notebook_publishing() {
 
     runtime.execute_cell(&analysis_cell).unwrap();
 
-    // TODO: Add publishing capabilities
+ // Planned feature: Add publishing capabilities
     // let publish_metadata = NotebookPublishMetadata {
     //     title: "Data Analysis Tutorial".to_string(),
     //     description: "Learn data analysis basics".to_string(),
@@ -383,7 +383,7 @@ fn test_notebook_publishing() {
     // assert!(!published.share_url.is_empty(), "Should generate share URL");
     // assert!(published.published_at > 0, "Should timestamp publication");
 
-    // Verify publishing structure
+    // Check publishing structure
     let notebook_json = runtime.to_json();
     assert!(
         notebook_json.contains("metadata"),
@@ -395,21 +395,21 @@ fn test_notebook_publishing() {
 
 #[test]
 fn test_notebook_discovery() {
-    // TODO: Add notebook discovery platform
+ // Planned feature: Add notebook discovery platform
     // let discovery = NotebookDiscovery::new();
 
-    // Test search functionality
+    // Check search functionality
     // let search_results = discovery.search_notebooks("data analysis").unwrap();
     // assert!(search_results.total_count >= 0, "Should return search results");
 
-    // Test filtering
+    // Check filtering
     // let filtered = discovery.filter_notebooks(NotebookFilters {
     //     tags: Some(vec!["tutorial"]),
     //     min_rating: Some(4.0),
     //     language: Some("ruchy"),
     // }).unwrap();
 
-    // Test trending
+    // Check trending
     // let trending = discovery.get_trending_notebooks(7).unwrap(); // Last 7 days
     // assert!(trending.notebooks.len() >= 0, "Should return trending notebooks");
 
@@ -431,7 +431,7 @@ fn test_data_visualization_generation() {
     );
     runtime.execute_cell(&data_cell).unwrap();
 
-    // TODO: Add visualization capabilities
+ // Planned feature: Add visualization capabilities
     // let line_chart = runtime.create_visualization("line_chart", VizConfig {
     //     data_source: "viz_data",
     //     x_column: 0,
@@ -442,7 +442,7 @@ fn test_data_visualization_generation() {
     // assert!(!line_chart.svg_content.is_empty(), "Should generate SVG content");
     // assert!(line_chart.interactive_config.is_some(), "Should support interactivity");
 
-    // Test different chart types
+    // Check different chart types
     // let bar_chart = runtime.create_visualization("bar_chart", VizConfig {
     //     data_source: "viz_data",
     //     x_column: 0,
@@ -450,7 +450,7 @@ fn test_data_visualization_generation() {
     //     title: "Value Comparison",
     // }).unwrap();
 
-    // Verify visualization framework
+    // Check visualization framework
     let cells_json = runtime.get_cells();
     let cells: Vec<JsonValue> = serde_json::from_str(&cells_json).unwrap();
     assert!(
@@ -469,7 +469,7 @@ fn test_interactive_plotting() {
     let dataset_cell = runtime.add_cell("code", "let plot_data = DataFrame::from_range(0, 50)");
     runtime.execute_cell(&dataset_cell).unwrap();
 
-    // TODO: Add interactive plotting
+ // Planned feature: Add interactive plotting
     // let interactive_plot = runtime.create_interactive_plot(InteractivePlotConfig {
     //     plot_type: "scatter",
     //     data_source: "plot_data",
@@ -481,7 +481,7 @@ fn test_interactive_plotting() {
     // assert!(!interactive_plot.javascript_code.is_empty(), "Should include JavaScript interactions");
     // assert!(interactive_plot.supports_export, "Should support export to PNG/SVG");
 
-    // Verify interactive framework
+    // Check interactive framework
     let memory_usage = runtime.get_memory_usage();
     assert!(
         !memory_usage.is_empty(),
@@ -507,19 +507,19 @@ fn test_notebook_content_indexing() {
     runtime.add_cell("markdown", "## Model Training");
     runtime.add_cell("code", "let model = 'trained_model'");
 
-    // TODO: Add search indexing
+ // Planned feature: Add search indexing
     // let index = runtime.build_search_index().unwrap();
     // assert!(index.total_tokens > 0, "Should tokenize notebook content");
     // assert!(index.keyword_frequency.contains_key("machine"), "Should index keywords");
     // assert!(index.code_symbols.contains("ml_data"), "Should index code symbols");
 
-    // Test search functionality
+    // Check search functionality
     // let search_results = runtime.search_notebook_content("machine learning").unwrap();
     // assert!(!search_results.is_empty(), "Should find relevant content");
     // assert!(search_results.iter().any(|r| r.cell_type == "markdown"), "Should search markdown");
     // assert!(search_results.iter().any(|r| r.relevance_score > 0.5), "Should rank by relevance");
 
-    // Verify search structure
+    // Check search structure
     let cells_json = runtime.get_cells();
     let cells: Vec<JsonValue> = serde_json::from_str(&cells_json).unwrap();
     assert!(cells.len() >= 6, "Should have content to index and search");
@@ -529,7 +529,7 @@ fn test_notebook_content_indexing() {
 
 #[test]
 fn test_cross_notebook_search() {
-    // TODO: Add cross-notebook search capabilities
+ // Planned feature: Add cross-notebook search capabilities
     // let search_engine = NotebookSearchEngine::new();
 
     // Index multiple notebooks
@@ -539,12 +539,12 @@ fn test_cross_notebook_search() {
     // search_engine.index_notebook(&notebook1).unwrap();
     // search_engine.index_notebook(&notebook2).unwrap();
 
-    // Test cross-notebook search
+    // Check cross-notebook search
     // let results = search_engine.search_all_notebooks("data").unwrap();
     // assert!(results.total_matches > 0, "Should find matches across notebooks");
     // assert!(results.notebooks.len() > 0, "Should return matched notebooks");
 
-    // Test advanced search with filters
+    // Check advanced search with filters
     // let filtered_results = search_engine.advanced_search(SearchQuery {
     //     text: "machine learning",
     //     tags: Some(vec!["ml"]),
@@ -580,14 +580,14 @@ fn test_analytics_performance_with_large_notebook() {
         runtime.add_cell("markdown", &format!("## Section {}: Analysis Results", i));
     }
 
-    // Test analytics performance
+    // Check analytics performance
     let start = Instant::now();
     let cells_json = runtime.get_cells();
     let memory_usage = runtime.get_memory_usage();
     let debug_info = runtime.get_debug_information().unwrap();
     let analytics_time = start.elapsed();
 
-    // Verify performance is acceptable
+    // Check performance is acceptable
     assert!(
         analytics_time.as_millis() < 1000,
         "Analytics should be fast even for large notebooks: {}ms",
@@ -630,12 +630,12 @@ fn test_end_to_end_analytics_workflow() {
     let debug_info = runtime.get_debug_information().unwrap();
     let cells_json = runtime.get_cells();
 
-    // TODO: Collect advanced analytics
+ // Planned feature: Collect advanced analytics
     // let usage_analytics = runtime.get_usage_analytics().unwrap();
     // let performance_profile = runtime.get_performance_profile().unwrap();
     // let recommendations = runtime.get_code_recommendations().unwrap();
 
-    // Verify workflow completeness
+    // Check workflow completeness
     assert!(
         notebook_json.contains("cells"),
         "Should have complete notebook"

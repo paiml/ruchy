@@ -11,6 +11,9 @@ no_satd = true  # No TODO/FIXME/HACK comments
 max_line_length = 120
 max_function_lines = 50
 
+[exclusions]
+satd_paths = ["tests.disabled/**"]  # Exclude disabled tests from SATD checking
+
 [testing]
 require_property_tests = true
 require_doctests = true

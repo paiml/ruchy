@@ -10,11 +10,107 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
     let Some((token, span)) = state.tokens.peek() else {
         bail!("Unexpected end of input - expected expression");
     };
-    // Performance: Clone once and match on owned token for better cache locality
     let token = token.clone();
     let span = *span;
+
+    dispatch_prefix_token(state, token, span)
+}
+
+fn dispatch_prefix_token(state: &mut ParserState, token: Token, span: Span) -> Result<Expr> {
     match token {
-        // Literal tokens - inlined for performance
+        // Literals
+        Token::Integer(_)
+        | Token::Float(_)
+        | Token::String(_)
+        | Token::FString(_)
+        | Token::Char(_)
+        | Token::Byte(_)
+        | Token::Bool(_)
+        | Token::Null
+        | Token::None
+        | Token::Some => parse_literal_prefix(state, token, span),
+
+        // Unary operators
+        Token::Minus
+        | Token::Bang
+        | Token::Star
+        | Token::Ampersand
+        | Token::Power
+        | Token::Await
+        | Token::Tilde
+        | Token::Spawn => parse_unary_prefix(state, token, span),
+
+        // Identifiers and special keywords
+        Token::Identifier(_) | Token::Underscore | Token::Self_ | Token::Super | Token::Default => {
+            parse_identifier_prefix(state, token, span)
+        }
+
+        // Keywords and declarations
+        Token::Fun
+        | Token::Fn
+        | Token::LeftBrace
+        | Token::Let
+        | Token::Var
+        | Token::Mod
+        | Token::Module
+        | Token::At => parse_declaration_prefix(state, token, span),
+
+        // Control flow and structures
+        Token::If
+        | Token::Match
+        | Token::While
+        | Token::For
+        | Token::Try
+        | Token::Loop
+        | Token::Lifetime(_) => parse_control_prefix(state, token, span),
+
+        // Data structures and definitions
+        Token::Struct
+        | Token::Class
+        | Token::Trait
+        | Token::Interface
+        | Token::Impl
+        | Token::Type
+        | Token::DataFrame
+        | Token::Actor => parse_structure_prefix(state, token),
+
+        // Imports, modifiers, and specials
+        Token::Import
+        | Token::From
+        | Token::Use
+        | Token::Pub
+        | Token::Const
+        | Token::Sealed
+        | Token::Final
+        | Token::Abstract
+        | Token::Unsafe
+        | Token::Break
+        | Token::Continue
+        | Token::Return
+        | Token::Throw
+        | Token::Export
+        | Token::Async
+        | Token::Increment
+        | Token::Decrement => parse_modifier_prefix(state, token, span),
+
+        // Collections and constructors
+        Token::Pipe
+        | Token::OrOr
+        | Token::Backslash
+        | Token::LeftParen
+        | Token::LeftBracket
+        | Token::Enum
+        | Token::Ok
+        | Token::Err
+        | Token::Result
+        | Token::Option => parse_collection_prefix(state, token, span),
+
+        _ => bail!("Unexpected token: {:?}", token),
+    }
+}
+
+fn parse_literal_prefix(state: &mut ParserState, token: Token, span: Span) -> Result<Expr> {
+    match token {
         Token::Integer(value) => {
             state.tokens.advance();
             Ok(Expr::new(ExprKind::Literal(Literal::Integer(value)), span))
@@ -29,7 +125,6 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
         }
         Token::FString(template) => {
             state.tokens.advance();
-            // Parse f-string template into parts with proper interpolation
             let parts = parse_fstring_into_parts(&template)?;
             Ok(Expr::new(ExprKind::StringInterpolation { parts }, span))
         }
@@ -53,210 +148,231 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
             state.tokens.advance();
             Ok(Expr::new(ExprKind::None, span))
         }
-        Token::Some => {
-            state.tokens.advance();
-            // Some requires a value in parentheses
-            if !matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
-                bail!("Expected '(' after Some");
-            }
-            state.tokens.advance(); // consume (
-            let value = super::parse_expr_with_precedence_recursive(state, 0)?;
-            if !matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
-                bail!("Expected ')' after Some value");
-            }
-            state.tokens.advance(); // consume )
-            Ok(Expr::new(
-                ExprKind::Some {
-                    value: Box::new(value),
-                },
-                span,
-            ))
-        }
-        // Identifier tokens - delegated to focused helper
+        Token::Some => parse_some_constructor(state, span),
+        _ => unreachable!(),
+    }
+}
+
+fn parse_some_constructor(state: &mut ParserState, span: Span) -> Result<Expr> {
+    state.tokens.advance();
+    if !matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
+        bail!("Expected '(' after Some");
+    }
+    state.tokens.advance();
+    let value = super::parse_expr_with_precedence_recursive(state, 0)?;
+    if !matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
+        bail!("Expected ')' after Some value");
+    }
+    state.tokens.advance();
+    Ok(Expr::new(
+        ExprKind::Some {
+            value: Box::new(value),
+        },
+        span,
+    ))
+}
+
+fn parse_unary_prefix(state: &mut ParserState, token: Token, span: Span) -> Result<Expr> {
+    match token {
+        Token::Minus => parse_unary_negate(state, span),
+        Token::Bang => parse_unary_not(state, span),
+        Token::Star => parse_unary_deref(state, span),
+        Token::Ampersand => parse_unary_reference(state, span),
+        Token::Power => parse_double_deref(state, span),
+        Token::Await => parse_await_expr(state, span),
+        Token::Tilde => parse_bitwise_not(state, span),
+        Token::Spawn => parse_spawn_expr(state, span),
+        _ => unreachable!(),
+    }
+}
+
+fn parse_unary_negate(state: &mut ParserState, span: Span) -> Result<Expr> {
+    state.tokens.advance();
+    let expr = super::parse_expr_with_precedence_recursive(state, 13)?;
+    Ok(Expr::new(
+        ExprKind::Unary {
+            op: UnaryOp::Negate,
+            operand: Box::new(expr),
+        },
+        span,
+    ))
+}
+
+fn parse_unary_not(state: &mut ParserState, span: Span) -> Result<Expr> {
+    state.tokens.advance();
+    let expr = super::parse_expr_with_precedence_recursive(state, 13)?;
+    Ok(Expr::new(
+        ExprKind::Unary {
+            op: UnaryOp::Not,
+            operand: Box::new(expr),
+        },
+        span,
+    ))
+}
+
+fn parse_unary_deref(state: &mut ParserState, span: Span) -> Result<Expr> {
+    state.tokens.advance();
+    let expr = super::parse_expr_with_precedence_recursive(state, 13)?;
+    Ok(Expr::new(
+        ExprKind::Unary {
+            op: UnaryOp::Deref,
+            operand: Box::new(expr),
+        },
+        span,
+    ))
+}
+
+fn parse_unary_reference(state: &mut ParserState, span: Span) -> Result<Expr> {
+    state.tokens.advance();
+    let expr = super::parse_expr_with_precedence_recursive(state, 13)?;
+    Ok(Expr::new(
+        ExprKind::Unary {
+            op: UnaryOp::Reference,
+            operand: Box::new(expr),
+        },
+        span,
+    ))
+}
+
+fn parse_double_deref(state: &mut ParserState, span: Span) -> Result<Expr> {
+    state.tokens.advance();
+    let expr = super::parse_expr_with_precedence_recursive(state, 13)?;
+    let inner_deref = Expr::new(
+        ExprKind::Unary {
+            op: UnaryOp::Deref,
+            operand: Box::new(expr),
+        },
+        span,
+    );
+    Ok(Expr::new(
+        ExprKind::Unary {
+            op: UnaryOp::Deref,
+            operand: Box::new(inner_deref),
+        },
+        span,
+    ))
+}
+
+fn parse_await_expr(state: &mut ParserState, span: Span) -> Result<Expr> {
+    state.tokens.advance();
+    let expr = super::parse_expr_with_precedence_recursive(state, 13)?;
+    Ok(Expr::new(
+        ExprKind::Await {
+            expr: Box::new(expr),
+        },
+        span,
+    ))
+}
+
+fn parse_bitwise_not(state: &mut ParserState, span: Span) -> Result<Expr> {
+    state.tokens.advance();
+    let expr = super::parse_expr_with_precedence_recursive(state, 13)?;
+    Ok(Expr::new(
+        ExprKind::Unary {
+            op: UnaryOp::BitwiseNot,
+            operand: Box::new(expr),
+        },
+        span,
+    ))
+}
+
+fn parse_spawn_expr(state: &mut ParserState, span: Span) -> Result<Expr> {
+    state.tokens.advance();
+    let expr = super::parse_expr_with_precedence_recursive(state, 13)?;
+    Ok(Expr::new(
+        ExprKind::Spawn {
+            actor: Box::new(expr),
+        },
+        span,
+    ))
+}
+
+fn parse_identifier_prefix(state: &mut ParserState, token: Token, span: Span) -> Result<Expr> {
+    match token {
         Token::Identifier(_) | Token::Underscore | Token::Self_ | Token::Super => {
             parse_identifier_token(state, &token, span)
         }
-        // Handle reserved keywords that can be used as identifiers in expression context
         Token::Default => {
             state.tokens.advance();
             Ok(Expr::new(ExprKind::Identifier("default".to_string()), span))
         }
-        // Unary operator tokens - inlined for performance
-        Token::Minus => {
-            state.tokens.advance();
-            let expr = super::parse_expr_with_precedence_recursive(state, 13)?; // High precedence for unary
-            Ok(Expr::new(
-                ExprKind::Unary {
-                    op: UnaryOp::Negate,
-                    operand: Box::new(expr),
-                },
-                span,
-            ))
-        }
-        Token::Bang => {
-            state.tokens.advance();
-            let expr = super::parse_expr_with_precedence_recursive(state, 13)?;
-            Ok(Expr::new(
-                ExprKind::Unary {
-                    op: UnaryOp::Not,
-                    operand: Box::new(expr),
-                },
-                span,
-            ))
-        }
-        Token::Star => {
-            state.tokens.advance();
-            let expr = super::parse_expr_with_precedence_recursive(state, 13)?; // High precedence for unary
-            Ok(Expr::new(
-                ExprKind::Unary {
-                    op: UnaryOp::Deref,
-                    operand: Box::new(expr),
-                },
-                span,
-            ))
-        }
-        Token::Ampersand => {
-            state.tokens.advance();
-            let expr = super::parse_expr_with_precedence_recursive(state, 13)?; // High precedence for unary
-            Ok(Expr::new(
-                ExprKind::Unary {
-                    op: UnaryOp::Reference,
-                    operand: Box::new(expr),
-                },
-                span,
-            ))
-        }
-        Token::Power => {
-            // Handle ** as double dereference in prefix position
-            state.tokens.advance();
-            let expr = super::parse_expr_with_precedence_recursive(state, 13)?; // High precedence for unary
-                                                                                // Create double dereference: *(*expr)
-            let inner_deref = Expr::new(
-                ExprKind::Unary {
-                    op: UnaryOp::Deref,
-                    operand: Box::new(expr),
-                },
-                span,
-            );
-            Ok(Expr::new(
-                ExprKind::Unary {
-                    op: UnaryOp::Deref,
-                    operand: Box::new(inner_deref),
-                },
-                span,
-            ))
-        }
-        Token::Await => {
-            state.tokens.advance();
-            let expr = super::parse_expr_with_precedence_recursive(state, 13)?;
-            Ok(Expr::new(
-                ExprKind::Await {
-                    expr: Box::new(expr),
-                },
-                span,
-            ))
-        }
-        Token::Tilde => {
-            state.tokens.advance();
-            let expr = super::parse_expr_with_precedence_recursive(state, 13)?;
-            Ok(Expr::new(
-                ExprKind::Unary {
-                    op: UnaryOp::BitwiseNot,
-                    operand: Box::new(expr),
-                },
-                span,
-            ))
-        }
-        Token::Spawn => {
-            state.tokens.advance();
-            // Parse the actor to spawn (e.g., Counter {} or Worker::new("id"))
-            let expr = super::parse_expr_with_precedence_recursive(state, 13)?;
-            Ok(Expr::new(
-                ExprKind::Spawn {
-                    actor: Box::new(expr),
-                },
-                span,
-            ))
-        }
-        // Loop label: 'label: for/while/loop
-        Token::Lifetime(label_name) => {
-            state.tokens.advance();
-            // Expect colon
-            state.tokens.expect(&Token::Colon)?;
-            // Next must be a loop keyword
-            match state.tokens.peek() {
-                Some((Token::For, _)) => parse_labeled_for_loop(state, Some(label_name)),
-                Some((Token::While, _)) => parse_labeled_while_loop(state, Some(label_name)),
-                Some((Token::Loop, _)) => parse_labeled_loop(state, Some(label_name)),
-                _ => bail!("Expected loop keyword after label"),
-            }
-        }
-        // Function/block tokens - delegated to focused helper
+        _ => unreachable!(),
+    }
+}
+
+fn parse_declaration_prefix(state: &mut ParserState, token: Token, span: Span) -> Result<Expr> {
+    match token {
         Token::Fun | Token::Fn | Token::LeftBrace => parse_function_block_token(state, token),
-        // Variable declaration tokens - delegated to focused helper
         Token::Let | Token::Var => parse_variable_declaration_token(state, token),
-        // Control flow tokens - delegated to focused helper
+        Token::Mod | Token::Module => parse_module_declaration(state),
+        Token::At => parse_decorator_prefix(state),
+        _ => unreachable!(),
+    }
+}
+
+fn parse_decorator_prefix(state: &mut ParserState) -> Result<Expr> {
+    let decorators = parse_decorators(state)?;
+    let mut expr = parse_prefix(state)?;
+    if let ExprKind::Class {
+        decorators: ref mut class_decorators,
+        ..
+    } = &mut expr.kind
+    {
+        *class_decorators = decorators;
+    }
+    Ok(expr)
+}
+
+fn parse_control_prefix(state: &mut ParserState, token: Token, span: Span) -> Result<Expr> {
+    match token {
         Token::If | Token::Match | Token::While | Token::For | Token::Try | Token::Loop => {
             parse_control_flow_token(state, token)
         }
-        // Module declaration token - support both 'mod' and 'module'
-        Token::Mod | Token::Module => parse_module_declaration(state),
-        // Lambda expression tokens - delegated to focused helper
-        Token::Pipe | Token::OrOr | Token::Backslash => parse_lambda_token(state, token),
-        // Parentheses tokens - delegated to focused helper (unit, grouping, tuples, lambdas)
-        Token::LeftParen => parse_parentheses_token(state, span),
-        // Data structure definition tokens - delegated to focused helper
+        Token::Lifetime(label_name) => parse_loop_label(state, label_name),
+        _ => unreachable!(),
+    }
+}
+
+fn parse_loop_label(state: &mut ParserState, label_name: String) -> Result<Expr> {
+    state.tokens.advance();
+    state.tokens.expect(&Token::Colon)?;
+    match state.tokens.peek() {
+        Some((Token::For, _)) => parse_labeled_for_loop(state, Some(label_name)),
+        Some((Token::While, _)) => parse_labeled_while_loop(state, Some(label_name)),
+        Some((Token::Loop, _)) => parse_labeled_loop(state, Some(label_name)),
+        _ => bail!("Expected loop keyword after label"),
+    }
+}
+
+fn parse_structure_prefix(state: &mut ParserState, token: Token) -> Result<Expr> {
+    match token {
         Token::Struct
         | Token::Class
         | Token::Trait
         | Token::Interface
         | Token::Impl
         | Token::Type => parse_data_structure_token(state, token),
-        // Import/module tokens - delegated to focused helper
-        Token::Import | Token::From | Token::Use => parse_import_token(state, token),
-        // Special definition tokens - delegated to focused helper
         Token::DataFrame | Token::Actor => parse_special_definition_token(state, token),
-        // Decorator token - parse decorators and apply to following definition
-        Token::At => {
-            // Parse decorators
-            let decorators = parse_decorators(state)?;
+        _ => unreachable!(),
+    }
+}
 
-            // Now parse the decorated class/struct
-            let mut expr = parse_prefix(state)?;
+fn parse_modifier_prefix(state: &mut ParserState, token: Token, span: Span) -> Result<Expr> {
+    match token {
+        Token::Import | Token::From | Token::Use => parse_import_token(state, token),
+        _ => parse_control_statement_token(state, token, span),
+    }
+}
 
-            // Apply decorators to class
-            if let ExprKind::Class {
-                decorators: ref mut class_decorators,
-                ..
-            } = &mut expr.kind
-            {
-                *class_decorators = decorators;
-            }
-
-            Ok(expr)
-        }
-        // Control statement tokens - delegated to focused helper
-        Token::Pub
-        | Token::Const
-        | Token::Sealed
-        | Token::Final
-        | Token::Abstract
-        | Token::Unsafe
-        | Token::Break
-        | Token::Continue
-        | Token::Return
-        | Token::Throw
-        | Token::Export
-        | Token::Async
-        | Token::Increment
-        | Token::Decrement => parse_control_statement_token(state, token, span),
-        // Collection/enum definition tokens - delegated to focused helper
+fn parse_collection_prefix(state: &mut ParserState, token: Token, span: Span) -> Result<Expr> {
+    match token {
+        Token::Pipe | Token::OrOr | Token::Backslash => parse_lambda_token(state, token),
+        Token::LeftParen => parse_parentheses_token(state, span),
         Token::LeftBracket | Token::Enum => parse_collection_enum_token(state, token),
-        // Constructor tokens - delegated to focused helper
         Token::Ok | Token::Err | Token::Result | Token::Option => {
             parse_constructor_token(state, token, span)
         }
-        _ => bail!("Unexpected token: {:?}", token),
+        _ => unreachable!(),
     }
 }
 /// Parse literal tokens (Integer, Float, String, Char, Bool, `FString`)
@@ -566,88 +682,90 @@ fn parse_parentheses_token(state: &mut ParserState, span: Span) -> Result<Expr> 
 /// Extracted from `parse_prefix` to reduce complexity
 fn parse_pub_token(state: &mut ParserState) -> Result<Expr> {
     state.tokens.advance(); // consume 'pub'
+    skip_visibility_scope(state)?;
 
-    // Check for pub(crate) or pub(super) syntax
-    let mut _visibility_scope = "pub".to_string();
-    if matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
-        state.tokens.advance(); // consume '('
-        match state.tokens.peek() {
-            Some((Token::Crate, _)) => {
-                state.tokens.advance();
-                state.tokens.expect(&Token::RightParen)?;
-                _visibility_scope = "pub_crate".to_string();
-            }
-            Some((Token::Super, _)) => {
-                state.tokens.advance();
-                state.tokens.expect(&Token::RightParen)?;
-                _visibility_scope = "pub_super".to_string();
-            }
-            _ => {
-                bail!("Expected 'crate' or 'super' after 'pub('");
-            }
-        }
+    let mut expr = parse_pub_target_expression(state)?;
+    mark_expression_as_public(&mut expr);
+    Ok(expr)
+}
+
+fn skip_visibility_scope(state: &mut ParserState) -> Result<()> {
+    if !matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
+        return Ok(());
     }
 
-    // Check next token for special handling
-    let mut expr = match state.tokens.peek() {
-        Some((Token::Use, _)) => {
-            // Handle pub use specially
-            // Note: parse_use_statement will consume the 'use' token
-            let mut expr = parse_use_statement(state)?;
-            // Add pub attribute to the import
-            expr.attributes.push(crate::frontend::ast::Attribute {
-                name: "pub".to_string(),
-                args: vec![],
-                span: expr.span,
-            });
-            return Ok(expr);
+    state.tokens.advance(); // consume '('
+    match state.tokens.peek() {
+        Some((Token::Crate, _)) | Some((Token::Super, _)) => {
+            state.tokens.advance();
+            state.tokens.expect(&Token::RightParen)?;
+            Ok(())
         }
-        Some((Token::Const, _)) => {
-            state.tokens.advance(); // consume 'const'
-            if !matches!(state.tokens.peek(), Some((Token::Fun | Token::Fn, _))) {
-                bail!("Expected 'fun' or 'fn' after 'pub const'");
-            }
-            let mut expr = parse_prefix(state)?;
-            // Add const attribute
-            if let ExprKind::Function { .. } = &expr.kind {
-                expr.attributes.push(crate::frontend::ast::Attribute {
-                    name: "const".to_string(),
-                    args: vec![],
-                    span: expr.span,
-                });
-            }
-            expr
-        }
-        Some((Token::Unsafe, _)) => {
-            state.tokens.advance(); // consume 'unsafe'
-            if !matches!(state.tokens.peek(), Some((Token::Fun | Token::Fn, _))) {
-                bail!("Expected 'fun' or 'fn' after 'pub unsafe'");
-            }
-            let mut expr = parse_prefix(state)?;
-            // Add unsafe attribute
-            if let ExprKind::Function { .. } = &expr.kind {
-                expr.attributes.push(crate::frontend::ast::Attribute {
-                    name: "unsafe".to_string(),
-                    args: vec![],
-                    span: expr.span,
-                });
-            }
-            expr
-        }
-        _ => parse_prefix(state)?,
-    };
+        _ => bail!("Expected 'crate' or 'super' after 'pub('"),
+    }
+}
 
-    // Mark the expression as public if it supports it
-    match &mut expr.kind {
-        ExprKind::Function { is_pub, .. } => *is_pub = true,
-        ExprKind::Struct { is_pub, .. } => *is_pub = true,
-        ExprKind::TupleStruct { is_pub, .. } => *is_pub = true,
-        ExprKind::Class { is_pub, .. } => *is_pub = true,
-        ExprKind::Trait { is_pub, .. } => *is_pub = true,
-        ExprKind::Impl { is_pub, .. } => *is_pub = true,
-        _ => {} // Other expressions don't have is_pub
+fn parse_pub_target_expression(state: &mut ParserState) -> Result<Expr> {
+    match state.tokens.peek() {
+        Some((Token::Use, _)) => parse_pub_use_statement(state),
+        Some((Token::Const, _)) => parse_pub_const_function(state),
+        Some((Token::Unsafe, _)) => parse_pub_unsafe_function(state),
+        _ => parse_prefix(state),
+    }
+}
+
+fn parse_pub_use_statement(state: &mut ParserState) -> Result<Expr> {
+    let mut expr = parse_use_statement(state)?;
+    expr.attributes.push(crate::frontend::ast::Attribute {
+        name: "pub".to_string(),
+        args: vec![],
+        span: expr.span,
+    });
+    Ok(expr)
+}
+
+fn parse_pub_const_function(state: &mut ParserState) -> Result<Expr> {
+    state.tokens.advance(); // consume 'const'
+    if !matches!(state.tokens.peek(), Some((Token::Fun | Token::Fn, _))) {
+        bail!("Expected 'fun' or 'fn' after 'pub const'");
+    }
+    let mut expr = parse_prefix(state)?;
+    if let ExprKind::Function { .. } = &expr.kind {
+        expr.attributes.push(crate::frontend::ast::Attribute {
+            name: "const".to_string(),
+            args: vec![],
+            span: expr.span,
+        });
     }
     Ok(expr)
+}
+
+fn parse_pub_unsafe_function(state: &mut ParserState) -> Result<Expr> {
+    state.tokens.advance(); // consume 'unsafe'
+    if !matches!(state.tokens.peek(), Some((Token::Fun | Token::Fn, _))) {
+        bail!("Expected 'fun' or 'fn' after 'pub unsafe'");
+    }
+    let mut expr = parse_prefix(state)?;
+    if let ExprKind::Function { .. } = &expr.kind {
+        expr.attributes.push(crate::frontend::ast::Attribute {
+            name: "unsafe".to_string(),
+            args: vec![],
+            span: expr.span,
+        });
+    }
+    Ok(expr)
+}
+
+fn mark_expression_as_public(expr: &mut Expr) {
+    match &mut expr.kind {
+        ExprKind::Function { is_pub, .. }
+        | ExprKind::Struct { is_pub, .. }
+        | ExprKind::TupleStruct { is_pub, .. }
+        | ExprKind::Class { is_pub, .. }
+        | ExprKind::Trait { is_pub, .. }
+        | ExprKind::Impl { is_pub, .. } => *is_pub = true,
+        _ => {}
+    }
 }
 
 /// Parse const token - handles const declarations for functions
@@ -2609,7 +2727,7 @@ fn parse_struct_fields(state: &mut ParserState) -> Result<Vec<StructField>> {
             visibility,
             is_mut,
             default_value,
-            decorators: Vec::new(), // TODO: parse field decorators
+            decorators: Vec::new(), // Field decorators not yet parsed
         });
 
         if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
@@ -2749,83 +2867,165 @@ fn parse_class_member(
     constants: &mut Vec<ClassConstant>,
     properties: &mut Vec<ClassProperty>,
 ) -> Result<()> {
-    // Check for decorators on the member
-    let decorators = if matches!(state.tokens.peek(), Some((Token::At, _))) {
-        parse_decorators(state)?
-    } else {
-        Vec::new()
-    };
+    let decorators = parse_member_decorators(state)?;
 
-    // Check for const first
+    if try_parse_class_constant(state, constants)? {
+        return Ok(());
+    }
+
+    if try_parse_class_property(state, properties)? {
+        return Ok(());
+    }
+
+    validate_no_unsupported_features(state)?;
+
+    if try_parse_operator_method(state, methods)? {
+        return Ok(());
+    }
+
+    parse_member_and_dispatch(state, fields, constructors, methods, decorators)
+}
+
+fn parse_member_decorators(state: &mut ParserState) -> Result<Vec<Decorator>> {
+    if matches!(state.tokens.peek(), Some((Token::At, _))) {
+        parse_decorators(state)
+    } else {
+        Ok(Vec::new())
+    }
+}
+
+fn try_parse_class_constant(
+    state: &mut ParserState,
+    constants: &mut Vec<ClassConstant>,
+) -> Result<bool> {
     if matches!(state.tokens.peek(), Some((Token::Const, _))) {
-        state.tokens.advance(); // consume 'const'
+        state.tokens.advance();
         let constant = parse_class_constant(state)?;
         constants.push(constant);
-        return Ok(());
+        Ok(true)
+    } else {
+        Ok(false)
     }
+}
 
-    // Check for property keyword
+fn try_parse_class_property(
+    state: &mut ParserState,
+    properties: &mut Vec<ClassProperty>,
+) -> Result<bool> {
     if matches!(state.tokens.peek(), Some((Token::Property, _))) {
-        state.tokens.advance(); // consume 'property'
+        state.tokens.advance();
         let property = parse_class_property(state)?;
         properties.push(property);
-        return Ok(());
+        Ok(true)
+    } else {
+        Ok(false)
     }
+}
 
-    // Detect unsupported advanced class features (impl blocks, nested classes)
-    // See tests: test_impl_blocks_inside_classes, test_nested_classes
+fn validate_no_unsupported_features(state: &mut ParserState) -> Result<()> {
     if matches!(state.tokens.peek(), Some((Token::Impl, _))) {
         bail!("Impl blocks inside classes are not yet supported");
     }
     if matches!(state.tokens.peek(), Some((Token::Class, _))) {
         bail!("Nested classes are not yet supported");
     }
+    Ok(())
+}
 
-    // Check for operator overloading first
+fn try_parse_operator_method(
+    state: &mut ParserState,
+    methods: &mut Vec<ClassMethod>,
+) -> Result<bool> {
     if matches!(state.tokens.peek(), Some((Token::Operator, _))) {
-        state.tokens.advance(); // consume 'operator'
+        state.tokens.advance();
         let operator_method = parse_operator_method(state)?;
         methods.push(operator_method);
-        return Ok(());
+        Ok(true)
+    } else {
+        Ok(false)
     }
+}
 
-    // Parse modifiers
+fn parse_member_and_dispatch(
+    state: &mut ParserState,
+    fields: &mut Vec<StructField>,
+    constructors: &mut Vec<Constructor>,
+    methods: &mut Vec<ClassMethod>,
+    decorators: Vec<Decorator>,
+) -> Result<()> {
     let (visibility, is_mut) = parse_class_modifiers(state)?;
     let (is_static, is_override, is_final, is_abstract) = parse_member_flags(state)?;
 
-    // Determine member type and parse accordingly
     match state.tokens.peek() {
         Some((Token::Identifier(name), _)) if name == "new" => {
-            validate_constructor_modifiers(is_static, is_override)?;
-            let mut constructor = parse_constructor(state)?;
-            constructor.is_pub = visibility.is_public();
-            constructors.push(constructor);
+            parse_and_add_constructor(state, constructors, visibility)
         }
-        Some((Token::Fun | Token::Fn, _)) => {
-            let mut method = parse_class_method(state)?;
-            apply_method_modifiers(
-                &mut method,
-                visibility.is_public(),
-                is_static,
-                is_override,
-                is_final,
-                is_abstract,
-            )?;
-            methods.push(method);
-        }
+        Some((Token::Fun | Token::Fn, _)) => parse_and_add_method(
+            state,
+            methods,
+            visibility.is_public(),
+            is_static,
+            is_override,
+            is_final,
+            is_abstract,
+        ),
         Some((Token::Identifier(_), _)) if !is_static => {
-            let (field_name, field_type, default_value) = parse_single_struct_field(state)?;
-            fields.push(StructField {
-                name: field_name,
-                ty: field_type,
-                visibility,
-                is_mut,
-                default_value,
-                decorators, // Apply parsed decorators
-            });
+            parse_and_add_field(state, fields, visibility, is_mut, decorators)
         }
         _ => bail!("Expected field, constructor, method, or constant in class body"),
     }
+}
+
+fn parse_and_add_constructor(
+    state: &mut ParserState,
+    constructors: &mut Vec<Constructor>,
+    visibility: Visibility,
+) -> Result<()> {
+    validate_constructor_modifiers(false, false)?;
+    let mut constructor = parse_constructor(state)?;
+    constructor.is_pub = visibility.is_public();
+    constructors.push(constructor);
+    Ok(())
+}
+
+fn parse_and_add_method(
+    state: &mut ParserState,
+    methods: &mut Vec<ClassMethod>,
+    is_pub: bool,
+    is_static: bool,
+    is_override: bool,
+    is_final: bool,
+    is_abstract: bool,
+) -> Result<()> {
+    let mut method = parse_class_method(state)?;
+    apply_method_modifiers(
+        &mut method,
+        is_pub,
+        is_static,
+        is_override,
+        is_final,
+        is_abstract,
+    )?;
+    methods.push(method);
+    Ok(())
+}
+
+fn parse_and_add_field(
+    state: &mut ParserState,
+    fields: &mut Vec<StructField>,
+    visibility: Visibility,
+    is_mut: bool,
+    decorators: Vec<Decorator>,
+) -> Result<()> {
+    let (field_name, field_type, default_value) = parse_single_struct_field(state)?;
+    fields.push(StructField {
+        name: field_name,
+        ty: field_type,
+        visibility,
+        is_mut,
+        default_value,
+        decorators,
+    });
     Ok(())
 }
 
@@ -3009,69 +3209,13 @@ fn parse_class_constant(state: &mut ParserState) -> Result<ClassConstant> {
 
 /// Parse class property: property NAME: TYPE { get => expr, set(param) => expr }
 fn parse_class_property(state: &mut ParserState) -> Result<ClassProperty> {
-    // Parse property name
-    let name = match state.tokens.peek() {
-        Some((Token::Identifier(n), _)) => {
-            let name = n.clone();
-            state.tokens.advance();
-            name
-        }
-        _ => bail!("Expected property name after 'property'"),
-    };
-
-    // Expect colon
+    let name = parse_property_name(state)?;
     state.tokens.expect(&Token::Colon)?;
-
-    // Parse type
     let ty = super::utils::parse_type(state)?;
-
-    // Expect opening brace
     state.tokens.expect(&Token::LeftBrace)?;
 
-    let mut getter = None;
-    let mut setter = None;
+    let (getter, setter) = parse_property_accessors(state)?;
 
-    // Parse getter and setter
-    while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
-        match state.tokens.peek() {
-            Some((Token::Identifier(keyword), _)) if keyword == "get" => {
-                state.tokens.advance();
-                state.tokens.expect(&Token::FatArrow)?;
-                let body = super::parse_expr_recursive(state)?;
-                getter = Some(Box::new(body));
-            }
-            Some((Token::Identifier(keyword), _)) if keyword == "set" => {
-                state.tokens.advance();
-
-                // Parse setter parameter
-                state.tokens.expect(&Token::LeftParen)?;
-                let param_name = match state.tokens.peek() {
-                    Some((Token::Identifier(n), _)) => {
-                        let name = n.clone();
-                        state.tokens.advance();
-                        name
-                    }
-                    _ => bail!("Expected parameter name for setter"),
-                };
-                state.tokens.expect(&Token::RightParen)?;
-
-                state.tokens.expect(&Token::FatArrow)?;
-                let body = super::parse_expr_recursive(state)?;
-                setter = Some(PropertySetter {
-                    param_name,
-                    body: Box::new(body),
-                });
-            }
-            _ => bail!("Expected 'get' or 'set' in property body"),
-        }
-
-        // Check for comma
-        if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
-            state.tokens.advance();
-        }
-    }
-
-    // Expect closing brace
     state.tokens.expect(&Token::RightBrace)?;
 
     Ok(ClassProperty {
@@ -3079,103 +3223,144 @@ fn parse_class_property(state: &mut ParserState) -> Result<ClassProperty> {
         ty,
         getter,
         setter,
-        is_pub: true, // Properties are public by default
+        is_pub: true,
+    })
+}
+
+fn parse_property_name(state: &mut ParserState) -> Result<String> {
+    match state.tokens.peek() {
+        Some((Token::Identifier(n), _)) => {
+            let name = n.clone();
+            state.tokens.advance();
+            Ok(name)
+        }
+        _ => bail!("Expected property name after 'property'"),
+    }
+}
+
+fn parse_property_accessors(
+    state: &mut ParserState,
+) -> Result<(Option<Box<Expr>>, Option<PropertySetter>)> {
+    let mut getter = None;
+    let mut setter = None;
+
+    while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
+        match state.tokens.peek() {
+            Some((Token::Identifier(keyword), _)) if keyword == "get" => {
+                getter = Some(parse_property_getter(state)?);
+            }
+            Some((Token::Identifier(keyword), _)) if keyword == "set" => {
+                setter = Some(parse_property_setter(state)?);
+            }
+            _ => bail!("Expected 'get' or 'set' in property body"),
+        }
+
+        if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+            state.tokens.advance();
+        }
+    }
+
+    Ok((getter, setter))
+}
+
+fn parse_property_getter(state: &mut ParserState) -> Result<Box<Expr>> {
+    state.tokens.advance(); // consume 'get'
+    state.tokens.expect(&Token::FatArrow)?;
+    let body = super::parse_expr_recursive(state)?;
+    Ok(Box::new(body))
+}
+
+fn parse_property_setter(state: &mut ParserState) -> Result<PropertySetter> {
+    state.tokens.advance(); // consume 'set'
+    state.tokens.expect(&Token::LeftParen)?;
+
+    let param_name = match state.tokens.peek() {
+        Some((Token::Identifier(n), _)) => {
+            let name = n.clone();
+            state.tokens.advance();
+            name
+        }
+        _ => bail!("Expected parameter name for setter"),
+    };
+
+    state.tokens.expect(&Token::RightParen)?;
+    state.tokens.expect(&Token::FatArrow)?;
+    let body = super::parse_expr_recursive(state)?;
+
+    Ok(PropertySetter {
+        param_name,
+        body: Box::new(body),
     })
 }
 
 /// Parse visibility modifiers (pub, private, protected, mut) - complexity: 4
 fn parse_class_modifiers(state: &mut ParserState) -> Result<(Visibility, bool)> {
-    let mut visibility = Visibility::Private;
-    let mut is_mut = false;
-
-    // Check for private keyword
-    if matches!(state.tokens.peek(), Some((Token::Private, _))) {
-        state.tokens.advance();
-        visibility = Visibility::Private;
-    }
-    // Check for protected keyword
-    else if matches!(state.tokens.peek(), Some((Token::Protected, _))) {
-        state.tokens.advance();
-        visibility = Visibility::Protected;
-    }
-    // Check for pub keyword
-    else if matches!(state.tokens.peek(), Some((Token::Pub, _))) {
-        state.tokens.advance();
-        visibility = Visibility::Public;
-
-        // Check for pub(crate) syntax
-        if matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
-            state.tokens.advance();
-            match state.tokens.peek() {
-                Some((Token::Crate, _)) => {
-                    state.tokens.advance();
-                    state.tokens.expect(&Token::RightParen)?;
-                    visibility = Visibility::PubCrate;
-                }
-                Some((Token::Super, _)) => {
-                    state.tokens.advance();
-                    state.tokens.expect(&Token::RightParen)?;
-                    visibility = Visibility::PubSuper;
-                }
-                Some((Token::Identifier(scope), _)) => {
-                    let scope = scope.clone();
-                    state.tokens.advance();
-                    state.tokens.expect(&Token::RightParen)?;
-                    bail!("Unsupported visibility scope: pub({}) - only pub(crate) and pub(super) are supported", scope);
-                }
-                _ => {
-                    bail!("Expected 'crate', 'super', or identifier after 'pub('");
-                }
-            }
-        }
-    }
-
-    if matches!(state.tokens.peek(), Some((Token::Mut, _))) {
-        state.tokens.advance();
-        is_mut = true;
-    }
+    let mut visibility = try_parse_visibility_modifier(state)?;
+    let mut is_mut = try_parse_mut_modifier(state);
 
     // Also check reverse order: mut pub/private/protected
     if matches!(visibility, Visibility::Private) {
-        if matches!(state.tokens.peek(), Some((Token::Pub, _))) {
-            state.tokens.advance();
-            visibility = Visibility::Public;
-        } else if matches!(state.tokens.peek(), Some((Token::Protected, _))) {
-            state.tokens.advance();
-            visibility = Visibility::Protected;
-        }
-        // private is already the default, no need to check for it
-
-        // Check for pub(crate) syntax in reverse order too
-        if matches!(visibility, Visibility::Public)
-            && matches!(state.tokens.peek(), Some((Token::LeftParen, _)))
-        {
-            state.tokens.advance();
-            match state.tokens.peek() {
-                Some((Token::Crate, _)) => {
-                    state.tokens.advance();
-                    state.tokens.expect(&Token::RightParen)?;
-                    visibility = Visibility::PubCrate;
-                }
-                Some((Token::Super, _)) => {
-                    state.tokens.advance();
-                    state.tokens.expect(&Token::RightParen)?;
-                    visibility = Visibility::PubSuper;
-                }
-                Some((Token::Identifier(scope), _)) => {
-                    let scope = scope.clone();
-                    state.tokens.advance();
-                    state.tokens.expect(&Token::RightParen)?;
-                    bail!("Unsupported visibility scope: pub({}) - only pub(crate) and pub(super) are supported", scope);
-                }
-                _ => {
-                    bail!("Expected 'crate', 'super', or identifier after 'pub('");
-                }
-            }
+        let second_visibility = try_parse_visibility_modifier(state)?;
+        if !matches!(second_visibility, Visibility::Private) {
+            visibility = second_visibility;
         }
     }
 
     Ok((visibility, is_mut))
+}
+
+fn try_parse_visibility_modifier(state: &mut ParserState) -> Result<Visibility> {
+    match state.tokens.peek() {
+        Some((Token::Private, _)) => {
+            state.tokens.advance();
+            Ok(Visibility::Private)
+        }
+        Some((Token::Protected, _)) => {
+            state.tokens.advance();
+            Ok(Visibility::Protected)
+        }
+        Some((Token::Pub, _)) => {
+            state.tokens.advance();
+            parse_pub_scope_modifier(state)
+        }
+        _ => Ok(Visibility::Private),
+    }
+}
+
+fn parse_pub_scope_modifier(state: &mut ParserState) -> Result<Visibility> {
+    if !matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
+        return Ok(Visibility::Public);
+    }
+
+    state.tokens.advance(); // consume (
+    let visibility = match state.tokens.peek() {
+        Some((Token::Crate, _)) => {
+            state.tokens.advance();
+            Visibility::PubCrate
+        }
+        Some((Token::Super, _)) => {
+            state.tokens.advance();
+            Visibility::PubSuper
+        }
+        Some((Token::Identifier(scope), _)) => {
+            let scope = scope.clone();
+            state.tokens.advance();
+            state.tokens.expect(&Token::RightParen)?;
+            bail!("Unsupported visibility scope: pub({}) - only pub(crate) and pub(super) are supported", scope);
+        }
+        _ => bail!("Expected 'crate', 'super', or identifier after 'pub('"),
+    };
+    state.tokens.expect(&Token::RightParen)?;
+    Ok(visibility)
+}
+
+fn try_parse_mut_modifier(state: &mut ParserState) -> bool {
+    if matches!(state.tokens.peek(), Some((Token::Mut, _))) {
+        state.tokens.advance();
+        true
+    } else {
+        false
+    }
 }
 
 /// Parse member flags (static, override) - complexity: 4
@@ -3749,125 +3934,154 @@ fn parse_grouped_import_item(
     base_path: &[String],
     start_span: crate::frontend::ast::Span,
 ) -> Result<Vec<Expr>> {
+    let identifier = parse_import_identifier(state)?;
+
+    if matches!(state.tokens.peek(), Some((Token::ColonColon, _))) {
+        state.tokens.advance(); // consume ::
+
+        if matches!(state.tokens.peek(), Some((Token::LeftBrace, _))) {
+            parse_nested_grouped_import(state, base_path, identifier, start_span)
+        } else {
+            parse_path_extension_import(state, base_path, identifier, start_span)
+        }
+    } else {
+        parse_simple_import_with_alias(state, base_path, identifier, start_span)
+    }
+}
+
+fn parse_import_identifier(state: &mut ParserState) -> Result<String> {
     if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
         let identifier = name.clone();
         state.tokens.advance();
-
-        // Check if this is a nested path: collections::{HashMap, HashSet}
-        if matches!(state.tokens.peek(), Some((Token::ColonColon, _))) {
-            state.tokens.advance(); // consume ::
-
-            if matches!(state.tokens.peek(), Some((Token::LeftBrace, _))) {
-                // Nested grouping: collections::{HashMap, HashSet}
-                // Parse the grouped items for this sub-module
-                state.tokens.advance(); // consume {
-                let mut items = Vec::new();
-
-                loop {
-                    if matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
-                        break;
-                    }
-
-                    if let Some((Token::Identifier(item), _)) = state.tokens.peek() {
-                        let mut item_name = item.clone();
-                        state.tokens.advance();
-
-                        // Check for alias
-                        if matches!(state.tokens.peek(), Some((Token::As, _))) {
-                            state.tokens.advance(); // consume 'as'
-                            if let Some((Token::Identifier(alias), _)) = state.tokens.peek() {
-                                item_name = format!("{item_name} as {alias}");
-                                state.tokens.advance();
-                            }
-                        }
-
-                        items.push(item_name);
-                    } else {
-                        bail!("Expected identifier in nested import list");
-                    }
-
-                    if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
-                        state.tokens.advance();
-                    } else if matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
-                        break;
-                    } else {
-                        bail!("Expected ',' or '}}' in nested import list");
-                    }
-                }
-
-                state.tokens.expect(&Token::RightBrace)?;
-
-                // Create a single import for the sub-module with its items
-                let full_module_path = [base_path, &[identifier]].concat().join("::");
-                Ok(vec![Expr::new(
-                    ExprKind::Import {
-                        module: full_module_path,
-                        items: Some(items),
-                    },
-                    start_span,
-                )])
-            } else {
-                // Simple path extension: fmt::Display
-                // Parse the full path after ::
-                let mut path_parts = vec![identifier];
-
-                // Continue parsing the path
-                while matches!(state.tokens.peek(), Some((Token::Identifier(_), _))) {
-                    if let Some((Token::Identifier(segment), _)) = state.tokens.peek() {
-                        path_parts.push(segment.clone());
-                        state.tokens.advance();
-
-                        // Check for more :: segments
-                        if matches!(state.tokens.peek(), Some((Token::ColonColon, _))) {
-                            state.tokens.advance(); // consume ::
-                        } else {
-                            break;
-                        }
-                    }
-                }
-
-                // For compound paths like fmt::Display within a group,
-                // expand to a separate import: std::fmt::Display
-                let full_module_path = [base_path, &path_parts[..path_parts.len() - 1]]
-                    .concat()
-                    .join("::");
-                let item_name = path_parts.last().unwrap().clone();
-
-                Ok(vec![Expr::new(
-                    ExprKind::Import {
-                        module: full_module_path,
-                        items: Some(vec![item_name]),
-                    },
-                    start_span,
-                )])
-            }
-        } else {
-            // Check for alias: HashMap as Map
-            let item_name = if matches!(state.tokens.peek(), Some((Token::As, _))) {
-                state.tokens.advance(); // consume 'as'
-                if let Some((Token::Identifier(alias), _)) = state.tokens.peek() {
-                    let aliased = format!("{identifier} as {alias}");
-                    state.tokens.advance();
-                    aliased
-                } else {
-                    bail!("Expected identifier after 'as'");
-                }
-            } else {
-                identifier
-            };
-
-            // Create a simple import for this item
-            Ok(vec![Expr::new(
-                ExprKind::Import {
-                    module: base_path.join("::"),
-                    items: Some(vec![item_name]),
-                },
-                start_span,
-            )])
-        }
+        Ok(identifier)
     } else {
         bail!("Expected identifier in import list");
     }
+}
+
+fn parse_nested_grouped_import(
+    state: &mut ParserState,
+    base_path: &[String],
+    identifier: String,
+    start_span: crate::frontend::ast::Span,
+) -> Result<Vec<Expr>> {
+    state.tokens.advance(); // consume {
+    let items = parse_nested_import_items(state)?;
+    state.tokens.expect(&Token::RightBrace)?;
+
+    let full_module_path = [base_path, &[identifier]].concat().join("::");
+    Ok(vec![Expr::new(
+        ExprKind::Import {
+            module: full_module_path,
+            items: Some(items),
+        },
+        start_span,
+    )])
+}
+
+fn parse_nested_import_items(state: &mut ParserState) -> Result<Vec<String>> {
+    let mut items = Vec::new();
+
+    loop {
+        if matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
+            break;
+        }
+
+        let item_name = parse_import_item_with_alias(state)?;
+        items.push(item_name);
+
+        if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+            state.tokens.advance();
+        } else if matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
+            break;
+        } else {
+            bail!("Expected ',' or '}}' in nested import list");
+        }
+    }
+
+    Ok(items)
+}
+
+fn parse_import_item_with_alias(state: &mut ParserState) -> Result<String> {
+    if let Some((Token::Identifier(item), _)) = state.tokens.peek() {
+        let mut item_name = item.clone();
+        state.tokens.advance();
+
+        if matches!(state.tokens.peek(), Some((Token::As, _))) {
+            state.tokens.advance(); // consume 'as'
+            if let Some((Token::Identifier(alias), _)) = state.tokens.peek() {
+                item_name = format!("{item_name} as {alias}");
+                state.tokens.advance();
+            }
+        }
+
+        Ok(item_name)
+    } else {
+        bail!("Expected identifier in nested import list");
+    }
+}
+
+fn parse_path_extension_import(
+    state: &mut ParserState,
+    base_path: &[String],
+    identifier: String,
+    start_span: crate::frontend::ast::Span,
+) -> Result<Vec<Expr>> {
+    let mut path_parts = vec![identifier];
+
+    while matches!(state.tokens.peek(), Some((Token::Identifier(_), _))) {
+        if let Some((Token::Identifier(segment), _)) = state.tokens.peek() {
+            path_parts.push(segment.clone());
+            state.tokens.advance();
+
+            if matches!(state.tokens.peek(), Some((Token::ColonColon, _))) {
+                state.tokens.advance(); // consume ::
+            } else {
+                break;
+            }
+        }
+    }
+
+    let full_module_path = [base_path, &path_parts[..path_parts.len() - 1]]
+        .concat()
+        .join("::");
+    let item_name = path_parts.last().unwrap().clone();
+
+    Ok(vec![Expr::new(
+        ExprKind::Import {
+            module: full_module_path,
+            items: Some(vec![item_name]),
+        },
+        start_span,
+    )])
+}
+
+fn parse_simple_import_with_alias(
+    state: &mut ParserState,
+    base_path: &[String],
+    identifier: String,
+    start_span: crate::frontend::ast::Span,
+) -> Result<Vec<Expr>> {
+    let item_name = if matches!(state.tokens.peek(), Some((Token::As, _))) {
+        state.tokens.advance(); // consume 'as'
+        if let Some((Token::Identifier(alias), _)) = state.tokens.peek() {
+            let aliased = format!("{identifier} as {alias}");
+            state.tokens.advance();
+            aliased
+        } else {
+            bail!("Expected identifier after 'as'");
+        }
+    } else {
+        identifier
+    };
+
+    Ok(vec![Expr::new(
+        ExprKind::Import {
+            module: base_path.join("::"),
+            items: Some(vec![item_name]),
+        },
+        start_span,
+    )])
 }
 
 fn parse_enum_definition(state: &mut ParserState) -> Result<Expr> {
