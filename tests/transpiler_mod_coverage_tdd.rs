@@ -360,6 +360,7 @@ fn test_transpile_while_loop() {
                 attributes: vec![],
             }),
             body: Box::new(make_literal(1)),
+            label: None,
         },
         span: Span::default(),
         attributes: vec![],
@@ -711,6 +712,7 @@ fn test_type_to_string_reference() {
                 kind: TypeKind::Named("Int".to_string()),
                 span: Span::default(),
             }),
+            lifetime: None,
         },
         span: Span::default(),
     };

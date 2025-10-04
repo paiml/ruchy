@@ -521,6 +521,7 @@ fn test_eval_while() {
                                 },
                                 ruchy::frontend::ast::Span { start: 0, end: 0 },
                             )),
+                            label: None,
                         },
                         ruchy::frontend::ast::Span { start: 0, end: 0 },
                     ),

@@ -265,7 +265,11 @@ fn test_complexity_rule_while_loop() {
     let condition = Box::new(create_test_expr(ExprKind::Literal(Literal::Bool(true))));
     let body = Box::new(create_test_expr(ExprKind::Literal(Literal::Integer(1))));
 
-    let while_expr = create_test_expr(ExprKind::While { condition, body });
+    let while_expr = create_test_expr(ExprKind::While {
+        condition,
+        body,
+        label: None,
+    });
     let violations = linter.lint(&while_expr);
 
     // Simple while loop should not violate complexity rules

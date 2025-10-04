@@ -150,11 +150,8 @@ mod value_operations {
 
     #[test]
     fn test_value_array() {
-        let arr = Value::Array(Rc::new(vec![
-            Value::Integer(1),
-            Value::Integer(2),
-            Value::Integer(3),
-        ]));
+        let arr =
+            Value::Array(vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)].into());
         assert!(matches!(arr, Value::Array(_)));
     }
 
