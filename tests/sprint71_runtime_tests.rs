@@ -134,8 +134,8 @@ mod value_operations {
         assert_ne!(Value::Bool(true), Value::Bool(false));
 
         assert_eq!(
-            Value::String(Rc::new("hello".to_string())),
-            Value::String(Rc::new("hello".to_string()))
+            Value::String(Rc::from("hello")),
+            Value::String(Rc::from("hello"))
         );
     }
 
@@ -144,10 +144,7 @@ mod value_operations {
         assert_eq!(Value::Integer(42).to_string(), "42");
         assert_eq!(Value::Bool(true).to_string(), "true");
         assert_eq!(Value::Bool(false).to_string(), "false");
-        assert_eq!(
-            Value::String(Rc::new("test".to_string())).to_string(),
-            "\"test\""
-        );
+        assert_eq!(Value::String(Rc::from("test")).to_string(), "\"test\"");
         assert_eq!(Value::Nil.to_string(), "nil");
     }
 
@@ -316,7 +313,7 @@ mod pattern_matching_tests {
         let mut parser = Parser::new(code);
         if let Ok(expr) = parser.parse() {
             if let Ok(result) = interp.eval_expr(&expr) {
-                assert_eq!(result, Value::String(Rc::new("two".to_string())));
+                assert_eq!(result, Value::String(Rc::from("two")));
             }
         }
     }
@@ -334,7 +331,7 @@ mod pattern_matching_tests {
         let mut parser = Parser::new(code);
         if let Ok(expr) = parser.parse() {
             if let Ok(result) = interp.eval_expr(&expr) {
-                assert_eq!(result, Value::String(Rc::new("medium".to_string())));
+                assert_eq!(result, Value::String(Rc::from("medium")));
             }
         }
     }

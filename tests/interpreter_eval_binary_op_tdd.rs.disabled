@@ -32,10 +32,10 @@ mod eval_binary_op_tdd {
         // String + String
         let result = interpreter.eval_binary_op(
             AstBinaryOp::Add,
-            &Value::String(Rc::new("Hello".to_string())),
-            &Value::String(Rc::new(" World".to_string()))
+            &Value::String(Rc::from("Hello")),
+            &Value::String(Rc::from(" World"))
         );
-        assert_eq!(result.unwrap(), Value::String(Rc::new("Hello World".to_string())));
+        assert_eq!(result.unwrap(), Value::String(Rc::from("Hello World")));
     }
 
     #[test]
@@ -103,8 +103,8 @@ mod eval_binary_op_tdd {
         
         let result = interpreter.eval_binary_op(
             AstBinaryOp::Equal,
-            &Value::String(Rc::new("hello".to_string())),
-            &Value::String(Rc::new("hello".to_string()))
+            &Value::String(Rc::from("hello")),
+            &Value::String(Rc::from("hello"))
         );
         assert_eq!(result.unwrap(), Value::Bool(true));
     }
@@ -189,7 +189,7 @@ mod eval_binary_op_tdd {
         // Test truthy values
         let result = interpreter.eval_binary_op(
             AstBinaryOp::And, 
-            &Value::String(Rc::new("hello".to_string())),
+            &Value::String(Rc::from("hello")),
             &Value::Integer(123)
         );
         assert_eq!(result.unwrap(), Value::Integer(123));

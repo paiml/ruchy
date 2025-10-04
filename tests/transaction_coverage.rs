@@ -15,16 +15,12 @@ fn test_transactional_state_basic() {
 
     // Insert bindings
     state.insert_binding("x".to_string(), Value::Integer(42), false);
-    state.insert_binding(
-        "y".to_string(),
-        Value::String(Rc::new("hello".to_string())),
-        true,
-    );
+    state.insert_binding("y".to_string(), Value::String(Rc::from("hello")), true);
 
     assert_eq!(state.bindings().get("x"), Some(&Value::Integer(42)));
     assert_eq!(
         state.bindings().get("y"),
-        Some(&Value::String(Rc::new("hello".to_string())))
+        Some(&Value::String(Rc::from("hello")))
     );
 
     assert!(!state.is_mutable("x"));

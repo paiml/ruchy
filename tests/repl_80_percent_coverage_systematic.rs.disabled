@@ -27,8 +27,8 @@ mod repl_value_fmt_coverage {
             Value::Float(-0.0),
             Value::Float(3.141592653589793),
             Value::String(String::new()), // Empty string
-            Value::String(Rc::new("hello\nworld\ttab".to_string())), // Escape sequences
-            Value::String(Rc::new("🦀 unicode ∑∞".to_string())), // Unicode
+            Value::String(Rc::from("hello\nworld\ttab")), // Escape sequences
+            Value::String(Rc::from("🦀 unicode ∑∞")), // Unicode
             Value::Bool(true),
             Value::Bool(false),
             Value::Char('\0'), // Null char
@@ -96,7 +96,7 @@ mod repl_value_fmt_coverage {
             Value::Tuple(vec![Value::Integer(1)]), // Single element
             Value::Tuple(vec![
                 Value::Integer(1),
-                Value::String(Rc::new("test".to_string())),
+                Value::String(Rc::from("test")),
             ]), // Mixed types
             Value::Tuple((0..50).map(Value::Int).collect()), // Long tuple
         ];
@@ -142,7 +142,7 @@ mod repl_value_fmt_coverage {
             {
                 let mut map = HashMap::new();
                 map.insert(
-                    Value::String(Rc::new("key".to_string())),
+                    Value::String(Rc::from("key")),
                     Value::Integer(42),
                 );
                 Value::HashMap(map)
@@ -159,7 +159,7 @@ mod repl_value_fmt_coverage {
             Value::HashSet(HashSet::new()), // Empty hashset
             {
                 let mut set = HashSet::new();
-                set.insert(Value::String(Rc::new("item".to_string())));
+                set.insert(Value::String(Rc::from("item")));
                 Value::HashSet(set)
             },
         ];
@@ -229,7 +229,7 @@ mod repl_value_fmt_coverage {
                 enum_name: "Result".to_string(),
                 variant_name: "Ok".to_string(),
                 data: Some(vec![
-                    Value::String(Rc::new("success".to_string())),
+                    Value::String(Rc::from("success")),
                     Value::Integer(200),
                 ]),
             },
@@ -312,8 +312,8 @@ mod repl_value_fmt_coverage {
                     DataFrameColumn {
                         name: "name".to_string(),
                         values: vec![
-                            Value::String(Rc::new("Alice".to_string())),
-                            Value::String(Rc::new("Bob".to_string())),
+                            Value::String(Rc::from("Alice")),
+                            Value::String(Rc::from("Bob")),
                         ],
                     },
                 ],

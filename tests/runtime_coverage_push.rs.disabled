@@ -344,8 +344,8 @@ fn test_value_operations() {
 
 #[test]
 fn test_value_string_operations() {
-    let s1 = Value::String(Rc::new("hello".to_string()));
-    let s2 = Value::String(Rc::new("world".to_string()));
+    let s1 = Value::String(Rc::from("hello"));
+    let s2 = Value::String(Rc::from("world"));
 
     // Test equality
     assert_ne!(s1, s2);
@@ -370,7 +370,7 @@ fn test_value_list_operations() {
 fn test_value_tuple_operations() {
     let tuple = Value::Tuple(Rc::new(vec![
         Value::Integer(42),
-        Value::String(Rc::new("test".to_string())),
+        Value::String(Rc::from("test")),
         Value::Bool(true),
     ]));
 

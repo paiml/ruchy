@@ -31,7 +31,7 @@ mod pattern_guard_tests {
             }
         "#;
         let result = eval_expr(code).unwrap();
-        assert_eq!(result, Value::String(Rc::new("big".to_string())));
+        assert_eq!(result, Value::String(Rc::from("big")));
     }
 
     #[test]
@@ -45,7 +45,7 @@ mod pattern_guard_tests {
             }
         "#;
         let result = eval_expr(code).unwrap();
-        assert_eq!(result, Value::String(Rc::new("positive".to_string())));
+        assert_eq!(result, Value::String(Rc::from("positive")));
     }
 
     #[test]
@@ -58,7 +58,7 @@ mod pattern_guard_tests {
             }
         "#;
         let result = eval_expr(code).unwrap();
-        assert_eq!(result, Value::String(Rc::new("sum_big".to_string())));
+        assert_eq!(result, Value::String(Rc::from("sum_big")));
     }
 
     #[test]
@@ -72,7 +72,7 @@ mod pattern_guard_tests {
             }
         "#;
         let result = eval_expr(code).unwrap();
-        assert_eq!(result, Value::String(Rc::new("medium".to_string())));
+        assert_eq!(result, Value::String(Rc::from("medium")));
     }
 
     #[test]
@@ -86,7 +86,7 @@ mod pattern_guard_tests {
             }
         "#;
         let result = eval_expr(code).unwrap();
-        assert_eq!(result, Value::String(Rc::new("above".to_string())));
+        assert_eq!(result, Value::String(Rc::from("above")));
     }
 }
 
@@ -144,7 +144,7 @@ mod destructuring_tests {
             }
         "#;
         let result = eval_expr(code).unwrap();
-        assert_eq!(result, Value::String(Rc::new("Alice".to_string())));
+        assert_eq!(result, Value::String(Rc::from("Alice")));
     }
 }
 
@@ -165,7 +165,7 @@ mod exhaustiveness_tests {
             }
         "#;
         let result = eval_expr(code).unwrap();
-        assert_eq!(result, Value::String(Rc::new("red".to_string())));
+        assert_eq!(result, Value::String(Rc::from("red")));
     }
 
     #[test]
@@ -194,7 +194,7 @@ mod exhaustiveness_tests {
             }
         "#;
         let result = eval_expr(code).unwrap();
-        assert_eq!(result, Value::String(Rc::new("yes".to_string())));
+        assert_eq!(result, Value::String(Rc::from("yes")));
     }
 
     #[test]
@@ -209,7 +209,7 @@ mod exhaustiveness_tests {
             }
         "#;
         let result = eval_expr(code).unwrap();
-        assert_eq!(result, Value::String(Rc::new("small_positive".to_string())));
+        assert_eq!(result, Value::String(Rc::from("small_positive")));
     }
 }
 
@@ -251,7 +251,7 @@ mod nested_pattern_tests {
             }
         "#;
         let result = eval_expr(code).unwrap();
-        assert_eq!(result, Value::String(Rc::new("condition_met".to_string())));
+        assert_eq!(result, Value::String(Rc::from("condition_met")));
     }
 }
 
@@ -270,7 +270,7 @@ mod or_pattern_tests {
             }
         "#;
         let result = eval_expr(code).unwrap();
-        assert_eq!(result, Value::String(Rc::new("low".to_string())));
+        assert_eq!(result, Value::String(Rc::from("low")));
     }
 
     #[test]
@@ -284,7 +284,7 @@ mod or_pattern_tests {
             }
         "#;
         let result = eval_expr(code).unwrap();
-        assert_eq!(result, Value::String(Rc::new("odd_and_big".to_string())));
+        assert_eq!(result, Value::String(Rc::from("odd_and_big")));
     }
 }
 
@@ -303,7 +303,7 @@ mod range_pattern_tests {
             }
         "#;
         let result = eval_expr(code).unwrap();
-        assert_eq!(result, Value::String(Rc::new("low_range".to_string())));
+        assert_eq!(result, Value::String(Rc::from("low_range")));
     }
 
     #[test]
@@ -317,7 +317,7 @@ mod range_pattern_tests {
             }
         "#;
         let result = eval_expr(code).unwrap();
-        assert_eq!(result, Value::String(Rc::new("high_range".to_string())));
+        assert_eq!(result, Value::String(Rc::from("high_range")));
     }
 }
 

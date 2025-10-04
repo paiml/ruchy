@@ -260,8 +260,8 @@ fn test_value_bool_ops() {
 
 #[test]
 fn test_value_string_ops() {
-    let v1 = Value::String(Rc::new("hello".to_string()));
-    let v2 = Value::String(Rc::new("world".to_string()));
+    let v1 = Value::String(Rc::from("hello"));
+    let v2 = Value::String(Rc::from("world"));
     assert_ne!(v1, v2);
 }
 
@@ -286,7 +286,7 @@ fn test_value_list_ops() {
 
 #[test]
 fn test_value_tuple_ops() {
-    let tuple = Value::Tuple(Rc::new(vec![Value::Integer(42), Value::Bool(true)]));
+    let tuple = Value::Tuple(vec![Value::Integer(42), Value::Bool(true)].into());
     if let Value::Tuple(t) = &tuple {
         assert_eq!(t.len(), 2);
     }
@@ -311,7 +311,7 @@ fn test_value_display() {
     assert_eq!(format!("{}", Value::Bool(false)), "false");
     assert_eq!(format!("{}", Value::Unit), "()");
     assert_eq!(
-        format!("{}", Value::String(Rc::new("test".to_string()))),
+        format!("{}", Value::String(Rc::from("test"))),
         "test"
     );
 }
@@ -364,8 +364,8 @@ fn test_runtime_large_values() {
 #[test]
 fn test_runtime_nested_structures() {
     let nested = Value::Array(Rc::new(vec![
-        Value::Array(Rc::new(vec![Value::Integer(1), Value::Integer(2)])),
-        Value::Array(Rc::new(vec![Value::Integer(3), Value::Integer(4)])),
+        Value::Array(vec![Value::Integer(1), Value::Integer(2)].into()),
+        Value::Array(vec![Value::Integer(3), Value::Integer(4)].into()),
     ]));
     if let Value::Array(outer) = nested {
         assert_eq!(outer.len(), 2);

@@ -55,9 +55,9 @@ mod value_tests {
 
     #[test]
     fn test_value_string() {
-        let val1 = Value::String(Rc::new("hello".to_string()));
-        let val2 = Value::String(Rc::new("hello".to_string()));
-        let val3 = Value::String(Rc::new("world".to_string()));
+        let val1 = Value::String(Rc::from("hello"));
+        let val2 = Value::String(Rc::from("hello"));
+        let val3 = Value::String(Rc::from("world"));
 
         assert_eq!(val1, val2);
         assert_ne!(val1, val3);
@@ -78,7 +78,7 @@ mod value_tests {
             Value::Integer(3),
         ]));
 
-        let val3 = Value::Array(Rc::new(vec![Value::Integer(4), Value::Integer(5)]));
+        let val3 = Value::Array(vec![Value::Integer(4), Value::Integer(5)].into());
 
         assert_eq!(val1, val2);
         assert_ne!(val1, val3);
@@ -86,11 +86,11 @@ mod value_tests {
 
     #[test]
     fn test_value_tuple() {
-        let val1 = Value::Tuple(Rc::new(vec![Value::Integer(42), Value::Bool(true)]));
+        let val1 = Value::Tuple(vec![Value::Integer(42), Value::Bool(true)].into());
 
-        let val2 = Value::Tuple(Rc::new(vec![Value::Integer(42), Value::Bool(true)]));
+        let val2 = Value::Tuple(vec![Value::Integer(42), Value::Bool(true)].into());
 
-        let val3 = Value::Tuple(Rc::new(vec![Value::Integer(42), Value::Bool(false)]));
+        let val3 = Value::Tuple(vec![Value::Integer(42), Value::Bool(false)].into());
 
         assert_eq!(val1, val2);
         assert_ne!(val1, val3);
@@ -124,9 +124,9 @@ mod value_tests {
             Value::Float(3.14),
             Value::Bool(true),
             Value::Nil,
-            Value::String(Rc::new("test".to_string())),
-            Value::Array(Rc::new(vec![Value::Integer(1)])),
-            Value::Tuple(Rc::new(vec![Value::Bool(true)])),
+            Value::String(Rc::from("test")),
+            Value::Array(vec![Value::Integer(1)].into()),
+            Value::Tuple(vec![Value::Bool(true)].into()),
         ];
 
         for val in values {
@@ -141,17 +141,17 @@ mod value_tests {
         let debug = format!("{:?}", val);
         assert!(debug.contains("Integer"));
 
-        let val = Value::String(Rc::new("test".to_string()));
+        let val = Value::String(Rc::from("test"));
         let debug = format!("{:?}", val);
         assert!(debug.contains("String"));
     }
 
     #[test]
     fn test_nested_arrays() {
-        let inner1 = Value::Array(Rc::new(vec![Value::Integer(1), Value::Integer(2)]));
-        let inner2 = Value::Array(Rc::new(vec![Value::Integer(3), Value::Integer(4)]));
+        let inner1 = Value::Array(vec![Value::Integer(1), Value::Integer(2)].into());
+        let inner2 = Value::Array(vec![Value::Integer(3), Value::Integer(4)].into());
 
-        let nested = Value::Array(Rc::new(vec![inner1, inner2]));
+        let nested = Value::Array(vec![inner1, inner2].into());
 
         if let Value::Array(outer) = &nested {
             assert_eq!(outer.len(), 2);
@@ -166,10 +166,10 @@ mod value_tests {
     fn test_mixed_nested_structures() {
         let array = Value::Array(Rc::new(vec![
             Value::Integer(1),
-            Value::String(Rc::new("nested".to_string())),
+            Value::String(Rc::from("nested")),
         ]));
 
-        let tuple = Value::Tuple(Rc::new(vec![Value::Bool(true), array]));
+        let tuple = Value::Tuple(vec![Value::Bool(true), array].into());
 
         if let Value::Tuple(tup) = &tuple {
             assert_eq!(tup.len(), 2);
@@ -230,19 +230,19 @@ mod value_tests {
         assert!(matches!(val, Value::Integer(_)));
         assert!(!matches!(val, Value::Float(_)));
 
-        let val = Value::String(Rc::new("test".to_string()));
+        let val = Value::String(Rc::from("test"));
         assert!(matches!(val, Value::String(_)));
         assert!(!matches!(val, Value::Integer(_)));
     }
 
     #[test]
     fn test_empty_collections() {
-        let empty_array = Value::Array(Rc::new(vec![]));
+        let empty_array = Value::Array(vec![].into());
         if let Value::Array(arr) = &empty_array {
             assert_eq!(arr.len(), 0);
         }
 
-        let empty_tuple = Value::Tuple(Rc::new(vec![]));
+        let empty_tuple = Value::Tuple(vec![].into());
         if let Value::Tuple(tup) = &empty_tuple {
             assert_eq!(tup.len(), 0);
         }
@@ -318,7 +318,7 @@ mod value_stress_tests {
         let mut current = Value::Integer(0);
 
         for i in 1..100 {
-            current = Value::Array(Rc::new(vec![current, Value::Integer(i)]));
+            current = Value::Array(vec![current, Value::Integer(i)].into());
         }
 
         // Should not stack overflow

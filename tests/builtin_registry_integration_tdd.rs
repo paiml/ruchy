@@ -29,7 +29,7 @@ fn test_builtin_registry_direct_call() {
     assert_eq!(result.unwrap(), Value::nil());
 
     // Check len with array
-    let arr = Value::Array(Rc::new(vec![Value::Integer(1), Value::Integer(2)]));
+    let arr = Value::Array(vec![Value::Integer(1), Value::Integer(2)].into());
     let result = registry.call("len", &[arr]);
     assert!(result.is_ok());
     assert_eq!(result.unwrap(), Value::Integer(2));

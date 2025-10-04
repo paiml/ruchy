@@ -116,7 +116,7 @@ fn test_eval_string_literal() {
         ruchy::frontend::ast::Span { start: 0, end: 0 },
     );
     let result = interpreter.eval_expr(&expr).unwrap();
-    assert_eq!(result, Value::String(Rc::new("hello".to_string())));
+    assert_eq!(result, Value::String(Rc::from("hello")));
 }
 
 #[test]
@@ -171,7 +171,7 @@ fn test_eval_char_literal() {
         ruchy::frontend::ast::Span { start: 0, end: 0 },
     );
     let result = interpreter.eval_expr(&expr).unwrap();
-    assert_eq!(result, Value::String(Rc::new("a".to_string())));
+    assert_eq!(result, Value::String(Rc::from("a")));
 }
 
 #[test]
@@ -215,7 +215,7 @@ fn test_eval_tuple_literal() {
         Value::Tuple(elements) => {
             assert_eq!(elements.len(), 3);
             assert_eq!(elements[0], Value::Integer(1));
-            assert_eq!(elements[1], Value::String(Rc::new("hello".to_string())));
+            assert_eq!(elements[1], Value::String(Rc::from("hello")));
             assert_eq!(elements[2], Value::Bool(true));
         }
         _ => panic!("Expected tuple"),

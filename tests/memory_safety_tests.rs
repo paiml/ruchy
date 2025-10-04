@@ -11,7 +11,7 @@ use std::thread;
 // Check reference counting
 #[test]
 fn test_rc_value_sharing() {
-    let value = Rc::new(Value::String(Rc::new("shared".to_string())));
+    let value = Rc::new(Value::String(Rc::from("shared")));
     let value2 = Rc::clone(&value);
     let value3 = Rc::clone(&value);
 
@@ -138,7 +138,7 @@ fn test_no_circular_references() {
 fn test_value_deep_clone() {
     let original = Value::List(Rc::new(vec![
         Value::Integer(1),
-        Value::String(Rc::new("test".to_string())),
+        Value::String(Rc::from("test")),
         Value::Bool(true),
     ]));
 
@@ -220,7 +220,7 @@ fn test_memory_pressure_handling() {
 fn test_value_drop_semantics() {
     {
         let _v1 = Value::Integer(42);
-        let _v2 = Value::String(Rc::new("temp".to_string()));
+        let _v2 = Value::String(Rc::from("temp"));
         let _v3 = Value::List(Rc::new(vec![Value::Integer(1)]));
         // All dropped at end of scope
     }

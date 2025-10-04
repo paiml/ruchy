@@ -14,9 +14,9 @@ fn test_lazy_value_computed_creation() {
 
 #[test]
 fn test_lazy_value_computed_force() {
-    let lazy = LazyValue::computed(Value::String(Rc::new("test".to_string())));
+    let lazy = LazyValue::computed(Value::String(Rc::from("test")));
     let result = lazy.force().unwrap();
-    assert_eq!(result, Value::String(Rc::new("test".to_string())));
+    assert_eq!(result, Value::String(Rc::from("test")));
 }
 
 #[test]
@@ -156,7 +156,7 @@ fn test_lazy_value_pipeline_with_deferred() {
     });
 
     let result = pipeline.force().unwrap();
-    assert_eq!(result, Value::String(Rc::new("number: 7".to_string())));
+    assert_eq!(result, Value::String(Rc::from("number: 7")));
 }
 
 #[test]
@@ -229,10 +229,7 @@ fn test_lazy_iterator_map_integers() {
 
 #[test]
 fn test_lazy_iterator_map_strings() {
-    let values = vec![
-        Value::String(Rc::new("a".to_string())),
-        Value::String(Rc::new("b".to_string())),
-    ];
+    let values = vec![Value::String(Rc::from("a")), Value::String(Rc::from("b"))];
     let lazy_iter = LazyIterator::from_vec(values);
     let mapped = lazy_iter.map(|v| {
         if let Value::String(s) = v {
@@ -245,10 +242,7 @@ fn test_lazy_iterator_map_strings() {
     let result = mapped.collect().unwrap();
     assert_eq!(
         result,
-        vec![
-            Value::String(Rc::new("A".to_string())),
-            Value::String(Rc::new("B".to_string())),
-        ]
+        vec![Value::String(Rc::from("A")), Value::String(Rc::from("B")),]
     );
 }
 
@@ -288,9 +282,9 @@ fn test_lazy_iterator_filter_even_numbers() {
 #[test]
 fn test_lazy_iterator_filter_strings() {
     let values = vec![
-        Value::String(Rc::new("abc".to_string())),
-        Value::String(Rc::new("a".to_string())),
-        Value::String(Rc::new("abcd".to_string())),
+        Value::String(Rc::from("abc")),
+        Value::String(Rc::from("a")),
+        Value::String(Rc::from("abcd")),
     ];
     let lazy_iter = LazyIterator::from_vec(values);
     let filtered = lazy_iter.filter(|v| {
@@ -305,8 +299,8 @@ fn test_lazy_iterator_filter_strings() {
     assert_eq!(
         result,
         vec![
-            Value::String(Rc::new("abc".to_string())),
-            Value::String(Rc::new("abcd".to_string())),
+            Value::String(Rc::from("abc")),
+            Value::String(Rc::from("abcd")),
         ]
     );
 }
@@ -500,11 +494,11 @@ fn test_lazy_cache_get_or_compute_new_key() {
     let result = cache
         .get_or_compute("test_key", || {
             *counter_clone.borrow_mut() += 1;
-            Ok(Value::String(Rc::new("computed".to_string())))
+            Ok(Value::String(Rc::from("computed")))
         })
         .unwrap();
 
-    assert_eq!(result, Value::String(Rc::new("computed".to_string())));
+    assert_eq!(result, Value::String(Rc::from("computed")));
     assert_eq!(*counter.borrow(), 1);
     assert_eq!(cache.size(), 1);
 }
@@ -617,7 +611,7 @@ fn test_lazy_cache_different_value_types() {
         .get_or_compute("int", || Ok(Value::Integer(42)))
         .unwrap();
     cache
-        .get_or_compute("string", || Ok(Value::String(Rc::new("test".to_string()))))
+        .get_or_compute("string", || Ok(Value::String(Rc::from("test"))))
         .unwrap();
     cache
         .get_or_compute("bool", || Ok(Value::Bool(true)))
@@ -638,7 +632,7 @@ fn test_lazy_cache_different_value_types() {
         cache
             .get_or_compute("string", || Ok(Value::String(Rc::new("".to_string()))))
             .unwrap(),
-        Value::String(Rc::new("test".to_string()))
+        Value::String(Rc::from("test"))
     );
     assert_eq!(
         cache
