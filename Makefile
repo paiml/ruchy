@@ -900,7 +900,7 @@ mutation-help:
 	@echo "  4. Boolean negations → Test both true/false branches"
 	@echo "  5. Operator changes → Test +/-, */%, &&/||"
 	@echo ""
-	@echo "CURRENT PROGRESS (Sprint 8 Phase 1-3):"
+	@echo "SPRINT 8 COMPLETE (91% Achievement!):"
 	@echo "  ✅ operator_precedence.rs: 21% → 90%+ (Phase 1)"
 	@echo "  ✅ imports.rs: High → 100% (Phase 1)"
 	@echo "  ✅ macro_parsing.rs: 66% → 95%+ (Phase 1)"
@@ -910,11 +910,11 @@ mutation-help:
 	@echo "  ✅ mod.rs: 8 gaps → 0 (Phase 2)"
 	@echo "  ✅ collections.rs: 9 gaps → 0 (Phase 3)"
 	@echo "  ✅ utils.rs: 8 gaps → 0 (Phase 3)"
-	@echo "  🔄 expressions.rs: Week 4 (22 gaps)"
-	@echo "  🔄 actors.rs: Week 4 (deferred)"
+	@echo "  ✅ expressions.rs: 22 gaps → 0 (Phase 4)"
+	@echo "  ⏸️ actors.rs: Deferred (timeout investigation needed)"
 	@echo ""
-	@echo "Progress: 9/11 files (82%), 48 tests added, 67+ gaps eliminated"
-	@echo "See docs/execution/SPRINT_8_PHASE_*_COMPLETE.md for full reports"
+	@echo "Final Results: 10/11 files (91%), 70 tests added, 92+ gaps eliminated"
+	@echo "See docs/execution/SPRINT_8_COMPLETE.md for comprehensive analysis"
 
 # ====================================================================
 # FIVE-CATEGORY COVERAGE TARGETS (v3.5.0)
