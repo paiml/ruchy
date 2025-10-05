@@ -1,3 +1,0 @@
-Found 12 mutants to test
-ok       Unmutated baseline
-12 mutants tested: 10 caught, 2 unviable

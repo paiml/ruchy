@@ -416,3 +416,161 @@ mod tests {
         assert_eq!(result, Value::from_string("true".to_string()));
     }
 }
+
+#[cfg(test)]
+mod mutation_tests {
+    use super::*;
+
+    // Sprint 9 Phase 3: eval_string_methods.rs mutation tests
+    // Testing 14 MISSED mutations from cargo-mutants baseline
+
+    #[test]
+    fn test_eval_zero_arg_string_method_to_string() {
+        // MISSED: delete match arm "to_string" in eval_zero_arg_string_method (line 35)
+        let s = Rc::from("hello");
+        let result = eval_zero_arg_string_method(&s, "to_string").unwrap();
+        assert_eq!(result, Value::from_string("hello".to_string()));
+    }
+
+    #[test]
+    fn test_eval_zero_arg_string_method_trim() {
+        // MISSED: delete match arm "trim" in eval_zero_arg_string_method (line 37)
+        let s = Rc::from("  hello  ");
+        let result = eval_zero_arg_string_method(&s, "trim").unwrap();
+        assert_eq!(result, Value::from_string("hello".to_string()));
+    }
+
+    #[test]
+    fn test_eval_zero_arg_string_method_trim_start() {
+        // MISSED: delete match arm "trim_start" in eval_zero_arg_string_method (line 38)
+        let s = Rc::from("  hello");
+        let result = eval_zero_arg_string_method(&s, "trim_start").unwrap();
+        assert_eq!(result, Value::from_string("hello".to_string()));
+    }
+
+    #[test]
+    fn test_eval_zero_arg_string_method_trim_end() {
+        // MISSED: delete match arm "trim_end" in eval_zero_arg_string_method (line 39)
+        let s = Rc::from("hello  ");
+        let result = eval_zero_arg_string_method(&s, "trim_end").unwrap();
+        assert_eq!(result, Value::from_string("hello".to_string()));
+    }
+
+    #[test]
+    fn test_eval_zero_arg_string_method_chars() {
+        // MISSED: delete match arm "chars" in eval_zero_arg_string_method (line 40)
+        let s = Rc::from("abc");
+        let result = eval_zero_arg_string_method(&s, "chars").unwrap();
+        match result {
+            Value::Array(arr) => {
+                assert_eq!(arr.len(), 3);
+                assert_eq!(arr[0], Value::from_string("a".to_string()));
+            }
+            _ => panic!("Expected array result from chars()"),
+        }
+    }
+
+    #[test]
+    fn test_eval_single_arg_string_method_starts_with() {
+        // MISSED: delete match arm "starts_with" in eval_single_arg_string_method (line 55)
+        let s = Rc::from("hello world");
+        let arg = Value::from_string("hello".to_string());
+        let result = eval_single_arg_string_method(&s, "starts_with", &arg).unwrap();
+        assert_eq!(result, Value::Bool(true));
+    }
+
+    #[test]
+    fn test_eval_two_arg_string_method_replace() {
+        // MISSED: delete match arm "replace" in eval_two_arg_string_method (line 73)
+        let s = Rc::from("hello world");
+        let arg1 = Value::from_string("world".to_string());
+        let arg2 = Value::from_string("Ruchy".to_string());
+        let result = eval_two_arg_string_method(&s, "replace", &arg1, &arg2).unwrap();
+        assert_eq!(result, Value::from_string("hello Ruchy".to_string()));
+    }
+
+    #[test]
+    fn test_eval_float_method_sqrt() {
+        // MISSED: delete match arm "sqrt" in eval_float_method (line 276)
+        let result = eval_float_method(4.0, "sqrt", true).unwrap();
+        assert_eq!(result, Value::Float(2.0));
+    }
+
+    #[test]
+    fn test_eval_float_method_floor() {
+        // MISSED: delete match arm "floor" in eval_float_method (line 279)
+        let result = eval_float_method(3.7, "floor", true).unwrap();
+        assert_eq!(result, Value::Float(3.0));
+    }
+
+    #[test]
+    fn test_eval_float_method_ceil() {
+        // MISSED: delete match arm "ceil" in eval_float_method (line 280)
+        let result = eval_float_method(3.2, "ceil", true).unwrap();
+        assert_eq!(result, Value::Float(4.0));
+    }
+
+    #[test]
+    fn test_eval_float_method_to_string() {
+        // MISSED: delete match arm "to_string" in eval_float_method (line 281)
+        let result = eval_float_method(3.14, "to_string", true).unwrap();
+        match result {
+            Value::String(s) => assert_eq!(s.as_ref(), "3.14"),
+            _ => panic!("Expected string result from to_string()"),
+        }
+    }
+
+    #[test]
+    fn test_eval_primitive_method_float_match_arm() {
+        // MISSED: delete match arm Value::Float(f) in eval_primitive_method (line 258)
+        let float_val = Value::Float(4.0);
+        let result = eval_primitive_method(&float_val, "sqrt", true).unwrap();
+        assert_eq!(result, Value::Float(2.0));
+    }
+
+    #[test]
+    fn test_eval_string_char_at_comparison_operator() {
+        // MISSED: replace >= with < in eval_string_char_at (line 181)
+        let s = Rc::from("abc");
+        let index = Value::Integer(1);
+
+        // Valid index (>= 0 check should pass)
+        let result = eval_string_char_at(&s, &index);
+        assert!(result.is_ok(), "Valid index should succeed");
+
+        // Negative index (>= 0 check should fail)
+        let neg_index = Value::Integer(-1);
+        let result = eval_string_char_at(&s, &neg_index);
+        assert!(result.is_err(), "Negative index should fail with >= check");
+    }
+
+    #[test]
+    fn test_eval_generic_method_logical_operator() {
+        // MISSED: replace && with || in eval_generic_method (line 317)
+        // This tests the condition: supports_to_string(value) && method == "to_string"
+
+        let int_val = Value::Integer(42);
+
+        // Both conditions true: should call to_string
+        let result = eval_generic_method(&int_val, "to_string", true).unwrap();
+        match result {
+            Value::String(s) => assert_eq!(s.as_ref(), "42"),
+            _ => panic!("Expected string result"),
+        }
+
+        // Method != "to_string": should fail
+        let result = eval_generic_method(&int_val, "other_method", true);
+        assert!(result.is_err(), "Non-to_string method should fail");
+    }
+
+    #[test]
+    fn test_eval_string_substring_logical_operator() {
+        // MISSED: replace && with || in eval_string_substring (line 206)
+        let s = Rc::from("hello");
+        let start = Value::Integer(1);
+        let end = Value::Integer(3);
+
+        let result = eval_string_substring(&s, &start, &end).unwrap();
+        assert_eq!(result, Value::from_string("el".to_string()));
+    }
+}

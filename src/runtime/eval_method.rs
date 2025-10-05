@@ -407,3 +407,55 @@ mod tests {
         }
     }
 }
+
+#[cfg(test)]
+mod mutation_tests {
+    use super::*;
+
+    #[test]
+    fn test_dispatch_method_call_float_match_arm() {
+        // MISSED: delete match arm Value::Float(f) in dispatch_method_call (line 52)
+
+        let float_val = Value::Float(4.0);
+        let result = dispatch_method_call(&float_val, "sqrt", &[], true);
+
+        assert!(result.is_ok(), "Float should dispatch to eval_float_method");
+        assert_eq!(result.unwrap(), Value::Float(2.0), "sqrt(4.0) should be 2.0");
+    }
+
+    #[test]
+    fn test_eval_method_call_logical_operator() {
+        // MISSED: replace && with || in eval_method_call (line 29)
+        // The && operator ensures BOTH conditions must be true:
+        // 1. receiver must be DataFrame
+        // 2. method must be "filter"
+        //
+        // If mutation changes to ||, then:
+        // - Any DataFrame (even without filter) would trigger special handling
+        // - Any type with filter method would trigger DataFrame path
+        //
+        // This test verifies the && logic by testing a DataFrame with non-filter method
+
+        let df_val = Value::DataFrame {
+            columns: vec![DataFrameColumn {
+                name: "test".to_string(),
+                values: vec![Value::Integer(1), Value::Integer(2)],
+            }],
+        };
+
+        // Test DataFrame with "columns" method (not "filter")
+        // With &&: should NOT take special DataFrame filter path
+        // With ||: would incorrectly take special path (because it's a DataFrame)
+        let result = dispatch_method_call(&df_val, "columns", &[], true);
+        assert!(
+            result.is_ok(),
+            "DataFrame with non-filter method should use normal dispatch"
+        );
+
+        // Verify it returns an array (normal dispatch working)
+        match result.unwrap() {
+            Value::Array(_) => {} // Success - normal dispatch occurred
+            _ => panic!("DataFrame.columns should return array via normal dispatch"),
+        }
+    }
+}

@@ -1,9 +1,0 @@
-Found 47 mutants to test
-ok       Unmutated baseline
-MISSED   src/runtime/cache.rs:118:9: replace BytecodeCache::clear with ()
-MISSED   src/runtime/cache.rs:185:9: replace <impl std::fmt::Display for CacheStats>::fmt -> std::fmt::Result with Ok(Default::default())
-MISSED   src/runtime/cache.rs:152:72: replace > with >= in BytecodeCache::evict_older_than
-MISSED   src/runtime/cache.rs:225:9: replace ExpressionCache::clear with ()
-ERROR interrupted
-ERROR scenario execution internal error err=interrupted phase=Build
-Error: interrupted

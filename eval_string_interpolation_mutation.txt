@@ -1,3 +1,0 @@
-Found 30 mutants to test
-ok       Unmutated baseline
-MISSED   src/runtime/eval_string_interpolation.rs:50:17: delete match arm Value::Float(f) in format_value_with_spec
