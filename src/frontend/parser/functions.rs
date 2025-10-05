@@ -862,4 +862,35 @@ mod tests {
             "Failed to parse immediately invoked function expression"
         );
     }
+
+    // Sprint 8 Phase 1: Mutation test gap coverage for functions.rs
+    // Target: 1 MISSED → 0 MISSED (mutation coverage improvement)
+
+    #[test]
+    fn test_tuple_access_with_integer_index() {
+        // Test gap: verify Token::Integer match arm (line 298) in parse_method_call
+        // This tests tuple access syntax like tuple.0, tuple.1, etc.
+        let mut parser = Parser::new("let t = (1, 2, 3); t.0");
+        let result = parser.parse();
+        assert!(
+            result.is_ok(),
+            "Should parse tuple access with integer index t.0"
+        );
+    }
+
+    #[test]
+    fn test_tuple_access_multiple_indices() {
+        // Test gap: verify tuple access works for different indices
+        let mut parser = Parser::new("let t = (\"a\", \"b\", \"c\"); t.1");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Should parse tuple access t.1");
+    }
+
+    #[test]
+    fn test_tuple_access_third_element() {
+        // Test gap: verify tuple access for index 2
+        let mut parser = Parser::new("let t = (1, 2, 3); t.2");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Should parse tuple access t.2");
+    }
 }
