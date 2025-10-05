@@ -46,6 +46,12 @@ help:
 	@echo "Language Compatibility:"
 	@echo "  make compatibility - Run comprehensive language feature compatibility tests"
 	@echo ""
+	@echo "Mutation Testing (Sprint 8 - Test Quality Validation):"
+	@echo "  make mutation-help        - Show mutation testing strategy guide"
+	@echo "  make mutation-test-file FILE=<path> - Test single file (5-30 min)"
+	@echo "  make mutation-test-parser - Test all parser modules"
+	@echo "  make mutation-test-baseline - Full baseline (WARNING: 10+ hours)"
+	@echo ""
 	@echo "WASM E2E Testing (Sprint 7):"
 	@echo "  make e2e-install     - Install Playwright and browsers"
 	@echo "  make e2e-install-deps - Install system dependencies only"
@@ -826,6 +832,83 @@ compatibility:
 	@echo ""
 	@echo "✅ Language compatibility verification complete!"
 	@echo "📊 Use results to prioritize development for maximum compatibility improvement"
+
+# ====================================================================
+# MUTATION TESTING (Sprint 8 - Empirical Test Quality Validation)
+# Gold standard for test effectiveness - line coverage != test quality
+# ====================================================================
+
+# Run mutation tests on parser modules (incremental approach)
+mutation-test-parser:
+	@echo "🧬 MUTATION TESTING: Parser Modules"
+	@echo "===================================="
+	@echo "Target: 80%+ mutation coverage (empirical test quality)"
+	@echo ""
+	@cargo mutants --file "src/frontend/parser/*.rs" --timeout 600 --no-times 2>&1 | tee parser_mutations.txt
+	@echo ""
+	@echo "📊 Analysis complete - see parser_mutations.txt for details"
+
+# Run mutation tests on specific file (fast, 5-30 min)
+mutation-test-file:
+	@if [ -z "$(FILE)" ]; then \
+		echo "❌ Error: FILE parameter required"; \
+		echo "Usage: make mutation-test-file FILE=src/frontend/parser/core.rs"; \
+		exit 1; \
+	fi
+	@echo "🧬 MUTATION TESTING: $(FILE)"
+	@echo "===================================="
+	@cargo mutants --file $(FILE) --timeout 300 --no-times
+	@echo ""
+	@echo "✅ Mutation test complete"
+
+# Run full mutation baseline (WARNING: 10+ hours, use incremental instead)
+mutation-test-baseline:
+	@echo "⚠️  WARNING: Full baseline takes 10+ hours"
+	@echo "Consider using mutation-test-parser or mutation-test-file instead"
+	@echo ""
+	@read -p "Continue with full baseline? [y/N] " confirm && [ "$$confirm" = "y" ] || exit 1
+	@cargo mutants --timeout 600 --no-times 2>&1 | tee mutation_baseline.txt
+
+# Show mutation testing help and strategy
+mutation-help:
+	@echo "🧬 MUTATION TESTING GUIDE"
+	@echo "========================"
+	@echo ""
+	@echo "WHY MUTATION TESTING?"
+	@echo "  • Line coverage measures execution, mutation coverage measures effectiveness"
+	@echo "  • 99% line coverage can have 20% mutation coverage"
+	@echo "  • Each mutation simulates a real bug - tests must catch it"
+	@echo ""
+	@echo "INCREMENTAL STRATEGY (RECOMMENDED):"
+	@echo "  1. Test one file at a time (5-30 min)"
+	@echo "     make mutation-test-file FILE=src/frontend/parser/core.rs"
+	@echo ""
+	@echo "  2. Find gaps: grep 'MISSED' core_mutations.txt"
+	@echo ""
+	@echo "  3. Write tests targeting specific mutations"
+	@echo ""
+	@echo "  4. Re-run to verify 80%+ coverage"
+	@echo ""
+	@echo "FULL BASELINE (NOT RECOMMENDED):"
+	@echo "  • Takes 10+ hours for all files"
+	@echo "  • Use: make mutation-test-baseline"
+	@echo ""
+	@echo "COMMON TEST GAP PATTERNS:"
+	@echo "  1. Match arm deletions → Test ALL match arms"
+	@echo "  2. Function stubs → Validate return values"
+	@echo "  3. Boundary conditions → Test <, <=, ==, >, >="
+	@echo "  4. Boolean negations → Test both true/false branches"
+	@echo "  5. Operator changes → Test +/-, */%, &&/||"
+	@echo ""
+	@echo "CURRENT PROGRESS (Sprint 8 Phase 1-2):"
+	@echo "  ✅ operator_precedence.rs: 21% → 90%+ (Phase 1)"
+	@echo "  ✅ imports.rs: High → 100% (Phase 1)"
+	@echo "  ✅ macro_parsing.rs: 66% → 95%+ (Phase 1)"
+	@echo "  ✅ functions.rs: High → 100% (Phase 1)"
+	@echo "  ✅ core.rs: 50% → 75% (Phase 2)"
+	@echo "  🔄 mod.rs: In progress (Phase 2)"
+	@echo ""
+	@echo "See docs/execution/SPRINT_8_PHASE_1_COMPLETE.md for full report"
 
 # ====================================================================
 # FIVE-CATEGORY COVERAGE TARGETS (v3.5.0)
