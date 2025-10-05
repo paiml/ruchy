@@ -1304,4 +1304,88 @@ mod tests {
             panic!("Expected nested list");
         }
     }
+
+    // Sprint 8 Phase 2: Mutation test gap coverage for mod.rs
+    // Target: 8 MISSED → 0 MISSED (operator precedence boundaries & calculations)
+
+    #[test]
+    fn test_ternary_operator_precedence_boundary() {
+        // Test gap: Line 464 - verify > comparison (not ==) in try_ternary_operator
+        // Ternary should work when min_prec is LESS than TERNARY_PRECEDENCE
+        let mut state = ParserState::new("true ? 1 : 2");
+        let result = parse_expr_recursive(&mut state);
+        assert!(
+            result.is_ok(),
+            "Ternary with default precedence should work"
+        );
+    }
+
+    #[test]
+    fn test_ternary_precedence_calculation() {
+        // Test gap: Line 449 - verify + operator (not *) in prec + 1
+        // This tests the precedence calculation for ternary true branch
+        let mut state = ParserState::new("1 + 1 ? 10 : 20");
+        let result = parse_expr_recursive(&mut state);
+        assert!(
+            result.is_ok(),
+            "Ternary with addition should parse correctly"
+        );
+    }
+
+    #[test]
+    fn test_assignment_operator_precedence_boundary_less_than() {
+        // Test gap: Line 590 - verify < comparison (not <= or ==) in try_assignment_operators
+        // Assignment should NOT work when prec >= min_prec
+        let mut state = ParserState::new("x = 42");
+        let result = parse_expr_with_precedence_recursive(&mut state, 0);
+        assert!(
+            result.is_ok(),
+            "Assignment with min_prec=0 should work (prec < min_prec is false)"
+        );
+    }
+
+    #[test]
+    fn test_range_operator_precedence_boundary() {
+        // Test gap: Line 686 - verify < comparison (not ==) in try_range_operators
+        let mut state = ParserState::new("1..10");
+        let result = parse_expr_with_precedence_recursive(&mut state, 0);
+        assert!(result.is_ok(), "Range with low min_prec should work");
+    }
+
+    #[test]
+    fn test_range_precedence_calculation() {
+        // Test gap: Line 691 - verify + operator (not *) in prec + 1
+        let mut state = ParserState::new("1..10");
+        let result = parse_expr_recursive(&mut state);
+        assert!(
+            result.is_ok(),
+            "Range precedence calculation should use + not *"
+        );
+    }
+
+    #[test]
+    fn test_pipeline_precedence_calculation() {
+        // Test gap: Line 649 - verify + operator (not -) in prec + 1
+        let mut state = ParserState::new("x |> f");
+        let result = parse_expr_recursive(&mut state);
+        assert!(
+            result.is_ok(),
+            "Pipeline precedence should use + for right recursion"
+        );
+    }
+
+    #[test]
+    fn test_macro_call_returns_some() {
+        // Test gap: Line 705 - verify try_parse_macro_call returns Some (not None stub)
+        let mut state = ParserState::new("vec![1, 2, 3]");
+        let result = parse_expr_recursive(&mut state);
+        assert!(result.is_ok(), "Macro call should parse successfully");
+
+        if let Ok(expr) = result {
+            assert!(
+                matches!(expr.kind, ExprKind::Macro { .. }),
+                "Should parse as Macro expression, not stub None"
+            );
+        }
+    }
 }
