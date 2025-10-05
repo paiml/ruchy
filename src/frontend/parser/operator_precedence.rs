@@ -305,3 +305,93 @@ mod tests {
         );
     }
 }
+
+#[cfg(test)]
+mod mutation_tests {
+    use super::*;
+
+    #[test]
+    fn test_is_prefix_operator_not_stub() {
+        // MISSED: replace is_prefix_operator -> bool with true (line 100)
+
+        // Test that function returns true for prefix operators
+        assert!(is_prefix_operator(&Token::Bang), "Bang should be prefix");
+        assert!(is_prefix_operator(&Token::Minus), "Minus should be prefix");
+        assert!(is_prefix_operator(&Token::Tilde), "Tilde should be prefix");
+
+        // Test that function returns false for non-prefix operators (proves not stub returning true)
+        assert!(
+            !is_prefix_operator(&Token::Plus),
+            "Plus should NOT be prefix"
+        );
+        assert!(
+            !is_prefix_operator(&Token::Slash),
+            "Slash should NOT be prefix"
+        );
+        assert!(!is_prefix_operator(&Token::Dot), "Dot should NOT be prefix");
+        assert!(
+            !is_prefix_operator(&Token::Equal),
+            "Equal should NOT be prefix"
+        );
+    }
+
+    #[test]
+    fn test_get_operator_info_ampersand_match_arm() {
+        // MISSED: delete match arm Token::Ampersand in get_operator_info (line 71)
+
+        let result = get_operator_info(&Token::Ampersand);
+        assert!(result.is_some(), "Ampersand should have operator info");
+
+        let (prec, assoc) = result.unwrap();
+        assert_eq!(
+            prec,
+            Precedence::BITWISE_AND,
+            "Ampersand should have BITWISE_AND precedence"
+        );
+        assert_eq!(
+            assoc,
+            Associativity::Left,
+            "Ampersand should be left-associative"
+        );
+    }
+
+    #[test]
+    fn test_get_operator_info_left_shift_match_arm() {
+        // MISSED: delete match arm Token::LeftShift in get_operator_info (line 72)
+
+        let result = get_operator_info(&Token::LeftShift);
+        assert!(result.is_some(), "LeftShift should have operator info");
+
+        let (prec, assoc) = result.unwrap();
+        assert_eq!(
+            prec,
+            Precedence::SHIFT,
+            "LeftShift should have SHIFT precedence"
+        );
+        assert_eq!(
+            assoc,
+            Associativity::Left,
+            "LeftShift should be left-associative"
+        );
+    }
+
+    #[test]
+    fn test_get_operator_info_right_shift_match_arm() {
+        // MISSED: delete match arm Token::RightShift in get_operator_info (line 73)
+
+        let result = get_operator_info(&Token::RightShift);
+        assert!(result.is_some(), "RightShift should have operator info");
+
+        let (prec, assoc) = result.unwrap();
+        assert_eq!(
+            prec,
+            Precedence::SHIFT,
+            "RightShift should have SHIFT precedence"
+        );
+        assert_eq!(
+            assoc,
+            Associativity::Left,
+            "RightShift should be left-associative"
+        );
+    }
+}

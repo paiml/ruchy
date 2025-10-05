@@ -1,0 +1,10 @@
+Found 29 mutants to test
+ok       Unmutated baseline
+ERROR interrupted
+ERROR scenario execution internal error err=interrupted phase=Build
+Error: interrupted
+Found 29 mutants to test
+ok       Unmutated baseline
+ERROR interrupted
+ERROR scenario execution internal error err=interrupted phase=Build
+Error: interrupted
