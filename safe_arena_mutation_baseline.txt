@@ -1,6 +1,0 @@
-Found 26 mutants to test
-ok       Unmutated baseline
-MISSED   src/runtime/safe_arena.rs:49:39: replace > with >= in SafeArena::alloc
-ERROR interrupted
-ERROR scenario execution internal error err=interrupted phase=Build
-Error: interrupted

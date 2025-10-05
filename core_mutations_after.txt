@@ -1,4 +1,0 @@
-Found 8 mutants to test
-ok       Unmutated baseline
-MISSED   src/frontend/parser/core.rs:16:9: replace Parser<'a>::get_errors -> &[ErrorNode] with Vec::leak(Vec::new())
-8 mutants tested: 1 missed, 3 caught, 4 unviable

@@ -1,3 +1,0 @@
-Found 29 mutants to test
-ok       Unmutated baseline in 86.7s build + 1.3s test
-MISSED   src/frontend/parser/operator_precedence.rs:69:9: delete match arm Token::Pipe in get_operator_info in 16.8s build + 1.3s test
