@@ -1,0 +1,11 @@
+Found 125 mutants to test
+ok       Unmutated baseline
+MISSED   src/frontend/parser/mod.rs:557:21: replace < with <= in try_new_actor_operators
+MISSED   src/frontend/parser/mod.rs:649:71: replace + with * in try_pipeline_operators
+MISSED   src/frontend/parser/mod.rs:705:5: replace try_parse_macro_call -> Result<Option<Expr>> with Ok(None)
+MISSED   src/frontend/parser/mod.rs:554:9: delete match arm Token::Bang in try_new_actor_operators
+MISSED   src/frontend/parser/mod.rs:625:9: delete match arm Token::PercentEqual in get_compound_assignment_op
+MISSED   src/frontend/parser/mod.rs:262:9: delete match arm Some((Token::Bang, _)) in try_handle_single_postfix
+MISSED   src/frontend/parser/mod.rs:691:64: replace + with - in try_range_operators
+MISSED   src/frontend/parser/mod.rs:251:9: delete match arm Some((Token::LeftBrace, _)) in try_handle_single_postfix
+MISSED   src/frontend/parser/mod.rs:149:9: replace ParserState<'a>::get_errors -> &[ErrorNode] with Vec::leak(Vec::new())
