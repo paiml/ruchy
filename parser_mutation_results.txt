@@ -1,0 +1,55 @@
+Found 1597 mutants to test
+ok       Unmutated baseline
+MISSED   src/frontend/parser/mod.rs:686:13: replace < with == in try_range_operators
+MISSED   src/frontend/parser/collections.rs:1168:31: delete ! in looks_like_comprehension
+MISSED   src/frontend/parser/utils.rs:655:8: delete ! in parse_url_import
+MISSED   src/frontend/parser/utils.rs:1137:5: replace should_process_char_quote -> bool with false
+MISSED   src/frontend/parser/mod.rs:691:64: replace + with * in try_range_operators
+MISSED   src/frontend/parser/expressions.rs:502:13: delete match arm Some((Token::Comma, _)) in parse_turbofish_generics
+MISSED   src/frontend/parser/expressions.rs:397:9: delete match arm Token::FString(template) in parse_literal_token
+MISSED   src/frontend/parser/mod.rs:590:13: replace < with <= in try_assignment_operators
+MISSED   src/frontend/parser/mod.rs:590:13: replace < with == in try_assignment_operators
+MISSED   src/frontend/parser/collections.rs:1326:5: replace parse_constructor_pattern -> Result<String> with Ok(String::new())
+MISSED   src/frontend/parser/collections.rs:322:9: delete match arm Token::Var in declaration_token_to_key
+MISSED   src/frontend/parser/expressions.rs:4391:5: replace parse_actor_receive_block -> Result<Vec<String>> with Ok(vec!["xyzzy".into()])
+MISSED   src/frontend/parser/expressions.rs:1094:34: replace match guard is_pub with true in parse_module_item
+MISSED   src/frontend/parser/expressions.rs:3846:9: delete match arm Some((Token::Super, _)) in parse_use_path
+MISSED   src/frontend/parser/operator_precedence.rs:100:5: replace is_prefix_operator -> bool with true
+MISSED   src/frontend/parser/collections.rs:1047:8: delete ! in add_non_empty_row
+MISSED   src/frontend/parser/mod.rs:464:84: replace + with * in try_ternary_operator
+MISSED   src/frontend/parser/operator_precedence.rs:71:9: delete match arm Token::Ampersand in get_operator_info
+MISSED   src/frontend/parser/expressions.rs:735:8: delete ! in parse_pub_const_function
+MISSED   src/frontend/parser/operator_precedence.rs:73:9: delete match arm Token::RightShift in get_operator_info
+MISSED   src/frontend/parser/operator_precedence.rs:72:9: delete match arm Token::LeftShift in get_operator_info
+MISSED   src/frontend/parser/expressions.rs:4391:5: replace parse_actor_receive_block -> Result<Vec<String>> with Ok(vec![String::new()])
+MISSED   src/frontend/parser/imports.rs:222:17: delete match arm Token::Crate in parse_module_path
+MISSED   src/frontend/parser/utils.rs:972:5: replace parse_rust_attribute_arguments -> Result<Vec<String>> with Ok(vec![String::new()])
+MISSED   src/frontend/parser/expressions.rs:3188:15: delete ! in parse_decorator
+MISSED   src/frontend/parser/expressions.rs:2638:8: delete ! in parse_inheritance
+MISSED   src/frontend/parser/expressions.rs:3326:9: delete match arm Some((Token::Identifier(n), _)) in parse_property_setter
+MISSED   src/frontend/parser/expressions.rs:766:5: replace mark_expression_as_public with ()
+MISSED   src/frontend/parser/expressions.rs:3012:9: delete match arm Some((Token::Fun | Token::Fn, _)) in parse_member_and_dispatch
+MISSED   src/frontend/parser/utils.rs:1149:25: delete ! in handle_string_delimiter
+MISSED   src/frontend/parser/collections.rs:1442:13: delete match arm Some((Token::RightBrace, _)) in try_parse_set_literal
+MISSED   src/frontend/parser/expressions.rs:3393:9: delete match arm Some((Token::Identifier(scope), _)) in parse_pub_scope_modifier
+MISSED   src/frontend/parser/collections.rs:941:5: replace is_dataframe_legacy_syntax_token -> bool with true
+MISSED   src/frontend/parser/functions.rs:298:9: delete match arm Some((Token::Integer(index), _)) in parse_method_call
+MISSED   src/frontend/parser/mod.rs:705:5: replace try_parse_macro_call -> Result<Option<Expr>> with Ok(None)
+MISSED   src/frontend/parser/collections.rs:991:5: replace parse_all_dataframe_rows -> Result<Vec<Vec<Expr>>> with Ok(vec![vec![]])
+MISSED   src/frontend/parser/expressions.rs:3389:9: delete match arm Some((Token::Super, _)) in parse_pub_scope_modifier
+MISSED   src/frontend/parser/utils.rs:957:5: replace parse_rust_attribute_name -> Result<String> with Ok(String::new())
+MISSED   src/frontend/parser/utils.rs:1014:8: delete ! in parse_identifier_argument
+MISSED   src/frontend/parser/collections.rs:325:9: delete match arm Token::Pub in declaration_token_to_key
+MISSED   src/frontend/parser/expressions.rs:5385:5: replace parse_async_lambda_params -> Result<Vec<String>> with Ok(vec!["xyzzy".into()])
+MISSED   src/frontend/parser/mod.rs:649:71: replace + with - in try_pipeline_operators
+MISSED   src/frontend/parser/expressions.rs:3292:5: replace parse_property_accessors -> Result<(Option<Box<Expr>>, Option<PropertySetter>)> with Ok((None, None))
+MISSED   src/frontend/parser/expressions.rs:3850:9: delete match arm Some((Token::Self_, _)) in parse_use_path
+MISSED   src/frontend/parser/expressions.rs:5394:5: replace parse_async_param_list -> Result<Vec<String>> with Ok(vec![String::new()])
+MISSED   src/frontend/parser/expressions.rs:3806:13: delete match arm Some((Token::LeftBrace, _)) in skip_impl_body
+MISSED   src/frontend/parser/expressions.rs:2939:5: replace parse_member_decorators -> Result<Vec<Decorator>> with Ok(vec![])
+MISSED   src/frontend/parser/utils.rs:145:5: replace check_and_consume_mut -> bool with true
+MISSED   src/frontend/parser/mod.rs:449:54: replace > with == in try_ternary_operator
+MISSED   src/frontend/parser/expressions.rs:3416:5: replace parse_member_flags -> Result<(bool, bool, bool, bool)> with Ok((true, true, true, false))
+MISSED   src/frontend/parser/expressions.rs:751:8: delete ! in parse_pub_unsafe_function
+MISSED   src/frontend/parser/utils.rs:1103:17: replace match guard should_process_char_quote(context) with true in process_character
+MISSED   src/frontend/parser/collections.rs:1447:13: delete match arm Some((Token::Semicolon, _)) in try_parse_set_literal

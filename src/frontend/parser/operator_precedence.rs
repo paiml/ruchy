@@ -158,4 +158,150 @@ mod tests {
         let (_, assoc) = get_operator_info(&Token::Power).expect("Power should have operator info");
         assert_eq!(assoc, Associativity::Right);
     }
+
+    // Sprint 8 Phase 1: Mutation test gap coverage
+    // Target: 21 MISSED → 0 MISSED (21% → 80%+ catch rate)
+
+    #[test]
+    fn test_all_operator_match_arms() {
+        // Test gaps: verify all match arms in get_operator_info
+        assert!(get_operator_info(&Token::Pipeline).is_some(), "Pipeline");
+        assert!(get_operator_info(&Token::OrOr).is_some(), "OrOr");
+        assert!(get_operator_info(&Token::AndAnd).is_some(), "AndAnd");
+        assert!(
+            get_operator_info(&Token::EqualEqual).is_some(),
+            "EqualEqual"
+        );
+        assert!(get_operator_info(&Token::NotEqual).is_some(), "NotEqual");
+        assert!(get_operator_info(&Token::Less).is_some(), "Less");
+        assert!(get_operator_info(&Token::Greater).is_some(), "Greater");
+        assert!(get_operator_info(&Token::LessEqual).is_some(), "LessEqual");
+        assert!(
+            get_operator_info(&Token::GreaterEqual).is_some(),
+            "GreaterEqual"
+        );
+        assert!(
+            get_operator_info(&Token::Pipe).is_some(),
+            "Pipe (bitwise OR)"
+        );
+        assert!(get_operator_info(&Token::Caret).is_some(), "Caret (XOR)");
+        assert!(
+            get_operator_info(&Token::Ampersand).is_some(),
+            "Ampersand (bitwise AND)"
+        );
+        assert!(get_operator_info(&Token::LeftShift).is_some(), "LeftShift");
+        assert!(
+            get_operator_info(&Token::RightShift).is_some(),
+            "RightShift"
+        );
+        assert!(get_operator_info(&Token::DotDot).is_some(), "DotDot");
+        assert!(
+            get_operator_info(&Token::DotDotEqual).is_some(),
+            "DotDotEqual"
+        );
+        assert!(get_operator_info(&Token::Star).is_some(), "Star");
+        assert!(get_operator_info(&Token::Slash).is_some(), "Slash");
+        assert!(get_operator_info(&Token::Percent).is_some(), "Percent");
+        assert!(get_operator_info(&Token::Bang).is_some(), "Bang");
+    }
+
+    #[test]
+    fn test_all_postfix_match_arms() {
+        // Test gaps: verify all match arms in get_postfix_precedence
+        assert_eq!(
+            get_postfix_precedence(&Token::Dot),
+            Precedence::MEMBER,
+            "Dot"
+        );
+        assert_eq!(
+            get_postfix_precedence(&Token::SafeNav),
+            Precedence::MEMBER,
+            "SafeNav"
+        );
+        assert_eq!(
+            get_postfix_precedence(&Token::LeftParen),
+            Precedence::CALL,
+            "LeftParen"
+        );
+        assert_eq!(
+            get_postfix_precedence(&Token::LeftBracket),
+            Precedence::CALL,
+            "LeftBracket"
+        );
+        assert_eq!(
+            get_postfix_precedence(&Token::Question),
+            Precedence::POSTFIX,
+            "Question"
+        );
+        assert_eq!(
+            get_postfix_precedence(&Token::Increment),
+            Precedence::POSTFIX,
+            "Increment"
+        );
+        assert_eq!(
+            get_postfix_precedence(&Token::Decrement),
+            Precedence::POSTFIX,
+            "Decrement"
+        );
+    }
+
+    #[test]
+    fn test_is_prefix_operator_returns_false_for_non_prefix() {
+        // Test gap: verify is_prefix_operator returns false (not just true)
+        assert!(!is_prefix_operator(&Token::Plus), "Plus is not prefix");
+        assert!(!is_prefix_operator(&Token::Slash), "Slash is not prefix");
+        assert!(!is_prefix_operator(&Token::Dot), "Dot is not prefix");
+        assert!(
+            !is_prefix_operator(&Token::EqualEqual),
+            "EqualEqual is not prefix"
+        );
+    }
+
+    #[test]
+    fn test_is_prefix_operator_returns_true_for_prefix() {
+        // Test gap: verify is_prefix_operator returns true (not just false)
+        assert!(is_prefix_operator(&Token::Bang), "Bang is prefix");
+        assert!(
+            is_prefix_operator(&Token::Minus),
+            "Minus (negation) is prefix"
+        );
+        assert!(is_prefix_operator(&Token::Tilde), "Tilde is prefix");
+        assert!(
+            is_prefix_operator(&Token::Ampersand),
+            "Ampersand (ref) is prefix"
+        );
+        assert!(is_prefix_operator(&Token::Star), "Star (deref) is prefix");
+        assert!(is_prefix_operator(&Token::Increment), "Increment is prefix");
+        assert!(is_prefix_operator(&Token::Decrement), "Decrement is prefix");
+    }
+
+    #[test]
+    fn test_should_continue_parsing_precedence_comparison() {
+        // Test gap: verify >= condition (not < or ==)
+        assert!(
+            should_continue_parsing(&Token::Plus, Precedence(100)),
+            "Should continue when current > min"
+        );
+        assert!(
+            should_continue_parsing(&Token::Plus, Precedence(120)),
+            "Should continue when current == min"
+        );
+        assert!(
+            !should_continue_parsing(&Token::Plus, Precedence(130)),
+            "Should stop when current < min"
+        );
+    }
+
+    #[test]
+    fn test_should_continue_parsing_returns_false_for_non_operators() {
+        // Test gap: verify function returns false (not true)
+        assert!(
+            !should_continue_parsing(&Token::Semicolon, Precedence(0)),
+            "Non-operator should return false"
+        );
+        assert!(
+            !should_continue_parsing(&Token::Comma, Precedence(0)),
+            "Non-operator should return false"
+        );
+    }
 }

@@ -242,3 +242,62 @@ fn parse_module_path(state: &mut ParserState) -> Result<String> {
 
     Ok(parts.join("."))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::super::Parser;
+
+    // Sprint 8 Phase 1: Mutation test gap coverage for imports.rs
+    // Target: 1 MISSED → 0 MISSED (mutation coverage improvement)
+
+    #[test]
+    fn test_import_with_crate_keyword() {
+        // Test gap: verify Token::Crate match arm (line 222)
+        let mut parser = Parser::new("import crate");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Should parse 'import crate' statement");
+    }
+
+    #[test]
+    fn test_import_with_self_keyword() {
+        // Test gap: verify Token::Self_ match arm (line 220)
+        let mut parser = Parser::new("import self");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Should parse 'import self' statement");
+    }
+
+    #[test]
+    fn test_import_with_super_keyword() {
+        // Test gap: verify Token::Super match arm (line 221)
+        let mut parser = Parser::new("import super");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Should parse 'import super' statement");
+    }
+
+    #[test]
+    fn test_from_crate_import() {
+        // Test gap: verify crate keyword in from...import
+        let mut parser = Parser::new("from crate import utils");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Should parse 'from crate import' statement");
+    }
+
+    #[test]
+    fn test_import_crate_with_path() {
+        // Test gap: verify crate keyword with dot notation
+        let mut parser = Parser::new("import crate.utils");
+        let result = parser.parse();
+        assert!(
+            result.is_ok(),
+            "Should parse 'import crate.utils' statement"
+        );
+    }
+
+    #[test]
+    fn test_from_super_import() {
+        // Test gap: verify super keyword in from...import
+        let mut parser = Parser::new("from super import foo");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Should parse 'from super import' statement");
+    }
+}
