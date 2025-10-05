@@ -93,6 +93,21 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_async_runtime_sleep_actually_waits() {
+        // Mutation test: Verify sleep actually delays execution (not just a no-op)
+        use std::time::Instant;
+        let runtime = AsyncRuntime::new();
+        let start = Instant::now();
+        runtime.sleep(Duration::from_millis(50)).await;
+        let elapsed = start.elapsed();
+        assert!(
+            elapsed >= Duration::from_millis(40),
+            "Sleep should delay at least 40ms, got {:?}",
+            elapsed
+        );
+    }
+
+    #[tokio::test]
     async fn test_async_runtime_spawn() {
         let runtime = AsyncRuntime::new();
         let handle = runtime.spawn(async { 42 });
