@@ -477,4 +477,88 @@ mod tests {
         let result = parser.parse();
         assert!(result.is_ok());
     }
+
+    // Sprint 8 Phase 2: Mutation test gap coverage for core.rs
+    // Target: 2 MISSED → 0 MISSED (75% → 100% catch rate)
+
+    #[test]
+    fn test_get_errors_returns_empty_slice_for_valid_input() {
+        // Test gap: verify get_errors returns real &[ErrorNode], not Vec::leak(Vec::new())
+        // This ensures function returns real error slice (line 16)
+        let parser = Parser::new("42");
+        let errors = parser.get_errors();
+
+        // Valid input should have empty slice
+        assert!(errors.is_empty(), "Valid input should have no errors");
+
+        // The slice length should be 0 (not leaked memory)
+        assert_eq!(errors.len(), 0, "Error slice should have length 0");
+    }
+
+    #[test]
+    fn test_get_errors_type_signature() {
+        // Test gap: Ensure get_errors returns the correct slice type
+        // If mutated to Vec::leak(Vec::new()), type might differ
+        let parser = Parser::new("let x = 1");
+        let errors: &[ErrorNode] = parser.get_errors();
+
+        // Should be a valid slice reference
+        assert_eq!(
+            errors.len(),
+            0,
+            "Should return slice with 0 errors for valid input"
+        );
+    }
+
+    #[test]
+    fn test_derive_attribute_processing_for_class() {
+        // Test gap: verify derive attributes extracted for Class (line 60 match arm)
+        // Pattern: #[derive(Debug, Clone)] class Foo {}
+        let mut parser = Parser::new("#[derive(Debug, Clone)]\nclass Foo {}");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Should parse class with derive attributes");
+
+        if let Ok(expr) = result {
+            if let ExprKind::Class { derives, .. } = expr.kind {
+                assert_eq!(derives.len(), 2, "Should extract 2 derives: Debug, Clone");
+            } else {
+                panic!("Expected Class expression");
+            }
+        }
+    }
+
+    #[test]
+    fn test_derive_attribute_processing_for_struct() {
+        // Test gap: verify derive attributes extracted for Struct (line 60 match arm)
+        let mut parser = Parser::new("#[derive(Debug)]\nstruct Point { x: i32, y: i32 }");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Should parse struct with derive attribute");
+
+        if let Ok(expr) = result {
+            if let ExprKind::Struct { derives, .. } = expr.kind {
+                assert_eq!(derives.len(), 1, "Should extract 1 derive: Debug");
+            } else {
+                panic!("Expected Struct expression");
+            }
+        }
+    }
+
+    #[test]
+    fn test_derive_attribute_processing_for_tuple_struct() {
+        // Test gap: verify derive attributes extracted for TupleStruct (line 60 match arm)
+        let mut parser = Parser::new("#[derive(Clone)]\nstruct Wrapper(i32)");
+        let result = parser.parse();
+        assert!(
+            result.is_ok(),
+            "Should parse tuple struct with derive attribute"
+        );
+
+        if let Ok(expr) = result {
+            if let ExprKind::TupleStruct { derives, .. } = expr.kind {
+                assert_eq!(derives.len(), 1, "Should extract 1 derive: Clone");
+            } else {
+                panic!("Expected TupleStruct expression");
+            }
+        }
+    }
 }

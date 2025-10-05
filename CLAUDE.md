@@ -71,7 +71,49 @@ fn process_single_item(item: Item) -> Result<ItemOutput> {
 - **Integration Tests**: Full compile → execute → validate pipeline
 - **Property Tests**: Automated generation of valid/invalid programs
 - **Fuzz Tests**: Random input stress testing (AFL, cargo-fuzz)
+- **Mutation Tests**: 80%+ mutation coverage via cargo-mutants (empirical validation)
 - **Examples Tests**: All examples/ must compile and run
+
+### Mutation Testing Protocol (MANDATORY - Sprint 8)
+
+**CRITICAL**: Mutation testing is the GOLD STANDARD for test quality validation.
+
+#### Why Mutation Testing Matters:
+- **Line coverage measures execution, mutation coverage measures effectiveness**
+- 99% line coverage can have 20% mutation coverage (tests run code but don't validate it)
+- Mutation testing empirically proves tests catch real bugs, not just exercise code paths
+- Each mutation simulates a real bug - if tests don't catch it, they're inadequate
+
+#### Incremental Mutation Testing Strategy:
+```bash
+# NEVER run full baseline (10+ hours) - use incremental file-by-file approach
+cargo mutants --file src/frontend/parser/core.rs --timeout 300  # 5-30 min
+
+# Analyze gaps immediately
+grep "MISSED" core_mutations.txt
+
+# Write tests targeting SPECIFIC mutations
+# Re-run to validate 80%+ coverage achieved
+```
+
+#### Test Gap Patterns (From Sprint 8 Empirical Data):
+1. **Match Arm Deletions** (most common): Test ALL match arms with assertions
+2. **Function Stub Replacements**: Validate return values are real data, not None/empty
+3. **Boundary Conditions**: Test <, <=, ==, >, >= explicitly
+4. **Boolean Negations**: Test both true AND false branches
+5. **Operator Changes**: Test +/-, */%, <=/>=, &&/|| alternatives
+
+#### Mutation-Driven TDD:
+1. Run mutation test FIRST to identify gaps
+2. Write test targeting SPECIFIC mutation
+3. Re-run mutation test to verify fix
+4. Repeat until 80%+ coverage achieved
+5. No speculative tests - only evidence-based
+
+#### Acceptable Mutations (Rare):
+- **Semantically Equivalent**: Mutation produces identical observable behavior
+- **Example**: `Vec::leak(Vec::new())` vs `self.state.get_errors()` both return empty slice
+- Document why mutation is uncatchable and mark ACCEPTABLE
 
 ## Scientific Method Protocol
 

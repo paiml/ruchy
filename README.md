@@ -221,10 +221,31 @@ ruchy/
 This project follows strict quality engineering practices:
 
 - **Test Coverage**: 46.41% line coverage, 50.79% branch coverage
+- **Mutation Testing**: 80%+ mutation coverage via cargo-mutants (Sprint 8 goal)
 - **Complexity Limits**: All functions ≤10 cyclomatic complexity
 - **Zero Technical Debt**: No TODO/FIXME comments allowed
 - **PMAT A+ Grade**: Enforced via automated quality gates
 - **TDD Practice**: Test-first development methodology
+
+### Mutation Testing Strategy
+
+We use **cargo-mutants v25.3.1** for empirical test quality validation:
+
+- **Incremental Testing**: File-by-file mutation testing (5-30 min vs 10+ hours baseline)
+- **Evidence-Based**: Tests target specific mutations identified by empirical analysis
+- **Pattern Recognition**: Reusable test strategies (match arms, boundaries, stubs)
+- **Quality Metrics**: 80%+ mutation coverage target across all modules
+
+```bash
+# Run mutation tests on specific file
+cargo mutants --file src/frontend/parser/core.rs --timeout 300
+
+# Run mutation tests on module
+cargo mutants --file "src/frontend/parser/*.rs" --timeout 600
+
+# See mutation test results
+make mutation-test
+```
 
 ## Development
 
