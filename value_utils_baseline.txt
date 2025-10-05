@@ -1,0 +1,6 @@
+Found 28 mutants to test
+ok       Unmutated baseline
+MISSED   src/runtime/value_utils.rs:81:9: replace Value::is_nil -> bool with true
+ERROR interrupted
+ERROR scenario execution internal error err=interrupted phase=Test
+Error: interrupted

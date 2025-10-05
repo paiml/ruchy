@@ -137,6 +137,79 @@ mod tests {
     }
 
     #[test]
+    fn test_validate_arg_range_boundaries() {
+        // Mutation test: Verify < and > operators (not ==)
+        // MISSED: replace < with == in validate_arg_range (line 54:19)
+        // MISSED: replace > with == in validate_arg_range (line 54:39)
+
+        // Test boundary values
+        let args_too_few = vec![Value::Integer(1)];
+        let args_min = vec![Value::Integer(1), Value::Integer(2)];
+        let args_mid = vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)];
+        let args_max = vec![
+            Value::Integer(1),
+            Value::Integer(2),
+            Value::Integer(3),
+            Value::Integer(4),
+        ];
+        let args_too_many = vec![
+            Value::Integer(1),
+            Value::Integer(2),
+            Value::Integer(3),
+            Value::Integer(4),
+            Value::Integer(5),
+        ];
+
+        // Range: 2-4 arguments
+        assert!(
+            validate_arg_range("test", &args_too_few, 2, 4).is_err(),
+            "Should reject fewer than min"
+        );
+        assert!(
+            validate_arg_range("test", &args_min, 2, 4).is_ok(),
+            "Should accept exactly min"
+        );
+        assert!(
+            validate_arg_range("test", &args_mid, 2, 4).is_ok(),
+            "Should accept middle value"
+        );
+        assert!(
+            validate_arg_range("test", &args_max, 2, 4).is_ok(),
+            "Should accept exactly max"
+        );
+        assert!(
+            validate_arg_range("test", &args_too_many, 2, 4).is_err(),
+            "Should reject more than max"
+        );
+    }
+
+    #[test]
+    fn test_validate_string_match_arm() {
+        // Mutation test: Verify String match arm is tested
+        // MISSED: delete match arm Value::String(_) in validate_string (line 92:9)
+
+        // Test String value is accepted
+        assert!(
+            validate_string("test", &Value::from_string("hello".to_string()), "arg").is_ok(),
+            "Should accept string value"
+        );
+
+        // Test non-String value is rejected
+        assert!(
+            validate_string("test", &Value::Integer(42), "arg").is_err(),
+            "Should reject integer value"
+        );
+        assert!(
+            validate_string("test", &Value::Float(3.14), "arg").is_err(),
+            "Should reject float value"
+        );
+        assert!(
+            validate_string("test", &Value::Bool(true), "arg").is_err(),
+            "Should reject bool value"
+        );
+    }
+
+    #[test]
     fn test_validate_numeric() {
         assert!(validate_numeric("test", &Value::Integer(42), "arg").is_ok());
         assert!(validate_numeric("test", &Value::Float(3.14), "arg").is_ok());

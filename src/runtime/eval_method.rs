@@ -279,4 +279,131 @@ mod tests {
         assert!(eval_integer_method(5, "abs", false).is_err());
         assert!(eval_generic_method(&Value::Nil, "type", false).is_err());
     }
+
+    #[test]
+    fn test_eval_array_method_simple_match_arms() {
+        // Mutation test: Verify array method match arms are tested
+        // MISSED: delete match arm "len" | "length" (line 154:9)
+        // MISSED: delete match arm "is_empty" (line 162:9)
+
+        let arr = Rc::from(vec![
+            Value::Integer(1),
+            Value::Integer(2),
+            Value::Integer(3),
+        ]);
+
+        // Test "len" match arm
+        let result = eval_array_method_simple(&arr, "len", &[]).unwrap();
+        assert_eq!(result, Value::Integer(3), "len should return array length");
+
+        // Test "length" alias
+        let result = eval_array_method_simple(&arr, "length", &[]).unwrap();
+        assert_eq!(
+            result,
+            Value::Integer(3),
+            "length should return array length"
+        );
+
+        // Test "is_empty" match arm with non-empty array
+        let result = eval_array_method_simple(&arr, "is_empty", &[]).unwrap();
+        assert_eq!(
+            result,
+            Value::Bool(false),
+            "is_empty should return false for non-empty"
+        );
+
+        // Test "is_empty" with empty array
+        let empty_arr = Rc::from(vec![]);
+        let result = eval_array_method_simple(&empty_arr, "is_empty", &[]).unwrap();
+        assert_eq!(
+            result,
+            Value::Bool(true),
+            "is_empty should return true for empty"
+        );
+    }
+
+    #[test]
+    fn test_eval_array_method_simple_negation_operators() {
+        // Mutation test: Verify negation operators (!) are tested
+        // MISSED: delete ! in eval_array_method_simple (line 155:16)
+        // MISSED: delete ! in eval_array_method_simple (line 163:16)
+
+        let arr = Rc::from(vec![Value::Integer(1)]);
+
+        // Test that len REJECTS arguments (! operator line 155)
+        let result = eval_array_method_simple(&arr, "len", &[Value::Integer(1)]);
+        assert!(result.is_err(), "len should reject arguments");
+
+        // Test that is_empty REJECTS arguments (! operator line 163)
+        let result = eval_array_method_simple(&arr, "is_empty", &[Value::Integer(1)]);
+        assert!(result.is_err(), "is_empty should reject arguments");
+    }
+
+    #[test]
+    fn test_eval_dataframe_method_simple_match_arms() {
+        // Mutation test: Verify DataFrame method match arms are tested
+        // MISSED: delete match arm "columns" (line 202:9)
+
+        let columns = vec![
+            DataFrameColumn {
+                name: "col1".to_string(),
+                values: vec![Value::Integer(1), Value::Integer(2)],
+            },
+            DataFrameColumn {
+                name: "col2".to_string(),
+                values: vec![Value::Integer(3), Value::Integer(4)],
+            },
+        ];
+
+        // Test "columns" match arm
+        let result = eval_dataframe_method_simple(&columns, "columns", &[]).unwrap();
+        match result {
+            Value::Array(arr) => {
+                assert_eq!(arr.len(), 2, "Should return 2 column names");
+                assert_eq!(arr[0], Value::from_string("col1".to_string()));
+                assert_eq!(arr[1], Value::from_string("col2".to_string()));
+            }
+            _ => panic!("Expected array of column names"),
+        }
+    }
+
+    #[test]
+    fn test_eval_dataframe_method_simple_negation_operator() {
+        // Mutation test: Verify negation operator (!) is tested
+        // MISSED: delete ! in eval_dataframe_method_simple (line 203:16)
+
+        let columns = vec![DataFrameColumn {
+            name: "col1".to_string(),
+            values: vec![Value::Integer(1)],
+        }];
+
+        // Test that columns REJECTS arguments (! operator line 203)
+        let result = eval_dataframe_method_simple(&columns, "columns", &[Value::Integer(1)]);
+        assert!(result.is_err(), "columns method should reject arguments");
+    }
+
+    #[test]
+    fn test_dispatch_method_call_match_arms() {
+        // Mutation test: Verify dispatch_method_call match arms are tested
+        // MISSED: delete match arm Value::Array(arr) (line 51:9)
+        // MISSED: delete match arm Value::DataFrame{columns} (line 54:9)
+
+        // Test Array dispatch
+        let arr_val = Value::Array(Rc::from(vec![Value::Integer(1), Value::Integer(2)]));
+        let result = dispatch_method_call(&arr_val, "len", &[], true).unwrap();
+        assert_eq!(result, Value::Integer(2), "Array should dispatch to len");
+
+        // Test DataFrame dispatch
+        let df_val = Value::DataFrame {
+            columns: vec![DataFrameColumn {
+                name: "test".to_string(),
+                values: vec![Value::Integer(1)],
+            }],
+        };
+        let result = dispatch_method_call(&df_val, "columns", &[], true).unwrap();
+        match result {
+            Value::Array(_) => {} // Success
+            _ => panic!("DataFrame should dispatch to columns"),
+        }
+    }
 }

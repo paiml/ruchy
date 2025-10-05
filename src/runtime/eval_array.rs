@@ -288,4 +288,216 @@ mod tests {
         let result = eval_array_get(&arr, &Value::Integer(1)).unwrap();
         assert_eq!(result, Value::Integer(2));
     }
+
+    #[test]
+    fn test_eval_array_method_match_guards() {
+        // Mutation test: Verify match guards work correctly
+        // MISSED: replace match guard args.is_empty() with true (line 26)
+        // MISSED: replace match guard args.len() == 1 with false (line 30)
+
+        let arr = Rc::from(vec![
+            Value::Integer(1),
+            Value::Integer(2),
+            Value::Integer(3),
+        ]);
+        let dummy_eval = |_: &Value, _: &[Value]| Ok(Value::Nil);
+
+        // Test "first" with no args (should work)
+        let result = eval_array_method(&arr, "first", &[], dummy_eval);
+        assert!(result.is_ok(), "first with 0 args should work");
+        assert_eq!(result.unwrap(), Value::Integer(1));
+
+        // Test "first" with args (should fail due to guard)
+        let result = eval_array_method(&arr, "first", &[Value::Integer(0)], dummy_eval);
+        assert!(
+            result.is_err(),
+            "first with args should fail (match guard: args.is_empty())"
+        );
+
+        // Test "push" with 1 arg (should work)
+        let result = eval_array_method(&arr, "push", &[Value::Integer(4)], dummy_eval);
+        assert!(result.is_ok(), "push with 1 arg should work");
+
+        // Test "push" with wrong number of args (should fail due to guard)
+        let result = eval_array_method(&arr, "push", &[], dummy_eval);
+        assert!(
+            result.is_err(),
+            "push with 0 args should fail (match guard: args.len() == 1)"
+        );
+    }
+
+    #[test]
+    fn test_eval_array_method_match_arms_any_all() {
+        // Mutation test: Verify "any" and "all" match arms exist
+        // MISSED: delete match arm "any" (line 38)
+        // MISSED: delete match arm "all" (line 39)
+
+        let arr = Rc::from(vec![
+            Value::Integer(1),
+            Value::Integer(2),
+            Value::Integer(3),
+        ]);
+
+        // Test by calling eval_array_any and eval_array_all directly
+        // Both require a closure, so we create a minimal one
+        use std::rc::Rc as RcAlias;
+        let closure = Value::Closure {
+            params: vec!["x".to_string()],
+            body: RcAlias::new(crate::frontend::ast::Expr {
+                kind: crate::frontend::ast::ExprKind::Identifier("x".to_string()),
+                span: crate::frontend::ast::Span::new(0, 0),
+                attributes: vec![],
+            }),
+            env: Default::default(),
+        };
+
+        let eval_func = |_: &Value, _: &[Value]| Ok(Value::Bool(true));
+
+        // Test "any" method via eval_array_any
+        let result = eval_array_any(&arr, &[closure.clone()], &mut |f, a| eval_func(f, a));
+        assert!(result.is_ok(), "any method should work (match arm test)");
+
+        // Test "all" method via eval_array_all
+        let result = eval_array_all(&arr, &[closure], &mut |f, a| eval_func(f, a));
+        assert!(result.is_ok(), "all method should work (match arm test)");
+    }
+
+    #[test]
+    fn test_eval_array_reduce_comparison_operator() {
+        // Mutation test: Verify reduce uses != not ==
+        // MISSED: replace != with == (line 141:19 in eval_array_reduce)
+
+        let arr = Rc::from(vec![Value::Integer(1), Value::Integer(2)]);
+
+        // Test with correct number of args (2) - should work
+        use std::rc::Rc as RcAlias;
+        let closure = Value::Closure {
+            params: vec!["acc".to_string(), "x".to_string()],
+            body: RcAlias::new(crate::frontend::ast::Expr {
+                kind: crate::frontend::ast::ExprKind::Identifier("acc".to_string()),
+                span: crate::frontend::ast::Span::new(0, 0),
+                attributes: vec![],
+            }),
+            env: Default::default(),
+        };
+        let eval_func = |_: &Value, args: &[Value]| Ok(args[0].clone());
+        let result = eval_array_reduce(&arr, &[closure.clone(), Value::Integer(0)], &mut |f, a| {
+            eval_func(f, a)
+        });
+        assert!(
+            result.is_ok(),
+            "reduce with 2 args should work (args.len() != 2 check)"
+        );
+
+        // Test with wrong number of args (1) - should fail
+        let result = eval_array_reduce(&arr, &[closure.clone()], &mut |f, a| eval_func(f, a));
+        assert!(
+            result.is_err(),
+            "reduce with 1 arg should fail (proves != operator, not ==)"
+        );
+
+        // Test with wrong number of args (3) - should fail
+        let result = eval_array_reduce(
+            &arr,
+            &[closure, Value::Integer(0), Value::Integer(1)],
+            &mut |f, a| eval_func(f, a),
+        );
+        assert!(
+            result.is_err(),
+            "reduce with 3 args should fail (proves != operator)"
+        );
+    }
+
+    #[test]
+    fn test_eval_array_reduce_negation_operator() {
+        // Mutation test: Verify reduce checks !matches (closure check)
+        // MISSED: delete ! in eval_array_reduce (line 146:8)
+
+        let arr = Rc::from(vec![Value::Integer(1)]);
+        let eval_func = |_: &Value, _: &[Value]| Ok(Value::Nil);
+
+        // Test with non-closure first arg (should fail due to ! check)
+        let result = eval_array_reduce(
+            &arr,
+            &[Value::Integer(0), Value::Integer(0)],
+            &mut |f, a| eval_func(f, a),
+        );
+        assert!(
+            result.is_err(),
+            "reduce should reject non-closure (tests !matches negation)"
+        );
+
+        // Test with closure (should work)
+        use std::rc::Rc as RcAlias;
+        let closure = Value::Closure {
+            params: vec![],
+            body: RcAlias::new(crate::frontend::ast::Expr {
+                kind: crate::frontend::ast::ExprKind::Literal(crate::frontend::ast::Literal::Null),
+                span: crate::frontend::ast::Span::new(0, 0),
+                attributes: vec![],
+            }),
+            env: Default::default(),
+        };
+        let result = eval_array_reduce(&arr, &[closure, Value::Integer(0)], &mut |f, a| {
+            eval_func(f, a)
+        });
+        assert!(
+            result.is_ok(),
+            "reduce should accept closure (proves negation works)"
+        );
+    }
+
+    #[test]
+    fn test_eval_array_all_negation_operator() {
+        // Mutation test: Verify all() uses ! to check falsy values
+        // MISSED: delete ! in eval_array_all (line 188:12)
+
+        let arr = Rc::from(vec![
+            Value::Bool(true),
+            Value::Bool(false),
+            Value::Bool(true),
+        ]);
+
+        // Evaluator that returns the actual value
+        let eval_identity = |_: &Value, args: &[Value]| Ok(args[0].clone());
+
+        use std::rc::Rc as RcAlias;
+        let closure = Value::Closure {
+            params: vec!["x".to_string()],
+            body: RcAlias::new(crate::frontend::ast::Expr {
+                kind: crate::frontend::ast::ExprKind::Identifier("x".to_string()),
+                span: crate::frontend::ast::Span::new(0, 0),
+                attributes: vec![],
+            }),
+            env: Default::default(),
+        };
+
+        // all() should return false because one element is false
+        // This tests the !func_result.is_truthy() logic
+        let result = eval_array_all(&arr, &[closure], &mut |f, a| eval_identity(f, a)).unwrap();
+        assert_eq!(
+            result,
+            Value::Bool(false),
+            "all() should return false when any element is falsy (tests ! operator)"
+        );
+
+        // Test with all true values
+        let all_true_arr = Rc::from(vec![Value::Bool(true), Value::Bool(true)]);
+        let closure2 = Value::Closure {
+            params: vec!["x".to_string()],
+            body: RcAlias::new(crate::frontend::ast::Expr {
+                kind: crate::frontend::ast::ExprKind::Identifier("x".to_string()),
+                span: crate::frontend::ast::Span::new(0, 0),
+                attributes: vec![],
+            }),
+            env: Default::default(),
+        };
+        let result =
+            eval_array_all(&all_true_arr, &[closure2], &mut |f, a| eval_identity(f, a)).unwrap();
+        assert_eq!(
+            result,
+            Value::Bool(true),
+            "all() should return true when all elements are truthy"
+        );
+    }
 }

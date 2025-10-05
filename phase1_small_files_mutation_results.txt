@@ -1,0 +1,4 @@
+Found 122 mutants to test
+ok       Unmutated baseline
+MISSED   src/runtime/validation.rs:54:19: replace < with == in validate_arg_range
+MISSED   src/runtime/transformation.rs:77:5: replace to_f64_batch -> Result<Vec<f64>, InterpreterError> with Ok(vec![1.0])

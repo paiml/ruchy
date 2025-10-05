@@ -1,0 +1,6 @@
+Found 44 mutants to test
+ok       Unmutated baseline
+MISSED   src/runtime/transformation.rs:37:5: replace to_string -> String with "xyzzy".into()
+ERROR interrupted
+ERROR scenario execution internal error err=interrupted phase=Build
+Error: interrupted

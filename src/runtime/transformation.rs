@@ -153,6 +153,28 @@ mod tests {
         let result = to_i64_batch(&values).unwrap();
         assert_eq!(result, vec![1, 2, 3]);
     }
+
+    #[test]
+    fn test_to_f64_batch_returns_actual_values() {
+        // Mutation test: Verify to_f64_batch returns actual data, not vec![1.0]
+        // MISSED: replace to_f64_batch -> Result<Vec<f64>, InterpreterError> with Ok(vec![1.0]) (line 77:5)
+
+        let values = vec![
+            Value::Integer(10),
+            Value::Integer(20),
+            Value::Float(3.14),
+            Value::Integer(42),
+        ];
+
+        let result = to_f64_batch(&values).unwrap();
+
+        // Verify we get the actual converted values, not a stub vec![1.0]
+        assert_eq!(result.len(), 4, "Should have 4 elements");
+        assert_eq!(result[0], 10.0, "First element should be 10.0");
+        assert_eq!(result[1], 20.0, "Second element should be 20.0");
+        assert_eq!(result[2], 3.14, "Third element should be 3.14");
+        assert_eq!(result[3], 42.0, "Fourth element should be 42.0");
+    }
 }
 
 #[cfg(test)]
@@ -198,5 +220,33 @@ mod property_tests {
             // All complete in constant time
             // Test passes without panic
         }
+    }
+}
+
+#[cfg(test)]
+mod mutation_tests {
+    use super::*;
+
+    #[test]
+    fn test_to_string_not_stub() {
+        // MISSED: replace to_string -> String with "xyzzy".into()
+
+        // Test String variant returns actual string
+        let s = Value::from_string("hello".to_string());
+        assert_eq!(
+            to_string(&s),
+            "hello",
+            "Should return actual string, not stub"
+        );
+
+        // Test other variants use format!
+        let i = Value::Integer(42);
+        assert_eq!(to_string(&i), "42", "Should format integer correctly");
+
+        let f = Value::Float(3.14);
+        assert!(
+            to_string(&f).contains("3.14"),
+            "Should format float correctly"
+        );
     }
 }

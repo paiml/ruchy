@@ -232,3 +232,188 @@ mod tests {
         // All functions maintain ≤10 complexity
     }
 }
+
+#[cfg(test)]
+mod mutation_tests {
+    use super::*;
+    use crate::frontend::ast::{ExprKind, Literal, Span};
+
+    #[test]
+    fn test_try_catch_clause_negation_operator() {
+        // MISSED: delete ! in try_catch_clause (line 85)
+        let mut interp = Interpreter::new();
+        interp.push_scope();
+
+        let error_value = Value::from_string("error".to_string());
+        let catch_clause = CatchClause {
+            pattern: Pattern::Identifier("e".to_string()),
+            body: Box::new(Expr::new(
+                ExprKind::Literal(Literal::String("caught".to_string())),
+                Span::new(0, 0),
+            )),
+        };
+
+        // Pattern should match, so result should be Some
+        let result = try_catch_clause(&mut interp, &error_value, &catch_clause).unwrap();
+        assert!(
+            result.is_some(),
+            "Matching pattern should return Some (! is critical)"
+        );
+    }
+
+    #[test]
+    fn test_try_catch_clause_not_stub() {
+        // MISSED: replace try_catch_clause -> Result<Option<Value>, InterpreterError> with Ok(None)
+        let mut interp = Interpreter::new();
+        interp.push_scope();
+
+        let error_value = Value::Integer(42);
+        let catch_clause = CatchClause {
+            pattern: Pattern::Identifier("e".to_string()),
+            body: Box::new(Expr::new(
+                ExprKind::Literal(Literal::Integer(99)),
+                Span::new(0, 0),
+            )),
+        };
+
+        let result = try_catch_clause(&mut interp, &error_value, &catch_clause).unwrap();
+        assert!(result.is_some(), "Should not be stub Ok(None)");
+        assert_eq!(
+            result.unwrap(),
+            Value::Integer(99),
+            "Should return actual body result"
+        );
+    }
+
+    #[test]
+    fn test_pattern_matches_not_stub() {
+        // MISSED: replace pattern_matches -> Result<bool, InterpreterError> with Ok(false)
+        let mut interp = Interpreter::new();
+
+        let pattern = Pattern::Identifier("x".to_string());
+        let value = Value::Integer(42);
+
+        let result = pattern_matches(&mut interp, &pattern, &value).unwrap();
+        assert!(
+            result,
+            "Identifier pattern should match any value, not stub false"
+        );
+    }
+
+    #[test]
+    fn test_error_to_value_throw_match_arm() {
+        // MISSED: delete match arm InterpreterError::Throw(value) in error_to_value (line 120)
+        let thrown_value = Value::from_string("custom error".to_string());
+        let error = InterpreterError::Throw(thrown_value.clone());
+
+        let result = error_to_value(error);
+        assert_eq!(result, thrown_value, "Throw error should unwrap to value");
+    }
+
+    #[test]
+    fn test_error_to_value_type_error_match_arm() {
+        // MISSED: delete match arm InterpreterError::TypeError(msg) in error_to_value (line 121)
+        let error = InterpreterError::TypeError("type mismatch".to_string());
+        let result = error_to_value(error);
+
+        if let Value::Object(obj) = result {
+            let type_val = obj.get("type").unwrap();
+            assert!(
+                matches!(type_val, Value::String(_)),
+                "TypeError should have type field"
+            );
+            assert!(
+                obj.get("message").is_some(),
+                "TypeError should have message field"
+            );
+        } else {
+            panic!("TypeError should convert to Object");
+        }
+    }
+
+    #[test]
+    fn test_error_to_value_runtime_error_match_arm() {
+        // MISSED: delete match arm InterpreterError::RuntimeError(msg) in error_to_value (line 132)
+        let error = InterpreterError::RuntimeError("runtime issue".to_string());
+        let result = error_to_value(error);
+
+        if let Value::Object(obj) = result {
+            let type_val = obj.get("type").unwrap();
+            assert!(
+                matches!(type_val, Value::String(_)),
+                "RuntimeError should have type field"
+            );
+            assert!(
+                obj.get("message").is_some(),
+                "RuntimeError should have message field"
+            );
+        } else {
+            panic!("RuntimeError should convert to Object");
+        }
+    }
+
+    #[test]
+    fn test_bind_pattern_variables_not_stub() {
+        // MISSED: replace bind_pattern_variables -> Result<(), InterpreterError> with Ok(())
+        let mut interp = Interpreter::new();
+        interp.push_scope();
+
+        let pattern = Pattern::Identifier("x".to_string());
+        let value = Value::Integer(42);
+
+        // Should successfully bind without error (not stub)
+        let result = bind_pattern_variables(&mut interp, &pattern, &value);
+        assert!(result.is_ok(), "Should bind variable successfully");
+    }
+
+    #[test]
+    fn test_bind_pattern_variables_identifier_match_arm() {
+        // MISSED: delete match arm Pattern::Identifier(name) in bind_pattern_variables (line 178)
+        let mut interp = Interpreter::new();
+        interp.push_scope();
+
+        let pattern = Pattern::Identifier("myvar".to_string());
+        let value = Value::from_string("test".to_string());
+
+        // Should succeed when binding identifier pattern
+        let result = bind_pattern_variables(&mut interp, &pattern, &value);
+        assert!(result.is_ok(), "Identifier pattern should bind");
+    }
+
+    #[test]
+    fn test_bind_pattern_variables_struct_match_arm() {
+        // MISSED: delete match arm Pattern::Struct in bind_pattern_variables (line 182)
+        let mut interp = Interpreter::new();
+        interp.push_scope();
+
+        use std::collections::HashMap;
+
+        let mut obj = HashMap::new();
+        obj.insert("field1".to_string(), Value::Integer(42));
+        let value = Value::Object(Rc::new(obj));
+
+        let pattern = Pattern::Struct {
+            name: "MyStruct".to_string(),
+            fields: vec![],
+            has_rest: false,
+        };
+
+        // Struct pattern should handle successfully
+        let result = bind_pattern_variables(&mut interp, &pattern, &value);
+        assert!(result.is_ok(), "Struct pattern should be handled");
+    }
+
+    #[test]
+    fn test_bind_pattern_variables_rest_match_arm() {
+        // MISSED: delete match arm Pattern::Rest | Pattern::RestNamed(_) in bind_pattern_variables (line 198)
+        let mut interp = Interpreter::new();
+        interp.push_scope();
+
+        let pattern = Pattern::Rest;
+        let value = Value::Integer(42);
+
+        // Should not crash when binding rest pattern
+        let result = bind_pattern_variables(&mut interp, &pattern, &value);
+        assert!(result.is_ok(), "Rest pattern should be handled");
+    }
+}

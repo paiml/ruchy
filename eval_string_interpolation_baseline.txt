@@ -1,0 +1,8 @@
+Found 30 mutants to test
+ok       Unmutated baseline
+MISSED   src/runtime/eval_string_interpolation.rs:141:9: delete match arm Value::Tuple(elements) in format_value_for_display
+MISSED   src/runtime/eval_string_interpolation.rs:49:17: delete match arm Value::Integer(n) in format_value_with_spec
+MISSED   src/runtime/eval_string_interpolation.rs:145:9: delete match arm Value::Object(fields) in format_value_for_display
+ERROR interrupted
+ERROR scenario execution internal error err=interrupted phase=Build
+Error: interrupted

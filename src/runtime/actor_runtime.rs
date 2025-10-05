@@ -311,3 +311,69 @@ mod tests {
         );
     }
 }
+
+#[cfg(test)]
+mod mutation_tests {
+    use super::*;
+
+    #[test]
+    fn test_actor_mailbox_is_empty_not_stub() {
+        // MISSED: replace is_empty -> bool with false
+        let mut mailbox = ActorMailbox::new(10);
+        assert!(mailbox.is_empty(), "Empty mailbox should return true");
+
+        mailbox
+            .enqueue(ActorMessage {
+                message_type: "test".into(),
+                data: vec![],
+            })
+            .unwrap();
+        assert!(!mailbox.is_empty(), "Non-empty mailbox should return false");
+    }
+
+    #[test]
+    fn test_generate_actor_id_unique() {
+        // MISSED: replace generate_actor_id -> String with "xyzzy".into()
+        let runtime = ActorRuntime::new();
+        let id1 = runtime.generate_actor_id();
+        let id2 = runtime.generate_actor_id();
+        assert_ne!(id1, id2, "IDs should be unique");
+        assert!(id1.starts_with("actor_"), "ID should have prefix");
+    }
+
+    #[test]
+    fn test_spawn_actor_returns_unique_id() {
+        // MISSED: replace spawn_actor -> Result with Ok(String::new())
+        let runtime = ActorRuntime::new();
+        let id1 = runtime
+            .spawn_actor("TestActor".into(), HashMap::new(), HashMap::new())
+            .unwrap();
+        let id2 = runtime
+            .spawn_actor("TestActor".into(), HashMap::new(), HashMap::new())
+            .unwrap();
+        assert_ne!(id1, id2, "spawn_actor should return unique IDs");
+        assert!(!id1.is_empty(), "ID should not be empty string");
+    }
+
+    #[test]
+    fn test_actor_field_value_bool_match_arm() {
+        // MISSED: delete match arm Value::Bool(b)
+        use crate::runtime::Value;
+
+        let bool_value = Value::Bool(true);
+        let field_value = ActorFieldValue::from_value(&bool_value);
+        assert_eq!(
+            field_value,
+            ActorFieldValue::Bool(true),
+            "Bool match arm should work"
+        );
+
+        let false_value = Value::Bool(false);
+        let field_false = ActorFieldValue::from_value(&false_value);
+        assert_eq!(
+            field_false,
+            ActorFieldValue::Bool(false),
+            "Bool false should work"
+        );
+    }
+}
