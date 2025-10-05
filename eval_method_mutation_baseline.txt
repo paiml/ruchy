@@ -1,0 +1,10 @@
+Found 35 mutants to test
+ok       Unmutated baseline
+MISSED   src/runtime/eval_method.rs:163:16: delete ! in eval_array_method_simple
+MISSED   src/runtime/eval_method.rs:155:16: delete ! in eval_array_method_simple
+MISSED   src/runtime/eval_method.rs:202:9: delete match arm "columns" in eval_dataframe_method_simple
+MISSED   src/runtime/eval_method.rs:162:9: delete match arm "is_empty" in eval_array_method_simple
+MISSED   src/runtime/eval_method.rs:54:9: delete match arm Value::DataFrame{columns} in dispatch_method_call
+MISSED   src/runtime/eval_method.rs:154:9: delete match arm "len" | "length" in eval_array_method_simple
+MISSED   src/runtime/eval_method.rs:51:9: delete match arm Value::Array(arr) in dispatch_method_call
+MISSED   src/runtime/eval_method.rs:203:16: delete ! in eval_dataframe_method_simple

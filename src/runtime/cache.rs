@@ -328,3 +328,95 @@ mod property_tests_cache {
         }
     }
 }
+
+#[cfg(test)]
+mod mutation_tests {
+    use super::*;
+
+    #[test]
+    fn test_bytecode_cache_clear_not_stub() {
+        // MISSED: replace BytecodeCache::clear with ()
+        use crate::frontend::ast::{ExprKind, Literal, Span};
+
+        let cache = BytecodeCache::new();
+        let expr = Rc::new(Expr {
+            kind: ExprKind::Literal(Literal::Integer(42)),
+            span: Span { start: 0, end: 0 },
+            attributes: Vec::new(),
+        });
+
+        cache.insert("test".to_string(), expr, None);
+        assert_eq!(cache.stats().size, 1);
+
+        cache.clear();
+        assert_eq!(cache.stats().size, 0, "Clear should empty cache");
+        assert_eq!(cache.stats().hits, 0, "Clear should reset hits");
+        assert_eq!(cache.stats().misses, 0, "Clear should reset misses");
+    }
+
+    #[test]
+    fn test_cache_stats_display_not_stub() {
+        // MISSED: replace fmt -> Result with Ok(Default::default())
+        let cache = BytecodeCache::new();
+        let stats = cache.stats();
+
+        let display = format!("{}", stats);
+        assert!(
+            display.contains("Cache:"),
+            "Display should contain 'Cache:'"
+        );
+        assert!(
+            display.contains("entries"),
+            "Display should contain 'entries'"
+        );
+        assert!(display.contains("hits"), "Display should contain 'hits'");
+        assert!(
+            display.contains("misses"),
+            "Display should contain 'misses'"
+        );
+    }
+
+    #[test]
+    fn test_evict_older_than_comparison_operator() {
+        // MISSED: replace > with >= in evict_older_than (line 152)
+        use crate::frontend::ast::{ExprKind, Literal, Span};
+
+        let cache = BytecodeCache::new();
+        let expr = Rc::new(Expr {
+            kind: ExprKind::Literal(Literal::Integer(42)),
+            span: Span { start: 0, end: 0 },
+            attributes: Vec::new(),
+        });
+
+        cache.insert("test".to_string(), Rc::clone(&expr), None);
+        assert_eq!(cache.stats().size, 1);
+
+        // Evict items older than 1 second (should evict the item after sleep)
+        std::thread::sleep(std::time::Duration::from_millis(1100));
+        cache.evict_older_than(std::time::Duration::from_secs(1));
+        assert_eq!(
+            cache.stats().size,
+            0,
+            "Items older than 1s should be evicted (>)"
+        );
+    }
+
+    #[test]
+    fn test_expression_cache_clear_not_stub() {
+        // MISSED: replace ExpressionCache::clear with ()
+        use crate::frontend::ast::{ExprKind, Literal, Span};
+
+        let cache = ExpressionCache::new();
+        let expr = Rc::new(Expr {
+            kind: ExprKind::Literal(Literal::Integer(42)),
+            span: Span { start: 0, end: 0 },
+            attributes: Vec::new(),
+        });
+
+        cache.cache_parsed("expr".to_string(), expr);
+        assert_eq!(cache.stats().size, 1);
+
+        cache.clear();
+        assert_eq!(cache.stats().size, 0, "Clear should empty expression cache");
+    }
+}

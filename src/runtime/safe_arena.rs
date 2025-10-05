@@ -403,3 +403,28 @@ mod property_tests_safe_arena {
         }
     }
 }
+
+#[cfg(test)]
+mod mutation_tests {
+    use super::*;
+
+    #[test]
+    fn test_alloc_memory_limit_comparison_operator() {
+        // MISSED: replace > with >= in SafeArena::alloc (line 49)
+        let arena = SafeArena::new(100);
+
+        // Allocate items up to but not exceeding limit (> not >=)
+        let result1 = arena.alloc(0u64); // 8 bytes
+        assert!(result1.is_ok(), "First allocation should succeed");
+
+        let result2 = arena.alloc([0u64; 11]); // 88 bytes (8+88=96 < 100)
+        assert!(
+            result2.is_ok(),
+            "Should allow allocation when total < limit (>)"
+        );
+
+        // This should fail (96+8=104 > 100)
+        let result3 = arena.alloc(0u64);
+        assert!(result3.is_err(), "Should fail when total exceeds limit");
+    }
+}

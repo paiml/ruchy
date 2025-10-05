@@ -1,0 +1,12 @@
+Found 55 mutants to test
+ok       Unmutated baseline
+MISSED   src/runtime/deterministic.rs:87:53: replace - with + in <impl DeterministicRepl for Repl>::execute_with_seed
+MISSED   src/runtime/deterministic.rs:209:17: delete match arm Value::String(s) in Repl::estimate_heap_usage
+MISSED   src/runtime/deterministic.rs:211:49: replace * with + in Repl::estimate_heap_usage
+MISSED   src/runtime/deterministic.rs:211:55: replace + with - in Repl::estimate_heap_usage
+MISSED   src/runtime/deterministic.rs:88:55: replace - with / in <impl DeterministicRepl for Repl>::execute_with_seed
+MISSED   src/runtime/deterministic.rs:31:9: replace MockTime::now -> u64 with 1
+MISSED   src/runtime/deterministic.rs:211:17: delete match arm Value::Object(map) in Repl::estimate_heap_usage
+MISSED   src/runtime/deterministic.rs:146:61: replace - with / in <impl DeterministicRepl for Repl>::restore
+MISSED   src/runtime/deterministic.rs:79:42: replace && with || in <impl DeterministicRepl for Repl>::execute_with_seed
+MISSED   src/runtime/deterministic.rs:144:50: replace && with || in <impl DeterministicRepl for Repl>::restore

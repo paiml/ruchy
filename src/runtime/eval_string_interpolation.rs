@@ -170,6 +170,28 @@ mod tests {
     }
 
     #[test]
+    fn test_format_value_with_spec_float_match_arm() {
+        // Mutation test: Verify Float match arm is tested in "d" format
+        // MISSED: delete match arm Value::Float(f) in format_value_with_spec (line 50:17)
+
+        let float_value = Value::Float(3.14);
+
+        // Test "d" format with Float - should convert to integer
+        assert_eq!(
+            format_value_with_spec(&float_value, "d"),
+            "3",
+            "Float with 'd' format should convert to integer"
+        );
+
+        // Test "i" format with Float - should also convert to integer
+        assert_eq!(
+            format_value_with_spec(&float_value, "i"),
+            "3",
+            "Float with 'i' format should convert to integer"
+        );
+    }
+
+    #[test]
     fn test_format_value_for_display() {
         let string_val = Value::from_string("hello".to_string());
         assert_eq!(format_value_for_display(&string_val), "\"hello\"");
@@ -202,5 +224,56 @@ mod tests {
         .unwrap();
 
         assert_eq!(result.to_string(), "\"Hello world!\"");
+    }
+}
+
+#[cfg(test)]
+mod mutation_tests {
+    use super::*;
+    use std::rc::Rc;
+
+    #[test]
+    fn test_format_value_with_spec_integer_match_arm() {
+        // MISSED: delete match arm Value::Integer(n) in format_value_with_spec (line 49)
+        let val = Value::Integer(42);
+        let result = format_value_with_spec(&val, "d");
+        assert_eq!(
+            result, "42",
+            "Integer format spec should use Integer match arm"
+        );
+    }
+
+    #[test]
+    fn test_format_value_for_display_tuple_match_arm() {
+        // MISSED: delete match arm Value::Tuple(elements) in format_value_for_display (line 141)
+        let tuple = Value::Tuple(Rc::from(vec![
+            Value::Integer(1),
+            Value::from_string("test".to_string()),
+        ]));
+        let result = format_value_for_display(&tuple);
+        assert!(
+            result.starts_with('('),
+            "Tuple should format with parentheses"
+        );
+        assert!(result.contains("1"), "Tuple should contain first element");
+        assert!(
+            result.contains("test"),
+            "Tuple should contain second element"
+        );
+    }
+
+    #[test]
+    fn test_format_value_for_display_object_match_arm() {
+        // MISSED: delete match arm Value::Object(fields) in format_value_for_display (line 145)
+        use std::collections::HashMap;
+
+        let mut map = HashMap::new();
+        map.insert("key".to_string(), Value::Integer(42));
+        let obj = Value::Object(Rc::new(map));
+
+        let result = format_value_for_display(&obj);
+        assert!(result.starts_with('{'), "Object should format with braces");
+        assert!(result.contains("key"), "Object should contain key");
+        assert!(result.contains("42"), "Object should contain value");
     }
 }

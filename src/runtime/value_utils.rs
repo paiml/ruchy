@@ -226,3 +226,24 @@ mod tests {
         assert!(bool_val.as_f64().is_err());
     }
 }
+
+#[cfg(test)]
+mod mutation_tests {
+    use super::*;
+
+    #[test]
+    fn test_is_nil_not_stub() {
+        // MISSED: replace Value::is_nil -> bool with true
+
+        // Test Nil value returns true
+        assert!(Value::Nil.is_nil(), "Nil should return true");
+
+        // Test non-Nil values return false (proves not always true)
+        assert!(!Value::Integer(0).is_nil(), "Integer should return false");
+        assert!(!Value::Bool(false).is_nil(), "Bool should return false");
+        assert!(
+            !Value::from_string("".to_string()).is_nil(),
+            "String should return false"
+        );
+    }
+}

@@ -293,4 +293,146 @@ mod tests {
         let result = eval_string_replace(&s, &from, &to).unwrap();
         assert_eq!(result, Value::from_string("hello Rust".to_string()));
     }
+
+    #[test]
+    fn test_eval_string_method_match_arm_zero_args() {
+        // Mutation test: Verify match arm for 0 args exists
+        // MISSED: delete match arm 0 in eval_string_method (line 20)
+
+        let s = Rc::from("hello");
+
+        // Test zero-arg method dispatch works
+        let result = eval_string_method(&s, "len", &[]);
+        assert!(
+            result.is_ok(),
+            "Zero-arg dispatch should work (match arm 0)"
+        );
+        assert_eq!(result.unwrap(), Value::Integer(5));
+
+        // Test that wrong arg count fails
+        let result = eval_string_method(&s, "len", &[Value::Integer(1)]);
+        assert!(
+            result.is_err(),
+            "len with 1 arg should fail (proves match on arg count)"
+        );
+    }
+
+    #[test]
+    fn test_dispatch_zero_arg_string_method_trim_start() {
+        // Mutation test: Verify "trim_start" match arm exists
+        // MISSED: delete match arm "trim_start" in dispatch_zero_arg_string_method (line 36)
+
+        let s = Rc::from("  hello  ");
+
+        // Test trim_start method exists
+        let result = dispatch_zero_arg_string_method(&s, "trim_start");
+        assert!(
+            result.is_ok(),
+            "trim_start method should exist (match arm test)"
+        );
+        assert_eq!(result.unwrap(), Value::from_string("hello  ".to_string()));
+
+        // Also test it actually trims (not just returns the string)
+        let s2 = Rc::from("  test");
+        let result2 = dispatch_zero_arg_string_method(&s2, "trim_start").unwrap();
+        assert_eq!(result2, Value::from_string("test".to_string()));
+    }
+
+    #[test]
+    fn test_dispatch_single_arg_string_method_char_at() {
+        // Mutation test: Verify "char_at" match arm exists
+        // MISSED: delete match arm "char_at" in dispatch_single_arg_string_method (line 58)
+
+        let s = Rc::from("hello");
+
+        // Test char_at method exists
+        let result = dispatch_single_arg_string_method(&s, "char_at", &Value::Integer(1));
+        assert!(
+            result.is_ok(),
+            "char_at method should exist (match arm test)"
+        );
+        assert_eq!(result.unwrap(), Value::from_string("e".to_string()));
+    }
+
+    #[test]
+    fn test_dispatch_two_arg_string_method_substring() {
+        // Mutation test: Verify "substring" match arm exists
+        // MISSED: delete match arm "substring" in dispatch_two_arg_string_method (line 73)
+
+        let s = Rc::from("hello");
+
+        // Test substring method exists
+        let result =
+            dispatch_two_arg_string_method(&s, "substring", &Value::Integer(1), &Value::Integer(4));
+        assert!(
+            result.is_ok(),
+            "substring method should exist (match arm test)"
+        );
+        assert_eq!(result.unwrap(), Value::from_string("ell".to_string()));
+    }
+
+    #[test]
+    fn test_eval_string_char_at_comparison_operator() {
+        // Mutation test: Verify >= operator (not <) for index validation
+        // MISSED: replace >= with < in eval_string_char_at (line 194:17)
+
+        let s = Rc::from("hello");
+
+        // Test with valid non-negative index (>= 0) - should work
+        let result = eval_string_char_at(&s, &Value::Integer(0));
+        assert!(
+            result.is_ok(),
+            "char_at with index 0 should work (tests >= 0 check)"
+        );
+        assert_eq!(result.unwrap(), Value::from_string("h".to_string()));
+
+        // Test with valid positive index
+        let result = eval_string_char_at(&s, &Value::Integer(2));
+        assert!(result.is_ok(), "char_at with positive index should work");
+        assert_eq!(result.unwrap(), Value::from_string("l".to_string()));
+
+        // Test with negative index - should fail (proves >= not <)
+        let result = eval_string_char_at(&s, &Value::Integer(-1));
+        assert!(
+            result.is_err(),
+            "char_at with negative index should fail (proves >= operator)"
+        );
+    }
+
+    #[test]
+    fn test_eval_string_substring_boolean_operator() {
+        // Mutation test: Verify && operator (not ||) in substring validation
+        // MISSED: replace && with || in eval_string_substring (line 231:28)
+
+        let s = Rc::from("hello");
+
+        // Test with valid indices (start >= 0 AND end >= start) - should work
+        let result = eval_string_substring(&s, &Value::Integer(1), &Value::Integer(3));
+        assert!(
+            result.is_ok(),
+            "substring with valid indices should work (tests && logic)"
+        );
+        assert_eq!(result.unwrap(), Value::from_string("el".to_string()));
+
+        // Test with start < 0 (first condition false) - should fail
+        let result = eval_string_substring(&s, &Value::Integer(-1), &Value::Integer(3));
+        assert!(
+            result.is_err(),
+            "substring with start < 0 should fail (proves && not ||)"
+        );
+
+        // Test with end < start (second condition false) - should fail
+        let result = eval_string_substring(&s, &Value::Integer(3), &Value::Integer(1));
+        assert!(
+            result.is_err(),
+            "substring with end < start should fail (proves && logic)"
+        );
+
+        // Test with both conditions true - should work
+        let result = eval_string_substring(&s, &Value::Integer(0), &Value::Integer(5));
+        assert!(
+            result.is_ok(),
+            "substring with both conditions true should work"
+        );
+    }
 }

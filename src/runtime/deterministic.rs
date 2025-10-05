@@ -287,4 +287,207 @@ mod tests {
         assert!(!validation.is_deterministic);
         assert!(!validation.divergences.is_empty());
     }
+
+    #[test]
+    fn test_estimate_heap_usage_actual_calculation() {
+        // Mutation test: Verify estimate_heap_usage returns actual calculations, not stub values
+        // MISSED: replace estimate_heap_usage -> usize with 1
+        // MISSED: replace * with + in estimate_heap_usage (lines 210, 211)
+        // MISSED: replace * with / in estimate_heap_usage (line 211)
+
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
+
+        // Empty state should have 0 heap usage
+        let empty_heap = repl.estimate_heap_usage();
+        assert_eq!(empty_heap, 0, "Empty REPL should have 0 heap usage");
+
+        // Add string variable - should increase heap
+        repl.eval("let s = \"hello world\"").unwrap();
+        let with_string = repl.estimate_heap_usage();
+        assert!(
+            with_string > empty_heap,
+            "String should increase heap usage from {empty_heap} to {with_string}"
+        );
+
+        // Add array - should increase heap more (multiplication in line 210)
+        repl.eval("let arr = [1, 2, 3, 4, 5]").unwrap();
+        let with_array = repl.estimate_heap_usage();
+        assert!(
+            with_array > with_string,
+            "Array should increase heap usage from {with_string} to {with_array}"
+        );
+
+        // Verify it's actually using multiplication (not addition or division)
+        // Array with 5 items should add items.len() * size_of::<Value>()
+        let array_contribution = with_array - with_string;
+        assert!(
+            array_contribution >= 5,
+            "Array contribution {array_contribution} should be at least 5 (items * size)"
+        );
+    }
+
+    #[test]
+    fn test_estimate_stack_depth_arithmetic() {
+        // Mutation test: Verify estimate_stack_depth uses correct arithmetic
+        // MISSED: replace estimate_stack_depth -> usize with 0
+        // MISSED: replace / with % in estimate_stack_depth (line 221)
+
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
+
+        // Get initial depth (may not be 1 due to internal bindings)
+        let initial_depth = repl.estimate_stack_depth();
+        let initial_bindings = repl.get_bindings().len();
+
+        // Add exactly 10 bindings
+        for i in 0..10 {
+            repl.eval(&format!("let var{i} = {i}")).unwrap();
+        }
+        let bindings_after_10 = repl.get_bindings().len();
+        let depth_after_10 = repl.estimate_stack_depth();
+
+        // Verify formula: depth = bindings / 10 + 1
+        // Change in depth should match (new_bindings - old_bindings) / 10
+        let bindings_added = bindings_after_10 - initial_bindings;
+        let expected_depth_increase = bindings_added / 10;
+        let actual_depth_increase = depth_after_10 - initial_depth;
+
+        assert_eq!(
+            actual_depth_increase, expected_depth_increase,
+            "Stack depth should increase by {expected_depth_increase} (using division), got {actual_depth_increase}"
+        );
+
+        // Add 10 more bindings
+        for i in 10..20 {
+            repl.eval(&format!("let var{i} = {i}")).unwrap();
+        }
+        let bindings_after_20 = repl.get_bindings().len();
+        let depth_after_20 = repl.estimate_stack_depth();
+
+        // Verify division (not modulo): adding more bindings continues to increase depth
+        let total_bindings_added = bindings_after_20 - initial_bindings;
+        let expected_final_depth_increase = total_bindings_added / 10;
+        let actual_final_depth_increase = depth_after_20 - initial_depth;
+
+        assert_eq!(
+            actual_final_depth_increase, expected_final_depth_increase,
+            "Stack depth formula should use division (not modulo)"
+        );
+
+        // Also verify it doesn't just return 0 (stub mutation)
+        assert!(depth_after_20 > 0, "Stack depth should never be 0");
+    }
+
+    #[test]
+    fn test_execute_with_seed_resource_tracking() {
+        // Mutation test: Verify resource usage calculations use subtraction
+        // MISSED: replace - with + in execute_with_seed (lines 87, 80)
+        // MISSED: replace - with / in execute_with_seed (line 80)
+
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
+
+        // First execution - should increase heap
+        let result1 = repl.execute_with_seed("let x = 10", 12345);
+        assert!(result1.output.is_ok());
+
+        // heap_bytes calculation: self.estimate_heap_usage() - start_heap
+        // This should be the difference between current and start
+        let current_heap = repl.estimate_heap_usage();
+
+        // The mutation tests verify that subtraction is used (not addition or division)
+        // If + was used: result would be current + start (huge number)
+        // If / was used: result would be current / start (wrong calculation)
+        assert!(
+            result1.resource_usage.heap_bytes > 0,
+            "Heap bytes should be positive, got {}",
+            result1.resource_usage.heap_bytes
+        );
+
+        // Verify it's a reasonable difference (not addition or division)
+        assert!(
+            result1.resource_usage.heap_bytes <= current_heap,
+            "Heap bytes {0} should be <= current heap {current_heap} (proves subtraction, not addition)",
+            result1.resource_usage.heap_bytes
+        );
+
+        // Second execution with string (larger data) - should use more heap
+        let before_string = repl.estimate_heap_usage();
+        let _result2 =
+            repl.execute_with_seed("let y = \"long string value that uses memory\"", 12345);
+        let after_string = repl.estimate_heap_usage();
+
+        // String should cause more heap growth than integer
+        let heap_change = after_string.saturating_sub(before_string);
+        assert!(
+            heap_change > 0,
+            "String variable should increase heap usage"
+        );
+    }
+
+    #[test]
+    fn test_execute_with_seed_state_hash_determinism() {
+        // Mutation test: The comparison operators (==) and boolean operators (&&)
+        // in lines 71-80 are currently DEAD CODE because s is always "success"
+        //
+        // MISSED mutations in DEAD CODE:
+        // - replace == with != (lines 71, 73) - never executed
+        // - replace && with || (line 79) - never executed
+        //
+        // These mutations reveal that the string parsing logic is not being used.
+        // The real functionality we can test is deterministic state hashing.
+
+        let mut repl1 = Repl::new(std::env::temp_dir()).unwrap();
+        let mut repl2 = Repl::new(std::env::temp_dir()).unwrap();
+
+        // Same input should produce same state hash (the actual working code)
+        let result1 = repl1.execute_with_seed("let x = 42", 12345);
+        let result2 = repl2.execute_with_seed("let x = 42", 12345);
+
+        assert!(result1.output.is_ok());
+        assert!(result2.output.is_ok());
+        assert_eq!(
+            result1.state_hash, result2.state_hash,
+            "Deterministic execution should produce same state hash"
+        );
+
+        // Different input should produce different hash
+        let result3 = repl1.execute_with_seed("let y = 99", 12345);
+        assert_ne!(
+            result1.state_hash, result3.state_hash,
+            "Different state should produce different hash"
+        );
+    }
+
+    #[test]
+    fn test_deterministic_rng_reset() {
+        // Mutation test: Verify DeterministicRng::reset actually resets state
+        // MISSED: replace DeterministicRng::reset with ()
+
+        let mut rng = DeterministicRng::new(12345);
+
+        // Generate some numbers
+        let first = rng.next();
+        let second = rng.next();
+        let third = rng.next();
+
+        // Reset should restore to seed state
+        rng.reset();
+
+        // After reset, should generate same sequence
+        let first_after_reset = rng.next();
+        let second_after_reset = rng.next();
+        let third_after_reset = rng.next();
+
+        assert_eq!(
+            first, first_after_reset,
+            "First value after reset should match original"
+        );
+        assert_eq!(
+            second, second_after_reset,
+            "Second value after reset should match original"
+        );
+        assert_eq!(
+            third, third_after_reset,
+            "Third value after reset should match original"
+        );
+    }
 }

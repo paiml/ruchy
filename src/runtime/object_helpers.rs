@@ -319,3 +319,22 @@ mod tests {
         assert!(set_object_field(&int_val, "key", Value::Integer(99)).is_err());
     }
 }
+
+#[test]
+fn test_to_immutable_object_match_arm() {
+    // MISSED: delete match arm Value::Object(_) in to_immutable (line 189)
+    use std::rc::Rc;
+
+    let mut map = HashMap::new();
+    map.insert("test".to_string(), Value::Integer(42));
+
+    let immutable_obj = Value::Object(Rc::new(map));
+    let result = to_immutable(&immutable_obj);
+
+    // Should return clone of immutable object (match arm test)
+    if let Value::Object(obj) = result {
+        assert_eq!(obj.get("test"), Some(&Value::Integer(42)));
+    } else {
+        panic!("Should return Object variant");
+    }
+}
