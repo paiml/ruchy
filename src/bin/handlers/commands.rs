@@ -676,7 +676,7 @@ fn handle_empty_directory(
     write_output(&output_content, output)?;
     Ok(())
 }
-/// Format output for empty directory (complexity: 2)
+/// Format output for empty directory (complexity: 3)
 fn format_empty_directory_output(path: &Path, depth: &str, format: &str) -> Result<String> {
     if format == "json" {
         serde_json::to_string_pretty(&serde_json::json!({
@@ -689,8 +689,12 @@ fn format_empty_directory_output(path: &Path, depth: &str, format: &str) -> Resu
         .map_err(Into::into)
     } else {
         Ok(format!(
-            "No .ruchy files found in {}\n\
-             Analysis Depth: {}\n",
+            "=== Quality Score ===\n\
+             Directory: {}\n\
+             Files: 0\n\
+             Analysis Depth: {}\n\
+             \n\
+             No .ruchy files found.\n",
             path.display(),
             depth
         ))
