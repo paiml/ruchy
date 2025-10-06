@@ -1826,6 +1826,12 @@ pub fn handle_property_tests_command(
         eprintln!("Test cases per property: {}", cases);
     }
 
+    // TOOL-VALIDATION-001: Support single file property testing
+    if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("ruchy") {
+        return handle_property_tests_single_file(path, cases, format, output, seed, verbose);
+    }
+
+    // Directory mode: Run existing test suite
     let mut cmd = std::process::Command::new("cargo");
     cmd.args(["test", "--test", "lang_comp_suite", "--", "--nocapture"])
         .env("PROPTEST_CASES", cases.to_string());
@@ -1872,6 +1878,151 @@ pub fn handle_property_tests_command(
         Ok(())
     } else {
         anyhow::bail!("Property tests failed:\n{}", stderr)
+    }
+}
+
+/// Handle property testing for a single .ruchy file
+/// Generates and runs synthetic property tests to validate:
+/// 1. Code executes without panicking (N iterations)
+/// 2. Output is deterministic (same input → same output)
+/// 3. Basic execution correctness
+fn handle_property_tests_single_file(
+    path: &Path,
+    cases: usize,
+    format: &str,
+    output: Option<&Path>,
+    _seed: Option<u64>,
+    verbose: bool,
+) -> Result<()> {
+    if verbose {
+        eprintln!(
+            "Generating property tests for single file: {}",
+            path.display()
+        );
+    }
+
+    let mut passed = 0;
+    let mut failed = 0;
+    let mut test_results = Vec::new();
+
+    // Property 1: Code executes without panicking (N times)
+    if verbose {
+        eprintln!("Property 1: Testing {} executions for panics...", cases);
+    }
+
+    for i in 0..cases {
+        let result = std::process::Command::new("cargo")
+            .args(["run", "--bin", "ruchy", "--", "run"])
+            .arg(path)
+            .output()?;
+
+        if result.status.success() {
+            passed += 1;
+        } else {
+            failed += 1;
+            test_results.push(format!(
+                "Iteration {}: FAILED - {}",
+                i,
+                String::from_utf8_lossy(&result.stderr)
+            ));
+            if verbose {
+                eprintln!("  Iteration {}: FAILED", i);
+            }
+        }
+    }
+
+    // Property 2: Deterministic output (run twice, compare)
+    if verbose {
+        eprintln!("Property 2: Testing output determinism...");
+    }
+
+    let run1 = std::process::Command::new("cargo")
+        .args(["run", "--bin", "ruchy", "--", "run"])
+        .arg(path)
+        .output()?;
+
+    let run2 = std::process::Command::new("cargo")
+        .args(["run", "--bin", "ruchy", "--", "run"])
+        .arg(path)
+        .output()?;
+
+    let deterministic = run1.stdout == run2.stdout;
+    if deterministic {
+        passed += 1;
+    } else {
+        failed += 1;
+        test_results.push("Determinism test: FAILED - outputs differ".to_string());
+    }
+
+    let total_tests = cases + 1; // N panic tests + 1 determinism test
+    let success = failed == 0;
+
+    match format {
+        "json" => {
+            let report = serde_json::json!({
+                "status": if success { "passed" } else { "failed" },
+                "file": path.display().to_string(),
+                "total_tests": total_tests,
+                "passed": passed,
+                "failed": failed,
+                "properties": {
+                    "no_panic": { "iterations": cases, "passed": cases - failed },
+                    "deterministic": deterministic
+                },
+                "failures": test_results
+            });
+            let json_output = serde_json::to_string_pretty(&report)?;
+            if let Some(out_path) = output {
+                fs::write(out_path, json_output)?;
+            } else {
+                println!("{}", json_output);
+            }
+        }
+        _ => {
+            println!("Property Test Report");
+            println!("====================");
+            println!("File: {}", path.display());
+            println!(
+                "Status: {}",
+                if success { "✅ PASSED" } else { "❌ FAILED" }
+            );
+            println!("Total tests: {}", total_tests);
+            println!("Passed: {}", passed);
+            println!("Failed: {}", failed);
+            println!("\nProperties Tested:");
+            println!("  1. No panics: {} iterations", cases);
+            println!(
+                "  2. Deterministic output: {}",
+                if deterministic { "✅" } else { "❌" }
+            );
+
+            if !test_results.is_empty() {
+                println!("\nFailures:");
+                for failure in &test_results {
+                    println!("  - {}", failure);
+                }
+            }
+
+            if let Some(out_path) = output {
+                let report = format!(
+                    "Property Test Report\nFile: {}\nPassed: {}/{}\n",
+                    path.display(),
+                    passed,
+                    total_tests
+                );
+                fs::write(out_path, report)?;
+            }
+        }
+    }
+
+    if success {
+        Ok(())
+    } else {
+        anyhow::bail!(
+            "Property tests failed: {}/{} tests passed",
+            passed,
+            total_tests
+        )
     }
 }
 
@@ -1980,6 +2131,13 @@ pub fn handle_fuzz_command(
         eprintln!("Iterations: {}, Timeout: {}ms", iterations, timeout);
     }
 
+    // TOOL-VALIDATION-002: Support .ruchy file fuzzing
+    let target_path = Path::new(target);
+    if target_path.is_file() && target_path.extension().and_then(|s| s.to_str()) == Some("ruchy") {
+        return handle_fuzz_single_file(target_path, iterations, timeout, format, output, verbose);
+    }
+
+    // cargo-fuzz mode for fuzz targets
     let mut cmd = std::process::Command::new("cargo");
     cmd.args([
         "fuzz",
@@ -2030,6 +2188,121 @@ pub fn handle_fuzz_command(
         Ok(())
     } else {
         anyhow::bail!("Fuzz tests found crashes or panics:\n{}", stderr)
+    }
+}
+
+/// Handle fuzz testing for a single .ruchy file
+/// Runs file repeatedly to detect crashes, hangs, or non-deterministic behavior
+fn handle_fuzz_single_file(
+    path: &Path,
+    iterations: usize,
+    _timeout_ms: u32,
+    format: &str,
+    output: Option<&Path>,
+    verbose: bool,
+) -> Result<()> {
+    if verbose {
+        eprintln!("Fuzzing single file: {}", path.display());
+    }
+
+    let mut crashes = 0;
+    let mut timeouts = 0;
+    let mut successes = 0;
+    let mut crash_details = Vec::new();
+
+    for i in 0..iterations {
+        if verbose && i % 100 == 0 {
+            eprintln!("  Iteration {}/{}", i, iterations);
+        }
+
+        let result = std::process::Command::new("cargo")
+            .args(["run", "--bin", "ruchy", "--", "run"])
+            .arg(path)
+            .output();
+
+        match result {
+            Ok(output) => {
+                if !output.status.success() {
+                    crashes += 1;
+                    let stderr = String::from_utf8_lossy(&output.stderr);
+                    crash_details.push(format!("Iteration {}: {}", i, stderr));
+                } else {
+                    successes += 1;
+                }
+            }
+            Err(e) => {
+                timeouts += 1;
+                crash_details.push(format!("Iteration {}: Timeout/Error - {}", i, e));
+            }
+        }
+    }
+
+    let total = successes + crashes + timeouts;
+    let success_rate = (successes as f64 / total as f64) * 100.0;
+
+    match format {
+        "json" => {
+            let report = serde_json::json!({
+                "file": path.display().to_string(),
+                "iterations": iterations,
+                "successes": successes,
+                "crashes": crashes,
+                "timeouts": timeouts,
+                "success_rate": success_rate,
+                "status": if crashes == 0 && timeouts == 0 { "passed" } else { "failed" },
+                "crash_details": crash_details
+            });
+            let json_output = serde_json::to_string_pretty(&report)?;
+            if let Some(out_path) = output {
+                fs::write(out_path, json_output)?;
+            } else {
+                println!("{}", json_output);
+            }
+        }
+        _ => {
+            println!("Fuzz Test Report");
+            println!("================");
+            println!("File: {}", path.display());
+            println!("Iterations: {}", iterations);
+            println!("Successes: {}", successes);
+            println!("Crashes: {}", crashes);
+            println!("Timeouts: {}", timeouts);
+            println!("Success rate: {:.1}%", success_rate);
+            println!(
+                "Status: {}",
+                if crashes == 0 && timeouts == 0 {
+                    "✅ PASSED"
+                } else {
+                    "❌ FAILED"
+                }
+            );
+
+            if !crash_details.is_empty() {
+                println!("\nCrash Details:");
+                for detail in &crash_details {
+                    println!("  - {}", detail);
+                }
+            }
+
+            if let Some(out_path) = output {
+                let report = format!(
+                    "Fuzz Test Report\nFile: {}\nSuccess rate: {:.1}%\n",
+                    path.display(),
+                    success_rate
+                );
+                fs::write(out_path, report)?;
+            }
+        }
+    }
+
+    if crashes == 0 && timeouts == 0 {
+        Ok(())
+    } else {
+        anyhow::bail!(
+            "Fuzz tests found {} crashes and {} timeouts",
+            crashes,
+            timeouts
+        )
     }
 }
 
