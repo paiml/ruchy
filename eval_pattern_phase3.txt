@@ -1,0 +1,12 @@
+Found 78 mutants to test
+ok       Unmutated baseline
+MISSED   src/runtime/eval_pattern.rs:179:71: replace < with > in values_equal
+MISSED   src/runtime/eval_pattern.rs:181:47: replace == with != in values_equal
+MISSED   src/runtime/eval_pattern.rs:284:31: replace >= with < in check_pattern_exhaustiveness
+MISSED   src/runtime/eval_pattern.rs:195:19: replace != with == in arrays_equal
+MISSED   src/runtime/eval_pattern.rs:74:9: delete match arm Pattern::Struct{name, fields, ..} in match_pattern
+MISSED   src/runtime/eval_pattern.rs:265:21: replace || with && in check_pattern_exhaustiveness
+MISSED   src/runtime/eval_pattern.rs:179:71: replace < with == in values_equal
+MISSED   src/runtime/eval_pattern.rs:195:5: replace arrays_equal -> bool with true
+MISSED   src/runtime/eval_pattern.rs:245:9: delete match arm Pattern::Tuple(patterns) in is_irrefutable_pattern
+MISSED   src/runtime/eval_pattern.rs:244:9: delete match arm Pattern::List(patterns) in is_irrefutable_pattern
