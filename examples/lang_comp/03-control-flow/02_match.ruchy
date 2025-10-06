@@ -1,0 +1,22 @@
+// LANG-COMP-003: Match Expression Example
+// Demonstrates pattern matching
+
+let number = 2
+
+let description = match number {
+    1 => "one",
+    2 => "two",
+    3 => "three",
+    _ => "other"
+}
+
+println(f"Number {number} is {description}")
+
+// Match with multiple patterns
+let day = 3
+let day_type = match day {
+    1 | 2 | 3 | 4 | 5 => "weekday",
+    6 | 7 => "weekend",
+    _ => "invalid"
+}
+println(f"Day {day} is a {day_type}")

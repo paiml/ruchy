@@ -1,0 +1,14 @@
+// LANG-COMP-003: For Loop Example
+// Demonstrates iteration over ranges
+
+println("Counting 1 to 5:")
+for i in 1..6 {
+    println(f"  {i}")
+}
+
+// Sum using for loop
+let sum = 0
+for i in 1..11 {
+    sum = sum + i
+}
+println(f"Sum of 1 to 10: {sum}")

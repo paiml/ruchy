@@ -401,12 +401,28 @@ Closes: TICKET-ID
 
 **CRITICAL**: After EVERY sprint completion, you MUST commit all changes immediately.
 
-**Sprint Completion Checklist**:
+**Sprint Completion Checklist (ALL MANDATORY - ZERO EXCEPTIONS)**:
 1. ✅ All sprint tasks complete and verified
-2. ✅ All tests passing (unit, integration, property, mutation where applicable)
-3. ✅ Roadmap updated with sprint completion status
-4. ✅ Documentation updated (examples, tests, validation results)
-5. ✅ **GIT COMMIT IMMEDIATELY** - Don't wait, commit now!
+2. ✅ **Unit tests passing**: All basic functionality tests green
+3. ✅ **Property tests EXECUTED**: Run ignored property tests, verify they pass, report results
+   ```bash
+   cargo test <test_module>::property_tests -- --ignored --nocapture
+   # Example: cargo test control_flow::property_tests -- --ignored --nocapture
+   ```
+4. ✅ **Mutation tests EXECUTED**: Run mutation testing on new code, achieve ≥75% coverage
+   ```bash
+   cargo mutants --file tests/lang_comp/<module>.rs --timeout 300
+   # Report: CAUGHT/MISSED ratio, must be ≥75%
+   ```
+5. ✅ **15-Tool Validation**: Verify examples work with ALL 15 native tools (sample validation acceptable)
+6. ✅ **Roadmap updated** with sprint completion status INCLUDING test metrics
+7. ✅ **Documentation updated** (examples, tests, validation results)
+8. ✅ **GIT COMMIT IMMEDIATELY** - Don't wait, commit now!
+
+**Why Property & Mutation Testing is MANDATORY**:
+- **Property Tests**: Prove invariants hold across 10K+ random inputs (mathematical correctness)
+- **Mutation Tests**: Empirically prove tests catch real bugs, not just exercise code paths
+- **Without Both**: You have NO PROOF tests are effective - just coverage theater
 
 **Commit Protocol**:
 ```bash
