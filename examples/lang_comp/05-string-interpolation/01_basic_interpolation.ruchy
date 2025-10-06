@@ -1,0 +1,9 @@
+// LANG-COMP-005: Basic String Interpolation Example
+// Demonstrates f-string syntax with variables
+
+let name = "Alice"
+let age = 30
+
+println(f"Name: {name}")
+println(f"Age: {age}")
+println(f"Hello, {name}! You are {age} years old.")

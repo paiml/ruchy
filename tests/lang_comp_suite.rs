@@ -13,4 +13,7 @@ mod lang_comp {
 
     #[cfg(test)]
     mod functions;
+
+    #[cfg(test)]
+    mod string_interpolation;
 }

@@ -1,0 +1,10 @@
+// LANG-COMP-005: Nested String Interpolation Example
+// Demonstrates f-string variables interpolated into other f-strings
+
+let first = "John"
+let last = "Doe"
+let full_name = f"{first} {last}"
+let greeting = f"Hello, {full_name}!"
+
+println(f"Full name: {full_name}")
+println(f"Greeting: {greeting}")

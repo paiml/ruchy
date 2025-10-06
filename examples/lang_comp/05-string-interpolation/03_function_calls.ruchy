@@ -1,0 +1,16 @@
+// LANG-COMP-005: String Interpolation with Function Calls
+// Demonstrates f-string syntax with function calls
+
+fn double(x) {
+    x * 2
+}
+
+fn add(a, b) {
+    a + b
+}
+
+let num = 21
+println(f"double({num}) = {double(num)}")
+
+let result = add(10, 20)
+println(f"add(10, 20) = {result}")
