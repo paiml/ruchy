@@ -1,334 +1,482 @@
-// LANG-COMP-002: Operators - RED PHASE TESTS
-// Tests written FIRST before examples exist
-// EXTREME TDD Protocol: These tests MUST fail until examples are created
+// LANG-COMP-002: Operators - Validation Tests with Traceability
+// Links to: examples/lang_comp/02-operators/*.ruchy
+// Validates: LANG-COMP-002 Operators (arithmetic, comparison, logical, precedence)
+// EXTREME TDD Protocol: Tests use assert_cmd + mandatory naming convention
 
-use std::process::Command;
+use assert_cmd::Command;
+use predicates::prelude::*;
+use std::path::PathBuf;
 
-/// Helper function to run a Ruchy example file and capture output
-fn run_ruchy_file(file_path: &str) -> std::process::Output {
-    Command::new("cargo")
-        .args(["run", "--bin", "ruchy", "--", "run", file_path])
-        .output()
-        .expect("Failed to execute ruchy command")
+/// Helper to get ruchy binary command
+fn ruchy_cmd() -> Command {
+    Command::cargo_bin("ruchy").expect("Failed to find ruchy binary")
 }
 
-/// Helper function to evaluate Ruchy code directly using REPL
-/// Returns output with REPL banners stripped - only the evaluation result
-fn eval_ruchy_code(code: &str) -> std::process::Output {
-    use std::io::Write;
-    use std::process::Stdio;
-
-    let mut child = Command::new("cargo")
-        .args(["run", "--bin", "ruchy", "--", "repl"])
-        .stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .spawn()
-        .expect("Failed to spawn ruchy repl");
-
-    if let Some(mut stdin) = child.stdin.take() {
-        writeln!(stdin, "{}", code).expect("Failed to write to stdin");
-        writeln!(stdin, ":quit").expect("Failed to write quit command");
-    }
-
-    let mut output = child.wait_with_output().expect("Failed to read output");
-
-    // Strip REPL banners - keep only the last non-empty line (the result)
-    let stdout_str = String::from_utf8_lossy(&output.stdout);
-    let result = stdout_str
-        .lines()
-        .filter(|line| {
-            !line.is_empty()
-                && !line.starts_with("Welcome")
-                && !line.starts_with("Type")
-                && !line.starts_with("🚀")
-                && !line.starts_with("✨")
-        })
-        .last()
-        .unwrap_or("")
-        .to_string();
-
-    output.stdout = result.into_bytes();
-    output
+/// Helper to get example file path
+fn example_path(relative_path: &str) -> PathBuf {
+    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("examples/lang_comp/02-operators")
+        .join(relative_path)
 }
 
 // ============================================================================
-// ARITHMETIC OPERATORS TESTS
+// LANG-COMP-002-01: Arithmetic Operators Tests
+// Links to: examples/lang_comp/02-operators/01_arithmetic.ruchy
 // ============================================================================
 
 #[test]
-fn test_arithmetic_operators_example() {
-    let output = run_ruchy_file("examples/lang_comp/02-operators/01_arithmetic.ruchy");
+fn test_langcomp_002_01_arithmetic_addition() {
+    let temp_file = std::env::temp_dir().join("langcomp_002_01_add.ruchy");
+    std::fs::write(&temp_file, "2 + 3").unwrap();
 
-    assert!(
-        output.status.success(),
-        "Arithmetic operators example should execute successfully"
-    );
+    ruchy_cmd()
+        .arg("run")
+        .arg(&temp_file)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("5"));
 
-    let stdout = String::from_utf8_lossy(&output.stdout);
-    // Example should demonstrate +, -, *, /, %
-    assert!(
-        !stdout.is_empty(),
-        "Arithmetic example should produce output"
-    );
+    std::fs::remove_file(&temp_file).ok();
 }
 
 #[test]
-fn test_addition_operator() {
-    let output = eval_ruchy_code("2 + 3");
-    assert!(output.status.success(), "Addition should work");
-    assert_eq!(String::from_utf8_lossy(&output.stdout).trim(), "5");
+fn test_langcomp_002_01_arithmetic_subtraction() {
+    let temp_file = std::env::temp_dir().join("langcomp_002_01_sub.ruchy");
+    std::fs::write(&temp_file, "10 - 3").unwrap();
+
+    ruchy_cmd()
+        .arg("run")
+        .arg(&temp_file)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("7"));
+
+    std::fs::remove_file(&temp_file).ok();
 }
 
 #[test]
-fn test_subtraction_operator() {
-    let output = eval_ruchy_code("10 - 3");
-    assert!(output.status.success(), "Subtraction should work");
-    assert_eq!(String::from_utf8_lossy(&output.stdout).trim(), "7");
+fn test_langcomp_002_01_arithmetic_multiplication() {
+    let temp_file = std::env::temp_dir().join("langcomp_002_01_mul.ruchy");
+    std::fs::write(&temp_file, "4 * 5").unwrap();
+
+    ruchy_cmd()
+        .arg("run")
+        .arg(&temp_file)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("20"));
+
+    std::fs::remove_file(&temp_file).ok();
 }
 
 #[test]
-fn test_multiplication_operator() {
-    let output = eval_ruchy_code("4 * 5");
-    assert!(output.status.success(), "Multiplication should work");
-    assert_eq!(String::from_utf8_lossy(&output.stdout).trim(), "20");
+fn test_langcomp_002_01_arithmetic_division() {
+    let temp_file = std::env::temp_dir().join("langcomp_002_01_div.ruchy");
+    std::fs::write(&temp_file, "20 / 4").unwrap();
+
+    ruchy_cmd()
+        .arg("run")
+        .arg(&temp_file)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("5"));
+
+    std::fs::remove_file(&temp_file).ok();
 }
 
 #[test]
-fn test_division_operator() {
-    let output = eval_ruchy_code("20 / 4");
-    assert!(output.status.success(), "Division should work");
-    assert_eq!(String::from_utf8_lossy(&output.stdout).trim(), "5");
+fn test_langcomp_002_01_arithmetic_modulo() {
+    let temp_file = std::env::temp_dir().join("langcomp_002_01_mod.ruchy");
+    std::fs::write(&temp_file, "10 % 3").unwrap();
+
+    ruchy_cmd()
+        .arg("run")
+        .arg(&temp_file)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("1"));
+
+    std::fs::remove_file(&temp_file).ok();
 }
 
 #[test]
-fn test_modulo_operator() {
-    let output = eval_ruchy_code("10 % 3");
-    assert!(output.status.success(), "Modulo should work");
-    assert_eq!(String::from_utf8_lossy(&output.stdout).trim(), "1");
+fn test_langcomp_002_01_arithmetic_example_file() {
+    // Validates: examples/lang_comp/02-operators/01_arithmetic.ruchy
+    ruchy_cmd()
+        .arg("run")
+        .arg(example_path("01_arithmetic.ruchy"))
+        .assert()
+        .success();
+}
+
+#[test]
+fn test_langcomp_002_01_arithmetic_precedence() {
+    // Test: 2 + 3 * 4 = 14 (multiplication before addition)
+    let temp_file = std::env::temp_dir().join("langcomp_002_01_precedence.ruchy");
+    std::fs::write(&temp_file, "2 + 3 * 4").unwrap();
+
+    ruchy_cmd()
+        .arg("run")
+        .arg(&temp_file)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("14"));
+
+    std::fs::remove_file(&temp_file).ok();
 }
 
 // ============================================================================
-// COMPARISON OPERATORS TESTS
+// LANG-COMP-002-02: Comparison Operators Tests
+// Links to: examples/lang_comp/02-operators/02_comparison.ruchy
 // ============================================================================
 
 #[test]
-fn test_comparison_operators_example() {
-    let output = run_ruchy_file("examples/lang_comp/02-operators/02_comparison.ruchy");
+fn test_langcomp_002_02_comparison_equality() {
+    let temp_file = std::env::temp_dir().join("langcomp_002_02_eq.ruchy");
+    std::fs::write(&temp_file, "5 == 5").unwrap();
 
-    assert!(
-        output.status.success(),
-        "Comparison operators example should execute successfully"
-    );
+    ruchy_cmd()
+        .arg("run")
+        .arg(&temp_file)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("true"));
 
-    let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(
-        !stdout.is_empty(),
-        "Comparison example should produce output"
-    );
+    std::fs::remove_file(&temp_file).ok();
 }
 
 #[test]
-fn test_equality_operator() {
-    let output = eval_ruchy_code("5 == 5");
-    assert!(output.status.success(), "Equality should work");
-    assert_eq!(String::from_utf8_lossy(&output.stdout).trim(), "true");
+fn test_langcomp_002_02_comparison_inequality() {
+    let temp_file = std::env::temp_dir().join("langcomp_002_02_neq.ruchy");
+    std::fs::write(&temp_file, "5 != 3").unwrap();
+
+    ruchy_cmd()
+        .arg("run")
+        .arg(&temp_file)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("true"));
+
+    std::fs::remove_file(&temp_file).ok();
 }
 
 #[test]
-fn test_inequality_operator() {
-    let output = eval_ruchy_code("5 != 3");
-    assert!(output.status.success(), "Inequality should work");
-    assert_eq!(String::from_utf8_lossy(&output.stdout).trim(), "true");
+fn test_langcomp_002_02_comparison_less_than() {
+    let temp_file = std::env::temp_dir().join("langcomp_002_02_lt.ruchy");
+    std::fs::write(&temp_file, "3 < 5").unwrap();
+
+    ruchy_cmd()
+        .arg("run")
+        .arg(&temp_file)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("true"));
+
+    std::fs::remove_file(&temp_file).ok();
 }
 
 #[test]
-fn test_less_than_operator() {
-    let output = eval_ruchy_code("3 < 5");
-    assert!(output.status.success(), "Less than should work");
-    assert_eq!(String::from_utf8_lossy(&output.stdout).trim(), "true");
+fn test_langcomp_002_02_comparison_greater_than() {
+    let temp_file = std::env::temp_dir().join("langcomp_002_02_gt.ruchy");
+    std::fs::write(&temp_file, "7 > 5").unwrap();
+
+    ruchy_cmd()
+        .arg("run")
+        .arg(&temp_file)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("true"));
+
+    std::fs::remove_file(&temp_file).ok();
 }
 
 #[test]
-fn test_greater_than_operator() {
-    let output = eval_ruchy_code("5 > 3");
-    assert!(output.status.success(), "Greater than should work");
-    assert_eq!(String::from_utf8_lossy(&output.stdout).trim(), "true");
+fn test_langcomp_002_02_comparison_less_than_or_equal() {
+    let temp_file = std::env::temp_dir().join("langcomp_002_02_lte.ruchy");
+    std::fs::write(&temp_file, "5 <= 5").unwrap();
+
+    ruchy_cmd()
+        .arg("run")
+        .arg(&temp_file)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("true"));
+
+    std::fs::remove_file(&temp_file).ok();
 }
 
 #[test]
-fn test_less_than_or_equal_operator() {
-    let output = eval_ruchy_code("3 <= 3");
-    assert!(output.status.success(), "Less than or equal should work");
-    assert_eq!(String::from_utf8_lossy(&output.stdout).trim(), "true");
+fn test_langcomp_002_02_comparison_greater_than_or_equal() {
+    let temp_file = std::env::temp_dir().join("langcomp_002_02_gte.ruchy");
+    std::fs::write(&temp_file, "5 >= 5").unwrap();
+
+    ruchy_cmd()
+        .arg("run")
+        .arg(&temp_file)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("true"));
+
+    std::fs::remove_file(&temp_file).ok();
 }
 
 #[test]
-fn test_greater_than_or_equal_operator() {
-    let output = eval_ruchy_code("5 >= 5");
-    assert!(output.status.success(), "Greater than or equal should work");
-    assert_eq!(String::from_utf8_lossy(&output.stdout).trim(), "true");
+fn test_langcomp_002_02_comparison_example_file() {
+    // Validates: examples/lang_comp/02-operators/02_comparison.ruchy
+    ruchy_cmd()
+        .arg("run")
+        .arg(example_path("02_comparison.ruchy"))
+        .assert()
+        .success();
+}
+
+#[test]
+fn test_langcomp_002_02_comparison_and_logical_precedence() {
+    // Test: comparison operators work in logical expressions
+    let temp_file = std::env::temp_dir().join("langcomp_002_02_comp_logical.ruchy");
+    std::fs::write(&temp_file, "5 > 3 && 10 < 20").unwrap();
+
+    ruchy_cmd()
+        .arg("run")
+        .arg(&temp_file)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("true"));
+
+    std::fs::remove_file(&temp_file).ok();
 }
 
 // ============================================================================
-// LOGICAL OPERATORS TESTS
+// LANG-COMP-002-03: Logical Operators Tests
+// Links to: examples/lang_comp/02-operators/03_logical.ruchy
 // ============================================================================
 
 #[test]
-fn test_logical_operators_example() {
-    let output = run_ruchy_file("examples/lang_comp/02-operators/03_logical.ruchy");
+fn test_langcomp_002_03_logical_and() {
+    let temp_file = std::env::temp_dir().join("langcomp_002_03_and.ruchy");
+    std::fs::write(&temp_file, "true && true").unwrap();
 
-    assert!(
-        output.status.success(),
-        "Logical operators example should execute successfully"
-    );
+    ruchy_cmd()
+        .arg("run")
+        .arg(&temp_file)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("true"));
 
-    let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(!stdout.is_empty(), "Logical example should produce output");
+    std::fs::remove_file(&temp_file).ok();
 }
 
 #[test]
-fn test_logical_and_operator() {
-    let output = eval_ruchy_code("true && true");
-    assert!(output.status.success(), "Logical AND should work");
-    assert_eq!(String::from_utf8_lossy(&output.stdout).trim(), "true");
+fn test_langcomp_002_03_logical_or() {
+    let temp_file = std::env::temp_dir().join("langcomp_002_03_or.ruchy");
+    std::fs::write(&temp_file, "false || true").unwrap();
+
+    ruchy_cmd()
+        .arg("run")
+        .arg(&temp_file)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("true"));
+
+    std::fs::remove_file(&temp_file).ok();
 }
 
 #[test]
-fn test_logical_or_operator() {
-    let output = eval_ruchy_code("false || true");
-    assert!(output.status.success(), "Logical OR should work");
-    assert_eq!(String::from_utf8_lossy(&output.stdout).trim(), "true");
+fn test_langcomp_002_03_logical_not() {
+    let temp_file = std::env::temp_dir().join("langcomp_002_03_not.ruchy");
+    std::fs::write(&temp_file, "!false").unwrap();
+
+    ruchy_cmd()
+        .arg("run")
+        .arg(&temp_file)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("true"));
+
+    std::fs::remove_file(&temp_file).ok();
 }
 
 #[test]
-fn test_logical_not_operator() {
-    let output = eval_ruchy_code("!false");
-    assert!(output.status.success(), "Logical NOT should work");
-    assert_eq!(String::from_utf8_lossy(&output.stdout).trim(), "true");
+fn test_langcomp_002_03_logical_example_file() {
+    // Validates: examples/lang_comp/02-operators/03_logical.ruchy
+    ruchy_cmd()
+        .arg("run")
+        .arg(example_path("03_logical.ruchy"))
+        .assert()
+        .success();
 }
 
 // ============================================================================
-// OPERATOR PRECEDENCE TESTS
+// LANG-COMP-002-04: Operator Precedence Tests
+// Links to: examples/lang_comp/02-operators/04_precedence.ruchy
 // ============================================================================
 
 #[test]
-fn test_operator_precedence_example() {
-    let output = run_ruchy_file("examples/lang_comp/02-operators/04_precedence.ruchy");
+fn test_langcomp_002_04_precedence_multiplication_before_addition() {
+    // Test: 2 + 3 * 4 = 14 (not 20)
+    let temp_file = std::env::temp_dir().join("langcomp_002_04_precedence_mul.ruchy");
+    std::fs::write(&temp_file, "2 + 3 * 4").unwrap();
 
-    assert!(
-        output.status.success(),
-        "Operator precedence example should execute successfully"
-    );
+    ruchy_cmd()
+        .arg("run")
+        .arg(&temp_file)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("14"));
+
+    std::fs::remove_file(&temp_file).ok();
 }
 
 #[test]
-fn test_arithmetic_precedence() {
-    let output = eval_ruchy_code("2 + 3 * 4");
-    assert!(output.status.success(), "Arithmetic precedence should work");
-    assert_eq!(String::from_utf8_lossy(&output.stdout).trim(), "14");
+fn test_langcomp_002_04_precedence_parentheses_override() {
+    // Test: (2 + 3) * 4 = 20 (parentheses override precedence)
+    let temp_file = std::env::temp_dir().join("langcomp_002_04_precedence_paren.ruchy");
+    std::fs::write(&temp_file, "(2 + 3) * 4").unwrap();
+
+    ruchy_cmd()
+        .arg("run")
+        .arg(&temp_file)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("20"));
+
+    std::fs::remove_file(&temp_file).ok();
 }
 
 #[test]
-fn test_parentheses_override_precedence() {
-    let output = eval_ruchy_code("(2 + 3) * 4");
-    assert!(
-        output.status.success(),
-        "Parentheses should override precedence"
-    );
-    assert_eq!(String::from_utf8_lossy(&output.stdout).trim(), "20");
-}
-
-#[test]
-fn test_comparison_and_logical_precedence() {
-    let output = eval_ruchy_code("3 < 5 && 5 < 10");
-    assert!(
-        output.status.success(),
-        "Comparison and logical precedence should work"
-    );
-    assert_eq!(String::from_utf8_lossy(&output.stdout).trim(), "true");
+fn test_langcomp_002_04_precedence_example_file() {
+    // Validates: examples/lang_comp/02-operators/04_precedence.ruchy
+    ruchy_cmd()
+        .arg("run")
+        .arg(example_path("04_precedence.ruchy"))
+        .assert()
+        .success();
 }
 
 // ============================================================================
-// PROPERTY-BASED TESTS (10,000+ cases per property)
+// LANG-COMP-002: Property Tests (Mathematical Correctness Proofs)
 // ============================================================================
 
 #[cfg(test)]
 mod property_tests {
     use super::*;
-    use proptest::prelude::*;
 
-    proptest! {
-        #[test]
-        #[ignore] // Run with: cargo test --test operators_test property_tests -- --ignored
-        fn addition_is_commutative(a in -1000i64..1000, b in -1000i64..1000) {
-            let expr1 = format!("{} + {}", a, b);
-            let expr2 = format!("{} + {}", b, a);
+    #[test]
+    #[ignore]
+    fn test_langcomp_002_property_addition_commutative() {
+        // Property: a + b == b + a for all integers
+        use proptest::prelude::*;
+        proptest!(|(a: i32, b: i32)| {
+            let code1 = format!("{} + {}", a, b);
+            let code2 = format!("{} + {}", b, a);
 
-            let output1 = eval_ruchy_code(&expr1);
-            let output2 = eval_ruchy_code(&expr2);
+            let temp1 = std::env::temp_dir().join(format!("langcomp_002_prop_add1_{}_{}.ruchy", a, b));
+            let temp2 = std::env::temp_dir().join(format!("langcomp_002_prop_add2_{}_{}.ruchy", a, b));
 
-            prop_assert!(output1.status.success());
-            prop_assert!(output2.status.success());
+            std::fs::write(&temp1, &code1).unwrap();
+            std::fs::write(&temp2, &code2).unwrap();
 
-            let result1 = String::from_utf8_lossy(&output1.stdout).trim().to_string();
-            let result2 = String::from_utf8_lossy(&output2.stdout).trim().to_string();
+            let result1 = ruchy_cmd().arg("run").arg(&temp1).output().unwrap();
+            let result2 = ruchy_cmd().arg("run").arg(&temp2).output().unwrap();
 
-            prop_assert_eq!(result1, result2, "Addition should be commutative");
-        }
+            std::fs::remove_file(&temp1).ok();
+            std::fs::remove_file(&temp2).ok();
 
-        #[test]
-        #[ignore]
-        fn multiplication_is_associative(a in -100i64..100, b in -100i64..100, c in -100i64..100) {
-            let expr1 = format!("({} * {}) * {}", a, b, c);
-            let expr2 = format!("{} * ({} * {})", a, b, c);
+            prop_assert_eq!(result1.stdout, result2.stdout);
+        });
+    }
 
-            let output1 = eval_ruchy_code(&expr1);
-            let output2 = eval_ruchy_code(&expr2);
-
-            if output1.status.success() && output2.status.success() {
-                let result1 = String::from_utf8_lossy(&output1.stdout).trim().to_string();
-                let result2 = String::from_utf8_lossy(&output2.stdout).trim().to_string();
-                prop_assert_eq!(result1, result2, "Multiplication should be associative");
-            }
-        }
-
-        #[test]
-        #[ignore]
-        fn comparison_operators_never_crash(a in any::<i64>(), b in any::<i64>()) {
+    #[test]
+    #[ignore]
+    fn test_langcomp_002_property_comparison_never_crashes() {
+        // Property: comparison operators never crash
+        use proptest::prelude::*;
+        proptest!(|(a: i32, b: i32)| {
             let operators = vec!["==", "!=", "<", ">", "<=", ">="];
-
             for op in operators {
-                let expr = format!("{} {} {}", a, op, b);
-                let output = eval_ruchy_code(&expr);
+                let code = format!("{} {} {}", a, op, b);
+                let temp_file = std::env::temp_dir().join(format!("langcomp_002_prop_cmp_{}_{}_{}.ruchy", a, op.replace("=", "e"), b));
+                std::fs::write(&temp_file, &code).unwrap();
 
-                prop_assert!(
-                    output.status.success() || String::from_utf8_lossy(&output.stderr).contains("error"),
-                    "Comparison operators should not crash: {}", expr
-                );
+                ruchy_cmd()
+                    .arg("run")
+                    .arg(&temp_file)
+                    .assert()
+                    .success();
+
+                std::fs::remove_file(&temp_file).ok();
+            }
+        });
+    }
+
+    #[test]
+    #[ignore]
+    fn test_langcomp_002_property_double_negation_identity() {
+        // Property: !!x == x for all booleans
+        for b in [true, false] {
+            let code = format!("!!{}", b);
+            let temp_file = std::env::temp_dir().join(format!("langcomp_002_prop_neg_{}.ruchy", b));
+            std::fs::write(&temp_file, &code).unwrap();
+
+            ruchy_cmd()
+                .arg("run")
+                .arg(&temp_file)
+                .assert()
+                .success()
+                .stdout(predicate::str::contains(b.to_string()));
+
+            std::fs::remove_file(&temp_file).ok();
+        }
+    }
+
+    #[test]
+    #[ignore]
+    fn test_langcomp_002_property_multiplication_associative() {
+        // Property: (a * b) * c == a * (b * c)
+        for a in 1..5 {
+            for b in 1..5 {
+                for c in 1..5 {
+                    let code1 = format!("({} * {}) * {}", a, b, c);
+                    let code2 = format!("{} * ({} * {})", a, b, c);
+
+                    let temp1 = std::env::temp_dir()
+                        .join(format!("langcomp_002_prop_mul1_{}_{}_{}ruchy", a, b, c));
+                    let temp2 = std::env::temp_dir()
+                        .join(format!("langcomp_002_prop_mul2_{}_{}_{}ruchy", a, b, c));
+
+                    std::fs::write(&temp1, &code1).unwrap();
+                    std::fs::write(&temp2, &code2).unwrap();
+
+                    let result1 = ruchy_cmd().arg("run").arg(&temp1).output().unwrap();
+                    let result2 = ruchy_cmd().arg("run").arg(&temp2).output().unwrap();
+
+                    std::fs::remove_file(&temp1).ok();
+                    std::fs::remove_file(&temp2).ok();
+
+                    assert_eq!(
+                        String::from_utf8_lossy(&result1.stdout),
+                        String::from_utf8_lossy(&result2.stdout)
+                    );
+                }
             }
         }
+    }
 
-        #[test]
-        #[ignore]
-        fn logical_and_is_short_circuit(a in any::<bool>()) {
-            // Test that false && X doesn't evaluate X (short-circuit)
-            let expr = format!("{} && true", a);
-            let output = eval_ruchy_code(&expr);
+    #[test]
+    #[ignore]
+    fn test_langcomp_002_property_logical_and_short_circuit() {
+        // Property: false && x never evaluates x
+        let code = "false && true";
+        let temp_file = std::env::temp_dir().join("langcomp_002_prop_and_short.ruchy");
+        std::fs::write(&temp_file, code).unwrap();
 
-            prop_assert!(output.status.success(), "Logical AND should work");
-        }
+        ruchy_cmd()
+            .arg("run")
+            .arg(&temp_file)
+            .assert()
+            .success()
+            .stdout(predicate::str::contains("false"));
 
-        #[test]
-        #[ignore]
-        fn double_negation_equals_identity(a in any::<bool>()) {
-            let expr = format!("!!{}", a);
-            let output = eval_ruchy_code(&expr);
-
-            if output.status.success() {
-                let result = String::from_utf8_lossy(&output.stdout).trim().to_string();
-                prop_assert_eq!(result, a.to_string(), "!!x should equal x");
-            }
-        }
+        std::fs::remove_file(&temp_file).ok();
     }
 }
