@@ -43,20 +43,21 @@
 28. [Provability](#28-provability)
 29. [Lint Specification](#29-lint-specification)
 30. [Quality Scoring Specification](#30-quality-scoring-specification)
+31. [Language Completeness Validation](#31-language-completeness-validation)
 
 ### Project Management
-31. [Master TODO](#31-master-todo)
-32. [Project Status](#32-project-status)
-33. [Deep Context](#33-deep-context)
+32. [Master TODO](#32-master-todo)
+33. [Project Status](#33-project-status)
+34. [Deep Context](#34-deep-context)
 
 ### External Dependencies
-34. [PMAT Integration](#34-pmat-integration)
-35. [PDMT Integration](#35-pdmt-integration)
-36. [External Tool Dependencies](#36-external-tool-dependencies)
+35. [PMAT Integration](#35-pmat-integration)
+36. [PDMT Integration](#36-pdmt-integration)
+37. [External Tool Dependencies](#37-external-tool-dependencies)
 
 ### Appendices
-37. [Complete Grammar Definition](#37-complete-grammar-definition)
-38. [Meta-Specification](#38-meta-specification)
+38. [Complete Grammar Definition](#38-complete-grammar-definition)
+39. [Meta-Specification](#39-meta-specification)
 
 ---
 
@@ -4821,6 +4822,267 @@ impl LintRegistry {
         }
     }
 }
+```
+
+## 31. Language Completeness Validation
+
+### 31.1 Native Tool Validation Protocol
+
+**MANDATORY**: All language completeness documentation (LANG-COMP tickets) MUST validate features using ALL 14 native Ruchy tools.
+
+### 31.2 15 Native Tool Validation Requirements
+
+Every example in language completeness documentation MUST pass validation from ALL 15 tools:
+
+#### 1. **`ruchy check`** - Syntax Validation
+- Fast syntax-only validation without execution
+- Validates: Parse correctness, syntax errors
+- Output: Success/failure with error locations
+- Use: Pre-flight check before other validations
+
+#### 2. **`ruchy transpile`** - Rust Code Generation
+- Generate readable Rust code from Ruchy source
+- Validates: Transpilation correctness, code generation
+- Output: Rust source code (.rs file)
+- Use: Verify transpiler generates valid Rust
+
+#### 3. **`ruchy repl`** - Interactive Validation
+- Test examples in REPL environment
+- Validates: Interactive behavior, incremental execution
+- Output: REPL session results
+- Use: Manual verification of interactive features
+
+#### 4. **`ruchy lint`** - Static Analysis
+- Zero linting issues for all examples
+- Validates: Variable usage, type correctness, style compliance
+- Blocks: Unused variables, undefined variables, shadowing issues
+
+#### 5. **`ruchy compile`** - Compilation
+- Successful compilation to Rust
+- Validates: Syntax correctness, type inference, transpilation
+- Blocks: Parse errors, type errors, transpilation failures
+
+#### 6. **`ruchy run`** - Execution
+- Correct execution with expected output
+- Validates: Runtime behavior, output correctness
+- Blocks: Runtime errors, incorrect results, crashes
+
+#### 7. **`ruchy coverage`** - Test Coverage Analysis
+- Example must have corresponding property tests
+- Target: ≥80% line coverage per module
+- Validates: Test completeness, code reachability
+- Output: Line/branch/function coverage metrics
+
+#### 8. **`ruchy big-o`** - Algorithmic Complexity Analysis
+- Automatic complexity class detection (O(1), O(n), O(n²), etc.)
+- Validates: Performance characteristics, scalability
+- Output: Complexity class, analysis justification, optimization suggestions
+- Blocks: Exponential complexity without justification
+
+#### 9. **`ruchy ast`** - AST Inspection
+- Display Abstract Syntax Tree for verification
+- Validates: Parse tree correctness, semantic structure
+- Output: Formatted AST with type annotations
+- Use: Verify parser handles syntax correctly
+
+#### 10. **`ruchy wasm`** - WASM Compilation
+- Compile example to WebAssembly
+- Validates: WASM backend correctness, browser compatibility
+- Output: .wasm module with size metrics
+- Blocks: WASM-incompatible features without fallback
+
+#### 11. **`ruchy provability`** - Formal Verification
+- Generate verification conditions for correctness
+- Validates: Logical soundness, invariant preservation
+- Output: Proof obligations, SMT solver results
+- Use: Critical algorithms, security-sensitive code
+
+#### 12. **`ruchy property-tests`** - Property-Based Testing
+- Run property-based tests with thousands of generated test cases
+- Validates: Mathematical invariants, roundtrip properties, metamorphic relations
+- Output: Test results, failure cases with shrinking
+- Requirement: ≥10,000 test cases per property, 100% success rate
+
+#### 13. **`ruchy mutations`** - Mutation Testing
+- Validate test suite quality by introducing deliberate bugs
+- Validates: Test effectiveness, edge case coverage
+- Output: Mutation score, surviving mutants, killed mutants
+- Requirement: ≥75% mutation coverage (target: 95%+)
+
+#### 14. **`ruchy fuzz`** - Fuzz Testing
+- Stress-test code with millions of random inputs to find crashes
+- Validates: Robustness, panic-freedom, undefined behavior detection
+- Output: Crash reports, corpus of interesting inputs
+- Requirement: ≥1M iterations, zero crashes/panics
+
+#### 15. **`ruchy notebook`** - Interactive WASM Notebook Server
+- Launch interactive notebook server for browser-based development
+- Validates: WASM integration, interactive execution, real-time feedback
+- Output: HTTP server on localhost with live code evaluation
+- Use: Developer experience, tutorials, live documentation, WASM demos
+- **CRITICAL for WASM notebooks and interactive development**
+
+### 31.3 Validation Workflow
+
+```bash
+# MANDATORY validation sequence for each LANG-COMP example (ALL 15 TOOLS):
+
+# 1. Syntax check (fast pre-flight validation)
+ruchy check examples/lang_comp/XX-feature/example.ruchy || exit 1
+
+# 2. Transpile to Rust (verify code generation)
+ruchy transpile examples/lang_comp/XX-feature/example.ruchy --output=example.rs || exit 1
+
+# 3. REPL validation (interactive behavior check)
+echo "load examples/lang_comp/XX-feature/example.ruchy" | ruchy repl || exit 1
+
+# 4. Lint check (zero issues required)
+ruchy lint examples/lang_comp/XX-feature/example.ruchy || exit 1
+
+# 5. Compilation (must succeed)
+ruchy compile examples/lang_comp/XX-feature/example.ruchy || exit 1
+
+# 6. Execution (verify output)
+ruchy run examples/lang_comp/XX-feature/example.ruchy > actual_output.txt
+diff actual_output.txt expected_output.txt || exit 1
+
+# 7. Coverage analysis (≥80% target)
+ruchy coverage tests/lang_comp/XX_feature_test.rs --min-coverage 80 || exit 1
+
+# 8. Complexity analysis (O(n) or better preferred)
+ruchy big-o examples/lang_comp/XX-feature/example.ruchy --max-class quadratic || exit 1
+
+# 9. AST verification (inspect structure)
+ruchy ast examples/lang_comp/XX-feature/example.ruchy --format=debug > ast_output.txt
+
+# 10. WASM compilation (if applicable)
+ruchy wasm examples/lang_comp/XX-feature/example.ruchy --output=example.wasm || exit 1
+
+# 11. Provability check (if applicable to algorithm)
+ruchy provability examples/lang_comp/XX-feature/example.ruchy --generate-proofs || exit 1
+
+# 12. Property-based tests (≥10K cases, 100% pass rate)
+ruchy property-tests tests/lang_comp/XX_feature_test.rs --cases 10000 || exit 1
+
+# 13. Mutation tests (≥75% coverage)
+ruchy mutations tests/lang_comp/XX_feature_test.rs --min-coverage 0.75 || exit 1
+
+# 14. Fuzz tests (≥1M iterations, zero crashes)
+ruchy fuzz parse_XX_feature --iterations 1000000 || exit 1
+
+# 15. Notebook server (verify help works - server start tested separately)
+ruchy notebook --help || exit 1
+```
+
+### 31.4 Documentation Requirements
+
+Each LANG-COMP chapter MUST document:
+
+```markdown
+**Validated with**:
+- ✅ `ruchy check` - Syntax validated successfully
+- ✅ `ruchy transpile` - Generated valid Rust code (142 LOC)
+- ✅ `ruchy repl` - Interactive execution verified
+- ✅ `ruchy lint` - Zero issues
+- ✅ `ruchy compile` - Successful compilation
+- ✅ `ruchy run` - Executes correctly, output matches expected
+- ✅ `ruchy coverage` - 82.3% line coverage (target: ≥80%)
+- ✅ `ruchy big-o` - O(n) complexity detected, optimal
+- ✅ `ruchy ast` - Parse tree verified, all nodes correct
+- ✅ `ruchy wasm` - 1.2KB .wasm module generated
+- ✅ `ruchy provability` - 3/3 proof obligations satisfied (Z3 solver)
+- ✅ `ruchy property-tests` - 10,000 cases passed (100% success rate)
+- ✅ `ruchy mutations` - 95.6% mutation coverage (43/45 mutations killed)
+- ✅ `ruchy fuzz` - 1,000,000 iterations completed (0 crashes)
+- ✅ `ruchy notebook` - Server ready, WASM integration verified
+```
+
+### 31.5 Tool Implementation Status
+
+**ALL 15 TOOLS ARE MANDATORY AND BLOCKING**
+
+| Tool | Status | Coverage | Requirement | Notes |
+|------|--------|----------|-------------|-------|
+| `ruchy check` | ✅ Implemented | 100% | **MANDATORY/BLOCKING** | Syntax validation without execution |
+| `ruchy transpile` | ✅ Implemented | 100% | **MANDATORY/BLOCKING** | Generates readable Rust code |
+| `ruchy repl` | ✅ Implemented | 100% | **MANDATORY/BLOCKING** | Interactive REPL with replay support |
+| `ruchy lint` | ✅ Implemented | 100% | **MANDATORY/BLOCKING** | Full linter with scope analysis |
+| `ruchy compile` | ✅ Implemented | 100% | **MANDATORY/BLOCKING** | Compiles to standalone binary |
+| `ruchy run` | ✅ Implemented | 100% | **MANDATORY/BLOCKING** | Script execution validation |
+| `ruchy coverage` | ✅ Implemented | 100% | **MANDATORY/BLOCKING** | Code coverage analysis |
+| `ruchy runtime --bigo` | ✅ Implemented | 100% | **MANDATORY/BLOCKING** | Algorithmic complexity detection |
+| `ruchy ast` | ✅ Implemented | 100% | **MANDATORY/BLOCKING** | AST pretty-printer |
+| `ruchy wasm` | ✅ Implemented | 100% | **MANDATORY/BLOCKING** | WASM compilation |
+| `ruchy provability` | ✅ Implemented | 100% | **MANDATORY/BLOCKING** | Formal verification |
+| `ruchy property-tests` | ✅ Implemented | 100% | **MANDATORY/BLOCKING** | Property-based testing with 10K+ cases |
+| `ruchy mutations` | ✅ Implemented | 100% | **MANDATORY/BLOCKING** | Mutation testing |
+| `ruchy fuzz` | ✅ Implemented | 100% | **MANDATORY/BLOCKING** | Fuzz testing |
+| `ruchy notebook` | ✅ Implemented | 100% | **MANDATORY/BLOCKING** | **WASM notebook server (CRITICAL for DX)** |
+
+### 31.6 Quality Gates Integration
+
+**Pre-commit Hook** must verify all 15 tools on changed examples:
+
+```bash
+#!/bin/bash
+# .git/hooks/pre-commit - LANG-COMP validation (ALL 15 TOOLS MANDATORY/BLOCKING)
+
+changed_examples=$(git diff --cached --name-only | grep "examples/lang_comp/.*\.ruchy$")
+
+for example in $changed_examples; do
+    echo "Validating $example with 15 native tools (ALL MANDATORY)..."
+
+    # ALL 15 TOOLS ARE MANDATORY AND BLOCKING
+    ruchy check "$example" || exit 1
+    ruchy transpile "$example" --output="${example%.ruchy}.rs" || exit 1
+    echo "load $example" | ruchy repl || exit 1
+    ruchy lint "$example" || exit 1
+    ruchy compile "$example" || exit 1
+    ruchy run "$example" > /dev/null || exit 1
+    ruchy coverage "${example%.ruchy}_test.rs" --min-coverage 80 || exit 1
+    ruchy big-o "$example" --max-class quadratic || exit 1
+    ruchy ast "$example" --validate || exit 1
+    ruchy wasm "$example" --output="${example%.ruchy}.wasm" || exit 1
+    ruchy provability "$example" --generate-proofs || exit 1
+    ruchy property-tests "${example%.ruchy}_test.rs" --cases 10000 || exit 1
+    ruchy mutations "${example%.ruchy}_test.rs" --min-coverage 0.75 || exit 1
+    ruchy fuzz "parse_${example##*/}" --iterations 1000000 || exit 1
+done
+
+echo "✅ All LANG-COMP examples validated with 14 tools"
+```
+
+### 31.7 LANG-COMP Ticket Requirements
+
+Every LANG-COMP-XXX ticket MUST include:
+
+1. **Feature Description**: What language feature is being documented
+2. **Example Files**: Minimum 3 runnable examples demonstrating feature
+3. **Property Tests**: 10K+ test cases validating feature correctness
+4. **8-Tool Validation**: Results from all 8 native tools documented
+5. **Quality Metrics**: Coverage ≥80%, complexity ≤10, zero SATD
+6. **Documentation Chapter**: Comprehensive README.md with validation results
+
+### 31.8 Automation
+
+**CI Pipeline** must run full 8-tool validation on every PR:
+
+```yaml
+# .github/workflows/lang-comp-validation.yml
+name: Language Completeness Validation
+
+on: [pull_request]
+
+jobs:
+  validate-examples:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Run 8-tool validation
+        run: |
+          for example in examples/lang_comp/**/*.ruchy; do
+            ./scripts/validate_8_tools.sh "$example" || exit 1
+          done
 ```
 
 ## 23. Master TODO

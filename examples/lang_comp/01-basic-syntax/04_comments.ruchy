@@ -1,0 +1,12 @@
+// LANG-COMP-001: Basic Syntax - Comments
+// Demonstrates: Line and block comments
+
+// This is a line comment
+42
+
+/* This is a
+   block comment */
+100
+
+let x = 200 // Trailing comment
+x

@@ -1,6 +1,6 @@
 // Code linter for Ruchy with comprehensive variable tracking
 // Toyota Way: Catch issues early through static analysis
-use crate::frontend::ast::{Expr, ExprKind, Pattern};
+use crate::frontend::ast::{Expr, ExprKind, Literal, Pattern};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -210,32 +210,62 @@ impl Linter {
             } => {
                 // Analyze the value first (with current scope)
                 self.analyze_expr(value, scope, issues);
-                // Create new scope for the let binding body
-                let mut let_scope = Scope::with_parent(scope.clone());
-                // Check for shadowing before defining
-                if self
-                    .rules
-                    .iter()
-                    .any(|r| matches!(r, LintRule::VariableShadowing))
-                    && let_scope.is_shadowing(name)
-                {
-                    issues.push(LintIssue {
-                        line: 3, // Simplified line tracking
-                        column: 1,
-                        severity: "warning".to_string(),
-                        rule: "shadowing".to_string(),
-                        message: format!("variable shadowing: {name}"),
-                        suggestion: format!("Consider renaming variable '{name}'"),
-                        issue_type: "variable_shadowing".to_string(),
-                        name: name.clone(),
-                    });
+
+                // Check if this is a top-level let (body is Unit) or expression-level let
+                let is_top_level = matches!(body.kind, ExprKind::Literal(Literal::Unit));
+
+                if is_top_level {
+                    // Top-level let: Define variable in current scope (for use in subsequent statements)
+                    // Check for shadowing before defining
+                    if self
+                        .rules
+                        .iter()
+                        .any(|r| matches!(r, LintRule::VariableShadowing))
+                        && scope.is_shadowing(name)
+                    {
+                        issues.push(LintIssue {
+                            line: 3, // Simplified line tracking
+                            column: 1,
+                            severity: "warning".to_string(),
+                            rule: "shadowing".to_string(),
+                            message: format!("variable shadowing: {name}"),
+                            suggestion: format!("Consider renaming variable '{name}'"),
+                            issue_type: "variable_shadowing".to_string(),
+                            name: name.clone(),
+                        });
+                    }
+                    // Define in current scope for visibility in subsequent block statements
+                    scope.define(name.clone(), 2, 1, VarType::Local);
+                    // Analyze body (even if Unit) to maintain consistency
+                    self.analyze_expr(body, scope, issues);
+                } else {
+                    // Expression-level let: Create new scope for the let binding body
+                    let mut let_scope = Scope::with_parent(scope.clone());
+                    // Check for shadowing before defining
+                    if self
+                        .rules
+                        .iter()
+                        .any(|r| matches!(r, LintRule::VariableShadowing))
+                        && let_scope.is_shadowing(name)
+                    {
+                        issues.push(LintIssue {
+                            line: 3, // Simplified line tracking
+                            column: 1,
+                            severity: "warning".to_string(),
+                            rule: "shadowing".to_string(),
+                            message: format!("variable shadowing: {name}"),
+                            suggestion: format!("Consider renaming variable '{name}'"),
+                            issue_type: "variable_shadowing".to_string(),
+                            name: name.clone(),
+                        });
+                    }
+                    // Define the variable in the new scope
+                    let_scope.define(name.clone(), 2, 1, VarType::Local);
+                    // Analyze the body with the new scope
+                    self.analyze_expr(body, &mut let_scope, issues);
+                    // Check for unused variables in the let scope
+                    self.check_unused_in_scope(&let_scope, issues);
                 }
-                // Define the variable in the new scope
-                let_scope.define(name.clone(), 2, 1, VarType::Local);
-                // Analyze the body with the new scope
-                self.analyze_expr(body, &mut let_scope, issues);
-                // Check for unused variables in the let scope
-                self.check_unused_in_scope(&let_scope, issues);
             }
             ExprKind::Identifier(name) => {
                 // Special case: println is a built-in, not an undefined variable
@@ -2484,5 +2514,148 @@ mod sprint_44_tests {
         // Test complexity calculation performance
         let complexity = linter.calculate_complexity(&complex_expr);
         assert_eq!(complexity, 0); // Binary operations don't add complexity in current implementation
+    }
+
+    // ========== LINTER BUG FIX: Block Scope Tracking ==========
+
+    /// RED phase: Test that reproduces block scope bug
+    /// Bug: Linter incorrectly reports "unused variable" and "undefined variable"
+    /// when variable is defined in one statement and used in next statement
+    #[test]
+    fn test_block_scope_variable_usage_across_statements() {
+        let linter = Linter::new();
+
+        // Create AST for: let x = 42\nx
+        // This should parse as Block([Let { name: "x", value: 42, body: Unit }, Identifier("x")])
+        let let_expr = Expr::new(
+            ExprKind::Let {
+                name: "x".to_string(),
+                type_annotation: None,
+                value: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(42)),
+                    Span { start: 88, end: 98 },
+                )),
+                body: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Unit),
+                    Span { start: 96, end: 98 },
+                )),
+                is_mutable: false,
+            },
+            Span { start: 88, end: 98 },
+        );
+
+        let identifier_expr = Expr::new(
+            ExprKind::Identifier("x".to_string()),
+            Span {
+                start: 99,
+                end: 100,
+            },
+        );
+
+        let block = Expr::new(
+            ExprKind::Block(vec![let_expr, identifier_expr]),
+            Span { start: 0, end: 100 },
+        );
+
+        let result = linter.lint(&block, "let x = 42\nx");
+        assert!(result.is_ok(), "Linting should succeed");
+
+        let issues = result.unwrap();
+
+        // CRITICAL: Variable 'x' should NOT be reported as unused (it's used in next statement)
+        let unused_x = issues
+            .iter()
+            .any(|i| i.name == "x" && i.rule.contains("unused"));
+        assert!(!unused_x, "Variable 'x' should NOT be reported as unused - it's used in the next statement. Issues: {:?}", issues);
+
+        // CRITICAL: Variable 'x' should NOT be reported as undefined (it's defined in previous statement)
+        let undefined_x = issues
+            .iter()
+            .any(|i| i.name == "x" && i.rule.contains("undefined"));
+        assert!(!undefined_x, "Variable 'x' should NOT be reported as undefined - it's defined in previous statement. Issues: {:?}", issues);
+
+        // The code should have ZERO issues
+        assert_eq!(
+            issues.len(),
+            0,
+            "Code should have zero linting issues, got: {:?}",
+            issues
+        );
+    }
+
+    /// Property test: Block scope should maintain variables across statements
+    #[test]
+    fn test_block_scope_multiple_variables() {
+        let linter = Linter::new();
+
+        // Create AST for: let x = 1\nlet y = 2\nx + y
+        let let_x = Expr::new(
+            ExprKind::Let {
+                name: "x".to_string(),
+                type_annotation: None,
+                value: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(1)),
+                    Span { start: 0, end: 1 },
+                )),
+                body: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Unit),
+                    Span { start: 0, end: 1 },
+                )),
+                is_mutable: false,
+            },
+            Span { start: 0, end: 1 },
+        );
+
+        let let_y = Expr::new(
+            ExprKind::Let {
+                name: "y".to_string(),
+                type_annotation: None,
+                value: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(2)),
+                    Span { start: 0, end: 1 },
+                )),
+                body: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Unit),
+                    Span { start: 0, end: 1 },
+                )),
+                is_mutable: false,
+            },
+            Span { start: 0, end: 1 },
+        );
+
+        let usage = Expr::new(
+            ExprKind::Binary {
+                op: crate::frontend::ast::BinaryOp::Add,
+                left: Box::new(Expr::new(
+                    ExprKind::Identifier("x".to_string()),
+                    Span { start: 0, end: 1 },
+                )),
+                right: Box::new(Expr::new(
+                    ExprKind::Identifier("y".to_string()),
+                    Span { start: 0, end: 1 },
+                )),
+            },
+            Span { start: 0, end: 1 },
+        );
+
+        let block = Expr::new(
+            ExprKind::Block(vec![let_x, let_y, usage]),
+            Span { start: 0, end: 10 },
+        );
+
+        let result = linter.lint(&block, "let x = 1\nlet y = 2\nx + y");
+        assert!(result.is_ok());
+
+        let issues = result.unwrap();
+
+        // Both variables should be used, no undefined/unused errors
+        assert!(
+            !issues.iter().any(|i| i.name == "x"),
+            "Variable 'x' should have no issues"
+        );
+        assert!(
+            !issues.iter().any(|i| i.name == "y"),
+            "Variable 'y' should have no issues"
+        );
     }
 }

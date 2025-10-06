@@ -25,8 +25,9 @@ use std::path::{Path, PathBuf};
 mod handlers;
 use handlers::{
     handle_check_command, handle_compile_command, handle_complex_command, handle_eval_command,
-    handle_file_execution, handle_parse_command, handle_repl_command, handle_run_command,
-    handle_stdin_input, handle_test_command, handle_transpile_command,
+    handle_file_execution, handle_fuzz_command, handle_mutations_command, handle_parse_command,
+    handle_property_tests_command, handle_repl_command, handle_run_command, handle_stdin_input,
+    handle_test_command, handle_transpile_command,
 };
 /// Configuration for code formatting
 #[derive(Debug, Clone)]
@@ -709,6 +710,66 @@ enum Commands {
         #[arg(long, default_value = "5000")]
         timeout: u64,
     },
+    /// Run property-based tests with configurable case count
+    PropertyTests {
+        /// Path to test file or directory
+        path: PathBuf,
+        /// Number of test cases per property
+        #[arg(long, default_value = "10000")]
+        cases: usize,
+        /// Output format (text, json, markdown)
+        #[arg(long, default_value = "text")]
+        format: String,
+        /// Output file
+        #[arg(long)]
+        output: Option<PathBuf>,
+        /// Random seed for reproducibility
+        #[arg(long)]
+        seed: Option<u64>,
+        /// Show verbose output
+        #[arg(long)]
+        verbose: bool,
+    },
+    /// Run mutation tests to validate test suite quality
+    Mutations {
+        /// Path to source file or directory
+        path: PathBuf,
+        /// Timeout per mutation (seconds)
+        #[arg(long, default_value = "300")]
+        timeout: u32,
+        /// Output format (text, json, markdown, sarif)
+        #[arg(long, default_value = "text")]
+        format: String,
+        /// Output file
+        #[arg(long)]
+        output: Option<PathBuf>,
+        /// Minimum mutation coverage (0.0-1.0)
+        #[arg(long, default_value = "0.75")]
+        min_coverage: f64,
+        /// Show verbose output
+        #[arg(long)]
+        verbose: bool,
+    },
+    /// Run fuzz tests to find crashes and panics
+    Fuzz {
+        /// Fuzz target name or path
+        target: String,
+        /// Number of iterations
+        #[arg(long, default_value = "1000000")]
+        iterations: usize,
+        /// Timeout per iteration (ms)
+        #[arg(long, default_value = "1000")]
+        timeout: u32,
+        /// Output format (text, json)
+        #[arg(long, default_value = "text")]
+        format: String,
+        /// Output file
+        #[arg(long)]
+        output: Option<PathBuf>,
+        /// Show verbose output
+        #[arg(long)]
+        verbose: bool,
+    },
 }
 fn main() -> Result<()> {
     let cli = Cli::parse();
@@ -788,6 +849,46 @@ fn handle_command_dispatch(command: Option<Commands>, verbose: bool) -> Result<(
             parallel,
             threshold,
             &format,
+        ),
+        Some(Commands::PropertyTests {
+            path,
+            cases,
+            format,
+            output,
+            seed,
+            verbose,
+        }) => {
+            handle_property_tests_command(&path, cases, &format, output.as_deref(), seed, verbose)
+        }
+        Some(Commands::Mutations {
+            path,
+            timeout,
+            format,
+            output,
+            min_coverage,
+            verbose,
+        }) => handle_mutations_command(
+            &path,
+            timeout,
+            &format,
+            output.as_deref(),
+            min_coverage,
+            verbose,
+        ),
+        Some(Commands::Fuzz {
+            target,
+            iterations,
+            timeout,
+            format,
+            output,
+            verbose,
+        }) => handle_fuzz_command(
+            &target,
+            iterations,
+            timeout,
+            &format,
+            output.as_deref(),
+            verbose,
         ),
         Some(command) => handle_advanced_command(command),
     }
