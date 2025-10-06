@@ -1,0 +1,8 @@
+Found 19 mutants to test
+ok       Unmutated baseline
+MISSED   src/runtime/eval_try_catch.rs:178:9: delete match arm Pattern::Identifier(name) in bind_pattern_variables
+MISSED   src/runtime/eval_try_catch.rs:182:9: delete match arm Pattern::Struct{name:_, fields, has_rest:_,} in bind_pattern_variables
+MISSED   src/runtime/eval_try_catch.rs:198:9: delete match arm Pattern::Rest | Pattern::RestNamed(_) in bind_pattern_variables
+MISSED   src/runtime/eval_try_catch.rs:165:5: replace pattern_matches -> Result<bool, InterpreterError> with Ok(true)
+MISSED   src/runtime/eval_try_catch.rs:177:5: replace bind_pattern_variables -> Result<(), InterpreterError> with Ok(())
+19 mutants tested: 5 missed, 6 caught, 8 unviable

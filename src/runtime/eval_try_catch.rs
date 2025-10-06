@@ -287,16 +287,24 @@ mod mutation_tests {
 
     #[test]
     fn test_pattern_matches_not_stub() {
-        // MISSED: replace pattern_matches -> Result<bool, InterpreterError> with Ok(false)
+        // MISSED: replace pattern_matches -> Result<bool, InterpreterError> with Ok(true)
         let mut interp = Interpreter::new();
 
-        let pattern = Pattern::Identifier("x".to_string());
-        let value = Value::Integer(42);
+        // Test true case - Identifier pattern matches any value
+        let pattern_match = Pattern::Identifier("x".to_string());
+        let value_match = Value::Integer(42);
+        let result_match = pattern_matches(&mut interp, &pattern_match, &value_match).unwrap();
+        assert!(result_match, "Identifier pattern should match any value");
 
-        let result = pattern_matches(&mut interp, &pattern, &value).unwrap();
+        // Test false case - Literal pattern with wrong value
+        // This will fail if mutation replaces function with Ok(true) stub
+        let pattern_nomatch = Pattern::Literal(Literal::Integer(99));
+        let value_nomatch = Value::Integer(42);
+        let result_nomatch =
+            pattern_matches(&mut interp, &pattern_nomatch, &value_nomatch).unwrap();
         assert!(
-            result,
-            "Identifier pattern should match any value, not stub false"
+            !result_nomatch,
+            "Non-matching literal pattern should return false (not stub Ok(true))"
         );
     }
 
