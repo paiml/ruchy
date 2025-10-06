@@ -26,7 +26,10 @@ test_feature() {
         return 2
     fi
 
-    result=$(echo "$code" | cargo run --quiet --bin ruchy repl 2>&1 | grep -v "Type :help\|Goodbye\|Welcome\|Ruchy REPL\|ALL functions\|coverage\|TDG" | tr -d '\n' | xargs)
+    # Use actual binary instead of cargo run to avoid determinism issues
+    # CRITICAL: cargo run shows different output than direct binary execution
+    # NOTE: Don't use xargs - it strips quotes from output!
+    result=$(echo "$code" | ./target/debug/ruchy repl 2>&1 | grep -v "Type :help\|Goodbye\|Welcome\|Ruchy REPL\|ALL functions\|coverage\|TDG" | tr -d '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
 
     if [[ "$result" == *"$expected"* ]]; then
         echo "✅ PASS"
