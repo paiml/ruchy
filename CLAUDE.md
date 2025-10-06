@@ -246,6 +246,54 @@ Level 7: Performance Tests  - Non-functional requirements
 
 **NEVER AGAIN RULE**: Every defect must be made impossible to repeat through systematic prevention.
 
+### 🚨 SACRED RULE: NO DEFECT IS OUT OF SCOPE
+
+**ABSOLUTE PRINCIPLE**: EVERY defect, bug, missing feature, or incompleteness MUST be fixed immediately. ZERO exceptions.
+
+**FORBIDDEN RESPONSES**:
+- ❌ "This is out of scope for the current task"
+- ❌ "Let's defer this to a future sprint"
+- ❌ "This is a separate issue"
+- ❌ "Let's work around this for now"
+- ❌ "This is a known limitation"
+
+**MANDATORY RESPONSE**:
+1. 🛑 **STOP THE LINE**: Halt ALL other work immediately
+2. 🔍 **ROOT CAUSE ANALYSIS**: Use Five Whys to understand the defect
+3. 📋 **CREATE SPECIFICATION**: Document what needs to be fixed
+4. ✅ **EXTREME TDD**: RED→GREEN→REFACTOR to fix the defect
+5. 🧪 **COMPREHENSIVE TESTING**: Property tests, mutation tests, fuzz tests
+6. ✅ **VERIFY FIX**: Prove the defect is resolved and cannot regress
+7. 📝 **DOCUMENT**: Update all affected documentation and tests
+
+**Toyota Way Principle**:
+- **Jidoka**: Stop the line when ANY problem is found
+- **No defect is too small**: Every defect represents a gap in quality
+- **No shortcut is acceptable**: Fix the root cause, not the symptom
+- **Long-term philosophy**: Deferring defects creates technical debt that compounds
+
+**Example - Correct Response**:
+```
+Discovery: "F-string compilation to WASM doesn't work"
+
+WRONG: "F-strings are out of scope for WASM work, let's skip them"
+RIGHT:
+  1. STOP THE LINE - this is a defect, not a feature request
+  2. Five Whys: Why don't f-strings work in WASM? → Not implemented
+  3. Create: docs/specifications/wasm-fstring-spec.md
+  4. RED: test_fstring_compiles_to_wasm() - FAILS
+  5. GREEN: Implement f-string WASM lowering
+  6. Property test: All f-strings compile to valid WASM
+  7. Mutation test: Verify tests catch f-string bugs
+  8. Commit: [WASM-XXX] Implement f-string WASM compilation with tests
+```
+
+**Why This Matters**:
+- **Quality is non-negotiable**: Every defect deferred is technical debt
+- **User trust**: Incomplete features break user confidence
+- **Compounding problems**: Small defects become big problems
+- **Toyota Way**: Stop the line for ANY defect, no exceptions
+
 ### Mandatory Testing Requirements (80% Property Test Coverage)
 
 **CRITICAL**: Following paiml-mcp-agent-toolkit Sprint 88 success pattern:
