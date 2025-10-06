@@ -64,6 +64,49 @@ fn process_single_item(item: Item) -> Result<ItemOutput> {
    - **GREEN**: Fix bug with minimal code changes
    - **REFACTOR**: Apply PMAT quality gates (A- minimum, ≤10 complexity)
 4. **EXTREME TEST COVERAGE**: Create comprehensive test suites immediately:
+
+### 🚨 CRITICAL: Missing Language Feature Protocol (MANDATORY)
+
+**IF YOU DISCOVER A LANGUAGE FEATURE IS "NOT IMPLEMENTED" - IMPLEMENT IT, DON'T SKIP IT!**
+
+**WRONG RESPONSE** (FORBIDDEN):
+- ❌ "This feature isn't implemented, let's skip it"
+- ❌ "Let's document it as not working"
+- ❌ "Let's work around it"
+- ❌ "Let's simplify the examples to avoid it"
+
+**CORRECT RESPONSE** (MANDATORY):
+1. 🛑 **STOP THE LINE**: Halt current work immediately
+2. 🔍 **INVESTIGATE**: Use GENCHI GENBUTSU to verify feature is truly missing (don't assume!)
+3. 📋 **CREATE TICKET**: Add to docs/execution/roadmap.md with format: [FEATURE-XXX]
+4. ✅ **EXTREME TDD IMPLEMENTATION**:
+   - **RED**: Write tests for the missing feature FIRST (they will fail)
+   - **GREEN**: Implement the feature minimally to pass tests
+   - **REFACTOR**: Apply quality gates (≤10 complexity, A- grade)
+5. 📊 **VALIDATE**: Property tests + mutation tests (≥75% coverage)
+6. 📝 **DOCUMENT**: Update LANG-COMP with working examples
+7. ✅ **COMMIT**: Complete implementation with ticket reference
+
+**Example - Correct Response to Missing Feature**:
+```
+Discovery: "Negative number literals don't work"
+
+WRONG: "Let's remove negative numbers from examples"
+RIGHT:
+  1. Stop the line
+  2. Verify: grep -r "Literal.*Negative" src/ (is it truly missing?)
+  3. Create: [PARSER-042] Implement negative number literals
+  4. RED: Write test_negative_literals() - fails
+  5. GREEN: Add parsing for `-123` syntax
+  6. Property test: All negative integers parse correctly
+  7. Commit: [PARSER-042] Implement negative number literals with tests
+```
+
+**Toyota Way Principle**:
+- **Jidoka**: Stop the line when defects found - missing features ARE defects
+- **Genchi Genbutsu**: Go see if feature is truly missing (don't assume!)
+- **Kaizen**: Each missing feature is an opportunity to improve the language
+- **No Shortcuts**: Implement properly with TDD, don't work around
    - Unit tests for specific bug scenario
    - Integration tests for complete programs
    - Property tests with random inputs (10,000+ iterations)
