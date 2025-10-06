@@ -380,11 +380,91 @@ Navigation:
 □ Find task ID in docs/execution/roadmap.md (MANDATORY)
 □ Verify ticket dependencies completed via DAG
 □ Reference ticket number in all commits/PRs
-□ Check existing patterns in codebase
+□ Check existing patterns in codebase (GENCHI GENBUTSU - Go And See!)
+  - For CLI tests: Use assert_cmd pattern from tests/fifteen_tool_validation.rs
+  - For property tests: Use proptest pattern from existing property_tests modules
+  - For mutation tests: Follow cargo-mutants pattern from Sprint 8
 □ PMAT complexity check: `pmat analyze complexity --max-cyclomatic 10`
 □ Confirm complexity budget (<10 cognitive) via PMAT verification
 □ Zero SATD: `pmat analyze satd --fail-on-violation`
 ```
+
+### MANDATORY: assert_cmd for ALL CLI Testing
+
+**CRITICAL**: ALL tests that invoke CLI commands MUST use assert_cmd, NOT raw std::process::Command.
+
+**Why assert_cmd is Mandatory**:
+- **Deterministic**: Predicates provide clear, testable assertions
+- **Maintainable**: Standard pattern across all CLI tests
+- **Debuggable**: Better error messages than raw Command
+- **Proven**: Already used in fifteen_tool_validation.rs with 18/22 passing tests
+
+**Pattern (from fifteen_tool_validation.rs)**:
+```rust
+use assert_cmd::Command;
+use predicates::prelude::*;
+
+fn ruchy_cmd() -> Command {
+    Command::cargo_bin("ruchy").expect("Failed to find ruchy binary")
+}
+
+#[test]
+fn test_example() {
+    ruchy_cmd()
+        .arg("run")
+        .arg("examples/test.ruchy")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("expected output"));
+}
+```
+
+**Never Use**: `std::process::Command` for testing CLI - this is a quality defect.
+
+### MANDATORY: Test Naming Convention (TRACEABILITY)
+
+**CRITICAL**: Every test MUST be traceable to its documentation/specification via naming convention.
+
+**Naming Pattern** (MANDATORY - NO EXCEPTIONS):
+```
+test_<TICKET_ID>_<section>_<feature>_<scenario>
+
+Examples:
+- test_langcomp_003_01_if_expression_true_branch()
+- test_langcomp_003_01_if_expression_example_file()
+- test_langcomp_003_02_match_literal_pattern()
+- test_langcomp_003_05_break_exits_loop()
+```
+
+**Component Breakdown**:
+1. `TICKET_ID`: LANG-COMP-003 → `langcomp_003` (lowercase, underscored)
+2. `section`: File number (01, 02, 03, 04, 05)
+3. `feature`: What is being tested (if_expression, match_pattern, for_loop)
+4. `scenario`: Specific test case (true_branch, example_file, literal_pattern)
+
+**Why Naming Convention is Mandatory**:
+- **Traceability**: Instantly map test → documentation → ticket → requirement
+- **Findability**: `grep "langcomp_003_01"` finds all if-expression tests
+- **Validation**: Prove documentation examples are tested (not just written)
+- **Toyota Way**: Standard work enables quality - no standard = no quality
+
+**Test-to-Doc Linkage** (MANDATORY):
+```rust
+// File: tests/lang_comp/control_flow.rs
+// Links to: examples/lang_comp/03-control-flow/01_if.ruchy
+// Validates: LANG-COMP-003 Control Flow - If Expressions
+
+#[test]
+fn test_langcomp_003_01_if_expression_example_file() {
+    ruchy_cmd()
+        .arg("run")
+        .arg("examples/lang_comp/03-control-flow/01_if.ruchy")
+        .assert()
+        .success();
+}
+```
+
+**Generic Names are DEFECTS**: `test_if_true_branch()` provides ZERO traceability.
 
 ### Commit Message Format
 ```
