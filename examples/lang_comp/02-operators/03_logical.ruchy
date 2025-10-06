@@ -1,0 +1,10 @@
+// LANG-COMP-002: Logical Operators Example
+// Demonstrates &&, ||, ! operators
+
+let p = true
+let q = false
+
+println(f"AND: {p} && {q} = {p && q}")
+println(f"OR: {p} || {q} = {p || q}")
+println(f"NOT: !{p} = {!p}")
+println(f"NOT: !{q} = {!q}")

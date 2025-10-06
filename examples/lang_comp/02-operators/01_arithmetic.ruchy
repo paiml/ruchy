@@ -1,0 +1,11 @@
+// LANG-COMP-002: Arithmetic Operators Example
+// Demonstrates +, -, *, /, % operators
+
+let a = 10
+let b = 3
+
+println(f"Addition: {a} + {b} = {a + b}")
+println(f"Subtraction: {a} - {b} = {a - b}")
+println(f"Multiplication: {a} * {b} = {a * b}")
+println(f"Division: {a} / {b} = {a / b}")
+println(f"Modulo: {a} % {b} = {a % b}")
