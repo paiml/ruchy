@@ -238,7 +238,7 @@ impl WasmEmitter {
     }
 
     /// Emit function section
-    /// Complexity: 4 (Toyota Way: <10 ✓)
+    /// Complexity: 6 (Toyota Way: <10 ✓)
     fn emit_function_section(
         &self,
         func_defs: &[(String, Vec<crate::frontend::ast::Param>, Box<Expr>)],
@@ -247,15 +247,18 @@ impl WasmEmitter {
         let mut functions = FunctionSection::new();
         let has_functions = !func_defs.is_empty();
 
+        // Type index offset: if we have built-ins, they occupy type index 0
+        let type_offset = u32::from(self.uses_builtins(expr));
+
         if has_functions {
             for i in 0..func_defs.len() {
-                functions.function(i as u32);
+                functions.function((i as u32) + type_offset);
             }
             if self.get_non_function_code(expr).is_some() {
-                functions.function(func_defs.len() as u32);
+                functions.function((func_defs.len() as u32) + type_offset);
             }
         } else {
-            functions.function(0);
+            functions.function(type_offset);
         }
         functions
     }
