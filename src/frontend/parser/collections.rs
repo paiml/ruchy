@@ -1860,12 +1860,10 @@ mod mutation_tests {
     fn test_declaration_token_to_key_var_match_arm() {
         // MISSED: delete match arm Token::Var in declaration_token_to_key (line 322)
 
-        // NOTE: This mutation may be difficult to test via Parser integration tests
-        // The function declaration_token_to_key is used internally for object parsing
-        // but testing it requires specific syntax that may not be fully supported
-
-        // Placeholder test - mutation may need direct unit testing
-        assert!(true, "Mutation testing note recorded");
+        // Direct unit test of the declaration_token_to_key function
+        let result = declaration_token_to_key(&Token::Var);
+        assert!(result.is_some(), "Token::Var should map to a key");
+        assert_eq!(result.unwrap(), "var", "Token::Var should map to 'var' string");
     }
 
     #[test]
