@@ -108,9 +108,14 @@ impl WasmEmitter {
         let mut module = Module::new();
         let func_defs = self.collect_functions(expr);
 
-        // Add sections to module
+        // Add sections to module (order matters in WASM)
         let types = self.emit_type_section(expr, &func_defs);
         module.section(&types);
+
+        // Import section must come before function section
+        if let Some(imports) = self.emit_import_section(expr) {
+            module.section(&imports);
+        }
 
         let functions = self.emit_function_section(&func_defs, expr);
         module.section(&functions);
@@ -130,7 +135,7 @@ impl WasmEmitter {
     }
 
     /// Emit type section with function signatures
-    /// Complexity: 6 (Toyota Way: <10 ✓)
+    /// Complexity: 7 (Toyota Way: <10 ✓)
     fn emit_type_section(
         &self,
         expr: &Expr,
@@ -138,6 +143,12 @@ impl WasmEmitter {
     ) -> TypeSection {
         let mut types = TypeSection::new();
         let has_functions = !func_defs.is_empty();
+
+        // Type index 0: Built-in functions (println, print, etc.) - (i32) -> ()
+        // This must be first because imports reference it
+        if self.uses_builtins(expr) {
+            types.function(vec![wasm_encoder::ValType::I32], vec![]);
+        }
 
         if has_functions {
             // Add a type for each function
@@ -175,6 +186,54 @@ impl WasmEmitter {
             WasmType::F32 => wasm_encoder::ValType::F32,
             WasmType::I64 => wasm_encoder::ValType::I64,
             WasmType::F64 => wasm_encoder::ValType::F64,
+        }
+    }
+
+    /// Emit import section for built-in functions
+    /// Complexity: 3 (Toyota Way: <10 ✓)
+    fn emit_import_section(&self, expr: &Expr) -> Option<wasm_encoder::ImportSection> {
+        // Check if expression uses any built-in functions
+        if !self.uses_builtins(expr) {
+            return None;
+        }
+
+        let mut imports = wasm_encoder::ImportSection::new();
+
+        // Import println from host environment
+        // Type index 0: () -> () (void function)
+        imports.import("env", "println", wasm_encoder::EntityType::Function(0));
+
+        Some(imports)
+    }
+
+    /// Check if expression tree uses any built-in functions
+    /// Complexity: 4 (Toyota Way: <10 ✓)
+    fn uses_builtins(&self, expr: &Expr) -> bool {
+        match &expr.kind {
+            ExprKind::Call { func, .. } => {
+                if let ExprKind::Identifier(name) = &func.kind {
+                    matches!(name.as_str(), "println" | "print" | "eprintln" | "eprint")
+                } else {
+                    false
+                }
+            }
+            ExprKind::Block(exprs) => exprs.iter().any(|e| self.uses_builtins(e)),
+            ExprKind::If {
+                condition,
+                then_branch,
+                else_branch,
+            } => {
+                self.uses_builtins(condition)
+                    || self.uses_builtins(then_branch)
+                    || else_branch.as_ref().is_some_and(|e| self.uses_builtins(e))
+            }
+            ExprKind::Let { value, body, .. } => {
+                self.uses_builtins(value) || self.uses_builtins(body)
+            }
+            ExprKind::Binary { left, right, .. } => {
+                self.uses_builtins(left) || self.uses_builtins(right)
+            }
+            _ => false,
         }
     }
 
@@ -620,7 +679,7 @@ impl WasmEmitter {
                 condition, body, ..
             } => self.lower_while(condition, body),
             ExprKind::Function { .. } => Ok(vec![]),
-            ExprKind::Call { func: _, args } => self.lower_call(args),
+            ExprKind::Call { func, args } => self.lower_call(func, args),
             ExprKind::Let {
                 name, value, body, ..
             } => self.lower_let(name, value, body),
@@ -651,13 +710,27 @@ impl WasmEmitter {
     }
 
     /// Lower a function call to WASM instructions
-    /// Complexity: 2 (Toyota Way: <10 ✓)
-    fn lower_call(&self, args: &[Expr]) -> Result<Vec<Instruction<'static>>, String> {
+    /// Complexity: 5 (Toyota Way: <10 ✓)
+    fn lower_call(&self, func: &Expr, args: &[Expr]) -> Result<Vec<Instruction<'static>>, String> {
         let mut instructions = vec![];
+
+        // Push arguments onto stack
         for arg in args {
             instructions.extend(self.lower_expression(arg)?);
         }
-        instructions.push(Instruction::Call(0));
+
+        // Determine function index
+        let func_index = if let ExprKind::Identifier(name) = &func.kind {
+            if matches!(name.as_str(), "println" | "print" | "eprintln" | "eprint") {
+                0 // Built-in functions are imported at index 0
+            } else {
+                0 // User-defined functions (not yet supported)
+            }
+        } else {
+            0 // Unknown function type
+        };
+
+        instructions.push(Instruction::Call(func_index));
         Ok(instructions)
     }
 
@@ -846,13 +919,21 @@ impl WasmEmitter {
         result
     }
     /// Check if an expression produces a value on the stack
+    /// Complexity: 8 (Toyota Way: <10 ✓)
     fn expression_produces_value(&self, expr: &Expr) -> bool {
         match &expr.kind {
             ExprKind::Literal(_) => true,
             ExprKind::Binary { .. } => true,
             ExprKind::Unary { .. } => true,
             ExprKind::Identifier(_) => true,
-            ExprKind::Call { .. } => true,
+            ExprKind::Call { func, .. } => {
+                // Check if this is a void function (println, print, etc.)
+                if let ExprKind::Identifier(name) = &func.kind {
+                    !matches!(name.as_str(), "println" | "print" | "eprintln" | "eprint")
+                } else {
+                    true
+                }
+            }
             ExprKind::List(_) => true,
             ExprKind::Block(exprs) => {
                 // Block produces value if last expression does
@@ -860,7 +941,18 @@ impl WasmEmitter {
                     .last()
                     .is_some_and(|e| self.expression_produces_value(e))
             }
-            ExprKind::If { .. } => true,
+            ExprKind::If {
+                then_branch,
+                else_branch,
+                ..
+            } => {
+                // If produces value only if both branches produce values
+                let then_produces = self.expression_produces_value(then_branch);
+                let else_produces = else_branch
+                    .as_ref()
+                    .is_some_and(|e| self.expression_produces_value(e));
+                then_produces && else_produces
+            }
             ExprKind::Let { body, .. } => {
                 // Let produces value only if body is not Unit
                 match &body.kind {
