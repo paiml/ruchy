@@ -83,8 +83,48 @@ fn test_case_conversion_idempotent() {
     }
 }
 
-// Property test placeholder - will implement with proptest
-// TODO: Add property tests with 10K cases for:
-// - Idempotence: upper(upper(s)) == upper(s)
-// - Length preservation (mostly): len(s) ~= len(upper(s))
-// - Reversibility: lower(upper(s)) may not equal s for all Unicode
+// Property tests with 10K cases (EXTREME TDD requirement)
+#[cfg(test)]
+mod properties {
+    use super::*;
+    use proptest::prelude::*;
+
+    proptest! {
+        #![proptest_config(ProptestConfig::with_cases(10000))]
+
+        #[test]
+        fn uppercase_idempotent(s in ".*") {
+            let rc_s = Rc::from(s.as_str());
+            let upper1 = eval_string_method(&rc_s, "to_uppercase", &[]).unwrap();
+
+            if let Value::String(upper_str) = upper1 {
+                let upper2 = eval_string_method(&upper_str, "to_uppercase", &[]).unwrap();
+
+                if let Value::String(upper2_str) = upper2 {
+                    prop_assert_eq!(&*upper_str, &*upper2_str);
+                }
+            }
+        }
+
+        #[test]
+        fn lowercase_idempotent(s in ".*") {
+            let rc_s = Rc::from(s.as_str());
+            let lower1 = eval_string_method(&rc_s, "to_lowercase", &[]).unwrap();
+
+            if let Value::String(lower_str) = lower1 {
+                let lower2 = eval_string_method(&lower_str, "to_lowercase", &[]).unwrap();
+
+                if let Value::String(lower2_str) = lower2 {
+                    prop_assert_eq!(&*lower_str, &*lower2_str);
+                }
+            }
+        }
+
+        #[test]
+        fn case_conversion_never_panics(s in ".*") {
+            let rc_s = Rc::from(s.as_str());
+            let _ = eval_string_method(&rc_s, "to_uppercase", &[]);
+            let _ = eval_string_method(&rc_s, "to_lowercase", &[]);
+        }
+    }
+}
