@@ -1,0 +1,5 @@
+// LANG-COMP-001: Basic Syntax - String Variables
+// Demonstrates: Let bindings with strings
+
+let greeting = "Hello"
+greeting

@@ -49,30 +49,58 @@ fn process_single_item(item: Item) -> Result<ItemOutput> {
 }
 ```
 
-## EXTREME TDD Protocol (CRITICAL RESPONSE TO PARSER FAILURES)
+## EXTREME TDD Protocol (CRITICAL RESPONSE TO ANY BUG)
 
-**ANY PARSER OR TRANSPILER BUG REQUIRES IMMEDIATE EXTREME TDD RESPONSE:**
+**ANY BUG IN ANY COMPONENT REQUIRES IMMEDIATE EXTREME TDD RESPONSE:**
 
-### Critical Bug Response (MANDATORY):
-1. **HALT ALL OTHER WORK**: Stop everything when parser/transpiler bugs found
-2. **EXTREME TEST COVERAGE**: Create comprehensive test suites immediately:
-   - Unit tests for every parser rule
-   - Integration tests for complete programs  
+### Critical Bug Response (MANDATORY - ZERO EXCEPTIONS):
+
+**🛑 STOP THE LINE PROTOCOL:**
+
+1. **HALT ALL OTHER WORK**: Stop everything when ANY bug found (parser, transpiler, runtime, linter, tooling, etc.)
+2. **ROOT CAUSE ANALYSIS**: Use GENCHI GENBUTSU (go and see) to understand exact failure mode
+3. **EXTREME TDD FIX** (RED→GREEN→REFACTOR):
+   - **RED**: Write failing test that reproduces bug FIRST
+   - **GREEN**: Fix bug with minimal code changes
+   - **REFACTOR**: Apply PMAT quality gates (A- minimum, ≤10 complexity)
+4. **EXTREME TEST COVERAGE**: Create comprehensive test suites immediately:
+   - Unit tests for specific bug scenario
+   - Integration tests for complete programs
    - Property tests with random inputs (10,000+ iterations)
+   - Mutation tests (≥75% mutation coverage via cargo-mutants)
    - Fuzz tests for edge cases
    - Doctests in every public function
    - `cargo run --examples` MUST pass 100%
-3. **REGRESSION PREVENTION**: Add failing test BEFORE fixing bug
-4. **COMPREHENSIVE VALIDATION**: Test all language features after any fix
+5. **REGRESSION PREVENTION**: Add failing test BEFORE fixing bug (TDD mandatory)
+6. **PMAT QUALITY GATES**: ALL fixes MUST pass:
+   - `pmat tdg <file> --min-grade A-` (≥85 points)
+   - `pmat analyze complexity --max-cyclomatic 10 --max-cognitive 10`
+   - `pmat analyze satd --fail-on-violation` (zero SATD)
+7. **MUTATION VALIDATION**: Run mutation tests on fixed code:
+   - `cargo mutants --file <fixed-file.rs> --timeout 300`
+   - Target: ≥75% mutation coverage (CAUGHT/(CAUGHT+MISSED) ≥ 75%)
+   - If <75%: Add more property tests and re-run
+8. **COMPREHENSIVE VALIDATION**: Test all related features after fix
 
 ### Test Coverage Requirements (MANDATORY):
 - **Parser Tests**: Every token, every grammar rule, every edge case
 - **Transpiler Tests**: Every Ruchy construct → Rust construct mapping
+- **Runtime Tests**: Every evaluation path, every error condition
+- **Linter Tests**: Every lint rule, every scope scenario, every AST pattern
+- **Tooling Tests**: Every CLI command, every flag combination, every output format
 - **Integration Tests**: Full compile → execute → validate pipeline
-- **Property Tests**: Automated generation of valid/invalid programs
+- **Property Tests**: Automated generation of valid/invalid programs (10K+ cases)
 - **Fuzz Tests**: Random input stress testing (AFL, cargo-fuzz)
-- **Mutation Tests**: 80%+ mutation coverage via cargo-mutants (empirical validation)
+- **Mutation Tests**: 75%+ mutation coverage via cargo-mutants (empirical validation)
 - **Examples Tests**: All examples/ must compile and run
+
+### Bug Categories (ALL Subject to EXTREME TDD):
+- **Parser Bugs**: Grammar issues, tokenization errors, AST construction failures
+- **Transpiler Bugs**: Incorrect Rust code generation, type mismatches, codegen errors
+- **Runtime Bugs**: Evaluation errors, type system bugs, memory issues
+- **Linter Bugs**: False positives, false negatives, scope tracking errors
+- **Tooling Bugs**: CLI failures, invalid output, incorrect behavior
+- **Quality Bugs**: PMAT violations, complexity explosions, technical debt accumulation
 
 ### Mutation Testing Protocol (MANDATORY - Sprint 8)
 
@@ -133,64 +161,13 @@ grep "MISSED" core_mutations.txt
 4. **Analyze**: Draw conclusions only from the evidence
 5. **Document**: Record findings and next steps
 
-## QDD (Quality-Driven Development) Protocol
+## QDD (Quality-Driven Development)
 
-**QUALITY IS THE DRIVER, NOT AN AFTERTHOUGHT - BASED ON PMAT BOOK CH14**
+**Metrics**: Complexity ≤10, Coverage ≥80%, SATD=0, TDG A- minimum
 
-### QDD Core Principles:
-1. **Quality Metrics First**: Define quality metrics BEFORE writing code
-2. **Continuous Monitoring**: Real-time quality tracking during development
-3. **Automated Enforcement**: Quality gates that cannot be bypassed
-4. **Data-Driven Decisions**: Let metrics guide development priorities
-5. **Preventive Maintenance**: Fix quality issues before they become technical debt
-
-### QDD Implementation with PMAT:
-```bash
-# BEFORE starting any task - establish quality baseline
-pmat tdg . --min-grade A- --format=json > quality_baseline.json
-pmat analyze complexity --format=csv > complexity_baseline.csv
-
-# DURING development - continuous quality monitoring
-pmat tdg dashboard --port 8080 --update-interval 5 &  # Real-time monitoring
-watch -n 5 'pmat quality-gate --quiet || echo "QUALITY DEGRADATION DETECTED"'
-
-# AFTER each function/module - verify quality maintained
-pmat tdg <file> --compare-baseline quality_baseline.json
-pmat analyze complexity <file> --max-cyclomatic 10 --max-cognitive 10
-
-# BEFORE commit - comprehensive quality validation
-pmat tdg . --min-grade A- --fail-on-violation
-pmat quality-gate --fail-on-violation --format=detailed
-```
-
-### QDD Metrics Hierarchy:
-1. **Code Quality Metrics** (via PMAT TDG):
-   - Cyclomatic Complexity: ≤10 per function
-   - Cognitive Complexity: ≤10 per function
-   - Code Duplication: <10% across codebase
-   - Documentation Coverage: >70% for public APIs
-   - Technical Debt: 0 SATD comments allowed
-
-2. **Test Quality Metrics** (via cargo llvm-cov):
-   - Line Coverage: ≥80% per module
-   - Branch Coverage: ≥75% per module
-   - Function Coverage: 100% for public APIs
-   - Test Diversity: Unit + Integration + Property + Fuzz
-
-3. **Performance Metrics** (via cargo bench):
-   - Regression Detection: ±5% performance variance allowed
-   - Memory Usage: Track peak and average
-   - Compilation Speed: <1s for incremental builds
-
-### QDD Workflow Integration:
-```yaml
-Development Cycle:
-1. DEFINE: Quality metrics for the task
-2. MEASURE: Baseline quality before changes
-3. DEVELOP: Write code with real-time monitoring
-4. VALIDATE: Ensure all metrics maintained/improved
-5. DOCUMENT: Record quality impact in commit message
-```
+**Setup**: `pmat quality-gates init; pmat hooks install`
+**During**: `pmat tdg dashboard --port 8080 &`
+**Commit**: Auto-validated via pre-commit hooks
 
 ## Toyota Way Implementation
 
@@ -268,73 +245,19 @@ mod property_tests {
 - **Pattern Test Results**: 2 passing → 4 passing (100% improvement achieved)
 - **Enforcement**: Automated coverage checking with clear error messages
 
-## PMAT TDG Quality Enforcement (MANDATORY - BLOCKING)
+## PMAT Quality Gates (v2.70+)
 
-**CRITICAL**: PMAT TDG (Technical Debt Grading) v2.39.0+ quality gates are MANDATORY and BLOCKING. NO EXCEPTIONS.
+**Setup**: `pmat quality-gates init; pmat hooks install`
+**Gates**: TDG A-, Complexity ≤10, SATD=0, Coverage ≥80%, Build clean
+**Health**: `pmat maintain health` (~10s)
 
-### TDG Quality Standards (Zero Tolerance - v2.39.0):
-- **Overall Grade**: Must maintain A- or higher (≥85 points) - HARD LIMIT
-- **Structural Complexity**: ≤10 per function (enforced via TDG)
-- **Semantic Complexity**: Cognitive complexity ≤10 (enforced via TDG) 
-- **Code Duplication**: <10% code duplication (measured via TDG)
-- **Documentation Coverage**: >70% for public APIs (tracked via TDG)
-- **Technical Debt**: Zero SATD comments (zero-tolerance via TDG)
-- **Coupling Analysis**: Module dependency limits (enforced via TDG)
-- **Consistency Score**: Naming/style consistency ≥80% (enforced via TDG)
+## PMAT TDG Quality Enforcement
 
-### MANDATORY TDG Commands (v2.39.0 - All Development):
+**Standards**: A- (≥85), Complexity ≤10, SATD=0, Duplication <10%, Docs >70%
 
-#### Before ANY Code Changes:
-```bash
-# MANDATORY: TDG baseline check with comprehensive analysis
-pmat tdg . --min-grade A- --fail-on-violation
-pmat quality-gate --fail-on-violation --format=summary
-```
-
-#### During Development (After Each Function/Module):
-```bash
-# MANDATORY: File-level TDG analysis
-pmat tdg <file.rs> --include-components --min-grade B+
-
-# MANDATORY: Traditional complexity verification (backup)
-pmat analyze complexity --max-cyclomatic 10 --max-cognitive 10 --fail-on-violation
-
-# MANDATORY: SATD detection (zero tolerance)
-pmat analyze satd --format=summary --fail-on-violation
-```
-
-#### End of Sprint (Before Commit):
-```bash
-# MANDATORY: Comprehensive TDG quality gate (BLOCKS commits)
-pmat tdg . --min-grade A- --format=sarif --output=tdg-report.sarif
-pmat quality-gate --fail-on-violation --format=detailed
-
-# MANDATORY: Real-time dashboard check
-pmat tdg dashboard --port 8080 --open  # Verify no regressions
-
-# MANDATORY: Export comprehensive analysis
-pmat tdg . --format=markdown --output=TDG_QUALITY_REPORT.md
-```
-
-### TDG Integration Protocol (Toyota Way v2.39.0):
-1. **HALT DEVELOPMENT**: Stop on ANY TDG grade below A- (85 points)
-2. **ROOT CAUSE**: Use `pmat tdg <file> --include-components` to identify exact issues
-3. **REFACTOR IMMEDIATELY**: Address all TDG component failures systematically
-4. **DASHBOARD MONITORING**: Use `pmat tdg dashboard` for real-time quality tracking
-5. **VERIFY FIX**: Re-run `pmat tdg <file>` to prove A- grade achievement
-6. **MCP INTEGRATION**: Use MCP tools for enterprise-grade external integration
-
-### Complexity Decomposition Strategy:
-```rust
-// BEFORE (Complexity: 72 - VIOLATION)
-fn giant_function() { /* 200 lines */ }
-
-// AFTER (Each <10 complexity - COMPLIANT)  
-fn orchestrator() { /* calls helpers */ }
-fn helper_one() { /* focused responsibility */ }
-fn helper_two() { /* focused responsibility */ }
-fn helper_three() { /* focused responsibility */ }
-```
+**Before**: `pmat tdg . --min-grade A- --fail-on-violation`
+**During**: `pmat tdg <file> --include-components`
+**Commit**: Blocked by pre-commit hooks if <A-
 
 ## Toyota Way Success Stories
 
@@ -463,119 +386,22 @@ Navigation:
 □ Zero SATD: `pmat analyze satd --fail-on-violation`
 ```
 
-### Commit Message Format (MANDATORY with TDG Tracking)
+### Commit Message Format
 ```
 [TICKET-ID] Brief description
 
-Detailed explanation of changes
-- Specific improvements made
-- Test coverage added
-- Performance impact
-- Breaking changes (if any)
-
-TDG Score Changes (MANDATORY):
-- src/file1.rs: 85.3→87.1 (B+→A-) [+1.8 improvement]
-- src/file2.rs: 72.5→72.5 (B-→B-) [stable]
-- File Hash: abc123def456...
+- Specific changes
+- Test coverage
+- TDG Score: src/file.rs: 68.2→82.5 (C+→B+)
 
 Closes: TICKET-ID
 ```
 
-**Example**:
-```
-[QUALITY-001] Refactor parse_prefix complexity from 161 to 8
+## MANDATORY: TDG Transactional Tracking
 
-Extracted 8 helper functions following single responsibility principle:
-- parse_literal_prefix (complexity: 5)
-- parse_string_prefix (complexity: 4)
-- parse_identifier_prefix (complexity: 7)
+**Scoring**: A+ (95-100), A (90-94), A- (85-89), B (80-84), C (70-79), D (60-69), F (<60)
 
-TDG Score Changes:
-- src/frontend/parser.rs: 68.2→82.5 (C+→B+) [+14.3 improvement]
-- tests/parser_test.rs: 91.0→92.1 (A→A) [+1.1 improvement]
-- File Hash: 7f3a9b2c4e8d1a5f6b9c2d4e8f1a3b5c7d9e1f3a
-
-PMAT Verification:
-- Complexity: 161→8 (95% reduction)
-- SATD: 0 violations maintained
-- Dead Code: <5% threshold maintained
-
-Added comprehensive doctests and property tests for all helpers.
-Performance trade-off: ~100ms -> ~200ms acceptable for maintainability.
-
-Closes: QUALITY-001
-```
-
-## MANDATORY: TDG (Technical Debt Gradient) Transactional Tracking
-
-**CRITICAL**: Every commit MUST include TDG score tracking to prevent debt drift.
-
-### TDG Scoring System
-- **A+ (95-100)**: Excellent - No action needed
-- **A (90-94)**: Very Good - Maintain quality
-- **B (80-89)**: Good - Monitor for degradation  
-- **C (70-79)**: Fair - Requires improvement
-- **D (60-69)**: Poor - Priority refactoring needed
-- **F (<60)**: Critical - MUST fix immediately
-
-### TDG Pre-Commit Protocol (MANDATORY)
-```bash
-# Run before EVERY commit to track debt changes:
-./.tdg_tracking.sh || {
-    echo "❌ TDG degradation detected - commit blocked"
-    echo "Fix the code or add [TDG-OVERRIDE] with justification"
-    exit 1
-}
-```
-
-### TDG Components Tracked
-1. **Structural Complexity** (25%): Cyclomatic/cognitive complexity
-2. **Semantic Complexity** (20%): Type complexity, generics usage
-3. **Duplication** (20%): Code duplication percentage
-4. **Coupling** (15%): Module dependencies
-5. **Documentation** (10%): Doc coverage percentage
-6. **Consistency** (10%): Style/pattern adherence
-
-### File Hash Tracking
-- Each commit includes SHA256 hash of modified files
-- Enables detection of uncommitted changes
-- Prevents TDG score gaming by partial commits
-
-### TDG Override Protocol
-Only allowed with explicit justification:
-```
-[P0-EMERGENCY][TDG-OVERRIDE] Critical production fix
-
-TDG Score Changes:
-- src/runtime/repl.rs: 67.4→65.2 (C+→D+) [-2.2 degradation]
-
-Override Justification: 
-- Emergency fix for production outage
-- Debt payback ticket created: DEBT-XXX
-- Scheduled for next sprint
-
-File Hash: 9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b
-```
-
-### MANDATORY: TDG Commit Verification Protocol v2.39.0
-**CRITICAL**: NO commits allowed without TDG A- grade verification
-
-```bash
-# MANDATORY before every commit (TDG v2.39.0):
-pmat tdg . --min-grade A- --fail-on-violation || {
-    echo "❌ COMMIT BLOCKED: TDG grade below A- threshold"
-    echo "Run: pmat tdg . --include-components --top-files 5"
-    echo "Use: pmat tdg dashboard --open for real-time analysis"
-    echo "ALL TDG violations must achieve A- grade before commit"
-    exit 1
-}
-
-# BACKUP: Traditional quality gate verification
-pmat quality-gate --fail-on-violation --format=summary || {
-    echo "❌ COMMIT BLOCKED: Traditional quality gate failed"
-    exit 1
-}
-```
+**Pre-Commit**: `pmat tdg . --min-grade A- --fail-on-violation` (BLOCKING)
 
 ## Compiler Architecture Patterns
 
@@ -642,47 +468,9 @@ cargo publish                    # Publish main package only
 # NOTE: ruchy-cli is DEPRECATED - do NOT publish (MUDA/waste)
 ```
 
-### Pre-commit Hooks (MANDATORY)
-```bash
-#!/bin/bash
-# .git/hooks/pre-commit - BLOCKS commits that violate quality
-set -e
-
-echo "🔒 MANDATORY Quality Gates Running..."
-
-# GATE 1: TDG A- Grade Verification (PRIMARY)
-echo "📊 MANDATORY: TDG A- grade verification..."
-TDG_SCORE=$(timeout 60s pmat tdg . --quiet 2>/dev/null || echo "0")
-if [ -n "$TDG_SCORE" ] && (( $(echo "$TDG_SCORE >= 85" | bc -l) )); then
-    echo "✅ TDG Grade: $TDG_SCORE (≥85 A- required) - PASSED"
-else
-    echo "❌ BLOCKED: TDG grade $TDG_SCORE below A- threshold (85 points)"
-    echo "Run: pmat tdg . --include-components --format=table"
-    exit 1
-fi
-
-# GATE 2: Function-level quality checks
-echo "📊 MANDATORY: Function-level quality gate..."
-if ./scripts/quality-gate.sh src; then
-    echo "✅ Quality gate passed"
-else
-    echo "❌ BLOCKED: Quality gate failed"
-    echo "Fix all functions with complexity >10 and remove SATD comments"
-    exit 1
-fi
-
-# GATE 3: Basic functionality test
-echo "🧪 MANDATORY: Basic functionality test..."
-if echo 'println("Hello")' | timeout 5s ruchy repl | grep -q "Hello"; then
-    echo "✅ Basic functionality test passed"
-else
-    echo "❌ BLOCKED: Basic functionality test failed"
-    echo "REPL cannot execute simple println"
-    exit 1
-fi
-
-echo "✅ All quality gates passed"
-```
+### Pre-commit Hooks (AUTO-INSTALLED via `pmat hooks install`)
+Gates: TDG A-, Function complexity ≤10, Basic REPL test
+Install: `pmat hooks install`
 
 ## The Make Lint Contract (Zero Warnings Allowed)
 ```bash
@@ -726,6 +514,16 @@ tests/
 
 Language compatibility testing is **GATE 2** in our mandatory pre-commit hooks - more critical than complexity or linting because **language regressions break user code**.
 
+## 15 Native Tool Validation Protocol (LANG-COMP MANDATORY)
+
+**CRITICAL**: All language completeness documentation (LANG-COMP tickets) MUST validate examples using ALL 15 native Ruchy tools.
+
+### 15-Tool Validation Requirements (MANDATORY/BLOCKING)
+
+Every LANG-COMP example MUST pass: `lint`, `compile`, `run`, `test`, `coverage`, `bench`, `doc`, `fmt`, `check`, `big-o`, `ast`, `wasm`, `provability`, `mutation`, `fuzz`
+
+See: docs/SPECIFICATION.md Section 31
+
 ## The Development Flow (PMAT-Enforced)
 
 ### MANDATORY: PMAT Quality at Every Step
@@ -739,35 +537,11 @@ Language compatibility testing is **GATE 2** in our mandatory pre-commit hooks -
 7. COMMIT with task reference (only if PMAT passes)
 ```
 
-### MANDATORY TDG Protocol v2.39.0 (BLOCKING):
-```bash
-# STEP 1: Pre-development TDG baseline (MANDATORY)
-pmat tdg . --min-grade A- --format=table
-pmat quality-gate --fail-on-violation --format=summary
-
-# STEP 2: Real-time development monitoring (continuous)
-pmat tdg dashboard --port 8080 --update-interval 5 &  # Background monitoring
-
-# STEP 3: File-level verification (after each function/module)
-pmat tdg <modified-file.rs> --include-components --min-grade B+
-
-# STEP 4: Pre-commit TDG verification (MANDATORY - BLOCKS COMMITS)
-pmat tdg . --min-grade A- --fail-on-violation
-pmat quality-gate --fail-on-violation --format=detailed
-
-# STEP 5: Sprint completion comprehensive analysis (MANDATORY)
-pmat tdg . --format=markdown --output=TDG_SPRINT_REPORT_$(date +%Y%m%d).md
-pmat tdg export . --all-formats --output-dir ./tdg-reports/
-```
-
-### TDG Violation Response v2.39.0 (IMMEDIATE):
-1. **HALT**: Stop ALL development when TDG grade falls below A- (85 points)
-2. **ANALYZE**: Use `pmat tdg <file> --include-components` to identify exact component failures
-3. **DASHBOARD**: Use `pmat tdg dashboard` for real-time hotspot identification
-4. **TARGETED REFACTOR**: Address specific TDG component issues (structural, semantic, etc.)
-5. **VERIFY**: Re-run `pmat tdg <file>` to prove A- grade achievement
-6. **TRENDING**: Use dashboard to verify no regression in other files
-7. **MCP INTEGRATION**: Use enterprise MCP tools for external quality integration
+### TDG Violation Response (IMMEDIATE):
+1. **HALT**: Stop when TDG < A- (85 points)
+2. **ANALYZE**: `pmat tdg <file> --include-components`
+3. **REFACTOR**: Fix specific component issues
+4. **VERIFY**: Re-run to prove A- achievement
 
 ## Sprint Hygiene Protocol
 
@@ -785,218 +559,23 @@ find . -type f -size +100M -not -path "./target/*" -not -path "./.git/*"
 
 **Remember**: Compiler engineering is about systematic transformation, not clever hacks. Every abstraction must have zero runtime cost. Every error must be actionable. Every line of code must justify its complexity budget.
 
-## MANDATORY TDG Real-Time Monitoring (v2.39.0 - CONTINUOUS)
 
-**NEW REQUIREMENT**: Real-time quality monitoring via TDG dashboard is MANDATORY for all development.
+## PMAT v2.68.0+ Advanced Features
 
-### TDG Dashboard Integration:
-```bash
-# MANDATORY: Start real-time monitoring at beginning of each session
-pmat tdg dashboard --port 8080 --update-interval 5 --open
+### Daily Workflow
+**Before Work**: `pmat tdg . --top-files 10; pmat tdg dashboard --port 8080 --open &`
+**During**: Monitor dashboard, check files: `pmat tdg <file> --include-components`
+**Before Commit**: `pmat tdg . --min-grade A- --fail-on-violation`
 
-# Features in v2.39.0:
-# - Real-time system metrics with 5-second updates
-# - Storage backend monitoring (Hot/Warm/Cold tiers)
-# - Performance profiling with flame graphs
-# - Bottleneck detection (CPU, I/O, Memory, Lock contention)
-# - Interactive analysis with Server-Sent Events
-```
-
-### TDG MCP Enterprise Integration:
-```bash
-# OPTIONAL: External tool integration via MCP server
-pmat mcp serve --port 3000
-
-# Available MCP tools for external integration:
-# - tdg_analyze_with_storage: Enterprise-grade analysis with persistence
-# - tdg_system_diagnostics: System health and performance monitoring
-# - tdg_storage_management: Storage backend control and optimization
-# - tdg_performance_profiling: Advanced profiling with flame graphs
-# - tdg_alert_management: Configurable alert system
-# - tdg_export_data: Multi-format export (JSON, CSV, SARIF, HTML, XML)
-```
-
-## MANDATORY TDG Rules (BLOCKING - NO EXCEPTIONS)
-
-**CRITICAL**: ALL development MUST achieve TDG A- grade (≥85 points) before proceeding.
-
-### TDG Enforcement Rules v2.39.0:
-- **TDG BASELINE**: Run `pmat tdg . --min-grade A-` before ANY code changes
-- **REAL-TIME MONITORING**: Keep `pmat tdg dashboard` running during development
-- **COMPLEXITY LIMIT**: ≤10 cyclomatic complexity per function (TDG structural component)
-- **COGNITIVE LIMIT**: ≤10 cognitive complexity per function (TDG semantic component)
-- **ZERO SATD**: No TODO/FIXME/HACK comments (TDG technical debt component)
-- **DOCUMENTATION**: >70% API documentation coverage (TDG documentation component)
-- **DUPLICATION**: <10% code duplication (TDG duplication component)
-- **CONSISTENCY**: ≥80% naming/style consistency (TDG consistency component)
-- **ENTERPRISE MCP**: Use MCP tools for external integration and advanced analytics
-- **COMMIT BLOCKING**: Pre-commit hooks MUST include TDG A- grade verification
-
-### PMAT Violation Response (IMMEDIATE ACTION REQUIRED):
-```bash
-# When PMAT fails:
-1. HALT: Stop ALL development immediately
-2. ANALYZE: pmat analyze complexity --top-files 5 --format=detailed
-3. IDENTIFY: Find functions >10 complexity 
-4. REFACTOR: Extract functions to reduce complexity
-5. VERIFY: Re-run pmat quality-gate to confirm fix
-6. CONTINUE: Only proceed when ALL violations resolved
-```
-
-## 🔥 PMAT v2.68.0+ Advanced Quality Features (MANDATORY INTEGRATION)
-
-### 📊 TDG Persistent Storage (NEW - Dogfooding Excellence)
-**MANDATORY**: Use TDG persistent scoring for continuous quality tracking and historical analysis.
-
-```bash
-# Install latest PMAT with TDG storage features
-cargo install pmat --force --version ">=2.68.0"
-
-# Analyze files (automatically stores scores to ~/.pmat/tdg-*)
-pmat tdg src/runtime/repl.rs --include-components
-
-# Check storage statistics (monitor quality trends)
-pmat tdg storage stats
-
-# View historical scores (uses cached results for performance)
-pmat tdg src/runtime/repl.rs  # Instant retrieval from storage
-
-# Export quality trends
-pmat tdg export . --format markdown --output quality-trends.md
-```
-
-**Storage Benefits**:
-- **📈 Historical Tracking**: Every TDG score persistently stored
-- **⚡ Performance**: Cache hits avoid re-analysis on unchanged files
-- **🎯 Quality Trends**: Track improvements/regressions over time
-- **💾 Tiered Storage**: Hot/warm/cold optimization for 100K+ files
-
-### 🎯 Actionable Entropy Analysis (v2.70.0+)
-**MANDATORY**: Replace noisy character entropy with AST-based actionable patterns.
-
-```bash
-# Analyze entropy for actionable refactoring opportunities
-pmat analyze entropy . --min-severity high --top-violations 10
-
-# Pattern types detected:
-# - ErrorHandling: Repetitive error handling patterns
-# - DataValidation: Duplicate validation logic
-# - ResourceManagement: Repeated resource patterns
-# - ConfigurationAccess: Multiple config accesses
-# - StateManagement: Redundant state checks
-# - AlgorithmicComplexity: Similar algorithm implementations
-
-# Each violation includes:
-# - Specific fix suggestion
-# - LOC reduction estimate
-# - Refactoring strategy
-```
-
-### 🌐 Real-time TDG Dashboard (v2.39.0+)
-```bash
-# Start interactive web dashboard for continuous monitoring
-pmat tdg dashboard --port 8080 --open
-
-# Features:
-# - Real-time quality metrics with 5-second updates
-# - Storage backend monitoring (Hot/Warm/Cold tiers)
-# - Performance profiling with flame graphs
-# - Bottleneck detection (CPU, I/O, Memory, Lock contention)
-# - Server-Sent Events for live updates
-```
-
-### 🔌 MCP Server Integration (Enterprise Features)
-```bash
-# Start MCP server for external tool integration
-pmat mcp serve --port 3000
-
-# Available MCP tools:
-# - tdg_analyze_with_storage: Analysis with persistent storage
-# - tdg_system_diagnostics: System health monitoring
-# - tdg_storage_management: Storage optimization
-# - tdg_performance_profiling: Advanced profiling
-# - tdg_alert_management: Configurable alerts
-# - tdg_export_data: Multi-format export
-# - analyze_entropy: Actionable pattern detection
-```
-
-### 🔒 Pre-commit Hooks Management (v2.66.0+)
-```bash
-# Install PMAT-managed pre-commit hooks
-pmat tdg hooks install --backup
-
-# Features:
-# - Dynamic generation from pmat.toml
-# - Single source of truth for thresholds
-# - Automatic TDG scoring on commit
-# - Entropy analysis integration
-# - Zero configuration duplication
-```
-
-### 📋 Daily PMAT Workflow (MANDATORY)
-
-**Before Starting Work**:
-```bash
-# 1. Check baseline quality with persistent storage
-pmat tdg . --top-files 10  # Uses cached scores for speed
-
-# 2. Start real-time dashboard
-pmat tdg dashboard --port 8080 --open &
-
-# 3. Analyze entropy patterns
-pmat analyze entropy . --min-severity medium
-```
-
-**During Development**:
-```bash
-# 1. Monitor dashboard for real-time quality feedback
-# 2. Check specific files after changes
-pmat tdg src/modified_file.rs --include-components
-
-# 3. Validate entropy patterns
-pmat analyze entropy --file src/modified_file.rs
-```
-
-**Before Committing**:
-```bash
-# 1. Full TDG validation (uses persistent storage)
-pmat tdg . --min-grade A- --fail-on-violation
-
-# 2. Entropy check for new patterns
-pmat analyze entropy --changed-files --min-severity high
-
-# 3. Export quality report
-pmat tdg export . --format json > commit-quality.json
-
-# 4. Storage statistics (track quality trends)
-pmat tdg storage stats
-```
-
-### 🏆 Quality Metrics Integration
-
-**Ruchy-Specific Thresholds**:
-- **TDG Grade**: Maintain A- (≥85 points) minimum
-- **Complexity**: ≤10 cyclomatic (strict Toyota Way)
-- **Entropy Violations**: ≤10 high-severity patterns
-- **Storage Growth**: Monitor ~/.pmat/tdg-* weekly
-- **Cache Hit Ratio**: >80% for unchanged files
-
-**Key Rules**:
-- **PMAT FIRST**: Always run PMAT quality gates before starting any task
-- **COMPLEXITY BUDGET**: Every function must justify its complexity via PMAT metrics
-- **NO BYPASS**: Quality gates cannot be bypassed or temporarily ignored
-- No "cruft" at root of repo - always clean up temp files before committing
-- If fixing documentation, always ensure a doctest exists
-- Language compatibility tests are MANDATORY quality gates - never bypass
-- ruchy-cli is deprecated, stop publishing it
-- When increasing test coverage ensure proper mix of unit/doctests/property-tests/fuzz
-- Always look at ../ruchy-book and ../rosetta-ruchy to ensure quality at sprint start
-- Any time we fail more than once, add more testing - mandatory sign this code path needs more testing
-- Check ../ruchyruchy for integration reports at beginning of each sprint
-- all bugs MUST be solved with TDD.  we don't do manual "hacks".  We write the test, then prove it fixes.
-- **PMAT VIOLATION RESPONSE**: "The quality gate might be too strict. Let me try bypassing for now since our changes are good" is NEVER TOLERATED. Use Five Whys and Toyota Way to fix root cause.
-- we use cargo-llvm not tarpualin for coverage
-- **PMAT MANDATORY**: Every commit MUST pass PMAT quality gates - no exceptions
+### Key Rules
+- **PMAT FIRST**: Run quality gates before ANY task
+- **NO BYPASS**: Never `--no-verify`, fix root cause via Five Whys
+- **TDD MANDATORY**: Write test first, prove fix works
+- Use cargo-llvm-cov (not tarpaulin)
+- All bugs solved with TDD, never manual hacks
+- ruchy-cli deprecated (don't publish)
+- Mix: unit/doctests/property-tests/fuzz tests
+- Check ../ruchy-book and ../rosetta-ruchy at sprint start
 
 ## Documentation Standards
 

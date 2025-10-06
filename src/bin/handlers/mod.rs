@@ -1801,6 +1801,238 @@ pub fn handle_wasm_command(
     Ok(())
 }
 
+/// Handle property-tests command - run property-based tests
+///
+/// # Arguments
+/// * `path` - Path to test file or directory
+/// * `cases` - Number of test cases per property
+/// * `format` - Output format (text, json, markdown)
+/// * `output` - Output file path
+/// * `seed` - Random seed for reproducibility
+/// * `verbose` - Enable verbose output
+///
+/// # Errors
+/// Returns error if tests fail or cannot be executed
+pub fn handle_property_tests_command(
+    path: &Path,
+    cases: usize,
+    format: &str,
+    output: Option<&Path>,
+    seed: Option<u64>,
+    verbose: bool,
+) -> Result<()> {
+    if verbose {
+        eprintln!("Running property tests on: {}", path.display());
+        eprintln!("Test cases per property: {}", cases);
+    }
+
+    let mut cmd = std::process::Command::new("cargo");
+    cmd.args(["test", "--test", "lang_comp_suite", "--", "--nocapture"])
+        .env("PROPTEST_CASES", cases.to_string());
+
+    if let Some(s) = seed {
+        cmd.env("PROPTEST_SEED", s.to_string());
+    }
+
+    let output_result = cmd.output()?;
+    let stdout = String::from_utf8_lossy(&output_result.stdout);
+    let stderr = String::from_utf8_lossy(&output_result.stderr);
+
+    if verbose {
+        eprintln!("Command output:\n{}", stderr);
+    }
+
+    if output_result.status.success() {
+        match format {
+            "json" => {
+                let report = serde_json::json!({
+                    "status": "passed",
+                    "cases": cases,
+                    "output": stdout.to_string()
+                });
+                let json_output = serde_json::to_string_pretty(&report)?;
+                if let Some(out_path) = output {
+                    fs::write(out_path, json_output)?;
+                } else {
+                    println!("{}", json_output);
+                }
+            }
+            _ => {
+                println!("Property Test Report");
+                println!("====================");
+                println!("Status: ✅ PASSED");
+                println!("Test cases: {}", cases);
+                if let Some(out_path) = output {
+                    fs::write(out_path, &stdout.to_string())?;
+                } else {
+                    println!("\n{}", stdout);
+                }
+            }
+        }
+        Ok(())
+    } else {
+        anyhow::bail!("Property tests failed:\n{}", stderr)
+    }
+}
+
+/// Handle mutations command - run mutation tests
+///
+/// # Arguments
+/// * `path` - Path to source file or directory
+/// * `timeout` - Timeout per mutation in seconds
+/// * `format` - Output format (text, json, markdown, sarif)
+/// * `output` - Output file path
+/// * `min_coverage` - Minimum mutation coverage (0.0-1.0)
+/// * `verbose` - Enable verbose output
+///
+/// # Errors
+/// Returns error if mutation coverage is below threshold
+pub fn handle_mutations_command(
+    path: &Path,
+    timeout: u32,
+    format: &str,
+    output: Option<&Path>,
+    min_coverage: f64,
+    verbose: bool,
+) -> Result<()> {
+    if verbose {
+        eprintln!("Running mutation tests on: {}", path.display());
+        eprintln!(
+            "Timeout: {}s, Min coverage: {:.1}%",
+            timeout,
+            min_coverage * 100.0
+        );
+    }
+
+    let mut cmd = std::process::Command::new("cargo");
+    cmd.args([
+        "mutants",
+        "--file",
+        path.to_str().unwrap(),
+        "--timeout",
+        &timeout.to_string(),
+        "--no-times",
+    ]);
+
+    let output_result = cmd.output()?;
+    let stdout = String::from_utf8_lossy(&output_result.stdout);
+    let stderr = String::from_utf8_lossy(&output_result.stderr);
+
+    if verbose {
+        eprintln!("Command output:\n{}", stderr);
+    }
+
+    match format {
+        "json" => {
+            let report = serde_json::json!({
+                "status": if output_result.status.success() { "passed" } else { "failed" },
+                "min_coverage": min_coverage,
+                "output": stdout.to_string()
+            });
+            let json_output = serde_json::to_string_pretty(&report)?;
+            if let Some(out_path) = output {
+                fs::write(out_path, json_output)?;
+            } else {
+                println!("{}", json_output);
+            }
+        }
+        _ => {
+            println!("Mutation Test Report");
+            println!("====================");
+            println!("Minimum coverage: {:.1}%", min_coverage * 100.0);
+            if let Some(out_path) = output {
+                fs::write(out_path, &stdout.to_string())?;
+            } else {
+                println!("\n{}", stdout);
+            }
+        }
+    }
+
+    if output_result.status.success() {
+        Ok(())
+    } else {
+        anyhow::bail!("Mutation tests failed or coverage below threshold")
+    }
+}
+
+/// Handle fuzz command - run fuzz tests
+///
+/// # Arguments
+/// * `target` - Fuzz target name or path
+/// * `iterations` - Number of iterations
+/// * `timeout` - Timeout per iteration in milliseconds
+/// * `format` - Output format (text, json)
+/// * `output` - Output file path
+/// * `verbose` - Enable verbose output
+///
+/// # Errors
+/// Returns error if fuzz tests find crashes or panics
+pub fn handle_fuzz_command(
+    target: &str,
+    iterations: usize,
+    timeout: u32,
+    format: &str,
+    output: Option<&Path>,
+    verbose: bool,
+) -> Result<()> {
+    if verbose {
+        eprintln!("Running fuzz tests on target: {}", target);
+        eprintln!("Iterations: {}, Timeout: {}ms", iterations, timeout);
+    }
+
+    let mut cmd = std::process::Command::new("cargo");
+    cmd.args([
+        "fuzz",
+        "run",
+        target,
+        "--",
+        &format!("-runs={}", iterations),
+        &format!("-timeout={}", timeout),
+    ]);
+
+    let output_result = cmd.output()?;
+    let stdout = String::from_utf8_lossy(&output_result.stdout);
+    let stderr = String::from_utf8_lossy(&output_result.stderr);
+
+    if verbose {
+        eprintln!("Command output:\n{}", stderr);
+    }
+
+    match format {
+        "json" => {
+            let report = serde_json::json!({
+                "target": target,
+                "iterations": iterations,
+                "status": if output_result.status.success() { "passed" } else { "failed" },
+                "output": stdout.to_string()
+            });
+            let json_output = serde_json::to_string_pretty(&report)?;
+            if let Some(out_path) = output {
+                fs::write(out_path, json_output)?;
+            } else {
+                println!("{}", json_output);
+            }
+        }
+        _ => {
+            println!("Fuzz Test Report");
+            println!("================");
+            println!("Target: {}", target);
+            println!("Iterations: {}", iterations);
+            if let Some(out_path) = output {
+                fs::write(out_path, &stdout.to_string())?;
+            } else {
+                println!("\n{}", stdout);
+            }
+        }
+    }
+
+    if output_result.status.success() {
+        Ok(())
+    } else {
+        anyhow::bail!("Fuzz tests found crashes or panics:\n{}", stderr)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

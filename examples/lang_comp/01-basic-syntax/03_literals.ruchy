@@ -1,0 +1,15 @@
+// LANG-COMP-001: Basic Syntax - Literals
+// Demonstrates: Integer, float, boolean, string literals
+
+// Integer literal
+42
+
+// Float literal
+3.14
+
+// Boolean literals
+true
+false
+
+// String literal
+"Hello, World!"

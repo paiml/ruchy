@@ -1,0 +1,5 @@
+// LANG-COMP-001: Basic Syntax - Variables
+// Demonstrates: Let bindings with integers
+
+let x = 42
+x
