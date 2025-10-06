@@ -5566,13 +5566,16 @@ impl Interpreter {
         &mut self,
         parts: &[StringPart],
     ) -> Result<Value, InterpreterError> {
+        use crate::runtime::eval_string_interpolation::format_value_for_interpolation;
+
         let mut result = String::new();
         for part in parts {
             match part {
                 StringPart::Text(text) => result.push_str(text),
                 StringPart::Expr(expr) => {
                     let value = self.eval_expr(expr)?;
-                    result.push_str(&value.to_string());
+                    // Use format_value_for_interpolation to avoid adding quotes to strings
+                    result.push_str(&format_value_for_interpolation(&value));
                 }
                 StringPart::ExprWithFormat { expr, format_spec } => {
                     let value = self.eval_expr(expr)?;
