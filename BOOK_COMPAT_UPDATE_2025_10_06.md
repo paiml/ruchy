@@ -107,13 +107,37 @@ $ echo 'let price = 99.99; let tax = 0.08; price * (1.0 + tax)' | ruchy repl
 - Priorities misdirected toward already-working code
 - Quality improvements overlooked
 
+## Additional Testing (2025-10-06 Continued)
+
+### Real Feature Gaps Discovered:
+- ❌ **Dataframes (Chapter 18)**: Parser errors - NOT IMPLEMENTED
+  ```
+  df!["name" => ["Alice"], "age" => [30]]
+  → Error: Unexpected token: FatArrow
+  ```
+
+- ❌ **Try-Catch (Chapter 17)**: Parser errors - INCOMPLETE
+  ```
+  try { ... } catch e { ... }
+  → Error: Expected RightBrace, found Let
+  ```
+
+### Features Verified Working:
+- ✅ **Binary Compilation (Chapter 15)**: WORKS (docs claim 1/4, may be higher)
+  ```
+  fun main() { println("Hello"); }
+  → ✓ Successfully compiled to: a.out
+  → Executes correctly
+  ```
+
 ## Next Steps
 
 1. ✅ **DONE**: Created accurate one-liner test (`.pmat/test_one_liners.sh`)
-2. **TODO**: Update INTEGRATION.md with 100% one-liner results
-3. **TODO**: Close Bug #002 in ruchy-runtime-bugs.md
+2. ✅ **DONE**: Update INTEGRATION.md with 100% one-liner results
+3. ✅ **DONE**: Close Bug #002 in ruchy-runtime-bugs.md
 4. **TODO**: Create comprehensive book example test suite
 5. **TODO**: Establish automated compatibility testing
+6. **TODO**: Separate documentation errors from real feature gaps
 
 ## Conclusion
 
