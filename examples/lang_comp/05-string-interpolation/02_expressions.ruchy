@@ -1,0 +1,10 @@
+// LANG-COMP-005: String Interpolation with Expressions
+// Demonstrates f-string syntax with complex expressions
+
+let x = 10
+let y = 20
+
+println(f"x + y = {x + y}")
+println(f"x * y = {x * y}")
+println(f"x > y is {x > y}")
+println(f"Result: {x + y * 2}")
