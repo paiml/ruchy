@@ -4828,9 +4828,39 @@ impl LintRegistry {
 
 ### 31.1 Native Tool Validation Protocol
 
-**MANDATORY**: All language completeness documentation (LANG-COMP tickets) MUST validate features using ALL 14 native Ruchy tools.
+**MANDATORY**: All language completeness documentation (LANG-COMP tickets) MUST validate features using ALL 15 native Ruchy tools.
 
-### 31.2 15 Native Tool Validation Requirements
+**CRITICAL REQUIREMENT**: Each LANG-COMP test MUST be named `test_langcomp_XXX_YY_feature` and invoke ALL 15 tools as acceptance criteria.
+
+### 31.2 Test Pattern (MANDATORY/BLOCKING)
+
+```rust
+#[test]
+fn test_langcomp_XXX_YY_feature_name() {
+    let example = example_path("XX-feature/YY_example.ruchy");
+
+    // TOOL 1-15: Invoke ALL tools via assert_cmd
+    ruchy_cmd().arg("check").arg(&example).assert().success();
+    ruchy_cmd().arg("transpile").arg(&example).assert().success();
+    // ... (repl skipped - interactive)
+    ruchy_cmd().arg("lint").arg(&example).assert().success();
+    ruchy_cmd().arg("compile").arg(&example).assert().success();
+    ruchy_cmd().arg("run").arg(&example).assert().success();
+    ruchy_cmd().arg("coverage").arg(&example).assert().success();
+    ruchy_cmd().arg("runtime").arg(&example).arg("--bigo").assert().success();
+    ruchy_cmd().arg("ast").arg(&example).assert().success();
+    ruchy_cmd().arg("wasm").arg(&example).assert().success();
+    ruchy_cmd().arg("provability").arg(&example).assert().success();
+    ruchy_cmd().arg("property-tests").arg(&example).assert().success();
+    ruchy_cmd().arg("mutations").arg(&example).assert().success();
+    ruchy_cmd().arg("fuzz").arg(&example).assert().success();
+    // ... (notebook skipped - requires server)
+}
+```
+
+**ACCEPTANCE CRITERIA**: Test passes ONLY if ALL 15 tools succeed.
+
+### 31.3 15 Native Tool Validation Requirements
 
 Every example in language completeness documentation MUST pass validation from ALL 15 tools:
 
