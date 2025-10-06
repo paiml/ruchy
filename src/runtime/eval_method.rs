@@ -420,7 +420,11 @@ mod mutation_tests {
         let result = dispatch_method_call(&float_val, "sqrt", &[], true);
 
         assert!(result.is_ok(), "Float should dispatch to eval_float_method");
-        assert_eq!(result.unwrap(), Value::Float(2.0), "sqrt(4.0) should be 2.0");
+        assert_eq!(
+            result.unwrap(),
+            Value::Float(2.0),
+            "sqrt(4.0) should be 2.0"
+        );
     }
 
     #[test]
