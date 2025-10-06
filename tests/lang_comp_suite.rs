@@ -7,4 +7,7 @@ mod lang_comp {
 
     #[cfg(test)]
     mod operators;
+
+    #[cfg(test)]
+    mod control_flow;
 }

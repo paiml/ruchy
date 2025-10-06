@@ -1,0 +1,22 @@
+// LANG-COMP-003: Break and Continue Example
+// Demonstrates loop control flow
+
+// Break example: find first number divisible by 7
+println("Finding first multiple of 7 after 20:")
+let i = 20
+while true {
+    if i % 7 == 0 {
+        println(f"Found: {i}")
+        break
+    }
+    i = i + 1
+}
+
+// Continue example: print only even numbers
+println("Even numbers 1-10:")
+for n in 1..11 {
+    if n % 2 != 0 {
+        continue
+    }
+    println(f"  {n}")
+}

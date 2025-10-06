@@ -1,0 +1,22 @@
+// LANG-COMP-003: While Loop Example
+// Demonstrates condition-based iteration
+
+let count = 1
+println("Counting with while:")
+while count <= 5 {
+    println(f"  {count}")
+    count = count + 1
+}
+
+// Fibonacci using while
+let a = 0
+let b = 1
+println("Fibonacci sequence (first 10):")
+let i = 0
+while i < 10 {
+    println(f"  {a}")
+    let temp = a + b
+    a = b
+    b = temp
+    i = i + 1
+}

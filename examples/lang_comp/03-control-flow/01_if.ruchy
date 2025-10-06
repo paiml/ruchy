@@ -1,0 +1,14 @@
+// LANG-COMP-003: If Expression Example
+// Demonstrates if/else conditional branching
+
+let age = 25
+
+if age >= 18 {
+    println("Adult")
+} else {
+    println("Minor")
+}
+
+// If as expression (returns value)
+let status = if age >= 21 { "Full access" } else { "Limited access" }
+println(f"Status: {status}")
