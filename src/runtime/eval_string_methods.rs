@@ -30,8 +30,8 @@ pub fn eval_string_method(
 fn eval_zero_arg_string_method(s: &Rc<str>, method: &str) -> Result<Value, InterpreterError> {
     match method {
         "len" | "length" => Ok(Value::Integer(s.len() as i64)),
-        "to_upper" => Ok(Value::from_string(s.to_uppercase())),
-        "to_lower" => Ok(Value::from_string(s.to_lowercase())),
+        "to_upper" | "to_uppercase" => Ok(Value::from_string(s.to_uppercase())),
+        "to_lower" | "to_lowercase" => Ok(Value::from_string(s.to_lowercase())),
         "to_string" => Ok(Value::from_string(s.to_string())),
         "is_empty" => Ok(Value::Bool(s.is_empty())),
         "trim" => Ok(Value::from_string(s.trim().to_string())),
