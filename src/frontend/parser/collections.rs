@@ -1863,7 +1863,11 @@ mod mutation_tests {
         // Direct unit test of the declaration_token_to_key function
         let result = declaration_token_to_key(&Token::Var);
         assert!(result.is_some(), "Token::Var should map to a key");
-        assert_eq!(result.unwrap(), "var", "Token::Var should map to 'var' string");
+        assert_eq!(
+            result.unwrap(),
+            "var",
+            "Token::Var should map to 'var' string"
+        );
     }
 
     #[test]
