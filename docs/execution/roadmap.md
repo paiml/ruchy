@@ -4567,30 +4567,33 @@ pmat analyze complexity --max-cyclomatic 10
 
 ---
 
-## 🛠️ **14 NATIVE TOOL VALIDATION PROTOCOL (LANG-COMP REQUIREMENT)**
+## 🛠️ **15 NATIVE TOOL VALIDATION PROTOCOL (LANG-COMP REQUIREMENT)**
 
-**MANDATORY**: All LANG-COMP tickets MUST validate examples using ALL 14 native Ruchy tools.
+**MANDATORY**: All LANG-COMP tickets MUST validate examples using ALL 15 native Ruchy tools.
+
+**CRITICAL REQUIREMENT**: EACH test must be named `test_langcomp_XXX_YY_feature` and invoke ALL 15 tools as acceptance criteria.
 
 ### Tool Implementation Status
 
-**ALL 14 TOOLS ARE MANDATORY AND BLOCKING**
+**ALL 15 TOOLS ARE MANDATORY AND BLOCKING**
 
 | # | Tool | Status | Purpose | Requirement |
 |---|------|--------|---------|-------------|
 | 1 | `ruchy check` | ✅ Implemented | Syntax validation (fast pre-flight) | **MANDATORY/BLOCKING** |
 | 2 | `ruchy transpile` | ✅ Implemented | Rust code generation | **MANDATORY/BLOCKING** |
-| 3 | `ruchy repl` | ✅ Implemented | Interactive validation | **MANDATORY/BLOCKING** |
+| 3 | `ruchy repl` | ✅ Implemented | Interactive validation (skip in tests) | **MANDATORY/BLOCKING** |
 | 4 | `ruchy lint` | ✅ Implemented | Static analysis, zero issues | **MANDATORY/BLOCKING** |
 | 5 | `ruchy compile` | ✅ Implemented | Standalone binary compilation | **MANDATORY/BLOCKING** |
 | 6 | `ruchy run` | ✅ Implemented | Execution validation | **MANDATORY/BLOCKING** |
-| 7 | `ruchy coverage` | 🚧 Planned | Test coverage ≥80% | **MANDATORY/BLOCKING** |
-| 8 | `ruchy big-o` | 🚧 Planned | Algorithmic complexity | **MANDATORY/BLOCKING** |
-| 9 | `ruchy ast` | 🚧 Planned | AST structure verification | **MANDATORY/BLOCKING** |
-| 10 | `ruchy wasm` | 🚧 Planned | WASM compilation | **MANDATORY/BLOCKING** |
-| 11 | `ruchy provability` | 🚧 Planned | Formal verification | **MANDATORY/BLOCKING** |
+| 7 | `ruchy coverage` | ✅ Implemented | Test coverage ≥80% | **MANDATORY/BLOCKING** |
+| 8 | `ruchy runtime --bigo` | ✅ Implemented | Algorithmic complexity | **MANDATORY/BLOCKING** |
+| 9 | `ruchy ast` | ✅ Implemented | AST structure verification | **MANDATORY/BLOCKING** |
+| 10 | `ruchy wasm` | ✅ Implemented | WASM compilation | **MANDATORY/BLOCKING** |
+| 11 | `ruchy provability` | ✅ Implemented | Formal verification | **MANDATORY/BLOCKING** |
 | 12 | `ruchy property-tests` | ✅ Implemented | Property-based testing (≥10K cases) | **MANDATORY/BLOCKING** |
 | 13 | `ruchy mutations` | ✅ Implemented | Mutation testing (≥75% coverage) | **MANDATORY/BLOCKING** |
 | 14 | `ruchy fuzz` | ✅ Implemented | Fuzz testing (≥1M iterations) | **MANDATORY/BLOCKING** |
+| 15 | `ruchy notebook` | ✅ Implemented | Interactive WASM notebook (skip in tests) | **MANDATORY/BLOCKING** |
 
 ### Current Status (LANG-COMP-001)
 
@@ -4615,7 +4618,13 @@ pmat analyze complexity --max-cyclomatic 10
 
 ### Validation Workflow
 
-**ALL 14 TOOLS MANDATORY - PRE-COMMIT BLOCKING**
+**ALL 15 TOOLS MANDATORY - PRE-COMMIT BLOCKING**
+
+Each LANG-COMP test MUST:
+1. Be named `test_langcomp_XXX_YY_feature_name`
+2. Invoke ALL 15 tools via assert_cmd
+3. Pass acceptance criteria: ALL 15 tools succeed
+4. Tools 3 (repl) and 15 (notebook) may be skipped (require interactive/server)
 
 ```bash
 # ALL 14 TOOLS BLOCK COMMITS IF THEY FAIL

@@ -695,7 +695,63 @@ Language compatibility testing is **GATE 2** in our mandatory pre-commit hooks -
 
 ### 15-Tool Validation Requirements (MANDATORY/BLOCKING)
 
-Every LANG-COMP example MUST pass: `lint`, `compile`, `run`, `test`, `coverage`, `bench`, `doc`, `fmt`, `check`, `big-o`, `ast`, `wasm`, `provability`, `mutation`, `fuzz`
+**EACH LANG-COMP TEST MUST BE NAMED BY TICKET AND INVOKE ALL 15 TOOLS**
+
+#### Mandatory Test Pattern:
+
+```rust
+#[test]
+fn test_langcomp_XXX_YY_feature_name() {
+    let example = example_path("XX-feature/YY_example.ruchy");
+
+    // TOOL 1: ruchy check
+    ruchy_cmd().arg("check").arg(&example).assert().success();
+
+    // TOOL 2: ruchy transpile
+    ruchy_cmd().arg("transpile").arg(&example).assert().success();
+
+    // TOOL 3: ruchy repl (skip - requires interactive)
+
+    // TOOL 4: ruchy lint
+    ruchy_cmd().arg("lint").arg(&example).assert().success();
+
+    // TOOL 5: ruchy compile
+    ruchy_cmd().arg("compile").arg(&example).assert().success();
+
+    // TOOL 6: ruchy run
+    ruchy_cmd().arg("run").arg(&example).assert().success();
+
+    // TOOL 7: ruchy coverage
+    ruchy_cmd().arg("coverage").arg(&example).assert().success();
+
+    // TOOL 8: ruchy runtime --bigo
+    ruchy_cmd().arg("runtime").arg(&example).arg("--bigo").assert().success();
+
+    // TOOL 9: ruchy ast
+    ruchy_cmd().arg("ast").arg(&example).assert().success();
+
+    // TOOL 10: ruchy wasm
+    ruchy_cmd().arg("wasm").arg(&example).assert().success();
+
+    // TOOL 11: ruchy provability
+    ruchy_cmd().arg("provability").arg(&example).assert().success();
+
+    // TOOL 12: ruchy property-tests
+    ruchy_cmd().arg("property-tests").arg(&example).assert().success();
+
+    // TOOL 13: ruchy mutations
+    ruchy_cmd().arg("mutations").arg(&example).assert().success();
+
+    // TOOL 14: ruchy fuzz
+    ruchy_cmd().arg("fuzz").arg(&example).assert().success();
+
+    // TOOL 15: ruchy notebook (skip - requires server)
+}
+```
+
+**ACCEPTANCE CRITERIA**: Test passes ONLY if ALL 15 tools succeed on the example file.
+
+**NAMING**: `test_langcomp_XXX_YY_feature_name` where XXX = ticket number, YY = section
 
 See: docs/SPECIFICATION.md Section 31
 
