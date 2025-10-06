@@ -10,4 +10,7 @@ mod lang_comp {
 
     #[cfg(test)]
     mod control_flow;
+
+    #[cfg(test)]
+    mod functions;
 }

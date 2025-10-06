@@ -1,0 +1,19 @@
+// LANG-COMP-004: Function Parameters Example
+// Demonstrates functions with parameters
+
+fn double(x) {
+    x * 2
+}
+
+fn add(a, b) {
+    a + b
+}
+
+fn greet_person(name) {
+    println(f"Hello, {name}!")
+}
+
+// Call functions with parameters
+println(f"double(5) = {double(5)}")
+println(f"add(3, 7) = {add(3, 7)}")
+greet_person("Alice")
