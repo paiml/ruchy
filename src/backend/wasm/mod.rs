@@ -1253,6 +1253,32 @@ mod tests {
         // Should contain i32.div_s instruction (0x6d)
         assert!(bytes.contains(&0x6d));
     }
+
+    #[test]
+    fn test_wasm_has_import_section_for_println() {
+        // RED phase: Test that WASM module has import section for println
+        let mut parser = Parser::new(r#"println("Hello")"#);
+        let ast = parser.parse().unwrap();
+
+        let emitter = WasmEmitter::new();
+        let wasm_bytes = emitter.emit(&ast).unwrap();
+
+        // Parse WASM and verify import section exists
+        let parser = wasmparser::Parser::new(0);
+        let mut has_import = false;
+
+        for payload in parser.parse_all(&wasm_bytes) {
+            if let Ok(wasmparser::Payload::ImportSection(_)) = payload {
+                has_import = true;
+                break;
+            }
+        }
+
+        assert!(
+            has_import,
+            "WASM module must have import section for println"
+        );
+    }
 }
 #[cfg(test)]
 mod property_tests_mod {
