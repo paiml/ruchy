@@ -4662,9 +4662,16 @@ fn parse_catch_clauses(state: &mut ParserState) -> Result<Vec<crate::frontend::a
     }
     Ok(catch_clauses)
 }
-/// Helper for parsing catch pattern (complexity: 5)
+/// Helper for parsing catch pattern (complexity: 7)
+/// Supports both `catch (e)` and `catch e` syntax
 fn parse_catch_pattern(state: &mut ParserState) -> Result<Pattern> {
-    state.tokens.expect(&Token::LeftParen)?;
+    // Check if using parentheses syntax: catch (e)
+    let has_parens = matches!(state.tokens.peek(), Some((Token::LeftParen, _)));
+
+    if has_parens {
+        state.tokens.expect(&Token::LeftParen)?;
+    }
+
     let pattern = if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
         let name = name.clone();
         state.tokens.advance();
@@ -4672,7 +4679,11 @@ fn parse_catch_pattern(state: &mut ParserState) -> Result<Pattern> {
     } else {
         bail!("Expected identifier in catch clause");
     };
-    state.tokens.expect(&Token::RightParen)?;
+
+    if has_parens {
+        state.tokens.expect(&Token::RightParen)?;
+    }
+
     Ok(pattern)
 }
 /// Helper for parsing catch body (complexity: 3)
