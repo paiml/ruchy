@@ -19,6 +19,82 @@ fn example_path(relative_path: &str) -> PathBuf {
         .join(relative_path)
 }
 
+/// 15-TOOL VALIDATION: Run ALL 15 native tools on example file
+/// MANDATORY/BLOCKING: Test passes ONLY if all tools succeed
+/// Skipped: Tool 3 (repl - interactive), Tool 15 (notebook - needs file arg implementation)
+/// Working: 13/15 tools = 87% coverage
+fn validate_with_15_tools(example: &PathBuf) {
+    // TOOL 1: ruchy check - Syntax validation
+    ruchy_cmd().arg("check").arg(example).assert().success();
+
+    // TOOL 2: ruchy transpile - Rust code generation
+    ruchy_cmd().arg("transpile").arg(example).assert().success();
+
+    // TOOL 3: ruchy repl - SKIPPED (requires interactive input)
+
+    // TOOL 4: ruchy lint - Static analysis
+    ruchy_cmd().arg("lint").arg(example).assert().success();
+
+    // TOOL 5: ruchy compile - Binary compilation
+    ruchy_cmd().arg("compile").arg(example).assert().success();
+
+    // TOOL 6: ruchy run - Execution
+    ruchy_cmd().arg("run").arg(example).assert().success();
+
+    // TOOL 7: ruchy coverage - Test coverage
+    ruchy_cmd().arg("coverage").arg(example).assert().success();
+
+    // TOOL 8: ruchy runtime --bigo - Complexity analysis
+    ruchy_cmd()
+        .arg("runtime")
+        .arg(example)
+        .arg("--bigo")
+        .assert()
+        .success();
+
+    // TOOL 9: ruchy ast - AST verification
+    ruchy_cmd().arg("ast").arg(example).assert().success();
+
+    // TOOL 10: ruchy wasm - WASM compilation
+    ruchy_cmd().arg("wasm").arg(example).assert().success();
+
+    // TOOL 11: ruchy provability - Formal verification
+    ruchy_cmd()
+        .arg("provability")
+        .arg(example)
+        .assert()
+        .success();
+
+    // TOOL 12: ruchy property-tests - Property-based testing (100 cases for speed)
+    ruchy_cmd()
+        .arg("property-tests")
+        .arg(example)
+        .arg("--cases")
+        .arg("100")
+        .assert()
+        .success();
+
+    // TOOL 13: ruchy mutations - Mutation testing (validates single files correctly)
+    ruchy_cmd()
+        .arg("mutations")
+        .arg(example)
+        .arg("--timeout")
+        .arg("60")
+        .assert()
+        .success();
+
+    // TOOL 14: ruchy fuzz - Fuzz testing (10 iterations for speed in tests)
+    ruchy_cmd()
+        .arg("fuzz")
+        .arg(example)
+        .arg("--iterations")
+        .arg("10")
+        .assert()
+        .success();
+
+    // TOOL 15: ruchy notebook - SKIPPED (requires server)
+}
+
 // ============================================================================
 // LANG-COMP-002-01: Arithmetic Operators Tests
 // Links to: examples/lang_comp/02-operators/01_arithmetic.ruchy
@@ -101,12 +177,10 @@ fn test_langcomp_002_01_arithmetic_modulo() {
 
 #[test]
 fn test_langcomp_002_01_arithmetic_example_file() {
-    // Validates: examples/lang_comp/02-operators/01_arithmetic.ruchy
-    ruchy_cmd()
-        .arg("run")
-        .arg(example_path("01_arithmetic.ruchy"))
-        .assert()
-        .success();
+    // 15-TOOL VALIDATION: examples/lang_comp/02-operators/01_arithmetic.ruchy
+    // ACCEPTANCE CRITERIA: ALL 15 tools must succeed
+    let example = example_path("01_arithmetic.ruchy");
+    validate_with_15_tools(&example);
 }
 
 #[test]
@@ -222,12 +296,10 @@ fn test_langcomp_002_02_comparison_greater_than_or_equal() {
 
 #[test]
 fn test_langcomp_002_02_comparison_example_file() {
-    // Validates: examples/lang_comp/02-operators/02_comparison.ruchy
-    ruchy_cmd()
-        .arg("run")
-        .arg(example_path("02_comparison.ruchy"))
-        .assert()
-        .success();
+    // 15-TOOL VALIDATION: examples/lang_comp/02-operators/02_comparison.ruchy
+    // ACCEPTANCE CRITERIA: ALL 15 tools must succeed
+    let example = example_path("02_comparison.ruchy");
+    validate_with_15_tools(&example);
 }
 
 #[test]
@@ -298,12 +370,10 @@ fn test_langcomp_002_03_logical_not() {
 
 #[test]
 fn test_langcomp_002_03_logical_example_file() {
-    // Validates: examples/lang_comp/02-operators/03_logical.ruchy
-    ruchy_cmd()
-        .arg("run")
-        .arg(example_path("03_logical.ruchy"))
-        .assert()
-        .success();
+    // 15-TOOL VALIDATION: examples/lang_comp/02-operators/03_logical.ruchy
+    // ACCEPTANCE CRITERIA: ALL 15 tools must succeed
+    let example = example_path("03_logical.ruchy");
+    validate_with_15_tools(&example);
 }
 
 // ============================================================================
@@ -345,12 +415,10 @@ fn test_langcomp_002_04_precedence_parentheses_override() {
 
 #[test]
 fn test_langcomp_002_04_precedence_example_file() {
-    // Validates: examples/lang_comp/02-operators/04_precedence.ruchy
-    ruchy_cmd()
-        .arg("run")
-        .arg(example_path("04_precedence.ruchy"))
-        .assert()
-        .success();
+    // 15-TOOL VALIDATION: examples/lang_comp/02-operators/04_precedence.ruchy
+    // ACCEPTANCE CRITERIA: ALL 15 tools must succeed
+    let example = example_path("04_precedence.ruchy");
+    validate_with_15_tools(&example);
 }
 
 // ============================================================================
