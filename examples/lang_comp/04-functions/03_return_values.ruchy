@@ -1,0 +1,18 @@
+// LANG-COMP-004: Function Return Values Example
+// Demonstrates implicit and explicit returns
+
+// Implicit return (last expression)
+fn square(x) {
+    x * x
+}
+
+// Explicit return with early exit
+fn max(a, b) {
+    if a > b {
+        return a
+    }
+    return b
+}
+
+println(f"square(4) = {square(4)}")
+println(f"max(10, 7) = {max(10, 7)}")

@@ -1,0 +1,9 @@
+// LANG-COMP-004: Closures Example
+// Demonstrates closure/lambda syntax
+
+// Fat arrow syntax for closures
+let double = |x| x * 2
+let add = |a, b| a + b
+
+println(f"double(5) = {double(5)}")
+println(f"add(3, 7) = {add(3, 7)}")

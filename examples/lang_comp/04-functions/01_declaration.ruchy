@@ -1,0 +1,15 @@
+// LANG-COMP-004: Function Declaration Example
+// Demonstrates basic function declaration and calling
+
+fn greet() {
+    println("Hello from Ruchy!")
+}
+
+fn get_answer() {
+    return 42
+}
+
+// Call functions
+greet()
+let answer = get_answer()
+println(f"The answer is {answer}")

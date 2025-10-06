@@ -7,6 +7,7 @@
 **Sprint Status**: ✅ **LANG-COMP-001 COMPLETE** - Basic Syntax (9/9 tests, 8-tool validation spec added)
 **Sprint Status**: ✅ **LANG-COMP-002 COMPLETE** - Operators (21/21 tests, 4 examples, REPL-based validation)
 **Sprint Status**: ✅ **LANG-COMP-003 COMPLETE** - Control Flow (13/13 unit + 3/3 property tests, 5 examples, 300 property iterations)
+**Sprint Status**: ✅ **LANG-COMP-004 COMPLETE** - Functions (11/11 unit + 3/3 property tests, 4 examples, Five Whys root cause fix)
 **Book Compatibility**: ✅ **100% verified (23/23 testable)** - improved from 86.9% (+13.1%)
 **Quality Gates**: ✅ **PMAT v2.70+ commands integrated** - hooks, roadmap validation, health checks
 **Test Status**: 📊 **3580 lib/bin tests passing + 39 E2E tests + 230K property cases, 0 regressions**
@@ -70,6 +71,19 @@ pmat hooks refresh                # Refresh after .pmat-gates.toml changes
   - **Validation**: `ruchy lint` works correctly on all LANG-COMP-001 examples
   - **Quality**: 100/100 linter tests passing, zero regressions
   - **Impact**: Critical tooling bug fixed, LANG-COMP work can proceed
+- [LANG-COMP-004] ✅ **COMPLETE**: Functions Documentation & Validation (EXTREME TDD + Five Whys Applied)
+  - **Progress**: RED→GREEN→FIVE_WHYS→FIX phases complete - 11/11 unit + 3/3 property tests passing
+  - **Unit Tests**: 11/11 passing (declaration, parameters, return values, closures)
+  - **Property Tests**: 3/3 passing (deterministic calls, nested calls, parameter validation)
+  - **Examples**: 4 files created (01_declaration, 02_parameters, 03_return_values, 04_closures)
+  - **Bug Found via Five Whys**: Tests expected implicit output but Ruchy requires explicit println()
+  - **Root Cause Analysis**:
+    - Why fail? No output → Why no output? Not printing → Why not? Expected implicit
+    - **ROOT CAUSE**: Ruchy doesn't auto-print function returns, needs explicit println()
+  - **Fix Applied**: Updated ALL tests to use println(f"Result: {func()}") pattern
+  - **Quality**: EXTREME TDD + Five Whys + assert_cmd + traceable naming
+  - **Lesson**: Don't assume "not implemented" - use Five Whys to find actual root cause!
+  - **Status**: ✅ Complete - Functions WORK perfectly, tests were wrong not the feature!
 - [LANG-COMP-REFACTOR] ✅ **COMPLETE**: Test Quality Refactoring - assert_cmd + Traceability
   - **Problem**: LANG-COMP tests used std::process::Command (not assert_cmd) + generic names (no traceability)
   - **Impact**: 34 tests (12 control_flow + 22 operators) violated quality standards
