@@ -12,12 +12,44 @@ fn run_ruchy_file(file_path: &str) -> std::process::Output {
         .expect("Failed to execute ruchy command")
 }
 
-/// Helper function to evaluate Ruchy code directly
+/// Helper function to evaluate Ruchy code directly using REPL
+/// Returns output with REPL banners stripped - only the evaluation result
 fn eval_ruchy_code(code: &str) -> std::process::Output {
-    Command::new("cargo")
-        .args(["run", "--bin", "ruchy", "--", "eval", code])
-        .output()
-        .expect("Failed to execute ruchy eval")
+    use std::io::Write;
+    use std::process::Stdio;
+
+    let mut child = Command::new("cargo")
+        .args(["run", "--bin", "ruchy", "--", "repl"])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .expect("Failed to spawn ruchy repl");
+
+    if let Some(mut stdin) = child.stdin.take() {
+        writeln!(stdin, "{}", code).expect("Failed to write to stdin");
+        writeln!(stdin, ":quit").expect("Failed to write quit command");
+    }
+
+    let mut output = child.wait_with_output().expect("Failed to read output");
+
+    // Strip REPL banners - keep only the last non-empty line (the result)
+    let stdout_str = String::from_utf8_lossy(&output.stdout);
+    let result = stdout_str
+        .lines()
+        .filter(|line| {
+            !line.is_empty()
+                && !line.starts_with("Welcome")
+                && !line.starts_with("Type")
+                && !line.starts_with("🚀")
+                && !line.starts_with("✨")
+        })
+        .last()
+        .unwrap_or("")
+        .to_string();
+
+    output.stdout = result.into_bytes();
+    output
 }
 
 // ============================================================================

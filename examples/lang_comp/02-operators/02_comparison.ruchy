@@ -1,0 +1,12 @@
+// LANG-COMP-002: Comparison Operators Example
+// Demonstrates ==, !=, <, >, <=, >= operators
+
+let x = 5
+let y = 10
+
+println(f"Equal: {x} == {y} is {x == y}")
+println(f"Not equal: {x} != {y} is {x != y}")
+println(f"Less than: {x} < {y} is {x < y}")
+println(f"Greater than: {x} > {y} is {x > y}")
+println(f"Less than or equal: {x} <= {y} is {x <= y}")
+println(f"Greater than or equal: {x} >= {y} is {x >= y}")

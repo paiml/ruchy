@@ -1,0 +1,9 @@
+// LANG-COMP-002: Operator Precedence Example
+// Demonstrates precedence: *, / before +, -
+// And parentheses override precedence
+
+let result1 = 2 + 3 * 4
+println(f"2 + 3 * 4 = {result1}")  // Should be 14 (multiplication first)
+
+let result2 = (2 + 3) * 4
+println(f"(2 + 3) * 4 = {result2}")  // Should be 20 (parentheses override)

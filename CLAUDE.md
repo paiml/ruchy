@@ -397,6 +397,42 @@ Navigation:
 Closes: TICKET-ID
 ```
 
+### End-of-Sprint Git Commit Protocol (MANDATORY)
+
+**CRITICAL**: After EVERY sprint completion, you MUST commit all changes immediately.
+
+**Sprint Completion Checklist**:
+1. ✅ All sprint tasks complete and verified
+2. ✅ All tests passing (unit, integration, property, mutation where applicable)
+3. ✅ Roadmap updated with sprint completion status
+4. ✅ Documentation updated (examples, tests, validation results)
+5. ✅ **GIT COMMIT IMMEDIATELY** - Don't wait, commit now!
+
+**Commit Protocol**:
+```bash
+# After sprint completion, ALWAYS run:
+git add .
+git status  # Verify changes
+git commit -m "[SPRINT-ID] Sprint completion: <brief summary>
+
+- All tasks complete: <list ticket IDs>
+- Tests: X/X passing
+- Examples: X files created
+- Validation: X-tool protocol verified
+- Roadmap: Updated with completion status
+
+🤖 Generated with Claude Code
+Co-Authored-By: Claude <noreply@anthropic.com>"
+
+git status  # Verify commit success
+```
+
+**Why This Matters (Toyota Way)**:
+- **Jidoka**: Each sprint is a complete unit of work - commit it atomically
+- **Genchi Genbutsu**: Working code on disk = empirical evidence of progress
+- **Kaizen**: Small, verified increments prevent integration hell
+- **Risk Mitigation**: Never lose completed work due to session interruption
+
 ## MANDATORY: TDG Transactional Tracking
 
 **Scoring**: A+ (95-100), A (90-94), A- (85-89), B (80-84), C (70-79), D (60-69), F (<60)
