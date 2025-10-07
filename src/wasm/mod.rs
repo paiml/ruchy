@@ -142,7 +142,7 @@ impl WasmCompiler {
     fn compile_expr(&self, expr: &Expr, func: &mut Function) -> Result<()> {
         match &expr.kind {
             ExprKind::Literal(lit) => match lit {
-                Literal::Integer(n) => {
+                Literal::Integer(n, _) => {
                     func.instruction(&Instruction::I32Const(*n as i32));
                 }
                 Literal::Float(f) => {

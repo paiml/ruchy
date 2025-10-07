@@ -69,15 +69,10 @@ pub enum Token {
     // Literals
     #[regex(r"[0-9]+(?:i8|i16|i32|i64|i128|isize|u8|u16|u32|u64|u128|usize)?", |lex| {
         let slice = lex.slice();
-        // Strip type suffix for parsing the numeric value
-        let (num_part, _type_suffix) = if let Some(pos) = slice.find(|c: char| c.is_alphabetic()) {
-            (&slice[..pos], Some(&slice[pos..]))
-        } else {
-            (slice, None)
-        };
-        num_part.parse::<i64>().ok()
+        // Parse type suffix and numeric value separately - store as string to preserve suffix
+        slice.to_string()
     })]
-    Integer(i64),
+    Integer(String),
     #[regex(r"[0-9]+\.[0-9]+([eE][+-]?[0-9]+)?|[0-9]+[eE][+-]?[0-9]+", |lex| lex.slice().parse::<f64>().ok())]
     Float(f64),
     #[regex(r#""([^"\\]|\\.)*""#, |lex| {

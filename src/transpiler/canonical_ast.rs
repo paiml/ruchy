@@ -308,7 +308,7 @@ impl AstNormalizer {
     }
     fn convert_literal(lit: &Literal) -> CoreExpr {
         CoreExpr::Literal(match lit {
-            Literal::Integer(i) => CoreLiteral::Integer(*i),
+            Literal::Integer(i, _) => CoreLiteral::Integer(*i),
             Literal::Float(f) => CoreLiteral::Float(*f),
             Literal::String(s) => CoreLiteral::String(s.clone()),
             Literal::Bool(b) => CoreLiteral::Bool(*b),

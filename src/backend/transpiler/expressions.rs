@@ -23,7 +23,7 @@ impl Transpiler {
     /// ```
     pub fn transpile_literal(lit: &Literal) -> TokenStream {
         match lit {
-            Literal::Integer(i) => Self::transpile_integer(*i),
+            Literal::Integer(i, type_suffix) => Self::transpile_integer(*i, type_suffix.as_deref()),
             Literal::Float(f) => quote! { #f },
             Literal::Unit => quote! { () },
             Literal::Null => quote! { None },
@@ -40,10 +40,13 @@ impl Transpiler {
             _ => unreachable!(),
         }
     }
-    fn transpile_integer(i: i64) -> TokenStream {
-        // Integer literals in Rust need proper type handling
-        // Use i32 for values that fit, i64 otherwise
-        if let Ok(i32_val) = i32::try_from(i) {
+    fn transpile_integer(i: i64, type_suffix: Option<&str>) -> TokenStream {
+        // DEFECT-002 FIX: Preserve type suffixes from source code
+        if let Some(suffix) = type_suffix {
+            // Emit integer with explicit type suffix (e.g., 5i32, 10u64)
+            let tokens = format!("{i}{suffix}");
+            tokens.parse().expect("Valid integer literal with suffix")
+        } else if let Ok(i32_val) = i32::try_from(i) {
             // Use unsuffixed for cleaner output - Rust can infer the type
             let literal = proc_macro2::Literal::i32_unsuffixed(i32_val);
             quote! { #literal }

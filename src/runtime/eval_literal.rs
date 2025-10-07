@@ -13,7 +13,7 @@ use crate::runtime::Value;
 /// Cyclomatic complexity: 9 (within limit of 10)
 pub fn eval_literal(lit: &Literal) -> Value {
     match lit {
-        Literal::Integer(i) => Value::from_i64(*i),
+        Literal::Integer(i, _) => Value::from_i64(*i),
         Literal::Float(f) => Value::from_f64(*f),
         Literal::String(s) => Value::from_string(s.clone()),
         Literal::Bool(b) => Value::from_bool(*b),

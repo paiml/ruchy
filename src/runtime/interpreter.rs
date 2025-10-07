@@ -1558,7 +1558,7 @@ impl Interpreter {
     /// Evaluate a literal value
     fn eval_literal(&self, lit: &Literal) -> Value {
         match lit {
-            Literal::Integer(i) => Value::from_i64(*i),
+            Literal::Integer(i, _) => Value::from_i64(*i),
             Literal::Float(f) => Value::from_f64(*f),
             Literal::String(s) => Value::from_string(s.clone()),
             Literal::Bool(b) => Value::from_bool(*b),
@@ -5731,7 +5731,7 @@ impl Interpreter {
 
     fn literal_matches(&self, literal: &Literal, value: &Value) -> bool {
         match (literal, value) {
-            (Literal::Integer(a), Value::Integer(b)) => a == b,
+            (Literal::Integer(a, _), Value::Integer(b)) => a == b,
             (Literal::Float(a), Value::Float(b)) => (a - b).abs() < f64::EPSILON,
             (Literal::String(a), Value::String(b)) => a == b.as_ref(),
             (Literal::Bool(a), Value::Bool(b)) => a == b,

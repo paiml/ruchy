@@ -119,10 +119,10 @@ done
 ## Status
 
 - [x] DEFECT-001: ✅ **FIXED** (2025-10-07) - String type annotations now auto-convert
-- [ ] DEFECT-002: Not fixed (documented 2025-10-07)
+- [x] DEFECT-002: ✅ **FIXED** (2025-10-07) - Integer literal type suffixes now preserved
 - [ ] DEFECT-003: Not fixed (documented 2025-10-07)
 
-**Next Action**: Apply EXTREME TDD to fix DEFECT-002 (integer type suffixes).
+**Next Action**: Apply EXTREME TDD to fix DEFECT-003 (.to_string() method calls).
 
 ## DEFECT-001 Fix Details
 
@@ -144,3 +144,35 @@ let value_tokens = match (&value.kind, type_annotation) {
 **Test**: `/tmp/test_defect_001.ruchy` - RED phase confirmed failure, GREEN phase confirmed fix.
 
 **Validation**: Updated LANG-COMP-007 example to use proper String type annotations.
+
+## DEFECT-002 Fix Details
+
+**Files Modified**:
+- `src/frontend/lexer.rs:75` - Token::Integer now stores String (preserves suffix)
+- `src/frontend/ast.rs:699` - Literal::Integer(i64, Option<String>) stores optional suffix
+- `src/frontend/parser/expressions.rs:114-124` - Parse integer string, extract value + suffix
+- `src/backend/transpiler/expressions.rs:26,43-58` - Emit type suffix when present
+
+**Fix**:
+1. Lexer stores full integer literal as String (e.g., "42i32")
+2. Parser extracts numeric value and type suffix separately
+3. AST stores both: `Literal::Integer(42, Some("i32"))`
+4. Transpiler emits suffix when present: `quote! { 42i32 }`
+
+**Code change (transpiler)**:
+```rust
+fn transpile_integer(i: i64, type_suffix: Option<&str>) -> TokenStream {
+    if let Some(suffix) = type_suffix {
+        // Emit integer with explicit type suffix
+        let tokens = format!("{}{}", i, suffix);
+        tokens.parse().expect("Valid integer literal with suffix")
+    } else {
+        // Use unsuffixed for type inference
+        ...
+    }
+}
+```
+
+**Test**: `/tmp/test_defect_002.ruchy` - Type suffix `i32` preserved in transpilation
+
+**Validation**: Updated LANG-COMP-008 example to use `(2i32).pow(3)` with type suffix.

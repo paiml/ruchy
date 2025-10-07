@@ -409,10 +409,18 @@ fn parse_list_type(state: &mut ParserState, span: Span) -> Result<Type> {
     if matches!(state.tokens.peek(), Some((Token::Semicolon, _))) {
         state.tokens.advance(); // consume ;
                                 // Parse the size - could be a literal or identifier
-        let size = if let Some((Token::Integer(n), _)) = state.tokens.peek() {
-            let size = *n as usize;
+        let size = if let Some((Token::Integer(n_str), _)) = state.tokens.peek() {
+            let n_str = n_str.clone();
             state.tokens.advance();
-            size
+            // Parse the integer (ignore type suffix for array size)
+            let (num_part, _) = if let Some(pos) = n_str.find(|c: char| c.is_alphabetic()) {
+                (&n_str[..pos], Some(n_str[pos..].to_string()))
+            } else {
+                (n_str.as_str(), None)
+            };
+            num_part
+                .parse::<usize>()
+                .map_err(|_| anyhow::anyhow!("Invalid array size: {}", num_part))?
         } else if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
             // For now, we'll handle constants by using a placeholder
             // In a real implementation, we'd resolve the constant value
@@ -1025,7 +1033,7 @@ fn parse_attribute_value(state: &mut ParserState) -> Result<String> {
         Some((token, _)) => {
             let value = match token {
                 Token::Identifier(v) => v.clone(),
-                Token::Integer(v) => v.to_string(),
+                Token::Integer(v) => v.clone(),
                 Token::Float(v) => v.to_string(),
                 Token::String(v) => format!("\"{v}\""),
                 Token::Bool(v) => v.to_string(),

@@ -243,7 +243,7 @@ impl LoweringContext {
     /// Lower a literal to a constant
     fn lower_literal(lit: &Literal) -> Constant {
         match lit {
-            Literal::Integer(i) => Constant::Int(i128::from(*i), Type::I32),
+            Literal::Integer(i, _) => Constant::Int(i128::from(*i), Type::I32),
             Literal::Float(f) => Constant::Float(*f, Type::F64),
             Literal::String(s) => Constant::String(s.clone()),
             Literal::Bool(b) => Constant::Bool(*b),

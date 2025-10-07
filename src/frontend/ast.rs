@@ -695,8 +695,8 @@ pub enum ExprKind {
 /// ```
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum Literal {
-    /// A signed 64-bit integer literal.
-    Integer(i64),
+    /// A signed 64-bit integer literal with optional type suffix (e.g., i32, i64, u32).
+    Integer(i64, Option<String>),
     /// A 64-bit floating-point literal.
     Float(f64),
     /// A string literal.
@@ -717,7 +717,7 @@ impl Literal {
     pub fn from_value(value: &crate::runtime::interpreter::Value) -> Self {
         use crate::runtime::interpreter::Value;
         match value {
-            Value::Integer(i) => Literal::Integer(*i),
+            Value::Integer(i) => Literal::Integer(*i, None),
             Value::Float(f) => Literal::Float(*f),
             Value::String(s) => Literal::String(s.to_string()),
             Value::Bool(b) => Literal::Bool(*b),

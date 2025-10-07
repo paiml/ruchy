@@ -97,7 +97,7 @@ impl Transpiler {
                 ))
             }
             // Integer literal -> cast
-            ExprKind::Literal(Literal::Integer(_)) => {
+            ExprKind::Literal(Literal::Integer(_, _)) => {
                 let value = self.transpile_expr(arg)?;
                 Ok(Some(quote! { (#value as f64) }))
             }
@@ -122,7 +122,7 @@ impl Transpiler {
     /// Convert literal to bool (complexity: ~8)
     fn convert_literal_to_bool(&self, lit: &Literal, arg: &Expr) -> Result<Option<TokenStream>> {
         match lit {
-            Literal::Integer(_) => {
+            Literal::Integer(_, _) => {
                 let value = self.transpile_expr(arg)?;
                 Ok(Some(quote! { (#value != 0) }))
             }
