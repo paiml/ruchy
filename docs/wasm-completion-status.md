@@ -89,20 +89,26 @@
 - ✅ `05-string-interpolation/01_basic_interpolation.ruchy`
 
 ### Failing Examples
-- None currently! 🎉
+- **None! All 21/21 LANG-COMP examples compile successfully! 🎉**
 
 ## Next Steps (NO DEFECT OUT OF SCOPE)
 
-### Priority 1: F-String Expression Concatenation
-**Defect**: F-strings with expressions return placeholder value
-**Strategy**:
-1. Implement string concatenation host function
-2. Lower expression evaluation + to_string conversion
-3. Build concatenated result
+### Status: ALL LANG-COMP EXAMPLES PASSING! 🎉
 
-**Acceptance Criteria**:
-- F-strings with expressions produce correct values
-- Runtime string concatenation works in WASM host
+All 21/21 LANG-COMP examples now compile to valid WASM with proper:
+- Expression evaluation
+- Function calls (user-defined + lambdas)
+- Control flow (if/match/for/while)
+- String interpolation (expressions evaluated)
+
+### Remaining Work (Beyond LANG-COMP)
+
+1. **Multi-part F-String Concatenation** (e.g., `f"x = {x}, y = {y}"`)
+   - Requires host function for string concatenation
+   - Single expressions work, multi-part needs runtime support
+
+2. **Advanced Pattern Types** (Variable bindings, tuple destructuring)
+   - Deferred until needed by examples
 
 ### Priority 3: Additional Pattern Types (Future)
 **Scope**: Variable bindings, tuple destructuring, guards
