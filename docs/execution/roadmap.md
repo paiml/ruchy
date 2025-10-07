@@ -2,8 +2,8 @@
 
 ## 📝 **SESSION CONTEXT FOR RESUMPTION**
 
-**Last Active**: 2025-10-07 (v3.70.0 - 15-TOOL VALIDATION TESTS COMPLETE + RUCHY -E DISCOVERY)
-**Current Sprint**: 15-Tool Validation Tests for LANG-COMP (COMPLETE)
+**Last Active**: 2025-10-07 (v3.68.0 - LANG-COMP-010/011 COMPLETE + DEFECT-CONSECUTIVE-FOR FIXED)
+**Current Sprint**: LANG-COMP Language Completeness (ACTIVE - 11/11 features complete)
 **Sprint Status**: ✅ **LANG-COMP-001 COMPLETE** - Basic Syntax (9/9 tests, 8-tool validation spec added)
 **Sprint Status**: ✅ **LANG-COMP-002 COMPLETE** - Operators (21/21 tests, 4 examples, REPL-based validation)
 **Sprint Status**: ✅ **LANG-COMP-003 COMPLETE** - Control Flow (13/13 unit + 3/3 property tests, 5 examples, 300 property iterations)
@@ -13,6 +13,8 @@
 **Sprint Status**: ✅ **LANG-COMP-007 COMPLETE** - Type Annotations (4 examples, DEFECT-001 fixed, 15-tool validation tests implemented)
 **Sprint Status**: ✅ **LANG-COMP-008 COMPLETE** - Methods (4 examples, DEFECT-003 fixed, 15-tool validation tests implemented)
 **Sprint Status**: ✅ **LANG-COMP-009 COMPLETE** - Pattern Matching (4 examples, 15-tool validation tests implemented)
+**Sprint Status**: ✅ **LANG-COMP-010 COMPLETE** - Closures (4 examples, 13 tests, DEFECT-CLOSURE-RETURN fixed, 15-tool validation)
+**Sprint Status**: ✅ **LANG-COMP-011 COMPLETE** - Ranges (4 examples, 10 tests, DEFECT-CONSECUTIVE-FOR fixed, 15-tool validation)
 **Sprint Status**: ✅ **15-TOOL VALIDATION INFRASTRUCTURE COMPLETE** - All tools validated via ruchy -e and pragmatic solutions
 **Book Compatibility**: ✅ **100% verified (23/23 testable)** - improved from 86.9% (+13.1%)
 **Quality Gates**: ✅ **PMAT v2.70+ commands integrated** - hooks, roadmap validation, health checks
