@@ -3121,7 +3121,7 @@ impl Interpreter {
             Value::String(s) => self.eval_string_method(s, method, arg_values),
             Value::Array(arr) => self.eval_array_method(arr, method, arg_values),
             Value::Float(f) => self.eval_float_method(*f, method, args_empty),
-            Value::Integer(n) => self.eval_integer_method(*n, method, args_empty),
+            Value::Integer(n) => self.eval_integer_method(*n, method, arg_values),
             Value::DataFrame { columns } => self.eval_dataframe_method(columns, method, arg_values),
             Value::Object(obj) => {
                 // Check if this is a type definition with constructor
@@ -3232,9 +3232,9 @@ impl Interpreter {
         &self,
         n: i64,
         method: &str,
-        args_empty: bool,
+        arg_values: &[Value],
     ) -> Result<Value, InterpreterError> {
-        eval_method::eval_integer_method(n, method, args_empty)
+        eval_method::eval_integer_method(n, method, arg_values)
     }
 
     fn eval_generic_method(
