@@ -45,6 +45,7 @@ help:
 	@echo ""
 	@echo "Language Compatibility:"
 	@echo "  make compatibility - Run comprehensive language feature compatibility tests"
+	@echo "  make test-lang-comp - Run LANG-COMP language completeness examples"
 	@echo ""
 	@echo "Mutation Testing (Sprint 8 - Test Quality Validation):"
 	@echo "  make mutation-help        - Show mutation testing strategy guide"
@@ -832,6 +833,48 @@ compatibility:
 	@echo ""
 	@echo "✅ Language compatibility verification complete!"
 	@echo "📊 Use results to prioritize development for maximum compatibility improvement"
+
+# Run LANG-COMP language completeness examples
+test-lang-comp:
+	@echo "🧪 LANG-COMP LANGUAGE COMPLETENESS TESTS"
+	@echo "=========================================="
+	@echo ""
+	@total=0; passed=0; \
+	for dir in examples/lang_comp/*/; do \
+		if [ -d "$$dir" ]; then \
+			category=$$(basename $$dir); \
+			echo "📋 Testing $$category..."; \
+			cat_passed=true; \
+			for example in $$dir*.ruchy; do \
+				if [ -f "$$example" ]; then \
+					total=$$((total + 1)); \
+					printf "  %-50s" "$$(basename $$example)"; \
+					if cargo run --bin ruchy -- run $$example > /dev/null 2>&1; then \
+						echo "✅"; \
+						passed=$$((passed + 1)); \
+					else \
+						echo "❌"; \
+						cat_passed=false; \
+					fi; \
+				fi; \
+			done; \
+			if [ "$$cat_passed" = true ]; then \
+				echo "✅ $$category: All examples passed"; \
+			else \
+				echo "❌ $$category: Some examples failed"; \
+			fi; \
+			echo ""; \
+		fi; \
+	done; \
+	echo "==========================================";\
+	echo "📊 Summary: $$passed/$$total examples passed"; \
+	if [ $$passed -eq $$total ]; then \
+		echo "✅ All LANG-COMP tests passed!"; \
+		exit 0; \
+	else \
+		echo "❌ Some LANG-COMP tests failed"; \
+		exit 1; \
+	fi
 
 # ====================================================================
 # MUTATION TESTING (Sprint 8 - Empirical Test Quality Validation)
