@@ -1,0 +1,23 @@
+// LANG-COMP-008: Methods - Array Methods
+// Demonstrates method calls on array values
+
+let numbers = [1, 2, 3, 4, 5]
+
+// Array properties
+let len = numbers.len()
+
+// Array access methods
+let first = numbers.first()
+let last = numbers.last()
+
+// Array contains check
+let has_three = numbers.contains(&3)
+let has_ten = numbers.contains(&10)
+
+// Output
+println(numbers)
+println(len)
+println(first)
+println(last)
+println(has_three)
+println(has_ten)

@@ -1,0 +1,22 @@
+// LANG-COMP-008: Methods - Integer Methods
+// Demonstrates method calls on integer values
+
+let num = 42
+
+// Conversion methods
+let as_string = num.to_string()
+let as_float = num as f64
+
+// Integer operations via methods (use typed variables)
+let negative: i32 = -5
+let abs_val = negative.abs()
+
+let base: i32 = 2
+let power = base.pow(3)
+
+// Output
+println(num)
+println(as_string)
+println(as_float)
+println(abs_val)
+println(power)

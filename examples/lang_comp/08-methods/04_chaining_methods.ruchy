@@ -1,0 +1,21 @@
+// LANG-COMP-008: Methods - Method Chaining
+// Demonstrates chaining multiple method calls
+
+let text = "  Hello World  "
+
+// Chain string methods
+let result = text.trim().to_lowercase().replace("world", "ruchy")
+
+// Chain on arrays
+let numbers = [1, 2, 3, 4, 5]
+let first_val = numbers.first()
+
+// Multiple chains (avoid temporary lifetime issues)
+let lowered = "LOUD TEXT".to_lowercase()
+let processed = lowered.trim()
+
+// Output
+println(text)
+println(result)
+println(first_val)
+println(processed)
