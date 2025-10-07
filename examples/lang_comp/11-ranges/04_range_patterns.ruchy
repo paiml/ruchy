@@ -1,0 +1,32 @@
+// LANG-COMP-011-04: Range Patterns
+// Demonstrates common patterns using ranges
+
+fn main() {
+    // Generating sequence
+    for i in 0..5 {
+        let value = i * 2
+        println(value)
+    }
+
+    // Index-based iteration
+    let items = ["a", "b", "c", "d"]
+    for i in 0..4 {
+        println(items[i])
+    }
+
+    // Building arrays with ranges
+    let mut squares = [0, 0, 0, 0, 0]
+    for i in 0..5 {
+        squares[i] = i * i
+    }
+
+    for n in 0..5 {
+        println(squares[n])
+    }
+
+    // Countdown pattern
+    let mut countdown = [5, 4, 3, 2, 1]
+    for i in 0..5 {
+        println(countdown[i])
+    }
+}

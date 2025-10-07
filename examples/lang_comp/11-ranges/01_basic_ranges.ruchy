@@ -1,0 +1,19 @@
+// LANG-COMP-011-01: Basic Ranges
+// Demonstrates basic range syntax and usage
+
+fn main() {
+    // Simple range 0 to 4 (exclusive end)
+    for i in 0..5 {
+        println(i)
+    }
+
+    // Range starting from 1
+    for n in 1..4 {
+        println(n)
+    }
+
+    // Range with larger numbers
+    for x in 10..13 {
+        println(x)
+    }
+}

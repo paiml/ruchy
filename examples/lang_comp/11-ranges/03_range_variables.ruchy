@@ -1,0 +1,31 @@
+// LANG-COMP-011-03: Range Variables
+// Demonstrates storing and using ranges in variables
+
+fn main() {
+    // Range in a variable
+    let range1 = 0..5
+    for i in range1 {
+        println(i)
+    }
+
+    // Multiple range variables
+    let range2 = 10..12
+    let range3 = 20..22
+
+    for n in range2 {
+        println(n)
+    }
+
+    for m in range3 {
+        println(m)
+    }
+
+    // Range from expression
+    let start = 3
+    let end = 6
+    let dynamic_range = start..end
+
+    for x in dynamic_range {
+        println(x)
+    }
+}

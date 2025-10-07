@@ -1168,6 +1168,12 @@ fn looks_like_comprehension(state: &mut ParserState) -> bool {
     while token_count < 20 && !found_for {
         match state.tokens.peek() {
             Some((Token::For, _)) if nesting_depth == 0 => {
+                // DEFECT-CONSECUTIVE-FOR FIX: If 'for' is the first token, it's not a comprehension
+                // Comprehensions require an expression before 'for': {x for x in list}
+                // If we see 'for' first, it's a for loop statement: {for x in list { ... }}
+                if token_count == 0 {
+                    break; // Not a comprehension - 'for' is first token
+                }
                 // Only consider 'for' at the same nesting level
                 found_for = true;
                 break;

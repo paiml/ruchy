@@ -1,0 +1,27 @@
+// LANG-COMP-011-02: Range Iteration
+// Demonstrates using ranges in different iteration contexts
+
+fn main() {
+    // Counting with ranges
+    let mut sum = 0
+    for i in 1..6 {
+        sum = sum + i
+    }
+    println(sum)
+
+    // Nested range iteration
+    for i in 0..3 {
+        for j in 0..2 {
+            println(i * 10 + j)
+        }
+    }
+
+    // Range in function call
+    fn print_range(start, end) {
+        for n in start..end {
+            println(n)
+        }
+    }
+
+    print_range(5, 8)
+}
