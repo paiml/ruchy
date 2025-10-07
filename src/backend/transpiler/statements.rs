@@ -2859,7 +2859,8 @@ impl Transpiler {
             // For single non-string arguments, add smart format string
             if !matches!(&args[0].kind, ExprKind::Literal(Literal::String(_))) {
                 let arg_tokens = self.transpile_expr(&args[0])?;
-                // Use Debug formatting for safety - works with all types including Vec, tuples, etc.
+                // DEFECT-DICT-DETERMINISM FIX: Use Debug format with BTreeMap (deterministic)
+                // BTreeMap Debug format is sorted, so {:?} is safe and deterministic
                 let format_str = "{:?}";
                 return Ok(Some(quote! { #func_tokens!(#format_str, #arg_tokens) }));
             }
@@ -2902,7 +2903,7 @@ impl Transpiler {
                     Ok(Some(printing_logic))
                 }
                 _ => {
-                    // Other types - use Debug format for complex types
+                    // DEFECT-DICT-DETERMINISM FIX: Debug format is OK with BTreeMap (sorted)
                     Ok(Some(quote! { #func_tokens!("{:?}", #(#all_args)*) }))
                 }
             }

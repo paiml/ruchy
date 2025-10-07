@@ -20,80 +20,6 @@ fn example_path(relative_path: &str) -> PathBuf {
         .join(relative_path)
 }
 
-/// 14-TOOL VALIDATION (excluding property tests): For non-deterministic examples
-/// Used for dictionaries/hashmaps which have non-deterministic key iteration order
-fn validate_with_14_tools_skip_property(example: &PathBuf) {
-    // TOOL 1: ruchy check - Syntax validation
-    ruchy_cmd().arg("check").arg(example).assert().success();
-
-    // TOOL 2: ruchy transpile - Rust code generation
-    ruchy_cmd().arg("transpile").arg(example).assert().success();
-
-    // TOOL 3: ruchy -e - Execute code via eval (REPL functionality)
-    let code = std::fs::read_to_string(example).unwrap();
-    ruchy_cmd().arg("-e").arg(&code).assert().success();
-
-    // TOOL 4: ruchy lint - Static analysis
-    ruchy_cmd().arg("lint").arg(example).assert().success();
-
-    // TOOL 5: ruchy compile - Binary compilation
-    ruchy_cmd().arg("compile").arg(example).assert().success();
-
-    // TOOL 6: ruchy run - Execution
-    ruchy_cmd().arg("run").arg(example).assert().success();
-
-    // TOOL 7: ruchy coverage - Test coverage
-    ruchy_cmd().arg("coverage").arg(example).assert().success();
-
-    // TOOL 8: ruchy runtime --bigo - Complexity analysis
-    ruchy_cmd()
-        .arg("runtime")
-        .arg(example)
-        .arg("--bigo")
-        .assert()
-        .success();
-
-    // TOOL 9: ruchy ast - AST verification
-    ruchy_cmd().arg("ast").arg(example).assert().success();
-
-    // TOOL 10: ruchy wasm - WASM compilation (validate tool works, not all features supported)
-    // Note: Some data structures in WASM have known limitations, so we test WASM works with simple code
-    let temp_file = std::env::temp_dir().join("wasm_validation_test.ruchy");
-    std::fs::write(&temp_file, "let x = 42\nprintln(x)").unwrap();
-    ruchy_cmd().arg("wasm").arg(&temp_file).assert().success();
-    std::fs::remove_file(&temp_file).ok();
-
-    // TOOL 11: ruchy provability - Formal verification
-    ruchy_cmd()
-        .arg("provability")
-        .arg(example)
-        .assert()
-        .success();
-
-    // TOOL 12: SKIPPED - property-tests would fail due to non-deterministic output
-
-    // TOOL 13: ruchy mutations - Mutation testing
-    ruchy_cmd()
-        .arg("mutations")
-        .arg(example)
-        .arg("--timeout")
-        .arg("60")
-        .assert()
-        .success();
-
-    // TOOL 14: ruchy fuzz - Fuzz testing (10 iterations for speed in tests)
-    ruchy_cmd()
-        .arg("fuzz")
-        .arg(example)
-        .arg("--iterations")
-        .arg("10")
-        .assert()
-        .success();
-
-    // TOOL 15: ruchy notebook - File validation mode
-    ruchy_cmd().arg("notebook").arg(example).assert().success();
-}
-
 /// 15-TOOL VALIDATION: Run ALL 15 native tools on example file
 /// MANDATORY/BLOCKING: Test passes ONLY if all tools succeed
 /// TOOL-VALIDATION SPRINT COMPLETE: ALL 15 tools support CLI file validation (ZERO EXCEPTIONS)
@@ -299,10 +225,11 @@ println(y)
 
 #[test]
 fn test_langcomp_006_02_dictionaries_example_file() {
-    // 14-TOOL VALIDATION: examples/lang_comp/06-data-structures/02_dictionaries.ruchy
-    // Note: Property tests skipped - dictionaries have non-deterministic key order
+    // 15-TOOL VALIDATION: examples/lang_comp/06-data-structures/02_dictionaries.ruchy
+    // DEFECT-DICT-DETERMINISM FIXED: BTreeMap provides deterministic ordering
+    // ACCEPTANCE CRITERIA: ALL 15 tools must succeed (including property-tests)
     let example = example_path("02_dictionaries.ruchy");
-    validate_with_14_tools_skip_property(&example);
+    validate_with_15_tools(&example);
 
     // Additional validation: Verify output correctness
     ruchy_cmd()

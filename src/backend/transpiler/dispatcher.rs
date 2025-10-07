@@ -649,16 +649,10 @@ impl Transpiler {
                             self.transpile_string_interpolation_for_print(parts)
                         }
                         _ => {
-                            // Use Display formatting ({}) for simple values, Debug formatting ({:?}) for complex types
+                            // DEFECT-DICT-DETERMINISM FIX: Use Debug format with BTreeMap (deterministic)
+                            // BTreeMap Debug format is sorted, so {:?} is safe and deterministic
                             let expr_tokens = self.transpile_expr(arg)?;
-                            match &arg.kind {
-                                // Simple types that have clean Display formatting
-                                ExprKind::Literal(_) | ExprKind::Identifier(_) => {
-                                    Ok(quote! { "{}", #expr_tokens })
-                                }
-                                // Complex types that need Debug formatting for safety
-                                _ => Ok(quote! { "{:?}", #expr_tokens }),
-                            }
+                            Ok(quote! { "{:?}", #expr_tokens })
                         }
                     }
                 })

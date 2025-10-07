@@ -741,6 +741,19 @@ Language compatibility testing is **GATE 2** in our mandatory pre-commit hooks -
 
 **CRITICAL**: All language completeness documentation (LANG-COMP tickets) MUST validate examples using ALL 15 native Ruchy tools.
 
+**🚨 SACRED PRINCIPLE: LANG-COMP TESTS ARE DEFECT-FINDING TOOLS**
+
+**Purpose**: LANG-COMP tests are DESIGNED to find subtle compiler/interpreter defects
+- **NOT documentation**: These tests expose gaps in implementation
+- **NO WORKAROUNDS EVER**: If a LANG-COMP test fails → FIX THE COMPILER
+- **Stop The Line**: Every failure indicates a real defect (Toyota Way: Jidoka)
+- **Success Stories**:
+  - ✅ DEFECT-POW: Found pow() missing in eval mode → FIXED in eval_integer_method
+  - ✅ DEFECT-REF: Found reference operator (&) missing → FIXED in eval_operations
+  - ✅ DEFECT-TUPLE: Found tuple field access missing in eval → FIXED in eval_field_access
+
+**Sacred Rule**: LANG-COMP test failing = Compiler bug. Fix compiler, NEVER skip tests.
+
 **IMPORTANT**: Following TOOL-VALIDATION sprint completion (2025-10-07), ALL 15 tools now support validation via CLI. NO tools should be skipped:
 - **REPL**: Use `ruchy -e "$(cat file.ruchy)"` to execute code via eval flag (discovered 2025-10-07)
 - **Notebook**: Accepts file parameter for non-interactive validation mode

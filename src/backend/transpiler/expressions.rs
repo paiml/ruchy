@@ -792,9 +792,11 @@ impl Transpiler {
         fields: &[crate::frontend::ast::ObjectField],
     ) -> Result<TokenStream> {
         let field_tokens = self.collect_hashmap_field_tokens(fields)?;
+        // DEFECT-DICT-DETERMINISM FIX: Use BTreeMap for deterministic key ordering
+        // BTreeMap maintains sorted order, HashMap has non-deterministic iteration order
         Ok(quote! {
             {
-                let mut map: std::collections::HashMap<String, String> = std::collections::HashMap::new();
+                let mut map: std::collections::BTreeMap<String, String> = std::collections::BTreeMap::new();
                 #(#field_tokens)*
                 map
             }
