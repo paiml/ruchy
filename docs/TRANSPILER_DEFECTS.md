@@ -120,9 +120,9 @@ done
 
 - [x] DEFECT-001: ✅ **FIXED** (2025-10-07) - String type annotations now auto-convert
 - [x] DEFECT-002: ✅ **FIXED** (2025-10-07) - Integer literal type suffixes now preserved
-- [ ] DEFECT-003: Not fixed (documented 2025-10-07)
+- [x] DEFECT-003: ✅ **FIXED** (2025-10-07) - .to_string() method calls now generated
 
-**Next Action**: Apply EXTREME TDD to fix DEFECT-003 (.to_string() method calls).
+**All transpiler defects fixed! 🎉**
 
 ## DEFECT-001 Fix Details
 
@@ -176,3 +176,26 @@ fn transpile_integer(i: i64, type_suffix: Option<&str>) -> TokenStream {
 **Test**: `/tmp/test_defect_002.ruchy` - Type suffix `i32` preserved in transpilation
 
 **Validation**: Updated LANG-COMP-008 example to use `(2i32).pow(3)` with type suffix.
+
+## DEFECT-003 Fix Details
+
+**File**: `src/backend/transpiler/statements.rs:1375-1379`
+
+**Fix**: In `transpile_string_methods()`, changed `.to_string()` handler to emit method call
+
+**Root Cause**: Line 1377 was returning just `#obj_tokens` without calling `.to_string()`
+- Old behavior: `num.to_string()` transpiled to `num` (method call dropped!)
+- Comment said "already a String stays String" but was wrong for integers
+
+**Code change**:
+```rust
+"to_s" | "to_string" => {
+    // Old: Ok(quote! { #obj_tokens })  // ❌ Drops the method call!
+    // New: Always emit .to_string() method call
+    Ok(quote! { #obj_tokens.to_string() })  // ✅ Generates the call
+}
+```
+
+**Test**: `/tmp/test_defect_003.ruchy` - Method call now preserved in transpilation
+
+**Validation**: LANG-COMP-008 example output now shows `"42"` (string) instead of `42` (int).

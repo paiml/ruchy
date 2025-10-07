@@ -1373,8 +1373,9 @@ impl Transpiler {
     ) -> Result<TokenStream> {
         match method {
             "to_s" | "to_string" => {
-                // Convert any value to string - already a String stays String
-                Ok(quote! { #obj_tokens })
+                // DEFECT-003 FIX: Always emit .to_string() method call
+                // This converts any value to String (integers, floats, etc.)
+                Ok(quote! { #obj_tokens.to_string() })
             }
             "to_upper" | "upper" => {
                 let rust_method = format_ident!("to_uppercase");
