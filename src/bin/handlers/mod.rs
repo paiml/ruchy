@@ -874,9 +874,12 @@ pub fn handle_complex_command(command: crate::Commands) -> Result<()> {
             format,
             verbose,
         } => handle_coverage_command(&path, threshold.unwrap_or(80.0), &format, verbose),
-        crate::Commands::Notebook { port, open, host } => {
-            handle_notebook_command(port, open, &host)
-        }
+        crate::Commands::Notebook {
+            file,
+            port,
+            open,
+            host,
+        } => handle_notebook_command(file.as_deref(), port, open, &host),
         crate::Commands::ReplayToTests {
             input,
             output,
@@ -1383,8 +1386,45 @@ pub fn handle_mcp_command(
 
 /// Handle notebook command
 #[cfg(feature = "notebook")]
-pub fn handle_notebook_command(port: u16, open_browser: bool, host: &str) -> Result<()> {
+pub fn handle_notebook_command(
+    file: Option<&Path>,
+    port: u16,
+    open_browser: bool,
+    host: &str,
+) -> Result<()> {
     use std::process::Command;
+
+    // TOOL-VALIDATION-003: Non-interactive file validation mode
+    if let Some(path) = file {
+        println!("📓 Notebook validation mode for: {}", path.display());
+
+        // Validate the file can be parsed and executed
+        let source = fs::read_to_string(path)
+            .with_context(|| format!("Failed to read file: {}", path.display()))?;
+        let ast = parse_source(&source)?;
+        let rust_code = transpile_for_execution(&ast, path)?;
+        let (temp_source, binary_path) = prepare_compilation(&rust_code, false)?;
+        compile_rust_code(temp_source.path(), &binary_path)?;
+
+        // Execute the file to validate it runs
+        let result = std::process::Command::new(&binary_path).output()?;
+
+        // Cleanup
+        let _ = fs::remove_file(&binary_path);
+
+        if result.status.success() {
+            println!("✅ Notebook validation: PASSED");
+            println!("   File can be loaded and executed in notebook environment");
+            return Ok(());
+        } else {
+            anyhow::bail!(
+                "Notebook validation: FAILED\n{}",
+                String::from_utf8_lossy(&result.stderr)
+            );
+        }
+    }
+
+    // Interactive server mode (original behavior)
     println!("🚀 Starting Ruchy Notebook server...");
     println!("   Host: {}:{}", host, port);
     // Create async runtime for the server
@@ -1410,7 +1450,12 @@ pub fn handle_notebook_command(port: u16, open_browser: bool, host: &str) -> Res
     result.map_err(|e| anyhow::anyhow!("Notebook server error: {}", e))
 }
 #[cfg(not(feature = "notebook"))]
-pub fn handle_notebook_command(_port: u16, _open_browser: bool, _host: &str) -> Result<()> {
+pub fn handle_notebook_command(
+    _file: Option<&Path>,
+    _port: u16,
+    _open_browser: bool,
+    _host: &str,
+) -> Result<()> {
     Err(anyhow::anyhow!(
         "Notebook feature not enabled. Rebuild with --features notebook"
     ))
@@ -1901,6 +1946,23 @@ fn handle_property_tests_single_file(
         );
     }
 
+    // PERFORMANCE FIX: Compile once, execute N times (not cargo run N times)
+    // Step 1: Transpile and compile the file ONCE
+    if verbose {
+        eprintln!("Compiling file once for property testing...");
+    }
+
+    let source = fs::read_to_string(path)
+        .with_context(|| format!("Failed to read file: {}", path.display()))?;
+    let ast = parse_source(&source)?;
+    let rust_code = transpile_for_execution(&ast, path)?;
+    let (temp_source, binary_path) = prepare_compilation(&rust_code, verbose)?;
+    compile_rust_code(temp_source.path(), &binary_path)?;
+
+    if verbose {
+        eprintln!("Binary compiled: {}", binary_path.display());
+    }
+
     let mut passed = 0;
     let mut failed = 0;
     let mut test_results = Vec::new();
@@ -1911,10 +1973,7 @@ fn handle_property_tests_single_file(
     }
 
     for i in 0..cases {
-        let result = std::process::Command::new("cargo")
-            .args(["run", "--bin", "ruchy", "--", "run"])
-            .arg(path)
-            .output()?;
+        let result = std::process::Command::new(&binary_path).output()?;
 
         if result.status.success() {
             passed += 1;
@@ -1936,15 +1995,8 @@ fn handle_property_tests_single_file(
         eprintln!("Property 2: Testing output determinism...");
     }
 
-    let run1 = std::process::Command::new("cargo")
-        .args(["run", "--bin", "ruchy", "--", "run"])
-        .arg(path)
-        .output()?;
-
-    let run2 = std::process::Command::new("cargo")
-        .args(["run", "--bin", "ruchy", "--", "run"])
-        .arg(path)
-        .output()?;
+    let run1 = std::process::Command::new(&binary_path).output()?;
+    let run2 = std::process::Command::new(&binary_path).output()?;
 
     let deterministic = run1.stdout == run2.stdout;
     if deterministic {
@@ -1953,6 +2005,9 @@ fn handle_property_tests_single_file(
         failed += 1;
         test_results.push("Determinism test: FAILED - outputs differ".to_string());
     }
+
+    // Cleanup: Remove binary
+    let _ = fs::remove_file(&binary_path);
 
     let total_tests = cases + 1; // N panic tests + 1 determinism test
     let success = failed == 0;
@@ -2205,6 +2260,22 @@ fn handle_fuzz_single_file(
         eprintln!("Fuzzing single file: {}", path.display());
     }
 
+    // PERFORMANCE FIX: Compile once, execute N times (not cargo run N times)
+    if verbose {
+        eprintln!("Compiling file once for fuzz testing...");
+    }
+
+    let source = fs::read_to_string(path)
+        .with_context(|| format!("Failed to read file: {}", path.display()))?;
+    let ast = parse_source(&source)?;
+    let rust_code = transpile_for_execution(&ast, path)?;
+    let (temp_source, binary_path) = prepare_compilation(&rust_code, verbose)?;
+    compile_rust_code(temp_source.path(), &binary_path)?;
+
+    if verbose {
+        eprintln!("Binary compiled: {}", binary_path.display());
+    }
+
     let mut crashes = 0;
     let mut timeouts = 0;
     let mut successes = 0;
@@ -2215,10 +2286,7 @@ fn handle_fuzz_single_file(
             eprintln!("  Iteration {}/{}", i, iterations);
         }
 
-        let result = std::process::Command::new("cargo")
-            .args(["run", "--bin", "ruchy", "--", "run"])
-            .arg(path)
-            .output();
+        let result = std::process::Command::new(&binary_path).output();
 
         match result {
             Ok(output) => {
@@ -2236,6 +2304,9 @@ fn handle_fuzz_single_file(
             }
         }
     }
+
+    // Cleanup: Remove binary
+    let _ = fs::remove_file(&binary_path);
 
     let total = successes + crashes + timeouts;
     let success_rate = (successes as f64 / total as f64) * 100.0;

@@ -77,7 +77,7 @@ impl SymbolTable {
 pub struct WasmEmitter {
     module: Module,
     symbols: std::cell::RefCell<SymbolTable>,
-    /// Maps function name to (index, is_void)
+    /// Maps function name to `(index, is_void)`
     functions: std::cell::RefCell<std::collections::HashMap<String, (u32, bool)>>,
 }
 impl WasmEmitter {
@@ -162,8 +162,8 @@ impl WasmEmitter {
                 let param_types = vec![wasm_encoder::ValType::I32; params.len()];
 
                 // Determine return type: check for explicit return OR implicit value
-                let returns_value = self.has_return_with_value(body)
-                    || self.expression_produces_value(body);
+                let returns_value =
+                    self.has_return_with_value(body) || self.expression_produces_value(body);
                 let return_types = if returns_value {
                     vec![wasm_encoder::ValType::I32]
                 } else {
@@ -1028,13 +1028,13 @@ impl WasmEmitter {
         let mut index_map = std::collections::HashMap::new();
 
         // Calculate offset: imports come first
-        let import_offset = if self.uses_builtins(expr) { 1 } else { 0 };
+        let import_offset = u32::from(self.uses_builtins(expr));
 
         // Map each user function to (index, is_void)
         for (i, (name, _, body)) in func_defs.iter().enumerate() {
             let index = (i as u32) + import_offset;
-            let returns_value = self.has_return_with_value(body)
-                || self.expression_produces_value(body);
+            let returns_value =
+                self.has_return_with_value(body) || self.expression_produces_value(body);
             let is_void = !returns_value;
             index_map.insert(name.clone(), (index, is_void));
         }
@@ -1062,9 +1062,15 @@ impl WasmEmitter {
             } => {
                 functions.push((name.clone(), params.clone(), body.clone()));
             }
-            ExprKind::Let { name, value, body, .. } => {
+            ExprKind::Let {
+                name, value, body, ..
+            } => {
                 // Check if the value is a lambda (closure)
-                if let ExprKind::Lambda { params, body: lambda_body } = &value.kind {
+                if let ExprKind::Lambda {
+                    params,
+                    body: lambda_body,
+                } = &value.kind
+                {
                     functions.push((name.clone(), params.clone(), lambda_body.clone()));
                 }
                 // Continue recursing into the let body

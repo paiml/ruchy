@@ -152,6 +152,8 @@ enum Commands {
     },
     /// Launch interactive notebook server
     Notebook {
+        /// Optional file to validate in non-interactive mode (TOOL-VALIDATION-003)
+        file: Option<PathBuf>,
         /// Port to run the server on
         #[arg(short, long, default_value = "8080")]
         port: u16,
@@ -1179,6 +1181,7 @@ mod tests {
     #[test]
     fn test_handle_advanced_command_notebook() {
         let command = Commands::Notebook {
+            file: None,
             port: 8080,
             open: false,
             host: "127.0.0.1".to_string(),
