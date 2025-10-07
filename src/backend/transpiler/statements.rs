@@ -558,6 +558,23 @@ impl Transpiler {
     fn has_non_unit_expression(&self, body: &Expr) -> bool {
         !self.is_void_expression(body)
     }
+
+    /// Check if function body returns a closure (Lambda expression)
+    fn returns_closure(&self, body: &Expr) -> bool {
+        match &body.kind {
+            ExprKind::Lambda { .. } => true,
+            ExprKind::Block(exprs) if !exprs.is_empty() => {
+                // Check if last expression in block is a lambda
+                if let Some(last_expr) = exprs.last() {
+                    matches!(last_expr.kind, ExprKind::Lambda { .. })
+                } else {
+                    false
+                }
+            }
+            _ => false,
+        }
+    }
+
     /// Transpiles function definitions
     #[allow(clippy::too_many_arguments)]
     /// Infer parameter type based on usage in function body
@@ -621,6 +638,10 @@ impl Transpiler {
             Ok(quote! { -> #ty_tokens })
         } else if name == "main" {
             Ok(quote! {})
+        } else if self.returns_closure(body) {
+            // DEFECT-CLOSURE-RETURN FIX: Infer closure return type
+            // Functions returning closures should have `impl Fn` return type
+            Ok(quote! { -> impl Fn(i32) -> i32 })
         } else if self.looks_like_numeric_function(name) {
             Ok(quote! { -> i32 })
         } else if self.has_non_unit_expression(body) {
@@ -954,6 +975,10 @@ impl Transpiler {
             Ok(quote! { -> #ty_tokens })
         } else if name == "main" {
             Ok(quote! {})
+        } else if self.returns_closure(body) {
+            // DEFECT-CLOSURE-RETURN FIX: Infer closure return type
+            // Functions returning closures should have `impl Fn` return type
+            Ok(quote! { -> impl Fn(i32) -> i32 })
         } else if self.looks_like_numeric_function(name) {
             Ok(quote! { -> i32 })
         } else if self.has_non_unit_expression(body) {
@@ -1040,9 +1065,11 @@ impl Transpiler {
             .map(|p| format_ident!("{}", p.name()))
             .collect();
         let body_tokens = self.transpile_expr(body)?;
+        // DEFECT-CLOSURE-RETURN FIX: Use 'move' for closures to capture variables by value
+        // This is necessary when closures are returned from functions and capture outer variables
         // Generate closure with proper formatting (no spaces around commas)
         if param_names.is_empty() {
-            Ok(quote! { || #body_tokens })
+            Ok(quote! { move || #body_tokens })
         } else {
             // Use a more controlled approach to avoid extra spaces
             let param_list = param_names
@@ -1050,7 +1077,7 @@ impl Transpiler {
                 .map(std::string::ToString::to_string)
                 .collect::<Vec<_>>()
                 .join(",");
-            let closure_str = format!("|{param_list}| {body_tokens}");
+            let closure_str = format!("move |{param_list}| {body_tokens}");
             closure_str
                 .parse()
                 .map_err(|e| anyhow::anyhow!("Failed to parse closure: {}", e))

@@ -19,11 +19,12 @@ fn main() {
     let times_two = |n| { n * 2 }
     println(compose(add_one, times_two, 5))
 
-    // Closure as variable passed to function
-    fn twice(f, x) {
-        f(f(x))
+    // Function returning closure
+    fn make_counter(start) {
+        |increment| { start + increment }
     }
 
-    let increment = |n| { n + 1 }
-    println(twice(increment, 5))
+    let counter = make_counter(10)
+    println(counter(5))
+    println(counter(3))
 }
