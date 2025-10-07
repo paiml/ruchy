@@ -1,0 +1,24 @@
+// LANG-COMP-006: Data Structures - Tuples
+// Demonstrates tuple creation and destructuring
+
+// Tuple literals
+let pair = (1, 2)
+let triple = (1, "two", 3.0)
+let nested = ((1, 2), (3, 4))
+
+// Tuple access via .N syntax
+let first = pair.0
+let second = pair.1
+
+// Mixed types
+let person = ("Alice", 30, "NYC")
+let name = person.0
+let age = person.1
+let city = person.2
+
+// Output
+println(pair)
+println(triple)
+println(first)
+println(name)
+println(age)

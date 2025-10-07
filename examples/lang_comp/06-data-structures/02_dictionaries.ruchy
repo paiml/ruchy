@@ -1,0 +1,18 @@
+// LANG-COMP-006: Data Structures - Dictionaries (Hash Maps)
+// Demonstrates dictionary/map creation and access
+
+// Dictionary literals
+let person = {
+    "name": "Alice",
+    "age": "30",
+    "city": "NYC"
+}
+
+let settings = {
+    "theme": "dark",
+    "language": "en"
+}
+
+// Output
+println(person)
+println(settings)

@@ -1,0 +1,20 @@
+// LANG-COMP-006: Data Structures - Tuple Destructuring
+// Demonstrates destructuring patterns for tuples
+
+// Simple tuple destructuring
+let (x, y) = (10, 20)
+println(x)
+println(y)
+
+// Triple destructuring
+let (a, b, c) = (100, 200, 300)
+println(a)
+println(b)
+println(c)
+
+// Nested tuple destructuring
+let ((p, q), (r, s)) = ((1, 2), (3, 4))
+println(p)
+println(q)
+println(r)
+println(s)
