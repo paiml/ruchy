@@ -1,0 +1,35 @@
+// LANG-COMP-009: Pattern Matching - Literal Patterns
+// Demonstrates matching against literal values
+
+let number = 42
+
+// Match against integer literals
+let result = match number {
+    0 => "zero",
+    1 => "one",
+    42 => "the answer",
+    _ => "something else"
+}
+
+println(result)
+
+// Match against string literals
+let status = "success"
+
+let message = match status {
+    "success" => "Operation completed",
+    "error" => "Operation failed",
+    "pending" => "Operation in progress",
+    _ => "Unknown status"
+}
+
+println(message)
+
+// Match with numbers (converted to conditional)
+let flag = 1
+
+if flag == 1 {
+    println("enabled")
+} else {
+    println("disabled")
+}

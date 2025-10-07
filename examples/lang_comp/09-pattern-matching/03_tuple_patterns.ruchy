@@ -1,0 +1,36 @@
+// LANG-COMP-009: Pattern Matching - Tuple Patterns
+// Demonstrates pattern matching on tuples
+
+let point = (10, 20)
+
+// Match on tuple structure
+let location = match point {
+    (0, 0) => "origin",
+    (x, 0) => "on x-axis",
+    (0, y) => "on y-axis",
+    (x, y) => "in quadrant"
+}
+
+println(location)
+
+// Match with tuple destructuring
+let pair = (42, "answer")
+
+match pair {
+    (num, text) => {
+        println(num)
+        println(text)
+    }
+}
+
+// Nested tuple matching
+let nested = ((1, 2), (3, 4))
+
+match nested {
+    ((a, b), (c, d)) => {
+        println(a)
+        println(b)
+        println(c)
+        println(d)
+    }
+}
