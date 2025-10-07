@@ -1,0 +1,37 @@
+// LANG-COMP-009: Pattern Matching - Destructuring
+// Demonstrates destructuring in let bindings and function parameters
+
+// Tuple destructuring in let binding
+let coordinates = (100, 200)
+let (x, y) = coordinates
+
+println(x)
+println(y)
+
+// Nested tuple destructuring
+let nested = ((1, 2), (3, 4))
+let ((a, b), (c, d)) = nested
+
+println(a)
+println(d)
+
+// Array destructuring (first elements)
+let numbers = [10, 20, 30]
+let first = numbers[0]
+let second = numbers[1]
+
+println(first)
+println(second)
+
+// Pattern matching with destructuring
+let point = (5, 10)
+
+match point {
+    (0, 0) => println("origin"),
+    (0, y) => println(y),
+    (x, 0) => println(x),
+    (x, y) => {
+        println(x)
+        println(y)
+    }
+}
