@@ -50,12 +50,17 @@
      3. Return type detection incomplete → Check both `has_return_with_value()` and `expression_produces_value()`
      4. Void function detection incomplete → Track (index, is_void) tuple
 
-### ❌ KNOWN DEFECTS (Per NO DEFECT OUT OF SCOPE)
+### ✅ RECENTLY FIXED
 
-2. **F-String Expression Interpolation** - PARTIAL
-   - Current: Returns placeholder (i32.const 0)
-   - Needed: Actual string concatenation with host functions
-   - Impact: F-strings with expressions don't produce correct values
+3. **F-String Expression Evaluation** - FIXED ✅
+   - Defect: F-strings with expressions returned placeholder (i32.const 0)
+   - Fix: Expressions now properly evaluated and result passed to functions
+   - Implementation: Single-expression f-strings return computed value
+   - Example: `f"{x + y}"` now evaluates `x + y` and returns result
+   - Note: Multi-part f-strings (text + expr) still require host string concatenation
+   - Result: All 4/4 f-string examples compile with proper expression evaluation
+
+### ❌ KNOWN DEFECTS (Per NO DEFECT OUT OF SCOPE)
 
 3. **Additional Pattern Types** - DEFERRED
    - Variable bindings in patterns
