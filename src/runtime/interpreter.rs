@@ -1363,6 +1363,10 @@ impl Interpreter {
         match object_value {
             Value::Object(ref object_map) => self.access_object_field(object_map, field),
             Value::ObjectMut(ref cell) => self.access_object_mut_field(cell, field),
+            Value::Tuple(ref elements) => {
+                // Tuple field access (e.g., tuple.0, tuple.1)
+                crate::runtime::eval_data_structures::eval_tuple_field_access(elements, field)
+            }
             _ => Err(InterpreterError::RuntimeError(format!(
                 "Cannot access field '{}' on type {}",
                 field,

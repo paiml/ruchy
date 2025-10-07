@@ -405,7 +405,7 @@ fn eval_dataframe_field_access(
 }
 
 /// Evaluate tuple field access (tuple.0, tuple.1, etc.)
-fn eval_tuple_field_access(elements: &[Value], field: &str) -> Result<Value, InterpreterError> {
+pub fn eval_tuple_field_access(elements: &[Value], field: &str) -> Result<Value, InterpreterError> {
     if let Ok(index) = field.parse::<usize>() {
         if index < elements.len() {
             Ok(elements[index].clone())

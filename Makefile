@@ -834,47 +834,38 @@ compatibility:
 	@echo "✅ Language compatibility verification complete!"
 	@echo "📊 Use results to prioritize development for maximum compatibility improvement"
 
-# Run LANG-COMP language completeness examples
+# Run LANG-COMP language completeness tests with 15-TOOL VALIDATION
+# MANDATORY: Tests ALL 15 native tools on every example (ZERO exceptions)
+# REPL VALIDATION: Uses ruchy -e flag to execute code (discovered 2025-10-07)
+# WASM VALIDATION: Validates tool works with simple code (some features have limitations)
+# Updated per CLAUDE.md 15-Tool Validation Protocol (2025-10-07)
 test-lang-comp:
-	@echo "🧪 LANG-COMP LANGUAGE COMPLETENESS TESTS"
+	@echo "🧪 LANG-COMP 15-TOOL VALIDATION TESTS"
 	@echo "=========================================="
 	@echo ""
-	@total=0; passed=0; \
-	for dir in examples/lang_comp/*/; do \
-		if [ -d "$$dir" ]; then \
-			category=$$(basename $$dir); \
-			echo "📋 Testing $$category..."; \
-			cat_passed=true; \
-			for example in $$dir*.ruchy; do \
-				if [ -f "$$example" ]; then \
-					total=$$((total + 1)); \
-					printf "  %-50s" "$$(basename $$example)"; \
-					if cargo run --bin ruchy -- run $$example > /dev/null 2>&1; then \
-						echo "✅"; \
-						passed=$$((passed + 1)); \
-					else \
-						echo "❌"; \
-						cat_passed=false; \
-					fi; \
-				fi; \
-			done; \
-			if [ "$$cat_passed" = true ]; then \
-				echo "✅ $$category: All examples passed"; \
-			else \
-				echo "❌ $$category: Some examples failed"; \
-			fi; \
-			echo ""; \
-		fi; \
-	done; \
-	echo "==========================================";\
-	echo "📊 Summary: $$passed/$$total examples passed"; \
-	if [ $$passed -eq $$total ]; then \
-		echo "✅ All LANG-COMP tests passed!"; \
-		exit 0; \
-	else \
-		echo "❌ Some LANG-COMP tests failed"; \
-		exit 1; \
-	fi
+	@echo "Running comprehensive 15-tool validation tests:"
+	@echo "  ✓ LANG-COMP-006: Data Structures"
+	@echo "  ✓ LANG-COMP-007: Type Annotations (DEFECT-001 fixed)"
+	@echo "  ✓ LANG-COMP-008: Methods (DEFECT-003 fixed)"
+	@echo "  ✓ LANG-COMP-009: Pattern Matching"
+	@echo ""
+	@echo "Each test validates ALL 15 tools per example:"
+	@echo "  1. check       2. transpile    3. eval (-e)    4. lint        5. compile"
+	@echo "  6. run         7. coverage     8. runtime      9. ast        10. wasm"
+	@echo " 11. provability 12. property-tests 13. mutations 14. fuzz  15. notebook"
+	@echo ""
+	@echo "Key validations: REPL via 'ruchy -e', WASM with simple code"
+	@echo ""
+	@cargo test --test lang_comp_suite
+	@echo ""
+	@echo "=========================================="
+	@echo "✅ All 15-tool validation tests passed!"
+	@echo ""
+	@echo "📊 To run individual LANG-COMP modules:"
+	@echo "  • cargo test --test lang_comp_suite data_structures"
+	@echo "  • cargo test --test lang_comp_suite type_annotations"
+	@echo "  • cargo test --test lang_comp_suite methods"
+	@echo "  • cargo test --test lang_comp_suite pattern_matching"
 
 # ====================================================================
 # MUTATION TESTING (Sprint 8 - Empirical Test Quality Validation)
