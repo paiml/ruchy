@@ -89,16 +89,26 @@ fn format_dataframe(f: &mut fmt::Formatter<'_>, columns: &[DataFrameColumn]) -> 
 /// Format an object value
 ///
 /// # Complexity
-/// Cyclomatic complexity: 3 (within Toyota Way limits)
+/// Cyclomatic complexity: 4 (within Toyota Way limits)
+///
+/// # Determinism
+/// Keys are sorted to ensure deterministic output across multiple runs.
+/// This is critical for property testing and reproducible behavior.
 fn format_object(
     f: &mut fmt::Formatter<'_>,
     obj: &std::collections::HashMap<String, Value>,
 ) -> fmt::Result {
     write!(f, "{{")?;
-    for (i, (key, val)) in obj.iter().enumerate() {
+
+    // Sort keys for deterministic output (DEFECT-DICT-DETERMINISM fix)
+    let mut keys: Vec<&String> = obj.keys().collect();
+    keys.sort();
+
+    for (i, key) in keys.iter().enumerate() {
         if i > 0 {
             write!(f, ", ")?;
         }
+        let val = &obj[*key];
         write!(f, "{key}: {val}")?;
     }
     write!(f, "}}")
