@@ -6,6 +6,7 @@ use super::{
     Visibility,
 };
 use crate::frontend::ast::Decorator;
+use crate::frontend::error_recovery::ParseError;
 pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
     let Some((token, span)) = state.tokens.peek() else {
         bail!("Unexpected end of input - expected expression");
@@ -111,9 +112,22 @@ fn dispatch_prefix_token(state: &mut ParserState, token: Token, span: Span) -> R
 
 fn parse_literal_prefix(state: &mut ParserState, token: Token, span: Span) -> Result<Expr> {
     match token {
-        Token::Integer(value) => {
+        Token::Integer(value_str) => {
             state.tokens.advance();
-            Ok(Expr::new(ExprKind::Literal(Literal::Integer(value)), span))
+            // Parse integer literal: extract numeric value and optional type suffix
+            let (num_part, type_suffix) =
+                if let Some(pos) = value_str.find(|c: char| c.is_alphabetic()) {
+                    (&value_str[..pos], Some(value_str[pos..].to_string()))
+                } else {
+                    (value_str.as_str(), None)
+                };
+            let value = num_part.parse::<i64>().map_err(|_| {
+                ParseError::new(format!("Invalid integer literal: {num_part}"), span)
+            })?;
+            Ok(Expr::new(
+                ExprKind::Literal(Literal::Integer(value, type_suffix)),
+                span,
+            ))
         }
         Token::Float(value) => {
             state.tokens.advance();
@@ -379,9 +393,22 @@ fn parse_collection_prefix(state: &mut ParserState, token: Token, span: Span) ->
 /// Extracted from `parse_prefix` to reduce complexity
 fn parse_literal_token(state: &mut ParserState, token: &Token, span: Span) -> Result<Expr> {
     match token {
-        Token::Integer(value) => {
+        Token::Integer(value_str) => {
             state.tokens.advance();
-            Ok(Expr::new(ExprKind::Literal(Literal::Integer(*value)), span))
+            // Parse integer value and optional type suffix
+            let (num_part, type_suffix) =
+                if let Some(pos) = value_str.find(|c: char| c.is_alphabetic()) {
+                    (&value_str[..pos], Some(value_str[pos..].to_string()))
+                } else {
+                    (value_str.as_str(), None)
+                };
+            let value = num_part.parse::<i64>().map_err(|_| {
+                ParseError::new(format!("Invalid integer literal: {num_part}"), span)
+            })?;
+            Ok(Expr::new(
+                ExprKind::Literal(Literal::Integer(value, type_suffix)),
+                span,
+            ))
         }
         Token::Float(value) => {
             state.tokens.advance();
@@ -543,7 +570,7 @@ fn parse_turbofish_type(state: &mut ParserState) -> Result<String> {
             }
             Some((Token::Integer(n), _)) => {
                 // For array sizes like [i32; 10]
-                type_str.push_str(&n.to_string());
+                type_str.push_str(&n.clone());
                 state.tokens.advance();
                 break;
             }
@@ -1941,13 +1968,26 @@ fn parse_literal_pattern(state: &mut ParserState) -> Result<Pattern> {
 }
 
 /// Extract method: Parse integer literal with optional range pattern - complexity: 8
-fn parse_integer_literal_pattern(state: &mut ParserState, val: i64) -> Result<Pattern> {
+fn parse_integer_literal_pattern(state: &mut ParserState, val: String) -> Result<Pattern> {
     state.tokens.advance();
+    // Parse the integer value from string (ignore type suffix for pattern matching)
+    let (num_part, type_suffix) = if let Some(pos) = val.find(|c: char| c.is_alphabetic()) {
+        (&val[..pos], Some(val[pos..].to_string()))
+    } else {
+        (val.as_str(), None)
+    };
+    let parsed_val = num_part.parse::<i64>().map_err(|_| {
+        ParseError::new(
+            format!("Invalid integer literal: {num_part}"),
+            Span::default(),
+        )
+    })?;
+
     // Check for range patterns: 1..5 or 1..=5
     match state.tokens.peek() {
-        Some((Token::DotDot, _)) => parse_integer_range_pattern(state, val, false),
-        Some((Token::DotDotEqual, _)) => parse_integer_range_pattern(state, val, true),
-        _ => Ok(Pattern::Literal(Literal::Integer(val))),
+        Some((Token::DotDot, _)) => parse_integer_range_pattern(state, parsed_val, false),
+        Some((Token::DotDotEqual, _)) => parse_integer_range_pattern(state, parsed_val, true),
+        _ => Ok(Pattern::Literal(Literal::Integer(parsed_val, type_suffix))),
     }
 }
 
@@ -1958,12 +1998,25 @@ fn parse_integer_range_pattern(
     inclusive: bool,
 ) -> Result<Pattern> {
     state.tokens.advance(); // consume '..' or '..='
-    if let Some((Token::Integer(end_val), _)) = state.tokens.peek() {
-        let end_val = *end_val;
+    if let Some((Token::Integer(end_val_str), _)) = state.tokens.peek() {
+        let end_val_str = end_val_str.clone();
         state.tokens.advance();
+        // Parse the end value
+        let (num_part, _type_suffix) =
+            if let Some(pos) = end_val_str.find(|c: char| c.is_alphabetic()) {
+                (&end_val_str[..pos], Some(end_val_str[pos..].to_string()))
+            } else {
+                (end_val_str.as_str(), None)
+            };
+        let end_val = num_part.parse::<i64>().map_err(|_| {
+            ParseError::new(
+                format!("Invalid integer literal: {num_part}"),
+                Span::default(),
+            )
+        })?;
         Ok(Pattern::Range {
-            start: Box::new(Pattern::Literal(Literal::Integer(start_val))),
-            end: Box::new(Pattern::Literal(Literal::Integer(end_val))),
+            start: Box::new(Pattern::Literal(Literal::Integer(start_val, None))),
+            end: Box::new(Pattern::Literal(Literal::Integer(end_val, None))),
             inclusive,
         })
     } else {
@@ -4201,18 +4254,44 @@ fn parse_single_variant(state: &mut ParserState) -> Result<EnumVariant> {
 /// Complexity: <5
 fn parse_variant_discriminant(state: &mut ParserState) -> Result<Option<i64>> {
     match state.tokens.peek() {
-        Some((Token::Integer(val), _)) => {
-            let value = *val;
+        Some((Token::Integer(val_str), _)) => {
+            let val_str = val_str.clone();
             state.tokens.advance();
+            // Parse the integer value
+            let (num_part, _type_suffix) =
+                if let Some(pos) = val_str.find(|c: char| c.is_alphabetic()) {
+                    (&val_str[..pos], Some(val_str[pos..].to_string()))
+                } else {
+                    (val_str.as_str(), None)
+                };
+            let value = num_part.parse::<i64>().map_err(|_| {
+                ParseError::new(
+                    format!("Invalid integer literal: {num_part}"),
+                    Span::default(),
+                )
+            })?;
             Ok(Some(value))
         }
         Some((Token::Minus, _)) => {
             state.tokens.advance(); // consume -
             match state.tokens.peek() {
-                Some((Token::Integer(val), _)) => {
-                    let value = -(*val);
+                Some((Token::Integer(val_str), _)) => {
+                    let val_str = val_str.clone();
                     state.tokens.advance();
-                    Ok(Some(value))
+                    // Parse the integer value
+                    let (num_part, _type_suffix) =
+                        if let Some(pos) = val_str.find(|c: char| c.is_alphabetic()) {
+                            (&val_str[..pos], Some(val_str[pos..].to_string()))
+                        } else {
+                            (val_str.as_str(), None)
+                        };
+                    let value = num_part.parse::<i64>().map_err(|_| {
+                        ParseError::new(
+                            format!("Invalid integer literal: {num_part}"),
+                            Span::default(),
+                        )
+                    })?;
+                    Ok(Some(-value))
                 }
                 _ => bail!("Expected integer after - in enum discriminant"),
             }
@@ -4724,8 +4803,9 @@ mod tests {
     fn test_parse_integer_literal() {
         let mut parser = Parser::new("42");
         let result = parser.parse().unwrap();
-        if let ExprKind::Literal(Literal::Integer(n)) = &result.kind {
+        if let ExprKind::Literal(Literal::Integer(n, type_suffix)) = &result.kind {
             assert_eq!(*n, 42);
+            assert_eq!(*type_suffix, None);
         } else {
             panic!("Expected integer literal, got {:?}", result.kind);
         }

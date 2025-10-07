@@ -7,12 +7,11 @@ let num = 42
 let as_string = num.to_string()
 let as_float = num as f64
 
-// Integer operations via methods (use typed variables)
+// Integer operations via methods
 let negative: i32 = -5
 let abs_val = negative.abs()
 
-let base: i32 = 2
-let power = base.pow(3)
+let power = (2i32).pow(3)  // Type suffix enables method calls on literals
 
 // Output
 println(num)

@@ -94,7 +94,7 @@ fn collect_sql_content(state: &mut ParserState) -> Result<String> {
 fn convert_token_to_sql(token: &Token) -> String {
     match token {
         Token::Identifier(s) => s.clone(),
-        Token::Integer(n) => n.to_string(),
+        Token::Integer(n) => n.clone(),
         Token::Float(f) => f.to_string(),
         Token::String(s) => format!("'{s}'"),
         Token::Star => "*".to_string(),

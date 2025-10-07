@@ -269,7 +269,7 @@ impl InferenceContext {
     }
     fn infer_literal(lit: &Literal) -> MonoType {
         match lit {
-            Literal::Integer(_) => MonoType::Int,
+            Literal::Integer(_, _) => MonoType::Int,
             Literal::Float(_) => MonoType::Float,
             Literal::String(_) => MonoType::String,
             Literal::Bool(_) => MonoType::Bool,

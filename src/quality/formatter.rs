@@ -50,7 +50,7 @@ impl Formatter {
         };
         match &expr.kind {
             ExprKind::Literal(lit) => match lit {
-                crate::frontend::ast::Literal::Integer(n) => n.to_string(),
+                crate::frontend::ast::Literal::Integer(n, _) => n.to_string(),
                 crate::frontend::ast::Literal::Float(f) => f.to_string(),
                 crate::frontend::ast::Literal::String(s) => {
                     format!("\"{}\"", s.replace('"', "\\\""))

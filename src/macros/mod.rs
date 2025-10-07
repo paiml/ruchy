@@ -131,7 +131,7 @@ impl MacroExpander {
     fn expand_line(&self, ast: &Expr) -> Expr {
         // Return current line number
         Expr {
-            kind: ExprKind::Literal(crate::frontend::ast::Literal::Integer(42)),
+            kind: ExprKind::Literal(crate::frontend::ast::Literal::Integer(42, None)),
             span: ast.span,
             attributes: vec![],
         }

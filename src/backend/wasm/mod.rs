@@ -455,7 +455,7 @@ impl WasmEmitter {
     /// Complexity: 7 (Toyota Way: <10 ✓)
     fn infer_type(&self, expr: &Expr) -> WasmType {
         match &expr.kind {
-            ExprKind::Literal(Literal::Integer(_)) => WasmType::I32,
+            ExprKind::Literal(Literal::Integer(_, _)) => WasmType::I32,
             ExprKind::Literal(Literal::Float(_)) => WasmType::F32,
             ExprKind::Literal(Literal::Bool(_)) => WasmType::I32,
             ExprKind::Binary { op, left, right } => self.infer_binary_type(op, left, right),
@@ -1269,7 +1269,7 @@ impl WasmEmitter {
     }
     fn lower_literal(&self, literal: &Literal) -> Result<Vec<Instruction<'static>>, String> {
         match literal {
-            Literal::Integer(n) => Ok(vec![Instruction::I32Const(*n as i32)]),
+            Literal::Integer(n, _) => Ok(vec![Instruction::I32Const(*n as i32)]),
             Literal::Float(f) => Ok(vec![Instruction::F32Const(*f as f32)]),
             Literal::Bool(b) => Ok(vec![Instruction::I32Const(i32::from(*b))]),
             Literal::String(_) => {

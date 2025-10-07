@@ -156,7 +156,7 @@ fn match_struct_pattern(
 /// Cyclomatic complexity: 7 (within Toyota Way limits)
 fn eval_pattern_literal(literal: &Literal) -> Result<Value, InterpreterError> {
     match literal {
-        Literal::Integer(n) => Ok(Value::Integer(*n)),
+        Literal::Integer(n, _) => Ok(Value::Integer(*n)),
         Literal::Float(f) => Ok(Value::Float(*f)),
         Literal::String(s) => Ok(Value::from_string(s.clone())),
         Literal::Bool(b) => Ok(Value::Bool(*b)),

@@ -17,7 +17,7 @@ use std::rc::Rc;
 pub fn match_literal_pattern(value: &Value, literal: &Literal) -> bool {
     match (value, literal) {
         (Value::Nil, Literal::Unit) => true,
-        (Value::Integer(v), Literal::Integer(p)) => v == p,
+        (Value::Integer(v), Literal::Integer(p, _)) => v == p,
         (Value::Float(v), Literal::Float(p)) => (v - p).abs() < f64::EPSILON,
         (Value::String(v), Literal::String(p)) => &**v == p,
         (Value::Bool(v), Literal::Bool(p)) => v == p,
@@ -264,12 +264,12 @@ fn match_range_pattern_helper(
     value: &Value,
 ) -> Option<Vec<(String, Value)>> {
     if let Value::Integer(val) = value {
-        let start_val = if let Pattern::Literal(Literal::Integer(n)) = start {
+        let start_val = if let Pattern::Literal(Literal::Integer(n, _)) = start {
             *n
         } else {
             return None;
         };
-        let end_val = if let Pattern::Literal(Literal::Integer(n)) = end {
+        let end_val = if let Pattern::Literal(Literal::Integer(n, _)) = end {
             *n
         } else {
             return None;

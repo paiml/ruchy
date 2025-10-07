@@ -338,7 +338,7 @@ fn match_range_pattern(
 /// # Complexity
 /// Cyclomatic complexity: 2 (within Toyota Way limits)
 fn extract_integer_from_pattern(pattern: &Pattern) -> Result<i64, InterpreterError> {
-    if let Pattern::Literal(Literal::Integer(val)) = pattern {
+    if let Pattern::Literal(Literal::Integer(val, _)) = pattern {
         Ok(*val)
     } else {
         Err(InterpreterError::RuntimeError(
@@ -354,7 +354,7 @@ mod tests {
 
     fn test_eval_literal(lit: &Literal) -> Value {
         match lit {
-            Literal::Integer(i) => Value::Integer(*i),
+            Literal::Integer(i, _) => Value::Integer(*i),
             Literal::Float(f) => Value::Float(*f),
             Literal::String(s) => Value::from_string(s.clone()),
             Literal::Bool(b) => Value::Bool(*b),

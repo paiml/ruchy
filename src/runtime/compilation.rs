@@ -362,7 +362,7 @@ impl DirectThreadedInterpreter {
     /// Cyclomatic complexity: 8 (within Toyota Way limits)
     fn literal_to_value(&self, lit: &Literal) -> Value {
         match lit {
-            Literal::Integer(n) => Value::Integer(*n),
+            Literal::Integer(n, _) => Value::Integer(*n),
             Literal::Float(f) => Value::Float(*f),
             Literal::Bool(b) => Value::Bool(*b),
             Literal::String(s) => Value::from_string(s.clone()),

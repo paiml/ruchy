@@ -283,11 +283,24 @@ impl<'a> RecoveryParser<'a> {
             return Ok(self.create_ghost_node("Max recursion depth"));
         }
         let result = match self.tokens.peek() {
-            Some((Token::Integer(n), span)) => {
-                let n = *n;
+            Some((Token::Integer(n_str), span)) => {
+                let n_str = n_str.clone();
                 let span = *span;
                 self.tokens.advance();
-                Ok(Expr::new(ExprKind::Literal(Literal::Integer(n)), span))
+                // Parse integer value and optional type suffix
+                let (num_part, type_suffix) =
+                    if let Some(pos) = n_str.find(|c: char| c.is_alphabetic()) {
+                        (&n_str[..pos], Some(n_str[pos..].to_string()))
+                    } else {
+                        (n_str.as_str(), None)
+                    };
+                let value = num_part.parse::<i64>().map_err(|_| {
+                    ParseError::new(format!("Invalid integer literal: {num_part}"), span)
+                })?;
+                Ok(Expr::new(
+                    ExprKind::Literal(Literal::Integer(value, type_suffix)),
+                    span,
+                ))
             }
             Some((Token::Float(f), span)) => {
                 let f = *f;

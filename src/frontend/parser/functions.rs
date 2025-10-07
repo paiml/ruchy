@@ -297,12 +297,12 @@ pub fn parse_method_call(state: &mut ParserState, receiver: Expr) -> Result<Expr
         }
         Some((Token::Integer(index), _)) => {
             // Handle tuple access like t.0, t.1, etc.
-            let index = *index;
+            let index = index.clone();
             state.tokens.advance();
             Ok(Expr {
                 kind: ExprKind::FieldAccess {
                     object: Box::new(receiver),
-                    field: index.to_string(),
+                    field: index,
                 },
                 span: Span { start: 0, end: 0 },
                 attributes: Vec::new(),
@@ -333,12 +333,12 @@ pub fn parse_optional_method_call(state: &mut ParserState, receiver: Expr) -> Re
         }
         Some((Token::Integer(index), _)) => {
             // Handle optional tuple access like t?.0, t?.1, etc.
-            let index = *index;
+            let index = index.clone();
             state.tokens.advance();
             Ok(Expr {
                 kind: ExprKind::OptionalFieldAccess {
                     object: Box::new(receiver),
-                    field: index.to_string(),
+                    field: index,
                 },
                 span: Span { start: 0, end: 0 },
                 attributes: Vec::new(),

@@ -3197,7 +3197,7 @@ impl Transpiler {
                     self.transpile_float_generic(&args[0])
                 }
             }
-            ExprKind::Literal(Literal::Integer(_)) => {
+            ExprKind::Literal(Literal::Integer(_, _)) => {
                 let value = self.transpile_expr(&args[0])?;
                 Ok(quote! { (#value as f64) })
             }
@@ -3216,7 +3216,7 @@ impl Transpiler {
         }
         // Check the type of the argument to generate appropriate conversion
         match &args[0].kind {
-            ExprKind::Literal(Literal::Integer(_)) => {
+            ExprKind::Literal(Literal::Integer(_, _)) => {
                 let value = self.transpile_expr(&args[0])?;
                 Ok(quote! { (#value != 0) })
             }

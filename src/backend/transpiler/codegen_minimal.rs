@@ -221,7 +221,7 @@ impl MinimalCodeGen {
     }
     fn gen_literal(lit: &Literal) -> Result<String> {
         match lit {
-            Literal::Integer(i) => Ok(i.to_string()),
+            Literal::Integer(i, _) => Ok(i.to_string()),
             Literal::Float(f) => Ok(f.to_string()),
             Literal::String(s) => Ok(format!("\"{}\"", s.replace('"', "\\\""))),
             Literal::Bool(b) => Ok(b.to_string()),
