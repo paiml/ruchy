@@ -34,15 +34,21 @@
 
 ### ✅ RECENTLY FIXED
 
-1. **Function Declarations/Calls** - FIXED ✅
+1. **Closures/Lambdas** - FIXED ✅
+   - Implemented lambda support: `let double = |x| x * 2`
+   - Changes:
+     1. `collect_functions_rec()` → Collect lambdas from Let bindings
+     2. `get_non_function_code()` → Filter out lambda-binding Let expressions
+     3. `lower_expression()` → Handle ExprKind::Lambda (returns empty instructions)
+     4. `uses_builtins()` → Check lambda bodies recursively
+   - Result: **ALL 4/4 function examples now compile successfully!**
+
+2. **Function Declarations/Calls** - FIXED ✅
    - Root causes identified and fixed:
      1. Function index tracking missing → Implemented function registry
      2. `uses_builtins()` not checking function bodies → Added Function case
      3. Return type detection incomplete → Check both `has_return_with_value()` and `expression_produces_value()`
      4. Void function detection incomplete → Track (index, is_void) tuple
-   - Result: 3/4 function examples now compile successfully
-   - Passing: 01_declaration.ruchy, 02_parameters.ruchy, 03_return_values.ruchy
-   - Still failing: 04_closures.ruchy (requires closure/lambda implementation)
 
 ### ❌ KNOWN DEFECTS (Per NO DEFECT OUT OF SCOPE)
 
@@ -71,28 +77,18 @@
 - ✅ `03-control-flow/03_for.ruchy`
 - ✅ `03-control-flow/04_while.ruchy`
 - ✅ `03-control-flow/05_break_continue.ruchy`
-- ✅ `04-functions/01_declaration.ruchy` ← JUST FIXED!
-- ✅ `04-functions/02_parameters.ruchy` ← JUST FIXED!
+- ✅ `04-functions/01_declaration.ruchy`
+- ✅ `04-functions/02_parameters.ruchy`
 - ✅ `04-functions/03_return_values.ruchy`
+- ✅ `04-functions/04_closures.ruchy` ← JUST FIXED!
 - ✅ `05-string-interpolation/01_basic_interpolation.ruchy`
 
 ### Failing Examples
-- ❌ `04-functions/04_closures.ruchy` - Requires closure/lambda implementation
+- None currently! 🎉
 
 ## Next Steps (NO DEFECT OUT OF SCOPE)
 
-### Priority 1: Closures/Lambdas (NEW BLOCKING ISSUE)
-**Defect**: Closure syntax `|x| x * 2` not yet implemented in WASM
-**Strategy**:
-1. Implement closure lowering as anonymous functions
-2. Handle closure variable capture (if needed)
-3. Lower closure calls correctly
-4. EXTREME TDD: RED→GREEN→REFACTOR
-
-**Acceptance Criteria**:
-- `04-functions/04_closures.ruchy` compiles to valid WASM
-
-### Priority 2: F-String Expression Concatenation
+### Priority 1: F-String Expression Concatenation
 **Defect**: F-strings with expressions return placeholder value
 **Strategy**:
 1. Implement string concatenation host function
