@@ -353,7 +353,18 @@ impl Transpiler {
             quote! {}
         };
 
-        let value_tokens = self.transpile_expr(value)?;
+        // DEFECT-001 FIX: Auto-convert string literals to String when type annotation is String
+        let value_tokens = match (&value.kind, type_annotation) {
+            (
+                crate::frontend::ast::ExprKind::Literal(crate::frontend::ast::Literal::String(s)),
+                Some(type_ann),
+            ) if matches!(&type_ann.kind, crate::frontend::ast::TypeKind::Named(name) if name == "String") =>
+            {
+                // String literal with String type annotation - add .to_string()
+                quote! { #s.to_string() }
+            }
+            _ => self.transpile_expr(value)?,
+        };
 
         // Generate type annotation if present
         let type_tokens = if let Some(type_ann) = type_annotation {

@@ -13,9 +13,9 @@ let ratio: f64 = 0.5
 let flag: bool = true
 let disabled: bool = false
 
-// String literals (type inferred as &str, annotations omitted)
-let name = "Alice"
-let greeting = "Hello"
+// String with type annotation (auto-converts to String)
+let name: String = "Alice"
+let greeting: String = "Hello"
 
 // Output
 println(x)
