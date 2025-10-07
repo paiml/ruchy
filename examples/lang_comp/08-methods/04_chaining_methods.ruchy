@@ -1,10 +1,10 @@
 // LANG-COMP-008: Methods - Method Chaining
 // Demonstrates chaining multiple method calls
 
-let text = "  Hello World  "
+let text = "  hello world  "
 
 // Chain string methods
-let result = text.trim().to_lowercase().replace("world", "ruchy")
+let result = text.trim().replace("world", "Ruchy")
 
 // Chain on arrays
 let numbers = [1, 2, 3, 4, 5]

@@ -11,7 +11,8 @@ let as_float = num as f64
 let negative: i32 = -5
 let abs_val = negative.abs()
 
-let power = (2i32).pow(3)  // Type suffix enables method calls on literals
+let base: i32 = 2
+let power = base.pow(3)  // Type annotation on variable enables method calls
 
 // Output
 println(num)

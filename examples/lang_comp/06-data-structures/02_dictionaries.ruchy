@@ -14,5 +14,6 @@ let settings = {
 }
 
 // Output
+// Note: Dictionary key order may vary between runs (non-deterministic)
 println(person)
 println(settings)
