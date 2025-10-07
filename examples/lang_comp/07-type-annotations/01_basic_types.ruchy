@@ -1,0 +1,25 @@
+// LANG-COMP-007: Type Annotations - Basic Types
+// Demonstrates type annotations for primitive types
+
+// Integer types
+let x: i32 = 42
+let big: i64 = 9999999999
+
+// Floating point
+let pi: f64 = 3.14159
+let ratio: f64 = 0.5
+
+// Boolean
+let flag: bool = true
+let disabled: bool = false
+
+// String literals (type inferred as &str, annotations omitted)
+let name = "Alice"
+let greeting = "Hello"
+
+// Output
+println(x)
+println(big)
+println(pi)
+println(flag)
+println(name)

@@ -1,0 +1,27 @@
+// LANG-COMP-007: Type Annotations - Function Types
+// Demonstrates type annotations in function signatures
+
+// Function with typed parameters and return type
+fn add(x: i32, y: i32) -> i32 {
+    return x + y
+}
+
+// Function with string parameter (takes &str, not String for simplicity)
+fn greet(name: &str, age: i32) -> i32 {
+    println(name)
+    return age + 1
+}
+
+// Function returning bool
+fn is_positive(n: i32) -> bool {
+    return n > 0
+}
+
+// Test the functions
+let sum = add(10, 20)
+let next_age = greet("Bob", 25)
+let check = is_positive(-5)
+
+println(sum)
+println(next_age)
+println(check)
