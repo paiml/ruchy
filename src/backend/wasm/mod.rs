@@ -870,16 +870,26 @@ impl WasmEmitter {
             self.lower_literal(&Literal::String(text))
         } else {
             // Stage 2: F-strings with expressions
-            // Approach: Build string from parts, evaluate each expression
-            // For MVP: expressions evaluated but concatenation is simplified
-            // Returns i32 pointer to result string in linear memory
+            // Strategy: For single-expression f-strings, evaluate and return the expression value
+            // Multi-part f-strings require host function support for concatenation
 
-            // Evaluate all expression parts (ignoring for now, placeholder)
-            // In a full implementation, we'd call string_concat host function
-            // Reference: wasm-fstring-spec.md Phase 2-3
+            // Check if this is a simple case: single expression, no text
+            if parts.len() == 1 {
+                if let StringPart::Expr(expr) = &parts[0] {
+                    // Single expression: just evaluate it
+                    return self.lower_expression(expr);
+                }
+            }
 
-            // Placeholder: return memory pointer 0 (represents empty/null string)
-            // Actual implementation requires host function binding
+            // For multi-part f-strings: requires host function support
+            // For now, evaluate first expression if present (partial fix)
+            for part in parts {
+                if let StringPart::Expr(expr) | StringPart::ExprWithFormat { expr, .. } = part {
+                    return self.lower_expression(expr);
+                }
+            }
+
+            // No expressions found: return placeholder
             Ok(vec![Instruction::I32Const(0)])
         }
     }
