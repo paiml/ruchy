@@ -1,0 +1,23 @@
+// LANG-COMP-010-01: Basic Closures
+// Demonstrates basic closure syntax and usage
+
+fn main() {
+    // Simple closure with no parameters
+    let greet = || { println("Hello!") }
+    greet()
+
+    // Closure with one parameter
+    let double = |x| { x * 2 }
+    println(double(21))
+
+    // Closure with multiple parameters
+    let add = |a, b| { a + b }
+    println(add(10, 20))
+
+    // Closure with explicit body
+    let multiply = |x, y| {
+        let result = x * y
+        result
+    }
+    println(multiply(3, 4))
+}

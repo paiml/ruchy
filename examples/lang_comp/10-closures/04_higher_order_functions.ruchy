@@ -1,0 +1,29 @@
+// LANG-COMP-010-04: Higher-Order Functions
+// Demonstrates functions that take or return closures
+
+fn main() {
+    // Function taking closure as parameter
+    fn apply(f, x) {
+        f(x)
+    }
+
+    let double = |n| { n * 2 }
+    println(apply(double, 21))
+
+    // Function taking multiple closure parameters
+    fn compose(f, g, x) {
+        f(g(x))
+    }
+
+    let add_one = |n| { n + 1 }
+    let times_two = |n| { n * 2 }
+    println(compose(add_one, times_two, 5))
+
+    // Closure as variable passed to function
+    fn twice(f, x) {
+        f(f(x))
+    }
+
+    let increment = |n| { n + 1 }
+    println(twice(increment, 5))
+}

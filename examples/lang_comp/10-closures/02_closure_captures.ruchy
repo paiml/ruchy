@@ -1,0 +1,23 @@
+// LANG-COMP-010-02: Closure Captures
+// Demonstrates capturing variables from outer scope
+
+fn main() {
+    // Capture outer variable by value
+    let x = 10
+    let add_x = |y| { x + y }
+    println(add_x(5))
+
+    // Capture multiple variables
+    let a = 2
+    let b = 3
+    let calculate = |n| { n * a + b }
+    println(calculate(5))
+
+    // Nested closure with capture
+    let outer = 100
+    let inner_closure = |n| {
+        let add_outer = |x| { x + outer }
+        add_outer(n)
+    }
+    println(inner_closure(5))
+}
