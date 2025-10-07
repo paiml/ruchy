@@ -103,12 +103,26 @@ All 21/21 LANG-COMP examples now compile to valid WASM with proper:
 
 ### Remaining Work (Beyond LANG-COMP)
 
-1. **Multi-part F-String Concatenation** (e.g., `f"x = {x}, y = {y}"`)
+1. **E2E Runtime Validation**
+   - Created: 11 new E2E tests for WASM execution (tests/e2e/wasm-langcomp.spec.ts)
+   - Total: 24 E2E tests (13 REPL + 11 WASM execution)
+   - Status: Ready for CI integration
+   - Next: Run in Chromium/Firefox/WebKit via CI
+
+2. **Test Coverage Improvement** (33% → 85% target)
+   - Current: 25 unit tests in WASM backend
+   - Need: Property-based tests for instruction generation
+   - Need: Mutation testing for WASM compiler
+   - Tooling: cargo-llvm-cov for coverage tracking
+
+3. **Multi-part F-String Concatenation** (e.g., `f"x = {x}, y = {y}"`)
    - Requires host function for string concatenation
    - Single expressions work, multi-part needs runtime support
+   - Not blocking: All examples use single expressions
 
-2. **Advanced Pattern Types** (Variable bindings, tuple destructuring)
+4. **Advanced Pattern Types** (Variable bindings, tuple destructuring)
    - Deferred until needed by examples
+   - Not blocking: All examples use literal patterns + wildcards
 
 ### Priority 3: Additional Pattern Types (Future)
 **Scope**: Variable bindings, tuple destructuring, guards
