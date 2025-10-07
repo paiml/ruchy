@@ -171,9 +171,12 @@ pub fn eval_unary_op(op: UnaryOp, operand: &Value) -> Result<Value, InterpreterE
                 operand.type_name()
             ))),
         },
-        UnaryOp::Reference => Err(InterpreterError::RuntimeError(format!(
-            "Unary operator not yet implemented: {op:?}"
-        ))),
+        UnaryOp::Reference => {
+            // In interpreted mode, the reference operator (&) is a no-op
+            // The interpreter already manages value ownership internally
+            // This allows Rust-like syntax (&value) to work in eval mode
+            Ok(operand.clone())
+        }
         UnaryOp::Deref => Err(InterpreterError::RuntimeError(
             "Dereference operator not yet implemented in interpreter".to_string(),
         )),
