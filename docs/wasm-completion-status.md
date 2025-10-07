@@ -32,13 +32,19 @@
    - Let bindings: WORKING
    - Variables/identifiers: WORKING
 
-### ❌ KNOWN DEFECTS (Per NO DEFECT OUT OF SCOPE)
+### ✅ RECENTLY FIXED
 
-1. **Function Declarations/Calls** - BLOCKING
-   - File: `examples/lang_comp/04-functions/01_declaration.ruchy`
-   - Error: "type mismatch: expected i32 but nothing on stack"
-   - Root cause: User-defined function calls not implemented in WASM
-   - Impact: ALL function examples fail to compile
+1. **Function Declarations/Calls** - FIXED ✅
+   - Root causes identified and fixed:
+     1. Function index tracking missing → Implemented function registry
+     2. `uses_builtins()` not checking function bodies → Added Function case
+     3. Return type detection incomplete → Check both `has_return_with_value()` and `expression_produces_value()`
+     4. Void function detection incomplete → Track (index, is_void) tuple
+   - Result: 3/4 function examples now compile successfully
+   - Passing: 01_declaration.ruchy, 02_parameters.ruchy, 03_return_values.ruchy
+   - Still failing: 04_closures.ruchy (requires closure/lambda implementation)
+
+### ❌ KNOWN DEFECTS (Per NO DEFECT OUT OF SCOPE)
 
 2. **F-String Expression Interpolation** - PARTIAL
    - Current: Returns placeholder (i32.const 0)
@@ -61,31 +67,30 @@
 - ✅ `02-operators/03_logical.ruchy`
 - ✅ `02-operators/04_precedence.ruchy`
 - ✅ `03-control-flow/01_if.ruchy`
-- ✅ `03-control-flow/02_match.ruchy` ← JUST FIXED!
+- ✅ `03-control-flow/02_match.ruchy`
 - ✅ `03-control-flow/03_for.ruchy`
 - ✅ `03-control-flow/04_while.ruchy`
 - ✅ `03-control-flow/05_break_continue.ruchy`
+- ✅ `04-functions/01_declaration.ruchy` ← JUST FIXED!
+- ✅ `04-functions/02_parameters.ruchy` ← JUST FIXED!
 - ✅ `04-functions/03_return_values.ruchy`
 - ✅ `05-string-interpolation/01_basic_interpolation.ruchy`
 
 ### Failing Examples
-- ❌ `04-functions/01_declaration.ruchy` - Function calls not implemented
-- ❌ `04-functions/02_parameters.ruchy` - Function calls not implemented
-- ❌ `04-functions/04_closures.ruchy` - Function calls not implemented
+- ❌ `04-functions/04_closures.ruchy` - Requires closure/lambda implementation
 
 ## Next Steps (NO DEFECT OUT OF SCOPE)
 
-### Priority 1: Function Calls (BLOCKING - Must Fix)
-**Defect**: User-defined function calls fail WASM validation
+### Priority 1: Closures/Lambdas (NEW BLOCKING ISSUE)
+**Defect**: Closure syntax `|x| x * 2` not yet implemented in WASM
 **Strategy**:
-1. Implement user function type table management
-2. Add function call lowering for user-defined functions
-3. Handle function parameters and return values
+1. Implement closure lowering as anonymous functions
+2. Handle closure variable capture (if needed)
+3. Lower closure calls correctly
 4. EXTREME TDD: RED→GREEN→REFACTOR
 
 **Acceptance Criteria**:
-- `test_langcomp_004_01_function_declaration_example_file` PASSING
-- All function examples compile to valid WASM
+- `04-functions/04_closures.ruchy` compiles to valid WASM
 
 ### Priority 2: F-String Expression Concatenation
 **Defect**: F-strings with expressions return placeholder value
