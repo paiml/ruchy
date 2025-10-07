@@ -741,11 +741,16 @@ Language compatibility testing is **GATE 2** in our mandatory pre-commit hooks -
 
 **CRITICAL**: All language completeness documentation (LANG-COMP tickets) MUST validate examples using ALL 15 native Ruchy tools.
 
+**IMPORTANT**: Following TOOL-VALIDATION sprint completion (2025-10-07), ALL 15 tools now support validation via CLI. NO tools should be skipped:
+- **REPL**: Use `ruchy -e "$(cat file.ruchy)"` to execute code via eval flag (discovered 2025-10-07)
+- **Notebook**: Accepts file parameter for non-interactive validation mode
+- **WASM**: Some features have limitations, validate tool works with simple code
+
 ### 15-Tool Validation Requirements (MANDATORY/BLOCKING)
 
-**EACH LANG-COMP TEST MUST BE NAMED BY TICKET AND INVOKE ALL 15 TOOLS**
+**EACH LANG-COMP TEST MUST BE NAMED BY TICKET AND INVOKE ALL 15 TOOLS - ZERO EXCEPTIONS**
 
-#### Mandatory Test Pattern:
+#### Mandatory Test Pattern (ALL 15 TOOLS - NO SKIPS):
 
 ```rust
 #[test]
@@ -758,7 +763,9 @@ fn test_langcomp_XXX_YY_feature_name() {
     // TOOL 2: ruchy transpile
     ruchy_cmd().arg("transpile").arg(&example).assert().success();
 
-    // TOOL 3: ruchy repl (skip - requires interactive)
+    // TOOL 3: ruchy -e (execute code via eval - REPL functionality)
+    let code = std::fs::read_to_string(&example).unwrap();
+    ruchy_cmd().arg("-e").arg(&code).assert().success();
 
     // TOOL 4: ruchy lint
     ruchy_cmd().arg("lint").arg(&example).assert().success();
@@ -793,13 +800,21 @@ fn test_langcomp_XXX_YY_feature_name() {
     // TOOL 14: ruchy fuzz
     ruchy_cmd().arg("fuzz").arg(&example).assert().success();
 
-    // TOOL 15: ruchy notebook (skip - requires server)
+    // TOOL 15: ruchy notebook (file validation mode)
+    ruchy_cmd().arg("notebook").arg(&example).assert().success();
 }
 ```
 
 **ACCEPTANCE CRITERIA**: Test passes ONLY if ALL 15 tools succeed on the example file.
 
 **NAMING**: `test_langcomp_XXX_YY_feature_name` where XXX = ticket number, YY = section
+
+**MAKEFILE TARGET**: Run all LANG-COMP 15-tool validation tests with `make test-lang-comp`
+- Executes comprehensive 15-tool validation via `cargo test --test lang_comp_suite`
+- Tests LANG-COMP-006 (Data Structures), 007 (Type Annotations), 008 (Methods), 009 (Pattern Matching)
+- Each test validates ALL 15 tools: check, transpile, eval (-e flag), lint, compile, run, coverage, runtime, ast, wasm, provability, property-tests, mutations, fuzz, notebook
+- Exits with error if any test fails (CI-friendly)
+- Current implementation: 4 test modules with full 15-tool coverage
 
 See: docs/SPECIFICATION.md Section 31
 

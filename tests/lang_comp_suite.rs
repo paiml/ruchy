@@ -16,4 +16,16 @@ mod lang_comp {
 
     #[cfg(test)]
     mod string_interpolation;
+
+    #[cfg(test)]
+    mod data_structures;
+
+    #[cfg(test)]
+    mod type_annotations;
+
+    #[cfg(test)]
+    mod methods;
+
+    #[cfg(test)]
+    mod pattern_matching;
 }
