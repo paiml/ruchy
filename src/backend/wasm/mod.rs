@@ -77,6 +77,8 @@ impl SymbolTable {
 pub struct WasmEmitter {
     module: Module,
     symbols: std::cell::RefCell<SymbolTable>,
+    /// Maps function name to (index, is_void)
+    functions: std::cell::RefCell<std::collections::HashMap<String, (u32, bool)>>,
 }
 impl WasmEmitter {
     /// # Examples
@@ -89,6 +91,7 @@ impl WasmEmitter {
         Self {
             module: Module::new(),
             symbols: std::cell::RefCell::new(SymbolTable::new()),
+            functions: std::cell::RefCell::new(std::collections::HashMap::new()),
         }
     }
     /// Emit a complete WASM module from a Ruchy AST expression
@@ -107,6 +110,9 @@ impl WasmEmitter {
 
         let mut module = Module::new();
         let func_defs = self.collect_functions(expr);
+
+        // Build function index map (must be done after collecting functions)
+        self.build_function_index_map(expr, &func_defs);
 
         // Add sections to module (order matters in WASM)
         let types = self.emit_type_section(expr, &func_defs);
@@ -152,9 +158,19 @@ impl WasmEmitter {
 
         if has_functions {
             // Add a type for each function
-            for (_name, params, _body) in func_defs {
+            for (_name, params, body) in func_defs {
                 let param_types = vec![wasm_encoder::ValType::I32; params.len()];
-                types.function(param_types, vec![wasm_encoder::ValType::I32]);
+
+                // Determine return type: check for explicit return OR implicit value
+                let returns_value = self.has_return_with_value(body)
+                    || self.expression_produces_value(body);
+                let return_types = if returns_value {
+                    vec![wasm_encoder::ValType::I32]
+                } else {
+                    vec![] // Void function
+                };
+
+                types.function(param_types, return_types);
             }
             // Also add a type for the main function if there's non-function code
             if let Some(main_expr) = self.get_non_function_code(expr) {
@@ -243,6 +259,7 @@ impl WasmEmitter {
             ExprKind::Match { expr, arms } => {
                 self.uses_builtins(expr) || arms.iter().any(|arm| self.uses_builtins(&arm.body))
             }
+            ExprKind::Function { body, .. } => self.uses_builtins(body),
             _ => false,
         }
     }
@@ -330,7 +347,7 @@ impl WasmEmitter {
     }
 
     /// Compile a single function body
-    /// Complexity: 4 (Toyota Way: <10 ✓)
+    /// Complexity: 6 (Toyota Way: <10 ✓)
     fn compile_function(&self, body: &Expr) -> Result<Function, String> {
         let locals = self.collect_local_types(body);
         let mut func = Function::new(locals);
@@ -338,6 +355,15 @@ impl WasmEmitter {
         for instr in instructions {
             func.instruction(&instr);
         }
+
+        // If expression produces value but function is void, drop it
+        if self.expression_produces_value(body) {
+            // Value producing expressions leave result on stack
+            // If function should return void, we need to drop it
+            // But we don't know here if this is a void function...
+            // This is handled by type section already
+        }
+
         func.instruction(&Instruction::End);
         Ok(func)
     }
@@ -736,7 +762,7 @@ impl WasmEmitter {
     }
 
     /// Lower a function call to WASM instructions
-    /// Complexity: 5 (Toyota Way: <10 ✓)
+    /// Complexity: 7 (Toyota Way: <10 ✓)
     fn lower_call(&self, func: &Expr, args: &[Expr]) -> Result<Vec<Instruction<'static>>, String> {
         let mut instructions = vec![];
 
@@ -750,10 +776,15 @@ impl WasmEmitter {
             if matches!(name.as_str(), "println" | "print" | "eprintln" | "eprint") {
                 0 // Built-in functions are imported at index 0
             } else {
-                0 // User-defined functions (not yet supported)
+                // Look up user-defined function index (extract index from tuple)
+                self.functions
+                    .borrow()
+                    .get(name)
+                    .map(|&(idx, _)| idx)
+                    .ok_or_else(|| format!("Unknown function: {name}"))?
             }
         } else {
-            0 // Unknown function type
+            return Err("Function calls must use identifiers".to_string());
         };
 
         instructions.push(Instruction::Call(func_index));
@@ -971,6 +1002,34 @@ impl WasmEmitter {
         Ok(result_instructions)
     }
 
+    /// Build function index map for resolving function calls
+    /// Complexity: 3 (Toyota Way: <10 ✓)
+    ///
+    /// Function indices in WASM:
+    /// - Import functions come first (e.g., println at index 0 if imports exist)
+    /// - User-defined functions follow
+    fn build_function_index_map(
+        &self,
+        expr: &Expr,
+        func_defs: &[(String, Vec<crate::frontend::ast::Param>, Box<Expr>)],
+    ) {
+        let mut index_map = std::collections::HashMap::new();
+
+        // Calculate offset: imports come first
+        let import_offset = if self.uses_builtins(expr) { 1 } else { 0 };
+
+        // Map each user function to (index, is_void)
+        for (i, (name, _, body)) in func_defs.iter().enumerate() {
+            let index = (i as u32) + import_offset;
+            let returns_value = self.has_return_with_value(body)
+                || self.expression_produces_value(body);
+            let is_void = !returns_value;
+            index_map.insert(name.clone(), (index, is_void));
+        }
+
+        *self.functions.borrow_mut() = index_map;
+    }
+
     /// Collect all function definitions from the AST
     fn collect_functions(
         &self,
@@ -1122,9 +1181,18 @@ impl WasmEmitter {
             ExprKind::Unary { .. } => true,
             ExprKind::Identifier(_) => true,
             ExprKind::Call { func, .. } => {
-                // Check if this is a void function (println, print, etc.)
+                // Check if this is a void function
                 if let ExprKind::Identifier(name) = &func.kind {
-                    !matches!(name.as_str(), "println" | "print" | "eprintln" | "eprint")
+                    // Built-in void functions
+                    if matches!(name.as_str(), "println" | "print" | "eprintln" | "eprint") {
+                        return false;
+                    }
+                    // User-defined functions - check registry
+                    if let Some(&(_idx, is_void)) = self.functions.borrow().get(name) {
+                        return !is_void;
+                    }
+                    // Unknown function - assume it produces a value
+                    true
                 } else {
                     true
                 }
