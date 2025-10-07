@@ -330,7 +330,7 @@ mod property_tests {
                 .arg(&temp_file)
                 .assert()
                 .success()
-                .stdout(predicate::str::is_match("^(0|1)$").unwrap());
+                .stdout(predicate::str::is_match(r"^(0|1)\s*$").unwrap());
 
             std::fs::remove_file(&temp_file).ok();
         }

@@ -60,7 +60,11 @@ fn validate_with_15_tools(example: &PathBuf) {
 
     // TOOL 10: ruchy wasm - WASM compilation (validate tool works, not all features supported)
     // Note: Some type features in WASM have known limitations, so we test WASM works with simple code
-    let temp_file = std::env::temp_dir().join("wasm_validation_test.ruchy");
+    // DEFECT-RACE-CONDITION FIX: Use unique temp file per thread to avoid parallel test collisions
+    let temp_file = std::env::temp_dir().join(format!(
+        "wasm_validation_test_{:?}.ruchy",
+        std::thread::current().id()
+    ));
     std::fs::write(&temp_file, "let x = 42\nprintln(x)").unwrap();
     ruchy_cmd().arg("wasm").arg(&temp_file).assert().success();
     std::fs::remove_file(&temp_file).ok();
