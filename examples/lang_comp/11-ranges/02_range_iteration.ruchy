@@ -17,7 +17,7 @@ fn main() {
     }
 
     // Range in function call
-    fn print_range(start, end) {
+    fn print_range(start: i32, end: i32) {
         for n in start..end {
             println(n)
         }
