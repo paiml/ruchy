@@ -25,11 +25,13 @@ where
         "len" | "length" if args.is_empty() => eval_array_len(arr),
         "first" if args.is_empty() => eval_array_first(arr),
         "last" if args.is_empty() => eval_array_last(arr),
+        "is_empty" if args.is_empty() => eval_array_is_empty(arr),
 
         // Single-argument methods
         "push" if args.len() == 1 => eval_array_push(arr, &args[0]),
         "pop" if args.is_empty() => eval_array_pop(arr),
         "get" if args.len() == 1 => eval_array_get(arr, &args[0]),
+        "contains" if args.len() == 1 => eval_array_contains(arr, &args[0]),
 
         // Higher-order methods
         "map" => eval_array_map(arr, args, &mut eval_function_call_value),
@@ -57,6 +59,10 @@ fn eval_array_first(arr: &Rc<[Value]>) -> Result<Value, InterpreterError> {
 
 fn eval_array_last(arr: &Rc<[Value]>) -> Result<Value, InterpreterError> {
     Ok(arr.last().cloned().unwrap_or(Value::Nil))
+}
+
+fn eval_array_is_empty(arr: &Rc<[Value]>) -> Result<Value, InterpreterError> {
+    Ok(Value::Bool(arr.is_empty()))
 }
 
 // Single-argument array methods (complexity <= 5 each)
@@ -89,6 +95,29 @@ fn eval_array_get(arr: &Rc<[Value]>, index: &Value) -> Result<Value, Interpreter
         Err(InterpreterError::RuntimeError(
             "get expects integer index".to_string(),
         ))
+    }
+}
+
+fn eval_array_contains(arr: &Rc<[Value]>, item: &Value) -> Result<Value, InterpreterError> {
+    // Check if the array contains the given value
+    for element in arr.iter() {
+        if values_equal(element, item) {
+            return Ok(Value::Bool(true));
+        }
+    }
+    Ok(Value::Bool(false))
+}
+
+/// Helper function to check if two values are equal
+/// Complexity: 8 (within Toyota Way limits)
+fn values_equal(a: &Value, b: &Value) -> bool {
+    match (a, b) {
+        (Value::Integer(x), Value::Integer(y)) => x == y,
+        (Value::Float(x), Value::Float(y)) => x == y,
+        (Value::Bool(x), Value::Bool(y)) => x == y,
+        (Value::String(x), Value::String(y)) => x == y,
+        (Value::Nil, Value::Nil) => true,
+        _ => false,
     }
 }
 
