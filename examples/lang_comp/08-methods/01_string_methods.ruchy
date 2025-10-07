@@ -1,0 +1,23 @@
+// LANG-COMP-008: Methods - String Methods
+// Demonstrates method calls on string values
+
+let text = "hello world"
+
+// Case conversion methods
+let upper = text.to_uppercase()
+let lower = text.to_lowercase()
+
+// Length and properties
+let len = text.len()
+
+// String manipulation
+let trimmed = "  spaces  ".trim()
+let replaced = text.replace("world", "Ruchy")
+
+// Output
+println(text)
+println(upper)
+println(lower)
+println(len)
+println(trimmed)
+println(replaced)
