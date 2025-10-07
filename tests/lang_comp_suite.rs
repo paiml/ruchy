@@ -34,4 +34,7 @@ mod lang_comp {
 
     #[cfg(test)]
     mod ranges;
+
+    #[cfg(test)]
+    mod error_handling;
 }

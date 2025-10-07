@@ -1,0 +1,52 @@
+// LANG-COMP-012-01: Result Type - Ok/Err
+// Demonstrates Result type for explicit error handling
+
+fn main() {
+    // Basic Result usage
+    fn divide(a: i32, b: i32) -> Result<i32, String> {
+        if b == 0 {
+            Err("Division by zero")
+        } else {
+            Ok(a / b)
+        }
+    }
+
+    // Successful case
+    let result1 = divide(10, 2)
+    match result1 {
+        Ok(value) => println(value),
+        Err(msg) => println(msg)
+    }
+
+    // Error case
+    let result2 = divide(10, 0)
+    match result2 {
+        Ok(value) => println(value),
+        Err(msg) => println(msg)
+    }
+
+    // Multiple operations
+    fn parse_number(s: String) -> Result<i32, String> {
+        // Simplified - actual implementation would parse
+        if s == "42" {
+            Ok(42)
+        } else {
+            Err("Parse error")
+        }
+    }
+
+    let s1: String = "42"
+    let s2: String = "abc"
+    let good = parse_number(s1)
+    let bad = parse_number(s2)
+
+    match good {
+        Ok(n) => println(n),
+        Err(e) => println(e)
+    }
+
+    match bad {
+        Ok(n) => println(n),
+        Err(e) => println(e)
+    }
+}
