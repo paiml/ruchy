@@ -50,7 +50,7 @@ pub fn dispatch_method_call(
         Value::String(s) => eval_string_method(s, method, arg_values),
         Value::Array(arr) => eval_array_method_simple(arr, method, arg_values),
         Value::Float(f) => eval_float_method(*f, method, args_empty),
-        Value::Integer(n) => eval_integer_method(*n, method, args_empty),
+        Value::Integer(n) => eval_integer_method(*n, method, arg_values),
         Value::DataFrame { columns } => eval_dataframe_method_simple(columns, method, arg_values),
         _ => eval_generic_method(receiver, method, args_empty),
     }
@@ -87,21 +87,53 @@ pub fn eval_float_method(
 /// Evaluate integer methods
 ///
 /// # Complexity
-/// Cyclomatic complexity: 5 (within Toyota Way limits)
+/// Cyclomatic complexity: 7 (within Toyota Way limits)
 pub fn eval_integer_method(
     n: i64,
     method: &str,
-    args_empty: bool,
+    arg_values: &[Value],
 ) -> Result<Value, InterpreterError> {
-    if !args_empty {
-        return Err(InterpreterError::RuntimeError(format!(
-            "Integer method '{method}' takes no arguments"
-        )));
-    }
-
     match method {
-        "abs" => Ok(Value::Integer(n.abs())),
-        "to_string" => Ok(Value::from_string(n.to_string())),
+        "abs" => {
+            if !arg_values.is_empty() {
+                return Err(InterpreterError::RuntimeError(
+                    "Integer method 'abs' takes no arguments".to_string(),
+                ));
+            }
+            Ok(Value::Integer(n.abs()))
+        }
+        "to_string" => {
+            if !arg_values.is_empty() {
+                return Err(InterpreterError::RuntimeError(
+                    "Integer method 'to_string' takes no arguments".to_string(),
+                ));
+            }
+            Ok(Value::from_string(n.to_string()))
+        }
+        "pow" => {
+            if arg_values.len() != 1 {
+                return Err(InterpreterError::RuntimeError(format!(
+                    "Integer method 'pow' requires exactly 1 argument, got {}",
+                    arg_values.len()
+                )));
+            }
+            // Extract exponent from argument
+            match &arg_values[0] {
+                Value::Integer(exp) => {
+                    if *exp < 0 {
+                        return Err(InterpreterError::RuntimeError(
+                            "Integer pow() exponent must be non-negative".to_string(),
+                        ));
+                    }
+                    let result = n.pow(*exp as u32);
+                    Ok(Value::Integer(result))
+                }
+                _ => Err(InterpreterError::TypeError(format!(
+                    "Integer pow() requires integer exponent, got {}",
+                    arg_values[0].type_name()
+                ))),
+            }
+        }
         _ => Err(InterpreterError::RuntimeError(format!(
             "Unknown integer method: {method}"
         ))),
@@ -248,16 +280,38 @@ mod tests {
 
     #[test]
     fn test_eval_integer_method() {
+        // Test abs() - no arguments
         assert_eq!(
-            eval_integer_method(-5, "abs", true).unwrap(),
+            eval_integer_method(-5, "abs", &[]).unwrap(),
             Value::Integer(5)
         );
 
-        let result = eval_integer_method(42, "to_string", true).unwrap();
+        // Test to_string() - no arguments
+        let result = eval_integer_method(42, "to_string", &[]).unwrap();
         match result {
             Value::String(s) => assert_eq!(s.as_ref(), "42"),
             _ => panic!("Expected string value"),
         }
+
+        // Test pow() - with argument
+        assert_eq!(
+            eval_integer_method(2, "pow", &[Value::Integer(3)]).unwrap(),
+            Value::Integer(8)
+        );
+        assert_eq!(
+            eval_integer_method(5, "pow", &[Value::Integer(2)]).unwrap(),
+            Value::Integer(25)
+        );
+        assert_eq!(
+            eval_integer_method(10, "pow", &[Value::Integer(0)]).unwrap(),
+            Value::Integer(1)
+        );
+
+        // Test pow() error cases
+        assert!(eval_integer_method(2, "pow", &[]).is_err()); // Missing argument
+        assert!(eval_integer_method(2, "pow", &[Value::Integer(-1)]).is_err()); // Negative exponent
+        assert!(eval_integer_method(2, "pow", &[Value::String("3".into())]).is_err());
+        // Wrong type
     }
 
     #[test]

@@ -379,10 +379,10 @@ println(result)
 
 #[test]
 fn test_langcomp_008_03_integer_methods_example_file() {
-    // 14-TOOL VALIDATION: examples/lang_comp/08-methods/03_integer_methods.ruchy
-    // Note: Skipping -e flag due to DEFECT-POW (pow() method not supported in eval mode)
+    // 15-TOOL VALIDATION: examples/lang_comp/08-methods/03_integer_methods.ruchy
+    // ACCEPTANCE CRITERIA: ALL 15 tools must succeed
     let example = example_path("03_integer_methods.ruchy");
-    validate_with_14_tools_skip_eval(&example);
+    validate_with_15_tools(&example);
 
     // Additional validation: Verify output correctness
     ruchy_cmd()

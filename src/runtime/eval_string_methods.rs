@@ -252,11 +252,12 @@ fn eval_string_lines(s: &str) -> Result<Value, InterpreterError> {
 pub fn eval_primitive_method(
     receiver: &Value,
     method: &str,
+    arg_values: &[Value],
     args_empty: bool,
 ) -> Result<Value, InterpreterError> {
     match receiver {
         Value::Float(f) => eval_float_method(*f, method, args_empty),
-        Value::Integer(n) => eval_integer_method(*n, method, args_empty),
+        Value::Integer(n) => eval_integer_method(*n, method, arg_values),
         _ => eval_generic_method(receiver, method, args_empty),
     }
 }
@@ -289,16 +290,51 @@ fn eval_float_method(f: f64, method: &str, args_empty: bool) -> Result<Value, In
 ///
 /// # Complexity
 /// Cyclomatic complexity: 5 (within Toyota Way limits)
-fn eval_integer_method(n: i64, method: &str, args_empty: bool) -> Result<Value, InterpreterError> {
-    if !args_empty {
-        return Err(InterpreterError::RuntimeError(format!(
-            "Integer method '{method}' takes no arguments"
-        )));
-    }
-
+fn eval_integer_method(
+    n: i64,
+    method: &str,
+    arg_values: &[Value],
+) -> Result<Value, InterpreterError> {
     match method {
-        "abs" => Ok(Value::Integer(n.abs())),
-        "to_string" => Ok(Value::from_string(n.to_string())),
+        "abs" => {
+            if !arg_values.is_empty() {
+                return Err(InterpreterError::RuntimeError(
+                    "Integer method 'abs' takes no arguments".to_string(),
+                ));
+            }
+            Ok(Value::Integer(n.abs()))
+        }
+        "to_string" => {
+            if !arg_values.is_empty() {
+                return Err(InterpreterError::RuntimeError(
+                    "Integer method 'to_string' takes no arguments".to_string(),
+                ));
+            }
+            Ok(Value::from_string(n.to_string()))
+        }
+        "pow" => {
+            if arg_values.len() != 1 {
+                return Err(InterpreterError::RuntimeError(format!(
+                    "Integer method 'pow' requires exactly 1 argument, got {}",
+                    arg_values.len()
+                )));
+            }
+            match &arg_values[0] {
+                Value::Integer(exp) => {
+                    if *exp < 0 {
+                        return Err(InterpreterError::RuntimeError(
+                            "Integer pow() exponent must be non-negative".to_string(),
+                        ));
+                    }
+                    let result = n.pow(*exp as u32);
+                    Ok(Value::Integer(result))
+                }
+                _ => Err(InterpreterError::TypeError(format!(
+                    "Integer pow() requires integer exponent, got {}",
+                    arg_values[0].type_name()
+                ))),
+            }
+        }
         _ => Err(InterpreterError::RuntimeError(format!(
             "Unknown integer method: {method}"
         ))),
