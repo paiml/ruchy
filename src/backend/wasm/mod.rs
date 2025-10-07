@@ -260,6 +260,7 @@ impl WasmEmitter {
                 self.uses_builtins(expr) || arms.iter().any(|arm| self.uses_builtins(&arm.body))
             }
             ExprKind::Function { body, .. } => self.uses_builtins(body),
+            ExprKind::Lambda { body, .. } => self.uses_builtins(body),
             _ => false,
         }
     }
@@ -729,6 +730,7 @@ impl WasmEmitter {
                 condition, body, ..
             } => self.lower_while(condition, body),
             ExprKind::Function { .. } => Ok(vec![]),
+            ExprKind::Lambda { .. } => Ok(vec![]), // Lambda definitions generate no instructions
             ExprKind::Call { func, args } => self.lower_call(func, args),
             ExprKind::Let {
                 name, value, body, ..
@@ -1050,6 +1052,14 @@ impl WasmEmitter {
             } => {
                 functions.push((name.clone(), params.clone(), body.clone()));
             }
+            ExprKind::Let { name, value, body, .. } => {
+                // Check if the value is a lambda (closure)
+                if let ExprKind::Lambda { params, body: lambda_body } = &value.kind {
+                    functions.push((name.clone(), params.clone(), lambda_body.clone()));
+                }
+                // Continue recursing into the let body
+                self.collect_functions_rec(body, functions);
+            }
             ExprKind::Block(exprs) => {
                 for e in exprs {
                     self.collect_functions_rec(e, functions);
@@ -1064,7 +1074,19 @@ impl WasmEmitter {
             ExprKind::Block(exprs) => {
                 let non_func_exprs: Vec<Expr> = exprs
                     .iter()
-                    .filter(|e| !matches!(e.kind, ExprKind::Function { .. }))
+                    .filter(|e| {
+                        // Filter out function definitions
+                        if matches!(e.kind, ExprKind::Function { .. }) {
+                            return false;
+                        }
+                        // Filter out let bindings that bind lambdas
+                        if let ExprKind::Let { value, .. } = &e.kind {
+                            if matches!(value.kind, ExprKind::Lambda { .. }) {
+                                return false;
+                            }
+                        }
+                        true
+                    })
                     .cloned()
                     .collect();
                 if non_func_exprs.is_empty() {
