@@ -408,7 +408,14 @@ impl Transpiler {
     }
     fn transpile_result_ok(&self, value: &Expr) -> Result<TokenStream> {
         let value_tokens = self.transpile_expr(value)?;
-        Ok(quote! { Ok(#value_tokens) })
+        // DEFECT-STRING-RESULT FIX: Convert string literals to String
+        let final_tokens = match &value.kind {
+            ExprKind::Literal(crate::frontend::ast::Literal::String(_)) => {
+                quote! { #value_tokens.to_string() }
+            }
+            _ => value_tokens,
+        };
+        Ok(quote! { Ok(#final_tokens) })
     }
     fn transpile_result_err(&self, error: &Expr) -> Result<TokenStream> {
         let error_tokens = self.transpile_expr(error)?;
@@ -423,7 +430,14 @@ impl Transpiler {
     }
     fn transpile_option_some(&self, value: &Expr) -> Result<TokenStream> {
         let value_tokens = self.transpile_expr(value)?;
-        Ok(quote! { Some(#value_tokens) })
+        // DEFECT-STRING-RESULT FIX: Convert string literals to String
+        let final_tokens = match &value.kind {
+            ExprKind::Literal(crate::frontend::ast::Literal::String(_)) => {
+                quote! { #value_tokens.to_string() }
+            }
+            _ => value_tokens,
+        };
+        Ok(quote! { Some(#final_tokens) })
     }
     fn transpile_try_operator(&self, expr: &Expr) -> Result<TokenStream> {
         let expr_tokens = self.transpile_expr(expr)?;

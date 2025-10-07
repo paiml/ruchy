@@ -1,0 +1,63 @@
+// LANG-COMP-012-04: Error Propagation - The ? operator
+// Demonstrates error propagation and chaining
+
+fn main() {
+    // Error propagation with ?
+    fn step1(x: i32) -> Result<i32, String> {
+        if x > 0 {
+            Ok(x * 2)
+        } else {
+            Err("Step 1 failed")
+        }
+    }
+
+    fn step2(x: i32) -> Result<i32, String> {
+        if x < 100 {
+            Ok(x + 10)
+        } else {
+            Err("Step 2 failed")
+        }
+    }
+
+    // Chaining with match
+    fn process(input: i32) {
+        match step1(input) {
+            Ok(v1) => match step2(v1) {
+                Ok(v2) => println(v2),
+                Err(e) => println(e)
+            },
+            Err(e) => println(e)
+        }
+    }
+
+    process(10)
+    process(-5)
+    process(60)
+
+    // Custom validation chain
+    fn validate_age(age: i32) -> Result<i32, String> {
+        if age < 0 {
+            Err("Negative age")
+        } else if age > 150 {
+            Err("Age too high")
+        } else {
+            Ok(age)
+        }
+    }
+
+    fn validate_name(name: String) -> Result<String, String> {
+        if name == "" {
+            Err("Empty name")
+        } else {
+            Ok(name)
+        }
+    }
+
+    let ages = [-5, 25, 200]
+    for age in ages {
+        match validate_age(age) {
+            Ok(a) => println(a),
+            Err(msg) => println(msg)
+        }
+    }
+}

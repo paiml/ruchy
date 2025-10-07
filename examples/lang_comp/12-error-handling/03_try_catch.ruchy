@@ -1,0 +1,60 @@
+// LANG-COMP-012-03: Try-Catch - Exception handling
+// Demonstrates try-catch blocks with throw
+
+fn main() {
+    // Basic try-catch
+    fn risky_operation(x: i32) -> i32 {
+        if x < 0 {
+            throw "Negative not allowed"
+        }
+        x * 2
+    }
+
+    // Successful try
+    try {
+        let result = risky_operation(5)
+        println(result)
+    } catch e {
+        println(e)
+    }
+
+    // Failing try
+    try {
+        let result = risky_operation(-1)
+        println(result)
+    } catch e {
+        println(e)
+    }
+
+    // Try-catch with multiple operations
+    fn validate_and_process(n: i32) -> i32 {
+        if n < 0 {
+            throw "Negative value"
+        }
+        if n > 100 {
+            throw "Too large"
+        }
+        n * n
+    }
+
+    try {
+        let r1 = validate_and_process(5)
+        println(r1)
+    } catch e {
+        println(e)
+    }
+
+    try {
+        let r2 = validate_and_process(-5)
+        println(r2)
+    } catch e {
+        println(e)
+    }
+
+    try {
+        let r3 = validate_and_process(150)
+        println(r3)
+    } catch e {
+        println(e)
+    }
+}

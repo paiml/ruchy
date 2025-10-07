@@ -1158,6 +1158,10 @@ impl Transpiler {
             if let Some(result) = self.try_transpile_dataframe_function(base_name, args)? {
                 return Ok(result);
             }
+            // DEFECT-STRING-RESULT FIX: Handle Ok/Err/Some when parsed as Call (not dedicated ExprKind)
+            if let Some(result) = self.try_transpile_result_call(base_name, args)? {
+                return Ok(result);
+            }
         }
         // Default: regular function call with string conversion
         self.transpile_regular_function_call(&func_tokens, args)
@@ -3492,6 +3496,44 @@ impl Transpiler {
             }
         }
         Ok(None)
+    }
+    /// Transpile Ok/Err/Some calls with automatic string conversion
+    ///
+    /// DEFECT-STRING-RESULT FIX: When Ok/Err/Some are parsed as Call expressions
+    /// (e.g., in return positions), convert string literals to String.
+    ///
+    /// This complements the `ExprKind::Ok/Err/Some` handlers in dispatcher.rs.
+    fn try_transpile_result_call(
+        &self,
+        base_name: &str,
+        args: &[Expr],
+    ) -> Result<Option<TokenStream>> {
+        use crate::frontend::ast::{ExprKind, Literal};
+
+        // Only handle Ok, Err, and Some constructors
+        if base_name != "Ok" && base_name != "Err" && base_name != "Some" {
+            return Ok(None);
+        }
+
+        // Transpile all arguments, converting string literals to String
+        let arg_tokens: Result<Vec<_>> = args
+            .iter()
+            .map(|arg| {
+                let base_tokens = self.transpile_expr(arg)?;
+                // Convert string literals to String for Result/Option type compatibility
+                match &arg.kind {
+                    ExprKind::Literal(Literal::String(_)) => {
+                        Ok(quote! { #base_tokens.to_string() })
+                    }
+                    _ => Ok(base_tokens),
+                }
+            })
+            .collect();
+
+        let arg_tokens = arg_tokens?;
+        let func_ident = proc_macro2::Ident::new(base_name, proc_macro2::Span::call_site());
+
+        Ok(Some(quote! { #func_ident(#(#arg_tokens),*) }))
     }
     /// Handle regular function calls with string literal conversion
     ///
