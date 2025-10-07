@@ -144,6 +144,8 @@ pub fn is_param_used_numerically(param_name: &str, expr: &Expr) -> bool {
         } => check_if_numeric_usage(param_name, condition, then_branch, else_branch.as_deref()),
         ExprKind::Let { value, body, .. } => check_let_numeric_usage(param_name, value, body),
         ExprKind::Call { args, .. } => check_call_numeric_usage(param_name, args),
+        // DEFECT-CLOSURE-RETURN FIX: Check inside lambda bodies for captured variables
+        ExprKind::Lambda { body, .. } => is_param_used_numerically(param_name, body),
         _ => false,
     }
 }

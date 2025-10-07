@@ -14,8 +14,11 @@ fn main() {
     }
     println(process(15))
 
-    // Closure with captured factor
-    let factor = 3
-    let times_three = |x| { x * factor }
+    // Function returning closure with capture
+    fn make_multiplier(factor) {
+        |x| { x * factor }
+    }
+
+    let times_three = make_multiplier(3)
     println(times_three(7))
 }

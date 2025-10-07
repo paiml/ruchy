@@ -13,11 +13,11 @@ fn main() {
     let calculate = |n| { n * a + b }
     println(calculate(5))
 
-    // Nested closure with capture
-    let outer = 100
-    let inner_closure = |n| {
-        let add_outer = |x| { x + outer }
-        add_outer(n)
+    // Function returning closure
+    fn make_adder(n) {
+        |x| { x + n }
     }
-    println(inner_closure(5))
+
+    let add_five = make_adder(5)
+    println(add_five(10))
 }
