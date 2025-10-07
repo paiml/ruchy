@@ -1,6 +1,6 @@
 /// TDD: Minimal WASM emitter implementation
 /// Following strict TDD - only implement what tests require
-use crate::frontend::ast::{BinaryOp, Expr, ExprKind, Literal, StringPart};
+use crate::frontend::ast::{BinaryOp, Expr, ExprKind, Literal, Pattern, StringPart};
 use wasm_encoder::{
     CodeSection, ExportSection, Function, FunctionSection, Instruction, MemorySection, MemoryType,
     Module, TypeSection,
@@ -240,6 +240,9 @@ impl WasmEmitter {
                     false
                 }
             }),
+            ExprKind::Match { expr, arms } => {
+                self.uses_builtins(expr) || arms.iter().any(|arm| self.uses_builtins(&arm.body))
+            }
             _ => false,
         }
     }
@@ -435,6 +438,17 @@ impl WasmEmitter {
             ExprKind::Call { .. } => WasmType::I32,
             ExprKind::Unary { operand, .. } => self.infer_type(operand),
             _ => WasmType::I32,
+        }
+    }
+
+    /// Convert `WasmType` to `wasm_encoder::ValType`
+    /// Complexity: 1 (Toyota Way: <10 ✓)
+    fn infer_wasm_type(&self, expr: &Expr) -> wasm_encoder::ValType {
+        match self.infer_type(expr) {
+            WasmType::I32 => wasm_encoder::ValType::I32,
+            WasmType::I64 => wasm_encoder::ValType::I64,
+            WasmType::F32 => wasm_encoder::ValType::F32,
+            WasmType::F64 => wasm_encoder::ValType::F64,
         }
     }
 
@@ -698,6 +712,7 @@ impl WasmEmitter {
             ExprKind::List(_items) => self.lower_list(),
             ExprKind::Return { value } => self.lower_return(value.as_deref()),
             ExprKind::StringInterpolation { parts } => self.lower_string_interpolation(parts),
+            ExprKind::Match { expr, arms } => self.lower_match(expr, arms),
             _ => Ok(vec![]),
         }
     }
@@ -834,6 +849,126 @@ impl WasmEmitter {
             // Actual implementation requires host function binding
             Ok(vec![Instruction::I32Const(0)])
         }
+    }
+
+    /// Lower match expression to WASM instructions
+    /// Complexity: 9 (Toyota Way: <10 ✓)
+    ///
+    /// Strategy: Desugar match into cascading if-else expressions
+    /// Reference: `docs/specifications/wasm-match-spec.md`
+    ///
+    /// # Examples
+    ///
+    /// ```ignore
+    /// match x { 1 => 10, 2 => 20, _ => 0 }
+    /// // Becomes:
+    /// if x == 1 { 10 } else if x == 2 { 20 } else { 0 }
+    /// ```
+    fn lower_match(
+        &self,
+        match_expr: &Expr,
+        arms: &[crate::frontend::ast::MatchArm],
+    ) -> Result<Vec<Instruction<'static>>, String> {
+        if arms.is_empty() {
+            return Ok(vec![Instruction::I32Const(0)]);
+        }
+
+        // Build cascading if-else from match arms
+        // Start from the last arm (usually wildcard) and work backwards
+        let mut result_instructions = vec![];
+
+        // Process arms in reverse to build nested if-else
+        for (i, arm) in arms.iter().enumerate().rev() {
+            let is_last = i == arms.len() - 1;
+
+            match &arm.pattern {
+                Pattern::Wildcard => {
+                    // Wildcard: just emit the body
+                    result_instructions = self.lower_expression(&arm.body)?;
+                }
+                Pattern::Literal(lit) => {
+                    if is_last {
+                        // Last arm without wildcard: just emit body
+                        result_instructions = self.lower_expression(&arm.body)?;
+                    } else {
+                        // Compare match_expr with pattern literal
+                        let mut instr = vec![];
+                        instr.extend(self.lower_expression(match_expr)?);
+                        instr.extend(self.lower_literal(lit)?);
+                        instr.push(Instruction::I32Eq);
+
+                        // if (condition) { arm.body } else { rest }
+                        let then_body = self.lower_expression(&arm.body)?;
+                        let else_body = result_instructions;
+
+                        // Determine result type from body
+                        let result_type = self.infer_wasm_type(&arm.body);
+
+                        instr.push(Instruction::If(wasm_encoder::BlockType::Result(
+                            result_type,
+                        )));
+                        instr.extend(then_body);
+                        instr.push(Instruction::Else);
+                        instr.extend(else_body);
+                        instr.push(Instruction::End);
+
+                        result_instructions = instr;
+                    }
+                }
+                Pattern::Or(patterns) => {
+                    if is_last {
+                        // Last arm: just emit body
+                        result_instructions = self.lower_expression(&arm.body)?;
+                    } else {
+                        // OR pattern: match_expr == pat1 || match_expr == pat2 || ...
+                        let mut instr = vec![];
+
+                        // Build comparison for each pattern in OR
+                        for (j, pattern) in patterns.iter().enumerate() {
+                            // Compare match_expr with this pattern
+                            instr.extend(self.lower_expression(match_expr)?);
+                            if let Pattern::Literal(lit) = pattern {
+                                instr.extend(self.lower_literal(lit)?);
+                                instr.push(Instruction::I32Eq);
+                            } else {
+                                return Err(format!(
+                                    "Non-literal patterns in OR not yet supported: {pattern:?}"
+                                ));
+                            }
+
+                            // OR with previous comparison (except for first)
+                            if j > 0 {
+                                instr.push(Instruction::I32Or);
+                            }
+                        }
+
+                        // if (any match) { arm.body } else { rest }
+                        let then_body = self.lower_expression(&arm.body)?;
+                        let else_body = result_instructions;
+                        let result_type = self.infer_wasm_type(&arm.body);
+
+                        instr.push(Instruction::If(wasm_encoder::BlockType::Result(
+                            result_type,
+                        )));
+                        instr.extend(then_body);
+                        instr.push(Instruction::Else);
+                        instr.extend(else_body);
+                        instr.push(Instruction::End);
+
+                        result_instructions = instr;
+                    }
+                }
+                _ => {
+                    // Other patterns not yet supported in MVP
+                    return Err(format!(
+                        "Pattern {:?} not yet supported in WASM",
+                        arm.pattern
+                    ));
+                }
+            }
+        }
+
+        Ok(result_instructions)
     }
 
     /// Collect all function definitions from the AST
@@ -1455,6 +1590,42 @@ mod tests {
         assert!(
             validation.is_ok(),
             "F-string WASM must pass validation: {:?}",
+            validation.err()
+        );
+    }
+
+    #[test]
+    fn test_wasm_match_simple_literal() {
+        // RED phase: Match expressions should compile to WASM
+        // This test WILL FAIL until we implement match expression support
+        // Root cause: Match in let binding doesn't produce value on stack
+        let code = r#"
+            let number = 2
+            let description = match number {
+                1 => "one",
+                2 => "two",
+                _ => "other"
+            }
+        "#;
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().unwrap();
+
+        let emitter = WasmEmitter::new();
+        let wasm_bytes = emitter.emit(&ast);
+
+        // Should compile successfully
+        assert!(
+            wasm_bytes.is_ok(),
+            "Match expressions must compile to valid WASM: {:?}",
+            wasm_bytes.err()
+        );
+
+        // Validate WASM bytecode
+        let bytes = wasm_bytes.unwrap();
+        let validation = wasmparser::validate(&bytes);
+        assert!(
+            validation.is_ok(),
+            "Match expression WASM must pass validation: {:?}",
             validation.err()
         );
     }
