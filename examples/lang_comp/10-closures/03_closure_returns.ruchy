@@ -1,0 +1,21 @@
+// LANG-COMP-010-03: Closure Returns
+// Demonstrates closures with explicit return values
+
+fn main() {
+    // Closure with implicit return
+    let square = |x| { x * x }
+    println(square(5))
+
+    // Closure with multiple expressions
+    let process = |n| {
+        let doubled = n * 2
+        let added = doubled + 10
+        added
+    }
+    println(process(15))
+
+    // Closure with captured factor
+    let factor = 3
+    let times_three = |x| { x * factor }
+    println(times_three(7))
+}

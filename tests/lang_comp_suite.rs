@@ -28,4 +28,7 @@ mod lang_comp {
 
     #[cfg(test)]
     mod pattern_matching;
+
+    #[cfg(test)]
+    mod closures;
 }
