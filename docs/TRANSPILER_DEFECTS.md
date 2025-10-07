@@ -118,8 +118,29 @@ done
 
 ## Status
 
-- [ ] DEFECT-001: Not fixed (documented 2025-10-07)
+- [x] DEFECT-001: ✅ **FIXED** (2025-10-07) - String type annotations now auto-convert
 - [ ] DEFECT-002: Not fixed (documented 2025-10-07)
 - [ ] DEFECT-003: Not fixed (documented 2025-10-07)
 
-**Next Action**: Apply EXTREME TDD to fix DEFECT-001 first (highest impact).
+**Next Action**: Apply EXTREME TDD to fix DEFECT-002 (integer type suffixes).
+
+## DEFECT-001 Fix Details
+
+**File**: `src/backend/transpiler/statements.rs:356-366`
+
+**Fix**: In `transpile_let_with_type()`, added check for String type annotation on string literals:
+```rust
+let value_tokens = match (&value.kind, type_annotation) {
+    (
+        ExprKind::Literal(Literal::String(s)),
+        Some(type_ann),
+    ) if matches!(&type_ann.kind, TypeKind::Named(name) if name == "String") => {
+        quote! { #s.to_string() }
+    }
+    _ => self.transpile_expr(value)?,
+};
+```
+
+**Test**: `/tmp/test_defect_001.ruchy` - RED phase confirmed failure, GREEN phase confirmed fix.
+
+**Validation**: Updated LANG-COMP-007 example to use proper String type annotations.
