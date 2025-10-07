@@ -1,0 +1,23 @@
+// LANG-COMP-006: Data Structures - Arrays
+// Demonstrates array creation, indexing, and basic operations
+
+// Array literals
+let numbers = [1, 2, 3, 4, 5]
+let strings = ["one", "two", "three"]
+
+// Array indexing
+let first = numbers[0]
+let last = numbers[4]
+let second_str = strings[1]
+
+// Nested arrays
+let matrix = [[1, 2], [3, 4]]
+let nested_val = matrix[0][1]
+
+// Output
+println(numbers)
+println(first)
+println(last)
+println(second_str)
+println(matrix)
+println(nested_val)
