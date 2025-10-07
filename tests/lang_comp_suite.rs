@@ -31,4 +31,7 @@ mod lang_comp {
 
     #[cfg(test)]
     mod closures;
+
+    #[cfg(test)]
+    mod ranges;
 }
