@@ -1,0 +1,28 @@
+// LANG-COMP-007: Type Annotations - Type Inference
+// Demonstrates when type annotations can be omitted
+
+// Type inference for literals
+let x = 42                    // inferred as i32
+let pi = 3.14                 // inferred as f64
+let flag = true               // inferred as bool
+let name = "Alice"            // inferred as &str
+
+// Type inference in function calls
+fn double(n: i32) -> i32 {
+    return n * 2
+}
+
+let result = double(21)       // inferred as i32 from return type
+
+// Type inference with operations
+let sum = 10 + 20            // inferred as i32
+let product = 3.0 * 4.0      // inferred as f64
+
+// Output
+println(x)
+println(pi)
+println(flag)
+println(name)
+println(result)
+println(sum)
+println(product)
