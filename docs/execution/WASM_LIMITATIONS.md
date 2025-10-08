@@ -1,8 +1,8 @@
 # WASM Compilation Limitations Tracker
 
 **Last Updated**: 2025-10-08
-**Version**: v3.69.0
-**Status**: MVP Implementation Complete, Advanced Features In Progress
+**Version**: v3.70.0
+**Status**: MEMORY MODEL WORKING - Real data structures in WASM!
 
 ## Purpose
 
@@ -18,50 +18,74 @@ This document tracks known WASM compilation limitations to ensure TRANSPARENCY a
 
 ### 1. Tuple Destructuring Patterns [WASM-002]
 
-**Status**: ⚠️ PARTIAL - Basic let destructuring works, match patterns not supported
-**Priority**: HIGH
+**Status**: ✅ 80% COMPLETE - Real memory loading works! Match patterns not supported
+**Priority**: MEDIUM (core functionality working)
+**Completed**: v3.70.0 (Phases 1-3 of WASM-005)
 **Blocking Tests**:
-- `test_langcomp_013_02_tuple_destructuring_example_file` (partially blocked by match patterns)
-- `test_langcomp_013_02_basic_destructuring` ✅ WORKS
-- `test_langcomp_013_02_underscore_destructuring` ✅ WORKS
-- `test_langcomp_013_04_destructuring_nested` ⚠️ NEEDS TESTING
+- `test_langcomp_013_02_basic_destructuring` ✅ WORKS WITH REAL VALUES
+- `test_langcomp_013_02_underscore_destructuring` ✅ WORKS WITH REAL VALUES
+- `test_langcomp_013_04_destructuring_nested` ✅ WORKS WITH REAL VALUES
+- `test_langcomp_013_02_tuple_destructuring_example_file` ⚠️ (blocked by match patterns only)
 
 **Current Behavior**:
 ```rust
-// ✅ WORKS: Basic let destructuring
-let (x, y) = (1, 2)
-println(x)  // Compiles successfully
+// ✅ WORKS: Basic let destructuring WITH REAL MEMORY LOADS
+let (x, y) = (3, 4)
+println(x)  // Prints: 3 (loaded from memory address 0)
+println(y)  // Prints: 4 (loaded from memory address 4)
 
-// ✅ WORKS: Multiple destructures
-let (a, b) = (3, 4)
-let (c, d) = (5, 6)
+// ✅ WORKS: Nested destructuring WITH REAL MEMORY
+let ((a, b), c) = ((1, 2), 3)
+println(a)  // Prints: 1 (loaded from inner tuple memory)
+println(b)  // Prints: 2
+println(c)  // Prints: 3 (loaded from outer tuple memory)
 
-// ❌ FAILS: Pattern variables in match arms
+// ✅ WORKS: Underscore patterns
+let (x, _, z) = (1, 2, 3)
+println(x)  // Prints: 1 (real value)
+println(z)  // Prints: 3 (real value)
+
+// ❌ ONLY LIMITATION: Pattern variables in match arms
 match point {
-    (x, y) => println(x)  // Error: x, y not bound as locals
+    (x, y) => println(x)  // Not supported (requires scoped locals)
 }
 ```
 
 **Root Cause**:
-- ✅ `lower_let_pattern()` now handles Pattern::Tuple in let bindings
-- ✅ `register_pattern_symbols()` allocates locals for pattern identifiers
-- ❌ Match arm pattern variables require scoped locals (WASM limitation)
-- ❌ WASM doesn't support variable shadowing easily across match arms
+- ✅ `lower_let_pattern()` loads actual values from tuple memory (v3.70.0)
+- ✅ `store_pattern_values()` uses i32.load to extract tuple elements
+- ✅ Bump allocator allocates real memory for tuples
+- ✅ Nested tuples work correctly
+- ❌ Match arm pattern variables require scoped locals (WASM architectural limitation)
 
-**MVP Implementation Complete**:
+**Implementation Complete (v3.70.0)**:
 - Handle Pattern::Tuple in let bindings ✅
-- Allocate locals for each tuple element ✅
-- MVP: Store placeholder (i32 const 0) to pattern variables ✅
+- Allocate memory for tuples using bump allocator ✅
+- Load actual values from tuple memory (NOT placeholders!) ✅
+- Support nested destructuring ✅
+- Support underscore patterns ✅
 - Match arm patterns: Intentionally not supported (requires scoped locals)
 
+**Memory Model (WASM-005 Phases 1-3)**:
+```
+Example: let (x, y) = (3, 4)
+
+1. Allocate tuple at address 0 (8 bytes)
+   Memory[0-3]: 3
+   Memory[4-7]: 4
+
+2. Destructure with i32.load
+   x = i32.load(address + 0) = 3
+   y = i32.load(address + 4) = 4
+```
+
 **Remaining Work**:
-- Support nested destructuring: `let ((a, b), c) = ((1, 2), 3)` (needs testing)
-- Support underscore patterns: `let (x, _, z) = (1, 2, 3)` (needs testing)
-- Full implementation: Extract actual values from tuple memory (blocked by WASM-005)
-- Match pattern bindings: Requires scoped locals architecture (future work)
+- Match pattern bindings: Requires scoped locals architecture (future work, low priority)
 
 **Test Files**:
-- examples/lang_comp/13-tuples/02_tuple_destructuring.ruchy (has match patterns - will fail)
+- ✅ test_destructure_real.ruchy - PASSES
+- ✅ test_nested_destructure.ruchy - PASSES
+- ⚠️ examples/lang_comp/13-tuples/02_tuple_destructuring.ruchy (match patterns only)
 
 ---
 
@@ -149,57 +173,122 @@ println(tup.0)     // Prints 0, not 3 (placeholder)
 
 ### 4. Full Memory Model [WASM-005]
 
-**Status**: ⚠️ PLACEHOLDER ONLY
-**Priority**: CRITICAL (Blocks #2, #3, and proper data structures)
-**Blocking**: All advanced data structure features
+**Status**: ✅ PHASES 1-3 COMPLETE - Tuples working with real memory! (v3.70.0)
+**Priority**: HIGH (Foundation complete, extend to structs/arrays)
+**Completed**: Bump allocator, tuple storage, tuple destructuring
 
 **Current Behavior**:
 ```rust
-// All return i32 const 0 placeholder:
-let pair = (1, 2)           // Returns 0, not actual tuple
-let s = Point { x: 1, y: 2 } // Returns 0, not actual struct
-let first = pair.0          // Returns 0, not actual field value
+// ✅ WORKING: Tuples use real memory
+let pair = (3, 4)           // Allocates 8 bytes, returns address 0
+let first = pair.0          // i32.load(0) = 3 (REAL value!)
+let (x, y) = pair           // Loads x=3, y=4 from memory
+
+// ⚠️ TODO: Structs still use placeholders
+let s = Point { x: 1, y: 2 } // Returns 0 (placeholder)
+
+// ⚠️ TODO: Arrays still use placeholders
+let arr = [1, 2, 3]         // Returns 0 (placeholder)
 ```
 
-**Root Cause**: MVP uses I32Const(0) placeholders instead of actual memory allocation
+**Completed Implementation (v3.70.0)**:
+- ✅ Linear memory allocation: Bump allocator (inline malloc)
+- ✅ Heap management: Global $heap_ptr, 64KB fixed heap
+- ✅ Type layout: Sequential, 4 bytes per i32 element
+- ✅ Tuple storage: Allocate, store, return address
+- ✅ Tuple field access: i32.load from memory
+- ✅ Tuple destructuring: i32.load elements into locals
 
-**Required Implementation**:
-- Linear memory allocation strategy
-- Heap management (malloc/free equivalent)
-- Type layout calculation (size, alignment, field offsets)
-- Garbage collection or reference counting
-- Memory safety validation
+**Design Decisions (Implemented)**:
+- ✅ Bump allocator: No GC, no free (acceptable for MVP)
+- ✅ Fixed 64KB heap: Sufficient for testing
+- ✅ Sequential layout: No padding, no type tags
+- ✅ i32 only: All values are 4 bytes
 
-**Design Decisions Needed**:
-- Manual memory management vs GC?
-- Fixed-size heap vs growing heap?
-- Type tagging strategy for dynamic types?
+**Remaining Work (Phases 4-5)**:
+- Phase 4: Struct field mutation with memory writes
+- Phase 5: Array element access from memory
+- Future: Garbage collection (low priority)
+- Future: Growing heap (low priority)
+
+**Memory Model Architecture**:
+```wat
+;; Global heap pointer (mutable)
+(global $heap_ptr (mut i32) (i32.const 0))
+
+;; Inline bump allocator in lower_tuple()
+global.get $heap_ptr          ;; Get current address
+local.set $temp               ;; Save it
+global.get $heap_ptr
+i32.const 8                   ;; Size needed
+i32.add
+global.set $heap_ptr          ;; Update heap pointer
+
+;; Store elements
+local.get $temp
+i32.const 3
+i32.store offset=0            ;; Store first element
+local.get $temp
+i32.const 4
+i32.store offset=4            ;; Store second element
+
+local.get $temp               ;; Return address
+```
 
 ---
 
-## Completed Features (v3.69.0)
+## Completed Features
 
-### ✅ Basic Tuple Creation [WASM-001]
-- **Implemented**: Commit d43197f2
-- **Status**: WORKING (MVP - returns placeholder)
+### ✅ Memory Model Foundation [WASM-005 Phase 1] (v3.70.0)
+- **Implemented**: Commit 9a4a67ae
+- **Status**: FULLY WORKING - 64KB heap with global heap pointer
+- **Features**:
+  - Memory section: 1 page (64KB), max=1
+  - Global section: `$heap_ptr` (mutable i32, init=0)
+  - Design document: docs/execution/WASM_MEMORY_MODEL.md
+- **Test**: Memory and global sections present in all tuple code
+
+### ✅ Tuple Memory Storage [WASM-005 Phase 2] (v3.70.0)
+- **Implemented**: Commit f7fdb1de
+- **Status**: FULLY WORKING - Real memory allocation and storage
+- **Features**:
+  - Inline bump allocator in `lower_tuple()`
+  - Allocates memory: GlobalGet($heap_ptr) → save → update → store
+  - Returns memory address instead of placeholder
+  - Field access loads from memory with i32.load
+- **Test**: `let pair = (3, 4); println(pair.0)` prints 3 (real value!)
+
+### ✅ Tuple Destructuring [WASM-005 Phase 3] (v3.70.0)
+- **Implemented**: Commit 30089fc6
+- **Status**: FULLY WORKING - Loads real values from memory
+- **Features**:
+  - `store_pattern_values()` loads from tuple memory
+  - Uses i32.load at address + offset for each element
+  - Stores loaded values into pattern variable locals
+  - Nested destructuring works correctly
+- **Test**: `let (x, y) = (3, 4); println(x)` prints 3 (real value!)
+
+### ✅ Basic Tuple Creation [WASM-001] (v3.69.0 → v3.70.0)
+- **Implemented**: Commit d43197f2 → Upgraded f7fdb1de
+- **Status**: FULLY WORKING WITH REAL MEMORY (v3.70.0)
 - **Test**: `test_langcomp_013_01_basic_tuples_example_file` ✅ PASSES
 
-### ✅ Tuple Field Access [WASM-001]
-- **Implemented**: Commit d43197f2
-- **Status**: WORKING (MVP - returns placeholder)
-- **Test**: Compiles without validation errors
+### ✅ Tuple Field Access [WASM-001] (v3.69.0 → v3.70.0)
+- **Implemented**: Commit d43197f2 → Upgraded f7fdb1de
+- **Status**: FULLY WORKING WITH REAL MEMORY (v3.70.0)
+- **Test**: Loads actual values from memory with i32.load
 
-### ✅ Simple Assignment [WASM-001]
+### ✅ Simple Assignment [WASM-001] (v3.69.0)
 - **Implemented**: Commit d43197f2
 - **Status**: WORKING
 - **Test**: `coords = (5, 10)` compiles successfully
 
-### ✅ Unit Literal [WASM-001]
+### ✅ Unit Literal [WASM-001] (v3.69.0)
 - **Implemented**: Commit d43197f2
 - **Status**: WORKING
 - **Test**: `let unit = ()` compiles successfully
 
-### ✅ Character Literals [WASM-001]
+### ✅ Character Literals [WASM-001] (v3.69.0)
 - **Implemented**: Commit d43197f2
 - **Status**: WORKING (UTF-32 code points)
 - **Test**: `'a'` compiles to I32Const(97)

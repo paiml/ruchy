@@ -4,6 +4,47 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.70.0] - 2025-10-08 - WASM Memory Model Complete (Phases 1-3)
+
+### 🎯 Major Achievement: Real Memory Allocation in WASM
+
+Implemented working memory model for WASM compilation with bump allocator and real data structure storage.
+
+#### ✅ WASM-MEMORY: Memory Model Implementation (Phases 1-3)
+
+**Phase 1: Memory Foundation**
+- Memory section: 1 page (64KB), max=1
+- Global section: `$heap_ptr` (mutable i32, initialized to 0)
+- Comprehensive design document: `docs/execution/WASM_MEMORY_MODEL.md`
+
+**Phase 2: Tuple Memory Storage**
+- Inline bump allocator in `lower_tuple()` - O(1) allocation
+- Real memory allocation with i32.store for each element
+- Returns memory address instead of placeholder 0
+- Sequential layout: 4 bytes per i32 element
+
+**Phase 3: Tuple Destructuring**
+- `store_pattern_values()` loads real values from memory with i32.load
+- Nested tuple destructuring working correctly
+- Underscore patterns supported (drop unused values)
+- Test: `let (x, y) = (3, 4); println(x)` prints 3 (real value from memory!)
+
+**Test Coverage**:
+- test_destructure_real.ruchy ✅ PASSING
+- test_nested_destructure.ruchy ✅ PASSING
+- Basic destructuring: `let (x, y) = (3, 4)` ✅
+- Nested destructuring: `let ((a, b), c) = ((1, 2), 3)` ✅
+- Underscore patterns: `let (x, _, z) = (1, 2, 3)` ✅
+
+**Status**: 80% complete - Match pattern bindings intentionally not supported (requires scoped locals architecture)
+
+**Files Modified**:
+- `src/backend/wasm/mod.rs`: Added memory/global sections, bump allocator, memory loads
+- `docs/execution/WASM_LIMITATIONS.md`: Updated with v3.70.0 progress
+- `docs/execution/WASM_MEMORY_MODEL.md`: NEW - comprehensive design document
+
+**Impact**: WASM compilation now uses real data structures instead of placeholders!
+
 ## [3.69.0] - 2025-10-06 - LANG-COMP-001 Basic Syntax + PMAT v2.70+ Integration
 
 ### 🎯 Major Achievement: Language Completeness Documentation Sprint
