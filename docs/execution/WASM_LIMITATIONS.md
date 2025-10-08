@@ -267,20 +267,39 @@ A limitation is considered RESOLVED when:
 
 ## Next Steps
 
-1. **IMMEDIATE**: Fix [WASM-002] Tuple Destructuring
-   - Run: `cargo test test_langcomp_013_02 --test lang_comp_suite`
-   - Identify failure mode
-   - Write RED phase test
-   - Implement GREEN phase fix
-   - Validate with mutation tests
+### Completed (v3.69.x)
+1. ✅ **[WASM-002]** Tuple Destructuring MVP (Commit 38096bfb)
+   - Basic let destructuring works: `let (x, y) = (1, 2)`
+   - Match pattern bindings not supported (documented limitation)
 
-2. **AFTER #1**: Fix [WASM-003] Struct Field Mutation
-   - Same EXTREME TDD process
+2. ✅ **[WASM-003]** Struct Field Mutation MVP (Commit 5e8a8042)
+   - Syntax compiles: `p.x = 5`
+   - Values dropped (no actual mutation until memory model)
+   - Honest documentation prevents user confusion
 
-3. **AFTER #2**: Design [WASM-005] Memory Model
+### Current Priorities
+
+1. **NEXT**: Implement [WASM-004] Complex Assignment Targets
+   - Array element assignment: `arr[0] = 10`
+   - Tuple element assignment: `tup.0 = 3`
+   - Follow same MVP pattern (compile but use placeholders)
+   - Complexity <10 for all functions
+
+2. **CRITICAL BLOCKER**: Design [WASM-005] Memory Model
    - Research WASM linear memory best practices
-   - Document design decisions
-   - Implement incrementally
+   - Document design decisions:
+     * Manual memory management vs GC?
+     * Fixed-size heap vs growing heap?
+     * Type tagging strategy for dynamic types?
+   - Implement incrementally with EXTREME TDD
+   - This unblocks ACTUAL implementation of WASM-002, WASM-003, WASM-004
+
+3. **AFTER MEMORY MODEL**: Convert MVPs to Real Implementations
+   - Replace I32Const(0) placeholders with actual data
+   - Implement tuple unpacking from memory
+   - Implement struct field access from memory
+   - Implement array element access from memory
+   - Full validation with property tests + mutation tests
 
 ---
 
