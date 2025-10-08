@@ -110,25 +110,40 @@ println(p.x)  // Will print 0, not 5 (no actual mutation)
 
 ### 3. Complex Assignment Targets [WASM-004]
 
-**Status**: ❌ NOT IMPLEMENTED
+**Status**: ⚠️ PARTIAL - Compiles but doesn't actually mutate (placeholder)
 **Priority**: MEDIUM
 **Blocking Tests**: (To be identified)
 
 **Current Behavior**:
 ```rust
-// All FAIL with "Assignment target must be identifier"
-arr[0] = 10        // Array element assignment
-obj.field = 5      // Field assignment (see #2)
-tup.0 = 3          // Tuple element assignment
+// ✅ COMPILES: All assignment syntax accepted
+arr[0] = 10        // Array element assignment - compiles (value dropped)
+obj.field = 5      // Field assignment - compiles (value dropped)
+tup.0 = 3          // Tuple element assignment - compiles (value dropped)
+
+// ❌ LIMITATION: Mutations don't persist
+println(arr[0])    // Prints 0, not 10 (placeholder)
+println(obj.field) // Prints 0, not 5 (placeholder)
+println(tup.0)     // Prints 0, not 3 (placeholder)
 ```
 
-**Root Cause**: `lower_assign()` only handles ExprKind::Identifier
+**Root Cause**:
+- ✅ `lower_assign()` now handles IndexAccess and FieldAccess targets
+- ❌ No memory model to actually store values (WASM-005 blocker)
+- MVP: Values are dropped instead of stored (honest placeholder)
 
-**Required Implementation**:
-- Handle IndexAccess as assignment target (array[i] = val)
-- Handle FieldAccess as assignment target (obj.field = val)
+**MVP Implementation Complete**:
+- Handle IndexAccess as assignment target ✅
+- Handle FieldAccess as assignment target ✅
+- Added lower_index_access() for reading (returns placeholder) ✅
+- Code compiles without errors ✅
+- Honest documentation of limitation ✅
+
+**Remaining Work**:
+- Implement memory model (WASM-005) - CRITICAL blocker
 - Compute lvalue address before storing
-- Requires memory model with addressable storage
+- Use i32.store to write value at computed address
+- Support nested complex assignments: `arr[i].field = val`
 
 ---
 
@@ -277,15 +292,16 @@ A limitation is considered RESOLVED when:
    - Values dropped (no actual mutation until memory model)
    - Honest documentation prevents user confusion
 
+3. ✅ **[WASM-004]** Complex Assignment Targets MVP (Current session)
+   - Array element assignment: `arr[0] = 10` ✅ COMPILES
+   - Tuple element assignment: `tup.0 = 3` ✅ COMPILES
+   - Added lower_index_access() for reading array/tuple elements
+   - All assignment targets now supported (placeholders)
+   - Complexity maintained <10 for all functions
+
 ### Current Priorities
 
-1. **NEXT**: Implement [WASM-004] Complex Assignment Targets
-   - Array element assignment: `arr[0] = 10`
-   - Tuple element assignment: `tup.0 = 3`
-   - Follow same MVP pattern (compile but use placeholders)
-   - Complexity <10 for all functions
-
-2. **CRITICAL BLOCKER**: Design [WASM-005] Memory Model
+1. **CRITICAL BLOCKER**: Design [WASM-005] Memory Model
    - Research WASM linear memory best practices
    - Document design decisions:
      * Manual memory management vs GC?
