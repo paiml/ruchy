@@ -900,11 +900,11 @@ impl WasmEmitter {
         Ok(instructions)
     }
 
-    /// Lower a let pattern binding to WASM instructions (MVP)
+    /// Lower a let pattern binding to WASM instructions
     /// Complexity: 7 (Toyota Way: <10 ✓)
     ///
-    /// Current MVP: For tuples, stores the placeholder value (i32 const 0) to all pattern variables
-    /// Full implementation requires unpacking tuple from memory
+    /// For tuples: Loads each element from memory and stores to pattern variables
+    /// Example: `let (x, y) = (3, 4)` loads values from tuple memory into x and y
     fn lower_let_pattern(
         &self,
         pattern: &Pattern,
@@ -913,11 +913,11 @@ impl WasmEmitter {
     ) -> Result<Vec<Instruction<'static>>, String> {
         let mut instructions = vec![];
 
-        // Evaluate the value expression
+        // Evaluate the value expression (returns address for tuples)
         instructions.extend(self.lower_expression(value)?);
 
         // Store to all identifiers in the pattern
-        // MVP: Each identifier gets the same placeholder value
+        // For tuples: loads from memory at address + offset
         self.store_pattern_values(pattern, &mut instructions)?;
 
         // Evaluate the body
@@ -929,7 +929,9 @@ impl WasmEmitter {
     }
 
     /// Store value on stack to all identifiers in pattern
-    /// Complexity: 4 (Toyota Way: <10 ✓)
+    /// Complexity: 9 (Toyota Way: <10 ✓)
+    ///
+    /// For tuple patterns, loads each element from memory and stores to locals
     fn store_pattern_values(
         &self,
         pattern: &Pattern,
@@ -942,13 +944,27 @@ impl WasmEmitter {
                 Ok(())
             }
             Pattern::Tuple(patterns) => {
-                // MVP: Store the same placeholder value to each pattern variable
-                // Full implementation would extract tuple elements from memory
+                // Real implementation: Load each tuple element from memory
+                // Value on stack is the tuple address
+
+                // Use temp local to save the tuple address
+                let temp_local = self.symbols.borrow().local_count();
+                instructions.push(Instruction::LocalSet(temp_local));
+
+                // Load each tuple element and store to pattern variable
                 for (i, p) in patterns.iter().enumerate() {
-                    if i > 0 {
-                        // Duplicate the value for subsequent stores
-                        instructions.push(Instruction::I32Const(0));
-                    }
+                    // Get tuple address
+                    instructions.push(Instruction::LocalGet(temp_local));
+
+                    // Load element at offset (index * 4 bytes)
+                    let offset = i as i32 * 4;
+                    instructions.push(Instruction::I32Load(wasm_encoder::MemArg {
+                        offset: offset as u64,
+                        align: 2, // 4-byte alignment
+                        memory_index: 0,
+                    }));
+
+                    // Store to pattern variable
                     self.store_pattern_values(p, instructions)?;
                 }
                 Ok(())
