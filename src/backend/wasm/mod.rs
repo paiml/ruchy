@@ -459,12 +459,13 @@ impl WasmEmitter {
 
     /// Collect all local variable types from expression tree
     /// Returns vector of (count, type) for WASM function locals section
-    /// Complexity: 8 (within <10 limit)
-    fn collect_local_types(&self, _expr: &Expr) -> Vec<(u32, wasm_encoder::ValType)> {
+    /// Complexity: 9 (within <10 limit)
+    fn collect_local_types(&self, expr: &Expr) -> Vec<(u32, wasm_encoder::ValType)> {
         let symbols = self.symbols.borrow();
         let local_count = symbols.local_count();
+        let needs_temp = self.needs_memory(expr); // Need temp local for tuple allocation
 
-        if local_count == 0 {
+        if local_count == 0 && !needs_temp {
             return vec![];
         }
 
@@ -481,7 +482,7 @@ impl WasmEmitter {
 
         // Convert to (count, ValType) format
         // For now, just declare each local individually
-        locals
+        let mut result: Vec<(u32, wasm_encoder::ValType)> = locals
             .into_iter()
             .map(|(ty, _)| {
                 let val_type = match ty {
@@ -492,7 +493,14 @@ impl WasmEmitter {
                 };
                 (1, val_type)
             })
-            .collect()
+            .collect();
+
+        // Add temporary local for tuple/struct allocation if needed
+        if needs_temp {
+            result.push((1, wasm_encoder::ValType::I32));
+        }
+
+        result
     }
 
     /// Register all identifiers in a pattern to the symbol table
@@ -816,8 +824,8 @@ impl WasmEmitter {
             ExprKind::Return { value } => self.lower_return(value.as_deref()),
             ExprKind::StringInterpolation { parts } => self.lower_string_interpolation(parts),
             ExprKind::Match { expr, arms } => self.lower_match(expr, arms),
-            ExprKind::Tuple(_elements) => self.lower_tuple(),
-            ExprKind::FieldAccess { .. } => self.lower_field_access(),
+            ExprKind::Tuple(elements) => self.lower_tuple(elements),
+            ExprKind::FieldAccess { object, field } => self.lower_field_access(object, field),
             ExprKind::StructLiteral { .. } => self.lower_struct_literal(),
             ExprKind::IndexAccess { .. } => self.lower_index_access(),
             ExprKind::Assign { target, value } => self.lower_assign(target, value),
@@ -967,22 +975,98 @@ impl WasmEmitter {
         Ok(vec![Instruction::I32Const(0)])
     }
 
-    /// Lower a tuple literal to WASM instructions (MVP)
-    /// Complexity: 1 (Toyota Way: <10 ✓)
+    /// Lower a tuple literal to WASM instructions
+    /// Complexity: 9 (Toyota Way: <10 ✓)
     ///
-    /// Current MVP: Tuples are represented as i32 placeholder (like lists)
-    /// Full tuple support requires memory model with field offsets
-    fn lower_tuple(&self) -> Result<Vec<Instruction<'static>>, String> {
-        Ok(vec![Instruction::I32Const(0)])
+    /// Allocates memory for tuple elements and stores them sequentially
+    /// Returns the address of the tuple in memory
+    ///
+    /// Memory layout: Each element is 4 bytes (i32)
+    /// Example: (3, 4) -> [addr+0: 3, addr+4: 4]
+    fn lower_tuple(&self, elements: &[Expr]) -> Result<Vec<Instruction<'static>>, String> {
+        let mut instructions = vec![];
+
+        // Empty tuple: return placeholder 0 (no allocation needed)
+        if elements.is_empty() {
+            return Ok(vec![Instruction::I32Const(0)]);
+        }
+
+        // Calculate size needed: 4 bytes per element (all i32 for MVP)
+        let size = elements.len() as i32 * 4;
+
+        // Temporary local index: last local (reserved in collect_local_types)
+        let temp_local = self.symbols.borrow().local_count();
+
+        // Inline malloc: allocate memory using bump allocator
+        // 1. Get current heap pointer (global 0) and save it
+        instructions.push(Instruction::GlobalGet(0));
+        instructions.push(Instruction::LocalSet(temp_local));
+
+        // 2. Update heap pointer: old_ptr + size
+        instructions.push(Instruction::GlobalGet(0));
+        instructions.push(Instruction::I32Const(size));
+        instructions.push(Instruction::I32Add);
+        instructions.push(Instruction::GlobalSet(0));
+
+        // 3. Store each tuple element in memory
+        for (i, element) in elements.iter().enumerate() {
+            let offset = i as i32 * 4;
+
+            // Get the base address
+            instructions.push(Instruction::LocalGet(temp_local));
+
+            // Evaluate the element value
+            instructions.extend(self.lower_expression(element)?);
+
+            // Store at address + offset
+            instructions.push(Instruction::I32Store(wasm_encoder::MemArg {
+                offset: offset as u64,
+                align: 2, // 4-byte alignment (2^2 = 4)
+                memory_index: 0,
+            }));
+        }
+
+        // 4. Return the base address
+        instructions.push(Instruction::LocalGet(temp_local));
+
+        Ok(instructions)
     }
 
-    /// Lower field access to WASM instructions (MVP)
-    /// Complexity: 1 (Toyota Way: <10 ✓)
+    /// Lower field access to WASM instructions
+    /// Complexity: 7 (Toyota Way: <10 ✓)
     ///
-    /// Current MVP: Field access returns i32 placeholder
-    /// Full support requires memory model with field offset calculations
-    fn lower_field_access(&self) -> Result<Vec<Instruction<'static>>, String> {
-        Ok(vec![Instruction::I32Const(0)])
+    /// Loads field value from memory
+    /// For tuples: field is numeric index ("0", "1", "2", ...)
+    /// For structs: field offset calculation (future work)
+    fn lower_field_access(
+        &self,
+        object: &Expr,
+        field: &str,
+    ) -> Result<Vec<Instruction<'static>>, String> {
+        let mut instructions = vec![];
+
+        // Evaluate object expression (should return address for tuples/structs)
+        instructions.extend(self.lower_expression(object)?);
+
+        // Calculate field offset
+        // For tuples, field is "0", "1", "2", etc.
+        // For MVP, try to parse as number
+        let offset = if let Ok(index) = field.parse::<i32>() {
+            index * 4 // Each element is 4 bytes (i32)
+        } else {
+            // For struct fields, we'd need a field layout map
+            // For MVP, just use 0 (placeholder)
+            0
+        };
+
+        // Load value from memory at address + offset
+        instructions.push(Instruction::I32Load(wasm_encoder::MemArg {
+            offset: offset as u64,
+            align: 2, // 4-byte alignment (2^2 = 4)
+            memory_index: 0,
+        }));
+
+        Ok(instructions)
     }
 
     /// Lower struct literal to WASM instructions (MVP)
@@ -1364,7 +1448,8 @@ impl WasmEmitter {
             _ => Some(expr.clone()),
         }
     }
-    /// Check if an expression needs memory (for arrays/strings)
+    /// Check if an expression needs memory (for arrays/strings/tuples/structs)
+    /// Complexity: 10 (Toyota Way: ≤10 ✓)
     fn needs_memory(&self, expr: &Expr) -> bool {
         match &expr.kind {
             ExprKind::Literal(Literal::String(_)) => true,
@@ -1373,6 +1458,7 @@ impl WasmEmitter {
             ExprKind::Tuple(_) => true, // Tuples need memory allocation
             ExprKind::StructLiteral { .. } => true, // Structs need memory allocation
             ExprKind::Block(exprs) => exprs.iter().any(|e| self.needs_memory(e)),
+            ExprKind::Function { body, .. } => self.needs_memory(body),
             ExprKind::Let { value, body, .. } => {
                 self.needs_memory(value) || self.needs_memory(body)
             }
