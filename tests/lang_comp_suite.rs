@@ -37,4 +37,7 @@ mod lang_comp {
 
     #[cfg(test)]
     mod error_handling;
+
+    #[cfg(test)]
+    mod tuples;
 }

@@ -1,0 +1,39 @@
+// LANG-COMP-013-01: Basic Tuples - Creation and indexing
+// Demonstrates basic tuple operations
+
+fn main() {
+    // Basic tuple creation
+    let pair = (1, 2)
+    println(pair)
+
+    // Tuple with different types
+    let mixed = (42, "hello", true)
+    println(mixed)
+
+    // Tuple indexing (0-based)
+    let first = pair.0
+    let second = pair.1
+    println(first)
+    println(second)
+
+    // Accessing mixed tuple elements
+    let num = mixed.0
+    let text = mixed.1
+    let flag = mixed.2
+    println(num)
+    println(text)
+    println(flag)
+
+    // Unit tuple (empty)
+    let unit = ()
+    println(unit)
+
+    // Single element tuple
+    let single = (100,)
+    println(single)
+
+    // Tuple modification via reassignment
+    let mut coords = (0, 0)
+    coords = (5, 10)
+    println(coords)
+}

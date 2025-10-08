@@ -17,7 +17,7 @@ impl Transpiler {
     /// use ruchy::backend::transpiler::Transpiler;
     /// use ruchy::frontend::ast::Literal;
     ///
-    /// let lit = Literal::Integer(42);
+    /// let lit = Literal::Integer(42, None);
     /// let result = Transpiler::transpile_literal(&lit);
     /// // Returns TokenStream
     /// ```
@@ -410,9 +410,17 @@ impl Transpiler {
                 })
             }
             ExprKind::FieldAccess { .. } => {
-                // Nested field access like net::TcpListener - use :: syntax
-                let field_ident = format_ident!("{}", field);
-                Ok(quote! { #obj_tokens::#field_ident })
+                // Nested field access - check if numeric (tuple) or identifier (module path)
+                if field.chars().all(|c| c.is_ascii_digit()) {
+                    // Nested tuple access like (nested.0).1
+                    let index: usize = field.parse().unwrap();
+                    let index = syn::Index::from(index);
+                    Ok(quote! { #obj_tokens.#index })
+                } else {
+                    // Module path like net::TcpListener - use :: syntax
+                    let field_ident = format_ident!("{}", field);
+                    Ok(quote! { #obj_tokens::#field_ident })
+                }
             }
             ExprKind::Identifier(name) if name.contains("::") => {
                 // Module path identifier - use :: syntax
@@ -1221,16 +1229,16 @@ mod tests {
     #[test]
     fn test_integer_literal_size_handling() {
         // Small integers
-        assert_eq!(Transpiler::transpile_integer(42).to_string(), "42");
+        assert_eq!(Transpiler::transpile_integer(42, None).to_string(), "42");
         // Large integers
         #[allow(clippy::unreadable_literal)]
         let large_int = 9223372036854775807;
         assert_eq!(
-            Transpiler::transpile_integer(large_int).to_string(),
+            Transpiler::transpile_integer(large_int, None).to_string(),
             "9223372036854775807i64"
         );
         // Negative integers
-        assert_eq!(Transpiler::transpile_integer(-42).to_string(), "- 42");
+        assert_eq!(Transpiler::transpile_integer(-42, None).to_string(), "- 42");
     }
     #[test]
     fn test_method_call_transpilation() {
@@ -1405,6 +1413,23 @@ mod tests {
     }
 
     #[test]
+    fn test_defect_nested_tuple_transpile_nested_tuple_access() {
+        // DEFECT-NESTED-TUPLE: Test that nested tuple access (nested.0).1 transpiles correctly
+        // Previously failed with "Ident cannot be a number; use Literal instead"
+        let transpiler = create_transpiler();
+        let code = "fn main() { let nested = ((1, 2), (3, 4)); let value = (nested.0).1; value }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        let result = transpiler.transpile(&ast);
+        assert!(result.is_ok(), "Nested tuple access should transpile successfully");
+        let rust_str = result.unwrap().to_string();
+        // Should contain nested.0.1 or similar tuple access pattern
+        assert!(rust_str.contains("nested"), "Should contain 'nested' identifier");
+        assert!(rust_str.contains(".0"), "Should contain tuple index .0");
+        assert!(rust_str.contains(".1"), "Should contain tuple index .1");
+    }
+
+    #[test]
     fn test_transpile_parenthesized_expression() {
         let transpiler = create_transpiler();
         let code = "(a + b) * c";
@@ -1436,7 +1461,7 @@ mod property_tests_expressions {
                 use crate::frontend::ast::Literal;
 
                 // Test common literal types (should never panic)
-                let _ = Transpiler::transpile_literal(&Literal::Integer(42));
+                let _ = Transpiler::transpile_literal(&Literal::Integer(42, None));
                 let _ = Transpiler::transpile_literal(&Literal::Float(3.141));
                 let _ = Transpiler::transpile_literal(&Literal::Bool(true));
                 let _ = Transpiler::transpile_literal(&Literal::String(input.clone()));
@@ -1703,12 +1728,12 @@ mod property_tests_expressions {
 
         for op in binary_ops {
             let left = Expr {
-                kind: ExprKind::Literal(Literal::Integer(1)),
+                kind: ExprKind::Literal(Literal::Integer(1, None)),
                 span: Default::default(),
                 attributes: vec![],
             };
             let right = Expr {
-                kind: ExprKind::Literal(Literal::Integer(2)),
+                kind: ExprKind::Literal(Literal::Integer(2, None)),
                 span: Default::default(),
                 attributes: vec![],
             };
@@ -1737,7 +1762,7 @@ mod property_tests_expressions {
 
         for op in unary_ops {
             let operand = Expr {
-                kind: ExprKind::Literal(Literal::Integer(42)),
+                kind: ExprKind::Literal(Literal::Integer(42, None)),
                 span: Default::default(),
                 attributes: vec![],
             };
