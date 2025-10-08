@@ -1666,8 +1666,8 @@ impl Transpiler {
         catch_clauses: &[CatchClause],
         finally_block: Option<&Expr>,
     ) -> Result<TokenStream> {
-        // For now, we'll transpile try-catch to a match on Result
-        // This is a simplified implementation that handles the common case
+        // DEFECT-TRY-CATCH FIX: Use catch_unwind to catch panics from throw
+        // throw -> panic!() requires catch_unwind, not Result pattern
         let try_body = self.transpile_expr(try_block)?;
         if catch_clauses.is_empty() {
             bail!("Try block must have at least one catch clause");
@@ -1685,25 +1685,45 @@ impl Transpiler {
             let finally_tokens = self.transpile_expr(finally)?;
             quote! {
                 {
-                    let _result = (|| -> Result<_, Box<dyn std::error::Error>> {
-                        Ok(#try_body)
-                    })();
+                    let _result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                        #try_body
+                    }));
                     let _final_result = match _result {
                         Ok(val) => val,
-                        Err(#catch_pattern) => #catch_body
+                        Err(panic_err) => {
+                            // Convert panic payload to string for catch variable
+                            let #catch_pattern = if let Some(s) = panic_err.downcast_ref::<&str>() {
+                                s.to_string()
+                            } else if let Some(s) = panic_err.downcast_ref::<String>() {
+                                s.clone()
+                            } else {
+                                "Unknown panic".to_string()
+                            };
+                            #catch_body
+                        }
                     };
                     #finally_tokens;
                     _final_result
                 }
             }
         } else {
-            // Simple try-catch without finally
+            // Simple try-catch without finally - use catch_unwind to catch panics
             quote! {
-                match (|| -> Result<_, Box<dyn std::error::Error>> {
-                    Ok(#try_body)
-                })() {
+                match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                    #try_body
+                })) {
                     Ok(val) => val,
-                    Err(#catch_pattern) => #catch_body
+                    Err(panic_err) => {
+                        // Convert panic payload to string for catch variable
+                        let #catch_pattern = if let Some(s) = panic_err.downcast_ref::<&str>() {
+                            s.to_string()
+                        } else if let Some(s) = panic_err.downcast_ref::<String>() {
+                            s.clone()
+                        } else {
+                            "Unknown panic".to_string()
+                        };
+                        #catch_body
+                    }
                 }
             }
         };
