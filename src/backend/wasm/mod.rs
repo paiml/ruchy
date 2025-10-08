@@ -791,6 +791,7 @@ impl WasmEmitter {
             ExprKind::Tuple(_elements) => self.lower_tuple(),
             ExprKind::FieldAccess { .. } => self.lower_field_access(),
             ExprKind::StructLiteral { .. } => self.lower_struct_literal(),
+            ExprKind::IndexAccess { .. } => self.lower_index_access(),
             ExprKind::Assign { target, value } => self.lower_assign(target, value),
             _ => Ok(vec![]),
         }
@@ -965,11 +966,22 @@ impl WasmEmitter {
         Ok(vec![Instruction::I32Const(0)])
     }
 
-    /// Lower assignment expression to WASM instructions
-    /// Complexity: 6 (Toyota Way: <10 ✓)
+    /// Lower index access to WASM instructions (MVP)
+    /// Complexity: 1 (Toyota Way: <10 ✓)
     ///
-    /// MVP: Supports identifier targets and field access (placeholder)
-    /// Full implementation requires memory model for actual field mutation
+    /// Current MVP: Array/tuple element access returns i32 placeholder
+    /// Full implementation requires memory model:
+    /// - Calculate element address (base + index * `element_size`)
+    /// - Load value from address using i32.load
+    fn lower_index_access(&self) -> Result<Vec<Instruction<'static>>, String> {
+        Ok(vec![Instruction::I32Const(0)])
+    }
+
+    /// Lower assignment expression to WASM instructions
+    /// Complexity: 8 (Toyota Way: <10 ✓)
+    ///
+    /// MVP: Supports identifiers, field access, and index access (placeholders)
+    /// Full implementation requires memory model for actual mutations
     fn lower_assign(
         &self,
         target: &Expr,
@@ -990,6 +1002,15 @@ impl WasmEmitter {
                 // MVP: Field mutation not yet implemented - requires memory model
                 // For now, just drop the value so code compiles
                 // Full implementation in WASM-005 (memory model)
+                instructions.push(Instruction::Drop);
+            }
+            ExprKind::IndexAccess { .. } => {
+                // MVP: Array/tuple element mutation not yet implemented - requires memory model
+                // For now, just drop the value so code compiles
+                // Full implementation in WASM-005 (memory model)
+                // Full implementation would:
+                // - Calculate element address (base + index * `element_size`)
+                // - Store value at computed address using i32.store
                 instructions.push(Instruction::Drop);
             }
             _ => {
