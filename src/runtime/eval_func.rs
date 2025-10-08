@@ -87,7 +87,9 @@ mod tests {
     fn test_eval_lambda() {
         let params = vec![];
         let body = Expr::new(
-            crate::frontend::ast::ExprKind::Literal(crate::frontend::ast::Literal::Integer(42)),
+            crate::frontend::ast::ExprKind::Literal(crate::frontend::ast::Literal::Integer(
+                42, None,
+            )),
             crate::frontend::ast::Span::default(),
         );
         let env = HashMap::new();

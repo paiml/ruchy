@@ -16,7 +16,7 @@ mod tests {
     // Helper to create a simple literal expression
     fn make_literal(val: i64) -> Expr {
         Expr {
-            kind: ExprKind::Literal(Literal::Integer(val)),
+            kind: ExprKind::Literal(Literal::Integer(val, None)),
             span: Span::default(),
         }
     }

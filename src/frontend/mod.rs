@@ -130,7 +130,10 @@ mod tests {
         let result = parser.parse();
         assert!(result.is_ok());
         let expr = result.unwrap();
-        assert!(matches!(expr.kind, ExprKind::Literal(Literal::Integer(42))));
+        assert!(matches!(
+            expr.kind,
+            ExprKind::Literal(Literal::Integer(42, None))
+        ));
     }
 
     #[test]
@@ -360,7 +363,10 @@ mod tests {
         assert!(result.is_ok());
         let expr = result.unwrap();
         // Parentheses don't create a special node, just affect precedence
-        assert!(matches!(expr.kind, ExprKind::Literal(Literal::Integer(42))));
+        assert!(matches!(
+            expr.kind,
+            ExprKind::Literal(Literal::Integer(42, None))
+        ));
     }
 
     #[test]

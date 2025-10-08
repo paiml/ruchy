@@ -271,7 +271,7 @@ mod mutation_tests {
         let catch_clause = CatchClause {
             pattern: Pattern::Identifier("e".to_string()),
             body: Box::new(Expr::new(
-                ExprKind::Literal(Literal::Integer(99)),
+                ExprKind::Literal(Literal::Integer(99, None)),
                 Span::new(0, 0),
             )),
         };
@@ -298,7 +298,7 @@ mod mutation_tests {
 
         // Test false case - Literal pattern with wrong value
         // This will fail if mutation replaces function with Ok(true) stub
-        let pattern_nomatch = Pattern::Literal(Literal::Integer(99));
+        let pattern_nomatch = Pattern::Literal(Literal::Integer(99, None));
         let value_nomatch = Value::Integer(42);
         let result_nomatch =
             pattern_matches(&mut interp, &pattern_nomatch, &value_nomatch).unwrap();

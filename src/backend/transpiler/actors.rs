@@ -359,7 +359,7 @@ mod tests {
         let transpiler = make_transpiler();
         let actor = make_ident("my_actor");
         let message = make_ident("Query");
-        let timeout = Some(make_literal(Literal::Integer(10)));
+        let timeout = Some(make_literal(Literal::Integer(10, None)));
 
         let result = transpiler.transpile_ask(&actor, &message, timeout.as_ref());
         assert!(result.is_ok());

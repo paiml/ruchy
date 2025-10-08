@@ -1408,6 +1408,7 @@ fn create_let_expression(
         | Pattern::Literal(_)
         | Pattern::QualifiedName(_)
         | Pattern::Struct { .. }
+        | Pattern::TupleVariant { .. }
         | Pattern::Range { .. }
         | Pattern::Or(_)
         | Pattern::Rest
@@ -2131,6 +2132,22 @@ fn parse_identifier_or_constructor_pattern(state: &mut ParserState) -> Result<Pa
         });
     }
 
+    // Check for enum variant paths: Color::Red, Option::Some, etc.
+    if matches!(state.tokens.peek(), Some((Token::ColonColon, _))) {
+        let full_path = parse_module_path_segments(state, name)?;
+        // Check if followed by struct fields or tuple args
+        return if matches!(state.tokens.peek(), Some((Token::LeftBrace, _))) {
+            parse_struct_pattern_with_name(state, full_path)
+        } else if matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
+            parse_constructor_pattern(state, full_path)
+        } else {
+            // Unit enum variant like Color::Red - use QualifiedName
+            let path_segments: Vec<String> =
+                full_path.split("::").map(ToString::to_string).collect();
+            Ok(Pattern::QualifiedName(path_segments))
+        };
+    }
+
     // Check for struct patterns: Point { x, y }
     if matches!(state.tokens.peek(), Some((Token::LeftBrace, _))) {
         parse_struct_pattern_with_name(state, name)
@@ -2257,20 +2274,19 @@ fn create_constructor_pattern(name: String, patterns: Vec<Pattern>) -> Result<Pa
             // None - Option empty case
             Ok(Pattern::None)
         }
-        (_, 1) => {
-            // Single argument constructor - for simplicity, use the inner pattern
-            Ok(patterns
-                .into_iter()
-                .next()
-                .expect("patterns.len() == 1, so next() must return Some"))
-        }
         (name, 0) => {
-            // Empty constructor - return as identifier
-            Ok(Pattern::Identifier(name.to_string()))
+            // Empty constructor - check if qualified path or simple identifier
+            if name.contains("::") {
+                let path: Vec<String> = name.split("::").map(ToString::to_string).collect();
+                Ok(Pattern::QualifiedName(path))
+            } else {
+                Ok(Pattern::Identifier(name.to_string()))
+            }
         }
-        (_, _) => {
-            // Multiple arguments - use tuple pattern
-            Ok(Pattern::Tuple(patterns))
+        (name, _) => {
+            // Constructor with arguments - use TupleVariant for custom enums
+            let path: Vec<String> = name.split("::").map(ToString::to_string).collect();
+            Ok(Pattern::TupleVariant { path, patterns })
         }
     }
 }

@@ -1047,7 +1047,7 @@ mod tests {
     fn test_token_types() {
         use crate::frontend::lexer::Token;
 
-        let t1 = Token::Integer(42);
+        let t1 = Token::Integer("42".to_string());
         let t2 = Token::Identifier("test".to_string());
         let t3 = Token::String("hello".to_string());
 

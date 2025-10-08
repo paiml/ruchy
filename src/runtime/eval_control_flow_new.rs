@@ -646,7 +646,7 @@ mod tests {
             Span::new(0, 4),
         );
         let then_branch = Expr::new(
-            crate::frontend::ast::ExprKind::Literal(Literal::Integer(42)),
+            crate::frontend::ast::ExprKind::Literal(Literal::Integer(42, None)),
             Span::new(5, 7),
         );
 
@@ -664,11 +664,11 @@ mod tests {
 
         let elements = vec![
             Expr::new(
-                crate::frontend::ast::ExprKind::Literal(Literal::Integer(1)),
+                crate::frontend::ast::ExprKind::Literal(Literal::Integer(1, None)),
                 Span::new(0, 1),
             ),
             Expr::new(
-                crate::frontend::ast::ExprKind::Literal(Literal::Integer(2)),
+                crate::frontend::ast::ExprKind::Literal(Literal::Integer(2, None)),
                 Span::new(3, 4),
             ),
         ];
@@ -693,11 +693,11 @@ mod tests {
 
         let statements = vec![
             Expr::new(
-                crate::frontend::ast::ExprKind::Literal(Literal::Integer(1)),
+                crate::frontend::ast::ExprKind::Literal(Literal::Integer(1, None)),
                 Span::new(0, 1),
             ),
             Expr::new(
-                crate::frontend::ast::ExprKind::Literal(Literal::Integer(2)),
+                crate::frontend::ast::ExprKind::Literal(Literal::Integer(2, None)),
                 Span::new(3, 4),
             ),
         ];
@@ -711,7 +711,7 @@ mod tests {
         let wildcard_pattern = Pattern::Wildcard;
         assert!(pattern_matches_simple(&wildcard_pattern, &Value::Integer(42)).unwrap());
 
-        let literal_pattern = Pattern::Literal(Literal::Integer(42));
+        let literal_pattern = Pattern::Literal(Literal::Integer(42, None));
         assert!(pattern_matches_simple(&literal_pattern, &Value::Integer(42)).unwrap());
         assert!(!pattern_matches_simple(&literal_pattern, &Value::Integer(43)).unwrap());
     }

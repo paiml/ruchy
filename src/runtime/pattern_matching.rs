@@ -8,10 +8,10 @@ use std::collections::HashMap;
 use std::rc::Rc;
 ///
 /// let value = `Value::Integer(42)`;
-/// let pattern = `Literal::Integer(42)`;
+/// let pattern = `Literal::Integer(42, None)`;
 /// `assert!(match_literal_pattern(&value`, &pattern));
 ///
-/// let pattern2 = `Literal::Integer(43)`;
+/// let pattern2 = `Literal::Integer(43, None)`;
 /// `assert!(!match_literal_pattern(&value`, &pattern2));
 /// ```
 pub fn match_literal_pattern(value: &Value, literal: &Literal) -> bool {
@@ -130,6 +130,10 @@ pub fn match_pattern(pattern: &Pattern, value: &Value) -> Option<Vec<(String, Va
             inclusive,
         } => match_range_pattern_helper(start, end, *inclusive, value),
         Pattern::QualifiedName(_) => None,
+        Pattern::TupleVariant { path: _, patterns } => {
+            // For enum tuple variants, match like tuple destructuring
+            match_tuple_pattern_helper(patterns, value)
+        }
         Pattern::Some(inner_pattern) => match_some_pattern_helper(inner_pattern, value),
         Pattern::None => match_none_pattern_helper(value),
         Pattern::Ok(inner_pattern) => match_ok_pattern_helper(inner_pattern, value),
@@ -419,11 +423,11 @@ mod tests {
         // Integer literal matching
         assert!(match_literal_pattern(
             &Value::Integer(42),
-            &Literal::Integer(42)
+            &Literal::Integer(42, None)
         ));
         assert!(!match_literal_pattern(
             &Value::Integer(42),
-            &Literal::Integer(43)
+            &Literal::Integer(43, None)
         ));
 
         // Float literal matching with epsilon
@@ -561,7 +565,7 @@ mod tests {
         assert!(values_equal(&bindings[0].1, &Value::Integer(42)));
 
         // Literal pattern matching
-        let literal_pattern = Pattern::Literal(Literal::Integer(42));
+        let literal_pattern = Pattern::Literal(Literal::Integer(42, None));
         assert!(match_pattern(&literal_pattern, &Value::Integer(42)).is_some());
         assert!(match_pattern(&literal_pattern, &Value::Integer(43)).is_none());
     }
@@ -577,7 +581,7 @@ mod tests {
 
         // Exact tuple match
         let tuple_pattern = Pattern::Tuple(vec![
-            Pattern::Literal(Literal::Integer(1)),
+            Pattern::Literal(Literal::Integer(1, None)),
             Pattern::Identifier("s".to_string()),
             Pattern::Literal(Literal::Bool(true)),
         ]);
@@ -594,14 +598,14 @@ mod tests {
 
         // Wrong tuple length should not match
         let wrong_pattern = Pattern::Tuple(vec![
-            Pattern::Literal(Literal::Integer(1)),
+            Pattern::Literal(Literal::Integer(1, None)),
             Pattern::Identifier("s".to_string()),
         ]);
         assert!(match_pattern(&wrong_pattern, &tuple_value).is_none());
 
         // Wrong element values should not match
         let mismatch_pattern = Pattern::Tuple(vec![
-            Pattern::Literal(Literal::Integer(2)),
+            Pattern::Literal(Literal::Integer(2, None)),
             Pattern::Identifier("s".to_string()),
             Pattern::Literal(Literal::Bool(true)),
         ]);
@@ -620,7 +624,7 @@ mod tests {
         // Exact list match with variables
         let list_pattern = Pattern::List(vec![
             Pattern::Identifier("first".to_string()),
-            Pattern::Literal(Literal::Integer(2)),
+            Pattern::Literal(Literal::Integer(2, None)),
             Pattern::Identifier("last".to_string()),
         ]);
 
@@ -700,8 +704,8 @@ mod tests {
     #[test]
     fn test_or_pattern_matching() {
         let or_pattern = Pattern::Or(vec![
-            Pattern::Literal(Literal::Integer(1)),
-            Pattern::Literal(Literal::Integer(2)),
+            Pattern::Literal(Literal::Integer(1, None)),
+            Pattern::Literal(Literal::Integer(2, None)),
             Pattern::Literal(Literal::String("test".to_string())),
         ]);
 
@@ -891,7 +895,7 @@ mod tests {
         assert!(match_pattern(&long_pattern, &short_tuple).is_none());
 
         // Literal mismatch
-        let literal_pattern = Pattern::Literal(Literal::Integer(42));
+        let literal_pattern = Pattern::Literal(Literal::Integer(42, None));
         assert!(match_pattern(&literal_pattern, &Value::Integer(43)).is_none());
         assert!(match_pattern(&literal_pattern, &Value::from_string("42".to_string())).is_none());
     }

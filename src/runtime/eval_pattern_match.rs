@@ -386,7 +386,7 @@ mod tests {
 
     #[test]
     fn test_literal_pattern_match() {
-        let pattern = Pattern::Literal(Literal::Integer(42));
+        let pattern = Pattern::Literal(Literal::Integer(42, None));
         let value = Value::Integer(42);
         let result = try_pattern_match(&pattern, &value, &test_eval_literal).unwrap();
         assert!(result.is_some());
@@ -394,7 +394,7 @@ mod tests {
 
     #[test]
     fn test_literal_pattern_no_match() {
-        let pattern = Pattern::Literal(Literal::Integer(42));
+        let pattern = Pattern::Literal(Literal::Integer(42, None));
         let value = Value::Integer(43);
         let result = try_pattern_match(&pattern, &value, &test_eval_literal).unwrap();
         assert!(result.is_none());
@@ -422,8 +422,8 @@ mod tests {
     #[test]
     fn test_range_pattern_inclusive() {
         let pattern = Pattern::Range {
-            start: Box::new(Pattern::Literal(Literal::Integer(1))),
-            end: Box::new(Pattern::Literal(Literal::Integer(5))),
+            start: Box::new(Pattern::Literal(Literal::Integer(1, None))),
+            end: Box::new(Pattern::Literal(Literal::Integer(5, None))),
             inclusive: true,
         };
 
@@ -443,9 +443,9 @@ mod tests {
     #[test]
     fn test_or_pattern() {
         let patterns = vec![
-            Pattern::Literal(Literal::Integer(1)),
-            Pattern::Literal(Literal::Integer(2)),
-            Pattern::Literal(Literal::Integer(3)),
+            Pattern::Literal(Literal::Integer(1, None)),
+            Pattern::Literal(Literal::Integer(2, None)),
+            Pattern::Literal(Literal::Integer(3, None)),
         ];
         let pattern = Pattern::Or(patterns);
 

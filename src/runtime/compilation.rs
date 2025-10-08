@@ -691,7 +691,7 @@ mod tests {
         let interpreter = DirectThreadedInterpreter::new();
 
         assert_eq!(
-            interpreter.literal_to_value(&Literal::Integer(42)),
+            interpreter.literal_to_value(&Literal::Integer(42, None)),
             Value::Integer(42)
         );
         assert_eq!(

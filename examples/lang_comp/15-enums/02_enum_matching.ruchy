@@ -1,0 +1,52 @@
+// LANG-COMP-015-02: Enum Pattern Matching
+// Demonstrates match expressions with enum variants
+
+fn main() {
+    // Basic enum matching
+    enum Color {
+        Red,
+        Green,
+        Blue
+    }
+
+    let c = Color::Red
+    match c {
+        Color::Red => println("It's red!"),
+        Color::Green => println("It's green!"),
+        Color::Blue => println("It's blue!")
+    }
+
+    // Match with different actions
+    enum Direction {
+        North,
+        South,
+        East,
+        West
+    }
+
+    let dir = Direction::East
+    match dir {
+        Direction::North => println("Going north"),
+        Direction::South => println("Going south"),
+        Direction::East => println("Going east"),
+        Direction::West => println("Going west")
+    }
+
+    // Enum in function
+    enum Status {
+        Success,
+        Failure
+    }
+
+    let s1 = Status::Success
+    match s1 {
+        Status::Success => println(true),
+        Status::Failure => println(false)
+    }
+
+    let s2 = Status::Failure
+    match s2 {
+        Status::Success => println(true),
+        Status::Failure => println(false)
+    }
+}

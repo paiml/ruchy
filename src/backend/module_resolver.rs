@@ -678,7 +678,7 @@ mod tests {
                     Span { start: 0, end: 0 },
                 ),
                 Expr::new(
-                    ExprKind::Literal(Literal::Integer(42)),
+                    ExprKind::Literal(Literal::Integer(42, None)),
                     Span { start: 0, end: 0 },
                 ),
             ]),
@@ -704,7 +704,7 @@ mod tests {
             // Third should remain as Literal
             assert!(matches!(
                 exprs[2].kind,
-                ExprKind::Literal(Literal::Integer(42))
+                ExprKind::Literal(Literal::Integer(42, _))
             ));
         } else {
             unreachable!("Expected Block expression");

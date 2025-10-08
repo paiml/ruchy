@@ -302,8 +302,8 @@ mod tests {
         let transpiler = make_transpiler();
         let expr = make_ident("result");
         let arms = vec![
-            ("Ok".to_string(), make_literal(Literal::Integer(42))),
-            ("Err".to_string(), make_literal(Literal::Integer(0))),
+            ("Ok".to_string(), make_literal(Literal::Integer(42, None))),
+            ("Err".to_string(), make_literal(Literal::Integer(0, None))),
         ];
 
         let result = transpiler.transpile_result_match(&expr, &arms);
@@ -370,7 +370,7 @@ mod tests {
     fn test_transpile_result_unwrap_or() {
         let transpiler = make_transpiler();
         let result_expr = make_ident("my_result");
-        let default = make_literal(Literal::Integer(0));
+        let default = make_literal(Literal::Integer(0, None));
 
         let result = transpiler.transpile_result_unwrap_or(&result_expr, &default);
         assert!(result.is_ok());

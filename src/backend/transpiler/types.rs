@@ -667,6 +667,9 @@ impl Transpiler {
         } else {
             quote! {}
         };
+        // Add #[derive(Debug, Clone, PartialEq)] for better usability
+        let derive_attr = quote! { #[derive(Debug, Clone, PartialEq)] };
+
         // Add #[repr(i32)] attribute if enum has discriminant values
         let repr_attr = if has_discriminants {
             quote! { #[repr(i32)] }
@@ -675,6 +678,7 @@ impl Transpiler {
         };
         if type_params.is_empty() {
             Ok(quote! {
+                #derive_attr
                 #repr_attr
                 #visibility enum #enum_name {
                     #(#variant_tokens,)*
@@ -682,6 +686,7 @@ impl Transpiler {
             })
         } else {
             Ok(quote! {
+                #derive_attr
                 #repr_attr
                 #visibility enum #enum_name<#(#type_param_tokens),*> {
                     #(#variant_tokens,)*

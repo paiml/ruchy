@@ -21,7 +21,7 @@
 //!
 //! // Create a simple literal expression
 //! let expr = Expr::new(
-//!     ExprKind::Literal(Literal::Integer(42)),
+//!     ExprKind::Literal(Literal::Integer(42, None)),
 //!     Span::new(0, 2)
 //! );
 //! ```
@@ -166,11 +166,11 @@ pub struct ComprehensionClause {
 ///
 /// // Create a binary expression: 2 + 3
 /// let left = Box::new(Expr::new(
-///     ExprKind::Literal(Literal::Integer(2)),
+///     ExprKind::Literal(Literal::Integer(2, None)),
 ///     Span::new(0, 1)
 /// ));
 /// let right = Box::new(Expr::new(
-///     ExprKind::Literal(Literal::Integer(3)),
+///     ExprKind::Literal(Literal::Integer(3, None)),
 ///     Span::new(4, 5)
 /// ));
 /// let expr = Expr::new(
@@ -234,7 +234,7 @@ impl Expr {
     /// use ruchy::frontend::ast::{Expr, ExprKind, Attribute, Literal, Span};
     ///
     /// let expr = Expr::with_attributes(
-    ///     ExprKind::Literal(Literal::Integer(42)),
+    ///     ExprKind::Literal(Literal::Integer(42, None)),
     ///     Span::new(0, 2),
     ///     vec![Attribute::inline()]
     /// );
@@ -686,7 +686,7 @@ pub enum ExprKind {
 /// ```ignore
 /// use ruchy::frontend::ast::Literal;
 ///
-/// let int = Literal::Integer(42);
+/// let int = Literal::Integer(42, None);
 /// let float = Literal::Float(3.14);
 /// let string = Literal::String("hello".to_string());
 /// let boolean = Literal::Bool(true);
@@ -1106,6 +1106,10 @@ pub enum Pattern {
         fields: Vec<StructPatternField>,
         has_rest: bool,
     },
+    TupleVariant {
+        path: Vec<String>,      // e.g., ["Message", "Text"]
+        patterns: Vec<Pattern>, // Arguments like (n) or (a, b)
+    }, // For enum tuple variants like Message::Text(n)
     Range {
         start: Box<Pattern>,
         end: Box<Pattern>,
@@ -1157,6 +1161,12 @@ impl Pattern {
                 } else {
                     name.clone()
                 }
+            }
+            Pattern::TupleVariant { path, patterns } => {
+                // For enum tuple variants, get first pattern's name or variant path
+                patterns
+                    .first()
+                    .map_or_else(|| path.join("::"), Pattern::primary_name)
             }
             Pattern::Ok(inner) | Pattern::Err(inner) | Pattern::Some(inner) => inner.primary_name(),
             Pattern::None => "_none".to_string(),
@@ -1404,18 +1414,18 @@ mod tests {
     #[test]
     fn test_expr_creation() {
         let span = Span::new(0, 10);
-        let expr = Expr::new(ExprKind::Literal(Literal::Integer(42)), span);
+        let expr = Expr::new(ExprKind::Literal(Literal::Integer(42, None)), span);
         assert_eq!(expr.span.start, 0);
         assert_eq!(expr.span.end, 10);
         match expr.kind {
-            ExprKind::Literal(Literal::Integer(n)) => assert_eq!(n, 42),
+            ExprKind::Literal(Literal::Integer(n, None)) => assert_eq!(n, 42),
             _ => panic!("Wrong expression kind"),
         }
     }
     #[test]
     fn test_literal_variants() {
         let literals = vec![
-            Literal::Integer(42),
+            Literal::Integer(42, None),
             #[allow(clippy::approx_constant)]
             Literal::Float(3.14), // Not PI, just a test value
             Literal::String("hello".to_string()),
@@ -1461,11 +1471,11 @@ mod tests {
     #[test]
     fn test_binary_expression() {
         let left = Box::new(Expr::new(
-            ExprKind::Literal(Literal::Integer(1)),
+            ExprKind::Literal(Literal::Integer(1, None)),
             Span::new(0, 1),
         ));
         let right = Box::new(Expr::new(
-            ExprKind::Literal(Literal::Integer(2)),
+            ExprKind::Literal(Literal::Integer(2, None)),
             Span::new(4, 5),
         ));
         let expr = Expr::new(
@@ -1484,11 +1494,11 @@ mod tests {
             } => {
                 assert_eq!(op, BinaryOp::Add);
                 match l.kind {
-                    ExprKind::Literal(Literal::Integer(n)) => assert_eq!(n, 1),
+                    ExprKind::Literal(Literal::Integer(n, None)) => assert_eq!(n, 1),
                     _ => panic!("Wrong left operand"),
                 }
                 match r.kind {
-                    ExprKind::Literal(Literal::Integer(n)) => assert_eq!(n, 2),
+                    ExprKind::Literal(Literal::Integer(n, None)) => assert_eq!(n, 2),
                     _ => panic!("Wrong right operand"),
                 }
             }
@@ -1526,11 +1536,11 @@ mod tests {
             Span::new(3, 7),
         ));
         let then_branch = Box::new(Expr::new(
-            ExprKind::Literal(Literal::Integer(1)),
+            ExprKind::Literal(Literal::Integer(1, None)),
             Span::new(10, 11),
         ));
         let else_branch = Some(Box::new(Expr::new(
-            ExprKind::Literal(Literal::Integer(2)),
+            ExprKind::Literal(Literal::Integer(2, None)),
             Span::new(17, 18),
         )));
         let expr = Expr::new(
@@ -1552,13 +1562,13 @@ mod tests {
                     _ => panic!("Wrong condition"),
                 }
                 match t.kind {
-                    ExprKind::Literal(Literal::Integer(n)) => assert_eq!(n, 1),
+                    ExprKind::Literal(Literal::Integer(n, None)) => assert_eq!(n, 1),
                     _ => panic!("Wrong then branch"),
                 }
                 assert!(e.is_some());
                 if let Some(else_expr) = e {
                     match else_expr.kind {
-                        ExprKind::Literal(Literal::Integer(n)) => assert_eq!(n, 2),
+                        ExprKind::Literal(Literal::Integer(n, None)) => assert_eq!(n, 2),
                         _ => panic!("Wrong else branch"),
                     }
                 }
@@ -1569,7 +1579,7 @@ mod tests {
     #[test]
     fn test_let_expression() {
         let value = Box::new(Expr::new(
-            ExprKind::Literal(Literal::Integer(42)),
+            ExprKind::Literal(Literal::Integer(42, None)),
             Span::new(8, 10),
         ));
         let body = Box::new(Expr::new(
@@ -1595,7 +1605,7 @@ mod tests {
             } => {
                 assert_eq!(name, "x");
                 match v.kind {
-                    ExprKind::Literal(Literal::Integer(n)) => assert_eq!(n, 42),
+                    ExprKind::Literal(Literal::Integer(n, None)) => assert_eq!(n, 42),
                     _ => panic!("Wrong value"),
                 }
                 match b.kind {
@@ -1664,8 +1674,14 @@ mod tests {
             Span::new(0, 3),
         ));
         let args = vec![
-            Expr::new(ExprKind::Literal(Literal::Integer(1)), Span::new(4, 5)),
-            Expr::new(ExprKind::Literal(Literal::Integer(2)), Span::new(7, 8)),
+            Expr::new(
+                ExprKind::Literal(Literal::Integer(1, None)),
+                Span::new(4, 5),
+            ),
+            Expr::new(
+                ExprKind::Literal(Literal::Integer(2, None)),
+                Span::new(7, 8),
+            ),
         ];
         let expr = Expr::new(ExprKind::Call { func, args }, Span::new(0, 9));
         match expr.kind {
@@ -1682,8 +1698,14 @@ mod tests {
     #[test]
     fn test_block_expression() {
         let exprs = vec![
-            Expr::new(ExprKind::Literal(Literal::Integer(1)), Span::new(2, 3)),
-            Expr::new(ExprKind::Literal(Literal::Integer(2)), Span::new(5, 6)),
+            Expr::new(
+                ExprKind::Literal(Literal::Integer(1, None)),
+                Span::new(2, 3),
+            ),
+            Expr::new(
+                ExprKind::Literal(Literal::Integer(2, None)),
+                Span::new(5, 6),
+            ),
         ];
         let expr = Expr::new(ExprKind::Block(exprs), Span::new(0, 8));
         match expr.kind {
@@ -1696,9 +1718,18 @@ mod tests {
     #[test]
     fn test_list_expression() {
         let items = vec![
-            Expr::new(ExprKind::Literal(Literal::Integer(1)), Span::new(1, 2)),
-            Expr::new(ExprKind::Literal(Literal::Integer(2)), Span::new(4, 5)),
-            Expr::new(ExprKind::Literal(Literal::Integer(3)), Span::new(7, 8)),
+            Expr::new(
+                ExprKind::Literal(Literal::Integer(1, None)),
+                Span::new(1, 2),
+            ),
+            Expr::new(
+                ExprKind::Literal(Literal::Integer(2, None)),
+                Span::new(4, 5),
+            ),
+            Expr::new(
+                ExprKind::Literal(Literal::Integer(3, None)),
+                Span::new(7, 8),
+            ),
         ];
         let expr = Expr::new(ExprKind::List(items), Span::new(0, 9));
         match expr.kind {
@@ -1713,11 +1744,11 @@ mod tests {
         let iter = Box::new(Expr::new(
             ExprKind::Range {
                 start: Box::new(Expr::new(
-                    ExprKind::Literal(Literal::Integer(0)),
+                    ExprKind::Literal(Literal::Integer(0, None)),
                     Span::new(10, 11),
                 )),
                 end: Box::new(Expr::new(
-                    ExprKind::Literal(Literal::Integer(10)),
+                    ExprKind::Literal(Literal::Integer(10, None)),
                     Span::new(13, 15),
                 )),
                 inclusive: false,
@@ -1762,11 +1793,11 @@ mod tests {
     #[test]
     fn test_range_expression() {
         let start = Box::new(Expr::new(
-            ExprKind::Literal(Literal::Integer(1)),
+            ExprKind::Literal(Literal::Integer(1, None)),
             Span::new(0, 1),
         ));
         let end = Box::new(Expr::new(
-            ExprKind::Literal(Literal::Integer(10)),
+            ExprKind::Literal(Literal::Integer(10, None)),
             Span::new(3, 5),
         ));
         let expr = Expr::new(
@@ -1785,11 +1816,11 @@ mod tests {
             } => {
                 assert!(!inclusive);
                 match s.kind {
-                    ExprKind::Literal(Literal::Integer(n)) => assert_eq!(n, 1),
+                    ExprKind::Literal(Literal::Integer(n, None)) => assert_eq!(n, 1),
                     _ => panic!("Wrong start"),
                 }
                 match e.kind {
-                    ExprKind::Literal(Literal::Integer(n)) => assert_eq!(n, 10),
+                    ExprKind::Literal(Literal::Integer(n, None)) => assert_eq!(n, 10),
                     _ => panic!("Wrong end"),
                 }
             }
@@ -1818,8 +1849,14 @@ mod tests {
     fn test_pipeline_expression() {
         let expr_start = Box::new(Expr::new(
             ExprKind::List(vec![
-                Expr::new(ExprKind::Literal(Literal::Integer(1)), Span::new(1, 2)),
-                Expr::new(ExprKind::Literal(Literal::Integer(2)), Span::new(4, 5)),
+                Expr::new(
+                    ExprKind::Literal(Literal::Integer(1, None)),
+                    Span::new(1, 2),
+                ),
+                Expr::new(
+                    ExprKind::Literal(Literal::Integer(2, None)),
+                    Span::new(4, 5),
+                ),
             ]),
             Span::new(0, 6),
         ));
@@ -1856,7 +1893,7 @@ mod tests {
         ));
         let arms = vec![
             MatchArm {
-                pattern: Pattern::Literal(Literal::Integer(1)),
+                pattern: Pattern::Literal(Literal::Integer(1, None)),
                 guard: None,
                 body: Box::new(Expr::new(
                     ExprKind::Literal(Literal::String("one".to_string())),
@@ -1896,15 +1933,15 @@ mod tests {
     fn test_pattern_variants() {
         let patterns = vec![
             Pattern::Wildcard,
-            Pattern::Literal(Literal::Integer(42)),
+            Pattern::Literal(Literal::Integer(42, None)),
             Pattern::Identifier("x".to_string()),
             Pattern::Tuple(vec![
-                Pattern::Literal(Literal::Integer(1)),
+                Pattern::Literal(Literal::Integer(1, None)),
                 Pattern::Identifier("x".to_string()),
             ]),
             Pattern::List(vec![
-                Pattern::Literal(Literal::Integer(1)),
-                Pattern::Literal(Literal::Integer(2)),
+                Pattern::Literal(Literal::Integer(1, None)),
+                Pattern::Literal(Literal::Integer(2, None)),
             ]),
             Pattern::Struct {
                 name: "Point".to_string(),
@@ -1915,13 +1952,13 @@ mod tests {
                 has_rest: false,
             },
             Pattern::Range {
-                start: Box::new(Pattern::Literal(Literal::Integer(1))),
-                end: Box::new(Pattern::Literal(Literal::Integer(10))),
+                start: Box::new(Pattern::Literal(Literal::Integer(1, None))),
+                end: Box::new(Pattern::Literal(Literal::Integer(10, None))),
                 inclusive: true,
             },
             Pattern::Or(vec![
-                Pattern::Literal(Literal::Integer(1)),
-                Pattern::Literal(Literal::Integer(2)),
+                Pattern::Literal(Literal::Integer(1, None)),
+                Pattern::Literal(Literal::Integer(2, None)),
             ]),
             Pattern::Rest,
         ];
@@ -2135,7 +2172,7 @@ mod tests {
         let ok_val = Expr::new(
             ExprKind::Ok {
                 value: Box::new(Expr::new(
-                    ExprKind::Literal(Literal::Integer(42)),
+                    ExprKind::Literal(Literal::Integer(42, None)),
                     Span::new(3, 5),
                 )),
             },
@@ -2155,7 +2192,7 @@ mod tests {
         let some_val = Expr::new(
             ExprKind::Some {
                 value: Box::new(Expr::new(
-                    ExprKind::Literal(Literal::Integer(1)),
+                    ExprKind::Literal(Literal::Integer(1, None)),
                     Span::new(5, 6),
                 )),
             },
@@ -2177,7 +2214,7 @@ mod tests {
     //     let pipeline = Expr::new(
     //         ExprKind::Binary {
     //             left: Box::new(Expr::new(
-    //                 ExprKind::Literal(Literal::Integer(5)),
+    //                 ExprKind::Literal(Literal::Integer(5, None)),
     //                 Span::new(0, 1),
     //             )),
     //             op: BinaryOp::Pipeline,
@@ -2319,8 +2356,14 @@ mod tests {
                     DataFrameColumn {
                         name: "age".to_string(),
                         values: vec![
-                            Expr::new(ExprKind::Literal(Literal::Integer(25)), Span::new(14, 16)),
-                            Expr::new(ExprKind::Literal(Literal::Integer(30)), Span::new(17, 19)),
+                            Expr::new(
+                                ExprKind::Literal(Literal::Integer(25, None)),
+                                Span::new(14, 16),
+                            ),
+                            Expr::new(
+                                ExprKind::Literal(Literal::Integer(30, None)),
+                                Span::new(17, 19),
+                            ),
                         ],
                     },
                 ],
@@ -2343,7 +2386,7 @@ mod tests {
         let cast = Expr::new(
             ExprKind::TypeCast {
                 expr: Box::new(Expr::new(
-                    ExprKind::Literal(Literal::Integer(42)),
+                    ExprKind::Literal(Literal::Integer(42, None)),
                     Span::new(0, 2),
                 )),
                 target_type: "f64".to_string(),
@@ -2386,12 +2429,12 @@ mod tests {
             let expr = Expr::new(
                 ExprKind::Binary {
                     left: Box::new(Expr::new(
-                        ExprKind::Literal(Literal::Integer(1)),
+                        ExprKind::Literal(Literal::Integer(1, None)),
                         Span::new(0, 1),
                     )),
                     op,
                     right: Box::new(Expr::new(
-                        ExprKind::Literal(Literal::Integer(2)),
+                        ExprKind::Literal(Literal::Integer(2, None)),
                         Span::new(2, 3),
                     )),
                 },
@@ -2426,7 +2469,7 @@ mod tests {
         let pattern = Pattern::WithDefault {
             pattern: Box::new(Pattern::Identifier("count".to_string())),
             default: Box::new(Expr::new(
-                ExprKind::Literal(Literal::Integer(0)),
+                ExprKind::Literal(Literal::Integer(0, None)),
                 Span::new(0, 1),
             )),
         };
@@ -2437,7 +2480,7 @@ mod tests {
                 _ => panic!("Expected identifier pattern"),
             }
             match default.kind {
-                ExprKind::Literal(Literal::Integer(val)) => assert_eq!(val, 0),
+                ExprKind::Literal(Literal::Integer(val, None)) => assert_eq!(val, 0),
                 _ => panic!("Expected integer literal"),
             }
         }
@@ -2517,7 +2560,7 @@ mod tests {
 
         // Test Literal variants
         let literals = vec![
-            ExprKind::Literal(Literal::Integer(42)),
+            ExprKind::Literal(Literal::Integer(42, None)),
             ExprKind::Literal(Literal::Float(3.15)),
             ExprKind::Literal(Literal::Bool(true)),
             ExprKind::Literal(Literal::Bool(false)),
@@ -2538,12 +2581,12 @@ mod tests {
 
         // Test Binary operations
         let left = Box::new(Expr {
-            kind: ExprKind::Literal(Literal::Integer(1)),
+            kind: ExprKind::Literal(Literal::Integer(1, None)),
             span: Span::new(0, 1),
             attributes: vec![],
         });
         let right = Box::new(Expr {
-            kind: ExprKind::Literal(Literal::Integer(2)),
+            kind: ExprKind::Literal(Literal::Integer(2, None)),
             span: Span::new(2, 3),
             attributes: vec![],
         });
@@ -2587,7 +2630,7 @@ mod tests {
 
         // Test Unary operations
         let operand = Box::new(Expr {
-            kind: ExprKind::Literal(Literal::Integer(42)),
+            kind: ExprKind::Literal(Literal::Integer(42, None)),
             span: Span::new(1, 3),
             attributes: vec![],
         });
@@ -2719,7 +2762,7 @@ mod tests {
 
         let patterns = vec![
             Pattern::Wildcard,
-            Pattern::Literal(Literal::Integer(42)),
+            Pattern::Literal(Literal::Integer(42, None)),
             Pattern::Literal(Literal::String("test".to_string())),
             Pattern::Literal(Literal::Bool(true)),
             Pattern::Identifier("variable".to_string()),
@@ -2788,7 +2831,7 @@ mod tests {
             }),
             args: vec![
                 Expr {
-                    kind: ExprKind::Literal(Literal::Integer(42)),
+                    kind: ExprKind::Literal(Literal::Integer(42, None)),
                     span: Span::new(11, 13),
                     attributes: vec![],
                 },
@@ -2818,7 +2861,7 @@ mod tests {
                         attributes: vec![],
                     }),
                     right: Box::new(Expr {
-                        kind: ExprKind::Literal(Literal::Integer(0)),
+                        kind: ExprKind::Literal(Literal::Integer(0, None)),
                         span: Span::new(7, 8),
                         attributes: vec![],
                     }),
@@ -2880,7 +2923,7 @@ mod tests {
 
         // Test expression with attributes
         let expr_with_attrs = Expr::with_attributes(
-            ExprKind::Literal(Literal::Integer(42)),
+            ExprKind::Literal(Literal::Integer(42, None)),
             Span::new(0, 2),
             vec![Attribute {
                 name: "test_attr".to_string(),
@@ -2914,12 +2957,12 @@ mod tests {
         // Test collections
         let list_expr = ExprKind::List(vec![
             Expr {
-                kind: ExprKind::Literal(Literal::Integer(1)),
+                kind: ExprKind::Literal(Literal::Integer(1, None)),
                 span: Span::new(1, 2),
                 attributes: vec![],
             },
             Expr {
-                kind: ExprKind::Literal(Literal::Integer(2)),
+                kind: ExprKind::Literal(Literal::Integer(2, None)),
                 span: Span::new(4, 5),
                 attributes: vec![],
             },
@@ -2932,7 +2975,7 @@ mod tests {
                 attributes: vec![],
             },
             Expr {
-                kind: ExprKind::Literal(Literal::Integer(42)),
+                kind: ExprKind::Literal(Literal::Integer(42, None)),
                 span: Span::new(10, 12),
                 attributes: vec![],
             },
@@ -2946,7 +2989,7 @@ mod tests {
                 attributes: vec![],
             }),
             value: Box::new(Expr {
-                kind: ExprKind::Literal(Literal::Integer(42)),
+                kind: ExprKind::Literal(Literal::Integer(42, None)),
                 span: Span::new(4, 6),
                 attributes: vec![],
             }),

@@ -1437,7 +1437,7 @@ mod tests {
     // Helper function to create a test expression
     fn create_test_expr() -> Expr {
         Expr {
-            kind: ExprKind::Literal(ruchy::frontend::ast::Literal::Integer(42)),
+            kind: ExprKind::Literal(ruchy::frontend::ast::Literal::Integer(42, None)),
             span: ruchy::frontend::ast::Span::default(),
             attributes: Vec::new(),
         }

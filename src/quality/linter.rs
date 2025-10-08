@@ -699,7 +699,7 @@ mod tests {
     }
     fn create_test_expr_literal_int(value: i64) -> Expr {
         Expr::new(
-            ExprKind::Literal(Literal::Integer(value)),
+            ExprKind::Literal(Literal::Integer(value, None)),
             create_test_span(),
         )
     }
@@ -1812,7 +1812,7 @@ mod sprint_44_tests {
                 name: "inner".to_string(),
                 type_annotation: None,
                 value: Box::new(Expr::new(
-                    ExprKind::Literal(Literal::Integer(1)),
+                    ExprKind::Literal(Literal::Integer(1, None)),
                     Span { start: 0, end: 1 },
                 )),
                 body: Box::new(Expr::new(
@@ -1829,7 +1829,7 @@ mod sprint_44_tests {
                 name: "outer".to_string(),
                 type_annotation: None,
                 value: Box::new(Expr::new(
-                    ExprKind::Literal(Literal::Integer(2)),
+                    ExprKind::Literal(Literal::Integer(2, None)),
                     Span { start: 0, end: 1 },
                 )),
                 body: Box::new(inner_let),
@@ -1905,7 +1905,7 @@ mod sprint_44_tests {
         // Test single expression block
         let single_block = Expr::new(
             ExprKind::Block(vec![Expr::new(
-                ExprKind::Literal(Literal::Integer(42)),
+                ExprKind::Literal(Literal::Integer(42, None)),
                 Span { start: 0, end: 1 },
             )]),
             Span { start: 0, end: 1 },
@@ -1924,7 +1924,7 @@ mod sprint_44_tests {
                 name: "x".to_string(),
                 type_annotation: None,
                 value: Box::new(Expr::new(
-                    ExprKind::Literal(Literal::Integer(3)),
+                    ExprKind::Literal(Literal::Integer(3, None)),
                     Span { start: 0, end: 1 },
                 )),
                 body: Box::new(Expr::new(
@@ -1941,7 +1941,7 @@ mod sprint_44_tests {
                 name: "x".to_string(),
                 type_annotation: None,
                 value: Box::new(Expr::new(
-                    ExprKind::Literal(Literal::Integer(2)),
+                    ExprKind::Literal(Literal::Integer(2, None)),
                     Span { start: 0, end: 1 },
                 )),
                 body: Box::new(level3),
@@ -1955,7 +1955,7 @@ mod sprint_44_tests {
                 name: "x".to_string(),
                 type_annotation: None,
                 value: Box::new(Expr::new(
-                    ExprKind::Literal(Literal::Integer(1)),
+                    ExprKind::Literal(Literal::Integer(1, None)),
                     Span { start: 0, end: 1 },
                 )),
                 body: Box::new(level2),
@@ -1982,7 +1982,7 @@ mod sprint_44_tests {
                     Span { start: 0, end: 1 },
                 )),
                 right: Box::new(Expr::new(
-                    ExprKind::Literal(Literal::Integer(10)),
+                    ExprKind::Literal(Literal::Integer(10, None)),
                     Span { start: 0, end: 1 },
                 )),
             },
@@ -2002,7 +2002,7 @@ mod sprint_44_tests {
         let match_expr = Expr::new(
             ExprKind::Match {
                 expr: Box::new(Expr::new(
-                    ExprKind::Literal(Literal::Integer(42)),
+                    ExprKind::Literal(Literal::Integer(42, None)),
                     Span { start: 0, end: 1 },
                 )),
                 arms: vec![match_arm],
@@ -2183,7 +2183,7 @@ mod sprint_44_tests {
             pattern: Pattern::Err(Box::new(Pattern::Identifier("error".to_string()))),
             guard: None,
             body: Box::new(Expr::new(
-                ExprKind::Literal(Literal::Integer(0)),
+                ExprKind::Literal(Literal::Integer(0, None)),
                 Span { start: 0, end: 1 },
             )),
             span: Span { start: 0, end: 1 },
@@ -2326,7 +2326,7 @@ mod sprint_44_tests {
 
         // Create deeply nested if-else chain
         let mut nested_expr = Expr::new(
-            ExprKind::Literal(Literal::Integer(0)),
+            ExprKind::Literal(Literal::Integer(0, None)),
             Span { start: 0, end: 1 },
         );
 
@@ -2338,7 +2338,7 @@ mod sprint_44_tests {
                         Span { start: 0, end: 1 },
                     )),
                     then_branch: Box::new(Expr::new(
-                        ExprKind::Literal(Literal::Integer(i)),
+                        ExprKind::Literal(Literal::Integer(i, None)),
                         Span { start: 0, end: 1 },
                     )),
                     else_branch: Some(Box::new(nested_expr)),
@@ -2484,7 +2484,7 @@ mod sprint_44_tests {
 
         // Create a moderately complex expression tree
         let mut complex_expr = Expr::new(
-            ExprKind::Literal(Literal::Integer(1)),
+            ExprKind::Literal(Literal::Integer(1, None)),
             Span { start: 0, end: 1 },
         );
 
@@ -2494,7 +2494,7 @@ mod sprint_44_tests {
                     op: BinaryOp::Add,
                     left: Box::new(complex_expr),
                     right: Box::new(Expr::new(
-                        ExprKind::Literal(Literal::Integer(i)),
+                        ExprKind::Literal(Literal::Integer(i, None)),
                         Span { start: 0, end: 1 },
                     )),
                 },
@@ -2532,7 +2532,7 @@ mod sprint_44_tests {
                 name: "x".to_string(),
                 type_annotation: None,
                 value: Box::new(Expr::new(
-                    ExprKind::Literal(Literal::Integer(42)),
+                    ExprKind::Literal(Literal::Integer(42, None)),
                     Span { start: 88, end: 98 },
                 )),
                 body: Box::new(Expr::new(
@@ -2594,7 +2594,7 @@ mod sprint_44_tests {
                 name: "x".to_string(),
                 type_annotation: None,
                 value: Box::new(Expr::new(
-                    ExprKind::Literal(Literal::Integer(1)),
+                    ExprKind::Literal(Literal::Integer(1, None)),
                     Span { start: 0, end: 1 },
                 )),
                 body: Box::new(Expr::new(
@@ -2611,7 +2611,7 @@ mod sprint_44_tests {
                 name: "y".to_string(),
                 type_annotation: None,
                 value: Box::new(Expr::new(
-                    ExprKind::Literal(Literal::Integer(2)),
+                    ExprKind::Literal(Literal::Integer(2, None)),
                     Span { start: 0, end: 1 },
                 )),
                 body: Box::new(Expr::new(

@@ -222,7 +222,7 @@ mod tests {
     #[test]
     fn test_complexity_rule_simple() {
         let rule = ComplexityRule::default();
-        let expr = make_test_expr(ExprKind::Literal(Literal::Integer(42)));
+        let expr = make_test_expr(ExprKind::Literal(Literal::Integer(42, None)));
         let violations = rule.check_expression(&expr);
         assert!(violations.is_empty());
     }
@@ -237,7 +237,7 @@ mod tests {
                                                          // Create a simple if statement
         let if_expr = make_test_expr(ExprKind::If {
             condition: Box::new(make_test_expr(ExprKind::Literal(Literal::Bool(true)))),
-            then_branch: Box::new(make_test_expr(ExprKind::Literal(Literal::Integer(1)))),
+            then_branch: Box::new(make_test_expr(ExprKind::Literal(Literal::Integer(1, None)))),
             else_branch: None,
         });
         let violations = rule.check_expression(&if_expr);
@@ -249,14 +249,14 @@ mod tests {
         // Create nested if statements to exceed complexity of 1
         let inner_if = make_test_expr(ExprKind::If {
             condition: Box::new(make_test_expr(ExprKind::Literal(Literal::Bool(true)))),
-            then_branch: Box::new(make_test_expr(ExprKind::Literal(Literal::Integer(1)))),
+            then_branch: Box::new(make_test_expr(ExprKind::Literal(Literal::Integer(1, None)))),
             else_branch: None,
         });
         let outer_if = make_test_expr(ExprKind::If {
             condition: Box::new(make_test_expr(ExprKind::Literal(Literal::Bool(false)))),
             then_branch: Box::new(inner_if),
             else_branch: Some(Box::new(make_test_expr(ExprKind::Literal(
-                Literal::Integer(2),
+                Literal::Integer(2, None),
             )))),
         });
         let violations = rule.check_expression(&outer_if);
@@ -269,7 +269,9 @@ mod tests {
         let while_expr = make_test_expr(ExprKind::While {
             label: None,
             condition: Box::new(make_test_expr(ExprKind::Literal(Literal::Bool(true)))),
-            body: Box::new(make_test_expr(ExprKind::Literal(Literal::Integer(42)))),
+            body: Box::new(make_test_expr(ExprKind::Literal(Literal::Integer(
+                42, None,
+            )))),
         });
         let violations = rule.check_expression(&while_expr);
         assert!(violations.is_empty()); // Complexity is 1, under limit
@@ -282,11 +284,15 @@ mod tests {
             var: "i".to_string(),
             pattern: None,
             iter: Box::new(make_test_expr(ExprKind::Range {
-                start: Box::new(make_test_expr(ExprKind::Literal(Literal::Integer(0)))),
-                end: Box::new(make_test_expr(ExprKind::Literal(Literal::Integer(10)))),
+                start: Box::new(make_test_expr(ExprKind::Literal(Literal::Integer(0, None)))),
+                end: Box::new(make_test_expr(ExprKind::Literal(Literal::Integer(
+                    10, None,
+                )))),
                 inclusive: false,
             })),
-            body: Box::new(make_test_expr(ExprKind::Literal(Literal::Integer(42)))),
+            body: Box::new(make_test_expr(ExprKind::Literal(Literal::Integer(
+                42, None,
+            )))),
         });
         let violations = rule.check_expression(&for_expr);
         assert!(violations.is_empty()); // Complexity is 1, under limit
@@ -295,9 +301,9 @@ mod tests {
     fn test_complexity_rule_binary_operation() {
         let rule = ComplexityRule { max_complexity: 5 };
         let binary_expr = make_test_expr(ExprKind::Binary {
-            left: Box::new(make_test_expr(ExprKind::Literal(Literal::Integer(1)))),
+            left: Box::new(make_test_expr(ExprKind::Literal(Literal::Integer(1, None)))),
             op: BinaryOp::Add,
-            right: Box::new(make_test_expr(ExprKind::Literal(Literal::Integer(2)))),
+            right: Box::new(make_test_expr(ExprKind::Literal(Literal::Integer(2, None)))),
         });
         let violations = rule.check_expression(&binary_expr);
         assert!(violations.is_empty()); // Binary operations don't add complexity
@@ -349,7 +355,7 @@ mod tests {
     fn test_linter_no_violations() {
         let linter = RuchyLinter::new();
         // Create simple expression with no violations
-        let expr = make_test_expr(ExprKind::Literal(Literal::Integer(42)));
+        let expr = make_test_expr(ExprKind::Literal(Literal::Integer(42, None)));
         let violations = linter.lint(&expr);
         assert!(violations.is_empty());
     }
@@ -360,20 +366,26 @@ mod tests {
         use crate::frontend::ast::{MatchArm, Pattern};
         let arms = vec![
             MatchArm {
-                pattern: Pattern::Literal(Literal::Integer(1)),
+                pattern: Pattern::Literal(Literal::Integer(1, None)),
                 guard: None,
-                body: Box::new(make_test_expr(ExprKind::Literal(Literal::Integer(10)))),
+                body: Box::new(make_test_expr(ExprKind::Literal(Literal::Integer(
+                    10, None,
+                )))),
                 span: Span::new(0, 10),
             },
             MatchArm {
-                pattern: Pattern::Literal(Literal::Integer(2)),
+                pattern: Pattern::Literal(Literal::Integer(2, None)),
                 guard: None,
-                body: Box::new(make_test_expr(ExprKind::Literal(Literal::Integer(20)))),
+                body: Box::new(make_test_expr(ExprKind::Literal(Literal::Integer(
+                    20, None,
+                )))),
                 span: Span::new(0, 10),
             },
         ];
         let match_expr = make_test_expr(ExprKind::Match {
-            expr: Box::new(make_test_expr(ExprKind::Literal(Literal::Integer(42)))),
+            expr: Box::new(make_test_expr(ExprKind::Literal(Literal::Integer(
+                42, None,
+            )))),
             arms,
         });
         let violations = rule.check_expression(&match_expr);
@@ -383,7 +395,7 @@ mod tests {
     fn test_complexity_rule_with_custom_max() {
         let rule = ComplexityRule { max_complexity: 3 };
         // Simple literal should not trigger
-        let expr = make_test_expr(ExprKind::Literal(Literal::Integer(42)));
+        let expr = make_test_expr(ExprKind::Literal(Literal::Integer(42, None)));
         let violations = rule.check_expression(&expr);
         assert!(violations.is_empty());
     }
@@ -400,7 +412,9 @@ mod tests {
         let rule = NoDebugPrintRule;
         // Test with non-identifier function (e.g., lambda call)
         let expr = make_test_expr(ExprKind::Call {
-            func: Box::new(make_test_expr(ExprKind::Literal(Literal::Integer(42)))),
+            func: Box::new(make_test_expr(ExprKind::Literal(Literal::Integer(
+                42, None,
+            )))),
             args: vec![],
         });
         let violations = rule.check_expression(&expr);
@@ -429,9 +443,9 @@ mod tests {
         let rule = ComplexityRule { max_complexity: 5 };
         let if_expr = make_test_expr(ExprKind::If {
             condition: Box::new(make_test_expr(ExprKind::Literal(Literal::Bool(true)))),
-            then_branch: Box::new(make_test_expr(ExprKind::Literal(Literal::Integer(1)))),
+            then_branch: Box::new(make_test_expr(ExprKind::Literal(Literal::Integer(1, None)))),
             else_branch: Some(Box::new(make_test_expr(ExprKind::Literal(
-                Literal::Integer(2),
+                Literal::Integer(2, None),
             )))),
         });
         let violations = rule.check_expression(&if_expr);

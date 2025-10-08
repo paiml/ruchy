@@ -191,7 +191,7 @@ mod tests {
     #[test]
     fn test_macro_registry_register_from_ast() {
         let registry = MacroRegistry::new();
-        let test_expr = create_test_expr(ExprKind::Literal(Literal::Integer(42)));
+        let test_expr = create_test_expr(ExprKind::Literal(Literal::Integer(42, None)));
         let result = registry.register_from_ast(&test_expr);
         assert!(result.is_ok());
     }
@@ -213,11 +213,11 @@ mod tests {
     #[test]
     fn test_expand_non_macro_expression() {
         let expander = MacroExpander::new();
-        let test_expr = create_test_expr(ExprKind::Literal(Literal::Integer(42)));
+        let test_expr = create_test_expr(ExprKind::Literal(Literal::Integer(42, None)));
         let result = expander.expand(&test_expr).unwrap();
 
         match result.kind {
-            ExprKind::Literal(Literal::Integer(42)) => {}
+            ExprKind::Literal(Literal::Integer(42, None)) => {}
             _ => panic!("Expected integer literal"),
         }
     }
@@ -249,7 +249,7 @@ mod tests {
 
         let result = expander.expand(&macro_expr).unwrap();
         match result.kind {
-            ExprKind::Literal(Literal::Integer(42)) => {}
+            ExprKind::Literal(Literal::Integer(42, None)) => {}
             _ => panic!("Expected integer literal"),
         }
     }
@@ -292,7 +292,7 @@ mod tests {
     #[test]
     fn test_builtin_macro_names() {
         let expander = MacroExpander::new();
-        let test_expr = create_test_expr(ExprKind::Literal(Literal::Integer(1)));
+        let test_expr = create_test_expr(ExprKind::Literal(Literal::Integer(1, None)));
 
         // Test all builtin macros
         let builtins = ["stringify", "line", "file"];

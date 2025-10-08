@@ -237,7 +237,7 @@ mod tests {
     use crate::frontend::ast::{ExprKind, Literal, Span};
     fn make_test_expr(value: i64) -> Rc<Expr> {
         Rc::new(Expr {
-            kind: ExprKind::Literal(Literal::Integer(value)),
+            kind: ExprKind::Literal(Literal::Integer(value, None)),
             span: Span { start: 0, end: 0 },
             attributes: Vec::new(),
         })
@@ -340,7 +340,7 @@ mod mutation_tests {
 
         let cache = BytecodeCache::new();
         let expr = Rc::new(Expr {
-            kind: ExprKind::Literal(Literal::Integer(42)),
+            kind: ExprKind::Literal(Literal::Integer(42, None)),
             span: Span { start: 0, end: 0 },
             attributes: Vec::new(),
         });
@@ -383,7 +383,7 @@ mod mutation_tests {
 
         let cache = BytecodeCache::new();
         let expr = Rc::new(Expr {
-            kind: ExprKind::Literal(Literal::Integer(42)),
+            kind: ExprKind::Literal(Literal::Integer(42, None)),
             span: Span { start: 0, end: 0 },
             attributes: Vec::new(),
         });
@@ -408,7 +408,7 @@ mod mutation_tests {
 
         let cache = ExpressionCache::new();
         let expr = Rc::new(Expr {
-            kind: ExprKind::Literal(Literal::Integer(42)),
+            kind: ExprKind::Literal(Literal::Integer(42, None)),
             span: Span { start: 0, end: 0 },
             attributes: Vec::new(),
         });

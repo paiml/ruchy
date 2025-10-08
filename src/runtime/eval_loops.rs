@@ -267,7 +267,10 @@ mod tests {
     use std::rc::Rc;
 
     fn make_literal_expr(val: i64) -> Expr {
-        Expr::new(ExprKind::Literal(Literal::Integer(val)), Default::default())
+        Expr::new(
+            ExprKind::Literal(Literal::Integer(val, None)),
+            Default::default(),
+        )
     }
 
     #[test]
@@ -391,7 +394,7 @@ mod tests {
         let mut condition_checks = 0;
 
         let result = eval_while_loop(&condition, &body, |expr| {
-            if matches!(expr.kind, ExprKind::Literal(Literal::Integer(1))) {
+            if matches!(expr.kind, ExprKind::Literal(Literal::Integer(1, None))) {
                 // This is the condition
                 condition_checks += 1;
                 if condition_checks > 3 {

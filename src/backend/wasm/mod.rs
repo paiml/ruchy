@@ -1600,7 +1600,10 @@ mod tests {
         let emitter = WasmEmitter::new();
 
         // Simple integer shouldn't need memory
-        let expr = Expr::new(ExprKind::Literal(Literal::Integer(42)), Default::default());
+        let expr = Expr::new(
+            ExprKind::Literal(Literal::Integer(42, None)),
+            Default::default(),
+        );
         assert!(!emitter.needs_memory(&expr));
 
         // List should need memory
@@ -1619,7 +1622,7 @@ mod tests {
                 type_params: vec![],
                 params: vec![],
                 body: Box::new(Expr::new(
-                    ExprKind::Literal(Literal::Integer(42)),
+                    ExprKind::Literal(Literal::Integer(42, None)),
                     Default::default(),
                 )),
                 return_type: None,

@@ -1489,7 +1489,7 @@ mod tests {
     // Helper function to create test expressions
     fn create_test_literal_expr(value: i64) -> Expr {
         Expr {
-            kind: ExprKind::Literal(Literal::Integer(value)),
+            kind: ExprKind::Literal(Literal::Integer(value, None)),
             span: Span::default(),
             attributes: vec![],
         }
@@ -1927,7 +1927,7 @@ mod tests {
         assert!(result.is_ok() || result.is_err());
 
         if let Ok(resolved) = result {
-            if let ExprKind::Literal(Literal::Integer(val)) = resolved.kind {
+            if let ExprKind::Literal(Literal::Integer(val, None)) = resolved.kind {
                 assert_eq!(val, 42);
             } else {
                 // Allow for different resolution behavior

@@ -499,7 +499,10 @@ mod tests {
             Value::Integer(30),
         ]));
 
-        let index_expr = Expr::new(ExprKind::Literal(Literal::Integer(1)), Span::new(0, 1));
+        let index_expr = Expr::new(
+            ExprKind::Literal(Literal::Integer(1, None)),
+            Span::new(0, 1),
+        );
         let mut eval_count = 0;
         let result = eval_index_access(&arr, &index_expr, |_| {
             eval_count += 1;
@@ -521,8 +524,14 @@ mod tests {
             Value::Integer(5),
         ]));
 
-        let start_expr = Expr::new(ExprKind::Literal(Literal::Integer(1)), Span::new(0, 1));
-        let end_expr = Expr::new(ExprKind::Literal(Literal::Integer(4)), Span::new(0, 1));
+        let start_expr = Expr::new(
+            ExprKind::Literal(Literal::Integer(1, None)),
+            Span::new(0, 1),
+        );
+        let end_expr = Expr::new(
+            ExprKind::Literal(Literal::Integer(4, None)),
+            Span::new(0, 1),
+        );
 
         let mut call_count = 0;
         let result = eval_slice_access(&arr, Some(&start_expr), Some(&end_expr), |_| {

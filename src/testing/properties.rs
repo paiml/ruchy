@@ -129,7 +129,7 @@ pub fn prop_parse_print_roundtrip(expr: &Expr) -> Result<(), TestCaseError> {
         // Check that the Rust code contains expected elements based on expr type
         let code_str = rust_code.to_string();
         match &expr.kind {
-            ExprKind::Literal(Literal::Integer(n)) => {
+            ExprKind::Literal(Literal::Integer(n, _)) => {
                 // Integer literals are transpiled with type suffixes (e.g., "42 i32")
                 prop_assert!(
                     code_str.contains(&n.to_string()),
@@ -268,7 +268,7 @@ fn is_well_typed(expr: &Expr) -> bool {
 fn is_numeric(expr: &Expr) -> bool {
     matches!(
         &expr.kind,
-        ExprKind::Literal(Literal::Integer(_) | Literal::Float(_))
+        ExprKind::Literal(Literal::Integer(_, _) | Literal::Float(_))
     )
 }
 fn is_boolean(expr: &Expr) -> bool {
@@ -396,7 +396,10 @@ mod tests {
     #[test]
     fn test_prop_transpilation_unit() {
         let test_exprs = vec![
-            Expr::new(ExprKind::Literal(Literal::Integer(42)), Default::default()),
+            Expr::new(
+                ExprKind::Literal(Literal::Integer(42, None)),
+                Default::default(),
+            ),
             Expr::new(ExprKind::Literal(Literal::Bool(true)), Default::default()),
             Expr::new(ExprKind::Identifier("x".to_string()), Default::default()),
         ];
@@ -413,7 +416,7 @@ mod tests {
             vec![],                                      // Empty parts
             vec![StringPart::Text("hello".to_string())], // Text only
             vec![StringPart::Expr(Box::new(Expr::new(
-                ExprKind::Literal(Literal::Integer(42)),
+                ExprKind::Literal(Literal::Integer(42, None)),
                 Default::default(),
             )))], // Expression only
         ];
@@ -441,7 +444,10 @@ mod tests {
     #[test]
     fn test_is_well_typed_function() {
         // Test numeric literals
-        let int_expr = Expr::new(ExprKind::Literal(Literal::Integer(42)), Default::default());
+        let int_expr = Expr::new(
+            ExprKind::Literal(Literal::Integer(42, None)),
+            Default::default(),
+        );
         assert!(is_well_typed(&int_expr));
 
         let float_expr = Expr::new(ExprKind::Literal(Literal::Float(3.14)), Default::default());
@@ -458,7 +464,10 @@ mod tests {
 
     #[test]
     fn test_is_numeric_function() {
-        let int_expr = Expr::new(ExprKind::Literal(Literal::Integer(42)), Default::default());
+        let int_expr = Expr::new(
+            ExprKind::Literal(Literal::Integer(42, None)),
+            Default::default(),
+        );
         assert!(is_numeric(&int_expr));
 
         let float_expr = Expr::new(ExprKind::Literal(Literal::Float(3.14)), Default::default());
@@ -483,7 +492,10 @@ mod tests {
             Expr::new(ExprKind::Literal(Literal::Bool(false)), Default::default());
         assert!(is_boolean(&bool_false_expr));
 
-        let int_expr = Expr::new(ExprKind::Literal(Literal::Integer(42)), Default::default());
+        let int_expr = Expr::new(
+            ExprKind::Literal(Literal::Integer(42, None)),
+            Default::default(),
+        );
         assert!(!is_boolean(&int_expr));
 
         let string_expr = Expr::new(
@@ -495,8 +507,14 @@ mod tests {
 
     #[test]
     fn test_well_typed_binary_expressions() {
-        let left = Expr::new(ExprKind::Literal(Literal::Integer(1)), Default::default());
-        let right = Expr::new(ExprKind::Literal(Literal::Integer(2)), Default::default());
+        let left = Expr::new(
+            ExprKind::Literal(Literal::Integer(1, None)),
+            Default::default(),
+        );
+        let right = Expr::new(
+            ExprKind::Literal(Literal::Integer(2, None)),
+            Default::default(),
+        );
 
         // Test arithmetic operations
         let add_expr = Expr::new(
@@ -526,7 +544,10 @@ mod tests {
     #[test]
     fn test_well_typed_unary_expressions() {
         // Test negation on numeric
-        let int_expr = Expr::new(ExprKind::Literal(Literal::Integer(42)), Default::default());
+        let int_expr = Expr::new(
+            ExprKind::Literal(Literal::Integer(42, None)),
+            Default::default(),
+        );
         let neg_expr = Expr::new(
             ExprKind::Unary {
                 operand: Box::new(int_expr),
@@ -551,8 +572,14 @@ mod tests {
     #[test]
     fn test_well_typed_if_expressions() {
         let condition = Expr::new(ExprKind::Literal(Literal::Bool(true)), Default::default());
-        let then_branch = Expr::new(ExprKind::Literal(Literal::Integer(1)), Default::default());
-        let else_branch = Expr::new(ExprKind::Literal(Literal::Integer(2)), Default::default());
+        let then_branch = Expr::new(
+            ExprKind::Literal(Literal::Integer(1, None)),
+            Default::default(),
+        );
+        let else_branch = Expr::new(
+            ExprKind::Literal(Literal::Integer(2, None)),
+            Default::default(),
+        );
 
         let if_expr = Expr::new(
             ExprKind::If {
@@ -569,7 +596,10 @@ mod tests {
     fn test_ill_typed_expressions() {
         // Test adding boolean to integer (ill-typed)
         let bool_expr = Expr::new(ExprKind::Literal(Literal::Bool(true)), Default::default());
-        let int_expr = Expr::new(ExprKind::Literal(Literal::Integer(42)), Default::default());
+        let int_expr = Expr::new(
+            ExprKind::Literal(Literal::Integer(42, None)),
+            Default::default(),
+        );
 
         let bad_add = Expr::new(
             ExprKind::Binary {
@@ -610,12 +640,12 @@ mod tests {
                     left: Box::new(Expr::new(
                         ExprKind::Binary {
                             left: Box::new(Expr::new(
-                                ExprKind::Literal(Literal::Integer(1)),
+                                ExprKind::Literal(Literal::Integer(1, None)),
                                 Default::default(),
                             )),
                             op: BinaryOp::Add,
                             right: Box::new(Expr::new(
-                                ExprKind::Literal(Literal::Integer(2)),
+                                ExprKind::Literal(Literal::Integer(2, None)),
                                 Default::default(),
                             )),
                         },
@@ -623,7 +653,7 @@ mod tests {
                     )),
                     op: BinaryOp::Multiply,
                     right: Box::new(Expr::new(
-                        ExprKind::Literal(Literal::Integer(3)),
+                        ExprKind::Literal(Literal::Integer(3, None)),
                         Default::default(),
                     )),
                 },
@@ -671,7 +701,10 @@ mod tests {
         assert!(prop_parser_never_panics("42").is_ok());
         assert!(prop_recovery_parser_always_produces_ast("42").is_ok());
 
-        let simple_expr = Expr::new(ExprKind::Literal(Literal::Integer(42)), Default::default());
+        let simple_expr = Expr::new(
+            ExprKind::Literal(Literal::Integer(42, None)),
+            Default::default(),
+        );
         assert!(prop_transpilation_preserves_structure(&simple_expr).is_ok());
 
         let simple_parts = vec![StringPart::Text("hello".to_string())];

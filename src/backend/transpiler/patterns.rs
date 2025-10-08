@@ -89,6 +89,21 @@ impl Transpiler {
                 }
                 Ok(tokens)
             }
+            Pattern::TupleVariant { path, patterns } => {
+                // For enum tuple variants like Message::Text(n) or Color::RGB(r, g, b)
+                let mut path_tokens = TokenStream::new();
+                for (i, part) in path.iter().enumerate() {
+                    if i > 0 {
+                        path_tokens.extend(quote! { :: });
+                    }
+                    let ident = format_ident!("{}", part);
+                    path_tokens.extend(quote! { #ident });
+                }
+                let pattern_tokens: Result<Vec<_>> =
+                    patterns.iter().map(|p| self.transpile_pattern(p)).collect();
+                let pattern_tokens = pattern_tokens?;
+                Ok(quote! { #path_tokens(#(#pattern_tokens),*) })
+            }
             Pattern::Tuple(patterns) => {
                 let pattern_tokens: Result<Vec<_>> =
                     patterns.iter().map(|p| self.transpile_pattern(p)).collect();
@@ -300,7 +315,7 @@ mod tests {
     #[test]
     fn test_transpile_literal_pattern() {
         let transpiler = Transpiler::new();
-        let pattern = Pattern::Literal(Literal::Integer(42));
+        let pattern = Pattern::Literal(Literal::Integer(42, None));
         let result = transpiler.transpile_pattern(&pattern).unwrap();
         // The output should contain the integer value
         let output = result.to_string();
@@ -437,8 +452,8 @@ mod tests {
     fn test_transpile_range_pattern_exclusive() {
         let transpiler = Transpiler::new();
         let pattern = Pattern::Range {
-            start: Box::new(Pattern::Literal(Literal::Integer(1))),
-            end: Box::new(Pattern::Literal(Literal::Integer(10))),
+            start: Box::new(Pattern::Literal(Literal::Integer(1, None))),
+            end: Box::new(Pattern::Literal(Literal::Integer(10, None))),
             inclusive: false,
         };
         let result = transpiler.transpile_pattern(&pattern).unwrap();
@@ -453,8 +468,8 @@ mod tests {
     fn test_transpile_range_pattern_inclusive() {
         let transpiler = Transpiler::new();
         let pattern = Pattern::Range {
-            start: Box::new(Pattern::Literal(Literal::Integer(1))),
-            end: Box::new(Pattern::Literal(Literal::Integer(10))),
+            start: Box::new(Pattern::Literal(Literal::Integer(1, None))),
+            end: Box::new(Pattern::Literal(Literal::Integer(10, None))),
             inclusive: true,
         };
         let result = transpiler.transpile_pattern(&pattern).unwrap();
@@ -468,9 +483,9 @@ mod tests {
     fn test_transpile_or_pattern() {
         let transpiler = Transpiler::new();
         let pattern = Pattern::Or(vec![
-            Pattern::Literal(Literal::Integer(1)),
-            Pattern::Literal(Literal::Integer(2)),
-            Pattern::Literal(Literal::Integer(3)),
+            Pattern::Literal(Literal::Integer(1, None)),
+            Pattern::Literal(Literal::Integer(2, None)),
+            Pattern::Literal(Literal::Integer(3, None)),
         ]);
         let result = transpiler.transpile_pattern(&pattern).unwrap();
         let output = result.to_string();
@@ -486,7 +501,7 @@ mod tests {
         let pattern = Pattern::WithDefault {
             pattern: Box::new(Pattern::Identifier("x".to_string())),
             default: Box::new(Expr::new(
-                ExprKind::Literal(Literal::Integer(0)),
+                ExprKind::Literal(Literal::Integer(0, None)),
                 Span::new(0, 0),
             )),
         };
@@ -504,7 +519,7 @@ mod tests {
         let expr = Expr::new(ExprKind::Identifier("x".to_string()), Span::new(0, 0));
         let arms = vec![
             MatchArm {
-                pattern: Pattern::Literal(Literal::Integer(1)),
+                pattern: Pattern::Literal(Literal::Integer(1, None)),
                 guard: None,
                 body: Box::new(Expr::new(
                     ExprKind::Literal(Literal::String("one".to_string())),
@@ -544,7 +559,7 @@ mod tests {
                         Span::new(0, 0),
                     )),
                     right: Box::new(Expr::new(
-                        ExprKind::Literal(Literal::Integer(0)),
+                        ExprKind::Literal(Literal::Integer(0, None)),
                         Span::new(0, 0),
                     )),
                 },

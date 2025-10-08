@@ -312,7 +312,7 @@ mod tests {
             message_type: "TestMessage".to_string(),
             params: vec![],
             body: Box::new(Expr::new(
-                ExprKind::Literal(Literal::Integer(42)),
+                ExprKind::Literal(Literal::Integer(42, None)),
                 Span::new(0, 2),
             )),
         };

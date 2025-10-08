@@ -59,7 +59,11 @@ fn validate_with_15_tools(example: &PathBuf) {
     ruchy_cmd().arg("wasm").arg(example).assert().success();
 
     // TOOL 11: ruchy provability - Formal verification
-    ruchy_cmd().arg("provability").arg(example).assert().success();
+    ruchy_cmd()
+        .arg("provability")
+        .arg(example)
+        .assert()
+        .success();
 
     // TOOL 12: ruchy property-tests - Property-based testing
     ruchy_cmd()
