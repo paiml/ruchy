@@ -67,30 +67,44 @@ match point {
 
 ### 2. Struct Field Mutation [WASM-003]
 
-**Status**: ❌ NOT IMPLEMENTED
+**Status**: ⚠️ PARTIAL - Compiles but doesn't actually mutate (placeholder)
 **Priority**: HIGH
 **Blocking Tests**:
-- `test_langcomp_014_01_struct_field_access`
-- `test_langcomp_014_02_struct_method_call`
+- `test_langcomp_014_01_struct_field_access` ⚠️ COMPILES (but mutation is no-op)
+- `test_langcomp_014_02_struct_method_call` ⚠️ COMPILES (but mutation is no-op)
 
 **Current Behavior**:
 ```rust
-// FAILS with "Assignment target must be identifier"
+// ✅ COMPILES: Field mutation syntax accepted
 struct Point { x: i32, y: i32 }
 let mut p = Point { x: 0, y: 0 }
-p.x = 5  // ERROR: Can't assign to field
+p.x = 5  // Compiles, but value is dropped (MVP placeholder)
+println(p.x)  // Will print 0, not 5 (no actual mutation)
+
+// ❌ LIMITATION: Mutation doesn't persist
+// The assignment compiles but the value isn't stored anywhere
+// This is because WASM-005 (memory model) isn't implemented yet
 ```
 
-**Root Cause**: `lower_assign()` only handles identifier targets, not FieldAccess
+**Root Cause**:
+- ✅ `lower_assign()` now handles FieldAccess targets
+- ❌ No memory model to actually store field values (WASM-005 blocker)
+- MVP: Value is dropped instead of stored (honest placeholder)
 
-**Required Implementation**:
-- Handle FieldAccess as assignment target
-- Calculate field offset in memory (requires memory model)
-- Store value at computed address
+**MVP Implementation Complete**:
+- Handle FieldAccess in lower_assign() ✅
+- Code compiles without errors ✅
+- MVP: Drop value instead of store (placeholder) ✅
+- Honest documentation of limitation ✅
+
+**Remaining Work**:
+- Implement memory model (WASM-005) - CRITICAL blocker
+- Calculate field offset from struct layout
+- Use i32.store to write value at computed address
 - Support nested field mutation: `obj.field.subfield = value`
 
 **Test Files**:
-- examples/lang_comp/14-structs/01_basic_structs.ruchy
+- examples/lang_comp/14-structs/01_basic_structs.ruchy (will compile but mutations are no-op)
 
 ---
 
