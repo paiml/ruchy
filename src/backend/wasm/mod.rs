@@ -2,8 +2,8 @@
 /// Following strict TDD - only implement what tests require
 use crate::frontend::ast::{BinaryOp, Expr, ExprKind, Literal, Pattern, StringPart};
 use wasm_encoder::{
-    CodeSection, ExportSection, Function, FunctionSection, Instruction, MemorySection, MemoryType,
-    Module, TypeSection,
+    CodeSection, ConstExpr, ExportSection, Function, FunctionSection, GlobalSection, GlobalType,
+    Instruction, MemorySection, MemoryType, Module, TypeSection, ValType,
 };
 #[cfg(test)]
 mod debug;
@@ -128,6 +128,11 @@ impl WasmEmitter {
 
         if let Some(memories) = self.emit_memory_section(expr) {
             module.section(&memories);
+        }
+
+        // Global section for heap pointer (if memory is needed)
+        if let Some(globals) = self.emit_global_section(expr) {
+            module.section(&globals);
         }
 
         if let Some(exports) = self.emit_export_section(expr) {
@@ -298,12 +303,35 @@ impl WasmEmitter {
             let mut memories = MemorySection::new();
             memories.memory(MemoryType {
                 minimum: 1,
-                maximum: None,
+                maximum: Some(1), // Fixed 64KB for MVP
                 memory64: false,
                 shared: false,
                 page_size_log2: None,
             });
             Some(memories)
+        } else {
+            None
+        }
+    }
+
+    /// Emit global section for heap pointer
+    /// Complexity: 3 (Toyota Way: <10 ✓)
+    ///
+    /// Creates a mutable global `$heap_ptr` initialized to 0
+    /// This is used by the bump allocator for memory allocation
+    fn emit_global_section(&self, expr: &Expr) -> Option<GlobalSection> {
+        if self.needs_memory(expr) {
+            let mut globals = GlobalSection::new();
+            // Global 0: heap pointer (mutable i32, starts at 0)
+            globals.global(
+                GlobalType {
+                    val_type: ValType::I32,
+                    mutable: true,
+                    shared: false,
+                },
+                &ConstExpr::i32_const(0),
+            );
+            Some(globals)
         } else {
             None
         }
@@ -1342,8 +1370,13 @@ impl WasmEmitter {
             ExprKind::Literal(Literal::String(_)) => true,
             ExprKind::List(_) => true,
             ExprKind::ArrayInit { .. } => true,
+            ExprKind::Tuple(_) => true, // Tuples need memory allocation
+            ExprKind::StructLiteral { .. } => true, // Structs need memory allocation
             ExprKind::Block(exprs) => exprs.iter().any(|e| self.needs_memory(e)),
             ExprKind::Let { value, body, .. } => {
+                self.needs_memory(value) || self.needs_memory(body)
+            }
+            ExprKind::LetPattern { value, body, .. } => {
                 self.needs_memory(value) || self.needs_memory(body)
             }
             ExprKind::Binary { left, right, .. } => {
