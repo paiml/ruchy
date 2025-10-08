@@ -146,48 +146,50 @@ let p = Point { x: 3, y: 4 }
 
 ### 3. Complex Assignment Targets [WASM-004]
 
-**Status**: ⚠️ PARTIAL - Compiles but doesn't actually mutate (placeholder)
-**Priority**: MEDIUM
-**Blocking Tests**: (To be identified)
+**Status**: ✅ COMPLETE - All assignment targets working! (v3.70.0 Phases 4-5)
+**Priority**: COMPLETE
+**Completed**: v3.70.0 (Phase 4: Fields, Phase 5: Arrays/Tuples)
 
 **Current Behavior**:
 ```rust
-// ✅ COMPILES: All assignment syntax accepted
-arr[0] = 10        // Array element assignment - compiles (value dropped)
-obj.field = 5      // Field assignment - compiles (value dropped)
-tup.0 = 3          // Tuple element assignment - compiles (value dropped)
+// ✅ WORKS: Array element assignment
+let mut arr = [10, 20, 30]
+arr[0] = 100
+println(arr[0])    // Prints: 100 (real mutation!)
 
-// ❌ LIMITATION: Mutations don't persist
-println(arr[0])    // Prints 0, not 10 (placeholder)
-println(obj.field) // Prints 0, not 5 (placeholder)
-println(tup.0)     // Prints 0, not 3 (placeholder)
+// ✅ WORKS: Field assignment
+struct Point { x: i32, y: i32 }
+let mut p = Point { x: 3, y: 4 }
+p.x = 10
+println(p.x)       // Prints: 10 (real mutation!)
+
+// ✅ WORKS: Tuple element assignment (using field syntax)
+let mut tup = (1, 2, 3)
+tup.0 = 100
+println(tup.0)     // Prints: 100 (real mutation!)
 ```
 
-**Root Cause**:
-- ✅ `lower_assign()` now handles IndexAccess and FieldAccess targets
-- ❌ No memory model to actually store values (WASM-005 blocker)
-- MVP: Values are dropped instead of stored (honest placeholder)
+**Implementation Complete (v3.70.0)**:
+- ✅ Field assignment (Phase 4): `obj.field = val` with i32.store
+- ✅ Array element assignment (Phase 5): `arr[i] = val` with dynamic offset
+- ✅ Tuple element assignment (Phase 5): `tup.0 = val` works via field access
+- ✅ Dynamic indexing: Runtime offset computation with i32.mul
+- ✅ Memory stores: All mutations persist in memory
 
-**MVP Implementation Complete**:
-- Handle IndexAccess as assignment target ✅
-- Handle FieldAccess as assignment target ✅
-- Added lower_index_access() for reading (returns placeholder) ✅
-- Code compiles without errors ✅
-- Honest documentation of limitation ✅
+**Limitations**:
+- ⚠️ Nested complex assignments `arr[i].field = val` require chained address calculation (future work)
 
-**Remaining Work**:
-- Implement memory model (WASM-005) - CRITICAL blocker
-- Compute lvalue address before storing
-- Use i32.store to write value at computed address
-- Support nested complex assignments: `arr[i].field = val`
+**Test Files**:
+- test_array_mutation.ruchy ✅ PASSING (204-byte WASM module)
+- test_struct_mutation.ruchy ✅ PASSING (146-byte WASM module)
 
 ---
 
 ### 4. Full Memory Model [WASM-005]
 
-**Status**: ✅ PHASES 1-3 COMPLETE - Tuples working with real memory! (v3.70.0)
-**Priority**: HIGH (Foundation complete, extend to structs/arrays)
-**Completed**: Bump allocator, tuple storage, tuple destructuring
+**Status**: ✅ PHASES 1-5 COMPLETE - Full memory model working! (v3.70.0)
+**Priority**: COMPLETE
+**Completed**: Bump allocator, tuples, structs, arrays with full mutation support
 
 **Current Behavior**:
 ```rust
@@ -196,32 +198,33 @@ let pair = (3, 4)           // Allocates 8 bytes, returns address 0
 let first = pair.0          // i32.load(0) = 3 (REAL value!)
 let (x, y) = pair           // Loads x=3, y=4 from memory
 
-// ⚠️ TODO: Structs still use placeholders
-let s = Point { x: 1, y: 2 } // Returns 0 (placeholder)
+// ✅ WORKING: Structs use real memory
+let s = Point { x: 1, y: 2 } // Allocates 8 bytes, returns address
+s.x = 10                    // i32.store with field offset
 
-// ⚠️ TODO: Arrays still use placeholders
-let arr = [1, 2, 3]         // Returns 0 (placeholder)
+// ✅ WORKING: Arrays use real memory
+let arr = [1, 2, 3]         // Allocates 12 bytes, returns address
+arr[0] = 100                // i32.store with dynamic offset
 ```
 
 **Completed Implementation (v3.70.0)**:
-- ✅ Linear memory allocation: Bump allocator (inline malloc)
-- ✅ Heap management: Global $heap_ptr, 64KB fixed heap
-- ✅ Type layout: Sequential, 4 bytes per i32 element
-- ✅ Tuple storage: Allocate, store, return address
-- ✅ Tuple field access: i32.load from memory
-- ✅ Tuple destructuring: i32.load elements into locals
+- ✅ **Phase 1**: Memory foundation (64KB heap, global $heap_ptr)
+- ✅ **Phase 2**: Tuple storage (allocate, store, return address)
+- ✅ **Phase 3**: Tuple destructuring (i32.load elements into locals)
+- ✅ **Phase 4**: Struct field mutation (struct registry, field offset calculation)
+- ✅ **Phase 5**: Array element access (dynamic indexing with i32.mul)
 
 **Design Decisions (Implemented)**:
-- ✅ Bump allocator: No GC, no free (acceptable for MVP)
+- ✅ Bump allocator: O(1) allocation, no GC/free (acceptable for MVP)
 - ✅ Fixed 64KB heap: Sufficient for testing
 - ✅ Sequential layout: No padding, no type tags
 - ✅ i32 only: All values are 4 bytes
+- ✅ Dynamic offsets: Runtime index * 4 for arrays
 
-**Remaining Work (Phases 4-5)**:
-- Phase 4: Struct field mutation with memory writes
-- Phase 5: Array element access from memory
-- Future: Garbage collection (low priority)
-- Future: Growing heap (low priority)
+**Future Work (Low Priority)**:
+- Garbage collection (not needed for short-running programs)
+- Growing heap (64KB sufficient for current use cases)
+- Nested complex assignments: `arr[i].field = val`
 
 **Memory Model Architecture**:
 ```wat
@@ -291,6 +294,17 @@ local.get $temp               ;; Return address
   - `lower_assign()` for FieldAccess: Uses i32.store at calculated offset
   - Five Whys root cause analysis: Fixed missing struct registry architecture
 - **Test**: `p.x = 10` stores to memory, `println(p.x)` prints 10 (real mutation!)
+
+### ✅ Array Element Access [WASM-005 Phase 5] (v3.70.0)
+- **Implemented**: Commit 27bb8474
+- **Status**: FULLY WORKING - Dynamic array indexing with memory loads/stores
+- **Features**:
+  - `lower_list()`: Allocates memory for arrays with bump allocator
+  - `lower_index_access()`: Dynamic offset computation (index * 4) with i32.mul
+  - `lower_assign()` for IndexAccess: Dynamic i32.store at runtime-computed address
+  - Runtime indexing: Supports variable indices, not just constants
+  - Works for both arrays and tuples with numeric indices
+- **Test**: `arr[0] = 100; println(arr[0])` prints 100 (real dynamic mutation!)
 
 ### ✅ Basic Tuple Creation [WASM-001] (v3.69.0 → v3.70.0)
 - **Implemented**: Commit d43197f2 → Upgraded f7fdb1de
