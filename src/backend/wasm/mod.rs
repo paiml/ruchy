@@ -859,14 +859,14 @@ impl WasmEmitter {
             } => self.lower_let_pattern(pattern, value, body),
             ExprKind::Identifier(name) => self.lower_identifier(name),
             ExprKind::Unary { op, operand } => self.lower_unary(op, operand),
-            ExprKind::List(_items) => self.lower_list(),
+            ExprKind::List(items) => self.lower_list(items),
             ExprKind::Return { value } => self.lower_return(value.as_deref()),
             ExprKind::StringInterpolation { parts } => self.lower_string_interpolation(parts),
             ExprKind::Match { expr, arms } => self.lower_match(expr, arms),
             ExprKind::Tuple(elements) => self.lower_tuple(elements),
             ExprKind::FieldAccess { object, field } => self.lower_field_access(object, field),
             ExprKind::StructLiteral { name, fields, .. } => self.lower_struct_literal(name, fields),
-            ExprKind::IndexAccess { .. } => self.lower_index_access(),
+            ExprKind::IndexAccess { object, index } => self.lower_index_access(object, index),
             ExprKind::Assign { target, value } => self.lower_assign(target, value),
             _ => Ok(vec![]),
         }
@@ -1024,10 +1024,61 @@ impl WasmEmitter {
         Ok(vec![Instruction::LocalGet(local_index)])
     }
 
-    /// Lower a list literal to WASM instructions
-    /// Complexity: 1 (Toyota Way: <10 ✓)
-    fn lower_list(&self) -> Result<Vec<Instruction<'static>>, String> {
-        Ok(vec![Instruction::I32Const(0)])
+    /// Lower a list/array literal to WASM instructions
+    /// Complexity: 9 (Toyota Way: <10 ✓)
+    ///
+    /// Allocates memory for array elements and stores them sequentially
+    /// Returns the address of the array in memory
+    ///
+    /// Memory layout: Each element is 4 bytes (i32), same as tuples
+    /// Example: [1, 2, 3] -> [addr+0: 1, addr+4: 2, addr+8: 3]
+    fn lower_list(&self, elements: &[Expr]) -> Result<Vec<Instruction<'static>>, String> {
+        let mut instructions = vec![];
+
+        // Empty array: return placeholder 0 (no allocation needed)
+        if elements.is_empty() {
+            return Ok(vec![Instruction::I32Const(0)]);
+        }
+
+        // Calculate size needed: 4 bytes per element (all i32 for MVP)
+        let size = elements.len() as i32 * 4;
+
+        // Temporary local index: last local (reserved in collect_local_types)
+        let temp_local = self.symbols.borrow().local_count();
+
+        // Inline malloc: allocate memory using bump allocator
+        // 1. Get current heap pointer (global 0) and save it
+        instructions.push(Instruction::GlobalGet(0));
+        instructions.push(Instruction::LocalSet(temp_local));
+
+        // 2. Update heap pointer: old_ptr + size
+        instructions.push(Instruction::GlobalGet(0));
+        instructions.push(Instruction::I32Const(size));
+        instructions.push(Instruction::I32Add);
+        instructions.push(Instruction::GlobalSet(0));
+
+        // 3. Store each array element in memory
+        for (i, element) in elements.iter().enumerate() {
+            let offset = i as i32 * 4;
+
+            // Get the base address
+            instructions.push(Instruction::LocalGet(temp_local));
+
+            // Evaluate the element value
+            instructions.extend(self.lower_expression(element)?);
+
+            // Store at address + offset
+            instructions.push(Instruction::I32Store(wasm_encoder::MemArg {
+                offset: offset as u64,
+                align: 2, // 4-byte alignment (2^2 = 4)
+                memory_index: 0,
+            }));
+        }
+
+        // 4. Return the base address
+        instructions.push(Instruction::LocalGet(temp_local));
+
+        Ok(instructions)
     }
 
     /// Lower a tuple literal to WASM instructions
@@ -1203,15 +1254,39 @@ impl WasmEmitter {
         Ok(instructions)
     }
 
-    /// Lower index access to WASM instructions (MVP)
-    /// Complexity: 1 (Toyota Way: <10 ✓)
+    /// Lower index access to WASM instructions
+    /// Complexity: 6 (Toyota Way: <10 ✓)
     ///
-    /// Current MVP: Array/tuple element access returns i32 placeholder
-    /// Full implementation requires memory model:
-    /// - Calculate element address (base + index * `element_size`)
-    /// - Load value from address using i32.load
-    fn lower_index_access(&self) -> Result<Vec<Instruction<'static>>, String> {
-        Ok(vec![Instruction::I32Const(0)])
+    /// Loads array/tuple element from memory using dynamic index
+    /// Computes offset at runtime: `base_address` + (index * 4)
+    fn lower_index_access(
+        &self,
+        object: &Expr,
+        index: &Expr,
+    ) -> Result<Vec<Instruction<'static>>, String> {
+        let mut instructions = vec![];
+
+        // 1. Evaluate object to get base address
+        instructions.extend(self.lower_expression(object)?);
+
+        // 2. Evaluate index (runtime value)
+        instructions.extend(self.lower_expression(index)?);
+
+        // 3. Compute offset: index * 4 (each element is 4 bytes)
+        instructions.push(Instruction::I32Const(4));
+        instructions.push(Instruction::I32Mul);
+
+        // 4. Add base address + offset
+        instructions.push(Instruction::I32Add);
+
+        // 5. Load value from computed address
+        instructions.push(Instruction::I32Load(wasm_encoder::MemArg {
+            offset: 0, // Offset already computed, no additional offset needed
+            align: 2,  // 4-byte alignment (2^2 = 4)
+            memory_index: 0,
+        }));
+
+        Ok(instructions)
     }
 
     /// Lower assignment expression to WASM instructions
@@ -1263,11 +1338,30 @@ impl WasmEmitter {
                     memory_index: 0,
                 }));
             }
-            ExprKind::IndexAccess { .. } => {
-                // MVP: Array/tuple element mutation not yet implemented
-                // Would need to evaluate index dynamically
+            ExprKind::IndexAccess { object, index } => {
+                // Array element mutation: store value to memory at address + dynamic offset
+                // 1. Evaluate object to get base address
+                instructions.extend(self.lower_expression(object)?);
+
+                // 2. Evaluate index (runtime value)
+                instructions.extend(self.lower_expression(index)?);
+
+                // 3. Compute offset: index * 4
+                instructions.push(Instruction::I32Const(4));
+                instructions.push(Instruction::I32Mul);
+
+                // 4. Add base + offset to get final address
+                instructions.push(Instruction::I32Add);
+
+                // 5. Evaluate value
                 instructions.extend(self.lower_expression(value)?);
-                instructions.push(Instruction::Drop);
+
+                // 6. Store value at computed address
+                instructions.push(Instruction::I32Store(wasm_encoder::MemArg {
+                    offset: 0, // Offset already computed
+                    align: 2,  // 4-byte alignment
+                    memory_index: 0,
+                }));
             }
             _ => {
                 return Err(format!(
