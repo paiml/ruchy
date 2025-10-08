@@ -464,7 +464,10 @@ mod tests {
     #[test]
     fn test_closure_creation() {
         let params = vec![Pattern::Identifier("x".to_string())];
-        let body = Expr::new(ExprKind::Literal(Literal::Integer(42)), Span::new(3, 5));
+        let body = Expr::new(
+            ExprKind::Literal(Literal::Integer(42, None)),
+            Span::new(3, 5),
+        );
         let env = HashMap::new();
 
         let closure = Closure::new(params, body, env);
@@ -475,7 +478,10 @@ mod tests {
     #[test]
     fn test_named_closure_creation() {
         let params = vec![Pattern::Identifier("x".to_string())];
-        let body = Expr::new(ExprKind::Literal(Literal::Integer(42)), Span::new(3, 5));
+        let body = Expr::new(
+            ExprKind::Literal(Literal::Integer(42, None)),
+            Span::new(3, 5),
+        );
         let env = HashMap::new();
 
         let closure = Closure::named(params, body, env, "factorial".to_string());

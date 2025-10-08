@@ -1,0 +1,39 @@
+// LANG-COMP-015-01: Basic Enums - Unit variants and printing
+// Demonstrates enum definition, creation, and display
+
+fn main() {
+    // Basic enum with unit variants
+    enum Color {
+        Red,
+        Green,
+        Blue
+    }
+
+    // Create and print enum values
+    let c1 = Color::Red
+    let c2 = Color::Green
+    let c3 = Color::Blue
+
+    println(c1)
+    println(c2)
+    println(c3)
+
+    // Enum with more variants
+    enum Direction {
+        North,
+        South,
+        East,
+        West
+    }
+
+    let dir = Direction::North
+    println(dir)
+
+    // Enum with single variant
+    enum Status {
+        Ready
+    }
+
+    let s = Status::Ready
+    println(s)
+}

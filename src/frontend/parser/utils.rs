@@ -1262,7 +1262,7 @@ impl ExprContext {
 /// let expr = parser.parse().unwrap();
 ///
 /// match &expr.kind {
-///     ExprKind::Literal(Literal::Integer(n)) => {
+///     ExprKind::Literal(Literal::Integer(n, None)) => {
 ///         assert_eq!(*n, 42);
 ///     }
 ///     _ => panic!("Expected literal expression"),
@@ -1278,7 +1278,7 @@ impl ExprContext {
 /// let expr = parser.parse().unwrap();
 ///
 /// match &expr.kind {
-///     ExprKind::Literal(Literal::Integer(n)) => {
+///     ExprKind::Literal(Literal::Integer(n, None)) => {
 ///         assert_eq!(*n, 42);
 ///     }
 ///     _ => panic!("Expected literal expression"),
@@ -1350,7 +1350,7 @@ pub fn parse_module(state: &mut ParserState) -> Result<Expr> {
 /// let expr = parser.parse().unwrap();
 ///
 /// match &expr.kind {
-///     ExprKind::Literal(Literal::Integer(n)) => {
+///     ExprKind::Literal(Literal::Integer(n, None)) => {
 ///         assert_eq!(*n, 42);
 ///     }
 ///     _ => panic!("Expected literal expression"),
@@ -1366,7 +1366,7 @@ pub fn parse_module(state: &mut ParserState) -> Result<Expr> {
 /// let expr = parser.parse().unwrap();
 ///
 /// match &expr.kind {
-///     ExprKind::Literal(Literal::Integer(n)) => {
+///     ExprKind::Literal(Literal::Integer(n, None)) => {
 ///         assert_eq!(*n, 42);
 ///     }
 ///     _ => panic!("Expected literal expression"),

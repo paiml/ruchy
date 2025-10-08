@@ -291,7 +291,7 @@ mod tests {
                 Pattern::Literal(lit) => {
                     // Simple literal matching
                     Ok(match (lit, value) {
-                        (Literal::Integer(a), Value::Integer(b)) => a == b,
+                        (Literal::Integer(a, None), Value::Integer(b)) => a == b,
                         (Literal::Bool(a), Value::Bool(b)) => a == b,
                         _ => false,
                     })
@@ -318,16 +318,19 @@ mod tests {
         let mut eval_expr = |expr: &Expr| -> Result<Value, InterpreterError> {
             match &expr.kind {
                 ExprKind::Literal(Literal::Bool(b)) => Ok(Value::Bool(*b)),
-                ExprKind::Literal(Literal::Integer(i)) => Ok(Value::Integer(*i)),
+                ExprKind::Literal(Literal::Integer(i, None)) => Ok(Value::Integer(*i)),
                 _ => Ok(Value::nil()),
             }
         };
         let mut evaluator = ControlFlowEvaluator::new(&mut eval_expr, &mut env);
 
         let condition = Expr::new(ExprKind::Literal(Literal::Bool(true)), Span::new(0, 0));
-        let then_branch = Expr::new(ExprKind::Literal(Literal::Integer(42)), Span::new(0, 0));
+        let then_branch = Expr::new(
+            ExprKind::Literal(Literal::Integer(42, None)),
+            Span::new(0, 0),
+        );
         let else_branch = Some(Box::new(Expr::new(
-            ExprKind::Literal(Literal::Integer(0)),
+            ExprKind::Literal(Literal::Integer(0, None)),
             Span::new(0, 0),
         )));
 
@@ -343,16 +346,19 @@ mod tests {
         let mut eval_expr = |expr: &Expr| -> Result<Value, InterpreterError> {
             match &expr.kind {
                 ExprKind::Literal(Literal::Bool(b)) => Ok(Value::Bool(*b)),
-                ExprKind::Literal(Literal::Integer(i)) => Ok(Value::Integer(*i)),
+                ExprKind::Literal(Literal::Integer(i, None)) => Ok(Value::Integer(*i)),
                 _ => Ok(Value::nil()),
             }
         };
         let mut evaluator = ControlFlowEvaluator::new(&mut eval_expr, &mut env);
 
         let condition = Expr::new(ExprKind::Literal(Literal::Bool(false)), Span::new(0, 0));
-        let then_branch = Expr::new(ExprKind::Literal(Literal::Integer(42)), Span::new(0, 0));
+        let then_branch = Expr::new(
+            ExprKind::Literal(Literal::Integer(42, None)),
+            Span::new(0, 0),
+        );
         let else_branch = Some(Box::new(Expr::new(
-            ExprKind::Literal(Literal::Integer(99)),
+            ExprKind::Literal(Literal::Integer(99, None)),
             Span::new(0, 0),
         )));
 
@@ -373,14 +379,17 @@ mod tests {
                     counter += 1;
                     Ok(Value::Bool(counter <= 3))
                 }
-                ExprKind::Literal(Literal::Integer(i)) => Ok(Value::Integer(*i)),
+                ExprKind::Literal(Literal::Integer(i, None)) => Ok(Value::Integer(*i)),
                 _ => Ok(Value::Integer(i64::from(counter))),
             }
         };
         let mut evaluator = ControlFlowEvaluator::new(&mut eval_expr, &mut env);
 
         let condition = Expr::new(ExprKind::Literal(Literal::Bool(true)), Span::new(0, 0));
-        let body = Expr::new(ExprKind::Literal(Literal::Integer(1)), Span::new(0, 0));
+        let body = Expr::new(
+            ExprKind::Literal(Literal::Integer(1, None)),
+            Span::new(0, 0),
+        );
 
         let _result = evaluator.eval_while(&condition, &body).unwrap();
         assert_eq!(counter, 4); // Checks condition 4 times (3 true, 1 false)
@@ -441,15 +450,15 @@ mod property_tests {
             let mut eval_expr = move |expr: &Expr| -> Result<Value, InterpreterError> {
                 match &expr.kind {
                     ExprKind::Literal(Literal::Bool(_)) => Ok(Value::Bool(condition)),
-                    ExprKind::Literal(Literal::Integer(i)) => Ok(Value::Integer(*i)),
+                    ExprKind::Literal(Literal::Integer(i, None)) => Ok(Value::Integer(*i)),
                     _ => Ok(Value::nil()),
                 }
             };
             let mut evaluator = ControlFlowEvaluator::new(&mut eval_expr, &mut env);
 
             let cond_expr = Expr::new(ExprKind::Literal(Literal::Bool(condition)), Span::new(0, 0));
-            let then_expr = Expr::new(ExprKind::Literal(Literal::Integer(then_val)), Span::new(0, 0));
-            let else_expr = Some(Box::new(Expr::new(ExprKind::Literal(Literal::Integer(else_val)), Span::new(0, 0))));
+            let then_expr = Expr::new(ExprKind::Literal(Literal::Integer(then_val, None)), Span::new(0, 0));
+            let else_expr = Some(Box::new(Expr::new(ExprKind::Literal(Literal::Integer(else_val, None)), Span::new(0, 0))));
 
             let result = evaluator.eval_if(&cond_expr, &then_expr, &else_expr).unwrap();
             prop_assert_eq!(result, Value::Integer(expected));

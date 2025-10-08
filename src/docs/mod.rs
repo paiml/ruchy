@@ -151,7 +151,7 @@ mod tests {
     fn test_extract_docs() {
         let gen = DocGenerator::new();
         let ast = Expr {
-            kind: ExprKind::Literal(Literal::Integer(42)),
+            kind: ExprKind::Literal(Literal::Integer(42, None)),
             span: Default::default(),
             attributes: vec![],
         };
@@ -163,7 +163,7 @@ mod tests {
     fn test_generate_markdown() {
         let gen = DocGenerator::new();
         let ast = Expr {
-            kind: ExprKind::Literal(Literal::Integer(42)),
+            kind: ExprKind::Literal(Literal::Integer(42, None)),
             span: Default::default(),
             attributes: vec![],
         };
@@ -175,7 +175,7 @@ mod tests {
     fn test_generate_html() {
         let gen = DocGenerator::new();
         let ast = Expr {
-            kind: ExprKind::Literal(Literal::Integer(42)),
+            kind: ExprKind::Literal(Literal::Integer(42, None)),
             span: Default::default(),
             attributes: vec![],
         };
@@ -188,7 +188,7 @@ mod tests {
     fn test_generate_json() {
         let gen = DocGenerator::new();
         let ast = Expr {
-            kind: ExprKind::Literal(Literal::Integer(42)),
+            kind: ExprKind::Literal(Literal::Integer(42, None)),
             span: Default::default(),
             attributes: vec![],
         };
@@ -201,7 +201,7 @@ mod tests {
     fn test_extract_examples() {
         let gen = DocGenerator::new();
         let ast = Expr {
-            kind: ExprKind::Literal(Literal::Integer(42)),
+            kind: ExprKind::Literal(Literal::Integer(42, None)),
             span: Default::default(),
             attributes: vec![],
         };
@@ -213,7 +213,7 @@ mod tests {
     fn test_validate_examples() {
         let gen = DocGenerator::new();
         let ast = Expr {
-            kind: ExprKind::Literal(Literal::Integer(42)),
+            kind: ExprKind::Literal(Literal::Integer(42, None)),
             span: Default::default(),
             attributes: vec![],
         };
@@ -225,7 +225,7 @@ mod tests {
     fn test_extract_attributes() {
         let gen = DocGenerator::new();
         let ast = Expr {
-            kind: ExprKind::Literal(Literal::Integer(42)),
+            kind: ExprKind::Literal(Literal::Integer(42, None)),
             span: Default::default(),
             attributes: vec![],
         };
@@ -237,7 +237,7 @@ mod tests {
     fn test_extract_inline_docs() {
         let gen = DocGenerator::new();
         let ast = Expr {
-            kind: ExprKind::Literal(Literal::Integer(42)),
+            kind: ExprKind::Literal(Literal::Integer(42, None)),
             span: Default::default(),
             attributes: vec![],
         };
@@ -249,7 +249,7 @@ mod tests {
     fn test_group_by_module() {
         let gen = DocGenerator::new();
         let ast = Expr {
-            kind: ExprKind::Literal(Literal::Integer(42)),
+            kind: ExprKind::Literal(Literal::Integer(42, None)),
             span: Default::default(),
             attributes: vec![],
         };
@@ -261,7 +261,7 @@ mod tests {
     fn test_generate_index() {
         let gen = DocGenerator::new();
         let ast = Expr {
-            kind: ExprKind::Literal(Literal::Integer(42)),
+            kind: ExprKind::Literal(Literal::Integer(42, None)),
             span: Default::default(),
             attributes: vec![],
         };
@@ -273,7 +273,7 @@ mod tests {
     fn test_resolve_links() {
         let gen = DocGenerator::new();
         let ast = Expr {
-            kind: ExprKind::Literal(Literal::Integer(42)),
+            kind: ExprKind::Literal(Literal::Integer(42, None)),
             span: Default::default(),
             attributes: vec![],
         };

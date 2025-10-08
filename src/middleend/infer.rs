@@ -1035,6 +1035,15 @@ impl InferenceContext {
                 // The default value will be used if the actual value doesn't match
                 self.infer_pattern(pattern, expected_ty)
             }
+            Pattern::TupleVariant { path: _, patterns } => {
+                // For enum tuple variants, infer the type from the arguments
+                // For now, treat like a tuple pattern
+                for pat in patterns {
+                    let elem_ty = MonoType::Var(self.gen.fresh());
+                    self.infer_pattern(pat, &elem_ty)?;
+                }
+                Ok(())
+            }
             Pattern::Mut(inner) => {
                 // Mut patterns have the same type as their inner pattern
                 // Mutability is a runtime concern, not a type concern
@@ -2082,7 +2091,10 @@ mod tests {
         let mut ctx = InferenceContext::new();
         ctx.recursion_depth = 99; // Set close to limit
 
-        let expr = Expr::new(ExprKind::Literal(Literal::Integer(42)), Default::default());
+        let expr = Expr::new(
+            ExprKind::Literal(Literal::Integer(42, None)),
+            Default::default(),
+        );
 
         // Should still work at depth 99
         let result = ctx.infer(&expr);
@@ -2098,7 +2110,10 @@ mod tests {
         let mut ctx = InferenceContext::with_env(env);
 
         // Simple literal should still work
-        let expr = Expr::new(ExprKind::Literal(Literal::Integer(42)), Default::default());
+        let expr = Expr::new(
+            ExprKind::Literal(Literal::Integer(42, None)),
+            Default::default(),
+        );
 
         let result = ctx.infer(&expr);
         assert_eq!(result.unwrap(), MonoType::Int);

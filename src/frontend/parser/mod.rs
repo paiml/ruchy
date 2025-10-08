@@ -757,7 +757,10 @@ mod tests {
     fn test_parser_basic_literals() {
         let mut state = ParserState::new("42");
         let expr = parse_expr_recursive(&mut state).unwrap();
-        assert!(matches!(expr.kind, ExprKind::Literal(Literal::Integer(42))));
+        assert!(matches!(
+            expr.kind,
+            ExprKind::Literal(Literal::Integer(42, None))
+        ));
 
         let mut state = ParserState::new("3.15");
         let expr = parse_expr_recursive(&mut state).unwrap();
@@ -951,7 +954,10 @@ mod tests {
         let mut state = ParserState::new("(42)");
         let expr = parse_expr_recursive(&mut state).unwrap();
         // Parentheses don't create a special node, just affect precedence
-        assert!(matches!(expr.kind, ExprKind::Literal(Literal::Integer(42))));
+        assert!(matches!(
+            expr.kind,
+            ExprKind::Literal(Literal::Integer(42, None))
+        ));
 
         let mut state = ParserState::new("(1 + 2) * 3");
         let expr = parse_expr_recursive(&mut state).unwrap();
@@ -1400,7 +1406,7 @@ mod mutation_tests {
 
         let mut state = ParserState::new("..10");
         let left = Expr {
-            kind: ExprKind::Literal(Literal::Integer(0)),
+            kind: ExprKind::Literal(Literal::Integer(0, None)),
             span: Span { start: 0, end: 0 },
             attributes: Vec::new(),
         };
@@ -1429,7 +1435,7 @@ mod mutation_tests {
 
         let mut state = ParserState::new("..10");
         let left = Expr {
-            kind: ExprKind::Literal(Literal::Integer(0)),
+            kind: ExprKind::Literal(Literal::Integer(0, None)),
             span: Span { start: 0, end: 0 },
             attributes: Vec::new(),
         };

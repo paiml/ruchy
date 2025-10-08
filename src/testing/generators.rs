@@ -15,7 +15,7 @@ const MAX_DEPTH: u32 = 5;
 /// ```
 pub fn arb_literal() -> BoxedStrategy<Literal> {
     prop_oneof![
-        (0i64..i64::MAX).prop_map(Literal::Integer),
+        (0i64..i64::MAX).prop_map(|n| Literal::Integer(n, None)),
         any::<f64>().prop_map(Literal::Float),
         any::<bool>().prop_map(Literal::Bool),
         "[a-zA-Z0-9 ]{0,20}".prop_map(Literal::String),
@@ -178,7 +178,7 @@ pub fn arb_expr() -> BoxedStrategy<Expr> {
 /// ```
 pub fn arb_pattern() -> BoxedStrategy<Pattern> {
     prop_oneof![
-        any::<i64>().prop_map(|i| Pattern::Literal(Literal::Integer(i))),
+        any::<i64>().prop_map(|i| Pattern::Literal(Literal::Integer(i, _))),
         any::<bool>().prop_map(|b| Pattern::Literal(Literal::Bool(b))),
         arb_identifier().prop_map(Pattern::Identifier),
         Just(Pattern::Wildcard),
@@ -204,12 +204,12 @@ pub fn arb_well_typed_expr() -> BoxedStrategy<Expr> {
             Expr::new(
                 ExprKind::Binary {
                     left: Box::new(Expr::new(
-                        ExprKind::Literal(Literal::Integer(a)),
+                        ExprKind::Literal(Literal::Integer(a, _)),
                         Span::new(0, 0),
                     )),
                     op: BinaryOp::Add,
                     right: Box::new(Expr::new(
-                        ExprKind::Literal(Literal::Integer(b)),
+                        ExprKind::Literal(Literal::Integer(b, _)),
                         Span::new(0, 0),
                     )),
                 },
@@ -382,7 +382,7 @@ mod tests {
 
     #[test]
     fn test_literal_variants() {
-        let _ = Literal::Integer(42);
+        let _ = Literal::Integer(42, None);
         let _ = Literal::Float(3.14);
         let _ = Literal::Bool(true);
         let _ = Literal::String("test".to_string());
@@ -397,14 +397,20 @@ mod tests {
 
     #[test]
     fn test_expr_new() {
-        let expr = Expr::new(ExprKind::Literal(Literal::Integer(42)), Span::new(0, 0));
-        assert!(matches!(expr.kind, ExprKind::Literal(Literal::Integer(42))));
+        let expr = Expr::new(
+            ExprKind::Literal(Literal::Integer(42, None)),
+            Span::new(0, 0),
+        );
+        assert!(matches!(
+            expr.kind,
+            ExprKind::Literal(Literal::Integer(42, None))
+        ));
         assert_eq!(expr.span, Span::new(0, 0));
     }
 
     #[test]
     fn test_pattern_enum_variants() {
-        let _ = Pattern::Literal(Literal::Integer(1));
+        let _ = Pattern::Literal(Literal::Integer(1, None));
         let _ = Pattern::Identifier("x".to_string());
         let _ = Pattern::Wildcard;
     }
@@ -436,11 +442,11 @@ mod tests {
             Span::new(0, 0),
         ));
         let then = Box::new(Expr::new(
-            ExprKind::Literal(Literal::Integer(1)),
+            ExprKind::Literal(Literal::Integer(1, None)),
             Span::new(0, 0),
         ));
         let else_b = Some(Box::new(Expr::new(
-            ExprKind::Literal(Literal::Integer(2)),
+            ExprKind::Literal(Literal::Integer(2, None)),
             Span::new(0, 0),
         )));
 
@@ -468,7 +474,7 @@ mod tests {
             let literal = value_tree.current();
             // Just verify it doesn't panic
             match literal {
-                Literal::Integer(_)
+                Literal::Integer(_, _)
                 | Literal::Float(_)
                 | Literal::Bool(_)
                 | Literal::String(_)
@@ -585,7 +591,7 @@ mod tests {
     #[test]
     fn test_expr_kind_variants() {
         // Test that various ExprKind variants can be constructed
-        let _ = ExprKind::Literal(Literal::Integer(42));
+        let _ = ExprKind::Literal(Literal::Integer(42, None));
         let _ = ExprKind::Identifier("x".to_string());
         let _ = ExprKind::Block(vec![]);
         let _ = ExprKind::Return { value: None };
@@ -632,7 +638,7 @@ mod tests {
             let value_tree = strategy.new_tree(&mut runner).unwrap();
             let literal = value_tree.current();
             match literal {
-                Literal::Integer(_) => {
+                Literal::Integer(_, _) => {
                     found_variants.insert("Integer");
                 }
                 Literal::Float(_) => {
@@ -837,7 +843,10 @@ mod tests {
     #[test]
     fn test_expr_with_specific_kinds() {
         // Test that we can generate expressions with specific kinds
-        let literal_expr = Expr::new(ExprKind::Literal(Literal::Integer(42)), Span::new(0, 0));
+        let literal_expr = Expr::new(
+            ExprKind::Literal(Literal::Integer(42, None)),
+            Span::new(0, 0),
+        );
         assert!(matches!(literal_expr.kind, ExprKind::Literal(_)));
 
         let id_expr = Expr::new(ExprKind::Identifier("test".to_string()), Span::new(0, 0));
@@ -889,7 +898,7 @@ mod tests {
     fn test_literal_variants_complete() {
         // Test that we can create all literal types
         let literals = vec![
-            Literal::Integer(42),
+            Literal::Integer(42, None),
             Literal::Float(3.14),
             Literal::Bool(true),
             Literal::String("test".to_string()),
@@ -902,7 +911,7 @@ mod tests {
         // Verify each type is distinct
         for literal in &literals {
             match literal {
-                Literal::Integer(n) => assert_eq!(*n, 42),
+                Literal::Integer(n, _) => assert_eq!(*n, 42),
                 Literal::Float(f) => assert!((*f - 3.14).abs() < f64::EPSILON),
                 Literal::Bool(b) => assert!(*b),
                 Literal::String(s) => assert_eq!(s, "test"),
@@ -963,7 +972,10 @@ mod tests {
     #[test]
     fn test_expr_construction() {
         // Test various ways to construct expressions
-        let expr1 = Expr::new(ExprKind::Literal(Literal::Integer(123)), Span::new(5, 8));
+        let expr1 = Expr::new(
+            ExprKind::Literal(Literal::Integer(123, None)),
+            Span::new(5, 8),
+        );
         assert_eq!(expr1.span.start, 5);
         assert_eq!(expr1.span.end, 8);
 

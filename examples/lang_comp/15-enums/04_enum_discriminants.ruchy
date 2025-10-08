@@ -1,0 +1,17 @@
+// LANG-COMP-015-04: Enum Discriminants - Explicit values
+// Demonstrates enums with explicit integer discriminants
+
+fn main() {
+    // Enum with explicit discriminant values
+    enum HttpStatus {
+        Ok = 200,
+        NotFound = 404,
+        ServerError = 500
+    }
+
+    let status = HttpStatus::Ok
+    println(status)
+
+    let error = HttpStatus::NotFound
+    println(error)
+}

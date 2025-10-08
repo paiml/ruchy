@@ -4,6 +4,7 @@ pub mod basic_syntax;
 pub mod closures;
 pub mod control_flow;
 pub mod data_structures;
+pub mod enums;
 pub mod error_handling;
 pub mod functions;
 pub mod methods;

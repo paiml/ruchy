@@ -367,7 +367,7 @@ mod tests {
     }
     fn make_literal_expr(val: i64) -> Expr {
         Expr {
-            kind: ExprKind::Literal(Literal::Integer(val)),
+            kind: ExprKind::Literal(Literal::Integer(val, None)),
             span: Span::new(0, 10),
             attributes: vec![],
         }
@@ -576,12 +576,12 @@ mod property_tests_dataframe {
                 name: "id".to_string(),
                 values: vec![
                     Expr {
-                        kind: ExprKind::Literal(Literal::Integer(1)),
+                        kind: ExprKind::Literal(Literal::Integer(1, None)),
                         span: Span::default(),
                         attributes: vec![],
                     },
                     Expr {
-                        kind: ExprKind::Literal(Literal::Integer(2)),
+                        kind: ExprKind::Literal(Literal::Integer(2, None)),
                         span: Span::default(),
                         attributes: vec![],
                     },

@@ -383,7 +383,7 @@ mod tests {
     }
     fn create_test_expr_literal_int(value: i64) -> Expr {
         Expr::new(
-            ExprKind::Literal(Literal::Integer(value)),
+            ExprKind::Literal(Literal::Integer(value, None)),
             create_test_span(),
         )
     }

@@ -328,7 +328,7 @@ mod tests {
     fn test_record_success() {
         let mut matrix = GrammarCoverageMatrix::new();
         let expr = Expr::new(
-            ExprKind::Literal(Literal::Integer(42)),
+            ExprKind::Literal(Literal::Integer(42, None)),
             Span { start: 0, end: 1 },
         );
 
@@ -362,7 +362,7 @@ mod tests {
     fn test_record_multiple_attempts() {
         let mut matrix = GrammarCoverageMatrix::new();
         let expr = Expr::new(
-            ExprKind::Literal(Literal::Integer(42)),
+            ExprKind::Literal(Literal::Integer(42, None)),
             Span { start: 0, end: 1 },
         );
 
@@ -381,7 +381,7 @@ mod tests {
         let mut matrix = GrammarCoverageMatrix::new();
 
         let literal_expr = Expr::new(
-            ExprKind::Literal(Literal::Integer(42)),
+            ExprKind::Literal(Literal::Integer(42, None)),
             Span { start: 0, end: 1 },
         );
 
@@ -425,7 +425,7 @@ mod tests {
     fn test_calculate_stats() {
         let mut matrix = GrammarCoverageMatrix::new();
         let expr = Expr::new(
-            ExprKind::Literal(Literal::Integer(42)),
+            ExprKind::Literal(Literal::Integer(42, None)),
             Span { start: 0, end: 1 },
         );
 
@@ -448,7 +448,7 @@ mod tests {
     fn test_generate_report() {
         let mut matrix = GrammarCoverageMatrix::new();
         let expr = Expr::new(
-            ExprKind::Literal(Literal::Integer(42)),
+            ExprKind::Literal(Literal::Integer(42, None)),
             Span { start: 0, end: 1 },
         );
 
@@ -466,7 +466,7 @@ mod tests {
     fn test_check_coverage_threshold_success() {
         let mut matrix = GrammarCoverageMatrix::new();
         let expr = Expr::new(
-            ExprKind::Literal(Literal::Integer(42)),
+            ExprKind::Literal(Literal::Integer(42, None)),
             Span { start: 0, end: 1 },
         );
 

@@ -296,7 +296,10 @@ mod tests {
 
     #[test]
     fn test_eval_literal() {
-        assert_eq!(eval_literal(&Literal::Integer(42)), Value::Integer(42));
+        assert_eq!(
+            eval_literal(&Literal::Integer(42, None)),
+            Value::Integer(42)
+        );
         assert_eq!(eval_literal(&Literal::Float(3.14)), Value::Float(3.14));
         assert_eq!(eval_literal(&Literal::Bool(true)), Value::Bool(true));
         assert_eq!(eval_literal(&Literal::Unit), Value::Nil);
@@ -313,12 +316,12 @@ mod tests {
     fn test_is_control_flow() {
         let if_expr = ExprKind::If {
             condition: Box::new(make_literal_expr(Literal::Bool(true))),
-            then_branch: Box::new(make_literal_expr(Literal::Integer(1))),
+            then_branch: Box::new(make_literal_expr(Literal::Integer(1, None))),
             else_branch: None,
         };
         assert!(is_control_flow_expr(&if_expr));
 
-        let literal_expr = ExprKind::Literal(Literal::Integer(42));
+        let literal_expr = ExprKind::Literal(Literal::Integer(42, None));
         assert!(!is_control_flow_expr(&literal_expr));
     }
 
@@ -330,15 +333,15 @@ mod tests {
         let tuple_expr = ExprKind::Tuple(vec![]);
         assert!(is_data_structure_expr(&tuple_expr));
 
-        let literal_expr = ExprKind::Literal(Literal::Integer(42));
+        let literal_expr = ExprKind::Literal(Literal::Integer(42, None));
         assert!(!is_data_structure_expr(&literal_expr));
     }
 
     #[test]
     fn test_eval_if_expr() {
         let condition = make_literal_expr(Literal::Bool(true));
-        let then_branch = make_literal_expr(Literal::Integer(1));
-        let else_branch = make_literal_expr(Literal::Integer(2));
+        let then_branch = make_literal_expr(Literal::Integer(1, None));
+        let else_branch = make_literal_expr(Literal::Integer(2, None));
 
         let result = eval_if_expr(
             &condition,
@@ -346,7 +349,7 @@ mod tests {
             Some(&else_branch),
             |expr| match &expr.kind {
                 ExprKind::Literal(Literal::Bool(b)) => Ok(Value::Bool(*b)),
-                ExprKind::Literal(Literal::Integer(i)) => Ok(Value::Integer(*i)),
+                ExprKind::Literal(Literal::Integer(i, None)) => Ok(Value::Integer(*i)),
                 _ => Ok(Value::Nil),
             },
         )
@@ -358,13 +361,13 @@ mod tests {
     #[test]
     fn test_eval_list_expr() {
         let elements = vec![
-            make_literal_expr(Literal::Integer(1)),
-            make_literal_expr(Literal::Integer(2)),
-            make_literal_expr(Literal::Integer(3)),
+            make_literal_expr(Literal::Integer(1, None)),
+            make_literal_expr(Literal::Integer(2, None)),
+            make_literal_expr(Literal::Integer(3, None)),
         ];
 
         let result = eval_list_expr(&elements, |expr| match &expr.kind {
-            ExprKind::Literal(Literal::Integer(i)) => Ok(Value::Integer(*i)),
+            ExprKind::Literal(Literal::Integer(i, None)) => Ok(Value::Integer(*i)),
             _ => Ok(Value::Nil),
         })
         .unwrap();

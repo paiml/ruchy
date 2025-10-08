@@ -30,7 +30,7 @@ mod tests {
 
     #[test]
     fn test_integer_literal() {
-        let lit = Literal::Integer(42);
+        let lit = Literal::Integer(42, None);
         let value = eval_literal(&lit);
         assert_eq!(value, Value::from_i64(42));
     }
@@ -86,7 +86,7 @@ mod property_tests {
     proptest! {
         #[test]
         fn test_integer_roundtrip(i in any::<i64>()) {
-            let lit = Literal::Integer(i);
+            let lit = Literal::Integer(i, None);
             let value = eval_literal(&lit);
             prop_assert_eq!(value, Value::from_i64(i));
         }

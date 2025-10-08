@@ -1,0 +1,33 @@
+// LANG-COMP-015-03: Enums with Data - Tuple and struct variants
+// Demonstrates enum variants that carry data
+
+fn main() {
+    // Enum with tuple variants
+    enum Message {
+        Text(i32),
+        Pair(i32, i32)
+    }
+
+    let msg1 = Message::Text(42)
+    println(msg1)
+
+    let msg2 = Message::Pair(10, 20)
+    println(msg2)
+
+    // Match and extract data from tuple variants
+    match msg1 {
+        Message::Text(n) => println(n),
+        Message::Pair(a, b) => {
+            println(a)
+            println(b)
+        }
+    }
+
+    match msg2 {
+        Message::Text(n) => println(n),
+        Message::Pair(a, b) => {
+            println(a)
+            println(b)
+        }
+    }
+}

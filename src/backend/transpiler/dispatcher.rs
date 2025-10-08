@@ -883,7 +883,7 @@ mod tests {
 
     #[test]
     fn test_transpile_literal_integer() {
-        let result = Transpiler::transpile_literal(&Literal::Integer(42));
+        let result = Transpiler::transpile_literal(&Literal::Integer(42, None));
         let expected = quote! { 42 };
         assert_eq!(result.to_string(), expected.to_string());
     }
@@ -982,7 +982,10 @@ mod tests {
     #[test]
     fn test_transpile_type_cast() {
         let transpiler = Transpiler::new();
-        let expr = Expr::new(ExprKind::Literal(Literal::Integer(42)), Default::default());
+        let expr = Expr::new(
+            ExprKind::Literal(Literal::Integer(42, None)),
+            Default::default(),
+        );
 
         // Test various type casts
         let types = vec![
@@ -1000,7 +1003,10 @@ mod tests {
     #[test]
     fn test_transpile_type_cast_unsupported() {
         let transpiler = Transpiler::new();
-        let expr = Expr::new(ExprKind::Literal(Literal::Integer(42)), Default::default());
+        let expr = Expr::new(
+            ExprKind::Literal(Literal::Integer(42, None)),
+            Default::default(),
+        );
 
         let result = transpiler.transpile_type_cast(&expr, "unknown_type");
         assert!(result.is_err());
@@ -1052,7 +1058,10 @@ mod tests {
         let transpiler = Transpiler::new();
 
         // Test literal
-        let expr = Expr::new(ExprKind::Literal(Literal::Integer(42)), Default::default());
+        let expr = Expr::new(
+            ExprKind::Literal(Literal::Integer(42, None)),
+            Default::default(),
+        );
         let result = transpiler.transpile_basic_expr(&expr);
         assert!(result.is_ok());
         assert_eq!(result.unwrap().to_string(), "42");
@@ -1130,10 +1139,10 @@ mod tests {
     #[test]
     fn test_literal_edge_cases() {
         // Test extreme integer values
-        let result = Transpiler::transpile_literal(&Literal::Integer(i64::MAX));
+        let result = Transpiler::transpile_literal(&Literal::Integer(i64::MAX, None));
         assert!(result.to_string().contains(&i64::MAX.to_string()));
 
-        let result = Transpiler::transpile_literal(&Literal::Integer(i64::MIN));
+        let result = Transpiler::transpile_literal(&Literal::Integer(i64::MIN, None));
         // i64::MIN transpiles correctly without overflow - just verify it doesn't panic
         assert!(!result.to_string().is_empty());
 

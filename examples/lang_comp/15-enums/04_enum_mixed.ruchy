@@ -1,0 +1,39 @@
+// LANG-COMP-015-04: Mixed Enum Variants
+// Demonstrates enums combining unit and tuple variants
+
+fn main() {
+    // Enum with mixed variant types
+    enum Message {
+        Quit,
+        Move(i32, i32),
+        Write(i32)
+    }
+
+    let m1 = Message::Quit
+    println(m1)
+
+    let m2 = Message::Move(10, 20)
+    println(m2)
+
+    let m3 = Message::Write(42)
+    println(m3)
+
+    // Pattern matching with mixed variants
+    match m1 {
+        Message::Quit => println("Quitting"),
+        Message::Move(x, y) => {
+            println(x)
+            println(y)
+        },
+        Message::Write(text) => println(text)
+    }
+
+    match m2 {
+        Message::Quit => println("Quitting"),
+        Message::Move(x, y) => {
+            println(x)
+            println(y)
+        },
+        Message::Write(text) => println(text)
+    }
+}

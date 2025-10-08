@@ -160,7 +160,7 @@ mod tests {
 
     fn create_simple_literal(value: i64) -> Expr {
         Expr::new(
-            ExprKind::Literal(Literal::Integer(value)),
+            ExprKind::Literal(Literal::Integer(value, None)),
             Default::default(),
         )
     }

@@ -348,7 +348,7 @@ mod tests {
     #[allow(clippy::approx_constant)]
     fn test_all_literals() {
         assert_eq!(
-            MinimalCodeGen::gen_literal(&Literal::Integer(42)).unwrap(),
+            MinimalCodeGen::gen_literal(&Literal::Integer(42, None)).unwrap(),
             "42"
         );
         assert_eq!(
@@ -526,7 +526,7 @@ mod tests {
 
     #[test]
     fn test_pattern_literal() {
-        let pat = Pattern::Literal(Literal::Integer(42));
+        let pat = Pattern::Literal(Literal::Integer(42, None));
         assert_eq!(MinimalCodeGen::gen_pattern(&pat).unwrap(), "42");
     }
 
@@ -539,7 +539,7 @@ mod tests {
     #[test]
     fn test_pattern_list() {
         let patterns = vec![
-            Pattern::Literal(Literal::Integer(1)),
+            Pattern::Literal(Literal::Integer(1, None)),
             Pattern::Identifier("x".to_string()),
             Pattern::Wildcard,
         ];
@@ -563,7 +563,7 @@ mod tests {
 
     #[test]
     fn test_pattern_option_some() {
-        let inner = Box::new(Pattern::Literal(Literal::Integer(42)));
+        let inner = Box::new(Pattern::Literal(Literal::Integer(42, None)));
         let pat = Pattern::Some(inner);
         assert_eq!(MinimalCodeGen::gen_pattern(&pat).unwrap(), "Some(42)");
     }
@@ -575,7 +575,7 @@ mod tests {
 
     #[test]
     fn test_gen_program() {
-        let expr = make_literal(Literal::Integer(42));
+        let expr = make_literal(Literal::Integer(42, None));
         let result = MinimalCodeGen::gen_program(&expr).unwrap();
         assert!(result.starts_with("use std::collections::HashMap;"));
         assert!(result.contains("42"));
@@ -614,8 +614,8 @@ mod tests {
     #[test]
     fn test_struct_literal_with_fields() {
         let fields = vec![
-            ("x".to_string(), make_literal(Literal::Integer(10))),
-            ("y".to_string(), make_literal(Literal::Integer(20))),
+            ("x".to_string(), make_literal(Literal::Integer(10, None))),
+            ("y".to_string(), make_literal(Literal::Integer(20, None))),
         ];
         let result = MinimalCodeGen::gen_struct_literal("Point", &fields).unwrap();
         assert_eq!(result, "Point { x: 10, y: 20 }");

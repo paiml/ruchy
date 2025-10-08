@@ -3889,7 +3889,7 @@ mod tests {
                     Span { start: 0, end: 0 },
                 )),
                 value: Box::new(Expr::new(
-                    ExprKind::Literal(crate::frontend::ast::Literal::Integer(42)),
+                    ExprKind::Literal(crate::frontend::ast::Literal::Integer(42, None)),
                     Span { start: 0, end: 0 },
                 )),
             },
@@ -4419,7 +4419,7 @@ mod tests {
             Span::default(),
         ));
         let value = Box::new(Expr::new(
-            ExprKind::Literal(crate::frontend::ast::Literal::Integer(5)),
+            ExprKind::Literal(crate::frontend::ast::Literal::Integer(5, None)),
             Span::default(),
         ));
         let assign_expr = Expr::new(ExprKind::Assign { target, value }, Span::default());
@@ -4438,7 +4438,7 @@ mod tests {
             Span::default(),
         ));
         let value = Box::new(Expr::new(
-            ExprKind::Literal(crate::frontend::ast::Literal::Integer(5)),
+            ExprKind::Literal(crate::frontend::ast::Literal::Integer(5, None)),
             Span::default(),
         ));
         let compound_expr = Expr::new(
@@ -4505,7 +4505,7 @@ mod tests {
             Span::default(),
         ));
         let value = Box::new(Expr::new(
-            ExprKind::Literal(crate::frontend::ast::Literal::Integer(5)),
+            ExprKind::Literal(crate::frontend::ast::Literal::Integer(5, None)),
             Span::default(),
         ));
         let assign_expr = Expr::new(ExprKind::Assign { target, value }, Span::default());
@@ -4525,7 +4525,7 @@ mod tests {
             Span::default(),
         ));
         let value = Box::new(Expr::new(
-            ExprKind::Literal(Literal::Integer(5)),
+            ExprKind::Literal(Literal::Integer(5, None)),
             Span::default(),
         ));
         let assign_expr = Expr::new(ExprKind::Assign { target, value }, Span::default());
@@ -4558,12 +4558,15 @@ mod tests {
             Span::default(),
         ));
         let value = Box::new(Expr::new(
-            ExprKind::Literal(Literal::Integer(5)),
+            ExprKind::Literal(Literal::Integer(5, None)),
             Span::default(),
         ));
         let assign_expr = Expr::new(ExprKind::Assign { target, value }, Span::default());
 
-        let right = Expr::new(ExprKind::Literal(Literal::Integer(10)), Span::default());
+        let right = Expr::new(
+            ExprKind::Literal(Literal::Integer(10, None)),
+            Span::default(),
+        );
         let binary_expr = Expr::new(
             ExprKind::Binary {
                 left: Box::new(assign_expr),
@@ -4631,7 +4634,10 @@ mod tests {
         assert!(transpiler.value_creates_vec(&list_expr));
 
         // Test literal expression (should not create vec)
-        let literal_expr = Expr::new(ExprKind::Literal(Literal::Integer(42)), Span::default());
+        let literal_expr = Expr::new(
+            ExprKind::Literal(Literal::Integer(42, None)),
+            Span::default(),
+        );
         assert!(!transpiler.value_creates_vec(&literal_expr));
 
         // Test identifier expression (should not create vec)

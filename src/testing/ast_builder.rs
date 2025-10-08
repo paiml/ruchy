@@ -36,7 +36,7 @@ impl AstBuilder {
     /// ```
     pub fn int(&self, value: i64) -> Expr {
         Expr {
-            kind: ExprKind::Literal(Literal::Integer(value)),
+            kind: ExprKind::Literal(Literal::Integer(value, None)),
             span: self.span,
             attributes: vec![],
         }
@@ -691,7 +691,7 @@ mod tests {
         let expr = builder.int(42);
 
         // Verify structure
-        if let ExprKind::Literal(Literal::Integer(value)) = expr.kind {
+        if let ExprKind::Literal(Literal::Integer(value, None)) = expr.kind {
             assert_eq!(value, 42);
         } else {
             panic!("Expected integer literal");
@@ -767,12 +767,12 @@ mod tests {
 
         if let ExprKind::Binary { left, op, right } = add_expr.kind {
             assert!(matches!(op, BinaryOp::Add));
-            if let ExprKind::Literal(Literal::Integer(val)) = left.kind {
+            if let ExprKind::Literal(Literal::Integer(val, None)) = left.kind {
                 assert_eq!(val, 1);
             } else {
                 panic!("Expected left operand to be 1");
             }
-            if let ExprKind::Literal(Literal::Integer(val)) = right.kind {
+            if let ExprKind::Literal(Literal::Integer(val, None)) = right.kind {
                 assert_eq!(val, 2);
             } else {
                 panic!("Expected right operand to be 2");
@@ -791,7 +791,7 @@ mod tests {
 
         if let ExprKind::Unary { op, operand } = neg_expr.kind {
             assert!(matches!(op, UnaryOp::Negate));
-            if let ExprKind::Literal(Literal::Integer(val)) = operand.kind {
+            if let ExprKind::Literal(Literal::Integer(val, None)) = operand.kind {
                 assert_eq!(val, 42);
             } else {
                 panic!("Expected operand to be 42");
@@ -878,7 +878,7 @@ mod tests {
 
             // Verify arguments
             assert_eq!(args.len(), 2);
-            if let ExprKind::Literal(Literal::Integer(val)) = args[0].kind {
+            if let ExprKind::Literal(Literal::Integer(val, None)) = args[0].kind {
                 assert_eq!(val, 1);
             } else {
                 panic!("Expected first argument to be 1");
@@ -949,9 +949,9 @@ mod tests {
     #[test]
     fn test_pattern_literal() {
         let builder = AstBuilder::new();
-        let pattern = builder.pattern_literal(Literal::Integer(42));
+        let pattern = builder.pattern_literal(Literal::Integer(42, None));
 
-        if let Pattern::Literal(Literal::Integer(val)) = pattern {
+        if let Pattern::Literal(Literal::Integer(val, None)) = pattern {
             assert_eq!(val, 42);
         } else {
             panic!("Expected literal pattern");
@@ -977,14 +977,20 @@ mod tests {
     fn test_pattern_or() {
         let builder = AstBuilder::new();
         let pattern = builder.pattern_or(vec![
-            builder.pattern_literal(Literal::Integer(1)),
-            builder.pattern_literal(Literal::Integer(2)),
+            builder.pattern_literal(Literal::Integer(1, None)),
+            builder.pattern_literal(Literal::Integer(2, None)),
         ]);
 
         if let Pattern::Or(patterns) = pattern {
             assert_eq!(patterns.len(), 2);
-            assert!(matches!(patterns[0], Pattern::Literal(Literal::Integer(1))));
-            assert!(matches!(patterns[1], Pattern::Literal(Literal::Integer(2))));
+            assert!(matches!(
+                patterns[0],
+                Pattern::Literal(Literal::Integer(1, None))
+            ));
+            assert!(matches!(
+                patterns[1],
+                Pattern::Literal(Literal::Integer(2, None))
+            ));
         } else {
             panic!("Expected or pattern");
         }
@@ -1036,7 +1042,7 @@ mod tests {
         if let ExprKind::List(elements) = list.kind {
             assert_eq!(elements.len(), 3);
             for (i, element) in elements.iter().enumerate() {
-                if let ExprKind::Literal(Literal::Integer(val)) = element.kind {
+                if let ExprKind::Literal(Literal::Integer(val, None)) = element.kind {
                     assert_eq!(val, (i + 1) as i64);
                 } else {
                     panic!("Expected integer literal at index {i}");
@@ -1061,7 +1067,7 @@ mod tests {
                 panic!("Expected string literal as first element");
             }
 
-            if let ExprKind::Literal(Literal::Integer(val)) = elements[1].kind {
+            if let ExprKind::Literal(Literal::Integer(val, None)) = elements[1].kind {
                 assert_eq!(val, 42);
             } else {
                 panic!("Expected integer literal as second element");
@@ -1208,7 +1214,7 @@ mod tests {
         if let ExprKind::Return { value } = return_with_value.kind {
             assert!(value.is_some());
             if let Some(val) = value {
-                if let ExprKind::Literal(Literal::Integer(num)) = val.kind {
+                if let ExprKind::Literal(Literal::Integer(num, None)) = val.kind {
                     assert_eq!(num, 42);
                 } else {
                     panic!("Expected integer return value");
@@ -1324,7 +1330,7 @@ mod tests {
             assert!(!is_mutable);
 
             // Verify value
-            if let ExprKind::Literal(Literal::Integer(val)) = value.kind {
+            if let ExprKind::Literal(Literal::Integer(val, None)) = value.kind {
                 assert_eq!(val, 42);
             } else {
                 panic!("Expected integer value");
@@ -1355,7 +1361,7 @@ mod tests {
             }
 
             // Verify value
-            if let ExprKind::Literal(Literal::Integer(val)) = value.kind {
+            if let ExprKind::Literal(Literal::Integer(val, None)) = value.kind {
                 assert_eq!(val, 100);
             } else {
                 panic!("Expected integer value");
@@ -1476,9 +1482,9 @@ mod tests {
             vec![
                 builder.match_arm(
                     builder.pattern_or(vec![
-                        builder.pattern_literal(Literal::Integer(1)),
-                        builder.pattern_literal(Literal::Integer(2)),
-                        builder.pattern_literal(Literal::Integer(3)),
+                        builder.pattern_literal(Literal::Integer(1, None)),
+                        builder.pattern_literal(Literal::Integer(2, None)),
+                        builder.pattern_literal(Literal::Integer(3, None)),
                     ]),
                     None,
                     builder.string("small"),
@@ -1499,7 +1505,7 @@ mod tests {
             builder.ident("value"),
             vec![
                 builder.match_arm(
-                    builder.pattern_literal(Literal::Integer(1)),
+                    builder.pattern_literal(Literal::Integer(1, None)),
                     None,
                     builder.string("one"),
                 ),
@@ -1521,7 +1527,7 @@ mod tests {
             // First arm
             assert!(matches!(
                 arms[0].pattern,
-                Pattern::Literal(Literal::Integer(1))
+                Pattern::Literal(Literal::Integer(1, None))
             ));
             assert!(arms[0].guard.is_none());
             if let ExprKind::Literal(Literal::String(val)) = &arms[0].body.kind {
@@ -1656,14 +1662,14 @@ mod tests {
 
         // Test extreme integer values
         let max_int = builder.int(i64::MAX);
-        if let ExprKind::Literal(Literal::Integer(val)) = max_int.kind {
+        if let ExprKind::Literal(Literal::Integer(val, None)) = max_int.kind {
             assert_eq!(val, i64::MAX);
         } else {
             panic!("Expected max integer");
         }
 
         let min_int = builder.int(i64::MIN);
-        if let ExprKind::Literal(Literal::Integer(val)) = min_int.kind {
+        if let ExprKind::Literal(Literal::Integer(val, None)) = min_int.kind {
             assert_eq!(val, i64::MIN);
         } else {
             panic!("Expected min integer");
@@ -1746,7 +1752,7 @@ mod tests {
         if let ExprKind::Binary { left, op, right } = nested.kind {
             assert!(matches!(op, BinaryOp::Subtract));
             assert!(matches!(left.kind, ExprKind::Binary { .. }));
-            if let ExprKind::Literal(Literal::Integer(val)) = right.kind {
+            if let ExprKind::Literal(Literal::Integer(val, None)) = right.kind {
                 assert_eq!(val, 4);
             } else {
                 panic!("Expected integer 4");
@@ -1762,13 +1768,16 @@ mod tests {
 
         // Complex nested pattern: (Some(Point { x, y: 0 }), _)
         let complex_pattern = builder.pattern_tuple(vec![
-            builder.pattern_literal(Literal::Integer(1)), // Simplified for testing
+            builder.pattern_literal(Literal::Integer(1, None)), // Simplified for testing
             builder.pattern_wildcard(),
         ]);
 
         if let Pattern::Tuple(patterns) = complex_pattern {
             assert_eq!(patterns.len(), 2);
-            assert!(matches!(patterns[0], Pattern::Literal(Literal::Integer(1))));
+            assert!(matches!(
+                patterns[0],
+                Pattern::Literal(Literal::Integer(1, None))
+            ));
             assert!(matches!(patterns[1], Pattern::Wildcard));
         } else {
             panic!("Expected tuple pattern");
@@ -1956,7 +1965,7 @@ mod property_tests_ast_builder {
             let builder = AstBuilder::new();
             let expr = builder.int(value);
 
-            if let ExprKind::Literal(Literal::Integer(actual)) = expr.kind {
+            if let ExprKind::Literal(Literal::Integer(actual, None)) = expr.kind {
                 prop_assert_eq!(actual, value);
             } else {
                 prop_assert!(false, "Expected integer literal");
@@ -2033,13 +2042,13 @@ mod property_tests_ast_builder {
             if let ExprKind::Binary { left: l, op, right: r } = expr.kind {
                 prop_assert!(matches!(op, BinaryOp::Add));
 
-                if let ExprKind::Literal(Literal::Integer(l_val)) = l.kind {
+                if let ExprKind::Literal(Literal::Integer(l_val, None)) = l.kind {
                     prop_assert_eq!(l_val, left);
                 } else {
                     prop_assert!(false, "Expected left operand to be integer");
                 }
 
-                if let ExprKind::Literal(Literal::Integer(r_val)) = r.kind {
+                if let ExprKind::Literal(Literal::Integer(r_val, None)) = r.kind {
                     prop_assert_eq!(r_val, right);
                 } else {
                     prop_assert!(false, "Expected right operand to be integer");
@@ -2060,7 +2069,7 @@ mod property_tests_ast_builder {
                 prop_assert_eq!(actual_elements.len(), elements.len());
 
                 for (i, &expected) in elements.iter().enumerate() {
-                    if let ExprKind::Literal(Literal::Integer(actual)) = actual_elements[i].kind {
+                    if let ExprKind::Literal(Literal::Integer(actual, None)) = actual_elements[i].kind {
                         prop_assert_eq!(actual, expected);
                     } else {
                         prop_assert!(false, "Expected integer literal at index {}", i);
@@ -2090,7 +2099,7 @@ mod property_tests_ast_builder {
         fn test_pattern_or_count(values: Vec<i64>) {
             let builder = AstBuilder::new();
             let patterns: Vec<_> = values.iter().map(|&x| {
-                builder.pattern_literal(Literal::Integer(x))
+                builder.pattern_literal(Literal::Integer(x, None))
             }).collect();
 
             let or_pattern = builder.pattern_or(patterns);

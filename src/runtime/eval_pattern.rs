@@ -373,7 +373,7 @@ mod tests {
 
     #[test]
     fn test_literal_pattern() {
-        let pattern = Pattern::Literal(Literal::Integer(42));
+        let pattern = Pattern::Literal(Literal::Integer(42, None));
 
         let matching_value = Value::Integer(42);
         let result = match_pattern(&pattern, &matching_value).unwrap();
@@ -388,7 +388,7 @@ mod tests {
     fn test_array_pattern() {
         let patterns = vec![
             Pattern::Identifier("x".to_string()),
-            Pattern::Literal(Literal::Integer(2)),
+            Pattern::Literal(Literal::Integer(2, None)),
         ];
 
         let pattern = Pattern::List(patterns);
@@ -415,7 +415,7 @@ mod tests {
         let identifier = Pattern::Identifier("x".to_string());
         assert!(is_irrefutable_pattern(&identifier));
 
-        let literal = Pattern::Literal(Literal::Integer(42));
+        let literal = Pattern::Literal(Literal::Integer(42, None));
         assert!(!is_irrefutable_pattern(&literal));
     }
 }
