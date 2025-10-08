@@ -622,7 +622,10 @@ mod tests {
             Some(Token::Identifier("x".to_string()))
         );
         assert_eq!(stream.next().map(|(t, _)| t), Some(Token::Equal));
-        assert_eq!(stream.next().map(|(t, _)| t), Some(Token::Integer(42)));
+        assert_eq!(
+            stream.next().map(|(t, _)| t),
+            Some(Token::Integer("42".to_string()))
+        );
         assert_eq!(stream.next().map(|(t, _)| t), Some(Token::Plus));
         assert_eq!(stream.next().map(|(t, _)| t), Some(Token::Float(3.14))); // Intentional literal for test
         assert_eq!(stream.next().map(|(t, _)| t), None);
@@ -631,7 +634,10 @@ mod tests {
     fn test_tokenize_pipeline() {
         let mut stream = TokenStream::new("[1, 2, 3] >> map(|x| x * 2)");
         assert_eq!(stream.next().map(|(t, _)| t), Some(Token::LeftBracket));
-        assert_eq!(stream.next().map(|(t, _)| t), Some(Token::Integer(1)));
+        assert_eq!(
+            stream.next().map(|(t, _)| t),
+            Some(Token::Integer("1".to_string()))
+        );
         // ... rest of tokens
     }
     #[test]
@@ -972,7 +978,7 @@ mod tests {
             let s = n.to_string();
             let mut stream = TokenStream::new(&s);
             match stream.advance() {
-                Some((Token::Integer(i), _)) => prop_assert_eq!(i, n),
+                Some((Token::Integer(i), _)) => prop_assert_eq!(i, n.to_string()),
                 _ => panic!("Failed to tokenize integer"),
             }
         }

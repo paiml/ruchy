@@ -207,7 +207,7 @@ fn test_integer_to_string() {
 
     // This calls eval_primitive_method → eval_integer_method (line 259)
     let num = Value::Integer(42);
-    let result = eval_primitive_method(&num, "to_string", true).unwrap();
+    let result = eval_primitive_method(&num, "to_string", &[], true).unwrap();
 
     if let Value::String(s) = result {
         assert_eq!(&*s, "42", "Integer.to_string() should work");

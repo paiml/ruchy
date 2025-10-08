@@ -178,7 +178,7 @@ pub fn arb_expr() -> BoxedStrategy<Expr> {
 /// ```
 pub fn arb_pattern() -> BoxedStrategy<Pattern> {
     prop_oneof![
-        any::<i64>().prop_map(|i| Pattern::Literal(Literal::Integer(i, _))),
+        any::<i64>().prop_map(|i| Pattern::Literal(Literal::Integer(i, None))),
         any::<bool>().prop_map(|b| Pattern::Literal(Literal::Bool(b))),
         arb_identifier().prop_map(Pattern::Identifier),
         Just(Pattern::Wildcard),
@@ -204,12 +204,12 @@ pub fn arb_well_typed_expr() -> BoxedStrategy<Expr> {
             Expr::new(
                 ExprKind::Binary {
                     left: Box::new(Expr::new(
-                        ExprKind::Literal(Literal::Integer(a, _)),
+                        ExprKind::Literal(Literal::Integer(a, None)),
                         Span::new(0, 0),
                     )),
                     op: BinaryOp::Add,
                     right: Box::new(Expr::new(
-                        ExprKind::Literal(Literal::Integer(b, _)),
+                        ExprKind::Literal(Literal::Integer(b, None)),
                         Span::new(0, 0),
                     )),
                 },

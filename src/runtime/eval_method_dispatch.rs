@@ -445,10 +445,10 @@ mod tests {
 
     #[test]
     fn test_integer_methods() {
-        let result = eval_integer_method(-42, "abs", true).unwrap();
+        let result = eval_integer_method(-42, "abs", &[]).unwrap();
         assert_eq!(result, Value::Integer(42));
 
-        let result = eval_integer_method(123, "to_string", true).unwrap();
+        let result = eval_integer_method(123, "to_string", &[]).unwrap();
         assert_eq!(result, Value::from_string("123".to_string()));
     }
 
