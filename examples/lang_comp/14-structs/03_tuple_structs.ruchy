@@ -1,0 +1,23 @@
+// LANG-COMP-014-03: Tuple Structs - Struct with unnamed fields
+// Demonstrates tuple struct usage and field access
+
+struct Point(i32, i32)
+struct Color(i32, i32, i32)
+struct UserId(i32)
+
+fn main() {
+    // Basic tuple struct
+    let p = Point(10, 20)
+    println(p.0)
+    println(p.1)
+
+    // Tuple struct with different types
+    let red = Color(255, 0, 0)
+    println(red.0)
+    println(red.1)
+    println(red.2)
+
+    // Tuple struct with single field (newtype pattern)
+    let user = UserId(12345)
+    println(user.0)
+}

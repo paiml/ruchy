@@ -1,0 +1,57 @@
+// LANG-COMP-014-01: Basic Structs - Definition and instantiation
+// Demonstrates basic struct creation and field access
+
+fn main() {
+    // Basic struct definition and creation
+    struct Point {
+        x: i32,
+        y: i32
+    }
+
+    let p = Point { x: 10, y: 20 }
+    println(p.x)
+    println(p.y)
+
+    // Struct with different field types
+    struct Person {
+        name: String,
+        age: i32,
+        active: bool
+    }
+
+    let person = Person {
+        name: "Alice",
+        age: 30,
+        active: true
+    }
+    println(person.name)
+    println(person.age)
+    println(person.active)
+
+    // Mutable struct
+    let mut point = Point { x: 0, y: 0 }
+    point.x = 5
+    point.y = 10
+    println(point.x)
+    println(point.y)
+
+    // Struct with method syntax for field access
+    let coords = Point { x: 100, y: 200 }
+    let x_val = coords.x
+    let y_val = coords.y
+    println(x_val)
+    println(y_val)
+
+    // Nested struct fields
+    struct Rectangle {
+        top_left: Point,
+        bottom_right: Point
+    }
+
+    let rect = Rectangle {
+        top_left: Point { x: 0, y: 0 },
+        bottom_right: Point { x: 10, y: 20 }
+    }
+    println(rect.top_left.x)
+    println(rect.bottom_right.y)
+}
