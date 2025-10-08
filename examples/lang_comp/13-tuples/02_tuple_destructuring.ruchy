@@ -1,0 +1,45 @@
+// LANG-COMP-013-02: Tuple Destructuring - Pattern matching
+// Demonstrates tuple destructuring and patterns
+
+fn main() {
+    // Basic destructuring
+    let (x, y) = (3, 4)
+    println(x)
+    println(y)
+
+    // Destructuring with different types
+    let (num, text, flag) = (42, "world", false)
+    println(num)
+    println(text)
+    println(flag)
+
+    // Nested tuple destructuring
+    let ((a, b), c) = ((1, 2), 3)
+    println(a)
+    println(b)
+    println(c)
+
+    // Destructuring in match
+    let point = (10, 20)
+    match point {
+        (0, 0) => println("Origin"),
+        (0, y) => println(f"On Y-axis at {y}"),
+        (x, 0) => println(f"On X-axis at {x}"),
+        (x, y) => println(f"Point at ({x}, {y})")
+    }
+
+    // Destructuring with underscore (ignore values)
+    let triple = (1, 2, 3)
+    let (first, _, third) = triple
+    println(first)
+    println(third)
+
+    // Multiple assignment (reassignment via let)
+    let mut a = 5
+    let mut b = 10
+    let temp = a
+    a = b
+    b = temp
+    println(a)
+    println(b)
+}

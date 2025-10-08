@@ -11,4 +11,5 @@ pub mod operators;
 pub mod pattern_matching;
 pub mod ranges;
 pub mod string_interpolation;
+pub mod tuples;
 pub mod type_annotations;
