@@ -1823,4 +1823,46 @@ mod property_tests_expressions {
             assert!(result.is_ok() || result.is_err());
         }
     }
+
+    // List transpilation behavior matches Rust semantics
+    #[test]
+    fn test_list_transpilation_matches_rust() {
+        use crate::frontend::ast::{Expr, ExprKind, Literal};
+
+        let transpiler = Transpiler::new();
+
+        // Test empty list → vec![] (Rust requires type annotation for empty [])
+        let empty_list = Expr {
+            kind: ExprKind::List(vec![]),
+            span: Default::default(),
+            attributes: vec![],
+        };
+        let empty_result = transpiler.transpile_expr(&empty_list).unwrap();
+        assert!(empty_result.to_string().contains("vec !"));
+
+        // Test non-empty list → array [1, 2, 3] (matches Rust array literal)
+        let non_empty_list = Expr {
+            kind: ExprKind::List(vec![
+                Expr {
+                    kind: ExprKind::Literal(Literal::Integer(1, None)),
+                    span: Default::default(),
+                    attributes: vec![],
+                },
+                Expr {
+                    kind: ExprKind::Literal(Literal::Integer(2, None)),
+                    span: Default::default(),
+                    attributes: vec![],
+                },
+            ]),
+            span: Default::default(),
+            attributes: vec![],
+        };
+        let non_empty_result = transpiler.transpile_expr(&non_empty_list).unwrap();
+        let code = non_empty_result.to_string();
+        assert!(code.contains("[") && code.contains("1") && code.contains("2"));
+        assert!(
+            !code.contains("vec !"),
+            "Non-empty lists should be arrays, not Vec"
+        );
+    }
 }

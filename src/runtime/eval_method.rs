@@ -330,7 +330,7 @@ mod tests {
     #[test]
     fn test_method_argument_validation() {
         assert!(eval_float_method(4.0, "sqrt", false).is_err());
-        assert!(eval_integer_method(5, "abs", false).is_err());
+        assert!(eval_integer_method(5, "abs", &[Value::Integer(1)]).is_err());
         assert!(eval_generic_method(&Value::Nil, "type", false).is_err());
     }
 

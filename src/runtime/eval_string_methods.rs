@@ -438,10 +438,10 @@ mod tests {
 
     #[test]
     fn test_integer_methods() {
-        let result = eval_integer_method(-42, "abs", true).unwrap();
+        let result = eval_integer_method(-42, "abs", &[]).unwrap();
         assert_eq!(result, Value::Integer(42));
 
-        let result = eval_integer_method(123, "to_string", true).unwrap();
+        let result = eval_integer_method(123, "to_string", &[]).unwrap();
         assert_eq!(result, Value::from_string("123".to_string()));
     }
 
@@ -560,7 +560,7 @@ mod mutation_tests {
     fn test_eval_primitive_method_float_match_arm() {
         // MISSED: delete match arm Value::Float(f) in eval_primitive_method (line 258)
         let float_val = Value::Float(4.0);
-        let result = eval_primitive_method(&float_val, "sqrt", true).unwrap();
+        let result = eval_primitive_method(&float_val, "sqrt", &[], true).unwrap();
         assert_eq!(result, Value::Float(2.0));
     }
 

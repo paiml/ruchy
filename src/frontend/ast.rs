@@ -1980,7 +1980,8 @@ mod tests {
                 | Pattern::QualifiedName(_)
                 | Pattern::AtBinding { .. }
                 | Pattern::WithDefault { .. }
-                | Pattern::Mut(_) => {} // Simple patterns
+                | Pattern::Mut(_)
+                | Pattern::TupleVariant { .. } => {} // Simple patterns
             }
         }
     }
