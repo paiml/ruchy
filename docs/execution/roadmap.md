@@ -2,8 +2,8 @@
 
 ## 📝 **SESSION CONTEXT FOR RESUMPTION**
 
-**Last Active**: 2025-10-07 (v3.68.0 - LANG-COMP-010/011 COMPLETE + DEFECT-CONSECUTIVE-FOR FIXED)
-**Current Sprint**: LANG-COMP Language Completeness (ACTIVE - 11/11 features complete)
+**Last Active**: 2025-10-08 (v3.69.0 - LANG-COMP-012/013/014/015 COMPLETE + 5 DEFECTS FIXED)
+**Current Sprint**: LANG-COMP Language Completeness (ACTIVE - 15/15 features complete)
 **Sprint Status**: ✅ **LANG-COMP-001 COMPLETE** - Basic Syntax (9/9 tests, 8-tool validation spec added)
 **Sprint Status**: ✅ **LANG-COMP-002 COMPLETE** - Operators (21/21 tests, 4 examples, REPL-based validation)
 **Sprint Status**: ✅ **LANG-COMP-003 COMPLETE** - Control Flow (13/13 unit + 3/3 property tests, 5 examples, 300 property iterations)
@@ -15,6 +15,10 @@
 **Sprint Status**: ✅ **LANG-COMP-009 COMPLETE** - Pattern Matching (4 examples, 15-tool validation tests implemented)
 **Sprint Status**: ✅ **LANG-COMP-010 COMPLETE** - Closures (4 examples, 13 tests, DEFECT-CLOSURE-RETURN fixed, 15-tool validation)
 **Sprint Status**: ✅ **LANG-COMP-011 COMPLETE** - Ranges (4 examples, 10 tests, DEFECT-CONSECUTIVE-FOR fixed, 15-tool validation)
+**Sprint Status**: ✅ **LANG-COMP-012 COMPLETE** - Error Handling (4 examples, 11 tests, DEFECT-TRY-CATCH fixed, 15-tool validation)
+**Sprint Status**: ✅ **LANG-COMP-013 COMPLETE** - Tuples (4 examples, 17 tests, DEFECT-NESTED-TUPLE fixed, 15-tool validation)
+**Sprint Status**: ✅ **LANG-COMP-014 COMPLETE** - Structs (3 examples, 10 tests, DEFECT-NESTED-STRUCT-FIELD fixed, 15-tool validation)
+**Sprint Status**: ✅ **LANG-COMP-015 COMPLETE** - Enums (4 examples, 10 tests, 3 enum defects fixed, 15-tool validation)
 **Sprint Status**: ✅ **15-TOOL VALIDATION INFRASTRUCTURE COMPLETE** - All tools validated via ruchy -e and pragmatic solutions
 **Book Compatibility**: ✅ **100% verified (23/23 testable)** - improved from 86.9% (+13.1%)
 **Quality Gates**: ✅ **PMAT v2.70+ commands integrated** - hooks, roadmap validation, health checks
@@ -61,7 +65,40 @@ pmat hooks refresh                # Refresh after .pmat-gates.toml changes
 
 ⚠️ **STRATEGIC SHIFT**: Based on wasm-labs success pattern (87% coverage, 99.4% mutation, 39 E2E tests), we are implementing world-class WASM quality assurance as the EXCLUSIVE priority until complete. NO other work proceeds until WASM quality gates are established.
 
-**Latest Updates** (Session 2025-10-07 v3.70.0 - 15-TOOL VALIDATION TESTS + RUCHY -E):
+**Latest Updates** (Session 2025-10-08 v3.69.0 - LANG-COMP-012/013/014/015 COMPLETE):
+- [LANG-COMP-012] ✅ **COMPLETE**: Error Handling (try/catch/throw/finally) (2025-10-08)
+  - **Achievement**: 4 examples, 11 tests, DEFECT-TRY-CATCH fixed
+  - **Examples**: 01_try_catch.ruchy, 02_nested_try.ruchy, 03_finally.ruchy, 04_multiple_catch.ruchy
+  - **Defect Fixed**: DEFECT-TRY-CATCH - try-catch now uses std::panic::catch_unwind to catch throw panics
+  - **Tests**: All 11 tests passing with assert_cmd + naming convention (test_langcomp_012_XX_*)
+  - **Impact**: Complete exception handling support with panic catching
+- [LANG-COMP-013] ✅ **COMPLETE**: Tuples (fixed-size heterogeneous collections) (2025-10-08)
+  - **Achievement**: 4 examples, 17 tests, DEFECT-NESTED-TUPLE fixed
+  - **Examples**: 01_basic_tuples.ruchy, 02_tuple_destructuring.ruchy, 03_tuple_functions.ruchy, 04_nested_tuples.ruchy
+  - **Defect Fixed**: DEFECT-NESTED-TUPLE - transpiler now handles numeric field access for nested tuples
+  - **Tests**: 17 tests covering creation, indexing, destructuring, functions, nested tuples
+  - **Impact**: Full tuple support with deep field access like (nested.0).1
+- [LANG-COMP-014] ✅ **COMPLETE**: Structs (named field collections) (2025-10-08)
+  - **Achievement**: 3 examples, 10 tests, DEFECT-NESTED-STRUCT-FIELD fixed
+  - **Examples**: 01_basic_structs.ruchy, 02_struct_methods.ruchy, 03_tuple_structs.ruchy
+  - **Defect Fixed**: DEFECT-NESTED-STRUCT-FIELD - transpiler uses . for nested struct fields instead of ::
+  - **Tests**: 10 tests covering definition, field access, methods, tuple structs
+  - **Impact**: Complete struct support with methods and nested field access
+- [LANG-COMP-015] ✅ **COMPLETE**: Enums (sum types with variants) (2025-10-08)
+  - **Achievement**: 4 examples, 10 tests, 3 enum defects fixed (DEFECT-ENUM-MATCH, DEFECT-ENUM-NO-DEBUG, DEFECT-ENUM-TUPLE-PATTERN)
+  - **Examples**: 01_basic_enums.ruchy, 02_enum_matching.ruchy, 03_enum_with_data.ruchy, 04_enum_mixed.ruchy
+  - **Defects Fixed**:
+    - DEFECT-ENUM-MATCH: Parser now handles :: in enum pattern matching (Color::Red in match arms)
+    - DEFECT-ENUM-NO-DEBUG: Transpiler adds #[derive(Debug, Clone, PartialEq)] to all enums
+    - DEFECT-ENUM-TUPLE-PATTERN: Added Pattern::TupleVariant to AST for enum data variants
+  - **Tests**: 10 tests covering unit variants, pattern matching, tuple variants, mixed variants
+  - **Technical Changes**: Added Pattern::TupleVariant, updated parser/transpiler/type-inference/runtime
+  - **Impact**: Complete enum support with unit variants, tuple variants, and pattern matching
+- **Test Coverage Summary**: 48 new tests across 4 features (11 + 17 + 10 + 10)
+- **Defects Fixed**: 5 total (DEFECT-TRY-CATCH, DEFECT-NESTED-TUPLE, DEFECT-NESTED-STRUCT-FIELD, DEFECT-ENUM-MATCH, DEFECT-ENUM-NO-DEBUG, DEFECT-ENUM-TUPLE-PATTERN)
+- **Quality**: All P0 validation passed, zero clippy warnings, code formatted, EXTREME TDD protocol followed
+
+**Previous Updates** (Session 2025-10-07 v3.70.0 - 15-TOOL VALIDATION TESTS + RUCHY -E):
 - [15-TOOL-VALIDATION-TESTS] ✅ **COMPLETE**: Comprehensive 15-Tool Test Infrastructure (2025-10-07)
   - **Achievement**: Created 4 comprehensive test modules for LANG-COMP-006/007/008/009
   - **Discovery**: `ruchy -e` flag provides REPL functionality for file validation
