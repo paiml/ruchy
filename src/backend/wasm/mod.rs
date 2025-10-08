@@ -741,6 +741,10 @@ impl WasmEmitter {
             ExprKind::Return { value } => self.lower_return(value.as_deref()),
             ExprKind::StringInterpolation { parts } => self.lower_string_interpolation(parts),
             ExprKind::Match { expr, arms } => self.lower_match(expr, arms),
+            ExprKind::Tuple(_elements) => self.lower_tuple(),
+            ExprKind::FieldAccess { .. } => self.lower_field_access(),
+            ExprKind::StructLiteral { .. } => self.lower_struct_literal(),
+            ExprKind::Assign { target, value } => self.lower_assign(target, value),
             _ => Ok(vec![]),
         }
     }
@@ -823,6 +827,56 @@ impl WasmEmitter {
     /// Complexity: 1 (Toyota Way: <10 ✓)
     fn lower_list(&self) -> Result<Vec<Instruction<'static>>, String> {
         Ok(vec![Instruction::I32Const(0)])
+    }
+
+    /// Lower a tuple literal to WASM instructions (MVP)
+    /// Complexity: 1 (Toyota Way: <10 ✓)
+    ///
+    /// Current MVP: Tuples are represented as i32 placeholder (like lists)
+    /// Full tuple support requires memory model with field offsets
+    fn lower_tuple(&self) -> Result<Vec<Instruction<'static>>, String> {
+        Ok(vec![Instruction::I32Const(0)])
+    }
+
+    /// Lower field access to WASM instructions (MVP)
+    /// Complexity: 1 (Toyota Way: <10 ✓)
+    ///
+    /// Current MVP: Field access returns i32 placeholder
+    /// Full support requires memory model with field offset calculations
+    fn lower_field_access(&self) -> Result<Vec<Instruction<'static>>, String> {
+        Ok(vec![Instruction::I32Const(0)])
+    }
+
+    /// Lower struct literal to WASM instructions (MVP)
+    /// Complexity: 1 (Toyota Way: <10 ✓)
+    ///
+    /// Current MVP: Structs are represented as i32 placeholder (like tuples)
+    /// Full struct support requires memory model with field layout
+    fn lower_struct_literal(&self) -> Result<Vec<Instruction<'static>>, String> {
+        Ok(vec![Instruction::I32Const(0)])
+    }
+
+    /// Lower an assignment to WASM instructions
+    /// Complexity: 6 (Toyota Way: <10 ✓)
+    fn lower_assign(
+        &self,
+        target: &Expr,
+        value: &Expr,
+    ) -> Result<Vec<Instruction<'static>>, String> {
+        let mut instructions = vec![];
+
+        // Evaluate the value expression
+        instructions.extend(self.lower_expression(value)?);
+
+        // Store to target (must be an identifier)
+        if let ExprKind::Identifier(name) = &target.kind {
+            let local_index = self.symbols.borrow().lookup_index(name).unwrap_or(0);
+            instructions.push(Instruction::LocalSet(local_index));
+        } else {
+            return Err("Assignment target must be identifier".to_string());
+        }
+
+        Ok(instructions)
     }
 
     /// Lower a return statement to WASM instructions
@@ -1277,7 +1331,15 @@ impl WasmEmitter {
                 // For now, return a placeholder
                 Ok(vec![Instruction::I32Const(0)])
             }
-            _ => Ok(vec![]), // Skip other literals for now
+            Literal::Unit => {
+                // Unit type () is represented as i32 const 0 in WASM
+                Ok(vec![Instruction::I32Const(0)])
+            }
+            Literal::Char(c) => {
+                // Character literals represented as i32 (UTF-32 code point)
+                Ok(vec![Instruction::I32Const(*c as i32)])
+            }
+            _ => Ok(vec![Instruction::I32Const(0)]), // Other literals default to 0
         }
     }
 }
