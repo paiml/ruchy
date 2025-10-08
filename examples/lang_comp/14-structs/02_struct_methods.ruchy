@@ -1,0 +1,94 @@
+// LANG-COMP-014-02: Struct Methods - Implementation blocks
+// Demonstrates struct methods and associated functions
+
+fn main() {
+    // Struct with methods
+    struct Rectangle {
+        width: i32,
+        height: i32
+    }
+
+    impl Rectangle {
+        fn area(self) -> i32 {
+            self.width * self.height
+        }
+
+        fn perimeter(self) -> i32 {
+            2 * (self.width + self.height)
+        }
+    }
+
+    let rect = Rectangle { width: 10, height: 20 }
+    let area = rect.area()
+    println(area)
+
+    let rect2 = Rectangle { width: 5, height: 15 }
+    let perimeter = rect2.perimeter()
+    println(perimeter)
+
+    // Struct with method that returns boolean
+    struct Circle {
+        radius: i32
+    }
+
+    impl Circle {
+        fn is_large(self) -> bool {
+            self.radius > 10
+        }
+    }
+
+    let small_circle = Circle { radius: 5 }
+    let large_circle = Circle { radius: 15 }
+    println(small_circle.is_large())
+    println(large_circle.is_large())
+
+    // Struct with method that takes parameters
+    struct Point {
+        x: i32,
+        y: i32
+    }
+
+    impl Point {
+        fn distance_from(self, other: Point) -> i32 {
+            let dx = self.x - other.x
+            let dy = self.y - other.y
+            dx * dx + dy * dy  // Squared distance
+        }
+    }
+
+    let p1 = Point { x: 0, y: 0 }
+    let p2 = Point { x: 3, y: 4 }
+    let dist = p1.distance_from(p2)
+    println(dist)
+
+    // Struct with multiple methods
+    struct Temperature {
+        celsius: i32
+    }
+
+    impl Temperature {
+        fn to_fahrenheit(self) -> i32 {
+            (self.celsius * 9 / 5) + 32
+        }
+
+        fn is_freezing(self) -> bool {
+            self.celsius <= 0
+        }
+    }
+
+    let temp = Temperature { celsius: 0 }
+    let fahren = temp.to_fahrenheit()
+    println(fahren)
+
+    let temp2 = Temperature { celsius: 0 }
+    let frozen = temp2.is_freezing()
+    println(frozen)
+
+    let warm = Temperature { celsius: 25 }
+    let warm_f = warm.to_fahrenheit()
+    println(warm_f)
+
+    let warm2 = Temperature { celsius: 25 }
+    let not_frozen = warm2.is_freezing()
+    println(not_frozen)
+}

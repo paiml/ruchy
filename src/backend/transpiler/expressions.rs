@@ -410,16 +410,16 @@ impl Transpiler {
                 })
             }
             ExprKind::FieldAccess { .. } => {
-                // Nested field access - check if numeric (tuple) or identifier (module path)
+                // Nested field access - check if numeric (tuple) or struct field
                 if field.chars().all(|c| c.is_ascii_digit()) {
                     // Nested tuple access like (nested.0).1
                     let index: usize = field.parse().unwrap();
                     let index = syn::Index::from(index);
                     Ok(quote! { #obj_tokens.#index })
                 } else {
-                    // Module path like net::TcpListener - use :: syntax
+                    // Nested struct field access like rect.top_left.x - use . syntax
                     let field_ident = format_ident!("{}", field);
-                    Ok(quote! { #obj_tokens::#field_ident })
+                    Ok(quote! { #obj_tokens.#field_ident })
                 }
             }
             ExprKind::Identifier(name) if name.contains("::") => {
@@ -1421,12 +1421,55 @@ mod tests {
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
         let result = transpiler.transpile(&ast);
-        assert!(result.is_ok(), "Nested tuple access should transpile successfully");
+        assert!(
+            result.is_ok(),
+            "Nested tuple access should transpile successfully"
+        );
         let rust_str = result.unwrap().to_string();
         // Should contain nested.0.1 or similar tuple access pattern
-        assert!(rust_str.contains("nested"), "Should contain 'nested' identifier");
+        assert!(
+            rust_str.contains("nested"),
+            "Should contain 'nested' identifier"
+        );
         assert!(rust_str.contains(".0"), "Should contain tuple index .0");
         assert!(rust_str.contains(".1"), "Should contain tuple index .1");
+    }
+
+    #[test]
+    fn test_defect_nested_struct_field_transpile_nested_struct_access() {
+        // DEFECT-NESTED-STRUCT-FIELD: Test that nested struct field access rect.top_left.x transpiles correctly
+        // Previously failed with incorrect :: separator instead of .
+        let transpiler = create_transpiler();
+        let code = "struct Point { x: i32 } struct Rectangle { top_left: Point } fn main() { let rect = Rectangle { top_left: Point { x: 10 } }; rect.top_left.x }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        let result = transpiler.transpile(&ast);
+        assert!(
+            result.is_ok(),
+            "Nested struct field access should transpile successfully"
+        );
+        let rust_str = result.unwrap().to_string();
+        // Should contain rect.top_left.x with . separator, not ::
+        assert!(
+            rust_str.contains("rect"),
+            "Should contain 'rect' identifier"
+        );
+        assert!(
+            rust_str.contains("top_left"),
+            "Should contain 'top_left' identifier"
+        );
+        // Critical: should NOT contain :: for struct field access
+        assert!(
+            !rust_str.contains("top_left :: x") && !rust_str.contains("top_left::x"),
+            "Should NOT use :: for nested struct field access, got: {}",
+            rust_str
+        );
+        // Should contain . for struct field access
+        assert!(
+            rust_str.contains("top_left . x") || rust_str.contains("top_left.x"),
+            "Should use . for nested struct field access, got: {}",
+            rust_str
+        );
     }
 
     #[test]

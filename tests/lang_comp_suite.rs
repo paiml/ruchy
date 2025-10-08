@@ -39,5 +39,8 @@ mod lang_comp {
     mod error_handling;
 
     #[cfg(test)]
+    mod structs;
+
+    #[cfg(test)]
     mod tuples;
 }
