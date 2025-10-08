@@ -91,44 +91,56 @@ Example: let (x, y) = (3, 4)
 
 ### 2. Struct Field Mutation [WASM-003]
 
-**Status**: ⚠️ PARTIAL - Compiles but doesn't actually mutate (placeholder)
-**Priority**: HIGH
-**Blocking Tests**:
-- `test_langcomp_014_01_struct_field_access` ⚠️ COMPILES (but mutation is no-op)
-- `test_langcomp_014_02_struct_method_call` ⚠️ COMPILES (but mutation is no-op)
+**Status**: ✅ COMPLETE - Real struct field mutation working! (v3.70.0 Phase 4)
+**Priority**: COMPLETE
+**Completed**: v3.70.0 (Phase 4 - Struct Registry & Field Mutation)
 
 **Current Behavior**:
 ```rust
-// ✅ COMPILES: Field mutation syntax accepted
+// ✅ WORKS: Struct definition and instantiation
 struct Point { x: i32, y: i32 }
-let mut p = Point { x: 0, y: 0 }
-p.x = 5  // Compiles, but value is dropped (MVP placeholder)
-println(p.x)  // Will print 0, not 5 (no actual mutation)
+let mut p = Point { x: 3, y: 4 }
+println(p.x)  // Prints: 3 (loaded from memory offset 0)
+println(p.y)  // Prints: 4 (loaded from memory offset 4)
 
-// ❌ LIMITATION: Mutation doesn't persist
-// The assignment compiles but the value isn't stored anywhere
-// This is because WASM-005 (memory model) isn't implemented yet
+// ✅ WORKS: Field mutation stores to memory
+p.x = 10
+println(p.x)  // Prints: 10 (real mutation!)
+
+// ✅ WORKS: Field access after mutation
+println(p.y)  // Prints: 4 (unchanged)
 ```
 
-**Root Cause**:
-- ✅ `lower_assign()` now handles FieldAccess targets
-- ❌ No memory model to actually store field values (WASM-005 blocker)
-- MVP: Value is dropped instead of stored (honest placeholder)
+**Implementation Complete (v3.70.0 Phase 4)**:
+- ✅ Struct registry: Maps struct_name → field_names for offset calculation
+- ✅ collect_struct_definitions(): Traverses AST to collect struct definitions
+- ✅ lower_struct_literal(): Allocates memory with bump allocator, returns address
+- ✅ lower_field_access(): Looks up field offset from registry, uses i32.load
+- ✅ lower_assign() for FieldAccess: Uses i32.store at calculated offset
+- ✅ Five Whys root cause analysis: Fixed missing struct registry architecture
 
-**MVP Implementation Complete**:
-- Handle FieldAccess in lower_assign() ✅
-- Code compiles without errors ✅
-- MVP: Drop value instead of store (placeholder) ✅
-- Honest documentation of limitation ✅
+**Memory Model**:
+```
+struct Point { x: i32, y: i32 }
+let p = Point { x: 3, y: 4 }
 
-**Remaining Work**:
-- Implement memory model (WASM-005) - CRITICAL blocker
-- Calculate field offset from struct layout
-- Use i32.store to write value at computed address
-- Support nested field mutation: `obj.field.subfield = value`
+1. Allocate 8 bytes at address 0 (2 fields × 4 bytes)
+   Memory[0-3]: 3  (field x at offset 0)
+   Memory[4-7]: 4  (field y at offset 4)
+
+2. Field access: p.x
+   i32.load(address + 0) = 3
+
+3. Field mutation: p.x = 10
+   i32.store(address + 0, 10)
+```
+
+**Limitations**:
+- ⚠️ Nested field mutation `obj.field.subfield = val` requires chained address calculation (future work)
+- ⚠️ Field name collisions across structs use heuristic (first match wins)
 
 **Test Files**:
-- examples/lang_comp/14-structs/01_basic_structs.ruchy (will compile but mutations are no-op)
+- test_struct_mutation.ruchy ✅ PASSING (compiles to valid 146-byte WASM module)
 
 ---
 
@@ -267,6 +279,18 @@ local.get $temp               ;; Return address
   - Stores loaded values into pattern variable locals
   - Nested destructuring works correctly
 - **Test**: `let (x, y) = (3, 4); println(x)` prints 3 (real value!)
+
+### ✅ Struct Field Mutation [WASM-005 Phase 4] (v3.70.0)
+- **Implemented**: Commit 4a42b76a
+- **Status**: FULLY WORKING - Real struct field mutation with memory stores
+- **Features**:
+  - Struct registry: Maps struct_name → field_names for offset calculation
+  - `collect_struct_definitions()`: Traverses AST to collect struct definitions
+  - `lower_struct_literal()`: Allocates memory with bump allocator
+  - `lower_field_access()`: Looks up field offset from registry, uses i32.load
+  - `lower_assign()` for FieldAccess: Uses i32.store at calculated offset
+  - Five Whys root cause analysis: Fixed missing struct registry architecture
+- **Test**: `p.x = 10` stores to memory, `println(p.x)` prints 10 (real mutation!)
 
 ### ✅ Basic Tuple Creation [WASM-001] (v3.69.0 → v3.70.0)
 - **Implemented**: Commit d43197f2 → Upgraded f7fdb1de
