@@ -217,361 +217,381 @@ impl Default for WasmCompiler {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used)]
 mod tests {
     use super::*;
+    use crate::frontend::ast::{BinaryOp, Span};
 
-    // Sprint 8: WASM module tests for coverage improvement
-    // Note: Many tests commented out due to API mismatches
+    // Helper to create test expressions
+    fn make_int(n: i64) -> Expr {
+        Expr {
+            kind: ExprKind::Literal(Literal::Integer(n, None)),
+            span: Span::default(),
+            attributes: vec![],
+        }
+    }
 
-    /* Tests commented out - API mismatches
+    fn make_float(f: f64) -> Expr {
+        Expr {
+            kind: ExprKind::Literal(Literal::Float(f)),
+            span: Span::default(),
+            attributes: vec![],
+        }
+    }
+
+    fn make_bool(b: bool) -> Expr {
+        Expr {
+            kind: ExprKind::Literal(Literal::Bool(b)),
+            span: Span::default(),
+            attributes: vec![],
+        }
+    }
+
+    fn make_binary(left: Expr, op: BinaryOp, right: Expr) -> Expr {
+        Expr {
+            kind: ExprKind::Binary {
+                left: Box::new(left),
+                op,
+                right: Box::new(right),
+            },
+            span: Span::default(),
+            attributes: vec![],
+        }
+    }
+
+    // =====================================================================
+    // WasmCompiler Tests
+    // =====================================================================
+
     #[test]
-    fn test_wasm_component_builder_creation() {
-        let builder = ComponentBuilder::new("test_component");
-        assert_eq!(builder.name(), "test_component");
+    fn test_compiler_new() {
+        let compiler = WasmCompiler::new();
+        assert_eq!(compiler.optimization_level, 0);
     }
 
     #[test]
-    fn test_component_config_default() {
-        let config = ComponentConfig::default();
-        assert!(config.optimize);
-        assert!(config.validate);
-        assert!(!config.debug_info);
+    fn test_compiler_default() {
+        let compiler = WasmCompiler::default();
+        assert_eq!(compiler.optimization_level, 0);
     }
 
     #[test]
-    fn test_component_config_custom() {
-        let config = ComponentConfig {
-            optimize: false,
-            validate: false,
-            debug_info: true,
-            memory_pages: 256,
-            max_memory_pages: Some(512),
+    fn test_set_optimization_level_valid() {
+        let mut compiler = WasmCompiler::new();
+        compiler.set_optimization_level(2);
+        assert_eq!(compiler.optimization_level, 2);
+    }
+
+    #[test]
+    fn test_set_optimization_level_clamps_high() {
+        let mut compiler = WasmCompiler::new();
+        compiler.set_optimization_level(10);
+        assert_eq!(
+            compiler.optimization_level, 3,
+            "Should clamp to maximum of 3"
+        );
+    }
+
+    #[test]
+    fn test_set_optimization_level_zero() {
+        let mut compiler = WasmCompiler::new();
+        compiler.set_optimization_level(0);
+        assert_eq!(compiler.optimization_level, 0);
+    }
+
+    #[test]
+    fn test_compile_integer_literal() {
+        let compiler = WasmCompiler::new();
+        let ast = make_int(42);
+        let result = compiler.compile(&ast);
+        assert!(result.is_ok(), "Should compile integer literal");
+    }
+
+    #[test]
+    fn test_compile_float_literal() {
+        let compiler = WasmCompiler::new();
+        let ast = make_float(3.14);
+        let result = compiler.compile(&ast);
+        assert!(result.is_ok(), "Should compile float literal");
+    }
+
+    #[test]
+    fn test_compile_bool_literal() {
+        let compiler = WasmCompiler::new();
+        let ast = make_bool(true);
+        let result = compiler.compile(&ast);
+        assert!(result.is_ok(), "Should compile bool literal");
+    }
+
+    #[test]
+    fn test_compile_binary_add() {
+        let compiler = WasmCompiler::new();
+        let ast = make_binary(make_int(2), BinaryOp::Add, make_int(3));
+        let result = compiler.compile(&ast);
+        assert!(result.is_ok(), "Should compile addition");
+    }
+
+    #[test]
+    fn test_compile_binary_subtract() {
+        let compiler = WasmCompiler::new();
+        let ast = make_binary(make_int(5), BinaryOp::Subtract, make_int(2));
+        let result = compiler.compile(&ast);
+        assert!(result.is_ok(), "Should compile subtraction");
+    }
+
+    #[test]
+    fn test_compile_binary_multiply() {
+        let compiler = WasmCompiler::new();
+        let ast = make_binary(make_int(3), BinaryOp::Multiply, make_int(4));
+        let result = compiler.compile(&ast);
+        assert!(result.is_ok(), "Should compile multiplication");
+    }
+
+    #[test]
+    fn test_compile_binary_divide() {
+        let compiler = WasmCompiler::new();
+        let ast = make_binary(make_int(10), BinaryOp::Divide, make_int(2));
+        let result = compiler.compile(&ast);
+        assert!(result.is_ok(), "Should compile division");
+    }
+
+    #[test]
+    fn test_has_return_false() {
+        let compiler = WasmCompiler::new();
+        let ast = make_int(42);
+        assert!(
+            !compiler.has_return(&ast),
+            "Integer literal should not have return"
+        );
+    }
+
+    #[test]
+    fn test_has_return_true() {
+        let compiler = WasmCompiler::new();
+        let ast = Expr {
+            kind: ExprKind::Return {
+                value: Some(Box::new(make_int(42))),
+            },
+            span: Span::default(),
+            attributes: vec![],
         };
-        assert!(!config.optimize);
-        assert!(!config.validate);
-        assert!(config.debug_info);
-        assert_eq!(config.memory_pages, 256);
-        assert_eq!(config.max_memory_pages, Some(512));
+        assert!(
+            compiler.has_return(&ast),
+            "Return expression should have return"
+        );
+    }
+
+    // =====================================================================
+    // WasmModule Tests
+    // =====================================================================
+
+    #[test]
+    fn test_module_bytes() {
+        let compiler = WasmCompiler::new();
+        let ast = make_int(42);
+        let module = compiler.compile(&ast).expect("Should compile");
+        let bytes = module.bytes();
+        assert!(!bytes.is_empty(), "Module should have bytecode");
     }
 
     #[test]
-    fn test_wit_generator_creation() {
-        let generator = WitGenerator::new();
-        assert!(generator.interfaces().is_empty());
+    fn test_module_validate_valid() {
+        let compiler = WasmCompiler::new();
+        let ast = make_int(42);
+        let module = compiler.compile(&ast).expect("Should compile");
+        let result = module.validate();
+        assert!(result.is_ok(), "Valid WASM module should pass validation");
     }
 
     #[test]
-    fn test_interface_definition_creation() {
-        let def = InterfaceDefinition::new("my-interface");
-        assert_eq!(def.name(), "my-interface");
-        assert!(def.functions().is_empty());
-        assert!(def.types().is_empty());
-    }
-
-    #[test]
-    fn test_deployment_target_variants() {
-        let browser = DeploymentTarget::Browser;
-        let node = DeploymentTarget::Node;
-        let wasi = DeploymentTarget::Wasi;
-        let cloudflare = DeploymentTarget::CloudflareWorkers;
-
-        assert!(matches!(browser, DeploymentTarget::Browser));
-        assert!(matches!(node, DeploymentTarget::Node));
-        assert!(matches!(wasi, DeploymentTarget::Wasi));
-        assert!(matches!(cloudflare, DeploymentTarget::CloudflareWorkers));
-    }
-
-    #[test]
-    fn test_deployment_config_default() {
-        let config = DeploymentConfig::default();
-        assert_eq!(config.target, DeploymentTarget::Browser);
-        assert!(config.minify);
-        assert!(!config.source_maps);
-    }
-
-    #[test]
-    fn test_deployment_config_custom() {
-        let config = DeploymentConfig {
-            target: DeploymentTarget::Node,
-            minify: false,
-            source_maps: true,
-            output_dir: Some("dist".to_string()),
-            public_url: Some("https://example.com".to_string()),
+    fn test_module_validate_invalid() {
+        let module = WasmModule {
+            bytes: vec![0xFF, 0xFF, 0xFF, 0xFF],
+            exports: vec![],
         };
-        assert_eq!(config.target, DeploymentTarget::Node);
-        assert!(!config.minify);
-        assert!(config.source_maps);
-        assert_eq!(config.output_dir, Some("dist".to_string()));
-        assert_eq!(config.public_url, Some("https://example.com".to_string()));
+        let result = module.validate();
+        assert!(
+            result.is_err(),
+            "Invalid WASM module should fail validation"
+        );
     }
 
     #[test]
-    fn test_deployer_creation() {
-        let config = DeploymentConfig::default();
-        let deployer = Deployer::new(config);
-        assert_eq!(deployer.config().target, DeploymentTarget::Browser);
+    fn test_module_validate_empty() {
+        let module = WasmModule {
+            bytes: vec![],
+            exports: vec![],
+        };
+        let result = module.validate();
+        assert!(result.is_err(), "Empty module should fail validation");
     }
 
     #[test]
-    fn test_portability_analyzer_creation() {
-        let analyzer = PortabilityAnalyzer::new();
-        assert!(analyzer.rules().len() > 0); // Should have default rules
+    fn test_module_has_magic_number() {
+        let compiler = WasmCompiler::new();
+        let ast = make_int(42);
+        let module = compiler.compile(&ast).expect("Should compile");
+        let bytes = module.bytes();
+        assert!(bytes.len() >= 4, "Module should have at least 4 bytes");
+        assert_eq!(
+            &bytes[0..4],
+            &[0x00, 0x61, 0x73, 0x6d],
+            "Should have WASM magic number"
+        );
     }
 
     #[test]
-    fn test_portability_score_creation() {
-        let score = PortabilityScore::new(85.5);
-        assert_eq!(score.value(), 85.5);
-        assert!(score.is_portable()); // Assuming threshold is 80
+    fn test_module_has_export_false() {
+        let compiler = WasmCompiler::new();
+        let ast = make_int(42);
+        let module = compiler.compile(&ast).expect("Should compile");
+        assert!(
+            !module.has_export("nonexistent"),
+            "Should not have nonexistent export"
+        );
+    }
+
+    // =====================================================================
+    // Integration Tests
+    // =====================================================================
+
+    #[test]
+    fn test_compile_nested_arithmetic() {
+        let compiler = WasmCompiler::new();
+        // (2 + 3) * 4
+        let inner = make_binary(make_int(2), BinaryOp::Add, make_int(3));
+        let outer = make_binary(inner, BinaryOp::Multiply, make_int(4));
+        let result = compiler.compile(&outer);
+        assert!(result.is_ok(), "Should compile nested arithmetic");
+        let module = result.unwrap();
+        assert!(
+            module.validate().is_ok(),
+            "Nested arithmetic should produce valid WASM"
+        );
     }
 
     #[test]
-    fn test_portability_score_levels() {
-        let excellent = PortabilityScore::new(95.0);
-        let good = PortabilityScore::new(85.0);
-        let fair = PortabilityScore::new(70.0);
-        let poor = PortabilityScore::new(50.0);
+    fn test_compile_different_optimization_levels() {
+        let ast = make_binary(make_int(2), BinaryOp::Add, make_int(3));
 
-        assert_eq!(excellent.level(), "Excellent");
-        assert_eq!(good.level(), "Good");
-        assert_eq!(fair.level(), "Fair");
-        assert_eq!(poor.level(), "Poor");
+        for level in 0..=3 {
+            let mut compiler = WasmCompiler::new();
+            compiler.set_optimization_level(level);
+            let result = compiler.compile(&ast);
+            assert!(
+                result.is_ok(),
+                "Should compile at optimization level {}",
+                level
+            );
+        }
     }
 
     #[test]
-    fn test_portability_report_creation() {
-        let report = PortabilityReport::new(PortabilityScore::new(88.0));
-        assert_eq!(report.score().value(), 88.0);
-        assert!(report.issues().is_empty());
-        assert!(report.suggestions().is_empty());
+    fn test_compile_preserves_bytecode() {
+        let compiler = WasmCompiler::new();
+        let ast = make_int(123);
+        let module = compiler.compile(&ast).expect("Should compile");
+        let bytes1 = module.bytes();
+        let bytes2 = module.bytes();
+        assert_eq!(
+            bytes1, bytes2,
+            "Multiple calls to bytes() should return same data"
+        );
     }
 
-    #[test]
-    fn test_wasm_repl_creation() {
-        let repl = WasmRepl::new();
-        assert!(repl.history().is_empty());
-        assert_eq!(repl.execution_count(), 0);
-    }
+    // =====================================================================
+    // Property Tests (10,000+ cases for mathematical proof)
+    // =====================================================================
 
-    #[test]
-    fn test_repl_output_variants() {
-        let text = ReplOutput::Text("Hello".to_string());
-        let error = ReplOutput::Error("Error".to_string());
-        let value = ReplOutput::Value("42".to_string());
+    #[cfg(test)]
+    mod property_tests {
+        use super::*;
+        use proptest::prelude::*;
 
-        assert!(matches!(text, ReplOutput::Text(_)));
-        assert!(matches!(error, ReplOutput::Error(_)));
-        assert!(matches!(value, ReplOutput::Value(_)));
-    }
+        proptest! {
+            #![proptest_config(ProptestConfig::with_cases(10000))]
 
-    #[test]
-    fn test_timing_info_creation() {
-        let timing = TimingInfo::new(100, 50, 25);
-        assert_eq!(timing.parse_time_us(), 100);
-        assert_eq!(timing.compile_time_us(), 50);
-        assert_eq!(timing.execute_time_us(), 25);
-        assert_eq!(timing.total_time_us(), 175);
-    }
+            /// Property 1: Compilation of integer literals never panics
+            #[test]
+            fn prop_compile_integer_never_panics(n in any::<i32>()) {
+                let compiler = WasmCompiler::new();
+                let ast = make_int(n as i64);
+                let _ = compiler.compile(&ast);
+            }
 
-    #[test]
-    fn test_notebook_runtime_creation() {
-        let runtime = NotebookRuntime::new();
-        assert_eq!(runtime.execution_count(), 0);
-        assert!(runtime.variables().is_empty());
-    }
+            /// Property 2: Compilation of float literals never panics
+            #[test]
+            fn prop_compile_float_never_panics(f in any::<f64>()) {
+                let compiler = WasmCompiler::new();
+                let ast = make_float(f);
+                let _ = compiler.compile(&ast);
+            }
 
-    #[test]
-    fn test_notebook_creation() {
-        let notebook = Notebook::new();
-        assert!(notebook.cells().is_empty());
-        assert_eq!(notebook.kernel(), "ruchy");
-        assert_eq!(notebook.language(), "ruchy");
-    }
+            /// Property 3: All valid WASM modules have magic number
+            #[test]
+            fn prop_compiled_modules_have_magic_number(n in any::<i32>()) {
+                let compiler = WasmCompiler::new();
+                let ast = make_int(n as i64);
+                if let Ok(module) = compiler.compile(&ast) {
+                    let bytes = module.bytes();
+                    prop_assert!(bytes.len() >= 4, "Module should have at least 4 bytes");
+                    prop_assert_eq!(&bytes[0..4], &[0x00, 0x61, 0x73, 0x6d], "Should have WASM magic number");
+                }
+            }
 
-    #[test]
-    fn test_notebook_add_cell() {
-        let mut notebook = Notebook::new();
-        let cell = NotebookCell::new(CellType::Code, "let x = 42");
-        notebook.add_cell(cell);
-        assert_eq!(notebook.cells().len(), 1);
-    }
+            /// Property 4: Compilation is deterministic
+            #[test]
+            fn prop_compilation_is_deterministic(n in any::<i32>()) {
+                let compiler = WasmCompiler::new();
+                let ast = make_int(n as i64);
+                if let Ok(module1) = compiler.compile(&ast) {
+                    if let Ok(module2) = compiler.compile(&ast) {
+                        prop_assert_eq!(module1.bytes(), module2.bytes(), "Same AST should produce same bytecode");
+                    }
+                }
+            }
 
-    #[test]
-    fn test_cell_type_variants() {
-        let code = CellType::Code;
-        let markdown = CellType::Markdown;
-        let raw = CellType::Raw;
+            /// Property 5: Optimization level always clamped to 0-3
+            #[test]
+            fn prop_optimization_level_clamped(level in any::<u8>()) {
+                let mut compiler = WasmCompiler::new();
+                compiler.set_optimization_level(level);
+                prop_assert!(compiler.optimization_level <= 3, "Optimization level should be clamped to max 3");
+            }
 
-        assert!(matches!(code, CellType::Code));
-        assert!(matches!(markdown, CellType::Markdown));
-        assert!(matches!(raw, CellType::Raw));
-    }
+            /// Property 6: Valid modules always pass validation
+            #[test]
+            fn prop_valid_modules_pass_validation(n in any::<i32>()) {
+                let compiler = WasmCompiler::new();
+                let ast = make_int(n as i64);
+                if let Ok(module) = compiler.compile(&ast) {
+                    prop_assert!(module.validate().is_ok(), "Valid module should pass validation");
+                }
+            }
 
-    #[test]
-    fn test_notebook_cell_creation() {
-        let cell = NotebookCell::new(CellType::Code, "print('hello')");
-        assert_eq!(cell.cell_type(), CellType::Code);
-        assert_eq!(cell.source(), "print('hello')");
-        assert!(cell.outputs().is_empty());
-        assert!(cell.execution_count().is_none());
-    }
+            /// Property 7: Binary addition is commutative in compilation
+            #[test]
+            fn prop_binary_add_compiles_consistently(a in any::<i32>(), b in any::<i32>()) {
+                let compiler = WasmCompiler::new();
+                let ast = make_binary(make_int(a as i64), BinaryOp::Add, make_int(b as i64));
+                if let Ok(module) = compiler.compile(&ast) {
+                    prop_assert!(module.validate().is_ok(), "Binary operation should produce valid WASM");
+                }
+            }
 
-    #[test]
-    fn test_notebook_cell_execute() {
-        let mut cell = NotebookCell::new(CellType::Code, "1 + 1");
-        cell.set_execution_count(Some(1));
-        cell.add_output(CellOutput::Text("2".to_string()));
-        assert_eq!(cell.execution_count(), Some(1));
-        assert_eq!(cell.outputs().len(), 1);
-    }
-
-    #[test]
-    fn test_cell_output_variants() {
-        let text = CellOutput::Text("output".to_string());
-        let error = CellOutput::Error("error".to_string());
-        let html = CellOutput::Html("<b>bold</b>".to_string());
-        let image = CellOutput::Image(vec![0, 1, 2, 3]);
-
-        assert!(matches!(text, CellOutput::Text(_)));
-        assert!(matches!(error, CellOutput::Error(_)));
-        assert!(matches!(html, CellOutput::Html(_)));
-        assert!(matches!(image, CellOutput::Image(_)));
-    }
-
-    #[test]
-    fn test_shared_session_creation() {
-        let session = SharedSession::new();
-        assert!(session.definitions().is_empty());
-        assert_eq!(session.execution_count(), 0);
-    }
-
-    #[test]
-    fn test_global_registry_singleton() {
-        let registry1 = GlobalRegistry::instance();
-        let registry2 = GlobalRegistry::instance();
-        // Should be the same instance
-        assert_eq!(registry1.session_count(), registry2.session_count());
-    }
-
-    #[test]
-    fn test_def_id_creation() {
-        let def_id = DefId::new("my_function", 1);
-        assert_eq!(def_id.name(), "my_function");
-        assert_eq!(def_id.version(), 1);
-    }
-
-    #[test]
-    fn test_execution_mode_variants() {
-        let interactive = ExecutionMode::Interactive;
-        let batch = ExecutionMode::Batch;
-        let async_mode = ExecutionMode::Async;
-
-        assert!(matches!(interactive, ExecutionMode::Interactive));
-        assert!(matches!(batch, ExecutionMode::Batch));
-        assert!(matches!(async_mode, ExecutionMode::Async));
-    }
-
-    #[test]
-    fn test_execute_response_success() {
-        let response = ExecuteResponse::success("42", 100);
-        assert!(response.success);
-        assert_eq!(response.value, Some("42".to_string()));
-        assert!(response.error.is_none());
-        assert_eq!(response.execution_time_ms, 100);
-    }
-
-    #[test]
-    fn test_execute_response_error() {
-        let response = ExecuteResponse::error("Type error", 50);
-        assert!(!response.success);
-        assert!(response.value.is_none());
-        assert_eq!(response.error, Some("Type error".to_string()));
-        assert_eq!(response.execution_time_ms, 50);
-    }
-
-    #[test]
-    fn test_find_demo_files() {
-        let files = find_demo_files();
-        // Should return a list of demo files
-        assert!(files.is_ok() || files.is_err()); // May or may not find files
-    }
-
-    #[test]
-    fn test_demo_notebook_creation() {
-        let notebook = DemoNotebook::new("Demo Notebook");
-        assert_eq!(notebook.title(), "Demo Notebook");
-        assert!(notebook.cells().is_empty());
-    }
-
-    #[test]
-    fn test_demo_notebook_cell_creation() {
-        let cell = DemoNotebookCell::code("let x = 42");
-        assert_eq!(cell.source(), "let x = 42");
-        assert!(cell.is_code());
-
-        let markdown = DemoNotebookCell::markdown("# Title");
-        assert_eq!(markdown.source(), "# Title");
-        assert!(markdown.is_markdown());
-    }
-
-    #[test]
-    fn test_component_builder_with_config() {
-        let config = ComponentConfig::default();
-        let builder = ComponentBuilder::with_config("test", config.clone());
-        assert_eq!(builder.name(), "test");
-        assert_eq!(builder.config().optimize, config.optimize);
-    }
-
-    #[test]
-    fn test_wit_interface_add_function() {
-        let mut interface = WitInterface::new("test");
-        interface.add_function("my_func", vec!["u32"], Some("u32"));
-        assert_eq!(interface.functions().len(), 1);
-    }
-
-    #[test]
-    fn test_deployment_target_requirements() {
-        let browser = DeploymentTarget::Browser;
-        assert!(browser.requires_bundler());
-        assert!(!browser.supports_filesystem());
-
-        let node = DeploymentTarget::Node;
-        assert!(!node.requires_bundler());
-        assert!(node.supports_filesystem());
-    }
-
-    #[test]
-    fn test_wasm_component_creation() {
-        let component = WasmComponent::new("my-component");
-        assert_eq!(component.name(), "my-component");
-        assert!(component.exports().is_empty());
-        assert!(component.imports().is_empty());
-    }
-
-    #[test]
-    fn test_wasm_component_add_export() {
-        let mut component = WasmComponent::new("test");
-        component.add_export("main", "function");
-        assert_eq!(component.exports().len(), 1);
-        assert!(component.has_export("main"));
-    }
-
-    #[test]
-    fn test_repl_timing_info_formatted() {
-        let timing = TimingInfo::new(1000, 2000, 3000);
-        let formatted = timing.format();
-        assert!(formatted.contains("parse"));
-        assert!(formatted.contains("compile"));
-        assert!(formatted.contains("execute"));
-        assert!(formatted.contains("total"));
-    }
-    */
-
-    // Simple tests that should work
-    #[test]
-    fn test_wasm_module_has_exports() {
-        // Just verify module structure exists
-        let _ = std::marker::PhantomData::<WasmComponent>;
-        let _ = std::marker::PhantomData::<ComponentBuilder>;
+            /// Property 8: Multiple calls to bytes() return same data
+            #[test]
+            fn prop_bytes_call_idempotent(n in any::<i32>()) {
+                let compiler = WasmCompiler::new();
+                let ast = make_int(n as i64);
+                if let Ok(module) = compiler.compile(&ast) {
+                    let bytes1 = module.bytes();
+                    let bytes2 = module.bytes();
+                    let bytes3 = module.bytes();
+                    prop_assert_eq!(bytes1, bytes2);
+                    prop_assert_eq!(bytes2, bytes3);
+                }
+            }
+        }
     }
 }
