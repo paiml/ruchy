@@ -421,7 +421,34 @@ fn power_values(left: &Value, right: &Value) -> Result<Value, InterpreterError> 
 /// # Complexity
 /// Cyclomatic complexity: 8 (within Toyota Way limits)
 #[allow(clippy::cast_precision_loss)]
+/// QUALITY-017: Refactored equality - main dispatcher
+/// Complexity: 7 (within Toyota Way limits)
+#[allow(clippy::unnested_or_patterns)] // Clearer to group all primitive types together
 fn equal_values(left: &Value, right: &Value) -> bool {
+    match (left, right) {
+        // Primitives - delegate to helper
+        (Value::Integer(_), Value::Integer(_))
+        | (Value::Float(_), Value::Float(_))
+        | (Value::Integer(_), Value::Float(_))
+        | (Value::Float(_), Value::Integer(_))
+        | (Value::Bool(_), Value::Bool(_))
+        | (Value::Byte(_), Value::Byte(_))
+        | (Value::String(_), Value::String(_))
+        | (Value::Nil, Value::Nil) => equal_primitives(left, right),
+        // Objects - delegate to helper
+        (Value::Object(a), Value::Object(b)) => equal_objects(a, b),
+        // Arrays - delegate to helper
+        (Value::Array(a), Value::Array(b)) => equal_arrays(a, b),
+        // Tuples - delegate to helper
+        (Value::Tuple(a), Value::Tuple(b)) => equal_tuples(a, b),
+        // Type mismatch
+        _ => false,
+    }
+}
+
+/// QUALITY-017: Compare primitive values (integers, floats, bools, bytes, strings, nil)
+/// Complexity: 3 (within Toyota Way limits)
+fn equal_primitives(left: &Value, right: &Value) -> bool {
     match (left, right) {
         (Value::Integer(a), Value::Integer(b)) => a == b,
         (Value::Float(a), Value::Float(b)) => a == b,
@@ -432,41 +459,44 @@ fn equal_values(left: &Value, right: &Value) -> bool {
         (Value::Byte(a), Value::Byte(b)) => a == b,
         (Value::String(a), Value::String(b)) => a == b,
         (Value::Nil, Value::Nil) => true,
-        // Object/struct equality - compare all fields
-        (Value::Object(a), Value::Object(b)) => {
-            // Check if both have same number of fields
-            if a.len() != b.len() {
-                return false;
-            }
-            // Check if all fields match
-            for (key, val_a) in a.iter() {
-                match b.get(key) {
-                    Some(val_b) => {
-                        if !equal_values(val_a, val_b) {
-                            return false;
-                        }
-                    }
-                    None => return false,
-                }
-            }
-            true
-        }
-        // Array equality
-        (Value::Array(a), Value::Array(b)) => {
-            if a.len() != b.len() {
-                return false;
-            }
-            a.iter().zip(b.iter()).all(|(x, y)| equal_values(x, y))
-        }
-        // Tuple equality
-        (Value::Tuple(a), Value::Tuple(b)) => {
-            if a.len() != b.len() {
-                return false;
-            }
-            a.iter().zip(b.iter()).all(|(x, y)| equal_values(x, y))
-        }
         _ => false,
     }
+}
+
+/// QUALITY-017: Compare object values field-by-field
+/// Complexity: 5 (within Toyota Way limits)
+fn equal_objects(
+    a: &std::collections::HashMap<String, Value>,
+    b: &std::collections::HashMap<String, Value>,
+) -> bool {
+    // Quick length check
+    if a.len() != b.len() {
+        return false;
+    }
+    // Check all fields match
+    for (key, val_a) in a {
+        match b.get(key) {
+            Some(val_b) => {
+                if !equal_values(val_a, val_b) {
+                    return false;
+                }
+            }
+            None => return false,
+        }
+    }
+    true
+}
+
+/// QUALITY-017: Compare array values element-by-element
+/// Complexity: 2 (within Toyota Way limits)
+fn equal_arrays(a: &[Value], b: &[Value]) -> bool {
+    a.len() == b.len() && a.iter().zip(b.iter()).all(|(x, y)| equal_values(x, y))
+}
+
+/// QUALITY-017: Compare tuple values element-by-element
+/// Complexity: 2 (within Toyota Way limits)
+fn equal_tuples(a: &[Value], b: &[Value]) -> bool {
+    a.len() == b.len() && a.iter().zip(b.iter()).all(|(x, y)| equal_values(x, y))
 }
 
 /// Check if left is less than right
@@ -558,6 +588,76 @@ mod tests {
 
         assert!(greater_than_values(&Value::Integer(5), &Value::Integer(3)).unwrap());
         assert!(!greater_than_values(&Value::Integer(3), &Value::Integer(5)).unwrap());
+    }
+
+    /// QUALITY-017: Comprehensive tests for equal_values() before refactoring
+    /// Tests cover all Value types to ensure refactoring doesn't break equality
+    #[test]
+    fn test_equal_values_comprehensive() {
+        use std::collections::HashMap;
+        use std::rc::Rc;
+
+        // Primitives
+        assert!(equal_values(&Value::Integer(42), &Value::Integer(42)));
+        assert!(!equal_values(&Value::Integer(42), &Value::Integer(43)));
+        assert!(equal_values(&Value::Float(3.14), &Value::Float(3.14)));
+        assert!(equal_values(&Value::Bool(true), &Value::Bool(true)));
+        assert!(!equal_values(&Value::Bool(true), &Value::Bool(false)));
+        assert!(equal_values(&Value::Byte(255), &Value::Byte(255)));
+        assert!(equal_values(
+            &Value::from_string("test".to_string()),
+            &Value::from_string("test".to_string())
+        ));
+        assert!(equal_values(&Value::Nil, &Value::Nil));
+
+        // Arrays
+        let arr1 = Value::Array(vec![Value::Integer(1), Value::Integer(2)].into());
+        let arr2 = Value::Array(vec![Value::Integer(1), Value::Integer(2)].into());
+        let arr3 = Value::Array(vec![Value::Integer(1), Value::Integer(3)].into());
+        assert!(equal_values(&arr1, &arr2));
+        assert!(!equal_values(&arr1, &arr3));
+
+        // Tuples
+        let tuple1 =
+            Value::Tuple(vec![Value::Integer(1), Value::from_string("test".to_string())].into());
+        let tuple2 =
+            Value::Tuple(vec![Value::Integer(1), Value::from_string("test".to_string())].into());
+        let tuple3 =
+            Value::Tuple(vec![Value::Integer(2), Value::from_string("test".to_string())].into());
+        assert!(equal_values(&tuple1, &tuple2));
+        assert!(!equal_values(&tuple1, &tuple3));
+
+        // Objects
+        let mut obj1 = HashMap::new();
+        obj1.insert("key1".to_string(), Value::Integer(10));
+        obj1.insert("key2".to_string(), Value::from_string("value".to_string()));
+
+        let mut obj2 = HashMap::new();
+        obj2.insert("key1".to_string(), Value::Integer(10));
+        obj2.insert("key2".to_string(), Value::from_string("value".to_string()));
+
+        let mut obj3 = HashMap::new();
+        obj3.insert("key1".to_string(), Value::Integer(11));
+        obj3.insert("key2".to_string(), Value::from_string("value".to_string()));
+
+        assert!(equal_values(
+            &Value::Object(Rc::new(obj1.clone())),
+            &Value::Object(Rc::new(obj2))
+        ));
+        assert!(!equal_values(
+            &Value::Object(Rc::new(obj1)),
+            &Value::Object(Rc::new(obj3))
+        ));
+
+        // Type mismatches
+        assert!(!equal_values(
+            &Value::Integer(5),
+            &Value::from_string("5".to_string())
+        ));
+        assert!(!equal_values(
+            &Value::Array(vec![].into()),
+            &Value::Tuple(vec![].into())
+        ));
     }
 
     #[test]
