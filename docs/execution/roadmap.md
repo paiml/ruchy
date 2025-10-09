@@ -620,11 +620,11 @@ pmat hooks refresh                # Refresh after .pmat-gates.toml changes
 
 ---
 
-### **Priority 2: Quality Violations Elimination** 🔥 **[IN PROGRESS - BATCH 14 COMPLETE]**
+### **Priority 2: Quality Violations Elimination** 🔥 **[IN PROGRESS - BATCH 15]**
 **Target**: 472 violations → 0 violations (ZERO TOLERANCE)
-**Status**: ✅ Batch 14 complete! SATD eliminated + Top 5 complexity hotspots refactored
-**Current Progress**: 472 → 467 violations (-28 eliminated: -23 SATD, -5 complexity)
-**Batch 14 Achievements**:
+**Status**: Batch 14 complete ✅ | Batch 15 in progress (1/4 functions done)
+**Current Progress**: 472 → 466 violations (-29 eliminated: -23 SATD, -6 complexity)
+**Batch 14 Achievements** (Complete ✅):
 - ✅ **SATD**: 23 → 0 (100% eliminated, PMAT strict mode: 0 violations)
 - ✅ **Top 5 Complexity**: 92 → 29 (68% reduction, 63 points eliminated)
   - handle_property_tests_single_file: 27 → 10
@@ -633,8 +633,15 @@ pmat hooks refresh                # Refresh after .pmat-gates.toml changes
   - handle_property_tests_command: 14 → 5
   - handle_fuzz_command: 13 → 5
 - ✅ **Code Reuse**: Created 15 helper functions (all ≤10 complexity)
-**Current Breakdown**: 55 complexity (-5) ✓, 0 SATD ✅, 55 entropy, 286 duplicates, 1 coverage, 1 provability
-**Next Steps**: Batch 15 - Address remaining 7 high-complexity functions (11-23 range)
+**Batch 15 Progress** (In Progress):
+- ✅ **handle_mutations_command**: 11 → 5 (55% reduction, 3 helpers)
+- 🔄 **Remaining errors**: 4 (all in parser/expressions.rs)
+  - parse_parentheses_token: 11
+  - parse_match_list_pattern: 11
+  - parse_trait_definition: 10
+  - parse_constructor: 10
+**Current Breakdown**: 54 complexity (-6) ✓, 0 SATD ✅, 55 entropy, 286 duplicates, 1 coverage, 1 provability
+**Next Steps**: Continue Batch 15 - Address remaining 4 parser complexity functions
 
 ### **Priority 3: Zero Coverage Module Testing** 🎯 **[READY TO RESUME]**
 **Target**: 4-5 modules from 0% → 80%+ coverage
