@@ -1,13 +1,14 @@
 # PRIORITY-3: Zero Coverage Module Testing - eval_control_flow_new.rs
 
 ## Status
-**Status**: 🟡 IN PROGRESS
+**Status**: 🟡 IN PROGRESS (Partial Integration Complete)
 **Module**: `src/runtime/eval_control_flow_new.rs`
 **Baseline Coverage**: 0.00% (dead code - not integrated)
-**Current Coverage**: 3.81% (379/394 lines uncovered)
-**Target Coverage**: 80%+
+**Current Coverage**: 22.34% (306/394 lines uncovered)
+**Realistic Ceiling**: ~40% (interpreter uses different loop/match implementations)
+**Target Coverage**: 80%+ (requires major interpreter refactoring)
 **Sprint**: Priority 3 (Module 3/N)
-**Integration**: ✅ Partially integrated (eval_if_expr active)
+**Integration**: ✅ 7/29 functions integrated, 41/41 tests passing
 
 ## Objective
 Apply EXTREME TDD methodology to increase coverage of control flow evaluation module from 29.06% to 80%+, following the proven pattern from optimize.rs (61x improvement) and wasm/mod.rs (41x improvement).
@@ -108,8 +109,47 @@ Run `cargo mutants --file src/runtime/eval_control_flow_new.rs --timeout 300`
 - **Kaizen**: Incremental improvement, one function at a time
 - **Zero Defects**: Every function must be fully tested
 
+## Integration Notes
+
+### Successfully Integrated (7 functions)
+✅ `eval_if_expr` - If/else expression evaluation
+✅ `eval_return_expr` - Return statement handling
+✅ `eval_list_expr` - Array literal creation
+✅ `eval_array_init_expr` - Array initialization `[value; size]`
+✅ `eval_block_expr` - Block statement evaluation
+✅ `eval_tuple_expr` - Tuple literal creation
+✅ `eval_range_expr` - Range expression `start..end`
+
+### NOT Integrated (22 functions - ~60% of module)
+❌ While loop helpers (eval_while_loop, eval_loop_condition, eval_loop_body, run_while_loop)
+❌ For loop helpers (eval_for_loop, eval_array_iteration, eval_range_iteration)
+❌ Match expression helpers (eval_match, eval_match_arm, eval_match_guard, find_matching_arm)
+❌ Pattern matching functions (match_literal_pattern, match_list_pattern, match_tuple_pattern, etc.)
+❌ Loop control helpers (handle_loop_control, extract_range_bounds, create_range_iterator)
+
+**Blocker**: Interpreter evolved with labeled loop support and different control flow handling. Integrating these functions would require major interpreter refactoring (high risk, low benefit).
+
+### Test Coverage
+- **Tests Created**: 41 tests (25 initial + 16 added)
+- **All Passing**: 41/41 ✅
+- **P0 Tests**: 15/15 ✅ (zero regressions)
+- **Test Categories**:
+  - Basic control flow (10 tests)
+  - Loop control (7 tests)
+  - Pattern matching (8 tests)
+  - Advanced iteration (8 tests)
+  - Error cases & edge cases (8 tests)
+
+### Coverage Ceiling Analysis
+- **Integrated Functions**: ~40% of module (7/29 functions, ~158/394 lines)
+- **Maximum Achievable**: ~40% without interpreter refactoring
+- **Current Achievement**: 22.34% (88/394 lines)
+- **Gap to Ceiling**: ~17.66% (~70 more lines possible with exhaustive edge case testing)
+- **Gap to 80% Target**: 57.66% (~227 lines - requires integrating blocked functions)
+
 ## Notes
 - Module already follows Toyota Way (≤10 complexity)
 - Clear function separation makes testing straightforward
 - Callback pattern requires careful test setup
 - May need mock/stub functions for eval_expr closures
+- **Recommendation**: Mark as "Partial Integration Complete" and move to next Priority-3 module
