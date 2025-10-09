@@ -75,28 +75,32 @@
 - Target: Browser applications only
 - Timeline: 2-3 months
 
-**Option C: Full Production Language**
-- Complete ecosystem development
-- Package management + standard library
-- DataFrame completion or removal decision
-- Complexity reduction (163 hours)
-- Timeline: 6-12 months, 866+ hours
+**Option C: Full Production Language** ✅ **CHOSEN**
+- Complete ecosystem development via **Cargo integration**
+- Leverage Rust ecosystem (140K+ crates) instead of building from scratch
+- Standard library = thin wrappers around Rust crates
+- DataFrame via polars-rs wrapper (recommended)
+- Timeline: **4 months, 328-408 hours** (60% reduction via Cargo)
 
-### Recommended Decision Point
+### ✅ **DECISION MADE: Cargo-First Production Language**
 
-**DECISION REQUIRED**: Choose production path before next sprint
+**Strategy**: Build on Cargo/Rust ecosystem, not parallel to it
+- Ruchy packages = Rust crates with .ruchy source
+- Package manager = Cargo (use crates.io)
+- Standard library = Wrappers around proven Rust crates
+- Build system = build.rs transpiler integration
 
-**If Option C (Full Production)**:
-1. **Phase 1** (3 months): Package management + standard library
-2. **Phase 2** (2 months): Quality stabilization + security
-3. **Phase 3** (1 month): Documentation + beta release
+**Revised Timeline** (4 months to v4.0.0-beta.1):
+1. **Phase 1** (Month 1): Cargo integration + core stdlib (fs, http, json) - 60 hrs
+2. **Phase 2** (Month 2): Stdlib expansion + DataFrame decision - 40-120 hrs
+3. **Phase 3** (Month 3): Quality stabilization + documentation - 124 hrs
+4. **Phase 4** (Month 4): Beta release + security audit - 104 hrs
 
-**If Option A/B (Research/DSL)**:
-- Update documentation to set realistic expectations
-- Remove/mark DataFrame as experimental
-- Continue innovation-focused development
+**Total Effort**: 328-408 hours (vs 866+ hours for custom package manager)
 
-**Next Priority**: 🎯 **Path Decision → DataFrame Resolution → Quality Stabilization**
+**See**: `docs/CARGO_INTEGRATION_STRATEGY.md` for complete strategy
+
+**Next Priority**: 🎯 **CARGO-001: Build.rs Integration Prototype (16 hours)**
 
 ## 🚨 **NEW CRITICAL DEFECTS FOUND (2025-10-09)**
 
