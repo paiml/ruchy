@@ -1990,7 +1990,12 @@ impl Interpreter {
         then_branch: &Expr,
         else_branch: Option<&Expr>,
     ) -> Result<Value, InterpreterError> {
-        eval_expr::eval_if_expr(condition, then_branch, else_branch, |e| self.eval_expr(e))
+        crate::runtime::eval_control_flow_new::eval_if_expr(
+            condition,
+            then_branch,
+            else_branch,
+            |e| self.eval_expr(e),
+        )
     }
 
     /// Evaluate let expression
