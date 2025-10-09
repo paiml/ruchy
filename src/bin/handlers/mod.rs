@@ -2239,6 +2239,73 @@ fn handle_property_tests_single_file(
 ///
 /// # Errors
 /// Returns error if mutation coverage is below threshold
+/// Run cargo mutants on file
+/// Complexity: 3 (Toyota Way: <10 ✓)
+fn run_cargo_mutants(path: &Path, timeout: u32, verbose: bool) -> Result<std::process::Output> {
+    let mut cmd = std::process::Command::new("cargo");
+    cmd.args([
+        "mutants",
+        "--file",
+        path.to_str().unwrap(),
+        "--timeout",
+        &timeout.to_string(),
+        "--no-times",
+    ]);
+
+    let output_result = cmd.output()?;
+
+    if verbose {
+        let stderr = String::from_utf8_lossy(&output_result.stderr);
+        eprintln!("Command output:\n{}", stderr);
+    }
+
+    Ok(output_result)
+}
+
+/// Write JSON format mutation test report
+/// Complexity: 2 (Toyota Way: <10 ✓)
+fn write_json_mutation_report(
+    output: Option<&Path>,
+    success: bool,
+    min_coverage: f64,
+    stdout: &str,
+) -> Result<()> {
+    let report = serde_json::json!({
+        "status": if success { "passed" } else { "failed" },
+        "min_coverage": min_coverage,
+        "output": stdout
+    });
+    let json_output = serde_json::to_string_pretty(&report)?;
+
+    if let Some(out_path) = output {
+        fs::write(out_path, json_output)?;
+    } else {
+        println!("{}", json_output);
+    }
+    Ok(())
+}
+
+/// Write text format mutation test report
+/// Complexity: 2 (Toyota Way: <10 ✓)
+fn write_text_mutation_report(
+    output: Option<&Path>,
+    min_coverage: f64,
+    stdout: &str,
+) -> Result<()> {
+    println!("Mutation Test Report");
+    println!("====================");
+    println!("Minimum coverage: {:.1}%", min_coverage * 100.0);
+
+    if let Some(out_path) = output {
+        fs::write(out_path, stdout)?;
+    } else {
+        println!("\n{}", stdout);
+    }
+    Ok(())
+}
+
+/// Handle mutations command - run mutation tests with cargo-mutants
+/// Complexity: 5 (Toyota Way: <10 ✓) [Reduced from 11]
 pub fn handle_mutations_command(
     path: &Path,
     timeout: u32,
@@ -2256,51 +2323,19 @@ pub fn handle_mutations_command(
         );
     }
 
-    let mut cmd = std::process::Command::new("cargo");
-    cmd.args([
-        "mutants",
-        "--file",
-        path.to_str().unwrap(),
-        "--timeout",
-        &timeout.to_string(),
-        "--no-times",
-    ]);
-
-    let output_result = cmd.output()?;
+    // Run cargo mutants
+    let output_result = run_cargo_mutants(path, timeout, verbose)?;
     let stdout = String::from_utf8_lossy(&output_result.stdout);
-    let stderr = String::from_utf8_lossy(&output_result.stderr);
+    let success = output_result.status.success();
 
-    if verbose {
-        eprintln!("Command output:\n{}", stderr);
-    }
-
+    // Generate report
     match format {
-        "json" => {
-            let report = serde_json::json!({
-                "status": if output_result.status.success() { "passed" } else { "failed" },
-                "min_coverage": min_coverage,
-                "output": stdout.to_string()
-            });
-            let json_output = serde_json::to_string_pretty(&report)?;
-            if let Some(out_path) = output {
-                fs::write(out_path, json_output)?;
-            } else {
-                println!("{}", json_output);
-            }
-        }
-        _ => {
-            println!("Mutation Test Report");
-            println!("====================");
-            println!("Minimum coverage: {:.1}%", min_coverage * 100.0);
-            if let Some(out_path) = output {
-                fs::write(out_path, &stdout.to_string())?;
-            } else {
-                println!("\n{}", stdout);
-            }
-        }
+        "json" => write_json_mutation_report(output, success, min_coverage, &stdout)?,
+        _ => write_text_mutation_report(output, min_coverage, &stdout)?,
     }
 
-    if output_result.status.success() {
+    // Return success/failure
+    if success {
         Ok(())
     } else {
         anyhow::bail!("Mutation tests failed or coverage below threshold")
