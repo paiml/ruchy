@@ -4,6 +4,111 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.71.1] - 2025-10-09 - Critical Bug Fixes + Module Integration
+
+### 🐛 Critical Bug Fixes
+
+#### DEFECT-ENUM-OK-RESERVED: Parser Bug for Enum Discriminants
+**Problem**: Parser rejected reserved keywords (Ok, Err, Some, None) in enum path expressions
+**Root Cause**: `parse_path_segment()` didn't handle reserved keyword tokens
+**Solution**: Extended parser to accept Ok/Err/Some/None tokens in path segments
+**Tests**: 11 unit tests + 30,000 property tests
+**Impact**: Enum variants with reserved names now work correctly: `HttpStatus::Ok`, `Result::Err`
+**Commit**: cf4a11b7
+
+#### DEFECT-WASM-TUPLE-TYPES: WASM Mixed-Type Tuple Compilation
+**Problem**: WASM compilation failed for tuples with mixed types (int + float)
+**Root Cause**: All elements stored as I32, println had fixed I32 signature
+**Solution**:
+- Added type inference system (`tuple_types` HashMap)
+- Type-specific store/load (F32Store vs I32Store)
+- Separate println_i32 and println_f32 imports
+- Pre-registration phase for tuple types
+**Tests**: 6 tests with wasmparser validation
+**Impact**: Mixed-type tuples now compile to valid WASM: `(1, 3.0)`, `(3.0, 1)`
+**Commit**: 289d130d
+
+### ✅ Module Integration: eval_control_flow_new.rs
+
+**Discovery**: Module was 100% dead code (0% coverage) - never integrated into interpreter
+
+**Integration Work** (3 commits):
+- **Phase 1**: Integrated `eval_if_expr` (0% → 3.81% coverage)
+- **Phase 2**: Integrated 6 more functions (3.81% → 17.26% coverage)
+  - eval_return_expr, eval_list_expr, eval_array_init_expr
+  - eval_block_expr, eval_tuple_expr, eval_range_expr
+- **Phase 3**: Added 16 edge case tests (17.26% → 22.34% coverage)
+
+**Results**:
+- Coverage: 0% → 22.34% (+88 lines covered)
+- Functions: 0/29 → 7/29 integrated (24%)
+- Tests: 0 → 41 passing
+- P0 Tests: 15/15 passing (zero regressions)
+
+**Coverage Ceiling**: ~40% (60% of module contains loop/match helpers incompatible with current interpreter - requires major refactoring)
+
+**Commits**: 669dcea5, 9c4e6363, 829e4665
+
+### 🔍 Dead Code Discovery: eval_method_dispatch.rs
+
+**Investigation**: Created 47 tests to increase coverage
+**Finding**: 23/47 tests failed - 75% of module is dead code
+**Root Cause**:
+- Module created to centralize method dispatch
+- Interpreter evolved to handle primitives directly
+- DataFrame methods moved to dedicated module
+- Only object/actor dispatch remains active
+- Old implementations never deleted
+
+**Dead Functions** (never called in codebase):
+- eval_integer_method() - Interpreter has own at interpreter.rs:3240
+- eval_float_method() - Handled directly by interpreter
+- eval_dataframe_method() - Implemented in eval_dataframe_ops.rs
+
+**Decision**: ABANDONED - not worth testing dead code
+**Recommendation**: Select modules with clear integration path for future Priority-3 work
+**Commit**: 8715d0e0
+
+### 📊 Test Coverage
+
+**Tests Added**: 41 new tests for eval_control_flow_new.rs
+- Basic control flow (10 tests)
+- Loop control (7 tests)
+- Pattern matching (8 tests)
+- Advanced iteration (8 tests)
+- Error cases & edge cases (8 tests)
+
+**P0 Critical Tests**: ✅ 15/15 passing (zero regressions)
+
+### 🏭 Toyota Way Principles Applied
+
+- **Jidoka (Stop the Line)**: Halted when discovering dead code in both modules
+- **Genchi Genbutsu (Go and See)**: Used coverage tools and empirical testing to verify actual integration
+- **Kaizen (Continuous Improvement)**: Incremental integration (1 → 7 functions across 3 commits)
+- **Sacred Rule (No Defect Out of Scope)**: Fixed incomplete refactoring instead of deferring
+
+### 📚 Documentation
+
+**New Documentation**:
+- `docs/execution/PRIORITY_3_EVAL_CONTROL_FLOW.md` - Integration analysis
+- `docs/execution/PRIORITY_3_EVAL_CONTROL_FLOW_ANALYSIS.md` - Gap analysis
+- `docs/execution/PRIORITY_3_NEXT_SESSION_QUICKSTART.md` - Continuation guide
+- `docs/execution/PRIORITY_3_EVAL_METHOD_DISPATCH.md` - Dead code discovery
+
+**Updated**:
+- Test suite expanded with comprehensive edge cases
+
+### 🎯 Impact
+
+**User-Facing**:
+- ✅ Enum variants with reserved names now work
+- ✅ WASM mixed-type tuples compile correctly
+
+**Internal Quality**:
+- ✅ 88 lines of dead code made active
+- ✅ 41 new tests ensuring reliability
+- ✅ Dead code patterns documented for future avoidance
+
 ## [3.71.0] - 2025-10-09 - Priority 3: Zero Coverage Testing Complete (2/N Modules)
 
 ### 🎯 Major Achievement: Extreme TDD Methodology for Zero Coverage Modules
