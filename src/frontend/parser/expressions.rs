@@ -461,6 +461,22 @@ fn parse_path_segment(state: &mut ParserState) -> Result<String> {
         // Allow 'from' keyword as method name (e.g., String::from)
         state.tokens.advance();
         Ok("from".to_string())
+    } else if let Some((Token::Ok, _)) = state.tokens.peek() {
+        // Allow 'Ok' as enum variant name
+        state.tokens.advance();
+        Ok("Ok".to_string())
+    } else if let Some((Token::Err, _)) = state.tokens.peek() {
+        // Allow 'Err' as enum variant name
+        state.tokens.advance();
+        Ok("Err".to_string())
+    } else if let Some((Token::Some, _)) = state.tokens.peek() {
+        // Allow 'Some' as enum variant name
+        state.tokens.advance();
+        Ok("Some".to_string())
+    } else if let Some((Token::None, _)) = state.tokens.peek() {
+        // Allow 'None' as enum variant name
+        state.tokens.advance();
+        Ok("None".to_string())
     } else {
         bail!("Expected identifier or '*' after '::'")
     }
