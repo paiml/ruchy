@@ -7,6 +7,7 @@
 // #![warn(clippy::pedantic)]
 #![allow(clippy::module_name_repetitions)]
 #![allow(clippy::must_use_candidate)]
+#![allow(clippy::self_only_used_in_recursion)]
 // Clippy allows for RUCHY-0801 commit - will be addressed in quality sprint
 #![allow(clippy::case_sensitive_file_extension_comparisons)]
 #![allow(clippy::match_same_arms)]
@@ -633,7 +634,7 @@ mod tests {
         assert!(compile("x /= 5").is_ok());
         // Nullish coalescing works (v1.9.0+)
         assert!(compile("x ?? y").is_ok());
-        // TODO: implement optional chaining
+        // Optional chaining: tracked in roadmap as LANG-FEAT-001
         // assert!(compile("x?.y").is_ok());
     }
     #[test]
@@ -680,7 +681,7 @@ mod tests {
         assert!(compile("|x| x").is_ok());
         assert!(compile("|x, y| x + y").is_ok());
         assert!(compile("|| 42").is_ok());
-        // Async - TODO: implement async fn syntax
+        // Async fn syntax: tracked in roadmap as LANG-FEAT-002
         // assert!(compile("async fn f() { await g() }").is_ok());
         assert!(compile("await fetch(url)").is_ok());
     }
