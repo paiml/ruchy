@@ -5997,10 +5997,7 @@ mod mutation_tests {
 
         // NOTE: Actor receive blocks may not be fully implemented yet
         // Placeholder test - function should return actual parsed data, not stub
-        assert!(
-            true,
-            "Mutation testing note recorded for parse_actor_receive_block"
-        );
+        // Mutation testing note: parse_actor_receive_block coverage recorded
     }
 
     #[test]
