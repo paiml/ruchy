@@ -2,9 +2,9 @@
 
 ## 📝 **SESSION CONTEXT FOR RESUMPTION**
 
-**Last Active**: 2025-10-09 (v3.71.0 RELEASED - PRIORITY 3: 2/N Modules Complete)
-**Current Sprint**: Language Completeness Testing (resuming)
-**Latest Release**: v3.71.0 (2025-10-09) - Priority 3 Zero Coverage Testing (160K+ property test executions)
+**Last Active**: 2025-10-09 (v3.71.1 RELEASED - PMAT Quality Assessment Complete)
+**Current Sprint**: Quality Assessment & Roadmap Planning
+**Latest Release**: v3.71.1 (2025-10-09) - Bug fixes + Priority 3 integration + PMAT quality analysis
 **Sprint Status**: ✅ **LANG-COMP-001 COMPLETE** - Basic Syntax (9/9 tests, 8-tool validation spec added)
 **Sprint Status**: ✅ **LANG-COMP-002 COMPLETE** - Operators (21/21 tests, 4 examples, REPL-based validation)
 **Sprint Status**: ✅ **LANG-COMP-003 COMPLETE** - Control Flow (13/13 unit + 3/3 property tests, 5 examples, 300 property iterations)
@@ -2816,6 +2816,68 @@ Based on deep_context.md analysis, these functions exceed complexity limits:
 
 **Binary Complexity**:
 - [ ] **QUALITY-016**: Refactor `bin/ruchy.rs::main` (complexity: 25, cognitive: 24)
+
+**2025-10-09 PMAT Quality Assessment - Critical Complexity & Entropy**:
+- [ ] **QUALITY-017**: Refactor `equal_values()` (CC: 42 → <10, 4 hours)
+  - File: `src/runtime/eval_operations.rs:600`
+  - Issue: Deepest nested comparisons (highest cognitive complexity in codebase)
+  - Fix: Extract type-specific comparison functions
+  - Impact: Eliminates highest complexity violation
+
+- [ ] **QUALITY-018**: Remove duplicate `values_equal()` (1 hour)
+  - File: `src/runtime/pattern_matching.rs:300`
+  - Issue: Duplicate high-complexity function (CC: 31)
+  - Fix: Consolidate with eval_operations.rs version
+  - Impact: Eliminates redundant complex code
+
+- [ ] **QUALITY-019**: Simplify `match_ok_pattern()` (CC: 36 → <10, 3 hours)
+  - File: `src/runtime/eval_pattern.rs:550`
+  - Issue: Complex pattern matching logic
+  - Fix: Extract helper functions per pattern type
+  - Impact: Reduces pattern matching complexity
+
+- [ ] **QUALITY-020**: Create validation trait/module (40 hours)
+  - Files: All eval_* modules
+  - Issue: DataValidation pattern repeated 12 times (15,869 lines duplication)
+  - Fix: Extract to ValidationTrait with standard implementations
+  - Impact: Reduces 8.7% code duplication (highest entropy violation)
+
+- [ ] **QUALITY-021**: Extract API client abstraction (20 hours)
+  - Files: MCP/LSP modules
+  - Issue: ApiCall pattern repeated 3 times (2,626 lines duplication)
+  - Fix: Create unified API client abstraction layer
+  - Impact: Improves API consistency and maintainability
+
+- [ ] **QUALITY-022**: DataFrame operations refactoring (20 hours)
+  - File: `src/runtime/eval_dataframe_ops.rs`
+  - Issue: 17 complexity violations in dataframe operations
+  - Fix: Extract aggregation helpers, create operation strategy pattern
+  - Impact: Reduces 17 violations, improves dataframe maintainability
+
+- [ ] **QUALITY-023**: Pattern matching refactoring (15 hours)
+  - Files: `src/runtime/eval_pattern*.rs`
+  - Issue: 18 complexity violations in pattern matching
+  - Fix: Create pattern-specific modules, extract match helpers
+  - Impact: Reduces 18 violations, improves match clarity
+
+- [ ] **QUALITY-024**: Remove dead code modules (40 hours)
+  - Files: `eval_method_dispatch.rs` (75% dead), `eval_control_flow_new.rs` (60% dead)
+  - Issue: Incomplete integration leaving dead code
+  - Fix: Complete integration OR remove dead functions
+  - Impact: Removes ~400 lines of dead code, clarifies module purpose
+
+- [ ] **QUALITY-025**: Data transformation pipeline (20 hours)
+  - Files: Distributed transformation code
+  - Issue: DataTransformation pattern repeated (1,526 lines duplication)
+  - Fix: Create unified data transformation pipeline
+  - Impact: Reduces duplication, improves data flow clarity
+
+**PMAT Quality Assessment Summary (2025-10-09)**:
+- **Status**: Generated comprehensive quality report (docs/quality/QUALITY_REPORT_2025-10-09.md)
+- **Key Findings**: 69 complexity errors (CC > 10), 52 entropy violations (24,539 LOC savings potential)
+- **Estimated Effort**: 163 hours total quality investment (QUALITY-017 through QUALITY-025)
+- **Expected Impact**: 71% complexity reduction, 62% entropy reduction, 7%+ LOC reduction
+- **Priority**: Q1 (017-019), Q2 (020-021), Q3 (022-023), Q4 (024-025)
 
 #### 🟢 **Medium: Complete P0 Unimplemented Features**
 
