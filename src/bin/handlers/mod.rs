@@ -81,20 +81,19 @@ pub fn handle_eval_command(expr: &str, verbose: bool, format: &str) -> Result<()
 /// # Errors
 /// Returns error if file cannot be read, parsed, or executed
 pub fn handle_file_execution(file: &Path) -> Result<()> {
-    let source = fs::read_to_string(file)
-        .with_context(|| format!("Failed to read file: {}", file.display()))?;
+    let source = read_file_with_context(file)?;
     // Use REPL to evaluate the file
     let mut repl = Repl::new(std::env::temp_dir())?;
     match repl.eval(&source) {
         Ok(result) => {
             // Only print non-unit results from file evaluation
-            if result != "Unit" && result != "()" {
+            if should_print_result(&result) {
                 println!("{result}");
             }
             // After evaluating the file, check if main() function exists and call it
             if let Ok(main_result) = repl.eval("main()") {
                 // Only print non-unit results from main()
-                if main_result != "Unit" && main_result != "()" {
+                if should_print_result(&main_result) {
                     println!("{main_result}");
                 }
             } else {
@@ -140,8 +139,7 @@ pub fn handle_parse_command(file: &Path, verbose: bool) -> Result<()> {
     if verbose {
         eprintln!("Parsing file: {}", file.display());
     }
-    let source = fs::read_to_string(file)
-        .with_context(|| format!("Failed to read file: {}", file.display()))?;
+    let source = read_file_with_context(file)?;
     let mut parser = RuchyParser::new(&source);
     match parser.parse() {
         Ok(ast) => {
@@ -223,12 +221,30 @@ fn write_output(rust_code: &str, output: Option<&Path>, verbose: bool) -> Result
     }
     Ok(())
 }
+
+// ============================================================================
+// Common Helper Functions (Complexity ≤5, reused across handlers)
+// ============================================================================
+
+/// Check if a result should be printed (filters out Unit values)
+/// Complexity: 2
+fn should_print_result(result: &str) -> bool {
+    result != "Unit" && result != "()"
+}
+
+/// Read file contents with detailed error context
+/// Complexity: 2
+fn read_file_with_context(file: &Path) -> Result<String> {
+    fs::read_to_string(file).with_context(|| format!("Failed to read file: {}", file.display()))
+}
+
+// ============================================================================
+
 /// Handle run command - compile and execute a Ruchy file
 pub fn handle_run_command(file: &Path, verbose: bool) -> Result<()> {
     log_run_start(file, verbose);
     // Parse and transpile
-    let source = fs::read_to_string(file)
-        .with_context(|| format!("Failed to read file: {}", file.display()))?;
+    let source = read_file_with_context(file)?;
     let ast = parse_source(&source)?;
     let rust_code = transpile_for_execution(&ast, file)?;
     // Compile and execute
@@ -472,7 +488,7 @@ pub fn handle_check_command(file: &Path, watch: bool) -> Result<()> {
 /// Check syntax of a single file
 fn handle_check_syntax(file: &Path) -> Result<()> {
     use colored::Colorize;
-    let source = fs::read_to_string(file)?;
+    let source = read_file_with_context(file)?;
     let mut parser = RuchyParser::new(&source);
     match parser.parse() {
         Ok(_) => {
@@ -1392,8 +1408,7 @@ fn validate_notebook_file(path: &Path) -> Result<()> {
     println!("📓 Notebook validation mode for: {}", path.display());
 
     // Validate the file can be parsed and executed
-    let source = fs::read_to_string(path)
-        .with_context(|| format!("Failed to read file: {}", path.display()))?;
+    let source = read_file_with_context(path)?;
     let ast = parse_source(&source)?;
     let rust_code = transpile_for_execution(&ast, path)?;
     let (temp_source, binary_path) = prepare_compilation(&rust_code, false)?;
@@ -1736,8 +1751,7 @@ fn print_wasm_compilation_status(file: &Path, target: &str, wit: bool, verbose: 
 /// # Errors
 /// Returns error if file reading or parsing fails
 fn parse_ruchy_source(file: &Path) -> Result<ruchy::frontend::ast::Expr> {
-    let source = fs::read_to_string(file)
-        .with_context(|| format!("Failed to read file: {}", file.display()))?;
+    let source = read_file_with_context(file)?;
     let mut parser = RuchyParser::new(&source);
     parser
         .parse()
@@ -1983,8 +1997,7 @@ fn compile_for_property_testing(path: &Path, verbose: bool) -> Result<PathBuf> {
         eprintln!("Compiling file once for property testing...");
     }
 
-    let source = fs::read_to_string(path)
-        .with_context(|| format!("Failed to read file: {}", path.display()))?;
+    let source = read_file_with_context(path)?;
     let ast = parse_source(&source)?;
     let rust_code = transpile_for_execution(&ast, path)?;
     let (temp_source, binary_path) = prepare_compilation(&rust_code, verbose)?;
