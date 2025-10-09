@@ -1931,23 +1931,9 @@ pub fn handle_property_tests_command(
 /// 1. Code executes without panicking (N iterations)
 /// 2. Output is deterministic (same input → same output)
 /// 3. Basic execution correctness
-fn handle_property_tests_single_file(
-    path: &Path,
-    cases: usize,
-    format: &str,
-    output: Option<&Path>,
-    _seed: Option<u64>,
-    verbose: bool,
-) -> Result<()> {
-    if verbose {
-        eprintln!(
-            "Generating property tests for single file: {}",
-            path.display()
-        );
-    }
-
-    // PERFORMANCE FIX: Compile once, execute N times (not cargo run N times)
-    // Step 1: Transpile and compile the file ONCE
+/// Compile Ruchy file for property testing
+/// Complexity: 3 (Toyota Way: <10 ✓)
+fn compile_for_property_testing(path: &Path, verbose: bool) -> Result<PathBuf> {
     if verbose {
         eprintln!("Compiling file once for property testing...");
     }
@@ -1963,23 +1949,26 @@ fn handle_property_tests_single_file(
         eprintln!("Binary compiled: {}", binary_path.display());
     }
 
-    let mut passed = 0;
-    let mut failed = 0;
-    let mut test_results = Vec::new();
+    Ok(binary_path)
+}
 
-    // Property 1: Code executes without panicking (N times)
+/// Run panic property tests (executes binary N times)
+/// Complexity: 4 (Toyota Way: <10 ✓)
+fn run_panic_property_tests(
+    binary_path: &Path,
+    cases: usize,
+    verbose: bool,
+) -> Result<(usize, Vec<String>)> {
     if verbose {
         eprintln!("Property 1: Testing {} executions for panics...", cases);
     }
 
+    let mut failures = Vec::new();
     for i in 0..cases {
-        let result = std::process::Command::new(&binary_path).output()?;
+        let result = std::process::Command::new(binary_path).output()?;
 
-        if result.status.success() {
-            passed += 1;
-        } else {
-            failed += 1;
-            test_results.push(format!(
+        if !result.status.success() {
+            failures.push(format!(
                 "Iteration {}: FAILED - {}",
                 i,
                 String::from_utf8_lossy(&result.stderr)
@@ -1990,93 +1979,205 @@ fn handle_property_tests_single_file(
         }
     }
 
-    // Property 2: Deterministic output (run twice, compare)
+    Ok((cases - failures.len(), failures))
+}
+
+/// Test output determinism (run twice, compare)
+/// Complexity: 2 (Toyota Way: <10 ✓)
+fn test_output_determinism(binary_path: &Path, verbose: bool) -> Result<bool> {
     if verbose {
         eprintln!("Property 2: Testing output determinism...");
     }
 
-    let run1 = std::process::Command::new(&binary_path).output()?;
-    let run2 = std::process::Command::new(&binary_path).output()?;
+    let run1 = std::process::Command::new(binary_path).output()?;
+    let run2 = std::process::Command::new(binary_path).output()?;
 
-    let deterministic = run1.stdout == run2.stdout;
-    if deterministic {
-        passed += 1;
-    } else {
-        failed += 1;
-        test_results.push("Determinism test: FAILED - outputs differ".to_string());
-    }
+    Ok(run1.stdout == run2.stdout)
+}
 
-    // Cleanup: Remove binary
-    let _ = fs::remove_file(&binary_path);
-
-    let total_tests = cases + 1; // N panic tests + 1 determinism test
+/// Generate property test report (JSON or text)
+/// Complexity: 3 (Toyota Way: <10 ✓)
+fn generate_property_test_report(
+    path: &Path,
+    format: &str,
+    output: Option<&Path>,
+    cases: usize,
+    passed: usize,
+    failed: usize,
+    deterministic: bool,
+    test_results: Vec<String>,
+) -> Result<()> {
+    let total_tests = cases + 1;
     let success = failed == 0;
 
     match format {
-        "json" => {
-            let report = serde_json::json!({
-                "status": if success { "passed" } else { "failed" },
-                "file": path.display().to_string(),
-                "total_tests": total_tests,
-                "passed": passed,
-                "failed": failed,
-                "properties": {
-                    "no_panic": { "iterations": cases, "passed": cases - failed },
-                    "deterministic": deterministic
-                },
-                "failures": test_results
-            });
-            let json_output = serde_json::to_string_pretty(&report)?;
-            if let Some(out_path) = output {
-                fs::write(out_path, json_output)?;
-            } else {
-                println!("{}", json_output);
-            }
-        }
-        _ => {
-            println!("Property Test Report");
-            println!("====================");
-            println!("File: {}", path.display());
-            println!(
-                "Status: {}",
-                if success { "✅ PASSED" } else { "❌ FAILED" }
-            );
-            println!("Total tests: {}", total_tests);
-            println!("Passed: {}", passed);
-            println!("Failed: {}", failed);
-            println!("\nProperties Tested:");
-            println!("  1. No panics: {} iterations", cases);
-            println!(
-                "  2. Deterministic output: {}",
-                if deterministic { "✅" } else { "❌" }
-            );
+        "json" => write_json_property_report(
+            path,
+            output,
+            success,
+            total_tests,
+            passed,
+            failed,
+            cases,
+            deterministic,
+            test_results,
+        ),
+        _ => write_text_property_report(
+            path,
+            output,
+            success,
+            total_tests,
+            passed,
+            failed,
+            cases,
+            deterministic,
+            test_results,
+        ),
+    }
+}
 
-            if !test_results.is_empty() {
-                println!("\nFailures:");
-                for failure in &test_results {
-                    println!("  - {}", failure);
-                }
-            }
+/// Write JSON format property test report
+/// Complexity: 2 (Toyota Way: <10 ✓)
+fn write_json_property_report(
+    path: &Path,
+    output: Option<&Path>,
+    success: bool,
+    total_tests: usize,
+    passed: usize,
+    failed: usize,
+    cases: usize,
+    deterministic: bool,
+    test_results: Vec<String>,
+) -> Result<()> {
+    let report = serde_json::json!({
+        "status": if success { "passed" } else { "failed" },
+        "file": path.display().to_string(),
+        "total_tests": total_tests,
+        "passed": passed,
+        "failed": failed,
+        "properties": {
+            "no_panic": { "iterations": cases, "passed": cases - (test_results.len()) },
+            "deterministic": deterministic
+        },
+        "failures": test_results
+    });
+    let json_output = serde_json::to_string_pretty(&report)?;
 
-            if let Some(out_path) = output {
-                let report = format!(
-                    "Property Test Report\nFile: {}\nPassed: {}/{}\n",
-                    path.display(),
-                    passed,
-                    total_tests
-                );
-                fs::write(out_path, report)?;
-            }
+    if let Some(out_path) = output {
+        fs::write(out_path, json_output)?;
+    } else {
+        println!("{}", json_output);
+    }
+    Ok(())
+}
+
+/// Write text format property test report
+/// Complexity: 3 (Toyota Way: <10 ✓)
+fn write_text_property_report(
+    path: &Path,
+    output: Option<&Path>,
+    success: bool,
+    total_tests: usize,
+    passed: usize,
+    failed: usize,
+    cases: usize,
+    deterministic: bool,
+    test_results: Vec<String>,
+) -> Result<()> {
+    println!("Property Test Report");
+    println!("====================");
+    println!("File: {}", path.display());
+    println!(
+        "Status: {}",
+        if success { "✅ PASSED" } else { "❌ FAILED" }
+    );
+    println!("Total tests: {}", total_tests);
+    println!("Passed: {}", passed);
+    println!("Failed: {}", failed);
+    println!("\nProperties Tested:");
+    println!("  1. No panics: {} iterations", cases);
+    println!(
+        "  2. Deterministic output: {}",
+        if deterministic { "✅" } else { "❌" }
+    );
+
+    if !test_results.is_empty() {
+        println!("\nFailures:");
+        for failure in &test_results {
+            println!("  - {}", failure);
         }
     }
 
-    if success {
+    if let Some(out_path) = output {
+        let report = format!(
+            "Property Test Report\nFile: {}\nPassed: {}/{}\n",
+            path.display(),
+            passed,
+            total_tests
+        );
+        fs::write(out_path, report)?;
+    }
+
+    Ok(())
+}
+
+/// Handle property tests for a single file
+/// Complexity: 5 (Toyota Way: <10 ✓) [Reduced from 27]
+fn handle_property_tests_single_file(
+    path: &Path,
+    cases: usize,
+    format: &str,
+    output: Option<&Path>,
+    _seed: Option<u64>,
+    verbose: bool,
+) -> Result<()> {
+    if verbose {
+        eprintln!(
+            "Generating property tests for single file: {}",
+            path.display()
+        );
+    }
+
+    // Step 1: Compile once for property testing
+    let binary_path = compile_for_property_testing(path, verbose)?;
+
+    // Step 2: Run panic property tests
+    let (panic_passed, mut test_results) = run_panic_property_tests(&binary_path, cases, verbose)?;
+
+    // Step 3: Test output determinism
+    let deterministic = test_output_determinism(&binary_path, verbose)?;
+
+    // Calculate totals
+    let passed = panic_passed + if deterministic { 1 } else { 0 };
+    let failed = (cases - panic_passed) + if deterministic { 0 } else { 1 };
+
+    if !deterministic {
+        test_results.push("Determinism test: FAILED - outputs differ".to_string());
+    }
+
+    // Cleanup binary
+    let _ = fs::remove_file(&binary_path);
+
+    // Step 4: Generate report
+    generate_property_test_report(
+        path,
+        format,
+        output,
+        cases,
+        passed,
+        failed,
+        deterministic,
+        test_results.clone(),
+    )?;
+
+    // Return success/failure
+    if failed == 0 {
         Ok(())
     } else {
         anyhow::bail!(
             "Property tests failed: {}/{} tests passed",
             passed,
-            total_tests
+            cases + 1
         )
     }
 }
