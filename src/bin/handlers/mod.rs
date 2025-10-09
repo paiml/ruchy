@@ -1386,60 +1386,78 @@ pub fn handle_mcp_command(
 
 /// Handle notebook command
 #[cfg(feature = "notebook")]
+/// Validate notebook file can be parsed and executed
+/// Complexity: 3 (Toyota Way: <10 ✓)
+fn validate_notebook_file(path: &Path) -> Result<()> {
+    println!("📓 Notebook validation mode for: {}", path.display());
+
+    // Validate the file can be parsed and executed
+    let source = fs::read_to_string(path)
+        .with_context(|| format!("Failed to read file: {}", path.display()))?;
+    let ast = parse_source(&source)?;
+    let rust_code = transpile_for_execution(&ast, path)?;
+    let (temp_source, binary_path) = prepare_compilation(&rust_code, false)?;
+    compile_rust_code(temp_source.path(), &binary_path)?;
+
+    // Execute the file to validate it runs
+    let result = std::process::Command::new(&binary_path).output()?;
+
+    // Cleanup
+    let _ = fs::remove_file(&binary_path);
+
+    if result.status.success() {
+        println!("✅ Notebook validation: PASSED");
+        println!("   File can be loaded and executed in notebook environment");
+        Ok(())
+    } else {
+        anyhow::bail!(
+            "Notebook validation: FAILED\n{}",
+            String::from_utf8_lossy(&result.stderr)
+        );
+    }
+}
+
+/// Open browser for notebook interface
+/// Complexity: 2 (Toyota Way: <10 ✓)
+fn open_browser_for_notebook(url: &str) -> Result<()> {
+    use std::process::Command;
+
+    println!("   Opening browser at {}", url);
+    #[cfg(target_os = "macos")]
+    Command::new("open").arg(url).spawn()?;
+    #[cfg(target_os = "linux")]
+    Command::new("xdg-open").arg(url).spawn()?;
+    #[cfg(target_os = "windows")]
+    Command::new("cmd").args(["/C", "start", url]).spawn()?;
+    Ok(())
+}
+
+/// Handle notebook command - start server or validate file
+/// Complexity: 4 (Toyota Way: <10 ✓) [Reduced from 14]
 pub fn handle_notebook_command(
     file: Option<&Path>,
     port: u16,
     open_browser: bool,
     host: &str,
 ) -> Result<()> {
-    use std::process::Command;
-
     // TOOL-VALIDATION-003: Non-interactive file validation mode
     if let Some(path) = file {
-        println!("📓 Notebook validation mode for: {}", path.display());
-
-        // Validate the file can be parsed and executed
-        let source = fs::read_to_string(path)
-            .with_context(|| format!("Failed to read file: {}", path.display()))?;
-        let ast = parse_source(&source)?;
-        let rust_code = transpile_for_execution(&ast, path)?;
-        let (temp_source, binary_path) = prepare_compilation(&rust_code, false)?;
-        compile_rust_code(temp_source.path(), &binary_path)?;
-
-        // Execute the file to validate it runs
-        let result = std::process::Command::new(&binary_path).output()?;
-
-        // Cleanup
-        let _ = fs::remove_file(&binary_path);
-
-        if result.status.success() {
-            println!("✅ Notebook validation: PASSED");
-            println!("   File can be loaded and executed in notebook environment");
-            return Ok(());
-        } else {
-            anyhow::bail!(
-                "Notebook validation: FAILED\n{}",
-                String::from_utf8_lossy(&result.stderr)
-            );
-        }
+        return validate_notebook_file(path);
     }
 
     // Interactive server mode (original behavior)
     println!("🚀 Starting Ruchy Notebook server...");
     println!("   Host: {}:{}", host, port);
+
     // Create async runtime for the server
     let runtime = tokio::runtime::Runtime::new()?;
+
     // Open browser if requested
     if open_browser {
         let url = format!("http://{}:{}", host, port);
-        println!("   Opening browser at {}", url);
-        #[cfg(target_os = "macos")]
-        Command::new("open").arg(&url).spawn()?;
-        #[cfg(target_os = "linux")]
-        Command::new("xdg-open").arg(&url).spawn()?;
-        #[cfg(target_os = "windows")]
-        Command::new("cmd").args(["/C", "start", &url]).spawn()?;
+        open_browser_for_notebook(&url)?;
     }
+
     // Start the notebook server
     println!(
         "🔧 DEBUG: About to call ruchy::notebook::start_server({})",
@@ -1858,6 +1876,70 @@ pub fn handle_wasm_command(
 ///
 /// # Errors
 /// Returns error if tests fail or cannot be executed
+/// Run property test suite via cargo test
+/// Complexity: 3 (Toyota Way: <10 ✓)
+fn run_property_test_suite(
+    cases: usize,
+    seed: Option<u64>,
+    verbose: bool,
+) -> Result<std::process::Output> {
+    let mut cmd = std::process::Command::new("cargo");
+    cmd.args(["test", "--test", "lang_comp_suite", "--", "--nocapture"])
+        .env("PROPTEST_CASES", cases.to_string());
+
+    if let Some(s) = seed {
+        cmd.env("PROPTEST_SEED", s.to_string());
+    }
+
+    let output_result = cmd.output()?;
+
+    if verbose {
+        let stderr = String::from_utf8_lossy(&output_result.stderr);
+        eprintln!("Command output:\n{}", stderr);
+    }
+
+    Ok(output_result)
+}
+
+/// Write property test summary report
+/// Complexity: 3 (Toyota Way: <10 ✓)
+fn write_property_test_summary(
+    format: &str,
+    output: Option<&Path>,
+    cases: usize,
+    stdout: &str,
+) -> Result<()> {
+    match format {
+        "json" => {
+            let report = serde_json::json!({
+                "status": "passed",
+                "cases": cases,
+                "output": stdout
+            });
+            let json_output = serde_json::to_string_pretty(&report)?;
+            if let Some(out_path) = output {
+                fs::write(out_path, json_output)?;
+            } else {
+                println!("{}", json_output);
+            }
+        }
+        _ => {
+            println!("Property Test Report");
+            println!("====================");
+            println!("Status: ✅ PASSED");
+            println!("Test cases: {}", cases);
+            if let Some(out_path) = output {
+                fs::write(out_path, stdout)?;
+            } else {
+                println!("\n{}", stdout);
+            }
+        }
+    }
+    Ok(())
+}
+
+/// Handle property tests command - single file or test suite
+/// Complexity: 5 (Toyota Way: <10 ✓) [Reduced from 14]
 pub fn handle_property_tests_command(
     path: &Path,
     cases: usize,
@@ -1877,49 +1959,12 @@ pub fn handle_property_tests_command(
     }
 
     // Directory mode: Run existing test suite
-    let mut cmd = std::process::Command::new("cargo");
-    cmd.args(["test", "--test", "lang_comp_suite", "--", "--nocapture"])
-        .env("PROPTEST_CASES", cases.to_string());
-
-    if let Some(s) = seed {
-        cmd.env("PROPTEST_SEED", s.to_string());
-    }
-
-    let output_result = cmd.output()?;
+    let output_result = run_property_test_suite(cases, seed, verbose)?;
     let stdout = String::from_utf8_lossy(&output_result.stdout);
     let stderr = String::from_utf8_lossy(&output_result.stderr);
 
-    if verbose {
-        eprintln!("Command output:\n{}", stderr);
-    }
-
     if output_result.status.success() {
-        match format {
-            "json" => {
-                let report = serde_json::json!({
-                    "status": "passed",
-                    "cases": cases,
-                    "output": stdout.to_string()
-                });
-                let json_output = serde_json::to_string_pretty(&report)?;
-                if let Some(out_path) = output {
-                    fs::write(out_path, json_output)?;
-                } else {
-                    println!("{}", json_output);
-                }
-            }
-            _ => {
-                println!("Property Test Report");
-                println!("====================");
-                println!("Status: ✅ PASSED");
-                println!("Test cases: {}", cases);
-                if let Some(out_path) = output {
-                    fs::write(out_path, &stdout.to_string())?;
-                } else {
-                    println!("\n{}", stdout);
-                }
-            }
-        }
+        write_property_test_summary(format, output, cases, &stdout)?;
         Ok(())
     } else {
         anyhow::bail!("Property tests failed:\n{}", stderr)
@@ -2274,6 +2319,76 @@ pub fn handle_mutations_command(
 ///
 /// # Errors
 /// Returns error if fuzz tests find crashes or panics
+/// Run cargo fuzz on target
+/// Complexity: 3 (Toyota Way: <10 ✓)
+fn run_cargo_fuzz(
+    target: &str,
+    iterations: usize,
+    timeout: u32,
+    verbose: bool,
+) -> Result<std::process::Output> {
+    let mut cmd = std::process::Command::new("cargo");
+    cmd.args([
+        "fuzz",
+        "run",
+        target,
+        "--",
+        &format!("-runs={}", iterations),
+        &format!("-timeout={}", timeout),
+    ]);
+
+    let output_result = cmd.output()?;
+
+    if verbose {
+        let stderr = String::from_utf8_lossy(&output_result.stderr);
+        eprintln!("Command output:\n{}", stderr);
+    }
+
+    Ok(output_result)
+}
+
+/// Write fuzz test summary
+/// Complexity: 3 (Toyota Way: <10 ✓)
+fn write_fuzz_summary(
+    format: &str,
+    output: Option<&Path>,
+    target: &str,
+    iterations: usize,
+    success: bool,
+    stdout: &str,
+) -> Result<()> {
+    match format {
+        "json" => {
+            let report = serde_json::json!({
+                "target": target,
+                "iterations": iterations,
+                "status": if success { "passed" } else { "failed" },
+                "output": stdout
+            });
+            let json_output = serde_json::to_string_pretty(&report)?;
+            if let Some(out_path) = output {
+                fs::write(out_path, json_output)?;
+            } else {
+                println!("{}", json_output);
+            }
+        }
+        _ => {
+            println!("Fuzz Test Report");
+            println!("================");
+            println!("Target: {}", target);
+            println!("Iterations: {}", iterations);
+            if let Some(out_path) = output {
+                fs::write(out_path, stdout)?;
+            } else {
+                println!("\n{}", stdout);
+            }
+        }
+    }
+    Ok(())
+}
+
+/// Handle fuzz command - single file or cargo-fuzz target
+/// Complexity: 5 (Toyota Way: <10 ✓) [Reduced from 13]
 pub fn handle_fuzz_command(
     target: &str,
     iterations: usize,
@@ -2294,53 +2409,14 @@ pub fn handle_fuzz_command(
     }
 
     // cargo-fuzz mode for fuzz targets
-    let mut cmd = std::process::Command::new("cargo");
-    cmd.args([
-        "fuzz",
-        "run",
-        target,
-        "--",
-        &format!("-runs={}", iterations),
-        &format!("-timeout={}", timeout),
-    ]);
-
-    let output_result = cmd.output()?;
+    let output_result = run_cargo_fuzz(target, iterations, timeout, verbose)?;
     let stdout = String::from_utf8_lossy(&output_result.stdout);
     let stderr = String::from_utf8_lossy(&output_result.stderr);
 
-    if verbose {
-        eprintln!("Command output:\n{}", stderr);
-    }
+    let success = output_result.status.success();
+    write_fuzz_summary(format, output, target, iterations, success, &stdout)?;
 
-    match format {
-        "json" => {
-            let report = serde_json::json!({
-                "target": target,
-                "iterations": iterations,
-                "status": if output_result.status.success() { "passed" } else { "failed" },
-                "output": stdout.to_string()
-            });
-            let json_output = serde_json::to_string_pretty(&report)?;
-            if let Some(out_path) = output {
-                fs::write(out_path, json_output)?;
-            } else {
-                println!("{}", json_output);
-            }
-        }
-        _ => {
-            println!("Fuzz Test Report");
-            println!("================");
-            println!("Target: {}", target);
-            println!("Iterations: {}", iterations);
-            if let Some(out_path) = output {
-                fs::write(out_path, &stdout.to_string())?;
-            } else {
-                println!("\n{}", stdout);
-            }
-        }
-    }
-
-    if output_result.status.success() {
+    if success {
         Ok(())
     } else {
         anyhow::bail!("Fuzz tests found crashes or panics:\n{}", stderr)
