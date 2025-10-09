@@ -2349,34 +2349,13 @@ pub fn handle_fuzz_command(
 
 /// Handle fuzz testing for a single .ruchy file
 /// Runs file repeatedly to detect crashes, hangs, or non-deterministic behavior
-fn handle_fuzz_single_file(
-    path: &Path,
+/// Run fuzz iterations on compiled binary
+/// Complexity: 5 (Toyota Way: <10 ✓)
+fn run_fuzz_iterations(
+    binary_path: &Path,
     iterations: usize,
-    _timeout_ms: u32,
-    format: &str,
-    output: Option<&Path>,
     verbose: bool,
-) -> Result<()> {
-    if verbose {
-        eprintln!("Fuzzing single file: {}", path.display());
-    }
-
-    // PERFORMANCE FIX: Compile once, execute N times (not cargo run N times)
-    if verbose {
-        eprintln!("Compiling file once for fuzz testing...");
-    }
-
-    let source = fs::read_to_string(path)
-        .with_context(|| format!("Failed to read file: {}", path.display()))?;
-    let ast = parse_source(&source)?;
-    let rust_code = transpile_for_execution(&ast, path)?;
-    let (temp_source, binary_path) = prepare_compilation(&rust_code, verbose)?;
-    compile_rust_code(temp_source.path(), &binary_path)?;
-
-    if verbose {
-        eprintln!("Binary compiled: {}", binary_path.display());
-    }
-
+) -> Result<(usize, usize, usize, Vec<String>)> {
     let mut crashes = 0;
     let mut timeouts = 0;
     let mut successes = 0;
@@ -2387,7 +2366,7 @@ fn handle_fuzz_single_file(
             eprintln!("  Iteration {}/{}", i, iterations);
         }
 
-        let result = std::process::Command::new(&binary_path).output();
+        let result = std::process::Command::new(binary_path).output();
 
         match result {
             Ok(output) => {
@@ -2406,67 +2385,142 @@ fn handle_fuzz_single_file(
         }
     }
 
-    // Cleanup: Remove binary
-    let _ = fs::remove_file(&binary_path);
+    Ok((successes, crashes, timeouts, crash_details))
+}
 
-    let total = successes + crashes + timeouts;
-    let success_rate = (successes as f64 / total as f64) * 100.0;
+/// Write JSON format fuzz test report
+/// Complexity: 2 (Toyota Way: <10 ✓)
+fn write_json_fuzz_report(
+    path: &Path,
+    output: Option<&Path>,
+    iterations: usize,
+    successes: usize,
+    crashes: usize,
+    timeouts: usize,
+    success_rate: f64,
+    crash_details: Vec<String>,
+) -> Result<()> {
+    let report = serde_json::json!({
+        "file": path.display().to_string(),
+        "iterations": iterations,
+        "successes": successes,
+        "crashes": crashes,
+        "timeouts": timeouts,
+        "success_rate": success_rate,
+        "status": if crashes == 0 && timeouts == 0 { "passed" } else { "failed" },
+        "crash_details": crash_details
+    });
+    let json_output = serde_json::to_string_pretty(&report)?;
 
-    match format {
-        "json" => {
-            let report = serde_json::json!({
-                "file": path.display().to_string(),
-                "iterations": iterations,
-                "successes": successes,
-                "crashes": crashes,
-                "timeouts": timeouts,
-                "success_rate": success_rate,
-                "status": if crashes == 0 && timeouts == 0 { "passed" } else { "failed" },
-                "crash_details": crash_details
-            });
-            let json_output = serde_json::to_string_pretty(&report)?;
-            if let Some(out_path) = output {
-                fs::write(out_path, json_output)?;
-            } else {
-                println!("{}", json_output);
-            }
+    if let Some(out_path) = output {
+        fs::write(out_path, json_output)?;
+    } else {
+        println!("{}", json_output);
+    }
+    Ok(())
+}
+
+/// Write text format fuzz test report
+/// Complexity: 3 (Toyota Way: <10 ✓)
+fn write_text_fuzz_report(
+    path: &Path,
+    output: Option<&Path>,
+    iterations: usize,
+    successes: usize,
+    crashes: usize,
+    timeouts: usize,
+    success_rate: f64,
+    crash_details: Vec<String>,
+) -> Result<()> {
+    println!("Fuzz Test Report");
+    println!("================");
+    println!("File: {}", path.display());
+    println!("Iterations: {}", iterations);
+    println!("Successes: {}", successes);
+    println!("Crashes: {}", crashes);
+    println!("Timeouts: {}", timeouts);
+    println!("Success rate: {:.1}%", success_rate);
+    println!(
+        "Status: {}",
+        if crashes == 0 && timeouts == 0 {
+            "✅ PASSED"
+        } else {
+            "❌ FAILED"
         }
-        _ => {
-            println!("Fuzz Test Report");
-            println!("================");
-            println!("File: {}", path.display());
-            println!("Iterations: {}", iterations);
-            println!("Successes: {}", successes);
-            println!("Crashes: {}", crashes);
-            println!("Timeouts: {}", timeouts);
-            println!("Success rate: {:.1}%", success_rate);
-            println!(
-                "Status: {}",
-                if crashes == 0 && timeouts == 0 {
-                    "✅ PASSED"
-                } else {
-                    "❌ FAILED"
-                }
-            );
+    );
 
-            if !crash_details.is_empty() {
-                println!("\nCrash Details:");
-                for detail in &crash_details {
-                    println!("  - {}", detail);
-                }
-            }
-
-            if let Some(out_path) = output {
-                let report = format!(
-                    "Fuzz Test Report\nFile: {}\nSuccess rate: {:.1}%\n",
-                    path.display(),
-                    success_rate
-                );
-                fs::write(out_path, report)?;
-            }
+    if !crash_details.is_empty() {
+        println!("\nCrash Details:");
+        for detail in &crash_details {
+            println!("  - {}", detail);
         }
     }
 
+    if let Some(out_path) = output {
+        let report = format!(
+            "Fuzz Test Report\nFile: {}\nSuccess rate: {:.1}%\n",
+            path.display(),
+            success_rate
+        );
+        fs::write(out_path, report)?;
+    }
+
+    Ok(())
+}
+
+/// Handle fuzz testing for a single file
+/// Complexity: 5 (Toyota Way: <10 ✓) [Reduced from 24]
+fn handle_fuzz_single_file(
+    path: &Path,
+    iterations: usize,
+    _timeout_ms: u32,
+    format: &str,
+    output: Option<&Path>,
+    verbose: bool,
+) -> Result<()> {
+    if verbose {
+        eprintln!("Fuzzing single file: {}", path.display());
+    }
+
+    // Step 1: Compile once for fuzz testing (reuses helper from property tests)
+    let binary_path = compile_for_property_testing(path, verbose)?;
+
+    // Step 2: Run fuzz iterations
+    let (successes, crashes, timeouts, crash_details) =
+        run_fuzz_iterations(&binary_path, iterations, verbose)?;
+
+    // Cleanup binary
+    let _ = fs::remove_file(&binary_path);
+
+    // Step 3: Calculate statistics
+    let total = successes + crashes + timeouts;
+    let success_rate = (successes as f64 / total as f64) * 100.0;
+
+    // Step 4: Generate report
+    match format {
+        "json" => write_json_fuzz_report(
+            path,
+            output,
+            iterations,
+            successes,
+            crashes,
+            timeouts,
+            success_rate,
+            crash_details,
+        )?,
+        _ => write_text_fuzz_report(
+            path,
+            output,
+            iterations,
+            successes,
+            crashes,
+            timeouts,
+            success_rate,
+            crash_details,
+        )?,
+    }
+
+    // Return success/failure
     if crashes == 0 && timeouts == 0 {
         Ok(())
     } else {
