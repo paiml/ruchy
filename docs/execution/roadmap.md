@@ -31,7 +31,104 @@
 **WASM Property Test Status**: ✅ **20/20 passing (100%)** - 200,000 total cases (10K per test)
 **WASM Quality Gates**: ✅ **ESTABLISHED** - CI/CD workflows, git hooks, quality dashboard complete
 **Sprint 7 Status**: ✅ **4/5 PHASES COMPLETE** (Phase 1-3, Memory Model, Phase 5 done; Phase 4 paused)
+**Book Verification Status**: ✅ **65/65 extracted examples tested (92.3% pass rate)** - Ch 15 & 18 verified
 **Next Priority**: 🎯 **Resume Batches 16-17** - Entropy violations (code duplication patterns) OR continue Zero Coverage Modules
+
+## 🚨 **NEW CRITICAL DEFECTS FOUND (2025-10-09)**
+
+### DEFECT-COMPILE-MAIN-CALL: Stack Overflow on Double main() Call
+**Filed**: 2025-10-09
+**Severity**: HIGH (P0) - User-facing crash
+**Status**: NEW
+**Found During**: Chapter 15 (Binary Compilation) verification
+
+**Problem**: When Ruchy code contains both `fun main()` definition AND explicit `main()` call at module level, the compiled binary crashes with stack overflow.
+
+**Reproduction**:
+```ruchy
+fun main() {
+    println("Hello");
+}
+
+main()  # ← Causes stack overflow in compiled binary!
+```
+
+**Compilation**:
+```bash
+$ ruchy compile bad.ruchy
+✓ Successfully compiled to: a.out
+
+$ ./a.out
+thread 'main' (2186933) has overflowed its stack
+fatal runtime error: stack overflow, aborting
+```
+
+**Root Cause**: The transpiled Rust code contains:
+1. A `fn main()` function definition
+2. A call to `main()` at module level placed INSIDE Rust's `fn main()`
+3. This creates infinite recursion: `main() → main() → main() → ...`
+
+**Workaround**: Don't call `main()` explicitly when defining `fun main()`. The compiled binary automatically calls it.
+
+**Impact**:
+- Breaks common script-to-compile workflow
+- User confusion: "Works in interpreter, crashes when compiled"
+- Affects book examples with both definition and call
+- Silent failure (compiles successfully, then crashes)
+
+**Expected Fix**:
+- Detect double main() call during transpilation
+- Either: Skip the explicit call in compiled mode
+- Or: Emit error/warning during compilation
+
+**Estimated Effort**: 4 hours
+**Priority**: HIGH - Fix before next release
+**Ticket**: DEFECT-COMPILE-MAIN-CALL
+
+### DataFrame Field Access Not Implemented
+**Filed**: 2025-10-09
+**Severity**: MEDIUM - Missing documented feature
+**Status**: NEW
+**Found During**: Chapter 18 (DataFrames) verification
+
+**Problem**: DataFrame creation works via `df![]` syntax in interpreter mode, but field access (.columns, .shape) is not implemented.
+
+**What Works**:
+```ruchy
+let df = df!["name" => ["Alice"], "age" => [30]];
+df  # ✅ Displays DataFrame
+```
+
+**What Doesn't Work**:
+```ruchy
+df.columns  # ❌ Error: Cannot access field 'columns' on type dataframe
+df.shape    # ❌ Error: Cannot access field 'shape' on type dataframe
+df.rows     # ❌ Not implemented
+```
+
+**Impact**:
+- Chapter 18 examples don't work
+- Users cannot introspect DataFrames
+- <10% of chapter features actually work
+- Misleading documentation (promises 80%, delivers <10%)
+
+**Recommended Priorities**:
+- P1: Implement .columns, .shape, .rows field access
+- P2: Implement .select(), .filter() operations
+- P3: Implement I/O (from_csv, to_csv, from_json)
+- P4: Add compilation mode support (polars dependency)
+
+**Estimated Effort**:
+- Field access: 8 hours
+- Basic operations: 20 hours
+- I/O: 15 hours
+- Compilation support: 40 hours
+
+**Tickets**:
+- DF-001: Implement DataFrame field access (.columns, .shape, .rows)
+- DF-002: Implement basic operations (select, filter)
+- DF-003: Implement I/O operations (CSV, JSON)
+- DF-004: Add compilation mode support
 
 ## 🔧 **PMAT v2.70+ COMMANDS REFERENCE**
 
