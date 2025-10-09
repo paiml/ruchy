@@ -1,0 +1,285 @@
+name: WASM Quality Gates
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'src/backend/wasm/**'
+      - 'tests/wasm_*.rs'
+      - 'tests/e2e/**'
+      - 'Cargo.toml'
+      - '.github/workflows/wasm-quality.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'src/backend/wasm/**'
+      - 'tests/wasm_*.rs'
+      - 'tests/e2e/**'
+      - 'Cargo.toml'
+
+env:
+  RUST_BACKTRACE: 1
+  CARGO_TERM_COLOR: always
+
+jobs:
+  wasm-memory-model-tests:
+    name: WASM Memory Model Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install Rust toolchain
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        targets: wasm32-unknown-unknown
+
+    - name: Cache Rust dependencies
+      uses: Swatinem/rust-cache@v2
+      with:
+        key: wasm-memory-${{ hashFiles('**/Cargo.lock') }}
+
+    - name: Run memory model E2E tests
+      run: cargo test --test wasm_memory_model
+      timeout-minutes: 5
+
+    - name: Run memory model property tests
+      run: cargo test --test wasm_memory_property_tests
+      timeout-minutes: 5
+
+    - name: Run memory model invariant tests
+      run: cargo test --test wasm_memory_property_tests invariant_tests
+      timeout-minutes: 2
+
+    - name: Upload test results
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: memory-model-test-results
+        path: target/debug/deps/
+        retention-days: 7
+
+  wasm-e2e-tests:
+    name: WASM E2E Tests (Cross-Browser)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, webkit]
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install Rust toolchain
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        targets: wasm32-unknown-unknown
+
+    - name: Cache Rust dependencies
+      uses: Swatinem/rust-cache@v2
+      with:
+        key: wasm-e2e-${{ hashFiles('**/Cargo.lock') }}
+
+    - name: Install wasm-pack
+      run: cargo install wasm-pack --locked
+      env:
+        CARGO_INSTALL_ROOT: ~/.cargo
+
+    - name: Install Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install Playwright
+      run: |
+        npm ci
+        npx playwright install --with-deps ${{ matrix.browser }}
+
+    - name: Build WASM module
+      run: wasm-pack build --target web
+      timeout-minutes: 5
+
+    - name: Verify WASM build
+      run: |
+        test -f pkg/ruchy_wasm_bg.wasm
+        head -c 4 pkg/ruchy_wasm_bg.wasm | od -An -tx1 | grep -q "00 61 73 6d"
+
+    - name: Run E2E tests (${{ matrix.browser }})
+      run: npx playwright test --project=${{ matrix.browser }}
+      timeout-minutes: 5
+
+    - name: Upload Playwright report
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: playwright-report-${{ matrix.browser }}
+        path: playwright-report/
+        retention-days: 30
+
+    - name: Upload test results
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: e2e-test-results-${{ matrix.browser }}
+        path: test-results/
+        retention-days: 7
+
+  wasm-complexity-check:
+    name: WASM Code Complexity Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install Rust toolchain
+      uses: dtolnay/rust-toolchain@stable
+
+    - name: Install PMAT
+      run: cargo install pmat --locked
+      env:
+        CARGO_INSTALL_ROOT: ~/.cargo
+
+    - name: Check WASM backend complexity
+      run: |
+        pmat analyze complexity \
+          --max-cyclomatic 10 \
+          --max-cognitive 10 \
+          src/backend/wasm/mod.rs
+
+    - name: Check SATD violations
+      run: pmat analyze satd --fail-on-violation src/backend/wasm/
+
+  wasm-build-verification:
+    name: WASM Build Verification
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install Rust toolchain
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        targets: wasm32-unknown-unknown
+
+    - name: Cache Rust dependencies
+      uses: Swatinem/rust-cache@v2
+
+    - name: Build WASM target
+      run: cargo build --target wasm32-unknown-unknown --release
+
+    - name: Verify WASM binary
+      run: |
+        WASM_FILE=target/wasm32-unknown-unknown/release/ruchy.wasm
+        test -f "$WASM_FILE"
+        SIZE=$(stat -f%z "$WASM_FILE" 2>/dev/null || stat -c%s "$WASM_FILE")
+        echo "WASM binary size: $SIZE bytes"
+        if [ "$SIZE" -gt 10485760 ]; then
+          echo "WARNING: WASM binary >10MB ($SIZE bytes)"
+          exit 1
+        fi
+
+    - name: Check for warnings
+      run: |
+        cargo build --target wasm32-unknown-unknown --release 2>&1 | tee build.log
+        if grep -q "warning:" build.log; then
+          echo "ERROR: Compilation warnings found"
+          exit 1
+        fi
+
+  wasm-quality-summary:
+    name: WASM Quality Summary
+    runs-on: ubuntu-latest
+    needs: [wasm-memory-model-tests, wasm-e2e-tests, wasm-complexity-check, wasm-build-verification]
+    if: always()
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Download all artifacts
+      uses: actions/download-artifact@v3
+
+    - name: Generate quality report
+      run: |
+        echo "# WASM Quality Gates Report" > quality-report.md
+        echo "" >> quality-report.md
+        echo "**Build**: #${{ github.run_number }}" >> quality-report.md
+        echo "**Commit**: ${{ github.sha }}" >> quality-report.md
+        echo "**Date**: $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> quality-report.md
+        echo "" >> quality-report.md
+
+        echo "## Test Results" >> quality-report.md
+        echo "" >> quality-report.md
+
+        # Memory Model Tests
+        if [ "${{ needs.wasm-memory-model-tests.result }}" == "success" ]; then
+          echo "- ✅ Memory Model Tests: PASSED" >> quality-report.md
+        else
+          echo "- ❌ Memory Model Tests: FAILED" >> quality-report.md
+        fi
+
+        # E2E Tests
+        if [ "${{ needs.wasm-e2e-tests.result }}" == "success" ]; then
+          echo "- ✅ E2E Tests (All Browsers): PASSED" >> quality-report.md
+        else
+          echo "- ❌ E2E Tests: FAILED" >> quality-report.md
+        fi
+
+        # Complexity Check
+        if [ "${{ needs.wasm-complexity-check.result }}" == "success" ]; then
+          echo "- ✅ Complexity Check: PASSED" >> quality-report.md
+        else
+          echo "- ❌ Complexity Check: FAILED" >> quality-report.md
+        fi
+
+        # Build Verification
+        if [ "${{ needs.wasm-build-verification.result }}" == "success" ]; then
+          echo "- ✅ Build Verification: PASSED" >> quality-report.md
+        else
+          echo "- ❌ Build Verification: FAILED" >> quality-report.md
+        fi
+
+        echo "" >> quality-report.md
+        echo "## Overall Status" >> quality-report.md
+        echo "" >> quality-report.md
+
+        if [ "${{ needs.wasm-memory-model-tests.result }}" == "success" ] && \
+           [ "${{ needs.wasm-e2e-tests.result }}" == "success" ] && \
+           [ "${{ needs.wasm-complexity-check.result }}" == "success" ] && \
+           [ "${{ needs.wasm-build-verification.result }}" == "success" ]; then
+          echo "✅ **ALL QUALITY GATES PASSED**" >> quality-report.md
+        else
+          echo "❌ **QUALITY GATES FAILED**" >> quality-report.md
+          exit 1
+        fi
+
+    - name: Upload quality report
+      uses: actions/upload-artifact@v3
+      with:
+        name: wasm-quality-report
+        path: quality-report.md
+        retention-days: 90
+
+    - name: Comment on PR
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          const report = fs.readFileSync('quality-report.md', 'utf8');
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: report
+          });
