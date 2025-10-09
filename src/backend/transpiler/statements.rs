@@ -1120,7 +1120,20 @@ impl Transpiler {
     /// assert!(result.contains("test"));
     /// ```
     pub fn transpile_call(&self, func: &Expr, args: &[Expr]) -> Result<TokenStream> {
-        let func_tokens = self.transpile_expr(func)?;
+        // DEFECT-COMPILE-MAIN-CALL: Rename calls to main() to __ruchy_main()
+        // This prevents infinite recursion when main function exists alongside module-level statements
+        let func_tokens = if let ExprKind::Identifier(name) = &func.kind {
+            if name == "main" {
+                // Rename main() calls to __ruchy_main() to avoid collision with Rust entry point
+                let renamed_ident = format_ident!("__ruchy_main");
+                quote! { #renamed_ident }
+            } else {
+                self.transpile_expr(func)?
+            }
+        } else {
+            self.transpile_expr(func)?
+        };
+
         // Check if this is a built-in function with special handling
         if let ExprKind::Identifier(name) = &func.kind {
             let base_name = if name.ends_with('!') {

@@ -762,7 +762,25 @@ impl Transpiler {
         let mut has_main_function = false;
         let mut main_function_expr = None;
 
+        // DEFECT-COMPILE-MAIN-CALL: First pass - detect if main function exists
+        // This prevents infinite recursion when code has both fun main() + main() call
         for expr in exprs {
+            if let ExprKind::Function { name, .. } = &expr.kind {
+                if name == "main" {
+                    has_main_function = true;
+                    break;
+                }
+            }
+        }
+
+        // Second pass - categorize expressions, skipping main() calls if main exists
+        for expr in exprs {
+            // DEFECT-COMPILE-MAIN-CALL: Skip explicit main() calls when main function exists
+            // This prevents: fn main() { main(); } infinite recursion
+            if has_main_function && Self::is_call_to_main(expr) {
+                continue; // Skip this expression
+            }
+
             self.categorize_single_expression(
                 expr,
                 &mut functions,
@@ -782,6 +800,18 @@ impl Transpiler {
             main_function_expr,
             imports,
         ))
+    }
+
+    /// Check if expression is a call to `main()` function
+    /// Used to prevent stack overflow when both `fun main()` definition and `main()` call exist
+    /// Complexity: 2 (within Toyota Way limits)
+    fn is_call_to_main(expr: &Expr) -> bool {
+        match &expr.kind {
+            ExprKind::Call { func, .. } => {
+                matches!(&func.kind, ExprKind::Identifier(name) if name == "main")
+            }
+            _ => false,
+        }
     }
 
     /// Categorize a single expression into appropriate category (complexity: 8)
@@ -1100,6 +1130,10 @@ impl Transpiler {
 
     /// Transpile with top-level statements
     /// Complexity: 2 (within Toyota Way limits)
+    /// Transpile with top-level statements
+    /// DEFECT-COMPILE-MAIN-CALL: When user has `fun main()` + module statements,
+    /// rename user's main to `__ruchy_main` to avoid collision with Rust entry point
+    /// Complexity: 3 (within Toyota Way limits)
     fn transpile_with_top_level_statements(
         &self,
         functions: &[TokenStream],
@@ -1110,8 +1144,11 @@ impl Transpiler {
         needs_hashmap: bool,
         imports: &[TokenStream],
     ) -> Result<TokenStream> {
-        let main_body = if let Some(main) = main_expr {
-            self.extract_main_function_body(main)?
+        // DEFECT-COMPILE-MAIN-CALL: If we have both main function AND module-level statements,
+        // we need to rename the user's main to avoid collision with Rust's entry point
+        let user_main_function = if let Some(main) = main_expr {
+            // Transpile the user's main function as __ruchy_main
+            self.transpile_main_as_renamed_function(main)?
         } else {
             quote! {}
         };
@@ -1122,11 +1159,49 @@ impl Transpiler {
             #(#imports)*
             #(#modules)*
             #(#functions)*
+            #user_main_function
             fn main() {
                 #(#statements)*
-                #main_body
             }
         })
+    }
+
+    /// Transpile user's main function with renamed identifier to avoid Rust entry point collision
+    /// DEFECT-COMPILE-MAIN-CALL: Renames `fun main()` to `fn __ruchy_main()` to prevent infinite recursion
+    /// Complexity: 6 (within Toyota Way limits)
+    fn transpile_main_as_renamed_function(&self, main_expr: &Expr) -> Result<TokenStream> {
+        if let ExprKind::Function {
+            params, body, name, ..
+        } = &main_expr.kind
+        {
+            if name != "main" {
+                return Err(anyhow::anyhow!("Expected main function, got {}", name));
+            }
+
+            // Transpile parameters
+            let param_tokens: Result<Vec<TokenStream>> = params
+                .iter()
+                .map(|param| {
+                    let param_name = format_ident!("{}", param.name());
+                    let param_type = self.transpile_type(&param.ty)?;
+                    Ok(quote! { #param_name: #param_type })
+                })
+                .collect();
+            let param_tokens = param_tokens?;
+
+            // Transpile body
+            let body_tokens = self.transpile_expr(body)?;
+
+            // Generate function with renamed identifier
+            let renamed_ident = format_ident!("__ruchy_main");
+            Ok(quote! {
+                fn #renamed_ident(#(#param_tokens),*) {
+                    #body_tokens
+                }
+            })
+        } else {
+            Err(anyhow::anyhow!("Expected function expression"))
+        }
     }
 
     /// Generate use statements based on feature flags
