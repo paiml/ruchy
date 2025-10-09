@@ -670,45 +670,56 @@ fn parse_unary_operator_token(state: &mut ParserState, token: &Token, span: Span
 }
 /// Parse parentheses tokens - either unit type (), grouped expression (expr), or tuple (a, b, c)
 /// Extracted from `parse_prefix` to reduce complexity
+/// Parse tuple elements after first element
+/// Complexity: 3 (Toyota Way: <10 ✓)
+fn parse_tuple_elements(state: &mut ParserState, first_expr: Expr) -> Result<Vec<Expr>> {
+    let mut elements = vec![first_expr];
+    while matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+        state.tokens.advance(); // consume comma
+                                // Check for trailing comma before closing paren
+        if matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
+            break;
+        }
+        elements.push(super::parse_expr_recursive(state)?);
+    }
+    Ok(elements)
+}
+
+/// Check if expression should be converted to lambda
+/// Complexity: 2 (Toyota Way: <10 ✓)
+fn maybe_parse_lambda(state: &mut ParserState, expr: Expr, span: Span) -> Result<Expr> {
+    if matches!(state.tokens.peek(), Some((Token::FatArrow, _))) {
+        parse_lambda_from_expr(state, expr, span)
+    } else {
+        Ok(expr)
+    }
+}
+
+/// Parse parenthesized expression, tuple, or lambda
+/// Complexity: 5 (Toyota Way: <10 ✓) [Reduced from 11]
 fn parse_parentheses_token(state: &mut ParserState, span: Span) -> Result<Expr> {
     state.tokens.advance();
+
     // Check for unit type ()
     if matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
         state.tokens.advance();
-        Ok(Expr::new(ExprKind::Literal(Literal::Unit), span))
+        return Ok(Expr::new(ExprKind::Literal(Literal::Unit), span));
+    }
+
+    // Parse first expression
+    let first_expr = super::parse_expr_recursive(state)?;
+
+    // Check if we have a comma (tuple) or just closing paren (grouped expr)
+    if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+        // This is a tuple, parse remaining elements
+        let elements = parse_tuple_elements(state, first_expr)?;
+        state.tokens.expect(&Token::RightParen)?;
+        let tuple_expr = Expr::new(ExprKind::Tuple(elements), span);
+        maybe_parse_lambda(state, tuple_expr, span)
     } else {
-        // Parse first expression
-        let first_expr = super::parse_expr_recursive(state)?;
-        // Check if we have a comma (tuple) or just closing paren (grouped expr)
-        if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
-            // This is a tuple, parse remaining elements
-            let mut elements = vec![first_expr];
-            while matches!(state.tokens.peek(), Some((Token::Comma, _))) {
-                state.tokens.advance(); // consume comma
-                                        // Check for trailing comma before closing paren
-                if matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
-                    break;
-                }
-                elements.push(super::parse_expr_recursive(state)?);
-            }
-            state.tokens.expect(&Token::RightParen)?;
-            let tuple_expr = Expr::new(ExprKind::Tuple(elements), span);
-            // Check if this is a lambda: (x, y) => expr
-            if matches!(state.tokens.peek(), Some((Token::FatArrow, _))) {
-                parse_lambda_from_expr(state, tuple_expr, span)
-            } else {
-                Ok(tuple_expr)
-            }
-        } else {
-            // Just a grouped expression
-            state.tokens.expect(&Token::RightParen)?;
-            // Check if this is a lambda: (x) => expr
-            if matches!(state.tokens.peek(), Some((Token::FatArrow, _))) {
-                parse_lambda_from_expr(state, first_expr, span)
-            } else {
-                Ok(first_expr)
-            }
-        }
+        // Just a grouped expression
+        state.tokens.expect(&Token::RightParen)?;
+        maybe_parse_lambda(state, first_expr, span)
     }
 }
 /// Parse pub token - handles public declarations for functions, structs, traits, impl blocks
@@ -2182,34 +2193,45 @@ fn parse_match_tuple_pattern(state: &mut ParserState) -> Result<Pattern> {
 }
 /// Parse list pattern in match: [], [a], [a, b], [head, ...tail]
 /// Complexity: <8
+/// Parse rest pattern in list with .. (two dots): ..tail
+/// Complexity: 3 (Toyota Way: <10 ✓)
+fn parse_list_rest_pattern(state: &mut ParserState) -> Result<Pattern> {
+    state.tokens.advance(); // consume ..
+    if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
+        let name = name.clone();
+        state.tokens.advance();
+        Ok(Pattern::RestNamed(name))
+    } else {
+        bail!("Expected identifier after .. in list pattern")
+    }
+}
+
+/// Parse single list pattern element (regular or rest)
+/// Complexity: 4 (Toyota Way: <10 ✓)
+fn parse_list_pattern_element(state: &mut ParserState) -> Result<Pattern> {
+    if matches!(state.tokens.peek(), Some((Token::DotDot, _))) {
+        parse_list_rest_pattern(state)
+    } else {
+        parse_match_pattern(state)
+    }
+}
+
+/// Parse list pattern: [a, b, ..rest, c]
+/// Complexity: 4 (Toyota Way: <10 ✓) [Reduced from 11]
 fn parse_match_list_pattern(state: &mut ParserState) -> Result<Pattern> {
     state.tokens.expect(&Token::LeftBracket)?;
+
     // Check for empty list []
     if matches!(state.tokens.peek(), Some((Token::RightBracket, _))) {
         state.tokens.advance();
         return Ok(Pattern::List(vec![]));
     }
+
     // Parse pattern elements
     let mut patterns = vec![];
     loop {
-        // Check for rest pattern ..tail (Ruchy uses .. not ...)
-        if matches!(state.tokens.peek(), Some((Token::DotDot, _))) {
-            state.tokens.advance();
-            if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
-                let name = name.clone();
-                state.tokens.advance();
-                patterns.push(Pattern::RestNamed(name));
-                // Check if there are more elements after the rest pattern
-                if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
-                    state.tokens.advance();
-                    // Continue parsing remaining patterns after rest
-                    continue;
-                }
-                break;
-            }
-            bail!("Expected identifier after .. in list pattern");
-        }
-        patterns.push(parse_match_pattern(state)?);
+        patterns.push(parse_list_pattern_element(state)?);
+
         if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
             state.tokens.advance();
             if matches!(state.tokens.peek(), Some((Token::RightBracket, _))) {
@@ -2219,6 +2241,7 @@ fn parse_match_list_pattern(state: &mut ParserState) -> Result<Pattern> {
             break;
         }
     }
+
     state.tokens.expect(&Token::RightBracket)?;
     Ok(Pattern::List(patterns))
 }
@@ -3554,40 +3577,55 @@ fn consume_optional_separator(state: &mut ParserState) {
 
 /// Parse constructor: new [name](params) { body } - complexity: <10
 /// Supports named constructors like: new square(size)
-fn parse_constructor(state: &mut ParserState) -> Result<Constructor> {
-    // Expect 'new' keyword
+/// Expect 'new' keyword for constructor
+/// Complexity: 2 (Toyota Way: <10 ✓)
+fn expect_new_keyword(state: &mut ParserState) -> Result<()> {
     if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
         if name == "new" {
             state.tokens.advance();
+            Ok(())
         } else {
             bail!("Expected 'new' keyword");
         }
     } else {
         bail!("Expected 'new' keyword");
     }
+}
 
-    // Check for optional constructor name (for named constructors)
-    let constructor_name = if matches!(state.tokens.peek(), Some((Token::Identifier(_), _))) {
-        // Peek ahead to see if next is identifier followed by (
-        let saved_pos = state.tokens.position();
-        if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
-            let name = name.clone();
-            state.tokens.advance();
-            // Check if followed by (
-            if matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
-                // This is a named constructor
-                Some(name)
-            } else {
-                // Not a named constructor, restore position
-                state.tokens.set_position(saved_pos);
-                None
-            }
+/// Parse optional constructor name (for named constructors)
+/// Complexity: 4 (Toyota Way: <10 ✓)
+fn parse_optional_constructor_name(state: &mut ParserState) -> Option<String> {
+    if !matches!(state.tokens.peek(), Some((Token::Identifier(_), _))) {
+        return None;
+    }
+
+    // Peek ahead to see if next is identifier followed by (
+    let saved_pos = state.tokens.position();
+    if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
+        let name = name.clone();
+        state.tokens.advance();
+        // Check if followed by (
+        if matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
+            // This is a named constructor
+            Some(name)
         } else {
+            // Not a named constructor, restore position
+            state.tokens.set_position(saved_pos);
             None
         }
     } else {
         None
-    };
+    }
+}
+
+/// Parse constructor: new(...) or new name(...)
+/// Complexity: 4 (Toyota Way: <10 ✓) [Reduced from 10]
+fn parse_constructor(state: &mut ParserState) -> Result<Constructor> {
+    // Expect 'new' keyword
+    expect_new_keyword(state)?;
+
+    // Check for optional constructor name (for named constructors)
+    let constructor_name = parse_optional_constructor_name(state);
 
     // Parse parameter list (params)
     let params = super::utils::parse_params(state)?;
@@ -3674,22 +3712,57 @@ fn parse_class_method(state: &mut ParserState) -> Result<ClassMethod> {
     })
 }
 
-fn parse_trait_definition(state: &mut ParserState) -> Result<Expr> {
-    // Parse trait/interface Name { fun method(self) -> Type ... }
-    // Check if we're parsing a trait or interface and consume the token
-    let start_span = match state.tokens.peek() {
-        Some((Token::Trait, span)) => {
+/// Parse trait keyword (trait or interface) and return span
+/// Complexity: 2 (Toyota Way: <10 ✓)
+fn parse_trait_keyword(state: &mut ParserState) -> Result<Span> {
+    match state.tokens.peek() {
+        Some((Token::Trait | Token::Interface, span)) => {
             let span = *span;
             state.tokens.advance();
-            span
-        }
-        Some((Token::Interface, span)) => {
-            let span = *span;
-            state.tokens.advance();
-            span
+            Ok(span)
         }
         _ => bail!("Expected 'trait' or 'interface' keyword"),
+    }
+}
+
+/// Parse single trait method signature
+/// Complexity: 4 (Toyota Way: <10 ✓)
+fn parse_trait_method(state: &mut ParserState) -> Result<String> {
+    // Expect 'fun' or 'fn' keyword
+    match state.tokens.peek() {
+        Some((Token::Fun | Token::Fn, _)) => {
+            state.tokens.advance();
+        }
+        _ => bail!("Expected 'fun' or 'fn' keyword in trait/interface"),
+    }
+
+    // Parse method name
+    let method_name = if let Some((Token::Identifier(n), _)) = state.tokens.peek() {
+        let name = n.clone();
+        state.tokens.advance();
+        name
+    } else {
+        bail!("Expected method name in trait");
     };
+
+    // Skip to end of line or next method
+    while !matches!(
+        state.tokens.peek(),
+        Some((Token::Fun | Token::RightBrace, _))
+    ) && state.tokens.peek().is_some()
+    {
+        state.tokens.advance();
+    }
+
+    Ok(method_name)
+}
+
+/// Parse trait definition: trait Name { methods }
+/// Complexity: 5 (Toyota Way: <10 ✓) [Reduced from 10]
+fn parse_trait_definition(state: &mut ParserState) -> Result<Expr> {
+    // Parse trait/interface keyword
+    let start_span = parse_trait_keyword(state)?;
+
     // Get trait name
     let name = if let Some((Token::Identifier(n), _)) = state.tokens.peek() {
         let name = n.clone();
@@ -3698,39 +3771,18 @@ fn parse_trait_definition(state: &mut ParserState) -> Result<Expr> {
     } else {
         bail!("Expected trait name after 'trait'");
     };
+
     // Parse { methods }
     state.tokens.expect(&Token::LeftBrace)?;
     let mut methods = Vec::new();
+
     // Parse methods
     while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
-        // Expect 'fun' or 'fn' keyword
-        match state.tokens.peek() {
-            Some((Token::Fun | Token::Fn, _)) => {
-                state.tokens.advance();
-            }
-            _ => bail!("Expected 'fun' or 'fn' keyword in trait/interface"),
-        }
-        // Parse method name
-        let method_name = if let Some((Token::Identifier(n), _)) = state.tokens.peek() {
-            let name = n.clone();
-            state.tokens.advance();
-            name
-        } else {
-            bail!("Expected method name in trait");
-        };
-        // For now, skip the rest of the method signature
-        // This is a simplified implementation
-        methods.push(method_name);
-        // Skip to end of line or next method
-        while !matches!(
-            state.tokens.peek(),
-            Some((Token::Fun | Token::RightBrace, _))
-        ) && state.tokens.peek().is_some()
-        {
-            state.tokens.advance();
-        }
+        methods.push(parse_trait_method(state)?);
     }
+
     state.tokens.expect(&Token::RightBrace)?;
+
     // Convert to proper Trait variant with TraitMethod
     let trait_methods = methods
         .into_iter()
@@ -3742,6 +3794,7 @@ fn parse_trait_definition(state: &mut ParserState) -> Result<Expr> {
             is_pub: true,
         })
         .collect();
+
     Ok(Expr::new(
         ExprKind::Trait {
             name,
