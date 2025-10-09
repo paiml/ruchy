@@ -10,7 +10,7 @@ fn transpile_literals(c: &mut Criterion) {
         (
             "integer",
             Expr {
-                kind: ExprKind::Literal(Literal::Integer(42)),
+                kind: ExprKind::Literal(Literal::Integer(42, None)),
                 span: Span::default(),
                 attributes: vec![],
             },

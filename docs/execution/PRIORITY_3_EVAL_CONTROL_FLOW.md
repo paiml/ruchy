@@ -3,9 +3,11 @@
 ## Status
 **Status**: 🟡 IN PROGRESS
 **Module**: `src/runtime/eval_control_flow_new.rs`
-**Current Coverage**: 29.06% (354/499 lines uncovered)
+**Baseline Coverage**: 0.00% (dead code - not integrated)
+**Current Coverage**: 3.81% (379/394 lines uncovered)
 **Target Coverage**: 80%+
 **Sprint**: Priority 3 (Module 3/N)
+**Integration**: ✅ Partially integrated (eval_if_expr active)
 
 ## Objective
 Apply EXTREME TDD methodology to increase coverage of control flow evaluation module from 29.06% to 80%+, following the proven pattern from optimize.rs (61x improvement) and wasm/mod.rs (41x improvement).
