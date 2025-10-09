@@ -1431,8 +1431,14 @@ mod tests {
             rust_str.contains("nested"),
             "Should contain 'nested' identifier"
         );
-        assert!(rust_str.contains(".0"), "Should contain tuple index .0");
-        assert!(rust_str.contains(".1"), "Should contain tuple index .1");
+        assert!(
+            rust_str.contains(". 0") || rust_str.contains(".0"),
+            "Should contain tuple index .0 (with or without spaces)"
+        );
+        assert!(
+            rust_str.contains(". 1") || rust_str.contains(".1"),
+            "Should contain tuple index .1 (with or without spaces)"
+        );
     }
 
     #[test]

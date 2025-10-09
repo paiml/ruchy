@@ -219,7 +219,24 @@ impl Transpiler {
         if name.is_empty() {
             return Ok(quote! { _ });
         }
-        let struct_name = format_ident!("{}", name);
+
+        // Handle qualified names like "Variant::A" by splitting on ::
+        let struct_name = if name.contains("::") {
+            let parts: Vec<&str> = name.split("::").collect();
+            let mut tokens = TokenStream::new();
+            for (i, part) in parts.iter().enumerate() {
+                if i > 0 {
+                    tokens.extend(quote! { :: });
+                }
+                let ident = format_ident!("{}", part);
+                tokens.extend(quote! { #ident });
+            }
+            tokens
+        } else {
+            let ident = format_ident!("{}", name);
+            quote! { #ident }
+        };
+
         if fields.is_empty() {
             return Ok(quote! { #struct_name {} });
         }
