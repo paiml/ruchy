@@ -28,7 +28,7 @@ pub fn handle_eval_command(expr: &str, verbose: bool, format: &str) -> Result<()
     if verbose {
         eprintln!("Parsing expression: {expr}");
     }
-    let mut repl = Repl::new(std::env::temp_dir())?;
+    let mut repl = create_repl()?;
     match repl.eval(expr) {
         Ok(result) => {
             if verbose {
@@ -83,7 +83,7 @@ pub fn handle_eval_command(expr: &str, verbose: bool, format: &str) -> Result<()
 pub fn handle_file_execution(file: &Path) -> Result<()> {
     let source = read_file_with_context(file)?;
     // Use REPL to evaluate the file
-    let mut repl = Repl::new(std::env::temp_dir())?;
+    let mut repl = create_repl()?;
     match repl.eval(&source) {
         Ok(result) => {
             // Only print non-unit results from file evaluation
@@ -122,7 +122,7 @@ pub fn handle_file_execution(file: &Path) -> Result<()> {
 /// # Errors
 /// Returns error if input cannot be parsed or evaluated
 pub fn handle_stdin_input(input: &str) -> Result<()> {
-    let mut repl = Repl::new(std::env::temp_dir())?;
+    let mut repl = create_repl()?;
     match repl.eval(input) {
         Ok(result) => {
             println!("{result}");
@@ -211,8 +211,7 @@ fn transpile_ast(ast: &Expr, minimal: bool) -> Result<String> {
 /// Write output to file or stdout (complexity: 5)
 fn write_output(rust_code: &str, output: Option<&Path>, verbose: bool) -> Result<()> {
     if let Some(output_path) = output {
-        fs::write(output_path, rust_code)
-            .with_context(|| format!("Failed to write output file: {}", output_path.display()))?;
+        write_file_with_context(output_path, rust_code.as_bytes())?;
         if verbose {
             eprintln!("Output written to: {}", output_path.display());
         }
@@ -236,6 +235,27 @@ fn should_print_result(result: &str) -> bool {
 /// Complexity: 2
 fn read_file_with_context(file: &Path) -> Result<String> {
     fs::read_to_string(file).with_context(|| format!("Failed to read file: {}", file.display()))
+}
+
+/// Create a REPL instance with temp directory
+/// Complexity: 1
+fn create_repl() -> Result<Repl> {
+    Repl::new(std::env::temp_dir())
+}
+
+/// Log command output if verbose mode is enabled
+/// Complexity: 2
+fn log_command_output(output: &std::process::Output, verbose: bool) {
+    if verbose {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        eprintln!("Command output:\n{}", stderr);
+    }
+}
+
+/// Write file with detailed error context
+/// Complexity: 2
+fn write_file_with_context(path: &Path, content: &[u8]) -> Result<()> {
+    fs::write(path, content).with_context(|| format!("Failed to write file: {}", path.display()))
 }
 
 // ============================================================================
@@ -385,7 +405,7 @@ pub fn handle_repl_command(record_file: Option<PathBuf>) -> Result<()> {
         ":help".green(),
         ":quit".yellow()
     );
-    let mut repl = Repl::new(std::env::temp_dir())?;
+    let mut repl = create_repl()?;
     if let Some(record_path) = record_file {
         repl.run_with_recording(&record_path)
     } else {
@@ -1809,8 +1829,7 @@ fn write_wasm_output(
     verbose: bool,
 ) -> Result<()> {
     use colored::Colorize;
-    fs::write(output_path, wasm_bytes)
-        .with_context(|| format!("Failed to write WASM to {}", output_path.display()))?;
+    write_file_with_context(output_path, wasm_bytes)?;
     println!(
         "{} Successfully compiled to {}",
         "✓".green(),
@@ -1906,11 +1925,7 @@ fn run_property_test_suite(
     }
 
     let output_result = cmd.output()?;
-
-    if verbose {
-        let stderr = String::from_utf8_lossy(&output_result.stderr);
-        eprintln!("Command output:\n{}", stderr);
-    }
+    log_command_output(&output_result, verbose);
 
     Ok(output_result)
 }
@@ -1943,7 +1958,7 @@ fn write_property_test_summary(
             println!("Status: ✅ PASSED");
             println!("Test cases: {}", cases);
             if let Some(out_path) = output {
-                fs::write(out_path, stdout)?;
+                write_file_with_context(out_path, stdout.as_bytes())?;
             } else {
                 println!("\n{}", stdout);
             }
@@ -2122,7 +2137,7 @@ fn write_json_property_report(
     let json_output = serde_json::to_string_pretty(&report)?;
 
     if let Some(out_path) = output {
-        fs::write(out_path, json_output)?;
+        write_file_with_context(out_path, json_output.as_bytes())?;
     } else {
         println!("{}", json_output);
     }
@@ -2266,11 +2281,7 @@ fn run_cargo_mutants(path: &Path, timeout: u32, verbose: bool) -> Result<std::pr
     ]);
 
     let output_result = cmd.output()?;
-
-    if verbose {
-        let stderr = String::from_utf8_lossy(&output_result.stderr);
-        eprintln!("Command output:\n{}", stderr);
-    }
+    log_command_output(&output_result, verbose);
 
     Ok(output_result)
 }
@@ -2291,7 +2302,7 @@ fn write_json_mutation_report(
     let json_output = serde_json::to_string_pretty(&report)?;
 
     if let Some(out_path) = output {
-        fs::write(out_path, json_output)?;
+        write_file_with_context(out_path, json_output.as_bytes())?;
     } else {
         println!("{}", json_output);
     }
@@ -2310,7 +2321,7 @@ fn write_text_mutation_report(
     println!("Minimum coverage: {:.1}%", min_coverage * 100.0);
 
     if let Some(out_path) = output {
-        fs::write(out_path, stdout)?;
+        write_file_with_context(out_path, stdout.as_bytes())?;
     } else {
         println!("\n{}", stdout);
     }
@@ -2386,11 +2397,7 @@ fn run_cargo_fuzz(
     ]);
 
     let output_result = cmd.output()?;
-
-    if verbose {
-        let stderr = String::from_utf8_lossy(&output_result.stderr);
-        eprintln!("Command output:\n{}", stderr);
-    }
+    log_command_output(&output_result, verbose);
 
     Ok(output_result)
 }
@@ -2426,7 +2433,7 @@ fn write_fuzz_summary(
             println!("Target: {}", target);
             println!("Iterations: {}", iterations);
             if let Some(out_path) = output {
-                fs::write(out_path, stdout)?;
+                write_file_with_context(out_path, stdout.as_bytes())?;
             } else {
                 println!("\n{}", stdout);
             }
@@ -2537,7 +2544,7 @@ fn write_json_fuzz_report(
     let json_output = serde_json::to_string_pretty(&report)?;
 
     if let Some(out_path) = output {
-        fs::write(out_path, json_output)?;
+        write_file_with_context(out_path, json_output.as_bytes())?;
     } else {
         println!("{}", json_output);
     }
