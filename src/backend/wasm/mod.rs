@@ -82,6 +82,9 @@ pub struct WasmEmitter {
     /// Maps struct name to ordered field names (order determines memory offset)
     /// Complexity: Field at index N is at offset N * 4 bytes
     structs: std::cell::RefCell<std::collections::HashMap<String, Vec<String>>>,
+    /// Maps variable name to tuple element types (for mixed-type tuple support)
+    /// Example: "x" -> [I32, F32] for tuple (1, 3.0)
+    tuple_types: std::cell::RefCell<std::collections::HashMap<String, Vec<WasmType>>>,
 }
 impl WasmEmitter {
     /// # Examples
@@ -96,6 +99,80 @@ impl WasmEmitter {
             symbols: std::cell::RefCell::new(SymbolTable::new()),
             functions: std::cell::RefCell::new(std::collections::HashMap::new()),
             structs: std::cell::RefCell::new(std::collections::HashMap::new()),
+            tuple_types: std::cell::RefCell::new(std::collections::HashMap::new()),
+        }
+    }
+
+    /// Infer element WASM type from expression for tuple support
+    /// Complexity: 5 (Toyota Way: <10 ✓)
+    ///
+    /// Returns `WasmType` based on expression kind
+    /// Used for mixed-type tuple support
+    fn infer_element_type(&self, expr: &Expr) -> WasmType {
+        match &expr.kind {
+            ExprKind::Literal(Literal::Float(_)) => WasmType::F32,
+            ExprKind::Literal(Literal::Integer(_, _)) => WasmType::I32,
+            ExprKind::Literal(Literal::Bool(_)) => WasmType::I32,
+            ExprKind::Literal(Literal::String(_)) => WasmType::I32, // Address
+            ExprKind::Binary { op, .. } => {
+                // Float operations return float, others return int
+                match op {
+                    BinaryOp::Add
+                    | BinaryOp::Subtract
+                    | BinaryOp::Multiply
+                    | BinaryOp::Divide
+                    | BinaryOp::Modulo => WasmType::F32, // Could be either
+                    _ => WasmType::I32, // Comparisons, logical ops
+                }
+            }
+            _ => WasmType::I32, // Default to I32 for complex expressions
+        }
+    }
+
+    /// Collect tuple element types from AST for mixed-type support
+    /// Complexity: 7 (Toyota Way: <10 ✓)
+    ///
+    /// Traverses AST recursively to find `Let { value: Tuple(..) }` nodes
+    /// Stores variable name → element types mapping for correct load/store
+    fn collect_tuple_types(&self, expr: &Expr) {
+        match &expr.kind {
+            ExprKind::Let {
+                name, value, body, ..
+            } => {
+                // Check if value is a tuple and register element types
+                if let ExprKind::Tuple(elements) = &value.kind {
+                    let element_types: Vec<WasmType> = elements
+                        .iter()
+                        .map(|e| self.infer_element_type(e))
+                        .collect();
+                    self.tuple_types
+                        .borrow_mut()
+                        .insert(name.clone(), element_types);
+                }
+                // Recursively traverse
+                self.collect_tuple_types(value);
+                self.collect_tuple_types(body);
+            }
+            ExprKind::Block(exprs) => {
+                for e in exprs {
+                    self.collect_tuple_types(e);
+                }
+            }
+            ExprKind::Function { body, .. } => {
+                self.collect_tuple_types(body);
+            }
+            ExprKind::If {
+                condition,
+                then_branch,
+                else_branch,
+            } => {
+                self.collect_tuple_types(condition);
+                self.collect_tuple_types(then_branch);
+                if let Some(else_expr) = else_branch {
+                    self.collect_tuple_types(else_expr);
+                }
+            }
+            _ => {}
         }
     }
 
@@ -141,6 +218,9 @@ impl WasmEmitter {
     /// let result = instance.emit(&expr);
     /// ```
     pub fn emit(&self, expr: &Expr) -> Result<Vec<u8>, String> {
+        // Collect tuple types BEFORE building symbol table (needed for type inference)
+        self.collect_tuple_types(expr);
+
         // Build symbol table from entire expression tree
         self.build_symbol_table(expr);
 
@@ -194,10 +274,12 @@ impl WasmEmitter {
         let mut types = TypeSection::new();
         let has_functions = !func_defs.is_empty();
 
-        // Type index 0: Built-in functions (println, print, etc.) - (i32) -> ()
-        // This must be first because imports reference it
+        // Type index 0: Built-in functions println_i32 - (i32) -> ()
+        // Type index 1: Built-in functions println_f32 - (f32) -> ()
+        // These must be first because imports reference them
         if self.uses_builtins(expr) {
             types.function(vec![wasm_encoder::ValType::I32], vec![]);
+            types.function(vec![wasm_encoder::ValType::F32], vec![]);
         }
 
         if has_functions {
@@ -259,9 +341,11 @@ impl WasmEmitter {
 
         let mut imports = wasm_encoder::ImportSection::new();
 
-        // Import println from host environment
-        // Type index 0: () -> () (void function)
-        imports.import("env", "println", wasm_encoder::EntityType::Function(0));
+        // Import println_i32 and println_f32 from host environment
+        // Function index 0: println_i32 uses type index 0: (i32) -> ()
+        // Function index 1: println_f32 uses type index 1: (f32) -> ()
+        imports.import("env", "println_i32", wasm_encoder::EntityType::Function(0));
+        imports.import("env", "println_f32", wasm_encoder::EntityType::Function(1));
 
         Some(imports)
     }
@@ -319,8 +403,8 @@ impl WasmEmitter {
         let mut functions = FunctionSection::new();
         let has_functions = !func_defs.is_empty();
 
-        // Type index offset: if we have built-ins, they occupy type index 0
-        let type_offset = u32::from(self.uses_builtins(expr));
+        // Type index offset: if we have built-ins, they occupy type indices 0 and 1
+        let type_offset = if self.uses_builtins(expr) { 2 } else { 0 };
 
         if has_functions {
             for i in 0..func_defs.len() {
@@ -580,6 +664,21 @@ impl WasmEmitter {
             ExprKind::Block(exprs) => exprs.last().map_or(WasmType::I32, |e| self.infer_type(e)),
             ExprKind::Call { .. } => WasmType::I32,
             ExprKind::Unary { operand, .. } => self.infer_type(operand),
+            ExprKind::FieldAccess { object, field } => {
+                // For tuple field access, look up the element type
+                if let Ok(index) = field.parse::<usize>() {
+                    if let ExprKind::Identifier(name) = &object.kind {
+                        return self
+                            .tuple_types
+                            .borrow()
+                            .get(name)
+                            .and_then(|types| types.get(index))
+                            .copied()
+                            .unwrap_or(WasmType::I32);
+                    }
+                }
+                WasmType::I32
+            }
             _ => WasmType::I32,
         }
     }
@@ -903,7 +1002,18 @@ impl WasmEmitter {
         // Determine function index
         let func_index = if let ExprKind::Identifier(name) = &func.kind {
             if matches!(name.as_str(), "println" | "print" | "eprintln" | "eprint") {
-                0 // Built-in functions are imported at index 0
+                // Built-in functions: choose based on argument type
+                // Function index 0: println_i32 - (i32) -> ()
+                // Function index 1: println_f32 - (f32) -> ()
+                if let Some(first_arg) = args.first() {
+                    let arg_type = self.infer_type(first_arg);
+                    match arg_type {
+                        WasmType::F32 => 1, // Use println_f32
+                        _ => 0,             // Use println_i32 (default)
+                    }
+                } else {
+                    0 // No args, use i32 version
+                }
             } else {
                 // Look up user-defined function index (extract index from tuple)
                 self.functions
@@ -932,6 +1042,17 @@ impl WasmEmitter {
         instructions.extend(self.lower_expression(value)?);
         let local_index = self.symbols.borrow().lookup_index(name).unwrap_or(0);
         instructions.push(Instruction::LocalSet(local_index));
+
+        // Track tuple element types for mixed-type support
+        if let ExprKind::Tuple(elements) = &value.kind {
+            let element_types: Vec<WasmType> = elements
+                .iter()
+                .map(|e| self.infer_element_type(e))
+                .collect();
+            self.tuple_types
+                .borrow_mut()
+                .insert(name.to_string(), element_types);
+        }
 
         if !matches!(&body.kind, ExprKind::Literal(Literal::Unit)) {
             instructions.extend(self.lower_expression(body)?);
@@ -1114,9 +1235,15 @@ impl WasmEmitter {
         instructions.push(Instruction::I32Add);
         instructions.push(Instruction::GlobalSet(0));
 
-        // 3. Store each tuple element in memory
+        // 3. Store each tuple element in memory (with correct type)
+        let element_types: Vec<WasmType> = elements
+            .iter()
+            .map(|e| self.infer_element_type(e))
+            .collect();
+
         for (i, element) in elements.iter().enumerate() {
             let offset = i as i32 * 4;
+            let elem_type = element_types[i];
 
             // Get the base address
             instructions.push(Instruction::LocalGet(temp_local));
@@ -1124,12 +1251,23 @@ impl WasmEmitter {
             // Evaluate the element value
             instructions.extend(self.lower_expression(element)?);
 
-            // Store at address + offset
-            instructions.push(Instruction::I32Store(wasm_encoder::MemArg {
-                offset: offset as u64,
-                align: 2, // 4-byte alignment (2^2 = 4)
-                memory_index: 0,
-            }));
+            // Store at address + offset (use correct store instruction per type)
+            match elem_type {
+                WasmType::F32 => {
+                    instructions.push(Instruction::F32Store(wasm_encoder::MemArg {
+                        offset: offset as u64,
+                        align: 2, // 4-byte alignment (2^2 = 4)
+                        memory_index: 0,
+                    }));
+                }
+                _ => {
+                    instructions.push(Instruction::I32Store(wasm_encoder::MemArg {
+                        offset: offset as u64,
+                        align: 2, // 4-byte alignment (2^2 = 4)
+                        memory_index: 0,
+                    }));
+                }
+            }
         }
 
         // 4. Return the base address
@@ -1154,30 +1292,54 @@ impl WasmEmitter {
         // Evaluate object expression (should return address for tuples/structs)
         instructions.extend(self.lower_expression(object)?);
 
-        // Calculate field offset
-        let offset = if let Ok(index) = field.parse::<i32>() {
+        // Determine field type and offset
+        let (offset, field_type) = if let Ok(index) = field.parse::<i32>() {
             // Tuple field access: "0", "1", "2", etc.
-            index * 4 // Each element is 4 bytes (i32)
+            let offset = index * 4; // Each element is 4 bytes
+
+            // Look up tuple element type if object is an identifier
+            let elem_type = if let ExprKind::Identifier(name) = &object.kind {
+                self.tuple_types
+                    .borrow()
+                    .get(name)
+                    .and_then(|types| types.get(index as usize))
+                    .copied()
+                    .unwrap_or(WasmType::I32)
+            } else {
+                WasmType::I32 // Default for non-identifier tuples
+            };
+
+            (offset, elem_type)
         } else {
             // Struct field access: look up field in struct registry
-            // Heuristic: search all structs to find which one has this field
             let structs = self.structs.borrow();
             let field_index = structs
                 .values()
                 .find_map(|fields| fields.iter().position(|f| f == field));
 
             match field_index {
-                Some(index) => index as i32 * 4,
-                None => 0, // Field not found - use 0 as fallback
+                Some(index) => (index as i32 * 4, WasmType::I32),
+                None => (0, WasmType::I32), // Field not found - use 0 as fallback
             }
         };
 
-        // Load value from memory at address + offset
-        instructions.push(Instruction::I32Load(wasm_encoder::MemArg {
-            offset: offset as u64,
-            align: 2, // 4-byte alignment (2^2 = 4)
-            memory_index: 0,
-        }));
+        // Load value from memory using correct instruction for field type
+        match field_type {
+            WasmType::F32 => {
+                instructions.push(Instruction::F32Load(wasm_encoder::MemArg {
+                    offset: offset as u64,
+                    align: 2, // 4-byte alignment (2^2 = 4)
+                    memory_index: 0,
+                }));
+            }
+            _ => {
+                instructions.push(Instruction::I32Load(wasm_encoder::MemArg {
+                    offset: offset as u64,
+                    align: 2, // 4-byte alignment (2^2 = 4)
+                    memory_index: 0,
+                }));
+            }
+        }
 
         Ok(instructions)
     }
@@ -1591,8 +1753,8 @@ impl WasmEmitter {
     ) {
         let mut index_map = std::collections::HashMap::new();
 
-        // Calculate offset: imports come first
-        let import_offset = u32::from(self.uses_builtins(expr));
+        // Calculate offset: imports come first (2 built-ins: println_i32 and println_f32)
+        let import_offset = if self.uses_builtins(expr) { 2 } else { 0 };
 
         // Map each user function to (index, is_void)
         for (i, (name, _, body)) in func_defs.iter().enumerate() {
