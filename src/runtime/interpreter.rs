@@ -2018,12 +2018,12 @@ impl Interpreter {
 
     /// Evaluate return expression
     fn eval_return_expr(&mut self, value: Option<&Expr>) -> Result<Value, InterpreterError> {
-        eval_expr::eval_return_expr(value, |e| self.eval_expr(e))
+        crate::runtime::eval_control_flow_new::eval_return_expr(value, |e| self.eval_expr(e))
     }
 
     /// Evaluate list expression
     fn eval_list_expr(&mut self, elements: &[Expr]) -> Result<Value, InterpreterError> {
-        eval_expr::eval_list_expr(elements, |e| self.eval_expr(e))
+        crate::runtime::eval_control_flow_new::eval_list_expr(elements, |e| self.eval_expr(e))
     }
 
     /// Evaluate array initialization expression [value; size]
@@ -2032,17 +2032,19 @@ impl Interpreter {
         value_expr: &Expr,
         size_expr: &Expr,
     ) -> Result<Value, InterpreterError> {
-        eval_expr::eval_array_init_expr(value_expr, size_expr, |e| self.eval_expr(e))
+        crate::runtime::eval_control_flow_new::eval_array_init_expr(value_expr, size_expr, |e| {
+            self.eval_expr(e)
+        })
     }
 
     /// Evaluate block expression
     fn eval_block_expr(&mut self, statements: &[Expr]) -> Result<Value, InterpreterError> {
-        eval_expr::eval_block_expr(statements, |e| self.eval_expr(e))
+        crate::runtime::eval_control_flow_new::eval_block_expr(statements, |e| self.eval_expr(e))
     }
 
     /// Evaluate tuple expression
     fn eval_tuple_expr(&mut self, elements: &[Expr]) -> Result<Value, InterpreterError> {
-        eval_expr::eval_tuple_expr(elements, |e| self.eval_expr(e))
+        crate::runtime::eval_control_flow_new::eval_tuple_expr(elements, |e| self.eval_expr(e))
     }
 
     /// Evaluate `DataFrame` literal expression
@@ -2079,7 +2081,9 @@ impl Interpreter {
         end: &Expr,
         inclusive: bool,
     ) -> Result<Value, InterpreterError> {
-        eval_expr::eval_range_expr(start, end, inclusive, |e| self.eval_expr(e))
+        crate::runtime::eval_control_flow_new::eval_range_expr(start, end, inclusive, |e| {
+            self.eval_expr(e)
+        })
     }
 
     /// Helper function for testing - evaluate a string expression via parser
