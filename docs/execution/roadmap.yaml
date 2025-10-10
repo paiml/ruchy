@@ -477,6 +477,50 @@ backlog:
       - "Test quality compensates for mutation testing impracticality"
       - "24/24 tests passing validates implementation correctness"
 
+  - id: "STD-009"
+    title: "Logging Module (ruchy/std/logging)"
+    status: "PENDING"  # ⏳ Specification complete, ready for RED phase
+    time_estimated: "4.5h"
+    functions: 8
+    wrapper_crate: "log v0.4 + env_logger v0.11"
+    tests:
+      unit: 21
+      property: 3
+      property_cases: 60
+      mutation_coverage_target: "≥75%"
+    quality:
+      complexity_max: 2
+      tdg_grade_target: "A-"
+    dependencies:
+      - "STD-008"  # After time module completion
+    notes:
+      - "Phase 2 module: Simple function-based logging (no macros)"
+      - "Specification: docs/specifications/stdlib-logging-spec.md"
+      - "Test suite planned: tests/std_009_logging.rs"
+      - "Functions: init_logger, log_info, log_warn, log_error, log_debug, log_trace, get_level, is_level_enabled"
+
+  - id: "STD-010"
+    title: "Regex Module (ruchy/std/regex)"
+    status: "PENDING"  # ⏳ Specification complete, ready for RED phase
+    time_estimated: "6h"
+    functions: 10
+    wrapper_crate: "regex v1.11"
+    tests:
+      unit: 27
+      property: 3
+      property_cases: 60
+      mutation_coverage_target: "≥75%"
+    quality:
+      complexity_max: 2
+      tdg_grade_target: "A-"
+    dependencies:
+      - "STD-009"  # After logging module completion
+    notes:
+      - "Phase 2 module: Safe regex operations wrapper"
+      - "Specification: docs/specifications/stdlib-regex-spec.md"
+      - "Test suite planned: tests/std_010_regex.rs"
+      - "Functions: is_match, find_first, find_all, replace_first, replace_all, split, capture_first, capture_all, is_valid_pattern, escape"
+
 # Quality Metrics
 quality_dashboard:
   test_coverage:
