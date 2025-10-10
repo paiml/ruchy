@@ -12,5 +12,7 @@
 //! # Modules
 //!
 //! - `fs`: File system operations (STD-001)
+//! - `http`: HTTP client operations (STD-002)
 
 pub mod fs;
+pub mod http;
