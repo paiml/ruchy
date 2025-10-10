@@ -127,8 +127,12 @@ fn test_std_006_current_pid() {
     assert!(result.is_ok(), "current_pid should succeed");
     let pid = result.unwrap();
 
+    // PIDs must be positive and less than system pid_max (typically 4M on Linux)
     assert!(pid > 0, "PID must be positive");
-    assert!(pid < 1000000, "PID must be reasonable (< 1M)");
+    assert!(
+        pid < 5000000,
+        "PID must be less than reasonable system maximum"
+    );
 
     // Call again should return same PID
     let pid2 = ruchy::stdlib::process::current_pid().unwrap();
