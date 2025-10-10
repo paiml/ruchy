@@ -6,6 +6,7 @@
 //! All functions maintain <10 cyclomatic complexity.
 
 use crate::frontend::ast::{DataFrameOp, Expr};
+use crate::runtime::validation::{validate_arg_count, validate_arg_range};
 use crate::runtime::{DataFrameColumn, InterpreterError, Value};
 use std::collections::HashMap;
 
@@ -103,16 +104,12 @@ fn eval_dataframe_column_names(
 /// Sort `DataFrame` by column values
 ///
 /// # Complexity
-/// Cyclomatic complexity: 9 (within Toyota Way limits)
+/// Cyclomatic complexity: 8 (within Toyota Way limits, reduced from 9)
 fn eval_dataframe_sort_by(
     columns: &[DataFrameColumn],
     args: &[Value],
 ) -> Result<Value, InterpreterError> {
-    if args.is_empty() || args.len() > 2 {
-        return Err(InterpreterError::RuntimeError(
-            "DataFrame.sort_by() requires 1-2 arguments (column, [descending])".to_string(),
-        ));
-    }
+    validate_arg_range("DataFrame.sort_by", args, 1, 2)?;
 
     // Get column name
     let col_name = match &args[0] {
@@ -195,16 +192,12 @@ fn compare_values_for_sort(a: &Value, b: &Value) -> std::cmp::Ordering {
 /// Select specific columns by name
 ///
 /// # Complexity
-/// Cyclomatic complexity: 5 (within Toyota Way limits)
+/// Cyclomatic complexity: 4 (within Toyota Way limits, reduced from 5)
 fn eval_dataframe_select(
     columns: &[DataFrameColumn],
     args: &[Value],
 ) -> Result<Value, InterpreterError> {
-    if args.len() != 1 {
-        return Err(InterpreterError::RuntimeError(
-            "DataFrame.select() requires exactly 1 argument (column_name)".to_string(),
-        ));
-    }
+    validate_arg_count("DataFrame.select", args, 1)?;
 
     if let Value::String(column_name) = &args[0] {
         for col in columns {
@@ -410,11 +403,7 @@ fn eval_dataframe_slice(
     columns: &[DataFrameColumn],
     args: &[Value],
 ) -> Result<Value, InterpreterError> {
-    if args.len() != 2 {
-        return Err(InterpreterError::RuntimeError(
-            "DataFrame.slice() requires exactly 2 arguments (start, length)".to_string(),
-        ));
-    }
+    validate_arg_count("DataFrame.slice", args, 2)?;
 
     let start = match &args[0] {
         Value::Integer(s) => *s as usize,
@@ -462,11 +451,7 @@ fn eval_dataframe_join(
     columns: &[DataFrameColumn],
     args: &[Value],
 ) -> Result<Value, InterpreterError> {
-    if args.len() != 2 {
-        return Err(InterpreterError::RuntimeError(
-            "DataFrame.join() requires exactly 2 arguments (other_df, on)".to_string(),
-        ));
-    }
+    validate_arg_count("DataFrame.join", args, 2)?;
 
     let other_df = &args[0];
     let join_column = match &args[1] {
@@ -636,11 +621,7 @@ fn eval_dataframe_groupby(
     columns: &[DataFrameColumn],
     args: &[Value],
 ) -> Result<Value, InterpreterError> {
-    if args.len() != 1 {
-        return Err(InterpreterError::RuntimeError(
-            "DataFrame.groupby() requires exactly 1 argument (column_name)".to_string(),
-        ));
-    }
+    validate_arg_count("DataFrame.groupby", args, 1)?;
 
     let group_column = match &args[0] {
         Value::String(col_name) => &**col_name,
@@ -1079,11 +1060,7 @@ fn eval_dataframe_get(
     columns: &[DataFrameColumn],
     args: &[Value],
 ) -> Result<Value, InterpreterError> {
-    if args.len() != 2 {
-        return Err(InterpreterError::RuntimeError(
-            "DataFrame.get() requires exactly 2 arguments: column name and row index".to_string(),
-        ));
-    }
+    validate_arg_count("DataFrame.get", args, 2)?;
 
     // Extract column name (first argument)
     let column_name = match &args[0] {
@@ -1252,7 +1229,7 @@ mod tests {
         assert!(result
             .unwrap_err()
             .to_string()
-            .contains("requires exactly 1 argument"));
+            .contains("expects exactly 1 argument"));
     }
 
     #[test]
@@ -1344,7 +1321,7 @@ mod tests {
         assert!(result
             .unwrap_err()
             .to_string()
-            .contains("requires exactly 2 arguments"));
+            .contains("expects exactly 2 arguments"));
     }
 
     #[test]
@@ -1428,7 +1405,7 @@ mod tests {
         assert!(result
             .unwrap_err()
             .to_string()
-            .contains("requires exactly 2 arguments"));
+            .contains("expects exactly 2 arguments"));
     }
 
     #[test]
@@ -1565,7 +1542,7 @@ mod tests {
         assert!(result
             .unwrap_err()
             .to_string()
-            .contains("requires exactly 1 argument"));
+            .contains("expects exactly 1 argument"));
     }
 
     #[test]
