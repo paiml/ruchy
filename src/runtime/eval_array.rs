@@ -5,6 +5,7 @@
 //! Complexity: <10 per function (Toyota Way compliant)
 
 use crate::runtime::pattern_matching::values_equal;
+use crate::runtime::validation::validate_arg_count;
 use crate::runtime::{InterpreterError, Value};
 use std::rc::Rc;
 
@@ -155,11 +156,7 @@ fn eval_array_reduce<F>(
 where
     F: FnMut(&Value, &[Value]) -> Result<Value, InterpreterError>,
 {
-    if args.len() != 2 {
-        return Err(InterpreterError::RuntimeError(
-            "reduce expects 2 arguments".to_string(),
-        ));
-    }
+    validate_arg_count("reduce", args, 2)?;
     if !matches!(&args[0], Value::Closure { .. }) {
         return Err(InterpreterError::RuntimeError(
             "reduce expects a function and initial value".to_string(),
@@ -227,17 +224,13 @@ where
     Ok(Value::Nil)
 }
 
-// Helper function (complexity <= 3)
+// Helper function (complexity <= 2, reduced from 3)
 
 fn validate_single_closure_argument(
     args: &[Value],
     method_name: &str,
 ) -> Result<(), InterpreterError> {
-    if args.len() != 1 {
-        return Err(InterpreterError::RuntimeError(format!(
-            "{method_name} expects 1 argument"
-        )));
-    }
+    validate_arg_count(method_name, args, 1)?;
     if !matches!(&args[0], Value::Closure { .. }) {
         return Err(InterpreterError::RuntimeError(format!(
             "{method_name} expects a function argument"
