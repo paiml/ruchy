@@ -1,6 +1,7 @@
 use anyhow::{Context, Result};
 mod commands;
 mod handlers_modules;
+pub mod new;
 use ruchy::frontend::ast::Expr;
 use ruchy::runtime::replay_converter::ConversionConfig;
 use ruchy::runtime::Repl;
@@ -1938,30 +1939,27 @@ fn write_property_test_summary(
     cases: usize,
     stdout: &str,
 ) -> Result<()> {
-    match format {
-        "json" => {
-            let report = serde_json::json!({
-                "status": "passed",
-                "cases": cases,
-                "output": stdout
-            });
-            let json_output = serde_json::to_string_pretty(&report)?;
-            if let Some(out_path) = output {
-                fs::write(out_path, json_output)?;
-            } else {
-                println!("{}", json_output);
-            }
+    if format == "json" {
+        let report = serde_json::json!({
+            "status": "passed",
+            "cases": cases,
+            "output": stdout
+        });
+        let json_output = serde_json::to_string_pretty(&report)?;
+        if let Some(out_path) = output {
+            fs::write(out_path, json_output)?;
+        } else {
+            println!("{}", json_output);
         }
-        _ => {
-            println!("Property Test Report");
-            println!("====================");
-            println!("Status: ✅ PASSED");
-            println!("Test cases: {}", cases);
-            if let Some(out_path) = output {
-                write_file_with_context(out_path, stdout.as_bytes())?;
-            } else {
-                println!("\n{}", stdout);
-            }
+    } else {
+        println!("Property Test Report");
+        println!("====================");
+        println!("Status: ✅ PASSED");
+        println!("Test cases: {}", cases);
+        if let Some(out_path) = output {
+            write_file_with_context(out_path, stdout.as_bytes())?;
+        } else {
+            println!("\n{}", stdout);
         }
     }
     Ok(())
@@ -2221,8 +2219,8 @@ fn handle_property_tests_single_file(
     let deterministic = test_output_determinism(&binary_path, verbose)?;
 
     // Calculate totals
-    let passed = panic_passed + if deterministic { 1 } else { 0 };
-    let failed = (cases - panic_passed) + if deterministic { 0 } else { 1 };
+    let passed = panic_passed + usize::from(deterministic);
+    let failed = (cases - panic_passed) + usize::from(!deterministic);
 
     if !deterministic {
         test_results.push("Determinism test: FAILED - outputs differ".to_string());
@@ -2412,31 +2410,28 @@ fn write_fuzz_summary(
     success: bool,
     stdout: &str,
 ) -> Result<()> {
-    match format {
-        "json" => {
-            let report = serde_json::json!({
-                "target": target,
-                "iterations": iterations,
-                "status": if success { "passed" } else { "failed" },
-                "output": stdout
-            });
-            let json_output = serde_json::to_string_pretty(&report)?;
-            if let Some(out_path) = output {
-                fs::write(out_path, json_output)?;
-            } else {
-                println!("{}", json_output);
-            }
+    if format == "json" {
+        let report = serde_json::json!({
+            "target": target,
+            "iterations": iterations,
+            "status": if success { "passed" } else { "failed" },
+            "output": stdout
+        });
+        let json_output = serde_json::to_string_pretty(&report)?;
+        if let Some(out_path) = output {
+            fs::write(out_path, json_output)?;
+        } else {
+            println!("{}", json_output);
         }
-        _ => {
-            println!("Fuzz Test Report");
-            println!("================");
-            println!("Target: {}", target);
-            println!("Iterations: {}", iterations);
-            if let Some(out_path) = output {
-                write_file_with_context(out_path, stdout.as_bytes())?;
-            } else {
-                println!("\n{}", stdout);
-            }
+    } else {
+        println!("Fuzz Test Report");
+        println!("================");
+        println!("Target: {}", target);
+        println!("Iterations: {}", iterations);
+        if let Some(out_path) = output {
+            write_file_with_context(out_path, stdout.as_bytes())?;
+        } else {
+            println!("\n{}", stdout);
         }
     }
     Ok(())
@@ -2501,12 +2496,12 @@ fn run_fuzz_iterations(
 
         match result {
             Ok(output) => {
-                if !output.status.success() {
+                if output.status.success() {
+                    successes += 1;
+                } else {
                     crashes += 1;
                     let stderr = String::from_utf8_lossy(&output.stderr);
                     crash_details.push(format!("Iteration {}: {}", i, stderr));
-                } else {
-                    successes += 1;
                 }
             }
             Err(e) => {

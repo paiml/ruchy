@@ -72,6 +72,14 @@ enum Commands {
         #[arg(long, value_name = "FILE")]
         record: Option<PathBuf>,
     },
+    /// Create a new Ruchy project with Cargo integration
+    New {
+        /// Project name
+        name: String,
+        /// Create a library instead of a binary
+        #[arg(long)]
+        lib: bool,
+    },
     /// Parse a Ruchy file and show the AST
     Parse {
         /// The file to parse
@@ -814,6 +822,7 @@ fn try_handle_stdin(command: Option<&Commands>) -> Result<Option<Result<()>>> {
 fn handle_command_dispatch(command: Option<Commands>, verbose: bool) -> Result<()> {
     match command {
         Some(Commands::Repl { record }) => handle_repl_command(record),
+        Some(Commands::New { name, lib }) => handlers::new::handle_new_command(&name, lib, verbose),
         None => handle_repl_command(None),
         Some(Commands::Parse { file }) => handle_parse_command(&file, verbose),
         Some(Commands::Transpile {
