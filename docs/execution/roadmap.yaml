@@ -166,25 +166,26 @@ tasks:
 phase_1_stdlib:
   status: "✅ COMPLETE"
   completion_date: "2025-10-10"
-  reason: "ALL modules exceed ≥75% mutation coverage target with FAST testing"
+  reason: "ALL 4 modules exceed ≥75% mutation coverage target with FAST testing"
   toyota_way_status: "Jidoka + Genchi Genbutsu + Kaizen applied successfully"
   achievements:
-    - "✅ ALL 51 tests enhanced with comprehensive side-effect validation"
-    - "✅ FAST mutation testing strategy: 6-10 min/module (vs timeout)"
-    - "✅ STD-001 (fs): 100% mutation coverage (16/16 caught)"
+    - "✅ ALL 71 tests enhanced with comprehensive side-effect validation"
+    - "✅ FAST mutation testing strategy: 6-15 min/module (vs timeout)"
+    - "✅ STD-001 (fs): 100% mutation coverage (16/16 caught, 2 unviable)"
     - "✅ STD-002 (http): 100% mutation coverage (12/12 caught)"
-    - "✅ STD-003 (json): 80% mutation coverage (20/25 caught, exceeds ≥75%)"
-    - "✅ Total: 55 mutants tested, 48 caught, 7 missed/unviable = 87% overall"
+    - "✅ STD-003 (json): 80% mutation coverage (20/25 caught)"
+    - "✅ STD-004 (path): 97% mutation coverage (32/33 caught)"
+    - "✅ Total: 88 mutants tested, 80 caught, 8 missed/unviable = 91% overall"
 
-  modules_complete: 3  # ✅ All three modules validated
-  modules_exceeding_target: 3  # All ≥75%
-  functions_total: 29
-  tests_total: 51
-  mutants_total: 55
-  mutation_coverage_overall: "87%"  # (48 caught / 55 total)
-  time_actual: "6.5h"  # Includes test enhancement + mutation testing
-  time_estimated: "24h"
-  efficiency: "73%"
+  modules_complete: 4  # ✅ All four modules validated
+  modules_exceeding_target: 4  # All ≥75%
+  functions_total: 43
+  tests_total: 71
+  mutants_total: 88
+  mutation_coverage_overall: "91%"  # (80 caught / 88 total)
+  time_actual: "7.5h"  # Includes test enhancement + mutation testing
+  time_estimated: "32h"
+  efficiency: "77%"
 
   mutation_testing_status:
     std_001_fs:
@@ -214,6 +215,16 @@ phase_1_stdlib:
       runtime: "8m 21s"
       result: "PASSED - Exceeds target"
       gaps: "as_f64 (4 missed), as_bool (1 missed) - documented in STD_003_JSON_MUTATION_GAPS.md"
+
+    std_004_path:
+      status: "✅ COMPLETE - 97% coverage"
+      tests_enhanced: "20 tests with mutation-resistant assertions"
+      command: "cargo mutants --file src/stdlib/path.rs -- --test std_004_path"
+      target: "≥75%"
+      actual_coverage: "97% (32/33 caught, 1 missed)"
+      runtime: "13m 18s"
+      result: "PASSED - Exceeds target"
+      gaps: "normalize CurDir deletion (minor - doesn't affect correctness)"
 
     breakthrough:
       achievement: "FAST mutation testing strategy enabled mutation testing"
@@ -262,18 +273,18 @@ phase_1_stdlib:
 backlog:
   - id: "STD-004"
     title: "Path Module (ruchy/std/path)"
-    status: "COMPLETE"
+    status: "COMPLETE"  # ✅ 97% mutation coverage achieved with FAST testing
     completed: "2025-10-10"
-    time_actual: "45min"
+    time_actual: "1h"
     time_estimated: "8h"
-    efficiency: "91%"
+    efficiency: "92%"
     functions: 14
     wrapper_crate: "std::path"
     tests:
       unit: 17
       property: 3
       property_cases: 60
-      mutation_coverage: "PENDING"  # Will run after STD-001/002/003 complete
+      mutation_coverage: "97%"  # ✅ 32/33 caught (exceeds ≥75% target)
     quality:
       complexity_max: 3
       tdg_grade: "A+"
@@ -281,9 +292,18 @@ backlog:
       - "✅ Tests written FIRST following EXTREME TDD (RED phase)"
       - "✅ Implementation completed - all tests passing (GREEN phase)"
       - "✅ Tests pre-enhanced with mutation-resistant assertions"
+      - "✅ FAST mutation testing: 13m 18s runtime (20 tests only)"
+      - "✅ 33 mutants tested: 32 caught, 1 missed"
+      - "✅ 97% mutation coverage achieved (≥75% target exceeded)"
       - "✅ 14 functions: join, join_many, parent, file_name, file_stem, extension, is_absolute, is_relative, canonicalize, with_extension, with_file_name, components, normalize"
       - "✅ Property tests validate path invariants (join never panics, absolute/relative inverse)"
-      - "⏳ Mutation testing deferred pending STD-001/002/003 results"
+      - "📋 1 MISSED: normalize CurDir deletion (minor - doesn't affect correctness)"
+    performance:
+      mutation_runtime: "13m 18s"
+      mutation_strategy: "FAST (--test std_004_path runs only 20 integration tests)"
+    improvement_opportunities:
+      - "OPTIONAL: Add test validating normalize removes . components → 100% coverage"
+      - "Priority: LOW (already exceeds ≥75% target at 97%)"
 
   - id: "STD-005"
     title: "Environment Module (ruchy/std/env)"

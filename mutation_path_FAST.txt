@@ -1,0 +1,5 @@
+Found 33 mutants to test
+ok       Unmutated baseline in 96.0s build + 0.6s test
+ INFO Auto-set test timeout to 2m
+MISSED   src/stdlib/path.rs:334:13: delete match arm std::path::Component::CurDir in normalize in 25.3s build + 0.2s test
+33 mutants tested in 13m 18s: 1 missed, 32 caught
