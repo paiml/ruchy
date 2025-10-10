@@ -1,0 +1,4 @@
+Found 19 mutants to test
+ok       Unmutated baseline in 189.3s build + 2.0s test
+ INFO Auto-set test timeout to 2m
+MISSED   src/stdlib/dataframe.rs:42:22: replace > with >= in from_columns in 124.2s build + 0.3s test
