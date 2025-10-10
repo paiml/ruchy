@@ -3064,11 +3064,18 @@ Based on deep_context.md analysis, these functions exceed complexity limits:
   - Impact: Reduced complexity CC 6→3 in both functions
   - Result: All 3,665 tests passing (17 pattern matching tests)
 
-- [ ] **QUALITY-020**: Create validation trait/module (40 hours)
+- ⏳ **QUALITY-020**: Create validation trait/module (40 hours) - IN PROGRESS
   - Files: All eval_* modules
   - Issue: DataValidation pattern repeated 12 times (15,869 lines duplication)
   - Fix: Extract to ValidationTrait with standard implementations
   - Impact: Reduces 8.7% code duplication (highest entropy violation)
+  - **Progress (2025-10-10)**:
+    - ✅ Batch 1: eval_builtin.rs (18 validations → centralized, CC -18)
+    - ✅ Batch 2: eval_array.rs (2 validations, CC -2) + eval_dataframe_ops.rs (6 validations, CC -6)
+    - Status: 26/36 inline validations migrated (72% complete)
+    - Eliminated: 104+ lines of duplicate validation code
+    - Tests: All 3,643 tests passing
+    - Remaining: Continue with other eval_* modules + search for additional patterns
 
 - [ ] **QUALITY-021**: Extract API client abstraction (20 hours)
   - Files: MCP/LSP modules
