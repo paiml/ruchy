@@ -284,6 +284,8 @@ lazy_static = "1.5"
 # Compilation support
 tempfile = "3.21"
 proptest = { version = "1.7", optional = true }
+# HTTP client support (STD-002)
+reqwest = { version = "0.12", features = ["blocking"] }
 # Notebook support
 wasmparser = { version = "0.239.0", optional = true }
 wasmtime = { version = "36.0.2", optional = true }
@@ -319,6 +321,7 @@ rexpect = "0.5"
 tempfile = "3.21"
 quickcheck_macros = { workspace = true }
 walkdir = "2.5"
+httpmock = "0.8"
 # TDD Web testing dependencies
 axum = { version = "0.7", features = ["macros"] }
 tower = { version = "0.4", features = ["util"] }
