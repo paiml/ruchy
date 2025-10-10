@@ -18,6 +18,7 @@
 //! - `env`: Environment operations (STD-005)
 //! - `process`: Process operations (STD-006)
 //! - `dataframe`: `DataFrame` operations (STD-007, requires `dataframe` feature)
+//! - `time`: Time operations (STD-008)
 
 pub mod env;
 pub mod fs;
@@ -25,6 +26,7 @@ pub mod http;
 pub mod json;
 pub mod path;
 pub mod process;
+pub mod time;
 
 #[cfg(feature = "dataframe")]
 pub mod dataframe;
