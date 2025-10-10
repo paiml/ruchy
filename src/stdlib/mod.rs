@@ -13,6 +13,8 @@
 //!
 //! - `fs`: File system operations (STD-001)
 //! - `http`: HTTP client operations (STD-002)
+//! - `json`: JSON parsing and manipulation (STD-003)
 
 pub mod fs;
 pub mod http;
+pub mod json;
