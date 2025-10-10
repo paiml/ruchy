@@ -16,9 +16,11 @@
 //! - `json`: JSON parsing and manipulation (STD-003)
 //! - `path`: Path manipulation operations (STD-004)
 //! - `env`: Environment operations (STD-005)
+//! - `process`: Process operations (STD-006)
 
 pub mod env;
 pub mod fs;
 pub mod http;
 pub mod json;
 pub mod path;
+pub mod process;

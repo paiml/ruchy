@@ -1,0 +1,6 @@
+Found 15 mutants to test
+ok       Unmutated baseline in 97.4s build + 0.3s test
+ INFO Auto-set test timeout to 2m
+MISSED   src/stdlib/process.rs:35:52: delete - in execute in 15.8s build + 0.3s test
+MISSED   src/stdlib/process.rs:51:5: replace current_pid -> Result<u32, String> with Ok(1) in 14.3s build + 0.8s test
+15 mutants tested in 5m 10s: 2 missed, 13 caught
