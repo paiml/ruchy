@@ -29,7 +29,11 @@ fn test_std_001_read_to_string_success() {
     assert!(result.is_ok(), "read_to_string should succeed");
     let content = result.unwrap();
     assert_eq!(content, test_content, "Content must match exactly");
-    assert_eq!(content.len(), test_content.len(), "Content length must match");
+    assert_eq!(
+        content.len(),
+        test_content.len(),
+        "Content length must match"
+    );
     assert!(content.contains("Ruchy"), "Content must contain 'Ruchy'");
 }
 
@@ -65,13 +69,24 @@ fn test_std_001_write_success() {
 
     // Verify file was created with correct content
     let content = fs::read_to_string(&file_path).expect("Failed to read written file");
-    assert_eq!(content, test_content, "File content should match what was written");
-    assert_eq!(content.len(), test_content.len(), "Content length must match");
+    assert_eq!(
+        content, test_content,
+        "File content should match what was written"
+    );
+    assert_eq!(
+        content.len(),
+        test_content.len(),
+        "Content length must match"
+    );
 
     // Verify file metadata
     let metadata = fs::metadata(&file_path).expect("Failed to get metadata");
     assert!(metadata.is_file(), "Should be a file");
-    assert_eq!(metadata.len(), test_content.len() as u64, "File size must match content length");
+    assert_eq!(
+        metadata.len(),
+        test_content.len() as u64,
+        "File size must match content length"
+    );
 }
 
 #[test]
@@ -120,7 +135,10 @@ fn test_std_001_create_dir_success() {
     let new_dir = temp_dir.path().join("new_directory");
 
     // Verify dir doesn't exist before creation
-    assert!(!new_dir.exists(), "Directory should not exist before creation");
+    assert!(
+        !new_dir.exists(),
+        "Directory should not exist before creation"
+    );
 
     // Call ruchy::stdlib::fs::create_dir
     let result = ruchy::stdlib::fs::create_dir(new_dir.to_str().unwrap());
@@ -131,7 +149,10 @@ fn test_std_001_create_dir_success() {
 
     // Verify we can read the directory (it's actually a directory)
     let read_result = fs::read_dir(&new_dir);
-    assert!(read_result.is_ok(), "Should be able to read created directory");
+    assert!(
+        read_result.is_ok(),
+        "Should be able to read created directory"
+    );
 }
 
 #[test]
@@ -142,7 +163,10 @@ fn test_std_001_create_dir_all_nested() {
     let nested_dir = temp_dir.path().join("a").join("b").join("c");
 
     // Verify nested path doesn't exist
-    assert!(!nested_dir.exists(), "Nested path should not exist before creation");
+    assert!(
+        !nested_dir.exists(),
+        "Nested path should not exist before creation"
+    );
 
     // Call ruchy::stdlib::fs::create_dir_all
     let result = ruchy::stdlib::fs::create_dir_all(nested_dir.to_str().unwrap());
@@ -154,8 +178,14 @@ fn test_std_001_create_dir_all_nested() {
     // Verify all intermediate directories exist
     let a_dir = temp_dir.path().join("a");
     let b_dir = a_dir.join("b");
-    assert!(a_dir.exists() && a_dir.is_dir(), "Intermediate 'a' should exist");
-    assert!(b_dir.exists() && b_dir.is_dir(), "Intermediate 'b' should exist");
+    assert!(
+        a_dir.exists() && a_dir.is_dir(),
+        "Intermediate 'a' should exist"
+    );
+    assert!(
+        b_dir.exists() && b_dir.is_dir(),
+        "Intermediate 'b' should exist"
+    );
 }
 
 #[test]
@@ -176,7 +206,10 @@ fn test_std_001_remove_file_success() {
 
     // Verify we cannot read the deleted file
     let read_result = fs::read_to_string(&file_path);
-    assert!(read_result.is_err(), "Should not be able to read deleted file");
+    assert!(
+        read_result.is_err(),
+        "Should not be able to read deleted file"
+    );
 }
 
 #[test]
@@ -198,7 +231,10 @@ fn test_std_001_remove_dir_success() {
 
     // Verify we cannot read the deleted directory
     let read_result = fs::read_dir(&dir_path);
-    assert!(read_result.is_err(), "Should not be able to read deleted directory");
+    assert!(
+        read_result.is_err(),
+        "Should not be able to read deleted directory"
+    );
 }
 
 #[test]
@@ -223,8 +259,15 @@ fn test_std_001_copy_file_success() {
     assert!(source.exists(), "Source should still exist after copy");
 
     let dest_content = fs::read_to_string(&dest).expect("Failed to read dest file");
-    assert_eq!(dest_content, "Copy this", "Destination content must match source");
-    assert_eq!(bytes_copied, "Copy this".len() as u64, "Bytes copied must match content length");
+    assert_eq!(
+        dest_content, "Copy this",
+        "Destination content must match source"
+    );
+    assert_eq!(
+        bytes_copied,
+        "Copy this".len() as u64,
+        "Bytes copied must match content length"
+    );
 }
 
 #[test]
@@ -236,7 +279,10 @@ fn test_std_001_rename_file_success() {
     let new_path = temp_dir.path().join("new_name.txt");
 
     assert!(old_path.exists(), "Old path should exist before rename");
-    assert!(!new_path.exists(), "New path should not exist before rename");
+    assert!(
+        !new_path.exists(),
+        "New path should not exist before rename"
+    );
 
     // Call ruchy::stdlib::fs::rename
     let result = ruchy::stdlib::fs::rename(old_path.to_str().unwrap(), new_path.to_str().unwrap());
@@ -247,7 +293,10 @@ fn test_std_001_rename_file_success() {
 
     // Verify content preserved after rename
     let content = fs::read_to_string(&new_path).expect("Failed to read renamed file");
-    assert_eq!(content, "Rename me", "Content should be preserved after rename");
+    assert_eq!(
+        content, "Rename me",
+        "Content should be preserved after rename"
+    );
 
     // Verify old path cannot be read
     let old_read = fs::read_to_string(&old_path);
@@ -280,7 +329,11 @@ fn test_std_001_read_dir_success() {
         .map(|e| e.file_name().to_string_lossy().to_string())
         .collect();
     names.sort();
-    assert_eq!(names, vec!["file1.txt", "file2.txt", "file3.txt"], "Entry names must match");
+    assert_eq!(
+        names,
+        vec!["file1.txt", "file2.txt", "file3.txt"],
+        "Entry names must match"
+    );
 }
 
 #[test]

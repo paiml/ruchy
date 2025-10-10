@@ -25,7 +25,10 @@ fn test_std_002_get_success() {
     assert_eq!(body, "Hello, Ruchy!", "Response body must match exactly");
     assert_eq!(body.len(), 13, "Response body length must match");
     assert!(body.contains("Ruchy"), "Response must contain 'Ruchy'");
-    assert!(body.starts_with("Hello"), "Response must start with 'Hello'");
+    assert!(
+        body.starts_with("Hello"),
+        "Response must start with 'Hello'"
+    );
     assert!(!body.is_empty(), "Response must not be empty");
     mock.assert();
 }
@@ -48,8 +51,14 @@ fn test_std_002_get_with_json_response() {
     assert!(result.is_ok(), "GET request should succeed");
     let body = result.unwrap();
     assert_eq!(body, json_body, "JSON body must match exactly");
-    assert!(body.contains("message"), "JSON must contain 'message' field");
-    assert!(body.contains("success"), "JSON must contain 'success' value");
+    assert!(
+        body.contains("message"),
+        "JSON must contain 'message' field"
+    );
+    assert!(
+        body.contains("success"),
+        "JSON must contain 'success' value"
+    );
     assert!(body.contains("200"), "JSON must contain status code");
     assert!(!body.is_empty(), "Response must not be empty");
     mock.assert();
@@ -97,7 +106,10 @@ fn test_std_002_post_with_body() {
     assert_eq!(body, response_body, "Response body must match exactly");
     assert!(body.contains("id"), "Response must contain 'id' field");
     assert!(body.contains("123"), "Response must contain id value");
-    assert!(body.contains("created"), "Response must contain 'created' field");
+    assert!(
+        body.contains("created"),
+        "Response must contain 'created' field"
+    );
     assert!(!body.is_empty(), "Response must not be empty");
     mock.assert();
 }
@@ -142,7 +154,10 @@ fn test_std_002_put_updates_resource() {
     assert!(result.is_ok(), "PUT request should succeed");
     let body = result.unwrap();
     assert_eq!(body, response_body, "Response body must match exactly");
-    assert!(body.contains("updated"), "Response must contain 'updated' field");
+    assert!(
+        body.contains("updated"),
+        "Response must contain 'updated' field"
+    );
     assert!(body.contains("true"), "Response must contain 'true' value");
     assert!(!body.is_empty(), "Response must not be empty");
     mock.assert();
@@ -186,7 +201,10 @@ fn test_std_002_delete_with_response_body() {
     assert!(result.is_ok(), "DELETE request should succeed");
     let body = result.unwrap();
     assert_eq!(body, response_body, "Response body must match exactly");
-    assert!(body.contains("deleted"), "Response must contain 'deleted' field");
+    assert!(
+        body.contains("deleted"),
+        "Response must contain 'deleted' field"
+    );
     assert!(body.contains("true"), "Response must contain 'true' value");
     assert!(body.contains("123"), "Response must contain id");
     assert!(!body.is_empty(), "Response must not be empty");
@@ -212,7 +230,10 @@ fn test_std_002_get_with_query_params() {
     assert!(result.is_ok(), "GET with query params should succeed");
     let body = result.unwrap();
     assert_eq!(body, response_body, "Response body must match exactly");
-    assert!(body.contains("results"), "Response must contain 'results' field");
+    assert!(
+        body.contains("results"),
+        "Response must contain 'results' field"
+    );
     assert!(!body.is_empty(), "Response must not be empty");
     mock.assert();
 }

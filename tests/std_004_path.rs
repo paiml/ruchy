@@ -25,8 +25,14 @@ fn test_std_004_join_paths() {
     assert!(result.is_ok(), "join should succeed");
     let path_str = result.unwrap();
     assert!(path_str.contains("/home/user"), "Must contain base path");
-    assert!(path_str.contains("documents"), "Must contain appended component");
-    assert!(path_str.ends_with("documents"), "Must end with appended component");
+    assert!(
+        path_str.contains("documents"),
+        "Must contain appended component"
+    );
+    assert!(
+        path_str.ends_with("documents"),
+        "Must end with appended component"
+    );
     assert!(!path_str.is_empty(), "Path must not be empty");
 }
 
@@ -55,8 +61,14 @@ fn test_std_004_parent() {
     let parent_str = result.unwrap();
     assert!(parent_str.is_some(), "Parent should exist");
     let parent = parent_str.unwrap();
-    assert!(parent.contains("documents"), "Parent must contain 'documents'");
-    assert!(!parent.contains("file.txt"), "Parent must not contain filename");
+    assert!(
+        parent.contains("documents"),
+        "Parent must contain 'documents'"
+    );
+    assert!(
+        !parent.contains("file.txt"),
+        "Parent must not contain filename"
+    );
     assert!(!parent.is_empty(), "Parent must not be empty");
 }
 
@@ -110,7 +122,10 @@ fn test_std_004_file_stem() {
     let stem_str = stem.unwrap();
     assert_eq!(stem_str, "file", "File stem must be exactly 'file'");
     assert_eq!(stem_str.len(), 4, "File stem length must be 4");
-    assert!(!stem_str.contains(".txt"), "Stem must not contain extension");
+    assert!(
+        !stem_str.contains(".txt"),
+        "Stem must not contain extension"
+    );
     assert!(!stem_str.is_empty(), "Stem must not be empty");
 }
 
@@ -175,10 +190,16 @@ fn test_std_004_canonicalize() {
 
     let result = ruchy::stdlib::path::canonicalize(file_path.to_str().unwrap());
 
-    assert!(result.is_ok(), "canonicalize should succeed for existing file");
+    assert!(
+        result.is_ok(),
+        "canonicalize should succeed for existing file"
+    );
     let canonical = result.unwrap();
     assert!(!canonical.is_empty(), "Canonical path must not be empty");
-    assert!(Path::new(&canonical).is_absolute(), "Canonical path must be absolute");
+    assert!(
+        Path::new(&canonical).is_absolute(),
+        "Canonical path must be absolute"
+    );
     assert!(canonical.contains("test.txt"), "Must contain filename");
 }
 
@@ -188,7 +209,10 @@ fn test_std_004_canonicalize_nonexistent() {
 
     let result = ruchy::stdlib::path::canonicalize("/nonexistent/path/file.txt");
 
-    assert!(result.is_err(), "canonicalize should fail for nonexistent path");
+    assert!(
+        result.is_err(),
+        "canonicalize should fail for nonexistent path"
+    );
 }
 
 #[test]
@@ -214,8 +238,14 @@ fn test_std_004_with_file_name() {
     assert!(result.is_ok(), "with_file_name should succeed");
     let new_path = result.unwrap();
     assert!(new_path.ends_with("new.txt"), "Must end with new filename");
-    assert!(!new_path.contains("old.txt"), "Must not contain old filename");
-    assert!(new_path.contains("/home/user"), "Must retain parent directory");
+    assert!(
+        !new_path.contains("old.txt"),
+        "Must not contain old filename"
+    );
+    assert!(
+        new_path.contains("/home/user"),
+        "Must retain parent directory"
+    );
     assert!(!new_path.is_empty(), "Path must not be empty");
 }
 
@@ -231,7 +261,10 @@ fn test_std_004_components() {
     assert!(comps.len() >= 3, "Should have at least 3 components");
     assert!(comps.contains(&"home".to_string()), "Must contain 'home'");
     assert!(comps.contains(&"user".to_string()), "Must contain 'user'");
-    assert!(comps.contains(&"file.txt".to_string()), "Must contain 'file.txt'");
+    assert!(
+        comps.contains(&"file.txt".to_string()),
+        "Must contain 'file.txt'"
+    );
 }
 
 #[test]
