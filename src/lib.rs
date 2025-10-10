@@ -72,6 +72,7 @@ pub mod performance_optimizations;
 pub mod proving;
 pub mod quality;
 pub mod runtime;
+pub mod stdlib;
 #[cfg(any(test, feature = "testing"))]
 pub mod testing;
 #[cfg(any(test, feature = "testing"))]
