@@ -20,6 +20,7 @@
 //! - `dataframe`: `DataFrame` operations (STD-007, requires `dataframe` feature)
 //! - `time`: Time operations (STD-008)
 //! - `logging`: Logging operations (STD-009)
+//! - `regex`: Regular expression operations (STD-010)
 
 pub mod env;
 pub mod fs;
@@ -28,6 +29,7 @@ pub mod json;
 pub mod logging;
 pub mod path;
 pub mod process;
+pub mod regex;
 pub mod time;
 
 #[cfg(feature = "dataframe")]
