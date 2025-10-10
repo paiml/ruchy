@@ -1,4 +1,13 @@
-# cargo-mutants configuration for Sprint 7 Phase 4  
-# Only test library code (skip integration tests and doctests)
-additional_cargo_test_args = ["--lib"]
+# cargo-mutants configuration - FAST stdlib mutation testing
+# Strategy: Run ONLY the specific integration test file for each module
+#
+# Usage (pass test name after --):
+#   cargo mutants --file src/stdlib/fs.rs -- --test std_001_fs
+#   cargo mutants --file src/stdlib/http.rs -- --test std_002_http
+#   cargo mutants --file src/stdlib/json.rs -- --test std_003_json
+#   cargo mutants --file src/stdlib/path.rs -- --test std_004_path
+#
+# This runs ~20 tests per module instead of 3662 lib tests
+# Result: 5-10 minutes per module instead of hours
 timeout_multiplier = 3.0
+minimum_test_timeout = 120
