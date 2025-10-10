@@ -5,6 +5,7 @@
 //! Extracted for maintainability and following Toyota Way principles.
 //! All functions maintain <10 cyclomatic complexity.
 
+use crate::runtime::validation::validate_arg_count;
 use crate::runtime::{InterpreterError, Value};
 
 #[cfg(test)]
@@ -183,13 +184,9 @@ fn eval_dbg(args: &[Value]) -> Result<Value, InterpreterError> {
 /// Square root function
 ///
 /// # Complexity
-/// Cyclomatic complexity: 4 (within Toyota Way limits)
+/// Cyclomatic complexity: 3 (within Toyota Way limits, reduced from 4)
 fn eval_sqrt(args: &[Value]) -> Result<Value, InterpreterError> {
-    if args.len() != 1 {
-        return Err(InterpreterError::RuntimeError(
-            "sqrt() expects exactly 1 argument".to_string(),
-        ));
-    }
+    validate_arg_count("sqrt", args, 1)?;
     match &args[0] {
         Value::Integer(n) => Ok(Value::Float((*n as f64).sqrt())),
         Value::Float(f) => Ok(Value::Float(f.sqrt())),
@@ -202,13 +199,9 @@ fn eval_sqrt(args: &[Value]) -> Result<Value, InterpreterError> {
 /// Power function (base^exponent)
 ///
 /// # Complexity
-/// Cyclomatic complexity: 7 (within Toyota Way limits)
+/// Cyclomatic complexity: 6 (within Toyota Way limits, reduced from 7)
 fn eval_pow(args: &[Value]) -> Result<Value, InterpreterError> {
-    if args.len() != 2 {
-        return Err(InterpreterError::RuntimeError(
-            "pow() expects exactly 2 arguments".to_string(),
-        ));
-    }
+    validate_arg_count("pow", args, 2)?;
     match (&args[0], &args[1]) {
         (Value::Integer(base), Value::Integer(exp)) => {
             if *exp >= 0 {
@@ -229,13 +222,9 @@ fn eval_pow(args: &[Value]) -> Result<Value, InterpreterError> {
 /// Absolute value function
 ///
 /// # Complexity
-/// Cyclomatic complexity: 4 (within Toyota Way limits)
+/// Cyclomatic complexity: 3 (within Toyota Way limits, reduced from 4)
 fn eval_abs(args: &[Value]) -> Result<Value, InterpreterError> {
-    if args.len() != 1 {
-        return Err(InterpreterError::RuntimeError(
-            "abs() expects exactly 1 argument".to_string(),
-        ));
-    }
+    validate_arg_count("abs", args, 1)?;
     match &args[0] {
         Value::Integer(n) => Ok(Value::Integer(n.abs())),
         Value::Float(f) => Ok(Value::Float(f.abs())),
@@ -248,13 +237,9 @@ fn eval_abs(args: &[Value]) -> Result<Value, InterpreterError> {
 /// Minimum of two values
 ///
 /// # Complexity
-/// Cyclomatic complexity: 6 (within Toyota Way limits)
+/// Cyclomatic complexity: 5 (within Toyota Way limits, reduced from 6)
 fn eval_min(args: &[Value]) -> Result<Value, InterpreterError> {
-    if args.len() != 2 {
-        return Err(InterpreterError::RuntimeError(
-            "min() expects exactly 2 arguments".to_string(),
-        ));
-    }
+    validate_arg_count("min", args, 2)?;
     match (&args[0], &args[1]) {
         (Value::Integer(a), Value::Integer(b)) => Ok(Value::Integer(*a.min(b))),
         (Value::Float(a), Value::Float(b)) => Ok(Value::Float(a.min(*b))),
@@ -269,13 +254,9 @@ fn eval_min(args: &[Value]) -> Result<Value, InterpreterError> {
 /// Maximum of two values
 ///
 /// # Complexity
-/// Cyclomatic complexity: 6 (within Toyota Way limits)
+/// Cyclomatic complexity: 5 (within Toyota Way limits, reduced from 6)
 fn eval_max(args: &[Value]) -> Result<Value, InterpreterError> {
-    if args.len() != 2 {
-        return Err(InterpreterError::RuntimeError(
-            "max() expects exactly 2 arguments".to_string(),
-        ));
-    }
+    validate_arg_count("max", args, 2)?;
     match (&args[0], &args[1]) {
         (Value::Integer(a), Value::Integer(b)) => Ok(Value::Integer(*a.max(b))),
         (Value::Float(a), Value::Float(b)) => Ok(Value::Float(a.max(*b))),
@@ -290,13 +271,9 @@ fn eval_max(args: &[Value]) -> Result<Value, InterpreterError> {
 /// Floor function (round down)
 ///
 /// # Complexity
-/// Cyclomatic complexity: 4 (within Toyota Way limits)
+/// Cyclomatic complexity: 3 (within Toyota Way limits, reduced from 4)
 fn eval_floor(args: &[Value]) -> Result<Value, InterpreterError> {
-    if args.len() != 1 {
-        return Err(InterpreterError::RuntimeError(
-            "floor() expects exactly 1 argument".to_string(),
-        ));
-    }
+    validate_arg_count("floor", args, 1)?;
     match &args[0] {
         Value::Integer(n) => Ok(Value::Integer(*n)),
         Value::Float(f) => Ok(Value::Integer(f.floor() as i64)),
@@ -309,13 +286,9 @@ fn eval_floor(args: &[Value]) -> Result<Value, InterpreterError> {
 /// Ceiling function (round up)
 ///
 /// # Complexity
-/// Cyclomatic complexity: 4 (within Toyota Way limits)
+/// Cyclomatic complexity: 3 (within Toyota Way limits, reduced from 4)
 fn eval_ceil(args: &[Value]) -> Result<Value, InterpreterError> {
-    if args.len() != 1 {
-        return Err(InterpreterError::RuntimeError(
-            "ceil() expects exactly 1 argument".to_string(),
-        ));
-    }
+    validate_arg_count("ceil", args, 1)?;
     match &args[0] {
         Value::Integer(n) => Ok(Value::Integer(*n)),
         Value::Float(f) => Ok(Value::Integer(f.ceil() as i64)),
@@ -328,13 +301,9 @@ fn eval_ceil(args: &[Value]) -> Result<Value, InterpreterError> {
 /// Round to nearest integer
 ///
 /// # Complexity
-/// Cyclomatic complexity: 4 (within Toyota Way limits)
+/// Cyclomatic complexity: 3 (within Toyota Way limits, reduced from 4)
 fn eval_round(args: &[Value]) -> Result<Value, InterpreterError> {
-    if args.len() != 1 {
-        return Err(InterpreterError::RuntimeError(
-            "round() expects exactly 1 argument".to_string(),
-        ));
-    }
+    validate_arg_count("round", args, 1)?;
     match &args[0] {
         Value::Integer(n) => Ok(Value::Integer(*n)),
         Value::Float(f) => Ok(Value::Integer(f.round() as i64)),
@@ -347,13 +316,9 @@ fn eval_round(args: &[Value]) -> Result<Value, InterpreterError> {
 /// Sine function
 ///
 /// # Complexity
-/// Cyclomatic complexity: 4 (within Toyota Way limits)
+/// Cyclomatic complexity: 3 (within Toyota Way limits, reduced from 4)
 fn eval_sin(args: &[Value]) -> Result<Value, InterpreterError> {
-    if args.len() != 1 {
-        return Err(InterpreterError::RuntimeError(
-            "sin() expects exactly 1 argument".to_string(),
-        ));
-    }
+    validate_arg_count("sin", args, 1)?;
     match &args[0] {
         Value::Integer(n) => Ok(Value::Float((*n as f64).sin())),
         Value::Float(f) => Ok(Value::Float(f.sin())),
@@ -366,13 +331,9 @@ fn eval_sin(args: &[Value]) -> Result<Value, InterpreterError> {
 /// Cosine function
 ///
 /// # Complexity
-/// Cyclomatic complexity: 4 (within Toyota Way limits)
+/// Cyclomatic complexity: 3 (within Toyota Way limits, reduced from 4)
 fn eval_cos(args: &[Value]) -> Result<Value, InterpreterError> {
-    if args.len() != 1 {
-        return Err(InterpreterError::RuntimeError(
-            "cos() expects exactly 1 argument".to_string(),
-        ));
-    }
+    validate_arg_count("cos", args, 1)?;
     match &args[0] {
         Value::Integer(n) => Ok(Value::Float((*n as f64).cos())),
         Value::Float(f) => Ok(Value::Float(f.cos())),
@@ -385,13 +346,9 @@ fn eval_cos(args: &[Value]) -> Result<Value, InterpreterError> {
 /// Tangent function
 ///
 /// # Complexity
-/// Cyclomatic complexity: 4 (within Toyota Way limits)
+/// Cyclomatic complexity: 3 (within Toyota Way limits, reduced from 4)
 fn eval_tan(args: &[Value]) -> Result<Value, InterpreterError> {
-    if args.len() != 1 {
-        return Err(InterpreterError::RuntimeError(
-            "tan() expects exactly 1 argument".to_string(),
-        ));
-    }
+    validate_arg_count("tan", args, 1)?;
     match &args[0] {
         Value::Integer(n) => Ok(Value::Float((*n as f64).tan())),
         Value::Float(f) => Ok(Value::Float(f.tan())),
@@ -404,13 +361,9 @@ fn eval_tan(args: &[Value]) -> Result<Value, InterpreterError> {
 /// Length of collections and strings
 ///
 /// # Complexity
-/// Cyclomatic complexity: 6 (within Toyota Way limits)
+/// Cyclomatic complexity: 5 (within Toyota Way limits, reduced from 6)
 fn eval_len(args: &[Value]) -> Result<Value, InterpreterError> {
-    if args.len() != 1 {
-        return Err(InterpreterError::RuntimeError(
-            "len() expects exactly 1 argument".to_string(),
-        ));
-    }
+    validate_arg_count("len", args, 1)?;
     match &args[0] {
         Value::String(s) => Ok(Value::Integer(s.len() as i64)),
         Value::Array(arr) => Ok(Value::Integer(arr.len() as i64)),
@@ -521,26 +474,18 @@ fn eval_range_three_args(
 /// Get type name of a value
 ///
 /// # Complexity
-/// Cyclomatic complexity: 3 (within Toyota Way limits)
+/// Cyclomatic complexity: 2 (within Toyota Way limits, reduced from 3)
 fn eval_type(args: &[Value]) -> Result<Value, InterpreterError> {
-    if args.len() != 1 {
-        return Err(InterpreterError::RuntimeError(
-            "type() expects exactly 1 argument".to_string(),
-        ));
-    }
+    validate_arg_count("type", args, 1)?;
     Ok(Value::from_string(args[0].type_name().to_string()))
 }
 
 /// Reverse arrays and strings
 ///
 /// # Complexity
-/// Cyclomatic complexity: 5 (within Toyota Way limits)
+/// Cyclomatic complexity: 4 (within Toyota Way limits, reduced from 5)
 fn eval_reverse(args: &[Value]) -> Result<Value, InterpreterError> {
-    if args.len() != 1 {
-        return Err(InterpreterError::RuntimeError(
-            "reverse() expects exactly 1 argument".to_string(),
-        ));
-    }
+    validate_arg_count("reverse", args, 1)?;
     match &args[0] {
         Value::Array(arr) => {
             let mut reversed = arr.to_vec();
@@ -560,13 +505,9 @@ fn eval_reverse(args: &[Value]) -> Result<Value, InterpreterError> {
 /// Sleep for a duration in milliseconds
 ///
 /// # Complexity
-/// Cyclomatic complexity: 3 (within Toyota Way limits)
+/// Cyclomatic complexity: 2 (within Toyota Way limits, reduced from 3)
 fn eval_sleep(args: &[Value]) -> Result<Value, InterpreterError> {
-    if args.len() != 1 {
-        return Err(InterpreterError::RuntimeError(
-            "sleep() expects exactly 1 argument (milliseconds)".to_string(),
-        ));
-    }
+    validate_arg_count("sleep", args, 1)?;
 
     let millis = match &args[0] {
         Value::Integer(n) => *n as u64,
@@ -637,13 +578,9 @@ fn eval_dataframe_new(args: &[Value]) -> Result<Value, InterpreterError> {
 
 /// `DataFrame::from_csv_string()` - Parse CSV data into `DataFrame`
 /// Performs type inference for integers, floats, and strings
-/// Complexity: 9 (within Toyota Way limits)
+/// Complexity: 8 (within Toyota Way limits, reduced from 9)
 fn eval_dataframe_from_csv_string(args: &[Value]) -> Result<Value, InterpreterError> {
-    if args.len() != 1 {
-        return Err(InterpreterError::RuntimeError(
-            "DataFrame::from_csv_string() requires 1 argument (csv_string)".to_string(),
-        ));
-    }
+    validate_arg_count("DataFrame::from_csv_string", args, 1)?;
 
     let csv_string = match &args[0] {
         Value::String(s) => s.as_ref(),
@@ -659,13 +596,9 @@ fn eval_dataframe_from_csv_string(args: &[Value]) -> Result<Value, InterpreterEr
 
 /// `DataFrame::from_json()` - Parse JSON array into `DataFrame`
 /// Expects array of objects with consistent keys
-/// Complexity: 8 (within Toyota Way limits)
+/// Complexity: 7 (within Toyota Way limits, reduced from 8)
 fn eval_dataframe_from_json(args: &[Value]) -> Result<Value, InterpreterError> {
-    if args.len() != 1 {
-        return Err(InterpreterError::RuntimeError(
-            "DataFrame::from_json() requires 1 argument (json_string)".to_string(),
-        ));
-    }
+    validate_arg_count("DataFrame::from_json", args, 1)?;
 
     let json_string = match &args[0] {
         Value::String(s) => s.as_ref(),
