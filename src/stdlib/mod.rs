@@ -19,11 +19,13 @@
 //! - `process`: Process operations (STD-006)
 //! - `dataframe`: `DataFrame` operations (STD-007, requires `dataframe` feature)
 //! - `time`: Time operations (STD-008)
+//! - `logging`: Logging operations (STD-009)
 
 pub mod env;
 pub mod fs;
 pub mod http;
 pub mod json;
+pub mod logging;
 pub mod path;
 pub mod process;
 pub mod time;
