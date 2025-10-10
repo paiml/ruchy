@@ -4390,6 +4390,7 @@ dependencies = [
  "console_error_panic_hook",
  "criterion",
  "getrandom 0.2.16",
+ "glob",
  "im",
  "insta",
  "js-sys",

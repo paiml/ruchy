@@ -1,0 +1,17 @@
+// Example Ruchy program for Cargo integration
+// This file will be automatically transpiled to main.rs during cargo build
+
+fun greet(name: String) -> String {
+    f"Hello, {name}!"
+}
+
+fun main() {
+    let greeting = greet("Cargo");
+    println(greeting);
+
+    let numbers = [1, 2, 3, 4, 5];
+    println(f"Numbers: {numbers:?}");
+
+    let sum = numbers.iter().sum::<i32>();
+    println(f"Sum: {sum}");
+}

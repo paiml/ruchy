@@ -51,6 +51,7 @@
 pub mod actors;
 pub mod api_docs;
 pub mod backend;
+pub mod build_transpiler;
 pub mod cli;
 pub mod debugger;
 pub mod docs;

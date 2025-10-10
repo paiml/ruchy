@@ -1,0 +1,21 @@
+# Example Cargo.toml for Ruchy Cargo Integration (CARGO-001)
+#
+# This demonstrates a Ruchy project using Cargo as the build system.
+# .ruchy files in src/ are automatically transpiled to .rs during build.
+
+[package]
+name = "ruchy-cargo-example"
+version = "0.1.0"
+edition = "2021"
+build = "build.rs"  # Enable build script
+
+[build-dependencies]
+# Ruchy transpiler as build dependency
+ruchy = { path = "../..", version = "3.71" }
+
+[dependencies]
+# You can use any Rust crate directly!
+# Examples:
+# reqwest = "0.11"
+# serde_json = "1.0"
+# tokio = { version = "1.0", features = ["full"] }

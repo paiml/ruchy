@@ -231,6 +231,7 @@ wasm-compile = []  # WASM compilation is always available via wasm-encoder
 [dependencies]
 rand = "0.8"
 wasm-encoder = "0.207.0"
+glob = "0.3"
 anyhow = { workspace = true }
 thiserror = { workspace = true }
 serde = { workspace = true }
