@@ -2,10 +2,11 @@
 
 ## 📝 **SESSION CONTEXT FOR RESUMPTION**
 
-**Last Active**: 2025-10-10 (CARGO-001 Build Transpiler Complete)
-**Current Sprint**: Cargo Integration - Build System Implementation
+**Last Active**: 2025-10-10 (CARGO-002 Project Template Generator Complete)
+**Current Sprint**: Cargo Integration - Project Creation & Standard Library
 **Latest Release**: v3.71.1 (2025-10-09) - Bug fixes + Priority 3 integration + PMAT quality analysis
 **Latest Commits**:
+- ✅ CARGO-002 complete (ruchy new command, 11/11 tests passing)
 - ✅ CARGO-001 complete (build.rs integration prototype, 8/8 tests passing)
 - ✅ DEFECT-COMPILE-MAIN-CALL fixed (stack overflow on double main() call)
 - ✅ QUALITY-017 complete (equal_values() complexity 42 → 7)
@@ -113,7 +114,19 @@
 - ✅ Time: ~2 hours actual (vs 16 hours estimated - 87% faster due to TDD efficiency)
 - ✅ Commits: All code committed with comprehensive tests
 
-**Next Priority**: 🎯 **CARGO-002: Project Template Generator (8 hours)**
+**Sprint Status**: ✅ **CARGO-002 COMPLETE** - Project Template Generator (2025-10-10)
+- ✅ `ruchy new` command implemented (wraps cargo new + adds Ruchy files)
+- ✅ Binary and library project support (--lib flag)
+- ✅ Auto-generated build.rs with transpiler integration
+- ✅ Auto-modified Cargo.toml with build dependencies
+- ✅ Template .ruchy source files (main.ruchy / lib.ruchy)
+- ✅ Generated README.md with usage instructions
+- ✅ Test suite: 11/11 passing (10 unit + 1 property test, 20 property cases)
+- ✅ Quality gates: All functions ≤10 complexity (Toyota Way compliant)
+- ✅ Time: ~2 hours actual (vs 8 hours estimated - 75% faster due to TDD efficiency)
+
+**Next Priority**: 🎯 **STD-001: File I/O Module (ruchy/std/fs) - 8 hours**
+
 
 ## 🚨 **NEW CRITICAL DEFECTS FOUND (2025-10-09)**
 
