@@ -17,6 +17,7 @@
 //! - `path`: Path manipulation operations (STD-004)
 //! - `env`: Environment operations (STD-005)
 //! - `process`: Process operations (STD-006)
+//! - `dataframe`: `DataFrame` operations (STD-007, requires `dataframe` feature)
 
 pub mod env;
 pub mod fs;
@@ -24,3 +25,6 @@ pub mod http;
 pub mod json;
 pub mod path;
 pub mod process;
+
+#[cfg(feature = "dataframe")]
+pub mod dataframe;
