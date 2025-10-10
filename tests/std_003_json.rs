@@ -114,7 +114,10 @@ fn test_std_003_stringify_object() {
     // Validate output
     assert!(!output.is_empty(), "Stringified output must not be empty");
     assert!(output.contains("name"), "Output must contain 'name' field");
-    assert!(output.contains("Alice"), "Output must contain 'Alice' value");
+    assert!(
+        output.contains("Alice"),
+        "Output must contain 'Alice' value"
+    );
     assert!(output.contains("age"), "Output must contain 'age' field");
     assert!(output.len() > 10, "Output must have reasonable length");
 
@@ -158,8 +161,14 @@ fn test_std_003_pretty_print() {
     assert!(!output.is_empty(), "Pretty output must not be empty");
     assert!(output.contains('\n'), "Pretty output should have newlines");
     assert!(output.contains("name"), "Output must contain 'name' field");
-    assert!(output.contains("Alice"), "Output must contain 'Alice' value");
-    assert!(output.len() > json_str.len(), "Pretty output should be longer than compact");
+    assert!(
+        output.contains("Alice"),
+        "Output must contain 'Alice' value"
+    );
+    assert!(
+        output.len() > json_str.len(),
+        "Pretty output should be longer than compact"
+    );
 
     // Should still be valid JSON
     let reparsed = ruchy::stdlib::json::parse(&output);
