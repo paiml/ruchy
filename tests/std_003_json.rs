@@ -19,6 +19,14 @@ fn test_std_003_parse_object() {
 
     // Verify it's an object
     assert!(value.is_object(), "Parsed value should be an object");
+    assert!(!value.is_null(), "Parsed value must not be null");
+    assert!(!value.is_array(), "Parsed value must not be array");
+
+    // Verify fields exist
+    let name = ruchy::stdlib::json::get(&value, "name");
+    assert!(name.is_some(), "Must have 'name' field");
+    let age = ruchy::stdlib::json::get(&value, "age");
+    assert!(age.is_some(), "Must have 'age' field");
 }
 
 #[test]
@@ -32,6 +40,14 @@ fn test_std_003_parse_array() {
     assert!(result.is_ok(), "Valid JSON array should parse");
     let value = result.unwrap();
     assert!(value.is_array(), "Parsed value should be an array");
+    assert!(!value.is_null(), "Parsed value must not be null");
+    assert!(!value.is_object(), "Parsed value must not be object");
+
+    // Verify array has elements
+    let first = ruchy::stdlib::json::get_index(&value, 0);
+    assert!(first.is_some(), "Array must have first element");
+    let last = ruchy::stdlib::json::get_index(&value, 4);
+    assert!(last.is_some(), "Array must have last element");
 }
 
 #[test]
@@ -95,6 +111,13 @@ fn test_std_003_stringify_object() {
     assert!(result.is_ok(), "Stringify should succeed");
     let output = result.unwrap();
 
+    // Validate output
+    assert!(!output.is_empty(), "Stringified output must not be empty");
+    assert!(output.contains("name"), "Output must contain 'name' field");
+    assert!(output.contains("Alice"), "Output must contain 'Alice' value");
+    assert!(output.contains("age"), "Output must contain 'age' field");
+    assert!(output.len() > 10, "Output must have reasonable length");
+
     // Should be valid JSON (parse it back)
     let reparsed = ruchy::stdlib::json::parse(&output);
     assert!(reparsed.is_ok(), "Stringified output should be valid JSON");
@@ -109,10 +132,13 @@ fn test_std_003_stringify_array() {
 
     let result = ruchy::stdlib::json::stringify(&value);
 
-    assert!(result.is_ok());
+    assert!(result.is_ok(), "Stringify should succeed");
     let output = result.unwrap();
-    assert!(output.contains('['));
-    assert!(output.contains(']'));
+    assert!(!output.is_empty(), "Output must not be empty");
+    assert!(output.contains('['), "Output must contain opening bracket");
+    assert!(output.contains(']'), "Output must contain closing bracket");
+    assert!(output.contains('1'), "Output must contain array elements");
+    assert!(output.len() >= 11, "Output must have reasonable length");
 }
 
 #[test]
@@ -128,12 +154,16 @@ fn test_std_003_pretty_print() {
     assert!(result.is_ok(), "Pretty print should succeed");
     let output = result.unwrap();
 
-    // Pretty printed output should have newlines
+    // Validate output
+    assert!(!output.is_empty(), "Pretty output must not be empty");
     assert!(output.contains('\n'), "Pretty output should have newlines");
+    assert!(output.contains("name"), "Output must contain 'name' field");
+    assert!(output.contains("Alice"), "Output must contain 'Alice' value");
+    assert!(output.len() > json_str.len(), "Pretty output should be longer than compact");
 
     // Should still be valid JSON
     let reparsed = ruchy::stdlib::json::parse(&output);
-    assert!(reparsed.is_ok());
+    assert!(reparsed.is_ok(), "Pretty output should be valid JSON");
 }
 
 #[test]
@@ -211,7 +241,11 @@ fn test_std_003_as_string() {
     // Call ruchy::stdlib::json::as_string
     let result = ruchy::stdlib::json::as_string(&value);
     assert!(result.is_some(), "String value should convert");
-    assert_eq!(result.unwrap(), "hello world");
+    let string = result.unwrap();
+    assert_eq!(string, "hello world", "String must match exactly");
+    assert_eq!(string.len(), 11, "String length must be 11");
+    assert!(string.contains("hello"), "String must contain 'hello'");
+    assert!(!string.is_empty(), "String must not be empty");
 }
 
 #[test]
@@ -224,7 +258,12 @@ fn test_std_003_as_i64() {
     // Call ruchy::stdlib::json::as_i64
     let result = ruchy::stdlib::json::as_i64(&value);
     assert!(result.is_some(), "Number value should convert");
-    assert_eq!(result.unwrap(), 42);
+    let num = result.unwrap();
+    assert_eq!(num, 42, "Number must be exactly 42");
+    assert_ne!(num, 0, "Number must not be 0");
+    assert_ne!(num, 1, "Number must not be 1");
+    assert!(num > 0, "Number must be positive");
+    assert!(num < 100, "Number must be less than 100");
 }
 
 #[test]
@@ -237,7 +276,10 @@ fn test_std_003_as_bool() {
     // Call ruchy::stdlib::json::as_bool
     let result = ruchy::stdlib::json::as_bool(&value);
     assert!(result.is_some(), "Boolean value should convert");
-    assert_eq!(result.unwrap(), true);
+    let bool_val = result.unwrap();
+    assert_eq!(bool_val, true, "Boolean must be true");
+    assert_ne!(bool_val, false, "Boolean must not be false");
+    assert!(bool_val, "Boolean must be truthy");
 }
 
 #[test]

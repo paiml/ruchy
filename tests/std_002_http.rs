@@ -21,7 +21,12 @@ fn test_std_002_get_success() {
     let result = ruchy::stdlib::http::get(&server.url("/test"));
 
     assert!(result.is_ok(), "GET request should succeed");
-    assert_eq!(result.unwrap(), "Hello, Ruchy!");
+    let body = result.unwrap();
+    assert_eq!(body, "Hello, Ruchy!", "Response body must match exactly");
+    assert_eq!(body.len(), 13, "Response body length must match");
+    assert!(body.contains("Ruchy"), "Response must contain 'Ruchy'");
+    assert!(body.starts_with("Hello"), "Response must start with 'Hello'");
+    assert!(!body.is_empty(), "Response must not be empty");
     mock.assert();
 }
 
@@ -41,7 +46,12 @@ fn test_std_002_get_with_json_response() {
     let result = ruchy::stdlib::http::get(&server.url("/api/data"));
 
     assert!(result.is_ok(), "GET request should succeed");
-    assert_eq!(result.unwrap(), json_body);
+    let body = result.unwrap();
+    assert_eq!(body, json_body, "JSON body must match exactly");
+    assert!(body.contains("message"), "JSON must contain 'message' field");
+    assert!(body.contains("success"), "JSON must contain 'success' value");
+    assert!(body.contains("200"), "JSON must contain status code");
+    assert!(!body.is_empty(), "Response must not be empty");
     mock.assert();
 }
 
@@ -83,7 +93,12 @@ fn test_std_002_post_with_body() {
     let result = ruchy::stdlib::http::post(&server.url("/api/users"), request_body);
 
     assert!(result.is_ok(), "POST request should succeed");
-    assert_eq!(result.unwrap(), response_body);
+    let body = result.unwrap();
+    assert_eq!(body, response_body, "Response body must match exactly");
+    assert!(body.contains("id"), "Response must contain 'id' field");
+    assert!(body.contains("123"), "Response must contain id value");
+    assert!(body.contains("created"), "Response must contain 'created' field");
+    assert!(!body.is_empty(), "Response must not be empty");
     mock.assert();
 }
 
@@ -100,7 +115,11 @@ fn test_std_002_post_empty_body() {
     let result = ruchy::stdlib::http::post(&server.url("/api/action"), "");
 
     assert!(result.is_ok(), "POST with empty body should succeed");
-    assert_eq!(result.unwrap(), "OK");
+    let body = result.unwrap();
+    assert_eq!(body, "OK", "Response must be exactly 'OK'");
+    assert_eq!(body.len(), 2, "Response length must be 2");
+    assert!(!body.is_empty(), "Response must not be empty");
+    assert_ne!(body, "", "Response must not be empty string");
     mock.assert();
 }
 
@@ -121,7 +140,11 @@ fn test_std_002_put_updates_resource() {
     let result = ruchy::stdlib::http::put(&server.url("/api/users/123"), update_body);
 
     assert!(result.is_ok(), "PUT request should succeed");
-    assert_eq!(result.unwrap(), response_body);
+    let body = result.unwrap();
+    assert_eq!(body, response_body, "Response body must match exactly");
+    assert!(body.contains("updated"), "Response must contain 'updated' field");
+    assert!(body.contains("true"), "Response must contain 'true' value");
+    assert!(!body.is_empty(), "Response must not be empty");
     mock.assert();
 }
 
@@ -139,8 +162,11 @@ fn test_std_002_delete_resource() {
     let result = ruchy::stdlib::http::delete(&server.url("/api/users/123"));
 
     assert!(result.is_ok(), "DELETE request should succeed");
+    let body = result.unwrap();
     // 204 No Content returns empty string
-    assert_eq!(result.unwrap(), "");
+    assert_eq!(body, "", "204 response must be empty");
+    assert_eq!(body.len(), 0, "204 response length must be 0");
+    assert!(body.is_empty(), "204 response must be empty");
     mock.assert();
 }
 
@@ -158,7 +184,12 @@ fn test_std_002_delete_with_response_body() {
     let result = ruchy::stdlib::http::delete(&server.url("/api/users/456"));
 
     assert!(result.is_ok(), "DELETE request should succeed");
-    assert_eq!(result.unwrap(), response_body);
+    let body = result.unwrap();
+    assert_eq!(body, response_body, "Response body must match exactly");
+    assert!(body.contains("deleted"), "Response must contain 'deleted' field");
+    assert!(body.contains("true"), "Response must contain 'true' value");
+    assert!(body.contains("123"), "Response must contain id");
+    assert!(!body.is_empty(), "Response must not be empty");
     mock.assert();
 }
 
@@ -167,17 +198,22 @@ fn test_std_002_get_with_query_params() {
     // STD-002: Test GET request with query parameters
 
     let server = MockServer::start();
+    let response_body = r#"{"results": []}"#;
     let mock = server.mock(|when, then| {
         when.method(GET)
             .path("/api/search")
             .query_param("q", "rust")
             .query_param("limit", "10");
-        then.status(200).body(r#"{"results": []}"#);
+        then.status(200).body(response_body);
     });
 
     let result = ruchy::stdlib::http::get(&server.url("/api/search?q=rust&limit=10"));
 
     assert!(result.is_ok(), "GET with query params should succeed");
+    let body = result.unwrap();
+    assert_eq!(body, response_body, "Response body must match exactly");
+    assert!(body.contains("results"), "Response must contain 'results' field");
+    assert!(!body.is_empty(), "Response must not be empty");
     mock.assert();
 }
 
@@ -254,7 +290,12 @@ fn test_std_002_large_response_body() {
     let result = ruchy::stdlib::http::get(&server.url("/large"));
 
     assert!(result.is_ok(), "Large response should succeed");
-    assert_eq!(result.unwrap().len(), 10000);
+    let body = result.unwrap();
+    assert_eq!(body.len(), 10000, "Response length must be exactly 10000");
+    assert!(body.starts_with("xxx"), "Response must start with 'xxx'");
+    assert!(body.ends_with("xxx"), "Response must end with 'xxx'");
+    assert!(!body.is_empty(), "Response must not be empty");
+    assert_eq!(body, large_body, "Response must match exactly");
     mock.assert();
 }
 
