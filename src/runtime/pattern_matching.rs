@@ -322,26 +322,19 @@ fn match_none_pattern_helper(value: &Value) -> Option<Vec<(String, Value)>> {
     None
 }
 
-/// Helper for matching Ok patterns (complexity: 6)
+/// Helper for matching Ok patterns (complexity: 3)
 fn match_ok_pattern_helper(inner_pattern: &Pattern, value: &Value) -> Option<Vec<(String, Value)>> {
     let fields = extract_object_fields(value)?;
-    eprintln!(
-        "DEBUG: Matching Ok pattern against Object with {} fields",
-        fields.len()
-    );
 
     if !is_ok_type(fields) {
         return None;
     }
-    eprintln!("DEBUG: Type matches 'Ok'");
 
     let data = extract_ok_data(fields)?;
-    eprintln!("DEBUG: Data is Array with {} elements", data.len());
-
     if data.is_empty() {
         return None;
     }
-    eprintln!("DEBUG: Matching inner pattern against data[0]");
+
     match_pattern(inner_pattern, &data[0])
 }
 
@@ -354,24 +347,19 @@ fn extract_object_fields(value: &Value) -> Option<&HashMap<String, Value>> {
 }
 
 fn is_ok_type(fields: &HashMap<String, Value>) -> bool {
-    if let Some(type_value) = fields.get("type") {
-        eprintln!("DEBUG: Found 'type' field: {type_value:?}");
-        if let Value::String(type_str) = type_value {
-            eprintln!("DEBUG: Type is String: {type_str}");
-            return &**type_str == "Ok";
-        }
+    if let Some(Value::String(type_str)) = fields.get("type") {
+        &**type_str == "Ok"
+    } else {
+        false
     }
-    false
 }
 
 fn extract_ok_data(fields: &HashMap<String, Value>) -> Option<&[Value]> {
-    if let Some(data_value) = fields.get("data") {
-        eprintln!("DEBUG: Found 'data' field: {data_value:?}");
-        if let Value::Array(data) = data_value {
-            return Some(data);
-        }
+    if let Some(Value::Array(data)) = fields.get("data") {
+        Some(data)
+    } else {
+        None
     }
-    None
 }
 
 /// Helper for matching Err patterns (complexity: 6)

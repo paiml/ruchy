@@ -242,61 +242,103 @@ pub fn check_pattern_exhaustiveness(
 /// Match Ok pattern - Result success case
 ///
 /// # Complexity
-/// Cyclomatic complexity: 6 (within Toyota Way limits)
+/// Cyclomatic complexity: 3 (within Toyota Way limits)
 fn match_ok_pattern(
     inner_pattern: &Pattern,
     value: &Value,
 ) -> Result<PatternMatchResult, InterpreterError> {
     // Ok(x) creates an Object: {data: [x], __type: "Message", type: "Ok"}
-    eprintln!("DEBUG: match_ok_pattern called");
-    if let Value::Object(fields) = value {
-        eprintln!("DEBUG: Value is Object with {} fields", fields.len());
-        if let Some(type_value) = fields.get("type") {
-            eprintln!("DEBUG: Found 'type' field: {type_value:?}");
-            if let Value::String(type_str) = type_value {
-                eprintln!("DEBUG: Type is String: {type_str}");
-                if &**type_str == "Ok" {
-                    eprintln!("DEBUG: Type matches 'Ok'");
-                    if let Some(data_value) = fields.get("data") {
-                        eprintln!("DEBUG: Found 'data' field");
-                        if let Value::Array(data) = data_value {
-                            eprintln!("DEBUG: Data is Array with {} elements", data.len());
-                            if !data.is_empty() {
-                                eprintln!("DEBUG: Matching inner pattern");
-                                return match_pattern(inner_pattern, &data[0]);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    } else {
-        eprintln!("DEBUG: Value is NOT an Object: {value:?}");
+    let fields = match_extract_object_fields(value)?;
+
+    if !match_is_ok_type(fields) {
+        return Ok(PatternMatchResult::failure());
     }
-    Ok(PatternMatchResult::failure())
+
+    let data = match_extract_data_array(fields)?;
+    if data.is_empty() {
+        return Ok(PatternMatchResult::failure());
+    }
+
+    match_pattern(inner_pattern, &data[0])
+}
+
+/// Extract object fields from Value
+///
+/// # Complexity
+/// Cyclomatic complexity: 2 (within Toyota Way limits)
+fn match_extract_object_fields(
+    value: &Value,
+) -> Result<&std::collections::HashMap<String, Value>, InterpreterError> {
+    if let Value::Object(fields) = value {
+        Ok(fields)
+    } else {
+        Err(InterpreterError::RuntimeError(
+            "Expected Object value for Result pattern".to_string(),
+        ))
+    }
+}
+
+/// Check if object has type field matching "Ok"
+///
+/// # Complexity
+/// Cyclomatic complexity: 3 (within Toyota Way limits)
+fn match_is_ok_type(fields: &std::collections::HashMap<String, Value>) -> bool {
+    if let Some(Value::String(type_str)) = fields.get("type") {
+        &**type_str == "Ok"
+    } else {
+        false
+    }
+}
+
+/// Extract data array from object fields
+///
+/// # Complexity
+/// Cyclomatic complexity: 2 (within Toyota Way limits)
+fn match_extract_data_array(
+    fields: &std::collections::HashMap<String, Value>,
+) -> Result<&[Value], InterpreterError> {
+    if let Some(Value::Array(data)) = fields.get("data") {
+        Ok(data)
+    } else {
+        Err(InterpreterError::RuntimeError(
+            "Expected data array in Result value".to_string(),
+        ))
+    }
+}
+
+/// Check if object has type field matching "Err"
+///
+/// # Complexity
+/// Cyclomatic complexity: 3 (within Toyota Way limits)
+fn match_is_err_type(fields: &std::collections::HashMap<String, Value>) -> bool {
+    if let Some(Value::String(type_str)) = fields.get("type") {
+        &**type_str == "Err"
+    } else {
+        false
+    }
 }
 
 /// Match Err pattern - Result error case
 ///
 /// # Complexity
-/// Cyclomatic complexity: 6 (within Toyota Way limits)
+/// Cyclomatic complexity: 3 (within Toyota Way limits)
 fn match_err_pattern(
     inner_pattern: &Pattern,
     value: &Value,
 ) -> Result<PatternMatchResult, InterpreterError> {
     // Err(x) creates an Object: {data: [x], __type: "Message", type: "Err"}
-    if let Value::Object(fields) = value {
-        if let Some(Value::String(type_str)) = fields.get("type") {
-            if &**type_str == "Err" {
-                if let Some(Value::Array(data)) = fields.get("data") {
-                    if !data.is_empty() {
-                        return match_pattern(inner_pattern, &data[0]);
-                    }
-                }
-            }
-        }
+    let fields = match_extract_object_fields(value)?;
+
+    if !match_is_err_type(fields) {
+        return Ok(PatternMatchResult::failure());
     }
-    Ok(PatternMatchResult::failure())
+
+    let data = match_extract_data_array(fields)?;
+    if data.is_empty() {
+        return Ok(PatternMatchResult::failure());
+    }
+
+    match_pattern(inner_pattern, &data[0])
 }
 
 #[cfg(test)]
