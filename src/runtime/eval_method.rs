@@ -6,6 +6,7 @@
 //! All functions maintain <10 cyclomatic complexity.
 
 use crate::frontend::ast::Expr;
+use crate::runtime::validation::validate_arg_count;
 use crate::runtime::{DataFrameColumn, InterpreterError, Value};
 use std::rc::Rc;
 
@@ -95,28 +96,15 @@ pub fn eval_integer_method(
 ) -> Result<Value, InterpreterError> {
     match method {
         "abs" => {
-            if !arg_values.is_empty() {
-                return Err(InterpreterError::RuntimeError(
-                    "Integer method 'abs' takes no arguments".to_string(),
-                ));
-            }
+            validate_arg_count("Integer.abs", arg_values, 0)?;
             Ok(Value::Integer(n.abs()))
         }
         "to_string" => {
-            if !arg_values.is_empty() {
-                return Err(InterpreterError::RuntimeError(
-                    "Integer method 'to_string' takes no arguments".to_string(),
-                ));
-            }
+            validate_arg_count("Integer.to_string", arg_values, 0)?;
             Ok(Value::from_string(n.to_string()))
         }
         "pow" => {
-            if arg_values.len() != 1 {
-                return Err(InterpreterError::RuntimeError(format!(
-                    "Integer method 'pow' requires exactly 1 argument, got {}",
-                    arg_values.len()
-                )));
-            }
+            validate_arg_count("Integer.pow", arg_values, 1)?;
             // Extract exponent from argument
             match &arg_values[0] {
                 Value::Integer(exp) => {
@@ -184,19 +172,11 @@ pub fn eval_array_method_simple(
 ) -> Result<Value, InterpreterError> {
     match method {
         "len" | "length" => {
-            if !args.is_empty() {
-                return Err(InterpreterError::RuntimeError(
-                    "Array method 'len' takes no arguments".to_string(),
-                ));
-            }
+            validate_arg_count("Array.len", args, 0)?;
             Ok(Value::Integer(arr.len() as i64))
         }
         "is_empty" => {
-            if !args.is_empty() {
-                return Err(InterpreterError::RuntimeError(
-                    "Array method 'is_empty' takes no arguments".to_string(),
-                ));
-            }
+            validate_arg_count("Array.is_empty", args, 0)?;
             Ok(Value::Bool(arr.is_empty()))
         }
         _ => {
@@ -220,11 +200,7 @@ pub fn eval_dataframe_method_simple(
 ) -> Result<Value, InterpreterError> {
     match method {
         "shape" => {
-            if !args.is_empty() {
-                return Err(InterpreterError::RuntimeError(
-                    "DataFrame method 'shape' takes no arguments".to_string(),
-                ));
-            }
+            validate_arg_count("DataFrame.shape", args, 0)?;
             let rows = columns.first().map_or(0, |c| c.values.len());
             let cols = columns.len();
             Ok(Value::Tuple(Rc::from(
@@ -232,11 +208,7 @@ pub fn eval_dataframe_method_simple(
             )))
         }
         "columns" => {
-            if !args.is_empty() {
-                return Err(InterpreterError::RuntimeError(
-                    "DataFrame method 'columns' takes no arguments".to_string(),
-                ));
-            }
+            validate_arg_count("DataFrame.columns", args, 0)?;
             let col_names = columns
                 .iter()
                 .map(|c| Value::from_string(c.name.clone()))
