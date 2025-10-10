@@ -4,6 +4,7 @@
 //! Extracted from the monolithic interpreter.rs to improve maintainability.
 //! Complexity: <10 per function (Toyota Way compliant)
 
+use crate::runtime::pattern_matching::values_equal;
 use crate::runtime::{InterpreterError, Value};
 use std::rc::Rc;
 
@@ -106,19 +107,6 @@ fn eval_array_contains(arr: &Rc<[Value]>, item: &Value) -> Result<Value, Interpr
         }
     }
     Ok(Value::Bool(false))
-}
-
-/// Helper function to check if two values are equal
-/// Complexity: 8 (within Toyota Way limits)
-fn values_equal(a: &Value, b: &Value) -> bool {
-    match (a, b) {
-        (Value::Integer(x), Value::Integer(y)) => x == y,
-        (Value::Float(x), Value::Float(y)) => x == y,
-        (Value::Bool(x), Value::Bool(y)) => x == y,
-        (Value::String(x), Value::String(y)) => x == y,
-        (Value::Nil, Value::Nil) => true,
-        _ => false,
-    }
 }
 
 // Higher-order array methods (complexity <= 8 each)
