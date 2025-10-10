@@ -15,7 +15,9 @@
 //! - `http`: HTTP client operations (STD-002)
 //! - `json`: JSON parsing and manipulation (STD-003)
 //! - `path`: Path manipulation operations (STD-004)
+//! - `env`: Environment operations (STD-005)
 
+pub mod env;
 pub mod fs;
 pub mod http;
 pub mod json;

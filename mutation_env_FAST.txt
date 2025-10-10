@@ -1,0 +1,5 @@
+Found 17 mutants to test
+ok       Unmutated baseline in 99.7s build + 0.3s test
+ INFO Auto-set test timeout to 2m
+MISSED   src/stdlib/env.rs:120:5: replace args -> Result<Vec<String>, String> with Ok(vec!["xyzzy".into()]) in 14.8s build + 0.3s test
+17 mutants tested in 6m 19s: 1 missed, 16 caught
