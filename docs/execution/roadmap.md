@@ -1,5 +1,17 @@
 # Ruchy Development Roadmap
 
+> ⚠️ **DEPRECATION NOTICE**: This Markdown roadmap is being deprecated in favor of `roadmap.yaml`.
+>
+> **SINGLE SOURCE OF TRUTH**: `/home/noah/src/ruchy/docs/execution/roadmap.yaml`
+>
+> **Why YAML?**
+> - Machine-readable format for programmatic access
+> - Better structure for complex task dependencies
+> - Enforces consistent formatting
+> - Easier to parse and validate
+>
+> **Status**: This file will continue to exist for human readability but should NOT be manually edited. All updates must go to `roadmap.yaml` first.
+
 ## 📝 **SESSION CONTEXT FOR RESUMPTION**
 
 **Last Active**: 2025-10-10 ([MILESTONE] v3.73.0 - Phase 2 Standard Library Complete)
