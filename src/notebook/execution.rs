@@ -13,6 +13,7 @@
 // - Line Coverage: ≥85%
 // - Branch Coverage: ≥90%
 
+use crate::notebook::html::HtmlFormatter;
 use std::time::Duration;
 
 /// Result of executing a notebook cell
@@ -192,6 +193,65 @@ impl CellExecutionResult {
     /// Check if there's any stderr output
     pub fn has_stderr(&self) -> bool {
         !self.stderr.is_empty()
+    }
+
+    /// Format the execution result as HTML
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::notebook::execution::CellExecutionResult;
+    /// use std::time::Duration;
+    ///
+    /// let result = CellExecutionResult::success(
+    ///     "42".to_string(),
+    ///     String::new(),
+    ///     String::new(),
+    ///     Duration::from_millis(5)
+    /// );
+    ///
+    /// let html = result.as_html();
+    /// assert!(html.contains("42"));
+    /// assert!(html.contains("<div"));
+    /// ```
+    pub fn as_html(&self) -> String {
+        let formatter = HtmlFormatter::new();
+
+        if self.success {
+            let mut html = String::new();
+
+            // Add output
+            if !self.output.is_empty() {
+                html.push_str(&formatter.format_value(&self.output));
+            }
+
+            // Add stdout if present
+            if self.has_stdout() {
+                html.push_str(r#"<div class="notebook-stdout">"#);
+                html.push_str(&formatter.format_value(&self.stdout));
+                html.push_str("</div>");
+            }
+
+            // Add stderr if present
+            if self.has_stderr() {
+                html.push_str(r#"<div class="notebook-stderr">"#);
+                html.push_str(&formatter.format_value(&self.stderr));
+                html.push_str("</div>");
+            }
+
+            // Add timing info if slow
+            if self.is_slow() {
+                html.push_str(&format!(
+                    r#"<div class="notebook-timing">⏱️ {}ms</div>"#,
+                    self.duration_ms()
+                ));
+            }
+
+            html
+        } else {
+            // Error formatting
+            formatter.format_error(self.error.as_deref().unwrap_or("Unknown error"))
+        }
     }
 }
 
@@ -493,5 +553,91 @@ mod tests {
 
         assert!(result.duration_ms() < 1);
         assert!(!result.is_slow());
+    }
+
+    // NOTEBOOK-004: Tests for HTML formatting integration
+
+    #[test]
+    fn test_notebook_004_as_html_success() {
+        let result = CellExecutionResult::success(
+            "42".to_string(),
+            String::new(),
+            String::new(),
+            Duration::from_millis(5),
+        );
+
+        let html = result.as_html();
+        assert!(html.contains("42"));
+        assert!(html.contains("<div"));
+    }
+
+    #[test]
+    fn test_notebook_004_as_html_error() {
+        let result =
+            CellExecutionResult::failure("Parse error".to_string(), Duration::from_millis(1));
+
+        let html = result.as_html();
+        assert!(html.contains("Parse error"));
+        assert!(html.contains("error"));
+        assert!(html.contains("❌"));
+    }
+
+    #[test]
+    fn test_notebook_004_as_html_with_stdout() {
+        let result = CellExecutionResult::success(
+            "result".to_string(),
+            "debug output".to_string(),
+            String::new(),
+            Duration::from_millis(10),
+        );
+
+        let html = result.as_html();
+        assert!(html.contains("result"));
+        assert!(html.contains("debug output"));
+        assert!(html.contains("notebook-stdout"));
+    }
+
+    #[test]
+    fn test_notebook_004_as_html_with_stderr() {
+        let result = CellExecutionResult::success(
+            "value".to_string(),
+            String::new(),
+            "warning message".to_string(),
+            Duration::from_millis(10),
+        );
+
+        let html = result.as_html();
+        assert!(html.contains("value"));
+        assert!(html.contains("warning message"));
+        assert!(html.contains("notebook-stderr"));
+    }
+
+    #[test]
+    fn test_notebook_004_as_html_slow_execution() {
+        let result = CellExecutionResult::success(
+            "slow result".to_string(),
+            String::new(),
+            String::new(),
+            Duration::from_millis(150),
+        );
+
+        let html = result.as_html();
+        assert!(html.contains("slow result"));
+        assert!(html.contains("150ms"));
+        assert!(html.contains("notebook-timing"));
+    }
+
+    #[test]
+    fn test_notebook_004_as_html_escapes_dangerous_content() {
+        let result = CellExecutionResult::success(
+            "<script>alert('xss')</script>".to_string(),
+            String::new(),
+            String::new(),
+            Duration::from_millis(5),
+        );
+
+        let html = result.as_html();
+        assert!(!html.contains("<script>"));
+        assert!(html.contains("&lt;script&gt;"));
     }
 }
