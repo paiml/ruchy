@@ -6,12 +6,15 @@ pub mod persistence;
 pub mod server;
 #[cfg(feature = "notebook")]
 pub mod testing;
+pub mod wasm;
+
 pub use dataframe::{ColumnType, DataFrame};
 pub use engine::NotebookEngine;
 pub use execution::CellExecutionResult;
 pub use html::{html_escape, HtmlFormatter};
 pub use persistence::{Checkpoint, TransactionResult};
 pub use server::start_server;
+pub use wasm::{NotebookPerformance, NotebookWasm};
 
 #[cfg(test)]
 mod tests {
