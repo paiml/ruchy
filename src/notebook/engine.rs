@@ -13,7 +13,9 @@
 // - Mutation Score: ≥90%
 
 use crate::notebook::execution::CellExecutionResult;
+use crate::notebook::persistence::{Checkpoint, TransactionResult};
 use crate::runtime::repl::Repl;
+use std::collections::HashMap;
 use std::path::PathBuf;
 use std::time::Instant;
 
@@ -128,6 +130,97 @@ impl NotebookEngine {
                 start.elapsed(),
             ),
             Err(e) => CellExecutionResult::failure(e.to_string(), start.elapsed()),
+        }
+    }
+
+    /// Create a checkpoint of the current notebook state
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::notebook::engine::NotebookEngine;
+    ///
+    /// let mut engine = NotebookEngine::new().unwrap();
+    /// engine.execute_cell("let x = 42").unwrap();
+    ///
+    /// let checkpoint = engine.create_checkpoint("before_change".to_string());
+    /// assert_eq!(checkpoint.name(), "before_change");
+    /// ```
+    pub fn create_checkpoint(&self, name: String) -> Checkpoint {
+        // Capture current state from REPL bindings
+        let bindings = self.repl.get_bindings();
+        let mut state_data = HashMap::new();
+
+        for (key, value) in bindings {
+            state_data.insert(key.clone(), value.to_string());
+        }
+
+        Checkpoint::with_state(name, state_data)
+    }
+
+    /// Restore notebook state from a checkpoint
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::notebook::engine::NotebookEngine;
+    ///
+    /// let mut engine = NotebookEngine::new().unwrap();
+    /// engine.execute_cell("let x = 10").unwrap();
+    /// let checkpoint = engine.create_checkpoint("save".to_string());
+    ///
+    /// engine.execute_cell("x = 99").unwrap();
+    /// engine.restore_checkpoint(&checkpoint);
+    ///
+    /// let result = engine.execute_cell("x").unwrap();
+    /// assert_eq!(result, "10");
+    /// ```
+    pub fn restore_checkpoint(&mut self, checkpoint: &Checkpoint) {
+        // Clear current bindings
+        self.repl.clear_bindings();
+
+        // Restore state from checkpoint
+        for (key, value) in checkpoint.state_data() {
+            // Re-execute variable definitions to restore state
+            let code = format!("let {key} = {value}");
+            let _ = self.repl.eval(&code);
+        }
+    }
+
+    /// Execute code transactionally with automatic rollback on error
+    ///
+    /// If execution fails, state is automatically rolled back to before the transaction.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::notebook::engine::NotebookEngine;
+    ///
+    /// let mut engine = NotebookEngine::new().unwrap();
+    /// engine.execute_cell("let x = 10").unwrap();
+    ///
+    /// // This will fail and rollback
+    /// let result = engine.execute_transaction("x = invalid_syntax");
+    /// assert!(result.is_rolled_back());
+    ///
+    /// // Original state preserved
+    /// let value = engine.execute_cell("x").unwrap();
+    /// assert_eq!(value, "10");
+    /// ```
+    pub fn execute_transaction(&mut self, code: &str) -> TransactionResult<String> {
+        // Create checkpoint before execution
+        let checkpoint = self.create_checkpoint("transaction_savepoint".to_string());
+
+        // Execute code
+        match self.execute_cell(code) {
+            Ok(result) => TransactionResult::Success(result),
+            Err(e) => {
+                // Rollback on error
+                self.restore_checkpoint(&checkpoint);
+                TransactionResult::RolledBack {
+                    error: e.to_string(),
+                }
+            }
         }
     }
 }
@@ -395,6 +488,157 @@ Point { x: 10, y: 20 }
         "#;
         let result = engine.execute_cell(code);
         assert!(result.is_ok());
+    }
+
+    // NOTEBOOK-003: Tests for checkpoint/restore/transaction
+
+    #[test]
+    fn test_notebook_003_create_empty_checkpoint() {
+        let engine = NotebookEngine::new().unwrap();
+        let checkpoint = engine.create_checkpoint("empty".to_string());
+
+        assert_eq!(checkpoint.name(), "empty");
+        assert!(checkpoint.is_empty());
+    }
+
+    #[test]
+    fn test_notebook_003_create_checkpoint_with_state() {
+        let mut engine = NotebookEngine::new().unwrap();
+        engine.execute_cell("let x = 42").unwrap();
+        engine.execute_cell("let y = 100").unwrap();
+
+        let checkpoint = engine.create_checkpoint("with_state".to_string());
+
+        assert_eq!(checkpoint.name(), "with_state");
+        assert!(!checkpoint.is_empty());
+        assert!(checkpoint.has_variable("x"));
+        assert!(checkpoint.has_variable("y"));
+    }
+
+    #[test]
+    fn test_notebook_003_restore_checkpoint() {
+        let mut engine = NotebookEngine::new().unwrap();
+        engine.execute_cell("let x = 10").unwrap();
+        let checkpoint = engine.create_checkpoint("save".to_string());
+
+        // Modify state
+        engine.execute_cell("x = 99").unwrap();
+        assert_eq!(engine.execute_cell("x").unwrap(), "99");
+
+        // Restore
+        engine.restore_checkpoint(&checkpoint);
+        assert_eq!(engine.execute_cell("x").unwrap(), "10");
+    }
+
+    #[test]
+    fn test_notebook_003_restore_multiple_variables() {
+        let mut engine = NotebookEngine::new().unwrap();
+        engine.execute_cell("let a = 1").unwrap();
+        engine.execute_cell("let b = 2").unwrap();
+        engine.execute_cell("let c = 3").unwrap();
+        let checkpoint = engine.create_checkpoint("multi".to_string());
+
+        // Modify
+        engine.execute_cell("a = 100").unwrap();
+        engine.execute_cell("b = 200").unwrap();
+
+        // Restore
+        engine.restore_checkpoint(&checkpoint);
+
+        assert_eq!(engine.execute_cell("a").unwrap(), "1");
+        assert_eq!(engine.execute_cell("b").unwrap(), "2");
+        assert_eq!(engine.execute_cell("c").unwrap(), "3");
+    }
+
+    #[test]
+    fn test_notebook_003_transaction_success() {
+        let mut engine = NotebookEngine::new().unwrap();
+        engine.execute_cell("let x = 10").unwrap();
+
+        let result = engine.execute_transaction("x + 5");
+
+        assert!(result.is_success());
+        assert_eq!(result.success_value(), Some("15".to_string()));
+    }
+
+    #[test]
+    fn test_notebook_003_transaction_failure_rollback() {
+        let mut engine = NotebookEngine::new().unwrap();
+        engine.execute_cell("let x = 10").unwrap();
+
+        // This will fail
+        let result = engine.execute_transaction("x = invalid_syntax");
+
+        assert!(!result.is_success());
+        assert!(result.is_rolled_back());
+        assert!(result.error().is_some());
+
+        // State should be preserved
+        assert_eq!(engine.execute_cell("x").unwrap(), "10");
+    }
+
+    #[test]
+    fn test_notebook_003_transaction_preserves_state_on_error() {
+        let mut engine = NotebookEngine::new().unwrap();
+        engine.execute_cell("let a = 1").unwrap();
+        engine.execute_cell("let b = 2").unwrap();
+
+        // Transaction that fails
+        let _result = engine.execute_transaction("let c = undefined_var");
+
+        // Original state should be intact
+        assert_eq!(engine.execute_cell("a").unwrap(), "1");
+        assert_eq!(engine.execute_cell("b").unwrap(), "2");
+
+        // c should not exist
+        assert!(engine.execute_cell("c").is_err());
+    }
+
+    #[test]
+    fn test_notebook_003_multiple_checkpoints() {
+        let mut engine = NotebookEngine::new().unwrap();
+
+        engine.execute_cell("let x = 1").unwrap();
+        let cp1 = engine.create_checkpoint("checkpoint1".to_string());
+
+        engine.execute_cell("x = 2").unwrap();
+        let cp2 = engine.create_checkpoint("checkpoint2".to_string());
+
+        engine.execute_cell("x = 3").unwrap();
+
+        // Restore to cp2
+        engine.restore_checkpoint(&cp2);
+        assert_eq!(engine.execute_cell("x").unwrap(), "2");
+
+        // Restore to cp1
+        engine.restore_checkpoint(&cp1);
+        assert_eq!(engine.execute_cell("x").unwrap(), "1");
+    }
+
+    #[test]
+    fn test_notebook_003_checkpoint_independence() {
+        let mut engine = NotebookEngine::new().unwrap();
+        engine.execute_cell("let x = 42").unwrap();
+
+        let cp1 = engine.create_checkpoint("cp1".to_string());
+        let cp2 = engine.create_checkpoint("cp2".to_string());
+
+        // Checkpoints should be independent
+        assert_eq!(cp1.name(), "cp1");
+        assert_eq!(cp2.name(), "cp2");
+        assert_eq!(cp1.variable_count(), cp2.variable_count());
+    }
+
+    #[test]
+    fn test_notebook_003_transaction_modifies_state_on_success() {
+        let mut engine = NotebookEngine::new().unwrap();
+        engine.execute_cell("let x = 10").unwrap();
+
+        let result = engine.execute_transaction("x = 20");
+
+        assert!(result.is_success());
+        // State should be modified
+        assert_eq!(engine.execute_cell("x").unwrap(), "20");
     }
 
     // NOTEBOOK-002: Tests for execute_cell_detailed()
@@ -789,6 +1033,181 @@ a + b
                 } else {
                     prop_assert!(result.error().is_some());
                     prop_assert!(!result.error().unwrap().is_empty());
+                }
+            }
+
+            // NOTEBOOK-003: Property tests for checkpoint/restore/transaction
+
+            #[test]
+            fn notebook_checkpoint_preserves_variable_count(
+                var_count in 0usize..20
+            ) {
+                let mut engine = NotebookEngine::new().unwrap();
+
+                // Get baseline count (REPL has built-in bindings)
+                let baseline = engine.create_checkpoint("baseline".to_string()).variable_count();
+
+                // Create variables
+                for i in 0..var_count {
+                    let _ = engine.execute_cell(&format!("let var{} = {}", i, i));
+                }
+
+                let checkpoint = engine.create_checkpoint("test".to_string());
+                // Should have at least baseline + our variables
+                prop_assert!(checkpoint.variable_count() >= baseline + var_count);
+            }
+
+            #[test]
+            fn notebook_restore_recovers_all_variables(
+                var_name in "[a-z][a-z0-9]{0,8}",
+                value in 0i64..1000
+            ) {
+                let mut engine = NotebookEngine::new().unwrap();
+
+                // Set variable
+                let def = format!("let {} = {}", var_name, value);
+                if engine.execute_cell(&def).is_ok() {
+                    let checkpoint = engine.create_checkpoint("save".to_string());
+
+                    // Modify
+                    let _ = engine.execute_cell(&format!("{} = 9999", var_name));
+
+                    // Restore
+                    engine.restore_checkpoint(&checkpoint);
+
+                    // Should have original value
+                    if let Ok(result) = engine.execute_cell(&var_name) {
+                        prop_assert_eq!(result, value.to_string());
+                    }
+                }
+            }
+
+            #[test]
+            fn notebook_transaction_success_preserves_result(
+                value in 1i64..1000
+            ) {
+                let mut engine = NotebookEngine::new().unwrap();
+                let code = format!("{}", value);
+                let result = engine.execute_transaction(&code);
+
+                if result.is_success() {
+                    prop_assert_eq!(result.success_value(), Some(value.to_string()));
+                }
+            }
+
+            #[test]
+            fn notebook_transaction_failure_preserves_state(
+                initial_value in 0i64..100,
+                invalid_code in "[+\\-*/]{3,10}"
+            ) {
+                let mut engine = NotebookEngine::new().unwrap();
+
+                // Set initial state
+                if engine.execute_cell(&format!("let x = {}", initial_value)).is_ok() {
+                    // Transaction that will fail
+                    let result = engine.execute_transaction(&invalid_code);
+
+                    if result.is_rolled_back() {
+                        // Original state should be preserved
+                        if let Ok(value) = engine.execute_cell("x") {
+                            prop_assert_eq!(value, initial_value.to_string());
+                        }
+                    }
+                }
+            }
+
+            #[test]
+            fn notebook_checkpoint_names_are_preserved(
+                name in "[a-zA-Z0-9_]{1,20}"
+            ) {
+                let engine = NotebookEngine::new().unwrap();
+                let checkpoint = engine.create_checkpoint(name.clone());
+                prop_assert_eq!(checkpoint.name(), name);
+            }
+
+            #[test]
+            fn notebook_multiple_checkpoints_independent(
+                vars in prop::collection::vec(("[a-z]{1,5}", 0i64..100), 1..10)
+            ) {
+                let mut engine = NotebookEngine::new().unwrap();
+
+                for (name, value) in &vars {
+                    let _ = engine.execute_cell(&format!("let {} = {}", name, value));
+                }
+
+                let cp1 = engine.create_checkpoint("cp1".to_string());
+                let cp2 = engine.create_checkpoint("cp2".to_string());
+
+                // Both checkpoints should capture same state
+                prop_assert_eq!(cp1.name(), "cp1");
+                prop_assert_eq!(cp2.name(), "cp2");
+                // Variable counts should be identical since state hasn't changed
+                prop_assert_eq!(cp1.variable_count(), cp2.variable_count());
+            }
+
+            #[test]
+            fn notebook_restore_is_idempotent(
+                value in 1i64..100
+            ) {
+                let mut engine = NotebookEngine::new().unwrap();
+
+                if engine.execute_cell(&format!("let x = {}", value)).is_ok() {
+                    let checkpoint = engine.create_checkpoint("save".to_string());
+
+                    // Restore multiple times
+                    engine.restore_checkpoint(&checkpoint);
+                    engine.restore_checkpoint(&checkpoint);
+                    engine.restore_checkpoint(&checkpoint);
+
+                    // Should still have correct value
+                    if let Ok(result) = engine.execute_cell("x") {
+                        prop_assert_eq!(result, value.to_string());
+                    }
+                }
+            }
+
+            #[test]
+            fn notebook_transaction_never_panics(code: String) {
+                let mut engine = NotebookEngine::new().unwrap();
+                // Should never panic on any input
+                let _ = engine.execute_transaction(&code);
+            }
+
+            #[test]
+            fn notebook_checkpoint_timestamps_are_ordered(
+                delay_ms in 0u64..10
+            ) {
+                use std::thread;
+                use std::time::Duration;
+
+                let engine = NotebookEngine::new().unwrap();
+                let cp1 = engine.create_checkpoint("first".to_string());
+
+                thread::sleep(Duration::from_millis(delay_ms));
+
+                let cp2 = engine.create_checkpoint("second".to_string());
+
+                // Second checkpoint should be same or later
+                prop_assert!(cp2.timestamp() >= cp1.timestamp());
+            }
+
+            #[test]
+            fn notebook_transaction_consistent_with_direct_execution(
+                expr in "[0-9]{1,5}"
+            ) {
+                let mut engine1 = NotebookEngine::new().unwrap();
+                let mut engine2 = NotebookEngine::new().unwrap();
+
+                let direct_result = engine1.execute_cell(&expr);
+                let transaction_result = engine2.execute_transaction(&expr);
+
+                // Both should agree on success
+                if direct_result.is_ok() {
+                    prop_assert!(transaction_result.is_success());
+                    prop_assert_eq!(
+                        transaction_result.success_value(),
+                        direct_result.ok()
+                    );
                 }
             }
         }
