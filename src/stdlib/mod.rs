@@ -24,13 +24,17 @@
 
 pub mod env;
 pub mod fs;
-pub mod http;
 pub mod json;
 pub mod logging;
 pub mod path;
-pub mod process;
 pub mod regex;
 pub mod time;
+
+// HTTP and process modules require blocking I/O (not available in WASM)
+#[cfg(not(target_arch = "wasm32"))]
+pub mod http;
+#[cfg(not(target_arch = "wasm32"))]
+pub mod process;
 
 #[cfg(feature = "dataframe")]
 pub mod dataframe;
