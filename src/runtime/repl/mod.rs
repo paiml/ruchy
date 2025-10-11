@@ -56,6 +56,7 @@ impl Default for ReplConfig {
 }
 
 /// EXTREME Quality REPL with guaranteed <10 complexity per function
+#[derive(Debug)]
 pub struct Repl {
     /// Command registry for :commands
     commands: CommandRegistry,

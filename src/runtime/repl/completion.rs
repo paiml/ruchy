@@ -3,6 +3,7 @@
 //! Provides intelligent tab completion for commands, keywords, and variables.
 
 /// Tab completion engine for the REPL
+#[derive(Debug)]
 pub struct CompletionEngine {
     /// Built-in keywords to complete
     keywords: Vec<String>,

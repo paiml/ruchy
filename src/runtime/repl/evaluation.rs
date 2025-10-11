@@ -17,6 +17,7 @@ pub enum EvalResult {
 }
 
 /// Expression evaluator for the REPL
+#[derive(Debug)]
 pub struct Evaluator {
     /// Internal interpreter instance
     interpreter: Interpreter,

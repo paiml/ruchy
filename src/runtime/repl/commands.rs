@@ -29,6 +29,7 @@ pub struct CommandContext<'a> {
 }
 
 /// Registry of available commands
+#[derive(Debug)]
 pub struct CommandRegistry {
     // No dynamic storage needed for built-in commands
 }
