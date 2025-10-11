@@ -185,16 +185,40 @@
 - **Estimated**: 30-40h
 
 #### NOTEBOOK-008: MD Book (41 Chapters)
-- **Partially Done**: Structure exists in docs/notebook/book/
-- **Remaining**: 40 chapters to write (1 example complete)
-- **Each Chapter Needs**:
-  - Feature description
-  - Runnable code
-  - Expected output
-  - Test links
-  - Coverage reports
-  - Mutation scores
-- **Estimated**: 60-80h
+- **Status**: 🔄 IN PROGRESS (18/41 chapters complete - 44%)
+- **Commits**:
+  - `54e07046` - Chapters 12-13 (Functions, Arrays)
+  - `44579403` - Chapters 14-16 (Tuples, Objects, Structs)
+  - `ee1ad282` - Chapters 17-18 (String Interpolation, Methods)
+- **Completed Chapters**:
+  1. ✅ Introduction (644 lines)
+  2. ✅ Literals (352 lines)
+  3. ✅ Variables (352 lines)
+  4. ✅ Comments (420 lines)
+  5. ✅ Arithmetic Operators (482 lines)
+  6. ✅ Comparison Operators (508 lines)
+  7. ✅ Logical Operators (425 lines)
+  8. ✅ Bitwise Operators (472 lines)
+  9. ✅ If-Else (537 lines)
+  10. ✅ Match Expressions (664 lines)
+  11. ✅ For Loops (538 lines)
+  12. ✅ Function Definitions (275 lines)
+  13. ✅ Arrays (269 lines)
+  14. ✅ Tuples (356 lines)
+  15. ✅ Objects/Maps (507 lines)
+  16. ✅ Structs (570 lines)
+  17. ✅ String Interpolation (347 lines)
+  18. ✅ String Methods (574 lines)
+- **Total Documentation**: 8,292 lines written
+- **Remaining**: 23 chapters (56%)
+- **Each Chapter Includes**:
+  - Feature description with examples
+  - Expected outputs for every example
+  - Test coverage links
+  - Common patterns and algorithms
+  - Best practices
+  - Quality metrics (coverage, mutation scores)
+- **Estimated Remaining**: 40-50h
 
 ### Week 5-6: Deployment & Polish
 
@@ -215,7 +239,7 @@
 | **WASI Imports** | 0 | ✅ Validated (pure WASM) |
 | **All 41 Features Work** | 100% | 🔄 In Progress |
 | **E2E Tests** | 123 runs | ❌ Not started |
-| **MD Book** | 41 chapters | 🔄 1/41 complete |
+| **MD Book** | 41 chapters | 🔄 18/41 complete (44%) |
 
 ---
 
@@ -328,7 +352,7 @@ Adopted 3-level quality gates:
 
 ## 🎉 Conclusion
 
-**Phase 4 Progress**: 50% complete (3 weeks of 6-week plan)
+**Phase 4 Progress**: 55% complete (NOTEBOOK-008 at 44%)
 
 **Quality Status**: Exceptional
 - Every function ≤10 complexity
