@@ -185,7 +185,7 @@
 - **Estimated**: 30-40h
 
 #### NOTEBOOK-008: MD Book (41 Chapters)
-- **Status**: 🔄 IN PROGRESS (25/41 chapters complete - 61%)
+- **Status**: 🔄 IN PROGRESS (28/41 chapters complete - 68%)
 - **Commits**:
   - `54e07046` - Chapters 12-13 (Functions, Arrays)
   - `44579403` - Chapters 14-16 (Tuples, Objects, Structs)
@@ -193,6 +193,8 @@
   - `2965fd49` - Chapters 19-21 (Enums, Destructuring, Pattern Guards)
   - `4c194bf3` - Chapters 22-23 (Exhaustiveness, Try-Catch)
   - `7172cfca` - Chapters 24-25 (Option, Result)
+  - `0d5ee0b4` - Chapters 26-27 (Collections, Iterators)
+  - `57f43dff` - Chapter 28 (I/O)
 - **Completed Chapters**:
   1. ✅ Introduction (644 lines)
   2. ✅ Literals (352 lines)
@@ -219,8 +221,11 @@
   23. ✅ Try-Catch (248 lines)
   24. ✅ Option Type (361 lines)
   25. ✅ Result Type (430 lines)
-- **Total Documentation**: 10,809 lines written
-- **Remaining**: 16 chapters (39%)
+  26. ✅ Collections (332 lines)
+  27. ✅ Iterators (403 lines)
+  28. ✅ I/O Operations (339 lines)
+- **Total Documentation**: 11,883 lines written
+- **Remaining**: 13 chapters (32%)
 - **Each Chapter Includes**:
   - Feature description with examples
   - Expected outputs for every example
@@ -249,7 +254,7 @@
 | **WASI Imports** | 0 | ✅ Validated (pure WASM) |
 | **All 41 Features Work** | 100% | 🔄 In Progress |
 | **E2E Tests** | 123 runs | ❌ Not started |
-| **MD Book** | 41 chapters | 🔄 25/41 complete (61%) |
+| **MD Book** | 41 chapters | 🔄 28/41 complete (68%) |
 
 ---
 
@@ -362,7 +367,7 @@ Adopted 3-level quality gates:
 
 ## 🎉 Conclusion
 
-**Phase 4 Progress**: 60% complete (NOTEBOOK-008 at 61%)
+**Phase 4 Progress**: 65% complete (NOTEBOOK-008 at 68%)
 
 **Quality Status**: Exceptional
 - Every function ≤10 complexity
