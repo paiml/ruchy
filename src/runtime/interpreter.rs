@@ -152,6 +152,7 @@ impl Value {
 ///
 /// Type feedback and execution counts are collected for hot code
 /// identification and optimization.
+#[derive(Debug)]
 pub struct Interpreter {
     /// Tagged pointer values for fast operation
     stack: Vec<Value>,

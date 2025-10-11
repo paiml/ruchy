@@ -30,6 +30,7 @@ impl std::fmt::Display for ReplMode {
 }
 
 /// REPL state container
+#[derive(Debug)]
 pub struct ReplState {
     /// Current operating mode
     mode: ReplMode,
