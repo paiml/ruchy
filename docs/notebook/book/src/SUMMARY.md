@@ -54,21 +54,32 @@
   - [String Methods](./08-strings/02-methods.md)
   - [String Escaping](./08-strings/03-escaping.md)
 
-# Part 4: Standard Library (Features 31-41)
+# Part 4: Standard Library (Features 26-30)
 
 - [Standard Library](./09-stdlib/README.md)
-  - [File I/O (fs)](./09-stdlib/01-fs.md)
-  - [HTTP Client](./09-stdlib/02-http.md)
-  - [JSON](./09-stdlib/03-json.md)
-  - [Path Operations](./09-stdlib/04-path.md)
-  - [Environment](./09-stdlib/05-env.md)
-  - [Process](./09-stdlib/06-process.md)
-  - [Time](./09-stdlib/07-time.md)
-  - [Logging](./09-stdlib/08-logging.md)
-  - [Regex](./09-stdlib/09-regex.md)
-  - [DataFrames](./09-stdlib/10-dataframes.md)
+  - [Collections](./09-stdlib/01-collections.md)
+  - [Iterators](./09-stdlib/02-iterators.md)
+  - [I/O Operations](./09-stdlib/03-io.md)
+  - [Math Functions](./09-stdlib/04-math.md)
+  - [Time & Date](./09-stdlib/05-time.md)
 
-# Part 5: Quality Proof
+# Part 5: Advanced Features (Features 31-42)
+
+- [Advanced Features](./10-advanced/README.md)
+  - [Generics](./10-advanced/01-generics.md)
+  - [Traits](./10-advanced/02-traits.md)
+  - [Lifetimes](./10-advanced/03-lifetimes.md)
+  - [Async/Await](./10-advanced/04-async-await.md)
+  - [Futures](./10-advanced/05-futures.md)
+  - [Concurrency](./10-advanced/006-concurrency.md)
+  - [FFI & Unsafe](./10-advanced/007-ffi-unsafe.md)
+  - [Macros](./10-advanced/008-macros.md)
+  - [Metaprogramming](./10-advanced/009-metaprogramming.md)
+  - [Advanced Patterns](./10-advanced/10-advanced-patterns.md)
+  - [Optimization](./10-advanced/11-optimization.md)
+  - [Testing](./10-advanced/12-testing.md)
+
+# Part 6: Quality Proof
 
 - [Testing & Validation](./10-validation/README.md)
   - [Test Coverage Report](./10-validation/01-coverage.md)
