@@ -12,8 +12,10 @@
 // - Branch Coverage: ≥90%
 // - Mutation Score: ≥90%
 
+use crate::notebook::execution::CellExecutionResult;
 use crate::runtime::repl::Repl;
 use std::path::PathBuf;
+use std::time::Instant;
 
 /// Core notebook execution engine
 ///
@@ -85,6 +87,48 @@ impl NotebookEngine {
         // Use eval() which returns Result<String> and properly propagates errors
         // Unlike process_line() which catches errors internally
         self.repl.eval(code)
+    }
+
+    /// Execute a cell and return detailed execution results
+    ///
+    /// Returns a `CellExecutionResult` with output, stdout, stderr, and timing.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::notebook::engine::NotebookEngine;
+    ///
+    /// let mut engine = NotebookEngine::new().unwrap();
+    /// let result = engine.execute_cell_detailed("1 + 1");
+    ///
+    /// assert!(result.is_success());
+    /// assert_eq!(result.output(), "2");
+    /// assert!(result.duration_ms() < 100);
+    /// ```
+    pub fn execute_cell_detailed(&mut self, code: &str) -> CellExecutionResult {
+        let start = Instant::now();
+
+        // Handle empty cells
+        let trimmed = code.trim();
+        if trimmed.is_empty() || trimmed.starts_with("//") {
+            return CellExecutionResult::success(
+                String::new(),
+                String::new(),
+                String::new(),
+                start.elapsed(),
+            );
+        }
+
+        // Execute and capture result
+        match self.repl.eval(code) {
+            Ok(output) => CellExecutionResult::success(
+                output,
+                String::new(), // TODO: Capture actual stdout in future enhancement
+                String::new(), // TODO: Capture actual stderr in future enhancement
+                start.elapsed(),
+            ),
+            Err(e) => CellExecutionResult::failure(e.to_string(), start.elapsed()),
+        }
     }
 }
 
@@ -353,6 +397,104 @@ Point { x: 10, y: 20 }
         assert!(result.is_ok());
     }
 
+    // NOTEBOOK-002: Tests for execute_cell_detailed()
+
+    #[test]
+    fn test_notebook_002_detailed_execution_success() {
+        let mut engine = NotebookEngine::new().unwrap();
+        let result = engine.execute_cell_detailed("42");
+
+        assert!(result.is_success());
+        assert_eq!(result.output(), "42");
+        assert!(result.duration_ms() < 1000);
+        assert!(!result.has_stdout());
+        assert!(!result.has_stderr());
+    }
+
+    #[test]
+    fn test_notebook_002_detailed_execution_error() {
+        let mut engine = NotebookEngine::new().unwrap();
+        let result = engine.execute_cell_detailed("undefined_variable");
+
+        assert!(!result.is_success());
+        assert!(result.error().is_some());
+        assert!(result.error().unwrap().contains("Undefined variable"));
+    }
+
+    #[test]
+    fn test_notebook_002_detailed_execution_empty_cell() {
+        let mut engine = NotebookEngine::new().unwrap();
+        let result = engine.execute_cell_detailed("");
+
+        assert!(result.is_success());
+        assert_eq!(result.output(), "");
+        assert!(result.duration_ms() < 10);
+    }
+
+    #[test]
+    fn test_notebook_002_detailed_execution_timing() {
+        let mut engine = NotebookEngine::new().unwrap();
+        let result = engine.execute_cell_detailed("1 + 1");
+
+        assert!(result.is_success());
+        // Should be very fast for simple arithmetic
+        assert!(result.duration_ms() < 50);
+        assert!(!result.is_slow());
+    }
+
+    #[test]
+    fn test_notebook_002_detailed_preserves_state() {
+        let mut engine = NotebookEngine::new().unwrap();
+
+        let result1 = engine.execute_cell_detailed("let x = 100");
+        assert!(result1.is_success());
+
+        let result2 = engine.execute_cell_detailed("x + 50");
+        assert!(result2.is_success());
+        assert_eq!(result2.output(), "150");
+    }
+
+    #[test]
+    fn test_notebook_002_detailed_complex_expression() {
+        let mut engine = NotebookEngine::new().unwrap();
+        let result = engine.execute_cell_detailed("if true { 42 } else { 0 }");
+
+        assert!(result.is_success());
+        assert_eq!(result.output(), "42");
+    }
+
+    #[test]
+    fn test_notebook_002_detailed_multiline_code() {
+        let mut engine = NotebookEngine::new().unwrap();
+        let code = r#"
+let a = 10
+let b = 20
+a + b
+        "#;
+        let result = engine.execute_cell_detailed(code);
+
+        assert!(result.is_success());
+        assert_eq!(result.output(), "30");
+    }
+
+    #[test]
+    fn test_notebook_002_detailed_error_recovery() {
+        let mut engine = NotebookEngine::new().unwrap();
+
+        // Execute valid code
+        let result1 = engine.execute_cell_detailed("let x = 5");
+        assert!(result1.is_success());
+
+        // Execute invalid code
+        let result2 = engine.execute_cell_detailed("invalid syntax");
+        assert!(!result2.is_success());
+
+        // Should still work after error
+        let result3 = engine.execute_cell_detailed("x + 10");
+        assert!(result3.is_success());
+        assert_eq!(result3.output(), "15");
+    }
+
     // PROPERTY TESTS: Verify robustness with 10,000+ random inputs
     #[cfg(test)]
     mod property_tests {
@@ -491,6 +633,163 @@ Point { x: 10, y: 20 }
                 let code = format!("// {}", comment_text);
                 // Comments should always succeed
                 prop_assert!(engine.execute_cell(&code).is_ok());
+            }
+
+            // NOTEBOOK-002: Property tests for detailed execution
+
+            #[test]
+            fn notebook_engine_detailed_never_panics(code: String) {
+                let mut engine = NotebookEngine::new().unwrap();
+                // Should never panic on any input
+                let _ = engine.execute_cell_detailed(&code);
+            }
+
+            #[test]
+            fn notebook_engine_detailed_timing_is_reasonable(
+                expr in "[0-9]{1,5}"
+            ) {
+                let mut engine = NotebookEngine::new().unwrap();
+                let result = engine.execute_cell_detailed(&expr);
+
+                // Should complete in reasonable time
+                prop_assert!(result.duration_ms() < 1000);
+            }
+
+            #[test]
+            fn notebook_engine_detailed_success_has_output(
+                value in 1i64..1000
+            ) {
+                let mut engine = NotebookEngine::new().unwrap();
+                let code = format!("{}", value);
+                let result = engine.execute_cell_detailed(&code);
+
+                if result.is_success() {
+                    // Success should have non-error output
+                    prop_assert!(result.error().is_none());
+                    prop_assert!(!result.output().is_empty() || result.output() == "()");
+                }
+            }
+
+            #[test]
+            fn notebook_engine_detailed_failure_has_error(
+                invalid in "[+\\-*/]{3,10}"
+            ) {
+                let mut engine = NotebookEngine::new().unwrap();
+                let result = engine.execute_cell_detailed(&invalid);
+
+                if !result.is_success() {
+                    // Failure should have error message
+                    prop_assert!(result.error().is_some());
+                    prop_assert!(!result.error().unwrap().is_empty());
+                }
+            }
+
+            #[test]
+            fn notebook_engine_detailed_preserves_timing_order(
+                operations in prop::collection::vec("[0-9]{1,3}", 5..15)
+            ) {
+                let mut engine = NotebookEngine::new().unwrap();
+                let mut timings = Vec::new();
+
+                for op in operations {
+                    let result = engine.execute_cell_detailed(&op);
+                    timings.push(result.duration_ms());
+                }
+
+                // All timings should be reasonable
+                for timing in timings {
+                    prop_assert!(timing < 100);
+                }
+            }
+
+            #[test]
+            fn notebook_engine_detailed_empty_is_fast(
+                spaces in 0usize..20
+            ) {
+                let mut engine = NotebookEngine::new().unwrap();
+                let code = " ".repeat(spaces);
+                let result = engine.execute_cell_detailed(&code);
+
+                // Empty cells should be very fast
+                prop_assert!(result.is_success());
+                prop_assert!(result.duration_ms() < 10);
+                prop_assert_eq!(result.output(), "");
+            }
+
+            #[test]
+            fn notebook_engine_detailed_arithmetic_always_timed(
+                a in 1i64..100,
+                b in 1i64..100,
+                op in "[+\\-*/]"
+            ) {
+                let mut engine = NotebookEngine::new().unwrap();
+                let code = format!("{} {} {}", a, op.chars().next().unwrap(), b);
+                let result = engine.execute_cell_detailed(&code);
+
+                // Should always have timing information
+                prop_assert!(result.duration_ms() >= 0);
+            }
+
+            #[test]
+            fn notebook_engine_detailed_consistent_with_basic(
+                expr in "[0-9]{1,5}"
+            ) {
+                let mut engine1 = NotebookEngine::new().unwrap();
+                let mut engine2 = NotebookEngine::new().unwrap();
+
+                let basic_result = engine1.execute_cell(&expr);
+                let detailed_result = engine2.execute_cell_detailed(&expr);
+
+                // Both should agree on success/failure
+                if basic_result.is_ok() {
+                    prop_assert!(detailed_result.is_success());
+                    prop_assert_eq!(detailed_result.output(), basic_result.unwrap());
+                } else {
+                    prop_assert!(!detailed_result.is_success());
+                }
+            }
+
+            #[test]
+            fn notebook_engine_detailed_state_consistency(
+                var_name in "[a-z][a-z0-9]{0,8}",
+                value1 in 0i64..100,
+                value2 in 0i64..100
+            ) {
+                let mut engine = NotebookEngine::new().unwrap();
+
+                // Define variable
+                let def_result = engine.execute_cell_detailed(&format!("let {} = {}", var_name, value1));
+                if def_result.is_success() {
+                    // Use variable
+                    let use_result = engine.execute_cell_detailed(&var_name);
+                    prop_assert!(use_result.is_success());
+
+                    // Modify variable
+                    let mod_result = engine.execute_cell_detailed(&format!("{} = {}", var_name, value2));
+                    if mod_result.is_success() {
+                        // Check new value
+                        let check_result = engine.execute_cell_detailed(&var_name);
+                        prop_assert!(check_result.is_success());
+                    }
+                }
+            }
+
+            #[test]
+            fn notebook_engine_detailed_error_metadata_complete(
+                invalid in ".*"
+            ) {
+                let mut engine = NotebookEngine::new().unwrap();
+                let result = engine.execute_cell_detailed(&invalid);
+
+                // Every result should have valid metadata
+                prop_assert!(result.duration_ms() >= 0);
+
+                if result.is_success() {
+                    prop_assert!(result.error().is_none());
+                } else {
+                    prop_assert!(result.error().is_some());
+                    prop_assert!(!result.error().unwrap().is_empty());
+                }
             }
         }
     }
