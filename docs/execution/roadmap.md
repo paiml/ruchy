@@ -3108,17 +3108,25 @@ Based on deep_context.md analysis, these functions exceed complexity limits:
   - Fix: Extract aggregation helpers, create operation strategy pattern
   - Impact: Reduces 17 violations, improves dataframe maintainability
 
-- [ ] **QUALITY-023**: Pattern matching refactoring (15 hours)
+- [x] **QUALITY-023**: Pattern matching refactoring (VERIFIED COMPLETE - 2025-10-11)
   - Files: `src/runtime/eval_pattern*.rs`
-  - Issue: 18 complexity violations in pattern matching
-  - Fix: Create pattern-specific modules, extract match helpers
-  - Impact: Reduces 18 violations, improves match clarity
+  - Status: ✅ All functions CC ≤10 (eval_pattern.rs: CC ≤9, pattern_matching.rs: CC ≤9, eval_pattern_match.rs: CC ≤10)
+  - Evidence: Manual inspection found ZERO violations over Toyota Way limit (CC >10)
+  - Original claim of "18 violations" was outdated/incorrect
+  - Impact: No work needed, refactoring already complete
 
-- [ ] **QUALITY-024**: Remove dead code modules (40 hours)
-  - Files: `eval_method_dispatch.rs` (75% dead), `eval_control_flow_new.rs` (60% dead)
-  - Issue: Incomplete integration leaving dead code
-  - Fix: Complete integration OR remove dead functions
-  - Impact: Removes ~400 lines of dead code, clarifies module purpose
+- [ ] **QUALITY-024**: Remove unused control flow modules (4 hours - revised 2025-10-11)
+  - Files: `eval_control_flow.rs` (467 LOC), `eval_control_flow_new.rs` (718 LOC)
+  - Status: ✅ BOTH modules are UNUSED - interpreter has inline control flow evaluation
+  - Finding: eval_control_flow_new.rs is COMPLETED TDD refactoring (CC ≤10, comprehensive tests)
+  - Tests: control_flow_refactor_tdd.rs (16 tests + property tests) in disabled test directory
+  - Original goal: Reduce complexity 25→≤10 (eval_match), 16→≤10 (eval_while) - **ACHIEVED**
+  - Options:
+    A. Remove both modules (~1,200 LOC) - simplest path (4 hours)
+    B. Complete integration into interpreter (40 hours - replace inline code)
+    C. Keep as alternate API for external consumers (0 hours - document as library API)
+  - Recommendation: Option A (remove) - interpreter's inline implementation works fine
+  - Note: eval_method_dispatch.rs is NOT dead (actively used in interpreter.rs:3953)
 
 - [ ] **QUALITY-025**: Data transformation pipeline (20 hours)
   - Files: Distributed transformation code
