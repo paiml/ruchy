@@ -1,0 +1,31 @@
+[book]
+title = "Ruchy Notebook - Language Proof"
+authors = ["Noah Gift"]
+description = "Step-by-step empirical proof that all 41 Ruchy language features work in the notebook"
+language = "en"
+multilingual = false
+src = "src"
+
+[build]
+build-dir = "book"
+create-missing = true
+
+[output.html]
+default-theme = "rust"
+preferred-dark-theme = "navy"
+git-repository-url = "https://github.com/paiml/ruchy"
+git-repository-icon = "fa-github"
+
+[output.html.playground]
+editable = true
+copyable = true
+line-numbers = true
+
+[output.html.search]
+enable = true
+limit-results = 30
+use-boolean-and = true
+
+[preprocessor.index]
+
+[preprocessor.links]
