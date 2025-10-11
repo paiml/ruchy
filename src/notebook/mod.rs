@@ -1,10 +1,12 @@
 pub mod engine;
 pub mod execution;
+pub mod persistence;
 pub mod server;
 #[cfg(feature = "notebook")]
 pub mod testing;
 pub use engine::NotebookEngine;
 pub use execution::CellExecutionResult;
+pub use persistence::{Checkpoint, TransactionResult};
 pub use server::start_server;
 
 #[cfg(test)]
