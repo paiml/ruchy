@@ -209,7 +209,7 @@ pub fn columns(df: &DataFrame) -> Result<Vec<String>, String> {
     Ok(df
         .get_column_names_owned()
         .iter()
-        .map(|s| s.to_string())
+        .map(polars::prelude::PlSmallStr::to_string)
         .collect())
 }
 

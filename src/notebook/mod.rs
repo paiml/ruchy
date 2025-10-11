@@ -1,3 +1,4 @@
+pub mod dataframe;
 pub mod engine;
 pub mod execution;
 pub mod html;
@@ -5,6 +6,7 @@ pub mod persistence;
 pub mod server;
 #[cfg(feature = "notebook")]
 pub mod testing;
+pub use dataframe::{ColumnType, DataFrame};
 pub use engine::NotebookEngine;
 pub use execution::CellExecutionResult;
 pub use html::{html_escape, HtmlFormatter};
