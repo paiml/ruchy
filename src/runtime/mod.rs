@@ -77,7 +77,6 @@ pub mod builtins;
 pub mod compilation; // EXTREME TDD: Direct-threaded interpreter compilation
 pub mod eval_array;
 pub mod eval_builtin;
-pub mod eval_control_flow;
 pub mod eval_control_flow_new;
 pub mod eval_data_structures;
 pub mod eval_dataframe;
@@ -99,7 +98,6 @@ pub mod eval_string_methods;
 pub mod eval_try_catch; // EXTREME TDD: Try/catch error handling
 pub mod gc;
 pub mod gc_impl; // EXTREME TDD: Full GC implementation with tests
-pub mod transformation;
 pub mod validation;
 // pub mod interpreter_modules;  // Temporarily disabled - compilation errors
 pub mod lazy;
