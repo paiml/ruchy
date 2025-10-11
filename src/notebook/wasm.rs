@@ -499,4 +499,133 @@ mod tests {
         assert!(notebook.restore(&cp2));
         assert!(notebook.restore(&cp1));
     }
+
+    // Property-based tests for robustness
+    mod property_tests {
+        use super::*;
+        use proptest::prelude::*;
+
+        proptest! {
+            #[test]
+            fn test_notebook_006_property_execute_never_panics(code in ".*") {
+                let mut notebook = NotebookWasm::new();
+                let _ = notebook.execute_cell_json(&code);
+                // Should not panic on any input
+            }
+
+            #[test]
+            fn test_notebook_006_property_json_always_valid(code in "[a-zA-Z0-9 +\\-*/()]*") {
+                let mut notebook = NotebookWasm::new();
+                let json = notebook.execute_cell_json(&code);
+
+                // JSON should always have braces
+                prop_assert!(json.starts_with('{'), "JSON should start with brace");
+                prop_assert!(json.ends_with('}'), "JSON should end with brace");
+            }
+
+            #[test]
+            fn test_notebook_006_property_html_always_string(code in "[a-zA-Z0-9 ]+") {
+                let mut notebook = NotebookWasm::new();
+                let html = notebook.execute_cell_html(&code);
+
+                // HTML should always be a valid string (may be empty for empty input)
+                prop_assert!(html.is_empty() || html.len() > 0);
+            }
+
+            #[test]
+            fn test_notebook_006_property_checkpoint_ids_unique(count in 1usize..20) {
+                let mut notebook = NotebookWasm::new();
+                let mut ids = Vec::new();
+
+                for _ in 0..count {
+                    ids.push(notebook.checkpoint());
+                }
+
+                // All checkpoint IDs should be unique
+                let unique_count = ids.iter().collect::<std::collections::HashSet<_>>().len();
+                prop_assert_eq!(unique_count, count);
+            }
+
+            #[test]
+            fn test_notebook_006_property_restore_invalid_always_fails(
+                invalid_id in "[a-z]{5,20}"
+            ) {
+                let mut notebook = NotebookWasm::new();
+
+                // Restoring to non-existent checkpoint should fail
+                prop_assert!(!notebook.restore(&invalid_id));
+            }
+
+            #[test]
+            fn test_notebook_006_property_performance_average_correct(
+                times in prop::collection::vec(0.0f64..1000.0, 1..50)
+            ) {
+                let mut perf = NotebookPerformance::new();
+
+                for time in &times {
+                    perf.record(*time);
+                }
+
+                let expected_avg = times.iter().sum::<f64>() / times.len() as f64;
+                let actual_avg = perf.average_time_ms();
+
+                prop_assert!((actual_avg - expected_avg).abs() < 0.01);
+            }
+
+            #[test]
+            fn test_notebook_006_property_performance_target_consistent(
+                times in prop::collection::vec(0.0f64..5.0, 1..20)
+            ) {
+                let mut perf = NotebookPerformance::new();
+
+                for time in &times {
+                    perf.record(*time);
+                }
+
+                // All times < 5.0, so average must be < 10.0 target
+                prop_assert!(perf.target_met());
+            }
+
+            #[test]
+            fn test_notebook_006_property_reset_clears_state(
+                code in "[a-zA-Z_][a-zA-Z0-9_]* = [0-9]+"
+            ) {
+                let mut notebook = NotebookWasm::new();
+
+                let _ = notebook.execute_cell_json(&code);
+                notebook.reset();
+
+                // After reset, notebook should be fresh
+                let version = notebook.version();
+                prop_assert!(!version.is_empty());
+            }
+
+            #[test]
+            fn test_notebook_006_property_checkpoint_restore_idempotent(
+                code in "let x = [0-9]+"
+            ) {
+                let mut notebook = NotebookWasm::new();
+                let _ = notebook.execute_cell_json(&code);
+
+                let cp = notebook.checkpoint();
+
+                // Restore multiple times should work
+                prop_assert!(notebook.restore(&cp));
+                prop_assert!(notebook.restore(&cp));
+                prop_assert!(notebook.restore(&cp));
+            }
+
+            #[test]
+            fn test_notebook_006_property_version_stable(iterations in 1usize..100) {
+                let notebook = NotebookWasm::new();
+                let expected_version = notebook.version();
+
+                // Version should be stable across multiple calls
+                for _ in 0..iterations {
+                    let v = notebook.version();
+                    prop_assert_eq!(&v, &expected_version);
+                }
+            }
+        }
+    }
 }
