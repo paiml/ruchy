@@ -185,11 +185,14 @@
 - **Estimated**: 30-40h
 
 #### NOTEBOOK-008: MD Book (41 Chapters)
-- **Status**: 🔄 IN PROGRESS (18/41 chapters complete - 44%)
+- **Status**: 🔄 IN PROGRESS (25/41 chapters complete - 61%)
 - **Commits**:
   - `54e07046` - Chapters 12-13 (Functions, Arrays)
   - `44579403` - Chapters 14-16 (Tuples, Objects, Structs)
   - `ee1ad282` - Chapters 17-18 (String Interpolation, Methods)
+  - `2965fd49` - Chapters 19-21 (Enums, Destructuring, Pattern Guards)
+  - `4c194bf3` - Chapters 22-23 (Exhaustiveness, Try-Catch)
+  - `7172cfca` - Chapters 24-25 (Option, Result)
 - **Completed Chapters**:
   1. ✅ Introduction (644 lines)
   2. ✅ Literals (352 lines)
@@ -209,8 +212,15 @@
   16. ✅ Structs (570 lines)
   17. ✅ String Interpolation (347 lines)
   18. ✅ String Methods (574 lines)
-- **Total Documentation**: 8,292 lines written
-- **Remaining**: 23 chapters (56%)
+  19. ✅ Enums (518 lines)
+  20. ✅ Destructuring (427 lines)
+  21. ✅ Pattern Guards (291 lines)
+  22. ✅ Exhaustiveness Checking (242 lines)
+  23. ✅ Try-Catch (248 lines)
+  24. ✅ Option Type (361 lines)
+  25. ✅ Result Type (430 lines)
+- **Total Documentation**: 10,809 lines written
+- **Remaining**: 16 chapters (39%)
 - **Each Chapter Includes**:
   - Feature description with examples
   - Expected outputs for every example
@@ -239,7 +249,7 @@
 | **WASI Imports** | 0 | ✅ Validated (pure WASM) |
 | **All 41 Features Work** | 100% | 🔄 In Progress |
 | **E2E Tests** | 123 runs | ❌ Not started |
-| **MD Book** | 41 chapters | 🔄 18/41 complete (44%) |
+| **MD Book** | 41 chapters | 🔄 25/41 complete (61%) |
 
 ---
 
@@ -352,7 +362,7 @@ Adopted 3-level quality gates:
 
 ## 🎉 Conclusion
 
-**Phase 4 Progress**: 55% complete (NOTEBOOK-008 at 44%)
+**Phase 4 Progress**: 60% complete (NOTEBOOK-008 at 61%)
 
 **Quality Status**: Exceptional
 - Every function ≤10 complexity
