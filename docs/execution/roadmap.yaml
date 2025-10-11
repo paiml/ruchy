@@ -324,63 +324,71 @@ quality_refactoring:
 
   - id: "QUALITY-024"
     title: "Remove unused control flow modules"
-    status: "PENDING"
+    status: "CORRECTED"
     revised_date: "2025-10-11"
-    time_estimated: "4h"
+    correction_date: "2025-10-11"
+    time_estimated: "1h"
     effort_options:
-      - name: "Option A: Remove both modules"
-        effort_hours: 4
-        loc_removed: 1185
-        files: ["eval_control_flow.rs (467 LOC)", "eval_control_flow_new.rs (718 LOC)"]
-        impact: "Eliminate dead code, reduce maintenance burden"
+      - name: "Option A: Remove eval_control_flow.rs only"
+        effort_hours: 1
+        loc_removed: 467
+        files: ["eval_control_flow.rs (467 LOC)"]
+        impact: "Eliminate dead code, keep TDD-refactored module"
         recommendation: true
-      - name: "Option B: Integrate eval_control_flow_new.rs"
-        effort_hours: 40
-        loc_integrated: 718
-        benefits: "Use TDD-refactored low-complexity implementation"
-        challenges: "Extensive testing required for integration"
-        recommendation: false
-      - name: "Option C: Keep as experimental API"
+      - name: "Option B: Keep as experimental API"
         effort_hours: 0
-        rationale: "Preserve completed TDD work for potential future use"
         tradeoff: "Accumulates technical debt"
         recommendation: false
     files:
       eval_control_flow:
         path: "src/runtime/eval_control_flow.rs"
         lines: 467
-        status: "UNUSED"
+        status: "UNUSED (dead code)"
         style: "Struct-based with EnvironmentOps trait"
         complexity: "CC ≤8"
         tests: "Exist but disabled in tests_temp_disabled_for_sprint7_mutation/"
+        usage_count: 0
       eval_control_flow_new:
         path: "src/runtime/eval_control_flow_new.rs"
         lines: 718
-        status: "UNUSED"
+        status: "✅ ACTIVELY USED"
         style: "Functional with helper delegation"
         complexity: "CC ≤8 (reduced from 25→≤10 for eval_match, 16→≤10 for eval_while)"
         tests: "Comprehensive - 16 tests + property tests in control_flow_refactor_tdd.rs"
-        quality: "✅ COMPLETED TDD refactoring, goals achieved"
+        quality: "✅ COMPLETED TDD refactoring, goals achieved, IN PRODUCTION"
+        usage_count: 7
+        used_by: "interpreter.rs (7 function calls)"
+        functions_used:
+          - "eval_if_expr (line 1993)"
+          - "eval_return_expr (line 2021)"
+          - "eval_list_expr (line 2026)"
+          - "eval_array_init_expr (line 2035)"
+          - "eval_block_expr (line 2042)"
+          - "eval_tuple_expr (line 2047)"
+          - "eval_range_expr (line 2084)"
       eval_method_dispatch:
         path: "src/runtime/eval_method_dispatch.rs"
         status: "ACTIVELY USED"
         usage: "interpreter.rs:3953 (eval_object_method)"
         finding: "❌ Original claim '75% dead' was INCORRECT"
     findings:
-      - "✅ BOTH control flow modules are UNUSED"
-      - "✅ Interpreter has inline control flow implementation"
+      - "❌ CORRECTED: eval_control_flow.rs is UNUSED (0 usages)"
+      - "✅ CORRECTED: eval_control_flow_new.rs is ACTIVELY USED (7 usages in interpreter.rs)"
+      - "✅ eval_control_flow_new.rs is the TDD-refactored version already in production"
       - "✅ eval_control_flow_new.rs achieved complexity goals (25→≤10, 16→≤10)"
       - "✅ Comprehensive test suite exists (16 tests + property tests)"
-      - "❌ eval_method_dispatch.rs is NOT dead (actively used in interpreter.rs:3953)"
-      - "❌ Original roadmap claims were inaccurate"
+      - "✅ eval_method_dispatch.rs is ACTIVELY USED (not 75% dead)"
+      - "❌ Original analysis ERROR: Used fully-qualified paths, not 'use' imports"
     verification:
-      method: "Grep search for usage patterns across codebase"
+      method: "Grep search for fully-qualified function calls"
       date: "2025-10-11"
       commands:
-        - "rg 'use.*eval_control_flow' src/"
-        - "rg 'use.*eval_method_dispatch' src/"
-      evidence: "Only disabled test files reference control flow modules"
-    recommendation: "Option A - Remove both unused control flow modules (~1,200 LOC)"
+        - "rg 'crate::runtime::eval_control_flow::' src/ (0 results)"
+        - "rg 'crate::runtime::eval_control_flow_new::' src/ (7 results in interpreter.rs)"
+        - "rg 'use.*eval_method_dispatch' src/ (1 result: interpreter.rs)"
+      evidence: "eval_control_flow_new IS used via fully-qualified paths"
+      error_analysis: "Initial grep searched for 'use' imports, missed fully-qualified calls"
+    recommendation: "Option A - Remove eval_control_flow.rs only (467 LOC dead code)"
 
   - id: "QUALITY-025"
     title: "Data transformation pipeline duplication"
