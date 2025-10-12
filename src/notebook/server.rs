@@ -33,6 +33,32 @@ struct RenderMarkdownResponse {
     error: Option<String>,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+struct LoadNotebookRequest {
+    path: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct LoadNotebookResponse {
+    notebook: crate::notebook::types::Notebook,
+    success: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    error: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct SaveNotebookRequest {
+    path: String,
+    notebook: crate::notebook::types::Notebook,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct SaveNotebookResponse {
+    success: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    error: Option<String>,
+}
+
 async fn health() -> &'static str {
     "OK"
 }
@@ -156,6 +182,56 @@ async fn render_markdown_handler(
     })
 }
 
+async fn load_notebook_handler(
+    Json(request): Json<LoadNotebookRequest>,
+) -> Json<LoadNotebookResponse> {
+    use crate::notebook::types::Notebook;
+    use std::fs;
+
+    match fs::read_to_string(&request.path) {
+        Ok(content) => match serde_json::from_str::<Notebook>(&content) {
+            Ok(notebook) => Json(LoadNotebookResponse {
+                notebook,
+                success: true,
+                error: None,
+            }),
+            Err(e) => Json(LoadNotebookResponse {
+                notebook: Notebook::new(),
+                success: false,
+                error: Some(format!("Failed to parse notebook: {e}")),
+            }),
+        },
+        Err(e) => Json(LoadNotebookResponse {
+            notebook: Notebook::new(),
+            success: false,
+            error: Some(format!("Failed to read file: {e}")),
+        }),
+    }
+}
+
+async fn save_notebook_handler(
+    Json(request): Json<SaveNotebookRequest>,
+) -> Json<SaveNotebookResponse> {
+    use std::fs;
+
+    match serde_json::to_string_pretty(&request.notebook) {
+        Ok(json) => match fs::write(&request.path, json) {
+            Ok(()) => Json(SaveNotebookResponse {
+                success: true,
+                error: None,
+            }),
+            Err(e) => Json(SaveNotebookResponse {
+                success: false,
+                error: Some(format!("Failed to write file: {e}")),
+            }),
+        },
+        Err(e) => Json(SaveNotebookResponse {
+            success: false,
+            error: Some(format!("Failed to serialize notebook: {e}")),
+        }),
+    }
+}
+
 /// Start the notebook server on the specified port
 ///
 /// # Examples
@@ -174,6 +250,8 @@ pub async fn start_server(port: u16) -> Result<(), Box<dyn std::error::Error>> {
         .route("/", get(serve_notebook))
         .route("/api/execute", post(execute_handler))
         .route("/api/render-markdown", post(render_markdown_handler))
+        .route("/api/notebook/load", post(load_notebook_handler))
+        .route("/api/notebook/save", post(save_notebook_handler))
         .route("/health", get(health));
     println!("🔧 TDD DEBUG: Creating app with /api/execute route");
     println!("🔧 TDD DEBUG: app created, binding to addr");
@@ -595,5 +673,112 @@ mod tests {
         let html = markdown_to_html("- item 1\n- item 2");
         assert!(html.contains("<ul>"));
         assert!(html.contains("<li>"));
+    }
+
+    // NOTEBOOK-009 Phase 4: File loading/saving tests (RED → GREEN → REFACTOR)
+
+    #[tokio::test]
+    async fn test_load_notebook_valid_file() {
+        use crate::notebook::types::{Cell, Notebook};
+        use std::fs;
+        use tempfile::NamedTempFile;
+
+        // Create a temporary .rnb file
+        let mut temp_file = NamedTempFile::new().unwrap();
+        let mut notebook = Notebook::new();
+        notebook.add_cell(Cell::markdown("# Hello"));
+        notebook.add_cell(Cell::code("println(42)"));
+
+        let json = serde_json::to_string_pretty(&notebook).unwrap();
+        std::io::Write::write_all(&mut temp_file, json.as_bytes()).unwrap();
+        let path = temp_file.path().to_str().unwrap().to_string();
+
+        let app = Router::new().route("/api/notebook/load", post(load_notebook_handler));
+
+        let request_body = LoadNotebookRequest { path };
+
+        let request = Request::builder()
+            .uri("/api/notebook/load")
+            .method("POST")
+            .header("content-type", "application/json")
+            .body(Body::from(serde_json::to_string(&request_body).unwrap()))
+            .unwrap();
+
+        let response = app.oneshot(request).await.unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let body_bytes = axum::body::to_bytes(response.into_body(), usize::MAX)
+            .await
+            .unwrap();
+        let response_data: LoadNotebookResponse = serde_json::from_slice(&body_bytes).unwrap();
+
+        // RED TEST: This will fail because handler is stubbed
+        assert!(response_data.success, "Expected success=true");
+        assert_eq!(response_data.notebook.cells.len(), 2);
+        assert!(response_data.notebook.cells[0].is_markdown());
+        assert!(response_data.notebook.cells[1].is_code());
+    }
+
+    #[tokio::test]
+    async fn test_load_notebook_invalid_path() {
+        let app = Router::new().route("/api/notebook/load", post(load_notebook_handler));
+
+        let request_body = LoadNotebookRequest {
+            path: "/nonexistent/file.rnb".to_string(),
+        };
+
+        let request = Request::builder()
+            .uri("/api/notebook/load")
+            .method("POST")
+            .header("content-type", "application/json")
+            .body(Body::from(serde_json::to_string(&request_body).unwrap()))
+            .unwrap();
+
+        let response = app.oneshot(request).await.unwrap();
+        let body_bytes = axum::body::to_bytes(response.into_body(), usize::MAX)
+            .await
+            .unwrap();
+        let response_data: LoadNotebookResponse = serde_json::from_slice(&body_bytes).unwrap();
+
+        assert!(!response_data.success);
+        assert!(response_data.error.is_some());
+    }
+
+    #[tokio::test]
+    async fn test_save_notebook() {
+        use crate::notebook::types::{Cell, Notebook};
+        use tempfile::tempdir;
+
+        let temp_dir = tempdir().unwrap();
+        let file_path = temp_dir.path().join("test.rnb");
+        let path = file_path.to_str().unwrap().to_string();
+
+        let mut notebook = Notebook::new();
+        notebook.add_cell(Cell::markdown("# Test"));
+        notebook.add_cell(Cell::code("2 + 2"));
+
+        let app = Router::new().route("/api/notebook/save", post(save_notebook_handler));
+
+        let request_body = SaveNotebookRequest {
+            path: path.clone(),
+            notebook,
+        };
+
+        let request = Request::builder()
+            .uri("/api/notebook/save")
+            .method("POST")
+            .header("content-type", "application/json")
+            .body(Body::from(serde_json::to_string(&request_body).unwrap()))
+            .unwrap();
+
+        let response = app.oneshot(request).await.unwrap();
+        let body_bytes = axum::body::to_bytes(response.into_body(), usize::MAX)
+            .await
+            .unwrap();
+        let response_data: SaveNotebookResponse = serde_json::from_slice(&body_bytes).unwrap();
+
+        // RED TEST: This will fail because handler is stubbed
+        assert!(response_data.success, "Expected success=true");
+        assert!(file_path.exists(), "File should be created");
     }
 }
