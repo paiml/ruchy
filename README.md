@@ -192,9 +192,16 @@ plot(df.x, df.y, kind="scatter", title="Analysis")
 - `ruchy wasm run <module>` - Execute WASM module
 
 ### Notebook
-- `ruchy notebook serve` - Start notebook server
+- `ruchy notebook` - Start interactive notebook server on http://localhost:8080
 - `ruchy notebook test <file>` - Test notebook with coverage
 - `ruchy notebook convert <input> <output>` - Convert notebook format
+
+**Notebook Features (v3.75.0+)**:
+- **State Persistence**: Variables and functions persist across cell executions (SharedRepl)
+- **Thread-Safe**: Arc-based concurrent access with Mutex synchronization
+- **Markdown Support**: Full markdown rendering with XSS protection
+- **Load/Save**: JSON-based `.rnb` notebook format
+- **API Access**: RESTful API at `/api/execute`, `/api/render-markdown`, `/api/notebook/load`, `/api/notebook/save`
 
 ### Testing
 - `ruchy test run <path>` - Run tests with optional coverage
@@ -226,6 +233,8 @@ This project follows strict quality engineering practices:
 - **Zero Technical Debt**: No TODO/FIXME comments allowed
 - **PMAT A+ Grade**: Enforced via automated quality gates
 - **TDD Practice**: Test-first development methodology
+- **Thread-Safety**: Arc-based concurrency, property-tested with 10K+ iterations (v3.75.0+)
+- **E2E Testing**: 21/21 Playwright tests enforced via pre-commit hooks
 
 ### Mutation Testing Strategy
 
