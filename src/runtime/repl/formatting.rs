@@ -17,7 +17,7 @@ pub fn format_ast(ast: &str) -> String {
 mod tests {
     use super::*;
     use crate::runtime::Value;
-    use std::rc::Rc;
+    use std::sync::Arc;
 
     #[test]
     fn test_format_integer() {
@@ -45,7 +45,7 @@ mod tests {
 
     #[test]
     fn test_format_array() {
-        let value = Value::Array(Rc::from(vec![
+        let value = Value::Array(Arc::from(vec![
             Value::Integer(1),
             Value::Integer(2),
             Value::Integer(3),
@@ -55,7 +55,7 @@ mod tests {
 
     #[test]
     fn test_format_tuple() {
-        let value = Value::Tuple(Rc::from(vec![
+        let value = Value::Tuple(Arc::from(vec![
             Value::Integer(1),
             Value::from_string("test".to_string()),
         ]));

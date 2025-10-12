@@ -157,7 +157,7 @@ pub fn format_value_for_display(value: &Value) -> String {
 mod tests {
     use super::*;
     use crate::frontend::ast::{ExprKind, Literal, Span};
-    use std::rc::Rc;
+    use std::sync::Arc;
 
     #[test]
     fn test_format_value_with_spec() {
@@ -196,10 +196,10 @@ mod tests {
         let string_val = Value::from_string("hello".to_string());
         assert_eq!(format_value_for_display(&string_val), "\"hello\"");
 
-        let array_val = Value::Array(Rc::from(vec![Value::Integer(1), Value::Integer(2)]));
+        let array_val = Value::Array(Arc::from(vec![Value::Integer(1), Value::Integer(2)]));
         assert_eq!(format_value_for_display(&array_val), "[1, 2]");
 
-        let tuple_val = Value::Tuple(Rc::from(vec![
+        let tuple_val = Value::Tuple(Arc::from(vec![
             Value::Integer(1),
             Value::from_string("test".to_string()),
         ]));
@@ -230,7 +230,7 @@ mod tests {
 #[cfg(test)]
 mod mutation_tests {
     use super::*;
-    use std::rc::Rc;
+    use std::sync::Arc;
 
     #[test]
     fn test_format_value_with_spec_integer_match_arm() {
@@ -246,7 +246,7 @@ mod mutation_tests {
     #[test]
     fn test_format_value_for_display_tuple_match_arm() {
         // MISSED: delete match arm Value::Tuple(elements) in format_value_for_display (line 141)
-        let tuple = Value::Tuple(Rc::from(vec![
+        let tuple = Value::Tuple(Arc::from(vec![
             Value::Integer(1),
             Value::from_string("test".to_string()),
         ]));
@@ -269,7 +269,7 @@ mod mutation_tests {
 
         let mut map = HashMap::new();
         map.insert("key".to_string(), Value::Integer(42));
-        let obj = Value::Object(Rc::new(map));
+        let obj = Value::Object(Arc::new(map));
 
         let result = format_value_for_display(&obj);
         assert!(result.starts_with('{'), "Object should format with braces");

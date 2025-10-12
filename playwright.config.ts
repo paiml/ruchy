@@ -62,12 +62,24 @@ export default defineConfig({
     },
   ],
 
-  // Run local dev server before starting the tests
-  webServer: {
-    command: 'python3 -m http.server 8000',
-    url: 'http://localhost:8000',
-    reuseExistingServer: !process.env.CI,
-    stdout: 'ignore',
-    stderr: 'pipe',
-  },
+  // Run local dev servers before starting the tests
+  webServer: [
+    // Python HTTP server for WASM files
+    {
+      command: 'python3 -m http.server 8000',
+      url: 'http://localhost:8000',
+      reuseExistingServer: !process.env.CI,
+      stdout: 'ignore',
+      stderr: 'pipe',
+    },
+    // Ruchy notebook server for notebook tests
+    {
+      command: 'cargo run --bin ruchy notebook',
+      url: 'http://localhost:8080/health',
+      reuseExistingServer: !process.env.CI,
+      stdout: 'ignore',
+      stderr: 'pipe',
+      timeout: 30 * 1000,  // 30 seconds for Rust compile + server start
+    },
+  ],
 });

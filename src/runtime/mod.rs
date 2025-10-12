@@ -178,7 +178,7 @@ pub use replay_converter::{ConversionConfig, GeneratedTest, ReplayConverter, Tes
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::rc::Rc;
+    use std::sync::Arc;
 
     // Sprint 4: Comprehensive runtime tests for coverage improvement
 
@@ -362,7 +362,7 @@ mod tests {
 
     #[test]
     fn test_value_list() {
-        let list = Value::Array(Rc::from(
+        let list = Value::Array(Arc::from(
             vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)].as_slice(),
         ));
         assert_eq!(list.to_string(), "[1, 2, 3]");
@@ -373,7 +373,7 @@ mod tests {
 
     #[test]
     fn test_value_tuple() {
-        let tuple = Value::Tuple(Rc::from(
+        let tuple = Value::Tuple(Arc::from(
             vec![Value::Integer(1), Value::from_string("test".to_string())].as_slice(),
         ));
         assert_eq!(tuple.to_string(), "(1, \"test\")");

@@ -1062,10 +1062,10 @@ mod tests {
     #[test]
     fn test_value_operations() {
         use crate::runtime::Value;
-        use std::rc::Rc;
+        use std::sync::Arc;
 
         let v1 = Value::Integer(42);
-        let v2 = Value::String(Rc::from("test"));
+        let v2 = Value::String(Arc::from("test"));
         let v3 = Value::Bool(true);
         let v4 = Value::Nil;
 

@@ -2,9 +2,8 @@
 //! All functions maintain ≤10 complexity budget following Toyota Way
 
 use super::{InterpreterError, Value};
-use std::cell::RefCell;
 use std::collections::HashMap;
-use std::rc::Rc;
+use std::sync::{Arc, Mutex};
 
 /// Check if value is a mutable object
 /// Complexity: 1
@@ -44,7 +43,7 @@ pub fn is_object(value: &Value) -> bool {
 pub fn get_object_field(value: &Value, field: &str) -> Option<Value> {
     match value {
         Value::Object(map) => map.get(field).cloned(),
-        Value::ObjectMut(cell) => cell.borrow().get(field).cloned(),
+        Value::ObjectMut(cell) => cell.lock().unwrap().get(field).cloned(),
         _ => None,
     }
 }
@@ -82,7 +81,7 @@ pub fn set_object_field(
             "Cannot mutate immutable object field '{field}'"
         ))),
         Value::ObjectMut(cell) => {
-            cell.borrow_mut().insert(field.to_string(), new_value);
+            cell.lock().unwrap().insert(field.to_string(), new_value);
             Ok(())
         }
         _ => Err(InterpreterError::RuntimeError(format!(
@@ -111,7 +110,7 @@ pub fn set_object_field(
 /// ```
 #[inline]
 pub fn new_mutable_object(map: HashMap<String, Value>) -> Value {
-    Value::ObjectMut(Rc::new(RefCell::new(map)))
+    Value::ObjectMut(Arc::new(Mutex::new(map)))
 }
 
 /// Create new immutable object from `HashMap`
@@ -134,7 +133,7 @@ pub fn new_mutable_object(map: HashMap<String, Value>) -> Value {
 /// ```
 #[inline]
 pub fn new_immutable_object(map: HashMap<String, Value>) -> Value {
-    Value::Object(Rc::new(map))
+    Value::Object(Arc::new(map))
 }
 
 /// Convert immutable Object to mutable `ObjectMut` (copies data)
@@ -158,7 +157,7 @@ pub fn new_immutable_object(map: HashMap<String, Value>) -> Value {
 /// ```
 pub fn to_mutable(value: &Value) -> Value {
     match value {
-        Value::Object(map) => Value::ObjectMut(Rc::new(RefCell::new((**map).clone()))),
+        Value::Object(map) => Value::ObjectMut(Arc::new(Mutex::new((**map).clone()))),
         Value::ObjectMut(_) => value.clone(),
         _ => value.clone(),
     }
@@ -185,7 +184,7 @@ pub fn to_mutable(value: &Value) -> Value {
 /// ```
 pub fn to_immutable(value: &Value) -> Value {
     match value {
-        Value::ObjectMut(cell) => Value::Object(Rc::new(cell.borrow().clone())),
+        Value::ObjectMut(cell) => Value::Object(Arc::new(cell.lock().unwrap().clone())),
         Value::Object(_) => value.clone(),
         _ => value.clone(),
     }
@@ -323,12 +322,12 @@ mod tests {
 #[test]
 fn test_to_immutable_object_match_arm() {
     // MISSED: delete match arm Value::Object(_) in to_immutable (line 189)
-    use std::rc::Rc;
+    use std::sync::Arc;
 
     let mut map = HashMap::new();
     map.insert("test".to_string(), Value::Integer(42));
 
-    let immutable_obj = Value::Object(Rc::new(map));
+    let immutable_obj = Value::Object(Arc::new(map));
     let result = to_immutable(&immutable_obj);
 
     // Should return clone of immutable object (match arm test)

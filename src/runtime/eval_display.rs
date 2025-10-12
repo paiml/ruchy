@@ -28,7 +28,7 @@ impl fmt::Display for Value {
             Value::DataFrame { columns } => format_dataframe(f, columns),
             Value::Object(obj) => format_object(f, obj),
             Value::ObjectMut(cell) => {
-                let obj = cell.borrow();
+                let obj = cell.lock().unwrap();
                 format_object(f, &obj)
             }
             Value::Range {
@@ -186,7 +186,7 @@ impl std::error::Error for InterpreterError {}
 mod tests {
     use super::*;
     use std::collections::HashMap;
-    use std::rc::Rc;
+    use std::sync::Arc;
 
     #[test]
     fn test_display_integer() {
@@ -219,7 +219,7 @@ mod tests {
 
     #[test]
     fn test_display_array() {
-        let val = Value::Array(Rc::from(vec![
+        let val = Value::Array(Arc::from(vec![
             Value::Integer(1),
             Value::Integer(2),
             Value::Integer(3),
@@ -229,7 +229,7 @@ mod tests {
 
     #[test]
     fn test_display_tuple() {
-        let val = Value::Tuple(Rc::from(vec![
+        let val = Value::Tuple(Arc::from(vec![
             Value::Integer(1),
             Value::from_string("test".to_string()),
         ]));
@@ -241,7 +241,7 @@ mod tests {
         let mut obj = HashMap::new();
         obj.insert("x".to_string(), Value::Integer(10));
         obj.insert("y".to_string(), Value::Integer(20));
-        let val = Value::Object(Rc::new(obj));
+        let val = Value::Object(Arc::new(obj));
         let display = val.to_string();
         assert!(display.contains("x: 10"));
         assert!(display.contains("y: 20"));

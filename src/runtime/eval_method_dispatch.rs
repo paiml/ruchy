@@ -10,7 +10,7 @@ use crate::runtime::eval_array;
 use crate::runtime::eval_string;
 use crate::runtime::interpreter::DataFrameColumn;
 use crate::runtime::{InterpreterError, Value};
-use std::rc::Rc;
+use std::sync::Arc;
 
 /// Evaluate a method call on a receiver value
 ///
@@ -422,7 +422,7 @@ fn eval_dataframe_shape(
     };
     let cols = columns.len();
 
-    Ok(Value::Array(Rc::from(
+    Ok(Value::Array(Arc::from(
         vec![Value::Integer(rows as i64), Value::Integer(cols as i64)].as_slice(),
     )))
 }

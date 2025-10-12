@@ -251,7 +251,7 @@ impl ConservativeGC {
                         .sum::<usize>()
             }
             Value::ObjectMut(cell) => {
-                let map = cell.borrow();
+                let map = cell.lock().unwrap();
                 56 + map.len() * 32 // Extra 8 bytes for RefCell borrow counter
                     + map
                         .iter()

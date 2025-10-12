@@ -5,7 +5,7 @@ use crate::runtime::Value;
 use std::collections::HashMap;
 
 #[cfg(test)]
-use std::rc::Rc;
+use std::sync::Arc;
 ///
 /// let value = `Value::Integer(42)`;
 /// let pattern = `Literal::Integer(42, None)`;
@@ -397,8 +397,8 @@ mod tests {
             Value::from_string("test".to_string()),
             Value::Bool(true),
             // Value::Char('a'), // Char variant not available in current Value enum
-            Value::Array(Rc::from(vec![Value::Integer(1), Value::Integer(2)])),
-            Value::Tuple(Rc::from(vec![
+            Value::Array(Arc::from(vec![Value::Integer(1), Value::Integer(2)])),
+            Value::Tuple(Arc::from(vec![
                 Value::from_string("hello".to_string()),
                 Value::Integer(10),
             ])),
@@ -496,15 +496,15 @@ mod tests {
         ));
 
         // List equality (recursive)
-        let list1 = Value::Array(Rc::from(vec![
+        let list1 = Value::Array(Arc::from(vec![
             Value::Integer(1),
             Value::from_string("test".to_string()),
         ]));
-        let list2 = Value::Array(Rc::from(vec![
+        let list2 = Value::Array(Arc::from(vec![
             Value::Integer(1),
             Value::from_string("test".to_string()),
         ]));
-        let list3 = Value::Array(Rc::from(vec![
+        let list3 = Value::Array(Arc::from(vec![
             Value::Integer(1),
             Value::from_string("other".to_string()),
         ]));
@@ -512,15 +512,15 @@ mod tests {
         assert!(!values_equal(&list1, &list3));
 
         // Tuple equality (recursive)
-        let tuple1 = Value::Tuple(Rc::from(vec![Value::Bool(true), Value::Integer(42)]));
-        let tuple2 = Value::Tuple(Rc::from(vec![Value::Bool(true), Value::Integer(42)]));
-        let tuple3 = Value::Tuple(Rc::from(vec![Value::Bool(false), Value::Integer(42)]));
+        let tuple1 = Value::Tuple(Arc::from(vec![Value::Bool(true), Value::Integer(42)]));
+        let tuple2 = Value::Tuple(Arc::from(vec![Value::Bool(true), Value::Integer(42)]));
+        let tuple3 = Value::Tuple(Arc::from(vec![Value::Bool(false), Value::Integer(42)]));
         assert!(values_equal(&tuple1, &tuple2));
         assert!(!values_equal(&tuple1, &tuple3));
 
         // Different lengths should not be equal
-        let short_list = Value::Array(Rc::from(vec![Value::Integer(1)]));
-        let long_list = Value::Array(Rc::from(vec![Value::Integer(1), Value::Integer(2)]));
+        let short_list = Value::Array(Arc::from(vec![Value::Integer(1)]));
+        let long_list = Value::Array(Arc::from(vec![Value::Integer(1), Value::Integer(2)]));
         assert!(!values_equal(&short_list, &long_list));
 
         // Different types should not be equal
@@ -530,7 +530,7 @@ mod tests {
         ));
         assert!(!values_equal(
             &Value::from_array(vec![]),
-            &Value::Tuple(Rc::from(vec![]))
+            &Value::Tuple(Arc::from(vec![]))
         ));
     }
 
@@ -561,7 +561,7 @@ mod tests {
     // Test 4: Tuple Pattern Matching
     #[test]
     fn test_tuple_pattern_matching() {
-        let tuple_value = Value::Tuple(Rc::from(vec![
+        let tuple_value = Value::Tuple(Arc::from(vec![
             Value::Integer(1),
             Value::from_string("test".to_string()),
             Value::Bool(true),
@@ -603,7 +603,7 @@ mod tests {
     // Test 5: List Pattern Matching
     #[test]
     fn test_list_pattern_matching() {
-        let list_value = Value::Array(Rc::from(vec![
+        let list_value = Value::Array(Arc::from(vec![
             Value::Integer(1),
             Value::Integer(2),
             Value::Integer(3),
@@ -640,7 +640,7 @@ mod tests {
     // Test 6: Rest Pattern Matching
     #[test]
     fn test_rest_pattern_matching() {
-        let list_value = Value::Array(Rc::from(vec![
+        let list_value = Value::Array(Arc::from(vec![
             Value::Integer(1),
             Value::Integer(2),
             Value::Integer(3),
@@ -743,7 +743,7 @@ mod tests {
     // Test 9: Struct Pattern Matching
     #[test]
     fn test_struct_pattern_matching() {
-        let struct_value = Value::Object(Rc::new({
+        let struct_value = Value::Object(Arc::new({
             let mut map = HashMap::new();
             map.insert("name".to_string(), Value::from_string("Alice".to_string()));
             map.insert("age".to_string(), Value::Integer(30));
@@ -821,10 +821,10 @@ mod tests {
     #[test]
     fn test_nested_pattern_matching() {
         // Nested tuple with list
-        let complex_value = Value::Tuple(Rc::from(vec![
+        let complex_value = Value::Tuple(Arc::from(vec![
             Value::from_string("outer".to_string()),
-            Value::Array(Rc::from(vec![Value::Integer(1), Value::Integer(2)])),
-            Value::Tuple(Rc::from(vec![Value::Bool(true)])),
+            Value::Array(Arc::from(vec![Value::Integer(1), Value::Integer(2)])),
+            Value::Tuple(Arc::from(vec![Value::Bool(true)])),
         ]));
 
         let nested_pattern = Pattern::Tuple(vec![
@@ -879,7 +879,7 @@ mod tests {
             Pattern::Identifier("b".to_string()),
             Pattern::Identifier("c".to_string()),
         ]);
-        let short_tuple = Value::Tuple(Rc::from(vec![Value::Integer(1), Value::Integer(2)]));
+        let short_tuple = Value::Tuple(Arc::from(vec![Value::Integer(1), Value::Integer(2)]));
         assert!(match_pattern(&long_pattern, &short_tuple).is_none());
 
         // Literal mismatch

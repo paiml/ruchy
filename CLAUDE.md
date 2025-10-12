@@ -7,6 +7,22 @@
 
 **Generate correct code that compiles on first attempt. Quality is built-in, not bolted-on.**
 
+## 🚨 CRITICAL: E2E Testing Protocol (DEFECT-001 Response)
+
+**SACRED RULE**: NEVER commit frontend changes without E2E tests passing.
+
+**Reference**: `docs/defects/CRITICAL-DEFECT-001-UI-EXECUTION-BROKEN.md`
+
+### Mandatory E2E Testing Checklist
+
+**Before ANY commit touching frontend code** (`static/**/*.html`, `*.js`, `*.css`):
+
+1. ✅ **Run E2E smoke tests**: `./run-e2e-tests.sh tests/e2e/notebook/00-smoke-test.spec.ts`
+2. ✅ **Verify selectors exist**: Use `validateSelectors()` helper (prevent phantom UI)
+3. ✅ **Check coverage**: Frontend coverage ≥80% (enforced)
+4. ✅ **Lint frontend**: `make lint-frontend` passes
+5. ✅ **Visual check**: Manually verify in browser (Genchi Genbutsu)
+
 ## 🚨 CRITICAL: A+ Code Standard (From paiml-mcp-agent-toolkit)
 
 **ABSOLUTE REQUIREMENT**: All NEW code MUST achieve A+ quality standards:

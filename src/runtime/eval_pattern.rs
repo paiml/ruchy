@@ -344,7 +344,7 @@ fn match_err_pattern(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::rc::Rc;
+    use std::sync::Arc;
 
     #[test]
     fn test_wildcard_pattern() {
@@ -388,7 +388,7 @@ mod tests {
 
         let pattern = Pattern::List(patterns);
 
-        let value = Value::Array(Rc::from(vec![Value::Integer(1), Value::Integer(2)]));
+        let value = Value::Array(Arc::from(vec![Value::Integer(1), Value::Integer(2)]));
         let result = match_pattern(&pattern, &value).unwrap();
         assert!(result.matches);
         assert_eq!(result.bindings.get("x"), Some(&Value::Integer(1)));

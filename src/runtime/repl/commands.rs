@@ -361,7 +361,7 @@ Enter expressions to evaluate them.
                 }
             }
             Value::ObjectMut(obj) => {
-                let borrowed = obj.borrow();
+                let borrowed = obj.lock().unwrap();
                 output.push_str(&format!("Fields: {}\n", borrowed.len()));
                 output.push_str("Properties:\n");
                 for (key, val) in borrowed.iter() {
@@ -429,7 +429,8 @@ Enter expressions to evaluate them.
             Value::ObjectMut(obj) => {
                 size_of::<std::collections::HashMap<String, Value>>()
                     + obj
-                        .borrow()
+                        .lock()
+                        .unwrap()
                         .iter()
                         .map(|(k, v)| k.len() + Self::estimate_value_memory(v))
                         .sum::<usize>()

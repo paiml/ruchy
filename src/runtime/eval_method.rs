@@ -8,7 +8,7 @@
 use crate::frontend::ast::Expr;
 use crate::runtime::validation::validate_arg_count;
 use crate::runtime::{DataFrameColumn, InterpreterError, Value};
-use std::rc::Rc;
+use std::sync::Arc;
 
 /// Main method call evaluation entry point
 ///
@@ -153,7 +153,7 @@ pub fn eval_generic_method(
 /// # Complexity
 /// Cyclomatic complexity: High - needs delegation to `eval_string_methods` module
 pub fn eval_string_method(
-    s: &Rc<str>,
+    s: &Arc<str>,
     method: &str,
     args: &[Value],
 ) -> Result<Value, InterpreterError> {
@@ -166,7 +166,7 @@ pub fn eval_string_method(
 /// # Complexity
 /// Cyclomatic complexity: 4 (within Toyota Way limits)
 pub fn eval_array_method_simple(
-    arr: &Rc<[Value]>,
+    arr: &Arc<[Value]>,
     method: &str,
     args: &[Value],
 ) -> Result<Value, InterpreterError> {
@@ -203,7 +203,7 @@ pub fn eval_dataframe_method_simple(
             validate_arg_count("DataFrame.shape", args, 0)?;
             let rows = columns.first().map_or(0, |c| c.values.len());
             let cols = columns.len();
-            Ok(Value::Tuple(Rc::from(
+            Ok(Value::Tuple(Arc::from(
                 vec![Value::Integer(rows as i64), Value::Integer(cols as i64)].as_slice(),
             )))
         }
@@ -312,7 +312,7 @@ mod tests {
         // MISSED: delete match arm "len" | "length" (line 154:9)
         // MISSED: delete match arm "is_empty" (line 162:9)
 
-        let arr = Rc::from(vec![
+        let arr = Arc::from(vec![
             Value::Integer(1),
             Value::Integer(2),
             Value::Integer(3),
@@ -339,7 +339,7 @@ mod tests {
         );
 
         // Test "is_empty" with empty array
-        let empty_arr = Rc::from(vec![]);
+        let empty_arr = Arc::from(vec![]);
         let result = eval_array_method_simple(&empty_arr, "is_empty", &[]).unwrap();
         assert_eq!(
             result,
@@ -354,7 +354,7 @@ mod tests {
         // MISSED: delete ! in eval_array_method_simple (line 155:16)
         // MISSED: delete ! in eval_array_method_simple (line 163:16)
 
-        let arr = Rc::from(vec![Value::Integer(1)]);
+        let arr = Arc::from(vec![Value::Integer(1)]);
 
         // Test that len REJECTS arguments (! operator line 155)
         let result = eval_array_method_simple(&arr, "len", &[Value::Integer(1)]);
@@ -415,7 +415,7 @@ mod tests {
         // MISSED: delete match arm Value::DataFrame{columns} (line 54:9)
 
         // Test Array dispatch
-        let arr_val = Value::Array(Rc::from(vec![Value::Integer(1), Value::Integer(2)]));
+        let arr_val = Value::Array(Arc::from(vec![Value::Integer(1), Value::Integer(2)]));
         let result = dispatch_method_call(&arr_val, "len", &[], true).unwrap();
         assert_eq!(result, Value::Integer(2), "Array should dispatch to len");
 

@@ -10,7 +10,7 @@
 use ruchy::runtime::repl::Repl;
 use ruchy::runtime::Value;
 use std::env;
-use std::rc::Rc;
+use std::sync::Arc;
 
 #[test]
 fn test_one_liner_execution() {
@@ -37,7 +37,7 @@ fn test_match_expressions() {
     let result = repl
         .evaluate_expr_str(r#"match 2 { 1 => "one", 2 => "two", _ => "other" }"#, None)
         .unwrap();
-    assert_eq!(result, Value::String(Rc::from("two")));
+    assert_eq!(result, Value::String(Arc::from("two")));
 }
 
 #[test]
@@ -75,7 +75,7 @@ fn test_string_interpolation() {
     repl.evaluate_expr_str(r#"let name = "World""#, None)
         .unwrap();
     let result = repl.evaluate_expr_str(r#"f"Hello {name}""#, None).unwrap();
-    assert_eq!(result, Value::String(Rc::from("Hello World")));
+    assert_eq!(result, Value::String(Arc::from("Hello World")));
 }
 
 #[test]

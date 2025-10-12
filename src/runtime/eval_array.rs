@@ -7,14 +7,14 @@
 use crate::runtime::pattern_matching::values_equal;
 use crate::runtime::validation::validate_arg_count;
 use crate::runtime::{InterpreterError, Value};
-use std::rc::Rc;
+use std::sync::Arc;
 
 /// Evaluate an array method call
 ///
 /// # Complexity
 /// Cyclomatic complexity: 15 (will be decomposed further into helper functions)
 pub fn eval_array_method<F>(
-    arr: &Rc<[Value]>,
+    arr: &Arc<[Value]>,
     method: &str,
     args: &[Value],
     mut eval_function_call_value: F,
@@ -51,37 +51,37 @@ where
 
 // No-argument array methods (complexity <= 3 each)
 
-fn eval_array_len(arr: &Rc<[Value]>) -> Result<Value, InterpreterError> {
+fn eval_array_len(arr: &Arc<[Value]>) -> Result<Value, InterpreterError> {
     Ok(Value::Integer(arr.len() as i64))
 }
 
-fn eval_array_first(arr: &Rc<[Value]>) -> Result<Value, InterpreterError> {
+fn eval_array_first(arr: &Arc<[Value]>) -> Result<Value, InterpreterError> {
     Ok(arr.first().cloned().unwrap_or(Value::Nil))
 }
 
-fn eval_array_last(arr: &Rc<[Value]>) -> Result<Value, InterpreterError> {
+fn eval_array_last(arr: &Arc<[Value]>) -> Result<Value, InterpreterError> {
     Ok(arr.last().cloned().unwrap_or(Value::Nil))
 }
 
-fn eval_array_is_empty(arr: &Rc<[Value]>) -> Result<Value, InterpreterError> {
+fn eval_array_is_empty(arr: &Arc<[Value]>) -> Result<Value, InterpreterError> {
     Ok(Value::Bool(arr.is_empty()))
 }
 
 // Single-argument array methods (complexity <= 5 each)
 
-fn eval_array_push(arr: &Rc<[Value]>, item: &Value) -> Result<Value, InterpreterError> {
+fn eval_array_push(arr: &Arc<[Value]>, item: &Value) -> Result<Value, InterpreterError> {
     let mut new_arr = arr.to_vec();
     new_arr.push(item.clone());
-    Ok(Value::Array(Rc::from(new_arr)))
+    Ok(Value::Array(Arc::from(new_arr)))
 }
 
-fn eval_array_pop(arr: &Rc<[Value]>) -> Result<Value, InterpreterError> {
+fn eval_array_pop(arr: &Arc<[Value]>) -> Result<Value, InterpreterError> {
     let mut new_arr = arr.to_vec();
     new_arr.pop().unwrap_or(Value::nil());
-    Ok(Value::Array(Rc::from(new_arr)))
+    Ok(Value::Array(Arc::from(new_arr)))
 }
 
-fn eval_array_get(arr: &Rc<[Value]>, index: &Value) -> Result<Value, InterpreterError> {
+fn eval_array_get(arr: &Arc<[Value]>, index: &Value) -> Result<Value, InterpreterError> {
     if let Value::Integer(idx) = index {
         if *idx < 0 {
             return Ok(Value::Nil);
@@ -100,7 +100,7 @@ fn eval_array_get(arr: &Rc<[Value]>, index: &Value) -> Result<Value, Interpreter
     }
 }
 
-fn eval_array_contains(arr: &Rc<[Value]>, item: &Value) -> Result<Value, InterpreterError> {
+fn eval_array_contains(arr: &Arc<[Value]>, item: &Value) -> Result<Value, InterpreterError> {
     // Check if the array contains the given value
     for element in arr.iter() {
         if values_equal(element, item) {
@@ -113,7 +113,7 @@ fn eval_array_contains(arr: &Rc<[Value]>, item: &Value) -> Result<Value, Interpr
 // Higher-order array methods (complexity <= 8 each)
 
 fn eval_array_map<F>(
-    arr: &Rc<[Value]>,
+    arr: &Arc<[Value]>,
     args: &[Value],
     eval_function_call_value: &mut F,
 ) -> Result<Value, InterpreterError>
@@ -126,11 +126,11 @@ where
         let func_result = eval_function_call_value(&args[0], std::slice::from_ref(item))?;
         result.push(func_result);
     }
-    Ok(Value::Array(Rc::from(result)))
+    Ok(Value::Array(Arc::from(result)))
 }
 
 fn eval_array_filter<F>(
-    arr: &Rc<[Value]>,
+    arr: &Arc<[Value]>,
     args: &[Value],
     eval_function_call_value: &mut F,
 ) -> Result<Value, InterpreterError>
@@ -145,11 +145,11 @@ where
             result.push(item.clone());
         }
     }
-    Ok(Value::Array(Rc::from(result)))
+    Ok(Value::Array(Arc::from(result)))
 }
 
 fn eval_array_reduce<F>(
-    arr: &Rc<[Value]>,
+    arr: &Arc<[Value]>,
     args: &[Value],
     eval_function_call_value: &mut F,
 ) -> Result<Value, InterpreterError>
@@ -171,7 +171,7 @@ where
 }
 
 fn eval_array_any<F>(
-    arr: &Rc<[Value]>,
+    arr: &Arc<[Value]>,
     args: &[Value],
     eval_function_call_value: &mut F,
 ) -> Result<Value, InterpreterError>
@@ -189,7 +189,7 @@ where
 }
 
 fn eval_array_all<F>(
-    arr: &Rc<[Value]>,
+    arr: &Arc<[Value]>,
     args: &[Value],
     eval_function_call_value: &mut F,
 ) -> Result<Value, InterpreterError>
@@ -207,7 +207,7 @@ where
 }
 
 fn eval_array_find<F>(
-    arr: &Rc<[Value]>,
+    arr: &Arc<[Value]>,
     args: &[Value],
     eval_function_call_value: &mut F,
 ) -> Result<Value, InterpreterError>
@@ -245,7 +245,7 @@ mod tests {
 
     #[test]
     fn test_array_len() {
-        let arr = Rc::from(vec![
+        let arr = Arc::from(vec![
             Value::Integer(1),
             Value::Integer(2),
             Value::Integer(3),
@@ -256,7 +256,7 @@ mod tests {
 
     #[test]
     fn test_array_first() {
-        let arr = Rc::from(vec![
+        let arr = Arc::from(vec![
             Value::Integer(1),
             Value::Integer(2),
             Value::Integer(3),
@@ -267,7 +267,7 @@ mod tests {
 
     #[test]
     fn test_array_last() {
-        let arr = Rc::from(vec![
+        let arr = Arc::from(vec![
             Value::Integer(1),
             Value::Integer(2),
             Value::Integer(3),
@@ -278,7 +278,7 @@ mod tests {
 
     #[test]
     fn test_array_push() {
-        let arr = Rc::from(vec![Value::Integer(1), Value::Integer(2)]);
+        let arr = Arc::from(vec![Value::Integer(1), Value::Integer(2)]);
         let result = eval_array_push(&arr, &Value::Integer(3)).unwrap();
         if let Value::Array(new_arr) = result {
             assert_eq!(new_arr.len(), 3);
@@ -290,7 +290,7 @@ mod tests {
 
     #[test]
     fn test_array_get() {
-        let arr = Rc::from(vec![
+        let arr = Arc::from(vec![
             Value::Integer(1),
             Value::Integer(2),
             Value::Integer(3),
@@ -305,7 +305,7 @@ mod tests {
         // MISSED: replace match guard args.is_empty() with true (line 26)
         // MISSED: replace match guard args.len() == 1 with false (line 30)
 
-        let arr = Rc::from(vec![
+        let arr = Arc::from(vec![
             Value::Integer(1),
             Value::Integer(2),
             Value::Integer(3),
@@ -342,7 +342,7 @@ mod tests {
         // MISSED: delete match arm "any" (line 38)
         // MISSED: delete match arm "all" (line 39)
 
-        let arr = Rc::from(vec![
+        let arr = Arc::from(vec![
             Value::Integer(1),
             Value::Integer(2),
             Value::Integer(3),
@@ -350,7 +350,7 @@ mod tests {
 
         // Test by calling eval_array_any and eval_array_all directly
         // Both require a closure, so we create a minimal one
-        use std::rc::Rc as RcAlias;
+        use std::sync::Arc as RcAlias;
         let closure = Value::Closure {
             params: vec!["x".to_string()],
             body: RcAlias::new(crate::frontend::ast::Expr {
@@ -377,10 +377,10 @@ mod tests {
         // Mutation test: Verify reduce uses != not ==
         // MISSED: replace != with == (line 141:19 in eval_array_reduce)
 
-        let arr = Rc::from(vec![Value::Integer(1), Value::Integer(2)]);
+        let arr = Arc::from(vec![Value::Integer(1), Value::Integer(2)]);
 
         // Test with correct number of args (2) - should work
-        use std::rc::Rc as RcAlias;
+        use std::sync::Arc as RcAlias;
         let closure = Value::Closure {
             params: vec!["acc".to_string(), "x".to_string()],
             body: RcAlias::new(crate::frontend::ast::Expr {
@@ -423,7 +423,7 @@ mod tests {
         // Mutation test: Verify reduce checks !matches (closure check)
         // MISSED: delete ! in eval_array_reduce (line 146:8)
 
-        let arr = Rc::from(vec![Value::Integer(1)]);
+        let arr = Arc::from(vec![Value::Integer(1)]);
         let eval_func = |_: &Value, _: &[Value]| Ok(Value::Nil);
 
         // Test with non-closure first arg (should fail due to ! check)
@@ -438,7 +438,7 @@ mod tests {
         );
 
         // Test with closure (should work)
-        use std::rc::Rc as RcAlias;
+        use std::sync::Arc as RcAlias;
         let closure = Value::Closure {
             params: vec![],
             body: RcAlias::new(crate::frontend::ast::Expr {
@@ -462,7 +462,7 @@ mod tests {
         // Mutation test: Verify all() uses ! to check falsy values
         // MISSED: delete ! in eval_array_all (line 188:12)
 
-        let arr = Rc::from(vec![
+        let arr = Arc::from(vec![
             Value::Bool(true),
             Value::Bool(false),
             Value::Bool(true),
@@ -471,7 +471,7 @@ mod tests {
         // Evaluator that returns the actual value
         let eval_identity = |_: &Value, args: &[Value]| Ok(args[0].clone());
 
-        use std::rc::Rc as RcAlias;
+        use std::sync::Arc as RcAlias;
         let closure = Value::Closure {
             params: vec!["x".to_string()],
             body: RcAlias::new(crate::frontend::ast::Expr {
@@ -492,7 +492,7 @@ mod tests {
         );
 
         // Test with all true values
-        let all_true_arr = Rc::from(vec![Value::Bool(true), Value::Bool(true)]);
+        let all_true_arr = Arc::from(vec![Value::Bool(true), Value::Bool(true)]);
         let closure2 = Value::Closure {
             params: vec!["x".to_string()],
             body: RcAlias::new(crate::frontend::ast::Expr {

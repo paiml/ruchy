@@ -342,7 +342,7 @@ impl TransactionalState {
 // /// RAII guard for automatic transaction rollback
 // pub struct SavePoint {
 //     tx_id: TransactionId,
-//     state: Rc<RefCell<TransactionalState>>,
+//     state: Arc<RefCell<TransactionalState>>,
 // }
 // Placeholder for SavePoint
 pub struct SavePoint;

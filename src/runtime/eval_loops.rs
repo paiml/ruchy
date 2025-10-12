@@ -264,7 +264,7 @@ fn is_truthy(value: &Value) -> bool {
 mod tests {
     use super::*;
     use crate::frontend::ast::{ExprKind, Literal};
-    use std::rc::Rc;
+    use std::sync::Arc;
 
     fn make_literal_expr(val: i64) -> Expr {
         Expr::new(
@@ -275,7 +275,7 @@ mod tests {
 
     #[test]
     fn test_for_loop_array() {
-        let arr = Value::Array(Rc::from(vec![
+        let arr = Value::Array(Arc::from(vec![
             Value::Integer(1),
             Value::Integer(2),
             Value::Integer(3),
@@ -356,7 +356,7 @@ mod tests {
 
     #[test]
     fn test_for_loop_break() {
-        let arr = Value::Array(Rc::from(vec![
+        let arr = Value::Array(Arc::from(vec![
             Value::Integer(1),
             Value::Integer(2),
             Value::Integer(3),

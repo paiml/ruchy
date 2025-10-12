@@ -9,7 +9,7 @@ use crate::frontend::ast::{Expr, ObjectField, StructField};
 use crate::runtime::interpreter::DataFrameColumn;
 use crate::runtime::{InterpreterError, Value};
 use std::collections::HashMap;
-use std::rc::Rc;
+use std::sync::Arc;
 
 /// Evaluate object/struct literal creation
 ///
@@ -44,7 +44,7 @@ where
         }
     }
 
-    Ok(Value::Object(Rc::new(field_map)))
+    Ok(Value::Object(Arc::new(field_map)))
 }
 
 /// Evaluate struct definition and return a constructor function
@@ -72,7 +72,7 @@ pub fn eval_field_access(object: &Value, field: &str) -> Result<Value, Interpret
         }),
         Value::ObjectMut(cell) => {
             // Safe borrow: We clone the result, so borrow is released immediately
-            cell.borrow().get(field).cloned().ok_or_else(|| {
+            cell.lock().unwrap().get(field).cloned().ok_or_else(|| {
                 InterpreterError::RuntimeError(format!("Field '{field}' not found in object"))
             })
         }
@@ -250,7 +250,7 @@ where
         result_fields.extend(additional_fields.as_ref().clone());
     }
 
-    Ok(Value::Object(Rc::new(result_fields)))
+    Ok(Value::Object(Arc::new(result_fields)))
 }
 
 /// Evaluate array spread operation ([...arr1, item, ...arr2])
@@ -471,7 +471,7 @@ where
 mod tests {
     use super::*;
     use crate::frontend::ast::{ExprKind, Literal, Span};
-    use std::rc::Rc;
+    use std::sync::Arc;
 
     #[test]
     fn test_field_access_object() {
@@ -479,7 +479,7 @@ mod tests {
         fields.insert("name".to_string(), Value::from_string("Alice".to_string()));
         fields.insert("age".to_string(), Value::Integer(30));
 
-        let obj = Value::Object(Rc::new(fields));
+        let obj = Value::Object(Arc::new(fields));
 
         let name_result = eval_field_access(&obj, "name").unwrap();
         assert_eq!(name_result, Value::from_string("Alice".to_string()));
@@ -493,7 +493,7 @@ mod tests {
 
     #[test]
     fn test_array_index_access() {
-        let arr = Value::Array(Rc::from(vec![
+        let arr = Value::Array(Arc::from(vec![
             Value::Integer(10),
             Value::Integer(20),
             Value::Integer(30),
@@ -516,7 +516,7 @@ mod tests {
 
     #[test]
     fn test_array_slice() {
-        let arr = Value::Array(Rc::from(vec![
+        let arr = Value::Array(Arc::from(vec![
             Value::Integer(1),
             Value::Integer(2),
             Value::Integer(3),

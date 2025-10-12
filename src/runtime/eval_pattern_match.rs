@@ -350,7 +350,7 @@ fn extract_integer_from_pattern(pattern: &Pattern) -> Result<i64, InterpreterErr
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::rc::Rc;
+    use std::sync::Arc;
 
     fn test_eval_literal(lit: &Literal) -> Value {
         match lit {
@@ -407,7 +407,7 @@ mod tests {
             Pattern::Identifier("y".to_string()),
         ];
         let pattern = Pattern::Tuple(patterns);
-        let value = Value::Tuple(Rc::from(vec![Value::Integer(1), Value::Integer(2)]));
+        let value = Value::Tuple(Arc::from(vec![Value::Integer(1), Value::Integer(2)]));
 
         let result = try_pattern_match(&pattern, &value, &test_eval_literal).unwrap();
         assert!(result.is_some());

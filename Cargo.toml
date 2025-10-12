@@ -6,7 +6,7 @@ exclude = ["fuzz"]
 resolver = "2"
 
 [workspace.lints.rust]
-unsafe_code = "forbid"
+unsafe_code = "warn"  # Changed from "forbid" for DEFECT-001-B CallFrame Send impl
 missing_docs = "allow"  # TODO: Add comprehensive documentation
 
 [workspace.lints.clippy]
