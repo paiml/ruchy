@@ -644,9 +644,7 @@ println("Hello, Ruchy!")
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        cell_id: cellId,
-                        code: code,
-                        execution_count: execCount
+                        source: code  // Backend expects 'source' not 'code'
                     })
                 });
                 
