@@ -6,6 +6,7 @@ pub mod persistence;
 pub mod server;
 #[cfg(feature = "notebook")]
 pub mod testing;
+pub mod types; // NOTEBOOK-009: Jupyter-style notebook types
 pub mod wasm;
 
 pub use dataframe::{ColumnType, DataFrame};
@@ -14,6 +15,7 @@ pub use execution::CellExecutionResult;
 pub use html::{html_escape, HtmlFormatter};
 pub use persistence::{Checkpoint, TransactionResult};
 pub use server::start_server;
+pub use types::{Cell, CellType, Notebook, NotebookMetadata}; // NOTEBOOK-009
 pub use wasm::{NotebookPerformance, NotebookWasm};
 
 #[cfg(test)]
