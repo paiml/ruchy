@@ -4525,6 +4525,43 @@ From paiml-mcp-agent-toolkit CLAUDE.md:
 - Macros (2), Testing (1)
 - **Total: 41 features fully tested**
 
+- [ ] **NOTEBOOK-008**: End-to-End Book Validation & Silent Failure Fix 🚨 **CRITICAL**
+  - 🚨 **Problem**: Notebook silently fails on basic operations (println doesn't output)
+  - 🚨 **Impact**: Cannot validate MD Book examples (primary testing interface broken)
+  - 🎯 **Goal**: 100% MD Book validation through working notebook interface
+
+  **Phase 1: Fix Silent Failures** (CRITICAL - BLOCKING)
+  - [ ] Investigate why println() produces no output in notebook
+  - [ ] Fix API response to include actual stdout/stderr
+  - [ ] Fix displayOutput() to show printed output, not just "Execution completed"
+  - [ ] Test basic println/print/debug output works
+  - [ ] Add error output to UI (currently shows generic messages)
+
+  **Phase 2: MD Book Integration Testing**
+  - [ ] Extract all code examples from MD Book (41 chapters)
+  - [ ] Create Playwright tests running each example through notebook
+  - [ ] Verify output matches expected results from book
+  - [ ] Track pass/fail rate per chapter
+  - [ ] Target: ≥90% book examples passing
+
+  **Phase 3: Coverage Reporting**
+  - [ ] Generate book validation report (X/Y examples passing)
+  - [ ] Create coverage dashboard showing chapter-by-chapter status
+  - [ ] Add to CI/CD pipeline
+  - [ ] Update INTEGRATION.md with validation results
+
+  **Success Criteria**:
+  - ✅ println("Hello") outputs "Hello" in notebook UI
+  - ✅ All 41 language features execute and display correctly
+  - ✅ ≥90% of MD Book examples pass E2E tests
+  - ✅ Coverage report shows per-chapter validation status
+
+  **Why Critical**:
+  - Notebook is THE primary interface for language validation
+  - MD Book examples are THE specification of language behavior
+  - Silent failures hide bugs and break user trust
+  - Cannot claim "100% feature coverage" if features don't work in notebook
+
 ## 🔧 **Implementation Tasks for Five-Category Strategy**
 
 ### **IMMEDIATE ACTION REQUIRED**:
