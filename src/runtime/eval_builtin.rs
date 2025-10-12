@@ -123,13 +123,9 @@ fn try_eval_dataframe_function(
 /// # Complexity
 /// Cyclomatic complexity: 6 (within Toyota Way limits)
 fn eval_println(args: &[Value]) -> Result<Value, InterpreterError> {
-    if args.is_empty() {
-        println!();
-        return Ok(Value::Nil);
-    }
-
-    // Check if first arg is a format string with {} placeholders
-    if let Value::String(fmt_str) = &args[0] {
+    let output = if args.is_empty() {
+        "\n".to_string()
+    } else if let Value::String(fmt_str) = &args[0] {
         if fmt_str.contains("{}") {
             // Perform string interpolation
             let mut result = fmt_str.to_string();
@@ -138,18 +134,34 @@ fn eval_println(args: &[Value]) -> Result<Value, InterpreterError> {
                     result.replace_range(pos..pos + 2, &format!("{arg}"));
                 }
             }
-            println!("{result}");
-            return Ok(Value::Nil);
+            format!("{result}\n")
+        } else {
+            // Fallback: join all args with spaces (backward compatibility)
+            let text = args
+                .iter()
+                .map(|v| format!("{v}"))
+                .collect::<Vec<_>>()
+                .join(" ");
+            format!("{text}\n")
         }
+    } else {
+        // Fallback: join all args with spaces (backward compatibility)
+        let text = args
+            .iter()
+            .map(|v| format!("{v}"))
+            .collect::<Vec<_>>()
+            .join(" ");
+        format!("{text}\n")
+    };
+
+    // Write to output buffer (for notebook capture)
+    if let Ok(mut buf) = crate::runtime::builtins::OUTPUT_BUFFER.lock() {
+        buf.push_str(&output);
     }
 
-    // Fallback: join all args with spaces (backward compatibility)
-    let output = args
-        .iter()
-        .map(|v| format!("{v}"))
-        .collect::<Vec<_>>()
-        .join(" ");
-    println!("{output}");
+    // Also write to stdout for local REPL use
+    print!("{output}");
+
     Ok(Value::Nil)
 }
 
@@ -163,7 +175,15 @@ fn eval_print(args: &[Value]) -> Result<Value, InterpreterError> {
         .map(|v| format!("{v}"))
         .collect::<Vec<_>>()
         .join(" ");
+
+    // Write to output buffer (for notebook capture)
+    if let Ok(mut buf) = crate::runtime::builtins::OUTPUT_BUFFER.lock() {
+        buf.push_str(&output);
+    }
+
+    // Also write to stdout for local REPL use
     print!("{output}");
+
     Ok(Value::Nil)
 }
 

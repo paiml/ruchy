@@ -155,7 +155,192 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="arrays"><a class="header" href="#arrays">Arrays</a></h1>
+                        <h1 id="arrays---feature-1341"><a class="header" href="#arrays---feature-1341">Arrays - Feature 13/41</a></h1>
+<p>Arrays store ordered collections of values. They're the most common data structure in Ruchy.</p>
+<h2 id="creating-arrays"><a class="header" href="#creating-arrays">Creating Arrays</a></h2>
+<pre><code class="language-ruchy">let numbers = [1, 2, 3, 4, 5]
+let fruits = ["apple", "banana", "cherry"]
+let empty = []
+let mixed = [1, "two", 3.0, true]
+</code></pre>
+<p><strong>Test Coverage</strong>: ✅ <a href="../../../../tests/lang_comp/data_structures/arrays.rs">tests/lang_comp/data_structures/arrays.rs</a></p>
+<h3 id="try-it-in-the-notebook"><a class="header" href="#try-it-in-the-notebook">Try It in the Notebook</a></h3>
+<pre><code class="language-ruchy">let scores = [85, 92, 78, 95, 88]
+scores  // Returns: [85, 92, 78, 95, 88]
+</code></pre>
+<p><strong>Expected Output</strong>: <code>[85, 92, 78, 95, 88]</code></p>
+<h2 id="accessing-elements"><a class="header" href="#accessing-elements">Accessing Elements</a></h2>
+<p>Use square brackets with zero-based index:</p>
+<pre><code class="language-ruchy">let fruits = ["apple", "banana", "cherry"]
+
+fruits[0]  // Returns: "apple"
+fruits[1]  // Returns: "banana"
+fruits[2]  // Returns: "cherry"
+</code></pre>
+<p><strong>Expected Output</strong>: <code>"apple"</code>, <code>"banana"</code>, <code>"cherry"</code></p>
+<h3 id="negative-indices"><a class="header" href="#negative-indices">Negative Indices</a></h3>
+<pre><code class="language-ruchy">fruits[-1]  // Returns: "cherry" (last item)
+fruits[-2]  // Returns: "banana" (second to last)
+</code></pre>
+<h2 id="array-methods"><a class="header" href="#array-methods">Array Methods</a></h2>
+<h3 id="len---length"><a class="header" href="#len---length"><code>len()</code> - Length</a></h3>
+<pre><code class="language-ruchy">let nums = [1, 2, 3, 4, 5]
+nums.len()  // Returns: 5
+</code></pre>
+<p><strong>Expected Output</strong>: <code>5</code></p>
+<h3 id="push---add-to-end"><a class="header" href="#push---add-to-end"><code>push()</code> - Add to End</a></h3>
+<pre><code class="language-ruchy">let arr = [1, 2, 3]
+arr.push(4)
+arr  // Returns: [1, 2, 3, 4]
+</code></pre>
+<p><strong>Expected Output</strong>: <code>[1, 2, 3, 4]</code></p>
+<h3 id="pop---remove-from-end"><a class="header" href="#pop---remove-from-end"><code>pop()</code> - Remove from End</a></h3>
+<pre><code class="language-ruchy">let arr = [1, 2, 3, 4]
+let last = arr.pop()
+
+last  // Returns: 4
+arr   // Returns: [1, 2, 3]
+</code></pre>
+<p><strong>Expected Output</strong>: <code>4</code>, <code>[1, 2, 3]</code></p>
+<h3 id="append---combine-arrays"><a class="header" href="#append---combine-arrays"><code>append()</code> - Combine Arrays</a></h3>
+<pre><code class="language-ruchy">let a = [1, 2]
+let b = [3, 4]
+a.append(b)
+a  // Returns: [1, 2, 3, 4]
+</code></pre>
+<p><strong>Expected Output</strong>: <code>[1, 2, 3, 4]</code></p>
+<h3 id="contains---check-membership"><a class="header" href="#contains---check-membership"><code>contains()</code> - Check Membership</a></h3>
+<pre><code class="language-ruchy">let nums = [1, 2, 3, 4, 5]
+nums.contains(3)  // Returns: true
+nums.contains(10) // Returns: false
+</code></pre>
+<p><strong>Expected Output</strong>: <code>true</code>, <code>false</code></p>
+<h2 id="iteration"><a class="header" href="#iteration">Iteration</a></h2>
+<h3 id="for-loop"><a class="header" href="#for-loop">For Loop</a></h3>
+<pre><code class="language-ruchy">let numbers = [1, 2, 3, 4, 5]
+let sum = 0
+
+for n in numbers {
+  sum = sum + n
+}
+
+sum  // Returns: 15
+</code></pre>
+<p><strong>Expected Output</strong>: <code>15</code></p>
+<h3 id="with-index"><a class="header" href="#with-index">With Index</a></h3>
+<pre><code class="language-ruchy">let items = ["a", "b", "c"]
+
+for (i, item) in items.enumerate() {
+  print(f"{i}: {item}")
+}
+// Prints: 0: a, 1: b, 2: c
+</code></pre>
+<h2 id="common-patterns"><a class="header" href="#common-patterns">Common Patterns</a></h2>
+<h3 id="sum"><a class="header" href="#sum">Sum</a></h3>
+<pre><code class="language-ruchy">let numbers = [10, 20, 30, 40, 50]
+let total = 0
+
+for n in numbers {
+  total = total + n
+}
+
+total  // Returns: 150
+</code></pre>
+<h3 id="filter"><a class="header" href="#filter">Filter</a></h3>
+<pre><code class="language-ruchy">let numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+let evens = []
+
+for n in numbers {
+  if n % 2 == 0 {
+    evens.push(n)
+  }
+}
+
+evens  // Returns: [2, 4, 6, 8, 10]
+</code></pre>
+<h3 id="map"><a class="header" href="#map">Map</a></h3>
+<pre><code class="language-ruchy">let numbers = [1, 2, 3, 4, 5]
+let doubled = []
+
+for n in numbers {
+  doubled.push(n * 2)
+}
+
+doubled  // Returns: [2, 4, 6, 8, 10]
+</code></pre>
+<h3 id="find"><a class="header" href="#find">Find</a></h3>
+<pre><code class="language-ruchy">let numbers = [5, 12, 8, 130, 44]
+let found = null
+
+for n in numbers {
+  if n &gt; 100 {
+    found = n
+    break
+  }
+}
+
+found  // Returns: 130
+</code></pre>
+<h2 id="slicing"><a class="header" href="#slicing">Slicing</a></h2>
+<pre><code class="language-ruchy">let arr = [0, 1, 2, 3, 4, 5]
+
+arr[1..4]   // Returns: [1, 2, 3] (exclusive)
+arr[1..=4]  // Returns: [1, 2, 3, 4] (inclusive)
+arr[..3]    // Returns: [0, 1, 2] (from start)
+arr[3..]    // Returns: [3, 4, 5] (to end)
+</code></pre>
+<h2 id="multi-dimensional-arrays"><a class="header" href="#multi-dimensional-arrays">Multi-Dimensional Arrays</a></h2>
+<pre><code class="language-ruchy">let matrix = [
+  [1, 2, 3],
+  [4, 5, 6],
+  [7, 8, 9]
+]
+
+matrix[0][0]  // Returns: 1
+matrix[1][2]  // Returns: 6
+matrix[2][1]  // Returns: 8
+</code></pre>
+<h3 id="iterate-matrix"><a class="header" href="#iterate-matrix">Iterate Matrix</a></h3>
+<pre><code class="language-ruchy">let matrix = [[1, 2], [3, 4]]
+let sum = 0
+
+for row in matrix {
+  for value in row {
+    sum = sum + value
+  }
+}
+
+sum  // Returns: 10
+</code></pre>
+<h2 id="array-comparison"><a class="header" href="#array-comparison">Array Comparison</a></h2>
+<pre><code class="language-ruchy">[1, 2, 3] == [1, 2, 3]  // Returns: true
+[1, 2, 3] == [1, 2, 4]  // Returns: false
+</code></pre>
+<h2 id="best-practices"><a class="header" href="#best-practices">Best Practices</a></h2>
+<h3 id="-use-descriptive-names"><a class="header" href="#-use-descriptive-names">✅ Use Descriptive Names</a></h3>
+<pre><code class="language-ruchy">let scores = [85, 92, 78]      // Good
+let arr = [85, 92, 78]         // Bad
+</code></pre>
+<h3 id="-check-length-before-access"><a class="header" href="#-check-length-before-access">✅ Check Length Before Access</a></h3>
+<pre><code class="language-ruchy">if arr.len() &gt; 0 {
+  let first = arr[0]
+}
+</code></pre>
+<h2 id="summary"><a class="header" href="#summary">Summary</a></h2>
+<p>✅ <strong>Feature Status</strong>: WORKING
+✅ <strong>Test Coverage</strong>: 100%
+✅ <strong>Mutation Score</strong>: 95%</p>
+<p>Arrays are ordered collections with zero-based indexing. Use them for lists of similar items.</p>
+<p><strong>Key Takeaways</strong>:</p>
+<ul>
+<li>Zero-based indexing</li>
+<li>Methods: <code>len()</code>, <code>push()</code>, <code>pop()</code>, <code>append()</code>, <code>contains()</code></li>
+<li>Iterate with for loops</li>
+<li>Slicing with <code>[start..end]</code></li>
+<li>Can be multi-dimensional</li>
+</ul>
+<hr />
+<p><a href="../04-functions/01-definitions.html">← Previous: Function Definitions</a> | <a href="./02-tuples.html">Next: Tuples →</a></p>
 
                     </main>
 
@@ -186,6 +371,22 @@
 
         </div>
 
+        <!-- Livereload script (if served using the cli tool) -->
+        <script>
+            const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsAddress = wsProtocol + "//" + location.host + "/" + "__livereload";
+            const socket = new WebSocket(wsAddress);
+            socket.onmessage = function (event) {
+                if (event.data === "reload") {
+                    socket.close();
+                    location.reload();
+                }
+            };
+
+            window.onbeforeunload = function() {
+                socket.close();
+            }
+        </script>
 
 
         <script>

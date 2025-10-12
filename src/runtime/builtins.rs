@@ -6,9 +6,38 @@
 
 use crate::runtime::{InterpreterError, Value};
 use std::collections::HashMap;
+use std::sync::{LazyLock, Mutex};
 
 #[cfg(test)]
 use std::rc::Rc;
+
+// Global output buffer for capturing println/print output
+// Uses Mutex for thread-safety across tokio::spawn_blocking boundaries
+pub static OUTPUT_BUFFER: LazyLock<Mutex<String>> = LazyLock::new(|| Mutex::new(String::new()));
+
+/// Enable output capture mode (for notebook/testing)
+pub fn enable_output_capture() {
+    if let Ok(mut buf) = OUTPUT_BUFFER.lock() {
+        buf.clear();
+    }
+}
+
+/// Get and clear captured output
+pub fn get_captured_output() -> String {
+    if let Ok(mut buf) = OUTPUT_BUFFER.lock() {
+        let output = buf.clone();
+        buf.clear();
+        output
+    } else {
+        String::new()
+    }
+}
+
+/// Check if output capture is enabled
+pub fn is_output_capture_enabled() -> bool {
+    // For now, always capture if buffer exists
+    true
+}
 
 /// Registry of built-in functions
 #[derive(Debug)]
@@ -99,7 +128,11 @@ impl BuiltinRegistry {
 
 // I/O Functions
 
-/// Built-in println function
+/// Built-in println function (DEPRECATED - use `eval_builtin.rs` instead)
+///
+/// NOTE: This function is kept for backward compatibility but is not used
+/// by the interpreter. The actual println implementation is in `eval_builtin.rs`
+/// which properly captures output for notebook use.
 ///
 /// # Complexity
 /// Cyclomatic complexity: 2 (within limit of 10)
@@ -117,7 +150,10 @@ fn builtin_println(args: &[Value]) -> Result<Value, InterpreterError> {
     Ok(Value::nil())
 }
 
-/// Built-in print function (no newline)
+/// Built-in print function (DEPRECATED - use `eval_builtin.rs` instead)
+///
+/// NOTE: This function is kept for backward compatibility but is not used
+/// by the interpreter. The actual print implementation is in `eval_builtin.rs`
 ///
 /// # Complexity
 /// Cyclomatic complexity: 1 (within limit of 10)

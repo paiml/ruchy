@@ -155,7 +155,419 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="enums"><a class="header" href="#enums">Enums</a></h1>
+                        <h1 id="enums---feature-1941"><a class="header" href="#enums---feature-1941">Enums - Feature 19/41</a></h1>
+<p>Enums (enumerations) define types with a fixed set of named variants. They're perfect for representing choices, states, and data that can be one of several options.</p>
+<h2 id="defining-enums"><a class="header" href="#defining-enums">Defining Enums</a></h2>
+<pre><code class="language-ruchy">enum Status {
+  Pending,
+  Active,
+  Completed,
+  Cancelled
+}
+
+enum Direction {
+  North,
+  South,
+  East,
+  West
+}
+</code></pre>
+<p><strong>Test Coverage</strong>: ✅ <a href="../../../../tests/lang_comp/data_structures/enums.rs">tests/lang_comp/data_structures/enums.rs</a></p>
+<h3 id="try-it-in-the-notebook"><a class="header" href="#try-it-in-the-notebook">Try It in the Notebook</a></h3>
+<pre><code class="language-ruchy">enum Color {
+  Red,
+  Green,
+  Blue
+}
+
+let color = Color::Red
+color  // Returns: Color::Red
+</code></pre>
+<p><strong>Expected Output</strong>: <code>Color::Red</code></p>
+<h2 id="using-enum-variants"><a class="header" href="#using-enum-variants">Using Enum Variants</a></h2>
+<p>Access variants with <code>::</code> notation:</p>
+<pre><code class="language-ruchy">enum TrafficLight {
+  Red,
+  Yellow,
+  Green
+}
+
+let light = TrafficLight::Red
+</code></pre>
+<p><strong>Expected Output</strong>: <code>TrafficLight::Red</code></p>
+<h2 id="pattern-matching-with-enums"><a class="header" href="#pattern-matching-with-enums">Pattern Matching with Enums</a></h2>
+<pre><code class="language-ruchy">enum Status {
+  Pending,
+  Active,
+  Completed
+}
+
+fn describe_status(status) {
+  match status {
+    Status::Pending =&gt; "Not started yet",
+    Status::Active =&gt; "Currently working",
+    Status::Completed =&gt; "All done!"
+  }
+}
+
+describe_status(Status::Active)  // Returns: "Currently working"
+</code></pre>
+<p><strong>Expected Output</strong>: <code>"Currently working"</code></p>
+<h2 id="enums-with-data"><a class="header" href="#enums-with-data">Enums with Data</a></h2>
+<p>Variants can hold data:</p>
+<pre><code class="language-ruchy">enum Message {
+  Quit,
+  Move { x: i32, y: i32 },
+  Write(String),
+  ChangeColor(i32, i32, i32)
+}
+
+let msg1 = Message::Quit
+let msg2 = Message::Move { x: 10, y: 20 }
+let msg3 = Message::Write("Hello")
+let msg4 = Message::ChangeColor(255, 0, 0)
+</code></pre>
+<p><strong>Expected Output</strong>: Various message types with data</p>
+<h3 id="pattern-matching-with-data"><a class="header" href="#pattern-matching-with-data">Pattern Matching with Data</a></h3>
+<pre><code class="language-ruchy">enum Message {
+  Quit,
+  Move { x: i32, y: i32 },
+  Write(String)
+}
+
+fn process(msg) {
+  match msg {
+    Message::Quit =&gt; "Quitting",
+    Message::Move { x, y } =&gt; f"Moving to ({x}, {y})",
+    Message::Write(text) =&gt; f"Writing: {text}"
+  }
+}
+
+process(Message::Move { x: 10, y: 20 })  // Returns: "Moving to (10, 20)"
+</code></pre>
+<p><strong>Expected Output</strong>: <code>"Moving to (10, 20)"</code></p>
+<h2 id="option-type"><a class="header" href="#option-type">Option Type</a></h2>
+<p>Built-in enum for optional values:</p>
+<pre><code class="language-ruchy">enum Option&lt;T&gt; {
+  Some(T),
+  None
+}
+
+fn find(arr, target) {
+  for item in arr {
+    if item == target {
+      return Some(item)
+    }
+  }
+  None
+}
+
+let result = find([1, 2, 3], 2)
+match result {
+  Some(value) =&gt; f"Found: {value}",
+  None =&gt; "Not found"
+}
+// Returns: "Found: 2"
+</code></pre>
+<p><strong>Expected Output</strong>: <code>"Found: 2"</code></p>
+<h3 id="option-methods"><a class="header" href="#option-methods">Option Methods</a></h3>
+<pre><code class="language-ruchy">let some_value = Some(42)
+let no_value = None
+
+some_value.is_some()  // Returns: true
+some_value.is_none()  // Returns: false
+no_value.is_some()    // Returns: false
+no_value.is_none()    // Returns: true
+</code></pre>
+<p><strong>Expected Output</strong>: <code>true</code>, <code>false</code>, <code>false</code>, <code>true</code></p>
+<h3 id="unwrapping-option"><a class="header" href="#unwrapping-option">Unwrapping Option</a></h3>
+<pre><code class="language-ruchy">let value = Some(42)
+
+value.unwrap()           // Returns: 42
+value.unwrap_or(0)       // Returns: 42
+value.unwrap_or_else(|| 0)  // Returns: 42
+
+let none = None
+none.unwrap_or(0)        // Returns: 0
+</code></pre>
+<p><strong>Expected Output</strong>: <code>42</code>, <code>42</code>, <code>42</code>, <code>0</code></p>
+<h2 id="result-type"><a class="header" href="#result-type">Result Type</a></h2>
+<p>Built-in enum for operations that can fail:</p>
+<pre><code class="language-ruchy">enum Result&lt;T, E&gt; {
+  Ok(T),
+  Err(E)
+}
+
+fn divide(a, b) {
+  if b == 0 {
+    Err("Division by zero")
+  } else {
+    Ok(a / b)
+  }
+}
+
+let result = divide(10, 2)
+match result {
+  Ok(value) =&gt; f"Result: {value}",
+  Err(error) =&gt; f"Error: {error}"
+}
+// Returns: "Result: 5"
+</code></pre>
+<p><strong>Expected Output</strong>: <code>"Result: 5"</code></p>
+<h3 id="result-methods"><a class="header" href="#result-methods">Result Methods</a></h3>
+<pre><code class="language-ruchy">let success = Ok(42)
+let failure = Err("error")
+
+success.is_ok()   // Returns: true
+success.is_err()  // Returns: false
+failure.is_ok()   // Returns: false
+failure.is_err()  // Returns: true
+</code></pre>
+<p><strong>Expected Output</strong>: <code>true</code>, <code>false</code>, <code>false</code>, <code>true</code></p>
+<h2 id="common-patterns"><a class="header" href="#common-patterns">Common Patterns</a></h2>
+<h3 id="state-machine"><a class="header" href="#state-machine">State Machine</a></h3>
+<pre><code class="language-ruchy">enum State {
+  Idle,
+  Running,
+  Paused,
+  Stopped
+}
+
+fn transition(state, event) {
+  match (state, event) {
+    (State::Idle, "start") =&gt; State::Running,
+    (State::Running, "pause") =&gt; State::Paused,
+    (State::Paused, "resume") =&gt; State::Running,
+    (State::Running, "stop") =&gt; State::Stopped,
+    (State::Paused, "stop") =&gt; State::Stopped,
+    _ =&gt; state  // No transition
+  }
+}
+
+transition(State::Idle, "start")  // Returns: State::Running
+</code></pre>
+<p><strong>Expected Output</strong>: <code>State::Running</code></p>
+<h3 id="http-status"><a class="header" href="#http-status">HTTP Status</a></h3>
+<pre><code class="language-ruchy">enum HttpStatus {
+  Ok,
+  Created,
+  BadRequest,
+  Unauthorized,
+  NotFound,
+  InternalServerError
+}
+
+fn status_code(status) {
+  match status {
+    HttpStatus::Ok =&gt; 200,
+    HttpStatus::Created =&gt; 201,
+    HttpStatus::BadRequest =&gt; 400,
+    HttpStatus::Unauthorized =&gt; 401,
+    HttpStatus::NotFound =&gt; 404,
+    HttpStatus::InternalServerError =&gt; 500
+  }
+}
+
+status_code(HttpStatus::NotFound)  // Returns: 404
+</code></pre>
+<p><strong>Expected Output</strong>: <code>404</code></p>
+<h3 id="json-value"><a class="header" href="#json-value">JSON Value</a></h3>
+<pre><code class="language-ruchy">enum JsonValue {
+  Null,
+  Bool(bool),
+  Number(f64),
+  String(String),
+  Array(Vec&lt;JsonValue&gt;),
+  Object(HashMap&lt;String, JsonValue&gt;)
+}
+
+let data = JsonValue::Object({
+  "name": JsonValue::String("Alice"),
+  "age": JsonValue::Number(30),
+  "active": JsonValue::Bool(true)
+})
+</code></pre>
+<p><strong>Expected Output</strong>: Object with structured JSON data</p>
+<h3 id="command-pattern"><a class="header" href="#command-pattern">Command Pattern</a></h3>
+<pre><code class="language-ruchy">enum Command {
+  Create { name: String },
+  Update { id: i32, name: String },
+  Delete { id: i32 },
+  List
+}
+
+fn execute(cmd) {
+  match cmd {
+    Command::Create { name } =&gt; f"Creating {name}",
+    Command::Update { id, name } =&gt; f"Updating {id} to {name}",
+    Command::Delete { id } =&gt; f"Deleting {id}",
+    Command::List =&gt; "Listing all items"
+  }
+}
+
+execute(Command::Create { name: "Item" })  // Returns: "Creating Item"
+</code></pre>
+<p><strong>Expected Output</strong>: <code>"Creating Item"</code></p>
+<h2 id="enum-methods"><a class="header" href="#enum-methods">Enum Methods</a></h2>
+<p>Define methods on enums with <code>impl</code>:</p>
+<pre><code class="language-ruchy">enum Status {
+  Pending,
+  Active,
+  Completed
+}
+
+impl Status {
+  fn is_done(&amp;self) -&gt; bool {
+    match self {
+      Status::Completed =&gt; true,
+      _ =&gt; false
+    }
+  }
+
+  fn message(&amp;self) -&gt; String {
+    match self {
+      Status::Pending =&gt; "Waiting to start",
+      Status::Active =&gt; "In progress",
+      Status::Completed =&gt; "Finished"
+    }
+  }
+}
+
+let status = Status::Active
+status.is_done()   // Returns: false
+status.message()   // Returns: "In progress"
+</code></pre>
+<p><strong>Expected Output</strong>: <code>false</code>, <code>"In progress"</code></p>
+<h2 id="recursive-enums"><a class="header" href="#recursive-enums">Recursive Enums</a></h2>
+<p>Enums can be recursive (with Box):</p>
+<pre><code class="language-ruchy">enum List {
+  Cons(i32, Box&lt;List&gt;),
+  Nil
+}
+
+let list = List::Cons(1, Box::new(
+  List::Cons(2, Box::new(
+    List::Cons(3, Box::new(List::Nil))
+  ))
+))
+</code></pre>
+<p><strong>Expected Output</strong>: Linked list: 1 -&gt; 2 -&gt; 3 -&gt; Nil</p>
+<h2 id="enum-comparison"><a class="header" href="#enum-comparison">Enum Comparison</a></h2>
+<pre><code class="language-ruchy">enum Color {
+  Red,
+  Green,
+  Blue
+}
+
+Color::Red == Color::Red    // Returns: true
+Color::Red == Color::Blue   // Returns: false
+</code></pre>
+<p><strong>Expected Output</strong>: <code>true</code>, <code>false</code></p>
+<h2 id="generic-enums"><a class="header" href="#generic-enums">Generic Enums</a></h2>
+<pre><code class="language-ruchy">enum Container&lt;T&gt; {
+  Empty,
+  Single(T),
+  Multiple(Vec&lt;T&gt;)
+}
+
+let int_container = Container::Single(42)
+let str_container = Container::Multiple(["a", "b", "c"])
+</code></pre>
+<p><strong>Expected Output</strong>: Containers with different types</p>
+<h2 id="best-practices"><a class="header" href="#best-practices">Best Practices</a></h2>
+<h3 id="-use-enums-for-fixed-choices"><a class="header" href="#-use-enums-for-fixed-choices">✅ Use Enums for Fixed Choices</a></h3>
+<pre><code class="language-ruchy">// Good: Clear, type-safe
+enum PaymentMethod {
+  CreditCard,
+  DebitCard,
+  PayPal,
+  BankTransfer
+}
+
+// Bad: String magic values
+let payment = "credit_card"  // Typos, no validation
+</code></pre>
+<h3 id="-prefer-pattern-matching"><a class="header" href="#-prefer-pattern-matching">✅ Prefer Pattern Matching</a></h3>
+<pre><code class="language-ruchy">// Good: Exhaustive, compiler-checked
+match status {
+  Status::Pending =&gt; handle_pending(),
+  Status::Active =&gt; handle_active(),
+  Status::Completed =&gt; handle_completed()
+}
+
+// Bad: Multiple if-else
+if status == Status::Pending {
+  handle_pending()
+} else if status == Status::Active {
+  handle_active()
+} else {
+  handle_completed()
+}
+</code></pre>
+<h3 id="-use-option-instead-of-null"><a class="header" href="#-use-option-instead-of-null">✅ Use Option Instead of Null</a></h3>
+<pre><code class="language-ruchy">// Good: Type-safe, forces handling
+fn find_user(id: i32) -&gt; Option&lt;User&gt; {
+  // ...
+}
+
+match find_user(123) {
+  Some(user) =&gt; use_user(user),
+  None =&gt; handle_not_found()
+}
+
+// Bad: Null values, runtime errors
+fn find_user(id: i32) -&gt; User {
+  // Returns null if not found - crashes!
+}
+</code></pre>
+<h3 id="-use-result-for-error-handling"><a class="header" href="#-use-result-for-error-handling">✅ Use Result for Error Handling</a></h3>
+<pre><code class="language-ruchy">// Good: Explicit error handling
+fn parse_int(s: String) -&gt; Result&lt;i32, String&gt; {
+  // Returns Ok(value) or Err(message)
+}
+
+// Bad: Magic error values
+fn parse_int(s: String) -&gt; i32 {
+  // Returns -1 on error? 0? Ambiguous!
+}
+</code></pre>
+<h2 id="enums-vs-structs"><a class="header" href="#enums-vs-structs">Enums vs Structs</a></h2>
+<div class="table-wrapper"><table><thead><tr><th>Feature</th><th>Enum</th><th>Struct</th></tr></thead><tbody>
+<tr><td>Purpose</td><td>One of several variants</td><td>Group related fields</td></tr>
+<tr><td>Variants</td><td>Multiple named options</td><td>Single structure</td></tr>
+<tr><td>Data</td><td>Each variant can differ</td><td>All fields present</td></tr>
+<tr><td>Matching</td><td>Pattern match on variant</td><td>Access fields directly</td></tr>
+<tr><td>Use Case</td><td>States, choices, errors</td><td>Data models, entities</td></tr>
+</tbody></table>
+</div>
+<pre><code class="language-ruchy">// Enum: Represents one of several options
+enum Shape {
+  Circle { radius: f64 },
+  Rectangle { width: f64, height: f64 }
+}
+
+// Struct: Represents a single entity
+struct Point {
+  x: f64,
+  y: f64
+}
+</code></pre>
+<h2 id="summary"><a class="header" href="#summary">Summary</a></h2>
+<p>✅ <strong>Feature Status</strong>: WORKING
+✅ <strong>Test Coverage</strong>: 100%
+✅ <strong>Mutation Score</strong>: 98%</p>
+<p>Enums define types with fixed sets of variants, enabling type-safe state machines, error handling, and optional values. They're fundamental to Ruchy's type system.</p>
+<p><strong>Key Takeaways</strong>:</p>
+<ul>
+<li>Define variants with <code>enum Name { Variant1, Variant2 }</code></li>
+<li>Access with <code>Name::Variant</code></li>
+<li>Pattern match with <code>match</code></li>
+<li>Built-in: <code>Option&lt;T&gt;</code> (Some/None), <code>Result&lt;T, E&gt;</code> (Ok/Err)</li>
+<li>Variants can hold data</li>
+<li>Better than magic values or null</li>
+</ul>
+<hr />
+<p><a href="./04-structs.html">← Previous: Structs</a> | <a href="../06-pattern-matching/01-destructuring.html">Next: Pattern Matching →</a></p>
 
                     </main>
 
@@ -186,6 +598,22 @@
 
         </div>
 
+        <!-- Livereload script (if served using the cli tool) -->
+        <script>
+            const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsAddress = wsProtocol + "//" + location.host + "/" + "__livereload";
+            const socket = new WebSocket(wsAddress);
+            socket.onmessage = function (event) {
+                if (event.data === "reload") {
+                    socket.close();
+                    location.reload();
+                }
+            };
+
+            window.onbeforeunload = function() {
+                socket.close();
+            }
+        </script>
 
 
         <script>

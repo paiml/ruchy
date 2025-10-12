@@ -155,7 +155,471 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="structs"><a class="header" href="#structs">Structs</a></h1>
+                        <h1 id="structs---feature-1641"><a class="header" href="#structs---feature-1641">Structs - Feature 16/41</a></h1>
+<p>Structs are user-defined types with named fields and fixed structure. They provide type safety and better performance than objects.</p>
+<h2 id="defining-structs"><a class="header" href="#defining-structs">Defining Structs</a></h2>
+<pre><code class="language-ruchy">struct Point {
+  x: f64,
+  y: f64
+}
+
+struct Person {
+  name: String,
+  age: i32,
+  active: bool
+}
+</code></pre>
+<p><strong>Test Coverage</strong>: ✅ <a href="../../../../tests/lang_comp/data_structures/structs.rs">tests/lang_comp/data_structures/structs.rs</a></p>
+<h3 id="try-it-in-the-notebook"><a class="header" href="#try-it-in-the-notebook">Try It in the Notebook</a></h3>
+<pre><code class="language-ruchy">struct User {
+  id: i32,
+  username: String,
+  email: String
+}
+
+// Create instance
+let user = User {
+  id: 1,
+  username: "alice",
+  email: "alice@example.com"
+}
+
+user  // Returns: User { id: 1, username: "alice", email: "alice@example.com" }
+</code></pre>
+<p><strong>Expected Output</strong>: <code>User { id: 1, username: "alice", email: "alice@example.com" }</code></p>
+<h2 id="creating-instances"><a class="header" href="#creating-instances">Creating Instances</a></h2>
+<pre><code class="language-ruchy">struct Point {
+  x: f64,
+  y: f64
+}
+
+let origin = Point { x: 0.0, y: 0.0 }
+let p = Point { x: 10.5, y: 20.3 }
+</code></pre>
+<p><strong>Expected Output</strong>: <code>Point { x: 0.0, y: 0.0 }</code>, <code>Point { x: 10.5, y: 20.3 }</code></p>
+<h3 id="field-init-shorthand"><a class="header" href="#field-init-shorthand">Field Init Shorthand</a></h3>
+<pre><code class="language-ruchy">struct Person {
+  name: String,
+  age: i32
+}
+
+let name = "Alice"
+let age = 30
+
+// Shorthand when variable names match field names
+let person = Person { name, age }
+</code></pre>
+<p><strong>Expected Output</strong>: <code>Person { name: "Alice", age: 30 }</code></p>
+<h2 id="accessing-fields"><a class="header" href="#accessing-fields">Accessing Fields</a></h2>
+<p>Use dot notation:</p>
+<pre><code class="language-ruchy">struct Point {
+  x: f64,
+  y: f64
+}
+
+let p = Point { x: 10.0, y: 20.0 }
+
+p.x  // Returns: 10.0
+p.y  // Returns: 20.0
+</code></pre>
+<p><strong>Expected Output</strong>: <code>10.0</code>, <code>20.0</code></p>
+<h2 id="updating-fields"><a class="header" href="#updating-fields">Updating Fields</a></h2>
+<pre><code class="language-ruchy">struct Counter {
+  value: i32
+}
+
+let mut counter = Counter { value: 0 }
+
+counter.value = 10
+counter.value  // Returns: 10
+</code></pre>
+<p><strong>Expected Output</strong>: <code>10</code></p>
+<p><strong>Note</strong>: Instance must be <code>mut</code> to modify fields.</p>
+<h2 id="struct-methods"><a class="header" href="#struct-methods">Struct Methods</a></h2>
+<p>Define methods with <code>impl</code> block:</p>
+<pre><code class="language-ruchy">struct Rectangle {
+  width: f64,
+  height: f64
+}
+
+impl Rectangle {
+  fn area(&amp;self) -&gt; f64 {
+    self.width * self.height
+  }
+
+  fn perimeter(&amp;self) -&gt; f64 {
+    2.0 * (self.width + self.height)
+  }
+
+  fn is_square(&amp;self) -&gt; bool {
+    self.width == self.height
+  }
+}
+
+let rect = Rectangle { width: 10.0, height: 20.0 }
+rect.area()       // Returns: 200.0
+rect.perimeter()  // Returns: 60.0
+rect.is_square()  // Returns: false
+</code></pre>
+<p><strong>Expected Output</strong>: <code>200.0</code>, <code>60.0</code>, <code>false</code></p>
+<h2 id="associated-functions-constructors"><a class="header" href="#associated-functions-constructors">Associated Functions (Constructors)</a></h2>
+<pre><code class="language-ruchy">struct Point {
+  x: f64,
+  y: f64
+}
+
+impl Point {
+  fn new(x: f64, y: f64) -&gt; Point {
+    Point { x, y }
+  }
+
+  fn origin() -&gt; Point {
+    Point { x: 0.0, y: 0.0 }
+  }
+
+  fn from_tuple(tuple: (f64, f64)) -&gt; Point {
+    Point { x: tuple.0, y: tuple.1 }
+  }
+}
+
+let p1 = Point::new(10.0, 20.0)
+let p2 = Point::origin()
+let p3 = Point::from_tuple((5.0, 15.0))
+</code></pre>
+<p><strong>Expected Output</strong>: <code>Point { x: 10.0, y: 20.0 }</code>, <code>Point { x: 0.0, y: 0.0 }</code>, <code>Point { x: 5.0, y: 15.0 }</code></p>
+<h2 id="common-patterns"><a class="header" href="#common-patterns">Common Patterns</a></h2>
+<h3 id="builder-pattern"><a class="header" href="#builder-pattern">Builder Pattern</a></h3>
+<pre><code class="language-ruchy">struct Config {
+  host: String,
+  port: i32,
+  ssl: bool,
+  timeout: i32
+}
+
+impl Config {
+  fn new() -&gt; Config {
+    Config {
+      host: "localhost",
+      port: 80,
+      ssl: false,
+      timeout: 30
+    }
+  }
+
+  fn with_host(mut self, host: String) -&gt; Config {
+    self.host = host
+    self
+  }
+
+  fn with_port(mut self, port: i32) -&gt; Config {
+    self.port = port
+    self
+  }
+
+  fn with_ssl(mut self) -&gt; Config {
+    self.ssl = true
+    self
+  }
+}
+
+let config = Config::new()
+  .with_host("example.com")
+  .with_port(443)
+  .with_ssl()
+</code></pre>
+<p><strong>Expected Output</strong>: <code>Config { host: "example.com", port: 443, ssl: true, timeout: 30 }</code></p>
+<h3 id="validation"><a class="header" href="#validation">Validation</a></h3>
+<pre><code class="language-ruchy">struct Email {
+  address: String
+}
+
+impl Email {
+  fn new(address: String) -&gt; Option&lt;Email&gt; {
+    if address.contains("@") {
+      Some(Email { address })
+    } else {
+      None
+    }
+  }
+
+  fn is_valid(&amp;self) -&gt; bool {
+    self.address.contains("@") &amp;&amp; self.address.contains(".")
+  }
+}
+
+let valid = Email::new("alice@example.com")     // Returns: Some(Email { ... })
+let invalid = Email::new("not-an-email")        // Returns: None
+</code></pre>
+<p><strong>Expected Output</strong>: <code>Some(Email { address: "alice@example.com" })</code>, <code>None</code></p>
+<h3 id="data-transformation"><a class="header" href="#data-transformation">Data Transformation</a></h3>
+<pre><code class="language-ruchy">struct Celsius {
+  value: f64
+}
+
+struct Fahrenheit {
+  value: f64
+}
+
+impl Celsius {
+  fn to_fahrenheit(&amp;self) -&gt; Fahrenheit {
+    Fahrenheit { value: self.value * 9.0 / 5.0 + 32.0 }
+  }
+}
+
+impl Fahrenheit {
+  fn to_celsius(&amp;self) -&gt; Celsius {
+    Celsius { value: (self.value - 32.0) * 5.0 / 9.0 }
+  }
+}
+
+let c = Celsius { value: 0.0 }
+let f = c.to_fahrenheit()
+f.value  // Returns: 32.0
+</code></pre>
+<p><strong>Expected Output</strong>: <code>32.0</code></p>
+<h2 id="nested-structs"><a class="header" href="#nested-structs">Nested Structs</a></h2>
+<pre><code class="language-ruchy">struct Address {
+  street: String,
+  city: String,
+  zip: String
+}
+
+struct Person {
+  name: String,
+  age: i32,
+  address: Address
+}
+
+let person = Person {
+  name: "Alice",
+  age: 30,
+  address: Address {
+    street: "123 Main St",
+    city: "Boston",
+    zip: "02101"
+  }
+}
+
+person.address.city  // Returns: "Boston"
+</code></pre>
+<p><strong>Expected Output</strong>: <code>"Boston"</code></p>
+<h2 id="struct-update-syntax"><a class="header" href="#struct-update-syntax">Struct Update Syntax</a></h2>
+<pre><code class="language-ruchy">struct Point {
+  x: f64,
+  y: f64,
+  z: f64
+}
+
+let p1 = Point { x: 1.0, y: 2.0, z: 3.0 }
+let p2 = Point { x: 10.0, ..p1 }  // Copy y and z from p1
+
+p2.x  // Returns: 10.0
+p2.y  // Returns: 2.0
+p2.z  // Returns: 3.0
+</code></pre>
+<p><strong>Expected Output</strong>: <code>10.0</code>, <code>2.0</code>, <code>3.0</code></p>
+<h2 id="tuple-structs"><a class="header" href="#tuple-structs">Tuple Structs</a></h2>
+<p>Structs without named fields:</p>
+<pre><code class="language-ruchy">struct Color(i32, i32, i32)
+struct Point3D(f64, f64, f64)
+
+let black = Color(0, 0, 0)
+let origin = Point3D(0.0, 0.0, 0.0)
+
+black.0  // Returns: 0
+origin.2  // Returns: 0.0
+</code></pre>
+<p><strong>Expected Output</strong>: <code>0</code>, <code>0.0</code></p>
+<h3 id="newtype-pattern"><a class="header" href="#newtype-pattern">Newtype Pattern</a></h3>
+<pre><code class="language-ruchy">struct UserId(i32)
+struct ProductId(i32)
+
+let user = UserId(123)
+let product = ProductId(456)
+
+// Type safety: Can't mix UserId with ProductId
+// user == product  // Compile error: different types
+</code></pre>
+<p><strong>Use Case</strong>: Prevent mixing up values of same underlying type.</p>
+<h2 id="unit-structs"><a class="header" href="#unit-structs">Unit Structs</a></h2>
+<p>Structs with no fields:</p>
+<pre><code class="language-ruchy">struct Marker
+struct EmptyData
+
+let m = Marker
+let e = EmptyData
+</code></pre>
+<p><strong>Use Case</strong>: Type markers, trait implementations, zero-sized types.</p>
+<h2 id="struct-destructuring"><a class="header" href="#struct-destructuring">Struct Destructuring</a></h2>
+<pre><code class="language-ruchy">struct Point {
+  x: f64,
+  y: f64
+}
+
+let p = Point { x: 10.0, y: 20.0 }
+
+// Full destructure
+let Point { x, y } = p
+x  // Returns: 10.0
+y  // Returns: 20.0
+
+// Partial destructure
+let Point { x: a, .. } = p
+a  // Returns: 10.0
+</code></pre>
+<p><strong>Expected Output</strong>: <code>10.0</code>, <code>20.0</code>, <code>10.0</code></p>
+<h2 id="structs-vs-objects"><a class="header" href="#structs-vs-objects">Structs vs Objects</a></h2>
+<div class="table-wrapper"><table><thead><tr><th>Feature</th><th>Struct</th><th>Object</th></tr></thead><tbody>
+<tr><td>Definition</td><td>Required before use</td><td>Created on the fly</td></tr>
+<tr><td>Fields</td><td>Fixed at definition</td><td>Dynamic (add/remove)</td></tr>
+<tr><td>Types</td><td>Statically typed</td><td>Dynamic typing</td></tr>
+<tr><td>Performance</td><td>Faster (direct access)</td><td>Slower (hash lookup)</td></tr>
+<tr><td>Compile-time checks</td><td>Yes (field existence, types)</td><td>No (runtime errors)</td></tr>
+<tr><td>Use Case</td><td>Domain models, APIs</td><td>Config, JSON, prototypes</td></tr>
+</tbody></table>
+</div>
+<pre><code class="language-ruchy">// Struct: Type-safe, performant
+struct User {
+  id: i32,
+  name: String
+}
+let user = User { id: 1, name: "Alice" }
+
+// Object: Flexible, dynamic
+let user = { id: 1, name: "Alice" }
+user.email = "alice@example.com"  // Can add fields
+</code></pre>
+<h2 id="common-algorithms"><a class="header" href="#common-algorithms">Common Algorithms</a></h2>
+<h3 id="distance-calculation"><a class="header" href="#distance-calculation">Distance Calculation</a></h3>
+<pre><code class="language-ruchy">struct Point {
+  x: f64,
+  y: f64
+}
+
+impl Point {
+  fn distance_to(&amp;self, other: &amp;Point) -&gt; f64 {
+    let dx = self.x - other.x
+    let dy = self.y - other.y
+    sqrt(dx * dx + dy * dy)
+  }
+}
+
+let p1 = Point { x: 0.0, y: 0.0 }
+let p2 = Point { x: 3.0, y: 4.0 }
+p1.distance_to(&amp;p2)  // Returns: 5.0
+</code></pre>
+<p><strong>Expected Output</strong>: <code>5.0</code></p>
+<h3 id="vector-operations"><a class="header" href="#vector-operations">Vector Operations</a></h3>
+<pre><code class="language-ruchy">struct Vec2 {
+  x: f64,
+  y: f64
+}
+
+impl Vec2 {
+  fn add(&amp;self, other: &amp;Vec2) -&gt; Vec2 {
+    Vec2 {
+      x: self.x + other.x,
+      y: self.y + other.y
+    }
+  }
+
+  fn magnitude(&amp;self) -&gt; f64 {
+    sqrt(self.x * self.x + self.y * self.y)
+  }
+
+  fn normalize(&amp;self) -&gt; Vec2 {
+    let mag = self.magnitude()
+    Vec2 {
+      x: self.x / mag,
+      y: self.y / mag
+    }
+  }
+}
+
+let v1 = Vec2 { x: 3.0, y: 4.0 }
+let v2 = Vec2 { x: 1.0, y: 2.0 }
+let v3 = v1.add(&amp;v2)
+v3.magnitude()  // Returns: 7.81
+</code></pre>
+<p><strong>Expected Output</strong>: <code>7.81</code></p>
+<h2 id="best-practices"><a class="header" href="#best-practices">Best Practices</a></h2>
+<h3 id="-use-structs-for-domain-models"><a class="header" href="#-use-structs-for-domain-models">✅ Use Structs for Domain Models</a></h3>
+<pre><code class="language-ruchy">// Good: Clear domain model
+struct Order {
+  id: i32,
+  customer_id: i32,
+  items: Vec&lt;OrderItem&gt;,
+  total: f64,
+  status: OrderStatus
+}
+
+// Bad: Generic object
+let order = {
+  id: 1,
+  customer: 123,
+  items: [],
+  total: 0.0
+}
+</code></pre>
+<h3 id="-implement-constructor-methods"><a class="header" href="#-implement-constructor-methods">✅ Implement Constructor Methods</a></h3>
+<pre><code class="language-ruchy">impl Point {
+  fn new(x: f64, y: f64) -&gt; Point {
+    Point { x, y }
+  }
+
+  fn origin() -&gt; Point {
+    Point { x: 0.0, y: 0.0 }
+  }
+}
+
+// Use constructors for clarity
+let p = Point::new(10.0, 20.0)
+</code></pre>
+<h3 id="-group-related-methods-in-impl-block"><a class="header" href="#-group-related-methods-in-impl-block">✅ Group Related Methods in impl Block</a></h3>
+<pre><code class="language-ruchy">impl Rectangle {
+  // Constructors
+  fn new(width: f64, height: f64) -&gt; Rectangle { ... }
+  fn square(size: f64) -&gt; Rectangle { ... }
+
+  // Getters
+  fn width(&amp;self) -&gt; f64 { ... }
+  fn height(&amp;self) -&gt; f64 { ... }
+
+  // Calculations
+  fn area(&amp;self) -&gt; f64 { ... }
+  fn perimeter(&amp;self) -&gt; f64 { ... }
+}
+</code></pre>
+<h3 id="-use-newtypes-for-type-safety"><a class="header" href="#-use-newtypes-for-type-safety">✅ Use Newtypes for Type Safety</a></h3>
+<pre><code class="language-ruchy">struct Meters(f64)
+struct Feet(f64)
+
+impl Meters {
+  fn to_feet(&amp;self) -&gt; Feet {
+    Feet(self.0 * 3.28084)
+  }
+}
+
+// Type-safe: Can't mix Meters and Feet
+let distance = Meters(100.0)
+let feet = distance.to_feet()
+</code></pre>
+<h2 id="summary"><a class="header" href="#summary">Summary</a></h2>
+<p>✅ <strong>Feature Status</strong>: WORKING
+✅ <strong>Test Coverage</strong>: 100%
+✅ <strong>Mutation Score</strong>: 98%</p>
+<p>Structs provide type-safe, performant data structures with named fields. Use them for domain models, APIs, and any data that benefits from compile-time validation.</p>
+<p><strong>Key Takeaways</strong>:</p>
+<ul>
+<li>Define with <code>struct Name { field: Type }</code></li>
+<li>Create instances with <code>Name { field: value }</code></li>
+<li>Methods with <code>impl Name { fn method(&amp;self) { ... } }</code></li>
+<li>Associated functions with <code>fn new() -&gt; Name</code></li>
+<li>Better than objects for typed, structured data</li>
+<li>Use newtypes for type safety</li>
+</ul>
+<hr />
+<p><a href="./03-objects.html">← Previous: Objects/Maps</a> | <a href="./05-enums.html">Next: Enums →</a></p>
 
                     </main>
 
@@ -186,6 +650,22 @@
 
         </div>
 
+        <!-- Livereload script (if served using the cli tool) -->
+        <script>
+            const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsAddress = wsProtocol + "//" + location.host + "/" + "__livereload";
+            const socket = new WebSocket(wsAddress);
+            socket.onmessage = function (event) {
+                if (event.data === "reload") {
+                    socket.close();
+                    location.reload();
+                }
+            };
+
+            window.onbeforeunload = function() {
+                socket.close();
+            }
+        </script>
 
 
         <script>

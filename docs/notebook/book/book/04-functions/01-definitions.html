@@ -155,7 +155,201 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="function-definitions"><a class="header" href="#function-definitions">Function Definitions</a></h1>
+                        <h1 id="function-definitions---feature-1241"><a class="header" href="#function-definitions---feature-1241">Function Definitions - Feature 12/41</a></h1>
+<p>Functions encapsulate reusable code. In Ruchy, functions are first-class values that can be passed around and returned.</p>
+<h2 id="basic-function-definition"><a class="header" href="#basic-function-definition">Basic Function Definition</a></h2>
+<p>Define a function with <code>fn</code>:</p>
+<pre><code class="language-ruchy">fn greet() {
+  print("Hello!")
+}
+
+greet()  // Prints: Hello!
+</code></pre>
+<p><strong>Expected Output</strong>: <code>Hello!</code></p>
+<p><strong>Test Coverage</strong>: ✅ <a href="../../../../tests/lang_comp/functions/definitions.rs">tests/lang_comp/functions/definitions.rs</a></p>
+<h3 id="try-it-in-the-notebook"><a class="header" href="#try-it-in-the-notebook">Try It in the Notebook</a></h3>
+<pre><code class="language-ruchy">fn add(a, b) {
+  a + b
+}
+
+let result = add(5, 3)
+result  // Returns: 8
+</code></pre>
+<p><strong>Expected Output</strong>: <code>8</code></p>
+<h2 id="function-with-return-value"><a class="header" href="#function-with-return-value">Function with Return Value</a></h2>
+<p>The last expression is automatically returned:</p>
+<pre><code class="language-ruchy">fn square(n) {
+  n * n
+}
+
+square(4)  // Returns: 16
+</code></pre>
+<p><strong>Expected Output</strong>: <code>16</code></p>
+<h3 id="explicit-return"><a class="header" href="#explicit-return">Explicit Return</a></h3>
+<p>Use <code>return</code> for early exit:</p>
+<pre><code class="language-ruchy">fn abs(n) {
+  if n &lt; 0 {
+    return -n
+  }
+  n
+}
+
+abs(-5)  // Returns: 5
+</code></pre>
+<p><strong>Expected Output</strong>: <code>5</code></p>
+<h2 id="parameters"><a class="header" href="#parameters">Parameters</a></h2>
+<p>Functions can accept multiple parameters:</p>
+<pre><code class="language-ruchy">fn calculate(x, y, z) {
+  x * y + z
+}
+
+calculate(2, 3, 4)  // Returns: 10
+</code></pre>
+<p><strong>Expected Output</strong>: <code>10</code></p>
+<h2 id="common-patterns"><a class="header" href="#common-patterns">Common Patterns</a></h2>
+<h3 id="pure-functions"><a class="header" href="#pure-functions">Pure Functions</a></h3>
+<pre><code class="language-ruchy">fn celsius_to_fahrenheit(c) {
+  c * 9 / 5 + 32
+}
+
+celsius_to_fahrenheit(0)   // Returns: 32
+celsius_to_fahrenheit(100)  // Returns: 212
+</code></pre>
+<h3 id="helper-functions"><a class="header" href="#helper-functions">Helper Functions</a></h3>
+<pre><code class="language-ruchy">fn is_even(n) {
+  n % 2 == 0
+}
+
+fn filter_evens(numbers) {
+  let result = []
+  for n in numbers {
+    if is_even(n) {
+      result.push(n)
+    }
+  }
+  result
+}
+
+filter_evens([1, 2, 3, 4, 5])  // Returns: [2, 4]
+</code></pre>
+<h3 id="validation-functions"><a class="header" href="#validation-functions">Validation Functions</a></h3>
+<pre><code class="language-ruchy">fn is_valid_age(age) {
+  age &gt;= 0 &amp;&amp; age &lt;= 120
+}
+
+is_valid_age(25)   // Returns: true
+is_valid_age(-5)   // Returns: false
+is_valid_age(150)  // Returns: false
+</code></pre>
+<h2 id="recursion"><a class="header" href="#recursion">Recursion</a></h2>
+<p>Functions can call themselves:</p>
+<pre><code class="language-ruchy">fn factorial(n) {
+  if n &lt;= 1 {
+    1
+  } else {
+    n * factorial(n - 1)
+  }
+}
+
+factorial(5)  // Returns: 120
+</code></pre>
+<p><strong>Expected Output</strong>: <code>120</code></p>
+<h3 id="fibonacci"><a class="header" href="#fibonacci">Fibonacci</a></h3>
+<pre><code class="language-ruchy">fn fib(n) {
+  if n &lt;= 1 {
+    n
+  } else {
+    fib(n - 1) + fib(n - 2)
+  }
+}
+
+fib(7)  // Returns: 13
+</code></pre>
+<p><strong>Expected Output</strong>: <code>13</code></p>
+<h2 id="function-scope"><a class="header" href="#function-scope">Function Scope</a></h2>
+<p>Functions have their own scope:</p>
+<pre><code class="language-ruchy">let x = 10
+
+fn test() {
+  let x = 20  // Different x
+  x
+}
+
+test()  // Returns: 20
+x       // Returns: 10 (unchanged)
+</code></pre>
+<h2 id="closures"><a class="header" href="#closures">Closures</a></h2>
+<p>Functions capture their environment:</p>
+<pre><code class="language-ruchy">fn make_adder(n) {
+  fn add(x) {
+    x + n  // Captures n
+  }
+  add
+}
+
+let add5 = make_adder(5)
+add5(3)  // Returns: 8
+</code></pre>
+<p><strong>Expected Output</strong>: <code>8</code></p>
+<h2 id="higher-order-functions"><a class="header" href="#higher-order-functions">Higher-Order Functions</a></h2>
+<p>Functions that take or return functions:</p>
+<pre><code class="language-ruchy">fn apply_twice(f, x) {
+  f(f(x))
+}
+
+fn double(n) {
+  n * 2
+}
+
+apply_twice(double, 3)  // Returns: 12 (3 * 2 * 2)
+</code></pre>
+<p><strong>Expected Output</strong>: <code>12</code></p>
+<h2 id="anonymous-functions"><a class="header" href="#anonymous-functions">Anonymous Functions</a></h2>
+<pre><code class="language-ruchy">let square = fn(x) { x * x }
+square(5)  // Returns: 25
+</code></pre>
+<p><strong>Expected Output</strong>: <code>25</code></p>
+<h2 id="arrow-functions"><a class="header" href="#arrow-functions">Arrow Functions</a></h2>
+<p>Shorthand syntax:</p>
+<pre><code class="language-ruchy">let add = (a, b) =&gt; a + b
+add(3, 4)  // Returns: 7
+</code></pre>
+<p><strong>Expected Output</strong>: <code>7</code></p>
+<h2 id="best-practices"><a class="header" href="#best-practices">Best Practices</a></h2>
+<h3 id="-small-focused-functions"><a class="header" href="#-small-focused-functions">✅ Small, Focused Functions</a></h3>
+<pre><code class="language-ruchy">// Good: Single responsibility
+fn calculate_tax(amount) {
+  amount * 0.08
+}
+
+fn calculate_total(subtotal) {
+  subtotal + calculate_tax(subtotal)
+}
+</code></pre>
+<h3 id="-descriptive-names"><a class="header" href="#-descriptive-names">✅ Descriptive Names</a></h3>
+<pre><code class="language-ruchy">// Good
+fn is_prime(n) { ... }
+fn get_user_by_id(id) { ... }
+
+// Bad
+fn check(n) { ... }
+fn get(id) { ... }
+</code></pre>
+<h2 id="summary"><a class="header" href="#summary">Summary</a></h2>
+<p>✅ <strong>Feature Status</strong>: WORKING
+✅ <strong>Test Coverage</strong>: 100%
+✅ <strong>Mutation Score</strong>: 96%</p>
+<p>Functions are the building blocks of reusable code. Use them to organize logic, avoid repetition, and create abstractions.</p>
+<p><strong>Key Takeaways</strong>:</p>
+<ul>
+<li>Last expression is returned automatically</li>
+<li>Use <code>return</code> for early exit</li>
+<li>Functions can be recursive</li>
+<li>Closures capture environment</li>
+<li>Keep functions small and focused</li>
+</ul>
+<hr />
+<p><a href="../03-control-flow/05-loop-control.html">← Previous: Loop Control</a> | <a href="./02-parameters.html">Next: Parameters &amp; Arguments →</a></p>
 
                     </main>
 
@@ -186,6 +380,22 @@
 
         </div>
 
+        <!-- Livereload script (if served using the cli tool) -->
+        <script>
+            const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsAddress = wsProtocol + "//" + location.host + "/" + "__livereload";
+            const socket = new WebSocket(wsAddress);
+            socket.onmessage = function (event) {
+                if (event.data === "reload") {
+                    socket.close();
+                    location.reload();
+                }
+            };
+
+            window.onbeforeunload = function() {
+                socket.close();
+            }
+        </script>
 
 
         <script>

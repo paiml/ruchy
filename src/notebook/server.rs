@@ -31,8 +31,12 @@ async fn serve_notebook() -> Html<&'static str> {
 async fn execute_handler(Json(request): Json<ExecuteRequest>) -> Json<ExecuteResponse> {
     println!("🔧 TDD DEBUG: execute_handler called with: {request:?}");
     let result = tokio::task::spawn_blocking(move || {
+        use crate::runtime::builtins::{enable_output_capture, get_captured_output};
         use crate::runtime::repl::Repl;
         use std::time::{Duration, Instant};
+
+        // Enable output capture for this execution
+        enable_output_capture();
 
         let mut repl = match Repl::new(std::env::current_dir().unwrap_or_else(|_| "/tmp".into())) {
             Ok(r) => r,
@@ -47,8 +51,8 @@ async fn execute_handler(Json(request): Json<ExecuteRequest>) -> Json<ExecuteRes
         let start = Instant::now();
         let timeout = Duration::from_secs(5);
 
-        match repl.process_line(&request.source) {
-            Ok(_should_exit) => {
+        match repl.eval(&request.source) {
+            Ok(expr_result) => {
                 if start.elapsed() > timeout {
                     ExecuteResponse {
                         output: String::new(),
@@ -56,8 +60,22 @@ async fn execute_handler(Json(request): Json<ExecuteRequest>) -> Json<ExecuteRes
                         error: Some("Execution timeout".to_string()),
                     }
                 } else {
+                    // Get captured println/print output
+                    let print_output = get_captured_output();
+
+                    // Combine print output with expression result
+                    let final_output = if print_output.is_empty() {
+                        expr_result
+                    } else if expr_result == "nil" || expr_result.is_empty() {
+                        // If expression returns nil, only show print output
+                        print_output.trim_end().to_string()
+                    } else {
+                        // Show both print output and expression result
+                        format!("{print_output}{expr_result}")
+                    };
+
                     ExecuteResponse {
-                        output: "Execution completed".to_string(),
+                        output: final_output,
                         success: true,
                         error: None,
                     }
