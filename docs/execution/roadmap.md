@@ -4580,9 +4580,13 @@ From paiml-mcp-agent-toolkit CLAUDE.md:
         - editMarkdown() and renderMarkdown() functions
         - Cell type selector wired up
         - Keyboard shortcuts: Shift+Enter, Esc to save
-      - [ ] Define .rnb (Ruchy Notebook) format or use .ipynb compatibility
-      - [ ] Convert MD Book chapters to notebook format
-      - [ ] Load chapter as notebook, execute all code cells, verify outputs
+      - [x] File loading/saving API (commit ab0d12f4) ✅ (NOTEBOOK-009 Phase 4)
+        - /api/notebook/load endpoint with error handling
+        - /api/notebook/save endpoint with JSON serialization
+        - .rnb format (Ruchy Notebook) JSON files
+        - 28/28 server tests passing
+      - [ ] Convert MD Book chapters to notebook format (NOTEBOOK-009 Phase 5)
+      - [ ] Load chapter as notebook, execute all code cells, verify outputs (NOTEBOOK-009 Phase 6)
     - **SUCCESS CRITERIA**:
       - ✅ Notebook displays markdown + code cells interleaved
       - ✅ MD Book chapters load as interactive notebooks
