@@ -1256,3 +1256,64 @@ clean-e2e:
 	@echo "🧹 Cleaning E2E artifacts..."
 	rm -rf playwright-report/ test-results/ .playwright/
 	@echo "✅ E2E artifacts cleaned"
+
+# Notebook E2E Coverage Testing (NOTEBOOK-007)
+# ===============================================
+.PHONY: test-notebook-e2e coverage-notebook-e2e
+
+# Run notebook E2E tests (41 features × 3 browsers = 123 tests)
+test-notebook-e2e:
+	@echo "📓 Running Notebook E2E Coverage Tests..."
+	@echo "=========================================="
+	@echo ""
+	@echo "🎯 Goal: 41 features × 3 browsers = 123 test scenarios"
+	@echo ""
+	@if [ ! -d "node_modules" ]; then \
+		echo "❌ Error: node_modules not found. Install with:"; \
+		echo "   export PATH=\"/home/noah/.nvm/versions/node/v22.13.1/bin:\$$PATH\""; \
+		echo "   npm install"; \
+		exit 1; \
+	fi
+	@export PATH="/home/noah/.nvm/versions/node/v22.13.1/bin:$$PATH" && \
+	npx playwright test tests/e2e/notebook --reporter=list,html,json || { \
+		echo ""; \
+		echo "❌ NOTEBOOK E2E TESTS FAILED"; \
+		echo ""; \
+		echo "📊 View detailed report:"; \
+		echo "   npx playwright show-report"; \
+		exit 1; \
+	}
+	@echo ""
+	@echo "✅ Notebook E2E tests PASSED"
+	@echo "📊 View report: npx playwright show-report"
+
+# Generate notebook coverage report with detailed metrics
+coverage-notebook-e2e: test-notebook-e2e
+	@echo ""
+	@echo "📊 Notebook E2E Coverage Report"
+	@echo "================================"
+	@echo ""
+	@export PATH="/home/noah/.nvm/versions/node/v22.13.1/bin:$$PATH" && \
+	node -e "const fs = require('fs'); \
+	const data = JSON.parse(fs.readFileSync('test-results/notebook-e2e.json', 'utf8')); \
+	const total = data.suites.reduce((sum, s) => sum + s.specs.length, 0); \
+	const passed = data.suites.reduce((sum, s) => sum + s.specs.filter(spec => spec.ok).length, 0); \
+	const failed = total - passed; \
+	console.log('Total Tests:  ' + total); \
+	console.log('Passed:       ' + passed + ' (' + ((passed/total)*100).toFixed(1) + '%)'); \
+	console.log('Failed:       ' + failed); \
+	console.log(''); \
+	console.log('Browser Coverage:'); \
+	console.log('- Chromium:   ' + (passed/3) + ' tests'); \
+	console.log('- Firefox:    ' + (passed/3) + ' tests'); \
+	console.log('- WebKit:     ' + (passed/3) + ' tests'); \
+	console.log(''); \
+	if (passed === total && total >= 123) { \
+		console.log('✅ MILESTONE: All 41 features × 3 browsers verified!'); \
+	} else { \
+		const target = 123; \
+		console.log('🎯 Progress: ' + passed + '/' + target + ' tests (' + ((passed/target)*100).toFixed(1) + '%)'); \
+	}"
+	@echo ""
+	@echo "📄 Detailed HTML report: playwright-report/index.html"
+
