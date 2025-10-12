@@ -510,7 +510,7 @@
             <button class="btn" id="btn-save" title="Save Notebook">
                 💾 Save
             </button>
-            <button class="btn" id="btn-add-cell" title="Add Cell Below">
+            <button class="btn add-cell-button" id="btn-add-cell" title="Add Cell Below">
                 ➕ Add Cell
             </button>
         </div>
@@ -541,13 +541,13 @@
                 </div>
                 <div class="cell-content">
                     <div class="cell-toolbar">
-                        <button onclick="runCell('cell-1')" title="Run Cell">▶</button>
-                        <button onclick="deleteCell('cell-1')" id="btn-delete-cell" title="Delete Cell">🗑</button>
-                        <button onclick="moveUp('cell-1')" id="btn-move-up" title="Move Up">↑</button>
-                        <button onclick="moveDown('cell-1')" id="btn-move-down" title="Move Down">↓</button>
+                        <button class="execute-button" onclick="runCell('cell-1')" title="Run Cell">▶</button>
+                        <button class="delete-cell-button" onclick="deleteCell('cell-1')" id="btn-delete-cell" title="Delete Cell">🗑</button>
+                        <button class="move-up-button" onclick="moveUp('cell-1')" id="btn-move-up" title="Move Up">↑</button>
+                        <button class="move-down-button" onclick="moveDown('cell-1')" id="btn-move-down" title="Move Down">↓</button>
                     </div>
                     <div class="cell-input">
-                        <textarea id="editor-cell-1" class="code-editor">// Welcome to Ruchy Notebook
+                        <textarea id="editor-cell-1" class="code-editor cell-input">// Welcome to Ruchy Notebook
 // Press Shift+Enter to run this cell
 
 println("Hello, Ruchy!")
@@ -644,9 +644,7 @@ println("Hello, Ruchy!")
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        cell_id: cellId,
-                        code: code,
-                        execution_count: execCount
+                        source: code  // Backend expects 'source' not 'code'
                     })
                 });
                 
@@ -680,7 +678,7 @@ println("Hello, Ruchy!")
                     outputDiv.innerHTML = `<div class="output-text">${escapeHtml(result.result || '')}</div>`;
                 }
             } else {
-                outputDiv.innerHTML = `<div class="error-output"><div class="traceback">${escapeHtml(result.error || result.result || 'Unknown error')}</div></div>`;
+                outputDiv.innerHTML = `<div class="error-output cell-error"><div class="traceback">${escapeHtml(result.error || result.result || 'Unknown error')}</div></div>`;
             }
         }
         
@@ -689,7 +687,7 @@ println("Hello, Ruchy!")
             if (!outputDiv) return;
             
             outputDiv.style.display = 'block';
-            outputDiv.innerHTML = `<div class="error-output"><div class="traceback">Error: ${escapeHtml(error)}</div></div>`;
+            outputDiv.innerHTML = `<div class="error-output cell-error"><div class="traceback">Error: ${escapeHtml(error)}</div></div>`;
         }
         
         function formatDataFrame(df) {
@@ -758,13 +756,13 @@ println("Hello, Ruchy!")
                     </div>
                     <div class="cell-content">
                         <div class="cell-toolbar">
-                            <button onclick="runCell('${cellId}')" title="Run Cell">▶</button>
-                            <button onclick="deleteCell('${cellId}')" title="Delete Cell">🗑</button>
-                            <button onclick="moveUp('${cellId}')" title="Move Up">↑</button>
-                            <button onclick="moveDown('${cellId}')" title="Move Down">↓</button>
+                            <button class="execute-button" onclick="runCell('${cellId}')" title="Run Cell">▶</button>
+                            <button class="delete-cell-button" onclick="deleteCell('${cellId}')" title="Delete Cell">🗑</button>
+                            <button class="move-up-button" onclick="moveUp('${cellId}')" title="Move Up">↑</button>
+                            <button class="move-down-button" onclick="moveDown('${cellId}')" title="Move Down">↓</button>
                         </div>
                         <div class="cell-input">
-                            <textarea id="editor-${cellId}" class="code-editor"></textarea>
+                            <textarea id="editor-${cellId}" class="code-editor cell-input"></textarea>
                         </div>
                         <div class="cell-output" id="output-${cellId}" style="display: none;"></div>
                     </div>
