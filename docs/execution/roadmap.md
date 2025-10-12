@@ -4554,16 +4554,42 @@ From paiml-mcp-agent-toolkit CLAUDE.md:
 
   **Sub-ticket NOTEBOOK-008-A: Rust API Integration Tests** (TDD Level 1)
   - [x] Create test infrastructure: tests/notebook_book_validation.rs
-  - [ ] RED: Write extract_examples() test for parsing MD code blocks
-  - [ ] GREEN: Implement extract_examples() to parse ruchy code blocks + expected output
-  - [ ] RED: Write test for Chapter 01 (Basic Syntax - Literals)
-  - [ ] GREEN: Implement validation for all Chapter 01 examples
-  - [ ] REFACTOR: Extract common test patterns, ensure <10 complexity
-  - [ ] RED: Write tests for remaining 10 chapters (02-11)
-  - [ ] GREEN: Implement validation for all chapters
-  - [ ] Property tests: Random MD parsing, malformed input handling
-  - [ ] Mutation tests: Verify tests catch real defects (≥75% mutation coverage)
-  - [ ] Target: ≥90% book examples passing at API level
+  - [x] RED: Write extract_examples() test for parsing MD code blocks
+  - [x] GREEN: Implement extract_examples() to parse ruchy code blocks + expected output
+    - **COMMIT**: 2be380ca [NOTEBOOK-008-A] Implement MD Book code example extractor (TDD)
+    - State machine parser: ````ruchy` → **Expected Output**: → ``` blocks
+    - Returns Vec<(code, Option<expected_output>)> for validation
+    - Test passing: test_extract_examples_from_literals ... ok
+  - [ ] **ARCHITECTURAL PIVOT**: Add Markdown Cell Support (Jupyter-style) 🎯
+    - **INSIGHT**: Don't extract/test MD Book - make MD Book chapters into notebook files!
+    - **BENEFITS**:
+      - Eliminate extraction layer complexity
+      - MD Book content renders directly in notebook UI
+      - Users read docs + run examples in same interface
+      - Validation = load notebook file + execute cells
+    - **IMPLEMENTATION**:
+      - [ ] Add markdown cell type to notebook data model
+      - [ ] Create `/api/render-markdown` endpoint (server-side)
+      - [ ] Update notebook.html to display markdown cells (client-side)
+      - [ ] Define .rnb (Ruchy Notebook) format or use .ipynb compatibility
+      - [ ] Convert MD Book chapters to notebook format
+      - [ ] Load chapter as notebook, execute all code cells, verify outputs
+    - **SUCCESS CRITERIA**:
+      - ✅ Notebook displays markdown + code cells interleaved
+      - ✅ MD Book chapters load as interactive notebooks
+      - ✅ All code examples executable in-place
+      - ✅ ≥90% examples passing when executed
+
+  **⏸️ PAUSED: Original extraction-based approach (kept for reference)**
+  - [x] extract_examples() parser complete (commit 2be380ca)
+  - [ ] ~~RED: Write test for Chapter 01 (Basic Syntax - Literals)~~
+  - [ ] ~~GREEN: Implement validation for all Chapter 01 examples~~
+  - [ ] ~~REFACTOR: Extract common test patterns, ensure <10 complexity~~
+  - [ ] ~~RED: Write tests for remaining 10 chapters (02-11)~~
+  - [ ] ~~GREEN: Implement validation for all chapters~~
+  - [ ] ~~Property tests: Random MD parsing, malformed input handling~~
+  - [ ] ~~Mutation tests: Verify tests catch real defects (≥75% mutation coverage)~~
+  - [ ] ~~Target: ≥90% book examples passing at API level~~
 
   **Sub-ticket NOTEBOOK-008-B: Playwright E2E Tests** (TDD Level 2)
   - [ ] RED: Write E2E test for Chapter 01 (notebook UI interaction)
