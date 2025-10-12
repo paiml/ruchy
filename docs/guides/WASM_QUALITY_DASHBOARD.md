@@ -1,7 +1,7 @@
 # WASM Quality Metrics Dashboard
 
-**Version**: 1.0.0
-**Last Updated**: 2025-10-08
+**Version**: 1.1.0
+**Last Updated**: 2025-10-12
 **Purpose**: Track and visualize WASM quality metrics for Ruchy compiler
 
 ---
@@ -27,11 +27,11 @@ The WASM Quality Dashboard provides real-time visibility into the quality assura
 |--------|---------|--------|--------|
 | **E2E Tests** | 39/39 passing | 39+ | ✅ MET |
 | **E2E Speed** | 6.5s | <10s | ✅ EXCEEDED |
-| **Property Tests** | 20/20 passing | 20+ | ✅ MET |
-| **Property Cases** | 200,000 | 200,000 | ✅ MET |
+| **Property Tests** | 29/29 passing | 20+ | ✅ EXCEEDED |
+| **Property Cases** | 290,000 | 200,000 | ✅ EXCEEDED |
 | **Memory Model E2E** | 17/17 passing | 17+ | ✅ MET |
 | **Memory Model Property** | 16/16 passing | 16+ | ✅ MET |
-| **Total WASM Tests** | 92/92 passing | 70+ | ✅ EXCEEDED |
+| **Total WASM Tests** | 101/101 passing | 70+ | ✅ EXCEEDED |
 | **Cross-Browser** | 3/3 browsers | 3 | ✅ MET |
 | **Test Determinism** | 100% | 100% | ✅ MET |
 | **Code Complexity** | ≤10 all functions | ≤10 | ✅ MET |
@@ -100,10 +100,10 @@ cargo test --test wasm_memory_property_tests -- --nocapture
 cargo test --test wasm_memory_property_tests property_tests -- --ignored --nocapture
 ```
 
-**Coverage**:
-- **Property Tests**: 9 tests × 100 cases = 900 validations
+**Coverage** (WASM-008 Update - 2025-10-12):
+- **Property Tests**: 9 tests × 10,000 cases = 90,000 validations ✅ ENABLED
 - **Invariant Tests**: 7 tests (deterministic boundaries)
-- **Total Cases**: 200,000+ random inputs tested
+- **Total Cases**: 290,000+ random inputs tested (was 200,000)
 
 **Invariants Verified**:
 1. Tuple creation with any i32 values always compiles
@@ -116,11 +116,12 @@ cargo test --test wasm_memory_property_tests property_tests -- --ignored --nocap
 8. Tuple destructuring works for any valid tuple
 9. Mixed data structures compile correctly
 
-**Quality Criteria**:
-- ✅ All property tests passing (20/20)
+**Quality Criteria** (WASM-008 Update):
+- ✅ All property tests passing (29/29) - was 20/20
 - ✅ 10,000 cases per test minimum
 - ✅ Zero property violations found
 - ✅ Edge cases tested (empty, min/max values)
+- ✅ Property tests enabled and verified (0.18s execution)
 
 **Monitoring Command**:
 ```bash
@@ -269,7 +270,7 @@ cargo llvm-cov --fail-under-lines 85
 
 **Description**: Empirical test quality validation (verify tests catch real bugs).
 
-**Current Status**: ⏸️ **PAUSED** (Phase 4 blocked by pre-existing integration test issues)
+**Current Status** (WASM-008 Update - 2025-10-12): ⏸️ **PAUSED** (Baseline test timeout - 362 mutants found, 300s timeout exceeded on unmutated baseline)
 
 **Infrastructure**:
 ```bash
@@ -295,7 +296,12 @@ cargo mutants --file src/backend/wasm/mod.rs --timeout 300
 cargo mutants --file src/backend/wasm/mod.rs --output mutants.json
 ```
 
-**Blocking Issue**: Integration tests need AST structure fixes before mutation testing can proceed.
+**Blocking Issue** (WASM-008 Analysis):
+- **Root Cause**: Baseline test suite takes >300s to run (timeout limit)
+- **Found Mutants**: 362 mutants identified in src/backend/wasm/mod.rs
+- **Attempted**: `cargo mutants --file src/backend/wasm/mod.rs --timeout 300`
+- **Result**: TIMEOUT on unmutated baseline (91.4s build + 300s test)
+- **Next Steps**: Need to either (1) increase timeout, (2) reduce test suite size, or (3) split WASM module into smaller files
 
 ---
 
