@@ -291,6 +291,7 @@ reqwest = { version = "0.12", features = ["blocking"] }
 # Notebook support
 wasmparser = { version = "0.239.0", optional = true }
 wasmtime = { version = "36.0.2", optional = true }
+pulldown-cmark = "0.9"
 
 # Platform-specific dependencies for non-WASM targets
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
