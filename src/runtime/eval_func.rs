@@ -7,7 +7,7 @@
 use crate::frontend::ast::{Expr, Param};
 use crate::runtime::{InterpreterError, Value};
 use std::collections::HashMap;
-use std::rc::Rc;
+use std::sync::Arc;
 
 /// Evaluate a function definition
 ///
@@ -27,8 +27,8 @@ pub fn eval_function(
 
     let closure = Value::Closure {
         params: param_names,
-        body: Rc::new(body.clone()),
-        env: Rc::new(current_env.clone()),
+        body: Arc::new(body.clone()),
+        env: Arc::new(current_env.clone()),
     };
 
     // Bind function name in environment for recursion
@@ -52,8 +52,8 @@ pub fn eval_lambda(
 
     let closure = Value::Closure {
         params: param_names,
-        body: Rc::new(body.clone()),
-        env: Rc::new(current_env.clone()),
+        body: Arc::new(body.clone()),
+        env: Arc::new(current_env.clone()),
     };
 
     Ok(closure)

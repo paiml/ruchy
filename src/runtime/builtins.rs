@@ -9,7 +9,7 @@ use std::collections::HashMap;
 use std::sync::{LazyLock, Mutex};
 
 #[cfg(test)]
-use std::rc::Rc;
+use std::sync::Arc;
 
 // Global output buffer for capturing println/print output
 // Uses Mutex for thread-safety across tokio::spawn_blocking boundaries
@@ -608,7 +608,7 @@ mod tests {
         let result = builtin_len(&[Value::from_string("hello".to_string())]).unwrap();
         assert_eq!(result, Value::Integer(5));
 
-        let arr = Value::Array(Rc::from(vec![Value::Integer(1), Value::Integer(2)]));
+        let arr = Value::Array(Arc::from(vec![Value::Integer(1), Value::Integer(2)]));
         let result = builtin_len(&[arr]).unwrap();
         assert_eq!(result, Value::Integer(2));
     }

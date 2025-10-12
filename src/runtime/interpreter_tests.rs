@@ -7,7 +7,7 @@ use super::*;
 use crate::frontend::ast::{BinaryOp as AstBinaryOp, Expr, ExprKind, Literal, Span};
 use crate::frontend::Parser;
 use std::collections::HashMap;
-use std::rc::Rc;
+use std::sync::Arc;
 
 #[cfg(test)]
 mod tests {

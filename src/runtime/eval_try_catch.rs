@@ -5,7 +5,7 @@
 
 use crate::frontend::ast::{CatchClause, Expr, Pattern};
 use crate::runtime::{Interpreter, InterpreterError, Value};
-use std::rc::Rc;
+use std::sync::Arc;
 
 /// Evaluate a try/catch/finally expression
 ///
@@ -118,7 +118,7 @@ fn eval_finally_block(
 fn error_to_value(error: InterpreterError) -> Value {
     match error {
         InterpreterError::Throw(value) => value,
-        InterpreterError::TypeError(msg) => Value::Object(Rc::new(
+        InterpreterError::TypeError(msg) => Value::Object(Arc::new(
             vec![
                 (
                     "type".to_string(),
@@ -129,7 +129,7 @@ fn error_to_value(error: InterpreterError) -> Value {
             .into_iter()
             .collect(),
         )),
-        InterpreterError::RuntimeError(msg) => Value::Object(Rc::new(
+        InterpreterError::RuntimeError(msg) => Value::Object(Arc::new(
             vec![
                 (
                     "type".to_string(),
@@ -398,7 +398,7 @@ mod mutation_tests {
 
         let mut obj = HashMap::new();
         obj.insert("field1".to_string(), Value::Integer(42));
-        let value = Value::Object(Rc::new(obj));
+        let value = Value::Object(Arc::new(obj));
 
         let pattern = Pattern::Struct {
             name: "MyStruct".to_string(),

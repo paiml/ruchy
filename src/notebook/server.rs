@@ -5,12 +5,14 @@ struct ExecuteRequest {
     source: String,
 }
 use axum::{
+    extract::State,
     response::Html,
     routing::{get, post},
     Json, Router,
 };
 use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
+use std::sync::{Arc, Mutex};
 
 #[derive(Debug, Serialize, Deserialize)]
 struct ExecuteResponse {
@@ -67,23 +69,29 @@ async fn serve_notebook() -> Html<&'static str> {
     Html(include_str!("../../static/notebook.html"))
 }
 
-async fn execute_handler(Json(request): Json<ExecuteRequest>) -> Json<ExecuteResponse> {
+// Shared REPL state for persistent variable/function definitions across cell executions
+type SharedRepl = Arc<Mutex<crate::runtime::repl::Repl>>;
+
+async fn execute_handler(
+    State(shared_repl): State<SharedRepl>,
+    Json(request): Json<ExecuteRequest>,
+) -> Json<ExecuteResponse> {
     println!("🔧 TDD DEBUG: execute_handler called with: {request:?}");
     let result = tokio::task::spawn_blocking(move || {
         use crate::runtime::builtins::{enable_output_capture, get_captured_output};
-        use crate::runtime::repl::Repl;
         use std::time::{Duration, Instant};
 
         // Enable output capture for this execution
         enable_output_capture();
 
-        let mut repl = match Repl::new(std::env::current_dir().unwrap_or_else(|_| "/tmp".into())) {
+        // Use shared REPL instance for persistent state across cell executions
+        let mut repl = match shared_repl.lock() {
             Ok(r) => r,
             Err(e) => {
                 return ExecuteResponse {
                     output: String::new(),
                     success: false,
-                    error: Some(format!("Failed to create REPL: {e}")),
+                    error: Some(format!("Failed to acquire REPL lock: {e}")),
                 }
             }
         };
@@ -245,14 +253,22 @@ async fn save_notebook_handler(
 /// }
 /// ```
 pub async fn start_server(port: u16) -> Result<(), Box<dyn std::error::Error>> {
+    use crate::runtime::repl::Repl;
+
     println!("🔧 TDD DEBUG: start_server called, about to create app");
+
+    // Create shared REPL instance for persistent state across cell executions
+    let repl = Repl::new(std::env::current_dir().unwrap_or_else(|_| "/tmp".into()))?;
+    let shared_repl = Arc::new(Mutex::new(repl));
+
     let app = Router::new()
         .route("/", get(serve_notebook))
         .route("/api/execute", post(execute_handler))
         .route("/api/render-markdown", post(render_markdown_handler))
         .route("/api/notebook/load", post(load_notebook_handler))
         .route("/api/notebook/save", post(save_notebook_handler))
-        .route("/health", get(health));
+        .route("/health", get(health))
+        .with_state(shared_repl);
     println!("🔧 TDD DEBUG: Creating app with /api/execute route");
     println!("🔧 TDD DEBUG: app created, binding to addr");
     let addr = SocketAddr::from(([127, 0, 0, 1], port));
@@ -360,10 +376,16 @@ mod tests {
 
     #[tokio::test]
     async fn test_router_creation() {
+        use crate::runtime::repl::Repl;
+
+        let repl = Repl::new(std::env::current_dir().unwrap_or_else(|_| "/tmp".into())).unwrap();
+        let shared_repl = Arc::new(Mutex::new(repl));
+
         let app = Router::new()
             .route("/", get(serve_notebook))
             .route("/api/execute", post(execute_handler))
-            .route("/health", get(health));
+            .route("/health", get(health))
+            .with_state(shared_repl);
 
         // Test health endpoint
         let request = Request::builder()
@@ -377,7 +399,14 @@ mod tests {
 
     #[tokio::test]
     async fn test_execute_handler_valid_request() {
-        let app = Router::new().route("/api/execute", post(execute_handler));
+        use crate::runtime::repl::Repl;
+
+        let repl = Repl::new(std::env::current_dir().unwrap_or_else(|_| "/tmp".into())).unwrap();
+        let shared_repl = Arc::new(Mutex::new(repl));
+
+        let app = Router::new()
+            .route("/api/execute", post(execute_handler))
+            .with_state(shared_repl);
 
         let request_body = ExecuteRequest {
             source: "1 + 1".to_string(),
@@ -396,7 +425,14 @@ mod tests {
 
     #[tokio::test]
     async fn test_execute_handler_invalid_json() {
-        let app = Router::new().route("/api/execute", post(execute_handler));
+        use crate::runtime::repl::Repl;
+
+        let repl = Repl::new(std::env::current_dir().unwrap_or_else(|_| "/tmp".into())).unwrap();
+        let shared_repl = Arc::new(Mutex::new(repl));
+
+        let app = Router::new()
+            .route("/api/execute", post(execute_handler))
+            .with_state(shared_repl);
 
         let request = Request::builder()
             .uri("/api/execute")

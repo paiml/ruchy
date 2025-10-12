@@ -10,7 +10,7 @@ use crate::runtime::replay::{
 use anyhow::Result;
 use sha2::{Digest, Sha256};
 use std::collections::HashMap;
-use std::rc::Rc;
+use std::sync::Arc;
 /// Mock time source for deterministic time operations
 pub struct MockTime {
     current_ns: u64,
@@ -77,7 +77,7 @@ impl DeterministicRepl for Repl {
             } else if let Ok(n) = s.parse::<i64>() {
                 Value::Integer(n)
             } else if s.starts_with('"') && s.ends_with('"') {
-                Value::String(Rc::from(&s[1..s.len() - 1]))
+                Value::String(Arc::from(&s[1..s.len() - 1]))
             } else {
                 // For complex types, we store as string representation
                 Value::from_string(s.to_string())

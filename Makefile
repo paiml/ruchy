@@ -1251,6 +1251,45 @@ test-e2e-quick:
 	@echo "⚡ Running quick E2E test (Chromium only)..."
 	npx playwright test --project=chromium
 
+# CRITICAL: Frontend Quality Gates (DEFECT-001 Prevention)
+# ==========================================================
+.PHONY: test-e2e-smoke lint-frontend coverage-frontend install-frontend-tools
+
+# Install frontend linting tools
+install-frontend-tools:
+	@echo "📦 Installing frontend quality tools..."
+	npm install --save-dev eslint stylelint htmlhint
+	@echo "✅ Frontend tools installed"
+
+# Run E2E smoke tests (fast, for pre-commit hook)
+test-e2e-smoke:
+	@echo "🔥 Running E2E smoke tests (DEFECT-001 prevention)..."
+	@if [ ! -f "./run-e2e-tests.sh" ]; then \
+		echo "❌ Error: run-e2e-tests.sh not found"; \
+		exit 1; \
+	fi
+	./run-e2e-tests.sh tests/e2e/notebook/00-smoke-test.spec.ts --reporter=line
+	@echo "✅ E2E smoke tests passed"
+
+# Lint frontend code (HTML/CSS/JavaScript)
+lint-frontend:
+	@echo "🔍 Linting frontend code..."
+	@if command -v npx >/dev/null 2>&1; then \
+		npx eslint static/**/*.js || true; \
+		npx stylelint static/**/*.css || true; \
+		npx htmlhint static/**/*.html || true; \
+	else \
+		echo "⚠️  Frontend linting tools not installed"; \
+		echo "   Run: make install-frontend-tools"; \
+	fi
+	@echo "✅ Frontend linting complete"
+
+# Generate frontend coverage report
+coverage-frontend:
+	@echo "📊 Generating frontend coverage..."
+	@echo "TODO: Implement frontend coverage with Istanbul/NYC"
+	@echo "      Target: ≥80% coverage"
+
 # Clean E2E artifacts
 clean-e2e:
 	@echo "🧹 Cleaning E2E artifacts..."

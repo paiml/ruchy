@@ -5,14 +5,14 @@
 //! Complexity: <10 per function (Toyota Way compliant)
 
 use crate::runtime::{InterpreterError, Value};
-use std::rc::Rc;
+use std::sync::Arc;
 
 /// Evaluate a string method call
 ///
 /// # Complexity
 /// Cyclomatic complexity: 20 (will be decomposed further)
 pub fn eval_string_method(
-    s: &Rc<str>,
+    s: &Arc<str>,
     method: &str,
     args: &[Value],
 ) -> Result<Value, InterpreterError> {
@@ -26,7 +26,7 @@ pub fn eval_string_method(
     }
 }
 
-fn dispatch_zero_arg_string_method(s: &Rc<str>, method: &str) -> Result<Value, InterpreterError> {
+fn dispatch_zero_arg_string_method(s: &Arc<str>, method: &str) -> Result<Value, InterpreterError> {
     match method {
         "len" | "length" => eval_string_len(s),
         "to_upper" => eval_string_to_upper(s),
@@ -45,7 +45,7 @@ fn dispatch_zero_arg_string_method(s: &Rc<str>, method: &str) -> Result<Value, I
 }
 
 fn dispatch_single_arg_string_method(
-    s: &Rc<str>,
+    s: &Arc<str>,
     method: &str,
     arg: &Value,
 ) -> Result<Value, InterpreterError> {
@@ -63,7 +63,7 @@ fn dispatch_single_arg_string_method(
 }
 
 fn dispatch_two_arg_string_method(
-    s: &Rc<str>,
+    s: &Arc<str>,
     method: &str,
     arg1: &Value,
     arg2: &Value,
@@ -79,57 +79,57 @@ fn dispatch_two_arg_string_method(
 
 // No-argument string methods (complexity <= 3 each)
 
-fn eval_string_len(s: &Rc<str>) -> Result<Value, InterpreterError> {
+fn eval_string_len(s: &Arc<str>) -> Result<Value, InterpreterError> {
     Ok(Value::Integer(s.len() as i64))
 }
 
-fn eval_string_to_upper(s: &Rc<str>) -> Result<Value, InterpreterError> {
+fn eval_string_to_upper(s: &Arc<str>) -> Result<Value, InterpreterError> {
     Ok(Value::from_string(s.to_uppercase()))
 }
 
-fn eval_string_to_lower(s: &Rc<str>) -> Result<Value, InterpreterError> {
+fn eval_string_to_lower(s: &Arc<str>) -> Result<Value, InterpreterError> {
     Ok(Value::from_string(s.to_lowercase()))
 }
 
-fn eval_string_trim(s: &Rc<str>) -> Result<Value, InterpreterError> {
+fn eval_string_trim(s: &Arc<str>) -> Result<Value, InterpreterError> {
     Ok(Value::from_string(s.trim().to_string()))
 }
 
-fn eval_string_to_string(s: &Rc<str>) -> Result<Value, InterpreterError> {
+fn eval_string_to_string(s: &Arc<str>) -> Result<Value, InterpreterError> {
     Ok(Value::from_string(s.to_string()))
 }
 
-fn eval_string_trim_start(s: &Rc<str>) -> Result<Value, InterpreterError> {
+fn eval_string_trim_start(s: &Arc<str>) -> Result<Value, InterpreterError> {
     Ok(Value::from_string(s.trim_start().to_string()))
 }
 
-fn eval_string_trim_end(s: &Rc<str>) -> Result<Value, InterpreterError> {
+fn eval_string_trim_end(s: &Arc<str>) -> Result<Value, InterpreterError> {
     Ok(Value::from_string(s.trim_end().to_string()))
 }
 
-fn eval_string_is_empty(s: &Rc<str>) -> Result<Value, InterpreterError> {
+fn eval_string_is_empty(s: &Arc<str>) -> Result<Value, InterpreterError> {
     Ok(Value::Bool(s.is_empty()))
 }
 
-fn eval_string_chars(s: &Rc<str>) -> Result<Value, InterpreterError> {
+fn eval_string_chars(s: &Arc<str>) -> Result<Value, InterpreterError> {
     let chars: Vec<Value> = s
         .chars()
         .map(|c| Value::from_string(c.to_string()))
         .collect();
-    Ok(Value::Array(Rc::from(chars)))
+    Ok(Value::Array(Arc::from(chars)))
 }
 
-fn eval_string_lines(s: &Rc<str>) -> Result<Value, InterpreterError> {
+fn eval_string_lines(s: &Arc<str>) -> Result<Value, InterpreterError> {
     let lines: Vec<Value> = s
         .lines()
         .map(|line| Value::from_string(line.to_string()))
         .collect();
-    Ok(Value::Array(Rc::from(lines)))
+    Ok(Value::Array(Arc::from(lines)))
 }
 
 // Single-argument string methods (complexity <= 5 each)
 
-fn eval_string_contains(s: &Rc<str>, needle: &Value) -> Result<Value, InterpreterError> {
+fn eval_string_contains(s: &Arc<str>, needle: &Value) -> Result<Value, InterpreterError> {
     if let Value::String(needle_str) = needle {
         Ok(Value::Bool(s.contains(&**needle_str)))
     } else {
@@ -139,7 +139,7 @@ fn eval_string_contains(s: &Rc<str>, needle: &Value) -> Result<Value, Interprete
     }
 }
 
-fn eval_string_starts_with(s: &Rc<str>, prefix: &Value) -> Result<Value, InterpreterError> {
+fn eval_string_starts_with(s: &Arc<str>, prefix: &Value) -> Result<Value, InterpreterError> {
     if let Value::String(prefix_str) = prefix {
         Ok(Value::Bool(s.starts_with(&**prefix_str)))
     } else {
@@ -149,7 +149,7 @@ fn eval_string_starts_with(s: &Rc<str>, prefix: &Value) -> Result<Value, Interpr
     }
 }
 
-fn eval_string_ends_with(s: &Rc<str>, suffix: &Value) -> Result<Value, InterpreterError> {
+fn eval_string_ends_with(s: &Arc<str>, suffix: &Value) -> Result<Value, InterpreterError> {
     if let Value::String(suffix_str) = suffix {
         Ok(Value::Bool(s.ends_with(&**suffix_str)))
     } else {
@@ -159,13 +159,13 @@ fn eval_string_ends_with(s: &Rc<str>, suffix: &Value) -> Result<Value, Interpret
     }
 }
 
-fn eval_string_split(s: &Rc<str>, separator: &Value) -> Result<Value, InterpreterError> {
+fn eval_string_split(s: &Arc<str>, separator: &Value) -> Result<Value, InterpreterError> {
     if let Value::String(sep_str) = separator {
         let parts: Vec<Value> = s
             .split(&**sep_str)
             .map(|part| Value::from_string(part.to_string()))
             .collect();
-        Ok(Value::Array(Rc::from(parts)))
+        Ok(Value::Array(Arc::from(parts)))
     } else {
         Err(InterpreterError::RuntimeError(
             "split expects string argument".to_string(),
@@ -173,7 +173,7 @@ fn eval_string_split(s: &Rc<str>, separator: &Value) -> Result<Value, Interprete
     }
 }
 
-fn eval_string_repeat(s: &Rc<str>, n: &Value) -> Result<Value, InterpreterError> {
+fn eval_string_repeat(s: &Arc<str>, n: &Value) -> Result<Value, InterpreterError> {
     if let Value::Integer(count) = n {
         if *count >= 0 {
             Ok(Value::from_string(s.repeat(*count as usize)))
@@ -189,7 +189,7 @@ fn eval_string_repeat(s: &Rc<str>, n: &Value) -> Result<Value, InterpreterError>
     }
 }
 
-fn eval_string_char_at(s: &Rc<str>, index: &Value) -> Result<Value, InterpreterError> {
+fn eval_string_char_at(s: &Arc<str>, index: &Value) -> Result<Value, InterpreterError> {
     if let Value::Integer(idx) = index {
         if *idx >= 0 {
             let chars: Vec<char> = s.chars().collect();
@@ -212,7 +212,7 @@ fn eval_string_char_at(s: &Rc<str>, index: &Value) -> Result<Value, InterpreterE
 
 // Two-argument string methods (complexity <= 8 each)
 
-fn eval_string_replace(s: &Rc<str>, from: &Value, to: &Value) -> Result<Value, InterpreterError> {
+fn eval_string_replace(s: &Arc<str>, from: &Value, to: &Value) -> Result<Value, InterpreterError> {
     if let (Value::String(from_str), Value::String(to_str)) = (from, to) {
         Ok(Value::from_string(s.replace(&**from_str, to_str)))
     } else {
@@ -223,7 +223,7 @@ fn eval_string_replace(s: &Rc<str>, from: &Value, to: &Value) -> Result<Value, I
 }
 
 fn eval_string_substring(
-    s: &Rc<str>,
+    s: &Arc<str>,
     start: &Value,
     end: &Value,
 ) -> Result<Value, InterpreterError> {
@@ -252,21 +252,21 @@ mod tests {
 
     #[test]
     fn test_string_len() {
-        let s = Rc::from("hello");
+        let s = Arc::from("hello");
         let result = eval_string_len(&s).unwrap();
         assert_eq!(result, Value::Integer(5));
     }
 
     #[test]
     fn test_string_to_upper() {
-        let s = Rc::from("hello");
+        let s = Arc::from("hello");
         let result = eval_string_to_upper(&s).unwrap();
         assert_eq!(result, Value::from_string("HELLO".to_string()));
     }
 
     #[test]
     fn test_string_contains() {
-        let s = Rc::from("hello world");
+        let s = Arc::from("hello world");
         let needle = Value::from_string("world".to_string());
         let result = eval_string_contains(&s, &needle).unwrap();
         assert_eq!(result, Value::Bool(true));
@@ -274,7 +274,7 @@ mod tests {
 
     #[test]
     fn test_string_split() {
-        let s = Rc::from("a,b,c");
+        let s = Arc::from("a,b,c");
         let separator = Value::from_string(",".to_string());
         let result = eval_string_split(&s, &separator).unwrap();
         if let Value::Array(parts) = result {
@@ -287,7 +287,7 @@ mod tests {
 
     #[test]
     fn test_string_replace() {
-        let s = Rc::from("hello world");
+        let s = Arc::from("hello world");
         let from = Value::from_string("world".to_string());
         let to = Value::from_string("Rust".to_string());
         let result = eval_string_replace(&s, &from, &to).unwrap();
@@ -299,7 +299,7 @@ mod tests {
         // Mutation test: Verify match arm for 0 args exists
         // MISSED: delete match arm 0 in eval_string_method (line 20)
 
-        let s = Rc::from("hello");
+        let s = Arc::from("hello");
 
         // Test zero-arg method dispatch works
         let result = eval_string_method(&s, "len", &[]);
@@ -322,7 +322,7 @@ mod tests {
         // Mutation test: Verify "trim_start" match arm exists
         // MISSED: delete match arm "trim_start" in dispatch_zero_arg_string_method (line 36)
 
-        let s = Rc::from("  hello  ");
+        let s = Arc::from("  hello  ");
 
         // Test trim_start method exists
         let result = dispatch_zero_arg_string_method(&s, "trim_start");
@@ -333,7 +333,7 @@ mod tests {
         assert_eq!(result.unwrap(), Value::from_string("hello  ".to_string()));
 
         // Also test it actually trims (not just returns the string)
-        let s2 = Rc::from("  test");
+        let s2 = Arc::from("  test");
         let result2 = dispatch_zero_arg_string_method(&s2, "trim_start").unwrap();
         assert_eq!(result2, Value::from_string("test".to_string()));
     }
@@ -343,7 +343,7 @@ mod tests {
         // Mutation test: Verify "char_at" match arm exists
         // MISSED: delete match arm "char_at" in dispatch_single_arg_string_method (line 58)
 
-        let s = Rc::from("hello");
+        let s = Arc::from("hello");
 
         // Test char_at method exists
         let result = dispatch_single_arg_string_method(&s, "char_at", &Value::Integer(1));
@@ -359,7 +359,7 @@ mod tests {
         // Mutation test: Verify "substring" match arm exists
         // MISSED: delete match arm "substring" in dispatch_two_arg_string_method (line 73)
 
-        let s = Rc::from("hello");
+        let s = Arc::from("hello");
 
         // Test substring method exists
         let result =
@@ -376,7 +376,7 @@ mod tests {
         // Mutation test: Verify >= operator (not <) for index validation
         // MISSED: replace >= with < in eval_string_char_at (line 194:17)
 
-        let s = Rc::from("hello");
+        let s = Arc::from("hello");
 
         // Test with valid non-negative index (>= 0) - should work
         let result = eval_string_char_at(&s, &Value::Integer(0));
@@ -404,7 +404,7 @@ mod tests {
         // Mutation test: Verify && operator (not ||) in substring validation
         // MISSED: replace && with || in eval_string_substring (line 231:28)
 
-        let s = Rc::from("hello");
+        let s = Arc::from("hello");
 
         // Test with valid indices (start >= 0 AND end >= start) - should work
         let result = eval_string_substring(&s, &Value::Integer(1), &Value::Integer(3));

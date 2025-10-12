@@ -9,7 +9,7 @@ use crate::runtime::validation::validate_arg_count;
 use crate::runtime::{InterpreterError, Value};
 
 #[cfg(test)]
-use std::rc::Rc;
+use std::sync::Arc;
 
 /// Evaluate a builtin function call
 ///
@@ -593,7 +593,7 @@ fn eval_dataframe_new(args: &[Value]) -> Result<Value, InterpreterError> {
     );
     builder.insert("__columns".to_string(), Value::from_array(vec![]));
 
-    Ok(Value::Object(std::rc::Rc::new(builder)))
+    Ok(Value::Object(std::sync::Arc::new(builder)))
 }
 
 /// `DataFrame::from_csv_string()` - Parse CSV data into `DataFrame`
@@ -918,7 +918,7 @@ mod tests {
         let result = eval_len(&args).unwrap();
         assert_eq!(result, Value::Integer(5));
 
-        let args = vec![Value::Array(Rc::from(vec![
+        let args = vec![Value::Array(Arc::from(vec![
             Value::Integer(1),
             Value::Integer(2),
             Value::Integer(3),
@@ -954,7 +954,7 @@ mod tests {
 
     #[test]
     fn test_eval_reverse() {
-        let args = vec![Value::Array(Rc::from(vec![
+        let args = vec![Value::Array(Arc::from(vec![
             Value::Integer(1),
             Value::Integer(2),
             Value::Integer(3),

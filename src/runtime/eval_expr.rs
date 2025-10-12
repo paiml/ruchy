@@ -7,7 +7,7 @@
 
 use crate::frontend::ast::{Expr, ExprKind, Literal};
 use crate::runtime::{InterpreterError, Value};
-use std::rc::Rc;
+use std::sync::Arc;
 
 /// Main expression evaluation dispatcher
 ///
@@ -254,7 +254,7 @@ where
     for elem in elements {
         values.push(eval_expr(elem)?);
     }
-    Ok(Value::Tuple(Rc::from(values.as_slice())))
+    Ok(Value::Tuple(Arc::from(values.as_slice())))
 }
 
 /// Evaluate a range expression

@@ -33,7 +33,7 @@ impl ConservativeGC {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::rc::Rc;
+    use std::sync::Arc;
 
     #[test]
     fn test_gc_new() {
@@ -112,7 +112,7 @@ mod tests {
         let mut gc = ConservativeGC::new();
 
         // Track array value
-        gc.track(&Value::Array(Rc::from(vec![
+        gc.track(&Value::Array(Arc::from(vec![
             Value::Integer(1),
             Value::Integer(2),
         ])));
@@ -120,7 +120,7 @@ mod tests {
         // Track object value
         let mut obj = std::collections::HashMap::new();
         obj.insert("key".to_string(), Value::from_string("value".to_string()));
-        gc.track(&Value::Object(Rc::new(obj)));
+        gc.track(&Value::Object(Arc::new(obj)));
 
         gc.collect();
         // Should handle complex values

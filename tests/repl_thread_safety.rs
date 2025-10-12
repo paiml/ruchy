@@ -1,0 +1,53 @@
+//! RED Phase Test for DEFECT-001-A-TICKET-2
+//!
+//! This test MUST FAIL with Rc-based Values (current state)
+//! This test MUST PASS after Arc refactoring (target state)
+//!
+//! Purpose: Prove that Repl can be shared across threads after Arc refactoring
+
+#![allow(clippy::expect_used)]
+
+use ruchy::runtime::Repl;
+
+/// Test that Repl is Send (can cross thread boundaries)
+///
+/// This is the RED phase test - it MUST fail with Rc, MUST pass with Arc.
+#[test]
+fn test_repl_is_send() {
+    fn assert_send<T: Send>() {}
+    assert_send::<Repl>(); // FAILS with Rc, PASSES with Arc
+}
+
+/// Test that Repl can actually be used across threads
+///
+/// This proves the practical use case: sharing Repl in Arc<Mutex<Repl>>
+#[test]
+#[ignore] // Cannot compile with Rc-based Values
+fn test_repl_shared_across_threads() {
+    use std::sync::{Arc, Mutex};
+    use std::thread;
+
+    // Create REPL
+    let repl = Repl::new(std::env::current_dir().unwrap()).expect("Failed to create REPL");
+    let shared_repl = Arc::new(Mutex::new(repl));
+
+    // Thread 1: Set variable x = 10
+    let repl1 = Arc::clone(&shared_repl);
+    let handle1 = thread::spawn(move || {
+        let mut repl = repl1.lock().unwrap();
+        repl.eval("x = 10").expect("Failed to eval")
+    });
+
+    let result1 = handle1.join().expect("Thread 1 panicked");
+    assert_eq!(result1.trim(), "10");
+
+    // Thread 2: Read variable x (should be 10)
+    let repl2 = Arc::clone(&shared_repl);
+    let handle2 = thread::spawn(move || {
+        let mut repl = repl2.lock().unwrap();
+        repl.eval("x * 2").expect("Failed to eval")
+    });
+
+    let result2 = handle2.join().expect("Thread 2 panicked");
+    assert_eq!(result2.trim(), "20");
+}

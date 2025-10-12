@@ -12,6 +12,7 @@
 #![allow(clippy::cast_precision_loss)] // Acceptable for arithmetic operations
 #![allow(clippy::expect_used)] // Used appropriately in tests
 #![allow(clippy::cast_possible_truncation)] // Controlled truncations for indices
+#![allow(unsafe_code)] // Required for CallFrame Send implementation - see DEFECT-001-B
 
 use super::eval_expr;
 use super::eval_func;
@@ -24,7 +25,7 @@ use crate::frontend::ast::{
 use crate::frontend::Param;
 use smallvec::{smallvec, SmallVec};
 use std::collections::HashMap;
-use std::rc::Rc;
+use std::sync::Arc;
 
 /// Control flow for loop iterations or error
 #[derive(Debug)]
@@ -36,7 +37,7 @@ enum LoopControlOrError {
 }
 
 /// `DataFrame` column representation for the interpreter
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub struct DataFrameColumn {
     pub name: String,
     pub values: Vec<Value>,
@@ -57,7 +58,7 @@ pub struct DataFrameColumn {
 /// let str_val = Value::from_string("hello".to_string());
 /// let arr_val = Value::from_array(vec![int_val.clone(), str_val]);
 /// ```
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 pub enum Value {
     /// 64-bit signed integer
     Integer(i64),
@@ -69,24 +70,24 @@ pub enum Value {
     Byte(u8),
     /// Nil/null value
     Nil,
-    /// String value (reference-counted for efficiency)
-    String(Rc<str>),
+    /// String value (reference-counted for efficiency, thread-safe)
+    String(Arc<str>),
     /// Array of values
-    Array(Rc<[Value]>),
+    Array(Arc<[Value]>),
     /// Tuple of values
-    Tuple(Rc<[Value]>),
+    Tuple(Arc<[Value]>),
     /// Function closure
     Closure {
         params: Vec<String>,
-        body: Rc<Expr>,
-        env: Rc<HashMap<String, Value>>, // Captured environment
+        body: Arc<Expr>,
+        env: Arc<HashMap<String, Value>>, // Captured environment
     },
     /// `DataFrame` value
     DataFrame { columns: Vec<DataFrameColumn> },
     /// Object/HashMap value for key-value mappings (immutable)
-    Object(Rc<HashMap<String, Value>>),
-    /// Mutable object with interior mutability (for actors and classes)
-    ObjectMut(Rc<std::cell::RefCell<HashMap<String, Value>>>),
+    Object(Arc<HashMap<String, Value>>),
+    /// Mutable object with interior mutability (for actors and classes, thread-safe)
+    ObjectMut(Arc<std::sync::Mutex<HashMap<String, Value>>>),
     /// Range value for representing ranges
     Range {
         start: Box<Value>,
@@ -100,6 +101,27 @@ pub enum Value {
     },
     /// Built-in function reference
     BuiltinFunction(String),
+}
+
+// Manual PartialEq implementation because Mutex doesn't implement PartialEq
+// ObjectMut uses identity-based equality (Arc pointer comparison) since it represents mutable state
+impl PartialEq for Value {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Value::Integer(a), Value::Integer(b)) => a == b,
+            (Value::Float(a), Value::Float(b)) => a == b,
+            (Value::String(a), Value::String(b)) => a == b,
+            (Value::Bool(a), Value::Bool(b)) => a == b,
+            (Value::Array(a), Value::Array(b)) => a == b,
+            (Value::Tuple(a), Value::Tuple(b)) => a == b,
+            (Value::Object(a), Value::Object(b)) => Arc::ptr_eq(a, b) || **a == **b,
+            (Value::ObjectMut(a), Value::ObjectMut(b)) => Arc::ptr_eq(a, b), // Identity-based
+            (Value::Nil, Value::Nil) => true,
+            (Value::Byte(a), Value::Byte(b)) => a == b,
+            // TODO: Add other variants as needed (DataFrame, Range, Closure, etc.)
+            _ => false, // Different variants are not equal
+        }
+    }
 }
 
 impl Value {
@@ -205,6 +227,14 @@ pub struct CallFrame {
     locals: usize,
 }
 
+// SAFETY: CallFrame can safely be Send because:
+// 1. The `ip` raw pointer points to immutable bytecode that never changes
+// 2. CallFrame has exclusive ownership of the data (no sharing)
+// 3. The pointer is never dereferenced across thread boundaries
+// 4. CallFrame is only used in single-threaded execution contexts within each thread
+// 5. When Repl is shared across threads, each thread gets its own CallFrame instance
+unsafe impl Send for CallFrame {}
+
 /// Interpreter execution result
 pub enum InterpreterResult {
     Continue,
@@ -223,7 +253,7 @@ pub enum InterpreterResult {
 /// let err = InterpreterError::TypeError("Expected integer".to_string());
 /// assert_eq!(err.to_string(), "Type error: Expected integer");
 /// ```
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub enum InterpreterError {
     TypeError(std::string::String),
     RuntimeError(std::string::String),
@@ -1324,10 +1354,10 @@ impl Interpreter {
 
     /// Index into a mutable object with string key (complexity: 1)
     fn index_object_mut(
-        cell: &std::cell::RefCell<HashMap<String, Value>>,
+        cell: &Arc<std::sync::Mutex<HashMap<String, Value>>>,
         key: &str,
     ) -> Result<Value, InterpreterError> {
-        cell.borrow().get(key).cloned().ok_or_else(|| {
+        cell.lock().unwrap().get(key).cloned().ok_or_else(|| {
             InterpreterError::RuntimeError(format!("Key '{key}' not found in object"))
         })
     }
@@ -1402,10 +1432,10 @@ impl Interpreter {
     /// Access field on mutable object (complexity: 4)
     fn access_object_mut_field(
         &self,
-        cell: &std::cell::RefCell<HashMap<String, Value>>,
+        cell: &Arc<std::sync::Mutex<HashMap<String, Value>>>,
         field: &str,
     ) -> Result<Value, InterpreterError> {
-        let object_map = cell.borrow();
+        let object_map = cell.lock().unwrap();
 
         // Check for actor field access
         if let Some(actor_field) = Self::check_actor_field_access(&object_map, field)? {
@@ -1496,7 +1526,7 @@ impl Interpreter {
             }
         }
 
-        Ok(Value::Object(Rc::new(object)))
+        Ok(Value::Object(Arc::new(object)))
     }
 
     fn eval_qualified_name(&self, module: &str, name: &str) -> Result<Value, InterpreterError> {
@@ -2436,8 +2466,8 @@ impl Interpreter {
     pub fn gc_alloc_closure(
         &mut self,
         params: Vec<String>,
-        body: Rc<Expr>,
-        env: Rc<HashMap<String, Value>>,
+        body: Arc<Expr>,
+        env: Arc<HashMap<String, Value>>,
     ) -> Value {
         let closure_value = Value::Closure { params, body, env };
         self.gc.track_object(closure_value.clone());
@@ -2891,7 +2921,7 @@ impl Interpreter {
                                 // Immutable object: create new copy with updated field
                                 let mut new_map = (**map).clone();
                                 new_map.insert(field.clone(), val.clone());
-                                let new_obj = Value::Object(Rc::new(new_map));
+                                let new_obj = Value::Object(Arc::new(new_map));
 
                                 // Update the variable with the modified object
                                 self.set_variable(obj_name, new_obj);
@@ -2899,7 +2929,7 @@ impl Interpreter {
                             }
                             Value::ObjectMut(ref cell) => {
                                 // Mutable object: update in place via RefCell
-                                cell.borrow_mut().insert(field.clone(), val.clone());
+                                cell.lock().unwrap().insert(field.clone(), val.clone());
                                 Ok(val)
                             }
                             _ => Err(InterpreterError::RuntimeError(format!(
@@ -2951,7 +2981,7 @@ impl Interpreter {
     /// Evaluate string methods
     fn eval_string_method(
         &mut self,
-        s: &Rc<str>,
+        s: &Arc<str>,
         method: &str,
         args: &[Value],
     ) -> Result<Value, InterpreterError> {
@@ -2962,7 +2992,7 @@ impl Interpreter {
     #[allow(clippy::rc_buffer)]
     fn eval_array_method(
         &mut self,
-        arr: &Rc<[Value]>,
+        arr: &Arc<[Value]>,
         method: &str,
         args: &[Value],
     ) -> Result<Value, InterpreterError> {
@@ -2993,7 +3023,7 @@ impl Interpreter {
                     new_arr.push(arg_value);
 
                     // Update the variable binding
-                    self.env_set(var_name.clone(), Value::Array(Rc::from(new_arr)));
+                    self.env_set(var_name.clone(), Value::Array(Arc::from(new_arr)));
 
                     return Ok(Value::Nil); // push returns nil
                 }
@@ -3005,7 +3035,7 @@ impl Interpreter {
                     let popped_value = new_arr.pop().unwrap_or(Value::Nil);
 
                     // Update the variable binding
-                    self.env_set(var_name.clone(), Value::Array(Rc::from(new_arr)));
+                    self.env_set(var_name.clone(), Value::Array(Arc::from(new_arr)));
 
                     return Ok(popped_value); // pop returns the removed item
                 }
@@ -3023,7 +3053,7 @@ impl Interpreter {
                         let arg_value = self.eval_expr(&args[0])?;
 
                         // Get mutable access to the object
-                        let mut obj = cell_rc.borrow_mut();
+                        let mut obj = cell_rc.lock().unwrap();
 
                         // Get the field value
                         if let Some(field_value) = obj.get(field) {
@@ -3031,7 +3061,7 @@ impl Interpreter {
                             if let Value::Array(arr) = field_value {
                                 let mut new_arr = arr.to_vec();
                                 new_arr.push(arg_value);
-                                obj.insert(field.clone(), Value::Array(Rc::from(new_arr)));
+                                obj.insert(field.clone(), Value::Array(Arc::from(new_arr)));
                                 return Ok(Value::Nil); // push returns nil
                             }
                         }
@@ -3059,7 +3089,7 @@ impl Interpreter {
             // Check if receiver is an actor instance (immutable or mutable)
             let is_actor = match &receiver_value {
                 Value::Object(ref obj) => obj.contains_key("__actor"),
-                Value::ObjectMut(ref cell) => cell.borrow().contains_key("__actor"),
+                Value::ObjectMut(ref cell) => cell.lock().unwrap().contains_key("__actor"),
                 _ => false,
             };
 
@@ -3078,8 +3108,8 @@ impl Interpreter {
                                 Value::from_string("Message".to_string()),
                             );
                             message.insert("type".to_string(), Value::from_string(name.clone()));
-                            message.insert("data".to_string(), Value::Array(Rc::from(vec![])));
-                            Value::Object(Rc::new(message))
+                            message.insert("data".to_string(), Value::Array(Arc::from(vec![])));
+                            Value::Object(Arc::new(message))
                         }
                     }
                     _ => self.eval_expr(&args[0])?,
@@ -3112,8 +3142,8 @@ impl Interpreter {
                         Value::from_string("Message".to_string()),
                     );
                     msg_obj.insert("type".to_string(), Value::from_string(name.clone()));
-                    msg_obj.insert("data".to_string(), Value::Array(Rc::from(vec![])));
-                    Ok(Value::Object(Rc::new(msg_obj)))
+                    msg_obj.insert("data".to_string(), Value::Array(Arc::from(vec![])));
+                    Ok(Value::Object(Arc::new(msg_obj)))
                 }
             }
             _ => self.eval_expr(message),
@@ -3184,7 +3214,7 @@ impl Interpreter {
             Value::ObjectMut(cell_rc) => {
                 // Dispatch mutable objects the same way as immutable ones
                 // Safe borrow: We only read metadata fields to determine dispatch
-                let obj = cell_rc.borrow();
+                let obj = cell_rc.lock().unwrap();
 
                 // Check if this is an actor instance
                 if let Some(Value::String(actor_name)) = obj.get("__actor") {
@@ -3261,7 +3291,7 @@ impl Interpreter {
 
     fn eval_actor_instance_method_mut(
         &mut self,
-        cell_rc: &Rc<std::cell::RefCell<std::collections::HashMap<String, Value>>>,
+        cell_rc: &Arc<std::sync::Mutex<std::collections::HashMap<String, Value>>>,
         actor_name: &str,
         method: &str,
         arg_values: &[Value],
@@ -3277,13 +3307,13 @@ impl Interpreter {
         }
 
         // For other methods, delegate to non-mut version
-        let instance = cell_rc.borrow();
+        let instance = cell_rc.lock().unwrap();
         self.eval_actor_instance_method(&instance, actor_name, method, arg_values)
     }
 
     fn eval_class_instance_method_mut(
         &mut self,
-        cell_rc: &Rc<std::cell::RefCell<std::collections::HashMap<String, Value>>>,
+        cell_rc: &Arc<std::sync::Mutex<std::collections::HashMap<String, Value>>>,
         class_name: &str,
         method: &str,
         arg_values: &[Value],
@@ -3322,9 +3352,10 @@ impl Interpreter {
                         // Create environment for method execution
                         let mut method_env = HashMap::new();
 
-                        // CRITICAL: Pass ObjectMut as self, using the SAME Rc<RefCell<>>
+                        // CRITICAL: Pass ObjectMut as self, using the SAME Arc<RefCell<>>
                         // This enables &mut self methods to mutate the shared instance
-                        method_env.insert("self".to_string(), Value::ObjectMut(Rc::clone(cell_rc)));
+                        method_env
+                            .insert("self".to_string(), Value::ObjectMut(Arc::clone(cell_rc)));
 
                         // Bind method parameters to arguments
                         if arg_values.len() != params.len() {
@@ -3369,23 +3400,23 @@ impl Interpreter {
 
     fn eval_struct_instance_method_mut(
         &mut self,
-        cell_rc: &Rc<std::cell::RefCell<std::collections::HashMap<String, Value>>>,
+        cell_rc: &Arc<std::sync::Mutex<std::collections::HashMap<String, Value>>>,
         struct_name: &str,
         method: &str,
         arg_values: &[Value],
     ) -> Result<Value, InterpreterError> {
-        let instance = cell_rc.borrow();
+        let instance = cell_rc.lock().unwrap();
         self.eval_struct_instance_method(&instance, struct_name, method, arg_values)
     }
 
     fn eval_object_method_mut(
         &mut self,
-        cell_rc: &Rc<std::cell::RefCell<std::collections::HashMap<String, Value>>>,
+        cell_rc: &Arc<std::sync::Mutex<std::collections::HashMap<String, Value>>>,
         method: &str,
         arg_values: &[Value],
         args_empty: bool,
     ) -> Result<Value, InterpreterError> {
-        let instance = cell_rc.borrow();
+        let instance = cell_rc.lock().unwrap();
         self.eval_object_method(&instance, method, arg_values, args_empty)
     }
 
@@ -3559,7 +3590,7 @@ impl Interpreter {
                                                                 // Also bind 'self' to the actor instance
                                                                 handler_env.insert(
                                                                     "self".to_string(),
-                                                                    Value::Object(Rc::new(
+                                                                    Value::Object(Arc::new(
                                                                         instance.clone(),
                                                                     )),
                                                                 );
@@ -3714,7 +3745,7 @@ impl Interpreter {
                                     }
                                 }
                                 handler_env
-                                    .insert("self".to_string(), Value::Object(Rc::new(self_obj)));
+                                    .insert("self".to_string(), Value::Object(Arc::new(self_obj)));
 
                                 // Execute the handler body
                                 self.env_stack.push(handler_env);
@@ -3737,14 +3768,14 @@ impl Interpreter {
 
     /// Process a message for a synchronous (interpreted) actor with mutable state.
     ///
-    /// This version accepts `Rc<RefCell<HashMap>>` and passes `ObjectMut` as self to enable mutations.
+    /// This version accepts `Arc<Mutex<HashMap>>` and passes `ObjectMut` as self to enable mutations.
     /// Complexity: 9
     fn process_actor_message_sync_mut(
         &mut self,
-        cell_rc: &Rc<std::cell::RefCell<std::collections::HashMap<String, Value>>>,
+        cell_rc: &Arc<std::sync::Mutex<std::collections::HashMap<String, Value>>>,
         message: &Value,
     ) -> Result<Value, InterpreterError> {
-        let instance = cell_rc.borrow();
+        let instance = cell_rc.lock().unwrap();
 
         // Parse the message to extract type and arguments
         let (msg_type, msg_args) = if let Value::Object(msg_obj) = message {
@@ -3856,7 +3887,7 @@ impl Interpreter {
                                 // This allows mutations in the handler to persist
                                 handler_env.insert(
                                     "self".to_string(),
-                                    Value::ObjectMut(Rc::clone(cell_rc)),
+                                    Value::ObjectMut(Arc::clone(cell_rc)),
                                 );
 
                                 // Execute the handler body
@@ -3910,7 +3941,7 @@ impl Interpreter {
                 if let Some(self_param) = params.first() {
                     new_env.insert(
                         self_param.clone(),
-                        Value::Object(std::rc::Rc::new(instance.clone())),
+                        Value::Object(std::sync::Arc::new(instance.clone())),
                     );
                 }
 
@@ -3937,7 +3968,7 @@ impl Interpreter {
         } else {
             // Fall back to generic method handling
             self.eval_generic_method(
-                &Value::Object(std::rc::Rc::new(instance.clone())),
+                &Value::Object(std::sync::Arc::new(instance.clone())),
                 method,
                 arg_values.is_empty(),
             )
@@ -3953,7 +3984,7 @@ impl Interpreter {
     ) -> Result<Value, InterpreterError> {
         use crate::runtime::eval_method_dispatch;
         eval_method_dispatch::eval_method_call(
-            &Value::Object(std::rc::Rc::new(obj.clone())),
+            &Value::Object(std::sync::Arc::new(obj.clone())),
             method,
             arg_values,
             args_empty,
@@ -4026,11 +4057,11 @@ impl Interpreter {
                 field_meta.insert("default".to_string(), Value::Nil);
             }
 
-            fields.insert(field.name.clone(), Value::Object(Rc::new(field_meta)));
+            fields.insert(field.name.clone(), Value::Object(Arc::new(field_meta)));
         }
         actor_type.insert(
             "__fields".to_string(),
-            Value::Object(std::rc::Rc::new(fields)),
+            Value::Object(std::sync::Arc::new(fields)),
         );
 
         // Store message handlers as closures
@@ -4051,7 +4082,7 @@ impl Interpreter {
                 .collect();
             handler_obj.insert(
                 "params".to_string(),
-                Value::Array(Rc::from(
+                Value::Array(Arc::from(
                     param_names
                         .iter()
                         .map(|n| Value::from_string(n.clone()))
@@ -4070,7 +4101,7 @@ impl Interpreter {
                 .collect();
             handler_obj.insert(
                 "param_types".to_string(),
-                Value::Array(Rc::from(
+                Value::Array(Arc::from(
                     param_types
                         .iter()
                         .map(|t| Value::from_string(t.clone()))
@@ -4084,20 +4115,20 @@ impl Interpreter {
                 "body".to_string(),
                 Value::Closure {
                     params: param_names,
-                    body: Rc::new(*handler.body.clone()),
-                    env: Rc::new(self.current_env().clone()),
+                    body: Arc::new(*handler.body.clone()),
+                    env: Arc::new(self.current_env().clone()),
                 },
             );
 
-            handlers_array.push(Value::Object(Rc::new(handler_obj)));
+            handlers_array.push(Value::Object(Arc::new(handler_obj)));
         }
         actor_type.insert(
             "__handlers".to_string(),
-            Value::Array(Rc::from(handlers_array)),
+            Value::Array(Arc::from(handlers_array)),
         );
 
         // Register this actor type in the environment
-        let actor_obj = Value::Object(std::rc::Rc::new(actor_type));
+        let actor_obj = Value::Object(std::sync::Arc::new(actor_type));
         self.set_variable(name, actor_obj.clone());
 
         Ok(actor_obj)
@@ -4166,17 +4197,17 @@ impl Interpreter {
 
             field_defs.insert(
                 field.name.clone(),
-                Value::Object(std::rc::Rc::new(field_info)),
+                Value::Object(std::sync::Arc::new(field_info)),
             );
         }
 
         struct_type.insert(
             "__fields".to_string(),
-            Value::Object(std::rc::Rc::new(field_defs)),
+            Value::Object(std::sync::Arc::new(field_defs)),
         );
 
         // Register this struct type in the environment
-        let struct_obj = Value::Object(std::rc::Rc::new(struct_type));
+        let struct_obj = Value::Object(std::sync::Arc::new(struct_type));
         self.set_variable(name, struct_obj.clone());
 
         Ok(struct_obj)
@@ -4234,7 +4265,7 @@ impl Interpreter {
             }
 
             // Call the actor instantiation function
-            return self.instantiate_actor_with_args(name, &[Value::Object(Rc::new(args_obj))]);
+            return self.instantiate_actor_with_args(name, &[Value::Object(Arc::new(args_obj))]);
         }
 
         if type_name != "Struct" {
@@ -4302,7 +4333,7 @@ impl Interpreter {
             }
         }
 
-        Ok(Value::Object(std::rc::Rc::new(instance)))
+        Ok(Value::Object(std::sync::Arc::new(instance)))
     }
 
     /// Evaluate class definition
@@ -4334,7 +4365,7 @@ impl Interpreter {
         _is_pub: bool,
     ) -> Result<Value, InterpreterError> {
         use std::collections::HashMap;
-        use std::rc::Rc;
+        use std::sync::Arc;
 
         // Create class metadata object
         let mut class_info = HashMap::new();
@@ -4379,10 +4410,10 @@ impl Interpreter {
 
             field_defs.insert(
                 field.name.clone(),
-                Value::Object(std::rc::Rc::new(field_info)),
+                Value::Object(std::sync::Arc::new(field_info)),
             );
         }
-        class_info.insert("__fields".to_string(), Value::Object(Rc::new(field_defs)));
+        class_info.insert("__fields".to_string(), Value::Object(Arc::new(field_defs)));
 
         // Store constructors as closures
         let mut constructor_info = HashMap::new();
@@ -4407,8 +4438,8 @@ impl Interpreter {
             // Create a closure for the constructor
             let ctor_closure = Value::Closure {
                 params: param_names,
-                body: Rc::new((*constructor.body).clone()),
-                env: Rc::new(HashMap::new()), // Empty env for now
+                body: Arc::new((*constructor.body).clone()),
+                env: Arc::new(HashMap::new()), // Empty env for now
             };
 
             constructor_info.insert(ctor_name, ctor_closure);
@@ -4424,8 +4455,8 @@ impl Interpreter {
 
             let default_constructor = Value::Closure {
                 params: Vec::new(), // No parameters
-                body: Rc::new(default_body),
-                env: Rc::new(HashMap::new()),
+                body: Arc::new(default_body),
+                env: Arc::new(HashMap::new()),
             };
 
             constructor_info.insert("new".to_string(), default_constructor);
@@ -4433,7 +4464,7 @@ impl Interpreter {
 
         class_info.insert(
             "__constructors".to_string(),
-            Value::Object(Rc::new(constructor_info)),
+            Value::Object(Arc::new(constructor_info)),
         );
 
         // Store methods as closures with metadata
@@ -4455,8 +4486,8 @@ impl Interpreter {
             // Create a closure for the method
             let method_closure = Value::Closure {
                 params: param_names,
-                body: Rc::new((*method.body).clone()),
-                env: Rc::new(HashMap::new()),
+                body: Arc::new((*method.body).clone()),
+                env: Arc::new(HashMap::new()),
             };
 
             // Store method with metadata
@@ -4465,9 +4496,12 @@ impl Interpreter {
             method_meta.insert("is_static".to_string(), Value::Bool(method.is_static));
             method_meta.insert("is_override".to_string(), Value::Bool(method.is_override));
 
-            method_info.insert(method.name.clone(), Value::Object(Rc::new(method_meta)));
+            method_info.insert(method.name.clone(), Value::Object(Arc::new(method_meta)));
         }
-        class_info.insert("__methods".to_string(), Value::Object(Rc::new(method_info)));
+        class_info.insert(
+            "__methods".to_string(),
+            Value::Object(Arc::new(method_info)),
+        );
 
         // Store class constants
         let mut constants_info = HashMap::new();
@@ -4484,7 +4518,7 @@ impl Interpreter {
             );
             const_meta.insert("is_pub".to_string(), Value::Bool(constant.is_pub));
 
-            constants_info.insert(constant.name.clone(), Value::Object(Rc::new(const_meta)));
+            constants_info.insert(constant.name.clone(), Value::Object(Arc::new(const_meta)));
 
             // Also store the constant directly on the class for easy access
             // e.g., MyClass::CONSTANT_NAME
@@ -4493,11 +4527,11 @@ impl Interpreter {
         }
         class_info.insert(
             "__constants".to_string(),
-            Value::Object(Rc::new(constants_info)),
+            Value::Object(Arc::new(constants_info)),
         );
 
         // Store the class definition in the environment
-        let class_value = Value::Object(Rc::new(class_info));
+        let class_value = Value::Object(Arc::new(class_info));
         self.set_variable(name, class_value.clone());
 
         Ok(class_value)
@@ -4509,7 +4543,7 @@ impl Interpreter {
         methods: &[crate::frontend::ast::ImplMethod],
     ) -> Result<Value, InterpreterError> {
         use std::collections::HashMap;
-        use std::rc::Rc;
+        use std::sync::Arc;
 
         // For struct impl blocks, we need to register methods that can be called on instances
         // We'll store them in a special registry keyed by type name
@@ -4529,8 +4563,8 @@ impl Interpreter {
             // Convert ImplMethod to a Value::Closure
             let closure = Value::Closure {
                 params: param_names,
-                body: Rc::new(*method.body.clone()),
-                env: Rc::new(HashMap::new()),
+                body: Arc::new(*method.body.clone()),
+                env: Arc::new(HashMap::new()),
             };
             impl_methods.insert(method.name.clone(), closure);
         }
@@ -4676,8 +4710,10 @@ impl Interpreter {
                         let mut ctor_env = HashMap::new();
 
                         // Bind 'self' to mutable instance for constructor
-                        ctor_env
-                            .insert("self".to_string(), Value::Object(Rc::new(instance.clone())));
+                        ctor_env.insert(
+                            "self".to_string(),
+                            Value::Object(Arc::new(instance.clone())),
+                        );
 
                         // Bind constructor parameters
                         for (param, arg) in params.iter().zip(args) {
@@ -4764,7 +4800,7 @@ impl Interpreter {
                 }
             }
 
-            Ok(Value::Object(Rc::new(instance)))
+            Ok(Value::Object(Arc::new(instance)))
         } else {
             Err(InterpreterError::RuntimeError(format!(
                 "{} is not a struct definition",
@@ -4934,8 +4970,10 @@ impl Interpreter {
                         let mut method_env = HashMap::new();
 
                         // Add 'self' to the environment
-                        method_env
-                            .insert("self".to_string(), Value::Object(Rc::new(instance.clone())));
+                        method_env.insert(
+                            "self".to_string(),
+                            Value::Object(Arc::new(instance.clone())),
+                        );
 
                         // Bind method parameters to arguments
                         // Note: We're not including 'self' in params count here
@@ -5108,13 +5146,13 @@ impl Interpreter {
 
                 // Add to columns array
                 let mut new_columns = current_columns;
-                new_columns.push(Value::Object(std::rc::Rc::new(col_obj)));
+                new_columns.push(Value::Object(std::sync::Arc::new(col_obj)));
 
                 // Create new builder with updated columns
                 let mut new_builder = builder.clone();
                 new_builder.insert("__columns".to_string(), Value::from_array(new_columns));
 
-                Ok(Value::Object(std::rc::Rc::new(new_builder)))
+                Ok(Value::Object(std::sync::Arc::new(new_builder)))
             }
             "build" => {
                 // .build() - convert builder to `DataFrame`
@@ -5200,7 +5238,7 @@ impl Interpreter {
                         row.insert(col.name.clone(), value.clone());
                     }
                 }
-                let row_value = Value::Object(std::rc::Rc::new(row));
+                let row_value = Value::Object(std::sync::Arc::new(row));
 
                 // Evaluate closure with row object
                 let result = self.eval_closure_with_value(closure, &row_value)?;
@@ -5310,7 +5348,7 @@ impl Interpreter {
                             row.insert(col.name.clone(), value.clone());
                         }
                     }
-                    Value::Object(std::rc::Rc::new(row))
+                    Value::Object(std::sync::Arc::new(row))
                 };
 
                 // Evaluate closure with the appropriate value
@@ -5634,8 +5672,8 @@ impl Interpreter {
 
         let closure = Value::Closure {
             params: param_names,
-            body: Rc::new(body.clone()),
-            env: Rc::new(self.current_env().clone()),
+            body: Arc::new(body.clone()),
+            env: Arc::new(self.current_env().clone()),
         };
 
         // Bind function name in environment for recursion
@@ -5674,9 +5712,9 @@ impl Interpreter {
                         Value::from_string("Message".to_string()),
                     );
                     message.insert("type".to_string(), Value::from_string(name.clone()));
-                    message.insert("data".to_string(), Value::Array(Rc::from(arg_vals)));
+                    message.insert("data".to_string(), Value::Array(Arc::from(arg_vals)));
 
-                    return Ok(Value::Object(Rc::new(message)));
+                    return Ok(Value::Object(Arc::new(message)));
                 }
                 return Err(InterpreterError::RuntimeError(msg));
             }

@@ -9,7 +9,7 @@ use crate::frontend::ast::{Expr, Pattern};
 use crate::runtime::eval_pattern::match_pattern;
 use crate::runtime::{InterpreterError, Value};
 use std::collections::HashMap;
-use std::rc::Rc;
+use std::sync::Arc;
 
 /// Function closure with captured environment
 #[derive(Debug, Clone)]
@@ -72,8 +72,8 @@ where
                 _ => "_".to_string(), // Complex patterns converted to placeholder
             })
             .collect(),
-        body: Rc::new(closure.body),
-        env: Rc::new(closure.captured_env),
+        body: Arc::new(closure.body),
+        env: Arc::new(closure.captured_env),
     })
 }
 
@@ -101,8 +101,8 @@ where
                 _ => "_".to_string(), // Complex patterns converted to placeholder
             })
             .collect(),
-        body: Rc::new(closure.body),
-        env: Rc::new(closure.captured_env),
+        body: Arc::new(closure.body),
+        env: Arc::new(closure.captured_env),
     })
 }
 
@@ -204,8 +204,8 @@ where
                     _ => "_".to_string(),
                 })
                 .collect(),
-            body: Rc::new(closure.body.clone()),
-            env: Rc::new(closure.captured_env.clone()),
+            body: Arc::new(closure.body.clone()),
+            env: Arc::new(closure.captured_env.clone()),
         };
         call_env.insert(name.clone(), closure_value);
     }
@@ -356,8 +356,8 @@ pub fn create_partial_application(
                         _ => "_".to_string(),
                     })
                     .collect(),
-                body: Rc::new(partial_closure.body),
-                env: Rc::new(partial_closure.captured_env),
+                body: Arc::new(partial_closure.body),
+                env: Arc::new(partial_closure.captured_env),
             })
         }
         _ => Err(InterpreterError::TypeError(
@@ -508,8 +508,8 @@ mod tests {
         );
         let function_value = Value::Closure {
             params: vec![],
-            body: Rc::new(Expr::new(ExprKind::Literal(Literal::Unit), Span::new(0, 0))),
-            env: Rc::new(HashMap::new()),
+            body: Arc::new(Expr::new(ExprKind::Literal(Literal::Unit), Span::new(0, 0))),
+            env: Arc::new(HashMap::new()),
         };
         assert!(is_callable(&function_value));
 
@@ -525,8 +525,8 @@ mod tests {
         ];
         let function_value = Value::Closure {
             params: vec!["x".to_string(), "y".to_string()],
-            body: Rc::new(Expr::new(ExprKind::Literal(Literal::Unit), Span::new(0, 0))),
-            env: Rc::new(HashMap::new()),
+            body: Arc::new(Expr::new(ExprKind::Literal(Literal::Unit), Span::new(0, 0))),
+            env: Arc::new(HashMap::new()),
         };
 
         assert_eq!(get_arity(&function_value).unwrap(), 2);

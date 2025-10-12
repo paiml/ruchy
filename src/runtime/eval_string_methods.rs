@@ -6,14 +6,14 @@
 //! All functions maintain <10 cyclomatic complexity.
 
 use crate::runtime::{InterpreterError, Value};
-use std::rc::Rc;
+use std::sync::Arc;
 
 /// Evaluate a string method call
 ///
 /// # Complexity
 /// Cyclomatic complexity: 9 (within Toyota Way limits)
 pub fn eval_string_method(
-    s: &Rc<str>,
+    s: &Arc<str>,
     method: &str,
     args: &[Value],
 ) -> Result<Value, InterpreterError> {
@@ -27,7 +27,7 @@ pub fn eval_string_method(
     }
 }
 
-fn eval_zero_arg_string_method(s: &Rc<str>, method: &str) -> Result<Value, InterpreterError> {
+fn eval_zero_arg_string_method(s: &Arc<str>, method: &str) -> Result<Value, InterpreterError> {
     match method {
         "len" | "length" => Ok(Value::Integer(s.len() as i64)),
         "to_upper" | "to_uppercase" => Ok(Value::from_string(s.to_uppercase())),
@@ -46,7 +46,7 @@ fn eval_zero_arg_string_method(s: &Rc<str>, method: &str) -> Result<Value, Inter
 }
 
 fn eval_single_arg_string_method(
-    s: &Rc<str>,
+    s: &Arc<str>,
     method: &str,
     arg: &Value,
 ) -> Result<Value, InterpreterError> {
@@ -64,7 +64,7 @@ fn eval_single_arg_string_method(
 }
 
 fn eval_two_arg_string_method(
-    s: &Rc<str>,
+    s: &Arc<str>,
     method: &str,
     arg1: &Value,
     arg2: &Value,
@@ -367,14 +367,14 @@ mod tests {
 
     #[test]
     fn test_string_length() {
-        let s = Rc::from("hello");
+        let s = Arc::from("hello");
         let result = eval_string_method(&s, "len", &[]).unwrap();
         assert_eq!(result, Value::Integer(5));
     }
 
     #[test]
     fn test_string_case_conversion() {
-        let s = Rc::from("Hello World");
+        let s = Arc::from("Hello World");
 
         let upper = eval_string_method(&s, "to_upper", &[]).unwrap();
         assert_eq!(upper, Value::from_string("HELLO WORLD".to_string()));
@@ -385,7 +385,7 @@ mod tests {
 
     #[test]
     fn test_string_contains() {
-        let s = Rc::from("hello world");
+        let s = Arc::from("hello world");
         let needle = Value::from_string("world".to_string());
 
         let result = eval_string_method(&s, "contains", &[needle]).unwrap();
@@ -394,7 +394,7 @@ mod tests {
 
     #[test]
     fn test_string_split() {
-        let s = Rc::from("a,b,c");
+        let s = Arc::from("a,b,c");
         let sep = Value::from_string(",".to_string());
 
         let result = eval_string_method(&s, "split", &[sep]).unwrap();
@@ -410,7 +410,7 @@ mod tests {
 
     #[test]
     fn test_string_substring() {
-        let s = Rc::from("hello");
+        let s = Arc::from("hello");
         let start = Value::Integer(1);
         let end = Value::Integer(4);
 
@@ -420,7 +420,7 @@ mod tests {
 
     #[test]
     fn test_string_repeat() {
-        let s = Rc::from("hi");
+        let s = Arc::from("hi");
         let count = Value::Integer(3);
 
         let result = eval_string_method(&s, "repeat", &[count]).unwrap();
@@ -463,7 +463,7 @@ mod mutation_tests {
     #[test]
     fn test_eval_zero_arg_string_method_to_string() {
         // MISSED: delete match arm "to_string" in eval_zero_arg_string_method (line 35)
-        let s = Rc::from("hello");
+        let s = Arc::from("hello");
         let result = eval_zero_arg_string_method(&s, "to_string").unwrap();
         assert_eq!(result, Value::from_string("hello".to_string()));
     }
@@ -471,7 +471,7 @@ mod mutation_tests {
     #[test]
     fn test_eval_zero_arg_string_method_trim() {
         // MISSED: delete match arm "trim" in eval_zero_arg_string_method (line 37)
-        let s = Rc::from("  hello  ");
+        let s = Arc::from("  hello  ");
         let result = eval_zero_arg_string_method(&s, "trim").unwrap();
         assert_eq!(result, Value::from_string("hello".to_string()));
     }
@@ -479,7 +479,7 @@ mod mutation_tests {
     #[test]
     fn test_eval_zero_arg_string_method_trim_start() {
         // MISSED: delete match arm "trim_start" in eval_zero_arg_string_method (line 38)
-        let s = Rc::from("  hello");
+        let s = Arc::from("  hello");
         let result = eval_zero_arg_string_method(&s, "trim_start").unwrap();
         assert_eq!(result, Value::from_string("hello".to_string()));
     }
@@ -487,7 +487,7 @@ mod mutation_tests {
     #[test]
     fn test_eval_zero_arg_string_method_trim_end() {
         // MISSED: delete match arm "trim_end" in eval_zero_arg_string_method (line 39)
-        let s = Rc::from("hello  ");
+        let s = Arc::from("hello  ");
         let result = eval_zero_arg_string_method(&s, "trim_end").unwrap();
         assert_eq!(result, Value::from_string("hello".to_string()));
     }
@@ -495,7 +495,7 @@ mod mutation_tests {
     #[test]
     fn test_eval_zero_arg_string_method_chars() {
         // MISSED: delete match arm "chars" in eval_zero_arg_string_method (line 40)
-        let s = Rc::from("abc");
+        let s = Arc::from("abc");
         let result = eval_zero_arg_string_method(&s, "chars").unwrap();
         match result {
             Value::Array(arr) => {
@@ -509,7 +509,7 @@ mod mutation_tests {
     #[test]
     fn test_eval_single_arg_string_method_starts_with() {
         // MISSED: delete match arm "starts_with" in eval_single_arg_string_method (line 55)
-        let s = Rc::from("hello world");
+        let s = Arc::from("hello world");
         let arg = Value::from_string("hello".to_string());
         let result = eval_single_arg_string_method(&s, "starts_with", &arg).unwrap();
         assert_eq!(result, Value::Bool(true));
@@ -518,7 +518,7 @@ mod mutation_tests {
     #[test]
     fn test_eval_two_arg_string_method_replace() {
         // MISSED: delete match arm "replace" in eval_two_arg_string_method (line 73)
-        let s = Rc::from("hello world");
+        let s = Arc::from("hello world");
         let arg1 = Value::from_string("world".to_string());
         let arg2 = Value::from_string("Ruchy".to_string());
         let result = eval_two_arg_string_method(&s, "replace", &arg1, &arg2).unwrap();
@@ -567,7 +567,7 @@ mod mutation_tests {
     #[test]
     fn test_eval_string_char_at_comparison_operator() {
         // MISSED: replace >= with < in eval_string_char_at (line 181)
-        let s = Rc::from("abc");
+        let s = Arc::from("abc");
         let index = Value::Integer(1);
 
         // Valid index (>= 0 check should pass)
@@ -602,7 +602,7 @@ mod mutation_tests {
     #[test]
     fn test_eval_string_substring_logical_operator() {
         // MISSED: replace && with || in eval_string_substring (line 206)
-        let s = Rc::from("hello");
+        let s = Arc::from("hello");
         let start = Value::Integer(1);
         let end = Value::Integer(3);
 

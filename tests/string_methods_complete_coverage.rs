@@ -5,12 +5,12 @@
 
 use ruchy::runtime::eval_string_methods::eval_string_method;
 use ruchy::runtime::Value;
-use std::rc::Rc;
+use std::sync::Arc;
 
 // MISSED: delete match arm "to_string"
 #[test]
 fn test_to_string_method() {
-    let s = Rc::from("hello");
+    let s = Arc::from("hello");
     let result = eval_string_method(&s, "to_string", &[]).unwrap();
     assert!(matches!(result, Value::String(_)));
 }
@@ -18,7 +18,7 @@ fn test_to_string_method() {
 // MISSED: delete match arm "chars"
 #[test]
 fn test_chars_method() {
-    let s = Rc::from("hi");
+    let s = Arc::from("hi");
     let result = eval_string_method(&s, "chars", &[]).unwrap();
     assert!(matches!(result, Value::Array(_)));
 }
@@ -26,7 +26,7 @@ fn test_chars_method() {
 // MISSED: delete match arm "trim"
 #[test]
 fn test_trim_method() {
-    let s = Rc::from("  hello  ");
+    let s = Arc::from("  hello  ");
     let result = eval_string_method(&s, "trim", &[]).unwrap();
     if let Value::String(trimmed) = result {
         assert_eq!(&*trimmed, "hello");
@@ -38,7 +38,7 @@ fn test_trim_method() {
 // MISSED: delete match arm "trim_start"
 #[test]
 fn test_trim_start_method() {
-    let s = Rc::from("  hello");
+    let s = Arc::from("  hello");
     let result = eval_string_method(&s, "trim_start", &[]).unwrap();
     if let Value::String(trimmed) = result {
         assert_eq!(&*trimmed, "hello");
@@ -50,7 +50,7 @@ fn test_trim_start_method() {
 // MISSED: delete match arm "trim_end"
 #[test]
 fn test_trim_end_method() {
-    let s = Rc::from("hello  ");
+    let s = Arc::from("hello  ");
     let result = eval_string_method(&s, "trim_end", &[]).unwrap();
     if let Value::String(trimmed) = result {
         assert_eq!(&*trimmed, "hello");
@@ -62,7 +62,7 @@ fn test_trim_end_method() {
 // MISSED: delete match arm "lines"
 #[test]
 fn test_lines_method() {
-    let s = Rc::from("line1\nline2");
+    let s = Arc::from("line1\nline2");
     let result = eval_string_method(&s, "lines", &[]).unwrap();
 
     // Must verify actual content, not just type
@@ -86,11 +86,11 @@ fn test_lines_method() {
 // MISSED: delete match arm "is_empty"
 #[test]
 fn test_is_empty_method() {
-    let s = Rc::from("");
+    let s = Arc::from("");
     let result = eval_string_method(&s, "is_empty", &[]).unwrap();
     assert_eq!(result, Value::Bool(true));
 
-    let s2 = Rc::from("not empty");
+    let s2 = Arc::from("not empty");
     let result2 = eval_string_method(&s2, "is_empty", &[]).unwrap();
     assert_eq!(result2, Value::Bool(false));
 }
@@ -98,7 +98,7 @@ fn test_is_empty_method() {
 // MISSED: delete match arm "starts_with"
 #[test]
 fn test_starts_with_method() {
-    let s = Rc::from("hello world");
+    let s = Arc::from("hello world");
     let arg = Value::from_string("hello".to_string());
     let result = eval_string_method(&s, "starts_with", &[arg]).unwrap();
     assert_eq!(result, Value::Bool(true));
@@ -107,7 +107,7 @@ fn test_starts_with_method() {
 // MISSED: delete match arm "ends_with"
 #[test]
 fn test_ends_with_method() {
-    let s = Rc::from("hello world");
+    let s = Arc::from("hello world");
     let arg = Value::from_string("world".to_string());
     let result = eval_string_method(&s, "ends_with", &[arg]).unwrap();
     assert_eq!(result, Value::Bool(true));
@@ -116,7 +116,7 @@ fn test_ends_with_method() {
 // MISSED: delete match arm "char_at"
 #[test]
 fn test_char_at_method() {
-    let s = Rc::from("hello");
+    let s = Arc::from("hello");
     let arg = Value::Integer(1);
     let result = eval_string_method(&s, "char_at", &[arg]).unwrap();
     if let Value::String(ch) = result {
@@ -129,7 +129,7 @@ fn test_char_at_method() {
 // MISSED: delete match arm "replace"
 #[test]
 fn test_replace_method() {
-    let s = Rc::from("hello world");
+    let s = Arc::from("hello world");
     let from = Value::from_string("world".to_string());
     let to = Value::from_string("rust".to_string());
     let result = eval_string_method(&s, "replace", &[from, to]).unwrap();
@@ -143,7 +143,7 @@ fn test_replace_method() {
 // MISSED: replace >= with < in char_at (boundary check)
 #[test]
 fn test_char_at_boundary() {
-    let s = Rc::from("hi");
+    let s = Arc::from("hi");
 
     // Valid index 0 - must verify it works
     let result = eval_string_method(&s, "char_at", &[Value::Integer(0)]).unwrap();
@@ -173,7 +173,7 @@ fn test_char_at_boundary() {
 // MISSED: replace && with || in substring (line 206)
 #[test]
 fn test_substring_logic() {
-    let s = Rc::from("hello");
+    let s = Arc::from("hello");
 
     // Valid substring (catches correct && logic)
     let result =

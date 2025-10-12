@@ -7,7 +7,7 @@
 
 use crate::frontend::ast::{Expr, Literal, MatchArm, Pattern};
 use crate::runtime::{InterpreterError, Value};
-use std::rc::Rc;
+use std::sync::Arc;
 
 /// Evaluate an if expression with optional else branch
 ///
@@ -296,7 +296,7 @@ where
         values.push(eval_expr(element)?);
     }
 
-    Ok(Value::Tuple(Rc::from(values.as_slice())))
+    Ok(Value::Tuple(Arc::from(values.as_slice())))
 }
 
 /// Evaluate a range expression

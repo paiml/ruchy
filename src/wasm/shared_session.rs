@@ -305,8 +305,8 @@ impl GlobalRegistry {
                 size
             }
             Value::ObjectMut(cell) => {
-                let map = cell.borrow();
-                let mut size = 32; // HashMap + RefCell overhead
+                let map = cell.lock().unwrap();
+                let mut size = 32; // HashMap + Mutex overhead
                 for (key, value) in map.iter() {
                     size += key.len(); // Key size
                     size += self.estimate_value_size(value); // Value size

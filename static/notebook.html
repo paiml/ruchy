@@ -675,10 +675,10 @@ println("Hello, Ruchy!")
                 } else if (result.image) {
                     outputDiv.innerHTML = `<img src="data:image/png;base64,${result.image}" />`;
                 } else {
-                    outputDiv.innerHTML = `<div class="output-text">${escapeHtml(result.result || '')}</div>`;
+                    outputDiv.innerHTML = `<div class="output-text">${escapeHtml(result.output || '')}</div>`;
                 }
             } else {
-                outputDiv.innerHTML = `<div class="error-output cell-error"><div class="traceback">${escapeHtml(result.error || result.result || 'Unknown error')}</div></div>`;
+                outputDiv.innerHTML = `<div class="error-output cell-error"><div class="traceback">${escapeHtml(result.error || 'Unknown error')}</div></div>`;
             }
         }
         

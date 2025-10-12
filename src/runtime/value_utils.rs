@@ -6,7 +6,7 @@
 
 use crate::runtime::{InterpreterError, Value};
 use std::collections::HashMap;
-use std::rc::Rc;
+use std::sync::Arc;
 
 impl Value {
     /// Create an integer value from an `i64`.
@@ -49,17 +49,17 @@ impl Value {
 
     /// Create string value
     pub fn from_string(s: String) -> Self {
-        Value::String(Rc::from(s))
+        Value::String(Arc::from(s))
     }
 
     /// Create array value
     pub fn from_array(arr: Vec<Value>) -> Self {
-        Value::Array(Rc::from(arr))
+        Value::Array(Arc::from(arr))
     }
 
     /// Create object value
     pub fn from_object(obj: HashMap<String, Value>) -> Self {
-        Value::Object(Rc::new(obj))
+        Value::Object(Arc::new(obj))
     }
 
     /// Create range value

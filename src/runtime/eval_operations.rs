@@ -279,10 +279,10 @@ fn mul_values(left: &Value, right: &Value) -> Result<Value, InterpreterError> {
             // String repetition: "hello" * 3 => "hellohellohello"
             // Negative or zero => empty string (Python behavior)
             if *n <= 0 {
-                Ok(Value::String(std::rc::Rc::from("")))
+                Ok(Value::String(std::sync::Arc::from("")))
             } else {
                 let repeated = s.repeat(*n as usize);
-                Ok(Value::String(std::rc::Rc::from(repeated.as_str())))
+                Ok(Value::String(std::sync::Arc::from(repeated.as_str())))
             }
         }
         _ => Err(InterpreterError::TypeError(format!(
@@ -595,7 +595,7 @@ mod tests {
     #[test]
     fn test_equal_values_comprehensive() {
         use std::collections::HashMap;
-        use std::rc::Rc;
+        use std::sync::Arc;
 
         // Primitives
         assert!(equal_values(&Value::Integer(42), &Value::Integer(42)));
@@ -641,12 +641,12 @@ mod tests {
         obj3.insert("key2".to_string(), Value::from_string("value".to_string()));
 
         assert!(equal_values(
-            &Value::Object(Rc::new(obj1.clone())),
-            &Value::Object(Rc::new(obj2))
+            &Value::Object(Arc::new(obj1.clone())),
+            &Value::Object(Arc::new(obj2))
         ));
         assert!(!equal_values(
-            &Value::Object(Rc::new(obj1)),
-            &Value::Object(Rc::new(obj3))
+            &Value::Object(Arc::new(obj1)),
+            &Value::Object(Arc::new(obj3))
         ));
 
         // Type mismatches

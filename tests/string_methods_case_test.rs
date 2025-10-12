@@ -5,11 +5,11 @@
 
 use ruchy::runtime::eval_string_methods::eval_string_method;
 use ruchy::runtime::Value;
-use std::rc::Rc;
+use std::sync::Arc;
 
 #[test]
 fn test_to_uppercase_method() {
-    let s = Rc::from("hello");
+    let s = Arc::from("hello");
     let result = eval_string_method(&s, "to_uppercase", &[]).unwrap();
 
     match result {
@@ -20,7 +20,7 @@ fn test_to_uppercase_method() {
 
 #[test]
 fn test_to_lowercase_method() {
-    let s = Rc::from("WORLD");
+    let s = Arc::from("WORLD");
     let result = eval_string_method(&s, "to_lowercase", &[]).unwrap();
 
     match result {
@@ -31,7 +31,7 @@ fn test_to_lowercase_method() {
 
 #[test]
 fn test_to_uppercase_empty_string() {
-    let s = Rc::from("");
+    let s = Arc::from("");
     let result = eval_string_method(&s, "to_uppercase", &[]).unwrap();
 
     match result {
@@ -42,7 +42,7 @@ fn test_to_uppercase_empty_string() {
 
 #[test]
 fn test_to_lowercase_mixed_case() {
-    let s = Rc::from("HeLLo WoRLd");
+    let s = Arc::from("HeLLo WoRLd");
     let result = eval_string_method(&s, "to_lowercase", &[]).unwrap();
 
     match result {
@@ -53,7 +53,7 @@ fn test_to_lowercase_mixed_case() {
 
 #[test]
 fn test_to_uppercase_unicode() {
-    let s = Rc::from("café");
+    let s = Arc::from("café");
     let result = eval_string_method(&s, "to_uppercase", &[]).unwrap();
 
     match result {
@@ -64,7 +64,7 @@ fn test_to_uppercase_unicode() {
 
 #[test]
 fn test_case_conversion_idempotent() {
-    let s = Rc::from("hello");
+    let s = Arc::from("hello");
     let upper1 = eval_string_method(&s, "to_uppercase", &[]).unwrap();
 
     if let Value::String(upper_str) = upper1 {
@@ -94,7 +94,7 @@ mod properties {
 
         #[test]
         fn uppercase_idempotent(s in ".*") {
-            let rc_s = Rc::from(s.as_str());
+            let rc_s = Arc::from(s.as_str());
             let upper1 = eval_string_method(&rc_s, "to_uppercase", &[]).unwrap();
 
             if let Value::String(upper_str) = upper1 {
@@ -108,7 +108,7 @@ mod properties {
 
         #[test]
         fn lowercase_idempotent(s in ".*") {
-            let rc_s = Rc::from(s.as_str());
+            let rc_s = Arc::from(s.as_str());
             let lower1 = eval_string_method(&rc_s, "to_lowercase", &[]).unwrap();
 
             if let Value::String(lower_str) = lower1 {
@@ -122,7 +122,7 @@ mod properties {
 
         #[test]
         fn case_conversion_never_panics(s in ".*") {
-            let rc_s = Rc::from(s.as_str());
+            let rc_s = Arc::from(s.as_str());
             let _ = eval_string_method(&rc_s, "to_uppercase", &[]);
             let _ = eval_string_method(&rc_s, "to_lowercase", &[]);
         }
