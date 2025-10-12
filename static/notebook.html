@@ -727,50 +727,144 @@ println("Hello, Ruchy!")
         }
         
         function addCell() {
+            const cellType = document.getElementById('cell-type-selector').value;
             const cellId = `cell-${Date.now()}`;
-            const cellHtml = createCellHtml(cellId, 'code');
-            
+            const cellHtml = createCellHtml(cellId, cellType);
+
             document.getElementById('notebook-cells').insertAdjacentHTML('beforeend', cellHtml);
-            initializeEditor(cellId);
+            if (cellType === 'code') {
+                initializeEditor(cellId);
+            }
             selectCell(cellId);
         }
-        
+
         function addCellAfter(afterCellId) {
+            const cellType = document.getElementById('cell-type-selector').value;
             const cellId = `cell-${Date.now()}`;
-            const cellHtml = createCellHtml(cellId, 'code');
-            
+            const cellHtml = createCellHtml(cellId, cellType);
+
             const afterCell = document.querySelector(`[data-cell-id="${afterCellId}"]`);
             if (afterCell) {
                 afterCell.insertAdjacentHTML('afterend', cellHtml);
-                initializeEditor(cellId);
+                if (cellType === 'code') {
+                    initializeEditor(cellId);
+                }
                 selectCell(cellId);
             }
         }
         
         function createCellHtml(cellId, cellType) {
-            return `
-                <div class="cell cell-type-${cellType}" data-cell-id="${cellId}" data-execution-count="0">
-                    <div class="cell-status"></div>
-                    <div class="cell-prompt">
-                        <span class="execution-count"></span>
-                    </div>
-                    <div class="cell-content">
-                        <div class="cell-toolbar">
-                            <button class="execute-button" onclick="runCell('${cellId}')" title="Run Cell">▶</button>
-                            <button class="delete-cell-button" onclick="deleteCell('${cellId}')" title="Delete Cell">🗑</button>
-                            <button class="move-up-button" onclick="moveUp('${cellId}')" title="Move Up">↑</button>
-                            <button class="move-down-button" onclick="moveDown('${cellId}')" title="Move Down">↓</button>
+            if (cellType === 'markdown') {
+                return `
+                    <div class="cell cell-type-markdown" data-cell-id="${cellId}">
+                        <div class="cell-status"></div>
+                        <div class="cell-prompt">
+                            <span class="execution-count"></span>
                         </div>
-                        <div class="cell-input">
-                            <textarea id="editor-${cellId}" class="code-editor cell-input"></textarea>
+                        <div class="cell-content">
+                            <div class="cell-toolbar">
+                                <button class="delete-cell-button" onclick="deleteCell('${cellId}')" title="Delete Cell">🗑</button>
+                                <button class="move-up-button" onclick="moveUp('${cellId}')" title="Move Up">↑</button>
+                                <button class="move-down-button" onclick="moveDown('${cellId}')" title="Move Down">↓</button>
+                            </div>
+                            <div class="markdown-preview" id="preview-${cellId}" onclick="editMarkdown('${cellId}')">
+                                Double-click to edit
+                            </div>
+                            <textarea class="markdown-edit" id="editor-${cellId}" style="display: none;"></textarea>
                         </div>
-                        <div class="cell-output" id="output-${cellId}" style="display: none;"></div>
                     </div>
-                    <div class="execution-progress"></div>
-                </div>
-            `;
+                `;
+            } else {
+                return `
+                    <div class="cell cell-type-${cellType}" data-cell-id="${cellId}" data-execution-count="0">
+                        <div class="cell-status"></div>
+                        <div class="cell-prompt">
+                            <span class="execution-count"></span>
+                        </div>
+                        <div class="cell-content">
+                            <div class="cell-toolbar">
+                                <button class="execute-button" onclick="runCell('${cellId}')" title="Run Cell">▶</button>
+                                <button class="delete-cell-button" onclick="deleteCell('${cellId}')" title="Delete Cell">🗑</button>
+                                <button class="move-up-button" onclick="moveUp('${cellId}')" title="Move Up">↑</button>
+                                <button class="move-down-button" onclick="moveDown('${cellId}')" title="Move Down">↓</button>
+                            </div>
+                            <div class="cell-input">
+                                <textarea id="editor-${cellId}" class="code-editor cell-input"></textarea>
+                            </div>
+                            <div class="cell-output" id="output-${cellId}" style="display: none;"></div>
+                        </div>
+                        <div class="execution-progress"></div>
+                    </div>
+                `;
+            }
         }
         
+        // Markdown cell functions
+        async function editMarkdown(cellId) {
+            const cell = document.querySelector(`[data-cell-id="${cellId}"]`);
+            if (!cell) return;
+
+            cell.classList.add('editing');
+            const preview = document.getElementById(`preview-${cellId}`);
+            const editor = document.getElementById(`editor-${cellId}`);
+
+            preview.style.display = 'none';
+            editor.style.display = 'block';
+            editor.focus();
+
+            // Save on blur
+            editor.onblur = () => renderMarkdown(cellId);
+
+            // Save on Shift+Enter
+            editor.onkeydown = (e) => {
+                if (e.key === 'Enter' && e.shiftKey) {
+                    e.preventDefault();
+                    renderMarkdown(cellId);
+                }
+                if (e.key === 'Escape') {
+                    renderMarkdown(cellId);
+                }
+            };
+        }
+
+        async function renderMarkdown(cellId) {
+            const cell = document.querySelector(`[data-cell-id="${cellId}"]`);
+            if (!cell) return;
+
+            cell.classList.remove('editing');
+            const preview = document.getElementById(`preview-${cellId}`);
+            const editor = document.getElementById(`editor-${cellId}`);
+            const source = editor.value;
+
+            if (!source.trim()) {
+                preview.innerHTML = '<em style="opacity: 0.5;">Double-click to edit</em>';
+                preview.style.display = 'block';
+                editor.style.display = 'none';
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/render-markdown', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ source })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    preview.innerHTML = result.html;
+                } else {
+                    preview.innerHTML = `<div class="error-output">${escapeHtml(result.error || 'Failed to render markdown')}</div>`;
+                }
+            } catch (error) {
+                preview.innerHTML = `<div class="error-output">${escapeHtml(error.message)}</div>`;
+            }
+
+            preview.style.display = 'block';
+            editor.style.display = 'none';
+        }
+
         function deleteCell(cellId) {
             const cell = document.querySelector(`[data-cell-id="${cellId}"]`);
             if (cell && document.querySelectorAll('.cell').length > 1) {
