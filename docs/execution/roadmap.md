@@ -4568,8 +4568,13 @@ From paiml-mcp-agent-toolkit CLAUDE.md:
       - Users read docs + run examples in same interface
       - Validation = load notebook file + execute cells
     - **IMPLEMENTATION**:
-      - [ ] Add markdown cell type to notebook data model
-      - [ ] Create `/api/render-markdown` endpoint (server-side)
+      - [x] Add markdown cell type to notebook data model (commit bce90c90) ✅
+        - CellType, Cell, Notebook, NotebookMetadata structs
+        - 16/16 tests passing, full serialization support
+      - [x] Create `/api/render-markdown` endpoint (commit 2917341c) ✅
+        - markdown_to_html() with pulldown-cmark
+        - XSS prevention via HTML escaping
+        - 9/9 tests passing (headers, paragraphs, code, tables, XSS)
       - [ ] Update notebook.html to display markdown cells (client-side)
       - [ ] Define .rnb (Ruchy Notebook) format or use .ipynb compatibility
       - [ ] Convert MD Book chapters to notebook format
