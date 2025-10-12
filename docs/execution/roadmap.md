@@ -4575,7 +4575,11 @@ From paiml-mcp-agent-toolkit CLAUDE.md:
         - markdown_to_html() with pulldown-cmark
         - XSS prevention via HTML escaping
         - 9/9 tests passing (headers, paragraphs, code, tables, XSS)
-      - [ ] Update notebook.html to display markdown cells (client-side)
+      - [x] Update notebook.html to display markdown cells (commit d5c68b48) ✅
+        - createCellHtml() handles markdown type
+        - editMarkdown() and renderMarkdown() functions
+        - Cell type selector wired up
+        - Keyboard shortcuts: Shift+Enter, Esc to save
       - [ ] Define .rnb (Ruchy Notebook) format or use .ipynb compatibility
       - [ ] Convert MD Book chapters to notebook format
       - [ ] Load chapter as notebook, execute all code cells, verify outputs
