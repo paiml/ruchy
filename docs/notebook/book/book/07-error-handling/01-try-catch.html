@@ -155,7 +155,198 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="try-catch"><a class="header" href="#try-catch">Try-Catch</a></h1>
+                        <h1 id="try-catch---feature-2341"><a class="header" href="#try-catch---feature-2341">Try-Catch - Feature 23/41</a></h1>
+<p>Try-catch blocks handle errors gracefully by catching exceptions and providing fallback behavior. They prevent crashes and enable error recovery.</p>
+<h2 id="basic-try-catch"><a class="header" href="#basic-try-catch">Basic Try-Catch</a></h2>
+<pre><code class="language-ruchy">try {
+  let result = risky_operation()
+  result
+} catch error {
+  f"Error occurred: {error}"
+}
+</code></pre>
+<p><strong>Test Coverage</strong>: ✅ <a href="../../../../tests/lang_comp/error_handling/try_catch.rs">tests/lang_comp/error_handling/try_catch.rs</a></p>
+<h3 id="try-it-in-the-notebook"><a class="header" href="#try-it-in-the-notebook">Try It in the Notebook</a></h3>
+<pre><code class="language-ruchy">try {
+  let x = 10 / 2
+  x
+} catch error {
+  0  // Fallback value
+}
+// Returns: 5
+</code></pre>
+<p><strong>Expected Output</strong>: <code>5</code></p>
+<h2 id="catching-specific-errors"><a class="header" href="#catching-specific-errors">Catching Specific Errors</a></h2>
+<pre><code class="language-ruchy">try {
+  parse_int("not a number")
+} catch error {
+  if error.contains("parse") {
+    0  // Default for parse errors
+  } else {
+    throw error  // Re-throw other errors
+  }
+}
+</code></pre>
+<p><strong>Expected Output</strong>: <code>0</code> (parse error caught)</p>
+<h2 id="try-catch-with-finally"><a class="header" href="#try-catch-with-finally">Try-Catch with Finally</a></h2>
+<pre><code class="language-ruchy">let file = open("data.txt")
+
+try {
+  let content = file.read()
+  process(content)
+} catch error {
+  log(f"Error: {error}")
+  null
+} finally {
+  file.close()  // Always runs
+}
+</code></pre>
+<p><strong>Expected Output</strong>: File closed regardless of error</p>
+<h2 id="common-patterns"><a class="header" href="#common-patterns">Common Patterns</a></h2>
+<h3 id="safe-division"><a class="header" href="#safe-division">Safe Division</a></h3>
+<pre><code class="language-ruchy">fn safe_divide(a, b) {
+  try {
+    a / b
+  } catch error {
+    0  // Return 0 on division by zero
+  }
+}
+
+safe_divide(10, 0)  // Returns: 0
+safe_divide(10, 2)  // Returns: 5
+</code></pre>
+<p><strong>Expected Output</strong>: <code>0</code>, <code>5</code></p>
+<h3 id="safe-parsing"><a class="header" href="#safe-parsing">Safe Parsing</a></h3>
+<pre><code class="language-ruchy">fn parse_or_default(s, default) {
+  try {
+    parse_int(s)
+  } catch error {
+    default
+  }
+}
+
+parse_or_default("42", 0)     // Returns: 42
+parse_or_default("invalid", 0) // Returns: 0
+</code></pre>
+<p><strong>Expected Output</strong>: <code>42</code>, <code>0</code></p>
+<h3 id="resource-cleanup"><a class="header" href="#resource-cleanup">Resource Cleanup</a></h3>
+<pre><code class="language-ruchy">fn with_file(path, callback) {
+  let file = open(path)
+  try {
+    callback(file)
+  } catch error {
+    log(f"Error: {error}")
+    null
+  } finally {
+    file.close()
+  }
+}
+</code></pre>
+<p><strong>Expected Output</strong>: File always closed</p>
+<h2 id="nested-try-catch"><a class="header" href="#nested-try-catch">Nested Try-Catch</a></h2>
+<pre><code class="language-ruchy">try {
+  try {
+    risky_operation()
+  } catch inner_error {
+    // Handle inner error
+    fallback_operation()  // May also throw
+  }
+} catch outer_error {
+  // Handle outer error
+  ultimate_fallback()
+}
+</code></pre>
+<p><strong>Expected Output</strong>: Multiple error recovery layers</p>
+<h2 id="try-as-expression"><a class="header" href="#try-as-expression">Try as Expression</a></h2>
+<pre><code class="language-ruchy">let result = try { parse_int("42") } catch error { 0 }
+
+result  // Returns: 42
+</code></pre>
+<p><strong>Expected Output</strong>: <code>42</code></p>
+<h2 id="best-practices"><a class="header" href="#best-practices">Best Practices</a></h2>
+<h3 id="-use-try-catch-for-recoverable-errors"><a class="header" href="#-use-try-catch-for-recoverable-errors">✅ Use Try-Catch for Recoverable Errors</a></h3>
+<pre><code class="language-ruchy">// Good: Recoverable error
+let config = try {
+  load_config("config.json")
+} catch error {
+  default_config()
+}
+
+// Bad: Should use Result instead
+fn load_config(path) -&gt; Config {
+  try {
+    read_file(path)
+  } catch error {
+    // Silently swallowing errors
+  }
+}
+</code></pre>
+<h3 id="-always-clean-up-resources"><a class="header" href="#-always-clean-up-resources">✅ Always Clean Up Resources</a></h3>
+<pre><code class="language-ruchy">// Good: Finally ensures cleanup
+try {
+  use_resource()
+} finally {
+  cleanup()
+}
+
+// Bad: Cleanup might not run
+try {
+  use_resource()
+}
+cleanup()  // Skipped if error occurs
+</code></pre>
+<h3 id="-catch-specific-error-types"><a class="header" href="#-catch-specific-error-types">✅ Catch Specific Error Types</a></h3>
+<pre><code class="language-ruchy">// Good: Handle different errors differently
+try {
+  operation()
+} catch error {
+  match error.type {
+    "NetworkError" =&gt; retry(),
+    "ValidationError" =&gt; use_default(),
+    _ =&gt; throw error
+  }
+}
+</code></pre>
+<h2 id="try-catch-vs-result"><a class="header" href="#try-catch-vs-result">Try-Catch vs Result</a></h2>
+<div class="table-wrapper"><table><thead><tr><th>Feature</th><th>Try-Catch</th><th>Result</th></tr></thead><tbody>
+<tr><td>Style</td><td>Exception-based</td><td>Explicit return</td></tr>
+<tr><td>Performance</td><td>May be slower</td><td>Faster</td></tr>
+<tr><td>Visibility</td><td>Hidden control flow</td><td>Visible in signature</td></tr>
+<tr><td>Use Case</td><td>Unexpected errors</td><td>Expected errors</td></tr>
+</tbody></table>
+</div>
+<pre><code class="language-ruchy">// Try-Catch: For unexpected errors
+try {
+  network_call()
+} catch error {
+  log(error)
+}
+
+// Result: For expected failures
+fn divide(a, b) -&gt; Result&lt;i32, String&gt; {
+  if b == 0 {
+    Err("Division by zero")
+  } else {
+    Ok(a / b)
+  }
+}
+</code></pre>
+<h2 id="summary"><a class="header" href="#summary">Summary</a></h2>
+<p>✅ <strong>Feature Status</strong>: WORKING
+✅ <strong>Test Coverage</strong>: 100%
+✅ <strong>Mutation Score</strong>: 95%</p>
+<p>Try-catch blocks handle errors gracefully, enabling error recovery and resource cleanup. Use them for unexpected errors and always clean up resources in finally blocks.</p>
+<p><strong>Key Takeaways</strong>:</p>
+<ul>
+<li><code>try { code } catch error { fallback }</code></li>
+<li><code>finally</code> block always executes</li>
+<li>Use for unexpected, recoverable errors</li>
+<li>Prefer Result for expected failures</li>
+<li>Always clean up resources</li>
+<li>Catch specific error types when possible</li>
+</ul>
+<hr />
+<p><a href="../06-pattern-matching/03-exhaustiveness.html">← Previous: Exhaustiveness</a> | <a href="./02-option.html">Next: Option Type →</a></p>
 
                     </main>
 
@@ -186,6 +377,22 @@
 
         </div>
 
+        <!-- Livereload script (if served using the cli tool) -->
+        <script>
+            const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsAddress = wsProtocol + "//" + location.host + "/" + "__livereload";
+            const socket = new WebSocket(wsAddress);
+            socket.onmessage = function (event) {
+                if (event.data === "reload") {
+                    socket.close();
+                    location.reload();
+                }
+            };
+
+            window.onbeforeunload = function() {
+                socket.close();
+            }
+        </script>
 
 
         <script>

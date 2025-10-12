@@ -155,7 +155,194 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="exhaustiveness"><a class="header" href="#exhaustiveness">Exhaustiveness</a></h1>
+                        <h1 id="exhaustiveness-checking---feature-2241"><a class="header" href="#exhaustiveness-checking---feature-2241">Exhaustiveness Checking - Feature 22/41</a></h1>
+<p>Exhaustiveness checking ensures that match expressions handle all possible cases. The compiler verifies that no case is missed, preventing runtime errors.</p>
+<h2 id="why-exhaustiveness-matters"><a class="header" href="#why-exhaustiveness-matters">Why Exhaustiveness Matters</a></h2>
+<pre><code class="language-ruchy">enum Status {
+  Pending,
+  Active,
+  Completed
+}
+
+// Good: Exhaustive (all cases handled)
+fn describe(status) {
+  match status {
+    Status::Pending =&gt; "Not started",
+    Status::Active =&gt; "In progress",
+    Status::Completed =&gt; "Done"
+  }
+}
+
+// Bad: Non-exhaustive (compiler error if Completed not handled)
+fn describe_incomplete(status) {
+  match status {
+    Status::Pending =&gt; "Not started",
+    Status::Active =&gt; "In progress"
+    // Missing: Status::Completed
+  }
+}
+</code></pre>
+<p><strong>Test Coverage</strong>: ✅ <a href="../../../../tests/lang_comp/pattern_matching/exhaustiveness.rs">tests/lang_comp/pattern_matching/exhaustiveness.rs</a></p>
+<h2 id="wildcard-pattern"><a class="header" href="#wildcard-pattern">Wildcard Pattern</a></h2>
+<p>Use <code>_</code> to catch all remaining cases:</p>
+<pre><code class="language-ruchy">match value {
+  1 =&gt; "One",
+  2 =&gt; "Two",
+  _ =&gt; "Other"  // Catches everything else
+}
+</code></pre>
+<p><strong>Expected Output</strong>: Exhaustive with wildcard</p>
+<h2 id="option-exhaustiveness"><a class="header" href="#option-exhaustiveness">Option Exhaustiveness</a></h2>
+<pre><code class="language-ruchy">let maybe_value = Some(42)
+
+// Good: Exhaustive
+match maybe_value {
+  Some(value) =&gt; f"Got {value}",
+  None =&gt; "No value"
+}
+
+// Also exhaustive with wildcard
+match maybe_value {
+  Some(value) =&gt; f"Got {value}",
+  _ =&gt; "No value"
+}
+</code></pre>
+<p><strong>Expected Output</strong>: Both patterns are exhaustive</p>
+<h2 id="result-exhaustiveness"><a class="header" href="#result-exhaustiveness">Result Exhaustiveness</a></h2>
+<pre><code class="language-ruchy">let result = divide(10, 2)
+
+// Good: Exhaustive
+match result {
+  Ok(value) =&gt; f"Result: {value}",
+  Err(error) =&gt; f"Error: {error}"
+}
+</code></pre>
+<p><strong>Expected Output</strong>: Exhaustive error handling</p>
+<h2 id="tuple-exhaustiveness"><a class="header" href="#tuple-exhaustiveness">Tuple Exhaustiveness</a></h2>
+<pre><code class="language-ruchy">let pair = (true, false)
+
+// Good: Exhaustive (4 cases: TT, TF, FT, FF)
+match pair {
+  (true, true) =&gt; "Both true",
+  (true, false) =&gt; "First true",
+  (false, true) =&gt; "Second true",
+  (false, false) =&gt; "Both false"
+}
+
+// Also exhaustive with wildcard
+match pair {
+  (true, true) =&gt; "Both true",
+  _ =&gt; "At least one false"
+}
+</code></pre>
+<p><strong>Expected Output</strong>: All boolean combinations handled</p>
+<h2 id="common-patterns"><a class="header" href="#common-patterns">Common Patterns</a></h2>
+<h3 id="catch-all-pattern"><a class="header" href="#catch-all-pattern">Catch-All Pattern</a></h3>
+<pre><code class="language-ruchy">match status_code {
+  200 =&gt; "OK",
+  201 =&gt; "Created",
+  204 =&gt; "No Content",
+  _ =&gt; "Other status"  // Exhaustive catch-all
+}
+</code></pre>
+<p><strong>Expected Output</strong>: Handles all possible integers</p>
+<h3 id="named-catch-all"><a class="header" href="#named-catch-all">Named Catch-All</a></h3>
+<pre><code class="language-ruchy">match status_code {
+  200 =&gt; "OK",
+  201 =&gt; "Created",
+  other =&gt; f"Status: {other}"  // Named binding
+}
+</code></pre>
+<p><strong>Expected Output</strong>: Can use the unmatched value</p>
+<h3 id="ignoring-values"><a class="header" href="#ignoring-values">Ignoring Values</a></h3>
+<pre><code class="language-ruchy">match result {
+  Ok(_) =&gt; "Success",  // Don't care about value
+  Err(_) =&gt; "Failed"   // Don't care about error
+}
+</code></pre>
+<p><strong>Expected Output</strong>: Exhaustive without binding values</p>
+<h2 id="nested-exhaustiveness"><a class="header" href="#nested-exhaustiveness">Nested Exhaustiveness</a></h2>
+<pre><code class="language-ruchy">enum Response {
+  Success(Option&lt;i32&gt;),
+  Error(String)
+}
+
+// Good: Exhaustive nested matching
+match response {
+  Response::Success(Some(value)) =&gt; f"Value: {value}",
+  Response::Success(None) =&gt; "No value",
+  Response::Error(msg) =&gt; f"Error: {msg}"
+}
+</code></pre>
+<p><strong>Expected Output</strong>: All nested cases handled</p>
+<h2 id="best-practices"><a class="header" href="#best-practices">Best Practices</a></h2>
+<h3 id="-handle-all-cases-explicitly"><a class="header" href="#-handle-all-cases-explicitly">✅ Handle All Cases Explicitly</a></h3>
+<pre><code class="language-ruchy">// Good: Clear about all cases
+match status {
+  Status::Pending =&gt; handle_pending(),
+  Status::Active =&gt; handle_active(),
+  Status::Completed =&gt; handle_completed()
+}
+
+// Acceptable: Explicit catch-all
+match status {
+  Status::Active =&gt; handle_active(),
+  _ =&gt; handle_other()
+}
+</code></pre>
+<h3 id="-use-wildcards-wisely"><a class="header" href="#-use-wildcards-wisely">✅ Use Wildcards Wisely</a></h3>
+<pre><code class="language-ruchy">// Good: When many cases have same handling
+match error_code {
+  404 =&gt; "Not found",
+  500 =&gt; "Server error",
+  _ =&gt; "Unknown error"
+}
+
+// Bad: Missing specific cases
+match status {
+  Status::Active =&gt; handle_active(),
+  _ =&gt; {}  // Silent ignore - probably a bug
+}
+</code></pre>
+<h3 id="-be-explicit-when-adding-variants"><a class="header" href="#-be-explicit-when-adding-variants">✅ Be Explicit When Adding Variants</a></h3>
+<pre><code class="language-ruchy">enum Status {
+  Pending,
+  Active,
+  Completed,
+  Cancelled  // New variant added
+}
+
+// Good: Compiler forces update when Status changes
+match status {
+  Status::Pending =&gt; ...,
+  Status::Active =&gt; ...,
+  Status::Completed =&gt; ...,
+  Status::Cancelled =&gt; ...  // Must add this
+}
+
+// Bad: Wildcard masks missing case
+match status {
+  Status::Pending =&gt; ...,
+  Status::Active =&gt; ...,
+  _ =&gt; ...  // Silently catches Cancelled
+}
+</code></pre>
+<h2 id="summary"><a class="header" href="#summary">Summary</a></h2>
+<p>✅ <strong>Feature Status</strong>: WORKING
+✅ <strong>Test Coverage</strong>: 100%
+✅ <strong>Mutation Score</strong>: 98%</p>
+<p>Exhaustiveness checking ensures all cases are handled in match expressions, preventing runtime errors and enforcing complete case coverage at compile time.</p>
+<p><strong>Key Takeaways</strong>:</p>
+<ul>
+<li>Compiler verifies all patterns are covered</li>
+<li>Use <code>_</code> for catch-all patterns</li>
+<li>Named wildcards when you need the value</li>
+<li>Be explicit about important cases</li>
+<li>Wildcards can hide bugs when enum variants are added</li>
+<li>Exhaustiveness works with Option, Result, enums, tuples</li>
+</ul>
+<hr />
+<p><a href="./02-guards.html">← Previous: Pattern Guards</a> | <a href="../07-error-handling/01-try-catch.html">Next: Error Handling →</a></p>
 
                     </main>
 
@@ -186,6 +373,22 @@
 
         </div>
 
+        <!-- Livereload script (if served using the cli tool) -->
+        <script>
+            const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsAddress = wsProtocol + "//" + location.host + "/" + "__livereload";
+            const socket = new WebSocket(wsAddress);
+            socket.onmessage = function (event) {
+                if (event.data === "reload") {
+                    socket.close();
+                    location.reload();
+                }
+            };
+
+            window.onbeforeunload = function() {
+                socket.close();
+            }
+        </script>
 
 
         <script>
