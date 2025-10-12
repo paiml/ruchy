@@ -4585,7 +4585,11 @@ From paiml-mcp-agent-toolkit CLAUDE.md:
         - /api/notebook/save endpoint with JSON serialization
         - .rnb format (Ruchy Notebook) JSON files
         - 28/28 server tests passing
-      - [ ] Convert MD Book chapters to notebook format (NOTEBOOK-009 Phase 5)
+      - [x] Convert MD Book chapters to notebook format (commit b6b7ceb7) ✅ (NOTEBOOK-009 Phase 5)
+        - scripts/md_to_notebook.rs: Single file conversion (3 unit tests)
+        - scripts/convert_all_chapters.sh: Batch conversion script
+        - 4 sample notebooks generated (168 cells total)
+        - Parsing logic for markdown + code blocks
       - [ ] Load chapter as notebook, execute all code cells, verify outputs (NOTEBOOK-009 Phase 6)
     - **SUCCESS CRITERIA**:
       - ✅ Notebook displays markdown + code cells interleaved
