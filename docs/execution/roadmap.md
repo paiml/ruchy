@@ -4590,12 +4590,16 @@ From paiml-mcp-agent-toolkit CLAUDE.md:
         - scripts/convert_all_chapters.sh: Batch conversion script
         - 4 sample notebooks generated (168 cells total)
         - Parsing logic for markdown + code blocks
-      - [ ] Load chapter as notebook, execute all code cells, verify outputs (NOTEBOOK-009 Phase 6)
+      - [x] Automated validation testing (commit 01f7fe65) ✅ (NOTEBOOK-009 Phase 6)
+        - tests/notebook_validation.rs: 5 validation tests
+        - Loads notebooks, executes cells, validates outputs
+        - Results: 90.2% pass rate (74/82 cells) - EXCEEDS 90% target!
+        - Per-notebook: literals 60%, variables 100%, arithmetic 89%, if-else 96%
     - **SUCCESS CRITERIA**:
       - ✅ Notebook displays markdown + code cells interleaved
       - ✅ MD Book chapters load as interactive notebooks
       - ✅ All code examples executable in-place
-      - ✅ ≥90% examples passing when executed
+      - ✅ ≥90% examples passing when executed (achieved 90.2%!)
 
   **⏸️ PAUSED: Original extraction-based approach (kept for reference)**
   - [x] extract_examples() parser complete (commit 2be380ca)
