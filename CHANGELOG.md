@@ -4,6 +4,76 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.75.0] - 2025-10-12 - [CRITICAL] Thread-Safety & Notebook State Persistence
+
+### 🚨 Critical Bug Fixes
+
+**DEFECT-001: Thread-Safety Implementation**
+- **Arc Refactoring (DEFECT-001-A)**: Complete Rc → Arc conversion for thread-safety
+  - Converted 47 files from `Rc<T>` to `Arc<T>` for atomic reference counting
+  - `Value` enum now uses `Arc` for all reference types (String, Array, Object, Tuple, etc.)
+  - `ObjectMut` changed from `Arc<RefCell<HashMap>>` to `Arc<Mutex<HashMap>>` for thread-safe interior mutability
+  - `CallFrame` raw pointer marked with `unsafe impl Send` for cross-thread safety
+  - Cargo.toml: Changed `unsafe_code = "forbid"` to `"warn"` (documented exception)
+
+**DEFECT-001-B: Notebook State Persistence Bug**
+- **ROOT CAUSE**: Notebook server's `execute_handler` created NEW `Repl` instance per API call
+- **IMPACT**: Variables defined in cell 1 were undefined in cell 2 (isolated environments)
+- **FIX**: Implemented `SharedRepl = Arc<Mutex<Repl>>` - single REPL shared across all executions
+- **RESULT**: Variables now persist between notebook cell executions as expected
+
+### ✅ Verification & Testing
+
+**Property-Based Testing**:
+- 10/10 property tests passing (10,000+ iterations each)
+- Arc clone semantics verified (idempotent, equivalence, deep equality)
+- ObjectMut thread-safety validated with concurrent access patterns
+
+**Thread-Safety Tests**:
+- `test_repl_is_send`: Verified `Repl: Send` trait implementation
+- `test_repl_shared_across_threads`: Multi-threaded execution validated
+
+**E2E Testing**:
+- 21/21 Playwright tests passing (100% ✅) - was 17/21 (81%)
+- Fixed markdown rendering timing issues (explicit waits added)
+- Fixed multi-cell execution verification
+- Updated playwright.config.ts to run both Python HTTP server AND Ruchy notebook server
+
+### 📦 Files Modified
+
+**Runtime (31 files)**:
+- `src/runtime/interpreter.rs`: ObjectMut with Mutex, CallFrame unsafe Send
+- `src/runtime/object_helpers.rs`: `.borrow()` → `.lock().unwrap()`
+- `src/runtime/eval_*.rs`: 20+ files updated for Arc usage
+- `src/runtime/gc.rs`, `src/runtime/mod.rs`, `src/runtime/value_utils.rs`
+
+**Notebook Server**:
+- `src/notebook/server.rs`: SharedRepl implementation with Arc<Mutex<Repl>>
+
+**Tests**:
+- `tests/property_arc_refactor.rs`: Comprehensive Arc semantics validation (NEW)
+- `tests/repl_thread_safety.rs`: Thread-safety verification (NEW)
+- `tests/e2e/notebook/00-smoke-test.spec.ts`: 21 smoke tests (NEW)
+
+**Configuration**:
+- `playwright.config.ts`: Dual webServer support (Python + Ruchy)
+- `run-e2e-tests.sh`: E2E test runner script (NEW)
+
+### 🏭 Toyota Way Principles Applied
+
+- **Jidoka** (Stop the Line): E2E test failures blocked commit until root cause fixed
+- **Genchi Genbutsu** (Go and See): Inspected execute_handler source code to find bug
+- **No Shortcuts**: Fixed actual problem (shared state) not symptoms (test timing)
+- **Poka-Yoke** (Error Prevention): Pre-commit hooks enforce E2E tests on frontend changes
+
+### 📚 Documentation
+
+- `docs/defects/CRITICAL-DEFECT-001-UI-EXECUTION-BROKEN.md`: Root cause analysis
+- `docs/defects/DEFECT-001-A-ARC-REFACTORING.md`: Arc refactoring details
+- `docs/defects/DEFECT-001-B-THREAD-SAFETY-BLOCKERS.md`: Thread-safety blockers
+- `docs/execution/DEFECT-001-NOTEBOOK-THREAD-SAFETY-COMPLETE.md`: Completion report
+- `DEFECT-001-IMPLEMENTATION-SUMMARY.md`: High-level implementation summary
+
 ## [3.74.0] - 2025-10-11 - [MILESTONE] Complete MD Book Documentation (42 Chapters)
 
 ### 🎯 MILESTONE: MD Book Documentation 100% Complete
