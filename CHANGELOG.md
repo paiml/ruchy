@@ -4,6 +4,19 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+### 🗺️ Roadmap YAML Migration (ROADMAP-YAML)
+
+**PMAT-Style Roadmap with Extreme TDD Tracking**
+
+#### Added
+- **roadmap.yaml**: Machine-readable roadmap (PMAT style)
+  - Sprint-based organization with ticket dependencies
+  - EXTREME TDD workflow: RED-GREEN-REFACTOR
+  - Quality gates: max complexity=10, min coverage=80%, min mutation=75%
+  - STOP THE LINE defect policy with Five Whys
+  - Current sprint: DataFrame completion (DF-001 through DF-009)
+  - Resolved blockers documented (thread-safety, package management, etc.)
+
 ### 📚 README Validation Infrastructure (README-VALIDATION)
 
 **EXTREME TDD for Documentation Accuracy**
