@@ -80,7 +80,6 @@ fn test_runtime_003_class_identity_different_instances() {
 
 /// Test 6: Class field mutation
 #[test]
-#[ignore] // RED: Will fail until GREEN phase
 fn test_runtime_003_class_field_mutation() {
     ruchy_cmd()
         .arg("-e")
@@ -92,7 +91,6 @@ fn test_runtime_003_class_field_mutation() {
 
 /// Test 7: Error handling - missing init method
 #[test]
-#[ignore] // RED: Will fail until GREEN phase
 fn test_runtime_003_class_error_missing_init() {
     ruchy_cmd()
         .arg("-e")
@@ -104,7 +102,6 @@ fn test_runtime_003_class_error_missing_init() {
 
 /// Test 8: Class with multiple methods
 #[test]
-#[ignore] // RED: Will fail until GREEN phase
 fn test_runtime_003_class_multiple_methods() {
     ruchy_cmd()
         .arg("-e")
@@ -116,7 +113,6 @@ fn test_runtime_003_class_multiple_methods() {
 
 /// Test 9: Class field access
 #[test]
-#[ignore] // RED: Will fail until GREEN phase
 fn test_runtime_003_class_field_access() {
     ruchy_cmd()
         .arg("-e")
@@ -128,7 +124,6 @@ fn test_runtime_003_class_field_access() {
 
 /// Test 10: Class method returning value
 #[test]
-#[ignore] // RED: Will fail until GREEN phase
 fn test_runtime_003_class_method_return_value() {
     ruchy_cmd()
         .arg("-e")

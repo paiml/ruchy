@@ -7,8 +7,8 @@ All notable changes to the Ruchy programming language will be documented in this
 ### Sprint: Runtime Implementation (sprint-runtime-001) - IN PROGRESS
 
 #### RUNTIME-003: Class Implementation - GREEN Phase (2025-10-13)
-**Status**: 🟢 GREEN PHASE - 50% Complete! ✅
-**Tests Passing**: 5/10 (instantiation, methods, reference semantics, identity comparison)
+**Status**: 🎉 GREEN PHASE COMPLETE - 100%! ✅
+**Tests Passing**: 10/10 (ALL tests passing!)
 
 **Critical Discovery**: Parser did NOT support `init` keyword for constructors!
 - **ROOT CAUSE**: Parser only recognized `new` keyword, not `init`
@@ -76,7 +76,7 @@ echo 'class Person { init(name: String) { self.name = name; } }' > /tmp/test_cla
 # Output: false ✅
 ```
 
-**Implementation Complete** (GREEN phase - 50% done):
+**Implementation Complete** (GREEN phase - 100% done!):
 1. ✅ Class instantiation with arguments: `Person("Alice")`
 2. ✅ Constructor execution (`init` method runs)
 3. ✅ Field assignment in constructor: `self.name = name`
@@ -84,6 +84,10 @@ echo 'class Person { init(name: String) { self.name = name; } }' > /tmp/test_cla
 5. ✅ Instance method calls: `counter.increment()`
 6. ✅ Reference semantics: `c2 = c1` shares same instance
 7. ✅ Identity comparison: `p1 == p2` uses `Arc::ptr_eq`
+8. ✅ Field mutation via methods: `person.have_birthday()` increments age
+9. ✅ Error handling: Missing init method detected with clear error message
+10. ✅ Multiple methods: Sequential method calls with state persistence
+11. ✅ Method return values: Methods can return computed values
 
 **Runtime Implementation Details**:
 - Added `instantiate_class_with_args()` function (lines 4795-4923)
@@ -96,13 +100,17 @@ echo 'class Person { init(name: String) { self.name = name; } }' > /tmp/test_cla
 - Updated `eval_field_access()` for Class variant (lines 1427-1439)
 - Updated `eval_assign()` to handle Class field assignment (lines 2988-2993)
 
-**Test Results** (5/10 passing):
+**Test Results** (10/10 passing - GREEN PHASE COMPLETE!):
 - ✅ test_runtime_003_class_instantiation_with_init: PASSING
 - ✅ test_runtime_003_class_instance_methods: PASSING
 - ✅ test_runtime_003_class_reference_semantics_shared: PASSING
 - ✅ test_runtime_003_class_identity_comparison: PASSING
 - ✅ test_runtime_003_class_identity_different_instances: PASSING
-- ⏸️ 5 tests remaining (still #[ignore]d)
+- ✅ test_runtime_003_class_field_mutation: PASSING
+- ✅ test_runtime_003_class_error_missing_init: PASSING
+- ✅ test_runtime_003_class_multiple_methods: PASSING
+- ✅ test_runtime_003_class_field_access: PASSING
+- ✅ test_runtime_003_class_method_return_value: PASSING
 
 **Manual Validation**:
 ```bash
