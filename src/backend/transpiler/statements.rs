@@ -1171,6 +1171,9 @@ impl Transpiler {
             if let Some(result) = self.try_transpile_dataframe_function(base_name, args)? {
                 return Ok(result);
             }
+            if let Some(result) = self.try_transpile_environment_function(base_name, args)? {
+                return Ok(result);
+            }
             // DEFECT-STRING-RESULT FIX: Handle Ok/Err/Some when parsed as Call (not dedicated ExprKind)
             if let Some(result) = self.try_transpile_result_call(base_name, args)? {
                 return Ok(result);
@@ -3530,6 +3533,29 @@ impl Transpiler {
         }
         Ok(None)
     }
+
+    /// Handle environment functions (env_args, env_var, etc.)
+    ///
+    /// # Complexity
+    /// Cyclomatic complexity: 2 (within Toyota Way limits)
+    fn try_transpile_environment_function(
+        &self,
+        base_name: &str,
+        args: &[Expr],
+    ) -> Result<Option<TokenStream>> {
+        match base_name {
+            "env_args" => {
+                if !args.is_empty() {
+                    anyhow::bail!("env_args() expects no arguments");
+                }
+                Ok(Some(quote! {
+                    std::env::args().collect::<Vec<String>>()
+                }))
+            }
+            _ => Ok(None),
+        }
+    }
+
     /// Transpile Ok/Err/Some calls with automatic string conversion
     ///
     /// DEFECT-STRING-RESULT FIX: When Ok/Err/Some are parsed as Call expressions
