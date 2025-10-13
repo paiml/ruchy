@@ -6,32 +6,56 @@
 
 ---
 
-## DEFECT-001: String Type Annotations Don't Auto-Convert
+## ✅ DEFECT-001: String Type Annotations Don't Auto-Convert - RESOLVED
 
 **Severity**: HIGH
 **Discovered**: 2025-10-07 (LANG-COMP-007 session)
+**Resolved**: 2025-10-13 (Validation session)
+**Status**: ✅ **FIXED AND VALIDATED**
 
-### Problem
+### Problem (Historical)
 ```ruchy
-let name: String = "Alice"  // ❌ FAILS: "expected String, found &str"
+let name: String = "Alice"  // ❌ FAILED: "expected String, found &str"
 ```
 
-### Expected Behavior
-When a variable has a `String` type annotation, string literals should automatically be converted via `.to_string()`.
+### Fix Implemented
+**Location**: `src/backend/transpiler/statements.rs:356-367`
 
-### Current Workaround
-```ruchy
-let name: String = "Alice".to_string()  // ✅ Manual conversion
-let name = "Alice"  // ✅ Type inference (&str)
+The transpiler now automatically inserts `.to_string()` when:
+1. Value is a string literal (`&str`)
+2. Type annotation is `String`
+
+```rust
+// DEFECT-001 FIX: Auto-convert string literals to String
+let value_tokens = match (&value.kind, type_annotation) {
+    (ExprKind::Literal(Literal::String(s)), Some(type_ann))
+    if matches!(&type_ann.kind, TypeKind::Named(name) if name == "String") =>
+    {
+        quote! { #s.to_string() }  // Auto-insert conversion
+    }
+    _ => self.transpile_expr(value)?,
+};
 ```
 
-### Root Cause
-Transpiler doesn't check type annotations when generating code for string literals.
+### Validation
+**Test File**: `tests/transpiler_defect_001_string_type_annotation.rs`
 
-### Fix Required
-In transpiler, when emitting let binding with String type annotation:
-1. Check if value is a string literal (&str)
-2. If type annotation is String, wrap with `.to_string()`
+✅ All 7 tests passing:
+1. ✅ Simple string literal with String annotation
+2. ✅ Multiple string variables with annotations
+3. ✅ Function parameter with String annotation
+4. ✅ F-string with String annotation
+5. ✅ Manual `.to_string()` workaround still works
+6. ✅ Type inference without annotation works
+7. ✅ Test summary validation
+
+### Now Works
+```ruchy
+let name: String = "Alice";           // ✅ Works!
+let first: String = "Alice";          // ✅ Works!
+let last: String = "Smith";           // ✅ Works!
+let greeting: String = f"Hello!";     // ✅ Works!
+```
 
 ---
 

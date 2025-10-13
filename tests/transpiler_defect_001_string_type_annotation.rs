@@ -28,10 +28,9 @@ fn temp_dir() -> TempDir {
 
 /// Test 1: Simple string literal with String type annotation
 ///
-/// This test WILL FAIL until transpiler is fixed.
+/// This test should PASS now that transpiler fix is implemented.
 #[test]
-#[ignore] // Remove #[ignore] when ready to work on this defect
-fn test_defect_001_red_string_literal_with_type_annotation() {
+fn test_defect_001_green_string_literal_with_type_annotation() {
     let temp = temp_dir();
     let source = temp.path().join("test.ruchy");
 
@@ -56,8 +55,7 @@ fun main() {
 
 /// Test 2: Multiple string variables with String type annotations
 #[test]
-#[ignore]
-fn test_defect_001_red_multiple_string_annotations() {
+fn test_defect_001_green_multiple_string_annotations() {
     let temp = temp_dir();
     let source = temp.path().join("test.ruchy");
 
@@ -83,8 +81,7 @@ fun main() {
 
 /// Test 3: String type annotation in function parameter
 #[test]
-#[ignore]
-fn test_defect_001_red_function_parameter_string_annotation() {
+fn test_defect_001_green_function_parameter_string_annotation() {
     let temp = temp_dir();
     let source = temp.path().join("test.ruchy");
 
@@ -111,8 +108,7 @@ fun main() {
 
 /// Test 4: String type annotation with f-string
 #[test]
-#[ignore]
-fn test_defect_001_red_fstring_with_string_annotation() {
+fn test_defect_001_green_fstring_with_string_annotation() {
     let temp = temp_dir();
     let source = temp.path().join("test.ruchy");
 
