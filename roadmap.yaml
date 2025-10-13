@@ -352,6 +352,177 @@ sprints:
           - "All test gaps documented and fixed"
           - "Mutation report committed to docs/"
 
+  # CURRENT SPRINT: Runtime Implementation for Parser-Only Features
+  - id: sprint-runtime-001
+    name: "Runtime Implementation: Structs, Classes, Actors, Async/Await"
+    status: IN_PROGRESS
+    start_date: 2025-10-13
+    goal: "Implement runtime execution for features that currently only parse (structs, classes, actors, async/await)"
+    estimated_duration: 40-60 hours
+    approach: "EXTREME TDD + Property Tests (10K+) + Mutation Tests (≥75%)"
+    priority: critical
+    blockers_addressed: "SPECIFICATION-001: Parser-only features not runtime-functional"
+
+    tickets:
+      - id: RUNTIME-001
+        title: "Baseline audit: Parser-only features status"
+        priority: critical
+        status: PENDING
+        requirements:
+          - "Document what parses vs what executes for structs/classes/actors/async"
+          - "Create test matrix showing parser success vs runtime failure"
+          - "Identify simplest feature to implement first (likely structs)"
+          - "Estimate effort per feature based on complexity"
+        tests:
+          - "test_parser_accepts_struct_definition"
+          - "test_runtime_rejects_struct_evaluation"
+          - "test_parser_accepts_class_definition"
+          - "test_runtime_rejects_class_evaluation"
+          - "test_parser_accepts_actor_definition"
+          - "test_runtime_rejects_actor_evaluation"
+          - "test_parser_accepts_async_await"
+          - "test_runtime_rejects_async_evaluation"
+        acceptance:
+          - "Baseline documented in docs/execution/runtime-baseline.md"
+          - "All parser tests passing (features parse correctly)"
+          - "All runtime tests FAILING (features don't execute)"
+          - "Prioritized implementation order determined"
+
+      - id: RUNTIME-002
+        title: "Implement runtime execution for Structs (value types)"
+        priority: high
+        status: PENDING
+        depends_on: [RUNTIME-001]
+        requirements:
+          - "Value::Struct(HashMap<String, Value>) runtime representation"
+          - "Struct instantiation: Point { x: 1.0, y: 2.0 }"
+          - "Field access: point.x, point.y"
+          - "Value semantics (copy on assignment)"
+          - "Error handling for missing/invalid fields"
+        tests:
+          - "test_struct_instantiation_literal_syntax"
+          - "test_struct_field_access_dot_notation"
+          - "test_struct_value_semantics_copy_on_assign"
+          - "test_struct_nested_structs"
+          - "test_struct_error_missing_field"
+          - "test_struct_error_wrong_type"
+          - "proptest_struct_field_access_preserves_types"
+          - "proptest_struct_copy_semantics_isolated"
+        mutation_targets:
+          - "Field access logic (wrong field name handling)"
+          - "Type checking in struct instantiation"
+          - "Copy semantics (ensure no reference sharing)"
+        acceptance:
+          - "100% test coverage"
+          - "≥75% mutation score"
+          - "Complexity ≤10 per function"
+          - "All struct examples in SPECIFICATION.md work"
+
+      - id: RUNTIME-003
+        title: "Implement runtime execution for Classes (reference types)"
+        priority: high
+        status: PENDING
+        depends_on: [RUNTIME-002]
+        requirements:
+          - "Value::Class(Arc<RefCell<ClassInstance>>) runtime representation"
+          - "Class instantiation with init: Person(name: 'Alice', age: 30)"
+          - "Instance methods: person.have_birthday()"
+          - "Reference semantics (shared on assignment)"
+          - "Identity comparison (===)"
+        tests:
+          - "test_class_instantiation_with_init"
+          - "test_class_instance_methods"
+          - "test_class_reference_semantics_shared"
+          - "test_class_identity_comparison"
+          - "test_class_field_mutation"
+          - "test_class_error_missing_init"
+          - "proptest_class_reference_semantics_shared_state"
+          - "proptest_class_identity_distinct_instances"
+        mutation_targets:
+          - "Reference sharing logic"
+          - "Identity vs equality comparison"
+          - "Method dispatch"
+        acceptance:
+          - "100% test coverage"
+          - "≥75% mutation score"
+          - "Complexity ≤10 per function"
+          - "All class examples in SPECIFICATION.md work"
+
+      - id: RUNTIME-004
+        title: "Implement runtime execution for Actors (message-passing)"
+        priority: medium
+        status: PENDING
+        depends_on: [RUNTIME-003]
+        requirements:
+          - "Actor trait with receive() method"
+          - "Actor spawn and message sending"
+          - "Mailbox queue (mpsc channel)"
+          - "Async message handling"
+          - "Error handling for actor failures"
+        tests:
+          - "test_actor_spawn_and_send_message"
+          - "test_actor_receive_processes_messages"
+          - "test_actor_mailbox_queues_messages"
+          - "test_actor_async_message_handling"
+          - "test_actor_error_on_send_to_dead_actor"
+          - "proptest_actor_message_order_preserved"
+          - "proptest_actor_no_message_loss"
+        mutation_targets:
+          - "Message queue logic"
+          - "Actor state isolation"
+          - "Error propagation"
+        acceptance:
+          - "100% test coverage"
+          - "≥75% mutation score"
+          - "Complexity ≤10 per function"
+          - "Basic actor examples work"
+
+      - id: RUNTIME-005
+        title: "Implement runtime execution for Async/Await"
+        priority: medium
+        status: PENDING
+        depends_on: [RUNTIME-004]
+        requirements:
+          - "async fn syntax support"
+          - "await expression evaluation"
+          - "Future trait integration"
+          - "Tokio runtime integration"
+          - "Error handling for await failures"
+        tests:
+          - "test_async_fn_definition"
+          - "test_await_expression_suspends"
+          - "test_async_block_execution"
+          - "test_async_error_propagation"
+          - "test_async_concurrent_execution"
+          - "proptest_async_execution_order"
+          - "proptest_async_no_race_conditions"
+        mutation_targets:
+          - "Future state machine transitions"
+          - "Await suspension/resumption"
+          - "Error handling in async context"
+        acceptance:
+          - "100% test coverage"
+          - "≥75% mutation score"
+          - "Complexity ≤10 per function"
+          - "Basic async examples work"
+
+      - id: RUNTIME-006
+        title: "Update SPECIFICATION.md with runtime status"
+        priority: high
+        status: PENDING
+        depends_on: [RUNTIME-002, RUNTIME-003, RUNTIME-004, RUNTIME-005]
+        requirements:
+          - "Remove 'PARSER ONLY' warnings"
+          - "Add runtime implementation status"
+          - "Update examples with working code"
+          - "Increment specification version"
+        tests:
+          - "test_all_spec_examples_compile_and_run"
+        acceptance:
+          - "All warnings removed"
+          - "Specification v16.0 published"
+          - "All examples tested"
+
   # FUTURE SPRINTS
   - id: sprint-ecosystem-001
     name: "Ecosystem Development"
