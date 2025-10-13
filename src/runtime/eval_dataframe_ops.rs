@@ -25,6 +25,8 @@ pub fn eval_dataframe_method(
         "mean" => eval_dataframe_mean(columns, arg_values),
         "max" => eval_dataframe_max(columns, arg_values),
         "min" => eval_dataframe_min(columns, arg_values),
+        "std" => eval_dataframe_std(columns, arg_values),
+        "var" => eval_dataframe_var(columns, arg_values),
         "slice" => eval_dataframe_slice(columns, arg_values),
         "join" => eval_dataframe_join(columns, arg_values),
         "groupby" => eval_dataframe_groupby(columns, arg_values),
@@ -393,6 +395,131 @@ fn eval_dataframe_min(
             "DataFrame.min() found no numeric values".to_string(),
         )),
     }
+}
+
+/// Calculate standard deviation of all numeric values in all columns
+///
+/// # Complexity
+/// Cyclomatic complexity: 10 (at Toyota Way limit)
+///
+/// # Formula
+/// std = sqrt(variance) = sqrt(sum((x - mean)^2) / N)
+fn eval_dataframe_std(
+    columns: &[DataFrameColumn],
+    args: &[Value],
+) -> Result<Value, InterpreterError> {
+    if !args.is_empty() {
+        return Err(InterpreterError::RuntimeError(
+            "DataFrame.std() takes no arguments".to_string(),
+        ));
+    }
+
+    let mut total = 0.0;
+    let mut count = 0;
+    let mut values: Vec<f64> = Vec::new();
+
+    // Collect all numeric values and calculate mean
+    for col in columns {
+        for val in &col.values {
+            match val {
+                Value::Integer(i) => {
+                    let f = *i as f64;
+                    total += f;
+                    count += 1;
+                    values.push(f);
+                }
+                Value::Float(f) => {
+                    total += f;
+                    count += 1;
+                    values.push(*f);
+                }
+                _ => {} // Skip non-numeric values
+            }
+        }
+    }
+
+    // Handle empty or single-value cases
+    if count == 0 || count == 1 {
+        return Ok(Value::Float(0.0));
+    }
+
+    let mean = total / f64::from(count);
+
+    // Calculate variance: sum((x - mean)^2) / N
+    let variance: f64 = values
+        .iter()
+        .map(|&x| {
+            let diff = x - mean;
+            diff * diff
+        })
+        .sum::<f64>()
+        / f64::from(count);
+
+    // Standard deviation is sqrt(variance)
+    let std = variance.sqrt();
+
+    Ok(Value::Float(std))
+}
+
+/// Calculate variance of all numeric values in all columns
+///
+/// # Complexity
+/// Cyclomatic complexity: 10 (at Toyota Way limit)
+///
+/// # Formula
+/// var = sum((x - mean)^2) / N
+fn eval_dataframe_var(
+    columns: &[DataFrameColumn],
+    args: &[Value],
+) -> Result<Value, InterpreterError> {
+    if !args.is_empty() {
+        return Err(InterpreterError::RuntimeError(
+            "DataFrame.var() takes no arguments".to_string(),
+        ));
+    }
+
+    let mut total = 0.0;
+    let mut count = 0;
+    let mut values: Vec<f64> = Vec::new();
+
+    // Collect all numeric values and calculate mean
+    for col in columns {
+        for val in &col.values {
+            match val {
+                Value::Integer(i) => {
+                    let f = *i as f64;
+                    total += f;
+                    count += 1;
+                    values.push(f);
+                }
+                Value::Float(f) => {
+                    total += f;
+                    count += 1;
+                    values.push(*f);
+                }
+                _ => {} // Skip non-numeric values
+            }
+        }
+    }
+
+    // Handle empty or single-value cases
+    if count == 0 || count == 1 {
+        return Ok(Value::Float(0.0));
+    }
+
+    let mean = total / f64::from(count);
+
+    // Calculate variance: sum((x - mean)^2) / N
+    let variance: f64 = values
+        .iter()
+        .map(|&x| {
+            let diff = x - mean;
+            diff * diff
+        })
+        .sum::<f64>()
+        / f64::from(count);
+
+    Ok(Value::Float(variance))
 }
 
 /// Slice `DataFrame` rows
