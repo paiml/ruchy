@@ -3314,6 +3314,14 @@ impl Interpreter {
                     self.eval_object_method_mut(cell_rc, method, arg_values, args_empty)
                 }
             }
+            Value::Class {
+                class_name,
+                fields,
+                methods,
+            } => {
+                // Dispatch instance method call on Class
+                self.eval_class_instance_method_on_class(class_name, fields, methods, method, arg_values)
+            }
             _ => self.eval_generic_method(receiver, method, args_empty),
         }
     }
@@ -3453,6 +3461,71 @@ impl Interpreter {
             Err(InterpreterError::RuntimeError(format!(
                 "{} is not a class",
                 class_name
+            )))
+        }
+    }
+
+    /// Evaluate instance method on Value::Class variant
+    /// This is for the new Class implementation with Arc<RwLock<HashMap>>
+    fn eval_class_instance_method_on_class(
+        &mut self,
+        class_name: &str,
+        fields: &Arc<std::sync::RwLock<HashMap<String, Value>>>,
+        methods: &Arc<HashMap<String, Value>>,
+        method: &str,
+        arg_values: &[Value],
+    ) -> Result<Value, InterpreterError> {
+        // Look up the method in the methods map
+        if let Some(method_closure) = methods.get(method) {
+            if let Value::Closure { params, body, .. } = method_closure {
+                // Check argument count
+                if arg_values.len() != params.len() {
+                    return Err(InterpreterError::RuntimeError(format!(
+                        "Method {} expects {} arguments, got {}",
+                        method,
+                        params.len(),
+                        arg_values.len()
+                    )));
+                }
+
+                // Create environment for method execution
+                let mut method_env = HashMap::new();
+
+                // Bind 'self' to the class instance
+                method_env.insert(
+                    "self".to_string(),
+                    Value::Class {
+                        class_name: class_name.to_string(),
+                        fields: Arc::clone(fields),
+                        methods: Arc::clone(methods),
+                    },
+                );
+
+                // Bind method parameters to arguments
+                for (param, arg) in params.iter().zip(arg_values) {
+                    method_env.insert(param.clone(), arg.clone());
+                }
+
+                // Push method environment
+                self.env_push(method_env);
+
+                // Execute method body
+                let result = self.eval_expr(body)?;
+
+                // Pop environment
+                self.env_pop();
+
+                Ok(result)
+            } else {
+                Err(InterpreterError::RuntimeError(format!(
+                    "Method {} is not a closure",
+                    method
+                )))
+            }
+        } else {
+            Err(InterpreterError::RuntimeError(format!(
+                "Method '{}' not found for type class",
+                method
             )))
         }
     }

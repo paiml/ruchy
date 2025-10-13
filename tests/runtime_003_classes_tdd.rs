@@ -36,7 +36,6 @@ fn test_runtime_003_class_instantiation_with_init() {
 
 /// Test 2: Class instance methods
 #[test]
-#[ignore] // RED: Will fail until GREEN phase
 fn test_runtime_003_class_instance_methods() {
     ruchy_cmd()
         .arg("-e")
