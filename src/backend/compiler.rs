@@ -127,7 +127,19 @@ fn parse_and_transpile(source: &str) -> Result<TokenStream> {
 }
 
 /// Check if AST contains DataFrame usage (complexity: 3)
-fn uses_dataframes(ast: &crate::frontend::ast::Expr) -> bool {
+///
+/// # Examples
+///
+/// ```
+/// use ruchy::frontend::parser::Parser;
+/// use ruchy::backend::compiler::uses_dataframes;
+///
+/// let code = r#"fun main() { let df = df!["x" => [1, 2, 3]]; }"#;
+/// let mut parser = Parser::new(code);
+/// let ast = parser.parse().unwrap();
+/// assert!(uses_dataframes(&ast));
+/// ```
+pub fn uses_dataframes(ast: &crate::frontend::ast::Expr) -> bool {
     use crate::frontend::ast::ExprKind;
 
     match &ast.kind {

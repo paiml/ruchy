@@ -556,3 +556,167 @@ fn test_dataframe_001_red_phase_summary() {
 
     assert!(true, "RED phase: 10 tests created, all will fail when un-ignored");
 }
+
+// ==================== REFACTOR PHASE: Property Tests ====================
+//
+// NOTE: Full compilation property tests are impractical (1 min per case due to cargo+polars build).
+// Instead, we test the DataFrame detection function directly (fast + comprehensive coverage).
+
+#[cfg(test)]
+mod property_tests {
+    use proptest::prelude::*;
+    use ruchy::frontend::parser::Parser;
+
+    /// Property test: DataFrame detection with random column names
+    ///
+    /// Validates that code with DataFrames is always detected correctly.
+    #[test]
+    fn proptest_dataframe_detection_any_column_name() {
+        let config = ProptestConfig::with_cases(1000); // Fast: just parsing, no compilation
+        proptest!(config, |(col_name in "[a-zA-Z][a-zA-Z0-9_]{0,20}")| {
+            let code = format!(
+                r#"fun main() {{
+                    let df = df![
+                        "{}" => [1, 2, 3]
+                    ];
+                    println(df);
+                }}"#,
+                col_name
+            );
+
+            // Parse the code
+            let mut parser = Parser::new(&code);
+            let ast = parser.parse().expect("Failed to parse");
+
+            // Should detect DataFrame usage
+            let uses_df = ruchy::backend::compiler::uses_dataframes(&ast);
+            prop_assert!(uses_df, "DataFrame with column '{}' should be detected", col_name);
+        });
+    }
+
+    /// Property test: DataFrame with random number of elements
+    ///
+    /// For ANY size array (1-100 elements), DataFrame should be detected.
+    #[test]
+    fn proptest_dataframe_any_size() {
+        let config = ProptestConfig::with_cases(1000); // Fast: just parsing
+        proptest!(config, |(size in 1..100usize)| {
+            let elements: Vec<String> = (0..size).map(|i| i.to_string()).collect();
+            let elements_str = elements.join(", ");
+
+            let code = format!(
+                r#"fun main() {{
+                    let df = df![
+                        "x" => [{}]
+                    ];
+                    println(df);
+                }}"#,
+                elements_str
+            );
+
+            // Parse the code
+            let mut parser = Parser::new(&code);
+            let ast = parser.parse().expect("Failed to parse");
+
+            // Should detect DataFrame usage
+            let uses_df = ruchy::backend::compiler::uses_dataframes(&ast);
+            prop_assert!(uses_df, "DataFrame with {} elements should be detected", size);
+        });
+    }
+
+    /// Property test: Non-DataFrame code is NOT detected as DataFrame
+    ///
+    /// For ANY simple program without DataFrames, should NOT detect DataFrame usage.
+    /// This validates that our detection doesn't have false positives.
+    #[test]
+    fn proptest_non_dataframe_not_detected() {
+        let config = ProptestConfig::with_cases(1000); // Fast: just parsing
+        proptest!(config, |(message in "[a-zA-Z0-9 ]{1,50}")| {
+            let code = format!(
+                r#"fun main() {{
+                    println("{}");
+                }}"#,
+                message.replace('"', "\\\"")
+            );
+
+            // Parse the code
+            let mut parser = Parser::new(&code);
+            let ast = parser.parse().expect("Failed to parse");
+
+            // Should NOT detect DataFrame usage
+            let uses_df = ruchy::backend::compiler::uses_dataframes(&ast);
+            prop_assert!(!uses_df, "Code without DataFrame should not be detected as having DataFrame");
+        });
+    }
+
+    /// Property test: DataFrame detection is deterministic
+    ///
+    /// The same code should always be detected the same way.
+    /// This validates determinism in our detection logic.
+    #[test]
+    fn proptest_dataframe_detection_deterministic() {
+        let config = ProptestConfig::with_cases(1000); // Fast: just parsing
+        proptest!(config, |(seed in 0..1000u32)| {
+            // Generate deterministic code based on seed
+            let code = format!(
+                r#"fun main() {{
+                    let df = df![
+                        "col_{}" => [{}, {}, {}]
+                    ];
+                    println(df);
+                }}"#,
+                seed, seed, seed + 1, seed + 2
+            );
+
+            // Parse twice
+            let mut parser1 = Parser::new(&code);
+            let ast1 = parser1.parse().expect("Failed to parse");
+            let uses_df1 = ruchy::backend::compiler::uses_dataframes(&ast1);
+
+            let mut parser2 = Parser::new(&code);
+            let ast2 = parser2.parse().expect("Failed to parse");
+            let uses_df2 = ruchy::backend::compiler::uses_dataframes(&ast2);
+
+            // Both should give same result
+            prop_assert_eq!(uses_df1, uses_df2, "Detection should be deterministic");
+            prop_assert!(uses_df1, "DataFrame should be detected");
+        });
+    }
+
+    /// Property test: Multiple DataFrames in same file
+    ///
+    /// For ANY number of DataFrames (1-5), all should be detected.
+    #[test]
+    fn proptest_multiple_dataframes() {
+        let config = ProptestConfig::with_cases(100); // Fast: just parsing
+        proptest!(config, |(count in 1..=5usize)| {
+            let mut dataframes = Vec::new();
+            for i in 0..count {
+                dataframes.push(format!(
+                    r#"let df{} = df![
+                        "col{}" => [1, 2, 3]
+                    ];"#,
+                    i, i
+                ));
+            }
+
+            let code = format!(
+                r#"fun main() {{
+                    {}
+                    println("Created {} dataframes");
+                }}"#,
+                dataframes.join("\n    "),
+                count
+            );
+
+            // Parse the code
+            let mut parser = Parser::new(&code);
+            let ast = parser.parse().expect("Failed to parse");
+
+            // Should detect DataFrame usage
+            let uses_df = ruchy::backend::compiler::uses_dataframes(&ast);
+            prop_assert!(uses_df, "Code with {} DataFrames should be detected", count);
+        });
+    }
+}
+
