@@ -14,7 +14,7 @@ A modern, expressive programming language for data science and scientific comput
 - **WebAssembly Support**: Compile to WASM for browser and edge deployment
 - **Notebook Integration**: Jupyter-style notebooks with testing framework
 - **Type System**: Bidirectional type checking with inference
-- **Actor Model**: Built-in concurrency with supervision trees
+- **Package Management**: Cargo integration with 140K+ crates via `ruchy add`
 - **Quality First**: Toyota Way principles with PMAT A+ code standards
 
 ## Installation
@@ -99,85 +99,74 @@ ruchy test run tests/
 
 ### Basic Syntax
 ```ruchy
-// Variables and functions
+// Variables
 let x = 42
-let add = fn(a, b) => a + b
+let name = "Ruchy"
+println(f"Hello, {name}! x = {x}")
+
+// Functions
+fun add(a, b) {
+    a + b
+}
+let result = add(10, 20)
+println(f"10 + 20 = {result}")
 
 // Pattern matching
+let value = Some(5)
 match value {
     Some(x) => println(f"Got {x}"),
     None => println("Nothing"),
 }
 
-// Async/await with blocks and lambdas (NEW in v3.45.0)
-async fn fetch_data(url) {
-    let response = await http.get(url)
-    response.json()
-}
-
-// Async blocks
-let future_result = async {
-    let data = await fetch_data("api/users")
-    data.length
-}
-
-// Async lambdas
-let processors = urls.map(async |url| await fetch_data(url))
-let transformer = async |x, y| x + await compute(y)
+// Collections
+let numbers = [1, 2, 3, 4, 5]
+println(f"Numbers: {numbers:?}")
 ```
 
-### Actor System (NEW in v3.46.0)
+### Package Management (NEW in v3.76.0)
+```bash
+# Create new Ruchy project with Cargo integration
+ruchy new my_project
+
+# Add dependencies from crates.io
+cd my_project
+ruchy add serde
+ruchy add tokio@1.0
+
+# Add dev dependencies
+ruchy add --dev proptest
+
+# Build project (auto-transpiles .ruchy → .rs)
+ruchy build
+ruchy build --release
+
+# Run project
+cargo run
+```
+
+### Data Science Features (Experimental - In Development)
+
+> **Status**: DataFrame is currently <10% complete. Basic operations work, advanced features are roadmap items.
+
 ```ruchy
-// Define actors with state and message handlers
-actor ChatAgent {
-    name: String,
-    message_count: i32,
+// NOT IMPLEMENTED - Basic DataFrame syntax example
+// This shows the intended API, implementation in progress
 
-    receive process_message(content: String, sender: String) {
-        self.message_count = self.message_count + 1;
-        println("[" + self.name + "] From " + sender + ": " + content)
-    }
-
-    receive get_stats() -> String {
-        self.name + " processed " + self.message_count.to_string() + " messages"
-    }
-}
-
-actor BankAccount {
-    balance: i32,
-    account_number: String,
-
-    receive deposit(amount: i32) {
-        self.balance = self.balance + amount;
-        println("Deposited " + amount.to_string() + ". Balance: " + self.balance.to_string())
-    }
-
-    receive withdraw(amount: i32) {
-        if amount <= self.balance {
-            self.balance = self.balance - amount;
-            println("Withdrew " + amount.to_string() + ". Balance: " + self.balance.to_string())
-        }
-    }
-
-    receive get_balance() -> i32 {
-        self.balance
-    }
-}
+// let df = df![
+//     "name" => ["Alice", "Bob", "Charlie"],
+//     "age" => [25, 30, 35],
+//     "score" => [85.5, 92.0, 78.5]
+// ];
+// println(df);
 ```
 
-### Data Science Features
-```ruchy
-// DataFrame operations
-let df = read_csv("data.csv")
-let result = df
-    |> filter(row => row.age > 18)
-    |> group_by("category")
-    |> agg(mean("value"))
-    |> sort_by("mean_value", descending=true)
-
-// Plotting
-plot(df.x, df.y, kind="scatter", title="Analysis")
-```
+**Coming Soon** (not yet implemented):
+- CSV reading/writing
+- Filtering with predicates
+- Group by operations
+- Aggregation functions
+- Sorting and joins
+- Plotting integration
 
 ## CLI Commands
 
