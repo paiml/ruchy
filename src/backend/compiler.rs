@@ -96,16 +96,24 @@ pub fn compile_to_binary(source_path: &Path, options: &CompileOptions) -> Result
 /// - The working directory cannot be created
 /// - The rustc compilation fails
 pub fn compile_source_to_binary(source: &str, options: &CompileOptions) -> Result<PathBuf> {
-    // Parse and transpile
-    let rust_code = parse_and_transpile(source)?;
-    // Prepare compilation artifacts
-    let (_temp_dir, rust_file) = prepare_rust_file(&rust_code)?;
-    // Build and execute rustc
-    let cmd = build_rustc_command(&rust_file, options);
-    execute_compilation(cmd)?;
-    // Verify output
-    verify_output_exists(&options.output)?;
-    Ok(options.output.clone())
+    // Parse to check for DataFrame usage
+    let mut parser = Parser::new(source);
+    let ast = parser.parse().parse_context("Ruchy source")?;
+    let needs_polars = uses_dataframes(&ast);
+
+    // Transpile
+    let mut transpiler = Transpiler::new();
+    let rust_code = transpiler
+        .transpile_to_program(&ast)
+        .compile_context("transpile to Rust")?;
+
+    if needs_polars {
+        // Use cargo build with Cargo.toml
+        compile_with_cargo(&rust_code, options)
+    } else {
+        // Use direct rustc (faster for simple programs)
+        compile_with_rustc(&rust_code, options)
+    }
 }
 /// Parse Ruchy source and transpile to Rust (complexity: 4)
 fn parse_and_transpile(source: &str) -> Result<TokenStream> {
@@ -117,6 +125,119 @@ fn parse_and_transpile(source: &str) -> Result<TokenStream> {
         .compile_context("transpile to Rust")?;
     Ok(rust_code)
 }
+
+/// Check if AST contains DataFrame usage (complexity: 2)
+fn uses_dataframes(ast: &crate::frontend::ast::Expr) -> bool {
+    use crate::frontend::ast::ExprKind;
+
+    match &ast.kind {
+        // Direct DataFrame usage
+        ExprKind::DataFrame { .. } | ExprKind::DataFrameOperation { .. } => true,
+
+        // Recursive checks
+        ExprKind::Binary { left, right, .. } => check_binary_for_dataframes(left, right),
+        ExprKind::Let { value, body, .. } => check_binary_for_dataframes(value, body),
+        ExprKind::MethodCall { receiver, args, .. } => check_method_for_dataframes(receiver, args),
+        ExprKind::Call { func, args } => check_call_for_dataframes(func, args),
+
+        // Default
+        _ => false,
+    }
+}
+
+/// Check binary expressions for DataFrames (complexity: 1)
+fn check_binary_for_dataframes(
+    left: &crate::frontend::ast::Expr,
+    right: &crate::frontend::ast::Expr,
+) -> bool {
+    uses_dataframes(left) || uses_dataframes(right)
+}
+
+/// Check method calls for DataFrames (complexity: 1)
+fn check_method_for_dataframes(
+    receiver: &crate::frontend::ast::Expr,
+    args: &[crate::frontend::ast::Expr],
+) -> bool {
+    uses_dataframes(receiver) || args.iter().any(uses_dataframes)
+}
+
+/// Check function calls for DataFrames (complexity: 1)
+fn check_call_for_dataframes(
+    func: &crate::frontend::ast::Expr,
+    args: &[crate::frontend::ast::Expr],
+) -> bool {
+    uses_dataframes(func) || args.iter().any(uses_dataframes)
+}
+
+/// Generate Cargo.toml with polars dependency (complexity: 2)
+fn generate_cargo_toml(binary_name: &str) -> String {
+    format!(
+        r#"[package]
+name = "{}"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+polars = {{ version = "0.35", features = ["lazy"] }}
+serde = {{ version = "1.0", features = ["derive"] }}
+serde_json = "1.0"
+"#,
+        binary_name
+    )
+}
+
+/// Compile with cargo (for DataFrame support) (complexity: 7)
+fn compile_with_cargo(rust_code: &TokenStream, options: &CompileOptions) -> Result<PathBuf> {
+    // Create temporary directory for cargo project
+    let temp_dir = TempDir::new().compile_context("create temporary directory")?;
+    let project_dir = temp_dir.path();
+
+    // Create src directory
+    let src_dir = project_dir.join("src");
+    fs::create_dir(&src_dir).context("Failed to create src directory")?;
+
+    // Write main.rs
+    let main_file = src_dir.join("main.rs");
+    fs::write(&main_file, rust_code.to_string())?;
+
+    // Write Cargo.toml
+    let cargo_toml = project_dir.join("Cargo.toml");
+    let cargo_content = generate_cargo_toml("ruchy_binary");
+    fs::write(&cargo_toml, cargo_content)?;
+
+    // Run cargo build --release
+    let mut cmd = Command::new("cargo");
+    cmd.arg("build")
+        .arg("--release")
+        .current_dir(project_dir);
+
+    let output = cmd.output().context("Failed to execute cargo build")?;
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        bail!("Cargo build failed:\n{}", stderr);
+    }
+
+    // Copy binary to output location
+    let compiled_binary = project_dir.join("target/release/ruchy_binary");
+    if !compiled_binary.exists() {
+        bail!("Expected binary not found after cargo build");
+    }
+
+    fs::copy(&compiled_binary, &options.output)
+        .context("Failed to copy compiled binary to output location")?;
+
+    Ok(options.output.clone())
+}
+
+/// Compile with rustc directly (for simple programs) (complexity: 5)
+fn compile_with_rustc(rust_code: &TokenStream, options: &CompileOptions) -> Result<PathBuf> {
+    let (_temp_dir, rust_file) = prepare_rust_file(rust_code)?;
+    let cmd = build_rustc_command(&rust_file, options);
+    execute_compilation(cmd)?;
+    verify_output_exists(&options.output)?;
+    Ok(options.output.clone())
+}
+
 /// Prepare temporary Rust file for compilation (complexity: 4)
 fn prepare_rust_file(rust_code: &TokenStream) -> Result<(TempDir, PathBuf)> {
     let temp_dir = TempDir::new().compile_context("create temporary directory")?;
