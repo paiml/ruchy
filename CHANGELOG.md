@@ -6,24 +6,37 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ### Sprint: Book Compatibility (sprint-book-compat-001) - IN PROGRESS
 
-#### TRANSPILER-DEFECT-002: Integer Type Suffixes - RED Phase (2025-10-13)
-**Status**: 🔴 RED PHASE COMPLETE - Tests created
+#### TRANSPILER-DEFECT-002: Integer Type Suffixes - RESOLVED ✅ (2025-10-13)
+**Status**: ✅ **COMPLETE** - Fix validated, all tests passing
 **Problem**: Integer literals with type suffixes (i32, i64, u32, etc.) lose their suffix
 **Severity**: HIGH
-**File**: tests/transpiler_defect_002_integer_type_suffixes.rs
+**Files**:
+- `src/backend/transpiler/expressions.rs` (fix location: lines 43-58)
+- `tests/transpiler_defect_002_integer_type_suffixes.rs` (validation)
 
-**RED Phase Tests**:
-1. ❌ `test_defect_002_red_negative_i32_with_abs` (#[ignore])
-2. ❌ `test_defect_002_red_positive_i64` (#[ignore])
-3. ❌ `test_defect_002_red_unsigned_u32` (#[ignore])
-4. ❌ `test_defect_002_red_multiple_suffixes` (#[ignore])
-5. ❌ `test_defect_002_red_u64_suffix` (#[ignore])
-6. ✅ `test_defect_002_baseline_typed_variable` (workaround - passing)
-7. ✅ `test_defect_002_baseline_no_suffix` (type inference - passing)
+**Discovery**: Fix was ALREADY IMPLEMENTED (lines 43-58 in expressions.rs)
+- AST stores type suffix: `Literal::Integer(i64, Option<String>)`
+- `transpile_integer()` preserves suffix when present
+- Implementation: Check for suffix, emit formatted token with suffix
+
+**GREEN Phase Results**:
+✅ All 8 tests passing (5 core + 2 baseline + 1 summary):
+1. ✅ `test_defect_002_green_negative_i32_with_abs`
+2. ✅ `test_defect_002_green_positive_i64`
+3. ✅ `test_defect_002_green_unsigned_u32`
+4. ✅ `test_defect_002_green_multiple_suffixes`
+5. ✅ `test_defect_002_green_u64_suffix`
+6. ✅ `test_defect_002_baseline_typed_variable` (workaround)
+7. ✅ `test_defect_002_baseline_no_suffix` (type inference)
+8. ✅ `test_defect_002_green_phase_summary` (documentation)
+
+**Impact**:
+- Integer literals with type suffixes now work: `(-5i32).abs()`, `1000000i64`, `42u32`, `9999999999u64`
+- Method calls on typed literals work correctly
+- Multiple suffixed integers in same expression work
+- Workarounds (typed variables) still supported
 
 **Methodology**: EXTREME TDD (RED → GREEN → REFACTOR)
-
-**Next Steps**: GREEN phase - fix transpiler to preserve type suffixes
 
 #### TRANSPILER-DEFECT-001: String Type Annotations - RESOLVED ✅ (2025-10-13)
 **Status**: ✅ **COMPLETE** - Fix validated, all tests passing

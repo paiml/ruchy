@@ -59,32 +59,65 @@ let greeting: String = f"Hello!";     // ✅ Works!
 
 ---
 
-## DEFECT-002: Integer Literal Type Suffixes Not Preserved
+## ✅ DEFECT-002: Integer Literal Type Suffixes Not Preserved - RESOLVED
 
 **Severity**: HIGH
 **Discovered**: 2025-10-07 (LANG-COMP-008 session)
+**Resolved**: 2025-10-13 (Validation session)
+**Status**: ✅ **FIXED AND VALIDATED**
 
-### Problem
+### Problem (Historical)
 ```ruchy
-let abs_val = (-5i32).abs()  // ❌ FAILS: Type suffix i32 lost in transpilation
+let abs_val = (-5i32).abs()  // ❌ FAILED: Type suffix i32 lost in transpilation
 ```
 
-### Expected Behavior
-Integer literals with type suffixes (i32, i64, u32, etc.) should be preserved in generated Rust code.
+### Fix Implemented
+**Location**: `src/backend/transpiler/expressions.rs:43-58`
 
-### Current Workaround
-```ruchy
-let x: i32 = -5
-let abs_val = x.abs()  // ✅ Use typed variable
+The transpiler now preserves type suffixes from source code:
+1. AST stores suffix: `Literal::Integer(i64, Option<String>)`
+2. `transpile_integer()` emits suffix when present
+
+```rust
+fn transpile_integer(i: i64, type_suffix: Option<&str>) -> TokenStream {
+    // DEFECT-002 FIX: Preserve type suffixes from source code
+    if let Some(suffix) = type_suffix {
+        // Emit integer with explicit type suffix (e.g., 5i32, 10u64)
+        let tokens = format!("{i}{suffix}");
+        tokens.parse().expect("Valid integer literal with suffix")
+    } else if let Ok(i32_val) = i32::try_from(i) {
+        // Use unsuffixed for cleaner output - Rust can infer the type
+        let literal = proc_macro2::Literal::i32_unsuffixed(i32_val);
+        quote! { #literal }
+    } else {
+        // For large integers, we need i64 suffix to avoid overflow
+        let literal = proc_macro2::Literal::i64_suffixed(i);
+        quote! { #literal }
+    }
+}
 ```
 
-### Root Cause
-Transpiler strips or doesn't preserve type suffixes on integer literals.
+### Validation
+**Test File**: `tests/transpiler_defect_002_integer_type_suffixes.rs`
 
-### Fix Required
-In transpiler literal handling:
-1. Parse and preserve type suffix from source
-2. Emit Rust code with same type suffix
+✅ All 8 tests passing:
+1. ✅ Negative integer with i32 suffix + .abs() method
+2. ✅ Positive integer with i64 suffix
+3. ✅ Unsigned integer with u32 suffix
+4. ✅ Multiple integers with type suffixes in expression
+5. ✅ Large unsigned integer with u64 suffix
+6. ✅ Typed variable workaround still works
+7. ✅ Type inference without suffix works
+8. ✅ Test summary validation
+
+### Now Works
+```ruchy
+let abs_val = (-5i32).abs();           // ✅ Works!
+let big_num = 1000000i64;              // ✅ Works!
+let unsigned = 42u32;                  // ✅ Works!
+let result = 10i32 + 20i32;            // ✅ Works!
+let big_unsigned = 9999999999u64;      // ✅ Works!
+```
 
 ---
 
@@ -142,11 +175,11 @@ done
 
 ## Status
 
-- [x] DEFECT-001: ✅ **FIXED** (2025-10-07) - String type annotations now auto-convert
-- [x] DEFECT-002: ✅ **FIXED** (2025-10-07) - Integer literal type suffixes now preserved
+- [x] DEFECT-001: ✅ **FIXED** (2025-10-07) and **VALIDATED** (2025-10-13) - String type annotations now auto-convert
+- [x] DEFECT-002: ✅ **FIXED** (2025-10-07) and **VALIDATED** (2025-10-13) - Integer literal type suffixes now preserved
 - [x] DEFECT-003: ✅ **FIXED** (2025-10-07) - .to_string() method calls now generated
 
-**All transpiler defects fixed! 🎉**
+**All transpiler defects fixed and validated! 🎉**
 
 ## DEFECT-001 Fix Details
 
