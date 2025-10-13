@@ -41,6 +41,11 @@ impl fmt::Display for Value {
             }
             Value::BuiltinFunction(name) => write!(f, "<builtin function: {name}>"),
             Value::Struct { name, fields } => format_struct(f, name, fields),
+            Value::Class {
+                class_name,
+                fields,
+                ..
+            } => format_class(f, class_name, fields),
         }
     }
 }
@@ -180,6 +185,35 @@ fn format_struct(
             write!(f, ", ")?;
         }
         let val = &fields[*key];
+        write!(f, "{key}: {val}")?;
+    }
+    write!(f, "}}")
+}
+
+/// Format a class instance value
+///
+/// # Complexity
+/// Cyclomatic complexity: 4 (within Toyota Way limits)
+///
+/// # Determinism
+/// Keys are sorted to ensure deterministic output across multiple runs.
+fn format_class(
+    f: &mut fmt::Formatter<'_>,
+    class_name: &str,
+    fields: &std::sync::Arc<std::sync::RwLock<std::collections::HashMap<String, Value>>>,
+) -> fmt::Result {
+    write!(f, "{class_name} {{")?;
+
+    // Sort keys for deterministic output
+    let fields_read = fields.read().unwrap();
+    let mut keys: Vec<&String> = fields_read.keys().collect();
+    keys.sort();
+
+    for (i, key) in keys.iter().enumerate() {
+        if i > 0 {
+            write!(f, ", ")?;
+        }
+        let val = &fields_read[*key];
         write!(f, "{key}: {val}")?;
     }
     write!(f, "}}")

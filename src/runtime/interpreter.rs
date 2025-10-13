@@ -107,6 +107,14 @@ pub enum Value {
         name: String,
         fields: Arc<HashMap<String, Value>>,
     },
+    /// Class instance (reference type with methods)
+    /// Thread-safe via Arc, reference semantics, mutable via RwLock
+    /// Identity-based equality (pointer comparison)
+    Class {
+        class_name: String,
+        fields: Arc<std::sync::RwLock<HashMap<String, Value>>>,
+        methods: Arc<HashMap<String, Value>>, // method name -> Closure
+    },
 }
 
 // Manual PartialEq implementation because Mutex doesn't implement PartialEq
@@ -124,6 +132,9 @@ impl PartialEq for Value {
             (Value::ObjectMut(a), Value::ObjectMut(b)) => Arc::ptr_eq(a, b), // Identity-based
             (Value::Struct { name: n1, fields: f1 }, Value::Struct { name: n2, fields: f2 }) => {
                 n1 == n2 && **f1 == **f2 // Value equality (compare fields)
+            }
+            (Value::Class { fields: f1, .. }, Value::Class { fields: f2, .. }) => {
+                Arc::ptr_eq(f1, f2) // Identity-based: same instance only
             }
             (Value::Nil, Value::Nil) => true,
             (Value::Byte(a), Value::Byte(b)) => a == b,
@@ -157,6 +168,7 @@ impl Value {
             Value::EnumVariant { .. } => TypeId::of::<(String, Option<Vec<Value>>)>(),
             Value::BuiltinFunction(_) => TypeId::of::<fn()>(),
             Value::Struct { .. } => TypeId::of::<HashMap<String, Value>>(),
+            Value::Class { .. } => TypeId::of::<HashMap<String, Value>>(),
         }
     }
 }

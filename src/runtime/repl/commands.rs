@@ -403,6 +403,20 @@ Enter expressions to evaluate them.
                     output.push_str(&format!("  {key}: {val}\n"));
                 }
             }
+            Value::Class {
+                class_name,
+                fields,
+                methods,
+            } => {
+                output.push_str(&format!("Class: {class_name}\n"));
+                let fields_read = fields.read().unwrap();
+                output.push_str(&format!("Fields: {}\n", fields_read.len()));
+                output.push_str(&format!("Methods: {}\n", methods.len()));
+                output.push_str("Values:\n");
+                for (key, val) in fields_read.iter() {
+                    output.push_str(&format!("  {key}: {val}\n"));
+                }
+            }
         }
 
         output
@@ -479,6 +493,21 @@ Enter expressions to evaluate them.
                         .map(|(k, v)| k.len() + Self::estimate_value_memory(v))
                         .sum::<usize>()
             }
+            Value::Class {
+                class_name,
+                fields,
+                methods,
+            } => {
+                let fields_read = fields.read().unwrap();
+                size_of::<String>()
+                    + class_name.len()
+                    + size_of::<std::collections::HashMap<String, Value>>()
+                    + fields_read
+                        .iter()
+                        .map(|(k, v)| k.len() + Self::estimate_value_memory(v))
+                        .sum::<usize>()
+                    + methods.len() * 32
+            }
         }
     }
 
@@ -502,6 +531,7 @@ Enter expressions to evaluate them.
             Value::EnumVariant { .. } => "Enum",
             Value::BuiltinFunction(_) => "BuiltinFunction",
             Value::Struct { .. } => "Struct",
+            Value::Class { .. } => "Class",
         }
     }
 }

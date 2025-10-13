@@ -336,6 +336,20 @@ impl GlobalRegistry {
                 }
                 size
             }
+            Value::Class {
+                class_name,
+                fields,
+                methods,
+            } => {
+                let mut size = class_name.len() + 24; // Name + HashMap overhead
+                let fields_read = fields.read().unwrap();
+                for (key, value) in fields_read.iter() {
+                    size += key.len(); // Key size
+                    size += self.estimate_value_size(value); // Value size
+                }
+                size += methods.len() * 32; // Rough method overhead
+                size
+            }
         }
     }
     /// # Examples

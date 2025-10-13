@@ -162,6 +162,7 @@ impl Value {
             Value::EnumVariant { .. } => "enum_variant",
             Value::BuiltinFunction(_) => "builtin_function",
             Value::Struct { .. } => "struct",
+            Value::Class { .. } => "class",
         }
     }
 }
