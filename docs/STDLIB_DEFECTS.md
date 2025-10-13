@@ -54,10 +54,28 @@ let parts = "hello,world".split(",")
 ### Current Workaround
 Cannot use `.split()` effectively in Ruchy
 
-### Fix Required
-1. Convert `.split()` result to Vec<String> in runtime
-2. Handle iterator → collection conversion
-3. Test with various delimiters
+### Fix Implemented (2025-10-13)
+**Solution**: Changed transpiler to collect iterator into Vec<String>
+```rust
+// Before (BROKEN):
+"split" => Ok(quote! { #obj_tokens.split(#(#arg_tokens),*) }),
+
+// After (FIXED):
+"split" => Ok(quote! {
+    #obj_tokens.split(#(#arg_tokens),*)
+        .map(|s| s.to_string())
+        .collect::<Vec<String>>()
+}),
+```
+
+**Location**: `src/backend/transpiler/statements.rs:1440-1444`
+
+**Test Results**: ✅ 8/8 tests passing
+- ✅ Can call .len() on result
+- ✅ Can index result (parts[0])
+- ✅ Can iterate over result
+- ✅ Works with various delimiters
+- ✅ Works in run and compile modes
 
 ---
 
@@ -107,7 +125,7 @@ Same as DEFECT-STDLIB-001 - no namespace support
 ## Status
 
 - [x] DEFECT-STDLIB-001: ✅ **GREEN PHASE COMPLETE** - env_args() implemented and tested (2025-10-13)
-- [ ] DEFECT-STDLIB-002: ❌ **IDENTIFIED** - Needs test suite
+- [x] DEFECT-STDLIB-002: ✅ **GREEN PHASE COMPLETE** - .split() now returns Vec<String> (2025-10-13)
 - [ ] DEFECT-STDLIB-003: ❌ **IDENTIFIED** - Needs comprehensive testing
 
 **Critical Discovery**: Book report was ACCURATE
