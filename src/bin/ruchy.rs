@@ -80,6 +80,12 @@ enum Commands {
         #[arg(long)]
         lib: bool,
     },
+    /// Build a Ruchy project (wrapper around cargo build)
+    Build {
+        /// Build in release mode with optimizations
+        #[arg(long)]
+        release: bool,
+    },
     /// Parse a Ruchy file and show the AST
     Parse {
         /// The file to parse
@@ -823,6 +829,7 @@ fn handle_command_dispatch(command: Option<Commands>, verbose: bool) -> Result<(
     match command {
         Some(Commands::Repl { record }) => handle_repl_command(record),
         Some(Commands::New { name, lib }) => handlers::new::handle_new_command(&name, lib, verbose),
+        Some(Commands::Build { release }) => handlers::build::handle_build_command(release, verbose),
         None => handle_repl_command(None),
         Some(Commands::Parse { file }) => handle_parse_command(&file, verbose),
         Some(Commands::Transpile {
