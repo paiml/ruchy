@@ -704,7 +704,6 @@ impl TypeChecker {
 ```bash
 # MANDATORY after version bump and git push:
 cargo publish                    # Publish main package only
-# NOTE: ruchy-cli is DEPRECATED - do NOT publish (MUDA/waste)
 ```
 
 ### Pre-commit Hooks (AUTO-INSTALLED via `pmat hooks install`)
@@ -896,7 +895,6 @@ find . -type f -size +100M -not -path "./target/*" -not -path "./.git/*"
 - **TDD MANDATORY**: Write test first, prove fix works
 - Use cargo-llvm-cov (not tarpaulin)
 - All bugs solved with TDD, never manual hacks
-- ruchy-cli deprecated (don't publish)
 - Mix: unit/doctests/property-tests/fuzz tests
 - Check ../ruchy-book and ../rosetta-ruchy at sprint start
 
