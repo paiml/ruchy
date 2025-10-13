@@ -1437,7 +1437,11 @@ impl Transpiler {
             "rstrip" => Ok(quote! { #obj_tokens.trim_end() }),
             "startswith" => Ok(quote! { #obj_tokens.starts_with(#(#arg_tokens),*) }),
             "endswith" => Ok(quote! { #obj_tokens.ends_with(#(#arg_tokens),*) }),
-            "split" => Ok(quote! { #obj_tokens.split(#(#arg_tokens),*) }),
+            "split" => {
+                // DEFECT-002 FIX: Convert iterator to Vec<String>
+                // .split() returns std::str::Split iterator, but Ruchy expects Vec<String>
+                Ok(quote! { #obj_tokens.split(#(#arg_tokens),*).map(|s| s.to_string()).collect::<Vec<String>>() })
+            }
             "replace" => Ok(quote! { #obj_tokens.replace(#(#arg_tokens),*) }),
             "length" => {
                 // Map Ruchy's length() to Rust's len()
