@@ -41,16 +41,22 @@ impl Transpiler {
                 let value_tokens = value_tokens?;
                 quote! { vec![#(#value_tokens),*] }
             };
-            // Create a Series from the values
+            // Create a Series from the values using NamedFrom trait
             series_tokens.push(quote! {
-                polars::prelude::Series::new(#col_name, #values_tokens)
+                {
+                    use polars::prelude::NamedFrom;
+                    polars::prelude::Series::new(#col_name, #values_tokens)
+                }
             });
         }
         // Create DataFrame from series
         Ok(quote! {
-            polars::prelude::DataFrame::new(vec![
-                #(#series_tokens),*
-            ]).expect("Failed to create DataFrame from columns")
+            {
+                use polars::prelude::NamedFrom;
+                polars::prelude::DataFrame::new(vec![
+                    #(#series_tokens),*
+                ]).expect("Failed to create DataFrame from columns")
+            }
         })
     }
     /// Transpiles DataFrame operations

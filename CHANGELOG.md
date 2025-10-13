@@ -50,12 +50,36 @@ All notable changes to the Ruchy programming language will be documented in this
 - DataFrame program: Uses cargo build ✅
 - Compilation infrastructure: WORKING ✅
 
-**Known Issues** (pre-existing transpiler bugs, not in scope):
-- DataFrame transpiler needs trait imports (NamedFrom) - separate issue
-- These are transpiler implementation bugs, not compilation infrastructure bugs
-- DATAFRAME-001 scope was compilation infrastructure only
+**Toyota Way Fix** (2025-10-13 - STOP THE LINE):
+🔴 DEFECT FOUND: DataFrame transpiler missing NamedFrom trait imports
+✅ DEFECT FIXED: Added trait imports to generated code
 
-**GREEN Phase Status**: ✅ COMPLETE - All requirements met
+**Fix Details** (src/backend/transpiler/dataframe.rs):
+- Wrapped Series::new in block with `use polars::prelude::NamedFrom;`
+- Wrapped DataFrame::new in block with `use polars::prelude::NamedFrom;`
+- Generated code now includes necessary trait imports
+
+**End-to-End Verification**:
+✅ DataFrame transpilation includes trait imports
+✅ Compilation succeeds (8.5MB binary)
+✅ Binary executes correctly
+✅ Output shows proper polars DataFrame table
+
+**Test Output**:
+```
+shape: (3, 1)
+┌─────┐
+│ x   │
+│ --- │
+│ i32 │
+╞═════╡
+│ 1   │
+│ 2   │
+│ 3   │
+└─────┘
+```
+
+**GREEN Phase Status**: ✅ COMPLETE - End-to-end working, NO DEFECTS
 
 **Next Steps**: REFACTOR phase (property tests + mutation tests)
 
