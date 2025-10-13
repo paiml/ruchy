@@ -106,6 +106,20 @@ impl BuiltinRegistry {
         self.register("env_current_dir", builtin_env_current_dir);
         self.register("env_set_current_dir", builtin_env_set_current_dir);
         self.register("env_temp_dir", builtin_env_temp_dir);
+
+        // File system functions
+        self.register("fs_read", builtin_fs_read);
+        self.register("fs_write", builtin_fs_write);
+        self.register("fs_exists", builtin_fs_exists);
+        self.register("fs_create_dir", builtin_fs_create_dir);
+        self.register("fs_remove_file", builtin_fs_remove_file);
+        self.register("fs_remove_dir", builtin_fs_remove_dir);
+        self.register("fs_copy", builtin_fs_copy);
+        self.register("fs_rename", builtin_fs_rename);
+        self.register("fs_metadata", builtin_fs_metadata);
+        self.register("fs_read_dir", builtin_fs_read_dir);
+        self.register("fs_canonicalize", builtin_fs_canonicalize);
+        self.register("fs_is_file", builtin_fs_is_file);
     }
 
     /// Register a builtin function
@@ -755,6 +769,184 @@ fn builtin_env_temp_dir(args: &[Value]) -> Result<Value, InterpreterError> {
 
     let temp = std::env::temp_dir();
     Ok(Value::from_string(temp.to_string_lossy().to_string()))
+}
+
+// File System Functions
+
+// Read file contents
+fn builtin_fs_read(args: &[Value]) -> Result<Value, InterpreterError> {
+    if args.len() != 1 {
+        return Err(InterpreterError::RuntimeError("fs_read() expects 1 argument".to_string()));
+    }
+    match &args[0] {
+        Value::String(path) => match std::fs::read_to_string(path.as_ref()) {
+            Ok(content) => Ok(Value::from_string(content)),
+            Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to read file: {}", e))),
+        },
+        _ => Err(InterpreterError::RuntimeError("fs_read() expects a string argument".to_string())),
+    }
+}
+
+// Write to file
+fn builtin_fs_write(args: &[Value]) -> Result<Value, InterpreterError> {
+    if args.len() != 2 {
+        return Err(InterpreterError::RuntimeError("fs_write() expects 2 arguments".to_string()));
+    }
+    match (&args[0], &args[1]) {
+        (Value::String(path), Value::String(content)) => match std::fs::write(path.as_ref(), content.as_ref()) {
+            Ok(_) => Ok(Value::Nil),
+            Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to write file: {}", e))),
+        },
+        _ => Err(InterpreterError::RuntimeError("fs_write() expects two string arguments".to_string())),
+    }
+}
+
+// Check if path exists
+fn builtin_fs_exists(args: &[Value]) -> Result<Value, InterpreterError> {
+    if args.len() != 1 {
+        return Err(InterpreterError::RuntimeError("fs_exists() expects 1 argument".to_string()));
+    }
+    match &args[0] {
+        Value::String(path) => Ok(Value::Bool(std::path::Path::new(path.as_ref()).exists())),
+        _ => Err(InterpreterError::RuntimeError("fs_exists() expects a string argument".to_string())),
+    }
+}
+
+// Create directory
+fn builtin_fs_create_dir(args: &[Value]) -> Result<Value, InterpreterError> {
+    if args.len() != 1 {
+        return Err(InterpreterError::RuntimeError("fs_create_dir() expects 1 argument".to_string()));
+    }
+    match &args[0] {
+        Value::String(path) => match std::fs::create_dir(path.as_ref()) {
+            Ok(_) => Ok(Value::Nil),
+            Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to create directory: {}", e))),
+        },
+        _ => Err(InterpreterError::RuntimeError("fs_create_dir() expects a string argument".to_string())),
+    }
+}
+
+// Remove file
+fn builtin_fs_remove_file(args: &[Value]) -> Result<Value, InterpreterError> {
+    if args.len() != 1 {
+        return Err(InterpreterError::RuntimeError("fs_remove_file() expects 1 argument".to_string()));
+    }
+    match &args[0] {
+        Value::String(path) => match std::fs::remove_file(path.as_ref()) {
+            Ok(_) => Ok(Value::Nil),
+            Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to remove file: {}", e))),
+        },
+        _ => Err(InterpreterError::RuntimeError("fs_remove_file() expects a string argument".to_string())),
+    }
+}
+
+// Remove directory
+fn builtin_fs_remove_dir(args: &[Value]) -> Result<Value, InterpreterError> {
+    if args.len() != 1 {
+        return Err(InterpreterError::RuntimeError("fs_remove_dir() expects 1 argument".to_string()));
+    }
+    match &args[0] {
+        Value::String(path) => match std::fs::remove_dir(path.as_ref()) {
+            Ok(_) => Ok(Value::Nil),
+            Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to remove directory: {}", e))),
+        },
+        _ => Err(InterpreterError::RuntimeError("fs_remove_dir() expects a string argument".to_string())),
+    }
+}
+
+// Copy file
+fn builtin_fs_copy(args: &[Value]) -> Result<Value, InterpreterError> {
+    if args.len() != 2 {
+        return Err(InterpreterError::RuntimeError("fs_copy() expects 2 arguments".to_string()));
+    }
+    match (&args[0], &args[1]) {
+        (Value::String(from), Value::String(to)) => match std::fs::copy(from.as_ref(), to.as_ref()) {
+            Ok(_) => Ok(Value::Nil),
+            Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to copy file: {}", e))),
+        },
+        _ => Err(InterpreterError::RuntimeError("fs_copy() expects two string arguments".to_string())),
+    }
+}
+
+// Rename/move file
+fn builtin_fs_rename(args: &[Value]) -> Result<Value, InterpreterError> {
+    if args.len() != 2 {
+        return Err(InterpreterError::RuntimeError("fs_rename() expects 2 arguments".to_string()));
+    }
+    match (&args[0], &args[1]) {
+        (Value::String(from), Value::String(to)) => match std::fs::rename(from.as_ref(), to.as_ref()) {
+            Ok(_) => Ok(Value::Nil),
+            Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to rename file: {}", e))),
+        },
+        _ => Err(InterpreterError::RuntimeError("fs_rename() expects two string arguments".to_string())),
+    }
+}
+
+// Get file metadata (returns object with size, is_dir, is_file)
+fn builtin_fs_metadata(args: &[Value]) -> Result<Value, InterpreterError> {
+    if args.len() != 1 {
+        return Err(InterpreterError::RuntimeError("fs_metadata() expects 1 argument".to_string()));
+    }
+    match &args[0] {
+        Value::String(path) => match std::fs::metadata(path.as_ref()) {
+            Ok(meta) => {
+                let mut map = HashMap::new();
+                map.insert("size".to_string(), Value::Integer(meta.len() as i64));
+                map.insert("is_dir".to_string(), Value::Bool(meta.is_dir()));
+                map.insert("is_file".to_string(), Value::Bool(meta.is_file()));
+                Ok(Value::Object(Arc::new(map)))
+            },
+            Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to get metadata: {}", e))),
+        },
+        _ => Err(InterpreterError::RuntimeError("fs_metadata() expects a string argument".to_string())),
+    }
+}
+
+// Read directory contents
+fn builtin_fs_read_dir(args: &[Value]) -> Result<Value, InterpreterError> {
+    if args.len() != 1 {
+        return Err(InterpreterError::RuntimeError("fs_read_dir() expects 1 argument".to_string()));
+    }
+    match &args[0] {
+        Value::String(path) => match std::fs::read_dir(path.as_ref()) {
+            Ok(entries) => {
+                let names: Result<Vec<Value>, _> = entries
+                    .map(|e| e.map(|entry| Value::from_string(entry.file_name().to_string_lossy().to_string())))
+                    .collect();
+                match names {
+                    Ok(vec) => Ok(Value::from_array(vec)),
+                    Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to read directory: {}", e))),
+                }
+            },
+            Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to read directory: {}", e))),
+        },
+        _ => Err(InterpreterError::RuntimeError("fs_read_dir() expects a string argument".to_string())),
+    }
+}
+
+// Canonicalize path (get absolute path)
+fn builtin_fs_canonicalize(args: &[Value]) -> Result<Value, InterpreterError> {
+    if args.len() != 1 {
+        return Err(InterpreterError::RuntimeError("fs_canonicalize() expects 1 argument".to_string()));
+    }
+    match &args[0] {
+        Value::String(path) => match std::fs::canonicalize(path.as_ref()) {
+            Ok(canonical) => Ok(Value::from_string(canonical.to_string_lossy().to_string())),
+            Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to canonicalize path: {}", e))),
+        },
+        _ => Err(InterpreterError::RuntimeError("fs_canonicalize() expects a string argument".to_string())),
+    }
+}
+
+// Check if path is a file
+fn builtin_fs_is_file(args: &[Value]) -> Result<Value, InterpreterError> {
+    if args.len() != 1 {
+        return Err(InterpreterError::RuntimeError("fs_is_file() expects 1 argument".to_string()));
+    }
+    match &args[0] {
+        Value::String(path) => Ok(Value::Bool(std::path::Path::new(path.as_ref()).is_file())),
+        _ => Err(InterpreterError::RuntimeError("fs_is_file() expects a string argument".to_string())),
+    }
 }
 
 #[cfg(test)]

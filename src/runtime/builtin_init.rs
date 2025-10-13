@@ -30,6 +30,7 @@ pub fn init_global_environment() -> HashMap<String, Value> {
     add_string_functions(&mut global_env);
     add_random_time_functions(&mut global_env);
     add_environment_functions(&mut global_env);
+    add_fs_functions(&mut global_env);
 
     global_env
 }
@@ -254,6 +255,59 @@ fn add_environment_functions(global_env: &mut HashMap<String, Value>) {
     );
 }
 
+/// Register file system functions in global environment
+/// Phase 2: STDLIB_ACCESS_PLAN - File System Module (12 functions)
+fn add_fs_functions(global_env: &mut HashMap<String, Value>) {
+    global_env.insert(
+        "fs_read".to_string(),
+        Value::from_string("__builtin_fs_read__".to_string()),
+    );
+    global_env.insert(
+        "fs_write".to_string(),
+        Value::from_string("__builtin_fs_write__".to_string()),
+    );
+    global_env.insert(
+        "fs_exists".to_string(),
+        Value::from_string("__builtin_fs_exists__".to_string()),
+    );
+    global_env.insert(
+        "fs_create_dir".to_string(),
+        Value::from_string("__builtin_fs_create_dir__".to_string()),
+    );
+    global_env.insert(
+        "fs_remove_file".to_string(),
+        Value::from_string("__builtin_fs_remove_file__".to_string()),
+    );
+    global_env.insert(
+        "fs_remove_dir".to_string(),
+        Value::from_string("__builtin_fs_remove_dir__".to_string()),
+    );
+    global_env.insert(
+        "fs_copy".to_string(),
+        Value::from_string("__builtin_fs_copy__".to_string()),
+    );
+    global_env.insert(
+        "fs_rename".to_string(),
+        Value::from_string("__builtin_fs_rename__".to_string()),
+    );
+    global_env.insert(
+        "fs_metadata".to_string(),
+        Value::from_string("__builtin_fs_metadata__".to_string()),
+    );
+    global_env.insert(
+        "fs_read_dir".to_string(),
+        Value::from_string("__builtin_fs_read_dir__".to_string()),
+    );
+    global_env.insert(
+        "fs_canonicalize".to_string(),
+        Value::from_string("__builtin_fs_canonicalize__".to_string()),
+    );
+    global_env.insert(
+        "fs_is_file".to_string(),
+        Value::from_string("__builtin_fs_is_file__".to_string()),
+    );
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -324,10 +378,13 @@ mod tests {
 
         // Should have all builtin functions
         // 1 constant + 9 basic + 11 math + 3 I/O + 3 utility
-        // + 4 conversion + 8 advanced + 2 string + 5 random/time + 8 env = 54 total
+        // + 4 conversion + 8 advanced + 2 string + 5 random/time + 8 env + 12 fs = 66 total
         // env functions: env_args, env_var, env_set_var, env_remove_var, env_vars,
         //                env_current_dir, env_set_current_dir, env_temp_dir
-        assert_eq!(env.len(), 54);
+        // fs functions: fs_read, fs_write, fs_exists, fs_create_dir, fs_remove_file,
+        //               fs_remove_dir, fs_copy, fs_rename, fs_metadata, fs_read_dir,
+        //               fs_canonicalize, fs_is_file
+        assert_eq!(env.len(), 66);
     }
 
     #[test]

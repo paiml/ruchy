@@ -1174,6 +1174,9 @@ impl Transpiler {
             if let Some(result) = self.try_transpile_environment_function(base_name, args)? {
                 return Ok(result);
             }
+            if let Some(result) = self.try_transpile_fs_function(base_name, args)? {
+                return Ok(result);
+            }
             // DEFECT-STRING-RESULT FIX: Handle Ok/Err/Some when parsed as Call (not dedicated ExprKind)
             if let Some(result) = self.try_transpile_result_call(base_name, args)? {
                 return Ok(result);
@@ -3618,6 +3621,137 @@ impl Transpiler {
                 }
                 Ok(Some(quote! {
                     std::env::temp_dir().to_string_lossy().to_string()
+                }))
+            }
+            _ => Ok(None),
+        }
+    }
+
+    /// Transpile file system functions (fs_*)
+    ///
+    /// Layer 2 of three-layer builtin pattern (proven from env functions)
+    fn try_transpile_fs_function(
+        &self,
+        base_name: &str,
+        args: &[Expr],
+    ) -> Result<Option<TokenStream>> {
+        match base_name {
+            "fs_read" => {
+                if args.len() != 1 {
+                    anyhow::bail!("fs_read() expects 1 argument");
+                }
+                let path = self.transpile_expr(&args[0])?;
+                Ok(Some(quote! {
+                    std::fs::read_to_string(#path).expect("Failed to read file")
+                }))
+            }
+            "fs_write" => {
+                if args.len() != 2 {
+                    anyhow::bail!("fs_write() expects 2 arguments");
+                }
+                let path = self.transpile_expr(&args[0])?;
+                let content = self.transpile_expr(&args[1])?;
+                Ok(Some(quote! {
+                    std::fs::write(#path, #content).expect("Failed to write file")
+                }))
+            }
+            "fs_exists" => {
+                if args.len() != 1 {
+                    anyhow::bail!("fs_exists() expects 1 argument");
+                }
+                let path = self.transpile_expr(&args[0])?;
+                Ok(Some(quote! {
+                    std::path::Path::new(&#path).exists()
+                }))
+            }
+            "fs_create_dir" => {
+                if args.len() != 1 {
+                    anyhow::bail!("fs_create_dir() expects 1 argument");
+                }
+                let path = self.transpile_expr(&args[0])?;
+                Ok(Some(quote! {
+                    std::fs::create_dir_all(#path).expect("Failed to create directory")
+                }))
+            }
+            "fs_remove_file" => {
+                if args.len() != 1 {
+                    anyhow::bail!("fs_remove_file() expects 1 argument");
+                }
+                let path = self.transpile_expr(&args[0])?;
+                Ok(Some(quote! {
+                    std::fs::remove_file(#path).expect("Failed to remove file")
+                }))
+            }
+            "fs_remove_dir" => {
+                if args.len() != 1 {
+                    anyhow::bail!("fs_remove_dir() expects 1 argument");
+                }
+                let path = self.transpile_expr(&args[0])?;
+                Ok(Some(quote! {
+                    std::fs::remove_dir(#path).expect("Failed to remove directory")
+                }))
+            }
+            "fs_copy" => {
+                if args.len() != 2 {
+                    anyhow::bail!("fs_copy() expects 2 arguments");
+                }
+                let from = self.transpile_expr(&args[0])?;
+                let to = self.transpile_expr(&args[1])?;
+                Ok(Some(quote! {
+                    std::fs::copy(#from, #to).expect("Failed to copy file")
+                }))
+            }
+            "fs_rename" => {
+                if args.len() != 2 {
+                    anyhow::bail!("fs_rename() expects 2 arguments");
+                }
+                let from = self.transpile_expr(&args[0])?;
+                let to = self.transpile_expr(&args[1])?;
+                Ok(Some(quote! {
+                    std::fs::rename(#from, #to).expect("Failed to rename file")
+                }))
+            }
+            "fs_metadata" => {
+                if args.len() != 1 {
+                    anyhow::bail!("fs_metadata() expects 1 argument");
+                }
+                let path = self.transpile_expr(&args[0])?;
+                Ok(Some(quote! {
+                    std::fs::metadata(#path).expect("Failed to get metadata")
+                }))
+            }
+            "fs_read_dir" => {
+                if args.len() != 1 {
+                    anyhow::bail!("fs_read_dir() expects 1 argument");
+                }
+                let path = self.transpile_expr(&args[0])?;
+                Ok(Some(quote! {
+                    std::fs::read_dir(#path)
+                        .expect("Failed to read directory")
+                        .filter_map(|e| e.ok())
+                        .map(|e| e.path().display().to_string())
+                        .collect::<Vec<String>>()
+                }))
+            }
+            "fs_canonicalize" => {
+                if args.len() != 1 {
+                    anyhow::bail!("fs_canonicalize() expects 1 argument");
+                }
+                let path = self.transpile_expr(&args[0])?;
+                Ok(Some(quote! {
+                    std::fs::canonicalize(#path)
+                        .expect("Failed to canonicalize path")
+                        .display()
+                        .to_string()
+                }))
+            }
+            "fs_is_file" => {
+                if args.len() != 1 {
+                    anyhow::bail!("fs_is_file() expects 1 argument");
+                }
+                let path = self.transpile_expr(&args[0])?;
+                Ok(Some(quote! {
+                    std::path::Path::new(&#path).is_file()
                 }))
             }
             _ => Ok(None),
