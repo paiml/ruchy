@@ -195,3 +195,167 @@ fn test_runtime_003_red_phase_summary() {
 
     assert!(true, "RED phase: 10 tests created, all will fail when un-ignored");
 }
+
+// ==================== REFACTOR PHASE: Property Tests ====================
+
+#[cfg(test)]
+mod property_tests {
+    use super::*;
+    use proptest::prelude::*;
+
+    /// Property test: Class instantiation always succeeds with valid arguments
+    ///
+    /// Validates that class instances can be created with any string name and integer age.
+    /// This tests the robustness of the instantiation mechanism.
+    #[test]
+    #[ignore] // Run with: cargo test property_tests -- --ignored --nocapture
+    fn proptest_class_instantiation_any_values() {
+        proptest!(|(name in "[a-zA-Z0-9_]+", age in -1000i32..1000i32)| {
+            let code = format!(
+                "class Person {{ init(name: String, age: i32) {{ self.name = name; self.age = age; }} }}; \
+                 let p = Person(\"{}\", {}); \
+                 p.age",
+                name.replace('"', "\\\""), age
+            );
+
+            let result = ruchy_cmd()
+                .arg("-e")
+                .arg(&code)
+                .assert()
+                .success();
+
+            // If it succeeds, output should contain the age
+            result.stdout(predicate::str::contains(age.to_string()));
+        });
+    }
+
+    /// Property test: Reference semantics - assignments share same instance
+    ///
+    /// For ANY class instance, assigning it to another variable should share the same reference.
+    /// Mutations through one variable should be visible through the other.
+    #[test]
+    #[ignore] // Run with: cargo test property_tests -- --ignored --nocapture
+    fn proptest_reference_semantics_shared_state() {
+        proptest!(|(initial in 0i32..100i32, delta in 1i32..50i32)| {
+            let code = format!(
+                "class Counter {{ init(n: i32) {{ self.count = n; }} \
+                                  fun add(n: i32) {{ self.count = self.count + n; }} }}; \
+                 let c1 = Counter({}); \
+                 let c2 = c1; \
+                 c2.add({}); \
+                 c1.count",
+                initial, delta
+            );
+
+            let expected = initial + delta;
+            ruchy_cmd()
+                .arg("-e")
+                .arg(&code)
+                .assert()
+                .success()
+                .stdout(predicate::str::contains(expected.to_string()));
+        });
+    }
+
+    /// Property test: Identity comparison - same reference returns true
+    ///
+    /// For ANY class instance, comparing it with a variable holding the same reference
+    /// should always return true (identity equality).
+    #[test]
+    #[ignore] // Run with: cargo test property_tests -- --ignored --nocapture
+    fn proptest_identity_same_reference_true() {
+        proptest!(|(value in 0i32..1000i32)| {
+            let code = format!(
+                "class Box {{ init(v: i32) {{ self.value = v; }} }}; \
+                 let b1 = Box({}); \
+                 let b2 = b1; \
+                 b1 == b2",
+                value
+            );
+
+            ruchy_cmd()
+                .arg("-e")
+                .arg(&code)
+                .assert()
+                .success()
+                .stdout(predicate::str::contains("true"));
+        });
+    }
+
+    /// Property test: Identity comparison - different instances return false
+    ///
+    /// For ANY two independently created class instances (even with identical field values),
+    /// identity comparison should return false.
+    #[test]
+    #[ignore] // Run with: cargo test property_tests -- --ignored --nocapture
+    fn proptest_identity_different_instances_false() {
+        proptest!(|(value in 0i32..1000i32)| {
+            let code = format!(
+                "class Box {{ init(v: i32) {{ self.value = v; }} }}; \
+                 let b1 = Box({}); \
+                 let b2 = Box({}); \
+                 b1 == b2",
+                value, value
+            );
+
+            ruchy_cmd()
+                .arg("-e")
+                .arg(&code)
+                .assert()
+                .success()
+                .stdout(predicate::str::contains("false"));
+        });
+    }
+
+    /// Property test: Method calls mutate shared state predictably
+    ///
+    /// For ANY sequence of method calls, the final state should be deterministic
+    /// and consistent with reference semantics.
+    #[test]
+    #[ignore] // Run with: cargo test property_tests -- --ignored --nocapture
+    fn proptest_method_mutations_deterministic() {
+        proptest!(|(a in 0i32..50i32, b in 0i32..50i32)| {
+            let code = format!(
+                "class Accumulator {{ init() {{ self.sum = 0; }} \
+                                      fun add(n: i32) {{ self.sum = self.sum + n; }} }}; \
+                 let acc = Accumulator(); \
+                 acc.add({}); \
+                 acc.add({}); \
+                 acc.sum",
+                a, b
+            );
+
+            let expected = a + b;
+            ruchy_cmd()
+                .arg("-e")
+                .arg(&code)
+                .assert()
+                .success()
+                .stdout(predicate::str::contains(expected.to_string()));
+        });
+    }
+
+    /// Property test: Field access is consistent
+    ///
+    /// For ANY class instance with fields, field access should return the values
+    /// that were set during initialization or mutation.
+    #[test]
+    #[ignore] // Run with: cargo test property_tests -- --ignored --nocapture
+    fn proptest_field_access_consistent() {
+        proptest!(|(x in -100i32..100i32, y in -100i32..100i32)| {
+            let code = format!(
+                "class Point {{ init(x: i32, y: i32) {{ self.x = x; self.y = y; }} }}; \
+                 let p = Point({}, {}); \
+                 p.x",
+                x, y
+            );
+
+            ruchy_cmd()
+                .arg("-e")
+                .arg(&code)
+                .assert()
+                .success()
+                .stdout(predicate::str::contains(x.to_string()));
+        });
+    }
+}
