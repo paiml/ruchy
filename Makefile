@@ -575,7 +575,7 @@ doc:
 # Install locally
 install:
 	@echo "Installing ruchy..."
-	@cargo install --path ruchy-cli --force
+	@cargo install --path . --force
 	@echo "✓ Ruchy installed to ~/.cargo/bin/ruchy"
 
 # Run PMAT quality gates
@@ -612,7 +612,6 @@ prepare-publish:
 	@echo "Preparing for crates.io publication..."
 	@echo "Checking package metadata..."
 	@cargo publish --dry-run --package ruchy
-	@cargo publish --dry-run --package ruchy-cli
 	@echo ""
 	@echo "Checklist for publication:"
 	@echo "  [ ] Version numbers updated in Cargo.toml"
@@ -625,8 +624,7 @@ prepare-publish:
 	@echo "  [ ] PMAT quality gates passing"
 	@echo ""
 	@echo "To publish:"
-	@echo "  cargo publish --package ruchy"
-	@echo "  cargo publish --package ruchy-cli"
+	@echo "  cargo publish"
 
 # Documentation enforcement targets
 .PHONY: check-docs commit sprint-close
@@ -717,12 +715,7 @@ pre-release-checks:
 	@echo ""
 	@echo "1️⃣ Version consistency check..."
 	@MAIN_VERSION=$$(grep -m1 '^version = ' Cargo.toml | cut -d'"' -f2); \
-	CLI_VERSION=$$(grep -m1 '^version = ' ruchy-cli/Cargo.toml | cut -d'"' -f2 || echo $$MAIN_VERSION); \
-	if [ "$$MAIN_VERSION" != "$$CLI_VERSION" ] && [ -n "$$CLI_VERSION" ]; then \
-		echo "❌ Version mismatch: ruchy=$$MAIN_VERSION, ruchy-cli=$$CLI_VERSION"; \
-		exit 1; \
-	fi; \
-	echo "✅ Versions consistent: $$MAIN_VERSION"
+	echo "✅ Version: $$MAIN_VERSION"
 	@echo ""
 	@echo "2️⃣ Running tests..."
 	@$(MAKE) test-all
@@ -744,7 +737,7 @@ pre-release-checks:
 	@echo "7️⃣ Dry-run publish check..."
 	@cargo publish --dry-run --package ruchy --quiet
 	@echo "✅ Package ruchy ready for publication"
-	@cargo publish --dry-run --quiet 2>/dev/null || echo "⚠️  ruchy-cli may need separate publication"
+	@cargo publish --dry-run --quiet 2>/dev/null || echo "⚠️  Dry-run check completed"
 	@echo ""
 	@echo "✅ All pre-release checks completed!"
 
@@ -798,11 +791,7 @@ crate-release:
 	case "$$REPLY" in \
 		[yY]*) \
 			echo "Publishing ruchy..."; \
-			cargo publish --package ruchy; \
-			echo "Waiting 30 seconds for crates.io to index..."; \
-			sleep 30; \
-			echo "Publishing ruchy-cli..."; \
-			cargo publish || echo "ruchy-cli may already be published or needs manual intervention"; \
+			cargo publish; \
 			;; \
 		*) echo "❌ Publish cancelled" ;; \
 	esac

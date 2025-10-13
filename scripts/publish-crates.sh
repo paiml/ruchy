@@ -64,30 +64,25 @@ if [ -z "$DRY_RUN" ]; then
     fi
 fi
 
-# Step 2: Publish the CLI crate
-echo -e "\n${GREEN}Step 2: Publishing ruchy-cli${NC}"
-echo "------------------------------"
-cargo publish --package ruchy-cli $DRY_RUN
-
 if [ -z "$DRY_RUN" ]; then
-    echo -e "${GREEN}✓ ruchy-cli successfully published!${NC}"
-    echo "View at: https://crates.io/crates/ruchy-cli"
-    
-    # Step 3: Test installation
-    echo -e "\n${GREEN}Step 3: Testing installation${NC}"
+    echo -e "${GREEN}✓ ruchy successfully published!${NC}"
+    echo "View at: https://crates.io/crates/ruchy"
+
+    # Step 2: Test installation
+    echo -e "\n${GREEN}Step 2: Testing installation${NC}"
     echo "-----------------------------"
     echo "You can now install Ruchy with:"
-    echo -e "${YELLOW}cargo install ruchy-cli${NC}"
-    
+    echo -e "${YELLOW}cargo install ruchy${NC}"
+
     echo -e "\n${GREEN}🎉 Publication complete!${NC}"
     echo ""
     echo "Next steps:"
-    echo "1. Test installation: cargo install ruchy-cli"
+    echo "1. Test installation: cargo install ruchy"
     echo "2. Verify documentation: https://docs.rs/ruchy"
     echo "3. Share the news!"
     echo ""
     echo "Installation methods:"
-    echo "  - Cargo: cargo install ruchy-cli"
+    echo "  - Cargo: cargo install ruchy"
     echo "  - Binary: https://github.com/paiml/ruchy/releases/latest"
 else
     echo -e "\n${GREEN}Dry run complete!${NC}"
