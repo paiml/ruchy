@@ -62,7 +62,7 @@ echo "🔧 Running PMAT quality analysis..."
 
 for file in $(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(rs|ruchy)$'); do
     echo "  Checking $file..."
-    
+
     # Complexity check
     if command -v pmat &> /dev/null; then
         pmat analyze complexity "$file" \
@@ -75,5 +75,17 @@ for file in $(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(rs|r
         }
     fi
 done
+
+# Validate documentation links (if .md files changed)
+if git diff --cached --name-only | grep -qE '\.md$'; then
+    echo "📚 Validating documentation links..."
+    if command -v pmat &> /dev/null; then
+        if ! pmat validate-docs 2>&1 | tee /tmp/pmat-docs-validation.log | grep -q "✅ All links are valid"; then
+            echo "⚠️  Warning: Documentation has broken links"
+            echo "💡 Run: pmat validate-docs to see full report"
+            echo "   (Not blocking commit - fix when possible)"
+        fi
+    fi
+fi
 
 echo "✅ All quality gates passed!"
