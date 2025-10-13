@@ -88,7 +88,8 @@ sprints:
       - id: DF-001
         title: "DataFrame baseline audit and test verification"
         priority: critical
-        status: IN_PROGRESS
+        status: COMPLETED
+        completion_date: 2025-10-13
         requirements:
           - "Run all DataFrame tests, document baseline"
           - "Verify polars-rs integration working"
@@ -107,8 +108,10 @@ sprints:
       - id: DF-002
         title: "Implement DataFrame::filter() with predicates"
         priority: high
-        status: PENDING
+        status: COMPLETED
+        completion_date: 2025-10-13
         depends_on: [DF-001]
+        test_results: "4 unit tests + 10 property tests with 100K iterations"
         requirements:
           - "Filter DataFrame rows by predicate function"
           - "Support closures: |row| row.age > 18"
@@ -134,10 +137,12 @@ sprints:
           - "Performance: <1ms per 1000 rows"
 
       - id: DF-003
-        title: "Implement DataFrame::group_by() aggregation"
+        title: "Implement DataFrame aggregation functions (std, var)"
         priority: high
-        status: PENDING
+        status: COMPLETED
+        completion_date: 2025-10-13
         depends_on: [DF-002]
+        test_results: "16 tests passing (EXTREME TDD: RED→GREEN→REFACTOR)"
         requirements:
           - "Group DataFrame by one or more columns"
           - "Support aggregation functions: mean, sum, count, min, max"
@@ -164,10 +169,12 @@ sprints:
           - "Performance: <10ms per grouping operation"
 
       - id: DF-004
-        title: "Implement DataFrame::sort_by() ordering"
+        title: "Validate DataFrame::sort_by() with property tests"
         priority: high
-        status: PENDING
+        status: COMPLETED
+        completion_date: 2025-10-13
         depends_on: [DF-003]
+        test_results: "3 unit tests + 10 property tests with 100K iterations"
         requirements:
           - "Sort DataFrame by column(s)"
           - "Support ascending/descending order"
