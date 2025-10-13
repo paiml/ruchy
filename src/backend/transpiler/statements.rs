@@ -1177,6 +1177,9 @@ impl Transpiler {
             if let Some(result) = self.try_transpile_fs_function(base_name, args)? {
                 return Ok(result);
             }
+            if let Some(result) = self.try_transpile_path_function(base_name, args)? {
+                return Ok(result);
+            }
             // DEFECT-STRING-RESULT FIX: Handle Ok/Err/Some when parsed as Call (not dedicated ExprKind)
             if let Some(result) = self.try_transpile_result_call(base_name, args)? {
                 return Ok(result);
@@ -3752,6 +3755,160 @@ impl Transpiler {
                 let path = self.transpile_expr(&args[0])?;
                 Ok(Some(quote! {
                     std::path::Path::new(&#path).is_file()
+                }))
+            }
+            _ => Ok(None),
+        }
+    }
+
+    /// Transpile path functions (path_*)
+    ///
+    /// Layer 2 of three-layer builtin pattern (proven from env/fs functions)
+    /// Phase 3: STDLIB_ACCESS_PLAN - Path Module (13 functions)
+    fn try_transpile_path_function(
+        &self,
+        base_name: &str,
+        args: &[Expr],
+    ) -> Result<Option<TokenStream>> {
+        match base_name {
+            "path_join" => {
+                if args.len() != 2 {
+                    anyhow::bail!("path_join() expects 2 arguments");
+                }
+                let base = self.transpile_expr(&args[0])?;
+                let component = self.transpile_expr(&args[1])?;
+                Ok(Some(quote! {
+                    std::path::Path::new(&#base).join(#component).to_string_lossy().to_string()
+                }))
+            }
+            "path_join_many" => {
+                if args.len() != 1 {
+                    anyhow::bail!("path_join_many() expects 1 argument");
+                }
+                let components = self.transpile_expr(&args[0])?;
+                Ok(Some(quote! {
+                    {
+                        let mut path = std::path::PathBuf::new();
+                        for component in #components {
+                            path.push(component);
+                        }
+                        path.to_string_lossy().to_string()
+                    }
+                }))
+            }
+            "path_parent" => {
+                if args.len() != 1 {
+                    anyhow::bail!("path_parent() expects 1 argument");
+                }
+                let path = self.transpile_expr(&args[0])?;
+                Ok(Some(quote! {
+                    std::path::Path::new(&#path).parent().map(|p| p.to_string_lossy().to_string())
+                }))
+            }
+            "path_file_name" => {
+                if args.len() != 1 {
+                    anyhow::bail!("path_file_name() expects 1 argument");
+                }
+                let path = self.transpile_expr(&args[0])?;
+                Ok(Some(quote! {
+                    std::path::Path::new(&#path).file_name().map(|n| n.to_string_lossy().to_string())
+                }))
+            }
+            "path_file_stem" => {
+                if args.len() != 1 {
+                    anyhow::bail!("path_file_stem() expects 1 argument");
+                }
+                let path = self.transpile_expr(&args[0])?;
+                Ok(Some(quote! {
+                    std::path::Path::new(&#path).file_stem().map(|s| s.to_string_lossy().to_string())
+                }))
+            }
+            "path_extension" => {
+                if args.len() != 1 {
+                    anyhow::bail!("path_extension() expects 1 argument");
+                }
+                let path = self.transpile_expr(&args[0])?;
+                Ok(Some(quote! {
+                    std::path::Path::new(&#path).extension().map(|e| e.to_string_lossy().to_string())
+                }))
+            }
+            "path_is_absolute" => {
+                if args.len() != 1 {
+                    anyhow::bail!("path_is_absolute() expects 1 argument");
+                }
+                let path = self.transpile_expr(&args[0])?;
+                Ok(Some(quote! {
+                    std::path::Path::new(&#path).is_absolute()
+                }))
+            }
+            "path_is_relative" => {
+                if args.len() != 1 {
+                    anyhow::bail!("path_is_relative() expects 1 argument");
+                }
+                let path = self.transpile_expr(&args[0])?;
+                Ok(Some(quote! {
+                    std::path::Path::new(&#path).is_relative()
+                }))
+            }
+            "path_canonicalize" => {
+                if args.len() != 1 {
+                    anyhow::bail!("path_canonicalize() expects 1 argument");
+                }
+                let path = self.transpile_expr(&args[0])?;
+                Ok(Some(quote! {
+                    std::fs::canonicalize(#path).expect("Failed to canonicalize path").to_string_lossy().to_string()
+                }))
+            }
+            "path_with_extension" => {
+                if args.len() != 2 {
+                    anyhow::bail!("path_with_extension() expects 2 arguments");
+                }
+                let path = self.transpile_expr(&args[0])?;
+                let ext = self.transpile_expr(&args[1])?;
+                Ok(Some(quote! {
+                    std::path::Path::new(&#path).with_extension(#ext).to_string_lossy().to_string()
+                }))
+            }
+            "path_with_file_name" => {
+                if args.len() != 2 {
+                    anyhow::bail!("path_with_file_name() expects 2 arguments");
+                }
+                let path = self.transpile_expr(&args[0])?;
+                let name = self.transpile_expr(&args[1])?;
+                Ok(Some(quote! {
+                    std::path::Path::new(&#path).with_file_name(#name).to_string_lossy().to_string()
+                }))
+            }
+            "path_components" => {
+                if args.len() != 1 {
+                    anyhow::bail!("path_components() expects 1 argument");
+                }
+                let path = self.transpile_expr(&args[0])?;
+                Ok(Some(quote! {
+                    std::path::Path::new(&#path)
+                        .components()
+                        .map(|c| c.as_os_str().to_string_lossy().to_string())
+                        .collect::<Vec<String>>()
+                }))
+            }
+            "path_normalize" => {
+                if args.len() != 1 {
+                    anyhow::bail!("path_normalize() expects 1 argument");
+                }
+                let path = self.transpile_expr(&args[0])?;
+                Ok(Some(quote! {
+                    {
+                        let p = std::path::Path::new(&#path);
+                        let mut normalized = std::path::PathBuf::new();
+                        for component in p.components() {
+                            match component {
+                                std::path::Component::CurDir => {},
+                                std::path::Component::ParentDir => { normalized.pop(); },
+                                _ => normalized.push(component),
+                            }
+                        }
+                        normalized.to_string_lossy().to_string()
+                    }
                 }))
             }
             _ => Ok(None),

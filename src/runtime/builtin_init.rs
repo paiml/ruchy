@@ -31,6 +31,7 @@ pub fn init_global_environment() -> HashMap<String, Value> {
     add_random_time_functions(&mut global_env);
     add_environment_functions(&mut global_env);
     add_fs_functions(&mut global_env);
+    add_path_functions(&mut global_env);
 
     global_env
 }
@@ -308,6 +309,24 @@ fn add_fs_functions(global_env: &mut HashMap<String, Value>) {
     );
 }
 
+/// Register path functions in global environment
+/// Phase 3: STDLIB_ACCESS_PLAN - Path Module (13 functions)
+fn add_path_functions(global_env: &mut HashMap<String, Value>) {
+    global_env.insert("path_join".to_string(), Value::from_string("__builtin_path_join__".to_string()));
+    global_env.insert("path_join_many".to_string(), Value::from_string("__builtin_path_join_many__".to_string()));
+    global_env.insert("path_parent".to_string(), Value::from_string("__builtin_path_parent__".to_string()));
+    global_env.insert("path_file_name".to_string(), Value::from_string("__builtin_path_file_name__".to_string()));
+    global_env.insert("path_file_stem".to_string(), Value::from_string("__builtin_path_file_stem__".to_string()));
+    global_env.insert("path_extension".to_string(), Value::from_string("__builtin_path_extension__".to_string()));
+    global_env.insert("path_is_absolute".to_string(), Value::from_string("__builtin_path_is_absolute__".to_string()));
+    global_env.insert("path_is_relative".to_string(), Value::from_string("__builtin_path_is_relative__".to_string()));
+    global_env.insert("path_canonicalize".to_string(), Value::from_string("__builtin_path_canonicalize__".to_string()));
+    global_env.insert("path_with_extension".to_string(), Value::from_string("__builtin_path_with_extension__".to_string()));
+    global_env.insert("path_with_file_name".to_string(), Value::from_string("__builtin_path_with_file_name__".to_string()));
+    global_env.insert("path_components".to_string(), Value::from_string("__builtin_path_components__".to_string()));
+    global_env.insert("path_normalize".to_string(), Value::from_string("__builtin_path_normalize__".to_string()));
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -378,13 +397,16 @@ mod tests {
 
         // Should have all builtin functions
         // 1 constant + 9 basic + 11 math + 3 I/O + 3 utility
-        // + 4 conversion + 8 advanced + 2 string + 5 random/time + 8 env + 12 fs = 66 total
+        // + 4 conversion + 8 advanced + 2 string + 5 random/time + 8 env + 12 fs + 13 path = 79 total
         // env functions: env_args, env_var, env_set_var, env_remove_var, env_vars,
         //                env_current_dir, env_set_current_dir, env_temp_dir
         // fs functions: fs_read, fs_write, fs_exists, fs_create_dir, fs_remove_file,
         //               fs_remove_dir, fs_copy, fs_rename, fs_metadata, fs_read_dir,
         //               fs_canonicalize, fs_is_file
-        assert_eq!(env.len(), 66);
+        // path functions: path_join, path_join_many, path_parent, path_file_name, path_file_stem,
+        //                 path_extension, path_is_absolute, path_is_relative, path_canonicalize,
+        //                 path_with_extension, path_with_file_name, path_components, path_normalize
+        assert_eq!(env.len(), 79);
     }
 
     #[test]

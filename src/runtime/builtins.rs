@@ -120,6 +120,21 @@ impl BuiltinRegistry {
         self.register("fs_read_dir", builtin_fs_read_dir);
         self.register("fs_canonicalize", builtin_fs_canonicalize);
         self.register("fs_is_file", builtin_fs_is_file);
+
+        // Path functions
+        self.register("path_join", builtin_path_join);
+        self.register("path_join_many", builtin_path_join_many);
+        self.register("path_parent", builtin_path_parent);
+        self.register("path_file_name", builtin_path_file_name);
+        self.register("path_file_stem", builtin_path_file_stem);
+        self.register("path_extension", builtin_path_extension);
+        self.register("path_is_absolute", builtin_path_is_absolute);
+        self.register("path_is_relative", builtin_path_is_relative);
+        self.register("path_canonicalize", builtin_path_canonicalize);
+        self.register("path_with_extension", builtin_path_with_extension);
+        self.register("path_with_file_name", builtin_path_with_file_name);
+        self.register("path_components", builtin_path_components);
+        self.register("path_normalize", builtin_path_normalize);
     }
 
     /// Register a builtin function
@@ -946,6 +961,215 @@ fn builtin_fs_is_file(args: &[Value]) -> Result<Value, InterpreterError> {
     match &args[0] {
         Value::String(path) => Ok(Value::Bool(std::path::Path::new(path.as_ref()).is_file())),
         _ => Err(InterpreterError::RuntimeError("fs_is_file() expects a string argument".to_string())),
+    }
+}
+
+// ==================== PATH FUNCTIONS ====================
+// Phase 3: STDLIB_ACCESS_PLAN - Path Module (13 functions)
+
+fn builtin_path_join(args: &[Value]) -> Result<Value, InterpreterError> {
+    if args.len() != 2 {
+        return Err(InterpreterError::RuntimeError("path_join() expects 2 arguments".to_string()));
+    }
+    match (&args[0], &args[1]) {
+        (Value::String(base), Value::String(component)) => {
+            let path = std::path::Path::new(base.as_ref()).join(component.as_ref());
+            Ok(Value::from_string(path.to_string_lossy().to_string()))
+        },
+        _ => Err(InterpreterError::RuntimeError("path_join() expects two string arguments".to_string())),
+    }
+}
+
+fn builtin_path_join_many(args: &[Value]) -> Result<Value, InterpreterError> {
+    if args.len() != 1 {
+        return Err(InterpreterError::RuntimeError("path_join_many() expects 1 argument".to_string()));
+    }
+    match &args[0] {
+        Value::Array(components) => {
+            let path = build_path_from_components(components)?;
+            Ok(Value::from_string(path.to_string_lossy().to_string()))
+        },
+        _ => Err(InterpreterError::RuntimeError("path_join_many() expects an array argument".to_string())),
+    }
+}
+
+/// Helper: Build PathBuf from Value array components
+/// Complexity: 3 (reduced cognitive load)
+fn build_path_from_components(components: &[Value]) -> Result<std::path::PathBuf, InterpreterError> {
+    let mut path = std::path::PathBuf::new();
+    for component in components.iter() {
+        match component {
+            Value::String(s) => path.push(s.as_ref()),
+            _ => return Err(InterpreterError::RuntimeError("path_join_many() expects array of strings".to_string())),
+        }
+    }
+    Ok(path)
+}
+
+fn builtin_path_parent(args: &[Value]) -> Result<Value, InterpreterError> {
+    if args.len() != 1 {
+        return Err(InterpreterError::RuntimeError("path_parent() expects 1 argument".to_string()));
+    }
+    match &args[0] {
+        Value::String(path) => {
+            let p = std::path::Path::new(path.as_ref());
+            match p.parent() {
+                Some(parent) => Ok(Value::from_string(parent.to_string_lossy().to_string())),
+                None => Ok(Value::Nil),
+            }
+        },
+        _ => Err(InterpreterError::RuntimeError("path_parent() expects a string argument".to_string())),
+    }
+}
+
+fn builtin_path_file_name(args: &[Value]) -> Result<Value, InterpreterError> {
+    if args.len() != 1 {
+        return Err(InterpreterError::RuntimeError("path_file_name() expects 1 argument".to_string()));
+    }
+    match &args[0] {
+        Value::String(path) => {
+            let p = std::path::Path::new(path.as_ref());
+            match p.file_name() {
+                Some(name) => Ok(Value::from_string(name.to_string_lossy().to_string())),
+                None => Ok(Value::Nil),
+            }
+        },
+        _ => Err(InterpreterError::RuntimeError("path_file_name() expects a string argument".to_string())),
+    }
+}
+
+fn builtin_path_file_stem(args: &[Value]) -> Result<Value, InterpreterError> {
+    if args.len() != 1 {
+        return Err(InterpreterError::RuntimeError("path_file_stem() expects 1 argument".to_string()));
+    }
+    match &args[0] {
+        Value::String(path) => {
+            let p = std::path::Path::new(path.as_ref());
+            match p.file_stem() {
+                Some(stem) => Ok(Value::from_string(stem.to_string_lossy().to_string())),
+                None => Ok(Value::Nil),
+            }
+        },
+        _ => Err(InterpreterError::RuntimeError("path_file_stem() expects a string argument".to_string())),
+    }
+}
+
+fn builtin_path_extension(args: &[Value]) -> Result<Value, InterpreterError> {
+    if args.len() != 1 {
+        return Err(InterpreterError::RuntimeError("path_extension() expects 1 argument".to_string()));
+    }
+    match &args[0] {
+        Value::String(path) => {
+            let p = std::path::Path::new(path.as_ref());
+            match p.extension() {
+                Some(ext) => Ok(Value::from_string(ext.to_string_lossy().to_string())),
+                None => Ok(Value::Nil),
+            }
+        },
+        _ => Err(InterpreterError::RuntimeError("path_extension() expects a string argument".to_string())),
+    }
+}
+
+fn builtin_path_is_absolute(args: &[Value]) -> Result<Value, InterpreterError> {
+    if args.len() != 1 {
+        return Err(InterpreterError::RuntimeError("path_is_absolute() expects 1 argument".to_string()));
+    }
+    match &args[0] {
+        Value::String(path) => {
+            let p = std::path::Path::new(path.as_ref());
+            Ok(Value::Bool(p.is_absolute()))
+        },
+        _ => Err(InterpreterError::RuntimeError("path_is_absolute() expects a string argument".to_string())),
+    }
+}
+
+fn builtin_path_is_relative(args: &[Value]) -> Result<Value, InterpreterError> {
+    if args.len() != 1 {
+        return Err(InterpreterError::RuntimeError("path_is_relative() expects 1 argument".to_string()));
+    }
+    match &args[0] {
+        Value::String(path) => {
+            let p = std::path::Path::new(path.as_ref());
+            Ok(Value::Bool(p.is_relative()))
+        },
+        _ => Err(InterpreterError::RuntimeError("path_is_relative() expects a string argument".to_string())),
+    }
+}
+
+fn builtin_path_canonicalize(args: &[Value]) -> Result<Value, InterpreterError> {
+    if args.len() != 1 {
+        return Err(InterpreterError::RuntimeError("path_canonicalize() expects 1 argument".to_string()));
+    }
+    match &args[0] {
+        Value::String(path) => match std::fs::canonicalize(path.as_ref()) {
+            Ok(canonical) => Ok(Value::from_string(canonical.to_string_lossy().to_string())),
+            Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to canonicalize path: {}", e))),
+        },
+        _ => Err(InterpreterError::RuntimeError("path_canonicalize() expects a string argument".to_string())),
+    }
+}
+
+fn builtin_path_with_extension(args: &[Value]) -> Result<Value, InterpreterError> {
+    if args.len() != 2 {
+        return Err(InterpreterError::RuntimeError("path_with_extension() expects 2 arguments".to_string()));
+    }
+    match (&args[0], &args[1]) {
+        (Value::String(path), Value::String(ext)) => {
+            let p = std::path::Path::new(path.as_ref()).with_extension(ext.as_ref());
+            Ok(Value::from_string(p.to_string_lossy().to_string()))
+        },
+        _ => Err(InterpreterError::RuntimeError("path_with_extension() expects two string arguments".to_string())),
+    }
+}
+
+fn builtin_path_with_file_name(args: &[Value]) -> Result<Value, InterpreterError> {
+    if args.len() != 2 {
+        return Err(InterpreterError::RuntimeError("path_with_file_name() expects 2 arguments".to_string()));
+    }
+    match (&args[0], &args[1]) {
+        (Value::String(path), Value::String(name)) => {
+            let p = std::path::Path::new(path.as_ref()).with_file_name(name.as_ref());
+            Ok(Value::from_string(p.to_string_lossy().to_string()))
+        },
+        _ => Err(InterpreterError::RuntimeError("path_with_file_name() expects two string arguments".to_string())),
+    }
+}
+
+fn builtin_path_components(args: &[Value]) -> Result<Value, InterpreterError> {
+    if args.len() != 1 {
+        return Err(InterpreterError::RuntimeError("path_components() expects 1 argument".to_string()));
+    }
+    match &args[0] {
+        Value::String(path) => {
+            let p = std::path::Path::new(path.as_ref());
+            let components: Vec<Value> = p.components()
+                .map(|c| Value::from_string(c.as_os_str().to_string_lossy().to_string()))
+                .collect();
+            Ok(Value::Array(components.into()))
+        },
+        _ => Err(InterpreterError::RuntimeError("path_components() expects a string argument".to_string())),
+    }
+}
+
+fn builtin_path_normalize(args: &[Value]) -> Result<Value, InterpreterError> {
+    if args.len() != 1 {
+        return Err(InterpreterError::RuntimeError("path_normalize() expects 1 argument".to_string()));
+    }
+    match &args[0] {
+        Value::String(path) => {
+            let p = std::path::Path::new(path.as_ref());
+            // Simple normalization: remove "." and resolve ".."
+            let mut normalized = std::path::PathBuf::new();
+            for component in p.components() {
+                match component {
+                    std::path::Component::CurDir => {},
+                    std::path::Component::ParentDir => { normalized.pop(); },
+                    _ => normalized.push(component),
+                }
+            }
+            Ok(Value::from_string(normalized.to_string_lossy().to_string()))
+        },
+        _ => Err(InterpreterError::RuntimeError("path_normalize() expects a string argument".to_string())),
     }
 }
 
