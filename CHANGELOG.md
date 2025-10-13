@@ -33,6 +33,26 @@ All notable changes to the Ruchy programming language will be documented in this
 
 **Next**: RUNTIME-002 (Implement Structs with EXTREME TDD)
 
+#### RUNTIME-002: Struct Implementation - RED Phase (2025-10-13)
+**Status**: 🔴 RED PHASE COMPLETE
+**Tests Created**: 10 unit tests (all #[ignore]d, will fail when un-ignored)
+
+**Test Suite**: `tests/runtime_002_structs_tdd.rs` (186 lines)
+
+**Tests Will Validate**:
+- Basic struct instantiation (`Point { x: 10, y: 20 }`)
+- Field access (`point.x`, `point.y`)
+- Value semantics (copy on assignment - no reference sharing)
+- Nested structs (`Rectangle { top_left: Point { x: 10 } }`)
+- Mixed field types (String, i32, f64)
+- Error handling (missing fields, extra fields, invalid field access)
+
+**Current Status**:
+- 1 test PASSING (summary/documentation)
+- 10 tests IGNORED (RED phase - will fail when un-ignored)
+
+**Next**: GREEN phase - Implement `Value::Struct` and make tests pass
+
 ## [3.76.0] - 2025-10-13
 
 ### 📊 DataFrame Implementation Sprint COMPLETED (DF-001 through DF-007)
