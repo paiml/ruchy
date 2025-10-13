@@ -1,9 +1,0 @@
-Found 10 mutants to test
-ok       Unmutated baseline in 87.5s build + 0.3s test
- INFO Auto-set test timeout to 2m
-MISSED   src/stdlib/logging.rs:94:5: replace log_debug -> Result<(), String> with Ok(()) in 11.5s build + 0.3s test
-MISSED   src/stdlib/logging.rs:49:5: replace log_info -> Result<(), String> with Ok(()) in 12.0s build + 0.3s test
-MISSED   src/stdlib/logging.rs:64:5: replace log_warn -> Result<(), String> with Ok(()) in 13.2s build + 0.3s test
-MISSED   src/stdlib/logging.rs:109:5: replace log_trace -> Result<(), String> with Ok(()) in 12.2s build + 0.3s test
-MISSED   src/stdlib/logging.rs:79:5: replace log_error -> Result<(), String> with Ok(()) in 11.5s build + 0.3s test
-10 mutants tested in 4m 27s: 5 missed, 5 caught
