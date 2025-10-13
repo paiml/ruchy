@@ -47,7 +47,6 @@ fn test_runtime_003_class_instance_methods() {
 
 /// Test 3: Class reference semantics (shared on assignment)
 #[test]
-#[ignore] // RED: Will fail until GREEN phase
 fn test_runtime_003_class_reference_semantics_shared() {
     ruchy_cmd()
         .arg("-e")
