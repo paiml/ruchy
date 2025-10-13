@@ -6,6 +6,69 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ### Sprint: Runtime Implementation (sprint-runtime-001) - IN PROGRESS
 
+#### RUNTIME-003: Class Implementation - GREEN Phase START (2025-10-13)
+**Status**: 🟢 GREEN PHASE - Parser Fix + Value::Class Variant Added
+**Tests Passing**: 0/10 (implementation in progress)
+
+**Critical Discovery**: Parser did NOT support `init` keyword for constructors!
+- **ROOT CAUSE**: Parser only recognized `new` keyword, not `init`
+- **STOP THE LINE**: Halted runtime work to fix parser first (Toyota Way: Jidoka)
+- **FIX**: Updated parser to accept both `new` and `init` as constructor keywords
+
+**Parser Changes** (src/frontend/parser/expressions.rs):
+1. Line 3117: Updated match to accept `name == "new" || name == "init"`
+2. Line 3600: Updated `expect_new_keyword()` to accept both `new` and `init`
+3. Error messages updated: "Expected 'new' or 'init' keyword"
+
+**Validation**:
+```bash
+echo 'class Person { init(name: String) { self.name = name; } }' > /tmp/test_class.ruchy
+./target/debug/ruchy ast /tmp/test_class.ruchy  # ✅ WORKS - AST generated successfully
+```
+
+**Runtime Changes** (Value::Class variant added):
+1. Added `Value::Class` variant to src/runtime/interpreter.rs (lines 110-117)
+   - `class_name: String`
+   - `fields: Arc<RwLock<HashMap<String, Value>>>` (thread-safe, mutable)
+   - `methods: Arc<HashMap<String, Value>>` (shared, immutable)
+2. Identity-based equality via `Arc::ptr_eq(f1, f2)` (lines 136-138)
+3. Updated `type_id()` to return TypeId for Class (line 171)
+4. Added `format_class()` display function with sorted keys (src/runtime/eval_display.rs)
+5. Updated all pattern matches across codebase:
+   - src/runtime/value_utils.rs: `type_name()` returns "class"
+   - src/runtime/gc_impl.rs: `estimate_object_size()` for Class
+   - src/runtime/repl/commands.rs: inspect/memory/type functions
+   - src/runtime/magic.rs: variable listing
+   - src/wasm/shared_session.rs: memory estimation
+
+**Thread Safety**:
+- Changed from `RefCell` to `RwLock` to satisfy `Send + Sync` requirements
+- Required for tokio::task::spawn_blocking in notebook server
+- All code uses `fields.read().unwrap()` or `fields.write().unwrap()`
+
+**Build Status**: ✅ COMPILES (0 errors, 0 warnings)
+
+**Next Steps**:
+1. Implement class instantiation evaluation (call `init` constructor)
+2. Implement method dispatch with `self` binding
+3. Implement field access on class instances
+4. Un-ignore tests one by one
+
+**Toyota Way Principles Applied**:
+- **Jidoka**: Stopped runtime work when parser defect discovered
+- **Genchi Genbutsu**: Tested parser directly with AST tool to verify fix
+- **Kaizen**: Incremental improvement - fix parser first, then runtime
+- **No Shortcuts**: Did not skip or work around missing feature
+
+**Lessons Learned**:
+- **ALWAYS test parser first** before assuming runtime is the issue
+- **STOP THE LINE** principle applies to ALL layers (parser, runtime, etc.)
+- Thread safety requirements propagate from async code to Value types
+
+## [Unreleased]
+
+### Sprint: Runtime Implementation (sprint-runtime-001) - IN PROGRESS
+
 #### RUNTIME-001: Baseline Audit Complete (2025-10-13)
 **Status**: ✅ COMPLETED
 **Test Results**: 15 tests created (4 passing, 11 ignored RED phase)

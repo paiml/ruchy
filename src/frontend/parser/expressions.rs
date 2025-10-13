@@ -3114,7 +3114,7 @@ fn parse_member_and_dispatch(
     let (is_static, is_override, is_final, is_abstract) = parse_member_flags(state)?;
 
     match state.tokens.peek() {
-        Some((Token::Identifier(name), _)) if name == "new" => {
+        Some((Token::Identifier(name), _)) if name == "new" || name == "init" => {
             parse_and_add_constructor(state, constructors, visibility)
         }
         Some((Token::Fun | Token::Fn, _)) => parse_and_add_method(
@@ -3597,14 +3597,14 @@ fn consume_optional_separator(state: &mut ParserState) {
 /// Complexity: 2 (Toyota Way: <10 ✓)
 fn expect_new_keyword(state: &mut ParserState) -> Result<()> {
     if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
-        if name == "new" {
+        if name == "new" || name == "init" {
             state.tokens.advance();
             Ok(())
         } else {
-            bail!("Expected 'new' keyword");
+            bail!("Expected 'new' or 'init' keyword");
         }
     } else {
-        bail!("Expected 'new' keyword");
+        bail!("Expected 'new' or 'init' keyword");
     }
 }
 

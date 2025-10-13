@@ -271,6 +271,20 @@ impl ConservativeGC {
                         .map(|(k, v)| k.len() + self.estimate_object_size(v))
                         .sum::<usize>()
             }
+            Value::Class {
+                class_name,
+                fields,
+                methods,
+            } => {
+                let fields_read = fields.read().unwrap();
+                48 + class_name.len()
+                    + fields_read.len() * 32
+                    + fields_read
+                        .iter()
+                        .map(|(k, v)| k.len() + self.estimate_object_size(v))
+                        .sum::<usize>()
+                    + methods.len() * 32
+            }
         }
     }
 
