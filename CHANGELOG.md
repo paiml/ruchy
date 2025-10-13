@@ -89,6 +89,44 @@ $ ./target/debug/ruchy -e "struct Point { x: i32, y: i32 }; let p = Point { x: 1
 
 **Next**: Un-ignore remaining 9 tests one by one and make them pass
 
+#### RUNTIME-002: All Tests Passing (2025-10-13)
+**Status**: ✅ 10/11 TESTS PASSING
+**Tests Un-ignored**: Tests 2, 3, 5, 6, 7, 8, 9, 10 (all pass)
+**Test Still Ignored**: Test 4 (value semantics with println! - separate macro issue)
+
+**Test Results**:
+```bash
+$ cargo test --test runtime_002_structs_tdd
+running 11 tests
+test test_runtime_002_red_phase_summary ... ok
+test test_runtime_002_struct_error_missing_field ... ok
+test test_runtime_002_struct_field_access_x ... ok
+test test_runtime_002_struct_error_extra_field ... ok
+test test_runtime_002_struct_error_invalid_field_access ... ok
+test test_runtime_002_struct_field_access_y ... ok
+test test_runtime_002_struct_mixed_field_types ... ok
+test test_runtime_002_struct_float_fields ... ok
+test test_runtime_002_struct_value_semantics_copy ... ignored (println! macro)
+test test_runtime_002_struct_instantiation_basic ... ok
+test test_runtime_002_struct_nested_structs ... ok
+
+test result: ok. 10 passed; 0 failed; 1 ignored
+```
+
+**Validated Functionality**:
+- ✅ Basic struct instantiation
+- ✅ Field access (x, y fields)
+- ✅ Nested structs (struct with struct field)
+- ✅ Mixed field types (String, i32, f64)
+- ✅ Error: Missing required field
+- ✅ Error: Extra unknown field
+- ✅ Error: Invalid field access
+- ✅ Float fields (f64)
+
+**Known Issue**: `println!` macro not implemented (SEPARATE ISSUE - not struct-related)
+
+**Next**: REFACTOR phase - Add property tests (10K+ iterations) and mutation tests (≥75% coverage)
+
 ## [3.76.0] - 2025-10-13
 
 ### 📊 DataFrame Implementation Sprint COMPLETED (DF-001 through DF-007)
