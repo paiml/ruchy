@@ -150,6 +150,20 @@ shape: (3, 1)
 
 **DATAFRAME-001 STATUS**: 🎉 REFACTOR COMPLETE - 4100 property tests passing ✅
 
+#### RUNTIME-004: Class/Struct Equality Comparison (2025-10-13)
+**Status**: ✅ COMPLETE
+**File**: src/runtime/eval_operations.rs
+
+**Changes**:
+- Added Class equality: Identity comparison using `Arc::ptr_eq` (reference semantics)
+- Added Struct equality: Value comparison using field-by-field `equal_objects` (value semantics)
+- Completes equality operators for all Value types
+
+**Rationale**:
+- Classes use reference semantics (like Python classes) - same object = equal
+- Structs use value semantics (like Rust structs) - same fields = equal
+- Matches language design: Classes are heap-allocated refs, Structs are value types
+
 ### Sprint: Runtime Implementation (sprint-runtime-001) - COMPLETE
 
 #### RUNTIME-003: Class Implementation - GREEN Phase (2025-10-13)
