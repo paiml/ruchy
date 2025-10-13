@@ -1,0 +1,128 @@
+// json_builtins.ruchy - Comprehensive example of all 10 JSON builtin functions
+// Part of STDLIB Phase 4: JSON Module (v3.77.0)
+
+fn main() {
+    println("=== Ruchy JSON Builtin Functions Demo ===\n")
+
+    // 1. json_parse() - Parse JSON string to value
+    println("1. json_parse() - Parse JSON string")
+    let person_json = "{\"name\": \"Alice\", \"age\": 30, \"city\": \"NYC\"}"
+    let person = json_parse(person_json)
+    println("Parsed person:")
+    println(person)
+    println("")
+
+    // 2. json_stringify() - Convert value to JSON string
+    println("2. json_stringify() - Convert to JSON")
+    let data_json = "{\"items\": [1, 2, 3], \"status\": \"ok\"}"
+    let data = json_parse(data_json)
+    let stringified = json_stringify(data)
+    println("Stringified:")
+    println(stringified)
+    println("")
+
+    // 3. json_pretty() - Pretty-print JSON with indentation
+    println("3. json_pretty() - Pretty-print with indentation")
+    let complex_json = "{\"user\": {\"name\": \"Bob\", \"age\": 25}, \"active\": true}"
+    let complex = json_parse(complex_json)
+    let pretty = json_pretty(complex)
+    println("Pretty-printed:")
+    println(pretty)
+    println("")
+
+    // 4. json_read() - Read and parse JSON file
+    println("4. json_read() - Read JSON from file")
+    println("(Skipping file I/O demo - requires file setup)")
+    println("")
+
+    // 5. json_write() - Write value as JSON to file
+    println("5. json_write() - Write JSON to file")
+    println("(Skipping file I/O demo - requires file setup)")
+    println("")
+
+    // 6. json_validate() - Check if string is valid JSON
+    println("6. json_validate() - Validate JSON string")
+    let valid_json = "{\"key\": \"value\"}"
+    let invalid_json = "{key: value}"
+    println("Valid JSON check:")
+    println(json_validate(valid_json))
+    println("Invalid JSON check:")
+    println(json_validate(invalid_json))
+    println("")
+
+    // 7. json_type() - Get JSON type without full parsing
+    println("7. json_type() - Get JSON type")
+    let obj_str = "{\"x\": 1}"
+    let arr_str = "[1, 2, 3]"
+    let num_str = "42"
+    let str_str = "\"hello\""
+    println("Object type:")
+    println(json_type(obj_str))
+    println("Array type:")
+    println(json_type(arr_str))
+    println("Number type:")
+    println(json_type(num_str))
+    println("String type:")
+    println(json_type(str_str))
+    println("")
+
+    // 8. json_merge() - Deep merge two JSON objects
+    println("8. json_merge() - Deep merge objects")
+    let obj1_json = "{\"a\": 1, \"b\": {\"x\": 10, \"y\": 20}}"
+    let obj2_json = "{\"b\": {\"y\": 30, \"z\": 40}, \"c\": 3}"
+    let obj1 = json_parse(obj1_json)
+    let obj2 = json_parse(obj2_json)
+    let merged = json_merge(obj1, obj2)
+    println("Merged result:")
+    println(json_pretty(merged))
+    println("")
+
+    // 9. json_get() - Get nested value by dot path
+    println("9. json_get() - Get nested value by path")
+    let nested_json = "{\"user\": {\"profile\": {\"name\": \"Charlie\", \"email\": \"charlie@example.com\"}}}"
+    let nested = json_parse(nested_json)
+    let name = json_get(nested, "user.profile.name")
+    let email = json_get(nested, "user.profile.email")
+    println("Name from path 'user.profile.name':")
+    println(name)
+    println("Email from path 'user.profile.email':")
+    println(email)
+    println("")
+
+    // 10. json_set() - Set nested value by dot path
+    println("10. json_set() - Set nested value by path")
+    let settings_json = "{\"app\": {\"theme\": \"light\", \"language\": \"en\"}}"
+    let settings = json_parse(settings_json)
+    let updated = json_set(settings, "app.theme", "dark")
+    println("Updated settings:")
+    println(json_pretty(updated))
+    println("")
+
+    // Real-world example: API response processing
+    println("=== Real-World Example: API Response Processing ===\n")
+
+    let api_response = "{\"status\": 200, \"data\": {\"users\": [{\"id\": 1, \"name\": \"Alice\"}, {\"id\": 2, \"name\": \"Bob\"}], \"total\": 2}}"
+
+    // Validate response
+    if json_validate(api_response) {
+        println("Valid API response")
+
+        // Parse response
+        let response = json_parse(api_response)
+
+        // Extract data using json_get
+        let status = json_get(response, "status")
+        let total = json_get(response, "data.total")
+
+        println("Status:")
+        println(status)
+        println("Total users:")
+        println(total)
+
+        // Pretty-print for debugging
+        println("\nPretty-printed response:")
+        println(json_pretty(response))
+    }
+
+    println("\n=== All 10 JSON builtin functions demonstrated! ===")
+}
