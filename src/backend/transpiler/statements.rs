@@ -3541,7 +3541,7 @@ impl Transpiler {
     /// Handle environment functions (env_args, env_var, etc.)
     ///
     /// # Complexity
-    /// Cyclomatic complexity: 2 (within Toyota Way limits)
+    /// Cyclomatic complexity: 3 (within Toyota Way limits)
     fn try_transpile_environment_function(
         &self,
         base_name: &str,
@@ -3554,6 +3554,15 @@ impl Transpiler {
                 }
                 Ok(Some(quote! {
                     std::env::args().collect::<Vec<String>>()
+                }))
+            }
+            "env_var" => {
+                if args.len() != 1 {
+                    anyhow::bail!("env_var() expects 1 argument");
+                }
+                let key = self.transpile_expr(&args[0])?;
+                Ok(Some(quote! {
+                    std::env::var(#key).expect("Environment variable not found")
                 }))
             }
             _ => Ok(None),

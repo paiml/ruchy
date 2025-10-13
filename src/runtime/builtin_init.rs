@@ -224,6 +224,10 @@ fn add_environment_functions(global_env: &mut HashMap<String, Value>) {
         "env_args".to_string(),
         Value::from_string("__builtin_env_args__".to_string()),
     );
+    global_env.insert(
+        "env_var".to_string(),
+        Value::from_string("__builtin_env_var__".to_string()),
+    );
 }
 
 #[cfg(test)]
@@ -296,9 +300,9 @@ mod tests {
 
         // Should have all builtin functions
         // 1 constant + 9 basic + 11 math + 3 I/O + 3 utility
-        // + 4 conversion + 8 advanced + 2 string + 5 random/time = 46 total
-        // (timestamp + get_time_ms + sleep + random + random_int)
-        assert_eq!(env.len(), 46);
+        // + 4 conversion + 8 advanced + 2 string + 5 random/time + 2 env = 48 total
+        // (timestamp + get_time_ms + sleep + random + random_int + env_args + env_var)
+        assert_eq!(env.len(), 48);
     }
 
     #[test]
