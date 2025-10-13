@@ -3,7 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Rust 1.75+](https://img.shields.io/badge/rust-1.75+-orange.svg)](https://www.rust-lang.org)
 [![Crates.io](https://img.shields.io/crates/v/ruchy.svg)](https://crates.io/crates/ruchy)
-[![Test Coverage](https://img.shields.io/badge/coverage-85%25+-brightgreen.svg)](https://github.com/noahgift/ruchy)
+[![Test Coverage](https://img.shields.io/badge/coverage-85%25+-brightgreen.svg)](https://github.com/paiml/ruchy)
 
 A modern, expressive programming language for data science and scientific computing, featuring a self-hosting compiler, comprehensive tooling, and enterprise-grade quality standards.
 
@@ -27,7 +27,7 @@ cargo install ruchy
 cargo install ruchy --features mcp
 
 # Or build from source
-git clone https://github.com/noahgift/ruchy
+git clone https://github.com/paiml/ruchy
 cd ruchy
 cargo build --release
 ```
@@ -311,10 +311,10 @@ make qa-help
 
 ## Related Resources
 
-- **[Ruchy Book](https://github.com/noahgift/ruchy-book)** - Comprehensive language guide with 259 examples
-- **[Rosetta Ruchy](https://github.com/noahgift/rosetta-ruchy)** - 100+ algorithm implementations showcasing language features
-- **[Ruchy REPL Demos](https://github.com/noahgift/ruchy-repl-demos)** - 180+ interactive REPL examples and tutorials
-- **[Ruchy Ruchy](https://github.com/noahgift/ruchyruchy)** - Self-hosting compiler demos and integration tests
+- **[Ruchy Book](https://github.com/paiml/ruchy-book)** - Comprehensive language guide with 259 examples
+- **[Rosetta Ruchy](https://github.com/paiml/rosetta-ruchy)** - 100+ algorithm implementations showcasing language features
+- **[Ruchy REPL Demos](https://github.com/paiml/ruchy-repl-demos)** - 180+ interactive REPL examples and tutorials
+- **[Ruchy Ruchy](https://github.com/paiml/ruchyruchy)** - Self-hosting compiler demos and integration tests
 
 ## Contributing
 
@@ -333,5 +333,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Contact
 
 - **Author**: Noah Gift
-- **Repository**: [github.com/noahgift/ruchy](https://github.com/noahgift/ruchy)
-- **Issues**: [GitHub Issues](https://github.com/noahgift/ruchy/issues)
+- **Repository**: [github.com/paiml/ruchy](https://github.com/paiml/ruchy)
+- **Issues**: [GitHub Issues](https://github.com/paiml/ruchy/issues)
