@@ -6,6 +6,33 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ### Sprint: Book Compatibility (sprint-book-compat-001) - IN PROGRESS
 
+#### COMPLEXITY-DEBT-001: eval_operations.rs Refactoring (2025-10-13)
+**Status**: ✅ COMPLETE
+**Problem**: Pre-existing cognitive complexity violations blocking commits
+**File**: src/runtime/eval_operations.rs
+
+**Refactoring Results**:
+1. **modulo_values**: Cognitive complexity 21 → 5 (within ≤10 limit)
+   - Extracted `check_modulo_divisor_not_zero()` helper function
+   - Removed nested zero-checks from each match arm
+   - Single upfront validation for cleaner logic flow
+
+2. **equal_objects**: Cognitive complexity 16 → 3 (within ≤10 limit)
+   - Replaced imperative loop+match+condition with functional style
+   - Used `.all()` and `.map_or()` for cleaner expression
+   - Reduced nesting from 3 levels to 1 level
+
+3. **eval_comparison_op**: Cognitive complexity 13 → 6 (within ≤10 limit)
+   - Extracted `less_or_equal_values()` and `greater_or_equal_values()` helpers
+   - Simplified ≤ and ≥ operations by removing local variables
+   - More declarative, less cognitive load
+
+**Impact**:
+- ✅ All 3869 tests still passing
+- ✅ Complexity now within Toyota Way limits (≤10)
+- ✅ Code more readable and maintainable
+- ✅ Unblocked RUNTIME-004 commit
+
 #### DATAFRAME-001: DataFrame Transpilation - GREEN Phase (2025-10-13)
 **Status**: 🟢 GREEN PHASE COMPLETE - Implementation done
 **Problem**: DataFrames work in interpreter but failed to compile to binaries
