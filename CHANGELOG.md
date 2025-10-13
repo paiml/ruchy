@@ -16,7 +16,8 @@ All notable changes to the Ruchy programming language will be documented in this
   - `std()` - Standard deviation (population)
   - `var()` - Variance (population)
   - Test file: `tests/dataframe_aggregations_tdd.rs` (232 lines, 16 tests)
-  - EXTREME TDD: RED → GREEN → REFACTOR cycle
+  - EXTREME TDD: RED → GREEN → REFACTOR cycle ✅ COMPLETE (2025-10-13)
+  - All 13 tests un-ignored and passing after implementation verified
 
 - **DataFrame filter() property tests** (`tests/dataframe_filter_properties.rs`, 422 lines)
   - 10 property tests with 10,000 iterations each = 100,000 test cases
