@@ -529,6 +529,221 @@ sprints:
           - "Specification v16.0 published"
           - "All examples tested"
 
+  # BOOK COMPATIBILITY SPRINT (NEW - 2025-10-13)
+  - id: sprint-book-compat-001
+    name: "Ruchy-Book 100% Compatibility"
+    goal: "Reach 100% compatibility with ruchy-book (134/134 examples)"
+    status: IN_PROGRESS
+    roadmap: "docs/execution/BOOK-COMPAT-ROADMAP.md"
+    baseline: "84% (113/134 examples) as of 2025-10-13"
+    target: "100% (134/134 examples)"
+    methodology: "EXTREME TDD (RED → GREEN → REFACTOR)"
+    tickets:
+      - id: DATAFRAME-001
+        title: "Fix DataFrame transpilation for compiled binaries"
+        priority: critical
+        status: PENDING
+        phase: 1
+        impact: "+3% compatibility (84% → 87%)"
+        specification: "docs/execution/DATAFRAME-001-transpilation.md"
+        depends_on: []
+        requirements:
+          - "Auto-generate Cargo.toml with polars dependency during compilation"
+          - "Detect DataFrame usage in AST (df![] macro)"
+          - "Inject polars dependency when needed"
+          - "Transpile df![] syntax to Polars API"
+        tests:
+          - "test_dataframe_001_basic_compilation"
+          - "test_dataframe_001_cargo_toml_generation"
+          - "test_dataframe_001_column_operations"
+          - "test_dataframe_001_filtering"
+          - "test_dataframe_001_multiple_dataframes"
+          - "test_dataframe_001_error_handling"
+          - "test_dataframe_001_large_dataframe"
+          - "test_dataframe_001_mixed_types"
+          - "test_dataframe_001_cleanup"
+          - "test_dataframe_001_interpreter_compatibility"
+        property_tests:
+          - "proptest_dataframe_any_size (10K+ cases)"
+          - "proptest_dataframe_operations (10K+ cases)"
+        mutation_targets:
+          - "DataFrame detection logic"
+          - "Cargo.toml generation"
+          - "df![] macro transpilation"
+          - "Polars API mapping"
+        acceptance:
+          - "4/4 Ch18 examples compile to binaries successfully"
+          - "Compiled binaries produce identical output to interpreter"
+          - "10/10 unit tests passing"
+          - "10K+ property test cases passing"
+          - "≥75% mutation coverage"
+          - "Complexity ≤10 per function"
+        effort: "12-16 hours (2-3 days)"
+
+      - id: STDLIB-001
+        title: "Implement missing string methods"
+        priority: high
+        status: PENDING
+        phase: 2
+        impact: "+4-5% compatibility (5-7 examples)"
+        depends_on: []
+        requirements:
+          - ".parse::<T>() - Parse strings to other types"
+          - ".split(pattern) - Split strings into Vec<&str>"
+          - ".trim() - Remove whitespace"
+          - ".to_uppercase() / .to_lowercase() - Case conversion"
+          - ".replace(from, to) - String replacement"
+        tests:
+          - "test_string_parse_to_int"
+          - "test_string_split_by_delimiter"
+          - "test_string_trim_whitespace"
+          - "test_string_case_conversion"
+          - "test_string_replace_substring"
+        acceptance:
+          - "100% test coverage"
+          - "10K+ property tests"
+          - "≥75% mutation score"
+          - "Complexity ≤10 per function"
+        effort: "2-3 days"
+
+      - id: STDLIB-002
+        title: "Implement command-line argument support"
+        priority: high
+        status: PENDING
+        phase: 2
+        impact: "+2-3% compatibility (3-4 examples)"
+        depends_on: []
+        requirements:
+          - "std::env::args() function"
+          - "Argument parsing"
+          - "Argument count validation"
+          - "Argument access by index"
+        tests:
+          - "test_env_args_parsing"
+          - "test_env_args_count"
+          - "test_env_args_access"
+        acceptance:
+          - "100% test coverage"
+          - "10K+ property tests"
+          - "≥75% mutation score"
+        effort: "1-2 days"
+
+      - id: STDLIB-003
+        title: "Implement math functions"
+        priority: high
+        status: PENDING
+        phase: 2
+        impact: "+3-4% compatibility (4-6 examples)"
+        depends_on: []
+        requirements:
+          - "sqrt(x) - Square root"
+          - "pow(base, exp) - Power"
+          - "abs(x) - Absolute value"
+          - "sin(x), cos(x), tan(x) - Trigonometry"
+          - "log(x), ln(x) - Logarithms"
+          - "floor(x), ceil(x), round(x) - Rounding"
+        tests:
+          - "test_math_sqrt"
+          - "test_math_trig_functions"
+          - "test_math_logarithms"
+          - "test_math_rounding"
+        acceptance:
+          - "100% test coverage"
+          - "10K+ property tests validating mathematical identities"
+          - "≥75% mutation score"
+        effort: "3-4 days"
+
+      - id: TESTING-001
+        title: "Implement assertion macros"
+        priority: high
+        status: PENDING
+        phase: 3
+        impact: "+1.5% compatibility (2 examples)"
+        depends_on: []
+        requirements:
+          - "assert_eq!(left, right) - Equality assertion"
+          - "assert_eq!(left, right, 'message') - With message"
+          - "assert!(condition) - Boolean assertion"
+          - "assert!(condition, 'message') - With message"
+        tests:
+          - "test_assert_eq_success"
+          - "test_assert_eq_failure"
+          - "test_assert_eq_with_message"
+          - "test_assert_bool_success"
+          - "test_assert_bool_failure"
+        acceptance:
+          - "100% test coverage"
+          - "10K+ property tests"
+          - "≥75% mutation score"
+        effort: "2-3 days"
+
+      - id: PATTERN-001
+        title: "Implement advanced pattern matching"
+        priority: medium
+        status: PENDING
+        phase: 4
+        impact: "+2-3% compatibility (3-4 examples)"
+        depends_on: []
+        requirements:
+          - "Complex destructuring in match arms"
+          - "Pattern guards (match x if condition)"
+          - "Struct pattern matching"
+          - "Exhaustiveness checking"
+        tests:
+          - "test_complex_destructuring"
+          - "test_pattern_guards"
+          - "test_struct_pattern_matching"
+        acceptance:
+          - "100% test coverage"
+          - "10K+ property tests"
+          - "≥75% mutation score"
+        effort: "1-2 weeks"
+
+      - id: TYPES-001
+        title: "Implement Result and Option types"
+        priority: medium
+        status: PENDING
+        phase: 4
+        impact: "+1-2% compatibility (2-3 examples)"
+        depends_on: []
+        requirements:
+          - "Result<T, E> enum"
+          - "Option<T> enum"
+          - ".unwrap(), .expect() methods"
+          - "? operator for error propagation"
+        tests:
+          - "test_result_ok_unwrap"
+          - "test_result_err_expect"
+          - "test_option_some_unwrap"
+          - "test_option_none_expect"
+          - "test_question_mark_operator"
+        acceptance:
+          - "100% test coverage"
+          - "10K+ property tests"
+          - "≥75% mutation score"
+        effort: "1 week"
+
+      - id: SYNTAX-001
+        title: "Implement pipeline operator"
+        priority: medium
+        status: PENDING
+        phase: 4
+        impact: "+0.5-1% compatibility (1-2 examples)"
+        depends_on: []
+        requirements:
+          - "|> operator for function chaining"
+          - "Operator precedence handling"
+          - "Left-to-right evaluation"
+        tests:
+          - "test_pipeline_basic_chaining"
+          - "test_pipeline_complex_expression"
+          - "test_pipeline_precedence"
+        acceptance:
+          - "100% test coverage"
+          - "10K+ property tests"
+          - "≥75% mutation score"
+        effort: "1 week"
+
   # FUTURE SPRINTS
   - id: sprint-ecosystem-001
     name: "Ecosystem Development"
@@ -537,11 +752,6 @@ sprints:
     tickets:
       - id: ECO-001
         title: "Rosetta Code validation (189 examples)"
-        priority: medium
-        status: PLANNED
-
-      - id: ECO-002
-        title: "Book compatibility increase (77% → 95%)"
         priority: medium
         status: PLANNED
 
