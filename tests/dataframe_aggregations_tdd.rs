@@ -27,9 +27,8 @@ fn float_column(name: &str, values: Vec<f64>) -> DataFrameColumn {
 mod df003_std_tests {
     use super::*;
 
-    /// DF-003: RED phase - std() should calculate standard deviation
+    /// DF-003: GREEN phase - std() calculates standard deviation
     #[test]
-    #[ignore] // Will fail until implemented
     fn test_df003_std_basic_integers() {
         let columns = vec![numeric_column("values", vec![1, 2, 3, 4, 5])];
 
@@ -45,7 +44,6 @@ mod df003_std_tests {
     }
 
     #[test]
-    #[ignore]
     fn test_df003_std_single_value() {
         let columns = vec![numeric_column("val", vec![42])];
 
@@ -58,7 +56,6 @@ mod df003_std_tests {
     }
 
     #[test]
-    #[ignore]
     fn test_df003_std_floats() {
         let columns = vec![float_column("data", vec![1.0, 2.0, 3.0, 4.0])];
 
@@ -72,7 +69,6 @@ mod df003_std_tests {
     }
 
     #[test]
-    #[ignore]
     fn test_df003_std_empty_dataframe() {
         let columns: Vec<DataFrameColumn> = vec![];
 
@@ -85,7 +81,6 @@ mod df003_std_tests {
     }
 
     #[test]
-    #[ignore]
     fn test_df003_std_with_args_error() {
         let columns = vec![numeric_column("val", vec![1, 2, 3])];
         let args = vec![Value::Integer(1)];
@@ -96,7 +91,6 @@ mod df003_std_tests {
     }
 
     #[test]
-    #[ignore]
     fn test_df003_std_multiple_columns() {
         let columns = vec![
             numeric_column("a", vec![1, 2, 3]),
@@ -117,9 +111,8 @@ mod df003_std_tests {
 mod df003_var_tests {
     use super::*;
 
-    /// DF-003: RED phase - var() should calculate variance
+    /// DF-003: GREEN phase - var() calculates variance
     #[test]
-    #[ignore] // Will fail until implemented
     fn test_df003_var_basic_integers() {
         let columns = vec![numeric_column("values", vec![1, 2, 3, 4, 5])];
 
@@ -135,7 +128,6 @@ mod df003_var_tests {
     }
 
     #[test]
-    #[ignore]
     fn test_df003_var_single_value() {
         let columns = vec![numeric_column("val", vec![42])];
 
@@ -148,7 +140,6 @@ mod df003_var_tests {
     }
 
     #[test]
-    #[ignore]
     fn test_df003_var_floats() {
         let columns = vec![float_column("data", vec![2.0, 4.0, 6.0, 8.0])];
 
@@ -162,7 +153,6 @@ mod df003_var_tests {
     }
 
     #[test]
-    #[ignore]
     fn test_df003_var_empty_dataframe() {
         let columns: Vec<DataFrameColumn> = vec![];
 
@@ -175,7 +165,6 @@ mod df003_var_tests {
     }
 
     #[test]
-    #[ignore]
     fn test_df003_var_with_args_error() {
         let columns = vec![numeric_column("val", vec![1, 2, 3])];
         let args = vec![Value::Integer(1)];
@@ -186,7 +175,6 @@ mod df003_var_tests {
     }
 
     #[test]
-    #[ignore]
     fn test_df003_var_all_same_values() {
         let columns = vec![numeric_column("same", vec![5, 5, 5, 5])];
 
@@ -199,7 +187,6 @@ mod df003_var_tests {
     }
 
     #[test]
-    #[ignore]
     fn test_df003_var_relationship_with_std() {
         let columns = vec![numeric_column("vals", vec![10, 20, 30, 40, 50])];
 

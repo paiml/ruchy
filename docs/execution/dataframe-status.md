@@ -273,9 +273,9 @@ With EXTREME TDD and the existing foundation, we can achieve 100% completion in 
 - Implementation: `src/runtime/eval_dataframe_ops.rs:400-523`
 
 **EXTREME TDD Evidence**:
-1. RED: Tests written first, all failed as expected
-2. GREEN: Implementations added, all 16 tests pass
-3. REFACTOR: Complexity checked (≤10), no warnings from clippy
+1. RED: Tests written first, all failed as expected (tests marked with #[ignore])
+2. GREEN: Implementations added, all 16 tests pass (2025-10-13)
+3. REFACTOR: Un-ignored all tests, verified complexity (≤10), no warnings from clippy (2025-10-13)
 
 ### DF-004: DataFrame sort_by() Validation ✅
 

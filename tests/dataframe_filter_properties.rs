@@ -11,6 +11,7 @@ use ruchy::runtime::eval_dataframe_ops::eval_dataframe_filter;
 use ruchy::frontend::ast::{Expr, ExprKind, Literal, Span};
 
 /// Generate arbitrary DataFrameColumn for property testing
+#[allow(dead_code)]
 fn arb_dataframe_column(name: String, size: usize) -> BoxedStrategy<DataFrameColumn> {
     prop::collection::vec(
         prop_oneof![
