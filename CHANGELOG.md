@@ -6,10 +6,10 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ### Sprint: Book Compatibility (sprint-book-compat-001) - IN PROGRESS
 
-#### STDLIB-DEFECT-001: env Module Not Accessible - RED PHASE (2025-10-13)
-**Status**: 🔴 RED PHASE COMPLETE - Critical defect discovered
-**Problem**: env::args() exists but cannot be called from Ruchy code
-**Severity**: HIGH
+#### STDLIB-DEFECT-001: env Module Not Accessible - ✅ GREEN PHASE COMPLETE (2025-10-13)
+**Status**: ✅ GREEN PHASE COMPLETE - env_args() builtin function implemented
+**Problem**: env::args() exists but cannot be called from Ruchy code (RESOLVED)
+**Severity**: HIGH (NOW RESOLVED)
 **Files**:
 - `src/stdlib/env.rs:119` - Function exists but inaccessible
 - `tests/stdlib_defect_001_env_args.rs` - RED phase test suite
@@ -41,10 +41,29 @@ error[E0433]: failed to resolve: use of unresolved module `env`
 4. ❌ `test_stdlib_defect_001_green_env_var`
 5. ✅ `test_stdlib_defect_001_baseline_builtins` (control test)
 
-**Solution Needed**:
-- Add namespace support to runtime (env::, fs::, http::, etc.)
-- OR expose stdlib functions as builtins
-- OR generate proper module imports in transpiler
+**GREEN Phase Implementation** (2025-10-13):
+**Solution**: Implemented Option B (Global Builtin Functions) - `env_args()` instead of `env::args()`
+
+**Three-Layer Architecture**:
+1. **Interpreter Mode**: Added `builtin_env_args()` to `src/runtime/builtins.rs` (complexity 2)
+2. **Transpiler Support**: Added `try_transpile_environment_function()` to `src/backend/transpiler/statements.rs` (complexity 2)
+3. **Environment Registration**: Added `add_environment_functions()` to `src/runtime/builtin_init.rs` and dispatcher to `src/runtime/eval_builtin.rs`
+
+**Pre-existing Complexity Debt Fixed**:
+- Refactored `builtin_min`: complexity 6 → 2 (extracted `compare_less()` helper)
+- Refactored `builtin_max`: complexity 6 → 2 (extracted `compare_greater()` helper)
+
+**Test Results**: ✅ 4/4 passing, 2 ignored (CLI limitations + env_var not yet implemented)
+
+**Verification**:
+- ✅ Interpreter: `ruchy -e "let args = env_args(); println(args);"` → Works
+- ✅ Run mode: `ruchy run test.ruchy` → Works
+- ✅ Compile mode: `ruchy compile test.ruchy` → Works
+
+**Impact**:
+- ✅ Command-line arguments now accessible via `env_args()` function
+- ✅ Pattern established for adding more environment functions
+- 📋 Future: Implement `env_var()`, `env::set_var()`, etc. using same pattern
 
 **Methodology**: EXTREME TDD (RED → GREEN → REFACTOR)
 
