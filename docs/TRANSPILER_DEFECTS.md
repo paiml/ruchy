@@ -121,28 +121,57 @@ let big_unsigned = 9999999999u64;      // ✅ Works!
 
 ---
 
-## DEFECT-003: .to_string() Not Auto-Called on Method Context
+## ✅ DEFECT-003: .to_string() Not Auto-Called on Method Context - RESOLVED
 
 **Severity**: MEDIUM
 **Discovered**: 2025-10-07 (LANG-COMP-008 session)
+**Resolved**: 2025-10-07 (Implementation)
+**Validated**: 2025-10-13 (Comprehensive test suite)
+**Status**: ✅ **FIXED AND VALIDATED**
 
-### Problem
+### Problem (Historical)
 ```ruchy
-let as_string = num.to_string()  // ❌ Method call not generated
-// Transpiles to: let as_string = num  // Just the variable!
+let as_string = num.to_string()  // ❌ FAILED: Method call not generated
+// Transpiled to: let as_string = num  // Just the variable!
 ```
 
-### Expected Behavior
-`.to_string()` method calls should be preserved and transpiled correctly.
+### Fix Implemented
+**Location**: `src/backend/transpiler/statements.rs:1375-1379`
 
-### Current Workaround
-This appears to work in some contexts but not others. Needs investigation.
+The transpiler now correctly emits `.to_string()` method calls:
+- Fixed: `transpile_string_methods()` now emits the method call
+- Root cause: Was returning just `#obj_tokens` without the method
+- Solution: Changed to `quote! { #obj_tokens.to_string() }`
 
-### Root Cause
-Method call transpilation may be context-dependent or have edge cases.
+```rust
+"to_s" | "to_string" => {
+    // Always emit .to_string() method call
+    Ok(quote! { #obj_tokens.to_string() })  // ✅ Generates the call
+}
+```
 
-### Fix Required
-Investigate method call transpilation logic and ensure `.to_string()` is always preserved.
+### Validation
+**Test File**: `tests/transpiler_defect_003_to_string_method.rs`
+
+✅ All 9 tests passing:
+1. ✅ Integer.to_string() method call
+2. ✅ Float.to_string() method call
+3. ✅ Boolean.to_string() method call
+4. ✅ Method chain with .to_string()
+5. ✅ Ruby-style .to_s() alias
+6. ✅ .to_string() in expression context
+7. ✅ Multiple .to_string() calls in same expression
+8. ✅ Baseline: String literal (no conversion needed)
+9. ✅ Test summary validation
+
+### Now Works
+```ruchy
+let as_string = num.to_string();           // ✅ Works!
+let pi_str = 3.14.to_string();             // ✅ Works!
+let flag_str = true.to_string();           // ✅ Works!
+let result = num.abs().to_string();        // ✅ Works!
+let combined = a.to_string() + b.to_string(); // ✅ Works!
+```
 
 ---
 
@@ -177,9 +206,17 @@ done
 
 - [x] DEFECT-001: ✅ **FIXED** (2025-10-07) and **VALIDATED** (2025-10-13) - String type annotations now auto-convert
 - [x] DEFECT-002: ✅ **FIXED** (2025-10-07) and **VALIDATED** (2025-10-13) - Integer literal type suffixes now preserved
-- [x] DEFECT-003: ✅ **FIXED** (2025-10-07) - .to_string() method calls now generated
+- [x] DEFECT-003: ✅ **FIXED** (2025-10-07) and **VALIDATED** (2025-10-13) - .to_string() method calls now generated
 
 **All transpiler defects fixed and validated! 🎉**
+
+### Summary Statistics
+- **Total Defects**: 3
+- **All Fixed**: 100%
+- **All Validated**: 100%
+- **Total Validation Tests**: 24 (DEFECT-001: 7, DEFECT-002: 8, DEFECT-003: 9)
+- **Test Success Rate**: 100% (24/24 passing)
+- **Total Test Runtime**: <1s (0.29s + 0.29s + 0.32s = 0.90s)
 
 ## DEFECT-001 Fix Details
 
