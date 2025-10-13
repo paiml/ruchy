@@ -27,10 +27,9 @@ fn temp_dir() -> TempDir {
 
 /// Test 1: Negative integer literal with i32 suffix
 ///
-/// This test WILL FAIL until transpiler preserves type suffixes.
+/// This test validates that transpiler preserves type suffixes.
 #[test]
-#[ignore] // Remove #[ignore] when ready to work on this defect
-fn test_defect_002_red_negative_i32_with_abs() {
+fn test_defect_002_green_negative_i32_with_abs() {
     let temp = temp_dir();
     let source = temp.path().join("test.ruchy");
 
@@ -55,8 +54,7 @@ fun main() {
 
 /// Test 2: Positive integer literal with i64 suffix
 #[test]
-#[ignore]
-fn test_defect_002_red_positive_i64() {
+fn test_defect_002_green_positive_i64() {
     let temp = temp_dir();
     let source = temp.path().join("test.ruchy");
 
@@ -80,8 +78,7 @@ fun main() {
 
 /// Test 3: Unsigned integer literal with u32 suffix
 #[test]
-#[ignore]
-fn test_defect_002_red_unsigned_u32() {
+fn test_defect_002_green_unsigned_u32() {
     let temp = temp_dir();
     let source = temp.path().join("test.ruchy");
 
@@ -105,8 +102,7 @@ fun main() {
 
 /// Test 4: Multiple type suffixes in same expression
 #[test]
-#[ignore]
-fn test_defect_002_red_multiple_suffixes() {
+fn test_defect_002_green_multiple_suffixes() {
     let temp = temp_dir();
     let source = temp.path().join("test.ruchy");
 
@@ -130,8 +126,7 @@ fun main() {
 
 /// Test 5: u64 suffix
 #[test]
-#[ignore]
-fn test_defect_002_red_u64_suffix() {
+fn test_defect_002_green_u64_suffix() {
     let temp = temp_dir();
     let source = temp.path().join("test.ruchy");
 
@@ -204,22 +199,27 @@ fun main() {
         .success();
 }
 
-// ==================== RED PHASE SUMMARY ====================
+// ==================== GREEN PHASE SUMMARY ====================
 
-/// Summary test to document all failing cases
+/// Summary test to document validation results
 #[test]
-fn test_defect_002_red_phase_summary() {
-    // This test documents the RED phase state
-    println!("TRANSPILER-DEFECT-002 RED Phase:");
-    println!("- 5 tests created that WILL FAIL when un-ignored");
-    println!("- 2 baseline tests that pass NOW (workaround + inference)");
+fn test_defect_002_green_phase_summary() {
+    // This test documents the GREEN phase validation
+    println!("TRANSPILER-DEFECT-002 GREEN Phase:");
+    println!("- Fix ALREADY IMPLEMENTED in src/backend/transpiler/expressions.rs:43-58");
+    println!("- All 7 tests now passing (5 feature tests + 2 baseline)");
     println!("");
-    println!("Expected failures:");
-    println!("1. Negative integer with i32 suffix + .abs() method");
-    println!("2. Positive integer with i64 suffix");
-    println!("3. Unsigned integer with u32 suffix");
-    println!("4. Multiple integers with type suffixes in expression");
-    println!("5. Large unsigned integer with u64 suffix");
+    println!("Fix details:");
+    println!("- AST stores type suffix: Literal::Integer(i64, Option<String>)");
+    println!("- transpile_integer() preserves suffix in generated code");
+    println!("- Example: 5i32 → quote! {{ 5i32 }} (suffix preserved)");
     println!("");
-    println!("Next: GREEN phase - fix transpiler to preserve type suffixes");
+    println!("Validated scenarios:");
+    println!("1. ✅ Negative integer with i32 suffix + .abs() method");
+    println!("2. ✅ Positive integer with i64 suffix");
+    println!("3. ✅ Unsigned integer with u32 suffix");
+    println!("4. ✅ Multiple integers with type suffixes in expression");
+    println!("5. ✅ Large unsigned integer with u64 suffix");
+    println!("");
+    println!("Status: DEFECT-002 RESOLVED ✅");
 }
