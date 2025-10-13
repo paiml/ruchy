@@ -328,6 +328,14 @@ impl GlobalRegistry {
                 size
             }
             Value::BuiltinFunction(name) => name.len() + 8, // String overhead
+            Value::Struct { name, fields } => {
+                let mut size = name.len() + 24; // Name + HashMap overhead
+                for (key, value) in fields.iter() {
+                    size += key.len(); // Key size
+                    size += self.estimate_value_size(value); // Value size
+                }
+                size
+            }
         }
     }
     /// # Examples

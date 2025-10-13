@@ -101,6 +101,12 @@ pub enum Value {
     },
     /// Built-in function reference
     BuiltinFunction(String),
+    /// Struct instance (value type with named fields)
+    /// Thread-safe via Arc, value semantics via cloning
+    Struct {
+        name: String,
+        fields: Arc<HashMap<String, Value>>,
+    },
 }
 
 // Manual PartialEq implementation because Mutex doesn't implement PartialEq
@@ -116,6 +122,9 @@ impl PartialEq for Value {
             (Value::Tuple(a), Value::Tuple(b)) => a == b,
             (Value::Object(a), Value::Object(b)) => Arc::ptr_eq(a, b) || **a == **b,
             (Value::ObjectMut(a), Value::ObjectMut(b)) => Arc::ptr_eq(a, b), // Identity-based
+            (Value::Struct { name: n1, fields: f1 }, Value::Struct { name: n2, fields: f2 }) => {
+                n1 == n2 && **f1 == **f2 // Value equality (compare fields)
+            }
             (Value::Nil, Value::Nil) => true,
             (Value::Byte(a), Value::Byte(b)) => a == b,
             // TODO: Add other variants as needed (DataFrame, Range, Closure, etc.)
@@ -147,6 +156,7 @@ impl Value {
             Value::Range { .. } => TypeId::of::<std::ops::Range<i64>>(),
             Value::EnumVariant { .. } => TypeId::of::<(String, Option<Vec<Value>>)>(),
             Value::BuiltinFunction(_) => TypeId::of::<fn()>(),
+            Value::Struct { .. } => TypeId::of::<HashMap<String, Value>>(),
         }
     }
 }
@@ -1394,6 +1404,14 @@ impl Interpreter {
         match object_value {
             Value::Object(ref object_map) => self.access_object_field(object_map, field),
             Value::ObjectMut(ref cell) => self.access_object_mut_field(cell, field),
+            Value::Struct { ref name, ref fields } => {
+                // Struct field access
+                fields.get(field).cloned().ok_or_else(|| {
+                    InterpreterError::RuntimeError(format!(
+                        "Field '{field}' not found in struct {name}"
+                    ))
+                })
+            }
             Value::Tuple(ref elements) => {
                 // Tuple field access (e.g., tuple.0, tuple.1)
                 crate::runtime::eval_data_structures::eval_tuple_field_access(elements, field)
@@ -4288,14 +4306,8 @@ impl Interpreter {
                 InterpreterError::RuntimeError(format!("Invalid struct type definition for {name}"))
             })?;
 
-        // Create struct instance
-        let mut instance = HashMap::new();
-
-        // Add metadata
-        instance.insert(
-            "__struct_type".to_string(),
-            Value::from_string(name.to_string()),
-        );
+        // Create struct instance fields (without metadata)
+        let mut instance_fields = HashMap::new();
 
         // Evaluate and set field values
         for (field_name, field_expr) in fields {
@@ -4308,17 +4320,17 @@ impl Interpreter {
 
             // Evaluate field value
             let field_value = self.eval_expr(field_expr)?;
-            instance.insert(field_name.clone(), field_value);
+            instance_fields.insert(field_name.clone(), field_value);
         }
 
         // Check that all required fields are provided or have defaults
         for (field_name, field_def_value) in field_defs.iter() {
-            if !instance.contains_key(field_name) && field_name != "__struct_type" {
+            if !instance_fields.contains_key(field_name) {
                 // Check if this field has a default value
                 if let Value::Object(field_info) = field_def_value {
                     if let Some(default_val) = field_info.get("default") {
                         // Use default value
-                        instance.insert(field_name.clone(), default_val.clone());
+                        instance_fields.insert(field_name.clone(), default_val.clone());
                     } else {
                         // No default, field is required
                         return Err(InterpreterError::RuntimeError(format!(
@@ -4333,7 +4345,11 @@ impl Interpreter {
             }
         }
 
-        Ok(Value::Object(std::sync::Arc::new(instance)))
+        // Return Value::Struct variant (not Object)
+        Ok(Value::Struct {
+            name: name.to_string(),
+            fields: Arc::new(instance_fields),
+        })
     }
 
     /// Evaluate class definition

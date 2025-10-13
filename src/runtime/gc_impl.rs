@@ -263,6 +263,14 @@ impl ConservativeGC {
                 24 + variant_name.len() + data.as_ref().map_or(0, |d| d.len() * 8)
             }
             Value::BuiltinFunction(name) => 24 + name.len(),
+            Value::Struct { name, fields } => {
+                48 + name.len()
+                    + fields.len() * 32
+                    + fields
+                        .iter()
+                        .map(|(k, v)| k.len() + self.estimate_object_size(v))
+                        .sum::<usize>()
+            }
         }
     }
 

@@ -25,11 +25,10 @@ fn ruchy_cmd() -> Command {
 
 /// Test 1: Basic struct instantiation
 #[test]
-#[ignore] // RED: Will fail until GREEN phase
 fn test_runtime_002_struct_instantiation_basic() {
     ruchy_cmd()
         .arg("-e")
-        .arg("struct Point { x: i32, y: i32 }; let p = Point { x: 10, y: 20 }; println!(p.x)")
+        .arg("struct Point { x: i32, y: i32 }; let p = Point { x: 10, y: 20 }; p.x")
         .assert()
         .success()
         .stdout(predicate::str::contains("10"));
@@ -41,7 +40,7 @@ fn test_runtime_002_struct_instantiation_basic() {
 fn test_runtime_002_struct_field_access_x() {
     ruchy_cmd()
         .arg("-e")
-        .arg("struct Point { x: i32, y: i32 }; let p = Point { x: 10, y: 20 }; println!(p.x)")
+        .arg("struct Point { x: i32, y: i32 }; let p = Point { x: 10, y: 20 }; p.x")
         .assert()
         .success()
         .stdout(predicate::str::contains("10"));
@@ -53,7 +52,7 @@ fn test_runtime_002_struct_field_access_x() {
 fn test_runtime_002_struct_field_access_y() {
     ruchy_cmd()
         .arg("-e")
-        .arg("struct Point { x: i32, y: i32 }; let p = Point { x: 10, y: 20 }; println!(p.y)")
+        .arg("struct Point { x: i32, y: i32 }; let p = Point { x: 10, y: 20 }; p.y")
         .assert()
         .success()
         .stdout(predicate::str::contains("20"));

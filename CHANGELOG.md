@@ -53,6 +53,42 @@ All notable changes to the Ruchy programming language will be documented in this
 
 **Next**: GREEN phase - Implement `Value::Struct` and make tests pass
 
+#### RUNTIME-002: Struct Implementation - GREEN Phase (2025-10-13)
+**Status**: ✅ GREEN PHASE COMPLETE
+**Tests Passing**: 1/10 (first test un-ignored and passing)
+
+**Implementation Changes**:
+- Added `Value::Struct` variant to `src/runtime/interpreter.rs` (lines 106-109)
+  - Thread-safe via `Arc<HashMap<String, Value>>`
+  - Value semantics via cloning
+- Updated `PartialEq` for struct value equality comparison (line 125-127)
+- Updated `type_id()` method to handle Struct variant (line 159)
+- Added `format_struct()` display function to `src/runtime/eval_display.rs` (lines 160-186)
+  - Deterministic output (sorted keys)
+- Updated `eval_struct_literal()` to return `Value::Struct` instead of `Value::Object` (line 4341-4344)
+- Updated `eval_field_access()` in interpreter to handle Struct (lines 1407-1414)
+- Updated `eval_field_access()` helper in `eval_data_structures.rs` (line 79-81)
+- Updated all pattern matches across codebase:
+  - `value_utils.rs`: `type_name()` method (line 164)
+  - `gc_impl.rs`: size estimation (lines 266-273)
+  - `repl/commands.rs`: inspect/memory/type functions (lines 398-405, 473-481, 504)
+  - `magic.rs`: variable listing (line 398)
+  - `wasm/shared_session.rs`: memory estimation (lines 331-338)
+
+**Test Results**:
+```bash
+$ cargo test test_runtime_002_struct_instantiation_basic
+test test_runtime_002_struct_instantiation_basic ... ok
+```
+
+**Manual Validation**:
+```bash
+$ ./target/debug/ruchy -e "struct Point { x: i32, y: i32 }; let p = Point { x: 10, y: 20 }; p.x"
+10
+```
+
+**Next**: Un-ignore remaining 9 tests one by one and make them pass
+
 ## [3.76.0] - 2025-10-13
 
 ### 📊 DataFrame Implementation Sprint COMPLETED (DF-001 through DF-007)

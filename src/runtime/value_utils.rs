@@ -161,6 +161,7 @@ impl Value {
             Value::Range { .. } => "range",
             Value::EnumVariant { .. } => "enum_variant",
             Value::BuiltinFunction(_) => "builtin_function",
+            Value::Struct { .. } => "struct",
         }
     }
 }
