@@ -6,6 +6,39 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ### Sprint: Book Compatibility (sprint-book-compat-001) - IN PROGRESS
 
+#### TRANSPILER-DEFECT-003: .to_string() Method Calls - VALIDATED ✅ (2025-10-13)
+**Status**: ✅ **COMPLETE** - Comprehensive test suite validates fix
+**Problem**: .to_string() method calls may not be preserved in transpilation
+**Severity**: MEDIUM
+**Files**:
+- `src/backend/transpiler/statements.rs` (fix location: lines 1375-1379)
+- `tests/transpiler_defect_003_to_string_method.rs` (validation)
+
+**Discovery**: Fix was ALREADY IMPLEMENTED (2025-10-07)
+- `transpile_string_methods()` emits `.to_string()` method call
+- Implementation: `quote! { #obj_tokens.to_string() }`
+
+**Validation Results**:
+✅ All 9 tests passing (0.32s runtime):
+1. ✅ `test_defect_003_green_integer_to_string`
+2. ✅ `test_defect_003_green_float_to_string`
+3. ✅ `test_defect_003_green_boolean_to_string`
+4. ✅ `test_defect_003_green_method_chain`
+5. ✅ `test_defect_003_green_to_s_alias`
+6. ✅ `test_defect_003_green_expression_context`
+7. ✅ `test_defect_003_green_multiple_calls`
+8. ✅ `test_defect_003_baseline_string_literal`
+9. ✅ `test_defect_003_green_phase_summary`
+
+**Impact**:
+- .to_string() method calls now work on all types: integers, floats, booleans
+- Method chaining with .to_string() works
+- Ruby-style .to_s() alias works
+- Expression context works (string concatenation)
+- Multiple .to_string() calls in same expression work
+
+**Methodology**: EXTREME TDD validation (comprehensive test suite)
+
 #### TRANSPILER-DEFECT-002: Integer Type Suffixes - RESOLVED ✅ (2025-10-13)
 **Status**: ✅ **COMPLETE** - Fix validated, all tests passing
 **Problem**: Integer literals with type suffixes (i32, i64, u32, etc.) lose their suffix
