@@ -126,7 +126,7 @@ fn parse_and_transpile(source: &str) -> Result<TokenStream> {
     Ok(rust_code)
 }
 
-/// Check if AST contains DataFrame usage (complexity: 2)
+/// Check if AST contains DataFrame usage (complexity: 3)
 fn uses_dataframes(ast: &crate::frontend::ast::Expr) -> bool {
     use crate::frontend::ast::ExprKind;
 
@@ -139,6 +139,10 @@ fn uses_dataframes(ast: &crate::frontend::ast::Expr) -> bool {
         ExprKind::Let { value, body, .. } => check_binary_for_dataframes(value, body),
         ExprKind::MethodCall { receiver, args, .. } => check_method_for_dataframes(receiver, args),
         ExprKind::Call { func, args } => check_call_for_dataframes(func, args),
+
+        // Check inside function bodies
+        ExprKind::Function { body, .. } => uses_dataframes(body),
+        ExprKind::Block(exprs) => exprs.iter().any(uses_dataframes),
 
         // Default
         _ => false,
