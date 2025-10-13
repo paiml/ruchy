@@ -6,6 +6,25 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ### Sprint: Book Compatibility (sprint-book-compat-001) - IN PROGRESS
 
+#### TRANSPILER-DEFECT-001: String Type Annotations - RED Phase (2025-10-13)
+**Status**: 🔴 RED PHASE COMPLETE - Tests created
+**Problem**: String literals with String type annotations don't auto-convert
+**Error**: "expected String, found &str"
+**Severity**: HIGH
+**File**: tests/transpiler_defect_001_string_type_annotation.rs
+
+**RED Phase Tests**:
+1. ❌ `test_defect_001_red_string_literal_with_type_annotation` (#[ignore])
+2. ❌ `test_defect_001_red_multiple_string_annotations` (#[ignore])
+3. ❌ `test_defect_001_red_function_parameter_string_annotation` (#[ignore])
+4. ❌ `test_defect_001_red_fstring_with_string_annotation` (#[ignore])
+5. ✅ `test_defect_001_workaround_manual_to_string` (baseline - passing)
+6. ✅ `test_defect_001_baseline_type_inference_works` (baseline - passing)
+
+**Methodology**: EXTREME TDD (RED → GREEN → REFACTOR)
+
+**Next Steps**: GREEN phase - fix transpiler to auto-insert `.to_string()`
+
 #### COMPLEXITY-DEBT-001: eval_operations.rs Refactoring (2025-10-13)
 **Status**: ✅ COMPLETE
 **Problem**: Pre-existing cognitive complexity violations blocking commits
