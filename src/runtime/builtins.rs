@@ -6,10 +6,7 @@
 
 use crate::runtime::{InterpreterError, Value};
 use std::collections::HashMap;
-use std::sync::{LazyLock, Mutex};
-
-#[cfg(test)]
-use std::sync::Arc;
+use std::sync::{Arc, LazyLock, Mutex};
 
 // Global output buffer for capturing println/print output
 // Uses Mutex for thread-safety across tokio::spawn_blocking boundaries
@@ -103,6 +100,12 @@ impl BuiltinRegistry {
         // Environment functions
         self.register("env_args", builtin_env_args);
         self.register("env_var", builtin_env_var);
+        self.register("env_set_var", builtin_env_set_var);
+        self.register("env_remove_var", builtin_env_remove_var);
+        self.register("env_vars", builtin_env_vars);
+        self.register("env_current_dir", builtin_env_current_dir);
+        self.register("env_set_current_dir", builtin_env_set_current_dir);
+        self.register("env_temp_dir", builtin_env_temp_dir);
     }
 
     /// Register a builtin function
@@ -644,6 +647,114 @@ fn builtin_env_var(args: &[Value]) -> Result<Value, InterpreterError> {
             "env_var() expects a string argument".to_string(),
         )),
     }
+}
+
+// Set environment variable
+// Complexity: 3 (within Toyota Way limits)
+fn builtin_env_set_var(args: &[Value]) -> Result<Value, InterpreterError> {
+    if args.len() != 2 {
+        return Err(InterpreterError::RuntimeError(
+            "env_set_var() expects 2 arguments".to_string(),
+        ));
+    }
+
+    match (&args[0], &args[1]) {
+        (Value::String(key), Value::String(value)) => {
+            std::env::set_var(key.as_ref(), value.as_ref());
+            Ok(Value::Nil)
+        }
+        _ => Err(InterpreterError::RuntimeError(
+            "env_set_var() expects two string arguments".to_string(),
+        )),
+    }
+}
+
+// Remove environment variable
+// Complexity: 2 (within Toyota Way limits)
+fn builtin_env_remove_var(args: &[Value]) -> Result<Value, InterpreterError> {
+    if args.len() != 1 {
+        return Err(InterpreterError::RuntimeError(
+            "env_remove_var() expects 1 argument".to_string(),
+        ));
+    }
+
+    match &args[0] {
+        Value::String(key) => {
+            std::env::remove_var(key.as_ref());
+            Ok(Value::Nil)
+        }
+        _ => Err(InterpreterError::RuntimeError(
+            "env_remove_var() expects a string argument".to_string(),
+        )),
+    }
+}
+
+// Get all environment variables
+// Complexity: 1 (within Toyota Way limits)
+fn builtin_env_vars(args: &[Value]) -> Result<Value, InterpreterError> {
+    if !args.is_empty() {
+        return Err(InterpreterError::RuntimeError(
+            "env_vars() expects no arguments".to_string(),
+        ));
+    }
+
+    let vars: HashMap<String, Value> = std::env::vars()
+        .map(|(k, v)| (k, Value::from_string(v)))
+        .collect();
+
+    Ok(Value::Object(Arc::new(vars)))
+}
+
+// Get current working directory
+// Complexity: 2 (within Toyota Way limits)
+fn builtin_env_current_dir(args: &[Value]) -> Result<Value, InterpreterError> {
+    if !args.is_empty() {
+        return Err(InterpreterError::RuntimeError(
+            "env_current_dir() expects no arguments".to_string(),
+        ));
+    }
+
+    match std::env::current_dir() {
+        Ok(path) => Ok(Value::from_string(path.to_string_lossy().to_string())),
+        Err(e) => Err(InterpreterError::RuntimeError(
+            format!("Failed to get current directory: {}", e),
+        )),
+    }
+}
+
+// Set current working directory
+// Complexity: 2 (within Toyota Way limits)
+fn builtin_env_set_current_dir(args: &[Value]) -> Result<Value, InterpreterError> {
+    if args.len() != 1 {
+        return Err(InterpreterError::RuntimeError(
+            "env_set_current_dir() expects 1 argument".to_string(),
+        ));
+    }
+
+    match &args[0] {
+        Value::String(path) => match std::env::set_current_dir(path.as_ref()) {
+            Ok(_) => Ok(Value::Nil),
+            Err(e) => Err(InterpreterError::RuntimeError(
+                format!("Failed to set current directory: {}", e),
+            )),
+        },
+        _ => Err(InterpreterError::RuntimeError(
+            "env_set_current_dir() expects a string argument".to_string(),
+        )),
+    }
+}
+
+// Get system temp directory
+// Complexity: 1 (within Toyota Way limits)
+fn builtin_env_temp_dir(args: &[Value]) -> Result<Value, InterpreterError> {
+    if !args.is_empty() {
+        return Err(InterpreterError::RuntimeError(
+            "env_temp_dir() expects no arguments".to_string(),
+        ));
+    }
+
+    let temp = std::env::temp_dir();
+    Ok(Value::from_string(temp.to_string_lossy().to_string()))
 }
 
 #[cfg(test)]

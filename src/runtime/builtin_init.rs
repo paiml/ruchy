@@ -228,6 +228,30 @@ fn add_environment_functions(global_env: &mut HashMap<String, Value>) {
         "env_var".to_string(),
         Value::from_string("__builtin_env_var__".to_string()),
     );
+    global_env.insert(
+        "env_set_var".to_string(),
+        Value::from_string("__builtin_env_set_var__".to_string()),
+    );
+    global_env.insert(
+        "env_remove_var".to_string(),
+        Value::from_string("__builtin_env_remove_var__".to_string()),
+    );
+    global_env.insert(
+        "env_vars".to_string(),
+        Value::from_string("__builtin_env_vars__".to_string()),
+    );
+    global_env.insert(
+        "env_current_dir".to_string(),
+        Value::from_string("__builtin_env_current_dir__".to_string()),
+    );
+    global_env.insert(
+        "env_set_current_dir".to_string(),
+        Value::from_string("__builtin_env_set_current_dir__".to_string()),
+    );
+    global_env.insert(
+        "env_temp_dir".to_string(),
+        Value::from_string("__builtin_env_temp_dir__".to_string()),
+    );
 }
 
 #[cfg(test)]
@@ -300,9 +324,10 @@ mod tests {
 
         // Should have all builtin functions
         // 1 constant + 9 basic + 11 math + 3 I/O + 3 utility
-        // + 4 conversion + 8 advanced + 2 string + 5 random/time + 2 env = 48 total
-        // (timestamp + get_time_ms + sleep + random + random_int + env_args + env_var)
-        assert_eq!(env.len(), 48);
+        // + 4 conversion + 8 advanced + 2 string + 5 random/time + 8 env = 54 total
+        // env functions: env_args, env_var, env_set_var, env_remove_var, env_vars,
+        //                env_current_dir, env_set_current_dir, env_temp_dir
+        assert_eq!(env.len(), 54);
     }
 
     #[test]

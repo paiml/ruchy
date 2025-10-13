@@ -3541,7 +3541,7 @@ impl Transpiler {
     /// Handle environment functions (env_args, env_var, etc.)
     ///
     /// # Complexity
-    /// Cyclomatic complexity: 3 (within Toyota Way limits)
+    /// Cyclomatic complexity: 9 (within Toyota Way limits)
     fn try_transpile_environment_function(
         &self,
         base_name: &str,
@@ -3563,6 +3563,61 @@ impl Transpiler {
                 let key = self.transpile_expr(&args[0])?;
                 Ok(Some(quote! {
                     std::env::var(#key).expect("Environment variable not found")
+                }))
+            }
+            "env_set_var" => {
+                if args.len() != 2 {
+                    anyhow::bail!("env_set_var() expects 2 arguments");
+                }
+                let key = self.transpile_expr(&args[0])?;
+                let value = self.transpile_expr(&args[1])?;
+                Ok(Some(quote! {
+                    std::env::set_var(#key, #value)
+                }))
+            }
+            "env_remove_var" => {
+                if args.len() != 1 {
+                    anyhow::bail!("env_remove_var() expects 1 argument");
+                }
+                let key = self.transpile_expr(&args[0])?;
+                Ok(Some(quote! {
+                    std::env::remove_var(#key)
+                }))
+            }
+            "env_vars" => {
+                if !args.is_empty() {
+                    anyhow::bail!("env_vars() expects no arguments");
+                }
+                Ok(Some(quote! {
+                    std::env::vars().collect::<std::collections::HashMap<String, String>>()
+                }))
+            }
+            "env_current_dir" => {
+                if !args.is_empty() {
+                    anyhow::bail!("env_current_dir() expects no arguments");
+                }
+                Ok(Some(quote! {
+                    std::env::current_dir()
+                        .expect("Failed to get current directory")
+                        .to_string_lossy()
+                        .to_string()
+                }))
+            }
+            "env_set_current_dir" => {
+                if args.len() != 1 {
+                    anyhow::bail!("env_set_current_dir() expects 1 argument");
+                }
+                let path = self.transpile_expr(&args[0])?;
+                Ok(Some(quote! {
+                    std::env::set_current_dir(#path).expect("Failed to set current directory")
+                }))
+            }
+            "env_temp_dir" => {
+                if !args.is_empty() {
+                    anyhow::bail!("env_temp_dir() expects no arguments");
+                }
+                Ok(Some(quote! {
+                    std::env::temp_dir().to_string_lossy().to_string()
                 }))
             }
             _ => Ok(None),
