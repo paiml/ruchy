@@ -26,6 +26,7 @@ pub fn eval_builtin_function(
         try_eval_time_function,
         try_eval_dataframe_function,
         try_eval_environment_function,
+        try_eval_fs_function,
     ];
 
     for try_eval in dispatchers {
@@ -1128,6 +1129,277 @@ fn eval_env_temp_dir(args: &[Value]) -> Result<Value, InterpreterError> {
 
     let temp = std::env::temp_dir();
     Ok(Value::from_string(temp.to_string_lossy().to_string()))
+}
+
+// ==================== FILE SYSTEM FUNCTIONS ====================
+// Layer 3 of three-layer builtin pattern (proven from env functions)
+// Phase 2: STDLIB_ACCESS_PLAN - File System Module
+
+/// Evaluate fs_read() builtin function
+/// Reads file contents and returns as string
+/// Complexity: 3 (within Toyota Way limits)
+fn eval_fs_read(args: &[Value]) -> Result<Value, InterpreterError> {
+    validate_arg_count("fs_read", args, 1)?;
+
+    match &args[0] {
+        Value::String(path) => match std::fs::read_to_string(path.as_ref()) {
+            Ok(content) => Ok(Value::from_string(content)),
+            Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to read file: {}", e))),
+        },
+        _ => Err(InterpreterError::RuntimeError(
+            "fs_read() expects a string argument".to_string(),
+        )),
+    }
+}
+
+/// Evaluate fs_write() builtin function
+/// Writes content to file
+/// Complexity: 3 (within Toyota Way limits)
+fn eval_fs_write(args: &[Value]) -> Result<Value, InterpreterError> {
+    validate_arg_count("fs_write", args, 2)?;
+
+    match (&args[0], &args[1]) {
+        (Value::String(path), Value::String(content)) => {
+            match std::fs::write(path.as_ref(), content.as_ref()) {
+                Ok(_) => Ok(Value::Nil),
+                Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to write file: {}", e))),
+            }
+        },
+        _ => Err(InterpreterError::RuntimeError(
+            "fs_write() expects two string arguments".to_string(),
+        )),
+    }
+}
+
+/// Evaluate fs_exists() builtin function
+/// Checks if path exists
+/// Complexity: 2 (within Toyota Way limits)
+fn eval_fs_exists(args: &[Value]) -> Result<Value, InterpreterError> {
+    validate_arg_count("fs_exists", args, 1)?;
+
+    match &args[0] {
+        Value::String(path) => Ok(Value::Bool(std::path::Path::new(path.as_ref()).exists())),
+        _ => Err(InterpreterError::RuntimeError(
+            "fs_exists() expects a string argument".to_string(),
+        )),
+    }
+}
+
+/// Evaluate fs_create_dir() builtin function
+/// Creates directory (including parent directories)
+/// Complexity: 3 (within Toyota Way limits)
+fn eval_fs_create_dir(args: &[Value]) -> Result<Value, InterpreterError> {
+    validate_arg_count("fs_create_dir", args, 1)?;
+
+    match &args[0] {
+        Value::String(path) => match std::fs::create_dir_all(path.as_ref()) {
+            Ok(_) => Ok(Value::Nil),
+            Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to create directory: {}", e))),
+        },
+        _ => Err(InterpreterError::RuntimeError(
+            "fs_create_dir() expects a string argument".to_string(),
+        )),
+    }
+}
+
+/// Evaluate fs_remove_file() builtin function
+/// Removes a file
+/// Complexity: 3 (within Toyota Way limits)
+fn eval_fs_remove_file(args: &[Value]) -> Result<Value, InterpreterError> {
+    validate_arg_count("fs_remove_file", args, 1)?;
+
+    match &args[0] {
+        Value::String(path) => match std::fs::remove_file(path.as_ref()) {
+            Ok(_) => Ok(Value::Nil),
+            Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to remove file: {}", e))),
+        },
+        _ => Err(InterpreterError::RuntimeError(
+            "fs_remove_file() expects a string argument".to_string(),
+        )),
+    }
+}
+
+/// Evaluate fs_remove_dir() builtin function
+/// Removes a directory
+/// Complexity: 3 (within Toyota Way limits)
+fn eval_fs_remove_dir(args: &[Value]) -> Result<Value, InterpreterError> {
+    validate_arg_count("fs_remove_dir", args, 1)?;
+
+    match &args[0] {
+        Value::String(path) => match std::fs::remove_dir(path.as_ref()) {
+            Ok(_) => Ok(Value::Nil),
+            Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to remove directory: {}", e))),
+        },
+        _ => Err(InterpreterError::RuntimeError(
+            "fs_remove_dir() expects a string argument".to_string(),
+        )),
+    }
+}
+
+/// Evaluate fs_copy() builtin function
+/// Copies a file from source to destination
+/// Complexity: 3 (within Toyota Way limits)
+fn eval_fs_copy(args: &[Value]) -> Result<Value, InterpreterError> {
+    validate_arg_count("fs_copy", args, 2)?;
+
+    match (&args[0], &args[1]) {
+        (Value::String(from), Value::String(to)) => {
+            match std::fs::copy(from.as_ref(), to.as_ref()) {
+                Ok(_) => Ok(Value::Nil),
+                Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to copy file: {}", e))),
+            }
+        },
+        _ => Err(InterpreterError::RuntimeError(
+            "fs_copy() expects two string arguments".to_string(),
+        )),
+    }
+}
+
+/// Evaluate fs_rename() builtin function
+/// Renames/moves a file
+/// Complexity: 3 (within Toyota Way limits)
+fn eval_fs_rename(args: &[Value]) -> Result<Value, InterpreterError> {
+    validate_arg_count("fs_rename", args, 2)?;
+
+    match (&args[0], &args[1]) {
+        (Value::String(from), Value::String(to)) => {
+            match std::fs::rename(from.as_ref(), to.as_ref()) {
+                Ok(_) => Ok(Value::Nil),
+                Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to rename file: {}", e))),
+            }
+        },
+        _ => Err(InterpreterError::RuntimeError(
+            "fs_rename() expects two string arguments".to_string(),
+        )),
+    }
+}
+
+/// Evaluate fs_metadata() builtin function
+/// Returns file metadata as Object
+/// Complexity: 3 (within Toyota Way limits)
+fn eval_fs_metadata(args: &[Value]) -> Result<Value, InterpreterError> {
+    validate_arg_count("fs_metadata", args, 1)?;
+
+    match &args[0] {
+        Value::String(path) => match std::fs::metadata(path.as_ref()) {
+            Ok(meta) => {
+                let mut map = HashMap::new();
+                map.insert("size".to_string(), Value::Integer(meta.len() as i64));
+                map.insert("is_dir".to_string(), Value::Bool(meta.is_dir()));
+                map.insert("is_file".to_string(), Value::Bool(meta.is_file()));
+                Ok(Value::Object(Arc::new(map)))
+            },
+            Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to get metadata: {}", e))),
+        },
+        _ => Err(InterpreterError::RuntimeError(
+            "fs_metadata() expects a string argument".to_string(),
+        )),
+    }
+}
+
+/// Evaluate fs_read_dir() builtin function
+/// Returns directory contents as Array of strings
+/// Complexity: 3 (within Toyota Way limits)
+fn eval_fs_read_dir(args: &[Value]) -> Result<Value, InterpreterError> {
+    validate_arg_count("fs_read_dir", args, 1)?;
+
+    match &args[0] {
+        Value::String(path) => match std::fs::read_dir(path.as_ref()) {
+            Ok(entries) => {
+                let paths: Vec<Value> = entries
+                    .filter_map(|e| e.ok())
+                    .map(|e| Value::from_string(e.path().display().to_string()))
+                    .collect();
+                Ok(Value::Array(paths.into()))
+            },
+            Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to read directory: {}", e))),
+        },
+        _ => Err(InterpreterError::RuntimeError(
+            "fs_read_dir() expects a string argument".to_string(),
+        )),
+    }
+}
+
+/// Evaluate fs_canonicalize() builtin function
+/// Returns absolute path
+/// Complexity: 3 (within Toyota Way limits)
+fn eval_fs_canonicalize(args: &[Value]) -> Result<Value, InterpreterError> {
+    validate_arg_count("fs_canonicalize", args, 1)?;
+
+    match &args[0] {
+        Value::String(path) => match std::fs::canonicalize(path.as_ref()) {
+            Ok(canonical) => Ok(Value::from_string(canonical.display().to_string())),
+            Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to canonicalize path: {}", e))),
+        },
+        _ => Err(InterpreterError::RuntimeError(
+            "fs_canonicalize() expects a string argument".to_string(),
+        )),
+    }
+}
+
+/// Evaluate fs_is_file() builtin function
+/// Checks if path is a file
+/// Complexity: 2 (within Toyota Way limits)
+fn eval_fs_is_file(args: &[Value]) -> Result<Value, InterpreterError> {
+    validate_arg_count("fs_is_file", args, 1)?;
+
+    match &args[0] {
+        Value::String(path) => Ok(Value::Bool(std::path::Path::new(path.as_ref()).is_file())),
+        _ => Err(InterpreterError::RuntimeError(
+            "fs_is_file() expects a string argument".to_string(),
+        )),
+    }
+}
+
+/// Dispatch file system functions - Part 1
+/// Complexity: 5 (cyclomatic 5, cognitive ≤8 - within strict limits)
+fn try_eval_fs_part1(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
+    match name {
+        "__builtin_fs_read__" => Ok(Some(eval_fs_read(args)?)),
+        "__builtin_fs_write__" => Ok(Some(eval_fs_write(args)?)),
+        "__builtin_fs_exists__" => Ok(Some(eval_fs_exists(args)?)),
+        "__builtin_fs_create_dir__" => Ok(Some(eval_fs_create_dir(args)?)),
+        _ => Ok(None),
+    }
+}
+
+/// Dispatch file system functions - Part 2
+/// Complexity: 5 (cyclomatic 5, cognitive ≤8 - within strict limits)
+fn try_eval_fs_part2(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
+    match name {
+        "__builtin_fs_remove_file__" => Ok(Some(eval_fs_remove_file(args)?)),
+        "__builtin_fs_remove_dir__" => Ok(Some(eval_fs_remove_dir(args)?)),
+        "__builtin_fs_copy__" => Ok(Some(eval_fs_copy(args)?)),
+        "__builtin_fs_rename__" => Ok(Some(eval_fs_rename(args)?)),
+        _ => Ok(None),
+    }
+}
+
+/// Dispatch file system functions - Part 3
+/// Complexity: 5 (cyclomatic 5, cognitive ≤8 - within strict limits)
+fn try_eval_fs_part3(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
+    match name {
+        "__builtin_fs_metadata__" => Ok(Some(eval_fs_metadata(args)?)),
+        "__builtin_fs_read_dir__" => Ok(Some(eval_fs_read_dir(args)?)),
+        "__builtin_fs_canonicalize__" => Ok(Some(eval_fs_canonicalize(args)?)),
+        "__builtin_fs_is_file__" => Ok(Some(eval_fs_is_file(args)?)),
+        _ => Ok(None),
+    }
+}
+
+/// Dispatcher for file system functions
+/// Complexity: 4 (within Toyota Way limits)
+fn try_eval_fs_function(
+    name: &str,
+    args: &[Value],
+) -> Result<Option<Value>, InterpreterError> {
+    if let Some(result) = try_eval_fs_part1(name, args)? {
+        return Ok(Some(result));
+    }
+    if let Some(result) = try_eval_fs_part2(name, args)? {
+        return Ok(Some(result));
+    }
+    try_eval_fs_part3(name, args)
 }
 
 #[cfg(test)]
