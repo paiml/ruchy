@@ -4,6 +4,25 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+### 📚 README Validation Infrastructure (README-VALIDATION)
+
+**EXTREME TDD for Documentation Accuracy**
+
+#### Added
+- **README validation test suite** (`tests/readme_validation.rs`, 367 lines)
+  - Extracts and validates ALL ```ruchy code examples
+  - 12 validation tests ensuring accuracy
+  - Property tests for idempotency
+  - Blocks commits if README contains non-working examples
+
+#### Fixed
+- **README.md accuracy**: Removed false claims
+  - Removed Actor system examples (not implemented)
+  - Removed async/await examples (not implemented)
+  - Marked DataFrame as <10% complete (honest status)
+  - Replaced with working package management examples
+  - All examples now validated automatically
+
 ### 🚀 Package Management Sprint (CARGO-003, CARGO-004, CARGO-005)
 
 **Production Readiness**: 76% → 80% (+4% - Package management core unblocked)

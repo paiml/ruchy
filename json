@@ -1,0 +1,34 @@
+# Complexity Analysis Summary
+
+📊 **Files analyzed**: 10
+🔧 **Total functions**: 71
+
+## Complexity Metrics
+
+- **Median Cyclomatic**: 5.0
+- **Median Cognitive**: 8.0
+- **Max Cyclomatic**: 10
+- **Max Cognitive**: 40
+- **90th Percentile Cyclomatic**: 9
+- **90th Percentile Cognitive**: 18
+
+⏱️  **Estimated Refactoring Time**: 23.8 hours
+
+## Issues Found
+
+❌ **Errors**: 1
+⚠️  **Warnings**: 12
+
+## Top Files by Complexity
+
+1. `diagnostics.rs` - Cyclomatic: 10, Cognitive: 13, Functions: 1
+2. `eval_display.rs` - Cyclomatic: 5, Cognitive: 9, Functions: 6
+3. `eval_data_structures.rs` - Cyclomatic: 4, Cognitive: 10, Functions: 14
+4. `eval_pattern_match.rs` - Cyclomatic: 4, Cognitive: 10, Functions: 16
+5. `imports.rs` - Cyclomatic: 5, Cognitive: 8, Functions: 7
+6. `test.rs` - Cyclomatic: 4, Cognitive: 8, Functions: 5
+7. `ruchy_coverage.rs` - Cyclomatic: 5, Cognitive: 7, Functions: 1
+8. `build_transpiler.rs` - Cyclomatic: 6, Cognitive: 6, Functions: 4
+9. `lexer.rs` - Cyclomatic: 4, Cognitive: 8, Functions: 3
+10. `eval_method_dispatch.rs` - Cyclomatic: 4, Cognitive: 8, Functions: 14
+
