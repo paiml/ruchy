@@ -395,6 +395,7 @@ impl MagicCommand for WhosMagic {
                 Value::Range { .. } => "Range",
                 Value::EnumVariant { .. } => "EnumVariant",
                 Value::BuiltinFunction(_) => "BuiltinFunction",
+                Value::Struct { .. } => "Struct",
             };
             let value_str = format!("{value:?}");
             let value_display = if value_str.len() > 40 {

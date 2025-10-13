@@ -40,6 +40,7 @@ impl fmt::Display for Value {
                 format_enum_variant(f, variant_name, data.as_ref())
             }
             Value::BuiltinFunction(name) => write!(f, "<builtin function: {name}>"),
+            Value::Struct { name, fields } => format_struct(f, name, fields),
         }
     }
 }
@@ -154,6 +155,34 @@ fn format_enum_variant(
         }
     }
     Ok(())
+}
+
+/// Format a struct value
+///
+/// # Complexity
+/// Cyclomatic complexity: 4 (within Toyota Way limits)
+///
+/// # Determinism
+/// Keys are sorted to ensure deterministic output across multiple runs.
+fn format_struct(
+    f: &mut fmt::Formatter<'_>,
+    name: &str,
+    fields: &std::collections::HashMap<String, Value>,
+) -> fmt::Result {
+    write!(f, "{name} {{")?;
+
+    // Sort keys for deterministic output
+    let mut keys: Vec<&String> = fields.keys().collect();
+    keys.sort();
+
+    for (i, key) in keys.iter().enumerate() {
+        if i > 0 {
+            write!(f, ", ")?;
+        }
+        let val = &fields[*key];
+        write!(f, "{key}: {val}")?;
+    }
+    write!(f, "}}")
 }
 
 impl fmt::Display for InterpreterError {

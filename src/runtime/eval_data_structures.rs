@@ -76,7 +76,9 @@ pub fn eval_field_access(object: &Value, field: &str) -> Result<Value, Interpret
                 InterpreterError::RuntimeError(format!("Field '{field}' not found in object"))
             })
         }
-        // Note: Struct variant not implemented in Value enum yet
+        Value::Struct { name, fields } => fields.get(field).cloned().ok_or_else(|| {
+            InterpreterError::RuntimeError(format!("Field '{field}' not found in struct {name}"))
+        }),
         Value::DataFrame { columns } => eval_dataframe_field_access(columns, field),
         Value::Tuple(elements) => eval_tuple_field_access(elements, field),
         _ => Err(InterpreterError::TypeError(format!(

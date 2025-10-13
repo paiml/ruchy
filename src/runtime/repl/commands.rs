@@ -395,6 +395,14 @@ Enter expressions to evaluate them.
             Value::EnumVariant { variant_name, .. } => {
                 output.push_str(&format!("Variant: {variant_name}\n"));
             }
+            Value::Struct { name, fields } => {
+                output.push_str(&format!("Struct: {name}\n"));
+                output.push_str(&format!("Fields: {}\n", fields.len()));
+                output.push_str("Values:\n");
+                for (key, val) in fields.iter() {
+                    output.push_str(&format!("  {key}: {val}\n"));
+                }
+            }
         }
 
         output
@@ -462,6 +470,15 @@ Enter expressions to evaluate them.
                 params.iter().map(std::string::String::len).sum::<usize>() + 128
             }
             Value::BuiltinFunction(name) => name.len() + size_of::<usize>(),
+            Value::Struct { name, fields } => {
+                size_of::<String>()
+                    + name.len()
+                    + size_of::<std::collections::HashMap<String, Value>>()
+                    + fields
+                        .iter()
+                        .map(|(k, v)| k.len() + Self::estimate_value_memory(v))
+                        .sum::<usize>()
+            }
         }
     }
 
@@ -484,6 +501,7 @@ Enter expressions to evaluate them.
             Value::Range { .. } => "Range",
             Value::EnumVariant { .. } => "Enum",
             Value::BuiltinFunction(_) => "BuiltinFunction",
+            Value::Struct { .. } => "Struct",
         }
     }
 }
