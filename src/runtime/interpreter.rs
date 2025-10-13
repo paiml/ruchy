@@ -4830,7 +4830,7 @@ impl Interpreter {
                         // Check argument count
                         if args.len() != params.len() {
                             return Err(InterpreterError::RuntimeError(format!(
-                                "Constructor expects {} arguments, got {}",
+                                "constructor expects {} arguments, got {}",
                                 params.len(),
                                 args.len()
                             )));
@@ -4960,7 +4960,7 @@ impl Interpreter {
                         // Check argument count
                         if args.len() != params.len() {
                             return Err(InterpreterError::RuntimeError(format!(
-                                "Constructor expects {} arguments, got {}",
+                                "constructor expects {} arguments, got {}",
                                 params.len(),
                                 args.len()
                             )));
