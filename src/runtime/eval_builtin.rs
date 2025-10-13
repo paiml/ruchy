@@ -8,7 +8,7 @@
 use crate::runtime::validation::validate_arg_count;
 use crate::runtime::{InterpreterError, Value};
 
-#[cfg(test)]
+use std::collections::HashMap;
 use std::sync::Arc;
 
 /// Evaluate a builtin function call
@@ -971,17 +971,40 @@ fn parse_json_object(obj_str: &str) -> Result<Vec<(String, Value)>, InterpreterE
 
 // Environment Functions
 
-/// Dispatch environment functions
-/// Complexity: 3 (within Toyota Way limits)
+/// Dispatch environment functions - Part 1
+/// Complexity: 5 (within Toyota Way limits)
+fn try_eval_env_part1(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
+    match name {
+        "__builtin_env_args__" => Ok(Some(eval_env_args(args)?)),
+        "__builtin_env_var__" => Ok(Some(eval_env_var(args)?)),
+        "__builtin_env_set_var__" => Ok(Some(eval_env_set_var(args)?)),
+        "__builtin_env_remove_var__" => Ok(Some(eval_env_remove_var(args)?)),
+        _ => Ok(None),
+    }
+}
+
+/// Dispatch environment functions - Part 2
+/// Complexity: 5 (within Toyota Way limits)
+fn try_eval_env_part2(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
+    match name {
+        "__builtin_env_vars__" => Ok(Some(eval_env_vars(args)?)),
+        "__builtin_env_current_dir__" => Ok(Some(eval_env_current_dir(args)?)),
+        "__builtin_env_set_current_dir__" => Ok(Some(eval_env_set_current_dir(args)?)),
+        "__builtin_env_temp_dir__" => Ok(Some(eval_env_temp_dir(args)?)),
+        _ => Ok(None),
+    }
+}
+
+/// Dispatcher for environment functions
+/// Complexity: 3 (within Toyota Way limits, reduced from 10)
 fn try_eval_environment_function(
     name: &str,
     args: &[Value],
 ) -> Result<Option<Value>, InterpreterError> {
-    match name {
-        "__builtin_env_args__" => Ok(Some(eval_env_args(args)?)),
-        "__builtin_env_var__" => Ok(Some(eval_env_var(args)?)),
-        _ => Ok(None),
+    if let Some(result) = try_eval_env_part1(name, args)? {
+        return Ok(Some(result));
     }
+    try_eval_env_part2(name, args)
 }
 
 /// Evaluate env_args() builtin function
@@ -1015,6 +1038,96 @@ fn eval_env_var(args: &[Value]) -> Result<Value, InterpreterError> {
             "env_var() expects a string argument".to_string(),
         )),
     }
+}
+
+/// Evaluate env_set_var() builtin function
+/// Sets environment variable
+/// Complexity: 3 (within Toyota Way limits)
+fn eval_env_set_var(args: &[Value]) -> Result<Value, InterpreterError> {
+    validate_arg_count("env_set_var", args, 2)?;
+
+    match (&args[0], &args[1]) {
+        (Value::String(key), Value::String(value)) => {
+            std::env::set_var(key.as_ref(), value.as_ref());
+            Ok(Value::Nil)
+        }
+        _ => Err(InterpreterError::RuntimeError(
+            "env_set_var() expects two string arguments".to_string(),
+        )),
+    }
+}
+
+/// Evaluate env_remove_var() builtin function
+/// Removes environment variable
+/// Complexity: 2 (within Toyota Way limits)
+fn eval_env_remove_var(args: &[Value]) -> Result<Value, InterpreterError> {
+    validate_arg_count("env_remove_var", args, 1)?;
+
+    match &args[0] {
+        Value::String(key) => {
+            std::env::remove_var(key.as_ref());
+            Ok(Value::Nil)
+        }
+        _ => Err(InterpreterError::RuntimeError(
+            "env_remove_var() expects a string argument".to_string(),
+        )),
+    }
+}
+
+/// Evaluate env_vars() builtin function
+/// Returns all environment variables as HashMap
+/// Complexity: 1 (within Toyota Way limits)
+fn eval_env_vars(args: &[Value]) -> Result<Value, InterpreterError> {
+    validate_arg_count("env_vars", args, 0)?;
+
+    let vars: HashMap<String, Value> = std::env::vars()
+        .map(|(k, v)| (k, Value::from_string(v)))
+        .collect();
+
+    Ok(Value::Object(Arc::new(vars)))
+}
+
+/// Evaluate env_current_dir() builtin function
+/// Returns current working directory
+/// Complexity: 2 (within Toyota Way limits)
+fn eval_env_current_dir(args: &[Value]) -> Result<Value, InterpreterError> {
+    validate_arg_count("env_current_dir", args, 0)?;
+
+    match std::env::current_dir() {
+        Ok(path) => Ok(Value::from_string(path.to_string_lossy().to_string())),
+        Err(e) => Err(InterpreterError::RuntimeError(
+            format!("Failed to get current directory: {}", e),
+        )),
+    }
+}
+
+/// Evaluate env_set_current_dir() builtin function
+/// Changes current working directory
+/// Complexity: 2 (within Toyota Way limits)
+fn eval_env_set_current_dir(args: &[Value]) -> Result<Value, InterpreterError> {
+    validate_arg_count("env_set_current_dir", args, 1)?;
+
+    match &args[0] {
+        Value::String(path) => match std::env::set_current_dir(path.as_ref()) {
+            Ok(_) => Ok(Value::Nil),
+            Err(e) => Err(InterpreterError::RuntimeError(
+                format!("Failed to set current directory: {}", e),
+            )),
+        },
+        _ => Err(InterpreterError::RuntimeError(
+            "env_set_current_dir() expects a string argument".to_string(),
+        )),
+    }
+}
+
+/// Evaluate env_temp_dir() builtin function
+/// Returns system temp directory
+/// Complexity: 1 (within Toyota Way limits)
+fn eval_env_temp_dir(args: &[Value]) -> Result<Value, InterpreterError> {
+    validate_arg_count("env_temp_dir", args, 0)?;
+
+    let temp = std::env::temp_dir();
+    Ok(Value::from_string(temp.to_string_lossy().to_string()))
 }
 
 #[cfg(test)]
