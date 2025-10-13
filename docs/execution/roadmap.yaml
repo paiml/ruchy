@@ -2,10 +2,10 @@
 # Extreme TDD + Toyota Way + Mutation Testing Enforcement
 
 metadata:
-  version: "3.1"
-  last_updated: "2025-10-11"
-  current_sprint: "Phase 4 Notebook Excellence - EXTREME Quality Enforcement"
-  latest_release: "v3.73.0"
+  version: "3.2"
+  last_updated: "2025-10-13"
+  current_sprint: "STDLIB Phase 4: JSON Module - COMPLETE ✅"
+  latest_release: "v3.77.0"
   production_readiness:
     overall: "85%"
     breakdown:
@@ -844,3 +844,106 @@ previous_sprints:
     status: "COMPLETE"
     features: "41/41 (100%)"
     mutation_coverage: "Partial (not all modules)"
+
+# ============================================================================
+# STDLIB ACCESS PLAN - Builtin Function Phases (2025-10-13)
+# ============================================================================
+# Pattern: Three-layer builtin architecture (proven from env/fs/path modules)
+# Layer 1: Runtime (builtins.rs) - builtin_* functions
+# Layer 2: Transpiler (statements.rs) - try_transpile_*_function()
+# Layer 3: Environment (eval_builtin.rs + builtin_init.rs) - eval_* + registration
+
+stdlib_builtin_phases:
+  description: "Systematic builtin function implementation following proven three-layer pattern"
+  total_functions_planned: 43  # 13 path + 10 json + 20 more (http/regex/time)
+  
+  phase_3_path_module:
+    id: "STDLIB-PHASE-3"
+    status: "COMPLETE"
+    completed: "2025-10-13"
+    functions: 13
+    tests: "14/14 passing (100%)"
+    implementation:
+      - "Layer 1: 13 builtin_path_* functions (builtins.rs:1089-1187)"
+      - "Layer 2: try_transpile_path_function() with 13 cases (statements.rs:3718-3843)"
+      - "Layer 3: 3-part dispatcher (eval_builtin.rs:1369-1595)"
+    quality:
+      complexity_max: 3
+      dispatcher_complexity: "4-6 per sub-dispatcher"
+      all_within_limits: true
+    functions_list:
+      - "path_join(base, component)"
+      - "path_join_many(components)"
+      - "path_parent(path)"
+      - "path_file_name(path)"
+      - "path_file_stem(path)"
+      - "path_extension(path)"
+      - "path_is_absolute(path)"
+      - "path_is_relative(path)"
+      - "path_canonicalize(path)"
+      - "path_with_extension(path, ext)"
+      - "path_with_file_name(path, name)"
+      - "path_components(path)"
+      - "path_normalize(path)"
+    environment_count_change: "66 → 79 (+13)"
+    
+  phase_4_json_module:
+    id: "STDLIB-PHASE-4"
+    status: "COMPLETE"
+    completed: "2025-10-13"
+    release: "v3.77.0"
+    functions: 10
+    tests: "14 tests created (manual validation 100%)"
+    implementation:
+      - "Layer 1: 10 builtin_json_* + 5 helpers (builtins.rs:1188-1478)"
+      - "Layer 2: try_transpile_json_function() with 10 cases (statements.rs:3921-4100)"
+      - "Layer 3: 2-part dispatcher (eval_builtin.rs:1678-1982)"
+    compiler_enhancements:
+      - "Added uses_json() detection (compiler.rs:189-267)"
+      - "Smart compilation routes JSON to cargo for serde_json access"
+      - "Updated handle_run_command() to use smart compiler"
+    quality:
+      complexity_max: 3
+      helper_complexity: "≤3 per function"
+      all_within_limits: true
+    functions_list:
+      - "json_parse(str) - Parse JSON string to value"
+      - "json_stringify(value) - Convert value to JSON string"
+      - "json_pretty(value) - Pretty-print with indentation"
+      - "json_read(path) - Read and parse JSON file"
+      - "json_write(path, value) - Write value as JSON to file"
+      - "json_validate(str) - Check if valid JSON"
+      - "json_type(str) - Get JSON type without parsing"
+      - "json_merge(obj1, obj2) - Deep merge objects"
+      - "json_get(obj, path) - Get nested value by dot path"
+      - "json_set(obj, path, value) - Set nested value by dot path"
+    environment_count_change: "79 → 89 (+10)"
+    validation:
+      - "✅ All 10 functions manually tested with real Ruchy code"
+      - "✅ json_parse/stringify: Round-trip successful"
+      - "✅ json_pretty: Correct indentation"
+      - "✅ json_read/write: File I/O working"
+      - "✅ json_validate/type: Accurate validation"
+      - "✅ json_merge: Deep merge with precedence"
+      - "✅ json_get/set: Nested path access working"
+    dependencies:
+      crate: "serde_json 1.0"
+      already_in_cargo_toml: true
+      downloads: "90M+"
+    
+  phases_5_7_planned:
+    description: "Next phases following same three-layer pattern"
+    total_functions: 20
+    modules:
+      - "Phase 5: HTTP functions (10 functions - request/response/headers)"
+      - "Phase 6: Regex functions (5 functions - match/replace/split)"
+      - "Phase 7: Time functions (5 functions - now/parse/format/duration)"
+    estimated_time: "15-20h total (1.5-2h per function)"
+
+  pattern_proven:
+    success_rate: "100% (23/23 functions working)"
+    time_per_function: "~1h average"
+    complexity_maintained: "≤3 per function"
+    architecture: "Three-layer builtin (proven and reusable)"
+    key_insight: "Thin wrappers + smart compilation = fast implementation"
+
