@@ -6,6 +6,25 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ### Sprint: Book Compatibility (sprint-book-compat-001) - IN PROGRESS
 
+#### TRANSPILER-DEFECT-002: Integer Type Suffixes - RED Phase (2025-10-13)
+**Status**: 🔴 RED PHASE COMPLETE - Tests created
+**Problem**: Integer literals with type suffixes (i32, i64, u32, etc.) lose their suffix
+**Severity**: HIGH
+**File**: tests/transpiler_defect_002_integer_type_suffixes.rs
+
+**RED Phase Tests**:
+1. ❌ `test_defect_002_red_negative_i32_with_abs` (#[ignore])
+2. ❌ `test_defect_002_red_positive_i64` (#[ignore])
+3. ❌ `test_defect_002_red_unsigned_u32` (#[ignore])
+4. ❌ `test_defect_002_red_multiple_suffixes` (#[ignore])
+5. ❌ `test_defect_002_red_u64_suffix` (#[ignore])
+6. ✅ `test_defect_002_baseline_typed_variable` (workaround - passing)
+7. ✅ `test_defect_002_baseline_no_suffix` (type inference - passing)
+
+**Methodology**: EXTREME TDD (RED → GREEN → REFACTOR)
+
+**Next Steps**: GREEN phase - fix transpiler to preserve type suffixes
+
 #### TRANSPILER-DEFECT-001: String Type Annotations - RESOLVED ✅ (2025-10-13)
 **Status**: ✅ **COMPLETE** - Fix validated, all tests passing
 **Problem**: String literals with String type annotations don't auto-convert
