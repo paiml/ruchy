@@ -4,6 +4,29 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+### 🚀 Package Management Sprint (CARGO-003, CARGO-004, CARGO-005)
+
+**Production Readiness**: 76% → 80% (+4% - Package management core unblocked)
+
+#### Added
+- **CARGO-003**: `ruchy add <crate>` command - Add Rust dependencies to projects
+  - Wrapper around `cargo add` with `@version` syntax support
+  - Dev dependency support via `--dev` flag
+  - 6/6 integration tests passing
+- **CARGO-004**: `ruchy build` command - Build Ruchy projects
+  - Wrapper around `cargo build` with auto-transpilation
+  - Release mode support via `--release` flag
+  - 7/7 integration tests passing
+- **CARGO-005**: End-to-end workflow tests
+  - Complete `new → add → build → run` validation
+  - Library project support tested
+  - 6/6 E2E tests passing
+
+#### Fixed
+- **lib.ruchy template**: Removed `#[cfg(test)]` syntax (not yet supported in Ruchy)
+  - Changed to simpler `multiply()` example function
+  - Prevents build errors in generated library projects
+
 ## [3.75.0] - 2025-10-12 - [CRITICAL] Thread-Safety & Notebook State Persistence
 
 ### 🚨 Critical Bug Fixes

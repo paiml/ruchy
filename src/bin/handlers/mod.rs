@@ -1,6 +1,8 @@
 use anyhow::{Context, Result};
 mod commands;
 mod handlers_modules;
+pub mod add;
+pub mod build;
 pub mod new;
 use ruchy::frontend::ast::Expr;
 use ruchy::runtime::replay_converter::ConversionConfig;
@@ -980,6 +982,16 @@ pub fn handle_complex_command(command: crate::Commands) -> Result<()> {
             verbose,
             config.as_deref(),
         ),
+        crate::Commands::Add {
+            package,
+            version,
+            dev,
+            registry: _registry,
+        } => {
+            // Use our new add::handle_add_command (CARGO-003)
+            // Note: registry parameter ignored for now - using cargo's default (crates.io)
+            add::handle_add_command(&package, version.as_deref(), dev, false)
+        }
         _ => {
             // Other commands not yet implemented
             eprintln!("Command not yet implemented");
@@ -1164,14 +1176,6 @@ pub fn handle_complex_command(command: crate::Commands) -> Result<()> {
                     return Err(anyhow::anyhow!("Error: Either provide a file or use --all flag"));
                 }
             }
-        }
-        crate::Commands::Add {
-            package,
-            version,
-            dev,
-            registry,
-        } => {
-            crate::add_package(&package, version.as_deref(), dev, &registry)
         }
         crate::Commands::Publish {
             registry,
