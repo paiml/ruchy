@@ -1424,6 +1424,19 @@ impl Interpreter {
                     ))
                 })
             }
+            Value::Class {
+                ref class_name,
+                ref fields,
+                ..
+            } => {
+                // Class field access
+                let fields_read = fields.read().unwrap();
+                fields_read.get(field).cloned().ok_or_else(|| {
+                    InterpreterError::RuntimeError(format!(
+                        "Field '{field}' not found in class {class_name}"
+                    ))
+                })
+            }
             Value::Tuple(ref elements) => {
                 // Tuple field access (e.g., tuple.0, tuple.1)
                 crate::runtime::eval_data_structures::eval_tuple_field_access(elements, field)
@@ -1884,6 +1897,16 @@ impl Interpreter {
                             } else {
                                 Err(InterpreterError::RuntimeError(
                                     "Actor missing __name field".to_string(),
+                                ))
+                            }
+                        }
+                        "Class" => {
+                            // Get class name and instantiate
+                            if let Some(Value::String(name)) = obj.get("__name") {
+                                self.instantiate_class_with_args(name.as_ref(), args)
+                            } else {
+                                Err(InterpreterError::RuntimeError(
+                                    "Class missing __name field".to_string(),
                                 ))
                             }
                         }
@@ -2960,6 +2983,12 @@ impl Interpreter {
                             Value::ObjectMut(ref cell) => {
                                 // Mutable object: update in place via RefCell
                                 cell.lock().unwrap().insert(field.clone(), val.clone());
+                                Ok(val)
+                            }
+                            Value::Class { ref fields, .. } => {
+                                // Class: update field in place via RwLock
+                                let mut fields_write = fields.write().unwrap();
+                                fields_write.insert(field.clone(), val.clone());
                                 Ok(val)
                             }
                             _ => Err(InterpreterError::RuntimeError(format!(
@@ -4774,6 +4803,120 @@ impl Interpreter {
 
             // Return ObjectMut for mutable class instances (support &mut self methods)
             Ok(crate::runtime::object_helpers::new_mutable_object(instance))
+        } else {
+            Err(InterpreterError::RuntimeError(format!(
+                "{} is not a class definition",
+                class_name
+            )))
+        }
+    }
+
+    /// Instantiate a class with arguments (calls init constructor)
+    /// Returns Value::Class with reference semantics
+    fn instantiate_class_with_args(
+        &mut self,
+        class_name: &str,
+        args: &[Value],
+    ) -> Result<Value, InterpreterError> {
+        use std::sync::RwLock;
+
+        // Look up the class definition
+        let class_def = self.lookup_variable(class_name)?;
+
+        if let Value::Object(ref class_info) = class_def {
+            // Verify this is a class
+            if let Some(Value::String(ref type_str)) = class_info.get("__type") {
+                if type_str.as_ref() != "Class" {
+                    return Err(InterpreterError::RuntimeError(format!(
+                        "{} is not a class",
+                        class_name
+                    )));
+                }
+            }
+
+            // Collect methods from the class definition
+            let mut methods_map = HashMap::new();
+            if let Some(Value::Object(ref methods_obj)) = class_info.get("__methods") {
+                for (method_name, method_value) in methods_obj.iter() {
+                    // Extract the closure from method metadata
+                    if let Value::Object(ref method_meta) = method_value {
+                        if let Some(closure) = method_meta.get("closure") {
+                            methods_map.insert(method_name.clone(), closure.clone());
+                        }
+                    }
+                }
+            }
+
+            // Create instance fields with default values
+            let mut instance_fields = HashMap::new();
+            if let Some(Value::Object(ref fields)) = class_info.get("__fields") {
+                for (field_name, field_info) in fields.iter() {
+                    if let Value::Object(ref field_meta) = field_info {
+                        // Use default value if present
+                        if let Some(default) = field_meta.get("default") {
+                            instance_fields.insert(field_name.clone(), default.clone());
+                        } else {
+                            // Initialize with nil
+                            instance_fields.insert(field_name.clone(), Value::Nil);
+                        }
+                    }
+                }
+            }
+
+            // Create the Class instance
+            let class_instance = Value::Class {
+                class_name: class_name.to_string(),
+                fields: Arc::new(RwLock::new(instance_fields.clone())),
+                methods: Arc::new(methods_map),
+            };
+
+            // Execute the init constructor if present
+            if let Some(Value::Object(ref constructors)) = class_info.get("__constructors") {
+                // Look for "init" or "new" constructor
+                let constructor = constructors
+                    .get("init")
+                    .or_else(|| constructors.get("new"));
+
+                if let Some(constructor) = constructor {
+                    if let Value::Closure {
+                        params,
+                        body,
+                        env: _,
+                    } = constructor
+                    {
+                        // Check argument count
+                        if args.len() != params.len() {
+                            return Err(InterpreterError::RuntimeError(format!(
+                                "Constructor expects {} arguments, got {}",
+                                params.len(),
+                                args.len()
+                            )));
+                        }
+
+                        // Create environment for constructor
+                        let mut ctor_env = HashMap::new();
+
+                        // Bind 'self' to the class instance
+                        ctor_env.insert("self".to_string(), class_instance.clone());
+
+                        // Bind constructor parameters
+                        for (param, arg) in params.iter().zip(args) {
+                            ctor_env.insert(param.clone(), arg.clone());
+                        }
+
+                        // Push constructor environment
+                        self.env_stack.push(ctor_env);
+
+                        // Execute constructor body
+                        let _result = self.eval_expr(body)?;
+
+                        // Pop environment
+                        self.env_stack.pop();
+                    }
+                }
+            }
+
+            Ok(class_instance)
         } else {
             Err(InterpreterError::RuntimeError(format!(
                 "{} is not a class definition",
