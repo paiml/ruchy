@@ -96,10 +96,11 @@ pub fn compile_to_binary(source_path: &Path, options: &CompileOptions) -> Result
 /// - The working directory cannot be created
 /// - The rustc compilation fails
 pub fn compile_source_to_binary(source: &str, options: &CompileOptions) -> Result<PathBuf> {
-    // Parse to check for DataFrame usage
+    // Parse to check for DataFrame and JSON usage
     let mut parser = Parser::new(source);
     let ast = parser.parse().parse_context("Ruchy source")?;
     let needs_polars = uses_dataframes(&ast);
+    let needs_json = uses_json(&ast);
 
     // Transpile
     let mut transpiler = Transpiler::new();
@@ -107,8 +108,8 @@ pub fn compile_source_to_binary(source: &str, options: &CompileOptions) -> Resul
         .transpile_to_program(&ast)
         .compile_context("transpile to Rust")?;
 
-    if needs_polars {
-        // Use cargo build with Cargo.toml
+    if needs_polars || needs_json {
+        // Use cargo build with Cargo.toml (for external crate access)
         compile_with_cargo(&rust_code, options)
     } else {
         // Use direct rustc (faster for simple programs)
@@ -183,6 +184,86 @@ fn check_call_for_dataframes(
     args: &[crate::frontend::ast::Expr],
 ) -> bool {
     uses_dataframes(func) || args.iter().any(uses_dataframes)
+}
+
+/// Check if AST contains JSON function usage (complexity: 4)
+///
+/// Detects usage of JSON stdlib functions that require serde_json crate.
+/// This triggers cargo compilation instead of direct rustc.
+///
+/// # Examples
+///
+/// ```
+/// use ruchy::frontend::parser::Parser;
+/// use ruchy::backend::compiler::uses_json;
+///
+/// let code = r#"fun main() { let obj = json_parse("{\"x\": 1}"); }"#;
+/// let mut parser = Parser::new(code);
+/// let ast = parser.parse().unwrap();
+/// assert!(uses_json(&ast));
+/// ```
+pub fn uses_json(ast: &crate::frontend::ast::Expr) -> bool {
+    use crate::frontend::ast::ExprKind;
+
+    match &ast.kind {
+        ExprKind::Call { func, args } => check_call_for_json(func, args),
+        ExprKind::Binary { left, right, .. } => check_binary_for_json(left, right),
+        ExprKind::Let { value, body, .. } => check_binary_for_json(value, body),
+        ExprKind::MethodCall { receiver, args, .. } => check_method_for_json(receiver, args),
+        ExprKind::Function { body, .. } => uses_json(body),
+        ExprKind::Block(exprs) => exprs.iter().any(uses_json),
+        _ => false,
+    }
+}
+
+/// Check function calls for JSON functions (complexity: 3)
+fn check_call_for_json(
+    func: &crate::frontend::ast::Expr,
+    args: &[crate::frontend::ast::Expr],
+) -> bool {
+    use crate::frontend::ast::ExprKind;
+
+    // Check if calling a JSON function
+    if let ExprKind::Identifier(name) = &func.kind {
+        if is_json_function(name) {
+            return true;
+        }
+    }
+    // Recursively check function and arguments
+    uses_json(func) || args.iter().any(uses_json)
+}
+
+/// Check binary expressions for JSON usage (complexity: 1)
+fn check_binary_for_json(
+    left: &crate::frontend::ast::Expr,
+    right: &crate::frontend::ast::Expr,
+) -> bool {
+    uses_json(left) || uses_json(right)
+}
+
+/// Check method calls for JSON usage (complexity: 1)
+fn check_method_for_json(
+    receiver: &crate::frontend::ast::Expr,
+    args: &[crate::frontend::ast::Expr],
+) -> bool {
+    uses_json(receiver) || args.iter().any(uses_json)
+}
+
+/// Check if function name is a JSON stdlib function (complexity: 1)
+fn is_json_function(name: &str) -> bool {
+    matches!(
+        name,
+        "json_parse"
+            | "json_stringify"
+            | "json_pretty"
+            | "json_read"
+            | "json_write"
+            | "json_validate"
+            | "json_type"
+            | "json_merge"
+            | "json_get"
+            | "json_set"
+    )
 }
 
 /// Generate Cargo.toml with polars dependency (complexity: 2)

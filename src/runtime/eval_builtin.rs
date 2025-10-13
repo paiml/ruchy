@@ -28,6 +28,7 @@ pub fn eval_builtin_function(
         try_eval_environment_function,
         try_eval_fs_function,
         try_eval_path_function,
+        try_eval_json_function,
     ];
 
     for try_eval in dispatchers {
@@ -1664,6 +1665,312 @@ fn try_eval_path_function(
         try_eval_path_part2,
         try_eval_path_part3a,
         try_eval_path_part3b,
+    ];
+
+    for dispatcher in dispatchers {
+        if let Some(result) = dispatcher(name, args)? {
+            return Ok(Some(result));
+        }
+    }
+    Ok(None)
+}
+
+// ==================== JSON FUNCTIONS ====================
+// Layer 3 of three-layer builtin pattern (proven from env/fs/path functions)
+// Phase 4: STDLIB_ACCESS_PLAN - JSON Module (10 functions)
+
+// Helper functions for JSON operations (reduce cognitive complexity)
+
+/// Helper: json_parse operation
+/// Complexity: 3
+fn eval_json_parse(args: &[Value]) -> Result<Value, InterpreterError> {
+    validate_arg_count("json_parse", args, 1)?;
+    match &args[0] {
+        Value::String(s) => {
+            match serde_json::from_str::<serde_json::Value>(s) {
+                Ok(json) => {
+                    // Convert serde_json::Value to Ruchy Value
+                    fn json_to_value(json: serde_json::Value) -> Value {
+                        match json {
+                            serde_json::Value::Null => Value::Nil,
+                            serde_json::Value::Bool(b) => Value::Bool(b),
+                            serde_json::Value::Number(n) => {
+                                if let Some(i) = n.as_i64() {
+                                    Value::Integer(i)
+                                } else if let Some(f) = n.as_f64() {
+                                    Value::Float(f)
+                                } else {
+                                    Value::Nil
+                                }
+                            },
+                            serde_json::Value::String(s) => Value::from_string(s),
+                            serde_json::Value::Array(arr) => {
+                                let values: Vec<Value> = arr.into_iter().map(json_to_value).collect();
+                                Value::Array(values.into())
+                            },
+                            serde_json::Value::Object(obj) => {
+                                let mut map = std::collections::HashMap::new();
+                                for (k, v) in obj {
+                                    map.insert(k, json_to_value(v));
+                                }
+                                Value::Object(std::sync::Arc::new(map))
+                            },
+                        }
+                    }
+                    Ok(json_to_value(json))
+                },
+                Err(e) => Err(InterpreterError::RuntimeError(format!("JSON parse error: {}", e))),
+            }
+        },
+        _ => Err(InterpreterError::RuntimeError("json_parse() expects a string argument".to_string())),
+    }
+}
+
+/// Helper: Convert Ruchy Value to serde_json::Value
+/// Complexity: 3
+fn value_to_json(value: &Value) -> Result<serde_json::Value, InterpreterError> {
+    match value {
+        Value::Nil => Ok(serde_json::Value::Null),
+        Value::Bool(b) => Ok(serde_json::Value::Bool(*b)),
+        Value::Integer(i) => Ok(serde_json::json!(*i)),
+        Value::Float(f) => Ok(serde_json::json!(*f)),
+        Value::String(s) => Ok(serde_json::Value::String(s.to_string())),
+        Value::Array(arr) => {
+            let json_arr: Result<Vec<serde_json::Value>, _> = arr.iter()
+                .map(value_to_json)
+                .collect();
+            Ok(serde_json::Value::Array(json_arr?))
+        },
+        Value::Object(map) => {
+            let mut json_obj = serde_json::Map::new();
+            for (k, v) in map.iter() {
+                json_obj.insert(k.clone(), value_to_json(v)?);
+            }
+            Ok(serde_json::Value::Object(json_obj))
+        },
+        _ => Err(InterpreterError::RuntimeError(format!("Cannot convert {:?} to JSON", value))),
+    }
+}
+
+/// Helper: json_stringify operation
+/// Complexity: 2
+fn eval_json_stringify(args: &[Value]) -> Result<Value, InterpreterError> {
+    validate_arg_count("json_stringify", args, 1)?;
+    let json = value_to_json(&args[0])?;
+    match serde_json::to_string(&json) {
+        Ok(s) => Ok(Value::from_string(s)),
+        Err(e) => Err(InterpreterError::RuntimeError(format!("JSON stringify error: {}", e))),
+    }
+}
+
+/// Helper: json_pretty operation
+/// Complexity: 2
+fn eval_json_pretty(args: &[Value]) -> Result<Value, InterpreterError> {
+    validate_arg_count("json_pretty", args, 1)?;
+    let json = value_to_json(&args[0])?;
+    match serde_json::to_string_pretty(&json) {
+        Ok(s) => Ok(Value::from_string(s)),
+        Err(e) => Err(InterpreterError::RuntimeError(format!("JSON pretty error: {}", e))),
+    }
+}
+
+/// Helper: json_read operation
+/// Complexity: 3
+fn eval_json_read(args: &[Value]) -> Result<Value, InterpreterError> {
+    validate_arg_count("json_read", args, 1)?;
+    match &args[0] {
+        Value::String(path) => {
+            let content = std::fs::read_to_string(path.as_ref())
+                .map_err(|e| InterpreterError::RuntimeError(format!("Failed to read file: {}", e)))?;
+            eval_json_parse(&[Value::from_string(content)])
+        },
+        _ => Err(InterpreterError::RuntimeError("json_read() expects a string argument".to_string())),
+    }
+}
+
+/// Helper: json_write operation
+/// Complexity: 3
+fn eval_json_write(args: &[Value]) -> Result<Value, InterpreterError> {
+    validate_arg_count("json_write", args, 2)?;
+    match &args[0] {
+        Value::String(path) => {
+            let json = value_to_json(&args[1])?;
+            let content = serde_json::to_string_pretty(&json)
+                .map_err(|e| InterpreterError::RuntimeError(format!("JSON stringify error: {}", e)))?;
+            std::fs::write(path.as_ref(), content)
+                .map_err(|e| InterpreterError::RuntimeError(format!("Failed to write file: {}", e)))?;
+            Ok(Value::Bool(true))
+        },
+        _ => Err(InterpreterError::RuntimeError("json_write() expects first argument to be string".to_string())),
+    }
+}
+
+/// Helper: json_validate operation
+/// Complexity: 2
+fn eval_json_validate(args: &[Value]) -> Result<Value, InterpreterError> {
+    validate_arg_count("json_validate", args, 1)?;
+    match &args[0] {
+        Value::String(s) => {
+            let is_valid = serde_json::from_str::<serde_json::Value>(s).is_ok();
+            Ok(Value::Bool(is_valid))
+        },
+        _ => Err(InterpreterError::RuntimeError("json_validate() expects a string argument".to_string())),
+    }
+}
+
+/// Helper: json_type operation
+/// Complexity: 3
+fn eval_json_type(args: &[Value]) -> Result<Value, InterpreterError> {
+    validate_arg_count("json_type", args, 1)?;
+    match &args[0] {
+        Value::String(s) => {
+            match serde_json::from_str::<serde_json::Value>(s) {
+                Ok(json) => {
+                    let type_str = match json {
+                        serde_json::Value::Null => "null",
+                        serde_json::Value::Bool(_) => "boolean",
+                        serde_json::Value::Number(_) => "number",
+                        serde_json::Value::String(_) => "string",
+                        serde_json::Value::Array(_) => "array",
+                        serde_json::Value::Object(_) => "object",
+                    };
+                    Ok(Value::from_string(type_str.to_string()))
+                },
+                Err(e) => Err(InterpreterError::RuntimeError(format!("JSON parse error: {}", e))),
+            }
+        },
+        _ => Err(InterpreterError::RuntimeError("json_type() expects a string argument".to_string())),
+    }
+}
+
+/// Helper: json_merge operation
+/// Complexity: 2
+fn eval_json_merge(args: &[Value]) -> Result<Value, InterpreterError> {
+    validate_arg_count("json_merge", args, 2)?;
+    let json1 = value_to_json(&args[0])?;
+    let json2 = value_to_json(&args[1])?;
+
+    fn merge_json(a: serde_json::Value, b: serde_json::Value) -> serde_json::Value {
+        match (a, b) {
+            (serde_json::Value::Object(mut a_map), serde_json::Value::Object(b_map)) => {
+                for (k, v) in b_map {
+                    if let Some(a_val) = a_map.get_mut(&k) {
+                        *a_val = merge_json(a_val.clone(), v);
+                    } else {
+                        a_map.insert(k, v);
+                    }
+                }
+                serde_json::Value::Object(a_map)
+            },
+            (_, b_val) => b_val,
+        }
+    }
+
+    let merged = merge_json(json1, json2);
+    eval_json_parse(&[Value::from_string(merged.to_string())])
+}
+
+/// Helper: json_get operation
+/// Complexity: 3
+fn eval_json_get(args: &[Value]) -> Result<Value, InterpreterError> {
+    validate_arg_count("json_get", args, 2)?;
+    let json = value_to_json(&args[0])?;
+
+    match &args[1] {
+        Value::String(path) => {
+            let parts: Vec<&str> = path.split('.').collect();
+
+            fn get_path<'a>(json: &'a serde_json::Value, path: &[&str]) -> Option<&'a serde_json::Value> {
+                if path.is_empty() {
+                    return Some(json);
+                }
+                match json {
+                    serde_json::Value::Object(map) => {
+                        map.get(path[0]).and_then(|v| get_path(v, &path[1..]))
+                    },
+                    _ => None,
+                }
+            }
+
+            match get_path(&json, &parts) {
+                Some(val) => eval_json_parse(&[Value::from_string(val.to_string())]),
+                None => Ok(Value::Nil),
+            }
+        },
+        _ => Err(InterpreterError::RuntimeError("json_get() expects second argument to be string".to_string())),
+    }
+}
+
+/// Helper: json_set operation
+/// Complexity: 3
+fn eval_json_set(args: &[Value]) -> Result<Value, InterpreterError> {
+    validate_arg_count("json_set", args, 3)?;
+    let mut json = value_to_json(&args[0])?;
+    let new_value = value_to_json(&args[2])?;
+
+    match &args[1] {
+        Value::String(path) => {
+            let parts: Vec<&str> = path.split('.').collect();
+
+            fn set_path(json: &mut serde_json::Value, path: &[&str], value: serde_json::Value) {
+                if path.is_empty() {
+                    *json = value;
+                    return;
+                }
+
+                if path.len() == 1 {
+                    if let serde_json::Value::Object(map) = json {
+                        map.insert(path[0].to_string(), value);
+                    }
+                } else if let serde_json::Value::Object(map) = json {
+                    if let Some(next) = map.get_mut(path[0]) {
+                        set_path(next, &path[1..], value);
+                    }
+                }
+            }
+
+            set_path(&mut json, &parts, new_value);
+            eval_json_parse(&[Value::from_string(json.to_string())])
+        },
+        _ => Err(InterpreterError::RuntimeError("json_set() expects second argument to be string".to_string())),
+    }
+}
+
+/// Dispatch JSON functions - Part 1 (functions 1-5)
+/// Complexity: 5
+fn try_eval_json_part1(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
+    match name {
+        "__builtin_json_parse__" => Ok(Some(eval_json_parse(args)?)),
+        "__builtin_json_stringify__" => Ok(Some(eval_json_stringify(args)?)),
+        "__builtin_json_pretty__" => Ok(Some(eval_json_pretty(args)?)),
+        "__builtin_json_read__" => Ok(Some(eval_json_read(args)?)),
+        "__builtin_json_write__" => Ok(Some(eval_json_write(args)?)),
+        _ => Ok(None),
+    }
+}
+
+/// Dispatch JSON functions - Part 2 (functions 6-10)
+/// Complexity: 6
+fn try_eval_json_part2(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
+    match name {
+        "__builtin_json_validate__" => Ok(Some(eval_json_validate(args)?)),
+        "__builtin_json_type__" => Ok(Some(eval_json_type(args)?)),
+        "__builtin_json_merge__" => Ok(Some(eval_json_merge(args)?)),
+        "__builtin_json_get__" => Ok(Some(eval_json_get(args)?)),
+        "__builtin_json_set__" => Ok(Some(eval_json_set(args)?)),
+        _ => Ok(None),
+    }
+}
+
+/// Dispatcher for JSON functions
+/// Complexity: 4
+fn try_eval_json_function(
+    name: &str,
+    args: &[Value],
+) -> Result<Option<Value>, InterpreterError> {
+    let dispatchers: &[fn(&str, &[Value]) -> Result<Option<Value>, InterpreterError>] = &[
+        try_eval_json_part1,
+        try_eval_json_part2,
     ];
 
     for dispatcher in dispatchers {

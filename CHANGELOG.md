@@ -6,6 +6,56 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ### Sprint: Book Compatibility (sprint-book-compat-001) - IN PROGRESS
 
+#### STDLIB-PHASE-4: Complete JSON Module - ✅ GREEN PHASE COMPLETE (2025-10-13)
+**Status**: ✅ Complete - ALL 10/10 JSON functions implemented and validated
+**Priority**: HIGH (Phase 4 of STDLIB_ACCESS_PLAN completed)
+
+**Functions Implemented**:
+1. ✅ json_parse(str) - Parse JSON string to value
+2. ✅ json_stringify(value) - Convert value to JSON string
+3. ✅ json_pretty(value) - Pretty-print JSON with indentation
+4. ✅ json_read(path) - Read and parse JSON file
+5. ✅ json_write(path, value) - Write value as JSON to file
+6. ✅ json_validate(str) - Check if string is valid JSON
+7. ✅ json_type(str) - Get JSON type without full parsing
+8. ✅ json_merge(obj1, obj2) - Deep merge two JSON objects
+9. ✅ json_get(obj, path) - Get nested value by dot path (e.g., "user.name")
+10. ✅ json_set(obj, path, value) - Set nested value by dot path
+
+**Manual Validation**: ✅ ALL 10 functions tested and working
+- json_parse/stringify: Round-trip successful
+- json_pretty: Correct indentation
+- json_read/write: File I/O working
+- json_validate/type: Correct validation and type detection
+- json_merge: Deep merge with correct precedence
+- json_get/set: Nested path access working
+
+**Implementation Architecture**:
+Three-layer builtin pattern (proven from env/fs/path modules):
+1. **Runtime Layer** (builtins.rs): 10 builtin_json_* functions + 5 helpers
+2. **Transpiler Layer** (statements.rs): try_transpile_json_function() with 10 cases
+   - Uses serde_json directly in compiled code
+   - Embedded helper functions for merge/get/set operations
+3. **Environment Layer** (eval_builtin.rs + builtin_init.rs):
+   - 2-part dispatcher (5 functions each) to maintain cognitive complexity ≤10
+   - try_eval_json_part1, try_eval_json_part2
+   - Main dispatcher: try_eval_json_function
+
+**Compiler Enhancement**:
+- Added uses_json() detection function (similar to uses_dataframes())
+- Smart compilation routes JSON usage to cargo (for serde_json access)
+- Updated handle_run_command() to use smart compiler backend
+
+**Dependencies**:
+- serde_json 1.0 (already in Cargo.toml, 90M+ downloads)
+- Automatic cargo compilation when JSON functions detected
+
+**Environment Count**: 79 → 89 (added 10 JSON functions)
+
+**Commit**: Complete JSON stdlib module with three-layer architecture
+
+---
+
 #### STDLIB-PHASE-3: Complete Path Module - ✅ GREEN PHASE COMPLETE (2025-10-13)
 **Status**: ✅ Complete - ALL 13/13 path functions implemented
 **Priority**: HIGH (Phase 3 of STDLIB_ACCESS_PLAN completed)

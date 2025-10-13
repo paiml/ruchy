@@ -265,14 +265,24 @@ fn write_file_with_context(path: &Path, content: &[u8]) -> Result<()> {
 
 /// Handle run command - compile and execute a Ruchy file
 pub fn handle_run_command(file: &Path, verbose: bool) -> Result<()> {
+    use ruchy::backend::{compile_to_binary, CompileOptions};
     log_run_start(file, verbose);
-    // Parse and transpile
-    let source = read_file_with_context(file)?;
-    let ast = parse_source(&source)?;
-    let rust_code = transpile_for_execution(&ast, file)?;
-    // Compile and execute
-    let (temp_source, binary_path) = prepare_compilation(&rust_code, verbose)?;
-    compile_rust_code(temp_source.path(), &binary_path)?;
+
+    // Use smart compiler that detects DataFrame/JSON usage
+    let binary_path = PathBuf::from("/tmp/ruchy_temp_run");
+    let options = CompileOptions {
+        output: binary_path.clone(),
+        opt_level: "0".to_string(), // Fast compilation for run mode
+        strip: false,
+        static_link: false,
+        target: None,
+        rustc_flags: Vec::new(),
+    };
+
+    // Compile (automatically uses cargo if JSON/DataFrame detected)
+    compile_to_binary(file, &options)?;
+
+    // Execute
     execute_binary(&binary_path)?;
     Ok(())
 }
