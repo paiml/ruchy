@@ -4,7 +4,7 @@
 meta:
   project: Ruchy Programming Language
   approach: Extreme Test-Driven Development + Toyota Way
-  version: 3.76.0-dev
+  version: 3.76.0
   production_readiness: 88%
   quality_gates:
     max_complexity: 10

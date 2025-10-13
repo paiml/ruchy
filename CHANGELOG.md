@@ -4,6 +4,8 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.76.0] - 2025-10-13
+
 ### 📊 DataFrame Implementation Sprint COMPLETED (DF-001 through DF-007)
 
 **EXTREME TDD: 80% Completion with 200K+ Property Tests**
