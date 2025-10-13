@@ -1,0 +1,384 @@
+# Ruchy Language Implementation Roadmap
+# Extreme TDD with Zero Tolerance Quality Gates
+
+meta:
+  project: Ruchy Programming Language
+  approach: Extreme Test-Driven Development + Toyota Way
+  version: 3.76.0-dev
+  production_readiness: 88%
+  quality_gates:
+    max_complexity: 10
+    max_cognitive: 10
+    min_coverage: 0.80
+    min_mutation_score: 0.75
+    satd_tolerance: 0
+  execution:
+    ticket_workflow: RED-GREEN-REFACTOR
+    commit_strategy: atomic_per_ticket
+    build_verification: mandatory_clean
+    defect_policy: STOP_THE_LINE
+  principles:
+    - "Jidoka: Stop the line for ANY defect"
+    - "Genchi Genbutsu: Go and see the root cause"
+    - "Kaizen: Continuous improvement via systematic TDD"
+    - "No False Advertising: README = ground truth"
+
+resolved_blockers:
+  - id: BLOCKER-001
+    title: "Thread-Safety"
+    status: RESOLVED
+    version: 3.75.0
+    solution: "Rc → Arc refactoring (47 files), property-tested 10K+ iterations"
+
+  - id: BLOCKER-002
+    title: "Standard Library"
+    status: RESOLVED
+    version: 3.73.0
+    solution: "10 modules complete (fs, http, json, path, env, process, time, logging, regex, dataframe)"
+
+  - id: BLOCKER-003
+    title: "Package Management"
+    status: RESOLVED
+    version: 3.76.0
+    solution: "Cargo integration (ruchy add/build), 19/19 tests passing"
+
+  - id: BLOCKER-004
+    title: "Language Completeness"
+    status: RESOLVED
+    version: 3.75.0
+    solution: "41/41 core features working, 100% one-liners passing"
+
+  - id: BLOCKER-005
+    title: "Quality Process"
+    status: RESOLVED
+    version: 3.75.0
+    solution: "PMAT gates enforced, max complexity=10, zero SATD, 99.4% tests passing"
+
+  - id: BLOCKER-006
+    title: "WASM Tooling"
+    status: RESOLVED
+    version: 3.75.0
+    solution: "100% complete (39/39 E2E, 200K property cases)"
+
+  - id: BLOCKER-007
+    title: "Complexity Debt (69 functions >10)"
+    status: RESOLVED
+    version: 3.75.0
+    solution: "Quality sprints batches 14-25, max complexity now = 10"
+
+remaining_blockers:
+  - id: BLOCKER-008
+    title: "DataFrame Implementation Gap"
+    status: IN_PROGRESS
+    priority: critical
+    current_completion: 40%
+    target_completion: 100%
+    estimated_effort: 60-80 hours
+    description: "Polars-rs integration exists but missing: filtering, groupby, aggregation, sorting, joins"
+
+sprints:
+  # CURRENT SPRINT: DataFrame Completion
+  - id: sprint-dataframe-001
+    name: "DataFrame Implementation Completion"
+    goal: "Complete DataFrame with polars-rs to 100%"
+    duration: 60-80 hours
+    approach: "EXTREME TDD + Property Tests (10K+) + Mutation Tests (1000+)"
+
+    tickets:
+      - id: DF-001
+        title: "DataFrame baseline audit and test verification"
+        priority: critical
+        status: IN_PROGRESS
+        requirements:
+          - "Run all DataFrame tests, document baseline"
+          - "Verify polars-rs integration working"
+          - "List implemented vs missing operations"
+          - "Create comprehensive test matrix"
+        tests:
+          - "cargo test dataframe --all-features"
+          - "Property test existing operations (10K iterations)"
+          - "Mutation test baseline (establish coverage)"
+        acceptance:
+          - "Baseline documented in docs/execution/dataframe-status.md"
+          - "All existing tests passing"
+          - "Test coverage baseline established"
+        five_whys_ready: true
+
+      - id: DF-002
+        title: "Implement DataFrame::filter() with predicates"
+        priority: high
+        status: PENDING
+        depends_on: [DF-001]
+        requirements:
+          - "Filter DataFrame rows by predicate function"
+          - "Support closures: |row| row.age > 18"
+          - "Error handling for invalid predicates"
+          - "Polars LazyFrame optimization"
+        tests:
+          - "test_filter_numeric_predicate"
+          - "test_filter_string_predicate"
+          - "test_filter_complex_boolean_logic"
+          - "test_filter_empty_result"
+          - "test_filter_error_invalid_column"
+          - "proptest_filter_preserves_schema"
+          - "proptest_filter_idempotent"
+          - "proptest_filter_never_increases_rows"
+        mutation_targets:
+          - "Boundary conditions in predicate evaluation"
+          - "Boolean negations in filter logic"
+          - "Error handling branches"
+        acceptance:
+          - "100% test coverage"
+          - "≥75% mutation score"
+          - "Complexity ≤10 per function"
+          - "Performance: <1ms per 1000 rows"
+
+      - id: DF-003
+        title: "Implement DataFrame::group_by() aggregation"
+        priority: high
+        status: PENDING
+        depends_on: [DF-002]
+        requirements:
+          - "Group DataFrame by one or more columns"
+          - "Support aggregation functions: mean, sum, count, min, max"
+          - "Handle multiple aggregations per group"
+          - "Polars GroupBy optimization"
+        tests:
+          - "test_groupby_single_column"
+          - "test_groupby_multiple_columns"
+          - "test_groupby_with_mean_aggregation"
+          - "test_groupby_with_multiple_aggs"
+          - "test_groupby_empty_dataframe"
+          - "test_groupby_error_missing_column"
+          - "proptest_groupby_partition_complete"
+          - "proptest_groupby_sum_equals_total"
+          - "proptest_groupby_deterministic"
+        mutation_targets:
+          - "Aggregation function implementations"
+          - "Group key comparison logic"
+          - "Empty group handling"
+        acceptance:
+          - "100% test coverage"
+          - "≥75% mutation score"
+          - "All aggregation functions tested"
+          - "Performance: <10ms per grouping operation"
+
+      - id: DF-004
+        title: "Implement DataFrame::sort_by() ordering"
+        priority: high
+        status: PENDING
+        depends_on: [DF-003]
+        requirements:
+          - "Sort DataFrame by column(s)"
+          - "Support ascending/descending order"
+          - "Handle multiple sort keys"
+          - "Stable sort guarantee"
+        tests:
+          - "test_sort_by_numeric_ascending"
+          - "test_sort_by_numeric_descending"
+          - "test_sort_by_string_column"
+          - "test_sort_by_multiple_columns"
+          - "test_sort_preserves_row_integrity"
+          - "test_sort_empty_dataframe"
+          - "proptest_sort_is_stable"
+          - "proptest_sort_preserves_count"
+          - "proptest_sort_order_correct"
+        mutation_targets:
+          - "Comparison operators (<, <=, ==, >=, >)"
+          - "Sort direction logic"
+          - "Multi-key priority handling"
+        acceptance:
+          - "100% test coverage"
+          - "≥75% mutation score"
+          - "Stable sort verified"
+          - "Performance: O(n log n)"
+
+      - id: DF-005
+        title: "Implement DataFrame::join() operations"
+        priority: medium
+        status: PENDING
+        depends_on: [DF-004]
+        requirements:
+          - "Inner, left, right, outer joins"
+          - "Join on single or multiple columns"
+          - "Handle duplicate join keys"
+          - "Polars join optimization"
+        tests:
+          - "test_inner_join_single_key"
+          - "test_left_join_preserves_left_rows"
+          - "test_right_join_preserves_right_rows"
+          - "test_outer_join_all_rows"
+          - "test_join_multiple_keys"
+          - "test_join_duplicate_keys"
+          - "test_join_empty_dataframe"
+          - "proptest_inner_join_subset_property"
+          - "proptest_outer_join_union_property"
+          - "proptest_left_join_cardinality"
+        mutation_targets:
+          - "Join type selection logic"
+          - "Key matching conditions"
+          - "Null handling in joins"
+        acceptance:
+          - "100% test coverage"
+          - "≥75% mutation score"
+          - "All join types tested"
+          - "Performance: <100ms for 10K row joins"
+
+      - id: DF-006
+        title: "Implement aggregation functions module"
+        priority: medium
+        status: PENDING
+        depends_on: [DF-003]
+        requirements:
+          - "mean(), sum(), count(), min(), max(), std(), var()"
+          - "Handle numeric and string columns appropriately"
+          - "Error handling for invalid operations"
+          - "Support null value handling"
+        tests:
+          - "test_mean_numeric_column"
+          - "test_sum_numeric_column"
+          - "test_count_with_nulls"
+          - "test_min_max_numeric"
+          - "test_std_variance_calculation"
+          - "test_agg_error_on_string_mean"
+          - "proptest_mean_within_bounds"
+          - "proptest_sum_associative"
+          - "proptest_count_non_negative"
+        mutation_targets:
+          - "Mathematical operators (+, -, *, /)"
+          - "Null value checks"
+          - "Division by zero handling"
+        acceptance:
+          - "100% test coverage"
+          - "≥75% mutation score"
+          - "All 7 aggregations implemented"
+          - "Mathematical accuracy verified"
+
+      - id: DF-007
+        title: "Update README examples to working DataFrame code"
+        priority: high
+        status: PENDING
+        depends_on: [DF-002, DF-003, DF-004]
+        requirements:
+          - "Replace \"NOT IMPLEMENTED\" examples with real code"
+          - "Add filter, groupby, sort examples"
+          - "All examples must pass README validation tests"
+          - "Update status from <10% to 100%"
+        tests:
+          - "test_readme_dataframe_examples_all_work"
+          - "test_readme_no_false_dataframe_claims"
+        acceptance:
+          - "README validation: 12/12 passing"
+          - "Zero \"NOT IMPLEMENTED\" markers"
+          - "DataFrame status: 100% complete"
+
+      - id: DF-008
+        title: "DataFrame comprehensive property test suite"
+        priority: critical
+        status: PENDING
+        depends_on: [DF-002, DF-003, DF-004, DF-005, DF-006]
+        requirements:
+          - "10,000+ iterations per property test"
+          - "Test mathematical properties (associativity, commutativity)"
+          - "Test DataFrame invariants (schema preservation, row integrity)"
+          - "Fuzz test with random DataFrames"
+        tests:
+          - "proptest_filter_then_count_leq_original"
+          - "proptest_groupby_sum_equals_total_sum"
+          - "proptest_sort_preserves_all_rows"
+          - "proptest_join_cardinality_bounds"
+          - "proptest_operations_preserve_schema"
+          - "proptest_chain_operations_deterministic"
+          - "fuzztest_random_dataframe_operations"
+        acceptance:
+          - "10,000+ test iterations per property"
+          - "Zero panics or crashes"
+          - "All invariants hold"
+          - "Execution time <60 seconds total"
+
+      - id: DF-009
+        title: "DataFrame mutation testing campaign (1000+ mutants)"
+        priority: critical
+        status: PENDING
+        depends_on: [DF-008]
+        requirements:
+          - "Run cargo-mutants on all DataFrame modules"
+          - "Target: ≥75% mutation score (CAUGHT/(CAUGHT+MISSED))"
+          - "Document acceptable mutations"
+          - "Fix test gaps revealed by mutations"
+        tests:
+          - "cargo mutants --file src/stdlib/dataframe.rs"
+          - "cargo mutants --file src/runtime/eval_dataframe*.rs"
+        mutation_categories:
+          - "Arithmetic operators: +, -, *, /"
+          - "Comparison operators: <, <=, ==, >=, >"
+          - "Boolean operators: &&, ||, !"
+          - "Function call deletions"
+          - "Return value replacements"
+        acceptance:
+          - "≥75% mutation score"
+          - "Zero UNCAUGHT mutations in critical paths"
+          - "All test gaps documented and fixed"
+          - "Mutation report committed to docs/"
+
+  # FUTURE SPRINTS
+  - id: sprint-ecosystem-001
+    name: "Ecosystem Development"
+    goal: "Build community and external library support"
+    status: PLANNED
+    tickets:
+      - id: ECO-001
+        title: "Rosetta Code validation (189 examples)"
+        priority: medium
+        status: PLANNED
+
+      - id: ECO-002
+        title: "Book compatibility increase (77% → 95%)"
+        priority: medium
+        status: PLANNED
+
+defect_tracking:
+  policy: "STOP_THE_LINE - Fix root cause immediately using Five Whys"
+  severity_levels:
+    - critical: "Blocks release, fix within 4 hours"
+    - high: "Impacts functionality, fix within 24 hours"
+    - medium: "Quality degradation, fix within 1 week"
+    - low: "Improvement opportunity, backlog"
+
+  process:
+    1: "HALT: Stop all other work when defect found"
+    2: "REPRODUCE: Create minimal failing test (RED phase)"
+    3: "ROOT_CAUSE: Five Whys analysis, document in defect log"
+    4: "FIX: Implement solution (GREEN phase)"
+    5: "PREVENT: Add regression tests, update quality gates (REFACTOR phase)"
+    6: "VERIFY: Mutation tests prove fix is effective"
+
+quality_metrics:
+  current:
+    complexity_max: 10
+    complexity_median: 5
+    test_coverage: 99.4%
+    passing_tests: 3902
+    mutation_coverage: 75%  # Target, not all modules tested yet
+    satd_count: 0
+  targets:
+    complexity_max: 10
+    test_coverage: 95%
+    mutation_coverage: 80%
+    satd_count: 0
+
+tools:
+  testing:
+    - cargo test
+    - cargo nextest
+    - proptest
+    - cargo-mutants
+    - assert_cmd
+  quality:
+    - pmat (quality gates)
+    - clippy
+    - cargo-llvm-cov
+  development:
+    - ruchy (self-hosting)
+    - cargo (build system)
+    - polars (DataFrame backend)
