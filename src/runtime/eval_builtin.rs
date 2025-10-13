@@ -58,23 +58,51 @@ fn try_eval_math_function(name: &str, args: &[Value]) -> Result<Option<Value>, I
 }
 
 /// Basic math functions (sqrt, pow, abs, min, max)
-fn try_eval_basic_math(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
+/// Basic math functions - Part 1
+/// Complexity: 4 (within Toyota Way limits)
+fn try_eval_basic_math_part1(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
     match name {
         "__builtin_sqrt__" => Ok(Some(eval_sqrt(args)?)),
         "__builtin_pow__" => Ok(Some(eval_pow(args)?)),
         "__builtin_abs__" => Ok(Some(eval_abs(args)?)),
+        _ => Ok(None),
+    }
+}
+
+/// Basic math functions - Part 2
+/// Complexity: 3 (within Toyota Way limits)
+fn try_eval_basic_math_part2(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
+    match name {
         "__builtin_min__" => Ok(Some(eval_min(args)?)),
         "__builtin_max__" => Ok(Some(eval_max(args)?)),
         _ => Ok(None),
     }
 }
 
-/// Advanced math functions (floor, ceil, round, trig)
-fn try_eval_advanced_math(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
+/// Dispatcher for basic math functions
+/// Complexity: 3 (within Toyota Way limits)
+fn try_eval_basic_math(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
+    if let Some(result) = try_eval_basic_math_part1(name, args)? {
+        return Ok(Some(result));
+    }
+    try_eval_basic_math_part2(name, args)
+}
+
+/// Advanced math functions - Part 1 (rounding)
+/// Complexity: 4 (within Toyota Way limits)
+fn try_eval_advanced_math_part1(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
     match name {
         "__builtin_floor__" => Ok(Some(eval_floor(args)?)),
         "__builtin_ceil__" => Ok(Some(eval_ceil(args)?)),
         "__builtin_round__" => Ok(Some(eval_round(args)?)),
+        _ => Ok(None),
+    }
+}
+
+/// Advanced math functions - Part 2 (trigonometry)
+/// Complexity: 4 (within Toyota Way limits)
+fn try_eval_advanced_math_part2(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
+    match name {
         "__builtin_sin__" => Ok(Some(eval_sin(args)?)),
         "__builtin_cos__" => Ok(Some(eval_cos(args)?)),
         "__builtin_tan__" => Ok(Some(eval_tan(args)?)),
@@ -82,17 +110,45 @@ fn try_eval_advanced_math(name: &str, args: &[Value]) -> Result<Option<Value>, I
     }
 }
 
-fn try_eval_utility_function(
-    name: &str,
-    args: &[Value],
-) -> Result<Option<Value>, InterpreterError> {
+/// Dispatcher for advanced math functions
+/// Complexity: 3 (within Toyota Way limits)
+fn try_eval_advanced_math(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
+    if let Some(result) = try_eval_advanced_math_part1(name, args)? {
+        return Ok(Some(result));
+    }
+    try_eval_advanced_math_part2(name, args)
+}
+
+/// Utility functions - Part 1
+/// Complexity: 3 (within Toyota Way limits)
+fn try_eval_utility_part1(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
     match name {
         "__builtin_len__" => Ok(Some(eval_len(args)?)),
         "__builtin_range__" => Ok(Some(eval_range(args)?)),
+        _ => Ok(None),
+    }
+}
+
+/// Utility functions - Part 2
+/// Complexity: 3 (within Toyota Way limits)
+fn try_eval_utility_part2(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
+    match name {
         "__builtin_type__" => Ok(Some(eval_type(args)?)),
         "__builtin_reverse__" => Ok(Some(eval_reverse(args)?)),
         _ => Ok(None),
     }
+}
+
+/// Dispatcher for utility functions
+/// Complexity: 3 (within Toyota Way limits, reduced from 6)
+fn try_eval_utility_function(
+    name: &str,
+    args: &[Value],
+) -> Result<Option<Value>, InterpreterError> {
+    if let Some(result) = try_eval_utility_part1(name, args)? {
+        return Ok(Some(result));
+    }
+    try_eval_utility_part2(name, args)
 }
 
 fn try_eval_time_function(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
@@ -123,37 +179,47 @@ fn try_eval_dataframe_function(
 ///
 /// # Complexity
 /// Cyclomatic complexity: 6 (within Toyota Way limits)
-fn eval_println(args: &[Value]) -> Result<Value, InterpreterError> {
-    let output = if args.is_empty() {
+/// Format string with interpolation
+/// Complexity: 2 (within Toyota Way limits)
+fn format_with_interpolation(fmt_str: &str, args: &[Value]) -> String {
+    let mut result = fmt_str.to_string();
+    for arg in args {
+        if let Some(pos) = result.find("{}") {
+            result.replace_range(pos..pos + 2, &format!("{arg}"));
+        }
+    }
+    result
+}
+
+/// Join values with spaces
+/// Complexity: 1 (within Toyota Way limits)
+fn join_values(args: &[Value]) -> String {
+    args.iter()
+        .map(|v| format!("{v}"))
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
+/// Format println output
+/// Complexity: 3 (within Toyota Way limits, reduced from 7)
+fn format_println_output(args: &[Value]) -> String {
+    if args.is_empty() {
         "\n".to_string()
     } else if let Value::String(fmt_str) = &args[0] {
         if fmt_str.contains("{}") {
-            // Perform string interpolation
-            let mut result = fmt_str.to_string();
-            for arg in &args[1..] {
-                if let Some(pos) = result.find("{}") {
-                    result.replace_range(pos..pos + 2, &format!("{arg}"));
-                }
-            }
-            format!("{result}\n")
+            format!("{}\n", format_with_interpolation(fmt_str, &args[1..]))
         } else {
-            // Fallback: join all args with spaces (backward compatibility)
-            let text = args
-                .iter()
-                .map(|v| format!("{v}"))
-                .collect::<Vec<_>>()
-                .join(" ");
-            format!("{text}\n")
+            format!("{}\n", join_values(args))
         }
     } else {
-        // Fallback: join all args with spaces (backward compatibility)
-        let text = args
-            .iter()
-            .map(|v| format!("{v}"))
-            .collect::<Vec<_>>()
-            .join(" ");
-        format!("{text}\n")
-    };
+        format!("{}\n", join_values(args))
+    }
+}
+
+/// Print values to stdout with newline
+/// Complexity: 2 (within Toyota Way limits, reduced from 7)
+fn eval_println(args: &[Value]) -> Result<Value, InterpreterError> {
+    let output = format_println_output(args);
 
     // Write to output buffer (for notebook capture)
     if let Ok(mut buf) = crate::runtime::builtins::OUTPUT_BUFFER.lock() {
@@ -458,6 +524,32 @@ fn eval_range_two_args(start_val: &Value, end_val: &Value) -> Result<Value, Inte
 ///
 /// # Complexity
 /// Cyclomatic complexity: 8 (within Toyota Way limits)
+/// Generate range with positive step
+/// Complexity: 2 (within Toyota Way limits)
+fn generate_range_forward(start: i64, end: i64, step: i64) -> Vec<Value> {
+    let mut result = Vec::new();
+    let mut i = start;
+    while i < end {
+        result.push(Value::Integer(i));
+        i += step;
+    }
+    result
+}
+
+/// Generate range with negative step
+/// Complexity: 2 (within Toyota Way limits)
+fn generate_range_backward(start: i64, end: i64, step: i64) -> Vec<Value> {
+    let mut result = Vec::new();
+    let mut i = start;
+    while i > end {
+        result.push(Value::Integer(i));
+        i += step;
+    }
+    result
+}
+
+/// Range function with three arguments (start, end, step)
+/// Complexity: 4 (within Toyota Way limits, reduced from 6)
 fn eval_range_three_args(
     start_val: &Value,
     end_val: &Value,
@@ -470,20 +562,11 @@ fn eval_range_three_args(
                     "range() step cannot be zero".to_string(),
                 ));
             }
-            let mut result = Vec::new();
-            if *step > 0 {
-                let mut i = *start;
-                while i < *end {
-                    result.push(Value::Integer(i));
-                    i += step;
-                }
+            let result = if *step > 0 {
+                generate_range_forward(*start, *end, *step)
             } else {
-                let mut i = *start;
-                while i > *end {
-                    result.push(Value::Integer(i));
-                    i += step;
-                }
-            }
+                generate_range_backward(*start, *end, *step)
+            };
             Ok(Value::Array(result.into()))
         }
         _ => Err(InterpreterError::RuntimeError(
@@ -793,27 +876,41 @@ struct JsonParserState {
 }
 
 /// Process a single JSON character
+/// Handle opening brace in JSON parsing
+/// Complexity: 1 (within Toyota Way limits)
+fn handle_opening_brace(state: &mut JsonParserState, ch: char) {
+    state.brace_count += 1;
+    state.current.push(ch);
+}
+
+/// Handle closing brace in JSON parsing
+/// Complexity: 2 (within Toyota Way limits)
+fn handle_closing_brace(state: &mut JsonParserState, ch: char, objects: &mut Vec<String>) {
+    state.brace_count -= 1;
+    state.current.push(ch);
+    if state.brace_count == 0 {
+        objects.push(state.current.trim().to_string());
+        state.current.clear();
+    }
+}
+
+/// Handle default character in JSON parsing
+/// Complexity: 2 (within Toyota Way limits)
+fn handle_json_default_char(ch: char, state: &mut JsonParserState) {
+    if state.brace_count > 0 {
+        state.current.push(ch);
+    }
+}
+
+/// Process a single character in JSON parsing
+/// Complexity: 5 (within Toyota Way limits, reduced from 7)
 fn process_json_char(ch: char, state: &mut JsonParserState, objects: &mut Vec<String>) {
     match ch {
         '"' => state.in_string = !state.in_string,
-        '{' if !state.in_string => {
-            state.brace_count += 1;
-            state.current.push(ch);
-        }
-        '}' if !state.in_string => {
-            state.brace_count -= 1;
-            state.current.push(ch);
-            if state.brace_count == 0 {
-                objects.push(state.current.trim().to_string());
-                state.current.clear();
-            }
-        }
+        '{' if !state.in_string => handle_opening_brace(state, ch),
+        '}' if !state.in_string => handle_closing_brace(state, ch, objects),
         ',' if !state.in_string && state.brace_count == 0 => {}
-        _ => {
-            if state.brace_count > 0 {
-                state.current.push(ch);
-            }
-        }
+        _ => handle_json_default_char(ch, state),
     }
 }
 
@@ -835,6 +932,27 @@ fn extract_json_keys(obj_str: &str) -> Result<Vec<String>, InterpreterError> {
 
 /// Parse JSON object into key-value pairs
 /// Complexity: 7 (within Toyota Way limits)
+/// Parse JSON value from string
+/// Complexity: 4 (within Toyota Way limits)
+fn parse_json_value(value_str: &str) -> Value {
+    if value_str.starts_with('"') {
+        // String value
+        let unquoted = value_str.trim_matches('"');
+        Value::from_string(unquoted.to_string())
+    } else if let Ok(i) = value_str.parse::<i64>() {
+        // Integer value
+        Value::Integer(i)
+    } else if let Ok(f) = value_str.parse::<f64>() {
+        // Float value
+        Value::Float(f)
+    } else {
+        // Default to string
+        Value::from_string(value_str.to_string())
+    }
+}
+
+/// Parse JSON object string into key-value pairs
+/// Complexity: 3 (within Toyota Way limits, reduced from 6)
 fn parse_json_object(obj_str: &str) -> Result<Vec<(String, Value)>, InterpreterError> {
     let mut pairs = Vec::new();
     let inner = obj_str.trim().trim_start_matches('{').trim_end_matches('}');
@@ -843,22 +961,7 @@ fn parse_json_object(obj_str: &str) -> Result<Vec<(String, Value)>, InterpreterE
         if let Some(colon_pos) = pair.find(':') {
             let key = pair[..colon_pos].trim().trim_matches('"').to_string();
             let value_str = pair[colon_pos + 1..].trim();
-
-            let value = if value_str.starts_with('"') {
-                // String value
-                let unquoted = value_str.trim_matches('"');
-                Value::from_string(unquoted.to_string())
-            } else if let Ok(i) = value_str.parse::<i64>() {
-                // Integer value
-                Value::Integer(i)
-            } else if let Ok(f) = value_str.parse::<f64>() {
-                // Float value
-                Value::Float(f)
-            } else {
-                // Default to string
-                Value::from_string(value_str.to_string())
-            };
-
+            let value = parse_json_value(value_str);
             pairs.push((key, value));
         }
     }
@@ -869,13 +972,14 @@ fn parse_json_object(obj_str: &str) -> Result<Vec<(String, Value)>, InterpreterE
 // Environment Functions
 
 /// Dispatch environment functions
-/// Complexity: 2 (within Toyota Way limits)
+/// Complexity: 3 (within Toyota Way limits)
 fn try_eval_environment_function(
     name: &str,
     args: &[Value],
 ) -> Result<Option<Value>, InterpreterError> {
     match name {
         "__builtin_env_args__" => Ok(Some(eval_env_args(args)?)),
+        "__builtin_env_var__" => Ok(Some(eval_env_var(args)?)),
         _ => Ok(None),
     }
 }
@@ -892,6 +996,25 @@ fn eval_env_args(args: &[Value]) -> Result<Value, InterpreterError> {
         .collect();
 
     Ok(Value::from_array(cmd_args))
+}
+
+/// Evaluate env_var() builtin function
+/// Returns environment variable value by key
+/// Complexity: 3 (within Toyota Way limits)
+fn eval_env_var(args: &[Value]) -> Result<Value, InterpreterError> {
+    validate_arg_count("env_var", args, 1)?;
+
+    match &args[0] {
+        Value::String(key) => match std::env::var(key.as_ref()) {
+            Ok(val) => Ok(Value::from_string(val)),
+            Err(_) => Err(InterpreterError::RuntimeError(
+                format!("Environment variable '{}' not found", key),
+            )),
+        },
+        _ => Err(InterpreterError::RuntimeError(
+            "env_var() expects a string argument".to_string(),
+        )),
+    }
 }
 
 #[cfg(test)]

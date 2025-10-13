@@ -6,6 +6,42 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ### Sprint: Book Compatibility (sprint-book-compat-001) - IN PROGRESS
 
+#### STDLIB-PHASE-1: env_var() Implementation - ✅ GREEN PHASE COMPLETE (2025-10-13)
+**Status**: ✅ Complete - 2/8 environment functions done
+**Task**: Implement env_var(key: String) -> Result<String>
+**Priority**: HIGH (Phase 1 of STDLIB_ACCESS_PLAN)
+
+**Implementation**:
+Three-layer architecture (proven pattern from env_args):
+1. Runtime: `builtin_env_var()` in builtins.rs (complexity 3)
+2. Transpiler: `env_var` case in try_transpile_environment_function() (complexity 3)
+3. Environment: `eval_env_var()` in eval_builtin.rs + registration in builtin_init.rs (complexity 3)
+
+**Test Results**: 6/6 passing
+- ✅ Basic env_var with PATH environment variable
+- ✅ Compiled mode execution
+- ✅ Custom environment variables
+- ✅ Error handling for missing variables
+- ✅ Argument count validation
+- ✅ Type validation (string arguments only)
+
+**Manual Verification**:
+- Interpreter mode: ✅ Works perfectly
+- Transpiler mode: ✅ Generates correct Rust code
+- Custom env vars: ✅ Runtime environment variables accessible
+
+**Files Modified**:
+- `src/runtime/builtins.rs` - Added builtin_env_var with pattern matching
+- `src/backend/transpiler/statements.rs` - Added env_var transpilation
+- `src/runtime/builtin_init.rs` - Registered __builtin_env_var__
+- `src/runtime/eval_builtin.rs` - Added eval_env_var dispatcher
+- `tests/stdlib_env_var.rs` - Complete RED/GREEN test suite
+
+**Progress**: 2/8 environment functions complete
+- ✅ env_args() (STDLIB-DEFECT-001)
+- ✅ env_var() (this entry)
+- ⏭️ env_set_var(), env_remove_var(), env_vars(), env_current_dir(), env_set_current_dir(), env_temp_dir()
+
 #### STDLIB-DEFECT-001: env Module Not Accessible - ✅ GREEN PHASE COMPLETE (2025-10-13)
 **Status**: ✅ GREEN PHASE COMPLETE - env_args() builtin function implemented
 **Problem**: env::args() exists but cannot be called from Ruchy code (RESOLVED)

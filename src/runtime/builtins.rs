@@ -102,6 +102,7 @@ impl BuiltinRegistry {
 
         // Environment functions
         self.register("env_args", builtin_env_args);
+        self.register("env_var", builtin_env_var);
     }
 
     /// Register a builtin function
@@ -622,6 +623,27 @@ fn builtin_env_args(args: &[Value]) -> Result<Value, InterpreterError> {
         .collect();
 
     Ok(Value::from_array(cmd_args))
+}
+
+// Get environment variable by key
+fn builtin_env_var(args: &[Value]) -> Result<Value, InterpreterError> {
+    if args.len() != 1 {
+        return Err(InterpreterError::RuntimeError(
+            "env_var() expects 1 argument".to_string(),
+        ));
+    }
+
+    match &args[0] {
+        Value::String(key) => match std::env::var(key.as_ref()) {
+            Ok(val) => Ok(Value::from_string(val)),
+            Err(_) => Err(InterpreterError::RuntimeError(
+                format!("Environment variable '{}' not found", key),
+            )),
+        },
+        _ => Err(InterpreterError::RuntimeError(
+            "env_var() expects a string argument".to_string(),
+        )),
+    }
 }
 
 #[cfg(test)]
