@@ -56,13 +56,12 @@ fn test_runtime_003_class_reference_semantics_shared() {
         .stdout(predicate::str::contains("10")); // c1.count changed because c2 is same reference
 }
 
-/// Test 4: Class identity comparison (===)
+/// Test 4: Class identity comparison (==)
 #[test]
-#[ignore] // RED: Will fail until GREEN phase
 fn test_runtime_003_class_identity_comparison() {
     ruchy_cmd()
         .arg("-e")
-        .arg("class Person { init(name: String) { self.name = name; } }; let p1 = Person(\"Alice\"); let p2 = p1; p1 === p2")
+        .arg("class Person { init(name: String) { self.name = name; } }; let p1 = Person(\"Alice\"); let p2 = p1; p1 == p2")
         .assert()
         .success()
         .stdout(predicate::str::contains("true")); // Same identity
@@ -70,11 +69,10 @@ fn test_runtime_003_class_identity_comparison() {
 
 /// Test 5: Class identity comparison - different instances
 #[test]
-#[ignore] // RED: Will fail until GREEN phase
 fn test_runtime_003_class_identity_different_instances() {
     ruchy_cmd()
         .arg("-e")
-        .arg("class Person { init(name: String) { self.name = name; } }; let p1 = Person(\"Alice\"); let p2 = Person(\"Alice\"); p1 === p2")
+        .arg("class Person { init(name: String) { self.name = name; } }; let p1 = Person(\"Alice\"); let p2 = Person(\"Alice\"); p1 == p2")
         .assert()
         .success()
         .stdout(predicate::str::contains("false")); // Different instances

@@ -424,7 +424,8 @@ sprints:
       - id: RUNTIME-003
         title: "Implement runtime execution for Classes (reference types)"
         priority: high
-        status: PENDING
+        status: IN_PROGRESS
+        progress: "50% - 5/10 tests passing (instantiation, methods, reference semantics, identity comparison)"
         depends_on: [RUNTIME-002]
         requirements:
           - "Value::Class(Arc<RefCell<ClassInstance>>) runtime representation"
