@@ -62,6 +62,7 @@ impl Transpiler {
             Self::handle_type_conversions,
             Self::handle_collection_constructors,
             Self::handle_dataframe_functions,
+            Self::handle_environment_functions,
         ]
     }
 
@@ -318,6 +319,30 @@ impl Transpiler {
             &body_tokens,
             attributes,
         )
+    }
+
+    /// Handle environment functions - Complexity: 3
+    fn handle_environment_functions(
+        &self,
+        name: &str,
+        _func_tokens: &TokenStream,
+        args: &[Expr],
+    ) -> Result<Option<TokenStream>> {
+        match name {
+            "env_args" => self.try_transpile_env_args(args),
+            _ => Ok(None),
+        }
+    }
+
+    /// Transpile env_args() to std::env::args().collect()
+    fn try_transpile_env_args(&self, args: &[Expr]) -> Result<Option<TokenStream>> {
+        if !args.is_empty() {
+            anyhow::bail!("env_args() expects no arguments");
+        }
+
+        Ok(Some(quote! {
+            std::env::args().collect::<Vec<String>>()
+        }))
     }
 }
 

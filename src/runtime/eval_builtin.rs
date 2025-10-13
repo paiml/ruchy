@@ -25,6 +25,7 @@ pub fn eval_builtin_function(
         try_eval_utility_function,
         try_eval_time_function,
         try_eval_dataframe_function,
+        try_eval_environment_function,
     ];
 
     for try_eval in dispatchers {
@@ -863,6 +864,34 @@ fn parse_json_object(obj_str: &str) -> Result<Vec<(String, Value)>, InterpreterE
     }
 
     Ok(pairs)
+}
+
+// Environment Functions
+
+/// Dispatch environment functions
+/// Complexity: 2 (within Toyota Way limits)
+fn try_eval_environment_function(
+    name: &str,
+    args: &[Value],
+) -> Result<Option<Value>, InterpreterError> {
+    match name {
+        "__builtin_env_args__" => Ok(Some(eval_env_args(args)?)),
+        _ => Ok(None),
+    }
+}
+
+/// Evaluate env_args() builtin function
+/// Returns command-line arguments as an array of strings
+/// Complexity: 2 (within Toyota Way limits)
+fn eval_env_args(args: &[Value]) -> Result<Value, InterpreterError> {
+    validate_arg_count("env_args", args, 0)?;
+
+    // Get command-line arguments
+    let cmd_args: Vec<Value> = std::env::args()
+        .map(|s| Value::from_string(s))
+        .collect();
+
+    Ok(Value::from_array(cmd_args))
 }
 
 #[cfg(test)]

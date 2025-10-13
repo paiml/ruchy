@@ -5980,3 +5980,30 @@ This version contained "shameful failures" of basic functionality:
 - Simple transpilation to Rust
 - CLI interface
 - Basic type system
+**GREEN Phase Implementation**:
+- Added `env_args()` as builtin function (workaround)
+- Located: `src/runtime/builtins.rs:616-629`
+- Complexity: 1 (within limit of 10)
+- Includes doctest example
+
+**What Works Now**:
+```ruchy
+let args = env_args();  // ✅ Works!
+println(args);           // Prints command-line arguments
+```
+
+**What Still Doesn't Work**:
+```ruchy
+let args = env::args();  // ❌ Still fails - needs namespace support
+```
+
+**Root Issue Remains**:
+- Full namespace system (env::, fs::, http::) not implemented
+- Workaround only fixes ONE function
+- Other 100+ stdlib functions still inaccessible
+
+**Next Steps**: 
+- Implement proper namespace/module system
+- OR flatten all stdlib to builtins (env_var, fs_read, etc.)
+- OR add transpiler module import generation
+

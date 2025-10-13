@@ -99,6 +99,9 @@ impl BuiltinRegistry {
         self.register("pop", builtin_pop);
         self.register("reverse", builtin_reverse);
         self.register("sort", builtin_sort);
+
+        // Environment functions
+        self.register("env_args", builtin_env_args);
     }
 
     /// Register a builtin function
@@ -307,10 +310,22 @@ fn builtin_abs(args: &[Value]) -> Result<Value, InterpreterError> {
     }
 }
 
+/// Helper: Compare two values for min operation
+/// Returns true if b < a
+fn compare_less(a: &Value, b: &Value) -> Result<bool, InterpreterError> {
+    match (a, b) {
+        (Value::Integer(x), Value::Integer(y)) => Ok(y < x),
+        (Value::Float(x), Value::Float(y)) => Ok(y < x),
+        _ => Err(InterpreterError::RuntimeError(
+            "min() expects all arguments to be numbers of the same type".to_string(),
+        )),
+    }
+}
+
 /// Built-in min function
 ///
 /// # Complexity
-/// Cyclomatic complexity: 5 (within limit of 10)
+/// Cyclomatic complexity: 2 (reduced via helper extraction)
 fn builtin_min(args: &[Value]) -> Result<Value, InterpreterError> {
     if args.is_empty() {
         return Err(InterpreterError::RuntimeError(
@@ -320,31 +335,29 @@ fn builtin_min(args: &[Value]) -> Result<Value, InterpreterError> {
 
     let mut min_val = &args[0];
     for arg in &args[1..] {
-        match (min_val, arg) {
-            (Value::Integer(a), Value::Integer(b)) => {
-                if b < a {
-                    min_val = arg;
-                }
-            }
-            (Value::Float(a), Value::Float(b)) => {
-                if b < a {
-                    min_val = arg;
-                }
-            }
-            _ => {
-                return Err(InterpreterError::RuntimeError(
-                    "min() expects all arguments to be numbers of the same type".to_string(),
-                ))
-            }
+        if compare_less(min_val, arg)? {
+            min_val = arg;
         }
     }
     Ok(min_val.clone())
 }
 
+/// Helper: Compare two values for max operation
+/// Returns true if b > a
+fn compare_greater(a: &Value, b: &Value) -> Result<bool, InterpreterError> {
+    match (a, b) {
+        (Value::Integer(x), Value::Integer(y)) => Ok(y > x),
+        (Value::Float(x), Value::Float(y)) => Ok(y > x),
+        _ => Err(InterpreterError::RuntimeError(
+            "max() expects all arguments to be numbers of the same type".to_string(),
+        )),
+    }
+}
+
 /// Built-in max function
 ///
 /// # Complexity
-/// Cyclomatic complexity: 5 (within limit of 10)
+/// Cyclomatic complexity: 2 (reduced via helper extraction)
 fn builtin_max(args: &[Value]) -> Result<Value, InterpreterError> {
     if args.is_empty() {
         return Err(InterpreterError::RuntimeError(
@@ -354,22 +367,8 @@ fn builtin_max(args: &[Value]) -> Result<Value, InterpreterError> {
 
     let mut max_val = &args[0];
     for arg in &args[1..] {
-        match (max_val, arg) {
-            (Value::Integer(a), Value::Integer(b)) => {
-                if b > a {
-                    max_val = arg;
-                }
-            }
-            (Value::Float(a), Value::Float(b)) => {
-                if b > a {
-                    max_val = arg;
-                }
-            }
-            _ => {
-                return Err(InterpreterError::RuntimeError(
-                    "max() expects all arguments to be numbers of the same type".to_string(),
-                ))
-            }
+        if compare_greater(max_val, arg)? {
+            max_val = arg;
         }
     }
     Ok(max_val.clone())
@@ -591,6 +590,38 @@ fn builtin_sort(args: &[Value]) -> Result<Value, InterpreterError> {
             "sort() expects an array".to_string(),
         )),
     }
+}
+
+// Environment Functions
+
+/// Built-in env_args function - returns command-line arguments
+///
+/// # Examples
+///
+/// ```
+/// use ruchy::runtime::builtins::BuiltinRegistry;
+/// use ruchy::runtime::Value;
+///
+/// let registry = BuiltinRegistry::new();
+/// let result = registry.call("env_args", &[]).unwrap();
+/// // Returns array of command-line arguments
+/// ```
+///
+/// # Complexity
+/// Cyclomatic complexity: 1 (within limit of 10)
+fn builtin_env_args(args: &[Value]) -> Result<Value, InterpreterError> {
+    if !args.is_empty() {
+        return Err(InterpreterError::RuntimeError(
+            "env_args() expects no arguments".to_string(),
+        ));
+    }
+
+    // Get command-line arguments
+    let cmd_args: Vec<Value> = std::env::args()
+        .map(|s| Value::String(s.into()))
+        .collect();
+
+    Ok(Value::from_array(cmd_args))
 }
 
 #[cfg(test)]

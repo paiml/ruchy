@@ -29,6 +29,7 @@ pub fn init_global_environment() -> HashMap<String, Value> {
     add_advanced_utility_functions(&mut global_env);
     add_string_functions(&mut global_env);
     add_random_time_functions(&mut global_env);
+    add_environment_functions(&mut global_env);
 
     global_env
 }
@@ -211,6 +212,17 @@ fn add_random_time_functions(global_env: &mut HashMap<String, Value>) {
     global_env.insert(
         "sleep".to_string(),
         Value::from_string("__builtin_sleep__".to_string()),
+    );
+}
+
+/// Add environment functions
+///
+/// # Complexity
+/// Cyclomatic complexity: 1 (within Toyota Way limits)
+fn add_environment_functions(global_env: &mut HashMap<String, Value>) {
+    global_env.insert(
+        "env_args".to_string(),
+        Value::from_string("__builtin_env_args__".to_string()),
     );
 }
 
