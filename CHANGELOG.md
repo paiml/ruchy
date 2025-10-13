@@ -165,6 +165,35 @@ test result: ok. 5 passed; 0 failed; 0 ignored
 
 **Next**: RUNTIME-003 - Implement Classes (reference types)
 
+#### RUNTIME-003: Class Implementation - RED Phase (2025-10-13)
+**Status**: 🔴 RED PHASE COMPLETE
+**Tests Created**: 10 unit tests (all #[ignore]d, will fail when un-ignored)
+
+**Test Suite**: `tests/runtime_003_classes_tdd.rs` (223 lines)
+
+**Tests Will Validate**:
+- Basic class instantiation with init method
+- Instance methods with self binding
+- Reference semantics (shared on assignment)
+- Identity comparison (=== operator)
+- Field mutation via methods
+- Multiple methods per class
+- Error handling (missing init)
+- Method return values
+
+**Key Differences from Structs (RUNTIME-002)**:
+- ✅ Reference semantics (not value semantics) - assignments share state
+- ✅ Identity comparison (=== not ==) - compares references
+- ✅ Mutable state via RefCell
+- ✅ Instance methods with self
+- ✅ Init method for construction
+
+**Current Status**:
+- 1 test PASSING (summary/documentation)
+- 10 tests IGNORED (RED phase - will fail when un-ignored)
+
+**Next**: GREEN phase - Implement `Value::Class` with `Arc<RefCell<ClassInstance>>`
+
 ## [3.76.0] - 2025-10-13
 
 ### 📊 DataFrame Implementation Sprint COMPLETED (DF-001 through DF-007)
