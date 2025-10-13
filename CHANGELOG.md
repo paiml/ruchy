@@ -6,9 +6,9 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ### Sprint: Runtime Implementation (sprint-runtime-001) - IN PROGRESS
 
-#### RUNTIME-003: Class Implementation - GREEN Phase START (2025-10-13)
-**Status**: 🟢 GREEN PHASE - Parser Fix + Value::Class Variant Added
-**Tests Passing**: 0/10 (implementation in progress)
+#### RUNTIME-003: Class Implementation - GREEN Phase (2025-10-13)
+**Status**: 🟢 GREEN PHASE - First Test Passing! ✅
+**Tests Passing**: 1/10 (basic instantiation works)
 
 **Critical Discovery**: Parser did NOT support `init` keyword for constructors!
 - **ROOT CAUSE**: Parser only recognized `new` keyword, not `init`
@@ -48,11 +48,40 @@ echo 'class Person { init(name: String) { self.name = name; } }' > /tmp/test_cla
 
 **Build Status**: ✅ COMPILES (0 errors, 0 warnings)
 
-**Next Steps**:
-1. Implement class instantiation evaluation (call `init` constructor)
-2. Implement method dispatch with `self` binding
-3. Implement field access on class instances
-4. Un-ignore tests one by one
+**Implementation Complete** (GREEN phase - basic functionality):
+1. ✅ Class instantiation with arguments: `Person("Alice")`
+2. ✅ Constructor execution (`init` method runs)
+3. ✅ Field assignment in constructor: `self.name = name`
+4. ✅ Field access on instances: `p.name`
+5. ✅ First test passing: `test_runtime_003_class_instantiation_with_init`
+
+**Runtime Implementation Details**:
+- Added `instantiate_class_with_args()` function (lines 4795-4923)
+  - Creates `Value::Class` instance with Arc<RwLock<HashMap>> fields
+  - Extracts methods from class definition
+  - Initializes fields with defaults
+  - Executes `init` or `new` constructor with `self` binding
+  - Returns initialized class instance
+- Updated `call_function()` to handle Class objects (lines 1890-1899)
+- Updated `eval_field_access()` for Class variant (lines 1427-1439)
+- Updated `eval_assign()` to handle Class field assignment (lines 2988-2993)
+
+**Test Results**:
+- ✅ test_runtime_003_class_instantiation_with_init: PASSING
+- ⏸️ 9 tests remaining (still #[ignore]d)
+
+**Manual Validation**:
+```bash
+./target/debug/ruchy -e "class Person { init(name: String) { self.name = name; } }; let p = Person(\"Alice\"); p.name"
+# Output: "Alice" ✅
+```
+
+**Next Steps** (remaining GREEN phase work):
+1. Un-ignore remaining tests one by one
+2. Implement instance method dispatch (`person.have_birthday()`)
+3. Implement reference semantics validation (test 3)
+4. Implement identity comparison (`===` operator)
+5. Error handling (missing init, etc.)
 
 **Toyota Way Principles Applied**:
 - **Jidoka**: Stopped runtime work when parser defect discovered

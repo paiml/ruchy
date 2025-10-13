@@ -25,7 +25,6 @@ fn ruchy_cmd() -> Command {
 
 /// Test 1: Basic class instantiation with init
 #[test]
-#[ignore] // RED: Will fail until GREEN phase
 fn test_runtime_003_class_instantiation_with_init() {
     ruchy_cmd()
         .arg("-e")
