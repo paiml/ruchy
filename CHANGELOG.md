@@ -6,6 +6,52 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ### Sprint: Book Compatibility (sprint-book-compat-001) - IN PROGRESS
 
+#### STDLIB-DEFECT-001: env Module Not Accessible - RED PHASE (2025-10-13)
+**Status**: 🔴 RED PHASE COMPLETE - Critical defect discovered
+**Problem**: env::args() exists but cannot be called from Ruchy code
+**Severity**: HIGH
+**Files**:
+- `src/stdlib/env.rs:119` - Function exists but inaccessible
+- `tests/stdlib_defect_001_env_args.rs` - RED phase test suite
+- `docs/STDLIB_DEFECTS.md` - Comprehensive defect documentation
+
+**Discovery**: Book compatibility report was ACCURATE
+- Report claims: "stdlib functions don't work"
+- Reality: Functions EXIST but are INACCESSIBLE
+- Root cause: No namespace/module system in runtime
+- Impact: ALL stdlib functions (env, fs, http, json, path, etc.) are unreachable
+
+**Critical Finding**:
+This explains ALL 15+ "missing" stdlib functions from book report:
+- ✅ `env::args()` - Exists in stdlib/env.rs but can't be called
+- ✅ `fs::read()` - Exists in stdlib/fs.rs but can't be called
+- ✅ `http::get()` - Exists in stdlib/http.rs but can't be called
+- ✅ All other stdlib - Implemented but inaccessible
+
+**Error Message**:
+```
+error[E0433]: failed to resolve: use of unresolved module `env`
+```
+
+**RED Phase Tests**:
+5 tests created demonstrating the defect:
+1. ❌ `test_stdlib_defect_001_green_env_args_basic`
+2. ❌ `test_stdlib_defect_001_green_env_args_iteration`
+3. ❌ `test_stdlib_defect_001_green_env_args_compile`
+4. ❌ `test_stdlib_defect_001_green_env_var`
+5. ✅ `test_stdlib_defect_001_baseline_builtins` (control test)
+
+**Solution Needed**:
+- Add namespace support to runtime (env::, fs::, http::, etc.)
+- OR expose stdlib functions as builtins
+- OR generate proper module imports in transpiler
+
+**Methodology**: EXTREME TDD (RED → GREEN → REFACTOR)
+
+**Next Steps**: GREEN phase - implement namespace support or alternate solution
+
+---
+
 #### TRANSPILER-DEFECT-003: .to_string() Method Calls - VALIDATED ✅ (2025-10-13)
 **Status**: ✅ **COMPLETE** - Comprehensive test suite validates fix
 **Problem**: .to_string() method calls may not be preserved in transpilation
