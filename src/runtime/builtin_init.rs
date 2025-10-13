@@ -32,6 +32,7 @@ pub fn init_global_environment() -> HashMap<String, Value> {
     add_environment_functions(&mut global_env);
     add_fs_functions(&mut global_env);
     add_path_functions(&mut global_env);
+    add_json_functions(&mut global_env);
 
     global_env
 }
@@ -327,6 +328,21 @@ fn add_path_functions(global_env: &mut HashMap<String, Value>) {
     global_env.insert("path_normalize".to_string(), Value::from_string("__builtin_path_normalize__".to_string()));
 }
 
+/// Register JSON functions in global environment
+/// Phase 4: STDLIB_ACCESS_PLAN - JSON Module (10 functions)
+fn add_json_functions(global_env: &mut HashMap<String, Value>) {
+    global_env.insert("json_parse".to_string(), Value::from_string("__builtin_json_parse__".to_string()));
+    global_env.insert("json_stringify".to_string(), Value::from_string("__builtin_json_stringify__".to_string()));
+    global_env.insert("json_pretty".to_string(), Value::from_string("__builtin_json_pretty__".to_string()));
+    global_env.insert("json_read".to_string(), Value::from_string("__builtin_json_read__".to_string()));
+    global_env.insert("json_write".to_string(), Value::from_string("__builtin_json_write__".to_string()));
+    global_env.insert("json_validate".to_string(), Value::from_string("__builtin_json_validate__".to_string()));
+    global_env.insert("json_type".to_string(), Value::from_string("__builtin_json_type__".to_string()));
+    global_env.insert("json_merge".to_string(), Value::from_string("__builtin_json_merge__".to_string()));
+    global_env.insert("json_get".to_string(), Value::from_string("__builtin_json_get__".to_string()));
+    global_env.insert("json_set".to_string(), Value::from_string("__builtin_json_set__".to_string()));
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -397,7 +413,7 @@ mod tests {
 
         // Should have all builtin functions
         // 1 constant + 9 basic + 11 math + 3 I/O + 3 utility
-        // + 4 conversion + 8 advanced + 2 string + 5 random/time + 8 env + 12 fs + 13 path = 79 total
+        // + 4 conversion + 8 advanced + 2 string + 5 random/time + 8 env + 12 fs + 13 path + 10 json = 89 total
         // env functions: env_args, env_var, env_set_var, env_remove_var, env_vars,
         //                env_current_dir, env_set_current_dir, env_temp_dir
         // fs functions: fs_read, fs_write, fs_exists, fs_create_dir, fs_remove_file,
@@ -406,7 +422,9 @@ mod tests {
         // path functions: path_join, path_join_many, path_parent, path_file_name, path_file_stem,
         //                 path_extension, path_is_absolute, path_is_relative, path_canonicalize,
         //                 path_with_extension, path_with_file_name, path_components, path_normalize
-        assert_eq!(env.len(), 79);
+        // json functions: json_parse, json_stringify, json_pretty, json_read, json_write,
+        //                 json_validate, json_type, json_merge, json_get, json_set
+        assert_eq!(env.len(), 89);
     }
 
     #[test]

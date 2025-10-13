@@ -135,6 +135,18 @@ impl BuiltinRegistry {
         self.register("path_with_file_name", builtin_path_with_file_name);
         self.register("path_components", builtin_path_components);
         self.register("path_normalize", builtin_path_normalize);
+
+        // JSON functions
+        self.register("json_parse", builtin_json_parse);
+        self.register("json_stringify", builtin_json_stringify);
+        self.register("json_pretty", builtin_json_pretty);
+        self.register("json_read", builtin_json_read);
+        self.register("json_write", builtin_json_write);
+        self.register("json_validate", builtin_json_validate);
+        self.register("json_type", builtin_json_type);
+        self.register("json_merge", builtin_json_merge);
+        self.register("json_get", builtin_json_get);
+        self.register("json_set", builtin_json_set);
     }
 
     /// Register a builtin function
@@ -1170,6 +1182,306 @@ fn builtin_path_normalize(args: &[Value]) -> Result<Value, InterpreterError> {
             Ok(Value::from_string(normalized.to_string_lossy().to_string()))
         },
         _ => Err(InterpreterError::RuntimeError("path_normalize() expects a string argument".to_string())),
+    }
+}
+
+// ==================== JSON FUNCTIONS ====================
+// Phase 4: STDLIB_ACCESS_PLAN - JSON Module (10 functions)
+// Thin wrapper pattern: delegate to serde_json (complexity ≤2 per function)
+
+/// Convert serde_json::Value to Ruchy Value
+/// Complexity: 2 (thin wrapper helper)
+fn json_value_to_ruchy(json: serde_json::Value) -> Value {
+    match json {
+        serde_json::Value::Null => Value::Nil,
+        serde_json::Value::Bool(b) => Value::Bool(b),
+        serde_json::Value::Number(n) => {
+            if let Some(i) = n.as_i64() {
+                Value::Integer(i)
+            } else if let Some(f) = n.as_f64() {
+                Value::Float(f)
+            } else {
+                Value::Nil
+            }
+        },
+        serde_json::Value::String(s) => Value::from_string(s),
+        serde_json::Value::Array(arr) => {
+            let values: Vec<Value> = arr.into_iter().map(json_value_to_ruchy).collect();
+            Value::Array(values.into())
+        },
+        serde_json::Value::Object(obj) => {
+            let mut map = std::collections::HashMap::new();
+            for (k, v) in obj {
+                map.insert(k, json_value_to_ruchy(v));
+            }
+            Value::Object(std::sync::Arc::new(map))
+        },
+    }
+}
+
+/// Convert Ruchy Value to serde_json::Value
+/// Complexity: 2 (thin wrapper helper)
+fn ruchy_value_to_json(value: &Value) -> Result<serde_json::Value, InterpreterError> {
+    match value {
+        Value::Nil => Ok(serde_json::Value::Null),
+        Value::Bool(b) => Ok(serde_json::Value::Bool(*b)),
+        Value::Integer(i) => Ok(serde_json::json!(*i)),
+        Value::Float(f) => Ok(serde_json::json!(*f)),
+        Value::String(s) => Ok(serde_json::Value::String(s.to_string())),
+        Value::Array(arr) => {
+            let json_arr: Result<Vec<serde_json::Value>, _> = arr.iter()
+                .map(ruchy_value_to_json)
+                .collect();
+            Ok(serde_json::Value::Array(json_arr?))
+        },
+        Value::Object(map) => {
+            let mut json_obj = serde_json::Map::new();
+            for (k, v) in map.iter() {
+                json_obj.insert(k.clone(), ruchy_value_to_json(v)?);
+            }
+            Ok(serde_json::Value::Object(json_obj))
+        },
+        Value::ObjectMut(map) => {
+            let guard = map.lock().unwrap();
+            let mut json_obj = serde_json::Map::new();
+            for (k, v) in guard.iter() {
+                json_obj.insert(k.clone(), ruchy_value_to_json(v)?);
+            }
+            Ok(serde_json::Value::Object(json_obj))
+        },
+        _ => Err(InterpreterError::RuntimeError(format!("Cannot convert {:?} to JSON", value))),
+    }
+}
+
+/// json_parse(str) - Parse JSON string to Ruchy value
+/// Complexity: 2 (thin wrapper)
+fn builtin_json_parse(args: &[Value]) -> Result<Value, InterpreterError> {
+    if args.len() != 1 {
+        return Err(InterpreterError::RuntimeError("json_parse() expects 1 argument".to_string()));
+    }
+    match &args[0] {
+        Value::String(s) => {
+            match serde_json::from_str::<serde_json::Value>(s) {
+                Ok(json) => Ok(json_value_to_ruchy(json)),
+                Err(e) => Err(InterpreterError::RuntimeError(format!("JSON parse error: {}", e))),
+            }
+        },
+        _ => Err(InterpreterError::RuntimeError("json_parse() expects a string argument".to_string())),
+    }
+}
+
+/// json_stringify(value) - Convert Ruchy value to JSON string
+/// Complexity: 2 (thin wrapper)
+fn builtin_json_stringify(args: &[Value]) -> Result<Value, InterpreterError> {
+    if args.len() != 1 {
+        return Err(InterpreterError::RuntimeError("json_stringify() expects 1 argument".to_string()));
+    }
+    let json = ruchy_value_to_json(&args[0])?;
+    match serde_json::to_string(&json) {
+        Ok(s) => Ok(Value::from_string(s)),
+        Err(e) => Err(InterpreterError::RuntimeError(format!("JSON stringify error: {}", e))),
+    }
+}
+
+/// json_pretty(value) - Pretty-print JSON with indentation
+/// Complexity: 2 (thin wrapper)
+fn builtin_json_pretty(args: &[Value]) -> Result<Value, InterpreterError> {
+    if args.len() != 1 {
+        return Err(InterpreterError::RuntimeError("json_pretty() expects 1 argument".to_string()));
+    }
+    let json = ruchy_value_to_json(&args[0])?;
+    match serde_json::to_string_pretty(&json) {
+        Ok(s) => Ok(Value::from_string(s)),
+        Err(e) => Err(InterpreterError::RuntimeError(format!("JSON pretty error: {}", e))),
+    }
+}
+
+/// json_read(path) - Read and parse JSON file
+/// Complexity: 2 (thin wrapper)
+fn builtin_json_read(args: &[Value]) -> Result<Value, InterpreterError> {
+    if args.len() != 1 {
+        return Err(InterpreterError::RuntimeError("json_read() expects 1 argument".to_string()));
+    }
+    match &args[0] {
+        Value::String(path) => {
+            let content = std::fs::read_to_string(path.as_ref())
+                .map_err(|e| InterpreterError::RuntimeError(format!("Failed to read file: {}", e)))?;
+            match serde_json::from_str::<serde_json::Value>(&content) {
+                Ok(json) => Ok(json_value_to_ruchy(json)),
+                Err(e) => Err(InterpreterError::RuntimeError(format!("JSON parse error: {}", e))),
+            }
+        },
+        _ => Err(InterpreterError::RuntimeError("json_read() expects a string argument".to_string())),
+    }
+}
+
+/// json_write(path, value) - Write value as JSON to file
+/// Complexity: 2 (thin wrapper)
+fn builtin_json_write(args: &[Value]) -> Result<Value, InterpreterError> {
+    if args.len() != 2 {
+        return Err(InterpreterError::RuntimeError("json_write() expects 2 arguments".to_string()));
+    }
+    match &args[0] {
+        Value::String(path) => {
+            let json = ruchy_value_to_json(&args[1])?;
+            let content = serde_json::to_string_pretty(&json)
+                .map_err(|e| InterpreterError::RuntimeError(format!("JSON stringify error: {}", e)))?;
+            std::fs::write(path.as_ref(), content)
+                .map_err(|e| InterpreterError::RuntimeError(format!("Failed to write file: {}", e)))?;
+            Ok(Value::Bool(true))
+        },
+        _ => Err(InterpreterError::RuntimeError("json_write() expects first argument to be string".to_string())),
+    }
+}
+
+/// json_validate(str) - Check if string is valid JSON
+/// Complexity: 2 (thin wrapper)
+fn builtin_json_validate(args: &[Value]) -> Result<Value, InterpreterError> {
+    if args.len() != 1 {
+        return Err(InterpreterError::RuntimeError("json_validate() expects 1 argument".to_string()));
+    }
+    match &args[0] {
+        Value::String(s) => {
+            let is_valid = serde_json::from_str::<serde_json::Value>(s).is_ok();
+            Ok(Value::Bool(is_valid))
+        },
+        _ => Err(InterpreterError::RuntimeError("json_validate() expects a string argument".to_string())),
+    }
+}
+
+/// json_type(str) - Get JSON type without full parsing
+/// Complexity: 2 (thin wrapper)
+fn builtin_json_type(args: &[Value]) -> Result<Value, InterpreterError> {
+    if args.len() != 1 {
+        return Err(InterpreterError::RuntimeError("json_type() expects 1 argument".to_string()));
+    }
+    match &args[0] {
+        Value::String(s) => {
+            match serde_json::from_str::<serde_json::Value>(s) {
+                Ok(json) => {
+                    let type_str = match json {
+                        serde_json::Value::Null => "null",
+                        serde_json::Value::Bool(_) => "boolean",
+                        serde_json::Value::Number(_) => "number",
+                        serde_json::Value::String(_) => "string",
+                        serde_json::Value::Array(_) => "array",
+                        serde_json::Value::Object(_) => "object",
+                    };
+                    Ok(Value::from_string(type_str.to_string()))
+                },
+                Err(e) => Err(InterpreterError::RuntimeError(format!("JSON parse error: {}", e))),
+            }
+        },
+        _ => Err(InterpreterError::RuntimeError("json_type() expects a string argument".to_string())),
+    }
+}
+
+/// json_merge(obj1, obj2) - Deep merge two JSON objects
+/// Complexity: 2 (delegates to helper)
+fn builtin_json_merge(args: &[Value]) -> Result<Value, InterpreterError> {
+    if args.len() != 2 {
+        return Err(InterpreterError::RuntimeError("json_merge() expects 2 arguments".to_string()));
+    }
+
+    // Convert both args to JSON, merge, convert back
+    let json1 = ruchy_value_to_json(&args[0])?;
+    let json2 = ruchy_value_to_json(&args[1])?;
+
+    let merged = merge_json_values(json1, json2);
+    Ok(json_value_to_ruchy(merged))
+}
+
+/// Helper: Deep merge two JSON values
+/// Complexity: 3 (recursive merge logic)
+fn merge_json_values(a: serde_json::Value, b: serde_json::Value) -> serde_json::Value {
+    match (a, b) {
+        (serde_json::Value::Object(mut a_map), serde_json::Value::Object(b_map)) => {
+            for (k, v) in b_map {
+                if let Some(a_val) = a_map.get_mut(&k) {
+                    *a_val = merge_json_values(a_val.clone(), v);
+                } else {
+                    a_map.insert(k, v);
+                }
+            }
+            serde_json::Value::Object(a_map)
+        },
+        (_, b_val) => b_val,
+    }
+}
+
+/// json_get(obj, path) - Get nested value by path (e.g., "user.name")
+/// Complexity: 2 (thin wrapper)
+fn builtin_json_get(args: &[Value]) -> Result<Value, InterpreterError> {
+    if args.len() != 2 {
+        return Err(InterpreterError::RuntimeError("json_get() expects 2 arguments".to_string()));
+    }
+
+    let json = ruchy_value_to_json(&args[0])?;
+
+    match &args[1] {
+        Value::String(path) => {
+            let parts: Vec<&str> = path.split('.').collect();
+            let result = get_json_path(&json, &parts);
+            match result {
+                Some(val) => Ok(json_value_to_ruchy(val.clone())),
+                None => Ok(Value::Nil),
+            }
+        },
+        _ => Err(InterpreterError::RuntimeError("json_get() expects second argument to be string".to_string())),
+    }
+}
+
+/// Helper: Get value at JSON path
+/// Complexity: 2 (recursive path traversal)
+fn get_json_path<'a>(json: &'a serde_json::Value, path: &[&str]) -> Option<&'a serde_json::Value> {
+    if path.is_empty() {
+        return Some(json);
+    }
+
+    match json {
+        serde_json::Value::Object(map) => {
+            map.get(path[0]).and_then(|v| get_json_path(v, &path[1..]))
+        },
+        _ => None,
+    }
+}
+
+/// json_set(obj, path, value) - Set nested value by path
+/// Complexity: 2 (thin wrapper)
+fn builtin_json_set(args: &[Value]) -> Result<Value, InterpreterError> {
+    if args.len() != 3 {
+        return Err(InterpreterError::RuntimeError("json_set() expects 3 arguments".to_string()));
+    }
+
+    let mut json = ruchy_value_to_json(&args[0])?;
+    let new_value = ruchy_value_to_json(&args[2])?;
+
+    match &args[1] {
+        Value::String(path) => {
+            let parts: Vec<&str> = path.split('.').collect();
+            set_json_path(&mut json, &parts, new_value);
+            Ok(json_value_to_ruchy(json))
+        },
+        _ => Err(InterpreterError::RuntimeError("json_set() expects second argument to be string".to_string())),
+    }
+}
+
+/// Helper: Set value at JSON path
+/// Complexity: 3 (recursive path setting with mutation)
+fn set_json_path(json: &mut serde_json::Value, path: &[&str], value: serde_json::Value) {
+    if path.is_empty() {
+        *json = value;
+        return;
+    }
+
+    if path.len() == 1 {
+        if let serde_json::Value::Object(map) = json {
+            map.insert(path[0].to_string(), value);
+        }
+    } else if let serde_json::Value::Object(map) = json {
+        if let Some(next) = map.get_mut(path[0]) {
+            set_json_path(next, &path[1..], value);
+        }
     }
 }
 
