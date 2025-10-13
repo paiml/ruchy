@@ -71,7 +71,7 @@ for file in $(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(rs|r
 
     # Complexity check (only for src/ files)
     if command -v pmat &> /dev/null; then
-        pmat analyze complexity "$file" \
+        pmat analyze complexity --file "$file" \
             --max-cyclomatic 10 \
             --max-cognitive 10 \
             --fail-on-violation || {

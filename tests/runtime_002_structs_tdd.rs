@@ -36,7 +36,6 @@ fn test_runtime_002_struct_instantiation_basic() {
 
 /// Test 2: Struct field access (x field)
 #[test]
-#[ignore] // RED: Will fail until GREEN phase
 fn test_runtime_002_struct_field_access_x() {
     ruchy_cmd()
         .arg("-e")
@@ -48,7 +47,6 @@ fn test_runtime_002_struct_field_access_x() {
 
 /// Test 3: Struct field access (y field)
 #[test]
-#[ignore] // RED: Will fail until GREEN phase
 fn test_runtime_002_struct_field_access_y() {
     ruchy_cmd()
         .arg("-e")
@@ -72,11 +70,10 @@ fn test_runtime_002_struct_value_semantics_copy() {
 
 /// Test 5: Nested struct instantiation
 #[test]
-#[ignore] // RED: Will fail until GREEN phase
 fn test_runtime_002_struct_nested_structs() {
     ruchy_cmd()
         .arg("-e")
-        .arg("struct Point { x: i32 }; struct Rectangle { top_left: Point }; let rect = Rectangle { top_left: Point { x: 10 } }; println!(rect.top_left.x)")
+        .arg("struct Point { x: i32 }; struct Rectangle { top_left: Point }; let rect = Rectangle { top_left: Point { x: 10 } }; rect.top_left.x")
         .assert()
         .success()
         .stdout(predicate::str::contains("10"));
@@ -84,11 +81,10 @@ fn test_runtime_002_struct_nested_structs() {
 
 /// Test 6: Struct with different field types
 #[test]
-#[ignore] // RED: Will fail until GREEN phase
 fn test_runtime_002_struct_mixed_field_types() {
     ruchy_cmd()
         .arg("-e")
-        .arg("struct Person { name: String, age: i32 }; let p = Person { name: \"Alice\", age: 30 }; println!(p.name)")
+        .arg("struct Person { name: String, age: i32 }; let p = Person { name: \"Alice\", age: 30 }; p.name")
         .assert()
         .success()
         .stdout(predicate::str::contains("Alice"));
@@ -96,7 +92,6 @@ fn test_runtime_002_struct_mixed_field_types() {
 
 /// Test 7: Error handling - missing field
 #[test]
-#[ignore] // RED: Will fail until GREEN phase
 fn test_runtime_002_struct_error_missing_field() {
     ruchy_cmd()
         .arg("-e")
@@ -108,7 +103,6 @@ fn test_runtime_002_struct_error_missing_field() {
 
 /// Test 8: Error handling - extra field
 #[test]
-#[ignore] // RED: Will fail until GREEN phase
 fn test_runtime_002_struct_error_extra_field() {
     ruchy_cmd()
         .arg("-e")
@@ -120,11 +114,10 @@ fn test_runtime_002_struct_error_extra_field() {
 
 /// Test 9: Error handling - accessing non-existent field
 #[test]
-#[ignore] // RED: Will fail until GREEN phase
 fn test_runtime_002_struct_error_invalid_field_access() {
     ruchy_cmd()
         .arg("-e")
-        .arg("struct Point { x: i32, y: i32 }; let p = Point { x: 10, y: 20 }; println!(p.z)") // z doesn't exist
+        .arg("struct Point { x: i32, y: i32 }; let p = Point { x: 10, y: 20 }; p.z") // z doesn't exist
         .assert()
         .failure() // Should fail with error
         .stderr(predicate::str::contains("field").or(predicate::str::contains("not found")));
@@ -132,11 +125,10 @@ fn test_runtime_002_struct_error_invalid_field_access() {
 
 /// Test 10: Struct with float fields
 #[test]
-#[ignore] // RED: Will fail until GREEN phase
 fn test_runtime_002_struct_float_fields() {
     ruchy_cmd()
         .arg("-e")
-        .arg("struct Point { x: f64, y: f64 }; let p = Point { x: 1.5, y: 2.5 }; println!(p.x)")
+        .arg("struct Point { x: f64, y: f64 }; let p = Point { x: 1.5, y: 2.5 }; p.x")
         .assert()
         .success()
         .stdout(predicate::str::contains("1.5"));
