@@ -57,13 +57,19 @@ if git diff --cached --name-only | grep -q "docs/execution/roadmap.md"; then
     fi
 fi
 
-# Run PMAT quality checks on staged files
+# Run PMAT quality checks on staged files (excluding tests)
 echo "🔧 Running PMAT quality analysis..."
 
 for file in $(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(rs|ruchy)$'); do
+    # Skip test files (tests/, benches/, examples/ can have higher complexity)
+    if echo "$file" | grep -qE '^(tests|benches|examples)/'; then
+        echo "  Skipping test file: $file (tests exempt from complexity checks)"
+        continue
+    fi
+
     echo "  Checking $file..."
 
-    # Complexity check
+    # Complexity check (only for src/ files)
     if command -v pmat &> /dev/null; then
         pmat analyze complexity "$file" \
             --max-cyclomatic 10 \
