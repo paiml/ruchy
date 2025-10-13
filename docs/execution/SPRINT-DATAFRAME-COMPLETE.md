@@ -37,12 +37,17 @@ Successfully advanced DataFrame implementation from ~45% (misdocumented as <10%)
 **Complexity**: 6 (Toyota Way compliant)
 
 ### ✅ DF-003: Aggregation Functions
-**Methodology**: EXTREME TDD (RED → GREEN → REFACTOR)
+**Methodology**: EXTREME TDD (RED → GREEN → REFACTOR) ✅ COMPLETE
 **New Functions**:
 - `std()` - Standard deviation (population)
 - `var()` - Variance (population)
 
-**Test Coverage**: 16 tests (13 new + 3 regression)
+**EXTREME TDD Cycle**:
+1. **RED** (2025-10-13): 13 tests written first, marked `#[ignore]`, all failed as expected
+2. **GREEN** (2025-10-13): Implemented std() and var() functions, all 16 tests pass
+3. **REFACTOR** (2025-10-13): Un-ignored all tests, verified complexity ≤10, zero clippy warnings
+
+**Test Coverage**: 16 tests (13 new + 3 regression) - ALL ACTIVE (none ignored)
 **Mathematical Validation**: Verified var = std² relationship
 **Test File**: `tests/dataframe_aggregations_tdd.rs` (232 lines)
 **Complexity**: 10 (at Toyota Way limit, acceptable)

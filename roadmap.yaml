@@ -149,8 +149,13 @@ sprints:
         priority: high
         status: COMPLETED
         completion_date: 2025-10-13
+        refactor_date: 2025-10-13
         depends_on: [DF-002]
-        test_results: "16 tests passing (EXTREME TDD: RED→GREEN→REFACTOR)"
+        test_results: "16 tests passing (EXTREME TDD: RED→GREEN→REFACTOR complete)"
+        extreme_tdd_cycle:
+          red: "13 tests written first, marked #[ignore], all failed as expected"
+          green: "Implemented std() and var() functions, all 16 tests pass"
+          refactor: "Un-ignored all tests, verified complexity ≤10, zero clippy warnings"
         requirements:
           - "Group DataFrame by one or more columns"
           - "Support aggregation functions: mean, sum, count, min, max"
@@ -272,7 +277,8 @@ sprints:
       - id: DF-007
         title: "Update README examples to working DataFrame code"
         priority: high
-        status: PENDING
+        status: COMPLETED
+        completion_date: 2025-10-13
         depends_on: [DF-002, DF-003, DF-004]
         requirements:
           - "Replace \"NOT IMPLEMENTED\" examples with real code"
