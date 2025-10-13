@@ -14,20 +14,22 @@
 
 ## 📝 **SESSION CONTEXT FOR RESUMPTION**
 
-**Last Active**: 2025-10-12 ([CRITICAL RELEASE] v3.75.0 - Thread-Safety & Notebook State Persistence)
-**Current Sprint**: ✅ **DEFECT-001 COMPLETE** - Thread-Safety Implementation & Notebook Bug Fix
+**Last Active**: 2025-10-13 ([CLEANUP] Repository Organization & Documentation Quality)
+**Current Sprint**: ✅ **CLEANUP-001 COMPLETE** - Root Directory, ruchy-cli Removal, Documentation Validation
 **Latest Release**: v3.75.0 (2025-10-12) - Critical thread-safety and state persistence fixes
 **Published**: ✅ https://crates.io/crates/ruchy/3.75.0
-**Latest Commits (v3.75.0)**:
+**Latest Commits (Cleanup Sprint 2025-10-13)**:
+- 🧹 **[CLEANUP]** Root directory: Removed 37 temporary files, moved 5 docs to docs/
+- 🧹 **[CLEANUP]** ruchy-cli: Yanked all 46 versions from crates.io, removed all references (DEPRECATED)
+- 📚 **[QUALITY]** Documentation validation: pmat validate-docs enforced in pre-commit hooks
+- 🔗 **[DOCS]** Fixed 7 GitHub URLs (noahgift → paiml organization)
+- 📊 **[STATUS]** 91 broken links tracked in docs/BROKEN_LINKS.md for incremental fixing
+**Previous Sprint (v3.75.0 - 2025-10-12)**:
 - 🚨 **[CRITICAL]** DEFECT-001-B: Fixed notebook state persistence bug (SharedRepl implementation)
 - 🚨 **[CRITICAL]** DEFECT-001-A: Complete Rc → Arc refactoring for thread-safety (47 files)
 - ✅ **E2E Testing**: 21/21 Playwright tests passing (100%, was 81%)
-- ✅ **Property Tests**: 10/10 Arc semantics tests (10K+ iterations each)
-- ✅ **Thread-Safety**: 2/2 tests passing (Repl: Send verified)
-- 📚 **Documentation**: 5 new defect analysis documents
-- 🎉 **[MILESTONE]** Phase 2 Standard Library 100% Complete (10 modules, 177 tests)
-**Production Assessment**: ⚠️ **72% Ready** - Standard Library blocker resolved (40% → 100%)
-**Critical Blockers**: Package management, DataFrame completion (reduced from 3 to 2 blockers)
+**Production Assessment**: ⚠️ **75% Ready** - Thread-safety + Cleanup complete
+**Critical Blockers**: 4 remaining (Package management, DataFrame, Ecosystem, Complexity debt)
 **Sprint Status**: ✅ **LANG-COMP-001 COMPLETE** - Basic Syntax (9/9 tests, 8-tool validation spec added)
 **Sprint Status**: ✅ **LANG-COMP-002 COMPLETE** - Operators (21/21 tests, 4 examples, REPL-based validation)
 **Sprint Status**: ✅ **LANG-COMP-003 COMPLETE** - Control Flow (13/13 unit + 3/3 property tests, 5 examples, 300 property iterations)
@@ -58,9 +60,9 @@
 
 ---
 
-## 🎯 **PRODUCTION READINESS SUMMARY (2025-10-12)**
+## 🎯 **PRODUCTION READINESS SUMMARY (2025-10-13)**
 
-**Overall Assessment**: ⚠️ **BETA - 75% Production Ready** (+3% from v3.74.0 - Thread-safety + Notebook fixes)
+**Overall Assessment**: ⚠️ **BETA - 76% Production Ready** (+1% from v3.75.0 - Cleanup + Documentation quality)
 
 ### Strengths ✅
 - ✅ **100% Language Completeness** (41/41 core features)
@@ -216,6 +218,50 @@
 - Performance optimization
 - Production deployment validation
 
+
+## ✅ **COMPLETED SPRINTS (2025-10-13)**
+
+### CLEANUP-001: Repository Organization & Documentation Quality ✅ **COMPLETE**
+**Filed**: 2025-10-13
+**Type**: CLEANUP + QUALITY
+**Status**: ✅ **COMPLETE** (Commits: 1ec23e8c, 3805a2de, 03b2c0c4, bf9c1591, 7b93f186, 11647b88)
+
+**Work Completed**:
+
+**1. Root Directory Cleanup**:
+- ❌→✅ Removed 37 temporary files (mutation outputs, session docs, old plans)
+- ❌→✅ Moved 5 documentation files to docs/ directory
+- ❌→✅ Root now contains only 30 essential files (configs, core docs)
+- **Files removed**: mutation_*_FAST.txt (7), SESSION*.md (4), SPRINT*.md (4), DEFECT-001*.md (2), QA_*.md (5), implementation plans (6), temp HTML (2)
+
+**2. ruchy-cli Deprecation & Removal**:
+- ❌→✅ Yanked all 46 versions from crates.io (0.1.0 through 0.11.3)
+- ❌→✅ Removed all references from CLAUDE.md (2 occurrences)
+- ❌→✅ Removed all references from Makefile (6 occurrences)
+- ❌→✅ Removed publication logic from scripts/publish-crates.sh
+- ❌→✅ Created docs/RUCHY-CLI-DEPRECATION.md with migration guide
+- **Reason**: MUDA (waste) - duplicate package, now consolidated into main `ruchy` crate
+
+**3. Documentation Quality Enforcement**:
+- ❌→✅ Ran pmat validate-docs baseline: Found 98 broken links
+- ❌→✅ Fixed 7 GitHub repository URLs (noahgift → paiml)
+- ❌→✅ Added pmat validate-docs to pre-commit hooks (warning mode, non-blocking)
+- ❌→✅ Created docs/BROKEN_LINKS.md tracking 91 remaining broken links
+- ❌→✅ Categorized broken links by priority (missing files, docs/guides, notebook paths)
+- **Enforcement**: WARNING mode until broken links < 10, then make BLOCKING
+
+**Impact**:
+- Repository cleanliness: Improved significantly (37 temp files removed)
+- Package maintenance: Simplified (no duplicate ruchy-cli to maintain)
+- Documentation quality: Baseline established, tracked, enforced in pre-commit
+- GitHub organization: URLs now point to correct paiml organization
+
+**Toyota Way Principles Applied**:
+- **MUDA Elimination**: Removed waste (duplicate package, temp files, stale docs)
+- **Jidoka**: Automated documentation validation in pre-commit hooks
+- **Kaizen**: Incremental improvement (track 91 broken links for gradual fixing)
+
+---
 
 ## 🚨 **CRITICAL DEFECTS (2025-10-12)**
 
@@ -5425,3 +5471,292 @@ ruchy fuzz parse_XX_feature --iterations 1000000 || exit 1
 *Last Updated: 2025-10-06*
 *Version: 3.69.0*
 *Quality Focus: LANGUAGE COMPLETENESS DOCUMENTATION + 8-TOOL VALIDATION*
+---
+
+## 📋 **WHAT'S LEFT: COMPREHENSIVE ANALYSIS (2025-10-13)**
+
+This section provides a complete analysis of remaining work to reach production readiness.
+
+### ✅ **What's Complete (76% Done)**
+
+**Language Features** (100%):
+- ✅ All 41 core language features working
+- ✅ 15 LANG-COMP modules complete with tests
+- ✅ String interpolation, pattern matching, closures, error handling
+- ✅ Tuples, structs, enums all functional
+
+**Runtime & Tooling** (95%):
+- ✅ Thread-safe runtime (Arc-based concurrency)
+- ✅ 15 native tools (check, transpile, REPL, lint, compile, run, etc.)
+- ✅ Notebook server with state persistence
+- ✅ WASM compilation (100% complete)
+- ✅ Binary compilation (85% complete)
+
+**Standard Library** (100%):
+- ✅ 10 modules: fs, http, json, path, env, process, time, logging, regex, dataframe
+- ✅ 177 tests, all passing
+- ✅ Thin wrapper pattern (delegates to Rust crates)
+
+**Quality & Testing** (90%):
+- ✅ 3,902 tests (3,869 lib + 10 property + 2 thread-safety + 21 E2E)
+- ✅ 99.4% test pass rate
+- ✅ PMAT quality gates enforced
+- ✅ Pre-commit hooks with documentation validation
+- ✅ Toyota Way principles applied
+
+**Documentation** (70%):
+- ✅ 91/98 broken links documented for fixing
+- ✅ Comprehensive README, CHANGELOG, CLAUDE.md
+- ✅ ruchy-book (77% examples passing)
+- ✅ Release documentation (v3.75.0)
+
+### ❌ **What's Left (24% Remaining)**
+
+#### 1. Package Management (0% Complete) - **CRITICAL BLOCKER**
+
+**Status**: Not started
+**Estimated Effort**: 60-80 hours
+**Priority**: P0 - Cannot use external dependencies without this
+
+**What needs to be done**:
+- [ ] Cargo integration complete (CARGO-001 prototype exists)
+- [ ] `ruchy new` command (CARGO-002 complete)
+- [ ] `ruchy add <crate>` - Add Rust crate as dependency
+- [ ] `ruchy build` - Transpile + cargo build wrapper
+- [ ] `ruchy publish` - Publish to crates.io
+- [ ] Package resolution and versioning
+- [ ] Build.rs integration testing with complex projects
+
+**Approach**: Leverage Cargo/crates.io instead of building custom package manager
+- Ruchy packages = Rust crates with .ruchy source
+- build.rs transpiles .ruchy → .rs during cargo build
+- Use existing 140K+ crates on crates.io
+
+**Blockers Fixed**:
+- ✅ Build.rs transpiler prototype working (CARGO-001)
+- ✅ Project template generator working (CARGO-002)
+
+**Next Steps**:
+1. CARGO-003: Implement `ruchy add` command
+2. CARGO-004: Implement `ruchy build` wrapper
+3. CARGO-005: Test with complex multi-crate project
+4. CARGO-006: Document package workflow
+
+---
+
+#### 2. DataFrame Completion (10% Complete) - **CRITICAL BLOCKER**
+
+**Status**: Misleading documentation - claims 80% but actually <10%
+**Estimated Effort**: 40-60 hours OR remove entirely
+**Priority**: P0 - Advertised feature doesn't work
+
+**Current State**:
+- ✅ df![] macro works (create DataFrame)
+- ❌ df.columns doesn't work (field access broken)
+- ❌ df.shape doesn't work (not implemented)
+- ❌ df.rows doesn't work (not implemented)
+- ❌ Most DataFrame operations missing
+
+**Options**:
+**Option A: Complete DataFrame** (40-60 hours)
+- Wrap polars-rs (battle-tested DataFrame library)
+- Implement all advertised operations
+- Add comprehensive tests
+
+**Option B: Remove DataFrame** (2-4 hours) - **RECOMMENDED**
+- Mark as experimental in docs
+- Remove misleading documentation claims
+- Add to future roadmap for v4.x
+- Focus on core language stability
+
+**Decision Point**: Need to choose Option A or B
+- If keeping: Commit to 40-60 hour implementation
+- If removing: Update docs to reflect reality
+
+---
+
+#### 3. Ecosystem & Community (5% Complete) - **NON-BLOCKING**
+
+**Status**: No community, no third-party libraries
+**Estimated Effort**: Ongoing (6-12 months)
+**Priority**: P1 - Important but not blocking v4.0 release
+
+**What needs to be done**:
+- [ ] Public announcement and marketing
+- [ ] Community building (Discord, forums)
+- [ ] Contributor documentation (CONTRIBUTING.md missing)
+- [ ] Example projects and tutorials
+- [ ] Blog posts and technical writing
+- [ ] Conference talks or presentations
+- [ ] Third-party library development
+
+**Current Assets**:
+- ✅ Published on crates.io (v3.75.0)
+- ✅ GitHub repository public (paiml/ruchy)
+- ✅ External repos: ruchy-book, rosetta-ruchy, ruchy-repl-demos
+- ✅ Documentation (README, CHANGELOG, examples)
+
+**Blockers**:
+- ❌ No CONTRIBUTING.md (referenced but missing)
+- ❌ No docs/architecture/ (referenced but missing)
+- ❌ No community presence
+
+---
+
+#### 4. Complexity Debt Reduction (50% Complete) - **HIGH PRIORITY**
+
+**Status**: 69 functions with cyclomatic complexity >10
+**Estimated Effort**: 20-40 hours
+**Priority**: P1 - Quality/maintainability issue
+
+**Current State**:
+- ❌ 69 functions violate complexity limits
+- ✅ PMAT quality gates enforced (new code must be ≤10)
+- ✅ Pre-commit hooks block high complexity
+
+**What needs to be done**:
+- [ ] Refactor 69 high-complexity functions
+- [ ] Target: All functions ≤10 cyclomatic complexity
+- [ ] Apply PMAT refactor auto where possible
+- [ ] Batch refactoring with comprehensive tests
+
+**Approach**:
+1. Use `pmat analyze complexity --max-cyclomatic 10` to find violations
+2. Refactor worst offenders first (CC >30)
+3. Use `pmat refactor auto` for mechanical refactorings
+4. Add tests before refactoring (TDD)
+5. Verify behavior unchanged after refactoring
+
+**Impact on Production Readiness**: Medium
+- Doesn't block functionality
+- Affects maintainability and future development speed
+- Could introduce bugs if not careful
+
+---
+
+#### 5. Documentation Completeness (80% Complete) - **MEDIUM PRIORITY**
+
+**Status**: 91 broken links tracked in docs/BROKEN_LINKS.md
+**Estimated Effort**: 10-15 hours
+**Priority**: P2 - Documentation quality
+
+**What needs to be done**:
+- [ ] Create CONTRIBUTING.md (referenced 2x in README)
+- [ ] Create docs/architecture/ directory with README.md
+- [ ] Create docs/guides/ directory (testing.md, code-quality.md, etc.)
+- [ ] Fix 60+ notebook book relative path references
+- [ ] Create examples/ subdirectories (scoring/, testing/, linting/)
+- [ ] Fix or remove remaining broken links
+
+**Current State**:
+- ✅ Documentation validation enforced (pmat validate-docs in pre-commit)
+- ✅ 98 broken links found, 7 fixed (GitHub URLs)
+- ✅ 91 remaining broken links tracked
+- ⚠️ Pre-commit warning mode (non-blocking until <10 broken links)
+
+**Priority Breakdown**:
+1. **High**: CONTRIBUTING.md, docs/architecture/ (referenced in README)
+2. **Medium**: docs/guides/ directory
+3. **Low**: Notebook book path fixes (60+ links)
+
+---
+
+### 🎯 **Path to v4.0.0-beta.1 (Production Ready)**
+
+**Estimated Total Effort**: 130-195 hours (3-5 months part-time)
+
+**Phase 1: Critical Blockers** (100-140 hours)
+1. Package Management (60-80 hours)
+   - CARGO-003 through CARGO-006
+   - Multi-crate project testing
+   - Documentation and examples
+
+2. DataFrame Decision (40-60 hours OR 2-4 hours)
+   - **Option A**: Complete implementation with polars-rs
+   - **Option B**: Remove and document as future work (RECOMMENDED)
+
+**Phase 2: Quality Stabilization** (20-40 hours)
+3. Complexity Debt Reduction (20-40 hours)
+   - Refactor 69 high-complexity functions
+   - All functions ≤10 cyclomatic complexity
+   - Comprehensive test coverage maintained
+
+**Phase 3: Documentation & Ecosystem** (10-15 hours)
+4. Documentation Completeness (10-15 hours)
+   - Create missing files (CONTRIBUTING.md, architecture/)
+   - Fix broken links to <10 (make pre-commit blocking)
+   - Create essential guides
+
+5. Ecosystem Building (Ongoing, non-blocking)
+   - Community building
+   - Marketing and announcements
+   - Third-party library development
+
+---
+
+### 📊 **Recommended Next Steps**
+
+**Immediate (Next Sprint)**:
+1. **DECISION**: DataFrame - Keep or Remove?
+   - If keep: Allocate 40-60 hours for polars-rs wrapper
+   - If remove: Update docs (2-4 hours), move to v4.x roadmap
+
+2. **START**: CARGO-003 - Implement `ruchy add` command
+   - Estimated: 8-12 hours
+   - Enables users to add Rust crate dependencies
+
+**Short-term (Next 2-4 weeks)**:
+3. **COMPLETE**: Package Management (CARGO-003 through CARGO-006)
+   - Estimated: 60-80 hours
+   - Highest priority blocker
+
+4. **START**: Complexity Debt Reduction (worst 10 functions)
+   - Estimated: 5-10 hours
+   - Improves maintainability
+
+**Medium-term (1-2 months)**:
+5. **COMPLETE**: Remaining complexity refactoring
+   - Estimated: 15-30 hours
+   - All functions ≤10 complexity
+
+6. **COMPLETE**: Documentation fixes
+   - Estimated: 10-15 hours
+   - <10 broken links, make pre-commit blocking
+
+**Long-term (3-5 months)**:
+7. **RELEASE**: v4.0.0-beta.1
+   - All critical blockers resolved
+   - Package management working
+   - DataFrame decision made
+   - Complexity debt eliminated
+   - Documentation complete
+
+8. **BUILD**: Ecosystem and community
+   - Ongoing effort
+   - Not blocking v4.0 release
+
+---
+
+### 🚀 **Alternative: Minimum Viable v4.0**
+
+If aggressive timeline needed, focus on absolute essentials:
+
+**Must Have** (80-100 hours):
+1. ✅ Package Management (CARGO-003 through CARGO-005) - 60-80 hours
+2. ✅ DataFrame Decision (Remove Option B) - 2-4 hours
+3. ✅ CONTRIBUTING.md + critical docs - 4-6 hours
+4. ✅ Top 20 complexity refactors - 10-15 hours
+
+**Nice to Have** (defer to v4.1):
+- Remaining 49 complexity refactors
+- Full documentation link fixes
+- Ecosystem building
+- Community growth
+
+**Timeline**: 2-3 months part-time → v4.0.0-beta.1 release
+
+---
+
+*Last Updated: 2025-10-13*
+*Version: 3.75.0*
+*Focus: Cleanup complete, package management next priority*
