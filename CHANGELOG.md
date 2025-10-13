@@ -4,6 +4,35 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+### Sprint: Runtime Implementation (sprint-runtime-001) - IN PROGRESS
+
+#### RUNTIME-001: Baseline Audit Complete (2025-10-13)
+**Status**: ✅ COMPLETED
+**Test Results**: 15 tests created (4 passing, 11 ignored RED phase)
+
+**Critical Findings**:
+- ✅ Structs: Parser accepts, runtime does NOT execute
+- ✅ Classes: Parser accepts, runtime does NOT execute
+- ✅ Actors: Parser accepts, runtime does NOT execute
+- ❌ Async/Await: Parser REJECTS (`async` keyword not implemented!)
+
+**Specification Error Corrected**:
+- SPECIFICATION.md v15.0 incorrectly stated "await parses but NOT runtime-functional"
+- Reality: `async` keyword NOT recognized by parser at all
+- Error: "Expected 'fun', '{', '|', or identifier after 'async'"
+
+**Files Created**:
+- `tests/runtime_baseline_audit.rs` (227 lines, 15 baseline tests)
+- `docs/execution/runtime-baseline.md` (comprehensive audit report)
+
+**Implementation Priority**:
+1. Structs (4-6 hours) - parser works, simplest runtime
+2. Classes (6-8 hours) - parser works, reference semantics
+3. Actors (8-12 hours) - parser works, message-passing
+4. Async/Await (12-20 hours) - BLOCKED: must implement parser first
+
+**Next**: RUNTIME-002 (Implement Structs with EXTREME TDD)
+
 ## [3.76.0] - 2025-10-13
 
 ### 📊 DataFrame Implementation Sprint COMPLETED (DF-001 through DF-007)

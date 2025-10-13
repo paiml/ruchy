@@ -367,7 +367,10 @@ sprints:
       - id: RUNTIME-001
         title: "Baseline audit: Parser-only features status"
         priority: critical
-        status: PENDING
+        status: COMPLETED
+        completion_date: 2025-10-13
+        test_results: "15 tests created (4 passing, 11 ignored RED phase)"
+        critical_finding: "Async/Await NOT implemented at parser level (specification error corrected)"
         requirements:
           - "Document what parses vs what executes for structs/classes/actors/async"
           - "Create test matrix showing parser success vs runtime failure"
