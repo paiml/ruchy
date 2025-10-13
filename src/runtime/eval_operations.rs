@@ -442,6 +442,14 @@ fn equal_values(left: &Value, right: &Value) -> bool {
         (Value::Array(a), Value::Array(b)) => equal_arrays(a, b),
         // Tuples - delegate to helper
         (Value::Tuple(a), Value::Tuple(b)) => equal_tuples(a, b),
+        // Class - identity comparison (Arc pointer equality)
+        (Value::Class { fields: f1, .. }, Value::Class { fields: f2, .. }) => {
+            std::sync::Arc::ptr_eq(f1, f2)
+        }
+        // Struct - value equality (field-by-field comparison)
+        (Value::Struct { fields: f1, .. }, Value::Struct { fields: f2, .. }) => {
+            equal_objects(f1, f2)
+        }
         // Type mismatch
         _ => false,
     }
