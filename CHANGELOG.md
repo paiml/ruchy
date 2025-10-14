@@ -4,9 +4,34 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.82.0] - 2025-10-14
+
+**Theme**: CLI Unification - Deno-Style UX
+
+**Summary**: Fixed CRITICAL CLI bugs to match industry-standard behavior (Deno/Python/Ruby/Node). `ruchy run` now interprets immediately (<1s) instead of compiling (10-60s), providing 30x speed improvement and eliminating binary artifacts.
+
+**Quality Metrics**:
+- Tests added: 9 (4 CLI-UNIFY-001 + 5 CLI-UNIFY-002)
+- Tests passing: 5/5 CLI-UNIFY-002 (100%)
+- Speed improvement: 30x faster (0.092s → 0.003s)
+- Binary artifacts: Eliminated
+- Complexity: Compliant (Cyclomatic 7, Cognitive 10)
+
 ### Fixed
 - **BUG-031 (CRITICAL)**: Fixed `ruchy fmt` file corruption - formatter now generates valid Ruchy code instead of AST Debug output for function calls, method calls, and for loops (EXTREME TDD: RED → GREEN → REFACTOR, 4/5 tests passing)
 - **CLI-UNIFY-002 (CRITICAL)**: Fixed `ruchy run` to use interpreter instead of compiler - now matches Deno/Python/Ruby/Node behavior with 30x speed improvement (0.092s → 0.003s) and zero binary artifacts (EXTREME TDD: 5/5 tests passing)
+
+### Changed
+- **CLI Behavior**: `ruchy` with no arguments now opens REPL (was already working, now documented)
+- **CLI Behavior**: `ruchy script.ruchy` interprets immediately (fast path)
+- **CLI Behavior**: `ruchy run script.ruchy` interprets immediately (consistent with direct execution)
+- **CLI Behavior**: `ruchy compile script.ruchy` creates production binary (explicit compilation)
+
+### Added
+- **Documentation**: `docs/unified-deno-cli-spec.md` - Comprehensive CLI specification
+- **Documentation**: `docs/defects/CRITICAL-ruchy-run-forced-transpilation.md` - Root cause analysis
+- **Tests**: `tests/cli_unify_002_run_command.rs` - 5 comprehensive CLI tests
+- **Roadmap**: 7 CLI unification tasks (CLI-UNIFY-001 through CLI-UNIFY-007)
 
 ## [3.81.0] - 2025-10-14
 
