@@ -556,9 +556,10 @@ impl Transpiler {
             ExprKind::Trait {
                 name,
                 type_params,
+                associated_types,
                 methods,
                 is_pub,
-            } => self.transpile_trait(name, type_params, methods, *is_pub),
+            } => self.transpile_trait(name, type_params, associated_types, methods, *is_pub),
             ExprKind::Impl {
                 type_params,
                 trait_name,
