@@ -1,0 +1,7 @@
+// Example 1: Hello World
+// Tests: Basic println functionality
+// Expected: "Hello, World!"
+
+fun main() {
+    println("Hello, World!")
+}

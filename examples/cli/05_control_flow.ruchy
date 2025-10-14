@@ -1,0 +1,13 @@
+// Example 5: Control Flow
+// Tests: If expressions
+// Expected: "positive"
+
+fun main() {
+    let x = 10
+    let result = if x > 0 {
+        "positive"
+    } else {
+        "negative"
+    }
+    println(result)
+}

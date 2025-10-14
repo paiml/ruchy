@@ -1,0 +1,11 @@
+// Example 2: Simple Math
+// Tests: Arithmetic operations
+// Expected: 42
+
+fun main() {
+    let x = 10
+    let y = 20
+    let z = 12
+    let result = x + y + z
+    println(result)
+}

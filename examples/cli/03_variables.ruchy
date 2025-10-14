@@ -1,0 +1,10 @@
+// Example 3: Variables
+// Tests: Variable binding and printing
+// Expected: "Alice" and 30
+
+fun main() {
+    let name = "Alice"
+    let age = 30
+    println(name)
+    println(age)
+}
