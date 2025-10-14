@@ -1319,6 +1319,12 @@ impl Interpreter {
             (Value::ObjectMut(ref cell), Value::String(ref key)) => {
                 Self::index_object_mut(cell, key)
             }
+            (Value::DataFrame { columns }, Value::Integer(idx)) => {
+                Self::index_dataframe_row(columns, *idx)
+            }
+            (Value::DataFrame { columns }, Value::String(ref col_name)) => {
+                Self::index_dataframe_column(columns, col_name)
+            }
             _ => Err(InterpreterError::RuntimeError(format!(
                 "Cannot index {} with {}",
                 object_value.type_name(),
@@ -1384,6 +1390,51 @@ impl Interpreter {
         })
     }
 
+    /// Index into a DataFrame by row index (complexity: 5)
+    /// Returns a row as an Object with column names as keys
+    fn index_dataframe_row(
+        columns: &[DataFrameColumn],
+        row_idx: i64,
+    ) -> Result<Value, InterpreterError> {
+        if columns.is_empty() {
+            return Err(InterpreterError::RuntimeError(
+                "Cannot index empty DataFrame".to_string(),
+            ));
+        }
+
+        let index = row_idx as usize;
+        let num_rows = columns[0].values.len();
+
+        if index >= num_rows {
+            return Err(InterpreterError::RuntimeError(format!(
+                "Row index {index} out of bounds for DataFrame with {num_rows} rows"
+            )));
+        }
+
+        // Build row as Object with column names as keys
+        let mut row = HashMap::new();
+        for col in columns {
+            row.insert(col.name.clone(), col.values[index].clone());
+        }
+
+        Ok(Value::Object(Arc::new(row)))
+    }
+
+    /// Index into a DataFrame by column name (complexity: 3)
+    /// Returns a column as an Array
+    fn index_dataframe_column(
+        columns: &[DataFrameColumn],
+        col_name: &str,
+    ) -> Result<Value, InterpreterError> {
+        columns
+            .iter()
+            .find(|col| col.name == col_name)
+            .map(|col| Value::Array(Arc::from(col.values.clone())))
+            .ok_or_else(|| {
+                InterpreterError::RuntimeError(format!("Column '{col_name}' not found in DataFrame"))
+            })
+    }
+
     /// Check if a field is accessible based on visibility rules
     /// Complexity: 5
     fn check_field_visibility(
@@ -1440,6 +1491,10 @@ impl Interpreter {
             Value::Tuple(ref elements) => {
                 // Tuple field access (e.g., tuple.0, tuple.1)
                 crate::runtime::eval_data_structures::eval_tuple_field_access(elements, field)
+            }
+            Value::DataFrame { ref columns } => {
+                // DataFrame field access (df.column_name returns column as array)
+                Self::index_dataframe_column(columns, field)
             }
             _ => Err(InterpreterError::RuntimeError(format!(
                 "Cannot access field '{}' on type {}",
