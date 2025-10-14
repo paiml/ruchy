@@ -435,6 +435,7 @@ impl<'a> RecoveryParser<'a> {
                 value,
                 body,
                 is_mutable: false,
+                else_block: None,  // Error recovery doesn't support let-else
             },
             span,
         )

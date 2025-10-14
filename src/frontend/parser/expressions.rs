@@ -1309,8 +1309,21 @@ fn parse_let_statement(state: &mut ParserState) -> Result<Expr> {
     state.tokens.expect(&Token::Equal)?;
     // Parse value expression
     let value = Box::new(super::parse_expr_recursive(state)?);
-    // Parse optional 'in' clause for let expressions
-    let body = parse_let_in_clause(state, value.span)?;
+
+    // Check for 'else' clause (let-else pattern)
+    let else_block = parse_let_else_clause(state)?;
+
+    // Parse optional 'in' clause for let expressions (not compatible with let-else)
+    let body = if else_block.is_none() {
+        parse_let_in_clause(state, value.span)?
+    } else {
+        // For let-else, body is unit (the else block handles divergence)
+        Box::new(Expr::new(
+            ExprKind::Literal(Literal::Unit),
+            value.span,
+        ))
+    };
+
     // Create the appropriate expression based on pattern type
     create_let_expression(
         pattern,
@@ -1318,6 +1331,7 @@ fn parse_let_statement(state: &mut ParserState) -> Result<Expr> {
         value,
         body,
         is_mutable,
+        else_block,
         start_span,
     )
 }
@@ -1394,6 +1408,22 @@ fn parse_let_type_annotation(state: &mut ParserState) -> Result<Option<Type>> {
         Ok(None)
     }
 }
+/// Parse optional 'else' clause for let-else patterns
+/// Extracted to reduce complexity
+fn parse_let_else_clause(state: &mut ParserState) -> Result<Option<Box<Expr>>> {
+    if matches!(state.tokens.peek(), Some((Token::Else, _))) {
+        state.tokens.advance(); // consume 'else'
+        // Must be followed by a block (diverging expression)
+        if !matches!(state.tokens.peek(), Some((Token::LeftBrace, _))) {
+            bail!("let-else requires a block after 'else'");
+        }
+        let block = super::parse_expr_recursive(state)?;
+        Ok(Some(Box::new(block)))
+    } else {
+        Ok(None)
+    }
+}
+
 /// Parse optional 'in' clause for let expressions
 /// Extracted from `parse_let_statement` to reduce complexity
 fn parse_let_in_clause(state: &mut ParserState, value_span: Span) -> Result<Box<Expr>> {
@@ -1416,6 +1446,7 @@ fn create_let_expression(
     value: Box<Expr>,
     body: Box<Expr>,
     is_mutable: bool,
+    else_block: Option<Box<Expr>>,
     start_span: Span,
 ) -> Result<Expr> {
     let end_span = body.span;
@@ -1427,6 +1458,7 @@ fn create_let_expression(
                 value,
                 body,
                 is_mutable,
+                else_block,
             },
             start_span.merge(end_span),
         )),
@@ -1439,6 +1471,7 @@ fn create_let_expression(
                     value,
                     body,
                     is_mutable,
+                    else_block,
                 },
                 start_span.merge(end_span),
             ))
@@ -1467,6 +1500,7 @@ fn create_let_expression(
                     value,
                     body,
                     is_mutable,
+                    else_block,
                 },
                 start_span.merge(end_span),
             ))
@@ -1543,6 +1577,7 @@ fn create_var_expression(
                 value,
                 body,
                 is_mutable,
+                else_block: None,  // var doesn't support let-else
             },
             start_span.merge(end_span),
         )),
@@ -1553,6 +1588,7 @@ fn create_var_expression(
                 value,
                 body,
                 is_mutable,
+                else_block: None,  // var doesn't support let-else
             },
             start_span.merge(end_span),
         )),
