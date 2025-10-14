@@ -6,6 +6,29 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ### Parser Bug Fixes (Sprint continues)
 
+#### DEFECT-PARSER-013: ColonColon Operator in Import Statements - ✅ COMPLETE (2025-10-14)
+**Status**: ✅ Fixed - `import std::fs` and Rust-style `::` syntax now works
+**Priority**: BLOCKING (ruchy-cli-tools-book development halted, filed as GitHub Issue #30)
+
+**Root Cause**: `parse_module_path()` only accepted dot notation (`.`) but not ColonColon (`::`) for module path separators, despite `::` being used extensively in example files and being standard Rust-style syntax.
+
+**Implementation (COMPLETE)**:
+- ✅ Modified `parse_module_path()` in `src/frontend/parser/imports.rs`
+- ✅ Added `Token::ColonColon` support alongside `Token::Dot`
+- ✅ Both `import std.fs` and `import std::fs` now work
+- ✅ Output normalized to Rust-style `::` separator
+- ✅ Comprehensive test suite: 12/12 tests passing
+- ✅ Tests: `tests/parser_defect_013_coloncolon_imports.rs`
+
+**Files Modified**:
+- `src/frontend/parser/imports.rs`: Added ColonColon support to `parse_module_path()`
+
+**Impact**:
+- ✅ Unblocks ruchy-cli-tools-book development (Sprint 1, Task S1T1)
+- ✅ Official example files (`examples/11_file_io.ruchy`) can now use `::` syntax
+- ✅ Rust-style imports work as expected
+- ✅ Resolves GitHub Issue #30
+
 #### DEFECT-PARSER-012: F-string Empty Placeholders - ✅ COMPLETE (2025-10-14)
 **Status**: ✅ Fixed - f-strings with empty `{}` placeholders now parse correctly
 **Priority**: HIGH (book example 22 failing, widespread f-string usage)
