@@ -1603,6 +1603,7 @@ mod tests {
                 value,
                 body,
                 is_mutable: false,
+                else_block: None,
             },
             Span::new(0, 15),
         );

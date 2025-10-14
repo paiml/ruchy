@@ -4,6 +4,12 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.79.0] - 2025-10-14
+
+### 🎉 Major Release: Parser Bug-Crushing Sprint
+
+**10 Critical Parser Defects Fixed** - Significant improvements to Rust language feature parity
+
 #### DEFECT-PARSER-010: Trait Associated Types & Enhancements - ✅ COMPLETE (2025-10-14)
 **Status**: ✅ Fixed - trait associated types, generics, and default implementations now work
 **Priority**: CRITICAL (book appendix-b example 21 failing)
