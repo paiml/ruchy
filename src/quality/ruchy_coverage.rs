@@ -358,6 +358,10 @@ impl RuchyCoverageCollector {
     pub fn execute_with_coverage(&mut self, file_path: &Path) -> Result<()> {
         use crate::frontend::parser::Parser;
         use crate::runtime::repl::Repl;
+
+        // BUG-036 FIX: Analyze file first to populate total_lines and total_functions
+        self.analyze_file(file_path)?;
+
         let file_str = file_path.to_str().unwrap_or("unknown");
         let content = fs::read_to_string(file_path)?;
         // Parse the Ruchy source code
