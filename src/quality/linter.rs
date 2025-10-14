@@ -89,6 +89,57 @@ impl Scope {
         self.parent.as_ref().is_some_and(|p| p.is_defined(name))
     }
 }
+
+/// Check if a name is a built-in function
+///
+/// Returns true if the name is a Ruchy standard library function or built-in.
+///
+/// # Examples
+///
+/// ```
+/// use ruchy::quality::linter::is_builtin;
+///
+/// assert!(is_builtin("println"));
+/// assert!(is_builtin("fs_read"));
+/// assert!(is_builtin("range"));
+/// assert!(!is_builtin("my_custom_function"));
+/// ```
+pub fn is_builtin(name: &str) -> bool {
+    matches!(
+        name,
+        // Output functions
+        "println" | "print" | "eprintln" | "eprint" | "dbg" |
+        // File system functions
+        "fs_read" | "fs_write" | "fs_exists" | "fs_remove" | "fs_metadata" |
+        "fs_create_dir" | "fs_read_dir" | "fs_copy" | "fs_rename" |
+        // Environment functions
+        "env_var" | "env_args" | "env_current_dir" | "env_set_var" |
+        // HTTP functions
+        "http_get" | "http_post" | "http_put" | "http_delete" |
+        // JSON functions
+        "json_parse" | "json_stringify" |
+        // Time functions
+        "time_now" | "time_sleep" | "time_duration" |
+        // Path functions
+        "path_join" | "path_extension" | "path_filename" | "path_parent" |
+        // Collection functions
+        "range" | "HashMap" | "HashSet" |
+        // Math functions
+        "abs" | "sqrt" | "pow" | "sin" | "cos" | "tan" | "floor" | "ceil" | "round" |
+        "min" | "max" | "exp" | "ln" | "log10" | "log2" |
+        // Process functions
+        "exit" | "panic" | "assert" | "assert_eq" | "assert_ne" |
+        // String functions (if any are global)
+        "format" |
+        // Regex functions
+        "regex_new" | "regex_is_match" | "regex_find" | "regex_replace" |
+        // Logging functions
+        "log_info" | "log_warn" | "log_error" | "log_debug" | "log_trace" |
+        // DataFrame functions
+        "col" | "lit" | "DataFrame"
+    )
+}
+
 pub struct Linter {
     rules: Vec<LintRule>,
     strict_mode: bool,
@@ -268,8 +319,8 @@ impl Linter {
                 }
             }
             ExprKind::Identifier(name) => {
-                // Special case: println is a built-in, not an undefined variable
-                if name == "println" || name == "print" || name == "eprintln" {
+                // Skip built-in functions - they're always available
+                if is_builtin(name) {
                     return;
                 }
                 // Mark as used if defined, otherwise report as undefined
