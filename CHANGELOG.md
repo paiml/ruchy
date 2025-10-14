@@ -4,6 +4,48 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+#### DEFECT-PARSER-010: Trait Associated Types & Enhancements - ✅ COMPLETE (2025-10-14)
+**Status**: ✅ Fixed - trait associated types, generics, and default implementations now work
+**Priority**: CRITICAL (book appendix-b example 21 failing)
+
+**Root Cause**: Multiple trait parsing deficiencies:
+1. No support for associated type declarations (`type Item`)
+2. No support for trait generic parameters (`trait From<T>`)
+3. Broken method body depth tracking (default implementations failed)
+4. Reserved keywords not handled as method/type names (`from`, `Result`, `Err`)
+
+**Implementation (COMPLETE)**:
+- ✅ Added `associated_types: Vec<String>` field to Trait variant
+- ✅ Implemented `parse_trait_associated_type()` to parse `type Item` declarations
+- ✅ Added trait generic parameter parsing (`<T, U>`) to `parse_trait_definition()`
+- ✅ Fixed `parse_trait_method()` depth tracking for default implementations
+- ✅ Added reserved keyword handling (Token::From, Token::Result, Token::Err)
+- ✅ Updated transpiler to generate associated types: `type Item;`
+
+**Test Results**:
+- ✅ All 8 comprehensive tests passing (0.01s runtime)
+- ✅ Basic associated type: `type Item` ✅
+- ✅ Associated type + method ✅
+- ✅ Trait generics: `trait From<T>` ✅
+- ✅ Default implementations with method bodies ✅
+- ✅ Multiple associated types (incl. reserved keywords) ✅
+- ✅ Transpile verification ✅
+- ✅ Complex trait (all features combined) ✅
+- ✅ Book example appendix-b-syntax-reference_example_21 PASSES ✅
+
+**Files Modified**:
+- src/frontend/ast.rs (Trait variant + associated_types field, +1 line)
+- src/frontend/parser/expressions.rs (parse_trait_associated_type, generic parsing, depth tracking, +68 lines)
+- src/backend/transpiler/types.rs (associated type codegen, +12 lines)
+- src/backend/transpiler/dispatcher.rs (add associated_types param, +1 line)
+- tests/parser_defect_010_trait_associated_types.rs (8 new tests)
+
+**Complexity**: All modified functions within ≤10 cyclomatic complexity limit
+
+**Impact**: Fixes appendix-b-syntax-reference_example_21.ruchy - Rust trait feature parity achieved ✅
+
+---
+
 #### DEFECT-PARSER-009: Enum Struct Variants - ✅ COMPLETE (2025-10-14)
 **Status**: ✅ Fixed - enum struct variants now parse successfully
 **Priority**: HIGH (book appendix-b example 19 failing)

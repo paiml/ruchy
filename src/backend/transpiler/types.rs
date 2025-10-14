@@ -718,10 +718,21 @@ impl Transpiler {
         &self,
         name: &str,
         type_params: &[String],
+        associated_types: &[String],
         methods: &[TraitMethod],
         is_pub: bool,
     ) -> Result<TokenStream> {
         let trait_name = format_ident!("{}", name);
+
+        // Generate associated type declarations: type Item;
+        let associated_type_tokens: Vec<TokenStream> = associated_types
+            .iter()
+            .map(|type_name| {
+                let type_ident = format_ident!("{}", type_name);
+                quote! { type #type_ident; }
+            })
+            .collect();
+
         let method_tokens: Result<Vec<_>> = methods
             .iter()
             .map(|method| {
@@ -787,12 +798,14 @@ impl Transpiler {
         if type_params.is_empty() {
             Ok(quote! {
                 #visibility trait #trait_name {
+                    #(#associated_type_tokens)*
                     #(#method_tokens)*
                 }
             })
         } else {
             Ok(quote! {
                 #visibility trait #trait_name<#(#type_param_tokens),*> {
+                    #(#associated_type_tokens)*
                     #(#method_tokens)*
                 }
             })

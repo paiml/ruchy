@@ -3894,8 +3894,8 @@ fn parse_trait_keyword(state: &mut ParserState) -> Result<Span> {
     }
 }
 
-/// Parse single trait method signature
-/// Complexity: 4 (Toyota Way: <10 ✓)
+/// Parse single trait method signature (with optional default implementation)
+/// Complexity: 8 (Toyota Way: <10 ✓)
 fn parse_trait_method(state: &mut ParserState) -> Result<String> {
     // Expect 'fun' or 'fn' keyword
     match state.tokens.peek() {
@@ -3905,25 +3905,82 @@ fn parse_trait_method(state: &mut ParserState) -> Result<String> {
         _ => bail!("Expected 'fun' or 'fn' keyword in trait/interface"),
     }
 
-    // Parse method name
-    let method_name = if let Some((Token::Identifier(n), _)) = state.tokens.peek() {
-        let name = n.clone();
-        state.tokens.advance();
-        name
-    } else {
-        bail!("Expected method name in trait");
+    // Parse method name (can be identifier or reserved keyword like 'from')
+    let method_name = match state.tokens.peek() {
+        Some((Token::Identifier(n), _)) => {
+            let name = n.clone();
+            state.tokens.advance();
+            name
+        }
+        Some((Token::From, _)) => {
+            state.tokens.advance();
+            "from".to_string()
+        }
+        _ => bail!("Expected method name in trait"),
     };
 
-    // Skip to end of line or next method
+    // Skip method signature (params and return type) and optional body
+    let mut depth = 0;
+    while state.tokens.peek().is_some() {
+        match state.tokens.peek() {
+            Some((Token::LeftBrace, _)) => {
+                depth += 1;
+                state.tokens.advance();
+            }
+            Some((Token::RightBrace, _)) if depth > 0 => {
+                depth -= 1;
+                state.tokens.advance();
+                if depth == 0 {
+                    break; // End of method body
+                }
+            }
+            Some((Token::Type | Token::Fun | Token::Fn | Token::RightBrace, _)) if depth == 0 => {
+                break; // Next trait item or end of trait
+            }
+            _ => {
+                state.tokens.advance();
+            }
+        }
+    }
+
+    Ok(method_name)
+}
+
+/// Parse trait associated type: type Item
+/// Complexity: <5 (Toyota Way: <10 ✓)
+fn parse_trait_associated_type(state: &mut ParserState) -> Result<String> {
+    // Expect 'type' keyword
+    state.tokens.expect(&Token::Type)?;
+
+    // Parse type name (can be identifier or reserved keyword like 'Error', 'Result', 'Item')
+    let type_name = match state.tokens.peek() {
+        Some((Token::Identifier(n), _)) => {
+            let name = n.clone();
+            state.tokens.advance();
+            name
+        }
+        Some((Token::Result, _)) => {
+            state.tokens.advance();
+            "Result".to_string()
+        }
+        Some((Token::Err, _)) => {
+            state.tokens.advance();
+            "Err".to_string()
+        }
+        _ => bail!("Expected type name after 'type' keyword in trait"),
+    };
+
+    // Associated types can optionally have bounds or default: type Item: Display = String
+    // For now, skip to next trait item (type or fn) or right brace
     while !matches!(
         state.tokens.peek(),
-        Some((Token::Fun | Token::RightBrace, _))
+        Some((Token::Type | Token::Fun | Token::Fn | Token::RightBrace, _))
     ) && state.tokens.peek().is_some()
     {
         state.tokens.advance();
     }
 
-    Ok(method_name)
+    Ok(type_name)
 }
 
 /// Parse trait definition: trait Name { methods }
@@ -3941,13 +3998,33 @@ fn parse_trait_definition(state: &mut ParserState) -> Result<Expr> {
         bail!("Expected trait name after 'trait'");
     };
 
-    // Parse { methods }
+    // Parse optional generic parameters: <T, U>
+    let type_params = if matches!(state.tokens.peek(), Some((Token::Less, _))) {
+        parse_generic_params(state)?
+    } else {
+        vec![]
+    };
+
+    // Parse { associated types and methods }
     state.tokens.expect(&Token::LeftBrace)?;
+    let mut associated_types = Vec::new();
     let mut methods = Vec::new();
 
-    // Parse methods
+    // Parse trait items (associated types and methods)
     while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
-        methods.push(parse_trait_method(state)?);
+        match state.tokens.peek() {
+            Some((Token::Type, _)) => {
+                // Parse associated type: type Item
+                associated_types.push(parse_trait_associated_type(state)?);
+            }
+            Some((Token::Fun | Token::Fn, _)) => {
+                // Parse method
+                methods.push(parse_trait_method(state)?);
+            }
+            _ => {
+                bail!("Expected 'type' or method in trait body")
+            }
+        }
     }
 
     state.tokens.expect(&Token::RightBrace)?;
@@ -3967,7 +4044,8 @@ fn parse_trait_definition(state: &mut ParserState) -> Result<Expr> {
     Ok(Expr::new(
         ExprKind::Trait {
             name,
-            type_params: vec![],
+            type_params,
+            associated_types,
             methods: trait_methods,
             is_pub: false,
         },

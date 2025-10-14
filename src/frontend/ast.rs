@@ -470,6 +470,7 @@ pub enum ExprKind {
     Trait {
         name: String,
         type_params: Vec<String>,
+        associated_types: Vec<String>, // type Item, type Output, etc.
         methods: Vec<TraitMethod>,
         is_pub: bool,
     },
