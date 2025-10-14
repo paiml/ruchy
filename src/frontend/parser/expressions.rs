@@ -4054,6 +4054,14 @@ fn parse_trait_definition(state: &mut ParserState) -> Result<Expr> {
 }
 fn parse_impl_block(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.expect(&Token::Impl)?;
+
+    // Parse optional generic parameters: impl<T> or impl<T: Display>
+    let type_params = if matches!(state.tokens.peek(), Some((Token::Less, _))) {
+        parse_generic_params(state)?
+    } else {
+        vec![]
+    };
+
     // Parse impl header (trait and type names)
     let (trait_name, type_name) = parse_impl_header(state)?;
     // Parse impl body (methods)
@@ -4062,7 +4070,7 @@ fn parse_impl_block(state: &mut ParserState) -> Result<Expr> {
     state.tokens.expect(&Token::RightBrace)?;
     Ok(Expr::new(
         ExprKind::Impl {
-            type_params: vec![],
+            type_params,
             trait_name,
             for_type: type_name,
             methods,
@@ -4087,15 +4095,53 @@ fn parse_impl_header(state: &mut ParserState) -> Result<(Option<String>, String)
         bail!("Expected type or trait name in impl");
     }
 }
-/// Parse optional identifier (complexity: 3)
+/// Parse optional identifier with generic params: Point or Point<T> (complexity: 5)
 fn parse_optional_identifier(state: &mut ParserState) -> Option<String> {
     if let Some((Token::Identifier(n), _)) = state.tokens.peek() {
-        let name = n.clone();
+        let mut name = n.clone();
         state.tokens.advance();
+
+        // Check for generic parameters: Point<T>
+        if matches!(state.tokens.peek(), Some((Token::Less, _))) {
+            // Parse and append generics to name
+            name = parse_identifier_with_generics(state, name).ok()?;
+        }
+
         Some(name)
     } else {
         None
     }
+}
+
+/// Parse identifier with generic params: Point<T> -> "Point<T>" (complexity: 5)
+fn parse_identifier_with_generics(state: &mut ParserState, base_name: String) -> Result<String> {
+    state.tokens.expect(&Token::Less)?;
+    let mut result = format!("{}<", base_name);
+    let mut first = true;
+
+    while !matches!(state.tokens.peek(), Some((Token::Greater, _))) {
+        if !first {
+            result.push_str(", ");
+        }
+        first = false;
+
+        // Parse type parameter (identifier)
+        if let Some((Token::Identifier(param), _)) = state.tokens.peek() {
+            result.push_str(param);
+            state.tokens.advance();
+        } else {
+            bail!("Expected type parameter in generic list")
+        }
+
+        // Handle comma
+        if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+            state.tokens.advance();
+        }
+    }
+
+    state.tokens.expect(&Token::Greater)?;
+    result.push('>');
+    Ok(result)
 }
 /// Parse required identifier with error message (complexity: 3)
 fn parse_required_identifier(state: &mut ParserState, context: &str) -> Result<String> {
@@ -5055,6 +5101,12 @@ fn flush_text_part(parts: &mut Vec<StringPart>, current: &mut String) {
 
 fn parse_interpolation(expr_str: &str) -> Result<StringPart> {
     use crate::frontend::parser::Parser;
+
+    // DEFECT-PARSER-012 FIX: Handle empty placeholders {} for positional arguments
+    if expr_str.is_empty() {
+        // Empty {} is a positional placeholder - create a placeholder expression
+        return Ok(StringPart::Text("{}".to_string()));
+    }
 
     if let Some(colon_pos) = expr_str.find(':') {
         let expr_part = &expr_str[..colon_pos];

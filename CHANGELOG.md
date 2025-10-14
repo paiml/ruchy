@@ -4,6 +4,46 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+### Parser Bug Fixes (Sprint continues)
+
+#### DEFECT-PARSER-012: F-string Empty Placeholders - ✅ COMPLETE (2025-10-14)
+**Status**: ✅ Fixed - f-strings with empty `{}` placeholders now parse correctly
+**Priority**: HIGH (book example 22 failing, widespread f-string usage)
+
+**Root Cause**: F-string interpolation parser failed when encountering empty `{}` placeholders (Python-style positional arguments), causing "Unexpected end of input" errors.
+
+**Implementation (COMPLETE)**:
+- ✅ Added empty placeholder detection in `parse_interpolation()` at line 5108
+- ✅ Empty `{}` now treated as literal text placeholder instead of expression
+- ✅ Supports Python-style formatting: `f"Point at ({}, {})" with args`
+- ✅ Mixed placeholders work: `f"Value: {}, Name: {name}"`
+- ✅ Comprehensive test suite: 11/11 tests passing
+- ✅ Tests: `tests/parser_defect_012_fstring_empty_placeholders.rs`
+
+**Files Modified**:
+- `src/frontend/parser/expressions.rs`: Added empty string check in `parse_interpolation()`
+
+#### DEFECT-PARSER-011: Impl Block Generic Parameters - ✅ COMPLETE (2025-10-14)
+**Status**: ✅ Fixed - impl blocks with generic parameters (`impl<T>`) now parse correctly
+**Priority**: HIGH (book example 24 failing, essential Rust feature)
+
+**Root Cause**: Parser did not support generic parameter syntax after `impl` keyword, causing failures on `impl<T> Point<T>` and `impl<T: Display> ToString for T`.
+
+**Implementation (COMPLETE)**:
+- ✅ Added generic parameter parsing after `impl` keyword in `parse_impl_block()`
+- ✅ Created `parse_identifier_with_generics()` helper for type names like `Point<T>`
+- ✅ Updated `parse_optional_identifier()` to handle generic parameters
+- ✅ Supports: `impl<T>`, `impl<T: Display>`, `impl<K, V>` syntax
+- ✅ Comprehensive test suite: 7/7 tests passing
+- ✅ Tests: `tests/parser_defect_011_impl_generics.rs`
+
+**Files Modified**:
+- `src/frontend/parser/expressions.rs`: Added generic parsing to impl blocks
+
+**Known Limitations**:
+- `impl<T> Trait for Generic<T>` (generics on target type) requires additional work
+- Trait bounds with `+` (e.g., `Clone + Debug`) may need separate parser enhancement
+
 ## [3.79.0] - 2025-10-14
 
 ### 🎉 Major Release: Parser Bug-Crushing Sprint
