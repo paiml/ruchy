@@ -2980,15 +2980,31 @@ fn parse_single_struct_field(state: &mut ParserState) -> Result<(String, Type, O
     } else {
         bail!("Expected field name in struct");
     };
-    state.tokens.expect(&Token::Colon)?;
-    let field_type = super::utils::parse_type(state)?;
 
-    // Parse optional default value: field: Type = value
-    let default_value = if matches!(state.tokens.peek(), Some((Token::Equal, _))) {
+    // Check if type annotation exists (field: Type) or inferred (field = value)
+    let (field_type, default_value) = if matches!(state.tokens.peek(), Some((Token::Colon, _))) {
+        state.tokens.advance(); // consume :
+        let field_type = super::utils::parse_type(state)?;
+
+        // Parse optional default value: field: Type = value
+        let default_value = if matches!(state.tokens.peek(), Some((Token::Equal, _))) {
+            state.tokens.advance(); // consume =
+            Some(super::parse_expr_recursive(state)?)
+        } else {
+            None
+        };
+        (field_type, default_value)
+    } else if matches!(state.tokens.peek(), Some((Token::Equal, _))) {
+        // Type inference: field = value (use _ placeholder for inferred type)
         state.tokens.advance(); // consume =
-        Some(super::parse_expr_recursive(state)?)
+        let value = super::parse_expr_recursive(state)?;
+        let inferred_type = Type {
+            kind: TypeKind::Named("_".to_string()),
+            span: Span { start: 0, end: 0 },
+        };
+        (inferred_type, Some(value))
     } else {
-        None
+        bail!("Expected ':' for type annotation or '=' for type inference in field declaration");
     };
 
     Ok((field_name, field_type, default_value))
@@ -3142,6 +3158,11 @@ fn parse_member_and_dispatch(
                 is_abstract,
             },
         ),
+        // Support field declaration with 'let' keyword
+        Some((Token::Let, _)) => {
+            state.tokens.advance(); // consume 'let'
+            parse_and_add_field(state, fields, visibility, is_mut, decorators)
+        }
         Some((Token::Identifier(_), _)) if !is_static => {
             parse_and_add_field(state, fields, visibility, is_mut, decorators)
         }
