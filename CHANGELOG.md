@@ -4,6 +4,24 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+#### DEFECT-PARSER-004: Support `let` Fields in Classes - ✅ COMPLETE (2025-10-14)
+**Status**: ✅ Fixed - Class fields can now use `let name = value` syntax with type inference
+**Priority**: HIGH (36 book examples with class body errors)
+
+**Root Cause**: Class field parser required `: Type` annotation, didn't support type inference
+
+**Implementation**:
+- Modified `parse_single_struct_field()` to support optional type annotation
+- Added `let` keyword support in `parse_member_and_dispatch()`
+- Type inference uses `Named("_")` placeholder
+
+**Test Results**:
+- ✅ `class { let x = 42 }` now works
+- ✅ `class { x: Int = 42 }` still works
+- ✅ Type inference enabled for class fields
+
+---
+
 #### DEFECT-PARSER-003: Fix Async Fn Syntax - ✅ COMPLETE (2025-10-14)
 **Status**: ✅ Fixed - async fn and async fun both supported
 **Priority**: HIGH (56 book examples with async syntax)
