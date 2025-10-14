@@ -4,6 +4,40 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.84.0] - 2025-10-14
+
+**Theme**: BUG-035 Fix - Intelligent Type Inference from Built-in Function Signatures
+
+**Summary**: Fixed type inference generating incorrect types (always i32) for parameters and return values. Type inference now intelligently infers types from built-in function signatures: fs_read(path) → path: &str, returns String.
+
+**Quality Metrics**:
+- Tests added: 6 (4 feature + 2 baseline)
+- Tests passing: 6/6 (100%)
+- EXTREME TDD: 100% adherence (RED → GREEN → REFACTOR)
+- Complexity: ≤10 for all new functions
+- Parameter inference: 50+ built-in functions mapped
+- Return type inference: 15+ built-in functions mapped
+
+### Fixed
+- **BUG-035 (MEDIUM)**: Fixed type inference generating wrong types - parameters now correctly infer &str for file/URL functions instead of i32, return types now infer String/Vec<String>/bool from built-in calls (EXTREME TDD: 6 tests, compilation now succeeds)
+
+### Added
+- **Type Inference**: `infer_param_type_from_builtin_usage()` - Maps 50+ stdlib functions to correct parameter types
+- **Type Inference**: `infer_return_type_from_builtin_call()` - Maps 15+ stdlib functions to correct return types
+- **Built-in Signatures**: File system (fs_read, fs_write, fs_exists)
+- **Built-in Signatures**: HTTP (http_get, http_post, http_put, http_delete)
+- **Built-in Signatures**: Environment (env_var, env_args, env_current_dir)
+- **Built-in Signatures**: Path manipulation (path_join, path_extension, path_filename)
+- **Built-in Signatures**: JSON (json_parse, json_stringify)
+- **Built-in Signatures**: Regex (regex_new, regex_is_match, regex_find)
+
+### Changed
+- **Type Inference Logic**: Now checks built-in function signatures FIRST before defaulting to i32
+- **Parameter Types**: fs_read(path) → path: &str (was: path: i32)
+- **Return Types**: fs_read() → String (was: i32)
+- **Return Types**: env_args() → Vec<String> (was: i32)
+- **Return Types**: fs_exists() → bool (was: i32)
+
 ## [3.83.0] - 2025-10-14
 
 **Theme**: Stop The Line Event #2 - Bug Crushing Sprint
