@@ -1323,6 +1323,7 @@ mod tests {
             type_annotation,
             is_mutable,
             body,
+            ..
         } = let_expr.kind
         {
             assert_eq!(name, "variable");
