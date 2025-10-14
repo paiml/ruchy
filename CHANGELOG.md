@@ -38,6 +38,33 @@ All notable changes to the Ruchy programming language will be documented in this
 
 **Tests**: 4 passing (parser_defect_001_blank_line_let_mut.rs)
 
+#### REGRESSION: Actor State Block Default Values - ✅ COMPLETE (2025-10-14)
+**Status**: ✅ Fixed - `state { }` blocks now support default values
+**Priority**: CRITICAL (Regression from DEFECT-PARSER-001 fix)
+
+**Root Cause** (GENCHI GENBUTSU):
+- After fixing DEFECT-PARSER-001, discovered `parse_state_block` didn't support default values
+- Only `parse_inline_state_field` had default value logic
+- Error: "Expected field name in state block" when using `count: i32 = 0` syntax
+
+**Implementation** (EXTREME TDD: RED→GREEN):
+1. **RED Phase**: Created test `/tmp/actor_state_default.ruchy` that failed
+2. **GREEN Phase**: Added default value parsing to `parse_state_block` (actors.rs lines 106-112)
+   - Mirrors logic from `parse_inline_state_field` (lines 228-233)
+   - Supports optional `= <expr>` after type annotation
+
+**Functionality**:
+- ✅ `state { count: i32 = 0 }` works with defaults
+- ✅ `state { count: i32 }` works without defaults
+- ✅ Mixed defaults: `state { url: &str, port: i32 = 5432 }`
+- ✅ Both syntaxes work in same file
+
+**Impact**: Actor system fully functional with all syntax variations
+
+**Time**: ~30min (investigation + fix + comprehensive tests)
+
+**Tests**: 5 passing (parser_actor_state_block_regression.rs)
+
 ---
 
 ## [3.78.0] - 2025-10-14
