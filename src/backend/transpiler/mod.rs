@@ -551,12 +551,56 @@ impl Transpiler {
             _ => false,
         }
     }
-    /// Checks if an expression contains `DataFrame` operations (simplified for complexity)
+    /// Checks if an expression contains `DataFrame` operations
+    /// Recursively scans the entire AST to detect DataFrame usage
     fn contains_dataframe(expr: &Expr) -> bool {
-        matches!(
-            expr.kind,
-            ExprKind::DataFrame { .. } | ExprKind::DataFrameOperation { .. }
-        )
+        use crate::frontend::ast::ExprKind;
+
+        match &expr.kind {
+            // Direct DataFrame constructs
+            ExprKind::DataFrame { .. } | ExprKind::DataFrameOperation { .. } => true,
+
+            // DataFrame::new() constructor calls
+            ExprKind::Call { func, .. } => {
+                if let ExprKind::QualifiedName { module, name } = &func.kind {
+                    module == "DataFrame" && name == "new"
+                } else {
+                    false
+                }
+            }
+
+            // Method calls on DataFrame instances (builder pattern)
+            ExprKind::MethodCall { receiver, method, .. } => {
+                matches!(method.as_str(), "column" | "build" | "rows" | "columns" | "height" | "width")
+                    || Self::contains_dataframe(receiver)
+            }
+
+            // Type annotations with DataFrame
+            ExprKind::Function { params, body, .. } => {
+                params.iter().any(|p| {
+                    if let crate::frontend::ast::TypeKind::Named(name) = &p.ty.kind {
+                        name == "DataFrame"
+                    } else {
+                        false
+                    }
+                }) || Self::contains_dataframe(body)
+            }
+
+            // Let bindings with DataFrame
+            ExprKind::Let { body, value, .. } => {
+                Self::contains_dataframe(value) || Self::contains_dataframe(body)
+            }
+
+            // Blocks and control flow
+            ExprKind::Block(exprs) => exprs.iter().any(Self::contains_dataframe),
+            ExprKind::If { condition, then_branch, else_branch } => {
+                Self::contains_dataframe(condition)
+                    || Self::contains_dataframe(then_branch)
+                    || else_branch.as_ref().is_some_and(|e| Self::contains_dataframe(e))
+            }
+
+            _ => false,
+        }
     }
     /// Wraps transpiled code in a complete Rust program with necessary imports
     ///

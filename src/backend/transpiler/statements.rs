@@ -1241,10 +1241,10 @@ impl Transpiler {
         method: &str,
         args: &[Expr],
     ) -> Result<TokenStream> {
-        // Check if this is part of a DataFrame builder pattern
+        // DEFECT-TRANSPILER-DF-002 FIX: Check if this is part of a DataFrame builder pattern
         if method == "column" || method == "build" {
             // Build the full method call expression to check for builder pattern
-            let _method_call_expr = Expr {
+            let method_call_expr = Expr {
                 kind: ExprKind::MethodCall {
                     receiver: Box::new(object.clone()),
                     method: method.to_string(),
@@ -1253,11 +1253,102 @@ impl Transpiler {
                 span: object.span,
                 attributes: vec![],
             };
-            // DataFrame builder functionality moved to dedicated module
-            // See src/backend/transpiler/dataframe.rs for implementation
+
+            // Try DataFrame builder pattern transpilation (inline implementation)
+            if let Some(builder_tokens) = self.try_transpile_dataframe_builder_inline(&method_call_expr)? {
+                return Ok(builder_tokens);
+            }
         }
         // Use the old implementation for other cases
         self.transpile_method_call_old(object, method, args)
+    }
+
+    /// DEFECT-TRANSPILER-DF-002: Inline DataFrame builder pattern transpilation
+    /// Transforms: DataFrame::new().column("a", [1,2]).build()
+    /// Into: DataFrame::new(vec![Series::new("a", &[1,2])])
+    fn try_transpile_dataframe_builder_inline(&self, expr: &Expr) -> Result<Option<TokenStream>> {
+        // Check if this is a builder pattern ending in .build()
+        let (columns, _base) = match &expr.kind {
+            ExprKind::MethodCall { receiver, method, .. } if method == "build" => {
+                if let Some(result) = self.extract_dataframe_columns(receiver) {
+                    result
+                } else {
+                    return Ok(None);
+                }
+            }
+            ExprKind::MethodCall { receiver, method, args } if method == "column" && args.len() == 2 => {
+                // Builder without .build() - still valid
+                let mut cols = vec![(args[0].clone(), args[1].clone())];
+                if let Some((mut prev_cols, base)) = self.extract_dataframe_columns(receiver) {
+                    prev_cols.append(&mut cols);
+                    (prev_cols, base)
+                } else {
+                    return Ok(None);
+                }
+            }
+            _ => return Ok(None),
+        };
+
+        // Generate Series for each column
+        let mut series_tokens = Vec::new();
+        for (name, data) in columns {
+            let name_tokens = self.transpile_expr(&name)?;
+            let data_tokens = self.transpile_expr(&data)?;
+            series_tokens.push(quote! {
+                polars::prelude::Series::new(#name_tokens, &#data_tokens)
+            });
+        }
+
+        // Generate DataFrame constructor
+        if series_tokens.is_empty() {
+            Ok(Some(quote! { polars::prelude::DataFrame::empty() }))
+        } else {
+            Ok(Some(quote! {
+                polars::prelude::DataFrame::new(vec![#(#series_tokens),*])
+                    .expect("Failed to create DataFrame")
+            }))
+        }
+    }
+
+    /// Extract DataFrame column chain recursively
+    fn extract_dataframe_columns(&self, expr: &Expr) -> Option<(Vec<(Expr, Expr)>, Expr)> {
+        match &expr.kind {
+            ExprKind::MethodCall { receiver, method, args } if method == "column" && args.len() == 2 => {
+                if let Some((mut cols, base)) = self.extract_dataframe_columns(receiver) {
+                    cols.push((args[0].clone(), args[1].clone()));
+                    Some((cols, base))
+                } else {
+                    // Check if receiver is DataFrame::new()
+                    if let ExprKind::Call { func, args: call_args } = &receiver.kind {
+                        // Handle both Identifier("DataFrame::new") and QualifiedName
+                        let is_dataframe_new = match &func.kind {
+                            ExprKind::Identifier(name) if name == "DataFrame::new" => true,
+                            ExprKind::QualifiedName { module, name }
+                                if module == "DataFrame" && name == "new" => true,
+                            _ => false,
+                        };
+                        if is_dataframe_new && call_args.is_empty() {
+                            return Some((vec![(args[0].clone(), args[1].clone())], receiver.as_ref().clone()));
+                        }
+                    }
+                    None
+                }
+            }
+            ExprKind::Call { func, args } if args.is_empty() => {
+                // Handle both Identifier("DataFrame::new") and QualifiedName
+                let is_dataframe_new = match &func.kind {
+                    ExprKind::Identifier(name) if name == "DataFrame::new" => true,
+                    ExprKind::QualifiedName { module, name }
+                        if module == "DataFrame" && name == "new" => true,
+                    _ => false,
+                };
+                if is_dataframe_new {
+                    return Some((Vec::new(), expr.clone()));
+                }
+                None
+            }
+            _ => None,
+        }
     }
     #[allow(dead_code)]
     fn transpile_method_call_old(
