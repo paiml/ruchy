@@ -4507,7 +4507,8 @@ fn parse_actor_body(
     let mut handlers = Vec::new();
     while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
         match state.tokens.peek() {
-            Some((Token::State, _)) => {
+            // DEFECT-PARSER-001 fix: Check for identifier "state" instead of Token::State
+            Some((Token::Identifier(name), _)) if name == "state" => {
                 let field = parse_actor_state_field(state)?;
                 state_fields.push(field);
             }

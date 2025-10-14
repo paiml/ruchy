@@ -63,7 +63,10 @@ fn parse_single_state_field(
     state_fields: &mut Vec<StructField>,
 ) -> Result<()> {
     match state.tokens.peek() {
-        Some((Token::State, _)) => parse_state_block(state, state_fields),
+        // DEFECT-PARSER-001 fix: Check for identifier "state" instead of Token::State keyword
+        Some((Token::Identifier(name), _)) if name == "state" => {
+            parse_state_block(state, state_fields)
+        }
         Some((Token::Mut | Token::Identifier(_), _)) => {
             parse_inline_state_field(state, state_fields)
         }

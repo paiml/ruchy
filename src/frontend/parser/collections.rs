@@ -380,7 +380,7 @@ fn token_to_object_key(token: &Token) -> Result<String> {
         Token::String(s) | Token::RawString(s) => Ok(s.clone()),
         // Allow reserved words as object keys - delegated to helper functions
         Token::Command => Ok("command".to_string()),
-        Token::State => Ok("state".to_string()),
+        // Note: Token::State removed (DEFECT-PARSER-001) - "state" now handled as Identifier
         _ => {
             // Try each category of keywords
             if let Some(key) = control_flow_token_to_key(token) {
