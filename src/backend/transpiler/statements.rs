@@ -581,14 +581,25 @@ impl Transpiler {
     /// Infer parameter type based on usage in function body
     fn infer_param_type(&self, param: &Param, body: &Expr, func_name: &str) -> TokenStream {
         use super::type_inference::{
-            is_param_used_as_function, is_param_used_as_function_argument,
+            infer_param_type_from_builtin_usage, is_param_used_as_function,
             is_param_used_numerically,
         };
+
+        // BUG-035 FIX: Check built-in function signatures FIRST
+        // This gives us precise type information for stdlib functions
+        if let Some(type_hint) = infer_param_type_from_builtin_usage(&param.name(), body) {
+            match type_hint {
+                "&str" => return quote! { &str },
+                // Future: Add more types as needed (String, Vec<String>, etc.)
+                _ => {}
+            }
+        }
+
+        // Then check for function parameters (higher-order functions)
         if is_param_used_as_function(&param.name(), body) {
             quote! { impl Fn(i32) -> i32 }
         } else if is_param_used_numerically(&param.name(), body)
             || self.looks_like_numeric_function(func_name)
-            || is_param_used_as_function_argument(&param.name(), body)
         {
             quote! { i32 }
         } else {
@@ -630,6 +641,8 @@ impl Transpiler {
         return_type: Option<&Type>,
         body: &Expr,
     ) -> Result<TokenStream> {
+        use super::type_inference::infer_return_type_from_builtin_call;
+
         // FIRST CHECK: Override for test functions
         if name.starts_with("test_") {
             return Ok(quote! {});
@@ -643,6 +656,24 @@ impl Transpiler {
             // DEFECT-CLOSURE-RETURN FIX: Infer closure return type
             // Functions returning closures should have `impl Fn` return type
             Ok(quote! { -> impl Fn(i32) -> i32 })
+        // BUG-035 FIX: Infer return type from built-in function calls
+        } else if let Some(return_ty) = infer_return_type_from_builtin_call(body) {
+            match return_ty {
+                "String" => {
+                    let string_ident = format_ident!("String");
+                    Ok(quote! { -> #string_ident })
+                }
+                "Vec<String>" => {
+                    let vec_ident = format_ident!("Vec");
+                    let string_ident = format_ident!("String");
+                    Ok(quote! { -> #vec_ident<#string_ident> })
+                }
+                "bool" => {
+                    Ok(quote! { -> bool })
+                }
+                "()" => Ok(quote! {}),
+                _ => Ok(quote! { -> i32 }) // Fallback for unknown types
+            }
         } else if self.looks_like_numeric_function(name) {
             Ok(quote! { -> i32 })
         } else if self.has_non_unit_expression(body) {
