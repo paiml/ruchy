@@ -6,6 +6,54 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ### Sprint: Book Compatibility (sprint-book-compat-001) - IN PROGRESS
 
+#### DEFECT-DATAFRAME-001 & 002: Fix DataFrame Indexing and Field Access - ✅ COMPLETE (2025-10-14)
+**Status**: ✅ Fixed - DataFrame indexing and field access now fully functional
+**Priority**: CRITICAL (Gemini audit identified 84% book example failures related to DataFrame access)
+
+**Root Cause Analysis** (GENCHI GENBUTSU):
+- **DEFECT-001**: `eval_index_access()` at line 1306 had no DataFrame match arms
+- **DEFECT-002**: `eval_field_access()` at line 1464 had no DataFrame match arm
+- Missing implementation of core DataFrame access patterns
+
+**Implementation** (EXTREME TDD: RED→GREEN→REFACTOR):
+1. **RED Phase**: Created 5 failing tests in `tests/dataframe_access_defects.rs`
+   - test_dataframe_indexing_row_access (df[0])
+   - test_dataframe_field_access_column (df.column_name)
+   - test_dataframe_column_access_via_string_index (df["name"])
+   - test_dataframe_out_of_bounds_index (error handling)
+   - test_dataframe_nonexistent_field (error handling)
+
+2. **GREEN Phase**: Fixed `src/runtime/interpreter.rs`
+   - Added DataFrame match arms in `eval_index_access()` (lines 1322-1327)
+   - Added DataFrame match arm in `eval_field_access()` (lines 1495-1498)
+   - Implemented `index_dataframe_row()` (lines 1393-1421, complexity: 5)
+   - Implemented `index_dataframe_column()` (lines 1423-1436, complexity: 3)
+
+3. **REFACTOR Phase**: Comprehensive validation
+   - Created `tests/dataframe_validation.rs` with 6 tests
+   - Validated exact Gemini audit scenario (employee DataFrame)
+   - All 11 tests passing (5 defect tests + 6 validation tests)
+
+**Functionality Implemented**:
+- ✅ `df[integer]` - Returns row as Object with column names as keys
+- ✅ `df["column_name"]` - Returns column as Array
+- ✅ `df.column_name` - Returns column as Array (dot notation)
+- ✅ Out-of-bounds indexing error handling
+- ✅ Nonexistent field error handling
+
+**Complexity**:
+- `index_dataframe_row`: 5 (builds HashMap from columns)
+- `index_dataframe_column`: 3 (finds and returns column values)
+- Both functions within A+ quality standards (≤10)
+
+**Impact**: This fix resolves 7 failing DataFrame examples from Gemini audit report, improving book compatibility from 84% → expected ~92%
+
+**Time**: ~2h (investigation + RED + GREEN + comprehensive validation)
+
+**Tests**: 11 passing (dataframe_access_defects.rs + dataframe_validation.rs)
+
+---
+
 #### STDLIB-PHASE-5: Complete HTTP Module - ✅ GREEN PHASE COMPLETE (2025-10-14)
 **Status**: ✅ Complete - ALL 4/4 HTTP functions implemented and validated
 **Priority**: HIGH (Phase 5 of STDLIB_ACCESS_PLAN completed)
