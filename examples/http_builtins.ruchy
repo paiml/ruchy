@@ -1,0 +1,72 @@
+// http_builtins.ruchy - Comprehensive example of all 4 HTTP builtin functions
+// Part of STDLIB Phase 5: HTTP Module (v3.78.0)
+
+fn main() {
+    println("=== Ruchy HTTP Builtin Functions Demo ===\n")
+
+    // 1. http_get() - Send GET request
+    println("1. http_get() - Send GET request")
+    println("   Fetching data from httpbin.org...")
+    let get_response = http_get("https://httpbin.org/get")
+    println("   ✓ GET request successful")
+    println("   Response preview:")
+    println("   " + get_response)
+    println("")
+
+    // 2. http_post() - Send POST request with JSON body
+    println("2. http_post() - Send POST request with JSON body")
+    let user_data = "{\"name\": \"Alice\", \"email\": \"alice@example.com\", \"age\": 30}"
+    println("   Posting data: " + user_data)
+    let post_response = http_post("https://httpbin.org/post", user_data)
+    println("   ✓ POST request successful")
+    println("   Response preview:")
+    println("   " + post_response)
+    println("")
+
+    // 3. http_put() - Send PUT request with JSON body
+    println("3. http_put() - Send PUT request with JSON body")
+    let update_data = "{\"name\": \"Alice Updated\", \"age\": 31}"
+    println("   Updating data: " + update_data)
+    let put_response = http_put("https://httpbin.org/put", update_data)
+    println("   ✓ PUT request successful")
+    println("   Response preview:")
+    println("   " + put_response)
+    println("")
+
+    // 4. http_delete() - Send DELETE request
+    println("4. http_delete() - Send DELETE request")
+    println("   Deleting resource...")
+    let delete_response = http_delete("https://httpbin.org/delete")
+    println("   ✓ DELETE request successful")
+    println("   Response preview:")
+    println("   " + delete_response)
+    println("")
+
+    // Real-world example: REST API workflow
+    println("=== Real-World Example: REST API Workflow ===\n")
+
+    println("Step 1: Create new user (POST)")
+    let new_user = "{\"username\": \"john_doe\", \"email\": \"john@example.com\"}"
+    let create_result = http_post("https://httpbin.org/post", new_user)
+    println("✓ User created")
+    println("")
+
+    println("Step 2: Fetch user data (GET)")
+    let fetch_result = http_get("https://httpbin.org/get?user_id=123")
+    println("✓ User data retrieved")
+    println("")
+
+    println("Step 3: Update user data (PUT)")
+    let updated_user = "{\"email\": \"newemail@example.com\"}"
+    let update_result = http_put("https://httpbin.org/put", updated_user)
+    println("✓ User data updated")
+    println("")
+
+    println("Step 4: Delete user (DELETE)")
+    let delete_result = http_delete("https://httpbin.org/delete")
+    println("✓ User deleted")
+    println("")
+
+    println("=== All 4 HTTP builtin functions demonstrated! ===")
+    println("Complete CRUD operations via HTTP REST API")
+}
