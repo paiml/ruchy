@@ -935,7 +935,7 @@ fn parse_rust_style_attributes(
     state: &mut ParserState,
     attributes: &mut Vec<Attribute>,
 ) -> Result<()> {
-    while matches!(state.tokens.peek(), Some((Token::Hash, _))) {
+    while matches!(state.tokens.peek(), Some((Token::AttributeStart, _))) {
         let attribute = parse_single_rust_attribute(state)?;
         attributes.push(attribute);
     }
@@ -943,11 +943,7 @@ fn parse_rust_style_attributes(
 }
 
 fn parse_single_rust_attribute(state: &mut ParserState) -> Result<Attribute> {
-    state.tokens.advance(); // consume #
-    if !matches!(state.tokens.peek(), Some((Token::LeftBracket, _))) {
-        bail!("Expected '[' after '#'");
-    }
-    state.tokens.advance(); // consume [
+    state.tokens.advance(); // consume #[ (AttributeStart token)
 
     let name = parse_rust_attribute_name(state)?;
     let args = parse_rust_attribute_arguments(state)?;
