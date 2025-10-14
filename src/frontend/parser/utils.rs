@@ -335,6 +335,7 @@ pub fn parse_type(state: &mut ParserState) -> Result<Type> {
         Some((Token::Ampersand, _)) => parse_reference_type(state, span),
         Some((Token::Fn, _)) => parse_fn_type(state, span),
         Some((Token::Fun, _)) => parse_fn_type(state, span),
+        Some((Token::Impl, _)) => parse_impl_trait_type(state, span),
         Some((Token::LeftBracket, _)) => parse_list_type(state, span),
         Some((Token::LeftParen, _)) => parse_paren_type(state, span),
         Some((
@@ -399,6 +400,44 @@ fn parse_fn_type(state: &mut ParserState, span: Span) -> Result<Type> {
             ret: Box::new(ret_type),
         },
         span,
+    })
+}
+// Helper: Parse impl Trait type (e.g., impl Fn(i32) -> i32) (complexity: 8)
+fn parse_impl_trait_type(state: &mut ParserState, _span: Span) -> Result<Type> {
+    state.tokens.advance(); // consume 'impl'
+
+    // Get the trait name (e.g., Fn, Iterator, Display)
+    let trait_name = if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
+        let name = name.clone();
+        state.tokens.advance();
+        name
+    } else {
+        bail!("Expected trait name after 'impl'")
+    };
+
+    // Handle Fn/FnOnce/FnMut trait bounds: Fn(Args) -> Ret
+    if matches!(trait_name.as_str(), "Fn" | "FnOnce" | "FnMut") {
+        if matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
+            // Parse as function type: Fn(i32, i32) -> i32
+            state.tokens.advance(); // consume (
+            let param_types = parse_type_list(state)?;
+            state.tokens.expect(&Token::RightParen)?;
+            state.tokens.expect(&Token::Arrow)?;
+            let ret_type = parse_type(state)?;
+            return Ok(Type {
+                kind: TypeKind::Function {
+                    params: param_types,
+                    ret: Box::new(ret_type),
+                },
+                span: Span { start: 0, end: 0 },
+            });
+        }
+    }
+
+    // For other traits, just return a named type
+    Ok(Type {
+        kind: TypeKind::Named(format!("impl {}", trait_name)),
+        span: Span { start: 0, end: 0 },
     })
 }
 // Helper: Parse list type `[T]` or array type `[T; size]` (complexity: 5)
