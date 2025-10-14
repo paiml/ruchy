@@ -14,47 +14,57 @@ fn process_basic_escape(ch: char) -> Option<char> {
         _ => None,
     }
 }
-/// Process a Unicode escape sequence
-fn process_unicode_escape(chars: &mut std::str::Chars) -> String {
+/// Extract hex digits from Unicode escape sequence
+fn extract_unicode_hex(chars: &mut std::str::Chars) -> String {
     chars.next(); // consume '{'
-                  // Most Unicode escapes are 4-6 chars
-    let mut hex = String::with_capacity(6);
+    let mut hex = String::with_capacity(6); // Most Unicode escapes are 4-6 chars
     for hex_char in chars.by_ref() {
         if hex_char == '}' {
             break;
         }
         hex.push(hex_char);
     }
-    if let Ok(code_point) = u32::from_str_radix(&hex, 16) {
-        if let Some(unicode_char) = char::from_u32(code_point) {
-            return unicode_char.to_string();
+    hex
+}
+
+/// Process a Unicode escape sequence
+fn process_unicode_escape(chars: &mut std::str::Chars) -> String {
+    let hex = extract_unicode_hex(chars);
+
+    // Try to parse as valid Unicode code point
+    u32::from_str_radix(&hex, 16)
+        .ok()
+        .and_then(char::from_u32)
+        .map(|c| c.to_string())
+        .unwrap_or_else(|| format!("\\u{{{hex}}}"))
+}
+
+/// Handle a backslash escape sequence
+fn process_backslash_escape(chars: &mut std::str::Chars, result: &mut String) {
+    match chars.next() {
+        None => result.push('\\'), // End of string
+        Some('u') if chars.as_str().starts_with('{') => {
+            result.push_str(&process_unicode_escape(chars));
+        }
+        Some(escape_ch) => {
+            if let Some(escaped) = process_basic_escape(escape_ch) {
+                result.push(escaped);
+            } else {
+                // Unknown escape sequence, keep as literal
+                result.push('\\');
+                result.push(escape_ch);
+            }
         }
     }
-    // Invalid code point or hex, keep as literal
-    format!("\\u{{{hex}}}")
 }
+
 /// Process escape sequences in a string literal
 fn process_escapes(s: &str) -> String {
-    // Pre-allocate based on input size for common case
     let mut result = String::with_capacity(s.len());
     let mut chars = s.chars();
     while let Some(ch) = chars.next() {
         if ch == '\\' {
-            match chars.next() {
-                None => result.push('\\'), // End of string
-                Some('u') if chars.as_str().starts_with('{') => {
-                    result.push_str(&process_unicode_escape(&mut chars));
-                }
-                Some(escape_ch) => {
-                    if let Some(escaped) = process_basic_escape(escape_ch) {
-                        result.push(escaped);
-                    } else {
-                        // Unknown escape sequence, keep as literal
-                        result.push('\\');
-                        result.push(escape_ch);
-                    }
-                }
-            }
+            process_backslash_escape(&mut chars, &mut result);
         } else {
             result.push(ch);
         }
@@ -88,6 +98,13 @@ pub enum Token {
         Some(process_escapes(inner))
     })]
     FString(String),
+    // Raw strings with hash delimiters: r#"..."# (allows quotes inside)
+    #[regex(r####"r#"([^"]|"[^#])*"#"####, |lex| {
+        let s = lex.slice();
+        // Remove r#" prefix and "# suffix - no escape processing for raw strings
+        Some(s[3..s.len()-2].to_string())
+    })]
+    // Basic raw strings: r"..." (no hash delimiters)
     #[regex(r#"r"([^"])*""#, |lex| {
         let s = lex.slice();
         // Remove r" prefix and " suffix - no escape processing for raw strings
@@ -407,8 +424,9 @@ pub enum Token {
     #[token("_", priority = 2)]
     Underscore,
     // Attribute support
-    #[token("#")]
-    Hash,
+    // Attribute support - match #[ specifically to avoid blocking raw strings
+    #[token("#[")]
+    AttributeStart,
 }
 impl Token {
     #[must_use]

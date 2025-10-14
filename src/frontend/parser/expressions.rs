@@ -23,6 +23,7 @@ fn dispatch_prefix_token(state: &mut ParserState, token: Token, span: Span) -> R
         Token::Integer(_)
         | Token::Float(_)
         | Token::String(_)
+        | Token::RawString(_)
         | Token::FString(_)
         | Token::Char(_)
         | Token::Byte(_)
@@ -134,6 +135,10 @@ fn parse_literal_prefix(state: &mut ParserState, token: Token, span: Span) -> Re
             Ok(Expr::new(ExprKind::Literal(Literal::Float(value)), span))
         }
         Token::String(value) => {
+            state.tokens.advance();
+            Ok(Expr::new(ExprKind::Literal(Literal::String(value)), span))
+        }
+        Token::RawString(value) => {
             state.tokens.advance();
             Ok(Expr::new(ExprKind::Literal(Literal::String(value)), span))
         }
@@ -415,6 +420,13 @@ fn parse_literal_token(state: &mut ParserState, token: &Token, span: Span) -> Re
             Ok(Expr::new(ExprKind::Literal(Literal::Float(*value)), span))
         }
         Token::String(value) => {
+            state.tokens.advance();
+            Ok(Expr::new(
+                ExprKind::Literal(Literal::String(value.clone())),
+                span,
+            ))
+        }
+        Token::RawString(value) => {
             state.tokens.advance();
             Ok(Expr::new(
                 ExprKind::Literal(Literal::String(value.clone())),
@@ -1960,6 +1972,7 @@ fn parse_single_pattern(state: &mut ParserState) -> Result<Pattern> {
         Token::Integer(_)
         | Token::Float(_)
         | Token::String(_)
+        | Token::RawString(_)
         | Token::Char(_)
         | Token::Bool(_) => parse_literal_pattern(state),
         Token::Some | Token::None => parse_option_pattern(state),
@@ -1987,6 +2000,7 @@ fn parse_literal_pattern(state: &mut ParserState) -> Result<Pattern> {
         Token::Integer(val) => parse_integer_literal_pattern(state, val)?,
         Token::Float(val) => parse_simple_literal_pattern(state, Literal::Float(val))?,
         Token::String(s) => parse_simple_literal_pattern(state, Literal::String(s))?,
+        Token::RawString(s) => parse_simple_literal_pattern(state, Literal::String(s))?,
         Token::Char(c) => parse_char_literal_pattern(state, c)?,
         Token::Byte(b) => parse_simple_literal_pattern(state, Literal::Byte(b))?,
         Token::Bool(b) => parse_simple_literal_pattern(state, Literal::Bool(b))?,

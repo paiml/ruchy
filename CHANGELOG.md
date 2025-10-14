@@ -4,6 +4,58 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+#### DEFECT-PARSER-002: Implement Raw String Literals (r#"..."#) - ✅ COMPLETE (2025-10-14)
+**Status**: ✅ Fixed - Raw string literals r#"..."# and r"..." now supported
+**Priority**: CRITICAL (Gemini audit - 15+ book examples failing, highest frequency parser error)
+
+**Root Cause** (GENCHI GENBUTSU):
+- Hash token `#[token("#")]` in lexer.rs (line 410-411) had higher priority than regex patterns
+- Logos lexer prioritizes `#[token]` over `#[regex]` regardless of priority values
+- When lexer saw `r#"test"#`, it tokenized as: Identifier(r) + Hash(#) + String("test") + Hash(#)
+- Raw string regex patterns never got a chance to match the full pattern
+- Error: "Expected RightBrace, found Let" (generic parser error when quotes broke syntax)
+
+**Implementation** (EXTREME TDD: RED→GREEN→REFACTOR):
+1. **RED Phase**: Created 6 failing tests in `tests/parser_defect_002_raw_strings.rs`
+   - test_parser_002_raw_string_minimal (basic r#"..."#)
+   - test_parser_002_raw_string_with_quotes (JSON use case)
+   - test_parser_002_raw_string_multiline (multiline content)
+   - test_parser_002_raw_string_with_backslashes (Windows paths)
+   - test_parser_002_regular_string_still_works (control test)
+   - test_parser_002_book_example_dataframe (real failing book example)
+
+2. **GREEN Phase**: Fixed lexer and parser
+   - Replaced `#[token("#")]` Hash with `#[token("#[")]` AttributeStart (specific, doesn't block raw strings)
+   - Added regex for `r#"([^"]|"[^#])*"#` (hash-delimited raw strings)
+   - Added regex for `r"[^"]*"` (basic raw strings)
+   - Added Token::RawString handling in expressions.rs (3 locations)
+   - Updated utils.rs to use AttributeStart instead of Hash
+
+3. **REFACTOR**: Quality maintained via PMAT
+   - lexer.rs: 93.9/100 (A) - maintained
+   - utils.rs: 77.2/100 (B) - maintained
+   - expressions.rs: 71.9/100 (B-) - pre-existing
+
+**Functionality**:
+- ✅ Raw strings with hash delimiters: `r#"..."#`
+- ✅ Basic raw strings: `r"..."`
+- ✅ No escape processing in raw strings
+- ✅ Allows quotes inside: `r#"{"key": "value"}"#`
+- ✅ Allows backslashes: `r#"C:\Users\Alice"#`
+- ✅ Multiline support: `r#"line1\nline2"#` (literal backslash-n, not newline)
+
+**Test Results**:
+- ✅ All 6 tests passing (RED→GREEN transition complete)
+- ✅ ch18-dataframes/01-dataframe-creation.ruchy now passes
+- ✅ Raw strings work in expressions, literals, and pattern matching
+
+**Impact**:
+- Fixed highest-frequency parser error from Gemini audit
+- Enables JSON, regex, file paths, and other string content without escaping
+- Rust-compatible raw string syntax now supported
+
+---
+
 #### DEFECT-PARSER-001: Fix 'state' Keyword Conflict - ✅ COMPLETE (2025-10-14)
 **Status**: ✅ Fixed - "state" no longer a reserved keyword, now context-sensitive in actors
 **Priority**: CRITICAL (Gemini audit - Practical Patterns example 6 failing)
