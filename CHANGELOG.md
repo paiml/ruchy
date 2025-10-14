@@ -4,6 +4,42 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+#### DEFECT-PARSER-009: Enum Struct Variants - ✅ COMPLETE (2025-10-14)
+**Status**: ✅ Fixed - enum struct variants now parse successfully
+**Priority**: HIGH (book appendix-b example 19 failing)
+
+**Root Cause**: EnumVariant only supported unit variants and tuple variants, not struct-style variants
+
+**Implementation (COMPLETE)**:
+- ✅ Refactored EnumVariant to use EnumVariantKind enum (Unit, Tuple, Struct)
+- ✅ Added parse_variant_struct_fields() to parse { field: Type, ... } syntax
+- ✅ Renamed parse_variant_fields() to parse_variant_tuple_fields() for clarity
+- ✅ Updated transpiler types.rs to handle all three variant kinds
+- ✅ Supports mixed variant types in single enum
+
+**Test Results**:
+- ✅ All 9 comprehensive tests passing (0.01s runtime)
+- ✅ Basic struct variant: Move { x: i32, y: i32 } ✅
+- ✅ Multiple struct variants ✅
+- ✅ Mixed variants (unit, tuple, struct) ✅
+- ✅ Generic enums: Result<T, E> ✅
+- ✅ Empty struct variants: Unit {} ✅
+- ✅ Trailing commas: Move { x: i32, } ✅
+- ✅ Transpile to Rust verification ✅
+- ✅ Book example appendix-b-syntax-reference_example_19 PASSES ✅
+
+**Files Modified**:
+- src/frontend/ast.rs (EnumVariant struct + new EnumVariantKind enum, +8 lines)
+- src/frontend/parser/expressions.rs (parse_single_variant refactor, parse_variant_struct_fields +55 lines)
+- src/backend/transpiler/types.rs (match on EnumVariantKind, +38 lines)
+- tests/parser_defect_009_enum_struct_variant.rs (9 new tests)
+
+**Complexity**: All modified functions within ≤10 cyclomatic complexity limit
+
+**Impact**: Fixes appendix-b-syntax-reference_example_19.ruchy ✅
+
+---
+
 #### DEFECT-PARSER-008: Tuple Struct Destructuring in Let Patterns - ✅ COMPLETE (2025-10-14)
 **Status**: ✅ Fixed - multi-element tuple destructuring now works
 **Priority**: HIGH (book appendix-b example 18 failing)
