@@ -1345,28 +1345,49 @@ fn parse_let_mutability(state: &mut ParserState) -> bool {
         false
     }
 }
-/// Parse variant pattern with name: Some(x), Ok(val), Err(e)
+/// Parse variant pattern with name: Some(x), Ok(val), Err(e), Color(r, g, b)
 /// Extracted to reduce complexity in parse_let_pattern
 fn parse_variant_pattern_with_name(state: &mut ParserState, variant_name: String) -> Result<Pattern> {
     // At this point, we've consumed the variant name and peeked '('
     state.tokens.expect(&Token::LeftParen)?;
 
-    // Parse the inner pattern
-    let inner_pattern = parse_single_pattern(state)?;
+    // Parse patterns (could be single or multiple comma-separated)
+    let mut patterns = vec![];
+
+    // Parse first pattern
+    if !matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
+        patterns.push(parse_single_pattern(state)?);
+
+        // Parse additional patterns separated by commas
+        while matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+            state.tokens.advance(); // consume comma
+
+            // Check for trailing comma
+            if matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
+                break;
+            }
+
+            patterns.push(parse_single_pattern(state)?);
+        }
+    }
 
     state.tokens.expect(&Token::RightParen)?;
 
-    // Special case for common Option/Result variants
-    match variant_name.as_str() {
-        "Some" => Ok(Pattern::Some(Box::new(inner_pattern))),
-        "Ok" => Ok(Pattern::Ok(Box::new(inner_pattern))),
-        "Err" => Ok(Pattern::Err(Box::new(inner_pattern))),
-        // For other variants, use TupleVariant
-        _ => Ok(Pattern::TupleVariant {
-            path: vec![variant_name],
-            patterns: vec![inner_pattern],
-        }),
+    // Special case for common Option/Result variants (single element)
+    if patterns.len() == 1 {
+        match variant_name.as_str() {
+            "Some" => return Ok(Pattern::Some(Box::new(patterns.into_iter().next().unwrap()))),
+            "Ok" => return Ok(Pattern::Ok(Box::new(patterns.into_iter().next().unwrap()))),
+            "Err" => return Ok(Pattern::Err(Box::new(patterns.into_iter().next().unwrap()))),
+            _ => {}
+        }
     }
+
+    // For other variants or multiple elements, use TupleVariant
+    Ok(Pattern::TupleVariant {
+        path: vec![variant_name],
+        patterns,
+    })
 }
 
 /// Parse pattern for let statement (identifier or destructuring)

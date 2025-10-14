@@ -4,6 +4,39 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+#### DEFECT-PARSER-008: Tuple Struct Destructuring in Let Patterns - ✅ COMPLETE (2025-10-14)
+**Status**: ✅ Fixed - multi-element tuple destructuring now works
+**Priority**: HIGH (book appendix-b example 18 failing)
+
+**Root Cause**: parse_variant_pattern_with_name() only parsed single pattern, not comma-separated patterns
+
+**Implementation (COMPLETE)**:
+- ✅ Updated parse_variant_pattern_with_name() to parse multiple patterns
+- ✅ Handles comma-separated patterns: Color(r, g, b)
+- ✅ Supports trailing commas
+- ✅ Backward compatible with single-element patterns (Some, Ok, Err)
+- ✅ Handles empty tuples: Unit()
+
+**Test Results**:
+- ✅ All 7 comprehensive tests passing (0.01s runtime)
+- ✅ 3-element tuples: Color(r, g, b) ✅
+- ✅ 2-element tuples: Point(x, y) ✅
+- ✅ 4-element tuples: Rgba(r, g, b, a) ✅
+- ✅ Single elements still work: Some(x), Ok(v), Err(e) ✅
+- ✅ Empty tuples: Unit() ✅
+- ✅ Trailing commas: Color(r, g, b,) ✅
+- ✅ Book example appendix-b-syntax-reference_example_18 PASSES ✅
+
+**Files Modified**:
+- src/frontend/parser/expressions.rs (parse_variant_pattern_with_name, +25 lines)
+- tests/parser_defect_008_tuple_destructure.rs (7 new tests)
+
+**Complexity**: Modified function CC increased from 3 to 6 (within ≤10 limit)
+
+**Impact**: Fixes appendix-b-syntax-reference_example_18.ruchy ✅
+
+---
+
 #### DEFECT-PARSER-007: Where Clause Syntax - ✅ COMPLETE (2025-10-14)
 **Status**: ✅ Fixed - where clauses now parse successfully
 **Priority**: MEDIUM (book examples with generic trait bounds failing)
