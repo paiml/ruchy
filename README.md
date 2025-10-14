@@ -82,17 +82,22 @@ For more details, see [docs/mcp-registry-publish.md](docs/mcp-registry-publish.m
 ## Quick Start
 
 ```bash
-# Start the interactive REPL
-ruchy repl
+# Start the interactive REPL (no args)
+ruchy
 
-# Run a Ruchy script
+# Run a Ruchy script (interprets immediately, <1s)
+ruchy script.ruchy
+# or explicitly:
 ruchy run script.ruchy
+
+# Compile to production binary
+ruchy compile script.ruchy -o myapp
 
 # Format code
 ruchy fmt src/
 
 # Run tests
-ruchy test run tests/
+ruchy test tests/
 ```
 
 ## Language Examples
