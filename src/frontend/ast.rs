@@ -885,8 +885,15 @@ pub struct StructField {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct EnumVariant {
     pub name: String,
-    pub fields: Option<Vec<Type>>, // None for unit variant, Some for tuple variant
+    pub kind: EnumVariantKind,
     pub discriminant: Option<i64>, // Explicit discriminant value for TypeScript compatibility
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum EnumVariantKind {
+    Unit,                        // Quit
+    Tuple(Vec<Type>),            // Write(String)
+    Struct(Vec<StructField>),    // Move { x: i32, y: i32 }
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum ObjectField {

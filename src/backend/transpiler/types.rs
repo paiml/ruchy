@@ -643,22 +643,42 @@ impl Transpiler {
         let variant_tokens: Vec<TokenStream> = variants
             .iter()
             .map(|variant| {
+                use crate::frontend::ast::EnumVariantKind;
                 let variant_name = format_ident!("{}", variant.name);
-                if let Some(fields) = &variant.fields {
-                    // Tuple variant (can't have discriminant)
-                    let field_types: Vec<TokenStream> = fields
-                        .iter()
-                        .map(|ty| self.transpile_type(ty).unwrap_or_else(|_| quote! { _ }))
-                        .collect();
-                    quote! { #variant_name(#(#field_types),*) }
-                } else if let Some(disc_value) = variant.discriminant {
-                    // Unit variant with explicit discriminant
-                    // Convert to i32 literal without suffix for cleaner output
-                    let disc_literal = proc_macro2::Literal::i32_unsuffixed(disc_value as i32);
-                    quote! { #variant_name = #disc_literal }
-                } else {
-                    // Unit variant without discriminant
-                    quote! { #variant_name }
+
+                match &variant.kind {
+                    EnumVariantKind::Tuple(fields) => {
+                        // Tuple variant: Write(String)
+                        let field_types: Vec<TokenStream> = fields
+                            .iter()
+                            .map(|ty| self.transpile_type(ty).unwrap_or_else(|_| quote! { _ }))
+                            .collect();
+                        quote! { #variant_name(#(#field_types),*) }
+                    }
+                    EnumVariantKind::Struct(fields) => {
+                        // Struct variant: Move { x: i32, y: i32 }
+                        let field_defs: Vec<TokenStream> = fields
+                            .iter()
+                            .map(|field| {
+                                let field_name = format_ident!("{}", field.name);
+                                let field_type = self
+                                    .transpile_type(&field.ty)
+                                    .unwrap_or_else(|_| quote! { _ });
+                                quote! { #field_name: #field_type }
+                            })
+                            .collect();
+                        quote! { #variant_name { #(#field_defs),* } }
+                    }
+                    EnumVariantKind::Unit => {
+                        // Unit variant with optional discriminant
+                        if let Some(disc_value) = variant.discriminant {
+                            let disc_literal =
+                                proc_macro2::Literal::i32_unsuffixed(disc_value as i32);
+                            quote! { #variant_name = #disc_literal }
+                        } else {
+                            quote! { #variant_name }
+                        }
+                    }
                 }
             })
             .collect();

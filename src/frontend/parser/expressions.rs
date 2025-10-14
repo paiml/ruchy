@@ -5,7 +5,7 @@ use super::{
     Result, SelfType, Span, StringPart, StructField, Token, TraitMethod, Type, TypeKind, UnaryOp,
     Visibility,
 };
-use crate::frontend::ast::Decorator;
+use crate::frontend::ast::{Decorator, EnumVariantKind};
 use crate::frontend::error_recovery::ParseError;
 pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
     let Some((token, span)) = state.tokens.peek() else {
@@ -4469,22 +4469,32 @@ fn parse_enum_variants(state: &mut ParserState) -> Result<Vec<EnumVariant>> {
 }
 fn parse_single_variant(state: &mut ParserState) -> Result<EnumVariant> {
     let variant_name = parse_variant_name(state)?;
-    // Check for discriminant value: = <integer>
-    let discriminant = if matches!(state.tokens.peek(), Some((Token::Equal, _))) {
-        state.tokens.advance(); // consume =
-        parse_variant_discriminant(state)?
-    } else {
-        None
+
+    // Determine variant kind based on next token
+    let (kind, discriminant) = match state.tokens.peek() {
+        // Struct variant: Move { x: i32, y: i32 }
+        Some((Token::LeftBrace, _)) => {
+            let fields = parse_variant_struct_fields(state)?;
+            (EnumVariantKind::Struct(fields), None)
+        }
+        // Tuple variant: Write(String)
+        Some((Token::LeftParen, _)) => {
+            let types = parse_variant_tuple_fields(state)?;
+            (EnumVariantKind::Tuple(types), None)
+        }
+        // Discriminant: Quit = 0
+        Some((Token::Equal, _)) => {
+            state.tokens.advance(); // consume =
+            let disc = parse_variant_discriminant(state)?;
+            (EnumVariantKind::Unit, disc)
+        }
+        // Unit variant: Quit
+        _ => (EnumVariantKind::Unit, None),
     };
-    // Check for fields (tuple variants)
-    let fields = if discriminant.is_none() {
-        parse_variant_fields(state)?
-    } else {
-        None // Can't have both discriminant and fields
-    };
+
     Ok(EnumVariant {
         name: variant_name,
-        fields,
+        kind,
         discriminant,
     })
 }
@@ -4563,11 +4573,9 @@ fn parse_variant_name(state: &mut ParserState) -> Result<String> {
         _ => bail!("Expected variant name in enum"),
     }
 }
-fn parse_variant_fields(state: &mut ParserState) -> Result<Option<Vec<Type>>> {
-    if !matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
-        return Ok(None);
-    }
-    state.tokens.advance();
+/// Parse tuple variant fields: (String, i32)
+fn parse_variant_tuple_fields(state: &mut ParserState) -> Result<Vec<Type>> {
+    state.tokens.expect(&Token::LeftParen)?;
     let mut field_types = Vec::new();
     while !matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
         field_types.push(super::utils::parse_type(state)?);
@@ -4576,7 +4584,49 @@ fn parse_variant_fields(state: &mut ParserState) -> Result<Option<Vec<Type>>> {
         }
     }
     state.tokens.expect(&Token::RightParen)?;
-    Ok(Some(field_types))
+    Ok(field_types)
+}
+
+/// Parse struct variant fields: { x: i32, y: i32 }
+fn parse_variant_struct_fields(state: &mut ParserState) -> Result<Vec<StructField>> {
+    use crate::frontend::ast::{StructField, Visibility};
+
+    state.tokens.expect(&Token::LeftBrace)?;
+    let mut fields = Vec::new();
+
+    while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
+        // Parse field name
+        let name = if let Some((Token::Identifier(n), _)) = state.tokens.peek() {
+            let name = n.clone();
+            state.tokens.advance();
+            name
+        } else {
+            bail!("Expected field name in struct variant")
+        };
+
+        // Expect colon
+        state.tokens.expect(&Token::Colon)?;
+
+        // Parse field type
+        let ty = super::utils::parse_type(state)?;
+
+        fields.push(StructField {
+            name,
+            ty,
+            visibility: Visibility::Public, // Enum variant fields are public
+            is_mut: false,
+            default_value: None,
+            decorators: vec![],
+        });
+
+        // Handle comma
+        if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+            state.tokens.advance();
+        }
+    }
+
+    state.tokens.expect(&Token::RightBrace)?;
+    Ok(fields)
 }
 fn parse_generic_params(state: &mut ParserState) -> Result<Vec<String>> {
     // Parse <T, U, ...> or <T: Display, U: Debug + Clone>
