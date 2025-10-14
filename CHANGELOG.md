@@ -4,6 +4,45 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+### Examples
+
+#### EXAMPLE: Titanic DataFrame Analysis - ✅ ADDED (2025-10-14)
+**Status**: ✅ Complete - Comprehensive DataFrame example with EXTREME TDD
+**Purpose**: Prove DataFrame transpilation generates correct, executable code
+
+**Example**: `examples/titanic_dataframe.ruchy`
+- Loads Titanic dataset (10 passengers, 6 columns)
+- Demonstrates DataFrame creation with builder pattern
+- Shows method calls: `rows()` → `height()`, `columns()` → `width()`
+- Multiple DataFrames in same file
+- Complete analysis pipeline with functions
+
+**Specification**: `docs/specifications/dataframe-demo-titanic.md`
+- Complete technical specification
+- Expected transpilation output
+- Analysis steps documented
+
+**Tests**: `tests/example_titanic_dataframe.rs`
+- 6 unit tests + 1 property test = 7 total
+- Tests transpilation correctness
+- Tests method name mapping
+- Tests builder pattern handling
+- Tests multiple DataFrames
+- All tests passing ✅
+
+**Transpiled Output Quality**:
+- ✅ Correct Polars API: `DataFrame::new(vec![Series::new(...)])`
+- ✅ Proper imports: `use polars::prelude::*`
+- ✅ Method mapping: `rows()` → `height()`, `columns()` → `width()`
+- ✅ Error handling: `.expect("Failed to create DataFrame")`
+
+**EXTREME TDD Methodology**:
+1. RED: Wrote 7 failing tests first
+2. GREEN: Implemented example (all tests pass)
+3. REFACTOR: Verified complexity ≤10
+
+**Toyota Way**: Genchi Genbutsu (go-and-see) - Example empirically proves transpilation works
+
 ### Transpiler Fixes
 
 #### DEFECT-TRANSPILER-DF-001-004: DataFrame Transpilation - ✅ FIXED (2025-10-14)
