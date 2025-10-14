@@ -365,6 +365,7 @@ impl AstBuilder {
                 value: Box::new(value),
                 type_annotation: None,
                 is_mutable: false,
+                else_block: None,
                 body: Box::new(Expr {
                     kind: ExprKind::Literal(Literal::Unit),
                     span: self.span,

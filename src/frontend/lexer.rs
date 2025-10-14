@@ -939,6 +939,25 @@ mod tests {
     }
 
     #[test]
+    fn test_fstring_in_function_body() {
+        // DEFECT-PARSER-012: Debug tokenization of f-string in function
+        let input = r#"fn test() {
+    f"test {}"
+}"#;
+        let mut stream = TokenStream::new(input);
+        let tokens: Vec<Token> = std::iter::from_fn(|| stream.next().map(|(t, _)| t)).collect();
+
+        // Print tokens for debugging
+        for (i, token) in tokens.iter().enumerate() {
+            eprintln!("Token {}: {:?}", i, token);
+        }
+
+        // Verify f-string is tokenized as single token
+        assert!(tokens.iter().any(|t| matches!(t, Token::FString(_))),
+                "FString token should exist");
+    }
+
+    #[test]
     fn test_tokenize_special_tokens() {
         let mut stream = TokenStream::new("_");
         assert_eq!(stream.next().map(|(t, _)| t), Some(Token::Underscore));
