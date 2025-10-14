@@ -4,6 +4,42 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+#### DEFECT-PARSER-001: Fix 'state' Keyword Conflict - ✅ COMPLETE (2025-10-14)
+**Status**: ✅ Fixed - "state" no longer a reserved keyword, now context-sensitive in actors
+**Priority**: CRITICAL (Gemini audit - Practical Patterns example 6 failing)
+
+**Root Cause** (GENCHI GENBUTSU):
+- `state` was hardcoded as Token::State keyword in lexer (line 214)
+- When user code used `let mut state` after complex if/else chains, parser confused it with actor state keyword
+- Error: "Expected RightBrace, found Let"
+
+**Implementation** (EXTREME TDD: RED→GREEN):
+1. **RED Phase**: Created 4 failing tests in `tests/parser_defect_001_blank_line_let_mut.rs`
+   - test_parser_001_complex_function_blank_line_let_mut (book example)
+   - test_parser_001_minimal_reproduction (simplified case)
+   - test_parser_001_works_without_blank_line (control)
+   - test_parser_001_works_without_mut (control)
+
+2. **GREEN Phase**: Fixed lexer and parser
+   - Removed `#[token("state")]` from lexer.rs (line 213)
+   - Updated actors.rs to check `Identifier("state")` instead of `Token::State` (line 67)
+   - Updated expressions.rs to check `Identifier("state")` in actor parsing (line 4511)
+   - Updated collections.rs to remove dead `Token::State` handling (line 383)
+
+**Functionality**:
+- ✅ `let mut state` now works in regular functions
+- ✅ `state { ... }` still works in actor definitions (context-sensitive)
+- ✅ No reserved keyword conflicts
+- ✅ All book examples now parse correctly
+
+**Impact**: Resolves 1 failing book example from Gemini audit (Practical Patterns Ch04)
+
+**Time**: ~3h (investigation + RED + GREEN + validation)
+
+**Tests**: 4 passing (parser_defect_001_blank_line_let_mut.rs)
+
+---
+
 ## [3.78.0] - 2025-10-14
 
 ### Sprint: Book Compatibility (sprint-book-compat-001)
