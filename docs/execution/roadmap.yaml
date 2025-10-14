@@ -295,6 +295,71 @@ tasks:
       - "Enables compilation mode for examples using range()"
     lesson: "EXTREME TDD catches defects early - 6/9 tests failed in RED phase as expected"
 
+  - id: "BUG-034"
+    title: "Fix: Linter false positives for built-in functions"
+    status: "COMPLETE"
+    completed: "2025-10-14"
+    priority: "🟡 MEDIUM"
+    defect_type: "Linter missing standard library awareness"
+    github_issue: "#34"
+    time_actual: "1.5h"
+    time_estimated: "2h"
+    efficiency: "75%"
+    description: |
+      Linter reported "undefined variable" errors for built-in functions.
+      Only println/print/eprintln were recognized as built-ins.
+      Impact: Made linter output unusable due to excessive false positives.
+      Root cause: No comprehensive list of standard library functions in linter.
+    fix:
+      - "Added is_builtin() function with 50+ standard library functions"
+      - "Covers all stdlib modules: fs_, env_, http_, json_, time_, path_, etc."
+      - "Replaced hardcoded println check with comprehensive is_builtin() call"
+      - "Added public is_builtin() function for external use"
+    tests:
+      test_file: "tests/bug_034_lint_false_positives_built_ins.rs"
+      unit: 11  # 8 feature tests + 2 baseline tests + 1 summary
+      property: 0
+      doctest: 1  # is_builtin doctest
+      mutation_coverage: null
+    tdd_process:
+      - "RED: Created 11 tests (8 failing for built-ins + 2 passing baseline + 1 summary)"
+      - "GREEN: Implemented is_builtin() function - all 11 tests passing"
+      - "REFACTOR: Clean pattern matching, complexity ≤3"
+    validated_scenarios:
+      - "fs_ functions (fs_read, fs_write, fs_exists, etc.)"
+      - "env_ functions (env_args, env_var, env_current_dir, etc.)"
+      - "range() function"
+      - "http_ functions (http_get, http_post, http_put, http_delete)"
+      - "json_ functions (json_parse, json_stringify)"
+      - "time_ functions (time_now, time_sleep, time_duration)"
+      - "path_ functions (path_join, path_extension, path_filename, etc.)"
+      - "Baseline: println already working"
+      - "Baseline: real undefined variables still detected"
+      - "Multiple built-ins in one file"
+    quality:
+      complexity: 2  # is_builtin uses matches! macro
+      complexity_max: 10
+      tdg_grade: "A-"
+    impact:
+      - "Linter output now usable (no false positives for stdlib)"
+      - "Recognizes 50+ built-in functions across 10 stdlib modules"
+      - "Can trust lint results for real undefined variables"
+    stdlib_coverage:
+      output: "println, print, eprintln, eprint, dbg"
+      fs: "fs_read, fs_write, fs_exists, fs_remove, fs_metadata, fs_create_dir, fs_read_dir, fs_copy, fs_rename"
+      env: "env_var, env_args, env_current_dir, env_set_var"
+      http: "http_get, http_post, http_put, http_delete"
+      json: "json_parse, json_stringify"
+      time: "time_now, time_sleep, time_duration"
+      path: "path_join, path_extension, path_filename, path_parent"
+      collections: "range, HashMap, HashSet"
+      math: "abs, sqrt, pow, sin, cos, tan, floor, ceil, round, min, max, exp, ln, log10, log2"
+      process: "exit, panic, assert, assert_eq, assert_ne"
+      regex: "regex_new, regex_is_match, regex_find, regex_replace"
+      logging: "log_info, log_warn, log_error, log_debug, log_trace"
+      dataframe: "col, lit, DataFrame"
+    lesson: "Comprehensive standard library awareness essential for usable linter"
+
   - id: "CARGO-001"
     title: "Build.rs Integration Prototype"
     status: "COMPLETE"
