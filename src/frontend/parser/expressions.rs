@@ -5469,8 +5469,8 @@ fn parse_async_token(state: &mut ParserState) -> Result<Expr> {
     state.tokens.advance(); // consume 'async'
 
     match state.tokens.peek() {
-        // async fun declaration
-        Some((Token::Fun, _)) => parse_async_function(state, false),
+        // async fun/fn declaration (support both keywords)
+        Some((Token::Fun, _)) | Some((Token::Fn, _)) => parse_async_function(state, false),
         // async { ... } block
         Some((Token::LeftBrace, _)) => parse_async_block(state),
         // async |x| ... lambda
@@ -5480,10 +5480,10 @@ fn parse_async_token(state: &mut ParserState) -> Result<Expr> {
             if let Some((Token::Arrow, _)) = state.tokens.peek_ahead(1) {
                 parse_async_arrow_lambda(state)
             } else {
-                bail!("Expected 'fun', '{{', '|', or arrow lambda after 'async'")
+                bail!("Expected 'fun'/'fn', '{{', '|', or arrow lambda after 'async'")
             }
         }
-        _ => bail!("Expected 'fun', '{{', '|', or identifier after 'async'"),
+        _ => bail!("Expected 'fun'/'fn', '{{', '|', or identifier after 'async'"),
     }
 }
 

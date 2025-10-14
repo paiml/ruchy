@@ -4,6 +4,20 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+#### DEFECT-PARSER-003: Fix Async Fn Syntax - ✅ COMPLETE (2025-10-14)
+**Status**: ✅ Fixed - async fn and async fun both supported
+**Priority**: HIGH (56 book examples with async syntax)
+
+**Root Cause**: `parse_async_token()` only checked `Token::Fun`, not `Token::Fn`
+
+**Implementation**: Added `Token::Fn` to match - 3-line fix
+
+**Test Results**:
+- ✅ `async fn test()` now works
+- ✅ `async fun test()` still works
+
+---
+
 #### DEFECT-PARSER-002: Implement Raw String Literals (r#"..."#) - ✅ COMPLETE (2025-10-14)
 **Status**: ✅ Fixed - Raw string literals r#"..."# and r"..." now supported
 **Priority**: CRITICAL (Gemini audit - 15+ book examples failing, highest frequency parser error)
