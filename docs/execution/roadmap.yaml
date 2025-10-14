@@ -406,6 +406,51 @@ tasks:
       - "Correct #[test] attributes in transpiled Rust"
     lesson: "Rust attribute validation must be part of transpiler - not all attributes accept arguments"
 
+  - id: "BUG-036"
+    title: "Fix: Coverage reports 0/0 lines (100%)"
+    status: "COMPLETE"
+    completed: "2025-10-14"
+    priority: "🟢 LOW"
+    defect_type: "Coverage tool missing initialization"
+    github_issue: "#36"
+    time_actual: "0.5h"
+    time_estimated: "2h"
+    efficiency: "75%"
+    description: |
+      Coverage always reported 0/0 = 100% (meaningless).
+      Impact: Cannot measure actual code coverage.
+      Root cause: execute_with_coverage() never called analyze_file().
+    fix:
+      - "Added self.analyze_file(file_path)? call before execution"
+      - "Single line fix that populates total_lines and total_functions"
+      - "Then covered lines/functions give real percentages"
+    tests:
+      test_file: "tests/bug_036_coverage_reports_zero.rs"
+      unit: 4
+      property: 2  # 100 iterations each
+      doctest: 0
+      mutation_coverage: null
+    tdd_process:
+      - "RED: Created 4 tests (3 failing as expected)"
+      - "GREEN: Added analyze_file() call - all 4 tests passing"
+      - "REFACTOR: Added 2 property tests for validation"
+    property_tests:
+      - "Coverage never reports 0/0 for files with code (100 random line counts)"
+      - "Coverage totals are non-negative (100 random function counts)"
+    validated_scenarios:
+      - "Reports actual line counts (not 0/0)"
+      - "Reports actual function counts (not 0/0)"
+      - "Coverage reports actual numbers"
+    quality:
+      complexity: 0  # No complexity change (added one line)
+      complexity_max: 10
+      tdg_grade: "A-"
+    impact:
+      - "Coverage now shows real counts like '10/10' instead of '0/0'"
+      - "Can actually measure test coverage"
+      - "Tool provides useful information"
+    lesson: "Always initialize state before using - coverage_data was empty HashMap"
+
   - id: "CARGO-001"
     title: "Build.rs Integration Prototype"
     status: "COMPLETE"
