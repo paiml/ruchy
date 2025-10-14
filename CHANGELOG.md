@@ -6,6 +6,49 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ### Parser Bug Fixes (Sprint continues)
 
+#### DEFECT-PARSER-014: Impl Blocks with Generic Target Types - ✅ COMPLETE (2025-10-14)
+**Status**: ✅ Fixed - `impl<T> Trait for Type<T>` syntax now works
+**Priority**: HIGH (book example 22 failing, fundamental Rust pattern)
+
+**Root Cause**: Multiple issues prevented impl blocks with generic target types:
+1. `parse_impl_header()` used `parse_required_identifier()` which doesn't handle generics on target types
+2. `from` and `default` keywords not accepted as trait/type/method names
+3. Standard library types (`Option`, `Result`, `Some`, `None`, `Ok`, `Err`) are lexer keywords, not identifiers
+4. Nested generics like `Vec<Vec<T> >` require spaces due to `>>` being lexed as `RightShift`
+
+**Implementation (COMPLETE)**:
+- ✅ Modified `parse_impl_header()` to use `parse_optional_identifier()` for target type (handles generics)
+- ✅ Extended `parse_optional_identifier()` to accept `From`, `Default`, `Option`, `Result`, etc. as type names
+- ✅ Modified `parse_method_in_impl()` and `parse_impl_method()` to accept keyword method names
+- ✅ Added recursive generic parsing in `parse_identifier_with_generics()`
+- ✅ Documented nested generic limitation (requires space: `Vec<Vec<T> >` not `Vec<Vec<T>>`)
+- ✅ Comprehensive test suite: 8/8 tests passing
+- ✅ Tests: `tests/parser_defect_014_impl_generic_target.rs`
+
+**Files Modified**:
+- `src/frontend/parser/expressions.rs`: Updated `parse_impl_header()`, `parse_optional_identifier()`, `parse_identifier_with_generics()`, `parse_impl_method()`
+
+**Test Coverage**:
+- ✅ `impl<T> Default for Point<T>` - Simple generic trait impl
+- ✅ `impl<T: Clone> Clone for Box<T>` - Trait bounds on generic impl
+- ✅ `impl<T: Display> Display for Wrapper<T>` - Trait bounds with standard library traits
+- ✅ `impl<K, V> Map for HashMap<K, V>` - Multiple generic parameters
+- ✅ `impl<T> Iterator for Vec<Vec<T> >` - Nested generics (with space)
+- ✅ `impl<T> From<T> for Option<T>` - Keyword types (From, Option)
+- ✅ `impl Default for Point` - Regression: non-generic still works
+- ✅ `impl<T> Point<T>` - Regression: impl without trait still works
+
+**Impact**:
+- ✅ Enables blanket implementations: `impl<T> Trait for Type<T>`
+- ✅ Supports conversion traits: `impl<T> From<T> for Option<T>`
+- ✅ Works with standard library keyword types: `Option`, `Result`, `Some`, `None`, `Ok`, `Err`
+- ✅ Example 22 progresses (f-string + impl generics both fixed)
+
+**Known Limitations**:
+- Nested generics without spaces (`Vec<Vec<T>>`) don't work due to lexer treating `>>` as `RightShift` token
+- Workaround: Add space before closing brackets: `Vec<Vec<T> >`
+- Future enhancement: Implement token splitting for `>>` → `>` + `>`
+
 #### DEFECT-PARSER-013: ColonColon Operator in Import Statements - ✅ COMPLETE (2025-10-14)
 **Status**: ✅ Fixed - `import std::fs` and Rust-style `::` syntax now works
 **Priority**: BLOCKING (ruchy-cli-tools-book development halted, filed as GitHub Issue #30)

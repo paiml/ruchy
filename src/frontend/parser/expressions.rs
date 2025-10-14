@@ -3832,13 +3832,23 @@ fn parse_class_method(state: &mut ParserState) -> Result<ClassMethod> {
         _ => bail!("Expected 'fun' or 'fn' keyword for method definition"),
     }
 
-    // Parse method name
-    let method_name = if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
-        let name = name.clone();
-        state.tokens.advance();
-        name
-    } else {
-        bail!("Expected method name after 'fn'");
+    // Parse method name (accept keywords that can be method names)
+    let method_name = match state.tokens.peek() {
+        Some((Token::Identifier(name), _)) => {
+            let name = name.clone();
+            state.tokens.advance();
+            name
+        }
+        // Allow keyword method names (impl From has fn from method)
+        Some((Token::From, _)) => {
+            state.tokens.advance();
+            "from".to_string()
+        }
+        Some((Token::Default, _)) => {
+            state.tokens.advance();
+            "default".to_string()
+        }
+        _ => bail!("Expected method name after 'fn'"),
     };
 
     // Parse parameter list starting with self parameter
@@ -4086,7 +4096,10 @@ fn parse_impl_header(state: &mut ParserState) -> Result<(Option<String>, String)
     // Check for "for" keyword to determine if first was trait
     if matches!(state.tokens.peek(), Some((Token::For, _))) {
         state.tokens.advance();
-        let type_name = parse_required_identifier(state, "type name after 'for' in impl")?;
+        // DEFECT-PARSER-014 FIX: Use parse_optional_identifier to handle generics
+        // on target type: impl<T> Trait for Type<T>
+        let type_name = parse_optional_identifier(state)
+            .ok_or_else(|| anyhow::anyhow!("Expected type name after 'for' in impl"))?;
         Ok((first_name, type_name))
     } else if let Some(type_name) = first_name {
         // impl Type { ... } case
@@ -4095,25 +4108,41 @@ fn parse_impl_header(state: &mut ParserState) -> Result<(Option<String>, String)
         bail!("Expected type or trait name in impl");
     }
 }
-/// Parse optional identifier with generic params: Point or Point<T> (complexity: 5)
+/// Parse optional identifier with generic params: Point or Point<T> (complexity: 7)
+/// Also accepts keywords that can be trait/type names: From, Default, Option, Result, etc.
 fn parse_optional_identifier(state: &mut ParserState) -> Option<String> {
-    if let Some((Token::Identifier(n), _)) = state.tokens.peek() {
-        let mut name = n.clone();
-        state.tokens.advance();
-
-        // Check for generic parameters: Point<T>
-        if matches!(state.tokens.peek(), Some((Token::Less, _))) {
-            // Parse and append generics to name
-            name = parse_identifier_with_generics(state, name).ok()?;
+    let name = match state.tokens.peek() {
+        Some((Token::Identifier(n), _)) => {
+            let name = n.clone();
+            state.tokens.advance();
+            name
         }
+        // Allow keywords that are valid trait/type names in impl blocks
+        Some((Token::From, _)) => { state.tokens.advance(); "From".to_string() }
+        Some((Token::Default, _)) => { state.tokens.advance(); "Default".to_string() }
+        Some((Token::Option, _)) => { state.tokens.advance(); "Option".to_string() }
+        Some((Token::Result, _)) => { state.tokens.advance(); "Result".to_string() }
+        Some((Token::Some, _)) => { state.tokens.advance(); "Some".to_string() }
+        Some((Token::None, _)) => { state.tokens.advance(); "None".to_string() }
+        Some((Token::Ok, _)) => { state.tokens.advance(); "Ok".to_string() }
+        Some((Token::Err, _)) => { state.tokens.advance(); "Err".to_string() }
+        _ => return None,
+    };
 
-        Some(name)
+    // Check for generic parameters: Point<T>
+    let final_name = if matches!(state.tokens.peek(), Some((Token::Less, _))) {
+        // Parse and append generics to name
+        parse_identifier_with_generics(state, name).ok()?
     } else {
-        None
-    }
+        name
+    };
+
+    Some(final_name)
 }
 
-/// Parse identifier with generic params: Point<T> -> "Point<T>" (complexity: 5)
+/// Parse identifier with generic params: Point<T> or Vec<Vec<T> > (complexity: 5)
+/// NOTE: Nested generics without spaces like Vec<Vec<T>> are not supported due to
+/// lexer tokenizing >> as RightShift. Use Vec<Vec<T> > with a space instead.
 fn parse_identifier_with_generics(state: &mut ParserState, base_name: String) -> Result<String> {
     state.tokens.expect(&Token::Less)?;
     let mut result = format!("{}<", base_name);
@@ -4125,10 +4154,18 @@ fn parse_identifier_with_generics(state: &mut ParserState, base_name: String) ->
         }
         first = false;
 
-        // Parse type parameter (identifier)
+        // Parse type parameter (can be nested like Vec<T>)
         if let Some((Token::Identifier(param), _)) = state.tokens.peek() {
-            result.push_str(param);
+            let param_name = param.clone();
             state.tokens.advance();
+
+            // Check for nested generics: Vec<T>
+            if matches!(state.tokens.peek(), Some((Token::Less, _))) {
+                let nested = parse_identifier_with_generics(state, param_name)?;
+                result.push_str(&nested);
+            } else {
+                result.push_str(&param_name);
+            }
         } else {
             bail!("Expected type parameter in generic list")
         }
@@ -4187,8 +4224,23 @@ fn parse_impl_method(state: &mut ParserState) -> Result<crate::frontend::ast::Im
         state.tokens.expect(&Token::Fn)?;
     }
 
-    // Parse method name
-    let name = parse_required_identifier(state, "method name")?;
+    // Parse method name (accept keywords that can be method names)
+    let name = match state.tokens.peek() {
+        Some((Token::Identifier(n), _)) => {
+            let n = n.clone();
+            state.tokens.advance();
+            n
+        }
+        Some((Token::From, _)) => {
+            state.tokens.advance();
+            "from".to_string()
+        }
+        Some((Token::Default, _)) => {
+            state.tokens.advance();
+            "default".to_string()
+        }
+        _ => bail!("Expected method name after 'fn' in impl block"),
+    };
 
     // Parse parameters
     let params = super::utils::parse_params(state)?;
