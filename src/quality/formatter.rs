@@ -142,6 +142,60 @@ impl Formatter {
                 }
                 result
             }
+            ExprKind::Call { func, args } => {
+                let mut result = self.format_expr(func, indent);
+                result.push('(');
+                for (i, arg) in args.iter().enumerate() {
+                    if i > 0 {
+                        result.push_str(", ");
+                    }
+                    result.push_str(&self.format_expr(arg, indent));
+                }
+                result.push(')');
+                result
+            }
+            ExprKind::MethodCall {
+                receiver,
+                method,
+                args,
+                ..
+            } => {
+                let mut result = self.format_expr(receiver, indent);
+                result.push('.');
+                result.push_str(method);
+                result.push('(');
+                for (i, arg) in args.iter().enumerate() {
+                    if i > 0 {
+                        result.push_str(", ");
+                    }
+                    result.push_str(&self.format_expr(arg, indent));
+                }
+                result.push(')');
+                result
+            }
+            ExprKind::For {
+                var,
+                pattern,
+                iter,
+                body,
+                ..
+            } => {
+                let mut result = "for ".to_string();
+                if let Some(pat) = pattern {
+                    if let crate::frontend::ast::Pattern::Identifier(name) = pat {
+                        result.push_str(name);
+                    } else {
+                        result.push_str(&format!("{pat:?}"));
+                    }
+                } else {
+                    result.push_str(var);
+                }
+                result.push_str(" in ");
+                result.push_str(&self.format_expr(iter, indent));
+                result.push(' ');
+                result.push_str(&self.format_expr(body, indent));
+                result
+            }
             _ => {
                 format!("{:?}", expr.kind) // Fallback for unimplemented cases
             }
