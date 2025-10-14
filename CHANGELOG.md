@@ -4,6 +4,38 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+#### DEFECT-PARSER-006: impl Trait Return Types - ✅ COMPLETE (2025-10-14)
+**Status**: ✅ Fixed - impl Trait syntax now fully supported
+**Priority**: HIGH (book appendix-b examples failing)
+
+**Root Cause**: Parser didn't recognize `impl Fn(...)` return type syntax - missing Token::Impl handling
+
+**Implementation (COMPLETE)**:
+- ✅ Added `Token::Impl` case to `parse_type()` dispatcher
+- ✅ Created `parse_impl_trait_type()` to handle `impl Trait` bounds
+- ✅ Special handling for `Fn/FnOnce/FnMut` trait bounds with function signatures
+- ✅ Parses `impl Fn(Args) -> Ret` as function type
+- ✅ Parses `impl OtherTrait` as named type with "impl " prefix
+
+**Test Results**:
+- ✅ All 6 comprehensive tests passing (0.01s runtime)
+- ✅ `fn make_adder(n: i32) -> impl Fn(i32) -> i32` works
+- ✅ `impl FnOnce() -> i32` works
+- ✅ `impl FnMut() -> i32` works
+- ✅ `impl Fn(i32, i32) -> i32` (multi-param) works
+- ✅ impl Trait as function parameter works
+- ✅ Complete programs with impl Trait compile
+
+**Files Modified**:
+- src/frontend/parser/utils.rs (parse_type, parse_impl_trait_type)
+- tests/parser_defect_006_impl_trait.rs (6 new tests)
+
+**Complexity**: Added function with CC=8 (within ≤10 limit)
+
+**Impact**: Fixes appendix-b-syntax-reference_example_16.ruchy (partially - where clause still pending)
+
+---
+
 #### DEFECT-PARSER-005: Let-else Pattern Syntax - ✅ COMPLETE (2025-10-14)
 **Status**: ✅ Fixed - let-else patterns now fully supported
 **Priority**: HIGH (many book examples failing with let-else patterns)

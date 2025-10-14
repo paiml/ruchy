@@ -1049,14 +1049,26 @@ parser_defect_sprint:
       time_actual: "0.5h"
       commits: 1
 
-  defects_remaining:
     - id: "DEFECT-PARSER-005"
-      title: "Function parameters in classes"
+      title: "Let-else pattern syntax"
+      status: "COMPLETE"
+      completed: "2025-10-14"
+      impact: "Book examples with let-else patterns (appendix-b_example_10)"
+      root_cause: "Parser didn't recognize `let pattern = expr else { diverging_block }` syntax"
+      solution: "Added else_block: Option<Box<Expr>> to Let/LetPattern AST + parse_let_else_clause()"
+      tests: "6 RED phase tests created, all passing + book example validated"
+      time_actual: "2h"
+      commits: 2
+      defects_fixed: 5
+
+  defects_remaining:
+    - id: "DEFECT-PARSER-006"
+      title: "Attribute parsing (RightBracket errors)"
       status: "TODO"
       estimated: "1h"
 
-    - id: "DEFECT-PARSER-006"
-      title: "Attribute parsing (RightBracket errors)"
+    - id: "DEFECT-PARSER-007"
+      title: "Function parameters in classes"
       status: "TODO"
       estimated: "1h"
 
