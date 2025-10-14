@@ -714,6 +714,7 @@ mod tests {
                 value: Box::new(value),
                 body: Box::new(body),
                 is_mutable: false,
+                else_block: None,
             },
             create_test_span(),
         )
@@ -1820,6 +1821,7 @@ mod sprint_44_tests {
                     Span { start: 0, end: 1 },
                 )),
                 is_mutable: false,
+                else_block: None,
             },
             Span { start: 0, end: 1 },
         );
@@ -1834,6 +1836,7 @@ mod sprint_44_tests {
                 )),
                 body: Box::new(inner_let),
                 is_mutable: false,
+                else_block: None,
             },
             Span { start: 0, end: 1 },
         )
@@ -1932,6 +1935,7 @@ mod sprint_44_tests {
                     Span { start: 0, end: 1 },
                 )),
                 is_mutable: false,
+                else_block: None,
             },
             Span { start: 0, end: 1 },
         );
@@ -1946,6 +1950,7 @@ mod sprint_44_tests {
                 )),
                 body: Box::new(level3),
                 is_mutable: false,
+                else_block: None,
             },
             Span { start: 0, end: 1 },
         );
@@ -1960,6 +1965,7 @@ mod sprint_44_tests {
                 )),
                 body: Box::new(level2),
                 is_mutable: false,
+                else_block: None,
             },
             Span { start: 0, end: 1 },
         );
@@ -2540,6 +2546,7 @@ mod sprint_44_tests {
                     Span { start: 96, end: 98 },
                 )),
                 is_mutable: false,
+                else_block: None,
             },
             Span { start: 88, end: 98 },
         );
@@ -2602,6 +2609,7 @@ mod sprint_44_tests {
                     Span { start: 0, end: 1 },
                 )),
                 is_mutable: false,
+                else_block: None,
             },
             Span { start: 0, end: 1 },
         );
@@ -2619,6 +2627,7 @@ mod sprint_44_tests {
                     Span { start: 0, end: 1 },
                 )),
                 is_mutable: false,
+                else_block: None,
             },
             Span { start: 0, end: 1 },
         );

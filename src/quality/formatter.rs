@@ -278,6 +278,7 @@ mod tests {
                     span: Default::default(),
                 }),
                 is_mutable: false,
+                else_block: None,
             },
             Default::default(),
         );

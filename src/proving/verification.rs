@@ -420,6 +420,7 @@ mod tests {
                 value: Box::new(value),
                 body: Box::new(body),
                 is_mutable: false,
+                else_block: None,
             },
             create_test_span(),
         )
