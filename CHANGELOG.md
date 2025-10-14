@@ -4,6 +4,39 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+#### DEFECT-PARSER-007: Where Clause Syntax - ✅ COMPLETE (2025-10-14)
+**Status**: ✅ Fixed - where clauses now parse successfully
+**Priority**: MEDIUM (book examples with generic trait bounds failing)
+
+**Root Cause**: Parser didn't handle `where` keyword after function signature - no where clause parsing
+
+**Implementation (COMPLETE)**:
+- ✅ Added `parse_where_clause()` function to parse trait bounds
+- ✅ Integrated into `parse_function_with_visibility()` after return type parsing
+- ✅ Parses `where T: Trait, U: Trait` syntax
+- ✅ Handles complex bounds like `where F: Fn(T) -> U`
+- ✅ Gracefully handles multiple bounds separated by commas
+- ⚠️  Currently parses and skips bounds (doesn't enforce them yet - future work)
+
+**Test Results**:
+- ✅ All 6 comprehensive tests passing (0.01s runtime)
+- ✅ Single trait bound: `where F: Fn(T) -> U` works
+- ✅ Multiple bounds: `where T: Display, U: Clone` works
+- ✅ Complex Fn trait bounds work
+- ✅ Complete programs with where clauses compile
+- ✅ Book example appendix-b-syntax-reference_example_16 now passes
+- ✅ Functions without where clauses still work (backward compatible)
+
+**Files Modified**:
+- src/frontend/parser/functions.rs (parse_where_clause, +45 lines)
+- tests/parser_defect_007_where_clause.rs (6 new tests)
+
+**Complexity**: Added function with CC=6 (within ≤10 limit)
+
+**Impact**: Fixes appendix-b-syntax-reference_example_16.ruchy completely ✅
+
+---
+
 #### DEFECT-PARSER-006: impl Trait Return Types - ✅ COMPLETE (2025-10-14)
 **Status**: ✅ Fixed - impl Trait syntax now fully supported
 **Priority**: HIGH (book appendix-b examples failing)
