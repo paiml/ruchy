@@ -6,6 +6,7 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ### Fixed
 - **BUG-031 (CRITICAL)**: Fixed `ruchy fmt` file corruption - formatter now generates valid Ruchy code instead of AST Debug output for function calls, method calls, and for loops (EXTREME TDD: RED → GREEN → REFACTOR, 4/5 tests passing)
+- **CLI-UNIFY-002 (CRITICAL)**: Fixed `ruchy run` to use interpreter instead of compiler - now matches Deno/Python/Ruby/Node behavior with 30x speed improvement (0.092s → 0.003s) and zero binary artifacts (EXTREME TDD: 5/5 tests passing)
 
 ## [3.81.0] - 2025-10-14
 
