@@ -4,7 +4,26 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
-### Parser Bug Fixes (Sprint continues)
+## [3.80.0] - 2025-10-14
+
+**Theme**: Parser Bug-Crushing Sprint - Extreme TDD Methodology
+
+**Summary**: Fixed 4 critical parser defects blocking ruchy-book example compatibility, using EXTREME TDD with property tests, mutation tests, and PMAT quality gates. All fixes include comprehensive test suites (unit + property tests) and maintain cyclomatic complexity ≤10.
+
+**Impact**:
+- ✅ **Example 27** now works: Full Rust visibility syntax (`pub(crate)`, `pub(super)`, `pub(in path)`)
+- ✅ **Example 28** now works: Use statements with keyword module names
+- ✅ **Example 22** progresses: Impl blocks with generic target types (`impl<T> Trait for Type<T>`)
+- ✅ **Example 26** progresses: `pub mod` declarations in modules
+- ✅ **Import syntax** fixed: ColonColon (`::`) operator in use/import statements
+
+**Quality Metrics**:
+- **Tests Added**: 38 unit tests + 14 property tests = 52 tests (100% passing)
+- **Property Test Coverage**: 1,408 random validations across all defects
+- **PMAT Compliance**: All functions ≤10 cyclomatic complexity
+- **Toyota Way**: Jidoka (stop-the-line), Genchi Genbutsu (go-and-see), Kaizen (continuous improvement)
+
+### Parser Bug Fixes - Extreme TDD Sprint Results
 
 #### DEFECT-PARSER-017: Keywords in Use Statement Paths - ✅ COMPLETE (2025-10-14)
 **Status**: ✅ Fixed - `use unix_specific::module` and keyword paths now work in use statements
