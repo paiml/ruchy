@@ -94,26 +94,47 @@ fn parse_handler_error(state: &mut ParserState) -> Result<Vec<ActorHandler>> {
     }
     bail!("Expected 'receive' or '}}', found EOF");
 }
-// Helper: Parse state block (complexity: 5)
+// Helper: Parse state block (complexity: 3)
 fn parse_state_block(state: &mut ParserState, state_fields: &mut Vec<StructField>) -> Result<()> {
     state.tokens.advance(); // consume 'state'
     state.tokens.expect(&Token::LeftBrace)?;
     while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
-        let field_name = parse_field_name(state, "Expected field name in state block")?;
-        state.tokens.expect(&Token::Colon)?;
-        let ty = utils::parse_type(state)?;
-        state_fields.push(StructField {
-            name: field_name,
-            ty,
-            visibility: Visibility::Private,
-            is_mut: false,
-            default_value: None,
-            decorators: Vec::new(),
-        });
+        parse_single_state_block_field(state, state_fields)?;
         consume_optional_separator(state);
     }
     state.tokens.expect(&Token::RightBrace)?;
     Ok(())
+}
+
+// Helper: Parse single field in state block (complexity: 2)
+fn parse_single_state_block_field(
+    state: &mut ParserState,
+    state_fields: &mut Vec<StructField>,
+) -> Result<()> {
+    let field_name = parse_field_name(state, "Expected field name in state block")?;
+    state.tokens.expect(&Token::Colon)?;
+    let ty = utils::parse_type(state)?;
+    let default_value = parse_optional_default_value(state)?;
+
+    state_fields.push(StructField {
+        name: field_name,
+        ty,
+        visibility: Visibility::Private,
+        is_mut: false,
+        default_value,
+        decorators: Vec::new(),
+    });
+    Ok(())
+}
+
+// Helper: Parse optional default value (complexity: 2)
+fn parse_optional_default_value(state: &mut ParserState) -> Result<Option<Expr>> {
+    if matches!(state.tokens.peek(), Some((Token::Equal, _))) {
+        state.tokens.advance(); // consume =
+        Ok(Some(super::parse_expr_recursive(state)?))
+    } else {
+        Ok(None)
+    }
 }
 // Helper: Parse receive handler (complexity: 3)
 fn parse_receive_handler(state: &mut ParserState, handlers: &mut Vec<ActorHandler>) -> Result<()> {
@@ -124,88 +145,92 @@ fn parse_receive_handler(state: &mut ParserState, handlers: &mut Vec<ActorHandle
         parse_individual_handler(state, handlers)
     }
 }
-// Helper: Parse receive block with multiple handlers (complexity: 6)
+// Helper: Parse receive block with multiple handlers (complexity: 3)
 fn parse_receive_block(state: &mut ParserState, handlers: &mut Vec<ActorHandler>) -> Result<()> {
     state.tokens.advance(); // consume {
     while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
-        // Parse message pattern (could be just a name or Name(params))
-        let message_type = if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
-            let name = name.clone();
-            state.tokens.advance();
-            name
-        } else {
-            bail!("Expected message type in receive block");
-        };
-
-        // Parse optional parameters in parentheses
-        let params = if matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
-            parse_optional_params(state)?
-        } else {
-            Vec::new()
-        };
-        state.tokens.expect(&Token::FatArrow)?;
-        let body = parse_handler_body(state)?;
-        handlers.push(ActorHandler {
-            message_type,
-            params,
-            body,
-        });
-        if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
-            state.tokens.advance();
-        }
+        parse_single_handler_in_block(state, handlers)?;
+        consume_optional_comma(state);
     }
     state.tokens.expect(&Token::RightBrace)?;
     Ok(())
 }
-// Helper: Parse individual handler (complexity: 4)
+
+// Helper: Parse single handler within receive block (complexity: 2)
+fn parse_single_handler_in_block(
+    state: &mut ParserState,
+    handlers: &mut Vec<ActorHandler>,
+) -> Result<()> {
+    let message_type = parse_message_type_in_block(state)?;
+    let params = parse_optional_params(state)?;
+    state.tokens.expect(&Token::FatArrow)?;
+    let body = parse_handler_body(state)?;
+
+    handlers.push(ActorHandler {
+        message_type,
+        params,
+        body,
+    });
+    Ok(())
+}
+
+// Helper: Parse message type in receive block (complexity: 2)
+fn parse_message_type_in_block(state: &mut ParserState) -> Result<String> {
+    if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
+        let name = name.clone();
+        state.tokens.advance();
+        Ok(name)
+    } else {
+        bail!("Expected message type in receive block");
+    }
+}
+
+// Helper: Consume optional comma separator (complexity: 2)
+fn consume_optional_comma(state: &mut ParserState) {
+    if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+        state.tokens.advance();
+    }
+}
+// Helper: Parse individual handler (complexity: 3)
 fn parse_individual_handler(
     state: &mut ParserState,
     handlers: &mut Vec<ActorHandler>,
 ) -> Result<()> {
-    // Parse message pattern (could be just a name or Name(params))
-    let message_type = if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
+    let message_type = parse_message_type(state)?;
+    let params = parse_optional_params(state)?;
+    let body = parse_handler_body_with_type(state)?;
+
+    handlers.push(ActorHandler {
+        message_type,
+        params,
+        body,
+    });
+    Ok(())
+}
+
+// Helper: Parse message type identifier (complexity: 2)
+fn parse_message_type(state: &mut ParserState) -> Result<String> {
+    if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
         let name = name.clone();
         state.tokens.advance();
-        name
+        Ok(name)
     } else {
         bail!("Expected message type after receive");
-    };
+    }
+}
 
-    // Parse optional parameters in parentheses
-    let params = if matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
-        parse_optional_params(state)?
-    } else {
-        Vec::new()
-    };
-    // Check for => (fat arrow) or -> (return type)
+// Helper: Parse handler body with optional type annotation (complexity: 3)
+fn parse_handler_body_with_type(state: &mut ParserState) -> Result<Box<Expr>> {
     if matches!(state.tokens.peek(), Some((Token::FatArrow, _))) {
         state.tokens.advance(); // consume =>
-        let body = parse_handler_body(state)?;
-        handlers.push(ActorHandler {
-            message_type,
-            params,
-            body,
-        });
+        parse_handler_body(state)
     } else if matches!(state.tokens.peek(), Some((Token::Arrow, _))) {
         state.tokens.advance(); // consume ->
         let _return_type = utils::parse_type(state)?;
-        // After return type, expect a block
-        let body = Box::new(collections::parse_block(state)?);
-        handlers.push(ActorHandler {
-            message_type,
-            params,
-            body,
-        });
+        Ok(Box::new(collections::parse_block(state)?))
     } else {
-        // No arrow, expect a block directly
-        let body = Box::new(collections::parse_block(state)?);
-        handlers.push(ActorHandler {
-            message_type,
-            params,
-            body,
-        });
+        Ok(Box::new(collections::parse_block(state)?))
     }
-    Ok(())
 }
 // Helper: Parse inline state field (complexity: 4)
 fn parse_inline_state_field(
