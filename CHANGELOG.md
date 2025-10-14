@@ -6,6 +6,40 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ### Parser Bug Fixes (Sprint continues)
 
+#### DEFECT-PARSER-015: pub mod Declarations - ✅ COMPLETE (2025-10-14)
+**Status**: ✅ Fixed - `pub mod` syntax now works in module bodies
+**Priority**: HIGH (book example 26 failing, fundamental Rust visibility pattern)
+
+**Root Cause**: Multiple issues prevented pub mod declarations:
+1. `parse_module_item()` rejected all `pub` items except functions and use statements
+2. Module name parsing only accepted `Token::Identifier`, rejecting keyword names like "private"
+3. Function parsing only matched `Token::Fun`, not `Token::Fn`
+
+**Implementation (COMPLETE)**:
+- ✅ Modified `parse_module_item()` to accept `pub mod` and `pub module`
+- ✅ Extended module name parsing to accept `Token::Private` as a module name
+- ✅ Fixed function matching to accept both `Token::Fun` and `Token::Fn`
+- ✅ Comprehensive test suite: 5/5 tests passing
+- ✅ Tests: `tests/parser_defect_015_pub_mod.rs`
+
+**Files Modified**:
+- `src/frontend/parser/expressions.rs`: Updated `parse_module_item()` and `parse_module_declaration()`
+
+**Test Coverage**:
+- ✅ `pub mod utils {}` - Basic pub mod
+- ✅ `mod graphics { pub mod shapes {} }` - Nested pub mod
+- ✅ `pub mod empty {}` - Empty pub mod
+- ✅ `pub mod network { pub fn f() {} }` - pub mod with functions
+- ✅ `mod private {}` - Regression: regular mod still works
+
+**Impact**:
+- ✅ Enables visibility control for modules: `pub mod`, `pub use`
+- ✅ Supports nested module hierarchies with mixed visibility
+- ✅ Example 26 partially works (module body syntax works, file-based modules need separate fix)
+
+**Known Limitations**:
+- File-based module declarations (`mod utils;`) not yet supported - separate ticket needed
+
 #### DEFECT-PARSER-014: Impl Blocks with Generic Target Types - ✅ COMPLETE (2025-10-14)
 **Status**: ✅ Fixed - `impl<T> Trait for Type<T>` syntax now works
 **Priority**: HIGH (book example 22 failing, fundamental Rust pattern)

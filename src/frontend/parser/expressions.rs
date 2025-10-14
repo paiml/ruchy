@@ -1114,13 +1114,19 @@ fn parse_module_declaration(state: &mut ParserState) -> Result<Expr> {
     } else {
         state.tokens.expect(&Token::Module)?
     };
-    // Parse module name
-    let name = if let Some((Token::Identifier(n), _)) = state.tokens.peek() {
-        let n = n.clone();
-        state.tokens.advance();
-        n
-    } else {
-        bail!("Expected module name after 'mod' or 'module'");
+    // Parse module name (accept keywords as module names)
+    let name = match state.tokens.peek() {
+        Some((Token::Identifier(n), _)) => {
+            let n = n.clone();
+            state.tokens.advance();
+            n
+        }
+        // DEFECT-PARSER-015 FIX: Allow keyword module names (mod private, mod utils, etc.)
+        Some((Token::Private, _)) => {
+            state.tokens.advance();
+            "private".to_string()
+        }
+        _ => bail!("Expected module name after 'mod' or 'module'"),
     };
     // Parse module body with visibility support
     state.tokens.expect(&Token::LeftBrace)?;
@@ -1156,13 +1162,20 @@ fn parse_visibility_modifier(state: &mut ParserState) -> bool {
 
 fn parse_module_item(state: &mut ParserState, is_pub: bool) -> Result<Expr> {
     match state.tokens.peek() {
-        Some((Token::Fun, _)) => super::functions::parse_function_with_visibility(state, is_pub),
+        // DEFECT-PARSER-015 FIX: Accept both 'fun' and 'fn' for functions
+        Some((Token::Fun, _)) | Some((Token::Fn, _)) => {
+            super::functions::parse_function_with_visibility(state, is_pub)
+        }
         Some((Token::Use, _)) if is_pub => {
             state.tokens.advance();
             super::parse_use_statement_with_visibility(state, true)
         }
+        // DEFECT-PARSER-015 FIX: Allow pub mod
+        Some((Token::Mod, _)) | Some((Token::Module, _)) if is_pub => {
+            parse_module_declaration(state)
+        }
         _ if is_pub => {
-            bail!("'pub' can only be used with function declarations or use statements in modules")
+            bail!("'pub' can only be used with function declarations, use statements, or module declarations")
         }
         _ => super::parse_expr_recursive(state),
     }
