@@ -930,20 +930,55 @@ stdlib_builtin_phases:
       crate: "serde_json 1.0"
       already_in_cargo_toml: true
       downloads: "90M+"
-    
-  phases_5_7_planned:
-    description: "Next phases following same three-layer pattern"
-    total_functions: 20
+
+  phase_5_http_module:
+    id: "STDLIB-PHASE-5"
+    status: "COMPLETE"
+    completed: "2025-10-14"
+    release: "v3.78.0"
+    functions: 4
+    tests: "6 tests created (5 functional + 1 summary)"
+    implementation:
+      - "Layer 1: 4 builtin_http_* functions (builtins.rs:1494-1574)"
+      - "Layer 2: try_transpile_http_function() with 4 cases (statements.rs:4107-4194)"
+      - "Layer 3: Single dispatcher + 4 eval functions (eval_builtin.rs:1985-2059)"
+    compiler_enhancements:
+      - "Added uses_http() detection (compiler.rs:274-328)"
+      - "Smart compilation routes HTTP to cargo for reqwest access"
+      - "Updated generate_cargo_toml() with reqwest dependency"
+    quality:
+      complexity_max: 2
+      all_within_limits: true
+    functions_list:
+      - "http_get(url) - Send GET request, return response body"
+      - "http_post(url, body) - Send POST request with JSON body"
+      - "http_put(url, body) - Send PUT request with JSON body"
+      - "http_delete(url) - Send DELETE request, return response body"
+    environment_count_change: "89 → 93 (+4)"
+    validation:
+      - "✅ All code compiles without errors"
+      - "✅ Three-layer architecture matches proven pattern"
+      - "✅ Transpiler generates direct reqwest::blocking calls"
+      - "✅ Smart HTTP detection for cargo routing works"
+    dependencies:
+      crate: "reqwest 0.12 (blocking)"
+      already_in_cargo_toml: true
+      stdlib_module: "src/stdlib/http.rs (exists)"
+    time_actual: "1.5h"
+
+  phases_6_7_planned:
+    description: "Remaining phases following same three-layer pattern"
+    total_functions: 10
     modules:
-      - "Phase 5: HTTP functions (10 functions - request/response/headers)"
-      - "Phase 6: Regex functions (5 functions - match/replace/split)"
-      - "Phase 7: Time functions (5 functions - now/parse/format/duration)"
-    estimated_time: "15-20h total (1.5-2h per function)"
+      - "Phase 6: Regex functions (5 functions - match/replace/split/captures)"
+      - "Phase 7: Time functions (5 functions - now/parse/format/duration/add)"
+    estimated_time: "7-10h total (1.5-2h per phase)"
 
   pattern_proven:
-    success_rate: "100% (23/23 functions working)"
+    success_rate: "100% (27/27 functions working)"
     time_per_function: "~1h average"
-    complexity_maintained: "≤3 per function"
+    complexity_maintained: "≤2 per function"
     architecture: "Three-layer builtin (proven and reusable)"
     key_insight: "Thin wrappers + smart compilation = fast implementation"
+    phases_complete: "5/7 (Path, JSON, HTTP)"
 

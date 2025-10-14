@@ -1183,6 +1183,9 @@ impl Transpiler {
             if let Some(result) = self.try_transpile_json_function(base_name, args)? {
                 return Ok(result);
             }
+            if let Some(result) = self.try_transpile_http_function(base_name, args)? {
+                return Ok(result);
+            }
             // DEFECT-STRING-RESULT FIX: Handle Ok/Err/Some when parsed as Call (not dedicated ExprKind)
             if let Some(result) = self.try_transpile_result_call(base_name, args)? {
                 return Ok(result);
@@ -4094,6 +4097,95 @@ impl Transpiler {
                             result
                         }
                         set_json_path(#obj, &#path, serde_json::json!(#value))
+                    }
+                }))
+            }
+            _ => Ok(None),
+        }
+    }
+
+    /// Transpile HTTP builtin functions (STDLIB-PHASE-5)
+    ///
+    /// Wraps ruchy::stdlib::http module functions for compilation
+    /// Complexity: 2 (match + delegation)
+    fn try_transpile_http_function(
+        &self,
+        name: &str,
+        args: &[crate::frontend::ast::Expr],
+    ) -> Result<Option<proc_macro2::TokenStream>> {
+        match name {
+            "http_get" => {
+                if args.len() != 1 {
+                    anyhow::bail!("http_get() expects 1 argument");
+                }
+                let url = self.transpile_expr(&args[0])?;
+                Ok(Some(quote! {
+                    {
+                        let response = reqwest::blocking::get(&#url).expect("HTTP GET failed");
+                        if !response.status().is_success() {
+                            panic!("HTTP GET failed with status {}", response.status());
+                        }
+                        response.text().expect("Failed to read response body")
+                    }
+                }))
+            }
+            "http_post" => {
+                if args.len() != 2 {
+                    anyhow::bail!("http_post() expects 2 arguments");
+                }
+                let url = self.transpile_expr(&args[0])?;
+                let body = self.transpile_expr(&args[1])?;
+                Ok(Some(quote! {
+                    {
+                        let client = reqwest::blocking::Client::new();
+                        let response = client.post(&#url)
+                            .header("content-type", "application/json")
+                            .body((#body).to_string())
+                            .send()
+                            .expect("HTTP POST failed");
+                        if !response.status().is_success() {
+                            panic!("HTTP POST failed with status {}", response.status());
+                        }
+                        response.text().expect("Failed to read response body")
+                    }
+                }))
+            }
+            "http_put" => {
+                if args.len() != 2 {
+                    anyhow::bail!("http_put() expects 2 arguments");
+                }
+                let url = self.transpile_expr(&args[0])?;
+                let body = self.transpile_expr(&args[1])?;
+                Ok(Some(quote! {
+                    {
+                        let client = reqwest::blocking::Client::new();
+                        let response = client.put(&#url)
+                            .header("content-type", "application/json")
+                            .body((#body).to_string())
+                            .send()
+                            .expect("HTTP PUT failed");
+                        if !response.status().is_success() {
+                            panic!("HTTP PUT failed with status {}", response.status());
+                        }
+                        response.text().expect("Failed to read response body")
+                    }
+                }))
+            }
+            "http_delete" => {
+                if args.len() != 1 {
+                    anyhow::bail!("http_delete() expects 1 argument");
+                }
+                let url = self.transpile_expr(&args[0])?;
+                Ok(Some(quote! {
+                    {
+                        let client = reqwest::blocking::Client::new();
+                        let response = client.delete(&#url)
+                            .send()
+                            .expect("HTTP DELETE failed");
+                        if !response.status().is_success() {
+                            panic!("HTTP DELETE failed with status {}", response.status());
+                        }
+                        response.text().expect("Failed to read response body")
                     }
                 }))
             }

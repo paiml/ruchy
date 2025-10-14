@@ -29,6 +29,7 @@ pub fn eval_builtin_function(
         try_eval_fs_function,
         try_eval_path_function,
         try_eval_json_function,
+        try_eval_http_function,
     ];
 
     for try_eval in dispatchers {
@@ -1979,6 +1980,82 @@ fn try_eval_json_function(
         }
     }
     Ok(None)
+}
+
+// ==============================================================================
+// HTTP Builtin Functions (STDLIB-PHASE-5)
+// ==============================================================================
+
+/// Dispatcher for HTTP builtin functions
+/// Complexity: 2 (loop + match delegation)
+fn try_eval_http_function(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
+    match name {
+        "http_get" => Ok(Some(eval_http_get(args)?)),
+        "http_post" => Ok(Some(eval_http_post(args)?)),
+        "http_put" => Ok(Some(eval_http_put(args)?)),
+        "http_delete" => Ok(Some(eval_http_delete(args)?)),
+        _ => Ok(None),
+    }
+}
+
+/// Eval: http_get(url)
+/// Complexity: 2 (validation + stdlib delegation)
+fn eval_http_get(args: &[Value]) -> Result<Value, InterpreterError> {
+    validate_arg_count("http_get", args, 1)?;
+    match &args[0] {
+        Value::String(url) => {
+            match crate::stdlib::http::get(url) {
+                Ok(response) => Ok(Value::from_string(response)),
+                Err(e) => Err(InterpreterError::RuntimeError(format!("HTTP GET failed: {}", e))),
+            }
+        },
+        _ => Err(InterpreterError::RuntimeError("http_get() expects a string URL".to_string())),
+    }
+}
+
+/// Eval: http_post(url, body)
+/// Complexity: 2 (validation + stdlib delegation)
+fn eval_http_post(args: &[Value]) -> Result<Value, InterpreterError> {
+    validate_arg_count("http_post", args, 2)?;
+    match (&args[0], &args[1]) {
+        (Value::String(url), Value::String(body)) => {
+            match crate::stdlib::http::post(url, body) {
+                Ok(response) => Ok(Value::from_string(response)),
+                Err(e) => Err(InterpreterError::RuntimeError(format!("HTTP POST failed: {}", e))),
+            }
+        },
+        _ => Err(InterpreterError::RuntimeError("http_post() expects two string arguments".to_string())),
+    }
+}
+
+/// Eval: http_put(url, body)
+/// Complexity: 2 (validation + stdlib delegation)
+fn eval_http_put(args: &[Value]) -> Result<Value, InterpreterError> {
+    validate_arg_count("http_put", args, 2)?;
+    match (&args[0], &args[1]) {
+        (Value::String(url), Value::String(body)) => {
+            match crate::stdlib::http::put(url, body) {
+                Ok(response) => Ok(Value::from_string(response)),
+                Err(e) => Err(InterpreterError::RuntimeError(format!("HTTP PUT failed: {}", e))),
+            }
+        },
+        _ => Err(InterpreterError::RuntimeError("http_put() expects two string arguments".to_string())),
+    }
+}
+
+/// Eval: http_delete(url)
+/// Complexity: 2 (validation + stdlib delegation)
+fn eval_http_delete(args: &[Value]) -> Result<Value, InterpreterError> {
+    validate_arg_count("http_delete", args, 1)?;
+    match &args[0] {
+        Value::String(url) => {
+            match crate::stdlib::http::delete(url) {
+                Ok(response) => Ok(Value::from_string(response)),
+                Err(e) => Err(InterpreterError::RuntimeError(format!("HTTP DELETE failed: {}", e))),
+            }
+        },
+        _ => Err(InterpreterError::RuntimeError("http_delete() expects a string URL".to_string())),
+    }
 }
 
 #[cfg(test)]

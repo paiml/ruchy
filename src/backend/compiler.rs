@@ -96,11 +96,12 @@ pub fn compile_to_binary(source_path: &Path, options: &CompileOptions) -> Result
 /// - The working directory cannot be created
 /// - The rustc compilation fails
 pub fn compile_source_to_binary(source: &str, options: &CompileOptions) -> Result<PathBuf> {
-    // Parse to check for DataFrame and JSON usage
+    // Parse to check for DataFrame, JSON, and HTTP usage
     let mut parser = Parser::new(source);
     let ast = parser.parse().parse_context("Ruchy source")?;
     let needs_polars = uses_dataframes(&ast);
     let needs_json = uses_json(&ast);
+    let needs_http = uses_http(&ast);
 
     // Transpile
     let mut transpiler = Transpiler::new();
@@ -108,7 +109,7 @@ pub fn compile_source_to_binary(source: &str, options: &CompileOptions) -> Resul
         .transpile_to_program(&ast)
         .compile_context("transpile to Rust")?;
 
-    if needs_polars || needs_json {
+    if needs_polars || needs_json || needs_http {
         // Use cargo build with Cargo.toml (for external crate access)
         compile_with_cargo(&rust_code, options)
     } else {
@@ -266,6 +267,66 @@ fn is_json_function(name: &str) -> bool {
     )
 }
 
+// ==============================================================================
+// HTTP Detection Functions (STDLIB-PHASE-5)
+// ==============================================================================
+
+/// Check AST for HTTP stdlib usage (complexity: 2)
+pub fn uses_http(ast: &crate::frontend::ast::Expr) -> bool {
+    use crate::frontend::ast::ExprKind;
+
+    match &ast.kind {
+        ExprKind::Call { func, args } => check_call_for_http(func, args),
+        ExprKind::Binary { left, right, .. } => check_binary_for_http(left, right),
+        ExprKind::Let { value, body, .. } => check_binary_for_http(value, body),
+        ExprKind::MethodCall { receiver, args, .. } => check_method_for_http(receiver, args),
+        ExprKind::Function { body, .. } => uses_http(body),
+        ExprKind::Block(exprs) => exprs.iter().any(uses_http),
+        _ => false,
+    }
+}
+
+/// Check function calls for HTTP functions (complexity: 3)
+fn check_call_for_http(
+    func: &crate::frontend::ast::Expr,
+    args: &[crate::frontend::ast::Expr],
+) -> bool {
+    use crate::frontend::ast::ExprKind;
+
+    // Check if calling an HTTP function
+    if let ExprKind::Identifier(name) = &func.kind {
+        if is_http_function(name) {
+            return true;
+        }
+    }
+    // Recursively check function and arguments
+    uses_http(func) || args.iter().any(uses_http)
+}
+
+/// Check binary expressions for HTTP usage (complexity: 1)
+fn check_binary_for_http(
+    left: &crate::frontend::ast::Expr,
+    right: &crate::frontend::ast::Expr,
+) -> bool {
+    uses_http(left) || uses_http(right)
+}
+
+/// Check method calls for HTTP usage (complexity: 1)
+fn check_method_for_http(
+    receiver: &crate::frontend::ast::Expr,
+    args: &[crate::frontend::ast::Expr],
+) -> bool {
+    uses_http(receiver) || args.iter().any(uses_http)
+}
+
+/// Check if function name is an HTTP stdlib function (complexity: 1)
+fn is_http_function(name: &str) -> bool {
+    matches!(
+        name,
+        "http_get" | "http_post" | "http_put" | "http_delete"
+    )
+}
+
 /// Generate Cargo.toml with polars dependency (complexity: 2)
 fn generate_cargo_toml(binary_name: &str) -> String {
     format!(
@@ -278,6 +339,7 @@ edition = "2021"
 polars = {{ version = "0.35", features = ["lazy"] }}
 serde = {{ version = "1.0", features = ["derive"] }}
 serde_json = "1.0"
+reqwest = {{ version = "0.12", features = ["blocking"] }}
 "#,
         binary_name
     )
