@@ -2,10 +2,10 @@
 # Extreme TDD + Toyota Way + Mutation Testing Enforcement
 
 metadata:
-  version: "3.3"
+  version: "3.4"
   last_updated: "2025-10-14"
-  current_sprint: "Parser Bug Crushing - STDLIB Phase 5 HTTP COMPLETE ✅"
-  latest_release: "v3.78.0"
+  current_sprint: "🚨 CRITICAL: CLI Unification (Deno-style UX) - STOP THE LINE 🚨"
+  latest_release: "v3.79.0"
   production_readiness:
     overall: "85%"
     breakdown:
@@ -80,6 +80,173 @@ notebook_excellence:
 
 # Current Sprint Tasks
 tasks:
+  # 🚨 CRITICAL: CLI Unification Sprint (STOP THE LINE)
+  - id: "CLI-UNIFY-001"
+    title: "Fix: 'ruchy' (no args) should open REPL, not show help"
+    status: "PENDING"
+    priority: "🔴 CRITICAL"
+    defect_type: "UX violation - every scripting language opens REPL"
+    time_estimated: "2h"
+    specification: "docs/unified-deno-cli-spec.md"
+    description: |
+      Currently `ruchy` with no args shows help message.
+      Expected: Open REPL (like python, ruby, node, deno)
+    tests:
+      test_file: "tests/cli/test_default_command.rs"
+      unit: 3  # Test no args → REPL, test --help → help, test invalid → error
+      property: 1  # Property: Always deterministic behavior
+      property_cases: 100
+      mutation_coverage_target: "≥80%"
+    tdd_steps:
+      - "RED: Write test_ruchy_no_args_opens_repl() - FAILS"
+      - "GREEN: Modify src/bin/ruchy.rs:main() to detect no args"
+      - "REFACTOR: Verify complexity ≤10 via PMAT"
+    quality:
+      complexity_max: 10
+      tdg_grade_target: "A-"
+
+  - id: "CLI-UNIFY-002"
+    title: "Fix: 'ruchy run' should interpret, not compile"
+    status: "PENDING"
+    priority: "🔴 CRITICAL"
+    defect_type: "Performance bug - 100x slower than necessary"
+    time_estimated: "4h"
+    specification: "docs/unified-deno-cli-spec.md"
+    defect_document: "docs/defects/CRITICAL-ruchy-run-forced-transpilation.md"
+    description: |
+      Currently `ruchy run script.ruchy` compiles with rustc (10-60s).
+      Expected: Interpret immediately like REPL (<1s)
+      Root cause: handle_run_command() calls compile_to_binary() instead of Repl::eval()
+    tests:
+      test_file: "tests/cli/test_run_command.rs"
+      unit: 5  # Test speed <2s, test no binary artifact, test output correct, test errors handled, test verbose flag
+      property: 2  # Property: Always <2s, always same output as REPL
+      property_cases: 200
+      mutation_coverage_target: "≥80%"
+      performance: 1  # Benchmark: ruchy run must be <2s
+    tdd_steps:
+      - "RED: Write test_ruchy_run_interprets_under_2s() - FAILS (currently 10-60s)"
+      - "RED: Write test_ruchy_run_no_binary_artifact() - FAILS (currently creates binary)"
+      - "GREEN: Replace compile_to_binary() with Repl::eval() in handle_run_command()"
+      - "REFACTOR: DRY with handle_file_execution() - extract common interpreter logic"
+      - "REFACTOR: Verify complexity ≤10 via PMAT"
+    quality:
+      complexity_max: 10
+      tdg_grade_target: "A-"
+
+  - id: "CLI-UNIFY-003"
+    title: "Comprehensive CLI Test Suite (100+ tests)"
+    status: "PENDING"
+    priority: "🔴 CRITICAL"
+    time_estimated: "8h"
+    specification: "docs/unified-deno-cli-spec.md"
+    description: |
+      Create comprehensive test suite covering ALL CLI invocation patterns
+      to prevent future regressions of interpreter/transpiler parity
+    tests:
+      test_file: "tests/cli/extreme_tdd_cli_suite.rs"
+      unit: 50  # All CLI patterns
+      property: 10  # Invariants: determinism, speed, consistency
+      property_cases: 10000
+      mutation_coverage_target: "≥80%"
+      rexpect: 20  # Interactive REPL tests
+      performance: 5  # Speed benchmarks
+    test_categories:
+      - "Default command (no args)"
+      - "File execution (ruchy script.ruchy)"
+      - "Run command (ruchy run)"
+      - "REPL command (ruchy repl)"
+      - "Eval flag (ruchy -e)"
+      - "Stdin execution (echo | ruchy)"
+      - "Compile command (ruchy compile)"
+      - "All 15 native tools"
+    quality:
+      complexity_max: 10
+      tdg_grade_target: "A-"
+
+  - id: "CLI-UNIFY-004"
+    title: "Pre-commit Hook: CLI Regression Prevention"
+    status: "PENDING"
+    priority: "🔴 CRITICAL"
+    time_estimated: "2h"
+    specification: "docs/unified-deno-cli-spec.md"
+    description: |
+      Create git pre-commit hook that prevents CLI UX regressions
+      by running smoke tests on all CLI invocation patterns
+    tests:
+      test_file: ".git/hooks/pre-commit"
+      smoke_tests: 10  # Fast checks (<30s total)
+    smoke_tests:
+      - "ruchy (no args) → opens REPL"
+      - "ruchy run test.ruchy → interprets <2s"
+      - "ruchy -e 'println(1)' → evaluates <1s"
+      - "ruchy test.ruchy → interprets <2s"
+      - "ruchy compile → creates binary"
+    quality:
+      complexity_max: 10
+      execution_time_max: "30s"
+
+  - id: "CLI-UNIFY-005"
+    title: "Example Validations (10 working examples)"
+    status: "PENDING"
+    priority: "🟡 HIGH"
+    time_estimated: "4h"
+    specification: "docs/unified-deno-cli-spec.md"
+    description: |
+      Create 10 example Ruchy programs and validate they work with
+      all CLI invocation patterns (direct, run, compile, REPL)
+    examples:
+      - "examples/cli/01_hello_world.ruchy"
+      - "examples/cli/02_simple_math.ruchy"
+      - "examples/cli/03_variables.ruchy"
+      - "examples/cli/04_functions.ruchy"
+      - "examples/cli/05_control_flow.ruchy"
+      - "examples/cli/06_data_structures.ruchy"
+      - "examples/cli/07_string_interpolation.ruchy"
+      - "examples/cli/08_error_handling.ruchy"
+      - "examples/cli/09_file_io.ruchy"
+      - "examples/cli/10_http_request.ruchy"
+    validation_matrix: "Each example × 4 invocation patterns = 40 validations"
+    quality:
+      all_examples_must_pass: true
+
+  - id: "CLI-UNIFY-006"
+    title: "Documentation Updates"
+    status: "PENDING"
+    priority: "🟡 HIGH"
+    time_estimated: "2h"
+    specification: "docs/unified-deno-cli-spec.md"
+    description: |
+      Update all documentation to reflect Deno-style CLI UX
+    files_to_update:
+      - "README.md"
+      - "docs/SPECIFICATION.md"
+      - "../ruchy-book/src/SUMMARY.md"
+      - "../ruchy-book/src/getting-started/installation.md"
+      - "../ruchy-book/src/getting-started/quick-start.md"
+    changes:
+      - "Document: 'ruchy' opens REPL"
+      - "Document: 'ruchy script.ruchy' interprets immediately"
+      - "Document: 'ruchy run' is alias for direct execution"
+      - "Document: 'ruchy compile' for production binaries"
+
+  - id: "CLI-UNIFY-007"
+    title: "Release: v3.80.0 - CLI Unification (Deno-style UX)"
+    status: "PENDING"
+    priority: "🔴 CRITICAL"
+    time_estimated: "1h"
+    depends_on: ["CLI-UNIFY-001", "CLI-UNIFY-002", "CLI-UNIFY-003", "CLI-UNIFY-004", "CLI-UNIFY-005", "CLI-UNIFY-006"]
+    description: |
+      Publish new release with CLI UX fixes
+    steps:
+      - "Update CHANGELOG.md with CLI fixes"
+      - "Update Cargo.toml version: 3.79.0 → 3.80.0"
+      - "Git commit with message: '[RELEASE] v3.80.0 - CLI Unification (Deno-style UX)'"
+      - "Git tag: v3.80.0"
+      - "Git push --tags"
+      - "cargo publish"
+      - "Create GitHub release with notes"
+
   - id: "CARGO-001"
     title: "Build.rs Integration Prototype"
     status: "COMPLETE"

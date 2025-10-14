@@ -265,26 +265,34 @@ fn write_file_with_context(path: &Path, content: &[u8]) -> Result<()> {
 
 /// Handle run command - compile and execute a Ruchy file
 pub fn handle_run_command(file: &Path, verbose: bool) -> Result<()> {
-    use ruchy::backend::{compile_to_binary, CompileOptions};
     log_run_start(file, verbose);
 
-    // Use smart compiler that detects DataFrame/JSON usage
-    let binary_path = PathBuf::from("/tmp/ruchy_temp_run");
-    let options = CompileOptions {
-        output: binary_path.clone(),
-        opt_level: "0".to_string(), // Fast compilation for run mode
-        strip: false,
-        static_link: false,
-        target: None,
-        rustc_flags: Vec::new(),
-    };
+    // CLI-UNIFY-002: Use interpreter (like handle_file_execution), not compiler
+    // This matches Deno/Python/Ruby/Node behavior: `run` = interpret immediately
+    // For compilation to binary, use: `ruchy compile`
+    let source = read_file_with_context(file)?;
+    let mut repl = create_repl()?;
 
-    // Compile (automatically uses cargo if JSON/DataFrame detected)
-    compile_to_binary(file, &options)?;
-
-    // Execute
-    execute_binary(&binary_path)?;
-    Ok(())
+    match repl.eval(&source) {
+        Ok(result) => {
+            // Only print non-unit results from file evaluation
+            if should_print_result(&result) {
+                println!("{result}");
+            }
+            // After evaluating the file, check if main() function exists and call it
+            if let Ok(main_result) = repl.eval("main()") {
+                // Only print non-unit results from main()
+                if should_print_result(&main_result) {
+                    println!("{main_result}");
+                }
+            }
+            Ok(())
+        }
+        Err(e) => {
+            eprintln!("Error: {e}");
+            std::process::exit(1);
+        }
+    }
 }
 /// Log run command start (complexity: 2)
 fn log_run_start(file: &Path, verbose: bool) {
