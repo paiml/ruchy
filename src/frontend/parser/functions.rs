@@ -37,6 +37,12 @@ pub fn parse_function_with_visibility(state: &mut ParserState, is_pub: bool) -> 
     } else {
         None
     };
+
+    // Parse where clause if present (for now, we parse and skip it)
+    if matches!(state.tokens.peek(), Some((Token::Where, _))) {
+        parse_where_clause(state)?;
+    }
+
     // Parse body
     let body = super::parse_expr_recursive(state)?;
     Ok(Expr::new(
@@ -594,6 +600,62 @@ fn parse_optional_method_or_field_access(
             span: Span { start: 0, end: 0 },
             attributes: Vec::new(),
         })
+    }
+}
+
+/// Parse where clause (e.g., where T: Display, U: Clone)
+/// For now, we parse and skip it as we don't enforce trait bounds yet
+/// # Errors
+/// Returns an error if parsing fails
+fn parse_where_clause(state: &mut ParserState) -> Result<()> {
+    state.tokens.advance(); // consume 'where'
+
+    // Parse trait bounds: T: Trait, U: Trait
+    while parse_single_trait_bound(state)? {
+        // Continue parsing bounds
+    }
+
+    Ok(())
+}
+
+/// Parse a single trait bound (T: Trait) and return true if more bounds may follow
+/// # Errors
+/// Returns an error if parsing fails
+fn parse_single_trait_bound(state: &mut ParserState) -> Result<bool> {
+    // Check for type parameter name
+    if !matches!(state.tokens.peek(), Some((Token::Identifier(_), _))) {
+        return Ok(false);
+    }
+    state.tokens.advance(); // consume type param name
+
+    // Expect colon
+    if !matches!(state.tokens.peek(), Some((Token::Colon, _))) {
+        return Ok(false);
+    }
+    state.tokens.advance(); // consume :
+
+    // Parse trait bound tokens until comma or left brace
+    consume_trait_bound_tokens(state)
+}
+
+/// Consume tokens that are part of a trait bound
+/// # Errors
+/// Returns an error if parsing fails
+fn consume_trait_bound_tokens(state: &mut ParserState) -> Result<bool> {
+    loop {
+        match state.tokens.peek() {
+            Some((Token::Comma, _)) => {
+                state.tokens.advance();
+                return Ok(true); // More bounds may follow
+            }
+            Some((Token::LeftBrace, _)) => {
+                return Ok(false); // End of where clause
+            }
+            Some(_) => {
+                state.tokens.advance(); // Part of trait bound
+            }
+            None => return Ok(false),
+        }
     }
 }
 
