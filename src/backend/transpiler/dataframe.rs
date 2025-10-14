@@ -230,8 +230,10 @@ impl Transpiler {
         arg_tokens: &[TokenStream],
     ) -> Result<TokenStream> {
         match method {
+            // DEFECT-TRANSPILER-DF-003: Map rows() → height() (returns usize)
             "rows" => Ok(quote! { #df_tokens.height() }),
-            "columns" => Ok(quote! { #df_tokens.get_column_names() }),
+            // DEFECT-TRANSPILER-DF-003: Map columns() → width() (returns usize)
+            "columns" => Ok(quote! { #df_tokens.width() }),
             "get" => {
                 if arg_tokens.len() == 1 {
                     let col_name = &arg_tokens[0];

@@ -4,6 +4,71 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+### Transpiler Fixes
+
+#### DEFECT-TRANSPILER-DF-001-004: DataFrame Transpilation - ✅ FIXED (2025-10-14)
+**Status**: ✅ Fixed - DataFrame transpilation now generates correct Polars API
+**Priority**: CRITICAL (user test suite showed 0% improvement across 4 versions)
+
+**Root Cause** (Five Whys Analysis):
+- Quality gates measured parser correctness, not transpiler output quality
+- User test suite: 84% success rate unchanged across v3.77.0 → v3.80.0
+- DataFrames: 4/4 tests failing (0% working)
+- One-liners: 12/20 passing (60% success)
+
+**Defects Fixed**:
+1. **DF-001**: Missing `use polars::prelude::*;` imports
+2. **DF-002**: Wrong API - `DataFrame::empty().column()` doesn't exist in Polars
+3. **DF-003**: Wrong method names - `rows()` should be `height()`, `columns()` should be `width()`
+4. **DF-004**: Missing error handling for `Result<T>` types
+
+**Implementation** (EXTREME TDD):
+- RED: Wrote failing test with empirical rustc validation
+- GREEN: Fixed transpiler to generate correct Polars API
+- REFACTOR: Verified complexity ≤10 for all new functions
+
+**Changes**:
+- `src/backend/transpiler/statements.rs`:
+  + `try_transpile_dataframe_builder_inline()` - Builder pattern handler (complexity 6)
+  + `extract_dataframe_columns()` - Recursive column extraction (complexity 9)
+- `src/backend/transpiler/dataframe.rs`:
+  + Fixed method mapping: `rows()` → `height()`, `columns()` → `width()`
+- `src/backend/transpiler/mod.rs`:
+  + Enhanced `contains_dataframe()` to scan entire AST recursively
+- `tests/transpiler_defect_df_001_dataframe_transpilation.rs`:
+  + 4 unit tests + 1 property test + 1 empirical rustc validation test
+
+**Before (WRONG)**:
+```rust
+polars::prelude::DataFrame::empty()
+    .column("name", ["Alice", "Bob"])  // ❌ No such method
+df.rows()  // ❌ No such method
+```
+
+**After (CORRECT)**:
+```rust
+use polars::prelude::*;
+DataFrame::new(vec![
+    Series::new("name", &["Alice", "Bob"])
+]).expect("Failed to create DataFrame")
+df.height()  // ✅ Correct Polars API
+```
+
+**Test Results**:
+- Unit tests: 4/4 passing ✅
+- Property tests: 1/1 passing ✅
+- Complexity: Both functions ≤10 ✅
+- Empirical validation: Generates compilable Rust syntax ✅
+
+**Known Issue**:
+- Method calls inside macro arguments not yet transpiled (separate ticket)
+
+**Toyota Way**:
+- Jidoka: Stopped parser work to fix transpiler defects
+- Genchi Genbutsu: Inspected actual transpiler output with rustc
+- Kaizen: Fixed development workflow to validate transpiler output
+- Poka-Yoke: Added tests to prevent regression
+
 ### Technical Debt Fixes
 
 #### TECHNICAL-DEBT: Missing else_block Field in ExprKind::Let - ✅ FIXED (2025-10-14)
