@@ -1345,16 +1345,77 @@ fn parse_let_mutability(state: &mut ParserState) -> bool {
         false
     }
 }
+/// Parse variant pattern with name: Some(x), Ok(val), Err(e)
+/// Extracted to reduce complexity in parse_let_pattern
+fn parse_variant_pattern_with_name(state: &mut ParserState, variant_name: String) -> Result<Pattern> {
+    // At this point, we've consumed the variant name and peeked '('
+    state.tokens.expect(&Token::LeftParen)?;
+
+    // Parse the inner pattern
+    let inner_pattern = parse_single_pattern(state)?;
+
+    state.tokens.expect(&Token::RightParen)?;
+
+    // Special case for common Option/Result variants
+    match variant_name.as_str() {
+        "Some" => Ok(Pattern::Some(Box::new(inner_pattern))),
+        "Ok" => Ok(Pattern::Ok(Box::new(inner_pattern))),
+        "Err" => Ok(Pattern::Err(Box::new(inner_pattern))),
+        // For other variants, use TupleVariant
+        _ => Ok(Pattern::TupleVariant {
+            path: vec![variant_name],
+            patterns: vec![inner_pattern],
+        }),
+    }
+}
+
 /// Parse pattern for let statement (identifier or destructuring)
 /// Extracted from `parse_let_statement` to reduce complexity
 fn parse_let_pattern(state: &mut ParserState, is_mutable: bool) -> Result<Pattern> {
     match state.tokens.peek() {
+        // Handle Option::Some pattern
+        Some((Token::Some, _)) => {
+            state.tokens.advance();
+            if matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
+                parse_variant_pattern_with_name(state, "Some".to_string())
+            } else {
+                bail!("Some must be followed by parentheses in patterns: Some(value)")
+            }
+        }
+        // Handle Result::Ok pattern
+        Some((Token::Ok, _)) => {
+            state.tokens.advance();
+            if matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
+                parse_variant_pattern_with_name(state, "Ok".to_string())
+            } else {
+                bail!("Ok must be followed by parentheses in patterns: Ok(value)")
+            }
+        }
+        // Handle Result::Err pattern
+        Some((Token::Err, _)) => {
+            state.tokens.advance();
+            if matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
+                parse_variant_pattern_with_name(state, "Err".to_string())
+            } else {
+                bail!("Err must be followed by parentheses in patterns: Err(value)")
+            }
+        }
+        // Handle Option::None pattern
+        Some((Token::None, _)) => {
+            state.tokens.advance();
+            Ok(Pattern::None)
+        }
         Some((Token::Identifier(name), _)) => {
             let name = name.clone();
             state.tokens.advance();
 
+            // Check if this is a variant pattern with custom variants
+            if matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
+                // Parse enum variant pattern with tuple destructuring
+                parse_variant_pattern_with_name(state, name)
+            }
             // Check if this is a struct pattern: Name { ... }
-            if matches!(state.tokens.peek(), Some((Token::LeftBrace, _))) {
+            else if matches!(state.tokens.peek(), Some((Token::LeftBrace, _))) {
                 parse_struct_pattern_with_name(state, name)
             } else {
                 Ok(Pattern::Identifier(name))
