@@ -1128,7 +1128,11 @@ fn calculate_complexity(ast: &ruchy::frontend::ast::Expr) -> usize {
                 value,
                 body,
                 is_mutable: _,
-            } => count_branches(value) + count_branches(body),
+                else_block,
+            } => {
+                let else_complexity = else_block.as_ref().map_or(0, |e| count_branches(e));
+                count_branches(value) + count_branches(body) + else_complexity
+            }
             _ => 0, // Other expressions don't add complexity
         }
     }
@@ -1202,6 +1206,7 @@ fn analyze_ast_quality(expr: &ruchy::frontend::ast::Expr, metrics: &mut QualityM
             value,
             body,
             is_mutable: _,
+            else_block,
         } => {
             metrics.total_identifiers += 1;
             if name.len() > 1 {
@@ -1209,6 +1214,9 @@ fn analyze_ast_quality(expr: &ruchy::frontend::ast::Expr, metrics: &mut QualityM
             }
             analyze_ast_quality(value, metrics);
             analyze_ast_quality(body, metrics);
+            if let Some(else_expr) = else_block {
+                analyze_ast_quality(else_expr, metrics);
+            }
         }
         // Note: Comments are not in AST, need to check source text separately
         ExprKind::Block(exprs) => {
@@ -1314,10 +1322,12 @@ fn calculate_max_nesting(expr: &ruchy::frontend::ast::Expr) -> usize {
                 value,
                 body,
                 is_mutable: _,
+                else_block,
             } => {
                 let val_depth = nesting_helper(value, current_depth);
                 let body_depth = nesting_helper(body, current_depth);
-                val_depth.max(body_depth)
+                let else_depth = else_block.as_ref().map_or(0, |e| nesting_helper(e, current_depth));
+                val_depth.max(body_depth).max(else_depth)
             }
             ExprKind::Binary { op: _, left, right } => {
                 let left_depth = nesting_helper(left, current_depth);

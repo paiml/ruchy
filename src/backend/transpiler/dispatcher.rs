@@ -481,20 +481,32 @@ impl Transpiler {
                 value,
                 body,
                 is_mutable,
-            } => self.transpile_let_with_type(
-                name,
-                type_annotation.as_ref(),
-                value,
-                body,
-                *is_mutable,
-            ),
+                else_block,
+            } => {
+                // TODO: Implement let-else transpilation
+                if else_block.is_some() {
+                    bail!("let-else transpilation not yet implemented");
+                }
+                self.transpile_let_with_type(
+                    name,
+                    type_annotation.as_ref(),
+                    value,
+                    body,
+                    *is_mutable,
+                )
+            }
             ExprKind::LetPattern {
                 pattern,
                 type_annotation,
                 value,
                 body,
                 is_mutable: _,
+                else_block,
             } => {
+                // TODO: Implement let-else transpilation
+                if else_block.is_some() {
+                    bail!("let-else transpilation not yet implemented");
+                }
                 self.transpile_let_pattern_with_type(pattern, type_annotation.as_ref(), value, body)
             }
             ExprKind::Block(exprs) => self.transpile_block(exprs),

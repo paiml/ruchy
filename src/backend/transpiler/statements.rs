@@ -225,6 +225,7 @@ impl Transpiler {
                 body: inner_body,
                 is_mutable: inner_mutable,
                 type_annotation: _,
+                else_block: _,  // TODO: Handle let-else in nested lets
             } = &body.kind
             {
                 // Body is another Let - flatten nested let expressions into sequential statements

@@ -152,6 +152,7 @@ fn create_let_statement_expression(
             value: Box::new(let_info.value),
             body: Box::new(body),
             is_mutable: false,
+            else_block: None,  // Block-level let doesn't support let-else
         },
         start_span,
     ))

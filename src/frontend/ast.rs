@@ -379,6 +379,7 @@ pub enum ExprKind {
         value: Box<Expr>,
         body: Box<Expr>,
         is_mutable: bool,
+        else_block: Option<Box<Expr>>,  // For let-else: `let x = val else { diverging }`
     },
     LetPattern {
         pattern: Pattern,
@@ -386,6 +387,7 @@ pub enum ExprKind {
         value: Box<Expr>,
         body: Box<Expr>,
         is_mutable: bool,
+        else_block: Option<Box<Expr>>,  // For let-else: `let Some(x) = val else { diverging }`
     },
     Function {
         name: String,
