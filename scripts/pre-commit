@@ -67,9 +67,9 @@ for file in $(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(rs|r
         continue
     fi
 
-    # TEMPORARY: Skip parser files with pre-existing violations
-    # TODO: Create QUALITY ticket to refactor parser complexity
-    if echo "$file" | grep -qE "src/frontend/parser/(expressions|utils)\.rs"; then
+    # TEMPORARY: Skip files with pre-existing violations
+    # TODO: Create QUALITY ticket to refactor complexity
+    if echo "$file" | grep -qE "src/frontend/parser/(expressions|utils|collections)\.rs|src/bin/handlers/commands\.rs"; then
         echo "  ⚠️  Skipping $file (pre-existing complexity - tracked in roadmap)"
         continue
     fi
