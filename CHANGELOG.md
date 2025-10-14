@@ -4,9 +4,11 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
-### Sprint: Book Compatibility (sprint-book-compat-001) - IN PROGRESS
+## [3.78.0] - 2025-10-14
 
-#### DEFECT-DATAFRAME-001 & 002: Fix DataFrame Indexing and Field Access - ✅ COMPLETE (2025-10-14)
+### Sprint: Book Compatibility (sprint-book-compat-001)
+
+#### DEFECT-DATAFRAME-001 & 002: Fix DataFrame Indexing and Field Access - ✅ COMPLETE
 **Status**: ✅ Fixed - DataFrame indexing and field access now fully functional
 **Priority**: CRITICAL (Gemini audit identified 84% book example failures related to DataFrame access)
 
@@ -54,7 +56,7 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ---
 
-#### STDLIB-PHASE-5: Complete HTTP Module - ✅ GREEN PHASE COMPLETE (2025-10-14)
+#### STDLIB-PHASE-5: Complete HTTP Module - ✅ GREEN PHASE COMPLETE
 **Status**: ✅ Complete - ALL 4/4 HTTP functions implemented and validated
 **Priority**: HIGH (Phase 5 of STDLIB_ACCESS_PLAN completed)
 
