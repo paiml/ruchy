@@ -4399,25 +4399,24 @@ pub(super) fn parse_use_path(
     // Parse initial module path
     let mut path_parts = vec![];
 
-    // First component - can be identifier, super, self, or crate
+    // First component - can be identifier, super, self, crate, or any keyword
+    // DEFECT-PARSER-017 FIX: Accept keywords as first path segment
     match state.tokens.peek() {
         Some((Token::Identifier(name), _)) => {
             path_parts.push(name.clone());
             state.tokens.advance();
         }
-        Some((Token::Super, _)) => {
-            path_parts.push("super".to_string());
-            state.tokens.advance();
+        Some((token, _)) => {
+            // Try to convert keyword token to string
+            let keyword_str = token_to_keyword_string(token);
+            if !keyword_str.is_empty() {
+                path_parts.push(keyword_str);
+                state.tokens.advance();
+            } else {
+                bail!("Expected module path after 'use'")
+            }
         }
-        Some((Token::Self_, _)) => {
-            path_parts.push("self".to_string());
-            state.tokens.advance();
-        }
-        Some((Token::Crate, _)) => {
-            path_parts.push("crate".to_string());
-            state.tokens.advance();
-        }
-        _ => bail!("Expected module path after 'use'"),
+        None => bail!("Expected module path after 'use'"),
     }
 
     // Additional components separated by ::
@@ -4439,21 +4438,24 @@ pub(super) fn parse_use_path(
                 start_span,
             ));
         }
-        // After :: we can have identifier, super, or self
+        // After :: we can have identifier, super, self, or any keyword
+        // DEFECT-PARSER-017 FIX: Accept keywords as path segments in use statements
         match state.tokens.peek() {
             Some((Token::Identifier(segment), _)) => {
                 path_parts.push(segment.clone());
                 state.tokens.advance();
             }
-            Some((Token::Super, _)) => {
-                path_parts.push("super".to_string());
-                state.tokens.advance();
+            Some((token, _)) => {
+                // Try to convert keyword token to string
+                let keyword_str = token_to_keyword_string(token);
+                if !keyword_str.is_empty() {
+                    path_parts.push(keyword_str);
+                    state.tokens.advance();
+                } else {
+                    bail!("Expected identifier, 'super', 'self', '*', or '{{' after '::'")
+                }
             }
-            Some((Token::Self_, _)) => {
-                path_parts.push("self".to_string());
-                state.tokens.advance();
-            }
-            _ => bail!("Expected identifier, 'super', 'self', '*', or '{{' after '::'"),
+            None => bail!("Expected identifier, 'super', 'self', '*', or '{{' after '::'"),
         }
     }
 

@@ -6,6 +6,56 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ### Parser Bug Fixes (Sprint continues)
 
+#### DEFECT-PARSER-017: Keywords in Use Statement Paths - ✅ COMPLETE (2025-10-14)
+**Status**: ✅ Fixed - `use unix_specific::module` and keyword paths now work in use statements
+**Priority**: HIGH (book example 28 failing, prevents importing modules with keyword names)
+
+**Root Cause**: Use statement path parser (`parse_use_path()`) only accepted `Token::Identifier`, rejecting keywords:
+1. First path component only matched Identifier/Super/Self/Crate, not other keywords
+2. Subsequent path segments only matched Identifier/Super/Self, not other keywords
+3. No reuse of `token_to_keyword_string()` helper created in DEFECT-016
+
+**Implementation (COMPLETE - EXTREME TDD)**:
+- ✅ Modified first component parsing to use `token_to_keyword_string()` for keyword support
+- ✅ Modified subsequent segment parsing to use `token_to_keyword_string()` for keywords
+- ✅ Reused existing `token_to_keyword_string()` helper (40+ keywords, DRY principle)
+- ✅ Comprehensive test suite: 8 unit + 3 property tests (11/11 passing, 100%)
+- ✅ Tests: `tests/parser_defect_017_use_keywords.rs`
+
+**Files Modified**:
+- `src/frontend/parser/expressions.rs`: Modified `parse_use_path()` function (2 locations)
+  * First component match: Added keyword support via `token_to_keyword_string()`
+  * Subsequent segments match: Added keyword support via `token_to_keyword_string()`
+
+**Test Coverage (EXTREME TDD)**:
+- ✅ **8 unit tests** - Specific keyword scenarios (all passing)
+  - `use unix_specific::module` - 'module' keyword from example 28 ✅
+  - `use core::type` - 'type' keyword ✅
+  - `use helpers::fn` - 'fn' keyword ✅
+  - `use config::const` - 'const' keyword ✅
+  - `use core::trait` - 'trait' keyword ✅
+  - Regression tests: simple paths, wildcards, multiple imports ✅
+- ✅ **3 property tests** - Random input validation (300 cases total, all passing)
+  - Random identifier + keyword combinations (100 cases)
+  - Nested keyword paths (100 cases)
+  - Keyword as first segment (100 cases)
+
+**PMAT Quality Gates**: ✅ MOSTLY PASSING
+- Cyclomatic complexity: `parse_use_path`: 10 ≤ 10 ✅ (exactly at limit)
+- Cognitive complexity: Pre-existing 22 (not worsened by change)
+- Tests: 11/11 passing (100%)
+- Example 28: ✅ Validates successfully
+
+**Impact**:
+- ✅ Enables importing modules with keyword names: `use path::module`, `use path::type`
+- ✅ Supports all 40+ keywords as module names in use statements
+- ✅ Example 28 fully works: All import syntaxes validated
+- ✅ DRY: Reused `token_to_keyword_string()` from DEFECT-016
+
+**Toyota Way Principles Applied**:
+- **Kaizen**: Reused existing helper instead of duplicating keyword enumeration
+- **DRY**: Single source of truth for keyword-to-string mapping
+
 #### DEFECT-PARSER-016: pub(in path) Visibility Syntax - ✅ COMPLETE (2025-10-14)
 **Status**: ✅ Fixed - `pub(in crate::utils)` and full Rust visibility syntax now works
 **Priority**: HIGH (book example 27 failing, fine-grained visibility control)
