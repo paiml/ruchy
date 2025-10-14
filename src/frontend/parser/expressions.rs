@@ -457,6 +457,8 @@ fn parse_literal_token(state: &mut ParserState, token: &Token, span: Span) -> Re
 /// Parse identifier tokens (Identifier, Underscore, fat arrow lambdas)
 /// Extracted from `parse_prefix` to reduce complexity
 /// Parse a single path segment after :: (complexity: 5)
+/// Parse path segment after :: (complexity: 6)
+/// DEFECT-PARSER-016 FIX: Accept any keyword as path segment (module names can be keywords)
 fn parse_path_segment(state: &mut ParserState) -> Result<String> {
     if matches!(state.tokens.peek(), Some((Token::Less, _))) {
         // Parse turbofish generic arguments
@@ -469,28 +471,68 @@ fn parse_path_segment(state: &mut ParserState) -> Result<String> {
         // Handle wildcard in qualified names (for use statements)
         state.tokens.advance();
         Ok("*".to_string())
-    } else if let Some((Token::From, _)) = state.tokens.peek() {
-        // Allow 'from' keyword as method name (e.g., String::from)
-        state.tokens.advance();
-        Ok("from".to_string())
-    } else if let Some((Token::Ok, _)) = state.tokens.peek() {
-        // Allow 'Ok' as enum variant name
-        state.tokens.advance();
-        Ok("Ok".to_string())
-    } else if let Some((Token::Err, _)) = state.tokens.peek() {
-        // Allow 'Err' as enum variant name
-        state.tokens.advance();
-        Ok("Err".to_string())
-    } else if let Some((Token::Some, _)) = state.tokens.peek() {
-        // Allow 'Some' as enum variant name
-        state.tokens.advance();
-        Ok("Some".to_string())
-    } else if let Some((Token::None, _)) = state.tokens.peek() {
-        // Allow 'None' as enum variant name
-        state.tokens.advance();
-        Ok("None".to_string())
+    } else if let Some((token, _)) = state.tokens.peek() {
+        // Accept any keyword as a path segment (keywords can be module names)
+        // This handles: as, for, if, match, etc. in paths like pub(in crate::as::match)
+        let name = token_to_keyword_string(token);
+        if !name.is_empty() {
+            state.tokens.advance();
+            Ok(name)
+        } else {
+            bail!("Expected identifier or '*' after '::'")
+        }
     } else {
         bail!("Expected identifier or '*' after '::'")
+    }
+}
+
+/// Convert token to lowercase keyword string if it's a keyword, empty string otherwise
+fn token_to_keyword_string(token: &Token) -> String {
+    match token {
+        Token::As => "as".to_string(),
+        Token::Async => "async".to_string(),
+        Token::Await => "await".to_string(),
+        Token::Break => "break".to_string(),
+        Token::Const => "const".to_string(),
+        Token::Continue => "continue".to_string(),
+        Token::Crate => "crate".to_string(),
+        Token::Default => "default".to_string(),
+        Token::Else => "else".to_string(),
+        Token::Enum => "enum".to_string(),
+        Token::Err => "Err".to_string(),
+        Token::Fn => "fn".to_string(),
+        Token::For => "for".to_string(),
+        Token::From => "from".to_string(),
+        Token::Fun => "fun".to_string(),
+        Token::If => "if".to_string(),
+        Token::Impl => "impl".to_string(),
+        Token::In => "in".to_string(),
+        Token::Let => "let".to_string(),
+        Token::Loop => "loop".to_string(),
+        Token::Match => "match".to_string(),
+        Token::Mod => "mod".to_string(),
+        Token::Module => "module".to_string(),
+        Token::Mut => "mut".to_string(),
+        Token::None => "None".to_string(),
+        Token::Ok => "Ok".to_string(),
+        Token::Private => "private".to_string(),
+        Token::Pub => "pub".to_string(),
+        Token::Return => "return".to_string(),
+        Token::Self_ => "self".to_string(),
+        Token::Some => "Some".to_string(),
+        Token::Static => "static".to_string(),
+        Token::Struct => "struct".to_string(),
+        Token::Super => "super".to_string(),
+        Token::Trait => "trait".to_string(),
+        Token::Type => "type".to_string(),
+        Token::Unsafe => "unsafe".to_string(),
+        Token::Use => "use".to_string(),
+        Token::Where => "where".to_string(),
+        Token::While => "while".to_string(),
+        // Standard library types that are keywords
+        Token::Option => "Option".to_string(),
+        Token::Result => "Result".to_string(),
+        _ => String::new(),
     }
 }
 
@@ -761,6 +803,8 @@ fn parse_pub_token(state: &mut ParserState) -> Result<Expr> {
     Ok(expr)
 }
 
+/// Parse visibility scope: pub(crate), pub(super), or pub(in path) (complexity: 4)
+/// DEFECT-PARSER-016 FIX: Added support for pub(in path) syntax
 fn skip_visibility_scope(state: &mut ParserState) -> Result<()> {
     if !matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
         return Ok(());
@@ -773,8 +817,46 @@ fn skip_visibility_scope(state: &mut ParserState) -> Result<()> {
             state.tokens.expect(&Token::RightParen)?;
             Ok(())
         }
-        _ => bail!("Expected 'crate' or 'super' after 'pub('"),
+        Some((Token::In, _)) => {
+            state.tokens.advance(); // consume 'in'
+            parse_visibility_path(state)?;
+            state.tokens.expect(&Token::RightParen)?;
+            Ok(())
+        }
+        _ => bail!("Expected 'crate', 'super', or 'in' after 'pub('"),
     }
+}
+
+/// Parse path after pub(in ...) (complexity: 5)
+/// Extracted from skip_visibility_scope to reduce complexity
+fn parse_visibility_path(state: &mut ParserState) -> Result<()> {
+    // Parse path: can start with :: (absolute), crate, super, or self
+    if matches!(state.tokens.peek(), Some((Token::ColonColon, _))) {
+        state.tokens.advance(); // consume leading ::
+    }
+
+    // Parse first segment
+    match state.tokens.peek() {
+        Some((Token::Crate, _)) => {
+            state.tokens.advance();
+            let _ = parse_module_path_segments(state, "crate".to_string())?;
+        }
+        Some((Token::Super, _)) => {
+            state.tokens.advance();
+            let _ = parse_module_path_segments(state, "super".to_string())?;
+        }
+        Some((Token::Self_, _)) => {
+            state.tokens.advance();
+            let _ = parse_module_path_segments(state, "self".to_string())?;
+        }
+        Some((Token::Identifier(name), _)) => {
+            let name = name.clone();
+            state.tokens.advance();
+            let _ = parse_module_path_segments(state, name)?;
+        }
+        _ => bail!("Expected path after 'pub(in'"),
+    }
+    Ok(())
 }
 
 fn parse_pub_target_expression(state: &mut ParserState) -> Result<Expr> {
