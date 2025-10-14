@@ -29,14 +29,23 @@ All notable changes to the Ruchy programming language will be documented in this
 - `src/frontend/parser/expressions.rs`: Updated `parse_impl_header()`, `parse_optional_identifier()`, `parse_identifier_with_generics()`, `parse_impl_method()`
 
 **Test Coverage**:
-- ✅ `impl<T> Default for Point<T>` - Simple generic trait impl
-- ✅ `impl<T: Clone> Clone for Box<T>` - Trait bounds on generic impl
-- ✅ `impl<T: Display> Display for Wrapper<T>` - Trait bounds with standard library traits
-- ✅ `impl<K, V> Map for HashMap<K, V>` - Multiple generic parameters
-- ✅ `impl<T> Iterator for Vec<Vec<T> >` - Nested generics (with space)
-- ✅ `impl<T> From<T> for Option<T>` - Keyword types (From, Option)
-- ✅ `impl Default for Point` - Regression: non-generic still works
-- ✅ `impl<T> Point<T>` - Regression: impl without trait still works
+- ✅ **8 unit tests** - Specific impl scenarios (all passing)
+  - `impl<T> Default for Point<T>` - Simple generic trait impl
+  - `impl<T: Clone> Clone for Box<T>` - Trait bounds on generic impl
+  - `impl<T: Display> Display for Wrapper<T>` - Trait bounds with standard library traits
+  - `impl<K, V> Map for HashMap<K, V>` - Multiple generic parameters
+  - `impl<T> Iterator for Vec<Vec<T> >` - Nested generics (with space)
+  - `impl<T> From<T> for Option<T>` - Keyword types (From, Option)
+  - `impl Default for Point` - Regression: non-generic still works
+  - `impl<T> Point<T>` - Regression: impl without trait still works
+- ✅ **6 property tests** - Random input validation (600 cases total, all passing)
+  - `prop_impl_with_arbitrary_type_names`: Random type/trait name combinations
+  - `prop_impl_with_generic_type_names`: Generic parameters with random names
+  - `prop_keyword_types_as_impl_targets`: Keyword types (Option, Result, etc.)
+  - `prop_keyword_traits_in_impl`: Keyword traits (From, Default)
+  - `prop_keyword_method_names`: Keyword method names (from, default)
+  - `prop_multiple_generic_params`: 1-3 generic parameters
+- ⚠️ **Mutation tests**: Blocked by pre-existing linter.rs compilation errors (else_block field issue)
 
 **Impact**:
 - ✅ Enables blanket implementations: `impl<T> Trait for Type<T>`
