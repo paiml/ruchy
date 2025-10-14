@@ -123,3 +123,103 @@ impl<T> Point<T> {
 }
 "#);
 }
+
+// Property Tests for DEFECT-014
+#[cfg(test)]
+mod property_tests {
+    use super::*;
+    use proptest::prelude::*;
+
+    // Property: All valid type names should parse in impl blocks
+    proptest! {
+        #[test]
+        fn prop_impl_with_arbitrary_type_names(
+            type_name in "[A-Z][a-zA-Z0-9]{0,10}",
+            trait_name in "[A-Z][a-zA-Z0-9]{0,10}"
+        ) {
+            let code = format!("impl {} for {} {{}}", trait_name, type_name);
+            let result = std::panic::catch_unwind(|| {
+                test_code(&code);
+            });
+            // Should not panic - either parse successfully or fail gracefully
+            prop_assert!(result.is_ok(), "Parser panicked on valid syntax");
+        }
+    }
+
+    proptest! {
+        #[test]
+        fn prop_impl_with_generic_type_names(
+            type_name in "[A-Z][a-zA-Z0-9]{0,10}",
+            trait_name in "[A-Z][a-zA-Z0-9]{0,10}",
+            generic_param in "[A-Z]"
+        ) {
+            let code = format!("impl<{}> {} for {}<{}> {{}}",
+                generic_param, trait_name, type_name, generic_param);
+            let result = std::panic::catch_unwind(|| {
+                test_code(&code);
+            });
+            prop_assert!(result.is_ok(), "Parser panicked on valid generic syntax");
+        }
+    }
+
+    proptest! {
+        #[test]
+        fn prop_keyword_types_as_impl_targets(
+            keyword in prop::sample::select(vec!["Option", "Result", "Some", "None", "Ok", "Err"])
+        ) {
+            let code = format!("impl Display for {} {{}}", keyword);
+            let result = std::panic::catch_unwind(|| {
+                test_code(&code);
+            });
+            prop_assert!(result.is_ok(), "Parser should accept keyword type names");
+        }
+    }
+
+    proptest! {
+        #[test]
+        fn prop_keyword_traits_in_impl(
+            keyword in prop::sample::select(vec!["From", "Default"])
+        ) {
+            let code = format!("impl {} for MyType {{}}", keyword);
+            let result = std::panic::catch_unwind(|| {
+                test_code(&code);
+            });
+            prop_assert!(result.is_ok(), "Parser should accept keyword trait names");
+        }
+    }
+
+    proptest! {
+        #[test]
+        fn prop_keyword_method_names(
+            keyword in prop::sample::select(vec!["from", "default"])
+        ) {
+            let code = format!("impl MyTrait for MyType {{ fn {}() {{}} }}", keyword);
+            let result = std::panic::catch_unwind(|| {
+                test_code(&code);
+            });
+            prop_assert!(result.is_ok(), "Parser should accept keyword method names");
+        }
+    }
+
+    proptest! {
+        #[test]
+        fn prop_multiple_generic_params(
+            num_params in 1usize..4usize
+        ) {
+            let params: Vec<String> = (0..num_params)
+                .map(|i| ((b'A' + i as u8) as char).to_string())
+                .collect();
+            let generic_list = params.join(", ");
+            let type_params = params.join(", ");
+
+            let code = format!(
+                "impl<{}> MyTrait for MyType<{}> {{}}",
+                generic_list, type_params
+            );
+            let result = std::panic::catch_unwind(|| {
+                test_code(&code);
+            });
+            prop_assert!(result.is_ok(), "Parser should handle multiple generic params");
+        }
+    }
+}
