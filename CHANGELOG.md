@@ -6,6 +6,71 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ### Parser Bug Fixes (Sprint continues)
 
+#### DEFECT-PARSER-016: pub(in path) Visibility Syntax - ✅ COMPLETE (2025-10-14)
+**Status**: ✅ Fixed - `pub(in crate::utils)` and full Rust visibility syntax now works
+**Priority**: HIGH (book example 27 failing, fine-grained visibility control)
+
+**Root Cause**: Parser only accepted `pub(crate)` and `pub(super)`, rejected `pub(in path)`:
+1. `skip_visibility_scope()` only matched `Token::Crate` and `Token::Super`, not `Token::In`
+2. No path parsing logic after `pub(in ...)`
+3. `parse_path_segment()` didn't accept keywords as module names in paths
+
+**Implementation (COMPLETE - EXTREME TDD)**:
+- ✅ Extended `skip_visibility_scope()` to handle `Token::In` (complexity: 6 ≤ 10)
+- ✅ Added `parse_visibility_path()` helper - parses paths in `pub(in ...)` (complexity: 7 ≤ 10)
+- ✅ Extended `parse_path_segment()` to accept ALL keywords as path segments (complexity: 6 ≤ 10)
+- ✅ Created `token_to_keyword_string()` - converts 40+ keyword tokens to strings
+- ✅ Refactored for PMAT complexity limits (Toyota Way: extracted parse_visibility_path)
+- ✅ Comprehensive test suite: 7 unit + 5 property tests (12/12 passing, 100%)
+- ✅ Tests: `tests/parser_defect_016_pub_visibility.rs`
+
+**Files Modified**:
+- `src/frontend/parser/expressions.rs`: 3 functions modified, 2 functions added
+  * `skip_visibility_scope()` - Added `pub(in path)` support
+  * `parse_visibility_path()` - NEW: Parse path in `pub(in ...)`
+  * `parse_path_segment()` - Accept keywords as path segments (as, for, if, match, etc.)
+  * `token_to_keyword_string()` - NEW: Token-to-keyword mapping (40+ keywords)
+
+**Test Coverage (EXTREME TDD)**:
+- ✅ **7 unit tests** - Specific visibility scenarios (all passing)
+  - `pub(crate) fn visible()` - Regression: crate visibility ✅
+  - `pub(super) fn visible()` - Regression: parent module visibility ✅
+  - `pub(in crate::utils) fn limited()` - Primary syntax from example 27 ✅
+  - `pub(in super::utils) fn helper()` - Super-relative path ✅
+  - `pub(in self::module) fn local()` - Self-relative path ✅
+  - `pub(in crate::a::b::c) fn draw()` - Deeply nested path ✅
+  - `pub(in ::utils) fn helper()` - Absolute path from root ✅
+- ✅ **5 property tests** - Random input validation (500 cases total, all passing)
+  - `prop_pub_in_single_segment`: Random crate::segment paths (100 cases)
+  - `prop_pub_in_nested_segments`: 3-level nested paths (100 cases)
+  - `prop_pub_in_super_path`: Super-relative paths (100 cases)
+  - `prop_pub_in_self_path`: Self-relative paths (100 cases)
+  - `prop_pub_in_absolute_path`: Absolute paths (100 cases)
+  - **Property test FOUND BUG**: `pub(in crate::as::match)` failed (keywords in paths)
+  - **FIXED**: Extended `token_to_keyword_string()` to handle all 40+ keywords
+
+**PMAT Quality Gates**: ✅ ALL PASSING
+- Cyclomatic complexity: `skip_visibility_scope`: 6 ≤ 10 ✅
+- Cyclomatic complexity: `parse_visibility_path`: 7 ≤ 10 ✅
+- Cyclomatic complexity: `parse_path_segment`: 6 ≤ 10 ✅
+- Cognitive complexity: All functions ≤ 10 ✅
+- Initial implementation had complexity 11 → refactored to 6 via function extraction
+- Tests: 12/12 passing (100%)
+- Example 27: ✅ Validates successfully
+
+**Impact**:
+- ✅ Enables fine-grained Rust-style visibility control for module encapsulation
+- ✅ Supports all three visibility syntaxes: `pub(crate)`, `pub(super)`, `pub(in path)`
+- ✅ Handles absolute paths (`::utils`), crate-relative (`crate::`), parent (`super::`), self (`self::`)
+- ✅ Keywords can appear as module names in paths: `pub(in crate::as::match::for)`
+- ✅ Example 27 fully works: All visibility modifiers validated
+
+**Toyota Way Principles Applied**:
+- **Jidoka**: Property tests found keyword bug ('as' in path) → stopped and fixed immediately
+- **Genchi Genbutsu**: Examined actual Token enum to verify which keywords exist (avoided false tokens)
+- **Kaizen**: Initial implementation complexity 11 → refactored to 6 via extraction
+- **Poka-Yoke**: Comprehensive property tests prevent keyword-related regressions forever
+
 #### DEFECT-PARSER-015: pub mod Declarations - ✅ COMPLETE (2025-10-14)
 **Status**: ✅ Fixed - `pub mod` syntax now works in module bodies
 **Priority**: HIGH (book example 26 failing, fundamental Rust visibility pattern)
