@@ -7,6 +7,7 @@ All notable changes to the Ruchy programming language will be documented in this
 ### Fixed
 - **BUG-032 (HIGH)**: Fixed `range()` function not transpiling to Rust syntax - `range(start, end)` now correctly transpiles to `(start..end)`, unblocking compilation to standalone binaries (EXTREME TDD: 9 tests, RED → GREEN → REFACTOR)
 - **BUG-034 (MEDIUM)**: Fixed linter false positives for built-in functions - linter now recognizes 50+ standard library functions (fs_, env_, http_, json_, time_, path_, range, etc.) making linter output usable (EXTREME TDD: 11 tests, RED → GREEN → REFACTOR)
+- **BUG-033 (MEDIUM)**: Fixed `@test("description")` transpiling to invalid Rust - test attributes now correctly strip descriptions since Rust's `#[test]` takes no arguments, unblocking `ruchy property-tests` command (EXTREME TDD: 7 tests, RED → GREEN → REFACTOR)
 
 ## [3.82.0] - 2025-10-14
 

@@ -360,6 +360,52 @@ tasks:
       dataframe: "col, lit, DataFrame"
     lesson: "Comprehensive standard library awareness essential for usable linter"
 
+  - id: "BUG-033"
+    title: "Fix: @test(\"description\") transpiles to invalid Rust"
+    status: "COMPLETE"
+    completed: "2025-10-14"
+    priority: "🟡 MEDIUM"
+    defect_type: "Transpiler invalid Rust generation"
+    github_issue: "#33"
+    time_actual: "1h"
+    time_estimated: "2h"
+    efficiency: "50%"
+    description: |
+      @test("description") transpiled to #[test(description)] which is invalid Rust.
+      Rust's #[test] attribute takes NO arguments.
+      Impact: Broke ruchy property-tests command.
+      Root cause: format_regular_attribute() blindly copied attribute arguments.
+    fix:
+      - "Added special handling for 'test' attribute in format_regular_attribute()"
+      - "Strip all arguments when attribute name == 'test'"
+      - "@test(\"desc\") now correctly transpiles to #[test]"
+    tests:
+      test_file: "tests/bug_033_test_attribute_invalid_rust.rs"
+      unit: 7  # 5 feature tests + 1 baseline + 1 summary
+      property: 0
+      doctest: 0
+      mutation_coverage: null
+    tdd_process:
+      - "RED: Created 7 tests (5 failing compilation + 1 passing baseline + 1 summary)"
+      - "GREEN: Modified format_regular_attribute() - all 7 tests passing"
+      - "REFACTOR: Clean early return, complexity =3"
+    validated_scenarios:
+      - "@test with description - compile"
+      - "@test without description - baseline"
+      - "@test with complex description"
+      - "Multiple @test functions with mixed descriptions"
+      - "Verify transpiled output format (no invalid syntax)"
+      - "property-tests command works"
+    quality:
+      complexity: 3  # Added one branch for test attribute
+      complexity_max: 10
+      tdg_grade: "A-"
+    impact:
+      - "Unblocks ruchy property-tests command"
+      - "Test descriptions gracefully stripped"
+      - "Correct #[test] attributes in transpiled Rust"
+    lesson: "Rust attribute validation must be part of transpiler - not all attributes accept arguments"
+
   - id: "CARGO-001"
     title: "Build.rs Integration Prototype"
     status: "COMPLETE"

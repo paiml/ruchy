@@ -841,9 +841,19 @@ impl Transpiler {
     }
 
     /// Format a regular attribute
-    /// Complexity: 2 (within Toyota Way limits)
+    /// Complexity: 3 (within Toyota Way limits)
+    ///
+    /// Special handling for Rust attributes:
+    /// - `#[test]` takes no arguments - strips any description provided
     fn format_regular_attribute(&self, attr: &crate::frontend::ast::Attribute) -> TokenStream {
         let attr_name = format_ident!("{}", attr.name);
+
+        // BUG-033: Rust's #[test] attribute takes NO arguments
+        // Strip descriptions: @test("desc") → #[test]
+        if attr.name == "test" {
+            return quote! { #[#attr_name] };
+        }
+
         if attr.args.is_empty() {
             quote! { #[#attr_name] }
         } else {
