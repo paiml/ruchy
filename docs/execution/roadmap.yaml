@@ -247,6 +247,54 @@ tasks:
       - "cargo publish"
       - "Create GitHub release with notes"
 
+  - id: "BUG-032"
+    title: "Fix: range() function not transpiling to Rust syntax"
+    status: "COMPLETE"
+    completed: "2025-10-14"
+    priority: "🔴 HIGH"
+    defect_type: "Transpiler missing feature - blocks compilation"
+    github_issue: "#32"
+    time_actual: "2h"
+    time_estimated: "3h"
+    efficiency: "67%"
+    description: |
+      range(start, end) function calls were not transpiled to Rust's (start..end) syntax.
+      This blocked compilation to standalone binaries (ruchy compile, ruchy fuzz).
+      Root cause: Transpiler had transpile_range for Range AST nodes (1..10 syntax)
+      but no handler for range() function calls.
+    fix:
+      - "Added try_transpile_range_function() method in transpiler"
+      - "Maps range(start, end) → (start..end) using quote! macro"
+      - "Integrated into transpile_call() dispatch chain"
+    tests:
+      test_file: "tests/bug_032_range_function_not_transpiled.rs"
+      unit: 9  # 6 feature tests + 2 baseline tests + 1 summary
+      property: 0
+      doctest: 1  # try_transpile_range_function doctest
+      mutation_coverage: null  # Not run yet - can add in REFACTOR phase
+    tdd_process:
+      - "RED: Created 9 tests (6 failing compilation tests + 2 passing baseline + 1 summary)"
+      - "GREEN: Implemented try_transpile_range_function() - all 9 tests passing"
+      - "REFACTOR: Clean implementation with complexity ≤10"
+    validated_scenarios:
+      - "Basic range() in for loop (canonical GitHub #32 case)"
+      - "range() with variable arguments"
+      - "range() assigned to variable"
+      - "range() in expression context (.count())"
+      - "Multiple/nested range() calls"
+      - "range() with negative numbers"
+      - "Baseline: range syntax (0..10) already working"
+      - "Baseline: range() in interpreter mode already working"
+    quality:
+      complexity: 3  # try_transpile_range_function complexity
+      complexity_max: 10
+      tdg_grade: "A-"
+    impact:
+      - "Unblocks compilation to standalone binaries"
+      - "range() now works in all 15 native tools"
+      - "Enables compilation mode for examples using range()"
+    lesson: "EXTREME TDD catches defects early - 6/9 tests failed in RED phase as expected"
+
   - id: "CARGO-001"
     title: "Build.rs Integration Prototype"
     status: "COMPLETE"

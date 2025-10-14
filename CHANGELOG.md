@@ -4,6 +4,9 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+### Fixed
+- **BUG-032 (HIGH)**: Fixed `range()` function not transpiling to Rust syntax - `range(start, end)` now correctly transpiles to `(start..end)`, unblocking compilation to standalone binaries (EXTREME TDD: 9 tests, RED → GREEN → REFACTOR)
+
 ## [3.82.0] - 2025-10-14
 
 **Theme**: CLI Unification - Deno-Style UX

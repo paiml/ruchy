@@ -1169,6 +1169,9 @@ impl Transpiler {
             if let Some(result) = self.try_transpile_collection_constructor(base_name, args)? {
                 return Ok(result);
             }
+            if let Some(result) = self.try_transpile_range_function(base_name, args)? {
+                return Ok(result);
+            }
             if let Some(result) = self.try_transpile_dataframe_function(base_name, args)? {
                 return Ok(result);
             }
@@ -3594,6 +3597,36 @@ impl Transpiler {
             _ => Ok(None),
         }
     }
+
+    /// Handle `range()` function - transpile to Rust range syntax
+    ///
+    /// Converts `range(start, end)` to `(start..end)`
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::{Transpiler, Parser};
+    ///
+    /// let transpiler = Transpiler::new();
+    /// let mut parser = Parser::new(r#"range(0, 10)"#);
+    /// let ast = parser.parse().expect("Failed to parse");
+    /// let result = transpiler.transpile(&ast).unwrap().to_string();
+    /// assert!(result.contains("(0 .. 10)"));
+    /// ```
+    fn try_transpile_range_function(
+        &self,
+        base_name: &str,
+        args: &[Expr],
+    ) -> Result<Option<TokenStream>> {
+        // Handle range(start, end) -> (start..end)
+        if base_name == "range" && args.len() == 2 {
+            let start = self.transpile_expr(&args[0])?;
+            let end = self.transpile_expr(&args[1])?;
+            return Ok(Some(quote! { (#start .. #end) }));
+        }
+        Ok(None)
+    }
+
     /// Handle `DataFrame` functions (col)
     ///
     /// # Examples
