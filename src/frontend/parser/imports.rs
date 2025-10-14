@@ -78,48 +78,37 @@ pub fn parse_from_import_statement(state: &mut ParserState) -> Result<Expr> {
 
     // Parse the import items
     let items = if matches!(state.tokens.peek(), Some((Token::Star, _))) {
-        // from module import *
-        state.tokens.advance();
-        // Use an empty vector to indicate wildcard import
-        // This distinguishes from None which means simple import
-        Some(vec![])
+        parse_wildcard_import_items(state)?
     } else {
-        // from module import item1, item2, ...
-        let mut import_items = Vec::new();
-
-        loop {
-            if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
-                let mut item = name.clone();
-                state.tokens.advance();
-
-                // Check for 'as' alias
-                if matches!(state.tokens.peek(), Some((Token::As, _))) {
-                    state.tokens.advance();
-                    if let Some((Token::Identifier(alias), _)) = state.tokens.peek() {
-                        item = format!("{item} as {alias}");
-                        state.tokens.advance();
-                    } else {
-                        bail!("Expected identifier after 'as'");
-                    }
-                }
-
-                import_items.push(item);
-
-                // Check for more items
-                if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
-                    state.tokens.advance();
-                } else {
-                    break;
-                }
-            } else {
-                bail!("Expected identifier in import list");
-            }
-        }
-
-        Some(import_items)
+        parse_named_import_items(state)?
     };
 
     Ok(Expr::new(ExprKind::Import { module, items }, start_span))
+}
+
+// Helper: Parse wildcard import (from module import *)
+fn parse_wildcard_import_items(state: &mut ParserState) -> Result<Option<Vec<String>>> {
+    state.tokens.advance(); // consume *
+    // Use an empty vector to indicate wildcard import
+    Ok(Some(vec![]))
+}
+
+// Helper: Parse named import items (from module import item1, item2)
+fn parse_named_import_items(state: &mut ParserState) -> Result<Option<Vec<String>>> {
+    let mut import_items = Vec::new();
+
+    loop {
+        import_items.push(parse_import_item(state)?);
+
+        // Check for more items
+        if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+            state.tokens.advance();
+        } else {
+            break;
+        }
+    }
+
+    Ok(Some(import_items))
 }
 
 // Helper: Parse single import item with optional alias (complexity: 3)
@@ -228,19 +217,22 @@ fn parse_module_path(state: &mut ParserState) -> Result<String> {
         _ => bail!("Expected module path"),
     }
 
-    // Parse additional dot-separated parts
-    while matches!(state.tokens.peek(), Some((Token::Dot, _))) {
-        state.tokens.advance(); // consume dot
+    // Parse additional dot-separated or :: -separated parts
+    // DEFECT-PARSER-013 FIX: Accept both . and :: as separators
+    while matches!(state.tokens.peek(), Some((Token::Dot, _)))
+        || matches!(state.tokens.peek(), Some((Token::ColonColon, _))) {
+        state.tokens.advance(); // consume dot or ::
 
         if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
             parts.push(name.clone());
             state.tokens.advance();
         } else {
-            bail!("Expected identifier after '.' in module path");
+            bail!("Expected identifier after '.' or '::' in module path");
         }
     }
 
-    Ok(parts.join("."))
+    // Join with :: (Rust-style) regardless of input separator
+    Ok(parts.join("::"))
 }
 
 #[cfg(test)]
