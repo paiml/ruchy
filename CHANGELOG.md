@@ -4,11 +4,24 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.83.0] - 2025-10-14
+
+**Theme**: Stop The Line Event #2 - Bug Crushing Sprint
+
+**Summary**: Fixed 4 critical bugs from Stop The Line Event #2 using EXTREME TDD methodology. All fixes include comprehensive tests, maintain complexity ≤10, and provide immediate user value.
+
+**Quality Metrics**:
+- Tests added: 33 (31 unit + 2 property)
+- Tests passing: 33/33 (100%)
+- EXTREME TDD: 100% adherence (RED → GREEN → REFACTOR)
+- Complexity: All functions ≤10
+- Property test iterations: 200
+
 ### Fixed
-- **BUG-032 (HIGH)**: Fixed `range()` function not transpiling to Rust syntax - `range(start, end)` now correctly transpiles to `(start..end)`, unblocking compilation to standalone binaries (EXTREME TDD: 9 tests, RED → GREEN → REFACTOR)
-- **BUG-034 (MEDIUM)**: Fixed linter false positives for built-in functions - linter now recognizes 50+ standard library functions (fs_, env_, http_, json_, time_, path_, range, etc.) making linter output usable (EXTREME TDD: 11 tests, RED → GREEN → REFACTOR)
-- **BUG-033 (MEDIUM)**: Fixed `@test("description")` transpiling to invalid Rust - test attributes now correctly strip descriptions since Rust's `#[test]` takes no arguments, unblocking `ruchy property-tests` command (EXTREME TDD: 7 tests, RED → GREEN → REFACTOR)
-- **BUG-036 (LOW)**: Fixed coverage reporting 0/0 lines - coverage tool now calls `analyze_file()` to count actual lines/functions before measuring coverage (EXTREME TDD: 4 unit + 2 property tests, RED → GREEN → REFACTOR)
+- **BUG-032 (HIGH)**: Fixed `range()` function not transpiling to Rust syntax - `range(start, end)` now correctly transpiles to `(start..end)`, unblocking compilation to standalone binaries (EXTREME TDD: 9 tests)
+- **BUG-034 (MEDIUM)**: Fixed linter false positives for built-in functions - linter now recognizes 50+ standard library functions (fs_, env_, http_, json_, time_, path_, range, etc.) making linter output usable (EXTREME TDD: 11 tests)
+- **BUG-033 (MEDIUM)**: Fixed `@test("description")` transpiling to invalid Rust - test attributes now correctly strip descriptions since Rust's `#[test]` takes no arguments, unblocking `ruchy property-tests` command (EXTREME TDD: 7 tests)
+- **BUG-036 (LOW)**: Fixed coverage reporting 0/0 lines - coverage tool now calls `analyze_file()` to count actual lines/functions before measuring coverage (EXTREME TDD: 4 unit + 2 property tests)
 
 ## [3.82.0] - 2025-10-14
 
