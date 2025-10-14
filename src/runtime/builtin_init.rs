@@ -33,6 +33,7 @@ pub fn init_global_environment() -> HashMap<String, Value> {
     add_fs_functions(&mut global_env);
     add_path_functions(&mut global_env);
     add_json_functions(&mut global_env);
+    add_http_functions(&mut global_env);
 
     global_env
 }
@@ -343,6 +344,14 @@ fn add_json_functions(global_env: &mut HashMap<String, Value>) {
     global_env.insert("json_set".to_string(), Value::from_string("__builtin_json_set__".to_string()));
 }
 
+/// Phase 5: STDLIB-PHASE-5 - HTTP Module (4 functions)
+fn add_http_functions(global_env: &mut HashMap<String, Value>) {
+    global_env.insert("http_get".to_string(), Value::from_string("__builtin_http_get__".to_string()));
+    global_env.insert("http_post".to_string(), Value::from_string("__builtin_http_post__".to_string()));
+    global_env.insert("http_put".to_string(), Value::from_string("__builtin_http_put__".to_string()));
+    global_env.insert("http_delete".to_string(), Value::from_string("__builtin_http_delete__".to_string()));
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -424,7 +433,7 @@ mod tests {
         //                 path_with_extension, path_with_file_name, path_components, path_normalize
         // json functions: json_parse, json_stringify, json_pretty, json_read, json_write,
         //                 json_validate, json_type, json_merge, json_get, json_set
-        assert_eq!(env.len(), 89);
+        assert_eq!(env.len(), 93); // 89 + 4 HTTP functions = 93
     }
 
     #[test]

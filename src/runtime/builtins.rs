@@ -147,6 +147,12 @@ impl BuiltinRegistry {
         self.register("json_merge", builtin_json_merge);
         self.register("json_get", builtin_json_get);
         self.register("json_set", builtin_json_set);
+
+        // HTTP functions
+        self.register("http_get", builtin_http_get);
+        self.register("http_post", builtin_http_post);
+        self.register("http_put", builtin_http_put);
+        self.register("http_delete", builtin_http_delete);
     }
 
     /// Register a builtin function
@@ -1482,6 +1488,88 @@ fn set_json_path(json: &mut serde_json::Value, path: &[&str], value: serde_json:
         if let Some(next) = map.get_mut(path[0]) {
             set_json_path(next, &path[1..], value);
         }
+    }
+}
+
+// ==============================================================================
+// HTTP Builtin Functions (STDLIB-PHASE-5)
+// ==============================================================================
+// Thin wrappers around crate::stdlib::http module
+// Complexity: ≤2 per function (Toyota Way limits)
+
+/// Builtin: http_get(url)
+/// Sends GET request and returns response body as string
+/// Complexity: 2 (error handling + stdlib delegation)
+fn builtin_http_get(args: &[Value]) -> Result<Value, InterpreterError> {
+    if args.len() != 1 {
+        return Err(InterpreterError::RuntimeError("http_get() expects 1 argument".to_string()));
+    }
+
+    match &args[0] {
+        Value::String(url) => {
+            match crate::stdlib::http::get(url) {
+                Ok(response) => Ok(Value::from_string(response)),
+                Err(e) => Err(InterpreterError::RuntimeError(format!("HTTP GET failed: {}", e))),
+            }
+        },
+        _ => Err(InterpreterError::RuntimeError("http_get() expects a string URL".to_string())),
+    }
+}
+
+/// Builtin: http_post(url, body)
+/// Sends POST request with body and returns response
+/// Complexity: 2 (error handling + stdlib delegation)
+fn builtin_http_post(args: &[Value]) -> Result<Value, InterpreterError> {
+    if args.len() != 2 {
+        return Err(InterpreterError::RuntimeError("http_post() expects 2 arguments".to_string()));
+    }
+
+    match (&args[0], &args[1]) {
+        (Value::String(url), Value::String(body)) => {
+            match crate::stdlib::http::post(url, body) {
+                Ok(response) => Ok(Value::from_string(response)),
+                Err(e) => Err(InterpreterError::RuntimeError(format!("HTTP POST failed: {}", e))),
+            }
+        },
+        _ => Err(InterpreterError::RuntimeError("http_post() expects two string arguments".to_string())),
+    }
+}
+
+/// Builtin: http_put(url, body)
+/// Sends PUT request with body and returns response
+/// Complexity: 2 (error handling + stdlib delegation)
+fn builtin_http_put(args: &[Value]) -> Result<Value, InterpreterError> {
+    if args.len() != 2 {
+        return Err(InterpreterError::RuntimeError("http_put() expects 2 arguments".to_string()));
+    }
+
+    match (&args[0], &args[1]) {
+        (Value::String(url), Value::String(body)) => {
+            match crate::stdlib::http::put(url, body) {
+                Ok(response) => Ok(Value::from_string(response)),
+                Err(e) => Err(InterpreterError::RuntimeError(format!("HTTP PUT failed: {}", e))),
+            }
+        },
+        _ => Err(InterpreterError::RuntimeError("http_put() expects two string arguments".to_string())),
+    }
+}
+
+/// Builtin: http_delete(url)
+/// Sends DELETE request and returns response
+/// Complexity: 2 (error handling + stdlib delegation)
+fn builtin_http_delete(args: &[Value]) -> Result<Value, InterpreterError> {
+    if args.len() != 1 {
+        return Err(InterpreterError::RuntimeError("http_delete() expects 1 argument".to_string()));
+    }
+
+    match &args[0] {
+        Value::String(url) => {
+            match crate::stdlib::http::delete(url) {
+                Ok(response) => Ok(Value::from_string(response)),
+                Err(e) => Err(InterpreterError::RuntimeError(format!("HTTP DELETE failed: {}", e))),
+            }
+        },
+        _ => Err(InterpreterError::RuntimeError("http_delete() expects a string URL".to_string())),
     }
 }
 

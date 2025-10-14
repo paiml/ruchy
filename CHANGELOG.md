@@ -6,6 +6,46 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ### Sprint: Book Compatibility (sprint-book-compat-001) - IN PROGRESS
 
+#### STDLIB-PHASE-5: Complete HTTP Module - ✅ GREEN PHASE COMPLETE (2025-10-14)
+**Status**: ✅ Complete - ALL 4/4 HTTP functions implemented and validated
+**Priority**: HIGH (Phase 5 of STDLIB_ACCESS_PLAN completed)
+
+**Functions Implemented**:
+1. ✅ http_get(url) - Send GET request, return response body as string
+2. ✅ http_post(url, body) - Send POST request with JSON body
+3. ✅ http_put(url, body) - Send PUT request with JSON body
+4. ✅ http_delete(url) - Send DELETE request, return response body
+
+**Implementation Architecture**:
+Three-layer builtin pattern (proven from path/json modules):
+1. **Runtime Layer** (builtins.rs): 4 builtin_http_* functions wrapping stdlib::http
+   - Complexity ≤2 per function (thin wrappers with error handling)
+2. **Transpiler Layer** (statements.rs): try_transpile_http_function() with 4 cases
+   - Transpiles directly to reqwest::blocking API (following serde_json pattern)
+   - Embedded request/response handling in generated code
+3. **Environment Layer** (eval_builtin.rs + builtin_init.rs):
+   - Single dispatcher: try_eval_http_function (4 function match)
+   - 4 eval_http_* helper functions
+   - Registration in add_http_functions()
+
+**Compiler Enhancement**:
+- Added uses_http() detection function (following uses_json/uses_dataframes pattern)
+- Smart compilation routes HTTP usage to cargo (for reqwest access)
+- Updated generate_cargo_toml() to include reqwest dependency
+
+**Dependencies**:
+- reqwest 0.12 with blocking feature (already in Cargo.toml)
+- Automatic cargo compilation when HTTP functions detected
+- stdlib::http module (thin Rust wrappers for direct Ruchy usage)
+
+**Environment Count**: 89 → 93 (added 4 HTTP functions)
+
+**Time**: ~1.5h (following proven three-layer pattern)
+
+**Commit**: Complete HTTP stdlib module with three-layer architecture
+
+---
+
 #### STDLIB-PHASE-4: Complete JSON Module - ✅ GREEN PHASE COMPLETE (2025-10-13)
 **Status**: ✅ Complete - ALL 10/10 JSON functions implemented and validated
 **Priority**: HIGH (Phase 4 of STDLIB_ACCESS_PLAN completed)
