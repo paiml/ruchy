@@ -1,0 +1,9 @@
+// Example 10: Closures
+// Tests: Closure creation and calling
+// Expected: 15
+
+fun main() {
+    let add = |a, b| a + b
+    let result = add(5, 10)
+    println(result)
+}

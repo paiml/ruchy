@@ -1,0 +1,11 @@
+// Example 7: String Operations
+// Tests: String concatenation and methods
+// Expected: "HELLO WORLD"
+
+fun main() {
+    let greeting = "hello"
+    let target = "world"
+    let message = greeting + " " + target
+    let upper = message.to_uppercase()
+    println(upper)
+}

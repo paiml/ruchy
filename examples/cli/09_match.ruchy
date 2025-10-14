@@ -1,0 +1,14 @@
+// Example 9: Match Expressions
+// Tests: Pattern matching
+// Expected: "two"
+
+fun main() {
+    let x = 2
+    let result = match x {
+        1 => "one",
+        2 => "two",
+        3 => "three",
+        _ => "other"
+    }
+    println(result)
+}

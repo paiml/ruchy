@@ -1,0 +1,9 @@
+// Example 6: Loops
+// Tests: For loop iteration
+// Expected: 0, 1, 2, 3, 4
+
+fun main() {
+    for i in [0, 1, 2, 3, 4] {
+        println(i)
+    }
+}
