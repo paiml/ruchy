@@ -155,7 +155,7 @@ assertions_on_constants = "allow"  # Tests assert expected constants
 overly_complex_bool_expr = "allow"  # Tests can have complex conditions
 
 [workspace.package]
-version = "3.84.0"
+version = "3.86.0"
 edition = "2021"
 authors = ["Noah Gift"]
 license = "MIT OR Apache-2.0"
@@ -196,7 +196,7 @@ quickcheck_macros = "1.1"
 
 [package]
 name = "ruchy"
-version = "3.84.0"
+version = "3.86.0"
 edition.workspace = true
 authors.workspace = true
 license.workspace = true
@@ -325,6 +325,7 @@ tempfile = "3.21"
 quickcheck_macros = { workspace = true }
 walkdir = "2.5"
 httpmock = "0.8"
+nix = { version = "0.29", features = ["signal", "process"] }
 # TDD Web testing dependencies
 axum = { version = "0.7", features = ["macros"] }
 tower = { version = "0.4", features = ["util"] }
