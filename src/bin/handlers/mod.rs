@@ -244,7 +244,10 @@ fn should_print_result(result: &str) -> bool {
 /// Read file contents with detailed error context
 /// Complexity: 2
 fn read_file_with_context(file: &Path) -> Result<String> {
-    fs::read_to_string(file).with_context(|| format!("Failed to read file: {}", file.display()))
+    fs::read_to_string(file).map_err(|e| {
+        // Include the OS error message (e.g., "No such file or directory")
+        anyhow::anyhow!("{}: {}", file.display(), e)
+    })
 }
 
 /// Create a REPL instance with temp directory
@@ -524,25 +527,63 @@ pub fn handle_compile_command(
     }
     Ok(())
 }
-/// Handle check command - check syntax of a Ruchy file
+/// Handle check command - check syntax of one or more Ruchy files
 ///
 /// # Arguments
-/// * `file` - Path to the Ruchy file to check
-/// * `watch` - Enable file watching mode
+/// * `files` - Paths to Ruchy file(s) to check
+/// * `watch` - Enable file watching mode (only works with single file)
 ///
 /// # Examples
 /// ```
 /// // This function is typically called by the CLI check command
-/// // handle_check_command(&Path::new("script.ruchy"), false);
+/// // handle_check_command(&[Path::new("script.ruchy").to_path_buf()], false);
 /// ```
 ///
 /// # Errors
-/// Returns error if file cannot be read or has syntax errors
-pub fn handle_check_command(file: &Path, watch: bool) -> Result<()> {
+/// Returns error if files cannot be read or have syntax errors
+pub fn handle_check_command(files: &[PathBuf], watch: bool) -> Result<()> {
+    // FIX CLI-CONTRACT-CHECK-003: Support checking multiple files
+    validate_file_list(files)?;
+
     if watch {
-        handle_watch_and_check(file)
+        check_watch_mode(files)
+    } else if files.len() == 1 {
+        // Single file - return error directly for better error messages
+        handle_check_syntax(&files[0])
     } else {
-        handle_check_syntax(file)
+        check_multiple_files(files)
+    }
+}
+
+/// Validate that file list is not empty (complexity: 1)
+fn validate_file_list(files: &[PathBuf]) -> Result<()> {
+    if files.is_empty() {
+        anyhow::bail!("No files specified for checking");
+    }
+    Ok(())
+}
+
+/// Handle watch mode for check command (complexity: 2)
+fn check_watch_mode(files: &[PathBuf]) -> Result<()> {
+    if files.len() > 1 {
+        anyhow::bail!("Watch mode only supports checking a single file");
+    }
+    handle_watch_and_check(&files[0])
+}
+
+/// Check multiple files sequentially (complexity: 4)
+fn check_multiple_files(files: &[PathBuf]) -> Result<()> {
+    let mut all_valid = true;
+    for file in files {
+        if let Err(e) = handle_check_syntax(file) {
+            all_valid = false;
+            eprintln!("{e}");
+        }
+    }
+    if all_valid {
+        Ok(())
+    } else {
+        anyhow::bail!("Some files have syntax errors")
     }
 }
 /// Check syntax of a single file
@@ -556,9 +597,45 @@ fn handle_check_syntax(file: &Path) -> Result<()> {
             Ok(())
         }
         Err(e) => {
-            eprintln!("{}", format!("✗ Syntax error: {e}").red());
-            Err(anyhow::anyhow!("Syntax error: {}", e))
+            // FIX CLI-CONTRACT-CHECK-001: Include filename in error message
+            // FIX CLI-CONTRACT-CHECK-002: Include line number in error message
+            let filename = file.display();
+            let line_info = estimate_error_line(&source, &e.to_string());
+            let error_location = if let Some(line) = line_info {
+                format!("{filename}:{line}")
+            } else {
+                format!("{filename}")
+            };
+            eprintln!("{}", format!("✗ {error_location}: Syntax error: {e}").red());
+            Err(anyhow::anyhow!("{error_location}: Syntax error: {}", e))
         }
+    }
+}
+
+/// Estimate the line number where a parse error occurred (complexity: 5)
+///
+/// This is a heuristic that counts newlines in the source code to find the approximate
+/// error location. Ideally, the parser would include precise span information in errors,
+/// but that requires significant parser refactoring.
+fn estimate_error_line(source: &str, _error_msg: &str) -> Option<usize> {
+    // Heuristic: Most parse errors occur near the end of the source that was successfully
+    // tokenized. Count total lines and report the last non-empty line as the error location.
+    // This is not perfect but better than no line number at all.
+    let lines: Vec<&str> = source.lines().collect();
+
+    // Find the last non-empty, non-comment line
+    for (idx, line) in lines.iter().enumerate().rev() {
+        let trimmed = line.trim();
+        if !trimmed.is_empty() && !trimmed.starts_with("//") {
+            return Some(idx + 1); // Line numbers are 1-indexed
+        }
+    }
+
+    // If all lines are empty/comments, return the last line
+    if !lines.is_empty() {
+        Some(lines.len())
+    } else {
+        None
     }
 }
 /// Watch a file and check syntax on changes

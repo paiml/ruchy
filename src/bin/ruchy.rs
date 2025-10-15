@@ -129,8 +129,8 @@ enum Commands {
     },
     /// Check syntax without running
     Check {
-        /// The file to check
-        file: PathBuf,
+        /// The file(s) to check
+        files: Vec<PathBuf>,
         /// Watch for changes and re-check automatically
         #[arg(long)]
         watch: bool,
@@ -846,7 +846,7 @@ fn handle_command_dispatch(command: Option<Commands>, verbose: bool) -> Result<(
             static_link,
             target,
         }) => handle_compile_command(&file, output, opt_level, strip, static_link, target),
-        Some(Commands::Check { file, watch }) => handle_check_command(&file, watch),
+        Some(Commands::Check { files, watch }) => handle_check_command(&files, watch),
         Some(Commands::Test {
             path,
             watch,
@@ -1187,7 +1187,7 @@ mod tests {
         fs::write(&temp_file, "let x = 42").unwrap();
 
         let command = Commands::Check {
-            file: temp_file.path().to_path_buf(),
+            files: vec![temp_file.path().to_path_buf()],
             watch: false,
         };
         let result = handle_advanced_command(command);
