@@ -7,6 +7,7 @@ All notable changes to the Ruchy programming language will be documented in this
 ### Fixed
 - Updated Sprint 3 config test assertions for new CLI output format (6/6 passing, 3 ignored with TODOs)
 - Marked 3 config tests as ignored for future investigation (functionality works, test assertions need updates)
+- Partial fix for ignore directive span calculation (1/10 tests passing, needs further work)
 
 ## [3.88.0] - 2025-10-15
 
