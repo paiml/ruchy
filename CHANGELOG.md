@@ -4,6 +4,9 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+### Fixed
+- Updated Sprint 3 config test assertions for new CLI output format (6/9 passing)
+
 ## [3.88.0] - 2025-10-15
 
 **Theme**: P0 CRITICAL Formatter Bug Fix (Debug Fallback)
