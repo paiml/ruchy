@@ -5,6 +5,29 @@ All notable changes to the Ruchy programming language will be documented in this
 ## [Unreleased]
 
 ### Added
+- **[SQLITE-TEST-002] Type System Soundness Test Harness - Foundation (1.0%)**: Created Type System Soundness tests
+  - **Progress Theorem Tests**: 3 tests validating well-typed terms are not stuck
+    - Simple arithmetic expressions
+    - Boolean expressions
+    - String operations
+  - **Preservation Theorem Tests**: 3 tests validating types preserved during evaluation
+    - Arithmetic type preservation
+    - Boolean type preservation
+    - Comparison type preservation
+  - **Substitution Lemma Tests**: 2 tests validating variable substitution preserves types
+    - Simple let bindings
+    - Nested let bindings
+  - **Property Tests**: 3 tests with 3,000 total iterations (1.0% of 300K target)
+    - Arithmetic progress: 1,000 iterations
+    - Boolean soundness: 1,000 iterations
+    - Substitution soundness: 1,000 iterations
+  - **Type Error Detection**: 1 test ensuring errors don't cause panics
+  - **Test Results**: 12/12 passing (100%)
+  - **Research Foundation**: Pierce (2002) Types and Programming Languages (TAPL)
+  - **Current Limitation**: Using parser-only validation (no interpreter integration yet)
+  - **Next Steps**: Integrate with middleend/infer.rs for full type checking validation
+  - **File**: tests/sqlite_002_type_soundness.rs
+
 - **[PARSER-055 through PARSER-059] Parser Limitation Tickets**: Created 5 tickets for limitations discovered via SQLite testing
   - [PARSER-055] Bare return statements (no value) - 4h estimated
   - [PARSER-056] Async blocks - 8h estimated
