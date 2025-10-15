@@ -5,15 +5,21 @@ All notable changes to the Ruchy programming language will be documented in this
 ## [Unreleased]
 
 ### Fixed
-- **[PARSER-053] Fixed line continuation parsing with Extreme TDD (8/10 ignore tests passing)**:
-  - **STOP THE LINE**: Parser failed "Unexpected token: Plus" on line continuations with comments
-  - **RED PHASE**: Created 6 failing tests in tests/parser_defect_053_line_continuation.rs
-  - **GREEN PHASE**: Fixed try_handle_infix_operators() to consume comments before checking operators
+- **[PARSER-053 + PARSER-054] Fixed multiple comment preservation bugs with Extreme TDD (8/10 ignore tests passing)**:
+  - **BUG #1 - PARSER-053**: Line continuations with intervening comments fail ("Unexpected token: Plus")
+  - **BUG #2 - PARSER-054**: Multiple leading comments in block not preserved (only first captured)
+  - **ROOT CAUSE**: try_handle_infix_operators() consumed comments without checking if operator exists
+  - **EXTREME TDD - RED PHASE**: Created 9 failing tests (6 for PARSER-053, 3 for PARSER-054)
+  - **EXTREME TDD - GREEN PHASE**:
+    - Peek past comments to find operators, but only consume after confirming operator exists
+    - Skip comments in try_binary_operators() before consuming operator token
+    - This allows line continuations while preserving comments between statements
   - **PROPERTY TESTS**: Added 3 property tests with 10K+ random inputs
-  - **RESULT**: Parser tests 6/6 passing, ignore directive tests 7/10 → 8/10 (+1 fixed)
-  - Fixed: test_fmt_ignore_preserves_comments_and_whitespace now passing
-  - Implementation: Consume leading comments in try_handle_infix_operators() (1 line fix!)
-  - Remaining: 2 ignore tests still failing (need investigation)
+  - **RESULT**: All 9/9 parser tests passing, ignore directive tests 7/10 → 8/10 (+1 fixed)
+  - **FIXED TESTS**:
+    - test_fmt_ignore_preserves_comments_and_whitespace ✓
+    - test_fmt_ignore_multiple_expressions ✓ (regression from PARSER-053 v1)
+  - **REMAINING**: 2 ignore tests failing (complex expressions, nested blocks)
 - **[PARSER-FIX] Fixed comment attribution bug with Extreme TDD (7/10 ignore tests passing)**:
   - **STOP THE LINE**: Discovered parser wrongly attributes standalone comments as trailing
   - **RED PHASE**: Created 4 failing tests in tests/parser_defect_comment_attribution.rs

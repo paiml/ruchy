@@ -201,21 +201,27 @@
   - Enhanced execute_format() to apply configuration
   - 11 CLI tests for config integration (format, check, invalid config)
 
-**Phase 2 Progress** (Ignore Directives - PARSER BUG FIXED WITH EXTREME TDD):
+**Phase 2 Progress** (Ignore Directives - PARSER BUGS FIXED WITH EXTREME TDD):
 - ✅ [FMT-PERFECT-022] Ignore directives implementation (PARTIAL - 8/10 tests passing)
   - **BUG #1 FIXED**: commands.rs now calls formatter.set_source()
   - **BUG #2 FIXED**: Parser comment attribution (STOP THE LINE - Extreme TDD)
   - **BUG #3 DISCOVERED**: Let expression spans don't include full expression tree
-  - **BUG #4 FIXED**: [PARSER-053] Line continuations with intervening comments (STOP THE LINE - Extreme TDD)
-  - **EXTREME TDD - RED PHASE**: Created 4 failing parser tests (comment attribution) + 6 failing tests (line continuation)
+  - **BUG #4 FIXED**: [PARSER-053] Line continuations with intervening comments (Extreme TDD)
+  - **BUG #5 FIXED**: [PARSER-054] Multiple leading comments not preserved (Extreme TDD)
+  - **EXTREME TDD - RED PHASE**: Created 13 failing parser tests total
+    - 4 tests for comment attribution
+    - 6 tests for line continuation (PARSER-053)
+    - 3 tests for multiple comments (PARSER-054)
   - **EXTREME TDD - GREEN PHASE**:
     - Fixed consume_trailing_comment() with line awareness
-    - Fixed try_handle_infix_operators() to consume comments before checking operators (1 line fix!)
+    - Fixed try_handle_infix_operators() to peek past comments without consuming
+    - Fixed try_binary_operators() to consume comments before operator
+    - **KEY INSIGHT**: Must peek past comments to find operators, but only consume after confirming
   - **PROPERTY TESTS**: 6 tests with 10K+ random inputs verify invariants
   - **FIXES APPLIED**:
     - [PARSER] Fixed consume_trailing_comment() to check same line (is_on_same_line helper)
     - [PARSER] Added TokenStream::source() method for source access
-    - [PARSER-053] Fixed try_handle_infix_operators() to consume leading comments (line continuation support)
+    - [PARSER-053/054] Peek past comments in try_handle_infix_operators(), consume in try_binary_operators()
     - [FORMATTER] Modified read_and_format_file() to call formatter.set_source()
     - [FORMATTER] Fixed format() to handle top-level blocks without adding braces
     - [FORMATTER] Implemented find_rightmost_span_end() to calculate true expression end
@@ -227,7 +233,7 @@
     - test_fmt_ignore_does_not_affect_other_files ✓
     - test_fmt_ignore_with_extra_whitespace ✓
     - test_fmt_ignore_with_check_mode ✓ (FIXED CLI assertion)
-    - test_fmt_ignore_multiple_expressions ✓ (FIXED BY PARSER)
+    - test_fmt_ignore_multiple_expressions ✓ (FIXED BY PARSER-054)
     - test_fmt_ignore_preserves_comments_and_whitespace ✓ (FIXED BY PARSER-053)
   - **REMAINING FAILURES (2/10)**: Needs investigation
     - test_fmt_ignore_with_complex_expression (function formatting)
