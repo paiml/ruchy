@@ -174,15 +174,24 @@ impl<'a> ParserState<'a> {
 pub(crate) fn parse_expr_recursive(state: &mut ParserState) -> Result<Expr> {
     parse_expr_with_precedence_recursive(state, 0)
 }
+/// Parse expression with precedence handling (complexity: 3, cognitive: 3)
 pub(crate) fn parse_expr_with_precedence_recursive(
     state: &mut ParserState,
     min_prec: i32,
 ) -> Result<Expr> {
     let mut left = expressions::parse_prefix(state)?;
+    left = parse_postfix_and_infix_chain(state, left, min_prec)?;
+    Ok(left)
+}
+
+/// Parse postfix and infix operator chain (complexity: 3, cognitive: 3)
+fn parse_postfix_and_infix_chain(
+    state: &mut ParserState,
+    mut left: Expr,
+    min_prec: i32,
+) -> Result<Expr> {
     loop {
-        // Handle postfix operators
         left = handle_postfix_operators(state, left)?;
-        // Try to handle infix operators
         if let Some(new_left) = try_handle_infix_operators(state, left.clone(), min_prec)? {
             left = new_left;
         } else {
@@ -364,6 +373,8 @@ fn parse_index_access(state: &mut ParserState, left: Expr, index: Expr) -> Resul
         },
         span: Span { start: 0, end: 0 },
         attributes: Vec::new(),
+        leading_comments: Vec::new(),
+        trailing_comment: None,
     })
 }
 /// Create slice expression (complexity: 1)
@@ -376,6 +387,8 @@ fn create_slice_expr(object: Expr, start: Option<Box<Expr>>, end: Option<Box<Exp
         },
         span: Span { start: 0, end: 0 },
         attributes: Vec::new(),
+        leading_comments: Vec::new(),
+        trailing_comment: None,
     }
 }
 /// Try to parse struct literal
@@ -397,6 +410,8 @@ fn create_post_increment(left: Expr) -> Expr {
         },
         span: Span { start: 0, end: 0 },
         attributes: Vec::new(),
+        leading_comments: Vec::new(),
+        trailing_comment: None,
     }
 }
 /// Create post-decrement expression
@@ -407,6 +422,8 @@ fn create_post_decrement(left: Expr) -> Expr {
         },
         span: Span { start: 0, end: 0 },
         attributes: Vec::new(),
+        leading_comments: Vec::new(),
+        trailing_comment: None,
     }
 }
 /// Try to parse binary operators
@@ -431,55 +448,82 @@ fn try_binary_operators(
             },
             span: Span { start: 0, end: 0 },
             attributes: Vec::new(),
+            leading_comments: Vec::new(),
+            trailing_comment: None,
         }))
     } else {
         Ok(None)
     }
 }
-/// Try to parse ternary operator (? :) - complexity: 8
+/// Try to parse ternary operator (? :) (complexity: 5, cognitive: 5)
 fn try_ternary_operator(
     state: &mut ParserState,
     left: Expr,
     token: &Token,
     min_prec: i32,
 ) -> Result<Option<Expr>> {
-    // Ternary has very low precedence (1)
     const TERNARY_PRECEDENCE: i32 = 1;
 
-    if !matches!(token, Token::Question) || min_prec > TERNARY_PRECEDENCE {
+    if !is_valid_ternary_start(token, min_prec, TERNARY_PRECEDENCE) {
         return Ok(None);
     }
 
-    // Check if this is a postfix try operator (no space, followed by dot or semicolon)
-    if let Some((next_token, _)) = state.tokens.peek_nth(1) {
-        if matches!(
-            next_token,
-            Token::Dot | Token::Semicolon | Token::RightParen | Token::RightBracket
-        ) {
-            return Ok(None); // This is a try operator, not ternary
-        }
+    if is_try_operator_not_ternary(state) {
+        return Ok(None);
     }
 
-    state.tokens.advance(); // Consume '?'
-    let true_expr = parse_expr_with_precedence_recursive(state, TERNARY_PRECEDENCE + 1)?;
+    parse_ternary_expression(state, left, TERNARY_PRECEDENCE)
+}
 
-    // Expect ':'
+/// Check if token and precedence allow ternary parsing (complexity: 2, cognitive: 2)
+fn is_valid_ternary_start(token: &Token, min_prec: i32, ternary_prec: i32) -> bool {
+    matches!(token, Token::Question) && min_prec <= ternary_prec
+}
+
+/// Check if this is a try operator rather than ternary (complexity: 3, cognitive: 3)
+fn is_try_operator_not_ternary(state: &mut ParserState) -> bool {
+    if let Some((next_token, _)) = state.tokens.peek_nth(1) {
+        matches!(
+            next_token,
+            Token::Dot | Token::Semicolon | Token::RightParen | Token::RightBracket
+        )
+    } else {
+        false
+    }
+}
+
+/// Parse complete ternary expression (complexity: 3, cognitive: 3)
+fn parse_ternary_expression(
+    state: &mut ParserState,
+    condition: Expr,
+    ternary_prec: i32,
+) -> Result<Option<Expr>> {
+    state.tokens.advance(); // Consume '?'
+    let true_expr = parse_expr_with_precedence_recursive(state, ternary_prec + 1)?;
+
     if !matches!(state.tokens.peek(), Some((Token::Colon, _))) {
         bail!("Expected ':' in ternary expression");
     }
     state.tokens.advance(); // Consume ':'
 
-    let false_expr = parse_expr_with_precedence_recursive(state, TERNARY_PRECEDENCE)?;
+    let false_expr = parse_expr_with_precedence_recursive(state, ternary_prec)?;
 
-    Ok(Some(Expr {
+    Ok(Some(create_ternary_expr(condition, true_expr, false_expr)))
+}
+
+/// Create ternary expression AST node (complexity: 1, cognitive: 1)
+fn create_ternary_expr(condition: Expr, true_expr: Expr, false_expr: Expr) -> Expr {
+    Expr {
         kind: ExprKind::Ternary {
-            condition: Box::new(left),
+            condition: Box::new(condition),
             true_expr: Box::new(true_expr),
             false_expr: Box::new(false_expr),
         },
         span: Span { start: 0, end: 0 },
         attributes: Vec::new(),
-    }))
+        leading_comments: Vec::new(),
+        trailing_comment: None,
+    }
 }
 
 /// Try to parse type cast operator (as) - complexity: 5
@@ -509,72 +553,90 @@ fn try_type_cast_operator(
         },
         span: Span { start: 0, end: 0 },
         attributes: Vec::new(),
+        leading_comments: Vec::new(),
+        trailing_comment: None,
     }))
 }
-/// Try to parse new actor operations (<- and <?)
+/// Try to parse actor operations (<-, <?, !) (complexity: 3, cognitive: 3)
 fn try_new_actor_operators(
     state: &mut ParserState,
     left: Expr,
     token: &Token,
     min_prec: i32,
 ) -> Result<Option<Expr>> {
-    let (expr_kind, _prec) = match token {
-        Token::LeftArrow => {
-            // Parse actor <- message
-            let prec = 1; // Same as assignment
-            if prec < min_prec {
-                return Ok(None);
-            }
-            state.tokens.advance();
-            let message = parse_expr_with_precedence_recursive(state, prec)?;
-            (
-                ExprKind::ActorSend {
-                    actor: Box::new(left),
-                    message: Box::new(message),
-                },
-                prec,
-            )
-        }
-        Token::ActorQuery => {
-            // Parse actor <? message
-            let prec = 1; // Same as assignment
-            if prec < min_prec {
-                return Ok(None);
-            }
-            state.tokens.advance();
-            let message = parse_expr_with_precedence_recursive(state, prec)?;
-            (
-                ExprKind::ActorQuery {
-                    actor: Box::new(left),
-                    message: Box::new(message),
-                },
-                prec,
-            )
-        }
-        Token::Bang => {
-            // Parse actor ! message (actor message passing)
-            let prec = 1; // Same as assignment
-            if prec < min_prec {
-                return Ok(None);
-            }
-            state.tokens.advance();
-            let message = parse_expr_with_precedence_recursive(state, prec)?;
-            (
-                ExprKind::Binary {
-                    op: BinaryOp::Send,
-                    left: Box::new(left),
-                    right: Box::new(message),
-                },
-                prec,
-            )
-        }
+    let expr_kind = match token {
+        Token::LeftArrow => parse_actor_send_op(state, left, min_prec)?,
+        Token::ActorQuery => parse_actor_query_op(state, left, min_prec)?,
+        Token::Bang => parse_actor_bang_op(state, left, min_prec)?,
         _ => return Ok(None),
     };
-    Ok(Some(Expr {
-        kind: expr_kind,
+    Ok(Some(create_actor_expr(expr_kind)))
+}
+
+/// Parse actor send operator (<-) (complexity: 3, cognitive: 3)
+fn parse_actor_send_op(
+    state: &mut ParserState,
+    actor: Expr,
+    min_prec: i32,
+) -> Result<ExprKind> {
+    const PREC: i32 = 1; // Same as assignment
+    if PREC < min_prec {
+        bail!("Precedence check failed for actor send");
+    }
+    state.tokens.advance();
+    let message = parse_expr_with_precedence_recursive(state, PREC)?;
+    Ok(ExprKind::ActorSend {
+        actor: Box::new(actor),
+        message: Box::new(message),
+    })
+}
+
+/// Parse actor query operator (<?) (complexity: 3, cognitive: 3)
+fn parse_actor_query_op(
+    state: &mut ParserState,
+    actor: Expr,
+    min_prec: i32,
+) -> Result<ExprKind> {
+    const PREC: i32 = 1; // Same as assignment
+    if PREC < min_prec {
+        bail!("Precedence check failed for actor query");
+    }
+    state.tokens.advance();
+    let message = parse_expr_with_precedence_recursive(state, PREC)?;
+    Ok(ExprKind::ActorQuery {
+        actor: Box::new(actor),
+        message: Box::new(message),
+    })
+}
+
+/// Parse actor bang operator (!) (complexity: 3, cognitive: 3)
+fn parse_actor_bang_op(
+    state: &mut ParserState,
+    left: Expr,
+    min_prec: i32,
+) -> Result<ExprKind> {
+    const PREC: i32 = 1; // Same as assignment
+    if PREC < min_prec {
+        bail!("Precedence check failed for actor bang");
+    }
+    state.tokens.advance();
+    let message = parse_expr_with_precedence_recursive(state, PREC)?;
+    Ok(ExprKind::Binary {
+        op: BinaryOp::Send,
+        left: Box::new(left),
+        right: Box::new(message),
+    })
+}
+
+/// Create actor expression AST node (complexity: 1, cognitive: 1)
+fn create_actor_expr(kind: ExprKind) -> Expr {
+    Expr {
+        kind,
         span: Span { start: 0, end: 0 },
         attributes: Vec::new(),
-    }))
+        leading_comments: Vec::new(),
+        trailing_comment: None,
+    }
 }
 /// Try to parse assignment operators
 fn try_assignment_operators(
@@ -600,6 +662,8 @@ fn try_assignment_operators(
             },
             span: Span { start: 0, end: 0 },
             attributes: Vec::new(),
+            leading_comments: Vec::new(),
+            trailing_comment: None,
         }
     } else {
         let bin_op = get_compound_assignment_op(token);
@@ -611,6 +675,8 @@ fn try_assignment_operators(
             },
             span: Span { start: 0, end: 0 },
             attributes: Vec::new(),
+            leading_comments: Vec::new(),
+            trailing_comment: None,
         }
     };
     Ok(Some(expr))
@@ -656,6 +722,8 @@ fn try_pipeline_operators(
             kind: ExprKind::Pipeline { expr, stages },
             span: Span { start: 0, end: 0 },
             attributes: Vec::new(),
+            leading_comments: Vec::new(),
+            trailing_comment: None,
         }
     } else {
         Expr {
@@ -668,6 +736,8 @@ fn try_pipeline_operators(
             },
             span: Span { start: 0, end: 0 },
             attributes: Vec::new(),
+            leading_comments: Vec::new(),
+            trailing_comment: None,
         }
     };
     Ok(Some(expr))
@@ -697,53 +767,78 @@ fn try_range_operators(
         },
         span: Span { start: 0, end: 0 },
         attributes: Vec::new(),
+        leading_comments: Vec::new(),
+        trailing_comment: None,
     }))
 }
 /// Try to parse a macro call: identifier!( args ) or identifier![ args ]
 /// Refactored to reduce complexity from 105 to <10
+/// Try to parse macro call syntax (complexity: 5, cognitive: 5)
 fn try_parse_macro_call(state: &mut ParserState, left: &Expr) -> Result<Option<Expr>> {
     let ExprKind::Identifier(name) = &left.kind else {
         return Ok(None);
     };
 
-    // Check if this looks like a macro call (peek ahead for macro delimiters)
-    // We need to check BEFORE consuming the ! to avoid breaking binary operators
+    if !is_valid_macro_call_syntax(state, name) {
+        return Ok(None);
+    }
+
+    parse_macro_call_by_type(state, name)
+}
+
+/// Check if syntax is valid macro call (complexity: 3, cognitive: 3)
+fn is_valid_macro_call_syntax(state: &mut ParserState, name: &str) -> bool {
     let next_after_bang = state.tokens.peek_nth(1);
     let is_macro_call = matches!(
         next_after_bang,
         Some((Token::LeftParen | Token::LeftBracket | Token::LeftBrace, _))
     );
+    is_macro_call || name == "df"
+}
 
-    // If it doesn't look like a macro call, don't consume the ! token
-    if !is_macro_call && name != "df" {
-        return Ok(None);
+/// Parse macro call based on type (complexity: 5, cognitive: 5)
+fn parse_macro_call_by_type(state: &mut ParserState, name: &str) -> Result<Option<Expr>> {
+    // Handle special dataframe macro
+    if let Some(df_result) = try_parse_dataframe_macro(state, name)? {
+        return Ok(Some(df_result));
     }
 
-    // Handle special case macros first
-    if name == "df" {
-        if let Some(result) = macro_parsing::parse_dataframe_macro(state)? {
-            return Ok(Some(result));
-        }
-        // If not df![], already consumed !, continue to regular macro parsing
-    } else {
-        state.tokens.advance(); // consume !
+    // Consume ! token for non-df macros
+    if name != "df" {
+        state.tokens.advance();
     }
 
     // Handle SQL macro specially
-    if name == "sql" && matches!(state.tokens.peek(), Some((Token::LeftBrace, _))) {
+    if is_sql_macro(state, name) {
         return Ok(Some(macro_parsing::parse_sql_macro(state, name)?));
     }
 
-    // Get macro delimiters
+    // Parse generic macro
+    parse_generic_macro(state, name)
+}
+
+/// Try to parse dataframe macro (complexity: 2, cognitive: 2)
+fn try_parse_dataframe_macro(state: &mut ParserState, name: &str) -> Result<Option<Expr>> {
+    if name == "df" {
+        macro_parsing::parse_dataframe_macro(state)
+    } else {
+        Ok(None)
+    }
+}
+
+/// Check if this is a SQL macro (complexity: 2, cognitive: 2)
+fn is_sql_macro(state: &mut ParserState, name: &str) -> bool {
+    name == "sql" && matches!(state.tokens.peek(), Some((Token::LeftBrace, _)))
+}
+
+/// Parse generic macro with delimiters (complexity: 3, cognitive: 3)
+fn parse_generic_macro(state: &mut ParserState, name: &str) -> Result<Option<Expr>> {
     let Some((_style, closing_token)) = macro_parsing::get_macro_delimiters(state) else {
         return Ok(None);
     };
 
-    // Parse macro arguments
     let args = macro_parsing::parse_macro_arguments(state, closing_token)?;
-
-    // Create and return macro expression
-    Ok(Some(macro_parsing::create_macro_expr(name.clone(), args)))
+    Ok(Some(macro_parsing::create_macro_expr(name.to_string(), args)))
 }
 
 #[cfg(test)]
