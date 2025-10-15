@@ -768,6 +768,98 @@ impl Formatter {
                 };
                 format!("`{}`", full_cmd)
             }
+            // Phase 5: Final 10 variants (100% coverage)
+            ExprKind::QualifiedName { module, name } => {
+                format!("{}::{}", module, name)
+            }
+            ExprKind::TypeAlias { name, target_type } => {
+                format!("type {} = {}", name, self.format_type(&target_type.kind))
+            }
+            ExprKind::Spread { expr } => {
+                format!("...{}", self.format_expr(expr, indent))
+            }
+            ExprKind::OptionalMethodCall { receiver, method, args } => {
+                let args_str = args
+                    .iter()
+                    .map(|arg| self.format_expr(arg, indent))
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                format!(
+                    "{}?.{}({})",
+                    self.format_expr(receiver, indent),
+                    method,
+                    args_str
+                )
+            }
+            ExprKind::Extension { target_type, methods } => {
+                let indent_str = " ".repeat(indent * self.config.indent_width);
+                let methods_str = methods
+                    .iter()
+                    .map(|method| {
+                        let params_str = method
+                            .params
+                            .iter()
+                            .map(|p| self.format_pattern(&p.pattern))
+                            .collect::<Vec<_>>()
+                            .join(", ");
+                        format!(
+                            "{}    fun {}({}) {{ }}",
+                            indent_str,
+                            method.name,
+                            params_str
+                        )
+                    })
+                    .collect::<Vec<_>>()
+                    .join("\n");
+                format!(
+                    "extension {} {{\n{}\n{}}}",
+                    target_type,
+                    methods_str,
+                    indent_str
+                )
+            }
+            ExprKind::ReExport { items, module } => {
+                format!("export {{ {} }} from {}", items.join(", "), module)
+            }
+            ExprKind::Macro { name, args } => {
+                let args_str = args
+                    .iter()
+                    .map(|arg| self.format_expr(arg, indent))
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                format!("macro {}({}) {{ }}", name, args_str)
+            }
+            ExprKind::MacroInvocation { name, args } => {
+                let args_str = args
+                    .iter()
+                    .map(|arg| self.format_expr(arg, indent))
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                format!("{}!({})", name, args_str)
+            }
+            ExprKind::DataFrame { columns } => {
+                let columns_str = columns
+                    .iter()
+                    .map(|col| {
+                        let values_str = col.values
+                            .iter()
+                            .map(|v| self.format_expr(v, indent))
+                            .collect::<Vec<_>>()
+                            .join(", ");
+                        format!("\"{}\" => [{}]", col.name, values_str)
+                    })
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                format!("df![{}]", columns_str)
+            }
+            ExprKind::DataFrameOperation { source, operation } => {
+                // Format DataFrame operations like df.select(), df.filter(), etc.
+                format!(
+                    "{}.{:?}",
+                    self.format_expr(source, indent),
+                    operation
+                )
+            }
             _ => {
                 // CRITICAL: Changed from silent Debug output to explicit error
                 // This prevents silent data corruption
