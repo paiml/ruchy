@@ -64,6 +64,8 @@ use crate::frontend::ast::{
     ClassConstant,
     ClassMethod,
     ClassProperty,
+    Comment,
+    CommentKind,
     Constructor,
     EnumVariant,
     Expr,
@@ -158,6 +160,50 @@ impl<'a> ParserState<'a> {
     pub fn interner_stats(&self) -> (usize, usize) {
         self.interner.stats()
     }
+
+    /// Consume all leading comments before an expression (complexity: 2)
+    pub fn consume_leading_comments(&mut self) -> Vec<Comment> {
+        let mut comments = Vec::new();
+        while let Some((token, span)) = self.tokens.peek() {
+            if let Some(comment) = token_to_comment(token, *span) {
+                self.tokens.advance();
+                comments.push(comment);
+            } else {
+                break;
+            }
+        }
+        comments
+    }
+
+    /// Consume trailing comment on same line as expression (complexity: 2)
+    pub fn consume_trailing_comment(&mut self) -> Option<Comment> {
+        if let Some((token, span)) = self.tokens.peek() {
+            if let Some(comment) = token_to_comment(token, *span) {
+                self.tokens.advance();
+                return Some(comment);
+            }
+        }
+        None
+    }
+}
+
+/// Convert token to comment if it's a comment token (complexity: 2)
+fn token_to_comment(token: &Token, span: Span) -> Option<Comment> {
+    match token {
+        Token::LineComment(text) => Some(Comment::new(
+            CommentKind::Line(text.clone()),
+            span,
+        )),
+        Token::DocComment(text) => Some(Comment::new(
+            CommentKind::Doc(text.clone()),
+            span,
+        )),
+        Token::BlockComment(text) => Some(Comment::new(
+            CommentKind::Block(text.clone()),
+            span,
+        )),
+        _ => None,
+    }
 }
 /// Parses an expression using recursive descent.
 ///
@@ -174,14 +220,34 @@ impl<'a> ParserState<'a> {
 pub(crate) fn parse_expr_recursive(state: &mut ParserState) -> Result<Expr> {
     parse_expr_with_precedence_recursive(state, 0)
 }
-/// Parse expression with precedence handling (complexity: 3, cognitive: 3)
+/// Parse expression with precedence handling (complexity: 5, cognitive: 5)
 pub(crate) fn parse_expr_with_precedence_recursive(
     state: &mut ParserState,
     min_prec: i32,
 ) -> Result<Expr> {
+    // Consume any leading comments before the expression
+    let leading_comments = state.consume_leading_comments();
+
+    // Parse the expression
     let mut left = expressions::parse_prefix(state)?;
     left = parse_postfix_and_infix_chain(state, left, min_prec)?;
-    Ok(left)
+
+    // Consume any trailing comment on the same line
+    let trailing_comment = state.consume_trailing_comment();
+
+    // Attach comments to the expression
+    attach_comments_to_expr(left, leading_comments, trailing_comment)
+}
+
+/// Attach comments to expression (complexity: 1)
+fn attach_comments_to_expr(
+    mut expr: Expr,
+    leading_comments: Vec<Comment>,
+    trailing_comment: Option<Comment>,
+) -> Result<Expr> {
+    expr.leading_comments = leading_comments;
+    expr.trailing_comment = trailing_comment;
+    Ok(expr)
 }
 
 /// Parse postfix and infix operator chain (complexity: 3, cognitive: 3)
