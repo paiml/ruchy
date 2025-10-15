@@ -4,6 +4,12 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.89.0] - 2025-10-15
+
+**Theme**: Formatter Perfection - Ignore Directives Complete
+
+**Summary**: Sprint 3 Phase 2 completion with 10 critical bugs fixed across parser and formatter. Ignore directives now work perfectly for all expression types (single-line, functions, nested blocks). Applied Toyota Way "STOP THE LINE" methodology with Extreme TDD throughout.
+
 ### Fixed
 - **[FMT-PERFECT-022] Formatter ignore directives - 10/10 tests passing ✅ COMPLETE**:
   - **BUG #1 FIXED**: find_rightmost_span_end() missing Function and Block cases
