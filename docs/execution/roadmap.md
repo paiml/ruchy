@@ -23,24 +23,30 @@
 
 ### Sprint 1: v3.89.0 - Comment Preservation (2-3 days)
 **Goal**: 100% comment preservation (line, block, doc, trailing)
-**Status**: 🟡 **IN PROGRESS** - [FMT-PERFECT-001] partial (lexer done)
-**Tickets**: [FMT-PERFECT-001] through [FMT-PERFECT-007]
+**Status**: ✅ **COMPLETE** - All 12/12 tests passing!
+**Tickets**: [FMT-PERFECT-001] through [FMT-PERFECT-005]
 
 **Progress**:
 - ✅ [FMT-PERFECT-001] Lexer tracks comments (GREEN - COMPLETE)
-  - Lexer now captures DocComment, LineComment, BlockComment tokens
-  - 12 failing CLI tests written (RED phase complete)
+  - Lexer captures DocComment, LineComment, BlockComment tokens
+  - Preserves exact whitespace (removed .trim())
 - ✅ [FMT-PERFECT-002] Store comments in AST (GREEN - COMPLETE)
   - Added Comment and CommentKind types
   - Added leading_comments and trailing_comment fields to Expr
-  - Fixed 30+ Expr initializations across codebase
-  - Compiles successfully
+  - Fixed 30+ Expr initializations + complexity violations
 - ✅ [FMT-PERFECT-003] Parser associates comments (GREEN - COMPLETE)
   - Added consume_leading_comments() and consume_trailing_comment()
-  - Parser now attaches comments to expressions
-  - Comments flow: Lexer → Parser → AST
-- 🟡 [FMT-PERFECT-004] Formatter emits comments (NEXT)
-- ✅ [FMT-PERFECT-005] Add 12 CLI tests (RED phase done)
+  - Parser attaches comments to expressions via AST
+  - Comments flow: Lexer → Parser → AST → Formatter
+- ✅ [FMT-PERFECT-004] Formatter emits comments (GREEN - COMPLETE)
+  - Added format_comment() method to emit all comment types
+  - Emits leading comments before expressions
+  - Emits trailing comments after expressions
+  - Preserves exact formatting
+- ✅ [FMT-PERFECT-005] All 12 CLI tests passing (GREEN - COMPLETE)
+  - 100% comment preservation achieved
+  - Line comments: ✓ | Doc comments: ✓ | Block comments: ✓
+  - Trailing comments: ✓ | Multiple comments: ✓ | Comment order: ✓
 
 **What We'll Do**:
 - ✅ Extend lexer to track comments as tokens (not discard) - DONE

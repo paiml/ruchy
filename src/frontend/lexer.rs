@@ -75,15 +75,16 @@ fn process_escapes(s: &str) -> String {
 #[logos(skip r"[ \t\n\f]+")]
 pub enum Token {
     // Comments (NEW: Track instead of skip)
-    #[regex(r"///[^\n]*", |lex| lex.slice()[3..].trim().to_string())]
+    // Preserve exact text including whitespace for perfect formatting
+    #[regex(r"///[^\n]*", |lex| lex.slice()[3..].to_string())]
     DocComment(String),
 
-    #[regex(r"//[^\n]*", |lex| lex.slice()[2..].trim().to_string())]
+    #[regex(r"//[^\n]*", |lex| lex.slice()[2..].to_string())]
     LineComment(String),
 
     #[regex(r"/\*([^*]|\*[^/])*\*/", |lex| {
         let s = lex.slice();
-        // Remove /* and */ delimiters
+        // Preserve exact text including whitespace
         s[2..s.len()-2].to_string()
     })]
     BlockComment(String),

@@ -48,7 +48,16 @@ impl Formatter {
         } else {
             " ".repeat(indent * self.indent_width)
         };
-        match &expr.kind {
+
+        // Format leading comments
+        let mut result = String::new();
+        for comment in &expr.leading_comments {
+            result.push_str(&self.format_comment(comment, indent));
+            result.push('\n');
+        }
+
+        // Format the expression itself
+        let expr_str = match &expr.kind {
             ExprKind::Literal(lit) => match lit {
                 crate::frontend::ast::Literal::Integer(n, _) => n.to_string(),
                 crate::frontend::ast::Literal::Float(f) => f.to_string(),
@@ -307,6 +316,41 @@ impl Formatter {
                 // CRITICAL: Changed from silent Debug output to explicit error
                 // This prevents silent data corruption
                 format!("/* UNIMPLEMENTED: {:?} */", expr.kind)
+            }
+        };
+
+        // Append the formatted expression
+        result.push_str(&expr_str);
+
+        // Append trailing comment if present
+        if let Some(trailing) = &expr.trailing_comment {
+            result.push(' ');
+            result.push_str(&self.format_comment(trailing, 0)); // No indent for trailing
+        }
+
+        result
+    }
+
+    /// Format a comment (complexity: 2)
+    fn format_comment(&self, comment: &crate::frontend::ast::Comment, indent: usize) -> String {
+        let indent_str = if self.use_tabs {
+            "\t".repeat(indent)
+        } else {
+            " ".repeat(indent * self.indent_width)
+        };
+
+        match &comment.kind {
+            crate::frontend::ast::CommentKind::Line(text) => {
+                // Line comments: text already has leading space from lexer
+                format!("{indent_str}//{text}")
+            }
+            crate::frontend::ast::CommentKind::Doc(text) => {
+                // Doc comments: text already has leading space from lexer
+                format!("{indent_str}///{text}")
+            }
+            crate::frontend::ast::CommentKind::Block(text) => {
+                // Block comments: preserve text exactly as captured
+                format!("{indent_str}/*{text}*/")
             }
         }
     }
