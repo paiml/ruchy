@@ -15,11 +15,18 @@
 ## 📝 **SESSION CONTEXT FOR RESUMPTION**
 
 **Last Active**: 2025-10-15 (QUALITY-009: CLI Contract Testing + Specification v4.0)
-**Current Sprint**: 🚧 **QUALITY-009 IN PROGRESS** - CLI contract tests + critical defect fixes (51 tests, 49 passing)
+**Current Sprint**: ✅ **QUALITY-009 COMPLETE** - CLI contract tests 51/51 passing (100%)
 **Latest Release**: ✅ **v3.86.0** published to crates.io and GitHub (15-tool specification + roadmap accuracy)
-**Latest Commit**: 0936eb25 - [QUALITY-009] CLI contract tests: run + lint
+**Latest Commit**: [CLI-CONTRACT-CHECK-001,002,003] - Fixed check tool defects (filename, line number, multiple files)
 
 **Latest Commits (Quality Sprint 2025-10-15)**:
+- ✅ **[CLI-CONTRACT-CHECK-001,002,003]** Fixed 3 check tool defects (12/12 tests passing, 51/51 total = 100%)
+  - FIXED: Error messages now include filename (CLI-CONTRACT-CHECK-001)
+  - FIXED: Error messages now include line number via heuristic (CLI-CONTRACT-CHECK-002)
+  - FIXED: Check command now supports multiple files (CLI-CONTRACT-CHECK-003)
+  - Implementation: estimate_error_line() heuristic (complexity 5)
+  - Quality: All 51 CLI contract tests passing (100%)
+  - Toyota Way: ALL defects fixed - zero tolerance for known issues
 - ✅ **[QUALITY-DEBT]** Refactored complexity violations (3 functions: cognitive 13/11 → 2/5)
   - NEVER bypass quality gates - always fix violations
   - write_property_test_summary: 13 → 2 (extracted JSON/text helpers)
