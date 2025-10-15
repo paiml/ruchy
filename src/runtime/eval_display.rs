@@ -141,6 +141,8 @@ fn format_range(
 ///
 /// # Complexity
 /// Cyclomatic complexity: 5 (within Toyota Way limits)
+/// Format enum variant with optional data
+/// Complexity: 3 (reduced by extracting value formatting)
 fn format_enum_variant(
     f: &mut fmt::Formatter<'_>,
     variant_name: &str,
@@ -148,16 +150,30 @@ fn format_enum_variant(
 ) -> fmt::Result {
     write!(f, "{variant_name}")?;
     if let Some(values) = data {
-        if !values.is_empty() {
-            write!(f, "(")?;
-            for (i, val) in values.iter().enumerate() {
-                if i > 0 {
-                    write!(f, ", ")?;
-                }
-                write!(f, "{val}")?;
-            }
-            write!(f, ")")?;
+        format_enum_data(f, values)?;
+    }
+    Ok(())
+}
+
+/// Format enum variant data values
+/// Complexity: 2 (conditional + delegation)
+fn format_enum_data(f: &mut fmt::Formatter<'_>, values: &[Value]) -> fmt::Result {
+    if values.is_empty() {
+        return Ok(());
+    }
+    write!(f, "(")?;
+    write_comma_separated_values(f, values)?;
+    write!(f, ")")
+}
+
+/// Write comma-separated values
+/// Complexity: 3 (iteration + conditional separator)
+fn write_comma_separated_values(f: &mut fmt::Formatter<'_>, values: &[Value]) -> fmt::Result {
+    for (i, val) in values.iter().enumerate() {
+        if i > 0 {
+            write!(f, ", ")?;
         }
+        write!(f, "{val}")?;
     }
     Ok(())
 }
@@ -239,6 +255,7 @@ impl fmt::Display for InterpreterError {
             InterpreterError::Continue(None) => write!(f, "Continue outside of loop"),
             InterpreterError::Return(_) => write!(f, "Return outside of function"),
             InterpreterError::Throw(value) => write!(f, "Uncaught exception: {value:?}"),
+            InterpreterError::AssertionFailed(msg) => write!(f, "Assertion failed: {msg}"),
         }
     }
 }

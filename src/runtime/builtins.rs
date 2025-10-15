@@ -76,6 +76,10 @@ impl BuiltinRegistry {
         self.register("type_of", builtin_type_of);
         self.register("is_nil", builtin_is_nil);
 
+        // Testing/assertion functions
+        self.register("assert_eq", builtin_assert_eq);
+        self.register("assert", builtin_assert);
+
         // Math functions
         self.register("sqrt", builtin_sqrt);
         self.register("pow", builtin_pow);
@@ -1227,6 +1231,8 @@ fn json_value_to_ruchy(json: serde_json::Value) -> Value {
 
 /// Convert Ruchy Value to serde_json::Value
 /// Complexity: 2 (thin wrapper helper)
+/// Convert Ruchy value to JSON value
+/// Complexity: 5 (reduced by extracting object conversion helpers)
 fn ruchy_value_to_json(value: &Value) -> Result<serde_json::Value, InterpreterError> {
     match value {
         Value::Nil => Ok(serde_json::Value::Null),
@@ -1234,29 +1240,41 @@ fn ruchy_value_to_json(value: &Value) -> Result<serde_json::Value, InterpreterEr
         Value::Integer(i) => Ok(serde_json::json!(*i)),
         Value::Float(f) => Ok(serde_json::json!(*f)),
         Value::String(s) => Ok(serde_json::Value::String(s.to_string())),
-        Value::Array(arr) => {
-            let json_arr: Result<Vec<serde_json::Value>, _> = arr.iter()
-                .map(ruchy_value_to_json)
-                .collect();
-            Ok(serde_json::Value::Array(json_arr?))
-        },
-        Value::Object(map) => {
-            let mut json_obj = serde_json::Map::new();
-            for (k, v) in map.iter() {
-                json_obj.insert(k.clone(), ruchy_value_to_json(v)?);
-            }
-            Ok(serde_json::Value::Object(json_obj))
-        },
-        Value::ObjectMut(map) => {
-            let guard = map.lock().unwrap();
-            let mut json_obj = serde_json::Map::new();
-            for (k, v) in guard.iter() {
-                json_obj.insert(k.clone(), ruchy_value_to_json(v)?);
-            }
-            Ok(serde_json::Value::Object(json_obj))
-        },
+        Value::Array(arr) => convert_array_to_json(arr),
+        Value::Object(map) => convert_object_to_json(map),
+        Value::ObjectMut(map) => convert_object_mut_to_json(map),
         _ => Err(InterpreterError::RuntimeError(format!("Cannot convert {:?} to JSON", value))),
     }
+}
+
+/// Convert Ruchy array to JSON array
+/// Complexity: 2 (simple map + collect)
+fn convert_array_to_json(arr: &[Value]) -> Result<serde_json::Value, InterpreterError> {
+    let json_arr: Result<Vec<serde_json::Value>, _> = arr.iter()
+        .map(ruchy_value_to_json)
+        .collect();
+    Ok(serde_json::Value::Array(json_arr?))
+}
+
+/// Convert immutable Ruchy object to JSON object
+/// Complexity: 3 (iteration + recursive conversion)
+fn convert_object_to_json(map: &std::collections::HashMap<String, Value>) -> Result<serde_json::Value, InterpreterError> {
+    let mut json_obj = serde_json::Map::new();
+    for (k, v) in map.iter() {
+        json_obj.insert(k.clone(), ruchy_value_to_json(v)?);
+    }
+    Ok(serde_json::Value::Object(json_obj))
+}
+
+/// Convert mutable Ruchy object to JSON object
+/// Complexity: 3 (lock + iteration + recursive conversion)
+fn convert_object_mut_to_json(map: &std::sync::Arc<std::sync::Mutex<std::collections::HashMap<String, Value>>>) -> Result<serde_json::Value, InterpreterError> {
+    let guard = map.lock().unwrap();
+    let mut json_obj = serde_json::Map::new();
+    for (k, v) in guard.iter() {
+        json_obj.insert(k.clone(), ruchy_value_to_json(v)?);
+    }
+    Ok(serde_json::Value::Object(json_obj))
 }
 
 /// json_parse(str) - Parse JSON string to Ruchy value
@@ -1323,21 +1341,35 @@ fn builtin_json_read(args: &[Value]) -> Result<Value, InterpreterError> {
 
 /// json_write(path, value) - Write value as JSON to file
 /// Complexity: 2 (thin wrapper)
+/// json_write(path, value) - Write Ruchy value as JSON file
+/// Complexity: 3 (reduced by extracting serialization)
 fn builtin_json_write(args: &[Value]) -> Result<Value, InterpreterError> {
     if args.len() != 2 {
         return Err(InterpreterError::RuntimeError("json_write() expects 2 arguments".to_string()));
     }
     match &args[0] {
         Value::String(path) => {
-            let json = ruchy_value_to_json(&args[1])?;
-            let content = serde_json::to_string_pretty(&json)
-                .map_err(|e| InterpreterError::RuntimeError(format!("JSON stringify error: {}", e)))?;
-            std::fs::write(path.as_ref(), content)
-                .map_err(|e| InterpreterError::RuntimeError(format!("Failed to write file: {}", e)))?;
+            let content = serialize_value_to_json_string(&args[1])?;
+            write_json_to_file(path, &content)?;
             Ok(Value::Bool(true))
         },
         _ => Err(InterpreterError::RuntimeError("json_write() expects first argument to be string".to_string())),
     }
+}
+
+/// Serialize Ruchy value to JSON string
+/// Complexity: 2 (conversion + stringify)
+fn serialize_value_to_json_string(value: &Value) -> Result<String, InterpreterError> {
+    let json = ruchy_value_to_json(value)?;
+    serde_json::to_string_pretty(&json)
+        .map_err(|e| InterpreterError::RuntimeError(format!("JSON stringify error: {}", e)))
+}
+
+/// Write JSON string to file
+/// Complexity: 2 (file write with error handling)
+fn write_json_to_file(path: &str, content: &str) -> Result<(), InterpreterError> {
+    std::fs::write(path, content)
+        .map_err(|e| InterpreterError::RuntimeError(format!("Failed to write file: {}", e)))
 }
 
 /// json_validate(str) - Check if string is valid JSON
@@ -1474,6 +1506,8 @@ fn builtin_json_set(args: &[Value]) -> Result<Value, InterpreterError> {
 
 /// Helper: Set value at JSON path
 /// Complexity: 3 (recursive path setting with mutation)
+/// Set value at JSON path (recursive)
+/// Complexity: 4 (reduced by extracting single-level setter)
 fn set_json_path(json: &mut serde_json::Value, path: &[&str], value: serde_json::Value) {
     if path.is_empty() {
         *json = value;
@@ -1481,10 +1515,24 @@ fn set_json_path(json: &mut serde_json::Value, path: &[&str], value: serde_json:
     }
 
     if path.len() == 1 {
-        if let serde_json::Value::Object(map) = json {
-            map.insert(path[0].to_string(), value);
-        }
-    } else if let serde_json::Value::Object(map) = json {
+        set_json_value_at_key(json, path[0], value);
+    } else {
+        set_json_path_recursive(json, path, value);
+    }
+}
+
+/// Set JSON value at single key
+/// Complexity: 2 (single-level operation)
+fn set_json_value_at_key(json: &mut serde_json::Value, key: &str, value: serde_json::Value) {
+    if let serde_json::Value::Object(map) = json {
+        map.insert(key.to_string(), value);
+    }
+}
+
+/// Set JSON value at nested path
+/// Complexity: 3 (recursive path traversal)
+fn set_json_path_recursive(json: &mut serde_json::Value, path: &[&str], value: serde_json::Value) {
+    if let serde_json::Value::Object(map) = json {
         if let Some(next) = map.get_mut(path[0]) {
             set_json_path(next, &path[1..], value);
         }
@@ -1570,6 +1618,70 @@ fn builtin_http_delete(args: &[Value]) -> Result<Value, InterpreterError> {
             }
         },
         _ => Err(InterpreterError::RuntimeError("http_delete() expects a string URL".to_string())),
+    }
+}
+
+/// Built-in assert_eq function for testing
+/// Panics if the two values are not equal
+///
+/// # Arguments
+/// * args[0] - Expected value
+/// * args[1] - Actual value
+/// * args[2] - Optional message (string)
+///
+/// # Complexity
+/// Cyclomatic complexity: 3 (within limit of 10)
+fn builtin_assert_eq(args: &[Value]) -> Result<Value, InterpreterError> {
+    if args.len() < 2 {
+        return Err(InterpreterError::RuntimeError(
+            "assert_eq() expects at least 2 arguments (expected, actual)".to_string(),
+        ));
+    }
+
+    let expected = &args[0];
+    let actual = &args[1];
+    let message = if args.len() > 2 {
+        format!("{}", args[2])
+    } else {
+        format!("Assertion failed: expected {:?}, got {:?}", expected, actual)
+    };
+
+    if expected != actual {
+        Err(InterpreterError::AssertionFailed(message))
+    } else {
+        Ok(Value::nil())
+    }
+}
+
+/// Built-in assert function for testing
+/// Panics if the condition is false
+///
+/// # Arguments
+/// * args[0] - Condition (must be boolean)
+/// * args[1] - Optional message (string)
+///
+/// # Complexity
+/// Cyclomatic complexity: 3 (within limit of 10)
+fn builtin_assert(args: &[Value]) -> Result<Value, InterpreterError> {
+    if args.is_empty() {
+        return Err(InterpreterError::RuntimeError(
+            "assert() expects at least 1 argument (condition)".to_string(),
+        ));
+    }
+
+    let condition = &args[0];
+    let message = if args.len() > 1 {
+        format!("{}", args[1])
+    } else {
+        "Assertion failed".to_string()
+    };
+
+    match condition {
+        Value::Bool(true) => Ok(Value::nil()),
+        Value::Bool(false) => Err(InterpreterError::AssertionFailed(message)),
+        _ => Err(InterpreterError::RuntimeError(
+            "assert() expects a boolean condition".to_string(),
+        )),
     }
 }
 

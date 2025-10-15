@@ -288,6 +288,7 @@ pub enum InterpreterError {
     Continue(Option<String>),
     Return(Value),
     Throw(Value), // EXTREME TDD: Exception handling
+    AssertionFailed(std::string::String), // BUG-037: Test assertions
 }
 
 // Display implementations moved to eval_display.rs
