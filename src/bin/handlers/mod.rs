@@ -27,6 +27,7 @@ use std::path::{Path, PathBuf};
 ///
 /// # Errors
 /// Returns error if expression cannot be parsed or evaluated
+/// Handle eval command (complexity: 5 - reduced from 11)
 pub fn handle_eval_command(expr: &str, verbose: bool, format: &str) -> Result<()> {
     if verbose {
         eprintln!("Parsing expression: {expr}");
@@ -37,37 +38,43 @@ pub fn handle_eval_command(expr: &str, verbose: bool, format: &str) -> Result<()
             if verbose {
                 eprintln!("Evaluation successful");
             }
-            if format == "json" {
-                // Manually construct JSON to ensure field order matches test expectations
-                let result_str = result.replace('"', "\\\"");
-                println!("{{\"success\":true,\"result\":\"{result_str}\"}}");
-            } else {
-                // Default text output - always show result for one-liner evaluation
-                println!("{result}");
-            }
+            print_eval_success(&result, format);
             Ok(())
         }
         Err(e) => {
             if verbose {
                 eprintln!("Evaluation failed: {e}");
             }
-            match format {
-                "json" => {
-                    println!(
-                        "{}",
-                        serde_json::json!({
-                            "success": false,
-                            "error": e.to_string()
-                        })
-                    );
-                }
-                _ => {
-                    eprintln!("Error: {e}");
-                }
-            }
-            // Return an error instead of exiting - let the caller decide what to do
+            print_eval_error(&e, format);
             Err(e)
         }
+    }
+}
+
+/// Print successful evaluation result (complexity: 2)
+fn print_eval_success(result: &str, format: &str) {
+    if format == "json" {
+        // Manually construct JSON to ensure field order matches test expectations
+        let result_str = result.replace('"', "\\\"");
+        println!("{{\"success\":true,\"result\":\"{result_str}\"}}");
+    } else {
+        // Default text output - always show result for one-liner evaluation
+        println!("{result}");
+    }
+}
+
+/// Print evaluation error (complexity: 2)
+fn print_eval_error(e: &anyhow::Error, format: &str) {
+    if format == "json" {
+        println!(
+            "{}",
+            serde_json::json!({
+                "success": false,
+                "error": e.to_string()
+            })
+        );
+    } else {
+        eprintln!("Error: {e}");
     }
 }
 /// Handle file execution - run a Ruchy script file directly (not via subcommand)
@@ -1618,16 +1625,28 @@ fn process_single_file(
     }
 }
 /// Process directory containing .replay files (complexity: 10)
+/// Process directory of replay files (complexity: 4 - reduced from 11)
 fn process_directory(
     input: &Path,
     converter: &ruchy::runtime::replay_converter::ReplayConverter,
     all_tests: &mut Vec<ruchy::runtime::replay_converter::GeneratedTest>,
     processed_files: &mut usize,
 ) -> Result<()> {
-    use std::fs;
     println!("📁 Processing replay directory: {}", input.display());
-    // Find all .replay files in directory
-    let replay_files: Vec<_> = fs::read_dir(input)?
+    let replay_files = find_replay_files(input)?;
+    if replay_files.is_empty() {
+        println!("⚠️  No .replay files found in directory");
+        return Ok(());
+    }
+    println!("🔍 Found {} replay files", replay_files.len());
+    process_replay_files(&replay_files, converter, all_tests, processed_files);
+    Ok(())
+}
+
+/// Find all .replay files in directory (complexity: 3)
+fn find_replay_files(dir: &Path) -> Result<Vec<PathBuf>> {
+    use std::fs;
+    Ok(fs::read_dir(dir)?
         .filter_map(|entry| {
             let entry = entry.ok()?;
             let path = entry.path();
@@ -1637,15 +1656,19 @@ fn process_directory(
                 None
             }
         })
-        .collect();
-    if replay_files.is_empty() {
-        println!("⚠️  No .replay files found in directory");
-        return Ok(());
-    }
-    println!("🔍 Found {} replay files", replay_files.len());
+        .collect())
+}
+
+/// Process all replay files in sequence (complexity: 4)
+fn process_replay_files(
+    replay_files: &[PathBuf],
+    converter: &ruchy::runtime::replay_converter::ReplayConverter,
+    all_tests: &mut Vec<ruchy::runtime::replay_converter::GeneratedTest>,
+    processed_files: &mut usize,
+) {
     for replay_file in replay_files {
         println!("📄 Processing: {}", replay_file.display());
-        match converter.convert_file(&replay_file) {
+        match converter.convert_file(replay_file) {
             Ok(tests) => {
                 println!("  ✅ Generated {} tests", tests.len());
                 all_tests.extend(tests);
@@ -1657,7 +1680,6 @@ fn process_directory(
             }
         }
     }
-    Ok(())
 }
 /// Write test output to file, creating directories if needed (complexity: 4)
 fn write_test_output(
@@ -1967,6 +1989,7 @@ fn run_property_test_suite(
 
 /// Write property test summary report
 /// Complexity: 3 (Toyota Way: <10 ✓)
+/// Write property test summary (complexity: 2 - reduced from 13)
 fn write_property_test_summary(
     format: &str,
     output: Option<&Path>,
@@ -1974,27 +1997,38 @@ fn write_property_test_summary(
     stdout: &str,
 ) -> Result<()> {
     if format == "json" {
-        let report = serde_json::json!({
-            "status": "passed",
-            "cases": cases,
-            "output": stdout
-        });
-        let json_output = serde_json::to_string_pretty(&report)?;
-        if let Some(out_path) = output {
-            fs::write(out_path, json_output)?;
-        } else {
-            println!("{}", json_output);
-        }
+        write_property_test_json(output, cases, stdout)
     } else {
-        println!("Property Test Report");
-        println!("====================");
-        println!("Status: ✅ PASSED");
-        println!("Test cases: {}", cases);
-        if let Some(out_path) = output {
-            write_file_with_context(out_path, stdout.as_bytes())?;
-        } else {
-            println!("\n{}", stdout);
-        }
+        write_property_test_text(output, cases, stdout)
+    }
+}
+
+/// Write JSON property test report (complexity: 3)
+fn write_property_test_json(output: Option<&Path>, cases: usize, stdout: &str) -> Result<()> {
+    let report = serde_json::json!({
+        "status": "passed",
+        "cases": cases,
+        "output": stdout
+    });
+    let json_output = serde_json::to_string_pretty(&report)?;
+    if let Some(out_path) = output {
+        fs::write(out_path, json_output)?;
+    } else {
+        println!("{}", json_output);
+    }
+    Ok(())
+}
+
+/// Write text property test report (complexity: 3)
+fn write_property_test_text(output: Option<&Path>, cases: usize, stdout: &str) -> Result<()> {
+    println!("Property Test Report");
+    println!("====================");
+    println!("Status: ✅ PASSED");
+    println!("Test cases: {}", cases);
+    if let Some(out_path) = output {
+        write_file_with_context(out_path, stdout.as_bytes())?;
+    } else {
+        println!("\n{}", stdout);
     }
     Ok(())
 }
@@ -2436,6 +2470,7 @@ fn run_cargo_fuzz(
 
 /// Write fuzz test summary
 /// Complexity: 3 (Toyota Way: <10 ✓)
+/// Write fuzz test summary (complexity: 2 - reduced from 13)
 fn write_fuzz_summary(
     format: &str,
     output: Option<&Path>,
@@ -2445,28 +2480,50 @@ fn write_fuzz_summary(
     stdout: &str,
 ) -> Result<()> {
     if format == "json" {
-        let report = serde_json::json!({
-            "target": target,
-            "iterations": iterations,
-            "status": if success { "passed" } else { "failed" },
-            "output": stdout
-        });
-        let json_output = serde_json::to_string_pretty(&report)?;
-        if let Some(out_path) = output {
-            fs::write(out_path, json_output)?;
-        } else {
-            println!("{}", json_output);
-        }
+        write_fuzz_json(output, target, iterations, success, stdout)
     } else {
-        println!("Fuzz Test Report");
-        println!("================");
-        println!("Target: {}", target);
-        println!("Iterations: {}", iterations);
-        if let Some(out_path) = output {
-            write_file_with_context(out_path, stdout.as_bytes())?;
-        } else {
-            println!("\n{}", stdout);
-        }
+        write_fuzz_text(output, target, iterations, stdout)
+    }
+}
+
+/// Write JSON fuzz test report (complexity: 3)
+fn write_fuzz_json(
+    output: Option<&Path>,
+    target: &str,
+    iterations: usize,
+    success: bool,
+    stdout: &str,
+) -> Result<()> {
+    let report = serde_json::json!({
+        "target": target,
+        "iterations": iterations,
+        "status": if success { "passed" } else { "failed" },
+        "output": stdout
+    });
+    let json_output = serde_json::to_string_pretty(&report)?;
+    if let Some(out_path) = output {
+        fs::write(out_path, json_output)?;
+    } else {
+        println!("{}", json_output);
+    }
+    Ok(())
+}
+
+/// Write text fuzz test report (complexity: 3)
+fn write_fuzz_text(
+    output: Option<&Path>,
+    target: &str,
+    iterations: usize,
+    stdout: &str,
+) -> Result<()> {
+    println!("Fuzz Test Report");
+    println!("================");
+    println!("Target: {}", target);
+    println!("Iterations: {}", iterations);
+    if let Some(out_path) = output {
+        write_file_with_context(out_path, stdout.as_bytes())?;
+    } else {
+        println!("\n{}", stdout);
     }
     Ok(())
 }
