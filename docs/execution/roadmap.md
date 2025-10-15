@@ -202,21 +202,25 @@
   - 11 CLI tests for config integration (format, check, invalid config)
 
 **Phase 2 Progress** (Ignore Directives - PARSER BUG FIXED WITH EXTREME TDD):
-- ✅ [FMT-PERFECT-022] Ignore directives implementation (PARTIAL - 7/10 tests passing)
+- ✅ [FMT-PERFECT-022] Ignore directives implementation (PARTIAL - 8/10 tests passing)
   - **BUG #1 FIXED**: commands.rs now calls formatter.set_source()
   - **BUG #2 FIXED**: Parser comment attribution (STOP THE LINE - Extreme TDD)
   - **BUG #3 DISCOVERED**: Let expression spans don't include full expression tree
-  - **EXTREME TDD - RED PHASE**: Created 4 failing parser tests
-  - **EXTREME TDD - GREEN PHASE**: Fixed consume_trailing_comment() with line awareness
-  - **PROPERTY TESTS**: 3 tests with 10K+ random inputs verify invariants
+  - **BUG #4 FIXED**: [PARSER-053] Line continuations with intervening comments (STOP THE LINE - Extreme TDD)
+  - **EXTREME TDD - RED PHASE**: Created 4 failing parser tests (comment attribution) + 6 failing tests (line continuation)
+  - **EXTREME TDD - GREEN PHASE**:
+    - Fixed consume_trailing_comment() with line awareness
+    - Fixed try_handle_infix_operators() to consume comments before checking operators (1 line fix!)
+  - **PROPERTY TESTS**: 6 tests with 10K+ random inputs verify invariants
   - **FIXES APPLIED**:
     - [PARSER] Fixed consume_trailing_comment() to check same line (is_on_same_line helper)
     - [PARSER] Added TokenStream::source() method for source access
+    - [PARSER-053] Fixed try_handle_infix_operators() to consume leading comments (line continuation support)
     - [FORMATTER] Modified read_and_format_file() to call formatter.set_source()
     - [FORMATTER] Fixed format() to handle top-level blocks without adding braces
     - [FORMATTER] Implemented find_rightmost_span_end() to calculate true expression end
-  - **TEST RESULTS**: Improved from 1/10 → 6/10 → 7/10 passing (+600% improvement)
-  - **PASSING TESTS (7/10)**:
+  - **TEST RESULTS**: Improved from 1/10 → 6/10 → 7/10 → 8/10 passing (+700% improvement)
+  - **PASSING TESTS (8/10)**:
     - test_fmt_ignore_preserves_single_line ✓
     - test_fmt_ignore_next_alias ✓
     - test_fmt_ignore_case_sensitivity ✓
@@ -224,9 +228,9 @@
     - test_fmt_ignore_with_extra_whitespace ✓
     - test_fmt_ignore_with_check_mode ✓ (FIXED CLI assertion)
     - test_fmt_ignore_multiple_expressions ✓ (FIXED BY PARSER)
-  - **REMAINING FAILURES (3/10)**: Needs investigation
-    - test_fmt_ignore_preserves_comments_and_whitespace (trailing comments in body)
-    - test_fmt_ignore_with_complex_expression (nested structures)
+    - test_fmt_ignore_preserves_comments_and_whitespace ✓ (FIXED BY PARSER-053)
+  - **REMAINING FAILURES (2/10)**: Needs investigation
+    - test_fmt_ignore_with_complex_expression (function formatting)
     - test_fmt_ignore_with_nested_expressions (block handling)
 
 **Configuration Options Available**:
