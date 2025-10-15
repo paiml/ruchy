@@ -2225,7 +2225,7 @@ dependencies = [
 
 [[package]]
 name = "ruchy"
-version = "3.77.0"
+version = "3.86.0"
 dependencies = [
  "anyhow",
  "axum",
