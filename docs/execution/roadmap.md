@@ -201,16 +201,29 @@
   - Enhanced execute_format() to apply configuration
   - 11 CLI tests for config integration (format, check, invalid config)
 
-**Phase 2 Progress** (Ignore Directives - COMPLETE):
-- ✅ [FMT-PERFECT-022] Ignore directives implementation (GREEN)
-  - Added source field to Formatter for original text preservation
-  - Implemented should_ignore() to detect // ruchy-fmt-ignore directives
-  - Implemented get_original_text() to extract original formatting via span
-  - Supports both // ruchy-fmt-ignore and // ruchy-fmt-ignore-next
-  - Preserves exact formatting (whitespace, comments) for ignored expressions
-  - Updated CLI to set source text on formatter
-  - 11 CLI tests for ignore directives (all passing)
-  - Tests cover: single line, multiple expressions, nested blocks, check mode
+**Phase 2 Progress** (Ignore Directives - MAJOR BUG FIX IN PROGRESS):
+- ✅ [FMT-PERFECT-022] Ignore directives implementation (PARTIAL - 6/10 tests passing)
+  - **BUG DISCOVERED**: Two critical root causes prevented feature from working
+    1. commands.rs never called formatter.set_source() (source was always None)
+    2. Parser bug: Let expression spans don't include full expression tree
+  - **FIXES APPLIED**:
+    - Modified read_and_format_file() to call formatter.set_source()
+    - Fixed format() to handle top-level blocks without adding braces
+    - Implemented find_rightmost_span_end() to calculate true expression end
+    - get_original_text() now recursively finds rightmost span (not just expr.span.end)
+  - **TEST RESULTS**: Improved from 1/10 to 6/10 passing (+500% improvement)
+  - **PASSING TESTS (6/10)**:
+    - test_fmt_ignore_preserves_single_line ✓
+    - test_fmt_ignore_next_alias ✓
+    - test_fmt_ignore_case_sensitivity ✓
+    - test_fmt_ignore_does_not_affect_other_files ✓
+    - test_fmt_ignore_preserves_comments_and_whitespace ✓
+    - test_fmt_ignore_with_extra_whitespace ✓
+  - **REMAINING FAILURES (4/10)**: Needs further investigation
+    - test_fmt_ignore_multiple_expressions
+    - test_fmt_ignore_with_check_mode (CLI output format issue)
+    - test_fmt_ignore_with_complex_expression (nested structures)
+    - test_fmt_ignore_with_nested_expressions (block handling)
 
 **Configuration Options Available**:
 - indent_width: usize (default: 4)
