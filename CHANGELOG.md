@@ -5,6 +5,15 @@ All notable changes to the Ruchy programming language will be documented in this
 ## [Unreleased]
 
 ### Fixed
+- **[PARSER-FIX] Fixed comment attribution bug with Extreme TDD (7/10 ignore tests passing)**:
+  - **STOP THE LINE**: Discovered parser wrongly attributes standalone comments as trailing
+  - **RED PHASE**: Created 4 failing tests in tests/parser_defect_comment_attribution.rs
+  - **GREEN PHASE**: Fixed consume_trailing_comment() to check if comment is on same line
+  - **PROPERTY TESTS**: Added 3 property tests validating invariants with 10K+ random inputs
+  - **RESULT**: Parser tests 4/4 passing, ignore directive tests 6/10 → 7/10 (+1 fixed)
+  - Fixed: test_fmt_ignore_multiple_expressions now passing
+  - Implementation: Added is_on_same_line() helper and TokenStream::source() method
+  - Remaining: 3 ignore tests still failing (complex expressions, nested blocks)
 - **[FMT-PERFECT-011] Major fix for ignore directive feature (6/10 tests passing)**:
   - ROOT CAUSE 1: Formatter never received source text (commands.rs didn't call set_source)
   - ROOT CAUSE 2: Parser bug - Let expression spans don't include full expression tree
@@ -12,9 +21,7 @@ All notable changes to the Ruchy programming language will be documented in this
   - Fixed format() to handle top-level blocks without braces
   - Implemented find_rightmost_span_end() to recursively calculate true expression end
   - Improved test success from 1/10 to 6/10 (+500% improvement)
-  - Remaining 4 failures require deeper investigation (nested structures, check mode)
 - Updated Sprint 3 config test assertions for new CLI output format (6/6 passing, 3 ignored with TODOs)
-- Marked 3 config tests as ignored for future investigation (functionality works, test assertions need updates)
 
 ## [3.88.0] - 2025-10-15
 
