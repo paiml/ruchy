@@ -14,12 +14,20 @@
 
 ## 📝 **SESSION CONTEXT FOR RESUMPTION**
 
-**Last Active**: 2025-10-15 (CLI contract tests: 32/33 tools complete, 339+ tests)
-**Current Sprint**: ✅ **CLI-COMPLETE** - CLI contract tests for all 33 Ruchy tools (97% complete)
-**Latest Release**: ✅ **v3.86.0** published to crates.io and GitHub (15-tool specification + roadmap accuracy)
-**Latest Commit**: [CLI-TEST] Add CLI contract tests for 17 additional tools (339+ total tests, 32/33 tools)
+**Last Active**: 2025-10-15 (v3.87.0 released - CLI contract testing complete)
+**Current Sprint**: ✅ **CLI-COMPLETE** - Released v3.87.0 with comprehensive CLI testing
+**Latest Release**: ✅ **v3.87.0** published to crates.io and GitHub (CLI testing complete, 32/33 tools)
+**Latest Commit**: [CHORE] Update Cargo.lock for v3.87.0
 
-**Latest Commits (CRITICAL fmt fix + Quality Sprint 2025-10-15)**:
+**Latest Commits (v3.87.0 Release - CLI Testing Complete 2025-10-15)**:
+- ✅ **[RELEASE v3.87.0]** CLI contract testing complete for 32/33 tools (97% coverage)
+  - Achievement: 339+ CLI tests validating user-facing contracts
+  - Tools Covered: All core development, quality, testing, compiler, docs, formatting, project mgmt, and advanced tools
+  - fmt tool: 23 regression tests preventing P0 code destruction
+  - wasm tool: 26 tests covering all targets and optimization levels
+  - Specification update: 16 → 33 tools (discovered actual tool count)
+  - Published to crates.io: https://crates.io/crates/ruchy/3.87.0
+  - GitHub Release: https://github.com/paiml/ruchy/releases/tag/v3.87.0
 - 🚨 **[CRITICAL-FMT]** Fixed P0 code-destroying bugs in formatter (Toyota Way: Stop the Line)
   - DEFECT 1: Operator mangling - `x * 2` became `x Multiply 2` (BROKEN CODE)
   - DEFECT 2: Let rewriting - `let x = 42` became `let x = 42 in ()` (INVALID SYNTAX)
