@@ -247,6 +247,342 @@ tasks:
       - "cargo publish"
       - "Create GitHub release with notes"
 
+  # 🔬 SQLite-Level Testing Framework (16-week implementation)
+  # Research-grade testing achieving 100% MC/DC + 80% mutation coverage
+  - id: "SQLITE-TEST-001"
+    title: "Test Harness 1.1: Parser Grammar Coverage Suite (2000+ tests)"
+    status: "IN_PROGRESS"
+    priority: "🔴 CRITICAL"
+    time_estimated: "32h (4-5 days)"
+    time_spent: "4h"
+    specification: "docs/specifications/ruchy-sqlite-testing-v2.md"
+    phase: "Phase 1: Vertical Slice (Weeks 1-4)"
+    progress: "15/2000 tests implemented (0.75%)"
+    description: |
+      Implement comprehensive parser grammar coverage test suite:
+      - 100% grammar production rule coverage
+      - 100% MC/DC coverage on critical boolean logic
+      - Exhaustive operator precedence testing
+      - Complete error recovery path validation
+      - Property tests: parse-print-parse identity
+      - 10K+ property test iterations
+    tests:
+      test_file: "tests/sqlite_harness/parser_grammar_coverage.rs"
+      unit: 200  # All grammar rules
+      property: 20  # Invariants (never panic, parse-print-parse, etc.)
+      property_cases: 10000
+      mutation_coverage_target: "≥80%"
+    deliverables:
+      - "tests/sqlite_harness/parser_grammar_coverage.rs"
+      - "tests/sqlite_harness/parser_error_recovery.rs"
+      - "tests/sqlite_harness/parser_performance.rs"
+    success_criteria:
+      - "2000+ parser tests passing"
+      - "100% grammar rule coverage"
+      - "100% MC/DC on critical logic"
+      - "O(n) parsing complexity verified"
+    tdd_steps:
+      - "RED: Write test_literal_expressions_exhaustive() - covers all literal types"
+      - "RED: Write test_operator_precedence_exhaustive() - all operator pairs"
+      - "RED: Write test_operator_precedence_mcdc() - prove independent effects"
+      - "RED: Write test_pattern_matching_exhaustive() - all pattern types"
+      - "RED: Write property_parser_never_panics() - 10K iterations"
+      - "RED: Write property_parse_print_parse_identity() - roundtrip test"
+      - "GREEN: Ensure all tests pass with existing parser"
+      - "REFACTOR: Add missing grammar rules if tests fail"
+    quality:
+      complexity_max: 10
+      tdg_grade_target: "A-"
+
+  - id: "SQLITE-TEST-002"
+    title: "Test Harness 1.2: Type System Soundness Tests (300K+ property tests)"
+    status: "PENDING"
+    priority: "🔴 CRITICAL"
+    time_estimated: "40h (5-6 days)"
+    specification: "docs/specifications/ruchy-sqlite-testing-v2.md"
+    phase: "Phase 1: Vertical Slice (Weeks 1-4)"
+    description: |
+      Mathematical proof of type soundness via property testing:
+      - Progress theorem: well-typed terms don't get stuck
+      - Preservation theorem: evaluation preserves types
+      - Substitution lemma validation
+      - 100K+ property test iterations per theorem
+      - Bidirectional type checking tests
+      - Polymorphic instantiation tests
+      - Unification algorithm tests
+    research_foundation:
+      - "Pierce, B. C. (2002). Types and Programming Languages. MIT Press."
+      - "Chapter 8: Type Soundness"
+    tests:
+      test_file: "tests/sqlite_harness/type_system_soundness.rs"
+      property: 30  # Progress, Preservation, Substitution, etc.
+      property_cases: 300000  # 100K per major theorem
+      mutation_coverage_target: "≥80%"
+    deliverables:
+      - "tests/sqlite_harness/type_system_soundness.rs"
+      - "tests/sqlite_harness/bidirectional_typing.rs"
+      - "tests/sqlite_harness/type_errors.rs"
+    success_criteria:
+      - "300K+ property tests passing"
+      - "Progress theorem validated"
+      - "Preservation theorem validated"
+      - "Zero type unsoundness bugs"
+    quality:
+      complexity_max: 10
+      tdg_grade_target: "A-"
+
+  - id: "SQLITE-TEST-003"
+    title: "Test Harness 1.3: Metamorphic Code Generation Tests (100K+ programs)"
+    status: "PENDING"
+    priority: "🔴 CRITICAL"
+    time_estimated: "48h (6-7 days)"
+    specification: "docs/specifications/ruchy-sqlite-testing-v2.md"
+    phase: "Phase 2: Feature Expansion (Weeks 5-12)"
+    description: |
+      Metamorphic testing for compiler correctness:
+      - MR1: Optimization equivalence (Optimize(P) ≡ P)
+      - MR2: Statement permutation (independent statements commute)
+      - MR3: Constant propagation correctness
+      - MR4: Alpha renaming (variable renaming preserves semantics)
+      - MR5: Interpreter-compiler equivalence (differential testing)
+      - MR6: Parse-print-parse identity
+      - 100K+ random program generations
+      - Differential testing against Python/Ruby
+    research_foundation:
+      - "Chen et al. (2018). Metamorphic testing: A review. ACM Computing Surveys."
+    tests:
+      test_file: "tests/sqlite_harness/codegen_metamorphic.rs"
+      property: 50  # 6 MRs × multiple tests each
+      property_cases: 100000
+      differential_tests: 100000  # Against 3 reference implementations
+      mutation_coverage_target: "≥80%"
+    deliverables:
+      - "tests/sqlite_harness/codegen_metamorphic.rs"
+      - "tests/sqlite_harness/differential_testing.rs"
+      - "tests/sqlite_harness/codegen_patterns.rs"
+      - "tests/sqlite_harness/memory_safety.rs"
+    success_criteria:
+      - "100K+ metamorphic tests passing"
+      - "100K+ differential tests passing"
+      - "<10 divergences tolerated"
+      - "All MRs validated"
+    quality:
+      complexity_max: 10
+      tdg_grade_target: "A-"
+
+  - id: "SQLITE-TEST-004"
+    title: "Test Harness 1.4: Runtime Anomaly Tests (50K+ tests)"
+    status: "PENDING"
+    priority: "🔴 CRITICAL"
+    time_estimated: "32h (4-5 days)"
+    specification: "docs/specifications/ruchy-sqlite-testing-v2.md"
+    phase: "Phase 2: Feature Expansion (Weeks 5-12)"
+    description: |
+      Comprehensive runtime failure mode testing:
+      - Stack overflow handling (infinite recursion)
+      - Heap exhaustion (OOM conditions)
+      - Memory leak detection
+      - Division by zero
+      - Integer overflow/underflow
+      - Array bounds checking
+      - Type errors at runtime
+      - Pattern match failures
+      - I/O failures (file not found, permission denied)
+      - Property: Runtime never panics (10K+ random programs)
+      - Property: REPL state consistency after errors
+    tests:
+      test_file: "tests/sqlite_harness/runtime_anomalies.rs"
+      unit: 100  # All anomaly scenarios
+      property: 20  # Never panics, state consistency
+      property_cases: 50000
+      mutation_coverage_target: "≥80%"
+    deliverables:
+      - "tests/sqlite_harness/runtime_anomalies.rs"
+      - "tests/sqlite_harness/repl_testing.rs"
+    success_criteria:
+      - "50K+ runtime tests passing"
+      - "100% error path coverage"
+      - "Zero panics tolerated"
+      - "REPL always recoverable"
+    quality:
+      complexity_max: 10
+      tdg_grade_target: "A-"
+
+  - id: "SQLITE-TEST-005"
+    title: "Test Harness 1.5: Coverage-Guided Fuzzing (24hrs/release)"
+    status: "PENDING"
+    priority: "🔴 CRITICAL"
+    time_estimated: "24h (3-4 days setup + continuous runs)"
+    specification: "docs/specifications/ruchy-sqlite-testing-v2.md"
+    phase: "Phase 1: Vertical Slice (Weeks 1-4)"
+    description: |
+      Security-focused coverage-guided fuzzing:
+      - AFL and libFuzzer integration
+      - Parser security fuzzing (malformed input)
+      - Transpiler determinism fuzzing
+      - WASM security fuzzing
+      - 24 cumulative hours per release
+      - Zero crashes required for release
+    research_foundation:
+      - "Zalewski, M. (2014). American Fuzzy Lop (AFL)"
+    tests:
+      fuzz_targets:
+        - "fuzz/fuzz_targets/parser_security.rs"
+        - "fuzz/fuzz_targets/transpiler_determinism.rs"
+        - "fuzz/fuzz_targets/wasm_security.rs"
+      continuous_hours: 24
+      crash_tolerance: 0
+    deliverables:
+      - "Enhanced fuzz/fuzz_targets/ with security focus"
+      - ".github/workflows/continuous-fuzzing.yml"
+    success_criteria:
+      - "24 cumulative fuzzing hours"
+      - "Zero crashes found"
+      - "Coverage map shows saturation"
+    quality:
+      complexity_max: 10
+
+  - id: "SQLITE-TEST-006"
+    title: "Test Harness 2: Performance Benchmarks with Regression Detection"
+    status: "PENDING"
+    priority: "🟡 HIGH"
+    time_estimated: "24h (3-4 days)"
+    specification: "docs/specifications/ruchy-sqlite-testing-v2.md"
+    phase: "Phase 3: Ecosystem (Weeks 13-16)"
+    description: |
+      Automated performance regression detection:
+      - Parser benchmarks (100, 1K, 10K, 100K tokens)
+      - Type checker benchmarks
+      - Transpiler benchmarks
+      - Full compilation benchmarks
+      - Criterion.rs integration
+      - <5% regression tolerance
+      - Automatic baseline updates
+    tests:
+      benchmark_file: "benches/sqlite_compiler_benchmarks.rs"
+      benchmarks: 50
+      regression_threshold: "5%"
+    deliverables:
+      - "benches/sqlite_compiler_benchmarks.rs"
+      - ".github/workflows/performance-benchmarks.yml"
+      - "scripts/check_regression.py"
+    success_criteria:
+      - "50+ benchmarks tracked"
+      - "<5% regression detection"
+      - "CI integration complete"
+    quality:
+      complexity_max: 10
+
+  - id: "SQLITE-TEST-007"
+    title: "Test Harness 3: Diagnostic Quality Testing"
+    status: "PENDING"
+    priority: "🟡 HIGH"
+    time_estimated: "24h (3-4 days)"
+    specification: "docs/specifications/ruchy-sqlite-testing-v2.md"
+    phase: "Phase 3: Ecosystem (Weeks 13-16)"
+    description: |
+      Compiler error message quality validation:
+      - Precision: Exact error location (line, column)
+      - Context: Show surrounding code
+      - Actionability: Suggest concrete fixes
+      - 80%+ diagnostic quality score
+      - Based on Barik et al. (2016) research
+    research_foundation:
+      - "Barik et al. (2016). Compiler error messages considered unhelpful. IEEE MSR."
+    tests:
+      test_file: "tests/e2e/diagnostic_quality.spec.ts"
+      scenarios: 100
+      quality_target: "80%"
+    deliverables:
+      - "tests/e2e/diagnostic_quality.spec.ts"
+      - "scripts/measure_diagnostic_quality.py"
+    success_criteria:
+      - "100+ error scenarios tested"
+      - "80%+ quality score"
+      - "All errors have suggestions"
+    quality:
+      complexity_max: 10
+
+  - id: "SQLITE-TEST-008"
+    title: "Test Harness 4: Corpus Testing (10K+ real programs)"
+    status: "PENDING"
+    priority: "🟡 HIGH"
+    time_estimated: "32h (4-5 days)"
+    specification: "docs/specifications/ruchy-sqlite-testing-v2.md"
+    phase: "Phase 3: Ecosystem (Weeks 13-16)"
+    description: |
+      Real-world program corpus validation:
+      - Adapt 10K Rust programs to Ruchy syntax
+      - >95% success rate required
+      - Identify real-world compatibility issues
+      - Continuous corpus testing
+    tests:
+      test_file: "tests/sqlite_harness/corpus_testing.rs"
+      corpus_size: 10000
+      success_rate_target: "95%"
+    deliverables:
+      - "tests/sqlite_harness/corpus_testing.rs"
+      - "corpus/rust/*.rs (10K programs)"
+      - "scripts/adapt_rust_to_ruchy.py"
+    success_criteria:
+      - "10K+ programs in corpus"
+      - ">95% success rate"
+      - "Failures documented"
+    quality:
+      complexity_max: 10
+
+  - id: "SQLITE-TEST-009"
+    title: "CI/CD Integration for All 8 Harnesses"
+    status: "PENDING"
+    priority: "🔴 CRITICAL"
+    time_estimated: "16h (2-3 days)"
+    specification: "docs/specifications/ruchy-sqlite-testing-v2.md"
+    phase: "Phase 3: Ecosystem (Weeks 13-16)"
+    description: |
+      Complete CI/CD workflow for SQLite testing:
+      - Pre-commit: Veryquick suite (<3 min, catches 90%+ bugs)
+      - PR checks: All 8 harnesses
+      - Nightly: Full suite + 24hr fuzzing
+      - Release gates: 15 mandatory criteria
+    deliverables:
+      - ".github/workflows/sqlite-pre-commit.yml"
+      - ".github/workflows/sqlite-full-suite.yml"
+      - ".github/workflows/sqlite-nightly.yml"
+      - "scripts/release_gate_check.sh"
+    success_criteria:
+      - "All 8 harnesses in CI"
+      - "Pre-commit <3 minutes"
+      - "15 release gates enforced"
+    quality:
+      complexity_max: 10
+
+  - id: "SQLITE-TEST-010"
+    title: "Documentation: SQLite Testing Framework Guide"
+    status: "PENDING"
+    priority: "🟡 HIGH"
+    time_estimated: "16h (2-3 days)"
+    specification: "docs/specifications/ruchy-sqlite-testing-v2.md"
+    phase: "Phase 3: Ecosystem (Weeks 13-16)"
+    description: |
+      Comprehensive documentation for SQLite testing framework:
+      - Architecture overview
+      - Running each harness
+      - Interpreting results
+      - Adding new tests
+      - Release criteria checklist
+    deliverables:
+      - "docs/testing/sqlite-framework-guide.md"
+      - "docs/testing/harness-1-parser.md"
+      - "docs/testing/harness-2-types.md"
+      - "docs/testing/harness-3-codegen.md"
+      - "docs/testing/harness-4-runtime.md"
+      - "docs/testing/harness-5-fuzzing.md"
+      - "docs/testing/harness-6-performance.md"
+      - "docs/testing/harness-7-diagnostics.md"
+      - "docs/testing/harness-8-corpus.md"
+    quality:
+      complexity_max: 10
+
   - id: "BUG-032"
     title: "Fix: range() function not transpiling to Rust syntax"
     status: "COMPLETE"
