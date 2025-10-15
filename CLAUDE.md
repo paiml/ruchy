@@ -81,6 +81,55 @@ fn process_single_item(item: Item) -> Result<ItemOutput> {
    - **REFACTOR**: Apply PMAT quality gates (A- minimum, ≤10 complexity)
 4. **EXTREME TEST COVERAGE**: Create comprehensive test suites immediately:
 
+### 🚨 ABSOLUTE RULE: NO BUG IS OUT OF SCOPE (MANDATORY - ZERO EXCEPTIONS)
+
+**THE WORDS "THIS BUG IS OUT OF SCOPE" DO NOT EXIST IN OUR VOCABULARY**
+
+**FORBIDDEN RESPONSES** (ABSOLUTELY NEVER SAY THESE):
+- ❌ "This bug is out of scope for the current task"
+- ❌ "This is a parser bug, we're working on the formatter"
+- ❌ "Let's mark this test as ignored and move on"
+- ❌ "Let's defer this to a future sprint"
+- ❌ "This is a separate issue"
+- ❌ "Let's work around this for now"
+- ❌ "This is a known limitation"
+
+**TOYOTA WAY PRINCIPLE**: When you find a bug, you STOP THE LINE and FIX IT. No exceptions. No deferrals. No workarounds.
+
+**MANDATORY RESPONSE** (THE ONLY ACCEPTABLE RESPONSE):
+1. 🛑 **STOP THE LINE IMMEDIATELY**: Halt ALL other work when ANY bug found
+2. 🔍 **ROOT CAUSE ANALYSIS**: Use Five Whys and GENCHI GENBUTSU (go and see)
+3. 📋 **CREATE TICKET**: Add to docs/execution/roadmap.md with format: [PARSER-XXX], [FORMATTER-XXX], etc.
+4. ✅ **EXTREME TDD IMPLEMENTATION**:
+   - **RED**: Write failing test that reproduces bug FIRST
+   - **GREEN**: Fix bug with minimal code changes
+   - **REFACTOR**: Apply PMAT quality gates (A- minimum, ≤10 complexity)
+5. 🧪 **PROPERTY TESTS**: Verify invariants hold with 10K+ random inputs
+6. 🧬 **MUTATION TESTS**: Prove tests catch real bugs (≥75% mutation coverage)
+7. ✅ **COMMIT**: Document fix with ticket reference
+
+**WHY THIS MATTERS**:
+- **Quality is non-negotiable**: Every bug deferred is technical debt that compounds
+- **User trust**: Ignoring bugs breaks user confidence
+- **Team velocity**: Small bugs become big problems
+- **Toyota Way**: Stop the line for ANY defect, no exceptions
+
+**EXAMPLE - CORRECT RESPONSE**:
+```
+Discovery: Parser fails with "Unexpected token: Plus" on line continuations with comments
+
+❌ WRONG: "This is a parser bug, out of scope for formatter work. Mark test as ignored."
+✅ RIGHT:
+  1. STOP THE LINE - this is a defect that blocks progress
+  2. Five Whys: Why does it fail? → Parser doesn't handle line continuations with comments
+  3. Create: [PARSER-053] Fix line continuation parsing with intervening comments
+  4. RED: test_parse_line_continuation_with_comment() - FAILS
+  5. GREEN: Fix parser to handle line continuations
+  6. Property test: All valid line continuations parse correctly
+  7. Mutation test: Verify parser tests catch line continuation bugs
+  8. Commit: [PARSER-053] Fix line continuation parsing with tests
+```
+
 ### 🚨 CRITICAL: Missing Language Feature Protocol (MANDATORY)
 
 **IF YOU DISCOVER A LANGUAGE FEATURE IS "NOT IMPLEMENTED" - IMPLEMENT IT, DON'T SKIP IT!**
