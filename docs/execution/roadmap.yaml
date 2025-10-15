@@ -590,6 +590,137 @@ tasks:
     quality:
       complexity_max: 10
 
+  # Parser Limitations Discovered via SQLITE-TEST-001
+  # These were found through systematic SQLite-level testing
+  - id: "PARSER-055"
+    title: "Add support for bare return statements (no value)"
+    status: "PENDING"
+    priority: "🟡 MEDIUM"
+    discovered_by: "SQLITE-TEST-001 (test_sqlite_098_bare_return)"
+    time_estimated: "4h"
+    description: |
+      Parser currently requires return statements to have a value.
+      Bare `return` (equivalent to `return ()` or early exit) not supported.
+
+      Example that fails:
+      ```ruchy
+      fun early_exit() {
+          if condition {
+              return  // Should exit early
+          }
+          do_work()
+      }
+      ```
+    tests:
+      test_file: "tests/sqlite_001_parser_grammar.rs"
+      failing_test: "test_sqlite_098_bare_return (currently ignored)"
+    tdd_steps:
+      - "RED: Un-ignore test_sqlite_098_bare_return() - FAILS"
+      - "GREEN: Add parser support for return without expression"
+      - "REFACTOR: Ensure complexity ≤10"
+    quality:
+      complexity_max: 10
+
+  - id: "PARSER-056"
+    title: "Add support for async blocks"
+    status: "PENDING"
+    priority: "🟡 MEDIUM"
+    discovered_by: "SQLITE-TEST-001 (test_sqlite_112_async_blocks)"
+    time_estimated: "8h"
+    description: |
+      Parser supports async functions and await, but not async blocks.
+
+      Example that fails:
+      ```ruchy
+      let future = async {
+          let data = await fetch()
+          process(data)
+      }
+      ```
+    tests:
+      test_file: "tests/sqlite_001_parser_grammar.rs"
+      failing_test: "test_sqlite_112_async_blocks (currently ignored)"
+    tdd_steps:
+      - "RED: Un-ignore test_sqlite_112_async_blocks() - FAILS"
+      - "GREEN: Add parser support for async { } blocks"
+      - "REFACTOR: Ensure complexity ≤10"
+    quality:
+      complexity_max: 10
+
+  - id: "PARSER-057"
+    title: "Add support for export keyword"
+    status: "PENDING"
+    priority: "🟡 MEDIUM"
+    discovered_by: "SQLITE-TEST-001 (test_sqlite_143_export_statements)"
+    time_estimated: "6h"
+    description: |
+      Module system supports imports but not exports.
+
+      Example that fails:
+      ```ruchy
+      export fun add(a, b) { a + b }
+      export struct Point { x: i32, y: i32 }
+      ```
+    tests:
+      test_file: "tests/sqlite_001_parser_grammar.rs"
+      failing_test: "test_sqlite_143_export_statements (currently ignored)"
+    tdd_steps:
+      - "RED: Un-ignore test_sqlite_143_export_statements() - FAILS"
+      - "GREEN: Add parser support for export keyword"
+      - "REFACTOR: Ensure complexity ≤10"
+    quality:
+      complexity_max: 10
+
+  - id: "PARSER-058"
+    title: "Add support for type aliases"
+    status: "PENDING"
+    priority: "🟡 MEDIUM"
+    discovered_by: "SQLITE-TEST-001 (test_sqlite_160_type_aliases)"
+    time_estimated: "6h"
+    description: |
+      Type system lacks type alias support.
+
+      Example that fails:
+      ```ruchy
+      type UserId = i32
+      type Result<T> = Result<T, Error>
+      ```
+    tests:
+      test_file: "tests/sqlite_001_parser_grammar.rs"
+      failing_test: "test_sqlite_160_type_aliases (currently ignored)"
+    tdd_steps:
+      - "RED: Un-ignore test_sqlite_160_type_aliases() - FAILS"
+      - "GREEN: Add parser support for type aliases"
+      - "REFACTOR: Ensure complexity ≤10"
+    quality:
+      complexity_max: 10
+
+  - id: "PARSER-059"
+    title: "Add support for array patterns in match expressions"
+    status: "PENDING"
+    priority: "🟡 MEDIUM"
+    discovered_by: "SQLITE-TEST-001 (test_sqlite_172_array_patterns)"
+    time_estimated: "8h"
+    description: |
+      Pattern matching supports tuples and structs but not arrays.
+
+      Example that fails:
+      ```ruchy
+      match arr {
+          [first, second] => {},
+          [head, ...tail] => {}
+      }
+      ```
+    tests:
+      test_file: "tests/sqlite_001_parser_grammar.rs"
+      failing_test: "test_sqlite_172_array_patterns (currently ignored)"
+    tdd_steps:
+      - "RED: Un-ignore test_sqlite_172_array_patterns() - FAILS"
+      - "GREEN: Add parser support for array destructuring in patterns"
+      - "REFACTOR: Ensure complexity ≤10"
+    quality:
+      complexity_max: 10
+
   - id: "BUG-032"
     title: "Fix: range() function not transpiling to Rust syntax"
     status: "COMPLETE"

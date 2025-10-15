@@ -5,6 +5,15 @@ All notable changes to the Ruchy programming language will be documented in this
 ## [Unreleased]
 
 ### Added
+- **[PARSER-055 through PARSER-059] Parser Limitation Tickets**: Created 5 tickets for limitations discovered via SQLite testing
+  - [PARSER-055] Bare return statements (no value) - 4h estimated
+  - [PARSER-056] Async blocks - 8h estimated
+  - [PARSER-057] Export keyword - 6h estimated
+  - [PARSER-058] Type aliases - 6h estimated
+  - [PARSER-059] Array patterns in match - 8h estimated
+  - All discovered through systematic SQLITE-TEST-001 defensive testing
+  - Each ticket includes failing test, example code, and TDD steps
+  - Total estimated effort: 32h to implement all 5 features
 - **[SQLITE-TEST-001] SQLite-Level Testing Framework - 100-Test Milestone (5%)**: Expanded from 47 to 100 tests (+113%)
   - **🎉 MILESTONE**: Reached 100/2000 tests (5.00% of target)
   - **Advanced language features**: 53 new tests added
