@@ -2125,6 +2125,11 @@ pub fn handle_property_tests_command(
         eprintln!("Test cases per property: {}", cases);
     }
 
+    // FIX: CLI-CONTRACT-PROPERTY-TESTS-001: Validate file exists before processing
+    if !path.exists() {
+        anyhow::bail!("{}: File or directory not found", path.display());
+    }
+
     // TOOL-VALIDATION-001: Support single file property testing
     if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("ruchy") {
         return handle_property_tests_single_file(path, cases, format, output, seed, verbose);
@@ -2355,7 +2360,14 @@ fn handle_property_tests_single_file(
     }
 
     // Step 1: Compile once for property testing
-    let binary_path = compile_for_property_testing(path, verbose)?;
+    // FIX: CLI-CONTRACT-PROPERTY-TESTS-002: Catch compilation errors gracefully
+    let binary_path = match compile_for_property_testing(path, verbose) {
+        Ok(bp) => bp,
+        Err(e) => {
+            // Return error immediately for syntax errors or empty files
+            anyhow::bail!("{}: {}", path.display(), e);
+        }
+    };
 
     // Step 2: Run panic property tests
     let (panic_passed, mut test_results) = run_panic_property_tests(&binary_path, cases, verbose)?;
