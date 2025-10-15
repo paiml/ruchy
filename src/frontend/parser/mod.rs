@@ -310,18 +310,25 @@ pub(crate) fn try_handle_infix_operators(
     left: Expr,
     min_prec: i32,
 ) -> Result<Option<Expr>> {
-    // PARSER-053 FIX: Consume leading comments to support line continuations
-    // This allows expressions like:
-    //   let x = 1 + 2
-    //       // comment
-    //       + 3
-    let _leading_comments = state.consume_leading_comments();
+    // PARSER-053/054 FIX: Peek past comments to find operators (line continuation support)
+    // Save position in case we need to backtrack
+    let saved_position = state.tokens.position();
 
-    // Get current token for infix processing
-    let Some((token, _)) = state.tokens.peek() else {
+    // Skip comments temporarily to peek at the actual next token
+    while matches!(state.tokens.peek(), Some((Token::LineComment(_) | Token::DocComment(_) | Token::BlockComment(_), _))) {
+        state.tokens.advance();
+    }
+
+    // Get current token for infix processing (after skipping comments)
+    let token_result = state.tokens.peek().map(|(t, _)| t.clone());
+
+    // Restore position - we'll consume comments properly in the operator handlers
+    state.tokens.set_position(saved_position);
+
+    let Some(token) = token_result else {
         return Ok(None);
     };
-    let token_clone = token.clone();
+    let token_clone = token;
     // Try operators in order of priority
     let handlers = [
         try_new_actor_operators,
@@ -535,7 +542,20 @@ fn try_binary_operators(
         if prec < min_prec {
             return Ok(None);
         }
-        state.tokens.advance();
+
+        // PARSER-053/054 FIX: Consume comments before operator (line continuation support)
+        // This allows expressions like:
+        //   let x = 1 + 2
+        //       // comment
+        //       + 3
+        // We skip comments to get to the operator, then let parse_expr_with_precedence_recursive()
+        // consume them as leading comments for the right-hand side.
+        while matches!(state.tokens.peek(), Some((Token::LineComment(_) | Token::DocComment(_) | Token::BlockComment(_), _))) {
+            state.tokens.advance();
+        }
+
+        state.tokens.advance(); // consume operator
+
         let right = parse_expr_with_precedence_recursive(state, prec + 1)?;
         Ok(Some(Expr {
             kind: ExprKind::Binary {
