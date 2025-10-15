@@ -184,94 +184,141 @@ fn execute_run(path: PathBuf, verbose: bool) -> Result<(), String> {
     Ok(())
 }
 fn execute_format(path: PathBuf, check: bool) -> Result<(), String> {
+    use crate::quality::formatter::Formatter;
+
+    let config = find_and_load_config(&path)?;
+    let formatter = Formatter::with_config(config);
+
     if check {
-        println!("Checking formatting for: {}", path.display());
-        // Basic format checking - verify file is parseable
-        let source =
-            std::fs::read_to_string(&path).map_err(|_e| format_file_error("read", &path))?;
-        let mut parser = crate::frontend::parser::Parser::new(&source);
-        parser
-            .parse()
-            .map_err(|e| format!("Parse error (formatting issue): {e:?}"))?;
+        check_format(&path, &formatter)
+    } else {
+        apply_format(&path, &formatter)
+    }
+}
+
+/// Check if a file is properly formatted
+fn check_format(path: &PathBuf, formatter: &crate::quality::formatter::Formatter) -> Result<(), String> {
+    println!("Checking formatting for: {}", path.display());
+
+    let source = std::fs::read_to_string(path).map_err(|_e| format_file_error("read", path))?;
+    let ast = parse_source(&source)?;
+    let formatted = formatter.format(&ast).map_err(|e| format!("Format error: {e}"))?;
+
+    if formatted.trim() == source.trim() {
         println!("✓ File is properly formatted");
         Ok(())
     } else {
-        println!("Formatting: {}", path.display());
-        // Basic formatting - ensure file is parseable and write back
-        let source =
-            std::fs::read_to_string(&path).map_err(|_e| format_file_error("read", &path))?;
-        let mut parser = crate::frontend::parser::Parser::new(&source);
-        let _ast = parser
-            .parse()
-            .map_err(|e| format!("Cannot format unparseable file: {e:?}"))?;
-        // For now, just verify it's parseable (real formatting would rewrite)
-        println!("✓ File verified as valid Ruchy code");
-        Ok(())
+        Err("File is not properly formatted. Run without --check to fix.".to_string())
+    }
+}
+
+/// Apply formatting to a file
+fn apply_format(path: &PathBuf, formatter: &crate::quality::formatter::Formatter) -> Result<(), String> {
+    println!("Formatting: {}", path.display());
+
+    let source = std::fs::read_to_string(path).map_err(|_e| format_file_error("read", path))?;
+    let ast = parse_source(&source)?;
+    let formatted = formatter.format(&ast).map_err(|e| format!("Format error: {e}"))?;
+
+    std::fs::write(path, formatted).map_err(|e| format!("Failed to write file: {e}"))?;
+    println!("✓ File formatted successfully");
+    Ok(())
+}
+
+/// Parse source code into AST
+fn parse_source(source: &str) -> Result<crate::frontend::ast::Expr, String> {
+    let mut parser = crate::frontend::parser::Parser::new(source);
+    parser.parse().map_err(|e| format!("Parse error: {e:?}"))
+}
+
+/// Find and load formatter configuration by searching up the directory tree
+fn find_and_load_config(start_path: &PathBuf) -> Result<crate::quality::FormatterConfig, String> {
+    let start_dir = get_start_directory(start_path);
+    find_config_in_ancestors(&start_dir)
+}
+
+/// Get the directory to start config search from
+fn get_start_directory(path: &PathBuf) -> PathBuf {
+    if path.is_file() {
+        path.parent().unwrap_or(path).to_path_buf()
+    } else {
+        path.clone()
+    }
+}
+
+/// Search for config file in current and ancestor directories
+fn find_config_in_ancestors(start_dir: &PathBuf) -> Result<crate::quality::FormatterConfig, String> {
+    // Try current directory
+    let config_path = start_dir.join(".ruchy-fmt.toml");
+    if config_path.exists() {
+        return crate::quality::FormatterConfig::from_file(&config_path);
+    }
+
+    // Try parent directories recursively
+    match start_dir.parent() {
+        Some(parent) => find_config_in_ancestors(&parent.to_path_buf()),
+        None => Ok(crate::quality::FormatterConfig::default()),
     }
 }
 fn execute_notebook(cmd: NotebookCommand, verbose: bool) -> Result<(), String> {
     match cmd {
-        NotebookCommand::Serve { port, host } => {
-            if verbose {
-                println!("Starting notebook server on {host}:{port}");
-            }
-            // Use existing notebook server
-            #[cfg(feature = "notebook")]
-            {
-                let rt = tokio::runtime::Runtime::new()
-                    .map_err(|e| format!("Failed to create runtime: {e}"))?;
-                rt.block_on(async {
-                    crate::notebook::server::start_server(port)
-                        .await
-                        .map_err(|e| format!("Server error: {e}"))
-                })?;
-            }
-            #[cfg(not(feature = "notebook"))]
-            {
-                return Err("Notebook feature not enabled".to_string());
-            }
-            Ok(())
-        }
-        NotebookCommand::Test {
-            path,
-            coverage: _coverage,
-            format,
-        } => {
-            if verbose {
-                println!("Testing notebook: {}", path.display());
-            }
-            #[cfg(feature = "notebook")]
-            {
-                let config = crate::notebook::testing::types::TestConfig::default();
-                let report = run_test_command(&path, config)?;
-                match format.as_str() {
-                    "json" => match serde_json::to_string_pretty(&report) {
-                        Ok(json) => println!("{json}"),
-                        Err(e) => eprintln!("Failed to serialize report: {e}"),
-                    },
-                    "html" => println!("HTML report generation not yet implemented"),
-                    _ => println!("{report:#?}"),
-                }
-            }
-            #[cfg(not(feature = "notebook"))]
-            {
-                let _ = (_coverage, format);
-                return Err("Notebook feature not enabled".to_string());
-            }
-            Ok(())
-        }
-        NotebookCommand::Convert {
-            input,
-            output: _,
-            format,
-        } => {
-            if verbose {
-                println!("Converting {} to {format} format", input.display());
-            }
-            // Note: Implement notebook conversion
-            Ok(())
+        NotebookCommand::Serve { port, host } => execute_notebook_serve(port, host, verbose),
+        NotebookCommand::Test { path, coverage, format } => execute_notebook_test(path, coverage, format, verbose),
+        NotebookCommand::Convert { input, output, format } => execute_notebook_convert(input, Some(output), format, verbose),
+    }
+}
+
+fn execute_notebook_serve(port: u16, host: String, verbose: bool) -> Result<(), String> {
+    if verbose {
+        println!("Starting notebook server on {host}:{port}");
+    }
+    #[cfg(feature = "notebook")]
+    {
+        let rt = tokio::runtime::Runtime::new()
+            .map_err(|e| format!("Failed to create runtime: {e}"))?;
+        rt.block_on(async {
+            crate::notebook::server::start_server(port)
+                .await
+                .map_err(|e| format!("Server error: {e}"))
+        })?;
+    }
+    #[cfg(not(feature = "notebook"))]
+    {
+        return Err("Notebook feature not enabled".to_string());
+    }
+    Ok(())
+}
+
+fn execute_notebook_test(path: PathBuf, _coverage: bool, format: String, verbose: bool) -> Result<(), String> {
+    if verbose {
+        println!("Testing notebook: {}", path.display());
+    }
+    #[cfg(feature = "notebook")]
+    {
+        let config = crate::notebook::testing::types::TestConfig::default();
+        let report = run_test_command(&path, config)?;
+        match format.as_str() {
+            "json" => match serde_json::to_string_pretty(&report) {
+                Ok(json) => println!("{json}"),
+                Err(e) => eprintln!("Failed to serialize report: {e}"),
+            },
+            "html" => println!("HTML report generation not yet implemented"),
+            _ => println!("{report:#?}"),
         }
     }
+    #[cfg(not(feature = "notebook"))]
+    {
+        return Err("Notebook feature not enabled".to_string());
+    }
+    Ok(())
+}
+
+fn execute_notebook_convert(input: PathBuf, _output: Option<PathBuf>, format: String, verbose: bool) -> Result<(), String> {
+    if verbose {
+        println!("Converting {} to {format} format", input.display());
+    }
+    // Note: Implement notebook conversion
+    Ok(())
 }
 // COMPLEXITY REDUCTION: Split execute_wasm into separate functions (was 14, now <5 each)
 fn execute_wasm(cmd: WasmCommand, verbose: bool) -> Result<(), String> {
