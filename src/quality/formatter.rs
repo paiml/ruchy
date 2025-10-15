@@ -106,10 +106,18 @@ impl Formatter {
     }
 
     /// Get original text from span (for ignore directives)
-    fn get_original_text(&self, span: &crate::frontend::ast::Span) -> Option<String> {
+    fn get_original_text(&self, expr: &Expr) -> Option<String> {
         self.source.as_ref().map(|src| {
-            let start = span.start.min(src.len());
-            let end = span.end.min(src.len());
+            // Calculate span including leading comments
+            let start = if !expr.leading_comments.is_empty() {
+                expr.leading_comments[0].span.start
+            } else {
+                expr.span.start
+            };
+            let end = expr.span.end;
+
+            let start = start.min(src.len());
+            let end = end.min(src.len());
             src[start..end].to_string()
         })
     }
@@ -118,7 +126,7 @@ impl Formatter {
         // Check for ignore directives FIRST
         if self.should_ignore(expr) {
             // If we have original source, preserve it exactly
-            if let Some(original) = self.get_original_text(&expr.span) {
+            if let Some(original) = self.get_original_text(expr) {
                 return original;
             }
             // Otherwise, fall through to normal formatting
