@@ -15,17 +15,19 @@
 ## 📝 **SESSION CONTEXT FOR RESUMPTION**
 
 **Last Active**: 2025-10-15 (QUALITY-009: CLI Contract Testing + Specification v4.0)
-**Current Sprint**: 🚧 **QUALITY-009 IN PROGRESS** - 15-tool improvement specification + CLI contract tests (23/41 tests, 20 passing)
+**Current Sprint**: 🚧 **QUALITY-009 IN PROGRESS** - CLI contract tests (51 tests, 46 passing - EXCEEDED 41-test target!)
 **Latest Release**: ✅ **v3.86.0** published to crates.io and GitHub (15-tool specification + roadmap accuracy)
-**Latest Commit**: a29b84fe - [QUALITY-009] Release v3.86.0: 15-tool improvement specification
+**Latest Commit**: cf740587 - [QUALITY-009] CLI contract tests: check + transpile
 
 **Latest Commits (Quality Sprint 2025-10-15)**:
-- 🚧 **[QUALITY-009]** CLI contract tests: check + transpile (23 tests, 20 passing, 3 documented defects)
+- 🚧 **[QUALITY-009]** CLI contract tests: check + transpile + run + lint (51 tests, 46 passing, 5 defects documented)
   - Created CLI contract test framework using assert_cmd
   - Layer 4 testing: exit codes, stdio, error messages
-  - check tool: 9/12 passing (3 defects documented)
+  - check tool: 9/12 passing (3 defects: CLI-CONTRACT-CHECK-001,002,003)
   - transpile tool: 11/11 passing (100%)
-  - Progress: 23/41 CLI tests (56% of specification target)
+  - run tool: 16/18 passing (2 defects: CLI-CONTRACT-RUN-001,002)
+  - lint tool: 10/10 passing (100%)
+  - Progress: 51/41 CLI tests (124% of specification target - EXCEEDED!)
 - ✅ **[QUALITY-009]** Release v3.86.0: 15-tool improvement specification
   - Created comprehensive 15-tool analysis (v4.0)
   - Compared with Deno (14 tools) and Ruff (2-3 tools)
