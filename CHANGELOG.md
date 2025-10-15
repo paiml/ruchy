@@ -5,6 +5,15 @@ All notable changes to the Ruchy programming language will be documented in this
 ## [Unreleased]
 
 ### Fixed
+- **[PARSER-053] Fixed line continuation parsing with Extreme TDD (8/10 ignore tests passing)**:
+  - **STOP THE LINE**: Parser failed "Unexpected token: Plus" on line continuations with comments
+  - **RED PHASE**: Created 6 failing tests in tests/parser_defect_053_line_continuation.rs
+  - **GREEN PHASE**: Fixed try_handle_infix_operators() to consume comments before checking operators
+  - **PROPERTY TESTS**: Added 3 property tests with 10K+ random inputs
+  - **RESULT**: Parser tests 6/6 passing, ignore directive tests 7/10 → 8/10 (+1 fixed)
+  - Fixed: test_fmt_ignore_preserves_comments_and_whitespace now passing
+  - Implementation: Consume leading comments in try_handle_infix_operators() (1 line fix!)
+  - Remaining: 2 ignore tests still failing (need investigation)
 - **[PARSER-FIX] Fixed comment attribution bug with Extreme TDD (7/10 ignore tests passing)**:
   - **STOP THE LINE**: Discovered parser wrongly attributes standalone comments as trailing
   - **RED PHASE**: Created 4 failing tests in tests/parser_defect_comment_attribution.rs

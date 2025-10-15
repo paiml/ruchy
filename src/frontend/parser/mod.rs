@@ -310,6 +310,13 @@ pub(crate) fn try_handle_infix_operators(
     left: Expr,
     min_prec: i32,
 ) -> Result<Option<Expr>> {
+    // PARSER-053 FIX: Consume leading comments to support line continuations
+    // This allows expressions like:
+    //   let x = 1 + 2
+    //       // comment
+    //       + 3
+    let _leading_comments = state.consume_leading_comments();
+
     // Get current token for infix processing
     let Some((token, _)) = state.tokens.peek() else {
         return Ok(None);
