@@ -1,0 +1,6 @@
+fn add(a, b) {
+    a + b
+}
+
+let result = add(5, 10)
+println(result)

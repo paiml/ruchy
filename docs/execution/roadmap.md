@@ -14,10 +14,10 @@
 
 ## 📝 **SESSION CONTEXT FOR RESUMPTION**
 
-**Last Active**: 2025-10-15 (CRITICAL: fmt tool code destruction bug - P0 defect fixed)
-**Current Sprint**: 🚨 **CRITICAL-FMT** - Fixed P0 code-destroying bugs in formatter
+**Last Active**: 2025-10-15 (CLI contract tests: fmt + wasm tools added, 49 new tests)
+**Current Sprint**: 🚨 **CLI-COMPLETE** - Creating CLI contract tests for all 33 Ruchy tools
 **Latest Release**: ✅ **v3.86.0** published to crates.io and GitHub (15-tool specification + roadmap accuracy)
-**Latest Commit**: [CRITICAL-FMT] Fix code-destroying bugs in formatter (operators + let statements)
+**Latest Commit**: [CLI-TEST] Add CLI contract tests for fmt and wasm tools (49 tests, 223 total)
 
 **Latest Commits (CRITICAL fmt fix + Quality Sprint 2025-10-15)**:
 - 🚨 **[CRITICAL-FMT]** Fixed P0 code-destroying bugs in formatter (Toyota Way: Stop the Line)
