@@ -1,7 +1,8 @@
 //! Helper functions for test command
 //! Extracted to maintain ≤10 complexity per function
-use anyhow::{Context, Result};
+use anyhow::{bail, Context, Result};
 use colored::Colorize;
+use ruchy::frontend::ast::Attribute;
 use ruchy::utils::read_file_with_context;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -76,21 +77,147 @@ fn should_include_file(entry: &walkdir::DirEntry, filter: Option<&str>) -> bool 
     }
 }
 /// Run a single .ruchy test file
+/// Complexity: 5 (reduced by extracting helpers)
 pub fn run_test_file(test_file: &Path, verbose: bool) -> Result<()> {
-    use ruchy::runtime::repl::Repl;
     let test_content = read_file_with_context(test_file)?;
+
+    // Parse and find test functions
+    let test_functions = parse_and_find_tests(&test_content, test_file, verbose)?;
+
+    // Initialize REPL and execute tests
+    execute_test_functions(&test_content, &test_functions, test_file, verbose)?;
+
+    Ok(())
+}
+
+/// Parse test file and find all @test functions
+/// Complexity: 2 (reduced by extracting validation)
+fn parse_and_find_tests(
+    test_content: &str,
+    test_file: &Path,
+    verbose: bool,
+) -> Result<Vec<String>> {
+    use ruchy::frontend::parser::Parser;
+
     if verbose {
         println!("   📖 Parsing test file...");
-        println!("   🏃 Executing test...");
     }
-    let mut repl = Repl::new(std::env::temp_dir())?;
-    let result = repl
-        .evaluate_expr_str(&test_content, None)
-        .with_context(|| format!("Test execution failed for: {}", test_file.display()))?;
+
+    let mut parser = Parser::new(test_content);
+    let ast = parser.parse()
+        .with_context(|| format!("Failed to parse test file: {}", test_file.display()))?;
+
+    let test_functions = extract_test_functions(&ast)?;
+    validate_test_functions(&test_functions, test_file, verbose)?;
+
+    Ok(test_functions)
+}
+
+/// Validate that test functions were found
+/// Complexity: 2 (simple validation)
+fn validate_test_functions(
+    test_functions: &[String],
+    test_file: &Path,
+    verbose: bool,
+) -> Result<()> {
+    if test_functions.is_empty() {
+        bail!("No test functions found in {}", test_file.display());
+    }
+
     if verbose {
-        println!("   📤 Test result: {:?}", result);
+        println!("   🧪 Found {} test function(s)", test_functions.len());
     }
+
     Ok(())
+}
+
+/// Execute all test functions in REPL
+/// Complexity: 4 (within limit)
+fn execute_test_functions(
+    test_content: &str,
+    test_functions: &[String],
+    test_file: &Path,
+    verbose: bool,
+) -> Result<()> {
+    use ruchy::runtime::repl::Repl;
+
+    // Initialize REPL and load the file (defines all functions)
+    let mut repl = Repl::new(std::env::temp_dir())?;
+    repl.evaluate_expr_str(test_content, None)
+        .with_context(|| format!("Failed to load test file: {}", test_file.display()))?;
+
+    // Execute each test function
+    for test_fn_name in test_functions {
+        execute_single_test(&mut repl, test_fn_name, verbose)?;
+    }
+
+    Ok(())
+}
+
+/// Execute a single test function
+/// Complexity: 3 (within limit)
+fn execute_single_test(
+    repl: &mut ruchy::runtime::repl::Repl,
+    test_fn_name: &str,
+    verbose: bool,
+) -> Result<()> {
+    if verbose {
+        println!("   🏃 Executing test: {}", test_fn_name);
+    }
+
+    let call_expr = format!("{}()", test_fn_name);
+    let result = repl.evaluate_expr_str(&call_expr, None);
+
+    match result {
+        Ok(_) => {
+            if verbose {
+                println!("   ✅ Test passed: {}", test_fn_name);
+            }
+            Ok(())
+        }
+        Err(e) => bail!("Test failed: {} - {}", test_fn_name, e),
+    }
+}
+
+/// Extract names of functions with @test attribute
+/// Handles both single function and block of expressions
+/// Complexity: 3 (reduced by extracting helpers)
+fn extract_test_functions(ast: &ruchy::frontend::ast::Expr) -> Result<Vec<String>> {
+    use ruchy::frontend::ast::ExprKind;
+
+    let test_functions = match &ast.kind {
+        ExprKind::Block(exprs) => extract_from_block(exprs),
+        ExprKind::Function { name, .. } if has_test_attribute(&ast.attributes) => {
+            vec![name.clone()]
+        }
+        _ => vec![],
+    };
+
+    Ok(test_functions)
+}
+
+/// Extract test functions from block of expressions
+/// Complexity: 2 (simple iteration with filter)
+fn extract_from_block(exprs: &[ruchy::frontend::ast::Expr]) -> Vec<String> {
+    use ruchy::frontend::ast::ExprKind;
+
+    exprs
+        .iter()
+        .filter(|expr| has_test_attribute(&expr.attributes))
+        .filter_map(|expr| {
+            if let ExprKind::Function { name, .. } = &expr.kind {
+                Some(name.clone())
+            } else {
+                None
+            }
+        })
+        .collect()
+}
+
+/// Check if attributes contain @test
+/// Complexity: 1 (simple check)
+fn has_test_attribute(attributes: &[Attribute]) -> bool {
+    attributes.iter().any(|attr| attr.name == "test")
 }
 /// Execute all test files
 pub fn execute_tests(test_files: &[PathBuf], verbose: bool) -> Vec<TestResult> {
@@ -222,6 +349,8 @@ pub fn generate_json_output(
     Ok(serde_json::to_string_pretty(&json_output)?)
 }
 /// Handle coverage reporting
+/// Generate coverage report from test results
+/// Complexity: 3 (reduced by extracting analysis and collection)
 pub fn generate_coverage_report(
     test_files: &[PathBuf],
     test_results: &[TestResult],
@@ -230,29 +359,43 @@ pub fn generate_coverage_report(
 ) -> Result<()> {
     use ruchy::quality::ruchy_coverage::RuchyCoverageCollector;
     let mut collector = RuchyCoverageCollector::new();
-    // Analyze test files
+
+    analyze_test_files(&mut collector, test_files);
+    collect_runtime_coverage(&mut collector, test_results);
+
+    output_coverage_report(&collector, coverage_format)?;
+    check_coverage_threshold(&collector, threshold)?;
+    Ok(())
+}
+
+/// Analyze test files for static coverage
+/// Complexity: 2 (simple iteration with error handling)
+fn analyze_test_files(
+    collector: &mut ruchy::quality::ruchy_coverage::RuchyCoverageCollector,
+    test_files: &[PathBuf],
+) {
     for test_file in test_files {
         if let Err(e) = collector.analyze_file(test_file) {
             eprintln!("Warning: Failed to analyze {}: {}", test_file.display(), e);
         }
     }
-    // Collect runtime coverage for successful tests
-    for result in test_results {
-        if result.success {
-            if let Err(e) = collector.execute_with_coverage(&result.file) {
-                eprintln!(
-                    "Warning: Failed to collect runtime coverage for {}: {}",
-                    result.file.display(),
-                    e
-                );
-            }
+}
+
+/// Collect runtime coverage for successful tests
+/// Complexity: 3 (iteration + filter + error handling)
+fn collect_runtime_coverage(
+    collector: &mut ruchy::quality::ruchy_coverage::RuchyCoverageCollector,
+    test_results: &[TestResult],
+) {
+    for result in test_results.iter().filter(|r| r.success) {
+        if let Err(e) = collector.execute_with_coverage(&result.file) {
+            eprintln!(
+                "Warning: Failed to collect runtime coverage for {}: {}",
+                result.file.display(),
+                e
+            );
         }
     }
-    // Generate and output report
-    output_coverage_report(&collector, coverage_format)?;
-    // Check threshold
-    check_coverage_threshold(&collector, threshold)?;
-    Ok(())
 }
 /// Output coverage report in requested format
 fn output_coverage_report(

@@ -134,11 +134,14 @@ fn try_eval_utility_part1(name: &str, args: &[Value]) -> Result<Option<Value>, I
 }
 
 /// Utility functions - Part 2
-/// Complexity: 3 (within Toyota Way limits)
+/// Complexity: 5 (within Toyota Way limits, added assert functions)
 fn try_eval_utility_part2(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
     match name {
         "__builtin_type__" => Ok(Some(eval_type(args)?)),
         "__builtin_reverse__" => Ok(Some(eval_reverse(args)?)),
+        // BUG-037: Test assertions
+        "__builtin_assert_eq__" => Ok(Some(eval_assert_eq(args)?)),
+        "__builtin_assert__" => Ok(Some(eval_assert(args)?)),
         _ => Ok(None),
     }
 }
@@ -1684,51 +1687,71 @@ fn try_eval_path_function(
 
 /// Helper: json_parse operation
 /// Complexity: 3
+/// json_parse(json_string) - Parse JSON string to Ruchy value
+/// Complexity: 3 (reduced by extracting conversion logic)
 fn eval_json_parse(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("json_parse", args, 1)?;
     match &args[0] {
-        Value::String(s) => {
-            match serde_json::from_str::<serde_json::Value>(s) {
-                Ok(json) => {
-                    // Convert serde_json::Value to Ruchy Value
-                    fn json_to_value(json: serde_json::Value) -> Value {
-                        match json {
-                            serde_json::Value::Null => Value::Nil,
-                            serde_json::Value::Bool(b) => Value::Bool(b),
-                            serde_json::Value::Number(n) => {
-                                if let Some(i) = n.as_i64() {
-                                    Value::Integer(i)
-                                } else if let Some(f) = n.as_f64() {
-                                    Value::Float(f)
-                                } else {
-                                    Value::Nil
-                                }
-                            },
-                            serde_json::Value::String(s) => Value::from_string(s),
-                            serde_json::Value::Array(arr) => {
-                                let values: Vec<Value> = arr.into_iter().map(json_to_value).collect();
-                                Value::Array(values.into())
-                            },
-                            serde_json::Value::Object(obj) => {
-                                let mut map = std::collections::HashMap::new();
-                                for (k, v) in obj {
-                                    map.insert(k, json_to_value(v));
-                                }
-                                Value::Object(std::sync::Arc::new(map))
-                            },
-                        }
-                    }
-                    Ok(json_to_value(json))
-                },
-                Err(e) => Err(InterpreterError::RuntimeError(format!("JSON parse error: {}", e))),
-            }
-        },
+        Value::String(s) => parse_json_string_to_value(s),
         _ => Err(InterpreterError::RuntimeError("json_parse() expects a string argument".to_string())),
     }
 }
 
+/// Parse JSON string and convert to Ruchy value
+/// Complexity: 3 (parse + convert + error handling)
+fn parse_json_string_to_value(s: &str) -> Result<Value, InterpreterError> {
+    match serde_json::from_str::<serde_json::Value>(s) {
+        Ok(json) => Ok(json_to_ruchy_value(json)),
+        Err(e) => Err(InterpreterError::RuntimeError(format!("JSON parse error: {}", e))),
+    }
+}
+
+/// Convert serde_json::Value to Ruchy Value
+/// Complexity: 5 (6 match arms, reduced by extracting helpers)
+fn json_to_ruchy_value(json: serde_json::Value) -> Value {
+    match json {
+        serde_json::Value::Null => Value::Nil,
+        serde_json::Value::Bool(b) => Value::Bool(b),
+        serde_json::Value::Number(n) => convert_json_number(n),
+        serde_json::Value::String(s) => Value::from_string(s),
+        serde_json::Value::Array(arr) => convert_json_array(arr),
+        serde_json::Value::Object(obj) => convert_json_object(obj),
+    }
+}
+
+/// Convert JSON number to Ruchy value
+/// Complexity: 2 (try integer, fallback to float)
+fn convert_json_number(n: serde_json::Number) -> Value {
+    if let Some(i) = n.as_i64() {
+        Value::Integer(i)
+    } else if let Some(f) = n.as_f64() {
+        Value::Float(f)
+    } else {
+        Value::Nil
+    }
+}
+
+/// Convert JSON array to Ruchy array
+/// Complexity: 2 (map + collect)
+fn convert_json_array(arr: Vec<serde_json::Value>) -> Value {
+    let values: Vec<Value> = arr.into_iter().map(json_to_ruchy_value).collect();
+    Value::Array(values.into())
+}
+
+/// Convert JSON object to Ruchy object
+/// Complexity: 3 (iteration + recursive conversion)
+fn convert_json_object(obj: serde_json::Map<String, serde_json::Value>) -> Value {
+    let mut map = std::collections::HashMap::new();
+    for (k, v) in obj {
+        map.insert(k, json_to_ruchy_value(v));
+    }
+    Value::Object(std::sync::Arc::new(map))
+}
+
 /// Helper: Convert Ruchy Value to serde_json::Value
 /// Complexity: 3
+/// Convert Ruchy Value to serde_json::Value
+/// Complexity: 5 (reduced by extracting array and object converters)
 fn value_to_json(value: &Value) -> Result<serde_json::Value, InterpreterError> {
     match value {
         Value::Nil => Ok(serde_json::Value::Null),
@@ -1736,21 +1759,29 @@ fn value_to_json(value: &Value) -> Result<serde_json::Value, InterpreterError> {
         Value::Integer(i) => Ok(serde_json::json!(*i)),
         Value::Float(f) => Ok(serde_json::json!(*f)),
         Value::String(s) => Ok(serde_json::Value::String(s.to_string())),
-        Value::Array(arr) => {
-            let json_arr: Result<Vec<serde_json::Value>, _> = arr.iter()
-                .map(value_to_json)
-                .collect();
-            Ok(serde_json::Value::Array(json_arr?))
-        },
-        Value::Object(map) => {
-            let mut json_obj = serde_json::Map::new();
-            for (k, v) in map.iter() {
-                json_obj.insert(k.clone(), value_to_json(v)?);
-            }
-            Ok(serde_json::Value::Object(json_obj))
-        },
+        Value::Array(arr) => convert_ruchy_array_to_json(arr),
+        Value::Object(map) => convert_ruchy_object_to_json(map),
         _ => Err(InterpreterError::RuntimeError(format!("Cannot convert {:?} to JSON", value))),
     }
+}
+
+/// Convert Ruchy array to JSON array
+/// Complexity: 2 (map + collect with error handling)
+fn convert_ruchy_array_to_json(arr: &[Value]) -> Result<serde_json::Value, InterpreterError> {
+    let json_arr: Result<Vec<serde_json::Value>, _> = arr.iter()
+        .map(value_to_json)
+        .collect();
+    Ok(serde_json::Value::Array(json_arr?))
+}
+
+/// Convert Ruchy object to JSON object
+/// Complexity: 3 (iteration + recursive conversion)
+fn convert_ruchy_object_to_json(map: &std::collections::HashMap<String, Value>) -> Result<serde_json::Value, InterpreterError> {
+    let mut json_obj = serde_json::Map::new();
+    for (k, v) in map.iter() {
+        json_obj.insert(k.clone(), value_to_json(v)?);
+    }
+    Ok(serde_json::Value::Object(json_obj))
 }
 
 /// Helper: json_stringify operation
@@ -1846,64 +1877,86 @@ fn eval_json_type(args: &[Value]) -> Result<Value, InterpreterError> {
 
 /// Helper: json_merge operation
 /// Complexity: 2
+/// json_merge(json1, json2) - Deep merge two JSON values
+/// Complexity: 3 (reduced by extracting merge logic)
 fn eval_json_merge(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("json_merge", args, 2)?;
     let json1 = value_to_json(&args[0])?;
     let json2 = value_to_json(&args[1])?;
 
-    fn merge_json(a: serde_json::Value, b: serde_json::Value) -> serde_json::Value {
-        match (a, b) {
-            (serde_json::Value::Object(mut a_map), serde_json::Value::Object(b_map)) => {
-                for (k, v) in b_map {
-                    if let Some(a_val) = a_map.get_mut(&k) {
-                        *a_val = merge_json(a_val.clone(), v);
-                    } else {
-                        a_map.insert(k, v);
-                    }
-                }
-                serde_json::Value::Object(a_map)
-            },
-            (_, b_val) => b_val,
+    let merged = merge_json_values(json1, json2);
+    eval_json_parse(&[Value::from_string(merged.to_string())])
+}
+
+/// Recursively merge two JSON values
+/// Complexity: 4 (object merge + recursive merge + insertion)
+fn merge_json_values(a: serde_json::Value, b: serde_json::Value) -> serde_json::Value {
+    match (a, b) {
+        (serde_json::Value::Object(mut a_map), serde_json::Value::Object(b_map)) => {
+            merge_json_objects(&mut a_map, b_map);
+            serde_json::Value::Object(a_map)
+        },
+        (_, b_val) => b_val,
+    }
+}
+
+/// Merge JSON object maps recursively
+/// Complexity: 4 (iteration + conditional merge + recursive call)
+fn merge_json_objects(
+    a_map: &mut serde_json::Map<String, serde_json::Value>,
+    b_map: serde_json::Map<String, serde_json::Value>,
+) {
+    for (k, v) in b_map {
+        if let Some(a_val) = a_map.get_mut(&k) {
+            *a_val = merge_json_values(a_val.clone(), v);
+        } else {
+            a_map.insert(k, v);
         }
     }
-
-    let merged = merge_json(json1, json2);
-    eval_json_parse(&[Value::from_string(merged.to_string())])
 }
 
 /// Helper: json_get operation
 /// Complexity: 3
+/// json_get(json_value, path) - Get value at JSON path
+/// Complexity: 4 (reduced by extracting path getter)
 fn eval_json_get(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("json_get", args, 2)?;
     let json = value_to_json(&args[0])?;
 
     match &args[1] {
-        Value::String(path) => {
-            let parts: Vec<&str> = path.split('.').collect();
-
-            fn get_path<'a>(json: &'a serde_json::Value, path: &[&str]) -> Option<&'a serde_json::Value> {
-                if path.is_empty() {
-                    return Some(json);
-                }
-                match json {
-                    serde_json::Value::Object(map) => {
-                        map.get(path[0]).and_then(|v| get_path(v, &path[1..]))
-                    },
-                    _ => None,
-                }
-            }
-
-            match get_path(&json, &parts) {
-                Some(val) => eval_json_parse(&[Value::from_string(val.to_string())]),
-                None => Ok(Value::Nil),
-            }
-        },
+        Value::String(path) => get_json_value_at_path(&json, path),
         _ => Err(InterpreterError::RuntimeError("json_get() expects second argument to be string".to_string())),
+    }
+}
+
+/// Get JSON value at dot-separated path
+/// Complexity: 3 (path parsing + retrieval + conversion)
+fn get_json_value_at_path(json: &serde_json::Value, path: &str) -> Result<Value, InterpreterError> {
+    let parts: Vec<&str> = path.split('.').collect();
+    match get_json_path_recursive(json, &parts) {
+        Some(val) => eval_json_parse(&[Value::from_string(val.to_string())]),
+        None => Ok(Value::Nil),
+    }
+}
+
+/// Recursively get JSON value at path
+/// Complexity: 3 (base case + recursive traversal)
+fn get_json_path_recursive<'a>(json: &'a serde_json::Value, path: &[&str]) -> Option<&'a serde_json::Value> {
+    if path.is_empty() {
+        return Some(json);
+    }
+    match json {
+        serde_json::Value::Object(map) => {
+            map.get(path[0]).and_then(|v| get_json_path_recursive(v, &path[1..]))
+        },
+        _ => None,
     }
 }
 
 /// Helper: json_set operation
 /// Complexity: 3
+/// json_set(json_value, path, new_value) - Set value at JSON path
+/// Complexity: 4 (reduced by extracting path setting logic)
 fn eval_json_set(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("json_set", args, 3)?;
     let mut json = value_to_json(&args[0])?;
@@ -1911,56 +1964,118 @@ fn eval_json_set(args: &[Value]) -> Result<Value, InterpreterError> {
 
     match &args[1] {
         Value::String(path) => {
-            let parts: Vec<&str> = path.split('.').collect();
-
-            fn set_path(json: &mut serde_json::Value, path: &[&str], value: serde_json::Value) {
-                if path.is_empty() {
-                    *json = value;
-                    return;
-                }
-
-                if path.len() == 1 {
-                    if let serde_json::Value::Object(map) = json {
-                        map.insert(path[0].to_string(), value);
-                    }
-                } else if let serde_json::Value::Object(map) = json {
-                    if let Some(next) = map.get_mut(path[0]) {
-                        set_path(next, &path[1..], value);
-                    }
-                }
-            }
-
-            set_path(&mut json, &parts, new_value);
+            set_json_path_from_string(&mut json, path, new_value)?;
             eval_json_parse(&[Value::from_string(json.to_string())])
         },
         _ => Err(InterpreterError::RuntimeError("json_set() expects second argument to be string".to_string())),
     }
 }
 
+/// Set JSON value at dot-separated path
+/// Complexity: 3 (path parsing + delegation)
+fn set_json_path_from_string(
+    json: &mut serde_json::Value,
+    path: &str,
+    value: serde_json::Value,
+) -> Result<(), InterpreterError> {
+    let parts: Vec<&str> = path.split('.').collect();
+    set_json_path_recursive(json, &parts, value);
+    Ok(())
+}
+
+/// Recursively set JSON value at path
+/// Complexity: 4 (base case + single-level + recursive case)
+fn set_json_path_recursive(json: &mut serde_json::Value, path: &[&str], value: serde_json::Value) {
+    if path.is_empty() {
+        *json = value;
+        return;
+    }
+
+    if path.len() == 1 {
+        set_json_single_key(json, path[0], value);
+    } else {
+        set_json_nested_path(json, path, value);
+    }
+}
+
+/// Set JSON value at single key
+/// Complexity: 2 (simple key insertion)
+fn set_json_single_key(json: &mut serde_json::Value, key: &str, value: serde_json::Value) {
+    if let serde_json::Value::Object(map) = json {
+        map.insert(key.to_string(), value);
+    }
+}
+
+/// Set JSON value at nested path
+/// Complexity: 3 (object check + recursive call)
+fn set_json_nested_path(json: &mut serde_json::Value, path: &[&str], value: serde_json::Value) {
+    if let serde_json::Value::Object(map) = json {
+        if let Some(next) = map.get_mut(path[0]) {
+            set_json_path_recursive(next, &path[1..], value);
+        }
+    }
+}
+
 /// Dispatch JSON functions - Part 1 (functions 1-5)
 /// Complexity: 5
-fn try_eval_json_part1(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
+/// Dispatch JSON functions - Part 1a (parse/stringify)
+/// Complexity: 3 (reduced by splitting dispatcher)
+fn try_eval_json_part1a(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
     match name {
         "__builtin_json_parse__" => Ok(Some(eval_json_parse(args)?)),
         "__builtin_json_stringify__" => Ok(Some(eval_json_stringify(args)?)),
         "__builtin_json_pretty__" => Ok(Some(eval_json_pretty(args)?)),
+        _ => Ok(None),
+    }
+}
+
+/// Dispatch JSON functions - Part 1b (read/write)
+/// Complexity: 3 (reduced by splitting dispatcher)
+fn try_eval_json_part1b(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
+    match name {
         "__builtin_json_read__" => Ok(Some(eval_json_read(args)?)),
         "__builtin_json_write__" => Ok(Some(eval_json_write(args)?)),
         _ => Ok(None),
     }
 }
 
-/// Dispatch JSON functions - Part 2 (functions 6-10)
-/// Complexity: 6
-fn try_eval_json_part2(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
+/// Dispatch JSON functions - Part 1 (combined)
+/// Complexity: 3 (delegates to sub-dispatchers)
+fn try_eval_json_part1(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
+    if let Some(result) = try_eval_json_part1a(name, args)? {
+        return Ok(Some(result));
+    }
+    try_eval_json_part1b(name, args)
+}
+
+/// Dispatch JSON functions - Part 2a (validate/type/merge)
+/// Complexity: 3 (reduced by splitting dispatcher)
+fn try_eval_json_part2a(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
     match name {
         "__builtin_json_validate__" => Ok(Some(eval_json_validate(args)?)),
         "__builtin_json_type__" => Ok(Some(eval_json_type(args)?)),
         "__builtin_json_merge__" => Ok(Some(eval_json_merge(args)?)),
+        _ => Ok(None),
+    }
+}
+
+/// Dispatch JSON functions - Part 2b (get/set)
+/// Complexity: 3 (reduced by splitting dispatcher)
+fn try_eval_json_part2b(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
+    match name {
         "__builtin_json_get__" => Ok(Some(eval_json_get(args)?)),
         "__builtin_json_set__" => Ok(Some(eval_json_set(args)?)),
         _ => Ok(None),
     }
+}
+
+/// Dispatch JSON functions - Part 2 (combined)
+/// Complexity: 3 (delegates to sub-dispatchers)
+fn try_eval_json_part2(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
+    if let Some(result) = try_eval_json_part2a(name, args)? {
+        return Ok(Some(result));
+    }
+    try_eval_json_part2b(name, args)
 }
 
 /// Dispatcher for JSON functions
@@ -2055,6 +2170,70 @@ fn eval_http_delete(args: &[Value]) -> Result<Value, InterpreterError> {
             }
         },
         _ => Err(InterpreterError::RuntimeError("http_delete() expects a string URL".to_string())),
+    }
+}
+
+/// Builtin assert_eq function for testing
+/// Panics if the two values are not equal
+///
+/// # Arguments
+/// * args[0] - Expected value
+/// * args[1] - Actual value
+/// * args[2] - Optional message (string)
+///
+/// # Complexity
+/// Cyclomatic complexity: 3 (within limit of 10)
+fn eval_assert_eq(args: &[Value]) -> Result<Value, InterpreterError> {
+    if args.len() < 2 {
+        return Err(InterpreterError::RuntimeError(
+            "assert_eq() expects at least 2 arguments (expected, actual)".to_string(),
+        ));
+    }
+
+    let expected = &args[0];
+    let actual = &args[1];
+    let message = if args.len() > 2 {
+        format!("{}", args[2])
+    } else {
+        format!("Assertion failed: expected {:?}, got {:?}", expected, actual)
+    };
+
+    if expected != actual {
+        Err(InterpreterError::AssertionFailed(message))
+    } else {
+        Ok(Value::Nil)
+    }
+}
+
+/// Builtin assert function for testing
+/// Panics if the condition is false
+///
+/// # Arguments
+/// * args[0] - Condition (must be boolean)
+/// * args[1] - Optional message (string)
+///
+/// # Complexity
+/// Cyclomatic complexity: 3 (within limit of 10)
+fn eval_assert(args: &[Value]) -> Result<Value, InterpreterError> {
+    if args.is_empty() {
+        return Err(InterpreterError::RuntimeError(
+            "assert() expects at least 1 argument (condition)".to_string(),
+        ));
+    }
+
+    let condition = &args[0];
+    let message = if args.len() > 1 {
+        format!("{}", args[1])
+    } else {
+        "Assertion failed".to_string()
+    };
+
+    match condition {
+        Value::Bool(true) => Ok(Value::Nil),
+        Value::Bool(false) => Err(InterpreterError::AssertionFailed(message)),
+        _ => Err(InterpreterError::RuntimeError(
+            "assert() expects a boolean condition".to_string(),
+        )),
     }
 }
 
