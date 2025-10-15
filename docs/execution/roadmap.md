@@ -20,6 +20,13 @@
 **Latest Commit**: 0936eb25 - [QUALITY-009] CLI contract tests: run + lint
 
 **Latest Commits (Quality Sprint 2025-10-15)**:
+- ✅ **[QUALITY-DEBT]** Refactored complexity violations (3 functions: cognitive 13/11 → 2/5)
+  - NEVER bypass quality gates - always fix violations
+  - write_property_test_summary: 13 → 2 (extracted JSON/text helpers)
+  - write_fuzz_summary: 13 → 2 (extracted JSON/text helpers)
+  - handle_eval_command: 11 → 5 (extracted print helpers)
+  - All functions now ≤10 complexity (Toyota Way standard)
+  - Lesson: --no-verify undermines quality system
 - ✅ **[CLI-CONTRACT-RUN-001,002]** CRITICAL: Fixed 2 run tool defects (18/18 tests passing)
   - FIXED: Syntax errors now exit with code 1 (was silently succeeding!)
   - FIXED: Silent programs produce no output (was leaking internal values)
