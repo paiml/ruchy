@@ -271,21 +271,33 @@ pub fn handle_run_command(file: &Path, verbose: bool) -> Result<()> {
     // This matches Deno/Python/Ruby/Node behavior: `run` = interpret immediately
     // For compilation to binary, use: `ruchy compile`
     let source = read_file_with_context(file)?;
+
+    // FIX CLI-CONTRACT-RUN-001: Parse the entire file FIRST to catch syntax errors
+    // The REPL's multiline detection treats "Expected X, found EOF" as incomplete,
+    // but for file execution, this is a hard error.
+    let mut parser = RuchyParser::new(&source);
+    let _ast = match parser.parse() {
+        Ok(ast) => ast,
+        Err(e) => {
+            eprintln!("✗ Syntax error: {e}");
+            eprintln!("Error: Syntax error: {e}");
+            std::process::exit(1);
+        }
+    };
+
+    // Now that parsing succeeded, evaluate via REPL
     let mut repl = create_repl()?;
 
     match repl.eval(&source) {
-        Ok(result) => {
-            // Only print non-unit results from file evaluation
-            if should_print_result(&result) {
-                println!("{result}");
-            }
+        Ok(_result) => {
+            // FIX CLI-CONTRACT-RUN-002: Don't print file evaluation results
+            // The user's code uses println() for output. We should NOT print the
+            // final value of file evaluation (that's REPL behavior, not script behavior).
+            // This matches Python/Ruby/Node: `python script.py` doesn't print the last value.
+
             // After evaluating the file, check if main() function exists and call it
-            if let Ok(main_result) = repl.eval("main()") {
-                // Only print non-unit results from main()
-                if should_print_result(&main_result) {
-                    println!("{main_result}");
-                }
-            }
+            // (but also don't print main's return value - it's not a println)
+            let _ = repl.eval("main()");
             Ok(())
         }
         Err(e) => {

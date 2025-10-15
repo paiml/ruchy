@@ -15,12 +15,18 @@
 ## 📝 **SESSION CONTEXT FOR RESUMPTION**
 
 **Last Active**: 2025-10-15 (QUALITY-009: CLI Contract Testing + Specification v4.0)
-**Current Sprint**: 🚧 **QUALITY-009 IN PROGRESS** - CLI contract tests (51 tests, 46 passing - EXCEEDED 41-test target!)
+**Current Sprint**: 🚧 **QUALITY-009 IN PROGRESS** - CLI contract tests + critical defect fixes (51 tests, 49 passing)
 **Latest Release**: ✅ **v3.86.0** published to crates.io and GitHub (15-tool specification + roadmap accuracy)
-**Latest Commit**: cf740587 - [QUALITY-009] CLI contract tests: check + transpile
+**Latest Commit**: 0936eb25 - [QUALITY-009] CLI contract tests: run + lint
 
 **Latest Commits (Quality Sprint 2025-10-15)**:
-- 🚧 **[QUALITY-009]** CLI contract tests: check + transpile + run + lint (51 tests, 46 passing, 5 defects documented)
+- ✅ **[CLI-CONTRACT-RUN-001,002]** CRITICAL: Fixed 2 run tool defects (18/18 tests passing)
+  - FIXED: Syntax errors now exit with code 1 (was silently succeeding!)
+  - FIXED: Silent programs produce no output (was leaking internal values)
+  - Root cause: REPL multiline detection treating syntax errors as incomplete
+  - Solution: Parse entire file FIRST before evaluation
+  - Toyota Way: Stop the line - fixed immediately upon discovery
+- 🚧 **[QUALITY-009]** CLI contract tests: check + transpile + run + lint (51 tests, 49 passing, 3 defects remaining)
   - Created CLI contract test framework using assert_cmd
   - Layer 4 testing: exit codes, stdio, error messages
   - check tool: 9/12 passing (3 defects: CLI-CONTRACT-CHECK-001,002,003)
