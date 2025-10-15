@@ -221,8 +221,9 @@ struct LetBindingInfo {
 ///
 /// Returns an error if token stream operations fail during lookahead.
 fn is_object_literal(state: &mut ParserState) -> bool {
+    // Empty braces {} are object literals, not empty blocks
     if is_empty_braces(state) {
-        return false;
+        return true;
     }
     if is_spread_operator(state) {
         return true;

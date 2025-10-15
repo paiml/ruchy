@@ -63,22 +63,40 @@
 - ✅ External verification: "Comments preserved perfectly"
 
 ### Sprint 2: v3.90.0 - Complete ExprKind Coverage (3-5 days)
-**Goal**: 100% ExprKind variant implementation (85/85)
-**Status**: 📋 **PLANNED** - Currently 32% (27/85)
-**Tickets**: [FMT-PERFECT-008] through [FMT-PERFECT-020]
+**Goal**: 100% ExprKind variant implementation (129/129)
+**Status**: 🔄 **IN PROGRESS** - Phase 1 complete (46/129 = 35.7%)
+**Tickets**: [FMT-PERFECT-006] through [FMT-PERFECT-020]
+
+**Phase 1 Progress** (9 high-priority variants implemented):
+- ✅ [FMT-PERFECT-006] Implement Lambda, ObjectLiteral, StructLiteral, Ternary (GREEN)
+  - Added format_pattern() method (complexity: 10, handles all Pattern variants)
+  - Added format_literal() method (complexity: 7, handles all Literal types)
+  - Added format_struct_pattern_field() helper
+  - Lambda: |params| body formatting
+  - ObjectLiteral: { key: value, ...spread } formatting
+  - StructLiteral: Point { x: 10, y: 20 } formatting
+  - Ternary: condition ? true_expr : false_expr formatting
+  - Throw: throw expr formatting
+  - TryCatch: try { } catch (e) { } finally { } formatting
+  - Await: await expr formatting
+  - AsyncBlock: async { } formatting
+  - TypeCast: expr as Type formatting
+  - **PARSER BUG FIXED**: {} now correctly parsed as ObjectLiteral (not Unit)
+  - All 11 CLI tests passing (RED → GREEN complete)
+  - No regression: All 12 comment tests still passing
 
 **What We'll Do**:
-- Audit all 85+ ExprKind variants in AST
-- Implement remaining ~58 variants systematically
+- Audit all 129 ExprKind variants in AST
+- Implement remaining ~83 variants systematically
 - Remove fallback panic (all variants covered)
-- Add 85 CLI tests (one per variant)
+- Add comprehensive CLI tests
 - Property tests with random code generation
 
 **Success Criteria**:
-- ✅ 85/85 variants implemented (100%)
+- ✅ 129/129 variants implemented (100%)
 - ✅ No fallback case remains
 - ✅ Handles all possible Ruchy syntax
-- ✅ 85/85 variant tests passing
+- ✅ All variant tests passing
 
 ### Sprint 3: v3.91.0 - Style Preservation & Configuration (2-3 days)
 **Goal**: Minimal style changes, full user control
