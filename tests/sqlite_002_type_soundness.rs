@@ -29,7 +29,7 @@
 //!
 //! # Target Test Count: 300,000+ property test iterations
 //!
-//! **Current Status**: 3,000/300,000 (1.0%)
+//! **Current Status**: 30,022/300,000 (10.0%)
 
 use proptest::prelude::*;
 use ruchy::frontend::parser::Parser;
@@ -239,11 +239,11 @@ fn test_sqlite_2021_substitution_nested() {
 // ============================================================================
 
 proptest! {
-    #![proptest_config(ProptestConfig::with_cases(1000))]
+    #![proptest_config(ProptestConfig::with_cases(10000))]
 
     /// Property: All well-typed arithmetic expressions evaluate successfully
     ///
-    /// **Target**: 100K iterations (currently 1000 for Phase 1)
+    /// **Target**: 100K iterations (currently 10000 for Phase 1)
     #[test]
     fn test_sqlite_2100_property_arithmetic_progress(
         a in 0i32..1000,
@@ -258,11 +258,11 @@ proptest! {
 }
 
 proptest! {
-    #![proptest_config(ProptestConfig::with_cases(1000))]
+    #![proptest_config(ProptestConfig::with_cases(10000))]
 
     /// Property: Boolean operations parse correctly
     ///
-    /// **Target**: 100K iterations (currently 1000 for Phase 1)
+    /// **Target**: 100K iterations (currently 10000 for Phase 1)
     /// **Note**: Full soundness testing requires interpreter integration
     #[test]
     fn test_sqlite_2101_property_boolean_soundness(
@@ -281,11 +281,11 @@ proptest! {
 }
 
 proptest! {
-    #![proptest_config(ProptestConfig::with_cases(1000))]
+    #![proptest_config(ProptestConfig::with_cases(10000))]
 
     /// Property: Let bindings preserve types
     ///
-    /// **Target**: 100K iterations (currently 1000 for Phase 1)
+    /// **Target**: 100K iterations (currently 10000 for Phase 1)
     #[test]
     fn test_sqlite_2102_property_substitution_soundness(
         value in 0i32..1000
@@ -297,6 +297,176 @@ proptest! {
 
         let result = eval_expr(&expr);
         prop_assert!(result.is_ok(), "Substitution should preserve well-typedness");
+    }
+}
+
+// ============================================================================
+// Polymorphic Type Tests (Generics)
+// ============================================================================
+
+/// Property: Generic type instantiation preserves well-typedness
+///
+/// **Type Theory**: Polymorphism allows code reuse while maintaining type safety.
+/// Generic types like `Vec<T>`, `Option<T>` must remain well-typed when instantiated.
+#[test]
+fn test_sqlite_2030_polymorphic_vec() {
+    // Generic Vec instantiation
+    let cases = vec![
+        "let v: Vec<i32> = vec![1, 2, 3]; v",
+        "let v: Vec<String> = vec![\"a\", \"b\"]; v",
+        "let v: Vec<bool> = vec![true, false]; v",
+    ];
+
+    for expr in cases {
+        assert!(is_well_typed(expr), "Generic Vec should be well-typed: {}", expr);
+        assert!(eval_expr(expr).is_ok(), "Generic instantiation should work: {}", expr);
+    }
+}
+
+#[test]
+fn test_sqlite_2031_polymorphic_option() {
+    // Generic Option instantiation
+    let cases = vec![
+        "let x: Option<i32> = Some(42); x",
+        "let x: Option<String> = Some(\"hello\"); x",
+        "let x: Option<i32> = None; x",
+    ];
+
+    for expr in cases {
+        assert!(is_well_typed(expr), "Generic Option should be well-typed: {}", expr);
+        assert!(eval_expr(expr).is_ok(), "Option instantiation should work: {}", expr);
+    }
+}
+
+#[test]
+fn test_sqlite_2032_polymorphic_result() {
+    // Generic Result instantiation
+    let cases = vec![
+        "let x: Result<i32, String> = Ok(42); x",
+        "let x: Result<i32, String> = Err(\"error\"); x",
+    ];
+
+    for expr in cases {
+        assert!(is_well_typed(expr), "Generic Result should be well-typed: {}", expr);
+        assert!(eval_expr(expr).is_ok(), "Result instantiation should work: {}", expr);
+    }
+}
+
+// ============================================================================
+// Function Type Tests
+// ============================================================================
+
+/// Property: Function types are well-typed
+///
+/// **Type Theory**: Functions have types of form `T1 -> T2` (input type to output type)
+#[test]
+fn test_sqlite_2040_function_types_simple() {
+    // Simple function definitions
+    let cases = vec![
+        "fun add(x: i32, y: i32) -> i32 { x + y }",
+        "fun is_even(n: i32) -> bool { n % 2 == 0 }",
+        "fun greet(name: String) -> String { \"Hello \" + name }",
+    ];
+
+    for expr in cases {
+        assert!(is_well_typed(expr), "Function definition should be well-typed: {}", expr);
+        assert!(eval_expr(expr).is_ok(), "Function should parse: {}", expr);
+    }
+}
+
+#[test]
+fn test_sqlite_2041_lambda_types() {
+    // Lambda expressions with types
+    let cases = vec![
+        "|x| x + 1",
+        "|x, y| x * y",
+        "|name| \"Hello \" + name",
+    ];
+
+    for expr in cases {
+        assert!(is_well_typed(expr), "Lambda should be well-typed: {}", expr);
+        assert!(eval_expr(expr).is_ok(), "Lambda should parse: {}", expr);
+    }
+}
+
+#[test]
+fn test_sqlite_2042_higher_order_functions() {
+    // Functions that take functions as arguments
+    let cases = vec![
+        "fun apply(f, x) { f(x) }",
+        "fun compose(f, g) { |x| f(g(x)) }",
+    ];
+
+    for expr in cases {
+        assert!(is_well_typed(expr), "Higher-order function should be well-typed: {}", expr);
+        assert!(eval_expr(expr).is_ok(), "HOF should parse: {}", expr);
+    }
+}
+
+// ============================================================================
+// Compound Type Tests (Arrays, Tuples, Structs)
+// ============================================================================
+
+/// Property: Compound types preserve well-typedness
+///
+/// **Type Theory**: Product types (tuples, structs) and collection types (arrays)
+/// must maintain type safety through construction and access operations.
+#[test]
+fn test_sqlite_2050_array_types() {
+    // Array type checking
+    let cases = vec![
+        "[1, 2, 3]",           // Array of integers
+        "[true, false]",       // Array of booleans
+        "[\"a\", \"b\", \"c\"]", // Array of strings
+        "[[1, 2], [3, 4]]",    // Nested arrays
+    ];
+
+    for expr in cases {
+        assert!(is_well_typed(expr), "Array should be well-typed: {}", expr);
+        assert!(eval_expr(expr).is_ok(), "Array should parse: {}", expr);
+    }
+}
+
+#[test]
+fn test_sqlite_2051_tuple_types() {
+    // Tuple type checking
+    let cases = vec![
+        "(1, 2)",                    // Pair of integers
+        "(1, \"hello\", true)",      // Heterogeneous tuple
+        "((1, 2), (3, 4))",          // Nested tuples
+    ];
+
+    for expr in cases {
+        assert!(is_well_typed(expr), "Tuple should be well-typed: {}", expr);
+        assert!(eval_expr(expr).is_ok(), "Tuple should parse: {}", expr);
+    }
+}
+
+#[test]
+fn test_sqlite_2052_struct_types() {
+    // Struct definitions and literals
+    let cases = vec![
+        "struct Point { x: i32, y: i32 }",
+        "Point { x: 10, y: 20 }",
+    ];
+
+    for expr in cases {
+        assert!(is_well_typed(expr), "Struct should be well-typed: {}", expr);
+        assert!(eval_expr(expr).is_ok(), "Struct should parse: {}", expr);
+    }
+}
+
+#[test]
+fn test_sqlite_2053_field_access_types() {
+    // Field access preserves types
+    let cases = vec![
+        "let p = Point { x: 10, y: 20 }; p.x",
+        "let t = (1, 2, 3); t.0",
+    ];
+
+    for expr in cases {
+        assert!(is_well_typed(expr), "Field access should be well-typed: {}", expr);
+        assert!(eval_expr(expr).is_ok(), "Field access should parse: {}", expr);
     }
 }
 
@@ -331,20 +501,24 @@ fn test_sqlite_2200_type_error_detection() {
 mod test_stats {
     //! Test Statistics Tracking
     //!
-    //! **Current Status**: 3,012/300,000 property iterations (1.0%)
+    //! **Current Status**: 30,022/300,000 property iterations (10.0%)
     //!
     //! **Test Categories**:
     //! - Progress Theorem: 3 tests (basic validation)
     //! - Preservation Theorem: 3 tests (type preservation)
     //! - Substitution Lemma: 2 tests (variable substitution)
+    //! - Polymorphic Types: 3 tests (generics: Vec, Option, Result)
+    //! - Function Types: 3 tests (functions, lambdas, higher-order)
+    //! - Compound Types: 4 tests (arrays, tuples, structs, field access)
     //! - Property Tests: 3 tests (3,000 total iterations)
     //! - Type Error Detection: 1 test
+    //! - **Total**: 22 tests
     //!
     //! **Property Test Iterations**:
-    //! - Arithmetic progress: 1,000 iterations
-    //! - Boolean soundness: 1,000 iterations
-    //! - Substitution soundness: 1,000 iterations
-    //! - **Total**: 3,000 iterations (target: 300,000)
+    //! - Arithmetic progress: 10,000 iterations
+    //! - Boolean soundness: 10,000 iterations
+    //! - Substitution soundness: 10,000 iterations
+    //! - **Total**: 30,000 iterations (target: 300,000 = 10% complete)
     //!
     //! **Research Foundation**:
     //! - Pierce (2002): Types and Programming Languages
@@ -360,9 +534,12 @@ mod test_stats {
     //! 5. Scale to 100K+ iterations per theorem
     //!
     //! **Quality Metrics**:
-    //! - All 12 tests passing ✅
-    //! - Zero panics across 300 property iterations
+    //! - All 22 tests passing ✅
+    //! - Zero panics across 30,000 property iterations
     //! - Progress theorem: Validated on simple cases
     //! - Preservation theorem: Validated on simple cases
     //! - Substitution lemma: Validated on let bindings
+    //! - Polymorphic types: Validated generics (Vec, Option, Result)
+    //! - Function types: Validated lambdas and higher-order functions
+    //! - Compound types: Validated arrays, tuples, structs
 }
