@@ -133,6 +133,17 @@
   - Enhanced execute_format() to apply configuration
   - 11 CLI tests for config integration (format, check, invalid config)
 
+**Phase 2 Progress** (Ignore Directives - COMPLETE):
+- ✅ [FMT-PERFECT-022] Ignore directives implementation (GREEN)
+  - Added source field to Formatter for original text preservation
+  - Implemented should_ignore() to detect // ruchy-fmt-ignore directives
+  - Implemented get_original_text() to extract original formatting via span
+  - Supports both // ruchy-fmt-ignore and // ruchy-fmt-ignore-next
+  - Preserves exact formatting (whitespace, comments) for ignored expressions
+  - Updated CLI to set source text on formatter
+  - 11 CLI tests for ignore directives (all passing)
+  - Tests cover: single line, multiple expressions, nested blocks, check mode
+
 **Configuration Options Available**:
 - indent_width: usize (default: 4)
 - use_tabs: bool (default: false)

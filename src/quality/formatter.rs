@@ -6,6 +6,7 @@ use anyhow::Result;
 
 pub struct Formatter {
     config: FormatterConfig,
+    source: Option<String>,
 }
 
 impl Formatter {
@@ -35,7 +36,24 @@ impl Formatter {
     /// let instance = Formatter::with_config(config);
     /// ```
     pub fn with_config(config: FormatterConfig) -> Self {
-        Self { config }
+        Self {
+            config,
+            source: None,
+        }
+    }
+
+    /// Set the original source text for preserve-original-text ignore directives
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::quality::formatter::Formatter;
+    ///
+    /// let mut formatter = Formatter::new();
+    /// formatter.set_source("let x = 1 + 2");
+    /// ```
+    pub fn set_source(&mut self, source: impl Into<String>) {
+        self.source = Some(source.into());
     }
     /// # Examples
     ///
@@ -72,7 +90,40 @@ impl Formatter {
             _ => format!("{ty_kind:?}"),
         }
     }
+    /// Check if an expression should be ignored based on leading comments
+    fn should_ignore(&self, expr: &Expr) -> bool {
+        expr.leading_comments.iter().any(|comment| {
+            use crate::frontend::ast::CommentKind;
+            match &comment.kind {
+                CommentKind::Line(text) => {
+                    let trimmed = text.trim();
+                    trimmed == "ruchy-fmt-ignore"
+                        || trimmed == "ruchy-fmt-ignore-next"
+                }
+                _ => false,
+            }
+        })
+    }
+
+    /// Get original text from span (for ignore directives)
+    fn get_original_text(&self, span: &crate::frontend::ast::Span) -> Option<String> {
+        self.source.as_ref().map(|src| {
+            let start = span.start.min(src.len());
+            let end = span.end.min(src.len());
+            src[start..end].to_string()
+        })
+    }
+
     fn format_expr(&self, expr: &Expr, indent: usize) -> String {
+        // Check for ignore directives FIRST
+        if self.should_ignore(expr) {
+            // If we have original source, preserve it exactly
+            if let Some(original) = self.get_original_text(&expr.span) {
+                return original;
+            }
+            // Otherwise, fall through to normal formatting
+        }
+
         let indent_str = if self.config.use_tabs {
             "\t".repeat(indent)
         } else {

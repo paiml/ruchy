@@ -187,21 +187,24 @@ fn execute_format(path: PathBuf, check: bool) -> Result<(), String> {
     use crate::quality::formatter::Formatter;
 
     let config = find_and_load_config(&path)?;
-    let formatter = Formatter::with_config(config);
+    let mut formatter = Formatter::with_config(config);
 
     if check {
-        check_format(&path, &formatter)
+        check_format(&path, &mut formatter)
     } else {
-        apply_format(&path, &formatter)
+        apply_format(&path, &mut formatter)
     }
 }
 
 /// Check if a file is properly formatted
-fn check_format(path: &PathBuf, formatter: &crate::quality::formatter::Formatter) -> Result<(), String> {
+fn check_format(path: &PathBuf, formatter: &mut crate::quality::formatter::Formatter) -> Result<(), String> {
     println!("Checking formatting for: {}", path.display());
 
     let source = std::fs::read_to_string(path).map_err(|_e| format_file_error("read", path))?;
     let ast = parse_source(&source)?;
+
+    // Set source for ignore directives
+    formatter.set_source(&source);
     let formatted = formatter.format(&ast).map_err(|e| format!("Format error: {e}"))?;
 
     if formatted.trim() == source.trim() {
@@ -213,11 +216,14 @@ fn check_format(path: &PathBuf, formatter: &crate::quality::formatter::Formatter
 }
 
 /// Apply formatting to a file
-fn apply_format(path: &PathBuf, formatter: &crate::quality::formatter::Formatter) -> Result<(), String> {
+fn apply_format(path: &PathBuf, formatter: &mut crate::quality::formatter::Formatter) -> Result<(), String> {
     println!("Formatting: {}", path.display());
 
     let source = std::fs::read_to_string(path).map_err(|_e| format_file_error("read", path))?;
     let ast = parse_source(&source)?;
+
+    // Set source for ignore directives
+    formatter.set_source(&source);
     let formatted = formatter.format(&ast).map_err(|e| format!("Format error: {e}"))?;
 
     std::fs::write(path, formatted).map_err(|e| format!("Failed to write file: {e}"))?;
