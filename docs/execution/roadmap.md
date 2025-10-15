@@ -35,8 +35,11 @@
   - Added leading_comments and trailing_comment fields to Expr
   - Fixed 30+ Expr initializations across codebase
   - Compiles successfully
-- 🟡 [FMT-PERFECT-003] Parser associates comments (NEXT)
-- ⏳ [FMT-PERFECT-004] Formatter emits comments (pending)
+- ✅ [FMT-PERFECT-003] Parser associates comments (GREEN - COMPLETE)
+  - Added consume_leading_comments() and consume_trailing_comment()
+  - Parser now attaches comments to expressions
+  - Comments flow: Lexer → Parser → AST
+- 🟡 [FMT-PERFECT-004] Formatter emits comments (NEXT)
 - ✅ [FMT-PERFECT-005] Add 12 CLI tests (RED phase done)
 
 **What We'll Do**:
