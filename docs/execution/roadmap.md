@@ -14,10 +14,79 @@
 
 ## 📝 **SESSION CONTEXT FOR RESUMPTION**
 
-**Last Active**: 2025-10-15 (v3.88.0 released - P0 formatter bug fix)
-**Current Sprint**: ✅ **COMPLETE** - Released v3.88.0 with P0 formatter bug fix
-**Latest Release**: ✅ **v3.88.0** published to crates.io and GitHub
-**Previous Release**: v3.87.0 (CLI testing complete, 32/33 tools)
+**Last Active**: 2025-10-15 (Formatter Perfection Roadmap - 3 sprints to PERFECT)
+**Current Sprint**: 🎯 **FORMATTER-PERFECTION** - Making fmt world-class (v3.89.0-v3.91.0)
+**Latest Release**: ✅ **v3.88.0** published to crates.io and GitHub (P0 fixed, P1 remains)
+**Next Releases**: v3.89.0 (Comments), v3.90.0 (Coverage), v3.91.0 (Perfect)
+
+**🎯 FORMATTER PERFECTION ROADMAP (3 Sprints, ~8-11 days)**
+
+### Sprint 1: v3.89.0 - Comment Preservation (2-3 days)
+**Goal**: 100% comment preservation (line, block, doc, trailing)
+**Status**: 📋 **PLANNED** - Specification complete
+**Tickets**: [FMT-PERFECT-001] through [FMT-PERFECT-007]
+
+**What We'll Do**:
+- Extend lexer to track comments as tokens (not discard)
+- Store comments in AST (leading + trailing fields)
+- Parser associates comments with nearest AST nodes
+- Formatter emits comments with expressions
+- Add 50 CLI tests for comment preservation
+- External validation: ruchy-cli-tools-book
+
+**Success Criteria**:
+- ✅ 0 comments lost (100% preservation)
+- ✅ 50/50 comment tests passing
+- ✅ head.ruchy retains all documentation
+- ✅ External verification: "Comments preserved perfectly"
+
+### Sprint 2: v3.90.0 - Complete ExprKind Coverage (3-5 days)
+**Goal**: 100% ExprKind variant implementation (85/85)
+**Status**: 📋 **PLANNED** - Currently 32% (27/85)
+**Tickets**: [FMT-PERFECT-008] through [FMT-PERFECT-020]
+
+**What We'll Do**:
+- Audit all 85+ ExprKind variants in AST
+- Implement remaining ~58 variants systematically
+- Remove fallback panic (all variants covered)
+- Add 85 CLI tests (one per variant)
+- Property tests with random code generation
+
+**Success Criteria**:
+- ✅ 85/85 variants implemented (100%)
+- ✅ No fallback case remains
+- ✅ Handles all possible Ruchy syntax
+- ✅ 85/85 variant tests passing
+
+### Sprint 3: v3.91.0 - Style Preservation & Configuration (2-3 days)
+**Goal**: Minimal style changes, full user control
+**Status**: 📋 **PLANNED** - Config + fixes
+**Tickets**: [FMT-PERFECT-021] through [FMT-PERFECT-032]
+
+**What We'll Do**:
+- Create FormatterConfig with sensible defaults
+- Load config from .ruchy-fmt.toml
+- Fix: No unwanted block wrapping
+- Fix: Preserve let syntax (statement vs functional)
+- Fix: Make type annotations optional
+- Fix: Newline display in strings
+- Implement ignore directives (ruchy-fmt-ignore)
+- Add 65 tests (config, ignore, round-trip, property)
+
+**Success Criteria**:
+- ✅ Minimal style changes only
+- ✅ User has full control via config
+- ✅ format(format(x)) == format(x) (idempotent)
+- ✅ External verification: "Formatter is PERFECT"
+
+**Industry Benchmarks Studied**:
+- ✅ rustfmt (Rust) - Comment preservation via position tracking
+- ✅ Deno fmt (TypeScript) - Ignore directives, dprint-based
+- ✅ Ruff (Python) - 99.9% Black compatibility, FormatNodeRule pattern
+
+**Specification**: `docs/specifications/world-class-formatter-spec.md` (500+ lines)
+
+---
 
 **Latest Commits (v3.88.0 Release 2025-10-15)**:
 - ✅ **[RELEASE v3.88.0]** P0 CRITICAL formatter bug fix released
