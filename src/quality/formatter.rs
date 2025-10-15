@@ -322,7 +322,7 @@ mod tests {
             Default::default(),
         );
         let result = formatter.format(&expr).unwrap();
-        assert_eq!(result, "1 Add 2");
+        assert_eq!(result, "1 + 2"); // FIXED: Use Display trait ("+"), not Debug ("Add")
     }
 
     #[test]
@@ -511,8 +511,9 @@ mod tests {
             Default::default(),
         );
         let result = formatter.format(&outer).unwrap();
-        assert!(result.contains("1 Add 2"));
-        assert!(result.contains("Multiply 3"));
+        // FIXED: Use Display trait ("+", "*"), not Debug ("Add", "Multiply")
+        assert!(result.contains("1 + 2"));
+        assert!(result.contains("* 3"));
     }
 
     #[test]

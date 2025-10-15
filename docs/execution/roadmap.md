@@ -19,7 +19,12 @@
 **Latest Release**: ✅ **v3.87.0** published to crates.io and GitHub (CLI testing complete, 32/33 tools)
 **Latest Commit**: [CHORE] Update Cargo.lock for v3.87.0
 
-**Latest Commits (v3.87.0 Release - CLI Testing Complete 2025-10-15)**:
+**Latest Commits (v3.87.0 Post-Release Fixes 2025-10-15)**:
+- ✅ **[FIX]** Updated formatter tests to match corrected behavior (2 tests fixed, 3870/3870 passing)
+  - Fixed tests expecting old buggy behavior (Debug trait instead of Display)
+  - test_format_binary_expression: "1 Add 2" → "1 + 2" ✅
+  - test_format_nested_expressions: Fixed to use "+", "*" instead of "Add", "Multiply" ✅
+  - All 28 formatter tests now passing, full suite: 3870/3870 ✅
 - ✅ **[RELEASE v3.87.0]** CLI contract testing complete for 32/33 tools (97% coverage)
   - Achievement: 339+ CLI tests validating user-facing contracts
   - Tools Covered: All core development, quality, testing, compiler, docs, formatting, project mgmt, and advanced tools
