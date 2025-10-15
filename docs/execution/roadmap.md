@@ -14,12 +14,23 @@
 
 ## 📝 **SESSION CONTEXT FOR RESUMPTION**
 
-**Last Active**: 2025-10-15 (QUALITY-009: CLI Contract Testing + Specification v4.0)
-**Current Sprint**: ✅ **QUALITY-009 COMPLETE** - CLI contract tests 174/174 passing (100%)
+**Last Active**: 2025-10-15 (CRITICAL: fmt tool code destruction bug - P0 defect fixed)
+**Current Sprint**: 🚨 **CRITICAL-FMT** - Fixed P0 code-destroying bugs in formatter
 **Latest Release**: ✅ **v3.86.0** published to crates.io and GitHub (15-tool specification + roadmap accuracy)
-**Latest Commit**: [CLI-CONTRACT-PROVABILITY] - Created CLI contract tests for provability tool (29/29 passing = 100%)
+**Latest Commit**: [CRITICAL-FMT] Fix code-destroying bugs in formatter (operators + let statements)
 
-**Latest Commits (Quality Sprint 2025-10-15)**:
+**Latest Commits (CRITICAL fmt fix + Quality Sprint 2025-10-15)**:
+- 🚨 **[CRITICAL-FMT]** Fixed P0 code-destroying bugs in formatter (Toyota Way: Stop the Line)
+  - DEFECT 1: Operator mangling - `x * 2` became `x Multiply 2` (BROKEN CODE)
+  - DEFECT 2: Let rewriting - `let x = 42` became `let x = 42 in ()` (INVALID SYNTAX)
+  - ROOT CAUSE: Used Debug trait ({:?}) instead of Display ({}) for operators
+  - ROOT CAUSE: Always used functional let syntax, even for statements
+  - FIX: Changed line 78 to use Display trait for operators
+  - FIX: Lines 69-80 check for Unit body, use statement style
+  - REMAINING: Block wrapping (medium priority, not P0)
+  - FILES: src/quality/formatter.rs (critical fixes), docs/defects/CRITICAL-FMT-CODE-DESTRUCTION.md
+  - TODO: Add fmt as 16th tool to specification (currently undocumented)
+  - Toyota Way: Jidoka (stop the line), Genchi Genbutsu (tested actual behavior)
 - ✅ **[CLI-CONTRACT-PROVABILITY]** CLI contract tests for provability tool (29/29 passing = 100%, HIGH RISK)
   - Created: tests/cli_contract_provability.rs (29 test functions, 580 lines)
   - Coverage: --verify, --contracts, --invariants, --termination, --bounds, --verbose, --output
