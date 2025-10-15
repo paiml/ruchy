@@ -65,18 +65,26 @@ impl Formatter {
             ExprKind::Let {
                 name, value, body, ..
             } => {
-                format!(
-                    "let {} = {} in {}",
-                    name,
-                    self.format_expr(value, indent),
-                    self.format_expr(body, indent)
-                )
+                // FIX: CRITICAL-FMT-CODE-DESTRUCTION - Use statement style for Unit body
+                if matches!(body.kind, ExprKind::Literal(crate::frontend::ast::Literal::Unit)) {
+                    // Statement style: let x = 42
+                    format!("let {} = {}", name, self.format_expr(value, indent))
+                } else {
+                    // Functional style only when there's a real body
+                    format!(
+                        "let {} = {} in {}",
+                        name,
+                        self.format_expr(value, indent),
+                        self.format_expr(body, indent)
+                    )
+                }
             }
             ExprKind::Binary { left, op, right } => {
+                // FIX: CRITICAL-FMT-CODE-DESTRUCTION - Use Display trait, not Debug
                 format!(
-                    "{} {:?} {}",
+                    "{} {} {}",
                     self.format_expr(left, indent),
-                    op,
+                    op,  // Uses Display trait: "*" not "Multiply"
                     self.format_expr(right, indent)
                 )
             }
