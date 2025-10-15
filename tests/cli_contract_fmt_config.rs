@@ -38,7 +38,7 @@ fn test_fmt_uses_default_config_when_no_config_file() {
         .arg(&test_file)
         .assert()
         .success()
-        .stdout(predicate::str::contains("✓ File formatted successfully"));
+        .stdout(predicate::str::contains("✓ Formatted"));
 
     // Read formatted file
     let formatted = fs::read_to_string(&test_file).expect("Failed to read formatted file");
@@ -119,7 +119,7 @@ fn test_fmt_check_passes_for_properly_formatted_file() {
         .arg(&test_file)
         .assert()
         .success()
-        .stdout(predicate::str::contains("✓ File is properly formatted"));
+        .stdout(predicate::str::contains("is properly formatted"));
 }
 
 #[test]
@@ -230,5 +230,5 @@ use_tabs = false
         .arg(&test_file)
         .assert()
         .success()
-        .stdout(predicate::str::contains("✓ File formatted successfully"));
+        .stdout(predicate::str::contains("✓ Formatted"));
 }
