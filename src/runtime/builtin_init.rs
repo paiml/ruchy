@@ -442,7 +442,8 @@ mod tests {
         //                 path_with_extension, path_with_file_name, path_components, path_normalize
         // json functions: json_parse, json_stringify, json_pretty, json_read, json_write,
         //                 json_validate, json_type, json_merge, json_get, json_set
-        assert_eq!(env.len(), 93); // 89 + 4 HTTP functions = 93
+        // test functions: assert, assert_eq (added in v3.86.0 for BUG-037)
+        assert_eq!(env.len(), 95); // 93 + 2 test functions = 95
     }
 
     #[test]

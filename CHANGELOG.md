@@ -4,6 +4,47 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.86.0] - 2025-10-15
+
+**Theme**: Tool Quality Specification + Roadmap Accuracy (QUALITY-009)
+
+**Summary**: Created comprehensive 15-tool improvement specification comparing Ruchy's tooling ecosystem with industry leaders (Deno, Ruff). Corrected roadmap production readiness assessment with empirical data. Refactored 23 functions across 4 files to meet Toyota Way complexity standards (≤10).
+
+**Quality Metrics**:
+- Tool assessment: 15/15 tools analyzed (3 pros, 3 cons, recommendations each)
+- Vaporware risk: 20% (3/15 tools: provability, runtime, notebook)
+- SATD risk: LOW (zero TODO/FIXME in handlers)
+- Well-tested tools: 80% (12/15 with comprehensive test suites)
+- Complexity refactoring: 23 functions reduced to ≤10 complexity
+- Files refactored: test_helpers.rs, builtins.rs, eval_builtin.rs, eval_display.rs
+
+### Added
+- **Specification**: `docs/specifications/15-tool-improvement-spec.md` (v4.0)
+  - Tool-by-tool analysis with pros/cons/recommendations
+  - Comparison with Deno (14 tools) and Ruff (2-3 tools)
+  - Identifies 3 high-risk tools needing systematic validation
+  - Action plan with 3 phases (stabilize, enhance, innovate)
+  - CLI contract testing layer (41 tests planned)
+  - TICR (Test-to-Implementation Complexity Ratio) quantification
+  - Shrinking mechanism meta-tests for property testing
+  - Automated Andon cord (CI failure → GitHub issue)
+
+### Fixed
+- **Roadmap Accuracy**: Corrected production readiness assessment (78% → 80%)
+  - Package management: RESOLVED (Cargo/crates.io integration)
+  - DataFrame: RESOLVED (533 implementations, working)
+  - Complexity debt: SUBSTANTIALLY REDUCED (recent refactorings)
+  - ruchy-book compatibility: Updated (77% → 97%, 130/134 examples)
+  - Critical blockers: 4 → 1 (ecosystem remains)
+
+### Changed
+- **Complexity Refactoring** (23 functions, 4 files):
+  - `test_helpers.rs`: run_test_file (13→5), extract_test_functions (6→3), parse_and_find_tests (6→2), generate_coverage_report (8→3)
+  - `builtins.rs`: ruchy_value_to_json (19→5), set_json_path, builtin_json_write
+  - `eval_builtin.rs`: eval_json_set (19→4), eval_json_parse (19→3), eval_json_get (12→4), value_to_json (11→5), eval_json_merge (9→3)
+  - `eval_display.rs`: format_enum_variant (26→3)
+  - All functions now meet Toyota Way standards (cyclomatic ≤10, cognitive ≤10)
+
 ## [3.85.0] - 2025-10-15
 
 **Theme**: BUG-037 Fix + Systematic Validation Framework (CRITICAL)
