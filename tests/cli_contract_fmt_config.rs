@@ -34,7 +34,7 @@ fn test_fmt_uses_default_config_when_no_config_file() {
 
     // Format file - should use defaults (4 spaces, no tabs)
     ruchy_cmd()
-        .arg("format")
+        .arg("fmt")
         .arg(&test_file)
         .assert()
         .success()
@@ -66,7 +66,7 @@ max_line_length = 80
 
     // Format file - should use config settings
     ruchy_cmd()
-        .arg("format")
+        .arg("fmt")
         .arg(&test_file)
         .assert()
         .success();
@@ -91,7 +91,7 @@ use_tabs = false
 
     // Format file - should find config in parent
     ruchy_cmd()
-        .arg("format")
+        .arg("fmt")
         .arg(&test_file)
         .assert()
         .success();
@@ -107,14 +107,14 @@ fn test_fmt_check_passes_for_properly_formatted_file() {
 
     // First format it
     ruchy_cmd()
-        .arg("format")
+        .arg("fmt")
         .arg(&test_file)
         .assert()
         .success();
 
     // Then check it - should pass
     ruchy_cmd()
-        .arg("format")
+        .arg("fmt")
         .arg("--check")
         .arg(&test_file)
         .assert()
@@ -132,7 +132,7 @@ fn test_fmt_check_fails_for_improperly_formatted_file() {
 
     // Check should fail
     let result = ruchy_cmd()
-        .arg("format")
+        .arg("fmt")
         .arg("--check")
         .arg(&test_file)
         .assert()
@@ -163,7 +163,7 @@ use_tabs = true
 
     // Format file
     ruchy_cmd()
-        .arg("format")
+        .arg("fmt")
         .arg(&test_file)
         .assert()
         .success();
@@ -190,7 +190,7 @@ fn test_fmt_with_invalid_config_file() {
 
     // Format should fail with config error
     ruchy_cmd()
-        .arg("format")
+        .arg("fmt")
         .arg(&test_file)
         .assert()
         .failure();
@@ -203,7 +203,7 @@ fn test_fmt_nonexistent_file() {
 
     // Attempt to format nonexistent file
     ruchy_cmd()
-        .arg("format")
+        .arg("fmt")
         .arg(&test_file)
         .assert()
         .failure();
@@ -226,7 +226,7 @@ use_tabs = false
 
     // Format file - should succeed
     ruchy_cmd()
-        .arg("format")
+        .arg("fmt")
         .arg(&test_file)
         .assert()
         .success()

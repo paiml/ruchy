@@ -36,7 +36,7 @@ let y = 3 + 4"#).expect("Failed to write test file");
 
     // Format file
     ruchy_cmd()
-        .arg("format")
+        .arg("fmt")
         .arg(&test_file)
         .assert()
         .success();
@@ -62,7 +62,7 @@ let x    =    1  +  2"#).expect("Failed to write test file");
 
     // Format file
     ruchy_cmd()
-        .arg("format")
+        .arg("fmt")
         .arg(&test_file)
         .assert()
         .success();
@@ -92,7 +92,7 @@ let d = 4"#).expect("Failed to write test file");
 
     // Format file
     ruchy_cmd()
-        .arg("format")
+        .arg("fmt")
         .arg(&test_file)
         .assert()
         .success();
@@ -122,7 +122,7 @@ fn bar(a, b) { a + b }"#).expect("Failed to write test file");
 
     // Format file
     ruchy_cmd()
-        .arg("format")
+        .arg("fmt")
         .arg(&test_file)
         .assert()
         .success();
@@ -148,14 +148,14 @@ let x    =    1  +  2"#).expect("Failed to write test file");
 
     // First format it
     ruchy_cmd()
-        .arg("format")
+        .arg("fmt")
         .arg(&test_file)
         .assert()
         .success();
 
     // Then check it - should pass because ignored line is preserved
     ruchy_cmd()
-        .arg("format")
+        .arg("fmt")
         .arg("--check")
         .arg(&test_file)
         .assert()
@@ -176,7 +176,7 @@ let x  =  1  +  2   // trailing comment
 
     // Format file
     ruchy_cmd()
-        .arg("format")
+        .arg("fmt")
         .arg(&test_file)
         .assert()
         .success();
@@ -203,13 +203,13 @@ let x    =    1  +  2"#).expect("Failed to write ignored file");
 
     // Format both files
     ruchy_cmd()
-        .arg("format")
+        .arg("fmt")
         .arg(&ignored_file)
         .assert()
         .success();
 
     ruchy_cmd()
-        .arg("format")
+        .arg("fmt")
         .arg(&normal_file)
         .assert()
         .success();
@@ -240,7 +240,7 @@ fn test_fmt_ignore_with_nested_expressions() {
 
     // Format file
     ruchy_cmd()
-        .arg("format")
+        .arg("fmt")
         .arg(&test_file)
         .assert()
         .success();
@@ -264,7 +264,7 @@ let x    =    1  +  2"#).expect("Failed to write test file");
 
     // Format file
     ruchy_cmd()
-        .arg("format")
+        .arg("fmt")
         .arg(&test_file)
         .assert()
         .success();
@@ -287,7 +287,7 @@ let x    =    1  +  2"#).expect("Failed to write test file");
 
     // Format file
     ruchy_cmd()
-        .arg("format")
+        .arg("fmt")
         .arg(&test_file)
         .assert()
         .success();

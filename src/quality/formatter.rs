@@ -666,6 +666,108 @@ impl Formatter {
             ExprKind::Send { actor, message } => {
                 format!("send({}, {})", self.format_expr(actor, indent), self.format_expr(message, indent))
             }
+            // Phase 4: High Priority Variants
+            ExprKind::Loop { body, .. } => {
+                format!("loop {{\n{}\n{}}}", self.format_expr(body, indent + 1), " ".repeat(indent * self.config.indent_width))
+            }
+            ExprKind::Pipeline { expr, stages } => {
+                // Start with initial expression, then chain stages
+                let mut result = self.format_expr(expr, indent);
+                for stage in stages {
+                    result.push_str(" |> ");
+                    result.push_str(&self.format_expr(&stage.op, indent));
+                }
+                result
+            }
+            // Note: Reference (&, &mut) is handled via Unary operator, not separate ExprKind
+            ExprKind::PreIncrement { target } => {
+                format!("++{}", self.format_expr(target, indent))
+            }
+            ExprKind::PostIncrement { target } => {
+                format!("{}++", self.format_expr(target, indent))
+            }
+            ExprKind::PreDecrement { target } => {
+                format!("--{}", self.format_expr(target, indent))
+            }
+            ExprKind::PostDecrement { target } => {
+                format!("{}--", self.format_expr(target, indent))
+            }
+            ExprKind::ActorSend { actor, message } => {
+                format!("{} <- {}", self.format_expr(actor, indent), self.format_expr(message, indent))
+            }
+            ExprKind::ActorQuery { actor, message } => {
+                format!("{} <? {}", self.format_expr(actor, indent), self.format_expr(message, indent))
+            }
+            ExprKind::Ask { actor, message, .. } => {
+                // timeout is optional, ignore for basic formatting
+                format!("ask {} {}", self.format_expr(actor, indent), self.format_expr(message, indent))
+            }
+            ExprKind::ListComprehension { element, clauses } => {
+                let clauses_str = clauses
+                    .iter()
+                    .map(|clause| {
+                        let cond = clause
+                            .condition
+                            .as_ref()
+                            .map(|c| format!(" if {}", self.format_expr(c, indent)))
+                            .unwrap_or_default();
+                        format!("{} in {}{}", clause.variable, self.format_expr(&clause.iterable, indent), cond)
+                    })
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                format!("[{} for {}]", self.format_expr(element, indent), clauses_str)
+            }
+            ExprKind::DictComprehension { key, value, clauses } => {
+                let clauses_str = clauses
+                    .iter()
+                    .map(|clause| {
+                        let cond = clause
+                            .condition
+                            .as_ref()
+                            .map(|c| format!(" if {}", self.format_expr(c, indent)))
+                            .unwrap_or_default();
+                        format!("{} in {}{}", clause.variable, self.format_expr(&clause.iterable, indent), cond)
+                    })
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                format!("{{{}: {} for {}}}", self.format_expr(key, indent), self.format_expr(value, indent), clauses_str)
+            }
+            ExprKind::SetComprehension { element, clauses } => {
+                let clauses_str = clauses
+                    .iter()
+                    .map(|clause| {
+                        let cond = clause
+                            .condition
+                            .as_ref()
+                            .map(|c| format!(" if {}", self.format_expr(c, indent)))
+                            .unwrap_or_default();
+                        format!("{} in {}{}", clause.variable, self.format_expr(&clause.iterable, indent), cond)
+                    })
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                format!("{{{} for {}}}", self.format_expr(element, indent), clauses_str)
+            }
+            ExprKind::ImportAll { module, .. } => {
+                format!("import {}::*", module)
+            }
+            ExprKind::ImportDefault { module, name } => {
+                format!("import default {} from {}", name, module)
+            }
+            ExprKind::ExportList { names } => {
+                format!("export {{ {} }}", names.join(", "))
+            }
+            ExprKind::ExportDefault { expr } => {
+                format!("export default {}", self.format_expr(expr, indent))
+            }
+            ExprKind::Command { program, args, .. } => {
+                // Format as backtick command - reconstruct the shell command
+                let full_cmd = if args.is_empty() {
+                    program.clone()
+                } else {
+                    format!("{} {}", program, args.join(" "))
+                };
+                format!("`{}`", full_cmd)
+            }
             _ => {
                 // CRITICAL: Changed from silent Debug output to explicit error
                 // This prevents silent data corruption
