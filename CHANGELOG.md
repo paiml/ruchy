@@ -5,6 +5,29 @@ All notable changes to the Ruchy programming language will be documented in this
 ## [Unreleased]
 
 ### Added
+- **[SQLITE-TEST-002] Type System Soundness Test Harness - 10% Milestone**: Expanded from 12 → 22 tests (+83%)
+  - **Property Test Scaling**: 10x increase from 3,000 → 30,000 iterations (10.0% of 300K target)
+    - Arithmetic progress: 1,000 → 10,000 iterations
+    - Boolean soundness: 1,000 → 10,000 iterations
+    - Substitution soundness: 1,000 → 10,000 iterations
+  - **NEW: Polymorphic Type Tests (3 tests)**: Generic type instantiation validation
+    - Generic Vec<T> instantiation with multiple type parameters
+    - Generic Option<T> instantiation (Some/None)
+    - Generic Result<T, E> instantiation (Ok/Err)
+  - **NEW: Function Type Tests (3 tests)**: Function type correctness
+    - Simple function definitions with type annotations
+    - Lambda expressions and closures
+    - Higher-order functions (functions as arguments)
+  - **NEW: Compound Type Tests (4 tests)**: Product type validation
+    - Array types with homogeneous elements
+    - Tuple types with heterogeneous elements
+    - Struct definitions and literal expressions
+    - Field access on structs and tuples
+  - **Test Results**: 22/22 passing (100%), zero panics across 30K iterations
+  - **Research Foundation**: Pierce (2002) Types and Programming Languages (TAPL)
+  - **File**: tests/sqlite_002_type_soundness.rs (546 lines, +177 lines)
+  - **Next Steps**: Scale to 50K iterations, integrate with middleend/infer.rs
+
 - **[SQLITE-TEST-002] Type System Soundness Test Harness - Foundation (1.0%)**: Created Type System Soundness tests
   - **Progress Theorem Tests**: 3 tests validating well-typed terms are not stuck
     - Simple arithmetic expressions
