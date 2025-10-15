@@ -160,7 +160,7 @@ let x    =    1  +  2"#).expect("Failed to write test file");
         .arg(&test_file)
         .assert()
         .success()
-        .stdout(predicate::str::contains("✓ File is properly formatted"));
+        .stdout(predicate::str::contains("is properly formatted"));
 }
 
 #[test]

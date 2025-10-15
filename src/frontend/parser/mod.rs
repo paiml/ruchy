@@ -175,16 +175,40 @@ impl<'a> ParserState<'a> {
         comments
     }
 
-    /// Consume trailing comment on same line as expression (complexity: 2)
-    pub fn consume_trailing_comment(&mut self) -> Option<Comment> {
-        if let Some((token, span)) = self.tokens.peek() {
-            if let Some(comment) = token_to_comment(token, *span) {
-                self.tokens.advance();
-                return Some(comment);
+    /// Consume trailing comment on same line as expression (complexity: 3)
+    pub fn consume_trailing_comment(&mut self, expr_span: &Span) -> Option<Comment> {
+        if let Some((_token, span)) = self.tokens.peek() {
+            // Copy span values before borrowing mutably
+            let comment_start = span.start;
+
+            // Get source reference before any mutable borrows
+            let source = self.tokens.source();
+
+            // Check if comment is on same line
+            if !is_on_same_line(source, expr_span.end, comment_start) {
+                // Comment is on a different line - don't consume (will be leading comment for next expr)
+                return None;
+            }
+
+            // Now we can safely peek again and consume
+            if let Some((token, span)) = self.tokens.peek() {
+                if let Some(comment) = token_to_comment(token, *span) {
+                    self.tokens.advance();
+                    return Some(comment);
+                }
             }
         }
         None
     }
+}
+
+/// Check if two byte positions are on the same line (no newline between them)
+fn is_on_same_line(source: &str, pos1: usize, pos2: usize) -> bool {
+    if pos1 > pos2 {
+        return false; // Invalid range
+    }
+    let between = &source[pos1.min(source.len())..pos2.min(source.len())];
+    !between.contains('\n')
 }
 
 /// Convert token to comment if it's a comment token (complexity: 2)
@@ -233,7 +257,7 @@ pub(crate) fn parse_expr_with_precedence_recursive(
     left = parse_postfix_and_infix_chain(state, left, min_prec)?;
 
     // Consume any trailing comment on the same line
-    let trailing_comment = state.consume_trailing_comment();
+    let trailing_comment = state.consume_trailing_comment(&left.span);
 
     // Attach comments to the expression
     attach_comments_to_expr(left, leading_comments, trailing_comment)

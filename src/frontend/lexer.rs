@@ -505,6 +505,12 @@ pub struct TokenStreamPosition<'a> {
     current_position: usize,
 }
 impl<'a> TokenStream<'a> {
+    /// Get reference to the source code
+    #[must_use]
+    pub fn source(&self) -> &'a str {
+        self.input
+    }
+
     #[must_use]
     pub fn new(input: &'a str) -> Self {
         // Handle shebang: Skip first line if it starts with #!
