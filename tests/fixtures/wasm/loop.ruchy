@@ -1,0 +1,9 @@
+fn sum_range(n) {
+    let total = 0
+    for i in 0..n {
+        total = total + i
+    }
+    total
+}
+
+sum_range(10)
