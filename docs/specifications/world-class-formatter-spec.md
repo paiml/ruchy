@@ -11,11 +11,19 @@
 
 Create a **world-class formatter** for Ruchy that matches or exceeds the quality of industry leaders (rustfmt, Deno fmt, Ruff). The formatter must be **PERFECT** - preserving comments, doctests, annotations, and user intent while applying consistent formatting.
 
-**Current Status**: v3.88.0 - P0 corruption fixed, but formatter still has P1 issues:
-- ❌ Strips ALL comments (documentation loss)
+**Previous Status**: v3.88.0 - P0 corruption fixed, but formatter had P1 issues:
+- ❌ Stripped ALL comments (documentation loss)
 - ❌ Significant unwanted style changes
 - ❌ Only 27/85 ExprKind variants implemented (~32%)
 - ❌ Newline display issues
+
+**Current Status**: v3.89.0 - Configuration + Ignore Directives COMPLETE (2025-10-15):
+- ✅ Configuration system with TOML support (11 tests passing)
+- ✅ Ignore directives fully functional (10/10 tests passing)
+- ✅ Parser fixes: Line continuations + multiple comments (9 parser tests)
+- ✅ 10 critical bugs fixed with Extreme TDD methodology
+- ✅ Property tests: 6 tests with 10K+ random inputs
+- 🎯 Released to crates.io: https://crates.io/crates/ruchy/3.89.0
 
 **Target Status**: v3.91.0 - Perfect formatter:
 - ✅ 100% comment preservation

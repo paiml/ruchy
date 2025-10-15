@@ -182,11 +182,14 @@
 - ✅ A+ code standard maintained (≤10 complexity)
 - ✅ Extreme TDD methodology followed throughout
 
-### Sprint 3: v3.91.0 - Style Preservation & Configuration (2-3 days)
+### Sprint 3: v3.89.0 - Style Preservation & Configuration (2-3 days)
 **Goal**: Minimal style changes, full user control
-**Status**: 🎯 **PHASES 1 & 2 COMPLETE** - Configuration + Ignore Directives (33 tests)
-**Tickets**: [FMT-PERFECT-021] through [FMT-PERFECT-032]
+**Status**: ✅ **RELEASED v3.89.0** - Configuration + Ignore Directives (33 tests, 10 bugs fixed)
+**Release Date**: 2025-10-15
+**Tickets**: [FMT-PERFECT-021] through [FMT-PERFECT-022], [PARSER-053], [PARSER-054]
 **Progress Report**: `docs/execution/SPRINT-3-PROGRESS-REPORT.md`
+**Crates.io**: https://crates.io/crates/ruchy/3.89.0
+**GitHub Release**: https://github.com/paiml/ruchy/releases/tag/v3.89.0
 
 **Phase 1 Progress** (Configuration System - COMPLETE):
 - ✅ [FMT-PERFECT-021] Configuration system with TOML support (GREEN)
