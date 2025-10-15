@@ -20,6 +20,12 @@
 **Latest Commit**: [CLI-CONTRACT-CHECK-001,002,003] - Fixed check tool defects (filename, line number, multiple files)
 
 **Latest Commits (Quality Sprint 2025-10-15)**:
+- ✅ **[CLI-CONTRACT-AST]** CLI contract tests for ast tool (19/19 passing = 100%)
+  - Created: tests/cli_contract_ast.rs (19 test functions)
+  - Coverage: Exit codes, AST structure validation, complex constructs, edge cases
+  - Validates: AST contains Expr, kind, span, proper representation of literals/functions/control flow
+  - TICR: ast tool 0.5 → 0.67 (2 CP implementation, 2 CP tests now)
+  - Progress: 7/15 tools with CLI tests, 100/100 tests passing
 - ✅ **[CLI-CONTRACT-COVERAGE]** CLI contract tests for coverage tool (15/15 passing = 100%)
   - Created: tests/cli_contract_coverage.rs (17 test functions)
   - Coverage: Exit codes, formats (text/html/json), threshold validation, edge cases
