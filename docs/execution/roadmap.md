@@ -64,7 +64,7 @@
 
 ### Sprint 2: v3.90.0 - Complete ExprKind Coverage (3-5 days)
 **Goal**: 100% ExprKind variant implementation (129/129)
-**Status**: 🔄 **IN PROGRESS** - Phase 1 complete (46/129 = 35.7%)
+**Status**: 🔄 **IN PROGRESS** - Phases 1 & 2 complete (57/129 = 44.2%)
 **Tickets**: [FMT-PERFECT-006] through [FMT-PERFECT-020]
 
 **Phase 1 Progress** (9 high-priority variants implemented):
@@ -85,9 +85,26 @@
   - All 11 CLI tests passing (RED → GREEN complete)
   - No regression: All 12 comment tests still passing
 
+**Phase 2 Progress** (11 additional variants implemented):
+- ✅ [FMT-PERFECT-007] Implement Result, Option, async ops, pattern matching (GREEN)
+  - ArrayInit: [value; size] formatting
+  - Ok: Ok(value) formatting
+  - Err: Err(error) formatting
+  - Some: Some(value) formatting
+  - None: None formatting
+  - Try: expr? formatting
+  - Spawn: spawn actor formatting
+  - AsyncLambda: async |params| body formatting
+  - IfLet: if let pattern = expr { } else { } formatting
+  - OptionalFieldAccess: obj?.field formatting
+  - Slice: arr[start..end] formatting
+  - All 12 CLI tests passing (RED → GREEN complete)
+  - No regression: All 23 previous tests still passing
+  - **Total: 35 tests passing (11 Phase 1 + 12 Comments + 12 Phase 2)**
+
 **What We'll Do**:
 - Audit all 129 ExprKind variants in AST
-- Implement remaining ~83 variants systematically
+- Implement remaining ~72 variants systematically
 - Remove fallback panic (all variants covered)
 - Add comprehensive CLI tests
 - Property tests with random code generation

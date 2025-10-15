@@ -390,6 +390,51 @@ impl Formatter {
             ExprKind::TypeCast { expr, target_type } => {
                 format!("{} as {}", self.format_expr(expr, indent), target_type)
             }
+
+            // Phase 2: Additional high-priority variants
+            ExprKind::ArrayInit { value, size } => {
+                format!("[{}; {}]", self.format_expr(value, indent), self.format_expr(size, indent))
+            }
+            ExprKind::Ok { value } => {
+                format!("Ok({})", self.format_expr(value, indent))
+            }
+            ExprKind::Err { error } => {
+                format!("Err({})", self.format_expr(error, indent))
+            }
+            ExprKind::Some { value } => {
+                format!("Some({})", self.format_expr(value, indent))
+            }
+            ExprKind::None => "None".to_string(),
+            ExprKind::Try { expr } => {
+                format!("{}?", self.format_expr(expr, indent))
+            }
+            ExprKind::Spawn { actor } => {
+                format!("spawn {}", self.format_expr(actor, indent))
+            }
+            ExprKind::AsyncLambda { params, body } => {
+                let params_str = params.join(", ");
+                format!("async |{}| {}", params_str, self.format_expr(body, indent))
+            }
+            ExprKind::IfLet { pattern, expr, then_branch, else_branch } => {
+                let mut result = format!(
+                    "if let {} = {} {}",
+                    self.format_pattern(pattern),
+                    self.format_expr(expr, indent),
+                    self.format_expr(then_branch, indent)
+                );
+                if let Some(else_expr) = else_branch {
+                    result.push_str(&format!(" else {}", self.format_expr(else_expr, indent)));
+                }
+                result
+            }
+            ExprKind::OptionalFieldAccess { object, field } => {
+                format!("{}?.{}", self.format_expr(object, indent), field)
+            }
+            ExprKind::Slice { object, start, end } => {
+                let start_str = start.as_ref().map_or("".to_string(), |e| self.format_expr(e, indent));
+                let end_str = end.as_ref().map_or("".to_string(), |e| self.format_expr(e, indent));
+                format!("{}[{}..{}]", self.format_expr(object, indent), start_str, end_str)
+            }
             _ => {
                 // CRITICAL: Changed from silent Debug output to explicit error
                 // This prevents silent data corruption
