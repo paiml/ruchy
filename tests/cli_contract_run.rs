@@ -148,7 +148,6 @@ fn cli_run_string_interpolation_output() {
 // ============================================================================
 
 #[test]
-#[ignore] // DEFECT: Syntax errors don't cause failure exit code (CLI-CONTRACT-RUN-001)
 fn cli_run_syntax_error_writes_stderr() {
     let temp = TempDir::new().unwrap();
     let file = create_temp_file(&temp, "bad_syntax.ruchy", "fun f( { }\n");
@@ -295,7 +294,6 @@ fn cli_run_comment_only_fails() {
 }
 
 #[test]
-#[ignore] // DEFECT: run prints values and internal messages to stdout (CLI-CONTRACT-RUN-002)
 fn cli_run_no_output_program_succeeds() {
     let temp = TempDir::new().unwrap();
     let file = create_temp_file(&temp, "silent.ruchy", "let x = 42\n"); // No println
