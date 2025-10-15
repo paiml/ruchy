@@ -14,10 +14,27 @@
 
 ## 📝 **SESSION CONTEXT FOR RESUMPTION**
 
-**Last Active**: 2025-10-15 (v3.87.0 released - CLI contract testing complete)
-**Current Sprint**: ✅ **CLI-COMPLETE** - Released v3.87.0 with comprehensive CLI testing
+**Last Active**: 2025-10-15 (v3.87.0 P0 formatter bug fix)
+**Current Sprint**: 🚨 **P0-FMT-DEBUG-FALLBACK** - Fixed critical Debug fallback bug
 **Latest Release**: ✅ **v3.87.0** published to crates.io and GitHub (CLI testing complete, 32/33 tools)
-**Latest Commit**: [CHORE] Update Cargo.lock for v3.87.0
+**Next Release**: 🎯 **v3.88.0** - P0 formatter bug fix (ready for release)
+
+**Latest Commits (v3.87.0 P0 Bug Fixes 2025-10-15)**:
+- 🚨 **[FMT-P0]** Fixed CRITICAL Debug fallback bug in formatter (NEW P0 CRITICAL)
+  - DEFECT: Formatter silently corrupted files with AST Debug output for 70+ unhandled ExprKind variants
+  - ROOT CAUSE: Catch-all pattern `_ => format!("{:?}", expr.kind)` for unhandled expression types
+  - DISCOVERY: External bug report from ruchy-cli-tools-book project (BUG_VERIFICATION_v3.87.0.md)
+  - IMPACT: Any code using array indexing, assignments, returns → corrupted with AST debug text
+  - EXAMPLE: `content[i]` became `IndexAccess { object: Expr { kind: Identifier("content"), ... }`
+  - FIX: Implemented 15 critical ExprKind variants (IndexAccess, Assign, Return, FieldAccess, While, Break, Continue, Range, Unary, List, Tuple, Match, CompoundAssign)
+  - FALLBACK: Changed from silent corruption to explicit error comment: `/* UNIMPLEMENTED: {:?} */`
+  - TESTS: Added 15 P0 regression tests preventing recurrence (36 total fmt CLI tests, all passing)
+  - VERIFICATION: Real-world head.ruchy now formats correctly, passes syntax validation
+  - FIVE WHYS: Incomplete formatter (12/85 variants) + catch-all Debug fallback + insufficient CLI test coverage
+  - FILES: src/quality/formatter.rs (15 new variant handlers), tests/cli_contract_fmt.rs (15 new tests)
+  - DEFECT REPORT: docs/defects/CRITICAL-FMT-DEBUG-FALLBACK.md (complete Toyota Way analysis)
+  - Toyota Way: Jidoka (stop the line for P0), Genchi Genbutsu (reproduced external bug), Poka-Yoke (explicit error vs silent corruption)
+  - Ready for v3.88.0 release
 
 **Latest Commits (v3.87.0 Post-Release Fixes 2025-10-15)**:
 - ✅ **[FIX]** Updated formatter tests to match corrected behavior (2 tests fixed, 3870/3870 passing)

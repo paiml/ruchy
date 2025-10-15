@@ -204,8 +204,109 @@ impl Formatter {
                 result.push_str(&self.format_expr(body, indent));
                 result
             }
+            // CRITICAL: IndexAccess - array/object indexing (arr[i])
+            ExprKind::IndexAccess { object, index } => {
+                format!(
+                    "{}[{}]",
+                    self.format_expr(object, indent),
+                    self.format_expr(index, indent)
+                )
+            }
+            // CRITICAL: Assign - assignment statements (x = value)
+            ExprKind::Assign { target, value } => {
+                format!(
+                    "{} = {}",
+                    self.format_expr(target, indent),
+                    self.format_expr(value, indent)
+                )
+            }
+            // CRITICAL: Return - return statements
+            ExprKind::Return { value } => {
+                if let Some(val) = value {
+                    format!("return {}", self.format_expr(val, indent))
+                } else {
+                    "return".to_string()
+                }
+            }
+            // CRITICAL: FieldAccess - object.field
+            ExprKind::FieldAccess { object, field } => {
+                format!("{}.{}", self.format_expr(object, indent), field)
+            }
+            // CRITICAL: While - while loops
+            ExprKind::While { condition, body, .. } => {
+                format!(
+                    "while {} {}",
+                    self.format_expr(condition, indent),
+                    self.format_expr(body, indent)
+                )
+            }
+            // CRITICAL: Break
+            ExprKind::Break { value, .. } => {
+                if let Some(val) = value {
+                    format!("break {}", self.format_expr(val, indent))
+                } else {
+                    "break".to_string()
+                }
+            }
+            // CRITICAL: Continue
+            ExprKind::Continue { .. } => "continue".to_string(),
+            // CRITICAL: Range expressions (0..10)
+            ExprKind::Range { start, end, inclusive } => {
+                let op = if *inclusive { "..=" } else { ".." };
+                format!(
+                    "{}{}{}",
+                    self.format_expr(start, indent),
+                    op,
+                    self.format_expr(end, indent)
+                )
+            }
+            // CRITICAL: Unary operations (-x, !x)
+            ExprKind::Unary { op, operand } => {
+                format!("{}{}", op, self.format_expr(operand, indent))
+            }
+            // CRITICAL: List literals [1, 2, 3]
+            ExprKind::List(items) => {
+                let formatted_items: Vec<String> = items
+                    .iter()
+                    .map(|item| self.format_expr(item, indent))
+                    .collect();
+                format!("[{}]", formatted_items.join(", "))
+            }
+            // CRITICAL: Tuple literals (1, 2, 3)
+            ExprKind::Tuple(items) => {
+                let formatted_items: Vec<String> = items
+                    .iter()
+                    .map(|item| self.format_expr(item, indent))
+                    .collect();
+                format!("({})", formatted_items.join(", "))
+            }
+            // Match expressions
+            ExprKind::Match { expr, arms } => {
+                let mut result = format!("match {} {{\n", self.format_expr(expr, indent));
+                for arm in arms {
+                    result.push_str(&format!(
+                        "{}  {} => {},\n",
+                        " ".repeat(indent * self.indent_width),
+                        format!("{:?}", arm.pattern), // TODO: Implement pattern formatting
+                        self.format_expr(&arm.body, indent + 1)
+                    ));
+                }
+                result.push_str(&format!("{}}}", " ".repeat(indent * self.indent_width)));
+                result
+            }
+            // CompoundAssign (+=, -=, etc.)
+            ExprKind::CompoundAssign { target, op, value } => {
+                format!(
+                    "{} {}= {}",
+                    self.format_expr(target, indent),
+                    op,
+                    self.format_expr(value, indent)
+                )
+            }
             _ => {
-                format!("{:?}", expr.kind) // Fallback for unimplemented cases
+                // CRITICAL: Changed from silent Debug output to explicit error
+                // This prevents silent data corruption
+                format!("/* UNIMPLEMENTED: {:?} */", expr.kind)
             }
         }
     }
