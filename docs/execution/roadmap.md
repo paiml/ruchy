@@ -117,18 +117,43 @@
 
 ### Sprint 3: v3.91.0 - Style Preservation & Configuration (2-3 days)
 **Goal**: Minimal style changes, full user control
-**Status**: 📋 **PLANNED** - Config + fixes
+**Status**: 🔄 **IN PROGRESS** - Phase 1 complete (Configuration)
 **Tickets**: [FMT-PERFECT-021] through [FMT-PERFECT-032]
 
+**Phase 1 Progress** (Configuration System - COMPLETE):
+- ✅ [FMT-PERFECT-021] Configuration system with TOML support (GREEN)
+  - Created FormatterConfig struct with 10 configuration options
+  - TOML serialization/deserialization via serde
+  - File I/O methods (from_file, to_file, from_toml, to_toml)
+  - Pattern matching for ignore directives (should_ignore)
+  - Config merging for hierarchical configuration
+  - 11 tests for FormatterConfig module (all passing)
+  - Refactored Formatter to use FormatterConfig (5 field updates)
+  - CLI integration: find_and_load_config() searches parent dirs
+  - Enhanced execute_format() to apply configuration
+  - 11 CLI tests for config integration (format, check, invalid config)
+
+**Configuration Options Available**:
+- indent_width: usize (default: 4)
+- use_tabs: bool (default: false)
+- max_line_length: usize (default: 100)
+- preserve_newlines: bool (default: true)
+- trailing_commas: bool (default: true)
+- space_after_colon: bool (default: true)
+- space_before_brace: bool (default: true)
+- format_strings: bool (default: false)
+- format_comments: bool (default: false)
+- ignore_patterns: Vec<String> (default: empty)
+
 **What We'll Do**:
-- Create FormatterConfig with sensible defaults
-- Load config from .ruchy-fmt.toml
+- ✅ Create FormatterConfig with sensible defaults - DONE
+- ✅ Load config from .ruchy-fmt.toml - DONE
 - Fix: No unwanted block wrapping
 - Fix: Preserve let syntax (statement vs functional)
 - Fix: Make type annotations optional
 - Fix: Newline display in strings
 - Implement ignore directives (ruchy-fmt-ignore)
-- Add 65 tests (config, ignore, round-trip, property)
+- Add property tests for idempotency
 
 **Success Criteria**:
 - ✅ Minimal style changes only

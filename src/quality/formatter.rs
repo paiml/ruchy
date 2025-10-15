@@ -1,13 +1,16 @@
 // Code formatter for Ruchy
 // Toyota Way: Consistent code style prevents defects
 use crate::frontend::ast::{Expr, ExprKind};
+use crate::quality::formatter_config::FormatterConfig;
 use anyhow::Result;
+
 pub struct Formatter {
-    indent_width: usize,
-    use_tabs: bool,
-    _line_width: usize,
+    config: FormatterConfig,
 }
+
 impl Formatter {
+    /// Create a new formatter with default configuration
+    ///
     /// # Examples
     ///
     /// ```
@@ -17,11 +20,22 @@ impl Formatter {
     /// // Verify behavior
     /// ```
     pub fn new() -> Self {
-        Self {
-            indent_width: 4,
-            use_tabs: false,
-            _line_width: 100,
-        }
+        Self::with_config(FormatterConfig::default())
+    }
+
+    /// Create a new formatter with custom configuration
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::quality::formatter::Formatter;
+    /// use ruchy::quality::FormatterConfig;
+    ///
+    /// let config = FormatterConfig::default();
+    /// let instance = Formatter::with_config(config);
+    /// ```
+    pub fn with_config(config: FormatterConfig) -> Self {
+        Self { config }
     }
     /// # Examples
     ///
@@ -59,10 +73,10 @@ impl Formatter {
         }
     }
     fn format_expr(&self, expr: &Expr, indent: usize) -> String {
-        let indent_str = if self.use_tabs {
+        let indent_str = if self.config.use_tabs {
             "\t".repeat(indent)
         } else {
-            " ".repeat(indent * self.indent_width)
+            " ".repeat(indent * self.config.indent_width)
         };
 
         // Format leading comments
@@ -115,10 +129,10 @@ impl Formatter {
             }
             ExprKind::Block(exprs) => {
                 let mut result = String::from("{\n");
-                let inner_indent_str = if self.use_tabs {
+                let inner_indent_str = if self.config.use_tabs {
                     "\t".repeat(indent + 1)
                 } else {
-                    " ".repeat((indent + 1) * self.indent_width)
+                    " ".repeat((indent + 1) * self.config.indent_width)
                 };
                 for expr in exprs {
                     result.push_str(&format!(
@@ -311,12 +325,12 @@ impl Formatter {
                 for arm in arms {
                     result.push_str(&format!(
                         "{}  {} => {},\n",
-                        " ".repeat(indent * self.indent_width),
+                        " ".repeat(indent * self.config.indent_width),
                         format!("{:?}", arm.pattern), // TODO: Implement pattern formatting
                         self.format_expr(&arm.body, indent + 1)
                     ));
                 }
-                result.push_str(&format!("{}}}", " ".repeat(indent * self.indent_width)));
+                result.push_str(&format!("{}}}", " ".repeat(indent * self.config.indent_width)));
                 result
             }
             // CompoundAssign (+=, -=, etc.)
@@ -622,10 +636,10 @@ impl Formatter {
 
     /// Format a comment (complexity: 2)
     fn format_comment(&self, comment: &crate::frontend::ast::Comment, indent: usize) -> String {
-        let indent_str = if self.use_tabs {
+        let indent_str = if self.config.use_tabs {
             "\t".repeat(indent)
         } else {
-            " ".repeat(indent * self.indent_width)
+            " ".repeat(indent * self.config.indent_width)
         };
 
         match &comment.kind {

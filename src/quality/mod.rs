@@ -124,6 +124,7 @@
 pub mod coverage;
 pub mod enforcement;
 pub mod formatter;
+pub mod formatter_config;
 pub mod gates;
 pub mod instrumentation;
 pub mod linter;
@@ -133,6 +134,7 @@ pub mod scoring;
 pub use coverage::{
     CoverageCollector, CoverageReport, CoverageTool, FileCoverage, HtmlReportGenerator,
 };
+pub use formatter_config::FormatterConfig;
 use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct QualityGates {
