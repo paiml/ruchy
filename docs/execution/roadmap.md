@@ -201,13 +201,19 @@
   - Enhanced execute_format() to apply configuration
   - 11 CLI tests for config integration (format, check, invalid config)
 
-**Phase 2 Progress** (Ignore Directives - PARSER BUGS FIXED WITH EXTREME TDD):
-- ✅ [FMT-PERFECT-022] Ignore directives implementation (PARTIAL - 8/10 tests passing)
-  - **BUG #1 FIXED**: commands.rs now calls formatter.set_source()
-  - **BUG #2 FIXED**: Parser comment attribution (STOP THE LINE - Extreme TDD)
-  - **BUG #3 DISCOVERED**: Let expression spans don't include full expression tree
-  - **BUG #4 FIXED**: [PARSER-053] Line continuations with intervening comments (Extreme TDD)
-  - **BUG #5 FIXED**: [PARSER-054] Multiple leading comments not preserved (Extreme TDD)
+**Phase 2 Progress** (Ignore Directives - ✅ COMPLETE 10/10):
+- ✅ [FMT-PERFECT-022] Ignore directives implementation (COMPLETE - 10/10 tests passing)
+  - **ALL 10 BUGS FIXED** (Parser + Formatter fixes with Extreme TDD):
+    1. commands.rs not calling formatter.set_source()
+    2. Parser comment attribution wrong (trailing vs leading)
+    3. Let expression spans incomplete
+    4. [PARSER-053] Line continuations with comments fail
+    5. [PARSER-054] Multiple leading comments lost
+    6. find_rightmost_span_end() missing Function/Block cases
+    7. Formatter outputs "fun" instead of "fn"
+    8. Formatter adds unwanted ": Any" type annotations
+    9. Parser spans incomplete (workaround with brace scanning)
+    10. Top-level blocks unwrapped before checking ignore
   - **EXTREME TDD - RED PHASE**: Created 13 failing parser tests total
     - 4 tests for comment attribution
     - 6 tests for line continuation (PARSER-053)
@@ -216,28 +222,32 @@
     - Fixed consume_trailing_comment() with line awareness
     - Fixed try_handle_infix_operators() to peek past comments without consuming
     - Fixed try_binary_operators() to consume comments before operator
-    - **KEY INSIGHT**: Must peek past comments to find operators, but only consume after confirming
+    - Extended find_rightmost_span_end() with Function and Block cases
+    - Added brace-depth scanning to find expression boundaries
+    - **FINAL FIX**: Check ignore directive BEFORE unwrapping top-level blocks
   - **PROPERTY TESTS**: 6 tests with 10K+ random inputs verify invariants
   - **FIXES APPLIED**:
     - [PARSER] Fixed consume_trailing_comment() to check same line (is_on_same_line helper)
     - [PARSER] Added TokenStream::source() method for source access
     - [PARSER-053/054] Peek past comments in try_handle_infix_operators(), consume in try_binary_operators()
     - [FORMATTER] Modified read_and_format_file() to call formatter.set_source()
-    - [FORMATTER] Fixed format() to handle top-level blocks without adding braces
-    - [FORMATTER] Implemented find_rightmost_span_end() to calculate true expression end
-  - **TEST RESULTS**: Improved from 1/10 → 6/10 → 7/10 → 8/10 passing (+700% improvement)
-  - **PASSING TESTS (8/10)**:
+    - [FORMATTER] Extended find_rightmost_span_end() with Function and Block recursion
+    - [FORMATTER] Changed "fun" → "fn" in function formatter
+    - [FORMATTER] Skip "Any" type annotations (parser default)
+    - [FORMATTER] Added brace scanning with depth tracking
+    - [FORMATTER] **KEY**: Check ignore directive in format() BEFORE unwrapping blocks
+  - **TEST RESULTS**: 1/10 → 6/10 → 7/10 → 8/10 → 9/10 → 10/10 (+900% improvement, 100% complete)
+  - **ALL TESTS PASSING (10/10)** ✅:
     - test_fmt_ignore_preserves_single_line ✓
     - test_fmt_ignore_next_alias ✓
     - test_fmt_ignore_case_sensitivity ✓
     - test_fmt_ignore_does_not_affect_other_files ✓
     - test_fmt_ignore_with_extra_whitespace ✓
-    - test_fmt_ignore_with_check_mode ✓ (FIXED CLI assertion)
+    - test_fmt_ignore_with_check_mode ✓
     - test_fmt_ignore_multiple_expressions ✓ (FIXED BY PARSER-054)
     - test_fmt_ignore_preserves_comments_and_whitespace ✓ (FIXED BY PARSER-053)
-  - **REMAINING FAILURES (2/10)**: Needs investigation
-    - test_fmt_ignore_with_complex_expression (function formatting)
-    - test_fmt_ignore_with_nested_expressions (block handling)
+    - test_fmt_ignore_with_complex_expression ✓ (FIXED BY FORMATTER IMPROVEMENTS)
+    - test_fmt_ignore_with_nested_expressions ✓ (FIXED BY TOP-LEVEL CHECK)
 
 **Configuration Options Available**:
 - indent_width: usize (default: 4)
