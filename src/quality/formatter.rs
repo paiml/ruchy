@@ -128,7 +128,74 @@ impl Formatter {
             };
 
             // Find the true end by recursing through the AST to find the rightmost span
-            let end = self.find_rightmost_span_end(expr);
+            let mut end = self.find_rightmost_span_end(expr);
+
+            // WORKAROUND for incomplete parser spans: scan forward to find actual end
+            // For expressions like functions and blocks, the span often doesn't include closing braces
+            // We need to find the TRUE end of the expression by scanning forward
+            let bytes = src.as_bytes();
+
+            // Track brace depth to find matching closing brace
+            let mut brace_depth = 0;
+            let mut in_expression = false;
+
+            // Check if this is a block expression (starts with {)
+            // Skip past leading comments first
+            let mut scan_pos = start;
+            // Skip comment lines
+            while scan_pos < bytes.len() {
+                // Skip whitespace
+                while scan_pos < bytes.len() && (bytes[scan_pos] == b' ' || bytes[scan_pos] == b'\t') {
+                    scan_pos += 1;
+                }
+                // Check for comment
+                if scan_pos + 1 < bytes.len() && bytes[scan_pos] == b'/' && bytes[scan_pos + 1] == b'/' {
+                    // Skip to end of line
+                    while scan_pos < bytes.len() && bytes[scan_pos] != b'\n' {
+                        scan_pos += 1;
+                    }
+                    if scan_pos < bytes.len() {
+                        scan_pos += 1; // skip newline
+                    }
+                } else {
+                    break;
+                }
+            }
+            // Now skip final whitespace before the actual expression
+            while scan_pos < bytes.len() && (bytes[scan_pos] == b' ' || bytes[scan_pos] == b'\t' || bytes[scan_pos] == b'\n') {
+                scan_pos += 1;
+            }
+            // Check if we found a block
+            if scan_pos < bytes.len() && bytes[scan_pos] == b'{' {
+                brace_depth = 1;
+                in_expression = true;
+                scan_pos += 1;
+            }
+
+            if in_expression {
+                // Scan forward to find matching closing brace
+                while scan_pos < bytes.len() && brace_depth > 0 {
+                    if bytes[scan_pos] == b'{' {
+                        brace_depth += 1;
+                    } else if bytes[scan_pos] == b'}' {
+                        brace_depth -= 1;
+                        if brace_depth == 0 {
+                            // Found the matching closing brace
+                            end = scan_pos + 1;
+                            break;
+                        }
+                    }
+                    scan_pos += 1;
+                }
+            } else {
+                // Not a block - scan to end of line
+                while end < bytes.len() {
+                    if bytes[end] == b'\n' {
+                        break;
+                    }
+                    end += 1;
+                }
+            }
 
             let start = start.min(src.len());
             let end = end.min(src.len());
@@ -149,6 +216,16 @@ impl Formatter {
             Binary { left, right, .. } => {
                 max_end = max_end.max(self.find_rightmost_span_end(left));
                 max_end = max_end.max(self.find_rightmost_span_end(right));
+            }
+            Function { body, .. } => {
+                // Function body is the rightmost part
+                max_end = max_end.max(self.find_rightmost_span_end(body));
+            }
+            Block(exprs) => {
+                // Last expression in block is the rightmost
+                if let Some(last) = exprs.last() {
+                    max_end = max_end.max(self.find_rightmost_span_end(last));
+                }
             }
             _ => {
                 // For other expression types, use the expr.span.end
@@ -247,7 +324,7 @@ impl Formatter {
                 body,
                 ..
             } => {
-                let mut result = format!("fun {name}");
+                let mut result = format!("fn {name}");
                 // Parameters
                 result.push('(');
                 for (i, param) in params.iter().enumerate() {
@@ -256,8 +333,16 @@ impl Formatter {
                     }
                     if let crate::frontend::ast::Pattern::Identifier(param_name) = &param.pattern {
                         result.push_str(param_name);
-                        result.push_str(": ");
-                        result.push_str(&self.format_type(&param.ty.kind));
+                        // Only add type annotation if it's not the default "Any"
+                        if let crate::frontend::ast::TypeKind::Named(type_name) = &param.ty.kind {
+                            if type_name != "Any" {
+                                result.push_str(": ");
+                                result.push_str(type_name);
+                            }
+                        } else {
+                            result.push_str(": ");
+                            result.push_str(&self.format_type(&param.ty.kind));
+                        }
                     }
                 }
                 result.push(')');
