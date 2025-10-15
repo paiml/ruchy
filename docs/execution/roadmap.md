@@ -23,12 +23,21 @@
 
 ### Sprint 1: v3.89.0 - Comment Preservation (2-3 days)
 **Goal**: 100% comment preservation (line, block, doc, trailing)
-**Status**: 📋 **PLANNED** - Specification complete
+**Status**: 🟡 **IN PROGRESS** - [FMT-PERFECT-001] partial (lexer done)
 **Tickets**: [FMT-PERFECT-001] through [FMT-PERFECT-007]
 
+**Progress**:
+- ✅ [FMT-PERFECT-001] Lexer tracks comments (partial GREEN)
+  - Lexer now captures DocComment, LineComment, BlockComment tokens
+  - 12 failing CLI tests written (RED phase complete)
+- 🟡 [FMT-PERFECT-002] Store comments in AST (next)
+- ⏳ [FMT-PERFECT-003] Parser associates comments (pending)
+- ⏳ [FMT-PERFECT-004] Formatter emits comments (pending)
+- ✅ [FMT-PERFECT-005] Add 12 CLI tests (RED phase done)
+
 **What We'll Do**:
-- Extend lexer to track comments as tokens (not discard)
-- Store comments in AST (leading + trailing fields)
+- ✅ Extend lexer to track comments as tokens (not discard) - DONE
+- Store comments in AST (leading + trailing fields) - NEXT
 - Parser associates comments with nearest AST nodes
 - Formatter emits comments with expressions
 - Add 50 CLI tests for comment preservation

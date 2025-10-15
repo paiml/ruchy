@@ -73,9 +73,21 @@ fn process_escapes(s: &str) -> String {
 }
 #[derive(Logos, Debug, PartialEq, Clone)]
 #[logos(skip r"[ \t\n\f]+")]
-#[logos(skip r"//[^\n]*")]
-#[logos(skip r"/\*([^*]|\*[^/])*\*/")]
 pub enum Token {
+    // Comments (NEW: Track instead of skip)
+    #[regex(r"///[^\n]*", |lex| lex.slice()[3..].trim().to_string())]
+    DocComment(String),
+
+    #[regex(r"//[^\n]*", |lex| lex.slice()[2..].trim().to_string())]
+    LineComment(String),
+
+    #[regex(r"/\*([^*]|\*[^/])*\*/", |lex| {
+        let s = lex.slice();
+        // Remove /* and */ delimiters
+        s[2..s.len()-2].to_string()
+    })]
+    BlockComment(String),
+
     // Literals
     #[regex(r"[0-9]+(?:i8|i16|i32|i64|i128|isize|u8|u16|u32|u64|u128|usize)?", |lex| {
         let slice = lex.slice();
