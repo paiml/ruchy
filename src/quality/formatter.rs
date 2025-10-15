@@ -312,6 +312,84 @@ impl Formatter {
                     self.format_expr(value, indent)
                 )
             }
+            // Sprint 2: ExprKind Coverage Expansion
+            ExprKind::Lambda { params, body } => {
+                let params_str = params
+                    .iter()
+                    .map(|p| self.format_pattern(&p.pattern))
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                format!("|{}| {}", params_str, self.format_expr(body, indent))
+            }
+            ExprKind::ObjectLiteral { fields } => {
+                if fields.is_empty() {
+                    "{}".to_string()
+                } else {
+                    let fields_str = fields
+                        .iter()
+                        .map(|f| match f {
+                            crate::frontend::ast::ObjectField::KeyValue { key, value } => {
+                                format!("{}: {}", key, self.format_expr(value, indent))
+                            }
+                            crate::frontend::ast::ObjectField::Spread { expr } => {
+                                format!("...{}", self.format_expr(expr, indent))
+                            }
+                        })
+                        .collect::<Vec<_>>()
+                        .join(", ");
+                    format!("{{ {} }}", fields_str)
+                }
+            }
+            ExprKind::StructLiteral { name, fields, base } => {
+                let fields_str = fields
+                    .iter()
+                    .map(|(key, val)| format!("{}: {}", key, self.format_expr(val, indent)))
+                    .collect::<Vec<_>>()
+                    .join(", ");
+
+                if let Some(base_expr) = base {
+                    format!("{} {{ {}, ..{} }}", name, fields_str, self.format_expr(base_expr, indent))
+                } else {
+                    format!("{} {{ {} }}", name, fields_str)
+                }
+            }
+            ExprKind::Ternary { condition, true_expr, false_expr } => {
+                format!(
+                    "{} ? {} : {}",
+                    self.format_expr(condition, indent),
+                    self.format_expr(true_expr, indent),
+                    self.format_expr(false_expr, indent)
+                )
+            }
+            ExprKind::Throw { expr } => {
+                format!("throw {}", self.format_expr(expr, indent))
+            }
+            ExprKind::TryCatch { try_block, catch_clauses, finally_block } => {
+                let mut result = format!("try {}", self.format_expr(try_block, indent));
+
+                for catch_clause in catch_clauses {
+                    result.push_str(&format!(
+                        " catch ({}) {}",
+                        self.format_pattern(&catch_clause.pattern),
+                        self.format_expr(&catch_clause.body, indent)
+                    ));
+                }
+
+                if let Some(finally) = finally_block {
+                    result.push_str(&format!(" finally {}", self.format_expr(finally, indent)));
+                }
+
+                result
+            }
+            ExprKind::Await { expr } => {
+                format!("await {}", self.format_expr(expr, indent))
+            }
+            ExprKind::AsyncBlock { body } => {
+                format!("async {}", self.format_expr(body, indent))
+            }
+            ExprKind::TypeCast { expr, target_type } => {
+                format!("{} as {}", self.format_expr(expr, indent), target_type)
+            }
             _ => {
                 // CRITICAL: Changed from silent Debug output to explicit error
                 // This prevents silent data corruption
@@ -352,6 +430,119 @@ impl Formatter {
                 // Block comments: preserve text exactly as captured
                 format!("{indent_str}/*{text}*/")
             }
+        }
+    }
+
+    /// Format a pattern (complexity: 10)
+    fn format_pattern(&self, pattern: &crate::frontend::ast::Pattern) -> String {
+        use crate::frontend::ast::Pattern;
+
+        match pattern {
+            Pattern::Wildcard => "_".to_string(),
+            Pattern::Literal(lit) => self.format_literal(lit),
+            Pattern::Identifier(name) => name.clone(),
+            Pattern::QualifiedName(parts) => parts.join("::"),
+            Pattern::Tuple(patterns) => {
+                let inner = patterns
+                    .iter()
+                    .map(|p| self.format_pattern(p))
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                format!("({})", inner)
+            }
+            Pattern::List(patterns) => {
+                let inner = patterns
+                    .iter()
+                    .map(|p| self.format_pattern(p))
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                format!("[{}]", inner)
+            }
+            Pattern::Struct { name, fields, has_rest } => {
+                let fields_str = fields
+                    .iter()
+                    .map(|f| self.format_struct_pattern_field(f))
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                if *has_rest {
+                    format!("{} {{ {}, .. }}", name, fields_str)
+                } else {
+                    format!("{} {{ {} }}", name, fields_str)
+                }
+            }
+            Pattern::TupleVariant { path, patterns } => {
+                let path_str = path.join("::");
+                let patterns_str = patterns
+                    .iter()
+                    .map(|p| self.format_pattern(p))
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                format!("{}({})", path_str, patterns_str)
+            }
+            Pattern::Range { start, end, inclusive } => {
+                let op = if *inclusive { "..=" } else { ".." };
+                format!("{}{}{}", self.format_pattern(start), op, self.format_pattern(end))
+            }
+            Pattern::Or(patterns) => {
+                patterns
+                    .iter()
+                    .map(|p| self.format_pattern(p))
+                    .collect::<Vec<_>>()
+                    .join(" | ")
+            }
+            Pattern::Rest => "..".to_string(),
+            Pattern::RestNamed(name) => format!("..{}", name),
+            Pattern::AtBinding { name, pattern } => {
+                format!("{} @ {}", name, self.format_pattern(pattern))
+            }
+            Pattern::WithDefault { pattern, default } => {
+                format!("{} = {}", self.format_pattern(pattern), self.format_expr(default, 0))
+            }
+            Pattern::Mut(pattern) => {
+                format!("mut {}", self.format_pattern(pattern))
+            }
+            Pattern::Ok(pattern) => {
+                format!("Ok({})", self.format_pattern(pattern))
+            }
+            Pattern::Err(pattern) => {
+                format!("Err({})", self.format_pattern(pattern))
+            }
+            Pattern::Some(pattern) => {
+                format!("Some({})", self.format_pattern(pattern))
+            }
+            Pattern::None => "None".to_string(),
+        }
+    }
+
+    /// Format a struct pattern field (complexity: 2)
+    fn format_struct_pattern_field(&self, field: &crate::frontend::ast::StructPatternField) -> String {
+        if let Some(pattern) = &field.pattern {
+            format!("{}: {}", field.name, self.format_pattern(pattern))
+        } else {
+            // Shorthand syntax: just the field name
+            field.name.clone()
+        }
+    }
+
+    /// Format a literal value (complexity: 7)
+    fn format_literal(&self, literal: &crate::frontend::ast::Literal) -> String {
+        use crate::frontend::ast::Literal;
+
+        match literal {
+            Literal::Integer(val, suffix) => {
+                if let Some(suffix) = suffix {
+                    format!("{}{}", val, suffix)
+                } else {
+                    val.to_string()
+                }
+            }
+            Literal::Float(val) => val.to_string(),
+            Literal::String(s) => format!("\"{}\"", s),
+            Literal::Bool(b) => b.to_string(),
+            Literal::Char(c) => format!("'{}'", c),
+            Literal::Byte(b) => format!("{}u8", b),
+            Literal::Unit => "()".to_string(),
+            Literal::Null => "null".to_string(),
         }
     }
 }
