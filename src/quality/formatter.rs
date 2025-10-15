@@ -65,6 +65,13 @@ impl Formatter {
     /// // Verify behavior
     /// ```
     pub fn format(&self, ast: &Expr) -> Result<String> {
+        // Check if the top-level expression should be ignored
+        if self.should_ignore(ast) {
+            if let Some(original) = self.get_original_text(ast) {
+                return Ok(original);
+            }
+        }
+
         // Handle top-level blocks specially (don't add braces)
         if let ExprKind::Block(exprs) = &ast.kind {
             let mut result = String::new();
