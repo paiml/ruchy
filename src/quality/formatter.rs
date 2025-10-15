@@ -37,8 +37,24 @@ impl Formatter {
         Ok(self.format_expr(ast, 0))
     }
     fn format_type(&self, ty_kind: &crate::frontend::ast::TypeKind) -> String {
+        use crate::frontend::ast::TypeKind;
+
         match ty_kind {
-            crate::frontend::ast::TypeKind::Named(name) => name.clone(),
+            TypeKind::Named(name) => name.clone(),
+            TypeKind::Generic { base, params } => {
+                let params_str = params.iter().map(|t| self.format_type(&t.kind)).collect::<Vec<_>>().join(", ");
+                format!("{}<{}>", base, params_str)
+            }
+            TypeKind::Function { params, ret } => {
+                let params_str = params.iter().map(|t| self.format_type(&t.kind)).collect::<Vec<_>>().join(", ");
+                format!("({}) -> {}", params_str, self.format_type(&ret.kind))
+            }
+            TypeKind::Tuple(types) => {
+                format!("({})", types.iter().map(|t| self.format_type(&t.kind)).collect::<Vec<_>>().join(", "))
+            }
+            TypeKind::Array { elem_type, size } => {
+                format!("[{}; {}]", self.format_type(&elem_type.kind), size)
+            }
             _ => format!("{ty_kind:?}"),
         }
     }
@@ -435,6 +451,156 @@ impl Formatter {
                 let end_str = end.as_ref().map_or("".to_string(), |e| self.format_expr(e, indent));
                 format!("{}[{}..{}]", self.format_expr(object, indent), start_str, end_str)
             }
+
+            // Phase 3: Declarations, modules, patterns
+            ExprKind::Struct { name, type_params, fields, is_pub, .. } => {
+                let pub_str = if *is_pub { "pub " } else { "" };
+                let type_params_str = if type_params.is_empty() {
+                    String::new()
+                } else {
+                    format!("<{}>", type_params.join(", "))
+                };
+                let fields_str = fields
+                    .iter()
+                    .map(|f| format!("{}: {}", f.name, self.format_type(&f.ty.kind)))
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                format!("{}struct {}{} {{ {} }}", pub_str, name, type_params_str, fields_str)
+            }
+            ExprKind::TupleStruct { name, type_params, fields, is_pub, .. } => {
+                let pub_str = if *is_pub { "pub " } else { "" };
+                let type_params_str = if type_params.is_empty() {
+                    String::new()
+                } else {
+                    format!("<{}>", type_params.join(", "))
+                };
+                let fields_str = fields
+                    .iter()
+                    .map(|ty| self.format_type(&ty.kind))
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                format!("{}struct {}{}({})", pub_str, name, type_params_str, fields_str)
+            }
+            ExprKind::Enum { name, type_params, variants, is_pub } => {
+                let pub_str = if *is_pub { "pub " } else { "" };
+                let type_params_str = if type_params.is_empty() {
+                    String::new()
+                } else {
+                    format!("<{}>", type_params.join(", "))
+                };
+                let variants_str = variants
+                    .iter()
+                    .map(|v| self.format_enum_variant(v))
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                format!("{}enum {}{} {{ {} }}", pub_str, name, type_params_str, variants_str)
+            }
+            ExprKind::Trait { name, type_params, methods, is_pub, .. } => {
+                let pub_str = if *is_pub { "pub " } else { "" };
+                let type_params_str = if type_params.is_empty() {
+                    String::new()
+                } else {
+                    format!("<{}>", type_params.join(", "))
+                };
+                let methods_str = methods
+                    .iter()
+                    .map(|m| self.format_trait_method(m))
+                    .collect::<Vec<_>>()
+                    .join(" ");
+                format!("{}trait {}{} {{ {} }}", pub_str, name, type_params_str, methods_str)
+            }
+            ExprKind::Impl { type_params, trait_name, for_type, methods, .. } => {
+                let type_params_str = if type_params.is_empty() {
+                    String::new()
+                } else {
+                    format!("<{}>", type_params.join(", "))
+                };
+                let trait_part = trait_name.as_ref().map_or(String::new(), |t| format!("{} for ", t));
+                let methods_str = methods
+                    .iter()
+                    .map(|m| self.format_impl_method(m))
+                    .collect::<Vec<_>>()
+                    .join(" ");
+                format!("impl{} {}{} {{ {} }}", type_params_str, trait_part, for_type, methods_str)
+            }
+            ExprKind::Class { name, type_params, fields, .. } => {
+                let type_params_str = if type_params.is_empty() {
+                    String::new()
+                } else {
+                    format!("<{}>", type_params.join(", "))
+                };
+                let fields_str = fields
+                    .iter()
+                    .map(|f| format!("{}: {}", f.name, self.format_type(&f.ty.kind)))
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                format!("class {}{} {{ {} }}", name, type_params_str, fields_str)
+            }
+            ExprKind::Module { name, body } => {
+                format!("mod {} {}", name, self.format_expr(body, indent))
+            }
+            ExprKind::Import { module, items } => {
+                if let Some(item_list) = items {
+                    format!("import {}::{{{}}}", module, item_list.join(", "))
+                } else {
+                    format!("import {}", module)
+                }
+            }
+            ExprKind::Export { expr, is_default } => {
+                if *is_default {
+                    format!("export default {}", self.format_expr(expr, indent))
+                } else {
+                    format!("export {}", self.format_expr(expr, indent))
+                }
+            }
+            ExprKind::LetPattern { pattern, value, body, .. } => {
+                format!(
+                    "let {} = {} in {}",
+                    self.format_pattern(pattern),
+                    self.format_expr(value, indent),
+                    self.format_expr(body, indent)
+                )
+            }
+            ExprKind::WhileLet { pattern, expr, body, .. } => {
+                format!(
+                    "while let {} = {} {}",
+                    self.format_pattern(pattern),
+                    self.format_expr(expr, indent),
+                    self.format_expr(body, indent)
+                )
+            }
+            ExprKind::StringInterpolation { parts } => {
+                let parts_str = parts
+                    .iter()
+                    .map(|part| match part {
+                        crate::frontend::ast::StringPart::Text(s) => s.clone(),
+                        crate::frontend::ast::StringPart::Expr(e) => {
+                            format!("{{{}}}", self.format_expr(e, indent))
+                        }
+                        crate::frontend::ast::StringPart::ExprWithFormat { expr, format_spec } => {
+                            format!("{{{}:{}}}", self.format_expr(expr, indent), format_spec)
+                        }
+                    })
+                    .collect::<Vec<_>>()
+                    .join("");
+                format!("f\"{}\"", parts_str)
+            }
+            ExprKind::Actor { name, state, handlers } => {
+                let state_str = state
+                    .iter()
+                    .map(|f| format!("{}: {}", f.name, self.format_type(&f.ty.kind)))
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                let handlers_str = handlers
+                    .iter()
+                    .map(|h| format!("handle {}", h.message_type))
+                    .collect::<Vec<_>>()
+                    .join(" ");
+                format!("actor {} {{ {} {} }}", name, state_str, handlers_str)
+            }
+            ExprKind::Send { actor, message } => {
+                format!("send({}, {})", self.format_expr(actor, indent), self.format_expr(message, indent))
+            }
             _ => {
                 // CRITICAL: Changed from silent Debug output to explicit error
                 // This prevents silent data corruption
@@ -589,6 +755,49 @@ impl Formatter {
             Literal::Unit => "()".to_string(),
             Literal::Null => "null".to_string(),
         }
+    }
+
+    /// Format an enum variant (complexity: 3)
+    fn format_enum_variant(&self, variant: &crate::frontend::ast::EnumVariant) -> String {
+        use crate::frontend::ast::EnumVariantKind;
+
+        match &variant.kind {
+            EnumVariantKind::Unit => variant.name.clone(),
+            EnumVariantKind::Tuple(types) => {
+                let types_str = types.iter().map(|t| self.format_type(&t.kind)).collect::<Vec<_>>().join(", ");
+                format!("{}({})", variant.name, types_str)
+            }
+            EnumVariantKind::Struct(fields) => {
+                let fields_str = fields
+                    .iter()
+                    .map(|f| format!("{}: {}", f.name, self.format_type(&f.ty.kind)))
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                format!("{} {{ {} }}", variant.name, fields_str)
+            }
+        }
+    }
+
+    /// Format a trait method (complexity: 3)
+    fn format_trait_method(&self, method: &crate::frontend::ast::TraitMethod) -> String {
+        let params_str = method.params
+            .iter()
+            .map(|p| format!("{}: {}", self.format_pattern(&p.pattern), self.format_type(&p.ty.kind)))
+            .collect::<Vec<_>>()
+            .join(", ");
+        let return_str = method.return_type.as_ref().map_or(String::new(), |t| format!(" -> {}", self.format_type(&t.kind)));
+        format!("fn {}({}){}; ", method.name, params_str, return_str)
+    }
+
+    /// Format an impl method (complexity: 3)
+    fn format_impl_method(&self, method: &crate::frontend::ast::ImplMethod) -> String {
+        let params_str = method.params
+            .iter()
+            .map(|p| format!("{}: {}", self.format_pattern(&p.pattern), self.format_type(&p.ty.kind)))
+            .collect::<Vec<_>>()
+            .join(", ");
+        let return_str = method.return_type.as_ref().map_or(String::new(), |t| format!(" -> {}", self.format_type(&t.kind)));
+        format!("fn {}({}){}  {}", method.name, params_str, return_str, self.format_expr(&method.body, 0))
     }
 }
 impl Default for Formatter {
