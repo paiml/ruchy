@@ -5,19 +5,21 @@ All notable changes to the Ruchy programming language will be documented in this
 ## [Unreleased]
 
 ### Fixed
-- **[FMT-PERFECT-022] Formatter ignore directives - 9/10 tests passing (STOP THE LINE fixes)**:
+- **[FMT-PERFECT-022] Formatter ignore directives - 10/10 tests passing ✅ COMPLETE**:
   - **BUG #1 FIXED**: find_rightmost_span_end() missing Function and Block cases
   - **BUG #2 FIXED**: Formatter outputting "fun" instead of "fn" for functions
   - **BUG #3 FIXED**: Formatter adding "Any" type annotations when not in source
-  - **BUG #4 WORKAROUND**: Parser spans incomplete - added brace scanning to find true end
+  - **BUG #4 FIXED**: Parser spans incomplete - added brace scanning to find true end
+  - **BUG #5 FIXED**: Top-level blocks unwrapped before checking ignore directive
   - **FIXES APPLIED**:
     - Added Function and Block cases to find_rightmost_span_end() recursion
     - Changed "fun" → "fn" in function formatter output
     - Skip type annotation when type is "Any" (parser default)
     - Scan forward for closing braces using brace-depth tracking
     - Skip past comment lines when detecting block expressions
-  - **TEST RESULTS**: Ignore directive tests 8/10 → 9/10 (+1 fixed)
-  - **PASSING TESTS (9/10)**:
+    - **KEY FIX**: Check for ignore directive BEFORE unwrapping top-level blocks
+  - **TEST RESULTS**: Ignore directive tests 8/10 → 9/10 → 10/10 (100% COMPLETE)
+  - **ALL TESTS PASSING (10/10)**:
     - test_fmt_ignore_preserves_single_line ✓
     - test_fmt_ignore_next_alias ✓
     - test_fmt_ignore_case_sensitivity ✓
@@ -26,11 +28,8 @@ All notable changes to the Ruchy programming language will be documented in this
     - test_fmt_ignore_with_check_mode ✓
     - test_fmt_ignore_multiple_expressions ✓
     - test_fmt_ignore_preserves_comments_and_whitespace ✓
-    - test_fmt_ignore_with_complex_expression ✓ (FIXED - functions now preserve)
-  - **REMAINING FAILURE (1/10)**: test_fmt_ignore_with_nested_expressions
-    - Issue: Parser transforms block statements into nested Let expressions
-    - Ignore comment attached to outer Block, but formatter sees inner Let
-    - Requires parser AST structure fix
+    - test_fmt_ignore_with_complex_expression ✓
+    - test_fmt_ignore_with_nested_expressions ✓ (FINAL FIX - top-level check)
 - **[PARSER-053 + PARSER-054] Fixed multiple comment preservation bugs with Extreme TDD (8/10 ignore tests passing)**:
   - **BUG #1 - PARSER-053**: Line continuations with intervening comments fail ("Unexpected token: Plus")
   - **BUG #2 - PARSER-054**: Multiple leading comments in block not preserved (only first captured)
