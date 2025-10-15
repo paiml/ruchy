@@ -149,7 +149,8 @@ fn read_and_format_file(path: &Path) -> Result<(String, String)> {
         .with_context(|| format!("Failed to read file: {}", path.display()))?;
     let mut parser = RuchyParser::new(&source);
     let ast = parser.parse()?;
-    let formatter = Formatter::new();
+    let mut formatter = Formatter::new();
+    formatter.set_source(source.clone());
     let formatted_code = formatter.format(&ast)?;
     Ok((source, formatted_code))
 }

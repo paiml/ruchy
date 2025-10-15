@@ -5,9 +5,16 @@ All notable changes to the Ruchy programming language will be documented in this
 ## [Unreleased]
 
 ### Fixed
+- **[FMT-PERFECT-011] Major fix for ignore directive feature (6/10 tests passing)**:
+  - ROOT CAUSE 1: Formatter never received source text (commands.rs didn't call set_source)
+  - ROOT CAUSE 2: Parser bug - Let expression spans don't include full expression tree
+  - Fixed read_and_format_file() to call formatter.set_source()
+  - Fixed format() to handle top-level blocks without braces
+  - Implemented find_rightmost_span_end() to recursively calculate true expression end
+  - Improved test success from 1/10 to 6/10 (+500% improvement)
+  - Remaining 4 failures require deeper investigation (nested structures, check mode)
 - Updated Sprint 3 config test assertions for new CLI output format (6/6 passing, 3 ignored with TODOs)
 - Marked 3 config tests as ignored for future investigation (functionality works, test assertions need updates)
-- Partial fix for ignore directive span calculation (1/10 tests passing, needs further work)
 
 ## [3.88.0] - 2025-10-15
 

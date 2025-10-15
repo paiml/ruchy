@@ -65,8 +65,20 @@ impl Formatter {
     /// // Verify behavior
     /// ```
     pub fn format(&self, ast: &Expr) -> Result<String> {
-        // Simple formatter that converts AST back to source
-        Ok(self.format_expr(ast, 0))
+        // Handle top-level blocks specially (don't add braces)
+        if let ExprKind::Block(exprs) = &ast.kind {
+            let mut result = String::new();
+            for (i, expr) in exprs.iter().enumerate() {
+                if i > 0 {
+                    result.push('\n');
+                }
+                result.push_str(&self.format_expr(expr, 0));
+            }
+            Ok(result)
+        } else {
+            // Single expression at top level
+            Ok(self.format_expr(ast, 0))
+        }
     }
     fn format_type(&self, ty_kind: &crate::frontend::ast::TypeKind) -> String {
         use crate::frontend::ast::TypeKind;
@@ -114,12 +126,37 @@ impl Formatter {
             } else {
                 expr.span.start
             };
-            let end = expr.span.end;
+
+            // Find the true end by recursing through the AST to find the rightmost span
+            let end = self.find_rightmost_span_end(expr);
 
             let start = start.min(src.len());
             let end = end.min(src.len());
             src[start..end].to_string()
         })
+    }
+
+    /// Recursively find the rightmost (maximum) span end in an expression tree
+    fn find_rightmost_span_end(&self, expr: &Expr) -> usize {
+        use ExprKind::*;
+        let mut max_end = expr.span.end;
+
+        match &expr.kind {
+            Let { value, body, .. } => {
+                max_end = max_end.max(self.find_rightmost_span_end(value));
+                max_end = max_end.max(self.find_rightmost_span_end(body));
+            }
+            Binary { left, right, .. } => {
+                max_end = max_end.max(self.find_rightmost_span_end(left));
+                max_end = max_end.max(self.find_rightmost_span_end(right));
+            }
+            _ => {
+                // For other expression types, use the expr.span.end
+                // This is a simplified version - full implementation would need to recurse into all expression types
+            }
+        }
+
+        max_end
     }
 
     fn format_expr(&self, expr: &Expr, indent: usize) -> String {
