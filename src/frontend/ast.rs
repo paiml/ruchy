@@ -29,6 +29,55 @@
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
+/// Comment information for AST nodes.
+///
+/// Comments are preserved during parsing to enable accurate code formatting
+/// that maintains documentation and developer intent. Each comment tracks its
+/// text content, position, and association with AST nodes.
+///
+/// # Examples
+///
+/// ```ignore
+/// use ruchy::frontend::ast::{Comment, CommentKind, Span};
+///
+/// // Create a line comment
+/// let comment = Comment::new(
+///     CommentKind::Line("This is a comment".to_string()),
+///     Span::new(0, 20)
+/// );
+/// ```
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Comment {
+    /// The type and content of this comment.
+    pub kind: CommentKind,
+    /// Source location information for this comment.
+    pub span: Span,
+}
+
+impl Comment {
+    /// Creates a new comment with the given kind and span.
+    #[must_use]
+    pub fn new(kind: CommentKind, span: Span) -> Self {
+        Self { kind, span }
+    }
+}
+
+/// The type of comment.
+///
+/// Ruchy supports three types of comments:
+/// - Line comments starting with `//`
+/// - Doc comments starting with `///` for documentation
+/// - Block comments enclosed in `/* ... */`
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub enum CommentKind {
+    /// A single-line comment: `// comment text`
+    Line(String),
+    /// A documentation comment: `/// doc comment text`
+    Doc(String),
+    /// A block comment: `/* comment text */`
+    Block(String),
+}
+
 /// Source location information for AST nodes.
 ///
 /// A `Span` represents a contiguous range of characters in the source code,
@@ -186,6 +235,16 @@ pub struct Expr {
     pub span: Span,
     /// Compiler attributes and metadata attached to this expression.
     pub attributes: Vec<Attribute>,
+    /// Comments that appear before this expression.
+    ///
+    /// Leading comments are associated with the expression they precede.
+    /// These typically include documentation comments and explanatory notes.
+    pub leading_comments: Vec<Comment>,
+    /// Optional comment that appears at the end of the same line as this expression.
+    ///
+    /// Trailing comments are inline comments that provide context for the
+    /// specific line of code they follow.
+    pub trailing_comment: Option<Comment>,
 }
 impl Expr {
     /// Creates a new expression with the given kind and span.
@@ -214,6 +273,54 @@ impl Expr {
             kind,
             span,
             attributes: Vec::new(),
+            leading_comments: Vec::new(),
+            trailing_comment: None,
+        }
+    }
+
+    /// Creates a new expression with comments attached.
+    ///
+    /// This constructor is used during parsing to associate comments with
+    /// their corresponding AST nodes, enabling accurate code formatting that
+    /// preserves documentation.
+    ///
+    /// # Arguments
+    ///
+    /// * `kind` - The specific type of expression
+    /// * `span` - The source location of this expression
+    /// * `leading_comments` - Comments that appear before this expression
+    /// * `trailing_comment` - Optional comment at the end of the line
+    ///
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::frontend::ast::{Expr, ExprKind, Comment, CommentKind, Span};
+    ///
+    /// let comment = Comment::new(
+    ///     CommentKind::Line("Important value".to_string()),
+    ///     Span::new(0, 18)
+    /// );
+    ///
+    /// let expr = Expr::with_comments(
+    ///     ExprKind::Literal(Literal::Integer(42, None)),
+    ///     Span::new(20, 22),
+    ///     vec![],
+    ///     Some(comment)
+    /// );
+    /// ```
+    #[must_use]
+    pub fn with_comments(
+        kind: ExprKind,
+        span: Span,
+        leading_comments: Vec<Comment>,
+        trailing_comment: Option<Comment>,
+    ) -> Self {
+        Self {
+            kind,
+            span,
+            attributes: Vec::new(),
+            leading_comments,
+            trailing_comment,
         }
     }
     /// Creates a new expression with attributes attached.
@@ -245,6 +352,8 @@ impl Expr {
             kind,
             span,
             attributes,
+            leading_comments: Vec::new(),
+            trailing_comment: None,
         }
     }
 }

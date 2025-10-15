@@ -124,6 +124,8 @@ impl MacroExpander {
             )),
             span: ast.span,
             attributes: vec![],
+            leading_comments: Vec::new(),
+            trailing_comment: None,
         }
     }
 
@@ -134,6 +136,8 @@ impl MacroExpander {
             kind: ExprKind::Literal(crate::frontend::ast::Literal::Integer(42, None)),
             span: ast.span,
             attributes: vec![],
+            leading_comments: Vec::new(),
+            trailing_comment: None,
         }
     }
 
@@ -146,6 +150,8 @@ impl MacroExpander {
             )),
             span: ast.span,
             attributes: vec![],
+            leading_comments: Vec::new(),
+            trailing_comment: None,
         }
     }
 }
@@ -166,6 +172,8 @@ mod tests {
             kind,
             span: Span::new(0, 0),
             attributes: vec![],
+            leading_comments: Vec::new(),
+            trailing_comment: None,
         }
     }
 

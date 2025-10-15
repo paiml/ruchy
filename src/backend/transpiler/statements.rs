@@ -1296,6 +1296,8 @@ impl Transpiler {
                 },
                 span: object.span,
                 attributes: vec![],
+                leading_comments: Vec::new(),
+                trailing_comment: None,
             };
 
             // Try DataFrame builder pattern transpilation (inline implementation)
@@ -5795,6 +5797,8 @@ mod property_tests_statements {
             kind: ExprKind::List(vec![]),
             span: Span::default(),
             attributes: vec![],
+            leading_comments: Vec::new(),
+            trailing_comment: None,
         };
         assert!(transpiler.value_creates_vec(&vec_expr));
 
@@ -6010,6 +6014,8 @@ mod property_tests_statements {
                 kind: ExprKind::List(vec![]),
                 span: Span::default(),
                 attributes: vec![],
+                leading_comments: Vec::new(),
+                trailing_comment: None,
             },
             Expr {
                 kind: ExprKind::Call {
@@ -6017,11 +6023,15 @@ mod property_tests_statements {
                         kind: ExprKind::Identifier("vec".to_string()),
                         span: Span::default(),
                         attributes: vec![],
+                        leading_comments: Vec::new(),
+                        trailing_comment: None,
                     }),
                     args: vec![],
                 },
                 span: Span::default(),
                 attributes: vec![],
+                leading_comments: Vec::new(),
+                trailing_comment: None,
             },
         ];
 

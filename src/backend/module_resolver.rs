@@ -199,6 +199,8 @@ impl ModuleResolver {
                 },
                 span: expr.span,
                 attributes: expr.attributes.clone(),
+                leading_comments: Vec::new(),
+                trailing_comment: None,
             })
         }
     }

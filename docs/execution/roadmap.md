@@ -27,11 +27,15 @@
 **Tickets**: [FMT-PERFECT-001] through [FMT-PERFECT-007]
 
 **Progress**:
-- ✅ [FMT-PERFECT-001] Lexer tracks comments (partial GREEN)
+- ✅ [FMT-PERFECT-001] Lexer tracks comments (GREEN - COMPLETE)
   - Lexer now captures DocComment, LineComment, BlockComment tokens
   - 12 failing CLI tests written (RED phase complete)
-- 🟡 [FMT-PERFECT-002] Store comments in AST (next)
-- ⏳ [FMT-PERFECT-003] Parser associates comments (pending)
+- ✅ [FMT-PERFECT-002] Store comments in AST (GREEN - COMPLETE)
+  - Added Comment and CommentKind types
+  - Added leading_comments and trailing_comment fields to Expr
+  - Fixed 30+ Expr initializations across codebase
+  - Compiles successfully
+- 🟡 [FMT-PERFECT-003] Parser associates comments (NEXT)
 - ⏳ [FMT-PERFECT-004] Formatter emits comments (pending)
 - ✅ [FMT-PERFECT-005] Add 12 CLI tests (RED phase done)
 

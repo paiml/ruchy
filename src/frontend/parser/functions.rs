@@ -11,40 +11,14 @@ pub fn parse_function(state: &mut ParserState) -> Result<Expr> {
     parse_function_with_visibility(state, false)
 }
 pub fn parse_function_with_visibility(state: &mut ParserState, is_pub: bool) -> Result<Expr> {
-    let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume fun
-                                                                                 // For regular functions, async is not supported in this path
-    let is_async = false;
-    // Parse function name
-    let name = if let Some((Token::Identifier(n), _)) = state.tokens.peek() {
-        let name = n.clone();
-        state.tokens.advance();
-        name
-    } else {
-        "anonymous".to_string()
-    };
-    // Parse optional type parameters <T, U, ...>
-    let type_params = if matches!(state.tokens.peek(), Some((Token::Less, _))) {
-        utils::parse_type_parameters(state)?
-    } else {
-        Vec::new()
-    };
-    // Parse parameters
+    let start_span = state.tokens.advance().expect("checked by parser logic").1;
+    let name = parse_function_name(state);
+    let type_params = parse_optional_type_params(state)?;
     let params = utils::parse_params(state)?;
-    // Parse return type if present
-    let return_type = if matches!(state.tokens.peek(), Some((Token::Arrow, _))) {
-        state.tokens.advance(); // consume ->
-        Some(utils::parse_type(state)?)
-    } else {
-        None
-    };
-
-    // Parse where clause if present (for now, we parse and skip it)
-    if matches!(state.tokens.peek(), Some((Token::Where, _))) {
-        parse_where_clause(state)?;
-    }
-
-    // Parse body
+    let return_type = parse_optional_return_type(state)?;
+    parse_optional_where_clause(state)?;
     let body = super::parse_expr_recursive(state)?;
+
     Ok(Expr::new(
         ExprKind::Function {
             name,
@@ -52,54 +26,126 @@ pub fn parse_function_with_visibility(state: &mut ParserState, is_pub: bool) -> 
             params,
             return_type,
             body: Box::new(body),
-            is_async,
+            is_async: false,
             is_pub,
         },
         start_span,
     ))
 }
+
+/// Parse function name or return "anonymous" (complexity: 1)
+fn parse_function_name(state: &mut ParserState) -> String {
+    if let Some((Token::Identifier(n), _)) = state.tokens.peek() {
+        let name = n.clone();
+        state.tokens.advance();
+        name
+    } else {
+        "anonymous".to_string()
+    }
+}
+
+/// Parse optional type parameters <T, U, ...> (complexity: 1)
+fn parse_optional_type_params(state: &mut ParserState) -> Result<Vec<String>> {
+    if matches!(state.tokens.peek(), Some((Token::Less, _))) {
+        utils::parse_type_parameters(state)
+    } else {
+        Ok(Vec::new())
+    }
+}
+
+/// Parse optional return type after arrow (complexity: 2)
+fn parse_optional_return_type(state: &mut ParserState) -> Result<Option<Type>> {
+    if matches!(state.tokens.peek(), Some((Token::Arrow, _))) {
+        state.tokens.advance();
+        Ok(Some(utils::parse_type(state)?))
+    } else {
+        Ok(None)
+    }
+}
+
+/// Parse optional where clause (complexity: 1)
+fn parse_optional_where_clause(state: &mut ParserState) -> Result<()> {
+    if matches!(state.tokens.peek(), Some((Token::Where, _))) {
+        parse_where_clause(state)?;
+    }
+    Ok(())
+}
 fn parse_lambda_params(state: &mut ParserState) -> Result<Vec<Param>> {
     let mut params = Vec::new();
-    // Parse parameters until we hit a pipe or arrow
-    loop {
-        // Check if we've reached the end of parameters
-        if matches!(state.tokens.peek(), Some((Token::Pipe, _))) {
-            break;
-        }
-        // Parse parameter name
-        let name = if let Some((Token::Identifier(n), _)) = state.tokens.peek() {
-            let name = n.clone();
-            state.tokens.advance();
-            name
-        } else {
-            break; // No more parameters
-        };
-        // Parse optional type annotation
-        let ty = if matches!(state.tokens.peek(), Some((Token::Colon, _))) {
-            state.tokens.advance(); // consume :
-            utils::parse_type(state)?
-        } else {
-            // Default to inferred type - use _ as placeholder
-            Type {
-                kind: TypeKind::Named("_".to_string()),
-                span: Span { start: 0, end: 0 },
-            }
-        };
-        params.push(Param {
-            pattern: Pattern::Identifier(name),
-            ty,
-            span: Span { start: 0, end: 0 },
-            is_mutable: false,
-            default_value: None,
-        });
-        // Check for comma
-        if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
-            state.tokens.advance(); // consume comma
-        } else {
+    while !is_at_param_end(state) {
+        if !try_append_lambda_param(state, &mut params)? {
             break;
         }
     }
     Ok(params)
+}
+
+/// Try to append a lambda parameter, return false if no more params (complexity: 3)
+fn try_append_lambda_param(state: &mut ParserState, params: &mut Vec<Param>) -> Result<bool> {
+    let Some(param) = try_parse_single_lambda_param(state)? else {
+        return Ok(false);
+    };
+    params.push(param);
+    Ok(consume_comma_if_present(state))
+}
+
+/// Check if at end of parameter list (complexity: 1)
+fn is_at_param_end(state: &mut ParserState) -> bool {
+    matches!(state.tokens.peek(), Some((Token::Pipe, _)))
+}
+
+/// Try to parse a single lambda parameter (complexity: 2)
+fn try_parse_single_lambda_param(state: &mut ParserState) -> Result<Option<Param>> {
+    let Some(param_name) = try_parse_param_name(state)? else {
+        return Ok(None);
+    };
+    let param_type = parse_optional_type_annotation(state)?;
+    Ok(Some(create_lambda_param(param_name, param_type)))
+}
+
+/// Try to parse a parameter name, returning None if no identifier found (complexity: 1)
+fn try_parse_param_name(state: &mut ParserState) -> Result<Option<String>> {
+    if let Some((Token::Identifier(n), _)) = state.tokens.peek() {
+        let name = n.clone();
+        state.tokens.advance();
+        Ok(Some(name))
+    } else {
+        Ok(None)
+    }
+}
+
+/// Parse optional type annotation after colon (complexity: 2)
+fn parse_optional_type_annotation(state: &mut ParserState) -> Result<Type> {
+    if matches!(state.tokens.peek(), Some((Token::Colon, _))) {
+        state.tokens.advance();
+        utils::parse_type(state)
+    } else {
+        Ok(Type {
+            kind: TypeKind::Named("_".to_string()),
+            span: Span { start: 0, end: 0 },
+        })
+    }
+}
+
+/// Create a lambda parameter from name and type (complexity: 1)
+fn create_lambda_param(name: String, ty: Type) -> Param {
+    Param {
+        pattern: Pattern::Identifier(name),
+        ty,
+        span: Span { start: 0, end: 0 },
+        is_mutable: false,
+        default_value: None,
+    }
+}
+
+/// Consume comma if present, return true if consumed (complexity: 1)
+fn consume_comma_if_present(state: &mut ParserState) -> bool {
+    if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+        state.tokens.advance();
+        true
+    } else {
+        false
+    }
 }
 /// # Errors
 ///
@@ -234,6 +280,8 @@ fn build_call_expression(
             },
             span: Span { start: 0, end: 0 },
             attributes: Vec::new(),
+            leading_comments: Vec::new(),
+            trailing_comment: None,
         })
     } else {
         build_struct_literal_call(func, named_args)
@@ -252,6 +300,8 @@ fn build_struct_literal_call(func: Expr, named_args: Vec<(String, Expr)>) -> Res
             },
             span: Span { start: 0, end: 0 },
             attributes: Vec::new(),
+            leading_comments: Vec::new(),
+            trailing_comment: None,
         })
     } else {
         // For now, only support named args with simple identifiers
@@ -262,6 +312,8 @@ fn build_struct_literal_call(func: Expr, named_args: Vec<(String, Expr)>) -> Res
             },
             span: Span { start: 0, end: 0 },
             attributes: Vec::new(),
+            leading_comments: Vec::new(),
+            trailing_comment: None,
         })
     }
 }
@@ -282,6 +334,8 @@ pub fn parse_method_call(state: &mut ParserState, receiver: Expr) -> Result<Expr
             },
             span: Span { start: 0, end: 0 },
             attributes: Vec::new(),
+            leading_comments: Vec::new(),
+            trailing_comment: None,
         });
     }
     // Parse method name or tuple index
@@ -312,6 +366,8 @@ pub fn parse_method_call(state: &mut ParserState, receiver: Expr) -> Result<Expr
                 },
                 span: Span { start: 0, end: 0 },
                 attributes: Vec::new(),
+                leading_comments: Vec::new(),
+                trailing_comment: None,
             })
         }
         _ => {
@@ -348,6 +404,8 @@ pub fn parse_optional_method_call(state: &mut ParserState, receiver: Expr) -> Re
                 },
                 span: Span { start: 0, end: 0 },
                 attributes: Vec::new(),
+                leading_comments: Vec::new(),
+                trailing_comment: None,
             })
         }
         _ => {
@@ -414,19 +472,13 @@ fn convert_named_args_to_object(state: &mut ParserState, named_args: Vec<(String
     Expr::new(ExprKind::ObjectLiteral { fields }, span)
 }
 
-/// Parse argument list with both positional and named arguments (complexity: 6)
+/// Parse argument list with both positional and named arguments (complexity: 3, cognitive: 5)
 fn parse_arguments_list(state: &mut ParserState) -> Result<(Vec<Expr>, Vec<(String, Expr)>)> {
     let mut args = Vec::new();
     let mut named_args = Vec::new();
 
-    while !matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
-        // Try parsing as named argument first
-        if let Some((name, value)) = try_parse_named_argument(state)? {
-            named_args.push((name, value));
-        } else {
-            // Regular positional argument
-            args.push(super::parse_expr_recursive(state)?);
-        }
+    while !is_at_argument_list_end(state) {
+        parse_single_argument(state, &mut args, &mut named_args)?;
 
         if !handle_argument_separator(state) {
             break;
@@ -434,6 +486,25 @@ fn parse_arguments_list(state: &mut ParserState) -> Result<(Vec<Expr>, Vec<(Stri
     }
 
     Ok((args, named_args))
+}
+
+/// Check if at end of argument list (complexity: 1, cognitive: 1)
+fn is_at_argument_list_end(state: &mut ParserState) -> bool {
+    matches!(state.tokens.peek(), Some((Token::RightParen, _)))
+}
+
+/// Parse a single argument (named or positional) (complexity: 2, cognitive: 3)
+fn parse_single_argument(
+    state: &mut ParserState,
+    args: &mut Vec<Expr>,
+    named_args: &mut Vec<(String, Expr)>,
+) -> Result<()> {
+    if let Some((name, value)) = try_parse_named_argument(state)? {
+        named_args.push((name, value));
+    } else {
+        args.push(super::parse_expr_recursive(state)?);
+    }
+    Ok(())
 }
 
 /// Try to parse a named argument (identifier: value) (complexity: 5)
@@ -497,6 +568,8 @@ fn handle_dataframe_method(receiver: Expr, method: String, args: Vec<Expr>) -> R
         },
         span: Span { start: 0, end: 0 },
         attributes: Vec::new(),
+        leading_comments: Vec::new(),
+        trailing_comment: None,
     })
 }
 /// Extract column names from select arguments (complexity: 8)
@@ -547,6 +620,8 @@ fn create_method_call(receiver: Expr, method: String, args: Vec<Expr>) -> Expr {
         },
         span: Span { start: 0, end: 0 },
         attributes: Vec::new(),
+        leading_comments: Vec::new(),
+        trailing_comment: None,
     }
 }
 /// Create a field access expression (complexity: 1)
@@ -558,48 +633,78 @@ fn create_field_access(receiver: Expr, field: String) -> Expr {
         },
         span: Span { start: 0, end: 0 },
         attributes: Vec::new(),
+        leading_comments: Vec::new(),
+        trailing_comment: None,
     }
 }
+/// Parse optional method or field access (?. operator) (complexity: 2, cognitive: 3)
 fn parse_optional_method_or_field_access(
     state: &mut ParserState,
     receiver: Expr,
     method: String,
 ) -> Result<Expr> {
-    // Check if it's a method call (with parentheses) or field access
-    if matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
-        // Optional method call - convert to OptionalMethodCall AST node
-        // For now, we'll just parse as regular method call but with optional semantics
-        state.tokens.advance(); // consume (
-        let mut args = Vec::new();
-        while !matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
-            args.push(super::parse_expr_recursive(state)?);
-            if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
-                state.tokens.advance(); // consume comma
-            } else {
-                break;
-            }
-        }
-        state.tokens.expect(&Token::RightParen)?;
-        // Create an OptionalMethodCall expression
-        Ok(Expr {
-            kind: ExprKind::OptionalMethodCall {
-                receiver: Box::new(receiver),
-                method,
-                args,
-            },
-            span: Span { start: 0, end: 0 },
-            attributes: Vec::new(),
-        })
+    if is_method_call(state) {
+        parse_optional_method_call_syntax(state, receiver, method)
     } else {
-        // Optional field access
-        Ok(Expr {
-            kind: ExprKind::OptionalFieldAccess {
-                object: Box::new(receiver),
-                field: method,
-            },
-            span: Span { start: 0, end: 0 },
-            attributes: Vec::new(),
-        })
+        Ok(create_optional_field_access(receiver, method))
+    }
+}
+
+/// Check if next token indicates method call (complexity: 1, cognitive: 1)
+fn is_method_call(state: &mut ParserState) -> bool {
+    matches!(state.tokens.peek(), Some((Token::LeftParen, _)))
+}
+
+/// Parse optional method call arguments and create expression (complexity: 3, cognitive: 5)
+fn parse_optional_method_call_syntax(
+    state: &mut ParserState,
+    receiver: Expr,
+    method: String,
+) -> Result<Expr> {
+    state.tokens.advance(); // consume (
+    let args = parse_optional_method_args(state)?;
+    state.tokens.expect(&Token::RightParen)?;
+    Ok(create_optional_method_call(receiver, method, args))
+}
+
+/// Parse arguments for optional method call (complexity: 3, cognitive: 5)
+fn parse_optional_method_args(state: &mut ParserState) -> Result<Vec<Expr>> {
+    let mut args = Vec::new();
+    while !matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
+        args.push(super::parse_expr_recursive(state)?);
+        if !consume_comma_if_present(state) {
+            break;
+        }
+    }
+    Ok(args)
+}
+
+/// Create optional method call expression (complexity: 1, cognitive: 1)
+fn create_optional_method_call(receiver: Expr, method: String, args: Vec<Expr>) -> Expr {
+    Expr {
+        kind: ExprKind::OptionalMethodCall {
+            receiver: Box::new(receiver),
+            method,
+            args,
+        },
+        span: Span { start: 0, end: 0 },
+        attributes: Vec::new(),
+        leading_comments: Vec::new(),
+        trailing_comment: None,
+    }
+}
+
+/// Create optional field access expression (complexity: 1, cognitive: 1)
+fn create_optional_field_access(receiver: Expr, field: String) -> Expr {
+    Expr {
+        kind: ExprKind::OptionalFieldAccess {
+            object: Box::new(receiver),
+            field,
+        },
+        span: Span { start: 0, end: 0 },
+        attributes: Vec::new(),
+        leading_comments: Vec::new(),
+        trailing_comment: None,
     }
 }
 
@@ -638,24 +743,56 @@ fn parse_single_trait_bound(state: &mut ParserState) -> Result<bool> {
     consume_trait_bound_tokens(state)
 }
 
-/// Consume tokens that are part of a trait bound
+/// Consume tokens that are part of a trait bound (complexity: 3, cognitive: 5)
 /// # Errors
 /// Returns an error if parsing fails
 fn consume_trait_bound_tokens(state: &mut ParserState) -> Result<bool> {
-    loop {
-        match state.tokens.peek() {
-            Some((Token::Comma, _)) => {
-                state.tokens.advance();
-                return Ok(true); // More bounds may follow
-            }
-            Some((Token::LeftBrace, _)) => {
-                return Ok(false); // End of where clause
-            }
-            Some(_) => {
-                state.tokens.advance(); // Part of trait bound
-            }
-            None => return Ok(false),
+    while should_continue_parsing_trait_bound(state)? {
+        // Continue consuming tokens
+    }
+    Ok(is_comma_delimiter(state))
+}
+
+/// Check if should continue parsing trait bound (complexity: 3)
+fn should_continue_parsing_trait_bound(state: &mut ParserState) -> Result<bool> {
+    if is_trait_bound_end(state) {
+        return Ok(false);
+    }
+    consume_trait_bound_token_if_present(state);
+    Ok(true)
+}
+
+/// Check if at end of trait bound (complexity: 2)
+fn is_trait_bound_end(state: &mut ParserState) -> bool {
+    matches!(state.tokens.peek(), Some((Token::Comma, _)) | Some((Token::LeftBrace, _)))
+}
+
+/// Check if current delimiter is comma (complexity: 1)
+fn is_comma_delimiter(state: &mut ParserState) -> bool {
+    matches!(state.tokens.peek(), Some((Token::Comma, _)))
+}
+
+/// Try to handle trait bound delimiters (comma or brace) (complexity: 2, cognitive: 3)
+fn try_handle_trait_bound_delimiter(state: &mut ParserState) -> Option<bool> {
+    match state.tokens.peek() {
+        Some((Token::Comma, _)) => {
+            state.tokens.advance();
+            Some(true) // More bounds may follow
         }
+        Some((Token::LeftBrace, _)) => {
+            Some(false) // End of where clause
+        }
+        _ => None,
+    }
+}
+
+/// Consume a single trait bound token if present (complexity: 1, cognitive: 2)
+fn consume_trait_bound_token_if_present(state: &mut ParserState) -> bool {
+    if state.tokens.peek().is_some() {
+        state.tokens.advance();
+        true
+    } else {
+        false
     }
 }
 

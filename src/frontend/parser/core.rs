@@ -87,6 +87,8 @@ impl<'a> Parser<'a> {
                 kind: ExprKind::Block(exprs),
                 span: Span { start: 0, end: 0 }, // Simplified span for now
                 attributes: Vec::new(),
+                leading_comments: Vec::new(),
+                trailing_comment: None,
             })
         }
     }
