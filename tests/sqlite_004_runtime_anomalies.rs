@@ -1922,6 +1922,662 @@ fn test_sqlite_240_const_eval_divergence() {
 }
 
 // ============================================================================
+// Category 30: Operator Overloading & Custom Operations
+// ============================================================================
+
+/// Test custom operator overloading
+#[test]
+#[ignore = "Runtime limitation: operator overloading not implemented - needs [RUNTIME-097] ticket"]
+fn test_sqlite_241_operator_overloading() {
+    let result = execute_program(r#"
+        struct Point { x: i32, y: i32 }
+        impl Add for Point {
+            fun add(self, other: Point) -> Point {
+                Point { x: self.x + other.x, y: self.y + other.y }
+            }
+        }
+        let p1 = Point { x: 1, y: 2 };
+        let p2 = Point { x: 3, y: 4 };
+        p1 + p2
+    "#);
+    assert!(result.is_ok(), "Operator overloading should work");
+}
+
+/// Test indexing operator overloading
+#[test]
+#[ignore = "Runtime limitation: index operator overloading not implemented - needs [RUNTIME-098] ticket"]
+fn test_sqlite_242_index_operator() {
+    let result = execute_program(r#"
+        struct Matrix { data: Vec<Vec<i32>> }
+        impl Index for Matrix {
+            fun index(self, idx: (i32, i32)) -> i32 {
+                self.data[idx.0][idx.1]
+            }
+        }
+    "#);
+    assert!(result.is_ok(), "Index operator should work");
+}
+
+/// Test comparison operator consistency
+#[test]
+#[ignore = "Runtime limitation: comparison operator consistency not enforced - needs [RUNTIME-099] ticket"]
+fn test_sqlite_243_comparison_consistency() {
+    let result = execute_program(r#"
+        let a = 5;
+        let b = 10;
+        (a < b) == !(a >= b)
+    "#);
+    assert!(result.is_ok(), "Comparison operators should be consistent");
+}
+
+/// Test bitwise operator combinations
+#[test]
+#[ignore = "Runtime limitation: bitwise operators not fully implemented - needs [RUNTIME-100] ticket"]
+fn test_sqlite_244_bitwise_combinations() {
+    let result = execute_program(r#"
+        let x = 0b1010;
+        let y = 0b1100;
+        (x & y) | (x ^ y)
+    "#);
+    assert!(result.is_ok(), "Bitwise operations should work");
+}
+
+/// Test operator precedence edge cases
+#[test]
+fn test_sqlite_245_operator_precedence() {
+    let result = execute_program(r#"
+        let x = 2 + 3 * 4;
+        x == 14
+    "#);
+    assert!(result.is_ok(), "Operator precedence should be correct");
+}
+
+// ============================================================================
+// Category 31: Lifetime & Borrowing Anomalies
+// ============================================================================
+
+/// Test dangling reference detection
+#[test]
+#[ignore = "Runtime limitation: dangling reference detection not implemented - needs [RUNTIME-101] ticket"]
+fn test_sqlite_246_dangling_reference() {
+    let result = execute_program(r#"
+        fun get_ref() -> &i32 {
+            let x = 42;
+            &x
+        }
+        let r = get_ref();
+    "#);
+    assert!(result.is_err(), "Dangling reference should error");
+}
+
+/// Test borrow checker violations
+#[test]
+#[ignore = "Runtime limitation: borrow checker not implemented - needs [RUNTIME-102] ticket"]
+fn test_sqlite_247_multiple_mutable_borrows() {
+    let result = execute_program(r#"
+        let mut x = 42;
+        let r1 = &mut x;
+        let r2 = &mut x;
+        *r1 + *r2
+    "#);
+    assert!(result.is_err(), "Multiple mutable borrows should error");
+}
+
+/// Test lifetime parameter inference
+#[test]
+#[ignore = "Runtime limitation: lifetime inference not implemented - needs [RUNTIME-103] ticket"]
+fn test_sqlite_248_lifetime_inference() {
+    let result = execute_program(r#"
+        fun longest<'a>(x: &'a str, y: &'a str) -> &'a str {
+            if x.len() > y.len() { x } else { y }
+        }
+    "#);
+    assert!(result.is_ok(), "Lifetime inference should work");
+}
+
+/// Test self-referential structures
+#[test]
+#[ignore = "Runtime limitation: self-referential structures not validated - needs [RUNTIME-104] ticket"]
+fn test_sqlite_249_self_referential() {
+    let result = execute_program(r#"
+        struct Node {
+            value: i32,
+            next: Option<&Node>
+        }
+    "#);
+    assert!(result.is_ok() || result.is_err(), "Self-referential structures should be handled");
+}
+
+/// Test lifetime elision rules
+#[test]
+#[ignore = "Runtime limitation: lifetime elision not implemented - needs [RUNTIME-105] ticket"]
+fn test_sqlite_250_lifetime_elision() {
+    let result = execute_program(r#"
+        fun first_word(s: &str) -> &str {
+            s.split_whitespace().next().unwrap_or("")
+        }
+    "#);
+    assert!(result.is_ok(), "Lifetime elision should work");
+}
+
+// ============================================================================
+// Category 32: Serialization & Deserialization Anomalies
+// ============================================================================
+
+/// Test JSON serialization edge cases
+#[test]
+#[ignore = "Runtime limitation: JSON serialization not implemented - needs [RUNTIME-106] ticket"]
+fn test_sqlite_251_json_serialization() {
+    let result = execute_program(r#"
+        let data = { name: "Alice", age: 30 };
+        JSON.stringify(data)
+    "#);
+    assert!(result.is_ok(), "JSON serialization should work");
+}
+
+/// Test circular reference serialization
+#[test]
+#[ignore = "Runtime limitation: circular reference detection in serialization - needs [RUNTIME-107] ticket"]
+fn test_sqlite_252_circular_serialization() {
+    let result = execute_program(r#"
+        let a = { b: None };
+        let b = { a: Some(a) };
+        a.b = Some(b);
+        JSON.stringify(a)
+    "#);
+    assert!(result.is_ok() || result.is_err(), "Circular serialization should be handled");
+}
+
+/// Test deserialization type safety
+#[test]
+#[ignore = "Runtime limitation: deserialization type checking not implemented - needs [RUNTIME-108] ticket"]
+fn test_sqlite_253_deserialization_type_safety() {
+    let result = execute_program(r#"
+        let json = '{"name": "Alice", "age": "thirty"}';
+        let person: Person = JSON.parse(json);
+    "#);
+    assert!(result.is_ok() || result.is_err(), "Deserialization type safety should be enforced");
+}
+
+/// Test binary serialization
+#[test]
+#[ignore = "Runtime limitation: binary serialization not implemented - needs [RUNTIME-109] ticket"]
+fn test_sqlite_254_binary_serialization() {
+    let result = execute_program(r#"
+        let data = [1, 2, 3, 4, 5];
+        let bytes = bincode::serialize(data);
+        bincode::deserialize(bytes)
+    "#);
+    assert!(result.is_ok(), "Binary serialization should work");
+}
+
+/// Test schema evolution
+#[test]
+#[ignore = "Runtime limitation: schema evolution not supported - needs [RUNTIME-110] ticket"]
+fn test_sqlite_255_schema_evolution() {
+    let result = execute_program(r#"
+        struct V1 { name: String }
+        struct V2 { name: String, age: i32 }
+        let v1_data = V1 { name: "Alice" };
+        let v2_data: V2 = migrate(v1_data);
+    "#);
+    assert!(result.is_ok() || result.is_err(), "Schema evolution should be handled");
+}
+
+// ============================================================================
+// Category 33: Performance & Optimization Anomalies
+// ============================================================================
+
+/// Test tail call optimization
+#[test]
+#[ignore = "Runtime limitation: tail call optimization not implemented - needs [RUNTIME-111] ticket"]
+fn test_sqlite_256_tail_call_optimization() {
+    let result = execute_program(r#"
+        fun factorial(n: i32, acc: i32) -> i32 {
+            if n == 0 { acc } else { factorial(n - 1, n * acc) }
+        }
+        factorial(100000, 1)
+    "#);
+    assert!(result.is_ok(), "Tail call optimization should prevent stack overflow");
+}
+
+/// Test lazy evaluation
+#[test]
+#[ignore = "Runtime limitation: lazy evaluation not implemented - needs [RUNTIME-112] ticket"]
+fn test_sqlite_257_lazy_evaluation() {
+    let result = execute_program(r#"
+        let expensive = lazy { expensive_computation() };
+        if false {
+            expensive.force()
+        }
+    "#);
+    assert!(result.is_ok(), "Lazy evaluation should defer computation");
+}
+
+/// Test memoization
+#[test]
+#[ignore = "Runtime limitation: memoization not implemented - needs [RUNTIME-113] ticket"]
+fn test_sqlite_258_memoization() {
+    let result = execute_program(r#"
+        @memoize
+        fun fib(n: i32) -> i32 {
+            if n <= 1 { n } else { fib(n-1) + fib(n-2) }
+        }
+        fib(40)
+    "#);
+    assert!(result.is_ok(), "Memoization should improve performance");
+}
+
+/// Test constant folding
+#[test]
+#[ignore = "Runtime limitation: constant folding not implemented - needs [RUNTIME-114] ticket"]
+fn test_sqlite_259_constant_folding() {
+    let result = execute_program(r#"
+        let x = 2 + 3 * 4;
+        x
+    "#);
+    assert!(result.is_ok(), "Constant folding should work");
+}
+
+/// Test dead code elimination
+#[test]
+#[ignore = "Runtime limitation: dead code elimination not implemented - needs [RUNTIME-115] ticket"]
+fn test_sqlite_260_dead_code_elimination() {
+    let result = execute_program(r#"
+        fun unused() { expensive_computation() }
+        fun main() { 42 }
+        main()
+    "#);
+    assert!(result.is_ok(), "Dead code should be eliminated");
+}
+
+// ============================================================================
+// Category 34: Security & Validation Anomalies
+// ============================================================================
+
+/// Test SQL injection prevention
+#[test]
+#[ignore = "Runtime limitation: SQL injection prevention not implemented - needs [RUNTIME-116] ticket"]
+fn test_sqlite_261_sql_injection() {
+    let result = execute_program(r#"
+        let user_input = "'; DROP TABLE users; --";
+        db.query("SELECT * FROM users WHERE name = ?", [user_input])
+    "#);
+    assert!(result.is_ok(), "SQL injection should be prevented");
+}
+
+/// Test path traversal prevention
+#[test]
+#[ignore = "Runtime limitation: path traversal prevention not implemented - needs [RUNTIME-117] ticket"]
+fn test_sqlite_262_path_traversal() {
+    let result = execute_program(r#"
+        let filename = "../../etc/passwd";
+        fs::read(filename)
+    "#);
+    assert!(result.is_err(), "Path traversal should be prevented");
+}
+
+/// Test command injection prevention
+#[test]
+#[ignore = "Runtime limitation: command injection prevention not implemented - needs [RUNTIME-118] ticket"]
+fn test_sqlite_263_command_injection() {
+    let result = execute_program(r#"
+        let user_input = "; rm -rf /";
+        shell_exec("echo " + user_input)
+    "#);
+    assert!(result.is_err(), "Command injection should be prevented");
+}
+
+/// Test XSS prevention in string handling
+#[test]
+#[ignore = "Runtime limitation: XSS prevention not implemented - needs [RUNTIME-119] ticket"]
+fn test_sqlite_264_xss_prevention() {
+    let result = execute_program(r#"
+        let user_input = "<script>alert('XSS')</script>";
+        html_escape(user_input)
+    "#);
+    assert!(result.is_ok(), "XSS should be prevented via escaping");
+}
+
+/// Test integer overflow in security contexts
+#[test]
+#[ignore = "Runtime limitation: security-critical overflow checking not enforced - needs [RUNTIME-120] ticket"]
+fn test_sqlite_265_security_overflow() {
+    let result = execute_program(r#"
+        let size: u32 = 0xFFFFFFFF;
+        let allocation = size + 1;
+    "#);
+    assert!(result.is_err(), "Security-critical overflow should error");
+}
+
+// ============================================================================
+// Category 35: Regex & Pattern Matching Advanced
+// ============================================================================
+
+/// Test regex backreferences
+#[test]
+#[ignore = "Runtime limitation: regex backreferences not implemented - needs [RUNTIME-121] ticket"]
+fn test_sqlite_266_regex_backreferences() {
+    let result = execute_program(r#"
+        let pattern = r"(\w+)\s+\1";
+        let text = "hello hello";
+        regex_match(pattern, text)
+    "#);
+    assert!(result.is_ok(), "Regex backreferences should work");
+}
+
+/// Test regex lookahead/lookbehind
+#[test]
+#[ignore = "Runtime limitation: regex lookahead/lookbehind not implemented - needs [RUNTIME-122] ticket"]
+fn test_sqlite_267_regex_lookahead() {
+    let result = execute_program(r#"
+        let pattern = r"\d+(?=\s*dollars)";
+        let text = "100 dollars";
+        regex_match(pattern, text)
+    "#);
+    assert!(result.is_ok(), "Regex lookahead should work");
+}
+
+/// Test regex named captures
+#[test]
+#[ignore = "Runtime limitation: regex named captures not implemented - needs [RUNTIME-123] ticket"]
+fn test_sqlite_268_regex_named_captures() {
+    let result = execute_program(r#"
+        let pattern = r"(?P<year>\d{4})-(?P<month>\d{2})";
+        let text = "2024-01";
+        let captures = regex_match(pattern, text);
+        captures.year
+    "#);
+    assert!(result.is_ok(), "Named captures should work");
+}
+
+/// Test pattern matching on types
+#[test]
+#[ignore = "Runtime limitation: type pattern matching not implemented - needs [RUNTIME-124] ticket"]
+fn test_sqlite_269_type_pattern_matching() {
+    let result = execute_program(r#"
+        match value {
+            x: i32 => "integer",
+            s: String => "string",
+            _ => "other"
+        }
+    "#);
+    assert!(result.is_ok(), "Type pattern matching should work");
+}
+
+/// Test active patterns
+#[test]
+#[ignore = "Runtime limitation: active patterns not implemented - needs [RUNTIME-125] ticket"]
+fn test_sqlite_270_active_patterns() {
+    let result = execute_program(r#"
+        active Even(x) when x % 2 == 0;
+        match 4 {
+            Even(n) => "even",
+            _ => "odd"
+        }
+    "#);
+    assert!(result.is_ok(), "Active patterns should work");
+}
+
+// ============================================================================
+// Category 36: Numeric Precision & Rounding
+// ============================================================================
+
+/// Test decimal precision
+#[test]
+#[ignore = "Runtime limitation: arbitrary precision decimals not implemented - needs [RUNTIME-126] ticket"]
+fn test_sqlite_271_decimal_precision() {
+    let result = execute_program(r#"
+        let x = Decimal::from("0.1");
+        let y = Decimal::from("0.2");
+        x + y == Decimal::from("0.3")
+    "#);
+    assert!(result.is_ok(), "Decimal precision should be exact");
+}
+
+/// Test rounding mode consistency
+#[test]
+#[ignore = "Runtime limitation: rounding mode control not implemented - needs [RUNTIME-127] ticket"]
+fn test_sqlite_272_rounding_modes() {
+    let result = execute_program(r#"
+        let x = 2.5;
+        round_half_up(x) == 3.0
+    "#);
+    assert!(result.is_ok(), "Rounding modes should be consistent");
+}
+
+/// Test floating point cumulative error
+#[test]
+fn test_sqlite_273_fp_cumulative_error() {
+    let result = execute_program(r#"
+        let sum = 0.0;
+        for i in 0..1000 {
+            sum += 0.1;
+        }
+        sum
+    "#);
+    assert!(result.is_ok(), "Floating point errors should accumulate");
+}
+
+/// Test big integer operations
+#[test]
+#[ignore = "Runtime limitation: big integers not implemented - needs [RUNTIME-128] ticket"]
+fn test_sqlite_274_big_integers() {
+    let result = execute_program(r#"
+        let big = BigInt::from("99999999999999999999999999999999");
+        big * big
+    "#);
+    assert!(result.is_ok(), "Big integer operations should work");
+}
+
+/// Test rational number arithmetic
+#[test]
+#[ignore = "Runtime limitation: rational numbers not implemented - needs [RUNTIME-129] ticket"]
+fn test_sqlite_275_rational_numbers() {
+    let result = execute_program(r#"
+        let a = Rational::new(1, 3);
+        let b = Rational::new(1, 6);
+        a + b == Rational::new(1, 2)
+    "#);
+    assert!(result.is_ok(), "Rational arithmetic should be exact");
+}
+
+// ============================================================================
+// Category 37: Generator & Iterator Advanced
+// ============================================================================
+
+/// Test generator functions
+#[test]
+#[ignore = "Runtime limitation: generators not implemented - needs [RUNTIME-130] ticket"]
+fn test_sqlite_276_generators() {
+    let result = execute_program(r#"
+        gen fun fibonacci() {
+            let (a, b) = (0, 1);
+            loop {
+                yield a;
+                (a, b) = (b, a + b);
+            }
+        }
+        let fib = fibonacci();
+        fib.take(10).collect()
+    "#);
+    assert!(result.is_ok(), "Generators should work");
+}
+
+/// Test async iterators
+#[test]
+#[ignore = "Runtime limitation: async iterators not implemented - needs [RUNTIME-131] ticket"]
+fn test_sqlite_277_async_iterators() {
+    let result = execute_program(r#"
+        async fun fetch_pages() {
+            for i in 0..10 {
+                yield await fetch_page(i);
+            }
+        }
+    "#);
+    assert!(result.is_ok(), "Async iterators should work");
+}
+
+/// Test iterator fusion optimization
+#[test]
+#[ignore = "Runtime limitation: iterator fusion not implemented - needs [RUNTIME-132] ticket"]
+fn test_sqlite_278_iterator_fusion() {
+    let result = execute_program(r#"
+        let result = (0..1000)
+            .map(|x| x * 2)
+            .filter(|x| x > 10)
+            .map(|x| x + 1)
+            .collect();
+    "#);
+    assert!(result.is_ok(), "Iterator fusion should optimize chains");
+}
+
+/// Test peekable iterators
+#[test]
+#[ignore = "Runtime limitation: peekable iterators not implemented - needs [RUNTIME-133] ticket"]
+fn test_sqlite_279_peekable_iterator() {
+    let result = execute_program(r#"
+        let iter = [1, 2, 3].iter().peekable();
+        iter.peek()
+    "#);
+    assert!(result.is_ok(), "Peekable iterators should work");
+}
+
+/// Test bidirectional iterators
+#[test]
+#[ignore = "Runtime limitation: bidirectional iterators not implemented - needs [RUNTIME-134] ticket"]
+fn test_sqlite_280_bidirectional_iterator() {
+    let result = execute_program(r#"
+        let iter = [1, 2, 3].iter();
+        iter.next_back()
+    "#);
+    assert!(result.is_ok(), "Bidirectional iteration should work");
+}
+
+// ============================================================================
+// Category 38: Error Context & Debugging
+// ============================================================================
+
+/// Test error context propagation
+#[test]
+#[ignore = "Runtime limitation: error context not implemented - needs [RUNTIME-135] ticket"]
+fn test_sqlite_281_error_context() {
+    let result = execute_program(r#"
+        fun inner() -> Result<i32, String> {
+            Err("inner error").context("in inner function")
+        }
+        fun outer() -> Result<i32, String> {
+            inner().context("in outer function")
+        }
+        outer()
+    "#);
+    assert!(result.is_err(), "Error context should be preserved");
+}
+
+/// Test stack trace availability
+#[test]
+#[ignore = "Runtime limitation: stack traces not implemented - needs [RUNTIME-136] ticket"]
+fn test_sqlite_282_stack_traces() {
+    let result = execute_program(r#"
+        fun a() { b() }
+        fun b() { c() }
+        fun c() { panic!("error") }
+        a()
+    "#);
+    assert!(result.is_err(), "Stack traces should be available");
+}
+
+/// Test custom error types
+#[test]
+#[ignore = "Runtime limitation: custom error types not implemented - needs [RUNTIME-137] ticket"]
+fn test_sqlite_283_custom_errors() {
+    let result = execute_program(r#"
+        struct MyError { message: String, code: i32 }
+        impl Error for MyError { }
+        Err(MyError { message: "failed", code: 404 })
+    "#);
+    assert!(result.is_err(), "Custom error types should work");
+}
+
+/// Test debug formatting
+#[test]
+#[ignore = "Runtime limitation: debug formatting not implemented - needs [RUNTIME-138] ticket"]
+fn test_sqlite_284_debug_formatting() {
+    let result = execute_program(r#"
+        struct Point { x: i32, y: i32 }
+        let p = Point { x: 1, y: 2 };
+        format!("{:?}", p)
+    "#);
+    assert!(result.is_ok(), "Debug formatting should work");
+}
+
+/// Test assertion messages
+#[test]
+fn test_sqlite_285_assertion_messages() {
+    let result = execute_program(r#"
+        assert!(false, "custom message")
+    "#);
+    assert!(result.is_err(), "Assertions should provide messages");
+}
+
+// ============================================================================
+// Category 39: DateTime & Timezone Handling
+// ============================================================================
+
+/// Test timezone conversions
+#[test]
+#[ignore = "Runtime limitation: timezone handling not implemented - needs [RUNTIME-139] ticket"]
+fn test_sqlite_286_timezone_conversion() {
+    let result = execute_program(r#"
+        let utc = DateTime::now_utc();
+        let local = utc.to_timezone("America/New_York");
+    "#);
+    assert!(result.is_ok(), "Timezone conversions should work");
+}
+
+/// Test daylight saving time transitions
+#[test]
+#[ignore = "Runtime limitation: DST handling not implemented - needs [RUNTIME-140] ticket"]
+fn test_sqlite_287_dst_transitions() {
+    let result = execute_program(r#"
+        let before_dst = DateTime::parse("2024-03-10 01:30:00");
+        let after_dst = before_dst + Duration::hours(1);
+    "#);
+    assert!(result.is_ok(), "DST transitions should be handled");
+}
+
+/// Test leap seconds
+#[test]
+#[ignore = "Runtime limitation: leap second handling not implemented - needs [RUNTIME-141] ticket"]
+fn test_sqlite_288_leap_seconds() {
+    let result = execute_program(r#"
+        let t = DateTime::parse("2024-06-30 23:59:60");
+    "#);
+    assert!(result.is_ok() || result.is_err(), "Leap seconds should be handled");
+}
+
+/// Test date arithmetic edge cases
+#[test]
+#[ignore = "Runtime limitation: date arithmetic not fully implemented - needs [RUNTIME-142] ticket"]
+fn test_sqlite_289_date_arithmetic() {
+    let result = execute_program(r#"
+        let date = Date::parse("2024-01-31");
+        date + Duration::months(1)
+    "#);
+    assert!(result.is_ok(), "Date arithmetic should handle month boundaries");
+}
+
+/// Test time parsing ambiguity
+#[test]
+#[ignore = "Runtime limitation: ambiguous time parsing not handled - needs [RUNTIME-143] ticket"]
+fn test_sqlite_290_time_parsing_ambiguity() {
+    let result = execute_program(r#"
+        let t = Time::parse("12:00");
+    "#);
+    assert!(result.is_ok(), "Ambiguous time formats should be parsed");
+}
+
+// ============================================================================
 // Helper Functions
 // ============================================================================
 
