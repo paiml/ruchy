@@ -2725,6 +2725,97 @@ fn test_sqlite_366_trait_object_send_sync() {
 #[ignore = "Parser limitation: super path in expression not supported - needs [PARSER-254] ticket"]
 #[test] fn test_sqlite_806_path_super() { assert_parses("super::parent::item"); }
 
+// Category 111: Range Expressions
+#[ignore = "Parser limitation: range full (..) expression not supported - needs [PARSER-255] ticket"]
+#[test] fn test_sqlite_807_range_full() { assert_parses(".."); }
+#[ignore = "Parser limitation: range from (1..) not supported - needs [PARSER-256] ticket"]
+#[test] fn test_sqlite_808_range_from() { assert_parses("1.."); }
+#[ignore = "Parser limitation: range to (..10) not supported - needs [PARSER-257] ticket"]
+#[test] fn test_sqlite_809_range_to() { assert_parses("..10"); }
+#[test] fn test_sqlite_810_range_full_expr() { assert_parses("1..10"); }
+#[test] fn test_sqlite_811_range_inclusive() { assert_parses("1..=10"); }
+
+// Category 112: Block Expressions
+#[test] fn test_sqlite_812_block_expr() { assert_parses("{ 42 }"); }
+#[test] fn test_sqlite_813_block_stmts() { assert_parses("{ let x = 1; x }"); }
+#[test] fn test_sqlite_814_block_empty() { assert_parses("{ }"); }
+#[test] fn test_sqlite_815_block_nested() { assert_parses("{ { 1 } }"); }
+#[ignore = "Parser limitation: unsafe block not supported - needs [PARSER-258] ticket"]
+#[test] fn test_sqlite_816_block_unsafe() { assert_parses("unsafe { }"); }
+
+// Category 113: Async Block Expressions
+#[ignore = "Parser limitation: async block not supported - needs [PARSER-259] ticket"]
+#[test] fn test_sqlite_817_async_block() { assert_parses("async { }"); }
+#[ignore = "Parser limitation: async move block not supported - needs [PARSER-260] ticket"]
+#[test] fn test_sqlite_818_async_move_block() { assert_parses("async move { }"); }
+#[test] fn test_sqlite_819_async_block_await() { assert_parses("async { value.await }"); }
+#[test] fn test_sqlite_820_async_block_expr() { assert_parses("async { 42 }"); }
+#[ignore = "Parser limitation: nested async blocks not supported - needs [PARSER-261] ticket"]
+#[test] fn test_sqlite_821_async_nested() { assert_parses("async { async { } }"); }
+
+// Category 114: Try Expressions
+#[ignore = "Parser limitation: try block not supported - needs [PARSER-262] ticket"]
+#[test] fn test_sqlite_822_try_block() { assert_parses("try { }"); }
+#[ignore = "Parser limitation: try expression not supported - needs [PARSER-263] ticket"]
+#[test] fn test_sqlite_823_try_expr() { assert_parses("try { Ok(42) }"); }
+#[test] fn test_sqlite_824_try_operator() { assert_parses("value?"); }
+#[test] fn test_sqlite_825_try_chain() { assert_parses("a?.b?.c"); }
+#[ignore = "Parser limitation: try with await not supported - needs [PARSER-264] ticket"]
+#[test] fn test_sqlite_826_try_await() { assert_parses("async { value?.await }"); }
+
+// Category 115: Const Block Expressions
+#[ignore = "Parser limitation: const block not supported - needs [PARSER-265] ticket"]
+#[test] fn test_sqlite_827_const_block() { assert_parses("const { 42 }"); }
+#[ignore = "Parser limitation: const block expression not supported - needs [PARSER-266] ticket"]
+#[test] fn test_sqlite_828_const_block_expr() { assert_parses("const { 1 + 1 }"); }
+#[ignore = "Parser limitation: const in array size not supported - needs [PARSER-267] ticket"]
+#[test] fn test_sqlite_829_const_array() { assert_parses("[0; const { 10 }]"); }
+#[ignore = "Parser limitation: const generic argument not supported - needs [PARSER-268] ticket"]
+#[test] fn test_sqlite_830_const_generic_arg() { assert_parses("Foo::<const { N + 1 }>"); }
+#[ignore = "Parser limitation: const with function call not supported - needs [PARSER-269] ticket"]
+#[test] fn test_sqlite_831_const_fn_call() { assert_parses("const { foo() }"); }
+
+// Category 116: Label Expressions
+#[ignore = "Parser limitation: labeled block not supported - needs [PARSER-270] ticket"]
+#[test] fn test_sqlite_832_labeled_block() { assert_parses("'label: { }"); }
+#[test] fn test_sqlite_833_labeled_loop() { assert_parses("'outer: loop { }"); }
+#[test] fn test_sqlite_834_labeled_while() { assert_parses("'label: while true { }"); }
+#[test] fn test_sqlite_835_labeled_for() { assert_parses("'label: for x in iter { }"); }
+#[test] fn test_sqlite_836_break_label() { assert_parses("'outer: loop { break 'outer; }"); }
+
+// Category 117: Return Expressions
+#[test] fn test_sqlite_837_return_unit() { assert_parses("return"); }
+#[test] fn test_sqlite_838_return_value() { assert_parses("return 42"); }
+#[test] fn test_sqlite_839_return_expr() { assert_parses("return x + y"); }
+#[test] fn test_sqlite_840_return_block() { assert_parses("return { 42 }"); }
+#[test] fn test_sqlite_841_return_if() { assert_parses("return if x { 1 } else { 2 }"); }
+
+// Category 118: Continue and Break
+#[test] fn test_sqlite_842_continue_simple() { assert_parses("loop { continue; }"); }
+#[test] fn test_sqlite_843_continue_label() { assert_parses("'outer: loop { continue 'outer; }"); }
+#[test] fn test_sqlite_844_break_simple() { assert_parses("loop { break; }"); }
+#[test] fn test_sqlite_845_break_value() { assert_parses("loop { break 42; }"); }
+#[test] fn test_sqlite_846_break_label_value() { assert_parses("'outer: loop { break 'outer 42; }"); }
+
+// Category 119: Underscore Expressions
+#[test] fn test_sqlite_847_underscore_pattern() { assert_parses("let _ = 42;"); }
+#[test] fn test_sqlite_848_underscore_type() { assert_parses("let _: i32 = 42;"); }
+#[ignore = "Parser limitation: underscore in function parameter not supported - needs [PARSER-271] ticket"]
+#[test] fn test_sqlite_849_underscore_fn_param() { assert_parses("fun foo(_: i32) { }"); }
+#[ignore = "Parser limitation: underscore in turbofish not supported - needs [PARSER-272] ticket"]
+#[test] fn test_sqlite_850_underscore_turbofish() { assert_parses("foo::<_>(x)"); }
+#[test] fn test_sqlite_851_underscore_struct() { assert_parses("S { _field: 1 }"); }
+
+// Category 120: Attribute Syntax Variations
+#[test] fn test_sqlite_852_attr_meta_word() { assert_parses("#[derive] struct S;"); }
+#[test] fn test_sqlite_853_attr_meta_list() { assert_parses("#[derive(Debug)] struct S;"); }
+#[ignore = "Parser limitation: attribute meta name-value not supported - needs [PARSER-273] ticket"]
+#[test] fn test_sqlite_854_attr_meta_namevalue() { assert_parses("#[doc = \"text\"] struct S;"); }
+#[ignore = "Parser limitation: attribute path not supported - needs [PARSER-274] ticket"]
+#[test] fn test_sqlite_855_attr_path() { assert_parses("#[std::prelude] struct S;"); }
+#[ignore = "Parser limitation: nested attribute not supported - needs [PARSER-275] ticket"]
+#[test] fn test_sqlite_856_attr_nested() { assert_parses("#[cfg(all(unix, target_pointer_width = \"64\"))] struct S;"); }
+
 // ============================================================================
 // Error Handling
 // ============================================================================
