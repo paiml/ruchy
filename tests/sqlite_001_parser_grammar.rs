@@ -669,7 +669,6 @@ fn test_sqlite_174_while_let_expressions() {
 // ============================================================================
 
 #[test]
-#[ignore = "Parser hangs on actor definitions - needs [PARSER-060] ticket"]
 fn test_sqlite_180_actor_definitions() {
     // Actor definitions
     assert_parses(r#"
@@ -1008,8 +1007,8 @@ mod test_stats {
     //! Test Statistics Tracking
     //!
     //! **Current Status**: 98/2000 tests implemented (4.90%)
-    //! - 92 passing tests
-    //! - 6 ignored tests (documented parser limitations)
+    //! - 93 passing tests
+    //! - 5 ignored tests (documented parser limitations)
     //!
     //! **Categories**:
     //! - Grammar Coverage: 78 tests
@@ -1038,13 +1037,12 @@ mod test_stats {
     //!   - Never panics: 2K iterations
     //!   - Valid identifiers: 1K iterations
     //!   - Valid numbers: 1K iterations
-    //! - Ignored: 6 tests (documented parser limitations)
+    //! - Ignored: 5 tests (documented parser limitations)
     //!   - [PARSER-055] Bare return statements
     //!   - [PARSER-056] Async blocks
     //!   - [PARSER-057] Export keyword
     //!   - [PARSER-058] Type aliases
     //!   - [PARSER-059] Array patterns
-    //!   - [PARSER-060] Actor definitions (parser hang bug)
     //!
     //! **Progress Since Last Update**:
     //! - Added 43 new tests (+93% increase from 46)
