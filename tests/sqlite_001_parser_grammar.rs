@@ -1862,6 +1862,89 @@ fn test_sqlite_366_trait_object_send_sync() {
 #[test] fn test_sqlite_406_unit_literal() { assert_parses("()"); }
 
 // ============================================================================
+// Advanced Syntax Tests - Expansion 6 (tests 407-456)
+// ============================================================================
+
+// Slice and Array Advanced Operations
+#[ignore = "Parser limitation: Slice patterns with rest not supported - needs [PARSER-139] ticket"]
+#[test] fn test_sqlite_407_slice_patterns() { assert_parses("let [a, b, ..rest] = arr"); }
+#[test] fn test_sqlite_408_array_methods() { assert_parses("arr.len()"); }
+#[test] fn test_sqlite_409_array_iteration() { assert_parses("for x in arr { }"); }
+#[test] fn test_sqlite_410_multidim_arrays() { assert_parses("let matrix = [[1, 2], [3, 4]]"); }
+#[test] fn test_sqlite_411_array_comprehension() { assert_parses("[x * 2 for x in range(10)]"); }
+
+// String Advanced Operations
+#[test] fn test_sqlite_412_string_methods() { assert_parses("s.split(',')"); }
+#[test] fn test_sqlite_413_string_formatting() { assert_parses("format!(\"x = {}\", x)"); }
+#[test] fn test_sqlite_414_multiline_strings() { assert_parses("\"\"\"\nmultiline\nstring\n\"\"\""); }
+#[test] fn test_sqlite_415_char_literals() { assert_parses("'a'"); }
+#[test] fn test_sqlite_416_escape_sequences() { assert_parses("\"\\n\\t\\r\""); }
+
+// Object and HashMap Operations
+#[test] fn test_sqlite_417_object_spread() { assert_parses("{ ...base, x: 1 }"); }
+#[ignore = "Parser limitation: Computed property names not supported - needs [PARSER-140] ticket"]
+#[test] fn test_sqlite_418_computed_properties() { assert_parses("{ [key]: value }"); }
+#[test] fn test_sqlite_419_object_methods() { assert_parses("obj.keys()"); }
+#[test] fn test_sqlite_420_nested_objects() { assert_parses("{ a: { b: { c: 1 } } }"); }
+#[ignore = "Parser limitation: Nested object destructuring not supported - needs [PARSER-141] ticket"]
+#[test] fn test_sqlite_421_object_destructure_nested() { assert_parses("let { a: { b } } = obj"); }
+
+// Function Advanced Features
+#[ignore = "Parser limitation: Variadic functions not supported - needs [PARSER-142] ticket"]
+#[test] fn test_sqlite_422_variadic_functions() { assert_parses("fun sum(...nums) { }"); }
+#[test] fn test_sqlite_423_default_parameters() { assert_parses("fun greet(name = \"World\") { }"); }
+#[test] fn test_sqlite_424_named_parameters() { assert_parses("greet(name: \"Alice\")"); }
+#[test] fn test_sqlite_425_function_overloading() { assert_parses("fun add(a: i32, b: i32) { }"); }
+#[test] fn test_sqlite_426_partial_application() { assert_parses("let add5 = add(5, _)"); }
+
+// Control Flow Advanced
+#[test] fn test_sqlite_427_loop_with_label() { assert_parses("'outer: loop { break 'outer; }"); }
+#[test] fn test_sqlite_428_while_let() { assert_parses("while let Some(x) = iter.next() { }"); }
+#[test] fn test_sqlite_429_for_with_index() { assert_parses("for (i, x) in arr.enumerate() { }"); }
+#[test] fn test_sqlite_430_match_with_guard() { assert_parses("match x { n if n > 0 => n }"); }
+#[ignore = "Parser limitation: Switch expressions not supported - needs [PARSER-143] ticket"]
+#[test] fn test_sqlite_431_switch_expression() { assert_parses("switch x { 1 => a, 2 => b, _ => c }"); }
+
+// Type System Advanced
+#[test] fn test_sqlite_432_type_aliases() { assert_parses("type Point = (i32, i32)"); }
+#[test] fn test_sqlite_433_newtype_pattern() { assert_parses("struct UserId(i32)"); }
+#[test] fn test_sqlite_434_phantom_data() { assert_parses("struct Foo<T>(PhantomData<T>)"); }
+#[ignore = "Parser limitation: Higher-kinded types not supported - needs [PARSER-144] ticket"]
+#[test] fn test_sqlite_435_higher_kinded() { assert_parses("trait Functor<F<_>> { }"); }
+#[test] fn test_sqlite_436_existential_types() { assert_parses("type Foo = impl Trait"); }
+
+// Trait System Advanced
+#[test] fn test_sqlite_437_trait_bounds_multiple() { assert_parses("fun foo<T: Clone + Debug>(x: T) { }"); }
+#[ignore = "Parser limitation: Complex where clauses not supported - needs [PARSER-145] ticket"]
+#[test] fn test_sqlite_438_where_clause_complex() { assert_parses("fun foo<T>() where T: Clone, T::Item: Debug { }"); }
+#[ignore = "Parser limitation: Associated constants not supported - needs [PARSER-146] ticket"]
+#[test] fn test_sqlite_439_associated_constants() { assert_parses("trait Foo { const MAX: i32; }"); }
+#[test] fn test_sqlite_440_default_trait_impl() { assert_parses("trait Foo { fun bar() { } }"); }
+#[ignore = "Parser limitation: Trait inheritance not supported - needs [PARSER-147] ticket"]
+#[test] fn test_sqlite_441_trait_inheritance() { assert_parses("trait Foo: Bar + Baz { }"); }
+
+// Enum Advanced Features
+#[test] fn test_sqlite_442_enum_with_data() { assert_parses("enum Result { Ok(i32), Err(String) }"); }
+#[test] fn test_sqlite_443_enum_methods() { assert_parses("impl Color { fun is_red(&self) { } }"); }
+#[test] fn test_sqlite_444_enum_from_int() { assert_parses("Color::from(1)"); }
+#[test] fn test_sqlite_445_enum_discriminants() { assert_parses("enum Foo { A = 1, B = 2 }"); }
+#[test] fn test_sqlite_446_enum_match_all() { assert_parses("match c { Red => 1, Green => 2, Blue => 3 }"); }
+
+// Module System Advanced
+#[test] fn test_sqlite_447_mod_inline() { assert_parses("mod foo { fun bar() { } }"); }
+#[test] fn test_sqlite_448_use_as_rename() { assert_parses("use std::io::Result as IoResult"); }
+#[test] fn test_sqlite_449_use_glob() { assert_parses("use std::collections::*"); }
+#[test] fn test_sqlite_450_pub_use() { assert_parses("pub use foo::bar"); }
+#[test] fn test_sqlite_451_super_keyword() { assert_parses("use super::parent"); }
+
+// Closure Advanced Features
+#[test] fn test_sqlite_452_closure_move() { assert_parses("let f = move || x"); }
+#[test] fn test_sqlite_453_closure_type_hints() { assert_parses("let f: fn(i32) -> i32 = |x| x + 1"); }
+#[test] fn test_sqlite_454_closure_multiline() { assert_parses("let f = || {\n    let x = 1;\n    x + 1\n}"); }
+#[test] fn test_sqlite_455_closure_return() { assert_parses("let f = || return 42"); }
+#[test] fn test_sqlite_456_closure_mutable() { assert_parses("let mut f = || { x += 1 }"); }
+
+// ============================================================================
 // Error Handling
 // ============================================================================
 

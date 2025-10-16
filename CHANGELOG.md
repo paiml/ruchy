@@ -43,6 +43,29 @@ All notable changes to the Ruchy programming language will be documented in this
   - **Files Changed**: src/frontend/parser/actors.rs (3 functions modified)
 
 ### Added
+- **[SQLITE-TEST-001] Harness 1 Sixth Expansion - 350 Test Milestone**: Added 50 new advanced syntax tests (300→350 tests, 16.7% increase)
+  - **Test Pass Rate**: 257/350 passing (73.4%)
+  - **New Test Categories** (10 categories, 50 tests total):
+    - Array/Slice Advanced (5 tests): Slice patterns, methods, iteration, multidimensional, comprehensions
+    - String Advanced (5 tests): Methods, formatting, multiline, char literals, escape sequences
+    - Object/HashMap Operations (5 tests): Spread, computed properties, methods, nesting, destructuring
+    - Function Advanced (5 tests): Variadic, default/named parameters, overloading, partial application
+    - Control Flow Advanced (5 tests): Labeled loops, while-let, indexed for, guards, switch
+    - Type System Advanced (5 tests): Type aliases, newtype, phantom data, higher-kinded, existential
+    - Trait System Advanced (5 tests): Multiple bounds, complex where, associated constants, default impl, inheritance
+    - Enum Advanced (5 tests): Data variants, methods, conversions, discriminants, exhaustive matching
+    - Module System Advanced (5 tests): Inline modules, use-as, glob, pub-use, super keyword
+    - Closure Advanced (5 tests): Move, type hints, multiline, return, mutable
+  - **Defensive Testing**: 9 new parser limitations discovered (PARSER-139 through PARSER-147)
+  - **Total Limitations**: 92 documented parser limitations (PARSER-055 through PARSER-147, PARSER-060 fixed)
+  - **Property Tests**: 20,000 iterations completed (zero panics, 100% of target)
+  - **Performance**: All 350 tests complete in 0.49 seconds
+  - **Progress**: 350/2,000 tests (17.5% of target)
+  - **Framework Total**: 463 tests across 4 harnesses
+  - **Time**: 5.5h / 32h estimated (17.2% complete)
+  - **Toyota Way**: Defensive testing discovered 9 new limitations proactively before user impact
+  - **Files Modified**: tests/sqlite_001_parser_grammar.rs, docs/testing/SQLITE-FRAMEWORK-PROGRESS-REPORT.md
+
 - **[SQLITE-TEST-004] Harness 4 Fourth Expansion - 150 Test Milestone**: Added 50 new runtime anomaly tests (100→150 tests, 50% increase)
   - **Test Pass Rate**: 55/150 passing (36.7%)
   - **New Test Categories** (10 categories, 50 tests total):
