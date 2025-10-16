@@ -8105,3 +8105,11 @@ let args = env::args();  // ❌ Still fails - needs namespace support
   - Framework Total: 513 tests across 4 harnesses
   - Files: tests/sqlite_004_runtime_anomalies.rs
 
+- **[SQLITE-TEST-001] Harness 1 Seventh Expansion - 400 Test Milestone**: Added 50 new advanced syntax tests (350→400, 14% increase)
+  - Test Pass Rate: 280/400 passing (70.0%)
+  - New Categories (10): Destructuring advanced, Async/await, Range expressions, Lifetime annotations, Operator overloading syntax, Visibility modifiers, Const/static, Pattern guards, Type inference, Unsafe operations
+  - Defensive Testing: 27 new parser limitations (PARSER-148 through PARSER-174)
+  - Total Limitations: 119 documented (PARSER-060 fixed)
+  - Framework Total: 563 tests across 4 harnesses
+  - Files: tests/sqlite_001_parser_grammar.rs
+

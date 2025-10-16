@@ -1945,6 +1945,107 @@ fn test_sqlite_366_trait_object_send_sync() {
 #[test] fn test_sqlite_456_closure_mutable() { assert_parses("let mut f = || { x += 1 }"); }
 
 // ============================================================================
+// Advanced Syntax Tests - Expansion 7 (tests 457-506)
+// ============================================================================
+
+// Destructuring Advanced
+#[test] fn test_sqlite_457_nested_tuple_destructure() { assert_parses("let ((a, b), c) = nested"); }
+#[ignore = "Parser limitation: Array destructuring not supported - needs [PARSER-148] ticket"]
+#[test] fn test_sqlite_458_array_destructure() { assert_parses("let [a, b, c] = arr"); }
+#[test] fn test_sqlite_459_struct_destructure_rename() { assert_parses("let Point { x: px, y: py } = p"); }
+#[ignore = "Parser limitation: Destructuring with defaults not supported - needs [PARSER-149] ticket"]
+#[test] fn test_sqlite_460_destructure_with_defaults() { assert_parses("let { x, y = 0 } = obj"); }
+#[test] fn test_sqlite_461_ignore_destructure() { assert_parses("let Point { x, .. } = p"); }
+
+// Async/Await Features
+#[ignore = "Parser limitation: Async functions not fully supported - needs [PARSER-150] ticket"]
+#[test] fn test_sqlite_462_async_function() { assert_parses("async fun fetch() { }"); }
+#[ignore = "Parser limitation: Await expressions not supported - needs [PARSER-151] ticket"]
+#[test] fn test_sqlite_463_await_expression() { assert_parses("let result = fetch().await"); }
+#[test] fn test_sqlite_464_async_block() { assert_parses("let future = async { 42 }"); }
+#[ignore = "Parser limitation: Async closures not supported - needs [PARSER-152] ticket"]
+#[test] fn test_sqlite_465_async_closure() { assert_parses("let f = async || { await task }"); }
+#[ignore = "Parser limitation: Try-await not supported - needs [PARSER-153] ticket"]
+#[test] fn test_sqlite_466_try_await() { assert_parses("fetch().await?"); }
+
+// Range Expressions
+#[test] fn test_sqlite_467_inclusive_range() { assert_parses("0..=10"); }
+#[ignore = "Parser limitation: Range-from syntax not supported - needs [PARSER-154] ticket"]
+#[test] fn test_sqlite_468_range_from() { assert_parses("5.."); }
+#[ignore = "Parser limitation: Range-to syntax not supported - needs [PARSER-155] ticket"]
+#[test] fn test_sqlite_469_range_to() { assert_parses("..10"); }
+#[ignore = "Parser limitation: Full range syntax not supported - needs [PARSER-156] ticket"]
+#[test] fn test_sqlite_470_full_range() { assert_parses(".."); }
+#[test] fn test_sqlite_471_range_in_pattern() { assert_parses("match x { 0..=10 => \"low\" }"); }
+
+// Lifetime Annotations
+#[ignore = "Parser limitation: Lifetime parameters not supported - needs [PARSER-171] ticket"]
+#[test] fn test_sqlite_472_lifetime_param() { assert_parses("fun foo<'a>(x: &'a str) { }"); }
+#[ignore = "Parser limitation: Multiple lifetimes not supported - needs [PARSER-172] ticket"]
+#[test] fn test_sqlite_473_multiple_lifetimes() { assert_parses("fun bar<'a, 'b>(x: &'a str, y: &'b str) { }"); }
+#[ignore = "Parser limitation: Lifetime bounds not supported - needs [PARSER-173] ticket"]
+#[test] fn test_sqlite_474_lifetime_bounds() { assert_parses("fun baz<'a: 'b, 'b>() { }"); }
+#[test] fn test_sqlite_475_static_lifetime() { assert_parses("let s: &'static str = \"hello\""); }
+#[test] fn test_sqlite_476_lifetime_in_struct() { assert_parses("struct Ref<'a> { data: &'a i32 }"); }
+
+// Operator Overloading Syntax
+#[test] fn test_sqlite_477_impl_add() { assert_parses("impl Add for Point { }"); }
+#[test] fn test_sqlite_478_impl_index() { assert_parses("impl Index<usize> for Array { }"); }
+#[test] fn test_sqlite_479_impl_deref() { assert_parses("impl Deref for Box { }"); }
+#[test] fn test_sqlite_480_impl_from() { assert_parses("impl From<i32> for Value { }"); }
+#[test] fn test_sqlite_481_impl_display() { assert_parses("impl Display for Point { }"); }
+
+// Visibility Modifiers
+#[test] fn test_sqlite_482_pub_fn() { assert_parses("pub fun foo() { }"); }
+#[test] fn test_sqlite_483_pub_struct() { assert_parses("pub struct Point { }"); }
+#[ignore = "Parser limitation: pub(crate) not supported - needs [PARSER-157] ticket"]
+#[test] fn test_sqlite_484_pub_crate() { assert_parses("pub(crate) fun internal() { }"); }
+#[ignore = "Parser limitation: pub(super) not supported - needs [PARSER-158] ticket"]
+#[test] fn test_sqlite_485_pub_super() { assert_parses("pub(super) struct Local { }"); }
+#[ignore = "Parser limitation: pub(in path) not supported - needs [PARSER-159] ticket"]
+#[test] fn test_sqlite_486_pub_in_path() { assert_parses("pub(in crate::utils) fun helper() { }"); }
+
+// Const and Static
+#[ignore = "Parser limitation: Const declarations not supported - needs [PARSER-174] ticket"]
+#[test] fn test_sqlite_487_const_declaration() { assert_parses("const MAX: i32 = 100"); }
+#[ignore = "Parser limitation: Static declarations not supported - needs [PARSER-160] ticket"]
+#[test] fn test_sqlite_488_static_declaration() { assert_parses("static GLOBAL: i32 = 42"); }
+#[ignore = "Parser limitation: Static mut not supported - needs [PARSER-161] ticket"]
+#[test] fn test_sqlite_489_static_mut() { assert_parses("static mut COUNTER: i32 = 0"); }
+#[test] fn test_sqlite_490_const_fn() { assert_parses("const fun compute() -> i32 { 42 }"); }
+#[ignore = "Parser limitation: Const generics not supported - needs [PARSER-162] ticket"]
+#[test] fn test_sqlite_491_const_generic() { assert_parses("struct Array<T, const N: usize> { }"); }
+
+// Pattern Guards and Advanced Matching
+#[test] fn test_sqlite_492_if_let_guard() { assert_parses("if let Some(x) = opt if x > 0 { }"); }
+#[test] fn test_sqlite_493_while_let_pattern() { assert_parses("while let Some(x) = iter.next() { }"); }
+#[ignore = "Parser limitation: Let-else not supported - needs [PARSER-163] ticket"]
+#[test] fn test_sqlite_494_let_else() { assert_parses("let Some(x) = opt else { return }"); }
+#[ignore = "Parser limitation: Match ref patterns not supported - needs [PARSER-164] ticket"]
+#[test] fn test_sqlite_495_match_ref_pattern() { assert_parses("match &value { Some(ref x) => x }"); }
+#[ignore = "Parser limitation: Match mut patterns not supported - needs [PARSER-165] ticket"]
+#[test] fn test_sqlite_496_match_mut_pattern() { assert_parses("match &mut value { Some(ref mut x) => x }"); }
+
+// Type Inference and Annotations
+#[ignore = "Parser limitation: Turbofish calls not supported - needs [PARSER-166] ticket"]
+#[test] fn test_sqlite_497_turbofish_call() { assert_parses("vec.collect::<Vec<i32>>()"); }
+#[test] fn test_sqlite_498_type_ascription() { assert_parses("let x: i32 = 42"); }
+#[test] fn test_sqlite_499_as_cast() { assert_parses("let x = 42 as f64"); }
+#[test] fn test_sqlite_500_type_param_bounds() { assert_parses("fun foo<T: Clone + Debug>(x: T) { }"); }
+#[test] fn test_sqlite_501_where_clause() { assert_parses("fun bar<T>() where T: Clone { }"); }
+
+// Unsafe Operations
+#[test] fn test_sqlite_502_unsafe_fn() { assert_parses("unsafe fun raw_ptr() { }"); }
+#[ignore = "Parser limitation: Unsafe blocks not supported - needs [PARSER-167] ticket"]
+#[test] fn test_sqlite_503_unsafe_block() { assert_parses("unsafe { *ptr }"); }
+#[ignore = "Parser limitation: Unsafe traits not supported - needs [PARSER-168] ticket"]
+#[test] fn test_sqlite_504_unsafe_trait() { assert_parses("unsafe trait Send { }"); }
+#[ignore = "Parser limitation: Unsafe impl not supported - needs [PARSER-169] ticket"]
+#[test] fn test_sqlite_505_unsafe_impl() { assert_parses("unsafe impl Send for MyType { }"); }
+#[ignore = "Parser limitation: Raw pointer syntax not supported - needs [PARSER-170] ticket"]
+#[test] fn test_sqlite_506_raw_pointer() { assert_parses("let p: *const i32 = &x"); }
+
+// ============================================================================
 // Error Handling
 // ============================================================================
 
