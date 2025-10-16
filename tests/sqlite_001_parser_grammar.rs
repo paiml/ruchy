@@ -1740,6 +1740,128 @@ fn test_sqlite_356_attribute_arguments() {
 }
 
 // ============================================================================
+// Comprehensive Grammar Coverage (tests 357-406)
+// ============================================================================
+
+/// Test unsafe blocks
+#[test]
+#[ignore = "Parser limitation: unsafe blocks not supported - needs [PARSER-123] ticket"]
+fn test_sqlite_357_unsafe_blocks() {
+    assert_parses("unsafe { *raw_ptr }");
+}
+
+/// Test union types
+#[test]
+#[ignore = "Parser limitation: union types not supported - needs [PARSER-124] ticket"]
+fn test_sqlite_358_union_types() {
+    assert_parses("union Data { i: i32, f: f32 }");
+}
+
+/// Test static variables
+#[test]
+#[ignore = "Parser limitation: static variables not supported - needs [PARSER-125] ticket"]
+fn test_sqlite_359_static_variables() {
+    assert_parses("static CONSTANT: i32 = 42;");
+}
+
+/// Test const functions
+#[test]
+#[ignore = "Parser limitation: const functions not supported - needs [PARSER-126] ticket"]
+fn test_sqlite_360_const_functions() {
+    assert_parses("const fun compute() -> i32 { 42 }");
+}
+
+/// Test inline assembly
+#[test]
+#[ignore = "Parser limitation: inline assembly not supported - needs [PARSER-127] ticket"]
+fn test_sqlite_361_inline_assembly() {
+    assert_parses(r#"asm!("mov rax, 42")"#);
+}
+
+/// Test type inference with turbofish
+#[test]
+#[ignore = "Parser limitation: Turbofish syntax not supported - needs [PARSER-129] ticket"]
+fn test_sqlite_362_turbofish() {
+    assert_parses("collect::<Vec<i32>>()");
+}
+
+/// Test UFCS (universal function call syntax)
+#[test]
+fn test_sqlite_363_ufcs() {
+    assert_parses("String::from(\"hello\")");
+}
+
+/// Test question mark operator chains
+#[test]
+fn test_sqlite_364_question_mark_chains() {
+    assert_parses("a()?.b()?.c()?");
+}
+
+/// Test nested generics
+#[test]
+#[ignore = "Parser limitation: Nested generics parsing - needs [PARSER-130] ticket"]
+fn test_sqlite_365_nested_generics() {
+    assert_parses("Vec<Option<Result<i32, String>>>");
+}
+
+/// Test trait object with Send/Sync
+#[test]
+#[ignore = "Parser limitation: Send/Sync bounds not supported - needs [PARSER-128] ticket"]
+fn test_sqlite_366_trait_object_send_sync() {
+    assert_parses("Box<dyn Trait + Send + Sync>");
+}
+
+// More tests continuing the pattern (357-406)
+#[ignore = "Parser limitation: Array type annotations - needs [PARSER-131] ticket"]
+#[test] fn test_sqlite_367_array_literal_types() { assert_parses("[1, 2, 3]: [i32; 3]"); }
+#[test] fn test_sqlite_368_slice_types() { assert_parses("let s: &[i32] = &arr"); }
+#[test] fn test_sqlite_369_function_pointers() { assert_parses("let f: fn(i32) -> i32 = increment"); }
+#[ignore = "Parser limitation: Never type (!) - needs [PARSER-132] ticket"]
+#[test] fn test_sqlite_370_never_type() { assert_parses("fun diverge() -> ! { panic!() }"); }
+#[ignore = "Parser limitation: Raw identifiers (r#) - needs [PARSER-133] ticket"]
+#[test] fn test_sqlite_371_raw_identifiers() { assert_parses("let r#match = 42"); }
+#[ignore = "Parser limitation: Fully qualified paths - needs [PARSER-134] ticket"]
+#[test] fn test_sqlite_372_qualified_paths() { assert_parses("<Vec<T> as IntoIterator>::into_iter"); }
+#[test] fn test_sqlite_373_associated_consts() { assert_parses("i32::MAX"); }
+#[test] fn test_sqlite_374_async_blocks() { assert_parses("async { await future }"); }
+#[ignore = "Parser limitation: async move blocks - needs [PARSER-135] ticket"]
+#[test] fn test_sqlite_375_async_move_blocks() { assert_parses("async move { value }"); }
+#[ignore = "Parser limitation: try blocks - needs [PARSER-136] ticket"]
+#[test] fn test_sqlite_376_try_blocks() { assert_parses("try { risky()? }"); }
+#[test] fn test_sqlite_377_loop_labels() { assert_parses("'outer: loop { break 'outer; }"); }
+#[test] fn test_sqlite_378_match_guards() { assert_parses("match x { n if n > 0 => n }"); }
+#[test] fn test_sqlite_379_irrefutable_patterns() { assert_parses("let Point { x, y } = p"); }
+#[test] fn test_sqlite_380_underscore_patterns() { assert_parses("let _ = value"); }
+#[ignore = "Parser limitation: Rest patterns in arrays - needs [PARSER-137] ticket"]
+#[test] fn test_sqlite_381_rest_patterns() { assert_parses("let [first, .., last] = arr"); }
+#[test] fn test_sqlite_382_string_escapes() { assert_parses(r#""Hello\nWorld\t!""#); }
+#[test] fn test_sqlite_383_raw_string_hashes() { assert_parses(r###"r#"raw"#"###); }
+#[test] fn test_sqlite_384_format_strings() { assert_parses(r#"format!("x = {}", x)"#); }
+#[test] fn test_sqlite_385_debug_format() { assert_parses(r#"format!("{:?}", value)"#); }
+#[test] fn test_sqlite_386_hex_format() { assert_parses(r#"format!("{:x}", num)"#); }
+#[test] fn test_sqlite_387_precision_format() { assert_parses(r#"format!("{:.2}", pi)"#); }
+#[test] fn test_sqlite_388_named_args_format() { assert_parses(r#"format!("{name}", name = "Alice")"#); }
+#[test] fn test_sqlite_389_positional_format() { assert_parses(r#"format!("{0} {1}", a, b)"#); }
+#[test] fn test_sqlite_390_struct_shorthand() { assert_parses("Point { x, y }"); }
+#[test] fn test_sqlite_391_enum_shorthand() { assert_parses("use Color::*; Red"); }
+#[test] fn test_sqlite_392_import_rename() { assert_parses("use std::io::Result as IoResult"); }
+#[test] fn test_sqlite_393_multiline_strings() { assert_parses("\"line1\nline2\nline3\""); }
+#[test] fn test_sqlite_394_numeric_separators() { assert_parses("1_000_000"); }
+#[test] fn test_sqlite_395_leading_zeros() { assert_parses("0042"); }
+#[test] fn test_sqlite_396_exponent_notation() { assert_parses("1e10"); }
+#[test] fn test_sqlite_397_negative_literals() { assert_parses("-42"); }
+#[ignore = "Parser limitation: Explicit positive sign - needs [PARSER-138] ticket"]
+#[test] fn test_sqlite_398_positive_sign() { assert_parses("+42"); }
+#[test] fn test_sqlite_399_parenthesized_exprs() { assert_parses("(1 + 2) * 3"); }
+#[test] fn test_sqlite_400_nested_parens() { assert_parses("((((42))))"); }
+#[test] fn test_sqlite_401_empty_blocks() { assert_parses("{}"); }
+#[test] fn test_sqlite_402_semicolon_expr() { assert_parses("{ expr; }"); }
+#[test] fn test_sqlite_403_block_value() { assert_parses("let x = { 42 }"); }
+#[test] fn test_sqlite_404_chained_comparisons() { assert_parses("a == b && b == c"); }
+#[test] fn test_sqlite_405_boolean_literals() { assert_parses("true && false || true"); }
+#[test] fn test_sqlite_406_unit_literal() { assert_parses("()"); }
+
+// ============================================================================
 // Error Handling
 // ============================================================================
 
