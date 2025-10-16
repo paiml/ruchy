@@ -5,6 +5,14 @@ All notable changes to the Ruchy programming language will be documented in this
 ## [Unreleased]
 
 ### Added
+- **[SQLITE-TEST-001] Harness 4 Seventh Expansion - 300 Test Milestone**: Added 50 new advanced runtime anomaly tests (250→300, 20% increase)
+  - Test Pass Rate: 58/300 passing (19.3%)
+  - New Categories (10): Type coercion/casting (implicit, explicit, pointer, transmute, ref-to-ptr), Deref coercion/smart pointers (Box, Rc, Arc, custom Deref), Drop/RAII (Drop trait, drop order, manual drop, Copy/Drop conflict), Pattern matching advanced (guards, or-patterns, binding modes, @ bindings, slice patterns), Method resolution (UFCS, priority, autoderef, autoref), Module system (visibility, pub(crate), pub(super), re-exports, glob re-exports), Unsafe code validation (function calls, raw pointers, mutable static, union access, unsafe trait methods), Async runtime (execution, Future trait, async blocks, await in loops, async move closures), GATs (trait definition, implementation, multiple params, bounds, lifetime elision), Error recovery/panics (panic messages, panic in Drop, double panic, catch_unwind, location tracking)
+  - Defensive Testing: 50 new runtime limitations (RUNTIME-194 through RUNTIME-243)
+  - Total Limitations: 242 documented (RUNTIME-001 fixed)
+  - Framework Total: 713 tests across 4 harnesses
+  - Progress: 300/50,000 tests (0.60% of Harness 4 complete)
+  - Time: 10.5h / 60h estimated
 - **[SQLITE-TEST-001] Harness 1 Eighth Expansion - 450 Test Milestone**: Added 50 new advanced parser grammar tests (400→450, 12.5% increase)
   - Test Pass Rate: 314/450 passing (69.8%)
   - New Categories (10): Attributes advanced (derive, cfg, allow, deprecated, doc), Macro invocations (braces, parens, brackets, nested), Use statements (glob, nested, alias, self, super), Type system (higher-ranked bounds, associated types, impl Trait, dyn Trait, where clauses), Expressions (range variants), Closures (move, async, type annotations, patterns), Structs (update syntax, patterns, shorthand, visibility), Enums (discriminants, complex variants, generics), Traits (default impl, associated const/type, supertraits), Impl blocks (generic, where, associated types, constants)
