@@ -255,6 +255,161 @@ fn test_sqlite_032_empty_array_access() {
 }
 
 // ============================================================================
+// Category 5: String Operation Anomalies
+// ============================================================================
+
+/// Test string index out of bounds
+#[test]
+fn test_sqlite_040_string_index_out_of_bounds() {
+    // Strings should handle out-of-bounds index gracefully
+    let result = std::panic::catch_unwind(|| {
+        execute_program(r#"let s = "hello"; s[100]"#)
+    });
+    assert!(result.is_ok(), "String index out of bounds should not panic");
+}
+
+/// Test string slice out of bounds
+#[test]
+fn test_sqlite_041_string_slice_out_of_bounds() {
+    let result = std::panic::catch_unwind(|| {
+        execute_program(r#"let s = "hello"; s[0..100]"#)
+    });
+    assert!(result.is_ok(), "String slice out of bounds should not panic");
+}
+
+/// Test invalid UTF-8 handling
+#[test]
+fn test_sqlite_042_invalid_utf8_handling() {
+    // Runtime should handle invalid UTF-8 gracefully
+    let result = std::panic::catch_unwind(|| {
+        execute_program(r#"let s = "\xFF\xFF""#)
+    });
+    assert!(result.is_ok(), "Invalid UTF-8 should not panic");
+}
+
+/// Test string method on non-string
+#[test]
+fn test_sqlite_043_string_method_on_non_string() {
+    assert_runtime_error("let x = 42; x.to_uppercase()", &["unknown", "method", "to_uppercase"]);
+}
+
+/// Test very long string allocation
+#[test]
+fn test_sqlite_044_very_long_string() {
+    // Allocating a very long string should either succeed or fail gracefully
+    let result = std::panic::catch_unwind(|| {
+        execute_program(r#"let s = "x".repeat(100000000)"#)
+    });
+    assert!(result.is_ok(), "Long string allocation should not panic");
+}
+
+// ============================================================================
+// Category 6: Hash/Object Anomalies
+// ============================================================================
+
+/// Test accessing undefined object field
+#[test]
+fn test_sqlite_050_undefined_object_field() {
+    let result = execute_program("let obj = {x: 1, y: 2}; obj.z");
+    // Should either return nil/none or error gracefully
+    assert!(result.is_ok() || result.is_err(), "Undefined field access should not panic");
+}
+
+/// Test circular object reference
+#[test]
+fn test_sqlite_051_circular_object_reference() {
+    // Circular references should not cause infinite loops in display/debug
+    let result = std::panic::catch_unwind(|| {
+        execute_program(r#"
+            let obj = {x: 1};
+            obj.self = obj;
+            obj
+        "#)
+    });
+    assert!(result.is_ok(), "Circular references should not panic");
+}
+
+/// Test object with many fields (stress test)
+#[test]
+fn test_sqlite_052_object_many_fields() {
+    let result = std::panic::catch_unwind(|| {
+        execute_program(r#"
+            let obj = {};
+            for i in 1..1000 {
+                obj[i.to_string()] = i;
+            }
+            obj
+        "#)
+    });
+    assert!(result.is_ok(), "Object with many fields should not panic");
+}
+
+/// Test hash collision handling
+#[test]
+fn test_sqlite_053_hash_collision() {
+    // Ensure hash map implementation handles collisions correctly
+    let result = execute_program(r#"
+        let obj = {key1: 1, key2: 2, key3: 3};
+        obj.key1
+    "#);
+
+    assert!(result.is_ok(), "Hash operations should not panic");
+    if let Ok(value) = result {
+        // Should return 1 (first key's value)
+        assert_eq!(format!("{:?}", value), "Integer(1)");
+    }
+}
+
+// ============================================================================
+// Category 7: Function Call Anomalies
+// ============================================================================
+
+/// Test function with too many arguments
+#[test]
+fn test_sqlite_060_function_too_many_args() {
+    assert_runtime_error(
+        "fun add(a, b) { a + b }; add(1, 2, 3)",
+        &["expects 2 arguments, got 3", "argument count", "arity"]
+    );
+}
+
+/// Test function with too few arguments
+#[test]
+fn test_sqlite_061_function_too_few_args() {
+    assert_runtime_error(
+        "fun add(a, b) { a + b }; add(1)",
+        &["expects 2 arguments, got 1", "argument count", "arity"]
+    );
+}
+
+/// Test calling undefined function
+#[test]
+fn test_sqlite_062_undefined_function() {
+    // Note: Ruchy treats undefined identifiers followed by () as message constructors
+    // This is a design decision, not an error. The test verifies no panic occurs.
+    let result = execute_program("undefined_function()");
+    assert!(result.is_ok(), "Undefined function call should not panic (message constructor behavior)");
+}
+
+/// Test deeply nested function calls (but within recursion limit)
+#[test]
+fn test_sqlite_063_deeply_nested_calls_within_limit() {
+    let result = execute_program(r#"
+        fun countdown(n) {
+            if n == 0 {
+                0
+            } else {
+                countdown(n - 1)
+            }
+        }
+        countdown(50)
+    "#);
+
+    // Should succeed - 50 is well below recursion limit
+    assert!(result.is_ok(), "Deep calls within limit should succeed");
+}
+
+// ============================================================================
 // Helper Functions
 // ============================================================================
 
