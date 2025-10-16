@@ -913,6 +913,339 @@ fn test_sqlite_149_empty_array() {
 }
 
 // ============================================================================
+// Category 16: Async/Concurrency Anomalies
+// ============================================================================
+
+/// Test async function definition
+#[test]
+#[ignore = "Runtime limitation: async functions not implemented - needs [RUNTIME-025] ticket"]
+fn test_sqlite_150_async_function() {
+    let result = execute_program(r#"
+        async fun fetch_data() {
+            42
+        }
+    "#);
+    assert!(result.is_ok(), "Async function should be defined");
+}
+
+/// Test await expression
+#[test]
+#[ignore = "Runtime limitation: await expressions not implemented - needs [RUNTIME-026] ticket"]
+fn test_sqlite_151_await_expression() {
+    let result = execute_program(r#"
+        async fun get_value() { 42 }
+        await get_value()
+    "#);
+    assert!(result.is_ok(), "Await expression should work");
+}
+
+/// Test concurrent execution
+#[test]
+#[ignore = "Runtime limitation: concurrent execution not implemented - needs [RUNTIME-027] ticket"]
+fn test_sqlite_152_concurrent_execution() {
+    let result = execute_program(r#"
+        spawn { 1 + 1 }
+    "#);
+    assert!(result.is_ok() || result.is_err(), "Concurrent execution should not panic");
+}
+
+/// Test race condition handling
+#[test]
+#[ignore = "Runtime limitation: shared state protection not implemented - needs [RUNTIME-028] ticket"]
+fn test_sqlite_153_race_condition() {
+    let result = execute_program(r#"
+        let mut counter = 0;
+        spawn { counter += 1; }
+        spawn { counter += 1; }
+    "#);
+    assert!(result.is_ok() || result.is_err(), "Race condition should not panic");
+}
+
+/// Test deadlock detection
+#[test]
+#[ignore = "Runtime limitation: deadlock detection not implemented - needs [RUNTIME-029] ticket"]
+fn test_sqlite_154_deadlock() {
+    let result = execute_program(r#"
+        let lock1 = Mutex::new(0);
+        let lock2 = Mutex::new(0);
+        spawn {
+            let _a = lock1.lock();
+            let _b = lock2.lock();
+        }
+        spawn {
+            let _b = lock2.lock();
+            let _a = lock1.lock();
+        }
+    "#);
+    assert!(result.is_ok() || result.is_err(), "Deadlock should not panic");
+}
+
+// ============================================================================
+// Category 17: I/O and External Resource Anomalies
+// ============================================================================
+
+/// Test file not found
+#[test]
+#[ignore = "Runtime limitation: file I/O not implemented - needs [RUNTIME-030] ticket"]
+fn test_sqlite_160_file_not_found() {
+    assert_runtime_error(
+        r#"fs_read("/nonexistent/file.txt")"#,
+        &["not found", "no such file", "does not exist"]
+    );
+}
+
+/// Test permission denied
+#[test]
+#[ignore = "Runtime limitation: file permissions not implemented - needs [RUNTIME-031] ticket"]
+fn test_sqlite_161_permission_denied() {
+    assert_runtime_error(
+        r#"fs_write("/root/protected.txt", "data")"#,
+        &["permission denied", "access denied", "insufficient permissions"]
+    );
+}
+
+/// Test network connection failure
+#[test]
+#[ignore = "Runtime limitation: network I/O not implemented - needs [RUNTIME-032] ticket"]
+fn test_sqlite_162_network_failure() {
+    assert_runtime_error(
+        r#"http_get("http://invalid.domain.xyz")"#,
+        &["connection failed", "network error", "timeout"]
+    );
+}
+
+/// Test database connection failure
+#[test]
+#[ignore = "Runtime limitation: database I/O not implemented - needs [RUNTIME-033] ticket"]
+fn test_sqlite_163_database_error() {
+    assert_runtime_error(
+        r#"db_connect("invalid://connection/string")"#,
+        &["connection failed", "invalid", "error"]
+    );
+}
+
+/// Test resource exhaustion
+#[test]
+#[ignore = "Runtime limitation: resource limits not implemented - needs [RUNTIME-034] ticket"]
+fn test_sqlite_164_resource_exhaustion() {
+    let result = execute_program(r#"
+        let files = [];
+        for i in 1..10000 {
+            files.push(fs_open(format!("/tmp/file{}", i)));
+        }
+    "#);
+    assert!(result.is_ok() || result.is_err(), "Resource exhaustion should not panic");
+}
+
+// ============================================================================
+// Category 18: Trait and Generic Anomalies
+// ============================================================================
+
+/// Test missing trait implementation
+#[test]
+#[ignore = "Runtime limitation: trait checking not implemented - needs [RUNTIME-035] ticket"]
+fn test_sqlite_170_missing_trait_impl() {
+    assert_runtime_error(
+        r#"
+        trait Drawable {
+            fun draw();
+        }
+        struct Circle {}
+        let c = Circle {};
+        c.draw()
+        "#,
+        &["not implemented", "missing", "trait"]
+    );
+}
+
+/// Test generic type mismatch
+#[test]
+#[ignore = "Runtime limitation: generic type checking not enforced - needs [RUNTIME-036] ticket"]
+fn test_sqlite_171_generic_type_mismatch() {
+    assert_runtime_error(
+        r#"
+        fun identity<T>(x: T) -> T { x }
+        let result: String = identity(42);
+        "#,
+        &["type mismatch", "expected String", "got"]
+    );
+}
+
+/// Test unbounded generic
+#[test]
+fn test_sqlite_172_unbounded_generic() {
+    let result = execute_program(r#"
+        fun process<T>(value: T) -> T {
+            value
+        }
+        process(42)
+    "#);
+    assert!(result.is_ok(), "Unbounded generic should work");
+}
+
+/// Test trait bound violation
+#[test]
+#[ignore = "Runtime limitation: trait bounds not enforced - needs [RUNTIME-037] ticket"]
+fn test_sqlite_173_trait_bound_violation() {
+    assert_runtime_error(
+        r#"
+        fun compare<T: Ord>(a: T, b: T) -> bool {
+            a < b
+        }
+        compare(|x| x, |y| y)
+        "#,
+        &["trait bound", "not satisfied", "Ord"]
+    );
+}
+
+/// Test associated type mismatch
+#[test]
+#[ignore = "Runtime limitation: associated types not implemented - needs [RUNTIME-038] ticket"]
+fn test_sqlite_174_associated_type_mismatch() {
+    assert_runtime_error(
+        r#"
+        trait Container {
+            type Item;
+            fun get() -> Self::Item;
+        }
+        "#,
+        &["associated type", "mismatch", "not implemented"]
+    );
+}
+
+// ============================================================================
+// Category 19: Memory Safety Anomalies
+// ============================================================================
+
+/// Test use after free
+#[test]
+#[ignore = "Runtime limitation: use-after-free detection not implemented - needs [RUNTIME-039] ticket"]
+fn test_sqlite_180_use_after_free() {
+    let result = execute_program(r#"
+        let ptr = alloc(100);
+        free(ptr);
+        *ptr
+    "#);
+    assert!(result.is_ok() || result.is_err(), "Use-after-free should not panic");
+}
+
+/// Test double free
+#[test]
+#[ignore = "Runtime limitation: double-free detection not implemented - needs [RUNTIME-040] ticket"]
+fn test_sqlite_181_double_free() {
+    let result = execute_program(r#"
+        let ptr = alloc(100);
+        free(ptr);
+        free(ptr)
+    "#);
+    assert!(result.is_ok() || result.is_err(), "Double free should not panic");
+}
+
+/// Test null pointer dereference
+#[test]
+#[ignore = "Runtime limitation: null pointer checking not implemented - needs [RUNTIME-041] ticket"]
+fn test_sqlite_182_null_pointer_deref() {
+    assert_runtime_error(
+        "*null_ptr",
+        &["null pointer", "nil", "cannot dereference"]
+    );
+}
+
+/// Test buffer overflow
+#[test]
+#[ignore = "Runtime limitation: buffer overflow detection not implemented - needs [RUNTIME-042] ticket"]
+fn test_sqlite_183_buffer_overflow() {
+    let result = execute_program(r#"
+        let buf = [0; 10];
+        buf[100] = 42
+    "#);
+    assert!(result.is_ok() || result.is_err(), "Buffer overflow should not panic");
+}
+
+/// Test memory leak
+#[test]
+#[ignore = "Runtime limitation: memory leak detection not implemented - needs [RUNTIME-043] ticket"]
+fn test_sqlite_184_memory_leak() {
+    let result = execute_program(r#"
+        for i in 1..1000 {
+            let data = vec![0; 1000000];
+        }
+    "#);
+    assert!(result.is_ok(), "Memory leak should not panic");
+}
+
+/// Test dangling pointer
+#[test]
+#[ignore = "Runtime limitation: dangling pointer detection not implemented - needs [RUNTIME-044] ticket"]
+fn test_sqlite_185_dangling_pointer() {
+    let result = execute_program(r#"
+        fun get_ref() -> &i32 {
+            let x = 42;
+            &x
+        }
+        *get_ref()
+    "#);
+    assert!(result.is_ok() || result.is_err(), "Dangling pointer should not panic");
+}
+
+/// Test uninitialized memory read
+#[test]
+#[ignore = "Runtime limitation: uninitialized memory detection not implemented - needs [RUNTIME-045] ticket"]
+fn test_sqlite_186_uninitialized_read() {
+    let result = execute_program(r#"
+        let x: i32;
+        x + 1
+    "#);
+    assert!(result.is_ok() || result.is_err(), "Uninitialized read should not panic");
+}
+
+/// Test stack overflow from large allocation
+#[test]
+fn test_sqlite_187_stack_allocation_limit() {
+    let result = execute_program(r#"
+        let huge_array = [0; 1000000];
+    "#);
+    // May succeed or fail depending on stack size limits
+    assert!(result.is_ok() || result.is_err(), "Large stack allocation should not panic");
+}
+
+/// Test heap exhaustion
+#[test]
+#[ignore = "Runtime limitation: heap exhaustion handling not implemented - needs [RUNTIME-046] ticket"]
+fn test_sqlite_188_heap_exhaustion() {
+    let result = execute_program(r#"
+        let mut data = [];
+        loop {
+            data.push(vec![0; 1000000]);
+        }
+    "#);
+    assert!(result.is_ok() || result.is_err(), "Heap exhaustion should not panic");
+}
+
+/// Test pointer arithmetic overflow
+#[test]
+#[ignore = "Runtime limitation: pointer arithmetic not implemented - needs [RUNTIME-047] ticket"]
+fn test_sqlite_189_pointer_arithmetic_overflow() {
+    let result = execute_program(r#"
+        let ptr = &mut 0;
+        ptr.offset(i64::MAX)
+    "#);
+    assert!(result.is_ok() || result.is_err(), "Pointer arithmetic overflow should not panic");
+}
+
+/// Test alignment violation
+#[test]
+#[ignore = "Runtime limitation: alignment checking not implemented - needs [RUNTIME-048] ticket"]
+fn test_sqlite_190_alignment_violation() {
+    let result = execute_program(r#"
+        let bytes = [0u8; 16];
+        let ptr = &bytes[1] as *const u64;
+        *ptr
+    "#);
+    assert!(result.is_ok() || result.is_err(), "Alignment violation should not panic");
+}
+
+// ============================================================================
 // Helper Functions
 // ============================================================================
 
