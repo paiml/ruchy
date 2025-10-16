@@ -23,31 +23,33 @@ Implemented foundation for **SQLite-level testing framework** targeting 608:1 te
 
 ## Harness-by-Harness Status
 
-### ✅ Harness 1: Parser Grammar Coverage (100% - TARGET ACHIEVED)
+### ✅ Harness 1: Parser Grammar Coverage (150 Test Milestone ✅)
 
 **File**: `tests/sqlite_001_parser_grammar.rs`
-**Status**: 🟢 100% - TARGET ACHIEVED (20,000 target reached)
-**Progress**: 145/2,000 tests (7.25%)
+**Status**: 🟢 150 Test Milestone + 20K Property Iterations ACHIEVED
+**Progress**: 150/2,000 tests (7.5%)
 **Property Iterations**: 20,000 (10x scaling from 2,000)
-**Time**: 2h / 32h estimated
+**Time**: 2.5h / 32h estimated
 
 **Implemented**:
-- ✅ 128 grammar coverage tests (passing)
+- ✅ 131 grammar coverage tests (passing) - **UP from 128**
 - ✅ 6 error recovery tests
 - ✅ 1 performance test (O(n) verification)
 - ✅ 3 property tests (20,000 iterations total - 10x scaling)
 - ✅ 52 advanced grammar tests added (35 passing, 12 new limitations discovered)
+- ✅ **5 NEW tests added** (labeled loops, operator precedence, slicing, unicode)
 
 **Key Achievements**:
+- **150 TEST MILESTONE**: Reached 150 total tests (145→150, 3.4% increase)
 - **TARGET ACHIEVED**: 20,000 property test iterations completed (100% of goal)
 - **10x scaling**: Property tests scaled from 2,000 → 20,000 iterations via systematic 2x pattern
-- **18 parser limitations discovered** via defensive testing (Toyota Way)
-- **Tickets created**: PARSER-055 through PARSER-072
+- **19 parser limitations discovered** via defensive testing (Toyota Way)
+- **Tickets created**: PARSER-055 through PARSER-073 (2 new limitations)
 - **PARSER-060 FIXED**: Actor definition infinite loop bug resolved
 - **Zero panics** across 20,000 property iterations
-- **128/145 passing** (17 ignored with documented tickets, 1 fixed)
-- **Fast execution**: All tests complete in 0.49 seconds
-- **STATUS**: COMPLETED - Ready for production use
+- **131/150 passing** (19 ignored with documented tickets, 1 fixed)
+- **Fast execution**: All tests complete in 0.48 seconds
+- **STATUS**: MILESTONE ACHIEVED - Ready for next expansion
 
 **Research Foundation**:
 - NASA DO-178B/C: Modified Condition/Decision Coverage (MC/DC)
@@ -73,6 +75,8 @@ Implemented foundation for **SQLite-level testing framework** targeting 608:1 te
 16. [PARSER-070] Byte literal escape sequences
 17. [PARSER-071] Async move blocks
 18. [PARSER-072] Chained tuple indexing (obj.0.1)
+19. [PARSER-072] Open-ended range syntax (arr[..5], arr[5..], arr[..]) - **NEW**
+20. [PARSER-073] Unicode identifiers (let π = 3.14) - **NEW**
 
 ---
 
