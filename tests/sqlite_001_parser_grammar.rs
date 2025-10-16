@@ -2281,6 +2281,112 @@ fn test_sqlite_366_trait_object_send_sync() {
 #[test] fn test_sqlite_606_turbofish() { assert_parses("Vec::<i32>::new()"); }
 
 // ============================================================================
+// Category 71: Field and Method Syntax
+// ============================================================================
+
+#[test] fn test_sqlite_607_field_access() { assert_parses("obj.field"); }
+#[test] fn test_sqlite_608_nested_field_access() { assert_parses("obj.field.subfield"); }
+#[test] fn test_sqlite_609_method_call_no_args() { assert_parses("obj.method()"); }
+#[test] fn test_sqlite_610_method_call_args() { assert_parses("obj.method(arg1, arg2)"); }
+#[test] fn test_sqlite_611_chained_methods() { assert_parses("obj.method1().method2().method3()"); }
+
+// ============================================================================
+// Category 72: If Let and While Let
+// ============================================================================
+
+#[test] fn test_sqlite_612_if_let() { assert_parses("if let Some(x) = opt { }"); }
+#[test] fn test_sqlite_613_if_let_else() { assert_parses("if let Some(x) = opt { } else { }"); }
+#[test] fn test_sqlite_614_while_let() { assert_parses("while let Some(x) = iter.next() { }"); }
+#[test] fn test_sqlite_615_if_let_pattern() { assert_parses("if let Ok(v) = result { }"); }
+#[test] fn test_sqlite_616_nested_if_let() { assert_parses("if let Some(x) = a { if let Some(y) = b { } }"); }
+
+// ============================================================================
+// Category 73: Array and Slice Expressions
+// ============================================================================
+
+#[test] fn test_sqlite_617_array_literal() { assert_parses("[1, 2, 3]"); }
+#[test] fn test_sqlite_618_array_repeat() { assert_parses("[0; 10]"); }
+#[test] fn test_sqlite_619_array_index() { assert_parses("arr[0]"); }
+#[test] fn test_sqlite_620_slice_range() { assert_parses("arr[1..5]"); }
+#[ignore = "Parser limitation: Slice from syntax (arr[n..]) not fully supported - needs [PARSER-210] ticket"]
+#[test] fn test_sqlite_621_slice_from() { assert_parses("arr[2..]"); }
+
+// ============================================================================
+// Category 74: Binary and Unary Operators
+// ============================================================================
+
+#[test] fn test_sqlite_622_arithmetic_ops() { assert_parses("a + b - c * d / e % f"); }
+#[test] fn test_sqlite_623_comparison_ops() { assert_parses("a < b && c > d || e == f"); }
+#[test] fn test_sqlite_624_bitwise_ops() { assert_parses("a & b | c ^ d"); }
+#[test] fn test_sqlite_625_shift_ops() { assert_parses("a << 2 >> 1"); }
+#[test] fn test_sqlite_626_unary_ops() { assert_parses("!a"); }
+
+// ============================================================================
+// Category 75: Assignment and Compound Assignment
+// ============================================================================
+
+#[test] fn test_sqlite_627_simple_assign() { assert_parses("x = 42"); }
+#[test] fn test_sqlite_628_add_assign() { assert_parses("x += 1"); }
+#[test] fn test_sqlite_629_sub_assign() { assert_parses("x -= 1"); }
+#[test] fn test_sqlite_630_mul_assign() { assert_parses("x *= 2"); }
+#[test] fn test_sqlite_631_div_assign() { assert_parses("x /= 2"); }
+
+// ============================================================================
+// Category 76: Return and Break Values
+// ============================================================================
+
+#[test] fn test_sqlite_632_return_value() { assert_parses("return 42"); }
+#[test] fn test_sqlite_633_return_expr() { assert_parses("return x + 1"); }
+#[test] fn test_sqlite_634_break_value() { assert_parses("break 42"); }
+#[test] fn test_sqlite_635_break_label_value() { assert_parses("break 'outer 42"); }
+#[test] fn test_sqlite_636_implicit_return() { assert_parses("fun foo() { 42 }"); }
+
+// ============================================================================
+// Category 77: Underscore and Placeholder
+// ============================================================================
+
+#[test] fn test_sqlite_637_underscore_pattern() { assert_parses("let _ = value"); }
+#[test] fn test_sqlite_638_underscore_in_match() { assert_parses("match x { _ => {} }"); }
+#[ignore = "Parser limitation: Underscore type placeholder not supported - needs [PARSER-211] ticket"]
+#[test] fn test_sqlite_639_underscore_type() { assert_parses("let x: _ = 42"); }
+#[test] fn test_sqlite_640_underscore_in_tuple() { assert_parses("let (_, y) = pair"); }
+#[ignore = "Parser limitation: Rest pattern (..) in array destructuring not supported - needs [PARSER-212] ticket"]
+#[test] fn test_sqlite_641_rest_pattern() { assert_parses("let [first, .., last] = arr"); }
+
+// ============================================================================
+// Category 78: Question Mark Operator
+// ============================================================================
+
+#[test] fn test_sqlite_642_try_operator() { assert_parses("func()?"); }
+#[test] fn test_sqlite_643_try_chained() { assert_parses("a()?.b()?.c()"); }
+#[ignore = "Parser limitation: Try operator in complex expressions not fully supported - needs [PARSER-213] ticket"]
+#[test] fn test_sqlite_644_try_in_expr() { assert_parses("let x = func()? + 1"); }
+#[test] fn test_sqlite_645_try_field_access() { assert_parses("obj?.field"); }
+#[ignore = "Parser limitation: Try operator with indexing not supported - needs [PARSER-214] ticket"]
+#[test] fn test_sqlite_646_try_index() { assert_parses("arr?[0]"); }
+
+// ============================================================================
+// Category 79: Semicolon Rules
+// ============================================================================
+
+#[test] fn test_sqlite_647_statement_semi() { assert_parses("let x = 1;"); }
+#[test] fn test_sqlite_648_expr_no_semi() { assert_parses("42"); }
+#[test] fn test_sqlite_649_block_last_expr() { assert_parses("{ let x = 1; x }"); }
+#[test] fn test_sqlite_650_block_last_stmt() { assert_parses("{ let x = 1; }"); }
+#[test] fn test_sqlite_651_if_no_semi() { assert_parses("if true { 1 } else { 2 }"); }
+
+// ============================================================================
+// Category 80: Comment Syntax
+// ============================================================================
+
+#[test] fn test_sqlite_652_line_comment() { assert_parses("// comment\nlet x = 1"); }
+#[test] fn test_sqlite_653_block_comment() { assert_parses("/* comment */ let x = 1"); }
+#[ignore = "Parser limitation: Nested block comments not supported - needs [PARSER-215] ticket"]
+#[test] fn test_sqlite_654_nested_block_comment() { assert_parses("/* outer /* inner */ outer */ let x = 1"); }
+#[test] fn test_sqlite_655_doc_comment() { assert_parses("/// doc comment\nfun foo() { }"); }
+#[test] fn test_sqlite_656_module_doc_comment() { assert_parses("//! module doc\nfun foo() { }"); }
+
+// ============================================================================
 // Error Handling
 // ============================================================================
 
