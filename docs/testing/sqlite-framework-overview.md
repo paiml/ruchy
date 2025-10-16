@@ -25,7 +25,7 @@ Implementing a research-grade testing framework inspired by SQLite's legendary r
 |---|---------|-----------|----------|--------|----------|
 | 1 | **Parser Grammar** | 2000+ | 100% MC/DC | 🟢 100 tests (5.0%) | NASA DO-178B/C |
 | 2 | **Type Soundness** | 300K+ | Progress+Preservation | 🟡 30,022 iterations (10.0%) | Pierce (MIT Press) |
-| 3 | **Metamorphic Testing** | 100K+ | Semantic equivalence | ⚪ Not started | Chen et al. (ACM) |
+| 3 | **Metamorphic Testing** | 100K+ | Semantic equivalence | 🟡 312 iterations (0.3%) | Chen et al. (ACM) |
 | 4 | **Runtime Anomalies** | 50K+ | All failure modes | ⚪ Not started | SQLite standard |
 | 5 | **Coverage-Guided Fuzzing** | 24hrs | 0 crashes | ⚪ Not started | AFL (Zalewski) |
 | 6 | **Performance Benchmarks** | 50+ | <5% regression | ⚪ Not started | criterion.rs |
@@ -172,6 +172,78 @@ Time: 0.01s (fast due to parser-only validation)
 3. Add bidirectional type checking validation
 4. Add higher-kinded type tests
 5. Add type inference tests
+
+### Harness 3: Metamorphic Testing (IN_PROGRESS - Foundation)
+
+**File**: `tests/sqlite_003_metamorphic_testing.rs`
+**Progress**: 312/100,000 iterations (0.3%)
+**Time Spent**: 2h / 48h estimated
+**Latest Update**: 2025-10-15
+
+**Implemented**:
+- ✅ **MR1: Optimization Equivalence (3 tests)**
+  - Constant folding (addition, multiplication)
+  - Dead code elimination
+- ✅ **MR2: Statement Permutation (3 tests)**
+  - Independent let bindings commute
+  - Independent function calls commute
+  - Dependent statements order validation
+- ✅ **MR3: Constant Propagation (3 tests)**
+  - Simple constant propagation
+  - Multiple variable uses
+  - Nested constant expressions
+- ✅ **MR4: Alpha Renaming (4 tests)**
+  - Lambda parameter renaming
+  - Let binding renaming
+  - Function parameter renaming
+  - Variable shadowing validation
+- ✅ **MR6: Parse-Print-Parse Identity (2 tests)**
+  - Literal expression determinism
+  - Complex expression determinism
+- ✅ **Property Tests (3 tests, 300 iterations total)**
+  - Constant folding equivalence: 100 iterations
+  - Alpha renaming preservation: 100 iterations
+  - Parse determinism: 100 iterations
+
+**Test Results**:
+```
+running 18 tests
+- MR1 Optimization Equivalence: 3 tests ✅
+- MR2 Statement Permutation: 3 tests ✅
+- MR3 Constant Propagation: 3 tests ✅
+- MR4 Alpha Renaming: 4 tests ✅
+- MR6 Parse-Print-Parse: 2 tests ✅
+- Property Tests: 3 tests (300 iterations) ✅
+
+test result: ok. 18 passed; 0 failed; 0 ignored
+Time: 0.00s (fast due to parser-only validation)
+```
+
+**Current Limitations**:
+- ⚠️ Using parser-only validation (no optimizer integration yet)
+- ⚠️ No interpreter/evaluator for semantic equivalence checking
+- ⚠️ Property tests validate parsing, not execution equivalence
+- ⚠️ Missing MR5: Interpreter-Compiler equivalence (requires eval integration)
+
+**Research Foundation**:
+- Chen et al. (2018): Metamorphic testing methodology (ACM CSUR)
+- Metamorphic Relations for compiler correctness validation
+- Six core MRs: Optimization, Permutation, Propagation, Renaming, Equivalence, Identity
+
+**Metamorphic Relations Defined**:
+1. **MR1**: Optimization preserves semantics (`Optimize(P) ≡ P`)
+2. **MR2**: Independent statements commute (`[S1; S2] ≡ [S2; S1]`)
+3. **MR3**: Constant propagation preserves semantics
+4. **MR4**: Variable renaming preserves semantics (alpha equivalence)
+5. **MR5**: Interpreter-compiler equivalence (NOT YET IMPLEMENTED)
+6. **MR6**: Parse-print-parse identity (`Parse(Print(Parse(P))) ≡ Parse(P)`)
+
+**Next Steps**:
+1. Scale property tests to 1,000 iterations per test
+2. Integrate with optimizer for real transformation testing
+3. Add interpreter integration for semantic equivalence checking
+4. Implement MR5: Interpreter-Compiler equivalence tests
+5. Scale to 10,000+ iterations per MR
 
 ## Implementation Roadmap
 
