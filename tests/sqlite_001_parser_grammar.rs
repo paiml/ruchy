@@ -3,7 +3,7 @@
 //! **Specification**: docs/specifications/ruchy-sqlite-testing-v2.md Section 1.1
 //! **Research Foundation**: NASA MC/DC (DO-178B/C), SQLite Lemon parser methodology
 //! **Ticket**: SQLITE-TEST-001
-//! **Status**: 40% Milestone - 8,000 property iterations (100/2000 tests = 5%)
+//! **Status**: 80% Milestone - 16,000 property iterations (100/2000 tests = 5%)
 //!
 //! # Coverage Goals
 //!
@@ -12,7 +12,7 @@
 //! - Exhaustive operator precedence validation
 //! - Complete error recovery path testing
 //! - Property tests: parse-print-parse identity
-//! - 8K property test iterations (4x baseline, 40% of 20K target)
+//! - 16K property test iterations (8x baseline, 80% of 20K target)
 //!
 //! # Test Organization
 //!
@@ -910,14 +910,14 @@ fn test_sqlite_200_parse_time_linear_small() {
 // ============================================================================
 
 proptest! {
-    #![proptest_config(ProptestConfig::with_cases(4000))]
+    #![proptest_config(ProptestConfig::with_cases(8000))]
 
     /// Property: Parser should NEVER panic, only return Ok or Err
     ///
     /// **Critical Safety Property**: For ANY input (valid or invalid),
     /// the parser must return Result, never panic.
     ///
-    /// **Test Iterations**: 4,000 (4x baseline, 40% of 10K target)
+    /// **Test Iterations**: 8,000 (8x baseline, 80% of 10K target)
     /// **Note**: Increase to 10K for release validation
     #[test]
     fn test_sqlite_300_property_parser_never_panics(expr in "[a-z0-9 +\\-*/]+") {
@@ -934,11 +934,11 @@ proptest! {
 }
 
 proptest! {
-    #![proptest_config(ProptestConfig::with_cases(2000))]
+    #![proptest_config(ProptestConfig::with_cases(4000))]
 
     /// Property: Parser handles all valid identifiers
     ///
-    /// **Test Iterations**: 2000 (4x baseline, 40% of 5K target)
+    /// **Test Iterations**: 4000 (8x baseline, 80% of 5K target)
     /// **Note**: Increase to 5K for release validation
     #[test]
     fn test_sqlite_301_property_valid_identifiers(id in "[a-z_][a-z0-9_]*") {
@@ -951,11 +951,11 @@ proptest! {
 }
 
 proptest! {
-    #![proptest_config(ProptestConfig::with_cases(2000))]
+    #![proptest_config(ProptestConfig::with_cases(4000))]
 
     /// Property: Parser handles all valid numbers
     ///
-    /// **Test Iterations**: 2000 (4x baseline, 40% of 5K target)
+    /// **Test Iterations**: 4000 (8x baseline, 80% of 5K target)
     /// **Note**: Increase to 5K for release validation
     #[test]
     fn test_sqlite_302_property_valid_numbers(n in 0i64..1000000) {
@@ -1033,10 +1033,10 @@ mod test_stats {
     //!   - Advanced Control: 3 tests
     //! - Error Recovery: 6 tests
     //! - Performance: 1 test
-    //! - Property Tests: 3 tests (8K total iterations - 4x baseline, 40% of target)
-    //!   - Never panics: 4K iterations
-    //!   - Valid identifiers: 2K iterations
-    //!   - Valid numbers: 2K iterations
+    //! - Property Tests: 3 tests (16K total iterations - 8x baseline, 80% of target)
+    //!   - Never panics: 8K iterations
+    //!   - Valid identifiers: 4K iterations
+    //!   - Valid numbers: 4K iterations
     //! - Ignored: 5 tests (documented parser limitations)
     //!   - [PARSER-055] Bare return statements
     //!   - [PARSER-056] Async blocks
