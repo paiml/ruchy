@@ -2616,6 +2616,116 @@ fn test_sqlite_366_trait_object_send_sync() {
 #[test] fn test_sqlite_756_trailing_comma() { assert_parses("let arr = [1, 2, 3,];"); }
 
 // ============================================================================
+// Category 101: Method Call Syntax
+// ============================================================================
+
+#[test] fn test_sqlite_757_method_call() { assert_parses("obj.method()"); }
+#[test] fn test_sqlite_758_method_chain() { assert_parses("obj.method1().method2()"); }
+#[test] fn test_sqlite_759_method_args() { assert_parses("obj.method(1, 2, 3)"); }
+#[ignore = "Parser limitation: generic method call syntax not supported - needs [PARSER-245] ticket"]
+#[test] fn test_sqlite_760_method_generic() { assert_parses("obj.method::<T>()"); }
+#[test] fn test_sqlite_761_method_self() { assert_parses("self.method()"); }
+
+// ============================================================================
+// Category 102: Field Access Patterns
+// ============================================================================
+
+#[test] fn test_sqlite_762_field_simple() { assert_parses("obj.field"); }
+#[test] fn test_sqlite_763_field_nested() { assert_parses("obj.field.subfield"); }
+#[test] fn test_sqlite_764_field_tuple() { assert_parses("tuple.0"); }
+#[test] fn test_sqlite_765_field_chain() { assert_parses("obj.field.method()"); }
+#[test] fn test_sqlite_766_field_paren() { assert_parses("(obj).field"); }
+
+// ============================================================================
+// Category 103: Index Expressions
+// ============================================================================
+
+#[test] fn test_sqlite_767_index_simple() { assert_parses("arr[0]"); }
+#[test] fn test_sqlite_768_index_expr() { assert_parses("arr[i + 1]"); }
+#[test] fn test_sqlite_769_index_nested() { assert_parses("arr[0][1]"); }
+#[test] fn test_sqlite_770_index_range() { assert_parses("arr[1..3]"); }
+#[test] fn test_sqlite_771_index_method() { assert_parses("arr[0].method()"); }
+
+// ============================================================================
+// Category 104: Dereference and Reference
+// ============================================================================
+
+#[test] fn test_sqlite_772_deref() { assert_parses("*ptr"); }
+#[test] fn test_sqlite_773_ref() { assert_parses("&x"); }
+#[ignore = "Parser limitation: mutable reference (&mut) not fully supported - needs [PARSER-246] ticket"]
+#[test] fn test_sqlite_774_ref_mut() { assert_parses("&mut x"); }
+#[test] fn test_sqlite_775_deref_chain() { assert_parses("**ptr"); }
+#[test] fn test_sqlite_776_ref_deref() { assert_parses("*&x"); }
+
+// ============================================================================
+// Category 105: Cast Expressions
+// ============================================================================
+
+#[test] fn test_sqlite_777_cast_as() { assert_parses("x as i32"); }
+#[test] fn test_sqlite_778_cast_chain() { assert_parses("x as i32 as i64"); }
+#[ignore = "Parser limitation: cast to pointer type not supported - needs [PARSER-247] ticket"]
+#[test] fn test_sqlite_779_cast_ptr() { assert_parses("x as *const i32"); }
+#[test] fn test_sqlite_780_cast_expr() { assert_parses("(x + 1) as i32"); }
+#[ignore = "Parser limitation: cast reference to pointer not supported - needs [PARSER-248] ticket"]
+#[test] fn test_sqlite_781_cast_ref() { assert_parses("&x as *const i32"); }
+
+// ============================================================================
+// Category 106: Macro Invocation Syntax
+// ============================================================================
+
+#[test] fn test_sqlite_782_macro_bang() { assert_parses("println!()"); }
+#[test] fn test_sqlite_783_macro_args() { assert_parses("println!(\"hello\")"); }
+#[test] fn test_sqlite_784_macro_multiple() { assert_parses("vec![1, 2, 3]"); }
+#[test] fn test_sqlite_785_macro_nested() { assert_parses("vec![vec![1]]"); }
+#[test] fn test_sqlite_786_macro_path() { assert_parses("std::println!()"); }
+
+// ============================================================================
+// Category 107: Struct Expression Forms
+// ============================================================================
+
+#[test] fn test_sqlite_787_struct_init() { assert_parses("Point { x: 1, y: 2 }"); }
+#[test] fn test_sqlite_788_struct_shorthand() { assert_parses("Point { x, y }"); }
+#[test] fn test_sqlite_789_struct_update() { assert_parses("Point { x: 1, ..p }"); }
+#[test] fn test_sqlite_790_struct_empty() { assert_parses("Empty { }"); }
+#[ignore = "Parser limitation: struct initialization with path not fully supported - needs [PARSER-249] ticket"]
+#[test] fn test_sqlite_791_struct_path() { assert_parses("mod::Point { x: 1 }"); }
+
+// ============================================================================
+// Category 108: Enum Variant Syntax
+// ============================================================================
+
+#[test] fn test_sqlite_792_enum_unit() { assert_parses("Option::None"); }
+#[test] fn test_sqlite_793_enum_tuple() { assert_parses("Option::Some(42)"); }
+#[test] fn test_sqlite_794_enum_struct() { assert_parses("Message::Move { x: 1, y: 2 }"); }
+#[test] fn test_sqlite_795_enum_path() { assert_parses("std::option::Option::None"); }
+#[ignore = "Parser limitation: enum variant with generic not supported - needs [PARSER-250] ticket"]
+#[test] fn test_sqlite_796_enum_generic() { assert_parses("Result::<i32, String>::Ok(42)"); }
+
+// ============================================================================
+// Category 109: Closure Expression Forms
+// ============================================================================
+
+#[test] fn test_sqlite_797_closure_simple() { assert_parses("|x| x + 1"); }
+#[test] fn test_sqlite_798_closure_multi_param() { assert_parses("|x, y| x + y"); }
+#[ignore = "Parser limitation: closure with type annotation not fully supported - needs [PARSER-251] ticket"]
+#[test] fn test_sqlite_799_closure_type() { assert_parses("|x: i32| x + 1"); }
+#[ignore = "Parser limitation: closure with return type not supported - needs [PARSER-252] ticket"]
+#[test] fn test_sqlite_800_closure_return() { assert_parses("|x| -> i32 { x }"); }
+#[test] fn test_sqlite_801_closure_move() { assert_parses("move |x| x"); }
+
+// ============================================================================
+// Category 110: Path Expressions Advanced
+// ============================================================================
+
+#[test] fn test_sqlite_802_path_simple() { assert_parses("foo"); }
+#[test] fn test_sqlite_803_path_qualified() { assert_parses("std::vec::Vec"); }
+#[test] fn test_sqlite_804_path_generic() { assert_parses("Vec::<i32>"); }
+#[ignore = "Parser limitation: self path in expression not fully supported - needs [PARSER-253] ticket"]
+#[test] fn test_sqlite_805_path_self() { assert_parses("self::module::function"); }
+#[ignore = "Parser limitation: super path in expression not supported - needs [PARSER-254] ticket"]
+#[test] fn test_sqlite_806_path_super() { assert_parses("super::parent::item"); }
+
+// ============================================================================
 // Error Handling
 // ============================================================================
 
