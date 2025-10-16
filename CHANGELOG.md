@@ -5,6 +5,14 @@ All notable changes to the Ruchy programming language will be documented in this
 ## [Unreleased]
 
 ### Added
+- **[SQLITE-TEST-001] Harness 4 Eighth Expansion - 350 Test Milestone**: Added 50 new advanced runtime anomaly tests (300→350, 16.7% increase)
+  - Test Pass Rate: 58/350 passing (16.6%)
+  - New Categories (10): Trait coherence/orphan rules (local trait/type, foreign trait/type, orphan violations, blanket impl conflicts), Variance/subtyping (covariant lifetimes, contravariance, invariance, trait subtyping, generic variance), Higher-kinded types (HKT simulation, functor laws, monad pattern, applicative functor, type constructor polymorphism), Reflection/introspection (type_name, Any trait, TypeId, size_of, align_of), Concurrency primitives (Mutex, RwLock, atomics, channels, thread spawn), Iterator combinators (flat_map, filter_map, fold, scan, chain), Closures/captures advanced (capture by value, capture by ref, Fn/FnMut/FnOnce traits), Operator overloading (Add, Index, Deref, Not, Mul traits), Trait object safety (object-safe traits, generic method violations, Self return violations, Sized/?Sized bounds), Numeric tower/conversions (From, Into, TryFrom, TryInto, numeric coercion)
+  - Defensive Testing: 50 new runtime limitations (RUNTIME-244 through RUNTIME-293)
+  - Total Limitations: 292 documented (RUNTIME-001 fixed)
+  - Framework Total: 813 tests across 4 harnesses
+  - Progress: 350/50,000 tests (0.70% of Harness 4 complete)
+  - Time: 12.5h / 60h estimated
 - **[SQLITE-TEST-001] Harness 1 Ninth Expansion - 500 Test Milestone (25% COMPLETE!)**: Added 50 new advanced parser grammar tests (450→500, 11.1% increase)
   - Test Pass Rate: 345/500 passing (69.0%)
   - New Categories (10): Box/heap allocation (Box::new, box pattern, Box type, deref, nested), Reference/borrow (shared ref, mutable ref, ref pattern, ref mut pattern, double ref), Label/loop control (labeled loop, labeled while, labeled for, break label, continue label), Where clause advanced (multiple bounds, lifetime bounds, for bounds, Self bounds, associated type bounds), Type alias advanced (simple, generic, where clause, complex paths, function types), Extern/FFI (extern block, extern fn, extern static, ABI variants, link attribute), Tuple/unit (empty tuple, single element, destructure, nested, index), Never type/diverging (never type, never return, never in match, never coercion, never in Result), Literal patterns (char, byte, byte string, raw byte string, float), Path/identifier (absolute path, self path, super path, crate path, turbofish)
