@@ -71,8 +71,12 @@ pub struct Repl {
 }
 
 impl Repl {
-    /// Create a new REPL instance (complexity: 3)
+    /// Create a new REPL instance (complexity: 4)
     pub fn new(work_dir: PathBuf) -> Result<Self> {
+        // [RUNTIME-001] SET DEFAULT RECURSION DEPTH LIMIT
+        let config = ReplConfig::default();
+        crate::runtime::eval_function::set_max_recursion_depth(config.maxdepth);
+
         Ok(Self {
             commands: CommandRegistry::new(),
             state: ReplState::new(),
@@ -82,9 +86,13 @@ impl Repl {
         })
     }
 
-    /// Create a new REPL instance with configuration (complexity: 4)
+    /// Create a new REPL instance with configuration (complexity: 5)
     pub fn with_config(config: ReplConfig) -> Result<Self> {
         let mut repl = Self::new(std::env::temp_dir())?;
+
+        // [RUNTIME-001] SET MAX RECURSION DEPTH FROM CONFIG
+        crate::runtime::eval_function::set_max_recursion_depth(config.maxdepth);
+
         // Apply configuration settings
         if config.debug {
             repl.state.set_mode(ReplMode::Debug);

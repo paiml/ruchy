@@ -169,30 +169,39 @@ Implemented foundation for **SQLite-level testing framework** targeting 608:1 te
 ### ✅ Harness 4: Runtime Anomaly Validation (Foundation Phase - 0.03%)
 
 **File**: `tests/sqlite_004_runtime_anomalies.rs`
-**Status**: 🟡 Foundation Phase (17/50,000 tests = 0.03%)
-**Progress**: 17 tests implemented (12 passing, 5 ignored - CRITICAL bugs found)
-**Time**: 1h / 60h estimated
+**Status**: 🟢 Foundation Complete (17/50,000 tests = 0.03%)
+**Progress**: 17 tests implemented (15 passing, 2 ignored - **RUNTIME-001 FIXED**)
+**Time**: 3.5h / 60h estimated
 
 **Implemented**:
-- ✅ 3 stack overflow tests (infinite recursion, mutual recursion, deep calls)
+- ✅ 3 stack overflow tests (infinite recursion, mutual recursion, deep calls) - **NOW PASSING**
 - ✅ 8 arithmetic anomaly tests (div by zero, overflow, NaN/Infinity handling)
 - ✅ 3 type error tests (calling non-function, field access, indexing)
 - ✅ 3 array anomaly tests (negative index, out of bounds, empty array)
 
-**CRITICAL Bugs Discovered** (Toyota Way - Defensive Testing):
-- 🔴 **[RUNTIME-001]**: Stack overflow NOT caught - runtime CRASHES on infinite recursion
-  - **Severity**: CRITICAL - Production runtime failure
-  - **Impact**: 3 tests failing (infinite recursion, mutual recursion, deep calls)
-  - **Example**: `fun infinite() { infinite() }` causes SIGABRT stack overflow
-  - **Required Fix**: Implement recursion depth limit or stack overflow handler
-- 🟡 **[RUNTIME-002]**: Calling non-function doesn't produce clear error message
-- 🟡 **[RUNTIME-003]**: Field access on non-object doesn't produce clear error message
+**CRITICAL Bug FIXED** (Toyota Way - Stop The Line):
+- ✅ **[RUNTIME-001]**: Stack overflow recursion depth limit **IMPLEMENTED**
+  - **Fix**: Thread-local recursion depth tracking (2.5h implementation)
+  - **Solution**: Check depth before entering function, decrement on ALL exit paths
+  - **Configuration**: Configurable via `ReplConfig.maxdepth` (default: 100)
+  - **Error Message**: Clear, actionable message with hints (3-line guidance)
+  - **Result**: 3/3 stack overflow tests now PASSING ✅
+  - **Files Modified**:
+    - `src/runtime/eval_function.rs`: Thread-local depth tracking
+    - `src/runtime/interpreter.rs`: Added depth checks to `call_function`
+    - `src/runtime/eval_display.rs`: Helpful error message with debugging hints
+    - `src/runtime/repl/mod.rs`: REPL config integration
+
+**Remaining Issues** (Non-Critical):
+- 🟡 **[RUNTIME-002]**: Calling non-function doesn't produce clear error message (1 test ignored)
+- 🟡 **[RUNTIME-003]**: Field access on non-object doesn't produce clear error message (1 test ignored)
 
 **Key Achievements**:
-- **3 CRITICAL BUGS FOUND**: Stack overflow crashes discovered before production use
-- **Toyota Way Validation**: Defensive testing found real safety issues
-- **Foundation Established**: Test framework ready for expansion to 50K+ tests
-- **SQLite Principle Applied**: "Test failure modes, not just happy paths"
+- ✅ **RUNTIME-001 FIXED**: Critical stack overflow bug resolved (Toyota Way: Jidoka - Stop the Line)
+- ✅ **Test Pass Rate**: 15/17 passing (88.2%) - up from 12/17 (70.6%)
+- ✅ **Production Safety**: Runtime now handles infinite recursion gracefully
+- ✅ **Foundation Established**: Test framework ready for expansion to 50K+ tests
+- ✅ **SQLite Principle Applied**: "Test failure modes, not just happy paths"
 
 **Research Foundation**:
 - SQLite anomaly testing methodology
@@ -204,7 +213,7 @@ Implemented foundation for **SQLite-level testing framework** targeting 608:1 te
 - ⚠️ Missing: Property-based anomaly testing (random error injection)
 
 **Next Steps**:
-- 🔴 **FIX [RUNTIME-001]**: Implement recursion depth limit (BLOCKING for production)
+- ✅ ~~**FIX [RUNTIME-001]**: Implement recursion depth limit~~ **COMPLETE**
 - Add 100+ more runtime anomaly tests
 - Integrate property-based error injection testing
 
