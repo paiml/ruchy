@@ -43,6 +43,29 @@ All notable changes to the Ruchy programming language will be documented in this
   - **Files Changed**: src/frontend/parser/actors.rs (3 functions modified)
 
 ### Added
+- **[SQLITE-TEST-001] Harness 1 Third Expansion - 200 Test Milestone**: Added 50 new parser grammar tests (150→200 tests, 33.3% increase)
+  - **Test Pass Rate**: 159/200 passing (79.5%)
+  - **Test Categories**:
+    - Advanced Numeric Literals (10 tests): Hex/binary/octal, scientific notation, char/byte literals, type suffixes
+    - Advanced Pattern Matching (10 tests): Struct patterns, enum patterns, tuple patterns, range patterns, at-patterns
+    - Advanced Type Features (10 tests): Associated types, HRTB, impl/dyn trait, const generics, lifetime bounds
+    - Advanced Expressions (10 tests): if-let, while-let, closures, method chains, complex nested expressions
+    - Macro Features (10 tests): Invocation, nested macros, definitions, procedural macros, attributes
+  - **Parser Limitations Discovered**: 22 new limitations (PARSER-074 through PARSER-095)
+    - Integer/float type suffixes (42i32, 3.14f32)
+    - Byte/byte string literals (b'A', b"hello")
+    - Or-patterns, slice patterns, box patterns
+    - Associated types, HRTB, impl/dyn Trait
+    - Const generics, lifetime bounds
+    - Macro definitions (macro_rules!)
+    - Procedural macros (#[derive], attributes)
+    - Reference patterns (&pattern in match)
+    - Qualified path with braces (path::to { })
+  - **Progress**: 200/2,000 tests (10.0% of target)
+  - **Execution Time**: 0.47 seconds (fast)
+  - **Quality**: Zero panics, 20,000 property iterations passed
+  - **Toyota Way**: Defensive testing discovered 22 parser limitations proactively before users encountered them
+
 - **[SQLITE-TEST-001] Harness 1 Expansion - 150 Test Milestone**: Added 5 new parser grammar tests (145→150 tests, 3.4% increase)
   - **Test Pass Rate**: 131/150 passing (87.3%, up from 88.3% at 145)
   - **New Tests**:

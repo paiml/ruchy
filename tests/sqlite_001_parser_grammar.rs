@@ -763,6 +763,507 @@ fn test_sqlite_256_unicode_identifiers() {
 }
 
 // ============================================================================
+// Advanced Numeric Literals (tests 257-266)
+// ============================================================================
+
+/// Test hexadecimal literals
+#[test]
+fn test_sqlite_257_hexadecimal_literals() {
+    assert_parses("0xFF");
+    assert_parses("0x1A2B");
+    assert_parses("0xDEADBEEF");
+}
+
+/// Test binary literals
+#[test]
+fn test_sqlite_258_binary_literals() {
+    assert_parses("0b1010");
+    assert_parses("0b11111111");
+    assert_parses("0b0");
+}
+
+/// Test octal literals
+#[test]
+fn test_sqlite_259_octal_literals() {
+    assert_parses("0o755");
+    assert_parses("0o644");
+    assert_parses("0o777");
+}
+
+/// Test scientific notation
+#[test]
+fn test_sqlite_260_scientific_notation() {
+    assert_parses("1.5e10");
+    assert_parses("2.5e-3");
+    assert_parses("6.022e23");
+}
+
+/// Test float literals with underscores
+#[test]
+fn test_sqlite_261_float_underscores() {
+    assert_parses("1_000.5");
+    assert_parses("3.14159_26535");
+    assert_parses("1_000_000.0");
+}
+
+/// Test integer literals with type suffix
+#[test]
+#[ignore = "Parser limitation: Integer type suffixes (42i32) not supported - needs [PARSER-074] ticket"]
+fn test_sqlite_262_integer_type_suffix() {
+    assert_parses("42i32");
+    assert_parses("100u64");
+    assert_parses("0xFFi64");
+}
+
+/// Test float literals with type suffix
+#[test]
+#[ignore = "Parser limitation: Float type suffixes (3.14f64) not supported - needs [PARSER-075] ticket"]
+fn test_sqlite_263_float_type_suffix() {
+    assert_parses("3.14f32");
+    assert_parses("2.5f64");
+    assert_parses("1e10f32");
+}
+
+/// Test char literals
+#[test]
+fn test_sqlite_264_char_literals() {
+    assert_parses("'a'");
+    assert_parses("'\\n'");
+    assert_parses("'\\t'");
+}
+
+/// Test byte literals
+#[test]
+#[ignore = "Parser limitation: Byte literals (b'A') not supported - needs [PARSER-076] ticket"]
+fn test_sqlite_264_byte_literals() {
+    assert_parses("b'A'");
+    assert_parses("b'\\n'");
+    assert_parses("b'0'");
+}
+
+/// Test byte string literals
+#[test]
+#[ignore = "Parser limitation: Byte string literals (b\"hello\") not supported - needs [PARSER-077] ticket"]
+fn test_sqlite_265_byte_string_literals() {
+    assert_parses("b\"hello\"");
+    assert_parses("b\"data\\x00\\xFF\"");
+}
+
+// ============================================================================
+// Advanced Pattern Matching (tests 267-276)
+// ============================================================================
+
+/// Test struct patterns
+#[test]
+fn test_sqlite_267_struct_patterns() {
+    assert_parses(r#"
+        match point {
+            Point { x: 0, y: 0 } => "origin",
+            Point { x, y } => "other"
+        }
+    "#);
+}
+
+/// Test tuple struct patterns
+#[test]
+fn test_sqlite_268_tuple_struct_patterns() {
+    assert_parses(r#"
+        match color {
+            Color(255, 0, 0) => "red",
+            Color(r, g, b) => "other"
+        }
+    "#);
+}
+
+/// Test enum patterns with data
+#[test]
+fn test_sqlite_269_enum_patterns_with_data() {
+    assert_parses(r#"
+        match msg {
+            Message::Quit => "quit",
+            Message::Move { x, y } => "move",
+            Message::Write(text) => "write"
+        }
+    "#);
+}
+
+/// Test or-patterns
+#[test]
+#[ignore = "Parser limitation: Or-patterns (| in match arms) not supported - needs [PARSER-078] ticket"]
+fn test_sqlite_270_or_patterns() {
+    assert_parses(r#"
+        match x {
+            1 | 2 | 3 => "small",
+            _ => "large"
+        }
+    "#);
+}
+
+/// Test range patterns
+#[test]
+fn test_sqlite_271_range_patterns() {
+    assert_parses(r#"
+        match x {
+            1..=5 => "low",
+            6..=10 => "high"
+        }
+    "#);
+}
+
+/// Test reference patterns
+#[test]
+#[ignore = "Parser limitation: Reference patterns (&pattern) not supported - needs [PARSER-094] ticket"]
+fn test_sqlite_272_reference_patterns() {
+    assert_parses(r#"
+        match &value {
+            &Some(ref x) => x,
+            &None => 0
+        }
+    "#);
+}
+
+/// Test slice patterns
+#[test]
+#[ignore = "Parser limitation: Slice patterns ([first, rest @ ..]) not supported - needs [PARSER-079] ticket"]
+fn test_sqlite_273_slice_patterns() {
+    assert_parses(r#"
+        match arr {
+            [first, rest @ ..] => first,
+            [] => 0
+        }
+    "#);
+}
+
+/// Test box patterns
+#[test]
+#[ignore = "Parser limitation: Box patterns (box x) not supported - needs [PARSER-080] ticket"]
+fn test_sqlite_274_box_patterns() {
+    assert_parses(r#"
+        match boxed {
+            box 42 => "magic",
+            box x => "other"
+        }
+    "#);
+}
+
+/// Test at-patterns
+#[test]
+fn test_sqlite_275_at_patterns() {
+    assert_parses(r#"
+        match x {
+            n @ 1..=5 => n,
+            _ => 0
+        }
+    "#);
+}
+
+/// Test wildcard in struct patterns
+#[test]
+fn test_sqlite_276_struct_wildcard_patterns() {
+    assert_parses(r#"
+        match point {
+            Point { x: 0, .. } => "x is zero",
+            Point { y: 0, .. } => "y is zero"
+        }
+    "#);
+}
+
+// ============================================================================
+// Advanced Type Features (tests 277-286)
+// ============================================================================
+
+/// Test associated types
+#[test]
+#[ignore = "Parser limitation: Associated types (type Item = T) not supported - needs [PARSER-081] ticket"]
+fn test_sqlite_277_associated_types() {
+    assert_parses(r#"
+        trait Iterator {
+            type Item;
+            fun next() -> Option<Self::Item>;
+        }
+    "#);
+}
+
+/// Test higher-ranked trait bounds
+#[test]
+#[ignore = "Parser limitation: HRTB (for<'a>) not supported - needs [PARSER-082] ticket"]
+fn test_sqlite_278_hrtb() {
+    assert_parses(r#"
+        fun apply<F>(f: F) where F: for<'a> Fn(&'a i32) -> &'a i32 {}
+    "#);
+}
+
+/// Test impl trait syntax
+#[test]
+#[ignore = "Parser limitation: impl Trait syntax not supported - needs [PARSER-083] ticket"]
+fn test_sqlite_279_impl_trait() {
+    assert_parses(r#"
+        fun make_iterator() -> impl Iterator<Item=i32> {
+            vec![1, 2, 3].into_iter()
+        }
+    "#);
+}
+
+/// Test dyn trait syntax
+#[test]
+#[ignore = "Parser limitation: dyn Trait syntax not supported - needs [PARSER-084] ticket"]
+fn test_sqlite_280_dyn_trait() {
+    assert_parses("let x: Box<dyn Display> = Box::new(42)");
+}
+
+/// Test const generics
+#[test]
+#[ignore = "Parser limitation: Const generics ([T; N]) not supported - needs [PARSER-085] ticket"]
+fn test_sqlite_281_const_generics() {
+    assert_parses(r#"
+        struct Array<T, const N: usize> {
+            data: [T; N]
+        }
+    "#);
+}
+
+/// Test type bounds in where clause
+#[test]
+fn test_sqlite_282_where_clause_bounds() {
+    assert_parses(r#"
+        fun process<T>(value: T) where T: Clone + Debug {
+            value.clone()
+        }
+    "#);
+}
+
+/// Test lifetime bounds
+#[test]
+#[ignore = "Parser limitation: Lifetime bounds ('a: 'b) not supported - needs [PARSER-086] ticket"]
+fn test_sqlite_283_lifetime_bounds() {
+    assert_parses(r#"
+        fun longest<'a, 'b: 'a>(x: &'a str, y: &'b str) -> &'a str {
+            if x.len() > y.len() { x } else { y }
+        }
+    "#);
+}
+
+/// Test trait object syntax with multiple bounds
+#[test]
+#[ignore = "Parser limitation: Multiple trait bounds in dyn not supported - needs [PARSER-087] ticket"]
+fn test_sqlite_284_trait_object_multiple_bounds() {
+    assert_parses("let x: Box<dyn Display + Debug> = Box::new(42)");
+}
+
+/// Test phantom data
+#[test]
+#[ignore = "Parser limitation: PhantomData not supported - needs [PARSER-088] ticket"]
+fn test_sqlite_285_phantom_data() {
+    assert_parses(r#"
+        struct Marker<T> {
+            _marker: PhantomData<T>
+        }
+    "#);
+}
+
+/// Test self type in trait
+#[test]
+fn test_sqlite_286_self_type_in_trait() {
+    assert_parses(r#"
+        trait Builder {
+            fun new() -> Self;
+            fun build(self) -> String;
+        }
+    "#);
+}
+
+// ============================================================================
+// Advanced Expression Features (tests 287-296)
+// ============================================================================
+
+/// Test if-let expressions
+#[test]
+fn test_sqlite_287_if_let() {
+    assert_parses(r#"
+        if let Some(x) = maybe_value {
+            x
+        } else {
+            0
+        }
+    "#);
+}
+
+/// Test while-let loops
+#[test]
+fn test_sqlite_288_while_let() {
+    assert_parses(r#"
+        while let Some(x) = iterator.next() {
+            process(x)
+        }
+    "#);
+}
+
+/// Test loop with break value
+#[test]
+fn test_sqlite_289_loop_break_value() {
+    assert_parses(r#"
+        let result = loop {
+            if condition {
+                break 42;
+            }
+        }
+    "#);
+}
+
+/// Test nested closures
+#[test]
+fn test_sqlite_290_nested_closures() {
+    assert_parses("let f = |x| |y| x + y");
+    assert_parses("let curry = |a| |b| |c| a + b + c");
+}
+
+/// Test closure with move
+#[test]
+fn test_sqlite_291_closure_move() {
+    assert_parses("let f = move |x| x + captured");
+}
+
+/// Test method call chains
+#[test]
+fn test_sqlite_292_method_chains() {
+    assert_parses("value.method1().method2().method3()");
+    assert_parses("vec![1,2,3].iter().map(|x| x * 2).collect()");
+}
+
+/// Test field access chains
+#[test]
+fn test_sqlite_293_field_chains() {
+    assert_parses("obj.field1.field2.field3");
+    assert_parses("data.inner.value.get()");
+}
+
+/// Test array/tuple indexing chains
+#[test]
+fn test_sqlite_294_indexing_chains() {
+    assert_parses("matrix[0][1]");
+    assert_parses("arr[i][j][k]");
+}
+
+/// Test mixed operator precedence
+#[test]
+fn test_sqlite_295_mixed_precedence() {
+    assert_parses("a + b * c - d / e % f");
+    assert_parses("x << 2 | y & z ^ w");
+    assert_parses("!a && b || c == d && e != f");
+}
+
+/// Test complex nested expressions
+#[test]
+fn test_sqlite_296_complex_nesting() {
+    assert_parses(r#"
+        {
+            let x = if cond1 {
+                match val {
+                    Some(n) => n * 2,
+                    None => loop {
+                        if cond2 { break 0; }
+                    }
+                }
+            } else {
+                for i in 1..10 {
+                    if i > 5 { return i; }
+                }
+                -1
+            };
+            x
+        }
+    "#);
+}
+
+// ============================================================================
+// Macro Features (tests 297-306)
+// ============================================================================
+
+/// Test basic macro invocation
+#[test]
+fn test_sqlite_297_macro_invocation() {
+    assert_parses("println!(\"hello\")");
+    assert_parses("vec![1, 2, 3]");
+    assert_parses("format!(\"x = {}\", x)");
+}
+
+/// Test macro with multiple arguments
+#[test]
+fn test_sqlite_298_macro_multiple_args() {
+    assert_parses("assert_eq!(actual, expected)");
+    assert_parses("write!(buf, \"data: {}\", value)");
+}
+
+/// Test nested macro calls
+#[test]
+fn test_sqlite_299_nested_macros() {
+    assert_parses("vec![Some(1), None, Some(vec![2, 3])]");
+}
+
+/// Test macro with trailing comma
+#[test]
+fn test_sqlite_300_macro_trailing_comma() {
+    assert_parses("vec![1, 2, 3,]");
+    assert_parses("println!(\"test\",)");
+}
+
+/// Test macro definition
+#[test]
+#[ignore = "Parser limitation: Macro definitions (macro_rules!) not supported - needs [PARSER-089] ticket"]
+fn test_sqlite_301_macro_definition() {
+    assert_parses(r#"
+        macro_rules! say_hello {
+            () => { println!("Hello!") }
+        }
+    "#);
+}
+
+/// Test procedural macro attributes
+#[test]
+#[ignore = "Parser limitation: Procedural macro attributes not supported - needs [PARSER-090] ticket"]
+fn test_sqlite_302_proc_macro_attributes() {
+    assert_parses(r#"
+        #[derive(Debug, Clone)]
+        struct Point { x: i32, y: i32 }
+    "#);
+}
+
+/// Test custom derive
+#[test]
+#[ignore = "Parser limitation: Custom derive macros not supported - needs [PARSER-091] ticket"]
+fn test_sqlite_303_custom_derive() {
+    assert_parses(r#"
+        #[derive(MyTrait)]
+        struct CustomType;
+    "#);
+}
+
+/// Test attribute macros
+#[test]
+#[ignore = "Parser limitation: Attribute macros not supported - needs [PARSER-092] ticket"]
+fn test_sqlite_304_attribute_macros() {
+    assert_parses(r#"
+        #[my_attribute]
+        fun decorated_function() {}
+    "#);
+}
+
+/// Test function-like procedural macros
+#[test]
+#[ignore = "Parser limitation: Function-like proc macros not supported - needs [PARSER-093] ticket"]
+fn test_sqlite_305_function_like_proc_macros() {
+    assert_parses("sql!(SELECT * FROM users WHERE id = $1)");
+}
+
+/// Test macro with braces
+#[test]
+#[ignore = "Parser limitation: Qualified path with braces (path::to { }) not supported - needs [PARSER-095] ticket"]
+fn test_sqlite_306_macro_braces() {
+    assert_parses("thread::spawn { do_work() }");
+    assert_parses("lazy_static! { static ref X: i32 = 42; }");
+}
+
+// ============================================================================
 // Error Handling
 // ============================================================================
 
