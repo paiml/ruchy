@@ -43,6 +43,27 @@ All notable changes to the Ruchy programming language will be documented in this
   - **Files Changed**: src/frontend/parser/actors.rs (3 functions modified)
 
 ### Added
+- **[SQLITE-TEST-004] Harness 4 Third Expansion - 74 Test Milestone**: Added 30 new runtime anomaly tests (44→74 tests, 68.2% increase)
+  - **Test Pass Rate**: 51/74 passing (68.9%)
+  - **New Test Categories** (5 categories, 30 tests total):
+    - Category 11: Boolean Logic Anomalies (5 tests) - AND/OR short-circuit, type checking for boolean operators
+    - Category 12: Comparison Anomalies (5 tests) - Incompatible types, NaN/Infinity, None comparisons
+    - Category 13: Pattern Matching Anomalies (5 tests) - Non-exhaustive match, unreachable patterns, if-let
+    - Category 14: Closure/Lambda Anomalies (5 tests) - Capture validation, arity, return scope, nested captures
+    - Category 15: Edge Cases & Boundaries (10 tests) - i64 limits, long names, deep nesting, empty inputs
+  - **Runtime Limitations Discovered**: 15 new limitations (RUNTIME-010 through RUNTIME-024)
+    - Type checking for boolean operators (NOT, AND, OR)
+    - Type checking for comparisons and ordering
+    - Match exhaustiveness and unreachable pattern detection
+    - Closure arity and capture validation
+    - if-let expressions not implemented
+    - i64::MIN literal support
+    - Integer overflow detection
+  - **Progress**: 74/50,000 tests (0.15% of target)
+  - **Execution Time**: 0.11 seconds (fast)
+  - **Coverage**: 15 test categories (up from 10)
+  - **Toyota Way**: Defensive testing discovered 15 runtime limitations proactively before users encountered them
+
 - **[SQLITE-TEST-001] Harness 1 Third Expansion - 200 Test Milestone**: Added 50 new parser grammar tests (150→200 tests, 33.3% increase)
   - **Test Pass Rate**: 159/200 passing (79.5%)
   - **Test Categories**:

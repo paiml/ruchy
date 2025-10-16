@@ -8,16 +8,16 @@
 
 ## Executive Summary
 
-Implemented foundation for **SQLite-level testing framework** targeting 608:1 test-to-code ratio reliability. Four independent test harnesses now operational with **207 total tests** and **470,000 total property test iterations**.
+Implemented foundation for **SQLite-level testing framework** targeting 608:1 test-to-code ratio reliability. Four independent test harnesses now operational with **237 total tests** and **470,000 total property test iterations**.
 
 ### Overall Progress
 
 | Metric | Current | Target | % Complete |
 |--------|---------|--------|------------|
 | **Test Harnesses** | 4/8 | 8 | 50.0% |
-| **Total Tests** | 207 | 500,000+ | 0.04% |
+| **Total Tests** | 237 | 500,000+ | 0.05% |
 | **Property Iterations** | 470,000 | 400,000+ | 117.5% ✅ |
-| **Time Invested** | 15h | 120h | 12.5% |
+| **Time Invested** | 16h | 120h | 13.3% |
 
 ---
 
@@ -196,12 +196,12 @@ Implemented foundation for **SQLite-level testing framework** targeting 608:1 te
 
 ---
 
-### ✅ Harness 4: Runtime Anomaly Validation (Expansion Phase - 0.09%)
+### ✅ Harness 4: Runtime Anomaly Validation (Expansion Phase - 0.15%)
 
 **File**: `tests/sqlite_004_runtime_anomalies.rs`
-**Status**: 🟢 Expansion Phase (44/50,000 tests = 0.09%)
-**Progress**: 44 tests implemented (36 passing, 8 ignored - **RUNTIME-001 FIXED**)
-**Time**: 4.5h / 60h estimated
+**Status**: 🟢 Expansion Phase (74/50,000 tests = 0.15%)
+**Progress**: 74 tests implemented (51 passing, 23 ignored - **RUNTIME-001 FIXED**)
+**Time**: 5.5h / 60h estimated
 
 **Implemented**:
 - ✅ **Category 1: Memory Anomalies** (3 tests)
@@ -214,12 +214,12 @@ Implemented foundation for **SQLite-level testing framework** targeting 608:1 te
   - Calling non-function, field access, indexing non-indexable
 - ✅ **Category 4: Array/Collection Anomalies** (3 tests)
   - Negative index, out of bounds, empty array
-- ✅ **Category 5: String Operation Anomalies** (5 tests) - **NEW**
+- ✅ **Category 5: String Operation Anomalies** (5 tests)
   - String index/slice out of bounds
   - Invalid UTF-8 handling
   - String method on non-string
   - Very long string allocation
-- ✅ **Category 6: Hash/Object Anomalies** (4 tests) - **NEW**
+- ✅ **Category 6: Hash/Object Anomalies** (4 tests)
   - Undefined object field access
   - Circular object references
   - Object with many fields (stress test)
@@ -228,22 +228,50 @@ Implemented foundation for **SQLite-level testing framework** targeting 608:1 te
   - Too many/few arguments
   - Undefined function (message constructor behavior)
   - Deeply nested calls within limit
-- ✅ **Category 8: Control Flow Anomalies** (5 tests) - **NEW**
+- ✅ **Category 8: Control Flow Anomalies** (5 tests)
   - Break/continue outside loop
   - Return outside function
   - Wrong label in break statement
   - Infinite loop detection (not implemented)
-- ✅ **Category 9: Variable Scope Anomalies** (5 tests) - **NEW**
+- ✅ **Category 9: Variable Scope Anomalies** (5 tests)
   - Variable shadowing
   - Out of scope access
   - Immutable assignment
   - Undefined variables
   - Double declaration
-- ✅ **Category 10: Loop Anomalies** (4 tests) - **NEW**
+- ✅ **Category 10: Loop Anomalies** (4 tests)
   - Invalid ranges
   - Non-iterable in for loop
   - Non-boolean while condition
   - Nested loops with same variable
+- ✅ **Category 11: Boolean Logic Anomalies** (5 tests) - **NEW**
+  - AND/OR short-circuit evaluation
+  - Type checking for boolean operators (NOT, AND, OR)
+- ✅ **Category 12: Comparison Anomalies** (5 tests) - **NEW**
+  - Incompatible type comparisons
+  - Ordering on non-comparable types
+  - NaN equality (IEEE 754)
+  - Infinity comparisons
+  - None/null comparisons
+- ✅ **Category 13: Pattern Matching Anomalies** (5 tests) - **NEW**
+  - Non-exhaustive match
+  - Unreachable patterns
+  - Destructuring mismatches
+  - if-let with no match
+  - Match on integers
+- ✅ **Category 14: Closure/Lambda Anomalies** (5 tests) - **NEW**
+  - Capturing undefined variables
+  - Wrong arity
+  - Return scope validation
+  - Nested captures
+  - Mutable captures
+- ✅ **Category 15: Edge Cases & Boundary Conditions** (10 tests) - **NEW**
+  - Max/min integer values (i64::MAX/MIN)
+  - Integer overflow edge
+  - Long variable names (1000 chars)
+  - Deeply nested data structures
+  - Empty program/whitespace/comments
+  - Empty strings and arrays
 
 **CRITICAL Bug FIXED** (Toyota Way - Stop The Line):
 - ✅ **[RUNTIME-001]**: Stack overflow recursion depth limit **IMPLEMENTED**
@@ -258,23 +286,38 @@ Implemented foundation for **SQLite-level testing framework** targeting 608:1 te
     - `src/runtime/eval_display.rs`: Helpful error message with debugging hints
     - `src/runtime/repl/mod.rs`: REPL config integration
 
-**Runtime Limitations Discovered** (Toyota Way - Defensive Testing):
-- 🟡 **[RUNTIME-002]**: Calling non-function doesn't produce clear error message
-- 🟡 **[RUNTIME-003]**: Field access on non-object doesn't produce clear error message
-- 🟡 **[RUNTIME-004]**: Infinite loop detection not implemented - **NEW**
-- 🟡 **[RUNTIME-005]**: Labeled break validation not enforced - **NEW**
-- 🟡 **[RUNTIME-006]**: Block scope not enforced (variables leak across blocks) - **NEW**
-- 🟡 **[RUNTIME-007]**: Immutability not enforced (can reassign let variables) - **NEW**
-- 🟡 **[RUNTIME-008]**: Type checking for iterables not enforced - **NEW**
-- 🟡 **[RUNTIME-009]**: Type checking for while conditions not enforced - **NEW**
+**Runtime Limitations Discovered** (Toyota Way - Defensive Testing) - **23 total**:
+1. 🟡 **[RUNTIME-002]**: Calling non-function doesn't produce clear error message
+2. 🟡 **[RUNTIME-003]**: Field access on non-object doesn't produce clear error message
+3. 🟡 **[RUNTIME-004]**: Infinite loop detection not implemented
+4. 🟡 **[RUNTIME-005]**: Labeled break validation not enforced
+5. 🟡 **[RUNTIME-006]**: Block scope not enforced (variables leak across blocks)
+6. 🟡 **[RUNTIME-007]**: Immutability not enforced (can reassign let variables)
+7. 🟡 **[RUNTIME-008]**: Type checking for iterables not enforced
+8. 🟡 **[RUNTIME-009]**: Type checking for while conditions not enforced
+9. 🟡 **[RUNTIME-010]**: Type checking for boolean operators (NOT) not enforced - **NEW**
+10. 🟡 **[RUNTIME-011]**: Type checking for boolean operators (AND) not enforced - **NEW**
+11. 🟡 **[RUNTIME-012]**: Type checking for boolean operators (OR) not enforced - **NEW**
+12. 🟡 **[RUNTIME-013]**: Type checking for comparisons not enforced - **NEW**
+13. 🟡 **[RUNTIME-014]**: Type checking for ordering not enforced - **NEW**
+14. 🟡 **[RUNTIME-015]**: Exhaustiveness checking for match not enforced - **NEW**
+15. 🟡 **[RUNTIME-016]**: Unreachable pattern detection not implemented - **NEW**
+16. 🟡 **[RUNTIME-017]**: Pattern match validation not enforced - **NEW**
+17. 🟡 **[RUNTIME-018]**: Arity checking for closures not enforced - **NEW**
+18. 🟡 **[RUNTIME-019]**: Return scope validation not enforced - **NEW**
+19. 🟡 **[RUNTIME-020]**: Mutable capture validation not enforced - **NEW**
+20. 🟡 **[RUNTIME-021]**: Integer overflow detection not enforced - **NEW**
+21. 🟡 **[RUNTIME-022]**: if-let expressions not implemented - **NEW**
+22. 🟡 **[RUNTIME-023]**: Closure capture validation not enforced - **NEW**
+23. 🟡 **[RUNTIME-024]**: i64::MIN literal not supported - **NEW**
 
 **Key Achievements**:
 - ✅ **RUNTIME-001 FIXED**: Critical stack overflow bug resolved (Toyota Way: Jidoka - Stop the Line)
-- ✅ **Test Pass Rate**: 36/44 passing (81.8%)
-- ✅ **Test Expansion**: 27 new tests added since foundation (17→44, 159% increase)
+- ✅ **Test Pass Rate**: 51/74 passing (68.9%)
+- ✅ **Test Expansion**: 30 new tests added (44→74, 68.2% increase)
 - ✅ **Production Safety**: Runtime now handles infinite recursion gracefully
-- ✅ **Coverage Expanded**: 10 test categories (up from 4)
-- ✅ **8 Limitations Discovered**: Proactive defect discovery via defensive testing
+- ✅ **Coverage Expanded**: 15 test categories (up from 10)
+- ✅ **23 Limitations Discovered**: Proactive defect discovery via defensive testing (15 new in this session)
 - ✅ **SQLite Principle Applied**: "Test failure modes, not just happy paths"
 
 **Research Foundation**:
