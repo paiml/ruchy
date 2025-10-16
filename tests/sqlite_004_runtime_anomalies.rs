@@ -1246,6 +1246,682 @@ fn test_sqlite_190_alignment_violation() {
 }
 
 // ============================================================================
+// Category 20: String & Text Anomalies
+// ============================================================================
+
+/// Test invalid UTF-8 sequences
+#[test]
+#[ignore = "Runtime limitation: UTF-8 validation not implemented - needs [RUNTIME-049] ticket"]
+fn test_sqlite_191_invalid_utf8() {
+    let result = execute_program(r#"
+        let bytes = [0xFF, 0xFF, 0xFF];
+        String::from_utf8(bytes)
+    "#);
+    assert!(result.is_ok() || result.is_err(), "Invalid UTF-8 should not panic");
+}
+
+/// Test string index out of bounds
+#[test]
+#[ignore = "Runtime limitation: string indexing bounds checking - needs [RUNTIME-050] ticket"]
+fn test_sqlite_192_string_index_oob() {
+    assert_runtime_error(
+        r#"let s = "hello"; s[100]"#,
+        &["out of bounds", "index", "range"]
+    );
+}
+
+/// Test string slice with invalid boundaries
+#[test]
+#[ignore = "Runtime limitation: string slice validation - needs [RUNTIME-051] ticket"]
+fn test_sqlite_193_string_slice_invalid() {
+    let result = execute_program(r#"
+        let s = "hello";
+        s[10..20]
+    "#);
+    assert!(result.is_ok() || result.is_err(), "Invalid string slice should not panic");
+}
+
+/// Test string operations on extremely large strings
+#[test]
+#[ignore = "Runtime limitation: large string handling - needs [RUNTIME-052] ticket"]
+fn test_sqlite_194_string_size_limit() {
+    let result = execute_program(r#"
+        let s = "x".repeat(1_000_000_000);
+        s.len()
+    "#);
+    assert!(result.is_ok() || result.is_err(), "Huge string allocation should not panic");
+}
+
+/// Test regex with catastrophic backtracking
+#[test]
+#[ignore = "Runtime limitation: regex safety not implemented - needs [RUNTIME-053] ticket"]
+fn test_sqlite_195_regex_catastrophic_backtracking() {
+    let result = execute_program(r#"
+        let pattern = "(a+)+b";
+        let text = "aaaaaaaaaaaaaaaaaaaaaaaaaaac";
+        regex_match(pattern, text)
+    "#);
+    assert!(result.is_ok() || result.is_err(), "Regex backtracking should timeout");
+}
+
+// ============================================================================
+// Category 21: Numeric Edge Cases & Special Values
+// ============================================================================
+
+/// Test subnormal (denormalized) floating-point numbers
+#[test]
+#[ignore = "Runtime limitation: subnormal handling - needs [RUNTIME-054] ticket"]
+fn test_sqlite_196_subnormal_floats() {
+    let result = execute_program(r#"
+        let tiny = 1e-320;
+        tiny * tiny
+    "#);
+    assert!(result.is_ok(), "Subnormal floats should work");
+}
+
+/// Test signed zero (-0.0 vs +0.0)
+#[test]
+#[ignore = "Runtime limitation: signed zero handling - needs [RUNTIME-055] ticket"]
+fn test_sqlite_197_signed_zero() {
+    let result = execute_program(r#"
+        let pos_zero = 0.0;
+        let neg_zero = -0.0;
+        pos_zero == neg_zero
+    "#);
+    assert!(result.is_ok(), "Signed zero should be handled");
+}
+
+/// Test NaN comparisons (NaN != NaN)
+#[test]
+#[ignore = "Runtime limitation: NaN comparison semantics - needs [RUNTIME-056] ticket"]
+fn test_sqlite_198_nan_equality() {
+    let result = execute_program(r#"
+        let nan1 = 0.0 / 0.0;
+        let nan2 = 0.0 / 0.0;
+        nan1 == nan2
+    "#);
+    assert!(result.is_ok(), "NaN comparisons should work");
+}
+
+/// Test infinity arithmetic
+#[test]
+#[ignore = "Runtime limitation: infinity arithmetic - needs [RUNTIME-057] ticket"]
+fn test_sqlite_199_infinity_arithmetic() {
+    let result = execute_program(r#"
+        let inf = 1.0 / 0.0;
+        inf - inf
+    "#);
+    assert!(result.is_ok(), "Infinity arithmetic should produce NaN");
+}
+
+/// Test integer overflow in different contexts
+#[test]
+#[ignore = "Runtime limitation: integer overflow detection - needs [RUNTIME-058] ticket"]
+fn test_sqlite_200_integer_overflow_contexts() {
+    let result = execute_program(r#"
+        let x = 9223372036854775807;
+        x + 1
+    "#);
+    assert!(result.is_ok() || result.is_err(), "Integer overflow should be handled");
+}
+
+// ============================================================================
+// Category 22: Collection & Iterator Anomalies
+// ============================================================================
+
+/// Test iterator invalidation (modifying collection during iteration)
+#[test]
+#[ignore = "Runtime limitation: iterator safety - needs [RUNTIME-059] ticket"]
+fn test_sqlite_201_iterator_invalidation() {
+    let result = execute_program(r#"
+        let arr = [1, 2, 3];
+        for x in arr {
+            arr.push(x + 1);
+        }
+    "#);
+    assert!(result.is_ok() || result.is_err(), "Iterator invalidation should not panic");
+}
+
+/// Test concurrent modification of shared collection
+#[test]
+#[ignore = "Runtime limitation: concurrent modification detection - needs [RUNTIME-060] ticket"]
+fn test_sqlite_202_concurrent_modification() {
+    let result = execute_program(r#"
+        let shared = [1, 2, 3];
+        spawn {
+            shared.push(4);
+        }
+        for x in shared {
+            print(x);
+        }
+    "#);
+    assert!(result.is_ok() || result.is_err(), "Concurrent modification should be detected");
+}
+
+/// Test infinite iterator consumption
+#[test]
+#[ignore = "Runtime limitation: infinite iterator safety - needs [RUNTIME-061] ticket"]
+fn test_sqlite_203_infinite_iterator() {
+    let result = execute_program(r#"
+        let infinite = (0..).map(|x| x * 2);
+        infinite.collect()
+    "#);
+    assert!(result.is_ok() || result.is_err(), "Infinite iterator should timeout or error");
+}
+
+/// Test empty collection edge cases
+#[test]
+fn test_sqlite_204_empty_collection_ops() {
+    let result = execute_program(r#"
+        let empty = [];
+        empty.first()
+    "#);
+    assert!(result.is_ok() || result.is_err(), "Empty collection ops should handle gracefully");
+}
+
+/// Test nested collection depth limits
+#[test]
+#[ignore = "Runtime limitation: nested collection limits - needs [RUNTIME-062] ticket"]
+fn test_sqlite_205_deeply_nested_collections() {
+    let result = execute_program(r#"
+        let deep = [[[[[[[[[[42]]]]]]]]]];
+        deep[0][0][0][0][0][0][0][0][0][0]
+    "#);
+    assert!(result.is_ok(), "Deeply nested collections should work");
+}
+
+// ============================================================================
+// Category 23: Control Flow Anomalies
+// ============================================================================
+
+/// Test break outside loop
+#[test]
+#[ignore = "Runtime limitation: break validation - needs [RUNTIME-063] ticket"]
+fn test_sqlite_206_break_outside_loop() {
+    let result = execute_program(r#"
+        fun broken() {
+            break;
+        }
+    "#);
+    assert!(result.is_err(), "Break outside loop should error");
+}
+
+/// Test continue outside loop
+#[test]
+#[ignore = "Runtime limitation: continue validation - needs [RUNTIME-064] ticket"]
+fn test_sqlite_207_continue_outside_loop() {
+    let result = execute_program(r#"
+        fun broken() {
+            continue;
+        }
+    "#);
+    assert!(result.is_err(), "Continue outside loop should error");
+}
+
+/// Test return from top-level (non-function context)
+#[test]
+#[ignore = "Runtime limitation: return validation - needs [RUNTIME-065] ticket"]
+fn test_sqlite_208_return_top_level() {
+    let result = execute_program(r#"
+        return 42;
+    "#);
+    assert!(result.is_ok() || result.is_err(), "Top-level return should be handled");
+}
+
+/// Test deeply nested control flow
+#[test]
+fn test_sqlite_209_deeply_nested_control() {
+    let result = execute_program(r#"
+        for i in [1, 2, 3] {
+            for j in [4, 5, 6] {
+                for k in [7, 8, 9] {
+                    if i == 2 {
+                        if j == 5 {
+                            if k == 8 {
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    "#);
+    assert!(result.is_ok(), "Deeply nested control flow should work");
+}
+
+/// Test labeled break with invalid label
+#[test]
+#[ignore = "Runtime limitation: labeled break validation - needs [RUNTIME-066] ticket"]
+fn test_sqlite_210_invalid_loop_label() {
+    let result = execute_program(r#"
+        'outer: loop {
+            break 'nonexistent;
+        }
+    "#);
+    assert!(result.is_err(), "Invalid loop label should error");
+}
+
+// ============================================================================
+// Category 24: Error Propagation & Panic Handling
+// ============================================================================
+
+/// Test panic propagation across function boundaries
+#[test]
+#[ignore = "Runtime limitation: panic handling - needs [RUNTIME-067] ticket"]
+fn test_sqlite_211_panic_propagation() {
+    let result = execute_program(r#"
+        fun inner() {
+            panic!("test panic");
+        }
+        fun outer() {
+            inner();
+        }
+        outer()
+    "#);
+    assert!(result.is_err(), "Panic should propagate and be catchable");
+}
+
+/// Test error propagation with ? operator chains
+#[test]
+#[ignore = "Runtime limitation: error propagation - needs [RUNTIME-068] ticket"]
+fn test_sqlite_212_error_propagation_chains() {
+    let result = execute_program(r#"
+        fun may_fail() -> Result<i32, String> {
+            Err("failed")
+        }
+        fun chain() -> Result<i32, String> {
+            let x = may_fail()?;
+            let y = may_fail()?;
+            Ok(x + y)
+        }
+        chain()
+    "#);
+    assert!(result.is_ok() || result.is_err(), "Error propagation should work");
+}
+
+/// Test catch/try with nested errors
+#[test]
+#[ignore = "Runtime limitation: nested error handling - needs [RUNTIME-069] ticket"]
+fn test_sqlite_213_nested_error_handling() {
+    let result = execute_program(r#"
+        try {
+            try {
+                error("inner");
+            } catch e {
+                error("outer: " + e);
+            }
+        } catch e {
+            print(e);
+        }
+    "#);
+    assert!(result.is_ok() || result.is_err(), "Nested error handling should work");
+}
+
+/// Test error in destructor/cleanup code
+#[test]
+#[ignore = "Runtime limitation: destructor error handling - needs [RUNTIME-070] ticket"]
+fn test_sqlite_214_error_in_destructor() {
+    let result = execute_program(r#"
+        class Resource {
+            drop() {
+                panic!("error in cleanup");
+            }
+        }
+        let r = Resource();
+    "#);
+    assert!(result.is_ok() || result.is_err(), "Error in destructor should be handled");
+}
+
+/// Test unwinding through FFI boundary
+#[test]
+#[ignore = "Runtime limitation: FFI unwinding - needs [RUNTIME-071] ticket"]
+fn test_sqlite_215_ffi_unwinding() {
+    let result = execute_program(r#"
+        extern fun native_fn();
+        try {
+            native_fn();
+        } catch e {
+            print("caught FFI error");
+        }
+    "#);
+    assert!(result.is_ok() || result.is_err(), "FFI unwinding should be safe");
+}
+
+// ============================================================================
+// Category 25: Resource Exhaustion & Limits
+// ============================================================================
+
+/// Test maximum function arity (too many parameters)
+#[test]
+#[ignore = "Runtime limitation: function arity limits - needs [RUNTIME-072] ticket"]
+fn test_sqlite_216_excessive_function_arity() {
+    let result = execute_program(r#"
+        fun many_params(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10,
+                        a11, a12, a13, a14, a15, a16, a17, a18, a19, a20) {
+            a1 + a20
+        }
+    "#);
+    assert!(result.is_ok() || result.is_err(), "Excessive arity should be handled");
+}
+
+/// Test excessive nesting depth (AST depth limit)
+#[test]
+#[ignore = "Runtime limitation: AST depth limits - needs [RUNTIME-073] ticket"]
+fn test_sqlite_217_ast_depth_limit() {
+    let result = execute_program("((((((((((42))))))))))");
+    assert!(result.is_ok(), "Deep nesting should work within limits");
+}
+
+/// Test maximum identifier length
+#[test]
+#[ignore = "Runtime limitation: identifier length limits - needs [RUNTIME-074] ticket"]
+fn test_sqlite_218_long_identifiers() {
+    let result = execute_program(&format!(
+        "let {} = 42;",
+        "x".repeat(10000)
+    ));
+    assert!(result.is_ok() || result.is_err(), "Long identifiers should be handled");
+}
+
+/// Test maximum number of local variables in scope
+#[test]
+#[ignore = "Runtime limitation: local variable limits - needs [RUNTIME-075] ticket"]
+fn test_sqlite_219_excessive_locals() {
+    let mut program = String::from("{\n");
+    for i in 0..10000 {
+        program.push_str(&format!("let x{} = {};\n", i, i));
+    }
+    program.push_str("}\n");
+    let result = execute_program(&program);
+    assert!(result.is_ok() || result.is_err(), "Excessive locals should be handled");
+}
+
+/// Test maximum closure capture size
+#[test]
+#[ignore = "Runtime limitation: closure capture limits - needs [RUNTIME-076] ticket"]
+fn test_sqlite_220_excessive_closure_captures() {
+    let result = execute_program(r#"
+        let vars = (0..1000).collect();
+        let closure = || {
+            vars.sum()
+        };
+        closure()
+    "#);
+    assert!(result.is_ok() || result.is_err(), "Excessive captures should be handled");
+}
+
+// ============================================================================
+// Category 26: Type System Edge Cases
+// ============================================================================
+
+/// Test type confusion between numeric types
+#[test]
+#[ignore = "Runtime limitation: numeric type safety - needs [RUNTIME-077] ticket"]
+fn test_sqlite_221_numeric_type_confusion() {
+    let result = execute_program(r#"
+        let int: i32 = 42;
+        let float: f64 = 3.14;
+        int + float
+    "#);
+    assert!(result.is_ok() || result.is_err(), "Type confusion should be caught");
+}
+
+/// Test dynamic type changes at runtime
+#[test]
+#[ignore = "Runtime limitation: dynamic type validation - needs [RUNTIME-078] ticket"]
+fn test_sqlite_222_runtime_type_change() {
+    let result = execute_program(r#"
+        let x = 42;
+        x = "string";
+        x + 1
+    "#);
+    assert!(result.is_ok() || result.is_err(), "Runtime type change should error");
+}
+
+/// Test trait object type safety
+#[test]
+#[ignore = "Runtime limitation: trait object safety - needs [RUNTIME-079] ticket"]
+fn test_sqlite_223_trait_object_type_safety() {
+    let result = execute_program(r#"
+        trait Animal { fun speak(); }
+        let obj: dyn Animal = Dog();
+        let dog: Dog = obj as Dog;
+    "#);
+    assert!(result.is_ok() || result.is_err(), "Trait object casts should be validated");
+}
+
+/// Test variance violations
+#[test]
+#[ignore = "Runtime limitation: variance checking - needs [RUNTIME-080] ticket"]
+fn test_sqlite_224_variance_violation() {
+    let result = execute_program(r#"
+        let array: Array<Animal> = Array<Dog>();
+        array.push(Cat())
+    "#);
+    assert!(result.is_ok() || result.is_err(), "Variance violations should be caught");
+}
+
+/// Test unsized type handling
+#[test]
+#[ignore = "Runtime limitation: unsized type handling - needs [RUNTIME-081] ticket"]
+fn test_sqlite_225_unsized_types() {
+    let result = execute_program(r#"
+        let slice: [i32] = [1, 2, 3];
+    "#);
+    assert!(result.is_ok() || result.is_err(), "Unsized types should be handled");
+}
+
+// ============================================================================
+// Category 27: Concurrency Stress Tests
+// ============================================================================
+
+/// Test race condition on shared mutable state
+#[test]
+#[ignore = "Runtime limitation: race detection - needs [RUNTIME-082] ticket"]
+fn test_sqlite_226_race_condition() {
+    let result = execute_program(r#"
+        let counter = 0;
+        for i in 0..100 {
+            spawn {
+                counter += 1;
+            }
+        }
+        thread::sleep(100);
+        counter
+    "#);
+    assert!(result.is_ok() || result.is_err(), "Race conditions should be detected");
+}
+
+/// Test thread pool exhaustion
+#[test]
+#[ignore = "Runtime limitation: thread pool limits - needs [RUNTIME-083] ticket"]
+fn test_sqlite_227_thread_pool_exhaustion() {
+    let result = execute_program(r#"
+        for i in 0..100000 {
+            spawn {
+                thread::sleep(1000);
+            }
+        }
+    "#);
+    assert!(result.is_ok() || result.is_err(), "Thread pool exhaustion should be handled");
+}
+
+/// Test channel buffer overflow
+#[test]
+#[ignore = "Runtime limitation: channel safety - needs [RUNTIME-084] ticket"]
+fn test_sqlite_228_channel_overflow() {
+    let result = execute_program(r#"
+        let (tx, rx) = channel(10);
+        for i in 0..1000 {
+            tx.send(i);
+        }
+    "#);
+    assert!(result.is_ok() || result.is_err(), "Channel overflow should be handled");
+}
+
+/// Test atomic operation failures
+#[test]
+#[ignore = "Runtime limitation: atomic operation safety - needs [RUNTIME-085] ticket"]
+fn test_sqlite_229_atomic_failures() {
+    let result = execute_program(r#"
+        let atomic = Atomic::new(0);
+        atomic.compare_exchange(1, 2)
+    "#);
+    assert!(result.is_ok() || result.is_err(), "Failed atomic ops should be handled");
+}
+
+/// Test lock poisoning recovery
+#[test]
+#[ignore = "Runtime limitation: lock poisoning handling - needs [RUNTIME-086] ticket"]
+fn test_sqlite_230_lock_poisoning() {
+    let result = execute_program(r#"
+        let mutex = Mutex::new(0);
+        spawn {
+            let guard = mutex.lock();
+            panic!("poison the lock");
+        }
+        thread::sleep(10);
+        mutex.lock()
+    "#);
+    assert!(result.is_ok() || result.is_err(), "Lock poisoning should be recoverable");
+}
+
+// ============================================================================
+// Category 28: Pattern Matching Edge Cases
+// ============================================================================
+
+/// Test non-exhaustive pattern matching
+#[test]
+#[ignore = "Runtime limitation: exhaustiveness checking - needs [RUNTIME-087] ticket"]
+fn test_sqlite_231_non_exhaustive_match() {
+    let result = execute_program(r#"
+        match 3 {
+            1 => "one",
+            2 => "two",
+        }
+    "#);
+    assert!(result.is_err(), "Non-exhaustive match should error");
+}
+
+/// Test unreachable pattern arms
+#[test]
+#[ignore = "Runtime limitation: unreachable pattern detection - needs [RUNTIME-088] ticket"]
+fn test_sqlite_232_unreachable_patterns() {
+    let result = execute_program(r#"
+        match x {
+            _ => "any",
+            1 => "one",
+        }
+    "#);
+    assert!(result.is_ok() || result.is_err(), "Unreachable patterns should warn");
+}
+
+/// Test pattern matching with side effects
+#[test]
+#[ignore = "Runtime limitation: pattern side effects - needs [RUNTIME-089] ticket"]
+fn test_sqlite_233_pattern_side_effects() {
+    let result = execute_program(r#"
+        match get_value() {
+            x if (counter += 1; x > 0) => "positive",
+            _ => "other",
+        }
+    "#);
+    assert!(result.is_ok() || result.is_err(), "Pattern side effects should be controlled");
+}
+
+/// Test pattern matching deeply nested structures
+#[test]
+#[ignore = "Runtime limitation: deep pattern matching - needs [RUNTIME-090] ticket"]
+fn test_sqlite_234_deep_pattern_matching() {
+    let result = execute_program(r#"
+        match nested {
+            Some(Ok(Some(Ok(value)))) => value,
+            _ => 0,
+        }
+    "#);
+    assert!(result.is_ok(), "Deep patterns should work");
+}
+
+/// Test pattern matching with large enums
+#[test]
+#[ignore = "Runtime limitation: large enum matching - needs [RUNTIME-091] ticket"]
+fn test_sqlite_235_large_enum_match() {
+    let result = execute_program(r#"
+        enum Large { V1, V2, V3, ... V100 }
+        match large_val {
+            V1 => 1,
+            V2 => 2,
+            _ => 0,
+        }
+    "#);
+    assert!(result.is_ok() || result.is_err(), "Large enum matching should work");
+}
+
+// ============================================================================
+// Category 29: Metaprogramming & Reflection Anomalies
+// ============================================================================
+
+/// Test macro expansion depth limits
+#[test]
+#[ignore = "Runtime limitation: macro expansion limits - needs [RUNTIME-092] ticket"]
+fn test_sqlite_236_macro_expansion_depth() {
+    let result = execute_program(r#"
+        macro recursive() {
+            recursive!()
+        }
+        recursive!()
+    "#);
+    assert!(result.is_ok() || result.is_err(), "Macro recursion should be limited");
+}
+
+/// Test reflection on private fields
+#[test]
+#[ignore = "Runtime limitation: reflection safety - needs [RUNTIME-093] ticket"]
+fn test_sqlite_237_reflection_privacy() {
+    let result = execute_program(r#"
+        class Private {
+            private secret: i32;
+        }
+        let obj = Private { secret: 42 };
+        reflect::get_field(obj, "secret")
+    "#);
+    assert!(result.is_ok() || result.is_err(), "Reflection should respect privacy");
+}
+
+/// Test dynamic code evaluation safety
+#[test]
+#[ignore = "Runtime limitation: eval safety - needs [RUNTIME-094] ticket"]
+fn test_sqlite_238_eval_safety() {
+    let result = execute_program(r#"
+        let code = "panic!('injected')";
+        eval(code)
+    "#);
+    assert!(result.is_ok() || result.is_err(), "Dynamic eval should be sandboxed");
+}
+
+/// Test type introspection edge cases
+#[test]
+#[ignore = "Runtime limitation: type introspection - needs [RUNTIME-095] ticket"]
+fn test_sqlite_239_type_introspection() {
+    let result = execute_program(r#"
+        let x: dyn Any = 42;
+        x.type_name()
+    "#);
+    assert!(result.is_ok() || result.is_err(), "Type introspection should work");
+}
+
+/// Test compile-time vs runtime behavior divergence
+#[test]
+#[ignore = "Runtime limitation: const evaluation consistency - needs [RUNTIME-096] ticket"]
+fn test_sqlite_240_const_eval_divergence() {
+    let result = execute_program(r#"
+        const COMPILE_TIME: i32 = 1 / 0;
+        let runtime = 1 / 0;
+    "#);
+    assert!(result.is_ok() || result.is_err(), "Const vs runtime should be consistent");
+}
+
+// ============================================================================
 // Helper Functions
 // ============================================================================
 

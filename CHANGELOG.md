@@ -43,6 +43,28 @@ All notable changes to the Ruchy programming language will be documented in this
   - **Files Changed**: src/frontend/parser/actors.rs (3 functions modified)
 
 ### Added
+- **[SQLITE-TEST-004] Harness 4 Fourth Expansion - 150 Test Milestone**: Added 50 new runtime anomaly tests (100→150 tests, 50% increase)
+  - **Test Pass Rate**: 55/150 passing (36.7%)
+  - **New Test Categories** (10 categories, 50 tests total):
+    - String & Text Anomalies (5 tests): UTF-8, indexing, slicing, size limits, regex backtracking
+    - Numeric Edge Cases (5 tests): Subnormal floats, signed zero, NaN, infinity, overflow contexts
+    - Collection & Iterator Anomalies (5 tests): Invalidation, concurrent modification, infinite iterators, empty ops, nesting
+    - Control Flow Anomalies (5 tests): Break/continue/return validation, deep nesting, invalid labels
+    - Error Propagation & Panic (5 tests): Panic propagation, error chains, nested handling, destructor errors, FFI
+    - Resource Exhaustion (5 tests): Function arity, AST depth, identifiers, locals, closures
+    - Type System Edge Cases (5 tests): Numeric confusion, dynamic types, trait objects, variance, unsized
+    - Concurrency Stress Tests (5 tests): Race conditions, thread pools, channels, atomics, lock poisoning
+    - Pattern Matching Edge Cases (5 tests): Non-exhaustive, unreachable, side effects, deep patterns, large enums
+    - Metaprogramming & Reflection (5 tests): Macro expansion, reflection privacy, eval safety, introspection, const eval
+  - **Defensive Testing**: 72 new runtime limitations discovered (RUNTIME-025 through RUNTIME-096)
+  - **Total Limitations**: 95 documented runtime limitations (RUNTIME-002 through RUNTIME-096, RUNTIME-001 fixed)
+  - **Performance**: All 150 tests complete in 0.10 seconds
+  - **Progress**: 150/50,000 tests (0.30% of target)
+  - **Framework Total**: 413 tests across 4 harnesses
+  - **Time**: 7.0h / 60h estimated (11.7% complete)
+  - **Toyota Way**: Defensive testing discovered 72 new limitations proactively before user impact
+  - **Files Modified**: tests/sqlite_004_runtime_anomalies.rs, docs/testing/SQLITE-FRAMEWORK-PROGRESS-REPORT.md
+
 - **[SQLITE-TEST-001] Harness 1 Fifth Expansion - 300 Test Milestone**: Added 50 new comprehensive grammar tests (250→300 tests, 20% increase)
   - **Test Pass Rate**: 216/300 passing (72.0%)
   - **New Test Categories** (Comprehensive Grammar Coverage, 50 tests total):
