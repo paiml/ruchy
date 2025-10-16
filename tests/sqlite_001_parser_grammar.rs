@@ -705,6 +705,63 @@ fn test_sqlite_251_complex_precedence() {
     assert_parses("!a && b || c");
 }
 
+/// Test labeled break statements (loop control)
+#[test]
+fn test_sqlite_252_labeled_break() {
+    assert_parses(r#"
+        'outer: loop {
+            for i in 1..10 {
+                if i == 5 {
+                    break 'outer;
+                }
+            }
+        }
+    "#);
+}
+
+/// Test labeled continue statements
+#[test]
+fn test_sqlite_253_labeled_continue() {
+    assert_parses(r#"
+        'outer: for i in 1..10 {
+            for j in 1..10 {
+                if j == 3 {
+                    continue 'outer;
+                }
+            }
+        }
+    "#);
+}
+
+/// Test complex operator precedence edge cases
+#[test]
+fn test_sqlite_254_operator_precedence_edge_cases() {
+    // Mixing bitwise, logical, and arithmetic
+    assert_parses("a & b | c ^ d");
+    assert_parses("x << 2 + y");
+    assert_parses("a == b && c != d || e > f");
+}
+
+/// Test slice operator with step
+#[test]
+#[ignore = "Parser limitation: open-ended range syntax (arr[..5]) not supported - needs [PARSER-072] ticket"]
+fn test_sqlite_255_slice_with_step() {
+    assert_parses("arr[1..10]");
+    assert_parses("arr[..5]");  // Not supported
+    assert_parses("arr[5..]");  // Not supported
+    assert_parses("arr[..]");   // Not supported
+}
+
+/// Test Unicode identifiers (international support)
+#[test]
+#[ignore = "Parser limitation: Unicode identifiers not supported - needs [PARSER-073] ticket"]
+fn test_sqlite_256_unicode_identifiers() {
+    // Unicode variable names
+    assert_parses("let π = 3.14159");
+    assert_parses("let 変数 = 42");
+    assert_parses("let привет = \"hello\"");
+}
+
 // ============================================================================
 // Error Handling
 // ============================================================================
