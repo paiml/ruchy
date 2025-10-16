@@ -4,6 +4,16 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+### Added
+- **[SQLITE-TEST-001] Harness 4 Sixth Expansion - 250 Test Milestone**: Added 50 new advanced runtime anomaly tests (200→250, 25% increase)
+  - Test Pass Rate: 58/250 passing (23.2%)
+  - New Categories (10): Memory leak detection, FFI anomalies, Macro system, Trait objects, Phantom types/ZST, Pin/Unpin semantics, Trait specialization, Inline assembly, Allocator API, Compile-time evaluation (const fn)
+  - Defensive Testing: 50 new runtime limitations (RUNTIME-144 through RUNTIME-193)
+  - Total Limitations: 192 documented (RUNTIME-001 fixed)
+  - Framework Total: 613 tests across 4 harnesses
+  - Advanced Features: Memory safety (circular refs, weak refs, Rc overflow), FFI (C interop, callbacks, ownership), macros (hygiene, fragments, proc macros), trait objects (downcasting, dynamic dispatch), phantom types (variance, ZST optimization), Pin/Unpin (self-referential structs), trait specialization (overlapping impls, negative bounds), inline asm (operands, clobbers, options), custom allocators (error handling, trait bounds), const fn (loops, panics, trait methods)
+  - Time: 8.5h / 60h estimated
+
 ### Fixed
 - **[RUNTIME-001] Recursion Depth Limit IMPLEMENTED**: Fixed CRITICAL stack overflow crash
   - **Severity**: CRITICAL PRODUCTION BLOCKER - Runtime crashed on infinite recursion
