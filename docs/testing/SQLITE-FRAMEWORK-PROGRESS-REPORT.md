@@ -8,52 +8,57 @@
 
 ## Executive Summary
 
-Implemented foundation for **SQLite-level testing framework** targeting 608:1 test-to-code ratio reliability. Four independent test harnesses now operational with **237 total tests** and **470,000 total property test iterations**.
+Implemented foundation for **SQLite-level testing framework** targeting 608:1 test-to-code ratio reliability. Four independent test harnesses now operational with **287 total tests** and **470,000 total property test iterations**.
 
 ### Overall Progress
 
 | Metric | Current | Target | % Complete |
 |--------|---------|--------|------------|
 | **Test Harnesses** | 4/8 | 8 | 50.0% |
-| **Total Tests** | 237 | 500,000+ | 0.05% |
+| **Total Tests** | 287 | 500,000+ | 0.06% |
 | **Property Iterations** | 470,000 | 400,000+ | 117.5% ✅ |
-| **Time Invested** | 16h | 120h | 13.3% |
+| **Time Invested** | 17h | 120h | 14.2% |
 
 ---
 
 ## Harness-by-Harness Status
 
-### ✅ Harness 1: Parser Grammar Coverage (200 Test Milestone ✅)
+### ✅ Harness 1: Parser Grammar Coverage (250 Test Milestone ✅)
 
 **File**: `tests/sqlite_001_parser_grammar.rs`
-**Status**: 🟢 200 Test Milestone + 20K Property Iterations ACHIEVED
-**Progress**: 200/2,000 tests (10.0%)
+**Status**: 🟢 250 Test Milestone + 20K Property Iterations ACHIEVED
+**Progress**: 250/2,000 tests (12.5%)
 **Property Iterations**: 20,000 (10x scaling from 2,000)
-**Time**: 3.5h / 32h estimated
+**Time**: 4.5h / 32h estimated
 
 **Implemented**:
-- ✅ 159 grammar coverage tests (passing) - **UP from 131** (+28 new passing)
+- ✅ 182 grammar coverage tests (passing) - **UP from 159** (+23 new passing)
 - ✅ 6 error recovery tests
 - ✅ 1 performance test (O(n) verification)
 - ✅ 3 property tests (20,000 iterations total - 10x scaling)
-- ✅ **50 NEW tests added** (257-306):
+- ✅ **100 NEW tests added** (257-356 across two expansions):
   - Advanced Numeric Literals (10 tests): Hex, binary, octal, scientific, char/byte literals
   - Advanced Pattern Matching (10 tests): Struct, enum, tuple, range, at-patterns
   - Advanced Type Features (10 tests): Associated types, HRTB, impl/dyn trait, const generics
   - Advanced Expressions (10 tests): if-let, while-let, closures, method chains, complex nesting
   - Macro Features (10 tests): Invocation, nested macros, definitions, attributes
+  - Module System (10 tests): Module declarations, use statements, visibility, nested paths
+  - Advanced Functions (10 tests): Result types, where clauses, lifetimes, recursion, references
+  - Struct/Enum Advanced (10 tests): Field visibility, tuple structs, unit structs, generics, mixed variants
+  - Operators (10 tests): Bitwise shifts, compound assignments, ranges, dereference, casts, safe navigation
+  - Attributes (10 tests): Function attributes, cfg, deprecated, lint, test, doc, repr, multiple
 
 **Key Achievements**:
-- **200 TEST MILESTONE**: Reached 200 total tests (150→200, 33.3% increase) ✅
+- **250 TEST MILESTONE**: Reached 250 total tests (200→250, 25% increase) ✅
 - **TARGET ACHIEVED**: 20,000 property test iterations completed (100% of goal)
 - **10x scaling**: Property tests scaled from 2,000 → 20,000 iterations via systematic 2x pattern
-- **41 parser limitations discovered** via defensive testing (Toyota Way) - **UP from 19** (+22 new)
-- **Tickets created**: PARSER-055 through PARSER-095 (22 new limitations discovered)
+- **68 parser limitations discovered** via defensive testing (Toyota Way) - **UP from 41** (+27 new)
+- **Tickets created**: PARSER-055 through PARSER-122 (27 new limitations discovered in this expansion)
 - **PARSER-060 FIXED**: Actor definition infinite loop bug resolved
 - **Zero panics** across 20,000 property iterations
-- **159/200 passing** (79.5% pass rate, 41 ignored with documented tickets, 1 fixed)
+- **182/250 passing** (72.8% pass rate, 68 ignored with documented tickets, 1 fixed)
 - **Fast execution**: All tests complete in 0.47 seconds
-- **STATUS**: 200 MILESTONE ACHIEVED - Ready for 250-test expansion
+- **STATUS**: 250 MILESTONE ACHIEVED - 12.5% of 2,000 target complete
 
 **Research Foundation**:
 - NASA DO-178B/C: Modified Condition/Decision Coverage (MC/DC)
@@ -100,9 +105,36 @@ Implemented foundation for **SQLite-level testing framework** targeting 608:1 te
 37. [PARSER-090] Procedural macro attributes (#[derive]) - **NEW**
 38. [PARSER-091] Custom derive macros - **NEW**
 39. [PARSER-092] Attribute macros (#[my_attribute]) - **NEW**
-40. [PARSER-093] Function-like procedural macros (sql!(...)) - **NEW**
-41. [PARSER-094] Reference patterns (&pattern in match) - **NEW**
-42. [PARSER-095] Qualified path with braces (path::to { }) - **NEW**
+40. [PARSER-093] Function-like procedural macros (sql!(...))
+41. [PARSER-094] Reference patterns (&pattern in match)
+42. [PARSER-095] Qualified path with braces (path::to { })
+43. [PARSER-096] Module attributes (#![...]) - **NEW**
+44. [PARSER-097] extern crate - **NEW**
+45. [PARSER-098] Lifetime parameters in functions not fully supported - **NEW**
+46. [PARSER-099] Default parameters - **NEW**
+47. [PARSER-100] Variadic functions - **NEW**
+48. [PARSER-101] Default field values in structs - **NEW**
+49. [PARSER-102] Enum discriminants - **NEW**
+50. [PARSER-103] Struct update syntax (..) - **NEW**
+51. [PARSER-104] 'is' operator - **NEW**
+52. [PARSER-105] Elvis operator (?:) - **NEW**
+53. [PARSER-106] Function attributes not fully supported - **NEW**
+54. [PARSER-107] cfg attributes - **NEW**
+55. [PARSER-108] deprecated attribute - **NEW**
+56. [PARSER-109] lint attributes - **NEW**
+57. [PARSER-110] test attribute - **NEW**
+58. [PARSER-111] must_use attribute - **NEW**
+59. [PARSER-112] repr attribute - **NEW**
+60. [PARSER-113] Multiple attributes not fully supported - **NEW**
+61. [PARSER-114] Attribute arguments not fully supported - **NEW**
+62. [PARSER-115] Module declarations without braces - **NEW**
+63. [PARSER-116] Nested import groups not fully supported - **NEW**
+64. [PARSER-117] 'self' in import lists - **NEW**
+65. [PARSER-118] 'crate' keyword in paths - **NEW**
+66. [PARSER-119] where clause in struct definitions - **NEW**
+67. [PARSER-120] Bitwise shift compound assignments (<<= >>=) - **NEW**
+68. [PARSER-121] Open-ended ranges (..10, 0..) - **NEW**
+69. [PARSER-122] '&mut' expression - **NEW**
 
 ---
 

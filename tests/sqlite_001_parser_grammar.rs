@@ -1264,6 +1264,482 @@ fn test_sqlite_306_macro_braces() {
 }
 
 // ============================================================================
+// Module System Tests (tests 307-316)
+// ============================================================================
+
+/// Test module declarations
+#[test]
+#[ignore = "Parser limitation: Module declarations without braces not supported - needs [PARSER-115] ticket"]
+fn test_sqlite_307_module_declarations() {
+    assert_parses("mod utils;");
+    assert_parses("mod network { }");
+    assert_parses("mod tests { mod helpers { } }");
+}
+
+/// Test use statements with paths
+#[test]
+fn test_sqlite_308_use_paths() {
+    assert_parses("use std::collections::HashMap;");
+    assert_parses("use super::utils;");
+    assert_parses("use crate::types::Value;");
+}
+
+/// Test use with glob imports
+#[test]
+fn test_sqlite_309_use_glob() {
+    assert_parses("use std::collections::*;");
+    assert_parses("use super::*;");
+}
+
+/// Test use with nested groups
+#[test]
+#[ignore = "Parser limitation: Nested import groups not fully supported - needs [PARSER-116] ticket"]
+fn test_sqlite_310_use_nested_groups() {
+    assert_parses("use std::{io, fs};");
+    assert_parses("use std::io::{Read, Write};");
+    assert_parses("use std::{io::{self, Read}, fs};");
+}
+
+/// Test pub use re-exports
+#[test]
+fn test_sqlite_311_pub_use() {
+    assert_parses("pub use std::collections::HashMap;");
+    assert_parses("pub use super::utils::*;");
+}
+
+/// Test visibility modifiers
+#[test]
+fn test_sqlite_312_visibility_modifiers() {
+    assert_parses("pub fun public_func() {}");
+    assert_parses("pub(crate) fun crate_func() {}");
+    assert_parses("pub(super) fun parent_func() {}");
+}
+
+/// Test module attributes
+#[test]
+#[ignore = "Parser limitation: Module attributes (#![...]) not supported - needs [PARSER-096] ticket"]
+fn test_sqlite_313_module_attributes() {
+    assert_parses("#![allow(dead_code)]");
+    assert_parses("#![warn(missing_docs)]");
+}
+
+/// Test extern crate
+#[test]
+#[ignore = "Parser limitation: extern crate not supported - needs [PARSER-097] ticket"]
+fn test_sqlite_314_extern_crate() {
+    assert_parses("extern crate serde;");
+    assert_parses("extern crate serde as serde_lib;");
+}
+
+/// Test use with self
+#[test]
+#[ignore = "Parser limitation: 'self' in import lists not supported - needs [PARSER-117] ticket"]
+fn test_sqlite_315_use_self() {
+    assert_parses("use std::io::{self, Read};");
+    assert_parses("use super::{self, utils};");
+}
+
+/// Test nested module paths
+#[test]
+#[ignore = "Parser limitation: 'crate' keyword in paths not supported - needs [PARSER-118] ticket"]
+fn test_sqlite_316_nested_module_paths() {
+    assert_parses("std::collections::HashMap::new()");
+    assert_parses("crate::utils::helpers::process()");
+}
+
+// ============================================================================
+// Advanced Function Features (tests 317-326)
+// ============================================================================
+
+/// Test function with multiple return types
+#[test]
+fn test_sqlite_317_function_result_types() {
+    assert_parses("fun may_fail() -> Result<i32, String> {}");
+    assert_parses("fun optional() -> Option<Vec<i32>> {}");
+}
+
+/// Test function with where clause
+#[test]
+fn test_sqlite_318_function_where_clause() {
+    assert_parses(r#"
+        fun compare<T>(a: T, b: T) -> bool
+        where T: PartialEq {
+            a == b
+        }
+    "#);
+}
+
+/// Test function with lifetime parameters
+#[test]
+#[ignore = "Parser limitation: Lifetime parameters in functions not fully supported - needs [PARSER-098] ticket"]
+fn test_sqlite_319_function_lifetimes() {
+    assert_parses("fun longest<'a>(x: &'a str, y: &'a str) -> &'a str {}");
+}
+
+/// Test function with default parameters
+#[test]
+#[ignore = "Parser limitation: Default parameters not supported - needs [PARSER-099] ticket"]
+fn test_sqlite_320_function_default_params() {
+    assert_parses("fun greet(name: str = \"World\") {}");
+}
+
+/// Test variadic functions
+#[test]
+#[ignore = "Parser limitation: Variadic functions not supported - needs [PARSER-100] ticket"]
+fn test_sqlite_321_variadic_functions() {
+    assert_parses("fun sum(...numbers: i32) -> i32 {}");
+}
+
+/// Test function with explicit return type unit
+#[test]
+fn test_sqlite_322_function_unit_return() {
+    assert_parses("fun do_nothing() -> () {}");
+    assert_parses("fun side_effect() -> unit {}");
+}
+
+/// Test recursive function definition
+#[test]
+fn test_sqlite_323_recursive_function() {
+    assert_parses(r#"
+        fun factorial(n: i32) -> i32 {
+            if n <= 1 { 1 } else { n * factorial(n - 1) }
+        }
+    "#);
+}
+
+/// Test mutually recursive functions
+#[test]
+fn test_sqlite_324_mutual_recursion() {
+    assert_parses(r#"
+        fun is_even(n: i32) -> bool {
+            if n == 0 { true } else { is_odd(n - 1) }
+        }
+        fun is_odd(n: i32) -> bool {
+            if n == 0 { false } else { is_even(n - 1) }
+        }
+    "#);
+}
+
+/// Test function with mutable parameters
+#[test]
+fn test_sqlite_325_mutable_parameters() {
+    assert_parses("fun modify(mut x: i32) { x = x + 1; }");
+}
+
+/// Test function with reference parameters
+#[test]
+fn test_sqlite_326_reference_parameters() {
+    assert_parses("fun read(x: &i32) -> i32 { *x }");
+    assert_parses("fun write(x: &mut i32) { *x = 42; }");
+}
+
+// ============================================================================
+// Struct and Enum Advanced Features (tests 327-336)
+// ============================================================================
+
+/// Test struct with visibility modifiers on fields
+#[test]
+fn test_sqlite_327_struct_field_visibility() {
+    assert_parses(r#"
+        struct Config {
+            pub host: String,
+            pub(crate) port: i32,
+            api_key: String
+        }
+    "#);
+}
+
+/// Test struct with default field values
+#[test]
+#[ignore = "Parser limitation: Default field values not supported - needs [PARSER-101] ticket"]
+fn test_sqlite_328_struct_default_values() {
+    assert_parses(r#"
+        struct Options {
+            timeout: i32 = 30,
+            retries: i32 = 3
+        }
+    "#);
+}
+
+/// Test tuple struct with multiple elements
+#[test]
+fn test_sqlite_329_tuple_struct() {
+    assert_parses("struct Point3D(f64, f64, f64);");
+    assert_parses("struct Color(u8, u8, u8, u8);");
+}
+
+/// Test unit struct
+#[test]
+fn test_sqlite_330_unit_struct() {
+    assert_parses("struct Marker;");
+    assert_parses("struct Empty;");
+}
+
+/// Test enum with discriminants
+#[test]
+#[ignore = "Parser limitation: Enum discriminants not supported - needs [PARSER-102] ticket"]
+fn test_sqlite_331_enum_discriminants() {
+    assert_parses(r#"
+        enum Status {
+            Ok = 0,
+            Error = 1,
+            Pending = 2
+        }
+    "#);
+}
+
+/// Test enum with mixed variants
+#[test]
+fn test_sqlite_332_enum_mixed_variants() {
+    assert_parses(r#"
+        enum Data {
+            None,
+            Single(i32),
+            Pair(i32, i32),
+            Record { x: i32, y: i32 }
+        }
+    "#);
+}
+
+/// Test struct update syntax
+#[test]
+#[ignore = "Parser limitation: Struct update syntax (..) not supported - needs [PARSER-103] ticket"]
+fn test_sqlite_333_struct_update() {
+    assert_parses(r#"
+        let p2 = Point { x: 5, ..p1 };
+    "#);
+}
+
+/// Test struct with generic parameters
+#[test]
+fn test_sqlite_334_struct_generics() {
+    assert_parses("struct Pair<T> { first: T, second: T }");
+    assert_parses("struct Triple<A, B, C> { a: A, b: B, c: C }");
+}
+
+/// Test enum with generic parameters
+#[test]
+fn test_sqlite_335_enum_generics() {
+    assert_parses(r#"
+        enum Result<T, E> {
+            Ok(T),
+            Err(E)
+        }
+    "#);
+}
+
+/// Test struct with where clause
+#[test]
+#[ignore = "Parser limitation: where clause in struct definitions not supported - needs [PARSER-119] ticket"]
+fn test_sqlite_336_struct_where_clause() {
+    assert_parses(r#"
+        struct Container<T>
+        where T: Clone {
+            value: T
+        }
+    "#);
+}
+
+// ============================================================================
+// Operators and Expressions (tests 337-346)
+// ============================================================================
+
+/// Test bitwise shift operators
+#[test]
+fn test_sqlite_337_bitwise_shifts() {
+    assert_parses("x << 2");
+    assert_parses("y >> 3");
+    assert_parses("z << 1 >> 2");
+}
+
+/// Test compound assignment operators
+#[test]
+fn test_sqlite_338_compound_assignment() {
+    assert_parses("x += 1");
+    assert_parses("y -= 2");
+    assert_parses("z *= 3");
+    assert_parses("w /= 4");
+    assert_parses("v %= 5");
+}
+
+/// Test bitwise compound assignments
+#[test]
+#[ignore = "Parser limitation: Bitwise shift compound assignments (<<= >>=) not supported - needs [PARSER-120] ticket"]
+fn test_sqlite_339_bitwise_compound_assignment() {
+    assert_parses("x &= mask");
+    assert_parses("y |= flag");
+    assert_parses("z ^= toggle");
+    assert_parses("w <<= 2");
+    assert_parses("v >>= 1");
+}
+
+/// Test range expressions with inclusive/exclusive
+#[test]
+#[ignore = "Parser limitation: Open-ended ranges (..10, 0..) not supported - needs [PARSER-121] ticket"]
+fn test_sqlite_340_range_expressions() {
+    assert_parses("0..10");
+    assert_parses("0..=10");
+    assert_parses("..10");
+    assert_parses("0..");
+}
+
+/// Test dereference operator
+#[test]
+fn test_sqlite_341_dereference() {
+    assert_parses("*ptr");
+    assert_parses("**double_ptr");
+}
+
+/// Test address-of operator
+#[test]
+#[ignore = "Parser limitation: '&mut' expression not supported - needs [PARSER-122] ticket"]
+fn test_sqlite_342_address_of() {
+    assert_parses("&value");
+    assert_parses("&mut mutable_value");
+}
+
+/// Test cast expressions
+#[test]
+fn test_sqlite_343_cast_expressions() {
+    assert_parses("x as i32");
+    assert_parses("y as f64");
+    assert_parses("(value as i64) as f32");
+}
+
+/// Test is/as pattern operators
+#[test]
+#[ignore = "Parser limitation: 'is' operator not supported - needs [PARSER-104] ticket"]
+fn test_sqlite_344_is_operator() {
+    assert_parses("x is Some");
+    assert_parses("value is Ok(n)");
+}
+
+/// Test elvis operator
+#[test]
+#[ignore = "Parser limitation: Elvis operator (?:) not supported - needs [PARSER-105] ticket"]
+fn test_sqlite_345_elvis_operator() {
+    assert_parses("x ?: default_value");
+}
+
+/// Test safe navigation operator
+#[test]
+fn test_sqlite_346_safe_navigation() {
+    assert_parses("obj?.field");
+    assert_parses("obj?.method()");
+    assert_parses("obj?.field?.nested");
+}
+
+// ============================================================================
+// Attribute and Annotation Tests (tests 347-356)
+// ============================================================================
+
+/// Test function attributes
+#[test]
+#[ignore = "Parser limitation: Function attributes not fully supported - needs [PARSER-106] ticket"]
+fn test_sqlite_347_function_attributes() {
+    assert_parses(r#"
+        #[inline]
+        fun fast_function() {}
+    "#);
+}
+
+/// Test conditional compilation
+#[test]
+#[ignore = "Parser limitation: cfg attributes not supported - needs [PARSER-107] ticket"]
+fn test_sqlite_348_cfg_attributes() {
+    assert_parses(r#"
+        #[cfg(test)]
+        fun test_only() {}
+    "#);
+}
+
+/// Test deprecated attribute
+#[test]
+#[ignore = "Parser limitation: deprecated attribute not supported - needs [PARSER-108] ticket"]
+fn test_sqlite_349_deprecated() {
+    assert_parses(r#"
+        #[deprecated]
+        fun old_function() {}
+    "#);
+}
+
+/// Test allow/warn/deny attributes
+#[test]
+#[ignore = "Parser limitation: lint attributes not supported - needs [PARSER-109] ticket"]
+fn test_sqlite_350_lint_attributes() {
+    assert_parses(r#"
+        #[allow(unused_variables)]
+        fun with_unused() {}
+    "#);
+}
+
+/// Test test attribute
+#[test]
+#[ignore = "Parser limitation: test attribute not supported - needs [PARSER-110] ticket"]
+fn test_sqlite_351_test_attribute() {
+    assert_parses(r#"
+        #[test]
+        fun test_addition() {
+            assert_eq!(2 + 2, 4);
+        }
+    "#);
+}
+
+/// Test doc comments as attributes
+#[test]
+fn test_sqlite_352_doc_comments() {
+    assert_parses(r#"
+        /// This is a doc comment
+        /// It can span multiple lines
+        fun documented() {}
+    "#);
+}
+
+/// Test must_use attribute
+#[test]
+#[ignore = "Parser limitation: must_use attribute not supported - needs [PARSER-111] ticket"]
+fn test_sqlite_353_must_use() {
+    assert_parses(r#"
+        #[must_use]
+        fun important() -> i32 { 42 }
+    "#);
+}
+
+/// Test repr attribute
+#[test]
+#[ignore = "Parser limitation: repr attribute not supported - needs [PARSER-112] ticket"]
+fn test_sqlite_354_repr() {
+    assert_parses(r#"
+        #[repr(C)]
+        struct FFIStruct {
+            x: i32,
+            y: i32
+        }
+    "#);
+}
+
+/// Test multiple attributes
+#[test]
+#[ignore = "Parser limitation: Multiple attributes not fully supported - needs [PARSER-113] ticket"]
+fn test_sqlite_355_multiple_attributes() {
+    assert_parses(r#"
+        #[inline]
+        #[must_use]
+        fun optimized() -> i32 { 1 }
+    "#);
+}
+
+/// Test attribute with arguments
+#[test]
+#[ignore = "Parser limitation: Attribute arguments not fully supported - needs [PARSER-114] ticket"]
+fn test_sqlite_356_attribute_arguments() {
+    assert_parses(r#"
+        #[deprecated(since = "1.0", note = "Use new_function instead")]
+        fun old_api() {}
+    "#);
+}
+
+// ============================================================================
 // Error Handling
 // ============================================================================
 
