@@ -4675,6 +4675,666 @@ fn test_sqlite_440_numeric_coercion() {
 }
 
 // ============================================================================
+// Category 81: Const Generics Advanced
+// ============================================================================
+
+/// Test const generic arrays
+#[test]
+#[ignore = "Runtime limitation: const generic arrays not implemented - needs [RUNTIME-294] ticket"]
+fn test_sqlite_441_const_generic_array() {
+    let result = execute_program(r#"
+        struct Buffer<const N: usize> { data: [u8; N] }
+        let buf = Buffer::<10> { data: [0; 10] };
+    "#);
+    assert!(result.is_ok(), "Const generic arrays should work");
+}
+
+/// Test const generic operations
+#[test]
+#[ignore = "Runtime limitation: const generic operations not implemented - needs [RUNTIME-295] ticket"]
+fn test_sqlite_442_const_generic_ops() {
+    let result = execute_program(r#"
+        fun double<const N: usize>() -> usize { N * 2 }
+        let result = double::<5>();
+    "#);
+    assert!(result.is_ok(), "Const generic operations should work");
+}
+
+/// Test const generic trait bounds
+#[test]
+#[ignore = "Runtime limitation: const generic trait bounds not implemented - needs [RUNTIME-296] ticket"]
+fn test_sqlite_443_const_generic_bounds() {
+    let result = execute_program(r#"
+        trait HasSize<const N: usize> {}
+        struct Array<T, const N: usize> where T: HasSize<N> {}
+    "#);
+    assert!(result.is_ok(), "Const generic trait bounds should work");
+}
+
+/// Test const generic default values
+#[test]
+#[ignore = "Runtime limitation: const generic defaults not implemented - needs [RUNTIME-297] ticket"]
+fn test_sqlite_444_const_generic_default() {
+    let result = execute_program(r#"
+        struct Buffer<const N: usize = 16> { data: [u8; N] }
+        let buf = Buffer { data: [0; 16] };
+    "#);
+    assert!(result.is_ok(), "Const generic defaults should work");
+}
+
+/// Test const generic expressions
+#[test]
+#[ignore = "Runtime limitation: const generic expressions not implemented - needs [RUNTIME-298] ticket"]
+fn test_sqlite_445_const_generic_expr() {
+    let result = execute_program(r#"
+        struct Grid<const W: usize, const H: usize> { data: [u8; W * H] }
+        let grid = Grid::<3, 4> { data: [0; 12] };
+    "#);
+    assert!(result.is_ok(), "Const generic expressions should work");
+}
+
+// ============================================================================
+// Category 82: Type-Level Programming
+// ============================================================================
+
+/// Test type-level booleans
+#[test]
+#[ignore = "Runtime limitation: type-level booleans not implemented - needs [RUNTIME-299] ticket"]
+fn test_sqlite_446_type_level_bool() {
+    let result = execute_program(r#"
+        trait Bool {}
+        struct True;
+        struct False;
+        impl Bool for True {}
+        impl Bool for False {}
+    "#);
+    assert!(result.is_ok(), "Type-level booleans should work");
+}
+
+/// Test type-level natural numbers
+#[test]
+#[ignore = "Runtime limitation: type-level naturals not implemented - needs [RUNTIME-300] ticket"]
+fn test_sqlite_447_type_level_nat() {
+    let result = execute_program(r#"
+        trait Nat {}
+        struct Zero;
+        struct Succ<N: Nat>;
+        impl Nat for Zero {}
+        impl<N: Nat> Nat for Succ<N> {}
+    "#);
+    assert!(result.is_ok(), "Type-level natural numbers should work");
+}
+
+/// Test type-level lists
+#[test]
+#[ignore = "Runtime limitation: type-level lists not implemented - needs [RUNTIME-301] ticket"]
+fn test_sqlite_448_type_level_list() {
+    let result = execute_program(r#"
+        trait List {}
+        struct Nil;
+        struct Cons<H, T: List>;
+        impl List for Nil {}
+        impl<H, T: List> List for Cons<H, T> {}
+    "#);
+    assert!(result.is_ok(), "Type-level lists should work");
+}
+
+/// Test type-level computation
+#[test]
+#[ignore = "Runtime limitation: type-level computation not implemented - needs [RUNTIME-302] ticket"]
+fn test_sqlite_449_type_level_compute() {
+    let result = execute_program(r#"
+        trait Add<Rhs> { type Output; }
+        struct Sum<A, B>;
+        impl<A, B> Add<B> for A { type Output = Sum<A, B>; }
+    "#);
+    assert!(result.is_ok(), "Type-level computation should work");
+}
+
+/// Test type-level equality
+#[test]
+#[ignore = "Runtime limitation: type-level equality not implemented - needs [RUNTIME-303] ticket"]
+fn test_sqlite_450_type_level_eq() {
+    let result = execute_program(r#"
+        trait TypeEq<T> {}
+        impl<T> TypeEq<T> for T {}
+    "#);
+    assert!(result.is_ok(), "Type-level equality should work");
+}
+
+// ============================================================================
+// Category 83: Advanced Lifetime Patterns
+// ============================================================================
+
+/// Test lifetime elision advanced
+#[test]
+#[ignore = "Runtime limitation: advanced lifetime elision not implemented - needs [RUNTIME-304] ticket"]
+fn test_sqlite_451_lifetime_elision_advanced() {
+    let result = execute_program(r#"
+        fun longest(x: &str, y: &str) -> &str {
+            if x.len() > y.len() { x } else { y }
+        }
+    "#);
+    assert!(result.is_ok(), "Advanced lifetime elision should work");
+}
+
+/// Test lifetime bounds in structs
+#[test]
+#[ignore = "Runtime limitation: lifetime bounds in structs not implemented - needs [RUNTIME-305] ticket"]
+fn test_sqlite_452_lifetime_struct_bounds() {
+    let result = execute_program(r#"
+        struct Ref<'a, T: 'a> { reference: &'a T }
+        let x = 42;
+        let r = Ref { reference: &x };
+    "#);
+    assert!(result.is_ok(), "Lifetime bounds in structs should work");
+}
+
+/// Test higher-ranked trait bounds (HRTB)
+#[test]
+#[ignore = "Runtime limitation: HRTB not implemented - needs [RUNTIME-306] ticket"]
+fn test_sqlite_453_hrtb() {
+    let result = execute_program(r#"
+        trait Trait<'a> {}
+        fun foo<T: for<'a> Trait<'a>>(x: T) {}
+    "#);
+    assert!(result.is_ok(), "HRTB should work");
+}
+
+/// Test lifetime subtyping
+#[test]
+#[ignore = "Runtime limitation: lifetime subtyping not implemented - needs [RUNTIME-307] ticket"]
+fn test_sqlite_454_lifetime_subtyping() {
+    let result = execute_program(r#"
+        fun choose<'a: 'b, 'b>(first: &'a i32, _: &'b i32) -> &'b i32 {
+            first
+        }
+    "#);
+    assert!(result.is_ok(), "Lifetime subtyping should work");
+}
+
+/// Test static lifetime special cases
+#[test]
+#[ignore = "Runtime limitation: static lifetime special cases not implemented - needs [RUNTIME-308] ticket"]
+fn test_sqlite_455_static_lifetime() {
+    let result = execute_program(r#"
+        const MSG: &'static str = "Hello";
+        fun get_static() -> &'static str { MSG }
+    "#);
+    assert!(result.is_ok(), "Static lifetime special cases should work");
+}
+
+// ============================================================================
+// Category 84: Procedural Macros Advanced
+// ============================================================================
+
+/// Test derive macro custom attributes
+#[test]
+#[ignore = "Runtime limitation: derive macro custom attributes not implemented - needs [RUNTIME-309] ticket"]
+fn test_sqlite_456_derive_custom_attr() {
+    let result = execute_program(r#"
+        #[derive(Debug)]
+        #[debug_custom(format = "custom")]
+        struct Point { x: i32, y: i32 }
+    "#);
+    assert!(result.is_ok(), "Derive macro custom attributes should work");
+}
+
+/// Test attribute macro on modules
+#[test]
+#[ignore = "Runtime limitation: attribute macro on modules not implemented - needs [RUNTIME-310] ticket"]
+fn test_sqlite_457_attr_macro_module() {
+    let result = execute_program(r#"
+        #[custom_module]
+        mod my_module {
+            fun foo() {}
+        }
+    "#);
+    assert!(result.is_ok(), "Attribute macro on modules should work");
+}
+
+/// Test function-like macro hygiene
+#[test]
+#[ignore = "Runtime limitation: function-like macro hygiene not implemented - needs [RUNTIME-311] ticket"]
+fn test_sqlite_458_macro_hygiene() {
+    let result = execute_program(r#"
+        macro_rules! define_x {
+            () => { let x = 42; }
+        }
+        define_x!();
+        let x = 10;  // Should not conflict
+    "#);
+    assert!(result.is_ok(), "Function-like macro hygiene should work");
+}
+
+/// Test macro expansion order
+#[test]
+#[ignore = "Runtime limitation: macro expansion order not implemented - needs [RUNTIME-312] ticket"]
+fn test_sqlite_459_macro_expansion_order() {
+    let result = execute_program(r#"
+        macro_rules! outer {
+            () => { inner!(); }
+        }
+        macro_rules! inner {
+            () => { 42 }
+        }
+        let x = outer!();
+    "#);
+    assert!(result.is_ok(), "Macro expansion order should work");
+}
+
+/// Test macro recursion limits
+#[test]
+#[ignore = "Runtime limitation: macro recursion limits not implemented - needs [RUNTIME-313] ticket"]
+fn test_sqlite_460_macro_recursion() {
+    let result = execute_program(r#"
+        macro_rules! recurse {
+            (0) => { 1 };
+            ($n:expr) => { recurse!($n - 1) }
+        }
+        let x = recurse!(5);
+    "#);
+    assert!(result.is_ok(), "Macro recursion limits should work");
+}
+
+// ============================================================================
+// Category 85: Unsafe Rust Advanced
+// ============================================================================
+
+/// Test raw pointer arithmetic
+#[test]
+#[ignore = "Runtime limitation: raw pointer arithmetic not implemented - needs [RUNTIME-314] ticket"]
+fn test_sqlite_461_raw_pointer_arithmetic() {
+    let result = execute_program(r#"
+        unsafe {
+            let arr = [1, 2, 3, 4, 5];
+            let ptr = arr.as_ptr();
+            let second = ptr.offset(1);
+        }
+    "#);
+    assert!(result.is_ok(), "Raw pointer arithmetic should work");
+}
+
+/// Test union types
+#[test]
+#[ignore = "Runtime limitation: union types not implemented - needs [RUNTIME-315] ticket"]
+fn test_sqlite_462_union() {
+    let result = execute_program(r#"
+        union MyUnion {
+            i: i32,
+            f: f32,
+        }
+        let u = MyUnion { i: 42 };
+    "#);
+    assert!(result.is_ok(), "Union types should work");
+}
+
+/// Test inline assembly constraints
+#[test]
+#[ignore = "Runtime limitation: inline assembly constraints not implemented - needs [RUNTIME-316] ticket"]
+fn test_sqlite_463_asm_constraints() {
+    let result = execute_program(r#"
+        unsafe {
+            let x: u64;
+            asm!("mov {}, 5", out(reg) x);
+        }
+    "#);
+    assert!(result.is_ok(), "Inline assembly constraints should work");
+}
+
+/// Test FFI variadic functions
+#[test]
+#[ignore = "Runtime limitation: FFI variadic functions not implemented - needs [RUNTIME-317] ticket"]
+fn test_sqlite_464_ffi_variadic() {
+    let result = execute_program(r#"
+        extern "C" {
+            fun printf(format: *const u8, ...) -> i32;
+        }
+    "#);
+    assert!(result.is_ok(), "FFI variadic functions should work");
+}
+
+/// Test unsafe trait implementation
+#[test]
+#[ignore = "Runtime limitation: unsafe trait implementation not implemented - needs [RUNTIME-318] ticket"]
+fn test_sqlite_465_unsafe_trait_impl() {
+    let result = execute_program(r#"
+        unsafe trait UnsafeTrait {}
+        unsafe impl UnsafeTrait for i32 {}
+    "#);
+    assert!(result.is_ok(), "Unsafe trait implementation should work");
+}
+
+// ============================================================================
+// Category 86: Async/Await Advanced
+// ============================================================================
+
+/// Test async closures
+#[test]
+#[ignore = "Runtime limitation: async closures not implemented - needs [RUNTIME-319] ticket"]
+fn test_sqlite_466_async_closure() {
+    let result = execute_program(r#"
+        let f = async || { 42 };
+        let result = f().await;
+    "#);
+    assert!(result.is_ok(), "Async closures should work");
+}
+
+/// Test async trait methods
+#[test]
+#[ignore = "Runtime limitation: async trait methods not implemented - needs [RUNTIME-320] ticket"]
+fn test_sqlite_467_async_trait_method() {
+    let result = execute_program(r#"
+        trait AsyncOps {
+            async fun fetch(&self) -> i32;
+        }
+    "#);
+    assert!(result.is_ok(), "Async trait methods should work");
+}
+
+/// Test async drop
+#[test]
+#[ignore = "Runtime limitation: async drop not implemented - needs [RUNTIME-321] ticket"]
+fn test_sqlite_468_async_drop() {
+    let result = execute_program(r#"
+        struct Resource;
+        impl AsyncDrop for Resource {
+            async fun drop(&mut self) {}
+        }
+    "#);
+    assert!(result.is_ok(), "Async drop should work");
+}
+
+/// Test async generators
+#[test]
+#[ignore = "Runtime limitation: async generators not implemented - needs [RUNTIME-322] ticket"]
+fn test_sqlite_469_async_generator() {
+    let result = execute_program(r#"
+        async gen fun count() -> i32 {
+            yield 1;
+            yield 2;
+            yield 3;
+        }
+    "#);
+    assert!(result.is_ok(), "Async generators should work");
+}
+
+/// Test async recursion
+#[test]
+#[ignore = "Runtime limitation: async recursion not implemented - needs [RUNTIME-323] ticket"]
+fn test_sqlite_470_async_recursion() {
+    let result = execute_program(r#"
+        async fun factorial(n: u64) -> u64 {
+            if n == 0 { 1 } else { n * factorial(n - 1).await }
+        }
+    "#);
+    assert!(result.is_ok(), "Async recursion should work");
+}
+
+// ============================================================================
+// Category 87: Pattern Matching Edge Cases
+// ============================================================================
+
+/// Test or-patterns in match
+#[test]
+#[ignore = "Runtime limitation: or-patterns not implemented - needs [RUNTIME-324] ticket"]
+fn test_sqlite_471_or_pattern() {
+    let result = execute_program(r#"
+        let x = 1;
+        match x {
+            1 | 2 | 3 => "small",
+            _ => "large"
+        }
+    "#);
+    assert!(result.is_ok(), "Or-patterns should work");
+}
+
+/// Test at-patterns with guards
+#[test]
+#[ignore = "Runtime limitation: at-patterns with guards not implemented - needs [RUNTIME-325] ticket"]
+fn test_sqlite_472_at_pattern_guard() {
+    let result = execute_program(r#"
+        match Some(5) {
+            Some(n @ 1..=10) if n % 2 == 0 => "even",
+            _ => "other"
+        }
+    "#);
+    assert!(result.is_ok(), "At-patterns with guards should work");
+}
+
+/// Test box patterns
+#[test]
+#[ignore = "Runtime limitation: box patterns not implemented - needs [RUNTIME-326] ticket"]
+fn test_sqlite_473_box_pattern() {
+    let result = execute_program(r#"
+        let boxed = Box::new(42);
+        match boxed {
+            box 42 => "matched",
+            _ => "other"
+        }
+    "#);
+    assert!(result.is_ok(), "Box patterns should work");
+}
+
+/// Test slice patterns advanced
+#[test]
+#[ignore = "Runtime limitation: slice patterns advanced not implemented - needs [RUNTIME-327] ticket"]
+fn test_sqlite_474_slice_pattern_advanced() {
+    let result = execute_program(r#"
+        match &[1, 2, 3, 4, 5][..] {
+            [first, .., last] => (first, last),
+            _ => (0, 0)
+        }
+    "#);
+    assert!(result.is_ok(), "Advanced slice patterns should work");
+}
+
+/// Test struct pattern with rest
+#[test]
+#[ignore = "Runtime limitation: struct pattern with rest not implemented - needs [RUNTIME-328] ticket"]
+fn test_sqlite_475_struct_pattern_rest() {
+    let result = execute_program(r#"
+        struct Point { x: i32, y: i32, z: i32 }
+        let p = Point { x: 1, y: 2, z: 3 };
+        match p {
+            Point { x, .. } => x
+        }
+    "#);
+    assert!(result.is_ok(), "Struct pattern with rest should work");
+}
+
+// ============================================================================
+// Category 88: Error Handling Advanced
+// ============================================================================
+
+/// Test try blocks
+#[test]
+#[ignore = "Runtime limitation: try blocks not implemented - needs [RUNTIME-329] ticket"]
+fn test_sqlite_476_try_block() {
+    let result = execute_program(r#"
+        let result: Result<i32, _> = try {
+            let x = Some(5)?;
+            x * 2
+        };
+    "#);
+    assert!(result.is_ok(), "Try blocks should work");
+}
+
+/// Test custom error types with question mark
+#[test]
+#[ignore = "Runtime limitation: custom error types with question mark not implemented - needs [RUNTIME-330] ticket"]
+fn test_sqlite_477_custom_error_try() {
+    let result = execute_program(r#"
+        enum MyError { A, B }
+        fun foo() -> Result<i32, MyError> {
+            let x = bar()?;
+            Ok(x + 1)
+        }
+    "#);
+    assert!(result.is_ok(), "Custom error types with ? should work");
+}
+
+/// Test error trait implementation
+#[test]
+#[ignore = "Runtime limitation: error trait implementation not implemented - needs [RUNTIME-331] ticket"]
+fn test_sqlite_478_error_trait() {
+    let result = execute_program(r#"
+        struct MyError;
+        impl std::error::Error for MyError {}
+    "#);
+    assert!(result.is_ok(), "Error trait implementation should work");
+}
+
+/// Test result combinators chaining
+#[test]
+#[ignore = "Runtime limitation: result combinators chaining not implemented - needs [RUNTIME-332] ticket"]
+fn test_sqlite_479_result_combinators() {
+    let result = execute_program(r#"
+        let x: Result<i32, _> = Ok(5);
+        let result = x.map(|n| n * 2).and_then(|n| Ok(n + 1));
+    "#);
+    assert!(result.is_ok(), "Result combinators chaining should work");
+}
+
+/// Test panic recovery mechanisms
+#[test]
+#[ignore = "Runtime limitation: panic recovery not implemented - needs [RUNTIME-333] ticket"]
+fn test_sqlite_480_panic_recovery() {
+    let result = execute_program(r#"
+        use std::panic::catch_unwind;
+        let result = catch_unwind(|| { panic!("test"); });
+    "#);
+    assert!(result.is_ok(), "Panic recovery should work");
+}
+
+// ============================================================================
+// Category 89: Interior Mutability Patterns
+// ============================================================================
+
+/// Test Cell usage patterns
+#[test]
+#[ignore = "Runtime limitation: Cell usage patterns not implemented - needs [RUNTIME-334] ticket"]
+fn test_sqlite_481_cell_pattern() {
+    let result = execute_program(r#"
+        use std::cell::Cell;
+        let x = Cell::new(5);
+        x.set(10);
+        let val = x.get();
+    "#);
+    assert!(result.is_ok(), "Cell usage patterns should work");
+}
+
+/// Test RefCell borrow checking
+#[test]
+#[ignore = "Runtime limitation: RefCell borrow checking not implemented - needs [RUNTIME-335] ticket"]
+fn test_sqlite_482_refcell_borrow() {
+    let result = execute_program(r#"
+        use std::cell::RefCell;
+        let x = RefCell::new(5);
+        *x.borrow_mut() += 1;
+    "#);
+    assert!(result.is_ok(), "RefCell borrow checking should work");
+}
+
+/// Test Mutex interior mutability
+#[test]
+#[ignore = "Runtime limitation: Mutex interior mutability not implemented - needs [RUNTIME-336] ticket"]
+fn test_sqlite_483_mutex_interior() {
+    let result = execute_program(r#"
+        use std::sync::Mutex;
+        let x = Mutex::new(5);
+        *x.lock().unwrap() += 1;
+    "#);
+    assert!(result.is_ok(), "Mutex interior mutability should work");
+}
+
+/// Test RwLock patterns
+#[test]
+#[ignore = "Runtime limitation: RwLock patterns not implemented - needs [RUNTIME-337] ticket"]
+fn test_sqlite_484_rwlock_pattern() {
+    let result = execute_program(r#"
+        use std::sync::RwLock;
+        let x = RwLock::new(5);
+        let r = x.read().unwrap();
+    "#);
+    assert!(result.is_ok(), "RwLock patterns should work");
+}
+
+/// Test atomic operations
+#[test]
+#[ignore = "Runtime limitation: atomic operations not implemented - needs [RUNTIME-338] ticket"]
+fn test_sqlite_485_atomic_ops() {
+    let result = execute_program(r#"
+        use std::sync::atomic::{AtomicI32, Ordering};
+        let x = AtomicI32::new(5);
+        x.fetch_add(1, Ordering::SeqCst);
+    "#);
+    assert!(result.is_ok(), "Atomic operations should work");
+}
+
+// ============================================================================
+// Category 90: Advanced Trait System
+// ============================================================================
+
+/// Test trait alias
+#[test]
+#[ignore = "Runtime limitation: trait alias not implemented - needs [RUNTIME-339] ticket"]
+fn test_sqlite_486_trait_alias() {
+    let result = execute_program(r#"
+        trait Trait1 {}
+        trait Trait2 {}
+        trait Combined = Trait1 + Trait2;
+    "#);
+    assert!(result.is_ok(), "Trait alias should work");
+}
+
+/// Test negative trait bounds
+#[test]
+#[ignore = "Runtime limitation: negative trait bounds not implemented - needs [RUNTIME-340] ticket"]
+fn test_sqlite_487_negative_bounds() {
+    let result = execute_program(r#"
+        fun foo<T: !Send>(x: T) {}
+    "#);
+    assert!(result.is_ok(), "Negative trait bounds should work");
+}
+
+/// Test auto traits
+#[test]
+#[ignore = "Runtime limitation: auto traits not implemented - needs [RUNTIME-341] ticket"]
+fn test_sqlite_488_auto_trait() {
+    let result = execute_program(r#"
+        auto trait MyAuto {}
+        struct MyStruct;
+    "#);
+    assert!(result.is_ok(), "Auto traits should work");
+}
+
+/// Test trait object upcasting
+#[test]
+#[ignore = "Runtime limitation: trait object upcasting not implemented - needs [RUNTIME-342] ticket"]
+fn test_sqlite_489_trait_upcast() {
+    let result = execute_program(r#"
+        trait Base {}
+        trait Derived: Base {}
+        let x: Box<dyn Derived> = Box::new(MyType);
+        let y: Box<dyn Base> = x;
+    "#);
+    assert!(result.is_ok(), "Trait object upcasting should work");
+}
+
+/// Test dyn trait multiple bounds
+#[test]
+#[ignore = "Runtime limitation: dyn trait multiple bounds not implemented - needs [RUNTIME-343] ticket"]
+fn test_sqlite_490_dyn_multiple_bounds() {
+    let result = execute_program(r#"
+        trait Trait1 {}
+        trait Trait2 {}
+        let x: Box<dyn Trait1 + Trait2 + Send>;
+    "#);
+    assert!(result.is_ok(), "Dyn trait multiple bounds should work");
+}
+
+// ============================================================================
 // Helper Functions
 // ============================================================================
 

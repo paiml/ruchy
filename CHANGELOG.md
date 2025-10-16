@@ -5,6 +5,14 @@ All notable changes to the Ruchy programming language will be documented in this
 ## [Unreleased]
 
 ### Added
+- **[SQLITE-TEST-001] Harness 4 Ninth Expansion - 400 Test Milestone (0.8% Complete)**: Added 50 new advanced runtime anomaly tests (350→400, 14.3% increase)
+  - Test Pass Rate: 58/400 passing (14.5%)
+  - New Categories (10): Const generics advanced (const generic arrays, operations, trait bounds, default values, expressions), Type-level programming (type-level booleans, natural numbers, lists, computation, equality), Advanced lifetime patterns (elision advanced, bounds in structs, HRTB, subtyping, static lifetime), Procedural macros advanced (derive custom attributes, attribute on modules, macro hygiene, expansion order, recursion limits), Unsafe Rust advanced (raw pointer arithmetic, union types, inline assembly constraints, FFI variadic functions, unsafe trait implementation), Async/await advanced (async closures, async trait methods, async drop, async generators, async recursion), Pattern matching edge cases (or-patterns, at-patterns with guards, box patterns, slice patterns advanced, struct pattern with rest), Error handling advanced (try blocks, custom error types with ?, error trait, result combinators, panic recovery), Interior mutability patterns (Cell, RefCell, Mutex, RwLock, atomics), Advanced trait system (trait alias, negative bounds, auto traits, trait object upcasting, dyn multiple bounds)
+  - Defensive Testing: 50 new runtime limitations (RUNTIME-294 through RUNTIME-343)
+  - Total Limitations: 342 documented (RUNTIME-001 fixed)
+  - Framework Total: 913 tests across 4 harnesses
+  - Progress: 400/50,000 tests (0.80% of Harness 4 complete)
+  - Time: 14.5h / 60h estimated
 - **[SQLITE-TEST-001] Harness 1 Tenth Expansion - 550 Test Milestone**: Added 50 new parser grammar tests (500→550, 10% increase)
   - Test Pass Rate: 389/550 passing (70.7%)
   - New Categories (10): Field/method syntax (field access, nested fields, method calls, chaining), If let/while let (if let patterns, if let else, while let, nested if let), Array/slice expressions (array literal, array repeat, index, slice range, slice from), Binary/unary operators (arithmetic, comparison, bitwise, shift, unary), Assignment/compound assignment (simple assign, +=, -=, *=, /=), Return/break values (return value, return expr, break value, break label value, implicit return), Underscore/placeholder (underscore pattern, in match, type placeholder, in tuple, rest pattern), Question mark operator (try operator, chained try, in expressions, field access, indexing), Semicolon rules (statement semi, expr no semi, block last expr, block last stmt, if no semi), Comment syntax (line comment, block comment, nested block comment, doc comment, module doc comment)
