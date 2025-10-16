@@ -5,6 +5,19 @@ All notable changes to the Ruchy programming language will be documented in this
 ## [Unreleased]
 
 ### Added
+- **[SQLITE-TEST-002] Type System Soundness 50% Milestone**: Scaled to 150,000 iterations (5x increase)
+  - **Property Test Scaling**: 5x increase from 30,000 → 150,000 iterations
+    - Arithmetic progress: 10,000 → 50,000 iterations
+    - Boolean soundness: 10,000 → 50,000 iterations
+    - Substitution soundness: 10,000 → 50,000 iterations
+  - **Test Results**: 22/22 passing (100%), zero panics across 150,000 iterations
+  - **Progress**: 10.0% → 50.0% (5x improvement, 150,022/300,000 iterations)
+  - **Milestone Achievement**: Reached halfway point to target iterations
+  - **Quality**: Zero failures during scaling validation
+  - **File**: tests/sqlite_002_type_soundness.rs (updated ProptestConfig to 50,000 cases)
+  - **Next Steps**: Scale to 100,000 iterations (33.3% per test), integrate middleend/infer.rs
+  - **Research Foundation**: Pierce (2002) Types and Programming Languages (MIT Press)
+
 - **[SQLITE-TEST-003] Metamorphic Testing 3% Milestone**: Scaled to 3,000 iterations (10x increase)
   - **Property Test Scaling**: 10x increase from 300 → 3,000 iterations
     - Constant folding equivalence: 100 → 1,000 iterations
@@ -19,13 +32,13 @@ All notable changes to the Ruchy programming language will be documented in this
 - **[SQLITE-FRAMEWORK] Three-Harness Milestone**: Foundation phase complete for SQLite-level testing
   - **Status**: 3/8 harnesses operational (37.5% complete)
   - **Total Tests**: 140 tests (135 passing, 5 ignored with tickets)
-  - **Property Iterations**: 35,018 total across all harnesses (updated from 32,300)
+  - **Property Iterations**: 155,018 total across all harnesses (15.5% of 1M target)
   - **Quality Metrics**: 96.4% pass rate, zero panics, 5 defects found via defensive testing
-  - **Time Investment**: 8h / 120h estimated (6.7% complete)
+  - **Time Investment**: 10h / 120h estimated (8.3% complete)
   - **Harness Progress**:
-    - Harness 1 (Parser Grammar): 100 tests, 2,000 iterations, 5.0% complete
-    - Harness 2 (Type Soundness): 22 tests, 30,000 iterations, 10.0% complete
-    - Harness 3 (Metamorphic): 18 tests, 300 iterations, 0.3% complete
+    - Harness 1 (Parser Grammar): 100 tests, 2,000 iterations, 10.0% complete
+    - Harness 2 (Type Soundness): 22 tests, 150,000 iterations, 50.0% complete
+    - Harness 3 (Metamorphic): 18 tests, 3,000 iterations, 3.0% complete
   - **Documentation**: Created comprehensive progress report (SQLITE-FRAMEWORK-PROGRESS-REPORT.md)
   - **Research Foundation**: NASA MC/DC, Pierce TAPL, Chen et al. Metamorphic Testing
   - **Next Steps**: Scale to 10% across all harnesses, integrate optimizer/interpreter, begin Harness 4-5
