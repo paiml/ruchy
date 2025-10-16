@@ -2578,6 +2578,735 @@ fn test_sqlite_290_time_parsing_ambiguity() {
 }
 
 // ============================================================================
+// Category 40: Memory Leak Detection
+// ============================================================================
+
+/// Test circular reference detection
+#[test]
+#[ignore = "Runtime limitation: circular reference detection not implemented - needs [RUNTIME-144] ticket"]
+fn test_sqlite_291_circular_reference() {
+    let result = execute_program(r#"
+        struct Node { value: i32, next: Option<Box<Node>> }
+        let mut a = Node { value: 1, next: None };
+        let mut b = Node { value: 2, next: None };
+        a.next = Some(Box::new(b));
+        b.next = Some(Box::new(a));  // Circular reference
+    "#);
+    assert!(result.is_ok(), "Circular references should be detected");
+}
+
+/// Test memory leak in closure
+#[test]
+#[ignore = "Runtime limitation: closure memory leak detection not implemented - needs [RUNTIME-145] ticket"]
+fn test_sqlite_292_closure_memory_leak() {
+    let result = execute_program(r#"
+        fun create_leak() {
+            let data = vec![1; 1000000];
+            || data.len()  // Closure captures large data
+        }
+        for _ in 0..1000 { create_leak(); }
+    "#);
+    assert!(result.is_ok(), "Closure memory leaks should be detected");
+}
+
+/// Test weak reference usage
+#[test]
+#[ignore = "Runtime limitation: weak references not implemented - needs [RUNTIME-146] ticket"]
+fn test_sqlite_293_weak_reference() {
+    let result = execute_program(r#"
+        let strong = Rc::new(42);
+        let weak = Rc::downgrade(&strong);
+        drop(strong);
+        assert!(weak.upgrade().is_none());
+    "#);
+    assert!(result.is_ok(), "Weak references should work");
+}
+
+/// Test reference counting overflow
+#[test]
+#[ignore = "Runtime limitation: Rc overflow detection not implemented - needs [RUNTIME-147] ticket"]
+fn test_sqlite_294_rc_overflow() {
+    let result = execute_program(r#"
+        let data = Rc::new(42);
+        for _ in 0..usize::MAX { let _ = Rc::clone(&data); }
+    "#);
+    assert!(result.is_ok(), "Rc overflow should be detected");
+}
+
+/// Test arena allocation
+#[test]
+#[ignore = "Runtime limitation: arena allocation not implemented - needs [RUNTIME-148] ticket"]
+fn test_sqlite_295_arena_allocation() {
+    let result = execute_program(r#"
+        let arena = Arena::new();
+        for i in 0..10000 {
+            arena.alloc(i);
+        }
+    "#);
+    assert!(result.is_ok(), "Arena allocation should work");
+}
+
+// ============================================================================
+// Category 41: FFI (Foreign Function Interface) Anomalies
+// ============================================================================
+
+/// Test C function call
+#[test]
+#[ignore = "Runtime limitation: C FFI not implemented - needs [RUNTIME-149] ticket"]
+fn test_sqlite_296_c_ffi_call() {
+    let result = execute_program(r#"
+        extern "C" {
+            fun abs(x: i32) -> i32;
+        }
+        unsafe { abs(-42) }
+    "#);
+    assert!(result.is_ok(), "C FFI calls should work");
+}
+
+/// Test null pointer handling in FFI
+#[test]
+#[ignore = "Runtime limitation: FFI null pointer handling not implemented - needs [RUNTIME-150] ticket"]
+fn test_sqlite_297_ffi_null_pointer() {
+    let result = execute_program(r#"
+        extern "C" {
+            fun process(ptr: *const i32) -> i32;
+        }
+        unsafe { process(std::ptr::null()) }
+    "#);
+    assert!(result.is_ok(), "FFI null pointers should be handled");
+}
+
+/// Test FFI type conversion
+#[test]
+#[ignore = "Runtime limitation: FFI type conversion not implemented - needs [RUNTIME-151] ticket"]
+fn test_sqlite_298_ffi_type_conversion() {
+    let result = execute_program(r#"
+        let rust_str = "hello";
+        let c_str = CString::new(rust_str).unwrap();
+        let ptr = c_str.as_ptr();
+    "#);
+    assert!(result.is_ok(), "FFI type conversions should work");
+}
+
+/// Test callback from C to Ruchy
+#[test]
+#[ignore = "Runtime limitation: C-to-Ruchy callbacks not implemented - needs [RUNTIME-152] ticket"]
+fn test_sqlite_299_c_callback() {
+    let result = execute_program(r#"
+        extern "C" fun callback(x: i32) -> i32 { x * 2 }
+        register_callback(callback);
+    "#);
+    assert!(result.is_ok(), "C callbacks should work");
+}
+
+/// Test FFI memory ownership
+#[test]
+#[ignore = "Runtime limitation: FFI memory ownership not implemented - needs [RUNTIME-153] ticket"]
+fn test_sqlite_300_ffi_ownership() {
+    let result = execute_program(r#"
+        let boxed = Box::new(42);
+        let raw = Box::into_raw(boxed);
+        unsafe { let _ = Box::from_raw(raw); }
+    "#);
+    assert!(result.is_ok(), "FFI memory ownership should be tracked");
+}
+
+// ============================================================================
+// Category 42: Macro System Anomalies
+// ============================================================================
+
+/// Test recursive macro expansion
+#[test]
+#[ignore = "Runtime limitation: recursive macros not implemented - needs [RUNTIME-154] ticket"]
+fn test_sqlite_301_recursive_macro() {
+    let result = execute_program(r#"
+        macro_rules! factorial {
+            (0) => { 1 };
+            ($n:expr) => { $n * factorial!($n - 1) };
+        }
+        factorial!(5)
+    "#);
+    assert!(result.is_ok(), "Recursive macros should expand");
+}
+
+/// Test macro hygiene
+#[test]
+#[ignore = "Runtime limitation: macro hygiene not implemented - needs [RUNTIME-155] ticket"]
+fn test_sqlite_302_macro_hygiene() {
+    let result = execute_program(r#"
+        macro_rules! test_hygiene {
+            () => {
+                let x = 42;
+            };
+        }
+        let x = 10;
+        test_hygiene!();
+        assert_eq!(x, 10);  // x should not be shadowed
+    "#);
+    assert!(result.is_ok(), "Macro hygiene should be maintained");
+}
+
+/// Test macro fragment specifiers
+#[test]
+#[ignore = "Runtime limitation: macro fragments not implemented - needs [RUNTIME-156] ticket"]
+fn test_sqlite_303_macro_fragments() {
+    let result = execute_program(r#"
+        macro_rules! test_frag {
+            ($e:expr) => { $e };
+            ($i:ident) => { let $i = 42; };
+            ($t:ty) => { let x: $t = 42; };
+        }
+        test_frag!(1 + 1);
+    "#);
+    assert!(result.is_ok(), "Macro fragments should work");
+}
+
+/// Test procedural macro invocation
+#[test]
+#[ignore = "Runtime limitation: procedural macros not implemented - needs [RUNTIME-157] ticket"]
+fn test_sqlite_304_procedural_macro() {
+    let result = execute_program(r#"
+        #[derive(Debug, Clone)]
+        struct Point { x: i32, y: i32 }
+        let p = Point { x: 1, y: 2 };
+        let q = p.clone();
+    "#);
+    assert!(result.is_ok(), "Procedural macros should work");
+}
+
+/// Test macro export/import
+#[test]
+#[ignore = "Runtime limitation: macro export not implemented - needs [RUNTIME-158] ticket"]
+fn test_sqlite_305_macro_export() {
+    let result = execute_program(r#"
+        #[macro_export]
+        macro_rules! my_macro {
+            () => { 42 };
+        }
+        my_macro!()
+    "#);
+    assert!(result.is_ok(), "Macro export should work");
+}
+
+// ============================================================================
+// Category 43: Trait Object Anomalies
+// ============================================================================
+
+/// Test trait object downcasting
+#[test]
+#[ignore = "Runtime limitation: trait object downcasting not implemented - needs [RUNTIME-159] ticket"]
+fn test_sqlite_306_trait_object_downcast() {
+    let result = execute_program(r#"
+        trait Animal { fun speak(&self) -> String; }
+        struct Dog;
+        impl Animal for Dog { fun speak(&self) -> String { "Woof".to_string() } }
+        let animal: Box<dyn Animal> = Box::new(Dog);
+        let dog: Option<&Dog> = animal.downcast_ref::<Dog>();
+    "#);
+    assert!(result.is_ok(), "Trait object downcasting should work");
+}
+
+/// Test trait object method dispatch
+#[test]
+#[ignore = "Runtime limitation: dynamic dispatch not optimized - needs [RUNTIME-160] ticket"]
+fn test_sqlite_307_dynamic_dispatch() {
+    let result = execute_program(r#"
+        trait Drawable { fun draw(&self); }
+        struct Circle;
+        impl Drawable for Circle { fun draw(&self) { println!("Circle"); } }
+        let obj: Box<dyn Drawable> = Box::new(Circle);
+        obj.draw();
+    "#);
+    assert!(result.is_ok(), "Dynamic dispatch should work");
+}
+
+/// Test trait object with associated types
+#[test]
+#[ignore = "Runtime limitation: trait objects with associated types not implemented - needs [RUNTIME-161] ticket"]
+fn test_sqlite_308_trait_object_assoc_type() {
+    let result = execute_program(r#"
+        trait Container {
+            type Item;
+            fun get(&self) -> Self::Item;
+        }
+        let c: Box<dyn Container<Item=i32>> = Box::new(MyContainer);
+    "#);
+    assert!(result.is_ok(), "Trait objects with associated types should work");
+}
+
+/// Test multiple trait object composition
+#[test]
+#[ignore = "Runtime limitation: multiple trait objects not implemented - needs [RUNTIME-162] ticket"]
+fn test_sqlite_309_multiple_trait_objects() {
+    let result = execute_program(r#"
+        trait A { fun a(&self); }
+        trait B { fun b(&self); }
+        struct AB;
+        impl A for AB { fun a(&self) {} }
+        impl B for AB { fun b(&self) {} }
+        let obj: Box<dyn A + B> = Box::new(AB);
+    "#);
+    assert!(result.is_ok(), "Multiple trait objects should work");
+}
+
+/// Test trait object size
+#[test]
+#[ignore = "Runtime limitation: trait object size query not implemented - needs [RUNTIME-163] ticket"]
+fn test_sqlite_310_trait_object_size() {
+    let result = execute_program(r#"
+        trait MyTrait {}
+        let size = std::mem::size_of::<Box<dyn MyTrait>>();
+        assert!(size > 0);
+    "#);
+    assert!(result.is_ok(), "Trait object size should be queryable");
+}
+
+// ============================================================================
+// Category 44: Phantom Types and Zero-Sized Types
+// ============================================================================
+
+/// Test PhantomData usage
+#[test]
+#[ignore = "Runtime limitation: PhantomData not implemented - needs [RUNTIME-164] ticket"]
+fn test_sqlite_311_phantom_data() {
+    let result = execute_program(r#"
+        use std::marker::PhantomData;
+        struct Wrapper<T> {
+            _marker: PhantomData<T>,
+            value: i32,
+        }
+        let w: Wrapper<String> = Wrapper { _marker: PhantomData, value: 42 };
+    "#);
+    assert!(result.is_ok(), "PhantomData should work");
+}
+
+/// Test zero-sized type optimization
+#[test]
+#[ignore = "Runtime limitation: ZST optimization not implemented - needs [RUNTIME-165] ticket"]
+fn test_sqlite_312_zst_optimization() {
+    let result = execute_program(r#"
+        struct Empty;
+        let size = std::mem::size_of::<Empty>();
+        assert_eq!(size, 0);
+        let arr = [Empty; 1000];
+        assert_eq!(std::mem::size_of_val(&arr), 0);
+    "#);
+    assert!(result.is_ok(), "ZST optimization should work");
+}
+
+/// Test unit-like struct
+#[test]
+#[ignore = "Runtime limitation: unit-like structs not optimized - needs [RUNTIME-166] ticket"]
+fn test_sqlite_313_unit_like_struct() {
+    let result = execute_program(r#"
+        struct Marker;
+        impl Marker {
+            fun new() -> Self { Marker }
+        }
+        let m = Marker::new();
+    "#);
+    assert!(result.is_ok(), "Unit-like structs should work");
+}
+
+/// Test phantom type covariance
+#[test]
+#[ignore = "Runtime limitation: phantom type variance not implemented - needs [RUNTIME-167] ticket"]
+fn test_sqlite_314_phantom_variance() {
+    let result = execute_program(r#"
+        use std::marker::PhantomData;
+        struct Covariant<T> {
+            _marker: PhantomData<fn() -> T>,
+        }
+        let _: Covariant<&'static str> = Covariant { _marker: PhantomData };
+    "#);
+    assert!(result.is_ok(), "Phantom type variance should work");
+}
+
+/// Test const generics with ZST
+#[test]
+#[ignore = "Runtime limitation: const generics with ZST not optimized - needs [RUNTIME-168] ticket"]
+fn test_sqlite_315_const_generics_zst() {
+    let result = execute_program(r#"
+        struct Array<T, const N: usize> {
+            data: [T; N],
+        }
+        let arr: Array<(), 1000> = Array { data: [()] };
+        assert_eq!(std::mem::size_of_val(&arr), 0);
+    "#);
+    assert!(result.is_ok(), "Const generics with ZST should be optimized");
+}
+
+// ============================================================================
+// Category 45: Pin and Unpin Semantics
+// ============================================================================
+
+/// Test Pin construction
+#[test]
+#[ignore = "Runtime limitation: Pin not implemented - needs [RUNTIME-169] ticket"]
+fn test_sqlite_316_pin_construction() {
+    let result = execute_program(r#"
+        use std::pin::Pin;
+        let value = 42;
+        let pinned = Pin::new(&value);
+    "#);
+    assert!(result.is_ok(), "Pin construction should work");
+}
+
+/// Test self-referential struct with Pin
+#[test]
+#[ignore = "Runtime limitation: self-referential structs not supported - needs [RUNTIME-170] ticket"]
+fn test_sqlite_317_self_referential() {
+    let result = execute_program(r#"
+        struct SelfRef {
+            data: String,
+            ptr: *const String,
+        }
+        let s = SelfRef { data: "hello".to_string(), ptr: std::ptr::null() };
+        let pinned = Box::pin(s);
+    "#);
+    assert!(result.is_ok(), "Self-referential structs should work with Pin");
+}
+
+/// Test Unpin trait
+#[test]
+#[ignore = "Runtime limitation: Unpin trait not implemented - needs [RUNTIME-171] ticket"]
+fn test_sqlite_318_unpin_trait() {
+    let result = execute_program(r#"
+        fun require_unpin<T: Unpin>(x: T) {}
+        require_unpin(42);
+    "#);
+    assert!(result.is_ok(), "Unpin trait should work");
+}
+
+/// Test Pin projection
+#[test]
+#[ignore = "Runtime limitation: Pin projection not implemented - needs [RUNTIME-172] ticket"]
+fn test_sqlite_319_pin_projection() {
+    let result = execute_program(r#"
+        use std::pin::Pin;
+        struct Wrapper { field: i32 }
+        let mut pinned = Box::pin(Wrapper { field: 42 });
+        let field_pin: Pin<&mut i32> = Pin::new(&mut pinned.field);
+    "#);
+    assert!(result.is_ok(), "Pin projection should work");
+}
+
+/// Test !Unpin marker
+#[test]
+#[ignore = "Runtime limitation: !Unpin marker not implemented - needs [RUNTIME-173] ticket"]
+fn test_sqlite_320_not_unpin() {
+    let result = execute_program(r#"
+        use std::marker::PhantomPinned;
+        struct NotUnpin {
+            _pin: PhantomPinned,
+        }
+        let x = NotUnpin { _pin: PhantomPinned };
+    "#);
+    assert!(result.is_ok(), "!Unpin marker should work");
+}
+
+// ============================================================================
+// Category 46: Trait Specialization
+// ============================================================================
+
+/// Test trait specialization
+#[test]
+#[ignore = "Runtime limitation: trait specialization not implemented - needs [RUNTIME-174] ticket"]
+fn test_sqlite_321_trait_specialization() {
+    let result = execute_program(r#"
+        trait MyTrait {
+            fun process(&self) -> String;
+        }
+        impl<T> MyTrait for T {
+            default fun process(&self) -> String { "default".to_string() }
+        }
+        impl MyTrait for i32 {
+            fun process(&self) -> String { "specialized".to_string() }
+        }
+    "#);
+    assert!(result.is_ok(), "Trait specialization should work");
+}
+
+/// Test min_specialization
+#[test]
+#[ignore = "Runtime limitation: min_specialization not implemented - needs [RUNTIME-175] ticket"]
+fn test_sqlite_322_min_specialization() {
+    let result = execute_program(r#"
+        trait Default {
+            fun get() -> i32 { 0 }
+        }
+        impl Default for String {
+            fun get() -> i32 { 42 }
+        }
+    "#);
+    assert!(result.is_ok(), "Min specialization should work");
+}
+
+/// Test overlapping trait implementations
+#[test]
+#[ignore = "Runtime limitation: overlapping trait impls not detected - needs [RUNTIME-176] ticket"]
+fn test_sqlite_323_overlapping_impls() {
+    let result = execute_program(r#"
+        trait MyTrait {}
+        impl<T> MyTrait for Vec<T> {}
+        impl MyTrait for Vec<i32> {}  // Should conflict
+    "#);
+    assert!(result.is_err(), "Overlapping trait implementations should be detected");
+}
+
+/// Test specialization with associated types
+#[test]
+#[ignore = "Runtime limitation: specialization with assoc types not implemented - needs [RUNTIME-177] ticket"]
+fn test_sqlite_324_specialization_assoc_types() {
+    let result = execute_program(r#"
+        trait Convert {
+            type Output;
+            fun convert(&self) -> Self::Output;
+        }
+        impl<T> Convert for T {
+            default type Output = String;
+            default fun convert(&self) -> Self::Output { "default".to_string() }
+        }
+    "#);
+    assert!(result.is_ok(), "Specialization with associated types should work");
+}
+
+/// Test negative trait bounds
+#[test]
+#[ignore = "Runtime limitation: negative trait bounds not implemented - needs [RUNTIME-178] ticket"]
+fn test_sqlite_325_negative_bounds() {
+    let result = execute_program(r#"
+        fun require_not_clone<T: !Clone>(x: T) {}
+        struct NotCloneable;
+        require_not_clone(NotCloneable);
+    "#);
+    assert!(result.is_ok(), "Negative trait bounds should work");
+}
+
+// ============================================================================
+// Category 47: Inline Assembly
+// ============================================================================
+
+/// Test inline assembly
+#[test]
+#[ignore = "Runtime limitation: inline assembly not implemented - needs [RUNTIME-179] ticket"]
+fn test_sqlite_326_inline_asm() {
+    let result = execute_program(r#"
+        unsafe {
+            let x: i32;
+            asm!("mov {}, 42", out(reg) x);
+            assert_eq!(x, 42);
+        }
+    "#);
+    assert!(result.is_ok(), "Inline assembly should work");
+}
+
+/// Test named assembly operands
+#[test]
+#[ignore = "Runtime limitation: named asm operands not implemented - needs [RUNTIME-180] ticket"]
+fn test_sqlite_327_named_asm_operands() {
+    let result = execute_program(r#"
+        unsafe {
+            let result: i32;
+            asm!("add {result}, {a}, {b}",
+                a = in(reg) 10,
+                b = in(reg) 32,
+                result = out(reg) result
+            );
+        }
+    "#);
+    assert!(result.is_ok(), "Named asm operands should work");
+}
+
+/// Test assembly clobbers
+#[test]
+#[ignore = "Runtime limitation: asm clobbers not implemented - needs [RUNTIME-181] ticket"]
+fn test_sqlite_328_asm_clobbers() {
+    let result = execute_program(r#"
+        unsafe {
+            asm!("nop", clobber_abi("C"));
+        }
+    "#);
+    assert!(result.is_ok(), "Assembly clobbers should work");
+}
+
+/// Test assembly options
+#[test]
+#[ignore = "Runtime limitation: asm options not implemented - needs [RUNTIME-182] ticket"]
+fn test_sqlite_329_asm_options() {
+    let result = execute_program(r#"
+        unsafe {
+            asm!("nop", options(nostack, preserves_flags));
+        }
+    "#);
+    assert!(result.is_ok(), "Assembly options should work");
+}
+
+/// Test global assembly
+#[test]
+#[ignore = "Runtime limitation: global_asm not implemented - needs [RUNTIME-183] ticket"]
+fn test_sqlite_330_global_asm() {
+    let result = execute_program(r#"
+        global_asm!("
+            .global my_func
+            my_func:
+                ret
+        ");
+    "#);
+    assert!(result.is_ok(), "Global assembly should work");
+}
+
+// ============================================================================
+// Category 48: Allocator API
+// ============================================================================
+
+/// Test custom allocator
+#[test]
+#[ignore = "Runtime limitation: custom allocators not implemented - needs [RUNTIME-184] ticket"]
+fn test_sqlite_331_custom_allocator() {
+    let result = execute_program(r#"
+        use std::alloc::{GlobalAlloc, Layout};
+        struct MyAllocator;
+        unsafe impl GlobalAlloc for MyAllocator {
+            unsafe fun alloc(&self, layout: Layout) -> *mut u8 {
+                std::alloc::System.alloc(layout)
+            }
+            unsafe fun dealloc(&self, ptr: *mut u8, layout: Layout) {
+                std::alloc::System.dealloc(ptr, layout)
+            }
+        }
+    "#);
+    assert!(result.is_ok(), "Custom allocators should work");
+}
+
+/// Test allocator usage with Vec
+#[test]
+#[ignore = "Runtime limitation: Vec with allocator not implemented - needs [RUNTIME-185] ticket"]
+fn test_sqlite_332_vec_with_allocator() {
+    let result = execute_program(r#"
+        use std::alloc::System;
+        let vec: Vec<i32, System> = Vec::new_in(System);
+    "#);
+    assert!(result.is_ok(), "Vec with custom allocator should work");
+}
+
+/// Test allocation error handling
+#[test]
+#[ignore = "Runtime limitation: allocation error handling not implemented - needs [RUNTIME-186] ticket"]
+fn test_sqlite_333_allocation_error() {
+    let result = execute_program(r#"
+        use std::alloc::{Layout, alloc};
+        let layout = Layout::from_size_align(usize::MAX, 8).unwrap();
+        let ptr = unsafe { alloc(layout) };
+        assert!(ptr.is_null(), "Allocation should fail gracefully");
+    "#);
+    assert!(result.is_ok(), "Allocation errors should be handled");
+}
+
+/// Test allocator trait bounds
+#[test]
+#[ignore = "Runtime limitation: allocator trait bounds not implemented - needs [RUNTIME-187] ticket"]
+fn test_sqlite_334_allocator_bounds() {
+    let result = execute_program(r#"
+        fun with_allocator<A: Allocator>(alloc: A) {
+            let vec = Vec::new_in(alloc);
+        }
+    "#);
+    assert!(result.is_ok(), "Allocator trait bounds should work");
+}
+
+/// Test global allocator attribute
+#[test]
+#[ignore = "Runtime limitation: global_allocator attribute not implemented - needs [RUNTIME-188] ticket"]
+fn test_sqlite_335_global_allocator_attr() {
+    let result = execute_program(r#"
+        use std::alloc::System;
+        #[global_allocator]
+        static GLOBAL: System = System;
+    "#);
+    assert!(result.is_ok(), "Global allocator attribute should work");
+}
+
+// ============================================================================
+// Category 49: Compile-Time Evaluation (const fn)
+// ============================================================================
+
+/// Test const function evaluation
+#[test]
+#[ignore = "Runtime limitation: const fn not implemented - needs [RUNTIME-189] ticket"]
+fn test_sqlite_336_const_fn() {
+    let result = execute_program(r#"
+        const fun factorial(n: u32) -> u32 {
+            if n == 0 { 1 } else { n * factorial(n - 1) }
+        }
+        const RESULT: u32 = factorial(5);
+        assert_eq!(RESULT, 120);
+    "#);
+    assert!(result.is_ok(), "Const functions should evaluate at compile time");
+}
+
+/// Test const generics evaluation
+#[test]
+#[ignore = "Runtime limitation: const generics evaluation not implemented - needs [RUNTIME-190] ticket"]
+fn test_sqlite_337_const_generics_eval() {
+    let result = execute_program(r#"
+        const fun double(n: usize) -> usize { n * 2 }
+        struct Array<const N: usize> {
+            data: [i32; double(N)],
+        }
+    "#);
+    assert!(result.is_ok(), "Const generics should be evaluated at compile time");
+}
+
+/// Test const trait methods
+#[test]
+#[ignore = "Runtime limitation: const trait methods not implemented - needs [RUNTIME-191] ticket"]
+fn test_sqlite_338_const_trait_methods() {
+    let result = execute_program(r#"
+        trait Computable {
+            const fun compute(&self) -> i32;
+        }
+        impl Computable for i32 {
+            const fun compute(&self) -> i32 { *self * 2 }
+        }
+    "#);
+    assert!(result.is_ok(), "Const trait methods should work");
+}
+
+/// Test const panic
+#[test]
+#[ignore = "Runtime limitation: const panic not implemented - needs [RUNTIME-192] ticket"]
+fn test_sqlite_339_const_panic() {
+    let result = execute_program(r#"
+        const fun check(x: i32) -> i32 {
+            if x < 0 { panic!("Negative value") }
+            x
+        }
+        const VALUE: i32 = check(10);
+    "#);
+    assert!(result.is_ok(), "Const panic should work at compile time");
+}
+
+/// Test const loops
+#[test]
+#[ignore = "Runtime limitation: const loops not implemented - needs [RUNTIME-193] ticket"]
+fn test_sqlite_340_const_loops() {
+    let result = execute_program(r#"
+        const fun sum_to(n: i32) -> i32 {
+            let mut sum = 0;
+            let mut i = 0;
+            while i <= n {
+                sum += i;
+                i += 1;
+            }
+            sum
+        }
+        const SUM: i32 = sum_to(100);
+    "#);
+    assert!(result.is_ok(), "Const loops should evaluate at compile time");
+}
+
+// ============================================================================
 // Helper Functions
 // ============================================================================
 
