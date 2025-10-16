@@ -17,6 +17,15 @@ All notable changes to the Ruchy programming language will be documented in this
   - **Files Changed**: src/frontend/parser/actors.rs (3 functions modified)
 
 ### Added
+- **[RUNTIME-001] Recursion Depth Limit Specification**: Created comprehensive fix specification
+  - **Status**: CRITICAL PRODUCTION BLOCKER - requires immediate fix
+  - **Root Cause**: No recursion depth tracking in eval_function_call
+  - **Impact**: Runtime crashes (SIGABRT) on infinite recursion instead of error
+  - **Solution**: Thread-local depth counter with configurable limit (default 1000)
+  - **Estimated Fix Time**: 2-3 hours implementation + testing
+  - **File**: docs/specifications/RUNTIME-001-recursion-depth-limit.md
+  - **Toyota Way**: Proper specification before implementation
+
 - **[SQLITE-TEST-004] Runtime Anomaly Validation - Foundation Phase**: Created new test harness (17 tests)
   - **NEW HARNESS**: Harness 4 operational - runtime failure mode testing
   - **Tests Implemented**: 17 foundation tests (12 passing, 5 ignored with CRITICAL bugs)
