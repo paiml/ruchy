@@ -5,10 +5,21 @@ All notable changes to the Ruchy programming language will be documented in this
 ## [Unreleased]
 
 ### Added
+- **[SQLITE-TEST-003] Metamorphic Testing 3% Milestone**: Scaled to 3,000 iterations (10x increase)
+  - **Property Test Scaling**: 10x increase from 300 → 3,000 iterations
+    - Constant folding equivalence: 100 → 1,000 iterations
+    - Alpha renaming preservation: 100 → 1,000 iterations
+    - Parse determinism: 100 → 1,000 iterations
+  - **Test Results**: 18/18 passing (100%), zero panics across 3,000 iterations
+  - **Progress**: 0.3% → 3.0% (10x improvement, 3,018/100,000 iterations)
+  - **Quality**: Zero failures during scaling validation
+  - **File**: tests/sqlite_003_metamorphic_testing.rs (updated iteration configs)
+  - **Next Steps**: Scale to 5,000 iterations (5% complete), integrate optimizer
+
 - **[SQLITE-FRAMEWORK] Three-Harness Milestone**: Foundation phase complete for SQLite-level testing
   - **Status**: 3/8 harnesses operational (37.5% complete)
   - **Total Tests**: 140 tests (135 passing, 5 ignored with tickets)
-  - **Property Iterations**: 32,300 total across all harnesses
+  - **Property Iterations**: 35,018 total across all harnesses (updated from 32,300)
   - **Quality Metrics**: 96.4% pass rate, zero panics, 5 defects found via defensive testing
   - **Time Investment**: 8h / 120h estimated (6.7% complete)
   - **Harness Progress**:
