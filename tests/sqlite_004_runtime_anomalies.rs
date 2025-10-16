@@ -3307,6 +3307,693 @@ fn test_sqlite_340_const_loops() {
 }
 
 // ============================================================================
+// Category 50: Type Coercion and Casting
+// ============================================================================
+
+/// Test implicit type coercion
+#[test]
+#[ignore = "Runtime limitation: implicit type coercion not implemented - needs [RUNTIME-194] ticket"]
+fn test_sqlite_341_implicit_coercion() {
+    let result = execute_program(r#"
+        let x: i32 = 42;
+        let y: i64 = x;  // Should coerce i32 to i64
+    "#);
+    assert!(result.is_ok(), "Implicit type coercion should work");
+}
+
+/// Test explicit casting with as
+#[test]
+#[ignore = "Runtime limitation: explicit casting not fully implemented - needs [RUNTIME-195] ticket"]
+fn test_sqlite_342_explicit_cast() {
+    let result = execute_program(r#"
+        let x = 42i64;
+        let y = x as i32;
+    "#);
+    assert!(result.is_ok(), "Explicit casting should work");
+}
+
+/// Test pointer casting
+#[test]
+#[ignore = "Runtime limitation: pointer casting not implemented - needs [RUNTIME-196] ticket"]
+fn test_sqlite_343_pointer_cast() {
+    let result = execute_program(r#"
+        let x = 42;
+        let ptr = &x as *const i32;
+        let addr = ptr as usize;
+    "#);
+    assert!(result.is_ok(), "Pointer casting should work");
+}
+
+/// Test transmute
+#[test]
+#[ignore = "Runtime limitation: transmute not implemented - needs [RUNTIME-197] ticket"]
+fn test_sqlite_344_transmute() {
+    let result = execute_program(r#"
+        unsafe {
+            let x: f32 = 1.0;
+            let y: u32 = std::mem::transmute(x);
+        }
+    "#);
+    assert!(result.is_ok(), "Transmute should work");
+}
+
+/// Test reference to pointer cast
+#[test]
+#[ignore = "Runtime limitation: reference to pointer cast not implemented - needs [RUNTIME-198] ticket"]
+fn test_sqlite_345_ref_to_ptr() {
+    let result = execute_program(r#"
+        let x = 42;
+        let ptr: *const i32 = &x;
+    "#);
+    assert!(result.is_ok(), "Reference to pointer cast should work");
+}
+
+// ============================================================================
+// Category 51: Deref Coercion and Smart Pointers
+// ============================================================================
+
+/// Test deref coercion
+#[test]
+#[ignore = "Runtime limitation: deref coercion not implemented - needs [RUNTIME-199] ticket"]
+fn test_sqlite_346_deref_coercion() {
+    let result = execute_program(r#"
+        let s = String::from("hello");
+        let slice: &str = &s;  // Deref coercion
+    "#);
+    assert!(result.is_ok(), "Deref coercion should work");
+}
+
+/// Test Box deref
+#[test]
+#[ignore = "Runtime limitation: Box deref not fully implemented - needs [RUNTIME-200] ticket"]
+fn test_sqlite_347_box_deref() {
+    let result = execute_program(r#"
+        let boxed = Box::new(42);
+        let value = *boxed;
+    "#);
+    assert!(result.is_ok(), "Box deref should work");
+}
+
+/// Test Rc deref
+#[test]
+#[ignore = "Runtime limitation: Rc deref not implemented - needs [RUNTIME-201] ticket"]
+fn test_sqlite_348_rc_deref() {
+    let result = execute_program(r#"
+        let rc = Rc::new(42);
+        let value = *rc;
+    "#);
+    assert!(result.is_ok(), "Rc deref should work");
+}
+
+/// Test Arc deref
+#[test]
+#[ignore = "Runtime limitation: Arc deref not implemented - needs [RUNTIME-202] ticket"]
+fn test_sqlite_349_arc_deref() {
+    let result = execute_program(r#"
+        let arc = Arc::new(42);
+        let value = *arc;
+    "#);
+    assert!(result.is_ok(), "Arc deref should work");
+}
+
+/// Test custom Deref implementation
+#[test]
+#[ignore = "Runtime limitation: custom Deref not implemented - needs [RUNTIME-203] ticket"]
+fn test_sqlite_350_custom_deref() {
+    let result = execute_program(r#"
+        struct Wrapper(String);
+        impl Deref for Wrapper {
+            type Target = String;
+            fun deref(&self) -> &String { &self.0 }
+        }
+        let w = Wrapper("hello".to_string());
+        let len = w.len();  // Deref coercion
+    "#);
+    assert!(result.is_ok(), "Custom Deref should work");
+}
+
+// ============================================================================
+// Category 52: Drop and RAII
+// ============================================================================
+
+/// Test Drop trait
+#[test]
+#[ignore = "Runtime limitation: Drop trait not implemented - needs [RUNTIME-204] ticket"]
+fn test_sqlite_351_drop_trait() {
+    let result = execute_program(r#"
+        struct Resource;
+        impl Drop for Resource {
+            fun drop(&mut self) {
+                println!("Dropping resource");
+            }
+        }
+        { let _r = Resource; }
+    "#);
+    assert!(result.is_ok(), "Drop trait should work");
+}
+
+/// Test drop order
+#[test]
+#[ignore = "Runtime limitation: drop order not guaranteed - needs [RUNTIME-205] ticket"]
+fn test_sqlite_352_drop_order() {
+    let result = execute_program(r#"
+        let _a = Resource::new("a");
+        let _b = Resource::new("b");
+        // b should drop before a
+    "#);
+    assert!(result.is_ok(), "Drop order should be correct");
+}
+
+/// Test manual drop
+#[test]
+#[ignore = "Runtime limitation: manual drop not implemented - needs [RUNTIME-206] ticket"]
+fn test_sqlite_353_manual_drop() {
+    let result = execute_program(r#"
+        let x = Box::new(42);
+        drop(x);
+        // x is now invalid
+    "#);
+    assert!(result.is_ok(), "Manual drop should work");
+}
+
+/// Test Copy prevents Drop
+#[test]
+#[ignore = "Runtime limitation: Copy/Drop conflict not checked - needs [RUNTIME-207] ticket"]
+fn test_sqlite_354_copy_drop_conflict() {
+    let result = execute_program(r#"
+        struct Invalid;
+        impl Copy for Invalid {}
+        impl Drop for Invalid { fun drop(&mut self) {} }  // Should error
+    "#);
+    assert!(result.is_err(), "Copy and Drop should conflict");
+}
+
+/// Test drop flag optimization
+#[test]
+#[ignore = "Runtime limitation: drop flag optimization not implemented - needs [RUNTIME-208] ticket"]
+fn test_sqlite_355_drop_flag() {
+    let result = execute_program(r#"
+        let x = Some(Resource::new());
+        if condition {
+            drop(x);
+        }
+        // x may or may not be dropped
+    "#);
+    assert!(result.is_ok(), "Drop flag optimization should work");
+}
+
+// ============================================================================
+// Category 53: Pattern Matching Advanced
+// ============================================================================
+
+/// Test match guard with complex condition
+#[test]
+#[ignore = "Runtime limitation: complex match guards not implemented - needs [RUNTIME-209] ticket"]
+fn test_sqlite_356_complex_match_guard() {
+    let result = execute_program(r#"
+        match value {
+            x if x > 0 && x < 10 => "small",
+            x if x >= 10 => "large",
+            _ => "other",
+        }
+    "#);
+    assert!(result.is_ok(), "Complex match guards should work");
+}
+
+/// Test or-patterns in match
+#[test]
+#[ignore = "Runtime limitation: or-patterns not implemented - needs [RUNTIME-210] ticket"]
+fn test_sqlite_357_or_patterns() {
+    let result = execute_program(r#"
+        match x {
+            1 | 2 | 3 => "low",
+            4 | 5 | 6 => "mid",
+            _ => "high",
+        }
+    "#);
+    assert!(result.is_ok(), "Or-patterns should work");
+}
+
+/// Test binding modes in patterns
+#[test]
+#[ignore = "Runtime limitation: binding modes not implemented - needs [RUNTIME-211] ticket"]
+fn test_sqlite_358_binding_modes() {
+    let result = execute_program(r#"
+        let ref x = 42;
+        let ref mut y = vec![1, 2, 3];
+    "#);
+    assert!(result.is_ok(), "Binding modes should work");
+}
+
+/// Test @ bindings in patterns
+#[test]
+#[ignore = "Runtime limitation: @ bindings not implemented - needs [RUNTIME-212] ticket"]
+fn test_sqlite_359_at_bindings() {
+    let result = execute_program(r#"
+        match value {
+            x @ 1..=5 => println!("Got {}", x),
+            _ => println!("Other"),
+        }
+    "#);
+    assert!(result.is_ok(), "@ bindings should work");
+}
+
+/// Test slice patterns
+#[test]
+#[ignore = "Runtime limitation: slice patterns not implemented - needs [RUNTIME-213] ticket"]
+fn test_sqlite_360_slice_patterns() {
+    let result = execute_program(r#"
+        match slice {
+            [first, .., last] => (first, last),
+            [single] => (single, single),
+            [] => (0, 0),
+        }
+    "#);
+    assert!(result.is_ok(), "Slice patterns should work");
+}
+
+// ============================================================================
+// Category 54: Method Resolution
+// ============================================================================
+
+/// Test method call syntax
+#[test]
+#[ignore = "Runtime limitation: method call syntax not fully implemented - needs [RUNTIME-214] ticket"]
+fn test_sqlite_361_method_call() {
+    let result = execute_program(r#"
+        struct Point { x: i32, y: i32 }
+        impl Point {
+            fun distance(&self) -> f64 {
+                ((self.x * self.x + self.y * self.y) as f64).sqrt()
+            }
+        }
+        let p = Point { x: 3, y: 4 };
+        p.distance()
+    "#);
+    assert!(result.is_ok(), "Method call syntax should work");
+}
+
+/// Test UFCS (Universal Function Call Syntax)
+#[test]
+#[ignore = "Runtime limitation: UFCS not implemented - needs [RUNTIME-215] ticket"]
+fn test_sqlite_362_ufcs() {
+    let result = execute_program(r#"
+        let s = "hello";
+        String::len(&s);  // UFCS
+    "#);
+    assert!(result.is_ok(), "UFCS should work");
+}
+
+/// Test method priority over inherent impl
+#[test]
+#[ignore = "Runtime limitation: method priority not correct - needs [RUNTIME-216] ticket"]
+fn test_sqlite_363_method_priority() {
+    let result = execute_program(r#"
+        struct S;
+        impl S {
+            fun foo(&self) -> i32 { 1 }
+        }
+        trait T {
+            fun foo(&self) -> i32 { 2 }
+        }
+        impl T for S {}
+        let s = S;
+        s.foo()  // Should call inherent impl (1)
+    "#);
+    assert!(result.is_ok(), "Method priority should be correct");
+}
+
+/// Test autoderef in method calls
+#[test]
+#[ignore = "Runtime limitation: autoderef not implemented - needs [RUNTIME-217] ticket"]
+fn test_sqlite_364_autoderef() {
+    let result = execute_program(r#"
+        let s = Box::new(Box::new("hello".to_string()));
+        s.len();  // Multiple autoderef
+    "#);
+    assert!(result.is_ok(), "Autoderef should work");
+}
+
+/// Test autoref in method calls
+#[test]
+#[ignore = "Runtime limitation: autoref not implemented - needs [RUNTIME-218] ticket"]
+fn test_sqlite_365_autoref() {
+    let result = execute_program(r#"
+        let s = "hello".to_string();
+        s.len();  // Autoref to &String
+    "#);
+    assert!(result.is_ok(), "Autoref should work");
+}
+
+// ============================================================================
+// Category 55: Module System
+// ============================================================================
+
+/// Test module visibility
+#[test]
+#[ignore = "Runtime limitation: module visibility not implemented - needs [RUNTIME-219] ticket"]
+fn test_sqlite_366_module_visibility() {
+    let result = execute_program(r#"
+        mod inner {
+            pub fun public() {}
+            fun private() {}
+        }
+        inner::public();
+    "#);
+    assert!(result.is_ok(), "Module visibility should work");
+}
+
+/// Test pub(crate) visibility
+#[test]
+#[ignore = "Runtime limitation: pub(crate) not implemented - needs [RUNTIME-220] ticket"]
+fn test_sqlite_367_pub_crate() {
+    let result = execute_program(r#"
+        pub(crate) fun internal() {}
+    "#);
+    assert!(result.is_ok(), "pub(crate) visibility should work");
+}
+
+/// Test pub(super) visibility
+#[test]
+#[ignore = "Runtime limitation: pub(super) not implemented - needs [RUNTIME-221] ticket"]
+fn test_sqlite_368_pub_super() {
+    let result = execute_program(r#"
+        mod parent {
+            mod child {
+                pub(super) fun restricted() {}
+            }
+        }
+    "#);
+    assert!(result.is_ok(), "pub(super) visibility should work");
+}
+
+/// Test re-exports
+#[test]
+#[ignore = "Runtime limitation: re-exports not implemented - needs [RUNTIME-222] ticket"]
+fn test_sqlite_369_re_exports() {
+    let result = execute_program(r#"
+        mod inner {
+            pub fun foo() {}
+        }
+        pub use inner::foo;
+    "#);
+    assert!(result.is_ok(), "Re-exports should work");
+}
+
+/// Test glob re-exports
+#[test]
+#[ignore = "Runtime limitation: glob re-exports not implemented - needs [RUNTIME-223] ticket"]
+fn test_sqlite_370_glob_reexport() {
+    let result = execute_program(r#"
+        mod inner {
+            pub fun foo() {}
+            pub fun bar() {}
+        }
+        pub use inner::*;
+    "#);
+    assert!(result.is_ok(), "Glob re-exports should work");
+}
+
+// ============================================================================
+// Category 56: Unsafe Code Validation
+// ============================================================================
+
+/// Test unsafe function calls
+#[test]
+#[ignore = "Runtime limitation: unsafe function validation not implemented - needs [RUNTIME-224] ticket"]
+fn test_sqlite_371_unsafe_function() {
+    let result = execute_program(r#"
+        unsafe fun dangerous() {}
+        unsafe { dangerous(); }
+    "#);
+    assert!(result.is_ok(), "Unsafe function calls should work");
+}
+
+/// Test raw pointer dereference
+#[test]
+#[ignore = "Runtime limitation: raw pointer deref not implemented - needs [RUNTIME-225] ticket"]
+fn test_sqlite_372_raw_pointer_deref() {
+    let result = execute_program(r#"
+        let x = 42;
+        let ptr = &x as *const i32;
+        unsafe { *ptr }
+    "#);
+    assert!(result.is_ok(), "Raw pointer dereference should work");
+}
+
+/// Test mutable static access
+#[test]
+#[ignore = "Runtime limitation: mutable static access not implemented - needs [RUNTIME-226] ticket"]
+fn test_sqlite_373_mutable_static() {
+    let result = execute_program(r#"
+        static mut COUNTER: i32 = 0;
+        unsafe {
+            COUNTER += 1;
+        }
+    "#);
+    assert!(result.is_ok(), "Mutable static access should work");
+}
+
+/// Test union field access
+#[test]
+#[ignore = "Runtime limitation: union field access not implemented - needs [RUNTIME-227] ticket"]
+fn test_sqlite_374_union_access() {
+    let result = execute_program(r#"
+        union Data {
+            i: i32,
+            f: f32,
+        }
+        let d = Data { i: 42 };
+        unsafe { d.f }
+    "#);
+    assert!(result.is_ok(), "Union field access should work");
+}
+
+/// Test calling unsafe trait method
+#[test]
+#[ignore = "Runtime limitation: unsafe trait methods not implemented - needs [RUNTIME-228] ticket"]
+fn test_sqlite_375_unsafe_trait_method() {
+    let result = execute_program(r#"
+        unsafe trait UnsafeTrait {
+            unsafe fun danger(&self);
+        }
+        impl UnsafeTrait for i32 {
+            unsafe fun danger(&self) {}
+        }
+    "#);
+    assert!(result.is_ok(), "Unsafe trait methods should work");
+}
+
+// ============================================================================
+// Category 57: Async Runtime Behavior
+// ============================================================================
+
+/// Test async function execution
+#[test]
+#[ignore = "Runtime limitation: async function execution not implemented - needs [RUNTIME-229] ticket"]
+fn test_sqlite_376_async_execution() {
+    let result = execute_program(r#"
+        async fun fetch() -> i32 { 42 }
+        let value = fetch().await;
+    "#);
+    assert!(result.is_ok(), "Async function execution should work");
+}
+
+/// Test Future trait
+#[test]
+#[ignore = "Runtime limitation: Future trait not implemented - needs [RUNTIME-230] ticket"]
+fn test_sqlite_377_future_trait() {
+    let result = execute_program(r#"
+        use std::future::Future;
+        fun returns_future() -> impl Future<Output=i32> {
+            async { 42 }
+        }
+    "#);
+    assert!(result.is_ok(), "Future trait should work");
+}
+
+/// Test async block
+#[test]
+#[ignore = "Runtime limitation: async blocks not implemented - needs [RUNTIME-231] ticket"]
+fn test_sqlite_378_async_block() {
+    let result = execute_program(r#"
+        let future = async {
+            let x = 42;
+            x + 1
+        };
+    "#);
+    assert!(result.is_ok(), "Async blocks should work");
+}
+
+/// Test await in loops
+#[test]
+#[ignore = "Runtime limitation: await in loops not optimized - needs [RUNTIME-232] ticket"]
+fn test_sqlite_379_await_in_loop() {
+    let result = execute_program(r#"
+        for i in 0..10 {
+            fetch(i).await;
+        }
+    "#);
+    assert!(result.is_ok(), "Await in loops should work");
+}
+
+/// Test async move closure
+#[test]
+#[ignore = "Runtime limitation: async move closures not implemented - needs [RUNTIME-233] ticket"]
+fn test_sqlite_380_async_move_closure() {
+    let result = execute_program(r#"
+        let data = vec![1, 2, 3];
+        let future = async move {
+            data.len()
+        };
+    "#);
+    assert!(result.is_ok(), "Async move closures should work");
+}
+
+// ============================================================================
+// Category 58: Generic Associated Types (GATs)
+// ============================================================================
+
+/// Test GAT in trait
+#[test]
+#[ignore = "Runtime limitation: GATs not implemented - needs [RUNTIME-234] ticket"]
+fn test_sqlite_381_gat_trait() {
+    let result = execute_program(r#"
+        trait Container {
+            type Item<'a>;
+            fun get<'a>(&'a self) -> Self::Item<'a>;
+        }
+    "#);
+    assert!(result.is_ok(), "GATs in traits should work");
+}
+
+/// Test GAT implementation
+#[test]
+#[ignore = "Runtime limitation: GAT implementation not implemented - needs [RUNTIME-235] ticket"]
+fn test_sqlite_382_gat_impl() {
+    let result = execute_program(r#"
+        impl Container for Vec<i32> {
+            type Item<'a> = &'a i32;
+            fun get<'a>(&'a self) -> &'a i32 {
+                &self[0]
+            }
+        }
+    "#);
+    assert!(result.is_ok(), "GAT implementation should work");
+}
+
+/// Test GAT with multiple parameters
+#[test]
+#[ignore = "Runtime limitation: GATs with multiple params not implemented - needs [RUNTIME-236] ticket"]
+fn test_sqlite_383_gat_multi_param() {
+    let result = execute_program(r#"
+        trait Collection {
+            type Iter<'a, T>;
+            fun iter<'a, T>(&'a self) -> Self::Iter<'a, T>;
+        }
+    "#);
+    assert!(result.is_ok(), "GATs with multiple parameters should work");
+}
+
+/// Test GAT bounds
+#[test]
+#[ignore = "Runtime limitation: GAT bounds not implemented - needs [RUNTIME-237] ticket"]
+fn test_sqlite_384_gat_bounds() {
+    let result = execute_program(r#"
+        trait Container {
+            type Item<'a>: Clone where Self: 'a;
+        }
+    "#);
+    assert!(result.is_ok(), "GAT bounds should work");
+}
+
+/// Test GAT with lifetime elision
+#[test]
+#[ignore = "Runtime limitation: GAT lifetime elision not implemented - needs [RUNTIME-238] ticket"]
+fn test_sqlite_385_gat_elision() {
+    let result = execute_program(r#"
+        trait Container {
+            type Item<'a>;
+            fun get(&self) -> Self::Item<'_>;
+        }
+    "#);
+    assert!(result.is_ok(), "GAT lifetime elision should work");
+}
+
+// ============================================================================
+// Category 59: Error Recovery and Panics
+// ============================================================================
+
+/// Test panic with message
+#[test]
+#[ignore = "Runtime limitation: panic messages not captured - needs [RUNTIME-239] ticket"]
+fn test_sqlite_386_panic_message() {
+    let result = execute_program(r#"
+        panic!("Something went wrong");
+    "#);
+    assert!(result.is_err(), "Panic should be caught");
+}
+
+/// Test panic in Drop
+#[test]
+#[ignore = "Runtime limitation: panic in Drop not handled - needs [RUNTIME-240] ticket"]
+fn test_sqlite_387_panic_in_drop() {
+    let result = execute_program(r#"
+        struct Bomb;
+        impl Drop for Bomb {
+            fun drop(&mut self) {
+                panic!("Boom!");
+            }
+        }
+        { let _b = Bomb; }
+    "#);
+    assert!(result.is_err(), "Panic in Drop should be handled");
+}
+
+/// Test double panic (should abort)
+#[test]
+#[ignore = "Runtime limitation: double panic detection not implemented - needs [RUNTIME-241] ticket"]
+fn test_sqlite_388_double_panic() {
+    let result = execute_program(r#"
+        struct DropPanic;
+        impl Drop for DropPanic {
+            fun drop(&mut self) { panic!("Drop panic"); }
+        }
+        let _d = DropPanic;
+        panic!("First panic");
+    "#);
+    assert!(result.is_err(), "Double panic should abort");
+}
+
+/// Test catch_unwind
+#[test]
+#[ignore = "Runtime limitation: catch_unwind not implemented - needs [RUNTIME-242] ticket"]
+fn test_sqlite_389_catch_unwind() {
+    let result = execute_program(r#"
+        use std::panic::catch_unwind;
+        let result = catch_unwind(|| {
+            panic!("Caught!");
+        });
+        assert!(result.is_err());
+    "#);
+    assert!(result.is_ok(), "catch_unwind should work");
+}
+
+/// Test panic location tracking
+#[test]
+#[ignore = "Runtime limitation: panic location tracking not implemented - needs [RUNTIME-243] ticket"]
+fn test_sqlite_390_panic_location() {
+    let result = execute_program(r#"
+        #[track_caller]
+        fun panics() {
+            panic!("Location tracked");
+        }
+        panics();
+    "#);
+    assert!(result.is_err(), "Panic location should be tracked");
+}
+
+// ============================================================================
 // Helper Functions
 // ============================================================================
 
