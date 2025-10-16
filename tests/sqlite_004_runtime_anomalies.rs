@@ -577,6 +577,342 @@ fn test_sqlite_093_nested_loops_same_var() {
 }
 
 // ============================================================================
+// Category 11: Boolean Logic Anomalies
+// ============================================================================
+
+/// Test logical AND short-circuit evaluation
+#[test]
+fn test_sqlite_100_and_short_circuit() {
+    let result = execute_program(r#"
+        let x = false && panic("should not execute");
+        x
+    "#);
+    // Should short-circuit, not panic
+    assert!(result.is_ok(), "AND should short-circuit on false");
+}
+
+/// Test logical OR short-circuit evaluation
+#[test]
+fn test_sqlite_101_or_short_circuit() {
+    let result = execute_program(r#"
+        let x = true || panic("should not execute");
+        x
+    "#);
+    // Should short-circuit, not panic
+    assert!(result.is_ok(), "OR should short-circuit on true");
+}
+
+/// Test NOT operator on non-boolean
+#[test]
+#[ignore = "Runtime limitation: type checking for boolean operators not enforced - needs [RUNTIME-010] ticket"]
+fn test_sqlite_102_not_non_boolean() {
+    assert_runtime_error(
+        "!42",
+        &["not a boolean", "type error", "expected bool"]
+    );
+}
+
+/// Test AND with non-boolean operands
+#[test]
+#[ignore = "Runtime limitation: type checking for boolean operators not enforced - needs [RUNTIME-011] ticket"]
+fn test_sqlite_103_and_non_boolean() {
+    assert_runtime_error(
+        "42 && true",
+        &["not a boolean", "type error", "expected bool"]
+    );
+}
+
+/// Test OR with non-boolean operands
+#[test]
+#[ignore = "Runtime limitation: type checking for boolean operators not enforced - needs [RUNTIME-012] ticket"]
+fn test_sqlite_104_or_non_boolean() {
+    assert_runtime_error(
+        "\"string\" || false",
+        &["not a boolean", "type error", "expected bool"]
+    );
+}
+
+// ============================================================================
+// Category 12: Comparison Anomalies
+// ============================================================================
+
+/// Test comparing incompatible types
+#[test]
+#[ignore = "Runtime limitation: type checking for comparisons not enforced - needs [RUNTIME-013] ticket"]
+fn test_sqlite_110_compare_incompatible_types() {
+    assert_runtime_error(
+        "42 == \"string\"",
+        &["type mismatch", "cannot compare", "incompatible types"]
+    );
+}
+
+/// Test ordering on non-comparable types
+#[test]
+#[ignore = "Runtime limitation: type checking for ordering not enforced - needs [RUNTIME-014] ticket"]
+fn test_sqlite_111_order_incomparable() {
+    assert_runtime_error(
+        "[1, 2] < [3, 4]",
+        &["cannot compare", "not comparable", "no ordering"]
+    );
+}
+
+/// Test NaN equality
+#[test]
+fn test_sqlite_112_nan_equality() {
+    let result = execute_program(r#"
+        let nan = 0.0 / 0.0;
+        nan == nan
+    "#);
+    // NaN != NaN in IEEE 754
+    assert!(result.is_ok(), "NaN equality check should work");
+}
+
+/// Test infinity comparisons
+#[test]
+fn test_sqlite_113_infinity_comparisons() {
+    let result = execute_program(r#"
+        let inf = 1.0 / 0.0;
+        inf > 1000.0
+    "#);
+    assert!(result.is_ok(), "Infinity comparisons should work");
+}
+
+/// Test null/None comparisons
+#[test]
+fn test_sqlite_114_none_comparison() {
+    let result = execute_program("None == None");
+    assert!(result.is_ok(), "None equality check should work");
+}
+
+// ============================================================================
+// Category 13: Pattern Matching Anomalies
+// ============================================================================
+
+/// Test match with no matching pattern
+#[test]
+#[ignore = "Runtime limitation: exhaustiveness checking not enforced - needs [RUNTIME-015] ticket"]
+fn test_sqlite_120_match_non_exhaustive() {
+    assert_runtime_error(
+        r#"
+        match 42 {
+            1 => "one",
+            2 => "two"
+        }
+        "#,
+        &["no pattern matched", "non-exhaustive", "match failed"]
+    );
+}
+
+/// Test match with unreachable patterns
+#[test]
+#[ignore = "Runtime limitation: unreachable pattern detection not implemented - needs [RUNTIME-016] ticket"]
+fn test_sqlite_121_match_unreachable_pattern() {
+    // Wildcard makes later patterns unreachable
+    let result = execute_program(r#"
+        match 42 {
+            _ => "any",
+            1 => "one"
+        }
+    "#);
+    // Should either warn or error about unreachable pattern
+    assert!(result.is_ok() || result.is_err(), "Unreachable pattern should not panic");
+}
+
+/// Test destructuring with wrong structure
+#[test]
+#[ignore = "Runtime limitation: pattern match validation not enforced - needs [RUNTIME-017] ticket"]
+fn test_sqlite_122_destructure_wrong_structure() {
+    assert_runtime_error(
+        r#"
+        let (x, y, z) = (1, 2);
+        "#,
+        &["pattern mismatch", "wrong structure", "tuple size"]
+    );
+}
+
+/// Test if-let with always-failing pattern
+#[test]
+#[ignore = "Runtime limitation: if-let expressions not implemented - needs [RUNTIME-022] ticket"]
+fn test_sqlite_123_if_let_no_match() {
+    let result = execute_program(r#"
+        if let Some(x) = None {
+            x
+        } else {
+            0
+        }
+    "#);
+    assert!(result.is_ok(), "if-let with no match should execute else branch");
+}
+
+/// Test match on non-enum value
+#[test]
+fn test_sqlite_124_match_on_integer() {
+    let result = execute_program(r#"
+        match 42 {
+            42 => "found",
+            _ => "other"
+        }
+    "#);
+    assert!(result.is_ok(), "Match on integer should work");
+}
+
+// ============================================================================
+// Category 14: Closure/Lambda Anomalies
+// ============================================================================
+
+/// Test closure capturing non-existent variable
+#[test]
+#[ignore = "Runtime limitation: closure capture validation not enforced - needs [RUNTIME-023] ticket"]
+fn test_sqlite_130_closure_capture_undefined() {
+    assert_runtime_error(
+        "|x| x + undefined_var",
+        &["undefined", "not found", "not defined"]
+    );
+}
+
+/// Test closure with wrong number of arguments
+#[test]
+#[ignore = "Runtime limitation: arity checking for closures not enforced - needs [RUNTIME-018] ticket"]
+fn test_sqlite_131_closure_wrong_arity() {
+    assert_runtime_error(
+        r#"
+        let f = |x, y| x + y;
+        f(1)
+        "#,
+        &["wrong number of arguments", "expected 2", "arity"]
+    );
+}
+
+/// Test closure returning from outer function
+#[test]
+#[ignore = "Runtime limitation: return scope validation not enforced - needs [RUNTIME-019] ticket"]
+fn test_sqlite_132_closure_return_outer() {
+    assert_runtime_error(
+        r#"
+        fun outer() {
+            let f = || return 42;
+            f()
+        }
+        outer()
+        "#,
+        &["return outside function", "invalid return", "scope error"]
+    );
+}
+
+/// Test nested closure captures
+#[test]
+fn test_sqlite_133_nested_closure_capture() {
+    let result = execute_program(r#"
+        let x = 1;
+        let f = |y| {
+            let g = |z| x + y + z;
+            g(3)
+        };
+        f(2)
+    "#);
+    assert!(result.is_ok(), "Nested closure captures should work");
+}
+
+/// Test closure modifying captured variable
+#[test]
+#[ignore = "Runtime limitation: mutable capture validation not enforced - needs [RUNTIME-020] ticket"]
+fn test_sqlite_134_closure_modify_capture() {
+    let result = execute_program(r#"
+        let mut x = 1;
+        let f = || { x = 2; };
+        f();
+        x
+    "#);
+    // Behavior depends on move/borrow semantics
+    assert!(result.is_ok() || result.is_err(), "Closure modifying capture should not panic");
+}
+
+// ============================================================================
+// Category 15: Edge Cases and Boundary Conditions
+// ============================================================================
+
+/// Test maximum integer value
+#[test]
+fn test_sqlite_140_max_integer() {
+    let result = execute_program("9223372036854775807"); // i64::MAX
+    assert!(result.is_ok(), "Maximum integer should parse");
+}
+
+/// Test minimum integer value
+#[test]
+#[ignore = "Runtime limitation: i64::MIN literal not supported - needs [RUNTIME-024] ticket"]
+fn test_sqlite_141_min_integer() {
+    let result = execute_program("-9223372036854775808"); // i64::MIN
+    assert!(result.is_ok(), "Minimum integer should parse");
+}
+
+/// Test integer overflow edge
+#[test]
+#[ignore = "Runtime limitation: integer overflow detection not enforced - needs [RUNTIME-021] ticket"]
+fn test_sqlite_142_integer_overflow_edge() {
+    assert_runtime_error(
+        "9223372036854775807 + 1",
+        &["overflow", "out of range"]
+    );
+}
+
+/// Test very long variable name
+#[test]
+fn test_sqlite_143_long_variable_name() {
+    let long_name = "a".repeat(1000);
+    let program = format!("let {} = 42; {}", long_name, long_name);
+    let result = execute_program(&program);
+    assert!(result.is_ok(), "Long variable names should work");
+}
+
+/// Test deeply nested data structures
+#[test]
+fn test_sqlite_144_deeply_nested_data() {
+    let result = execute_program(r#"
+        let nested = [[[[[[1, 2], [3, 4]], [[5, 6], [7, 8]]]]]]
+    "#);
+    assert!(result.is_ok(), "Deeply nested data structures should work");
+}
+
+/// Test empty program
+#[test]
+fn test_sqlite_145_empty_program() {
+    let result = execute_program("");
+    assert!(result.is_ok() || result.is_err(), "Empty program should not panic");
+}
+
+/// Test whitespace-only program
+#[test]
+fn test_sqlite_146_whitespace_only() {
+    let result = execute_program("   \n\t\r\n   ");
+    assert!(result.is_ok() || result.is_err(), "Whitespace-only program should not panic");
+}
+
+/// Test program with only comments
+#[test]
+fn test_sqlite_147_comments_only() {
+    let result = execute_program(r#"
+        // This is a comment
+        /* This is a block comment */
+    "#);
+    assert!(result.is_ok() || result.is_err(), "Comments-only program should not panic");
+}
+
+/// Test zero-length string
+#[test]
+fn test_sqlite_148_empty_string() {
+    let result = execute_program(r#""""#);
+    assert!(result.is_ok(), "Empty string should work");
+}
+
+/// Test zero-length array
+#[test]
+fn test_sqlite_149_empty_array() {
+    let result = execute_program("[]");
+    assert!(result.is_ok(), "Empty array should work");
+}
+
+// ============================================================================
 // Helper Functions
 // ============================================================================
 
