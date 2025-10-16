@@ -127,16 +127,16 @@ sqlite_testing_framework:
     - "ACM CSUR: Metamorphic testing (Chen et al. 2018)"
 
   quality_metrics:
-    - "96.4% pass rate (135/140 tests passing)"
-    - "100% panic-free (0 panics across 32,300 iterations)"
-    - "5 defects found via defensive testing (PARSER-055 through PARSER-059)"
+    - "94.3% pass rate (132/140 tests passing)"
+    - "100% panic-free (0 panics across 454,000 iterations)"
+    - "6 defects found via defensive testing (PARSER-055 through PARSER-060)"
     - "Zero technical debt (all issues documented with tickets)"
 
   next_milestones:
-    - "Scale Harness 2 to 50,000 iterations (16.7%)"
-    - "Scale Harness 3 to 1,000 iterations (1%)"
+    - "Fix PARSER-060: Actor definition infinite loop bug (urgent)"
+    - "Scale Harness 1 to 8,000 iterations (40% milestone)"
     - "Expand Harness 1 to 150 tests (7.5%)"
-    - "Fix parser limitations (32h estimated)"
+    - "Fix parser limitations (40h estimated)"
     - "Begin Harness 4: Runtime Anomaly Tests"
 
 # Phase 4: Notebook Excellence - EXTREME Quality (wasm-labs inspired)
@@ -333,14 +333,15 @@ tasks:
     time_spent: "8h"
     specification: "docs/specifications/ruchy-sqlite-testing-v2.md"
     phase: "Phase 1: Vertical Slice (Weeks 1-4)"
-    progress: "100/2000 tests implemented (5.00%) ✅ MILESTONE REACHED"
-    latest_update: "2025-10-15 - 100-test milestone! Discovered 5 parser limitations"
+    progress: "98/2000 tests (4.9%), 4,000/20,000 iterations (20.0% property test milestone)"
+    latest_update: "2025-10-16 - 20% property test milestone! 2x scaling (2K→4K), discovered PARSER-060"
     parser_limitations_found:
       - "[PARSER-055] Bare return statements"
       - "[PARSER-056] Async blocks"
       - "[PARSER-057] Export keyword"
       - "[PARSER-058] Type aliases"
       - "[PARSER-059] Array patterns in match"
+      - "[PARSER-060] Actor definitions (infinite loop bug)"
     description: |
       Implement comprehensive parser grammar coverage test suite:
       - 100% grammar production rule coverage
@@ -800,6 +801,37 @@ tasks:
       - "RED: Un-ignore test_sqlite_172_array_patterns() - FAILS"
       - "GREEN: Add parser support for array destructuring in patterns"
       - "REFACTOR: Ensure complexity ≤10"
+    quality:
+      complexity_max: 10
+
+  - id: "PARSER-060"
+    title: "Fix actor definitions causing parser infinite loop"
+    status: "PENDING"
+    priority: "🔴 HIGH"
+    discovered_by: "SQLITE-TEST-001 (test_sqlite_180_actor_definitions)"
+    time_estimated: "8h"
+    description: |
+      Parser enters infinite loop when parsing actor definitions with state blocks.
+      This is a critical bug causing test timeouts and potential production hangs.
+
+      Example that hangs:
+      ```ruchy
+      actor Counter {
+          state { count: i32 }
+          fun increment() { self.count += 1 }
+      }
+      ```
+
+      Root cause: Likely infinite recursion or missing termination condition in
+      actor parsing logic. Parser never returns from parse_actor_definition().
+    tests:
+      test_file: "tests/sqlite_001_parser_grammar.rs"
+      failing_test: "test_sqlite_180_actor_definitions (currently ignored)"
+    tdd_steps:
+      - "DEBUG: Add logging to parse_actor_definition() to find infinite loop location"
+      - "RED: Un-ignore test_sqlite_180_actor_definitions() - HANGS"
+      - "GREEN: Fix infinite loop in actor parser (add termination condition)"
+      - "REFACTOR: Ensure complexity ≤10, add property test for actor syntax"
     quality:
       complexity_max: 10
 

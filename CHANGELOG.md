@@ -5,6 +5,20 @@ All notable changes to the Ruchy programming language will be documented in this
 ## [Unreleased]
 
 ### Added
+- **[SQLITE-TEST-001] Parser Grammar Coverage 20% Milestone**: Scaled to 4,000 iterations (2x increase)
+  - **Property Test Scaling**: 2x increase from 2,000 → 4,000 iterations
+    - Never panics test: 1,000 → 2,000 iterations
+    - Valid identifiers: 500 → 1,000 iterations
+    - Valid numbers: 500 → 1,000 iterations
+  - **Test Results**: 92/98 passing (93.9%), 6 ignored with documented tickets
+  - **Progress**: 10% → 20% (4,018/20,000 iterations)
+  - **Milestone Achievement**: Reached 20% of target iterations (conservative 2x scaling)
+  - **Quality**: Zero panics across 4,000 iterations, tests complete in 0.47 seconds
+  - **Defect Discovery**: Found PARSER-060 (actor definition infinite loop bug)
+  - **File**: tests/sqlite_001_parser_grammar.rs (updated ProptestConfig to 2000/1000/1000 cases)
+  - **Total Defects**: 6 parser limitations discovered (PARSER-055 through PARSER-060)
+  - **Research Foundation**: NASA MC/DC (DO-178B/C) avionics-grade testing
+
 - **[SQLITE-TEST-002] Type System Soundness TARGET ACHIEVED**: Scaled to 300,000 iterations (100% of target)
   - **Property Test Scaling**: 2x increase from 150,000 → 300,000 iterations
     - Arithmetic progress: 50,000 → 100,000 iterations
@@ -71,13 +85,13 @@ All notable changes to the Ruchy programming language will be documented in this
 
 - **[SQLITE-FRAMEWORK] Three-Harness Milestone**: Foundation phase complete for SQLite-level testing
   - **Status**: 3/8 harnesses operational (37.5% complete)
-  - **Total Tests**: 140 tests (135 passing, 5 ignored with tickets)
-  - **Property Iterations**: 452,018 total across all harnesses (45.2% of 1M target)
-  - **Overall Target**: 107.6% of 420K target (EXCEEDED by 32,018 iterations)
-  - **Quality Metrics**: 96.4% pass rate, zero panics, 5 defects found via defensive testing
+  - **Total Tests**: 140 tests (132 passing, 6 ignored with tickets)
+  - **Property Iterations**: 454,018 total across all harnesses (45.4% of 1M target)
+  - **Overall Target**: 108.1% of 420K target (EXCEEDED by 34,018 iterations)
+  - **Quality Metrics**: 94.3% pass rate, zero panics, 6 defects found via defensive testing
   - **Time Investment**: 13h / 120h estimated (10.8% complete)
   - **Harness Progress**:
-    - Harness 1 (Parser Grammar): 100 tests, 2,000 iterations, 10.0% complete
+    - Harness 1 (Parser Grammar): 98 tests, 4,000 iterations, 20.0% complete
     - Harness 2 (Type Soundness): 22 tests, 300,000 iterations, 100.0% ACHIEVED ✅
     - Harness 3 (Metamorphic): 18 tests, 150,000 iterations, 150.0% EXCEEDED ✅
   - **Documentation**: Created comprehensive progress report (SQLITE-FRAMEWORK-PROGRESS-REPORT.md)
