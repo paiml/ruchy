@@ -5,6 +5,14 @@ All notable changes to the Ruchy programming language will be documented in this
 ## [Unreleased]
 
 ### Added
+- **[SQLITE-TEST-001] Harness 1 Thirteenth Expansion - 700 Test Milestone (35% Complete)**: Added 50 new parser grammar tests (650→700, 7.7% increase)
+  - Test Pass Rate: 500/700 passing (71.4%)
+  - New Categories (10): Method call syntax (method call, method chain, method with args, generic method, self method), Field access patterns (simple field, nested field, tuple field, field chain, parenthesized field), Index expressions (simple index, index with expr, nested index, range index, index method), Dereference and reference (deref, ref, ref mut, deref chain, ref deref), Cast expressions (as cast, cast chain, cast to pointer, cast expr, cast ref), Macro invocation syntax (macro bang, macro with args, macro multiple, nested macro, macro path), Struct expression forms (struct init, shorthand, update syntax, empty struct, struct path), Enum variant syntax (unit variant, tuple variant, struct variant, enum path, generic variant), Closure expression forms (simple closure, multi-param, typed closure, return type, move closure), Path expressions advanced (simple path, qualified path, generic path, self path, super path)
+  - Defensive Testing: 10 new parser limitations (PARSER-245 through PARSER-254)
+  - Total Limitations: 200 documented (PARSER-060 fixed)
+  - Framework Total: 1,163 tests across 4 harnesses
+  - Progress: 700/2,000 tests (35% of Harness 1 complete)
+  - Time: 19.5h / 60h estimated
 - **[SQLITE-TEST-001] Harness 4 Eleventh Expansion - 500 Test Milestone (1% COMPLETE!)**: Added 50 new runtime anomaly tests (450→500, 11.1% increase)
   - Test Pass Rate: 58/500 passing (11.6%)
   - New Categories (10): Borrowing and ownership edge cases (borrow checker basic, mutable borrow exclusive, borrow lifetime, move semantics, Copy trait), Macro system runtime (macro invocation, expansion, hygiene, repetition, metavariables), Module system runtime (module visibility, nested modules, use statements, glob imports, re-exports), Generic functions runtime (generic function basic, with bounds, multiple params, type inference, turbofish), Trait object runtime (trait object creation, method call, downcasting, with associated types, sizing), Concurrency primitives runtime (thread spawn, Arc sharing, channel communication, Mutex synchronization, Send/Sync traits), Async runtime advanced (async executor, task spawning, select, timeout, streams), Memory management edge cases (memory allocation, stack vs heap, leak detection, weak references, custom allocators), FFI and external integration (C function calling, FFI types, callback functions, external library linking, raw pointer conversion), Performance and optimization (zero-cost abstraction, inline optimization, const evaluation, SIMD operations, lazy evaluation)
