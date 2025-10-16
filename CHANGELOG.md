@@ -5,6 +5,24 @@ All notable changes to the Ruchy programming language will be documented in this
 ## [Unreleased]
 
 ### Added
+- **[SQLITE-TEST-003] Metamorphic Testing Test Harness - Foundation (0.3%)**: Created compiler correctness tests
+  - **Metamorphic Relations Implemented**: 6 core MRs for transformation validation
+    - **MR1: Optimization Equivalence** (3 tests): Constant folding, dead code elimination
+    - **MR2: Statement Permutation** (3 tests): Independent statement reordering
+    - **MR3: Constant Propagation** (3 tests): Constant value substitution
+    - **MR4: Alpha Renaming** (4 tests): Variable renaming preserves semantics
+    - **MR6: Parse-Print-Parse Identity** (2 tests): Deterministic parsing
+  - **Property Tests**: 3 tests with 300 total iterations (0.3% of 100K target)
+    - Constant folding equivalence: 100 iterations
+    - Alpha renaming preservation: 100 iterations
+    - Parse determinism: 100 iterations
+  - **Test Results**: 18/18 passing (100%), zero panics across 300 iterations
+  - **Research Foundation**: Chen et al. (2018) Metamorphic testing methodology (ACM CSUR)
+  - **Current Limitation**: Parser-only validation (optimizer/interpreter integration pending)
+  - **Missing**: MR5 (Interpreter-Compiler equivalence) requires eval integration
+  - **File**: tests/sqlite_003_metamorphic_testing.rs (424 lines)
+  - **Next Steps**: Scale to 1K iterations, integrate optimizer, add semantic equivalence checks
+
 - **[SQLITE-TEST-002] Type System Soundness Test Harness - 10% Milestone**: Expanded from 12 → 22 tests (+83%)
   - **Property Test Scaling**: 10x increase from 3,000 → 30,000 iterations (10.0% of 300K target)
     - Arithmetic progress: 1,000 → 10,000 iterations
