@@ -43,6 +43,26 @@ All notable changes to the Ruchy programming language will be documented in this
   - **Files Changed**: src/frontend/parser/actors.rs (3 functions modified)
 
 ### Added
+- **[SQLITE-TEST-001] Harness 1 Fourth Expansion - 250 Test Milestone**: Added 50 new parser grammar tests (200→250 tests, 25% increase)
+  - **Test Pass Rate**: 182/250 passing (72.8%)
+  - **New Test Categories** (5 categories, 50 tests total):
+    - Module System (10 tests): Module declarations, use statements, pub use, visibility modifiers, nested paths
+    - Advanced Functions (10 tests): Result types, where clauses, lifetimes, default params, recursion, references
+    - Struct/Enum Advanced (10 tests): Field visibility, default values, tuple/unit structs, discriminants, generics, where clauses
+    - Operators & Expressions (10 tests): Bitwise shifts, compound assignments, ranges, dereference, address-of, casts, safe navigation
+    - Attributes (10 tests): Function attributes, cfg, deprecated, lint, test, doc, repr, must_use, multiple attributes
+  - **Parser Limitations Discovered**: 27 new limitations (PARSER-096 through PARSER-122)
+    - Module system: Module attributes, extern crate, self in imports, crate keyword
+    - Functions: Lifetime parameters, default parameters, variadic functions
+    - Structs/Enums: Default field values, enum discriminants, struct update syntax, where clauses
+    - Operators: is operator, elvis operator, &mut expressions, open-ended ranges, bitwise shift compound assignments
+    - Attributes: cfg, deprecated, lint, test, must_use, repr, attribute arguments
+  - **Progress**: 250/2,000 tests (12.5% of parser grammar target)
+  - **Execution Time**: 0.47 seconds (fast)
+  - **Quality**: Zero panics, 20,000 property iterations passed
+  - **Coverage**: 69 parser limitations discovered total (27 new in this expansion)
+  - **Toyota Way**: Defensive testing discovered 27 parser limitations proactively before users encountered them
+
 - **[SQLITE-TEST-004] Harness 4 Third Expansion - 74 Test Milestone**: Added 30 new runtime anomaly tests (44→74 tests, 68.2% increase)
   - **Test Pass Rate**: 51/74 passing (68.9%)
   - **New Test Categories** (5 categories, 30 tests total):
