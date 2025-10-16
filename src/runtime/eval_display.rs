@@ -256,6 +256,17 @@ impl fmt::Display for InterpreterError {
             InterpreterError::Return(_) => write!(f, "Return outside of function"),
             InterpreterError::Throw(value) => write!(f, "Uncaught exception: {value:?}"),
             InterpreterError::AssertionFailed(msg) => write!(f, "Assertion failed: {msg}"),
+            InterpreterError::RecursionLimitExceeded(depth, max) => {
+                write!(
+                    f,
+                    "Recursion limit exceeded: depth {} exceeds maximum {}\n\
+                     Hint: Possible infinite recursion detected. Check for:\n\
+                     - Functions calling themselves without base case\n\
+                     - Mutual recursion between functions\n\
+                     - Very deep call chains",
+                    depth, max
+                )
+            }
         }
     }
 }

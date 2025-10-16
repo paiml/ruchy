@@ -5,6 +5,32 @@ All notable changes to the Ruchy programming language will be documented in this
 ## [Unreleased]
 
 ### Fixed
+- **[RUNTIME-001] Recursion Depth Limit IMPLEMENTED**: Fixed CRITICAL stack overflow crash
+  - **Severity**: CRITICAL PRODUCTION BLOCKER - Runtime crashed on infinite recursion
+  - **Symptom**: `fun infinite() { infinite() }` caused SIGABRT stack overflow crash
+  - **Root Cause**: No recursion depth tracking in closure evaluation paths
+  - **Solution**: Thread-local recursion depth counter with configurable limit
+  - **Implementation Details**:
+    - Added CALL_DEPTH and MAX_DEPTH thread-local statics in eval_function.rs
+    - Added check_recursion_depth() and decrement_depth() helper functions
+    - Integrated depth checks in TWO closure call paths (eval_function.rs AND interpreter.rs)
+    - Added RecursionLimitExceeded error variant with clear, actionable message
+    - Integrated with ReplConfig.maxdepth (default: 100 calls)
+  - **Error Message**: Clear 3-line guidance with hints about infinite recursion patterns
+  - **Test Results**: 3/3 stack overflow tests now PASSING (was 0/3)
+    - test_sqlite_001_stack_overflow_infinite_recursion ✅
+    - test_sqlite_002_stack_overflow_mutual_recursion ✅
+    - test_sqlite_003_deep_call_stack ✅
+  - **Harness 4 Impact**: 15/17 tests passing (88.2%, up from 70.6%)
+  - **Files Modified**:
+    - src/runtime/eval_function.rs: Thread-local depth tracking (pub fns)
+    - src/runtime/interpreter.rs: Added depth checks to call_function closure path
+    - src/runtime/eval_display.rs: Helpful error message (already existed)
+    - src/runtime/repl/mod.rs: REPL config integration
+  - **Implementation Time**: 2.5h actual (matched 2-3h estimate)
+  - **Discovery**: Found via SQLITE-TEST-004 defensive testing (Toyota Way)
+  - **Toyota Way**: Stop-the-line for CRITICAL bug - ALL work halted until fixed
+
 - **[PARSER-060] Actor Definition Infinite Loop**: Fixed critical parser bug causing infinite loop
   - **Root Cause**: parse_actor_state_fields() didn't exit on Token::Fun keyword
   - **Symptom**: Parser hung indefinitely when parsing actors with 'fun' methods

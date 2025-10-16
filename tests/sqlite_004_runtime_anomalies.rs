@@ -42,8 +42,9 @@ use std::path::PathBuf;
 ///
 /// **Critical Safety**: Runtime must catch stack overflow and return error,
 /// not segfault or panic.
+///
+/// **Fix**: [RUNTIME-001] implemented thread-local recursion depth tracking
 #[test]
-#[ignore = "CRITICAL: Runtime DOES overflow stack (found via defensive testing) - needs [RUNTIME-001] ticket"]
 fn test_sqlite_001_stack_overflow_infinite_recursion() {
     let prog = r#"
         fun infinite() {
@@ -84,8 +85,9 @@ fn test_sqlite_001_stack_overflow_infinite_recursion() {
 }
 
 /// Test mutual recursion stack overflow
+///
+/// **Fix**: [RUNTIME-001] implemented thread-local recursion depth tracking
 #[test]
-#[ignore = "CRITICAL: Runtime DOES overflow stack on mutual recursion - needs [RUNTIME-001] ticket"]
 fn test_sqlite_002_stack_overflow_mutual_recursion() {
     let prog = r#"
         fun foo() { bar() }
@@ -101,8 +103,9 @@ fn test_sqlite_002_stack_overflow_mutual_recursion() {
 }
 
 /// Test deeply nested function calls
+///
+/// **Fix**: [RUNTIME-001] implemented thread-local recursion depth tracking
 #[test]
-#[ignore = "CRITICAL: Runtime DOES overflow stack (found via defensive testing) - needs [RUNTIME-001] ticket"]
 fn test_sqlite_003_deep_call_stack() {
     let prog = r#"
         fun countdown(n) {

@@ -8,8 +8,74 @@
 use crate::frontend::ast::{Expr, Pattern};
 use crate::runtime::eval_pattern::match_pattern;
 use crate::runtime::{InterpreterError, Value};
+use std::cell::Cell;
 use std::collections::HashMap;
 use std::sync::Arc;
+
+// ============================================================================
+// Recursion Depth Tracking ([RUNTIME-001] Fix)
+// ============================================================================
+
+thread_local! {
+    /// Current recursion depth for this thread
+    static CALL_DEPTH: Cell<usize> = const { Cell::new(0) };
+
+    /// Maximum allowed recursion depth for this thread
+    static MAX_DEPTH: Cell<usize> = const { Cell::new(1000) };
+}
+
+/// Set the maximum recursion depth limit
+///
+/// Default is 1000 calls (matches Python's limit).
+/// Can be configured via REPL config or programmatically.
+///
+/// # Complexity
+/// Cyclomatic: 1
+pub fn set_max_recursion_depth(depth: usize) {
+    MAX_DEPTH.with(|max| max.set(depth));
+}
+
+/// Get current recursion depth (for debugging/monitoring)
+///
+/// # Complexity
+/// Cyclomatic: 1
+pub fn get_current_depth() -> usize {
+    CALL_DEPTH.with(|depth| depth.get())
+}
+
+/// Check recursion depth before entering function
+///
+/// Returns `RecursionLimitExceeded` error if depth would exceed limit.
+/// Increments depth counter on success.
+///
+/// # Complexity
+/// Cyclomatic: 2
+pub fn check_recursion_depth() -> Result<(), InterpreterError> {
+    CALL_DEPTH.with(|depth| {
+        let current = depth.get();
+        MAX_DEPTH.with(|max| {
+            let max_val = max.get();
+            if current >= max_val {
+                Err(InterpreterError::RecursionLimitExceeded(current, max_val))
+            } else {
+                depth.set(current + 1);
+                Ok(())
+            }
+        })
+    })
+}
+
+/// Decrement recursion depth after exiting function
+///
+/// Must be called on ALL exit paths (success, error, return, etc.)
+///
+/// # Complexity
+/// Cyclomatic: 1
+pub fn decrement_depth() {
+    CALL_DEPTH.with(|depth| {
+        depth.set(depth.get().saturating_sub(1));
+    });
+}
 
 /// Function closure with captured environment
 #[derive(Debug, Clone)]
@@ -135,7 +201,10 @@ where
 /// Evaluate a closure call directly with `Value::Closure` fields
 ///
 /// # Complexity
-/// Cyclomatic complexity: 6 (within Toyota Way limits)
+/// Cyclomatic complexity: 7 (within Toyota Way limits)
+///
+/// # [RUNTIME-001] Fix
+/// Now checks recursion depth before entering function body
 fn eval_closure_call_direct<F>(
     params: &[String],
     body: &Expr,
@@ -146,28 +215,39 @@ fn eval_closure_call_direct<F>(
 where
     F: FnMut(&Expr, &HashMap<String, Value>) -> Result<Value, InterpreterError>,
 {
-    if args.len() != params.len() {
-        return Err(InterpreterError::RuntimeError(format!(
-            "Function expects {} arguments, got {}",
-            params.len(),
-            args.len()
-        )));
-    }
+    // [RUNTIME-001] CHECK RECURSION DEPTH BEFORE ENTERING
+    check_recursion_depth()?;
 
-    // Create call environment with captured environment
-    let mut call_env = env.clone();
+    // Ensure depth is decremented on ALL exit paths
+    let result = (|| {
+        if args.len() != params.len() {
+            return Err(InterpreterError::RuntimeError(format!(
+                "Function expects {} arguments, got {}",
+                params.len(),
+                args.len()
+            )));
+        }
 
-    // Bind parameters to arguments
-    for (param, arg) in params.iter().zip(args.iter()) {
-        call_env.insert(param.clone(), arg.clone());
-    }
+        // Create call environment with captured environment
+        let mut call_env = env.clone();
 
-    // Evaluate function body with bound environment
-    // Catch InterpreterError::Return and extract the value (early return support)
-    match eval_with_env(body, &call_env) {
-        Err(InterpreterError::Return(val)) => Ok(val),
-        other => other,
-    }
+        // Bind parameters to arguments
+        for (param, arg) in params.iter().zip(args.iter()) {
+            call_env.insert(param.clone(), arg.clone());
+        }
+
+        // Evaluate function body with bound environment
+        // Catch InterpreterError::Return and extract the value (early return support)
+        match eval_with_env(body, &call_env) {
+            Err(InterpreterError::Return(val)) => Ok(val),
+            other => other,
+        }
+    })();
+
+    // [RUNTIME-001] ALWAYS DECREMENT, EVEN ON ERROR
+    decrement_depth();
+
+    result
 }
 
 /// Evaluate a closure call with parameter binding

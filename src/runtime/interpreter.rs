@@ -289,6 +289,9 @@ pub enum InterpreterError {
     Return(Value),
     Throw(Value), // EXTREME TDD: Exception handling
     AssertionFailed(std::string::String), // BUG-037: Test assertions
+    /// Recursion depth limit exceeded (current_depth, max_depth)
+    /// Added via [RUNTIME-001] fix for stack overflow crashes
+    RecursionLimitExceeded(usize, usize),
 }
 
 // Display implementations moved to eval_display.rs
@@ -1900,8 +1903,12 @@ impl Interpreter {
                 }
             }
             Value::Closure { params, body, env } => {
+                // [RUNTIME-001] CHECK RECURSION DEPTH BEFORE ENTERING
+                crate::runtime::eval_function::check_recursion_depth()?;
+
                 // Check argument count
                 if args.len() != params.len() {
+                    crate::runtime::eval_function::decrement_depth();
                     return Err(InterpreterError::RuntimeError(format!(
                         "Function expects {} arguments, got {}",
                         params.len(),
@@ -1929,6 +1936,9 @@ impl Interpreter {
 
                 // Pop environment
                 self.env_pop();
+
+                // [RUNTIME-001] ALWAYS DECREMENT, EVEN ON ERROR
+                crate::runtime::eval_function::decrement_depth();
 
                 result
             }
