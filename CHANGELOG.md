@@ -5,6 +5,14 @@ All notable changes to the Ruchy programming language will be documented in this
 ## [Unreleased]
 
 ### Added
+- **[SQLITE-TEST-001] Harness 1 Twelfth Expansion - 650 Test Milestone (32.5% Complete)**: Added 50 new parser grammar tests (600→650, 8.3% increase)
+  - Test Pass Rate: 460/650 passing (70.8%)
+  - New Categories (10): Type alias and newtype (type alias, generic alias, alias with where, newtype pattern, function type alias), Impl blocks advanced (basic impl, generic impl, trait for type, impl with where, associated items), Pattern syntax advanced (wildcard, tuple pattern, struct pattern, ref pattern, mut pattern), Loop syntax advanced (loop basic, labeled loop, break with value, break label, continue label), Type annotation edge cases (type annotation, tuple type, array type, reference type, function type), Expression statement forms (expr stmt, block expr, if expr, match expr, loop expr), Literal variants (decimal, hex, octal, binary, underscore separator), Attribute positions (outer attr, inner attr, multiple attr, attr with value, attr path), Expression precedence (arithmetic, comparison, logical, parentheses, unary), Whitespace and formatting (minimal whitespace, generous whitespace, newlines, empty lines, trailing comma)
+  - Defensive Testing: 5 new parser limitations (PARSER-240 through PARSER-244)
+  - Total Limitations: 190 documented (PARSER-060 fixed)
+  - Framework Total: 1,063 tests across 4 harnesses
+  - Progress: 650/2,000 tests (32.5% of Harness 1 complete)
+  - Time: 17.5h / 60h estimated
 - **[SQLITE-TEST-001] Harness 4 Tenth Expansion - 450 Test Milestone (0.9% Complete)**: Added 50 new runtime anomaly tests (400→450, 12.5% increase)
   - Test Pass Rate: 58/450 passing (12.9%)
   - New Categories (10): Slice and array advanced (array init, slice from array, mutable slice, slice methods, multidimensional arrays), String advanced operations (string slicing, concatenation, formatting, methods, iteration), Closure capturing edge cases (by value, by reference, mutable capture, nested closures, closure as return), Iterator advanced patterns (chaining, zip, enumerate, skip/take, custom iterator), Enum advanced patterns (enum with data, methods, discriminants, generic enum, enum as trait object), Struct advanced patterns (struct update syntax, tuple struct, unit struct, struct with lifetime, generics with where), Match expression edge cases (match with guards, multiple patterns, ranges, binding, exhaustiveness checking), Function advanced features (defaults, variadic, overloading, complex return, function pointer), Type conversion advanced (From trait, Into trait, as cast, transmute, type coercion), Standard library integration (Vec ops, HashMap ops, Option combinators, Result combinators, Range ops)
