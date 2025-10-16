@@ -3,7 +3,7 @@
 //! **Specification**: docs/specifications/ruchy-sqlite-testing-v2.md Section 1.1
 //! **Research Foundation**: NASA MC/DC (DO-178B/C), SQLite Lemon parser methodology
 //! **Ticket**: SQLITE-TEST-001
-//! **Status**: 100% Milestone ✅ - 20,000 property iterations (100/2000 tests = 5%)
+//! **Status**: 100% Milestone ✅ - 20,000 property iterations (145/2000 tests = 7.25%)
 //!
 //! # Coverage Goals
 //!
@@ -302,6 +302,407 @@ fn test_sqlite_075_assignment_operators() {
     assert_parses("x -= 1");
     assert_parses("x *= 2");
     assert_parses("x /= 2");
+}
+
+// ============================================================================
+// Category 1B: Advanced Grammar Coverage (Expanding to 150 tests)
+// ============================================================================
+
+/// Test advanced pattern matching with guards
+#[test]
+fn test_sqlite_076_pattern_guards() {
+    assert_parses(r#"
+        match x {
+            n if n > 0 => "positive"
+            n if n < 0 => "negative"
+            _ => "zero"
+        }
+    "#);
+}
+
+/// Test nested destructuring patterns
+#[test]
+#[ignore = "Parser limitation: nested object destructuring - needs [PARSER-061] ticket"]
+fn test_sqlite_077_nested_destructuring() {
+    assert_parses(r#"
+        let (a, (b, c)) = (1, (2, 3))
+    "#);
+    assert_parses(r#"
+        let {x: {y: z}} = {x: {y: 42}}
+    "#);
+}
+
+/// Test spread patterns in destructuring
+#[test]
+#[ignore = "Parser limitation: spread/rest patterns in destructuring - needs [PARSER-062] ticket"]
+fn test_sqlite_078_spread_patterns() {
+    assert_parses("let [first, ..rest] = arr");
+    assert_parses("let [..prefix, last] = arr");
+    assert_parses("let [first, ..middle, last] = arr");
+}
+
+/// Test type casting expressions
+#[test]
+#[ignore = "Parser limitation: generic type parameters in 'as' casts - needs [PARSER-063] ticket"]
+fn test_sqlite_079_type_casting() {
+    assert_parses("x as i32");
+    assert_parses("value as String");
+    assert_parses("data as Vec<u8>");
+}
+
+// Note: test_sqlite_080 through test_sqlite_099 already exist (error handling)
+// Continuing with test_sqlite_209+ to avoid conflicts
+
+/// Test array initialization with repeated values
+#[test]
+#[ignore = "Parser limitation: array repeat syntax [expr; N] - needs [PARSER-064] ticket"]
+fn test_sqlite_209_array_repeat() {
+    assert_parses("[0; 10]");
+    assert_parses("[false; 100]");
+    assert_parses("[vec!]; 5]");
+}
+
+/// Test slice expressions
+#[test]
+#[ignore = "Parser limitation: slice syntax with unbounded ranges - needs [PARSER-065] ticket"]
+fn test_sqlite_210_slice_operations() {
+    assert_parses("arr[1..5]");
+    assert_parses("arr[..5]");
+    assert_parses("arr[1..]");
+    assert_parses("arr[..]");
+}
+
+/// Test inclusive range expressions
+#[test]
+fn test_sqlite_211_inclusive_ranges() {
+    assert_parses("1..=10");
+    assert_parses("0..=100");
+    assert_parses("'a'..='z'");
+}
+
+/// Test list comprehensions
+#[test]
+fn test_sqlite_212_list_comprehensions() {
+    assert_parses("[x for x in items]");
+    assert_parses("[x * 2 for x in nums if x > 0]");
+    assert_parses("[i + j for i in a for j in b]");
+}
+
+/// Test set comprehensions
+#[test]
+fn test_sqlite_213_set_comprehensions() {
+    assert_parses("{x for x in items}");
+    assert_parses("{x % 10 for x in nums if x > 0}");
+}
+
+/// Test dict comprehensions
+#[test]
+#[ignore = "Parser limitation: dict comprehension with tuple unpacking - needs [PARSER-066] ticket"]
+fn test_sqlite_214_dict_comprehensions() {
+    assert_parses("{k: v for k, v in pairs}");
+    assert_parses("{x: x**2 for x in range(10)}");
+}
+
+/// Test optional chaining - multiple levels
+#[test]
+fn test_sqlite_215_optional_chaining() {
+    assert_parses("obj?.field");
+    assert_parses("obj?.method()");
+    assert_parses("obj?.field?.nested?.deep");
+}
+
+/// Test bitwise AND operator
+#[test]
+fn test_sqlite_216_bitwise_and() {
+    assert_parses("a & b");
+    assert_parses("x & 0xFF");
+    assert_parses("flags & MASK");
+}
+
+/// Test bitwise OR operator
+#[test]
+fn test_sqlite_217_bitwise_or() {
+    assert_parses("a | b");
+    assert_parses("x | 0x01");
+    assert_parses("flags | FLAG_ENABLE");
+}
+
+/// Test bitwise XOR operator
+#[test]
+fn test_sqlite_218_bitwise_xor() {
+    assert_parses("a ^ b");
+    assert_parses("x ^ 0xFF");
+    assert_parses("hash ^ key");
+}
+
+/// Test bitwise NOT operator
+#[test]
+fn test_sqlite_219_bitwise_not() {
+    assert_parses("~x");
+    assert_parses("~0xFF");
+    assert_parses("~flags");
+}
+
+/// Test left shift operator
+#[test]
+fn test_sqlite_220_left_shift() {
+    assert_parses("x << 1");
+    assert_parses("value << bits");
+    assert_parses("1 << 31");
+}
+
+/// Test right shift operator
+#[test]
+fn test_sqlite_221_right_shift() {
+    assert_parses("x >> 1");
+    assert_parses("value >> bits");
+    assert_parses("0xFF >> 4");
+}
+
+/// Test compound bitwise operators
+#[test]
+fn test_sqlite_222_compound_bitwise_ops() {
+    assert_parses("(a & b) | c");
+    assert_parses("x << 2 | y >> 2");
+    assert_parses("~(flags & MASK)");
+}
+
+/// Test generic function calls
+#[test]
+#[ignore = "Parser limitation: turbofish generic parameters in qualified paths - needs [PARSER-067] ticket"]
+fn test_sqlite_223_generic_function_calls() {
+    assert_parses("Vec::<i32>::new()");
+    assert_parses("Option::<String>::Some(x)");
+    assert_parses("collect::<Vec<_>>()");
+}
+
+/// Test generic type constraints
+#[test]
+fn test_sqlite_224_generic_constraints() {
+    assert_parses(r#"
+        fun process<T: Display>(x: T) { }
+    "#);
+}
+
+/// Test multiple type constraints
+#[test]
+fn test_sqlite_225_multiple_constraints() {
+    assert_parses(r#"
+        fun process<T: Display + Clone>(x: T) { }
+    "#);
+}
+
+/// Test where clauses
+#[test]
+fn test_sqlite_226_where_clauses() {
+    assert_parses(r#"
+        fun process<T>(x: T) where T: Display { }
+    "#);
+}
+
+/// Test complex where clauses
+#[test]
+#[ignore = "Parser limitation: multiple where clause constraints separated by comma - needs [PARSER-068] ticket"]
+fn test_sqlite_227_complex_where() {
+    assert_parses(r#"
+        fun process<T, U>(x: T, y: U)
+        where T: Display, U: Clone { }
+    "#);
+}
+
+/// Test string interpolation - f-strings
+#[test]
+fn test_sqlite_228_fstring_interpolation() {
+    assert_parses(r#"f"Hello {name}""#);
+    assert_parses(r#"f"Value: {x}""#);
+    assert_parses(r#"f"Result: {a + b}""#);
+}
+
+/// Test f-string format specifiers
+#[test]
+fn test_sqlite_229_fstring_format() {
+    assert_parses(r#"f"Hex: {x:x}""#);
+    assert_parses(r#"f"Float: {pi:.2}""#);
+    assert_parses(r#"f"Binary: {n:b}""#);
+}
+
+/// Test nested f-strings
+#[test]
+#[ignore = "Parser limitation: nested f-string interpolation - needs [PARSER-069] ticket"]
+fn test_sqlite_230_nested_fstrings() {
+    assert_parses(r#"f"Outer {f"inner {x}"} done""#);
+}
+
+/// Test raw strings
+#[test]
+fn test_sqlite_231_raw_strings() {
+    assert_parses(r#"r"raw\nstring""#);
+    assert_parses(r#"r"\t\n\r""#);
+}
+
+/// Test byte strings
+#[test]
+fn test_sqlite_232_byte_strings() {
+    assert_parses(r#"b"bytes""#);
+    assert_parses(r#"b"hello\x00world""#);
+}
+
+/// Test character literals
+#[test]
+fn test_sqlite_233_char_literals() {
+    assert_parses("'a'");
+    assert_parses("'\\n'");
+    assert_parses("'\\t'");
+    assert_parses("'\\''");
+}
+
+/// Test byte literals
+#[test]
+#[ignore = "Parser limitation: byte literal escape sequences - needs [PARSER-070] ticket"]
+fn test_sqlite_234_byte_literals() {
+    assert_parses("b'a'");
+    assert_parses("b'\\n'");
+    assert_parses("b'\\x00'");
+}
+
+/// Test try expressions
+#[test]
+fn test_sqlite_235_try_expressions() {
+    assert_parses("operation()?");
+    assert_parses("file.read()?.parse()?");
+}
+
+/// Test async expressions
+#[test]
+#[ignore = "Parser limitation: async move blocks - needs [PARSER-071] ticket"]
+fn test_sqlite_236_async_expressions() {
+    assert_parses("async { await future }");
+    assert_parses("async move { await task }");
+}
+
+/// Test await expressions
+#[test]
+fn test_sqlite_237_await_expressions() {
+    assert_parses("await future");
+    assert_parses("await async_call()");
+}
+
+/// Test loop labels
+#[test]
+fn test_sqlite_238_loop_labels() {
+    assert_parses(r#"
+        'outer: loop {
+            'inner: loop {
+                break 'outer
+            }
+        }
+    "#);
+}
+
+/// Test break with labels
+#[test]
+fn test_sqlite_239_break_labels() {
+    assert_parses(r#"
+        'outer: for x in items {
+            break 'outer
+        }
+    "#);
+}
+
+/// Test continue with labels
+#[test]
+fn test_sqlite_240_continue_labels() {
+    assert_parses(r#"
+        'outer: for x in items {
+            continue 'outer
+        }
+    "#);
+}
+
+/// Test break with values
+#[test]
+fn test_sqlite_241_break_values() {
+    assert_parses(r#"
+        let result = loop {
+            break 42
+        }
+    "#);
+}
+
+/// Test tuple expressions
+#[test]
+fn test_sqlite_242_tuple_expressions() {
+    assert_parses("(1, 2, 3)");
+    assert_parses("(\"hello\", 42, true)");
+    assert_parses("((1, 2), (3, 4))");
+}
+
+/// Test tuple indexing
+#[test]
+#[ignore = "Parser limitation: chained tuple indexing (obj.0.1) - needs [PARSER-072] ticket"]
+fn test_sqlite_243_tuple_indexing() {
+    assert_parses("tuple.0");
+    assert_parses("nested.0.1");
+    assert_parses("point.0 + point.1");
+}
+
+/// Test unit type
+#[test]
+fn test_sqlite_244_unit_type() {
+    assert_parses("()");
+    assert_parses("fun noop() { () }");
+}
+
+/// Test field access chains
+#[test]
+fn test_sqlite_245_field_chains() {
+    assert_parses("obj.field1.field2.field3");
+    assert_parses("obj.method().field");
+}
+
+/// Test method call chains
+#[test]
+fn test_sqlite_246_method_chains() {
+    assert_parses("obj.method1().method2().method3()");
+    assert_parses("str.trim().to_lowercase().split(\",\")");
+}
+
+/// Test index chains
+#[test]
+fn test_sqlite_247_index_chains() {
+    assert_parses("matrix[i][j]");
+    assert_parses("array[0][1][2]");
+}
+
+/// Test mixed access chains
+#[test]
+fn test_sqlite_248_mixed_chains() {
+    assert_parses("obj.arr[i].field.method()");
+    assert_parses("data[key].nested.value");
+}
+
+/// Test power operator
+#[test]
+fn test_sqlite_249_power_operator() {
+    assert_parses("2 ** 8");
+    assert_parses("base ** exponent");
+    assert_parses("x ** 2 + y ** 2");
+}
+
+/// Test modulo operator
+#[test]
+fn test_sqlite_250_modulo_operator() {
+    assert_parses("x % 10");
+    assert_parses("value % modulus");
+    assert_parses("(a + b) % c");
+}
+
+/// Test operator precedence - complex
+#[test]
+fn test_sqlite_251_complex_precedence() {
+    assert_parses("a + b * c ** d");
+    assert_parses("x && y || z");
+    assert_parses("!a && b || c");
 }
 
 // ============================================================================
