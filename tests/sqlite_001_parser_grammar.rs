@@ -2046,6 +2046,122 @@ fn test_sqlite_366_trait_object_send_sync() {
 #[test] fn test_sqlite_506_raw_pointer() { assert_parses("let p: *const i32 = &x"); }
 
 // ============================================================================
+// Category 51: Attribute Advanced
+// ============================================================================
+
+#[test] fn test_sqlite_507_derive_macro() { assert_parses("#[derive(Debug, Clone)] struct Point { }"); }
+#[test] fn test_sqlite_508_cfg_attribute() { assert_parses("#[cfg(test)] mod tests { }"); }
+#[test] fn test_sqlite_509_allow_attribute() { assert_parses("#[allow(dead_code)] fun foo() { }"); }
+#[test] fn test_sqlite_510_deprecated_attribute() { assert_parses("#[deprecated] fun old_api() { }"); }
+#[ignore = "Parser limitation: Doc attribute syntax not fully supported - needs [PARSER-175] ticket"]
+#[test] fn test_sqlite_511_doc_attribute() { assert_parses("#[doc = \"Documentation\"] struct Item { }"); }
+
+// ============================================================================
+// Category 52: Macro Invocation Advanced
+// ============================================================================
+
+#[test] fn test_sqlite_512_macro_with_braces() { assert_parses("vec! { 1, 2, 3 }"); }
+#[test] fn test_sqlite_513_macro_with_parens() { assert_parses("println!(\"hello\")"); }
+#[test] fn test_sqlite_514_macro_with_brackets() { assert_parses("vec![1, 2, 3]"); }
+#[test] fn test_sqlite_515_nested_macro_invocation() { assert_parses("vec![vec![1, 2], vec![3, 4]]"); }
+#[test] fn test_sqlite_516_macro_in_expression() { assert_parses("let x = vec![1, 2, 3].len()"); }
+
+// ============================================================================
+// Category 53: Use Statement Advanced
+// ============================================================================
+
+#[test] fn test_sqlite_517_use_glob() { assert_parses("use std::collections::*"); }
+#[test] fn test_sqlite_518_use_nested() { assert_parses("use std::{io, fs}"); }
+#[test] fn test_sqlite_519_use_alias() { assert_parses("use std::io as stdio"); }
+#[ignore = "Parser limitation: Use self in nested imports not supported - needs [PARSER-176] ticket"]
+#[test] fn test_sqlite_520_use_self() { assert_parses("use std::io::{self, Write}"); }
+#[test] fn test_sqlite_521_use_super() { assert_parses("use super::parent_module"); }
+
+// ============================================================================
+// Category 54: Type System Advanced
+// ============================================================================
+
+#[ignore = "Parser limitation: Higher-ranked trait bounds (for<>) not supported - needs [PARSER-177] ticket"]
+#[test] fn test_sqlite_522_higher_ranked_trait_bounds() { assert_parses("fun foo<F: for<'a> Fn(&'a i32)>(f: F) { }"); }
+#[ignore = "Parser limitation: Associated type bounds in generics not fully supported - needs [PARSER-178] ticket"]
+#[test] fn test_sqlite_523_associated_type_bounds() { assert_parses("fun bar<T: Iterator<Item=i32>>(iter: T) { }"); }
+#[ignore = "Parser limitation: impl Trait return type not supported - needs [PARSER-179] ticket"]
+#[test] fn test_sqlite_524_impl_trait_return() { assert_parses("fun get() -> impl Iterator<Item=i32> { }"); }
+#[ignore = "Parser limitation: dyn Trait syntax not supported - needs [PARSER-180] ticket"]
+#[test] fn test_sqlite_525_dyn_trait() { assert_parses("let x: Box<dyn Trait> = Box::new(val)"); }
+#[test] fn test_sqlite_526_type_bounds_where() { assert_parses("fun foo<T>(x: T) where T: Clone + Debug { }"); }
+
+// ============================================================================
+// Category 55: Expression Advanced
+// ============================================================================
+
+#[ignore = "Parser limitation: Full range (..) syntax not supported - needs [PARSER-181] ticket"]
+#[test] fn test_sqlite_527_range_full() { assert_parses("let r = .."); }
+#[ignore = "Parser limitation: Range from (n..) syntax not supported - needs [PARSER-182] ticket"]
+#[test] fn test_sqlite_528_range_from() { assert_parses("let r = 5.."); }
+#[ignore = "Parser limitation: Range to (..n) syntax not supported - needs [PARSER-183] ticket"]
+#[test] fn test_sqlite_529_range_to() { assert_parses("let r = ..10"); }
+#[test] fn test_sqlite_530_range_inclusive() { assert_parses("let r = 1..=10"); }
+#[ignore = "Parser limitation: Range to inclusive (..=n) syntax not supported - needs [PARSER-184] ticket"]
+#[test] fn test_sqlite_531_range_to_inclusive() { assert_parses("let r = ..=10"); }
+
+// ============================================================================
+// Category 56: Closure Advanced
+// ============================================================================
+
+#[test] fn test_sqlite_532_closure_move() { assert_parses("move || x + 1"); }
+#[ignore = "Parser limitation: Async closures not supported - needs [PARSER-185] ticket"]
+#[test] fn test_sqlite_533_closure_async() { assert_parses("async || { await_something().await }"); }
+#[ignore = "Parser limitation: Closure type annotations not fully supported - needs [PARSER-186] ticket"]
+#[test] fn test_sqlite_534_closure_type_annotation() { assert_parses("|x: i32| -> i32 { x + 1 }"); }
+#[test] fn test_sqlite_535_closure_multi_param() { assert_parses("|x, y, z| x + y + z"); }
+#[ignore = "Parser limitation: Closure pattern parameters not supported - needs [PARSER-187] ticket"]
+#[test] fn test_sqlite_536_closure_pattern() { assert_parses("|&x| x + 1"); }
+
+// ============================================================================
+// Category 57: Struct Advanced
+// ============================================================================
+
+#[test] fn test_sqlite_537_struct_update_syntax() { assert_parses("Point { x: 1, ..other }"); }
+#[test] fn test_sqlite_538_tuple_struct_pattern() { assert_parses("let Point(x, y) = p"); }
+#[test] fn test_sqlite_539_struct_shorthand() { assert_parses("Point { x, y }"); }
+#[test] fn test_sqlite_540_unit_struct() { assert_parses("struct Marker;"); }
+#[test] fn test_sqlite_541_struct_visibility() { assert_parses("pub struct Point { pub x: i32 }"); }
+
+// ============================================================================
+// Category 58: Enum Advanced
+// ============================================================================
+
+#[test] fn test_sqlite_542_enum_discriminant() { assert_parses("enum Color { Red = 1, Green = 2 }"); }
+#[test] fn test_sqlite_543_enum_complex_variant() { assert_parses("enum Message { Write { text: String, id: u32 } }"); }
+#[test] fn test_sqlite_544_enum_unit_variant() { assert_parses("enum Status { Active, Inactive }"); }
+#[test] fn test_sqlite_545_enum_tuple_variant() { assert_parses("enum Event { Click(i32, i32) }"); }
+#[test] fn test_sqlite_546_enum_generic() { assert_parses("enum Option<T> { Some(T), None }"); }
+
+// ============================================================================
+// Category 59: Trait Advanced
+// ============================================================================
+
+#[test] fn test_sqlite_547_trait_default_impl() { assert_parses("trait Foo { fun bar(&self) { } }"); }
+#[ignore = "Parser limitation: Trait associated constants not supported - needs [PARSER-188] ticket"]
+#[test] fn test_sqlite_548_trait_associated_const() { assert_parses("trait Foo { const N: i32; }"); }
+#[test] fn test_sqlite_549_trait_associated_type() { assert_parses("trait Container { type Item; }"); }
+#[ignore = "Parser limitation: Multiple trait supertraits not supported - needs [PARSER-189] ticket"]
+#[test] fn test_sqlite_550_trait_supertraits() { assert_parses("trait Sub: Super + Other { }"); }
+#[test] fn test_sqlite_551_trait_generic_bounds() { assert_parses("trait Foo<T: Clone> { }"); }
+
+// ============================================================================
+// Category 60: Impl Advanced
+// ============================================================================
+
+#[test] fn test_sqlite_552_impl_for_type() { assert_parses("impl MyTrait for MyType { }"); }
+#[test] fn test_sqlite_553_impl_generic() { assert_parses("impl<T> MyTrait for Vec<T> { }"); }
+#[ignore = "Parser limitation: Impl with where clause not fully supported - needs [PARSER-190] ticket"]
+#[test] fn test_sqlite_554_impl_where_clause() { assert_parses("impl<T> Foo for T where T: Clone { }"); }
+#[test] fn test_sqlite_555_impl_associated_type() { assert_parses("impl Container for Vec<i32> { type Item = i32; }"); }
+#[test] fn test_sqlite_556_impl_const() { assert_parses("impl Foo for i32 { const N: i32 = 42; }"); }
+
+// ============================================================================
 // Error Handling
 // ============================================================================
 

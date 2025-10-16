@@ -5,6 +5,14 @@ All notable changes to the Ruchy programming language will be documented in this
 ## [Unreleased]
 
 ### Added
+- **[SQLITE-TEST-001] Harness 1 Eighth Expansion - 450 Test Milestone**: Added 50 new advanced parser grammar tests (400→450, 12.5% increase)
+  - Test Pass Rate: 314/450 passing (69.8%)
+  - New Categories (10): Attributes advanced (derive, cfg, allow, deprecated, doc), Macro invocations (braces, parens, brackets, nested), Use statements (glob, nested, alias, self, super), Type system (higher-ranked bounds, associated types, impl Trait, dyn Trait, where clauses), Expressions (range variants), Closures (move, async, type annotations, patterns), Structs (update syntax, patterns, shorthand, visibility), Enums (discriminants, complex variants, generics), Traits (default impl, associated const/type, supertraits), Impl blocks (generic, where, associated types, constants)
+  - Defensive Testing: 16 new parser limitations (PARSER-175 through PARSER-190)
+  - Total Limitations: 136 documented (PARSER-060 fixed)
+  - Framework Total: 663 tests across 4 harnesses
+  - Progress: 450/2,000 tests (22.5% of Harness 1 complete)
+  - Time: 9.5h / 60h estimated
 - **[SQLITE-TEST-001] Harness 4 Sixth Expansion - 250 Test Milestone**: Added 50 new advanced runtime anomaly tests (200→250, 25% increase)
   - Test Pass Rate: 58/250 passing (23.2%)
   - New Categories (10): Memory leak detection, FFI anomalies, Macro system, Trait objects, Phantom types/ZST, Pin/Unpin semantics, Trait specialization, Inline assembly, Allocator API, Compile-time evaluation (const fn)
