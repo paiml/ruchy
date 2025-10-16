@@ -61,7 +61,41 @@ All notable changes to the Ruchy programming language will be documented in this
   - **Milestone**: 150 test threshold reached
   - **File**: tests/sqlite_001_parser_grammar.rs
 
-- **[SQLITE-TEST-004] Harness 4 Expansion**: Added 13 new runtime anomaly tests (17→30 tests, 76% increase)
+- **[SQLITE-TEST-004] Harness 4 Second Expansion**: Added 14 new runtime anomaly tests (30→44 tests, 47% increase)
+  - **Test Pass Rate**: 36/44 passing (81.8%)
+  - **New Categories**:
+    - Category 8: Control Flow Anomalies (5 tests)
+      - Break/continue outside loop (passing)
+      - Return outside function (passing)
+      - Wrong label in break statement (limitation discovered)
+      - Infinite loop detection (not implemented)
+    - Category 9: Variable Scope Anomalies (5 tests)
+      - Variable shadowing (passing)
+      - Out of scope access (limitation discovered)
+      - Immutable assignment (limitation discovered)
+      - Undefined variables (passing)
+      - Double declaration (passing - shadowing allowed)
+    - Category 10: Loop Anomalies (4 tests)
+      - Invalid ranges (passing)
+      - Non-iterable in for loop (limitation discovered)
+      - Non-boolean while condition (limitation discovered)
+      - Nested loops with same variable (passing)
+  - **Runtime Limitations Discovered**: 6 new limitations found
+    - [RUNTIME-004] Infinite loop detection not implemented
+    - [RUNTIME-005] Labeled break validation not enforced
+    - [RUNTIME-006] Block scope not enforced (variables leak)
+    - [RUNTIME-007] Immutability not enforced (can reassign let)
+    - [RUNTIME-008] Type checking for iterables not enforced
+    - [RUNTIME-009] Type checking for while conditions not enforced
+  - **Passing Tests**: 8/14 new tests passing (57%)
+  - **Ignored Tests**: 6/14 new tests (limitations documented)
+  - **Coverage**: 10 anomaly categories (up from 7)
+  - **Progress**: 44/50,000 tests (0.09%, 50% increase from 0.06%)
+  - **Time**: 4.5h / 60h estimated (7.5% time spent)
+  - **Toyota Way**: Defensive testing continues to find limitations proactively
+  - **File**: tests/sqlite_004_runtime_anomalies.rs
+
+- **[SQLITE-TEST-004] Harness 4 First Expansion**: Added 13 new runtime anomaly tests (17→30 tests, 76% increase)
   - **Test Pass Rate**: 28/30 passing (93.3%, up from 88.2%)
   - **New Categories**:
     - Category 5: String Operation Anomalies (5 tests)

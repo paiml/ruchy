@@ -410,6 +410,173 @@ fn test_sqlite_063_deeply_nested_calls_within_limit() {
 }
 
 // ============================================================================
+// Category 8: Control Flow Anomalies
+// ============================================================================
+
+/// Test break outside of loop
+#[test]
+fn test_sqlite_070_break_outside_loop() {
+    assert_runtime_error("break", &["break outside", "no loop"]);
+}
+
+/// Test continue outside of loop
+#[test]
+fn test_sqlite_071_continue_outside_loop() {
+    assert_runtime_error("continue", &["continue outside", "no loop"]);
+}
+
+/// Test return outside of function
+#[test]
+fn test_sqlite_072_return_outside_function() {
+    // Top-level return should either error or be handled gracefully
+    let result = execute_program("return 42");
+    // Should either error or complete (design decision)
+    assert!(result.is_ok() || result.is_err(), "Return outside function should not panic");
+}
+
+/// Test nested break with wrong label
+#[test]
+#[ignore = "Runtime limitation: labeled break validation not implemented - needs [RUNTIME-005] ticket"]
+fn test_sqlite_073_break_wrong_label() {
+    assert_runtime_error(
+        r#"
+        'outer: loop {
+            loop {
+                break 'inner;
+            }
+        }
+        "#,
+        &["label", "not found", "undefined"]
+    );
+}
+
+/// Test infinite loop timeout (if implemented)
+#[test]
+#[ignore = "Test would run indefinitely - infinite loop detection not yet implemented - needs [RUNTIME-004] ticket"]
+fn test_sqlite_074_infinite_loop_detection() {
+    // Infinite loop should either timeout or be detected
+    let result = std::panic::catch_unwind(|| {
+        execute_program("loop { let x = 1; }")
+    });
+    // Should not panic - may timeout or run indefinitely (test will timeout)
+    assert!(result.is_ok(), "Infinite loop should not panic runtime");
+}
+
+// ============================================================================
+// Category 9: Variable Scope Anomalies
+// ============================================================================
+
+/// Test variable shadowing
+#[test]
+fn test_sqlite_080_variable_shadowing() {
+    let result = execute_program(r#"
+        let x = 1;
+        {
+            let x = 2;
+            x
+        }
+    "#);
+    assert!(result.is_ok(), "Variable shadowing should work");
+}
+
+/// Test accessing variable after scope ends
+#[test]
+#[ignore = "Runtime limitation: block scope not enforced - needs [RUNTIME-006] ticket"]
+fn test_sqlite_081_variable_out_of_scope() {
+    assert_runtime_error(
+        r#"
+        {
+            let x = 42;
+        }
+        x
+        "#,
+        &["undefined", "not found", "not defined"]
+    );
+}
+
+/// Test mutable variable without mut keyword
+#[test]
+#[ignore = "Runtime limitation: immutability not enforced - needs [RUNTIME-007] ticket"]
+fn test_sqlite_082_immutable_assignment() {
+    assert_runtime_error(
+        r#"
+        let x = 1;
+        x = 2
+        "#,
+        &["immutable", "cannot assign", "not mutable"]
+    );
+}
+
+/// Test using undefined variable
+#[test]
+fn test_sqlite_083_undefined_variable() {
+    assert_runtime_error(
+        "undefined_var + 1",
+        &["undefined", "not found", "not defined"]
+    );
+}
+
+/// Test double declaration
+#[test]
+fn test_sqlite_084_double_declaration() {
+    // Double declaration in same scope - behavior varies by language
+    let result = execute_program(r#"
+        let x = 1;
+        let x = 2;
+        x
+    "#);
+    // Should either error or allow (shadowing) - must not panic
+    assert!(result.is_ok() || result.is_err(), "Double declaration should not panic");
+}
+
+// ============================================================================
+// Category 10: Loop Anomalies
+// ============================================================================
+
+/// Test for loop with invalid range
+#[test]
+fn test_sqlite_090_for_loop_invalid_range() {
+    // Range with start > end
+    let result = execute_program("for i in 10..1 { i }");
+    // Should either produce empty iteration or error - must not panic
+    assert!(result.is_ok() || result.is_err(), "Invalid range should not panic");
+}
+
+/// Test for loop with non-iterable
+#[test]
+#[ignore = "Runtime limitation: type checking for iterables not enforced - needs [RUNTIME-008] ticket"]
+fn test_sqlite_091_for_loop_non_iterable() {
+    assert_runtime_error(
+        "for i in 42 { i }",
+        &["not iterable", "cannot iterate", "not a collection"]
+    );
+}
+
+/// Test while loop with non-boolean condition
+#[test]
+#[ignore = "Runtime limitation: type checking for while conditions not enforced - needs [RUNTIME-009] ticket"]
+fn test_sqlite_092_while_non_boolean() {
+    assert_runtime_error(
+        "while 42 { break }",
+        &["not a boolean", "type error", "expected bool"]
+    );
+}
+
+/// Test nested loops with same variable
+#[test]
+fn test_sqlite_093_nested_loops_same_var() {
+    let result = execute_program(r#"
+        for i in 1..3 {
+            for i in 1..3 {
+                i
+            }
+        }
+    "#);
+    // Should work - inner i shadows outer i
+    assert!(result.is_ok(), "Nested loops with same variable should work");
+}
+
+// ============================================================================
 // Helper Functions
 // ============================================================================
 

@@ -170,12 +170,12 @@ Implemented foundation for **SQLite-level testing framework** targeting 608:1 te
 
 ---
 
-### ✅ Harness 4: Runtime Anomaly Validation (Expansion Phase - 0.06%)
+### ✅ Harness 4: Runtime Anomaly Validation (Expansion Phase - 0.09%)
 
 **File**: `tests/sqlite_004_runtime_anomalies.rs`
-**Status**: 🟢 Expansion Phase (30/50,000 tests = 0.06%)
-**Progress**: 30 tests implemented (28 passing, 2 ignored - **RUNTIME-001 FIXED**)
-**Time**: 4h / 60h estimated
+**Status**: 🟢 Expansion Phase (44/50,000 tests = 0.09%)
+**Progress**: 44 tests implemented (36 passing, 8 ignored - **RUNTIME-001 FIXED**)
+**Time**: 4.5h / 60h estimated
 
 **Implemented**:
 - ✅ **Category 1: Memory Anomalies** (3 tests)
@@ -198,10 +198,26 @@ Implemented foundation for **SQLite-level testing framework** targeting 608:1 te
   - Circular object references
   - Object with many fields (stress test)
   - Hash collision handling
-- ✅ **Category 7: Function Call Anomalies** (4 tests) - **NEW**
+- ✅ **Category 7: Function Call Anomalies** (4 tests)
   - Too many/few arguments
   - Undefined function (message constructor behavior)
   - Deeply nested calls within limit
+- ✅ **Category 8: Control Flow Anomalies** (5 tests) - **NEW**
+  - Break/continue outside loop
+  - Return outside function
+  - Wrong label in break statement
+  - Infinite loop detection (not implemented)
+- ✅ **Category 9: Variable Scope Anomalies** (5 tests) - **NEW**
+  - Variable shadowing
+  - Out of scope access
+  - Immutable assignment
+  - Undefined variables
+  - Double declaration
+- ✅ **Category 10: Loop Anomalies** (4 tests) - **NEW**
+  - Invalid ranges
+  - Non-iterable in for loop
+  - Non-boolean while condition
+  - Nested loops with same variable
 
 **CRITICAL Bug FIXED** (Toyota Way - Stop The Line):
 - ✅ **[RUNTIME-001]**: Stack overflow recursion depth limit **IMPLEMENTED**
@@ -216,17 +232,23 @@ Implemented foundation for **SQLite-level testing framework** targeting 608:1 te
     - `src/runtime/eval_display.rs`: Helpful error message with debugging hints
     - `src/runtime/repl/mod.rs`: REPL config integration
 
-**Remaining Issues** (Non-Critical):
-- 🟡 **[RUNTIME-002]**: Calling non-function doesn't produce clear error message (1 test ignored)
-- 🟡 **[RUNTIME-003]**: Field access on non-object doesn't produce clear error message (1 test ignored)
+**Runtime Limitations Discovered** (Toyota Way - Defensive Testing):
+- 🟡 **[RUNTIME-002]**: Calling non-function doesn't produce clear error message
+- 🟡 **[RUNTIME-003]**: Field access on non-object doesn't produce clear error message
+- 🟡 **[RUNTIME-004]**: Infinite loop detection not implemented - **NEW**
+- 🟡 **[RUNTIME-005]**: Labeled break validation not enforced - **NEW**
+- 🟡 **[RUNTIME-006]**: Block scope not enforced (variables leak across blocks) - **NEW**
+- 🟡 **[RUNTIME-007]**: Immutability not enforced (can reassign let variables) - **NEW**
+- 🟡 **[RUNTIME-008]**: Type checking for iterables not enforced - **NEW**
+- 🟡 **[RUNTIME-009]**: Type checking for while conditions not enforced - **NEW**
 
 **Key Achievements**:
 - ✅ **RUNTIME-001 FIXED**: Critical stack overflow bug resolved (Toyota Way: Jidoka - Stop the Line)
-- ✅ **Test Pass Rate**: 28/30 passing (93.3%) - up from 15/17 (88.2%)
-- ✅ **Test Expansion**: 13 new tests added (76% increase: 17→30 tests)
+- ✅ **Test Pass Rate**: 36/44 passing (81.8%)
+- ✅ **Test Expansion**: 27 new tests added since foundation (17→44, 159% increase)
 - ✅ **Production Safety**: Runtime now handles infinite recursion gracefully
-- ✅ **Coverage Expanded**: Added string, object, and function call anomaly tests
-- ✅ **7 Test Categories**: Comprehensive failure mode coverage
+- ✅ **Coverage Expanded**: 10 test categories (up from 4)
+- ✅ **8 Limitations Discovered**: Proactive defect discovery via defensive testing
 - ✅ **SQLite Principle Applied**: "Test failure modes, not just happy paths"
 
 **Research Foundation**:
