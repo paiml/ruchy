@@ -127,16 +127,15 @@ sqlite_testing_framework:
     - "ACM CSUR: Metamorphic testing (Chen et al. 2018)"
 
   quality_metrics:
-    - "94.3% pass rate (132/140 tests passing)"
+    - "95.0% pass rate (133/140 tests passing)"
     - "100% panic-free (0 panics across 454,000 iterations)"
-    - "6 defects found via defensive testing (PARSER-055 through PARSER-060)"
+    - "6 defects found, 1 fixed via defensive testing (PARSER-055 through PARSER-060)"
     - "Zero technical debt (all issues documented with tickets)"
 
   next_milestones:
-    - "Fix PARSER-060: Actor definition infinite loop bug (urgent)"
     - "Scale Harness 1 to 8,000 iterations (40% milestone)"
     - "Expand Harness 1 to 150 tests (7.5%)"
-    - "Fix parser limitations (40h estimated)"
+    - "Fix parser limitations (32h estimated for 5 remaining)"
     - "Begin Harness 4: Runtime Anomaly Tests"
 
 # Phase 4: Notebook Excellence - EXTREME Quality (wasm-labs inspired)
@@ -806,15 +805,18 @@ tasks:
 
   - id: "PARSER-060"
     title: "Fix actor definitions causing parser infinite loop"
-    status: "PENDING"
+    status: "COMPLETE"
+    completed: "2025-10-16"
     priority: "🔴 HIGH"
     discovered_by: "SQLITE-TEST-001 (test_sqlite_180_actor_definitions)"
     time_estimated: "8h"
+    time_actual: "0.5h"
+    efficiency: "1600%" # 8h estimated / 0.5h actual
     description: |
-      Parser enters infinite loop when parsing actor definitions with state blocks.
-      This is a critical bug causing test timeouts and potential production hangs.
+      Parser entered infinite loop when parsing actor definitions with 'fun' keyword.
+      This was a critical bug causing test timeouts and potential production hangs.
 
-      Example that hangs:
+      Example that hanged:
       ```ruchy
       actor Counter {
           state { count: i32 }
@@ -822,16 +824,16 @@ tasks:
       }
       ```
 
-      Root cause: Likely infinite recursion or missing termination condition in
-      actor parsing logic. Parser never returns from parse_actor_definition().
+      Root cause: parse_actor_state_fields() loop didn't exit on Token::Fun.
+      When it encountered 'fun' keyword, should_exit_state_parsing() returned false,
+      and parse_single_state_field() returned Ok(()) without consuming token.
+    fix:
+      - "Added Token::Fun check to should_exit_state_parsing()"
+      - "Implemented parse_fun_handler() to handle 'fun' keyword in actor bodies"
+      - "Updated parse_actor_handlers() to dispatch to parse_fun_handler()"
     tests:
       test_file: "tests/sqlite_001_parser_grammar.rs"
-      failing_test: "test_sqlite_180_actor_definitions (currently ignored)"
-    tdd_steps:
-      - "DEBUG: Add logging to parse_actor_definition() to find infinite loop location"
-      - "RED: Un-ignore test_sqlite_180_actor_definitions() - HANGS"
-      - "GREEN: Fix infinite loop in actor parser (add termination condition)"
-      - "REFACTOR: Ensure complexity ≤10, add property test for actor syntax"
+      passing_test: "test_sqlite_180_actor_definitions (now passing)"
     quality:
       complexity_max: 10
 

@@ -41,9 +41,10 @@ Implemented foundation for **SQLite-level testing framework** targeting 608:1 te
 - **2x scaling**: Property tests scaled from 2,000 → 4,000 iterations (20% milestone)
 - **6 parser limitations discovered** via defensive testing (Toyota Way)
 - **Tickets created**: PARSER-055 through PARSER-060
+- **PARSER-060 FIXED**: Actor definition infinite loop bug resolved
 - **Zero panics** across 4,000 property iterations
-- **92/98 passing** (6 ignored with documented tickets)
-- **Fast execution**: All tests complete in 0.47 seconds
+- **93/98 passing** (5 ignored with documented tickets, 1 fixed)
+- **Fast execution**: All tests complete in 0.48 seconds
 
 **Research Foundation**:
 - NASA DO-178B/C: Modified Condition/Decision Coverage (MC/DC)
@@ -56,7 +57,7 @@ Implemented foundation for **SQLite-level testing framework** targeting 608:1 te
 3. [PARSER-057] Export keyword not implemented
 4. [PARSER-058] Type aliases not implemented
 5. [PARSER-059] Array patterns (destructuring) not implemented
-6. [PARSER-060] Actor definitions cause parser hang (infinite loop bug)
+6. [PARSER-060] Actor definitions cause parser hang (**FIXED** - infinite loop resolved)
 
 ---
 
@@ -156,10 +157,10 @@ Implemented foundation for **SQLite-level testing framework** targeting 608:1 te
 
 | Category | Count | Status |
 |----------|-------|--------|
-| **Unit Tests** | 131 | ✅ All passing |
+| **Unit Tests** | 132 | ✅ All passing |
 | **Property Tests** | 9 | ✅ All passing |
-| **Ignored Tests** | 6 | 📋 Documented with tickets |
-| **Total Tests** | 140 | ✅ 96% passing |
+| **Ignored Tests** | 5 | 📋 Documented with tickets |
+| **Total Tests** | 140 | ✅ 96.4% passing |
 
 ### Property Test Iterations
 
@@ -204,10 +205,10 @@ Implemented foundation for **SQLite-level testing framework** targeting 608:1 te
 ## Quality Metrics
 
 ### Pass Rates
-- **Harness 1**: 92/98 passing (93.9%, 6 ignored with tickets)
+- **Harness 1**: 93/98 passing (94.9%, 5 ignored with tickets)
 - **Harness 2**: 22/22 passing (100%)
 - **Harness 3**: 18/18 passing (100%)
-- **Overall**: 132/140 passing (94.3%)
+- **Overall**: 133/140 passing (95.0%)
 
 ### Panic-Free Validation
 - ✅ Zero panics across 4,000 iterations (Harness 1)
@@ -226,14 +227,14 @@ Implemented foundation for **SQLite-level testing framework** targeting 608:1 te
 ## Next Steps (Priority Order)
 
 ### Immediate (Next Session)
-1. **Fix PARSER-060**: Actor definition infinite loop bug (urgent)
+1. ✅ **Fix PARSER-060**: Actor definition infinite loop bug (**COMPLETED**)
 2. **Continue scaling Harness 1**: Target 8,000 iterations (40% milestone)
 3. **Expand Harness 1** to 150 tests (7.5% complete)
 4. **Begin Harness 4**: Runtime Anomaly Tests (foundation phase)
 5. **Integrate H2 with type checker**: Connect to middleend/infer.rs for full soundness
 
 ### Short-term (This Week)
-6. **Fix parser limitations**: Implement PARSER-055 through PARSER-060
+6. **Fix parser limitations**: Implement PARSER-055 through PARSER-059
 7. **Integrate type checker**: Connect Harness 2 to `middleend/infer.rs`
 8. **Integrate optimizer**: Connect Harness 3 to real transformations
 
@@ -269,12 +270,14 @@ All discovered via **SQLITE-TEST-001** defensive testing:
    - Example: `match arr { [x, y, ..rest] => ... }`
    - Status: Documented, 8h fix estimated
 
-6. **[PARSER-060]**: Actor definitions cause infinite loop
-   - Example: `actor Counter { state { count: i32 } ... }`
-   - Status: Documented, 8h fix estimated (infinite loop bug)
+6. **[PARSER-060]**: Actor definitions cause infinite loop (**FIXED**)
+   - Example: `actor Counter { state { count: i32 } fun increment() {...} }`
+   - Status: **COMPLETED** - Fixed infinite loop bug
    - Discovery: Test timeout revealed parser hang
+   - Fix: Added support for 'fun' keyword in actor bodies, exit state parsing on 'fun' token
+   - Time actual: 0.5h (much faster than 8h estimate)
 
-**Total Remediation Effort**: 40 hours estimated
+**Total Remediation Effort**: 32 hours estimated (5 remaining issues)
 
 ---
 
@@ -314,9 +317,9 @@ All discovered via **SQLITE-TEST-001** defensive testing:
 3. **Missing harnesses**: 5/8 harnesses not yet started
 
 ### Path Forward
-1. **Fix PARSER-060** (actor infinite loop bug - urgent)
+1. ✅ **Fix PARSER-060** (actor infinite loop bug - **COMPLETED**)
 2. **Continue scaling existing harnesses** to 10% milestones
-3. **Fix discovered parser limitations** (40h estimated)
+3. **Fix discovered parser limitations** (32h estimated for 5 remaining issues)
 4. **Integrate with real components** (optimizer, type checker, interpreter)
 5. **Begin remaining harnesses** (4, 5, 6, 7, 8)
 

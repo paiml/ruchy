@@ -56,6 +56,7 @@ fn parse_actor_state_fields(state: &mut ParserState) -> Result<Vec<StructField>>
 fn should_exit_state_parsing(state: &mut ParserState) -> bool {
     matches!(state.tokens.peek(), Some((Token::RightBrace, _)))
         || matches!(state.tokens.peek(), Some((Token::Receive, _)))
+        || matches!(state.tokens.peek(), Some((Token::Fun, _))) // PARSER-060 fix: exit on 'fun' keyword
 }
 
 fn parse_single_state_field(
@@ -67,10 +68,17 @@ fn parse_single_state_field(
         Some((Token::Identifier(name), _)) if name == "state" => {
             parse_state_block(state, state_fields)
         }
-        Some((Token::Mut | Token::Identifier(_), _)) => {
+        Some((Token::Mut, _)) => {
             parse_inline_state_field(state, state_fields)
         }
-        _ => Ok(()), // Exit loop on unexpected token
+        Some((Token::Identifier(_), _)) => {
+            parse_inline_state_field(state, state_fields)
+        }
+        _ => {
+            // PARSER-060 fix: Exit immediately on unexpected token to prevent infinite loop
+            // This prevents the loop from continuing forever when encountering tokens like 'fun'
+            Ok(())
+        }
     }
 }
 
@@ -78,21 +86,54 @@ fn parse_actor_handlers(state: &mut ParserState) -> Result<Vec<ActorHandler>> {
     let mut handlers = Vec::new();
 
     while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
-        if matches!(state.tokens.peek(), Some((Token::Receive, _))) {
-            parse_receive_handler(state, &mut handlers)?;
-        } else {
-            return parse_handler_error(state);
-        }
+        parse_single_handler(state, &mut handlers)?;
     }
 
     Ok(handlers)
 }
 
-fn parse_handler_error(state: &mut ParserState) -> Result<Vec<ActorHandler>> {
-    if let Some((token, _)) = state.tokens.peek() {
-        bail!("Expected 'receive' or '}}', found {:?}", token);
+// PARSER-060: Extract handler parsing to reduce complexity
+fn parse_single_handler(state: &mut ParserState, handlers: &mut Vec<ActorHandler>) -> Result<()> {
+    match state.tokens.peek() {
+        Some((Token::Receive, _)) => parse_receive_handler(state, handlers),
+        Some((Token::Fun, _)) => parse_fun_handler(state, handlers),
+        _ => Err(parse_handler_error_message(state)),
     }
-    bail!("Expected 'receive' or '}}', found EOF");
+}
+
+fn parse_handler_error_message(state: &mut ParserState) -> anyhow::Error {
+    if let Some((token, _)) = state.tokens.peek() {
+        anyhow::anyhow!("Expected 'receive', 'fun', or '}}', found {:?}", token)
+    } else {
+        anyhow::anyhow!("Expected 'receive', 'fun', or '}}', found EOF")
+    }
+}
+
+// PARSER-060 fix: Parse 'fun' method definitions inside actors
+fn parse_fun_handler(state: &mut ParserState, handlers: &mut Vec<ActorHandler>) -> Result<()> {
+    state.tokens.advance(); // consume 'fun'
+
+    let message_type = parse_message_type(state)?;
+    let params = parse_optional_params(state)?;
+
+    // Optional return type
+    if matches!(state.tokens.peek(), Some((Token::Arrow, _))) {
+        state.tokens.advance(); // consume ->
+        let _return_type = utils::parse_type(state)?;
+    }
+
+    let body = if matches!(state.tokens.peek(), Some((Token::LeftBrace, _))) {
+        Box::new(collections::parse_block(state)?)
+    } else {
+        bail!("Expected block body for actor method");
+    };
+
+    handlers.push(ActorHandler {
+        message_type,
+        params,
+        body,
+    });
+    Ok(())
 }
 // Helper: Parse state block (complexity: 3)
 fn parse_state_block(state: &mut ParserState, state_fields: &mut Vec<StructField>) -> Result<()> {

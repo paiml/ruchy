@@ -4,6 +4,18 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+### Fixed
+- **[PARSER-060] Actor Definition Infinite Loop**: Fixed critical parser bug causing infinite loop
+  - **Root Cause**: parse_actor_state_fields() didn't exit on Token::Fun keyword
+  - **Symptom**: Parser hung indefinitely when parsing actors with 'fun' methods
+  - **Fix**: Added Token::Fun check to should_exit_state_parsing(), implemented parse_fun_handler()
+  - **Impact**: test_sqlite_180_actor_definitions now passes (93/98 passing, up from 92/98)
+  - **Discovery**: Found via SQLITE-TEST-001 defensive testing (test timeout)
+  - **Time**: 0.5h actual vs 8h estimated (1600% efficiency)
+  - **Example**: `actor Counter { state { count: i32 } fun increment() { self.count += 1 } }`
+  - **Toyota Way**: Stop-the-line principle - halted all work to fix critical bug immediately
+  - **Files Changed**: src/frontend/parser/actors.rs (3 functions modified)
+
 ### Added
 - **[SQLITE-TEST-001] Parser Grammar Coverage 20% Milestone**: Scaled to 4,000 iterations (2x increase)
   - **Property Test Scaling**: 2x increase from 2,000 → 4,000 iterations
