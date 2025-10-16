@@ -6000,6 +6000,684 @@ fn test_sqlite_540_range_ops() {
 }
 
 // ============================================================================
+// Category 101: Borrowing and Ownership Edge Cases
+// ============================================================================
+
+/// Test borrow checker basic
+#[test]
+#[ignore = "Runtime limitation: borrow checker not implemented - needs [RUNTIME-394] ticket"]
+fn test_sqlite_541_borrow_basic() {
+    let result = execute_program(r#"
+        let x = 5;
+        let y = &x;
+        let z = &x;
+    "#);
+    assert!(result.is_ok(), "Multiple immutable borrows should work");
+}
+
+/// Test mutable borrow exclusive
+#[test]
+#[ignore = "Runtime limitation: exclusive mutable borrow not enforced - needs [RUNTIME-395] ticket"]
+fn test_sqlite_542_mut_borrow_exclusive() {
+    let result = execute_program(r#"
+        let mut x = 5;
+        let y = &mut x;
+        *y += 1;
+    "#);
+    assert!(result.is_ok(), "Exclusive mutable borrow should work");
+}
+
+/// Test borrow lifetime
+#[test]
+#[ignore = "Runtime limitation: borrow lifetime checking not implemented - needs [RUNTIME-396] ticket"]
+fn test_sqlite_543_borrow_lifetime() {
+    let result = execute_program(r#"
+        let r;
+        {
+            let x = 5;
+            r = &x;
+        }
+    "#);
+    assert!(result.is_err(), "Borrowed value should not outlive owner");
+}
+
+/// Test move semantics
+#[test]
+#[ignore = "Runtime limitation: move semantics not implemented - needs [RUNTIME-397] ticket"]
+fn test_sqlite_544_move_semantics() {
+    let result = execute_program(r#"
+        let s1 = String::from("hello");
+        let s2 = s1;
+    "#);
+    assert!(result.is_ok(), "Move semantics should work");
+}
+
+/// Test copy trait
+#[test]
+#[ignore = "Runtime limitation: Copy trait not implemented - needs [RUNTIME-398] ticket"]
+fn test_sqlite_545_copy_trait() {
+    let result = execute_program(r#"
+        let x = 5;
+        let y = x;
+        let z = x;
+    "#);
+    assert!(result.is_ok(), "Copy trait should allow multiple uses");
+}
+
+// ============================================================================
+// Category 102: Macro System Runtime
+// ============================================================================
+
+/// Test macro invocation
+#[test]
+#[ignore = "Runtime limitation: macro invocation not implemented - needs [RUNTIME-399] ticket"]
+fn test_sqlite_546_macro_invoke() {
+    let result = execute_program(r#"
+        let v = vec![1, 2, 3];
+    "#);
+    assert!(result.is_ok(), "Macro invocation should work");
+}
+
+/// Test macro expansion
+#[test]
+#[ignore = "Runtime limitation: macro expansion not implemented - needs [RUNTIME-400] ticket"]
+fn test_sqlite_547_macro_expand() {
+    let result = execute_program(r#"
+        macro_rules! double {
+            ($x:expr) => { $x * 2 }
+        }
+        let result = double!(5);
+    "#);
+    assert!(result.is_ok(), "Macro expansion should work");
+}
+
+/// Test macro hygiene
+#[test]
+#[ignore = "Runtime limitation: macro hygiene not implemented - needs [RUNTIME-401] ticket"]
+fn test_sqlite_548_macro_hygiene() {
+    let result = execute_program(r#"
+        macro_rules! my_macro {
+            () => { let x = 1; }
+        }
+        my_macro!();
+        let x = 2;
+    "#);
+    assert!(result.is_ok(), "Macro hygiene should prevent name conflicts");
+}
+
+/// Test macro repetition
+#[test]
+#[ignore = "Runtime limitation: macro repetition not implemented - needs [RUNTIME-402] ticket"]
+fn test_sqlite_549_macro_repeat() {
+    let result = execute_program(r#"
+        macro_rules! sum {
+            ($($x:expr),*) => { $($x)+* }
+        }
+        let result = sum!(1, 2, 3);
+    "#);
+    assert!(result.is_ok(), "Macro repetition should work");
+}
+
+/// Test macro metavariables
+#[test]
+#[ignore = "Runtime limitation: macro metavariables not implemented - needs [RUNTIME-403] ticket"]
+fn test_sqlite_550_macro_metavar() {
+    let result = execute_program(r#"
+        macro_rules! create_fn {
+            ($name:ident) => {
+                fun $name() -> i32 { 42 }
+            }
+        }
+        create_fn!(my_func);
+    "#);
+    assert!(result.is_ok(), "Macro metavariables should work");
+}
+
+// ============================================================================
+// Category 103: Module System Runtime
+// ============================================================================
+
+/// Test module visibility
+#[test]
+#[ignore = "Runtime limitation: module visibility not implemented - needs [RUNTIME-404] ticket"]
+fn test_sqlite_551_mod_visibility() {
+    let result = execute_program(r#"
+        mod outer {
+            pub fun public_fn() { }
+            fun private_fn() { }
+        }
+        outer::public_fn();
+    "#);
+    assert!(result.is_ok(), "Module visibility should work");
+}
+
+/// Test nested modules
+#[test]
+#[ignore = "Runtime limitation: nested modules not implemented - needs [RUNTIME-405] ticket"]
+fn test_sqlite_552_nested_mods() {
+    let result = execute_program(r#"
+        mod outer {
+            pub mod inner {
+                pub fun foo() { }
+            }
+        }
+        outer::inner::foo();
+    "#);
+    assert!(result.is_ok(), "Nested modules should work");
+}
+
+/// Test use statements
+#[test]
+#[ignore = "Runtime limitation: use statements not implemented - needs [RUNTIME-406] ticket"]
+fn test_sqlite_553_use_stmt() {
+    let result = execute_program(r#"
+        mod my_mod {
+            pub fun my_fn() { }
+        }
+        use my_mod::my_fn;
+        my_fn();
+    "#);
+    assert!(result.is_ok(), "Use statements should work");
+}
+
+/// Test glob imports
+#[test]
+#[ignore = "Runtime limitation: glob imports not implemented - needs [RUNTIME-407] ticket"]
+fn test_sqlite_554_glob_import() {
+    let result = execute_program(r#"
+        mod my_mod {
+            pub fun fn1() { }
+            pub fun fn2() { }
+        }
+        use my_mod::*;
+        fn1();
+    "#);
+    assert!(result.is_ok(), "Glob imports should work");
+}
+
+/// Test re-exports
+#[test]
+#[ignore = "Runtime limitation: re-exports not implemented - needs [RUNTIME-408] ticket"]
+fn test_sqlite_555_reexport() {
+    let result = execute_program(r#"
+        mod inner {
+            pub fun foo() { }
+        }
+        mod outer {
+            pub use super::inner::foo;
+        }
+        outer::foo();
+    "#);
+    assert!(result.is_ok(), "Re-exports should work");
+}
+
+// ============================================================================
+// Category 104: Generic Functions Runtime
+// ============================================================================
+
+/// Test generic function basic
+#[test]
+#[ignore = "Runtime limitation: generic functions not implemented - needs [RUNTIME-409] ticket"]
+fn test_sqlite_556_generic_fn() {
+    let result = execute_program(r#"
+        fun identity<T>(x: T) -> T { x }
+        let result = identity(42);
+    "#);
+    assert!(result.is_ok(), "Generic functions should work");
+}
+
+/// Test generic function with bounds
+#[test]
+#[ignore = "Runtime limitation: generic function bounds not implemented - needs [RUNTIME-410] ticket"]
+fn test_sqlite_557_generic_fn_bounds() {
+    let result = execute_program(r#"
+        fun print_clone<T: Clone>(x: T) {
+            let y = x.clone();
+        }
+    "#);
+    assert!(result.is_ok(), "Generic function bounds should work");
+}
+
+/// Test generic function multiple params
+#[test]
+#[ignore = "Runtime limitation: generic function multiple params not implemented - needs [RUNTIME-411] ticket"]
+fn test_sqlite_558_generic_fn_multi() {
+    let result = execute_program(r#"
+        fun pair<T, U>(x: T, y: U) -> (T, U) {
+            (x, y)
+        }
+    "#);
+    assert!(result.is_ok(), "Generic functions with multiple params should work");
+}
+
+/// Test generic function inference
+#[test]
+#[ignore = "Runtime limitation: generic function type inference not implemented - needs [RUNTIME-412] ticket"]
+fn test_sqlite_559_generic_fn_infer() {
+    let result = execute_program(r#"
+        fun wrap<T>(x: T) -> Option<T> {
+            Some(x)
+        }
+        let result = wrap(42);
+    "#);
+    assert!(result.is_ok(), "Generic function type inference should work");
+}
+
+/// Test generic function turbofish
+#[test]
+#[ignore = "Runtime limitation: turbofish syntax not implemented - needs [RUNTIME-413] ticket"]
+fn test_sqlite_560_turbofish() {
+    let result = execute_program(r#"
+        fun identity<T>(x: T) -> T { x }
+        let result = identity::<i32>(42);
+    "#);
+    assert!(result.is_ok(), "Turbofish syntax should work");
+}
+
+// ============================================================================
+// Category 105: Trait Object Runtime
+// ============================================================================
+
+/// Test trait object creation
+#[test]
+#[ignore = "Runtime limitation: trait object creation not implemented - needs [RUNTIME-414] ticket"]
+fn test_sqlite_561_trait_obj_create() {
+    let result = execute_program(r#"
+        trait Animal {
+            fun speak(&self);
+        }
+        struct Dog;
+        impl Animal for Dog {
+            fun speak(&self) { }
+        }
+        let animal: Box<dyn Animal> = Box::new(Dog);
+    "#);
+    assert!(result.is_ok(), "Trait object creation should work");
+}
+
+/// Test trait object method call
+#[test]
+#[ignore = "Runtime limitation: trait object method call not implemented - needs [RUNTIME-415] ticket"]
+fn test_sqlite_562_trait_obj_call() {
+    let result = execute_program(r#"
+        trait Greet {
+            fun greet(&self) -> String;
+        }
+        struct Person;
+        impl Greet for Person {
+            fun greet(&self) -> String { "Hello".to_string() }
+        }
+        let g: Box<dyn Greet> = Box::new(Person);
+        g.greet();
+    "#);
+    assert!(result.is_ok(), "Trait object method call should work");
+}
+
+/// Test trait object downcasting
+#[test]
+#[ignore = "Runtime limitation: trait object downcasting not implemented - needs [RUNTIME-416] ticket"]
+fn test_sqlite_563_trait_obj_downcast() {
+    let result = execute_program(r#"
+        use std::any::Any;
+        let x: Box<dyn Any> = Box::new(42);
+        let y = x.downcast::<i32>();
+    "#);
+    assert!(result.is_ok(), "Trait object downcasting should work");
+}
+
+/// Test trait object with associated types
+#[test]
+#[ignore = "Runtime limitation: trait object with associated types not implemented - needs [RUNTIME-417] ticket"]
+fn test_sqlite_564_trait_obj_assoc() {
+    let result = execute_program(r#"
+        trait Iterator {
+            type Item;
+            fun next(&mut self) -> Option<Self::Item>;
+        }
+    "#);
+    assert!(result.is_ok(), "Trait object with associated types should work");
+}
+
+/// Test trait object sizing
+#[test]
+#[ignore = "Runtime limitation: trait object sizing not implemented - needs [RUNTIME-418] ticket"]
+fn test_sqlite_565_trait_obj_size() {
+    let result = execute_program(r#"
+        trait Drawable {}
+        struct Circle;
+        impl Drawable for Circle {}
+        let d: &dyn Drawable = &Circle;
+    "#);
+    assert!(result.is_ok(), "Trait object sizing should work");
+}
+
+// ============================================================================
+// Category 106: Concurrency Primitives Runtime
+// ============================================================================
+
+/// Test thread spawn
+#[test]
+#[ignore = "Runtime limitation: thread spawn not implemented - needs [RUNTIME-419] ticket"]
+fn test_sqlite_566_thread_spawn() {
+    let result = execute_program(r#"
+        use std::thread;
+        let handle = thread::spawn(|| { 42 });
+        let result = handle.join();
+    "#);
+    assert!(result.is_ok(), "Thread spawn should work");
+}
+
+/// Test Arc sharing
+#[test]
+#[ignore = "Runtime limitation: Arc sharing not implemented - needs [RUNTIME-420] ticket"]
+fn test_sqlite_567_arc_share() {
+    let result = execute_program(r#"
+        use std::sync::Arc;
+        let data = Arc::new(vec![1, 2, 3]);
+        let data2 = Arc::clone(&data);
+    "#);
+    assert!(result.is_ok(), "Arc sharing should work");
+}
+
+/// Test channel communication
+#[test]
+#[ignore = "Runtime limitation: channel communication not implemented - needs [RUNTIME-421] ticket"]
+fn test_sqlite_568_channel() {
+    let result = execute_program(r#"
+        use std::sync::mpsc;
+        let (tx, rx) = mpsc::channel();
+        tx.send(42).unwrap();
+        let val = rx.recv().unwrap();
+    "#);
+    assert!(result.is_ok(), "Channel communication should work");
+}
+
+/// Test Mutex synchronization
+#[test]
+#[ignore = "Runtime limitation: Mutex synchronization not implemented - needs [RUNTIME-422] ticket"]
+fn test_sqlite_569_mutex_sync() {
+    let result = execute_program(r#"
+        use std::sync::Mutex;
+        let m = Mutex::new(5);
+        let mut num = m.lock().unwrap();
+        *num = 6;
+    "#);
+    assert!(result.is_ok(), "Mutex synchronization should work");
+}
+
+/// Test Send and Sync traits
+#[test]
+#[ignore = "Runtime limitation: Send/Sync traits not implemented - needs [RUNTIME-423] ticket"]
+fn test_sqlite_570_send_sync() {
+    let result = execute_program(r#"
+        fun is_send<T: Send>() {}
+        fun is_sync<T: Sync>() {}
+        is_send::<i32>();
+        is_sync::<i32>();
+    "#);
+    assert!(result.is_ok(), "Send/Sync traits should work");
+}
+
+// ============================================================================
+// Category 107: Async Runtime Advanced
+// ============================================================================
+
+/// Test async executor
+#[test]
+#[ignore = "Runtime limitation: async executor not implemented - needs [RUNTIME-424] ticket"]
+fn test_sqlite_571_async_exec() {
+    let result = execute_program(r#"
+        async fun foo() -> i32 { 42 }
+        let result = foo().await;
+    "#);
+    assert!(result.is_ok(), "Async executor should work");
+}
+
+/// Test async task spawning
+#[test]
+#[ignore = "Runtime limitation: async task spawning not implemented - needs [RUNTIME-425] ticket"]
+fn test_sqlite_572_async_spawn() {
+    let result = execute_program(r#"
+        async fun task() { }
+        let handle = tokio::spawn(task());
+    "#);
+    assert!(result.is_ok(), "Async task spawning should work");
+}
+
+/// Test async select
+#[test]
+#[ignore = "Runtime limitation: async select not implemented - needs [RUNTIME-426] ticket"]
+fn test_sqlite_573_async_select() {
+    let result = execute_program(r#"
+        async fun foo() -> i32 { 1 }
+        async fun bar() -> i32 { 2 }
+        let result = tokio::select! {
+            x = foo() => x,
+            y = bar() => y,
+        };
+    "#);
+    assert!(result.is_ok(), "Async select should work");
+}
+
+/// Test async timeout
+#[test]
+#[ignore = "Runtime limitation: async timeout not implemented - needs [RUNTIME-427] ticket"]
+fn test_sqlite_574_async_timeout() {
+    let result = execute_program(r#"
+        use tokio::time::{timeout, Duration};
+        async fun slow() { }
+        let result = timeout(Duration::from_secs(1), slow()).await;
+    "#);
+    assert!(result.is_ok(), "Async timeout should work");
+}
+
+/// Test async streams
+#[test]
+#[ignore = "Runtime limitation: async streams not implemented - needs [RUNTIME-428] ticket"]
+fn test_sqlite_575_async_stream() {
+    let result = execute_program(r#"
+        use futures::stream::{self, StreamExt};
+        let stream = stream::iter(vec![1, 2, 3]);
+        stream.for_each(|x| async { }).await;
+    "#);
+    assert!(result.is_ok(), "Async streams should work");
+}
+
+// ============================================================================
+// Category 108: Memory Management Edge Cases
+// ============================================================================
+
+/// Test memory allocation
+#[test]
+#[ignore = "Runtime limitation: memory allocation tracking not implemented - needs [RUNTIME-429] ticket"]
+fn test_sqlite_576_mem_alloc() {
+    let result = execute_program(r#"
+        let v = vec![1, 2, 3, 4, 5];
+        drop(v);
+    "#);
+    assert!(result.is_ok(), "Memory allocation should work");
+}
+
+/// Test stack vs heap
+#[test]
+#[ignore = "Runtime limitation: stack/heap distinction not implemented - needs [RUNTIME-430] ticket"]
+fn test_sqlite_577_stack_heap() {
+    let result = execute_program(r#"
+        let stack_val = 42;
+        let heap_val = Box::new(42);
+    "#);
+    assert!(result.is_ok(), "Stack vs heap should work");
+}
+
+/// Test memory leak detection
+#[test]
+#[ignore = "Runtime limitation: memory leak detection not implemented - needs [RUNTIME-431] ticket"]
+fn test_sqlite_578_mem_leak() {
+    let result = execute_program(r#"
+        use std::rc::Rc;
+        let a = Rc::new(5);
+        let b = Rc::clone(&a);
+    "#);
+    assert!(result.is_ok(), "Memory leak detection should work");
+}
+
+/// Test weak references
+#[test]
+#[ignore = "Runtime limitation: weak references not implemented - needs [RUNTIME-432] ticket"]
+fn test_sqlite_579_weak_ref() {
+    let result = execute_program(r#"
+        use std::rc::{Rc, Weak};
+        let strong = Rc::new(5);
+        let weak: Weak<_> = Rc::downgrade(&strong);
+    "#);
+    assert!(result.is_ok(), "Weak references should work");
+}
+
+/// Test custom allocators
+#[test]
+#[ignore = "Runtime limitation: custom allocators not implemented - needs [RUNTIME-433] ticket"]
+fn test_sqlite_580_custom_alloc() {
+    let result = execute_program(r#"
+        use std::alloc::{System, GlobalAlloc};
+        let layout = Layout::new::<i32>();
+        unsafe { System.alloc(layout) };
+    "#);
+    assert!(result.is_ok(), "Custom allocators should work");
+}
+
+// ============================================================================
+// Category 109: FFI and External Integration
+// ============================================================================
+
+/// Test C function calling
+#[test]
+#[ignore = "Runtime limitation: C function calling not implemented - needs [RUNTIME-434] ticket"]
+fn test_sqlite_581_c_call() {
+    let result = execute_program(r#"
+        extern "C" {
+            fun abs(x: i32) -> i32;
+        }
+        unsafe { abs(-5); }
+    "#);
+    assert!(result.is_ok(), "C function calling should work");
+}
+
+/// Test FFI types
+#[test]
+#[ignore = "Runtime limitation: FFI types not implemented - needs [RUNTIME-435] ticket"]
+fn test_sqlite_582_ffi_types() {
+    let result = execute_program(r#"
+        use std::os::raw::{c_int, c_char};
+        let x: c_int = 42;
+    "#);
+    assert!(result.is_ok(), "FFI types should work");
+}
+
+/// Test callback functions
+#[test]
+#[ignore = "Runtime limitation: callback functions not implemented - needs [RUNTIME-436] ticket"]
+fn test_sqlite_583_callback() {
+    let result = execute_program(r#"
+        extern "C" fun callback(x: i32) -> i32 { x * 2 }
+        type Callback = extern "C" fn(i32) -> i32;
+        let cb: Callback = callback;
+    "#);
+    assert!(result.is_ok(), "Callback functions should work");
+}
+
+/// Test external library linking
+#[test]
+#[ignore = "Runtime limitation: external library linking not implemented - needs [RUNTIME-437] ticket"]
+fn test_sqlite_584_extern_lib() {
+    let result = execute_program(r#"
+        #[link(name = "m")]
+        extern "C" {
+            fun sqrt(x: f64) -> f64;
+        }
+    "#);
+    assert!(result.is_ok(), "External library linking should work");
+}
+
+/// Test raw pointer conversion
+#[test]
+#[ignore = "Runtime limitation: raw pointer conversion not implemented - needs [RUNTIME-438] ticket"]
+fn test_sqlite_585_raw_ptr_conv() {
+    let result = execute_program(r#"
+        let x = 5;
+        let ptr = &x as *const i32;
+        unsafe { *ptr };
+    "#);
+    assert!(result.is_ok(), "Raw pointer conversion should work");
+}
+
+// ============================================================================
+// Category 110: Performance and Optimization
+// ============================================================================
+
+/// Test zero-cost abstraction
+#[test]
+#[ignore = "Runtime limitation: zero-cost abstraction verification not implemented - needs [RUNTIME-439] ticket"]
+fn test_sqlite_586_zero_cost() {
+    let result = execute_program(r#"
+        let v = vec![1, 2, 3];
+        let sum: i32 = v.iter().map(|x| x * 2).sum();
+    "#);
+    assert!(result.is_ok(), "Zero-cost abstraction should work");
+}
+
+/// Test inline optimization
+#[test]
+#[ignore = "Runtime limitation: inline optimization not implemented - needs [RUNTIME-440] ticket"]
+fn test_sqlite_587_inline() {
+    let result = execute_program(r#"
+        #[inline(always)]
+        fun add(a: i32, b: i32) -> i32 { a + b }
+        let result = add(1, 2);
+    "#);
+    assert!(result.is_ok(), "Inline optimization should work");
+}
+
+/// Test const evaluation
+#[test]
+#[ignore = "Runtime limitation: const evaluation not implemented - needs [RUNTIME-441] ticket"]
+fn test_sqlite_588_const_eval() {
+    let result = execute_program(r#"
+        const fn factorial(n: u32) -> u32 {
+            if n == 0 { 1 } else { n * factorial(n - 1) }
+        }
+        const RESULT: u32 = factorial(5);
+    "#);
+    assert!(result.is_ok(), "Const evaluation should work");
+}
+
+/// Test SIMD operations
+#[test]
+#[ignore = "Runtime limitation: SIMD operations not implemented - needs [RUNTIME-442] ticket"]
+fn test_sqlite_589_simd() {
+    let result = execute_program(r#"
+        use std::arch::x86_64::*;
+        unsafe {
+            let a = _mm_set_ps(1.0, 2.0, 3.0, 4.0);
+            let b = _mm_set_ps(5.0, 6.0, 7.0, 8.0);
+            let c = _mm_add_ps(a, b);
+        }
+    "#);
+    assert!(result.is_ok(), "SIMD operations should work");
+}
+
+/// Test lazy evaluation
+#[test]
+#[ignore = "Runtime limitation: lazy evaluation not implemented - needs [RUNTIME-443] ticket"]
+fn test_sqlite_590_lazy_eval() {
+    let result = execute_program(r#"
+        let v = vec![1, 2, 3, 4, 5];
+        let iter = v.iter().map(|x| x * 2);
+        let first = iter.take(2).collect::<Vec<_>>();
+    "#);
+    assert!(result.is_ok(), "Lazy evaluation should work");
+}
+
+// ============================================================================
 // Helper Functions
 // ============================================================================
 

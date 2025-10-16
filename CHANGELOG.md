@@ -5,6 +5,14 @@ All notable changes to the Ruchy programming language will be documented in this
 ## [Unreleased]
 
 ### Added
+- **[SQLITE-TEST-001] Harness 4 Eleventh Expansion - 500 Test Milestone (1% COMPLETE!)**: Added 50 new runtime anomaly tests (450→500, 11.1% increase)
+  - Test Pass Rate: 58/500 passing (11.6%)
+  - New Categories (10): Borrowing and ownership edge cases (borrow checker basic, mutable borrow exclusive, borrow lifetime, move semantics, Copy trait), Macro system runtime (macro invocation, expansion, hygiene, repetition, metavariables), Module system runtime (module visibility, nested modules, use statements, glob imports, re-exports), Generic functions runtime (generic function basic, with bounds, multiple params, type inference, turbofish), Trait object runtime (trait object creation, method call, downcasting, with associated types, sizing), Concurrency primitives runtime (thread spawn, Arc sharing, channel communication, Mutex synchronization, Send/Sync traits), Async runtime advanced (async executor, task spawning, select, timeout, streams), Memory management edge cases (memory allocation, stack vs heap, leak detection, weak references, custom allocators), FFI and external integration (C function calling, FFI types, callback functions, external library linking, raw pointer conversion), Performance and optimization (zero-cost abstraction, inline optimization, const evaluation, SIMD operations, lazy evaluation)
+  - Defensive Testing: 50 new runtime limitations (RUNTIME-394 through RUNTIME-443)
+  - Total Limitations: 442 documented (RUNTIME-001 fixed)
+  - Framework Total: 1,113 tests across 4 harnesses
+  - Progress: 500/50,000 tests (**1.00% of Harness 4 complete - 1% MILESTONE!**)
+  - Time: 18.5h / 60h estimated
 - **[SQLITE-TEST-001] Harness 1 Twelfth Expansion - 650 Test Milestone (32.5% Complete)**: Added 50 new parser grammar tests (600→650, 8.3% increase)
   - Test Pass Rate: 460/650 passing (70.8%)
   - New Categories (10): Type alias and newtype (type alias, generic alias, alias with where, newtype pattern, function type alias), Impl blocks advanced (basic impl, generic impl, trait for type, impl with where, associated items), Pattern syntax advanced (wildcard, tuple pattern, struct pattern, ref pattern, mut pattern), Loop syntax advanced (loop basic, labeled loop, break with value, break label, continue label), Type annotation edge cases (type annotation, tuple type, array type, reference type, function type), Expression statement forms (expr stmt, block expr, if expr, match expr, loop expr), Literal variants (decimal, hex, octal, binary, underscore separator), Attribute positions (outer attr, inner attr, multiple attr, attr with value, attr path), Expression precedence (arithmetic, comparison, logical, parentheses, unary), Whitespace and formatting (minimal whitespace, generous whitespace, newlines, empty lines, trailing comma)
