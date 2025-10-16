@@ -166,18 +166,38 @@ Implemented foundation for **SQLite-level testing framework** targeting 608:1 te
 
 ---
 
-### ✅ Harness 4: Runtime Anomaly Validation (Foundation Phase - 0.03%)
+### ✅ Harness 4: Runtime Anomaly Validation (Expansion Phase - 0.06%)
 
 **File**: `tests/sqlite_004_runtime_anomalies.rs`
-**Status**: 🟢 Foundation Complete (17/50,000 tests = 0.03%)
-**Progress**: 17 tests implemented (15 passing, 2 ignored - **RUNTIME-001 FIXED**)
-**Time**: 3.5h / 60h estimated
+**Status**: 🟢 Expansion Phase (30/50,000 tests = 0.06%)
+**Progress**: 30 tests implemented (28 passing, 2 ignored - **RUNTIME-001 FIXED**)
+**Time**: 4h / 60h estimated
 
 **Implemented**:
-- ✅ 3 stack overflow tests (infinite recursion, mutual recursion, deep calls) - **NOW PASSING**
-- ✅ 8 arithmetic anomaly tests (div by zero, overflow, NaN/Infinity handling)
-- ✅ 3 type error tests (calling non-function, field access, indexing)
-- ✅ 3 array anomaly tests (negative index, out of bounds, empty array)
+- ✅ **Category 1: Memory Anomalies** (3 tests)
+  - Stack overflow (infinite, mutual, deep recursion) - **NOW PASSING**
+- ✅ **Category 2: Arithmetic Anomalies** (8 tests)
+  - Division by zero, modulo by zero
+  - Integer overflow (add, sub, mul)
+  - Float NaN and Infinity handling
+- ✅ **Category 3: Type Errors** (3 tests)
+  - Calling non-function, field access, indexing non-indexable
+- ✅ **Category 4: Array/Collection Anomalies** (3 tests)
+  - Negative index, out of bounds, empty array
+- ✅ **Category 5: String Operation Anomalies** (5 tests) - **NEW**
+  - String index/slice out of bounds
+  - Invalid UTF-8 handling
+  - String method on non-string
+  - Very long string allocation
+- ✅ **Category 6: Hash/Object Anomalies** (4 tests) - **NEW**
+  - Undefined object field access
+  - Circular object references
+  - Object with many fields (stress test)
+  - Hash collision handling
+- ✅ **Category 7: Function Call Anomalies** (4 tests) - **NEW**
+  - Too many/few arguments
+  - Undefined function (message constructor behavior)
+  - Deeply nested calls within limit
 
 **CRITICAL Bug FIXED** (Toyota Way - Stop The Line):
 - ✅ **[RUNTIME-001]**: Stack overflow recursion depth limit **IMPLEMENTED**
@@ -198,9 +218,11 @@ Implemented foundation for **SQLite-level testing framework** targeting 608:1 te
 
 **Key Achievements**:
 - ✅ **RUNTIME-001 FIXED**: Critical stack overflow bug resolved (Toyota Way: Jidoka - Stop the Line)
-- ✅ **Test Pass Rate**: 15/17 passing (88.2%) - up from 12/17 (70.6%)
+- ✅ **Test Pass Rate**: 28/30 passing (93.3%) - up from 15/17 (88.2%)
+- ✅ **Test Expansion**: 13 new tests added (76% increase: 17→30 tests)
 - ✅ **Production Safety**: Runtime now handles infinite recursion gracefully
-- ✅ **Foundation Established**: Test framework ready for expansion to 50K+ tests
+- ✅ **Coverage Expanded**: Added string, object, and function call anomaly tests
+- ✅ **7 Test Categories**: Comprehensive failure mode coverage
 - ✅ **SQLite Principle Applied**: "Test failure modes, not just happy paths"
 
 **Research Foundation**:

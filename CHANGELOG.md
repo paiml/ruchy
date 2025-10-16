@@ -43,6 +43,30 @@ All notable changes to the Ruchy programming language will be documented in this
   - **Files Changed**: src/frontend/parser/actors.rs (3 functions modified)
 
 ### Added
+- **[SQLITE-TEST-004] Harness 4 Expansion**: Added 13 new runtime anomaly tests (17→30 tests, 76% increase)
+  - **Test Pass Rate**: 28/30 passing (93.3%, up from 88.2%)
+  - **New Categories**:
+    - Category 5: String Operation Anomalies (5 tests)
+      - String index/slice out of bounds
+      - Invalid UTF-8 handling
+      - String method on non-string
+      - Very long string allocation
+    - Category 6: Hash/Object Anomalies (4 tests)
+      - Undefined object field access
+      - Circular object references
+      - Object with many fields (stress test)
+      - Hash collision handling
+    - Category 7: Function Call Anomalies (4 tests)
+      - Too many/few arguments
+      - Undefined function behavior
+      - Deeply nested calls within limit
+  - **Test Fixes**: Adjusted 3 tests for actual runtime behavior (message constructors, error messages)
+  - **Zero New Bugs**: All new tests pass (no panics, graceful error handling)
+  - **Coverage**: Now testing 7 anomaly categories (up from 4)
+  - **Progress**: 30/50,000 tests (0.06%, doubled from 0.03%)
+  - **Time**: 4h / 60h estimated (6.7% time spent)
+  - **File**: tests/sqlite_004_runtime_anomalies.rs
+
 - **[RUNTIME-001] Recursion Depth Limit Specification**: Created comprehensive fix specification
   - **Status**: CRITICAL PRODUCTION BLOCKER - requires immediate fix
   - **Root Cause**: No recursion depth tracking in eval_function_call
