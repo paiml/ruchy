@@ -2511,6 +2511,111 @@ fn test_sqlite_366_trait_object_send_sync() {
 #[test] fn test_sqlite_706_mod_attributes() { assert_parses("#[cfg(test)] mod tests { }"); }
 
 // ============================================================================
+// Category 91: Type Alias and Newtype
+// ============================================================================
+
+#[test] fn test_sqlite_707_type_alias() { assert_parses("type Int = i32;"); }
+#[ignore = "Parser limitation: generic type alias not fully supported - needs [PARSER-240] ticket"]
+#[test] fn test_sqlite_708_type_alias_generic() { assert_parses("type Result<T> = std::result::Result<T, Error>;"); }
+#[ignore = "Parser limitation: type alias with where clause not supported - needs [PARSER-241] ticket"]
+#[test] fn test_sqlite_709_type_alias_where() { assert_parses("type Foo<T> where T: Clone = Vec<T>;"); }
+#[test] fn test_sqlite_710_newtype() { assert_parses("struct Meters(f64);"); }
+#[test] fn test_sqlite_711_type_alias_fn() { assert_parses("type Handler = fn(i32) -> bool;"); }
+
+// ============================================================================
+// Category 92: Impl Blocks Advanced
+// ============================================================================
+
+#[test] fn test_sqlite_712_impl_basic() { assert_parses("impl Foo { }"); }
+#[test] fn test_sqlite_713_impl_generic() { assert_parses("impl<T> Foo<T> { }"); }
+#[test] fn test_sqlite_714_impl_trait_for() { assert_parses("impl Trait for Type { }"); }
+#[ignore = "Parser limitation: impl with where clause not fully supported - needs [PARSER-242] ticket"]
+#[test] fn test_sqlite_715_impl_where() { assert_parses("impl<T> Foo<T> where T: Clone { }"); }
+#[test] fn test_sqlite_716_impl_associated() { assert_parses("impl Foo { type Item = i32; }"); }
+
+// ============================================================================
+// Category 93: Pattern Syntax Advanced
+// ============================================================================
+
+#[test] fn test_sqlite_717_pattern_wildcard() { assert_parses("let _ = 42;"); }
+#[test] fn test_sqlite_718_pattern_tuple() { assert_parses("let (x, y) = (1, 2);"); }
+#[test] fn test_sqlite_719_pattern_struct() { assert_parses("let Point { x, y } = p;"); }
+#[ignore = "Parser limitation: ref pattern not supported - needs [PARSER-243] ticket"]
+#[test] fn test_sqlite_720_pattern_ref() { assert_parses("let ref x = value;"); }
+#[test] fn test_sqlite_721_pattern_mut() { assert_parses("let mut x = 5;"); }
+
+// ============================================================================
+// Category 94: Loop Syntax Advanced
+// ============================================================================
+
+#[test] fn test_sqlite_722_loop_basic() { assert_parses("loop { }"); }
+#[test] fn test_sqlite_723_loop_label() { assert_parses("'outer: loop { }"); }
+#[test] fn test_sqlite_724_loop_break_value() { assert_parses("loop { break 42; }"); }
+#[test] fn test_sqlite_725_loop_break_label() { assert_parses("'outer: loop { break 'outer; }"); }
+#[test] fn test_sqlite_726_loop_continue_label() { assert_parses("'outer: loop { continue 'outer; }"); }
+
+// ============================================================================
+// Category 95: Type Annotation Edge Cases
+// ============================================================================
+
+#[test] fn test_sqlite_727_type_annotation() { assert_parses("let x: i32 = 5;"); }
+#[test] fn test_sqlite_728_type_tuple() { assert_parses("let x: (i32, i32) = (1, 2);"); }
+#[test] fn test_sqlite_729_type_array() { assert_parses("let x: [i32; 5] = [0; 5];"); }
+#[test] fn test_sqlite_730_type_reference() { assert_parses("let x: &i32 = &5;"); }
+#[test] fn test_sqlite_731_type_function() { assert_parses("let f: fn(i32) -> i32 = |x| x;"); }
+
+// ============================================================================
+// Category 96: Expression Statement Forms
+// ============================================================================
+
+#[test] fn test_sqlite_732_expr_stmt() { assert_parses("x + 1;"); }
+#[test] fn test_sqlite_733_expr_block() { assert_parses("{ 42 }"); }
+#[test] fn test_sqlite_734_expr_if() { assert_parses("if true { 1 } else { 2 }"); }
+#[test] fn test_sqlite_735_expr_match() { assert_parses("match x { _ => 1 }"); }
+#[test] fn test_sqlite_736_expr_loop() { assert_parses("loop { break; }"); }
+
+// ============================================================================
+// Category 97: Literal Variants
+// ============================================================================
+
+#[test] fn test_sqlite_737_lit_int_decimal() { assert_parses("let x = 123;"); }
+#[test] fn test_sqlite_738_lit_int_hex() { assert_parses("let x = 0xFF;"); }
+#[test] fn test_sqlite_739_lit_int_octal() { assert_parses("let x = 0o77;"); }
+#[test] fn test_sqlite_740_lit_int_binary() { assert_parses("let x = 0b1010;"); }
+#[test] fn test_sqlite_741_lit_int_underscore() { assert_parses("let x = 1_000_000;"); }
+
+// ============================================================================
+// Category 98: Attribute Positions
+// ============================================================================
+
+#[test] fn test_sqlite_742_attr_outer() { assert_parses("#[test] fun foo() { }"); }
+#[test] fn test_sqlite_743_attr_inner() { assert_parses("fun foo() { #![allow(unused)] }"); }
+#[test] fn test_sqlite_744_attr_multiple() { assert_parses("#[test] #[ignore] fun foo() { }"); }
+#[test] fn test_sqlite_745_attr_with_value() { assert_parses("#[cfg(target = \"x86\")] fun foo() { }"); }
+#[ignore = "Parser limitation: attribute with path not supported - needs [PARSER-244] ticket"]
+#[test] fn test_sqlite_746_attr_path() { assert_parses("#[some::path::attr] fun foo() { }"); }
+
+// ============================================================================
+// Category 99: Expression Precedence
+// ============================================================================
+
+#[test] fn test_sqlite_747_prec_arithmetic() { assert_parses("1 + 2 * 3"); }
+#[test] fn test_sqlite_748_prec_comparison() { assert_parses("x > 5 && y < 10"); }
+#[test] fn test_sqlite_749_prec_logical() { assert_parses("a || b && c"); }
+#[test] fn test_sqlite_750_prec_parens() { assert_parses("(1 + 2) * 3"); }
+#[test] fn test_sqlite_751_prec_unary() { assert_parses("-x * 2"); }
+
+// ============================================================================
+// Category 100: Whitespace and Formatting
+// ============================================================================
+
+#[test] fn test_sqlite_752_whitespace_minimal() { assert_parses("let x=1;"); }
+#[test] fn test_sqlite_753_whitespace_generous() { assert_parses("let    x    =    1   ;"); }
+#[test] fn test_sqlite_754_newlines() { assert_parses("let x = 1;\nlet y = 2;"); }
+#[test] fn test_sqlite_755_empty_lines() { assert_parses("let x = 1;\n\n\nlet y = 2;"); }
+#[test] fn test_sqlite_756_trailing_comma() { assert_parses("let arr = [1, 2, 3,];"); }
+
+// ============================================================================
 // Error Handling
 // ============================================================================
 
