@@ -17,6 +17,23 @@ All notable changes to the Ruchy programming language will be documented in this
   - **Files Changed**: src/frontend/parser/actors.rs (3 functions modified)
 
 ### Added
+- **[SQLITE-TEST-004] Runtime Anomaly Validation - Foundation Phase**: Created new test harness (17 tests)
+  - **NEW HARNESS**: Harness 4 operational - runtime failure mode testing
+  - **Tests Implemented**: 17 foundation tests (12 passing, 5 ignored with CRITICAL bugs)
+  - **Test Categories**:
+    - Memory anomalies (stack overflow detection)
+    - Arithmetic anomalies (div by zero, overflow, NaN/Infinity)
+    - Type errors (runtime type violations)
+    - Array anomalies (bounds violations, negative indices)
+  - **CRITICAL BUGS FOUND**: 3 stack overflow crashes discovered!
+    - [RUNTIME-001]: Stack overflow NOT caught - runtime crashes on infinite recursion
+    - [RUNTIME-002]: Calling non-function error message unclear
+    - [RUNTIME-003]: Field access on non-object error unclear
+  - **Toyota Way**: Defensive testing found production-blocking bugs before release
+  - **SQLite Principle**: "Test failure modes, not just happy paths"
+  - **File**: tests/sqlite_004_runtime_anomalies.rs
+  - **Framework Progress**: 4/8 harnesses operational (50% complete)
+
 - **[SQLITE-TEST-001] Parser Grammar Coverage Test Expansion**: Added 52 advanced grammar tests
   - **Test Expansion**: 98 → 145 total tests (+47 tests, 7.25% complete)
   - **New Tests**: 128 passing, 17 ignored (12 new parser limitations discovered)
