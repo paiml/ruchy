@@ -228,6 +228,8 @@ mod tests {
             kind: ExprKind::Literal(Literal::Integer(n, None)),
             span: Span::default(),
             attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
         }
     }
 
@@ -236,6 +238,8 @@ mod tests {
             kind: ExprKind::Literal(Literal::Float(f)),
             span: Span::default(),
             attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
         }
     }
 
@@ -244,6 +248,8 @@ mod tests {
             kind: ExprKind::Literal(Literal::Bool(b)),
             span: Span::default(),
             attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
         }
     }
 
@@ -256,6 +262,8 @@ mod tests {
             },
             span: Span::default(),
             attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
         }
     }
 
@@ -374,6 +382,8 @@ mod tests {
             },
             span: Span::default(),
             attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
         };
         assert!(
             compiler.has_return(&ast),

@@ -1621,6 +1621,8 @@ mod mutation_tests {
             kind: ExprKind::Literal(Literal::Integer(0, None)),
             span: Span { start: 0, end: 0 },
             attributes: Vec::new(),
+            leading_comments: vec![],
+            trailing_comment: None,
         };
 
         // Test when prec < min_prec (should return None)
@@ -1650,6 +1652,8 @@ mod mutation_tests {
             kind: ExprKind::Literal(Literal::Integer(0, None)),
             span: Span { start: 0, end: 0 },
             attributes: Vec::new(),
+            leading_comments: vec![],
+            trailing_comment: None,
         };
 
         let result = try_range_operators(&mut state, left, &Token::DotDot, 1);
@@ -1674,6 +1678,8 @@ mod mutation_tests {
             kind: ExprKind::Identifier("x".to_string()),
             span: Span { start: 0, end: 0 },
             attributes: Vec::new(),
+            leading_comments: vec![],
+            trailing_comment: None,
         };
 
         // Test boundary: when prec == min_prec
@@ -1705,6 +1711,8 @@ mod mutation_tests {
             kind: ExprKind::Identifier("x".to_string()),
             span: Span { start: 0, end: 0 },
             attributes: Vec::new(),
+            leading_comments: vec![],
+            trailing_comment: None,
         };
 
         // Test when prec < min_prec (should return None with < operator)
@@ -1734,6 +1742,8 @@ mod mutation_tests {
             kind: ExprKind::Literal(Literal::Bool(true)),
             span: Span { start: 0, end: 0 },
             attributes: Vec::new(),
+            leading_comments: vec![],
+            trailing_comment: None,
         };
 
         let result = try_ternary_operator(&mut state, left, &Token::Question, 1);
@@ -1749,3 +1759,4 @@ mod mutation_tests {
         }
     }
 }
+

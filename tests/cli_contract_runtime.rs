@@ -462,13 +462,13 @@ fn cli_runtime_empty_file_fails() {
     let temp = TempDir::new().unwrap();
     let file = create_temp_file(&temp, "empty.ruchy", "");
 
-    // Empty files fail with "Parse error: Empty program"
+    // Empty files fail with "Parse error: Unexpected end of input"
     ruchy_cmd()
         .arg("runtime")
         .arg(&file)
         .assert()
         .failure()
-        .stderr(predicate::str::contains("Empty program")
+        .stderr(predicate::str::contains("Unexpected end of input")
             .or(predicate::str::contains("Parse error")));
 }
 

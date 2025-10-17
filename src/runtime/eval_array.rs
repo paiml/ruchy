@@ -357,6 +357,8 @@ mod tests {
                 kind: crate::frontend::ast::ExprKind::Identifier("x".to_string()),
                 span: crate::frontend::ast::Span::new(0, 0),
                 attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
             }),
             env: Default::default(),
         };
@@ -387,6 +389,8 @@ mod tests {
                 kind: crate::frontend::ast::ExprKind::Identifier("acc".to_string()),
                 span: crate::frontend::ast::Span::new(0, 0),
                 attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
             }),
             env: Default::default(),
         };
@@ -445,6 +449,8 @@ mod tests {
                 kind: crate::frontend::ast::ExprKind::Literal(crate::frontend::ast::Literal::Null),
                 span: crate::frontend::ast::Span::new(0, 0),
                 attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
             }),
             env: Default::default(),
         };
@@ -478,6 +484,8 @@ mod tests {
                 kind: crate::frontend::ast::ExprKind::Identifier("x".to_string()),
                 span: crate::frontend::ast::Span::new(0, 0),
                 attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
             }),
             env: Default::default(),
         };
@@ -499,6 +507,8 @@ mod tests {
                 kind: crate::frontend::ast::ExprKind::Identifier("x".to_string()),
                 span: crate::frontend::ast::Span::new(0, 0),
                 attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
             }),
             env: Default::default(),
         };

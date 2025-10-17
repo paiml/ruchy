@@ -878,7 +878,7 @@ fn test_sqlite_144_deeply_nested_data() {
 #[test]
 fn test_sqlite_145_empty_program() {
     let result = execute_program("");
-    assert!(result.is_ok() || result.is_err(), "Empty program should not panic");
+    assert!(result.is_ok() || result.is_err(), "Unexpected end of input should not panic");
 }
 
 /// Test whitespace-only program

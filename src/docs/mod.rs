@@ -154,6 +154,8 @@ mod tests {
             kind: ExprKind::Literal(Literal::Integer(42, None)),
             span: Default::default(),
             attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
         };
         let docs = gen.extract_docs(&ast);
         assert_eq!(docs.len(), 2);
@@ -166,6 +168,8 @@ mod tests {
             kind: ExprKind::Literal(Literal::Integer(42, None)),
             span: Default::default(),
             attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
         };
         let result = gen.generate(&ast, DocFormat::Markdown);
         assert!(result.is_ok());
@@ -178,6 +182,8 @@ mod tests {
             kind: ExprKind::Literal(Literal::Integer(42, None)),
             span: Default::default(),
             attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
         };
         let result = gen.generate(&ast, DocFormat::Html);
         assert!(result.is_ok());
@@ -191,6 +197,8 @@ mod tests {
             kind: ExprKind::Literal(Literal::Integer(42, None)),
             span: Default::default(),
             attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
         };
         let result = gen.generate(&ast, DocFormat::Json);
         assert!(result.is_ok());
@@ -204,6 +212,8 @@ mod tests {
             kind: ExprKind::Literal(Literal::Integer(42, None)),
             span: Default::default(),
             attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
         };
         let examples = gen.extract_examples(&ast);
         assert_eq!(examples.len(), 1);
@@ -216,6 +226,8 @@ mod tests {
             kind: ExprKind::Literal(Literal::Integer(42, None)),
             span: Default::default(),
             attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
         };
         let result = gen.validate_examples(&ast);
         assert!(result.is_ok());
@@ -228,6 +240,8 @@ mod tests {
             kind: ExprKind::Literal(Literal::Integer(42, None)),
             span: Default::default(),
             attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
         };
         let attrs = gen.extract_attributes(&ast);
         assert_eq!(attrs.len(), 0);
@@ -240,6 +254,8 @@ mod tests {
             kind: ExprKind::Literal(Literal::Integer(42, None)),
             span: Default::default(),
             attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
         };
         let docs = gen.extract_inline_docs(&ast);
         assert_eq!(docs.len(), 0);
@@ -252,6 +268,8 @@ mod tests {
             kind: ExprKind::Literal(Literal::Integer(42, None)),
             span: Default::default(),
             attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
         };
         let groups = gen.group_by_module(&ast);
         assert!(groups.is_empty());
@@ -264,6 +282,8 @@ mod tests {
             kind: ExprKind::Literal(Literal::Integer(42, None)),
             span: Default::default(),
             attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
         };
         let index = gen.generate_index(&ast);
         assert!(index.is_empty());
@@ -276,6 +296,8 @@ mod tests {
             kind: ExprKind::Literal(Literal::Integer(42, None)),
             span: Default::default(),
             attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
         };
         let result = gen.resolve_links(&ast);
         assert!(result.is_ok());

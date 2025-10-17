@@ -240,6 +240,8 @@ mod tests {
             kind: ExprKind::Literal(Literal::Integer(value, None)),
             span: Span { start: 0, end: 0 },
             attributes: Vec::new(),
+            leading_comments: vec![],
+            trailing_comment: None,
         })
     }
     #[test]
@@ -343,6 +345,8 @@ mod mutation_tests {
             kind: ExprKind::Literal(Literal::Integer(42, None)),
             span: Span { start: 0, end: 0 },
             attributes: Vec::new(),
+            leading_comments: vec![],
+            trailing_comment: None,
         });
 
         cache.insert("test".to_string(), expr, None);
@@ -386,6 +390,8 @@ mod mutation_tests {
             kind: ExprKind::Literal(Literal::Integer(42, None)),
             span: Span { start: 0, end: 0 },
             attributes: Vec::new(),
+            leading_comments: vec![],
+            trailing_comment: None,
         });
 
         cache.insert("test".to_string(), Rc::clone(&expr), None);
@@ -411,6 +417,8 @@ mod mutation_tests {
             kind: ExprKind::Literal(Literal::Integer(42, None)),
             span: Span { start: 0, end: 0 },
             attributes: Vec::new(),
+            leading_comments: vec![],
+            trailing_comment: None,
         });
 
         cache.cache_parsed("expr".to_string(), expr);

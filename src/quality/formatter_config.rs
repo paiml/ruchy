@@ -263,12 +263,21 @@ mod tests {
         indent_width = 2
         use_tabs = true
         max_line_length = 80
+        preserve_newlines = false
+        trailing_commas = false
+        space_after_colon = false
+        space_before_brace = false
+        format_strings = true
+        format_comments = true
+        ignore_patterns = ["*.test.rs"]
         "#;
 
         let config = FormatterConfig::from_toml(toml).unwrap();
         assert_eq!(config.indent_width, 2);
         assert!(config.use_tabs);
         assert_eq!(config.max_line_length, 80);
+        assert!(!config.preserve_newlines);
+        assert!(config.format_strings);
     }
 
     #[test]
