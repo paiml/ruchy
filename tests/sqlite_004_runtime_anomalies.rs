@@ -2083,6 +2083,621 @@ fn test_sqlite_1290_bit_operator_chain() {
     assert!(result.is_ok(), "bit operator chain should work");
 }
 
+// =============================================================================
+// Category 271: AddAssign/SubAssign/MulAssign/DivAssign Operator Trait Runtime (Tests 1291-1295)
+// =============================================================================
+
+#[test]
+#[ignore = "Runtime limitation: add assign custom not implemented - needs [RUNTIME-1144] ticket"]
+fn test_sqlite_1291_add_assign_custom() {
+    let result = execute_program(r#"
+        use std::ops::AddAssign;
+        struct Point { x: i32, y: i32 }
+        impl AddAssign for Point {
+            fn add_assign(&mut self, other: Point) {
+                self.x += other.x;
+                self.y += other.y;
+            }
+        }
+        let mut p = Point { x: 1, y: 2 };
+        p += Point { x: 3, y: 4 };
+    "#);
+    assert!(result.is_ok(), "add assign custom should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: sub assign custom not implemented - needs [RUNTIME-1145] ticket"]
+fn test_sqlite_1292_sub_assign_custom() {
+    let result = execute_program(r#"
+        use std::ops::SubAssign;
+        struct Point { x: i32, y: i32 }
+        impl SubAssign for Point {
+            fn sub_assign(&mut self, other: Point) {
+                self.x -= other.x;
+                self.y -= other.y;
+            }
+        }
+        let mut p = Point { x: 5, y: 6 };
+        p -= Point { x: 1, y: 2 };
+    "#);
+    assert!(result.is_ok(), "sub assign custom should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: mul assign custom not implemented - needs [RUNTIME-1146] ticket"]
+fn test_sqlite_1293_mul_assign_custom() {
+    let result = execute_program(r#"
+        use std::ops::MulAssign;
+        struct Point { x: i32, y: i32 }
+        impl MulAssign<i32> for Point {
+            fn mul_assign(&mut self, scalar: i32) {
+                self.x *= scalar;
+                self.y *= scalar;
+            }
+        }
+        let mut p = Point { x: 2, y: 3 };
+        p *= 4;
+    "#);
+    assert!(result.is_ok(), "mul assign custom should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: div assign custom not implemented - needs [RUNTIME-1147] ticket"]
+fn test_sqlite_1294_div_assign_custom() {
+    let result = execute_program(r#"
+        use std::ops::DivAssign;
+        struct Point { x: i32, y: i32 }
+        impl DivAssign<i32> for Point {
+            fn div_assign(&mut self, scalar: i32) {
+                self.x /= scalar;
+                self.y /= scalar;
+            }
+        }
+        let mut p = Point { x: 8, y: 12 };
+        p /= 4;
+    "#);
+    assert!(result.is_ok(), "div assign custom should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: rem assign custom not implemented - needs [RUNTIME-1148] ticket"]
+fn test_sqlite_1295_rem_assign_custom() {
+    let result = execute_program(r#"
+        use std::ops::RemAssign;
+        struct Point { x: i32, y: i32 }
+        impl RemAssign<i32> for Point {
+            fn rem_assign(&mut self, scalar: i32) {
+                self.x %= scalar;
+                self.y %= scalar;
+            }
+        }
+        let mut p = Point { x: 10, y: 15 };
+        p %= 3;
+    "#);
+    assert!(result.is_ok(), "rem assign custom should work");
+}
+
+// =============================================================================
+// Category 272: Range/RangeBounds Trait Runtime (Tests 1296-1300)
+// =============================================================================
+
+#[test]
+#[ignore = "Runtime limitation: range full runtime not implemented - needs [RUNTIME-1149] ticket"]
+fn test_sqlite_1296_range_full_runtime() {
+    let result = execute_program(r#"
+        let v = vec![1, 2, 3, 4, 5];
+        let s = &v[1..4];
+    "#);
+    assert!(result.is_ok(), "range full runtime should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: range inclusive runtime not implemented - needs [RUNTIME-1150] ticket"]
+fn test_sqlite_1297_range_inclusive_runtime() {
+    let result = execute_program(r#"
+        let v = vec![1, 2, 3, 4, 5];
+        let s = &v[1..=3];
+    "#);
+    assert!(result.is_ok(), "range inclusive runtime should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: range from runtime not implemented - needs [RUNTIME-1151] ticket"]
+fn test_sqlite_1298_range_from_runtime() {
+    let result = execute_program(r#"
+        let v = vec![1, 2, 3, 4, 5];
+        let s = &v[2..];
+    "#);
+    assert!(result.is_ok(), "range from runtime should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: range to runtime not implemented - needs [RUNTIME-1152] ticket"]
+fn test_sqlite_1299_range_to_runtime() {
+    let result = execute_program(r#"
+        let v = vec![1, 2, 3, 4, 5];
+        let s = &v[..3];
+    "#);
+    assert!(result.is_ok(), "range to runtime should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: range full unbounded runtime not implemented - needs [RUNTIME-1153] ticket"]
+fn test_sqlite_1300_range_full_unbounded_runtime() {
+    let result = execute_program(r#"
+        let v = vec![1, 2, 3, 4, 5];
+        let s = &v[..];
+    "#);
+    assert!(result.is_ok(), "range full unbounded runtime should work");
+}
+
+// =============================================================================
+// Category 273: Box/Rc/Arc Smart Pointer Runtime (Tests 1301-1305)
+// =============================================================================
+
+#[test]
+#[ignore = "Runtime limitation: box new not implemented - needs [RUNTIME-1154] ticket"]
+fn test_sqlite_1301_box_new() {
+    let result = execute_program(r#"
+        let b = Box::new(42);
+    "#);
+    assert!(result.is_ok(), "box new should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: box deref not implemented - needs [RUNTIME-1155] ticket"]
+fn test_sqlite_1302_box_deref() {
+    let result = execute_program(r#"
+        let b = Box::new(42);
+        let x = *b;
+    "#);
+    assert!(result.is_ok(), "box deref should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: rc new not implemented - needs [RUNTIME-1156] ticket"]
+fn test_sqlite_1303_rc_new() {
+    let result = execute_program(r#"
+        use std::rc::Rc;
+        let r = Rc::new(42);
+    "#);
+    assert!(result.is_ok(), "rc new should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: rc clone not implemented - needs [RUNTIME-1157] ticket"]
+fn test_sqlite_1304_rc_clone() {
+    let result = execute_program(r#"
+        use std::rc::Rc;
+        let r1 = Rc::new(42);
+        let r2 = Rc::clone(&r1);
+    "#);
+    assert!(result.is_ok(), "rc clone should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: arc new not implemented - needs [RUNTIME-1158] ticket"]
+fn test_sqlite_1305_arc_new() {
+    let result = execute_program(r#"
+        use std::sync::Arc;
+        let a = Arc::new(42);
+    "#);
+    assert!(result.is_ok(), "arc new should work");
+}
+
+// =============================================================================
+// Category 274: RefCell/Cell Interior Mutability Runtime (Tests 1306-1310)
+// =============================================================================
+
+#[test]
+#[ignore = "Runtime limitation: cell new not implemented - needs [RUNTIME-1159] ticket"]
+fn test_sqlite_1306_cell_new() {
+    let result = execute_program(r#"
+        use std::cell::Cell;
+        let c = Cell::new(42);
+    "#);
+    assert!(result.is_ok(), "cell new should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: cell get not implemented - needs [RUNTIME-1160] ticket"]
+fn test_sqlite_1307_cell_get() {
+    let result = execute_program(r#"
+        use std::cell::Cell;
+        let c = Cell::new(42);
+        let x = c.get();
+    "#);
+    assert!(result.is_ok(), "cell get should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: cell set not implemented - needs [RUNTIME-1161] ticket"]
+fn test_sqlite_1308_cell_set() {
+    let result = execute_program(r#"
+        use std::cell::Cell;
+        let c = Cell::new(42);
+        c.set(43);
+    "#);
+    assert!(result.is_ok(), "cell set should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: refcell new not implemented - needs [RUNTIME-1162] ticket"]
+fn test_sqlite_1309_refcell_new() {
+    let result = execute_program(r#"
+        use std::cell::RefCell;
+        let r = RefCell::new(42);
+    "#);
+    assert!(result.is_ok(), "refcell new should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: refcell borrow not implemented - needs [RUNTIME-1163] ticket"]
+fn test_sqlite_1310_refcell_borrow() {
+    let result = execute_program(r#"
+        use std::cell::RefCell;
+        let r = RefCell::new(42);
+        let borrowed = r.borrow();
+    "#);
+    assert!(result.is_ok(), "refcell borrow should work");
+}
+
+// =============================================================================
+// Category 275: Mutex/RwLock Synchronization Runtime (Tests 1311-1315)
+// =============================================================================
+
+#[test]
+#[ignore = "Runtime limitation: mutex new not implemented - needs [RUNTIME-1164] ticket"]
+fn test_sqlite_1311_mutex_new() {
+    let result = execute_program(r#"
+        use std::sync::Mutex;
+        let m = Mutex::new(42);
+    "#);
+    assert!(result.is_ok(), "mutex new should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: mutex lock not implemented - needs [RUNTIME-1165] ticket"]
+fn test_sqlite_1312_mutex_lock() {
+    let result = execute_program(r#"
+        use std::sync::Mutex;
+        let m = Mutex::new(42);
+        let guard = m.lock().unwrap();
+    "#);
+    assert!(result.is_ok(), "mutex lock should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: mutex unlock not implemented - needs [RUNTIME-1166] ticket"]
+fn test_sqlite_1313_mutex_unlock() {
+    let result = execute_program(r#"
+        use std::sync::Mutex;
+        let m = Mutex::new(42);
+        {
+            let guard = m.lock().unwrap();
+        }
+        let guard2 = m.lock().unwrap();
+    "#);
+    assert!(result.is_ok(), "mutex unlock should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: rwlock new not implemented - needs [RUNTIME-1167] ticket"]
+fn test_sqlite_1314_rwlock_new() {
+    let result = execute_program(r#"
+        use std::sync::RwLock;
+        let rw = RwLock::new(42);
+    "#);
+    assert!(result.is_ok(), "rwlock new should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: rwlock read not implemented - needs [RUNTIME-1168] ticket"]
+fn test_sqlite_1315_rwlock_read() {
+    let result = execute_program(r#"
+        use std::sync::RwLock;
+        let rw = RwLock::new(42);
+        let guard = rw.read().unwrap();
+    "#);
+    assert!(result.is_ok(), "rwlock read should work");
+}
+
+// =============================================================================
+// Category 276: Channel Send/Recv Runtime (Tests 1316-1320)
+// =============================================================================
+
+#[test]
+#[ignore = "Runtime limitation: channel create not implemented - needs [RUNTIME-1169] ticket"]
+fn test_sqlite_1316_channel_create() {
+    let result = execute_program(r#"
+        use std::sync::mpsc;
+        let (tx, rx) = mpsc::channel();
+    "#);
+    assert!(result.is_ok(), "channel create should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: channel send not implemented - needs [RUNTIME-1170] ticket"]
+fn test_sqlite_1317_channel_send() {
+    let result = execute_program(r#"
+        use std::sync::mpsc;
+        let (tx, rx) = mpsc::channel();
+        tx.send(42).unwrap();
+    "#);
+    assert!(result.is_ok(), "channel send should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: channel recv not implemented - needs [RUNTIME-1171] ticket"]
+fn test_sqlite_1318_channel_recv() {
+    let result = execute_program(r#"
+        use std::sync::mpsc;
+        let (tx, rx) = mpsc::channel();
+        tx.send(42).unwrap();
+        let x = rx.recv().unwrap();
+    "#);
+    assert!(result.is_ok(), "channel recv should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: channel try_recv not implemented - needs [RUNTIME-1172] ticket"]
+fn test_sqlite_1319_channel_try_recv() {
+    let result = execute_program(r#"
+        use std::sync::mpsc;
+        let (tx, rx) = mpsc::channel();
+        let result = rx.try_recv();
+        assert!(result.is_err());
+    "#);
+    assert!(result.is_ok(), "channel try_recv should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: channel iter not implemented - needs [RUNTIME-1173] ticket"]
+fn test_sqlite_1320_channel_iter() {
+    let result = execute_program(r#"
+        use std::sync::mpsc;
+        let (tx, rx) = mpsc::channel();
+        tx.send(1).unwrap();
+        tx.send(2).unwrap();
+        drop(tx);
+        for x in rx { }
+    "#);
+    assert!(result.is_ok(), "channel iter should work");
+}
+
+// =============================================================================
+// Category 277: Thread Spawn/Join Runtime (Tests 1321-1325)
+// =============================================================================
+
+#[test]
+#[ignore = "Runtime limitation: thread spawn not implemented - needs [RUNTIME-1174] ticket"]
+fn test_sqlite_1321_thread_spawn() {
+    let result = execute_program(r#"
+        use std::thread;
+        let handle = thread::spawn(|| { 42 });
+    "#);
+    assert!(result.is_ok(), "thread spawn should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: thread join not implemented - needs [RUNTIME-1175] ticket"]
+fn test_sqlite_1322_thread_join() {
+    let result = execute_program(r#"
+        use std::thread;
+        let handle = thread::spawn(|| { 42 });
+        let result = handle.join().unwrap();
+    "#);
+    assert!(result.is_ok(), "thread join should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: thread sleep not implemented - needs [RUNTIME-1176] ticket"]
+fn test_sqlite_1323_thread_sleep() {
+    let result = execute_program(r#"
+        use std::thread;
+        use std::time::Duration;
+        thread::sleep(Duration::from_millis(10));
+    "#);
+    assert!(result.is_ok(), "thread sleep should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: thread current not implemented - needs [RUNTIME-1177] ticket"]
+fn test_sqlite_1324_thread_current() {
+    let result = execute_program(r#"
+        use std::thread;
+        let current = thread::current();
+    "#);
+    assert!(result.is_ok(), "thread current should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: thread builder not implemented - needs [RUNTIME-1178] ticket"]
+fn test_sqlite_1325_thread_builder() {
+    let result = execute_program(r#"
+        use std::thread;
+        let handle = thread::Builder::new()
+            .name("worker".to_string())
+            .spawn(|| { 42 })
+            .unwrap();
+    "#);
+    assert!(result.is_ok(), "thread builder should work");
+}
+
+// =============================================================================
+// Category 278: Future/Poll Runtime (Tests 1326-1330)
+// =============================================================================
+
+#[test]
+#[ignore = "Runtime limitation: future poll not implemented - needs [RUNTIME-1179] ticket"]
+fn test_sqlite_1326_future_poll() {
+    let result = execute_program(r#"
+        use std::future::Future;
+        use std::pin::Pin;
+        use std::task::{Context, Poll};
+        async fn foo() -> i32 { 42 }
+    "#);
+    assert!(result.is_ok(), "future poll should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: future ready not implemented - needs [RUNTIME-1180] ticket"]
+fn test_sqlite_1327_future_ready() {
+    let result = execute_program(r#"
+        use std::future;
+        let f = future::ready(42);
+    "#);
+    assert!(result.is_ok(), "future ready should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: future pending not implemented - needs [RUNTIME-1181] ticket"]
+fn test_sqlite_1328_future_pending() {
+    let result = execute_program(r#"
+        use std::future;
+        let f: std::future::Pending<i32> = future::pending();
+    "#);
+    assert!(result.is_ok(), "future pending should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: pin new not implemented - needs [RUNTIME-1182] ticket"]
+fn test_sqlite_1329_pin_new() {
+    let result = execute_program(r#"
+        use std::pin::Pin;
+        let x = 42;
+        let pinned = Pin::new(&x);
+    "#);
+    assert!(result.is_ok(), "pin new should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: waker not implemented - needs [RUNTIME-1183] ticket"]
+fn test_sqlite_1330_waker() {
+    let result = execute_program(r#"
+        use std::task::{Waker, RawWaker, RawWakerVTable};
+        use std::ptr;
+    "#);
+    assert!(result.is_ok(), "waker should work");
+}
+
+// =============================================================================
+// Category 279: File I/O Runtime (Tests 1331-1335)
+// =============================================================================
+
+#[test]
+#[ignore = "Runtime limitation: file open not implemented - needs [RUNTIME-1184] ticket"]
+fn test_sqlite_1331_file_open() {
+    let result = execute_program(r#"
+        use std::fs::File;
+        let f = File::open("/dev/null");
+    "#);
+    assert!(result.is_ok(), "file open should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: file create not implemented - needs [RUNTIME-1185] ticket"]
+fn test_sqlite_1332_file_create() {
+    let result = execute_program(r#"
+        use std::fs::File;
+        let f = File::create("/tmp/test.txt");
+    "#);
+    assert!(result.is_ok(), "file create should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: file read not implemented - needs [RUNTIME-1186] ticket"]
+fn test_sqlite_1333_file_read() {
+    let result = execute_program(r#"
+        use std::fs::File;
+        use std::io::Read;
+        let mut f = File::open("/dev/null").unwrap();
+        let mut buf = vec![0; 10];
+        f.read(&mut buf).unwrap();
+    "#);
+    assert!(result.is_ok(), "file read should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: file write not implemented - needs [RUNTIME-1187] ticket"]
+fn test_sqlite_1334_file_write() {
+    let result = execute_program(r#"
+        use std::fs::File;
+        use std::io::Write;
+        let mut f = File::create("/tmp/test.txt").unwrap();
+        f.write_all(b"hello").unwrap();
+    "#);
+    assert!(result.is_ok(), "file write should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: file metadata not implemented - needs [RUNTIME-1188] ticket"]
+fn test_sqlite_1335_file_metadata() {
+    let result = execute_program(r#"
+        use std::fs::File;
+        let f = File::open("/dev/null").unwrap();
+        let metadata = f.metadata().unwrap();
+    "#);
+    assert!(result.is_ok(), "file metadata should work");
+}
+
+// =============================================================================
+// Category 280: Path/PathBuf Runtime (Tests 1336-1340)
+// =============================================================================
+
+#[test]
+#[ignore = "Runtime limitation: path new not implemented - needs [RUNTIME-1189] ticket"]
+fn test_sqlite_1336_path_new() {
+    let result = execute_program(r#"
+        use std::path::Path;
+        let p = Path::new("/tmp");
+    "#);
+    assert!(result.is_ok(), "path new should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: pathbuf new not implemented - needs [RUNTIME-1190] ticket"]
+fn test_sqlite_1337_pathbuf_new() {
+    let result = execute_program(r#"
+        use std::path::PathBuf;
+        let pb = PathBuf::new();
+    "#);
+    assert!(result.is_ok(), "pathbuf new should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: path join not implemented - needs [RUNTIME-1191] ticket"]
+fn test_sqlite_1338_path_join() {
+    let result = execute_program(r#"
+        use std::path::Path;
+        let p = Path::new("/tmp");
+        let joined = p.join("file.txt");
+    "#);
+    assert!(result.is_ok(), "path join should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: path exists not implemented - needs [RUNTIME-1192] ticket"]
+fn test_sqlite_1339_path_exists() {
+    let result = execute_program(r#"
+        use std::path::Path;
+        let p = Path::new("/tmp");
+        let exists = p.exists();
+    "#);
+    assert!(result.is_ok(), "path exists should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: path extension not implemented - needs [RUNTIME-1193] ticket"]
+fn test_sqlite_1340_path_extension() {
+    let result = execute_program(r#"
+        use std::path::Path;
+        let p = Path::new("file.txt");
+        let ext = p.extension();
+    "#);
+    assert!(result.is_ok(), "path extension should work");
+}
+
 #[test]
 #[ignore = "Runtime limitation: select_biased not implemented - needs [RUNTIME-822] ticket"]
 fn test_sqlite_969_select_biased() {
