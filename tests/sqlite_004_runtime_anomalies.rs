@@ -10338,3 +10338,650 @@ fn test_sqlite_890_marker_impl() {
     "#);
     assert!(result.is_ok(), "Marker trait impl should work");
 }
+
+// ============================================================================
+// Category 171: Cell and RefCell Patterns
+// ============================================================================
+
+/// Test Cell basic
+#[test]
+#[ignore = "Runtime limitation: Cell basic not implemented - needs [RUNTIME-744] ticket"]
+fn test_sqlite_891_cell_basic() {
+    let result = execute_program(r#"
+        use std::cell::Cell;
+        let c = Cell::new(42);
+        c.set(43);
+        let x = c.get();
+    "#);
+    assert!(result.is_ok(), "Cell basic should work");
+}
+
+/// Test RefCell basic
+#[test]
+#[ignore = "Runtime limitation: RefCell basic not implemented - needs [RUNTIME-745] ticket"]
+fn test_sqlite_892_refcell_basic() {
+    let result = execute_program(r#"
+        use std::cell::RefCell;
+        let c = RefCell::new(42);
+        *c.borrow_mut() = 43;
+        let x = *c.borrow();
+    "#);
+    assert!(result.is_ok(), "RefCell basic should work");
+}
+
+/// Test Cell in struct
+#[test]
+#[ignore = "Runtime limitation: Cell in struct not implemented - needs [RUNTIME-746] ticket"]
+fn test_sqlite_893_cell_struct() {
+    let result = execute_program(r#"
+        use std::cell::Cell;
+        struct Counter { count: Cell<i32> }
+        let c = Counter { count: Cell::new(0) };
+        c.count.set(1);
+    "#);
+    assert!(result.is_ok(), "Cell in struct should work");
+}
+
+/// Test RefCell borrow
+#[test]
+#[ignore = "Runtime limitation: RefCell borrow not implemented - needs [RUNTIME-747] ticket"]
+fn test_sqlite_894_refcell_borrow() {
+    let result = execute_program(r#"
+        use std::cell::RefCell;
+        let c = RefCell::new(vec![1, 2, 3]);
+        let borrowed = c.borrow();
+        let len = borrowed.len();
+    "#);
+    assert!(result.is_ok(), "RefCell borrow should work");
+}
+
+/// Test RefCell try_borrow
+#[test]
+#[ignore = "Runtime limitation: RefCell try_borrow not implemented - needs [RUNTIME-748] ticket"]
+fn test_sqlite_895_refcell_try_borrow() {
+    let result = execute_program(r#"
+        use std::cell::RefCell;
+        let c = RefCell::new(42);
+        let result = c.try_borrow();
+    "#);
+    assert!(result.is_ok(), "RefCell try_borrow should work");
+}
+
+// ============================================================================
+// Category 172: Rc and Arc Smart Pointers Advanced
+// ============================================================================
+
+/// Test Rc clone
+#[test]
+#[ignore = "Runtime limitation: Rc clone not implemented - needs [RUNTIME-749] ticket"]
+fn test_sqlite_896_rc_clone() {
+    let result = execute_program(r#"
+        use std::rc::Rc;
+        let x = Rc::new(42);
+        let y = x.clone();
+    "#);
+    assert!(result.is_ok(), "Rc clone should work");
+}
+
+/// Test Rc strong_count
+#[test]
+#[ignore = "Runtime limitation: Rc strong_count not implemented - needs [RUNTIME-750] ticket"]
+fn test_sqlite_897_rc_strong_count() {
+    let result = execute_program(r#"
+        use std::rc::Rc;
+        let x = Rc::new(42);
+        let y = x.clone();
+        let count = Rc::strong_count(&x);
+    "#);
+    assert!(result.is_ok(), "Rc strong_count should work");
+}
+
+/// Test Arc thread safety
+#[test]
+#[ignore = "Runtime limitation: Arc thread safety not implemented - needs [RUNTIME-751] ticket"]
+fn test_sqlite_898_arc_thread() {
+    let result = execute_program(r#"
+        use std::sync::Arc;
+        use std::thread;
+        let x = Arc::new(42);
+        let y = x.clone();
+        thread::spawn(move || { let _ = *y; });
+    "#);
+    assert!(result.is_ok(), "Arc thread safety should work");
+}
+
+/// Test Rc weak
+#[test]
+#[ignore = "Runtime limitation: Rc weak not implemented - needs [RUNTIME-752] ticket"]
+fn test_sqlite_899_rc_weak() {
+    let result = execute_program(r#"
+        use std::rc::Rc;
+        let x = Rc::new(42);
+        let weak = Rc::downgrade(&x);
+        let upgraded = weak.upgrade();
+    "#);
+    assert!(result.is_ok(), "Rc weak should work");
+}
+
+/// Test Arc weak
+#[test]
+#[ignore = "Runtime limitation: Arc weak not implemented - needs [RUNTIME-753] ticket"]
+fn test_sqlite_900_arc_weak() {
+    let result = execute_program(r#"
+        use std::sync::Arc;
+        let x = Arc::new(42);
+        let weak = Arc::downgrade(&x);
+        let upgraded = weak.upgrade();
+    "#);
+    assert!(result.is_ok(), "Arc weak should work");
+}
+
+// ============================================================================
+// Category 173: Mutex and RwLock Patterns
+// ============================================================================
+
+/// Test Mutex lock
+#[test]
+#[ignore = "Runtime limitation: Mutex lock not implemented - needs [RUNTIME-754] ticket"]
+fn test_sqlite_901_mutex_lock() {
+    let result = execute_program(r#"
+        use std::sync::Mutex;
+        let m = Mutex::new(42);
+        let mut data = m.lock().unwrap();
+        *data = 43;
+    "#);
+    assert!(result.is_ok(), "Mutex lock should work");
+}
+
+/// Test Mutex try_lock
+#[test]
+#[ignore = "Runtime limitation: Mutex try_lock not implemented - needs [RUNTIME-755] ticket"]
+fn test_sqlite_902_mutex_try_lock() {
+    let result = execute_program(r#"
+        use std::sync::Mutex;
+        let m = Mutex::new(42);
+        let result = m.try_lock();
+    "#);
+    assert!(result.is_ok(), "Mutex try_lock should work");
+}
+
+/// Test RwLock read
+#[test]
+#[ignore = "Runtime limitation: RwLock read not implemented - needs [RUNTIME-756] ticket"]
+fn test_sqlite_903_rwlock_read() {
+    let result = execute_program(r#"
+        use std::sync::RwLock;
+        let lock = RwLock::new(42);
+        let reader = lock.read().unwrap();
+        let value = *reader;
+    "#);
+    assert!(result.is_ok(), "RwLock read should work");
+}
+
+/// Test RwLock write
+#[test]
+#[ignore = "Runtime limitation: RwLock write not implemented - needs [RUNTIME-757] ticket"]
+fn test_sqlite_904_rwlock_write() {
+    let result = execute_program(r#"
+        use std::sync::RwLock;
+        let lock = RwLock::new(42);
+        let mut writer = lock.write().unwrap();
+        *writer = 43;
+    "#);
+    assert!(result.is_ok(), "RwLock write should work");
+}
+
+/// Test Mutex with Arc
+#[test]
+#[ignore = "Runtime limitation: Mutex with Arc not implemented - needs [RUNTIME-758] ticket"]
+fn test_sqlite_905_mutex_arc() {
+    let result = execute_program(r#"
+        use std::sync::{Arc, Mutex};
+        let counter = Arc::new(Mutex::new(0));
+        let c = counter.clone();
+        *c.lock().unwrap() += 1;
+    "#);
+    assert!(result.is_ok(), "Mutex with Arc should work");
+}
+
+// ============================================================================
+// Category 174: Channel Communication Patterns
+// ============================================================================
+
+/// Test channel send recv
+#[test]
+#[ignore = "Runtime limitation: channel send recv not implemented - needs [RUNTIME-759] ticket"]
+fn test_sqlite_906_channel_basic() {
+    let result = execute_program(r#"
+        use std::sync::mpsc;
+        let (tx, rx) = mpsc::channel();
+        tx.send(42).unwrap();
+        let val = rx.recv().unwrap();
+    "#);
+    assert!(result.is_ok(), "Channel send recv should work");
+}
+
+/// Test channel multiple sends
+#[test]
+#[ignore = "Runtime limitation: channel multiple sends not implemented - needs [RUNTIME-760] ticket"]
+fn test_sqlite_907_channel_multi() {
+    let result = execute_program(r#"
+        use std::sync::mpsc;
+        let (tx, rx) = mpsc::channel();
+        tx.send(1).unwrap();
+        tx.send(2).unwrap();
+        tx.send(3).unwrap();
+    "#);
+    assert!(result.is_ok(), "Channel multiple sends should work");
+}
+
+/// Test channel try_recv
+#[test]
+#[ignore = "Runtime limitation: channel try_recv not implemented - needs [RUNTIME-761] ticket"]
+fn test_sqlite_908_channel_try_recv() {
+    let result = execute_program(r#"
+        use std::sync::mpsc;
+        let (tx, rx) = mpsc::channel();
+        let result = rx.try_recv();
+    "#);
+    assert!(result.is_ok(), "Channel try_recv should work");
+}
+
+/// Test channel iter
+#[test]
+#[ignore = "Runtime limitation: channel iter not implemented - needs [RUNTIME-762] ticket"]
+fn test_sqlite_909_channel_iter() {
+    let result = execute_program(r#"
+        use std::sync::mpsc;
+        let (tx, rx) = mpsc::channel();
+        tx.send(1).unwrap();
+        drop(tx);
+        for val in rx { }
+    "#);
+    assert!(result.is_ok(), "Channel iter should work");
+}
+
+/// Test channel clone sender
+#[test]
+#[ignore = "Runtime limitation: channel clone sender not implemented - needs [RUNTIME-763] ticket"]
+fn test_sqlite_910_channel_clone() {
+    let result = execute_program(r#"
+        use std::sync::mpsc;
+        let (tx, rx) = mpsc::channel();
+        let tx2 = tx.clone();
+        tx.send(1).unwrap();
+        tx2.send(2).unwrap();
+    "#);
+    assert!(result.is_ok(), "Channel clone sender should work");
+}
+
+// ============================================================================
+// Category 175: Atomic Operations
+// ============================================================================
+
+/// Test AtomicBool
+#[test]
+#[ignore = "Runtime limitation: AtomicBool not implemented - needs [RUNTIME-764] ticket"]
+fn test_sqlite_911_atomic_bool() {
+    let result = execute_program(r#"
+        use std::sync::atomic::{AtomicBool, Ordering};
+        let flag = AtomicBool::new(false);
+        flag.store(true, Ordering::SeqCst);
+        let val = flag.load(Ordering::SeqCst);
+    "#);
+    assert!(result.is_ok(), "AtomicBool should work");
+}
+
+/// Test AtomicI32
+#[test]
+#[ignore = "Runtime limitation: AtomicI32 not implemented - needs [RUNTIME-765] ticket"]
+fn test_sqlite_912_atomic_i32() {
+    let result = execute_program(r#"
+        use std::sync::atomic::{AtomicI32, Ordering};
+        let counter = AtomicI32::new(0);
+        counter.fetch_add(1, Ordering::SeqCst);
+    "#);
+    assert!(result.is_ok(), "AtomicI32 should work");
+}
+
+/// Test AtomicUsize
+#[test]
+#[ignore = "Runtime limitation: AtomicUsize not implemented - needs [RUNTIME-766] ticket"]
+fn test_sqlite_913_atomic_usize() {
+    let result = execute_program(r#"
+        use std::sync::atomic::{AtomicUsize, Ordering};
+        let counter = AtomicUsize::new(0);
+        counter.fetch_add(1, Ordering::Relaxed);
+    "#);
+    assert!(result.is_ok(), "AtomicUsize should work");
+}
+
+/// Test compare_exchange
+#[test]
+#[ignore = "Runtime limitation: compare_exchange not implemented - needs [RUNTIME-767] ticket"]
+fn test_sqlite_914_compare_exchange() {
+    let result = execute_program(r#"
+        use std::sync::atomic::{AtomicI32, Ordering};
+        let val = AtomicI32::new(42);
+        let result = val.compare_exchange(42, 43, Ordering::SeqCst, Ordering::SeqCst);
+    "#);
+    assert!(result.is_ok(), "compare_exchange should work");
+}
+
+/// Test fetch_update
+#[test]
+#[ignore = "Runtime limitation: fetch_update not implemented - needs [RUNTIME-768] ticket"]
+fn test_sqlite_915_fetch_update() {
+    let result = execute_program(r#"
+        use std::sync::atomic::{AtomicI32, Ordering};
+        let val = AtomicI32::new(42);
+        let result = val.fetch_update(Ordering::SeqCst, Ordering::SeqCst, |x| Some(x + 1));
+    "#);
+    assert!(result.is_ok(), "fetch_update should work");
+}
+
+// ============================================================================
+// Category 176: Thread Spawning and Joining
+// ============================================================================
+
+/// Test thread spawn
+#[test]
+#[ignore = "Runtime limitation: thread spawn not implemented - needs [RUNTIME-769] ticket"]
+fn test_sqlite_916_thread_spawn() {
+    let result = execute_program(r#"
+        use std::thread;
+        let handle = thread::spawn(|| { 42 });
+    "#);
+    assert!(result.is_ok(), "Thread spawn should work");
+}
+
+/// Test thread join
+#[test]
+#[ignore = "Runtime limitation: thread join not implemented - needs [RUNTIME-770] ticket"]
+fn test_sqlite_917_thread_join() {
+    let result = execute_program(r#"
+        use std::thread;
+        let handle = thread::spawn(|| { 42 });
+        let result = handle.join().unwrap();
+    "#);
+    assert!(result.is_ok(), "Thread join should work");
+}
+
+/// Test thread move closure
+#[test]
+#[ignore = "Runtime limitation: thread move closure not implemented - needs [RUNTIME-771] ticket"]
+fn test_sqlite_918_thread_move() {
+    let result = execute_program(r#"
+        use std::thread;
+        let x = 42;
+        let handle = thread::spawn(move || { x + 1 });
+    "#);
+    assert!(result.is_ok(), "Thread move closure should work");
+}
+
+/// Test thread sleep
+#[test]
+#[ignore = "Runtime limitation: thread sleep not implemented - needs [RUNTIME-772] ticket"]
+fn test_sqlite_919_thread_sleep() {
+    let result = execute_program(r#"
+        use std::thread;
+        use std::time::Duration;
+        thread::sleep(Duration::from_millis(1));
+    "#);
+    assert!(result.is_ok(), "Thread sleep should work");
+}
+
+/// Test thread current
+#[test]
+#[ignore = "Runtime limitation: thread current not implemented - needs [RUNTIME-773] ticket"]
+fn test_sqlite_920_thread_current() {
+    let result = execute_program(r#"
+        use std::thread;
+        let current = thread::current();
+    "#);
+    assert!(result.is_ok(), "Thread current should work");
+}
+
+// ============================================================================
+// Category 177: Vec Operations Advanced
+// ============================================================================
+
+/// Test Vec push pop
+#[test]
+#[ignore = "Runtime limitation: Vec push pop not implemented - needs [RUNTIME-774] ticket"]
+fn test_sqlite_921_vec_push_pop() {
+    let result = execute_program(r#"
+        let mut v = Vec::new();
+        v.push(1);
+        v.push(2);
+        let x = v.pop();
+    "#);
+    assert!(result.is_ok(), "Vec push pop should work");
+}
+
+/// Test Vec capacity
+#[test]
+#[ignore = "Runtime limitation: Vec capacity not implemented - needs [RUNTIME-775] ticket"]
+fn test_sqlite_922_vec_capacity() {
+    let result = execute_program(r#"
+        let v = Vec::with_capacity(10);
+        let cap = v.capacity();
+    "#);
+    assert!(result.is_ok(), "Vec capacity should work");
+}
+
+/// Test Vec extend
+#[test]
+#[ignore = "Runtime limitation: Vec extend not implemented - needs [RUNTIME-776] ticket"]
+fn test_sqlite_923_vec_extend() {
+    let result = execute_program(r#"
+        let mut v = vec![1, 2];
+        v.extend(vec![3, 4]);
+    "#);
+    assert!(result.is_ok(), "Vec extend should work");
+}
+
+/// Test Vec retain
+#[test]
+#[ignore = "Runtime limitation: Vec retain not implemented - needs [RUNTIME-777] ticket"]
+fn test_sqlite_924_vec_retain() {
+    let result = execute_program(r#"
+        let mut v = vec![1, 2, 3, 4];
+        v.retain(|x| x % 2 == 0);
+    "#);
+    assert!(result.is_ok(), "Vec retain should work");
+}
+
+/// Test Vec sort
+#[test]
+#[ignore = "Runtime limitation: Vec sort not implemented - needs [RUNTIME-778] ticket"]
+fn test_sqlite_925_vec_sort() {
+    let result = execute_program(r#"
+        let mut v = vec![3, 1, 2];
+        v.sort();
+    "#);
+    assert!(result.is_ok(), "Vec sort should work");
+}
+
+// ============================================================================
+// Category 178: HashMap Operations Advanced
+// ============================================================================
+
+/// Test HashMap insert get
+#[test]
+#[ignore = "Runtime limitation: HashMap insert get not implemented - needs [RUNTIME-779] ticket"]
+fn test_sqlite_926_hashmap_insert_get() {
+    let result = execute_program(r#"
+        use std::collections::HashMap;
+        let mut map = HashMap::new();
+        map.insert("key", 42);
+        let val = map.get("key");
+    "#);
+    assert!(result.is_ok(), "HashMap insert get should work");
+}
+
+/// Test HashMap entry
+#[test]
+#[ignore = "Runtime limitation: HashMap entry not implemented - needs [RUNTIME-780] ticket"]
+fn test_sqlite_927_hashmap_entry() {
+    let result = execute_program(r#"
+        use std::collections::HashMap;
+        let mut map = HashMap::new();
+        map.entry("key").or_insert(42);
+    "#);
+    assert!(result.is_ok(), "HashMap entry should work");
+}
+
+/// Test HashMap remove
+#[test]
+#[ignore = "Runtime limitation: HashMap remove not implemented - needs [RUNTIME-781] ticket"]
+fn test_sqlite_928_hashmap_remove() {
+    let result = execute_program(r#"
+        use std::collections::HashMap;
+        let mut map = HashMap::new();
+        map.insert("key", 42);
+        let val = map.remove("key");
+    "#);
+    assert!(result.is_ok(), "HashMap remove should work");
+}
+
+/// Test HashMap iter
+#[test]
+#[ignore = "Runtime limitation: HashMap iter not implemented - needs [RUNTIME-782] ticket"]
+fn test_sqlite_929_hashmap_iter() {
+    let result = execute_program(r#"
+        use std::collections::HashMap;
+        let mut map = HashMap::new();
+        map.insert("a", 1);
+        map.insert("b", 2);
+        for (k, v) in &map { }
+    "#);
+    assert!(result.is_ok(), "HashMap iter should work");
+}
+
+/// Test HashMap len
+#[test]
+#[ignore = "Runtime limitation: HashMap len not implemented - needs [RUNTIME-783] ticket"]
+fn test_sqlite_930_hashmap_len() {
+    let result = execute_program(r#"
+        use std::collections::HashMap;
+        let mut map = HashMap::new();
+        map.insert("key", 42);
+        let len = map.len();
+    "#);
+    assert!(result.is_ok(), "HashMap len should work");
+}
+
+// ============================================================================
+// Category 179: String Operations Advanced
+// ============================================================================
+
+/// Test String push_str
+#[test]
+#[ignore = "Runtime limitation: String push_str not implemented - needs [RUNTIME-784] ticket"]
+fn test_sqlite_931_string_push_str() {
+    let result = execute_program(r#"
+        let mut s = String::from("hello");
+        s.push_str(" world");
+    "#);
+    assert!(result.is_ok(), "String push_str should work");
+}
+
+/// Test String split
+#[test]
+#[ignore = "Runtime limitation: String split not implemented - needs [RUNTIME-785] ticket"]
+fn test_sqlite_932_string_split() {
+    let result = execute_program(r#"
+        let s = "a,b,c";
+        let parts: Vec<&str> = s.split(",").collect();
+    "#);
+    assert!(result.is_ok(), "String split should work");
+}
+
+/// Test String trim
+#[test]
+#[ignore = "Runtime limitation: String trim not implemented - needs [RUNTIME-786] ticket"]
+fn test_sqlite_933_string_trim() {
+    let result = execute_program(r#"
+        let s = "  hello  ";
+        let trimmed = s.trim();
+    "#);
+    assert!(result.is_ok(), "String trim should work");
+}
+
+/// Test String replace
+#[test]
+#[ignore = "Runtime limitation: String replace not implemented - needs [RUNTIME-787] ticket"]
+fn test_sqlite_934_string_replace() {
+    let result = execute_program(r#"
+        let s = "hello world";
+        let replaced = s.replace("world", "Rust");
+    "#);
+    assert!(result.is_ok(), "String replace should work");
+}
+
+/// Test String contains
+#[test]
+#[ignore = "Runtime limitation: String contains not implemented - needs [RUNTIME-788] ticket"]
+fn test_sqlite_935_string_contains() {
+    let result = execute_program(r#"
+        let s = "hello world";
+        let has = s.contains("world");
+    "#);
+    assert!(result.is_ok(), "String contains should work");
+}
+
+// ============================================================================
+// Category 180: Range and RangeInclusive
+// ============================================================================
+
+/// Test Range basic
+#[test]
+#[ignore = "Runtime limitation: Range basic not implemented - needs [RUNTIME-789] ticket"]
+fn test_sqlite_936_range_basic() {
+    let result = execute_program(r#"
+        let r = 0..5;
+    "#);
+    assert!(result.is_ok(), "Range basic should work");
+}
+
+/// Test RangeInclusive
+#[test]
+#[ignore = "Runtime limitation: RangeInclusive not implemented - needs [RUNTIME-790] ticket"]
+fn test_sqlite_937_range_inclusive() {
+    let result = execute_program(r#"
+        let r = 0..=5;
+    "#);
+    assert!(result.is_ok(), "RangeInclusive should work");
+}
+
+/// Test Range contains
+#[test]
+#[ignore = "Runtime limitation: Range contains not implemented - needs [RUNTIME-791] ticket"]
+fn test_sqlite_938_range_contains() {
+    let result = execute_program(r#"
+        let r = 0..10;
+        let has = r.contains(&5);
+    "#);
+    assert!(result.is_ok(), "Range contains should work");
+}
+
+/// Test RangeFrom
+#[test]
+#[ignore = "Runtime limitation: RangeFrom not implemented - needs [RUNTIME-792] ticket"]
+fn test_sqlite_939_range_from() {
+    let result = execute_program(r#"
+        let r = 5..;
+    "#);
+    assert!(result.is_ok(), "RangeFrom should work");
+}
+
+/// Test RangeTo
+#[test]
+#[ignore = "Runtime limitation: RangeTo not implemented - needs [RUNTIME-793] ticket"]
+fn test_sqlite_940_range_to() {
+    let result = execute_program(r#"
+        let r = ..5;
+    "#);
+    assert!(result.is_ok(), "RangeTo should work");
+}
