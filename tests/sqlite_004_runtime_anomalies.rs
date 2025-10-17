@@ -939,6 +939,557 @@ fn test_sqlite_151_await_expression() {
     assert!(result.is_ok(), "Await expression should work");
 }
 
+// Category 181: Pin and Unpin
+#[test]
+#[ignore = "Runtime limitation: Pin basic not implemented - needs [RUNTIME-794] ticket"]
+fn test_sqlite_941_pin_basic() {
+    let result = execute_program(r#"
+        use std::pin::Pin;
+        let x = Box::pin(42);
+    "#);
+    assert!(result.is_ok(), "Pin basic should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: Pin deref not implemented - needs [RUNTIME-795] ticket"]
+fn test_sqlite_942_pin_deref() {
+    let result = execute_program(r#"
+        use std::pin::Pin;
+        let x = Box::pin(42);
+        let y = *x;
+    "#);
+    assert!(result.is_ok(), "Pin deref should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: Unpin trait not implemented - needs [RUNTIME-796] ticket"]
+fn test_sqlite_943_unpin_trait() {
+    let result = execute_program(r#"
+        fun foo<T: Unpin>(x: T) {}
+        foo(42);
+    "#);
+    assert!(result.is_ok(), "Unpin trait should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: Pin as_ref not implemented - needs [RUNTIME-797] ticket"]
+fn test_sqlite_944_pin_as_ref() {
+    let result = execute_program(r#"
+        use std::pin::Pin;
+        let x = Box::pin(42);
+        let r = Pin::as_ref(&x);
+    "#);
+    assert!(result.is_ok(), "Pin as_ref should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: Pin new_unchecked not implemented - needs [RUNTIME-798] ticket"]
+fn test_sqlite_945_pin_new_unchecked() {
+    let result = execute_program(r#"
+        use std::pin::Pin;
+        let x = unsafe { Pin::new_unchecked(&mut 42) };
+    "#);
+    assert!(result.is_ok(), "Pin new_unchecked should work");
+}
+
+// Category 182: Future and Poll
+#[test]
+#[ignore = "Runtime limitation: Future trait not implemented - needs [RUNTIME-799] ticket"]
+fn test_sqlite_946_future_trait() {
+    let result = execute_program(r#"
+        use std::future::Future;
+        use std::pin::Pin;
+        use std::task::{Context, Poll};
+        struct MyFuture;
+        impl Future for MyFuture {
+            type Output = i32;
+            fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<i32> {
+                Poll::Ready(42)
+            }
+        }
+    "#);
+    assert!(result.is_ok(), "Future trait should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: Poll enum not implemented - needs [RUNTIME-800] ticket"]
+fn test_sqlite_947_poll_enum() {
+    let result = execute_program(r#"
+        use std::task::Poll;
+        let p = Poll::Ready(42);
+    "#);
+    assert!(result.is_ok(), "Poll enum should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: Poll is_ready not implemented - needs [RUNTIME-801] ticket"]
+fn test_sqlite_948_poll_is_ready() {
+    let result = execute_program(r#"
+        use std::task::Poll;
+        let p = Poll::Ready(42);
+        let ready = p.is_ready();
+    "#);
+    assert!(result.is_ok(), "Poll is_ready should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: Poll is_pending not implemented - needs [RUNTIME-802] ticket"]
+fn test_sqlite_949_poll_is_pending() {
+    let result = execute_program(r#"
+        use std::task::Poll;
+        let p: Poll<i32> = Poll::Pending;
+        let pending = p.is_pending();
+    "#);
+    assert!(result.is_ok(), "Poll is_pending should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: Poll map not implemented - needs [RUNTIME-803] ticket"]
+fn test_sqlite_950_poll_map() {
+    let result = execute_program(r#"
+        use std::task::Poll;
+        let p = Poll::Ready(42);
+        let q = p.map(|x| x + 1);
+    "#);
+    assert!(result.is_ok(), "Poll map should work");
+}
+
+// Category 183: Waker and Context
+#[test]
+#[ignore = "Runtime limitation: Waker basic not implemented - needs [RUNTIME-804] ticket"]
+fn test_sqlite_951_waker_basic() {
+    let result = execute_program(r#"
+        use std::task::Waker;
+        let waker: Waker;
+    "#);
+    assert!(result.is_ok(), "Waker basic should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: Waker wake not implemented - needs [RUNTIME-805] ticket"]
+fn test_sqlite_952_waker_wake() {
+    let result = execute_program(r#"
+        use std::task::Waker;
+        let waker: Waker;
+        waker.wake();
+    "#);
+    assert!(result.is_ok(), "Waker wake should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: Context from_waker not implemented - needs [RUNTIME-806] ticket"]
+fn test_sqlite_953_context_from_waker() {
+    let result = execute_program(r#"
+        use std::task::{Context, Waker};
+        let waker: Waker;
+        let cx = Context::from_waker(&waker);
+    "#);
+    assert!(result.is_ok(), "Context from_waker should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: Context waker not implemented - needs [RUNTIME-807] ticket"]
+fn test_sqlite_954_context_waker() {
+    let result = execute_program(r#"
+        use std::task::Context;
+        let cx: Context;
+        let w = cx.waker();
+    "#);
+    assert!(result.is_ok(), "Context waker should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: Waker clone not implemented - needs [RUNTIME-808] ticket"]
+fn test_sqlite_955_waker_clone() {
+    let result = execute_program(r#"
+        use std::task::Waker;
+        let waker: Waker;
+        let waker2 = waker.clone();
+    "#);
+    assert!(result.is_ok(), "Waker clone should work");
+}
+
+// Category 184: Stream Trait
+#[test]
+#[ignore = "Runtime limitation: Stream trait not implemented - needs [RUNTIME-809] ticket"]
+fn test_sqlite_956_stream_trait() {
+    let result = execute_program(r#"
+        use std::pin::Pin;
+        use std::task::{Context, Poll};
+        trait Stream {
+            type Item;
+            fn poll_next(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>>;
+        }
+    "#);
+    assert!(result.is_ok(), "Stream trait should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: Stream poll_next not implemented - needs [RUNTIME-810] ticket"]
+fn test_sqlite_957_stream_poll_next() {
+    let result = execute_program(r#"
+        use std::pin::Pin;
+        use std::task::{Context, Poll};
+        let s: Stream<Item = i32>;
+        let item = s.poll_next(cx);
+    "#);
+    assert!(result.is_ok(), "Stream poll_next should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: Stream size_hint not implemented - needs [RUNTIME-811] ticket"]
+fn test_sqlite_958_stream_size_hint() {
+    let result = execute_program(r#"
+        let s: Stream<Item = i32>;
+        let (lower, upper) = s.size_hint();
+    "#);
+    assert!(result.is_ok(), "Stream size_hint should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: Stream next not implemented - needs [RUNTIME-812] ticket"]
+fn test_sqlite_959_stream_next() {
+    let result = execute_program(r#"
+        let s: Stream<Item = i32>;
+        let item = s.next().await;
+    "#);
+    assert!(result.is_ok(), "Stream next should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: Stream map not implemented - needs [RUNTIME-813] ticket"]
+fn test_sqlite_960_stream_map() {
+    let result = execute_program(r#"
+        let s: Stream<Item = i32>;
+        let t = s.map(|x| x + 1);
+    "#);
+    assert!(result.is_ok(), "Stream map should work");
+}
+
+// Category 185: Async Iterator Patterns
+#[test]
+#[ignore = "Runtime limitation: AsyncIterator trait not implemented - needs [RUNTIME-814] ticket"]
+fn test_sqlite_961_async_iterator_trait() {
+    let result = execute_program(r#"
+        trait AsyncIterator {
+            type Item;
+            async fn next(&mut self) -> Option<Self::Item>;
+        }
+    "#);
+    assert!(result.is_ok(), "AsyncIterator trait should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: AsyncIterator for_each not implemented - needs [RUNTIME-815] ticket"]
+fn test_sqlite_962_async_iterator_for_each() {
+    let result = execute_program(r#"
+        let iter: AsyncIterator<Item = i32>;
+        iter.for_each(|x| println!("{}", x)).await;
+    "#);
+    assert!(result.is_ok(), "AsyncIterator for_each should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: AsyncIterator collect not implemented - needs [RUNTIME-816] ticket"]
+fn test_sqlite_963_async_iterator_collect() {
+    let result = execute_program(r#"
+        let iter: AsyncIterator<Item = i32>;
+        let vec = iter.collect::<Vec<_>>().await;
+    "#);
+    assert!(result.is_ok(), "AsyncIterator collect should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: AsyncIterator filter not implemented - needs [RUNTIME-817] ticket"]
+fn test_sqlite_964_async_iterator_filter() {
+    let result = execute_program(r#"
+        let iter: AsyncIterator<Item = i32>;
+        let filtered = iter.filter(|x| *x > 0);
+    "#);
+    assert!(result.is_ok(), "AsyncIterator filter should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: AsyncIterator take not implemented - needs [RUNTIME-818] ticket"]
+fn test_sqlite_965_async_iterator_take() {
+    let result = execute_program(r#"
+        let iter: AsyncIterator<Item = i32>;
+        let taken = iter.take(5);
+    "#);
+    assert!(result.is_ok(), "AsyncIterator take should work");
+}
+
+// Category 186: Select and Join Operations
+#[test]
+#[ignore = "Runtime limitation: select macro not implemented - needs [RUNTIME-819] ticket"]
+fn test_sqlite_966_select_macro() {
+    let result = execute_program(r#"
+        use tokio::select;
+        select! {
+            x = async { 42 } => println!("{}", x),
+            y = async { 43 } => println!("{}", y),
+        }
+    "#);
+    assert!(result.is_ok(), "select macro should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: join macro not implemented - needs [RUNTIME-820] ticket"]
+fn test_sqlite_967_join_macro() {
+    let result = execute_program(r#"
+        use tokio::join;
+        let (a, b) = join!(async { 42 }, async { 43 });
+    "#);
+    assert!(result.is_ok(), "join macro should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: try_join not implemented - needs [RUNTIME-821] ticket"]
+fn test_sqlite_968_try_join() {
+    let result = execute_program(r#"
+        use tokio::try_join;
+        let (a, b) = try_join!(async { Ok(42) }, async { Ok(43) })?;
+    "#);
+    assert!(result.is_ok(), "try_join should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: select_biased not implemented - needs [RUNTIME-822] ticket"]
+fn test_sqlite_969_select_biased() {
+    let result = execute_program(r#"
+        use tokio::select;
+        select! {
+            biased;
+            x = async { 42 } => println!("{}", x),
+            y = async { 43 } => println!("{}", y),
+        }
+    "#);
+    assert!(result.is_ok(), "select_biased should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: join_all not implemented - needs [RUNTIME-823] ticket"]
+fn test_sqlite_970_join_all() {
+    let result = execute_program(r#"
+        use futures::future::join_all;
+        let futures = vec![async { 42 }, async { 43 }];
+        let results = join_all(futures).await;
+    "#);
+    assert!(result.is_ok(), "join_all should work");
+}
+
+// Category 187: Timeout and Interval
+#[test]
+#[ignore = "Runtime limitation: timeout basic not implemented - needs [RUNTIME-824] ticket"]
+fn test_sqlite_971_timeout_basic() {
+    let result = execute_program(r#"
+        use tokio::time::{timeout, Duration};
+        let result = timeout(Duration::from_secs(1), async { 42 }).await;
+    "#);
+    assert!(result.is_ok(), "timeout basic should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: timeout error not implemented - needs [RUNTIME-825] ticket"]
+fn test_sqlite_972_timeout_error() {
+    let result = execute_program(r#"
+        use tokio::time::{timeout, Duration, sleep};
+        let result = timeout(Duration::from_millis(10), sleep(Duration::from_secs(10))).await;
+    "#);
+    assert!(result.is_ok(), "timeout error should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: interval basic not implemented - needs [RUNTIME-826] ticket"]
+fn test_sqlite_973_interval_basic() {
+    let result = execute_program(r#"
+        use tokio::time::{interval, Duration};
+        let mut interval = interval(Duration::from_secs(1));
+    "#);
+    assert!(result.is_ok(), "interval basic should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: interval tick not implemented - needs [RUNTIME-827] ticket"]
+fn test_sqlite_974_interval_tick() {
+    let result = execute_program(r#"
+        use tokio::time::{interval, Duration};
+        let mut interval = interval(Duration::from_secs(1));
+        interval.tick().await;
+    "#);
+    assert!(result.is_ok(), "interval tick should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: sleep basic not implemented - needs [RUNTIME-828] ticket"]
+fn test_sqlite_975_sleep_basic() {
+    let result = execute_program(r#"
+        use tokio::time::{sleep, Duration};
+        sleep(Duration::from_secs(1)).await;
+    "#);
+    assert!(result.is_ok(), "sleep basic should work");
+}
+
+// Category 188: Async Mutex and RwLock
+#[test]
+#[ignore = "Runtime limitation: async Mutex basic not implemented - needs [RUNTIME-829] ticket"]
+fn test_sqlite_976_async_mutex_basic() {
+    let result = execute_program(r#"
+        use tokio::sync::Mutex;
+        let m = Mutex::new(42);
+    "#);
+    assert!(result.is_ok(), "async Mutex basic should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: async Mutex lock not implemented - needs [RUNTIME-830] ticket"]
+fn test_sqlite_977_async_mutex_lock() {
+    let result = execute_program(r#"
+        use tokio::sync::Mutex;
+        let m = Mutex::new(42);
+        let guard = m.lock().await;
+    "#);
+    assert!(result.is_ok(), "async Mutex lock should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: async RwLock basic not implemented - needs [RUNTIME-831] ticket"]
+fn test_sqlite_978_async_rwlock_basic() {
+    let result = execute_program(r#"
+        use tokio::sync::RwLock;
+        let lock = RwLock::new(42);
+    "#);
+    assert!(result.is_ok(), "async RwLock basic should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: async RwLock read not implemented - needs [RUNTIME-832] ticket"]
+fn test_sqlite_979_async_rwlock_read() {
+    let result = execute_program(r#"
+        use tokio::sync::RwLock;
+        let lock = RwLock::new(42);
+        let guard = lock.read().await;
+    "#);
+    assert!(result.is_ok(), "async RwLock read should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: async RwLock write not implemented - needs [RUNTIME-833] ticket"]
+fn test_sqlite_980_async_rwlock_write() {
+    let result = execute_program(r#"
+        use tokio::sync::RwLock;
+        let lock = RwLock::new(42);
+        let mut guard = lock.write().await;
+        *guard = 43;
+    "#);
+    assert!(result.is_ok(), "async RwLock write should work");
+}
+
+// Category 189: Channels Advanced
+#[test]
+#[ignore = "Runtime limitation: unbounded_channel not implemented - needs [RUNTIME-834] ticket"]
+fn test_sqlite_981_unbounded_channel() {
+    let result = execute_program(r#"
+        use tokio::sync::mpsc::unbounded_channel;
+        let (tx, rx) = unbounded_channel();
+    "#);
+    assert!(result.is_ok(), "unbounded_channel should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: broadcast channel not implemented - needs [RUNTIME-835] ticket"]
+fn test_sqlite_982_broadcast_channel() {
+    let result = execute_program(r#"
+        use tokio::sync::broadcast;
+        let (tx, rx) = broadcast::channel(10);
+    "#);
+    assert!(result.is_ok(), "broadcast channel should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: watch channel not implemented - needs [RUNTIME-836] ticket"]
+fn test_sqlite_983_watch_channel() {
+    let result = execute_program(r#"
+        use tokio::sync::watch;
+        let (tx, rx) = watch::channel(42);
+    "#);
+    assert!(result.is_ok(), "watch channel should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: oneshot channel not implemented - needs [RUNTIME-837] ticket"]
+fn test_sqlite_984_oneshot_channel() {
+    let result = execute_program(r#"
+        use tokio::sync::oneshot;
+        let (tx, rx) = oneshot::channel();
+    "#);
+    assert!(result.is_ok(), "oneshot channel should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: channel close not implemented - needs [RUNTIME-838] ticket"]
+fn test_sqlite_985_channel_close() {
+    let result = execute_program(r#"
+        use tokio::sync::mpsc;
+        let (tx, rx) = mpsc::channel(10);
+        drop(tx);
+    "#);
+    assert!(result.is_ok(), "channel close should work");
+}
+
+// Category 190: Spawn and Task Management
+#[test]
+#[ignore = "Runtime limitation: spawn_blocking not implemented - needs [RUNTIME-839] ticket"]
+fn test_sqlite_986_spawn_blocking() {
+    let result = execute_program(r#"
+        use tokio::task::spawn_blocking;
+        let handle = spawn_blocking(|| { 42 });
+    "#);
+    assert!(result.is_ok(), "spawn_blocking should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: JoinHandle await not implemented - needs [RUNTIME-840] ticket"]
+fn test_sqlite_987_join_handle_await() {
+    let result = execute_program(r#"
+        use tokio::task::spawn;
+        let handle = spawn(async { 42 });
+        let result = handle.await;
+    "#);
+    assert!(result.is_ok(), "JoinHandle await should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: JoinHandle abort not implemented - needs [RUNTIME-841] ticket"]
+fn test_sqlite_988_join_handle_abort() {
+    let result = execute_program(r#"
+        use tokio::task::spawn;
+        let handle = spawn(async { 42 });
+        handle.abort();
+    "#);
+    assert!(result.is_ok(), "JoinHandle abort should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: yield_now not implemented - needs [RUNTIME-842] ticket"]
+fn test_sqlite_989_yield_now() {
+    let result = execute_program(r#"
+        use tokio::task::yield_now;
+        yield_now().await;
+    "#);
+    assert!(result.is_ok(), "yield_now should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: LocalSet basic not implemented - needs [RUNTIME-843] ticket"]
+fn test_sqlite_990_local_set_basic() {
+    let result = execute_program(r#"
+        use tokio::task::LocalSet;
+        let local = LocalSet::new();
+    "#);
+    assert!(result.is_ok(), "LocalSet basic should work");
+}
+
 /// Test concurrent execution
 #[test]
 #[ignore = "Runtime limitation: concurrent execution not implemented - needs [RUNTIME-027] ticket"]
