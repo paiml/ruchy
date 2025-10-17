@@ -2,4 +2,5 @@
 
 pub mod async_ops;
 pub mod binary_ops;
+pub mod collections;
 pub mod field_access;
