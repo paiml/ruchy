@@ -3335,6 +3335,84 @@ fn test_sqlite_366_trait_object_send_sync() {
 #[test] fn test_sqlite_1155_num_binary() { assert_parses("let x = 0b101010;"); }
 #[test] fn test_sqlite_1156_num_underscore() { assert_parses("let x = 1_000_000;"); }
 
+// Category 181: Closure Syntax Variations
+#[test] fn test_sqlite_1157_closure_simple() { assert_parses("let f = || 42;"); }
+#[test] fn test_sqlite_1158_closure_param() { assert_parses("let f = |x| x + 1;"); }
+#[test] fn test_sqlite_1159_closure_multi_param() { assert_parses("let f = |x, y| x + y;"); }
+#[ignore = "Parser limitation: closure with type annotation not supported - needs [PARSER-375] ticket"]
+#[test] fn test_sqlite_1160_closure_type_ann() { assert_parses("let f = |x: i32| x + 1;"); }
+#[ignore = "Parser limitation: closure with return type not supported - needs [PARSER-376] ticket"]
+#[test] fn test_sqlite_1161_closure_return_type() { assert_parses("let f = |x: i32| -> i32 { x + 1 };"); }
+
+// Category 182: Array and Slice Syntax
+#[test] fn test_sqlite_1162_array_literal() { assert_parses("let a = [1, 2, 3];"); }
+#[test] fn test_sqlite_1163_array_repeat() { assert_parses("let a = [0; 10];"); }
+#[test] fn test_sqlite_1164_array_index() { assert_parses("let x = a[0];"); }
+#[test] fn test_sqlite_1165_array_range() { assert_parses("let s = &a[1..3];"); }
+#[test] fn test_sqlite_1166_array_empty() { assert_parses("let a: [i32; 0] = [];"); }
+
+// Category 183: Struct Expression Forms
+#[test] fn test_sqlite_1167_struct_expr_simple() { assert_parses("Point { x: 1, y: 2 }"); }
+#[test] fn test_sqlite_1168_struct_expr_shorthand() { assert_parses("let x = 1; Point { x, y: 2 }"); }
+#[test] fn test_sqlite_1169_struct_expr_update() { assert_parses("Point { x: 3, ..p }"); }
+#[test] fn test_sqlite_1170_struct_expr_tuple() { assert_parses("Color(255, 0, 0)"); }
+#[test] fn test_sqlite_1171_struct_expr_unit() { assert_parses("let u = Unit;"); }
+
+// Category 184: Enum Variant Syntax
+#[test] fn test_sqlite_1172_enum_variant_unit() { assert_parses("let v = Color::Red;"); }
+#[test] fn test_sqlite_1173_enum_variant_tuple() { assert_parses("let v = Color::Rgb(255, 0, 0);"); }
+#[test] fn test_sqlite_1174_enum_variant_struct() { assert_parses("let v = Color::Named { name: \"red\" };"); }
+#[test] fn test_sqlite_1175_enum_variant_nested() { assert_parses("let v = Option::Some(Result::Ok(42));"); }
+#[test] fn test_sqlite_1176_enum_variant_path() { assert_parses("let v = std::option::Option::None;"); }
+
+// Category 185: Loop Control Flow
+#[test] fn test_sqlite_1177_loop_break() { assert_parses("loop { break; }"); }
+#[test] fn test_sqlite_1178_loop_break_value() { assert_parses("let x = loop { break 42; };"); }
+#[test] fn test_sqlite_1179_loop_continue() { assert_parses("loop { continue; }"); }
+#[test] fn test_sqlite_1180_loop_nested_break() { assert_parses("loop { loop { break; } }"); }
+#[test] fn test_sqlite_1181_loop_label_break() { assert_parses("'outer: loop { break 'outer; }"); }
+
+// Category 186: Range Expressions
+#[test] fn test_sqlite_1182_range_full() { assert_parses("let r = 1..10;"); }
+#[test] fn test_sqlite_1183_range_inclusive() { assert_parses("let r = 1..=10;"); }
+#[ignore = "Parser limitation: RangeFrom syntax not supported - needs [PARSER-377] ticket"]
+#[test] fn test_sqlite_1184_range_from() { assert_parses("let r = 1..;"); }
+#[ignore = "Parser limitation: RangeTo syntax not supported - needs [PARSER-378] ticket"]
+#[test] fn test_sqlite_1185_range_to() { assert_parses("let r = ..10;"); }
+#[ignore = "Parser limitation: RangeFull syntax not supported - needs [PARSER-379] ticket"]
+#[test] fn test_sqlite_1186_range_full_unbounded() { assert_parses("let r = ..;"); }
+
+// Category 187: Method Call Chains
+#[test] fn test_sqlite_1187_method_chain_simple() { assert_parses("x.foo().bar();"); }
+#[test] fn test_sqlite_1188_method_chain_args() { assert_parses("x.foo(1).bar(2);"); }
+#[test] fn test_sqlite_1189_method_chain_field() { assert_parses("x.field.foo();"); }
+#[test] fn test_sqlite_1190_method_chain_index() { assert_parses("x[0].foo();"); }
+#[test] fn test_sqlite_1191_method_chain_try() { assert_parses("x.foo()?.bar();"); }
+
+// Category 188: Try Operator
+#[test] fn test_sqlite_1192_try_simple() { assert_parses("let x = foo()?;"); }
+#[test] fn test_sqlite_1193_try_method() { assert_parses("let x = obj.method()?;"); }
+#[test] fn test_sqlite_1194_try_chain() { assert_parses("let x = foo()?.bar()?;"); }
+#[test] fn test_sqlite_1195_try_field() { assert_parses("let x = obj?.field;"); }
+#[ignore = "Parser limitation: try operator on index not supported - needs [PARSER-380] ticket"]
+#[test] fn test_sqlite_1196_try_index() { assert_parses("let x = arr?[0];"); }
+
+// Category 189: Box and Reference Patterns
+#[test] fn test_sqlite_1197_box_expr() { assert_parses("let b = Box::new(42);"); }
+#[test] fn test_sqlite_1198_ref_expr() { assert_parses("let r = &x;"); }
+#[ignore = "Parser limitation: mutable reference syntax not supported - needs [PARSER-381] ticket"]
+#[test] fn test_sqlite_1199_ref_mut_expr() { assert_parses("let r = &mut x;"); }
+#[test] fn test_sqlite_1200_deref_expr() { assert_parses("let x = *r;"); }
+#[ignore = "Parser limitation: raw pointer address-of syntax not supported - needs [PARSER-382] ticket"]
+#[test] fn test_sqlite_1201_addr_of_expr() { assert_parses("let p = &raw const x;"); }
+
+// Category 190: Macro Invocation Forms
+#[test] fn test_sqlite_1202_macro_call() { assert_parses("println!(\"hello\");"); }
+#[test] fn test_sqlite_1203_macro_vec() { assert_parses("let v = vec![1, 2, 3];"); }
+#[test] fn test_sqlite_1204_macro_format() { assert_parses("let s = format!(\"x = {}\", x);"); }
+#[test] fn test_sqlite_1205_macro_assert() { assert_parses("assert!(x > 0);"); }
+#[test] fn test_sqlite_1206_macro_matches() { assert_parses("if matches!(x, Some(_)) { }"); }
+
 // ============================================================================
 // Error Handling
 // ============================================================================
