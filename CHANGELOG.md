@@ -4,6 +4,39 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.90.0] - 2025-10-17
+
+### Fixed
+- **[BUGFIX] AST Comment Tracking Support**: Fixed 125+ compilation errors after adding comment tracking to AST
+  - Added `leading_comments: Vec<Comment>` and `trailing_comment: Option<Comment>` fields to `Expr` struct
+  - Updated all Expr initializations across codebase to use `Expr::new()` constructor
+  - Fixed files: `src/wasm/mod.rs`, `src/testing/ast_builder.rs`, `src/frontend/ast.rs`, `src/frontend/parser/mod.rs`, `src/backend/transpiler/*`, `src/runtime/*`, `src/docs/mod.rs`, `src/lints/mod.rs`, `src/bin/handlers/commands.rs`
+  - Updated AST size test limit (320→400 bytes) to account for comment tracking fields
+  - Fixed lexer test to expect comments as tokens (tokenization behavior changed)
+  - Updated 8 formatter tests to work with changed output format
+  - Fixed CLI contract tests for new error messages ("Empty program" vs "Unexpected end of input")
+  - All tests passing: 3,876 passed, 22 ignored, 0 failed
+
+### Added
+- **[QUALITY] Enhanced Pre-commit Quality Gates**: Added PMAT TDG and Entropy checks to pre-commit hook
+  - **TDG (Technical Debt Grade)**: Minimum grade A- (≥85 points) enforced on all new code
+    - Checks: Complexity, Duplication, Documentation, Test Coverage, Code Style
+    - Blocks commits with grade below A-
+  - **Entropy Analysis**: Maximum entropy ≤0.8 enforced for code maintainability
+    - Measures: Naming consistency, Abstraction uniformity, Code organization
+    - Low entropy = predictable, maintainable code
+    - Blocks commits with high entropy (chaotic code)
+  - Updated `docs/execution/quality-gates.md` with new metrics
+  - Pre-commit hook now enforces 3 PMAT checks: Complexity, TDG, Entropy
+
+### Changed
+- **[QUALITY] Quality Gates Documentation**: Updated quality standards
+  - Added TDG grading scale (A+/A/A- pass, B/C/D/F fail)
+  - Added entropy thresholds and interpretation guidance
+  - Enhanced pre-commit hook enforcement documentation
+
+## [3.89.0] - Previous Release
+
 ### Added
 - **[SQLITE-TEST-001] Harness 4 Twenty-Seventh Expansion - 1,300 Test Milestone (2.6% COMPLETE!)**: Added 50 new runtime anomaly tests (1,250→1,300, 4.0% increase)
   - Test Pass Rate: 58/1,300 passing (4.5%)
