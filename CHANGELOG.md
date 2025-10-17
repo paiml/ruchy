@@ -5,12 +5,17 @@ All notable changes to the Ruchy programming language will be documented in this
 ## [Unreleased]
 
 ### Fixed
-- **[QUALITY] TDG Quality Improvements (Partial - 2/8 files)**: Ongoing refactoring to meet A- quality standard
+- **[QUALITY] TDG Quality Improvements (Partial - 3/8 files)**: Ongoing refactoring to meet A- quality standard
   - **eval_function.rs**: Now passes at 94.7/100 (A) - removed from pre-commit skip list
   - **dispatcher.rs**: Refactored from 867→667 lines (-23%)
     - Extracted macro transpilation helpers to `dispatcher_helpers/macro_helpers.rs`
     - Added proper Break/Continue/Return transpilation with value support
-  - **Remaining**: 6 files still need refactoring (verification.rs, expressions.rs, parser files, handlers/commands.rs)
+  - **verification.rs**: Refactored from 836→295 lines (-65%), 80.8→89.4/100 (A-)
+    - Extracted assertion extraction to `verification_modules/extraction.rs` (160 lines)
+    - Extracted verification helpers to `verification_modules/helpers.rs` (75 lines)
+    - Fixed function arguments mismatch in prove_helpers.rs
+    - Removed from pre-commit skip list - now passing quality gates
+  - **Remaining**: 5 files still need refactoring (expressions.rs, 3 parser files, handlers/commands.rs)
 
 ## [3.90.0] - 2025-10-17
 

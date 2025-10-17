@@ -8,7 +8,7 @@
 mod macro_helpers;
 
 use super::Transpiler;
-use crate::frontend::ast::{Expr, ExprKind, Literal};
+use crate::frontend::ast::{Expr, ExprKind};
 use anyhow::{bail, Result};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
