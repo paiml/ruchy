@@ -228,6 +228,8 @@ mod tests {
             kind: ExprKind::Identifier(name.to_string()),
             span: Default::default(),
             attributes: Vec::new(),
+            leading_comments: vec![],
+            trailing_comment: None,
         }
     }
 
@@ -236,6 +238,8 @@ mod tests {
             kind: ExprKind::Literal(Literal::String(s.to_string())),
             span: Default::default(),
             attributes: Vec::new(),
+            leading_comments: vec![],
+            trailing_comment: None,
         }
     }
 

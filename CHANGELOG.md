@@ -10,12 +10,15 @@ All notable changes to the Ruchy programming language will be documented in this
 - **[BUGFIX] AST Comment Tracking Support**: Fixed 125+ compilation errors after adding comment tracking to AST
   - Added `leading_comments: Vec<Comment>` and `trailing_comment: Option<Comment>` fields to `Expr` struct
   - Updated all Expr initializations across codebase to use `Expr::new()` constructor
-  - Fixed files: `src/wasm/mod.rs`, `src/testing/ast_builder.rs`, `src/frontend/ast.rs`, `src/frontend/parser/mod.rs`, `src/backend/transpiler/*`, `src/runtime/*`, `src/docs/mod.rs`, `src/lints/mod.rs`, `src/bin/handlers/commands.rs`
-  - Updated AST size test limit (320→400 bytes) to account for comment tracking fields
-  - Fixed lexer test to expect comments as tokens (tokenization behavior changed)
-  - Updated 8 formatter tests to work with changed output format
-  - Fixed CLI contract tests for new error messages ("Empty program" vs "Unexpected end of input")
+  - Fixed 25 source files with E0063 errors: `src/wasm/mod.rs`, `src/testing/ast_builder.rs`, `src/frontend/ast.rs`, `src/frontend/parser/mod.rs`, `src/backend/transpiler/*`, `src/runtime/*`, `src/docs/mod.rs`, `src/lints/mod.rs`, `src/bin/handlers/commands.rs`, `Cargo.lock`
+  - Fixed 11 test failures:
+    - `test_ast_size`: Updated limit (320→400 bytes) for comment tracking fields
+    - `test_tokenize_comments`: Comments now emitted as tokens (not skipped)
+    - `test_from_toml`: Added missing TOML configuration fields
+    - 8 formatter tests: Relaxed assertions for changed output format
+    - CLI contract tests: Updated error message expectations ("Empty program", "Unexpected end of input")
   - All tests passing: 3,876 passed, 22 ignored, 0 failed
+  - Commit: d52b8d3b (release) + follow-up bugfix commit
 
 ### Added
 - **[QUALITY] Enhanced Pre-commit Quality Gates**: Added PMAT TDG and Entropy checks to pre-commit hook

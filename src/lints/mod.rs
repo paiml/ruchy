@@ -155,6 +155,8 @@ mod tests {
             kind,
             span: Span::new(0, 10),
             attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
         }
     }
     #[test]

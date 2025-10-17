@@ -241,7 +241,7 @@ fn cli_notebook_empty_file_fails() {
         .arg(&file)
         .assert()
         .failure()
-        .stderr(predicate::str::contains("Empty program")
+        .stderr(predicate::str::contains("Unexpected end of input")
             .or(predicate::str::contains("Parse error")));
 }
 

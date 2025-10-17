@@ -35,11 +35,7 @@ impl AstBuilder {
     /// assert_eq!(result, Ok(42));
     /// ```
     pub fn int(&self, value: i64) -> Expr {
-        Expr {
-            kind: ExprKind::Literal(Literal::Integer(value, None)),
-            span: self.span,
-            attributes: vec![],
-        }
+        Expr::new(ExprKind::Literal(Literal::Integer(value, None)), self.span)
     }
     /// Create a float literal
     /// # Examples
@@ -51,11 +47,7 @@ impl AstBuilder {
     /// assert_eq!(result, Ok(()));
     /// ```
     pub fn float(&self, value: f64) -> Expr {
-        Expr {
-            kind: ExprKind::Literal(Literal::Float(value)),
-            span: self.span,
-            attributes: vec![],
-        }
+        Expr::new(ExprKind::Literal(Literal::Float(value)), self.span)
     }
     /// Create a string literal
     /// # Examples
@@ -71,6 +63,8 @@ impl AstBuilder {
             kind: ExprKind::Literal(Literal::String(value.to_string())),
             span: self.span,
             attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
         }
     }
     /// Create a boolean literal
@@ -87,6 +81,8 @@ impl AstBuilder {
             kind: ExprKind::Literal(Literal::Bool(value)),
             span: self.span,
             attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
         }
     }
     /// Create an identifier expression
@@ -103,6 +99,8 @@ impl AstBuilder {
             kind: ExprKind::Identifier(name.to_string()),
             span: self.span,
             attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
         }
     }
     /// Create a binary operation
@@ -123,6 +121,8 @@ impl AstBuilder {
             },
             span: self.span,
             attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
         }
     }
     /// Create a unary operation
@@ -142,6 +142,8 @@ impl AstBuilder {
             },
             span: self.span,
             attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
         }
     }
     /// Create an if expression
@@ -162,6 +164,8 @@ impl AstBuilder {
             },
             span: self.span,
             attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
         }
     }
     /// Create a match expression
@@ -181,6 +185,8 @@ impl AstBuilder {
             },
             span: self.span,
             attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
         }
     }
     /// Create a match arm
@@ -312,6 +318,8 @@ impl AstBuilder {
             },
             span: self.span,
             attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
         }
     }
     /// Create a lambda expression
@@ -331,6 +339,8 @@ impl AstBuilder {
             },
             span: self.span,
             attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
         }
     }
     /// Create a block expression
@@ -347,6 +357,8 @@ impl AstBuilder {
             kind: ExprKind::Block(statements),
             span: self.span,
             attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
         }
     }
     /// Create a let expression
@@ -370,10 +382,14 @@ impl AstBuilder {
                     kind: ExprKind::Literal(Literal::Unit),
                     span: self.span,
                     attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
                 }),
             },
             span: self.span,
             attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
         }
     }
     /// Create an assignment
@@ -393,6 +409,8 @@ impl AstBuilder {
             },
             span: self.span,
             attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
         }
     }
     /// Create a `Result::Ok` variant
@@ -412,6 +430,8 @@ impl AstBuilder {
             },
             span: self.span,
             attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
         }
     }
     /// Create a `Result::Err` variant
@@ -431,6 +451,8 @@ impl AstBuilder {
             },
             span: self.span,
             attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
         }
     }
     /// Create an `Option::Some` variant
@@ -450,6 +472,8 @@ impl AstBuilder {
             },
             span: self.span,
             attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
         }
     }
     /// Create an `Option::None` variant
@@ -478,6 +502,8 @@ impl AstBuilder {
             kind: ExprKind::List(elements),
             span: self.span,
             attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
         }
     }
     /// Create a tuple literal
@@ -494,6 +520,8 @@ impl AstBuilder {
             kind: ExprKind::Tuple(elements),
             span: self.span,
             attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
         }
     }
     /// Create string interpolation
@@ -510,6 +538,8 @@ impl AstBuilder {
             kind: ExprKind::StringInterpolation { parts },
             span: self.span,
             attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
         }
     }
     /// Create a for loop
@@ -532,6 +562,8 @@ impl AstBuilder {
             },
             span: self.span,
             attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
         }
     }
     /// Create a while loop
@@ -552,6 +584,8 @@ impl AstBuilder {
             },
             span: self.span,
             attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
         }
     }
     /// Create a loop expression
@@ -571,6 +605,8 @@ impl AstBuilder {
             },
             span: self.span,
             attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
         }
     }
     /// Create a break expression
@@ -587,6 +623,8 @@ impl AstBuilder {
             kind: ExprKind::Break { label, value: None },
             span: self.span,
             attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
         }
     }
     /// Create a continue expression
@@ -603,6 +641,8 @@ impl AstBuilder {
             kind: ExprKind::Continue { label },
             span: self.span,
             attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
         }
     }
     /// Create a return expression
@@ -621,6 +661,8 @@ impl AstBuilder {
             },
             span: self.span,
             attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
         }
     }
     /// Create a type annotation

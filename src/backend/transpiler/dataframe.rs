@@ -378,6 +378,8 @@ mod tests {
             kind: ExprKind::Literal(Literal::Integer(val, None)),
             span: Span::new(0, 10),
             attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
         }
     }
     #[test]
@@ -587,11 +589,15 @@ mod property_tests_dataframe {
                         kind: ExprKind::Literal(Literal::Integer(1, None)),
                         span: Span::default(),
                         attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
                     },
                     Expr {
                         kind: ExprKind::Literal(Literal::Integer(2, None)),
                         span: Span::default(),
                         attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
                     },
                 ],
             },
@@ -602,11 +608,15 @@ mod property_tests_dataframe {
                         kind: ExprKind::Literal(Literal::String("Alice".to_string())),
                         span: Span::default(),
                         attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
                     },
                     Expr {
                         kind: ExprKind::Literal(Literal::String("Bob".to_string())),
                         span: Span::default(),
                         attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
                     },
                 ],
             },

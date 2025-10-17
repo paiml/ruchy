@@ -684,7 +684,16 @@ mod tests {
             stream.next().map(|(t, _)| t),
             Some(Token::Identifier("x".to_string()))
         );
+        // Comments are now emitted as tokens for comment tracking
+        assert_eq!(
+            stream.next().map(|(t, _)| t),
+            Some(Token::LineComment(" comment".to_string()))
+        );
         assert_eq!(stream.next().map(|(t, _)| t), Some(Token::Plus));
+        assert_eq!(
+            stream.next().map(|(t, _)| t),
+            Some(Token::BlockComment(" block ".to_string()))
+        );
         assert_eq!(
             stream.next().map(|(t, _)| t),
             Some(Token::Identifier("y".to_string()))
