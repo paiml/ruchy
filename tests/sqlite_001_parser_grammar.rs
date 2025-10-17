@@ -4064,6 +4064,125 @@ fn test_sqlite_366_trait_object_send_sync() {
 #[test] fn test_sqlite_1506_impl_unsafe() { assert_parses("unsafe impl Trait for Foo { }"); }
 
 // ============================================================================
+// Category 271: Fn Pointer Syntax (Tests 1507-1511)
+// ============================================================================
+
+#[ignore = "Parser limitation: fn ptr simple not supported - needs [PARSER-493] ticket"]
+#[test] fn test_sqlite_1507_fn_ptr_simple() { assert_parses("let f: fn() -> i32;"); }
+#[ignore = "Parser limitation: fn ptr param not supported - needs [PARSER-494] ticket"]
+#[test] fn test_sqlite_1508_fn_ptr_param() { assert_parses("let f: fn(i32) -> i32;"); }
+#[ignore = "Parser limitation: fn ptr multi not supported - needs [PARSER-495] ticket"]
+#[test] fn test_sqlite_1509_fn_ptr_multi() { assert_parses("let f: fn(i32, i32) -> i32;"); }
+#[ignore = "Parser limitation: fn ptr unsafe not supported - needs [PARSER-496] ticket"]
+#[test] fn test_sqlite_1510_fn_ptr_unsafe() { assert_parses("let f: unsafe fn() -> i32;"); }
+#[ignore = "Parser limitation: fn ptr extern not supported - needs [PARSER-497] ticket"]
+#[test] fn test_sqlite_1511_fn_ptr_extern() { assert_parses("let f: extern \"C\" fn() -> i32;"); }
+
+// ============================================================================
+// Category 272: Trait Object Syntax (Tests 1512-1516)
+// ============================================================================
+
+#[ignore = "Parser limitation: trait obj simple not supported - needs [PARSER-498] ticket"]
+#[test] fn test_sqlite_1512_trait_obj_simple() { assert_parses("let x: &dyn Trait;"); }
+#[ignore = "Parser limitation: trait obj box not supported - needs [PARSER-499] ticket"]
+#[test] fn test_sqlite_1513_trait_obj_box() { assert_parses("let x: Box<dyn Trait>;"); }
+#[ignore = "Parser limitation: trait obj multi not supported - needs [PARSER-500] ticket"]
+#[test] fn test_sqlite_1514_trait_obj_multi() { assert_parses("let x: &dyn Trait + Send;"); }
+#[ignore = "Parser limitation: trait obj lifetime not supported - needs [PARSER-501] ticket"]
+#[test] fn test_sqlite_1515_trait_obj_lifetime() { assert_parses("let x: &'a dyn Trait;"); }
+#[ignore = "Parser limitation: trait obj impl not supported - needs [PARSER-502] ticket"]
+#[test] fn test_sqlite_1516_trait_obj_impl() { assert_parses("let x: &impl Trait;"); }
+
+// ============================================================================
+// Category 273: Lifetime Syntax Complete (Tests 1517-1521)
+// ============================================================================
+
+#[ignore = "Parser limitation: lifetime fn not supported - needs [PARSER-503] ticket"]
+#[test] fn test_sqlite_1517_lifetime_fn() { assert_parses("fn foo<'a>(x: &'a i32) { }"); }
+#[test] fn test_sqlite_1518_lifetime_struct() { assert_parses("struct Foo<'a> { x: &'a i32 }"); }
+#[ignore = "Parser limitation: lifetime impl not supported - needs [PARSER-504] ticket"]
+#[test] fn test_sqlite_1519_lifetime_impl() { assert_parses("impl<'a> Foo<'a> { }"); }
+#[ignore = "Parser limitation: lifetime static not supported - needs [PARSER-505] ticket"]
+#[test] fn test_sqlite_1520_lifetime_static() { assert_parses("static X: &'static str = \"hello\";"); }
+#[test] fn test_sqlite_1521_lifetime_elided() { assert_parses("fn foo(x: &i32) -> &i32 { x }"); }
+
+// ============================================================================
+// Category 274: Pattern Syntax Complete (Tests 1522-1526)
+// ============================================================================
+
+#[test] fn test_sqlite_1522_pattern_wildcard() { assert_parses("let _ = 42;"); }
+#[ignore = "Parser limitation: pattern rest not supported - needs [PARSER-506] ticket"]
+#[test] fn test_sqlite_1523_pattern_rest() { assert_parses("let [a, .., b] = arr;"); }
+#[test] fn test_sqlite_1524_pattern_range() { assert_parses("match x { 0..=10 => { } _ => { } }"); }
+#[ignore = "Parser limitation: pattern ref not supported - needs [PARSER-507] ticket"]
+#[test] fn test_sqlite_1525_pattern_ref() { assert_parses("let ref x = 42;"); }
+#[ignore = "Parser limitation: pattern ref mut not supported - needs [PARSER-508] ticket"]
+#[test] fn test_sqlite_1526_pattern_ref_mut() { assert_parses("let ref mut x = 42;"); }
+
+// ============================================================================
+// Category 275: Expression Syntax Complete (Tests 1527-1531)
+// ============================================================================
+
+#[test] fn test_sqlite_1527_expr_paren() { assert_parses("let x = (42);"); }
+#[test] fn test_sqlite_1528_expr_block() { assert_parses("let x = { 42 };"); }
+#[test] fn test_sqlite_1529_expr_return() { assert_parses("return 42;"); }
+#[test] fn test_sqlite_1530_expr_break() { assert_parses("loop { break; }"); }
+#[test] fn test_sqlite_1531_expr_continue() { assert_parses("loop { continue; }"); }
+
+// ============================================================================
+// Category 276: Statement Syntax Complete (Tests 1532-1536)
+// ============================================================================
+
+#[test] fn test_sqlite_1532_stmt_let() { assert_parses("let x = 42;"); }
+#[test] fn test_sqlite_1533_stmt_let_mut() { assert_parses("let mut x = 42;"); }
+#[test] fn test_sqlite_1534_stmt_let_type() { assert_parses("let x: i32 = 42;"); }
+#[test] fn test_sqlite_1535_stmt_expr() { assert_parses("42;"); }
+#[ignore = "Parser limitation: stmt empty not supported - needs [PARSER-509] ticket"]
+#[test] fn test_sqlite_1536_stmt_empty() { assert_parses(";"); }
+
+// ============================================================================
+// Category 277: Block Syntax Complete (Tests 1537-1541)
+// ============================================================================
+
+#[test] fn test_sqlite_1537_block_empty() { assert_parses("{ }"); }
+#[test] fn test_sqlite_1538_block_single() { assert_parses("{ 42 }"); }
+#[test] fn test_sqlite_1539_block_multi() { assert_parses("{ let x = 1; let y = 2; x + y }"); }
+#[test] fn test_sqlite_1540_block_nested() { assert_parses("{ { 42 } }"); }
+#[ignore = "Parser limitation: block label not supported - needs [PARSER-510] ticket"]
+#[test] fn test_sqlite_1541_block_label() { assert_parses("'block: { break 'block; }"); }
+
+// ============================================================================
+// Category 278: Operator Precedence Complete (Tests 1542-1546)
+// ============================================================================
+
+#[test] fn test_sqlite_1542_prec_add_mul() { assert_parses("1 + 2 * 3"); }
+#[test] fn test_sqlite_1543_prec_cmp_bool() { assert_parses("1 < 2 && 3 > 4"); }
+#[test] fn test_sqlite_1544_prec_assign() { assert_parses("x = y = 42"); }
+#[test] fn test_sqlite_1545_prec_unary() { assert_parses("-!x"); }
+#[test] fn test_sqlite_1546_prec_field() { assert_parses("x.y.z"); }
+
+// ============================================================================
+// Category 279: Unary Operator Complete (Tests 1547-1551)
+// ============================================================================
+
+#[test] fn test_sqlite_1547_unary_neg() { assert_parses("let x = -42;"); }
+#[test] fn test_sqlite_1548_unary_not() { assert_parses("let x = !true;"); }
+#[test] fn test_sqlite_1549_unary_deref() { assert_parses("let x = *ptr;"); }
+#[test] fn test_sqlite_1550_unary_ref() { assert_parses("let x = &42;"); }
+#[ignore = "Parser limitation: unary ref mut not supported - needs [PARSER-511] ticket"]
+#[test] fn test_sqlite_1551_unary_ref_mut() { assert_parses("let x = &mut 42;"); }
+
+// ============================================================================
+// Category 280: Binary Operator Complete (Tests 1552-1556)
+// ============================================================================
+
+#[test] fn test_sqlite_1552_binary_arith() { assert_parses("1 + 2 - 3 * 4 / 5 % 6"); }
+#[test] fn test_sqlite_1553_binary_cmp() { assert_parses("1 < 2 && 3 > 4 || 5 == 6"); }
+#[test] fn test_sqlite_1554_binary_bit() { assert_parses("1 & 2 | 3 ^ 4 << 5 >> 6"); }
+#[test] fn test_sqlite_1555_binary_assign() { assert_parses("x += 1; y -= 2; z *= 3;"); }
+#[test] fn test_sqlite_1556_binary_range() { assert_parses("let r = 0..10;"); }
+
+// ============================================================================
 // Error Handling
 // ============================================================================
 

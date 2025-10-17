@@ -5,6 +5,14 @@ All notable changes to the Ruchy programming language will be documented in this
 ## [Unreleased]
 
 ### Added
+- **[SQLITE-TEST-001] Harness 1 Twenty-Eighth Expansion - 1,450 Test Milestone (72.5% COMPLETE!)**: Added 50 new parser grammar tests (1,400→1,450, 3.6% increase)
+  - Test Pass Rate: 993/1,450 passing (68.5%)
+  - New Categories (10): Fn Pointer Syntax (fn ptr simple, fn ptr param, fn ptr multi, fn ptr unsafe, fn ptr extern), Trait Object Syntax (trait obj simple, trait obj box, trait obj multi, trait obj lifetime, trait obj impl), Lifetime Syntax Complete (lifetime fn, lifetime struct, lifetime impl, lifetime static, lifetime elided), Pattern Syntax Complete (pattern wildcard, pattern rest, pattern range, pattern ref, pattern ref mut), Expression Syntax Complete (expr paren, expr block, expr return, expr break, expr continue), Statement Syntax Complete (stmt let, stmt let mut, stmt let type, stmt expr, stmt empty), Block Syntax Complete (block empty, block single, block multi, block nested, block label), Operator Precedence Complete (prec add mul, prec cmp bool, prec assign, prec unary, prec field), Unary Operator Complete (unary neg, unary not, unary deref, unary ref, unary ref mut), Binary Operator Complete (binary arith, binary cmp, binary bit, binary assign, binary range)
+  - Defensive Testing: 19 new parser limitations (PARSER-493 through PARSER-511)
+  - Total Limitations: 457 documented (PARSER-060 fixed)
+  - Framework Total: 2,663 tests across 4 harnesses
+  - Progress: 1,450/2,000 tests (72.5% of Harness 1 complete - 72.5% MILESTONE!)
+  - Time: 33.5h / 60h estimated (55.8%)
 - **[SQLITE-TEST-001] Harness 4 Twenty-Sixth Expansion - 1,250 Test Milestone (2.5% COMPLETE!)**: Added 50 new runtime anomaly tests (1,200→1,250, 4.2% increase)
   - Test Pass Rate: 58/1,250 passing (4.6%)
   - New Categories (10): AddAssign/SubAssign/MulAssign/DivAssign Operator Trait Runtime (add assign custom, sub assign custom, mul assign custom, div assign custom, rem assign custom), Range/RangeBounds Trait Runtime (range full runtime, range inclusive runtime, range from runtime, range to runtime, range full unbounded runtime), Box/Rc/Arc Smart Pointer Runtime (box new, box deref, rc new, rc clone, arc new), RefCell/Cell Interior Mutability Runtime (cell new, cell get, cell set, refcell new, refcell borrow), Mutex/RwLock Synchronization Runtime (mutex new, mutex lock, mutex unlock, rwlock new, rwlock read), Channel Send/Recv Runtime (channel create, channel send, channel recv, channel try_recv, channel iter), Thread Spawn/Join Runtime (thread spawn, thread join, thread sleep, thread current, thread builder), Future/Poll Runtime (future poll, future ready, future pending, pin new, waker), File I/O Runtime (file open, file create, file read, file write, file metadata), Path/PathBuf Runtime (path new, pathbuf new, path join, path exists, path extension)
