@@ -2816,6 +2816,94 @@ fn test_sqlite_366_trait_object_send_sync() {
 #[ignore = "Parser limitation: nested attribute not supported - needs [PARSER-275] ticket"]
 #[test] fn test_sqlite_856_attr_nested() { assert_parses("#[cfg(all(unix, target_pointer_width = \"64\"))] struct S;"); }
 
+// Category 121: If-Let Expressions
+#[test] fn test_sqlite_857_if_let() { assert_parses("if let Some(x) = opt { x }"); }
+#[test] fn test_sqlite_858_if_let_else() { assert_parses("if let Some(x) = opt { x } else { 0 }"); }
+#[test] fn test_sqlite_859_if_let_chain() { assert_parses("if let Some(x) = a && let Some(y) = b { }"); }
+#[test] fn test_sqlite_860_if_let_pattern() { assert_parses("if let (x, y) = tuple { }"); }
+#[test] fn test_sqlite_861_if_let_guard() { assert_parses("if let x @ 1..=10 = n { }"); }
+
+// Category 122: While-Let Expressions
+#[test] fn test_sqlite_862_while_let() { assert_parses("while let Some(x) = iter.next() { }"); }
+#[test] fn test_sqlite_863_while_let_pattern() { assert_parses("while let (x, y) = get_pair() { }"); }
+#[test] fn test_sqlite_864_while_let_labeled() { assert_parses("'outer: while let Some(x) = iter { }"); }
+#[test] fn test_sqlite_865_while_let_guard() { assert_parses("while let x @ 1..=10 = get() { }"); }
+#[test] fn test_sqlite_866_while_let_nested() { assert_parses("while let Some(x) = a { while let Some(y) = b { } }"); }
+
+// Category 123: Array and Slice Syntax
+#[test] fn test_sqlite_867_array_literal() { assert_parses("[1, 2, 3]"); }
+#[test] fn test_sqlite_868_array_repeat() { assert_parses("[0; 10]"); }
+#[ignore = "Parser limitation: array type annotation not supported - needs [PARSER-276] ticket"]
+#[test] fn test_sqlite_869_array_type() { assert_parses("let x: [i32; 5];"); }
+#[ignore = "Parser limitation: slice type annotation not supported - needs [PARSER-277] ticket"]
+#[test] fn test_sqlite_870_slice_type() { assert_parses("let x: &[i32];"); }
+#[test] fn test_sqlite_871_array_nested() { assert_parses("[[1, 2], [3, 4]]"); }
+
+// Category 124: Tuple Syntax Advanced
+#[test] fn test_sqlite_872_tuple_expr() { assert_parses("(1, 2, 3)"); }
+#[test] fn test_sqlite_873_tuple_single() { assert_parses("(42,)"); }
+#[test] fn test_sqlite_874_tuple_nested() { assert_parses("((1, 2), (3, 4))"); }
+#[ignore = "Parser limitation: tuple type annotation not supported - needs [PARSER-278] ticket"]
+#[test] fn test_sqlite_875_tuple_type() { assert_parses("let x: (i32, i32);"); }
+#[test] fn test_sqlite_876_tuple_unit() { assert_parses("()"); }
+
+// Category 125: Reference and Pointer Syntax
+#[test] fn test_sqlite_877_ref_immut() { assert_parses("&x"); }
+#[ignore = "Parser limitation: mutable reference syntax not fully supported - needs [PARSER-279] ticket"]
+#[test] fn test_sqlite_878_ref_mut() { assert_parses("&mut x"); }
+#[ignore = "Parser limitation: raw pointer const syntax not supported - needs [PARSER-280] ticket"]
+#[test] fn test_sqlite_879_raw_ptr_const() { assert_parses("*const i32"); }
+#[ignore = "Parser limitation: raw pointer mut syntax not supported - needs [PARSER-281] ticket"]
+#[test] fn test_sqlite_880_raw_ptr_mut() { assert_parses("*mut i32"); }
+#[ignore = "Parser limitation: double reference syntax not supported - needs [PARSER-282] ticket"]
+#[test] fn test_sqlite_881_ref_ref() { assert_parses("&&x"); }
+
+// Category 126: Lifetime Syntax Advanced
+#[ignore = "Parser limitation: lifetime parameter not supported - needs [PARSER-283] ticket"]
+#[test] fn test_sqlite_882_lifetime_param() { assert_parses("fun foo<'a>(x: &'a str) { }"); }
+#[ignore = "Parser limitation: static lifetime annotation not supported - needs [PARSER-284] ticket"]
+#[test] fn test_sqlite_883_lifetime_static() { assert_parses("let x: &'static str;"); }
+#[ignore = "Parser limitation: multiple lifetime parameters not supported - needs [PARSER-285] ticket"]
+#[test] fn test_sqlite_884_lifetime_multi() { assert_parses("fun foo<'a, 'b>(x: &'a str, y: &'b str) { }"); }
+#[test] fn test_sqlite_885_lifetime_bound() { assert_parses("struct S<'a, T: 'a> { }"); }
+#[ignore = "Parser limitation: lifetime in where clause not supported - needs [PARSER-286] ticket"]
+#[test] fn test_sqlite_886_lifetime_where() { assert_parses("fun foo<'a, T>() where T: 'a { }"); }
+
+// Category 127: Where Clause Variations
+#[test] fn test_sqlite_887_where_trait() { assert_parses("fun foo<T>() where T: Clone { }"); }
+#[ignore = "Parser limitation: multiple where bounds not supported - needs [PARSER-287] ticket"]
+#[test] fn test_sqlite_888_where_multi() { assert_parses("fun foo<T, U>() where T: Clone, U: Copy { }"); }
+#[ignore = "Parser limitation: where clause with lifetime not supported - needs [PARSER-288] ticket"]
+#[test] fn test_sqlite_889_where_lifetime() { assert_parses("fun foo<'a, T>() where T: 'a { }"); }
+#[test] fn test_sqlite_890_where_complex() { assert_parses("fun foo<T>() where T: Clone + Send + 'static { }"); }
+#[ignore = "Parser limitation: where clause in impl not supported - needs [PARSER-289] ticket"]
+#[test] fn test_sqlite_891_where_impl() { assert_parses("impl<T> S<T> where T: Clone { }"); }
+
+// Category 128: Type Bounds Complex
+#[test] fn test_sqlite_892_bound_single() { assert_parses("fun foo<T: Clone>() { }"); }
+#[test] fn test_sqlite_893_bound_multi() { assert_parses("fun foo<T: Clone + Send>() { }"); }
+#[test] fn test_sqlite_894_bound_paren() { assert_parses("fun foo<T: (Clone)>() { }"); }
+#[test] fn test_sqlite_895_bound_lifetime() { assert_parses("fun foo<T: 'static>() { }"); }
+#[test] fn test_sqlite_896_bound_question() { assert_parses("fun foo<T: ?Sized>() { }"); }
+
+// Category 129: Associated Type Syntax
+#[test] fn test_sqlite_897_assoc_type() { assert_parses("trait Foo { type Item; }"); }
+#[test] fn test_sqlite_898_assoc_type_bound() { assert_parses("trait Foo { type Item: Clone; }"); }
+#[test] fn test_sqlite_899_assoc_type_default() { assert_parses("trait Foo { type Item = i32; }"); }
+#[test] fn test_sqlite_900_assoc_type_where() { assert_parses("trait Foo { type Item where Self: Sized; }"); }
+#[ignore = "Parser limitation: associated type in trait bound not supported - needs [PARSER-290] ticket"]
+#[test] fn test_sqlite_901_assoc_type_use() { assert_parses("fun foo<T: Iterator<Item = i32>>() { }"); }
+
+// Category 130: Existential Type Syntax
+#[test] fn test_sqlite_902_impl_trait_arg() { assert_parses("fun foo(x: impl Clone) { }"); }
+#[test] fn test_sqlite_903_impl_trait_ret() { assert_parses("fun foo() -> impl Clone { }"); }
+#[ignore = "Parser limitation: impl trait with multiple bounds not supported - needs [PARSER-291] ticket"]
+#[test] fn test_sqlite_904_impl_trait_multi() { assert_parses("fun foo(x: impl Clone + Send) { }"); }
+#[ignore = "Parser limitation: dyn trait syntax not supported - needs [PARSER-292] ticket"]
+#[test] fn test_sqlite_905_dyn_trait() { assert_parses("let x: &dyn Clone;"); }
+#[ignore = "Parser limitation: dyn trait with multiple bounds not supported - needs [PARSER-293] ticket"]
+#[test] fn test_sqlite_906_dyn_trait_multi() { assert_parses("let x: &(dyn Clone + Send);"); }
+
 // ============================================================================
 // Error Handling
 // ============================================================================
