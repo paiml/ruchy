@@ -5,6 +5,14 @@ All notable changes to the Ruchy programming language will be documented in this
 ## [Unreleased]
 
 ### Added
+- **[SQLITE-TEST-001] Harness 1 Twenty-Seventh Expansion - 1,400 Test Milestone (70% COMPLETE!)**: Added 50 new parser grammar tests (1,350→1,400, 3.7% increase)
+  - Test Pass Rate: 962/1,400 passing (68.7%)
+  - New Categories (10): Use Statement Variations (use simple, use nested, use glob, use as, use self), Mod Statement Variations (mod simple, mod inline, mod pub, mod nested, mod pub_crate), Visibility Modifier Complete (vis pub, vis pub_crate, vis pub_super, vis pub_in, vis priv), Extern Block Syntax (extern c, extern fn, extern static, extern multi, extern system), Type Alias Syntax (type simple, type generic, type pub, type complex, type where), Const/Static Item Syntax (const simple, const pub, static simple, static mut, static pub), Attribute Complete Syntax (attr outer, attr inner, attr meta list, attr meta name value, attr multi), Macro Invocation Variations (macro bang, macro vec, macro format, macro assert, macro assert_eq), Where Clause Complete (where simple, where multi, where lifetime, where assoc, where for), Impl Block Variations (impl simple, impl generic, impl trait for, impl where, impl unsafe)
+  - Defensive Testing: 23 new parser limitations (PARSER-470 through PARSER-492)
+  - Total Limitations: 438 documented (PARSER-060 fixed)
+  - Framework Total: 2,563 tests across 4 harnesses
+  - Progress: 1,400/2,000 tests (70.0% of Harness 1 complete - 70% MILESTONE!)
+  - Time: 32.5h / 60h estimated (54.2%)
 - **[SQLITE-TEST-001] Harness 4 Twenty-Fifth Expansion - 1,200 Test Milestone (2.4% COMPLETE!)**: Added 50 new runtime anomaly tests (1,150→1,200, 4.3% increase)
   - Test Pass Rate: 58/1,200 passing (4.8%)
   - New Categories (10): From/Into Trait Runtime (from simple, into conversion, from custom, into custom, from error), TryFrom/TryInto Trait Runtime (tryfrom simple, tryinto conversion, tryfrom custom, tryinto custom, tryfrom error), Display/Debug Trait Runtime (display simple, debug simple, debug derive, display format, debug format), Iterator Trait Runtime (iterator custom, iterator map, iterator filter, iterator fold, iterator chain), Drop Trait Runtime (drop simple, drop order, drop scope, drop manual, drop trait bound), Deref/DerefMut Trait Runtime (deref simple, deref coercion, derefmut simple, deref method, deref chain), Index/IndexMut Trait Runtime (index simple, indexmut simple, index range, index custom, index bounds), Add/Sub/Mul/Div Operator Trait Runtime (add custom, sub custom, mul custom, div custom, rem custom), Neg/Not/BitAnd/BitOr/BitXor Operator Trait Runtime (neg custom, not custom, bitand custom, bitor custom, bitxor custom), Shl/Shr Operator Trait Runtime (shl custom, shr custom, shl assign, shr assign, bit operator chain)

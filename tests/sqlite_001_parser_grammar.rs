@@ -3941,6 +3941,129 @@ fn test_sqlite_366_trait_object_send_sync() {
 #[test] fn test_sqlite_1456_if_let_guard() { assert_parses("if let Some(x) = opt && x > 0 { }"); }
 
 // ============================================================================
+// Category 261: Use Statement Variations (Tests 1457-1461)
+// ============================================================================
+
+#[test] fn test_sqlite_1457_use_simple() { assert_parses("use std::io;"); }
+#[test] fn test_sqlite_1458_use_nested() { assert_parses("use std::{io, fs};"); }
+#[test] fn test_sqlite_1459_use_glob() { assert_parses("use std::io::*;"); }
+#[test] fn test_sqlite_1460_use_as() { assert_parses("use std::io as stdio;"); }
+#[ignore = "Parser limitation: use self not supported - needs [PARSER-470] ticket"]
+#[test] fn test_sqlite_1461_use_self() { assert_parses("use std::io::{self, Read};"); }
+
+// ============================================================================
+// Category 262: Mod Statement Variations (Tests 1462-1466)
+// ============================================================================
+
+#[ignore = "Parser limitation: mod statement not supported - needs [PARSER-471] ticket"]
+#[test] fn test_sqlite_1462_mod_simple() { assert_parses("mod foo;"); }
+#[test] fn test_sqlite_1463_mod_inline() { assert_parses("mod foo { }"); }
+#[ignore = "Parser limitation: pub mod not supported - needs [PARSER-472] ticket"]
+#[test] fn test_sqlite_1464_mod_pub() { assert_parses("pub mod foo;"); }
+#[ignore = "Parser limitation: nested mod not supported - needs [PARSER-473] ticket"]
+#[test] fn test_sqlite_1465_mod_nested() { assert_parses("mod foo { mod bar; }"); }
+#[ignore = "Parser limitation: pub(crate) mod not supported - needs [PARSER-474] ticket"]
+#[test] fn test_sqlite_1466_mod_pub_crate() { assert_parses("pub(crate) mod foo;"); }
+
+// ============================================================================
+// Category 263: Visibility Modifier Complete (Tests 1467-1471)
+// ============================================================================
+
+#[test] fn test_sqlite_1467_vis_pub() { assert_parses("pub fn foo() { }"); }
+#[test] fn test_sqlite_1468_vis_pub_crate() { assert_parses("pub(crate) fn foo() { }"); }
+#[test] fn test_sqlite_1469_vis_pub_super() { assert_parses("pub(super) fn foo() { }"); }
+#[test] fn test_sqlite_1470_vis_pub_in() { assert_parses("pub(in crate::foo) fn bar() { }"); }
+#[test] fn test_sqlite_1471_vis_priv() { assert_parses("fn foo() { }"); }
+
+// ============================================================================
+// Category 264: Extern Block Syntax (Tests 1472-1476)
+// ============================================================================
+
+#[test] fn test_sqlite_1472_extern_c() { assert_parses("extern \"C\" { }"); }
+#[ignore = "Parser limitation: extern fn not supported - needs [PARSER-475] ticket"]
+#[test] fn test_sqlite_1473_extern_fn() { assert_parses("extern \"C\" { fn foo(); }"); }
+#[ignore = "Parser limitation: extern static not supported - needs [PARSER-476] ticket"]
+#[test] fn test_sqlite_1474_extern_static() { assert_parses("extern \"C\" { static X: i32; }"); }
+#[ignore = "Parser limitation: extern multi not supported - needs [PARSER-477] ticket"]
+#[test] fn test_sqlite_1475_extern_multi() { assert_parses("extern \"C\" { fn foo(); fn bar(); }"); }
+#[ignore = "Parser limitation: extern system not supported - needs [PARSER-478] ticket"]
+#[test] fn test_sqlite_1476_extern_system() { assert_parses("extern \"system\" { fn win_api(); }"); }
+
+// ============================================================================
+// Category 265: Type Alias Syntax (Tests 1477-1481)
+// ============================================================================
+
+#[test] fn test_sqlite_1477_type_simple() { assert_parses("type Foo = i32;"); }
+#[ignore = "Parser limitation: type alias generic not supported - needs [PARSER-479] ticket"]
+#[test] fn test_sqlite_1478_type_generic() { assert_parses("type Result<T> = std::result::Result<T, Error>;"); }
+#[test] fn test_sqlite_1479_type_pub() { assert_parses("pub type Foo = i32;"); }
+#[ignore = "Parser limitation: type alias complex not supported - needs [PARSER-480] ticket"]
+#[test] fn test_sqlite_1480_type_complex() { assert_parses("type BoxFn = Box<dyn Fn() -> i32>;"); }
+#[ignore = "Parser limitation: type alias where not supported - needs [PARSER-481] ticket"]
+#[test] fn test_sqlite_1481_type_where() { assert_parses("type Foo<T> where T: Clone = Vec<T>;"); }
+
+// ============================================================================
+// Category 266: Const/Static Item Syntax (Tests 1482-1486)
+// ============================================================================
+
+#[ignore = "Parser limitation: const item not supported - needs [PARSER-482] ticket"]
+#[test] fn test_sqlite_1482_const_simple() { assert_parses("const X: i32 = 42;"); }
+#[ignore = "Parser limitation: pub const not supported - needs [PARSER-483] ticket"]
+#[test] fn test_sqlite_1483_const_pub() { assert_parses("pub const X: i32 = 42;"); }
+#[ignore = "Parser limitation: static item not supported - needs [PARSER-484] ticket"]
+#[test] fn test_sqlite_1484_static_simple() { assert_parses("static X: i32 = 42;"); }
+#[ignore = "Parser limitation: static mut not supported - needs [PARSER-485] ticket"]
+#[test] fn test_sqlite_1485_static_mut() { assert_parses("static mut X: i32 = 42;"); }
+#[ignore = "Parser limitation: pub static not supported - needs [PARSER-486] ticket"]
+#[test] fn test_sqlite_1486_static_pub() { assert_parses("pub static X: i32 = 42;"); }
+
+// ============================================================================
+// Category 267: Attribute Complete Syntax (Tests 1487-1491)
+// ============================================================================
+
+#[test] fn test_sqlite_1487_attr_outer() { assert_parses("#[derive(Debug)] struct Foo;"); }
+#[test] fn test_sqlite_1488_attr_inner() { assert_parses("fn foo() { #![allow(dead_code)] }"); }
+#[test] fn test_sqlite_1489_attr_meta_list() { assert_parses("#[cfg(target_os = \"linux\")] fn foo() { }"); }
+#[ignore = "Parser limitation: attr meta name value not supported - needs [PARSER-487] ticket"]
+#[test] fn test_sqlite_1490_attr_meta_name_value() { assert_parses("#[doc = \"documentation\"] fn foo() { }"); }
+#[test] fn test_sqlite_1491_attr_multi() { assert_parses("#[derive(Debug)] #[allow(dead_code)] struct Foo;"); }
+
+// ============================================================================
+// Category 268: Macro Invocation Variations (Tests 1492-1496)
+// ============================================================================
+
+#[test] fn test_sqlite_1492_macro_bang() { assert_parses("println!(\"hello\");"); }
+#[test] fn test_sqlite_1493_macro_vec() { assert_parses("let v = vec![1, 2, 3];"); }
+#[test] fn test_sqlite_1494_macro_format() { assert_parses("let s = format!(\"x = {}\", x);"); }
+#[test] fn test_sqlite_1495_macro_assert() { assert_parses("assert!(x > 0);"); }
+#[test] fn test_sqlite_1496_macro_assert_eq() { assert_parses("assert_eq!(x, 42);"); }
+
+// ============================================================================
+// Category 269: Where Clause Complete (Tests 1497-1501)
+// ============================================================================
+
+#[test] fn test_sqlite_1497_where_simple() { assert_parses("fn foo<T>(x: T) where T: Clone { }"); }
+#[ignore = "Parser limitation: where multi bound not supported - needs [PARSER-488] ticket"]
+#[test] fn test_sqlite_1498_where_multi() { assert_parses("fn foo<T, U>(x: T, y: U) where T: Clone, U: Debug { }"); }
+#[ignore = "Parser limitation: where lifetime bound not supported - needs [PARSER-489] ticket"]
+#[test] fn test_sqlite_1499_where_lifetime() { assert_parses("fn foo<'a, T>(x: &'a T) where T: 'a { }"); }
+#[test] fn test_sqlite_1500_where_assoc() { assert_parses("fn foo<T>(x: T) where T: Iterator<Item = i32> { }"); }
+#[ignore = "Parser limitation: where for bound not supported - needs [PARSER-490] ticket"]
+#[test] fn test_sqlite_1501_where_for() { assert_parses("fn foo<T>(x: T) where for<'a> T: Fn(&'a i32) { }"); }
+
+// ============================================================================
+// Category 270: Impl Block Variations (Tests 1502-1506)
+// ============================================================================
+
+#[test] fn test_sqlite_1502_impl_simple() { assert_parses("impl Foo { }"); }
+#[test] fn test_sqlite_1503_impl_generic() { assert_parses("impl<T> Foo<T> { }"); }
+#[test] fn test_sqlite_1504_impl_trait_for() { assert_parses("impl Trait for Foo { }"); }
+#[ignore = "Parser limitation: impl where clause not supported - needs [PARSER-491] ticket"]
+#[test] fn test_sqlite_1505_impl_where() { assert_parses("impl<T> Foo<T> where T: Clone { }"); }
+#[ignore = "Parser limitation: unsafe impl not supported - needs [PARSER-492] ticket"]
+#[test] fn test_sqlite_1506_impl_unsafe() { assert_parses("unsafe impl Trait for Foo { }"); }
+
+// ============================================================================
 // Error Handling
 // ============================================================================
 
