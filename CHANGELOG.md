@@ -5,6 +5,14 @@ All notable changes to the Ruchy programming language will be documented in this
 ## [Unreleased]
 
 ### Added
+- **[SQLITE-TEST-001] Harness 4 Twenty-Fifth Expansion - 1,200 Test Milestone (2.4% COMPLETE!)**: Added 50 new runtime anomaly tests (1,150→1,200, 4.3% increase)
+  - Test Pass Rate: 58/1,200 passing (4.8%)
+  - New Categories (10): From/Into Trait Runtime (from simple, into conversion, from custom, into custom, from error), TryFrom/TryInto Trait Runtime (tryfrom simple, tryinto conversion, tryfrom custom, tryinto custom, tryfrom error), Display/Debug Trait Runtime (display simple, debug simple, debug derive, display format, debug format), Iterator Trait Runtime (iterator custom, iterator map, iterator filter, iterator fold, iterator chain), Drop Trait Runtime (drop simple, drop order, drop scope, drop manual, drop trait bound), Deref/DerefMut Trait Runtime (deref simple, deref coercion, derefmut simple, deref method, deref chain), Index/IndexMut Trait Runtime (index simple, indexmut simple, index range, index custom, index bounds), Add/Sub/Mul/Div Operator Trait Runtime (add custom, sub custom, mul custom, div custom, rem custom), Neg/Not/BitAnd/BitOr/BitXor Operator Trait Runtime (neg custom, not custom, bitand custom, bitor custom, bitxor custom), Shl/Shr Operator Trait Runtime (shl custom, shr custom, shl assign, shr assign, bit operator chain)
+  - Defensive Testing: 50 new runtime limitations (RUNTIME-1094 through RUNTIME-1143)
+  - Total Limitations: 1,142 documented (RUNTIME-001 fixed)
+  - Framework Total: 2,513 tests across 4 harnesses
+  - Progress: 1,200/50,000 tests (2.40% of Harness 4 complete)
+  - Time: 32.0h / 60h estimated (53.3%)
 - **[SQLITE-TEST-001] Harness 1 Twenty-Sixth Expansion - 1,350 Test Milestone (67.5% COMPLETE!)**: Added 50 new parser grammar tests (1,300→1,350, 3.8% increase)
   - Test Pass Rate: 935/1,350 passing (69.3%)
   - New Categories (10): String Literal Variations (string escaped, string unicode, string raw, string raw hash, byte string), Char Literal Variations (char simple, char escaped, char unicode, char byte, char quote), Float Literal Variations (float decimal, float exp, float exp neg, float suffix, float no decimal), Bool and Unit Literals (bool true, bool false, unit literal, unit type, unit fn), Tuple Syntax Variations (tuple empty, tuple single, tuple pair, tuple nested, tuple index), Array Syntax Variations (array literal, array repeat, array empty, array index, array slice), Range Syntax Complete (range full, range inclusive, range from, range to, range full unbounded), Closure Syntax Complete (closure no param, closure one param, closure multi param, closure type ann, closure move), Match Arm Variations (match literal, match range, match or, match guard, match binding), If Let Variations (if let simple, if let else, while let, if let or, if let guard)

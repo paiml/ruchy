@@ -1253,6 +1253,836 @@ fn test_sqlite_968_try_join() {
     assert!(result.is_ok(), "try_join should work");
 }
 
+// =============================================================================
+// Category 251: From/Into Trait Runtime (Tests 1241-1245)
+// =============================================================================
+
+#[test]
+#[ignore = "Runtime limitation: from simple not implemented - needs [RUNTIME-1094] ticket"]
+fn test_sqlite_1241_from_simple() {
+    let result = execute_program(r#"
+        let s: String = String::from("hello");
+    "#);
+    assert!(result.is_ok(), "from simple should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: into conversion not implemented - needs [RUNTIME-1095] ticket"]
+fn test_sqlite_1242_into_conversion() {
+    let result = execute_program(r#"
+        let s: String = "hello".into();
+    "#);
+    assert!(result.is_ok(), "into conversion should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: from custom not implemented - needs [RUNTIME-1096] ticket"]
+fn test_sqlite_1243_from_custom() {
+    let result = execute_program(r#"
+        struct Foo(i32);
+        impl From<i32> for Foo {
+            fn from(x: i32) -> Self { Foo(x) }
+        }
+        let f = Foo::from(42);
+    "#);
+    assert!(result.is_ok(), "from custom should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: into custom not implemented - needs [RUNTIME-1097] ticket"]
+fn test_sqlite_1244_into_custom() {
+    let result = execute_program(r#"
+        struct Foo(i32);
+        impl From<i32> for Foo {
+            fn from(x: i32) -> Self { Foo(x) }
+        }
+        let f: Foo = 42.into();
+    "#);
+    assert!(result.is_ok(), "into custom should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: from error not implemented - needs [RUNTIME-1098] ticket"]
+fn test_sqlite_1245_from_error() {
+    let result = execute_program(r#"
+        use std::error::Error;
+        struct MyError;
+        impl std::fmt::Display for MyError {
+            fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result { write!(f, "error") }
+        }
+        impl std::fmt::Debug for MyError {
+            fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result { write!(f, "error") }
+        }
+        impl Error for MyError {}
+    "#);
+    assert!(result.is_ok(), "from error should work");
+}
+
+// =============================================================================
+// Category 252: TryFrom/TryInto Trait Runtime (Tests 1246-1250)
+// =============================================================================
+
+#[test]
+#[ignore = "Runtime limitation: tryfrom simple not implemented - needs [RUNTIME-1099] ticket"]
+fn test_sqlite_1246_tryfrom_simple() {
+    let result = execute_program(r#"
+        use std::convert::TryFrom;
+        let x = i32::try_from(42u32).unwrap();
+    "#);
+    assert!(result.is_ok(), "tryfrom simple should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: tryinto conversion not implemented - needs [RUNTIME-1100] ticket"]
+fn test_sqlite_1247_tryinto_conversion() {
+    let result = execute_program(r#"
+        use std::convert::TryInto;
+        let x: i32 = 42u32.try_into().unwrap();
+    "#);
+    assert!(result.is_ok(), "tryinto conversion should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: tryfrom custom not implemented - needs [RUNTIME-1101] ticket"]
+fn test_sqlite_1248_tryfrom_custom() {
+    let result = execute_program(r#"
+        use std::convert::TryFrom;
+        struct Foo(i32);
+        impl TryFrom<i32> for Foo {
+            type Error = String;
+            fn try_from(x: i32) -> Result<Self, Self::Error> {
+                if x >= 0 { Ok(Foo(x)) } else { Err("negative".to_string()) }
+            }
+        }
+        let f = Foo::try_from(42).unwrap();
+    "#);
+    assert!(result.is_ok(), "tryfrom custom should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: tryinto custom not implemented - needs [RUNTIME-1102] ticket"]
+fn test_sqlite_1249_tryinto_custom() {
+    let result = execute_program(r#"
+        use std::convert::TryFrom;
+        struct Foo(i32);
+        impl TryFrom<i32> for Foo {
+            type Error = String;
+            fn try_from(x: i32) -> Result<Self, Self::Error> {
+                if x >= 0 { Ok(Foo(x)) } else { Err("negative".to_string()) }
+            }
+        }
+        let f: Result<Foo, _> = 42.try_into();
+    "#);
+    assert!(result.is_ok(), "tryinto custom should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: tryfrom error not implemented - needs [RUNTIME-1103] ticket"]
+fn test_sqlite_1250_tryfrom_error() {
+    let result = execute_program(r#"
+        use std::convert::TryFrom;
+        struct Foo(i32);
+        impl TryFrom<i32> for Foo {
+            type Error = String;
+            fn try_from(x: i32) -> Result<Self, Self::Error> {
+                if x >= 0 { Ok(Foo(x)) } else { Err("negative".to_string()) }
+            }
+        }
+        let f = Foo::try_from(-1);
+        assert!(f.is_err());
+    "#);
+    assert!(result.is_ok(), "tryfrom error should work");
+}
+
+// =============================================================================
+// Category 253: Display/Debug Trait Runtime (Tests 1251-1255)
+// =============================================================================
+
+#[test]
+#[ignore = "Runtime limitation: display simple not implemented - needs [RUNTIME-1104] ticket"]
+fn test_sqlite_1251_display_simple() {
+    let result = execute_program(r#"
+        use std::fmt;
+        struct Foo(i32);
+        impl fmt::Display for Foo {
+            fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+                write!(f, "Foo({})", self.0)
+            }
+        }
+        let s = format!("{}", Foo(42));
+    "#);
+    assert!(result.is_ok(), "display simple should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: debug simple not implemented - needs [RUNTIME-1105] ticket"]
+fn test_sqlite_1252_debug_simple() {
+    let result = execute_program(r#"
+        use std::fmt;
+        struct Foo(i32);
+        impl fmt::Debug for Foo {
+            fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+                write!(f, "Foo({:?})", self.0)
+            }
+        }
+        let s = format!("{:?}", Foo(42));
+    "#);
+    assert!(result.is_ok(), "debug simple should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: debug derive not implemented - needs [RUNTIME-1106] ticket"]
+fn test_sqlite_1253_debug_derive() {
+    let result = execute_program(r#"
+        #[derive(Debug)]
+        struct Foo { x: i32 }
+        let s = format!("{:?}", Foo { x: 42 });
+    "#);
+    assert!(result.is_ok(), "debug derive should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: display format not implemented - needs [RUNTIME-1107] ticket"]
+fn test_sqlite_1254_display_format() {
+    let result = execute_program(r#"
+        use std::fmt;
+        struct Point { x: i32, y: i32 }
+        impl fmt::Display for Point {
+            fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+                write!(f, "({}, {})", self.x, self.y)
+            }
+        }
+        let s = format!("{}", Point { x: 1, y: 2 });
+    "#);
+    assert!(result.is_ok(), "display format should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: debug format not implemented - needs [RUNTIME-1108] ticket"]
+fn test_sqlite_1255_debug_format() {
+    let result = execute_program(r#"
+        use std::fmt;
+        struct Point { x: i32, y: i32 }
+        impl fmt::Debug for Point {
+            fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+                f.debug_struct("Point")
+                    .field("x", &self.x)
+                    .field("y", &self.y)
+                    .finish()
+            }
+        }
+        let s = format!("{:#?}", Point { x: 1, y: 2 });
+    "#);
+    assert!(result.is_ok(), "debug format should work");
+}
+
+// =============================================================================
+// Category 254: Iterator Trait Runtime (Tests 1256-1260)
+// =============================================================================
+
+#[test]
+#[ignore = "Runtime limitation: iterator custom not implemented - needs [RUNTIME-1109] ticket"]
+fn test_sqlite_1256_iterator_custom() {
+    let result = execute_program(r#"
+        struct Counter { count: i32 }
+        impl Iterator for Counter {
+            type Item = i32;
+            fn next(&mut self) -> Option<Self::Item> {
+                self.count += 1;
+                if self.count < 5 { Some(self.count) } else { None }
+            }
+        }
+        let mut c = Counter { count: 0 };
+        let sum: i32 = c.sum();
+    "#);
+    assert!(result.is_ok(), "iterator custom should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: iterator map not implemented - needs [RUNTIME-1110] ticket"]
+fn test_sqlite_1257_iterator_map() {
+    let result = execute_program(r#"
+        let v = vec![1, 2, 3];
+        let doubled: Vec<_> = v.iter().map(|x| x * 2).collect();
+    "#);
+    assert!(result.is_ok(), "iterator map should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: iterator filter not implemented - needs [RUNTIME-1111] ticket"]
+fn test_sqlite_1258_iterator_filter() {
+    let result = execute_program(r#"
+        let v = vec![1, 2, 3, 4];
+        let evens: Vec<_> = v.iter().filter(|x| *x % 2 == 0).collect();
+    "#);
+    assert!(result.is_ok(), "iterator filter should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: iterator fold not implemented - needs [RUNTIME-1112] ticket"]
+fn test_sqlite_1259_iterator_fold() {
+    let result = execute_program(r#"
+        let v = vec![1, 2, 3, 4];
+        let sum = v.iter().fold(0, |acc, x| acc + x);
+    "#);
+    assert!(result.is_ok(), "iterator fold should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: iterator chain not implemented - needs [RUNTIME-1113] ticket"]
+fn test_sqlite_1260_iterator_chain() {
+    let result = execute_program(r#"
+        let v1 = vec![1, 2];
+        let v2 = vec![3, 4];
+        let chained: Vec<_> = v1.iter().chain(v2.iter()).collect();
+    "#);
+    assert!(result.is_ok(), "iterator chain should work");
+}
+
+// =============================================================================
+// Category 255: Drop Trait Runtime (Tests 1261-1265)
+// =============================================================================
+
+#[test]
+#[ignore = "Runtime limitation: drop simple not implemented - needs [RUNTIME-1114] ticket"]
+fn test_sqlite_1261_drop_simple() {
+    let result = execute_program(r#"
+        struct Foo;
+        impl Drop for Foo {
+            fn drop(&mut self) {
+                println!("dropping");
+            }
+        }
+        let f = Foo;
+    "#);
+    assert!(result.is_ok(), "drop simple should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: drop order not implemented - needs [RUNTIME-1115] ticket"]
+fn test_sqlite_1262_drop_order() {
+    let result = execute_program(r#"
+        struct Foo(i32);
+        impl Drop for Foo {
+            fn drop(&mut self) {
+                println!("dropping {}", self.0);
+            }
+        }
+        let _a = Foo(1);
+        let _b = Foo(2);
+    "#);
+    assert!(result.is_ok(), "drop order should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: drop scope not implemented - needs [RUNTIME-1116] ticket"]
+fn test_sqlite_1263_drop_scope() {
+    let result = execute_program(r#"
+        struct Foo;
+        impl Drop for Foo {
+            fn drop(&mut self) {
+                println!("dropping");
+            }
+        }
+        {
+            let _f = Foo;
+        }
+        println!("after scope");
+    "#);
+    assert!(result.is_ok(), "drop scope should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: drop manual not implemented - needs [RUNTIME-1117] ticket"]
+fn test_sqlite_1264_drop_manual() {
+    let result = execute_program(r#"
+        struct Foo;
+        impl Drop for Foo {
+            fn drop(&mut self) {
+                println!("dropping");
+            }
+        }
+        let f = Foo;
+        drop(f);
+    "#);
+    assert!(result.is_ok(), "drop manual should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: drop trait bound not implemented - needs [RUNTIME-1118] ticket"]
+fn test_sqlite_1265_drop_trait_bound() {
+    let result = execute_program(r#"
+        fn needs_drop<T: Drop>(_x: T) {}
+        struct Foo;
+        impl Drop for Foo {
+            fn drop(&mut self) {}
+        }
+        needs_drop(Foo);
+    "#);
+    assert!(result.is_ok(), "drop trait bound should work");
+}
+
+// =============================================================================
+// Category 256: Deref/DerefMut Trait Runtime (Tests 1266-1270)
+// =============================================================================
+
+#[test]
+#[ignore = "Runtime limitation: deref simple not implemented - needs [RUNTIME-1119] ticket"]
+fn test_sqlite_1266_deref_simple() {
+    let result = execute_program(r#"
+        use std::ops::Deref;
+        struct MyBox<T>(T);
+        impl<T> Deref for MyBox<T> {
+            type Target = T;
+            fn deref(&self) -> &T { &self.0 }
+        }
+        let b = MyBox(42);
+        let x = *b;
+    "#);
+    assert!(result.is_ok(), "deref simple should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: deref coercion not implemented - needs [RUNTIME-1120] ticket"]
+fn test_sqlite_1267_deref_coercion() {
+    let result = execute_program(r#"
+        use std::ops::Deref;
+        struct MyBox<T>(T);
+        impl<T> Deref for MyBox<T> {
+            type Target = T;
+            fn deref(&self) -> &T { &self.0 }
+        }
+        fn takes_ref(x: &i32) {}
+        let b = MyBox(42);
+        takes_ref(&b);
+    "#);
+    assert!(result.is_ok(), "deref coercion should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: derefmut simple not implemented - needs [RUNTIME-1121] ticket"]
+fn test_sqlite_1268_derefmut_simple() {
+    let result = execute_program(r#"
+        use std::ops::{Deref, DerefMut};
+        struct MyBox<T>(T);
+        impl<T> Deref for MyBox<T> {
+            type Target = T;
+            fn deref(&self) -> &T { &self.0 }
+        }
+        impl<T> DerefMut for MyBox<T> {
+            fn deref_mut(&mut self) -> &mut T { &mut self.0 }
+        }
+        let mut b = MyBox(42);
+        *b = 43;
+    "#);
+    assert!(result.is_ok(), "derefmut simple should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: deref method not implemented - needs [RUNTIME-1122] ticket"]
+fn test_sqlite_1269_deref_method() {
+    let result = execute_program(r#"
+        use std::ops::Deref;
+        struct MyBox<T>(T);
+        impl<T> Deref for MyBox<T> {
+            type Target = T;
+            fn deref(&self) -> &T { &self.0 }
+        }
+        let b = MyBox(String::from("hello"));
+        let len = b.len();
+    "#);
+    assert!(result.is_ok(), "deref method should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: deref chain not implemented - needs [RUNTIME-1123] ticket"]
+fn test_sqlite_1270_deref_chain() {
+    let result = execute_program(r#"
+        use std::ops::Deref;
+        struct Wrapper1<T>(T);
+        impl<T> Deref for Wrapper1<T> {
+            type Target = T;
+            fn deref(&self) -> &T { &self.0 }
+        }
+        struct Wrapper2<T>(T);
+        impl<T> Deref for Wrapper2<T> {
+            type Target = T;
+            fn deref(&self) -> &T { &self.0 }
+        }
+        let w = Wrapper1(Wrapper2(42));
+        let x = **w;
+    "#);
+    assert!(result.is_ok(), "deref chain should work");
+}
+
+// =============================================================================
+// Category 257: Index/IndexMut Trait Runtime (Tests 1271-1275)
+// =============================================================================
+
+#[test]
+#[ignore = "Runtime limitation: index simple not implemented - needs [RUNTIME-1124] ticket"]
+fn test_sqlite_1271_index_simple() {
+    let result = execute_program(r#"
+        use std::ops::Index;
+        struct MyVec<T>(Vec<T>);
+        impl<T> Index<usize> for MyVec<T> {
+            type Output = T;
+            fn index(&self, idx: usize) -> &T { &self.0[idx] }
+        }
+        let v = MyVec(vec![1, 2, 3]);
+        let x = v[0];
+    "#);
+    assert!(result.is_ok(), "index simple should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: indexmut simple not implemented - needs [RUNTIME-1125] ticket"]
+fn test_sqlite_1272_indexmut_simple() {
+    let result = execute_program(r#"
+        use std::ops::{Index, IndexMut};
+        struct MyVec<T>(Vec<T>);
+        impl<T> Index<usize> for MyVec<T> {
+            type Output = T;
+            fn index(&self, idx: usize) -> &T { &self.0[idx] }
+        }
+        impl<T> IndexMut<usize> for MyVec<T> {
+            fn index_mut(&mut self, idx: usize) -> &mut T { &mut self.0[idx] }
+        }
+        let mut v = MyVec(vec![1, 2, 3]);
+        v[0] = 42;
+    "#);
+    assert!(result.is_ok(), "indexmut simple should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: index range not implemented - needs [RUNTIME-1126] ticket"]
+fn test_sqlite_1273_index_range() {
+    let result = execute_program(r#"
+        use std::ops::{Index, Range};
+        struct MyVec<T>(Vec<T>);
+        impl<T: Clone> Index<Range<usize>> for MyVec<T> {
+            type Output = [T];
+            fn index(&self, range: Range<usize>) -> &[T] { &self.0[range] }
+        }
+        let v = MyVec(vec![1, 2, 3]);
+        let s = &v[0..2];
+    "#);
+    assert!(result.is_ok(), "index range should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: index custom not implemented - needs [RUNTIME-1127] ticket"]
+fn test_sqlite_1274_index_custom() {
+    let result = execute_program(r#"
+        use std::ops::Index;
+        struct Grid { data: Vec<i32>, width: usize }
+        impl Index<(usize, usize)> for Grid {
+            type Output = i32;
+            fn index(&self, (x, y): (usize, usize)) -> &i32 {
+                &self.data[y * self.width + x]
+            }
+        }
+        let g = Grid { data: vec![1, 2, 3, 4], width: 2 };
+        let x = g[(0, 1)];
+    "#);
+    assert!(result.is_ok(), "index custom should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: index bounds not implemented - needs [RUNTIME-1128] ticket"]
+fn test_sqlite_1275_index_bounds() {
+    let result = execute_program(r#"
+        use std::ops::Index;
+        struct MyVec<T>(Vec<T>);
+        impl<T> Index<usize> for MyVec<T> {
+            type Output = T;
+            fn index(&self, idx: usize) -> &T {
+                if idx < self.0.len() {
+                    &self.0[idx]
+                } else {
+                    panic!("index out of bounds");
+                }
+            }
+        }
+        let v = MyVec(vec![1, 2, 3]);
+        let x = v[5];
+    "#);
+    assert!(result.is_err(), "index bounds should panic");
+}
+
+// =============================================================================
+// Category 258: Add/Sub/Mul/Div Operator Trait Runtime (Tests 1276-1280)
+// =============================================================================
+
+#[test]
+#[ignore = "Runtime limitation: add custom not implemented - needs [RUNTIME-1129] ticket"]
+fn test_sqlite_1276_add_custom() {
+    let result = execute_program(r#"
+        use std::ops::Add;
+        struct Point { x: i32, y: i32 }
+        impl Add for Point {
+            type Output = Point;
+            fn add(self, other: Point) -> Point {
+                Point { x: self.x + other.x, y: self.y + other.y }
+            }
+        }
+        let p = Point { x: 1, y: 2 } + Point { x: 3, y: 4 };
+    "#);
+    assert!(result.is_ok(), "add custom should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: sub custom not implemented - needs [RUNTIME-1130] ticket"]
+fn test_sqlite_1277_sub_custom() {
+    let result = execute_program(r#"
+        use std::ops::Sub;
+        struct Point { x: i32, y: i32 }
+        impl Sub for Point {
+            type Output = Point;
+            fn sub(self, other: Point) -> Point {
+                Point { x: self.x - other.x, y: self.y - other.y }
+            }
+        }
+        let p = Point { x: 3, y: 4 } - Point { x: 1, y: 2 };
+    "#);
+    assert!(result.is_ok(), "sub custom should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: mul custom not implemented - needs [RUNTIME-1131] ticket"]
+fn test_sqlite_1278_mul_custom() {
+    let result = execute_program(r#"
+        use std::ops::Mul;
+        struct Point { x: i32, y: i32 }
+        impl Mul<i32> for Point {
+            type Output = Point;
+            fn mul(self, scalar: i32) -> Point {
+                Point { x: self.x * scalar, y: self.y * scalar }
+            }
+        }
+        let p = Point { x: 2, y: 3 } * 4;
+    "#);
+    assert!(result.is_ok(), "mul custom should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: div custom not implemented - needs [RUNTIME-1132] ticket"]
+fn test_sqlite_1279_div_custom() {
+    let result = execute_program(r#"
+        use std::ops::Div;
+        struct Point { x: i32, y: i32 }
+        impl Div<i32> for Point {
+            type Output = Point;
+            fn div(self, scalar: i32) -> Point {
+                Point { x: self.x / scalar, y: self.y / scalar }
+            }
+        }
+        let p = Point { x: 8, y: 12 } / 4;
+    "#);
+    assert!(result.is_ok(), "div custom should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: rem custom not implemented - needs [RUNTIME-1133] ticket"]
+fn test_sqlite_1280_rem_custom() {
+    let result = execute_program(r#"
+        use std::ops::Rem;
+        struct Point { x: i32, y: i32 }
+        impl Rem<i32> for Point {
+            type Output = Point;
+            fn rem(self, scalar: i32) -> Point {
+                Point { x: self.x % scalar, y: self.y % scalar }
+            }
+        }
+        let p = Point { x: 10, y: 15 } % 3;
+    "#);
+    assert!(result.is_ok(), "rem custom should work");
+}
+
+// =============================================================================
+// Category 259: Neg/Not/BitAnd/BitOr/BitXor Operator Trait Runtime (Tests 1281-1285)
+// =============================================================================
+
+#[test]
+#[ignore = "Runtime limitation: neg custom not implemented - needs [RUNTIME-1134] ticket"]
+fn test_sqlite_1281_neg_custom() {
+    let result = execute_program(r#"
+        use std::ops::Neg;
+        struct Point { x: i32, y: i32 }
+        impl Neg for Point {
+            type Output = Point;
+            fn neg(self) -> Point {
+                Point { x: -self.x, y: -self.y }
+            }
+        }
+        let p = -Point { x: 1, y: 2 };
+    "#);
+    assert!(result.is_ok(), "neg custom should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: not custom not implemented - needs [RUNTIME-1135] ticket"]
+fn test_sqlite_1282_not_custom() {
+    let result = execute_program(r#"
+        use std::ops::Not;
+        struct Flags(u8);
+        impl Not for Flags {
+            type Output = Flags;
+            fn not(self) -> Flags {
+                Flags(!self.0)
+            }
+        }
+        let f = !Flags(0b1010);
+    "#);
+    assert!(result.is_ok(), "not custom should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: bitand custom not implemented - needs [RUNTIME-1136] ticket"]
+fn test_sqlite_1283_bitand_custom() {
+    let result = execute_program(r#"
+        use std::ops::BitAnd;
+        struct Flags(u8);
+        impl BitAnd for Flags {
+            type Output = Flags;
+            fn bitand(self, other: Flags) -> Flags {
+                Flags(self.0 & other.0)
+            }
+        }
+        let f = Flags(0b1010) & Flags(0b1100);
+    "#);
+    assert!(result.is_ok(), "bitand custom should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: bitor custom not implemented - needs [RUNTIME-1137] ticket"]
+fn test_sqlite_1284_bitor_custom() {
+    let result = execute_program(r#"
+        use std::ops::BitOr;
+        struct Flags(u8);
+        impl BitOr for Flags {
+            type Output = Flags;
+            fn bitor(self, other: Flags) -> Flags {
+                Flags(self.0 | other.0)
+            }
+        }
+        let f = Flags(0b1010) | Flags(0b0101);
+    "#);
+    assert!(result.is_ok(), "bitor custom should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: bitxor custom not implemented - needs [RUNTIME-1138] ticket"]
+fn test_sqlite_1285_bitxor_custom() {
+    let result = execute_program(r#"
+        use std::ops::BitXor;
+        struct Flags(u8);
+        impl BitXor for Flags {
+            type Output = Flags;
+            fn bitxor(self, other: Flags) -> Flags {
+                Flags(self.0 ^ other.0)
+            }
+        }
+        let f = Flags(0b1010) ^ Flags(0b1100);
+    "#);
+    assert!(result.is_ok(), "bitxor custom should work");
+}
+
+// =============================================================================
+// Category 260: Shl/Shr Operator Trait Runtime (Tests 1286-1290)
+// =============================================================================
+
+#[test]
+#[ignore = "Runtime limitation: shl custom not implemented - needs [RUNTIME-1139] ticket"]
+fn test_sqlite_1286_shl_custom() {
+    let result = execute_program(r#"
+        use std::ops::Shl;
+        struct Bits(u32);
+        impl Shl<u32> for Bits {
+            type Output = Bits;
+            fn shl(self, rhs: u32) -> Bits {
+                Bits(self.0 << rhs)
+            }
+        }
+        let b = Bits(0b1010) << 2;
+    "#);
+    assert!(result.is_ok(), "shl custom should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: shr custom not implemented - needs [RUNTIME-1140] ticket"]
+fn test_sqlite_1287_shr_custom() {
+    let result = execute_program(r#"
+        use std::ops::Shr;
+        struct Bits(u32);
+        impl Shr<u32> for Bits {
+            type Output = Bits;
+            fn shr(self, rhs: u32) -> Bits {
+                Bits(self.0 >> rhs)
+            }
+        }
+        let b = Bits(0b1010) >> 2;
+    "#);
+    assert!(result.is_ok(), "shr custom should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: shl assign not implemented - needs [RUNTIME-1141] ticket"]
+fn test_sqlite_1288_shl_assign() {
+    let result = execute_program(r#"
+        use std::ops::ShlAssign;
+        struct Bits(u32);
+        impl ShlAssign<u32> for Bits {
+            fn shl_assign(&mut self, rhs: u32) {
+                self.0 <<= rhs;
+            }
+        }
+        let mut b = Bits(0b1010);
+        b <<= 2;
+    "#);
+    assert!(result.is_ok(), "shl assign should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: shr assign not implemented - needs [RUNTIME-1142] ticket"]
+fn test_sqlite_1289_shr_assign() {
+    let result = execute_program(r#"
+        use std::ops::ShrAssign;
+        struct Bits(u32);
+        impl ShrAssign<u32> for Bits {
+            fn shr_assign(&mut self, rhs: u32) {
+                self.0 >>= rhs;
+            }
+        }
+        let mut b = Bits(0b1010);
+        b >>= 2;
+    "#);
+    assert!(result.is_ok(), "shr assign should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: bit operator chain not implemented - needs [RUNTIME-1143] ticket"]
+fn test_sqlite_1290_bit_operator_chain() {
+    let result = execute_program(r#"
+        use std::ops::{BitAnd, BitOr, Shl};
+        struct Bits(u32);
+        impl BitAnd for Bits {
+            type Output = Bits;
+            fn bitand(self, other: Bits) -> Bits { Bits(self.0 & other.0) }
+        }
+        impl BitOr for Bits {
+            type Output = Bits;
+            fn bitor(self, other: Bits) -> Bits { Bits(self.0 | other.0) }
+        }
+        impl Shl<u32> for Bits {
+            type Output = Bits;
+            fn shl(self, rhs: u32) -> Bits { Bits(self.0 << rhs) }
+        }
+        let b = (Bits(0b1010) & Bits(0b1100)) | (Bits(0b0011) << 2);
+    "#);
+    assert!(result.is_ok(), "bit operator chain should work");
+}
+
 #[test]
 #[ignore = "Runtime limitation: select_biased not implemented - needs [RUNTIME-822] ticket"]
 fn test_sqlite_969_select_biased() {
