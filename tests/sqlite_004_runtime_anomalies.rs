@@ -2698,6 +2698,557 @@ fn test_sqlite_1340_path_extension() {
     assert!(result.is_ok(), "path extension should work");
 }
 
+// =============================================================================
+// Category 281: String Methods Runtime (Tests 1341-1345)
+// =============================================================================
+
+#[test]
+#[ignore = "Runtime limitation: string len not implemented - needs [RUNTIME-1194] ticket"]
+fn test_sqlite_1341_string_len() {
+    let result = execute_program(r#"
+        let s = String::from("hello");
+        let len = s.len();
+    "#);
+    assert!(result.is_ok(), "string len should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: string push not implemented - needs [RUNTIME-1195] ticket"]
+fn test_sqlite_1342_string_push() {
+    let result = execute_program(r#"
+        let mut s = String::from("hello");
+        s.push('!');
+    "#);
+    assert!(result.is_ok(), "string push should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: string push_str not implemented - needs [RUNTIME-1196] ticket"]
+fn test_sqlite_1343_string_push_str() {
+    let result = execute_program(r#"
+        let mut s = String::from("hello");
+        s.push_str(" world");
+    "#);
+    assert!(result.is_ok(), "string push_str should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: string pop not implemented - needs [RUNTIME-1197] ticket"]
+fn test_sqlite_1344_string_pop() {
+    let result = execute_program(r#"
+        let mut s = String::from("hello");
+        let c = s.pop();
+    "#);
+    assert!(result.is_ok(), "string pop should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: string chars not implemented - needs [RUNTIME-1198] ticket"]
+fn test_sqlite_1345_string_chars() {
+    let result = execute_program(r#"
+        let s = String::from("hello");
+        for c in s.chars() { }
+    "#);
+    assert!(result.is_ok(), "string chars should work");
+}
+
+// =============================================================================
+// Category 282: Vec Methods Runtime (Tests 1346-1350)
+// =============================================================================
+
+#[test]
+#[ignore = "Runtime limitation: vec push not implemented - needs [RUNTIME-1199] ticket"]
+fn test_sqlite_1346_vec_push() {
+    let result = execute_program(r#"
+        let mut v = vec![1, 2, 3];
+        v.push(4);
+    "#);
+    assert!(result.is_ok(), "vec push should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: vec pop not implemented - needs [RUNTIME-1200] ticket"]
+fn test_sqlite_1347_vec_pop() {
+    let result = execute_program(r#"
+        let mut v = vec![1, 2, 3];
+        let x = v.pop();
+    "#);
+    assert!(result.is_ok(), "vec pop should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: vec len not implemented - needs [RUNTIME-1201] ticket"]
+fn test_sqlite_1348_vec_len() {
+    let result = execute_program(r#"
+        let v = vec![1, 2, 3];
+        let len = v.len();
+    "#);
+    assert!(result.is_ok(), "vec len should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: vec capacity not implemented - needs [RUNTIME-1202] ticket"]
+fn test_sqlite_1349_vec_capacity() {
+    let result = execute_program(r#"
+        let v = vec![1, 2, 3];
+        let cap = v.capacity();
+    "#);
+    assert!(result.is_ok(), "vec capacity should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: vec clear not implemented - needs [RUNTIME-1203] ticket"]
+fn test_sqlite_1350_vec_clear() {
+    let result = execute_program(r#"
+        let mut v = vec![1, 2, 3];
+        v.clear();
+    "#);
+    assert!(result.is_ok(), "vec clear should work");
+}
+
+// =============================================================================
+// Category 283: HashMap Methods Runtime (Tests 1351-1355)
+// =============================================================================
+
+#[test]
+#[ignore = "Runtime limitation: hashmap insert not implemented - needs [RUNTIME-1204] ticket"]
+fn test_sqlite_1351_hashmap_insert() {
+    let result = execute_program(r#"
+        use std::collections::HashMap;
+        let mut map = HashMap::new();
+        map.insert("key", 42);
+    "#);
+    assert!(result.is_ok(), "hashmap insert should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: hashmap get not implemented - needs [RUNTIME-1205] ticket"]
+fn test_sqlite_1352_hashmap_get() {
+    let result = execute_program(r#"
+        use std::collections::HashMap;
+        let mut map = HashMap::new();
+        map.insert("key", 42);
+        let val = map.get("key");
+    "#);
+    assert!(result.is_ok(), "hashmap get should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: hashmap remove not implemented - needs [RUNTIME-1206] ticket"]
+fn test_sqlite_1353_hashmap_remove() {
+    let result = execute_program(r#"
+        use std::collections::HashMap;
+        let mut map = HashMap::new();
+        map.insert("key", 42);
+        map.remove("key");
+    "#);
+    assert!(result.is_ok(), "hashmap remove should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: hashmap contains_key not implemented - needs [RUNTIME-1207] ticket"]
+fn test_sqlite_1354_hashmap_contains_key() {
+    let result = execute_program(r#"
+        use std::collections::HashMap;
+        let mut map = HashMap::new();
+        map.insert("key", 42);
+        let exists = map.contains_key("key");
+    "#);
+    assert!(result.is_ok(), "hashmap contains_key should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: hashmap len not implemented - needs [RUNTIME-1208] ticket"]
+fn test_sqlite_1355_hashmap_len() {
+    let result = execute_program(r#"
+        use std::collections::HashMap;
+        let mut map = HashMap::new();
+        map.insert("key", 42);
+        let len = map.len();
+    "#);
+    assert!(result.is_ok(), "hashmap len should work");
+}
+
+// =============================================================================
+// Category 284: Option Methods Runtime (Tests 1356-1360)
+// =============================================================================
+
+#[test]
+#[ignore = "Runtime limitation: option unwrap not implemented - needs [RUNTIME-1209] ticket"]
+fn test_sqlite_1356_option_unwrap() {
+    let result = execute_program(r#"
+        let opt = Some(42);
+        let x = opt.unwrap();
+    "#);
+    assert!(result.is_ok(), "option unwrap should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: option unwrap_or not implemented - needs [RUNTIME-1210] ticket"]
+fn test_sqlite_1357_option_unwrap_or() {
+    let result = execute_program(r#"
+        let opt: Option<i32> = None;
+        let x = opt.unwrap_or(0);
+    "#);
+    assert!(result.is_ok(), "option unwrap_or should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: option is_some not implemented - needs [RUNTIME-1211] ticket"]
+fn test_sqlite_1358_option_is_some() {
+    let result = execute_program(r#"
+        let opt = Some(42);
+        let is_some = opt.is_some();
+    "#);
+    assert!(result.is_ok(), "option is_some should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: option is_none not implemented - needs [RUNTIME-1212] ticket"]
+fn test_sqlite_1359_option_is_none() {
+    let result = execute_program(r#"
+        let opt: Option<i32> = None;
+        let is_none = opt.is_none();
+    "#);
+    assert!(result.is_ok(), "option is_none should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: option map not implemented - needs [RUNTIME-1213] ticket"]
+fn test_sqlite_1360_option_map() {
+    let result = execute_program(r#"
+        let opt = Some(42);
+        let doubled = opt.map(|x| x * 2);
+    "#);
+    assert!(result.is_ok(), "option map should work");
+}
+
+// =============================================================================
+// Category 285: Result Methods Runtime (Tests 1361-1365)
+// =============================================================================
+
+#[test]
+#[ignore = "Runtime limitation: result unwrap not implemented - needs [RUNTIME-1214] ticket"]
+fn test_sqlite_1361_result_unwrap() {
+    let result = execute_program(r#"
+        let res: Result<i32, String> = Ok(42);
+        let x = res.unwrap();
+    "#);
+    assert!(result.is_ok(), "result unwrap should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: result unwrap_or not implemented - needs [RUNTIME-1215] ticket"]
+fn test_sqlite_1362_result_unwrap_or() {
+    let result = execute_program(r#"
+        let res: Result<i32, String> = Err("error".to_string());
+        let x = res.unwrap_or(0);
+    "#);
+    assert!(result.is_ok(), "result unwrap_or should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: result is_ok not implemented - needs [RUNTIME-1216] ticket"]
+fn test_sqlite_1363_result_is_ok() {
+    let result = execute_program(r#"
+        let res: Result<i32, String> = Ok(42);
+        let is_ok = res.is_ok();
+    "#);
+    assert!(result.is_ok(), "result is_ok should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: result is_err not implemented - needs [RUNTIME-1217] ticket"]
+fn test_sqlite_1364_result_is_err() {
+    let result = execute_program(r#"
+        let res: Result<i32, String> = Err("error".to_string());
+        let is_err = res.is_err();
+    "#);
+    assert!(result.is_ok(), "result is_err should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: result map not implemented - needs [RUNTIME-1218] ticket"]
+fn test_sqlite_1365_result_map() {
+    let result = execute_program(r#"
+        let res: Result<i32, String> = Ok(42);
+        let doubled = res.map(|x| x * 2);
+    "#);
+    assert!(result.is_ok(), "result map should work");
+}
+
+// =============================================================================
+// Category 286: Slice Methods Runtime (Tests 1366-1370)
+// =============================================================================
+
+#[test]
+#[ignore = "Runtime limitation: slice len not implemented - needs [RUNTIME-1219] ticket"]
+fn test_sqlite_1366_slice_len() {
+    let result = execute_program(r#"
+        let arr = [1, 2, 3, 4, 5];
+        let s = &arr[1..4];
+        let len = s.len();
+    "#);
+    assert!(result.is_ok(), "slice len should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: slice is_empty not implemented - needs [RUNTIME-1220] ticket"]
+fn test_sqlite_1367_slice_is_empty() {
+    let result = execute_program(r#"
+        let arr = [1, 2, 3];
+        let s = &arr[0..0];
+        let empty = s.is_empty();
+    "#);
+    assert!(result.is_ok(), "slice is_empty should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: slice first not implemented - needs [RUNTIME-1221] ticket"]
+fn test_sqlite_1368_slice_first() {
+    let result = execute_program(r#"
+        let arr = [1, 2, 3];
+        let s = &arr[..];
+        let first = s.first();
+    "#);
+    assert!(result.is_ok(), "slice first should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: slice last not implemented - needs [RUNTIME-1222] ticket"]
+fn test_sqlite_1369_slice_last() {
+    let result = execute_program(r#"
+        let arr = [1, 2, 3];
+        let s = &arr[..];
+        let last = s.last();
+    "#);
+    assert!(result.is_ok(), "slice last should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: slice iter not implemented - needs [RUNTIME-1223] ticket"]
+fn test_sqlite_1370_slice_iter() {
+    let result = execute_program(r#"
+        let arr = [1, 2, 3];
+        let s = &arr[..];
+        for x in s.iter() { }
+    "#);
+    assert!(result.is_ok(), "slice iter should work");
+}
+
+// =============================================================================
+// Category 287: Iterator Combinators Runtime (Tests 1371-1375)
+// =============================================================================
+
+#[test]
+#[ignore = "Runtime limitation: iter map not implemented - needs [RUNTIME-1224] ticket"]
+fn test_sqlite_1371_iter_map() {
+    let result = execute_program(r#"
+        let v = vec![1, 2, 3];
+        let doubled: Vec<_> = v.iter().map(|x| x * 2).collect();
+    "#);
+    assert!(result.is_ok(), "iter map should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: iter filter not implemented - needs [RUNTIME-1225] ticket"]
+fn test_sqlite_1372_iter_filter() {
+    let result = execute_program(r#"
+        let v = vec![1, 2, 3, 4];
+        let evens: Vec<_> = v.iter().filter(|x| *x % 2 == 0).collect();
+    "#);
+    assert!(result.is_ok(), "iter filter should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: iter fold not implemented - needs [RUNTIME-1226] ticket"]
+fn test_sqlite_1373_iter_fold() {
+    let result = execute_program(r#"
+        let v = vec![1, 2, 3, 4];
+        let sum = v.iter().fold(0, |acc, x| acc + x);
+    "#);
+    assert!(result.is_ok(), "iter fold should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: iter collect not implemented - needs [RUNTIME-1227] ticket"]
+fn test_sqlite_1374_iter_collect() {
+    let result = execute_program(r#"
+        let v = vec![1, 2, 3];
+        let collected: Vec<_> = v.iter().collect();
+    "#);
+    assert!(result.is_ok(), "iter collect should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: iter count not implemented - needs [RUNTIME-1228] ticket"]
+fn test_sqlite_1375_iter_count() {
+    let result = execute_program(r#"
+        let v = vec![1, 2, 3, 4, 5];
+        let count = v.iter().count();
+    "#);
+    assert!(result.is_ok(), "iter count should work");
+}
+
+// =============================================================================
+// Category 288: Numeric Methods Runtime (Tests 1376-1380)
+// =============================================================================
+
+#[test]
+#[ignore = "Runtime limitation: abs not implemented - needs [RUNTIME-1229] ticket"]
+fn test_sqlite_1376_abs() {
+    let result = execute_program(r#"
+        let x = -42;
+        let abs_x = x.abs();
+    "#);
+    assert!(result.is_ok(), "abs should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: pow not implemented - needs [RUNTIME-1230] ticket"]
+fn test_sqlite_1377_pow() {
+    let result = execute_program(r#"
+        let x = 2;
+        let squared = x.pow(2);
+    "#);
+    assert!(result.is_ok(), "pow should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: sqrt not implemented - needs [RUNTIME-1231] ticket"]
+fn test_sqlite_1378_sqrt() {
+    let result = execute_program(r#"
+        let x = 16.0;
+        let root = x.sqrt();
+    "#);
+    assert!(result.is_ok(), "sqrt should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: min not implemented - needs [RUNTIME-1232] ticket"]
+fn test_sqlite_1379_min() {
+    let result = execute_program(r#"
+        use std::cmp::min;
+        let x = min(3, 5);
+    "#);
+    assert!(result.is_ok(), "min should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: max not implemented - needs [RUNTIME-1233] ticket"]
+fn test_sqlite_1380_max() {
+    let result = execute_program(r#"
+        use std::cmp::max;
+        let x = max(3, 5);
+    "#);
+    assert!(result.is_ok(), "max should work");
+}
+
+// =============================================================================
+// Category 289: Conversion Methods Runtime (Tests 1381-1385)
+// =============================================================================
+
+#[test]
+#[ignore = "Runtime limitation: to_string not implemented - needs [RUNTIME-1234] ticket"]
+fn test_sqlite_1381_to_string() {
+    let result = execute_program(r#"
+        let x = 42;
+        let s = x.to_string();
+    "#);
+    assert!(result.is_ok(), "to_string should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: parse not implemented - needs [RUNTIME-1235] ticket"]
+fn test_sqlite_1382_parse() {
+    let result = execute_program(r#"
+        let s = "42";
+        let x: i32 = s.parse().unwrap();
+    "#);
+    assert!(result.is_ok(), "parse should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: as_bytes not implemented - needs [RUNTIME-1236] ticket"]
+fn test_sqlite_1383_as_bytes() {
+    let result = execute_program(r#"
+        let s = "hello";
+        let bytes = s.as_bytes();
+    "#);
+    assert!(result.is_ok(), "as_bytes should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: from_utf8 not implemented - needs [RUNTIME-1237] ticket"]
+fn test_sqlite_1384_from_utf8() {
+    let result = execute_program(r#"
+        use std::str;
+        let bytes = vec![104, 101, 108, 108, 111];
+        let s = str::from_utf8(&bytes).unwrap();
+    "#);
+    assert!(result.is_ok(), "from_utf8 should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: as_str not implemented - needs [RUNTIME-1238] ticket"]
+fn test_sqlite_1385_as_str() {
+    let result = execute_program(r#"
+        let s = String::from("hello");
+        let str_ref = s.as_str();
+    "#);
+    assert!(result.is_ok(), "as_str should work");
+}
+
+// =============================================================================
+// Category 290: Format/Debug Runtime (Tests 1386-1390)
+// =============================================================================
+
+#[test]
+#[ignore = "Runtime limitation: format simple not implemented - needs [RUNTIME-1239] ticket"]
+fn test_sqlite_1386_format_simple() {
+    let result = execute_program(r#"
+        let s = format!("x = {}", 42);
+    "#);
+    assert!(result.is_ok(), "format simple should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: format multi not implemented - needs [RUNTIME-1240] ticket"]
+fn test_sqlite_1387_format_multi() {
+    let result = execute_program(r#"
+        let s = format!("x = {}, y = {}", 42, 43);
+    "#);
+    assert!(result.is_ok(), "format multi should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: println not implemented - needs [RUNTIME-1241] ticket"]
+fn test_sqlite_1388_println() {
+    let result = execute_program(r#"
+        println!("hello");
+    "#);
+    assert!(result.is_ok(), "println should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: dbg not implemented - needs [RUNTIME-1242] ticket"]
+fn test_sqlite_1389_dbg() {
+    let result = execute_program(r#"
+        let x = 42;
+        dbg!(x);
+    "#);
+    assert!(result.is_ok(), "dbg should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: eprintln not implemented - needs [RUNTIME-1243] ticket"]
+fn test_sqlite_1390_eprintln() {
+    let result = execute_program(r#"
+        eprintln!("error");
+    "#);
+    assert!(result.is_ok(), "eprintln should work");
+}
+
 #[test]
 #[ignore = "Runtime limitation: select_biased not implemented - needs [RUNTIME-822] ticket"]
 fn test_sqlite_969_select_biased() {
