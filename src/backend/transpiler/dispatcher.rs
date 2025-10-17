@@ -3,6 +3,10 @@
 //!
 //! This module contains delegated transpilation functions to keep
 //! cyclomatic complexity below 10 for each function.
+
+#[path = "dispatcher_helpers/macro_helpers.rs"]
+mod macro_helpers;
+
 use super::Transpiler;
 use crate::frontend::ast::{Expr, ExprKind, Literal};
 use anyhow::{bail, Result};
@@ -543,7 +547,7 @@ impl Transpiler {
             | ExprKind::Enum { .. }
             | ExprKind::TypeAlias { .. } => self.transpile_type_decl_expr(expr),
             ExprKind::Break { .. } | ExprKind::Continue { .. } | ExprKind::Return { .. } => {
-                Self::transpile_control_misc_expr(expr)
+                self.transpile_control_misc_expr(expr)
             }
             ExprKind::Export { expr, is_default } => Ok(Self::transpile_export(expr, *is_default)),
             ExprKind::ExportList { names } => Ok(Self::transpile_export_list(names)),
@@ -591,277 +595,73 @@ impl Transpiler {
             _ => unreachable!(),
         }
     }
-    /// Transpile println! macro with string formatting support
-    ///
-    /// Handles string literals, string interpolation, and format strings correctly.
-    /// Complexity: <10 per Toyota Way requirement.
-    ///
-    /// # Example Usage
-    /// Transpiles arguments and wraps them in Rust's `println!` macro.
-    /// Empty args produce `println!()`, otherwise `println!(arg1, arg2, ...)`
-    fn transpile_println_macro(&self, args: &[Expr]) -> Result<TokenStream> {
-        let arg_tokens = self.transpile_print_args(args)?;
-        if arg_tokens.is_empty() {
-            Ok(quote! { println!() })
-        } else {
-            Ok(quote! { println!(#(#arg_tokens),*) })
-        }
-    }
-    /// Transpile print! macro with string formatting support
-    ///
-    /// Handles string literals, string interpolation, and format strings correctly.
-    /// Complexity: <10 per Toyota Way requirement.
-    ///
-    /// # Example Usage
-    /// Transpiles arguments and wraps them in Rust's `print!` macro.
-    /// Empty args produce `print!()`, otherwise `print!(arg1, arg2, ...)`
-    fn transpile_print_macro(&self, args: &[Expr]) -> Result<TokenStream> {
-        let arg_tokens = self.transpile_print_args(args)?;
-        if arg_tokens.is_empty() {
-            Ok(quote! { print!() })
-        } else {
-            Ok(quote! { print!(#(#arg_tokens),*) })
-        }
-    }
-    /// Transpile panic! macro with string formatting support
-    ///
-    /// Handles string literals, string interpolation, and format strings correctly.
-    /// Complexity: <10 per Toyota Way requirement.
-    ///
-    /// # Example Usage
-    /// Transpiles arguments and wraps them in Rust's `panic!` macro.
-    /// Empty args produce `panic!()`, otherwise `panic!(arg1, arg2, ...)`
-    fn transpile_panic_macro(&self, args: &[Expr]) -> Result<TokenStream> {
-        let arg_tokens = self.transpile_print_args(args)?;
-        if arg_tokens.is_empty() {
-            Ok(quote! { panic!() })
-        } else {
-            Ok(quote! { panic!(#(#arg_tokens),*) })
-        }
-    }
-    /// Common helper for transpiling print-style macro arguments
-    ///
-    /// Handles string literals, string interpolation, and format strings.
-    /// This eliminates code duplication between println!, print!, and panic!.
-    /// Complexity: <10 per Toyota Way requirement.
-    fn transpile_print_args(&self, args: &[Expr]) -> Result<Vec<TokenStream>> {
-        if args.is_empty() {
-            return Ok(vec![]);
-        }
-        // Check if first argument is a format string (contains {})
-        let first_is_format_string = match &args[0].kind {
-            ExprKind::Literal(Literal::String(s)) => s.contains("{}"),
-            _ => false,
-        };
-        if first_is_format_string && args.len() > 1 {
-            // First argument is format string, rest are values
-            let format_str = match &args[0].kind {
-                ExprKind::Literal(Literal::String(s)) => s,
-                _ => unreachable!(),
-            };
-            let mut tokens = vec![quote! { #format_str }];
-            // Add remaining arguments as values (without extra format strings)
-            for arg in &args[1..] {
-                let expr_tokens = self.transpile_expr(arg)?;
-                tokens.push(expr_tokens);
-            }
-            Ok(tokens)
-        } else {
-            // Original behavior for non-format cases
-            args.iter()
-                .map(|arg| {
-                    match &arg.kind {
-                        ExprKind::Literal(Literal::String(s)) => Ok(quote! { #s }),
-                        ExprKind::StringInterpolation { parts } => {
-                            self.transpile_string_interpolation_for_print(parts)
-                        }
-                        _ => {
-                            // DEFECT-DICT-DETERMINISM FIX: Use Debug format with BTreeMap (deterministic)
-                            // BTreeMap Debug format is sorted, so {:?} is safe and deterministic
-                            let expr_tokens = self.transpile_expr(arg)?;
-                            Ok(quote! { "{:?}", #expr_tokens })
-                        }
-                    }
-                })
-                .collect()
-        }
-    }
-    /// Handle string interpolation for print-style macros
-    ///
-    /// Detects if string interpolation has expressions or is just format text.
-    /// Complexity: <10 per Toyota Way requirement.
-    fn transpile_string_interpolation_for_print(
-        &self,
-        parts: &[crate::frontend::ast::StringPart],
-    ) -> Result<TokenStream> {
-        let has_expressions = parts.iter().any(|part| {
-            matches!(
-                part,
-                crate::frontend::ast::StringPart::Expr(_)
-                    | crate::frontend::ast::StringPart::ExprWithFormat { .. }
-            )
-        });
-        if has_expressions {
-            // This has actual interpolation - transpile normally
-            self.transpile_string_interpolation(parts)
-        } else {
-            // This is a format string like "Hello {}" - treat as literal
-            let format_string = parts
-                .iter()
-                .map(|part| match part {
-                    crate::frontend::ast::StringPart::Text(s) => s.as_str(),
-                    crate::frontend::ast::StringPart::Expr(_)
-                    | crate::frontend::ast::StringPart::ExprWithFormat { .. } => unreachable!(),
-                })
-                .collect::<String>();
-            Ok(quote! { #format_string })
-        }
-    }
-    /// Transpile vec! macro
-    ///
-    /// Simple element-by-element transpilation for collection creation.
-    /// Complexity: <10 per Toyota Way requirement.
-    ///
-    /// # Example Usage
-    /// Transpiles list elements and wraps them in Rust's `vec!` macro.
-    /// Produces `vec![elem1, elem2, ...]`
-    fn transpile_vec_macro(&self, args: &[Expr]) -> Result<TokenStream> {
-        let arg_tokens: Result<Vec<_>, _> =
-            args.iter().map(|arg| self.transpile_expr(arg)).collect();
-        let arg_tokens = arg_tokens?;
-        Ok(quote! { vec![#(#arg_tokens),*] })
-    }
-    /// Transpile assert! macro
-    ///
-    /// Simple argument transpilation for basic assertions.
-    /// Complexity: <10 per Toyota Way requirement.
-    ///
-    /// # Example Usage
-    /// Transpiles assertion condition and wraps it in Rust's `assert!` macro.
-    /// Produces `assert!(condition, optional_message)`
-    fn transpile_assert_macro(&self, args: &[Expr]) -> Result<TokenStream> {
-        let arg_tokens: Result<Vec<_>, _> =
-            args.iter().map(|arg| self.transpile_expr(arg)).collect();
-        let arg_tokens = arg_tokens?;
-        if arg_tokens.is_empty() {
-            Ok(quote! { assert!() })
-        } else {
-            Ok(quote! { assert!(#(#arg_tokens),*) })
-        }
-    }
-    /// Transpile `assert_eq`! macro with validation
-    ///
-    /// Validates argument count and transpiles for equality assertions.
-    /// Complexity: <10 per Toyota Way requirement.
-    ///
-    /// # Example Usage
-    /// Validates at least 2 arguments and transpiles to Rust's `assert_eq!` macro.
-    /// Produces `assert_eq!(left, right, optional_message)`
-    fn transpile_assert_eq_macro(&self, args: &[Expr]) -> Result<TokenStream> {
-        if args.len() < 2 {
-            bail!("assert_eq! requires at least 2 arguments")
-        }
-        let arg_tokens: Result<Vec<_>, _> =
-            args.iter().map(|arg| self.transpile_expr(arg)).collect();
-        let arg_tokens = arg_tokens?;
-        Ok(quote! { assert_eq!(#(#arg_tokens),*) })
-    }
-    /// Transpile `assert_ne`! macro with validation
-    ///
-    /// Validates argument count and transpiles for inequality assertions.
-    /// Complexity: <10 per Toyota Way requirement.
-    ///
-    /// # Example Usage
-    /// Validates at least 2 arguments and transpiles to Rust's `assert_ne!` macro.
-    /// Produces `assert_ne!(left, right, optional_message)`
-    fn transpile_assert_ne_macro(&self, args: &[Expr]) -> Result<TokenStream> {
-        if args.len() < 2 {
-            bail!("assert_ne! requires at least 2 arguments")
-        }
-        let arg_tokens: Result<Vec<_>, _> =
-            args.iter().map(|arg| self.transpile_expr(arg)).collect();
-        let arg_tokens = arg_tokens?;
-        Ok(quote! { assert_ne!(#(#arg_tokens),*) })
-    }
 
-    /// Pass through external macros without modification
-    fn transpile_passthrough_macro(&self, name: &str, args: &[Expr]) -> Result<TokenStream> {
-        let macro_ident = format_ident!("{}", name);
-
-        // Special handling for json! macro - needs raw JSON syntax
-        if name == "json" && args.len() == 1 {
-            if let ExprKind::ObjectLiteral { fields } = &args[0].kind {
-                return self.transpile_json_macro_object(fields);
-            }
-        }
-
-        let arg_tokens: Result<Vec<_>, _> =
-            args.iter().map(|arg| self.transpile_expr(arg)).collect();
-        let arg_tokens = arg_tokens?;
-        Ok(quote! { #macro_ident!(#(#arg_tokens),*) })
-    }
-
-    /// Transpile object literal for json! macro
-    fn transpile_json_macro_object(
-        &self,
-        fields: &[crate::frontend::ast::ObjectField],
-    ) -> Result<TokenStream> {
-        use crate::frontend::ast::ObjectField;
-        let mut json_fields = Vec::new();
-        for field in fields {
-            match field {
-                ObjectField::KeyValue { key, value } => {
-                    let value_tokens = match &value.kind {
-                        ExprKind::Literal(Literal::String(s)) => {
-                            quote! { #s }
-                        }
-                        _ => self.transpile_expr(value)?,
-                    };
-                    json_fields.push(quote! { #key: #value_tokens });
-                }
-                ObjectField::Spread { .. } => {
-                    // JSON doesn't support spread, skip for now
-                }
-            }
-        }
-        Ok(quote! { json!({ #(#json_fields),* }) })
-    }
-    fn transpile_control_misc_expr(expr: &Expr) -> Result<TokenStream> {
+    fn transpile_control_misc_expr(&self, expr: &Expr) -> Result<TokenStream> {
         match &expr.kind {
-            ExprKind::Break { label, .. } => Ok(Self::make_break_continue(true, label.as_ref())),
-            ExprKind::Continue { label } => Ok(Self::make_break_continue(false, label.as_ref())),
-            ExprKind::Return { value } => {
-                if let Some(val) = value {
-                    let transpiler = Transpiler::new();
-                    let val_tokens = transpiler.transpile_expr(val)?;
-                    Ok(quote! { return #val_tokens })
+            ExprKind::Break { label, value } => {
+                if let Some(val_expr) = value {
+                    let val_tokens = self.transpile_expr(val_expr)?;
+                    Ok(Self::make_break_continue_with_value(true, label.as_ref(), Some(val_tokens)))
                 } else {
-                    Ok(quote! { return })
+                    Ok(Self::make_break_continue(true, label.as_ref()))
                 }
             }
-            // Export variants are now handled elsewhere
-            ExprKind::Export { .. } | ExprKind::ExportList { .. } => {
-                // These should be handled in the main dispatch
-                Ok(quote! { /* Export handled in main dispatch */ })
+            ExprKind::Continue { label } => {
+                Ok(Self::make_break_continue(false, label.as_ref()))
+            }
+            ExprKind::Return { value } => {
+                if let Some(val_expr) = value {
+                    let val_tokens = self.transpile_expr(val_expr)?;
+                    Ok(quote! { return #val_tokens; })
+                } else {
+                    Ok(quote! { return; })
+                }
             }
             _ => unreachable!(),
         }
     }
+
     fn make_break_continue(is_break: bool, label: Option<&String>) -> TokenStream {
         let keyword = if is_break {
             quote! { break }
         } else {
             quote! { continue }
         };
+
         match label {
             Some(l) if !l.is_empty() => {
-                // Strip leading ' from label (Ruchy uses 'label, Rust uses label)
                 let label_name = l.strip_prefix('\'').unwrap_or(l);
                 let label_ident = format_ident!("{}", label_name);
                 quote! { #keyword #label_ident }
             }
-            _ => keyword, // Handle both None and empty string cases
+            _ => keyword,
+        }
+    }
+
+    fn make_break_continue_with_value(
+        is_break: bool,
+        label: Option<&String>,
+        value: Option<TokenStream>,
+    ) -> TokenStream {
+        let keyword = if is_break {
+            quote! { break }
+        } else {
+            quote! { continue }
+        };
+
+        match (label, value) {
+            (Some(l), Some(v)) if !l.is_empty() => {
+                let label_name = l.strip_prefix('\'').unwrap_or(l);
+                let label_ident = format_ident!("{}", label_name);
+                quote! { #keyword #label_ident #v }
+            }
+            (Some(l), None) if !l.is_empty() => {
+                let label_name = l.strip_prefix('\'').unwrap_or(l);
+                let label_ident = format_ident!("{}", label_name);
+                quote! { #keyword #label_ident }
+            }
+            (_, Some(v)) => quote! { #keyword #v },
+            _ => keyword,
         }
     }
 }
-
