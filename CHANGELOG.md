@@ -5,6 +5,14 @@ All notable changes to the Ruchy programming language will be documented in this
 ## [Unreleased]
 
 ### Added
+- **[SQLITE-TEST-001] Harness 4 Twenty-Second Expansion - 1,050 Test Milestone (2.1% COMPLETE!)**: Added 50 new runtime anomaly tests (1,000→1,050, 5.0% increase)
+  - Test Pass Rate: 58/1,050 passing (5.5%)
+  - New Categories (10): Memory Management Runtime (heap allocation, Vec growth, String heap, Rc reference counting, Arc thread-safe counting), Error Propagation Runtime (? operator propagation, Result unwrap panic, Option unwrap panic, expect custom message, panic macro), Concurrency Primitives Runtime (Mutex lock, RwLock read, RwLock write, channel send/recv, thread spawn), Collection Iterator Runtime (Vec iterator, HashMap iterator, HashSet iterator, BTreeMap iterator, BTreeSet iterator), Numeric Type Conversion Runtime (as cast i32 to i64, as cast f32 to f64, as cast i32 to f64, as cast f64 to i32, u8 to char cast), Slice Operations Runtime (slice indexing, slice range, slice len, slice is_empty, slice first/last), String Manipulation Runtime (String push, String push_str, String pop, String clear, String trim), Closure Capture Runtime (closure capture by value, closure capture by reference, closure capture mutable, closure call, closure with parameters), Macro Expansion Runtime (vec! macro, println! macro, format! macro, assert! macro, assert_eq! macro), Drop and RAII Runtime (Drop trait, drop order, drop scope, drop function, mem::forget)
+  - Defensive Testing: 50 new runtime limitations (RUNTIME-944 through RUNTIME-993)
+  - Total Limitations: 992 documented (RUNTIME-001 fixed)
+  - Framework Total: 2,213 tests across 4 harnesses
+  - Progress: 1,050/50,000 tests (2.10% of Harness 4 complete)
+  - Time: 29.0h / 60h estimated
 - **[SQLITE-TEST-001] Harness 1 Twenty-Third Expansion - 1,200 Test Milestone (60% COMPLETE!)**: Added 50 new parser grammar tests (1,150→1,200, 4.3% increase)
   - Test Pass Rate: 830/1,200 passing (69.2%)
   - New Categories (10): Where Clause Variations (where simple, where multi, where lifetime, where assoc, where for), Async Syntax Forms (async fn simple, async fn param, async block, async move, await expr), Dyn Trait Syntax (dyn simple, dyn box, dyn multi, dyn lifetime, dyn impl), Operator Precedence Complex (precedence add mul, precedence cmp logic, precedence neg mul, precedence deref field, precedence call index), Lifetime Syntax Variations (lifetime param, lifetime multi, lifetime struct, lifetime impl, lifetime bound), Associated Item Syntax (assoc type, assoc const, assoc fn, assoc type bound, assoc type default), Visibility Modifiers Complete (vis pub, vis pub crate, vis pub super, vis pub in, vis pub self), Pattern Syntax Complete (pat wildcard, pat ident, pat tuple, pat struct, pat ref), Literal Syntax Complete (lit int, lit float, lit string, lit char, lit bool), Type Syntax Complete (type path, type tuple, type array, type ref, type fn)
