@@ -1611,6 +1611,8 @@ mod tests {
             kind: ExprKind::Literal(Literal::Integer(value, None)),
             span: Span::default(),
             attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
         }
     }
 
@@ -1623,6 +1625,8 @@ mod tests {
             },
             span: Span::default(),
             attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
         }
     }
 
@@ -1631,6 +1635,8 @@ mod tests {
             kind: ExprKind::Identifier(name.to_string()),
             span: Span::default(),
             attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
         }
     }
 
@@ -1688,6 +1694,8 @@ mod tests {
             },
             span: Span::default(),
             attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
         };
 
         transpiler.collect_signatures_from_expr(&func_expr);
@@ -1738,6 +1746,8 @@ mod tests {
             kind: ExprKind::ObjectLiteral { fields: vec![] },
             span: Span::default(),
             attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
         };
 
         // Test regular literal (should not contain hashmap)
@@ -1762,6 +1772,8 @@ mod tests {
             kind: ExprKind::DataFrame { columns: vec![] },
             span: Span::default(),
             attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
         };
 
         // Test regular literal (should not contain dataframe)
@@ -1791,6 +1803,8 @@ mod tests {
             },
             span: Span::default(),
             attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
         };
 
         transpiler.analyze_expr_mutability(&assign_expr);
@@ -1803,6 +1817,8 @@ mod tests {
             },
             span: Span::default(),
             attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
         };
 
         transpiler.analyze_expr_mutability(&assign_expr2);
@@ -1841,6 +1857,8 @@ mod tests {
             ]),
             span: Span::default(),
             attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
         };
 
         let result = transpiler.transpile(&block_expr);
@@ -1883,6 +1901,8 @@ mod tests {
             kind: ExprKind::ObjectLiteral { fields: vec![] },
             span: Span::default(),
             attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
         };
 
         let result = transpiler.transpile_to_program(&object_expr);
@@ -1934,6 +1954,8 @@ mod tests {
             },
             span: Span::default(),
             attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
         };
 
         let result = transpiler.transpile_to_program(&func_expr);
@@ -1962,6 +1984,8 @@ mod tests {
             },
             span: Span::default(),
             attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
         };
 
         // Should not panic, even with potentially undefined variables
@@ -2023,6 +2047,8 @@ mod tests {
                 },
                 span: Span::default(),
                 attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
             };
 
             transpiler.collect_signatures_from_expr(&func_expr);
