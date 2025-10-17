@@ -1490,6 +1490,694 @@ fn test_sqlite_990_local_set_basic() {
     assert!(result.is_ok(), "LocalSet basic should work");
 }
 
+// Category 191: Trait Object Dynamic Dispatch
+#[test]
+#[ignore = "Runtime limitation: trait object basic not implemented - needs [RUNTIME-844] ticket"]
+fn test_sqlite_991_trait_object_basic() {
+    let result = execute_program(r#"
+        trait Drawable {
+            fn draw(&self);
+        }
+        let d: &dyn Drawable;
+    "#);
+    assert!(result.is_ok(), "trait object basic should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: trait object method call not implemented - needs [RUNTIME-845] ticket"]
+fn test_sqlite_992_trait_object_method() {
+    let result = execute_program(r#"
+        trait Drawable {
+            fn draw(&self);
+        }
+        let d: &dyn Drawable;
+        d.draw();
+    "#);
+    assert!(result.is_ok(), "trait object method call should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: trait object box not implemented - needs [RUNTIME-846] ticket"]
+fn test_sqlite_993_trait_object_box() {
+    let result = execute_program(r#"
+        trait Drawable {
+            fn draw(&self);
+        }
+        let d: Box<dyn Drawable>;
+    "#);
+    assert!(result.is_ok(), "trait object Box should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: trait object vec not implemented - needs [RUNTIME-847] ticket"]
+fn test_sqlite_994_trait_object_vec() {
+    let result = execute_program(r#"
+        trait Drawable {
+            fn draw(&self);
+        }
+        let v: Vec<Box<dyn Drawable>>;
+    "#);
+    assert!(result.is_ok(), "trait object Vec should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: trait object multiple traits not implemented - needs [RUNTIME-848] ticket"]
+fn test_sqlite_995_trait_object_multi() {
+    let result = execute_program(r#"
+        trait Drawable {}
+        trait Clickable {}
+        let d: &(dyn Drawable + Clickable);
+    "#);
+    assert!(result.is_ok(), "trait object with multiple traits should work");
+}
+
+// Category 192: Closure Capture Modes
+#[test]
+#[ignore = "Runtime limitation: closure capture by value not implemented - needs [RUNTIME-849] ticket"]
+fn test_sqlite_996_closure_capture_value() {
+    let result = execute_program(r#"
+        let x = 42;
+        let f = move || x;
+    "#);
+    assert!(result.is_ok(), "closure capture by value should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: closure capture by reference not implemented - needs [RUNTIME-850] ticket"]
+fn test_sqlite_997_closure_capture_ref() {
+    let result = execute_program(r#"
+        let x = 42;
+        let f = || &x;
+    "#);
+    assert!(result.is_ok(), "closure capture by reference should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: closure capture mutable not implemented - needs [RUNTIME-851] ticket"]
+fn test_sqlite_998_closure_capture_mut() {
+    let result = execute_program(r#"
+        let mut x = 42;
+        let f = || { x += 1; };
+    "#);
+    assert!(result.is_ok(), "closure capture mutable should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: closure FnOnce trait not implemented - needs [RUNTIME-852] ticket"]
+fn test_sqlite_999_closure_fn_once() {
+    let result = execute_program(r#"
+        let x = vec![1, 2, 3];
+        let f = || drop(x);
+        f();
+    "#);
+    assert!(result.is_ok(), "closure FnOnce trait should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: closure as parameter not implemented - needs [RUNTIME-853] ticket"]
+fn test_sqlite_1000_closure_as_param() {
+    let result = execute_program(r#"
+        fn apply<F: Fn(i32) -> i32>(f: F, x: i32) -> i32 {
+            f(x)
+        }
+        let result = apply(|n| n * 2, 21);
+    "#);
+    assert!(result.is_ok(), "closure as parameter should work");
+}
+
+// Category 193: Pattern Matching Runtime
+#[test]
+#[ignore = "Runtime limitation: match with enum not implemented - needs [RUNTIME-854] ticket"]
+fn test_sqlite_1001_match_enum() {
+    let result = execute_program(r#"
+        enum Color { Red, Green, Blue }
+        let c = Color::Red;
+        match c {
+            Color::Red => 1,
+            Color::Green => 2,
+            Color::Blue => 3,
+        }
+    "#);
+    assert!(result.is_ok(), "match with enum should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: match with tuple not implemented - needs [RUNTIME-855] ticket"]
+fn test_sqlite_1002_match_tuple() {
+    let result = execute_program(r#"
+        let pair = (1, 2);
+        match pair {
+            (0, y) => y,
+            (x, 0) => x,
+            (x, y) => x + y,
+        }
+    "#);
+    assert!(result.is_ok(), "match with tuple should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: match with struct not implemented - needs [RUNTIME-856] ticket"]
+fn test_sqlite_1003_match_struct() {
+    let result = execute_program(r#"
+        struct Point { x: i32, y: i32 }
+        let p = Point { x: 0, y: 0 };
+        match p {
+            Point { x: 0, y: 0 } => "origin",
+            Point { x: 0, y } => "y-axis",
+            Point { x, y: 0 } => "x-axis",
+            Point { x, y } => "other",
+        }
+    "#);
+    assert!(result.is_ok(), "match with struct should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: match with range not implemented - needs [RUNTIME-857] ticket"]
+fn test_sqlite_1004_match_range() {
+    let result = execute_program(r#"
+        let x = 5;
+        match x {
+            1..=5 => "low",
+            6..=10 => "high",
+            _ => "other",
+        }
+    "#);
+    assert!(result.is_ok(), "match with range should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: match with or pattern not implemented - needs [RUNTIME-858] ticket"]
+fn test_sqlite_1005_match_or() {
+    let result = execute_program(r#"
+        let x = 2;
+        match x {
+            1 | 2 => "one or two",
+            3 | 4 => "three or four",
+            _ => "other",
+        }
+    "#);
+    assert!(result.is_ok(), "match with or pattern should work");
+}
+
+// Category 194: Method Resolution
+#[test]
+#[ignore = "Runtime limitation: method call on struct not implemented - needs [RUNTIME-859] ticket"]
+fn test_sqlite_1006_method_struct() {
+    let result = execute_program(r#"
+        struct Point { x: i32, y: i32 }
+        impl Point {
+            fn distance(&self) -> f64 {
+                ((self.x * self.x + self.y * self.y) as f64).sqrt()
+            }
+        }
+        let p = Point { x: 3, y: 4 };
+        let d = p.distance();
+    "#);
+    assert!(result.is_ok(), "method call on struct should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: method call on enum not implemented - needs [RUNTIME-860] ticket"]
+fn test_sqlite_1007_method_enum() {
+    let result = execute_program(r#"
+        enum Option<T> {
+            Some(T),
+            None,
+        }
+        impl<T> Option<T> {
+            fn is_some(&self) -> bool {
+                match self {
+                    Option::Some(_) => true,
+                    Option::None => false,
+                }
+            }
+        }
+        let opt = Option::Some(42);
+        let is = opt.is_some();
+    "#);
+    assert!(result.is_ok(), "method call on enum should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: method chaining not implemented - needs [RUNTIME-861] ticket"]
+fn test_sqlite_1008_method_chain() {
+    let result = execute_program(r#"
+        let s = "hello";
+        let upper = s.to_uppercase().trim();
+    "#);
+    assert!(result.is_ok(), "method chaining should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: method with self not implemented - needs [RUNTIME-862] ticket"]
+fn test_sqlite_1009_method_self() {
+    let result = execute_program(r#"
+        struct Builder {
+            value: i32,
+        }
+        impl Builder {
+            fn set(mut self, v: i32) -> Self {
+                self.value = v;
+                self
+            }
+        }
+        let b = Builder { value: 0 }.set(42);
+    "#);
+    assert!(result.is_ok(), "method with self should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: associated function call not implemented - needs [RUNTIME-863] ticket"]
+fn test_sqlite_1010_associated_fn() {
+    let result = execute_program(r#"
+        struct Point { x: i32, y: i32 }
+        impl Point {
+            fn new(x: i32, y: i32) -> Self {
+                Point { x, y }
+            }
+        }
+        let p = Point::new(1, 2);
+    "#);
+    assert!(result.is_ok(), "associated function call should work");
+}
+
+// Category 195: Lifetime Validation Runtime
+#[test]
+#[ignore = "Runtime limitation: lifetime basic not implemented - needs [RUNTIME-864] ticket"]
+fn test_sqlite_1011_lifetime_basic() {
+    let result = execute_program(r#"
+        fn longest<'a>(x: &'a str, y: &'a str) -> &'a str {
+            if x.len() > y.len() { x } else { y }
+        }
+        let s1 = "hello";
+        let s2 = "world";
+        let result = longest(s1, s2);
+    "#);
+    assert!(result.is_ok(), "lifetime basic should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: lifetime struct not implemented - needs [RUNTIME-865] ticket"]
+fn test_sqlite_1012_lifetime_struct() {
+    let result = execute_program(r#"
+        struct Borrowed<'a> {
+            value: &'a i32,
+        }
+        let x = 42;
+        let b = Borrowed { value: &x };
+    "#);
+    assert!(result.is_ok(), "lifetime in struct should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: lifetime multiple not implemented - needs [RUNTIME-866] ticket"]
+fn test_sqlite_1013_lifetime_multi() {
+    let result = execute_program(r#"
+        fn select<'a, 'b>(x: &'a str, y: &'b str, first: bool) -> &'a str {
+            if first { x } else { x }
+        }
+    "#);
+    assert!(result.is_ok(), "multiple lifetimes should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: lifetime elision not implemented - needs [RUNTIME-867] ticket"]
+fn test_sqlite_1014_lifetime_elision() {
+    let result = execute_program(r#"
+        fn first_word(s: &str) -> &str {
+            &s[0..1]
+        }
+    "#);
+    assert!(result.is_ok(), "lifetime elision should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: lifetime static not implemented - needs [RUNTIME-868] ticket"]
+fn test_sqlite_1015_lifetime_static() {
+    let result = execute_program(r#"
+        let s: &'static str = "hello";
+    "#);
+    assert!(result.is_ok(), "static lifetime should work");
+}
+
+// Category 196: Generic Type Resolution
+#[test]
+#[ignore = "Runtime limitation: generic function call not implemented - needs [RUNTIME-869] ticket"]
+fn test_sqlite_1016_generic_fn() {
+    let result = execute_program(r#"
+        fn identity<T>(x: T) -> T { x }
+        let n = identity(42);
+    "#);
+    assert!(result.is_ok(), "generic function call should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: generic struct instantiation not implemented - needs [RUNTIME-870] ticket"]
+fn test_sqlite_1017_generic_struct() {
+    let result = execute_program(r#"
+        struct Wrapper<T> {
+            value: T,
+        }
+        let w = Wrapper { value: 42 };
+    "#);
+    assert!(result.is_ok(), "generic struct instantiation should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: generic enum instantiation not implemented - needs [RUNTIME-871] ticket"]
+fn test_sqlite_1018_generic_enum() {
+    let result = execute_program(r#"
+        enum Option<T> {
+            Some(T),
+            None,
+        }
+        let opt = Option::Some(42);
+    "#);
+    assert!(result.is_ok(), "generic enum instantiation should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: generic trait bound not implemented - needs [RUNTIME-872] ticket"]
+fn test_sqlite_1019_generic_bound() {
+    let result = execute_program(r#"
+        fn print_debug<T: Debug>(x: T) {
+            println!("{:?}", x);
+        }
+        print_debug(42);
+    "#);
+    assert!(result.is_ok(), "generic trait bound should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: generic multiple bounds not implemented - needs [RUNTIME-873] ticket"]
+fn test_sqlite_1020_generic_multi_bound() {
+    let result = execute_program(r#"
+        fn process<T: Clone + Debug>(x: T) -> T {
+            x.clone()
+        }
+        process(42);
+    "#);
+    assert!(result.is_ok(), "generic multiple bounds should work");
+}
+
+// Category 197: Operator Overloading Runtime
+#[test]
+#[ignore = "Runtime limitation: Add trait implementation not implemented - needs [RUNTIME-874] ticket"]
+fn test_sqlite_1021_add_trait() {
+    let result = execute_program(r#"
+        struct Point { x: i32, y: i32 }
+        impl Add for Point {
+            type Output = Point;
+            fn add(self, other: Point) -> Point {
+                Point { x: self.x + other.x, y: self.y + other.y }
+            }
+        }
+        let p1 = Point { x: 1, y: 2 };
+        let p2 = Point { x: 3, y: 4 };
+        let p3 = p1 + p2;
+    "#);
+    assert!(result.is_ok(), "Add trait implementation should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: Index trait implementation not implemented - needs [RUNTIME-875] ticket"]
+fn test_sqlite_1022_index_trait() {
+    let result = execute_program(r#"
+        struct Array {
+            data: Vec<i32>,
+        }
+        impl Index<usize> for Array {
+            type Output = i32;
+            fn index(&self, i: usize) -> &i32 {
+                &self.data[i]
+            }
+        }
+        let arr = Array { data: vec![1, 2, 3] };
+        let x = arr[0];
+    "#);
+    assert!(result.is_ok(), "Index trait implementation should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: Deref trait implementation not implemented - needs [RUNTIME-876] ticket"]
+fn test_sqlite_1023_deref_trait() {
+    let result = execute_program(r#"
+        struct MyBox<T>(T);
+        impl<T> Deref for MyBox<T> {
+            type Target = T;
+            fn deref(&self) -> &T {
+                &self.0
+            }
+        }
+        let b = MyBox(42);
+        let x = *b;
+    "#);
+    assert!(result.is_ok(), "Deref trait implementation should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: Display trait implementation not implemented - needs [RUNTIME-877] ticket"]
+fn test_sqlite_1024_display_trait() {
+    let result = execute_program(r#"
+        struct Point { x: i32, y: i32 }
+        impl Display for Point {
+            fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+                write!(f, "({}, {})", self.x, self.y)
+            }
+        }
+        let p = Point { x: 1, y: 2 };
+        println!("{}", p);
+    "#);
+    assert!(result.is_ok(), "Display trait implementation should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: PartialEq trait implementation not implemented - needs [RUNTIME-878] ticket"]
+fn test_sqlite_1025_partial_eq_trait() {
+    let result = execute_program(r#"
+        struct Point { x: i32, y: i32 }
+        impl PartialEq for Point {
+            fn eq(&self, other: &Self) -> bool {
+                self.x == other.x && self.y == other.y
+            }
+        }
+        let p1 = Point { x: 1, y: 2 };
+        let p2 = Point { x: 1, y: 2 };
+        let eq = p1 == p2;
+    "#);
+    assert!(result.is_ok(), "PartialEq trait implementation should work");
+}
+
+// Category 198: Drop and Resource Management
+#[test]
+#[ignore = "Runtime limitation: Drop trait basic not implemented - needs [RUNTIME-879] ticket"]
+fn test_sqlite_1026_drop_basic() {
+    let result = execute_program(r#"
+        struct Resource;
+        impl Drop for Resource {
+            fn drop(&mut self) {
+                println!("Dropping resource");
+            }
+        }
+        {
+            let r = Resource;
+        }
+    "#);
+    assert!(result.is_ok(), "Drop trait basic should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: Drop order not implemented - needs [RUNTIME-880] ticket"]
+fn test_sqlite_1027_drop_order() {
+    let result = execute_program(r#"
+        struct First;
+        struct Second;
+        impl Drop for First {
+            fn drop(&mut self) { println!("First"); }
+        }
+        impl Drop for Second {
+            fn drop(&mut self) { println!("Second"); }
+        }
+        {
+            let _a = First;
+            let _b = Second;
+        }
+    "#);
+    assert!(result.is_ok(), "Drop order should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: early drop not implemented - needs [RUNTIME-881] ticket"]
+fn test_sqlite_1028_early_drop() {
+    let result = execute_program(r#"
+        struct Resource;
+        impl Drop for Resource {
+            fn drop(&mut self) { println!("Dropped"); }
+        }
+        let r = Resource;
+        drop(r);
+    "#);
+    assert!(result.is_ok(), "early drop should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: Drop with field not implemented - needs [RUNTIME-882] ticket"]
+fn test_sqlite_1029_drop_field() {
+    let result = execute_program(r#"
+        struct Inner;
+        impl Drop for Inner {
+            fn drop(&mut self) { println!("Inner dropped"); }
+        }
+        struct Outer {
+            inner: Inner,
+        }
+        {
+            let o = Outer { inner: Inner };
+        }
+    "#);
+    assert!(result.is_ok(), "Drop with field should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: Drop with Vec not implemented - needs [RUNTIME-883] ticket"]
+fn test_sqlite_1030_drop_vec() {
+    let result = execute_program(r#"
+        struct Resource;
+        impl Drop for Resource {
+            fn drop(&mut self) { println!("Dropped"); }
+        }
+        {
+            let v = vec![Resource, Resource, Resource];
+        }
+    "#);
+    assert!(result.is_ok(), "Drop with Vec should work");
+}
+
+// Category 199: Iterator Combinators Runtime
+#[test]
+#[ignore = "Runtime limitation: iterator map runtime not implemented - needs [RUNTIME-884] ticket"]
+fn test_sqlite_1031_iter_map_runtime() {
+    let result = execute_program(r#"
+        let v = vec![1, 2, 3];
+        let doubled: Vec<_> = v.iter().map(|x| x * 2).collect();
+    "#);
+    assert!(result.is_ok(), "iterator map runtime should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: iterator filter runtime not implemented - needs [RUNTIME-885] ticket"]
+fn test_sqlite_1032_iter_filter_runtime() {
+    let result = execute_program(r#"
+        let v = vec![1, 2, 3, 4, 5];
+        let evens: Vec<_> = v.iter().filter(|x| *x % 2 == 0).collect();
+    "#);
+    assert!(result.is_ok(), "iterator filter runtime should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: iterator fold runtime not implemented - needs [RUNTIME-886] ticket"]
+fn test_sqlite_1033_iter_fold_runtime() {
+    let result = execute_program(r#"
+        let v = vec![1, 2, 3, 4];
+        let sum = v.iter().fold(0, |acc, x| acc + x);
+    "#);
+    assert!(result.is_ok(), "iterator fold runtime should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: iterator chain runtime not implemented - needs [RUNTIME-887] ticket"]
+fn test_sqlite_1034_iter_chain_runtime() {
+    let result = execute_program(r#"
+        let v1 = vec![1, 2, 3];
+        let v2 = vec![4, 5, 6];
+        let combined: Vec<_> = v1.iter().chain(v2.iter()).collect();
+    "#);
+    assert!(result.is_ok(), "iterator chain runtime should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: iterator zip runtime not implemented - needs [RUNTIME-888] ticket"]
+fn test_sqlite_1035_iter_zip_runtime() {
+    let result = execute_program(r#"
+        let v1 = vec![1, 2, 3];
+        let v2 = vec![4, 5, 6];
+        let pairs: Vec<_> = v1.iter().zip(v2.iter()).collect();
+    "#);
+    assert!(result.is_ok(), "iterator zip runtime should work");
+}
+
+// Category 200: Module System Runtime
+#[test]
+#[ignore = "Runtime limitation: module item access not implemented - needs [RUNTIME-889] ticket"]
+fn test_sqlite_1036_module_item() {
+    let result = execute_program(r#"
+        mod math {
+            pub fn add(a: i32, b: i32) -> i32 {
+                a + b
+            }
+        }
+        let result = math::add(1, 2);
+    "#);
+    assert!(result.is_ok(), "module item access should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: module nested not implemented - needs [RUNTIME-890] ticket"]
+fn test_sqlite_1037_module_nested() {
+    let result = execute_program(r#"
+        mod outer {
+            pub mod inner {
+                pub fn func() -> i32 { 42 }
+            }
+        }
+        let result = outer::inner::func();
+    "#);
+    assert!(result.is_ok(), "nested module should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: use statement not implemented - needs [RUNTIME-891] ticket"]
+fn test_sqlite_1038_use_statement() {
+    let result = execute_program(r#"
+        mod math {
+            pub fn add(a: i32, b: i32) -> i32 { a + b }
+        }
+        use math::add;
+        let result = add(1, 2);
+    "#);
+    assert!(result.is_ok(), "use statement should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: pub use re-export not implemented - needs [RUNTIME-892] ticket"]
+fn test_sqlite_1039_pub_use() {
+    let result = execute_program(r#"
+        mod inner {
+            pub fn func() -> i32 { 42 }
+        }
+        pub use inner::func;
+        let result = func();
+    "#);
+    assert!(result.is_ok(), "pub use re-export should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: self in module path not implemented - needs [RUNTIME-893] ticket"]
+fn test_sqlite_1040_module_self() {
+    let result = execute_program(r#"
+        mod parent {
+            pub fn outer() -> i32 { 1 }
+            pub mod child {
+                pub fn inner() -> i32 {
+                    self::super::outer()
+                }
+            }
+        }
+        let result = parent::child::inner();
+    "#);
+    assert!(result.is_ok(), "self in module path should work");
+}
+
 /// Test concurrent execution
 #[test]
 #[ignore = "Runtime limitation: concurrent execution not implemented - needs [RUNTIME-027] ticket"]
