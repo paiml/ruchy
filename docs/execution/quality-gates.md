@@ -7,9 +7,11 @@
 - Documentation sync: ✅ Required
 
 ## Quality Metrics
-- Cyclomatic complexity: <10
-- Cognitive complexity: <10
-- Test coverage: >80%
+- Cyclomatic complexity: ≤10
+- Cognitive complexity: ≤10
+- TDG (Technical Debt Grade): ≥A- (85 points)
+- Entropy: ≤0.8 (code maintainability)
+- Test coverage: ≥80%
 - SATD comments: 0
 - Lint warnings: 0
 
@@ -40,11 +42,27 @@ Located at: `.github/workflows/quality-enforcement.yml`
 - `make sprint-close` - Sprint quality verification
 
 ### PMAT Configuration
-Zero-tolerance quality settings in `pmat.toml`:
+Zero-tolerance quality settings enforced in pre-commit hook:
 - Max cyclomatic complexity: 10
 - Max cognitive complexity: 10
+- Min TDG grade: A- (85 points)
+- Max entropy: 0.8 (maintainability threshold)
 - Zero SATD comments allowed
 - Min test coverage: 80%
+
+**TDG Components** (all must pass):
+- Complexity score (cyclomatic + cognitive)
+- Duplication percentage
+- Documentation coverage
+- Test coverage
+- Code style consistency
+
+**Entropy Metrics** (measures code chaos):
+- Naming consistency
+- Abstraction level uniformity
+- Code organization patterns
+- Low entropy = predictable, maintainable code
+- High entropy = chaotic, hard to understand
 
 ## Setup Instructions
 Run once to enable all quality gates:
