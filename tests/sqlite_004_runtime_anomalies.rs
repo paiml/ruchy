@@ -9139,3 +9139,607 @@ fn assert_runtime_error_or_special(source: &str, expected_fragments: &[&str]) {
         }
     }
 }
+
+// ============================================================================
+// Category 151: AsRef and AsMut Traits Runtime
+// ============================================================================
+
+/// Test AsRef trait basic
+#[test]
+#[ignore = "Runtime limitation: AsRef trait basic not implemented - needs [RUNTIME-644] ticket"]
+fn test_sqlite_791_asref_basic() {
+    let result = execute_program(r#"
+        let s = String::from("hello");
+        let r: &str = s.as_ref();
+    "#);
+    assert!(result.is_ok(), "AsRef trait basic should work");
+}
+
+/// Test AsRef with generics
+#[test]
+#[ignore = "Runtime limitation: AsRef trait generics not implemented - needs [RUNTIME-645] ticket"]
+fn test_sqlite_792_asref_generic() {
+    let result = execute_program(r#"
+        fun takes_str<T: AsRef<str>>(x: T) {}
+        takes_str("hello");
+    "#);
+    assert!(result.is_ok(), "AsRef trait generics should work");
+}
+
+/// Test AsMut trait
+#[test]
+#[ignore = "Runtime limitation: AsMut trait not implemented - needs [RUNTIME-646] ticket"]
+fn test_sqlite_793_asmut() {
+    let result = execute_program(r#"
+        let mut v = vec![1, 2, 3];
+        let s: &mut [i32] = v.as_mut();
+    "#);
+    assert!(result.is_ok(), "AsMut trait should work");
+}
+
+/// Test AsRef Vec to slice
+#[test]
+#[ignore = "Runtime limitation: AsRef Vec to slice not implemented - needs [RUNTIME-647] ticket"]
+fn test_sqlite_794_asref_vec() {
+    let result = execute_program(r#"
+        let v = vec![1, 2, 3];
+        let s: &[i32] = v.as_ref();
+    "#);
+    assert!(result.is_ok(), "AsRef Vec to slice should work");
+}
+
+/// Test AsRef String to str
+#[test]
+#[ignore = "Runtime limitation: AsRef String to str not implemented - needs [RUNTIME-648] ticket"]
+fn test_sqlite_795_asref_string() {
+    let result = execute_program(r#"
+        let s = String::from("test");
+        let r: &str = s.as_ref();
+    "#);
+    assert!(result.is_ok(), "AsRef String to str should work");
+}
+
+// ============================================================================
+// Category 152: Borrow and BorrowMut Traits Runtime
+// ============================================================================
+
+/// Test Borrow trait basic
+#[test]
+#[ignore = "Runtime limitation: Borrow trait basic not implemented - needs [RUNTIME-649] ticket"]
+fn test_sqlite_796_borrow_basic() {
+    let result = execute_program(r#"
+        use std::borrow::Borrow;
+        let s = String::from("hello");
+        let r: &str = s.borrow();
+    "#);
+    assert!(result.is_ok(), "Borrow trait basic should work");
+}
+
+/// Test BorrowMut trait
+#[test]
+#[ignore = "Runtime limitation: BorrowMut trait not implemented - needs [RUNTIME-650] ticket"]
+fn test_sqlite_797_borrow_mut() {
+    let result = execute_program(r#"
+        use std::borrow::BorrowMut;
+        let mut v = vec![1, 2, 3];
+        let s: &mut [i32] = v.borrow_mut();
+    "#);
+    assert!(result.is_ok(), "BorrowMut trait should work");
+}
+
+/// Test Borrow in HashMap
+#[test]
+#[ignore = "Runtime limitation: Borrow in HashMap not implemented - needs [RUNTIME-651] ticket"]
+fn test_sqlite_798_borrow_hashmap() {
+    let result = execute_program(r#"
+        let mut map = HashMap::new();
+        map.insert(String::from("key"), 42);
+        let val = map.get("key");
+    "#);
+    assert!(result.is_ok(), "Borrow in HashMap should work");
+}
+
+/// Test Borrow trait generic
+#[test]
+#[ignore = "Runtime limitation: Borrow trait generic not implemented - needs [RUNTIME-652] ticket"]
+fn test_sqlite_799_borrow_generic() {
+    let result = execute_program(r#"
+        fun takes_borrowed<T, B: ?Sized>(x: &T) where T: Borrow<B> {}
+        takes_borrowed(&String::from("test"));
+    "#);
+    assert!(result.is_ok(), "Borrow trait generic should work");
+}
+
+/// Test Borrow ToOwned
+#[test]
+#[ignore = "Runtime limitation: Borrow ToOwned not implemented - needs [RUNTIME-653] ticket"]
+fn test_sqlite_800_borrow_to_owned() {
+    let result = execute_program(r#"
+        let s: &str = "hello";
+        let owned: String = s.to_owned();
+    "#);
+    assert!(result.is_ok(), "Borrow ToOwned should work");
+}
+
+// ============================================================================
+// Category 153: Into and TryInto Traits Runtime
+// ============================================================================
+
+/// Test Into trait basic
+#[test]
+#[ignore = "Runtime limitation: Into trait basic not implemented - needs [RUNTIME-654] ticket"]
+fn test_sqlite_801_into_basic() {
+    let result = execute_program(r#"
+        let x: i64 = 42i32.into();
+    "#);
+    assert!(result.is_ok(), "Into trait basic should work");
+}
+
+/// Test Into String from &str
+#[test]
+#[ignore = "Runtime limitation: Into String from str not implemented - needs [RUNTIME-655] ticket"]
+fn test_sqlite_802_into_string() {
+    let result = execute_program(r#"
+        let s: String = "hello".into();
+    "#);
+    assert!(result.is_ok(), "Into String from str should work");
+}
+
+/// Test TryInto trait
+#[test]
+#[ignore = "Runtime limitation: TryInto trait not implemented - needs [RUNTIME-656] ticket"]
+fn test_sqlite_803_try_into() {
+    let result = execute_program(r#"
+        let x: Result<i32, _> = 42i64.try_into();
+    "#);
+    assert!(result.is_ok(), "TryInto trait should work");
+}
+
+/// Test Into generic function
+#[test]
+#[ignore = "Runtime limitation: Into generic function not implemented - needs [RUNTIME-657] ticket"]
+fn test_sqlite_804_into_generic() {
+    let result = execute_program(r#"
+        fun takes_into<T: Into<String>>(x: T) -> String { x.into() }
+        let result = takes_into("test");
+    "#);
+    assert!(result.is_ok(), "Into generic function should work");
+}
+
+/// Test TryInto error case
+#[test]
+#[ignore = "Runtime limitation: TryInto error case not implemented - needs [RUNTIME-658] ticket"]
+fn test_sqlite_805_try_into_err() {
+    let result = execute_program(r#"
+        let x: Result<i32, _> = 999999999999i64.try_into();
+    "#);
+    assert!(result.is_ok(), "TryInto error case should work");
+}
+
+// ============================================================================
+// Category 154: FromIterator and IntoIterator Runtime
+// ============================================================================
+
+/// Test FromIterator Vec
+#[test]
+#[ignore = "Runtime limitation: FromIterator Vec not implemented - needs [RUNTIME-659] ticket"]
+fn test_sqlite_806_from_iter_vec() {
+    let result = execute_program(r#"
+        let v: Vec<i32> = (0..5).collect();
+    "#);
+    assert!(result.is_ok(), "FromIterator Vec should work");
+}
+
+/// Test FromIterator String
+#[test]
+#[ignore = "Runtime limitation: FromIterator String not implemented - needs [RUNTIME-660] ticket"]
+fn test_sqlite_807_from_iter_string() {
+    let result = execute_program(r#"
+        let s: String = ['h', 'e', 'l', 'l', 'o'].iter().collect();
+    "#);
+    assert!(result.is_ok(), "FromIterator String should work");
+}
+
+/// Test IntoIterator for loop
+#[test]
+#[ignore = "Runtime limitation: IntoIterator for loop not implemented - needs [RUNTIME-661] ticket"]
+fn test_sqlite_808_into_iter_for() {
+    let result = execute_program(r#"
+        let v = vec![1, 2, 3];
+        for x in v { }
+    "#);
+    assert!(result.is_ok(), "IntoIterator for loop should work");
+}
+
+/// Test FromIterator HashMap
+#[test]
+#[ignore = "Runtime limitation: FromIterator HashMap not implemented - needs [RUNTIME-662] ticket"]
+fn test_sqlite_809_from_iter_hashmap() {
+    let result = execute_program(r#"
+        let map: HashMap<i32, i32> = [(1, 2), (3, 4)].iter().cloned().collect();
+    "#);
+    assert!(result.is_ok(), "FromIterator HashMap should work");
+}
+
+/// Test IntoIterator explicit
+#[test]
+#[ignore = "Runtime limitation: IntoIterator explicit not implemented - needs [RUNTIME-663] ticket"]
+fn test_sqlite_810_into_iter_explicit() {
+    let result = execute_program(r#"
+        let v = vec![1, 2, 3];
+        let iter = v.into_iter();
+    "#);
+    assert!(result.is_ok(), "IntoIterator explicit should work");
+}
+
+// ============================================================================
+// Category 155: Add and Sub Operator Traits Runtime
+// ============================================================================
+
+/// Test Add trait basic
+#[test]
+#[ignore = "Runtime limitation: Add trait basic not implemented - needs [RUNTIME-664] ticket"]
+fn test_sqlite_811_add_trait() {
+    let result = execute_program(r#"
+        use std::ops::Add;
+        let x = 1.add(2);
+    "#);
+    assert!(result.is_ok(), "Add trait basic should work");
+}
+
+/// Test Sub trait basic
+#[test]
+#[ignore = "Runtime limitation: Sub trait basic not implemented - needs [RUNTIME-665] ticket"]
+fn test_sqlite_812_sub_trait() {
+    let result = execute_program(r#"
+        use std::ops::Sub;
+        let x = 5.sub(3);
+    "#);
+    assert!(result.is_ok(), "Sub trait basic should work");
+}
+
+/// Test AddAssign trait
+#[test]
+#[ignore = "Runtime limitation: AddAssign trait not implemented - needs [RUNTIME-666] ticket"]
+fn test_sqlite_813_add_assign() {
+    let result = execute_program(r#"
+        let mut x = 5;
+        x += 3;
+    "#);
+    assert!(result.is_ok(), "AddAssign trait should work");
+}
+
+/// Test SubAssign trait
+#[test]
+#[ignore = "Runtime limitation: SubAssign trait not implemented - needs [RUNTIME-667] ticket"]
+fn test_sqlite_814_sub_assign() {
+    let result = execute_program(r#"
+        let mut x = 5;
+        x -= 3;
+    "#);
+    assert!(result.is_ok(), "SubAssign trait should work");
+}
+
+/// Test Add trait custom type
+#[test]
+#[ignore = "Runtime limitation: Add trait custom type not implemented - needs [RUNTIME-668] ticket"]
+fn test_sqlite_815_add_custom() {
+    let result = execute_program(r#"
+        struct Point { x: i32, y: i32 }
+        impl Add for Point {
+            type Output = Point;
+            fun add(self, other: Point) -> Point {
+                Point { x: self.x + other.x, y: self.y + other.y }
+            }
+        }
+        let p = Point { x: 1, y: 2 } + Point { x: 3, y: 4 };
+    "#);
+    assert!(result.is_ok(), "Add trait custom type should work");
+}
+
+// ============================================================================
+// Category 156: Mul and Div Operator Traits Runtime
+// ============================================================================
+
+/// Test Mul trait basic
+#[test]
+#[ignore = "Runtime limitation: Mul trait basic not implemented - needs [RUNTIME-669] ticket"]
+fn test_sqlite_816_mul_trait() {
+    let result = execute_program(r#"
+        use std::ops::Mul;
+        let x = 3.mul(4);
+    "#);
+    assert!(result.is_ok(), "Mul trait basic should work");
+}
+
+/// Test Div trait basic
+#[test]
+#[ignore = "Runtime limitation: Div trait basic not implemented - needs [RUNTIME-670] ticket"]
+fn test_sqlite_817_div_trait() {
+    let result = execute_program(r#"
+        use std::ops::Div;
+        let x = 12.div(3);
+    "#);
+    assert!(result.is_ok(), "Div trait basic should work");
+}
+
+/// Test MulAssign trait
+#[test]
+#[ignore = "Runtime limitation: MulAssign trait not implemented - needs [RUNTIME-671] ticket"]
+fn test_sqlite_818_mul_assign() {
+    let result = execute_program(r#"
+        let mut x = 5;
+        x *= 3;
+    "#);
+    assert!(result.is_ok(), "MulAssign trait should work");
+}
+
+/// Test DivAssign trait
+#[test]
+#[ignore = "Runtime limitation: DivAssign trait not implemented - needs [RUNTIME-672] ticket"]
+fn test_sqlite_819_div_assign() {
+    let result = execute_program(r#"
+        let mut x = 15;
+        x /= 3;
+    "#);
+    assert!(result.is_ok(), "DivAssign trait should work");
+}
+
+/// Test Rem trait (modulo)
+#[test]
+#[ignore = "Runtime limitation: Rem trait not implemented - needs [RUNTIME-673] ticket"]
+fn test_sqlite_820_rem_trait() {
+    let result = execute_program(r#"
+        use std::ops::Rem;
+        let x = 10.rem(3);
+    "#);
+    assert!(result.is_ok(), "Rem trait should work");
+}
+
+// ============================================================================
+// Category 157: BitAnd and BitOr Operator Traits Runtime
+// ============================================================================
+
+/// Test BitAnd trait basic
+#[test]
+#[ignore = "Runtime limitation: BitAnd trait basic not implemented - needs [RUNTIME-674] ticket"]
+fn test_sqlite_821_bitand_trait() {
+    let result = execute_program(r#"
+        use std::ops::BitAnd;
+        let x = 0b1010.bitand(0b1100);
+    "#);
+    assert!(result.is_ok(), "BitAnd trait basic should work");
+}
+
+/// Test BitOr trait basic
+#[test]
+#[ignore = "Runtime limitation: BitOr trait basic not implemented - needs [RUNTIME-675] ticket"]
+fn test_sqlite_822_bitor_trait() {
+    let result = execute_program(r#"
+        use std::ops::BitOr;
+        let x = 0b1010.bitor(0b1100);
+    "#);
+    assert!(result.is_ok(), "BitOr trait basic should work");
+}
+
+/// Test BitXor trait
+#[test]
+#[ignore = "Runtime limitation: BitXor trait not implemented - needs [RUNTIME-676] ticket"]
+fn test_sqlite_823_bitxor_trait() {
+    let result = execute_program(r#"
+        use std::ops::BitXor;
+        let x = 0b1010.bitxor(0b1100);
+    "#);
+    assert!(result.is_ok(), "BitXor trait should work");
+}
+
+/// Test BitAndAssign trait
+#[test]
+#[ignore = "Runtime limitation: BitAndAssign trait not implemented - needs [RUNTIME-677] ticket"]
+fn test_sqlite_824_bitand_assign() {
+    let result = execute_program(r#"
+        let mut x = 0b1111;
+        x &= 0b1010;
+    "#);
+    assert!(result.is_ok(), "BitAndAssign trait should work");
+}
+
+/// Test Not trait (bitwise negation)
+#[test]
+#[ignore = "Runtime limitation: Not trait not implemented - needs [RUNTIME-678] ticket"]
+fn test_sqlite_825_not_trait() {
+    let result = execute_program(r#"
+        use std::ops::Not;
+        let x = (!0b1010) as u8;
+    "#);
+    assert!(result.is_ok(), "Not trait should work");
+}
+
+// ============================================================================
+// Category 158: Shl and Shr Operator Traits Runtime
+// ============================================================================
+
+/// Test Shl trait basic
+#[test]
+#[ignore = "Runtime limitation: Shl trait basic not implemented - needs [RUNTIME-679] ticket"]
+fn test_sqlite_826_shl_trait() {
+    let result = execute_program(r#"
+        use std::ops::Shl;
+        let x = 1.shl(2);
+    "#);
+    assert!(result.is_ok(), "Shl trait basic should work");
+}
+
+/// Test Shr trait basic
+#[test]
+#[ignore = "Runtime limitation: Shr trait basic not implemented - needs [RUNTIME-680] ticket"]
+fn test_sqlite_827_shr_trait() {
+    let result = execute_program(r#"
+        use std::ops::Shr;
+        let x = 8.shr(2);
+    "#);
+    assert!(result.is_ok(), "Shr trait basic should work");
+}
+
+/// Test ShlAssign trait
+#[test]
+#[ignore = "Runtime limitation: ShlAssign trait not implemented - needs [RUNTIME-681] ticket"]
+fn test_sqlite_828_shl_assign() {
+    let result = execute_program(r#"
+        let mut x = 1;
+        x <<= 3;
+    "#);
+    assert!(result.is_ok(), "ShlAssign trait should work");
+}
+
+/// Test ShrAssign trait
+#[test]
+#[ignore = "Runtime limitation: ShrAssign trait not implemented - needs [RUNTIME-682] ticket"]
+fn test_sqlite_829_shr_assign() {
+    let result = execute_program(r#"
+        let mut x = 16;
+        x >>= 2;
+    "#);
+    assert!(result.is_ok(), "ShrAssign trait should work");
+}
+
+/// Test shift overflow behavior
+#[test]
+#[ignore = "Runtime limitation: shift overflow behavior not implemented - needs [RUNTIME-683] ticket"]
+fn test_sqlite_830_shift_overflow() {
+    let result = execute_program(r#"
+        let x = 1i32 << 31;
+    "#);
+    assert!(result.is_ok(), "Shift overflow behavior should work");
+}
+
+// ============================================================================
+// Category 159: Index and IndexMut Traits Runtime
+// ============================================================================
+
+/// Test Index trait Vec
+#[test]
+#[ignore = "Runtime limitation: Index trait Vec not implemented - needs [RUNTIME-684] ticket"]
+fn test_sqlite_831_index_vec() {
+    let result = execute_program(r#"
+        use std::ops::Index;
+        let v = vec![1, 2, 3];
+        let x = v.index(1);
+    "#);
+    assert!(result.is_ok(), "Index trait Vec should work");
+}
+
+/// Test IndexMut trait Vec
+#[test]
+#[ignore = "Runtime limitation: IndexMut trait Vec not implemented - needs [RUNTIME-685] ticket"]
+fn test_sqlite_832_index_mut_vec() {
+    let result = execute_program(r#"
+        use std::ops::IndexMut;
+        let mut v = vec![1, 2, 3];
+        v.index_mut(1) = 5;
+    "#);
+    assert!(result.is_ok(), "IndexMut trait Vec should work");
+}
+
+/// Test Index trait HashMap
+#[test]
+#[ignore = "Runtime limitation: Index trait HashMap not implemented - needs [RUNTIME-686] ticket"]
+fn test_sqlite_833_index_hashmap() {
+    let result = execute_program(r#"
+        let mut map = HashMap::new();
+        map.insert("key", 42);
+        let x = &map["key"];
+    "#);
+    assert!(result.is_ok(), "Index trait HashMap should work");
+}
+
+/// Test Index trait custom type
+#[test]
+#[ignore = "Runtime limitation: Index trait custom type not implemented - needs [RUNTIME-687] ticket"]
+fn test_sqlite_834_index_custom() {
+    let result = execute_program(r#"
+        struct Matrix { data: Vec<i32> }
+        impl Index<usize> for Matrix {
+            type Output = i32;
+            fun index(&self, i: usize) -> &i32 { &self.data[i] }
+        }
+        let m = Matrix { data: vec![1, 2, 3] };
+        let x = m[0];
+    "#);
+    assert!(result.is_ok(), "Index trait custom type should work");
+}
+
+/// Test Index out of bounds
+#[test]
+#[ignore = "Runtime limitation: Index out of bounds not implemented - needs [RUNTIME-688] ticket"]
+fn test_sqlite_835_index_bounds() {
+    let result = execute_program(r#"
+        let v = vec![1, 2, 3];
+        let x = v[10];
+    "#);
+    assert!(result.is_err(), "Index out of bounds should panic");
+}
+
+// ============================================================================
+// Category 160: Fn, FnMut, and FnOnce Traits Runtime
+// ============================================================================
+
+/// Test Fn trait basic
+#[test]
+#[ignore = "Runtime limitation: Fn trait basic not implemented - needs [RUNTIME-689] ticket"]
+fn test_sqlite_836_fn_trait() {
+    let result = execute_program(r#"
+        fun call_fn<F: Fn(i32) -> i32>(f: F) -> i32 { f(5) }
+        let result = call_fn(|x| x + 1);
+    "#);
+    assert!(result.is_ok(), "Fn trait basic should work");
+}
+
+/// Test FnMut trait
+#[test]
+#[ignore = "Runtime limitation: FnMut trait not implemented - needs [RUNTIME-690] ticket"]
+fn test_sqlite_837_fn_mut_trait() {
+    let result = execute_program(r#"
+        fun call_fn_mut<F: FnMut(i32) -> i32>(mut f: F) -> i32 { f(5) }
+        let mut counter = 0;
+        call_fn_mut(|x| { counter += 1; x + counter });
+    "#);
+    assert!(result.is_ok(), "FnMut trait should work");
+}
+
+/// Test FnOnce trait
+#[test]
+#[ignore = "Runtime limitation: FnOnce trait not implemented - needs [RUNTIME-691] ticket"]
+fn test_sqlite_838_fn_once_trait() {
+    let result = execute_program(r#"
+        fun call_fn_once<F: FnOnce() -> i32>(f: F) -> i32 { f() }
+        let x = Box::new(42);
+        call_fn_once(|| *x);
+    "#);
+    assert!(result.is_ok(), "FnOnce trait should work");
+}
+
+/// Test Fn trait with closure capture
+#[test]
+#[ignore = "Runtime limitation: Fn trait closure capture not implemented - needs [RUNTIME-692] ticket"]
+fn test_sqlite_839_fn_capture() {
+    let result = execute_program(r#"
+        let y = 10;
+        fun call_fn<F: Fn(i32) -> i32>(f: F) -> i32 { f(5) }
+        let result = call_fn(|x| x + y);
+    "#);
+    assert!(result.is_ok(), "Fn trait with closure capture should work");
+}
+
+/// Test FnMut trait with mutable capture
+#[test]
+#[ignore = "Runtime limitation: FnMut trait mutable capture not implemented - needs [RUNTIME-693] ticket"]
+fn test_sqlite_840_fn_mut_capture() {
+    let result = execute_program(r#"
+        let mut sum = 0;
+        let mut add = |x| { sum += x; sum };
+        add(5);
+        add(10);
+    "#);
+    assert!(result.is_ok(), "FnMut trait with mutable capture should work");
+}
