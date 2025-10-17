@@ -3720,6 +3720,121 @@ fn test_sqlite_366_trait_object_send_sync() {
 #[test] fn test_sqlite_1356_unsafe_static() { assert_parses("unsafe { static mut X: i32 = 0; }"); }
 
 // ============================================================================
+// Category 231: Derive Macro Syntax
+// ============================================================================
+
+#[test] fn test_sqlite_1357_derive_single() { assert_parses("#[derive(Debug)] struct Foo;"); }
+#[test] fn test_sqlite_1358_derive_multi() { assert_parses("#[derive(Debug, Clone)] struct Foo;"); }
+#[test] fn test_sqlite_1359_derive_copy() { assert_parses("#[derive(Copy, Clone)] struct Foo;"); }
+#[test] fn test_sqlite_1360_derive_eq() { assert_parses("#[derive(PartialEq, Eq)] struct Foo;"); }
+#[test] fn test_sqlite_1361_derive_ord() { assert_parses("#[derive(PartialOrd, Ord)] struct Foo;"); }
+
+// ============================================================================
+// Category 232: Cfg Attribute Syntax
+// ============================================================================
+
+#[test] fn test_sqlite_1362_cfg_test() { assert_parses("#[cfg(test)] fn foo() { }"); }
+#[ignore = "Parser limitation: cfg not not supported - needs [PARSER-449] ticket"]
+#[test] fn test_sqlite_1363_cfg_not() { assert_parses("#[cfg(not(test))] fn foo() { }"); }
+#[ignore = "Parser limitation: cfg any not supported - needs [PARSER-450] ticket"]
+#[test] fn test_sqlite_1364_cfg_any() { assert_parses("#[cfg(any(unix, windows))] fn foo() { }"); }
+#[ignore = "Parser limitation: cfg all not supported - needs [PARSER-451] ticket"]
+#[test] fn test_sqlite_1365_cfg_all() { assert_parses("#[cfg(all(unix, target_pointer_width = \"64\"))] fn foo() { }"); }
+#[test] fn test_sqlite_1366_cfg_attr() { assert_parses("#[cfg_attr(test, ignore)] fn foo() { }"); }
+
+// ============================================================================
+// Category 233: Test Attribute Syntax
+// ============================================================================
+
+#[test] fn test_sqlite_1367_test_simple() { assert_parses("#[test] fn test_foo() { }"); }
+#[test] fn test_sqlite_1368_test_ignore() { assert_parses("#[test] #[ignore] fn test_foo() { }"); }
+#[test] fn test_sqlite_1369_test_should_panic() { assert_parses("#[test] #[should_panic] fn test_foo() { }"); }
+#[test] fn test_sqlite_1370_test_should_panic_msg() { assert_parses("#[test] #[should_panic(expected = \"panic\")] fn test_foo() { }"); }
+#[test] fn test_sqlite_1371_bench() { assert_parses("#[bench] fn bench_foo(b: &mut Bencher) { }"); }
+
+// ============================================================================
+// Category 234: Macro Rules Syntax
+// ============================================================================
+
+#[ignore = "Parser limitation: macro_rules simple not supported - needs [PARSER-452] ticket"]
+#[test] fn test_sqlite_1372_macro_rules_simple() { assert_parses("macro_rules! foo { () => { }; }"); }
+#[ignore = "Parser limitation: macro_rules expr not supported - needs [PARSER-453] ticket"]
+#[test] fn test_sqlite_1373_macro_rules_expr() { assert_parses("macro_rules! foo { ($e:expr) => { $e }; }"); }
+#[ignore = "Parser limitation: macro_rules ident not supported - needs [PARSER-454] ticket"]
+#[test] fn test_sqlite_1374_macro_rules_ident() { assert_parses("macro_rules! foo { ($i:ident) => { let $i = 0; }; }"); }
+#[ignore = "Parser limitation: macro_rules multi not supported - needs [PARSER-455] ticket"]
+#[test] fn test_sqlite_1375_macro_rules_multi() { assert_parses("macro_rules! foo { ($($e:expr),*) => { }; }"); }
+#[ignore = "Parser limitation: macro_rules arms not supported - needs [PARSER-456] ticket"]
+#[test] fn test_sqlite_1376_macro_rules_arms() { assert_parses("macro_rules! foo { () => { }; ($e:expr) => { $e }; }"); }
+
+// ============================================================================
+// Category 235: Inline Attribute Syntax
+// ============================================================================
+
+#[test] fn test_sqlite_1377_inline_simple() { assert_parses("#[inline] fn foo() { }"); }
+#[test] fn test_sqlite_1378_inline_always() { assert_parses("#[inline(always)] fn foo() { }"); }
+#[test] fn test_sqlite_1379_inline_never() { assert_parses("#[inline(never)] fn foo() { }"); }
+#[test] fn test_sqlite_1380_cold() { assert_parses("#[cold] fn foo() { }"); }
+#[test] fn test_sqlite_1381_track_caller() { assert_parses("#[track_caller] fn foo() { }"); }
+
+// ============================================================================
+// Category 236: Doc Comment Syntax
+// ============================================================================
+
+#[test] fn test_sqlite_1382_doc_outer() { assert_parses("/// Doc comment\nfn foo() { }"); }
+#[ignore = "Parser limitation: doc inner not supported - needs [PARSER-457] ticket"]
+#[test] fn test_sqlite_1383_doc_inner() { assert_parses("fn foo() { //! Inner doc\n}"); }
+#[test] fn test_sqlite_1384_doc_multi() { assert_parses("/// Line 1\n/// Line 2\nfn foo() { }"); }
+#[ignore = "Parser limitation: doc attr not supported - needs [PARSER-458] ticket"]
+#[test] fn test_sqlite_1385_doc_attr() { assert_parses("#[doc = \"Documentation\"] fn foo() { }"); }
+#[test] fn test_sqlite_1386_doc_hidden() { assert_parses("#[doc(hidden)] fn foo() { }"); }
+
+// ============================================================================
+// Category 237: Path Segment Syntax
+// ============================================================================
+
+#[test] fn test_sqlite_1387_path_simple() { assert_parses("foo::bar"); }
+#[test] fn test_sqlite_1388_path_generic() { assert_parses("Vec::<i32>::new()"); }
+#[ignore = "Parser limitation: path self not supported - needs [PARSER-459] ticket"]
+#[test] fn test_sqlite_1389_path_self() { assert_parses("self::foo"); }
+#[ignore = "Parser limitation: path super not supported - needs [PARSER-460] ticket"]
+#[test] fn test_sqlite_1390_path_super() { assert_parses("super::foo"); }
+#[ignore = "Parser limitation: path crate not supported - needs [PARSER-461] ticket"]
+#[test] fn test_sqlite_1391_path_crate() { assert_parses("crate::foo"); }
+
+// ============================================================================
+// Category 238: Destructuring Assignment Syntax
+// ============================================================================
+
+#[test] fn test_sqlite_1392_destruct_assign_tuple() { assert_parses("(a, b) = (1, 2);"); }
+#[test] fn test_sqlite_1393_destruct_assign_struct() { assert_parses("Point { x, y } = p;"); }
+#[test] fn test_sqlite_1394_destruct_assign_nested() { assert_parses("(a, (b, c)) = (1, (2, 3));"); }
+#[test] fn test_sqlite_1395_destruct_assign_ignore() { assert_parses("(a, _) = (1, 2);"); }
+#[ignore = "Parser limitation: destructuring assignment with rest not supported - needs [PARSER-462] ticket"]
+#[test] fn test_sqlite_1396_destruct_assign_rest() { assert_parses("(a, ..) = (1, 2, 3);"); }
+
+// ============================================================================
+// Category 239: Question Mark Operator Variations
+// ============================================================================
+
+#[test] fn test_sqlite_1397_try_result() { assert_parses("foo()?;"); }
+#[test] fn test_sqlite_1398_try_option() { assert_parses("bar()?.baz();"); }
+#[test] fn test_sqlite_1399_try_chain() { assert_parses("foo()?.bar()?.baz();"); }
+#[test] fn test_sqlite_1400_try_field() { assert_parses("obj?.field;"); }
+#[ignore = "Parser limitation: try operator on index not supported - needs [PARSER-463] ticket"]
+#[test] fn test_sqlite_1401_try_index() { assert_parses("arr?[0];"); }
+
+// ============================================================================
+// Category 240: Numeric Literal Variations
+// ============================================================================
+
+#[test] fn test_sqlite_1402_num_underscore() { assert_parses("let x = 1_000_000;"); }
+#[test] fn test_sqlite_1403_num_hex() { assert_parses("let x = 0xFF;"); }
+#[test] fn test_sqlite_1404_num_octal() { assert_parses("let x = 0o77;"); }
+#[test] fn test_sqlite_1405_num_binary() { assert_parses("let x = 0b1010;"); }
+#[test] fn test_sqlite_1406_num_suffix() { assert_parses("let x = 42u32;"); }
+
+// ============================================================================
 // Error Handling
 // ============================================================================
 
