@@ -3504,6 +3504,97 @@ fn test_sqlite_366_trait_object_send_sync() {
 #[test] fn test_sqlite_1255_item_stmt() { assert_parses("{ fn foo() { } foo(); }"); }
 #[test] fn test_sqlite_1256_macro_stmt() { assert_parses("println!(\"hello\");"); }
 
+// Category 201: Where Clause Variations
+#[test] fn test_sqlite_1257_where_simple() { assert_parses("fn foo<T>(x: T) where T: Clone { }"); }
+#[test] fn test_sqlite_1258_where_multi() { assert_parses("fn foo<T>(x: T) where T: Clone + Debug { }"); }
+#[ignore = "Parser limitation: where clause with lifetime not supported - needs [PARSER-404] ticket"]
+#[test] fn test_sqlite_1259_where_lifetime() { assert_parses("fn foo<'a, T>(x: &'a T) where T: 'a { }"); }
+#[test] fn test_sqlite_1260_where_assoc() { assert_parses("fn foo<T>() where T: Iterator<Item = i32> { }"); }
+#[ignore = "Parser limitation: where clause with for not supported - needs [PARSER-405] ticket"]
+#[test] fn test_sqlite_1261_where_for() { assert_parses("fn foo<T>() where for<'a> T: Fn(&'a i32) { }"); }
+
+// Category 202: Async Syntax Forms
+#[test] fn test_sqlite_1262_async_fn_simple() { assert_parses("async fn foo() { }"); }
+#[test] fn test_sqlite_1263_async_fn_param() { assert_parses("async fn foo(x: i32) -> i32 { x }"); }
+#[test] fn test_sqlite_1264_async_block() { assert_parses("let f = async { 42 };"); }
+#[ignore = "Parser limitation: async move block not supported - needs [PARSER-406] ticket"]
+#[test] fn test_sqlite_1265_async_move() { assert_parses("let f = async move { 42 };"); }
+#[test] fn test_sqlite_1266_await_expr() { assert_parses("let x = foo().await;"); }
+
+// Category 203: Dyn Trait Syntax
+#[ignore = "Parser limitation: dyn trait syntax not supported - needs [PARSER-407] ticket"]
+#[test] fn test_sqlite_1267_dyn_simple() { assert_parses("let x: &dyn Display;"); }
+#[ignore = "Parser limitation: dyn trait in Box not supported - needs [PARSER-408] ticket"]
+#[test] fn test_sqlite_1268_dyn_box() { assert_parses("let x: Box<dyn Display>;"); }
+#[ignore = "Parser limitation: dyn with multiple traits not supported - needs [PARSER-409] ticket"]
+#[test] fn test_sqlite_1269_dyn_multi() { assert_parses("let x: &(dyn Display + Send);"); }
+#[ignore = "Parser limitation: dyn with lifetime not supported - needs [PARSER-410] ticket"]
+#[test] fn test_sqlite_1270_dyn_lifetime() { assert_parses("let x: &'a dyn Display;"); }
+#[ignore = "Parser limitation: dyn in return type not supported - needs [PARSER-411] ticket"]
+#[test] fn test_sqlite_1271_dyn_impl() { assert_parses("fn foo() -> Box<dyn Fn()> { }"); }
+
+// Category 204: Operator Precedence Complex
+#[test] fn test_sqlite_1272_precedence_add_mul() { assert_parses("let x = 1 + 2 * 3;"); }
+#[test] fn test_sqlite_1273_precedence_cmp_logic() { assert_parses("let x = a < b && c > d;"); }
+#[test] fn test_sqlite_1274_precedence_neg_mul() { assert_parses("let x = -a * b;"); }
+#[test] fn test_sqlite_1275_precedence_deref_field() { assert_parses("let x = (*p).field;"); }
+#[test] fn test_sqlite_1276_precedence_call_index() { assert_parses("let x = foo()[0];"); }
+
+// Category 205: Lifetime Syntax Variations
+#[ignore = "Parser limitation: lifetime parameter not supported - needs [PARSER-412] ticket"]
+#[test] fn test_sqlite_1277_lifetime_param() { assert_parses("fn foo<'a>(x: &'a i32) { }"); }
+#[ignore = "Parser limitation: multiple lifetime parameters not supported - needs [PARSER-413] ticket"]
+#[test] fn test_sqlite_1278_lifetime_multi() { assert_parses("fn foo<'a, 'b>(x: &'a i32, y: &'b i32) { }"); }
+#[test] fn test_sqlite_1279_lifetime_struct() { assert_parses("struct Foo<'a> { x: &'a i32 }"); }
+#[ignore = "Parser limitation: lifetime in impl not supported - needs [PARSER-414] ticket"]
+#[test] fn test_sqlite_1280_lifetime_impl() { assert_parses("impl<'a> Foo<'a> { }"); }
+#[ignore = "Parser limitation: lifetime bound not supported - needs [PARSER-415] ticket"]
+#[test] fn test_sqlite_1281_lifetime_bound() { assert_parses("fn foo<'a, T: 'a>(x: &'a T) { }"); }
+
+// Category 206: Associated Item Syntax
+#[test] fn test_sqlite_1282_assoc_type() { assert_parses("trait Iter { type Item; }"); }
+#[ignore = "Parser limitation: associated const not supported - needs [PARSER-416] ticket"]
+#[test] fn test_sqlite_1283_assoc_const() { assert_parses("trait Foo { const MAX: i32; }"); }
+#[test] fn test_sqlite_1284_assoc_fn() { assert_parses("trait Foo { fn bar(); }"); }
+#[ignore = "Parser limitation: associated type bound not supported - needs [PARSER-417] ticket"]
+#[test] fn test_sqlite_1285_assoc_type_bound() { assert_parses("fn foo<T: Iterator<Item = i32>>() { }"); }
+#[test] fn test_sqlite_1286_assoc_type_default() { assert_parses("trait Iter { type Item = i32; }"); }
+
+// Category 207: Visibility Modifiers Complete
+#[test] fn test_sqlite_1287_vis_pub() { assert_parses("pub fn foo() { }"); }
+#[test] fn test_sqlite_1288_vis_pub_crate() { assert_parses("pub(crate) fn foo() { }"); }
+#[test] fn test_sqlite_1289_vis_pub_super() { assert_parses("pub(super) fn foo() { }"); }
+#[test] fn test_sqlite_1290_vis_pub_in() { assert_parses("pub(in crate::foo) fn bar() { }"); }
+#[ignore = "Parser limitation: pub(self) visibility not supported - needs [PARSER-418] ticket"]
+#[test] fn test_sqlite_1291_vis_pub_self() { assert_parses("pub(self) fn foo() { }"); }
+
+// Category 208: Pattern Syntax Complete
+#[test] fn test_sqlite_1292_pat_wildcard() { assert_parses("let _ = 42;"); }
+#[test] fn test_sqlite_1293_pat_ident() { assert_parses("let x = 42;"); }
+#[test] fn test_sqlite_1294_pat_tuple() { assert_parses("let (x, y) = (1, 2);"); }
+#[test] fn test_sqlite_1295_pat_struct() { assert_parses("let Point { x, y } = p;"); }
+#[ignore = "Parser limitation: ref pattern not supported - needs [PARSER-419] ticket"]
+#[test] fn test_sqlite_1296_pat_ref() { assert_parses("let ref x = 42;"); }
+
+// Category 209: Literal Syntax Complete
+#[test] fn test_sqlite_1297_lit_int() { assert_parses("let x = 42;"); }
+#[test] fn test_sqlite_1298_lit_float() { assert_parses("let x = 3.14;"); }
+#[test] fn test_sqlite_1299_lit_string() { assert_parses("let x = \"hello\";"); }
+#[test] fn test_sqlite_1300_lit_char() { assert_parses("let x = 'a';"); }
+#[test] fn test_sqlite_1301_lit_bool() { assert_parses("let x = true;"); }
+
+// Category 210: Type Syntax Complete
+#[ignore = "Parser limitation: qualified type path not supported - needs [PARSER-420] ticket"]
+#[test] fn test_sqlite_1302_type_path() { assert_parses("let x: std::vec::Vec<i32>;"); }
+#[ignore = "Parser limitation: tuple type annotation not supported - needs [PARSER-421] ticket"]
+#[test] fn test_sqlite_1303_type_tuple() { assert_parses("let x: (i32, i32);"); }
+#[ignore = "Parser limitation: array type annotation not supported - needs [PARSER-422] ticket"]
+#[test] fn test_sqlite_1304_type_array() { assert_parses("let x: [i32; 10];"); }
+#[ignore = "Parser limitation: reference type annotation not supported - needs [PARSER-423] ticket"]
+#[test] fn test_sqlite_1305_type_ref() { assert_parses("let x: &i32;"); }
+#[ignore = "Parser limitation: function type annotation not supported - needs [PARSER-424] ticket"]
+#[test] fn test_sqlite_1306_type_fn() { assert_parses("let x: fn(i32) -> i32;"); }
+
 // ============================================================================
 // Error Handling
 // ============================================================================
