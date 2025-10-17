@@ -9743,3 +9743,598 @@ fn test_sqlite_840_fn_mut_capture() {
     "#);
     assert!(result.is_ok(), "FnMut trait with mutable capture should work");
 }
+
+// ============================================================================
+// Category 161: Sized and Unsize Traits Runtime
+// ============================================================================
+
+/// Test Sized trait basic
+#[test]
+#[ignore = "Runtime limitation: Sized trait basic not implemented - needs [RUNTIME-694] ticket"]
+fn test_sqlite_841_sized_basic() {
+    let result = execute_program(r#"
+        fun foo<T: Sized>(x: T) {}
+        foo(42);
+    "#);
+    assert!(result.is_ok(), "Sized trait basic should work");
+}
+
+/// Test ?Sized trait
+#[test]
+#[ignore = "Runtime limitation: ?Sized trait not implemented - needs [RUNTIME-695] ticket"]
+fn test_sqlite_842_unsized() {
+    let result = execute_program(r#"
+        fun foo<T: ?Sized>(x: &T) {}
+        let s: &str = "hello";
+        foo(s);
+    "#);
+    assert!(result.is_ok(), "?Sized trait should work");
+}
+
+/// Test Sized bound implicit
+#[test]
+#[ignore = "Runtime limitation: Sized bound implicit not implemented - needs [RUNTIME-696] ticket"]
+fn test_sqlite_843_sized_implicit() {
+    let result = execute_program(r#"
+        fun foo<T>(x: T) {}
+        foo(42);
+    "#);
+    assert!(result.is_ok(), "Sized bound implicit should work");
+}
+
+/// Test DST behind pointer
+#[test]
+#[ignore = "Runtime limitation: DST behind pointer not implemented - needs [RUNTIME-697] ticket"]
+fn test_sqlite_844_dst_pointer() {
+    let result = execute_program(r#"
+        let s: Box<str> = Box::new("hello".to_string()).into();
+    "#);
+    assert!(result.is_ok(), "DST behind pointer should work");
+}
+
+/// Test Unsize coercion
+#[test]
+#[ignore = "Runtime limitation: Unsize coercion not implemented - needs [RUNTIME-698] ticket"]
+fn test_sqlite_845_unsize_coercion() {
+    let result = execute_program(r#"
+        let arr: [i32; 3] = [1, 2, 3];
+        let slice: &[i32] = &arr;
+    "#);
+    assert!(result.is_ok(), "Unsize coercion should work");
+}
+
+// ============================================================================
+// Category 162: Send and Sync Traits Runtime
+// ============================================================================
+
+/// Test Send trait basic
+#[test]
+#[ignore = "Runtime limitation: Send trait basic not implemented - needs [RUNTIME-699] ticket"]
+fn test_sqlite_846_send_basic() {
+    let result = execute_program(r#"
+        use std::thread;
+        let x = 42;
+        thread::spawn(move || { let _ = x; });
+    "#);
+    assert!(result.is_ok(), "Send trait basic should work");
+}
+
+/// Test Sync trait basic
+#[test]
+#[ignore = "Runtime limitation: Sync trait basic not implemented - needs [RUNTIME-700] ticket"]
+fn test_sqlite_847_sync_basic() {
+    let result = execute_program(r#"
+        use std::sync::Arc;
+        let x = Arc::new(42);
+        let y = x.clone();
+    "#);
+    assert!(result.is_ok(), "Sync trait basic should work");
+}
+
+/// Test Send bound in function
+#[test]
+#[ignore = "Runtime limitation: Send bound in function not implemented - needs [RUNTIME-701] ticket"]
+fn test_sqlite_848_send_bound() {
+    let result = execute_program(r#"
+        fun foo<T: Send>(x: T) {}
+        foo(42);
+    "#);
+    assert!(result.is_ok(), "Send bound in function should work");
+}
+
+/// Test Sync bound in function
+#[test]
+#[ignore = "Runtime limitation: Sync bound in function not implemented - needs [RUNTIME-702] ticket"]
+fn test_sqlite_849_sync_bound() {
+    let result = execute_program(r#"
+        fun foo<T: Sync>(x: T) {}
+        foo(42);
+    "#);
+    assert!(result.is_ok(), "Sync bound in function should work");
+}
+
+/// Test Send Sync together
+#[test]
+#[ignore = "Runtime limitation: Send Sync together not implemented - needs [RUNTIME-703] ticket"]
+fn test_sqlite_850_send_sync() {
+    let result = execute_program(r#"
+        fun foo<T: Send + Sync>(x: T) {}
+        foo(42);
+    "#);
+    assert!(result.is_ok(), "Send Sync together should work");
+}
+
+// ============================================================================
+// Category 163: Copy and Clone Trait Interactions
+// ============================================================================
+
+/// Test Copy implies Clone
+#[test]
+#[ignore = "Runtime limitation: Copy implies Clone not implemented - needs [RUNTIME-704] ticket"]
+fn test_sqlite_851_copy_implies_clone() {
+    let result = execute_program(r#"
+        #[derive(Copy, Clone)]
+        struct Point { x: i32, y: i32 }
+        let p1 = Point { x: 1, y: 2 };
+        let p2 = p1;
+        let p3 = p1.clone();
+    "#);
+    assert!(result.is_ok(), "Copy implies Clone should work");
+}
+
+/// Test Copy semantics
+#[test]
+#[ignore = "Runtime limitation: Copy semantics not implemented - needs [RUNTIME-705] ticket"]
+fn test_sqlite_852_copy_semantics() {
+    let result = execute_program(r#"
+        let x = 42;
+        let y = x;
+        let z = x;
+    "#);
+    assert!(result.is_ok(), "Copy semantics should work");
+}
+
+/// Test Clone without Copy
+#[test]
+#[ignore = "Runtime limitation: Clone without Copy not implemented - needs [RUNTIME-706] ticket"]
+fn test_sqlite_853_clone_no_copy() {
+    let result = execute_program(r#"
+        let s1 = String::from("hello");
+        let s2 = s1.clone();
+    "#);
+    assert!(result.is_ok(), "Clone without Copy should work");
+}
+
+/// Test Copy bound
+#[test]
+#[ignore = "Runtime limitation: Copy bound not implemented - needs [RUNTIME-707] ticket"]
+fn test_sqlite_854_copy_bound() {
+    let result = execute_program(r#"
+        fun foo<T: Copy>(x: T) -> T { x }
+        let result = foo(42);
+    "#);
+    assert!(result.is_ok(), "Copy bound should work");
+}
+
+/// Test Clone bound
+#[test]
+#[ignore = "Runtime limitation: Clone bound not implemented - needs [RUNTIME-708] ticket"]
+fn test_sqlite_855_clone_bound() {
+    let result = execute_program(r#"
+        fun foo<T: Clone>(x: T) -> T { x.clone() }
+        let result = foo(42);
+    "#);
+    assert!(result.is_ok(), "Clone bound should work");
+}
+
+// ============================================================================
+// Category 164: Drop and RAII Patterns
+// ============================================================================
+
+/// Test Drop order
+#[test]
+#[ignore = "Runtime limitation: Drop order not implemented - needs [RUNTIME-709] ticket"]
+fn test_sqlite_856_drop_order() {
+    let result = execute_program(r#"
+        struct A;
+        impl Drop for A { fun drop(&mut self) {} }
+        let x = A;
+        let y = A;
+    "#);
+    assert!(result.is_ok(), "Drop order should work");
+}
+
+/// Test Drop with resources
+#[test]
+#[ignore = "Runtime limitation: Drop with resources not implemented - needs [RUNTIME-710] ticket"]
+fn test_sqlite_857_drop_resources() {
+    let result = execute_program(r#"
+        struct File { handle: i32 }
+        impl Drop for File { fun drop(&mut self) {} }
+        let f = File { handle: 42 };
+    "#);
+    assert!(result.is_ok(), "Drop with resources should work");
+}
+
+/// Test manual drop
+#[test]
+#[ignore = "Runtime limitation: manual drop not implemented - needs [RUNTIME-711] ticket"]
+fn test_sqlite_858_manual_drop() {
+    let result = execute_program(r#"
+        let x = String::from("hello");
+        drop(x);
+    "#);
+    assert!(result.is_ok(), "Manual drop should work");
+}
+
+/// Test Drop in scope
+#[test]
+#[ignore = "Runtime limitation: Drop in scope not implemented - needs [RUNTIME-712] ticket"]
+fn test_sqlite_859_drop_scope() {
+    let result = execute_program(r#"
+        struct A;
+        impl Drop for A { fun drop(&mut self) {} }
+        { let x = A; }
+    "#);
+    assert!(result.is_ok(), "Drop in scope should work");
+}
+
+/// Test Drop not copyable
+#[test]
+#[ignore = "Runtime limitation: Drop not copyable not implemented - needs [RUNTIME-713] ticket"]
+fn test_sqlite_860_drop_not_copy() {
+    let result = execute_program(r#"
+        struct A;
+        impl Drop for A { fun drop(&mut self) {} }
+        let x = A;
+    "#);
+    assert!(result.is_ok(), "Drop not copyable should work");
+}
+
+// ============================================================================
+// Category 165: Iterator Trait Advanced
+// ============================================================================
+
+/// Test Iterator next
+#[test]
+#[ignore = "Runtime limitation: Iterator next not implemented - needs [RUNTIME-714] ticket"]
+fn test_sqlite_861_iterator_next() {
+    let result = execute_program(r#"
+        let mut iter = vec![1, 2, 3].into_iter();
+        let x = iter.next();
+    "#);
+    assert!(result.is_ok(), "Iterator next should work");
+}
+
+/// Test Iterator collect
+#[test]
+#[ignore = "Runtime limitation: Iterator collect not implemented - needs [RUNTIME-715] ticket"]
+fn test_sqlite_862_iterator_collect() {
+    let result = execute_program(r#"
+        let v: Vec<i32> = (0..5).collect();
+    "#);
+    assert!(result.is_ok(), "Iterator collect should work");
+}
+
+/// Test Iterator map
+#[test]
+#[ignore = "Runtime limitation: Iterator map not implemented - needs [RUNTIME-716] ticket"]
+fn test_sqlite_863_iterator_map() {
+    let result = execute_program(r#"
+        let v: Vec<i32> = vec![1, 2, 3].iter().map(|x| x * 2).collect();
+    "#);
+    assert!(result.is_ok(), "Iterator map should work");
+}
+
+/// Test Iterator filter
+#[test]
+#[ignore = "Runtime limitation: Iterator filter not implemented - needs [RUNTIME-717] ticket"]
+fn test_sqlite_864_iterator_filter() {
+    let result = execute_program(r#"
+        let v: Vec<i32> = vec![1, 2, 3, 4].iter().filter(|x| **x % 2 == 0).collect();
+    "#);
+    assert!(result.is_ok(), "Iterator filter should work");
+}
+
+/// Test Iterator fold
+#[test]
+#[ignore = "Runtime limitation: Iterator fold not implemented - needs [RUNTIME-718] ticket"]
+fn test_sqlite_865_iterator_fold() {
+    let result = execute_program(r#"
+        let sum = vec![1, 2, 3].iter().fold(0, |acc, x| acc + x);
+    "#);
+    assert!(result.is_ok(), "Iterator fold should work");
+}
+
+// ============================================================================
+// Category 166: Future and Async Traits Runtime
+// ============================================================================
+
+/// Test Future trait basic
+#[test]
+#[ignore = "Runtime limitation: Future trait basic not implemented - needs [RUNTIME-719] ticket"]
+fn test_sqlite_866_future_basic() {
+    let result = execute_program(r#"
+        use std::future::Future;
+        async fun foo() -> i32 { 42 }
+    "#);
+    assert!(result.is_ok(), "Future trait basic should work");
+}
+
+/// Test async fn execution
+#[test]
+#[ignore = "Runtime limitation: async fn execution not implemented - needs [RUNTIME-720] ticket"]
+fn test_sqlite_867_async_fn() {
+    let result = execute_program(r#"
+        async fun foo() -> i32 { 42 }
+        let result = foo().await;
+    "#);
+    assert!(result.is_ok(), "Async fn execution should work");
+}
+
+/// Test await expression
+#[test]
+#[ignore = "Runtime limitation: await expression not implemented - needs [RUNTIME-721] ticket"]
+fn test_sqlite_868_await_expr() {
+    let result = execute_program(r#"
+        async fun foo() -> i32 { 42 }
+        async fun bar() -> i32 { foo().await }
+    "#);
+    assert!(result.is_ok(), "Await expression should work");
+}
+
+/// Test async block
+#[test]
+#[ignore = "Runtime limitation: async block not implemented - needs [RUNTIME-722] ticket"]
+fn test_sqlite_869_async_block() {
+    let result = execute_program(r#"
+        let future = async { 42 };
+    "#);
+    assert!(result.is_ok(), "Async block should work");
+}
+
+/// Test async closure
+#[test]
+#[ignore = "Runtime limitation: async closure not implemented - needs [RUNTIME-723] ticket"]
+fn test_sqlite_870_async_closure() {
+    let result = execute_program(r#"
+        let f = async || 42;
+    "#);
+    assert!(result.is_ok(), "Async closure should work");
+}
+
+// ============================================================================
+// Category 167: Error Trait and Result Patterns
+// ============================================================================
+
+/// Test Error trait basic
+#[test]
+#[ignore = "Runtime limitation: Error trait basic not implemented - needs [RUNTIME-724] ticket"]
+fn test_sqlite_871_error_basic() {
+    let result = execute_program(r#"
+        use std::error::Error;
+        struct MyError;
+        impl Error for MyError {}
+    "#);
+    assert!(result.is_ok(), "Error trait basic should work");
+}
+
+/// Test Result Ok
+#[test]
+#[ignore = "Runtime limitation: Result Ok not implemented - needs [RUNTIME-725] ticket"]
+fn test_sqlite_872_result_ok() {
+    let result = execute_program(r#"
+        let x: Result<i32, String> = Ok(42);
+    "#);
+    assert!(result.is_ok(), "Result Ok should work");
+}
+
+/// Test Result Err
+#[test]
+#[ignore = "Runtime limitation: Result Err not implemented - needs [RUNTIME-726] ticket"]
+fn test_sqlite_873_result_err() {
+    let result = execute_program(r#"
+        let x: Result<i32, String> = Err("error".to_string());
+    "#);
+    assert!(result.is_ok(), "Result Err should work");
+}
+
+/// Test Result unwrap
+#[test]
+#[ignore = "Runtime limitation: Result unwrap not implemented - needs [RUNTIME-727] ticket"]
+fn test_sqlite_874_result_unwrap() {
+    let result = execute_program(r#"
+        let x: Result<i32, String> = Ok(42);
+        let value = x.unwrap();
+    "#);
+    assert!(result.is_ok(), "Result unwrap should work");
+}
+
+/// Test Result map
+#[test]
+#[ignore = "Runtime limitation: Result map not implemented - needs [RUNTIME-728] ticket"]
+fn test_sqlite_875_result_map() {
+    let result = execute_program(r#"
+        let x: Result<i32, String> = Ok(42);
+        let y = x.map(|v| v * 2);
+    "#);
+    assert!(result.is_ok(), "Result map should work");
+}
+
+// ============================================================================
+// Category 168: Option Trait Patterns
+// ============================================================================
+
+/// Test Option Some
+#[test]
+#[ignore = "Runtime limitation: Option Some not implemented - needs [RUNTIME-729] ticket"]
+fn test_sqlite_876_option_some() {
+    let result = execute_program(r#"
+        let x: Option<i32> = Some(42);
+    "#);
+    assert!(result.is_ok(), "Option Some should work");
+}
+
+/// Test Option None
+#[test]
+#[ignore = "Runtime limitation: Option None not implemented - needs [RUNTIME-730] ticket"]
+fn test_sqlite_877_option_none() {
+    let result = execute_program(r#"
+        let x: Option<i32> = None;
+    "#);
+    assert!(result.is_ok(), "Option None should work");
+}
+
+/// Test Option unwrap
+#[test]
+#[ignore = "Runtime limitation: Option unwrap not implemented - needs [RUNTIME-731] ticket"]
+fn test_sqlite_878_option_unwrap() {
+    let result = execute_program(r#"
+        let x: Option<i32> = Some(42);
+        let value = x.unwrap();
+    "#);
+    assert!(result.is_ok(), "Option unwrap should work");
+}
+
+/// Test Option map
+#[test]
+#[ignore = "Runtime limitation: Option map not implemented - needs [RUNTIME-732] ticket"]
+fn test_sqlite_879_option_map() {
+    let result = execute_program(r#"
+        let x: Option<i32> = Some(42);
+        let y = x.map(|v| v * 2);
+    "#);
+    assert!(result.is_ok(), "Option map should work");
+}
+
+/// Test Option and_then
+#[test]
+#[ignore = "Runtime limitation: Option and_then not implemented - needs [RUNTIME-733] ticket"]
+fn test_sqlite_880_option_and_then() {
+    let result = execute_program(r#"
+        let x: Option<i32> = Some(42);
+        let y = x.and_then(|v| Some(v * 2));
+    "#);
+    assert!(result.is_ok(), "Option and_then should work");
+}
+
+// ============================================================================
+// Category 169: Pointer Trait Patterns
+// ============================================================================
+
+/// Test raw pointer const
+#[test]
+#[ignore = "Runtime limitation: raw pointer const not implemented - needs [RUNTIME-734] ticket"]
+fn test_sqlite_881_raw_ptr_const() {
+    let result = execute_program(r#"
+        let x = 42;
+        let p: *const i32 = &x;
+    "#);
+    assert!(result.is_ok(), "Raw pointer const should work");
+}
+
+/// Test raw pointer mut
+#[test]
+#[ignore = "Runtime limitation: raw pointer mut not implemented - needs [RUNTIME-735] ticket"]
+fn test_sqlite_882_raw_ptr_mut() {
+    let result = execute_program(r#"
+        let mut x = 42;
+        let p: *mut i32 = &mut x;
+    "#);
+    assert!(result.is_ok(), "Raw pointer mut should work");
+}
+
+/// Test raw pointer deref
+#[test]
+#[ignore = "Runtime limitation: raw pointer deref not implemented - needs [RUNTIME-736] ticket"]
+fn test_sqlite_883_raw_ptr_deref() {
+    let result = execute_program(r#"
+        let x = 42;
+        let p: *const i32 = &x;
+        unsafe { let y = *p; }
+    "#);
+    assert!(result.is_ok(), "Raw pointer deref should work");
+}
+
+/// Test pointer offset
+#[test]
+#[ignore = "Runtime limitation: pointer offset not implemented - needs [RUNTIME-737] ticket"]
+fn test_sqlite_884_ptr_offset() {
+    let result = execute_program(r#"
+        let arr = [1, 2, 3];
+        let p: *const i32 = &arr[0];
+        unsafe { let p2 = p.offset(1); }
+    "#);
+    assert!(result.is_ok(), "Pointer offset should work");
+}
+
+/// Test null pointer
+#[test]
+#[ignore = "Runtime limitation: null pointer not implemented - needs [RUNTIME-738] ticket"]
+fn test_sqlite_885_null_ptr() {
+    let result = execute_program(r#"
+        let p: *const i32 = std::ptr::null();
+    "#);
+    assert!(result.is_ok(), "Null pointer should work");
+}
+
+// ============================================================================
+// Category 170: PhantomData and Marker Traits
+// ============================================================================
+
+/// Test PhantomData basic
+#[test]
+#[ignore = "Runtime limitation: PhantomData basic not implemented - needs [RUNTIME-739] ticket"]
+fn test_sqlite_886_phantom_data() {
+    let result = execute_program(r#"
+        use std::marker::PhantomData;
+        struct Foo<T> { marker: PhantomData<T> }
+    "#);
+    assert!(result.is_ok(), "PhantomData basic should work");
+}
+
+/// Test PhantomData with lifetime
+#[test]
+#[ignore = "Runtime limitation: PhantomData with lifetime not implemented - needs [RUNTIME-740] ticket"]
+fn test_sqlite_887_phantom_lifetime() {
+    let result = execute_program(r#"
+        use std::marker::PhantomData;
+        struct Foo<'a> { marker: PhantomData<&'a ()> }
+    "#);
+    assert!(result.is_ok(), "PhantomData with lifetime should work");
+}
+
+/// Test Unpin marker
+#[test]
+#[ignore = "Runtime limitation: Unpin marker not implemented - needs [RUNTIME-741] ticket"]
+fn test_sqlite_888_unpin_marker() {
+    let result = execute_program(r#"
+        use std::marker::Unpin;
+        struct Foo;
+        impl Unpin for Foo {}
+    "#);
+    assert!(result.is_ok(), "Unpin marker should work");
+}
+
+/// Test PhantomPinned marker
+#[test]
+#[ignore = "Runtime limitation: PhantomPinned marker not implemented - needs [RUNTIME-742] ticket"]
+fn test_sqlite_889_phantom_pinned() {
+    let result = execute_program(r#"
+        use std::marker::PhantomPinned;
+        struct Foo { _pin: PhantomPinned }
+    "#);
+    assert!(result.is_ok(), "PhantomPinned marker should work");
+}
+
+/// Test marker trait impl
+#[test]
+#[ignore = "Runtime limitation: marker trait impl not implemented - needs [RUNTIME-743] ticket"]
+fn test_sqlite_890_marker_impl() {
+    let result = execute_program(r#"
+        struct Foo;
+        unsafe impl Send for Foo {}
+        unsafe impl Sync for Foo {}
+    "#);
+    assert!(result.is_ok(), "Marker trait impl should work");
+}

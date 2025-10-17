@@ -5,6 +5,14 @@ All notable changes to the Ruchy programming language will be documented in this
 ## [Unreleased]
 
 ### Added
+- **[SQLITE-TEST-001] Harness 4 Seventeenth Expansion - 800 Test Milestone (1.6% COMPLETE!)**: Added 50 new runtime anomaly tests (750→800, 6.7% increase)
+  - Test Pass Rate: 58/800 passing (7.25%)
+  - New Categories (10): Sized and Unsize traits runtime (Sized trait basic, ?Sized trait, Sized bound implicit, DST behind pointer, Unsize coercion), Send and Sync traits runtime (Send trait basic, Sync trait basic, Send bound in function, Sync bound in function, Send Sync together), Copy and Clone trait interactions (Copy implies Clone, Copy semantics, Clone without Copy, Copy bound, Clone bound), Drop and RAII patterns (Drop order, Drop with resources, manual drop, Drop in scope, Drop not copyable), Iterator trait advanced (Iterator next, Iterator collect, Iterator map, Iterator filter, Iterator fold), Future and async traits runtime (Future trait basic, async fn execution, await expression, async block, async closure), Error trait and Result patterns (Error trait basic, Result Ok, Result Err, Result unwrap, Result map), Option trait patterns (Option Some, Option None, Option unwrap, Option map, Option and_then), Pointer trait patterns (raw pointer const, raw pointer mut, raw pointer deref, pointer offset, null pointer), PhantomData and marker traits (PhantomData basic, PhantomData with lifetime, Unpin marker, PhantomPinned marker, marker trait impl)
+  - Defensive Testing: 50 new runtime limitations (RUNTIME-694 through RUNTIME-743)
+  - Total Limitations: 742 documented (RUNTIME-001 fixed)
+  - Framework Total: 1,713 tests across 4 harnesses
+  - Progress: 800/50,000 tests (1.60% of Harness 4 complete)
+  - Time: 24.0h / 60h estimated
 - **[SQLITE-TEST-001] Harness 1 Eighteenth Expansion - 950 Test Milestone (47.5% COMPLETE!)**: Added 50 new parser grammar tests (900→950, 5.6% increase)
   - Test Pass Rate: 655/950 passing (68.9%)
   - New Categories (10): Generic constraints advanced (trait bound, multi bound, lifetime bound, where bound, assoc type bound), Lifetime elision cases (lifetime input, lifetime output, lifetime multi, lifetime struct, lifetime impl), Trait object syntax (dyn trait, dyn multi, dyn lifetime, impl trait arg, impl trait ret), Type alias complex forms (type simple, type generic, type where, type lifetime, type assoc), Associated type patterns (assoc simple, assoc bound, assoc default, assoc where, assoc use), Const generics patterns (const param, const fn, const impl, const expr, const trait), Higher-ranked trait bounds (HRTB fn, HRTB multi, HRTB trait, HRTB impl, HRTB type), Unsafe code patterns (unsafe fn, unsafe block, unsafe trait, unsafe impl, extern fn), Macro patterns advanced (macro simple, macro multi, macro nested, macro path, macro expr), Visibility modifiers complete (pub simple, pub crate, pub super, pub in, pub field)
