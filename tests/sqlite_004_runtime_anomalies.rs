@@ -2178,6 +2178,596 @@ fn test_sqlite_1040_module_self() {
     assert!(result.is_ok(), "self in module path should work");
 }
 
+// Category 201: Struct Field Access Patterns
+#[test]
+#[ignore = "Runtime limitation: struct field read not implemented - needs [RUNTIME-894] ticket"]
+fn test_sqlite_1041_struct_field_read() {
+    let result = execute_program(r#"
+        struct Point { x: i32, y: i32 }
+        let p = Point { x: 1, y: 2 };
+        let x = p.x;
+    "#);
+    assert!(result.is_ok(), "struct field read should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: struct field write not implemented - needs [RUNTIME-895] ticket"]
+fn test_sqlite_1042_struct_field_write() {
+    let result = execute_program(r#"
+        struct Point { x: i32, y: i32 }
+        let mut p = Point { x: 1, y: 2 };
+        p.x = 10;
+    "#);
+    assert!(result.is_ok(), "struct field write should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: nested struct access not implemented - needs [RUNTIME-896] ticket"]
+fn test_sqlite_1043_nested_struct_access() {
+    let result = execute_program(r#"
+        struct Inner { value: i32 }
+        struct Outer { inner: Inner }
+        let o = Outer { inner: Inner { value: 42 } };
+        let v = o.inner.value;
+    "#);
+    assert!(result.is_ok(), "nested struct access should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: tuple struct field access not implemented - needs [RUNTIME-897] ticket"]
+fn test_sqlite_1044_tuple_struct_field() {
+    let result = execute_program(r#"
+        struct Color(i32, i32, i32);
+        let c = Color(255, 0, 0);
+        let r = c.0;
+    "#);
+    assert!(result.is_ok(), "tuple struct field access should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: struct update syntax not implemented - needs [RUNTIME-898] ticket"]
+fn test_sqlite_1045_struct_update() {
+    let result = execute_program(r#"
+        struct Point { x: i32, y: i32 }
+        let p1 = Point { x: 1, y: 2 };
+        let p2 = Point { x: 10, ..p1 };
+    "#);
+    assert!(result.is_ok(), "struct update syntax should work");
+}
+
+// Category 202: Enum Pattern Matching Runtime
+#[test]
+#[ignore = "Runtime limitation: enum unit variant match not implemented - needs [RUNTIME-899] ticket"]
+fn test_sqlite_1046_enum_unit_match() {
+    let result = execute_program(r#"
+        enum Color { Red, Green, Blue }
+        let c = Color::Red;
+        match c {
+            Color::Red => 1,
+            _ => 0,
+        }
+    "#);
+    assert!(result.is_ok(), "enum unit variant match should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: enum tuple variant match not implemented - needs [RUNTIME-900] ticket"]
+fn test_sqlite_1047_enum_tuple_match() {
+    let result = execute_program(r#"
+        enum Message { Move(i32, i32) }
+        let m = Message::Move(10, 20);
+        match m {
+            Message::Move(x, y) => x + y,
+        }
+    "#);
+    assert!(result.is_ok(), "enum tuple variant match should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: enum struct variant match not implemented - needs [RUNTIME-901] ticket"]
+fn test_sqlite_1048_enum_struct_match() {
+    let result = execute_program(r#"
+        enum Message { Write { text: String } }
+        let m = Message::Write { text: "hello" };
+        match m {
+            Message::Write { text } => text,
+        }
+    "#);
+    assert!(result.is_ok(), "enum struct variant match should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: nested enum match not implemented - needs [RUNTIME-902] ticket"]
+fn test_sqlite_1049_nested_enum_match() {
+    let result = execute_program(r#"
+        enum Result<T, E> { Ok(T), Err(E) }
+        enum Option<T> { Some(T), None }
+        let r = Result::Ok(Option::Some(42));
+        match r {
+            Result::Ok(Option::Some(n)) => n,
+            _ => 0,
+        }
+    "#);
+    assert!(result.is_ok(), "nested enum match should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: wildcard enum match not implemented - needs [RUNTIME-903] ticket"]
+fn test_sqlite_1050_wildcard_enum_match() {
+    let result = execute_program(r#"
+        enum Color { Red, Green, Blue, Yellow }
+        let c = Color::Yellow;
+        match c {
+            Color::Red => 1,
+            Color::Green => 2,
+            _ => 99,
+        }
+    "#);
+    assert!(result.is_ok(), "wildcard enum match should work");
+}
+
+// Category 203: Array and Vec Operations Runtime
+#[test]
+#[ignore = "Runtime limitation: array indexing runtime not implemented - needs [RUNTIME-904] ticket"]
+fn test_sqlite_1051_array_index_runtime() {
+    let result = execute_program(r#"
+        let arr = [1, 2, 3, 4, 5];
+        let x = arr[2];
+    "#);
+    assert!(result.is_ok(), "array indexing runtime should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: array length runtime not implemented - needs [RUNTIME-905] ticket"]
+fn test_sqlite_1052_array_len_runtime() {
+    let result = execute_program(r#"
+        let arr = [1, 2, 3, 4, 5];
+        let len = arr.len();
+    "#);
+    assert!(result.is_ok(), "array length runtime should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: Vec push runtime not implemented - needs [RUNTIME-906] ticket"]
+fn test_sqlite_1053_vec_push_runtime() {
+    let result = execute_program(r#"
+        let mut v = Vec::new();
+        v.push(1);
+        v.push(2);
+    "#);
+    assert!(result.is_ok(), "Vec push runtime should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: Vec pop runtime not implemented - needs [RUNTIME-907] ticket"]
+fn test_sqlite_1054_vec_pop_runtime() {
+    let result = execute_program(r#"
+        let mut v = vec![1, 2, 3];
+        let x = v.pop();
+    "#);
+    assert!(result.is_ok(), "Vec pop runtime should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: Vec iteration runtime not implemented - needs [RUNTIME-908] ticket"]
+fn test_sqlite_1055_vec_iter_runtime() {
+    let result = execute_program(r#"
+        let v = vec![1, 2, 3];
+        for x in v {
+            println!("{}", x);
+        }
+    "#);
+    assert!(result.is_ok(), "Vec iteration runtime should work");
+}
+
+// Category 204: String Operations Runtime
+#[test]
+#[ignore = "Runtime limitation: string concatenation runtime not implemented - needs [RUNTIME-909] ticket"]
+fn test_sqlite_1056_string_concat_runtime() {
+    let result = execute_program(r#"
+        let s1 = String::from("hello");
+        let s2 = String::from(" world");
+        let s3 = s1 + &s2;
+    "#);
+    assert!(result.is_ok(), "string concatenation runtime should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: string indexing runtime not implemented - needs [RUNTIME-910] ticket"]
+fn test_sqlite_1057_string_index_runtime() {
+    let result = execute_program(r#"
+        let s = "hello";
+        let slice = &s[0..2];
+    "#);
+    assert!(result.is_ok(), "string indexing runtime should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: string len runtime not implemented - needs [RUNTIME-911] ticket"]
+fn test_sqlite_1058_string_len_runtime() {
+    let result = execute_program(r#"
+        let s = "hello";
+        let len = s.len();
+    "#);
+    assert!(result.is_ok(), "string len runtime should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: string chars runtime not implemented - needs [RUNTIME-912] ticket"]
+fn test_sqlite_1059_string_chars_runtime() {
+    let result = execute_program(r#"
+        let s = "hello";
+        for c in s.chars() {
+            println!("{}", c);
+        }
+    "#);
+    assert!(result.is_ok(), "string chars runtime should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: string format runtime not implemented - needs [RUNTIME-913] ticket"]
+fn test_sqlite_1060_string_format_runtime() {
+    let result = execute_program(r#"
+        let x = 42;
+        let s = format!("The answer is {}", x);
+    "#);
+    assert!(result.is_ok(), "string format runtime should work");
+}
+
+// Category 205: Reference and Borrowing Runtime
+#[test]
+#[ignore = "Runtime limitation: immutable borrow runtime not implemented - needs [RUNTIME-914] ticket"]
+fn test_sqlite_1061_immutable_borrow() {
+    let result = execute_program(r#"
+        let x = 42;
+        let r = &x;
+        let y = *r;
+    "#);
+    assert!(result.is_ok(), "immutable borrow runtime should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: mutable borrow runtime not implemented - needs [RUNTIME-915] ticket"]
+fn test_sqlite_1062_mutable_borrow() {
+    let result = execute_program(r#"
+        let mut x = 42;
+        let r = &mut x;
+        *r = 43;
+    "#);
+    assert!(result.is_ok(), "mutable borrow runtime should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: multiple immutable borrows not implemented - needs [RUNTIME-916] ticket"]
+fn test_sqlite_1063_multiple_immut_borrow() {
+    let result = execute_program(r#"
+        let x = 42;
+        let r1 = &x;
+        let r2 = &x;
+        let y = *r1 + *r2;
+    "#);
+    assert!(result.is_ok(), "multiple immutable borrows should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: borrow in function not implemented - needs [RUNTIME-917] ticket"]
+fn test_sqlite_1064_borrow_in_fn() {
+    let result = execute_program(r#"
+        fn add_one(x: &mut i32) {
+            *x += 1;
+        }
+        let mut n = 42;
+        add_one(&mut n);
+    "#);
+    assert!(result.is_ok(), "borrow in function should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: return reference not implemented - needs [RUNTIME-918] ticket"]
+fn test_sqlite_1065_return_reference() {
+    let result = execute_program(r#"
+        fn first<'a>(arr: &'a [i32]) -> &'a i32 {
+            &arr[0]
+        }
+        let arr = [1, 2, 3];
+        let x = first(&arr);
+    "#);
+    assert!(result.is_ok(), "return reference should work");
+}
+
+// Category 206: Tuple Operations Runtime
+#[test]
+#[ignore = "Runtime limitation: tuple construction runtime not implemented - needs [RUNTIME-919] ticket"]
+fn test_sqlite_1066_tuple_construct() {
+    let result = execute_program(r#"
+        let t = (1, 2, 3);
+    "#);
+    assert!(result.is_ok(), "tuple construction runtime should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: tuple indexing runtime not implemented - needs [RUNTIME-920] ticket"]
+fn test_sqlite_1067_tuple_index() {
+    let result = execute_program(r#"
+        let t = (1, 2, 3);
+        let x = t.0;
+        let y = t.1;
+    "#);
+    assert!(result.is_ok(), "tuple indexing runtime should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: tuple destructuring runtime not implemented - needs [RUNTIME-921] ticket"]
+fn test_sqlite_1068_tuple_destruct() {
+    let result = execute_program(r#"
+        let t = (1, 2, 3);
+        let (x, y, z) = t;
+    "#);
+    assert!(result.is_ok(), "tuple destructuring runtime should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: nested tuple runtime not implemented - needs [RUNTIME-922] ticket"]
+fn test_sqlite_1069_nested_tuple() {
+    let result = execute_program(r#"
+        let t = (1, (2, 3));
+        let (a, (b, c)) = t;
+    "#);
+    assert!(result.is_ok(), "nested tuple runtime should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: tuple in function not implemented - needs [RUNTIME-923] ticket"]
+fn test_sqlite_1070_tuple_in_fn() {
+    let result = execute_program(r#"
+        fn swap(pair: (i32, i32)) -> (i32, i32) {
+            let (a, b) = pair;
+            (b, a)
+        }
+        let result = swap((1, 2));
+    "#);
+    assert!(result.is_ok(), "tuple in function should work");
+}
+
+// Category 207: Control Flow Runtime
+#[test]
+#[ignore = "Runtime limitation: if expression runtime not implemented - needs [RUNTIME-924] ticket"]
+fn test_sqlite_1071_if_expr_runtime() {
+    let result = execute_program(r#"
+        let x = if true { 1 } else { 0 };
+    "#);
+    assert!(result.is_ok(), "if expression runtime should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: loop runtime not implemented - needs [RUNTIME-925] ticket"]
+fn test_sqlite_1072_loop_runtime() {
+    let result = execute_program(r#"
+        let mut i = 0;
+        loop {
+            i += 1;
+            if i > 5 { break; }
+        }
+    "#);
+    assert!(result.is_ok(), "loop runtime should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: while loop runtime not implemented - needs [RUNTIME-926] ticket"]
+fn test_sqlite_1073_while_runtime() {
+    let result = execute_program(r#"
+        let mut i = 0;
+        while i < 5 {
+            i += 1;
+        }
+    "#);
+    assert!(result.is_ok(), "while loop runtime should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: for loop runtime not implemented - needs [RUNTIME-927] ticket"]
+fn test_sqlite_1074_for_runtime() {
+    let result = execute_program(r#"
+        for i in 0..5 {
+            println!("{}", i);
+        }
+    "#);
+    assert!(result.is_ok(), "for loop runtime should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: break with value runtime not implemented - needs [RUNTIME-928] ticket"]
+fn test_sqlite_1075_break_value_runtime() {
+    let result = execute_program(r#"
+        let x = loop {
+            break 42;
+        };
+    "#);
+    assert!(result.is_ok(), "break with value runtime should work");
+}
+
+// Category 208: Function Call Runtime
+#[test]
+#[ignore = "Runtime limitation: function call runtime not implemented - needs [RUNTIME-929] ticket"]
+fn test_sqlite_1076_fn_call_runtime() {
+    let result = execute_program(r#"
+        fn add(a: i32, b: i32) -> i32 {
+            a + b
+        }
+        let result = add(1, 2);
+    "#);
+    assert!(result.is_ok(), "function call runtime should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: recursive function not implemented - needs [RUNTIME-930] ticket"]
+fn test_sqlite_1077_recursive_fn() {
+    let result = execute_program(r#"
+        fn factorial(n: i32) -> i32 {
+            if n <= 1 { 1 } else { n * factorial(n - 1) }
+        }
+        let result = factorial(5);
+    "#);
+    assert!(result.is_ok(), "recursive function should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: closure call runtime not implemented - needs [RUNTIME-931] ticket"]
+fn test_sqlite_1078_closure_call() {
+    let result = execute_program(r#"
+        let add = |a, b| a + b;
+        let result = add(1, 2);
+    "#);
+    assert!(result.is_ok(), "closure call runtime should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: higher order function not implemented - needs [RUNTIME-932] ticket"]
+fn test_sqlite_1079_higher_order_fn() {
+    let result = execute_program(r#"
+        fn apply<F: Fn(i32) -> i32>(f: F, x: i32) -> i32 {
+            f(x)
+        }
+        let result = apply(|n| n * 2, 21);
+    "#);
+    assert!(result.is_ok(), "higher order function should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: function returning closure not implemented - needs [RUNTIME-933] ticket"]
+fn test_sqlite_1080_fn_return_closure() {
+    let result = execute_program(r#"
+        fn make_adder(n: i32) -> impl Fn(i32) -> i32 {
+            move |x| x + n
+        }
+        let add5 = make_adder(5);
+        let result = add5(10);
+    "#);
+    assert!(result.is_ok(), "function returning closure should work");
+}
+
+// Category 209: Option and Result Runtime
+#[test]
+#[ignore = "Runtime limitation: Option Some runtime not implemented - needs [RUNTIME-934] ticket"]
+fn test_sqlite_1081_option_some() {
+    let result = execute_program(r#"
+        let opt = Some(42);
+        match opt {
+            Some(n) => n,
+            None => 0,
+        }
+    "#);
+    assert!(result.is_ok(), "Option Some runtime should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: Option None runtime not implemented - needs [RUNTIME-935] ticket"]
+fn test_sqlite_1082_option_none() {
+    let result = execute_program(r#"
+        let opt: Option<i32> = None;
+        match opt {
+            Some(n) => n,
+            None => 0,
+        }
+    "#);
+    assert!(result.is_ok(), "Option None runtime should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: Result Ok runtime not implemented - needs [RUNTIME-936] ticket"]
+fn test_sqlite_1083_result_ok() {
+    let result = execute_program(r#"
+        let res: Result<i32, &str> = Ok(42);
+        match res {
+            Ok(n) => n,
+            Err(_) => 0,
+        }
+    "#);
+    assert!(result.is_ok(), "Result Ok runtime should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: Result Err runtime not implemented - needs [RUNTIME-937] ticket"]
+fn test_sqlite_1084_result_err() {
+    let result = execute_program(r#"
+        let res: Result<i32, &str> = Err("error");
+        match res {
+            Ok(n) => n,
+            Err(_) => 0,
+        }
+    "#);
+    assert!(result.is_ok(), "Result Err runtime should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: try operator runtime not implemented - needs [RUNTIME-938] ticket"]
+fn test_sqlite_1085_try_operator() {
+    let result = execute_program(r#"
+        fn divide(a: i32, b: i32) -> Result<i32, &'static str> {
+            if b == 0 {
+                Err("division by zero")
+            } else {
+                Ok(a / b)
+            }
+        }
+        fn compute() -> Result<i32, &'static str> {
+            let x = divide(10, 2)?;
+            Ok(x * 2)
+        }
+        let result = compute();
+    "#);
+    assert!(result.is_ok(), "try operator runtime should work");
+}
+
+// Category 210: Arithmetic Operations Runtime
+#[test]
+#[ignore = "Runtime limitation: integer addition runtime not implemented - needs [RUNTIME-939] ticket"]
+fn test_sqlite_1086_int_add() {
+    let result = execute_program(r#"
+        let x = 1 + 2;
+    "#);
+    assert!(result.is_ok(), "integer addition runtime should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: integer multiplication runtime not implemented - needs [RUNTIME-940] ticket"]
+fn test_sqlite_1087_int_mul() {
+    let result = execute_program(r#"
+        let x = 3 * 4;
+    "#);
+    assert!(result.is_ok(), "integer multiplication runtime should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: integer division runtime not implemented - needs [RUNTIME-941] ticket"]
+fn test_sqlite_1088_int_div() {
+    let result = execute_program(r#"
+        let x = 10 / 2;
+    "#);
+    assert!(result.is_ok(), "integer division runtime should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: integer modulo runtime not implemented - needs [RUNTIME-942] ticket"]
+fn test_sqlite_1089_int_mod() {
+    let result = execute_program(r#"
+        let x = 10 % 3;
+    "#);
+    assert!(result.is_ok(), "integer modulo runtime should work");
+}
+
+#[test]
+#[ignore = "Runtime limitation: comparison operations runtime not implemented - needs [RUNTIME-943] ticket"]
+fn test_sqlite_1090_comparison() {
+    let result = execute_program(r#"
+        let a = 1 < 2;
+        let b = 3 > 2;
+        let c = 5 == 5;
+        let d = 4 != 3;
+    "#);
+    assert!(result.is_ok(), "comparison operations runtime should work");
+}
+
 /// Test concurrent execution
 #[test]
 #[ignore = "Runtime limitation: concurrent execution not implemented - needs [RUNTIME-027] ticket"]
