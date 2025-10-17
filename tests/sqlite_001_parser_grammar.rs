@@ -3596,6 +3596,130 @@ fn test_sqlite_366_trait_object_send_sync() {
 #[test] fn test_sqlite_1306_type_fn() { assert_parses("let x: fn(i32) -> i32;"); }
 
 // ============================================================================
+// Category 221: Generic Constraint Syntax
+// ============================================================================
+
+#[test] fn test_sqlite_1307_generic_trait_bound() { assert_parses("fn foo<T: Clone>(x: T) { }"); }
+#[test] fn test_sqlite_1308_generic_multi_bound() { assert_parses("fn foo<T: Clone + Send>(x: T) { }"); }
+#[test] fn test_sqlite_1309_generic_where_bound() { assert_parses("fn foo<T>(x: T) where T: Clone { }"); }
+#[ignore = "Parser limitation: generic lifetime bound not supported - needs [PARSER-425] ticket"]
+#[test] fn test_sqlite_1310_generic_lifetime_bound() { assert_parses("fn foo<'a, T: 'a>(x: &'a T) { }"); }
+#[ignore = "Parser limitation: higher ranked trait bound not supported - needs [PARSER-426] ticket"]
+#[test] fn test_sqlite_1311_generic_higher_ranked() { assert_parses("fn foo<T: for<'a> Fn(&'a i32)>(x: T) { }"); }
+
+// ============================================================================
+// Category 222: Turbofish Syntax
+// ============================================================================
+
+#[test] fn test_sqlite_1312_turbofish_simple() { assert_parses("foo::<i32>();"); }
+#[test] fn test_sqlite_1313_turbofish_multi() { assert_parses("foo::<i32, String>();"); }
+#[ignore = "Parser limitation: turbofish method call not supported - needs [PARSER-427] ticket"]
+#[test] fn test_sqlite_1314_turbofish_method() { assert_parses("x.foo::<i32>();"); }
+#[ignore = "Parser limitation: turbofish nested not supported - needs [PARSER-428] ticket"]
+#[test] fn test_sqlite_1315_turbofish_nested() { assert_parses("Vec::<Vec::<i32>>::new();"); }
+#[test] fn test_sqlite_1316_turbofish_path() { assert_parses("std::vec::Vec::<i32>::new();"); }
+
+// ============================================================================
+// Category 223: Phantom Types
+// ============================================================================
+
+#[test] fn test_sqlite_1317_phantom_basic() { assert_parses("use std::marker::PhantomData; struct Foo<T> { _marker: PhantomData<T> }"); }
+#[test] fn test_sqlite_1318_phantom_lifetime() { assert_parses("use std::marker::PhantomData; struct Foo<'a> { _marker: PhantomData<&'a ()> }"); }
+#[test] fn test_sqlite_1319_phantom_multi() { assert_parses("use std::marker::PhantomData; struct Foo<T, U> { _t: PhantomData<T>, _u: PhantomData<U> }"); }
+#[test] fn test_sqlite_1320_phantom_fn() { assert_parses("use std::marker::PhantomData; struct Foo<F> { _f: PhantomData<fn() -> F> }"); }
+#[test] fn test_sqlite_1321_phantom_tuple() { assert_parses("use std::marker::PhantomData; struct Foo<T, U> { _marker: PhantomData<(T, U)> }"); }
+
+// ============================================================================
+// Category 224: Const Generic Syntax
+// ============================================================================
+
+#[ignore = "Parser limitation: const generic basic not supported - needs [PARSER-429] ticket"]
+#[test] fn test_sqlite_1322_const_generic_basic() { assert_parses("struct Foo<const N: usize>;"); }
+#[ignore = "Parser limitation: const generic array not supported - needs [PARSER-430] ticket"]
+#[test] fn test_sqlite_1323_const_generic_array() { assert_parses("struct Foo<T, const N: usize> { data: [T; N] }"); }
+#[ignore = "Parser limitation: const generic fn not supported - needs [PARSER-431] ticket"]
+#[test] fn test_sqlite_1324_const_generic_fn() { assert_parses("fn foo<const N: usize>(x: [i32; N]) { }"); }
+#[ignore = "Parser limitation: const generic impl not supported - needs [PARSER-432] ticket"]
+#[test] fn test_sqlite_1325_const_generic_impl() { assert_parses("impl<const N: usize> Foo<N> { }"); }
+#[ignore = "Parser limitation: const generic expr not supported - needs [PARSER-433] ticket"]
+#[test] fn test_sqlite_1326_const_generic_expr() { assert_parses("fn foo<const N: usize>() { let x = [0; N]; }"); }
+
+// ============================================================================
+// Category 225: Associated Type Syntax
+// ============================================================================
+
+#[test] fn test_sqlite_1327_assoc_type_simple() { assert_parses("trait Foo { type Item; }"); }
+#[test] fn test_sqlite_1328_assoc_type_bound() { assert_parses("trait Foo { type Item: Clone; }"); }
+#[test] fn test_sqlite_1329_assoc_type_default() { assert_parses("trait Foo { type Item = i32; }"); }
+#[ignore = "Parser limitation: associated type where clause not supported - needs [PARSER-434] ticket"]
+#[test] fn test_sqlite_1330_assoc_type_where() { assert_parses("trait Foo where Self::Item: Clone { type Item; }"); }
+#[test] fn test_sqlite_1331_assoc_type_usage() { assert_parses("fn foo<T: Iterator>(x: T::Item) { }"); }
+
+// ============================================================================
+// Category 226: Negative Trait Bounds
+// ============================================================================
+
+#[test] fn test_sqlite_1332_negative_bound_simple() { assert_parses("fn foo<T: !Send>(x: T) { }"); }
+#[test] fn test_sqlite_1333_negative_bound_multi() { assert_parses("fn foo<T: !Send + !Sync>(x: T) { }"); }
+#[test] fn test_sqlite_1334_negative_bound_where() { assert_parses("fn foo<T>(x: T) where T: !Send { }"); }
+#[ignore = "Parser limitation: negative impl not supported - needs [PARSER-435] ticket"]
+#[test] fn test_sqlite_1335_negative_impl() { assert_parses("impl !Send for Foo { }"); }
+#[ignore = "Parser limitation: negative auto trait not supported - needs [PARSER-436] ticket"]
+#[test] fn test_sqlite_1336_negative_auto_trait() { assert_parses("auto trait NotSend { } impl !NotSend for Foo { }"); }
+
+// ============================================================================
+// Category 227: Raw Identifier Syntax
+// ============================================================================
+
+#[ignore = "Parser limitation: raw identifier keyword not supported - needs [PARSER-437] ticket"]
+#[test] fn test_sqlite_1337_raw_ident_keyword() { assert_parses("let r#fn = 42;"); }
+#[ignore = "Parser limitation: raw identifier type not supported - needs [PARSER-438] ticket"]
+#[test] fn test_sqlite_1338_raw_ident_type() { assert_parses("let r#type = 42;"); }
+#[ignore = "Parser limitation: raw identifier fn not supported - needs [PARSER-439] ticket"]
+#[test] fn test_sqlite_1339_raw_ident_fn() { assert_parses("fn r#match() { }"); }
+#[ignore = "Parser limitation: raw identifier struct not supported - needs [PARSER-440] ticket"]
+#[test] fn test_sqlite_1340_raw_ident_struct() { assert_parses("struct r#struct { }"); }
+#[ignore = "Parser limitation: raw identifier module not supported - needs [PARSER-441] ticket"]
+#[test] fn test_sqlite_1341_raw_ident_module() { assert_parses("mod r#mod { }"); }
+
+// ============================================================================
+// Category 228: Label Syntax
+// ============================================================================
+
+#[test] fn test_sqlite_1342_label_loop() { assert_parses("'outer: loop { }"); }
+#[test] fn test_sqlite_1343_label_while() { assert_parses("'outer: while true { }"); }
+#[test] fn test_sqlite_1344_label_for() { assert_parses("'outer: for x in 0..10 { }"); }
+#[test] fn test_sqlite_1345_label_break() { assert_parses("'outer: loop { break 'outer; }"); }
+#[test] fn test_sqlite_1346_label_continue() { assert_parses("'outer: loop { continue 'outer; }"); }
+
+// ============================================================================
+// Category 229: Async Block Syntax
+// ============================================================================
+
+#[test] fn test_sqlite_1347_async_block_simple() { assert_parses("async { 42 }"); }
+#[test] fn test_sqlite_1348_async_block_await() { assert_parses("async { foo().await }"); }
+#[ignore = "Parser limitation: async move block not supported - needs [PARSER-442] ticket"]
+#[test] fn test_sqlite_1349_async_block_move() { assert_parses("async move { x }"); }
+#[ignore = "Parser limitation: async closure not supported - needs [PARSER-443] ticket"]
+#[test] fn test_sqlite_1350_async_closure() { assert_parses("let f = async || { 42 };"); }
+#[test] fn test_sqlite_1351_async_closure_param() { assert_parses("let f = async |x| { x };"); }
+
+// ============================================================================
+// Category 230: Unsafe Trait Syntax
+// ============================================================================
+
+#[ignore = "Parser limitation: unsafe trait not supported - needs [PARSER-444] ticket"]
+#[test] fn test_sqlite_1352_unsafe_trait() { assert_parses("unsafe trait Foo { }"); }
+#[ignore = "Parser limitation: unsafe impl trait not supported - needs [PARSER-445] ticket"]
+#[test] fn test_sqlite_1353_unsafe_impl_trait() { assert_parses("unsafe impl Foo for Bar { }"); }
+#[ignore = "Parser limitation: unsafe fn in trait not supported - needs [PARSER-446] ticket"]
+#[test] fn test_sqlite_1354_unsafe_fn_trait() { assert_parses("trait Foo { unsafe fn bar(); }"); }
+#[ignore = "Parser limitation: unsafe extern fn not supported - needs [PARSER-447] ticket"]
+#[test] fn test_sqlite_1355_unsafe_extern() { assert_parses("unsafe extern \"C\" fn foo();"); }
+#[ignore = "Parser limitation: unsafe static in block not supported - needs [PARSER-448] ticket"]
+#[test] fn test_sqlite_1356_unsafe_static() { assert_parses("unsafe { static mut X: i32 = 0; }"); }
+
+// ============================================================================
 // Error Handling
 // ============================================================================
 
