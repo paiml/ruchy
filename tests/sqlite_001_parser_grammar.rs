@@ -2999,6 +2999,84 @@ fn test_sqlite_366_trait_object_send_sync() {
 #[ignore = "Parser limitation: unsafe impl not supported - needs [PARSER-318] ticket"]
 #[test] fn test_sqlite_956_impl_unsafe() { assert_parses("unsafe impl Send for S { }"); }
 
+// Category 141: Enum Variants Advanced
+#[test] fn test_sqlite_957_enum_unit() { assert_parses("enum E { A, B, C }"); }
+#[test] fn test_sqlite_958_enum_tuple() { assert_parses("enum E { A(i32), B(String) }"); }
+#[test] fn test_sqlite_959_enum_struct() { assert_parses("enum E { A { x: i32 }, B { y: i32 } }"); }
+#[test] fn test_sqlite_960_enum_mixed() { assert_parses("enum E { A, B(i32), C { x: i32 } }"); }
+#[test] fn test_sqlite_961_enum_discriminant() { assert_parses("enum E { A = 1, B = 2 }"); }
+
+// Category 142: Struct Variants Advanced
+#[test] fn test_sqlite_962_struct_unit() { assert_parses("struct S;"); }
+#[test] fn test_sqlite_963_struct_tuple() { assert_parses("struct S(i32, i32);"); }
+#[test] fn test_sqlite_964_struct_named() { assert_parses("struct S { x: i32, y: i32 }"); }
+#[test] fn test_sqlite_965_struct_empty() { assert_parses("struct S { }"); }
+#[test] fn test_sqlite_966_struct_single() { assert_parses("struct S { x: i32 }"); }
+
+// Category 143: Union Syntax
+#[test] fn test_sqlite_967_union_basic() { assert_parses("union U { x: i32, y: f32 }"); }
+#[test] fn test_sqlite_968_union_generic() { assert_parses("union U<T> { x: T, y: i32 }"); }
+#[test] fn test_sqlite_969_union_pub() { assert_parses("pub union U { x: i32 }"); }
+#[ignore = "Parser limitation: union field visibility not supported - needs [PARSER-319] ticket"]
+#[test] fn test_sqlite_970_union_field() { assert_parses("union U { pub x: i32 }"); }
+#[test] fn test_sqlite_971_union_attr() { assert_parses("#[repr(C)] union U { x: i32 }"); }
+
+// Category 144: Operator Overloading Syntax
+#[test] fn test_sqlite_972_op_add() { assert_parses("impl Add for S { type Output = S; fun add(self, rhs: S) -> S { } }"); }
+#[test] fn test_sqlite_973_op_index() { assert_parses("impl Index<usize> for S { type Output = i32; fun index(&self, i: usize) -> &i32 { } }"); }
+#[test] fn test_sqlite_974_op_deref() { assert_parses("impl Deref for S { type Target = i32; fun deref(&self) -> &i32 { } }"); }
+#[test] fn test_sqlite_975_op_neg() { assert_parses("impl Neg for S { type Output = S; fun neg(self) -> S { } }"); }
+#[test] fn test_sqlite_976_op_not() { assert_parses("impl Not for S { type Output = bool; fun not(self) -> bool { } }"); }
+
+// Category 145: Closure Syntax Variations
+#[test] fn test_sqlite_977_closure_basic() { assert_parses("|| 42"); }
+#[test] fn test_sqlite_978_closure_param() { assert_parses("|x| x + 1"); }
+#[test] fn test_sqlite_979_closure_multi() { assert_parses("|x, y| x + y"); }
+#[ignore = "Parser limitation: typed closure parameter not supported - needs [PARSER-320] ticket"]
+#[test] fn test_sqlite_980_closure_type() { assert_parses("|x: i32| x + 1"); }
+#[ignore = "Parser limitation: closure return type not supported - needs [PARSER-321] ticket"]
+#[test] fn test_sqlite_981_closure_ret() { assert_parses("|x| -> i32 { x + 1 }"); }
+
+// Category 146: Pattern Variations
+#[test] fn test_sqlite_982_pattern_lit() { assert_parses("match x { 42 => { } }"); }
+#[test] fn test_sqlite_983_pattern_wild() { assert_parses("match x { _ => { } }"); }
+#[test] fn test_sqlite_984_pattern_ident() { assert_parses("match x { y => { } }"); }
+#[test] fn test_sqlite_985_pattern_tuple() { assert_parses("match x { (a, b) => { } }"); }
+#[test] fn test_sqlite_986_pattern_struct() { assert_parses("match x { Point { x, y } => { } }"); }
+
+// Category 147: For Loop Variations
+#[test] fn test_sqlite_987_for_basic() { assert_parses("for x in iter { }"); }
+#[test] fn test_sqlite_988_for_range() { assert_parses("for i in 0..10 { }"); }
+#[test] fn test_sqlite_989_for_pattern() { assert_parses("for (k, v) in map { }"); }
+#[ignore = "Parser limitation: for loop ref pattern not supported - needs [PARSER-322] ticket"]
+#[test] fn test_sqlite_990_for_ref() { assert_parses("for &x in slice { }"); }
+#[ignore = "Parser limitation: for loop mut pattern not supported - needs [PARSER-323] ticket"]
+#[test] fn test_sqlite_991_for_mut() { assert_parses("for mut x in vec { }"); }
+
+// Category 148: Let Statement Variations
+#[test] fn test_sqlite_992_let_simple() { assert_parses("let x = 42;"); }
+#[test] fn test_sqlite_993_let_type() { assert_parses("let x: i32 = 42;"); }
+#[test] fn test_sqlite_994_let_mut() { assert_parses("let mut x = 42;"); }
+#[test] fn test_sqlite_995_let_pattern() { assert_parses("let (x, y) = tuple;"); }
+#[ignore = "Parser limitation: let ref pattern not supported - needs [PARSER-324] ticket"]
+#[test] fn test_sqlite_996_let_ref() { assert_parses("let ref x = value;"); }
+
+// Category 149: Expression Statement Forms
+#[test] fn test_sqlite_997_expr_stmt() { assert_parses("fun foo() { 42; }"); }
+#[test] fn test_sqlite_998_expr_ret() { assert_parses("fun foo() -> i32 { 42 }"); }
+#[test] fn test_sqlite_999_expr_block() { assert_parses("{ let x = 1; x }"); }
+#[test] fn test_sqlite_1000_expr_if() { assert_parses("if true { 1 } else { 2 }"); }
+#[test] fn test_sqlite_1001_expr_match() { assert_parses("match x { _ => 42 }"); }
+
+// Category 150: Attribute Combinations
+#[test] fn test_sqlite_1002_attr_multi() { assert_parses("#[a] #[b] struct S;"); }
+#[test] fn test_sqlite_1003_attr_inner() { assert_parses("mod m { #![attr] }"); }
+#[test] fn test_sqlite_1004_attr_fn() { assert_parses("#[inline] fun foo() { }"); }
+#[ignore = "Parser limitation: field attribute not supported - needs [PARSER-325] ticket"]
+#[test] fn test_sqlite_1005_attr_field() { assert_parses("struct S { #[serde] x: i32 }"); }
+#[ignore = "Parser limitation: parameter attribute not supported - needs [PARSER-326] ticket"]
+#[test] fn test_sqlite_1006_attr_param() { assert_parses("fun foo(#[attr] x: i32) { }"); }
+
 // ============================================================================
 // Error Handling
 // ============================================================================
