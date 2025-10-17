@@ -5,6 +5,14 @@ All notable changes to the Ruchy programming language will be documented in this
 ## [Unreleased]
 
 ### Added
+- **[SQLITE-TEST-001] Harness 1 Twenty-Fifth Expansion - 1,300 Test Milestone (65% COMPLETE!)**: Added 50 new parser grammar tests (1,250→1,300, 4.0% increase)
+  - Test Pass Rate: 891/1,300 passing (68.5%)
+  - New Categories (10): Derive Macro Syntax (derive single, derive multi, derive copy, derive eq, derive ord), Cfg Attribute Syntax (cfg test, cfg not, cfg any, cfg all, cfg_attr), Test Attribute Syntax (test simple, test ignore, test should_panic, test should_panic_msg, bench), Macro Rules Syntax (macro_rules simple, macro_rules expr, macro_rules ident, macro_rules multi, macro_rules arms), Inline Attribute Syntax (inline simple, inline always, inline never, cold, track_caller), Doc Comment Syntax (doc outer, doc inner, doc multi, doc attr, doc hidden), Path Segment Syntax (path simple, path generic, path self, path super, path crate), Destructuring Assignment Syntax (destruct assign tuple, destruct assign struct, destruct assign nested, destruct assign ignore, destruct assign rest), Question Mark Operator Variations (try result, try option, try chain, try field, try index), Numeric Literal Variations (num underscore, num hex, num octal, num binary, num suffix)
+  - Defensive Testing: 15 new parser limitations (PARSER-449 through PARSER-463)
+  - Total Limitations: 409 documented (PARSER-060 fixed)
+  - Framework Total: 2,363 tests across 4 harnesses
+  - Progress: 1,300/2,000 tests (65.0% of Harness 1 complete - PAST 65%!)
+  - Time: 30.5h / 60h estimated
 - **[SQLITE-TEST-001] Harness 4 Twenty-Third Expansion - 1,100 Test Milestone (2.2% COMPLETE!)**: Added 50 new runtime anomaly tests (1,050→1,100, 4.8% increase)
   - Test Pass Rate: 58/1,100 passing (5.3%)
   - New Categories (10): Trait Method Dispatch Runtime (trait method simple, trait method default, trait method override, trait method generic, trait method self), Generic Function Instantiation (generic fn simple, generic fn multi param, generic fn bound, generic fn where, generic fn turbofish), Lifetime Runtime Validation (lifetime fn param, lifetime struct field, lifetime elision, lifetime static, lifetime multiple), Pattern Destructuring Runtime (pattern tuple destruct, pattern struct destruct, pattern enum destruct, pattern ref destruct, pattern slice destruct), Iterator Adapter Runtime (iter map, iter filter, iter fold, iter chain, iter zip), Deref Coercion Runtime (deref coercion simple, deref coercion string, deref coercion vec, deref method call, deref trait impl), From/Into Conversion Runtime (from simple, into simple, from custom, into custom, try from), Display/Debug Formatting Runtime (debug simple, display simple, debug custom, display custom, debug derive), Operator Trait Runtime (add trait, sub trait, mul trait, index trait, neg trait), Async Runtime Execution (async fn basic, await basic, async block basic, async move capture, future poll)
