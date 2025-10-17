@@ -5,6 +5,14 @@ All notable changes to the Ruchy programming language will be documented in this
 ## [Unreleased]
 
 ### Added
+- **[SQLITE-TEST-001] Harness 4 Eighteenth Expansion - 850 Test Milestone (1.7% COMPLETE!)**: Added 50 new runtime anomaly tests (800→850, 6.25% increase)
+  - Test Pass Rate: 58/850 passing (6.8%)
+  - New Categories (10): Cell and RefCell patterns (Cell basic, RefCell basic, Cell in struct, RefCell borrow, RefCell try_borrow), Rc and Arc smart pointers advanced (Rc clone, Rc strong_count, Arc thread safety, Rc weak, Arc weak), Mutex and RwLock patterns (Mutex lock, Mutex try_lock, RwLock read, RwLock write, Mutex with Arc), Channel communication patterns (channel send recv, channel multiple sends, channel try_recv, channel iter, channel clone sender), Atomic operations (AtomicBool, AtomicI32, AtomicUsize, compare_exchange, fetch_update), Thread spawning and joining (thread spawn, thread join, thread move closure, thread sleep, thread current), Vec operations advanced (Vec push pop, Vec capacity, Vec extend, Vec retain, Vec sort), HashMap operations advanced (HashMap insert get, HashMap entry, HashMap remove, HashMap iter, HashMap len), String operations advanced (String push_str, String split, String trim, String replace, String contains), Range and RangeInclusive (Range basic, RangeInclusive, Range contains, RangeFrom, RangeTo)
+  - Defensive Testing: 50 new runtime limitations (RUNTIME-744 through RUNTIME-793)
+  - Total Limitations: 792 documented (RUNTIME-001 fixed)
+  - Framework Total: 1,813 tests across 4 harnesses
+  - Progress: 850/50,000 tests (1.70% of Harness 4 complete)
+  - Time: 25.0h / 60h estimated
 - **[SQLITE-TEST-001] Harness 1 Nineteenth Expansion - 1,000 Test MILESTONE (50% COMPLETE - HALFWAY THERE!)**: Added 50 new parser grammar tests (950→1,000, 5.3% increase) **MAJOR MILESTONE ACHIEVED!**
   - Test Pass Rate: 689/1,000 passing (68.9%)
   - New Categories (10): Raw identifier patterns (raw ident, raw struct, raw fn, raw field, raw var), Nested generic patterns (nested generic, triple nested, generic tuple, generic fn, generic bound), Complex expression patterns (chain method, chain field, mixed chain, index chain, complex expr), Turbofish syntax (turbofish fn, turbofish method, turbofish multi, turbofish nested, turbofish path), Slice pattern advanced (slice lit, slice type, slice mut, slice index, slice range), Async syntax extended (async fn, async method, async trait fn, async return, await call), Complex pattern matching (nested pattern, tuple pattern, struct pattern, enum pattern, ref pattern), Label and loop advanced (labeled loop, labeled while, labeled for, break label, continue label), Literal patterns extended (byte lit, byte string, raw string, raw byte string, char escape), Trait bound combinations (bound multi, bound lifetime, bound paren, bound for, bound complex)
