@@ -3835,6 +3835,112 @@ fn test_sqlite_366_trait_object_send_sync() {
 #[test] fn test_sqlite_1406_num_suffix() { assert_parses("let x = 42u32;"); }
 
 // ============================================================================
+// Category 241: String Literal Variations
+// ============================================================================
+
+#[test] fn test_sqlite_1407_string_escaped() { assert_parses("let s = \"hello\\nworld\";"); }
+#[test] fn test_sqlite_1408_string_unicode() { assert_parses("let s = \"\\u{1F680}\";"); }
+#[test] fn test_sqlite_1409_string_raw() { assert_parses("let s = r\"raw string\";"); }
+#[ignore = "Parser limitation: raw string with hash not supported - needs [PARSER-464] ticket"]
+#[test] fn test_sqlite_1410_string_raw_hash() { assert_parses("let s = r#\"raw with \"quotes\"\"#;"); }
+#[test] fn test_sqlite_1411_byte_string() { assert_parses("let s = b\"bytes\";"); }
+
+// ============================================================================
+// Category 242: Char Literal Variations
+// ============================================================================
+
+#[test] fn test_sqlite_1412_char_simple() { assert_parses("let c = 'a';"); }
+#[test] fn test_sqlite_1413_char_escaped() { assert_parses("let c = '\\n';"); }
+#[ignore = "Parser limitation: char unicode escape not supported - needs [PARSER-465] ticket"]
+#[test] fn test_sqlite_1414_char_unicode() { assert_parses("let c = '\\u{1F680}';"); }
+#[test] fn test_sqlite_1415_char_byte() { assert_parses("let c = b'a';"); }
+#[test] fn test_sqlite_1416_char_quote() { assert_parses("let c = '\\'';"); }
+
+// ============================================================================
+// Category 243: Float Literal Variations
+// ============================================================================
+
+#[test] fn test_sqlite_1417_float_decimal() { assert_parses("let x = 3.14;"); }
+#[test] fn test_sqlite_1418_float_exp() { assert_parses("let x = 1.5e10;"); }
+#[test] fn test_sqlite_1419_float_exp_neg() { assert_parses("let x = 2.5e-3;"); }
+#[test] fn test_sqlite_1420_float_suffix() { assert_parses("let x = 3.14f64;"); }
+#[test] fn test_sqlite_1421_float_no_decimal() { assert_parses("let x = 1e10;"); }
+
+// ============================================================================
+// Category 244: Bool and Unit Literals
+// ============================================================================
+
+#[test] fn test_sqlite_1422_bool_true() { assert_parses("let x = true;"); }
+#[test] fn test_sqlite_1423_bool_false() { assert_parses("let x = false;"); }
+#[test] fn test_sqlite_1424_unit_literal() { assert_parses("let x = ();"); }
+#[test] fn test_sqlite_1425_unit_type() { assert_parses("let x: () = ();"); }
+#[test] fn test_sqlite_1426_unit_fn() { assert_parses("fn foo() { }"); }
+
+// ============================================================================
+// Category 245: Tuple Syntax Variations
+// ============================================================================
+
+#[test] fn test_sqlite_1427_tuple_empty() { assert_parses("let t = ();"); }
+#[test] fn test_sqlite_1428_tuple_single() { assert_parses("let t = (1,);"); }
+#[test] fn test_sqlite_1429_tuple_pair() { assert_parses("let t = (1, 2);"); }
+#[test] fn test_sqlite_1430_tuple_nested() { assert_parses("let t = (1, (2, 3));"); }
+#[test] fn test_sqlite_1431_tuple_index() { assert_parses("let x = t.0;"); }
+
+// ============================================================================
+// Category 246: Array Syntax Variations
+// ============================================================================
+
+#[test] fn test_sqlite_1432_array_literal() { assert_parses("let a = [1, 2, 3];"); }
+#[test] fn test_sqlite_1433_array_repeat() { assert_parses("let a = [0; 10];"); }
+#[test] fn test_sqlite_1434_array_empty() { assert_parses("let a: [i32; 0] = [];"); }
+#[test] fn test_sqlite_1435_array_index() { assert_parses("let x = a[0];"); }
+#[test] fn test_sqlite_1436_array_slice() { assert_parses("let s = &a[1..3];"); }
+
+// ============================================================================
+// Category 247: Range Syntax Complete
+// ============================================================================
+
+#[test] fn test_sqlite_1437_range_full() { assert_parses("let r = 0..10;"); }
+#[test] fn test_sqlite_1438_range_inclusive() { assert_parses("let r = 0..=10;"); }
+#[ignore = "Parser limitation: range from not supported - needs [PARSER-466] ticket"]
+#[test] fn test_sqlite_1439_range_from() { assert_parses("let r = 5..;"); }
+#[ignore = "Parser limitation: range to not supported - needs [PARSER-467] ticket"]
+#[test] fn test_sqlite_1440_range_to() { assert_parses("let r = ..5;"); }
+#[ignore = "Parser limitation: range full unbounded not supported - needs [PARSER-468] ticket"]
+#[test] fn test_sqlite_1441_range_full_unbounded() { assert_parses("let r = ..;"); }
+
+// ============================================================================
+// Category 248: Closure Syntax Complete
+// ============================================================================
+
+#[test] fn test_sqlite_1442_closure_no_param() { assert_parses("let f = || 42;"); }
+#[test] fn test_sqlite_1443_closure_one_param() { assert_parses("let f = |x| x + 1;"); }
+#[test] fn test_sqlite_1444_closure_multi_param() { assert_parses("let f = |x, y| x + y;"); }
+#[ignore = "Parser limitation: closure type annotation not supported - needs [PARSER-469] ticket"]
+#[test] fn test_sqlite_1445_closure_type_ann() { assert_parses("let f = |x: i32| -> i32 { x + 1 };"); }
+#[test] fn test_sqlite_1446_closure_move() { assert_parses("let f = move |x| x;"); }
+
+// ============================================================================
+// Category 249: Match Arm Variations
+// ============================================================================
+
+#[test] fn test_sqlite_1447_match_literal() { assert_parses("match x { 1 => {}, _ => {} }"); }
+#[test] fn test_sqlite_1448_match_range() { assert_parses("match x { 1..=10 => {}, _ => {} }"); }
+#[test] fn test_sqlite_1449_match_or() { assert_parses("match x { 1 | 2 => {}, _ => {} }"); }
+#[test] fn test_sqlite_1450_match_guard() { assert_parses("match x { n if n > 0 => {}, _ => {} }"); }
+#[test] fn test_sqlite_1451_match_binding() { assert_parses("match x { Some(n) => n, None => 0 }"); }
+
+// ============================================================================
+// Category 250: If Let Variations
+// ============================================================================
+
+#[test] fn test_sqlite_1452_if_let_simple() { assert_parses("if let Some(x) = opt { }"); }
+#[test] fn test_sqlite_1453_if_let_else() { assert_parses("if let Some(x) = opt { } else { }"); }
+#[test] fn test_sqlite_1454_while_let() { assert_parses("while let Some(x) = iter.next() { }"); }
+#[test] fn test_sqlite_1455_if_let_or() { assert_parses("if let Some(x) | None = opt { }"); }
+#[test] fn test_sqlite_1456_if_let_guard() { assert_parses("if let Some(x) = opt && x > 0 { }"); }
+
+// ============================================================================
 // Error Handling
 // ============================================================================
 

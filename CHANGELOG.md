@@ -5,6 +5,14 @@ All notable changes to the Ruchy programming language will be documented in this
 ## [Unreleased]
 
 ### Added
+- **[SQLITE-TEST-001] Harness 1 Twenty-Sixth Expansion - 1,350 Test Milestone (67.5% COMPLETE!)**: Added 50 new parser grammar tests (1,300→1,350, 3.8% increase)
+  - Test Pass Rate: 935/1,350 passing (69.3%)
+  - New Categories (10): String Literal Variations (string escaped, string unicode, string raw, string raw hash, byte string), Char Literal Variations (char simple, char escaped, char unicode, char byte, char quote), Float Literal Variations (float decimal, float exp, float exp neg, float suffix, float no decimal), Bool and Unit Literals (bool true, bool false, unit literal, unit type, unit fn), Tuple Syntax Variations (tuple empty, tuple single, tuple pair, tuple nested, tuple index), Array Syntax Variations (array literal, array repeat, array empty, array index, array slice), Range Syntax Complete (range full, range inclusive, range from, range to, range full unbounded), Closure Syntax Complete (closure no param, closure one param, closure multi param, closure type ann, closure move), Match Arm Variations (match literal, match range, match or, match guard, match binding), If Let Variations (if let simple, if let else, while let, if let or, if let guard)
+  - Defensive Testing: 6 new parser limitations (PARSER-464 through PARSER-469)
+  - Total Limitations: 415 documented (PARSER-060 fixed)
+  - Framework Total: 2,463 tests across 4 harnesses
+  - Progress: 1,350/2,000 tests (67.5% of Harness 1 complete - PAST 67.5%!)
+  - Time: 31.5h / 60h estimated
 - **[SQLITE-TEST-001] Harness 4 Twenty-Fourth Expansion - 1,150 Test Milestone (2.3% COMPLETE!)**: Added 50 new runtime anomaly tests (1,100→1,150, 4.5% increase)
   - Test Pass Rate: 58/1,150 passing (5.0%)
   - New Categories (10): Default Trait Runtime (default simple, default custom, default generic, default vec, default string), PartialEq/Eq Runtime (partialeq simple, partialeq custom, eq trait, ne operator, partialeq derive), PartialOrd/Ord Runtime (partialord simple, partialord custom, ord trait, comparison ops, min max), Hash Runtime (hash simple, hash custom, hash derive, hashmap insert, hashmap get), Clone Runtime (clone simple, clone custom, clone derive, clone vec, clone string), Copy Runtime (copy simple, copy custom, copy vs move, copy array, copy tuple), Send/Sync Runtime (send simple, sync simple, send custom, sync custom, send sync bound), Sized Runtime (sized implicit, unsized trait object, unsized slice, unsized str, sized bound explicit), AsRef/AsMut Runtime (asref simple, asref string, asref vec, asmut simple, asmut vec), Borrow/BorrowMut Runtime (borrow simple, borrow string, borrowmut simple, cow simple, cow owned)
