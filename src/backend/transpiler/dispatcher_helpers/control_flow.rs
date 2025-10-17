@@ -1,10 +1,10 @@
 //! Control flow expression transpilation helpers
 
 use super::super::Transpiler;
-use crate::frontend::ast::Expr;
+use crate::frontend::ast::{Expr, ExprKind};
 use anyhow::{bail, Result};
 use proc_macro2::TokenStream;
-use quote::quote;
+use quote::{format_ident, quote};
 
 impl Transpiler {
     fn transpile_operator_only_expr(&self, expr: &Expr) -> Result<TokenStream> {

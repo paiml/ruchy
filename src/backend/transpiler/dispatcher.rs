@@ -7,6 +7,12 @@
 #[path = "dispatcher_helpers/macro_helpers.rs"]
 mod macro_helpers;
 
+#[path = "dispatcher_helpers/identifiers.rs"]
+mod identifiers;
+
+#[path = "dispatcher_helpers/misc.rs"]
+mod misc;
+
 use super::Transpiler;
 use crate::frontend::ast::{Expr, ExprKind};
 use anyhow::{bail, Result};
@@ -26,114 +32,7 @@ impl Transpiler {
             _ => unreachable!("Non-basic expression in transpile_basic_expr"),
         }
     }
-    fn transpile_type_cast(&self, expr: &Expr, target_type: &str) -> Result<TokenStream> {
-        let expr_tokens = self.transpile_expr(expr)?;
-        // Map Ruchy types to Rust types
-        let rust_type = match target_type {
-            "i32" => quote! { i32 },
-            "i64" => quote! { i64 },
-            "f32" => quote! { f32 },
-            "f64" => quote! { f64 },
-            "usize" => quote! { usize },
-            "u8" => quote! { u8 },
-            "u16" => quote! { u16 },
-            "u32" => quote! { u32 },
-            "u64" => quote! { u64 },
-            "i8" => quote! { i8 },
-            "i16" => quote! { i16 },
-            _ => bail!("Unsupported cast target type: {}", target_type),
-        };
-        Ok(quote! { (#expr_tokens as #rust_type) })
-    }
-    fn transpile_identifier(name: &str) -> TokenStream {
-        // Check if this is a module path like "math::add"
-        if name.contains("::") {
-            // Split into module path components
-            let parts: Vec<&str> = name.split("::").collect();
-            let mut tokens = Vec::new();
-            for (i, part) in parts.iter().enumerate() {
-                // Check if this is a turbofish segment like "<i32>"
-                if part.starts_with('<') && part.ends_with('>') {
-                    // Parse turbofish generics: "<i32>" or "<String, i32>"
-                    let turbofish_tokens = Self::transpile_turbofish(part);
-                    tokens.push(turbofish_tokens);
-                } else {
-                    let safe_part = if matches!(*part, "self" | "Self" | "super" | "crate") {
-                        (*part).to_string()
-                    } else if Self::is_rust_reserved_keyword(part) {
-                        format!("r#{part}")
-                    } else {
-                        (*part).to_string()
-                    };
-                    let ident = format_ident!("{}", safe_part);
-                    tokens.push(quote! { #ident });
-                }
-                if i < parts.len() - 1 {
-                    tokens.push(quote! { :: });
-                }
-            }
-            quote! { #(#tokens)* }
-        } else {
-            // Handle single identifier with Rust reserved keywords
-            let safe_name = if matches!(name, "self" | "Self" | "super" | "crate") {
-                // These keywords cannot be raw identifiers, use them as-is
-                name.to_string()
-            } else if Self::is_rust_reserved_keyword(name) {
-                format!("r#{name}")
-            } else {
-                name.to_string()
-            };
-            let ident = format_ident!("{}", safe_name);
-            quote! { #ident }
-        }
-    }
 
-    /// Transpile turbofish generics like "<i32>" or "<String, i32>"
-    fn transpile_turbofish(turbofish: &str) -> TokenStream {
-        // Remove < and > brackets
-        let inner = &turbofish[1..turbofish.len() - 1];
-
-        // Split by comma to get individual type arguments
-        let type_args: Vec<&str> = inner.split(',').map(str::trim).collect();
-
-        // Build token stream for each type argument
-        let type_tokens: Vec<TokenStream> = type_args
-            .iter()
-            .map(|type_arg| {
-                // Handle qualified type names like std::string::String
-                if type_arg.contains("::") {
-                    Self::transpile_identifier(type_arg)
-                } else {
-                    let ident = format_ident!("{}", type_arg);
-                    quote! { #ident }
-                }
-            })
-            .collect();
-
-        // Build <Type1, Type2, ...> token stream
-        quote! { < #(#type_tokens),* > }
-    }
-    fn transpile_qualified_name(module: &str, name: &str) -> TokenStream {
-        // Handle nested qualified names like "net::TcpListener"
-        let module_parts: Vec<&str> = module.split("::").collect();
-        let name_ident = format_ident!("{}", name);
-        if module_parts.len() == 1 {
-            // Simple case: single module name
-            let module_ident = format_ident!("{}", module_parts[0]);
-            quote! { #module_ident::#name_ident }
-        } else {
-            // Complex case: nested path like "net::TcpListener"
-            let mut tokens = TokenStream::new();
-            for (i, part) in module_parts.iter().enumerate() {
-                if i > 0 {
-                    tokens.extend(quote! { :: });
-                }
-                let part_ident = format_ident!("{}", part);
-                tokens.extend(quote! { #part_ident });
-            }
-            quote! { #tokens::#name_ident }
-        }
-    }
     /// Transpile operator and control flow expressions (split for complexity)
     pub(super) fn transpile_operator_control_expr(&self, expr: &Expr) -> Result<TokenStream> {
         match &expr.kind {
@@ -593,75 +492,6 @@ impl Transpiler {
                 Ok(quote! { type #name_ident = #type_tokens; })
             }
             _ => unreachable!(),
-        }
-    }
-
-    fn transpile_control_misc_expr(&self, expr: &Expr) -> Result<TokenStream> {
-        match &expr.kind {
-            ExprKind::Break { label, value } => {
-                if let Some(val_expr) = value {
-                    let val_tokens = self.transpile_expr(val_expr)?;
-                    Ok(Self::make_break_continue_with_value(true, label.as_ref(), Some(val_tokens)))
-                } else {
-                    Ok(Self::make_break_continue(true, label.as_ref()))
-                }
-            }
-            ExprKind::Continue { label } => {
-                Ok(Self::make_break_continue(false, label.as_ref()))
-            }
-            ExprKind::Return { value } => {
-                if let Some(val_expr) = value {
-                    let val_tokens = self.transpile_expr(val_expr)?;
-                    Ok(quote! { return #val_tokens; })
-                } else {
-                    Ok(quote! { return; })
-                }
-            }
-            _ => unreachable!(),
-        }
-    }
-
-    fn make_break_continue(is_break: bool, label: Option<&String>) -> TokenStream {
-        let keyword = if is_break {
-            quote! { break }
-        } else {
-            quote! { continue }
-        };
-
-        match label {
-            Some(l) if !l.is_empty() => {
-                let label_name = l.strip_prefix('\'').unwrap_or(l);
-                let label_ident = format_ident!("{}", label_name);
-                quote! { #keyword #label_ident }
-            }
-            _ => keyword,
-        }
-    }
-
-    fn make_break_continue_with_value(
-        is_break: bool,
-        label: Option<&String>,
-        value: Option<TokenStream>,
-    ) -> TokenStream {
-        let keyword = if is_break {
-            quote! { break }
-        } else {
-            quote! { continue }
-        };
-
-        match (label, value) {
-            (Some(l), Some(v)) if !l.is_empty() => {
-                let label_name = l.strip_prefix('\'').unwrap_or(l);
-                let label_ident = format_ident!("{}", label_name);
-                quote! { #keyword #label_ident #v }
-            }
-            (Some(l), None) if !l.is_empty() => {
-                let label_name = l.strip_prefix('\'').unwrap_or(l);
-                let label_ident = format_ident!("{}", label_name);
-                quote! { #keyword #label_ident }
-            }
-            (_, Some(v)) => quote! { #keyword #v },
-            _ => keyword,
         }
     }
 }

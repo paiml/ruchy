@@ -5,11 +5,13 @@ All notable changes to the Ruchy programming language will be documented in this
 ## [Unreleased]
 
 ### Fixed
-- **[QUALITY] TDG Quality Improvements (Partial - 4/8 files)**: Ongoing refactoring to meet A- quality standard
+- **[QUALITY] TDG Quality Improvements (Partial - 5/8 files)**: Ongoing refactoring to meet A- quality standard
   - **eval_function.rs**: Now passes at 94.7/100 (A) - removed from pre-commit skip list
-  - **dispatcher.rs**: Refactored from 867→667 lines (-23%)
-    - Extracted macro transpilation helpers to `dispatcher_helpers/macro_helpers.rs`
-    - Added proper Break/Continue/Return transpilation with value support
+  - **dispatcher.rs**: Refactored from 667→497 lines (-25.5%), 80.0→86.7/100 (B+→A-) ✅
+    - Extracted identifier/qualified name helpers to `dispatcher_helpers/identifiers.rs` (100 lines)
+    - Extracted type cast/break/continue/return helpers to `dispatcher_helpers/misc.rs` (100 lines)
+    - Methods: transpile_identifier, transpile_turbofish, transpile_qualified_name, transpile_type_cast, transpile_control_misc_expr, make_break_continue, make_break_continue_with_value
+    - Removed from pre-commit skip list - now passing quality gates
   - **verification.rs**: Refactored from 836→320 lines (-62%), 80.8→89.4/100 (A-)
     - Extracted assertion extraction to `verification_modules/extraction.rs` (160 lines)
     - Extracted verification helpers to `verification_modules/helpers.rs` (60 lines)
@@ -20,7 +22,7 @@ All notable changes to the Ruchy programming language will be documented in this
     - Extracted collection transpilation to `expressions_helpers/collections.rs` (219 lines)
     - Methods: transpile_list, transpile_set, transpile_tuple, transpile_range, transpile_object_literal, transpile_struct_literal
     - Removed from pre-commit skip list - now passing quality gates
-  - **Remaining**: 4 files still need refactoring (dispatcher.rs, 3 parser files, handlers/commands.rs)
+  - **Remaining**: 3 files still need refactoring (3 parser files, handlers/commands.rs)
 
 ## [3.90.0] - 2025-10-17
 
