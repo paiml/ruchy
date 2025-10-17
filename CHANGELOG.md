@@ -5,6 +5,14 @@ All notable changes to the Ruchy programming language will be documented in this
 ## [Unreleased]
 
 ### Added
+- **[SQLITE-TEST-001] Harness 4 Twentieth Expansion - 950 Test Milestone (1.9% COMPLETE!)**: Added 50 new runtime anomaly tests (900→950, 5.6% increase)
+  - Test Pass Rate: 58/950 passing (6.1%)
+  - New Categories (10): Trait Object Dynamic Dispatch (trait object basic, trait object method, trait object box, trait object vec, trait object multi), Closure Capture Modes (closure capture value, closure capture ref, closure capture mut, closure FnOnce, closure as param), Pattern Matching Runtime (match enum, match tuple, match struct, match range, match or), Method Resolution (method struct, method enum, method chain, method self, associated fn), Lifetime Validation Runtime (lifetime basic, lifetime struct, lifetime multi, lifetime elision, lifetime static), Generic Type Resolution (generic fn, generic struct, generic enum, generic bound, generic multi bound), Operator Overloading Runtime (Add trait, Index trait, Deref trait, Display trait, PartialEq trait), Drop and Resource Management (Drop basic, Drop order, early drop, Drop field, Drop Vec), Iterator Combinators Runtime (iter map, iter filter, iter fold, iter chain, iter zip), Module System Runtime (module item, module nested, use statement, pub use, module self)
+  - Defensive Testing: 50 new runtime limitations (RUNTIME-844 through RUNTIME-893)
+  - Total Limitations: 892 documented (RUNTIME-001 fixed)
+  - Framework Total: 2,013 tests across 4 harnesses
+  - Progress: 950/50,000 tests (1.90% of Harness 4 complete)
+  - Time: 27.0h / 60h estimated
 - **[SQLITE-TEST-001] Harness 1 Twenty-First Expansion - 1,100 Test Milestone (55% COMPLETE!)**: Added 50 new parser grammar tests (1,050→1,100, 4.8% increase)
   - Test Pass Rate: 772/1,100 passing (70.2%)
   - New Categories (10): Closure Syntax Variations (closure simple, closure param, closure multi param, closure type ann, closure return type), Array and Slice Syntax (array literal, array repeat, array index, array range, array empty), Struct Expression Forms (struct expr simple, struct expr shorthand, struct expr update, struct expr tuple, struct expr unit), Enum Variant Syntax (enum variant unit, enum variant tuple, enum variant struct, enum variant nested, enum variant path), Loop Control Flow (loop break, loop break value, loop continue, loop nested break, loop label break), Range Expressions (range full, range inclusive, range from, range to, range full unbounded), Method Call Chains (method chain simple, method chain args, method chain field, method chain index, method chain try), Try Operator (try simple, try method, try chain, try field, try index), Box and Reference Patterns (box expr, ref expr, ref mut expr, deref expr, addr of expr), Macro Invocation Forms (macro call, macro vec, macro format, macro assert, macro matches)
