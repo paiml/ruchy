@@ -3170,6 +3170,92 @@ fn test_sqlite_366_trait_object_send_sync() {
 #[test] fn test_sqlite_1055_pub_in() { assert_parses("pub(in crate::foo) struct S;"); }
 #[test] fn test_sqlite_1056_pub_field() { assert_parses("struct S { pub x: i32 }"); }
 
+// Category 161: Raw Identifier Patterns
+#[ignore = "Parser limitation: raw identifier not supported - needs [PARSER-350] ticket"]
+#[test] fn test_sqlite_1057_raw_ident() { assert_parses("let r#fn = 42;"); }
+#[ignore = "Parser limitation: raw identifier in struct not supported - needs [PARSER-351] ticket"]
+#[test] fn test_sqlite_1058_raw_struct() { assert_parses("struct r#type { x: i32 }"); }
+#[ignore = "Parser limitation: raw identifier in function not supported - needs [PARSER-352] ticket"]
+#[test] fn test_sqlite_1059_raw_fn() { assert_parses("fun r#match() { }"); }
+#[ignore = "Parser limitation: raw identifier in field not supported - needs [PARSER-353] ticket"]
+#[test] fn test_sqlite_1060_raw_field() { assert_parses("struct S { r#if: i32 }"); }
+#[ignore = "Parser limitation: raw identifier in variable not supported - needs [PARSER-354] ticket"]
+#[test] fn test_sqlite_1061_raw_var() { assert_parses("let r#self = 42;"); }
+
+// Category 162: Nested Generic Patterns
+#[ignore = "Parser limitation: nested generic type not supported - needs [PARSER-355] ticket"]
+#[test] fn test_sqlite_1062_nested_generic() { assert_parses("let x: Vec<Vec<i32>>;"); }
+#[ignore = "Parser limitation: triple nested generic not supported - needs [PARSER-356] ticket"]
+#[test] fn test_sqlite_1063_triple_nested() { assert_parses("let x: Option<Result<Vec<i32>, Error>>;"); }
+#[ignore = "Parser limitation: generic tuple type not supported - needs [PARSER-357] ticket"]
+#[test] fn test_sqlite_1064_generic_tuple() { assert_parses("let x: (Vec<i32>, HashMap<String, i32>);"); }
+#[test] fn test_sqlite_1065_generic_fn() { assert_parses("fun foo() -> Result<Option<i32>, Error> { }"); }
+#[test] fn test_sqlite_1066_generic_bound() { assert_parses("fun foo<T: Iterator<Item = Vec<i32>>>() { }"); }
+
+// Category 163: Complex Expression Patterns
+#[test] fn test_sqlite_1067_chain_method() { assert_parses("x.foo().bar().baz();"); }
+#[test] fn test_sqlite_1068_chain_field() { assert_parses("x.a.b.c;"); }
+#[test] fn test_sqlite_1069_mixed_chain() { assert_parses("x.foo().y.bar();"); }
+#[test] fn test_sqlite_1070_index_chain() { assert_parses("x[0][1][2];"); }
+#[test] fn test_sqlite_1071_complex_expr() { assert_parses("x.foo()[0].bar().y;"); }
+
+// Category 164: Turbofish Syntax
+#[test] fn test_sqlite_1072_turbofish_fn() { assert_parses("foo::<i32>();"); }
+#[ignore = "Parser limitation: turbofish in method call not supported - needs [PARSER-358] ticket"]
+#[test] fn test_sqlite_1073_turbofish_method() { assert_parses("x.collect::<Vec<i32>>();"); }
+#[test] fn test_sqlite_1074_turbofish_multi() { assert_parses("foo::<i32, String>();"); }
+#[ignore = "Parser limitation: turbofish with nested generic not supported - needs [PARSER-359] ticket"]
+#[test] fn test_sqlite_1075_turbofish_nested() { assert_parses("foo::<Vec<i32>>();"); }
+#[test] fn test_sqlite_1076_turbofish_path() { assert_parses("Vec::<i32>::new();"); }
+
+// Category 165: Slice Pattern Advanced
+#[test] fn test_sqlite_1077_slice_lit() { assert_parses("let x = &[1, 2, 3];"); }
+#[ignore = "Parser limitation: slice type annotation not supported - needs [PARSER-360] ticket"]
+#[test] fn test_sqlite_1078_slice_type() { assert_parses("let x: &[i32];"); }
+#[ignore = "Parser limitation: mutable slice type not supported - needs [PARSER-361] ticket"]
+#[test] fn test_sqlite_1079_slice_mut() { assert_parses("let x: &mut [i32];"); }
+#[ignore = "Parser limitation: slice index with full range not supported - needs [PARSER-362] ticket"]
+#[test] fn test_sqlite_1080_slice_index() { assert_parses("let x = arr[..];"); }
+#[test] fn test_sqlite_1081_slice_range() { assert_parses("let x = arr[1..3];"); }
+
+// Category 166: Async Syntax Extended
+#[test] fn test_sqlite_1082_async_fn() { assert_parses("async fun foo() { }"); }
+#[test] fn test_sqlite_1083_async_method() { assert_parses("impl S { async fun foo(&self) { } }"); }
+#[ignore = "Parser limitation: async trait function not supported - needs [PARSER-363] ticket"]
+#[test] fn test_sqlite_1084_async_trait_fn() { assert_parses("trait T { async fun foo(); }"); }
+#[test] fn test_sqlite_1085_async_return() { assert_parses("async fun foo() -> i32 { 42 }"); }
+#[test] fn test_sqlite_1086_await_call() { assert_parses("foo().await;"); }
+
+// Category 167: Complex Pattern Matching
+#[test] fn test_sqlite_1087_nested_pattern() { assert_parses("match x { Some(Ok(v)) => v }"); }
+#[test] fn test_sqlite_1088_tuple_pattern() { assert_parses("match x { (a, b, c) => a }"); }
+#[test] fn test_sqlite_1089_struct_pattern() { assert_parses("match x { Point { x, y } => x }"); }
+#[test] fn test_sqlite_1090_enum_pattern() { assert_parses("match x { Some(v) => v, None => 0 }"); }
+#[ignore = "Parser limitation: ref pattern in match not supported - needs [PARSER-364] ticket"]
+#[test] fn test_sqlite_1091_ref_pattern() { assert_parses("match x { ref v => v }"); }
+
+// Category 168: Label and Loop Advanced
+#[test] fn test_sqlite_1092_labeled_loop() { assert_parses("'outer: loop { }"); }
+#[test] fn test_sqlite_1093_labeled_while() { assert_parses("'outer: while true { }"); }
+#[test] fn test_sqlite_1094_labeled_for() { assert_parses("'outer: for x in iter { }"); }
+#[test] fn test_sqlite_1095_break_label() { assert_parses("loop { break 'outer; }"); }
+#[test] fn test_sqlite_1096_continue_label() { assert_parses("loop { continue 'outer; }"); }
+
+// Category 169: Literal Patterns Extended
+#[test] fn test_sqlite_1097_byte_lit() { assert_parses("let x = b'a';"); }
+#[test] fn test_sqlite_1098_byte_string() { assert_parses("let x = b\"hello\";"); }
+#[test] fn test_sqlite_1099_raw_string() { assert_parses("let x = r\"hello\";"); }
+#[test] fn test_sqlite_1100_raw_byte_string() { assert_parses("let x = br\"hello\";"); }
+#[test] fn test_sqlite_1101_char_escape() { assert_parses("let x = '\\n';"); }
+
+// Category 170: Trait Bound Combinations
+#[test] fn test_sqlite_1102_bound_multi() { assert_parses("fun foo<T: Clone + Debug + Send>() { }"); }
+#[ignore = "Parser limitation: lifetime in trait bound not supported - needs [PARSER-365] ticket"]
+#[test] fn test_sqlite_1103_bound_lifetime() { assert_parses("fun foo<'a, T: 'a + Clone>() { }"); }
+#[test] fn test_sqlite_1104_bound_paren() { assert_parses("fun foo<T: (Clone)>() { }"); }
+#[test] fn test_sqlite_1105_bound_for() { assert_parses("fun foo<T>() where T: for<'a> Fn(&'a i32) { }"); }
+#[test] fn test_sqlite_1106_bound_complex() { assert_parses("fun foo<T>() where T: Clone + for<'a> Fn(&'a i32) { }"); }
+
 // ============================================================================
 // Error Handling
 // ============================================================================
