@@ -5,6 +5,14 @@ All notable changes to the Ruchy programming language will be documented in this
 ## [Unreleased]
 
 ### Added
+- **[SQLITE-TEST-001] Harness 4 Fourteenth Expansion - 650 Test Milestone (1.3% Complete)**: Added 50 new runtime anomaly tests (600→650, 8.3% increase)
+  - Test Pass Rate: 58/650 passing (8.9%)
+  - New Categories (10): Iterator runtime advanced (iterator map, filter, fold, chain, zip), String runtime advanced (string format, split, trim, replace, parse), Collection runtime advanced (Vec push/pop, HashMap insert/get, HashSet ops, BTreeMap, VecDeque), Error handling runtime advanced (Result map, Result and_then, Result unwrap_or, Option map, Option and_then), Closure runtime advanced (closure move semantics, closure as function argument, closure return, Fn trait, FnMut trait), Trait object runtime (trait object creation, method call, in collection, casting, size), Smart pointer runtime advanced (Box deref, Rc clone, Arc thread safety, RefCell borrow, Cell get/set), Concurrency runtime advanced (thread spawn, channel send/recv, Mutex lock, RwLock read/write, atomic operations), Memory operations runtime (memory allocation, size_of, align_of, drop, forget), Conversion trait runtime (From trait, Into trait, TryFrom trait, TryInto trait, AsRef trait)
+  - Defensive Testing: 50 new runtime limitations (RUNTIME-544 through RUNTIME-593)
+  - Total Limitations: 592 documented (RUNTIME-001 fixed)
+  - Framework Total: 1,413 tests across 4 harnesses
+  - Progress: 650/50,000 tests (1.30% of Harness 4 complete)
+  - Time: 22.0h / 60h estimated
 - **[SQLITE-TEST-001] Harness 1 Fifteenth Expansion - 800 Test Milestone (40% COMPLETE!)**: Added 50 new parser grammar tests (750→800, 6.7% increase)
   - Test Pass Rate: 561/800 passing (70.1%)
   - New Categories (10): If-let expressions (if let, if let else, if let chain, if let pattern, if let guard), While-let expressions (while let, while let pattern, while let labeled, while let guard, while let nested), Array and slice syntax (array literal, array repeat, array type, slice type, array nested), Tuple syntax advanced (tuple expr, tuple single, tuple nested, tuple type, tuple unit), Reference and pointer syntax (ref immut, ref mut, raw ptr const, raw ptr mut, ref ref), Lifetime syntax advanced (lifetime param, lifetime static, lifetime multi, lifetime bound, lifetime where), Where clause variations (where trait, where multi, where lifetime, where complex, where impl), Type bounds complex (bound single, bound multi, bound paren, bound lifetime, bound question), Associated type syntax (assoc type, assoc type bound, assoc type default, assoc type where, assoc type use), Existential type syntax (impl trait arg, impl trait ret, impl trait multi, dyn trait, dyn trait multi)
