@@ -5,6 +5,14 @@ All notable changes to the Ruchy programming language will be documented in this
 ## [Unreleased]
 
 ### Added
+- **[SQLITE-TEST-001] Harness 4 Twenty-Seventh Expansion - 1,300 Test Milestone (2.6% COMPLETE!)**: Added 50 new runtime anomaly tests (1,250→1,300, 4.0% increase)
+  - Test Pass Rate: 58/1,300 passing (4.5%)
+  - New Categories (10): String Methods Runtime (string len, string push, string push_str, string pop, string chars), Vec Methods Runtime (vec push, vec pop, vec len, vec capacity, vec clear), HashMap Methods Runtime (hashmap insert, hashmap get, hashmap remove, hashmap contains_key, hashmap len), Option Methods Runtime (option unwrap, option unwrap_or, option is_some, option is_none, option map), Result Methods Runtime (result unwrap, result unwrap_or, result is_ok, result is_err, result map), Slice Methods Runtime (slice len, slice is_empty, slice first, slice last, slice iter), Iterator Combinators Runtime (iter map, iter filter, iter fold, iter collect, iter count), Numeric Methods Runtime (abs, pow, sqrt, min, max), Conversion Methods Runtime (to_string, parse, as_bytes, from_utf8, as_str), Format/Debug Runtime (format simple, format multi, println, dbg, eprintln)
+  - Defensive Testing: 50 new runtime limitations (RUNTIME-1194 through RUNTIME-1243)
+  - Total Limitations: 1,242 documented (RUNTIME-001 fixed)
+  - Framework Total: 2,713 tests across 4 harnesses
+  - Progress: 1,300/50,000 tests (2.60% of Harness 4 complete)
+  - Time: 34.0h / 60h estimated (56.7%)
 - **[SQLITE-TEST-001] Harness 1 Twenty-Eighth Expansion - 1,450 Test Milestone (72.5% COMPLETE!)**: Added 50 new parser grammar tests (1,400→1,450, 3.6% increase)
   - Test Pass Rate: 993/1,450 passing (68.5%)
   - New Categories (10): Fn Pointer Syntax (fn ptr simple, fn ptr param, fn ptr multi, fn ptr unsafe, fn ptr extern), Trait Object Syntax (trait obj simple, trait obj box, trait obj multi, trait obj lifetime, trait obj impl), Lifetime Syntax Complete (lifetime fn, lifetime struct, lifetime impl, lifetime static, lifetime elided), Pattern Syntax Complete (pattern wildcard, pattern rest, pattern range, pattern ref, pattern ref mut), Expression Syntax Complete (expr paren, expr block, expr return, expr break, expr continue), Statement Syntax Complete (stmt let, stmt let mut, stmt let type, stmt expr, stmt empty), Block Syntax Complete (block empty, block single, block multi, block nested, block label), Operator Precedence Complete (prec add mul, prec cmp bool, prec assign, prec unary, prec field), Unary Operator Complete (unary neg, unary not, unary deref, unary ref, unary ref mut), Binary Operator Complete (binary arith, binary cmp, binary bit, binary assign, binary range)
