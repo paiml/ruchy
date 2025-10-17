@@ -5,6 +5,15 @@ All notable changes to the Ruchy programming language will be documented in this
 ## [Unreleased]
 
 ### Fixed
+- **[QUALITY-009] parser/utils.rs TDG Refactoring (IN PROGRESS)**: Using EXTREME TDD methodology
+  - **Property Tests Created**: Comprehensive test suite for type parsing functions (20 tests total)
+    - 13 property tests with 10K+ iterations each (never panics, deterministic, type preservation, error clarity)
+    - 7 unit tests for sanity checks (basic types, references, generics, tuples, functions, complex nested)
+    - Test file: `tests/property_type_parsing.rs` (437 lines)
+    - All tests passing: Property tests validate invariants before extraction
+  - **Next**: Extract type parsing functions (~400 lines) to `utils_helpers/types.rs` with mutation testing
+  - **Current State**: utils.rs at 1948 lines, 77.2/100 (B), needs +7.8 points to reach A-
+
 - **[QUALITY] TDG Quality Improvements (Partial - 5/8 files)**: Ongoing refactoring to meet A- quality standard
   - **eval_function.rs**: Now passes at 94.7/100 (A) - removed from pre-commit skip list
   - **dispatcher.rs**: Refactored from 667→497 lines (-25.5%), 80.0→86.7/100 (B+→A-) ✅
