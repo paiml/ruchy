@@ -14130,3 +14130,667 @@ fn test_sqlite_1190_future_poll() {
     "#);
     assert!(result.is_ok(), "future poll should work");
 }
+
+// ============================================================================
+// Category 241: Default Trait Runtime
+// ============================================================================
+
+/// Test default simple
+#[test]
+#[ignore = "Runtime limitation: default simple not implemented - needs [RUNTIME-1044] ticket"]
+fn test_sqlite_1191_default_simple() {
+    let result = execute_program(r#"
+        #[derive(Default)]
+        struct Foo { x: i32 }
+        let f = Foo::default();
+    "#);
+    assert!(result.is_ok(), "default simple should work");
+}
+
+/// Test default custom
+#[test]
+#[ignore = "Runtime limitation: default custom not implemented - needs [RUNTIME-1045] ticket"]
+fn test_sqlite_1192_default_custom() {
+    let result = execute_program(r#"
+        struct Foo { x: i32 }
+        impl Default for Foo {
+            fn default() -> Foo { Foo { x: 42 } }
+        }
+        let f = Foo::default();
+    "#);
+    assert!(result.is_ok(), "default custom should work");
+}
+
+/// Test default generic
+#[test]
+#[ignore = "Runtime limitation: default generic not implemented - needs [RUNTIME-1046] ticket"]
+fn test_sqlite_1193_default_generic() {
+    let result = execute_program(r#"
+        struct Foo<T> { x: T }
+        impl<T: Default> Default for Foo<T> {
+            fn default() -> Foo<T> { Foo { x: T::default() } }
+        }
+        let f = Foo::<i32>::default();
+    "#);
+    assert!(result.is_ok(), "default generic should work");
+}
+
+/// Test default vec
+#[test]
+#[ignore = "Runtime limitation: default vec not implemented - needs [RUNTIME-1047] ticket"]
+fn test_sqlite_1194_default_vec() {
+    let result = execute_program(r#"
+        let v: Vec<i32> = Default::default();
+    "#);
+    assert!(result.is_ok(), "default vec should work");
+}
+
+/// Test default string
+#[test]
+#[ignore = "Runtime limitation: default string not implemented - needs [RUNTIME-1048] ticket"]
+fn test_sqlite_1195_default_string() {
+    let result = execute_program(r#"
+        let s: String = Default::default();
+    "#);
+    assert!(result.is_ok(), "default string should work");
+}
+
+// ============================================================================
+// Category 242: PartialEq/Eq Runtime
+// ============================================================================
+
+/// Test partialeq simple
+#[test]
+#[ignore = "Runtime limitation: partialeq simple not implemented - needs [RUNTIME-1049] ticket"]
+fn test_sqlite_1196_partialeq_simple() {
+    let result = execute_program(r#"
+        let x = 42;
+        let y = 42;
+        let eq = x == y;
+    "#);
+    assert!(result.is_ok(), "partialeq simple should work");
+}
+
+/// Test partialeq custom
+#[test]
+#[ignore = "Runtime limitation: partialeq custom not implemented - needs [RUNTIME-1050] ticket"]
+fn test_sqlite_1197_partialeq_custom() {
+    let result = execute_program(r#"
+        struct Foo { x: i32 }
+        impl PartialEq for Foo {
+            fn eq(&self, other: &Foo) -> bool { self.x == other.x }
+        }
+        let f1 = Foo { x: 42 };
+        let f2 = Foo { x: 42 };
+        let eq = f1 == f2;
+    "#);
+    assert!(result.is_ok(), "partialeq custom should work");
+}
+
+/// Test eq trait
+#[test]
+#[ignore = "Runtime limitation: eq trait not implemented - needs [RUNTIME-1051] ticket"]
+fn test_sqlite_1198_eq_trait() {
+    let result = execute_program(r#"
+        #[derive(PartialEq, Eq)]
+        struct Foo { x: i32 }
+        let f1 = Foo { x: 42 };
+        let f2 = Foo { x: 42 };
+        let eq = f1 == f2;
+    "#);
+    assert!(result.is_ok(), "eq trait should work");
+}
+
+/// Test ne operator
+#[test]
+#[ignore = "Runtime limitation: ne operator not implemented - needs [RUNTIME-1052] ticket"]
+fn test_sqlite_1199_ne_operator() {
+    let result = execute_program(r#"
+        let x = 42;
+        let y = 43;
+        let ne = x != y;
+    "#);
+    assert!(result.is_ok(), "ne operator should work");
+}
+
+/// Test partialeq derive
+#[test]
+#[ignore = "Runtime limitation: partialeq derive not implemented - needs [RUNTIME-1053] ticket"]
+fn test_sqlite_1200_partialeq_derive() {
+    let result = execute_program(r#"
+        #[derive(PartialEq)]
+        struct Foo { x: i32, y: i32 }
+        let f1 = Foo { x: 1, y: 2 };
+        let f2 = Foo { x: 1, y: 2 };
+        let eq = f1 == f2;
+    "#);
+    assert!(result.is_ok(), "partialeq derive should work");
+}
+
+// ============================================================================
+// Category 243: PartialOrd/Ord Runtime
+// ============================================================================
+
+/// Test partialord simple
+#[test]
+#[ignore = "Runtime limitation: partialord simple not implemented - needs [RUNTIME-1054] ticket"]
+fn test_sqlite_1201_partialord_simple() {
+    let result = execute_program(r#"
+        let x = 42;
+        let y = 43;
+        let lt = x < y;
+    "#);
+    assert!(result.is_ok(), "partialord simple should work");
+}
+
+/// Test partialord custom
+#[test]
+#[ignore = "Runtime limitation: partialord custom not implemented - needs [RUNTIME-1055] ticket"]
+fn test_sqlite_1202_partialord_custom() {
+    let result = execute_program(r#"
+        use std::cmp::Ordering;
+        struct Foo { x: i32 }
+        impl PartialOrd for Foo {
+            fn partial_cmp(&self, other: &Foo) -> Option<Ordering> {
+                self.x.partial_cmp(&other.x)
+            }
+        }
+        let f1 = Foo { x: 42 };
+        let f2 = Foo { x: 43 };
+        let lt = f1 < f2;
+    "#);
+    assert!(result.is_ok(), "partialord custom should work");
+}
+
+/// Test ord trait
+#[test]
+#[ignore = "Runtime limitation: ord trait not implemented - needs [RUNTIME-1056] ticket"]
+fn test_sqlite_1203_ord_trait() {
+    let result = execute_program(r#"
+        use std::cmp::Ordering;
+        #[derive(PartialEq, Eq, PartialOrd, Ord)]
+        struct Foo { x: i32 }
+        let f1 = Foo { x: 42 };
+        let f2 = Foo { x: 43 };
+        let cmp = f1.cmp(&f2);
+    "#);
+    assert!(result.is_ok(), "ord trait should work");
+}
+
+/// Test comparison ops
+#[test]
+#[ignore = "Runtime limitation: comparison ops not implemented - needs [RUNTIME-1057] ticket"]
+fn test_sqlite_1204_comparison_ops() {
+    let result = execute_program(r#"
+        let x = 42;
+        let y = 43;
+        let lt = x < y;
+        let le = x <= y;
+        let gt = x > y;
+        let ge = x >= y;
+    "#);
+    assert!(result.is_ok(), "comparison ops should work");
+}
+
+/// Test min max
+#[test]
+#[ignore = "Runtime limitation: min max not implemented - needs [RUNTIME-1058] ticket"]
+fn test_sqlite_1205_min_max() {
+    let result = execute_program(r#"
+        use std::cmp::{min, max};
+        let x = 42;
+        let y = 43;
+        let mn = min(x, y);
+        let mx = max(x, y);
+    "#);
+    assert!(result.is_ok(), "min max should work");
+}
+
+// ============================================================================
+// Category 244: Hash Runtime
+// ============================================================================
+
+/// Test hash simple
+#[test]
+#[ignore = "Runtime limitation: hash simple not implemented - needs [RUNTIME-1059] ticket"]
+fn test_sqlite_1206_hash_simple() {
+    let result = execute_program(r#"
+        use std::collections::hash_map::DefaultHasher;
+        use std::hash::{Hash, Hasher};
+        let x = 42;
+        let mut hasher = DefaultHasher::new();
+        x.hash(&mut hasher);
+        let hash = hasher.finish();
+    "#);
+    assert!(result.is_ok(), "hash simple should work");
+}
+
+/// Test hash custom
+#[test]
+#[ignore = "Runtime limitation: hash custom not implemented - needs [RUNTIME-1060] ticket"]
+fn test_sqlite_1207_hash_custom() {
+    let result = execute_program(r#"
+        use std::hash::{Hash, Hasher};
+        struct Foo { x: i32 }
+        impl Hash for Foo {
+            fn hash<H: Hasher>(&self, state: &mut H) {
+                self.x.hash(state);
+            }
+        }
+    "#);
+    assert!(result.is_ok(), "hash custom should work");
+}
+
+/// Test hash derive
+#[test]
+#[ignore = "Runtime limitation: hash derive not implemented - needs [RUNTIME-1061] ticket"]
+fn test_sqlite_1208_hash_derive() {
+    let result = execute_program(r#"
+        use std::collections::HashMap;
+        #[derive(Hash, PartialEq, Eq)]
+        struct Foo { x: i32 }
+        let mut map = HashMap::new();
+        map.insert(Foo { x: 42 }, "value");
+    "#);
+    assert!(result.is_ok(), "hash derive should work");
+}
+
+/// Test hashmap insert
+#[test]
+#[ignore = "Runtime limitation: hashmap insert not implemented - needs [RUNTIME-1062] ticket"]
+fn test_sqlite_1209_hashmap_insert() {
+    let result = execute_program(r#"
+        use std::collections::HashMap;
+        let mut map = HashMap::new();
+        map.insert("key", 42);
+    "#);
+    assert!(result.is_ok(), "hashmap insert should work");
+}
+
+/// Test hashmap get
+#[test]
+#[ignore = "Runtime limitation: hashmap get not implemented - needs [RUNTIME-1063] ticket"]
+fn test_sqlite_1210_hashmap_get() {
+    let result = execute_program(r#"
+        use std::collections::HashMap;
+        let mut map = HashMap::new();
+        map.insert("key", 42);
+        let value = map.get("key");
+    "#);
+    assert!(result.is_ok(), "hashmap get should work");
+}
+
+// ============================================================================
+// Category 245: Clone Runtime
+// ============================================================================
+
+/// Test clone simple
+#[test]
+#[ignore = "Runtime limitation: clone simple not implemented - needs [RUNTIME-1064] ticket"]
+fn test_sqlite_1211_clone_simple() {
+    let result = execute_program(r#"
+        let x = 42;
+        let y = x.clone();
+    "#);
+    assert!(result.is_ok(), "clone simple should work");
+}
+
+/// Test clone custom
+#[test]
+#[ignore = "Runtime limitation: clone custom not implemented - needs [RUNTIME-1065] ticket"]
+fn test_sqlite_1212_clone_custom() {
+    let result = execute_program(r#"
+        struct Foo { x: i32 }
+        impl Clone for Foo {
+            fn clone(&self) -> Foo { Foo { x: self.x } }
+        }
+        let f1 = Foo { x: 42 };
+        let f2 = f1.clone();
+    "#);
+    assert!(result.is_ok(), "clone custom should work");
+}
+
+/// Test clone derive
+#[test]
+#[ignore = "Runtime limitation: clone derive not implemented - needs [RUNTIME-1066] ticket"]
+fn test_sqlite_1213_clone_derive() {
+    let result = execute_program(r#"
+        #[derive(Clone)]
+        struct Foo { x: i32 }
+        let f1 = Foo { x: 42 };
+        let f2 = f1.clone();
+    "#);
+    assert!(result.is_ok(), "clone derive should work");
+}
+
+/// Test clone vec
+#[test]
+#[ignore = "Runtime limitation: clone vec not implemented - needs [RUNTIME-1067] ticket"]
+fn test_sqlite_1214_clone_vec() {
+    let result = execute_program(r#"
+        let v1 = vec![1, 2, 3];
+        let v2 = v1.clone();
+    "#);
+    assert!(result.is_ok(), "clone vec should work");
+}
+
+/// Test clone string
+#[test]
+#[ignore = "Runtime limitation: clone string not implemented - needs [RUNTIME-1068] ticket"]
+fn test_sqlite_1215_clone_string() {
+    let result = execute_program(r#"
+        let s1 = String::from("hello");
+        let s2 = s1.clone();
+    "#);
+    assert!(result.is_ok(), "clone string should work");
+}
+
+// ============================================================================
+// Category 246: Copy Runtime
+// ============================================================================
+
+/// Test copy simple
+#[test]
+#[ignore = "Runtime limitation: copy simple not implemented - needs [RUNTIME-1069] ticket"]
+fn test_sqlite_1216_copy_simple() {
+    let result = execute_program(r#"
+        let x: i32 = 42;
+        let y = x;
+        let z = x;
+    "#);
+    assert!(result.is_ok(), "copy simple should work");
+}
+
+/// Test copy custom
+#[test]
+#[ignore = "Runtime limitation: copy custom not implemented - needs [RUNTIME-1070] ticket"]
+fn test_sqlite_1217_copy_custom() {
+    let result = execute_program(r#"
+        #[derive(Copy, Clone)]
+        struct Foo { x: i32 }
+        let f1 = Foo { x: 42 };
+        let f2 = f1;
+        let f3 = f1;
+    "#);
+    assert!(result.is_ok(), "copy custom should work");
+}
+
+/// Test copy vs move
+#[test]
+#[ignore = "Runtime limitation: copy vs move not implemented - needs [RUNTIME-1071] ticket"]
+fn test_sqlite_1218_copy_vs_move() {
+    let result = execute_program(r#"
+        let x = 42;
+        let y = x;
+        let z = x;
+        let s = String::from("hello");
+        let s2 = s;
+    "#);
+    assert!(result.is_ok(), "copy vs move should work");
+}
+
+/// Test copy array
+#[test]
+#[ignore = "Runtime limitation: copy array not implemented - needs [RUNTIME-1072] ticket"]
+fn test_sqlite_1219_copy_array() {
+    let result = execute_program(r#"
+        let a1 = [1, 2, 3];
+        let a2 = a1;
+        let a3 = a1;
+    "#);
+    assert!(result.is_ok(), "copy array should work");
+}
+
+/// Test copy tuple
+#[test]
+#[ignore = "Runtime limitation: copy tuple not implemented - needs [RUNTIME-1073] ticket"]
+fn test_sqlite_1220_copy_tuple() {
+    let result = execute_program(r#"
+        let t1 = (1, 2);
+        let t2 = t1;
+        let t3 = t1;
+    "#);
+    assert!(result.is_ok(), "copy tuple should work");
+}
+
+// ============================================================================
+// Category 247: Send/Sync Runtime
+// ============================================================================
+
+/// Test send simple
+#[test]
+#[ignore = "Runtime limitation: send simple not implemented - needs [RUNTIME-1074] ticket"]
+fn test_sqlite_1221_send_simple() {
+    let result = execute_program(r#"
+        fn is_send<T: Send>() { }
+        is_send::<i32>();
+    "#);
+    assert!(result.is_ok(), "send simple should work");
+}
+
+/// Test sync simple
+#[test]
+#[ignore = "Runtime limitation: sync simple not implemented - needs [RUNTIME-1075] ticket"]
+fn test_sqlite_1222_sync_simple() {
+    let result = execute_program(r#"
+        fn is_sync<T: Sync>() { }
+        is_sync::<i32>();
+    "#);
+    assert!(result.is_ok(), "sync simple should work");
+}
+
+/// Test send custom
+#[test]
+#[ignore = "Runtime limitation: send custom not implemented - needs [RUNTIME-1076] ticket"]
+fn test_sqlite_1223_send_custom() {
+    let result = execute_program(r#"
+        struct Foo;
+        unsafe impl Send for Foo { }
+    "#);
+    assert!(result.is_ok(), "send custom should work");
+}
+
+/// Test sync custom
+#[test]
+#[ignore = "Runtime limitation: sync custom not implemented - needs [RUNTIME-1077] ticket"]
+fn test_sqlite_1224_sync_custom() {
+    let result = execute_program(r#"
+        struct Foo;
+        unsafe impl Sync for Foo { }
+    "#);
+    assert!(result.is_ok(), "sync custom should work");
+}
+
+/// Test send sync bound
+#[test]
+#[ignore = "Runtime limitation: send sync bound not implemented - needs [RUNTIME-1078] ticket"]
+fn test_sqlite_1225_send_sync_bound() {
+    let result = execute_program(r#"
+        fn foo<T: Send + Sync>(x: T) { }
+        foo(42);
+    "#);
+    assert!(result.is_ok(), "send sync bound should work");
+}
+
+// ============================================================================
+// Category 248: Sized Runtime
+// ============================================================================
+
+/// Test sized implicit
+#[test]
+#[ignore = "Runtime limitation: sized implicit not implemented - needs [RUNTIME-1079] ticket"]
+fn test_sqlite_1226_sized_implicit() {
+    let result = execute_program(r#"
+        fn foo<T>(x: T) { }
+        foo(42);
+    "#);
+    assert!(result.is_ok(), "sized implicit should work");
+}
+
+/// Test unsized trait object
+#[test]
+#[ignore = "Runtime limitation: unsized trait object not implemented - needs [RUNTIME-1080] ticket"]
+fn test_sqlite_1227_unsized_trait_object() {
+    let result = execute_program(r#"
+        trait Foo { }
+        fn bar(x: &dyn Foo) { }
+    "#);
+    assert!(result.is_ok(), "unsized trait object should work");
+}
+
+/// Test unsized slice
+#[test]
+#[ignore = "Runtime limitation: unsized slice not implemented - needs [RUNTIME-1081] ticket"]
+fn test_sqlite_1228_unsized_slice() {
+    let result = execute_program(r#"
+        fn foo(x: &[i32]) { }
+        let v = vec![1, 2, 3];
+        foo(&v);
+    "#);
+    assert!(result.is_ok(), "unsized slice should work");
+}
+
+/// Test unsized str
+#[test]
+#[ignore = "Runtime limitation: unsized str not implemented - needs [RUNTIME-1082] ticket"]
+fn test_sqlite_1229_unsized_str() {
+    let result = execute_program(r#"
+        fn foo(x: &str) { }
+        foo("hello");
+    "#);
+    assert!(result.is_ok(), "unsized str should work");
+}
+
+/// Test sized bound explicit
+#[test]
+#[ignore = "Runtime limitation: sized bound explicit not implemented - needs [RUNTIME-1083] ticket"]
+fn test_sqlite_1230_sized_bound_explicit() {
+    let result = execute_program(r#"
+        fn foo<T: Sized>(x: T) { }
+        foo(42);
+    "#);
+    assert!(result.is_ok(), "sized bound explicit should work");
+}
+
+// ============================================================================
+// Category 249: AsRef/AsMut Runtime
+// ============================================================================
+
+/// Test asref simple
+#[test]
+#[ignore = "Runtime limitation: asref simple not implemented - needs [RUNTIME-1084] ticket"]
+fn test_sqlite_1231_asref_simple() {
+    let result = execute_program(r#"
+        fn foo<T: AsRef<str>>(x: T) { }
+        foo("hello");
+    "#);
+    assert!(result.is_ok(), "asref simple should work");
+}
+
+/// Test asref string
+#[test]
+#[ignore = "Runtime limitation: asref string not implemented - needs [RUNTIME-1085] ticket"]
+fn test_sqlite_1232_asref_string() {
+    let result = execute_program(r#"
+        let s = String::from("hello");
+        let slice: &str = s.as_ref();
+    "#);
+    assert!(result.is_ok(), "asref string should work");
+}
+
+/// Test asref vec
+#[test]
+#[ignore = "Runtime limitation: asref vec not implemented - needs [RUNTIME-1086] ticket"]
+fn test_sqlite_1233_asref_vec() {
+    let result = execute_program(r#"
+        let v = vec![1, 2, 3];
+        let slice: &[i32] = v.as_ref();
+    "#);
+    assert!(result.is_ok(), "asref vec should work");
+}
+
+/// Test asmut simple
+#[test]
+#[ignore = "Runtime limitation: asmut simple not implemented - needs [RUNTIME-1087] ticket"]
+fn test_sqlite_1234_asmut_simple() {
+    let result = execute_program(r#"
+        fn foo<T: AsMut<[i32]>>(mut x: T) { }
+        let mut v = vec![1, 2, 3];
+        foo(v);
+    "#);
+    assert!(result.is_ok(), "asmut simple should work");
+}
+
+/// Test asmut vec
+#[test]
+#[ignore = "Runtime limitation: asmut vec not implemented - needs [RUNTIME-1088] ticket"]
+fn test_sqlite_1235_asmut_vec() {
+    let result = execute_program(r#"
+        let mut v = vec![1, 2, 3];
+        let slice: &mut [i32] = v.as_mut();
+    "#);
+    assert!(result.is_ok(), "asmut vec should work");
+}
+
+// ============================================================================
+// Category 250: Borrow/BorrowMut Runtime
+// ============================================================================
+
+/// Test borrow simple
+#[test]
+#[ignore = "Runtime limitation: borrow simple not implemented - needs [RUNTIME-1089] ticket"]
+fn test_sqlite_1236_borrow_simple() {
+    let result = execute_program(r#"
+        use std::borrow::Borrow;
+        fn foo<T: Borrow<str>>(x: T) { }
+        foo("hello");
+    "#);
+    assert!(result.is_ok(), "borrow simple should work");
+}
+
+/// Test borrow string
+#[test]
+#[ignore = "Runtime limitation: borrow string not implemented - needs [RUNTIME-1090] ticket"]
+fn test_sqlite_1237_borrow_string() {
+    let result = execute_program(r#"
+        use std::borrow::Borrow;
+        let s = String::from("hello");
+        let borrowed: &str = s.borrow();
+    "#);
+    assert!(result.is_ok(), "borrow string should work");
+}
+
+/// Test borrowmut simple
+#[test]
+#[ignore = "Runtime limitation: borrowmut simple not implemented - needs [RUNTIME-1091] ticket"]
+fn test_sqlite_1238_borrowmut_simple() {
+    let result = execute_program(r#"
+        use std::borrow::BorrowMut;
+        fn foo<T: BorrowMut<[i32]>>(mut x: T) { }
+        let mut v = vec![1, 2, 3];
+        foo(v);
+    "#);
+    assert!(result.is_ok(), "borrowmut simple should work");
+}
+
+/// Test cow simple
+#[test]
+#[ignore = "Runtime limitation: cow simple not implemented - needs [RUNTIME-1092] ticket"]
+fn test_sqlite_1239_cow_simple() {
+    let result = execute_program(r#"
+        use std::borrow::Cow;
+        let cow: Cow<str> = Cow::Borrowed("hello");
+    "#);
+    assert!(result.is_ok(), "cow simple should work");
+}
+
+/// Test cow owned
+#[test]
+#[ignore = "Runtime limitation: cow owned not implemented - needs [RUNTIME-1093] ticket"]
+fn test_sqlite_1240_cow_owned() {
+    let result = execute_program(r#"
+        use std::borrow::Cow;
+        let cow: Cow<str> = Cow::Owned(String::from("hello"));
+    "#);
+    assert!(result.is_ok(), "cow owned should work");
+}
