@@ -8477,6 +8477,601 @@ fn test_sqlite_740_asref_trait() {
     assert!(result.is_ok(), "AsRef trait should work");
 }
 
+// Category 141: Default Trait Runtime
+/// Test Default trait basic
+#[test]
+#[ignore = "Runtime limitation: Default trait basic not implemented - needs [RUNTIME-594] ticket"]
+fn test_sqlite_741_default_basic() {
+    let result = execute_program(r#"
+        let x: i32 = Default::default();
+    "#);
+    assert!(result.is_ok(), "Default trait basic should work");
+}
+
+/// Test Default trait struct
+#[test]
+#[ignore = "Runtime limitation: Default trait struct not implemented - needs [RUNTIME-595] ticket"]
+fn test_sqlite_742_default_struct() {
+    let result = execute_program(r#"
+        struct Point { x: i32, y: i32 }
+        impl Default for Point {
+            fun default() -> Self { Point { x: 0, y: 0 } }
+        }
+    "#);
+    assert!(result.is_ok(), "Default trait struct should work");
+}
+
+/// Test Default derive
+#[test]
+#[ignore = "Runtime limitation: Default derive not implemented - needs [RUNTIME-596] ticket"]
+fn test_sqlite_743_default_derive() {
+    let result = execute_program(r#"
+        #[derive(Default)]
+        struct Point { x: i32, y: i32 }
+    "#);
+    assert!(result.is_ok(), "Default derive should work");
+}
+
+/// Test Default for collections
+#[test]
+#[ignore = "Runtime limitation: Default for collections not implemented - needs [RUNTIME-597] ticket"]
+fn test_sqlite_744_default_vec() {
+    let result = execute_program(r#"
+        let v: Vec<i32> = Default::default();
+    "#);
+    assert!(result.is_ok(), "Default for collections should work");
+}
+
+/// Test Default with new
+#[test]
+#[ignore = "Runtime limitation: Default with new not implemented - needs [RUNTIME-598] ticket"]
+fn test_sqlite_745_default_new() {
+    let result = execute_program(r#"
+        struct S;
+        impl Default for S {
+            fun default() -> Self { S::new() }
+        }
+    "#);
+    assert!(result.is_ok(), "Default with new should work");
+}
+
+// Category 142: Clone Trait Runtime
+/// Test Clone trait basic
+#[test]
+#[ignore = "Runtime limitation: Clone trait basic not implemented - needs [RUNTIME-599] ticket"]
+fn test_sqlite_746_clone_basic() {
+    let result = execute_program(r#"
+        let x = vec![1, 2, 3];
+        let y = x.clone();
+    "#);
+    assert!(result.is_ok(), "Clone trait basic should work");
+}
+
+/// Test Clone derive
+#[test]
+#[ignore = "Runtime limitation: Clone derive not implemented - needs [RUNTIME-600] ticket"]
+fn test_sqlite_747_clone_derive() {
+    let result = execute_program(r#"
+        #[derive(Clone)]
+        struct Point { x: i32, y: i32 }
+    "#);
+    assert!(result.is_ok(), "Clone derive should work");
+}
+
+/// Test Clone impl
+#[test]
+#[ignore = "Runtime limitation: Clone impl not implemented - needs [RUNTIME-601] ticket"]
+fn test_sqlite_748_clone_impl() {
+    let result = execute_program(r#"
+        struct S;
+        impl Clone for S {
+            fun clone(&self) -> Self { S }
+        }
+    "#);
+    assert!(result.is_ok(), "Clone impl should work");
+}
+
+/// Test clone_from
+#[test]
+#[ignore = "Runtime limitation: clone_from not implemented - needs [RUNTIME-602] ticket"]
+fn test_sqlite_749_clone_from() {
+    let result = execute_program(r#"
+        let mut x = vec![1, 2, 3];
+        let y = vec![4, 5, 6];
+        x.clone_from(&y);
+    "#);
+    assert!(result.is_ok(), "clone_from should work");
+}
+
+/// Test Clone for generic
+#[test]
+#[ignore = "Runtime limitation: Clone for generic not implemented - needs [RUNTIME-603] ticket"]
+fn test_sqlite_750_clone_generic() {
+    let result = execute_program(r#"
+        struct Wrapper<T: Clone> { value: T }
+        impl<T: Clone> Clone for Wrapper<T> {
+            fun clone(&self) -> Self { Wrapper { value: self.value.clone() } }
+        }
+    "#);
+    assert!(result.is_ok(), "Clone for generic should work");
+}
+
+// Category 143: Copy Trait Runtime
+/// Test Copy trait basic
+#[test]
+#[ignore = "Runtime limitation: Copy trait basic not implemented - needs [RUNTIME-604] ticket"]
+fn test_sqlite_751_copy_basic() {
+    let result = execute_program(r#"
+        let x = 42;
+        let y = x;
+        let z = x;
+    "#);
+    assert!(result.is_ok(), "Copy trait basic should work");
+}
+
+/// Test Copy derive
+#[test]
+#[ignore = "Runtime limitation: Copy derive not implemented - needs [RUNTIME-605] ticket"]
+fn test_sqlite_752_copy_derive() {
+    let result = execute_program(r#"
+        #[derive(Copy, Clone)]
+        struct Point { x: i32, y: i32 }
+    "#);
+    assert!(result.is_ok(), "Copy derive should work");
+}
+
+/// Test Copy semantics
+#[test]
+#[ignore = "Runtime limitation: Copy semantics not implemented - needs [RUNTIME-606] ticket"]
+fn test_sqlite_753_copy_semantics() {
+    let result = execute_program(r#"
+        let x = 42;
+        let y = x;
+        println!("{}", x);
+    "#);
+    assert!(result.is_ok(), "Copy semantics should work");
+}
+
+/// Test Copy vs Move
+#[test]
+#[ignore = "Runtime limitation: Copy vs Move not implemented - needs [RUNTIME-607] ticket"]
+fn test_sqlite_754_copy_move() {
+    let result = execute_program(r#"
+        let s = String::from("hello");
+        let t = s;
+    "#);
+    assert!(result.is_ok(), "Copy vs Move should work");
+}
+
+/// Test Copy marker trait
+#[test]
+#[ignore = "Runtime limitation: Copy marker trait not implemented - needs [RUNTIME-608] ticket"]
+fn test_sqlite_755_copy_marker() {
+    let result = execute_program(r#"
+        fun is_copy<T: Copy>() { }
+    "#);
+    assert!(result.is_ok(), "Copy marker trait should work");
+}
+
+// Category 144: Debug Trait Runtime
+/// Test Debug trait basic
+#[test]
+#[ignore = "Runtime limitation: Debug trait basic not implemented - needs [RUNTIME-609] ticket"]
+fn test_sqlite_756_debug_basic() {
+    let result = execute_program(r#"
+        println!("{:?}", 42);
+    "#);
+    assert!(result.is_ok(), "Debug trait basic should work");
+}
+
+/// Test Debug derive
+#[test]
+#[ignore = "Runtime limitation: Debug derive not implemented - needs [RUNTIME-610] ticket"]
+fn test_sqlite_757_debug_derive() {
+    let result = execute_program(r#"
+        #[derive(Debug)]
+        struct Point { x: i32, y: i32 }
+    "#);
+    assert!(result.is_ok(), "Debug derive should work");
+}
+
+/// Test Debug impl
+#[test]
+#[ignore = "Runtime limitation: Debug impl not implemented - needs [RUNTIME-611] ticket"]
+fn test_sqlite_758_debug_impl() {
+    let result = execute_program(r#"
+        use std::fmt;
+        impl fmt::Debug for S {
+            fun fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+                write!(f, "S")
+            }
+        }
+    "#);
+    assert!(result.is_ok(), "Debug impl should work");
+}
+
+/// Test Debug pretty print
+#[test]
+#[ignore = "Runtime limitation: Debug pretty print not implemented - needs [RUNTIME-612] ticket"]
+fn test_sqlite_759_debug_pretty() {
+    let result = execute_program(r#"
+        println!("{:#?}", vec![1, 2, 3]);
+    "#);
+    assert!(result.is_ok(), "Debug pretty print should work");
+}
+
+/// Test Debug for collections
+#[test]
+#[ignore = "Runtime limitation: Debug for collections not implemented - needs [RUNTIME-613] ticket"]
+fn test_sqlite_760_debug_vec() {
+    let result = execute_program(r#"
+        let v = vec![1, 2, 3];
+        println!("{:?}", v);
+    "#);
+    assert!(result.is_ok(), "Debug for collections should work");
+}
+
+// Category 145: Display Trait Runtime
+/// Test Display trait basic
+#[test]
+#[ignore = "Runtime limitation: Display trait basic not implemented - needs [RUNTIME-614] ticket"]
+fn test_sqlite_761_display_basic() {
+    let result = execute_program(r#"
+        println!("{}", 42);
+    "#);
+    assert!(result.is_ok(), "Display trait basic should work");
+}
+
+/// Test Display impl
+#[test]
+#[ignore = "Runtime limitation: Display impl not implemented - needs [RUNTIME-615] ticket"]
+fn test_sqlite_762_display_impl() {
+    let result = execute_program(r#"
+        use std::fmt;
+        impl fmt::Display for Point {
+            fun fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+                write!(f, "({}, {})", self.x, self.y)
+            }
+        }
+    "#);
+    assert!(result.is_ok(), "Display impl should work");
+}
+
+/// Test Display to_string
+#[test]
+#[ignore = "Runtime limitation: Display to_string not implemented - needs [RUNTIME-616] ticket"]
+fn test_sqlite_763_display_to_string() {
+    let result = execute_program(r#"
+        let s = 42.to_string();
+    "#);
+    assert!(result.is_ok(), "Display to_string should work");
+}
+
+/// Test Display format
+#[test]
+#[ignore = "Runtime limitation: Display format not implemented - needs [RUNTIME-617] ticket"]
+fn test_sqlite_764_display_format() {
+    let result = execute_program(r#"
+        let s = format!("Value: {}", 42);
+    "#);
+    assert!(result.is_ok(), "Display format should work");
+}
+
+/// Test Display vs Debug
+#[test]
+#[ignore = "Runtime limitation: Display vs Debug not implemented - needs [RUNTIME-618] ticket"]
+fn test_sqlite_765_display_debug() {
+    let result = execute_program(r#"
+        println!("{}", "hello");
+        println!("{:?}", "hello");
+    "#);
+    assert!(result.is_ok(), "Display vs Debug should work");
+}
+
+// Category 146: PartialEq and Eq Runtime
+/// Test PartialEq basic
+#[test]
+#[ignore = "Runtime limitation: PartialEq basic not implemented - needs [RUNTIME-619] ticket"]
+fn test_sqlite_766_partialeq_basic() {
+    let result = execute_program(r#"
+        let x = 42;
+        let y = 42;
+        let equal = x == y;
+    "#);
+    assert!(result.is_ok(), "PartialEq basic should work");
+}
+
+/// Test PartialEq derive
+#[test]
+#[ignore = "Runtime limitation: PartialEq derive not implemented - needs [RUNTIME-620] ticket"]
+fn test_sqlite_767_partialeq_derive() {
+    let result = execute_program(r#"
+        #[derive(PartialEq)]
+        struct Point { x: i32, y: i32 }
+    "#);
+    assert!(result.is_ok(), "PartialEq derive should work");
+}
+
+/// Test PartialEq impl
+#[test]
+#[ignore = "Runtime limitation: PartialEq impl not implemented - needs [RUNTIME-621] ticket"]
+fn test_sqlite_768_partialeq_impl() {
+    let result = execute_program(r#"
+        impl PartialEq for S {
+            fun eq(&self, other: &Self) -> bool { true }
+        }
+    "#);
+    assert!(result.is_ok(), "PartialEq impl should work");
+}
+
+/// Test Eq trait
+#[test]
+#[ignore = "Runtime limitation: Eq trait not implemented - needs [RUNTIME-622] ticket"]
+fn test_sqlite_769_eq_trait() {
+    let result = execute_program(r#"
+        #[derive(PartialEq, Eq)]
+        struct Point { x: i32, y: i32 }
+    "#);
+    assert!(result.is_ok(), "Eq trait should work");
+}
+
+/// Test ne method
+#[test]
+#[ignore = "Runtime limitation: ne method not implemented - needs [RUNTIME-623] ticket"]
+fn test_sqlite_770_ne_method() {
+    let result = execute_program(r#"
+        let not_equal = 42 != 43;
+    "#);
+    assert!(result.is_ok(), "ne method should work");
+}
+
+// Category 147: PartialOrd and Ord Runtime
+/// Test PartialOrd basic
+#[test]
+#[ignore = "Runtime limitation: PartialOrd basic not implemented - needs [RUNTIME-624] ticket"]
+fn test_sqlite_771_partialord_basic() {
+    let result = execute_program(r#"
+        let less = 1 < 2;
+    "#);
+    assert!(result.is_ok(), "PartialOrd basic should work");
+}
+
+/// Test PartialOrd derive
+#[test]
+#[ignore = "Runtime limitation: PartialOrd derive not implemented - needs [RUNTIME-625] ticket"]
+fn test_sqlite_772_partialord_derive() {
+    let result = execute_program(r#"
+        #[derive(PartialOrd)]
+        struct Point { x: i32, y: i32 }
+    "#);
+    assert!(result.is_ok(), "PartialOrd derive should work");
+}
+
+/// Test PartialOrd impl
+#[test]
+#[ignore = "Runtime limitation: PartialOrd impl not implemented - needs [RUNTIME-626] ticket"]
+fn test_sqlite_773_partialord_impl() {
+    let result = execute_program(r#"
+        impl PartialOrd for S {
+            fun partial_cmp(&self, other: &Self) -> Option<Ordering> {
+                Some(Ordering::Equal)
+            }
+        }
+    "#);
+    assert!(result.is_ok(), "PartialOrd impl should work");
+}
+
+/// Test Ord trait
+#[test]
+#[ignore = "Runtime limitation: Ord trait not implemented - needs [RUNTIME-627] ticket"]
+fn test_sqlite_774_ord_trait() {
+    let result = execute_program(r#"
+        #[derive(Ord, PartialOrd, Eq, PartialEq)]
+        struct Point { x: i32, y: i32 }
+    "#);
+    assert!(result.is_ok(), "Ord trait should work");
+}
+
+/// Test comparison operators
+#[test]
+#[ignore = "Runtime limitation: comparison operators not implemented - needs [RUNTIME-628] ticket"]
+fn test_sqlite_775_cmp_ops() {
+    let result = execute_program(r#"
+        let lt = 1 < 2;
+        let le = 1 <= 2;
+        let gt = 2 > 1;
+        let ge = 2 >= 1;
+    "#);
+    assert!(result.is_ok(), "Comparison operators should work");
+}
+
+// Category 148: Hash Trait Runtime
+/// Test Hash trait basic
+#[test]
+#[ignore = "Runtime limitation: Hash trait basic not implemented - needs [RUNTIME-629] ticket"]
+fn test_sqlite_776_hash_basic() {
+    let result = execute_program(r#"
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        set.insert(42);
+    "#);
+    assert!(result.is_ok(), "Hash trait basic should work");
+}
+
+/// Test Hash derive
+#[test]
+#[ignore = "Runtime limitation: Hash derive not implemented - needs [RUNTIME-630] ticket"]
+fn test_sqlite_777_hash_derive() {
+    let result = execute_program(r#"
+        #[derive(Hash)]
+        struct Point { x: i32, y: i32 }
+    "#);
+    assert!(result.is_ok(), "Hash derive should work");
+}
+
+/// Test Hash impl
+#[test]
+#[ignore = "Runtime limitation: Hash impl not implemented - needs [RUNTIME-631] ticket"]
+fn test_sqlite_778_hash_impl() {
+    let result = execute_program(r#"
+        use std::hash::{Hash, Hasher};
+        impl Hash for S {
+            fun hash<H: Hasher>(&self, state: &mut H) {
+                42.hash(state);
+            }
+        }
+    "#);
+    assert!(result.is_ok(), "Hash impl should work");
+}
+
+/// Test HashMap with custom key
+#[test]
+#[ignore = "Runtime limitation: HashMap with custom key not implemented - needs [RUNTIME-632] ticket"]
+fn test_sqlite_779_hashmap_custom() {
+    let result = execute_program(r#"
+        #[derive(Hash, Eq, PartialEq)]
+        struct Key { id: i32 }
+        let mut map = HashMap::new();
+        map.insert(Key { id: 1 }, "value");
+    "#);
+    assert!(result.is_ok(), "HashMap with custom key should work");
+}
+
+/// Test HashSet with custom type
+#[test]
+#[ignore = "Runtime limitation: HashSet with custom type not implemented - needs [RUNTIME-633] ticket"]
+fn test_sqlite_780_hashset_custom() {
+    let result = execute_program(r#"
+        #[derive(Hash, Eq, PartialEq)]
+        struct Item { id: i32 }
+        let mut set = HashSet::new();
+        set.insert(Item { id: 1 });
+    "#);
+    assert!(result.is_ok(), "HashSet with custom type should work");
+}
+
+// Category 149: Drop Trait Runtime
+/// Test Drop trait basic
+#[test]
+#[ignore = "Runtime limitation: Drop trait basic not implemented - needs [RUNTIME-634] ticket"]
+fn test_sqlite_781_drop_basic() {
+    let result = execute_program(r#"
+        struct S;
+        impl Drop for S {
+            fun drop(&mut self) { }
+        }
+    "#);
+    assert!(result.is_ok(), "Drop trait basic should work");
+}
+
+/// Test Drop execution
+#[test]
+#[ignore = "Runtime limitation: Drop execution not implemented - needs [RUNTIME-635] ticket"]
+fn test_sqlite_782_drop_exec() {
+    let result = execute_program(r#"
+        {
+            let s = S;
+        }
+    "#);
+    assert!(result.is_ok(), "Drop execution should work");
+}
+
+/// Test Drop order
+#[test]
+#[ignore = "Runtime limitation: Drop order not implemented - needs [RUNTIME-636] ticket"]
+fn test_sqlite_783_drop_order() {
+    let result = execute_program(r#"
+        let a = S1;
+        let b = S2;
+    "#);
+    assert!(result.is_ok(), "Drop order should work");
+}
+
+/// Test manual drop
+#[test]
+#[ignore = "Runtime limitation: manual drop not implemented - needs [RUNTIME-637] ticket"]
+fn test_sqlite_784_manual_drop() {
+    let result = execute_program(r#"
+        let s = S;
+        drop(s);
+    "#);
+    assert!(result.is_ok(), "Manual drop should work");
+}
+
+/// Test Drop with resources
+#[test]
+#[ignore = "Runtime limitation: Drop with resources not implemented - needs [RUNTIME-638] ticket"]
+fn test_sqlite_785_drop_resources() {
+    let result = execute_program(r#"
+        struct File { handle: i32 }
+        impl Drop for File {
+            fun drop(&mut self) {
+                close(self.handle);
+            }
+        }
+    "#);
+    assert!(result.is_ok(), "Drop with resources should work");
+}
+
+// Category 150: Deref and DerefMut Runtime
+/// Test Deref trait basic
+#[test]
+#[ignore = "Runtime limitation: Deref trait basic not implemented - needs [RUNTIME-639] ticket"]
+fn test_sqlite_786_deref_basic() {
+    let result = execute_program(r#"
+        let boxed = Box::new(42);
+        let value = *boxed;
+    "#);
+    assert!(result.is_ok(), "Deref trait basic should work");
+}
+
+/// Test Deref impl
+#[test]
+#[ignore = "Runtime limitation: Deref impl not implemented - needs [RUNTIME-640] ticket"]
+fn test_sqlite_787_deref_impl() {
+    let result = execute_program(r#"
+        use std::ops::Deref;
+        impl Deref for Wrapper {
+            type Target = i32;
+            fun deref(&self) -> &Self::Target { &self.value }
+        }
+    "#);
+    assert!(result.is_ok(), "Deref impl should work");
+}
+
+/// Test DerefMut trait
+#[test]
+#[ignore = "Runtime limitation: DerefMut trait not implemented - needs [RUNTIME-641] ticket"]
+fn test_sqlite_788_derefmut_trait() {
+    let result = execute_program(r#"
+        let mut boxed = Box::new(42);
+        *boxed = 43;
+    "#);
+    assert!(result.is_ok(), "DerefMut trait should work");
+}
+
+/// Test Deref coercion
+#[test]
+#[ignore = "Runtime limitation: Deref coercion not implemented - needs [RUNTIME-642] ticket"]
+fn test_sqlite_789_deref_coercion() {
+    let result = execute_program(r#"
+        let s: String = String::from("hello");
+        let slice: &str = &s;
+    "#);
+    assert!(result.is_ok(), "Deref coercion should work");
+}
+
+/// Test Deref chain
+#[test]
+#[ignore = "Runtime limitation: Deref chain not implemented - needs [RUNTIME-643] ticket"]
+fn test_sqlite_790_deref_chain() {
+    let result = execute_program(r#"
+        let rc = Rc::new(Box::new(42));
+        let value = **rc;
+    "#);
+    assert!(result.is_ok(), "Deref chain should work");
+}
+
 // ============================================================================
 // Helper Functions
 // ============================================================================
