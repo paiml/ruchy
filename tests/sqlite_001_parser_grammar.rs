@@ -3256,6 +3256,85 @@ fn test_sqlite_366_trait_object_send_sync() {
 #[test] fn test_sqlite_1105_bound_for() { assert_parses("fun foo<T>() where T: for<'a> Fn(&'a i32) { }"); }
 #[test] fn test_sqlite_1106_bound_complex() { assert_parses("fun foo<T>() where T: Clone + for<'a> Fn(&'a i32) { }"); }
 
+// Category 171: Destructuring Advanced
+#[test] fn test_sqlite_1107_destruct_tuple() { assert_parses("let (a, b) = (1, 2);"); }
+#[test] fn test_sqlite_1108_destruct_nested() { assert_parses("let (a, (b, c)) = (1, (2, 3));"); }
+#[test] fn test_sqlite_1109_destruct_struct() { assert_parses("let Point { x, y } = p;"); }
+#[test] fn test_sqlite_1110_destruct_enum() { assert_parses("let Some(x) = opt;"); }
+#[ignore = "Parser limitation: rest pattern in array destructuring not supported - needs [PARSER-366] ticket"]
+#[test] fn test_sqlite_1111_destruct_rest() { assert_parses("let [a, b, ..] = arr;"); }
+
+// Category 172: If Let and While Let
+#[test] fn test_sqlite_1112_if_let() { assert_parses("if let Some(x) = opt { }"); }
+#[test] fn test_sqlite_1113_if_let_else() { assert_parses("if let Some(x) = opt { } else { }"); }
+#[test] fn test_sqlite_1114_while_let() { assert_parses("while let Some(x) = iter.next() { }"); }
+#[test] fn test_sqlite_1115_if_let_chain() { assert_parses("if let Some(x) = a { if let Some(y) = b { } }"); }
+#[test] fn test_sqlite_1116_while_let_pattern() { assert_parses("while let Ok(x) = result { }"); }
+
+// Category 173: Match Guards
+#[test] fn test_sqlite_1117_match_guard() { assert_parses("match x { n if n > 0 => n }"); }
+#[test] fn test_sqlite_1118_match_guard_complex() { assert_parses("match x { Some(n) if n > 0 => n }"); }
+#[test] fn test_sqlite_1119_match_guard_multi() { assert_parses("match x { n if n > 0 && n < 10 => n }"); }
+#[test] fn test_sqlite_1120_match_guard_call() { assert_parses("match x { n if is_valid(n) => n }"); }
+#[ignore = "Parser limitation: ref pattern in match guard not supported - needs [PARSER-367] ticket"]
+#[test] fn test_sqlite_1121_match_guard_ref() { assert_parses("match x { ref n if *n > 0 => n }"); }
+
+// Category 174: Qualified Paths
+#[ignore = "Parser limitation: qualified path syntax not supported - needs [PARSER-368] ticket"]
+#[test] fn test_sqlite_1122_path_qualified() { assert_parses("let x = <T as Trait>::method();"); }
+#[test] fn test_sqlite_1123_path_self() { assert_parses("let x = Self::method();"); }
+#[ignore = "Parser limitation: super path not supported - needs [PARSER-369] ticket"]
+#[test] fn test_sqlite_1124_path_super() { assert_parses("let x = super::module::func();"); }
+#[ignore = "Parser limitation: crate path not supported - needs [PARSER-370] ticket"]
+#[test] fn test_sqlite_1125_path_crate() { assert_parses("let x = crate::module::func();"); }
+#[ignore = "Parser limitation: absolute path with :: not supported - needs [PARSER-371] ticket"]
+#[test] fn test_sqlite_1126_path_absolute() { assert_parses("let x = ::std::vec::Vec::new();"); }
+
+// Category 175: Attribute Variations
+#[test] fn test_sqlite_1127_attr_derive() { assert_parses("#[derive(Debug, Clone)] struct S;"); }
+#[test] fn test_sqlite_1128_attr_cfg() { assert_parses("#[cfg(test)] fun foo() { }"); }
+#[test] fn test_sqlite_1129_attr_allow() { assert_parses("#[allow(dead_code)] fun foo() { }"); }
+#[ignore = "Parser limitation: doc attribute with value not supported - needs [PARSER-372] ticket"]
+#[test] fn test_sqlite_1130_attr_doc() { assert_parses("#[doc = \"text\"] struct S;"); }
+#[test] fn test_sqlite_1131_attr_repr() { assert_parses("#[repr(C)] struct S { x: i32 }"); }
+
+// Category 176: Return Type Syntax
+#[test] fn test_sqlite_1132_return_unit() { assert_parses("fun foo() { }"); }
+#[test] fn test_sqlite_1133_return_type() { assert_parses("fun foo() -> i32 { 42 }"); }
+#[test] fn test_sqlite_1134_return_tuple() { assert_parses("fun foo() -> (i32, i32) { (1, 2) }"); }
+#[test] fn test_sqlite_1135_return_result() { assert_parses("fun foo() -> Result<i32, Error> { Ok(42) }"); }
+#[test] fn test_sqlite_1136_return_impl() { assert_parses("fun foo() -> impl Display { 42 }"); }
+
+// Category 177: Field Access Patterns
+#[test] fn test_sqlite_1137_field_simple() { assert_parses("x.field;"); }
+#[test] fn test_sqlite_1138_field_chain() { assert_parses("x.a.b.c;"); }
+#[test] fn test_sqlite_1139_field_tuple() { assert_parses("x.0;"); }
+#[ignore = "Parser limitation: chained tuple field access not supported - needs [PARSER-373] ticket"]
+#[test] fn test_sqlite_1140_field_tuple_chain() { assert_parses("x.0.1.2;"); }
+#[test] fn test_sqlite_1141_field_mixed() { assert_parses("x.field.0.other;"); }
+
+// Category 178: Parenthesized Expressions
+#[test] fn test_sqlite_1142_paren_simple() { assert_parses("(42);"); }
+#[test] fn test_sqlite_1143_paren_expr() { assert_parses("(x + y);"); }
+#[test] fn test_sqlite_1144_paren_nested() { assert_parses("((x));"); }
+#[test] fn test_sqlite_1145_paren_complex() { assert_parses("((x + y) * z);"); }
+#[test] fn test_sqlite_1146_paren_type() { assert_parses("let x: (i32) = 42;"); }
+
+// Category 179: Underscore Patterns
+#[test] fn test_sqlite_1147_underscore_pattern() { assert_parses("let _ = 42;"); }
+#[test] fn test_sqlite_1148_underscore_tuple() { assert_parses("let (x, _) = (1, 2);"); }
+#[test] fn test_sqlite_1149_underscore_match() { assert_parses("match x { _ => 0 }"); }
+#[ignore = "Parser limitation: underscore in function parameter not supported - needs [PARSER-374] ticket"]
+#[test] fn test_sqlite_1150_underscore_fn() { assert_parses("fun foo(_: i32) { }"); }
+#[test] fn test_sqlite_1151_underscore_multi() { assert_parses("let (_, _, x) = (1, 2, 3);"); }
+
+// Category 180: Numeric Literal Variations
+#[test] fn test_sqlite_1152_num_decimal() { assert_parses("let x = 42;"); }
+#[test] fn test_sqlite_1153_num_hex() { assert_parses("let x = 0x2A;"); }
+#[test] fn test_sqlite_1154_num_octal() { assert_parses("let x = 0o52;"); }
+#[test] fn test_sqlite_1155_num_binary() { assert_parses("let x = 0b101010;"); }
+#[test] fn test_sqlite_1156_num_underscore() { assert_parses("let x = 1_000_000;"); }
+
 // ============================================================================
 // Error Handling
 // ============================================================================
