@@ -3413,6 +3413,97 @@ fn test_sqlite_366_trait_object_send_sync() {
 #[test] fn test_sqlite_1205_macro_assert() { assert_parses("assert!(x > 0);"); }
 #[test] fn test_sqlite_1206_macro_matches() { assert_parses("if matches!(x, Some(_)) { }"); }
 
+// Category 191: Impl Block Syntax
+#[test] fn test_sqlite_1207_impl_simple() { assert_parses("impl Point { }"); }
+#[test] fn test_sqlite_1208_impl_method() { assert_parses("impl Point { fn new() -> Self { Point } }"); }
+#[test] fn test_sqlite_1209_impl_trait() { assert_parses("impl Display for Point { }"); }
+#[test] fn test_sqlite_1210_impl_generic() { assert_parses("impl<T> Wrapper<T> { }"); }
+#[ignore = "Parser limitation: impl with where clause not supported - needs [PARSER-383] ticket"]
+#[test] fn test_sqlite_1211_impl_where() { assert_parses("impl<T> Foo<T> where T: Clone { }"); }
+
+// Category 192: Trait Definition Syntax
+#[test] fn test_sqlite_1212_trait_simple() { assert_parses("trait Drawable { }"); }
+#[test] fn test_sqlite_1213_trait_method() { assert_parses("trait Drawable { fn draw(&self); }"); }
+#[test] fn test_sqlite_1214_trait_assoc_type() { assert_parses("trait Iterator { type Item; }"); }
+#[test] fn test_sqlite_1215_trait_generic() { assert_parses("trait Convert<T> { }"); }
+#[ignore = "Parser limitation: trait with supertrait not supported - needs [PARSER-384] ticket"]
+#[test] fn test_sqlite_1216_trait_super() { assert_parses("trait Printable: Display { }"); }
+
+// Category 193: Type Alias and Newtype
+#[test] fn test_sqlite_1217_type_alias_simple() { assert_parses("type Meters = i32;"); }
+#[ignore = "Parser limitation: generic type alias not supported - needs [PARSER-385] ticket"]
+#[test] fn test_sqlite_1218_type_alias_generic() { assert_parses("type Result<T> = std::result::Result<T, Error>;"); }
+#[test] fn test_sqlite_1219_type_alias_fn() { assert_parses("type Callback = fn(i32) -> i32;"); }
+#[test] fn test_sqlite_1220_newtype_struct() { assert_parses("struct Meters(i32);"); }
+#[ignore = "Parser limitation: type alias with lifetime not supported - needs [PARSER-386] ticket"]
+#[test] fn test_sqlite_1221_type_alias_lifetime() { assert_parses("type Ref<'a> = &'a i32;"); }
+
+// Category 194: Const and Static Items
+#[ignore = "Parser limitation: const item declaration not supported - needs [PARSER-387] ticket"]
+#[test] fn test_sqlite_1222_const_simple() { assert_parses("const MAX: i32 = 100;"); }
+#[ignore = "Parser limitation: const expression not supported - needs [PARSER-388] ticket"]
+#[test] fn test_sqlite_1223_const_expr() { assert_parses("const SIZE: usize = 10 * 20;"); }
+#[ignore = "Parser limitation: static item declaration not supported - needs [PARSER-389] ticket"]
+#[test] fn test_sqlite_1224_static_simple() { assert_parses("static COUNTER: i32 = 0;"); }
+#[ignore = "Parser limitation: mutable static not supported - needs [PARSER-390] ticket"]
+#[test] fn test_sqlite_1225_static_mut() { assert_parses("static mut GLOBAL: i32 = 0;"); }
+#[test] fn test_sqlite_1226_const_fn() { assert_parses("const fn double(x: i32) -> i32 { x * 2 }"); }
+
+// Category 195: Module Declaration Forms
+#[test] fn test_sqlite_1227_mod_empty() { assert_parses("mod utils { }"); }
+#[test] fn test_sqlite_1228_mod_pub() { assert_parses("pub mod utils { }"); }
+#[test] fn test_sqlite_1229_mod_nested() { assert_parses("mod outer { mod inner { } }"); }
+#[ignore = "Parser limitation: module file declaration not supported - needs [PARSER-391] ticket"]
+#[test] fn test_sqlite_1230_mod_file() { assert_parses("mod utils;"); }
+#[test] fn test_sqlite_1231_mod_path() { assert_parses("mod tests { use super::*; }"); }
+
+// Category 196: Use Statement Variations
+#[test] fn test_sqlite_1232_use_simple() { assert_parses("use std::collections::HashMap;"); }
+#[test] fn test_sqlite_1233_use_glob() { assert_parses("use std::collections::*;"); }
+#[test] fn test_sqlite_1234_use_as() { assert_parses("use std::io::Result as IoResult;"); }
+#[test] fn test_sqlite_1235_use_nested() { assert_parses("use std::{io, fs};"); }
+#[ignore = "Parser limitation: use with self not supported - needs [PARSER-392] ticket"]
+#[test] fn test_sqlite_1236_use_self() { assert_parses("use std::io::{self, Read};"); }
+
+// Category 197: Extern and FFI Syntax
+#[ignore = "Parser limitation: extern function not supported - needs [PARSER-393] ticket"]
+#[test] fn test_sqlite_1237_extern_fn() { assert_parses("extern \"C\" fn foo();"); }
+#[ignore = "Parser limitation: extern block not supported - needs [PARSER-394] ticket"]
+#[test] fn test_sqlite_1238_extern_block() { assert_parses("extern \"C\" { fn abs(x: i32) -> i32; }"); }
+#[ignore = "Parser limitation: extern crate not supported - needs [PARSER-395] ticket"]
+#[test] fn test_sqlite_1239_extern_crate() { assert_parses("extern crate core;"); }
+#[ignore = "Parser limitation: extern static not supported - needs [PARSER-396] ticket"]
+#[test] fn test_sqlite_1240_extern_static() { assert_parses("extern \"C\" { static GLOBAL: i32; }"); }
+#[ignore = "Parser limitation: extern ABI not supported - needs [PARSER-397] ticket"]
+#[test] fn test_sqlite_1241_extern_abi() { assert_parses("extern \"system\" fn win_api();"); }
+
+// Category 198: Unsafe Block Variations
+#[ignore = "Parser limitation: unsafe block not supported - needs [PARSER-398] ticket"]
+#[test] fn test_sqlite_1242_unsafe_block() { assert_parses("unsafe { let x = 42; }"); }
+#[test] fn test_sqlite_1243_unsafe_fn() { assert_parses("unsafe fn dangerous() { }"); }
+#[ignore = "Parser limitation: unsafe trait not supported - needs [PARSER-399] ticket"]
+#[test] fn test_sqlite_1244_unsafe_trait() { assert_parses("unsafe trait Send { }"); }
+#[ignore = "Parser limitation: unsafe impl not supported - needs [PARSER-400] ticket"]
+#[test] fn test_sqlite_1245_unsafe_impl() { assert_parses("unsafe impl Send for MyType { }"); }
+#[ignore = "Parser limitation: unsafe expression not supported - needs [PARSER-401] ticket"]
+#[test] fn test_sqlite_1246_unsafe_expr() { assert_parses("let x = unsafe { *ptr };"); }
+
+// Category 199: Attribute Placement
+#[test] fn test_sqlite_1247_attr_outer() { assert_parses("#[derive(Debug)] struct Point { }"); }
+#[test] fn test_sqlite_1248_attr_inner() { assert_parses("fn main() { #![allow(dead_code)] }"); }
+#[test] fn test_sqlite_1249_attr_multi() { assert_parses("#[derive(Debug)] #[derive(Clone)] struct Point { }"); }
+#[test] fn test_sqlite_1250_attr_args() { assert_parses("#[cfg(target_os = \"linux\")] fn foo() { }"); }
+#[ignore = "Parser limitation: path attribute not supported - needs [PARSER-402] ticket"]
+#[test] fn test_sqlite_1251_attr_path() { assert_parses("#[path = \"other.rs\"] mod other;"); }
+
+// Category 200: Expression Statement Forms
+#[test] fn test_sqlite_1252_expr_stmt() { assert_parses("x + 1;"); }
+#[test] fn test_sqlite_1253_let_stmt() { assert_parses("let x = 42;"); }
+#[ignore = "Parser limitation: empty statement not supported - needs [PARSER-403] ticket"]
+#[test] fn test_sqlite_1254_empty_stmt() { assert_parses(";"); }
+#[test] fn test_sqlite_1255_item_stmt() { assert_parses("{ fn foo() { } foo(); }"); }
+#[test] fn test_sqlite_1256_macro_stmt() { assert_parses("println!(\"hello\");"); }
+
 // ============================================================================
 // Error Handling
 // ============================================================================
