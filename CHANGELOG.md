@@ -5,6 +5,14 @@ All notable changes to the Ruchy programming language will be documented in this
 ## [Unreleased]
 
 ### Added
+- **[SQLITE-TEST-001] Harness 1 Sixteenth Expansion - 850 Test Milestone (42.5% Complete)**: Added 50 new parser grammar tests (800→850, 6.25% increase)
+  - Test Pass Rate: 586/850 passing (68.9%)
+  - New Categories (10): Function pointer types (fn ptr, fn ptr multi, fn ptr no ret, unsafe fn ptr, extern fn ptr), Macro rules syntax (macro_rules, macro_rules expr, macro_rules multi, macro_rules alt, macro_rules repeat), Use statement variations (use simple, use self, use glob, use multi, use alias), Visibility modifiers complete (pub, pub(crate), pub(super), priv, pub(in)), Extern block syntax (extern block, extern C, extern fn, extern static, extern multi), Type alias complex (type alias simple, type alias generic, type alias where, type alias bound, type alias lifetime), Const and static advanced (const decl, static decl, static mut, const fn decl, const generic decl), Module declaration forms (mod decl, mod inline, mod pub, mod nested, mod attr), Trait definition advanced (trait empty, trait method, trait assoc type, trait generic, trait bound), Impl block advanced (impl simple, impl generic, impl trait for, impl where, impl unsafe)
+  - Defensive Testing: 25 new parser limitations (PARSER-294 through PARSER-318)
+  - Total Limitations: 264 documented (PARSER-060 fixed)
+  - Framework Total: 1,463 tests across 4 harnesses
+  - Progress: 850/2,000 tests (42.5% of Harness 1 complete)
+  - Time: 22.5h / 60h estimated
 - **[SQLITE-TEST-001] Harness 4 Fourteenth Expansion - 650 Test Milestone (1.3% Complete)**: Added 50 new runtime anomaly tests (600→650, 8.3% increase)
   - Test Pass Rate: 58/650 passing (8.9%)
   - New Categories (10): Iterator runtime advanced (iterator map, filter, fold, chain, zip), String runtime advanced (string format, split, trim, replace, parse), Collection runtime advanced (Vec push/pop, HashMap insert/get, HashSet ops, BTreeMap, VecDeque), Error handling runtime advanced (Result map, Result and_then, Result unwrap_or, Option map, Option and_then), Closure runtime advanced (closure move semantics, closure as function argument, closure return, Fn trait, FnMut trait), Trait object runtime (trait object creation, method call, in collection, casting, size), Smart pointer runtime advanced (Box deref, Rc clone, Arc thread safety, RefCell borrow, Cell get/set), Concurrency runtime advanced (thread spawn, channel send/recv, Mutex lock, RwLock read/write, atomic operations), Memory operations runtime (memory allocation, size_of, align_of, drop, forget), Conversion trait runtime (From trait, Into trait, TryFrom trait, TryInto trait, AsRef trait)
