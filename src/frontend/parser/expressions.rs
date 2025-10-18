@@ -773,7 +773,7 @@ fn parse_control_statement_token(
 /// Extracted from `parse_prefix` to reduce complexity
 fn parse_collection_enum_token(state: &mut ParserState, token: Token) -> Result<Expr> {
     match token {
-        Token::LeftBracket => parse_list_literal(state),
+        Token::LeftBracket => expressions_helpers::arrays::parse_list_literal(state),
         Token::Enum => parse_enum_definition(state),
         _ => bail!("Expected collection/enum token, got: {:?}", token),
     }
@@ -2115,81 +2115,9 @@ fn parse_for_pattern(state: &mut ParserState) -> Result<Pattern> {
         _ => bail!("Expected identifier, underscore, or destructuring pattern in for loop"),
     }
 }
-/// Parse an array element which might be a spread expression (...expr) or regular expression
-fn parse_array_element(state: &mut ParserState) -> Result<Expr> {
-    if matches!(state.tokens.peek(), Some((Token::DotDotDot, _))) {
-        let start_span = state.tokens.expect(&Token::DotDotDot)?; // consume ...
-        let expr = super::parse_expr_recursive(state)?;
-        Ok(Expr::new(
-            ExprKind::Spread {
-                expr: Box::new(expr),
-            },
-            start_span,
-        ))
-    } else {
-        super::parse_expr_recursive(state)
-    }
-}
-fn parse_list_literal(state: &mut ParserState) -> Result<Expr> {
-    let start_span = state.tokens.expect(&Token::LeftBracket)?;
-    // Handle empty list
-    if matches!(state.tokens.peek(), Some((Token::RightBracket, _))) {
-        state.tokens.advance();
-        return Ok(Expr::new(ExprKind::List(vec![]), start_span));
-    }
-    // Parse first element
-    let first_expr = parse_array_element(state)?;
-    // Determine list type based on next token
-    match state.tokens.peek() {
-        Some((Token::Semicolon, _)) => parse_array_init(state, first_expr, start_span),
-        Some((Token::For, _)) => parse_list_comprehension_body(state, first_expr, start_span),
-        _ => parse_regular_list(state, first_expr, start_span),
-    }
-}
-/// Parse array initialization syntax: [value; size]
-/// Extracted to reduce complexity
-fn parse_array_init(state: &mut ParserState, value_expr: Expr, start_span: Span) -> Result<Expr> {
-    state.tokens.advance(); // consume ;
-    let size_expr = super::parse_expr_recursive(state)?;
-    state
-        .tokens
-        .expect(&Token::RightBracket)
-        .map_err(|_| anyhow::anyhow!("Expected ']' after array initialization"))?;
-    Ok(Expr::new(
-        ExprKind::ArrayInit {
-            value: Box::new(value_expr),
-            size: Box::new(size_expr),
-        },
-        start_span,
-    ))
-}
-/// Parse regular list literal: [expr, expr, ...]
-/// Extracted to reduce complexity
-fn parse_regular_list(state: &mut ParserState, first_expr: Expr, start_span: Span) -> Result<Expr> {
-    let mut elements = vec![first_expr];
-    // Parse remaining elements
-    while matches!(state.tokens.peek(), Some((Token::Comma, _))) {
-        state.tokens.advance();
-        // Check for trailing comma
-        if matches!(state.tokens.peek(), Some((Token::RightBracket, _))) {
-            break;
-        }
-        elements.push(parse_array_element(state)?);
-    }
-    state
-        .tokens
-        .expect(&Token::RightBracket)
-        .map_err(|_| anyhow::anyhow!("Expected ']' to close list literal"))?;
-    Ok(Expr::new(ExprKind::List(elements), start_span))
-}
-fn parse_list_comprehension_body(
-    state: &mut ParserState,
-    expr: Expr,
-    start_span: Span,
-) -> Result<Expr> {
-    // Delegate to the collections module which handles nested comprehensions properly
-    super::collections::parse_list_comprehension(state, start_span, expr)
-}
+
+// Array/list parsing moved to expressions_helpers/arrays.rs module
+
 fn parse_lambda_no_params(state: &mut ParserState) -> Result<Expr> {
     // Parse || body
     let start_span = state.tokens.expect(&Token::OrOr)?;
