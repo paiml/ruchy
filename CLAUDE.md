@@ -482,6 +482,42 @@ Navigation:
 - v1.9.1 Language Completeness: Pipeline operator, Import/Export, String methods
 - Regression detection from previous versions
 
+### ruchy-book Validation (Following pmat-book Pattern)
+
+**MANDATORY**: All commits MUST pass ruchy-book validation via pre-commit hook.
+
+**Pattern**: Following `paiml-mcp-agent-toolkit/scripts/validate-pmat-book.sh`
+
+**Critical Chapters** (MUST pass):
+- Ch01: Getting Started - Basic functionality
+- Ch02: Variables and Types
+- Ch03: Control Flow
+- Ch05: Functions
+
+**Usage**:
+```bash
+# Manual validation (recommended before commits)
+make validate-book
+
+# Automatic validation (via pre-commit hook)
+git commit  # Runs validation automatically
+
+# Direct script execution
+./scripts/validate-ruchy-book.sh
+```
+
+**Features**:
+- Parallel execution (4 jobs default, configurable via RUCHY_BOOK_JOBS)
+- Fail-fast on first failure
+- 120-second timeout per chapter
+- Skips gracefully if ruchy-book not found
+
+**Why This Matters** (Toyota Way):
+- **Jidoka**: Stop the line if book examples break
+- **Genchi Genbutsu**: Validate examples work, not just exist
+- **Kaizen**: Continuous validation prevents documentation drift
+- **Quality Built-In**: Pre-commit hook catches issues before merge
+
 ## Quality Status (v1.9.3)
 
 **INTERPRETER COMPLEXITY**: 
