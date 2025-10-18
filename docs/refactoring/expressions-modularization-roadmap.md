@@ -5,9 +5,9 @@
 **Goal**: Improve TDG score from 71.2/100 (B-) to ≥85/100 (A-) through systematic modularization
 
 **Current Status** (as of 2025-10-18):
-- File size: 5,208 lines, 241 functions
+- File size: 5,128 lines, 241 functions
 - TDG Score: 71.2/100 (B-)
-- Progress: 21.3% complete (1,415 lines removed across 11 modules + dead code cleanup)
+- Progress: 22.5% complete (1,495 lines removed across 12 modules + dead code cleanup)
 
 **Target**: Extract ~5,000 lines (≥75%) to achieve TDG ≥85
 
@@ -104,6 +104,15 @@
 - **Features**: For loops with pattern destructuring, while loops, while-let loops, infinite loops, labeled loops
 - **expressions.rs reduction**: 147 lines removed (5,355 → 5,208)
 
+### Phase 13: lambdas Module ⭐
+- **Lines**: 265 (including tests)
+- **Functions**: 3 (parse_lambda_no_params, parse_lambda_from_expr, parse_lambda_expression)
+- **Tests**: 7 unit tests + 7 property tests
+- **Quality**: **TDG 91.8/100 (A grade)** - EXCEEDS TARGET
+- **Methodology**: EXTREME TDD (RED→GREEN→REFACTOR)
+- **Features**: No-parameter lambdas (||), pipe-delimited lambdas (|x|), arrow syntax (x =>)
+- **expressions.rs reduction**: 80 lines removed (5,208 → 5,128)
+
 ### Dead Code Cleanup ⭐
 - **Lines Removed**: 142 (actor helper functions)
 - **Functions Removed**: 6 (parse_actor_name, parse_actor_body, parse_actor_state_field, parse_actor_receive_block, parse_actor_bare_field, create_actor_expression)
@@ -112,7 +121,7 @@
 - **Tests**: All 3,836 tests still passing
 - **Commit**: `05052a8b`
 
-**Total Removed**: 3,233 lines (1,415 from expressions.rs: 1,273 extracted + 142 dead code removed)
+**Total Removed**: 3,498 lines (1,495 from expressions.rs: 1,353 extracted + 142 dead code removed)
 
 ---
 
