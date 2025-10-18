@@ -72,6 +72,7 @@ use crate::frontend::ast::{
     StringPart,
     Type,
     TypeKind,
+    UnaryOp,
 };
 use crate::frontend::lexer::{Token, TokenStream};
 use crate::parser::error_recovery::ErrorNode;
