@@ -1721,97 +1721,17 @@ fn parse_for_loop(state: &mut ParserState) -> Result<Expr> {
 
 // Array/list parsing moved to expressions_helpers/arrays.rs module
 
+// No-parameter lambda parsing moved to expressions_helpers/lambdas.rs module
 fn parse_lambda_no_params(state: &mut ParserState) -> Result<Expr> {
-    // Parse || body
-    let start_span = state.tokens.expect(&Token::OrOr)?;
-    // Parse the body
-    let body = Box::new(super::parse_expr_recursive(state)?);
-    Ok(Expr::new(
-        ExprKind::Lambda {
-            params: vec![],
-            body,
-        },
-        start_span,
-    ))
+    expressions_helpers::lambdas::parse_lambda_no_params(state)
 }
+// Arrow lambda parsing moved to expressions_helpers/lambdas.rs module
 fn parse_lambda_from_expr(state: &mut ParserState, expr: Expr, start_span: Span) -> Result<Expr> {
-    // Convert (x) => expr or (x, y) => expr syntax
-    state.tokens.advance(); // consume =>
-                            // Convert the expression to parameters
-    let params = match &expr.kind {
-        ExprKind::Identifier(name) => vec![Param {
-            pattern: Pattern::Identifier(name.clone()),
-            ty: Type {
-                kind: TypeKind::Named("_".to_string()),
-                span: expr.span,
-            },
-            default_value: None,
-            is_mutable: false,
-            span: expr.span,
-        }],
-        ExprKind::Tuple(elements) => {
-            // Convert tuple elements to parameters
-            elements
-                .iter()
-                .map(|elem| match &elem.kind {
-                    ExprKind::Identifier(name) => Ok(Param {
-                        pattern: Pattern::Identifier(name.clone()),
-                        ty: Type {
-                            kind: TypeKind::Named("_".to_string()),
-                            span: elem.span,
-                        },
-                        default_value: None,
-                        is_mutable: false,
-                        span: elem.span,
-                    }),
-                    _ => bail!("Expected identifier in lambda parameter"),
-                })
-                .collect::<Result<Vec<_>>>()?
-        }
-        _ => bail!("Expected identifier or tuple in lambda parameter"),
-    };
-    // Parse the body
-    let body = Box::new(super::parse_expr_recursive(state)?);
-    Ok(Expr::new(ExprKind::Lambda { params, body }, start_span))
+    expressions_helpers::lambdas::parse_lambda_from_expr(state, expr, start_span)
 }
+// Pipe-delimited lambda parsing moved to expressions_helpers/lambdas.rs module
 fn parse_lambda_expression(state: &mut ParserState) -> Result<Expr> {
-    // Parse |param, param| body or |param| body
-    let start_span = state.tokens.expect(&Token::Pipe)?;
-    let mut params = Vec::new();
-    // Parse parameters
-    while !matches!(state.tokens.peek(), Some((Token::Pipe, _))) {
-        if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
-            params.push(Pattern::Identifier(name.clone()));
-            state.tokens.advance();
-            // Check for comma
-            if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
-                state.tokens.advance();
-            }
-        } else {
-            bail!("Expected parameter name in lambda");
-        }
-    }
-    state
-        .tokens
-        .expect(&Token::Pipe)
-        .map_err(|_| anyhow::anyhow!("Expected '|' after lambda parameters"))?;
-    // Parse body
-    let body = Box::new(super::parse_expr_recursive(state)?);
-    // Convert Pattern to Param for Lambda
-    let params = params
-        .into_iter()
-        .map(|p| Param {
-            pattern: p,
-            ty: Type {
-                kind: TypeKind::Named("_".to_string()),
-                span: start_span,
-            },
-            span: start_span,
-            is_mutable: false,
-            default_value: None,
-        })
-        .collect();
-    Ok(Expr::new(ExprKind::Lambda { params, body }, start_span))
+    expressions_helpers::lambdas::parse_lambda_expression(state)
 }
 /// Parse type alias: type Name = Type
 /// Complexity: <5

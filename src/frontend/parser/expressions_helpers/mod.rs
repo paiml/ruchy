@@ -10,6 +10,7 @@ pub mod binary_operators;
 pub mod control_flow;
 pub mod dataframes;
 pub mod identifiers;
+pub mod lambdas;
 pub mod literals;
 pub mod loops;
 pub mod string_operations;
