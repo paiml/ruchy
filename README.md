@@ -3,9 +3,15 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Rust 1.75+](https://img.shields.io/badge/rust-1.75+-orange.svg)](https://www.rust-lang.org)
 [![Crates.io](https://img.shields.io/crates/v/ruchy.svg)](https://crates.io/crates/ruchy)
-[![Test Coverage](https://img.shields.io/badge/coverage-85%25+-brightgreen.svg)](https://github.com/paiml/ruchy)
+[![Test Coverage](https://img.shields.io/badge/coverage-70.34%25-yellow.svg)](https://github.com/paiml/ruchy)
+[![Production Ready](https://img.shields.io/badge/production-NOT%20READY-red.svg)](docs/PRODUCTION-READINESS-ASSESSMENT.md)
 
 A modern, expressive programming language for data science and scientific computing, featuring a self-hosting compiler, comprehensive tooling, and enterprise-grade quality standards.
+
+> ⚠️ **PRODUCTION READINESS**: Ruchy v3.91.0 is **NOT production-ready**. While demonstrating exceptional engineering quality (TDG A-, 3,849 tests, EXTREME TDD), it lacks ecosystem maturity, security audits, and stability guarantees required for production use. **Estimated time to production: 18-30 months**. See [`docs/PRODUCTION-READINESS-ASSESSMENT.md`](docs/PRODUCTION-READINESS-ASSESSMENT.md) for detailed analysis.
+>
+> **Appropriate uses**: Research, education, prototyping, experimentation
+> **Inappropriate uses**: Production services, mission-critical systems, public-facing products
 
 ## Features
 
