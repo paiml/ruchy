@@ -256,6 +256,85 @@ fn parse_collection_prefix(state: &mut ParserState, token: Token, span: Span) ->
 
 /// Parse unary operator tokens (Minus, Bang)
 /// Extracted from `parse_prefix` to reduce complexity
+fn parse_unary_operator_token(state: &mut ParserState, token: &Token, span: Span) -> Result<Expr> {
+    match token {
+        Token::Minus => {
+            state.tokens.advance();
+            let expr = super::parse_expr_with_precedence_recursive(state, 13)?; // High precedence for unary
+            Ok(Expr::new(
+                ExprKind::Unary {
+                    op: UnaryOp::Negate,
+                    operand: Box::new(expr),
+                },
+                span,
+            ))
+        }
+        Token::Bang => {
+            state.tokens.advance();
+            let expr = super::parse_expr_with_precedence_recursive(state, 13)?;
+            Ok(Expr::new(
+                ExprKind::Unary {
+                    op: UnaryOp::Not,
+                    operand: Box::new(expr),
+                },
+                span,
+            ))
+        }
+        Token::Star => {
+            state.tokens.advance();
+            let expr = super::parse_expr_with_precedence_recursive(state, 13)?; // High precedence for unary
+            Ok(Expr::new(
+                ExprKind::Unary {
+                    op: UnaryOp::Deref,
+                    operand: Box::new(expr),
+                },
+                span,
+            ))
+        }
+        Token::Power => {
+            // Handle ** as double dereference in prefix position
+            state.tokens.advance();
+            let expr = super::parse_expr_with_precedence_recursive(state, 13)?; // High precedence for unary
+                                                                                // Create double dereference: *(*expr)
+            let inner_deref = Expr::new(
+                ExprKind::Unary {
+                    op: UnaryOp::Deref,
+                    operand: Box::new(expr),
+                },
+                span,
+            );
+            Ok(Expr::new(
+                ExprKind::Unary {
+                    op: UnaryOp::Deref,
+                    operand: Box::new(inner_deref),
+                },
+                span,
+            ))
+        }
+        Token::Await => {
+            state.tokens.advance();
+            let expr = super::parse_expr_with_precedence_recursive(state, 13)?;
+            Ok(Expr::new(
+                ExprKind::Await {
+                    expr: Box::new(expr),
+                },
+                span,
+            ))
+        }
+        Token::Tilde => {
+            state.tokens.advance();
+            let expr = super::parse_expr_with_precedence_recursive(state, 13)?;
+            Ok(Expr::new(
+                ExprKind::Unary {
+                    op: UnaryOp::BitwiseNot,
+                    operand: Box::new(expr),
+                },
+                span,
+            ))
+        }
+        _ => bail!("Expected unary operator token, got: {:?}", token),
+    }
+}
 /// Parse parentheses tokens - either unit type (), grouped expression (expr), or tuple (a, b, c)
 /// Extracted from `parse_prefix` to reduce complexity
 // Tuple parsing moved to expressions_helpers/tuples.rs module
