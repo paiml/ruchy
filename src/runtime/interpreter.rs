@@ -966,6 +966,7 @@ impl Interpreter {
         matches!(
             expr_kind,
             ExprKind::Actor { .. }
+                | ExprKind::Enum { .. }
                 | ExprKind::Struct { .. }
                 | ExprKind::TupleStruct { .. }
                 | ExprKind::Class { .. }
@@ -1007,6 +1008,12 @@ impl Interpreter {
                 state,
                 handlers,
             } => self.eval_actor_definition(name, state, handlers),
+            ExprKind::Enum {
+                name,
+                type_params,
+                variants,
+                is_pub,
+            } => self.eval_enum_definition(name, type_params, variants, *is_pub),
             ExprKind::Struct {
                 name,
                 type_params,
@@ -1469,7 +1476,19 @@ impl Interpreter {
         let object_value = self.eval_expr(object)?;
 
         match object_value {
-            Value::Object(ref object_map) => self.access_object_field(object_map, field),
+            Value::Object(ref object_map) => {
+                // Check if this is an enum type trying to construct a variant
+                if let Some(Value::String(type_str)) = object_map.get("__type") {
+                    if type_str.as_ref() == "Enum" {
+                        // This is enum variant construction: EnumName::VariantName
+                        return Ok(Value::EnumVariant {
+                            variant_name: field.to_string(),
+                            data: None, // Unit variant (no data)
+                        });
+                    }
+                }
+                self.access_object_field(object_map, field)
+            }
             Value::ObjectMut(ref cell) => self.access_object_mut_field(cell, field),
             Value::Struct { ref name, ref fields } => {
                 // Struct field access
@@ -4409,6 +4428,64 @@ impl Interpreter {
         self.set_variable(name, struct_obj.clone());
 
         Ok(struct_obj)
+    }
+
+    /// Evaluate enum definition
+    /// Stores enum type with variant definitions in the environment
+    /// Complexity: 6
+    fn eval_enum_definition(
+        &mut self,
+        name: &str,
+        _type_params: &[String], // Generic type parameters (not yet used in runtime)
+        variants: &[crate::frontend::ast::EnumVariant],
+        _is_pub: bool,
+    ) -> Result<Value, InterpreterError> {
+        use std::collections::HashMap;
+
+        // Create an enum type object
+        let mut enum_type = HashMap::new();
+
+        // Store enum metadata
+        enum_type.insert(
+            "__type".to_string(),
+            Value::from_string("Enum".to_string()),
+        );
+        enum_type.insert("__name".to_string(), Value::from_string(name.to_string()));
+
+        // Store variant definitions
+        let mut variant_defs = HashMap::new();
+        for variant in variants {
+            let mut variant_info = HashMap::new();
+
+            // Store variant kind
+            let kind_str = match &variant.kind {
+                crate::frontend::ast::EnumVariantKind::Unit => "Unit",
+                crate::frontend::ast::EnumVariantKind::Tuple(_) => "Tuple",
+                crate::frontend::ast::EnumVariantKind::Struct(_) => "Struct",
+            };
+            variant_info.insert("kind".to_string(), Value::from_string(kind_str.to_string()));
+
+            // Store discriminant if present
+            if let Some(disc) = variant.discriminant {
+                variant_info.insert("discriminant".to_string(), Value::Integer(disc));
+            }
+
+            variant_defs.insert(
+                variant.name.clone(),
+                Value::Object(std::sync::Arc::new(variant_info)),
+            );
+        }
+
+        enum_type.insert(
+            "__variants".to_string(),
+            Value::Object(std::sync::Arc::new(variant_defs)),
+        );
+
+        // Register this enum type in the environment
+        let enum_obj = Value::Object(std::sync::Arc::new(enum_type));
+        self.set_variable(name, enum_obj.clone());
+
+        Ok(enum_obj)
     }
 
     /// Evaluate struct literal (instantiation)
