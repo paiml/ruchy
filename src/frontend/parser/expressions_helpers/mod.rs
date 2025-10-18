@@ -7,6 +7,7 @@
 
 pub mod arrays;
 pub mod control_flow;
+pub mod dataframes;
 pub mod identifiers;
 pub mod literals;
 pub mod tuples;
