@@ -115,6 +115,7 @@ fn dispatch_prefix_token(state: &mut ParserState, token: Token, span: Span) -> R
     }
 }
 
+// All literal parsing moved to expressions_helpers/literals.rs module
 fn parse_literal_prefix(state: &mut ParserState, token: Token, span: Span) -> Result<Expr> {
     match token {
         // Basic literals - delegated to literals module
@@ -127,37 +128,12 @@ fn parse_literal_prefix(state: &mut ParserState, token: Token, span: Span) -> Re
         | Token::Byte(_)
         | Token::Bool(_) => expressions_helpers::literals::parse_literal_token(state, &token, span),
 
-        // Special literals handled here
-        Token::Null => {
-            state.tokens.advance();
-            Ok(Expr::new(ExprKind::Literal(Literal::Null), span))
-        }
-        Token::None => {
-            state.tokens.advance();
-            Ok(Expr::new(ExprKind::None, span))
-        }
-        Token::Some => parse_some_constructor(state, span),
+        // Special literals also in literals module
+        Token::Null => expressions_helpers::literals::parse_null(state, span),
+        Token::None => expressions_helpers::literals::parse_none(state, span),
+        Token::Some => expressions_helpers::literals::parse_some_constructor(state, span),
         _ => unreachable!(),
     }
-}
-
-fn parse_some_constructor(state: &mut ParserState, span: Span) -> Result<Expr> {
-    state.tokens.advance();
-    if !matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
-        bail!("Expected '(' after Some");
-    }
-    state.tokens.advance();
-    let value = super::parse_expr_with_precedence_recursive(state, 0)?;
-    if !matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
-        bail!("Expected ')' after Some value");
-    }
-    state.tokens.advance();
-    Ok(Expr::new(
-        ExprKind::Some {
-            value: Box::new(value),
-        },
-        span,
-    ))
 }
 
 // Unary operator parsing moved to expressions_helpers/unary_operators.rs module
