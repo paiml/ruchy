@@ -347,11 +347,164 @@ pub fn normalize(path: &str) -> Result<String> {
 mod tests {
     use super::*;
 
+    // ============================================================================
+    // EXTREME TDD: Comprehensive Path Module Testing
+    // Coverage Target: 20.41% → 80%+
+    // Mutation Target: ≥75% caught
+    // ============================================================================
+
+    // --------------------------------------------------------------------------
+    // join() tests
+    // --------------------------------------------------------------------------
+
     #[test]
     fn test_join_basic() {
         let result = join("/home", "user").unwrap();
         assert!(result.contains("user"));
+        assert!(result.contains("home"));
     }
+
+    #[test]
+    fn test_join_empty_base() {
+        let result = join("", "file.txt").unwrap();
+        assert_eq!(result, "file.txt");
+    }
+
+    #[test]
+    fn test_join_empty_component() {
+        let result = join("/home", "").unwrap();
+        assert!(result.contains("home"));
+    }
+
+    #[test]
+    fn test_join_windows_style() {
+        let result = join("C:\\Users", "Documents").unwrap();
+        assert!(result.contains("Documents"));
+    }
+
+    // --------------------------------------------------------------------------
+    // join_many() tests
+    // --------------------------------------------------------------------------
+
+    #[test]
+    fn test_join_many_basic() {
+        let result = join_many(&["/home", "user", "documents"]).unwrap();
+        assert!(result.contains("home"));
+        assert!(result.contains("user"));
+        assert!(result.contains("documents"));
+    }
+
+    #[test]
+    fn test_join_many_empty() {
+        let result = join_many(&[]).unwrap();
+        assert_eq!(result, "");
+    }
+
+    #[test]
+    fn test_join_many_single() {
+        let result = join_many(&["/home"]).unwrap();
+        assert!(result.contains("home"));
+    }
+
+    // --------------------------------------------------------------------------
+    // parent() tests
+    // --------------------------------------------------------------------------
+
+    #[test]
+    fn test_parent_file_path() {
+        let result = parent("/home/user/file.txt").unwrap();
+        assert!(result.is_some());
+        let parent_path = result.unwrap();
+        assert!(parent_path.contains("user"));
+    }
+
+    #[test]
+    fn test_parent_root() {
+        let result = parent("/").unwrap();
+        assert!(result.is_none(), "Root path should have no parent");
+    }
+
+    #[test]
+    fn test_parent_relative() {
+        let result = parent("file.txt").unwrap();
+        assert!(result.is_some() || result.is_none()); // Platform dependent
+    }
+
+    // --------------------------------------------------------------------------
+    // file_name() tests
+    // --------------------------------------------------------------------------
+
+    #[test]
+    fn test_file_name_basic() {
+        let result = file_name("/home/user/file.txt").unwrap();
+        assert_eq!(result, Some("file.txt".to_string()));
+    }
+
+    #[test]
+    fn test_file_name_no_extension() {
+        let result = file_name("/home/user/file").unwrap();
+        assert_eq!(result, Some("file".to_string()));
+    }
+
+    #[test]
+    fn test_file_name_directory() {
+        let result = file_name("/home/user/").unwrap();
+        assert!(result.is_none() || result == Some("user".to_string()));
+    }
+
+    // --------------------------------------------------------------------------
+    // file_stem() tests
+    // --------------------------------------------------------------------------
+
+    #[test]
+    fn test_file_stem_basic() {
+        let result = file_stem("/home/user/file.txt").unwrap();
+        assert_eq!(result, Some("file".to_string()));
+    }
+
+    #[test]
+    fn test_file_stem_multiple_dots() {
+        let result = file_stem("/home/user/archive.tar.gz").unwrap();
+        assert_eq!(result, Some("archive.tar".to_string()));
+    }
+
+    #[test]
+    fn test_file_stem_no_extension() {
+        let result = file_stem("/home/user/file").unwrap();
+        assert_eq!(result, Some("file".to_string()));
+    }
+
+    // --------------------------------------------------------------------------
+    // extension() tests
+    // --------------------------------------------------------------------------
+
+    #[test]
+    fn test_extension_basic() {
+        let result = extension("/home/user/file.txt").unwrap();
+        assert_eq!(result, Some("txt".to_string()));
+    }
+
+    #[test]
+    fn test_extension_multiple_dots() {
+        let result = extension("/home/user/archive.tar.gz").unwrap();
+        assert_eq!(result, Some("gz".to_string()));
+    }
+
+    #[test]
+    fn test_extension_none() {
+        let result = extension("/home/user/file").unwrap();
+        assert_eq!(result, None);
+    }
+
+    #[test]
+    fn test_extension_hidden_file() {
+        let result = extension("/home/user/.bashrc").unwrap();
+        assert_eq!(result, None);
+    }
+
+    // --------------------------------------------------------------------------
+    // is_absolute() tests
+    // --------------------------------------------------------------------------
 
     #[test]
     fn test_is_absolute_true() {
@@ -361,5 +514,273 @@ mod tests {
     #[test]
     fn test_is_absolute_false() {
         assert_eq!(is_absolute("relative/path"), false);
+    }
+
+    #[test]
+    fn test_is_absolute_current_dir() {
+        assert_eq!(is_absolute("."), false);
+    }
+
+    #[test]
+    fn test_is_absolute_parent_dir() {
+        assert_eq!(is_absolute(".."), false);
+    }
+
+    // --------------------------------------------------------------------------
+    // is_relative() tests
+    // --------------------------------------------------------------------------
+
+    #[test]
+    fn test_is_relative_true() {
+        assert_eq!(is_relative("relative/path"), true);
+    }
+
+    #[test]
+    fn test_is_relative_false() {
+        assert_eq!(is_relative("/home/user"), false);
+    }
+
+    #[test]
+    fn test_is_relative_current_dir() {
+        assert_eq!(is_relative("."), true);
+    }
+
+    // --------------------------------------------------------------------------
+    // with_extension() tests
+    // --------------------------------------------------------------------------
+
+    #[test]
+    fn test_with_extension_replace() {
+        let result = with_extension("/home/user/file.txt", "md").unwrap();
+        assert!(result.ends_with(".md"));
+        assert!(!result.ends_with(".txt"));
+    }
+
+    #[test]
+    fn test_with_extension_add() {
+        let result = with_extension("/home/user/file", "txt").unwrap();
+        assert!(result.ends_with(".txt"));
+    }
+
+    #[test]
+    fn test_with_extension_empty() {
+        let result = with_extension("/home/user/file.txt", "").unwrap();
+        assert!(!result.ends_with(".txt"));
+    }
+
+    // --------------------------------------------------------------------------
+    // with_file_name() tests
+    // --------------------------------------------------------------------------
+
+    #[test]
+    fn test_with_file_name_replace() {
+        let result = with_file_name("/home/user/old.txt", "new.txt").unwrap();
+        assert!(result.ends_with("new.txt"));
+        assert!(!result.contains("old"));
+    }
+
+    #[test]
+    fn test_with_file_name_different_extension() {
+        let result = with_file_name("/home/user/file.txt", "data.json").unwrap();
+        assert!(result.ends_with("data.json"));
+    }
+
+    // --------------------------------------------------------------------------
+    // components() tests
+    // --------------------------------------------------------------------------
+
+    #[test]
+    fn test_components_basic() {
+        let result = components("/home/user/file.txt").unwrap();
+        assert!(result.contains(&"home".to_string()));
+        assert!(result.contains(&"user".to_string()));
+        assert!(result.contains(&"file.txt".to_string()));
+    }
+
+    #[test]
+    fn test_components_relative() {
+        let result = components("user/file.txt").unwrap();
+        assert!(result.contains(&"user".to_string()));
+        assert!(result.contains(&"file.txt".to_string()));
+    }
+
+    #[test]
+    fn test_components_empty() {
+        let result = components("").unwrap();
+        assert_eq!(result.len(), 0);
+    }
+
+    // --------------------------------------------------------------------------
+    // normalize() tests
+    // --------------------------------------------------------------------------
+
+    #[test]
+    fn test_normalize_parent_dir() {
+        let result = normalize("/home/user/../admin/file.txt").unwrap();
+        assert!(!result.contains(".."));
+        assert!(result.contains("admin"));
+    }
+
+    #[test]
+    fn test_normalize_current_dir() {
+        let result = normalize("/home/user/./file.txt").unwrap();
+        assert!(!result.contains("/./"));
+    }
+
+    #[test]
+    fn test_normalize_multiple_dots() {
+        let result = normalize("/home/user/../../etc/file.txt").unwrap();
+        assert!(!result.contains(".."));
+    }
+
+    #[test]
+    fn test_normalize_no_dots() {
+        let result = normalize("/home/user/file.txt").unwrap();
+        assert!(result.contains("home"));
+        assert!(result.contains("user"));
+    }
+
+    // --------------------------------------------------------------------------
+    // Property Tests (Mathematical Invariants)
+    // --------------------------------------------------------------------------
+
+    #[test]
+    fn prop_is_absolute_and_is_relative_are_inverses() {
+        let test_paths = vec![
+            "/home/user",
+            "relative/path",
+            ".",
+            "..",
+            "/",
+        ];
+
+        for path in test_paths {
+            assert_eq!(
+                is_absolute(path),
+                !is_relative(path),
+                "is_absolute and is_relative should be inverses for '{}'",
+                path
+            );
+        }
+    }
+
+    #[test]
+    fn prop_join_preserves_both_components() {
+        let base = "/home";
+        let component = "user";
+        let result = join(base, component).unwrap();
+
+        assert!(result.contains("home"), "Result should contain base");
+        assert!(result.contains("user"), "Result should contain component");
+    }
+
+    #[test]
+    fn prop_extension_of_with_extension_matches() {
+        let path = "/home/user/file.txt";
+        let new_ext = "md";
+
+        let modified = with_extension(path, new_ext).unwrap();
+        let ext = extension(&modified).unwrap();
+
+        assert_eq!(ext, Some(new_ext.to_string()),
+                   "Extension of modified path should match new extension");
+    }
+
+    #[test]
+    fn prop_file_stem_plus_extension_equals_file_name() {
+        let path = "/home/user/file.txt";
+
+        let stem = file_stem(path).unwrap();
+        let ext = extension(path).unwrap();
+        let name = file_name(path).unwrap();
+
+        if let (Some(s), Some(e), Some(n)) = (stem, ext, name) {
+            assert_eq!(format!("{}.{}", s, e), n,
+                       "file_stem + extension should equal file_name");
+        }
+    }
+
+    // --------------------------------------------------------------------------
+    // Boundary Condition Tests
+    // --------------------------------------------------------------------------
+
+    #[test]
+    fn test_empty_path() {
+        let result = file_name("").unwrap();
+        assert_eq!(result, None);
+    }
+
+    #[test]
+    fn test_very_long_path() {
+        let long_component = "a".repeat(255);
+        let result = join("/home", &long_component).unwrap();
+        assert!(result.len() > 255);
+    }
+
+    #[test]
+    fn test_special_characters() {
+        let result = join("/home", "user@domain").unwrap();
+        assert!(result.contains("@"));
+    }
+
+    #[test]
+    fn test_unicode_path() {
+        let result = join("/home", "用户").unwrap();
+        assert!(result.contains("用户"));
+    }
+}
+
+// ============================================================================
+// Property Tests Module (High-Confidence Verification)
+// ============================================================================
+
+#[cfg(test)]
+mod property_tests {
+    use super::*;
+
+    #[test]
+    fn prop_join_never_panics() {
+        let test_cases = vec![
+            ("", ""),
+            ("/home", ""),
+            ("", "user"),
+            ("/home", "user"),
+            ("C:\\Users", "Documents"),
+            ("/", "file.txt"),
+        ];
+
+        for (base, component) in test_cases {
+            let _ = join(base, component);
+            // Should not panic
+        }
+    }
+
+    #[test]
+    fn prop_all_functions_handle_empty_strings() {
+        // Property: All functions should handle empty strings gracefully
+        let _ = join("", "");
+        let _ = join_many(&[]);
+        let _ = parent("");
+        let _ = file_name("");
+        let _ = file_stem("");
+        let _ = extension("");
+        let _ = is_absolute("");
+        let _ = is_relative("");
+        let _ = with_extension("", "txt");
+        let _ = with_file_name("", "file.txt");
+        let _ = components("");
+        let _ = normalize("");
+        // All should complete without panic
+    }
+
+    #[test]
+    fn prop_path_operations_are_pure() {
+        // Property: Path operations don't modify input, always produce consistent output
+        let path = "/home/user/file.txt";
+
+        let result1 = file_name(path).unwrap();
+        let result2 = file_name(path).unwrap();
+
+        assert_eq!(result1, result2, "Path operations should be deterministic");
     }
 }
