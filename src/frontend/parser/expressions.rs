@@ -312,86 +312,9 @@ fn parse_control_flow_token(state: &mut ParserState, token: Token) -> Result<Exp
 fn parse_try_catch(state: &mut ParserState) -> Result<Expr> {
     expressions_helpers::error_handling::parse_try_catch(state)
 }
-/// Parse module declaration: mod name { body }
-/// Complexity: <5 (simple structure)
+// Module declaration parsing moved to expressions_helpers/modules.rs module
 fn parse_module_declaration(state: &mut ParserState) -> Result<Expr> {
-    // Accept both 'mod' and 'module' keywords
-    let start_span = if matches!(state.tokens.peek(), Some((Token::Mod, _))) {
-        state.tokens.expect(&Token::Mod)?
-    } else {
-        state.tokens.expect(&Token::Module)?
-    };
-    // Parse module name (accept keywords as module names)
-    let name = match state.tokens.peek() {
-        Some((Token::Identifier(n), _)) => {
-            let n = n.clone();
-            state.tokens.advance();
-            n
-        }
-        // DEFECT-PARSER-015 FIX: Allow keyword module names (mod private, mod utils, etc.)
-        Some((Token::Private, _)) => {
-            state.tokens.advance();
-            "private".to_string()
-        }
-        _ => bail!("Expected module name after 'mod' or 'module'"),
-    };
-    // Parse module body with visibility support
-    state.tokens.expect(&Token::LeftBrace)?;
-    let body = Box::new(parse_module_body(state)?);
-    Ok(Expr::new(ExprKind::Module { name, body }, start_span))
-}
-/// Parse module body with support for visibility modifiers (pub)
-fn parse_module_body(state: &mut ParserState) -> Result<Expr> {
-    let start_span = state
-        .tokens
-        .peek()
-        .map_or(Span { start: 0, end: 0 }, |t| t.1);
-    let mut exprs = Vec::new();
-
-    while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
-        let is_pub = parse_visibility_modifier(state);
-        exprs.push(parse_module_item(state, is_pub)?);
-        skip_optional_semicolon(state);
-    }
-
-    state.tokens.expect(&Token::RightBrace)?;
-    Ok(Expr::new(ExprKind::Block(exprs), start_span))
-}
-
-fn parse_visibility_modifier(state: &mut ParserState) -> bool {
-    if matches!(state.tokens.peek(), Some((Token::Pub, _))) {
-        state.tokens.advance();
-        true
-    } else {
-        false
-    }
-}
-
-fn parse_module_item(state: &mut ParserState, is_pub: bool) -> Result<Expr> {
-    match state.tokens.peek() {
-        // DEFECT-PARSER-015 FIX: Accept both 'fun' and 'fn' for functions
-        Some((Token::Fun, _)) | Some((Token::Fn, _)) => {
-            super::functions::parse_function_with_visibility(state, is_pub)
-        }
-        Some((Token::Use, _)) if is_pub => {
-            state.tokens.advance();
-            super::parse_use_statement_with_visibility(state, true)
-        }
-        // DEFECT-PARSER-015 FIX: Allow pub mod
-        Some((Token::Mod, _)) | Some((Token::Module, _)) if is_pub => {
-            parse_module_declaration(state)
-        }
-        _ if is_pub => {
-            bail!("'pub' can only be used with function declarations, use statements, or module declarations")
-        }
-        _ => super::parse_expr_recursive(state),
-    }
-}
-
-fn skip_optional_semicolon(state: &mut ParserState) {
-    if matches!(state.tokens.peek(), Some((Token::Semicolon, _))) {
-        state.tokens.advance();
-    }
+    expressions_helpers::modules::parse_module_declaration(state)
 }
 /// Parse data structure definition tokens (Struct, Trait, Impl)
 /// Extracted from `parse_prefix` to reduce complexity
