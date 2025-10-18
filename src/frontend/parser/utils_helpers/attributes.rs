@@ -212,7 +212,7 @@ fn parse_simple_value(state: &mut ParserState) -> Result<String> {
         Token::Float(v) => v.to_string(),
         Token::String(v) => format!("\"{v}\""),
         Token::Bool(v) => v.to_string(),
-        _ => bail!("Unsupported attribute value type: {:?}", token),
+        _ => bail!("Unsupported attribute value type: {token:?}"),
     };
     state.tokens.advance();
     Ok(value)

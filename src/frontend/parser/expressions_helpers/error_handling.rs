@@ -43,7 +43,7 @@
 //!
 //! Extracted from expressions.rs to improve maintainability (TDG Structural improvement).
 
-use crate::frontend::ast::{CatchClause, Expr, ExprKind, Pattern, Span};
+use crate::frontend::ast::{CatchClause, Expr, ExprKind, Pattern};
 use crate::frontend::lexer::Token;
 use crate::frontend::parser::{bail, ParserState, Result};
 

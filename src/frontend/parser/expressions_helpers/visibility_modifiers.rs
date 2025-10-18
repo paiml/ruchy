@@ -69,7 +69,7 @@ fn skip_visibility_scope(state: &mut ParserState) -> Result<()> {
 /// Parse path after pub(in ...)
 ///
 /// Complexity: 5 (within target ≤10)
-/// Extracted from skip_visibility_scope to reduce complexity
+/// Extracted from `skip_visibility_scope` to reduce complexity
 fn parse_visibility_path(state: &mut ParserState) -> Result<()> {
     // Parse path: can start with :: (absolute), crate, super, or self
     if matches!(state.tokens.peek(), Some((Token::ColonColon, _))) {
@@ -155,7 +155,7 @@ fn parse_pub_unsafe_function(state: &mut ParserState) -> Result<Expr> {
     Ok(expr)
 }
 
-/// Mark expression as public (set is_pub flag)
+/// Mark expression as public (set `is_pub` flag)
 fn mark_expression_as_public(expr: &mut Expr) {
     match &mut expr.kind {
         ExprKind::Function { is_pub, .. }

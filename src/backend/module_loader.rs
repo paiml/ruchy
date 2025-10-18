@@ -125,7 +125,7 @@ impl ModuleLoader {
         if self.loading_stack.contains(&module_name.to_string()) {
             let stack = self.loading_stack.join(" -> ");
             let cycle_path = format!("{stack} -> {module_name}");
-            bail!("Circular dependency detected: {}", cycle_path);
+            bail!("Circular dependency detected: {cycle_path}");
         }
         // Check cache for already loaded modules
         if let Some(cached) = self.cache.get(module_name) {
@@ -159,7 +159,7 @@ impl ModuleLoader {
             if self.loading_stack.contains(&dep.clone()) {
                 let stack = self.loading_stack.join(" -> ");
                 let cycle_path = format!("{stack} -> {module_name} -> {dep}");
-                bail!("Circular dependency detected: {}", cycle_path);
+                bail!("Circular dependency detected: {cycle_path}");
             }
             self.load_module(dep).with_context(|| {
                 format!("Failed to load dependency '{dep}' for module '{module_name}'")

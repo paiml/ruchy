@@ -163,7 +163,7 @@ impl Transpiler {
             }
             _ => {
                 use anyhow::bail;
-                bail!("Invalid operator for compound assignment: {:?}", op)
+                bail!("Invalid operator for compound assignment: {op:?}")
             }
         }
     }

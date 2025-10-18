@@ -113,7 +113,7 @@ impl MagicRegistry {
                     command.execute_line(repl, args.join(" ").as_str())
                 }
             }
-            None => Err(anyhow!("Unknown magic command: %{}", command_name)),
+            None => Err(anyhow!("Unknown magic command: %{command_name}")),
         }
     }
     /// Get list of available magic commands
@@ -276,7 +276,7 @@ impl MagicCommand for RunMagic {
             return Err(anyhow!("Usage: %run <script.ruchy>"));
         }
         let script_content =
-            std::fs::read_to_string(args).map_err(|e| anyhow!("Failed to read script: {}", e))?;
+            std::fs::read_to_string(args).map_err(|e| anyhow!("Failed to read script: {e}"))?;
         let result = repl.eval(&script_content)?;
         Ok(MagicResult::Text(result))
     }
@@ -487,8 +487,8 @@ impl MagicCommand for SaveMagic {
             serializable.insert(k.clone(), format!("{v:?}"));
         }
         let json = serde_json::to_string_pretty(&serializable)
-            .map_err(|e| anyhow!("Failed to serialize: {}", e))?;
-        std::fs::write(args.trim(), json).map_err(|e| anyhow!("Failed to write file: {}", e))?;
+            .map_err(|e| anyhow!("Failed to serialize: {e}"))?;
+        std::fs::write(args.trim(), json).map_err(|e| anyhow!("Failed to write file: {e}"))?;
         Ok(MagicResult::Text(format!(
             "Saved workspace to {}",
             args.trim()
@@ -506,7 +506,7 @@ impl MagicCommand for LoadMagic {
             return Err(anyhow!("Usage: %load <filename>"));
         }
         let _content = std::fs::read_to_string(args.trim())
-            .map_err(|e| anyhow!("Failed to read file: {}", e))?;
+            .map_err(|e| anyhow!("Failed to read file: {e}"))?;
         // In production, would deserialize and load into workspace
         Ok(MagicResult::Text(format!(
             "Loaded workspace from {}",
@@ -524,7 +524,7 @@ impl MagicCommand for LoadMagic {
 struct PwdMagic;
 impl MagicCommand for PwdMagic {
     fn execute_line(&self, _repl: &mut Repl, _args: &str) -> Result<MagicResult> {
-        let pwd = std::env::current_dir().map_err(|e| anyhow!("Failed to get pwd: {}", e))?;
+        let pwd = std::env::current_dir().map_err(|e| anyhow!("Failed to get pwd: {e}"))?;
         Ok(MagicResult::Text(pwd.display().to_string()))
     }
     fn help(&self) -> &'static str {
@@ -541,8 +541,8 @@ impl MagicCommand for CdMagic {
             args.trim().to_string()
         };
         std::env::set_current_dir(&path)
-            .map_err(|e| anyhow!("Failed to change directory: {}", e))?;
-        let pwd = std::env::current_dir().map_err(|e| anyhow!("Failed to get pwd: {}", e))?;
+            .map_err(|e| anyhow!("Failed to change directory: {e}"))?;
+        let pwd = std::env::current_dir().map_err(|e| anyhow!("Failed to get pwd: {e}"))?;
         Ok(MagicResult::Text(format!("Changed to: {}", pwd.display())))
     }
     fn help(&self) -> &'static str {
@@ -559,10 +559,10 @@ impl MagicCommand for LsMagic {
             args.trim()
         };
         let entries =
-            std::fs::read_dir(path).map_err(|e| anyhow!("Failed to read directory: {}", e))?;
+            std::fs::read_dir(path).map_err(|e| anyhow!("Failed to read directory: {e}"))?;
         let mut output = String::new();
         for entry in entries {
-            let entry = entry.map_err(|e| anyhow!("Failed to read entry: {}", e))?;
+            let entry = entry.map_err(|e| anyhow!("Failed to read entry: {e}"))?;
             let name = entry.file_name();
             output.push_str(&format!("{}\n", name.to_string_lossy()));
         }

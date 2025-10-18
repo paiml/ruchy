@@ -649,7 +649,7 @@ fn builtin_sort(args: &[Value]) -> Result<Value, InterpreterError> {
 
 // Environment Functions
 
-/// Built-in env_args function - returns command-line arguments
+/// Built-in `env_args` function - returns command-line arguments
 ///
 /// # Examples
 ///
@@ -691,7 +691,7 @@ fn builtin_env_var(args: &[Value]) -> Result<Value, InterpreterError> {
         Value::String(key) => match std::env::var(key.as_ref()) {
             Ok(val) => Ok(Value::from_string(val)),
             Err(_) => Err(InterpreterError::RuntimeError(
-                format!("Environment variable '{}' not found", key),
+                format!("Environment variable '{key}' not found"),
             )),
         },
         _ => Err(InterpreterError::RuntimeError(
@@ -768,7 +768,7 @@ fn builtin_env_current_dir(args: &[Value]) -> Result<Value, InterpreterError> {
     match std::env::current_dir() {
         Ok(path) => Ok(Value::from_string(path.to_string_lossy().to_string())),
         Err(e) => Err(InterpreterError::RuntimeError(
-            format!("Failed to get current directory: {}", e),
+            format!("Failed to get current directory: {e}"),
         )),
     }
 }
@@ -784,9 +784,9 @@ fn builtin_env_set_current_dir(args: &[Value]) -> Result<Value, InterpreterError
 
     match &args[0] {
         Value::String(path) => match std::env::set_current_dir(path.as_ref()) {
-            Ok(_) => Ok(Value::Nil),
+            Ok(()) => Ok(Value::Nil),
             Err(e) => Err(InterpreterError::RuntimeError(
-                format!("Failed to set current directory: {}", e),
+                format!("Failed to set current directory: {e}"),
             )),
         },
         _ => Err(InterpreterError::RuntimeError(
@@ -818,7 +818,7 @@ fn builtin_fs_read(args: &[Value]) -> Result<Value, InterpreterError> {
     match &args[0] {
         Value::String(path) => match std::fs::read_to_string(path.as_ref()) {
             Ok(content) => Ok(Value::from_string(content)),
-            Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to read file: {}", e))),
+            Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to read file: {e}"))),
         },
         _ => Err(InterpreterError::RuntimeError("fs_read() expects a string argument".to_string())),
     }
@@ -831,8 +831,8 @@ fn builtin_fs_write(args: &[Value]) -> Result<Value, InterpreterError> {
     }
     match (&args[0], &args[1]) {
         (Value::String(path), Value::String(content)) => match std::fs::write(path.as_ref(), content.as_ref()) {
-            Ok(_) => Ok(Value::Nil),
-            Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to write file: {}", e))),
+            Ok(()) => Ok(Value::Nil),
+            Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to write file: {e}"))),
         },
         _ => Err(InterpreterError::RuntimeError("fs_write() expects two string arguments".to_string())),
     }
@@ -856,8 +856,8 @@ fn builtin_fs_create_dir(args: &[Value]) -> Result<Value, InterpreterError> {
     }
     match &args[0] {
         Value::String(path) => match std::fs::create_dir(path.as_ref()) {
-            Ok(_) => Ok(Value::Nil),
-            Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to create directory: {}", e))),
+            Ok(()) => Ok(Value::Nil),
+            Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to create directory: {e}"))),
         },
         _ => Err(InterpreterError::RuntimeError("fs_create_dir() expects a string argument".to_string())),
     }
@@ -870,8 +870,8 @@ fn builtin_fs_remove_file(args: &[Value]) -> Result<Value, InterpreterError> {
     }
     match &args[0] {
         Value::String(path) => match std::fs::remove_file(path.as_ref()) {
-            Ok(_) => Ok(Value::Nil),
-            Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to remove file: {}", e))),
+            Ok(()) => Ok(Value::Nil),
+            Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to remove file: {e}"))),
         },
         _ => Err(InterpreterError::RuntimeError("fs_remove_file() expects a string argument".to_string())),
     }
@@ -884,8 +884,8 @@ fn builtin_fs_remove_dir(args: &[Value]) -> Result<Value, InterpreterError> {
     }
     match &args[0] {
         Value::String(path) => match std::fs::remove_dir(path.as_ref()) {
-            Ok(_) => Ok(Value::Nil),
-            Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to remove directory: {}", e))),
+            Ok(()) => Ok(Value::Nil),
+            Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to remove directory: {e}"))),
         },
         _ => Err(InterpreterError::RuntimeError("fs_remove_dir() expects a string argument".to_string())),
     }
@@ -899,7 +899,7 @@ fn builtin_fs_copy(args: &[Value]) -> Result<Value, InterpreterError> {
     match (&args[0], &args[1]) {
         (Value::String(from), Value::String(to)) => match std::fs::copy(from.as_ref(), to.as_ref()) {
             Ok(_) => Ok(Value::Nil),
-            Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to copy file: {}", e))),
+            Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to copy file: {e}"))),
         },
         _ => Err(InterpreterError::RuntimeError("fs_copy() expects two string arguments".to_string())),
     }
@@ -912,8 +912,8 @@ fn builtin_fs_rename(args: &[Value]) -> Result<Value, InterpreterError> {
     }
     match (&args[0], &args[1]) {
         (Value::String(from), Value::String(to)) => match std::fs::rename(from.as_ref(), to.as_ref()) {
-            Ok(_) => Ok(Value::Nil),
-            Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to rename file: {}", e))),
+            Ok(()) => Ok(Value::Nil),
+            Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to rename file: {e}"))),
         },
         _ => Err(InterpreterError::RuntimeError("fs_rename() expects two string arguments".to_string())),
     }
@@ -933,7 +933,7 @@ fn builtin_fs_metadata(args: &[Value]) -> Result<Value, InterpreterError> {
                 map.insert("is_file".to_string(), Value::Bool(meta.is_file()));
                 Ok(Value::Object(Arc::new(map)))
             },
-            Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to get metadata: {}", e))),
+            Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to get metadata: {e}"))),
         },
         _ => Err(InterpreterError::RuntimeError("fs_metadata() expects a string argument".to_string())),
     }
@@ -952,10 +952,10 @@ fn builtin_fs_read_dir(args: &[Value]) -> Result<Value, InterpreterError> {
                     .collect();
                 match names {
                     Ok(vec) => Ok(Value::from_array(vec)),
-                    Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to read directory: {}", e))),
+                    Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to read directory: {e}"))),
                 }
             },
-            Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to read directory: {}", e))),
+            Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to read directory: {e}"))),
         },
         _ => Err(InterpreterError::RuntimeError("fs_read_dir() expects a string argument".to_string())),
     }
@@ -969,7 +969,7 @@ fn builtin_fs_canonicalize(args: &[Value]) -> Result<Value, InterpreterError> {
     match &args[0] {
         Value::String(path) => match std::fs::canonicalize(path.as_ref()) {
             Ok(canonical) => Ok(Value::from_string(canonical.to_string_lossy().to_string())),
-            Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to canonicalize path: {}", e))),
+            Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to canonicalize path: {e}"))),
         },
         _ => Err(InterpreterError::RuntimeError("fs_canonicalize() expects a string argument".to_string())),
     }
@@ -1015,11 +1015,11 @@ fn builtin_path_join_many(args: &[Value]) -> Result<Value, InterpreterError> {
     }
 }
 
-/// Helper: Build PathBuf from Value array components
+/// Helper: Build `PathBuf` from Value array components
 /// Complexity: 3 (reduced cognitive load)
 fn build_path_from_components(components: &[Value]) -> Result<std::path::PathBuf, InterpreterError> {
     let mut path = std::path::PathBuf::new();
-    for component in components.iter() {
+    for component in components {
         match component {
             Value::String(s) => path.push(s.as_ref()),
             _ => return Err(InterpreterError::RuntimeError("path_join_many() expects array of strings".to_string())),
@@ -1125,7 +1125,7 @@ fn builtin_path_canonicalize(args: &[Value]) -> Result<Value, InterpreterError> 
     match &args[0] {
         Value::String(path) => match std::fs::canonicalize(path.as_ref()) {
             Ok(canonical) => Ok(Value::from_string(canonical.to_string_lossy().to_string())),
-            Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to canonicalize path: {}", e))),
+            Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to canonicalize path: {e}"))),
         },
         _ => Err(InterpreterError::RuntimeError("path_canonicalize() expects a string argument".to_string())),
     }
@@ -1199,7 +1199,7 @@ fn builtin_path_normalize(args: &[Value]) -> Result<Value, InterpreterError> {
 // Phase 4: STDLIB_ACCESS_PLAN - JSON Module (10 functions)
 // Thin wrapper pattern: delegate to serde_json (complexity ≤2 per function)
 
-/// Convert serde_json::Value to Ruchy Value
+/// Convert `serde_json::Value` to Ruchy Value
 /// Complexity: 2 (thin wrapper helper)
 fn json_value_to_ruchy(json: serde_json::Value) -> Value {
     match json {
@@ -1229,7 +1229,7 @@ fn json_value_to_ruchy(json: serde_json::Value) -> Value {
     }
 }
 
-/// Convert Ruchy Value to serde_json::Value
+/// Convert Ruchy Value to `serde_json::Value`
 /// Complexity: 2 (thin wrapper helper)
 /// Convert Ruchy value to JSON value
 /// Complexity: 5 (reduced by extracting object conversion helpers)
@@ -1243,7 +1243,7 @@ fn ruchy_value_to_json(value: &Value) -> Result<serde_json::Value, InterpreterEr
         Value::Array(arr) => convert_array_to_json(arr),
         Value::Object(map) => convert_object_to_json(map),
         Value::ObjectMut(map) => convert_object_mut_to_json(map),
-        _ => Err(InterpreterError::RuntimeError(format!("Cannot convert {:?} to JSON", value))),
+        _ => Err(InterpreterError::RuntimeError(format!("Cannot convert {value:?} to JSON"))),
     }
 }
 
@@ -1260,7 +1260,7 @@ fn convert_array_to_json(arr: &[Value]) -> Result<serde_json::Value, Interpreter
 /// Complexity: 3 (iteration + recursive conversion)
 fn convert_object_to_json(map: &std::collections::HashMap<String, Value>) -> Result<serde_json::Value, InterpreterError> {
     let mut json_obj = serde_json::Map::new();
-    for (k, v) in map.iter() {
+    for (k, v) in map {
         json_obj.insert(k.clone(), ruchy_value_to_json(v)?);
     }
     Ok(serde_json::Value::Object(json_obj))
@@ -1277,7 +1277,7 @@ fn convert_object_mut_to_json(map: &std::sync::Arc<std::sync::Mutex<std::collect
     Ok(serde_json::Value::Object(json_obj))
 }
 
-/// json_parse(str) - Parse JSON string to Ruchy value
+/// `json_parse(str)` - Parse JSON string to Ruchy value
 /// Complexity: 2 (thin wrapper)
 fn builtin_json_parse(args: &[Value]) -> Result<Value, InterpreterError> {
     if args.len() != 1 {
@@ -1287,14 +1287,14 @@ fn builtin_json_parse(args: &[Value]) -> Result<Value, InterpreterError> {
         Value::String(s) => {
             match serde_json::from_str::<serde_json::Value>(s) {
                 Ok(json) => Ok(json_value_to_ruchy(json)),
-                Err(e) => Err(InterpreterError::RuntimeError(format!("JSON parse error: {}", e))),
+                Err(e) => Err(InterpreterError::RuntimeError(format!("JSON parse error: {e}"))),
             }
         },
         _ => Err(InterpreterError::RuntimeError("json_parse() expects a string argument".to_string())),
     }
 }
 
-/// json_stringify(value) - Convert Ruchy value to JSON string
+/// `json_stringify(value)` - Convert Ruchy value to JSON string
 /// Complexity: 2 (thin wrapper)
 fn builtin_json_stringify(args: &[Value]) -> Result<Value, InterpreterError> {
     if args.len() != 1 {
@@ -1303,11 +1303,11 @@ fn builtin_json_stringify(args: &[Value]) -> Result<Value, InterpreterError> {
     let json = ruchy_value_to_json(&args[0])?;
     match serde_json::to_string(&json) {
         Ok(s) => Ok(Value::from_string(s)),
-        Err(e) => Err(InterpreterError::RuntimeError(format!("JSON stringify error: {}", e))),
+        Err(e) => Err(InterpreterError::RuntimeError(format!("JSON stringify error: {e}"))),
     }
 }
 
-/// json_pretty(value) - Pretty-print JSON with indentation
+/// `json_pretty(value)` - Pretty-print JSON with indentation
 /// Complexity: 2 (thin wrapper)
 fn builtin_json_pretty(args: &[Value]) -> Result<Value, InterpreterError> {
     if args.len() != 1 {
@@ -1316,11 +1316,11 @@ fn builtin_json_pretty(args: &[Value]) -> Result<Value, InterpreterError> {
     let json = ruchy_value_to_json(&args[0])?;
     match serde_json::to_string_pretty(&json) {
         Ok(s) => Ok(Value::from_string(s)),
-        Err(e) => Err(InterpreterError::RuntimeError(format!("JSON pretty error: {}", e))),
+        Err(e) => Err(InterpreterError::RuntimeError(format!("JSON pretty error: {e}"))),
     }
 }
 
-/// json_read(path) - Read and parse JSON file
+/// `json_read(path)` - Read and parse JSON file
 /// Complexity: 2 (thin wrapper)
 fn builtin_json_read(args: &[Value]) -> Result<Value, InterpreterError> {
     if args.len() != 1 {
@@ -1329,19 +1329,19 @@ fn builtin_json_read(args: &[Value]) -> Result<Value, InterpreterError> {
     match &args[0] {
         Value::String(path) => {
             let content = std::fs::read_to_string(path.as_ref())
-                .map_err(|e| InterpreterError::RuntimeError(format!("Failed to read file: {}", e)))?;
+                .map_err(|e| InterpreterError::RuntimeError(format!("Failed to read file: {e}")))?;
             match serde_json::from_str::<serde_json::Value>(&content) {
                 Ok(json) => Ok(json_value_to_ruchy(json)),
-                Err(e) => Err(InterpreterError::RuntimeError(format!("JSON parse error: {}", e))),
+                Err(e) => Err(InterpreterError::RuntimeError(format!("JSON parse error: {e}"))),
             }
         },
         _ => Err(InterpreterError::RuntimeError("json_read() expects a string argument".to_string())),
     }
 }
 
-/// json_write(path, value) - Write value as JSON to file
+/// `json_write(path`, value) - Write value as JSON to file
 /// Complexity: 2 (thin wrapper)
-/// json_write(path, value) - Write Ruchy value as JSON file
+/// `json_write(path`, value) - Write Ruchy value as JSON file
 /// Complexity: 3 (reduced by extracting serialization)
 fn builtin_json_write(args: &[Value]) -> Result<Value, InterpreterError> {
     if args.len() != 2 {
@@ -1362,17 +1362,17 @@ fn builtin_json_write(args: &[Value]) -> Result<Value, InterpreterError> {
 fn serialize_value_to_json_string(value: &Value) -> Result<String, InterpreterError> {
     let json = ruchy_value_to_json(value)?;
     serde_json::to_string_pretty(&json)
-        .map_err(|e| InterpreterError::RuntimeError(format!("JSON stringify error: {}", e)))
+        .map_err(|e| InterpreterError::RuntimeError(format!("JSON stringify error: {e}")))
 }
 
 /// Write JSON string to file
 /// Complexity: 2 (file write with error handling)
 fn write_json_to_file(path: &str, content: &str) -> Result<(), InterpreterError> {
     std::fs::write(path, content)
-        .map_err(|e| InterpreterError::RuntimeError(format!("Failed to write file: {}", e)))
+        .map_err(|e| InterpreterError::RuntimeError(format!("Failed to write file: {e}")))
 }
 
-/// json_validate(str) - Check if string is valid JSON
+/// `json_validate(str)` - Check if string is valid JSON
 /// Complexity: 2 (thin wrapper)
 fn builtin_json_validate(args: &[Value]) -> Result<Value, InterpreterError> {
     if args.len() != 1 {
@@ -1387,7 +1387,7 @@ fn builtin_json_validate(args: &[Value]) -> Result<Value, InterpreterError> {
     }
 }
 
-/// json_type(str) - Get JSON type without full parsing
+/// `json_type(str)` - Get JSON type without full parsing
 /// Complexity: 2 (thin wrapper)
 fn builtin_json_type(args: &[Value]) -> Result<Value, InterpreterError> {
     if args.len() != 1 {
@@ -1407,14 +1407,14 @@ fn builtin_json_type(args: &[Value]) -> Result<Value, InterpreterError> {
                     };
                     Ok(Value::from_string(type_str.to_string()))
                 },
-                Err(e) => Err(InterpreterError::RuntimeError(format!("JSON parse error: {}", e))),
+                Err(e) => Err(InterpreterError::RuntimeError(format!("JSON parse error: {e}"))),
             }
         },
         _ => Err(InterpreterError::RuntimeError("json_type() expects a string argument".to_string())),
     }
 }
 
-/// json_merge(obj1, obj2) - Deep merge two JSON objects
+/// `json_merge(obj1`, obj2) - Deep merge two JSON objects
 /// Complexity: 2 (delegates to helper)
 fn builtin_json_merge(args: &[Value]) -> Result<Value, InterpreterError> {
     if args.len() != 2 {
@@ -1447,7 +1447,7 @@ fn merge_json_values(a: serde_json::Value, b: serde_json::Value) -> serde_json::
     }
 }
 
-/// json_get(obj, path) - Get nested value by path (e.g., "user.name")
+/// `json_get(obj`, path) - Get nested value by path (e.g., "user.name")
 /// Complexity: 2 (thin wrapper)
 fn builtin_json_get(args: &[Value]) -> Result<Value, InterpreterError> {
     if args.len() != 2 {
@@ -1484,7 +1484,7 @@ fn get_json_path<'a>(json: &'a serde_json::Value, path: &[&str]) -> Option<&'a s
     }
 }
 
-/// json_set(obj, path, value) - Set nested value by path
+/// `json_set(obj`, path, value) - Set nested value by path
 /// Complexity: 2 (thin wrapper)
 fn builtin_json_set(args: &[Value]) -> Result<Value, InterpreterError> {
     if args.len() != 3 {
@@ -1545,7 +1545,7 @@ fn set_json_path_recursive(json: &mut serde_json::Value, path: &[&str], value: s
 // Thin wrappers around crate::stdlib::http module
 // Complexity: ≤2 per function (Toyota Way limits)
 
-/// Builtin: http_get(url)
+/// Builtin: `http_get(url)`
 /// Sends GET request and returns response body as string
 /// Complexity: 2 (error handling + stdlib delegation)
 fn builtin_http_get(args: &[Value]) -> Result<Value, InterpreterError> {
@@ -1557,14 +1557,14 @@ fn builtin_http_get(args: &[Value]) -> Result<Value, InterpreterError> {
         Value::String(url) => {
             match crate::stdlib::http::get(url) {
                 Ok(response) => Ok(Value::from_string(response)),
-                Err(e) => Err(InterpreterError::RuntimeError(format!("HTTP GET failed: {}", e))),
+                Err(e) => Err(InterpreterError::RuntimeError(format!("HTTP GET failed: {e}"))),
             }
         },
         _ => Err(InterpreterError::RuntimeError("http_get() expects a string URL".to_string())),
     }
 }
 
-/// Builtin: http_post(url, body)
+/// Builtin: `http_post(url`, body)
 /// Sends POST request with body and returns response
 /// Complexity: 2 (error handling + stdlib delegation)
 fn builtin_http_post(args: &[Value]) -> Result<Value, InterpreterError> {
@@ -1576,14 +1576,14 @@ fn builtin_http_post(args: &[Value]) -> Result<Value, InterpreterError> {
         (Value::String(url), Value::String(body)) => {
             match crate::stdlib::http::post(url, body) {
                 Ok(response) => Ok(Value::from_string(response)),
-                Err(e) => Err(InterpreterError::RuntimeError(format!("HTTP POST failed: {}", e))),
+                Err(e) => Err(InterpreterError::RuntimeError(format!("HTTP POST failed: {e}"))),
             }
         },
         _ => Err(InterpreterError::RuntimeError("http_post() expects two string arguments".to_string())),
     }
 }
 
-/// Builtin: http_put(url, body)
+/// Builtin: `http_put(url`, body)
 /// Sends PUT request with body and returns response
 /// Complexity: 2 (error handling + stdlib delegation)
 fn builtin_http_put(args: &[Value]) -> Result<Value, InterpreterError> {
@@ -1595,14 +1595,14 @@ fn builtin_http_put(args: &[Value]) -> Result<Value, InterpreterError> {
         (Value::String(url), Value::String(body)) => {
             match crate::stdlib::http::put(url, body) {
                 Ok(response) => Ok(Value::from_string(response)),
-                Err(e) => Err(InterpreterError::RuntimeError(format!("HTTP PUT failed: {}", e))),
+                Err(e) => Err(InterpreterError::RuntimeError(format!("HTTP PUT failed: {e}"))),
             }
         },
         _ => Err(InterpreterError::RuntimeError("http_put() expects two string arguments".to_string())),
     }
 }
 
-/// Builtin: http_delete(url)
+/// Builtin: `http_delete(url)`
 /// Sends DELETE request and returns response
 /// Complexity: 2 (error handling + stdlib delegation)
 fn builtin_http_delete(args: &[Value]) -> Result<Value, InterpreterError> {
@@ -1614,14 +1614,14 @@ fn builtin_http_delete(args: &[Value]) -> Result<Value, InterpreterError> {
         Value::String(url) => {
             match crate::stdlib::http::delete(url) {
                 Ok(response) => Ok(Value::from_string(response)),
-                Err(e) => Err(InterpreterError::RuntimeError(format!("HTTP DELETE failed: {}", e))),
+                Err(e) => Err(InterpreterError::RuntimeError(format!("HTTP DELETE failed: {e}"))),
             }
         },
         _ => Err(InterpreterError::RuntimeError("http_delete() expects a string URL".to_string())),
     }
 }
 
-/// Built-in assert_eq function for testing
+/// Built-in `assert_eq` function for testing
 /// Panics if the two values are not equal
 ///
 /// # Arguments
@@ -1643,13 +1643,13 @@ fn builtin_assert_eq(args: &[Value]) -> Result<Value, InterpreterError> {
     let message = if args.len() > 2 {
         format!("{}", args[2])
     } else {
-        format!("Assertion failed: expected {:?}, got {:?}", expected, actual)
+        format!("Assertion failed: expected {expected:?}, got {actual:?}")
     };
 
-    if expected != actual {
-        Err(InterpreterError::AssertionFailed(message))
-    } else {
+    if expected == actual {
         Ok(Value::nil())
+    } else {
+        Err(InterpreterError::AssertionFailed(message))
     }
 }
 

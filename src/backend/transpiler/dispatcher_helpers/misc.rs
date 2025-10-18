@@ -22,7 +22,7 @@ impl Transpiler {
             "u64" => quote! { u64 },
             "i8" => quote! { i8 },
             "i16" => quote! { i16 },
-            _ => bail!("Unsupported cast target type: {}", target_type),
+            _ => bail!("Unsupported cast target type: {target_type}"),
         };
         Ok(quote! { (#expr_tokens as #rust_type) })
     }

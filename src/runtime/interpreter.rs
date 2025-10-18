@@ -108,7 +108,7 @@ pub enum Value {
         fields: Arc<HashMap<String, Value>>,
     },
     /// Class instance (reference type with methods)
-    /// Thread-safe via Arc, reference semantics, mutable via RwLock
+    /// Thread-safe via Arc, reference semantics, mutable via `RwLock`
     /// Identity-based equality (pointer comparison)
     Class {
         class_name: String,
@@ -289,7 +289,7 @@ pub enum InterpreterError {
     Return(Value),
     Throw(Value), // EXTREME TDD: Exception handling
     AssertionFailed(std::string::String), // BUG-037: Test assertions
-    /// Recursion depth limit exceeded (current_depth, max_depth)
+    /// Recursion depth limit exceeded (`current_depth`, `max_depth`)
     /// Added via [RUNTIME-001] fix for stack overflow crashes
     RecursionLimitExceeded(usize, usize),
 }
@@ -1394,7 +1394,7 @@ impl Interpreter {
         })
     }
 
-    /// Index into a DataFrame by row index (complexity: 5)
+    /// Index into a `DataFrame` by row index (complexity: 5)
     /// Returns a row as an Object with column names as keys
     fn index_dataframe_row(
         columns: &[DataFrameColumn],
@@ -1424,7 +1424,7 @@ impl Interpreter {
         Ok(Value::Object(Arc::new(row)))
     }
 
-    /// Index into a DataFrame by column name (complexity: 3)
+    /// Index into a `DataFrame` by column name (complexity: 3)
     /// Returns a column as an Array
     fn index_dataframe_column(
         columns: &[DataFrameColumn],
@@ -3531,8 +3531,8 @@ impl Interpreter {
         }
     }
 
-    /// Evaluate instance method on Value::Class variant
-    /// This is for the new Class implementation with Arc<RwLock<HashMap>>
+    /// Evaluate instance method on `Value::Class` variant
+    /// This is for the new Class implementation with Arc<`RwLock`<HashMap>>
     fn eval_class_instance_method_on_class(
         &mut self,
         class_name: &str,
@@ -4951,7 +4951,7 @@ impl Interpreter {
     }
 
     /// Instantiate a class with arguments (calls init constructor)
-    /// Returns Value::Class with reference semantics
+    /// Returns `Value::Class` with reference semantics
     fn instantiate_class_with_args(
         &mut self,
         class_name: &str,

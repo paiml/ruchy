@@ -1,12 +1,8 @@
 //! Basic expression parsing - minimal version with only used functions
 use super::{
-    bail, ActorHandler, BinaryOp, ClassConstant, ClassMethod, ClassProperty, Constructor,
-    EnumVariant, Expr, ExprKind, Literal, MatchArm, Param, ParserState, Pattern, PropertySetter,
-    Result, SelfType, Span, StringPart, StructField, Token, TraitMethod, Type, TypeKind, UnaryOp,
-    Visibility,
+    bail, Expr, ExprKind, ParserState, Pattern,
+    Result, Span, Token,
 };
-use crate::frontend::ast::{Decorator, EnumVariantKind};
-use crate::frontend::error_recovery::ParseError;
 
 // Helper modules for improved maintainability (TDG Structural improvement)
 #[path = "expressions_helpers/mod.rs"]
@@ -111,7 +107,7 @@ fn dispatch_prefix_token(state: &mut ParserState, token: Token, span: Span) -> R
         | Token::Result
         | Token::Option => parse_collection_prefix(state, token, span),
 
-        _ => bail!("Unexpected token: {:?}", token),
+        _ => bail!("Unexpected token: {token:?}"),
     }
 }
 
@@ -249,7 +245,7 @@ fn parse_control_flow_token(state: &mut ParserState, token: Token) -> Result<Exp
         Token::For => parse_for_loop(state),
         Token::Try => parse_try_catch(state),
         Token::Loop => parse_loop(state),
-        _ => bail!("Expected control flow token, got: {:?}", token),
+        _ => bail!("Expected control flow token, got: {token:?}"),
     }
 }
 // Try-catch-finally parsing moved to expressions_helpers/error_handling.rs module
@@ -270,7 +266,7 @@ fn parse_data_structure_token(state: &mut ParserState, token: Token) -> Result<E
         Token::Interface => parse_trait_definition(state), // Interface is just a trait
         Token::Impl => parse_impl_block(state),
         Token::Type => parse_type_alias(state),
-        _ => bail!("Expected data structure token, got: {:?}", token),
+        _ => bail!("Expected data structure token, got: {token:?}"),
     }
 }
 /// Parse import/module tokens (Import, Use)
@@ -293,7 +289,7 @@ fn parse_import_token(state: &mut ParserState, token: Token) -> Result<Expr> {
             super::imports::parse_from_import_statement(state)
         }
         Token::Use => parse_use_statement(state),
-        _ => bail!("Expected import token, got: {:?}", token),
+        _ => bail!("Expected import token, got: {token:?}"),
     }
 }
 
@@ -304,7 +300,7 @@ fn parse_lambda_token(state: &mut ParserState, token: Token) -> Result<Expr> {
         Token::Pipe => parse_lambda_expression(state),
         Token::OrOr => parse_lambda_no_params(state),
         Token::Backslash => super::functions::parse_lambda(state),
-        _ => bail!("Expected lambda token, got: {:?}", token),
+        _ => bail!("Expected lambda token, got: {token:?}"),
     }
 }
 /// Parse function/block tokens (Fun, Fn, `LeftBrace`)
@@ -313,7 +309,7 @@ fn parse_function_block_token(state: &mut ParserState, token: Token) -> Result<E
     match token {
         Token::Fun | Token::Fn => super::functions::parse_function(state),
         Token::LeftBrace => super::collections::parse_block(state),
-        _ => bail!("Expected function/block token, got: {:?}", token),
+        _ => bail!("Expected function/block token, got: {token:?}"),
     }
 }
 /// Parse variable declaration tokens (Let, Var)
@@ -322,7 +318,7 @@ fn parse_variable_declaration_token(state: &mut ParserState, token: Token) -> Re
     match token {
         Token::Let => parse_let_statement(state),
         Token::Var => parse_var_statement(state),
-        _ => bail!("Expected variable declaration token, got: {:?}", token),
+        _ => bail!("Expected variable declaration token, got: {token:?}"),
     }
 }
 /// Parse special definition tokens (`DataFrame`, Actor)
@@ -332,7 +328,7 @@ fn parse_special_definition_token(state: &mut ParserState, token: Token, span: S
         // DataFrame literal (df![...]) or identifier (df) - delegated to dataframes module
         Token::DataFrame => expressions_helpers::dataframes::parse_dataframe_token(state, span),
         Token::Actor => parse_actor_definition(state),
-        _ => bail!("Expected special definition token, got: {:?}", token),
+        _ => bail!("Expected special definition token, got: {token:?}"),
     }
 }
 /// Parse control statement tokens (Pub, Break, Continue, Return)
@@ -357,7 +353,7 @@ fn parse_control_statement_token(
         Token::Async => parse_async_token(state),
         Token::Increment => parse_increment_token(state, span),
         Token::Decrement => parse_decrement_token(state, span),
-        _ => bail!("Expected control statement token, got: {:?}", token),
+        _ => bail!("Expected control statement token, got: {token:?}"),
     }
 }
 /// Parse collection/enum definition tokens (`LeftBracket`, Enum)
@@ -366,7 +362,7 @@ fn parse_collection_enum_token(state: &mut ParserState, token: Token) -> Result<
     match token {
         Token::LeftBracket => expressions_helpers::arrays::parse_list_literal(state),
         Token::Enum => parse_enum_definition(state),
-        _ => bail!("Expected collection/enum token, got: {:?}", token),
+        _ => bail!("Expected collection/enum token, got: {token:?}"),
     }
 }
 /// Parse let statement: let [mut] name [: type] = value [in body]

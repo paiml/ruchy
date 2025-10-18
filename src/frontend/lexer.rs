@@ -34,9 +34,7 @@ fn process_unicode_escape(chars: &mut std::str::Chars) -> String {
     // Try to parse as valid Unicode code point
     u32::from_str_radix(&hex, 16)
         .ok()
-        .and_then(char::from_u32)
-        .map(|c| c.to_string())
-        .unwrap_or_else(|| format!("\\u{{{hex}}}"))
+        .and_then(char::from_u32).map_or_else(|| format!("\\u{{{hex}}}"), |c| c.to_string())
 }
 
 /// Handle a backslash escape sequence
@@ -634,8 +632,8 @@ impl<'a> TokenStream<'a> {
     pub fn expect(&mut self, expected: &Token) -> anyhow::Result<Span> {
         match self.next() {
             Some((token, span)) if token == *expected => Ok(span),
-            Some((token, _)) => anyhow::bail!("Expected {:?}, found {:?}", expected, token),
-            None => anyhow::bail!("Expected {:?}, found EOF", expected),
+            Some((token, _)) => anyhow::bail!("Expected {expected:?}, found {token:?}"),
+            None => anyhow::bail!("Expected {expected:?}, found EOF"),
         }
     }
     // Alias for next() to avoid clippy warning about Iterator trait

@@ -155,7 +155,7 @@ fn parse_reference_pattern(state: &mut ParserState) -> Result<(Pattern, (bool, b
             } else {
                 "'self' after '&'"
             };
-            bail!("Expected {} (got identifier '{}')", expected, n)
+            bail!("Expected {expected} (got identifier '{n}')")
         }
         _ => {
             let expected = if is_mut_ref {
@@ -163,7 +163,7 @@ fn parse_reference_pattern(state: &mut ParserState) -> Result<(Pattern, (bool, b
             } else {
                 "'self' after '&'"
             };
-            bail!("Expected {}", expected)
+            bail!("Expected {expected}")
         }
     }
 }

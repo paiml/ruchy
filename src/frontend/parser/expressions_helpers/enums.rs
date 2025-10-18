@@ -45,7 +45,7 @@
 //!
 //! Extracted from expressions.rs to improve maintainability (TDG Structural improvement).
 
-use crate::frontend::ast::{EnumVariant, EnumVariantKind, Expr, ExprKind, Span, StructField, Type};
+use crate::frontend::ast::{EnumVariant, EnumVariantKind, Expr, ExprKind, StructField, Type};
 use crate::frontend::lexer::Token;
 use crate::frontend::parser::{bail, utils, ParserState, Result};
 

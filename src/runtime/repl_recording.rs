@@ -66,7 +66,7 @@ impl Repl {
             let result = self.eval(input);
             let result_for_recording = match &result {
                 Ok(s) => Ok(Value::from_string(s.clone())),
-                Err(e) => Err(anyhow::anyhow!("{}", e)),
+                Err(e) => Err(anyhow::anyhow!("{e}")),
             };
             recorder.record_output(result_for_recording);
             // Display result
@@ -101,7 +101,7 @@ impl Repl {
                 let result = self.eval(&full_input);
                 let result_for_recording = match &result {
                     Ok(s) => Ok(Value::from_string(s.clone())),
-                    Err(e) => Err(anyhow::anyhow!("{}", e)),
+                    Err(e) => Err(anyhow::anyhow!("{e}")),
                 };
                 recorder.record_output(result_for_recording);
                 match result {

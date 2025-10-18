@@ -24,7 +24,7 @@ fn parse_analysis_depth(depth: &str) -> Result<AnalysisDepth> {
         "shallow" => Ok(AnalysisDepth::Shallow),
         "standard" => Ok(AnalysisDepth::Standard),
         "deep" => Ok(AnalysisDepth::Deep),
-        _ => Err(anyhow::anyhow!("Invalid depth: {}", depth)),
+        _ => Err(anyhow::anyhow!("Invalid depth: {depth}")),
     }
 }
 /// Process file or directory path (complexity: 5)
@@ -57,7 +57,7 @@ fn output_results(
         "console" => print_console_results(results, verbose)?,
         "json" => print_json_results(results)?,
         "junit" => print_junit_results(results)?,
-        _ => return Err(anyhow::anyhow!("Invalid format: {}", format)),
+        _ => return Err(anyhow::anyhow!("Invalid format: {format}")),
     }
     Ok(())
 }

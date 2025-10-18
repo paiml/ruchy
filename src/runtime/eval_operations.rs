@@ -484,7 +484,7 @@ fn equal_objects(
     }
     // Check all fields match using functional style
     a.iter()
-        .all(|(key, val_a)| b.get(key).map_or(false, |val_b| equal_values(val_a, val_b)))
+        .all(|(key, val_a)| b.get(key).is_some_and(|val_b| equal_values(val_a, val_b)))
 }
 
 /// QUALITY-017: Compare array values element-by-element

@@ -40,7 +40,7 @@ pub fn set_max_recursion_depth(depth: usize) {
 /// # Complexity
 /// Cyclomatic: 1
 pub fn get_current_depth() -> usize {
-    CALL_DEPTH.with(|depth| depth.get())
+    CALL_DEPTH.with(std::cell::Cell::get)
 }
 
 /// Check recursion depth before entering function

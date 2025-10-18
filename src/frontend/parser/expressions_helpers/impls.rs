@@ -32,7 +32,7 @@
 //!
 //! Extracted from expressions.rs to improve maintainability (TDG Structural improvement).
 
-use crate::frontend::ast::{Expr, ExprKind, ImplMethod, Span};
+use crate::frontend::ast::{Expr, ExprKind, ImplMethod};
 use crate::frontend::lexer::Token;
 use crate::frontend::parser::{bail, parse_expr_recursive, utils, ParserState, Result};
 
@@ -122,10 +122,10 @@ fn parse_optional_identifier(state: &mut ParserState) -> Option<String> {
 
 /// Parse identifier with generic params: Point<T> or Vec<Vec<T> > (complexity: 5)
 /// NOTE: Nested generics without spaces like Vec<Vec<T>> are not supported due to
-/// lexer tokenizing >> as RightShift. Use Vec<Vec<T> > with a space instead.
+/// lexer tokenizing >> as `RightShift`. Use Vec<Vec<T> > with a space instead.
 fn parse_identifier_with_generics(state: &mut ParserState, base_name: String) -> Result<String> {
     state.tokens.expect(&Token::Less)?;
-    let mut result = format!("{}<", base_name);
+    let mut result = format!("{base_name}<");
     let mut first = true;
 
     while !matches!(state.tokens.peek(), Some((Token::Greater, _))) {

@@ -259,12 +259,11 @@ impl fmt::Display for InterpreterError {
             InterpreterError::RecursionLimitExceeded(depth, max) => {
                 write!(
                     f,
-                    "Recursion limit exceeded: depth {} exceeds maximum {}\n\
+                    "Recursion limit exceeded: depth {depth} exceeds maximum {max}\n\
                      Hint: Possible infinite recursion detected. Check for:\n\
                      - Functions calling themselves without base case\n\
                      - Mutual recursion between functions\n\
-                     - Very deep call chains",
-                    depth, max
+                     - Very deep call chains"
                 )
             }
         }

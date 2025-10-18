@@ -31,7 +31,7 @@
 //!
 //! Extracted from expressions.rs to improve maintainability (TDG Structural improvement).
 
-use crate::frontend::ast::{Expr, ExprKind, Span};
+use crate::frontend::ast::{Expr, ExprKind};
 use crate::frontend::lexer::Token;
 use crate::frontend::parser::{bail, parse_expr_recursive, utils, ParserState, Result};
 
@@ -43,7 +43,7 @@ pub(in crate::frontend::parser) fn parse_async_token(state: &mut ParserState) ->
 
     match state.tokens.peek() {
         // async fun/fn declaration (support both keywords)
-        Some((Token::Fun, _)) | Some((Token::Fn, _)) => parse_async_function(state, false),
+        Some((Token::Fun | Token::Fn, _)) => parse_async_function(state, false),
         // async { ... } block
         Some((Token::LeftBrace, _)) => parse_async_block(state),
         // async |x| ... lambda

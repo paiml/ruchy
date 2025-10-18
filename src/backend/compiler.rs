@@ -128,7 +128,7 @@ fn parse_and_transpile(source: &str) -> Result<TokenStream> {
     Ok(rust_code)
 }
 
-/// Check if AST contains DataFrame usage (complexity: 3)
+/// Check if AST contains `DataFrame` usage (complexity: 3)
 ///
 /// # Examples
 ///
@@ -163,7 +163,7 @@ pub fn uses_dataframes(ast: &crate::frontend::ast::Expr) -> bool {
     }
 }
 
-/// Check binary expressions for DataFrames (complexity: 1)
+/// Check binary expressions for `DataFrames` (complexity: 1)
 fn check_binary_for_dataframes(
     left: &crate::frontend::ast::Expr,
     right: &crate::frontend::ast::Expr,
@@ -171,7 +171,7 @@ fn check_binary_for_dataframes(
     uses_dataframes(left) || uses_dataframes(right)
 }
 
-/// Check method calls for DataFrames (complexity: 1)
+/// Check method calls for `DataFrames` (complexity: 1)
 fn check_method_for_dataframes(
     receiver: &crate::frontend::ast::Expr,
     args: &[crate::frontend::ast::Expr],
@@ -179,7 +179,7 @@ fn check_method_for_dataframes(
     uses_dataframes(receiver) || args.iter().any(uses_dataframes)
 }
 
-/// Check function calls for DataFrames (complexity: 1)
+/// Check function calls for `DataFrames` (complexity: 1)
 fn check_call_for_dataframes(
     func: &crate::frontend::ast::Expr,
     args: &[crate::frontend::ast::Expr],
@@ -189,7 +189,7 @@ fn check_call_for_dataframes(
 
 /// Check if AST contains JSON function usage (complexity: 4)
 ///
-/// Detects usage of JSON stdlib functions that require serde_json crate.
+/// Detects usage of JSON stdlib functions that require `serde_json` crate.
 /// This triggers cargo compilation instead of direct rustc.
 ///
 /// # Examples
@@ -331,7 +331,7 @@ fn is_http_function(name: &str) -> bool {
 fn generate_cargo_toml(binary_name: &str) -> String {
     format!(
         r#"[package]
-name = "{}"
+name = "{binary_name}"
 version = "0.1.0"
 edition = "2021"
 
@@ -340,12 +340,11 @@ polars = {{ version = "0.35", features = ["lazy"] }}
 serde = {{ version = "1.0", features = ["derive"] }}
 serde_json = "1.0"
 reqwest = {{ version = "0.12", features = ["blocking"] }}
-"#,
-        binary_name
+"#
     )
 }
 
-/// Compile with cargo (for DataFrame support) (complexity: 7)
+/// Compile with cargo (for `DataFrame` support) (complexity: 7)
 fn compile_with_cargo(rust_code: &TokenStream, options: &CompileOptions) -> Result<PathBuf> {
     // Create temporary directory for cargo project
     let temp_dir = TempDir::new().compile_context("create temporary directory")?;
@@ -373,7 +372,7 @@ fn compile_with_cargo(rust_code: &TokenStream, options: &CompileOptions) -> Resu
     let output = cmd.output().context("Failed to execute cargo build")?;
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
-        bail!("Cargo build failed:\n{}", stderr);
+        bail!("Cargo build failed:\n{stderr}");
     }
 
     // Copy binary to output location
@@ -441,7 +440,7 @@ fn execute_compilation(mut cmd: Command) -> Result<()> {
     let output = cmd.output().context("Failed to execute rustc")?;
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
-        bail!("Compilation failed:\n{}", stderr);
+        bail!("Compilation failed:\n{stderr}");
     }
     Ok(())
 }

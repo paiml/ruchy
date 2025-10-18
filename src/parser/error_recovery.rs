@@ -68,12 +68,12 @@ pub enum RecoveryStrategy {
 /// Extension to Expr to support error nodes
 #[derive(Debug, Clone, PartialEq)]
 pub enum ExprWithError {
-    Valid(Expr),
+    Valid(Box<Expr>),
     Error(ErrorNode),
 }
 impl From<Expr> for ExprWithError {
     fn from(expr: Expr) -> Self {
-        ExprWithError::Valid(expr)
+        ExprWithError::Valid(Box::new(expr))
     }
 }
 impl From<ErrorNode> for ExprWithError {

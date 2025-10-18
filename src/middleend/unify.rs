@@ -94,9 +94,7 @@ impl Unifier {
                 for ((name1, ty1), (name2, ty2)) in cols1.iter().zip(cols2.iter()) {
                     if name1 != name2 {
                         bail!(
-                            "Cannot unify DataFrames with different column names: {} vs {}",
-                            name1,
-                            name2
+                            "Cannot unify DataFrames with different column names: {name1} vs {name2}"
                         );
                     }
                     self.unify(ty1, ty2)?;
@@ -104,14 +102,14 @@ impl Unifier {
                 Ok(())
             }
             (MonoType::Series(ty1), MonoType::Series(ty2)) => self.unify(&ty1, &ty2),
-            (t1, t2) => bail!("Cannot unify {} with {}", t1, t2),
+            (t1, t2) => bail!("Cannot unify {t1} with {t2}"),
         }
     }
     /// Bind a type variable to a type
     fn bind(&mut self, var: &TyVar, ty: &MonoType) -> Result<()> {
         // Occurs check: ensure var doesn't occur in ty
         if Self::occurs(var, ty) {
-            bail!("Infinite type: {} occurs in {}", var, ty);
+            bail!("Infinite type: {var} occurs in {ty}");
         }
         // Apply the binding
         self.subst.insert(var.clone(), ty.clone());

@@ -94,7 +94,7 @@ impl Formatter {
             TypeKind::Named(name) => name.clone(),
             TypeKind::Generic { base, params } => {
                 let params_str = params.iter().map(|t| self.format_type(&t.kind)).collect::<Vec<_>>().join(", ");
-                format!("{}<{}>", base, params_str)
+                format!("{base}<{params_str}>")
             }
             TypeKind::Function { params, ret } => {
                 let params_str = params.iter().map(|t| self.format_type(&t.kind)).collect::<Vec<_>>().join(", ");
@@ -128,10 +128,10 @@ impl Formatter {
     fn get_original_text(&self, expr: &Expr) -> Option<String> {
         self.source.as_ref().map(|src| {
             // Calculate span including leading comments
-            let start = if !expr.leading_comments.is_empty() {
-                expr.leading_comments[0].span.start
-            } else {
+            let start = if expr.leading_comments.is_empty() {
                 expr.span.start
+            } else {
+                expr.leading_comments[0].span.start
             };
 
             // Find the true end by recursing through the AST to find the rightmost span
@@ -212,7 +212,7 @@ impl Formatter {
 
     /// Recursively find the rightmost (maximum) span end in an expression tree
     fn find_rightmost_span_end(&self, expr: &Expr) -> usize {
-        use ExprKind::*;
+        use ExprKind::{Let, Binary, Function, Block};
         let mut max_end = expr.span.end;
 
         match &expr.kind {
@@ -511,10 +511,11 @@ impl Formatter {
             ExprKind::Match { expr, arms } => {
                 let mut result = format!("match {} {{\n", self.format_expr(expr, indent));
                 for arm in arms {
+                    let pattern_str = format!("{:?}", arm.pattern); // TODO: Implement pattern formatting
                     result.push_str(&format!(
                         "{}  {} => {},\n",
                         " ".repeat(indent * self.config.indent_width),
-                        format!("{:?}", arm.pattern), // TODO: Implement pattern formatting
+                        pattern_str,
                         self.format_expr(&arm.body, indent + 1)
                     ));
                 }
@@ -555,7 +556,7 @@ impl Formatter {
                         })
                         .collect::<Vec<_>>()
                         .join(", ");
-                    format!("{{ {} }}", fields_str)
+                    format!("{{ {fields_str} }}")
                 }
             }
             ExprKind::StructLiteral { name, fields, base } => {
@@ -568,7 +569,7 @@ impl Formatter {
                 if let Some(base_expr) = base {
                     format!("{} {{ {}, ..{} }}", name, fields_str, self.format_expr(base_expr, indent))
                 } else {
-                    format!("{} {{ {} }}", name, fields_str)
+                    format!("{name} {{ {fields_str} }}")
                 }
             }
             ExprKind::Ternary { condition, true_expr, false_expr } => {
@@ -649,8 +650,8 @@ impl Formatter {
                 format!("{}?.{}", self.format_expr(object, indent), field)
             }
             ExprKind::Slice { object, start, end } => {
-                let start_str = start.as_ref().map_or("".to_string(), |e| self.format_expr(e, indent));
-                let end_str = end.as_ref().map_or("".to_string(), |e| self.format_expr(e, indent));
+                let start_str = start.as_ref().map_or(String::new(), |e| self.format_expr(e, indent));
+                let end_str = end.as_ref().map_or(String::new(), |e| self.format_expr(e, indent));
                 format!("{}[{}..{}]", self.format_expr(object, indent), start_str, end_str)
             }
 
@@ -667,7 +668,7 @@ impl Formatter {
                     .map(|f| format!("{}: {}", f.name, self.format_type(&f.ty.kind)))
                     .collect::<Vec<_>>()
                     .join(", ");
-                format!("{}struct {}{} {{ {} }}", pub_str, name, type_params_str, fields_str)
+                format!("{pub_str}struct {name}{type_params_str} {{ {fields_str} }}")
             }
             ExprKind::TupleStruct { name, type_params, fields, is_pub, .. } => {
                 let pub_str = if *is_pub { "pub " } else { "" };
@@ -681,7 +682,7 @@ impl Formatter {
                     .map(|ty| self.format_type(&ty.kind))
                     .collect::<Vec<_>>()
                     .join(", ");
-                format!("{}struct {}{}({})", pub_str, name, type_params_str, fields_str)
+                format!("{pub_str}struct {name}{type_params_str}({fields_str})")
             }
             ExprKind::Enum { name, type_params, variants, is_pub } => {
                 let pub_str = if *is_pub { "pub " } else { "" };
@@ -695,7 +696,7 @@ impl Formatter {
                     .map(|v| self.format_enum_variant(v))
                     .collect::<Vec<_>>()
                     .join(", ");
-                format!("{}enum {}{} {{ {} }}", pub_str, name, type_params_str, variants_str)
+                format!("{pub_str}enum {name}{type_params_str} {{ {variants_str} }}")
             }
             ExprKind::Trait { name, type_params, methods, is_pub, .. } => {
                 let pub_str = if *is_pub { "pub " } else { "" };
@@ -709,7 +710,7 @@ impl Formatter {
                     .map(|m| self.format_trait_method(m))
                     .collect::<Vec<_>>()
                     .join(" ");
-                format!("{}trait {}{} {{ {} }}", pub_str, name, type_params_str, methods_str)
+                format!("{pub_str}trait {name}{type_params_str} {{ {methods_str} }}")
             }
             ExprKind::Impl { type_params, trait_name, for_type, methods, .. } => {
                 let type_params_str = if type_params.is_empty() {
@@ -717,13 +718,13 @@ impl Formatter {
                 } else {
                     format!("<{}>", type_params.join(", "))
                 };
-                let trait_part = trait_name.as_ref().map_or(String::new(), |t| format!("{} for ", t));
+                let trait_part = trait_name.as_ref().map_or(String::new(), |t| format!("{t} for "));
                 let methods_str = methods
                     .iter()
                     .map(|m| self.format_impl_method(m))
                     .collect::<Vec<_>>()
                     .join(" ");
-                format!("impl{} {}{} {{ {} }}", type_params_str, trait_part, for_type, methods_str)
+                format!("impl{type_params_str} {trait_part}{for_type} {{ {methods_str} }}")
             }
             ExprKind::Class { name, type_params, fields, .. } => {
                 let type_params_str = if type_params.is_empty() {
@@ -736,7 +737,7 @@ impl Formatter {
                     .map(|f| format!("{}: {}", f.name, self.format_type(&f.ty.kind)))
                     .collect::<Vec<_>>()
                     .join(", ");
-                format!("class {}{} {{ {} }}", name, type_params_str, fields_str)
+                format!("class {name}{type_params_str} {{ {fields_str} }}")
             }
             ExprKind::Module { name, body } => {
                 format!("mod {} {}", name, self.format_expr(body, indent))
@@ -745,7 +746,7 @@ impl Formatter {
                 if let Some(item_list) = items {
                     format!("import {}::{{{}}}", module, item_list.join(", "))
                 } else {
-                    format!("import {}", module)
+                    format!("import {module}")
                 }
             }
             ExprKind::Export { expr, is_default } => {
@@ -783,9 +784,8 @@ impl Formatter {
                             format!("{{{}:{}}}", self.format_expr(expr, indent), format_spec)
                         }
                     })
-                    .collect::<Vec<_>>()
-                    .join("");
-                format!("f\"{}\"", parts_str)
+                    .collect::<String>();
+                format!("f\"{parts_str}\"")
             }
             ExprKind::Actor { name, state, handlers } => {
                 let state_str = state
@@ -798,7 +798,7 @@ impl Formatter {
                     .map(|h| format!("handle {}", h.message_type))
                     .collect::<Vec<_>>()
                     .join(" ");
-                format!("actor {} {{ {} {} }}", name, state_str, handlers_str)
+                format!("actor {name} {{ {state_str} {handlers_str} }}")
             }
             ExprKind::Send { actor, message } => {
                 format!("send({}, {})", self.format_expr(actor, indent), self.format_expr(message, indent))
@@ -885,10 +885,10 @@ impl Formatter {
                 format!("{{{} for {}}}", self.format_expr(element, indent), clauses_str)
             }
             ExprKind::ImportAll { module, .. } => {
-                format!("import {}::*", module)
+                format!("import {module}::*")
             }
             ExprKind::ImportDefault { module, name } => {
-                format!("import default {} from {}", name, module)
+                format!("import default {name} from {module}")
             }
             ExprKind::ExportList { names } => {
                 format!("export {{ {} }}", names.join(", "))
@@ -903,11 +903,11 @@ impl Formatter {
                 } else {
                     format!("{} {}", program, args.join(" "))
                 };
-                format!("`{}`", full_cmd)
+                format!("`{full_cmd}`")
             }
             // Phase 5: Final 10 variants (100% coverage)
             ExprKind::QualifiedName { module, name } => {
-                format!("{}::{}", module, name)
+                format!("{module}::{name}")
             }
             ExprKind::TypeAlias { name, target_type } => {
                 format!("type {} = {}", name, self.format_type(&target_type.kind))
@@ -949,10 +949,7 @@ impl Formatter {
                     .collect::<Vec<_>>()
                     .join("\n");
                 format!(
-                    "extension {} {{\n{}\n{}}}",
-                    target_type,
-                    methods_str,
-                    indent_str
+                    "extension {target_type} {{\n{methods_str}\n{indent_str}}}"
                 )
             }
             ExprKind::ReExport { items, module } => {
@@ -964,7 +961,7 @@ impl Formatter {
                     .map(|arg| self.format_expr(arg, indent))
                     .collect::<Vec<_>>()
                     .join(", ");
-                format!("macro {}({}) {{ }}", name, args_str)
+                format!("macro {name}({args_str}) {{ }}")
             }
             ExprKind::MacroInvocation { name, args } => {
                 let args_str = args
@@ -972,7 +969,7 @@ impl Formatter {
                     .map(|arg| self.format_expr(arg, indent))
                     .collect::<Vec<_>>()
                     .join(", ");
-                format!("{}!({})", name, args_str)
+                format!("{name}!({args_str})")
             }
             ExprKind::DataFrame { columns } => {
                 let columns_str = columns
@@ -987,7 +984,7 @@ impl Formatter {
                     })
                     .collect::<Vec<_>>()
                     .join(", ");
-                format!("df![{}]", columns_str)
+                format!("df![{columns_str}]")
             }
             ExprKind::DataFrameOperation { source, operation } => {
                 // Format DataFrame operations like df.select(), df.filter(), etc.
@@ -997,7 +994,7 @@ impl Formatter {
                     operation
                 )
             }
-            _ => {
+            ExprKind::Set(_) => {
                 // CRITICAL: Changed from silent Debug output to explicit error
                 // This prevents silent data corruption
                 format!("/* UNIMPLEMENTED: {:?} */", expr.kind)
@@ -1055,7 +1052,7 @@ impl Formatter {
                     .map(|p| self.format_pattern(p))
                     .collect::<Vec<_>>()
                     .join(", ");
-                format!("({})", inner)
+                format!("({inner})")
             }
             Pattern::List(patterns) => {
                 let inner = patterns
@@ -1063,7 +1060,7 @@ impl Formatter {
                     .map(|p| self.format_pattern(p))
                     .collect::<Vec<_>>()
                     .join(", ");
-                format!("[{}]", inner)
+                format!("[{inner}]")
             }
             Pattern::Struct { name, fields, has_rest } => {
                 let fields_str = fields
@@ -1072,9 +1069,9 @@ impl Formatter {
                     .collect::<Vec<_>>()
                     .join(", ");
                 if *has_rest {
-                    format!("{} {{ {}, .. }}", name, fields_str)
+                    format!("{name} {{ {fields_str}, .. }}")
                 } else {
-                    format!("{} {{ {} }}", name, fields_str)
+                    format!("{name} {{ {fields_str} }}")
                 }
             }
             Pattern::TupleVariant { path, patterns } => {
@@ -1084,7 +1081,7 @@ impl Formatter {
                     .map(|p| self.format_pattern(p))
                     .collect::<Vec<_>>()
                     .join(", ");
-                format!("{}({})", path_str, patterns_str)
+                format!("{path_str}({patterns_str})")
             }
             Pattern::Range { start, end, inclusive } => {
                 let op = if *inclusive { "..=" } else { ".." };
@@ -1098,7 +1095,7 @@ impl Formatter {
                     .join(" | ")
             }
             Pattern::Rest => "..".to_string(),
-            Pattern::RestNamed(name) => format!("..{}", name),
+            Pattern::RestNamed(name) => format!("..{name}"),
             Pattern::AtBinding { name, pattern } => {
                 format!("{} @ {}", name, self.format_pattern(pattern))
             }
@@ -1138,16 +1135,16 @@ impl Formatter {
         match literal {
             Literal::Integer(val, suffix) => {
                 if let Some(suffix) = suffix {
-                    format!("{}{}", val, suffix)
+                    format!("{val}{suffix}")
                 } else {
                     val.to_string()
                 }
             }
             Literal::Float(val) => val.to_string(),
-            Literal::String(s) => format!("\"{}\"", s),
+            Literal::String(s) => format!("\"{s}\""),
             Literal::Bool(b) => b.to_string(),
-            Literal::Char(c) => format!("'{}'", c),
-            Literal::Byte(b) => format!("{}u8", b),
+            Literal::Char(c) => format!("'{c}'"),
+            Literal::Byte(b) => format!("{b}u8"),
             Literal::Unit => "()".to_string(),
             Literal::Null => "null".to_string(),
         }

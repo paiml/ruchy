@@ -172,7 +172,7 @@ impl NotebookParser {
     /// ```
     pub fn parse(&self, content: &str) -> anyhow::Result<Notebook> {
         serde_json::from_str(content)
-            .map_err(|e| anyhow::anyhow!("Failed to parse notebook: {}", e))
+            .map_err(|e| anyhow::anyhow!("Failed to parse notebook: {e}"))
     }
     /// Validate notebook structure
     /// # Examples

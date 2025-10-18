@@ -8,7 +8,7 @@
 //!
 //! Extracted from expressions.rs to improve maintainability (TDG Structural improvement).
 
-use crate::frontend::ast::{Expr, ExprKind, Span};
+use crate::frontend::ast::{Expr, ExprKind};
 use crate::frontend::lexer::Token;
 use crate::frontend::parser::{bail, utils, ParserState, Result};
 

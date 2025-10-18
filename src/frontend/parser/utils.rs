@@ -5,25 +5,15 @@ mod utils_helpers;
 
 use super::{
     bail, Attribute, Expr, ExprKind, Literal, ParserState, Result, Span, StringPart, Token,
-    TypeKind,
 };
 use crate::frontend::ast::ImportItem;
 
 // Re-export for other parser modules
 pub use utils_helpers::attributes::parse_attributes;
-pub use utils_helpers::imports::{
-    create_import_expression, parse_braced_import_list, parse_export, parse_import_items,
-    parse_import_legacy, parse_module_path, parse_url_import,
-};
-pub use utils_helpers::modules::parse_module;
+pub use utils_helpers::imports::parse_export;
 pub use utils_helpers::params::parse_params;
-pub use utils_helpers::string_interpolation::parse_string_interpolation;
 pub use utils_helpers::types::{parse_type, parse_type_parameters};
 
-use utils_helpers::url_validation::{
-    is_valid_url_scheme, validate_url_extension, validate_url_import,
-    validate_url_no_suspicious_patterns, validate_url_path_safety, validate_url_scheme,
-};
 /// Create a detailed error message with context
 pub fn error_with_context(msg: &str, state: &mut ParserState, expected: &str) -> anyhow::Error {
     let (line, col) = state.tokens.current_position();

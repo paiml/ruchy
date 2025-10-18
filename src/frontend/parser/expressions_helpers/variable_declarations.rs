@@ -241,7 +241,7 @@ fn parse_variant_pattern_with_name(state: &mut ParserState, variant_name: String
 
 /// Create pattern for variant
 ///
-/// Special cases for Some/Ok/Err, otherwise TupleVariant.
+/// Special cases for Some/Ok/Err, otherwise `TupleVariant`.
 fn create_pattern_for_variant(variant_name: String, patterns: Vec<Pattern>) -> Result<Pattern> {
     // Special case for common Option/Result variants (single element)
     if patterns.len() == 1 {

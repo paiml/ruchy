@@ -125,7 +125,7 @@ impl TacticLibrary {
         self.tactics
             .get(name)
             .map(std::convert::AsRef::as_ref)
-            .ok_or_else(|| anyhow::anyhow!("Unknown tactic: {}", name))
+            .ok_or_else(|| anyhow::anyhow!("Unknown tactic: {name}"))
     }
     /// Suggest tactics for a goal
     /// # Examples

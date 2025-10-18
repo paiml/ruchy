@@ -180,7 +180,7 @@ impl Transpiler {
         }
     }
 
-    /// Transpile assert_eq! macro with validation
+    /// Transpile `assert_eq`! macro with validation
     ///
     /// Validates argument count and transpiles for equality assertions.
     /// Complexity: <10 per Toyota Way requirement.
@@ -198,7 +198,7 @@ impl Transpiler {
         Ok(quote! { assert_eq!(#(#arg_tokens),*) })
     }
 
-    /// Transpile assert_ne! macro with validation
+    /// Transpile `assert_ne`! macro with validation
     ///
     /// Validates argument count and transpiles for inequality assertions.
     /// Complexity: <10 per Toyota Way requirement.

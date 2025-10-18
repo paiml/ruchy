@@ -101,7 +101,7 @@ impl FormatterConfig {
     /// ```
     pub fn from_file<P: AsRef<Path>>(path: P) -> Result<Self, String> {
         let contents = std::fs::read_to_string(path.as_ref())
-            .map_err(|e| format!("Failed to read config file: {}", e))?;
+            .map_err(|e| format!("Failed to read config file: {e}"))?;
 
         Self::from_toml(&contents)
     }
@@ -127,7 +127,7 @@ impl FormatterConfig {
     /// ```
     pub fn from_toml(toml_str: &str) -> Result<Self, String> {
         toml::from_str(toml_str)
-            .map_err(|e| format!("Failed to parse config TOML: {}", e))
+            .map_err(|e| format!("Failed to parse config TOML: {e}"))
     }
 
     /// Save configuration to a TOML file
@@ -147,7 +147,7 @@ impl FormatterConfig {
     pub fn to_file<P: AsRef<Path>>(&self, path: P) -> Result<(), String> {
         let toml_str = self.to_toml()?;
         std::fs::write(path.as_ref(), toml_str)
-            .map_err(|e| format!("Failed to write config file: {}", e))
+            .map_err(|e| format!("Failed to write config file: {e}"))
     }
 
     /// Convert configuration to TOML string
@@ -167,7 +167,7 @@ impl FormatterConfig {
     /// ```
     pub fn to_toml(&self) -> Result<String, String> {
         toml::to_string_pretty(self)
-            .map_err(|e| format!("Failed to serialize config: {}", e))
+            .map_err(|e| format!("Failed to serialize config: {e}"))
     }
 
     /// Check if a file path should be ignored based on patterns

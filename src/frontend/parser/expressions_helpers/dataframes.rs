@@ -1,10 +1,10 @@
-//! DataFrame literal parsing
+//! `DataFrame` literal parsing
 //!
-//! Handles parsing of DataFrame literals using the `df!` macro syntax.
-//! DataFrames are delegated to the collections module for full parsing,
+//! Handles parsing of `DataFrame` literals using the `df!` macro syntax.
+//! `DataFrames` are delegated to the collections module for full parsing,
 //! while this module handles the dispatch between:
-//! - `df![...]` - DataFrame literal (delegated to collections)
-//! - `df` - DataFrame identifier (for method calls, etc.)
+//! - `df![...]` - `DataFrame` literal (delegated to collections)
+//! - `df` - `DataFrame` identifier (for method calls, etc.)
 //!
 //! # Examples
 //! ```ruchy
@@ -21,10 +21,10 @@ use crate::frontend::parser::{ParserState, Result};
 // Import DataFrame parser from collections module
 use crate::frontend::parser::collections;
 
-/// Parse DataFrame token: either `df![...]` literal or `df` identifier
+/// Parse `DataFrame` token: either `df![...]` literal or `df` identifier
 ///
 /// Dispatches based on whether the next token is `!`:
-/// - `df!` → Delegate to collections::parse_dataframe for literal parsing
+/// - `df!` → Delegate to `collections::parse_dataframe` for literal parsing
 /// - `df` → Treat as identifier for method calls
 ///
 /// # Examples

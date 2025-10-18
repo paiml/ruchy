@@ -500,10 +500,10 @@ impl DataflowDebugger {
             .map_err(|_| anyhow::anyhow!("Failed to acquire materialized data lock"))?;
         let stage1_data = materialized_data
             .get(stage1_id)
-            .ok_or_else(|| anyhow::anyhow!("Stage {} not materialized", stage1_id))?;
+            .ok_or_else(|| anyhow::anyhow!("Stage {stage1_id} not materialized"))?;
         let stage2_data = materialized_data
             .get(stage2_id)
-            .ok_or_else(|| anyhow::anyhow!("Stage {} not materialized", stage2_id))?;
+            .ok_or_else(|| anyhow::anyhow!("Stage {stage2_id} not materialized"))?;
         // Compute basic diff metrics
         let row_count_diff = stage2_data.total_rows as i64 - stage1_data.total_rows as i64;
         let schema_changed = stage1_data.schema.schema_hash != stage2_data.schema.schema_hash;
@@ -575,8 +575,7 @@ impl DataflowDebugger {
             }
             _ => {
                 return Err(anyhow::anyhow!(
-                    "Export format {:?} not yet implemented",
-                    format
+                    "Export format {format:?} not yet implemented"
                 ));
             }
         }

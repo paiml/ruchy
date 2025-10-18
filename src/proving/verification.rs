@@ -153,8 +153,8 @@ fn verify_simple_assertion(assertion: &str) -> (bool, Option<String>, Option<Str
         verify_inequality(assertion)
     } else if assertion.contains(">=")
         || assertion.contains("<=")
-        || assertion.contains(">")
-        || assertion.contains("<")
+        || assertion.contains('>')
+        || assertion.contains('<')
     {
         verify_comparison(assertion)
     } else {
@@ -251,9 +251,9 @@ fn parse_comparison_operator(assertion: &str) -> Result<(&str, Vec<&str>), (bool
         Ok((">=", assertion.split(">=").collect::<Vec<_>>()))
     } else if assertion.contains("<=") {
         Ok(("<=", assertion.split("<=").collect::<Vec<_>>()))
-    } else if assertion.contains(">") {
+    } else if assertion.contains('>') {
         Ok((">", assertion.split('>').collect::<Vec<_>>()))
-    } else if assertion.contains("<") {
+    } else if assertion.contains('<') {
         Ok(("<", assertion.split('<').collect::<Vec<_>>()))
     } else {
         Err((
