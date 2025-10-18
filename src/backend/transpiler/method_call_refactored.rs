@@ -119,7 +119,7 @@ impl Transpiler {
             }
             "union" | "intersection" | "difference" | "symmetric_difference" => {
                 if args.len() != 1 {
-                    bail!("{} requires exactly 1 argument", method);
+                    bail!("{method} requires exactly 1 argument");
                 }
                 let other = &args[0];
                 let method_ident = format_ident!("{}", method);

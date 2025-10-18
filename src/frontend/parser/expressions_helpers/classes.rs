@@ -11,12 +11,10 @@
 //! Extracted from expressions.rs to improve maintainability (TDG Structural improvement).
 
 use crate::frontend::ast::{
-    ClassConstant, ClassMethod, ClassProperty, Constructor, Decorator, Expr, ExprKind,
-    Literal, Param, PropertySetter, SelfType, Span, StructField, Type, Visibility,
+    ClassConstant, ClassMethod, ClassProperty, Constructor, Decorator, Expr, ExprKind, Param, PropertySetter, SelfType, Span, StructField, Visibility,
 };
 use crate::frontend::lexer::Token;
 use crate::frontend::parser::{bail, parse_expr_recursive, utils, ParserState, Result};
-use std::collections::HashMap;
 
 pub(in crate::frontend::parser) fn parse_class_definition(
     state: &mut ParserState,
@@ -601,7 +599,7 @@ fn parse_pub_scope_modifier(state: &mut ParserState) -> Result<Visibility> {
             let scope = scope.clone();
             state.tokens.advance();
             state.tokens.expect(&Token::RightParen)?;
-            bail!("Unsupported visibility scope: pub({}) - only pub(crate) and pub(super) are supported", scope);
+            bail!("Unsupported visibility scope: pub({scope}) - only pub(crate) and pub(super) are supported");
         }
         _ => bail!("Expected 'crate', 'super', or identifier after 'pub('"),
     };

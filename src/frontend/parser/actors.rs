@@ -103,7 +103,7 @@ fn parse_single_handler(state: &mut ParserState, handlers: &mut Vec<ActorHandler
 
 fn parse_handler_error_message(state: &mut ParserState) -> anyhow::Error {
     if let Some((token, _)) = state.tokens.peek() {
-        anyhow::anyhow!("Expected 'receive', 'fun', or '}}', found {:?}", token)
+        anyhow::anyhow!("Expected 'receive', 'fun', or '}}', found {token:?}")
     } else {
         anyhow::anyhow!("Expected 'receive', 'fun', or '}}', found EOF")
     }
@@ -316,7 +316,7 @@ fn parse_field_name(state: &mut ParserState, error_msg: &str) -> Result<String> 
         state.tokens.advance();
         Ok(name)
     } else {
-        bail!("{}", error_msg);
+        bail!("{error_msg}");
     }
 }
 // Helper: Parse optional parameters (complexity: 2)

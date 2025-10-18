@@ -1117,8 +1117,7 @@ fn try_parse_comprehension(state: &mut ParserState, start_span: Span) -> Result<
         Err(e) => {
             state.tokens.set_position(saved_position);
             bail!(
-                "Not a comprehension - failed to parse first expression: {}",
-                e
+                "Not a comprehension - failed to parse first expression: {e}"
             );
         }
     };
@@ -1136,7 +1135,7 @@ fn try_parse_comprehension(state: &mut ParserState, start_span: Span) -> Result<
                 Ok(expr) => expr,
                 Err(e) => {
                     state.tokens.set_position(saved_position);
-                    bail!("Not a dict comprehension - failed to parse value: {}", e);
+                    bail!("Not a dict comprehension - failed to parse value: {e}");
                 }
             };
 

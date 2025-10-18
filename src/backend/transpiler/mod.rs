@@ -552,7 +552,7 @@ impl Transpiler {
         }
     }
     /// Checks if an expression contains `DataFrame` operations
-    /// Recursively scans the entire AST to detect DataFrame usage
+    /// Recursively scans the entire AST to detect `DataFrame` usage
     fn contains_dataframe(expr: &Expr) -> bool {
         use crate::frontend::ast::ExprKind;
 
@@ -1219,7 +1219,7 @@ impl Transpiler {
         } = &main_expr.kind
         {
             if name != "main" {
-                return Err(anyhow::anyhow!("Expected main function, got {}", name));
+                return Err(anyhow::anyhow!("Expected main function, got {name}"));
             }
 
             // Transpile parameters

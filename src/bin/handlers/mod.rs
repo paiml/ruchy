@@ -632,10 +632,10 @@ fn estimate_error_line(source: &str, _error_msg: &str) -> Option<usize> {
     }
 
     // If all lines are empty/comments, return the last line
-    if !lines.is_empty() {
-        Some(lines.len())
-    } else {
+    if lines.is_empty() {
         None
+    } else {
+        Some(lines.len())
     }
 }
 /// Watch a file and check syntax on changes
@@ -2148,12 +2148,8 @@ pub fn handle_property_tests_command(
     }
 }
 
-/// Handle property testing for a single .ruchy file
-/// Generates and runs synthetic property tests to validate:
-/// 1. Code executes without panicking (N iterations)
-/// 2. Output is deterministic (same input → same output)
-/// 3. Basic execution correctness
 /// Compile Ruchy file for property testing
+///
 /// Complexity: 3 (Toyota Way: <10 ✓)
 fn compile_for_property_testing(path: &Path, verbose: bool) -> Result<PathBuf> {
     if verbose {
@@ -2226,7 +2222,7 @@ fn generate_property_test_report(
     passed: usize,
     failed: usize,
     deterministic: bool,
-    test_results: Vec<String>,
+    test_results: &[String],
 ) -> Result<()> {
     let total_tests = cases + 1;
     let success = failed == 0;
@@ -2268,7 +2264,7 @@ fn write_json_property_report(
     failed: usize,
     cases: usize,
     deterministic: bool,
-    test_results: Vec<String>,
+    test_results: &[String],
 ) -> Result<()> {
     let report = serde_json::json!({
         "status": if success { "passed" } else { "failed" },
@@ -2303,7 +2299,7 @@ fn write_text_property_report(
     failed: usize,
     cases: usize,
     deterministic: bool,
-    test_results: Vec<String>,
+    test_results: &[String],
 ) -> Result<()> {
     println!("Property Test Report");
     println!("====================");
@@ -2324,7 +2320,7 @@ fn write_text_property_report(
 
     if !test_results.is_empty() {
         println!("\nFailures:");
-        for failure in &test_results {
+        for failure in test_results {
             println!("  - {}", failure);
         }
     }
@@ -2395,7 +2391,7 @@ fn handle_property_tests_single_file(
         passed,
         failed,
         deterministic,
-        test_results.clone(),
+        &test_results,
     )?;
 
     // Return success/failure
@@ -2657,6 +2653,7 @@ pub fn handle_fuzz_command(
 /// Runs file repeatedly to detect crashes, hangs, or non-deterministic behavior
 /// Run fuzz iterations on compiled binary
 /// Complexity: 5 (Toyota Way: <10 ✓)
+#[allow(clippy::unnecessary_wraps)]
 fn run_fuzz_iterations(
     binary_path: &Path,
     iterations: usize,
@@ -2704,7 +2701,7 @@ fn write_json_fuzz_report(
     crashes: usize,
     timeouts: usize,
     success_rate: f64,
-    crash_details: Vec<String>,
+    crash_details: &[String],
 ) -> Result<()> {
     let report = serde_json::json!({
         "file": path.display().to_string(),
@@ -2736,7 +2733,7 @@ fn write_text_fuzz_report(
     crashes: usize,
     timeouts: usize,
     success_rate: f64,
-    crash_details: Vec<String>,
+    crash_details: &[String],
 ) -> Result<()> {
     println!("Fuzz Test Report");
     println!("================");
@@ -2757,7 +2754,7 @@ fn write_text_fuzz_report(
 
     if !crash_details.is_empty() {
         println!("\nCrash Details:");
-        for detail in &crash_details {
+        for detail in crash_details {
             println!("  - {}", detail);
         }
     }
@@ -2812,7 +2809,7 @@ fn handle_fuzz_single_file(
             crashes,
             timeouts,
             success_rate,
-            crash_details,
+            &crash_details,
         )?,
         _ => write_text_fuzz_report(
             path,
@@ -2822,7 +2819,7 @@ fn handle_fuzz_single_file(
             crashes,
             timeouts,
             success_rate,
-            crash_details,
+            &crash_details,
         )?,
     }
 

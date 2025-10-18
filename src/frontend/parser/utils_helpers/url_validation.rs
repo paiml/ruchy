@@ -13,7 +13,7 @@ pub(in crate::frontend::parser) fn validate_url_import(url: &str) -> Result<()> 
 
 /// Validate URL uses HTTPS (except for localhost)
 /// Extracted to reduce complexity
-pub(crate) fn validate_url_scheme(url: &str) -> Result<()> {
+pub fn validate_url_scheme(url: &str) -> Result<()> {
     if is_valid_url_scheme(url) {
         Ok(())
     } else {
@@ -22,14 +22,14 @@ pub(crate) fn validate_url_scheme(url: &str) -> Result<()> {
 }
 
 /// Check if URL has valid scheme
-pub(crate) fn is_valid_url_scheme(url: &str) -> bool {
+pub fn is_valid_url_scheme(url: &str) -> bool {
     url.starts_with("https://")
         || url.starts_with("http://localhost")
         || url.starts_with("http://127.0.0.1")
 }
 
 /// Validate URL has correct file extension
-pub(crate) fn validate_url_extension(url: &str) -> Result<()> {
+pub fn validate_url_extension(url: &str) -> Result<()> {
     if url.ends_with(".ruchy") || url.ends_with(".rchy") {
         Ok(())
     } else {
@@ -38,7 +38,7 @@ pub(crate) fn validate_url_extension(url: &str) -> Result<()> {
 }
 
 /// Validate URL doesn't contain path traversal
-pub(crate) fn validate_url_path_safety(url: &str) -> Result<()> {
+pub fn validate_url_path_safety(url: &str) -> Result<()> {
     if url.contains("..") || url.contains("/.") {
         bail!("URL imports cannot contain path traversal sequences (.. or /.): {url}")
     }
@@ -46,7 +46,7 @@ pub(crate) fn validate_url_path_safety(url: &str) -> Result<()> {
 }
 
 /// Validate URL doesn't contain suspicious patterns
-pub(crate) fn validate_url_no_suspicious_patterns(url: &str) -> Result<()> {
+pub fn validate_url_no_suspicious_patterns(url: &str) -> Result<()> {
     const SUSPICIOUS_PATTERNS: &[&str] = &["javascript:", "data:", "file:"];
     for pattern in SUSPICIOUS_PATTERNS {
         if url.contains(pattern) {

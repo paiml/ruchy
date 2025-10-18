@@ -356,7 +356,7 @@ impl RefinementChecker {
         let refinement = self
             .signatures
             .get(name)
-            .ok_or_else(|| anyhow::anyhow!("Unknown function: {}", name))?;
+            .ok_or_else(|| anyhow::anyhow!("Unknown function: {name}"))?;
         let mut solver = SmtSolver::new(self.backend);
         for pre in &refinement.preconditions {
             solver.assert(pre);

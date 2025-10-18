@@ -191,7 +191,7 @@ impl Repl {
             EvalResult::NeedMoreInput => {
                 Ok(String::new()) // Multiline mode
             }
-            EvalResult::Error(msg) => Err(anyhow::anyhow!("Evaluation error: {}", msg)),
+            EvalResult::Error(msg) => Err(anyhow::anyhow!("Evaluation error: {msg}")),
         }
     }
 
@@ -249,7 +249,7 @@ impl Repl {
         match self.evaluator.evaluate_line(expr, &mut self.state)? {
             EvalResult::Value(value) => Ok(value),
             EvalResult::NeedMoreInput => Err(anyhow::anyhow!("Incomplete expression")),
-            EvalResult::Error(msg) => Err(anyhow::anyhow!("Evaluation error: {}", msg)),
+            EvalResult::Error(msg) => Err(anyhow::anyhow!("Evaluation error: {msg}")),
         }
     }
 

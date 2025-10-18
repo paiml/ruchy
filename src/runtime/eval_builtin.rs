@@ -1014,7 +1014,7 @@ fn try_eval_environment_function(
     try_eval_env_part2(name, args)
 }
 
-/// Evaluate env_args() builtin function
+/// Evaluate `env_args()` builtin function
 /// Returns command-line arguments as an array of strings
 /// Complexity: 2 (within Toyota Way limits)
 fn eval_env_args(args: &[Value]) -> Result<Value, InterpreterError> {
@@ -1022,13 +1022,13 @@ fn eval_env_args(args: &[Value]) -> Result<Value, InterpreterError> {
 
     // Get command-line arguments
     let cmd_args: Vec<Value> = std::env::args()
-        .map(|s| Value::from_string(s))
+        .map(Value::from_string)
         .collect();
 
     Ok(Value::from_array(cmd_args))
 }
 
-/// Evaluate env_var() builtin function
+/// Evaluate `env_var()` builtin function
 /// Returns environment variable value by key
 /// Complexity: 3 (within Toyota Way limits)
 fn eval_env_var(args: &[Value]) -> Result<Value, InterpreterError> {
@@ -1038,7 +1038,7 @@ fn eval_env_var(args: &[Value]) -> Result<Value, InterpreterError> {
         Value::String(key) => match std::env::var(key.as_ref()) {
             Ok(val) => Ok(Value::from_string(val)),
             Err(_) => Err(InterpreterError::RuntimeError(
-                format!("Environment variable '{}' not found", key),
+                format!("Environment variable '{key}' not found"),
             )),
         },
         _ => Err(InterpreterError::RuntimeError(
@@ -1047,7 +1047,7 @@ fn eval_env_var(args: &[Value]) -> Result<Value, InterpreterError> {
     }
 }
 
-/// Evaluate env_set_var() builtin function
+/// Evaluate `env_set_var()` builtin function
 /// Sets environment variable
 /// Complexity: 3 (within Toyota Way limits)
 fn eval_env_set_var(args: &[Value]) -> Result<Value, InterpreterError> {
@@ -1064,7 +1064,7 @@ fn eval_env_set_var(args: &[Value]) -> Result<Value, InterpreterError> {
     }
 }
 
-/// Evaluate env_remove_var() builtin function
+/// Evaluate `env_remove_var()` builtin function
 /// Removes environment variable
 /// Complexity: 2 (within Toyota Way limits)
 fn eval_env_remove_var(args: &[Value]) -> Result<Value, InterpreterError> {
@@ -1081,8 +1081,8 @@ fn eval_env_remove_var(args: &[Value]) -> Result<Value, InterpreterError> {
     }
 }
 
-/// Evaluate env_vars() builtin function
-/// Returns all environment variables as HashMap
+/// Evaluate `env_vars()` builtin function
+/// Returns all environment variables as `HashMap`
 /// Complexity: 1 (within Toyota Way limits)
 fn eval_env_vars(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("env_vars", args, 0)?;
@@ -1094,7 +1094,7 @@ fn eval_env_vars(args: &[Value]) -> Result<Value, InterpreterError> {
     Ok(Value::Object(Arc::new(vars)))
 }
 
-/// Evaluate env_current_dir() builtin function
+/// Evaluate `env_current_dir()` builtin function
 /// Returns current working directory
 /// Complexity: 2 (within Toyota Way limits)
 fn eval_env_current_dir(args: &[Value]) -> Result<Value, InterpreterError> {
@@ -1103,12 +1103,12 @@ fn eval_env_current_dir(args: &[Value]) -> Result<Value, InterpreterError> {
     match std::env::current_dir() {
         Ok(path) => Ok(Value::from_string(path.to_string_lossy().to_string())),
         Err(e) => Err(InterpreterError::RuntimeError(
-            format!("Failed to get current directory: {}", e),
+            format!("Failed to get current directory: {e}"),
         )),
     }
 }
 
-/// Evaluate env_set_current_dir() builtin function
+/// Evaluate `env_set_current_dir()` builtin function
 /// Changes current working directory
 /// Complexity: 2 (within Toyota Way limits)
 fn eval_env_set_current_dir(args: &[Value]) -> Result<Value, InterpreterError> {
@@ -1116,9 +1116,9 @@ fn eval_env_set_current_dir(args: &[Value]) -> Result<Value, InterpreterError> {
 
     match &args[0] {
         Value::String(path) => match std::env::set_current_dir(path.as_ref()) {
-            Ok(_) => Ok(Value::Nil),
+            Ok(()) => Ok(Value::Nil),
             Err(e) => Err(InterpreterError::RuntimeError(
-                format!("Failed to set current directory: {}", e),
+                format!("Failed to set current directory: {e}"),
             )),
         },
         _ => Err(InterpreterError::RuntimeError(
@@ -1127,7 +1127,7 @@ fn eval_env_set_current_dir(args: &[Value]) -> Result<Value, InterpreterError> {
     }
 }
 
-/// Evaluate env_temp_dir() builtin function
+/// Evaluate `env_temp_dir()` builtin function
 /// Returns system temp directory
 /// Complexity: 1 (within Toyota Way limits)
 fn eval_env_temp_dir(args: &[Value]) -> Result<Value, InterpreterError> {
@@ -1141,7 +1141,7 @@ fn eval_env_temp_dir(args: &[Value]) -> Result<Value, InterpreterError> {
 // Layer 3 of three-layer builtin pattern (proven from env functions)
 // Phase 2: STDLIB_ACCESS_PLAN - File System Module
 
-/// Evaluate fs_read() builtin function
+/// Evaluate `fs_read()` builtin function
 /// Reads file contents and returns as string
 /// Complexity: 3 (within Toyota Way limits)
 fn eval_fs_read(args: &[Value]) -> Result<Value, InterpreterError> {
@@ -1150,7 +1150,7 @@ fn eval_fs_read(args: &[Value]) -> Result<Value, InterpreterError> {
     match &args[0] {
         Value::String(path) => match std::fs::read_to_string(path.as_ref()) {
             Ok(content) => Ok(Value::from_string(content)),
-            Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to read file: {}", e))),
+            Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to read file: {e}"))),
         },
         _ => Err(InterpreterError::RuntimeError(
             "fs_read() expects a string argument".to_string(),
@@ -1158,7 +1158,7 @@ fn eval_fs_read(args: &[Value]) -> Result<Value, InterpreterError> {
     }
 }
 
-/// Evaluate fs_write() builtin function
+/// Evaluate `fs_write()` builtin function
 /// Writes content to file
 /// Complexity: 3 (within Toyota Way limits)
 fn eval_fs_write(args: &[Value]) -> Result<Value, InterpreterError> {
@@ -1167,8 +1167,8 @@ fn eval_fs_write(args: &[Value]) -> Result<Value, InterpreterError> {
     match (&args[0], &args[1]) {
         (Value::String(path), Value::String(content)) => {
             match std::fs::write(path.as_ref(), content.as_ref()) {
-                Ok(_) => Ok(Value::Nil),
-                Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to write file: {}", e))),
+                Ok(()) => Ok(Value::Nil),
+                Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to write file: {e}"))),
             }
         },
         _ => Err(InterpreterError::RuntimeError(
@@ -1177,7 +1177,7 @@ fn eval_fs_write(args: &[Value]) -> Result<Value, InterpreterError> {
     }
 }
 
-/// Evaluate fs_exists() builtin function
+/// Evaluate `fs_exists()` builtin function
 /// Checks if path exists
 /// Complexity: 2 (within Toyota Way limits)
 fn eval_fs_exists(args: &[Value]) -> Result<Value, InterpreterError> {
@@ -1191,7 +1191,7 @@ fn eval_fs_exists(args: &[Value]) -> Result<Value, InterpreterError> {
     }
 }
 
-/// Evaluate fs_create_dir() builtin function
+/// Evaluate `fs_create_dir()` builtin function
 /// Creates directory (including parent directories)
 /// Complexity: 3 (within Toyota Way limits)
 fn eval_fs_create_dir(args: &[Value]) -> Result<Value, InterpreterError> {
@@ -1199,8 +1199,8 @@ fn eval_fs_create_dir(args: &[Value]) -> Result<Value, InterpreterError> {
 
     match &args[0] {
         Value::String(path) => match std::fs::create_dir_all(path.as_ref()) {
-            Ok(_) => Ok(Value::Nil),
-            Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to create directory: {}", e))),
+            Ok(()) => Ok(Value::Nil),
+            Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to create directory: {e}"))),
         },
         _ => Err(InterpreterError::RuntimeError(
             "fs_create_dir() expects a string argument".to_string(),
@@ -1208,7 +1208,7 @@ fn eval_fs_create_dir(args: &[Value]) -> Result<Value, InterpreterError> {
     }
 }
 
-/// Evaluate fs_remove_file() builtin function
+/// Evaluate `fs_remove_file()` builtin function
 /// Removes a file
 /// Complexity: 3 (within Toyota Way limits)
 fn eval_fs_remove_file(args: &[Value]) -> Result<Value, InterpreterError> {
@@ -1216,8 +1216,8 @@ fn eval_fs_remove_file(args: &[Value]) -> Result<Value, InterpreterError> {
 
     match &args[0] {
         Value::String(path) => match std::fs::remove_file(path.as_ref()) {
-            Ok(_) => Ok(Value::Nil),
-            Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to remove file: {}", e))),
+            Ok(()) => Ok(Value::Nil),
+            Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to remove file: {e}"))),
         },
         _ => Err(InterpreterError::RuntimeError(
             "fs_remove_file() expects a string argument".to_string(),
@@ -1225,7 +1225,7 @@ fn eval_fs_remove_file(args: &[Value]) -> Result<Value, InterpreterError> {
     }
 }
 
-/// Evaluate fs_remove_dir() builtin function
+/// Evaluate `fs_remove_dir()` builtin function
 /// Removes a directory
 /// Complexity: 3 (within Toyota Way limits)
 fn eval_fs_remove_dir(args: &[Value]) -> Result<Value, InterpreterError> {
@@ -1233,8 +1233,8 @@ fn eval_fs_remove_dir(args: &[Value]) -> Result<Value, InterpreterError> {
 
     match &args[0] {
         Value::String(path) => match std::fs::remove_dir(path.as_ref()) {
-            Ok(_) => Ok(Value::Nil),
-            Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to remove directory: {}", e))),
+            Ok(()) => Ok(Value::Nil),
+            Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to remove directory: {e}"))),
         },
         _ => Err(InterpreterError::RuntimeError(
             "fs_remove_dir() expects a string argument".to_string(),
@@ -1242,7 +1242,7 @@ fn eval_fs_remove_dir(args: &[Value]) -> Result<Value, InterpreterError> {
     }
 }
 
-/// Evaluate fs_copy() builtin function
+/// Evaluate `fs_copy()` builtin function
 /// Copies a file from source to destination
 /// Complexity: 3 (within Toyota Way limits)
 fn eval_fs_copy(args: &[Value]) -> Result<Value, InterpreterError> {
@@ -1252,7 +1252,7 @@ fn eval_fs_copy(args: &[Value]) -> Result<Value, InterpreterError> {
         (Value::String(from), Value::String(to)) => {
             match std::fs::copy(from.as_ref(), to.as_ref()) {
                 Ok(_) => Ok(Value::Nil),
-                Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to copy file: {}", e))),
+                Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to copy file: {e}"))),
             }
         },
         _ => Err(InterpreterError::RuntimeError(
@@ -1261,7 +1261,7 @@ fn eval_fs_copy(args: &[Value]) -> Result<Value, InterpreterError> {
     }
 }
 
-/// Evaluate fs_rename() builtin function
+/// Evaluate `fs_rename()` builtin function
 /// Renames/moves a file
 /// Complexity: 3 (within Toyota Way limits)
 fn eval_fs_rename(args: &[Value]) -> Result<Value, InterpreterError> {
@@ -1270,8 +1270,8 @@ fn eval_fs_rename(args: &[Value]) -> Result<Value, InterpreterError> {
     match (&args[0], &args[1]) {
         (Value::String(from), Value::String(to)) => {
             match std::fs::rename(from.as_ref(), to.as_ref()) {
-                Ok(_) => Ok(Value::Nil),
-                Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to rename file: {}", e))),
+                Ok(()) => Ok(Value::Nil),
+                Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to rename file: {e}"))),
             }
         },
         _ => Err(InterpreterError::RuntimeError(
@@ -1280,7 +1280,7 @@ fn eval_fs_rename(args: &[Value]) -> Result<Value, InterpreterError> {
     }
 }
 
-/// Evaluate fs_metadata() builtin function
+/// Evaluate `fs_metadata()` builtin function
 /// Returns file metadata as Object
 /// Complexity: 3 (within Toyota Way limits)
 fn eval_fs_metadata(args: &[Value]) -> Result<Value, InterpreterError> {
@@ -1295,7 +1295,7 @@ fn eval_fs_metadata(args: &[Value]) -> Result<Value, InterpreterError> {
                 map.insert("is_file".to_string(), Value::Bool(meta.is_file()));
                 Ok(Value::Object(Arc::new(map)))
             },
-            Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to get metadata: {}", e))),
+            Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to get metadata: {e}"))),
         },
         _ => Err(InterpreterError::RuntimeError(
             "fs_metadata() expects a string argument".to_string(),
@@ -1303,7 +1303,7 @@ fn eval_fs_metadata(args: &[Value]) -> Result<Value, InterpreterError> {
     }
 }
 
-/// Evaluate fs_read_dir() builtin function
+/// Evaluate `fs_read_dir()` builtin function
 /// Returns directory contents as Array of strings
 /// Complexity: 3 (within Toyota Way limits)
 fn eval_fs_read_dir(args: &[Value]) -> Result<Value, InterpreterError> {
@@ -1313,12 +1313,12 @@ fn eval_fs_read_dir(args: &[Value]) -> Result<Value, InterpreterError> {
         Value::String(path) => match std::fs::read_dir(path.as_ref()) {
             Ok(entries) => {
                 let paths: Vec<Value> = entries
-                    .filter_map(|e| e.ok())
+                    .filter_map(std::result::Result::ok)
                     .map(|e| Value::from_string(e.path().display().to_string()))
                     .collect();
                 Ok(Value::Array(paths.into()))
             },
-            Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to read directory: {}", e))),
+            Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to read directory: {e}"))),
         },
         _ => Err(InterpreterError::RuntimeError(
             "fs_read_dir() expects a string argument".to_string(),
@@ -1326,7 +1326,7 @@ fn eval_fs_read_dir(args: &[Value]) -> Result<Value, InterpreterError> {
     }
 }
 
-/// Evaluate fs_canonicalize() builtin function
+/// Evaluate `fs_canonicalize()` builtin function
 /// Returns absolute path
 /// Complexity: 3 (within Toyota Way limits)
 fn eval_fs_canonicalize(args: &[Value]) -> Result<Value, InterpreterError> {
@@ -1335,7 +1335,7 @@ fn eval_fs_canonicalize(args: &[Value]) -> Result<Value, InterpreterError> {
     match &args[0] {
         Value::String(path) => match std::fs::canonicalize(path.as_ref()) {
             Ok(canonical) => Ok(Value::from_string(canonical.display().to_string())),
-            Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to canonicalize path: {}", e))),
+            Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to canonicalize path: {e}"))),
         },
         _ => Err(InterpreterError::RuntimeError(
             "fs_canonicalize() expects a string argument".to_string(),
@@ -1343,7 +1343,7 @@ fn eval_fs_canonicalize(args: &[Value]) -> Result<Value, InterpreterError> {
     }
 }
 
-/// Evaluate fs_is_file() builtin function
+/// Evaluate `fs_is_file()` builtin function
 /// Checks if path is a file
 /// Complexity: 2 (within Toyota Way limits)
 fn eval_fs_is_file(args: &[Value]) -> Result<Value, InterpreterError> {
@@ -1414,7 +1414,7 @@ fn try_eval_fs_function(
 
 // Helper functions for path operations (reduce cognitive complexity)
 
-/// Helper: path_join operation
+/// Helper: `path_join` operation
 /// Complexity: 3 (minimal nesting)
 fn eval_path_join(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("path_join", args, 2)?;
@@ -1431,7 +1431,7 @@ fn eval_path_join(args: &[Value]) -> Result<Value, InterpreterError> {
 /// Complexity: 3 (extracted to reduce nesting)
 fn build_path_from_value_components(components: &[Value]) -> Result<std::path::PathBuf, InterpreterError> {
     let mut path = std::path::PathBuf::new();
-    for component in components.iter() {
+    for component in components {
         match component {
             Value::String(s) => path.push(s.as_ref()),
             _ => return Err(InterpreterError::RuntimeError("path_join_many() expects array of strings".to_string())),
@@ -1440,7 +1440,7 @@ fn build_path_from_value_components(components: &[Value]) -> Result<std::path::P
     Ok(path)
 }
 
-/// Helper: path_join_many operation
+/// Helper: `path_join_many` operation
 /// Complexity: 3 (reduced via helper extraction)
 fn eval_path_join_many(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("path_join_many", args, 1)?;
@@ -1453,7 +1453,7 @@ fn eval_path_join_many(args: &[Value]) -> Result<Value, InterpreterError> {
     }
 }
 
-/// Helper: path_parent operation
+/// Helper: `path_parent` operation
 /// Complexity: 4
 fn eval_path_parent(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("path_parent", args, 1)?;
@@ -1469,7 +1469,7 @@ fn eval_path_parent(args: &[Value]) -> Result<Value, InterpreterError> {
     }
 }
 
-/// Helper: path_file_name operation
+/// Helper: `path_file_name` operation
 /// Complexity: 4
 fn eval_path_file_name(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("path_file_name", args, 1)?;
@@ -1485,7 +1485,7 @@ fn eval_path_file_name(args: &[Value]) -> Result<Value, InterpreterError> {
     }
 }
 
-/// Helper: path_file_stem operation
+/// Helper: `path_file_stem` operation
 /// Complexity: 4
 fn eval_path_file_stem(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("path_file_stem", args, 1)?;
@@ -1501,7 +1501,7 @@ fn eval_path_file_stem(args: &[Value]) -> Result<Value, InterpreterError> {
     }
 }
 
-/// Helper: path_extension operation
+/// Helper: `path_extension` operation
 /// Complexity: 4
 fn eval_path_extension(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("path_extension", args, 1)?;
@@ -1517,7 +1517,7 @@ fn eval_path_extension(args: &[Value]) -> Result<Value, InterpreterError> {
     }
 }
 
-/// Helper: path_is_absolute operation
+/// Helper: `path_is_absolute` operation
 /// Complexity: 2
 fn eval_path_is_absolute(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("path_is_absolute", args, 1)?;
@@ -1527,7 +1527,7 @@ fn eval_path_is_absolute(args: &[Value]) -> Result<Value, InterpreterError> {
     }
 }
 
-/// Helper: path_is_relative operation
+/// Helper: `path_is_relative` operation
 /// Complexity: 2
 fn eval_path_is_relative(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("path_is_relative", args, 1)?;
@@ -1537,20 +1537,20 @@ fn eval_path_is_relative(args: &[Value]) -> Result<Value, InterpreterError> {
     }
 }
 
-/// Helper: path_canonicalize operation
+/// Helper: `path_canonicalize` operation
 /// Complexity: 4
 fn eval_path_canonicalize(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("path_canonicalize", args, 1)?;
     match &args[0] {
         Value::String(path) => match std::fs::canonicalize(path.as_ref()) {
             Ok(canonical) => Ok(Value::from_string(canonical.to_string_lossy().to_string())),
-            Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to canonicalize path: {}", e))),
+            Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to canonicalize path: {e}"))),
         },
         _ => Err(InterpreterError::RuntimeError("path_canonicalize() expects a string argument".to_string())),
     }
 }
 
-/// Helper: path_with_extension operation
+/// Helper: `path_with_extension` operation
 /// Complexity: 3
 fn eval_path_with_extension(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("path_with_extension", args, 2)?;
@@ -1563,7 +1563,7 @@ fn eval_path_with_extension(args: &[Value]) -> Result<Value, InterpreterError> {
     }
 }
 
-/// Helper: path_with_file_name operation
+/// Helper: `path_with_file_name` operation
 /// Complexity: 3
 fn eval_path_with_file_name(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("path_with_file_name", args, 2)?;
@@ -1576,7 +1576,7 @@ fn eval_path_with_file_name(args: &[Value]) -> Result<Value, InterpreterError> {
     }
 }
 
-/// Helper: path_components operation
+/// Helper: `path_components` operation
 /// Complexity: 3
 fn eval_path_components(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("path_components", args, 1)?;
@@ -1592,7 +1592,7 @@ fn eval_path_components(args: &[Value]) -> Result<Value, InterpreterError> {
     }
 }
 
-/// Helper: path_normalize operation
+/// Helper: `path_normalize` operation
 /// Complexity: 4
 fn eval_path_normalize(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("path_normalize", args, 1)?;
@@ -1685,9 +1685,9 @@ fn try_eval_path_function(
 
 // Helper functions for JSON operations (reduce cognitive complexity)
 
-/// Helper: json_parse operation
+/// Helper: `json_parse` operation
 /// Complexity: 3
-/// json_parse(json_string) - Parse JSON string to Ruchy value
+/// `json_parse(json_string)` - Parse JSON string to Ruchy value
 /// Complexity: 3 (reduced by extracting conversion logic)
 fn eval_json_parse(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("json_parse", args, 1)?;
@@ -1702,11 +1702,11 @@ fn eval_json_parse(args: &[Value]) -> Result<Value, InterpreterError> {
 fn parse_json_string_to_value(s: &str) -> Result<Value, InterpreterError> {
     match serde_json::from_str::<serde_json::Value>(s) {
         Ok(json) => Ok(json_to_ruchy_value(json)),
-        Err(e) => Err(InterpreterError::RuntimeError(format!("JSON parse error: {}", e))),
+        Err(e) => Err(InterpreterError::RuntimeError(format!("JSON parse error: {e}"))),
     }
 }
 
-/// Convert serde_json::Value to Ruchy Value
+/// Convert `serde_json::Value` to Ruchy Value
 /// Complexity: 5 (6 match arms, reduced by extracting helpers)
 fn json_to_ruchy_value(json: serde_json::Value) -> Value {
     match json {
@@ -1748,9 +1748,9 @@ fn convert_json_object(obj: serde_json::Map<String, serde_json::Value>) -> Value
     Value::Object(std::sync::Arc::new(map))
 }
 
-/// Helper: Convert Ruchy Value to serde_json::Value
+/// Helper: Convert Ruchy Value to `serde_json::Value`
 /// Complexity: 3
-/// Convert Ruchy Value to serde_json::Value
+/// Convert Ruchy Value to `serde_json::Value`
 /// Complexity: 5 (reduced by extracting array and object converters)
 fn value_to_json(value: &Value) -> Result<serde_json::Value, InterpreterError> {
     match value {
@@ -1761,7 +1761,7 @@ fn value_to_json(value: &Value) -> Result<serde_json::Value, InterpreterError> {
         Value::String(s) => Ok(serde_json::Value::String(s.to_string())),
         Value::Array(arr) => convert_ruchy_array_to_json(arr),
         Value::Object(map) => convert_ruchy_object_to_json(map),
-        _ => Err(InterpreterError::RuntimeError(format!("Cannot convert {:?} to JSON", value))),
+        _ => Err(InterpreterError::RuntimeError(format!("Cannot convert {value:?} to JSON"))),
     }
 }
 
@@ -1778,49 +1778,49 @@ fn convert_ruchy_array_to_json(arr: &[Value]) -> Result<serde_json::Value, Inter
 /// Complexity: 3 (iteration + recursive conversion)
 fn convert_ruchy_object_to_json(map: &std::collections::HashMap<String, Value>) -> Result<serde_json::Value, InterpreterError> {
     let mut json_obj = serde_json::Map::new();
-    for (k, v) in map.iter() {
+    for (k, v) in map {
         json_obj.insert(k.clone(), value_to_json(v)?);
     }
     Ok(serde_json::Value::Object(json_obj))
 }
 
-/// Helper: json_stringify operation
+/// Helper: `json_stringify` operation
 /// Complexity: 2
 fn eval_json_stringify(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("json_stringify", args, 1)?;
     let json = value_to_json(&args[0])?;
     match serde_json::to_string(&json) {
         Ok(s) => Ok(Value::from_string(s)),
-        Err(e) => Err(InterpreterError::RuntimeError(format!("JSON stringify error: {}", e))),
+        Err(e) => Err(InterpreterError::RuntimeError(format!("JSON stringify error: {e}"))),
     }
 }
 
-/// Helper: json_pretty operation
+/// Helper: `json_pretty` operation
 /// Complexity: 2
 fn eval_json_pretty(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("json_pretty", args, 1)?;
     let json = value_to_json(&args[0])?;
     match serde_json::to_string_pretty(&json) {
         Ok(s) => Ok(Value::from_string(s)),
-        Err(e) => Err(InterpreterError::RuntimeError(format!("JSON pretty error: {}", e))),
+        Err(e) => Err(InterpreterError::RuntimeError(format!("JSON pretty error: {e}"))),
     }
 }
 
-/// Helper: json_read operation
+/// Helper: `json_read` operation
 /// Complexity: 3
 fn eval_json_read(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("json_read", args, 1)?;
     match &args[0] {
         Value::String(path) => {
             let content = std::fs::read_to_string(path.as_ref())
-                .map_err(|e| InterpreterError::RuntimeError(format!("Failed to read file: {}", e)))?;
+                .map_err(|e| InterpreterError::RuntimeError(format!("Failed to read file: {e}")))?;
             eval_json_parse(&[Value::from_string(content)])
         },
         _ => Err(InterpreterError::RuntimeError("json_read() expects a string argument".to_string())),
     }
 }
 
-/// Helper: json_write operation
+/// Helper: `json_write` operation
 /// Complexity: 3
 fn eval_json_write(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("json_write", args, 2)?;
@@ -1828,16 +1828,16 @@ fn eval_json_write(args: &[Value]) -> Result<Value, InterpreterError> {
         Value::String(path) => {
             let json = value_to_json(&args[1])?;
             let content = serde_json::to_string_pretty(&json)
-                .map_err(|e| InterpreterError::RuntimeError(format!("JSON stringify error: {}", e)))?;
+                .map_err(|e| InterpreterError::RuntimeError(format!("JSON stringify error: {e}")))?;
             std::fs::write(path.as_ref(), content)
-                .map_err(|e| InterpreterError::RuntimeError(format!("Failed to write file: {}", e)))?;
+                .map_err(|e| InterpreterError::RuntimeError(format!("Failed to write file: {e}")))?;
             Ok(Value::Bool(true))
         },
         _ => Err(InterpreterError::RuntimeError("json_write() expects first argument to be string".to_string())),
     }
 }
 
-/// Helper: json_validate operation
+/// Helper: `json_validate` operation
 /// Complexity: 2
 fn eval_json_validate(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("json_validate", args, 1)?;
@@ -1850,7 +1850,7 @@ fn eval_json_validate(args: &[Value]) -> Result<Value, InterpreterError> {
     }
 }
 
-/// Helper: json_type operation
+/// Helper: `json_type` operation
 /// Complexity: 3
 fn eval_json_type(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("json_type", args, 1)?;
@@ -1868,16 +1868,16 @@ fn eval_json_type(args: &[Value]) -> Result<Value, InterpreterError> {
                     };
                     Ok(Value::from_string(type_str.to_string()))
                 },
-                Err(e) => Err(InterpreterError::RuntimeError(format!("JSON parse error: {}", e))),
+                Err(e) => Err(InterpreterError::RuntimeError(format!("JSON parse error: {e}"))),
             }
         },
         _ => Err(InterpreterError::RuntimeError("json_type() expects a string argument".to_string())),
     }
 }
 
-/// Helper: json_merge operation
+/// Helper: `json_merge` operation
 /// Complexity: 2
-/// json_merge(json1, json2) - Deep merge two JSON values
+/// `json_merge(json1`, json2) - Deep merge two JSON values
 /// Complexity: 3 (reduced by extracting merge logic)
 fn eval_json_merge(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("json_merge", args, 2)?;
@@ -1915,9 +1915,9 @@ fn merge_json_objects(
     }
 }
 
-/// Helper: json_get operation
+/// Helper: `json_get` operation
 /// Complexity: 3
-/// json_get(json_value, path) - Get value at JSON path
+/// `json_get(json_value`, path) - Get value at JSON path
 /// Complexity: 4 (reduced by extracting path getter)
 fn eval_json_get(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("json_get", args, 2)?;
@@ -1953,9 +1953,9 @@ fn get_json_path_recursive<'a>(json: &'a serde_json::Value, path: &[&str]) -> Op
     }
 }
 
-/// Helper: json_set operation
+/// Helper: `json_set` operation
 /// Complexity: 3
-/// json_set(json_value, path, new_value) - Set value at JSON path
+/// `json_set(json_value`, path, `new_value`) - Set value at JSON path
 /// Complexity: 4 (reduced by extracting path setting logic)
 fn eval_json_set(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("json_set", args, 3)?;
@@ -2113,7 +2113,7 @@ fn try_eval_http_function(name: &str, args: &[Value]) -> Result<Option<Value>, I
     }
 }
 
-/// Eval: http_get(url)
+/// Eval: `http_get(url)`
 /// Complexity: 2 (validation + stdlib delegation)
 fn eval_http_get(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("http_get", args, 1)?;
@@ -2121,14 +2121,14 @@ fn eval_http_get(args: &[Value]) -> Result<Value, InterpreterError> {
         Value::String(url) => {
             match crate::stdlib::http::get(url) {
                 Ok(response) => Ok(Value::from_string(response)),
-                Err(e) => Err(InterpreterError::RuntimeError(format!("HTTP GET failed: {}", e))),
+                Err(e) => Err(InterpreterError::RuntimeError(format!("HTTP GET failed: {e}"))),
             }
         },
         _ => Err(InterpreterError::RuntimeError("http_get() expects a string URL".to_string())),
     }
 }
 
-/// Eval: http_post(url, body)
+/// Eval: `http_post(url`, body)
 /// Complexity: 2 (validation + stdlib delegation)
 fn eval_http_post(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("http_post", args, 2)?;
@@ -2136,14 +2136,14 @@ fn eval_http_post(args: &[Value]) -> Result<Value, InterpreterError> {
         (Value::String(url), Value::String(body)) => {
             match crate::stdlib::http::post(url, body) {
                 Ok(response) => Ok(Value::from_string(response)),
-                Err(e) => Err(InterpreterError::RuntimeError(format!("HTTP POST failed: {}", e))),
+                Err(e) => Err(InterpreterError::RuntimeError(format!("HTTP POST failed: {e}"))),
             }
         },
         _ => Err(InterpreterError::RuntimeError("http_post() expects two string arguments".to_string())),
     }
 }
 
-/// Eval: http_put(url, body)
+/// Eval: `http_put(url`, body)
 /// Complexity: 2 (validation + stdlib delegation)
 fn eval_http_put(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("http_put", args, 2)?;
@@ -2151,14 +2151,14 @@ fn eval_http_put(args: &[Value]) -> Result<Value, InterpreterError> {
         (Value::String(url), Value::String(body)) => {
             match crate::stdlib::http::put(url, body) {
                 Ok(response) => Ok(Value::from_string(response)),
-                Err(e) => Err(InterpreterError::RuntimeError(format!("HTTP PUT failed: {}", e))),
+                Err(e) => Err(InterpreterError::RuntimeError(format!("HTTP PUT failed: {e}"))),
             }
         },
         _ => Err(InterpreterError::RuntimeError("http_put() expects two string arguments".to_string())),
     }
 }
 
-/// Eval: http_delete(url)
+/// Eval: `http_delete(url)`
 /// Complexity: 2 (validation + stdlib delegation)
 fn eval_http_delete(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("http_delete", args, 1)?;
@@ -2166,14 +2166,14 @@ fn eval_http_delete(args: &[Value]) -> Result<Value, InterpreterError> {
         Value::String(url) => {
             match crate::stdlib::http::delete(url) {
                 Ok(response) => Ok(Value::from_string(response)),
-                Err(e) => Err(InterpreterError::RuntimeError(format!("HTTP DELETE failed: {}", e))),
+                Err(e) => Err(InterpreterError::RuntimeError(format!("HTTP DELETE failed: {e}"))),
             }
         },
         _ => Err(InterpreterError::RuntimeError("http_delete() expects a string URL".to_string())),
     }
 }
 
-/// Builtin assert_eq function for testing
+/// Builtin `assert_eq` function for testing
 /// Panics if the two values are not equal
 ///
 /// # Arguments
@@ -2195,13 +2195,13 @@ fn eval_assert_eq(args: &[Value]) -> Result<Value, InterpreterError> {
     let message = if args.len() > 2 {
         format!("{}", args[2])
     } else {
-        format!("Assertion failed: expected {:?}, got {:?}", expected, actual)
+        format!("Assertion failed: expected {expected:?}, got {actual:?}")
     };
 
-    if expected != actual {
-        Err(InterpreterError::AssertionFailed(message))
-    } else {
+    if expected == actual {
         Ok(Value::Nil)
+    } else {
+        Err(InterpreterError::AssertionFailed(message))
     }
 }
 

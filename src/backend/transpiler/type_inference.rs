@@ -87,10 +87,10 @@ fn check_func_call(param_name: &str, func: &Expr, args: &[Expr]) -> bool {
 
 /// Check if branches for parameter as function
 /// Complexity: 1 (chained OR)
-fn check_if_for_func(param_name: &str, condition: &Expr, then_branch: &Expr, else_branch: &Option<Box<Expr>>) -> bool {
+fn check_if_for_func(param_name: &str, condition: &Expr, then_branch: &Expr, else_branch: Option<&Expr>) -> bool {
     is_param_used_as_function(param_name, condition)
         || is_param_used_as_function(param_name, then_branch)
-        || else_branch.as_ref().is_some_and(|e| is_param_used_as_function(param_name, e))
+        || else_branch.is_some_and(|e| is_param_used_as_function(param_name, e))
 }
 
 /// Analyzes if a parameter is used as a function in the given expression
@@ -112,7 +112,7 @@ pub fn is_param_used_as_function(param_name: &str, expr: &Expr) -> bool {
     match &expr.kind {
         ExprKind::Call { func, args } => check_func_call(param_name, func, args),
         ExprKind::Block(exprs) => exprs.iter().any(|e| is_param_used_as_function(param_name, e)),
-        ExprKind::If { condition, then_branch, else_branch } => check_if_for_func(param_name, condition, then_branch, else_branch),
+        ExprKind::If { condition, then_branch, else_branch } => check_if_for_func(param_name, condition, then_branch, else_branch.as_deref()),
         ExprKind::Let { value, body, .. } | ExprKind::Binary { left: value, right: body, .. } => {
             check_let_and_binary_for_func(param_name, value, body)
         }
@@ -254,7 +254,7 @@ fn check_call_for_return_type(func: &Expr) -> Option<&'static str> {
 }
 
 /// Infer return type from built-in function calls in expression
-/// Returns Some(return_type) if expression calls a built-in with known signature
+/// Returns `Some(return_type)` if expression calls a built-in with known signature
 /// Returns None if no built-in call detected
 pub fn infer_return_type_from_builtin_call(expr: &Expr) -> Option<&'static str> {
     match &expr.kind {
@@ -281,11 +281,9 @@ fn get_builtin_param_type(func_name: &str, arg_idx: usize) -> Option<&'static st
         ("http_get" | "http_post" | "http_put" | "http_delete", 0) => Some("&str"),
 
         // Environment/Path/JSON/Regex: strings are &str
-        ("env_var" | "env_set_var", 0)
-        | ("path_join" | "path_extension" | "path_filename" | "path_parent", 0 | 1)
-        | ("json_parse", 0)
-        | ("regex_new", 0)
-        | ("regex_is_match" | "regex_find" | "regex_replace", 1) => Some("&str"),
+        ("env_var" | "env_set_var" | "json_parse" | "regex_new", 0) |
+("path_join" | "path_extension" | "path_filename" | "path_parent", 0 | 1) |
+("regex_is_match" | "regex_find" | "regex_replace", 1) => Some("&str"),
 
         // Output/logging: generic (keep default)
         _ => None,
@@ -330,18 +328,18 @@ fn check_let_bindings(param_name: &str, value: &Expr, body: &Expr) -> Option<&'s
 }
 
 /// Check if expression  in branches
-/// Complexity: 1 (chained or_else)
-fn check_if_branches(param_name: &str, condition: &Expr, then_branch: &Expr, else_branch: &Option<Box<Expr>>) -> Option<&'static str> {
+/// Complexity: 1 (chained `or_else`)
+fn check_if_branches(param_name: &str, condition: &Expr, then_branch: &Expr, else_branch: Option<&Expr>) -> Option<&'static str> {
     infer_param_type_from_builtin_usage(param_name, condition)
         .or_else(|| infer_param_type_from_builtin_usage(param_name, then_branch))
-        .or_else(|| else_branch.as_ref().and_then(|e| infer_param_type_from_builtin_usage(param_name, e)))
+        .or_else(|| else_branch.and_then(|e| infer_param_type_from_builtin_usage(param_name, e)))
 }
 
 pub fn infer_param_type_from_builtin_usage(param_name: &str, expr: &Expr) -> Option<&'static str> {
     match &expr.kind {
         ExprKind::Call { func, args } => check_call_for_param_type(param_name, func, args),
         ExprKind::Block(exprs) => exprs.iter().find_map(|e| infer_param_type_from_builtin_usage(param_name, e)),
-        ExprKind::If { condition, then_branch, else_branch } => check_if_branches(param_name, condition, then_branch, else_branch),
+        ExprKind::If { condition, then_branch, else_branch } => check_if_branches(param_name, condition, then_branch, else_branch.as_deref()),
         ExprKind::Let { value, body, .. } | ExprKind::LetPattern { value, body, .. } => check_let_bindings(param_name, value, body),
         ExprKind::Binary { left, right, .. } => {
             infer_param_type_from_builtin_usage(param_name, left)

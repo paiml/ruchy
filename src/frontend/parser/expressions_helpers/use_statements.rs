@@ -118,13 +118,12 @@ fn parse_use_first_segment(state: &mut ParserState, path_parts: &mut Vec<String>
         }
         Some((token, _)) => {
             let keyword_str = super::identifiers::token_to_keyword_string(token);
-            if !keyword_str.is_empty() {
-                path_parts.push(keyword_str);
-                state.tokens.advance();
-                Ok(())
-            } else {
+            if keyword_str.is_empty() {
                 bail!("Expected module path after 'use'")
             }
+            path_parts.push(keyword_str);
+            state.tokens.advance();
+            Ok(())
         }
         None => bail!("Expected module path after 'use'"),
     }
@@ -140,19 +139,18 @@ fn parse_use_segment_after_colon(state: &mut ParserState, path_parts: &mut Vec<S
         }
         Some((token, _)) => {
             let keyword_str = super::identifiers::token_to_keyword_string(token);
-            if !keyword_str.is_empty() {
-                path_parts.push(keyword_str);
-                state.tokens.advance();
-                Ok(())
-            } else {
+            if keyword_str.is_empty() {
                 bail!("Expected identifier or keyword after '::'")
             }
+            path_parts.push(keyword_str);
+            state.tokens.advance();
+            Ok(())
         }
         None => bail!("Expected identifier after '::'"),
     }
 }
 
-/// Parse nested grouped imports: use std::{collections, io}
+/// Parse nested grouped imports: use `std::{collections`, io}
 fn parse_nested_grouped_imports(
     state: &mut ParserState,
     base_path: Vec<String>,
@@ -318,7 +316,7 @@ fn parse_simple_import_with_alias(
     identifier: String,
     start_span: Span,
 ) -> Result<Vec<Expr>> {
-    let full_module_path = [base_path, &[identifier.clone()]].concat().join("::");
+    let full_module_path = [base_path, &[identifier]].concat().join("::");
 
     if matches!(state.tokens.peek(), Some((Token::As, _))) {
         state.tokens.advance(); // consume 'as'

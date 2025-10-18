@@ -201,7 +201,7 @@ fn parse_backslash_lambda(state: &mut ParserState) -> Result<Vec<Param>> {
     state
         .tokens
         .expect(&Token::Arrow)
-        .map_err(|e| anyhow::anyhow!("In backslash lambda after params: {}", e))?;
+        .map_err(|e| anyhow::anyhow!("In backslash lambda after params: {e}"))?;
     Ok(params)
 }
 /// Parse pipe-style lambda: |x, y| body (complexity: 5)
@@ -764,7 +764,7 @@ fn should_continue_parsing_trait_bound(state: &mut ParserState) -> Result<bool> 
 
 /// Check if at end of trait bound (complexity: 2)
 fn is_trait_bound_end(state: &mut ParserState) -> bool {
-    matches!(state.tokens.peek(), Some((Token::Comma, _)) | Some((Token::LeftBrace, _)))
+    matches!(state.tokens.peek(), Some((Token::Comma | Token::LeftBrace, _)))
 }
 
 /// Check if current delimiter is comma (complexity: 1)

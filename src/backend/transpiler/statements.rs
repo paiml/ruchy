@@ -588,11 +588,10 @@ impl Transpiler {
         // BUG-035 FIX: Check built-in function signatures FIRST
         // This gives us precise type information for stdlib functions
         if let Some(type_hint) = infer_param_type_from_builtin_usage(&param.name(), body) {
-            match type_hint {
-                "&str" => return quote! { &str },
-                // Future: Add more types as needed (String, Vec<String>, etc.)
-                _ => {}
+            if type_hint == "&str" {
+                return quote! { &str };
             }
+            // Future: Add more types as needed (String, Vec<String>, etc.)
         }
 
         // Then check for function parameters (higher-order functions)
@@ -1122,7 +1121,7 @@ impl Transpiler {
             let closure_str = format!("move |{param_list}| {body_tokens}");
             closure_str
                 .parse()
-                .map_err(|e| anyhow::anyhow!("Failed to parse closure: {}", e))
+                .map_err(|e| anyhow::anyhow!("Failed to parse closure: {e}"))
         }
     }
     /// Transpiles function calls
@@ -1309,9 +1308,9 @@ impl Transpiler {
         self.transpile_method_call_old(object, method, args)
     }
 
-    /// DEFECT-TRANSPILER-DF-002: Inline DataFrame builder pattern transpilation
-    /// Transforms: DataFrame::new().column("a", [1,2]).build()
-    /// Into: DataFrame::new(vec![Series::new("a", &[1,2])])
+    /// DEFECT-TRANSPILER-DF-002: Inline `DataFrame` builder pattern transpilation
+    /// Transforms: `DataFrame::new().column("a`", [1,2]).`build()`
+    /// Into: `DataFrame::new(vec`![`Series::new("a`", &[1,2])])
     fn try_transpile_dataframe_builder_inline(&self, expr: &Expr) -> Result<Option<TokenStream>> {
         // Check if this is a builder pattern ending in .build()
         let (columns, _base) = match &expr.kind {
@@ -1356,7 +1355,7 @@ impl Transpiler {
         }
     }
 
-    /// Extract DataFrame column chain recursively
+    /// Extract `DataFrame` column chain recursively
     fn extract_dataframe_columns(&self, expr: &Expr) -> Option<(Vec<(Expr, Expr)>, Expr)> {
         match &expr.kind {
             ExprKind::MethodCall { receiver, method, args } if method == "column" && args.len() == 2 => {
@@ -1550,7 +1549,7 @@ impl Transpiler {
         arg_tokens: &[TokenStream],
     ) -> Result<TokenStream> {
         if arg_tokens.len() != 1 {
-            bail!("{} requires exactly 1 argument", method);
+            bail!("{method} requires exactly 1 argument");
         }
         let other = &arg_tokens[0];
         let method_ident = format_ident!("{}", method);
@@ -1909,7 +1908,7 @@ impl Transpiler {
         if Self::is_complex_pattern(var) {
             // Complex pattern - parse as TokenStream
             var.parse()
-                .map_err(|e| anyhow::anyhow!("Invalid pattern '{}': {}", var, e))
+                .map_err(|e| anyhow::anyhow!("Invalid pattern '{var}': {e}"))
         } else {
             // Simple identifier
             let var_ident = format_ident!("{}", var);
@@ -2154,7 +2153,7 @@ impl Transpiler {
             // Use proc_macro2::TokenStream to parse the pattern
             let pattern: proc_macro2::TokenStream = pattern_str
                 .parse()
-                .map_err(|e| anyhow::anyhow!("Invalid pattern in set comprehension: {}", e))?;
+                .map_err(|e| anyhow::anyhow!("Invalid pattern in set comprehension: {e}"))?;
             pattern
         } else {
             // Simple identifier
@@ -2275,7 +2274,7 @@ impl Transpiler {
             // Use proc_macro2::TokenStream to parse the pattern
             let pattern: proc_macro2::TokenStream = pattern_str
                 .parse()
-                .map_err(|e| anyhow::anyhow!("Invalid pattern in dict comprehension: {}", e))?;
+                .map_err(|e| anyhow::anyhow!("Invalid pattern in dict comprehension: {e}"))?;
             pattern
         } else {
             // Simple identifier
@@ -3483,7 +3482,7 @@ impl Transpiler {
         match base_name {
             "sin" | "cos" | "tan" => {
                 if args.len() != 1 {
-                    bail!("{}() expects exactly 1 argument", base_name);
+                    bail!("{base_name}() expects exactly 1 argument");
                 }
                 let value = self.transpile_expr(&args[0])?;
                 let method = proc_macro2::Ident::new(base_name, proc_macro2::Span::call_site());
@@ -3539,7 +3538,7 @@ impl Transpiler {
         match base_name {
             "timestamp" | "get_time_ms" => {
                 if !args.is_empty() {
-                    bail!("{}() expects no arguments", base_name);
+                    bail!("{base_name}() expects no arguments");
                 }
                 // Get current time in milliseconds since Unix epoch
                 Ok(Some(quote! {
@@ -3718,7 +3717,7 @@ impl Transpiler {
         Ok(None)
     }
 
-    /// Handle environment functions (env_args, env_var, etc.)
+    /// Handle environment functions (`env_args`, `env_var`, etc.)
     ///
     /// # Complexity
     /// Cyclomatic complexity: 9 (within Toyota Way limits)
@@ -3938,7 +3937,7 @@ impl Transpiler {
     /// Transpile path functions (path_*)
     ///
     /// Layer 2 of three-layer builtin pattern (proven from env/fs functions)
-    /// Phase 3: STDLIB_ACCESS_PLAN - Path Module (13 functions)
+    /// Phase 3: `STDLIB_ACCESS_PLAN` - Path Module (13 functions)
     fn try_transpile_path_function(
         &self,
         base_name: &str,
@@ -4091,7 +4090,7 @@ impl Transpiler {
 
     /// Transpile JSON functions (json_*)
     /// Layer 2 of three-layer builtin pattern (proven from env/fs/path functions)
-    /// Phase 4: STDLIB_ACCESS_PLAN - JSON Module (10 functions)
+    /// Phase 4: `STDLIB_ACCESS_PLAN` - JSON Module (10 functions)
     fn try_transpile_json_function(
         &self,
         base_name: &str,
@@ -4274,7 +4273,7 @@ impl Transpiler {
 
     /// Transpile HTTP builtin functions (STDLIB-PHASE-5)
     ///
-    /// Wraps ruchy::stdlib::http module functions for compilation
+    /// Wraps `ruchy::stdlib::http` module functions for compilation
     /// Complexity: 2 (match + delegation)
     fn try_transpile_http_function(
         &self,

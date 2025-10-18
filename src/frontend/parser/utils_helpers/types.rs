@@ -13,7 +13,7 @@
 //! - `parse_list_type()` - Parse [T] list and [T; N] array types
 //! - `parse_paren_type()` - Parse tuple and parenthesized function types
 //! - `parse_named_type()` - Parse named types with optional generics
-//! - `parse_qualified_name()` - Parse module paths like std::vec::Vec
+//! - `parse_qualified_name()` - Parse module paths like `std::vec::Vec`
 //! - `parse_generic_type()` - Parse generic instantiations Vec<T>
 //! - `parse_type_list()` - Parse comma-separated lists of types
 
@@ -200,7 +200,7 @@ fn parse_trait_name(state: &mut ParserState) -> Result<String> {
     }
 }
 
-/// Check if trait is a function trait (Fn, FnOnce, FnMut)
+/// Check if trait is a function trait (Fn, `FnOnce`, `FnMut`)
 fn is_function_trait(trait_name: &str) -> bool {
     matches!(trait_name, "Fn" | "FnOnce" | "FnMut")
 }
@@ -227,10 +227,10 @@ fn parse_function_trait_type(state: &mut ParserState, _trait_name: String) -> Re
     })
 }
 
-/// Parse named trait type: impl TraitName
+/// Parse named trait type: impl `TraitName`
 fn parse_named_trait_type(trait_name: String) -> Result<Type> {
     Ok(Type {
-        kind: TypeKind::Named(format!("impl {}", trait_name)),
+        kind: TypeKind::Named(format!("impl {trait_name}")),
         span: Span { start: 0, end: 0 },
     })
 }
@@ -292,7 +292,7 @@ fn parse_integer_array_size(state: &mut ParserState, n_str: &str) -> Result<usiz
     let num_part = strip_type_suffix(&n_str);
     num_part
         .parse::<usize>()
-        .map_err(|_| anyhow::anyhow!("Invalid array size: {}", num_part))
+        .map_err(|_| anyhow::anyhow!("Invalid array size: {num_part}"))
 }
 
 /// Parse identifier as array size (constant resolution placeholder)

@@ -156,9 +156,7 @@ impl InferenceContext {
                 }
                 if arity != expected_arity {
                     bail!(
-                        "Function arity mismatch: expected {}, found {}",
-                        expected_arity,
-                        arity
+                        "Function arity mismatch: expected {expected_arity}, found {arity}"
                     );
                 }
             }
@@ -176,7 +174,7 @@ impl InferenceContext {
                         // String iterates over characters
                         self.unifier.unify(&element_ty, &MonoType::Char)?;
                     }
-                    _ => bail!("Type {} is not iterable", collection_ty),
+                    _ => bail!("Type {collection_ty} is not iterable"),
                 }
             }
         }
@@ -282,7 +280,7 @@ impl InferenceContext {
     fn infer_identifier(&mut self, name: &str) -> Result<MonoType> {
         match self.env.lookup(name) {
             Some(scheme) => Ok(self.env.instantiate(scheme, &mut self.gen)),
-            None => bail!("Undefined variable: {}", name),
+            None => bail!("Undefined variable: {name}"),
         }
     }
     fn infer_binary(&mut self, left: &Expr, op: BinaryOp, right: &Expr) -> Result<MonoType> {
@@ -552,7 +550,7 @@ impl InferenceContext {
                 // df! macro creates a DataFrame with columns
                 self.infer_dataframe_macro(args)
             }
-            _ => bail!("Unknown macro: {}", name),
+            _ => bail!("Unknown macro: {name}"),
         }
     }
 
@@ -796,13 +794,13 @@ impl InferenceContext {
     /// Helper methods for argument validation (complexity ~3 each)
     fn validate_no_args(&self, method: &str, args: &[Expr]) -> Result<()> {
         if !args.is_empty() {
-            bail!("Method {} takes no arguments", method);
+            bail!("Method {method} takes no arguments");
         }
         Ok(())
     }
     fn validate_single_arg(&self, method: &str, args: &[Expr]) -> Result<()> {
         if args.len() != 1 {
-            bail!("Method {} takes exactly one argument", method);
+            bail!("Method {method} takes exactly one argument");
         }
         Ok(())
     }
@@ -1750,7 +1748,7 @@ impl InferenceContext {
                 // Fallback for untyped DataFrames
                 Ok(MonoType::Named("DataFrame".to_string()))
             }
-            _ => bail!("DataFrame operation on non-DataFrame type: {}", source_ty),
+            _ => bail!("DataFrame operation on non-DataFrame type: {source_ty}"),
         }
     }
     fn infer_async_block(&mut self, body: &Expr) -> Result<MonoType> {

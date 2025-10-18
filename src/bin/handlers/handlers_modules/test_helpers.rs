@@ -182,6 +182,7 @@ fn execute_single_test(
 /// Extract names of functions with @test attribute
 /// Handles both single function and block of expressions
 /// Complexity: 3 (reduced by extracting helpers)
+#[allow(clippy::unnecessary_wraps)]
 fn extract_test_functions(ast: &ruchy::frontend::ast::Expr) -> Result<Vec<String>> {
     use ruchy::frontend::ast::ExprKind;
 

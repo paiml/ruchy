@@ -2,9 +2,9 @@
 //!
 //! Handles parsing of:
 //! - Identifiers (variable names, function names, etc.)
-//! - Qualified paths (std::string::String, math::add)
-//! - Module path segments (crate::module::submodule)
-//! - Turbofish generic arguments (Vec::<i32>, HashMap::<String, i32>)
+//! - Qualified paths (`std::string::String`, `math::add`)
+//! - Module path segments (`crate::module::submodule`)
+//! - Turbofish generic arguments (`Vec::`<i32>, `HashMap::`<String, i32>)
 //! - Special identifiers (self, super, _, default)
 //! - Fat arrow lambdas (x => x + 1)
 //!
@@ -62,7 +62,7 @@ pub(in crate::frontend::parser) fn parse_identifier_token(
             state.tokens.advance();
             Ok(Expr::new(ExprKind::Identifier("super".to_string()), span))
         }
-        _ => bail!("Expected identifier token, got: {:?}", token),
+        _ => bail!("Expected identifier token, got: {token:?}"),
     }
 }
 
@@ -114,12 +114,11 @@ pub(in crate::frontend::parser) fn parse_path_segment(state: &mut ParserState) -
         // Accept any keyword as a path segment (keywords can be module names)
         // This handles: as, for, if, match, etc. in paths like pub(in crate::as::match)
         let name = token_to_keyword_string(token);
-        if !name.is_empty() {
-            state.tokens.advance();
-            Ok(name)
-        } else {
+        if name.is_empty() {
             bail!("Expected identifier or '*' after '::'")
         }
+        state.tokens.advance();
+        Ok(name)
     } else {
         bail!("Expected identifier or '*' after '::'")
     }

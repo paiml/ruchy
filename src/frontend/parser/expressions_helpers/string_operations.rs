@@ -98,7 +98,7 @@ fn handle_closing_brace(
     }
 }
 
-/// Flush accumulated text as a StringPart
+/// Flush accumulated text as a `StringPart`
 fn flush_text_part(parts: &mut Vec<StringPart>, current: &mut String) {
     if !current.is_empty() {
         parts.push(StringPart::Text(current.clone()));

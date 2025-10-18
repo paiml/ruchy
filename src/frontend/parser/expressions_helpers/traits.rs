@@ -205,7 +205,7 @@ fn parse_trait_associated_type(state: &mut ParserState) -> Result<String> {
     Ok(type_name)
 }
 
-/// Convert method names to TraitMethod structs
+/// Convert method names to `TraitMethod` structs
 fn convert_to_trait_methods(methods: Vec<String>) -> Vec<TraitMethod> {
     methods
         .into_iter()

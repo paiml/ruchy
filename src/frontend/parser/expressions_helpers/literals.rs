@@ -91,7 +91,7 @@ pub(in crate::frontend::parser) fn parse_literal_token(
             state.tokens.advance();
             Ok(Expr::new(ExprKind::Literal(Literal::Bool(*value)), span))
         }
-        _ => bail!("Expected literal token, got: {:?}", token),
+        _ => bail!("Expected literal token, got: {token:?}"),
     }
 }
 

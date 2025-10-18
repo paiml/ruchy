@@ -41,7 +41,7 @@ pub fn parse_ruchy_code(source: &str) -> Result<crate::frontend::ast::Expr> {
     let mut parser = crate::frontend::parser::Parser::new(source);
     parser
         .parse()
-        .map_err(|e| anyhow::anyhow!("Parse error: {:?}", e))
+        .map_err(|e| anyhow::anyhow!("Parse error: {e:?}"))
 }
 /// Standard pattern for success response creation  
 /// # Examples
@@ -422,14 +422,14 @@ pub fn format_duration(duration: std::time::Duration) -> String {
 }
 /// Safe alternative to `unwrap()` for Option values with context
 pub fn unwrap_or_bail<T>(opt: Option<T>, msg: &str) -> Result<T> {
-    opt.ok_or_else(|| anyhow::anyhow!("{}", msg))
+    opt.ok_or_else(|| anyhow::anyhow!("{msg}"))
 }
 /// Safe alternative to `unwrap()` for Result values  
 pub fn unwrap_result_or_bail<T, E>(res: std::result::Result<T, E>, msg: &str) -> Result<T>
 where
     E: std::fmt::Display,
 {
-    res.map_err(|e| anyhow::anyhow!("{}: {}", msg, e))
+    res.map_err(|e| anyhow::anyhow!("{msg}: {e}"))
 }
 /// Standard pattern for error formatting with file operations
 /// # Examples
@@ -550,7 +550,7 @@ pub fn unescape_string(s: &str) -> Result<String> {
                 Some('\\') => result.push('\\'),
                 Some('"') => result.push('"'),
                 Some('\'') => result.push('\''),
-                Some(c) => return Err(anyhow::anyhow!("Invalid escape sequence: \\{}", c)),
+                Some(c) => return Err(anyhow::anyhow!("Invalid escape sequence: \\{c}")),
                 None => return Err(anyhow::anyhow!("Incomplete escape sequence")),
             }
         } else {

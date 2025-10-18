@@ -438,7 +438,7 @@ impl ActorSystem {
         supervisor: Option<ActorId>,
     ) -> Result<ActorRef> {
         if self.actor_names.contains_key(&name) {
-            return Err(anyhow!("Actor with name '{}' already exists", name));
+            return Err(anyhow!("Actor with name '{name}' already exists"));
         }
         let id = ActorId(self.next_id);
         self.next_id += 1;

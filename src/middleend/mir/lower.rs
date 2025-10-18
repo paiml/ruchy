@@ -135,7 +135,7 @@ impl LoweringContext {
                 if let Some(local) = self.builder.get_local(name) {
                     Ok(Operand::Copy(Place::Local(local)))
                 } else {
-                    Err(anyhow!("Unbound variable: {}", name))
+                    Err(anyhow!("Unbound variable: {name}"))
                 }
             }
             ExprKind::Binary { op, left, right } => {

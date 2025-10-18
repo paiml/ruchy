@@ -70,7 +70,7 @@ fn parse_variant_pattern_with_name(state: &mut ParserState, variant_name: String
     create_pattern_for_variant(variant_name, patterns)
 }
 
-/// Create pattern for variant (special cases for Some/Ok/Err, otherwise TupleVariant)
+/// Create pattern for variant (special cases for Some/Ok/Err, otherwise `TupleVariant`)
 fn create_pattern_for_variant(variant_name: String, patterns: Vec<Pattern>) -> Result<Pattern> {
     // Special case for common Option/Result variants (single element)
     if patterns.len() == 1 {
@@ -582,7 +582,7 @@ fn handle_pattern_separator(state: &mut ParserState, end_token: Token) -> Result
                 Token::RightParen => "',' or ')'",
                 _ => "',' or closing delimiter",
             };
-            bail!("Expected {} in pattern", expected);
+            bail!("Expected {expected} in pattern");
         }
         Ok(false)
     } else {
@@ -607,22 +607,21 @@ fn parse_if_let_expression(state: &mut ParserState, start_span: Span) -> Result<
     state.tokens.advance(); // consume 'let'
                             // Parse the pattern
     let pattern = parse_match_pattern(state)
-        .map_err(|e| anyhow::anyhow!("Expected pattern after 'if let': {}", e))?;
+        .map_err(|e| anyhow::anyhow!("Expected pattern after 'if let': {e}"))?;
     // Expect '='
     state
         .tokens
         .expect(&Token::Equal)
-        .map_err(|e| anyhow::anyhow!("Expected '=' after pattern in if-let: {}", e))?;
+        .map_err(|e| anyhow::anyhow!("Expected '=' after pattern in if-let: {e}"))?;
     // Parse the expression to match against
     let expr = Box::new(
         parse_expr_recursive(state)
-            .map_err(|e| anyhow::anyhow!("Expected expression after '=' in if-let: {}", e))?,
+            .map_err(|e| anyhow::anyhow!("Expected expression after '=' in if-let: {e}"))?,
     );
     // Parse then branch
     let then_branch = Box::new(parse_expr_recursive(state).map_err(|e| {
         anyhow::anyhow!(
-            "Expected body after if-let condition, typically {{ ... }}: {}",
-            e
+            "Expected body after if-let condition, typically {{ ... }}: {e}"
         )
     })?);
     // Parse optional else branch
@@ -643,13 +642,12 @@ fn parse_regular_if_expression(state: &mut ParserState, start_span: Span) -> Res
     // Parse condition with better error context
     let condition = Box::new(
         parse_expr_recursive(state)
-            .map_err(|e| anyhow::anyhow!("Expected condition after 'if': {}", e))?,
+            .map_err(|e| anyhow::anyhow!("Expected condition after 'if': {e}"))?,
     );
     // Parse then branch (expect block) with better error context
     let then_branch = Box::new(parse_expr_recursive(state).map_err(|e| {
         anyhow::anyhow!(
-            "Expected body after if condition, typically {{ ... }}: {}",
-            e
+            "Expected body after if condition, typically {{ ... }}: {e}"
         )
     })?);
     // Parse optional else branch
@@ -674,7 +672,7 @@ fn parse_else_branch(state: &mut ParserState) -> Result<Option<Box<Expr>>> {
             Ok(Some(Box::new(parse_if_expression(state)?)))
         } else {
             Ok(Some(Box::new(parse_expr_recursive(state).map_err(
-                |e| anyhow::anyhow!("Expected body after 'else', typically {{ ... }}: {}", e),
+                |e| anyhow::anyhow!("Expected body after 'else', typically {{ ... }}: {e}"),
             )?)))
         }
     } else {
@@ -688,7 +686,7 @@ pub(in crate::frontend::parser) fn parse_match_expression(state: &mut ParserStat
     // Parse the expression to match on
     let expr = Box::new(
         parse_expr_recursive(state)
-            .map_err(|e| anyhow::anyhow!("Expected expression after 'match': {}", e))?,
+            .map_err(|e| anyhow::anyhow!("Expected expression after 'match': {e}"))?,
     );
     // Expect opening brace for match arms
     state
@@ -787,7 +785,7 @@ pub(in crate::frontend::parser) fn parse_single_pattern(state: &mut ParserState)
         Token::Identifier(_) => parse_identifier_or_constructor_pattern(state),
         Token::LeftParen => parse_match_tuple_pattern(state),
         Token::LeftBracket => parse_match_list_pattern(state),
-        _ => bail!("Unexpected token in pattern: {:?}", token),
+        _ => bail!("Unexpected token in pattern: {token:?}"),
     }
 }
 /// Parse wildcard pattern: _
@@ -811,7 +809,7 @@ fn parse_literal_pattern(state: &mut ParserState) -> Result<Pattern> {
         Token::Char(c) => parse_char_literal_pattern(state, c)?,
         Token::Byte(b) => parse_simple_literal_pattern(state, Literal::Byte(b))?,
         Token::Bool(b) => parse_simple_literal_pattern(state, Literal::Bool(b))?,
-        _ => bail!("Expected literal pattern, got: {:?}", token),
+        _ => bail!("Expected literal pattern, got: {token:?}"),
     };
     Ok(pattern)
 }

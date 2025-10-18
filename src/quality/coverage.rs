@@ -243,7 +243,7 @@ impl CoverageCollector {
 
         if !output.status.success() {
             let stderr = String::from_utf8_lossy(&output.stderr);
-            return Err(anyhow::anyhow!("cargo llvm-cov failed: {}", stderr));
+            return Err(anyhow::anyhow!("cargo llvm-cov failed: {stderr}"));
         }
 
         let stdout = String::from_utf8_lossy(&output.stdout);

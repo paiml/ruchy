@@ -211,8 +211,7 @@ impl Deployer {
             DeploymentTarget::Wasmtime => self.deploy_wasmtime(component),
             DeploymentTarget::WasmEdge => self.deploy_wasmedge(component),
             DeploymentTarget::Custom(name) => Err(anyhow::anyhow!(
-                "Custom deployment target '{}' not implemented",
-                name
+                "Custom deployment target '{name}' not implemented"
             )),
         }
     }

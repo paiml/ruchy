@@ -2,7 +2,7 @@
 // PMAT Complexity: <10 per function
 use crate::utils::format_file_error;
 use clap::{Parser, Subcommand};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 #[derive(Parser, Debug)]
 #[command(name = "ruchy")]
 #[command(author = "Noah Gift")]
@@ -205,9 +205,9 @@ fn check_format(path: &PathBuf, formatter: &mut crate::quality::formatter::Forma
 
     // Set source for ignore directives
     formatter.set_source(&source);
-    let formatted = formatter.format(&ast).map_err(|e| format!("Format error: {e}"))?;
+    let formatted_code = formatter.format(&ast).map_err(|e| format!("Format error: {e}"))?;
 
-    if formatted.trim() == source.trim() {
+    if formatted_code.trim() == source.trim() {
         println!("✓ File is properly formatted");
         Ok(())
     } else {
@@ -224,9 +224,9 @@ fn apply_format(path: &PathBuf, formatter: &mut crate::quality::formatter::Forma
 
     // Set source for ignore directives
     formatter.set_source(&source);
-    let formatted = formatter.format(&ast).map_err(|e| format!("Format error: {e}"))?;
+    let formatted_code = formatter.format(&ast).map_err(|e| format!("Format error: {e}"))?;
 
-    std::fs::write(path, formatted).map_err(|e| format!("Failed to write file: {e}"))?;
+    std::fs::write(path, formatted_code).map_err(|e| format!("Failed to write file: {e}"))?;
     println!("✓ File formatted successfully");
     Ok(())
 }
@@ -238,22 +238,22 @@ fn parse_source(source: &str) -> Result<crate::frontend::ast::Expr, String> {
 }
 
 /// Find and load formatter configuration by searching up the directory tree
-fn find_and_load_config(start_path: &PathBuf) -> Result<crate::quality::FormatterConfig, String> {
+fn find_and_load_config(start_path: &Path) -> Result<crate::quality::FormatterConfig, String> {
     let start_dir = get_start_directory(start_path);
     find_config_in_ancestors(&start_dir)
 }
 
 /// Get the directory to start config search from
-fn get_start_directory(path: &PathBuf) -> PathBuf {
+fn get_start_directory(path: &Path) -> PathBuf {
     if path.is_file() {
         path.parent().unwrap_or(path).to_path_buf()
     } else {
-        path.clone()
+        path.to_path_buf()
     }
 }
 
 /// Search for config file in current and ancestor directories
-fn find_config_in_ancestors(start_dir: &PathBuf) -> Result<crate::quality::FormatterConfig, String> {
+fn find_config_in_ancestors(start_dir: &Path) -> Result<crate::quality::FormatterConfig, String> {
     // Try current directory
     let config_path = start_dir.join(".ruchy-fmt.toml");
     if config_path.exists() {

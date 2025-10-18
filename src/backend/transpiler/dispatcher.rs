@@ -180,7 +180,7 @@ impl Transpiler {
             | "write" | "writeln" | "eprintln" | "eprint" => {
                 self.transpile_passthrough_macro(name, args)
             }
-            _ => bail!("Unknown macro: {}", name),
+            _ => bail!("Unknown macro: {name}"),
         }
     }
     /// Transpile structure-related expressions

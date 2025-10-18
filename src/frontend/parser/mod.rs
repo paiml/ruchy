@@ -58,33 +58,20 @@ mod utils;
 use crate::frontend::arena::{Arena, StringInterner};
 use crate::frontend::ast::{
     // Additional types for re-export to submodules
-    ActorHandler,
     Attribute,
     BinaryOp,
-    ClassConstant,
-    ClassMethod,
-    ClassProperty,
     Comment,
     CommentKind,
-    Constructor,
-    EnumVariant,
     Expr,
     ExprKind,
     Literal,
-    MatchArm,
     Param,
     Pattern,
     PipelineStage,
-    PropertySetter,
-    SelfType,
     Span,
     StringPart,
-    StructField,
-    TraitMethod,
     Type,
     TypeKind,
-    UnaryOp,
-    Visibility,
 };
 use crate::frontend::lexer::{Token, TokenStream};
 use crate::parser::error_recovery::ErrorNode;

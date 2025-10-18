@@ -45,7 +45,7 @@
 //!
 //! Extracted from expressions.rs to improve maintainability (TDG Structural improvement).
 
-use crate::frontend::ast::{Expr, ExprKind, Pattern, Span};
+use crate::frontend::ast::{Expr, ExprKind, Pattern};
 use crate::frontend::lexer::Token;
 use crate::frontend::parser::{bail, parse_expr_recursive, ParserState, Result};
 
@@ -84,21 +84,21 @@ fn parse_labeled_while_loop(state: &mut ParserState, label: Option<String>) -> R
         state.tokens.advance(); // consume 'let'
                                 // Parse the pattern
         let pattern = parse_match_pattern(state)
-            .map_err(|e| anyhow::anyhow!("Expected pattern after 'while let': {}", e))?;
+            .map_err(|e| anyhow::anyhow!("Expected pattern after 'while let': {e}"))?;
         // Expect '='
         state
             .tokens
             .expect(&Token::Equal)
-            .map_err(|e| anyhow::anyhow!("Expected '=' after pattern in while-let: {}", e))?;
+            .map_err(|e| anyhow::anyhow!("Expected '=' after pattern in while-let: {e}"))?;
         // Parse the expression to match against
         let expr =
             Box::new(parse_expr_recursive(state).map_err(|e| {
-                anyhow::anyhow!("Expected expression after '=' in while-let: {}", e)
+                anyhow::anyhow!("Expected expression after '=' in while-let: {e}")
             })?);
         // Parse body (expect block)
         let body = Box::new(
             parse_expr_recursive(state)
-                .map_err(|e| anyhow::anyhow!("Expected body after while-let condition: {}", e))?,
+                .map_err(|e| anyhow::anyhow!("Expected body after while-let condition: {e}"))?,
         );
         Ok(Expr::new(
             ExprKind::WhileLet {
@@ -114,12 +114,12 @@ fn parse_labeled_while_loop(state: &mut ParserState, label: Option<String>) -> R
         // Parse condition
         let condition = Box::new(
             parse_expr_recursive(state)
-                .map_err(|e| anyhow::anyhow!("Expected condition after 'while': {}", e))?,
+                .map_err(|e| anyhow::anyhow!("Expected condition after 'while': {e}"))?,
         );
         // Parse body (expect block)
         let body = Box::new(
             parse_expr_recursive(state)
-                .map_err(|e| anyhow::anyhow!("Expected body after while condition: {}", e))?,
+                .map_err(|e| anyhow::anyhow!("Expected body after while condition: {e}"))?,
         );
         Ok(Expr::new(
             ExprKind::While {
@@ -154,12 +154,12 @@ fn parse_labeled_for_loop(state: &mut ParserState, label: Option<String>) -> Res
     // Parse iterator expression
     let iterator = Box::new(
         parse_expr_recursive(state)
-            .map_err(|e| anyhow::anyhow!("Expected iterator after 'in': {}", e))?,
+            .map_err(|e| anyhow::anyhow!("Expected iterator after 'in': {e}"))?,
     );
     // Parse body (expect block)
     let body = Box::new(
         parse_expr_recursive(state)
-            .map_err(|e| anyhow::anyhow!("Expected body after for iterator: {}", e))?,
+            .map_err(|e| anyhow::anyhow!("Expected body after for iterator: {e}"))?,
     );
     // Get the var name from the pattern for backward compatibility
     let var = pattern.primary_name();

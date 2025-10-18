@@ -268,7 +268,7 @@ fn add_environment_functions(global_env: &mut HashMap<String, Value>) {
 }
 
 /// Register file system functions in global environment
-/// Phase 2: STDLIB_ACCESS_PLAN - File System Module (12 functions)
+/// Phase 2: `STDLIB_ACCESS_PLAN` - File System Module (12 functions)
 fn add_fs_functions(global_env: &mut HashMap<String, Value>) {
     global_env.insert(
         "fs_read".to_string(),
@@ -321,7 +321,7 @@ fn add_fs_functions(global_env: &mut HashMap<String, Value>) {
 }
 
 /// Register path functions in global environment
-/// Phase 3: STDLIB_ACCESS_PLAN - Path Module (13 functions)
+/// Phase 3: `STDLIB_ACCESS_PLAN` - Path Module (13 functions)
 fn add_path_functions(global_env: &mut HashMap<String, Value>) {
     global_env.insert("path_join".to_string(), Value::from_string("__builtin_path_join__".to_string()));
     global_env.insert("path_join_many".to_string(), Value::from_string("__builtin_path_join_many__".to_string()));
@@ -339,7 +339,7 @@ fn add_path_functions(global_env: &mut HashMap<String, Value>) {
 }
 
 /// Register JSON functions in global environment
-/// Phase 4: STDLIB_ACCESS_PLAN - JSON Module (10 functions)
+/// Phase 4: `STDLIB_ACCESS_PLAN` - JSON Module (10 functions)
 fn add_json_functions(global_env: &mut HashMap<String, Value>) {
     global_env.insert("json_parse".to_string(), Value::from_string("__builtin_json_parse__".to_string()));
     global_env.insert("json_stringify".to_string(), Value::from_string("__builtin_json_stringify__".to_string()));

@@ -61,7 +61,7 @@ pub(in crate::frontend::parser) fn parse_constructor_token(
         Token::Err => "Err",
         Token::Result => "Result",
         Token::Option => "Option",
-        _ => bail!("Expected constructor token, got: {:?}", token),
+        _ => bail!("Expected constructor token, got: {token:?}"),
     };
     state.tokens.advance();
 

@@ -722,7 +722,7 @@ impl<'a> RecoveryParser<'a> {
             Token::Pipe => BinaryOp::BitwiseOr,
             Token::Caret => BinaryOp::BitwiseXor,
             Token::LeftShift => BinaryOp::LeftShift,
-            _ => anyhow::bail!("Not a binary operator: {:?}", token),
+            _ => anyhow::bail!("Not a binary operator: {token:?}"),
         })
     }
 }
