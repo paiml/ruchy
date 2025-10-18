@@ -5,9 +5,9 @@
 **Goal**: Improve TDG score from 71.2/100 (B-) to ≥85/100 (A-) through systematic modularization
 
 **Current Status** (as of 2025-10-18):
-- File size: 5,598 lines, 247 functions
+- File size: 5,497 lines, 247 functions
 - TDG Score: 71.2/100 (B-)
-- Progress: 15.5% complete (1,025 lines extracted across 9 modules)
+- Progress: 16.8% complete (1,126 lines extracted across 10 modules)
 
 **Target**: Extract ~5,000 lines (≥75%) to achieve TDG ≥85
 
@@ -86,7 +86,16 @@
 - **Features**: Token→BinaryOp mapping, operator precedence, mathematical invariants
 - **Re-exports**: Public API maintained for external callers
 
-**Total Extracted**: 2,488 lines (1,025 from expressions.rs after accounting for overhead + dead code removal)
+### Phase 11: string_operations Module ⭐
+- **Lines**: 317 (including tests)
+- **Functions**: 6 (parse_fstring_into_parts + 5 helpers)
+- **Tests**: 9 unit tests + 7 property tests
+- **Quality**: **TDG 91.4/100 (A grade)** - EXCEEDS TARGET
+- **Methodology**: EXTREME TDD (RED→GREEN→REFACTOR)
+- **Features**: F-string interpolation, escaped braces, nested expressions, format specifiers
+- **Integration**: literals.rs imports directly from string_operations module
+
+**Total Extracted**: 2,703 lines (1,126 from expressions.rs after accounting for overhead + dead code removal)
 
 ---
 
@@ -291,6 +300,7 @@ src/frontend/parser/expressions_helpers/
 ├── dataframes.rs           ✅ DONE (178 lines, TDG: 93.0/100 A)
 ├── identifiers.rs          ✅ DONE (401 lines, TDG: 82.9/100 B+)
 ├── literals.rs             ✅ DONE (206 lines, TDG: 92.9/100 A)
+├── string_operations.rs    ✅ DONE (317 lines, TDG: 91.4/100 A)
 ├── tuples.rs               ✅ DONE (225 lines, TDG: 93.1/100 A)
 ├── unary_operators.rs      ✅ DONE (286 lines, TDG: 91.3/100 A)
 ├── visibility_modifiers.rs ✅ DONE (558 lines, TDG: 91.1/100 A)
@@ -299,7 +309,6 @@ src/frontend/parser/expressions_helpers/
 ├── functions.rs            ⏳ PLANNED (400 lines)
 ├── loops.rs                ⏳ PLANNED (300 lines)
 ├── types.rs                ⏳ PLANNED (400 lines)
-├── strings.rs              ⏳ PLANNED (300 lines)
 ├── async_await.rs          ⏳ PLANNED (200 lines)
 ├── modules.rs              ⏳ PLANNED (300 lines)
 └── mod.rs                  ✅ UPDATED
