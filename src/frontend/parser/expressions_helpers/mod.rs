@@ -9,4 +9,5 @@ pub mod arrays;
 pub mod control_flow;
 pub mod identifiers;
 pub mod literals;
+pub mod tuples;
 pub mod visibility_modifiers;
