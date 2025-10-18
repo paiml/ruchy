@@ -15,6 +15,7 @@ pub mod enums;
 pub mod error_handling;
 pub mod identifiers;
 pub mod impls;
+pub mod increment_decrement;
 pub mod lambdas;
 pub mod literals;
 pub mod loops;
