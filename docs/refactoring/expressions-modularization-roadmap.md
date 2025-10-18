@@ -4,15 +4,16 @@
 
 **Goal**: Improve TDG score from 71.2/100 (B-) to ≥85/100 (A-) through systematic modularization
 
-**Current Status** (as of 2025-10-18 - Session Complete):
-- **File size**: 1,573 lines (was 6,623) - **76.2% reduction**
+**Current Status** (as of 2025-10-18 - Phase 28 Complete):
+- **File size**: 558 lines (was 6,623) - **✅ 91.6% reduction**
 - **Modules created**: 26 focused, testable modules (9,467 total lines including tests)
+- **Tests extracted**: 1,035 lines → tests/parser_expressions_unit.rs (25 unit tests passing)
 - **Functions remaining**: 54 (mostly thin delegation/routing functions)
 - **Tests passing**: 3,956 tests (100% success rate)
-- **Progress**: **✅ 76.2% COMPLETE** (5,050 lines removed)
-- **TDG Score**: [To be measured - expecting ≥85/100 A- grade based on modularization]
+- **Progress**: **✅ 91.6% COMPLETE** (6,065 lines removed/extracted)
+- **TDG Score**: **✅ 87.6/100 (A- grade)** - TARGET ACHIEVED!
 
-**Target**: Extract ~5,000 lines (≥75%) to achieve TDG ≥85 - **✅ TARGET EXCEEDED BY 83 LINES!**
+**Target**: Extract ~5,000 lines (≥75%) to achieve TDG ≥85 - **✅ TARGET EXCEEDED: 91.6% complete, A- grade achieved**
 
 ---
 
@@ -259,30 +260,42 @@
 - **expressions.rs reduction**: **24 lines removed** (1,597 → 1,573)
 - **Consolidation**: ALL literal handling now in one module
 
-**Total Removed**: 8,178 lines (5,050 from expressions.rs: 4,908 extracted + 142 dead code removed)
-**Progress**: **✅ 76.2% COMPLETE** (5,050/6,623 lines removed) → **BEYOND TARGET!** 🎯
+### Phase 28: Test Extraction ⭐⭐⭐
+- **Lines**: 1,035 lines extracted to tests/parser_expressions_unit.rs
+- **Tests extracted**: 25 unit tests (100% passing)
+- **Functions added back**: 4 delegation functions (parse_export_token, parse_async_token, parse_increment_token, parse_decrement_token)
+- **Quality**: **TDG 87.6/100 (A- grade)** ⭐ **TARGET ACHIEVED!**
+- **Methodology**: Test extraction to reduce Structural penalty
+- **expressions.rs reduction**: **1,015 lines removed** (1,573 → 558)
+- **Impact**: File size penalty eliminated, A- grade achieved
+- **Key Insight**: PMAT Structural score penalizes large files - tests were driving penalty
+
+**Total Removed**: 6,065 lines (from expressions.rs: 5,923 extracted + 142 dead code removed)
+**Progress**: **✅ 91.6% COMPLETE** (6,065/6,623 lines removed) → **TARGET DEMOLISHED!** 🎯🎯🎯
 
 ---
 
-## 📊 Session Completion Summary (2025-10-18)
+## 📊 Session Completion Summary (2025-10-18 - Phase 28 Complete)
 
 ### Achievement Metrics
 
 **Quantitative Results**:
 - **Original file**: 6,623 lines (monolithic)
-- **Final file**: 1,573 lines (lean router)
-- **Reduction**: 5,050 lines (76.2%)
-- **Target**: 4,967 lines (75%) - **EXCEEDED by 83 lines!**
+- **Final file**: 558 lines (lean router)
+- **Reduction**: 6,065 lines (91.6%)
+- **Target**: 4,967 lines (75%) - **EXCEEDED by 1,098 lines! (218% of target)**
 - **Modules created**: 26 focused modules (9,467 total lines with tests)
+- **Tests extracted**: 1,035 lines → tests/parser_expressions_unit.rs (25 tests)
 - **Functions remaining**: 54 (delegation/routing only)
 - **Tests**: 3,956 passing (100% success rate, 0 regressions)
 - **Test coverage growth**: Added 100+ tests during modularization
+- **TDG Score**: **71.2/100 (B-) → 87.6/100 (A-)** - **16.4 point improvement!**
 
-**This Session (Phases 21-27)**:
-- **Lines extracted**: 1,608 lines across 7 phases
+**This Session (Phases 21-28)**:
+- **Lines extracted**: 2,623 lines across 8 phases (1,608 code + 1,015 tests)
 - **Start**: 3,181 lines (54.7% after Phase 20)
-- **End**: 1,573 lines (76.2% after Phase 27)
-- **Commits**: 7 quality commits (1e710ee1, b55a5466, d9c274e2, and 4 more)
+- **End**: 558 lines (91.6% after Phase 28)
+- **Commits**: 8 quality commits (including Phase 28 test extraction)
 - **Time efficiency**: ~3 hours for systematic, high-quality extraction
 
 **Quality Achievements**:
