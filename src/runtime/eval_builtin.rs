@@ -2344,4 +2344,345 @@ mod tests {
         let result = eval_reverse(&args).unwrap();
         assert_eq!(result, Value::from_string("olleh".to_string()));
     }
+
+    // ============================================================================
+    // EXTREME TDD: Comprehensive Builtin Function Testing (QUALITY-008)
+    // Coverage Target: 16.83% → 70%+
+    // ============================================================================
+
+    // --------------------------------------------------------------------------
+    // Math Functions (floor, ceil, round, sin, cos, tan)
+    // --------------------------------------------------------------------------
+
+    #[test]
+    fn test_eval_floor() {
+        let args = vec![Value::Float(3.7)];
+        let result = eval_floor(&args).unwrap();
+        assert_eq!(result, Value::Integer(3));
+
+        let args = vec![Value::Float(-2.3)];
+        let result = eval_floor(&args).unwrap();
+        assert_eq!(result, Value::Integer(-3));
+
+        let args = vec![Value::Integer(5)];
+        let result = eval_floor(&args).unwrap();
+        assert_eq!(result, Value::Integer(5));
+    }
+
+    #[test]
+    fn test_eval_ceil() {
+        let args = vec![Value::Float(3.2)];
+        let result = eval_ceil(&args).unwrap();
+        assert_eq!(result, Value::Integer(4));
+
+        let args = vec![Value::Float(-2.7)];
+        let result = eval_ceil(&args).unwrap();
+        assert_eq!(result, Value::Integer(-2));
+
+        let args = vec![Value::Integer(5)];
+        let result = eval_ceil(&args).unwrap();
+        assert_eq!(result, Value::Integer(5));
+    }
+
+    #[test]
+    fn test_eval_round() {
+        let args = vec![Value::Float(3.5)];
+        let result = eval_round(&args).unwrap();
+        assert_eq!(result, Value::Integer(4));
+
+        let args = vec![Value::Float(3.4)];
+        let result = eval_round(&args).unwrap();
+        assert_eq!(result, Value::Integer(3));
+
+        // Note: Rust's round() uses banker's rounding (round half to even)
+        let args = vec![Value::Float(-2.5)];
+        let result = eval_round(&args).unwrap();
+        assert_eq!(result, Value::Integer(-3));
+
+        let args = vec![Value::Integer(7)];
+        let result = eval_round(&args).unwrap();
+        assert_eq!(result, Value::Integer(7));
+    }
+
+    #[test]
+    fn test_eval_sin() {
+        use std::f64::consts::PI;
+
+        let args = vec![Value::Float(0.0)];
+        let result = eval_sin(&args).unwrap();
+        if let Value::Float(v) = result {
+            assert!((v - 0.0).abs() < 1e-10, "sin(0) should be ~0");
+        } else {
+            panic!("Expected float result");
+        }
+
+        let args = vec![Value::Float(PI / 2.0)];
+        let result = eval_sin(&args).unwrap();
+        if let Value::Float(v) = result {
+            assert!((v - 1.0).abs() < 1e-10, "sin(π/2) should be ~1");
+        } else {
+            panic!("Expected float result");
+        }
+
+        let args = vec![Value::Integer(0)];
+        let result = eval_sin(&args).unwrap();
+        if let Value::Float(v) = result {
+            assert!((v - 0.0).abs() < 1e-10);
+        } else {
+            panic!("Expected float result");
+        }
+    }
+
+    #[test]
+    fn test_eval_cos() {
+        use std::f64::consts::PI;
+
+        let args = vec![Value::Float(0.0)];
+        let result = eval_cos(&args).unwrap();
+        if let Value::Float(v) = result {
+            assert!((v - 1.0).abs() < 1e-10, "cos(0) should be ~1");
+        } else {
+            panic!("Expected float result");
+        }
+
+        let args = vec![Value::Float(PI)];
+        let result = eval_cos(&args).unwrap();
+        if let Value::Float(v) = result {
+            assert!((v + 1.0).abs() < 1e-10, "cos(π) should be ~-1");
+        } else {
+            panic!("Expected float result");
+        }
+
+        let args = vec![Value::Integer(0)];
+        let result = eval_cos(&args).unwrap();
+        if let Value::Float(v) = result {
+            assert!((v - 1.0).abs() < 1e-10);
+        } else {
+            panic!("Expected float result");
+        }
+    }
+
+    #[test]
+    fn test_eval_tan() {
+        use std::f64::consts::PI;
+
+        let args = vec![Value::Float(0.0)];
+        let result = eval_tan(&args).unwrap();
+        if let Value::Float(v) = result {
+            assert!((v - 0.0).abs() < 1e-10, "tan(0) should be ~0");
+        } else {
+            panic!("Expected float result");
+        }
+
+        let args = vec![Value::Float(PI / 4.0)];
+        let result = eval_tan(&args).unwrap();
+        if let Value::Float(v) = result {
+            assert!((v - 1.0).abs() < 1e-10, "tan(π/4) should be ~1");
+        } else {
+            panic!("Expected float result");
+        }
+
+        let args = vec![Value::Integer(0)];
+        let result = eval_tan(&args).unwrap();
+        if let Value::Float(v) = result {
+            assert!((v - 0.0).abs() < 1e-10);
+        } else {
+            panic!("Expected float result");
+        }
+    }
+
+    // --------------------------------------------------------------------------
+    // Assertion Functions (assert, assert_eq)
+    // --------------------------------------------------------------------------
+
+    #[test]
+    fn test_eval_assert_true() {
+        let args = vec![Value::Bool(true)];
+        let result = eval_assert(&args);
+        assert!(result.is_ok(), "assert(true) should succeed");
+        assert_eq!(result.unwrap(), Value::Nil);
+    }
+
+    #[test]
+    fn test_eval_assert_false() {
+        let args = vec![Value::Bool(false)];
+        let result = eval_assert(&args);
+        assert!(result.is_err(), "assert(false) should fail");
+    }
+
+    #[test]
+    fn test_eval_assert_with_message() {
+        let args = vec![Value::Bool(false), Value::from_string("Custom error".to_string())];
+        let result = eval_assert(&args);
+        assert!(result.is_err(), "assert(false, msg) should fail");
+        if let Err(InterpreterError::AssertionFailed(msg)) = result {
+            assert!(msg.contains("Custom error"), "Should include custom message");
+        } else {
+            panic!("Expected AssertionFailed error");
+        }
+    }
+
+    #[test]
+    fn test_eval_assert_non_boolean() {
+        let args = vec![Value::Integer(1)];
+        let result = eval_assert(&args);
+        assert!(result.is_err(), "assert(non-bool) should fail");
+    }
+
+    #[test]
+    fn test_eval_assert_eq_equal() {
+        let args = vec![Value::Integer(42), Value::Integer(42)];
+        let result = eval_assert_eq(&args);
+        assert!(result.is_ok(), "assert_eq(42, 42) should succeed");
+        assert_eq!(result.unwrap(), Value::Nil);
+    }
+
+    #[test]
+    fn test_eval_assert_eq_not_equal() {
+        let args = vec![Value::Integer(42), Value::Integer(43)];
+        let result = eval_assert_eq(&args);
+        assert!(result.is_err(), "assert_eq(42, 43) should fail");
+    }
+
+    #[test]
+    fn test_eval_assert_eq_strings() {
+        let args = vec![
+            Value::from_string("hello".to_string()),
+            Value::from_string("hello".to_string()),
+        ];
+        let result = eval_assert_eq(&args);
+        assert!(result.is_ok(), "assert_eq strings should succeed");
+
+        let args = vec![
+            Value::from_string("hello".to_string()),
+            Value::from_string("world".to_string()),
+        ];
+        let result = eval_assert_eq(&args);
+        assert!(result.is_err(), "assert_eq different strings should fail");
+    }
+
+    // --------------------------------------------------------------------------
+    // Core I/O Functions (println, print, dbg)
+    // Note: These functions have side effects (stdout), so we test they don't panic
+    // --------------------------------------------------------------------------
+
+    #[test]
+    fn test_eval_println_basic() {
+        let args = vec![Value::from_string("Hello, World!".to_string())];
+        let result = eval_println(&args);
+        assert!(result.is_ok(), "println should not panic");
+        assert_eq!(result.unwrap(), Value::Nil);
+    }
+
+    #[test]
+    fn test_eval_println_multiple_args() {
+        let args = vec![
+            Value::from_string("Hello".to_string()),
+            Value::from_string("World".to_string()),
+        ];
+        let result = eval_println(&args);
+        assert!(result.is_ok(), "println with multiple args should not panic");
+    }
+
+    #[test]
+    fn test_eval_println_no_args() {
+        let args = vec![];
+        let result = eval_println(&args);
+        assert!(result.is_ok(), "println with no args should print newline");
+    }
+
+    #[test]
+    fn test_eval_print_basic() {
+        let args = vec![Value::from_string("Test".to_string())];
+        let result = eval_print(&args);
+        assert!(result.is_ok(), "print should not panic");
+        assert_eq!(result.unwrap(), Value::Nil);
+    }
+
+    #[test]
+    fn test_eval_print_integers() {
+        let args = vec![Value::Integer(42)];
+        let result = eval_print(&args);
+        assert!(result.is_ok(), "print(42) should not panic");
+    }
+
+    #[test]
+    fn test_eval_dbg_basic() {
+        let args = vec![Value::Integer(123)];
+        let result = eval_dbg(&args);
+        assert!(result.is_ok(), "dbg should not panic");
+        // dbg returns the value, not Nil
+        assert_eq!(result.unwrap(), Value::Integer(123));
+    }
+
+    #[test]
+    fn test_eval_dbg_string() {
+        let args = vec![Value::from_string("debug".to_string())];
+        let result = eval_dbg(&args);
+        assert!(result.is_ok(), "dbg should not panic");
+        assert_eq!(result.unwrap(), Value::from_string("debug".to_string()));
+    }
+
+    // --------------------------------------------------------------------------
+    // Property Tests (Mathematical Invariants)
+    // --------------------------------------------------------------------------
+
+    #[test]
+    fn prop_floor_ceil_relationship() {
+        // Property: floor(x) <= x <= ceil(x)
+        let test_values = vec![3.1, 3.9, -2.3, -2.9, 0.0, 5.0];
+
+        for val in test_values {
+            let floor_result = eval_floor(&vec![Value::Float(val)]).unwrap();
+            let ceil_result = eval_ceil(&vec![Value::Float(val)]).unwrap();
+
+            if let (Value::Integer(floor), Value::Integer(ceil)) = (floor_result, ceil_result) {
+                let floor_f = floor as f64;
+                let ceil_f = ceil as f64;
+                assert!(floor_f <= val, "floor({}) should be <= {}", val, val);
+                assert!(ceil_f >= val, "ceil({}) should be >= {}", val, val);
+                assert!(floor_f <= ceil_f, "floor({}) <= ceil({})", val, val);
+            }
+        }
+    }
+
+    #[test]
+    fn prop_trig_pythagorean_identity() {
+        // Property: sin²(x) + cos²(x) = 1
+        use std::f64::consts::PI;
+        let test_angles = vec![0.0, PI / 6.0, PI / 4.0, PI / 3.0, PI / 2.0];
+
+        for angle in test_angles {
+            let sin_val = eval_sin(&vec![Value::Float(angle)]).unwrap();
+            let cos_val = eval_cos(&vec![Value::Float(angle)]).unwrap();
+
+            if let (Value::Float(s), Value::Float(c)) = (sin_val, cos_val) {
+                let identity = s * s + c * c;
+                assert!((identity - 1.0).abs() < 1e-10,
+                        "sin²({}) + cos²({}) should = 1, got {}", angle, angle, identity);
+            }
+        }
+    }
+
+    #[test]
+    fn prop_abs_non_negative() {
+        // Property: abs(x) >= 0 for all x
+        let test_values = vec![
+            Value::Integer(-100),
+            Value::Integer(0),
+            Value::Integer(100),
+            Value::Float(-3.14),
+            Value::Float(0.0),
+            Value::Float(2.71),
+        ];
+
+        for val in test_values {
+            let result = eval_abs(&vec![val]).unwrap();
+            match result {
+                Value::Integer(i) => assert!(i >= 0, "abs should be non-negative"),
+                Value::Float(f) => assert!(f >= 0.0, "abs should be non-negative"),
+                _ => panic!("abs should return number"),
+            }
+        }
+    }
 }
