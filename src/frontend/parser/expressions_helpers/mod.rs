@@ -6,4 +6,5 @@
 //! Modularization improves TDG Structural score from 0/25 to target ≥21/25.
 
 pub mod control_flow;
+pub mod literals;
 pub mod visibility_modifiers;
