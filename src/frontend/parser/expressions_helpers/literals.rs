@@ -16,6 +16,9 @@ use crate::frontend::error_recovery::ParseError;
 use crate::frontend::lexer::Token;
 use crate::frontend::parser::{bail, ParserState, Result};
 
+// Import f-string parsing from string_operations module
+use super::string_operations::parse_fstring_into_parts;
+
 /// Parse literal tokens into expressions
 ///
 /// Handles all primitive literal types with proper type suffix parsing for integers.
@@ -73,7 +76,7 @@ pub(in crate::frontend::parser) fn parse_literal_token(
         Token::FString(template) => {
             state.tokens.advance();
             // Parse f-string template into parts with proper interpolation
-            let parts = super::super::parse_fstring_into_parts(template)?;
+            let parts = parse_fstring_into_parts(template)?;
             Ok(Expr::new(ExprKind::StringInterpolation { parts }, span))
         }
         Token::Char(value) => {

@@ -11,6 +11,7 @@ pub mod control_flow;
 pub mod dataframes;
 pub mod identifiers;
 pub mod literals;
+pub mod string_operations;
 pub mod tuples;
 pub mod unary_operators;
 pub mod visibility_modifiers;
