@@ -1103,10 +1103,11 @@ fn parse_continue_token(state: &mut ParserState, span: Span) -> Result<Expr> {
 fn parse_return_token(state: &mut ParserState, span: Span) -> Result<Expr> {
     state.tokens.advance();
     // Check if there's an expression to return
-    let value = if matches!(state.tokens.peek(), Some((Token::Semicolon, _)))
+    // Bare return is allowed when followed by: ;, }, or EOF
+    let value = if matches!(state.tokens.peek(), Some((Token::Semicolon | Token::RightBrace, _)))
         || state.tokens.peek().is_none()
     {
-        // No expression, just return
+        // No expression, bare return (equivalent to return ())
         None
     } else {
         // Parse the return expression
@@ -1468,6 +1469,12 @@ fn parse_variant_pattern_with_name(state: &mut ParserState, variant_name: String
 
     state.tokens.expect(&Token::RightParen)?;
 
+    // Try to create special pattern for common variants
+    create_pattern_for_variant(variant_name, patterns)
+}
+
+/// Create pattern for variant (special cases for Some/Ok/Err, otherwise TupleVariant)
+fn create_pattern_for_variant(variant_name: String, patterns: Vec<Pattern>) -> Result<Pattern> {
     // Special case for common Option/Result variants (single element)
     if patterns.len() == 1 {
         match variant_name.as_str() {
@@ -3950,16 +3957,7 @@ fn parse_class_method(state: &mut ParserState) -> Result<ClassMethod> {
     let params = super::utils::parse_params(state)?;
 
     // Determine self type from first parameter
-    let self_type = if !params.is_empty() && params[0].name() == "self" {
-        use crate::frontend::ast::TypeKind;
-        match &params[0].ty.kind {
-            TypeKind::Reference { is_mut: true, .. } => SelfType::MutBorrowed,
-            TypeKind::Reference { is_mut: false, .. } => SelfType::Borrowed,
-            _ => SelfType::Owned,
-        }
-    } else {
-        SelfType::None // No self parameter = static method
-    };
+    let self_type = determine_self_type_from_params(&params);
 
     // Parse optional return type
     let return_type = if matches!(state.tokens.peek(), Some((Token::Arrow, _))) {
@@ -3984,6 +3982,20 @@ fn parse_class_method(state: &mut ParserState) -> Result<ClassMethod> {
         is_abstract: false, // Will be set by class body parsing
         self_type,
     })
+}
+
+/// Determine self type from method parameters
+fn determine_self_type_from_params(params: &[Param]) -> SelfType {
+    if !params.is_empty() && params[0].name() == "self" {
+        use crate::frontend::ast::TypeKind;
+        match &params[0].ty.kind {
+            TypeKind::Reference { is_mut: true, .. } => SelfType::MutBorrowed,
+            TypeKind::Reference { is_mut: false, .. } => SelfType::Borrowed,
+            _ => SelfType::Owned,
+        }
+    } else {
+        SelfType::None // No self parameter = static method
+    }
 }
 
 /// Parse trait keyword (trait or interface) and return span
@@ -4093,58 +4105,15 @@ fn parse_trait_associated_type(state: &mut ParserState) -> Result<String> {
 fn parse_trait_definition(state: &mut ParserState) -> Result<Expr> {
     // Parse trait/interface keyword
     let start_span = parse_trait_keyword(state)?;
-
-    // Get trait name
-    let name = if let Some((Token::Identifier(n), _)) = state.tokens.peek() {
-        let name = n.clone();
-        state.tokens.advance();
-        name
-    } else {
-        bail!("Expected trait name after 'trait'");
-    };
-
-    // Parse optional generic parameters: <T, U>
-    let type_params = if matches!(state.tokens.peek(), Some((Token::Less, _))) {
-        parse_generic_params(state)?
-    } else {
-        vec![]
-    };
+    let name = parse_trait_name(state)?;
+    let type_params = parse_optional_trait_generics(state)?;
 
     // Parse { associated types and methods }
     state.tokens.expect(&Token::LeftBrace)?;
-    let mut associated_types = Vec::new();
-    let mut methods = Vec::new();
-
-    // Parse trait items (associated types and methods)
-    while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
-        match state.tokens.peek() {
-            Some((Token::Type, _)) => {
-                // Parse associated type: type Item
-                associated_types.push(parse_trait_associated_type(state)?);
-            }
-            Some((Token::Fun | Token::Fn, _)) => {
-                // Parse method
-                methods.push(parse_trait_method(state)?);
-            }
-            _ => {
-                bail!("Expected 'type' or method in trait body")
-            }
-        }
-    }
-
+    let (associated_types, methods) = parse_trait_body_items(state)?;
     state.tokens.expect(&Token::RightBrace)?;
 
-    // Convert to proper Trait variant with TraitMethod
-    let trait_methods = methods
-        .into_iter()
-        .map(|name| TraitMethod {
-            name,
-            params: vec![],
-            return_type: None,
-            body: None,
-            is_pub: true,
-        })
-        .collect();
+    let trait_methods = convert_to_trait_methods(methods);
 
     Ok(Expr::new(
         ExprKind::Trait {
@@ -4156,6 +4125,61 @@ fn parse_trait_definition(state: &mut ParserState) -> Result<Expr> {
         },
         start_span,
     ))
+}
+
+/// Parse trait name after 'trait' keyword
+fn parse_trait_name(state: &mut ParserState) -> Result<String> {
+    match state.tokens.peek() {
+        Some((Token::Identifier(n), _)) => {
+            let name = n.clone();
+            state.tokens.advance();
+            Ok(name)
+        }
+        _ => bail!("Expected trait name after 'trait'"),
+    }
+}
+
+/// Parse optional generic parameters
+fn parse_optional_trait_generics(state: &mut ParserState) -> Result<Vec<String>> {
+    if matches!(state.tokens.peek(), Some((Token::Less, _))) {
+        parse_generic_params(state)
+    } else {
+        Ok(vec![])
+    }
+}
+
+/// Parse trait body items (associated types and methods)
+fn parse_trait_body_items(state: &mut ParserState) -> Result<(Vec<String>, Vec<String>)> {
+    let mut associated_types = Vec::new();
+    let mut methods = Vec::new();
+
+    while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
+        match state.tokens.peek() {
+            Some((Token::Type, _)) => {
+                associated_types.push(parse_trait_associated_type(state)?);
+            }
+            Some((Token::Fun | Token::Fn, _)) => {
+                methods.push(parse_trait_method(state)?);
+            }
+            _ => bail!("Expected 'type' or method in trait body"),
+        }
+    }
+
+    Ok((associated_types, methods))
+}
+
+/// Convert method names to TraitMethod structs
+fn convert_to_trait_methods(methods: Vec<String>) -> Vec<TraitMethod> {
+    methods
+        .into_iter()
+        .map(|name| TraitMethod {
+            name,
+            params: vec![],
+            return_type: None,
+            body: None,
+            is_pub: true,
+        })
+        .collect()
 }
 fn parse_impl_block(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.expect(&Token::Impl)?;
@@ -4398,26 +4422,7 @@ pub(super) fn parse_use_path(
 ) -> Result<Expr> {
     // Parse initial module path
     let mut path_parts = vec![];
-
-    // First component - can be identifier, super, self, crate, or any keyword
-    // DEFECT-PARSER-017 FIX: Accept keywords as first path segment
-    match state.tokens.peek() {
-        Some((Token::Identifier(name), _)) => {
-            path_parts.push(name.clone());
-            state.tokens.advance();
-        }
-        Some((token, _)) => {
-            // Try to convert keyword token to string
-            let keyword_str = token_to_keyword_string(token);
-            if !keyword_str.is_empty() {
-                path_parts.push(keyword_str);
-                state.tokens.advance();
-            } else {
-                bail!("Expected module path after 'use'")
-            }
-        }
-        None => bail!("Expected module path after 'use'"),
-    }
+    parse_use_first_segment(state, &mut path_parts)?;
 
     // Additional components separated by ::
     while matches!(state.tokens.peek(), Some((Token::ColonColon, _))) {
@@ -4439,24 +4444,7 @@ pub(super) fn parse_use_path(
             ));
         }
         // After :: we can have identifier, super, self, or any keyword
-        // DEFECT-PARSER-017 FIX: Accept keywords as path segments in use statements
-        match state.tokens.peek() {
-            Some((Token::Identifier(segment), _)) => {
-                path_parts.push(segment.clone());
-                state.tokens.advance();
-            }
-            Some((token, _)) => {
-                // Try to convert keyword token to string
-                let keyword_str = token_to_keyword_string(token);
-                if !keyword_str.is_empty() {
-                    path_parts.push(keyword_str);
-                    state.tokens.advance();
-                } else {
-                    bail!("Expected identifier, 'super', 'self', '*', or '{{' after '::'")
-                }
-            }
-            None => bail!("Expected identifier, 'super', 'self', '*', or '{{' after '::'"),
-        }
+        parse_use_segment_after_colon(state, &mut path_parts)?;
     }
 
     let module_path = path_parts.join("::");
@@ -4487,6 +4475,50 @@ pub(super) fn parse_use_path(
             },
             start_span,
         ))
+    }
+}
+
+/// Parse first segment in use path (identifier or keyword)
+fn parse_use_first_segment(state: &mut ParserState, path_parts: &mut Vec<String>) -> Result<()> {
+    match state.tokens.peek() {
+        Some((Token::Identifier(name), _)) => {
+            path_parts.push(name.clone());
+            state.tokens.advance();
+            Ok(())
+        }
+        Some((token, _)) => {
+            let keyword_str = token_to_keyword_string(token);
+            if !keyword_str.is_empty() {
+                path_parts.push(keyword_str);
+                state.tokens.advance();
+                Ok(())
+            } else {
+                bail!("Expected module path after 'use'")
+            }
+        }
+        None => bail!("Expected module path after 'use'"),
+    }
+}
+
+/// Parse segment after :: in use path (identifier or keyword)
+fn parse_use_segment_after_colon(state: &mut ParserState, path_parts: &mut Vec<String>) -> Result<()> {
+    match state.tokens.peek() {
+        Some((Token::Identifier(segment), _)) => {
+            path_parts.push(segment.clone());
+            state.tokens.advance();
+            Ok(())
+        }
+        Some((token, _)) => {
+            let keyword_str = token_to_keyword_string(token);
+            if !keyword_str.is_empty() {
+                path_parts.push(keyword_str);
+                state.tokens.advance();
+                Ok(())
+            } else {
+                bail!("Expected identifier, 'super', 'self', '*', or '{{' after '::'")
+            }
+        }
+        None => bail!("Expected identifier, 'super', 'self', '*', or '{{' after '::'"),
     }
 }
 

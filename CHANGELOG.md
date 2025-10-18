@@ -5,6 +5,7 @@ All notable changes to the Ruchy programming language will be documented in this
 ## [Unreleased]
 
 ### Fixed
+- **[PARSER-055] Bare return statements support**: Parser now correctly handles `return` without value (early exit). One-line fix discovered via SQLite-level testing. Zero regressions, all 3763 tests passing.
 - **[QUALITY-009] parser/utils.rs TDG Refactoring (PHASES 1 & 2 COMPLETE)**: Using EXTREME TDD methodology
   - **Phase 1 Complete: Type Parsing Extraction + Property Test Infrastructure**
     - **EXTREME TDD Property Tests Created**:
