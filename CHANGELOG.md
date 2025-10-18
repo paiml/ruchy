@@ -2,7 +2,7 @@
 
 All notable changes to the Ruchy programming language will be documented in this file.
 
-## [Unreleased]
+## [3.91.0] - 2025-10-18
 
 ### Changed
 - **[QUALITY] expressions.rs Modularization - 91.6% Complete (TARGET DEMOLISHED)**: Systematic extraction of monolithic parser file using EXTREME TDD methodology
