@@ -4252,10 +4252,8 @@ fn test_sqlite_097_return_statement() {
 }
 
 #[test]
-#[ignore = "Parser limitation: bare 'return' not supported - needs [PARSER-055] ticket"]
 fn test_sqlite_098_bare_return() {
-    // Bare return statement (no value)
-    // TODO: Create [PARSER-055] ticket to add support
+    // Bare return statement (no value) - [PARSER-055]
     assert_parses("fun f() { return }");
 }
 
