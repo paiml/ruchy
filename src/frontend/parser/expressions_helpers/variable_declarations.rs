@@ -40,8 +40,8 @@ use crate::frontend::ast::{Expr, ExprKind, Literal, Pattern, Span, Type};
 use crate::frontend::lexer::Token;
 use crate::frontend::parser::{bail, parse_expr_recursive, utils, ParserState, Result};
 
-// Import pattern parsing from parent expressions module
-use super::super::{
+// Import pattern parsing from patterns module
+use super::patterns::{
     parse_list_pattern, parse_single_pattern, parse_struct_pattern, parse_struct_pattern_with_name,
     parse_tuple_pattern,
 };
