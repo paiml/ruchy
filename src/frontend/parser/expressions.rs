@@ -278,7 +278,7 @@ fn parse_spawn_expr(state: &mut ParserState, span: Span) -> Result<Expr> {
 fn parse_identifier_prefix(state: &mut ParserState, token: Token, span: Span) -> Result<Expr> {
     match token {
         Token::Identifier(_) | Token::Underscore | Token::Self_ | Token::Super => {
-            parse_identifier_token(state, &token, span)
+            expressions_helpers::identifiers::parse_identifier_token(state, &token, span)
         }
         Token::Default => {
             state.tokens.advance();
@@ -365,209 +365,7 @@ fn parse_collection_prefix(state: &mut ParserState, token: Token, span: Span) ->
 }
 
 // Literal parsing moved to expressions_helpers/literals.rs module
-
-/// Parse identifier tokens (Identifier, Underscore, fat arrow lambdas)
-/// Extracted from `parse_prefix` to reduce complexity
-/// Parse a single path segment after :: (complexity: 5)
-/// Parse path segment after :: (complexity: 6)
-/// DEFECT-PARSER-016 FIX: Accept any keyword as path segment (module names can be keywords)
-fn parse_path_segment(state: &mut ParserState) -> Result<String> {
-    if matches!(state.tokens.peek(), Some((Token::Less, _))) {
-        // Parse turbofish generic arguments
-        parse_turbofish_generics(state)
-    } else if let Some((Token::Identifier(segment), _)) = state.tokens.peek() {
-        let segment = segment.clone();
-        state.tokens.advance();
-        Ok(segment)
-    } else if matches!(state.tokens.peek(), Some((Token::Star, _))) {
-        // Handle wildcard in qualified names (for use statements)
-        state.tokens.advance();
-        Ok("*".to_string())
-    } else if let Some((token, _)) = state.tokens.peek() {
-        // Accept any keyword as a path segment (keywords can be module names)
-        // This handles: as, for, if, match, etc. in paths like pub(in crate::as::match)
-        let name = token_to_keyword_string(token);
-        if !name.is_empty() {
-            state.tokens.advance();
-            Ok(name)
-        } else {
-            bail!("Expected identifier or '*' after '::'")
-        }
-    } else {
-        bail!("Expected identifier or '*' after '::'")
-    }
-}
-
-/// Convert token to lowercase keyword string if it's a keyword, empty string otherwise
-fn token_to_keyword_string(token: &Token) -> String {
-    match token {
-        Token::As => "as".to_string(),
-        Token::Async => "async".to_string(),
-        Token::Await => "await".to_string(),
-        Token::Break => "break".to_string(),
-        Token::Const => "const".to_string(),
-        Token::Continue => "continue".to_string(),
-        Token::Crate => "crate".to_string(),
-        Token::Default => "default".to_string(),
-        Token::Else => "else".to_string(),
-        Token::Enum => "enum".to_string(),
-        Token::Err => "Err".to_string(),
-        Token::Fn => "fn".to_string(),
-        Token::For => "for".to_string(),
-        Token::From => "from".to_string(),
-        Token::Fun => "fun".to_string(),
-        Token::If => "if".to_string(),
-        Token::Impl => "impl".to_string(),
-        Token::In => "in".to_string(),
-        Token::Let => "let".to_string(),
-        Token::Loop => "loop".to_string(),
-        Token::Match => "match".to_string(),
-        Token::Mod => "mod".to_string(),
-        Token::Module => "module".to_string(),
-        Token::Mut => "mut".to_string(),
-        Token::None => "None".to_string(),
-        Token::Ok => "Ok".to_string(),
-        Token::Private => "private".to_string(),
-        Token::Pub => "pub".to_string(),
-        Token::Return => "return".to_string(),
-        Token::Self_ => "self".to_string(),
-        Token::Some => "Some".to_string(),
-        Token::Static => "static".to_string(),
-        Token::Struct => "struct".to_string(),
-        Token::Super => "super".to_string(),
-        Token::Trait => "trait".to_string(),
-        Token::Type => "type".to_string(),
-        Token::Unsafe => "unsafe".to_string(),
-        Token::Use => "use".to_string(),
-        Token::Where => "where".to_string(),
-        Token::While => "while".to_string(),
-        // Standard library types that are keywords
-        Token::Option => "Option".to_string(),
-        Token::Result => "Result".to_string(),
-        _ => String::new(),
-    }
-}
-
-/// Parse module path segments separated by :: (complexity: 3)
-fn parse_module_path_segments(state: &mut ParserState, initial: String) -> Result<String> {
-    let mut path = vec![initial];
-    while matches!(state.tokens.peek(), Some((Token::ColonColon, _))) {
-        state.tokens.advance(); // consume ::
-        path.push(parse_path_segment(state)?);
-    }
-    Ok(path.join("::"))
-}
-
-fn parse_identifier_token(state: &mut ParserState, token: &Token, span: Span) -> Result<Expr> {
-    match token {
-        Token::Identifier(name) => {
-            state.tokens.advance();
-            // Check for module path: math::add
-            if matches!(state.tokens.peek(), Some((Token::ColonColon, _))) {
-                let qualified_name = parse_module_path_segments(state, name.clone())?;
-                Ok(Expr::new(ExprKind::Identifier(qualified_name), span))
-            }
-            // Check for fat arrow lambda: x => x * 2
-            else if matches!(state.tokens.peek(), Some((Token::FatArrow, _))) {
-                let ident_expr = Expr::new(ExprKind::Identifier(name.clone()), span);
-                parse_lambda_from_expr(state, ident_expr, span)
-            } else {
-                // Don't consume ! here - let postfix handle macro calls
-                Ok(Expr::new(ExprKind::Identifier(name.clone()), span))
-            }
-        }
-        Token::Underscore => {
-            state.tokens.advance();
-            Ok(Expr::new(ExprKind::Identifier("_".to_string()), span))
-        }
-        Token::Self_ => {
-            state.tokens.advance();
-            Ok(Expr::new(ExprKind::Identifier("self".to_string()), span))
-        }
-        Token::Super => {
-            state.tokens.advance();
-            Ok(Expr::new(ExprKind::Identifier("super".to_string()), span))
-        }
-        _ => bail!("Expected identifier token, got: {:?}", token),
-    }
-}
-
-/// Parse turbofish generic arguments: ::<i32> or ::<String, i32>
-/// Returns a string representation of the turbofish for path construction
-fn parse_turbofish_generics(state: &mut ParserState) -> Result<String> {
-    // Consume the < token
-    state.tokens.advance();
-
-    let mut type_args = Vec::new();
-
-    // Parse comma-separated type list
-    loop {
-        // Parse single type argument
-        let type_str = parse_turbofish_type(state)?;
-        type_args.push(type_str);
-
-        // Check for comma (more types) or > (end of list)
-        match state.tokens.peek() {
-            Some((Token::Comma, _)) => {
-                state.tokens.advance(); // consume comma
-                                        // Continue to next type
-            }
-            Some((Token::Greater, _)) => {
-                state.tokens.advance(); // consume >
-                break;
-            }
-            Some((Token::GreaterEqual, _)) => {
-                // Handle >> as two > tokens (for nested generics like Vec<Vec<i32>>)
-                // This is a simplification - proper handling would require token splitting
-                state.tokens.advance();
-                break;
-            }
-            _ => bail!("Expected ',' or '>' in turbofish generics"),
-        }
-    }
-
-    // Build string representation
-    Ok(format!("<{}>", type_args.join(", ")))
-}
-
-/// Parse a single type in turbofish context
-/// Returns a string representation of the type
-fn parse_turbofish_type(state: &mut ParserState) -> Result<String> {
-    let mut type_str = String::new();
-
-    // Parse type name (could be qualified path like std::string::String)
-    loop {
-        match state.tokens.peek() {
-            Some((Token::Identifier(name), _)) => {
-                type_str.push_str(name);
-                state.tokens.advance();
-
-                // Check for :: (qualified path)
-                if matches!(state.tokens.peek(), Some((Token::ColonColon, _))) {
-                    type_str.push_str("::");
-                    state.tokens.advance();
-                    continue;
-                }
-                break;
-            }
-            Some((Token::Integer(n), _)) => {
-                // For array sizes like [i32; 10]
-                type_str.push_str(&n.clone());
-                state.tokens.advance();
-                break;
-            }
-            _ => break,
-        }
-    }
-
-    // Check for nested generics: Vec<i32>
-    if matches!(state.tokens.peek(), Some((Token::Less, _))) {
-        let nested = parse_turbofish_generics(state)?;
-        type_str.push_str(&nested);
-    }
-
-    Ok(type_str)
-}
+// Identifier and path parsing moved to expressions_helpers/identifiers.rs module
 
 /// Parse unary operator tokens (Minus, Bang)
 /// Extracted from `parse_prefix` to reduce complexity
@@ -1983,7 +1781,7 @@ fn parse_identifier_or_constructor_pattern(state: &mut ParserState) -> Result<Pa
 
     // Check for enum variant paths: Color::Red, Option::Some, etc.
     if matches!(state.tokens.peek(), Some((Token::ColonColon, _))) {
-        let full_path = parse_module_path_segments(state, name)?;
+        let full_path = expressions_helpers::identifiers::parse_module_path_segments(state, name)?;
         // Check if followed by struct fields or tuple args
         return if matches!(state.tokens.peek(), Some((Token::LeftBrace, _))) {
             parse_struct_pattern_with_name(state, full_path)
@@ -4075,7 +3873,7 @@ fn parse_use_first_segment(state: &mut ParserState, path_parts: &mut Vec<String>
             Ok(())
         }
         Some((token, _)) => {
-            let keyword_str = token_to_keyword_string(token);
+            let keyword_str = expressions_helpers::identifiers::token_to_keyword_string(token);
             if !keyword_str.is_empty() {
                 path_parts.push(keyword_str);
                 state.tokens.advance();
@@ -4097,7 +3895,7 @@ fn parse_use_segment_after_colon(state: &mut ParserState, path_parts: &mut Vec<S
             Ok(())
         }
         Some((token, _)) => {
-            let keyword_str = token_to_keyword_string(token);
+            let keyword_str = expressions_helpers::identifiers::token_to_keyword_string(token);
             if !keyword_str.is_empty() {
                 path_parts.push(keyword_str);
                 state.tokens.advance();
