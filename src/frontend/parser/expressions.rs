@@ -208,15 +208,9 @@ fn parse_control_prefix(state: &mut ParserState, token: Token, _span: Span) -> R
     }
 }
 
+// Loop label parsing moved to expressions_helpers/loops.rs module
 fn parse_loop_label(state: &mut ParserState, label_name: String) -> Result<Expr> {
-    state.tokens.advance();
-    state.tokens.expect(&Token::Colon)?;
-    match state.tokens.peek() {
-        Some((Token::For, _)) => parse_labeled_for_loop(state, Some(label_name)),
-        Some((Token::While, _)) => parse_labeled_while_loop(state, Some(label_name)),
-        Some((Token::Loop, _)) => parse_labeled_loop(state, Some(label_name)),
-        _ => bail!("Expected loop keyword after label"),
-    }
+    expressions_helpers::loops::parse_loop_label(state, label_name)
 }
 
 fn parse_structure_prefix(state: &mut ParserState, token: Token, span: Span) -> Result<Expr> {
@@ -1716,147 +1710,13 @@ fn parse_or_pattern(state: &mut ParserState, first: Pattern) -> Result<Pattern> 
 /// Complexity: <5
 /// Parse while loop: while condition { body }
 /// Complexity: <5 (simple structure)
+// While loop parsing moved to expressions_helpers/loops.rs module
 fn parse_while_loop(state: &mut ParserState) -> Result<Expr> {
-    parse_labeled_while_loop(state, None)
+    expressions_helpers::loops::parse_while_loop(state)
 }
-
-fn parse_labeled_while_loop(state: &mut ParserState, label: Option<String>) -> Result<Expr> {
-    let start_span = state.tokens.expect(&Token::While)?;
-    // Check for while-let syntax
-    if matches!(state.tokens.peek(), Some((Token::Let, _))) {
-        state.tokens.advance(); // consume 'let'
-                                // Parse the pattern
-        let pattern = parse_match_pattern(state)
-            .map_err(|e| anyhow::anyhow!("Expected pattern after 'while let': {}", e))?;
-        // Expect '='
-        state
-            .tokens
-            .expect(&Token::Equal)
-            .map_err(|e| anyhow::anyhow!("Expected '=' after pattern in while-let: {}", e))?;
-        // Parse the expression to match against
-        let expr =
-            Box::new(super::parse_expr_recursive(state).map_err(|e| {
-                anyhow::anyhow!("Expected expression after '=' in while-let: {}", e)
-            })?);
-        // Parse body (expect block)
-        let body = Box::new(
-            super::parse_expr_recursive(state)
-                .map_err(|e| anyhow::anyhow!("Expected body after while-let condition: {}", e))?,
-        );
-        Ok(Expr::new(
-            ExprKind::WhileLet {
-                label,
-                pattern,
-                expr,
-                body,
-            },
-            start_span,
-        ))
-    } else {
-        // Regular while loop
-        // Parse condition
-        let condition = Box::new(
-            super::parse_expr_recursive(state)
-                .map_err(|e| anyhow::anyhow!("Expected condition after 'while': {}", e))?,
-        );
-        // Parse body (expect block)
-        let body = Box::new(
-            super::parse_expr_recursive(state)
-                .map_err(|e| anyhow::anyhow!("Expected body after while condition: {}", e))?,
-        );
-        Ok(Expr::new(
-            ExprKind::While {
-                label,
-                condition,
-                body,
-            },
-            start_span,
-        ))
-    }
-}
-/// Parse for loop with optional label: ['label:] for pattern in iterator { body }
-/// Complexity: <5 (simple structure)
+// For loop parsing moved to expressions_helpers/loops.rs module
 fn parse_for_loop(state: &mut ParserState) -> Result<Expr> {
-    parse_labeled_for_loop(state, None)
-}
-
-/// Parse for loop with provided label
-fn parse_labeled_for_loop(state: &mut ParserState, label: Option<String>) -> Result<Expr> {
-    let start_span = state.tokens.expect(&Token::For)?;
-    // Parse pattern (e.g., "i" in "for i in ...")
-    let pattern = parse_for_pattern(state)?;
-    // Expect 'in' keyword
-    state
-        .tokens
-        .expect(&Token::In)
-        .map_err(|_| anyhow::anyhow!("Expected 'in' after for pattern"))?;
-    // Parse iterator expression
-    let iterator = Box::new(
-        super::parse_expr_recursive(state)
-            .map_err(|e| anyhow::anyhow!("Expected iterator after 'in': {}", e))?,
-    );
-    // Parse body (expect block)
-    let body = Box::new(
-        super::parse_expr_recursive(state)
-            .map_err(|e| anyhow::anyhow!("Expected body after for iterator: {}", e))?,
-    );
-    // Get the var name from the pattern for backward compatibility
-    let var = pattern.primary_name();
-    Ok(Expr::new(
-        ExprKind::For {
-            label,
-            var,
-            pattern: Some(pattern),
-            iter: iterator,
-            body,
-        },
-        start_span,
-    ))
-}
-/// Parse for loop pattern (supports bare tuple destructuring)
-/// Complexity: <8
-fn parse_for_pattern(state: &mut ParserState) -> Result<Pattern> {
-    let Some((token, _)) = state.tokens.peek() else {
-        bail!("Expected pattern in for loop");
-    };
-    match token {
-        Token::Identifier(name) => {
-            let name = name.clone();
-            state.tokens.advance();
-            // Check if this is a bare tuple pattern: key, value (without parens)
-            if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
-                // Parse as bare tuple: key, value, ...
-                let mut patterns = vec![Pattern::Identifier(name)];
-                while matches!(state.tokens.peek(), Some((Token::Comma, _))) {
-                    state.tokens.advance(); // consume comma
-                                            // Parse next pattern element
-                    if let Some((Token::Identifier(next_name), _)) = state.tokens.peek() {
-                        let next_name = next_name.clone();
-                        state.tokens.advance();
-                        patterns.push(Pattern::Identifier(next_name));
-                    } else {
-                        bail!("Expected identifier after comma in tuple pattern");
-                    }
-                }
-                Ok(Pattern::Tuple(patterns))
-            } else {
-                Ok(Pattern::Identifier(name))
-            }
-        }
-        Token::Underscore => {
-            state.tokens.advance();
-            Ok(Pattern::Wildcard)
-        }
-        Token::LeftParen => {
-            // Parse tuple pattern with parens: (x, y)
-            parse_tuple_pattern(state)
-        }
-        Token::LeftBracket => {
-            // Parse list pattern: [x, y]
-            parse_list_pattern(state)
-        }
-        _ => bail!("Expected identifier, underscore, or destructuring pattern in for loop"),
-    }
+    expressions_helpers::loops::parse_for_loop(state)
 }
 
 // Array/list parsing moved to expressions_helpers/arrays.rs module
@@ -4864,16 +4724,9 @@ fn parse_async_arrow_lambda(state: &mut ParserState) -> Result<Expr> {
     ))
 }
 
-/// Parse loop statement - infinite loop with break/continue
+// Infinite loop parsing moved to expressions_helpers/loops.rs module
 fn parse_loop(state: &mut ParserState) -> Result<Expr> {
-    parse_labeled_loop(state, None)
-}
-
-fn parse_labeled_loop(state: &mut ParserState, label: Option<String>) -> Result<Expr> {
-    let start_span = state.tokens.expect(&Token::Loop)?;
-    let body = Box::new(super::parse_expr_recursive(state)?);
-
-    Ok(Expr::new(ExprKind::Loop { label, body }, start_span))
+    expressions_helpers::loops::parse_loop(state)
 }
 
 /// Parse increment operator (++var or var++)

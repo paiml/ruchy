@@ -5,9 +5,9 @@
 **Goal**: Improve TDG score from 71.2/100 (B-) to ≥85/100 (A-) through systematic modularization
 
 **Current Status** (as of 2025-10-18):
-- File size: 5,355 lines, 241 functions (142 lines dead code removed)
+- File size: 5,208 lines, 241 functions
 - TDG Score: 71.2/100 (B-)
-- Progress: 18.9% complete (1,268 lines removed across 10 modules + dead code cleanup)
+- Progress: 21.3% complete (1,415 lines removed across 11 modules + dead code cleanup)
 
 **Target**: Extract ~5,000 lines (≥75%) to achieve TDG ≥85
 
@@ -95,6 +95,15 @@
 - **Features**: F-string interpolation, escaped braces, nested expressions, format specifiers
 - **Integration**: literals.rs imports directly from string_operations module
 
+### Phase 12: loops Module ⭐
+- **Lines**: 388 (including tests)
+- **Functions**: 6 (parse_loop_label, parse_while_loop, parse_for_loop, parse_loop, parse_labeled_while_loop, parse_labeled_for_loop, parse_labeled_loop, parse_for_pattern)
+- **Tests**: 10 unit tests + 7 property tests
+- **Quality**: **TDG 93.2/100 (A grade)** - EXCEEDS TARGET
+- **Methodology**: EXTREME TDD (RED→GREEN→REFACTOR)
+- **Features**: For loops with pattern destructuring, while loops, while-let loops, infinite loops, labeled loops
+- **expressions.rs reduction**: 147 lines removed (5,355 → 5,208)
+
 ### Dead Code Cleanup ⭐
 - **Lines Removed**: 142 (actor helper functions)
 - **Functions Removed**: 6 (parse_actor_name, parse_actor_body, parse_actor_state_field, parse_actor_receive_block, parse_actor_bare_field, create_actor_expression)
@@ -103,7 +112,7 @@
 - **Tests**: All 3,836 tests still passing
 - **Commit**: `05052a8b`
 
-**Total Removed**: 2,845 lines (1,268 from expressions.rs: 1,126 extracted + 142 dead code removed)
+**Total Removed**: 3,233 lines (1,415 from expressions.rs: 1,273 extracted + 142 dead code removed)
 
 ---
 
