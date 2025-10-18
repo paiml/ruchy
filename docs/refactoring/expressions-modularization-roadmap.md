@@ -5,9 +5,9 @@
 **Goal**: Improve TDG score from 71.2/100 (B-) to ≥85/100 (A-) through systematic modularization
 
 **Current Status** (as of 2025-10-18):
-- File size: 6,300 lines, 247 functions
+- File size: 6,211 lines, 247 functions
 - TDG Score: 71.2/100 (B-)
-- Progress: 5% complete (323 lines extracted across 2 modules)
+- Progress: 6% complete (412 lines extracted across 3 modules)
 
 **Target**: Extract ~5,000 lines (≥75%) to achieve TDG ≥85
 
@@ -28,7 +28,15 @@
 - **Quality**: **TDG 91.1/100 (A grade)** - EXCEEDS TARGET
 - **Methodology**: EXTREME TDD (RED→GREEN→REFACTOR)
 
-**Total Extracted**: 735 lines (323 from expressions.rs after accounting for module overhead)
+### Phase 3: literals Module ⭐
+- **Lines**: 206
+- **Functions**: 1 (parse_literal_token)
+- **Tests**: 7 unit tests + 6 property tests
+- **Quality**: **TDG 92.9/100 (A grade)** - EXCEEDS TARGET
+- **Methodology**: EXTREME TDD (RED→GREEN→REFACTOR)
+- **Dead Code Removed**: 58 lines (duplicate parse_literal_token function)
+
+**Total Extracted**: 941 lines (412 from expressions.rs after accounting for overhead + dead code removal)
 
 ---
 
@@ -38,18 +46,14 @@
 
 #### 🔴 **Tier 1: High Impact** (~2,500 lines, 40% of remaining)
 
-**Phase 3: Literal & Primitive Parsing** (~200 lines)
-- **Location**: Lines 403-460
-- **Functions**:
-  - `parse_literal_token` (integers, floats, strings, chars, bytes, bools)
-  - `parse_fstring_into_parts` (line 4907, f-string interpolation)
-- **Property Tests**:
-  - Random integer parsing (i8, i16, i32, i64 ranges)
-  - Float parsing (special values: NaN, Infinity, -0.0)
-  - String escape sequences
-  - Unicode character validation
-- **Estimated Effort**: 2 hours
-- **TDG Impact**: Low (small module, ~3% reduction)
+**Phase 3: Literal & Primitive Parsing** ✅ COMPLETE
+- **Lines**: 206 (expressions.rs: -89 lines including dead code)
+- **Functions**: parse_literal_token (integers, floats, strings, chars, bytes, bools, fstrings)
+- **Property Tests**: 6 (integers, floats, strings, bools, type suffixes, hex integers)
+- **Unit Tests**: 7 (integer, float, string, char, bool, fstring, type suffix)
+- **Quality**: TDG 92.9/100 (A grade) ⭐ EXCEEDS TARGET
+- **Actual Effort**: 1.5 hours
+- **Commit**: 44eab952
 
 **Phase 4: Identifier & Path Resolution** (~600 lines)
 - **Location**: Lines 553-700, scattered helper functions
@@ -254,7 +258,7 @@
 src/frontend/parser/expressions_helpers/
 ├── control_flow.rs         ✅ DONE (177 lines, TDG: N/A)
 ├── visibility_modifiers.rs ✅ DONE (558 lines, TDG: 91.1/100 A)
-├── literals.rs             ⏳ PLANNED (200 lines)
+├── literals.rs             ✅ DONE (206 lines, TDG: 92.9/100 A)
 ├── identifiers.rs          ⏳ PLANNED (600 lines)
 ├── arrays.rs               ⏳ PLANNED (400 lines)
 ├── objects.rs              ⏳ PLANNED (500 lines)
@@ -313,7 +317,7 @@ mod property_tests {
 - [x] visibility_modifiers extracted (A grade)
 
 **Tier 1 (High Impact)**:
-- [ ] Phase 3: Literals (~200 lines)
+- [x] Phase 3: Literals (206 lines, TDG 92.9/100 A) ✅
 - [ ] Phase 4: Identifiers (~600 lines)
 - [ ] Phase 5: Arrays (~400 lines)
 - [ ] Phase 6: Objects (~500 lines)
