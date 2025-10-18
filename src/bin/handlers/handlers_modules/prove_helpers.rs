@@ -255,7 +255,12 @@ pub fn verify_proofs_from_ast(
     if verbose {
         print_assertions(&assertions);
     }
-    let results = verify_assertions_batch(&assertions, counterexample);
+    let counterexamples = if counterexample {
+        Some(vec![]) // Empty counterexample list for now
+    } else {
+        None
+    };
+    let results = verify_assertions_batch(assertions, counterexamples);
     output_verification_results(&results, file_path, format, verbose)?;
     check_verification_failures(&results)?;
     Ok(())
