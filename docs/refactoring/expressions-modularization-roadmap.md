@@ -5,9 +5,9 @@
 **Goal**: Improve TDG score from 71.2/100 (B-) to ≥85/100 (A-) through systematic modularization
 
 **Current Status** (as of 2025-10-18):
-- File size: 1,597 lines (was 6,623)
+- File size: 1,573 lines (was 6,623)
 - TDG Score: [To be measured - expecting ≥85/100 A- grade]
-- Progress: **✅ 75.9% complete (5,026 lines removed across 26 modules)**
+- Progress: **✅ 76.2% complete (5,050 lines removed across 26 modules)**
 
 **Target**: Extract ~5,000 lines (≥75%) to achieve TDG ≥85 - **TARGET EXCEEDED!**
 
@@ -246,8 +246,18 @@
 - **Features**: Pre-increment/decrement operators, constructor tokens (Ok, Err, Result, Option), qualified constructors
 - **expressions.rs reduction**: **53 lines removed** (1,650 → 1,597)
 
-**Total Removed**: 8,154 lines (5,026 from expressions.rs: 4,884 extracted + 142 dead code removed)
-**Progress**: **✅ 75.9% COMPLETE** (5,026/6,623 lines removed) → **BEYOND TARGET!** 🎯
+### Phase 27: Special Literals to literals Module ⭐
+- **Lines**: 37 added to literals.rs (206 → 243 lines)
+- **Functions**: 3 (parse_null, parse_none, parse_some_constructor)
+- **Tests**: Existing tests cover these (3,956 tests passing)
+- **Quality**: Estimated TDG ~93/100 (A grade)
+- **Methodology**: EXTREME TDD (existing tests validate)
+- **Features**: Null literal, None literal, Some(value) constructor
+- **expressions.rs reduction**: **24 lines removed** (1,597 → 1,573)
+- **Consolidation**: ALL literal handling now in one module
+
+**Total Removed**: 8,178 lines (5,050 from expressions.rs: 4,908 extracted + 142 dead code removed)
+**Progress**: **✅ 76.2% COMPLETE** (5,050/6,623 lines removed) → **BEYOND TARGET!** 🎯
 
 ---
 

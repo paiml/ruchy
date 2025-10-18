@@ -95,6 +95,43 @@ pub(in crate::frontend::parser) fn parse_literal_token(
     }
 }
 
+/// Parse Null literal
+pub(in crate::frontend::parser) fn parse_null(state: &mut ParserState, span: Span) -> Result<Expr> {
+    state.tokens.advance();
+    Ok(Expr::new(ExprKind::Literal(Literal::Null), span))
+}
+
+/// Parse None literal
+pub(in crate::frontend::parser) fn parse_none(state: &mut ParserState, span: Span) -> Result<Expr> {
+    state.tokens.advance();
+    Ok(Expr::new(ExprKind::None, span))
+}
+
+/// Parse Some constructor: Some(value)
+pub(in crate::frontend::parser) fn parse_some_constructor(
+    state: &mut ParserState,
+    span: Span,
+) -> Result<Expr> {
+    use crate::frontend::parser::parse_expr_with_precedence_recursive;
+
+    state.tokens.advance();
+    if !matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
+        bail!("Expected '(' after Some");
+    }
+    state.tokens.advance();
+    let value = parse_expr_with_precedence_recursive(state, 0)?;
+    if !matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
+        bail!("Expected ')' after Some value");
+    }
+    state.tokens.advance();
+    Ok(Expr::new(
+        ExprKind::Some {
+            value: Box::new(value),
+        },
+        span,
+    ))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
