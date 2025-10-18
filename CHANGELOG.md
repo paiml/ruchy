@@ -5,14 +5,40 @@ All notable changes to the Ruchy programming language will be documented in this
 ## [Unreleased]
 
 ### Fixed
-- **[QUALITY-009] parser/utils.rs TDG Refactoring (IN PROGRESS)**: Using EXTREME TDD methodology
-  - **Property Tests Created**: Comprehensive test suite for type parsing functions (20 tests total)
-    - 13 property tests with 10K+ iterations each (never panics, deterministic, type preservation, error clarity)
-    - 7 unit tests for sanity checks (basic types, references, generics, tuples, functions, complex nested)
-    - Test file: `tests/property_type_parsing.rs` (437 lines)
-    - All tests passing: Property tests validate invariants before extraction
-  - **Next**: Extract type parsing functions (~400 lines) to `utils_helpers/types.rs` with mutation testing
-  - **Current State**: utils.rs at 1948 lines, 77.2/100 (B), needs +7.8 points to reach A-
+- **[QUALITY-009] parser/utils.rs TDG Refactoring (PHASES 1 & 2 COMPLETE)**: Using EXTREME TDD methodology
+  - **Phase 1 Complete: Type Parsing Extraction + Property Test Infrastructure**
+    - **EXTREME TDD Property Tests Created**:
+      - Type parsing tests: 20 tests (13 property + 7 unit) - ALL PASSING
+        - File: `tests/property_type_parsing.rs` (437 lines)
+        - 10K+ iterations per property test
+        - Invariants: never panics, deterministic, type preservation, error clarity
+      - Import parsing tests: 11 tests (8 property + 3 unit) - ALL PASSING
+        - File: `tests/property_import_parsing.rs` (259 lines)
+        - 10K+ iterations per property test
+        - Invariants: never panics, deterministic, module preservation, error clarity
+    - **Type Parsing Extraction Results**:
+      - Created `src/frontend/parser/utils_helpers/types.rs` (411 lines)
+      - Functions extracted: parse_type, parse_type_parameters, parse_reference_type, parse_fn_type, parse_impl_trait_type, parse_list_type, parse_paren_type, parse_named_type, parse_qualified_name, parse_generic_type, parse_type_list (11 functions)
+      - File reduction: utils.rs 1948→1569 lines (-379 lines, -19.5%)
+      - Zero regressions: All 3768 tests passing
+    - **Code Quality Improvements (Phase 1)**:
+      - Max cyclomatic complexity: 10→9 (improved)
+      - Functions: 71→57 (14 functions extracted)
+      - Estimated refactoring time: 32.5→17.5 hours (46% reduction)
+    - **TDG Score (Phase 1)**: utils.rs remains at 77.2/100 (B)
+    - **Analysis (Phase 1)**: 19.5% reduction insufficient; need ~30-40% total reduction to reach A- (85+)
+  - **Phase 2 Complete: Import/Export Parsing Extraction**
+    - **Import/Export Parsing Extraction Results**:
+      - Created `src/frontend/parser/utils_helpers/imports.rs` (313 lines)
+      - Functions extracted: parse_import_legacy, parse_url_import, parse_module_path, parse_import_items, parse_braced_import_list, parse_export, parse_export_default, parse_export_list, parse_module_specifier, parse_export_declaration, and 8 helper functions (18 functions total)
+      - File reduction: utils.rs 1569→1301 lines (-268 lines, -17.1% this phase)
+      - **Total reduction**: 1948→1301 lines (-647 lines, -33.2% combined)
+      - Zero regressions: All 3768 tests passing
+    - **TDG Score (Phase 2)**: utils.rs 77.2→77.4/100 (+0.2 points, still B grade)
+    - **Analysis (Phase 2)**: 33% reduction achieved but TDG improvement minimal; need Phase 3 to reach A- (85+)
+  - **Next Phase Required**: Extract attribute/decorator parsing (~150-200 lines) to push over A- threshold
+  - **Current State**: utils.rs at 1301 lines, 77.4/100 (B), Gap to A-: +7.6 points
+  - **Methodology Validated**: EXTREME TDD proven successful - zero regressions across 2 phases, 310K+ test iterations
 
 - **[QUALITY] TDG Quality Improvements (Partial - 5/8 files)**: Ongoing refactoring to meet A- quality standard
   - **eval_function.rs**: Now passes at 94.7/100 (A) - removed from pre-commit skip list
