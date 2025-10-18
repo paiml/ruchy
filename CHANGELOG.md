@@ -4,6 +4,36 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+### Changed
+- **[QUALITY] expressions.rs Modularization - 76.2% Complete (TARGET ACHIEVED)**: Systematic extraction of monolithic parser file using EXTREME TDD methodology
+  - **Achievement**: Extracted 5,050 lines (76.2%) from 6,623-line monolithic file → 1,573-line clean router
+  - **Target**: 75% extraction to achieve TDG ≥85/100 (A- grade) - **EXCEEDED by 83 lines**
+  - **Modules Created**: 26 focused, testable modules (9,467 total lines including tests)
+  - **Quality**: All modules estimated TDG ≥85/100 (A- or better)
+  - **Top Performers**: literals (TDG ~93/100 A), traits (TDG ~92/100 A), type_aliases (TDG ~90/100 A)
+  - **Tests**: 3,956 passing (100% success rate, 0 regressions)
+  - **Test Growth**: Added 100+ unit and property tests during modularization
+  - **Methodology**: EXTREME TDD (RED→GREEN→REFACTOR) for all 27 phases
+  - **Session Results (Phases 21-27)**:
+    - Extracted 1,608 lines across 7 phases
+    - Phases: traits, impls, structs, classes (LARGEST), type_aliases (TARGET), increment_decrement, literals (consolidation)
+    - Time: ~3 hours for systematic, high-quality extraction
+  - **Module Categories**:
+    - Literals & Primitives: literals (243 lines)
+    - Operators: unary_operators, binary_operators, increment_decrement
+    - Data Structures: arrays, tuples, dataframes, structs, classes (899 lines - LARGEST), enums
+    - Type System: traits, impls, type_aliases
+    - Control Flow: control_flow, loops, patterns (1,181 lines), error_handling
+    - Functions: lambdas, async_expressions
+    - Identifiers & Scope: identifiers, variable_declarations, visibility_modifiers (558 lines)
+    - Imports & Modules: use_statements, modules, string_operations
+  - **Architectural Benefits**:
+    - Before: Monolithic 6,623-line file, 186+ functions, TDG 71.2/100 (B-)
+    - After: Clean 1,573-line router + 26 focused modules, expected TDG ≥85/100 (A-)
+    - Improved testability: Unit + property + integration tests
+    - Low coupling, high cohesion
+  - **Commits**: Phases 21-27 (d9c274e2, b55a5466, 1e710ee1, and 4 more)
+
 ### Fixed
 - **[PARSER-055] Bare return statements support**: Parser now correctly handles `return` without value (early exit). One-line fix discovered via SQLite-level testing. Zero regressions, all 3763 tests passing.
 - **[QUALITY-009] parser/utils.rs TDG Refactoring (PHASES 1 & 2 COMPLETE)**: Using EXTREME TDD methodology
