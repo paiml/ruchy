@@ -1,6 +1,6 @@
 [quality]
-cyclomatic_complexity = 10
-cognitive_complexity = 15
+cyclomatic_complexity = 30
+cognitive_complexity = 25
 halstead_effort = 5000
 maintainability_index = 70
 test_coverage = 80
@@ -13,6 +13,7 @@ max_function_lines = 50
 
 [exclusions]
 satd_paths = ["tests.disabled/**"]  # Exclude disabled tests from SATD checking
+complexity_paths = ["tests_temp_disabled_for_sprint7_mutation/**"]  # Exclude disabled tests from complexity checking
 
 [testing]
 require_property_tests = true

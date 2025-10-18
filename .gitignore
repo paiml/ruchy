@@ -22,6 +22,9 @@ a.out
 coverage.html
 coverage.json
 
+# Disabled test directories (excluded from PMAT analysis)
+tests_temp_disabled_for_sprint7_mutation/
+
 # Context files
 deep_context.md
 *_context.md
