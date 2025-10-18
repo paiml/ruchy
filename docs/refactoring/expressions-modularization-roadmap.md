@@ -5,9 +5,9 @@
 **Goal**: Improve TDG score from 71.2/100 (B-) to ≥85/100 (A-) through systematic modularization
 
 **Current Status** (as of 2025-10-18):
-- File size: 5,680 lines, 247 functions
+- File size: 5,598 lines, 247 functions
 - TDG Score: 71.2/100 (B-)
-- Progress: 14.2% complete (943 lines extracted across 8 modules)
+- Progress: 15.5% complete (1,025 lines extracted across 9 modules)
 
 **Target**: Extract ~5,000 lines (≥75%) to achieve TDG ≥85
 
@@ -77,7 +77,16 @@
 - **Dead Code Removed**: 79 lines (duplicate parse_unary_operator_token)
 - **Operators**: -, !, *, &, **, await, ~, spawn
 
-**Total Extracted**: 2,306 lines (943 from expressions.rs after accounting for overhead + dead code removal)
+### Phase 10B: binary_operators Module ⭐
+- **Lines**: 393 (including tests)
+- **Functions**: 7 (token_to_binary_op, get_precedence, 5 mapping helpers)
+- **Tests**: 8 unit tests + 7 property tests
+- **Quality**: **TDG 97.2/100 (A+ grade)** - HIGHEST SCORE YET ⭐⭐⭐
+- **Methodology**: EXTREME TDD (RED→GREEN→REFACTOR)
+- **Features**: Token→BinaryOp mapping, operator precedence, mathematical invariants
+- **Re-exports**: Public API maintained for external callers
+
+**Total Extracted**: 2,488 lines (1,025 from expressions.rs after accounting for overhead + dead code removal)
 
 ---
 
@@ -277,6 +286,7 @@
 ```
 src/frontend/parser/expressions_helpers/
 ├── arrays.rs               ✅ DONE (275 lines, TDG: 93.5/100 A)
+├── binary_operators.rs     ✅ DONE (393 lines, TDG: 97.2/100 A+) ⭐
 ├── control_flow.rs         ✅ DONE (177 lines, TDG: N/A)
 ├── dataframes.rs           ✅ DONE (178 lines, TDG: 93.0/100 A)
 ├── identifiers.rs          ✅ DONE (401 lines, TDG: 82.9/100 B+)
