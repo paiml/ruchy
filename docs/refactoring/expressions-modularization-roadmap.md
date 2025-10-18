@@ -5,9 +5,9 @@
 **Goal**: Improve TDG score from 71.2/100 (B-) to ≥85/100 (A-) through systematic modularization
 
 **Current Status** (as of 2025-10-18):
-- File size: 5,694 lines, 247 functions
+- File size: 5,680 lines, 247 functions
 - TDG Score: 71.2/100 (B-)
-- Progress: 14% complete (929 lines extracted across 7 modules)
+- Progress: 14.2% complete (943 lines extracted across 8 modules)
 
 **Target**: Extract ~5,000 lines (≥75%) to achieve TDG ≥85
 
@@ -60,6 +60,14 @@
 - **Methodology**: EXTREME TDD (RED→GREEN→REFACTOR)
 - **Features**: Unit type, grouped expressions, tuples, tuple-to-lambda conversion
 
+### Phase 8: dataframes Module ⭐
+- **Lines**: 178
+- **Functions**: 1 (parse_dataframe_token - dispatch between df! and df identifier)
+- **Tests**: 7 unit tests + 6 property tests
+- **Quality**: **TDG 93.0/100 (A grade)** - EXCEEDS TARGET
+- **Methodology**: EXTREME TDD (RED→GREEN→REFACTOR)
+- **Features**: DataFrame literal vs identifier dispatch, delegates to collections module
+
 ### Phase 9: unary_operators Module ⭐
 - **Lines**: 286
 - **Functions**: 9 (parse_unary_prefix + 8 operator functions)
@@ -69,7 +77,7 @@
 - **Dead Code Removed**: 79 lines (duplicate parse_unary_operator_token)
 - **Operators**: -, !, *, &, **, await, ~, spawn
 
-**Total Extracted**: 2,128 lines (929 from expressions.rs after accounting for overhead + dead code removal)
+**Total Extracted**: 2,306 lines (943 from expressions.rs after accounting for overhead + dead code removal)
 
 ---
 
@@ -120,32 +128,23 @@
 - **Estimated Effort**: 4 hours
 - **TDG Impact**: Medium (~8% reduction)
 
-**Phase 7: Tuple Parsing** (~300 lines)
-- **Location**: Lines 749-795, 1461-1500, 2105-2150
-- **Functions**:
-  - `parse_tuple_elements` (line 749)
-  - `parse_tuple_pattern` (line 1461)
-  - `parse_match_tuple_pattern` (line 2105)
-  - `parse_single_tuple_pattern_element` (line 1478)
-- **Property Tests**:
-  - Tuple arity (0 to 12 elements)
-  - Nested tuples
-  - Pattern matching destructuring
-- **Estimated Effort**: 3 hours
-- **TDG Impact**: Low-Medium (~5% reduction)
+**Phase 7: Tuple Parsing** ✅ COMPLETE
+- **Lines**: 225 (expressions.rs: -51 lines)
+- **Functions**: 3 (parse_parentheses_token, parse_tuple_elements, maybe_parse_lambda)
+- **Property Tests**: 6 (empty, pairs, nested, trailing commas, large tuples, lambda conversion)
+- **Unit Tests**: 7 (unit type, single element, pairs, triples, nested, grouped, lambda)
+- **Quality**: TDG 93.1/100 (A grade) ⭐ EXCEEDS TARGET
+- **Actual Effort**: 1.5 hours
+- **Commit**: 85bce0dc
 
-**Phase 8: DataFrame Literals** (~200 lines)
-- **Location**: Lines 1025-1026 (delegates to collections module)
-- **Functions**:
-  - DataFrame macro parsing `df![...]`
-  - Column specifications
-  - Row data
-- **Property Tests**:
-  - Various column types
-  - Empty DataFrames
-  - Large DataFrames
-- **Estimated Effort**: 2 hours
-- **TDG Impact**: Low (~3% reduction)
+**Phase 8: DataFrame Literals** ✅ COMPLETE
+- **Lines**: 178 (expressions.rs: -14 lines)
+- **Functions**: 1 (parse_dataframe_token - dispatch between df! and df identifier)
+- **Property Tests**: 6 (identifier, empty literal, integer columns, method chains, column names, multiple columns)
+- **Unit Tests**: 7 (empty, single column, multiple columns, identifier, method call, assignment, integers)
+- **Quality**: TDG 93.0/100 (A grade) ⭐ EXCEEDS TARGET
+- **Actual Effort**: 0.5 hours
+- **Commit**: 55f107c9
 
 **Phase 9: Unary & Prefix Operators** (~300 lines)
 - **Location**: Lines 666-740
@@ -279,14 +278,13 @@
 src/frontend/parser/expressions_helpers/
 ├── arrays.rs               ✅ DONE (275 lines, TDG: 93.5/100 A)
 ├── control_flow.rs         ✅ DONE (177 lines, TDG: N/A)
+├── dataframes.rs           ✅ DONE (178 lines, TDG: 93.0/100 A)
 ├── identifiers.rs          ✅ DONE (401 lines, TDG: 82.9/100 B+)
 ├── literals.rs             ✅ DONE (206 lines, TDG: 92.9/100 A)
 ├── tuples.rs               ✅ DONE (225 lines, TDG: 93.1/100 A)
 ├── unary_operators.rs      ✅ DONE (286 lines, TDG: 91.3/100 A)
 ├── visibility_modifiers.rs ✅ DONE (558 lines, TDG: 91.1/100 A)
 ├── objects.rs              ⏳ PLANNED (500 lines)
-├── dataframes.rs           ⏳ PLANNED (200 lines)
-├── unary_operators.rs      ⏳ PLANNED (300 lines)
 ├── patterns.rs             ⏳ PLANNED (400 lines)
 ├── functions.rs            ⏳ PLANNED (400 lines)
 ├── loops.rs                ⏳ PLANNED (300 lines)
@@ -344,7 +342,7 @@ mod property_tests {
 - [x] Phase 5: Arrays (275 lines, TDG 93.5/100 A) ✅
 - [ ] Phase 6: Objects (~500 lines)
 - [x] Phase 7: Tuples (225 lines, TDG 93.1/100 A) ✅
-- [ ] Phase 8: DataFrames (~200 lines - minimal, delegates to collections)
+- [x] Phase 8: DataFrames (178 lines, TDG 93.0/100 A) ✅
 - [x] Phase 9: Unary Ops (286 lines, TDG 91.3/100 A) ✅
 
 **Tier 2 (Medium Impact)**:
