@@ -117,52 +117,17 @@ fn dispatch_prefix_token(state: &mut ParserState, token: Token, span: Span) -> R
 
 fn parse_literal_prefix(state: &mut ParserState, token: Token, span: Span) -> Result<Expr> {
     match token {
-        Token::Integer(value_str) => {
-            state.tokens.advance();
-            // Parse integer literal: extract numeric value and optional type suffix
-            let (num_part, type_suffix) =
-                if let Some(pos) = value_str.find(|c: char| c.is_alphabetic()) {
-                    (&value_str[..pos], Some(value_str[pos..].to_string()))
-                } else {
-                    (value_str.as_str(), None)
-                };
-            let value = num_part.parse::<i64>().map_err(|_| {
-                ParseError::new(format!("Invalid integer literal: {num_part}"), span)
-            })?;
-            Ok(Expr::new(
-                ExprKind::Literal(Literal::Integer(value, type_suffix)),
-                span,
-            ))
-        }
-        Token::Float(value) => {
-            state.tokens.advance();
-            Ok(Expr::new(ExprKind::Literal(Literal::Float(value)), span))
-        }
-        Token::String(value) => {
-            state.tokens.advance();
-            Ok(Expr::new(ExprKind::Literal(Literal::String(value)), span))
-        }
-        Token::RawString(value) => {
-            state.tokens.advance();
-            Ok(Expr::new(ExprKind::Literal(Literal::String(value)), span))
-        }
-        Token::FString(template) => {
-            state.tokens.advance();
-            let parts = parse_fstring_into_parts(&template)?;
-            Ok(Expr::new(ExprKind::StringInterpolation { parts }, span))
-        }
-        Token::Char(value) => {
-            state.tokens.advance();
-            Ok(Expr::new(ExprKind::Literal(Literal::Char(value)), span))
-        }
-        Token::Byte(value) => {
-            state.tokens.advance();
-            Ok(Expr::new(ExprKind::Literal(Literal::Byte(value)), span))
-        }
-        Token::Bool(value) => {
-            state.tokens.advance();
-            Ok(Expr::new(ExprKind::Literal(Literal::Bool(value)), span))
-        }
+        // Basic literals - delegated to literals module
+        Token::Integer(_)
+        | Token::Float(_)
+        | Token::String(_)
+        | Token::RawString(_)
+        | Token::FString(_)
+        | Token::Char(_)
+        | Token::Byte(_)
+        | Token::Bool(_) => expressions_helpers::literals::parse_literal_token(state, &token, span),
+
+        // Special literals handled here
         Token::Null => {
             state.tokens.advance();
             Ok(Expr::new(ExprKind::Literal(Literal::Null), span))
@@ -398,66 +363,9 @@ fn parse_collection_prefix(state: &mut ParserState, token: Token, span: Span) ->
         _ => unreachable!(),
     }
 }
-/// Parse literal tokens (Integer, Float, String, Char, Bool, `FString`)
-/// Extracted from `parse_prefix` to reduce complexity
-fn parse_literal_token(state: &mut ParserState, token: &Token, span: Span) -> Result<Expr> {
-    match token {
-        Token::Integer(value_str) => {
-            state.tokens.advance();
-            // Parse integer value and optional type suffix
-            let (num_part, type_suffix) =
-                if let Some(pos) = value_str.find(|c: char| c.is_alphabetic()) {
-                    (&value_str[..pos], Some(value_str[pos..].to_string()))
-                } else {
-                    (value_str.as_str(), None)
-                };
-            let value = num_part.parse::<i64>().map_err(|_| {
-                ParseError::new(format!("Invalid integer literal: {num_part}"), span)
-            })?;
-            Ok(Expr::new(
-                ExprKind::Literal(Literal::Integer(value, type_suffix)),
-                span,
-            ))
-        }
-        Token::Float(value) => {
-            state.tokens.advance();
-            Ok(Expr::new(ExprKind::Literal(Literal::Float(*value)), span))
-        }
-        Token::String(value) => {
-            state.tokens.advance();
-            Ok(Expr::new(
-                ExprKind::Literal(Literal::String(value.clone())),
-                span,
-            ))
-        }
-        Token::RawString(value) => {
-            state.tokens.advance();
-            Ok(Expr::new(
-                ExprKind::Literal(Literal::String(value.clone())),
-                span,
-            ))
-        }
-        Token::FString(template) => {
-            state.tokens.advance();
-            // Parse f-string template into parts with proper interpolation
-            let parts = parse_fstring_into_parts(template)?;
-            Ok(Expr::new(ExprKind::StringInterpolation { parts }, span))
-        }
-        Token::Char(value) => {
-            state.tokens.advance();
-            Ok(Expr::new(ExprKind::Literal(Literal::Char(*value)), span))
-        }
-        Token::Byte(value) => {
-            state.tokens.advance();
-            Ok(Expr::new(ExprKind::Literal(Literal::Byte(*value)), span))
-        }
-        Token::Bool(value) => {
-            state.tokens.advance();
-            Ok(Expr::new(ExprKind::Literal(Literal::Bool(*value)), span))
-        }
-        _ => bail!("Expected literal token, got: {:?}", token),
-    }
-}
+
+// Literal parsing moved to expressions_helpers/literals.rs module
+
 /// Parse identifier tokens (Identifier, Underscore, fat arrow lambdas)
 /// Extracted from `parse_prefix` to reduce complexity
 /// Parse a single path segment after :: (complexity: 5)
