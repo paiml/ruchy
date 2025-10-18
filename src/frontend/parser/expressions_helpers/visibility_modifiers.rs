@@ -14,6 +14,9 @@ use crate::frontend::ast::{Attribute, Expr, ExprKind, Span};
 use crate::frontend::lexer::Token;
 use crate::frontend::parser::{bail, ParserState, Result};
 
+// Import identifiers module for parse_module_path_segments
+use super::identifiers;
+
 /// Parse pub token with optional visibility scope
 ///
 /// Syntax: `pub`, `pub(crate)`, `pub(super)`, `pub(in path::to::module)`
@@ -77,20 +80,20 @@ fn parse_visibility_path(state: &mut ParserState) -> Result<()> {
     match state.tokens.peek() {
         Some((Token::Crate, _)) => {
             state.tokens.advance();
-            let _ = super::super::parse_module_path_segments(state, "crate".to_string())?;
+            let _ = identifiers::parse_module_path_segments(state, "crate".to_string())?;
         }
         Some((Token::Super, _)) => {
             state.tokens.advance();
-            let _ = super::super::parse_module_path_segments(state, "super".to_string())?;
+            let _ = identifiers::parse_module_path_segments(state, "super".to_string())?;
         }
         Some((Token::Self_, _)) => {
             state.tokens.advance();
-            let _ = super::super::parse_module_path_segments(state, "self".to_string())?;
+            let _ = identifiers::parse_module_path_segments(state, "self".to_string())?;
         }
         Some((Token::Identifier(name), _)) => {
             let name = name.clone();
             state.tokens.advance();
-            let _ = super::super::parse_module_path_segments(state, name)?;
+            let _ = identifiers::parse_module_path_segments(state, name)?;
         }
         _ => bail!("Expected path after 'pub(in'"),
     }
