@@ -14,12 +14,43 @@
 
 ## 📝 **SESSION CONTEXT FOR RESUMPTION**
 
-**Last Active**: 2025-10-15 (Formatter Perfection Roadmap - 3 sprints to PERFECT)
-**Current Sprint**: 🎯 **FORMATTER-PERFECTION** - Making fmt world-class (v3.89.0-v3.91.0)
-**Latest Release**: ✅ **v3.88.0** published to crates.io and GitHub (P0 fixed, P1 remains)
-**Next Releases**: v3.89.0 (Comments), v3.90.0 (Coverage), v3.91.0 (Perfect)
+**Last Active**: 2025-10-18 (QUALITY-008: P0 Test Coverage Improvement - Quick Wins Complete)
+**Current Sprint**: 🎯 **QUALITY-008** - Test Coverage 70.34% → 80%+ (EXTREME TDD)
+**Latest Release**: ✅ **v3.91.0** published to crates.io and GitHub (Expressions modularization complete)
+**Current Coverage**: 70.62% (was 70.34%, +0.28% from stdlib quick wins)
+**Next Priority**: Top 5 large modules (runtime/interpreter.rs first - 3-5% impact possible)
 
-**🎯 FORMATTER PERFECTION ROADMAP (3 Sprints, ~8-11 days)**
+---
+
+## 🎯 **QUALITY-008: P0 Test Coverage Improvement (70.34% → 80%+)**
+
+**Status**: 🔄 **IN PROGRESS** - Quick wins complete, pivoting to Top 5
+**Date**: 2025-10-18
+**Methodology**: EXTREME TDD + Property Testing + Mutation Verification
+
+### Quick Wins Complete (3/4 stdlib modules):
+- ✅ **stdlib/http.rs**: 19.67% → 61.37% (+41.70%) - 19 new tests
+- ✅ **stdlib/path.rs**: 20.41% → 96.66% (+76.25%) - 50 new tests
+- ✅ **stdlib/fs.rs**: 27.59% → 95.06% (+67.47%) - 31 new tests
+- 📊 **Overall**: 70.34% → 70.62% (+0.28%) - 100 new tests
+
+### Key Discovery:
+**Small modules = small overall impact**. Quick wins added only 0.28% to total coverage. Must pivot to Top 5 large modules for meaningful progress toward 80% goal.
+
+### Strategic Pivot - Top 5 Modules (Required for 80% goal):
+1. ⏳ **runtime/interpreter.rs** (5,907 lines, 24.33%) - **Target: 3-5% overall impact**
+2. ⏳ **runtime/eval_builtin.rs** (2,490 lines, 16.83%) - **Target: ~2% overall impact**
+3. ⏳ **runtime/builtins.rs** (1,739 lines, 27.95%) - **Target: ~1.5% overall impact**
+4. ⏳ **quality/formatter.rs** (2,440 lines, 29.96%) - **Target: ~1.5% overall impact**
+5. ⏳ **quality/scoring.rs** (1,982 lines, 37.34%) - **Target: ~1% overall impact**
+
+**Total Expected Impact**: Top 5 modules could add 9-11% to overall coverage (achieves 80%+ goal)
+
+**Detailed Progress**: See `docs/QUALITY-008-PROGRESS.md`
+
+---
+
+## 🎯 **FORMATTER PERFECTION ROADMAP (COMPLETED - v3.89.0-v3.91.0)**
 
 ### Sprint 1: v3.89.0 - Comment Preservation (2-3 days)
 **Goal**: 100% comment preservation (line, block, doc, trailing)
