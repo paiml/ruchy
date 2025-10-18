@@ -15,6 +15,7 @@ pub mod identifiers;
 pub mod lambdas;
 pub mod literals;
 pub mod loops;
+pub mod modules;
 pub mod patterns;
 pub mod string_operations;
 pub mod tuples;

@@ -5,9 +5,9 @@
 **Goal**: Improve TDG score from 71.2/100 (B-) to ≥85/100 (A-) through systematic modularization
 
 **Current Status** (as of 2025-10-18):
-- File size: 3,754 lines, 202 functions
+- File size: 3,677 lines, 198 functions
 - TDG Score: 71.2/100 (B-) [will improve with remaining extractions]
-- Progress: 43.3% complete (2,869 lines removed across 16 modules + dead code cleanup)
+- Progress: 44.5% complete (2,946 lines removed across 17 modules + dead code cleanup)
 
 **Target**: Extract ~5,000 lines (≥75%) to achieve TDG ≥85
 
@@ -151,6 +151,15 @@
 - **expressions.rs reduction**: 1,089 lines removed (4,843 → 3,754) - **MASSIVE REDUCTION**
 - **Note**: Largest single extraction, includes if/match/var expressions (marked for future refactoring)
 
+### Phase 18: modules Module ⭐
+- **Lines**: 252 (including tests)
+- **Functions**: 5 (parse_module_declaration, parse_module_body, parse_visibility_modifier, parse_module_item, skip_optional_semicolon)
+- **Tests**: 8 unit tests + 7 property tests
+- **Quality**: **TDG 93.0/100 (A grade)** - EXCEEDS TARGET
+- **Methodology**: EXTREME TDD (RED→GREEN→REFACTOR)
+- **Features**: Module declarations, nested modules, pub visibility, keyword module names
+- **expressions.rs reduction**: 77 lines removed (3,754 → 3,677)
+
 ### Dead Code Cleanup ⭐
 - **Lines Removed**: 142 (actor helper functions)
 - **Functions Removed**: 6 (parse_actor_name, parse_actor_body, parse_actor_state_field, parse_actor_receive_block, parse_actor_bare_field, create_actor_expression)
@@ -159,7 +168,7 @@
 - **Tests**: All 3,836 tests still passing
 - **Commit**: `05052a8b`
 
-**Total Removed**: 5,910 lines (2,869 from expressions.rs: 2,727 extracted + 142 dead code removed)
+**Total Removed**: 5,987 lines (2,946 from expressions.rs: 2,804 extracted + 142 dead code removed)
 
 ---
 
