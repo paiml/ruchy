@@ -355,7 +355,7 @@ fn parse_modifier_prefix(state: &mut ParserState, token: Token, span: Span) -> R
 fn parse_collection_prefix(state: &mut ParserState, token: Token, span: Span) -> Result<Expr> {
     match token {
         Token::Pipe | Token::OrOr | Token::Backslash => parse_lambda_token(state, token),
-        Token::LeftParen => parse_parentheses_token(state, span),
+        Token::LeftParen => expressions_helpers::tuples::parse_parentheses_token(state, span),
         Token::LeftBracket | Token::Enum => parse_collection_enum_token(state, token),
         Token::Ok | Token::Err | Token::Result | Token::Option => {
             parse_constructor_token(state, token, span)
@@ -450,58 +450,7 @@ fn parse_unary_operator_token(state: &mut ParserState, token: &Token, span: Span
 }
 /// Parse parentheses tokens - either unit type (), grouped expression (expr), or tuple (a, b, c)
 /// Extracted from `parse_prefix` to reduce complexity
-/// Parse tuple elements after first element
-/// Complexity: 3 (Toyota Way: <10 ✓)
-fn parse_tuple_elements(state: &mut ParserState, first_expr: Expr) -> Result<Vec<Expr>> {
-    let mut elements = vec![first_expr];
-    while matches!(state.tokens.peek(), Some((Token::Comma, _))) {
-        state.tokens.advance(); // consume comma
-                                // Check for trailing comma before closing paren
-        if matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
-            break;
-        }
-        elements.push(super::parse_expr_recursive(state)?);
-    }
-    Ok(elements)
-}
-
-/// Check if expression should be converted to lambda
-/// Complexity: 2 (Toyota Way: <10 ✓)
-fn maybe_parse_lambda(state: &mut ParserState, expr: Expr, span: Span) -> Result<Expr> {
-    if matches!(state.tokens.peek(), Some((Token::FatArrow, _))) {
-        parse_lambda_from_expr(state, expr, span)
-    } else {
-        Ok(expr)
-    }
-}
-
-/// Parse parenthesized expression, tuple, or lambda
-/// Complexity: 5 (Toyota Way: <10 ✓) [Reduced from 11]
-fn parse_parentheses_token(state: &mut ParserState, span: Span) -> Result<Expr> {
-    state.tokens.advance();
-
-    // Check for unit type ()
-    if matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
-        state.tokens.advance();
-        return Ok(Expr::new(ExprKind::Literal(Literal::Unit), span));
-    }
-
-    // Parse first expression
-    let first_expr = super::parse_expr_recursive(state)?;
-
-    // Check if we have a comma (tuple) or just closing paren (grouped expr)
-    if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
-        // This is a tuple, parse remaining elements
-        let elements = parse_tuple_elements(state, first_expr)?;
-        state.tokens.expect(&Token::RightParen)?;
-        let tuple_expr = Expr::new(ExprKind::Tuple(elements), span);
-        maybe_parse_lambda(state, tuple_expr, span)
-    } else {
-        // Just a grouped expression
-        state.tokens.expect(&Token::RightParen)?;
-        maybe_parse_lambda(state, first_expr, span)
-    }
-}
+// Tuple parsing moved to expressions_helpers/tuples.rs module
 
 // Visibility and modifier functions moved to expressions_helpers/visibility_modifiers.rs (TDG improvement)
 // - parse_pub_token, parse_const_token, parse_sealed_token, parse_final_token
