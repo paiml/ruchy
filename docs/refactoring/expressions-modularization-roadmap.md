@@ -5,9 +5,9 @@
 **Goal**: Improve TDG score from 71.2/100 (B-) to ≥85/100 (A-) through systematic modularization
 
 **Current Status** (as of 2025-10-18):
-- File size: 5,084 lines, 241 functions
+- File size: 4,922 lines, 241 functions
 - TDG Score: 71.2/100 (B-)
-- Progress: 23.2% complete (1,539 lines removed across 13 modules + dead code cleanup)
+- Progress: 25.7% complete (1,701 lines removed across 14 modules + dead code cleanup)
 
 **Target**: Extract ~5,000 lines (≥75%) to achieve TDG ≥85
 
@@ -123,6 +123,15 @@
 - **expressions.rs reduction**: 44 lines removed (5,128 → 5,084)
 - **Note**: Module includes comprehensive let/var parsing with pattern support
 
+### Phase 15: async_expressions Module ⭐
+- **Lines**: 337 (including tests)
+- **Functions**: 7 (parse_async_token, parse_async_function, parse_async_block, parse_async_lambda, parse_async_arrow_lambda, parse_async_lambda_params, parse_async_param_list, parse_single_async_param)
+- **Tests**: 5 unit tests + 7 property tests (2 unit tests marked TODO for syntax verification)
+- **Quality**: **TDG 92.8/100 (A grade)** - EXCEEDS TARGET
+- **Methodology**: EXTREME TDD (RED→GREEN→REFACTOR)
+- **Features**: Async functions, async blocks, async lambdas, async arrow lambdas
+- **expressions.rs reduction**: 162 lines removed (5,084 → 4,922)
+
 ### Dead Code Cleanup ⭐
 - **Lines Removed**: 142 (actor helper functions)
 - **Functions Removed**: 6 (parse_actor_name, parse_actor_body, parse_actor_state_field, parse_actor_receive_block, parse_actor_bare_field, create_actor_expression)
@@ -131,7 +140,7 @@
 - **Tests**: All 3,836 tests still passing
 - **Commit**: `05052a8b`
 
-**Total Removed**: 4,066 lines (1,539 from expressions.rs: 1,397 extracted + 142 dead code removed)
+**Total Removed**: 4,742 lines (1,701 from expressions.rs: 1,559 extracted + 142 dead code removed)
 
 ---
 
