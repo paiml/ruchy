@@ -731,7 +731,67 @@ Post-modularization improvements:
 
 ---
 
+## 🔧 Quality Infrastructure (Post-Modularization)
+
+### ruchy-book Validation System ✅ (2025-10-18)
+**Goal**: Prevent documentation drift by validating book examples with every commit
+**Status**: COMPLETE - Following paiml-mcp-agent-toolkit pattern
+
+**Implementation**:
+1. **Validation Script** (`scripts/validate-ruchy-book.sh`):
+   - Parallel execution (4 jobs, configurable via RUCHY_BOOK_JOBS)
+   - Fail-fast on first failure
+   - 120-second timeout per chapter
+   - Tests 4 critical chapters: Ch01, Ch02, Ch03, Ch05
+
+2. **Pre-commit Hook Integration**:
+   - Automatic validation on every commit
+   - Clear error messages with manual run instructions
+   - Graceful skip if ruchy-book not found
+   - Follows `.git/hooks/pre-commit` pattern from pmat
+
+3. **Make Target** (`make validate-book`):
+   - Easy manual validation
+   - Consistent with `make compatibility` pattern
+   - Added to help section and .PHONY
+
+4. **Documentation** (CLAUDE.md):
+   - Mandatory validation requirement documented
+   - Toyota Way principles explained
+   - Usage examples provided
+
+**Validation Results** (2025-10-18):
+- ✅ Ch01: Getting Started - 8/8 examples passing (7-layer validation)
+  - Layer 1: Syntax validation (ruchy check)
+  - Layer 2: Binary compilation (ruchy compile)
+  - Layer 3: Execution (ruchy run)
+  - Layer 4: Tool validation (check, lint, score)
+  - Layer 5: Notebook (skipped - requires server)
+  - Layer 6: Language spec compliance
+  - Layer 7: Integration testing
+- ✅ Ch02: Variables and Types - All examples passing
+- ✅ Ch03: Control Flow - All examples passing
+- ✅ Ch05: Functions - All examples passing
+
+**Test Coverage**:
+- Each example tested with 3 critical tools: check, compile, run
+- Each example validated for syntax, compilation, and execution
+- F-string interpolation confirmed working (ex8)
+
+**Commits**:
+- `b748a3b5` - [QUALITY] Add ruchy-book validation to pre-commit hooks
+- `51b12048` - [QUALITY] Add make validate-book target
+- `dd81d0e3` - [DOCS] Document ruchy-book validation protocol
+
+**Benefits** (Toyota Way):
+- **Jidoka**: Stop the line if book examples break
+- **Genchi Genbutsu**: Validate examples work, not just exist
+- **Kaizen**: Continuous validation prevents drift
+- **Quality Built-In**: Pre-commit catches issues before merge
+
+---
+
 **Last Updated**: 2025-10-18
 **Next Review**: After Sprint 1 completion
 **Owner**: Modularization team
-**Status**: 5% complete, on track for 5-sprint completion
+**Status**: 91.6% complete, A- grade achieved, book validation active
