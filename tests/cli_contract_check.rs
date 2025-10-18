@@ -177,7 +177,7 @@ fn cli_check_empty_file_is_error() {
         .arg(&file)
         .assert()
         .failure() // Empty file is syntax error (Ruchy requires non-empty programs)
-        .stderr(predicate::str::contains("Unexpected end of input"));
+        .stderr(predicate::str::contains("Empty program"));
 }
 
 #[test]
@@ -190,7 +190,7 @@ fn cli_check_whitespace_only_is_error() {
         .arg(&file)
         .assert()
         .failure() // Whitespace-only is syntax error
-        .stderr(predicate::str::contains("Unexpected end of input"));
+        .stderr(predicate::str::contains("Empty program"));
 }
 
 #[test]
