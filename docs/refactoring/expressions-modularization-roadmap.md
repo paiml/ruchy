@@ -5,9 +5,9 @@
 **Goal**: Improve TDG score from 71.2/100 (B-) to ≥85/100 (A-) through systematic modularization
 
 **Current Status** (as of 2025-10-18):
-- File size: 5,497 lines, 247 functions
+- File size: 5,355 lines, 241 functions (142 lines dead code removed)
 - TDG Score: 71.2/100 (B-)
-- Progress: 16.8% complete (1,126 lines extracted across 10 modules)
+- Progress: 18.9% complete (1,268 lines removed across 10 modules + dead code cleanup)
 
 **Target**: Extract ~5,000 lines (≥75%) to achieve TDG ≥85
 
@@ -95,7 +95,15 @@
 - **Features**: F-string interpolation, escaped braces, nested expressions, format specifiers
 - **Integration**: literals.rs imports directly from string_operations module
 
-**Total Extracted**: 2,703 lines (1,126 from expressions.rs after accounting for overhead + dead code removal)
+### Dead Code Cleanup ⭐
+- **Lines Removed**: 142 (actor helper functions)
+- **Functions Removed**: 6 (parse_actor_name, parse_actor_body, parse_actor_state_field, parse_actor_receive_block, parse_actor_bare_field, create_actor_expression)
+- **Reason**: parse_actor_definition delegates to actors::parse_actor; functions were unreachable
+- **Impact**: expressions.rs: 5,497 → 5,355 lines
+- **Tests**: All 3,836 tests still passing
+- **Commit**: `05052a8b`
+
+**Total Removed**: 2,845 lines (1,268 from expressions.rs: 1,126 extracted + 142 dead code removed)
 
 ---
 
