@@ -5,9 +5,9 @@
 **Goal**: Improve TDG score from 71.2/100 (B-) to ≥85/100 (A-) through systematic modularization
 
 **Current Status** (as of 2025-10-18):
-- File size: 5,886 lines, 247 functions
+- File size: 5,694 lines, 247 functions
 - TDG Score: 71.2/100 (B-)
-- Progress: 13% complete (737 lines extracted across 6 modules)
+- Progress: 14% complete (929 lines extracted across 7 modules)
 
 **Target**: Extract ~5,000 lines (≥75%) to achieve TDG ≥85
 
@@ -60,7 +60,16 @@
 - **Methodology**: EXTREME TDD (RED→GREEN→REFACTOR)
 - **Features**: Unit type, grouped expressions, tuples, tuple-to-lambda conversion
 
-**Total Extracted**: 1,842 lines (737 from expressions.rs after accounting for overhead)
+### Phase 9: unary_operators Module ⭐
+- **Lines**: 286
+- **Functions**: 9 (parse_unary_prefix + 8 operator functions)
+- **Tests**: 6 unit tests + 4 property tests
+- **Quality**: **TDG 91.3/100 (A grade)** - EXCEEDS TARGET
+- **Methodology**: EXTREME TDD (RED→GREEN→REFACTOR)
+- **Dead Code Removed**: 79 lines (duplicate parse_unary_operator_token)
+- **Operators**: -, !, *, &, **, await, ~, spawn
+
+**Total Extracted**: 2,128 lines (929 from expressions.rs after accounting for overhead + dead code removal)
 
 ---
 
@@ -273,6 +282,7 @@ src/frontend/parser/expressions_helpers/
 ├── identifiers.rs          ✅ DONE (401 lines, TDG: 82.9/100 B+)
 ├── literals.rs             ✅ DONE (206 lines, TDG: 92.9/100 A)
 ├── tuples.rs               ✅ DONE (225 lines, TDG: 93.1/100 A)
+├── unary_operators.rs      ✅ DONE (286 lines, TDG: 91.3/100 A)
 ├── visibility_modifiers.rs ✅ DONE (558 lines, TDG: 91.1/100 A)
 ├── objects.rs              ⏳ PLANNED (500 lines)
 ├── dataframes.rs           ⏳ PLANNED (200 lines)
@@ -334,8 +344,8 @@ mod property_tests {
 - [x] Phase 5: Arrays (275 lines, TDG 93.5/100 A) ✅
 - [ ] Phase 6: Objects (~500 lines)
 - [x] Phase 7: Tuples (225 lines, TDG 93.1/100 A) ✅
-- [ ] Phase 8: DataFrames (~200 lines)
-- [ ] Phase 9: Unary Ops (~300 lines)
+- [ ] Phase 8: DataFrames (~200 lines - minimal, delegates to collections)
+- [x] Phase 9: Unary Ops (286 lines, TDG 91.3/100 A) ✅
 
 **Tier 2 (Medium Impact)**:
 - [ ] Phase 10: Patterns (~400 lines)
