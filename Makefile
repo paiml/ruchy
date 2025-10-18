@@ -1,4 +1,4 @@
-.PHONY: help all build test lint format clean clean-coverage coverage coverage-wasm-notebook examples bench install doc ci prepare-publish quality-gate test-examples test-fuzz test-fuzz-quick tdg-dashboard tdg-stop tdg-status tdg-restart e2e-install e2e-install-deps wasm-build test-e2e test-e2e-ui test-e2e-debug test-e2e-headed wasm-quality-gate test-e2e-quick clean-e2e
+.PHONY: help all build test lint format clean clean-coverage coverage coverage-wasm-notebook examples bench install doc ci prepare-publish quality-gate test-examples test-fuzz test-fuzz-quick tdg-dashboard tdg-stop tdg-status tdg-restart e2e-install e2e-install-deps wasm-build test-e2e test-e2e-ui test-e2e-debug test-e2e-headed wasm-quality-gate test-e2e-quick clean-e2e validate-book
 
 # Default target
 help:
@@ -46,6 +46,7 @@ help:
 	@echo "Language Compatibility:"
 	@echo "  make compatibility - Run comprehensive language feature compatibility tests"
 	@echo "  make test-lang-comp - Run LANG-COMP language completeness examples"
+	@echo "  make validate-book - Validate ruchy-book examples (parallel, fail-fast)"
 	@echo ""
 	@echo "Mutation Testing (Sprint 8 - Test Quality Validation):"
 	@echo "  make mutation-help        - Show mutation testing strategy guide"
@@ -822,6 +823,17 @@ compatibility:
 	@echo ""
 	@echo "✅ Language compatibility verification complete!"
 	@echo "📊 Use results to prioritize development for maximum compatibility improvement"
+
+# Run ruchy-book validation (following pmat-book pattern)
+# Tests critical chapters to ensure book examples work with latest ruchy
+# Runs in parallel with fail-fast for quick feedback
+validate-book:
+	@echo "📚 RUCHY-BOOK VALIDATION"
+	@echo $$(printf '=%.0s' $$(seq 1 60))
+	@echo ""
+	@./scripts/validate-ruchy-book.sh
+	@echo ""
+	@echo "✅ Book validation complete!"
 
 # Run LANG-COMP language completeness tests with 15-TOOL VALIDATION
 # MANDATORY: Tests ALL 15 native tools on every example (ZERO exceptions)
