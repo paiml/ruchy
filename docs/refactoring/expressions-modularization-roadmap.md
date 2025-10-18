@@ -5,9 +5,9 @@
 **Goal**: Improve TDG score from 71.2/100 (B-) to ≥85/100 (A-) through systematic modularization
 
 **Current Status** (as of 2025-10-18):
-- File size: 5,128 lines, 241 functions
+- File size: 5,084 lines, 241 functions
 - TDG Score: 71.2/100 (B-)
-- Progress: 22.5% complete (1,495 lines removed across 12 modules + dead code cleanup)
+- Progress: 23.2% complete (1,539 lines removed across 13 modules + dead code cleanup)
 
 **Target**: Extract ~5,000 lines (≥75%) to achieve TDG ≥85
 
@@ -113,6 +113,16 @@
 - **Features**: No-parameter lambdas (||), pipe-delimited lambdas (|x|), arrow syntax (x =>)
 - **expressions.rs reduction**: 80 lines removed (5,208 → 5,128)
 
+### Phase 14: variable_declarations Module ⭐
+- **Lines**: 568 (including tests)
+- **Functions**: 2 main (parse_let_statement, parse_var_statement) + 11 helpers
+- **Tests**: 8 unit tests + 7 property tests
+- **Quality**: **TDG 87.0/100 (A- grade)** - MEETS TARGET
+- **Methodology**: EXTREME TDD (RED→GREEN→REFACTOR)
+- **Features**: Let bindings, mutable bindings, type annotations, pattern matching, let-else, let-in, var statements
+- **expressions.rs reduction**: 44 lines removed (5,128 → 5,084)
+- **Note**: Module includes comprehensive let/var parsing with pattern support
+
 ### Dead Code Cleanup ⭐
 - **Lines Removed**: 142 (actor helper functions)
 - **Functions Removed**: 6 (parse_actor_name, parse_actor_body, parse_actor_state_field, parse_actor_receive_block, parse_actor_bare_field, create_actor_expression)
@@ -121,7 +131,7 @@
 - **Tests**: All 3,836 tests still passing
 - **Commit**: `05052a8b`
 
-**Total Removed**: 3,498 lines (1,495 from expressions.rs: 1,353 extracted + 142 dead code removed)
+**Total Removed**: 4,066 lines (1,539 from expressions.rs: 1,397 extracted + 142 dead code removed)
 
 ---
 

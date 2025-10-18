@@ -16,4 +16,5 @@ pub mod loops;
 pub mod string_operations;
 pub mod tuples;
 pub mod unary_operators;
+pub mod variable_declarations;
 pub mod visibility_modifiers;

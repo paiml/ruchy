@@ -516,43 +516,9 @@ fn parse_collection_enum_token(state: &mut ParserState, token: Token) -> Result<
     }
 }
 /// Parse let statement: let [mut] name [: type] = value [in body]
+// Let statement parsing moved to expressions_helpers/variable_declarations.rs module
 fn parse_let_statement(state: &mut ParserState) -> Result<Expr> {
-    let start_span = state.tokens.expect(&Token::Let)?;
-    // Check for optional 'mut' keyword
-    let is_mutable = parse_let_mutability(state);
-    // Parse variable name or destructuring pattern
-    let pattern = parse_let_pattern(state, is_mutable)?;
-    // Parse optional type annotation
-    let type_annotation = parse_let_type_annotation(state)?;
-    // Parse '=' token
-    state.tokens.expect(&Token::Equal)?;
-    // Parse value expression
-    let value = Box::new(super::parse_expr_recursive(state)?);
-
-    // Check for 'else' clause (let-else pattern)
-    let else_block = parse_let_else_clause(state)?;
-
-    // Parse optional 'in' clause for let expressions (not compatible with let-else)
-    let body = if else_block.is_none() {
-        parse_let_in_clause(state, value.span)?
-    } else {
-        // For let-else, body is unit (the else block handles divergence)
-        Box::new(Expr::new(
-            ExprKind::Literal(Literal::Unit),
-            value.span,
-        ))
-    };
-
-    // Create the appropriate expression based on pattern type
-    create_let_expression(
-        pattern,
-        type_annotation,
-        value,
-        body,
-        is_mutable,
-        else_block,
-        start_span,
-    )
+    expressions_helpers::variable_declarations::parse_let_statement(state)
 }
 /// Parse mutability for let statement
 /// Extracted from `parse_let_statement` to reduce complexity
@@ -814,19 +780,9 @@ fn create_let_expression(
         }
     }
 }
-/// Parse var statement: var name [: type] = value
-/// var is implicitly mutable (like let mut)
+// Var statement parsing moved to expressions_helpers/variable_declarations.rs module
 fn parse_var_statement(state: &mut ParserState) -> Result<Expr> {
-    let start_span = state.tokens.expect(&Token::Var)?;
-    // var is always mutable
-
-    let pattern = parse_var_pattern(state)?;
-    let type_annotation = parse_optional_type_annotation(state)?;
-
-    state.tokens.expect(&Token::Equal)?;
-    let value = Box::new(super::parse_expr_recursive(state)?);
-
-    create_var_expression(pattern, type_annotation, value, start_span)
+    expressions_helpers::variable_declarations::parse_var_statement(state)
 }
 
 /// Extract method: Parse variable pattern - complexity: 6
