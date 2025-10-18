@@ -78,7 +78,7 @@ fn dispatch_prefix_token(state: &mut ParserState, token: Token, span: Span) -> R
         | Token::Impl
         | Token::Type
         | Token::DataFrame
-        | Token::Actor => parse_structure_prefix(state, token),
+        | Token::Actor => parse_structure_prefix(state, token, span),
 
         // Imports, modifiers, and specials
         Token::Import
@@ -219,7 +219,7 @@ fn parse_loop_label(state: &mut ParserState, label_name: String) -> Result<Expr>
     }
 }
 
-fn parse_structure_prefix(state: &mut ParserState, token: Token) -> Result<Expr> {
+fn parse_structure_prefix(state: &mut ParserState, token: Token, span: Span) -> Result<Expr> {
     match token {
         Token::Struct
         | Token::Class
@@ -227,7 +227,7 @@ fn parse_structure_prefix(state: &mut ParserState, token: Token) -> Result<Expr>
         | Token::Interface
         | Token::Impl
         | Token::Type => parse_data_structure_token(state, token),
-        Token::DataFrame | Token::Actor => parse_special_definition_token(state, token),
+        Token::DataFrame | Token::Actor => parse_special_definition_token(state, token, span),
         _ => unreachable!(),
     }
 }
@@ -479,24 +479,10 @@ fn parse_variable_declaration_token(state: &mut ParserState, token: Token) -> Re
 }
 /// Parse special definition tokens (`DataFrame`, Actor)
 /// Extracted from `parse_prefix` to reduce complexity
-fn parse_special_definition_token(state: &mut ParserState, token: Token) -> Result<Expr> {
+fn parse_special_definition_token(state: &mut ParserState, token: Token, span: Span) -> Result<Expr> {
     match token {
-        Token::DataFrame => {
-            // Check if this is df! (literal) or df (identifier)
-            if matches!(state.tokens.peek(), Some((Token::Bang, _))) {
-                // Use the single DataFrame parser from collections module
-                // parse_dataframe will handle consuming the DataFrame token
-                super::collections::parse_dataframe(state)
-            } else {
-                // Treat 'df' as a regular identifier for method calls, etc.
-                // Consume the DataFrame token since we're handling it as identifier
-                state.tokens.advance();
-                Ok(Expr::new(
-                    ExprKind::Identifier("df".to_string()),
-                    Span::default(),
-                ))
-            }
-        }
+        // DataFrame literal (df![...]) or identifier (df) - delegated to dataframes module
+        Token::DataFrame => expressions_helpers::dataframes::parse_dataframe_token(state, span),
         Token::Actor => parse_actor_definition(state),
         _ => bail!("Expected special definition token, got: {:?}", token),
     }
