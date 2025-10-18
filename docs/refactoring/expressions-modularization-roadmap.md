@@ -5,9 +5,9 @@
 **Goal**: Improve TDG score from 71.2/100 (B-) to ≥85/100 (A-) through systematic modularization
 
 **Current Status** (as of 2025-10-18):
-- File size: 3,677 lines, 198 functions
+- File size: 3,376 lines, 186 functions
 - TDG Score: 71.2/100 (B-) [will improve with remaining extractions]
-- Progress: 44.5% complete (2,946 lines removed across 17 modules + dead code cleanup)
+- Progress: 49.0% complete (3,247 lines removed across 18 modules + dead code cleanup)
 
 **Target**: Extract ~5,000 lines (≥75%) to achieve TDG ≥85
 
@@ -160,6 +160,15 @@
 - **Features**: Module declarations, nested modules, pub visibility, keyword module names
 - **expressions.rs reduction**: 77 lines removed (3,754 → 3,677)
 
+### Phase 19: use_statements Module ⭐
+- **Lines**: 437 (including tests)
+- **Functions**: 12 (parse_use_statement, parse_use_path, parse_use_first_segment, parse_use_segment_after_colon, parse_nested_grouped_imports, parse_grouped_import_item, parse_import_identifier, parse_nested_grouped_import, parse_nested_import_items, parse_import_item_with_alias, parse_path_extension_import, parse_simple_import_with_alias)
+- **Tests**: 5 unit tests + 5 property tests
+- **Quality**: **TDG 91.2/100 (A grade)** - EXCEEDS TARGET
+- **Methodology**: EXTREME TDD (RED→GREEN→REFACTOR)
+- **Features**: Simple imports, wildcard imports, aliased imports, grouped imports, nested grouped imports
+- **expressions.rs reduction**: 301 lines removed (3,677 → 3,376)
+
 ### Dead Code Cleanup ⭐
 - **Lines Removed**: 142 (actor helper functions)
 - **Functions Removed**: 6 (parse_actor_name, parse_actor_body, parse_actor_state_field, parse_actor_receive_block, parse_actor_bare_field, create_actor_expression)
@@ -168,7 +177,7 @@
 - **Tests**: All 3,836 tests still passing
 - **Commit**: `05052a8b`
 
-**Total Removed**: 5,987 lines (2,946 from expressions.rs: 2,804 extracted + 142 dead code removed)
+**Total Removed**: 6,288 lines (3,247 from expressions.rs: 3,105 extracted + 142 dead code removed)
 
 ---
 
