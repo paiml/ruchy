@@ -5,9 +5,9 @@
 **Goal**: Improve TDG score from 71.2/100 (B-) to ≥85/100 (A-) through systematic modularization
 
 **Current Status** (as of 2025-10-18):
-- File size: 6,211 lines, 247 functions
+- File size: 6,009 lines, 247 functions
 - TDG Score: 71.2/100 (B-)
-- Progress: 6% complete (412 lines extracted across 3 modules)
+- Progress: 10% complete (614 lines extracted across 4 modules)
 
 **Target**: Extract ~5,000 lines (≥75%) to achieve TDG ≥85
 
@@ -36,7 +36,15 @@
 - **Methodology**: EXTREME TDD (RED→GREEN→REFACTOR)
 - **Dead Code Removed**: 58 lines (duplicate parse_literal_token function)
 
-**Total Extracted**: 941 lines (412 from expressions.rs after accounting for overhead + dead code removal)
+### Phase 4: identifiers Module ⭐
+- **Lines**: 401
+- **Functions**: 5 (parse_identifier_token, parse_module_path_segments, parse_path_segment, parse_turbofish_generics, token_to_keyword_string)
+- **Tests**: 7 unit tests + 6 property tests
+- **Quality**: **TDG 82.9/100 (B+ grade)** - Near A- target
+- **Methodology**: EXTREME TDD (RED→GREEN→REFACTOR)
+- **Cross-Module**: visibility_modifiers imports identifiers module
+
+**Total Extracted**: 1,342 lines (614 from expressions.rs after accounting for overhead)
 
 ---
 
@@ -55,20 +63,14 @@
 - **Actual Effort**: 1.5 hours
 - **Commit**: 44eab952
 
-**Phase 4: Identifier & Path Resolution** (~600 lines)
-- **Location**: Lines 553-700, scattered helper functions
-- **Functions**:
-  - `parse_identifier_token`
-  - `parse_path_segment` (line 466)
-  - `token_to_keyword_string` (line 494)
-  - `parse_module_path_segments` (line 544)
-  - Turbofish generic parsing
-- **Property Tests**:
-  - Valid identifier generation (alphanumeric + underscore)
-  - Path parsing (::, nested modules)
-  - Keyword-as-identifier edge cases
-- **Estimated Effort**: 4 hours
-- **TDG Impact**: Medium (~9% reduction)
+**Phase 4: Identifier & Path Resolution** ✅ COMPLETE
+- **Lines**: 401 (expressions.rs: -202 lines)
+- **Functions**: 5 (parse_identifier_token, parse_module_path_segments, parse_path_segment, parse_turbofish_generics, token_to_keyword_string)
+- **Property Tests**: 6 (identifiers, qualified paths, triple paths, keywords, specials, lambdas)
+- **Unit Tests**: 7 (simple, qualified, nested, underscore, self, super, lambda)
+- **Quality**: TDG 82.9/100 (B+ grade) - Near A- target
+- **Actual Effort**: 2 hours
+- **Commit**: 5222eb61
 
 **Phase 5: Array & Collection Literals** (~400 lines)
 - **Location**: Lines 2413-2600
@@ -259,7 +261,7 @@ src/frontend/parser/expressions_helpers/
 ├── control_flow.rs         ✅ DONE (177 lines, TDG: N/A)
 ├── visibility_modifiers.rs ✅ DONE (558 lines, TDG: 91.1/100 A)
 ├── literals.rs             ✅ DONE (206 lines, TDG: 92.9/100 A)
-├── identifiers.rs          ⏳ PLANNED (600 lines)
+├── identifiers.rs          ✅ DONE (401 lines, TDG: 82.9/100 B+)
 ├── arrays.rs               ⏳ PLANNED (400 lines)
 ├── objects.rs              ⏳ PLANNED (500 lines)
 ├── tuples.rs               ⏳ PLANNED (300 lines)
@@ -318,7 +320,7 @@ mod property_tests {
 
 **Tier 1 (High Impact)**:
 - [x] Phase 3: Literals (206 lines, TDG 92.9/100 A) ✅
-- [ ] Phase 4: Identifiers (~600 lines)
+- [x] Phase 4: Identifiers (401 lines, TDG 82.9/100 B+) ✅
 - [ ] Phase 5: Arrays (~400 lines)
 - [ ] Phase 6: Objects (~500 lines)
 - [ ] Phase 7: Tuples (~300 lines)
