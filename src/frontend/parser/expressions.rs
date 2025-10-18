@@ -7,6 +7,10 @@ use super::{
 };
 use crate::frontend::ast::{Decorator, EnumVariantKind};
 use crate::frontend::error_recovery::ParseError;
+
+// Helper modules for improved maintainability (TDG Structural improvement)
+#[path = "expressions_helpers/mod.rs"]
+mod expressions_helpers;
 pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
     let Some((token, span)) = state.tokens.peek() else {
         bail!("Unexpected end of input - expected expression");
@@ -1056,72 +1060,8 @@ fn parse_unsafe_token(state: &mut ParserState) -> Result<Expr> {
     }
 }
 
-/// Parse break token with optional label
-/// Extracted from `parse_prefix` to reduce complexity
-fn parse_break_token(state: &mut ParserState, span: Span) -> Result<Expr> {
-    state.tokens.advance();
-    // Optional label (lifetime syntax 'label)
-    let label = if let Some((Token::Lifetime(name), _)) = state.tokens.peek() {
-        let label = Some(name.clone());
-        state.tokens.advance();
-        label
-    } else {
-        None
-    };
+// Control flow functions moved to expressions_helpers/control_flow.rs (TDG improvement)
 
-    // Parse optional break value: break <expr> or break 'label <expr>
-    let value = if matches!(
-        state.tokens.peek(),
-        Some((Token::Semicolon | Token::RightBrace | Token::RightParen, _))
-    ) || state.tokens.peek().is_none()
-    {
-        // No value if followed by terminator or EOF
-        None
-    } else {
-        // Parse the value expression
-        Some(Box::new(super::parse_expr_recursive(state)?))
-    };
-
-    Ok(Expr::new(ExprKind::Break { label, value }, span))
-}
-/// Parse continue token with optional label
-/// Extracted from `parse_prefix` to reduce complexity
-fn parse_continue_token(state: &mut ParserState, span: Span) -> Result<Expr> {
-    state.tokens.advance();
-    // Optional label (lifetime syntax 'label)
-    let label = if let Some((Token::Lifetime(name), _)) = state.tokens.peek() {
-        let label = Some(name.clone());
-        state.tokens.advance();
-        label
-    } else {
-        None
-    };
-    Ok(Expr::new(ExprKind::Continue { label }, span))
-}
-/// Parse return token with optional expression
-/// Extracted from `parse_prefix` to reduce complexity
-fn parse_return_token(state: &mut ParserState, span: Span) -> Result<Expr> {
-    state.tokens.advance();
-    // Check if there's an expression to return
-    // Bare return is allowed when followed by: ;, }, or EOF
-    let value = if matches!(state.tokens.peek(), Some((Token::Semicolon | Token::RightBrace, _)))
-        || state.tokens.peek().is_none()
-    {
-        // No expression, bare return (equivalent to return ())
-        None
-    } else {
-        // Parse the return expression
-        Some(Box::new(super::parse_expr_recursive(state)?))
-    };
-    Ok(Expr::new(ExprKind::Return { value }, span))
-}
-/// Parse throw statement token  
-fn parse_throw_token(state: &mut ParserState, span: Span) -> Result<Expr> {
-    state.tokens.advance();
-    // Throw always requires an expression
-    let expr = Box::new(super::parse_expr_recursive(state)?);
-    Ok(Expr::new(ExprKind::Throw { expr }, span))
-}
 /// Parse constructor tokens (Some, None, Ok, Err, Result, Option)
 /// Extracted from `parse_prefix` to reduce complexity
 fn parse_constructor_token(state: &mut ParserState, token: Token, span: Span) -> Result<Expr> {
@@ -1372,10 +1312,10 @@ fn parse_control_statement_token(
         Token::Final => parse_final_token(state),
         Token::Abstract => parse_abstract_token(state),
         Token::Unsafe => parse_unsafe_token(state),
-        Token::Break => parse_break_token(state, span),
-        Token::Continue => parse_continue_token(state, span),
-        Token::Return => parse_return_token(state, span),
-        Token::Throw => parse_throw_token(state, span),
+        Token::Break => expressions_helpers::control_flow::parse_break_token(state, span),
+        Token::Continue => expressions_helpers::control_flow::parse_continue_token(state, span),
+        Token::Return => expressions_helpers::control_flow::parse_return_token(state, span),
+        Token::Throw => expressions_helpers::control_flow::parse_throw_token(state, span),
         Token::Export => parse_export_token(state),
         Token::Async => parse_async_token(state),
         Token::Increment => parse_increment_token(state, span),
