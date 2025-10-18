@@ -4195,91 +4195,9 @@ fn create_actor_expression(
         start_span,
     ))
 }
-pub fn token_to_binary_op(token: &Token) -> Option<BinaryOp> {
-    // Try each category of operators
-    map_arithmetic_operator(token)
-        .or_else(|| map_comparison_operator(token))
-        .or_else(|| map_logical_operator(token))
-        .or_else(|| map_bitwise_operator(token))
-        .or_else(|| map_actor_operator(token))
-}
-/// Map arithmetic tokens to binary operators
-/// Extracted from `token_to_binary_op` to reduce complexity
-fn map_arithmetic_operator(token: &Token) -> Option<BinaryOp> {
-    match token {
-        Token::Plus => Some(BinaryOp::Add),
-        Token::Minus => Some(BinaryOp::Subtract),
-        Token::Star => Some(BinaryOp::Multiply),
-        Token::Slash => Some(BinaryOp::Divide),
-        Token::Percent => Some(BinaryOp::Modulo),
-        Token::Power => Some(BinaryOp::Power),
-        _ => None,
-    }
-}
-/// Map comparison tokens to binary operators
-/// Extracted from `token_to_binary_op` to reduce complexity
-fn map_comparison_operator(token: &Token) -> Option<BinaryOp> {
-    match token {
-        Token::EqualEqual => Some(BinaryOp::Equal),
-        Token::NotEqual => Some(BinaryOp::NotEqual),
-        Token::Less => Some(BinaryOp::Less),
-        Token::LessEqual => Some(BinaryOp::LessEqual),
-        Token::Greater => Some(BinaryOp::Greater),
-        Token::GreaterEqual => Some(BinaryOp::GreaterEqual),
-        _ => None,
-    }
-}
-/// Map logical tokens to binary operators
-/// Extracted from `token_to_binary_op` to reduce complexity
-fn map_logical_operator(token: &Token) -> Option<BinaryOp> {
-    match token {
-        Token::AndAnd => Some(BinaryOp::And),
-        Token::OrOr => Some(BinaryOp::Or),
-        Token::NullCoalesce => Some(BinaryOp::NullCoalesce),
-        _ => None,
-    }
-}
-/// Map bitwise tokens to binary operators
-/// Extracted from `token_to_binary_op` to reduce complexity
-fn map_bitwise_operator(token: &Token) -> Option<BinaryOp> {
-    match token {
-        Token::Ampersand => Some(BinaryOp::BitwiseAnd),
-        Token::Pipe => Some(BinaryOp::BitwiseOr),
-        Token::Caret => Some(BinaryOp::BitwiseXor),
-        Token::LeftShift => Some(BinaryOp::LeftShift),
-        Token::RightShift => Some(BinaryOp::RightShift),
-        _ => None,
-    }
-}
-/// Map actor message passing tokens to binary operators
-fn map_actor_operator(token: &Token) -> Option<BinaryOp> {
-    match token {
-        Token::Bang => Some(BinaryOp::Send), // actor ! Message
-        _ => None,
-    }
-}
-pub fn get_precedence(op: BinaryOp) -> i32 {
-    match op {
-        BinaryOp::Or => 1,
-        BinaryOp::NullCoalesce => 2,
-        BinaryOp::And => 3,
-        BinaryOp::BitwiseOr => 4,
-        BinaryOp::BitwiseXor => 5,
-        BinaryOp::BitwiseAnd => 6,
-        BinaryOp::Equal | BinaryOp::NotEqual => 7,
-        BinaryOp::Less
-        | BinaryOp::LessEqual
-        | BinaryOp::Greater
-        | BinaryOp::GreaterEqual
-        | BinaryOp::Gt => 8,
-        BinaryOp::LeftShift => 9,
-        BinaryOp::RightShift => 9,
-        BinaryOp::Add | BinaryOp::Subtract => 10,
-        BinaryOp::Multiply | BinaryOp::Divide | BinaryOp::Modulo => 11,
-        BinaryOp::Power => 12,
-        BinaryOp::Send => 2, // Actor message passing precedence
-    }
-}
+// Re-export binary operator functions from binary_operators module
+// These are used by mod.rs and collections.rs
+pub use expressions_helpers::binary_operators::{get_precedence, token_to_binary_op};
 /// Parse f-string content into interpolation parts
 fn parse_fstring_into_parts(input: &str) -> Result<Vec<StringPart>> {
     let mut parts = Vec::new();

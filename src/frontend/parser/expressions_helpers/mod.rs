@@ -6,6 +6,7 @@
 //! Modularization improves TDG Structural score from 0/25 to target ≥21/25.
 
 pub mod arrays;
+pub mod binary_operators;
 pub mod control_flow;
 pub mod dataframes;
 pub mod identifiers;
