@@ -37,7 +37,24 @@ All notable changes to the Ruchy programming language will be documented in this
   - **Key Insight**: PMAT Structural score penalizes large files - extracting tests to separate file eliminated penalty
   - **Commits**: Phases 21-28 (d9c274e2, b55a5466, 1e710ee1, and 5 more)
 
+- **[QUALITY] handlers/mod.rs Test Extraction (Incremental)**: Extracted tests to improve maintainability
+  - Test extraction: 174 lines → handlers/tests.rs (17 unit tests, 100% passing)
+  - File reduction: 3,017 → 2,843 lines (6% reduction)
+  - TDG Score: 68.3 → 68.9 (C+) - small improvement (+0.6 points)
+  - Key finding: Test extraction alone insufficient for large files (tests were only 6%)
+  - Next step: Function modularization needed to reach A- grade (similar to expressions.rs success)
+  - Commit: 9c222c93
+
 ### Fixed
+- **[FIX] CLI Contract Tests for Parser Error Messages**: Updated test expectations to match improved parser error messages
+  - Fixed cli_check_empty_file_is_error: Expected "Empty program" instead of "Unexpected end of input"
+  - Fixed cli_check_whitespace_only_is_error: Expected "Empty program" instead of "Unexpected end of input"
+  - Fixed cli_check_comment_only_is_error: Correctly expects "Unexpected end of input" (comments are tokenized)
+  - All 9 cli_contract_check tests now passing (100% success rate)
+  - Root cause: Parser improved error messages for empty files vs comment-only files
+  - Toyota Way: Stopped the line immediately to fix test failures
+  - Commit: 7bc8001b
+
 - **[PARSER-055] Bare return statements support**: Parser now correctly handles `return` without value (early exit). One-line fix discovered via SQLite-level testing. Zero regressions, all 3763 tests passing.
 - **[QUALITY-009] parser/utils.rs TDG Refactoring (PHASES 1 & 2 COMPLETE)**: Using EXTREME TDD methodology
   - **Phase 1 Complete: Type Parsing Extraction + Property Test Infrastructure**
