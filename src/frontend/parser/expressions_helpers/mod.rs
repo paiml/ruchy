@@ -10,6 +10,7 @@ pub mod async_expressions;
 pub mod binary_operators;
 pub mod control_flow;
 pub mod dataframes;
+pub mod error_handling;
 pub mod identifiers;
 pub mod lambdas;
 pub mod literals;

@@ -308,22 +308,9 @@ fn parse_control_flow_token(state: &mut ParserState, token: Token) -> Result<Exp
         _ => bail!("Expected control flow token, got: {:?}", token),
     }
 }
-/// Parse try-catch-finally block
-/// Complexity: <10 (structured error handling)
+// Try-catch-finally parsing moved to expressions_helpers/error_handling.rs module
 fn parse_try_catch(state: &mut ParserState) -> Result<Expr> {
-    let start_span = state.tokens.expect(&Token::Try)?;
-    let try_block = parse_try_block(state)?;
-    let catch_clauses = parse_catch_clauses(state)?;
-    let finally_block = parse_finally_block(state)?;
-    validate_try_catch_structure(&catch_clauses, finally_block.as_deref())?;
-    Ok(Expr::new(
-        ExprKind::TryCatch {
-            try_block,
-            catch_clauses,
-            finally_block,
-        },
-        start_span,
-    ))
+    expressions_helpers::error_handling::parse_try_catch(state)
 }
 /// Parse module declaration: mod name { body }
 /// Complexity: <5 (simple structure)
@@ -3797,72 +3784,6 @@ fn parse_actor_definition(state: &mut ParserState) -> Result<Expr> {
 // Re-export binary operator functions from binary_operators module
 // These are used by mod.rs and collections.rs
 pub use expressions_helpers::binary_operators::{get_precedence, token_to_binary_op};
-/// Helper for parsing try block (complexity: 3)
-fn parse_try_block(state: &mut ParserState) -> Result<Box<Expr>> {
-    // parse_block expects and consumes the left brace
-    Ok(Box::new(super::collections::parse_block(state)?))
-}
-/// Helper for parsing catch clauses (complexity: 8)
-fn parse_catch_clauses(state: &mut ParserState) -> Result<Vec<crate::frontend::ast::CatchClause>> {
-    use crate::frontend::ast::CatchClause;
-    let mut catch_clauses = Vec::new();
-    while matches!(state.tokens.peek(), Some((Token::Catch, _))) {
-        state.tokens.advance(); // consume 'catch'
-        let pattern = parse_catch_pattern(state)?;
-        let body = parse_catch_body(state)?;
-        catch_clauses.push(CatchClause { pattern, body });
-    }
-    Ok(catch_clauses)
-}
-/// Helper for parsing catch pattern (complexity: 7)
-/// Supports both `catch (e)` and `catch e` syntax
-fn parse_catch_pattern(state: &mut ParserState) -> Result<Pattern> {
-    // Check if using parentheses syntax: catch (e)
-    let has_parens = matches!(state.tokens.peek(), Some((Token::LeftParen, _)));
-
-    if has_parens {
-        state.tokens.expect(&Token::LeftParen)?;
-    }
-
-    let pattern = if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
-        let name = name.clone();
-        state.tokens.advance();
-        Pattern::Identifier(name)
-    } else {
-        bail!("Expected identifier in catch clause");
-    };
-
-    if has_parens {
-        state.tokens.expect(&Token::RightParen)?;
-    }
-
-    Ok(pattern)
-}
-/// Helper for parsing catch body (complexity: 3)
-fn parse_catch_body(state: &mut ParserState) -> Result<Box<Expr>> {
-    // parse_block expects and consumes the left brace
-    Ok(Box::new(super::collections::parse_block(state)?))
-}
-/// Helper for parsing optional finally block (complexity: 6)
-fn parse_finally_block(state: &mut ParserState) -> Result<Option<Box<Expr>>> {
-    if matches!(state.tokens.peek(), Some((Token::Finally, _))) {
-        state.tokens.advance(); // consume 'finally'
-                                // parse_block expects and consumes the left brace
-        Ok(Some(Box::new(super::collections::parse_block(state)?)))
-    } else {
-        Ok(None)
-    }
-}
-/// Helper for validating try-catch structure (complexity: 3)
-fn validate_try_catch_structure(
-    catch_clauses: &[crate::frontend::ast::CatchClause],
-    finally_block: Option<&Expr>,
-) -> Result<()> {
-    if catch_clauses.is_empty() && finally_block.is_none() {
-        bail!("Try block must have at least one catch clause or a finally block");
-    }
-    Ok(())
-}
 
 #[cfg(test)]
 mod tests {

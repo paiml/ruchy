@@ -5,9 +5,9 @@
 **Goal**: Improve TDG score from 71.2/100 (B-) to ≥85/100 (A-) through systematic modularization
 
 **Current Status** (as of 2025-10-18):
-- File size: 4,922 lines, 241 functions
+- File size: 4,843 lines, 234 functions
 - TDG Score: 71.2/100 (B-)
-- Progress: 25.7% complete (1,701 lines removed across 14 modules + dead code cleanup)
+- Progress: 26.9% complete (1,780 lines removed across 15 modules + dead code cleanup)
 
 **Target**: Extract ~5,000 lines (≥75%) to achieve TDG ≥85
 
@@ -132,6 +132,15 @@
 - **Features**: Async functions, async blocks, async lambdas, async arrow lambdas
 - **expressions.rs reduction**: 162 lines removed (5,084 → 4,922)
 
+### Phase 16: error_handling Module ⭐
+- **Lines**: 302 (including tests)
+- **Functions**: 7 (parse_try_catch, parse_try_block, parse_catch_clauses, parse_catch_pattern, parse_catch_body, parse_finally_block, validate_try_catch_structure)
+- **Tests**: 8 unit tests + 7 property tests
+- **Quality**: **TDG 93.1/100 (A grade)** - EXCEEDS TARGET
+- **Methodology**: EXTREME TDD (RED→GREEN→REFACTOR)
+- **Features**: Try-catch-finally blocks, multiple catch clauses, catch without parens, nested try-catch
+- **expressions.rs reduction**: 79 lines removed (4,922 → 4,843)
+
 ### Dead Code Cleanup ⭐
 - **Lines Removed**: 142 (actor helper functions)
 - **Functions Removed**: 6 (parse_actor_name, parse_actor_body, parse_actor_state_field, parse_actor_receive_block, parse_actor_bare_field, create_actor_expression)
@@ -140,7 +149,7 @@
 - **Tests**: All 3,836 tests still passing
 - **Commit**: `05052a8b`
 
-**Total Removed**: 4,742 lines (1,701 from expressions.rs: 1,559 extracted + 142 dead code removed)
+**Total Removed**: 4,821 lines (1,780 from expressions.rs: 1,638 extracted + 142 dead code removed)
 
 ---
 
