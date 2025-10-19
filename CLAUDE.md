@@ -464,6 +464,74 @@ mod property_tests {
 ✅ **Allowed**: `*.ruchy` files loaded via `:load` command in REPL
 ❌ **Forbidden**: Python scripts, shell scripts, or any non-Ruchy testing code
 
+## bashrs Quality Enforcement (Shell Scripts & Makefiles)
+
+**MANDATORY**: All shell scripts and Makefiles MUST pass bashrs quality checks before commit.
+
+### Installation
+```bash
+cargo install bashrs  # Already installed at ~/.cargo/bin/bashrs
+```
+
+### Usage
+
+**Manual Linting**:
+```bash
+# Lint single shell script
+bashrs lint <script.sh>
+
+# Lint Makefile
+bashrs make lint Makefile
+
+# Lint all via Makefile targets
+make lint-scripts    # All .sh files
+make lint-make       # Makefile only
+make lint-bashrs     # Everything (scripts + Makefile)
+```
+
+**Pre-commit Hook**: bashrs validation runs automatically on staged files
+- ✅ **Errors**: Block commit (exit 1)
+- ⚠️  **Warnings**: Allow commit (non-blocking)
+
+### Current Quality Status (2025-10-19)
+
+**Makefile**: 0 errors, 2 warnings (non-blocking)
+- MAKE003: Unquoted variable warning (line 766)
+- MAKE004: Missing .PHONY for 'dev' target (line 688)
+
+**Shell Scripts** (sample):
+- `./run-e2e-tests.sh`: 0 errors, 3 warnings
+- `./.pmat/test_book_compat.sh`: 0 errors, 17 warnings
+- `./.pmat/run_overnight_mutations.sh`: **5 errors** (MUST FIX)
+
+### Quality Standards
+
+**Errors (BLOCKING)**:
+- Syntax errors
+- Dangerous command patterns (e.g., `rm -rf /`)
+- Unquoted variables in critical contexts
+- Missing error handling for critical operations
+
+**Warnings (NON-BLOCKING)**:
+- ShellCheck-compatible style suggestions
+- Quoting recommendations
+- POSIX portability hints
+
+### Toyota Way Application
+
+**Jidoka**: bashrs stops the line for shell script defects
+- Pre-commit hook: Automated quality gates
+- Manual review: `make lint-bashrs` before any bash/Makefile changes
+
+**Kaizen**: Continuous improvement of shell quality
+- Fix errors immediately (blocking)
+- Address warnings incrementally (non-blocking)
+- Use bashrs suggestions as learning opportunities
+
+**NEVER BYPASS**: `git commit --no-verify` is FORBIDDEN
+- Fix root cause, don't bypass quality gates
+- If bashrs blocks incorrectly, fix bashrs detection
+
 ## Implementation Hierarchy
 
 ```yaml

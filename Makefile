@@ -1,4 +1,4 @@
-.PHONY: help all build test lint format clean clean-coverage coverage coverage-wasm-notebook examples bench install doc ci prepare-publish quality-gate test-examples test-fuzz test-fuzz-quick tdg-dashboard tdg-stop tdg-status tdg-restart e2e-install e2e-install-deps wasm-build test-e2e test-e2e-ui test-e2e-debug test-e2e-headed wasm-quality-gate test-e2e-quick clean-e2e validate-book
+.PHONY: help all build test lint lint-scripts lint-make lint-bashrs format clean clean-coverage coverage coverage-wasm-notebook examples bench install doc ci prepare-publish quality-gate test-examples test-fuzz test-fuzz-quick tdg-dashboard tdg-stop tdg-status tdg-restart e2e-install e2e-install-deps wasm-build test-e2e test-e2e-ui test-e2e-debug test-e2e-headed wasm-quality-gate test-e2e-quick clean-e2e validate-book
 
 # Default target
 help:
@@ -17,6 +17,9 @@ help:
 	@echo "  make test-repl   - Run ALL REPL tests (unit, property, fuzz, examples, coverage)"
 	@echo "  make test-nextest - Run tests with nextest (better output)"
 	@echo "  make lint        - Run clippy linter"
+	@echo "  make lint-bashrs - Lint shell scripts and Makefile with bashrs"
+	@echo "  make lint-scripts - Lint shell scripts with bashrs"
+	@echo "  make lint-make   - Lint Makefile with bashrs"
 	@echo "  make format      - Format code with rustfmt"
 	@echo "  make clean       - Clean build artifacts"
 	@echo ""
@@ -238,6 +241,44 @@ lint-all:
 	@echo "Running clippy on all targets..."
 	@cargo clippy --all-targets --all-features -- -D warnings
 	@echo "✓ Linting complete"
+
+# Lint shell scripts with bashrs
+lint-scripts:
+	@echo "Linting shell scripts with bashrs..."
+	@ERRORS=0; \
+	for file in $$(find . -name "*.sh" -not -path "./target/*" -not -path "./.git/*"); do \
+		OUTPUT=$$(bashrs lint "$$file" 2>&1); \
+		SCRIPT_ERRORS=$$(echo "$$OUTPUT" | grep -oP '\d+(?= error\(s\))' || echo "0"); \
+		if [ $$SCRIPT_ERRORS -gt 0 ]; then \
+			echo "❌ $$file: $$SCRIPT_ERRORS error(s)"; \
+			echo "$$OUTPUT"; \
+			ERRORS=$$((ERRORS + SCRIPT_ERRORS)); \
+		fi; \
+	done; \
+	if [ $$ERRORS -gt 0 ]; then \
+		echo "❌ Found $$ERRORS total error(s) in shell scripts"; \
+		exit 1; \
+	fi
+	@echo "✓ Shell script linting complete"
+
+# Lint Makefile with bashrs
+lint-make:
+	@echo "Linting Makefile with bashrs..."
+	@OUTPUT=$$(bashrs make lint Makefile 2>&1); \
+	ERRORS=$$(echo "$$OUTPUT" | grep -oP '\d+(?= error\(s\))' || echo "0"); \
+	WARNINGS=$$(echo "$$OUTPUT" | grep -oP '\d+(?= warning\(s\))' || echo "0"); \
+	echo "$$OUTPUT"; \
+	if [ $$ERRORS -gt 0 ]; then \
+		echo "❌ Makefile has $$ERRORS error(s)"; \
+		exit 1; \
+	elif [ $$WARNINGS -gt 0 ]; then \
+		echo "⚠️  Makefile has $$WARNINGS warning(s) (non-blocking)"; \
+	fi
+	@echo "✓ Makefile linting complete"
+
+# Lint all bash/Makefile files with bashrs
+lint-bashrs: lint-scripts lint-make
+	@echo "✓ All bashrs linting complete"
 
 # Format code
 format:
