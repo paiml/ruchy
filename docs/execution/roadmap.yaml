@@ -3,9 +3,9 @@
 
 metadata:
   version: "3.5"
-  last_updated: "2025-10-15"
-  current_sprint: "🚀 SQLite-Level Testing Framework - Foundation Phase (3/8 Harnesses)"
-  latest_release: "v3.89.0"
+  last_updated: "2025-10-19"
+  current_sprint: "✅ PARSER-DEFECT-001 Fixed + WASM Operator Precedence Complete"
+  latest_release: "v3.95.0"
   production_readiness:
     overall: "87%"
     breakdown:
