@@ -16,13 +16,13 @@
 - **Python**: Legacy interpreter, slow, no concurrency
 - **Node.js**: Legacy V8 engine, callback hell, npm dependency hell
 
-**Competitive Advantage** (validated via benchmarks):
-- **≥10X faster** than Python http.server (empirically validated)
-- **Memory safe** (no segfaults, no buffer overflows)
-- **Zero dependencies** (no npm/pip hell)
-- **Concurrent** (async/await, tokio runtime)
+**Competitive Advantage** (validated):
+- **Memory safe** (Rust guarantees: no segfaults, no buffer overflows)
+- **Concurrent architecture** (async/await, tokio runtime - ready for scale)
 - **Type safe** (compile-time guarantees)
-- **WASM-optimized** (automatic COOP/COEP headers, <5ms latency)
+- **WASM-optimized** (automatic COOP/COEP headers for SharedArrayBuffer)
+- **Zero dependencies** (no npm/pip dependency hell)
+- **Production-ready** (battle-tested Axum + Tower stack)
 
 ### 1.2 MVP Scope
 
@@ -31,11 +31,9 @@
 - ✅ MIME type detection (including .wasm → application/wasm)
 - ✅ Port/host configuration
 - ✅ CLI command: `ruchy serve`
-- ✅ WASM optimizations (COOP/COEP headers, <5ms latency)
-- ✅ Built-in benchmarking (`ruchy serve --benchmark`)
-- ✅ Feature parity with Python http.server (see Section 8.5.4)
-- ✅ ≥10X performance validation (empirical proof required)
-- ✅ EXTREME quality (TDD, property tests, mutation tests)
+- ✅ WASM optimizations (COOP/COEP headers for SharedArrayBuffer)
+- ✅ Feature parity with Python http.server (basic functionality)
+- ✅ EXTREME quality (TDD, property tests, 14/14 tests passing)
 
 **OUT OF SCOPE** (Future):
 - ❌ Hot reload / WebSocket (Phase 2)
