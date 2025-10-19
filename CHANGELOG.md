@@ -2,6 +2,37 @@
 
 All notable changes to the Ruchy programming language will be documented in this file.
 
+## [3.92.0] - 2025-10-19
+
+### Added
+- **[RUNTIME] Enum Runtime Support - Full Implementation**
+  - Unit variants: `enum Status { Success, Pending }` with `Status::Success` construction
+  - Tuple variants: `enum Response { Ok, Error(String) }` with `Response::Error("msg")` construction
+  - Keyword variants: Support for `Ok`, `Err`, `Some`, `None` as variant names
+  - Enum type registration and metadata storage in interpreter
+  - 5 comprehensive integration tests (tests/enum_runtime.rs)
+
+### Fixed
+- **[PARSER] Fixed `::` operator handling** - Changed from eager module path parsing to postfix operator
+  - Parser now creates proper `FieldAccess` AST nodes instead of qualified `Identifier` strings
+  - Enables `Status::Success` syntax for enum variant construction
+  - Supports keyword tokens (Ok, Err, Some, None) as variant names after `::`
+- **[CLEANUP] Unused variable warning** in enum tuple variant handling
+
+### Technical Details
+- **Parser Changes**: src/frontend/parser/mod.rs
+  - Removed eager `::` handling from `parse_identifier_token()`
+  - Added `handle_colon_colon_operator()` with keyword support
+  - Added lexer test `test_tokenize_enum_variant()` to verify tokenization
+
+- **Interpreter Changes**: src/runtime/interpreter.rs
+  - `eval_enum_definition()`: Registers enum types with metadata
+  - `eval_field_access()`: Creates `EnumVariant` values for unit variants
+  - `eval_function_call()`: Handles tuple variant construction
+
+- **Tests**: All 3,965 tests passing (0 failures)
+- **Commits**: 5 commits (4 implementation + 1 cleanup)
+
 ## [3.91.0] - 2025-10-18
 
 ### Changed
