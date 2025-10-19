@@ -6113,7 +6113,7 @@ impl Interpreter {
         let arg_vals = arg_vals?;
 
         // Special handling for enum variant construction with arguments (tuple variants)
-        if let Value::EnumVariant { variant_name, data } = func_val {
+        if let Value::EnumVariant { variant_name, data: _ } = func_val {
             // This is a tuple variant constructor: Response::Error("msg")
             return Ok(Value::EnumVariant {
                 variant_name,
