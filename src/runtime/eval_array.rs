@@ -33,6 +33,7 @@ where
         "push" if args.len() == 1 => eval_array_push(arr, &args[0]),
         "pop" if args.is_empty() => eval_array_pop(arr),
         "get" if args.len() == 1 => eval_array_get(arr, &args[0]),
+        "nth" if args.len() == 1 => eval_array_nth(arr, &args[0]),
         "contains" if args.len() == 1 => eval_array_contains(arr, &args[0]),
 
         // Higher-order methods
@@ -96,6 +97,38 @@ fn eval_array_get(arr: &Arc<[Value]>, index: &Value) -> Result<Value, Interprete
     } else {
         Err(InterpreterError::RuntimeError(
             "get expects integer index".to_string(),
+        ))
+    }
+}
+
+/// Return the nth element of an array wrapped in Option::Some, or Option::None if out of bounds
+///
+/// # Complexity
+/// Cyclomatic complexity: 4 (well within <10 limit)
+fn eval_array_nth(arr: &Arc<[Value]>, index: &Value) -> Result<Value, InterpreterError> {
+    if let Value::Integer(idx) = index {
+        if *idx < 0 {
+            return Ok(Value::EnumVariant {
+                variant_name: "None".to_string(),
+                data: None,
+            });
+        }
+        #[allow(clippy::cast_sign_loss)]
+        let index = *idx as usize;
+        if index < arr.len() {
+            Ok(Value::EnumVariant {
+                variant_name: "Some".to_string(),
+                data: Some(vec![arr[index].clone()]),
+            })
+        } else {
+            Ok(Value::EnumVariant {
+                variant_name: "None".to_string(),
+                data: None,
+            })
+        }
+    } else {
+        Err(InterpreterError::RuntimeError(
+            "nth expects integer index".to_string(),
         ))
     }
 }
@@ -519,5 +552,124 @@ mod tests {
             Value::Bool(true),
             "all() should return true when all elements are truthy"
         );
+    }
+
+    #[test]
+    fn test_array_nth_in_bounds() {
+        let arr = Arc::from(vec![
+            Value::Integer(10),
+            Value::Integer(20),
+            Value::Integer(30),
+        ]);
+        let result = eval_array_nth(&arr, &Value::Integer(1)).unwrap();
+
+        // Should return Option::Some(20)
+        match result {
+            Value::EnumVariant { variant_name, data } if variant_name == "Some" => {
+                assert_eq!(data.unwrap()[0], Value::Integer(20));
+            }
+            _ => panic!("Expected Some variant"),
+        }
+    }
+
+    #[test]
+    fn test_array_nth_out_of_bounds() {
+        let arr = Arc::from(vec![Value::Integer(1), Value::Integer(2)]);
+        let result = eval_array_nth(&arr, &Value::Integer(10)).unwrap();
+
+        // Should return Option::None
+        match result {
+            Value::EnumVariant { variant_name, data } if variant_name == "None" => {
+                assert!(data.is_none());
+            }
+            _ => panic!("Expected None variant"),
+        }
+    }
+
+    #[test]
+    fn test_array_nth_negative_index() {
+        let arr = Arc::from(vec![Value::Integer(1), Value::Integer(2)]);
+        let result = eval_array_nth(&arr, &Value::Integer(-1)).unwrap();
+
+        // Should return Option::None for negative indices
+        match result {
+            Value::EnumVariant { variant_name, data } if variant_name == "None" => {
+                assert!(data.is_none());
+            }
+            _ => panic!("Expected None variant for negative index"),
+        }
+    }
+
+    #[cfg(test)]
+    mod property_tests {
+        use super::*;
+        use proptest::prelude::*;
+
+        proptest! {
+            /// Property: nth() with valid index always returns Some
+            #[test]
+            fn prop_nth_valid_index_returns_some(values in prop::collection::vec(any::<i64>(), 1..10), idx in 0usize..10) {
+                if idx >= values.len() {
+                    return Ok(()); // Skip if out of bounds
+                }
+
+                let arr = Arc::from(
+                    values.iter().map(|&v| Value::Integer(v)).collect::<Vec<_>>()
+                );
+                let result = eval_array_nth(&arr, &Value::Integer(idx as i64)).unwrap();
+
+                // Should return Some variant
+                match result {
+                    Value::EnumVariant { variant_name, data } if variant_name == "Some" => {
+                        prop_assert!(data.is_some());
+                        prop_assert_eq!(&data.unwrap()[0], &Value::Integer(values[idx]));
+                    }
+                    _ => prop_assert!(false, "Expected Some variant"),
+                }
+            }
+
+            /// Property: nth() with out-of-bounds index always returns None
+            #[test]
+            fn prop_nth_out_of_bounds_returns_none(values in prop::collection::vec(any::<i64>(), 0..10), idx in 10i64..100) {
+                let arr = Arc::from(
+                    values.iter().map(|&v| Value::Integer(v)).collect::<Vec<_>>()
+                );
+                let result = eval_array_nth(&arr, &Value::Integer(idx)).unwrap();
+
+                // Should return None variant
+                match result {
+                    Value::EnumVariant { variant_name, data } if variant_name == "None" => {
+                        prop_assert!(data.is_none());
+                    }
+                    _ => prop_assert!(false, "Expected None variant"),
+                }
+            }
+
+            /// Property: nth() with negative index always returns None
+            #[test]
+            fn prop_nth_negative_returns_none(values in prop::collection::vec(any::<i64>(), 1..10), idx in -100i64..-1) {
+                let arr = Arc::from(
+                    values.iter().map(|&v| Value::Integer(v)).collect::<Vec<_>>()
+                );
+                let result = eval_array_nth(&arr, &Value::Integer(idx)).unwrap();
+
+                // Should return None variant
+                match result {
+                    Value::EnumVariant { variant_name, data } if variant_name == "None" => {
+                        prop_assert!(data.is_none());
+                    }
+                    _ => prop_assert!(false, "Expected None variant for negative index"),
+                }
+            }
+
+            /// Property: nth() never panics
+            #[test]
+            fn prop_nth_never_panics(values in prop::collection::vec(any::<i64>(), 0..20), idx in any::<i64>()) {
+                let arr = Arc::from(
+                    values.iter().map(|&v| Value::Integer(v)).collect::<Vec<_>>()
+                );
+                let _ = eval_array_nth(&arr, &Value::Integer(idx)); // Should not panic
+            }
+        }
     }
 }
