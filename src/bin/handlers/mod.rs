@@ -33,7 +33,15 @@ pub fn handle_eval_command(expr: &str, verbose: bool, format: &str) -> Result<()
         eprintln!("Parsing expression: {expr}");
     }
     let mut repl = create_repl()?;
-    match repl.eval(expr) {
+
+    // If expression defines main(), call it automatically
+    let expr_to_eval = if expr.contains("fn main(") {
+        format!("{expr}\nmain()")
+    } else {
+        expr.to_string()
+    };
+
+    match repl.eval(&expr_to_eval) {
         Ok(result) => {
             if verbose {
                 eprintln!("Evaluation successful");
