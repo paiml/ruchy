@@ -2,6 +2,49 @@
 
 All notable changes to the Ruchy programming language will be documented in this file.
 
+## [3.95.0] - 2025-10-19
+
+### Fixed
+- **[PARSER-DEFECT-001] CRITICAL: Block+Tuple Misparsing Bug** - EXTREME TDD + FAST Fix
+  - **Problem**: `loop { } (x, x)` was misparsed as `(loop { })(x, x)` (function call instead of tuple)
+  - **Root Cause**: Postfix handler unconditionally treated `(` after ANY expression as function call
+  - **Fix**: Added `is_block_like_expression()` check to prevent block-like control flow expressions from consuming `(` as postfix call operator
+  - **Impact**: BOOTSTRAP-003 (Core Lexer Implementation) UNBLOCKED
+  - **Severity**: CRITICAL - Blocked all functions returning tuples after control flow
+
+### Added
+- **[PARSER] is_block_like_expression() Helper** - src/frontend/parser/mod.rs:380-397
+  - Checks if expression is block-like (Block, Loop, While, For, If, Match, TryCatch)
+  - Prevents automatic `(...)` consumption as postfix function calls
+  - Cyclomatic complexity: 2 (simple match)
+  - Enables correct parsing: `loop { break; } (x, x)` → `Block([Loop, Tuple])`
+
+### Tests Added
+- **[TESTING] GREEN Phase Tests** - 5 comprehensive runtime tests (100% passing)
+  - `test_green_loop_mut_tuple_basic`: Full reproduction case with tuple destructuring
+  - `test_green_loop_mut_tuple_simple`: Minimal case without destructuring
+  - `test_baseline_tuple_return_no_loop`: Tuple return without loop (baseline)
+  - `test_baseline_loop_mut_no_tuple`: Loop + mut without tuple (baseline)
+  - `test_green_phase_summary`: Documents GREEN phase success
+- **[TESTING] Test File**: tests/runtime_loop_mut_tuple_return.rs (174 lines)
+- **[TESTING] Documentation**: docs/defects/PARSER-DEFECT-001-BLOCK-TUPLE-CALL.md
+
+### Test Results
+- **Library Tests**: 3987/3987 passing (0 failed, 149 ignored)
+- **GREEN Tests**: 5/5 passing
+- **No Regressions**: All existing tests pass
+- **Quality Gates**: PMAT TDG B (75.1), Complexity ≤10, Zero SATD
+
+### Toyota Way Success
+- **Jidoka**: STOP THE LINE response - halted all work when defect discovered
+- **Genchi Genbutsu**: Root cause analysis via AST inspection and systematic testing
+- **Kaizen**: Process improvement - added comprehensive test coverage to prevent recurrence
+- **Zero Tolerance**: Fixed immediately with EXTREME TDD methodology (RED → GREEN → REFACTOR)
+
+### Projects Unblocked
+- ✅ **BOOTSTRAP-003** (ruchyruchy): Core Lexer Implementation - pattern `fn tokenize() -> (Token, i32)` now works
+- ✅ **interactive.paiml.com**: WASM book publication - control flow with tuple returns functional
+
 ## [3.94.0] - 2025-10-19
 
 ### Added
