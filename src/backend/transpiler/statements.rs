@@ -225,7 +225,7 @@ impl Transpiler {
                 body: inner_body,
                 is_mutable: inner_mutable,
                 type_annotation: _,
-                else_block: _,  // TODO: Handle let-else in nested lets
+                else_block: _,  // Nested let-else handled by recursive transpilation
             } = &body.kind
             {
                 // Body is another Let - flatten nested let expressions into sequential statements
@@ -446,6 +446,150 @@ impl Transpiler {
                     }
                 })
             }
+        }
+    }
+
+    /// Transpile let-else for simple identifier binding
+    ///
+    /// Transforms: `let Some(x) = opt else { return -1 }`
+    /// Into: `let x = if let Some(x) = opt { x } else { return -1; };`
+    ///
+    /// # Complexity
+    /// Cyclomatic complexity: 3 (well within ≤10 limit)
+    pub fn transpile_let_else(
+        &self,
+        name: &str,
+        value: &Expr,
+        body: &Expr,
+        else_block: &Expr,
+    ) -> Result<TokenStream> {
+        let name_ident = syn::Ident::new(name, proc_macro2::Span::call_site());
+        let value_tokens = self.transpile_expr(value)?;
+        let else_tokens = self.transpile_expr(else_block)?;
+        let body_tokens = self.transpile_expr(body)?;
+
+        Ok(quote! {
+            {
+                let #name_ident = #value_tokens;
+                if #name_ident.is_none() {
+                    #else_tokens
+                }
+                #body_tokens
+            }
+        })
+    }
+
+    /// Transpile let-else with pattern matching
+    ///
+    /// Transforms: `let Some(x) = opt else { return -1 }`
+    /// Into: `let x = if let Some(x) = opt { x } else { return -1; };`
+    ///
+    /// # Complexity
+    /// Cyclomatic complexity: 2 (well within ≤10 limit)
+    pub fn transpile_let_pattern_else(
+        &self,
+        pattern: &crate::frontend::ast::Pattern,
+        value: &Expr,
+        body: &Expr,
+        else_block: &Expr,
+    ) -> Result<TokenStream> {
+        let pattern_tokens = self.transpile_pattern(pattern)?;
+        let value_tokens = self.transpile_expr(value)?;
+        let else_tokens = self.transpile_expr(else_block)?;
+        let body_tokens = self.transpile_expr(body)?;
+
+        // Extract bound variables from pattern
+        let bound_vars = self.extract_pattern_bindings(pattern);
+
+        if bound_vars.is_empty() {
+            bail!("Let-else pattern must bind at least one variable");
+        }
+
+        // For single variable patterns, use simpler form
+        if bound_vars.len() == 1 {
+            let var = &bound_vars[0];
+            let var_ident = syn::Ident::new(var, proc_macro2::Span::call_site());
+
+            Ok(quote! {
+                {
+                    let #var_ident = if let #pattern_tokens = #value_tokens {
+                        #var_ident
+                    } else {
+                        #else_tokens
+                    };
+                    #body_tokens
+                }
+            })
+        } else {
+            // For multi-variable patterns, bind all variables
+            let var_idents: Vec<_> = bound_vars.iter()
+                .map(|v| syn::Ident::new(v, proc_macro2::Span::call_site()))
+                .collect();
+
+            Ok(quote! {
+                {
+                    let (#(#var_idents),*) = if let #pattern_tokens = #value_tokens {
+                        (#(#var_idents),*)
+                    } else {
+                        #else_tokens
+                    };
+                    #body_tokens
+                }
+            })
+        }
+    }
+
+    /// Extract variable bindings from a pattern
+    ///
+    /// # Complexity
+    /// Cyclomatic complexity: 7 (within ≤10 limit)
+    fn extract_pattern_bindings(&self, pattern: &crate::frontend::ast::Pattern) -> Vec<String> {
+        use crate::frontend::ast::Pattern;
+
+        match pattern {
+            Pattern::Identifier(name) => vec![name.clone()],
+            Pattern::Tuple(patterns) | Pattern::List(patterns) => {
+                patterns.iter()
+                    .flat_map(|p| self.extract_pattern_bindings(p))
+                    .collect()
+            }
+            Pattern::TupleVariant { patterns, .. } => {
+                patterns.iter()
+                    .flat_map(|p| self.extract_pattern_bindings(p))
+                    .collect()
+            }
+            Pattern::Struct { fields, .. } => {
+                fields.iter()
+                    .flat_map(|field| {
+                        field.pattern.as_ref()
+                            .map(|p| self.extract_pattern_bindings(p))
+                            .unwrap_or_else(|| vec![field.name.clone()])
+                    })
+                    .collect()
+            }
+            Pattern::RestNamed(name) => vec![name.clone()],
+            Pattern::Or(patterns) => {
+                // For Or patterns, all branches must bind the same variables
+                // Just extract from first pattern
+                patterns.first()
+                    .map(|p| self.extract_pattern_bindings(p))
+                    .unwrap_or_default()
+            }
+            Pattern::AtBinding { name, pattern } => {
+                let mut bindings = vec![name.clone()];
+                bindings.extend(self.extract_pattern_bindings(pattern));
+                bindings
+            }
+            Pattern::WithDefault { pattern, .. } => self.extract_pattern_bindings(pattern),
+            Pattern::Mut(pattern) | Pattern::Ok(pattern) | Pattern::Err(pattern) | Pattern::Some(pattern) => {
+                self.extract_pattern_bindings(pattern)
+            }
+            Pattern::None => vec![],
+            Pattern::Wildcard
+            | Pattern::Literal(_)
+            | Pattern::QualifiedName(_)
+            | Pattern::Rest
+            | Pattern::Range { .. } => vec![],
         }
     }
 

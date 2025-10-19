@@ -95,17 +95,18 @@ impl Transpiler {
                 is_mutable,
                 else_block,
             } => {
-                // TODO: Implement let-else transpilation
-                if else_block.is_some() {
-                    bail!("let-else transpilation not yet implemented");
+                if let Some(else_expr) = else_block {
+                    // Transpile let-else: let PAT = EXPR else { BLOCK }
+                    self.transpile_let_else(name, value, body, else_expr)
+                } else {
+                    self.transpile_let_with_type(
+                        name,
+                        type_annotation.as_ref(),
+                        value,
+                        body,
+                        *is_mutable,
+                    )
                 }
-                self.transpile_let_with_type(
-                    name,
-                    type_annotation.as_ref(),
-                    value,
-                    body,
-                    *is_mutable,
-                )
             }
             ExprKind::LetPattern {
                 pattern,
@@ -115,11 +116,12 @@ impl Transpiler {
                 is_mutable: _,
                 else_block,
             } => {
-                // TODO: Implement let-else transpilation
-                if else_block.is_some() {
-                    bail!("let-else transpilation not yet implemented");
+                if let Some(else_expr) = else_block {
+                    // Transpile let-else pattern: let PAT = EXPR else { BLOCK }
+                    self.transpile_let_pattern_else(pattern, value, body, else_expr)
+                } else {
+                    self.transpile_let_pattern_with_type(pattern, type_annotation.as_ref(), value, body)
                 }
-                self.transpile_let_pattern_with_type(pattern, type_annotation.as_ref(), value, body)
             }
             ExprKind::Block(exprs) => self.transpile_block(exprs),
             ExprKind::Pipeline { expr, stages } => self.transpile_pipeline(expr, stages),
