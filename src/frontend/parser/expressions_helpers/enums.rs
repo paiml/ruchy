@@ -88,8 +88,19 @@ fn parse_enum_variants(state: &mut ParserState) -> Result<Vec<EnumVariant>> {
     let mut variants = Vec::new();
     while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
         variants.push(parse_single_variant(state)?);
+
+        // Skip any inline comments after variant definition
+        while matches!(state.tokens.peek(), Some((Token::LineComment(_), _)) | Some((Token::BlockComment(_), _)) | Some((Token::DocComment(_), _))) {
+            state.tokens.advance();
+        }
+
         if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
             state.tokens.advance();
+
+            // Skip comments after comma
+            while matches!(state.tokens.peek(), Some((Token::LineComment(_), _)) | Some((Token::BlockComment(_), _)) | Some((Token::DocComment(_), _))) {
+                state.tokens.advance();
+            }
         }
     }
     state.tokens.expect(&Token::RightBrace)?;
