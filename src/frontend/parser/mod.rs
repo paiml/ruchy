@@ -348,7 +348,18 @@ fn try_handle_single_postfix(state: &mut ParserState, left: Expr) -> Result<Opti
         Some((Token::Dot, _)) => handle_dot_operator(state, left).map(Some),
         Some((Token::ColonColon, _)) => handle_colon_colon_operator(state, left).map(Some),
         Some((Token::SafeNav, _)) => handle_safe_nav_operator(state, left).map(Some),
-        Some((Token::LeftParen, _)) => Ok(Some(functions::parse_call(state, left)?)),
+        Some((Token::LeftParen, _)) => {
+            // PARSER-DEFECT-001 FIX: Block-like control flow expressions should NOT
+            // consume `(...)` as function calls in statement position.
+            // This prevents: `loop { break; } (x, x)` from being parsed as
+            // `(loop { break; })(x, x)` (calling loop result with args).
+            // Instead it should be two separate statements.
+            if is_block_like_expression(&left) {
+                Ok(None) // Don't treat `(` as postfix call
+            } else {
+                Ok(Some(functions::parse_call(state, left)?))
+            }
+        }
         Some((Token::LeftBracket, _)) => Ok(Some(handle_array_indexing(state, left)?)),
         Some((Token::LeftBrace, _)) => try_parse_struct_literal(state, &left),
         Some((Token::Increment, _)) => handle_increment_operator(state, left).map(Some),
@@ -364,6 +375,26 @@ fn try_handle_single_postfix(state: &mut ParserState, left: Expr) -> Result<Opti
         Some((Token::Bang, _)) => try_parse_macro_call(state, &left),
         _ => Ok(None),
     }
+}
+
+/// Check if expression is a block-like control flow construct
+///
+/// Block-like expressions (block, loop, while, for, if, match, try) should not
+/// automatically consume `(...)` as postfix function calls.
+///
+/// # Complexity
+/// Cyclomatic complexity: 2 (simple match)
+fn is_block_like_expression(expr: &Expr) -> bool {
+    matches!(
+        expr.kind,
+        ExprKind::Block(_)
+            | ExprKind::Loop { .. }
+            | ExprKind::While { .. }
+            | ExprKind::For { .. }
+            | ExprKind::If { .. }
+            | ExprKind::Match { .. }
+            | ExprKind::TryCatch { .. }
+    )
 }
 /// Handle dot operator for method calls
 fn handle_dot_operator(state: &mut ParserState, left: Expr) -> Result<Expr> {
