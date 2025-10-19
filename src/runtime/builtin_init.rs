@@ -94,8 +94,10 @@ fn add_basic_builtins(global_env: &mut HashMap<String, Value>) {
 /// # Complexity
 /// Cyclomatic complexity: 1 (within Toyota Way limits)
 fn add_math_functions(global_env: &mut HashMap<String, Value>) {
+    // STDLIB-002: Added log, log10, random
     let math_functions = [
-        "sqrt", "pow", "abs", "min", "max", "floor", "ceil", "round", "sin", "cos", "tan",
+        "sqrt", "pow", "abs", "min", "max", "floor", "ceil", "round",
+        "sin", "cos", "tan", "log", "log10", "random",
     ];
 
     for func_name in &math_functions {

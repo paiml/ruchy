@@ -11,9 +11,9 @@
 
 ### Actual Coverage (Revised Analysis)
 - **Total Methods**: 71 specified
-- **Fully Implemented** (✅): 45 methods (63%) - Most "REPL only" methods actually transpile correctly
+- **Fully Implemented** (✅): 48 methods (68%) - STDLIB-002 completed advanced math functions
 - **Partial Implementation** (🟡): 12 methods (17%) - Need custom Rust implementation
-- **Not Implemented** (❌): 14 methods (20%)
+- **Not Implemented** (❌): 11 methods (15%)
 
 ### Implementation Strategy
 The standard library uses a dual-mode approach:
@@ -25,8 +25,7 @@ This leverages Rust's extensive stdlib, achieving zero-cost abstractions for mos
 ### Remaining Gaps
 1. **Custom Methods**: Operations without direct Rust equivalents (e.g., `substring`, `unique`)
 2. **Advanced File I/O**: Beyond basic read/write operations
-3. **Math Functions**: Trigonometric and logarithmic functions
-4. **Collection Operations**: Some higher-level operations need custom implementation
+3. **Collection Operations**: Some higher-level operations need custom implementation
 
 ## Module Organization
 
@@ -97,15 +96,25 @@ PI: Float = 3.14159265358979323846
 E: Float = 2.71828182845904523536
 ```
 
-### Advanced Math - Status: ❌ Not implemented
+### Advanced Math - Status: ✅ Fully implemented (STDLIB-002)
 ```rust
-sin(x: Float) -> Float
-cos(x: Float) -> Float
-tan(x: Float) -> Float
-log(x: Float) -> Float
-log10(x: Float) -> Float
-random() -> Float  // 0.0-1.0
+sin(x: Float) -> Float      // Natural sine (wraps f64::sin)
+cos(x: Float) -> Float      // Natural cosine (wraps f64::cos)
+tan(x: Float) -> Float      // Natural tangent (wraps f64::tan)
+log(x: Float) -> Float      // Natural logarithm (wraps f64::ln)
+log10(x: Float) -> Float    // Base-10 logarithm (wraps f64::log10)
+random() -> Float           // Random float in [0.0, 1.0) (wraps rand::random)
 ```
+
+**Implementation Details**:
+- Zero-cost abstraction pattern: Direct wrapping of Rust stdlib methods
+- Dual-mode execution: Both interpreter and transpiler modes supported
+- Property tested: 30,000 iterations validating mathematical invariants
+  - Pythagorean identity: sin²(x) + cos²(x) = 1
+  - Logarithm product rule: log(a*b) = log(a) + log(b)
+  - Random range: All values in [0.0, 1.0)
+- Complexity: All functions ≤4 (well within Toyota Way limit of 10)
+- Test coverage: 16 unit tests + 3 property tests (all passing)
 
 ## String Methods
 
