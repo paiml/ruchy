@@ -6112,6 +6112,15 @@ impl Interpreter {
             args.iter().map(|arg| self.eval_expr(arg)).collect();
         let arg_vals = arg_vals?;
 
+        // Special handling for enum variant construction with arguments (tuple variants)
+        if let Value::EnumVariant { variant_name, data } = func_val {
+            // This is a tuple variant constructor: Response::Error("msg")
+            return Ok(Value::EnumVariant {
+                variant_name,
+                data: Some(arg_vals),
+            });
+        }
+
         let result = self.call_function(func_val, &arg_vals)?;
 
         // Collect type feedback for function call
