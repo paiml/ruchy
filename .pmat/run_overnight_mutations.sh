@@ -2,10 +2,14 @@
 # Overnight mutation testing for Sprint 9 Phase 3 remaining files
 # Created: 2025-10-06
 # Purpose: Run complete mutation tests on 7 large runtime files (estimated 10-15 hours)
+#
+# bashrs DET002 Exception: Timestamps are INTENTIONAL for logging/testing scripts
+# This script logs test execution times - determinism is NOT required here.
+# The $(date) commands provide valuable debugging information for overnight test runs.
 
 set -e
 
-TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+TIMESTAMP="$(date +%Y%m%d_%H%M%S)"
 LOG_DIR="/home/noah/src/ruchy/.pmat/mutation_logs"
 mkdir -p "$LOG_DIR"
 
@@ -26,7 +30,7 @@ FILES=(
 
 # Test each file sequentially
 for FILE in "${FILES[@]}"; do
-    BASENAME=$(basename "$FILE" .rs)
+    BASENAME="$(basename "$FILE" .rs)"
     OUTPUT_FILE="$LOG_DIR/${BASENAME}_mutations_${TIMESTAMP}.txt"
 
     echo "🧪 Testing: $FILE"
@@ -50,7 +54,7 @@ echo ""
 echo "📈 Final Summary:"
 echo "================="
 for FILE in "${FILES[@]}"; do
-    BASENAME=$(basename "$FILE" .rs)
+    BASENAME="$(basename "$FILE" .rs)"
     OUTPUT_FILE="$LOG_DIR/${BASENAME}_mutations_${TIMESTAMP}.txt"
 
     echo ""
