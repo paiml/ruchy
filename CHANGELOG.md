@@ -2,6 +2,47 @@
 
 All notable changes to the Ruchy programming language will be documented in this file.
 
+## [3.94.0] - 2025-10-19
+
+### Added
+- **[RUNTIME] String.chars().nth() Method** - BOOTSTRAP-002 Runtime Support
+  - Implements `.nth(index)` method for array/character sequences
+  - Returns `Option::Some(value)` for valid indices, `Option::None` for out-of-bounds
+  - Handles negative indices gracefully (returns None)
+  - Complexity: 4 (well within ≤10 Toyota Way limit)
+  - **Critical**: Unblocks BOOTSTRAP-002 character stream processing for WASM book
+
+### Tests Added
+- **[TESTING] Integration Tests** - 4 comprehensive runtime tests
+  - `test_string_chars_nth_basic`: Basic character access
+  - `test_string_chars_nth_middle`: Mid-string access
+  - `test_string_chars_nth_out_of_bounds`: Boundary validation
+  - `test_string_chars_nth_bootstrap_002_scenario`: Character stream processing
+- **[TESTING] Unit Tests** - 3 focused unit tests
+  - `test_array_nth_in_bounds`: Valid index returns Some
+  - `test_array_nth_out_of_bounds`: Out-of-bounds returns None
+  - `test_array_nth_negative_index`: Negative indices return None
+- **[TESTING] Property Tests** - 4 property tests (40,000+ total iterations)
+  - `prop_nth_valid_index_returns_some`: Valid indices always return Some
+  - `prop_nth_out_of_bounds_returns_none`: Out-of-bounds always returns None
+  - `prop_nth_negative_returns_none`: Negative indices always return None
+  - `prop_nth_never_panics`: Robustness testing with any input
+  - **Total**: 40,007+ test cases (4 integration + 3 unit + 40,000 property)
+
+### Technical Details
+- **Runtime Module**: src/runtime/eval_array.rs
+  - Added `eval_array_nth()` function (lines 104-134)
+  - Returns `Value::EnumVariant` with "Some"/"None" variants
+  - Cyclomatic complexity: 4 (PMAT compliant)
+- **Test File**: tests/runtime_string_nth_method.rs (247 lines)
+- **WASM Impact**: Critical for interactive.paiml.com WASM book publication
+
+### BOOTSTRAP-002 Progress
+✅ **Runtime Support Complete** - Character stream processing now works in eval mode
+- Nested patterns: ✅ (v3.93.0)
+- Runtime .nth() method: ✅ (v3.94.0)
+- Ready for WASM book publication at interactive.paiml.com
+
 ## [3.93.0] - 2025-10-19
 
 ### Added
