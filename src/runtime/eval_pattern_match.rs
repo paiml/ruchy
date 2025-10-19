@@ -56,6 +56,10 @@ pub fn try_pattern_match(
         Pattern::None => try_match_none_pattern(value),
         Pattern::Ok(inner_pattern) => try_match_ok_pattern(inner_pattern, value, eval_literal),
         Pattern::Err(inner_pattern) => try_match_err_pattern(inner_pattern, value, eval_literal),
+        Pattern::QualifiedName(path) => try_match_qualified_name_pattern(path, value),
+        Pattern::TupleVariant { path, patterns } => {
+            try_match_tuple_variant_pattern(path, patterns, value, eval_literal)
+        }
         _ => Ok(None), // Other patterns not yet implemented
     }
 }
@@ -221,6 +225,63 @@ fn try_match_err_pattern(
                         return try_pattern_match(inner_pattern, &data[0], eval_literal);
                     }
                 }
+            }
+        }
+    }
+    Ok(None)
+}
+
+/// Try to match a qualified name pattern (unit enum variant)
+///
+/// Matches patterns like `Status::Success` against `EnumVariant` values
+///
+/// # Complexity
+/// Cyclomatic complexity: 3 (within Toyota Way limits)
+fn try_match_qualified_name_pattern(
+    path: &[String],
+    value: &Value,
+) -> Result<Option<Vec<(String, Value)>>, InterpreterError> {
+    if let Value::EnumVariant { variant_name, data } = value {
+        // Check if variant is unit (no data) and name matches
+        if data.is_none() && path.last() == Some(variant_name) {
+            return Ok(Some(vec![]));
+        }
+    }
+    Ok(None)
+}
+
+/// Try to match a tuple variant pattern (enum with data)
+///
+/// Matches patterns like `Response::Error(msg)` against `EnumVariant` values
+///
+/// # Complexity
+/// Cyclomatic complexity: 6 (within Toyota Way limits)
+fn try_match_tuple_variant_pattern(
+    path: &[String],
+    patterns: &[Pattern],
+    value: &Value,
+    eval_literal: &dyn Fn(&Literal) -> Value,
+) -> Result<Option<Vec<(String, Value)>>, InterpreterError> {
+    if let Value::EnumVariant { variant_name, data } = value {
+        // Check if variant name matches the last component of path
+        if path.last() == Some(variant_name) {
+            // Check if variant has data
+            if let Some(variant_data) = data {
+                // Match the number of patterns with data elements
+                if patterns.len() != variant_data.len() {
+                    return Ok(None);
+                }
+
+                // Try to match each pattern against corresponding data element
+                let mut all_bindings = Vec::new();
+                for (pattern, data_val) in patterns.iter().zip(variant_data.iter()) {
+                    if let Some(bindings) = try_pattern_match(pattern, data_val, eval_literal)? {
+                        all_bindings.extend(bindings);
+                    } else {
+                        return Ok(None);
+                    }
+                }
+                return Ok(Some(all_bindings));
             }
         }
     }
@@ -506,6 +567,120 @@ mod tests {
         let value = Value::EnumVariant {
             variant_name: "Some".to_string(),
             data: Some(vec![Value::Integer(42)]),
+        };
+
+        let result = try_pattern_match(&pattern, &value, &test_eval_literal).unwrap();
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_qualified_name_unit_variant_match() {
+        let pattern = Pattern::QualifiedName(vec!["Status".to_string(), "Success".to_string()]);
+        let value = Value::EnumVariant {
+            variant_name: "Success".to_string(),
+            data: None,
+        };
+
+        let result = try_pattern_match(&pattern, &value, &test_eval_literal).unwrap();
+        assert!(result.is_some());
+        let bindings = result.unwrap();
+        assert!(bindings.is_empty()); // Unit variants have no bindings
+    }
+
+    #[test]
+    fn test_qualified_name_unit_variant_no_match_wrong_name() {
+        let pattern = Pattern::QualifiedName(vec!["Status".to_string(), "Success".to_string()]);
+        let value = Value::EnumVariant {
+            variant_name: "Failed".to_string(),
+            data: None,
+        };
+
+        let result = try_pattern_match(&pattern, &value, &test_eval_literal).unwrap();
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_qualified_name_no_match_on_tuple_variant() {
+        let pattern = Pattern::QualifiedName(vec!["Response".to_string(), "Error".to_string()]);
+        let value = Value::EnumVariant {
+            variant_name: "Error".to_string(),
+            data: Some(vec![Value::from_string("failed".to_string())]),
+        };
+
+        let result = try_pattern_match(&pattern, &value, &test_eval_literal).unwrap();
+        assert!(result.is_none()); // Should not match - has data
+    }
+
+    #[test]
+    fn test_tuple_variant_single_element() {
+        let pattern = Pattern::TupleVariant {
+            path: vec!["Response".to_string(), "Error".to_string()],
+            patterns: vec![Pattern::Identifier("msg".to_string())],
+        };
+        let value = Value::EnumVariant {
+            variant_name: "Error".to_string(),
+            data: Some(vec![Value::from_string("failed".to_string())]),
+        };
+
+        let result = try_pattern_match(&pattern, &value, &test_eval_literal).unwrap();
+        assert!(result.is_some());
+        let bindings = result.unwrap();
+        assert_eq!(bindings.len(), 1);
+        assert_eq!(bindings[0].0, "msg");
+        assert_eq!(bindings[0].1, Value::from_string("failed".to_string()));
+    }
+
+    #[test]
+    fn test_tuple_variant_multiple_elements() {
+        let pattern = Pattern::TupleVariant {
+            path: vec!["Point".to_string(), "Pos".to_string()],
+            patterns: vec![
+                Pattern::Identifier("x".to_string()),
+                Pattern::Identifier("y".to_string()),
+            ],
+        };
+        let value = Value::EnumVariant {
+            variant_name: "Pos".to_string(),
+            data: Some(vec![Value::Integer(10), Value::Integer(20)]),
+        };
+
+        let result = try_pattern_match(&pattern, &value, &test_eval_literal).unwrap();
+        assert!(result.is_some());
+        let bindings = result.unwrap();
+        assert_eq!(bindings.len(), 2);
+        assert_eq!(bindings[0].0, "x");
+        assert_eq!(bindings[0].1, Value::Integer(10));
+        assert_eq!(bindings[1].0, "y");
+        assert_eq!(bindings[1].1, Value::Integer(20));
+    }
+
+    #[test]
+    fn test_tuple_variant_no_match_wrong_variant_name() {
+        let pattern = Pattern::TupleVariant {
+            path: vec!["Message".to_string(), "Move".to_string()],
+            patterns: vec![Pattern::Identifier("dir".to_string())],
+        };
+        let value = Value::EnumVariant {
+            variant_name: "Quit".to_string(),
+            data: None,
+        };
+
+        let result = try_pattern_match(&pattern, &value, &test_eval_literal).unwrap();
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_tuple_variant_no_match_arity_mismatch() {
+        let pattern = Pattern::TupleVariant {
+            path: vec!["Point".to_string(), "Pos".to_string()],
+            patterns: vec![
+                Pattern::Identifier("x".to_string()),
+                Pattern::Identifier("y".to_string()),
+            ],
+        };
+        let value = Value::EnumVariant {
+            variant_name: "Pos".to_string(),
+            data: Some(vec![Value::Integer(10)]), // Only 1 element, pattern expects 2
         };
 
         let result = try_pattern_match(&pattern, &value, &test_eval_literal).unwrap();
