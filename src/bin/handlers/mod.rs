@@ -1041,6 +1041,12 @@ pub fn handle_complex_command(command: crate::Commands) -> Result<()> {
             open,
             host,
         } => handle_notebook_command(file.as_deref(), port, open, &host),
+        crate::Commands::Serve {
+            directory,
+            port,
+            host,
+            verbose,
+        } => handle_serve_command(&directory, port, &host, verbose),
         crate::Commands::ReplayToTests {
             input,
             output,
@@ -1640,6 +1646,70 @@ pub fn handle_notebook_command(
         "Notebook feature not enabled. Rebuild with --features notebook"
     ))
 }
+
+// ============================================================================
+// HTTP Static File Server (HTTP-001)
+// ============================================================================
+
+/// Handle serve command - serve static files over HTTP
+///
+/// # Arguments
+/// * `directory` - Directory to serve
+/// * `port` - Port to bind to
+/// * `host` - Host address to bind to
+/// * `verbose` - Enable verbose logging
+#[cfg(feature = "notebook")]
+pub fn handle_serve_command(directory: &Path, port: u16, host: &str, verbose: bool) -> Result<()> {
+    use axum::Router;
+    use tower_http::services::ServeDir;
+
+    // Verify directory exists
+    if !directory.exists() {
+        return Err(anyhow::anyhow!("Directory not found: {}", directory.display()));
+    }
+    if !directory.is_dir() {
+        return Err(anyhow::anyhow!("Path is not a directory: {}", directory.display()));
+    }
+
+    // Print startup banner
+    println!("🚀 Ruchy HTTP Server");
+    println!("📁 Serving: {}", directory.display());
+    println!("🌐 Listening: http://{}:{}", host, port);
+    println!("Press Ctrl+C to stop\n");
+
+    // Build the Axum app with static file serving
+    let serve_dir = ServeDir::new(directory);
+    let app = Router::new()
+        .fallback_service(serve_dir);
+
+    // Create tokio runtime
+    let runtime = tokio::runtime::Runtime::new()?;
+
+    // Bind and serve
+    let addr = format!("{}:{}", host, port);
+    runtime.block_on(async {
+        let listener = tokio::net::TcpListener::bind(&addr).await?;
+        if verbose {
+            println!("✅ Server started successfully");
+        }
+        axum::serve(listener, app).await
+    })?;
+
+    Ok(())
+}
+
+#[cfg(not(feature = "notebook"))]
+pub fn handle_serve_command(
+    _directory: &Path,
+    _port: u16,
+    _host: &str,
+    _verbose: bool,
+) -> Result<()> {
+    Err(anyhow::anyhow!(
+        "HTTP server requires notebook feature. Rebuild with --features notebook"
+    ))
+}
+
 /// Handle replay-to-tests command - convert .replay files to regression tests
 ///
 /// # Arguments

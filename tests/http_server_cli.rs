@@ -36,7 +36,6 @@ fn create_test_dir() -> TempDir {
 // ============================================================================
 
 #[test]
-#[ignore] // Remove this when implementation starts
 fn test_red_ruchy_serve_shows_help() {
     // RED: This MUST fail - ruchy serve doesn't exist yet
     ruchy_cmd()
@@ -48,7 +47,6 @@ fn test_red_ruchy_serve_shows_help() {
 }
 
 #[test]
-#[ignore]
 fn test_red_ruchy_serve_requires_directory() {
     // RED: This MUST fail - ruchy serve doesn't exist yet
     let port = find_available_port();
@@ -60,25 +58,30 @@ fn test_red_ruchy_serve_requires_directory() {
         .arg(port.to_string())
         .assert()
         .failure()
-        .stderr(predicate::str::contains("directory not found").or(
+        .stderr(predicate::str::contains("Directory not found").or(
             predicate::str::contains("No such file")
         ));
 }
 
 #[test]
-#[ignore]
 fn test_red_ruchy_serve_starts_server() {
     // RED: This MUST fail - ruchy serve doesn't exist yet
+    use std::process::{Command, Stdio};
+
     let test_dir = create_test_dir();
     let port = find_available_port();
 
-    // Start server in background (will timeout)
-    let mut child = ruchy_cmd()
+    // Get ruchy binary path
+    let ruchy_bin = assert_cmd::cargo::cargo_bin("ruchy");
+
+    // Start server in background
+    let mut child = Command::new(ruchy_bin)
         .arg("serve")
         .arg(test_dir.path())
         .arg("--port")
         .arg(port.to_string())
-        .timeout(Duration::from_secs(2))
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
         .spawn()
         .expect("Failed to spawn server");
 
@@ -98,15 +101,20 @@ fn test_red_ruchy_serve_starts_server() {
 }
 
 #[test]
-#[ignore]
 fn test_red_ruchy_serve_default_port_8080() {
     // RED: This MUST fail - ruchy serve doesn't exist yet
+    use std::process::{Command, Stdio};
+
     let test_dir = create_test_dir();
 
-    let mut child = ruchy_cmd()
+    // Get ruchy binary path
+    let ruchy_bin = assert_cmd::cargo::cargo_bin("ruchy");
+
+    let mut child = Command::new(ruchy_bin)
         .arg("serve")
         .arg(test_dir.path())
-        .timeout(Duration::from_secs(2))
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
         .spawn()
         .expect("Failed to spawn server");
 
@@ -120,7 +128,6 @@ fn test_red_ruchy_serve_default_port_8080() {
 }
 
 #[test]
-#[ignore]
 fn test_red_ruchy_serve_shows_startup_message() {
     // RED: This MUST fail - ruchy serve doesn't exist yet
     let test_dir = create_test_dir();

@@ -178,6 +178,21 @@ enum Commands {
         #[arg(long, default_value = "127.0.0.1")]
         host: String,
     },
+    /// Serve static files over HTTP (HTTP-001)
+    Serve {
+        /// Directory to serve (defaults to current directory)
+        #[arg(default_value = ".")]
+        directory: PathBuf,
+        /// Port to run the server on
+        #[arg(short, long, default_value = "8080")]
+        port: u16,
+        /// Host to bind to
+        #[arg(long, default_value = "127.0.0.1")]
+        host: String,
+        /// Show verbose logging
+        #[arg(long)]
+        verbose: bool,
+    },
     /// Generate coverage report for Ruchy code
     Coverage {
         /// The file or directory to analyze  
