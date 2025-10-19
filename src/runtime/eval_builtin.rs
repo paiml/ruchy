@@ -115,13 +115,27 @@ fn try_eval_advanced_math_part2(name: &str, args: &[Value]) -> Result<Option<Val
     }
 }
 
+/// Advanced math functions - Part 3 (logarithms and random) - STDLIB-002
+/// Complexity: 4 (within Toyota Way limits)
+fn try_eval_advanced_math_part3(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
+    match name {
+        "__builtin_log__" => Ok(Some(eval_log(args)?)),
+        "__builtin_log10__" => Ok(Some(eval_log10(args)?)),
+        "__builtin_random__" => Ok(Some(eval_random(args)?)),
+        _ => Ok(None),
+    }
+}
+
 /// Dispatcher for advanced math functions
-/// Complexity: 3 (within Toyota Way limits)
+/// Complexity: 4 (within Toyota Way limits) - STDLIB-002: Added part3
 fn try_eval_advanced_math(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
     if let Some(result) = try_eval_advanced_math_part1(name, args)? {
         return Ok(Some(result));
     }
-    try_eval_advanced_math_part2(name, args)
+    if let Some(result) = try_eval_advanced_math_part2(name, args)? {
+        return Ok(Some(result));
+    }
+    try_eval_advanced_math_part3(name, args)
 }
 
 /// Utility functions - Part 1
@@ -468,6 +482,53 @@ fn eval_tan(args: &[Value]) -> Result<Value, InterpreterError> {
             "tan() expects a number".to_string(),
         )),
     }
+}
+
+// ============================================================================
+// STDLIB-002: Advanced Math Functions - Logarithms and Random
+// Zero-cost abstraction wrapping Rust std::f64 methods
+// ============================================================================
+
+/// Natural logarithm (base e)
+///
+/// # Complexity
+/// Cyclomatic complexity: 3 (within Toyota Way limits)
+fn eval_log(args: &[Value]) -> Result<Value, InterpreterError> {
+    validate_arg_count("log", args, 1)?;
+    match &args[0] {
+        Value::Integer(n) => Ok(Value::Float((*n as f64).ln())),  // Wraps Rust f64::ln
+        Value::Float(f) => Ok(Value::Float(f.ln())),
+        _ => Err(InterpreterError::RuntimeError(
+            "log() expects a number".to_string(),
+        )),
+    }
+}
+
+/// Base-10 logarithm
+///
+/// # Complexity
+/// Cyclomatic complexity: 3 (within Toyota Way limits)
+fn eval_log10(args: &[Value]) -> Result<Value, InterpreterError> {
+    validate_arg_count("log10", args, 1)?;
+    match &args[0] {
+        Value::Integer(n) => Ok(Value::Float((*n as f64).log10())),  // Wraps Rust f64::log10
+        Value::Float(f) => Ok(Value::Float(f.log10())),
+        _ => Err(InterpreterError::RuntimeError(
+            "log10() expects a number".to_string(),
+        )),
+    }
+}
+
+/// Generate random float in [0.0, 1.0)
+///
+/// # Complexity
+/// Cyclomatic complexity: 1 (within Toyota Way limits)
+fn eval_random(args: &[Value]) -> Result<Value, InterpreterError> {
+    validate_arg_count("random", args, 0)?;
+    // Wraps Rust rand::random (zero-cost abstraction)
+    use rand::Rng;
+    let mut rng = rand::thread_rng();
+    Ok(Value::Float(rng.gen::<f64>()))  // Returns [0.0, 1.0)
 }
 
 /// Length of collections and strings
