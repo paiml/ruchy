@@ -40,6 +40,109 @@
 - ❌ Rate limiting (Phase 2)
 - ❌ Compression (Phase 2)
 
+### 1.3 Architecture Decision: Hybrid + Task Runner
+
+**Decision**: Implement **Hybrid approach** (CLI + Imports + Deno-style task runner)
+
+**Three Ways to Use Ruchy Standard Library**:
+
+#### Option A: CLI (Python-style simplicity)
+```bash
+# Quick dev server (like python3 -m http.server)
+ruchy serve ./dist --port 8080
+```
+
+#### Option B: Import (Node.js-style power)
+```ruchy
+// server.ruchy - Advanced customization
+import http
+
+let server = http.Server::new("0.0.0.0:8080")
+server.route("/api/users", handle_users)
+server.middleware(cors())
+await server.listen()
+```
+```bash
+# Run the script
+ruchy run server.ruchy
+```
+
+#### Option C: Task Runner (Deno-style workflow)
+```yaml
+# ruchy.yaml - Project configuration
+tasks:
+  dev:
+    cmd: ruchy serve ./dist --port 8080
+    watch: ["./src", "./static"]
+
+  build:
+    cmd: ruchy compile ./src/main.ruchy
+
+  test:
+    cmd: ruchy test ./tests
+
+  preview:
+    cmd: ruchy serve ./dist --port 4173
+    deps: [build]
+```
+```bash
+# Run tasks
+ruchy task dev      # Start dev server with watch
+ruchy task build    # Build project
+ruchy task preview  # Build then preview
+```
+
+**Why This Matters**:
+
+1. **Simplicity**: `ruchy serve` matches Python's ease of use (beginners)
+2. **Power**: `import http` enables advanced customization (experts)
+3. **Workflow**: `ruchy task dev` matches modern development practices (Deno, npm scripts)
+4. **Dogfooding**: CLI internally uses `import http` (proves stdlib works)
+5. **Flexibility**: Users choose their level of control
+
+**Implementation Strategy**:
+
+```
+Phase 1 (MVP):     CLI (ruchy serve)
+                   ↓
+                   Uses src/stdlib/http internally
+
+Phase 2:           Expose as importable module
+                   Users write .ruchy scripts with import http
+
+Phase 3:           Task runner (ruchy task)
+                   Reads ruchy.yaml for workflows
+```
+
+**Future Standard Library Components** (all follow same pattern):
+
+```bash
+# CLI (quick usage)
+ruchy serve       # HTTP server
+ruchy test        # Test runner
+ruchy fmt         # Formatter
+ruchy bundle      # Bundler
+ruchy bench       # Benchmarks
+```
+
+```ruchy
+// Import (programmatic usage)
+import http       // HTTP server
+import fs         // File system
+import crypto     // Cryptography
+import test       // Testing framework
+import process    // Process management
+```
+
+```yaml
+# Task runner (workflow automation)
+tasks:
+  dev:    { cmd: ruchy serve }
+  test:   { cmd: ruchy test }
+  build:  { cmd: ruchy bundle }
+  deploy: { cmd: ruchy deploy, deps: [build, test] }
+```
+
 ---
 
 ## 2. User Experience
