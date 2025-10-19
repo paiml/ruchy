@@ -346,6 +346,7 @@ pub(crate) fn handle_postfix_operators(state: &mut ParserState, mut left: Expr) 
 fn try_handle_single_postfix(state: &mut ParserState, left: Expr) -> Result<Option<Expr>> {
     match state.tokens.peek() {
         Some((Token::Dot, _)) => handle_dot_operator(state, left).map(Some),
+        Some((Token::ColonColon, _)) => handle_colon_colon_operator(state, left).map(Some),
         Some((Token::SafeNav, _)) => handle_safe_nav_operator(state, left).map(Some),
         Some((Token::LeftParen, _)) => Ok(Some(functions::parse_call(state, left)?)),
         Some((Token::LeftBracket, _)) => Ok(Some(handle_array_indexing(state, left)?)),
@@ -368,6 +369,33 @@ fn try_handle_single_postfix(state: &mut ParserState, left: Expr) -> Result<Opti
 fn handle_dot_operator(state: &mut ParserState, left: Expr) -> Result<Expr> {
     state.tokens.advance();
     functions::parse_method_call(state, left)
+}
+/// Handle :: operator for enum variant access (e.g., Status::Success)
+/// Complexity: 3
+fn handle_colon_colon_operator(state: &mut ParserState, left: Expr) -> Result<Expr> {
+    state.tokens.advance(); // consume ::
+
+    // Expect an identifier after ::
+    match state.tokens.peek() {
+        Some((Token::Identifier(field_name), span)) => {
+            let field = field_name.clone();
+            let field_span = *span;
+            state.tokens.advance();
+            Ok(Expr::new(
+                ExprKind::FieldAccess {
+                    object: Box::new(left),
+                    field,
+                },
+                field_span,
+            ))
+        }
+        Some((token, _)) => {
+            Err(anyhow::anyhow!("Expected identifier after '::' but got {token:?}"))
+        }
+        None => {
+            Err(anyhow::anyhow!("Expected identifier after '::' but reached end of input"))
+        }
+    }
 }
 /// Handle safe navigation operator ?.
 fn handle_safe_nav_operator(state: &mut ParserState, left: Expr) -> Result<Expr> {

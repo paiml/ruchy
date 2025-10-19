@@ -36,17 +36,13 @@ pub(in crate::frontend::parser) fn parse_identifier_token(
     match token {
         Token::Identifier(name) => {
             state.tokens.advance();
-            // Check for module path: math::add
-            if matches!(state.tokens.peek(), Some((Token::ColonColon, _))) {
-                let qualified_name = parse_module_path_segments(state, name.clone())?;
-                Ok(Expr::new(ExprKind::Identifier(qualified_name), span))
-            }
             // Check for fat arrow lambda: x => x * 2
-            else if matches!(state.tokens.peek(), Some((Token::FatArrow, _))) {
+            if matches!(state.tokens.peek(), Some((Token::FatArrow, _))) {
                 let ident_expr = Expr::new(ExprKind::Identifier(name.clone()), span);
                 super::super::parse_lambda_from_expr(state, ident_expr, span)
             } else {
                 // Don't consume ! here - let postfix handle macro calls
+                // Don't consume :: here - let postfix handle field access (enum variants, module paths)
                 Ok(Expr::new(ExprKind::Identifier(name.clone()), span))
             }
         }

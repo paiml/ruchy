@@ -1014,6 +1014,23 @@ mod tests {
         assert!(stream.peek_nth_is_colon(1));
     }
 
+    #[test]
+    fn test_tokenize_enum_variant() {
+        let mut stream = TokenStream::new("Status::Success");
+
+        // Should tokenize as: Identifier("Status"), ColonColon, Identifier("Success")
+        assert_eq!(
+            stream.next().map(|(t, _)| t),
+            Some(Token::Identifier("Status".to_string()))
+        );
+        assert_eq!(stream.next().map(|(t, _)| t), Some(Token::ColonColon));
+        assert_eq!(
+            stream.next().map(|(t, _)| t),
+            Some(Token::Identifier("Success".to_string()))
+        );
+        assert_eq!(stream.next(), None);
+    }
+
     proptest! {
         #[test]
         fn test_tokenize_identifiers(s in "[a-zA-Z_][a-zA-Z0-9_]{0,100}") {
