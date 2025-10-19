@@ -181,9 +181,13 @@ pub fn eval_unary_op(op: UnaryOp, operand: &Value) -> Result<Value, InterpreterE
             // This allows Rust-like syntax (&value) to work in eval mode
             Ok(operand.clone())
         }
-        UnaryOp::Deref => Err(InterpreterError::RuntimeError(
-            "Dereference operator not yet implemented in interpreter".to_string(),
-        )),
+        UnaryOp::Deref => {
+            // In interpreted mode, dereference (*) is transparent
+            // Box<T> is represented as the value T itself (Box is transparent in Ruchy)
+            // The interpreter manages ownership, so *boxed just returns the value
+            Ok(operand.clone())
+        }
+
     }
 }
 

@@ -6079,6 +6079,35 @@ impl Interpreter {
         func: &Expr,
         args: &[Expr],
     ) -> Result<Value, InterpreterError> {
+        // Handle static method calls: Type::method(args)
+        // Parser represents these as Call { func: FieldAccess { object: Identifier("Type"), field: "method" }, args }
+        if let ExprKind::FieldAccess { object, field } = &func.kind {
+            if let ExprKind::Identifier(type_name) = &object.kind {
+                // Detect Box::new(value) static method
+                if type_name == "Box" && field == "new" {
+                    if args.len() != 1 {
+                        return Err(InterpreterError::RuntimeError(format!(
+                            "Box::new() requires exactly 1 argument, got {}",
+                            args.len()
+                        )));
+                    }
+                    // Box::new(value) → just return the value (Box is transparent in Ruchy)
+                    return self.eval_expr(&args[0]);
+                }
+                // Detect Vec::new() static method
+                if type_name == "Vec" && field == "new" {
+                    if !args.is_empty() {
+                        return Err(InterpreterError::RuntimeError(format!(
+                            "Vec::new() takes no arguments, got {}",
+                            args.len()
+                        )));
+                    }
+                    // Vec::new() → empty array
+                    return Ok(Value::Array(Arc::from([])));
+                }
+            }
+        }
+
         // Try to evaluate the function normally
         let func_val_result = self.eval_expr(func);
 
