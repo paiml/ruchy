@@ -1810,21 +1810,20 @@ impl Interpreter {
 
     /// Set a variable in the current environment
     #[allow(clippy::expect_used)] // Environment stack invariant ensures this never panics
+    /// Create a new variable binding in the current scope (for `let` bindings)
+    ///
+    /// RUNTIME-038 FIX: `let` bindings create NEW variables in current scope (shadowing),
+    /// they do NOT update variables in parent scopes. This prevents variable collision
+    /// in nested function calls.
+    ///
+    /// # Complexity
+    /// Cyclomatic complexity: 1 (within Toyota Way limits)
     fn env_set(&mut self, name: String, value: Value) {
         // Record type feedback for optimization
         self.record_variable_assignment_feedback(&name, &value);
 
-        // Search for existing variable in scope stack (like lookup_variable does)
-        // Update it where it exists, not just in current scope
-        for env in self.env_stack.iter_mut().rev() {
-            use std::collections::hash_map::Entry;
-            if let Entry::Occupied(mut entry) = env.entry(name.clone()) {
-                entry.insert(value);
-                return;
-            }
-        }
-
-        // Variable doesn't exist yet - create in current scope
+        // ALWAYS create in current scope - `let` bindings shadow outer scopes
+        // Do NOT search parent scopes (that's for reassignments without `let`)
         let env = self
             .env_stack
             .last_mut()

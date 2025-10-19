@@ -57,11 +57,11 @@ eprint(value: Any...)          // Print to stderr
 input(prompt: String) -> String    // Prompted input
 readline() -> String               // Raw line input
 
-// Type conversions - Status: 🟡 REPL only
-str(x: Any) -> String              // Convert to string
-int(x: Any) -> Int                 // Convert to integer  
-float(x: Any) -> Float             // Convert to float
-bool(x: Any) -> Bool               // Convert to boolean
+// Type conversions - Status: ✅ Fully implemented (STDLIB-001)
+str(x: Any) -> String              // Convert to string (wraps Rust Display/to_string)
+int(x: Any) -> Int                 // Convert to integer (wraps parse/type casting)
+float(x: Any) -> Float             // Convert to float (wraps parse/type casting)
+bool(x: Any) -> Bool               // Convert to boolean (truthiness logic)
 
 // Assertions - Status: ✅ Fully implemented
 assert(condition: Bool, msg?: String)           // Assert condition
