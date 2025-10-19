@@ -203,6 +203,159 @@ mod property_tests {
 }
 
 // ============================================================================
+// MIME Type Detection Tests (HTTP-002)
+// ============================================================================
+
+#[test]
+fn test_http002_mime_html() {
+    let test_dir = TempDir::new().unwrap();
+    std::fs::write(test_dir.path().join("index.html"), "<!DOCTYPE html><html></html>").unwrap();
+
+    let port = find_available_port();
+    let ruchy_bin = assert_cmd::cargo::cargo_bin("ruchy");
+    let mut child = std::process::Command::new(ruchy_bin)
+        .arg("serve")
+        .arg(test_dir.path())
+        .arg("--port")
+        .arg(port.to_string())
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .spawn()
+        .expect("Failed to spawn server");
+
+    std::thread::sleep(Duration::from_millis(500));
+
+    let response = reqwest::blocking::get(format!("http://127.0.0.1:{}/index.html", port)).unwrap();
+    assert_eq!(response.status(), 200);
+    assert_eq!(
+        response.headers().get("content-type").unwrap(),
+        "text/html"
+    );
+
+    child.kill().unwrap();
+}
+
+#[test]
+fn test_http002_mime_css() {
+    let test_dir = TempDir::new().unwrap();
+    std::fs::write(test_dir.path().join("style.css"), "body { margin: 0; }").unwrap();
+
+    let port = find_available_port();
+    let ruchy_bin = assert_cmd::cargo::cargo_bin("ruchy");
+    let mut child = std::process::Command::new(ruchy_bin)
+        .arg("serve")
+        .arg(test_dir.path())
+        .arg("--port")
+        .arg(port.to_string())
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .spawn()
+        .expect("Failed to spawn server");
+
+    std::thread::sleep(Duration::from_millis(500));
+
+    let response = reqwest::blocking::get(format!("http://127.0.0.1:{}/style.css", port)).unwrap();
+    assert_eq!(response.status(), 200);
+    assert_eq!(
+        response.headers().get("content-type").unwrap(),
+        "text/css"
+    );
+
+    child.kill().unwrap();
+}
+
+#[test]
+fn test_http002_mime_javascript() {
+    let test_dir = TempDir::new().unwrap();
+    std::fs::write(test_dir.path().join("app.js"), "console.log('test');").unwrap();
+
+    let port = find_available_port();
+    let ruchy_bin = assert_cmd::cargo::cargo_bin("ruchy");
+    let mut child = std::process::Command::new(ruchy_bin)
+        .arg("serve")
+        .arg(test_dir.path())
+        .arg("--port")
+        .arg(port.to_string())
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .spawn()
+        .expect("Failed to spawn server");
+
+    std::thread::sleep(Duration::from_millis(500));
+
+    let response = reqwest::blocking::get(format!("http://127.0.0.1:{}/app.js", port)).unwrap();
+    assert_eq!(response.status(), 200);
+    let content_type = response.headers().get("content-type").unwrap().to_str().unwrap();
+    assert!(
+        content_type.contains("application/javascript") || content_type.contains("text/javascript"),
+        "Expected JavaScript MIME type, got: {}", content_type
+    );
+
+    child.kill().unwrap();
+}
+
+#[test]
+fn test_http002_mime_wasm() {
+    // CRITICAL: WASM files MUST have application/wasm MIME type
+    let test_dir = TempDir::new().unwrap();
+    // Minimal valid WASM module: magic number + version
+    std::fs::write(test_dir.path().join("module.wasm"), b"\x00\x61\x73\x6d\x01\x00\x00\x00").unwrap();
+
+    let port = find_available_port();
+    let ruchy_bin = assert_cmd::cargo::cargo_bin("ruchy");
+    let mut child = std::process::Command::new(ruchy_bin)
+        .arg("serve")
+        .arg(test_dir.path())
+        .arg("--port")
+        .arg(port.to_string())
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .spawn()
+        .expect("Failed to spawn server");
+
+    std::thread::sleep(Duration::from_millis(500));
+
+    let response = reqwest::blocking::get(format!("http://127.0.0.1:{}/module.wasm", port)).unwrap();
+    assert_eq!(response.status(), 200);
+    assert_eq!(
+        response.headers().get("content-type").unwrap(),
+        "application/wasm",
+        "WASM files MUST have application/wasm MIME type for streaming compilation"
+    );
+
+    child.kill().unwrap();
+}
+
+#[test]
+fn test_http002_mime_json() {
+    let test_dir = TempDir::new().unwrap();
+    std::fs::write(test_dir.path().join("data.json"), r#"{"test": true}"#).unwrap();
+
+    let port = find_available_port();
+    let ruchy_bin = assert_cmd::cargo::cargo_bin("ruchy");
+    let mut child = std::process::Command::new(ruchy_bin)
+        .arg("serve")
+        .arg(test_dir.path())
+        .arg("--port")
+        .arg(port.to_string())
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .spawn()
+        .expect("Failed to spawn server");
+
+    std::thread::sleep(Duration::from_millis(500));
+
+    let response = reqwest::blocking::get(format!("http://127.0.0.1:{}/data.json", port)).unwrap();
+    assert_eq!(response.status(), 200);
+    assert_eq!(
+        response.headers().get("content-type").unwrap(),
+        "application/json"
+    );
+
+    child.kill().unwrap();
+}
+
+// ============================================================================
 // RED Phase Validation
 // ============================================================================
 
