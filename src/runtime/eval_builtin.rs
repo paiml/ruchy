@@ -23,6 +23,7 @@ pub fn eval_builtin_function(
         try_eval_io_function,
         try_eval_math_function,
         try_eval_utility_function,
+        try_eval_conversion_function,
         try_eval_time_function,
         try_eval_dataframe_function,
         try_eval_environment_function,
@@ -156,6 +157,23 @@ fn try_eval_utility_function(
         return Ok(Some(result));
     }
     try_eval_utility_part2(name, args)
+}
+
+/// Try to evaluate type conversion functions (STDLIB-001)
+///
+/// Wraps Rust stdlib methods for zero-cost abstraction.
+/// Complexity: 5 (within Toyota Way limits)
+fn try_eval_conversion_function(
+    name: &str,
+    args: &[Value],
+) -> Result<Option<Value>, InterpreterError> {
+    match name {
+        "__builtin_str__" => Ok(Some(eval_str(args)?)),
+        "__builtin_int__" => Ok(Some(eval_int(args)?)),
+        "__builtin_float__" => Ok(Some(eval_float(args)?)),
+        "__builtin_bool__" => Ok(Some(eval_bool(args)?)),
+        _ => Ok(None),
+    }
 }
 
 fn try_eval_time_function(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
@@ -2171,6 +2189,91 @@ fn eval_http_delete(args: &[Value]) -> Result<Value, InterpreterError> {
         },
         _ => Err(InterpreterError::RuntimeError("http_delete() expects a string URL".to_string())),
     }
+}
+
+// ============================================================================
+// Type Conversion Functions (STDLIB-001)
+// Wraps Rust stdlib methods for zero-cost abstraction
+// ============================================================================
+
+/// Convert any value to string (wraps Rust's Display/to_string)
+///
+/// # Complexity
+/// Cyclomatic complexity: 2 (within Toyota Way limits)
+fn eval_str(args: &[Value]) -> Result<Value, InterpreterError> {
+    validate_arg_count("str", args, 1)?;
+    match &args[0] {
+        // String -> String: Return as-is (no quotes added)
+        Value::String(s) => Ok(Value::String(s.clone())),
+        // Other types: Use Display trait via format!
+        other => Ok(Value::from_string(format!("{}", other))),
+    }
+}
+
+/// Convert value to integer (wraps Rust's parse and type casting)
+///
+/// # Complexity
+/// Cyclomatic complexity: 4 (within Toyota Way limits)
+fn eval_int(args: &[Value]) -> Result<Value, InterpreterError> {
+    validate_arg_count("int", args, 1)?;
+    match &args[0] {
+        Value::Integer(n) => Ok(Value::Integer(*n)),
+        Value::Float(f) => Ok(Value::Integer(*f as i64)), // Type cast (zero-cost)
+        Value::String(s) => {
+            // Wrap Rust stdlib parse (zero-cost)
+            s.parse::<i64>()
+                .map(Value::Integer)
+                .map_err(|_| InterpreterError::RuntimeError(
+                    format!("int() cannot parse string: '{}'", s)
+                ))
+        }
+        Value::Bool(b) => Ok(Value::Integer(if *b { 1 } else { 0 })),
+        _ => Err(InterpreterError::RuntimeError(
+            format!("int() does not support type: {}", args[0])
+        )),
+    }
+}
+
+/// Convert value to float (wraps Rust's parse and type casting)
+///
+/// # Complexity
+/// Cyclomatic complexity: 4 (within Toyota Way limits)
+fn eval_float(args: &[Value]) -> Result<Value, InterpreterError> {
+    validate_arg_count("float", args, 1)?;
+    match &args[0] {
+        Value::Float(f) => Ok(Value::Float(*f)),
+        Value::Integer(n) => Ok(Value::Float(*n as f64)), // Type cast (zero-cost)
+        Value::String(s) => {
+            // Wrap Rust stdlib parse (zero-cost)
+            s.parse::<f64>()
+                .map(Value::Float)
+                .map_err(|_| InterpreterError::RuntimeError(
+                    format!("float() cannot parse string: '{}'", s)
+                ))
+        }
+        Value::Bool(b) => Ok(Value::Float(if *b { 1.0 } else { 0.0 })),
+        _ => Err(InterpreterError::RuntimeError(
+            format!("float() does not support type: {}", args[0])
+        )),
+    }
+}
+
+/// Convert value to boolean (wraps Rust's truthiness logic)
+///
+/// # Complexity
+/// Cyclomatic complexity: 5 (within Toyota Way limits)
+fn eval_bool(args: &[Value]) -> Result<Value, InterpreterError> {
+    validate_arg_count("bool", args, 1)?;
+    let result = match &args[0] {
+        Value::Bool(b) => *b,
+        Value::Integer(n) => *n != 0, // Zero-cost comparison
+        Value::Float(f) => *f != 0.0, // Zero-cost comparison
+        Value::String(s) => !s.is_empty(), // Wrap Rust stdlib method (zero-cost)
+        Value::Nil => false,
+        Value::Array(arr) => !arr.is_empty(),
+        _ => true, // All other types are truthy
+    };
+    Ok(Value::Bool(result))
 }
 
 /// Builtin `assert_eq` function for testing
