@@ -356,6 +356,113 @@ fn test_http002_mime_json() {
 }
 
 // ============================================================================
+// WASM-Specific Headers Tests (HTTP-003)
+// ============================================================================
+
+#[test]
+fn test_http003_wasm_coop_header() {
+    // CRITICAL: WASM files MUST have Cross-Origin-Opener-Policy for SharedArrayBuffer
+    let test_dir = TempDir::new().unwrap();
+    std::fs::write(test_dir.path().join("app.wasm"), b"\x00\x61\x73\x6d\x01\x00\x00\x00").unwrap();
+
+    let port = find_available_port();
+    let ruchy_bin = assert_cmd::cargo::cargo_bin("ruchy");
+    let mut child = std::process::Command::new(ruchy_bin)
+        .arg("serve")
+        .arg(test_dir.path())
+        .arg("--port")
+        .arg(port.to_string())
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .spawn()
+        .expect("Failed to spawn server");
+
+    std::thread::sleep(Duration::from_millis(500));
+
+    let response = reqwest::blocking::get(format!("http://127.0.0.1:{}/app.wasm", port)).unwrap();
+    assert_eq!(response.status(), 200);
+
+    // COOP header required for SharedArrayBuffer
+    let coop = response.headers().get("cross-origin-opener-policy");
+    assert!(
+        coop.is_some(),
+        "WASM files MUST have Cross-Origin-Opener-Policy header for SharedArrayBuffer support"
+    );
+    assert_eq!(coop.unwrap(), "same-origin");
+
+    child.kill().unwrap();
+}
+
+#[test]
+fn test_http003_wasm_coep_header() {
+    // CRITICAL: WASM files MUST have Cross-Origin-Embedder-Policy for SharedArrayBuffer
+    let test_dir = TempDir::new().unwrap();
+    std::fs::write(test_dir.path().join("app.wasm"), b"\x00\x61\x73\x6d\x01\x00\x00\x00").unwrap();
+
+    let port = find_available_port();
+    let ruchy_bin = assert_cmd::cargo::cargo_bin("ruchy");
+    let mut child = std::process::Command::new(ruchy_bin)
+        .arg("serve")
+        .arg(test_dir.path())
+        .arg("--port")
+        .arg(port.to_string())
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .spawn()
+        .expect("Failed to spawn server");
+
+    std::thread::sleep(Duration::from_millis(500));
+
+    let response = reqwest::blocking::get(format!("http://127.0.0.1:{}/app.wasm", port)).unwrap();
+    assert_eq!(response.status(), 200);
+
+    // COEP header required for SharedArrayBuffer
+    let coep = response.headers().get("cross-origin-embedder-policy");
+    assert!(
+        coep.is_some(),
+        "WASM files MUST have Cross-Origin-Embedder-Policy header for SharedArrayBuffer support"
+    );
+    assert_eq!(coep.unwrap(), "require-corp");
+
+    child.kill().unwrap();
+}
+
+#[test]
+fn test_http003_html_coop_header() {
+    // HTML files serving WASM also need COOP/COEP headers
+    let test_dir = TempDir::new().unwrap();
+    std::fs::write(test_dir.path().join("index.html"), "<!DOCTYPE html><html></html>").unwrap();
+
+    let port = find_available_port();
+    let ruchy_bin = assert_cmd::cargo::cargo_bin("ruchy");
+    let mut child = std::process::Command::new(ruchy_bin)
+        .arg("serve")
+        .arg(test_dir.path())
+        .arg("--port")
+        .arg(port.to_string())
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .spawn()
+        .expect("Failed to spawn server");
+
+    std::thread::sleep(Duration::from_millis(500));
+
+    let response = reqwest::blocking::get(format!("http://127.0.0.1:{}/index.html", port)).unwrap();
+    assert_eq!(response.status(), 200);
+
+    // HTML pages that load WASM need these headers too
+    let coop = response.headers().get("cross-origin-opener-policy");
+    assert!(coop.is_some(), "HTML files MUST have COOP header for WASM SharedArrayBuffer");
+    assert_eq!(coop.unwrap(), "same-origin");
+
+    let coep = response.headers().get("cross-origin-embedder-policy");
+    assert!(coep.is_some(), "HTML files MUST have COEP header for WASM SharedArrayBuffer");
+    assert_eq!(coep.unwrap(), "require-corp");
+
+    child.kill().unwrap();
+}
+
+// ============================================================================
 // RED Phase Validation
 // ============================================================================
 

@@ -1660,8 +1660,9 @@ pub fn handle_notebook_command(
 /// * `verbose` - Enable verbose logging
 #[cfg(feature = "notebook")]
 pub fn handle_serve_command(directory: &Path, port: u16, host: &str, verbose: bool) -> Result<()> {
-    use axum::Router;
-    use tower_http::services::ServeDir;
+    use axum::{http::HeaderValue, Router};
+    use tower::ServiceBuilder;
+    use tower_http::{services::ServeDir, set_header::SetResponseHeaderLayer};
 
     // Verify directory exists
     if !directory.exists() {
@@ -1677,10 +1678,27 @@ pub fn handle_serve_command(directory: &Path, port: u16, host: &str, verbose: bo
     println!("🌐 Listening: http://{}:{}", host, port);
     println!("Press Ctrl+C to stop\n");
 
-    // Build the Axum app with static file serving
+    // Build the Axum app with static file serving + WASM headers
     let serve_dir = ServeDir::new(directory);
+
+    // Add WASM-specific headers for SharedArrayBuffer support (HTTP-003)
+    // Required for: WebAssembly threading, SharedArrayBuffer, Atomics
+    // Reference: https://web.dev/coop-coep/
     let app = Router::new()
-        .fallback_service(serve_dir);
+        .fallback_service(serve_dir)
+        .layer(
+            ServiceBuilder::new()
+                // Cross-Origin-Opener-Policy: Isolate browsing context
+                .layer(SetResponseHeaderLayer::if_not_present(
+                    axum::http::header::HeaderName::from_static("cross-origin-opener-policy"),
+                    HeaderValue::from_static("same-origin"),
+                ))
+                // Cross-Origin-Embedder-Policy: Require CORP for cross-origin resources
+                .layer(SetResponseHeaderLayer::if_not_present(
+                    axum::http::header::HeaderName::from_static("cross-origin-embedder-policy"),
+                    HeaderValue::from_static("require-corp"),
+                ))
+        );
 
     // Create tokio runtime
     let runtime = tokio::runtime::Runtime::new()?;
