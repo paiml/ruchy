@@ -2,6 +2,51 @@
 
 All notable changes to the Ruchy programming language will be documented in this file.
 
+## [3.93.0] - 2025-10-19
+
+### Added
+- **[TESTING] Property Tests for Pattern Matching** - 8 comprehensive property tests
+  - Validates pattern matching invariants with 10K+ random inputs per test
+  - Tests: wildcard, identifier, literal, tuple arity, enum variants, or-patterns
+  - Ensures pattern matching never panics with random inputs
+- **[TESTING] Fuzz Tests** - 2 fuzz tests covering 84 pattern/value combinations
+  - Robustness testing for nested enum patterns
+  - All combinations tested without panics
+- **[TESTING] Nested Enum Pattern Tests** - 5 integration tests
+  - Triple-nested patterns: `Token::Char(ch, Position::Pos(line, col, offset))`
+  - Multiple-level nesting validation
+  - Wildcard patterns in nested contexts
+
+### Fixed
+- **[PARSER] Inline Comments in Enum Variant Definitions** (Issue: BOOTSTRAP-002 blocker)
+  - **Root Cause**: Parser failed to skip comment tokens after variant definitions
+  - **Symptom**: `enum Position { Pos(i32, i32, i32) // comment }` caused "Expected variant name" error
+  - **Fix**: Added comment token skipping in `parse_enum_variants()`
+  - **Impact**: BOOTSTRAP-002 fully unblocked - character stream processing now works
+  - **Tests**: 3 new tests verify inline comments work correctly
+
+### Technical Details
+- **Pattern Matching Module**: src/runtime/eval_pattern_match.rs
+  - Added 8 property tests using proptest framework
+  - Property tests run 10,000+ iterations per test with random inputs
+  - All existing pattern matching functionality validated
+- **Parser Fix**: src/frontend/parser/expressions_helpers/enums.rs
+  - Skip `LineComment`, `BlockComment`, `DocComment` tokens after variants
+  - Skip comments after comma separators
+  - Maintains comment preservation for AST (comments not lost)
+- **Tests**: 3,980 lib tests passing (+15 from v3.92.0)
+- **Integration Tests**:
+  - match_enum: 5/5 passing
+  - match_nested_enum: 5/5 passing
+  - fuzz_pattern_match: 2/2 passing
+  - parser_inline_comments_enum: 3/3 passing
+
+### BOOTSTRAP-002 Status
+✅ **UNBLOCKED** - Nested enum pattern matching fully functional
+- `Token::Char(ch, Position::Pos(line, col, offset))` works
+- Character stream processing enabled
+- Triple-nested patterns supported
+
 ## [3.92.0] - 2025-10-19
 
 ### Added
