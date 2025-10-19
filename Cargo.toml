@@ -155,7 +155,7 @@ assertions_on_constants = "allow"  # Tests assert expected constants
 overly_complex_bool_expr = "allow"  # Tests can have complex conditions
 
 [workspace.package]
-version = "3.97.0"
+version = "3.98.0"
 edition = "2021"
 authors = ["Noah Gift"]
 license = "MIT OR Apache-2.0"
