@@ -2,6 +2,56 @@
 
 All notable changes to the Ruchy programming language will be documented in this file.
 
+## [3.98.0] - 2025-10-19
+
+### Fixed - CRITICAL RUNTIME BUG (RUNTIME-038)
+- **[RUNTIME] Variable Collision in Nested Function Calls** - GitHub Issue #38
+  - **Bug**: Variable names in nested functions collided with outer scopes, causing type corruption (String → i32)
+  - **Root Cause**: `env_set()` searched parent scopes and mutated existing variables, even for `let` bindings
+  - **Fix**: Changed `env_set()` to ALWAYS create variables in current scope (proper shadowing)
+  - **Complexity**: Reduced from 4 → 1 (Toyota Way compliant)
+  - **Impact**: Critical type safety violation - BLOCKS production use - **NOW FIXED**
+  - **Tests**: 5 regression tests + 10,000 property tests (scope isolation)
+  - **Discovered**: 2025-10-19 during RuchyRuchy bootstrap compiler testing
+  - **Methodology**: EXTREME TDD (RED → GREEN → REFACTOR) + Five Whys root cause analysis
+
+### Added - STANDARD LIBRARY TYPE CONVERSIONS (STDLIB-001)
+- **[STDLIB] Type Conversion Functions** - ✅ Fully implemented in both modes
+  - `str(x: Any) -> String` - Convert any value to string (wraps Rust Display/to_string)
+  - `int(x: Any) -> Int` - Convert to integer (wraps parse/type casting)
+  - `float(x: Any) -> Float` - Convert to float (wraps parse/type casting)
+  - `bool(x: Any) -> Bool` - Convert to boolean (truthiness logic)
+  - **Zero-cost abstraction**: Direct Rust stdlib wrapping (format!, parse(), type casts)
+  - **Tests**: 17/17 passing (interpreter + transpiler modes)
+  - **Bug Fixed**: String Display trait adding quotes in `str()` function
+  - **Impact**: Standard library now 100% complete for core type conversions
+
+### Tests Added - EXTREME TDD + Property Testing
+- **[TESTING] Runtime Scope Isolation Tests** - 5/5 passing (tests/runtime_038_variable_collision.rs)
+  - `test_runtime038_minimal_reproduction`: GitHub Issue #38 reproduction
+  - `test_runtime038_regression_simple`: Simple scope isolation
+  - `test_runtime038_interpreter_mode`: Interpreter mode validation
+  - `test_runtime038_common_variable_names`: Common variable collision prevention
+  - `test_runtime038_deeply_nested`: 3+ level nesting validation
+  - **Property Tests**: 10,000 random scope combinations (run with `--ignored`)
+
+- **[TESTING] Type Conversion Tests** - 17/17 passing (tests/stdlib_type_conversions_test.rs)
+  - Interpreter mode: 13 tests (str, int, float, bool conversions + edge cases)
+  - Transpiler mode: 4 tests (compile-to-binary validation)
+  - Edge cases: Negative numbers, empty strings, boolean conversions
+
+### Quality Validation
+- **Total Tests**: 4,009 passing (3,987 lib + 22 new)
+- **No Regressions**: Full test suite validates both fixes
+- **Complexity**: RUNTIME-038 fix reduced from 4 → 1 (Toyota Way: ≤10)
+- **Coverage**: Added comprehensive regression prevention
+- **Toyota Way**: Jidoka (stop the line), Genchi Genbutsu (go and see), Kaizen (continuous improvement)
+
+### Impact on RuchyRuchy Bootstrap Compiler
+- **UNBLOCKED**: Critical type safety bug prevented complex nested function calls
+- **Validated**: Fix tested with 5,000+ property test cases in RuchyRuchy project
+- **Production Ready**: Type conversions + scope isolation enable bootstrap compiler development
+
 ## [3.97.0] - 2025-10-19
 
 ### Added - HTTP SERVER MVP (PRODUCTION READY)
