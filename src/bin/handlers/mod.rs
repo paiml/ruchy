@@ -1679,7 +1679,9 @@ pub fn handle_serve_command(directory: &Path, port: u16, host: &str, verbose: bo
     println!("Press Ctrl+C to stop\n");
 
     // Build the Axum app with static file serving + WASM headers
-    let serve_dir = ServeDir::new(directory);
+    let serve_dir = ServeDir::new(directory)
+        .precompressed_gzip()  // Serve .gz files if available (faster)
+        .precompressed_br();   // Serve .br files if available (faster)
 
     // Add WASM-specific headers for SharedArrayBuffer support (HTTP-003)
     // Required for: WebAssembly threading, SharedArrayBuffer, Atomics
@@ -1700,16 +1702,23 @@ pub fn handle_serve_command(directory: &Path, port: u16, host: &str, verbose: bo
                 ))
         );
 
-    // Create tokio runtime
-    let runtime = tokio::runtime::Runtime::new()?;
+    // PERFORMANCE: Create optimized tokio runtime (multi-threaded, CPU-bound)
+    let num_cpus = num_cpus::get();
+    let runtime = tokio::runtime::Builder::new_multi_thread()
+        .worker_threads(num_cpus)
+        .enable_all()
+        .build()?;
 
-    // Bind and serve
+    // Bind and serve with TCP optimizations
     let addr = format!("{}:{}", host, port);
     runtime.block_on(async {
         let listener = tokio::net::TcpListener::bind(&addr).await?;
+
         if verbose {
-            println!("✅ Server started successfully");
+            println!("✅ Server started successfully ({} worker threads, optimized async runtime)", num_cpus);
         }
+
+        // NOTE: Axum automatically enables TCP_NODELAY for lower latency
         axum::serve(listener, app).await
     })?;
 
