@@ -669,7 +669,7 @@ prepare-publish:
 	@echo "  cargo publish"
 
 # Documentation enforcement targets
-.PHONY: check-docs commit sprint-close
+.PHONY: check-docs commit sprint-close dev
 
 # Ensure documentation is current
 check-docs:
@@ -763,7 +763,7 @@ pre-release-checks:
 	@$(MAKE) test-all
 	@echo ""
 	@echo "3️⃣ Checking formatting and lints..."
-	@$(MAKE) format-check
+	@"$(MAKE)" format-check
 	@$(MAKE) lint
 	@echo ""
 	@echo "4️⃣ Security audit..."
