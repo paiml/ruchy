@@ -532,6 +532,20 @@ make lint-bashrs     # Everything (scripts + Makefile)
 - Fix root cause, don't bypass quality gates
 - If bashrs blocks incorrectly, fix bashrs detection
 
+### Documented Exceptions
+
+**DET002 (Non-deterministic timestamps)** - Acceptable in logging/testing scripts:
+- `.pmat/run_overnight_mutations.sh`: Timestamps are INTENTIONAL for test logging
+- Rationale: Logging scripts need timestamps for debugging and audit trails
+- Pattern: Add header comment explaining why timestamps are required
+- Pre-commit: Excluded from bashrs validation (documented in .git/hooks/pre-commit)
+
+**Exception Criteria**:
+- Script purpose is logging, testing, or debugging (not build/deployment)
+- Timestamps provide valuable debugging information
+- Script is NOT used in reproducible builds or CI/CD pipelines
+- Exception is documented in script header AND CLAUDE.md
+
 ## Implementation Hierarchy
 
 ```yaml
