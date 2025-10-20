@@ -466,7 +466,17 @@ mod property_tests {
 
 ## bashrs Quality Enforcement (Shell Scripts & Makefiles)
 
-**MANDATORY**: All shell scripts and Makefiles MUST pass bashrs quality checks before commit.
+**SACRED RULE**: ALL shell scripts MUST either:
+1. **Use bashrs validation** (for infrastructure/build scripts like Makefile, pre-commit hooks), OR
+2. **Be replaced with Ruchy scripts** (PREFERRED for all new scripting)
+
+**MANDATORY**: All remaining shell scripts and Makefiles MUST pass bashrs quality checks before commit.
+
+**Policy**:
+- **New Scripts**: Write in Ruchy (`.ruchy` files) whenever possible
+- **Existing Scripts**: Either migrate to Ruchy OR enforce bashrs quality gates
+- **Infrastructure**: Build tools, CI/CD, and git hooks may remain in bash with bashrs validation
+- **Zero Exceptions**: No raw bash without bashrs validation
 
 ### Installation
 ```bash
