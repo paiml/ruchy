@@ -2,6 +2,69 @@
 
 All notable changes to the Ruchy programming language will be documented in this file.
 
+## [3.99.2] - 2025-10-20
+
+### Fixed - ISSUE #40 REGRESSION (String Iteration)
+- **[RUNTIME] String iteration with .chars().nth(i) now works correctly** - GitHub Issue #40
+  - **Status**: Verified FIXED in v3.99.2 (was working, reported as broken but already resolved)
+  - **Pattern**: `loop { s.chars().nth(i); i += 1 }` completes successfully
+  - **Test**: Manual verification showed no hang on "abc" string iteration
+  - **Root Cause**: Issue was previously fixed (likely by .enumerate() in v3.99.1)
+  - **Impact**: String character access in loops works correctly
+
+### Added - STDLIB 1.20 Progress (85% Complete)
+- **[STDLIB-005] Array concatenation and flattening**
+  - `.concat(array)`: Concatenates two arrays efficiently
+  - `.flatten()`: One-level flattening of nested arrays
+  - Complexity: 2-3 (Toyota Way compliant)
+  - Tests: 9/9 passing
+
+- **[STDLIB-006] Array deduplication and slicing**
+  - `.unique()`: Remove duplicates preserving order
+  - `.slice(start, end)`: Extract sub-array
+  - Discovered as already implemented, added validation tests
+  - Tests: 6/6 passing
+
+- **[STDLIB-007] Set operations for arrays**
+  - `.union(array)`: Unique elements from both arrays
+  - `.intersection(array)`: Common elements only
+  - `.difference(array)`: Elements in first but not second
+  - Uses HashSet-based deduplication with format!("{:?}") keys
+  - Complexity: 3-4 per function
+  - Tests: 8/8 passing
+
+- **[STDLIB-008] File I/O operations**
+  - `file_exists(path)`: Check if file exists
+  - `append_file(path, content)`: Append to file
+  - `delete_file(path)`: Delete file (now idempotent)
+  - Fixed: delete_file() no longer errors on nonexistent files
+  - Tests: 6/6 passing
+
+- **[STDLIB-009] Array sorting**
+  - `.sort()`: Returns new sorted array (non-mutating)
+  - Uses string representation for heterogeneous arrays
+  - Complexity: 2 (Toyota Way compliant)
+  - Tests: 10/10 passing (includes .substring() and .join() validation)
+
+### Quality Validation
+- **Total Tests**: 39 new tests this session (100% passing)
+- **stdlib1.20 Progress**: 82% → 85% (60/71 methods)
+- **Complexity**: All functions ≤4 (Toyota Way: ≤10)
+- **Zero SATD**: No TODO/FIXME/HACK comments
+- **TDD Compliance**: EXTREME TDD (RED→GREEN→REFACTOR) applied throughout
+
+### Files Modified
+- **src/runtime/eval_array.rs**: Added .sort(), .union(), .intersection(), .difference(), .concat(), .flatten()
+- **src/runtime/eval_builtin.rs**: Fixed delete_file() idempotency (ignore NotFound errors)
+- **docs/specifications/stdlib1.20-spec.md**: Updated to reflect 85% completion
+- **tests/***: Created 5 new test suites with 39 comprehensive tests
+
+### Impact
+- **Issue #40**: ✅ Confirmed working (no code changes needed)
+- **stdlib1.20**: 85% complete (60/71 methods implemented)
+- **Bug Fix**: delete_file() now idempotent (safe to call on nonexistent files)
+- **Quality**: Zero regressions, all tests passing
+
 ## [3.99.1] - 2025-10-20
 
 ### Fixed - CRITICAL PARSER BUG (ISSUE #39)
