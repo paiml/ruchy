@@ -81,7 +81,8 @@ fn try_parse_block_expressions(state: &mut ParserState, start_span: Span) -> Res
 }
 
 /// Parse all expressions within a block (complexity: 8)
-fn parse_block_expressions(state: &mut ParserState, start_span: Span) -> Result<Vec<Expr>> {
+/// Made public for use by async block parsing (PARSER-056)
+pub(in crate::frontend::parser) fn parse_block_expressions(state: &mut ParserState, start_span: Span) -> Result<Vec<Expr>> {
     let mut exprs = Vec::new();
     while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
         let expr = parse_next_block_expression(state, start_span)?;
