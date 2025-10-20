@@ -1,0 +1,24 @@
+// STDLIB-005: Directory Walking Library Functions
+// High-level convenience functions built on core walk() and glob() builtins
+
+/// Find files matching a predicate
+/// Convenience wrapper around walk().filter()
+/// 
+/// # Arguments
+/// * path - Directory path to search
+/// * predicate - Function that takes FileEntry and returns bool
+///
+/// # Returns
+/// Array of FileEntry objects matching predicate
+///
+/// # Examples
+/// ```
+/// // Find all .txt files
+/// let txt_files = find("/data", |e| e.is_file && e.path.ends_with(".txt"))
+///
+/// // Find large files (>100MB)
+/// let large = find("/data", |e| e.is_file && e.size > 100_000_000)
+/// ```
+fn find(path, predicate) {
+    walk(path).filter(predicate)
+}

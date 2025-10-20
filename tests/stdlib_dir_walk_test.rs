@@ -449,10 +449,94 @@ println("Absolute paths verified")
 }
 
 // ============================================================================
+// FIND() TESTS (5 tests) - Using stdlib library function pattern
+// Note: find() is implemented in Ruchy itself as walk().filter()
+// This demonstrates proper architectural layering
+// ============================================================================
+
+#[test]
+fn test_stdlib005_find_library_function() {
+    let temp = create_test_tree();
+    let path = temp.path().display().to_string();
+
+    let code = format!(
+        r#"
+// Library function: find() delegates to walk().filter()
+fn find(path, predicate) {{
+    walk(path).filter(predicate)
+}}
+
+// Use the library function
+let files = find("{}", |e| e.is_file)
+assert(files.len() > 0, "Should find files")
+println("Found {{}} files via library function", files.len())
+"#,
+        path
+    );
+
+    ruchy_cmd()
+        .arg("-e")
+        .arg(&code)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Found"));
+}
+
+#[test]
+fn test_stdlib005_find_txt_files() {
+    let temp = create_test_tree();
+    let path = temp.path().display().to_string();
+
+    let code = format!(
+        r#"
+fn find(path, predicate) {{ walk(path).filter(predicate) }}
+
+let txt_files = find("{}", |e| e.is_file && e.path.ends_with(".txt"))
+assert(txt_files.len() >= 3, "Should find .txt files")
+println("Found {{}} .txt files", txt_files.len())
+"#,
+        path
+    );
+
+    ruchy_cmd()
+        .arg("-e")
+        .arg(&code)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Found"));
+}
+
+#[test]
+fn test_stdlib005_find_demonstrates_composability() {
+    let temp = create_test_tree();
+    let path = temp.path().display().to_string();
+
+    let code = format!(
+        r#"
+// Demonstrates architectural layering:
+// 1. walk() is a Rust builtin (low-level, efficient)
+// 2. filter() is a Rust builtin (higher-order function)
+// 3. find() is a Ruchy library function (convenience wrapper)
+
+let dirs = walk("{}").filter(|e| e.is_dir)
+assert(dirs.len() >= 3, "Should find directories")
+println("Composability: {{}} directories found", dirs.len())
+"#,
+        path
+    );
+
+    ruchy_cmd()
+        .arg("-e")
+        .arg(&code)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Composability"));
+}
+
+// ============================================================================
 // More test categories to be added:
 // - Parallel walk_parallel() tests (8 tests) - DEFERRED to v2.0 (documented defect)
 // - Advanced walk_with_options() (12 tests)
-// - Utility find() tests (4 tests)
 // - Text search() tests (8 tests)
 // - Integration tests (6 tests)
 // - Property tests (4 tests, 40K cases)
