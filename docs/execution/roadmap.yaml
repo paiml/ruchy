@@ -3,8 +3,8 @@
 
 metadata:
   version: "3.6"
-  last_updated: "2025-10-19"
-  current_sprint: "✅ v3.96.0 Box<T>/Vec<T> COMPLETE | 🔄 STDLIB-WEBSERVER-SPEC: Standard Library & Web Server Specification (In Progress)"
+  last_updated: "2025-10-20"
+  current_sprint: "✅ v3.96.0 Box<T>/Vec<T> COMPLETE | 🔄 STDLIB-WEBSERVER-SPEC: Standard Library & Web Server Specification (In Progress) | ✅ STDLIB-003/004: File I/O + String/Array Methods (COMPLETE)"
   latest_release: "v3.96.0"
   production_readiness:
     overall: "87%"
@@ -1811,14 +1811,169 @@ backlog:
       - "All functions ≤2 complexity (trivial wrappers)"
       - "Perfect mutation coverage: All test assertions validate behavior"
 
+  - id: "STDLIB-003"
+    title: "Advanced File I/O Functions (stdlib1.20-spec)"
+    status: "COMPLETE"
+    completed: "2025-10-20"
+    time_actual: "1h"
+    functions: 5
+    module: "Zero-cost abstraction over std::fs methods"
+    tests:
+      unit: 11
+      interpreter: 6
+      transpiler: 3
+      integration: 2
+    quality:
+      complexity_max: 6
+      tdg_grade: "A"
+    progress:
+      - "✅ EXTREME TDD: 11 tests written FIRST (all failed initially)"
+      - "✅ Implemented: append_file(), file_exists(), delete_file()"
+      - "✅ User-friendly aliases wrapping existing fs_ functions"
+      - "✅ Dual-mode testing: interpreter (-e) + transpiler (run)"
+      - "✅ All 11/11 tests passing"
+      - "✅ Complexity ≤6 (all functions within Toyota Way limits)"
+    validation:
+      - "✅ File metadata operations functional"
+      - "✅ Directory operations validated"
+      - "✅ Zero-cost abstraction pattern maintained"
+      - "✅ Integration tests validate real-world scenarios"
+
+  - id: "STDLIB-004"
+    title: "Custom String/Array Methods (stdlib1.20-spec)"
+    status: "COMPLETE"
+    completed: "2025-10-20"
+    time_actual: "2h"
+    functions: 5
+    module: "Custom implementations (no direct Rust stdlib equivalents)"
+    tests:
+      unit: 19
+      interpreter: 11
+      transpiler: 3
+      integration: 3
+      property: 2
+    quality:
+      complexity_max: 7
+      tdg_grade: "A"
+    progress:
+      - "✅ EXTREME TDD: 19 tests written FIRST (14 failed initially)"
+      - "✅ Implemented: Array.slice(), Array.join(), Array.unique()"
+      - "✅ Implemented: zip(), enumerate() standalone functions"
+      - "✅ substring() already existed, validated via tests"
+      - "✅ Dual-mode testing: interpreter (-e) + transpiler (run)"
+      - "✅ All 19/19 tests passing"
+      - "✅ Complexity ≤7 (all functions within Toyota Way limits)"
+    validation:
+      - "✅ Array slicing with skip/take pattern"
+      - "✅ String joining with type conversion"
+      - "✅ Deduplication via HashSet (debug representation keys)"
+      - "✅ Tuple representation for zip/enumerate results"
+      - "✅ Integration tests validate CSV parsing, deduplication"
+
+  - id: "STDLIB-005"
+    title: "Multi-Threaded Directory Walking + Text Search (HARDENED)"
+    status: "PLANNED (Post-Critical Review)"
+    priority: "🔴 HIGH"
+    estimated_time: "14-18h"
+    critical_review_applied: true
+    version: "2.0.0"
+    dependencies:
+      - "STDLIB-004"
+    functions: 6
+    cli_tools: 5
+    module: "Directory traversal with parallel processing + fast text search (security-hardened)"
+    spec: "docs/specifications/multi-threaded-dir-walk-spec.md"
+    tests:
+      unit: 70
+      concurrency: 3
+      security: 5
+      benchmarks: 2
+      interpreter: 45
+      transpiler: 12
+      integration: 6
+      property: 4
+      property_cases: 40000
+      mutation_target: "≥90%"
+    quality:
+      complexity_max: 10
+      tdg_target: "A-"
+      quality_gates: 16
+    dependencies_crates:
+      - "walkdir = \"2.5\""
+      - "rayon = \"1.10\""
+      - "glob = \"0.3\""
+      - "num_cpus = \"1.16\""
+      - "grep = \"0.3\""
+      - "regex = \"1.10\""
+      - "loom = \"0.7\""
+    theoretical_foundations:
+      - "Blumofe & Leiserson (1999): Work-stealing scheduler"
+      - "Aho & Corasick (1975): Multi-pattern string matching"
+      - "Thompson (1968): NFA-based regex matching"
+      - "Flanagan & Godefroid (2005): DPOR for model checking"
+    api:
+      - "walk(path) -> Array<FileEntry> - Basic recursive walk"
+      - "walk_parallel(path, callback) -> Array<Any> - Parallel processing (memory defect documented)"
+      - "walk_with_options(path, options) -> Array<FileEntry> - Advanced options"
+      - "glob(pattern) -> Array<String> - Glob pattern matching"
+      - "find(path, predicate) -> Array<FileEntry> - Find with predicate"
+      - "search(pattern, path, options?) -> Array<SearchMatch> - Fast text search"
+    cli:
+      - "ruchy find - Smart file finder (simpler than GNU find)"
+      - "ruchy tree - Visual directory tree with stats"
+      - "ruchy du - Disk usage with visual charts"
+      - "ruchy count - File statistics with language detection"
+      - "ruchy rg - Fast parallel text search (like ripgrep)"
+    implementation_phases:
+      - phase: "RED"
+        tasks:
+          - "Create tests/stdlib_dir_walk_test.rs with 70 unit tests"
+          - "Add 3 concurrency tests (loom, thread sanitizer, stress)"
+          - "Add 5 security tests (traversal, symlinks, unicode, injection, TOCTOU)"
+          - "Add 2 performance benchmarks (abstraction overhead <1µs, parallel speedup ≥2x)"
+          - "All tests fail initially (no implementation)"
+          - "Property tests defined (4 tests × 10K cases)"
+      - phase: "GREEN"
+        tasks:
+          - "Implement walk() - basic recursive traversal"
+          - "Implement walk_parallel() - rayon parallel processing (document memory defect)"
+          - "Implement walk_with_options() - advanced configuration"
+          - "Implement glob() and find() utilities"
+          - "Implement search() - fast text search with grep crate"
+          - "All 70/70 unit tests passing"
+          - "All 3 concurrency tests passing (loom + thread sanitizer clean)"
+          - "All 5 security tests passing (attacks blocked)"
+      - phase: "REFACTOR"
+        tasks:
+          - "Verify complexity ≤10 for all functions"
+          - "Run mutation tests (target ≥90%)"
+          - "Performance benchmarks: abstraction overhead <1µs, parallel speedup ≥2x"
+          - "Security audit: penetration testing against documented attack vectors"
+          - "Code review with algorithm justification (theoretical foundations)"
+    design_flaws_fixed:
+      - "Memory scalability: walk_parallel eager collection → iterator API proposed for v2.0"
+      - "Abstraction cost: 'Zero-cost' claim → 'High-performance' with <1µs benchmark gate"
+      - "Concurrency testing: Added loom + thread sanitizer + stress tests"
+      - "Security testing: Added 5 attack vector test categories"
+      - "Algorithm justification: Added peer-reviewed CS research references"
+    use_cases:
+      - "ETL pipelines: Process thousands of CSV files in parallel"
+      - "Log analysis: Search errors across directory trees"
+      - "Data science: Build training datasets from image directories"
+      - "Code analysis: Count lines of code, find patterns"
+      - "Security audits: Find sensitive data patterns in codebases"
+    impact: "Enables high-performance, security-hardened data processing + text search for data engineering and sysadmin workflows"
+    rationale: "Combines walkdir + rayon (work-stealing) + grep (Aho-Corasick) with rigorous concurrency/security testing. Design grounded in peer-reviewed CS research (Blumofe & Leiserson, Thompson NFA, DPOR)."
+
 # Quality Metrics
 quality_dashboard:
   test_coverage:
     lib_tests: "3630/3630 (100%)"
     wasm_tests: "92/92 (100%)"
-    stdlib_tests: "153/153 (100%)"  # ✅ Phase 1 & 2 complete (10 modules)
+    stdlib_tests: "183/183 (100%)"  # ✅ Phase 1 & 2 + stdlib1.20-spec (12 modules)
     stdlib_mutation: "10/10 modules (100%)"  # ✅ COMPLETE - Phase 1 & 2 validated
     phase_2_detail: "24 logging tests + 31 regex tests = 55 new tests"
+    stdlib1_20_detail: "11 File I/O tests + 19 String/Array tests = 30 new tests (2025-10-20)"
 
   complexity:
     violations: 0
