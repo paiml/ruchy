@@ -32,6 +32,7 @@ pub fn init_global_environment() -> HashMap<String, Value> {
     add_environment_functions(&mut global_env);
     add_fs_functions(&mut global_env);
     add_stdlib003_functions(&mut global_env);  // STDLIB-003: User-friendly file I/O
+    add_stdlib005_functions(&mut global_env);  // STDLIB-005: Directory walking
     add_path_functions(&mut global_env);
     add_json_functions(&mut global_env);
     add_http_functions(&mut global_env);
@@ -350,6 +351,17 @@ fn add_stdlib003_functions(global_env: &mut HashMap<String, Value>) {
     );
 }
 
+/// Register STDLIB-005: Multi-Threaded Directory Walking + Text Search
+/// Provides directory traversal and text search functionality
+/// Complexity: 1 (simple registration)
+fn add_stdlib005_functions(global_env: &mut HashMap<String, Value>) {
+    // STDLIB-005: Directory Walking Functions
+    global_env.insert(
+        "walk".to_string(),
+        Value::from_string("__builtin_walk__".to_string()),
+    );
+}
+
 /// Register path functions in global environment
 /// Phase 3: `STDLIB_ACCESS_PLAN` - Path Module (13 functions)
 fn add_path_functions(global_env: &mut HashMap<String, Value>) {
@@ -476,8 +488,9 @@ mod tests {
         // math functions: log, log10, random (added in STDLIB-002: 3 new)
         // file I/O functions: append_file, delete_file (STDLIB-003: 2 new, others existed)
         // string/array functions: substring, slice, join, unique, zip, enumerate (STDLIB-004: 6 new)
-        // Total: 89 base + 3 STDLIB-002 + 2 STDLIB-003 + 6 STDLIB-004 + 2 misc = 102
-        assert_eq!(env.len(), 102);
+        // directory walking: walk (STDLIB-005: 1 new)
+        // Total: 89 base + 3 STDLIB-002 + 2 STDLIB-003 + 6 STDLIB-004 + 1 STDLIB-005 + 2 misc = 103
+        assert_eq!(env.len(), 103);
     }
 
     #[test]

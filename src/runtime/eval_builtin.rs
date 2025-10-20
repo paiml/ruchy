@@ -28,6 +28,8 @@ pub fn eval_builtin_function(
         try_eval_dataframe_function,
         try_eval_environment_function,
         try_eval_fs_function,
+        try_eval_stdlib003,
+        try_eval_stdlib005,
         try_eval_path_function,
         try_eval_json_function,
         try_eval_http_function,
@@ -1406,6 +1408,71 @@ fn eval_fs_remove_dir(args: &[Value]) -> Result<Value, InterpreterError> {
     }
 }
 
+/// Evaluate `walk()` builtin function (STDLIB-005)
+/// Recursively walks a directory and returns array of FileEntry objects
+/// Complexity: 8 (within Toyota Way limit of 10)
+fn eval_walk(args: &[Value]) -> Result<Value, InterpreterError> {
+    validate_arg_count("walk", args, 1)?;
+
+    match &args[0] {
+        Value::String(path) => {
+            use walkdir::WalkDir;
+            use std::collections::HashMap;
+
+            let entries: Vec<Value> = WalkDir::new(path.as_ref())
+                .into_iter()
+                .filter_map(|e| e.ok())
+                .map(|entry| {
+                    let mut fields = HashMap::new();
+
+                    // path: Full path as string
+                    fields.insert("path".to_string(), Value::String(
+                        entry.path().display().to_string().into()
+                    ));
+
+                    // name: File name only
+                    fields.insert("name".to_string(), Value::String(
+                        entry.file_name().to_string_lossy().to_string().into()
+                    ));
+
+                    // is_file: Boolean
+                    fields.insert("is_file".to_string(), Value::from_bool(
+                        entry.file_type().is_file()
+                    ));
+
+                    // is_dir: Boolean
+                    fields.insert("is_dir".to_string(), Value::from_bool(
+                        entry.file_type().is_dir()
+                    ));
+
+                    // is_symlink: Boolean
+                    fields.insert("is_symlink".to_string(), Value::from_bool(
+                        entry.file_type().is_symlink()
+                    ));
+
+                    // size: File size in bytes (0 for directories)
+                    let size = entry.metadata()
+                        .map(|m| m.len() as i64)
+                        .unwrap_or(0);
+                    fields.insert("size".to_string(), Value::Integer(size));
+
+                    // depth: Nesting depth (0 = root)
+                    fields.insert("depth".to_string(), Value::Integer(
+                        entry.depth() as i64
+                    ));
+
+                    Value::Object(Arc::new(fields))
+                })
+                .collect();
+
+            Ok(Value::Array(entries.into()))
+        }
+        _ => Err(InterpreterError::RuntimeError(
+            "walk() expects a string path".to_string(),
+        )),
+    }
+}
+
 /// Evaluate `fs_copy()` builtin function
 /// Copies a file from source to destination
 /// Complexity: 3 (within Toyota Way limits)
@@ -1567,6 +1634,15 @@ fn try_eval_stdlib003(name: &str, args: &[Value]) -> Result<Option<Value>, Inter
         "__builtin_file_exists__" => Ok(Some(eval_fs_exists(args)?)),
         "__builtin_delete_file__" => Ok(Some(eval_fs_remove_file(args)?)),
         "__builtin_append_file__" => Ok(Some(eval_append_file(args)?)),
+        _ => Ok(None),
+    }
+}
+
+/// Dispatch STDLIB-005: Multi-Threaded Directory Walking + Text Search
+/// Complexity: 2 (within Toyota Way limits of 10)
+fn try_eval_stdlib005(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
+    match name {
+        "__builtin_walk__" => Ok(Some(eval_walk(args)?)),
         _ => Ok(None),
     }
 }
