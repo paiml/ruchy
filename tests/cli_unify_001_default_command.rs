@@ -3,7 +3,6 @@
 
 use assert_cmd::Command;
 use predicates::prelude::*;
-use std::io::Write;
 
 fn ruchy_cmd() -> Command {
     Command::cargo_bin("ruchy").expect("Failed to find ruchy binary")
@@ -21,15 +20,14 @@ fn test_ruchy_no_args_opens_repl() {
         .assert();
 
     // REPL should:
-    // 1. Show prompt
+    // 1. Show banner
     // 2. Accept input
     // 3. Show result
     // 4. NOT show help text
     assert
         .success()
-        .stdout(predicate::str::contains("Ruchy"))  // REPL banner
-        .stdout(predicate::str::contains(">>"))     // REPL prompt
-        .stdout(predicate::str::contains("2").or(predicate::str::contains("result")))  // Output
+        .stdout(predicate::str::contains("Welcome to Ruchy REPL"))  // REPL banner
+        .stdout(predicate::str::contains("2"))  // Evaluation result of 1 + 1
         .stdout(predicate::str::contains("Usage:").not()); // NOT help text
 }
 

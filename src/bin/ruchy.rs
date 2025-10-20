@@ -803,6 +803,13 @@ enum Commands {
     },
 }
 fn main() -> Result<()> {
+    // CLI-UNIFY-001: If no args provided, open REPL directly
+    // This matches behavior of python, ruby, node, deno
+    // Check before clap parsing to avoid showing help
+    if std::env::args().len() == 1 {
+        return handle_repl_command(None);
+    }
+
     let cli = Cli::parse();
     // Try to handle direct evaluation first
     if let Some(result) = try_handle_direct_evaluation(&cli) {
