@@ -456,6 +456,13 @@ fn verify_output_exists(output_path: &Path) -> Result<()> {
 }
 /// Check if rustc is available
 ///
+/// Uses multiple strategies to find rustc:
+/// 1. Try "rustc" in PATH (standard approach)
+/// 2. Try common cargo installation paths as fallback
+///
+/// This robust approach handles edge cases in test environments where PATH
+/// may not be fully propagated to subprocesses (complexity: 5)
+///
 /// # Examples
 ///
 /// ```
@@ -470,14 +477,48 @@ fn verify_output_exists(output_path: &Path) -> Result<()> {
 ///
 /// Returns an error if rustc is not installed or cannot be executed
 pub fn check_rustc_available() -> Result<()> {
-    let output = Command::new("rustc")
-        .arg("--version")
-        .output()
-        .context("Failed to execute rustc")?;
-    if !output.status.success() {
-        bail!("rustc is not available. Please install Rust toolchain.");
+    // Strategy 1: Try rustc in PATH (standard approach)
+    if try_rustc_command("rustc").is_ok() {
+        return Ok(());
     }
-    Ok(())
+
+    // Strategy 2: Try common cargo installation paths (robustness for test environments)
+    let fallback_paths = [
+        format!("{}/.cargo/bin/rustc", std::env::var("HOME").unwrap_or_default()),
+        "/usr/local/bin/rustc".to_string(),
+        "/usr/bin/rustc".to_string(),
+    ];
+
+    for path in &fallback_paths {
+        if try_rustc_command(path).is_ok() {
+            return Ok(());
+        }
+    }
+
+    bail!("rustc is not available. Please install Rust toolchain.")
+}
+
+/// Try executing rustc command with given path (complexity: 4)
+fn try_rustc_command(rustc_path: &str) -> Result<()> {
+    let output = Command::new(rustc_path)
+        .arg("--version")
+        .output();
+
+    match output {
+        Ok(output) if output.status.success() => Ok(()),
+        Ok(output) => {
+            // Command executed but returned non-zero exit code
+            bail!(
+                "rustc at '{}' failed with exit code {:?}",
+                rustc_path,
+                output.status.code()
+            )
+        }
+        Err(e) => {
+            // Command could not be executed (binary not found, permission denied, etc.)
+            bail!("Could not execute rustc at '{}': {}", rustc_path, e)
+        }
+    }
 }
 /// Get rustc version information
 ///
