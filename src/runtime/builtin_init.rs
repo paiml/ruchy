@@ -364,6 +364,10 @@ fn add_stdlib005_functions(global_env: &mut HashMap<String, Value>) {
         "glob".to_string(),
         Value::from_string("__builtin_glob__".to_string()),
     );
+    global_env.insert(
+        "search".to_string(),
+        Value::from_string("__builtin_search__".to_string()),
+    );
 }
 
 /// Register path functions in global environment
@@ -492,9 +496,9 @@ mod tests {
         // math functions: log, log10, random (added in STDLIB-002: 3 new)
         // file I/O functions: append_file, delete_file (STDLIB-003: 2 new, others existed)
         // string/array functions: substring, slice, join, unique, zip, enumerate (STDLIB-004: 6 new)
-        // directory walking: walk, glob (STDLIB-005: 2 new)
-        // Total: 89 base + 3 STDLIB-002 + 2 STDLIB-003 + 6 STDLIB-004 + 2 STDLIB-005 + 2 misc = 104
-        assert_eq!(env.len(), 104);
+        // directory walking: walk, glob, search (STDLIB-005: 3 new)
+        // Total: 89 base + 3 STDLIB-002 + 2 STDLIB-003 + 6 STDLIB-004 + 3 STDLIB-005 + 2 misc = 105
+        assert_eq!(env.len(), 105);
     }
 
     #[test]
