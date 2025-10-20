@@ -1473,6 +1473,38 @@ fn eval_walk(args: &[Value]) -> Result<Value, InterpreterError> {
     }
 }
 
+/// Evaluate `glob()` builtin function (STDLIB-005)
+/// Find files matching glob pattern (wraps glob crate)
+/// Complexity: 4 (within Toyota Way limit of 10)
+fn eval_glob(args: &[Value]) -> Result<Value, InterpreterError> {
+    validate_arg_count("glob", args, 1)?;
+
+    match &args[0] {
+        Value::String(pattern) => {
+            use glob::glob;
+
+            match glob(pattern.as_ref()) {
+                Ok(paths) => {
+                    let results: Vec<Value> = paths
+                        .filter_map(|entry| entry.ok())
+                        .map(|path| Value::String(
+                            path.display().to_string().into()
+                        ))
+                        .collect();
+
+                    Ok(Value::Array(results.into()))
+                }
+                Err(e) => Err(InterpreterError::RuntimeError(
+                    format!("glob() pattern error: {e}")
+                )),
+            }
+        }
+        _ => Err(InterpreterError::RuntimeError(
+            "glob() expects a string pattern".to_string(),
+        )),
+    }
+}
+
 /// Evaluate `fs_copy()` builtin function
 /// Copies a file from source to destination
 /// Complexity: 3 (within Toyota Way limits)
@@ -1639,10 +1671,11 @@ fn try_eval_stdlib003(name: &str, args: &[Value]) -> Result<Option<Value>, Inter
 }
 
 /// Dispatch STDLIB-005: Multi-Threaded Directory Walking + Text Search
-/// Complexity: 2 (within Toyota Way limits of 10)
+/// Complexity: 3 (within Toyota Way limits of 10)
 fn try_eval_stdlib005(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
     match name {
         "__builtin_walk__" => Ok(Some(eval_walk(args)?)),
+        "__builtin_glob__" => Ok(Some(eval_glob(args)?)),
         _ => Ok(None),
     }
 }
