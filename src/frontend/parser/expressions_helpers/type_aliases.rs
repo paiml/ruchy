@@ -12,19 +12,32 @@ use crate::frontend::ast::{Expr, ExprKind};
 use crate::frontend::lexer::Token;
 use crate::frontend::parser::{bail, utils, ParserState, Result};
 
-/// Parse type alias: type Name = Type
-/// Complexity: <5
+/// Parse type alias: type Name = Type or type Name<T> = Type<T>
+/// Complexity: <10
 pub(in crate::frontend::parser) fn parse_type_alias(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.expect(&Token::Type)?;
 
-    // Parse the alias name
-    let name = if let Some((Token::Identifier(n), _)) = state.tokens.peek() {
-        let name = n.clone();
-        state.tokens.advance();
-        name
-    } else {
-        bail!("Expected identifier after 'type'");
+    // Parse the alias name (can be identifier OR reserved type name like Result/Option)
+    let name = match state.tokens.peek() {
+        Some((Token::Identifier(n), _)) => {
+            let name = n.clone();
+            state.tokens.advance();
+            name
+        }
+        Some((Token::Result, _)) => {
+            state.tokens.advance();
+            "Result".to_string()
+        }
+        Some((Token::Option, _)) => {
+            state.tokens.advance();
+            "Option".to_string()
+        }
+        _ => bail!("Expected identifier after 'type'"),
     };
+
+    // Parse optional generic parameters: <T, U, ...>
+    // Note: Generics are parsed but not stored in AST yet (for future enhancement)
+    let _generics = parse_optional_generics(state)?;
 
     // Expect =
     state.tokens.expect(&Token::Equal)?;
@@ -131,6 +144,22 @@ mod tests {
         let code = "type StringResult = Result<String>";
         let result = Parser::new(code).parse();
         assert!(result.is_ok(), "Type alias with generic target should parse: {:?}", result.err());
+    }
+
+    #[test]
+    fn test_parser_058_generic_type_alias() {
+        // PARSER-058: Support generic type aliases
+        let code = "type Result<T> = Result<T, Error>";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Generic type alias should parse: {:?}", result.err());
+    }
+
+    #[test]
+    fn test_parser_058_simple_type_alias() {
+        // PARSER-058: Simple type alias (baseline test)
+        let code = "type UserId = i32";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Simple type alias should parse: {:?}", result.err());
     }
 
     #[test]

@@ -262,7 +262,7 @@ pub fn parse_export(state: &mut ParserState) -> Result<Expr> {
     match state.tokens.peek() {
         Some((Token::Default, _)) => parse_export_default(state, start_span),
         Some((Token::LeftBrace, _)) => parse_export_list(state, start_span),
-        Some((Token::Fun | Token::Const | Token::Let | Token::Class, _)) => {
+        Some((Token::Fun | Token::Const | Token::Let | Token::Class | Token::Struct, _)) => {
             parse_export_declaration(state, start_span)
         }
         _ => bail!("Invalid export statement"),
