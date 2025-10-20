@@ -40,6 +40,7 @@ where
         "slice" if args.len() == 2 => eval_array_slice(arr, &args[0], &args[1]),
         "join" if args.len() == 1 => eval_array_join(arr, &args[0]),
         "unique" if args.is_empty() => eval_array_unique(arr),
+        "enumerate" if args.is_empty() => eval_array_enumerate(arr),
 
         // Higher-order methods
         "map" => eval_array_map(arr, args, &mut eval_function_call_value),
@@ -146,6 +147,26 @@ fn eval_array_contains(arr: &Arc<[Value]>, item: &Value) -> Result<Value, Interp
         }
     }
     Ok(Value::Bool(false))
+}
+
+/// Returns array of (index, value) tuples for iteration with position tracking
+///
+/// # Complexity
+/// Cyclomatic complexity: 2 (within Toyota Way limits)
+///
+/// # Examples
+/// ```
+/// [10, 20, 30].enumerate() => [(0, 10), (1, 20), (2, 30)]
+/// ```
+fn eval_array_enumerate(arr: &Arc<[Value]>) -> Result<Value, InterpreterError> {
+    let enumerated: Vec<Value> = arr
+        .iter()
+        .enumerate()
+        .map(|(i, val)| {
+            Value::Tuple(Arc::from(vec![Value::Integer(i as i64), val.clone()]))
+        })
+        .collect();
+    Ok(Value::Array(Arc::from(enumerated)))
 }
 
 // STDLIB-004: Custom array methods (complexity <= 5 each)

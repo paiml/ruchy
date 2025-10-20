@@ -103,7 +103,6 @@ fn dispatch_prefix_token(state: &mut ParserState, token: Token, span: Span) -> R
         | Token::Enum
         | Token::Ok
         | Token::Err
-        | Token::Result
         | Token::Option => parse_collection_prefix(state, token, span),
 
         _ => bail!("Unexpected token: {token:?}"),
