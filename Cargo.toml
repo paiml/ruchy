@@ -232,6 +232,7 @@ wasm-compile = []  # WASM compilation is always available via wasm-encoder
 rand = "0.8"
 wasm-encoder = "0.207.0"
 glob = "0.3"
+walkdir = "2.5"  # STDLIB-005: Directory traversal
 anyhow = { workspace = true }
 thiserror = { workspace = true }
 serde = { workspace = true }
