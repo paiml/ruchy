@@ -67,6 +67,7 @@ pub mod middleend;
 #[cfg(feature = "notebook")]
 pub mod notebook;
 pub mod package;
+pub mod bench;
 pub mod parser;
 pub mod performance_optimizations;
 pub mod proving;
