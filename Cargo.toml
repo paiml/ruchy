@@ -291,6 +291,12 @@ proptest = { version = "1.7", optional = true }
 reqwest = { version = "0.12", features = ["blocking"] }
 # HTTP server support (HTTP-001)
 mime_guess = "2.0"
+# HTML parsing support (HTTP-002-C) - native implementation
+html5ever = "0.27"
+markup5ever = "0.13"
+markup5ever_rcdom = "0.3"
+selectors = "0.25"
+cssparser = "0.33"
 # Notebook support
 wasmparser = { version = "0.239.0", optional = true }
 wasmtime = { version = "36.0.2", optional = true }

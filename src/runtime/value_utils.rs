@@ -163,6 +163,10 @@ impl Value {
             Value::BuiltinFunction(_) => "builtin_function",
             Value::Struct { .. } => "struct",
             Value::Class { .. } => "class",
+            #[cfg(not(target_arch = "wasm32"))]
+            Value::HtmlDocument(_) => "html_document",
+            #[cfg(not(target_arch = "wasm32"))]
+            Value::HtmlElement(_) => "html_element",
         }
     }
 }

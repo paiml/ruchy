@@ -417,6 +417,16 @@ Enter expressions to evaluate them.
                     output.push_str(&format!("  {key}: {val}\n"));
                 }
             }
+            #[cfg(not(target_arch = "wasm32"))]
+            Value::HtmlDocument(_) => {
+                output.push_str("Type: HtmlDocument\n");
+                output.push_str("(HTML document content)\n");
+            }
+            #[cfg(not(target_arch = "wasm32"))]
+            Value::HtmlElement(_) => {
+                output.push_str("Type: HtmlElement\n");
+                output.push_str("(HTML element node)\n");
+            }
         }
 
         output
@@ -508,6 +518,10 @@ Enter expressions to evaluate them.
                         .sum::<usize>()
                     + methods.len() * 32
             }
+            #[cfg(not(target_arch = "wasm32"))]
+            Value::HtmlDocument(_) => 128, // Estimated HTML document overhead
+            #[cfg(not(target_arch = "wasm32"))]
+            Value::HtmlElement(_) => 64, // Estimated HTML element overhead
         }
     }
 
@@ -532,6 +546,10 @@ Enter expressions to evaluate them.
             Value::BuiltinFunction(_) => "BuiltinFunction",
             Value::Struct { .. } => "Struct",
             Value::Class { .. } => "Class",
+            #[cfg(not(target_arch = "wasm32"))]
+            Value::HtmlDocument(_) => "HtmlDocument",
+            #[cfg(not(target_arch = "wasm32"))]
+            Value::HtmlElement(_) => "HtmlElement",
         }
     }
 }

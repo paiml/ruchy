@@ -46,6 +46,10 @@ impl fmt::Display for Value {
                 fields,
                 ..
             } => format_class(f, class_name, fields),
+            #[cfg(not(target_arch = "wasm32"))]
+            Value::HtmlDocument(_) => write!(f, "<HtmlDocument>"),
+            #[cfg(not(target_arch = "wasm32"))]
+            Value::HtmlElement(_) => write!(f, "<HtmlElement>"),
         }
     }
 }

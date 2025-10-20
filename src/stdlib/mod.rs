@@ -36,5 +36,9 @@ pub mod http;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod process;
 
+// HTML parsing (HTTP-002-C, STD-011)
+#[cfg(not(target_arch = "wasm32"))]
+pub mod html;
+
 #[cfg(feature = "dataframe")]
 pub mod dataframe;

@@ -285,6 +285,10 @@ impl ConservativeGC {
                         .sum::<usize>()
                     + methods.len() * 32
             }
+            #[cfg(not(target_arch = "wasm32"))]
+            Value::HtmlDocument(_) => 128, // Estimated HTML document overhead
+            #[cfg(not(target_arch = "wasm32"))]
+            Value::HtmlElement(_) => 64, // Estimated HTML element overhead
         }
     }
 

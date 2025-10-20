@@ -33,6 +33,7 @@ pub fn eval_builtin_function(
         try_eval_path_function,
         try_eval_json_function,
         try_eval_http_function,
+        try_eval_html_function,
     ];
 
     for try_eval in dispatchers {
@@ -2632,6 +2633,41 @@ fn eval_http_delete(args: &[Value]) -> Result<Value, InterpreterError> {
             }
         },
         _ => Err(InterpreterError::RuntimeError("http_delete() expects a string URL".to_string())),
+    }
+}
+
+// ============================================================================
+// HTML Parsing Functions (HTTP-002-C, STD-011)
+// Native HTML parser using html5ever (no deprecated dependencies)
+// ============================================================================
+
+/// HTML function dispatcher (HTTP-002-C)
+/// Complexity: 2 (within Toyota Way limits)
+#[cfg(not(target_arch = "wasm32"))]
+fn try_eval_html_function(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
+    match name {
+        "Html_parse" => Ok(Some(eval_html_parse(args)?)),
+        _ => Ok(None),
+    }
+}
+
+/// Stub for WASM - HTML not available
+#[cfg(target_arch = "wasm32")]
+fn try_eval_html_function(_name: &str, _args: &[Value]) -> Result<Option<Value>, InterpreterError> {
+    Ok(None)
+}
+
+/// Eval: `Html.parse(html_string)`
+/// Complexity: 2 (validation + stdlib delegation)
+#[cfg(not(target_arch = "wasm32"))]
+fn eval_html_parse(args: &[Value]) -> Result<Value, InterpreterError> {
+    validate_arg_count("Html.parse", args, 1)?;
+    match &args[0] {
+        Value::String(html) => {
+            let doc = crate::stdlib::html::HtmlDocument::parse(html);
+            Ok(Value::HtmlDocument(doc))
+        },
+        _ => Err(InterpreterError::RuntimeError("Html.parse() expects a string".to_string())),
     }
 }
 

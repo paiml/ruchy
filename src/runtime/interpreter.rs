@@ -115,6 +115,12 @@ pub enum Value {
         fields: Arc<std::sync::RwLock<HashMap<String, Value>>>,
         methods: Arc<HashMap<String, Value>>, // method name -> Closure
     },
+    /// HTML document (HTTP-002-C)
+    #[cfg(not(target_arch = "wasm32"))]
+    HtmlDocument(crate::stdlib::html::HtmlDocument),
+    /// HTML element (HTTP-002-C)
+    #[cfg(not(target_arch = "wasm32"))]
+    HtmlElement(crate::stdlib::html::HtmlElement),
 }
 
 // Manual PartialEq implementation because Mutex doesn't implement PartialEq
@@ -138,6 +144,10 @@ impl PartialEq for Value {
             }
             (Value::Nil, Value::Nil) => true,
             (Value::Byte(a), Value::Byte(b)) => a == b,
+            #[cfg(not(target_arch = "wasm32"))]
+            (Value::HtmlDocument(_), Value::HtmlDocument(_)) => false, // Documents compared by identity
+            #[cfg(not(target_arch = "wasm32"))]
+            (Value::HtmlElement(_), Value::HtmlElement(_)) => false, // Elements compared by identity
             // TODO: Add other variants as needed (DataFrame, Range, Closure, etc.)
             _ => false, // Different variants are not equal
         }
@@ -169,6 +179,10 @@ impl Value {
             Value::BuiltinFunction(_) => TypeId::of::<fn()>(),
             Value::Struct { .. } => TypeId::of::<HashMap<String, Value>>(),
             Value::Class { .. } => TypeId::of::<HashMap<String, Value>>(),
+            #[cfg(not(target_arch = "wasm32"))]
+            Value::HtmlDocument(_) => TypeId::of::<crate::stdlib::html::HtmlDocument>(),
+            #[cfg(not(target_arch = "wasm32"))]
+            Value::HtmlElement(_) => TypeId::of::<crate::stdlib::html::HtmlElement>(),
         }
     }
 }
@@ -3152,6 +3166,20 @@ impl Interpreter {
         method: &str,
         args: &[Expr],
     ) -> Result<Value, InterpreterError> {
+        // Special handling for stdlib namespace methods (e.g., Html.parse())
+        if let ExprKind::Identifier(namespace) = &receiver.kind {
+            // Check if this is a stdlib namespace call before trying to look it up as a variable
+            let namespace_method = format!("{namespace}_{method}");
+
+            // Try to evaluate as builtin function first
+            let arg_values: Result<Vec<_>, _> = args.iter().map(|arg| self.eval_expr(arg)).collect();
+            let arg_values = arg_values?;
+
+            if let Ok(Some(result)) = crate::runtime::eval_builtin::eval_builtin_function(&namespace_method, &arg_values) {
+                return Ok(result);
+            }
+        }
+
         // Special handling for mutating array methods on simple identifiers
         // e.g., messages.push(item)
         if let ExprKind::Identifier(var_name) = &receiver.kind {
@@ -3406,6 +3434,10 @@ impl Interpreter {
                 // Dispatch instance method call on Class
                 self.eval_class_instance_method_on_class(class_name, fields, methods, method, arg_values)
             }
+            #[cfg(not(target_arch = "wasm32"))]
+            Value::HtmlDocument(doc) => self.eval_html_document_method(doc, method, arg_values),
+            #[cfg(not(target_arch = "wasm32"))]
+            Value::HtmlElement(elem) => self.eval_html_element_method(elem, method, arg_values),
             _ => self.eval_generic_method(receiver, method, args_empty),
         }
     }
@@ -3435,6 +3467,134 @@ impl Interpreter {
         args_empty: bool,
     ) -> Result<Value, InterpreterError> {
         eval_method::eval_generic_method(receiver, method, args_empty)
+    }
+
+    /// Evaluate HtmlDocument methods (HTTP-002-C)
+    /// Complexity: 4 (within Toyota Way limits)
+    #[cfg(not(target_arch = "wasm32"))]
+    fn eval_html_document_method(
+        &self,
+        doc: &crate::stdlib::html::HtmlDocument,
+        method: &str,
+        arg_values: &[Value],
+    ) -> Result<Value, InterpreterError> {
+        match method {
+            "select" => {
+                if arg_values.len() != 1 {
+                    return Err(InterpreterError::RuntimeError(
+                        "select() expects 1 argument (selector)".to_string(),
+                    ));
+                }
+                match &arg_values[0] {
+                    Value::String(selector) => {
+                        let elements = doc
+                            .select(selector.as_ref())
+                            .map_err(|e| InterpreterError::RuntimeError(format!("select() failed: {e}")))?;
+                        let values: Vec<Value> = elements
+                            .into_iter()
+                            .map(Value::HtmlElement)
+                            .collect();
+                        Ok(Value::Array(values.into()))
+                    }
+                    _ => Err(InterpreterError::RuntimeError(
+                        "select() expects a string selector".to_string(),
+                    )),
+                }
+            }
+            "query_selector" => {
+                if arg_values.len() != 1 {
+                    return Err(InterpreterError::RuntimeError(
+                        "query_selector() expects 1 argument (selector)".to_string(),
+                    ));
+                }
+                match &arg_values[0] {
+                    Value::String(selector) => {
+                        let element = doc
+                            .query_selector(selector.as_ref())
+                            .map_err(|e| InterpreterError::RuntimeError(format!("query_selector() failed: {e}")))?;
+                        Ok(element.map(Value::HtmlElement).unwrap_or(Value::Nil))
+                    }
+                    _ => Err(InterpreterError::RuntimeError(
+                        "query_selector() expects a string selector".to_string(),
+                    )),
+                }
+            }
+            "query_selector_all" => {
+                if arg_values.len() != 1 {
+                    return Err(InterpreterError::RuntimeError(
+                        "query_selector_all() expects 1 argument (selector)".to_string(),
+                    ));
+                }
+                match &arg_values[0] {
+                    Value::String(selector) => {
+                        let elements = doc
+                            .query_selector_all(selector.as_ref())
+                            .map_err(|e| InterpreterError::RuntimeError(format!("query_selector_all() failed: {e}")))?;
+                        let values: Vec<Value> = elements
+                            .into_iter()
+                            .map(Value::HtmlElement)
+                            .collect();
+                        Ok(Value::Array(values.into()))
+                    }
+                    _ => Err(InterpreterError::RuntimeError(
+                        "query_selector_all() expects a string selector".to_string(),
+                    )),
+                }
+            }
+            _ => Err(InterpreterError::RuntimeError(format!(
+                "Unknown method '{}' on HtmlDocument",
+                method
+            ))),
+        }
+    }
+
+    /// Evaluate HtmlElement methods (HTTP-002-C)
+    /// Complexity: 4 (within Toyota Way limits)
+    #[cfg(not(target_arch = "wasm32"))]
+    fn eval_html_element_method(
+        &self,
+        elem: &crate::stdlib::html::HtmlElement,
+        method: &str,
+        arg_values: &[Value],
+    ) -> Result<Value, InterpreterError> {
+        match method {
+            "text" => {
+                if !arg_values.is_empty() {
+                    return Err(InterpreterError::RuntimeError(
+                        "text() expects no arguments".to_string(),
+                    ));
+                }
+                Ok(Value::from_string(elem.text()))
+            }
+            "attr" => {
+                if arg_values.len() != 1 {
+                    return Err(InterpreterError::RuntimeError(
+                        "attr() expects 1 argument (attribute name)".to_string(),
+                    ));
+                }
+                match &arg_values[0] {
+                    Value::String(attr_name) => {
+                        let value = elem.attr(attr_name.as_ref());
+                        Ok(value.map(Value::from_string).unwrap_or(Value::Nil))
+                    }
+                    _ => Err(InterpreterError::RuntimeError(
+                        "attr() expects a string attribute name".to_string(),
+                    )),
+                }
+            }
+            "html" => {
+                if !arg_values.is_empty() {
+                    return Err(InterpreterError::RuntimeError(
+                        "html() expects no arguments".to_string(),
+                    ));
+                }
+                Ok(Value::from_string(elem.html()))
+            }
+            _ => Err(InterpreterError::RuntimeError(format!(
+                "Unknown method '{}' on HtmlElement",
+                method
+            ))),
+        }
     }
 
     // ObjectMut adapter methods - delegate to immutable versions via borrow

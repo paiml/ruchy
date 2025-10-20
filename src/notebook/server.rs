@@ -12,7 +12,7 @@ use axum::{
 };
 use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 #[derive(Debug, Serialize, Deserialize)]
 struct ExecuteResponse {
@@ -69,80 +69,114 @@ async fn serve_notebook() -> Html<&'static str> {
     Html(include_str!("../../static/notebook.html"))
 }
 
-// Shared REPL state for persistent variable/function definitions across cell executions
-type SharedRepl = Arc<Mutex<crate::runtime::repl::Repl>>;
+// CRITICAL FIX: Channel-based REPL executor to support non-Send types (HTML with Rc)
+// The REPL runs on a single local task, commands are sent via channel
+type ReplExecutor = tokio::sync::mpsc::UnboundedSender<ReplCommand>;
+
+struct ReplCommand {
+    source: String,
+    response_tx: tokio::sync::oneshot::Sender<ExecuteResponse>,
+}
 
 async fn execute_handler(
-    State(shared_repl): State<SharedRepl>,
+    State(repl_executor): State<ReplExecutor>,
     Json(request): Json<ExecuteRequest>,
 ) -> Json<ExecuteResponse> {
     println!("🔧 TDD DEBUG: execute_handler called with: {request:?}");
-    let result = tokio::task::spawn_blocking(move || {
+
+    // Send command to REPL executor task
+    let (response_tx, response_rx) = tokio::sync::oneshot::channel();
+    let command = ReplCommand {
+        source: request.source.clone(),
+        response_tx,
+    };
+
+    if repl_executor.send(command).is_err() {
+        return Json(ExecuteResponse {
+            output: String::new(),
+            success: false,
+            error: Some("REPL executor task has stopped".to_string()),
+        });
+    }
+
+    // Wait for response from REPL executor
+    match response_rx.await {
+        Ok(response) => Json(response),
+        Err(_) => Json(ExecuteResponse {
+            output: String::new(),
+            success: false,
+            error: Some("Failed to receive REPL response".to_string()),
+        }),
+    }
+}
+
+// Spawn a dedicated task to run the REPL (allows non-Send types)
+fn spawn_repl_executor() -> ReplExecutor {
+    let (cmd_tx, mut cmd_rx) = tokio::sync::mpsc::unbounded_channel::<ReplCommand>();
+
+    tokio::task::spawn_local(async move {
         use crate::runtime::builtins::{enable_output_capture, get_captured_output};
+        use crate::runtime::repl::Repl;
         use std::time::{Duration, Instant};
 
-        // Enable output capture for this execution
-        enable_output_capture();
-
-        // Use shared REPL instance for persistent state across cell executions
-        let mut repl = match shared_repl.lock() {
+        let mut repl = match Repl::new(std::env::current_dir().unwrap_or_else(|_| "/tmp".into())) {
             Ok(r) => r,
             Err(e) => {
-                return ExecuteResponse {
-                    output: String::new(),
-                    success: false,
-                    error: Some(format!("Failed to acquire REPL lock: {e}")),
-                }
+                eprintln!("Failed to create REPL: {e}");
+                return;
             }
         };
-        let start = Instant::now();
-        let timeout = Duration::from_secs(5);
 
-        match repl.eval(&request.source) {
-            Ok(expr_result) => {
-                if start.elapsed() > timeout {
-                    ExecuteResponse {
-                        output: String::new(),
-                        success: false,
-                        error: Some("Execution timeout".to_string()),
-                    }
-                } else {
-                    // Get captured println/print output
-                    let print_output = get_captured_output();
+        while let Some(command) = cmd_rx.recv().await {
+            // Enable output capture for this execution
+            enable_output_capture();
 
-                    // Combine print output with expression result
-                    let final_output = if print_output.is_empty() {
-                        expr_result
-                    } else if expr_result == "nil" || expr_result.is_empty() {
-                        // If expression returns nil, only show print output
-                        print_output.trim_end().to_string()
+            let start = Instant::now();
+            let timeout = Duration::from_secs(5);
+
+            let response = match repl.eval(&command.source) {
+                Ok(expr_result) => {
+                    if start.elapsed() > timeout {
+                        ExecuteResponse {
+                            output: String::new(),
+                            success: false,
+                            error: Some("Execution timeout".to_string()),
+                        }
                     } else {
-                        // Show both print output and expression result
-                        format!("{print_output}{expr_result}")
-                    };
+                        // Get captured println/print output
+                        let print_output = get_captured_output();
 
-                    ExecuteResponse {
-                        output: final_output,
-                        success: true,
-                        error: None,
+                        // Combine print output with expression result
+                        let final_output = if print_output.is_empty() {
+                            expr_result
+                        } else if expr_result == "nil" || expr_result.is_empty() {
+                            // If expression returns nil, only show print output
+                            print_output.trim_end().to_string()
+                        } else {
+                            // Show both print output and expression result
+                            format!("{print_output}{expr_result}")
+                        };
+
+                        ExecuteResponse {
+                            output: final_output,
+                            success: true,
+                            error: None,
+                        }
                     }
                 }
-            }
-            Err(e) => ExecuteResponse {
-                output: String::new(),
-                success: false,
-                error: Some(format!("{e}")),
-            },
+                Err(e) => ExecuteResponse {
+                    output: String::new(),
+                    success: false,
+                    error: Some(format!("{e}")),
+                },
+            };
+
+            // Send response back (ignore if receiver dropped)
+            let _ = command.response_tx.send(response);
         }
-    })
-    .await
-    .unwrap_or_else(|e| ExecuteResponse {
-        output: String::new(),
-        success: false,
-        error: Some(format!("Task panic: {e}")),
     });
 
-    Json(result)
+    cmd_tx
 }
 
 /// Convert markdown to HTML using pulldown-cmark
@@ -253,13 +287,13 @@ async fn save_notebook_handler(
 /// }
 /// ```
 pub async fn start_server(port: u16) -> Result<(), Box<dyn std::error::Error>> {
-    use crate::runtime::repl::Repl;
-
     println!("🔧 TDD DEBUG: start_server called, about to create app");
 
-    // Create shared REPL instance for persistent state across cell executions
-    let repl = Repl::new(std::env::current_dir().unwrap_or_else(|_| "/tmp".into()))?;
-    let shared_repl = Arc::new(Mutex::new(repl));
+    // Create LocalSet to run non-Send REPL executor task
+    let local = tokio::task::LocalSet::new();
+
+    // Spawn REPL executor on local task set (supports non-Send types)
+    let repl_executor = local.run_until(async { spawn_repl_executor() }).await;
 
     let app = Router::new()
         .route("/", get(serve_notebook))
@@ -268,13 +302,19 @@ pub async fn start_server(port: u16) -> Result<(), Box<dyn std::error::Error>> {
         .route("/api/notebook/load", post(load_notebook_handler))
         .route("/api/notebook/save", post(save_notebook_handler))
         .route("/health", get(health))
-        .with_state(shared_repl);
+        .with_state(repl_executor);
     println!("🔧 TDD DEBUG: Creating app with /api/execute route");
     println!("🔧 TDD DEBUG: app created, binding to addr");
     let addr = SocketAddr::from(([127, 0, 0, 1], port));
     let listener = tokio::net::TcpListener::bind(addr).await?;
     println!("🚀 Notebook server running at http://127.0.0.1:{port}");
-    axum::serve(listener, app).await?;
+
+    // Run server and REPL executor concurrently on local set
+    local
+        .run_until(async move {
+            axum::serve(listener, app).await
+        })
+        .await?;
     Ok(())
 }
 
@@ -376,74 +416,80 @@ mod tests {
 
     #[tokio::test]
     async fn test_router_creation() {
-        use crate::runtime::repl::Repl;
+        let local = tokio::task::LocalSet::new();
+        local
+            .run_until(async {
+                let repl_executor = spawn_repl_executor();
 
-        let repl = Repl::new(std::env::current_dir().unwrap_or_else(|_| "/tmp".into())).unwrap();
-        let shared_repl = Arc::new(Mutex::new(repl));
+                let app = Router::new()
+                    .route("/", get(serve_notebook))
+                    .route("/api/execute", post(execute_handler))
+                    .route("/health", get(health))
+                    .with_state(repl_executor);
 
-        let app = Router::new()
-            .route("/", get(serve_notebook))
-            .route("/api/execute", post(execute_handler))
-            .route("/health", get(health))
-            .with_state(shared_repl);
+                // Test health endpoint
+                let request = Request::builder()
+                    .uri("/health")
+                    .body(Body::empty())
+                    .unwrap();
 
-        // Test health endpoint
-        let request = Request::builder()
-            .uri("/health")
-            .body(Body::empty())
-            .unwrap();
-
-        let response = app.clone().oneshot(request).await.unwrap();
-        assert_eq!(response.status(), StatusCode::OK);
+                let response = app.clone().oneshot(request).await.unwrap();
+                assert_eq!(response.status(), StatusCode::OK);
+            })
+            .await;
     }
 
     #[tokio::test]
     async fn test_execute_handler_valid_request() {
-        use crate::runtime::repl::Repl;
+        let local = tokio::task::LocalSet::new();
+        local
+            .run_until(async {
+                let repl_executor = spawn_repl_executor();
 
-        let repl = Repl::new(std::env::current_dir().unwrap_or_else(|_| "/tmp".into())).unwrap();
-        let shared_repl = Arc::new(Mutex::new(repl));
+                let app = Router::new()
+                    .route("/api/execute", post(execute_handler))
+                    .with_state(repl_executor);
 
-        let app = Router::new()
-            .route("/api/execute", post(execute_handler))
-            .with_state(shared_repl);
+                let request_body = ExecuteRequest {
+                    source: "1 + 1".to_string(),
+                };
 
-        let request_body = ExecuteRequest {
-            source: "1 + 1".to_string(),
-        };
+                let request = Request::builder()
+                    .uri("/api/execute")
+                    .method("POST")
+                    .header("content-type", "application/json")
+                    .body(Body::from(serde_json::to_string(&request_body).unwrap()))
+                    .unwrap();
 
-        let request = Request::builder()
-            .uri("/api/execute")
-            .method("POST")
-            .header("content-type", "application/json")
-            .body(Body::from(serde_json::to_string(&request_body).unwrap()))
-            .unwrap();
-
-        let response = app.oneshot(request).await.unwrap();
-        assert_eq!(response.status(), StatusCode::OK);
+                let response = app.oneshot(request).await.unwrap();
+                assert_eq!(response.status(), StatusCode::OK);
+            })
+            .await;
     }
 
     #[tokio::test]
     async fn test_execute_handler_invalid_json() {
-        use crate::runtime::repl::Repl;
+        let local = tokio::task::LocalSet::new();
+        local
+            .run_until(async {
+                let repl_executor = spawn_repl_executor();
 
-        let repl = Repl::new(std::env::current_dir().unwrap_or_else(|_| "/tmp".into())).unwrap();
-        let shared_repl = Arc::new(Mutex::new(repl));
+                let app = Router::new()
+                    .route("/api/execute", post(execute_handler))
+                    .with_state(repl_executor);
 
-        let app = Router::new()
-            .route("/api/execute", post(execute_handler))
-            .with_state(shared_repl);
+                let request = Request::builder()
+                    .uri("/api/execute")
+                    .method("POST")
+                    .header("content-type", "application/json")
+                    .body(Body::from("invalid json"))
+                    .unwrap();
 
-        let request = Request::builder()
-            .uri("/api/execute")
-            .method("POST")
-            .header("content-type", "application/json")
-            .body(Body::from("invalid json"))
-            .unwrap();
-
-        let response = app.oneshot(request).await.unwrap();
-        // Should return an error status for invalid JSON
-        assert_ne!(response.status(), StatusCode::OK);
+                let response = app.oneshot(request).await.unwrap();
+                // Should return an error status for invalid JSON
+                assert_ne!(response.status(), StatusCode::OK);
+            })
+            .await;
     }
 
     #[test]

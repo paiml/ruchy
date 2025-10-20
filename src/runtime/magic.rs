@@ -397,6 +397,10 @@ impl MagicCommand for WhosMagic {
                 Value::BuiltinFunction(_) => "BuiltinFunction",
                 Value::Struct { .. } => "Struct",
                 Value::Class { .. } => "Class",
+                #[cfg(not(target_arch = "wasm32"))]
+                Value::HtmlDocument(_) => "HtmlDocument",
+                #[cfg(not(target_arch = "wasm32"))]
+                Value::HtmlElement(_) => "HtmlElement",
             };
             let value_str = format!("{value:?}");
             let value_display = if value_str.len() > 40 {
