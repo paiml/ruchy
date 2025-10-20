@@ -179,6 +179,57 @@ pub fn eval_array_method_simple(
             validate_arg_count("Array.is_empty", args, 0)?;
             Ok(Value::Bool(arr.is_empty()))
         }
+        // STDLIB-004: Custom array methods
+        "slice" => {
+            validate_arg_count("Array.slice", args, 2)?;
+            match (&args[0], &args[1]) {
+                (Value::Integer(start), Value::Integer(end)) => {
+                    let start_idx = (*start).max(0) as usize;
+                    let end_idx = (*end).max(0) as usize;
+                    let slice: Vec<Value> = arr
+                        .iter()
+                        .skip(start_idx)
+                        .take(end_idx.saturating_sub(start_idx))
+                        .cloned()
+                        .collect();
+                    Ok(Value::from_array(slice))
+                }
+                _ => Err(InterpreterError::RuntimeError(
+                    "Array.slice() expects two integer arguments".to_string(),
+                )),
+            }
+        }
+        "join" => {
+            validate_arg_count("Array.join", args, 1)?;
+            match &args[0] {
+                Value::String(separator) => {
+                    let strings: Vec<String> = arr
+                        .iter()
+                        .map(|v| match v {
+                            Value::String(s) => s.to_string(),
+                            _ => format!("{v}"),
+                        })
+                        .collect();
+                    Ok(Value::from_string(strings.join(separator.as_ref())))
+                }
+                _ => Err(InterpreterError::RuntimeError(
+                    "Array.join() expects a string argument".to_string(),
+                )),
+            }
+        }
+        "unique" => {
+            validate_arg_count("Array.unique", args, 0)?;
+            let mut seen = std::collections::HashSet::new();
+            let unique: Vec<Value> = arr
+                .iter()
+                .filter(|v| {
+                    let key = format!("{v:?}");  // Use debug representation as key
+                    seen.insert(key)
+                })
+                .cloned()
+                .collect();
+            Ok(Value::from_array(unique))
+        }
         _ => {
             // For complex array methods, delegate to eval_array module
             // This requires passing a function evaluator which we don't have here

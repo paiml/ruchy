@@ -751,6 +751,53 @@ fn test_langcomp_003_01_if_expression_example_file() {
 Closes: TICKET-ID
 ```
 
+### 🚨 MANDATORY: Update Roadmap & Changelog on EVERY Commit
+
+**ABSOLUTE REQUIREMENT**: EVERY commit MUST update documentation to prevent stale roadmap.
+
+**Pre-Commit Checklist (NO EXCEPTIONS)**:
+1. ✅ **Update docs/execution/roadmap.yaml**:
+   - Add completed task to appropriate sprint section
+   - Update progress percentages
+   - Document test metrics (unit/property/mutation counts)
+   - Mark dependencies as complete
+
+2. ✅ **Update CHANGELOG.md**:
+   - Add entry under appropriate version header
+   - Document what changed (Added/Fixed/Changed/Removed)
+   - Include ticket reference and file paths
+   - Note breaking changes if any
+
+**Why This Matters**:
+- **Single Source of Truth**: roadmap.yaml is machine-readable and programmatically validated
+- **Historical Record**: CHANGELOG.md provides human-readable version history
+- **No Stale Documentation**: Every commit keeps documentation current
+- **Toyota Way**: Jidoka (quality built-in) - documentation is part of the commit, not an afterthought
+
+**Example Workflow**:
+```bash
+# 1. Make code changes
+# 2. Update roadmap.yaml with task completion
+# 3. Update CHANGELOG.md with change description
+# 4. Commit all together atomically
+git add src/ docs/execution/roadmap.yaml CHANGELOG.md
+git commit -m "[STDLIB-003] Implement file metadata functions
+
+- Added fs_metadata(), fs_size(), fs_modified() functions
+- 12/12 tests passing (interpreter + transpiler modes)
+- Updated roadmap.yaml with STDLIB-003 completion
+- Updated CHANGELOG.md with new stdlib functions
+
+🤖 Generated with Claude Code
+Co-Authored-By: Claude <noreply@anthropic.com>"
+```
+
+**Forbidden**:
+- ❌ Committing code without updating roadmap.yaml
+- ❌ Committing code without updating CHANGELOG.md
+- ❌ "Will update documentation later"
+- ❌ Separate documentation commits after code commit
+
 ### End-of-Sprint Git Commit Protocol (MANDATORY)
 
 **CRITICAL**: After EVERY sprint completion, you MUST commit all changes immediately.

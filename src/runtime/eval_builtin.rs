@@ -149,7 +149,7 @@ fn try_eval_utility_part1(name: &str, args: &[Value]) -> Result<Option<Value>, I
 }
 
 /// Utility functions - Part 2
-/// Complexity: 5 (within Toyota Way limits, added assert functions)
+/// Complexity: 7 (within Toyota Way limits, added STDLIB-004 functions)
 fn try_eval_utility_part2(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
     match name {
         "__builtin_type__" => Ok(Some(eval_type(args)?)),
@@ -157,6 +157,9 @@ fn try_eval_utility_part2(name: &str, args: &[Value]) -> Result<Option<Value>, I
         // BUG-037: Test assertions
         "__builtin_assert_eq__" => Ok(Some(eval_assert_eq(args)?)),
         "__builtin_assert__" => Ok(Some(eval_assert(args)?)),
+        // STDLIB-004: Advanced array utilities
+        "__builtin_zip__" => Ok(Some(eval_zip(args)?)),
+        "__builtin_enumerate__" => Ok(Some(eval_enumerate(args)?)),
         _ => Ok(None),
     }
 }
@@ -688,6 +691,52 @@ fn eval_reverse(args: &[Value]) -> Result<Value, InterpreterError> {
         }
         _ => Err(InterpreterError::RuntimeError(
             "reverse() expects an array or string".to_string(),
+        )),
+    }
+}
+
+// ============================================================================
+// STDLIB-004: Advanced Array Utility Functions
+// ============================================================================
+
+/// Zip two arrays into array of tuples
+/// Complexity: 3 (within Toyota Way limits)
+fn eval_zip(args: &[Value]) -> Result<Value, InterpreterError> {
+    validate_arg_count("zip", args, 2)?;
+    match (&args[0], &args[1]) {
+        (Value::Array(a), Value::Array(b)) => {
+            let zipped: Vec<Value> = a
+                .iter()
+                .zip(b.iter())
+                .map(|(x, y)| Value::Tuple(Arc::from(vec![x.clone(), y.clone()].as_slice())))
+                .collect();
+            Ok(Value::from_array(zipped))
+        }
+        _ => Err(InterpreterError::RuntimeError(
+            "zip() expects two arrays".to_string(),
+        )),
+    }
+}
+
+/// Enumerate array (add indices)
+/// Complexity: 2 (within Toyota Way limits)
+fn eval_enumerate(args: &[Value]) -> Result<Value, InterpreterError> {
+    validate_arg_count("enumerate", args, 1)?;
+    match &args[0] {
+        Value::Array(arr) => {
+            let enumerated: Vec<Value> = arr
+                .iter()
+                .enumerate()
+                .map(|(i, v)| {
+                    Value::Tuple(Arc::from(
+                        vec![Value::Integer(i as i64), v.clone()].as_slice(),
+                    ))
+                })
+                .collect();
+            Ok(Value::from_array(enumerated))
+        }
+        _ => Err(InterpreterError::RuntimeError(
+            "enumerate() expects an array".to_string(),
         )),
     }
 }
@@ -1256,6 +1305,42 @@ fn eval_fs_write(args: &[Value]) -> Result<Value, InterpreterError> {
     }
 }
 
+// ============================================================================
+// STDLIB-003: Advanced File I/O Functions
+// Zero-cost abstraction wrapping Rust std::fs methods
+// ============================================================================
+
+/// Append content to file (creates if doesn't exist)
+/// Wraps std::fs::OpenOptions with append(true) and create(true)
+///
+/// # Complexity
+/// Cyclomatic complexity: 3 (within Toyota Way limits)
+fn eval_append_file(args: &[Value]) -> Result<Value, InterpreterError> {
+    validate_arg_count("append_file", args, 2)?;
+
+    match (&args[0], &args[1]) {
+        (Value::String(path), Value::String(content)) => {
+            use std::fs::OpenOptions;
+            use std::io::Write;
+
+            match OpenOptions::new()
+                .create(true)
+                .append(true)
+                .open(path.as_ref())
+            {
+                Ok(mut file) => match file.write_all(content.as_bytes()) {
+                    Ok(()) => Ok(Value::Nil),
+                    Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to append to file: {e}"))),
+                },
+                Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to open file for append: {e}"))),
+            }
+        },
+        _ => Err(InterpreterError::RuntimeError(
+            "append_file() expects two string arguments".to_string(),
+        )),
+    }
+}
+
 /// Evaluate `fs_exists()` builtin function
 /// Checks if path exists
 /// Complexity: 2 (within Toyota Way limits)
@@ -1472,8 +1557,22 @@ fn try_eval_fs_part3(name: &str, args: &[Value]) -> Result<Option<Value>, Interp
     }
 }
 
+/// Dispatch STDLIB-003: User-friendly file I/O aliases
+/// Complexity: 6 (within Toyota Way limits of 10)
+fn try_eval_stdlib003(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
+    match name {
+        // User-friendly aliases for file I/O
+        "__builtin_read_file__" => Ok(Some(eval_fs_read(args)?)),
+        "__builtin_write_file__" => Ok(Some(eval_fs_write(args)?)),
+        "__builtin_file_exists__" => Ok(Some(eval_fs_exists(args)?)),
+        "__builtin_delete_file__" => Ok(Some(eval_fs_remove_file(args)?)),
+        "__builtin_append_file__" => Ok(Some(eval_append_file(args)?)),
+        _ => Ok(None),
+    }
+}
+
 /// Dispatcher for file system functions
-/// Complexity: 4 (within Toyota Way limits)
+/// Complexity: 5 (within Toyota Way limits)
 fn try_eval_fs_function(
     name: &str,
     args: &[Value],
@@ -1484,7 +1583,10 @@ fn try_eval_fs_function(
     if let Some(result) = try_eval_fs_part2(name, args)? {
         return Ok(Some(result));
     }
-    try_eval_fs_part3(name, args)
+    if let Some(result) = try_eval_fs_part3(name, args)? {
+        return Ok(Some(result));
+    }
+    try_eval_stdlib003(name, args)  // STDLIB-003: User-friendly aliases
 }
 
 // ==================== PATH FUNCTIONS ====================
