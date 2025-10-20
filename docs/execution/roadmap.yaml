@@ -4,7 +4,7 @@
 metadata:
   version: "3.6"
   last_updated: "2025-10-20"
-  current_sprint: "✅ v3.96.0 Box<T>/Vec<T> COMPLETE | 🔄 STDLIB-WEBSERVER-SPEC: Standard Library & Web Server Specification (In Progress) | ✅ STDLIB-003/004: File I/O + String/Array Methods (COMPLETE)"
+  current_sprint: "✅ PARSER-056-059 COMPLETE (4 parser limitations fixed) | ✅ v3.96.0 Box<T>/Vec<T> COMPLETE | 🔄 STDLIB-WEBSERVER-SPEC: Standard Library & Web Server Specification (In Progress)"
   latest_release: "v3.96.0"
   production_readiness:
     overall: "87%"
@@ -75,12 +75,12 @@ sqlite_testing_framework:
   overall_progress:
     harnesses_operational: "3/8 (37.5%)"
     total_tests: 140
-    tests_passing: 133
-    tests_ignored: 5  # With documented tickets
+    tests_passing: 137  # Increased from 133 (+4 parser limitation fixes)
+    tests_ignored: 1  # Only PARSER-055 remaining (down from 5)
     property_iterations: 470000
-    pass_rate: "95.0%"
+    pass_rate: "97.9%"  # Improved from 95.0%
     panic_free: "100% (zero panics across 470,000 iterations)"
-    defects_found: 6  # Parser limitations discovered via defensive testing
+    defects_found: 6  # Parser limitations: 5 fixed (056-060), 1 pending (055)
     time_invested: "13h / 120h (10.8%)"
 
   harness_status:
@@ -717,10 +717,11 @@ tasks:
 
   - id: "PARSER-056"
     title: "Add support for async blocks"
-    status: "PENDING"
+    status: "COMPLETE"
     priority: "🟡 MEDIUM"
     discovered_by: "SQLITE-TEST-001 (test_sqlite_112_async_blocks)"
-    time_estimated: "8h"
+    completed_date: "2025-10-20"
+    time_actual: "1h"
     description: |
       Parser supports async functions and await, but not async blocks.
 
@@ -743,10 +744,11 @@ tasks:
 
   - id: "PARSER-057"
     title: "Add support for export keyword"
-    status: "PENDING"
+    status: "COMPLETE"
     priority: "🟡 MEDIUM"
     discovered_by: "SQLITE-TEST-001 (test_sqlite_143_export_statements)"
-    time_estimated: "6h"
+    completed_date: "2025-10-20"
+    time_actual: "0.5h"
     description: |
       Module system supports imports but not exports.
 
@@ -767,10 +769,11 @@ tasks:
 
   - id: "PARSER-058"
     title: "Add support for type aliases"
-    status: "PENDING"
+    status: "COMPLETE"
     priority: "🟡 MEDIUM"
     discovered_by: "SQLITE-TEST-001 (test_sqlite_160_type_aliases)"
-    time_estimated: "6h"
+    completed_date: "2025-10-20"
+    time_actual: "1h"
     description: |
       Type system lacks type alias support.
 
@@ -791,10 +794,11 @@ tasks:
 
   - id: "PARSER-059"
     title: "Add support for array patterns in match expressions"
-    status: "PENDING"
+    status: "COMPLETE"
     priority: "🟡 MEDIUM"
     discovered_by: "SQLITE-TEST-001 (test_sqlite_172_array_patterns)"
-    time_estimated: "8h"
+    completed_date: "2025-10-20"
+    time_actual: "1h"
     description: |
       Pattern matching supports tuples and structs but not arrays.
 
