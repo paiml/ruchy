@@ -51,6 +51,9 @@ where
         "intersection" if args.len() == 1 => eval_array_intersection(arr, &args[0]),
         "difference" if args.len() == 1 => eval_array_difference(arr, &args[0]),
 
+        // STDLIB-009: Sort array
+        "sort" if args.is_empty() => eval_array_sort(arr),
+
         // Higher-order methods
         "map" => eval_array_map(arr, args, &mut eval_function_call_value),
         "filter" => eval_array_filter(arr, args, &mut eval_function_call_value),
@@ -929,4 +932,28 @@ fn eval_array_difference(arr: &Arc<[Value]>, other: &Value) -> Result<Value, Int
             other
         ))),
     }
+}
+
+/// STDLIB-009: Sort array elements
+///
+/// Returns a new sorted array without modifying the original.
+/// Sorts by string representation to handle heterogeneous arrays.
+///
+/// # Complexity
+/// Cyclomatic complexity: 2 (within Toyota Way limits)
+///
+/// # Examples
+/// ```
+/// [3, 1, 4, 1, 5].sort() => [1, 1, 3, 4, 5]
+/// ["zebra", "apple", "banana"].sort() => ["apple", "banana", "zebra"]
+/// [].sort() => []
+/// ```
+fn eval_array_sort(arr: &Arc<[Value]>) -> Result<Value, InterpreterError> {
+    let mut sorted = arr.to_vec();
+    sorted.sort_by(|a, b| {
+        let a_str = format!("{a:?}");
+        let b_str = format!("{b:?}");
+        a_str.cmp(&b_str)
+    });
+    Ok(Value::Array(Arc::from(sorted)))
 }

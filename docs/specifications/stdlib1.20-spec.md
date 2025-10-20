@@ -11,8 +11,8 @@
 
 ### Actual Coverage (Revised Analysis)
 - **Total Methods**: 71 specified
-- **Fully Implemented** (✅): 58 methods (82%) - STDLIB-008 validated all File I/O methods
-- **Partial Implementation** (🟡): 12 methods (17%) - Need custom Rust implementation
+- **Fully Implemented** (✅): 59 methods (83%) - STDLIB-009 completed .sort()
+- **Partial Implementation** (🟡): 11 methods (15%) - Need custom Rust implementation
 - **Not Implemented** (❌): 1 method (1%) - File::open() (advanced feature, not core)
 
 ### Implementation Strategy
@@ -153,8 +153,8 @@ random() -> Float           // Random float in [0.0, 1.0) (wraps rand::random)
 | `.sum()` | ✅ Full | `.iter().sum()` | `[1,2,3].sum() // 6` |
 | `.take()` | ✅ Full | `.iter().take().collect()` | `[1,2,3,4].take(2) // [1,2]` |
 | `.skip()` | ✅ Full | `.iter().skip().collect()` | `[1,2,3,4].skip(2) // [3,4]` |
-| `.sort()` | 🟡 Partial | `.sort()` (mutable) | `vec.sort()` |
-| `.join()` | 🟡 Partial | Custom impl | `["a","b"].join(",") // "a,b"` |
+| `.sort()` | ✅ Full | `.sort_by()` (string repr) | `[3,1,4].sort() // [1,3,4]` |
+| `.join()` | ✅ Full | Custom impl | `["a","b"].join(",") // "a,b"` |
 | `.slice()` | ✅ Full | `[start..end].to_vec()` | `[1,2,3,4].slice(1,3) // [2,3]` |
 | `.concat()` | ✅ Full | `.extend_from_slice()` | `[1,2].concat([3,4]) // [1,2,3,4]` |
 | `.flatten()` | ✅ Full | Custom impl | `[[1,2],[3]].flatten() // [1,2,3]` |
