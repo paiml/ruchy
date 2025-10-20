@@ -73,9 +73,61 @@ pub fn match_pattern(
         Pattern::List(patterns) => match_array_pattern(patterns, value),
         Pattern::Tuple(patterns) => match_tuple_pattern(patterns, value),
         Pattern::Struct { name, fields, .. } => match_struct_pattern(name, fields, value),
+        Pattern::TupleVariant { path, patterns } => match_tuple_variant_pattern(path, patterns, value),
         Pattern::Ok(inner_pattern) => match_ok_pattern(inner_pattern, value),
         Pattern::Err(inner_pattern) => match_err_pattern(inner_pattern, value),
         _ => Ok(PatternMatchResult::failure()), // Other patterns not implemented yet
+    }
+}
+
+/// Match tuple variant pattern (enum variant destructuring)
+///
+/// # Complexity
+/// Cyclomatic complexity: 8 (within Toyota Way limits)
+fn match_tuple_variant_pattern(
+    path: &[String],
+    patterns: &[Pattern],
+    value: &Value,
+) -> Result<PatternMatchResult, InterpreterError> {
+    // Match against Value::EnumVariant { variant_name, data }
+    if let Value::EnumVariant { variant_name, data } = value {
+        // Extract variant name from path (last element)
+        // Path is like ["Result", "Ok"] -> we want "Ok"
+        let expected_variant = path.last().map(|s| s.as_str()).unwrap_or("");
+
+        // Check if variant names match
+        if variant_name != expected_variant {
+            return Ok(PatternMatchResult::failure());
+        }
+
+        // Match data against patterns
+        match data {
+            Some(values) => {
+                if values.len() != patterns.len() {
+                    return Ok(PatternMatchResult::failure());
+                }
+
+                let mut all_bindings = HashMap::new();
+                for (pattern, val) in patterns.iter().zip(values.iter()) {
+                    let result = match_pattern(pattern, val)?;
+                    if !result.matches {
+                        return Ok(PatternMatchResult::failure());
+                    }
+                    all_bindings.extend(result.bindings);
+                }
+                Ok(PatternMatchResult::success(all_bindings))
+            }
+            None => {
+                // Unit variant (no data) - should have no patterns
+                if patterns.is_empty() {
+                    Ok(PatternMatchResult::success_no_bindings())
+                } else {
+                    Ok(PatternMatchResult::failure())
+                }
+            }
+        }
+    } else {
+        Ok(PatternMatchResult::failure())
     }
 }
 

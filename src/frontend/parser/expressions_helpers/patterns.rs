@@ -782,7 +782,7 @@ pub(in crate::frontend::parser) fn parse_single_pattern(state: &mut ParserState)
         | Token::Bool(_) => parse_literal_pattern(state),
         Token::Some | Token::None => parse_option_pattern(state),
         Token::Ok | Token::Err => parse_result_pattern(state),
-        Token::Identifier(_) => parse_identifier_or_constructor_pattern(state),
+        Token::Identifier(_) | Token::Result => parse_identifier_or_constructor_pattern(state),
         Token::LeftParen => parse_match_tuple_pattern(state),
         Token::LeftBracket => parse_match_list_pattern(state),
         _ => bail!("Unexpected token in pattern: {token:?}"),
@@ -956,10 +956,12 @@ fn parse_result_pattern(state: &mut ParserState) -> Result<Pattern> {
 /// Parse identifier or constructor patterns
 /// Complexity: <5
 fn parse_identifier_or_constructor_pattern(state: &mut ParserState) -> Result<Pattern> {
-    let Some((Token::Identifier(name), _span)) = state.tokens.peek() else {
-        bail!("Expected identifier pattern");
+    // Handle both Token::Identifier and Token::Result (which can be used as enum type name)
+    let name = match state.tokens.peek() {
+        Some((Token::Identifier(n), _)) => n.clone(),
+        Some((Token::Result, _)) => "Result".to_string(),
+        _ => bail!("Expected identifier pattern"),
     };
-    let name = name.clone();
     state.tokens.advance();
 
     // Check for @ bindings: name @ pattern
