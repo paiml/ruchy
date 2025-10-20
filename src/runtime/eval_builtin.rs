@@ -3224,3 +3224,19 @@ mod tests {
         }
     }
 }
+
+#[test]
+fn test_println_string_no_quotes() {
+    // DEFECT: println should print strings WITHOUT quotes
+    // Expected: "Hello Ruchy" → Hello Ruchy (no quotes)
+    // Actual: "Hello Ruchy" → "Hello Ruchy" (with quotes)
+    let fmt = Value::from_string("Name: {}".to_string());
+    let arg = Value::from_string("Ruchy".to_string());
+    let output = format_println_output(&[fmt, arg]);
+    
+    // Should NOT contain quotes around Ruchy
+    assert!(!output.contains("\"Ruchy\""), 
+        "println should not print quotes around strings, got: {}", output);
+    assert!(output.contains("Name: Ruchy"), 
+        "Expected 'Name: Ruchy' without quotes, got: {}", output);
+}

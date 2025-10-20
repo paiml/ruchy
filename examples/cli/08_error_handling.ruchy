@@ -1,0 +1,32 @@
+// Example 8: Error Handling
+// Demonstrates error handling patterns with if/else
+
+// Division with error checking (using if/else, not early return)
+fun safe_divide(a, b) {
+    if b == 0 {
+        0
+    } else {
+        a / b
+    }
+}
+
+let result1 = safe_divide(10, 2)
+println("10 / 2 = {}", result1)
+
+let result2 = safe_divide(10, 0)
+println("10 / 0 = {}", result2)
+
+// Array bounds checking
+let numbers = [10, 20, 30]
+let valid_index = 1
+let invalid_index = 10
+
+// Valid access
+if valid_index >= 0 && valid_index < numbers.len() {
+    println("Valid access: {}", numbers[valid_index])
+}
+
+// Invalid access
+if invalid_index < 0 || invalid_index >= numbers.len() {
+    println("Error: Index out of bounds!")
+}

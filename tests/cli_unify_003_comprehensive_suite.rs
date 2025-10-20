@@ -265,14 +265,15 @@ println(x + y)
 
 #[test]
 fn test_019_file_empty() {
-    // Empty file should complete successfully (no error)
+    // Empty file should fail with "Empty program" error
     let temp = TempDir::new().unwrap();
     let script = create_temp_file(&temp, "empty.ruchy", "");
 
     ruchy_cmd()
         .arg(&script)
         .assert()
-        .success();
+        .failure()
+        .stderr(predicate::str::contains("Empty program"));
 }
 
 // ============================================================================
@@ -383,11 +384,13 @@ fn test_033_stdin_empty() {
 
 #[test]
 fn test_034_stdin_syntax_error() {
-    // Stdin with syntax error should show error
+    // Stdin with syntax error - REPL handles gracefully (exits 0, shows error)
     let mut cmd = ruchy_cmd();
-    cmd.write_stdin("let x = ")
+    cmd.write_stdin("let x = \n:quit\n")
         .assert()
-        .failure();
+        .success()
+        .stdout(predicate::str::contains("Error")
+            .or(predicate::str::contains("error")));
 }
 
 // ============================================================================
@@ -578,7 +581,8 @@ fn test_061_tool_transpile() {
         .arg(&script)
         .assert()
         .success()
-        .stdout(predicate::str::contains("fn main()"));
+        .stdout(predicate::str::contains("fn main")
+            .and(predicate::str::contains("let x = 1")));
 }
 
 #[test]

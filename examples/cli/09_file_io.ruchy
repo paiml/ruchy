@@ -1,0 +1,21 @@
+// Example 9: File I/O
+// File reading and writing operations
+
+// Write to file
+let content = "Hello from Ruchy!\nLine 2\nLine 3"
+File.write("output.txt", content)
+println("Wrote to output.txt")
+
+// Read from file
+let read_content = File.read("output.txt")
+println("Read from file:")
+println(read_content)
+
+// Check file exists
+if File.exists("output.txt") {
+    println("File exists: output.txt")
+}
+
+// Clean up (optional)
+File.delete("output.txt")
+println("Cleaned up output.txt")

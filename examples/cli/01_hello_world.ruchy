@@ -1,7 +1,4 @@
 // Example 1: Hello World
-// Tests: Basic println functionality
-// Expected: "Hello, World!"
+// The simplest Ruchy program - print to stdout
 
-fun main() {
-    println("Hello, World!")
-}
+println("Hello, World!")

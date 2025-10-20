@@ -323,7 +323,7 @@ proptest! {
         // If we got multiple outputs, they should all be identical
         if outputs.len() >= 2 {
             for window in outputs.windows(2) {
-                prop_assert_eq!(window[0], window[1],
+                prop_assert_eq!(&window[0], &window[1],
                     "Multiple runs should produce identical output");
             }
         }

@@ -1,12 +1,25 @@
 // Example 4: Functions
-// Tests: Function definition and calling
-// Expected: 15
+// Function definitions and calls
+
+fun greet(name) {
+    println("Hello, {}!", name)
+}
 
 fun add(a, b) {
     a + b
 }
 
-fun main() {
-    let result = add(5, 10)
-    println(result)
+fun factorial(n) {
+    if n <= 1 {
+        1
+    } else {
+        n * factorial(n - 1)
+    }
 }
+
+greet("World")
+let sum = add(5, 3)
+println("5 + 3 = {}", sum)
+
+let fact5 = factorial(5)
+println("5! = {}", fact5)
