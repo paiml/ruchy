@@ -1393,6 +1393,7 @@ fn eval_fs_remove_file(args: &[Value]) -> Result<Value, InterpreterError> {
     match &args[0] {
         Value::String(path) => match std::fs::remove_file(path.as_ref()) {
             Ok(()) => Ok(Value::Nil),
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(Value::Nil), // Idempotent: OK if already deleted
             Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to remove file: {e}"))),
         },
         _ => Err(InterpreterError::RuntimeError(
