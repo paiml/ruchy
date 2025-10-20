@@ -103,21 +103,15 @@ pub fn handle_file_execution(file: &Path) -> Result<()> {
     // Use REPL to evaluate the file
     let mut repl = create_repl()?;
     match repl.eval(&source) {
-        Ok(result) => {
-            // Only print non-unit results from file evaluation
-            if should_print_result(&result) {
-                println!("{result}");
-            }
+        Ok(_result) => {
+            // CLI-UNIFY-002: Don't print file evaluation results
+            // The user's code uses println() for output. We should NOT print the
+            // final value of file evaluation (that's REPL behavior, not script behavior).
+            // This matches Python/Ruby/Node: `python script.py` doesn't print the last value.
+
             // After evaluating the file, check if main() function exists and call it
-            if let Ok(main_result) = repl.eval("main()") {
-                // Only print non-unit results from main()
-                if should_print_result(&main_result) {
-                    println!("{main_result}");
-                }
-            } else {
-                // main() function doesn't exist or failed - that's OK
-                // Files don't have to have main() functions
-            }
+            // (but also don't print main's return value - it's not a println)
+            let _ = repl.eval("main()");
             Ok(())
         }
         Err(e) => {
