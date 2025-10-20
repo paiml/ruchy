@@ -21,7 +21,7 @@ impl fmt::Display for Value {
             Value::Bool(b) => write!(f, "{b}"),
             Value::Byte(b) => write!(f, "{b}"),
             Value::Nil => write!(f, "nil"),
-            Value::String(s) => write!(f, "\"{s}\""),
+            Value::String(s) => write!(f, "{s}"),
             Value::Array(arr) => format_array(f, arr),
             Value::Tuple(elements) => format_tuple(f, elements),
             Value::Closure { .. } => write!(f, "<function>"),

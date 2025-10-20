@@ -1,13 +1,35 @@
 // Example 5: Control Flow
-// Tests: If expressions
-// Expected: "positive"
+// Demonstrates if/else, match expressions, and loops
 
-fun main() {
-    let x = 10
-    let result = if x > 0 {
-        "positive"
-    } else {
-        "negative"
-    }
-    println(result)
+// If/else expression
+let age = 18
+let status = if age >= 18 {
+    "adult"
+} else {
+    "minor"
+}
+println("Status: {}", status)
+
+// Match expression
+let number = 2
+let description = match number {
+    1 => "one",
+    2 => "two",
+    3 => "three",
+    _ => "other"
+}
+println("Number: {}", description)
+
+// For loop
+let sum = 0
+for i in 1..=5 {
+    sum = sum + i
+}
+println("Sum 1..5: {}", sum)
+
+// While loop
+let count = 0
+while count < 3 {
+    println("Count: {}", count)
+    count = count + 1
 }

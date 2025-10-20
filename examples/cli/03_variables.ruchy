@@ -1,10 +1,15 @@
 // Example 3: Variables
-// Tests: Variable binding and printing
-// Expected: "Alice" and 30
+// Variable declarations and reassignments
 
-fun main() {
-    let name = "Alice"
-    let age = 30
-    println(name)
-    println(age)
-}
+let name = "Ruchy"
+let version = 3.80
+let is_fast = true
+
+println("Language: {}", name)
+println("Version: {}", version)
+println("Fast: {}", is_fast)
+
+// Reassignment
+let count = 1
+count = count + 1
+println("Count: {}", count)

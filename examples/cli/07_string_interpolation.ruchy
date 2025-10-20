@@ -1,0 +1,21 @@
+// Example 7: String Interpolation
+// F-string formatting and string operations
+
+let name = "Ruchy"
+let version = "3.80"
+let year = 2025
+
+// F-string interpolation
+println(f"Welcome to {name} v{version}!")
+println(f"Released in {year}")
+
+// Expression interpolation
+let a = 10
+let b = 20
+println(f"{a} + {b} = {a + b}")
+
+// String methods
+let text = "hello world"
+println(f"Original: {text}")
+println(f"Uppercase: {text.to_uppercase()}")
+println(f"Length: {text.len()}")
