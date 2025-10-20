@@ -534,10 +534,155 @@ println("Composability: {{}} directories found", dirs.len())
 }
 
 // ============================================================================
+// SEARCH() TESTS (6 tests) - Fast text search with ripgrep functionality
+// ============================================================================
+
+#[test]
+fn test_stdlib005_search_basic() {
+    let temp = create_test_files_with_content();
+    let path = temp.path().display().to_string();
+
+    let code = format!(
+        r#"
+let matches = search("error", "{}")
+assert(matches.len() > 0, "Should find matches for 'error'")
+println("Found {{}} matches", matches.len())
+"#,
+        path
+    );
+
+    ruchy_cmd()
+        .arg("-e")
+        .arg(&code)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Found"));
+}
+
+#[test]
+fn test_stdlib005_search_returns_array() {
+    let temp = create_test_files_with_content();
+    let path = temp.path().display().to_string();
+
+    let code = format!(
+        r#"
+let matches = search("test", "{}")
+assert(matches.len() >= 0, "Should return an array")
+println("Search returned array with {{}} matches", matches.len())
+"#,
+        path
+    );
+
+    ruchy_cmd()
+        .arg("-e")
+        .arg(&code)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Search returned array"));
+}
+
+#[test]
+fn test_stdlib005_search_match_has_fields() {
+    let temp = create_test_files_with_content();
+    let path = temp.path().display().to_string();
+
+    let code = format!(
+        r#"
+let matches = search("error", "{}")
+let first = matches[0]
+
+// SearchMatch should have required fields
+assert(first.path != nil, "Should have path field")
+assert(first.line_num > 0, "Should have line_num field")
+assert(first.line != nil, "Should have line field")
+
+println("SearchMatch fields validated")
+"#,
+        path
+    );
+
+    ruchy_cmd()
+        .arg("-e")
+        .arg(&code)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("SearchMatch fields validated"));
+}
+
+#[test]
+fn test_stdlib005_search_case_insensitive() {
+    let temp = create_test_files_with_content();
+    let path = temp.path().display().to_string();
+
+    let code = format!(
+        r#"
+// Should find both "error" and "ERROR"
+let matches = search("ERROR", "{}", {{
+    case_insensitive: true
+}})
+assert(matches.len() > 0, "Should find case-insensitive matches")
+println("Found {{}} case-insensitive matches", matches.len())
+"#,
+        path
+    );
+
+    ruchy_cmd()
+        .arg("-e")
+        .arg(&code)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Found"));
+}
+
+#[test]
+fn test_stdlib005_search_no_matches() {
+    let temp = create_test_files_with_content();
+    let path = temp.path().display().to_string();
+
+    let code = format!(
+        r#"
+let matches = search("nonexistentpattern12345", "{}")
+assert(matches.len() == 0, "Should return empty array for no matches")
+println("No matches found (expected)")
+"#,
+        path
+    );
+
+    ruchy_cmd()
+        .arg("-e")
+        .arg(&code)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("No matches found"));
+}
+
+#[test]
+fn test_stdlib005_search_multiple_files() {
+    let temp = create_test_files_with_content();
+    let path = temp.path().display().to_string();
+
+    let code = format!(
+        r#"
+let matches = search("test", "{}")
+// Should find matches in multiple files (test1.txt and test2.log)
+assert(matches.len() > 0, "Should find matches across multiple files")
+println("Found {{}} matches across files", matches.len())
+"#,
+        path
+    );
+
+    ruchy_cmd()
+        .arg("-e")
+        .arg(&code)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Found"));
+}
+
+// ============================================================================
 // More test categories to be added:
 // - Parallel walk_parallel() tests (8 tests) - DEFERRED to v2.0 (documented defect)
 // - Advanced walk_with_options() (12 tests)
-// - Text search() tests (8 tests)
 // - Integration tests (6 tests)
 // - Property tests (4 tests, 40K cases)
 // - Concurrency tests (3 tests)

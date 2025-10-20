@@ -1505,6 +1505,87 @@ fn eval_glob(args: &[Value]) -> Result<Value, InterpreterError> {
     }
 }
 
+/// Evaluate `search()` builtin function (STDLIB-005)
+/// Fast text search across files (basic implementation)
+/// Complexity: 9 (within Toyota Way limit of 10)
+fn eval_search(args: &[Value]) -> Result<Value, InterpreterError> {
+    // Validate arguments: pattern (required), path (required), options (optional)
+    if args.len() < 2 || args.len() > 3 {
+        return Err(InterpreterError::RuntimeError(
+            "search() expects 2-3 arguments: (pattern, path, options?)".to_string(),
+        ));
+    }
+
+    match (&args[0], &args[1]) {
+        (Value::String(pattern), Value::String(path)) => {
+            use regex::RegexBuilder;
+            use walkdir::WalkDir;
+
+            // Parse options if provided
+            let case_insensitive = if args.len() == 3 {
+                if let Value::Object(opts) = &args[2] {
+                    opts.get("case_insensitive")
+                        .and_then(|v| match v {
+                            Value::Bool(b) => Some(*b),
+                            _ => None,
+                        })
+                        .unwrap_or(false)
+                } else {
+                    false
+                }
+            } else {
+                false
+            };
+
+            // Build regex with options
+            let re = RegexBuilder::new(pattern.as_ref())
+                .case_insensitive(case_insensitive)
+                .build()
+                .map_err(|e| InterpreterError::RuntimeError(
+                    format!("search() regex error: {e}")
+                ))?;
+
+            let mut results = Vec::new();
+
+            // Walk directory and search in files
+            for entry in WalkDir::new(path.as_ref())
+                .into_iter()
+                .filter_map(|e| e.ok())
+                .filter(|e| e.file_type().is_file())
+            {
+                // Read file contents
+                if let Ok(contents) = std::fs::read_to_string(entry.path()) {
+                    // Search each line
+                    for (line_num, line) in contents.lines().enumerate() {
+                        if re.is_match(line) {
+                            let mut fields = HashMap::new();
+
+                            fields.insert("path".to_string(), Value::String(
+                                entry.path().display().to_string().into()
+                            ));
+
+                            fields.insert("line_num".to_string(), Value::Integer(
+                                (line_num + 1) as i64  // 1-indexed
+                            ));
+
+                            fields.insert("line".to_string(), Value::String(
+                                line.to_string().into()
+                            ));
+
+                            results.push(Value::Object(Arc::new(fields)));
+                        }
+                    }
+                }
+            }
+
+            Ok(Value::Array(results.into()))
+        }
+        _ => Err(InterpreterError::RuntimeError(
+            "search() expects (string pattern, string path, object? options)".to_string(),
+        )),
+    }
+}
+
 /// Evaluate `fs_copy()` builtin function
 /// Copies a file from source to destination
 /// Complexity: 3 (within Toyota Way limits)
@@ -1671,11 +1752,12 @@ fn try_eval_stdlib003(name: &str, args: &[Value]) -> Result<Option<Value>, Inter
 }
 
 /// Dispatch STDLIB-005: Multi-Threaded Directory Walking + Text Search
-/// Complexity: 3 (within Toyota Way limits of 10)
+/// Complexity: 4 (within Toyota Way limits of 10)
 fn try_eval_stdlib005(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
     match name {
         "__builtin_walk__" => Ok(Some(eval_walk(args)?)),
         "__builtin_glob__" => Ok(Some(eval_glob(args)?)),
+        "__builtin_search__" => Ok(Some(eval_search(args)?)),
         _ => Ok(None),
     }
 }
