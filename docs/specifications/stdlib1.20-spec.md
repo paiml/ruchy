@@ -11,9 +11,9 @@
 
 ### Actual Coverage (Revised Analysis)
 - **Total Methods**: 71 specified
-- **Fully Implemented** (✅): 52 methods (73%) - STDLIB-006 discovered .unique() and .slice() already implemented
+- **Fully Implemented** (✅): 55 methods (77%) - STDLIB-007 implemented set operations (.union, .intersection, .difference)
 - **Partial Implementation** (🟡): 12 methods (17%) - Need custom Rust implementation
-- **Not Implemented** (❌): 7 methods (10%)
+- **Not Implemented** (❌): 4 methods (6%)
 
 ### Implementation Strategy
 The standard library uses a dual-mode approach:
@@ -185,9 +185,9 @@ random() -> Float           // Random float in [0.0, 1.0) (wraps rand::random)
 | `.remove()` | ✅ Full | `(T) -> Bool` | `set.remove(42)` |
 | `.contains()` | ✅ Full | `(T) -> Bool` | `set.contains(42)` |
 | `.clear()` | ✅ Full | `()` | `set.clear()` |
-| `.union()` | ❌ | `(HashSet<T>) -> HashSet<T>` | `set1.union(set2)` |
-| `.intersection()` | ❌ | `(HashSet<T>) -> HashSet<T>` | `set1.intersection(set2)` |
-| `.difference()` | ❌ | `(HashSet<T>) -> HashSet<T>` | `set1.difference(set2)` |
+| `.union()` | ✅ Full | `(Array<T>) -> Array<T>` | `[1,2,3].union([3,4,5]) // [1,2,3,4,5]` |
+| `.intersection()` | ✅ Full | `(Array<T>) -> Array<T>` | `[1,2,3,4].intersection([3,4,5,6]) // [3,4]` |
+| `.difference()` | ✅ Full | `(Array<T>) -> Array<T>` | `[1,2,3,4].difference([3,4,5,6]) // [1,2]` |
 
 ## Option/Result Types
 
