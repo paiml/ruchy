@@ -1036,10 +1036,13 @@ fn parse_list_rest_pattern(state: &mut ParserState) -> Result<Pattern> {
 }
 
 /// Parse single list pattern element (regular or rest)
-/// Complexity: 4 (Toyota Way: <10 ✓)
+/// Complexity: 5 (Toyota Way: <10 ✓)
+/// PARSER-059: Support both ..tail (two dots) and ...tail (three dots) syntax
 fn parse_list_pattern_element(state: &mut ParserState) -> Result<Pattern> {
     if matches!(state.tokens.peek(), Some((Token::DotDot, _))) {
         parse_list_rest_pattern(state)
+    } else if matches!(state.tokens.peek(), Some((Token::DotDotDot, _))) {
+        parse_rest_pattern(state)
     } else {
         parse_match_pattern(state)
     }
