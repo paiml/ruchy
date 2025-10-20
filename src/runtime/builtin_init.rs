@@ -445,7 +445,8 @@ mod tests {
         // json functions: json_parse, json_stringify, json_pretty, json_read, json_write,
         //                 json_validate, json_type, json_merge, json_get, json_set
         // test functions: assert, assert_eq (added in v3.86.0 for BUG-037)
-        assert_eq!(env.len(), 95); // 93 + 2 test functions = 95
+        // math functions: log, log10, random (added in STDLIB-002)
+        assert_eq!(env.len(), 97); // 95 + 2 math functions = 97 (log10, random; log may have existed)
     }
 
     #[test]
@@ -454,6 +455,7 @@ mod tests {
 
         let expected_math = [
             "sqrt", "pow", "abs", "min", "max", "floor", "ceil", "round", "sin", "cos", "tan",
+            "log", "log10", "random",  // STDLIB-002: Advanced math functions
         ];
 
         for func in &expected_math {
