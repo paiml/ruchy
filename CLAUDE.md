@@ -1,7 +1,18 @@
 # CLAUDE.md - Ruchy Compiler Implementation Protocol
 
-## IMPORTANT: Auto-Generated Files
-**NEVER EDIT `deep_context.md`** - This file is auto-generated and will be overwritten. Any changes should be made to the source files instead.
+## IMPORTANT: Auto-Generated and Single-Source-of-Truth Files
+
+**🚨 ABSOLUTELY FORBIDDEN TO EDIT - THESE FILES ARE AUTO-GENERATED:**
+
+1. **`deep_context.md`** - Auto-generated, will be overwritten
+
+## IMPORTANT: Roadmap Single Source of Truth
+
+**✅ ALWAYS USE `docs/execution/roadmap.yaml`** - This is the ONLY roadmap file
+   - **DELETED**: `docs/execution/roadmap.md` (removed 2025-10-20)
+   - **Rationale**: Maintaining duplicate .md file caused confusion and merge conflicts
+   - **Migration**: All roadmap data now lives exclusively in YAML format
+   - **Benefits**: Machine-readable, programmatically accessible, prevents drift
 
 ## Prime Directive
 
