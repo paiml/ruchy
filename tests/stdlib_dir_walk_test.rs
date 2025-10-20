@@ -680,9 +680,127 @@ println("Found {{}} matches across files", matches.len())
 }
 
 // ============================================================================
+// walk_with_options() Tests (Advanced Configuration)
+// ============================================================================
+
+#[test]
+fn test_stdlib005_walk_with_options_max_depth() {
+    // Test max_depth option - limit recursion depth
+    let temp = create_test_tree();
+    let path = temp.path().display().to_string();
+
+    let code = format!(
+        r#"
+let entries = walk_with_options("{}", {{
+    max_depth: 1
+}})
+
+// Should only include root and first level, not subdir/file4.txt
+let paths = entries.map(|e| e.path)
+let deep_file = paths.filter(|p| p.contains("file4.txt"))
+assert(deep_file.len() == 0, "Should not include files deeper than max_depth")
+
+println("Max depth test passed")
+"#,
+        path
+    );
+
+    ruchy_cmd()
+        .arg("-e")
+        .arg(&code)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Max depth test passed"));
+}
+
+#[test]
+fn test_stdlib005_walk_with_options_min_depth() {
+    // Test min_depth option - skip root directory
+    let temp = create_test_tree();
+    let path = temp.path().display().to_string();
+
+    let code = format!(
+        r#"
+let entries = walk_with_options("{}", {{
+    min_depth: 1
+}})
+
+// Should not include the root directory itself
+let paths = entries.map(|e| e.path)
+let root_entries = paths.filter(|p| p == "{}")
+assert(root_entries.len() == 0, "Should not include root directory with min_depth: 1")
+
+println("Min depth test passed")
+"#,
+        path, path
+    );
+
+    ruchy_cmd()
+        .arg("-e")
+        .arg(&code)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Min depth test passed"));
+}
+
+#[test]
+fn test_stdlib005_walk_with_options_empty_options() {
+    // Test with empty options object - should work like walk()
+    let temp = create_test_tree();
+    let path = temp.path().display().to_string();
+
+    let code = format!(
+        r#"
+let entries = walk_with_options("{}", {{}})
+
+// Should return FileEntry array like walk()
+assert(entries.len() > 0, "Should return entries with empty options")
+assert(entries[0].path != nil, "Entries should have path field")
+
+println("Empty options test passed")
+"#,
+        path
+    );
+
+    ruchy_cmd()
+        .arg("-e")
+        .arg(&code)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Empty options test passed"));
+}
+
+#[test]
+fn test_stdlib005_walk_with_options_combined() {
+    // Test combining multiple options
+    let temp = create_test_tree();
+    let path = temp.path().display().to_string();
+
+    let code = format!(
+        r#"
+let entries = walk_with_options("{}", {{
+    max_depth: 2,
+    min_depth: 1
+}})
+
+// Should only include depth 1 and 2, not root (0) or deeper (3+)
+assert(entries.len() > 0, "Should have some entries")
+println("Combined options test passed: {{}} entries", entries.len())
+"#,
+        path
+    );
+
+    ruchy_cmd()
+        .arg("-e")
+        .arg(&code)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Combined options test passed"));
+}
+
+// ============================================================================
 // More test categories to be added:
 // - Parallel walk_parallel() tests (8 tests) - DEFERRED to v2.0 (documented defect)
-// - Advanced walk_with_options() (12 tests)
 // - Integration tests (6 tests)
 // - Property tests (4 tests, 40K cases)
 // - Concurrency tests (3 tests)

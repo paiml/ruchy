@@ -1586,6 +1586,86 @@ fn eval_search(args: &[Value]) -> Result<Value, InterpreterError> {
     }
 }
 
+/// Evaluate `walk_with_options()` builtin function (STDLIB-005)
+/// Advanced directory walking with fine-grained control
+/// Complexity: 7 (within Toyota Way limit of 10)
+fn eval_walk_with_options(args: &[Value]) -> Result<Value, InterpreterError> {
+    // Validate arguments: path (required), options (required)
+    if args.len() != 2 {
+        return Err(InterpreterError::RuntimeError(
+            "walk_with_options() expects 2 arguments: (path, options)".to_string(),
+        ));
+    }
+
+    match (&args[0], &args[1]) {
+        (Value::String(path), Value::Object(opts)) => {
+            use walkdir::WalkDir;
+
+            let mut walker = WalkDir::new(path.as_ref());
+
+            // Apply max_depth option
+            if let Some(Value::Integer(max)) = opts.get("max_depth") {
+                walker = walker.max_depth(*max as usize);
+            }
+
+            // Apply min_depth option
+            if let Some(Value::Integer(min)) = opts.get("min_depth") {
+                walker = walker.min_depth(*min as usize);
+            }
+
+            // Apply follow_links option
+            if let Some(Value::Bool(follow)) = opts.get("follow_links") {
+                walker = walker.follow_links(*follow);
+            }
+
+            // Collect results
+            let mut results = Vec::new();
+
+            for entry in walker.into_iter().filter_map(|e| e.ok()) {
+                let mut fields = HashMap::new();
+
+                // path field
+                fields.insert(
+                    "path".to_string(),
+                    Value::String(entry.path().display().to_string().into()),
+                );
+
+                // name field
+                if let Some(name) = entry.file_name().to_str() {
+                    fields.insert("name".to_string(), Value::String(name.to_string().into()));
+                }
+
+                // is_file, is_dir, is_symlink fields
+                let file_type = entry.file_type();
+                fields.insert("is_file".to_string(), Value::Bool(file_type.is_file()));
+                fields.insert("is_dir".to_string(), Value::Bool(file_type.is_dir()));
+                fields.insert(
+                    "is_symlink".to_string(),
+                    Value::Bool(file_type.is_symlink()),
+                );
+
+                // size field (0 for directories)
+                let size = if file_type.is_file() {
+                    entry.metadata().ok().map(|m| m.len()).unwrap_or(0)
+                } else {
+                    0
+                };
+                fields.insert("size".to_string(), Value::Integer(size as i64));
+
+                // depth field
+                fields.insert("depth".to_string(), Value::Integer(entry.depth() as i64));
+
+                results.push(Value::Object(Arc::new(fields)));
+            }
+
+            Ok(Value::Array(results.into()))
+        }
+        _ => Err(InterpreterError::RuntimeError(
+            "walk_with_options() expects (string path, object options)".to_string(),
+        )),
+    }
+}
+
 /// Evaluate `fs_copy()` builtin function
 /// Copies a file from source to destination
 /// Complexity: 3 (within Toyota Way limits)
@@ -1752,12 +1832,13 @@ fn try_eval_stdlib003(name: &str, args: &[Value]) -> Result<Option<Value>, Inter
 }
 
 /// Dispatch STDLIB-005: Multi-Threaded Directory Walking + Text Search
-/// Complexity: 4 (within Toyota Way limits of 10)
+/// Complexity: 5 (within Toyota Way limits of 10)
 fn try_eval_stdlib005(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
     match name {
         "__builtin_walk__" => Ok(Some(eval_walk(args)?)),
         "__builtin_glob__" => Ok(Some(eval_glob(args)?)),
         "__builtin_search__" => Ok(Some(eval_search(args)?)),
+        "__builtin_walk_with_options__" => Ok(Some(eval_walk_with_options(args)?)),
         _ => Ok(None),
     }
 }
