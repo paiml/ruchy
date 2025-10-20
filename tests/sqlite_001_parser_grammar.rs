@@ -4419,10 +4419,8 @@ fn test_sqlite_142_aliased_imports() {
 }
 
 #[test]
-#[ignore = "Parser limitation: export keyword - needs [PARSER-057] ticket"]
 fn test_sqlite_143_export_statements() {
-    // Export statements
-    // TODO: Create [PARSER-057] ticket
+    // Export statements - PARSER-057 COMPLETE
     assert_parses("export fun add(a, b) { a + b }");
     assert_parses("export struct Point { x: i32, y: i32 }");
 }
@@ -4467,10 +4465,8 @@ fn test_sqlite_152_macro_definitions() {
 // ============================================================================
 
 #[test]
-#[ignore = "Parser limitation: type aliases - needs [PARSER-058] ticket"]
 fn test_sqlite_160_type_aliases() {
-    // Type aliases
-    // TODO: Create [PARSER-058] ticket
+    // Type aliases - PARSER-058 COMPLETE
     assert_parses("type UserId = i32");
     assert_parses("type Result<T> = Result<T, Error>");
 }
