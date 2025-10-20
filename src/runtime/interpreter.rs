@@ -1846,10 +1846,30 @@ impl Interpreter {
     }
 
     /// Set a mutable variable in the environment
-    /// Currently an alias for `env_set` as Ruchy's dynamic runtime doesn't enforce immutability
-    /// The mut keyword is primarily for documentation and future static analysis
+    /// ISSUE-040 FIX: Searches parent scopes for existing variable and mutates it.
+    /// Falls back to creating new binding in current scope if variable doesn't exist.
+    ///
+    /// # Complexity
+    /// Cyclomatic complexity: 4 (within Toyota Way limits ≤10)
     fn env_set_mut(&mut self, name: String, value: Value) {
-        self.env_set(name, value);
+        // Record type feedback for optimization
+        self.record_variable_assignment_feedback(&name, &value);
+
+        // Search from innermost to outermost scope for existing variable
+        for env in self.env_stack.iter_mut().rev() {
+            if env.contains_key(&name) {
+                // Found existing variable - mutate it in place
+                env.insert(name, value);
+                return;
+            }
+        }
+
+        // Variable doesn't exist in any scope - create new binding in current scope
+        let env = self
+            .env_stack
+            .last_mut()
+            .expect("Environment stack should never be empty");
+        env.insert(name, value);
     }
 
     /// Push a new environment onto the stack
@@ -6344,7 +6364,8 @@ impl Interpreter {
     /// # Complexity
     /// Cyclomatic complexity: 1
     pub fn set_variable(&mut self, name: &str, value: Value) {
-        self.env_set(name.to_string(), value);
+        // ISSUE-040 FIX: Use env_set_mut to search parent scopes for existing variables
+        self.env_set_mut(name.to_string(), value);
     }
 
     /// Pattern matching for try/catch
