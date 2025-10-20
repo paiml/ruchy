@@ -151,8 +151,14 @@ fn parse_let_pattern(state: &mut ParserState, is_mutable: bool) -> Result<Patter
             state.tokens.advance();
             Ok(Pattern::None)
         }
-        Some((Token::Identifier(name), _)) => {
-            let name = name.clone();
+        Some((Token::Identifier(_), _)) | Some((Token::Result, _)) | Some((Token::Var, _)) => {
+            // Handle identifier or reserved keywords that can be used as identifiers
+            let name = match state.tokens.peek() {
+                Some((Token::Identifier(n), _)) => n.clone(),
+                Some((Token::Result, _)) => "Result".to_string(),
+                Some((Token::Var, _)) => "var".to_string(),
+                _ => bail!("Expected identifier in let pattern"),
+            };
             state.tokens.advance();
 
             // Check if this is a variant pattern with custom variants
