@@ -223,13 +223,22 @@ fn try_eval_dataframe_function(
 ///
 /// # Complexity
 /// Cyclomatic complexity: 6 (within Toyota Way limits)
+/// Format value for println (strings without quotes)
+/// Complexity: 2 (within Toyota Way limits)
+fn format_value_for_println(value: &Value) -> String {
+    match value {
+        Value::String(s) => s.to_string(),
+        other => format!("{other}"),
+    }
+}
+
 /// Format string with interpolation
 /// Complexity: 2 (within Toyota Way limits)
 fn format_with_interpolation(fmt_str: &str, args: &[Value]) -> String {
     let mut result = fmt_str.to_string();
     for arg in args {
         if let Some(pos) = result.find("{}") {
-            result.replace_range(pos..pos + 2, &format!("{arg}"));
+            result.replace_range(pos..pos + 2, &format_value_for_println(arg));
         }
     }
     result
@@ -239,7 +248,7 @@ fn format_with_interpolation(fmt_str: &str, args: &[Value]) -> String {
 /// Complexity: 1 (within Toyota Way limits)
 fn join_values(args: &[Value]) -> String {
     args.iter()
-        .map(|v| format!("{v}"))
+        .map(format_value_for_println)
         .collect::<Vec<_>>()
         .join(" ")
 }
