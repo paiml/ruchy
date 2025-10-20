@@ -1872,18 +1872,18 @@ backlog:
 
   - id: "STDLIB-005"
     title: "Multi-Threaded Directory Walking + Text Search (HARDENED)"
-    status: "IN_PROGRESS (3/6 functions complete: walk, glob, find)"
+    status: "IN_PROGRESS (4/6 functions complete: walk, glob, find, search)"
     priority: "🔴 HIGH"
     estimated_time: "14-18h"
-    time_spent: "5h"
+    time_spent: "6h"
     critical_review_applied: true
     version: "2.0.0"
     dependencies:
       - "STDLIB-004"
     functions: 6
-    functions_complete: 3
+    functions_complete: 4
     cli_tools: 5
-    tests_passing: "19/19 (100%)"
+    tests_passing: "25/25 (100%)"
     module: "Directory traversal with parallel processing + fast text search (security-hardened)"
     spec: "docs/specifications/multi-threaded-dir-walk-spec.md"
     tests:
@@ -1970,7 +1970,7 @@ backlog:
       - "✅ FileEntry fields: path, name, is_file, is_dir, is_symlink, size, depth"
       - "✅ NASA-quality architecture: find() delegates to walk().filter() (proper layering)"
       - "✅ Created stdlib/dir_walk.ruchy with library functions"
-      - "🔄 Next: search(), walk_with_options() (walk_parallel deferred to v2.0)"
+      - "🔄 Next: walk_with_options() (walk_parallel deferred to v2.0)"
     validation:
       - "✅ walk(): Basic recursive directory traversal working"
       - "✅ walk(): FileEntry objects with all 7 fields (path, name, is_file, is_dir, is_symlink, size, depth)"
@@ -1987,6 +1987,12 @@ backlog:
       - "✅ find(): Library function pattern working"
       - "✅ find(): Delegates to walk().filter() (DRY principle)"
       - "✅ find(): Demonstrates architectural composability"
+      - "✅ search(): Regex-based text search across files working"
+      - "✅ search(): Returns SearchMatch objects with 3 fields (path, line_num, line)"
+      - "✅ search(): Case-insensitive option functional"
+      - "✅ search(): Multi-file search validated"
+      - "✅ search(): Empty array on no matches graceful"
+      - "✅ search(): Line number indexing correct (1-indexed)"
       - "✅ Architecture: Proper 3-layer design (builtins + higher-order + library)"
       - "✅ Algorithm justification: Added peer-reviewed CS research references"
     use_cases:
