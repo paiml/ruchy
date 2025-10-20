@@ -305,10 +305,154 @@ let entries = walk("/nonexistent/path/that/does/not/exist")
 }
 
 // ============================================================================
+// GLOB() TESTS (6 tests)
+// ============================================================================
+
+#[test]
+fn test_stdlib005_glob_basic_pattern() {
+    let temp = create_test_tree();
+    let path = temp.path().display().to_string();
+
+    let code = format!(
+        r#"
+let pattern = "{}/*.txt"
+let files = glob(pattern)
+assert(files.len() > 0, "Should find .txt files")
+println("Found {{}} .txt files", files.len())
+"#,
+        path
+    );
+
+    ruchy_cmd()
+        .arg("-e")
+        .arg(&code)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Found"));
+}
+
+#[test]
+fn test_stdlib005_glob_recursive_pattern() {
+    let temp = create_test_tree();
+    let path = temp.path().display().to_string();
+
+    let code = format!(
+        r#"
+let pattern = "{}/**/*.txt"
+let files = glob(pattern)
+assert(files.len() >= 3, "Should find all .txt files recursively")
+println("Found {{}} .txt files recursively", files.len())
+"#,
+        path
+    );
+
+    ruchy_cmd()
+        .arg("-e")
+        .arg(&code)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Found"));
+}
+
+#[test]
+fn test_stdlib005_glob_returns_string_array() {
+    let temp = create_test_tree();
+    let path = temp.path().display().to_string();
+
+    let code = format!(
+        r#"
+let pattern = "{}/*.txt"
+let files = glob(pattern)
+let first = files[0]
+// String paths should be printable
+println("First file: {{}}", first)
+"#,
+        path
+    );
+
+    ruchy_cmd()
+        .arg("-e")
+        .arg(&code)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("First file:"));
+}
+
+#[test]
+fn test_stdlib005_glob_filter_by_extension() {
+    let temp = create_test_tree();
+    let path = temp.path().display().to_string();
+
+    let code = format!(
+        r#"
+let txt_files = glob("{}/**/*.txt")
+let log_files = glob("{}/**/*.log")
+
+assert(txt_files.len() > 0, "Should find .txt files")
+assert(log_files.len() > 0, "Should find .log files")
+println("Found {{}} .txt and {{}} .log files", txt_files.len(), log_files.len())
+"#,
+        path, path
+    );
+
+    ruchy_cmd()
+        .arg("-e")
+        .arg(&code)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Found"));
+}
+
+#[test]
+fn test_stdlib005_glob_no_matches() {
+    let temp = create_test_tree();
+    let path = temp.path().display().to_string();
+
+    let code = format!(
+        r#"
+let files = glob("{}/**/*.nonexistent")
+assert(files.len() == 0, "Should return empty array for no matches")
+println("No matches found (expected)")
+"#,
+        path
+    );
+
+    ruchy_cmd()
+        .arg("-e")
+        .arg(&code)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("No matches found"));
+}
+
+#[test]
+fn test_stdlib005_glob_absolute_paths() {
+    let temp = create_test_tree();
+    let path = temp.path().display().to_string();
+
+    let code = format!(
+        r#"
+let files = glob("{}/**/*.txt")
+// Results should be absolute paths
+assert(files[0].starts_with("/") || files[0].starts_with("C:"), "Should return absolute paths")
+println("Absolute paths verified")
+"#,
+        path
+    );
+
+    ruchy_cmd()
+        .arg("-e")
+        .arg(&code)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Absolute paths verified"));
+}
+
+// ============================================================================
 // More test categories to be added:
-// - Parallel walk_parallel() tests (8 tests)
+// - Parallel walk_parallel() tests (8 tests) - DEFERRED to v2.0 (documented defect)
 // - Advanced walk_with_options() (12 tests)
-// - Utility glob()/find() tests (6 tests)
+// - Utility find() tests (4 tests)
 // - Text search() tests (8 tests)
 // - Integration tests (6 tests)
 // - Property tests (4 tests, 40K cases)
@@ -316,5 +460,3 @@ let entries = walk("/nonexistent/path/that/does/not/exist")
 // - Security tests (5 tests)
 // - Performance benchmarks (2 tests)
 // ============================================================================
-
-// TODO: Add remaining test categories following the spec
