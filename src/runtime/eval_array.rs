@@ -42,6 +42,10 @@ where
         "unique" if args.is_empty() => eval_array_unique(arr),
         "enumerate" if args.is_empty() => eval_array_enumerate(arr),
 
+        // STDLIB-005: Array concatenation and flattening
+        "concat" if args.len() == 1 => eval_array_concat(arr, &args[0]),
+        "flatten" if args.is_empty() => eval_array_flatten(arr),
+
         // Higher-order methods
         "map" => eval_array_map(arr, args, &mut eval_function_call_value),
         "filter" => eval_array_filter(arr, args, &mut eval_function_call_value),
@@ -756,4 +760,59 @@ mod tests {
             }
         }
     }
+}
+
+// ============================================================================
+// STDLIB-005: Array concatenation and flattening (ISSUE #41)
+// ============================================================================
+
+/// Concatenate two arrays
+///
+/// # Complexity
+/// Cyclomatic complexity: 2 (within Toyota Way limits)
+///
+/// # Examples
+/// ```
+/// [1, 2].concat([3, 4]) => [1, 2, 3, 4]
+/// ```
+fn eval_array_concat(arr: &Arc<[Value]>, other: &Value) -> Result<Value, InterpreterError> {
+    match other {
+        Value::Array(other_arr) => {
+            let mut result = arr.to_vec();
+            result.extend_from_slice(other_arr);
+            Ok(Value::Array(Arc::from(result)))
+        }
+        _ => Err(InterpreterError::TypeError(format!(
+            "concat() requires array argument, got {:?}",
+            other
+        ))),
+    }
+}
+
+/// Flatten nested arrays by one level
+///
+/// # Complexity
+/// Cyclomatic complexity: 3 (within Toyota Way limits)
+///
+/// # Examples
+/// ```
+/// [[1, 2], [3, 4]].flatten() => [1, 2, 3, 4]
+/// [1, 2, 3].flatten() => [1, 2, 3]  // Already flat
+/// ```
+fn eval_array_flatten(arr: &Arc<[Value]>) -> Result<Value, InterpreterError> {
+    let mut result = Vec::new();
+
+    for item in arr.iter() {
+        match item {
+            Value::Array(nested) => {
+                result.extend_from_slice(nested);
+            }
+            _ => {
+                // Not an array - keep as-is (already flat at this level)
+                result.push(item.clone());
+            }
+        }
+    }
+
+    Ok(Value::Array(Arc::from(result)))
 }
