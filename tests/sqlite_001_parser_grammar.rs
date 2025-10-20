@@ -4276,10 +4276,8 @@ fn test_sqlite_111_await_expressions() {
 }
 
 #[test]
-#[ignore = "Parser limitation: async blocks - needs [PARSER-056] ticket"]
 fn test_sqlite_112_async_blocks() {
-    // Async blocks
-    // TODO: Create [PARSER-056] ticket
+    // Async blocks - PARSER-056 COMPLETE
     assert_parses("async { fetch() }");
     assert_parses("async { let x = await fetch(); x }");
 }

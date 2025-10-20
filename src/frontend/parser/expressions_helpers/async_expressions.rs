@@ -113,13 +113,18 @@ fn parse_async_function(state: &mut ParserState, is_pub: bool) -> Result<Expr> {
 
 /// Parse async block
 ///
-/// Syntax: `async { body }`
+/// Syntax: `async { body }` or `async { stmt1; stmt2; ... }`
+/// PARSER-056: Support blocks with multiple statements
 fn parse_async_block(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.expect(&Token::LeftBrace)?; // consume '{'
 
-    let body = parse_expr_recursive(state)?;
+    // Parse multiple statements (PARSER-056 fix)
+    let statements = crate::frontend::parser::collections::parse_block_expressions(state, start_span)?;
 
     state.tokens.expect(&Token::RightBrace)?; // consume '}'
+
+    // Wrap statements in a Block expression
+    let body = Expr::new(ExprKind::Block(statements), start_span);
 
     Ok(Expr::new(
         ExprKind::AsyncBlock {
