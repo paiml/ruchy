@@ -1872,14 +1872,16 @@ backlog:
 
   - id: "STDLIB-005"
     title: "Multi-Threaded Directory Walking + Text Search (HARDENED)"
-    status: "PLANNED (Post-Critical Review)"
+    status: "IN_PROGRESS (walk() complete: 10/10 tests passing)"
     priority: "🔴 HIGH"
     estimated_time: "14-18h"
+    time_spent: "3h"
     critical_review_applied: true
     version: "2.0.0"
     dependencies:
       - "STDLIB-004"
     functions: 6
+    functions_complete: 1
     cli_tools: 5
     module: "Directory traversal with parallel processing + fast text search (security-hardened)"
     spec: "docs/specifications/multi-threaded-dir-walk-spec.md"
@@ -1955,6 +1957,24 @@ backlog:
       - "Abstraction cost: 'Zero-cost' claim → 'High-performance' with <1µs benchmark gate"
       - "Concurrency testing: Added loom + thread sanitizer + stress tests"
       - "Security testing: Added 5 attack vector test categories"
+    progress:
+      - "✅ EXTREME TDD: 10 basic walk() tests written FIRST (RED phase: 9 failed)"
+      - "✅ walkdir = \"2.5\" dependency added to Cargo.toml"
+      - "✅ Implemented: walk() function in eval_builtin.rs (complexity: 8)"
+      - "✅ Registered: walk() in builtin_init.rs via add_stdlib005_functions()"
+      - "✅ Dispatcher: try_eval_stdlib005() added to builtin dispatcher chain"
+      - "✅ GREEN phase complete: All 10/10 walk() tests passing"
+      - "✅ FileEntry fields: path, name, is_file, is_dir, is_symlink, size, depth"
+      - "🔄 Next: walk_parallel(), walk_with_options(), glob(), find(), search()"
+    validation:
+      - "✅ Basic recursive directory traversal working"
+      - "✅ FileEntry objects returned with all required fields"
+      - "✅ Filtering by file/directory type functional"
+      - "✅ Recursive traversal into subdirectories verified"
+      - "✅ Depth tracking accurate"
+      - "✅ Extension filtering working (.txt, .log, etc.)"
+      - "✅ Empty directory handling graceful"
+      - "✅ Nonexistent path error handling appropriate"
       - "Algorithm justification: Added peer-reviewed CS research references"
     use_cases:
       - "ETL pipelines: Process thousands of CSV files in parallel"
