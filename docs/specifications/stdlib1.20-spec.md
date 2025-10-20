@@ -11,9 +11,9 @@
 
 ### Actual Coverage (Revised Analysis)
 - **Total Methods**: 71 specified
-- **Fully Implemented** (✅): 50 methods (70%) - STDLIB-005 completed .concat() and .flatten()
+- **Fully Implemented** (✅): 52 methods (73%) - STDLIB-006 discovered .unique() and .slice() already implemented
 - **Partial Implementation** (🟡): 12 methods (17%) - Need custom Rust implementation
-- **Not Implemented** (❌): 9 methods (13%)
+- **Not Implemented** (❌): 7 methods (10%)
 
 ### Implementation Strategy
 The standard library uses a dual-mode approach:
@@ -155,10 +155,10 @@ random() -> Float           // Random float in [0.0, 1.0) (wraps rand::random)
 | `.skip()` | ✅ Full | `.iter().skip().collect()` | `[1,2,3,4].skip(2) // [3,4]` |
 | `.sort()` | 🟡 Partial | `.sort()` (mutable) | `vec.sort()` |
 | `.join()` | 🟡 Partial | Custom impl | `["a","b"].join(",") // "a,b"` |
-| `.slice()` | ❌ | `[start..end].to_vec()` | `[1,2,3,4].slice(1,3) // [2,3]` |
+| `.slice()` | ✅ Full | `[start..end].to_vec()` | `[1,2,3,4].slice(1,3) // [2,3]` |
 | `.concat()` | ✅ Full | `.extend_from_slice()` | `[1,2].concat([3,4]) // [1,2,3,4]` |
 | `.flatten()` | ✅ Full | Custom impl | `[[1,2],[3]].flatten() // [1,2,3]` |
-| `.unique()` | ❌ | HashSet conversion | `[1,2,1,3].unique()` |
+| `.unique()` | ✅ Full | HashSet-based dedup | `[1,2,1,3].unique() // [1,2,3]` |
 
 ## HashMap Methods
 
