@@ -303,6 +303,10 @@ colored = "3.0"
 walkdir = "2.5"
 notify = "8.2"
 
+# Unix-specific dependencies for process management
+[target.'cfg(unix)'.dependencies]
+nix = { version = "0.29", features = ["signal", "process"] }
+
 # WASM-specific dependencies
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 getrandom = { version = "0.2", features = ["js"] }
