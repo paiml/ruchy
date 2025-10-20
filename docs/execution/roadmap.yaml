@@ -2,10 +2,10 @@
 # Extreme TDD + Toyota Way + Mutation Testing Enforcement
 
 metadata:
-  version: "3.6"
+  version: "3.7"
   last_updated: "2025-10-20"
-  current_sprint: "✅ PARSER-055-060 COMPLETE (ALL 6 parser limitations resolved) | ✅ v3.96.0 Box<T>/Vec<T> COMPLETE | 🔄 STDLIB-WEBSERVER-SPEC: Standard Library & Web Server Specification (In Progress)"
-  latest_release: "v3.96.0"
+  current_sprint: "✅ ISSUE-039 + ISSUE-040 COMPLETE (Parser contextual keywords + .enumerate() method) | ✅ v3.99.1 RELEASED | Next: HTTP-002-A (PID File Management)"
+  latest_release: "v3.99.1"
   production_readiness:
     overall: "87%"
     breakdown:
