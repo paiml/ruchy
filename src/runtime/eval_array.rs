@@ -46,6 +46,11 @@ where
         "concat" if args.len() == 1 => eval_array_concat(arr, &args[0]),
         "flatten" if args.is_empty() => eval_array_flatten(arr),
 
+        // STDLIB-007: Set operations (arrays as sets)
+        "union" if args.len() == 1 => eval_array_union(arr, &args[0]),
+        "intersection" if args.len() == 1 => eval_array_intersection(arr, &args[0]),
+        "difference" if args.len() == 1 => eval_array_difference(arr, &args[0]),
+
         // Higher-order methods
         "map" => eval_array_map(arr, args, &mut eval_function_call_value),
         "filter" => eval_array_filter(arr, args, &mut eval_function_call_value),
@@ -815,4 +820,113 @@ fn eval_array_flatten(arr: &Arc<[Value]>) -> Result<Value, InterpreterError> {
     }
 
     Ok(Value::Array(Arc::from(result)))
+}
+/// Compute union of two arrays (treats arrays as sets with unique elements)
+///
+/// # Complexity
+/// Cyclomatic complexity: 3 (within Toyota Way limits)
+///
+/// # Examples
+/// ```
+/// [1, 2, 3].union([3, 4, 5]) => [1, 2, 3, 4, 5]
+/// [1, 2, 2].union([2, 3]) => [1, 2, 3]  // Duplicates removed
+/// ```
+fn eval_array_union(arr: &Arc<[Value]>, other: &Value) -> Result<Value, InterpreterError> {
+    match other {
+        Value::Array(other_arr) => {
+            let mut seen = std::collections::HashSet::new();
+            let mut result = Vec::new();
+
+            // Add all unique elements from first array
+            for item in arr.iter() {
+                let key = format!("{item:?}");
+                if seen.insert(key) {
+                    result.push(item.clone());
+                }
+            }
+
+            // Add unique elements from second array that aren't already in result
+            for item in other_arr.iter() {
+                let key = format!("{item:?}");
+                if seen.insert(key) {
+                    result.push(item.clone());
+                }
+            }
+
+            Ok(Value::Array(Arc::from(result)))
+        }
+        _ => Err(InterpreterError::TypeError(format!(
+            "union() requires array argument, got {:?}",
+            other
+        ))),
+    }
+}
+
+/// Compute intersection of two arrays (common elements only)
+///
+/// # Complexity
+/// Cyclomatic complexity: 4 (within Toyota Way limits)
+///
+/// # Examples
+/// ```
+/// [1, 2, 3, 4].intersection([3, 4, 5, 6]) => [3, 4]
+/// [1, 2].intersection([3, 4]) => []  // No common elements
+/// ```
+fn eval_array_intersection(arr: &Arc<[Value]>, other: &Value) -> Result<Value, InterpreterError> {
+    match other {
+        Value::Array(other_arr) => {
+            let other_set: std::collections::HashSet<_> =
+                other_arr.iter().map(|v| format!("{v:?}")).collect();
+            let mut seen = std::collections::HashSet::new();
+            let mut result = Vec::new();
+
+            for item in arr.iter() {
+                let key = format!("{item:?}");
+                if other_set.contains(&key) && seen.insert(key) {
+                    result.push(item.clone());
+                }
+            }
+
+            Ok(Value::Array(Arc::from(result)))
+        }
+        _ => Err(InterpreterError::TypeError(format!(
+            "intersection() requires array argument, got {:?}",
+            other
+        ))),
+    }
+}
+
+/// Compute difference of two arrays (elements in first but not in second)
+///
+/// # Complexity
+/// Cyclomatic complexity: 4 (within Toyota Way limits)
+///
+/// # Examples
+/// ```
+/// [1, 2, 3, 4].difference([3, 4, 5, 6]) => [1, 2]
+/// [1, 2].difference([3, 4]) => [1, 2]  // All elements retained
+/// [1, 2].difference([1, 2, 3]) => []   // All elements removed
+/// ```
+fn eval_array_difference(arr: &Arc<[Value]>, other: &Value) -> Result<Value, InterpreterError> {
+    match other {
+        Value::Array(other_arr) => {
+            let other_set: std::collections::HashSet<_> =
+                other_arr.iter().map(|v| format!("{v:?}")).collect();
+            let mut seen = std::collections::HashSet::new();
+            let mut result = Vec::new();
+
+            for item in arr.iter() {
+                let key = format!("{item:?}");
+                if !other_set.contains(&key) && seen.insert(key) {
+                    result.push(item.clone());
+                }
+            }
+
+            Ok(Value::Array(Arc::from(result)))
+        }
+        _ => Err(InterpreterError::TypeError(format!(
+            "difference() requires array argument, got {:?}",
+            other
+        ))),
+    }
 }
