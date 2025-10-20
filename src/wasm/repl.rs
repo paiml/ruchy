@@ -1,6 +1,7 @@
 //! WebAssembly REPL implementation for browser-based evaluation
 //!
 //! Provides interactive Ruchy evaluation in the browser with progressive enhancement.
+use crate::runtime::Interpreter;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 #[cfg(target_arch = "wasm32")]
@@ -81,6 +82,7 @@ impl WasmRepl {
     /// ```
     pub fn eval(&mut self, input: &str) -> Result<String, JsValue> {
         let start = get_timestamp();
+
         // Parse the input
         let parse_start = get_timestamp();
         let mut parser = crate::Parser::new(input);
@@ -104,14 +106,31 @@ impl WasmRepl {
             }
         };
         let parse_time = get_timestamp() - parse_start;
-        // Type checking would go here
-        let typecheck_start = get_timestamp();
-        // ... type checking implementation ...
-        let typecheck_time = get_timestamp() - typecheck_start;
-        // Evaluation
+
+        // Evaluate using interpreter
         let eval_start = get_timestamp();
-        // For now, just return the parsed AST as a string
-        let result = format!("{ast:?}");
+        let mut interpreter = Interpreter::new();
+
+        // Evaluate the expression
+        let result = match interpreter.eval_expr(&ast) {
+            Ok(value) => format!("{value}"),
+            Err(e) => {
+                return Ok(serde_json::to_string(&ReplOutput {
+                    success: false,
+                    display: None,
+                    type_info: None,
+                    rust_code: None,
+                    error: Some(format!("Runtime error: {e}")),
+                    timing: TimingInfo {
+                        parse_ms: parse_time,
+                        typecheck_ms: 0.0,
+                        eval_ms: get_timestamp() - eval_start,
+                        total_ms: get_timestamp() - start,
+                    },
+                })
+                .unwrap_or_else(|_| "Error serializing output".to_string()));
+            }
+        };
         let eval_time = get_timestamp() - eval_start;
         // Add to history
         self.history.push(input.to_string());
@@ -124,7 +143,7 @@ impl WasmRepl {
             error: None,
             timing: TimingInfo {
                 parse_ms: parse_time,
-                typecheck_ms: typecheck_time,
+                typecheck_ms: 0.0,
                 eval_ms: eval_time,
                 total_ms: get_timestamp() - start,
             },
