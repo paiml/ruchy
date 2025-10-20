@@ -59,6 +59,9 @@ pub enum NotebookCommand {
         /// Host to bind to
         #[arg(long, default_value = "127.0.0.1")]
         host: String,
+        /// PID file for automatic process management
+        #[arg(long)]
+        pid_file: Option<PathBuf>,
     },
     /// Test a notebook
     Test {
@@ -268,13 +271,24 @@ fn find_config_in_ancestors(start_dir: &Path) -> Result<crate::quality::Formatte
 }
 fn execute_notebook(cmd: NotebookCommand, verbose: bool) -> Result<(), String> {
     match cmd {
-        NotebookCommand::Serve { port, host } => execute_notebook_serve(port, host, verbose),
+        NotebookCommand::Serve { port, host, pid_file } => execute_notebook_serve(port, host, pid_file, verbose),
         NotebookCommand::Test { path, coverage, format } => execute_notebook_test(path, coverage, format, verbose),
         NotebookCommand::Convert { input, output, format } => execute_notebook_convert(input, Some(output), format, verbose),
     }
 }
 
-fn execute_notebook_serve(port: u16, host: String, verbose: bool) -> Result<(), String> {
+fn execute_notebook_serve(port: u16, host: String, pid_file: Option<PathBuf>, verbose: bool) -> Result<(), String> {
+    // Create PID file for process management (if specified)
+    let _pid_file_guard = if let Some(pid_path) = pid_file {
+        if verbose {
+            println!("Creating PID file at: {}", pid_path.display());
+        }
+        Some(crate::server::PidFile::new(pid_path)
+            .map_err(|e| format!("Failed to create PID file: {e}"))?)
+    } else {
+        None
+    };
+
     if verbose {
         println!("Starting notebook server on {host}:{port}");
     }
@@ -293,6 +307,7 @@ fn execute_notebook_serve(port: u16, host: String, verbose: bool) -> Result<(), 
         return Err("Notebook feature not enabled".to_string());
     }
     Ok(())
+    // PID file automatically cleaned up when _pid_file_guard drops
 }
 
 fn execute_notebook_test(path: PathBuf, _coverage: bool, format: String, verbose: bool) -> Result<(), String> {
@@ -536,10 +551,12 @@ mod tests {
         let cmd = NotebookCommand::Serve {
             port: 8080,
             host: "localhost".to_string(),
+            pid_file: None,
         };
-        if let NotebookCommand::Serve { port, host } = cmd {
+        if let NotebookCommand::Serve { port, host, pid_file } = cmd {
             assert_eq!(port, 8080);
             assert_eq!(host, "localhost");
+            assert_eq!(pid_file, None);
         } else {
             panic!("Expected Serve command");
         }
@@ -748,12 +765,14 @@ mod tests {
         let cmd = NotebookCommand::Serve {
             port: 8888,
             host: "127.0.0.1".to_string(),
+            pid_file: None,
         };
 
         // Test the command parsing works correctly
-        if let NotebookCommand::Serve { port, host } = cmd {
+        if let NotebookCommand::Serve { port, host, pid_file } = cmd {
             assert_eq!(port, 8888);
             assert_eq!(host, "127.0.0.1");
+            assert_eq!(pid_file, None);
         } else {
             panic!("Expected Serve command");
         }
@@ -764,6 +783,7 @@ mod tests {
             let cmd = NotebookCommand::Serve {
                 port: 8888,
                 host: "127.0.0.1".to_string(),
+                pid_file: None,
             };
             let result = execute_notebook(cmd, false);
             assert!(result.is_err());
