@@ -36,6 +36,11 @@ where
         "nth" if args.len() == 1 => eval_array_nth(arr, &args[0]),
         "contains" if args.len() == 1 => eval_array_contains(arr, &args[0]),
 
+        // STDLIB-004: Custom array methods
+        "slice" if args.len() == 2 => eval_array_slice(arr, &args[0], &args[1]),
+        "join" if args.len() == 1 => eval_array_join(arr, &args[0]),
+        "unique" if args.is_empty() => eval_array_unique(arr),
+
         // Higher-order methods
         "map" => eval_array_map(arr, args, &mut eval_function_call_value),
         "filter" => eval_array_filter(arr, args, &mut eval_function_call_value),
@@ -141,6 +146,64 @@ fn eval_array_contains(arr: &Arc<[Value]>, item: &Value) -> Result<Value, Interp
         }
     }
     Ok(Value::Bool(false))
+}
+
+// STDLIB-004: Custom array methods (complexity <= 5 each)
+
+/// Extract slice from array
+/// Complexity: 5 (within Toyota Way limits)
+fn eval_array_slice(arr: &Arc<[Value]>, start: &Value, end: &Value) -> Result<Value, InterpreterError> {
+    match (start, end) {
+        (Value::Integer(s), Value::Integer(e)) => {
+            let start_idx = (*s).max(0) as usize;
+            let end_idx = (*e).max(0) as usize;
+            let slice: Vec<Value> = arr
+                .iter()
+                .skip(start_idx)
+                .take(end_idx.saturating_sub(start_idx))
+                .cloned()
+                .collect();
+            Ok(Value::Array(Arc::from(slice)))
+        }
+        _ => Err(InterpreterError::RuntimeError(
+            "Array.slice() expects two integer arguments".to_string(),
+        )),
+    }
+}
+
+/// Join array elements into string
+/// Complexity: 4 (within Toyota Way limits)
+fn eval_array_join(arr: &Arc<[Value]>, separator: &Value) -> Result<Value, InterpreterError> {
+    match separator {
+        Value::String(sep) => {
+            let strings: Vec<String> = arr
+                .iter()
+                .map(|v| match v {
+                    Value::String(s) => s.to_string(),
+                    _ => format!("{v}"),
+                })
+                .collect();
+            Ok(Value::from_string(strings.join(sep.as_ref())))
+        }
+        _ => Err(InterpreterError::RuntimeError(
+            "Array.join() expects a string argument".to_string(),
+        )),
+    }
+}
+
+/// Remove duplicate elements from array
+/// Complexity: 3 (within Toyota Way limits)
+fn eval_array_unique(arr: &Arc<[Value]>) -> Result<Value, InterpreterError> {
+    let mut seen = std::collections::HashSet::new();
+    let unique: Vec<Value> = arr
+        .iter()
+        .filter(|v| {
+            let key = format!("{v:?}");
+            seen.insert(key)
+        })
+        .cloned()
+        .collect();
+    Ok(Value::Array(Arc::from(unique)))
 }
 
 // Higher-order array methods (complexity <= 8 each)

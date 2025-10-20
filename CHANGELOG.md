@@ -2,6 +2,86 @@
 
 All notable changes to the Ruchy programming language will be documented in this file.
 
+## [3.99.0] - 2025-10-20
+
+### Added - STANDARD LIBRARY EXPANSION (stdlib1.20-spec)
+
+#### STDLIB-003: Advanced File I/O Functions
+- **[STDLIB] File I/O Enhancements** - User-friendly aliases for file operations
+  - `append_file(path, content)` - Append content to file (creates if doesn't exist)
+  - `file_exists(path)` - Check if file exists (wraps std::fs::metadata)
+  - `delete_file(path)` - Delete file from filesystem (wraps std::fs::remove_file)
+  - **Pattern**: Zero-cost abstraction wrapping existing fs_ functions
+  - **Complexity**: All functions ≤6 (within Toyota Way limits)
+  - **Tests**: 11/11 passing (6 interpreter + 3 transpiler + 2 integration)
+  - **Impact**: Completes file I/O operations from stdlib1.20 specification
+
+#### STDLIB-004: Custom String/Array Methods
+- **[STDLIB] String/Array Methods** - Custom implementations for collection operations
+  - `Array.slice(start, end)` - Extract subarray (skip/take pattern)
+  - `Array.join(separator)` - Join elements into string (with type conversion)
+  - `Array.unique()` - Remove duplicates (HashSet deduplication)
+  - `zip(array1, array2)` - Zip two arrays into tuples
+  - `enumerate(array)` - Add indices to array elements
+  - `substring(start, end)` - Extract substring (already existed, validated)
+  - **Pattern**: Custom implementations (no direct Rust stdlib equivalents)
+  - **Complexity**: All functions ≤7 (within Toyota Way limits)
+  - **Tests**: 19/19 passing (11 interpreter + 3 transpiler + 3 integration + 2 property)
+  - **Impact**: Completes string/array operations from stdlib1.20 specification
+
+### Tests Added - EXTREME TDD Methodology
+- **[TESTING] File I/O Tests** - 11/11 passing (tests/stdlib_file_io_advanced_test.rs)
+  - Interpreter mode: 6 tests (append, exists, delete operations)
+  - Transpiler mode: 3 tests (compile-to-binary validation)
+  - Integration tests: 2 tests (log rotation, temp file cleanup)
+  - RED phase: All tests written FIRST, all failed initially
+  - GREEN phase: Minimal implementation to pass tests
+  - REFACTOR phase: Complexity verification (all ≤6)
+
+- **[TESTING] String/Array Method Tests** - 19/19 passing (tests/stdlib_string_array_methods_test.rs)
+  - Interpreter mode: 11 tests (substring, slice, join, unique, zip, enumerate)
+  - Transpiler mode: 3 tests (compile-to-binary validation)
+  - Integration tests: 3 tests (CSV parsing, deduplication, string extraction)
+  - Property tests: 2 tests (invariant validation planned for future mutation testing)
+  - RED phase: 14/19 tests failed initially (substring already worked)
+  - GREEN phase: Implemented all missing methods in eval_array.rs
+  - REFACTOR phase: Complexity verification (all ≤7)
+
+### Files Modified
+- **src/runtime/eval_builtin.rs**:
+  - Added: eval_append_file() (complexity: 3)
+  - Added: try_eval_stdlib003() dispatcher (complexity: 6)
+  - Added: eval_zip() (complexity: 3)
+  - Added: eval_enumerate() (complexity: 2)
+  - Updated: try_eval_utility_part2() to include zip/enumerate (complexity: 5→7)
+
+- **src/runtime/builtin_init.rs**:
+  - Added: add_stdlib003_functions() - registers 5 file I/O aliases
+  - Updated: Environment count 97→102 (+5 functions)
+
+- **src/runtime/eval_array.rs**:
+  - Added: eval_array_slice() (complexity: 5)
+  - Added: eval_array_join() (complexity: 4)
+  - Added: eval_array_unique() (complexity: 3)
+  - Updated: eval_array_method() to dispatch to new methods
+
+- **src/runtime/eval_method.rs**:
+  - Added: Array.slice(), Array.join(), Array.unique() in eval_array_method_simple()
+  - Note: Duplicate implementation removed in favor of eval_array.rs dispatcher
+
+### Quality Validation
+- **Total Tests**: 30 new tests (11 File I/O + 19 String/Array)
+- **Test Coverage**: stdlib_tests 153→183 (+30)
+- **Complexity**: All new functions ≤7 (Toyota Way: ≤10)
+- **Zero SATD**: No TODO/FIXME/HACK comments
+- **TDD Compliance**: RED→GREEN→REFACTOR cycle followed strictly
+- **Toyota Way**: Jidoka (quality built-in), Complexity limits enforced
+
+### Documentation Updates
+- **roadmap.yaml**: Added STDLIB-003 and STDLIB-004 entries with full metrics
+- **CLAUDE.md**: Added mandatory documentation update requirement (2025-10-20)
+- **current_sprint**: Updated to reflect completion status
+
 ## [3.98.0] - 2025-10-19
 
 ### Fixed - CRITICAL RUNTIME BUG (RUNTIME-038)

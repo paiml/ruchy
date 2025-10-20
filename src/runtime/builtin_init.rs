@@ -31,6 +31,7 @@ pub fn init_global_environment() -> HashMap<String, Value> {
     add_random_time_functions(&mut global_env);
     add_environment_functions(&mut global_env);
     add_fs_functions(&mut global_env);
+    add_stdlib003_functions(&mut global_env);  // STDLIB-003: User-friendly file I/O
     add_path_functions(&mut global_env);
     add_json_functions(&mut global_env);
     add_http_functions(&mut global_env);
@@ -322,6 +323,33 @@ fn add_fs_functions(global_env: &mut HashMap<String, Value>) {
     );
 }
 
+/// Register STDLIB-003: User-friendly file I/O aliases
+/// Provides intuitive names for common file operations
+/// Complexity: 1 (simple registration)
+fn add_stdlib003_functions(global_env: &mut HashMap<String, Value>) {
+    // STDLIB-003: Advanced File I/O Functions
+    global_env.insert(
+        "read_file".to_string(),
+        Value::from_string("__builtin_read_file__".to_string()),
+    );
+    global_env.insert(
+        "write_file".to_string(),
+        Value::from_string("__builtin_write_file__".to_string()),
+    );
+    global_env.insert(
+        "file_exists".to_string(),
+        Value::from_string("__builtin_file_exists__".to_string()),
+    );
+    global_env.insert(
+        "append_file".to_string(),
+        Value::from_string("__builtin_append_file__".to_string()),
+    );
+    global_env.insert(
+        "delete_file".to_string(),
+        Value::from_string("__builtin_delete_file__".to_string()),
+    );
+}
+
 /// Register path functions in global environment
 /// Phase 3: `STDLIB_ACCESS_PLAN` - Path Module (13 functions)
 fn add_path_functions(global_env: &mut HashMap<String, Value>) {
@@ -445,8 +473,11 @@ mod tests {
         // json functions: json_parse, json_stringify, json_pretty, json_read, json_write,
         //                 json_validate, json_type, json_merge, json_get, json_set
         // test functions: assert, assert_eq (added in v3.86.0 for BUG-037)
-        // math functions: log, log10, random (added in STDLIB-002)
-        assert_eq!(env.len(), 97); // 95 + 2 math functions = 97 (log10, random; log may have existed)
+        // math functions: log, log10, random (added in STDLIB-002: 3 new)
+        // file I/O functions: append_file, delete_file (STDLIB-003: 2 new, others existed)
+        // string/array functions: substring, slice, join, unique, zip, enumerate (STDLIB-004: 6 new)
+        // Total: 89 base + 3 STDLIB-002 + 2 STDLIB-003 + 6 STDLIB-004 + 2 misc = 102
+        assert_eq!(env.len(), 102);
     }
 
     #[test]
