@@ -4513,10 +4513,8 @@ fn test_sqlite_171_destructuring_structs() {
 }
 
 #[test]
-#[ignore = "Parser limitation: array patterns in match - needs [PARSER-059] ticket"]
 fn test_sqlite_172_array_patterns() {
-    // Array patterns
-    // TODO: Create [PARSER-059] ticket
+    // Array patterns - PARSER-059 COMPLETE
     assert_parses("match arr { [first, second] => {} }");
     assert_parses("match arr { [head, ...tail] => {} }");
 }
