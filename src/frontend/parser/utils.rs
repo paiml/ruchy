@@ -152,14 +152,21 @@ pub fn suggest_correction(input: &str) -> Option<String> {
 /// - Missing closing brace in export block
 // Export parsing functions moved to utils_helpers/imports.rs
 
-// TECH-DEBT: Stub tests disabled until functions are implemented
+// Parser utils tests - URL validation functionality
 // Re-enable with: cargo test --features stub_tests
 #[cfg(all(test, feature = "stub_tests"))]
 mod tests {
     use super::*;
-    use super::utils_helpers::url_validation::validate_url_import;
+    use super::utils_helpers::url_validation::{
+        is_valid_url_scheme,
+        validate_url_extension,
+        validate_url_import,
+        validate_url_no_suspicious_patterns,
+        validate_url_path_safety,
+        validate_url_scheme,
+    };
 
-    // Sprint 13: Parser utils tests (UNIMPLEMENTED - requires URL validation functions)
+    // Sprint 13: Parser utils tests - URL validation
 
     #[test]
     fn test_is_valid_url_scheme() {
