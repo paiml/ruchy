@@ -4,6 +4,38 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+### ✅ STDLIB-007 Complete - Missing Array and String Methods (2025-10-21)
+
+**100% Complete** - Resolves GitHub Issue #47
+
+- **[STDLIB-007] Implement array.append() method**
+  - Method: `array.append(other_array)` - Appends all elements from another array
+  - Implementation: Alias for existing `concat()` method
+  - Tests: 3 comprehensive unit tests (basic, empty arrays, type checking)
+  - Example:
+    ```ruchy
+    let a = [1, 2]
+    let b = [3, 4]
+    a.append(b)  // => [1, 2, 3, 4]
+    ```
+
+- **[STDLIB-007] Implement string.format() method**
+  - Method: `string.format(...args)` - Python-style {} placeholder replacement
+  - Supports variadic arguments (1+ arguments)
+  - Tests: 4 comprehensive unit tests (single/multiple placeholders, edge cases)
+  - Example:
+    ```ruchy
+    "Hello, {}!".format("Alice")      // => "Hello, Alice!"
+    "{} + {} = {}".format(2, 3, 5)   // => "2 + 3 = 5"
+    ```
+
+**Changes**:
+- `src/runtime/eval_array.rs` - Added "append" as alias for "concat" (line 47)
+- `src/runtime/eval_string_methods.rs` - Added eval_string_format() function (lines 253-278)
+- `src/runtime/eval_string_methods.rs` - Modified eval_string_method() for variadic support (line 21)
+
+**Impact**: Fixes GitHub Issue #47 - Documented methods now work as expected (~10 book examples unblocked)
+
 ### ✅ PARSER-053 Complete - Hash Comment Support (2025-10-21)
 
 **100% Complete** (was 90%) - Unblocks 200+ ruchy-book examples
