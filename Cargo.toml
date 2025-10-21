@@ -140,9 +140,10 @@ cargo_common_metadata = "warn"
 
 # Allow some things that are too strict
 module_inception = "allow"
+arc-with-non-send-sync = "allow"  # Value enum contains HtmlDocument (uses Rc internally)
 # Allow test-related patterns as specified in CLAUDE.md
 unwrap_used = "allow"  # Tests can use unwrap for clarity
-expect_used = "allow"  # Tests can use expect for clarity  
+expect_used = "allow"  # Tests can use expect for clarity
 panic = "allow"        # Tests can panic
 print_stdout = "allow" # Examples and tests can print
 print_stderr = "allow" # Examples and tests can print
@@ -227,6 +228,7 @@ batteries-included = ["notebook", "wasm-compile"]
 minimal = []  # Users can use --no-default-features --features minimal for core only
 dataframe = ["polars", "arrow", "arrow-array", "arrow-buffer", "arrow-schema"]
 testing = ["proptest"]
+stub_tests = []  # Enable stub tests for incomplete features (development only)
 notebook = ["tokio", "tokio-util", "axum", "tower", "tower-http", "wasmparser", "wasmtime"]
 mcp = ["tokio", "tokio-util", "pmcp", "async-trait", "tower-lsp"]
 wasm-compile = []  # WASM compilation is always available via wasm-encoder
