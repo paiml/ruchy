@@ -1,6 +1,25 @@
 //! Function-related parsing (function definitions, lambdas, calls)
 use super::{bail, utils, Expr, ExprKind, Param, ParserState, Result, Span, Token, Type, TypeKind};
 use crate::frontend::ast::{DataFrameOp, Literal, Pattern};
+/// Skip any comment tokens in the stream (PARSER-063)
+///
+/// Comments should be transparent to parsing logic - they don't affect syntax.
+/// This helper ensures comment tokens don't interfere with function body parsing.
+fn skip_comments(state: &mut ParserState) {
+    while matches!(
+        state.tokens.peek(),
+        Some((
+            Token::LineComment(_)
+                | Token::BlockComment(_)
+                | Token::DocComment(_)
+                | Token::HashComment(_),
+            _
+        ))
+    ) {
+        state.tokens.advance();
+    }
+}
+
 /// # Errors
 ///
 /// Returns an error if the operation fails
@@ -17,6 +36,10 @@ pub fn parse_function_with_visibility(state: &mut ParserState, is_pub: bool) -> 
     let params = utils::parse_params(state)?;
     let return_type = parse_optional_return_type(state)?;
     parse_optional_where_clause(state)?;
+
+    // PARSER-063: Skip comments before function body
+    skip_comments(state);
+
     let body = super::parse_expr_recursive(state)?;
 
     Ok(Expr::new(

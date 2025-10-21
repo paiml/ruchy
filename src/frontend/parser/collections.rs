@@ -55,6 +55,8 @@ pub fn parse_block(state: &mut ParserState) -> Result<Expr> {
     }
 
     // Final fallback - parse as empty block
+    // PARSER-063: Skip comments before expecting closing brace
+    skip_comments(state);
     state.tokens.expect(&Token::RightBrace)?;
     Ok(create_block_result(Vec::new(), start_span))
 }
@@ -65,6 +67,10 @@ fn try_parse_block_expressions(state: &mut ParserState, start_span: Span) -> Res
     let saved_position = state.tokens.position();
 
     if let Ok(exprs) = parse_block_expressions(state, start_span) {
+        // PARSER-063: Skip comments before checking for closing brace
+        // This is critical - comments before } would cause backtracking otherwise
+        skip_comments(state);
+
         if matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
             state.tokens.advance(); // consume }
             Ok(create_block_result(exprs, start_span))
@@ -80,11 +86,37 @@ fn try_parse_block_expressions(state: &mut ParserState, start_span: Span) -> Res
     }
 }
 
+/// Skip any comment tokens in the stream (PARSER-063)
+///
+/// Comments should be transparent to parsing logic - they don't affect syntax.
+fn skip_comments(state: &mut ParserState) {
+    while matches!(
+        state.tokens.peek(),
+        Some((
+            Token::LineComment(_)
+                | Token::BlockComment(_)
+                | Token::DocComment(_)
+                | Token::HashComment(_),
+            _
+        ))
+    ) {
+        state.tokens.advance();
+    }
+}
+
 /// Parse all expressions within a block (complexity: 8)
 /// Made public for use by async block parsing (PARSER-056)
 pub(in crate::frontend::parser) fn parse_block_expressions(state: &mut ParserState, start_span: Span) -> Result<Vec<Expr>> {
     let mut exprs = Vec::new();
     while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
+        // PARSER-063: Skip comments before parsing each expression in the block
+        skip_comments(state);
+
+        // Check again after skipping comments
+        if matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
+            break;
+        }
+
         let expr = parse_next_block_expression(state, start_span)?;
         exprs.push(expr);
         consume_optional_semicolon(state);
