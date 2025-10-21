@@ -21,7 +21,7 @@
 
 use super::BenchmarkResults;
 use std::process::Command;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 /// Benchmark a CLI command
 ///
