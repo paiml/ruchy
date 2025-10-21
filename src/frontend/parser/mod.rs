@@ -187,6 +187,23 @@ impl<'a> ParserState<'a> {
         }
         None
     }
+
+    /// Skip all comment tokens transparently
+    /// This allows method chains and expressions to work with intervening comments
+    /// PARSER-053: Fix for multi-line comments breaking method chains
+    pub fn skip_comments(&mut self) {
+        while let Some((token, _)) = self.tokens.peek() {
+            match token {
+                Token::LineComment(_)
+                | Token::BlockComment(_)
+                | Token::DocComment(_)
+                | Token::HashComment(_) => {
+                    self.tokens.advance();
+                }
+                _ => break,
+            }
+        }
+    }
 }
 
 /// Check if two byte positions are on the same line (no newline between them)
@@ -349,12 +366,11 @@ pub(crate) fn handle_postfix_operators(state: &mut ParserState, mut left: Expr) 
 fn try_handle_single_postfix(state: &mut ParserState, left: Expr) -> Result<Option<Expr>> {
     // PARSER-053 FIX: Skip comments before checking for postfix operators
     // This allows: "hello" # comment\n .to_uppercase()
-    let saved_position = state.tokens.position();
+    // Comments are consumed (not restored) so method chains work properly
     while matches!(state.tokens.peek(), Some((Token::LineComment(_) | Token::DocComment(_) | Token::BlockComment(_) | Token::HashComment(_), _))) {
         state.tokens.advance();
     }
     let token_peek = state.tokens.peek().map(|(t, _)| t.clone());
-    state.tokens.set_position(saved_position); // Restore position
 
     match token_peek.as_ref() {
         Some(Token::Dot) => handle_dot_operator(state, left).map(Some),
