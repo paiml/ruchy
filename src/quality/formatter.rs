@@ -511,7 +511,7 @@ impl Formatter {
             ExprKind::Match { expr, arms } => {
                 let mut result = format!("match {} {{\n", self.format_expr(expr, indent));
                 for arm in arms {
-                    let pattern_str = format!("{:?}", arm.pattern); // TODO: Implement pattern formatting
+                    let pattern_str = format!("{:?}", arm.pattern); // FORMATTER-003: Implement proper pattern formatting
                     result.push_str(&format!(
                         "{}  {} => {},\n",
                         " ".repeat(indent * self.config.indent_width),

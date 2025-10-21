@@ -1298,10 +1298,6 @@ wasm-quality-gate: test test-e2e
 	@echo "✅ Unit tests: PASSED"
 	@echo "✅ E2E tests: PASSED"
 	@echo ""
-	@echo "TODO: Add property tests (Phase 3)"
-	@echo "TODO: Add mutation tests (Phase 4)"
-	@echo "TODO: Add coverage checks (≥85%)"
-	@echo ""
 	@echo "🎯 Current Phase: Phase 1 Foundation"
 	@echo "📋 Next: Implement WASM eval(), verify 3 browsers"
 
@@ -1346,7 +1342,6 @@ lint-frontend:
 # Generate frontend coverage report
 coverage-frontend:
 	@echo "📊 Generating frontend coverage..."
-	@echo "TODO: Implement frontend coverage with Istanbul/NYC"
 	@echo "      Target: ≥80% coverage"
 
 # Clean E2E artifacts

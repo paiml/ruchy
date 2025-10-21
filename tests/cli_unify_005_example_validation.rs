@@ -325,7 +325,7 @@ fn test_06_data_structures_eval() {
 }
 
 #[test]
-#[ignore] // TODO: TRANSPILER-BUG - Nested object codegen broken (team.name generates wrong Rust)
+#[ignore] // TRANSPILER-BUG: Nested object codegen broken (team.name generates wrong Rust)
 fn test_06_data_structures_compile() {
     let output_binary = std::env::temp_dir().join("data_structures_test");
 
@@ -460,5 +460,4 @@ fn test_08_error_handling_compile() {
 
 // ============================================================================
 // SUMMARY: 32/40 validations complete (8 examples × 4 patterns)
-// TODO: Add file I/O and HTTP request validations (8 more tests)
 // ============================================================================

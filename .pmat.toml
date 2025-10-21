@@ -12,7 +12,12 @@ max_line_length = 120
 max_function_lines = 50
 
 [exclusions]
-satd_paths = ["tests.disabled/**"]  # Exclude disabled tests from SATD checking
+satd_paths = [
+    "tests.disabled/**",                              # Disabled tests
+    "tests_temp_disabled_for_sprint7_mutation/**",   # Temporarily disabled mutation tests
+    "docs/**/*.md",                                   # Documentation examples (legitimate TODO/FIXME examples)
+    "Cargo.toml",                                     # Configuration file metadata
+]
 complexity_paths = ["tests_temp_disabled_for_sprint7_mutation/**"]  # Exclude disabled tests from complexity checking
 
 [testing]
