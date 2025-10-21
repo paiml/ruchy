@@ -304,10 +304,13 @@ fn execute_notebook_serve(port: u16, host: String, pid_file: Option<PathBuf>, ve
     }
     #[cfg(not(feature = "notebook"))]
     {
-        return Err("Notebook feature not enabled".to_string());
+        Err("Notebook feature not enabled".to_string())
     }
-    Ok(())
-    // PID file automatically cleaned up when _pid_file_guard drops
+    #[cfg(feature = "notebook")]
+    {
+        Ok(())
+        // PID file automatically cleaned up when _pid_file_guard drops
+    }
 }
 
 fn execute_notebook_test(path: PathBuf, _coverage: bool, format: String, verbose: bool) -> Result<(), String> {
@@ -329,9 +332,12 @@ fn execute_notebook_test(path: PathBuf, _coverage: bool, format: String, verbose
     }
     #[cfg(not(feature = "notebook"))]
     {
-        return Err("Notebook feature not enabled".to_string());
+        Err("Notebook feature not enabled".to_string())
     }
-    Ok(())
+    #[cfg(feature = "notebook")]
+    {
+        Ok(())
+    }
 }
 
 fn execute_notebook_convert(input: PathBuf, _output: Option<PathBuf>, format: String, verbose: bool) -> Result<(), String> {
@@ -430,13 +436,13 @@ fn execute_wasm_validate(module: std::path::PathBuf, verbose: bool) -> Result<()
     #[cfg(feature = "notebook")]
     {
         wasmparser::validate(&bytes).map_err(|e| format!("WASM validation error: {e}"))?;
+        println!("✓ WASM module is valid");
     }
     #[cfg(not(feature = "notebook"))]
     {
         eprintln!("Warning: WASM validation requires notebook feature");
         return Err("WASM validation not available without notebook feature".to_string());
     }
-    println!("✓ WASM module is valid");
     Ok(())
 }
 fn execute_test(cmd: TestCommand, verbose: bool) -> Result<(), String> {

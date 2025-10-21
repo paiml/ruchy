@@ -18,28 +18,55 @@ pub fn eval_builtin_function(
     name: &str,
     args: &[Value],
 ) -> Result<Option<Value>, InterpreterError> {
-    // Dispatch to category-specific handlers (try each in sequence)
-    let dispatchers: &[fn(&str, &[Value]) -> Result<Option<Value>, InterpreterError>] = &[
-        try_eval_io_function,
-        try_eval_math_function,
-        try_eval_utility_function,
-        try_eval_conversion_function,
-        try_eval_time_function,
-        try_eval_dataframe_function,
-        try_eval_environment_function,
-        try_eval_fs_function,
-        try_eval_stdlib003,
-        try_eval_stdlib005,
-        try_eval_path_function,
-        try_eval_json_function,
-        try_eval_http_function,
-        try_eval_html_function,
-    ];
+    // Try each category-specific handler in sequence
 
-    for try_eval in dispatchers {
-        if let Some(result) = try_eval(name, args)? {
-            return Ok(Some(result));
-        }
+    if let Some(result) = try_eval_io_function(name, args)? {
+        return Ok(Some(result));
+    }
+    if let Some(result) = try_eval_math_function(name, args)? {
+        return Ok(Some(result));
+    }
+    if let Some(result) = try_eval_utility_function(name, args)? {
+        return Ok(Some(result));
+    }
+    if let Some(result) = try_eval_conversion_function(name, args)? {
+        return Ok(Some(result));
+    }
+    if let Some(result) = try_eval_time_function(name, args)? {
+        return Ok(Some(result));
+    }
+    if let Some(result) = try_eval_dataframe_function(name, args)? {
+        return Ok(Some(result));
+    }
+    if let Some(result) = try_eval_environment_function(name, args)? {
+        return Ok(Some(result));
+    }
+    if let Some(result) = try_eval_fs_function(name, args)? {
+        return Ok(Some(result));
+    }
+    if let Some(result) = try_eval_stdlib003(name, args)? {
+        return Ok(Some(result));
+    }
+    if let Some(result) = try_eval_stdlib005(name, args)? {
+        return Ok(Some(result));
+    }
+    if let Some(result) = try_eval_path_function(name, args)? {
+        return Ok(Some(result));
+    }
+    if let Some(result) = try_eval_json_function(name, args)? {
+        return Ok(Some(result));
+    }
+
+    // HTTP functions - not available in WASM
+    #[cfg(not(target_arch = "wasm32"))]
+    if let Some(result) = try_eval_http_function(name, args)? {
+        return Ok(Some(result));
+    }
+
+    // HTML functions - not available in WASM
+    #[cfg(not(target_arch = "wasm32"))]
+    if let Some(result) = try_eval_html_function(name, args)? {
+        return Ok(Some(result));
     }
 
     Ok(None)
@@ -2567,6 +2594,7 @@ fn try_eval_json_function(
 
 /// Dispatcher for HTTP builtin functions
 /// Complexity: 2 (loop + match delegation)
+#[cfg(not(target_arch = "wasm32"))]
 fn try_eval_http_function(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
     match name {
         "http_get" => Ok(Some(eval_http_get(args)?)),
@@ -2579,6 +2607,7 @@ fn try_eval_http_function(name: &str, args: &[Value]) -> Result<Option<Value>, I
 
 /// Eval: `http_get(url)`
 /// Complexity: 2 (validation + stdlib delegation)
+#[cfg(not(target_arch = "wasm32"))]
 fn eval_http_get(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("http_get", args, 1)?;
     match &args[0] {
@@ -2594,6 +2623,7 @@ fn eval_http_get(args: &[Value]) -> Result<Value, InterpreterError> {
 
 /// Eval: `http_post(url`, body)
 /// Complexity: 2 (validation + stdlib delegation)
+#[cfg(not(target_arch = "wasm32"))]
 fn eval_http_post(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("http_post", args, 2)?;
     match (&args[0], &args[1]) {
@@ -2609,6 +2639,7 @@ fn eval_http_post(args: &[Value]) -> Result<Value, InterpreterError> {
 
 /// Eval: `http_put(url`, body)
 /// Complexity: 2 (validation + stdlib delegation)
+#[cfg(not(target_arch = "wasm32"))]
 fn eval_http_put(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("http_put", args, 2)?;
     match (&args[0], &args[1]) {
@@ -2624,6 +2655,7 @@ fn eval_http_put(args: &[Value]) -> Result<Value, InterpreterError> {
 
 /// Eval: `http_delete(url)`
 /// Complexity: 2 (validation + stdlib delegation)
+#[cfg(not(target_arch = "wasm32"))]
 fn eval_http_delete(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("http_delete", args, 1)?;
     match &args[0] {

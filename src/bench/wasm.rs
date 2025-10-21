@@ -5,6 +5,8 @@
 //! - Memory allocation tracking
 //! - Execution time percentiles
 //!
+//! Note: This module is not available for WASM targets (it benchmarks WASM from native code)
+//!
 //! # Examples
 //!
 //! ```no_run
@@ -20,6 +22,7 @@
 //!
 //! println!("Mean: {:.2}µs", results.mean_time().as_micros());
 //! ```
+#![cfg(not(target_arch = "wasm32"))]
 
 use super::BenchmarkResults;
 use std::path::Path;
