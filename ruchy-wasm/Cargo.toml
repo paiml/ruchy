@@ -1,0 +1,31 @@
+[package]
+name = "ruchy-wasm"
+version = "3.107.0"
+edition = "2021"
+authors = ["Noah Gift"]
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/paiml/ruchy"
+description = "WebAssembly bindings for Ruchy - compile Ruchy to Rust in the browser"
+keywords = ["wasm", "webassembly", "compiler", "ruchy", "browser"]
+categories = ["wasm", "compilers", "web-programming"]
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+ruchy = { path = "..", version = "3.107.0", default-features = false }
+wasm-bindgen = "0.2"
+wasm-bindgen-futures = "0.4"
+js-sys = "0.3"
+console_error_panic_hook = "0.1"
+serde = { version = "1.0", features = ["derive"] }
+serde-wasm-bindgen = "0.6"
+
+[dev-dependencies]
+wasm-bindgen-test = "0.3"
+
+[profile.release]
+opt-level = "s"  # Optimize for size
+lto = true       # Link-time optimization
+codegen-units = 1  # Better optimization, slower compile
+strip = true     # Remove debug symbols

@@ -1,0 +1,7 @@
+pkg/
+target/
+node_modules/
+*.log
+*.wasm
+*.js
+!src/**/*.js

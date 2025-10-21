@@ -1,0 +1,37 @@
+{
+  "name": "ruchy-wasm",
+  "version": "3.107.0",
+  "description": "WebAssembly bindings for Ruchy - compile Ruchy to Rust in the browser",
+  "main": "pkg/ruchy_wasm.js",
+  "types": "pkg/ruchy_wasm.d.ts",
+  "files": [
+    "pkg/"
+  ],
+  "scripts": {
+    "build": "wasm-pack build --target web",
+    "build:bundler": "wasm-pack build --target bundler",
+    "build:nodejs": "wasm-pack build --target nodejs",
+    "test": "wasm-pack test --headless --firefox",
+    "publish:npm": "cd pkg && npm publish"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/paiml/ruchy.git",
+    "directory": "ruchy-wasm"
+  },
+  "keywords": [
+    "wasm",
+    "webassembly",
+    "ruchy",
+    "compiler",
+    "rust",
+    "transpiler",
+    "programming-language"
+  ],
+  "author": "Noah Gift",
+  "license": "MIT OR Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/paiml/ruchy/issues"
+  },
+  "homepage": "https://github.com/paiml/ruchy#readme"
+}
