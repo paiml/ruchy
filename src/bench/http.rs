@@ -6,8 +6,11 @@
 //! - POST/GET/PUT/DELETE methods
 //! - Request body payloads
 //!
+//! Note: This module is not available for WASM targets
+//!
 //! # Examples
 //!
+#![cfg(not(target_arch = "wasm32"))]
 //! ```no_run
 //! use ruchy::bench::http::benchmark_http;
 //!

@@ -215,6 +215,9 @@ path = "src/bin/ruchy.rs"
 [lib]
 crate-type = ["cdylib", "rlib"]
 
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = false
+
 [lints]
 workspace = true
 
