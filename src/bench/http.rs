@@ -10,7 +10,7 @@
 //!
 //! # Examples
 //!
-#![cfg(not(target_arch = "wasm32"))]
+#![cfg(all(not(target_arch = "wasm32"), feature = "http-client"))]
 //! ```no_run
 //! use ruchy::bench::http::benchmark_http;
 //!

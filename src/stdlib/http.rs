@@ -4,6 +4,7 @@
 //!
 //! # Examples
 //!
+#![cfg(feature = "http-client")]
 //! ```no_run
 //! use ruchy::stdlib::http;
 //!

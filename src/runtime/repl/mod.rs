@@ -6,6 +6,8 @@
 //! - TDG A+ grade (VERIFIED)
 //! - <50ms response time (MEASURED)
 
+#![cfg(feature = "repl")]
+
 pub mod commands;
 pub mod completion;
 pub mod evaluation;

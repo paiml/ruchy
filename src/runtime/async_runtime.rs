@@ -2,6 +2,8 @@
 //!
 //! Provides async/await functionality and Future trait integration
 
+#![cfg(any(feature = "notebook", feature = "mcp"))]
+
 use std::future::Future as StdFuture;
 use std::pin::Pin;
 use std::task::{Context, Poll};

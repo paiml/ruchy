@@ -1,6 +1,9 @@
 //! Refactored recording functionality with reduced complexity
 //!
 //! Following TDD approach: Each function has complexity < 20
+
+#![cfg(feature = "repl")]
+
 use crate::runtime::completion::RuchyCompleter;
 use crate::runtime::repl::Repl;
 use crate::runtime::replay::{InputMode, SessionMetadata, SessionRecorder};

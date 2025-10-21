@@ -2,6 +2,8 @@
 //!
 //! Provides hot-reload functionality similar to nodemon/cargo-watch.
 
+#![cfg(feature = "watch-mode")]
+
 use notify::{Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher as NotifyWatcher};
 use std::path::PathBuf;
 use std::sync::mpsc::{channel, Receiver, Sender};
