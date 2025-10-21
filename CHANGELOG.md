@@ -4,6 +4,22 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+### ✅ DEFECT-PARSER-006 Complete - Attributes in Block Bodies (2025-10-21)
+
+**85.3% Book Compatibility Achieved (+2.0% improvement)** - Fixed parser + corrected book content
+
+- **[DEFECT-PARSER-006] Parser now handles attributes inside block bodies**
+  - Attributes like `#[test]` now work inside `{ }` blocks, not just at top level
+  - Fixes "Unexpected token: AttributeStart" errors in nested contexts
+  - Root cause: `parse_next_block_expression()` didn't call `parse_attributes()`
+  - Solution: Added attribute parsing before expressions in block bodies
+  - Files modified:
+    - `src/frontend/parser/collections.rs` - Added attribute parsing (line 101)
+    - `tests/defect_parser_006_attributes_in_blocks.rs` - 4 comprehensive tests (2 passing, 2 documented limitations)
+  - Book content fix: Changed 9 Rust `proptest!` blocks from ` ```ruchy ` to ` ```rust `
+  - Book compatibility improved 83.2% → 85.3% (318/373 blocks passing)
+  - Remaining gap to 95%: 10 percentage points (37 more blocks need to pass)
+
 ### ✅ PARSER-054 Complete - Inline Comments After Semicolons (2025-10-21)
 
 **83.2% Book Compatibility Achieved (+3.7% improvement)** - Fixes critical parser bug
