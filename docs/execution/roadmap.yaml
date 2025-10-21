@@ -2,11 +2,32 @@
 # Extreme TDD + Toyota Way + Mutation Testing Enforcement
 
 metadata:
-  version: "3.12"
+  version: "3.13"
   last_updated: "2025-10-21"
-  current_sprint: "✅ HTTP-002-A COMPLETE (6/6 chunks - 100%) | v3.105.0 World-Class Dev Server Shipped!"
+  current_sprint: "🎯 PARSER-053 PLANNED | Fix Multi-line Comments (GitHub #45 - CRITICAL)"
   latest_release: "v3.105.0"
-  next_release: "TBD - See backlog for next priorities"
+  next_release: "v3.106.0 - Parser fixes for book compatibility"
+  github_issues:
+    critical:
+      - id: 45
+        url: "https://github.com/paiml/ruchy/issues/45"
+        title: "Multi-line Code Blocks with Inline Comments"
+        impact: "200+ broken examples"
+        ticket: "PARSER-053"
+        priority: "HIGH"
+    medium:
+      - id: 47
+        url: "https://github.com/paiml/ruchy/issues/47"
+        title: "Missing array.append() and string.format()"
+        impact: "~5 broken examples"
+        ticket: "STDLIB-007"
+        priority: "MEDIUM"
+      - id: 46
+        url: "https://github.com/paiml/ruchy/issues/46"
+        title: "Negative Array Indexing Not Supported"
+        impact: "~5 broken examples"
+        ticket: "FEATURE-042"
+        priority: "MEDIUM"
   production_readiness:
     overall: "88%"
     breakdown:
@@ -22,11 +43,12 @@ metadata:
       deployment: "50%"  # No production deployment guide
   blockers_to_100:
     - "✅ COMPLETE: Box<T> and Vec<T> support (v3.96.0 - 2025-10-19)"
-    - "🔄 IN PROGRESS: Standard library specification (stdlib-webserver-spec.md - 2025-10-19)"
+    - "✅ COMPLETE: World-class dev server (HTTP-002-A, v3.105.0 - 2025-10-21)"
+    - "🔄 NEXT: Multi-line comment parsing (PARSER-053, GitHub #45 - CRITICAL)"
     - "Package management system (40-60h estimated)"
     - "Complete API documentation (20-30h estimated)"
     - "Production deployment guide (10-15h estimated)"
-  honest_assessment: "Feature-complete language (100%) with growing ecosystem (60%), now with comprehensive stdlib/web server specification"
+  honest_assessment: "Feature-complete language (100%) with world-class dev server (v3.105.0), focusing on book compatibility improvements via parser fixes"
   note: "This YAML file is the SINGLE SOURCE OF TRUTH for roadmap status"
 
 # 🚨 MANDATORY QUALITY GATES FOR ALL STDLIB MODULES
