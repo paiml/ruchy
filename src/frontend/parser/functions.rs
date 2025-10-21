@@ -339,6 +339,8 @@ pub fn parse_method_call(state: &mut ParserState, receiver: Expr) -> Result<Expr
             trailing_comment: None,
         });
     }
+    // Skip any comments between '.' and method name (PARSER-053)
+    state.skip_comments();
     // Parse method name or tuple index
     match state.tokens.peek() {
         Some((Token::Identifier(name), _)) => {
@@ -377,6 +379,8 @@ pub fn parse_method_call(state: &mut ParserState, receiver: Expr) -> Result<Expr
     }
 }
 pub fn parse_optional_method_call(state: &mut ParserState, receiver: Expr) -> Result<Expr> {
+    // Skip any comments between '?.' and method name (PARSER-053)
+    state.skip_comments();
     // Parse method name or tuple index for optional chaining
     match state.tokens.peek() {
         Some((Token::Identifier(name), _)) => {
