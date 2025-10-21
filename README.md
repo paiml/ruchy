@@ -405,6 +405,28 @@ make lint
 make doc
 ```
 
+### RuchyRuchy Debugging Tools
+
+Ruchy integrates with the **RuchyRuchy** debugging toolkit for advanced debugging capabilities:
+
+- **Source Maps**: 1:1 line mapping for Ruchy → Rust transpilation debugging
+- **Time-Travel Debugging**: Record-replay engine for stepping backward through execution
+- **Performance Validation**: Automated regression detection (<6s validation)
+
+**Setup**:
+```bash
+# Clone ruchyruchy as sibling directory
+git clone https://github.com/paiml/ruchyruchy ../ruchyruchy
+
+# Validation runs automatically via pre-commit hook
+# Manual validation:
+./scripts/validate-debugging-tools.sh
+```
+
+**Pre-commit Integration**: The debugging tools are automatically validated on every commit (3 checks, <6s total).
+
+See [RuchyRuchy README](https://github.com/paiml/ruchyruchy) for detailed documentation.
+
 ### WebAssembly QA Framework
 The project includes a comprehensive WebAssembly Quality Assurance Framework v3.0 with 4 validation phases:
 

@@ -301,47 +301,41 @@ mod property_tests {
 - Mix: unit/doctests/property-tests/fuzz tests
 - Check ../ruchy-book and ../rosetta-ruchy at sprint start
 
-## Toyota Way Success Stories
+## RuchyRuchy Debugging Tools Integration
 
-### Property Testing Victory (2024-12)
-- **545 systematic test cases**: 0 parser inconsistencies found
-- **ROOT CAUSE**: Manual testing methodology error, NOT code defect
-- **LESSON**: Property testing is objective - mathematically proves system behavior
+**CRITICAL**: RuchyRuchy is a separate debugging toolkit project providing advanced debugging infrastructure for Ruchy.
 
-### PMAT Enforcement Success (2025-08-30)
-**Discovery**: 3,557 quality violations found
-- **Finding**: Functions with 72x complexity limit (720 vs 10)
-- **SATD debt**: 1,280 technical debt comments
-- **Dead code**: 6 violations indicating maintenance debt
-- **Root cause**: PMAT quality gates not enforced during development
-- **Solution**: Mandatory PMAT enforcement at every development step
-- **Lesson**: Quality must be built-in from start, not bolted-on later
+**Repository**: `../ruchyruchy` (sibling directory to main Ruchy project)
 
-### Language Completeness Achievement v1.9.1 (2025-08)
-**Systematic Testing Revealed**:
-- ✅ **Fat arrow syntax**: Functional (`x => x + 1`)
-- ✅ **String interpolation**: Functional (`f"Hello {name}"`)
-- ✅ **Async/await**: Functional (async fn and await expressions)
-- ✅ **DataFrame literals**: Functional (`df![]` macro)
-- ✅ **Generics**: Functional (`Vec<T>`, `Option<T>`)
-- ✅ **Pipeline Operator**: `|>` for functional programming (v1.9.0)
-- ✅ **Import/Export**: Module system evaluation (v1.9.1)
-- ✅ **String Methods**: Complete suite (v1.8.9)
+**Tools Provided**:
+- **Source Map Generation**: 1:1 line mapping for Ruchy → Rust transpilation debugging
+- **Time-Travel Debugging**: Record-replay engine for stepping backward through execution
+- **Performance Validation**: Regression detection for compilation and runtime performance
 
-**ROOT CAUSE**: Manual testing created false negatives. Features were already implemented.
+**Pre-commit Integration**: MANDATORY validation on every commit (<6s total)
+```bash
+# Validation runs automatically via pre-commit hook
+# Manual execution:
+cd ../ruchyruchy && ./scripts/validate-debugging-tools.sh
 
-### Quality Excellence Sprint v1.6.0
-**Results**: 107 tests created, 287 tests passing, 80% coverage achieved
-- LSP module coverage: 0% → 96-100% 
-- MCP module coverage: 0% → 33%
-- Type inference coverage: 0% → 15%
+# Symlinked to main project:
+./scripts/validate-debugging-tools.sh
+```
 
-### Complete Language Restoration - Status
-**Core Functionality Status**:
-- Basic Math, Float Math, Variables ✅
-- String Concatenation, Method Calls ✅  
-- Boolean Operations, Complex Expressions ✅
-- Reserved Keywords: final → r#final (automatic) ✅
+**Setup Requirements**:
+1. Clone ruchyruchy as sibling directory: `git clone https://github.com/paiml/ruchyruchy ../ruchyruchy`
+2. Pre-commit hook automatically detects and validates debugging tools
+3. Validation includes: source maps (3 lines, <2s), time-travel (3 steps, <3s), performance (100 mappings, <1s)
+
+**Usage**:
+- Pre-commit hook validates debugging tools automatically
+- See `../ruchyruchy/README.md` for detailed documentation
+- See `../ruchyruchy/DEBUGGING_TOOLS_SESSION_SUMMARY.md` for implementation status
+
+**Why This Matters (Toyota Way)**:
+- **Jidoka**: Fast feedback loop (<6s) catches debugging tool regressions immediately
+- **Genchi Genbutsu**: Source maps enable "go and see" debugging at Rust code level
+- **Kaizen**: Time-travel debugging enables root cause analysis of complex bugs
 
 ## Scripting Policy
 
@@ -455,10 +449,7 @@ Navigation:
 
 ## Book Compatibility Monitoring
 
-**CRITICAL**: Check `../ruchy-book/INTEGRATION.md` FREQUENTLY for:
-- Current compatibility: 19% (49/259 examples) + 100% one-liners (20/20)
-- v1.9.1 Language Completeness: Pipeline operator, Import/Export, String methods
-- Regression detection from previous versions
+**CRITICAL**: Check `../ruchy-book/INTEGRATION.md` for current compatibility status and regression detection.
 
 ### ruchy-book Validation (Following pmat-book Pattern)
 
@@ -495,25 +486,6 @@ git commit  # Runs validation automatically
 - **Genchi Genbutsu**: Validate examples work, not just exist
 - **Kaizen**: Continuous validation prevents documentation drift
 - **Quality Built-In**: Pre-commit hook catches issues before merge
-
-## Quality Status (v1.9.3)
-
-**INTERPRETER COMPLEXITY**: 
-- evaluate_expr: 138 (was 209, target <50)
-- Value::fmt: 66 (target <30)
-- Value::format_dataframe: 69 (target <30)
-- **Latest Features**: Math functions (sqrt, pow, abs, min, max, floor, ceil, round)
-
-## Critical Quality Gate Defect (Toyota Way Investigation)
-
-**DEFECT**: Pre-commit hook hangs at dogfooding test
-
-**ROOT CAUSE**: Transpiler generates different code in debug vs release mode, violating determinism
-
-**PREVENTION**: 
-- Add property test: `assert!(transpile_debug(x) == transpile_release(x))`
-- Quality gates must use consistent binary paths
-- Never allow behavioral differences between debug/release
 
 ## Absolute Rules (From paiml-mcp-agent-toolkit)
 
