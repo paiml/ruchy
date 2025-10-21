@@ -1,4 +1,6 @@
 // Example 1: Hello World
-// The simplest Ruchy program - print to stdout
+// Demonstrates: Basic println output
+// Usage: ruchy examples/cli/01_hello_world.ruchy
 
 println("Hello, World!")
+println("Welcome to Ruchy!")

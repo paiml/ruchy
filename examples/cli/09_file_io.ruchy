@@ -1,21 +1,22 @@
 // Example 9: File I/O
-// File reading and writing operations
+// Demonstrates: Reading and writing files
+// Usage: ruchy examples/cli/09_file_io.ruchy
 
 // Write to file
-let content = "Hello from Ruchy!\nLine 2\nLine 3"
-File.write("output.txt", content)
-println("Wrote to output.txt")
+let content = "Hello from Ruchy!\nThis is a test file.\n"
+fs_write("/tmp/ruchy_test.txt", content)
+println("File written to /tmp/ruchy_test.txt")
 
 // Read from file
-let read_content = File.read("output.txt")
-println("Read from file:")
-println(read_content)
+let data = fs_read("/tmp/ruchy_test.txt")
+println("File contents:")
+println(data)
 
-// Check file exists
-if File.exists("output.txt") {
-    println("File exists: output.txt")
+// Check if file exists
+if fs_exists("/tmp/ruchy_test.txt") {
+    println("File exists!")
 }
 
-// Clean up (optional)
-File.delete("output.txt")
-println("Cleaned up output.txt")
+// Clean up
+fs_remove("/tmp/ruchy_test.txt")
+println("File removed")

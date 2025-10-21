@@ -1,35 +1,24 @@
 // Example 5: Control Flow
-// Demonstrates if/else, match expressions, and loops
+// Demonstrates: if/else, for loops, while loops
+// Usage: ruchy examples/cli/05_control_flow.ruchy
 
-// If/else expression
-let age = 18
-let status = if age >= 18 {
-    "adult"
+// If/else
+let age = 25
+if age >= 18 {
+    println("Adult")
 } else {
-    "minor"
+    println("Minor")
 }
-println("Status: {}", status)
-
-// Match expression
-let number = 2
-let description = match number {
-    1 => "one",
-    2 => "two",
-    3 => "three",
-    _ => "other"
-}
-println("Number: {}", description)
 
 // For loop
-let sum = 0
-for i in 1..=5 {
-    sum = sum + i
+println("Counting 1-5:")
+for i in range(1, 6) {
+    println(i)
 }
-println("Sum 1..5: {}", sum)
 
 // While loop
 let count = 0
 while count < 3 {
-    println("Count: {}", count)
+    println(f"Count: {count}")
     count = count + 1
 }

@@ -209,8 +209,11 @@ See `tests/dataframe_*_properties.rs` for comprehensive test examples.
 ## CLI Commands
 
 ### Core Commands
-- `ruchy repl` - Start interactive REPL
-- `ruchy run <file>` - Execute a Ruchy script
+- `ruchy` - Start interactive REPL (no args, Deno-style UX)
+- `ruchy <file>` - Execute a Ruchy script directly (interprets immediately)
+- `ruchy run <file>` - Execute a Ruchy script (alias for direct execution)
+- `ruchy -e "<code>"` - Evaluate code directly (e.g., `ruchy -e "println(1+1)"`)
+- `ruchy compile <file>` - Compile to standalone binary
 - `ruchy fmt <path>` - Format code (supports --check flag)
 
 ### WebAssembly

@@ -1,12 +1,12 @@
 // Example 2: Simple Math
-// Basic arithmetic operations and expressions
+// Demonstrates: Arithmetic operations, variables
+// Usage: ruchy examples/cli/02_simple_math.ruchy
 
-let a = 10
-let b = 20
-let sum = a + b
-let product = a * b
-let quotient = b / a
+let x = 10
+let y = 5
 
-println("Sum: {}", sum)
-println("Product: {}", product)
-println("Quotient: {}", quotient)
+println(f"Addition: {x} + {y} = {x + y}")
+println(f"Subtraction: {x} - {y} = {x - y}")
+println(f"Multiplication: {x} * {y} = {x * y}")
+println(f"Division: {x} / {y} = {x / y}")
+println(f"Modulo: {x} % {y} = {x % y}")
