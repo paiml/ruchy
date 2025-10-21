@@ -1777,7 +1777,7 @@ pub fn handle_serve_command(
 
     // Setup signal handling for graceful shutdown (Ctrl+C)
     #[cfg(unix)]
-    let (shutdown_tx, mut shutdown_rx) = std::sync::mpsc::channel::<()>();
+    let (shutdown_tx, shutdown_rx) = std::sync::mpsc::channel::<()>();
 
     #[cfg(unix)]
     {
@@ -1794,6 +1794,7 @@ pub fn handle_serve_command(
         });
     }
 
+    #[allow(unreachable_code)] // Watch mode and Unix signal handling both return early
     if watch {
         // Watch mode: Monitor file changes and restart server
         loop {
@@ -1947,6 +1948,7 @@ pub fn handle_serve_command(
         })?;
     }
 
+    #[allow(unreachable_code)]
     Ok(())
 }
 
