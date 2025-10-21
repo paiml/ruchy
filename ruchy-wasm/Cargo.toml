@@ -1,6 +1,6 @@
 [package]
 name = "ruchy-wasm"
-version = "3.107.0"
+version = "3.108.0"
 edition = "2021"
 authors = ["Noah Gift"]
 license = "MIT OR Apache-2.0"
@@ -13,12 +13,13 @@ categories = ["wasm", "compilers", "web-programming"]
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-ruchy = { path = "..", version = "3.107.0", default-features = false }
+ruchy = { path = "..", version = "3.108.0" }
 wasm-bindgen = "0.2"
 wasm-bindgen-futures = "0.4"
 js-sys = "0.3"
 console_error_panic_hook = "0.1"
 serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
 serde-wasm-bindgen = "0.6"
 
 [dev-dependencies]
