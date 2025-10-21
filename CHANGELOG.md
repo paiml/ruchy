@@ -4,6 +4,30 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+### ✅ PARSER-053 Complete - Hash Comment Support (2025-10-21)
+
+**100% Complete** (was 90%) - Unblocks 200+ ruchy-book examples
+
+- **[PARSER-053] Fix multi-line comments breaking method chains**
+  - Root Cause: Parser was skipping comments to peek ahead but then restoring position
+  - Fix: Consume comments (don't restore) so method chains work properly
+  - Tests: 10/10 passing (was 9/10)
+  - Example now works:
+    ```ruchy
+    let result = "hello world"
+        # Convert to uppercase
+        .to_uppercase()
+        # Get length
+        .len()
+    ```
+
+**Changes**:
+- `src/frontend/parser/mod.rs:try_handle_single_postfix()` - Removed position restore logic
+- `src/frontend/parser/functions.rs` - Added skip_comments() before method parsing
+- `src/frontend/parser/mod.rs:skip_comments()` - Added helper method to ParserState
+
+**Impact**: Fixes GitHub Issue #45 - Multi-line Code Blocks with Inline Comments
+
 ### 🧹 Technical Debt Cleanup (2025-10-21)
 
 **Complete technical debt cleanup - Phases A-G**
