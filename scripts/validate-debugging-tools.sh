@@ -1,0 +1,1 @@
+../ruchyruchy/scripts/validate-debugging-tools.sh
