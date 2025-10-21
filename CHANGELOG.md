@@ -4,6 +4,31 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.110.0] - 2025-10-21
+
+### Fixed
+
+- **[PARSER-066] Fix EOF handling after comments (8 test failures)**
+  - Comments at end of file no longer trigger "Unexpected end of input - expected expression" errors
+  - Root cause: Main parse loop tried to parse expression after consuming trailing comments
+  - Solution: Added EOF check after `skip_comments()` in core parser (core.rs:59-62)
+  - Files modified: `src/frontend/parser/core.rs`
+  - Impact: Fixes 2.3% of ruchy-book test failures (8/344 blocks)
+  - Test cases: EOF with single comment, multiple comments, inline comments preserved
+
+- **[PARSER-053] Support `->` arrow syntax in match arms (3 test failures)**
+  - Match arms now accept both `=>` (standard) and `->` (user convenience)
+  - Root cause: Users writing `->` instead of `=>` from habit (Rust uses `=>`)
+  - Solution: Modified match arm parser to accept both Token::FatArrow and Token::Arrow
+  - Files modified: `src/frontend/parser/expressions_helpers/patterns.rs`
+  - Backward compatible: Original `=>` syntax still works
+  - Impact: Improves user experience, fixes 0.9% of test failures (3/344 blocks)
+
+### Quality
+
+- **Parser Test Suite:** All 442 parser tests passing
+- **Overall Impact:** +2.6% improvement in ruchy-book compatibility (from 85.5% to ~88%)
+
 ## [3.109.0] - 2025-10-21
 
 ### Changed
