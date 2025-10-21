@@ -2,11 +2,11 @@
 # Extreme TDD + Toyota Way + Mutation Testing Enforcement
 
 metadata:
-  version: "3.23"
+  version: "3.24"
   last_updated: "2025-10-21"
-  current_sprint: "Book Compatibility Final Push - Achieve 100% (4 edge cases remaining)"
-  latest_release: "v3.106.0"
-  next_release: "v3.107.0 - TBD based on next sprint selection"
+  current_sprint: "Book Compatibility Push - 83.2% Achieved, Target ≥95% (64 failures remaining)"
+  latest_release: "v3.107.0"
+  next_release: "v3.108.0 - PARSER-054 + systematic parser bug fixes (PARSER-061, 062, 063)"
   github_issues:
     completed:
       - id: 45
@@ -125,8 +125,34 @@ metadata:
           - "⏮️  Time-travel: ✅ (3 steps, backward replay, <3s)"
           - "⚡ Performance: ✅ (100 mappings, <1s threshold)"
         time_actual: "2 hours (under 4-6h estimate)"
+
+      - id: "PARSER-054"
+        title: "Fix inline comments after semicolons"
+        priority: "HIGH"
+        status: "✅ COMPLETE (2025-10-21)"
+        started: "2025-10-21"
+        completed: "2025-10-21"
+        description: "Parser fails with 'Expected RightBrace, found Let' when inline comments follow semicolons"
+        root_cause: "consume_optional_semicolon() consumed semicolon but left comment tokens in stream"
+        solution: "Added comment skipping loop after semicolon consumption"
+        impact: "Book compatibility improved 79.6% → 83.2% (+14 blocks, +3.7%)"
+        files_modified:
+          - "src/frontend/parser/collections.rs (lines 191-210)"
+          - "tests/parser_054_inline_comments.rs (4 tests, all passing)"
+        validation:
+          - "✅ 4/4 unit tests passing"
+          - "✅ 382 book code blocks tested"
+          - "✅ 318/382 passing (83.2%)"
+          - "✅ 35 parse failures identified for next fixes"
+          - "✅ 29 execute failures (runtime errors, not parser bugs)"
+        next_priorities:
+          - "PARSER-061: Attribute syntax support (9 failures - highest impact)"
+          - "PARSER-062: Incomplete expressions/line continuations (8 failures)"
+          - "PARSER-063: Comments in nested blocks (3 failures - edge cases)"
+        time_actual: "3 hours (including comprehensive validation)"
+
   production_readiness:
-    overall: "93%"  # Increased from 88% due to corrected book compatibility
+    overall: "88%"  # Recalculated with comprehensive 382-block testing methodology
     breakdown:
       language_features: "100%"  # All 41 features working
       stdlib: "100%"  # 10 modules with 87% mutation coverage
@@ -134,7 +160,7 @@ metadata:
       testing: "100%"  # 3999/3999 tests passing (includes all unit + property + integration tests)
       wasm: "100%"  # 92/92 tests passing
       tooling: "95%"  # 15 native tools + 10 CLI examples + docs
-      book_compatibility: "97%"  # 130/134 examples passing (v3.82.0 - CORRECTED from 65%)
+      book_compatibility: "83.2%"  # 318/382 blocks passing (v3.107.0+PARSER-054 - comprehensive validation)
       ecosystem: "60%"  # Package management not yet implemented
       documentation: "75%"  # Examples + CLI docs complete
       deployment: "50%"  # No production deployment guide
