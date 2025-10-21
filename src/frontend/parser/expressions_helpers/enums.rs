@@ -90,7 +90,7 @@ fn parse_enum_variants(state: &mut ParserState) -> Result<Vec<EnumVariant>> {
         variants.push(parse_single_variant(state)?);
 
         // Skip any inline comments after variant definition
-        while matches!(state.tokens.peek(), Some((Token::LineComment(_), _)) | Some((Token::BlockComment(_), _)) | Some((Token::DocComment(_), _)) | Some((Token::HashComment(_), _))) {
+        while matches!(state.tokens.peek(), Some((Token::LineComment(_) | Token::BlockComment(_) | Token::DocComment(_) | Token::HashComment(_), _))) {
             state.tokens.advance();
         }
 
@@ -98,7 +98,7 @@ fn parse_enum_variants(state: &mut ParserState) -> Result<Vec<EnumVariant>> {
             state.tokens.advance();
 
             // Skip comments after comma
-            while matches!(state.tokens.peek(), Some((Token::LineComment(_), _)) | Some((Token::BlockComment(_), _)) | Some((Token::DocComment(_), _)) | Some((Token::HashComment(_), _))) {
+            while matches!(state.tokens.peek(), Some((Token::LineComment(_) | Token::BlockComment(_) | Token::DocComment(_) | Token::HashComment(_), _))) {
                 state.tokens.advance();
             }
         }

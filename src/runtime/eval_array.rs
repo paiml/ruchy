@@ -119,7 +119,7 @@ fn eval_array_get(arr: &Arc<[Value]>, index: &Value) -> Result<Value, Interprete
     }
 }
 
-/// Return the nth element of an array wrapped in Option::Some, or Option::None if out of bounds
+/// Return the nth element of an array wrapped in `Option::Some`, or `Option::None` if out of bounds
 ///
 /// # Complexity
 /// Cyclomatic complexity: 4 (well within <10 limit)
@@ -791,8 +791,7 @@ fn eval_array_concat(arr: &Arc<[Value]>, other: &Value) -> Result<Value, Interpr
             Ok(Value::Array(Arc::from(result)))
         }
         _ => Err(InterpreterError::TypeError(format!(
-            "concat() requires array argument, got {:?}",
-            other
+            "concat() requires array argument, got {other:?}"
         ))),
     }
 }
@@ -859,8 +858,7 @@ fn eval_array_union(arr: &Arc<[Value]>, other: &Value) -> Result<Value, Interpre
             Ok(Value::Array(Arc::from(result)))
         }
         _ => Err(InterpreterError::TypeError(format!(
-            "union() requires array argument, got {:?}",
-            other
+            "union() requires array argument, got {other:?}"
         ))),
     }
 }
@@ -893,8 +891,7 @@ fn eval_array_intersection(arr: &Arc<[Value]>, other: &Value) -> Result<Value, I
             Ok(Value::Array(Arc::from(result)))
         }
         _ => Err(InterpreterError::TypeError(format!(
-            "intersection() requires array argument, got {:?}",
-            other
+            "intersection() requires array argument, got {other:?}"
         ))),
     }
 }
@@ -928,8 +925,7 @@ fn eval_array_difference(arr: &Arc<[Value]>, other: &Value) -> Result<Value, Int
             Ok(Value::Array(Arc::from(result)))
         }
         _ => Err(InterpreterError::TypeError(format!(
-            "difference() requires array argument, got {:?}",
-            other
+            "difference() requires array argument, got {other:?}"
         ))),
     }
 }

@@ -102,7 +102,7 @@ pub fn benchmark_http(
         let client = client.clone();
         let url = url.to_string();
         let method = method.to_string();
-        let data = data.map(|s| s.to_string());
+        let data = data.map(ToString::to_string);
         let headers = headers.clone();
         let results = Arc::clone(&results);
         let successful = Arc::clone(&successful);

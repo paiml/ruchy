@@ -1784,9 +1784,9 @@ pub fn handle_serve_command(
         use signal_hook::consts::{SIGINT, SIGTERM};
         use signal_hook::iterator::Signals;
 
-        let shutdown_tx_clone = shutdown_tx.clone();
+        let shutdown_tx_clone = shutdown_tx;
         std::thread::spawn(move || {
-            let mut signals = Signals::new(&[SIGINT, SIGTERM]).expect("Failed to register signal handlers");
+            let mut signals = Signals::new([SIGINT, SIGTERM]).expect("Failed to register signal handlers");
             for _sig in signals.forever() {
                 let _ = shutdown_tx_clone.send(());
                 break;
@@ -1905,7 +1905,7 @@ pub fn handle_serve_command(
 
         #[cfg(unix)]
         {
-            let addr_clone = addr.clone();
+            let addr_clone = addr;
             let verbose_clone = verbose;
             let num_cpus_clone = num_cpus;
             let server_future = async move {

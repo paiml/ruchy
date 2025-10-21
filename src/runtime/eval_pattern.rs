@@ -93,7 +93,7 @@ fn match_tuple_variant_pattern(
     if let Value::EnumVariant { variant_name, data } = value {
         // Extract variant name from path (last element)
         // Path is like ["Result", "Ok"] -> we want "Ok"
-        let expected_variant = path.last().map(|s| s.as_str()).unwrap_or("");
+        let expected_variant = path.last().map_or("", std::string::String::as_str);
 
         // Check if variant names match
         if variant_name != expected_variant {

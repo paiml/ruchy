@@ -1350,7 +1350,7 @@ fn eval_fs_write(args: &[Value]) -> Result<Value, InterpreterError> {
 // ============================================================================
 
 /// Append content to file (creates if doesn't exist)
-/// Wraps std::fs::OpenOptions with append(true) and create(true)
+/// Wraps `std::fs::OpenOptions` with append(true) and create(true)
 ///
 /// # Complexity
 /// Cyclomatic complexity: 3 (within Toyota Way limits)
@@ -1447,7 +1447,7 @@ fn eval_fs_remove_dir(args: &[Value]) -> Result<Value, InterpreterError> {
 }
 
 /// Evaluate `walk()` builtin function (STDLIB-005)
-/// Recursively walks a directory and returns array of FileEntry objects
+/// Recursively walks a directory and returns array of `FileEntry` objects
 /// Complexity: 8 (within Toyota Way limit of 10)
 fn eval_walk(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("walk", args, 1)?;
@@ -1459,7 +1459,7 @@ fn eval_walk(args: &[Value]) -> Result<Value, InterpreterError> {
 
             let entries: Vec<Value> = WalkDir::new(path.as_ref())
                 .into_iter()
-                .filter_map(|e| e.ok())
+                .filter_map(std::result::Result::ok)
                 .map(|entry| {
                     let mut fields = HashMap::new();
 
@@ -1524,7 +1524,7 @@ fn eval_glob(args: &[Value]) -> Result<Value, InterpreterError> {
             match glob(pattern.as_ref()) {
                 Ok(paths) => {
                     let results: Vec<Value> = paths
-                        .filter_map(|entry| entry.ok())
+                        .filter_map(std::result::Result::ok)
                         .map(|path| Value::String(
                             path.display().to_string().into()
                         ))
@@ -1588,7 +1588,7 @@ fn eval_search(args: &[Value]) -> Result<Value, InterpreterError> {
             // Walk directory and search in files
             for entry in WalkDir::new(path.as_ref())
                 .into_iter()
-                .filter_map(|e| e.ok())
+                .filter_map(std::result::Result::ok)
                 .filter(|e| e.file_type().is_file())
             {
                 // Read file contents
@@ -1659,7 +1659,7 @@ fn eval_walk_with_options(args: &[Value]) -> Result<Value, InterpreterError> {
             // Collect results
             let mut results = Vec::new();
 
-            for entry in walker.into_iter().filter_map(|e| e.ok()) {
+            for entry in walker.into_iter().filter_map(std::result::Result::ok) {
                 let mut fields = HashMap::new();
 
                 // path field
@@ -1684,7 +1684,7 @@ fn eval_walk_with_options(args: &[Value]) -> Result<Value, InterpreterError> {
 
                 // size field (0 for directories)
                 let size = if file_type.is_file() {
-                    entry.metadata().ok().map(|m| m.len()).unwrap_or(0)
+                    entry.metadata().ok().map_or(0, |m| m.len())
                 } else {
                     0
                 };
@@ -2709,7 +2709,7 @@ fn eval_html_parse(args: &[Value]) -> Result<Value, InterpreterError> {
 // Wraps Rust stdlib methods for zero-cost abstraction
 // ============================================================================
 
-/// Convert any value to string (wraps Rust's Display/to_string)
+/// Convert any value to string (wraps Rust's `Display/to_string`)
 ///
 /// # Complexity
 /// Cyclomatic complexity: 2 (within Toyota Way limits)
@@ -2719,7 +2719,7 @@ fn eval_str(args: &[Value]) -> Result<Value, InterpreterError> {
         // String -> String: Return as-is (no quotes added)
         Value::String(s) => Ok(Value::String(s.clone())),
         // Other types: Use Display trait via format!
-        other => Ok(Value::from_string(format!("{}", other))),
+        other => Ok(Value::from_string(format!("{other}"))),
     }
 }
 
@@ -2737,10 +2737,10 @@ fn eval_int(args: &[Value]) -> Result<Value, InterpreterError> {
             s.parse::<i64>()
                 .map(Value::Integer)
                 .map_err(|_| InterpreterError::RuntimeError(
-                    format!("int() cannot parse string: '{}'", s)
+                    format!("int() cannot parse string: '{s}'")
                 ))
         }
-        Value::Bool(b) => Ok(Value::Integer(if *b { 1 } else { 0 })),
+        Value::Bool(b) => Ok(Value::Integer(i64::from(*b))),
         _ => Err(InterpreterError::RuntimeError(
             format!("int() does not support type: {}", args[0])
         )),
@@ -2761,7 +2761,7 @@ fn eval_float(args: &[Value]) -> Result<Value, InterpreterError> {
             s.parse::<f64>()
                 .map(Value::Float)
                 .map_err(|_| InterpreterError::RuntimeError(
-                    format!("float() cannot parse string: '{}'", s)
+                    format!("float() cannot parse string: '{s}'")
                 ))
         }
         Value::Bool(b) => Ok(Value::Float(if *b { 1.0 } else { 0.0 })),
