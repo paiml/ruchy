@@ -1,6 +1,7 @@
 [workspace]
 members = [
     ".",
+    "ruchy-wasm",
 ]
 exclude = ["fuzz"]
 resolver = "2"
