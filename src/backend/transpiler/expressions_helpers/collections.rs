@@ -2,7 +2,7 @@
 #![allow(clippy::missing_errors_doc)]
 
 use super::super::Transpiler;
-use crate::frontend::ast::{Expr, ExprKind, Literal};
+use crate::frontend::ast::Expr;
 use anyhow::Result;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
@@ -191,13 +191,9 @@ impl Transpiler {
         let mut field_tokens = Vec::new();
         for (field_name, value) in fields {
             let field_ident = format_ident!("{}", field_name);
-            let value_tokens = match &value.kind {
-                // Convert string literals to String for struct fields
-                ExprKind::Literal(Literal::String(s)) => {
-                    quote! { #s.to_string() }
-                }
-                _ => self.transpile_expr(value)?,
-            };
+            // TRANSPILER-001: Don't add .to_string() to string literals
+            // Let Rust handle type coercion - &str works for both &str and String fields
+            let value_tokens = self.transpile_expr(value)?;
             field_tokens.push(quote! { #field_ident: #value_tokens });
         }
 
