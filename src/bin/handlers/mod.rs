@@ -1836,6 +1836,34 @@ pub fn handle_serve_command(
                     #[cfg(not(target_arch = "wasm32"))]
                     {
                         use colored::Colorize;
+
+                        // WASM hot reload: compile .ruchy files to .wasm
+                        if watch_wasm {
+                            for file in &changed_files {
+                                if file.extension().and_then(|s| s.to_str()) == Some("ruchy") {
+                                    println!("  🦀 {}: {}",
+                                        "Compiling".cyan().bold(),
+                                        file.display()
+                                    );
+
+                                    match compile_ruchy_to_wasm(file, verbose) {
+                                        Ok(wasm_path) => {
+                                            println!("  ✅ {}: {}",
+                                                "Compiled".green(),
+                                                wasm_path.display()
+                                            );
+                                        }
+                                        Err(e) => {
+                                            println!("  ❌ {}: {}",
+                                                "Failed".red(),
+                                                e
+                                            );
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
                         if verbose {
                             for file in &changed_files {
                                 println!("  📝 {}: {}",
@@ -2308,6 +2336,33 @@ fn handle_optimization_and_deployment(
             );
         }
     }
+}
+
+/// Compile a single .ruchy file to WASM for hot reload
+///
+/// # Arguments
+/// * `file` - Path to .ruchy source file
+/// * `verbose` - Enable verbose logging
+///
+/// # Returns
+/// Path to generated .wasm file on success
+///
+/// # Errors
+/// Returns error if parsing or compilation fails
+fn compile_ruchy_to_wasm(file: &Path, verbose: bool) -> Result<PathBuf> {
+    // Parse the source file
+    let ast = parse_ruchy_source(file)?;
+
+    // Generate WASM bytes
+    let wasm_bytes = generate_and_validate_wasm(&ast, verbose)?;
+
+    // Determine output path (.ruchy -> .wasm)
+    let output_path = file.with_extension("wasm");
+
+    // Write WASM output
+    write_wasm_output(&wasm_bytes, &output_path, "wasm32", verbose)?;
+
+    Ok(output_path)
 }
 /// # Errors
 /// Returns error if compilation fails or WASM generation fails

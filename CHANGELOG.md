@@ -11,11 +11,11 @@ All notable changes to the Ruchy programming language will be documented in this
   - ✅ CHUNK 2: Integrate watch into serve command (--watch, --debounce, --pid-file, --watch-wasm flags)
   - ✅ CHUNK 3: Graceful shutdown with signal-hook (Ctrl+C handling, no more kill -9)
   - ✅ CHUNK 4: Integration tests (tests/http_watch_mode.rs - 5/5 basic tests passing, 4 ignored)
+  - ✅ CHUNK 5: WASM hot reload (--watch-wasm compiles .ruchy → .wasm on file changes)
   - ✅ World-class UX: Vite-style colored output, network IP detection (colored crate)
-  - ⏳ CHUNK 5: Add WASM hot reload watching (.ruchy → .wasm automatic rebuild)
   - ⏳ CHUNK 6: Comprehensive testing and documentation
   - Dependencies added: local-ip-address v0.6, signal-hook v0.3 (Unix only)
-  - Status: 4/6 chunks complete (67%)
+  - Status: 5/6 chunks complete (83%)
 
 ## [3.100.0] - 2025-10-21
 
