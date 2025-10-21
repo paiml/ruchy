@@ -2,11 +2,11 @@
 # Extreme TDD + Toyota Way + Mutation Testing Enforcement
 
 metadata:
-  version: "3.18"
+  version: "3.19"
   last_updated: "2025-10-21"
-  current_sprint: "✅ FEATURE-042 COMPLETE | Negative array/string/tuple indexing (GitHub #46)"
-  latest_release: "v3.105.0"
-  next_release: "v3.106.0 - PARSER-053 + STDLIB-007 + FEATURE-042 complete (GitHub #45, #46, #47)"
+  current_sprint: "🎯 PRIORITY: Issue #44 (WASM REPL println capture) or Issue #31 (fmt corruption)"
+  latest_release: "v3.106.0"
+  next_release: "v3.107.0 - Critical bug fixes (Issue #44 or #31)"
   github_issues:
     completed:
       - id: 45
@@ -33,15 +33,47 @@ metadata:
         priority: "MEDIUM"
         status: "✅ COMPLETE (2025-10-21)"
         solution: "Implemented Python/Ruby-style negative indexing for arrays, strings, and tuples"
-    critical: []
-    medium: []
+    critical:
+      - id: 44
+        url: "https://github.com/paiml/ruchy/issues/44"
+        title: "WASM REPL println output not captured"
+        impact: "Blocks interactive book launch at interactive.paiml.com"
+        priority: "P0 - CRITICAL"
+        status: "🔴 OPEN"
+        note: "Without this, interactive book is DOA (Dead On Arrival)"
+      - id: 31
+        url: "https://github.com/paiml/ruchy/issues/31"
+        title: "ruchy fmt corrupts files - writes AST instead of code"
+        impact: "Data loss - corrupts source files"
+        priority: "P0 - CRITICAL"
+        status: "🔴 OPEN"
+        note: "Makes formatter unusable, causes data loss"
+    medium:
+      - id: 38
+        url: "https://github.com/paiml/ruchy/issues/38"
+        title: "Variable collision in nested function calls with tuple unpacking"
+        impact: "Type corruption in edge cases"
+        priority: "MEDIUM"
+        status: "🟡 OPEN"
+      - id: 37
+        url: "https://github.com/paiml/ruchy/issues/37"
+        title: "ruchy test reports PASS even when assertions fail"
+        impact: "False positives in test results"
+        priority: "MEDIUM"
+        status: "🟡 OPEN"
+      - id: 35
+        url: "https://github.com/paiml/ruchy/issues/35"
+        title: "Type inference generates incorrect types"
+        impact: "Type system accuracy"
+        priority: "MEDIUM"
+        status: "🟡 OPEN"
   production_readiness:
     overall: "88%"
     breakdown:
       language_features: "100%"  # All 41 features working
       stdlib: "100%"  # 10 modules with 87% mutation coverage
       quality_gates: "100%"  # Complexity ≤10, mutation ≥75%
-      testing: "100%"  # 3985/3985 tests passing (includes all unit + property + integration tests)
+      testing: "100%"  # 3999/3999 tests passing (includes all unit + property + integration tests)
       wasm: "100%"  # 92/92 tests passing
       tooling: "95%"  # 15 native tools + 10 CLI examples + docs (↑5%)
       book_compatibility: "65%"  # 233/359 examples passing (+2.6% from parser fixes)
@@ -51,14 +83,16 @@ metadata:
   blockers_to_100:
     - "✅ COMPLETE: Box<T> and Vec<T> support (v3.96.0 - 2025-10-19)"
     - "✅ COMPLETE: World-class dev server (HTTP-002-A, v3.105.0 - 2025-10-21)"
-    - "✅ COMPLETE: Multi-line comment parsing (PARSER-053, GitHub #45 - 2025-10-21)"
-    - "✅ COMPLETE: Missing stdlib methods (STDLIB-007, GitHub #47 - 2025-10-21)"
-    - "✅ COMPLETE: Negative array indexing (FEATURE-042, GitHub #46 - 2025-10-21)"
-    - "🎉 All critical GitHub issues resolved!"
+    - "✅ COMPLETE: v3.106.0 Release - All critical GitHub issues resolved! (2025-10-21)"
+      - "✅ Multi-line comment parsing (PARSER-053, GitHub #45)"
+      - "✅ Missing stdlib methods (STDLIB-007, GitHub #47)"
+      - "✅ Negative array indexing (FEATURE-042, GitHub #46)"
+    - "🔴 CRITICAL: WASM REPL println capture (Issue #44) - blocks interactive book"
+    - "🔴 CRITICAL: ruchy fmt corruption (Issue #31) - causes data loss"
     - "Package management system (40-60h estimated)"
     - "Complete API documentation (20-30h estimated)"
     - "Production deployment guide (10-15h estimated)"
-  honest_assessment: "Feature-complete language (100%) with world-class dev server (v3.105.0), focusing on book compatibility improvements via parser fixes"
+  honest_assessment: "Feature-complete language (100%) with 3999/3999 tests passing. v3.106.0 resolved 3 critical issues. Focus: Issue #44 (WASM REPL) for interactive book launch, Issue #31 (fmt) for developer safety."
   note: "This YAML file is the SINGLE SOURCE OF TRUTH for roadmap status"
 
 # 🚨 MANDATORY QUALITY GATES FOR ALL STDLIB MODULES
