@@ -151,7 +151,7 @@ fn parse_let_pattern(state: &mut ParserState, is_mutable: bool) -> Result<Patter
             state.tokens.advance();
             Ok(Pattern::None)
         }
-        Some((Token::Identifier(_), _)) | Some((Token::Result, _)) | Some((Token::Var, _)) => {
+        Some((Token::Identifier(_) | Token::Result | Token::Var, _)) => {
             // Handle identifier or reserved keywords that can be used as identifiers
             let name = match state.tokens.peek() {
                 Some((Token::Identifier(n), _)) => n.clone(),

@@ -516,7 +516,7 @@ fn try_rustc_command(rustc_path: &str) -> Result<()> {
         }
         Err(e) => {
             // Command could not be executed (binary not found, permission denied, etc.)
-            bail!("Could not execute rustc at '{}': {}", rustc_path, e)
+            bail!("Could not execute rustc at '{rustc_path}': {e}")
         }
     }
 }

@@ -562,8 +562,7 @@ impl Transpiler {
                 fields.iter()
                     .flat_map(|field| {
                         field.pattern.as_ref()
-                            .map(|p| self.extract_pattern_bindings(p))
-                            .unwrap_or_else(|| vec![field.name.clone()])
+                            .map_or_else(|| vec![field.name.clone()], |p| self.extract_pattern_bindings(p))
                     })
                     .collect()
             }

@@ -178,7 +178,7 @@ impl BenchmarkResults {
 
         println!("\nPercentage of requests served within a certain time (ms)");
         for p in &[50, 66, 75, 80, 90, 95, 98, 99, 100] {
-            let time = self.percentile(*p as f64);
+            let time = self.percentile(f64::from(*p));
             println!("  {:3}%  {:6.0}", p, time.as_secs_f64() * 1000.0);
         }
     }

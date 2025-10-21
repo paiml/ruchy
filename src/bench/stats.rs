@@ -96,7 +96,7 @@ impl Statistics {
         }
 
         let mid = self.samples.len() / 2;
-        if self.samples.len() % 2 == 0 {
+        if self.samples.len().is_multiple_of(2) {
             // Even number of samples - average the two middle values
             let sum = self.samples[mid - 1] + self.samples[mid];
             sum / 2

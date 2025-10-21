@@ -65,7 +65,7 @@ pub fn benchmark_wasm(
     args: &[i32],
     iterations: usize,
 ) -> Result<BenchmarkResults, String> {
-    use wasmtime::*;
+    use wasmtime::{Engine, Instance, Module, Store, Val};
 
     // Load WASM module
     let engine = Engine::default();

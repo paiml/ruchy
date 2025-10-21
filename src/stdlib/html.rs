@@ -26,7 +26,7 @@ use std::sync::Arc;
 
 /// HTML document type for parsing and querying
 ///
-/// Wraps html5ever's RcDom for Ruchy-friendly API
+/// Wraps html5ever's `RcDom` for Ruchy-friendly API
 #[derive(Clone)]
 pub struct HtmlDocument {
     dom: Arc<RcDom>,
@@ -171,9 +171,8 @@ impl HtmlDocument {
                         return attrs_borrowed.iter().any(|attr| {
                             attr.name.local.as_ref() == attr_name && attr.value.as_ref() == attr_value
                         });
-                    } else {
-                        return attrs_borrowed.iter().any(|attr| attr.name.local.as_ref() == inner);
                     }
+                    return attrs_borrowed.iter().any(|attr| attr.name.local.as_ref() == inner);
                 }
 
                 // Descendant selector: "div p" - match last element only (simplified)

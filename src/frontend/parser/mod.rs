@@ -419,7 +419,7 @@ fn handle_dot_operator(state: &mut ParserState, left: Expr) -> Result<Expr> {
 
     functions::parse_method_call(state, left)
 }
-/// Handle :: operator for enum variant access (e.g., Status::Success)
+/// Handle :: operator for enum variant access (e.g., `Status::Success`)
 /// Complexity: 3
 fn handle_colon_colon_operator(state: &mut ParserState, left: Expr) -> Result<Expr> {
     state.tokens.advance(); // consume ::

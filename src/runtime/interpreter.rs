@@ -1862,9 +1862,9 @@ impl Interpreter {
 
         // Search from innermost to outermost scope for existing variable
         for env in self.env_stack.iter_mut().rev() {
-            if env.contains_key(&name) {
+            if let std::collections::hash_map::Entry::Occupied(mut e) = env.entry(name.clone()) {
                 // Found existing variable - mutate it in place
-                env.insert(name, value);
+                e.insert(value);
                 return;
             }
         }
@@ -3494,7 +3494,7 @@ impl Interpreter {
         eval_method::eval_generic_method(receiver, method, args_empty)
     }
 
-    /// Evaluate HtmlDocument methods (HTTP-002-C)
+    /// Evaluate `HtmlDocument` methods (HTTP-002-C)
     /// Complexity: 4 (within Toyota Way limits)
     #[cfg(not(target_arch = "wasm32"))]
     fn eval_html_document_method(
@@ -3537,7 +3537,7 @@ impl Interpreter {
                         let element = doc
                             .query_selector(selector.as_ref())
                             .map_err(|e| InterpreterError::RuntimeError(format!("query_selector() failed: {e}")))?;
-                        Ok(element.map(Value::HtmlElement).unwrap_or(Value::Nil))
+                        Ok(element.map_or(Value::Nil, Value::HtmlElement))
                     }
                     _ => Err(InterpreterError::RuntimeError(
                         "query_selector() expects a string selector".to_string(),
@@ -3573,7 +3573,7 @@ impl Interpreter {
         }
     }
 
-    /// Evaluate HtmlElement methods (HTTP-002-C)
+    /// Evaluate `HtmlElement` methods (HTTP-002-C)
     /// Complexity: 4 (within Toyota Way limits)
     #[cfg(not(target_arch = "wasm32"))]
     fn eval_html_element_method(
@@ -3600,7 +3600,7 @@ impl Interpreter {
                 match &arg_values[0] {
                     Value::String(attr_name) => {
                         let value = elem.attr(attr_name.as_ref());
-                        Ok(value.map(Value::from_string).unwrap_or(Value::Nil))
+                        Ok(value.map_or(Value::Nil, Value::from_string))
                     }
                     _ => Err(InterpreterError::RuntimeError(
                         "attr() expects a string attribute name".to_string(),
