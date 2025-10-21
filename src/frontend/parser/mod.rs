@@ -437,72 +437,51 @@ fn handle_dot_operator(state: &mut ParserState, left: Expr) -> Result<Expr> {
 }
 /// Handle :: operator for enum variant access (e.g., `Status::Success`)
 /// Complexity: 3
+/// PARSER-064: Extract identifier name from token (handles keywords used as identifiers)
+///
+/// In Rust and Ruchy, keywords can be used as method/function names in path expressions.
+/// Example: String::from() - where 'from' is a keyword but valid after ::
+fn token_as_identifier(token: &Token) -> Option<String> {
+    match token {
+        Token::Identifier(name) => Some(name.clone()),
+        // Keywords that can be used as identifiers (common in Rust stdlib)
+        Token::Ok => Some("Ok".to_string()),
+        Token::Err => Some("Err".to_string()),
+        Token::Some => Some("Some".to_string()),
+        Token::None => Some("None".to_string()),
+        Token::From => Some("from".to_string()),  // PARSER-064: Allow from (String::from)
+        Token::As => Some("as".to_string()),
+        Token::In => Some("in".to_string()),
+        Token::Type => Some("type".to_string()),
+        // Add more keywords as needed for Rust compatibility
+        _ => Option::None,
+    }
+}
+
 fn handle_colon_colon_operator(state: &mut ParserState, left: Expr) -> Result<Expr> {
     state.tokens.advance(); // consume ::
 
-    // Expect an identifier or keyword after :: (variant names can be keywords like Ok, Err)
+    // PARSER-064: Accept identifiers AND keywords after :: (keywords can be method names)
+    // Examples: String::from(), Result::Ok(), Option::Some()
     match state.tokens.peek() {
-        Some((Token::Identifier(field_name), span)) => {
-            let field = field_name.clone();
-            let field_span = *span;
-            state.tokens.advance();
-            Ok(Expr::new(
-                ExprKind::FieldAccess {
-                    object: Box::new(left),
-                    field,
-                },
-                field_span,
-            ))
+        Some((token, span)) => {
+            if let Some(field) = token_as_identifier(token) {
+                let field_span = *span;
+                state.tokens.advance();
+                Ok(Expr::new(
+                    ExprKind::FieldAccess {
+                        object: Box::new(left),
+                        field,
+                    },
+                    field_span,
+                ))
+            } else {
+                Err(anyhow::anyhow!(
+                    "Expected identifier or keyword usable as identifier after '::' but got {token:?}"
+                ))
+            }
         }
-        // Accept keywords as variant names (Ok, Err, Some, None are common enum variants)
-        Some((Token::Ok, span)) => {
-            let field_span = *span;
-            state.tokens.advance();
-            Ok(Expr::new(
-                ExprKind::FieldAccess {
-                    object: Box::new(left),
-                    field: "Ok".to_string(),
-                },
-                field_span,
-            ))
-        }
-        Some((Token::Err, span)) => {
-            let field_span = *span;
-            state.tokens.advance();
-            Ok(Expr::new(
-                ExprKind::FieldAccess {
-                    object: Box::new(left),
-                    field: "Err".to_string(),
-                },
-                field_span,
-            ))
-        }
-        Some((Token::Some, span)) => {
-            let field_span = *span;
-            state.tokens.advance();
-            Ok(Expr::new(
-                ExprKind::FieldAccess {
-                    object: Box::new(left),
-                    field: "Some".to_string(),
-                },
-                field_span,
-            ))
-        }
-        Some((Token::None, span)) => {
-            let field_span = *span;
-            state.tokens.advance();
-            Ok(Expr::new(
-                ExprKind::FieldAccess {
-                    object: Box::new(left),
-                    field: "None".to_string(),
-                },
-                field_span,
-            ))
-        }
-        Some((token, _)) => {
-            Err(anyhow::anyhow!("Expected identifier or variant name after '::' but got {token:?}"))
-        }
-        None => {
+        Option::None => {
             Err(anyhow::anyhow!("Expected identifier after '::' but reached end of input"))
         }
     }
