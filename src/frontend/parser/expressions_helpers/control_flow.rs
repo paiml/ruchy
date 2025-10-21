@@ -7,6 +7,25 @@ use crate::frontend::ast::{Expr, ExprKind, Span};
 use crate::frontend::lexer::Token;
 use crate::frontend::parser::{parse_expr_recursive, ParserState, Result};
 
+/// Skip any comment tokens in the stream
+///
+/// Comments should be transparent to parsing logic - they don't affect syntax.
+/// This helper ensures comment tokens don't interfere with terminator detection.
+fn skip_comments(state: &mut ParserState) {
+    while matches!(
+        state.tokens.peek(),
+        Some((
+            Token::LineComment(_)
+                | Token::BlockComment(_)
+                | Token::DocComment(_)
+                | Token::HashComment(_),
+            _
+        ))
+    ) {
+        state.tokens.advance();
+    }
+}
+
 /// Parse break token with optional label and value
 ///
 /// Syntax: `break`, `break 'label`, `break value`, `break 'label value`
@@ -32,6 +51,9 @@ pub(in crate::frontend::parser) fn parse_break_token(
     } else {
         None
     };
+
+    // Skip comments before checking for terminators (PARSER-062 fix)
+    skip_comments(state);
 
     // Parse optional break value: break <expr> or break 'label <expr>
     let value = if matches!(
@@ -73,6 +95,9 @@ pub(in crate::frontend::parser) fn parse_continue_token(
         None
     };
 
+    // Skip comments after continue statement (PARSER-062 fix)
+    skip_comments(state);
+
     Ok(Expr::new(ExprKind::Continue { label }, span))
 }
 
@@ -94,6 +119,9 @@ pub(in crate::frontend::parser) fn parse_return_token(
     span: Span,
 ) -> Result<Expr> {
     state.tokens.advance();
+
+    // Skip comments before checking for terminators (PARSER-062 fix)
+    skip_comments(state);
 
     // Check if there's an expression to return
     // Bare return is allowed when followed by: ;, }, or EOF

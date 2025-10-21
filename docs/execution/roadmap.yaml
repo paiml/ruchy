@@ -179,6 +179,30 @@ metadata:
           - "Need +37 blocks to reach 95% threshold (355/373)"
         time_actual: "2 hours (parser fix + book content corrections + comprehensive validation)"
 
+      - id: "PARSER-062"
+        title: "Fix comments after control flow statements (break/continue/return)"
+        priority: "HIGH"
+        status: "✅ COMPLETE (2025-10-21)"
+        started: "2025-10-21"
+        completed: "2025-10-21"
+        description: "Parser fails with 'Expected body after for iterator: Expected RightBrace, found If' when inline comments follow break/continue/return statements"
+        root_cause: "Comment tokens weren't skipped when checking for statement terminators in control flow parsing"
+        solution: "Added skip_comments() helper function and applied to break/continue/return parsing to make comments transparent"
+        impact: "Fixed critical parser bug affecting for loops with if statements and inline comments (blocks 78-79 now passing)"
+        files_modified:
+          - "src/frontend/parser/expressions_helpers/control_flow.rs (added skip_comments() and updated parse_break_token/parse_continue_token/parse_return_token)"
+          - "tests/parser_062_comments_after_control_flow.rs (5 tests, all passing)"
+        tdd_process:
+          - "RED: Created 5 tests, 4 failing, 1 passing (continue already worked)"
+          - "GREEN: Implemented skip_comments() helper and applied to all three functions"
+          - "REFACTOR: All 5 tests passing, clean implementation"
+        validation:
+          - "✅ 5/5 unit tests passing"
+          - "✅ Blocks 78-79 confirmed passing (previously critical failures)"
+          - "✅ Fix handles break, continue, and return with inline comments"
+          - "✅ Comments now transparent to parser terminator detection"
+        time_actual: "2 hours (investigation + TDD implementation + validation)"
+
   production_readiness:
     overall: "90%"  # Increased due to book compatibility improvement (85.3%)
     breakdown:

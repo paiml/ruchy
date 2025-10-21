@@ -4,6 +4,29 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+### ✅ PARSER-062 Complete - Comments After Control Flow Statements (2025-10-21)
+
+**Book Compatibility Improved** - Fixed parser handling of inline comments after break/continue/return
+
+- **[PARSER-062] Parser now skips comments after control flow statements**
+  - Comments after `break`, `continue`, and `return` no longer cause parse failures
+  - Fixes "Expected body after for iterator: Expected RightBrace, found If" errors
+  - Root cause: Comment tokens weren't skipped when checking for statement terminators
+  - Solution: Added `skip_comments()` helper to make comments transparent to parser
+  - Files modified:
+    - `src/frontend/parser/expressions_helpers/control_flow.rs` - Added skip_comments() and applied to break/continue/return parsing
+    - `tests/parser_062_comments_after_control_flow.rs` - 5 comprehensive tests (all passing)
+  - EXTREME TDD: RED (4 failures, 1 pass) → GREEN (5 passes) → REFACTOR
+  - Validated fix: Blocks 78-79 now passing, previously critical failures
+  - Example that now works:
+    ```ruchy
+    for n in numbers {
+      if n > 100 {
+        break  // Exit early ← This comment now parses correctly!
+      }
+    }
+    ```
+
 ### ✅ DEFECT-PARSER-006 Complete - Attributes in Block Bodies (2025-10-21)
 
 **85.3% Book Compatibility Achieved (+2.0% improvement)** - Fixed parser + corrected book content
