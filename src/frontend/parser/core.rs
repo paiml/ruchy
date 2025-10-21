@@ -53,6 +53,14 @@ impl<'a> Parser<'a> {
         let mut exprs = Vec::new();
         while self.state.tokens.peek().is_some() {
             let attributes = utils::parse_attributes(&mut self.state)?;
+
+            // PARSER-066: Skip trailing comments and check for EOF
+            // Comments at end of file should not trigger "expected expression" errors
+            self.state.skip_comments();
+            if self.state.tokens.peek().is_none() {
+                break;
+            }
+
             let mut expr = super::parse_expr_recursive(&mut self.state)?;
 
             // Extract derive attributes for classes, structs, and tuple structs

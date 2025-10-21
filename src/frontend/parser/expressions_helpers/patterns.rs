@@ -736,11 +736,12 @@ fn parse_single_match_arm(state: &mut ParserState) -> Result<MatchArm> {
     } else {
         None
     };
-    // Expect => token
-    state
-        .tokens
-        .expect(&Token::FatArrow)
-        .map_err(|_| anyhow::anyhow!("Expected '=>' in match arm"))?;
+    // PARSER-053: Support both => and -> in match arms for user convenience
+    // Accept either Token::FatArrow (=>) or Token::Arrow (->)
+    if !matches!(state.tokens.peek(), Some((Token::FatArrow | Token::Arrow, _))) {
+        bail!("Expected '=>' or '->' in match arm");
+    }
+    state.tokens.advance();
     // Parse result expression
     let body = Box::new(parse_expr_recursive(state)?);
     let end_span = body.span;
