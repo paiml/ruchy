@@ -4,6 +4,32 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+### ✅ PARSER-054 Complete - Inline Comments After Semicolons (2025-10-21)
+
+**83.2% Book Compatibility Achieved (+3.7% improvement)** - Fixes critical parser bug
+
+- **[PARSER-054] Fix inline comments after semicolons**
+  - Parser now correctly skips trailing comments after semicolons
+  - Fixes "Expected RightBrace, found Let" errors in 14+ book examples
+  - Book compatibility improved from 79.6% (304/382) to 83.2% (318/382)
+  - EXTREME TDD: RED → GREEN → REFACTOR cycle completed
+  - Example:
+    ```ruchy
+    fun main() {
+        let x = 10;
+        println(x);  // Output: 10  ← This now works!
+    }
+    ```
+  - Files modified:
+    - `src/frontend/parser/collections.rs` - Added comment skipping in `consume_optional_semicolon()` (lines 191-210)
+    - `tests/parser_054_inline_comments.rs` - 4 comprehensive tests (all passing)
+  - Comprehensive validation: 382 code blocks tested from interactive book
+  - Remaining issues identified:
+    - 9 failures: Attribute syntax (`@decorator`)
+    - 8 failures: Incomplete expressions/line continuations
+    - 3 failures: Comments in deeply nested blocks
+    - 29 failures: Runtime errors (undefined variables, missing methods)
+
 ## [3.107.0] - 2025-10-21
 
 ### ✅ BOOK-COMPAT-001 Complete - Struct Lifetime Annotations

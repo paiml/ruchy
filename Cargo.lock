@@ -4967,6 +4967,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "ruchy-wasm"
+version = "3.107.0"
+dependencies = [
+ "console_error_panic_hook",
+ "js-sys",
+ "ruchy",
+ "serde",
+ "serde-wasm-bindgen",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "wasm-bindgen-test",
+]
+
+[[package]]
 name = "rustc-demangle"
 version = "0.1.26"
 source = "registry+https://github.com/rust-lang/crates.io-index"

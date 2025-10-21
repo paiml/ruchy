@@ -188,10 +188,24 @@ fn create_block_result(exprs: Vec<Expr>, start_span: Span) -> Expr {
         Expr::new(ExprKind::Block(exprs), start_span)
     }
 }
-/// Consume optional semicolon (complexity: 2)
+/// Consume optional semicolon and skip trailing comments (complexity: 3)
+/// PARSER-054: Must skip comments after semicolons to avoid parse errors
 fn consume_optional_semicolon(state: &mut ParserState) {
     if matches!(state.tokens.peek(), Some((Token::Semicolon, _))) {
         state.tokens.advance();
+        // Skip any trailing comments after the semicolon
+        while matches!(
+            state.tokens.peek(),
+            Some((
+                Token::LineComment(_)
+                    | Token::BlockComment(_)
+                    | Token::DocComment(_)
+                    | Token::HashComment(_),
+                _
+            ))
+        ) {
+            state.tokens.advance();
+        }
     }
 }
 /// Information about a let binding (complexity: 1)
