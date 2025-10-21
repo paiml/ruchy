@@ -4,6 +4,19 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+### 🔄 In Progress - HTTP-002-A (World-Class Dev Server)
+- **[HTTP-002-A] PID File Management + Watch Mode + Graceful Shutdown**
+  - Target version: v3.105.0
+  - ✅ CHUNK 1: FileWatcher implementation with debouncing (src/server/watcher.rs)
+  - ✅ CHUNK 2: Integrate watch into serve command (--watch, --debounce, --pid-file, --watch-wasm flags)
+  - ✅ CHUNK 3: Graceful shutdown with signal-hook (Ctrl+C handling, no more kill -9)
+  - ✅ World-class UX: Vite-style colored output, network IP detection (colored crate)
+  - ⏳ CHUNK 4: Test watch mode functionality
+  - ⏳ CHUNK 5: Add WASM hot reload watching (.ruchy → .wasm automatic rebuild)
+  - ⏳ CHUNK 6: Comprehensive testing and documentation
+  - Dependencies added: local-ip-address v0.6, signal-hook v0.3 (Unix only)
+  - Status: 3/6 chunks complete (50%)
+
 ## [3.100.0] - 2025-10-21
 
 ### 🎉 CLI Unification Complete (CLI-UNIFY Sprint)

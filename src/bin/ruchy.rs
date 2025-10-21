@@ -192,6 +192,18 @@ enum Commands {
         /// Show verbose logging
         #[arg(long)]
         verbose: bool,
+        /// Watch files and auto-restart on changes
+        #[arg(long)]
+        watch: bool,
+        /// Debounce delay in milliseconds (default: 300)
+        #[arg(long, default_value = "300")]
+        debounce: u64,
+        /// PID file for process management
+        #[arg(long)]
+        pid_file: Option<PathBuf>,
+        /// Watch .ruchy files and rebuild WASM
+        #[arg(long)]
+        watch_wasm: bool,
     },
     /// Generate coverage report for Ruchy code
     Coverage {

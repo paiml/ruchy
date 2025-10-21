@@ -166,23 +166,6 @@ RIGHT:
 - **Genchi Genbutsu**: Go see if feature is truly missing (don't assume!)
 - **Kaizen**: Each missing feature is an opportunity to improve the language
 - **No Shortcuts**: Implement properly with TDD, don't work around
-   - Unit tests for specific bug scenario
-   - Integration tests for complete programs
-   - Property tests with random inputs (10,000+ iterations)
-   - Mutation tests (≥75% mutation coverage via cargo-mutants)
-   - Fuzz tests for edge cases
-   - Doctests in every public function
-   - `cargo run --examples` MUST pass 100%
-5. **REGRESSION PREVENTION**: Add failing test BEFORE fixing bug (TDD mandatory)
-6. **PMAT QUALITY GATES**: ALL fixes MUST pass:
-   - `pmat tdg <file> --min-grade A-` (≥85 points)
-   - `pmat analyze complexity --max-cyclomatic 10 --max-cognitive 10`
-   - `pmat analyze satd --fail-on-violation` (zero SATD)
-7. **MUTATION VALIDATION**: Run mutation tests on fixed code:
-   - `cargo mutants --file <fixed-file.rs> --timeout 300`
-   - Target: ≥75% mutation coverage (CAUGHT/(CAUGHT+MISSED) ≥ 75%)
-   - If <75%: Add more property tests and re-run
-8. **COMPREHENSIVE VALIDATION**: Test all related features after fix
 
 ### Test Coverage Requirements (MANDATORY):
 - **Parser Tests**: Every token, every grammar rule, every edge case
@@ -244,29 +227,19 @@ grep "MISSED" core_mutations.txt
 
 ### Evidence-Based Development Rules:
 1. **NO ASSUMPTIONS**: Every claim must be backed by concrete evidence
-2. **MEASURE EVERYTHING**: Use tests, benchmarks, and metrics to validate behavior  
+2. **MEASURE EVERYTHING**: Use tests, benchmarks, and metrics to validate behavior
 3. **REPRODUCE ISSUES**: Create minimal test cases that demonstrate problems
 4. **QUANTIFY IMPROVEMENTS**: Before/after metrics prove effectiveness
 5. **DOCUMENT EVIDENCE**: All findings must be recorded with reproducible steps
 
 ### Investigation Protocol:
 1. **Hypothesis**: State what you believe is happening
-2. **Test**: Create specific tests that prove/disprove the hypothesis  
+2. **Test**: Create specific tests that prove/disprove the hypothesis
 3. **Measure**: Collect concrete data (test results, timings, coverage)
 4. **Analyze**: Draw conclusions only from the evidence
 5. **Document**: Record findings and next steps
 
-## QDD (Quality-Driven Development)
-
-**Metrics**: Complexity ≤10, Coverage ≥80%, SATD=0, TDG A- minimum
-
-**Setup**: `pmat quality-gates init; pmat hooks install`
-**During**: `pmat tdg dashboard --port 8080 &`
-**Commit**: Auto-validated via pre-commit hooks
-
-
-
-### Mandatory Testing Requirements (80% Property Test Coverage)
+## Mandatory Testing Requirements (80% Property Test Coverage)
 
 **CRITICAL**: Following paiml-mcp-agent-toolkit Sprint 88 success pattern:
 
@@ -308,19 +281,25 @@ mod property_tests {
 - **Pattern Test Results**: 2 passing → 4 passing (100% improvement achieved)
 - **Enforcement**: Automated coverage checking with clear error messages
 
-## PMAT Quality Gates (v2.70+)
+## PMAT Quality Gates & Enforcement (v2.70+)
+
+**Standards**: A- (≥85), Complexity ≤10, SATD=0, Duplication <10%, Docs >70%, Coverage ≥80%
 
 **Setup**: `pmat quality-gates init; pmat hooks install`
-**Gates**: TDG A-, Complexity ≤10, SATD=0, Coverage ≥80%, Build clean
-**Health**: `pmat maintain health` (~10s)
+**Daily Workflow**:
+- **Before Work**: `pmat tdg . --top-files 10; pmat tdg dashboard --port 8080 --open &`
+- **During**: Monitor dashboard, check files: `pmat tdg <file> --include-components`
+- **Before Commit**: `pmat tdg . --min-grade A- --fail-on-violation` (BLOCKING)
+**Health Check**: `pmat maintain health` (~10s)
 
-## PMAT TDG Quality Enforcement
-
-**Standards**: A- (≥85), Complexity ≤10, SATD=0, Duplication <10%, Docs >70%
-
-**Before**: `pmat tdg . --min-grade A- --fail-on-violation`
-**During**: `pmat tdg <file> --include-components`
-**Commit**: Blocked by pre-commit hooks if <A-
+**Key Rules**:
+- **PMAT FIRST**: Run quality gates before ANY task
+- **NO BYPASS**: Never `--no-verify`, fix root cause via Five Whys
+- **TDD MANDATORY**: Write test first, prove fix works
+- Use cargo-llvm-cov (not tarpaulin)
+- All bugs solved with TDD, never manual hacks
+- Mix: unit/doctests/property-tests/fuzz tests
+- Check ../ruchy-book and ../rosetta-ruchy at sprint start
 
 ## Toyota Way Success Stories
 
@@ -1011,23 +990,6 @@ find . -type f -size +100M -not -path "./target/*" -not -path "./.git/*"
 ---
 
 **Remember**: Compiler engineering is about systematic transformation, not clever hacks. Every abstraction must have zero runtime cost. Every error must be actionable. Every line of code must justify its complexity budget.
-
-
-## PMAT v2.68.0+ Advanced Features
-
-### Daily Workflow
-**Before Work**: `pmat tdg . --top-files 10; pmat tdg dashboard --port 8080 --open &`
-**During**: Monitor dashboard, check files: `pmat tdg <file> --include-components`
-**Before Commit**: `pmat tdg . --min-grade A- --fail-on-violation`
-
-### Key Rules
-- **PMAT FIRST**: Run quality gates before ANY task
-- **NO BYPASS**: Never `--no-verify`, fix root cause via Five Whys
-- **TDD MANDATORY**: Write test first, prove fix works
-- Use cargo-llvm-cov (not tarpaulin)
-- All bugs solved with TDD, never manual hacks
-- Mix: unit/doctests/property-tests/fuzz tests
-- Check ../ruchy-book and ../rosetta-ruchy at sprint start
 
 ## Documentation Standards
 
