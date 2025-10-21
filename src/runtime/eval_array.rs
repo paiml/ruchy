@@ -44,6 +44,7 @@ where
 
         // STDLIB-005: Array concatenation and flattening
         "concat" if args.len() == 1 => eval_array_concat(arr, &args[0]),
+        "append" if args.len() == 1 => eval_array_concat(arr, &args[0]), // STDLIB-007: alias for concat (GitHub #47)
         "flatten" if args.is_empty() => eval_array_flatten(arr),
 
         // STDLIB-007: Set operations (arrays as sets)
@@ -426,6 +427,52 @@ mod tests {
         ]);
         let result = eval_array_get(&arr, &Value::Integer(1)).unwrap();
         assert_eq!(result, Value::Integer(2));
+    }
+
+    // STDLIB-007 (GitHub Issue #47): array.append() tests
+    #[test]
+    fn test_array_append_basic() {
+        let arr = Arc::from(vec![Value::Integer(1), Value::Integer(2)]);
+        let other = Value::Array(Arc::from(vec![Value::Integer(3), Value::Integer(4)]));
+
+        let dummy_eval = |_: &Value, _: &[Value]| Ok(Value::Nil);
+        let result = eval_array_method(&arr, "append", &[other], dummy_eval).unwrap();
+
+        if let Value::Array(result_arr) = result {
+            assert_eq!(result_arr.len(), 4);
+            assert_eq!(result_arr[0], Value::Integer(1));
+            assert_eq!(result_arr[1], Value::Integer(2));
+            assert_eq!(result_arr[2], Value::Integer(3));
+            assert_eq!(result_arr[3], Value::Integer(4));
+        } else {
+            panic!("Expected array result from append");
+        }
+    }
+
+    #[test]
+    fn test_array_append_empty_arrays() {
+        let arr = Arc::from(vec![Value::Integer(1)]);
+        let other = Value::Array(Arc::from(vec![]));
+
+        let dummy_eval = |_: &Value, _: &[Value]| Ok(Value::Nil);
+        let result = eval_array_method(&arr, "append", &[other], dummy_eval).unwrap();
+
+        if let Value::Array(result_arr) = result {
+            assert_eq!(result_arr.len(), 1);
+            assert_eq!(result_arr[0], Value::Integer(1));
+        } else {
+            panic!("Expected array result from append");
+        }
+    }
+
+    #[test]
+    fn test_array_append_wrong_arg_type() {
+        let arr = Arc::from(vec![Value::Integer(1)]);
+        let dummy_eval = |_: &Value, _: &[Value]| Ok(Value::Nil);
+
+        // append() with non-array argument should fail
+        let result = eval_array_method(&arr, "append", &[Value::Integer(42)], dummy_eval);
+        assert!(result.is_err(), "append() should reject non-array arguments");
     }
 
     #[test]

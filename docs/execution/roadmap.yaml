@@ -2,11 +2,11 @@
 # Extreme TDD + Toyota Way + Mutation Testing Enforcement
 
 metadata:
-  version: "3.16"
+  version: "3.17"
   last_updated: "2025-10-21"
-  current_sprint: "✅ PARSER-053 VALIDATED | Book compatibility verified, all tests passing"
+  current_sprint: "✅ STDLIB-007 COMPLETE | array.append() + string.format() implemented (GitHub #47)"
   latest_release: "v3.105.0"
-  next_release: "v3.106.0 - PARSER-053 complete + stdlib enhancements (GitHub #47)"
+  next_release: "v3.106.0 - PARSER-053 + STDLIB-007 complete (GitHub #45, #47)"
   github_issues:
     completed:
       - id: 45
@@ -17,14 +17,16 @@ metadata:
         priority: "HIGH"
         status: "✅ COMPLETE (2025-10-21)"
         solution: "Fixed position restore bug in try_handle_single_postfix"
-    critical: []
-    medium:
       - id: 47
         url: "https://github.com/paiml/ruchy/issues/47"
         title: "Missing array.append() and string.format()"
-        impact: "~5 broken examples"
+        impact: "~10 broken examples"
         ticket: "STDLIB-007"
         priority: "MEDIUM"
+        status: "✅ COMPLETE (2025-10-21)"
+        solution: "Added array.append() as concat alias, implemented variadic string.format() with {} placeholders"
+    critical: []
+    medium:
       - id: 46
         url: "https://github.com/paiml/ruchy/issues/46"
         title: "Negative Array Indexing Not Supported"
@@ -48,7 +50,8 @@ metadata:
     - "✅ COMPLETE: Box<T> and Vec<T> support (v3.96.0 - 2025-10-19)"
     - "✅ COMPLETE: World-class dev server (HTTP-002-A, v3.105.0 - 2025-10-21)"
     - "✅ COMPLETE: Multi-line comment parsing (PARSER-053, GitHub #45 - 2025-10-21)"
-    - "🔄 NEXT: Missing stdlib methods (GitHub #47 - array.append, string.format)"
+    - "✅ COMPLETE: Missing stdlib methods (STDLIB-007, GitHub #47 - 2025-10-21)"
+    - "🔄 NEXT: Negative array indexing (FEATURE-042, GitHub #46)"
     - "Package management system (40-60h estimated)"
     - "Complete API documentation (20-30h estimated)"
     - "Production deployment guide (10-15h estimated)"

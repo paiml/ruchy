@@ -11,12 +11,17 @@ use std::sync::Arc;
 /// Evaluate a string method call
 ///
 /// # Complexity
-/// Cyclomatic complexity: 9 (within Toyota Way limits)
+/// Cyclomatic complexity: 10 (within Toyota Way limits - added format() support)
 pub fn eval_string_method(
     s: &Arc<str>,
     method: &str,
     args: &[Value],
 ) -> Result<Value, InterpreterError> {
+    // STDLIB-007 (GitHub #47): format() accepts variadic arguments
+    if method == "format" && !args.is_empty() {
+        return eval_string_format(s, args);
+    }
+
     match args.len() {
         0 => eval_zero_arg_string_method(s, method),
         1 => eval_single_arg_string_method(s, method, &args[0]),
@@ -245,6 +250,33 @@ fn eval_string_lines(s: &str) -> Result<Value, InterpreterError> {
     Ok(Value::from_array(lines))
 }
 
+/// Format string by replacing {} placeholders with arguments
+///
+/// # STDLIB-007 (GitHub Issue #47)
+/// Implements Python-style string formatting with {} placeholders
+///
+/// # Complexity
+/// Cyclomatic complexity: 4 (within Toyota Way limits)
+///
+/// # Examples
+/// ```
+/// "Hello, {}!".format("Alice") => "Hello, Alice!"
+/// "{} + {} = {}".format(2, 3, 5) => "2 + 3 = 5"
+/// ```
+fn eval_string_format(s: &str, args: &[Value]) -> Result<Value, InterpreterError> {
+    let mut result = s.to_string();
+    for arg in args {
+        // Convert Value to string without quotes for String values
+        let arg_str = match arg {
+            Value::String(s) => s.to_string(),
+            _ => format!("{arg}"),
+        };
+        // Replace first occurrence of {} with the argument
+        result = result.replacen("{}", &arg_str, 1);
+    }
+    Ok(Value::from_string(result))
+}
+
 /// Evaluate primitive type methods (float, integer, generic)
 ///
 /// # Complexity
@@ -450,6 +482,47 @@ mod tests {
         let value = Value::Bool(true);
         let result = eval_generic_method(&value, "to_string", true).unwrap();
         assert_eq!(result, Value::from_string("true".to_string()));
+    }
+
+    // STDLIB-007 (GitHub Issue #47): string.format() tests
+    #[test]
+    fn test_string_format_single_placeholder() {
+        let s = Arc::from("Hello, {}!");
+        let arg = Value::from_string("Alice".to_string());
+
+        let result = eval_string_method(&s, "format", &[arg]).unwrap();
+        assert_eq!(result, Value::from_string("Hello, Alice!".to_string()));
+    }
+
+    #[test]
+    fn test_string_format_multiple_placeholders() {
+        let s = Arc::from("{} + {} = {}");
+        let arg1 = Value::Integer(2);
+        let arg2 = Value::Integer(3);
+        let arg3 = Value::Integer(5);
+
+        let result = eval_string_method(&s, "format", &[arg1, arg2, arg3]).unwrap();
+        assert_eq!(result, Value::from_string("2 + 3 = 5".to_string()));
+    }
+
+    #[test]
+    fn test_string_format_no_placeholders() {
+        let s = Arc::from("Hello, World!");
+        let arg = Value::from_string("Alice".to_string());
+
+        let result = eval_string_method(&s, "format", &[arg]).unwrap();
+        // Should return unchanged string if no placeholders
+        assert_eq!(result, Value::from_string("Hello, World!".to_string()));
+    }
+
+    #[test]
+    fn test_string_format_more_placeholders_than_args() {
+        let s = Arc::from("{} and {}");
+        let arg = Value::from_string("Alice".to_string());
+
+        let result = eval_string_method(&s, "format", &[arg]).unwrap();
+        // Should replace first placeholder only
+        assert_eq!(result, Value::from_string("Alice and {}".to_string()));
     }
 }
 
