@@ -1,7 +1,7 @@
 //! WebAssembly REPL implementation for browser-based evaluation
 //!
 //! Provides interactive Ruchy evaluation in the browser with progressive enhancement.
-use crate::runtime::Interpreter;
+use crate::runtime::{Interpreter, Value};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 #[cfg(target_arch = "wasm32")]
@@ -113,7 +113,7 @@ impl WasmRepl {
 
         // Evaluate the expression
         let result = match interpreter.eval_expr(&ast) {
-            Ok(value) => format!("{value}"),
+            Ok(value) => Self::format_value_for_display(&value),
             Err(e) => {
                 return Ok(serde_json::to_string(&ReplOutput {
                     success: false,
@@ -150,6 +150,19 @@ impl WasmRepl {
         })
         .unwrap_or_else(|_| "Error serializing output".to_string()))
     }
+    /// Format a Value for display in REPL output
+    /// Strings are displayed without quotes for user-friendly output
+    ///
+    /// # Complexity
+    /// Cyclomatic complexity: 3 (within Toyota Way ≤10)
+    fn format_value_for_display(value: &Value) -> String {
+        match value {
+            Value::String(s) => s.to_string(),
+            Value::Nil => "nil".to_string(),
+            _ => format!("{value}"),
+        }
+    }
+
     /// Get command history
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
     /// # Examples
