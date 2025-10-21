@@ -218,6 +218,33 @@ See `tests/dataframe_*_properties.rs` for comprehensive test examples.
 - `ruchy wasm validate <module>` - Validate WASM module
 - `ruchy wasm run <module>` - Execute WASM module
 
+**WASM Distribution** (v3.99.2+):
+Ruchy provides pre-built WASM binaries for browser and edge deployment:
+
+```bash
+# Build WASM package (for maintainers)
+wasm-pack build --target web --no-default-features --features wasm-compile
+
+# WASM artifacts available at:
+# - pkg/ruchy_bg.wasm (~3.1MB optimized)
+# - pkg/ruchy.js (JavaScript bindings)
+# - pkg/ruchy_bg.wasm.d.ts (TypeScript definitions)
+```
+
+**Browser Usage**:
+```html
+<script type="module">
+  import init, { WasmRepl } from './ruchy.js';
+
+  await init();
+  const repl = new WasmRepl();
+  const result = repl.eval('1 + 2');
+  console.log(result); // "3"
+</script>
+```
+
+**Note**: WASM builds exclude HTTP and file I/O operations (not available in browser sandbox).
+
 ### Notebook
 - `ruchy notebook` - Start interactive notebook server on http://localhost:8080
 - `ruchy notebook test <file>` - Test notebook with coverage

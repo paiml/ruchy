@@ -2,6 +2,38 @@
 
 All notable changes to the Ruchy programming language will be documented in this file.
 
+## [Unreleased]
+
+### Added - WASM Distribution
+- **[WASM] WebAssembly compilation support for wasm32-unknown-unknown target**
+  - Pre-built WASM binaries available in `pkg/` directory after release
+  - Browser-compatible REPL with fixed string evaluation (no quotes in output)
+  - JavaScript bindings via wasm-pack for easy integration
+  - TypeScript definitions for type-safe browser usage
+  - Files: ruchy_bg.wasm (~3.1MB), ruchy.js, ruchy_bg.wasm.d.ts
+
+### Fixed - WASM Compilation
+- **[WASM] Fixed compilation errors for wasm32 target**
+  - Gated HTTP operations behind `#[cfg(not(target_arch = "wasm32"))]`
+  - Gated file I/O benchmarking modules (not available in browser)
+  - Fixed 3 unreachable code warnings in CLI module
+  - Disabled wasm-opt (parse errors on large binaries)
+  - Files: src/bench/http.rs, src/bench/wasm.rs, src/cli/mod.rs, src/runtime/builtins.rs, src/runtime/eval_builtin.rs, Cargo.toml
+
+### Added - Deployment Automation
+- **[RELEASE] WASM build integrated into release process**
+  - `make wasm-build`: Build WASM package with wasm-pack
+  - `make wasm-deploy`: Build and deploy to interactive.paiml.com
+  - `make crate-release`: Now builds both crates.io + WASM artifacts
+  - `./scripts/deploy-wasm.sh`: Automated WASM deployment script
+
+### Documentation
+- **[DOCS] Comprehensive WASM usage documentation**
+  - Added browser usage examples to README.md
+  - Documented WASM build process and artifacts
+  - Added deployment targets to Makefile help
+  - Note: WASM builds exclude HTTP and file I/O (browser sandbox restrictions)
+
 ## [3.99.2] - 2025-10-20
 
 ### Fixed - ISSUE #40 REGRESSION (String Iteration)
