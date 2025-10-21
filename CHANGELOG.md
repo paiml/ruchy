@@ -4,6 +4,18 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.109.0] - 2025-10-21
+
+### Changed
+
+- **[DEPENDENCY-CLEANUP] Remove unused CSS parser dependencies**
+  - Removed `selectors` v0.25.0 (unused, confirmed via grep)
+  - Removed `cssparser` v0.33.0 (unused, confirmed via grep)
+  - HTML parsing dependencies (html5ever, markup5ever) retained - actively used in stdlib
+  - Benefits: Cleaner dependency tree, faster compilation, better clarity
+  - Zero functionality impact: All 3,999 tests passing
+  - Binary size unchanged (19.2 MiB) - Rust linker already dead-code eliminated unused deps
+
 ## [3.108.0] - 2025-10-21
 
 ### ✅ PARSER-063 Complete - Comments in Block Expressions (2025-10-21)
