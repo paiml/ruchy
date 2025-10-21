@@ -4,6 +4,37 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+### ✅ FEATURE-042 Complete - Negative Array Indexing (2025-10-21)
+
+**100% Complete** - Resolves GitHub Issue #46
+
+- **[FEATURE-042] Implement Python/Ruby-style negative indexing**
+  - Arrays: `arr[-1]` returns last element, `arr[-2]` returns second-to-last, etc.
+  - Strings: `str[-1]` returns last character
+  - Tuples: `tuple[-1]` returns last element
+  - Tests: 7 comprehensive unit tests (arrays, strings, tuples, bounds checking)
+  - Examples:
+    ```ruchy
+    let fruits = ["apple", "banana", "cherry"]
+    fruits[-1]  // => "cherry" (last element)
+    fruits[-2]  // => "banana" (second-to-last)
+    fruits[-3]  // => "apple" (first element)
+
+    let word = "hello"
+    word[-1]    // => "o" (last character)
+
+    let point = (10, 20, 30)
+    point[-1]   // => 30 (last element)
+    ```
+
+**Changes**:
+- `src/runtime/interpreter.rs:index_array()` - Added negative indexing support (lines 1365-1386)
+- `src/runtime/interpreter.rs:index_string()` - Added negative indexing support (lines 1388-1409)
+- `src/runtime/interpreter.rs:index_tuple()` - Added negative indexing support (lines 1411-1431)
+- `src/runtime/interpreter.rs` - Added 7 comprehensive tests (lines 6575-6671)
+
+**Impact**: Fixes GitHub Issue #46 - Documented feature now works as expected (~5 book examples unblocked)
+
 ### ✅ STDLIB-007 Complete - Missing Array and String Methods (2025-10-21)
 
 **100% Complete** - Resolves GitHub Issue #47

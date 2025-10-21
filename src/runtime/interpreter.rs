@@ -1362,44 +1362,72 @@ impl Interpreter {
         }
     }
 
-    /// Index into an array (complexity: 2)
+    /// Index into an array (complexity: 5 - added negative indexing support)
+    /// FEATURE-042 (GitHub Issue #46): Support Python/Ruby-style negative indexing
     fn index_array(array: &[Value], idx: i64) -> Result<Value, InterpreterError> {
-        let index = idx as usize;
-        if index < array.len() {
-            Ok(array[index].clone())
+        let len = array.len() as i64;
+        let actual_index = if idx < 0 {
+            // Negative index: count from the end
+            // -1 => len-1 (last), -2 => len-2 (second-to-last), etc.
+            len + idx
         } else {
-            Err(InterpreterError::RuntimeError(format!(
-                "Index {index} out of bounds for array of length {}",
-                array.len()
-            )))
+            idx
+        };
+
+        // Check bounds (actual_index must be in range [0, len))
+        if actual_index < 0 || actual_index >= len {
+            return Err(InterpreterError::RuntimeError(format!(
+                "Index {idx} out of bounds for array of length {len}"
+            )));
         }
+
+        #[allow(clippy::cast_sign_loss)] // Safe: we've verified actual_index >= 0
+        Ok(array[actual_index as usize].clone())
     }
 
-    /// Index into a string (complexity: 2)
+    /// Index into a string (complexity: 5 - added negative indexing support)
+    /// FEATURE-042 (GitHub Issue #46): Support Python/Ruby-style negative indexing
     fn index_string(s: &str, idx: i64) -> Result<Value, InterpreterError> {
-        let index = idx as usize;
         let chars: Vec<char> = s.chars().collect();
-        if index < chars.len() {
-            Ok(Value::from_string(chars[index].to_string()))
+        let len = chars.len() as i64;
+        let actual_index = if idx < 0 {
+            // Negative index: count from the end
+            len + idx
         } else {
-            Err(InterpreterError::RuntimeError(format!(
-                "Index {index} out of bounds for string of length {}",
-                chars.len()
-            )))
+            idx
+        };
+
+        // Check bounds
+        if actual_index < 0 || actual_index >= len {
+            return Err(InterpreterError::RuntimeError(format!(
+                "Index {idx} out of bounds for string of length {len}"
+            )));
         }
+
+        #[allow(clippy::cast_sign_loss)] // Safe: we've verified actual_index >= 0
+        Ok(Value::from_string(chars[actual_index as usize].to_string()))
     }
 
-    /// Index into a tuple (complexity: 2)
+    /// Index into a tuple (complexity: 5 - added negative indexing support)
+    /// FEATURE-042 (GitHub Issue #46): Support Python/Ruby-style negative indexing
     fn index_tuple(tuple: &[Value], idx: i64) -> Result<Value, InterpreterError> {
-        let index = idx as usize;
-        if index < tuple.len() {
-            Ok(tuple[index].clone())
+        let len = tuple.len() as i64;
+        let actual_index = if idx < 0 {
+            // Negative index: count from the end
+            len + idx
         } else {
-            Err(InterpreterError::RuntimeError(format!(
-                "Index {index} out of bounds for tuple of length {}",
-                tuple.len()
-            )))
+            idx
+        };
+
+        // Check bounds
+        if actual_index < 0 || actual_index >= len {
+            return Err(InterpreterError::RuntimeError(format!(
+                "Index {idx} out of bounds for tuple of length {len}"
+            )));
         }
+
+        #[allow(clippy::cast_sign_loss)] // Safe: we've verified actual_index >= 0
+        Ok(tuple[actual_index as usize].clone())
     }
 
     /// Index into an object with string key (complexity: 1)
@@ -6569,6 +6597,104 @@ mod lambda_tests {
         let mut interpreter = Interpreter::new();
         let result = interpreter.eval_expr(&ast).expect("Eval failed");
         assert_eq!(result, Value::Integer(12));
+    }
+}
+
+#[cfg(test)]
+mod negative_indexing_tests {
+    use super::*;
+
+    // FEATURE-042 (GitHub Issue #46): Negative indexing tests
+
+    #[test]
+    fn test_negative_array_indexing_last_element() {
+        let code = r#"
+            let fruits = ["apple", "banana", "cherry"]
+            fruits[-1]
+        "#;
+        let mut parser = crate::frontend::parser::Parser::new(code);
+        let ast = parser.parse().expect("Parse failed");
+        let mut interpreter = Interpreter::new();
+        let result = interpreter.eval_expr(&ast).expect("Eval failed");
+        assert_eq!(result, Value::from_string("cherry".to_string()));
+    }
+
+    #[test]
+    fn test_negative_array_indexing_second_to_last() {
+        let code = r#"
+            let fruits = ["apple", "banana", "cherry"]
+            fruits[-2]
+        "#;
+        let mut parser = crate::frontend::parser::Parser::new(code);
+        let ast = parser.parse().expect("Parse failed");
+        let mut interpreter = Interpreter::new();
+        let result = interpreter.eval_expr(&ast).expect("Eval failed");
+        assert_eq!(result, Value::from_string("banana".to_string()));
+    }
+
+    #[test]
+    fn test_negative_array_indexing_first_element() {
+        let code = r#"
+            let fruits = ["apple", "banana", "cherry"]
+            fruits[-3]
+        "#;
+        let mut parser = crate::frontend::parser::Parser::new(code);
+        let ast = parser.parse().expect("Parse failed");
+        let mut interpreter = Interpreter::new();
+        let result = interpreter.eval_expr(&ast).expect("Eval failed");
+        assert_eq!(result, Value::from_string("apple".to_string()));
+    }
+
+    #[test]
+    fn test_negative_array_indexing_out_of_bounds() {
+        let code = r#"
+            let fruits = ["apple", "banana"]
+            fruits[-5]
+        "#;
+        let mut parser = crate::frontend::parser::Parser::new(code);
+        let ast = parser.parse().expect("Parse failed");
+        let mut interpreter = Interpreter::new();
+        let result = interpreter.eval_expr(&ast);
+        assert!(result.is_err(), "Should fail for out-of-bounds negative index");
+    }
+
+    #[test]
+    fn test_negative_string_indexing() {
+        let code = r#"
+            let word = "hello"
+            word[-1]
+        "#;
+        let mut parser = crate::frontend::parser::Parser::new(code);
+        let ast = parser.parse().expect("Parse failed");
+        let mut interpreter = Interpreter::new();
+        let result = interpreter.eval_expr(&ast).expect("Eval failed");
+        assert_eq!(result, Value::from_string("o".to_string()));
+    }
+
+    #[test]
+    fn test_negative_tuple_indexing() {
+        let code = r#"
+            let point = (10, 20, 30)
+            point[-1]
+        "#;
+        let mut parser = crate::frontend::parser::Parser::new(code);
+        let ast = parser.parse().expect("Parse failed");
+        let mut interpreter = Interpreter::new();
+        let result = interpreter.eval_expr(&ast).expect("Eval failed");
+        assert_eq!(result, Value::Integer(30));
+    }
+
+    #[test]
+    fn test_negative_indexing_with_integers() {
+        let code = r#"
+            let numbers = [100, 200, 300, 400]
+            numbers[-2]
+        "#;
+        let mut parser = crate::frontend::parser::Parser::new(code);
+        let ast = parser.parse().expect("Parse failed");
+        let mut interpreter = Interpreter::new();
+        let result = interpreter.eval_expr(&ast).expect("Eval failed");
+        assert_eq!(result, Value::Integer(300));
     }
 }
 
