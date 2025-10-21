@@ -1,0 +1,30 @@
+// Ruchy WASM Hot Reload Demo
+// Edit this file and save - it will auto-compile to main.wasm!
+
+fn greet(name: String) -> String {
+    f"Hello, {name}! Welcome to Ruchy Dev Server 🚀"
+}
+
+fn calculate_fibonacci(n: i32) -> i32 {
+    if n <= 1 {
+        n
+    } else {
+        calculate_fibonacci(n - 1) + calculate_fibonacci(n - 2)
+    }
+}
+
+fn main() {
+    let welcome = greet("Developer");
+    println(welcome);
+
+    println("Fibonacci sequence (first 10 numbers):");
+    for i in 0..10 {
+        let fib = calculate_fibonacci(i);
+        println(f"fib({i}) = {fib}");
+    }
+
+    println("\nEdit this file and watch it auto-compile!");
+}
+
+// Try editing this message and saving:
+// The server will detect the change, compile to WASM, and restart!

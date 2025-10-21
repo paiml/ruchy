@@ -248,6 +248,81 @@ wasm-pack build --target web --no-default-features --features wasm-compile
 
 **Note**: WASM builds exclude HTTP and file I/O operations (not available in browser sandbox).
 
+### Development Server
+
+Ruchy provides a world-class development server with hot reload, WASM compilation, and graceful shutdown (v3.105.0+).
+
+**Basic Usage**:
+```bash
+# Serve current directory on port 8080
+ruchy serve
+
+# Serve specific directory with custom port
+ruchy serve ./dist --port 3000
+
+# Enable watch mode (auto-restart on file changes)
+ruchy serve --watch
+
+# Enable WASM hot reload (.ruchy → .wasm on save)
+ruchy serve --watch --watch-wasm
+```
+
+**Advanced Features**:
+
+```bash
+# Full development mode with all features
+ruchy serve \
+  --watch \                # Auto-restart on file changes
+  --watch-wasm \           # Compile .ruchy → .wasm on save
+  --debounce 200 \         # Debounce delay in ms (default: 300)
+  --verbose \              # Show detailed logging
+  --pid-file server.pid    # PID file for process management
+
+# Output:
+#   🚀 Ruchy Dev Server v3.105.0
+#
+#   ➜  Local:   http://127.0.0.1:8080
+#   ➜  Network: http://192.168.1.100:8080
+#   📁 Serving: ./dist
+#   👀 Watching: ./dist/**/*
+#   🦀 WASM: Hot reload enabled for .ruchy files
+#
+#   Ready Press Ctrl+C to stop
+```
+
+**Features**:
+- **Hot Reload**: Automatic server restart on file changes (configurable debouncing)
+- **WASM Compilation**: Auto-compile `.ruchy` files to `.wasm` on save
+- **Graceful Shutdown**: Ctrl+C for clean shutdown (no `kill -9` needed!)
+- **Network Access**: Displays both local and network URLs for mobile testing
+- **PID Management**: RAII-based PID file with automatic cleanup
+- **Beautiful UX**: Vite-style colored output with status indicators
+- **Performance**: Multi-threaded async runtime with optimized TCP settings
+
+**WASM Hot Reload Workflow**:
+```bash
+# 1. Start dev server with WASM watching
+ruchy serve --watch --watch-wasm
+
+# 2. Edit your .ruchy files
+# When you save main.ruchy:
+#   📝 Changed: main.ruchy
+#   🦀 Compiling: main.ruchy
+#   ✅ Compiled: main.wasm
+#   ↻ Restarting server...
+
+# 3. Browser automatically reloads with new WASM
+```
+
+**Production Deployment**:
+```bash
+# Build optimized WASM files
+ruchy wasm compile *.ruchy -o dist/ --opt-level 3
+
+# Serve production build (no watch mode)
+ruchy serve ./dist --port 8080
+```
+
 ### Notebook
 - `ruchy notebook` - Start interactive notebook server on http://localhost:8080
 - `ruchy notebook test <file>` - Test notebook with coverage

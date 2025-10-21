@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ruchy Dev Server Example</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Ruchy Development Server</h1>
+        <p class="subtitle">Hot Reload + WASM Compilation Demo</p>
+
+        <div class="status">
+            <h2>Server Status</h2>
+            <div id="server-status" class="status-indicator">
+                <span class="dot active"></span>
+                <span>Server Running</span>
+            </div>
+        </div>
+
+        <div class="demo">
+            <h2>WASM Demo</h2>
+            <p>The WASM module is loaded from <code>main.wasm</code> (compiled from <code>main.ruchy</code>)</p>
+
+            <div class="demo-box">
+                <h3>Try This:</h3>
+                <ol>
+                    <li>Edit <code>main.ruchy</code> in your editor</li>
+                    <li>Save the file</li>
+                    <li>Watch the server terminal:
+                        <pre>📝 Changed: main.ruchy
+🦀 Compiling: main.ruchy
+✅ Compiled: main.wasm
+↻ Restarting server...</pre>
+                    </li>
+                    <li>Refresh this page to see changes!</li>
+                </ol>
+            </div>
+
+            <div id="wasm-output" class="output">
+                <h3>WASM Output:</h3>
+                <pre id="result">Loading WASM...</pre>
+            </div>
+        </div>
+
+        <div class="features">
+            <h2>Features</h2>
+            <div class="feature-grid">
+                <div class="feature">
+                    <h3>⚡ Hot Reload</h3>
+                    <p>Server restarts automatically on file changes</p>
+                </div>
+                <div class="feature">
+                    <h3>🦀 WASM Compilation</h3>
+                    <p>Ruchy files compile to WASM on save</p>
+                </div>
+                <div class="feature">
+                    <h3>🌐 Network Access</h3>
+                    <p>Test on mobile devices via network URL</p>
+                </div>
+                <div class="feature">
+                    <h3>✨ Graceful Shutdown</h3>
+                    <p>Press Ctrl+C for clean exit</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>Running on <strong>Ruchy v3.105.0</strong></p>
+            <p>Edit any file and watch it reload! 🎉</p>
+        </div>
+    </div>
+
+    <script type="module" src="app.js"></script>
+</body>
+</html>
