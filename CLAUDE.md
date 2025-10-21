@@ -17,6 +17,7 @@
 ## Prime Directive
 
 **Generate correct code that compiles on first attempt. Quality is built-in, not bolted-on.**
+**Extreme TDD means - TDD augmented by mutation + property + fuzz testing + pmat complexity, satd, tdg, entropy**
 
 ## 🚨 CRITICAL: E2E Testing Protocol (DEFECT-001 Response)
 
@@ -48,17 +49,6 @@
 **Enforcement Example**:
 ```rust
 // ❌ BAD: Complexity 15+
-fn process_data(items: Vec<Item>) -> Result<Output> {
-    let mut results = Vec::new();
-    for item in items {
-        if item.valid {
-            if item.type == "A" {
-                // ... 20 more lines of nested logic
-            }
-        }
-    }
-    // ... more complexity
-}
 
 // ✅ GOOD: Complexity ≤10
 fn process_data(items: Vec<Item>) -> Result<Output> {
@@ -66,13 +56,6 @@ fn process_data(items: Vec<Item>) -> Result<Output> {
         .filter(|item| item.valid)
         .map(process_single_item)
         .collect()
-}
-
-fn process_single_item(item: Item) -> Result<ItemOutput> {
-    match item.item_type {
-        ItemType::A => process_type_a(item),
-        ItemType::B => process_type_b(item),
-    }
 }
 ```
 
@@ -110,7 +93,7 @@ fn process_single_item(item: Item) -> Result<ItemOutput> {
 **MANDATORY RESPONSE** (THE ONLY ACCEPTABLE RESPONSE):
 1. 🛑 **STOP THE LINE IMMEDIATELY**: Halt ALL other work when ANY bug found
 2. 🔍 **ROOT CAUSE ANALYSIS**: Use Five Whys and GENCHI GENBUTSU (go and see)
-3. 📋 **CREATE TICKET**: Add to docs/execution/roadmap.md with format: [PARSER-XXX], [FORMATTER-XXX], etc.
+3. 📋 **CREATE TICKET**: Add to docs/execution/roadmap.yaml with format: [PARSER-XXX], [FORMATTER-XXX], etc.
 4. ✅ **EXTREME TDD IMPLEMENTATION**:
    - **RED**: Write failing test that reproduces bug FIRST
    - **GREEN**: Fix bug with minimal code changes
@@ -154,7 +137,7 @@ Discovery: Parser fails with "Unexpected token: Plus" on line continuations with
 **CORRECT RESPONSE** (MANDATORY):
 1. 🛑 **STOP THE LINE**: Halt current work immediately
 2. 🔍 **INVESTIGATE**: Use GENCHI GENBUTSU to verify feature is truly missing (don't assume!)
-3. 📋 **CREATE TICKET**: Add to docs/execution/roadmap.md with format: [FEATURE-XXX]
+3. 📋 **CREATE TICKET**: Add to docs/execution/roadmap.yaml with format: [FEATURE-XXX]
 4. ✅ **EXTREME TDD IMPLEMENTATION**:
    - **RED**: Write tests for the missing feature FIRST (they will fail)
    - **GREEN**: Implement the feature minimally to pass tests
@@ -243,13 +226,6 @@ grep "MISSED" core_mutations.txt
 # Re-run to validate 80%+ coverage achieved
 ```
 
-#### Test Gap Patterns (From Sprint 8 Empirical Data):
-1. **Match Arm Deletions** (most common): Test ALL match arms with assertions
-2. **Function Stub Replacements**: Validate return values are real data, not None/empty
-3. **Boundary Conditions**: Test <, <=, ==, >, >= explicitly
-4. **Boolean Negations**: Test both true AND false branches
-5. **Operator Changes**: Test +/-, */%, <=/>=, &&/|| alternatives
-
 #### Mutation-Driven TDD:
 1. Run mutation test FIRST to identify gaps
 2. Write test targeting SPECIFIC mutation
@@ -288,87 +264,7 @@ grep "MISSED" core_mutations.txt
 **During**: `pmat tdg dashboard --port 8080 &`
 **Commit**: Auto-validated via pre-commit hooks
 
-## Toyota Way Implementation
 
-**STOP THE LINE FOR ANY DEFECT. NO DEFECT IS TOO SMALL. NO SHORTCUT IS ACCEPTABLE.**
-
-### Core Toyota Principles:
-1. **Jidoka (Autonomation)**: Build quality into the process, detect problems immediately
-2. **Genchi Genbutsu**: Go to the source, understand the root cause through direct observation
-3. **Kaizen**: Continuous improvement through systematic problem-solving
-4. **Respect for People**: Create systems that prevent human error, not blame people
-5. **Long-term Philosophy**: Short-term fixes create long-term problems
-
-### Defect Response Protocol (MANDATORY):
-```
-1. HALT DEVELOPMENT: Stop all forward progress when defect detected
-2. ROOT CAUSE ANALYSIS: Use 5 Whys to find true cause, not symptoms  
-3. POKA-YOKE: Design error-prevention into the system
-4. SYSTEMATIC TESTING: Add comprehensive test coverage to prevent recurrence
-5. PROCESS IMPROVEMENT: Update development process to catch similar issues earlier
-6. VERIFICATION: Prove the fix works and cannot regress
-```
-
-### Testing Hierarchy (Systematic Defect Prevention):
-```
-Level 1: Unit Tests         - Function-level correctness
-Level 2: Integration Tests  - Component interaction  
-Level 3: E2E Tests          - Full system behavior
-Level 4: Property Tests     - Mathematical invariants
-Level 5: Fuzz Tests         - Random input robustness
-Level 6: Regression Tests   - Historical defect prevention
-Level 7: Performance Tests  - Non-functional requirements
-```
-
-**NEVER AGAIN RULE**: Every defect must be made impossible to repeat through systematic prevention.
-
-### 🚨 SACRED RULE: NO DEFECT IS OUT OF SCOPE
-
-**ABSOLUTE PRINCIPLE**: EVERY defect, bug, missing feature, or incompleteness MUST be fixed immediately. ZERO exceptions.
-
-**FORBIDDEN RESPONSES**:
-- ❌ "This is out of scope for the current task"
-- ❌ "Let's defer this to a future sprint"
-- ❌ "This is a separate issue"
-- ❌ "Let's work around this for now"
-- ❌ "This is a known limitation"
-
-**MANDATORY RESPONSE**:
-1. 🛑 **STOP THE LINE**: Halt ALL other work immediately
-2. 🔍 **ROOT CAUSE ANALYSIS**: Use Five Whys to understand the defect
-3. 📋 **CREATE SPECIFICATION**: Document what needs to be fixed
-4. ✅ **EXTREME TDD**: RED→GREEN→REFACTOR to fix the defect
-5. 🧪 **COMPREHENSIVE TESTING**: Property tests, mutation tests, fuzz tests
-6. ✅ **VERIFY FIX**: Prove the defect is resolved and cannot regress
-7. 📝 **DOCUMENT**: Update all affected documentation and tests
-
-**Toyota Way Principle**:
-- **Jidoka**: Stop the line when ANY problem is found
-- **No defect is too small**: Every defect represents a gap in quality
-- **No shortcut is acceptable**: Fix the root cause, not the symptom
-- **Long-term philosophy**: Deferring defects creates technical debt that compounds
-
-**Example - Correct Response**:
-```
-Discovery: "F-string compilation to WASM doesn't work"
-
-WRONG: "F-strings are out of scope for WASM work, let's skip them"
-RIGHT:
-  1. STOP THE LINE - this is a defect, not a feature request
-  2. Five Whys: Why don't f-strings work in WASM? → Not implemented
-  3. Create: docs/specifications/wasm-fstring-spec.md
-  4. RED: test_fstring_compiles_to_wasm() - FAILS
-  5. GREEN: Implement f-string WASM lowering
-  6. Property test: All f-strings compile to valid WASM
-  7. Mutation test: Verify tests catch f-string bugs
-  8. Commit: [WASM-XXX] Implement f-string WASM compilation with tests
-```
-
-**Why This Matters**:
-- **Quality is non-negotiable**: Every defect deferred is technical debt
-- **User trust**: Incomplete features break user confidence
-- **Compounding problems**: Small defects become big problems
-- **Toyota Way**: Stop the line for ANY defect, no exceptions
 
 ### Mandatory Testing Requirements (80% Property Test Coverage)
 
@@ -572,7 +468,7 @@ make lint-bashrs     # Everything (scripts + Makefile)
 ```yaml
 Navigation:
 1. SPECIFICATION.md     # What to build (reference)
-2. docs/execution/roadmap.md  # Strategic priorities and current tasks
+2. docs/execution/roadmap.yaml  # Strategic priorities and current tasks
 3. docs/execution/      # Tactical work breakdown
 4. ../ruchy-book/INTEGRATION.md  # Book compatibility tracking
 5. CHANGELOG.md         # Version history and release notes
@@ -659,7 +555,7 @@ git commit  # Runs validation automatically
 
 **CRITICAL**: ALL development work MUST follow roadmap-driven development:
 
-1. **ALWAYS Use Ticket Numbers**: Every commit, PR, and task MUST reference a ticket ID from docs/execution/roadmap.md
+1. **ALWAYS Use Ticket Numbers**: Every commit, PR, and task MUST reference a ticket ID from docs/execution/roadmap.yaml
 2. **Roadmap-First Development**: No work begins without a corresponding roadmap entry
 3. **Ticket Format**: Use format "QUALITY-XXX", "PARSER-XXX", "DF-XXX", "WASM-XXX" per roadmap
 4. **Traceability**: Every change must be traceable back to business requirements via ticket system
@@ -672,7 +568,7 @@ git commit  # Runs validation automatically
 □ Check ../ruchy-book/INTEGRATION.md for latest compatibility report
 □ Check ../ruchy-book/docs/bugs/ruchy-runtime-bugs.md for known issues
 □ Locate specification section in SPECIFICATION.md
-□ Find task ID in docs/execution/roadmap.md (MANDATORY)
+□ Find task ID in docs/execution/roadmap.yaml (MANDATORY)
 □ Verify ticket dependencies completed via DAG
 □ Reference ticket number in all commits/PRs
 □ Check existing patterns in codebase (GENCHI GENBUTSU - Go And See!)

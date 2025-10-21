@@ -6400,6 +6400,67 @@ impl Interpreter {
             _ => false,
         }
     }
+
+    // ========================================================================
+    // EXTREME TDD: stdout Capture for WASM/REPL
+    // Bug: https://github.com/paiml/ruchy/issues/PRINTLN_STDOUT
+    // ========================================================================
+
+    /// Capture println output to stdout buffer
+    /// Complexity: 1 (single operation)
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::interpreter::Interpreter;
+    ///
+    /// let mut interpreter = Interpreter::new();
+    /// interpreter.capture_stdout("Hello, World!".to_string());
+    /// assert_eq!(interpreter.get_stdout(), "Hello, World!");
+    /// ```
+    pub fn capture_stdout(&mut self, output: String) {
+        self.stdout_buffer.push(output);
+    }
+
+    /// Get captured stdout as a single string with newlines
+    /// Complexity: 2 (join + conditional)
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::interpreter::Interpreter;
+    ///
+    /// let mut interpreter = Interpreter::new();
+    /// interpreter.capture_stdout("Line 1".to_string());
+    /// interpreter.capture_stdout("Line 2".to_string());
+    /// assert_eq!(interpreter.get_stdout(), "Line 1\nLine 2");
+    /// ```
+    pub fn get_stdout(&self) -> String {
+        self.stdout_buffer.join("\n")
+    }
+
+    /// Clear stdout buffer
+    /// Complexity: 1 (single operation)
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::interpreter::Interpreter;
+    ///
+    /// let mut interpreter = Interpreter::new();
+    /// interpreter.capture_stdout("test".to_string());
+    /// interpreter.clear_stdout();
+    /// assert_eq!(interpreter.get_stdout(), "");
+    /// ```
+    pub fn clear_stdout(&mut self) {
+        self.stdout_buffer.clear();
+    }
+
+    /// Check if stdout has any captured output
+    /// Complexity: 1 (single check)
+    pub fn has_stdout(&self) -> bool {
+        !self.stdout_buffer.is_empty()
+    }
 }
 
 impl Default for Interpreter {
@@ -6479,67 +6540,11 @@ mod tests {
             _ => unreachable!("Expected float, got {result:?}"),
         }
     }
+}
 
-    // ========================================================================
-    // EXTREME TDD: stdout Capture for WASM/REPL
-    // Bug: https://github.com/paiml/ruchy/issues/PRINTLN_STDOUT
-    // ========================================================================
-
-    /// Capture println output to stdout buffer
-    /// Complexity: 1 (single operation)
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::runtime::interpreter::Interpreter;
-    ///
-    /// let mut interpreter = Interpreter::new();
-    /// interpreter.capture_stdout("Hello, World!");
-    /// assert_eq!(interpreter.get_stdout(), "Hello, World!");
-    /// ```
-    pub fn capture_stdout(&mut self, output: String) {
-        self.stdout_buffer.push(output);
-    }
-
-    /// Get captured stdout as a single string with newlines
-    /// Complexity: 2 (join + conditional)
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::runtime::interpreter::Interpreter;
-    ///
-    /// let mut interpreter = Interpreter::new();
-    /// interpreter.capture_stdout("Line 1".to_string());
-    /// interpreter.capture_stdout("Line 2".to_string());
-    /// assert_eq!(interpreter.get_stdout(), "Line 1\nLine 2");
-    /// ```
-    pub fn get_stdout(&self) -> String {
-        self.stdout_buffer.join("\n")
-    }
-
-    /// Clear stdout buffer
-    /// Complexity: 1 (single operation)
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::runtime::interpreter::Interpreter;
-    ///
-    /// let mut interpreter = Interpreter::new();
-    /// interpreter.capture_stdout("test".to_string());
-    /// interpreter.clear_stdout();
-    /// assert_eq!(interpreter.get_stdout(), "");
-    /// ```
-    pub fn clear_stdout(&mut self) {
-        self.stdout_buffer.clear();
-    }
-
-    /// Check if stdout has any captured output
-    /// Complexity: 1 (single check)
-    pub fn has_stdout(&self) -> bool {
-        !self.stdout_buffer.is_empty()
-    }
+#[cfg(test)]
+mod lambda_tests {
+    use super::*;
 
     #[test]
     fn test_lambda_variable_assignment_and_call() {

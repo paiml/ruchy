@@ -4,6 +4,16 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+### Fixed - WASM REPL (P0 CRITICAL)
+- **[WASM] Fixed println stdout capture for interactive book**
+  - Bug: println output not visible in browser REPL (showed "nil" instead)
+  - Impact: Blocked production launch of interactive.paiml.com Ruchy book
+  - Solution: Capture stdout from existing OUTPUT_BUFFER mechanism
+  - Tests: 6/6 EXTREME TDD tests passing
+  - Files: src/runtime/interpreter.rs, src/wasm/repl.rs, examples/test_println_stdout.rs
+  - Commit: feee4c38
+  - Result: ✅ Interactive book production launch UNBLOCKED
+
 ### Added - WASM Distribution
 - **[WASM] WebAssembly compilation support for wasm32-unknown-unknown target**
   - Pre-built WASM binaries available in `pkg/` directory after release
