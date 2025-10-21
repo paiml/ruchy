@@ -2,11 +2,11 @@
 # Extreme TDD + Toyota Way + Mutation Testing Enforcement
 
 metadata:
-  version: "3.20"
+  version: "3.21"
   last_updated: "2025-10-21"
-  current_sprint: "🎉 ALL CRITICAL ISSUES RESOLVED | Focus: Package management or book compatibility"
+  current_sprint: "🛑 STOP THE LINE: TOOLING-001 RuchyRuchy Debugging Tools Integration"
   latest_release: "v3.106.0"
-  next_release: "v3.107.0 - Package management or book improvements"
+  next_release: "v3.107.0 - RuchyRuchy debugging tools integration"
   github_issues:
     completed:
       - id: 45
@@ -73,6 +73,40 @@ metadata:
         status: "✅ COMPLETE (v3.81.0 - 2025-10-14)"
         solution: "Intelligent inference from 50+ built-in function signatures"
         commit: "4f21335d"
+    active_work:
+      - id: "TOOLING-001"
+        github_issue: 48
+        url: "https://github.com/paiml/ruchy/issues/48"
+        title: "Integrate RuchyRuchy Debugging Tools into Main Project"
+        priority: "HIGH"
+        status: "🛑 STOP THE LINE - In Progress"
+        started: "2025-10-21"
+        description: "Full integration of ruchyruchy debugging toolkit (source maps, time-travel debugging, performance validation)"
+        requirements:
+          - "Symlink or copy validation scripts from ../ruchyruchy"
+          - "Update pre-commit hooks with debugging tools validation"
+          - "Update CLAUDE.md (remove ~2K cruft, add ruchyruchy section)"
+          - "Update all documentation with ruchyruchy references"
+          - "Add ruchyruchy as development tool requirement"
+        estimated_effort: "4-6 hours"
+        benefits:
+          - "Fast feedback debugging validation (<6s per commit)"
+          - "Real-world dogfooding on 50K+ LOC Ruchy compiler"
+          - "Source map validation for better error messages"
+          - "Time-travel debugging support"
+          - "Performance regression detection"
+        deliverables:
+          - "Pre-commit hook integration (scripts/validate-debugging-tools.sh)"
+          - "Updated CLAUDE.md with ruchyruchy usage guidelines"
+          - "Updated roadmap with TOOLING-001 completion"
+          - "Documentation updates (README, CONTRIBUTING, etc.)"
+          - "GitHub issue filed for tracking"
+        acceptance_criteria:
+          - "Pre-commit hook runs ruchyruchy validation in <6s"
+          - "All 3 validation checks passing (source maps, time-travel, performance)"
+          - "CLAUDE.md updated and reduced by ~2K"
+          - "All documentation references ruchyruchy correctly"
+          - "Zero regressions in existing pre-commit hooks"
     critical: []
     medium: []
   production_readiness:
