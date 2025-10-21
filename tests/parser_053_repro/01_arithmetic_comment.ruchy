@@ -1,0 +1,6 @@
+# Test 01: Comment between arithmetic operations
+let x = 1
+    # Add two
+    + 2
+    # Multiply by three
+    * 3

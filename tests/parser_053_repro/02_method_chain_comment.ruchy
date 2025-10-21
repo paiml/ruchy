@@ -1,0 +1,6 @@
+# Test 02: Comment between method chains
+let result = "hello world"
+    # Convert to uppercase
+    .to_uppercase()
+    # Get length
+    .len()

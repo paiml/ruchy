@@ -213,6 +213,10 @@ fn token_to_comment(token: &Token, span: Span) -> Option<Comment> {
             CommentKind::Block(text.clone()),
             span,
         )),
+        Token::HashComment(text) => Some(Comment::new(
+            CommentKind::Line(text.clone()), // Treat hash comments as line comments
+            span,
+        )),
         _ => None,
     }
 }
@@ -302,7 +306,7 @@ pub(crate) fn try_handle_infix_operators(
     let saved_position = state.tokens.position();
 
     // Skip comments temporarily to peek at the actual next token
-    while matches!(state.tokens.peek(), Some((Token::LineComment(_) | Token::DocComment(_) | Token::BlockComment(_), _))) {
+    while matches!(state.tokens.peek(), Some((Token::LineComment(_) | Token::DocComment(_) | Token::BlockComment(_) | Token::HashComment(_), _))) {
         state.tokens.advance();
     }
 
@@ -343,11 +347,20 @@ pub(crate) fn handle_postfix_operators(state: &mut ParserState, mut left: Expr) 
 /// Try to handle a single postfix operator
 /// Returns Some(expr) if handled, None if no postfix operator found
 fn try_handle_single_postfix(state: &mut ParserState, left: Expr) -> Result<Option<Expr>> {
-    match state.tokens.peek() {
-        Some((Token::Dot, _)) => handle_dot_operator(state, left).map(Some),
-        Some((Token::ColonColon, _)) => handle_colon_colon_operator(state, left).map(Some),
-        Some((Token::SafeNav, _)) => handle_safe_nav_operator(state, left).map(Some),
-        Some((Token::LeftParen, _)) => {
+    // PARSER-053 FIX: Skip comments before checking for postfix operators
+    // This allows: "hello" # comment\n .to_uppercase()
+    let saved_position = state.tokens.position();
+    while matches!(state.tokens.peek(), Some((Token::LineComment(_) | Token::DocComment(_) | Token::BlockComment(_) | Token::HashComment(_), _))) {
+        state.tokens.advance();
+    }
+    let token_peek = state.tokens.peek().map(|(t, _)| t.clone());
+    state.tokens.set_position(saved_position); // Restore position
+
+    match token_peek.as_ref() {
+        Some(Token::Dot) => handle_dot_operator(state, left).map(Some),
+        Some(Token::ColonColon) => handle_colon_colon_operator(state, left).map(Some),
+        Some(Token::SafeNav) => handle_safe_nav_operator(state, left).map(Some),
+        Some(Token::LeftParen) => {
             // PARSER-DEFECT-001 FIX: Block-like control flow expressions should NOT
             // consume `(...)` as function calls in statement position.
             // This prevents: `loop { break; } (x, x)` from being parsed as
@@ -359,11 +372,11 @@ fn try_handle_single_postfix(state: &mut ParserState, left: Expr) -> Result<Opti
                 Ok(Some(functions::parse_call(state, left)?))
             }
         }
-        Some((Token::LeftBracket, _)) => Ok(Some(handle_array_indexing(state, left)?)),
-        Some((Token::LeftBrace, _)) => try_parse_struct_literal(state, &left),
-        Some((Token::Increment, _)) => handle_increment_operator(state, left).map(Some),
-        Some((Token::Decrement, _)) => handle_decrement_operator(state, left).map(Some),
-        Some((Token::Question, _)) => {
+        Some(Token::LeftBracket) => Ok(Some(handle_array_indexing(state, left)?)),
+        Some(Token::LeftBrace) => try_parse_struct_literal(state, &left),
+        Some(Token::Increment) => handle_increment_operator(state, left).map(Some),
+        Some(Token::Decrement) => handle_decrement_operator(state, left).map(Some),
+        Some(Token::Question) => {
             // Check if this is ternary or try operator
             if is_ternary_operator(state) {
                 Ok(None) // Let ternary handler in infix operators handle it
@@ -371,7 +384,7 @@ fn try_handle_single_postfix(state: &mut ParserState, left: Expr) -> Result<Opti
                 handle_try_operator(state, left).map(Some)
             }
         }
-        Some((Token::Bang, _)) => try_parse_macro_call(state, &left),
+        Some(Token::Bang) => try_parse_macro_call(state, &left),
         _ => Ok(None),
     }
 }
@@ -397,7 +410,13 @@ fn is_block_like_expression(expr: &Expr) -> bool {
 }
 /// Handle dot operator for method calls
 fn handle_dot_operator(state: &mut ParserState, left: Expr) -> Result<Expr> {
-    state.tokens.advance();
+    state.tokens.advance(); // consume dot
+
+    // PARSER-053 FIX: Skip comments after dot (allows: .  # comment\n  method_name())
+    while matches!(state.tokens.peek(), Some((Token::LineComment(_) | Token::DocComment(_) | Token::BlockComment(_) | Token::HashComment(_), _))) {
+        state.tokens.advance();
+    }
+
     functions::parse_method_call(state, left)
 }
 /// Handle :: operator for enum variant access (e.g., Status::Success)
@@ -641,7 +660,7 @@ fn try_binary_operators(
         //       + 3
         // We skip comments to get to the operator, then let parse_expr_with_precedence_recursive()
         // consume them as leading comments for the right-hand side.
-        while matches!(state.tokens.peek(), Some((Token::LineComment(_) | Token::DocComment(_) | Token::BlockComment(_), _))) {
+        while matches!(state.tokens.peek(), Some((Token::LineComment(_) | Token::DocComment(_) | Token::BlockComment(_) | Token::HashComment(_), _))) {
             state.tokens.advance();
         }
 

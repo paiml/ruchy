@@ -325,6 +325,7 @@ fn build_struct_literal_call(func: Expr, named_args: Vec<(String, Expr)>) -> Res
 /// Returns an error if the operation fails
 #[allow(clippy::too_many_lines)]
 pub fn parse_method_call(state: &mut ParserState, receiver: Expr) -> Result<Expr> {
+    // Note: Comments after dot are now handled in handle_dot_operator (PARSER-053)
     // Check for special postfix operators like .await
     if let Some((Token::Await, _)) = state.tokens.peek() {
         state.tokens.advance(); // consume await

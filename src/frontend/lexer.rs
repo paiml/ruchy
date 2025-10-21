@@ -87,6 +87,11 @@ pub enum Token {
     })]
     BlockComment(String),
 
+    // Python/Ruby-style hash comments (PARSER-053)
+    // Must come BEFORE #[ pattern to avoid conflict with attributes
+    #[regex(r"#[^\n]*", |lex| lex.slice()[1..].to_string())]
+    HashComment(String),
+
     // Literals
     #[regex(r"[0-9]+(?:i8|i16|i32|i64|i128|isize|u8|u16|u32|u64|u128|usize)?", |lex| {
         let slice = lex.slice();
@@ -435,8 +440,9 @@ pub enum Token {
     #[token("_", priority = 2)]
     Underscore,
     // Attribute support
-    // Attribute support - match #[ specifically to avoid blocking raw strings
-    #[token("#[")]
+    // Attribute support - match #[ specifically to avoid conflict with hash comments
+    // Priority 3 ensures #[ is matched before # comments (which default to priority 0)
+    #[token("#[", priority = 3)]
     AttributeStart,
 }
 impl Token {
