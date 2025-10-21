@@ -111,6 +111,11 @@ impl WasmRepl {
         let eval_start = get_timestamp();
         let mut interpreter = Interpreter::new();
 
+        // Clear OUTPUT_BUFFER before evaluation
+        if let Ok(mut buf) = crate::runtime::builtins::OUTPUT_BUFFER.lock() {
+            buf.clear();
+        }
+
         // Evaluate the expression
         let result = match interpreter.eval_expr(&ast) {
             Ok(value) => Self::format_value_for_display(&value),
@@ -132,12 +137,33 @@ impl WasmRepl {
             }
         };
         let eval_time = get_timestamp() - eval_start;
+
+        // Get captured stdout from OUTPUT_BUFFER
+        let stdout = if let Ok(buf) = crate::runtime::builtins::OUTPUT_BUFFER.lock() {
+            if buf.is_empty() {
+                None
+            } else {
+                Some(buf.clone())
+            }
+        } else {
+            None
+        };
+
+        // Determine what to display: stdout if available, otherwise return value
+        let display = if let Some(stdout_output) = stdout {
+            // Remove trailing newline if present (println adds it)
+            stdout_output.trim_end().to_string()
+        } else {
+            result
+        };
+
         // Add to history
         self.history.push(input.to_string());
+
         // Return result
         Ok(serde_json::to_string(&ReplOutput {
             success: true,
-            display: Some(result),
+            display: Some(display),
             type_info: Some("Any".to_string()),
             rust_code: None,
             error: None,
@@ -333,6 +359,127 @@ mod tests {
         heap.minor_gc();
         heap.major_gc();
         assert!(heap.young.is_empty());
+    }
+
+    // ============================================================================
+    // EXTREME TDD - RED TESTS for println stdout capture
+    // Bug: https://github.com/paiml/ruchy/issues/PRINTLN_STDOUT
+    // ============================================================================
+
+    #[test]
+    fn test_println_captured() {
+        let mut repl = WasmRepl::new().unwrap();
+        let result = repl.eval(r#"println("Hello, World!")"#).unwrap();
+        let output: ReplOutput = serde_json::from_str(&result).unwrap();
+
+        assert!(output.success, "println should execute successfully");
+        assert_eq!(
+            output.display,
+            Some("Hello, World!".to_string()),
+            "println output should be captured and displayed"
+        );
+    }
+
+    #[test]
+    fn test_multiple_println() {
+        let mut repl = WasmRepl::new().unwrap();
+        let code = r#"
+            println("Line 1");
+            println("Line 2");
+            println("Line 3");
+        "#;
+        let result = repl.eval(code).unwrap();
+        let output: ReplOutput = serde_json::from_str(&result).unwrap();
+
+        assert!(output.success);
+        assert_eq!(
+            output.display,
+            Some("Line 1\nLine 2\nLine 3".to_string()),
+            "Multiple println calls should be captured with newlines"
+        );
+    }
+
+    #[test]
+    fn test_println_with_variables() {
+        let mut repl = WasmRepl::new().unwrap();
+        let code = r#"
+            let name = "Alice";
+            println("Hello,", name);
+        "#;
+        let result = repl.eval(code).unwrap();
+        let output: ReplOutput = serde_json::from_str(&result).unwrap();
+
+        assert!(output.success);
+        assert_eq!(
+            output.display,
+            Some("Hello, Alice".to_string()),
+            "println with variables should concatenate correctly"
+        );
+    }
+
+    #[test]
+    fn test_expression_vs_println() {
+        let mut repl = WasmRepl::new().unwrap();
+
+        // Expression should return value
+        let expr_result = repl.eval("1 + 1").unwrap();
+        let expr_output: ReplOutput = serde_json::from_str(&expr_result).unwrap();
+        assert_eq!(
+            expr_output.display,
+            Some("2".to_string()),
+            "Expression should return its value"
+        );
+
+        // println should return output, not nil
+        let print_result = repl.eval(r#"println("Hello")"#).unwrap();
+        let print_output: ReplOutput = serde_json::from_str(&print_result).unwrap();
+        assert_eq!(
+            print_output.display,
+            Some("Hello".to_string()),
+            "println should show stdout, not return value (nil)"
+        );
+    }
+
+    #[test]
+    fn test_println_in_function() {
+        let mut repl = WasmRepl::new().unwrap();
+        let code = r#"
+            fun greet(name) {
+                println("Hello,", name);
+            }
+            greet("Bob")
+        "#;
+        let result = repl.eval(code).unwrap();
+        let output: ReplOutput = serde_json::from_str(&result).unwrap();
+
+        assert!(output.success);
+        assert_eq!(
+            output.display,
+            Some("Hello, Bob".to_string()),
+            "println inside function should be captured"
+        );
+    }
+
+    #[test]
+    fn test_mixed_println_and_expression() {
+        let mut repl = WasmRepl::new().unwrap();
+        let code = r#"
+            println("Debug: starting");
+            let x = 10;
+            println("x =", x);
+            x * 2
+        "#;
+        let result = repl.eval(code).unwrap();
+        let output: ReplOutput = serde_json::from_str(&result).unwrap();
+
+        assert!(output.success);
+        // When both println and expression exist, stdout should take precedence
+        let display = output.display.unwrap();
+        assert!(
+            display.contains("Debug: starting"),
+            "Should contain first println"
+        );
+        assert!(display.contains("x = 10"), "Should contain second println");
     }
 }
 #[cfg(test)]
