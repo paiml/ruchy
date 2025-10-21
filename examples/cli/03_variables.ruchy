@@ -1,15 +1,17 @@
 // Example 3: Variables
-// Variable declarations and reassignments
+// Demonstrates: Variable declarations, reassignment
+// Usage: ruchy examples/cli/03_variables.ruchy
 
 let name = "Ruchy"
-let version = 3.80
-let is_fast = true
+let version = 3.99
+let is_awesome = true
 
-println("Language: {}", name)
-println("Version: {}", version)
-println("Fast: {}", is_fast)
+println(f"Language: {name}")
+println(f"Version: {version}")
+println(f"Is awesome: {is_awesome}")
 
 // Reassignment
-let count = 1
+let count = 0
 count = count + 1
-println("Count: {}", count)
+count = count + 1
+println(f"Count: {count}")

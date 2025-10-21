@@ -1,21 +1,21 @@
 // Example 7: String Interpolation
-// F-string formatting and string operations
+// Demonstrates: f-strings, expressions in strings
+// Usage: ruchy examples/cli/07_string_interpolation.ruchy
 
 let name = "Ruchy"
-let version = "3.80"
+let version = 3.99
 let year = 2025
 
-// F-string interpolation
-println(f"Welcome to {name} v{version}!")
-println(f"Released in {year}")
+// Basic interpolation
+println(f"Language: {name}")
+println(f"Version: {version}")
 
-// Expression interpolation
-let a = 10
-let b = 20
-println(f"{a} + {b} = {a + b}")
+// Expressions in interpolation
+println(f"Next version: {version + 0.01}")
+println(f"Year: {year}, Next year: {year + 1}")
 
-// String methods
-let text = "hello world"
-println(f"Original: {text}")
-println(f"Uppercase: {text.to_uppercase()}")
-println(f"Length: {text.len()}")
+// Complex expressions
+let x = 10
+let y = 5
+println(f"{x} + {y} = {x + y}")
+println(f"{x} * {y} = {x * y}")

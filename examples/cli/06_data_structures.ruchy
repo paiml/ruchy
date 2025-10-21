@@ -1,25 +1,21 @@
 // Example 6: Data Structures
-// Arrays and objects
+// Demonstrates: Arrays, objects, iteration
+// Usage: ruchy examples/cli/06_data_structures.ruchy
 
-// Array creation and access
+// Arrays
 let numbers = [1, 2, 3, 4, 5]
-println("First number: {}", numbers[0])
-println("Array length: {}", numbers.len())
+println(f"Array: {numbers}")
+println(f"First element: {numbers[0]}")
+println(f"Length: {numbers.length()}")
 
-// Object creation and access
+// Objects
 let person = {
     name: "Alice",
     age: 30,
-    city: "Portland"
+    city: "NYC"
 }
-println("Name: {}", person.name)
-println("Age: {}", person.age)
+println(f"Person: {person.name}, age {person.age}")
 
-// Nested structures
-let team = {
-    name: "Dev Team",
-    members: ["Alice", "Bob", "Charlie"],
-    size: 3
-}
-println("Team: {}", team.name)
-println("First member: {}", team.members[0])
+// Array methods
+let doubled = numbers.map(|x| x * 2)
+println(f"Doubled: {doubled}")

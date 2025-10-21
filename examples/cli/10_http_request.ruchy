@@ -1,31 +1,18 @@
 // Example 10: HTTP Request
-// Making HTTP requests
+// Demonstrates: Making HTTP GET requests
+// Usage: ruchy examples/cli/10_http_request.ruchy
+// Note: Requires network connection
 
-// Simple GET request
-let response = HTTP.get("https://api.github.com/users/github")
-println("Status: {}", response.status)
+// Simple HTTP GET request
+println("Fetching data from httpbin.org...")
 
-if response.status == 200 {
-    let data = JSON.parse(response.body)
-    println("GitHub user: {}", data.login)
-    println("Public repos: {}", data.public_repos)
-} else {
-    println("Request failed with status: {}", response.status)
-}
+let response = http_get("https://httpbin.org/json")
+println("Response received!")
+println(response)
 
-// POST request with JSON body
-let post_data = {
-    title: "Test Post",
-    body: "This is a test",
-    userId: 1
-}
+// Example with different endpoint
+println("\nFetching IP address...")
+let ip_response = http_get("https://httpbin.org/ip")
+println(ip_response)
 
-let post_response = HTTP.post(
-    "https://jsonplaceholder.typicode.com/posts",
-    {
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(post_data)
-    }
-)
-
-println("POST Status: {}", post_response.status)
+println("\nHTTP request example completed!")

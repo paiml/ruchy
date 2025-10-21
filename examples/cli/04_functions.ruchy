@@ -1,8 +1,9 @@
 // Example 4: Functions
-// Function definitions and calls
+// Demonstrates: Function definitions, calls, return values
+// Usage: ruchy examples/cli/04_functions.ruchy
 
 fun greet(name) {
-    println("Hello, {}!", name)
+    f"Hello, {name}!"
 }
 
 fun add(a, b) {
@@ -17,9 +18,6 @@ fun factorial(n) {
     }
 }
 
-greet("World")
-let sum = add(5, 3)
-println("5 + 3 = {}", sum)
-
-let fact5 = factorial(5)
-println("5! = {}", fact5)
+println(greet("World"))
+println(f"5 + 3 = {add(5, 3)}")
+println(f"5! = {factorial(5)}")
