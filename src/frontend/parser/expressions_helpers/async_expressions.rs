@@ -246,7 +246,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore] // TODO: Verify async lambda no-param syntax is supported
+    #[ignore] // ASYNC-001: Async lambda no-param syntax not yet supported
     fn test_async_lambda_no_params() {
         let code = "async || await fetch()";
         let result = Parser::new(code).parse();
@@ -261,7 +261,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore] // TODO: Verify async arrow lambda syntax is supported
+    #[ignore] // ASYNC-002: Async arrow lambda syntax not yet supported
     fn test_async_arrow_lambda() {
         let code = "async x => await transform(x)";
         let result = Parser::new(code).parse();

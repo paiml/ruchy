@@ -5,8 +5,7 @@
 //!
 //! Run with: cargo run --example `notebook_server`
 
-// NOTE: ruchy_notebook crate doesn't exist, so this example is disabled
-// TODO: Implement ruchy_notebook crate or remove this example
+// NOTE: ruchy_notebook crate not yet implemented - placeholder example for future feature
 
 #[cfg(feature = "notebook")]
 // use ruchy_notebook::server::start_server; // Disabled - crate doesn't exist

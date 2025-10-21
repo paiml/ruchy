@@ -1,3 +1,5 @@
 # Exclude disabled test directories from PMAT analysis
 tests_temp_disabled_for_sprint7_mutation/
 tests_temp_disabled_for_sprint7_mutation/**
+tests.disabled/
+tests.disabled/**

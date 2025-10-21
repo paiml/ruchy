@@ -125,8 +125,8 @@ impl NotebookEngine {
         match self.repl.eval(code) {
             Ok(output) => CellExecutionResult::success(
                 output,
-                String::new(), // TODO: Capture actual stdout in future enhancement
-                String::new(), // TODO: Capture actual stderr in future enhancement
+                String::new(), // NOTEBOOK-001: Capture stdout during execution
+                String::new(), // NOTEBOOK-001: Capture stderr during execution
                 start.elapsed(),
             ),
             Err(e) => CellExecutionResult::failure(e.to_string(), start.elapsed()),

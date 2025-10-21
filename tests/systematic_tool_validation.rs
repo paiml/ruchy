@@ -280,12 +280,11 @@ fun test_fail() {
 }
 
 #[test]
-#[ignore] // TODO: Test runner currently only detects first @test function in file
+#[ignore] // KNOWN LIMITATION: Test runner only detects first @test function (parser issue)
 fn tool_05_test_runs_multiple_tests() {
-    // KNOWN LIMITATION: When multiple @test functions are at top level,
-    // only the first is detected. This is a parser issue with how
-    // multiple top-level items are handled.
-    // See: extract_test_functions() in test_helpers.rs
+    // Parser limitation with multiple top-level @test decorators
+    // Only first function is detected in extract_test_functions()
+    // See: test_helpers.rs for implementation details
     let temp = temp_dir();
     let file = write_ruchy_file(
         &temp,

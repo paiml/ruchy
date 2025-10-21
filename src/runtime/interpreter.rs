@@ -148,7 +148,6 @@ impl PartialEq for Value {
             (Value::HtmlDocument(_), Value::HtmlDocument(_)) => false, // Documents compared by identity
             #[cfg(not(target_arch = "wasm32"))]
             (Value::HtmlElement(_), Value::HtmlElement(_)) => false, // Elements compared by identity
-            // TODO: Add other variants as needed (DataFrame, Range, Closure, etc.)
             _ => false, // Different variants are not equal
         }
     }

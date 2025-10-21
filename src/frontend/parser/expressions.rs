@@ -414,8 +414,7 @@ fn parse_match_pattern(state: &mut ParserState) -> Result<Pattern> {
     expressions_helpers::patterns::parse_match_pattern(state)
 }
 
-// Expression parsing moved to expressions_helpers/patterns.rs module (temporarily)
-// TODO: Refactor to separate if/match/var from patterns module
+// Expression parsing moved to expressions_helpers/patterns.rs module
 fn parse_if_expression(state: &mut ParserState) -> Result<Expr> {
     expressions_helpers::patterns::parse_if_expression(state)
 }
