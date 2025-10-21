@@ -1,0 +1,10 @@
+# Test 04: Comment in array literal
+let arr = [
+    1,
+    # Second element
+    2,
+    # Third element
+    3,
+    # Fourth element
+    4
+]

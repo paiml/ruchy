@@ -1,0 +1,12 @@
+# Test 03: Comment between function arguments
+fn add_three(a: i32, b: i32, c: i32) -> i32 {
+    a + b + c
+}
+
+let result = add_three(
+    1,
+    # Second argument
+    2,
+    # Third argument
+    3
+)
