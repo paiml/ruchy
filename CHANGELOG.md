@@ -4,6 +4,35 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+### 📋 Known Issues (GitHub)
+Track progress on these upstream ruchy-book issues:
+
+- **[Issue #45](https://github.com/paiml/ruchy/issues/45)** - Multi-line Code Blocks with Inline Comments (CRITICAL)
+  - Impact: 200+ broken examples
+  - Root cause: Parser doesn't handle comments between continued lines
+  - Priority: HIGH - Blocks major book compatibility improvement
+
+- **[Issue #46](https://github.com/paiml/ruchy/issues/46)** - Negative Array Indexing Not Supported
+  - Impact: ~5 broken examples
+  - Feature: Python-style `arr[-1]` for last element
+  - Priority: MEDIUM - Nice-to-have feature
+
+- **[Issue #47](https://github.com/paiml/ruchy/issues/47)** - Missing array.append() and string.format()
+  - Impact: ~5 broken examples
+  - Missing stdlib functions
+  - Priority: MEDIUM - Completeness feature
+
+### 📊 Current Status (v3.105.0)
+- **Book Compatibility**: 65% (233/359 examples passing)
+- **Language Features**: 100% (41/41 features complete)
+- **Quality Gates**: All passing (complexity ≤10, mutation ≥75%)
+- **Production Readiness**: 88%
+
+### 🎯 Next Sprint Candidates
+1. **PARSER-053** - Fix multi-line comment parsing (Issue #45)
+2. **STDLIB-007** - Add array.append() and string.format() (Issue #47)
+3. **FEATURE-042** - Implement negative array indexing (Issue #46)
+
 ## [3.105.0] - 2025-10-21
 
 ### 🎉 HTTP-002-A Complete - World-Class Development Server
