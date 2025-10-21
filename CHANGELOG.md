@@ -4,6 +4,32 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.99.3] - 2025-10-21
+
+### Completed - CLI Quality Gates
+- **[CLI-UNIFY-004] Pre-commit hook CLI regression prevention**
+  - Status: ✅ COMPLETE - Documented existing implementation
+  - Tests: 5/5 smoke tests passing (100%)
+  - Execution time: <5s (target: <30s)
+  - Script: `scripts/cli-smoke-tests.sh`
+  - Integration: Pre-commit hook validates CLI UX automatically
+  - Prevents regressions: REPL open, interpret speed, eval speed, compile functionality
+
+### Added - WASM API Refactoring
+- **[WASM] Stdout capture methods now public API**
+  - Methods: `capture_stdout()`, `get_stdout()`, `clear_stdout()`, `has_stdout()`
+  - Moved from tests module to main `Interpreter` impl
+  - Enables WASM/REPL integration
+  - Complexity: All methods ≤2
+  - Doctests: 4/4 methods documented
+  - Files: src/runtime/interpreter.rs:6400-6460
+
+### Documentation
+- **[ROADMAP] Synchronized roadmap.yaml with actual completion status**
+  - CLI-UNIFY-004 marked COMPLETE (was PENDING, implementation existed)
+  - Updated metadata: v3.8, current_sprint reflects CLI progress
+  - CLAUDE.md: Fixed all roadmap.md → roadmap.yaml references
+
 ### Fixed - WASM REPL (P0 CRITICAL)
 - **[WASM] Fixed println stdout capture for interactive book**
   - Bug: println output not visible in browser REPL (showed "nil" instead)
