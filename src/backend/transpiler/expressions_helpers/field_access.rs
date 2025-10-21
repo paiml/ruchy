@@ -38,6 +38,13 @@ impl Transpiler {
                 let field_ident = format_ident!("{}", field);
                 Ok(quote! { #obj_tokens::#field_ident })
             }
+            ExprKind::Identifier(name) if name.chars().next().map_or(false, |c| c.is_uppercase()) => {
+                // TRANSPILER-065: Type name (PascalCase) - use :: for associated functions/constructors
+                // Examples: String::from(), Result::Ok(), Vec::new()
+                // Heuristic: Rust types start with uppercase, instances with lowercase
+                let field_ident = format_ident!("{}", field);
+                Ok(quote! { #obj_tokens::#field_ident })
+            }
             _ => {
                 // Check if field is numeric (tuple field access)
                 if field.chars().all(|c| c.is_ascii_digit()) {
