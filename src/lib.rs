@@ -153,7 +153,7 @@ pub fn get_parse_error(source: &str) -> Option<String> {
 /// Returns an error if:
 /// - The REPL cannot be initialized
 /// - User interaction fails
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(all(not(target_arch = "wasm32"), feature = "repl"))]
 pub fn run_repl() -> Result<()> {
     let mut repl =
         runtime::repl::Repl::new(std::env::current_dir().unwrap_or_else(|_| "/tmp".into()))?;

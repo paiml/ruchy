@@ -1,3 +1,5 @@
+#![cfg(feature = "notebook")]
+
 // use crate::notebook::testing::execute::ExecuteRequest;  // Module doesn't exist
 
 #[derive(Debug, Serialize, Deserialize)]

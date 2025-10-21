@@ -5,6 +5,8 @@
 //! - Coverage >90% (MANDATORY)
 //! - TDG Grade A+ (MANDATORY)
 
+#![cfg(feature = "repl")]
+
 pub mod commands;
 pub mod completion;
 pub mod evaluation;

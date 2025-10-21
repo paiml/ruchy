@@ -1,4 +1,7 @@
 //! Interactive theorem prover core functionality
+
+#![cfg(feature = "repl")]
+
 use super::counterexample::{Counterexample, CounterexampleGenerator};
 use super::refinement::{RefinementChecker, RefinementType};
 use super::smt::{SmtBackend, SmtQuery, SmtResult, SmtSolver};

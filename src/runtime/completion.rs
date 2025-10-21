@@ -1,5 +1,8 @@
 //! Tab completion module for REPL
 //! Handles intelligent code completion with low complexity
+
+#![cfg(feature = "repl")]
+
 use rustyline::completion::{Completer, Pair};
 use rustyline::Context;
 use std::collections::{HashMap, HashSet};
