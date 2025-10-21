@@ -2315,6 +2315,34 @@ metrics:
 
 # Historical Context
 previous_sprints:
+  - name: "DEPENDENCY-CLEANUP Sprint v3.109.0 (Phase 1: Audit & Remove Unused)"
+    status: "IN PROGRESS"
+    completion_date: "2025-10-21"
+    time_actual: "2h"
+    commits: 1
+    tickets: ["DEPENDENCY-CLEANUP-001"]
+    results:
+      dependencies_removed: 2
+      binary_size: "19.2 MiB (unchanged - linker already dead-code eliminated)"
+      test_pass_rate: "100% (3999/3999 lib tests)"
+      compile_time: "Improved (fewer deps to analyze)"
+    tasks_complete:
+      - "TASK-001: HTML/CSS parser usage audit (grep verification)"
+      - "TASK-002: Baseline binary bloat measurement (cargo bloat)"
+      - "TASK-003: Dependency audit report creation"
+      - "TASK-004: Remove unused CSS dependencies (selectors, cssparser)"
+    tasks_remaining:
+      - "TASK-005: Feature-gate heavy dependencies (axum, reqwest, notify)"
+      - "TASK-006: Optimize release profile (opt-level=z, lto=fat)"
+    lessons:
+      - "Rust linker already dead-code eliminates unused deps - no binary size gain"
+      - "Removal still valuable: cleaner deps, faster compile, better clarity"
+      - "HTML parsers (html5ever) confirmed USED in src/stdlib/html.rs"
+    toyota_way:
+      jidoka: "Stopped and audited dependencies before feature-gating"
+      genchi_genbutsu: "Used grep to empirically verify actual usage"
+      kaizen: "Small incremental improvement - removed unused, kept used"
+
   - name: "Technical Debt Cleanup (Phases A-G)"
     status: "COMPLETE"
     completion_date: "2025-10-21"
