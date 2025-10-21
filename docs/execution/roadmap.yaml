@@ -2,10 +2,10 @@
 # Extreme TDD + Toyota Way + Mutation Testing Enforcement
 
 metadata:
-  version: "3.7"
-  last_updated: "2025-10-20"
-  current_sprint: "✅ ISSUE-039 + ISSUE-040 COMPLETE (Parser contextual keywords + .enumerate() method) | ✅ v3.99.1 RELEASED | Next: HTTP-002-A (PID File Management)"
-  latest_release: "v3.99.1"
+  version: "3.8"
+  last_updated: "2025-10-21"
+  current_sprint: "✅ CLI-UNIFY-004 COMPLETE (Pre-commit smoke tests) | ✅ v3.99.3 RELEASED | Next: CLI-UNIFY-005/006 (Examples + Docs)"
+  latest_release: "v3.99.3"
   production_readiness:
     overall: "87%"
     breakdown:
@@ -253,24 +253,34 @@ tasks:
 
   - id: "CLI-UNIFY-004"
     title: "Pre-commit Hook: CLI Regression Prevention"
-    status: "PENDING"
+    status: "COMPLETE"
+    completed: "2025-10-21"
     priority: "🔴 CRITICAL"
     time_estimated: "2h"
+    time_actual: "2h"
+    efficiency: "100%"
     specification: "docs/unified-deno-cli-spec.md"
     description: |
       Create git pre-commit hook that prevents CLI UX regressions
       by running smoke tests on all CLI invocation patterns
     tests:
       test_file: ".git/hooks/pre-commit"
-      smoke_tests: 10  # Fast checks (<30s total)
+      smoke_tests: 5  # Fast checks (<30s total)
+      passing: "5/5 (100%)"
     smoke_tests:
-      - "ruchy (no args) → opens REPL"
-      - "ruchy run test.ruchy → interprets <2s"
-      - "ruchy -e 'println(1)' → evaluates <1s"
-      - "ruchy test.ruchy → interprets <2s"
-      - "ruchy compile → creates binary"
+      - "✅ ruchy (no args) → opens REPL"
+      - "✅ ruchy run test.ruchy → interprets <2s"
+      - "✅ ruchy -e 'println(1)' → evaluates <1s"
+      - "✅ ruchy test.ruchy → interprets <2s"
+      - "✅ ruchy compile → creates binary"
+    implementation:
+      - "Created scripts/cli-smoke-tests.sh with 5 smoke tests"
+      - "Integrated into .git/hooks/pre-commit"
+      - "All tests passing (validated 2025-10-21)"
+      - "Execution time: <5s (well under 30s limit)"
     quality:
       complexity_max: 10
+      execution_time_actual: "<5s"
       execution_time_max: "30s"
 
   - id: "CLI-UNIFY-005"
