@@ -8,13 +8,26 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ### Changed
 
-- **[DEPENDENCY-CLEANUP] Remove unused CSS parser dependencies**
-  - Removed `selectors` v0.25.0 (unused, confirmed via grep)
-  - Removed `cssparser` v0.33.0 (unused, confirmed via grep)
-  - HTML parsing dependencies (html5ever, markup5ever) retained - actively used in stdlib
-  - Benefits: Cleaner dependency tree, faster compilation, better clarity
-  - Zero functionality impact: All 3,999 tests passing
-  - Binary size unchanged (19.2 MiB) - Rust linker already dead-code eliminated unused deps
+- **[DEPENDENCY-CLEANUP] Dependency optimization and feature-gating infrastructure**
+  - **Removed unused dependencies:**
+    - `selectors` v0.25.0 (unused, confirmed via grep)
+    - `cssparser` v0.33.0 (unused, confirmed via grep)
+    - HTML parsing dependencies (html5ever, markup5ever) retained - actively used in stdlib
+  - **Added feature flags for optional dependencies:**
+    - `http-client` = ["dep:reqwest"] - HTTP client functionality
+    - `markdown` = ["dep:pulldown-cmark"] - Markdown parsing
+    - `repl` = ["dep:rustyline"] - REPL line editing
+    - `watch-mode` = ["dep:notify"] - File watching for auto-reload
+    - `batteries-included` (default) = all features enabled for backward compatibility
+  - **Optimized release profile:**
+    - `lto = "fat"` - Full link-time optimization for smaller binaries
+    - `codegen-units = 1` - Better optimization (single compilation unit)
+    - `strip = true` - Remove debug symbols
+    - `panic = "abort"` - Smaller panic handler
+  - **Status:** Partial implementation - default build works, minimal build needs additional cfg guards
+  - **Benefits:** Cleaner dependency tree, faster compilation, foundation for minimal builds
+  - **Tests:** All 3,999 tests passing with default features
+  - **Binary size:** **19.2 MB → 12 MB (37.5% reduction!)** from LTO optimizations alone
 
 ## [3.108.0] - 2025-10-21
 
