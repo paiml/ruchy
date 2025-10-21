@@ -67,6 +67,10 @@ help:
 	@echo "  make wasm-quality-gate - Comprehensive WASM quality checks"
 	@echo "  make clean-e2e       - Clean E2E test artifacts"
 	@echo ""
+	@echo "WASM Deployment:"
+	@echo "  make wasm-build      - Build WASM package with wasm-pack"
+	@echo "  make wasm-deploy     - Build and deploy WASM to interactive.paiml.com"
+	@echo ""
 	@echo "Publishing:"
 	@echo "  make prepare-publish - Prepare for crates.io publication"
 	@echo "  make pre-release-checks - Run all pre-release quality checks"
@@ -74,7 +78,7 @@ help:
 	@echo "  make release-minor - Create minor release (new features)"
 	@echo "  make release-major - Create major release (breaking changes)"
 	@echo "  make release-auto - Auto-detect version bump type"
-	@echo "  make crate-release - Publish to crates.io"
+	@echo "  make crate-release - Publish to crates.io + build WASM"
 
 # Build project
 build:
@@ -818,8 +822,8 @@ release-dry:
 	@cargo release patch --dry-run
 
 # Publish to crates.io (interactive)
-crate-release:
-	@echo "📦 Publishing to crates.io..."
+crate-release: wasm-build
+	@echo "📦 Publishing to crates.io + WASM deployment..."
 	@echo "Current version: $$(grep '^version' Cargo.toml | head -1 | cut -d'\"' -f2)"
 	@echo ""
 	@echo "Pre-publish checklist:"
@@ -827,13 +831,21 @@ crate-release:
 	@echo "  ✓ CHANGELOG.md updated"
 	@echo "  ✓ All tests passing"
 	@echo "  ✓ Documentation builds"
+	@echo "  ✓ WASM build complete (pkg/ruchy_bg.wasm)"
 	@echo ""
 	@printf "Continue with publish? [y/N] "; \
 	read REPLY; \
 	case "$$REPLY" in \
 		[yY]*) \
-			echo "Publishing ruchy..."; \
+			echo "📦 Publishing ruchy to crates.io..."; \
 			cargo publish; \
+			echo ""; \
+			echo "🌐 WASM binaries built at: pkg/"; \
+			echo "   - ruchy_bg.wasm (~3.1MB)"; \
+			echo "   - ruchy.js (JavaScript bindings)"; \
+			echo "   - ruchy_bg.wasm.d.ts (TypeScript definitions)"; \
+			echo ""; \
+			echo "✅ Release complete!"; \
 			;; \
 		*) echo "❌ Publish cancelled" ;; \
 	esac
@@ -1242,6 +1254,11 @@ wasm-build:
 	@echo "🔨 Building WASM module..."
 	wasm-pack build --target web --out-dir pkg -- --no-default-features --features wasm-compile
 	@echo "✅ WASM module built: pkg/ruchy_bg.wasm"
+
+wasm-deploy: wasm-build
+	@echo "🚀 Deploying WASM to interactive.paiml.com..."
+	./scripts/deploy-wasm.sh --deploy
+	@echo "✅ WASM deployed successfully"
 
 # Run E2E tests (all 3 browsers)
 test-e2e: wasm-build
