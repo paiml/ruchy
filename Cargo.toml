@@ -198,7 +198,7 @@ quickcheck_macros = "1.1"
 
 [package]
 name = "ruchy"
-version = "3.107.0"
+version.workspace = true
 edition.workspace = true
 authors.workspace = true
 license.workspace = true
