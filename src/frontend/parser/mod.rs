@@ -1071,7 +1071,7 @@ fn parse_generic_macro(state: &mut ParserState, name: &str) -> Result<Option<Exp
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::frontend::ast::Literal;
+    use crate::frontend::ast::{Literal, UnaryOp};
 
     // Sprint 4: Comprehensive parser unit tests for coverage improvement
 
