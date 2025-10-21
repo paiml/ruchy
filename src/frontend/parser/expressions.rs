@@ -43,7 +43,7 @@ fn dispatch_prefix_token(state: &mut ParserState, token: Token, span: Span) -> R
         | Token::Spawn => expressions_helpers::unary_operators::parse_unary_prefix(state, token, span),
 
         // Identifiers and special keywords
-        Token::Identifier(_) | Token::Underscore | Token::Self_ | Token::Super | Token::Default | Token::Var | Token::Result => {
+        Token::Identifier(_) | Token::Underscore | Token::Self_ | Token::Super | Token::Default | Token::Result => {
             parse_identifier_prefix(state, token, span)
         }
 
@@ -52,6 +52,7 @@ fn dispatch_prefix_token(state: &mut ParserState, token: Token, span: Span) -> R
         | Token::Fn
         | Token::LeftBrace
         | Token::Let
+        | Token::Var
         | Token::Mod
         | Token::Module
         | Token::At => parse_declaration_prefix(state, token, span),
@@ -140,10 +141,6 @@ fn parse_identifier_prefix(state: &mut ParserState, token: Token, span: Span) ->
         Token::Default => {
             state.tokens.advance();
             Ok(Expr::new(ExprKind::Identifier("default".to_string()), span))
-        }
-        Token::Var => {
-            state.tokens.advance();
-            Ok(Expr::new(ExprKind::Identifier("var".to_string()), span))
         }
         Token::Result => {
             state.tokens.advance();

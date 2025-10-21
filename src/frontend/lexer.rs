@@ -88,8 +88,12 @@ pub enum Token {
     BlockComment(String),
 
     // Python/Ruby-style hash comments (PARSER-053)
-    // Must come BEFORE #[ pattern to avoid conflict with attributes
-    #[regex(r"#[^\n]*", |lex| lex.slice()[1..].to_string())]
+    // Match # followed by non-[ character (or end of line)
+    // Pattern: # followed by (NOT '[' and NOT newline), then anything until newline
+    #[regex(r"#(?:[^\[\n][^\n]*)?", |lex| {
+        let s = lex.slice();
+        if s.len() > 1 { s[1..].to_string() } else { String::new() }
+    })]
     HashComment(String),
 
     // Literals

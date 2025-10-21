@@ -21,7 +21,7 @@
 
 use super::BenchmarkResults;
 use std::process::Command;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 /// Benchmark a CLI command
 ///
@@ -106,6 +106,7 @@ pub fn benchmark_cli(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::time::Duration;
 
     /// Test CLI benchmark with echo command
     ///
