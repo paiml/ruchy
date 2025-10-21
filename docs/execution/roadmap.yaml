@@ -73,7 +73,24 @@ metadata:
         status: "✅ COMPLETE (v3.81.0 - 2025-10-14)"
         solution: "Intelligent inference from 50+ built-in function signatures"
         commit: "4f21335d"
-    active_work: []
+    active_work:
+      - id: "BOOK-COMPAT-001"
+        github_issue: 50
+        url: "https://github.com/paiml/ruchy/issues/50"
+        title: "Fix &str lifetime annotations in transpiler for struct fields"
+        priority: "HIGH"
+        status: "🛑 STOP THE LINE - In Progress"
+        started: "2025-10-21"
+        description: "Transpiler doesn't generate Rust lifetime annotations for &str in struct fields, causing compilation failures"
+        root_cause: "Ch19 Ex2 failure - struct Person { name: &str } transpiles to Rust without lifetime parameter <'a>"
+        fix_required: "Generate struct Person<'a> { name: &'a str, ... } in transpiler output"
+        estimated_effort: "2-4 hours"
+        impact: "Blocks 100% book compatibility (currently 1 failure remaining)"
+        acceptance_criteria:
+          - "Ch19 Ex2 compiles successfully to binary"
+          - "All structs with &str fields get lifetime annotations"
+          - "Tests pass for lifetime annotation generation"
+          - "Complexity ≤10 for new code"
     critical: []
     medium: []
     recently_completed:

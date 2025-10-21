@@ -93,7 +93,12 @@ fn process_data(items: Vec<Item>) -> Result<Output> {
 **MANDATORY RESPONSE** (THE ONLY ACCEPTABLE RESPONSE):
 1. 🛑 **STOP THE LINE IMMEDIATELY**: Halt ALL other work when ANY bug found
 2. 🔍 **ROOT CAUSE ANALYSIS**: Use Five Whys and GENCHI GENBUTSU (go and see)
-3. 📋 **CREATE TICKET**: Add to docs/execution/roadmap.yaml with format: [PARSER-XXX], [FORMATTER-XXX], etc.
+3. 📋 **CREATE TICKET VIA RUCHYRUCHY (DOGFOODING MANDATORY)**:
+   - **ALWAYS use RuchyRuchy debugger**: `ruchy debug create-ticket --category [PARSER/FORMATTER/etc]`
+   - **Why**: Dogfooding improves our own debugging tools through real-world usage
+   - **Benefits**: Tests ticket creation workflow, validates tool usability, finds UX bugs
+   - **Fallback ONLY if RuchyRuchy broken**: Manually add to docs/execution/roadmap.yaml
+   - **Format**: [PARSER-XXX], [FORMATTER-XXX], [TRANSPILER-XXX], etc.
 4. ✅ **EXTREME TDD IMPLEMENTATION**:
    - **RED**: Write failing test that reproduces bug FIRST
    - **GREEN**: Fix bug with minimal code changes

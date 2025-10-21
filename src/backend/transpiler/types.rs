@@ -223,6 +223,35 @@ impl Transpiler {
         Ok(struct_def)
     }
 
+    /// Helper: Check if any field has a reference type (for lifetime detection)
+    /// Complexity: 2 (simple iteration + match)
+    fn has_reference_fields(&self, fields: &[StructField]) -> bool {
+        use crate::frontend::ast::TypeKind;
+        fields.iter().any(|field| matches!(field.ty.kind, TypeKind::Reference { .. }))
+    }
+
+    /// Helper: Check if type params already contain a lifetime
+    /// Complexity: 1 (simple predicate)
+    fn has_lifetime_params(&self, type_params: &[String]) -> bool {
+        type_params.iter().any(|p| p.starts_with('\''))
+    }
+
+    /// Helper: Transpile type with explicit lifetime annotation for struct fields
+    /// Complexity: 3 (type matching + recursive call)
+    fn transpile_struct_field_type_with_lifetime(&self, ty: &Type, lifetime: &str) -> Result<TokenStream> {
+        use crate::frontend::ast::TypeKind;
+        match &ty.kind {
+            TypeKind::Reference { is_mut, inner, .. } => {
+                // Override lifetime for references
+                self.transpile_reference_type(*is_mut, Some(lifetime), inner)
+            }
+            _ => {
+                // For non-reference types, use regular transpilation
+                self.transpile_type(ty)
+            }
+        }
+    }
+
     /// Transpiles struct definitions
     pub fn transpile_struct(
         &self,
@@ -233,7 +262,18 @@ impl Transpiler {
         is_pub: bool,
     ) -> Result<TokenStream> {
         let struct_name = format_ident!("{}", name);
-        let type_param_tokens: Vec<TokenStream> = type_params
+
+        // BOOK-COMPAT-001: Auto-add lifetime parameter if struct has reference fields
+        let needs_lifetime = self.has_reference_fields(fields) && !self.has_lifetime_params(type_params);
+        let effective_type_params: Vec<String> = if needs_lifetime {
+            let mut params = vec!["'a".to_string()];
+            params.extend_from_slice(type_params);
+            params
+        } else {
+            type_params.to_vec()
+        };
+
+        let type_param_tokens: Vec<TokenStream> = effective_type_params
             .iter()
             .map(|p| {
                 if p.starts_with('\'') {
@@ -251,9 +291,15 @@ impl Transpiler {
             .iter()
             .map(|field| {
                 let field_name = format_ident!("{}", field.name);
-                let field_type = self
-                    .transpile_type(&field.ty)
-                    .unwrap_or_else(|_| quote! { _ });
+
+                // BOOK-COMPAT-001: Add lifetime to reference types if needed
+                let field_type = if needs_lifetime {
+                    self.transpile_struct_field_type_with_lifetime(&field.ty, "'a")
+                        .unwrap_or_else(|_| quote! { _ })
+                } else {
+                    self.transpile_type(&field.ty)
+                        .unwrap_or_else(|_| quote! { _ })
+                };
 
                 use crate::frontend::ast::Visibility;
                 match &field.visibility {
@@ -281,7 +327,7 @@ impl Transpiler {
         };
 
         // Generate struct definition
-        let struct_def = if type_params.is_empty() {
+        let struct_def = if effective_type_params.is_empty() {
             quote! {
                 #derive_attrs
                 #visibility struct #struct_name {
