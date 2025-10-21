@@ -1040,7 +1040,11 @@ pub fn handle_complex_command(command: crate::Commands) -> Result<()> {
             port,
             host,
             verbose,
-        } => handle_serve_command(&directory, port, &host, verbose),
+            watch,
+            debounce,
+            pid_file,
+            watch_wasm,
+        } => handle_serve_command(&directory, port, &host, verbose, watch, debounce, pid_file.as_deref(), watch_wasm),
         crate::Commands::ReplayToTests {
             input,
             output,
@@ -1653,7 +1657,16 @@ pub fn handle_notebook_command(
 /// * `host` - Host address to bind to
 /// * `verbose` - Enable verbose logging
 #[cfg(feature = "notebook")]
-pub fn handle_serve_command(directory: &Path, port: u16, host: &str, verbose: bool) -> Result<()> {
+pub fn handle_serve_command(
+    directory: &Path,
+    port: u16,
+    host: &str,
+    verbose: bool,
+    watch: bool,
+    debounce: u64,
+    pid_file: Option<&Path>,
+    watch_wasm: bool,
+) -> Result<()> {
     use axum::{http::HeaderValue, Router};
     use tower::ServiceBuilder;
     use tower_http::{services::ServeDir, set_header::SetResponseHeaderLayer};
@@ -1666,11 +1679,70 @@ pub fn handle_serve_command(directory: &Path, port: u16, host: &str, verbose: bo
         return Err(anyhow::anyhow!("Path is not a directory: {}", directory.display()));
     }
 
-    // Print startup banner
-    println!("🚀 Ruchy HTTP Server");
-    println!("📁 Serving: {}", directory.display());
-    println!("🌐 Listening: http://{}:{}", host, port);
-    println!("Press Ctrl+C to stop\n");
+    // Initialize PID file if requested
+    let _pid_guard = if let Some(pid_path) = pid_file {
+        Some(ruchy::server::PidFile::create(pid_path)?)
+    } else {
+        None
+    };
+
+    // World-class UX: Colored startup banner (vite-style)
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        use colored::Colorize;
+
+        println!("\n  🚀 {} {}\n",
+            "Ruchy Dev Server".bright_cyan().bold(),
+            format!("v{}", env!("CARGO_PKG_VERSION")).dimmed()
+        );
+
+        println!("  {}  http://{}:{}",
+            "➜  Local:".green(),
+            host,
+            port.to_string().bold()
+        );
+
+        // Show network IP if available
+        if let Ok(ip) = local_ip_address::local_ip() {
+            println!("  {}  http://{}:{}",
+                "➜  Network:".green(),
+                ip,
+                port
+            );
+        }
+
+        println!("  📁 {}: {}",
+            "Serving".dimmed(),
+            directory.display().to_string().bold()
+        );
+
+        if watch {
+            println!("  👀 {}: {}/**/*",
+                "Watching".dimmed(),
+                directory.display().to_string().bold()
+            );
+            if watch_wasm {
+                println!("  🦀 {}: Hot reload enabled for .ruchy files",
+                    "WASM".dimmed()
+                );
+            }
+        }
+
+        println!("\n  {} Press Ctrl+C to stop\n",
+            "Ready".green().bold()
+        );
+    }
+
+    #[cfg(target_arch = "wasm32")]
+    {
+        println!("🚀 Ruchy HTTP Server v{}", env!("CARGO_PKG_VERSION"));
+        println!("📁 Serving: {}", directory.display());
+        println!("🌐 Listening: http://{}:{}", host, port);
+        if watch {
+            println!("👀 Watching: {}/**/*", directory.display());
+        }
+        println!("Press Ctrl+C to stop\n");
+    }
 
     // Build the Axum app with static file serving + WASM headers
     let serve_dir = ServeDir::new(directory)
@@ -1703,18 +1775,149 @@ pub fn handle_serve_command(directory: &Path, port: u16, host: &str, verbose: bo
         .enable_all()
         .build()?;
 
-    // Bind and serve with TCP optimizations
-    let addr = format!("{}:{}", host, port);
-    runtime.block_on(async {
-        let listener = tokio::net::TcpListener::bind(&addr).await?;
+    // Setup signal handling for graceful shutdown (Ctrl+C)
+    #[cfg(unix)]
+    let (shutdown_tx, mut shutdown_rx) = std::sync::mpsc::channel::<()>();
 
-        if verbose {
-            println!("✅ Server started successfully ({} worker threads, optimized async runtime)", num_cpus);
+    #[cfg(unix)]
+    {
+        use signal_hook::consts::{SIGINT, SIGTERM};
+        use signal_hook::iterator::Signals;
+
+        let shutdown_tx_clone = shutdown_tx.clone();
+        std::thread::spawn(move || {
+            let mut signals = Signals::new(&[SIGINT, SIGTERM]).expect("Failed to register signal handlers");
+            for _sig in signals.forever() {
+                let _ = shutdown_tx_clone.send(());
+                break;
+            }
+        });
+    }
+
+    if watch {
+        // Watch mode: Monitor file changes and restart server
+        loop {
+            let mut watcher = ruchy::server::watcher::FileWatcher::new(
+                vec![directory.to_path_buf()],
+                debounce,
+            )?;
+
+            let addr = format!("{}:{}", host, port);
+            let app_clone = app.clone();
+            let server_handle = runtime.spawn(async move {
+                let listener = tokio::net::TcpListener::bind(&addr).await?;
+
+                if verbose {
+                    println!("✅ Server started ({} workers)", num_cpus);
+                }
+
+                axum::serve(listener, app_clone).await
+            });
+
+            // Poll for file changes AND shutdown signal
+            loop {
+                // Check for shutdown signal
+                #[cfg(unix)]
+                if shutdown_rx.try_recv().is_ok() {
+                    #[cfg(not(target_arch = "wasm32"))]
+                    {
+                        use colored::Colorize;
+                        println!("\n  {} Shutting down gracefully...\n", "✓".green());
+                    }
+                    #[cfg(target_arch = "wasm32")]
+                    {
+                        println!("\n  ✓ Shutting down gracefully...\n");
+                    }
+                    server_handle.abort();
+                    return Ok(());
+                }
+
+                if let Some(changed_files) = watcher.check_changes() {
+                    #[cfg(not(target_arch = "wasm32"))]
+                    {
+                        use colored::Colorize;
+                        if verbose {
+                            for file in &changed_files {
+                                println!("  📝 {}: {}",
+                                    "Changed".yellow(),
+                                    file.display()
+                                );
+                            }
+                        }
+
+                        // Gracefully shutdown server
+                        server_handle.abort();
+
+                        println!("\n  {} Restarting server...\n",
+                            "↻".cyan()
+                        );
+                    }
+
+                    #[cfg(target_arch = "wasm32")]
+                    {
+                        if verbose {
+                            for file in &changed_files {
+                                println!("  📝 Changed: {}", file.display());
+                            }
+                        }
+                        server_handle.abort();
+                        println!("\n  ↻ Restarting server...\n");
+                    }
+
+                    break;
+                }
+
+                std::thread::sleep(std::time::Duration::from_millis(100));
+            }
+        }
+    } else {
+        // Normal mode: Run server once with graceful shutdown
+        let addr = format!("{}:{}", host, port);
+
+        #[cfg(unix)]
+        {
+            let addr_clone = addr.clone();
+            let verbose_clone = verbose;
+            let num_cpus_clone = num_cpus;
+            let server_future = async move {
+                let listener = tokio::net::TcpListener::bind(&addr_clone).await?;
+
+                if verbose_clone {
+                    println!("✅ Server started ({} workers)", num_cpus_clone);
+                }
+
+                axum::serve(listener, app).await
+            };
+
+            // Spawn server task
+            let server_handle = runtime.spawn(server_future);
+
+            // Wait for shutdown signal
+            loop {
+                if shutdown_rx.try_recv().is_ok() {
+                    #[cfg(not(target_arch = "wasm32"))]
+                    {
+                        use colored::Colorize;
+                        println!("\n  {} Shutting down gracefully...\n", "✓".green());
+                    }
+                    server_handle.abort();
+                    return Ok(());
+                }
+                std::thread::sleep(std::time::Duration::from_millis(100));
+            }
         }
 
-        // NOTE: Axum automatically enables TCP_NODELAY for lower latency
-        axum::serve(listener, app).await
-    })?;
+        #[cfg(not(unix))]
+        runtime.block_on(async {
+            let listener = tokio::net::TcpListener::bind(&addr).await?;
+
+            if verbose {
+                println!("✅ Server started ({} workers)", num_cpus);
+            }
+
+            axum::serve(listener, app).await
+        })?;
+    }
 
     Ok(())
 }
@@ -1725,6 +1928,10 @@ pub fn handle_serve_command(
     _port: u16,
     _host: &str,
     _verbose: bool,
+    _watch: bool,
+    _debounce: u64,
+    _pid_file: Option<&Path>,
+    _watch_wasm: bool,
 ) -> Result<()> {
     Err(anyhow::anyhow!(
         "HTTP server requires notebook feature. Rebuild with --features notebook"

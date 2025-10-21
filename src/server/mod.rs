@@ -35,6 +35,18 @@ pub struct PidFile {
 }
 
 impl PidFile {
+    /// Create new PID file from a path reference
+    ///
+    /// # Errors
+    ///
+    /// Returns error if:
+    /// - Cannot read existing PID file
+    /// - Cannot write new PID file
+    /// - Cannot kill existing process
+    pub fn create(path: &std::path::Path) -> io::Result<Self> {
+        Self::new(path.to_path_buf())
+    }
+
     /// Create new PID file, killing existing process if needed
     ///
     /// # Errors
@@ -225,3 +237,5 @@ mod tests {
         });
     }
 }
+
+pub mod watcher;
