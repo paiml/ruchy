@@ -2346,3 +2346,45 @@ parser_defect_sprint:
     complexity_violations_fixed: 2
     quality_gates_passed: "100%"
 
+
+  - id: "WASM-ADVANCED-FEATURES"
+    title: "Advanced Rust features missing in WASM (::, use, generics, stdlib)"
+    status: "DOCUMENTED - Future Work"
+    priority: "High (not P0)"
+    discovered: "2025-10-21"
+    impact: "30% of book content (chapters 10-11, 284 code blocks)"
+    severity: "High - blocks advanced content deployment"
+    bug_report: "../interactive.paiml.com/wasm/ruchy/BUG_ADVANCED_FEATURES_NOT_IN_WASM.md"
+    root_cause: |
+      WASM parser missing fundamental Rust language features:
+      1. Path/namespace operator (::) - Vec::new(), HashMap::new()
+      2. Use declarations - use std::collections::HashMap
+      3. Generic type parameters - Vec<T>, HashMap<K,V>
+      4. Turbofish syntax - collect::<Vec<_>>()
+      5. Standard library bindings - Vec, HashMap, HashSet
+    current_workaround: "Chapters 10-11 removed from production deployment"
+    content_loss: "284/859 code blocks (33%)"
+    estimated_effort:
+      minimum_viable: "13-19 days (2.5-4 weeks)"
+      phases:
+        - "Phase 1: :: operator (2-3 days)"
+        - "Phase 2: use statements (1-2 days)"
+        - "Phase 3: Generics <T> (3-4 days)"
+        - "Phase 4: stdlib bindings (5-7 days)"
+        - "Testing (2-3 days)"
+      full_implementation: "28-41 days (6-8 weeks) with async/traits/lifetimes"
+    why_not_p0: |
+      - Core book (chapters 1-9) is functional and deployed
+      - println stdout capture fix (feee4c38) unblocked production launch
+      - Advanced features require substantial parser work (weeks not days)
+      - Current deployment provides beginner-intermediate learning path
+    future_roadmap: |
+      - Sprint: WASM-STDLIB (Phase 1+2: :: and use)
+      - Sprint: WASM-GENERICS (Phase 3: Generic syntax)
+      - Sprint: WASM-COLLECTIONS (Phase 4: Vec/HashMap/HashSet)
+      - Timeline: Q1 2026 target for chapters 10-11 deployment
+    status_note: "Acknowledged and documented - not blocking current release"
+    related_commits:
+      - "feee4c38 - [WASM] Fix println stdout capture (P0 CRITICAL - RESOLVED)"
+      - "0dd771be - [WASM] Fix compilation for wasm32 target"
+      - "b896f34 - Deploy Ruchy Interactive Book (9 chapters only)"
