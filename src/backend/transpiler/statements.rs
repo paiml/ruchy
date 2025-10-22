@@ -335,6 +335,7 @@ impl Transpiler {
         value: &Expr,
         body: &Expr,
         is_mutable: bool,
+        is_const: bool,
     ) -> Result<TokenStream> {
         // Handle Rust reserved keywords by prefixing with r#
         let safe_name = if Self::is_rust_reserved_keyword(name) {
@@ -344,14 +345,17 @@ impl Transpiler {
         };
         let name_ident = format_ident!("{}", safe_name);
 
-        // Check mutability: explicit mut, detected in body, or tracked in mutable_vars
-        let mut_keyword = if is_mutable
+        // PARSER-073: Generate const/let keyword based on const attribute
+        let var_keyword = if is_const {
+            // Const variables are always immutable in Rust
+            quote! { const }
+        } else if is_mutable
             || self.mutable_vars.contains(name)
             || Self::is_variable_mutated(name, body)
         {
-            quote! { mut }
+            quote! { let mut }
         } else {
-            quote! {}
+            quote! { let }
         };
 
         // DEFECT-001 FIX: Auto-convert string literals to String when type annotation is String
@@ -382,14 +386,14 @@ impl Transpiler {
         ) {
             // Standalone let statement - no wrapping needed
             Ok(quote! {
-                let #mut_keyword #name_ident #type_tokens = #value_tokens;
+                #var_keyword #name_ident #type_tokens = #value_tokens;
             })
         } else {
             // Traditional let-in expression with scoping
             let body_tokens = self.transpile_expr(body)?;
             Ok(quote! {
                 {
-                    let #mut_keyword #name_ident #type_tokens = #value_tokens;
+                    #var_keyword #name_ident #type_tokens = #value_tokens;
                     #body_tokens
                 }
             })

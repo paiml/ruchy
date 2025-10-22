@@ -4,6 +4,30 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.120.0] - 2025-10-22
+
+### Added
+
+- **[PARSER-073] Add const variable declarations (GitHub Issue #57, Part 2/3)**
+  - Feature: Const variable declarations now supported (`const PI = 3.14159`)
+  - Parser: Extended `parse_const_token()` to handle variable identifiers after `const` keyword
+  - Transpiler: Emits `const` keyword in Rust output when "const" attribute present
+  - Semantic: Const variables are always immutable (incompatible with `mut`)
+  - Test coverage: 10/10 tests passing (basic, integer, string, expression, multiple, in-function, vs-let, transpile, check, regression)
+  - Files modified:
+    - `src/frontend/parser/expressions_helpers/visibility_modifiers.rs` (add parse_const_variable function, lines 210-276)
+    - `src/backend/transpiler/statements.rs` (add is_const parameter to transpile_let_with_type, emit "const" keyword, lines 331-401)
+    - `src/backend/transpiler/dispatcher.rs` (extract const attribute from expr, line 395)
+    - `src/backend/transpiler/dispatcher_helpers/error_handling.rs` (extract const attribute, line 103)
+    - `tests/parser_073_const_declarations.rs` (10 comprehensive tests)
+  - Impact: Chapter 2, Block 8 documentation now works correctly
+  - Examples:
+    - Basic: `const PI = 3.14159`
+    - With type: `const MAX_SIZE: i32 = 100`
+    - Expression: `const DOUBLE_PI = 3.14159 * 2`
+    - Multiple: `const PI = 3.14159; const E = 2.71828`
+    - Regression: `const fun get_pi() { 3.14159 }` still works
+
 ## [3.119.0] - 2025-10-22
 
 ### Added
