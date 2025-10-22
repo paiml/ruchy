@@ -9,6 +9,18 @@ metadata:
   next_release: "v3.122.0 - Continue book compatibility (currently 83.2%, target ≥95%)"
   github_issues:
     active:
+      - id: 58
+        url: "https://github.com/paiml/ruchy/issues/58"
+        title: "Parser: Edge cases (nested comments, unary plus, #[test] attributes, deep nesting)"
+        impact: "LOW-MEDIUM - Four edge cases affecting ~4 code blocks (~1% of total)"
+        tickets: "PARSER-075 (nested comments), PARSER-076 (unary plus), PARSER-077 (attributes), PARSER-078 (deep nesting)"
+        priority: "MEDIUM"
+        status: "🔄 IN PROGRESS - PARSER-077 next (1/4 complete)"
+        progress:
+          - "PARSER-075: Nested block comments - PENDING (low priority)"
+          - "PARSER-076: Unary plus operator - ✅ COMPLETE (v3.122.0) - 12/12 tests passing, identity operation, optimization"
+          - "PARSER-077: Rust test attributes - PENDING (high value, next priority)"
+          - "PARSER-078: Deep if-else nesting - PENDING"
     completed:
       - id: 57
         url: "https://github.com/paiml/ruchy/issues/57"

@@ -41,6 +41,7 @@ pub(in crate::frontend::parser) fn parse_unary_prefix(
 ) -> Result<Expr> {
     match token {
         Token::Minus => parse_unary_negate(state, span),
+        Token::Plus => parse_unary_plus(state, span),
         Token::Bang => parse_unary_not(state, span),
         Token::Star => parse_unary_deref(state, span),
         Token::Ampersand => parse_unary_reference(state, span),
@@ -63,6 +64,13 @@ fn parse_unary_negate(state: &mut ParserState, span: Span) -> Result<Expr> {
         },
         span,
     ))
+}
+
+/// Parse unary plus: `+expr` (identity operation - returns operand unchanged)
+fn parse_unary_plus(state: &mut ParserState, _span: Span) -> Result<Expr> {
+    state.tokens.advance();
+    // Unary plus is identity operation - just parse and return the operand
+    parse_expr_with_precedence_recursive(state, 13)
 }
 
 /// Parse logical not: `!expr`
