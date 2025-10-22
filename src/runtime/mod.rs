@@ -145,13 +145,13 @@ pub use observatory::{
     MessageTrace, ObservatoryConfig, SystemMetrics,
 };
 // Export assessment components
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(all(not(target_arch = "wasm32"), feature = "repl"))]
 pub use assessment::{
     Assignment, AssignmentSetup, ExpectedBehavior, GradeReport, GradingEngine, GradingRubric,
     PlagiarismDetector, SecureSandbox, Task, TaskGrade, TestCase,
 };
 // Export magic commands
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(all(not(target_arch = "wasm32"), feature = "repl"))]
 pub use magic::{MagicCommand, MagicRegistry, MagicResult, ProfileData, UnicodeExpander};
 // Export inspection protocol
 pub use inspect::{CompositeForm, DisplayForm, Inspect, InspectStyle, Inspector, OpaqueHandle};

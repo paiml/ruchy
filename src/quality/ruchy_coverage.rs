@@ -355,6 +355,7 @@ impl RuchyCoverageCollector {
     /// let result = execute_with_coverage(());
     /// assert_eq!(result, Ok(()));
     /// ```
+    #[cfg(all(not(target_arch = "wasm32"), feature = "repl"))]
     pub fn execute_with_coverage(&mut self, file_path: &Path) -> Result<()> {
         use crate::frontend::parser::Parser;
         use crate::runtime::repl::Repl;
@@ -411,6 +412,15 @@ impl RuchyCoverageCollector {
         }
         Ok(())
     }
+
+    /// Stub for builds without REPL support
+    #[cfg(not(all(not(target_arch = "wasm32"), feature = "repl")))]
+    pub fn execute_with_coverage(&mut self, file_path: &Path) -> Result<()> {
+        // Analyze file for static coverage only (no execution)
+        self.analyze_file(file_path)?;
+        Ok(())
+    }
+
     /// Get runtime coverage data
     /// # Examples
     ///

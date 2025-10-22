@@ -2594,7 +2594,7 @@ fn try_eval_json_function(
 
 /// Dispatcher for HTTP builtin functions
 /// Complexity: 2 (loop + match delegation)
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(all(not(target_arch = "wasm32"), feature = "http-client"))]
 fn try_eval_http_function(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
     match name {
         "http_get" => Ok(Some(eval_http_get(args)?)),
@@ -2605,9 +2605,15 @@ fn try_eval_http_function(name: &str, args: &[Value]) -> Result<Option<Value>, I
     }
 }
 
+/// Stub for builds without http-client feature
+#[cfg(not(all(not(target_arch = "wasm32"), feature = "http-client")))]
+fn try_eval_http_function(_name: &str, _args: &[Value]) -> Result<Option<Value>, InterpreterError> {
+    Ok(None)
+}
+
 /// Eval: `http_get(url)`
 /// Complexity: 2 (validation + stdlib delegation)
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(all(not(target_arch = "wasm32"), feature = "http-client"))]
 fn eval_http_get(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("http_get", args, 1)?;
     match &args[0] {
@@ -2623,7 +2629,7 @@ fn eval_http_get(args: &[Value]) -> Result<Value, InterpreterError> {
 
 /// Eval: `http_post(url`, body)
 /// Complexity: 2 (validation + stdlib delegation)
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(all(not(target_arch = "wasm32"), feature = "http-client"))]
 fn eval_http_post(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("http_post", args, 2)?;
     match (&args[0], &args[1]) {
@@ -2639,7 +2645,7 @@ fn eval_http_post(args: &[Value]) -> Result<Value, InterpreterError> {
 
 /// Eval: `http_put(url`, body)
 /// Complexity: 2 (validation + stdlib delegation)
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(all(not(target_arch = "wasm32"), feature = "http-client"))]
 fn eval_http_put(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("http_put", args, 2)?;
     match (&args[0], &args[1]) {
@@ -2655,7 +2661,7 @@ fn eval_http_put(args: &[Value]) -> Result<Value, InterpreterError> {
 
 /// Eval: `http_delete(url)`
 /// Complexity: 2 (validation + stdlib delegation)
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(all(not(target_arch = "wasm32"), feature = "http-client"))]
 fn eval_http_delete(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("http_delete", args, 1)?;
     match &args[0] {

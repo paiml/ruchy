@@ -165,13 +165,19 @@ impl Cli {
         }
     }
 }
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(all(not(target_arch = "wasm32"), feature = "repl"))]
 fn execute_repl(_verbose: bool, quiet: bool) -> Result<(), String> {
     if !quiet {
         println!("Starting Ruchy REPL v3.4.1...");
     }
     // Use existing REPL implementation
     crate::run_repl().map_err(|e| format!("REPL error: {e}"))
+}
+
+/// Stub for builds without REPL support
+#[cfg(not(all(not(target_arch = "wasm32"), feature = "repl")))]
+fn execute_repl(_verbose: bool, _quiet: bool) -> Result<(), String> {
+    Err("REPL not available (requires 'repl' feature)".to_string())
 }
 fn execute_run(path: PathBuf, verbose: bool) -> Result<(), String> {
     if verbose {
