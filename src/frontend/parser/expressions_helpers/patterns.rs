@@ -723,6 +723,31 @@ fn parse_match_arms(state: &mut ParserState) -> Result<Vec<MatchArm>> {
     }
     Ok(arms)
 }
+/// Parse guard expression in match arms
+/// PARSER-071: Specialized parser that stops at `=>` and `->` to avoid treating them as lambda syntax
+/// Complexity: 3 (simple delegation with context management)
+fn parse_guard_expression(state: &mut ParserState) -> Result<Expr> {
+    // Set guard context flag to prevent `=>` and `->` from being treated as lambda syntax
+    let old_context = state.in_guard_context;
+    state.in_guard_context = true;
+
+    // Parse expression using standard parser
+    let expr = parse_expr_recursive(state);
+
+    // Restore previous context
+    state.in_guard_context = old_context;
+
+    // Return result (may be error)
+    let expr = expr?;
+
+    // Verify we stopped at a valid match arm delimiter
+    if !matches!(state.tokens.peek(), Some((Token::FatArrow | Token::Arrow, _))) {
+        bail!("Guard expression did not stop at match arm delimiter => or ->");
+    }
+
+    Ok(expr)
+}
+
 /// Parse a single match arm: pattern [if guard] => expr
 /// Complexity: <5 (simple sequential parsing)
 fn parse_single_match_arm(state: &mut ParserState) -> Result<MatchArm> {
@@ -730,9 +755,10 @@ fn parse_single_match_arm(state: &mut ParserState) -> Result<MatchArm> {
     // Parse pattern
     let pattern = parse_match_pattern(state)?;
     // Parse optional guard (if condition)
+    // PARSER-071: Use specialized guard parser to avoid treating `=>` as lambda arrow
     let guard = if matches!(state.tokens.peek(), Some((Token::If, _))) {
         state.tokens.advance(); // consume 'if'
-        Some(Box::new(parse_expr_recursive(state)?))
+        Some(Box::new(parse_guard_expression(state)?))
     } else {
         None
     };

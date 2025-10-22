@@ -9,6 +9,14 @@ metadata:
   next_release: "v3.119.0 - Continue book compatibility + parser enhancements"
   github_issues:
     completed:
+      - id: 56
+        url: "https://github.com/paiml/ruchy/issues/56"
+        title: "Guard clauses with external variable references fail to parse"
+        impact: "P1 - Match guards with external variables broken (n if n < limit => body)"
+        ticket: "PARSER-071"
+        priority: "HIGH"
+        status: "✅ COMPLETE (v3.119.0 - 2025-10-22)"
+        solution: "Added in_guard_context flag to prevent lambda interpretation in match guards (8/8 tests passing)"
       - id: 55
         url: "https://github.com/paiml/ruchy/issues/55"
         title: "Implement std::time module for timing measurements"

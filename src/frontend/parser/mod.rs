@@ -121,6 +121,9 @@ pub(crate) struct ParserState<'a> {
     /// Small cache for recently parsed expressions (capacity 8)
     #[allow(dead_code)]
     pub expr_cache: VecDeque<(usize, Expr)>,
+    /// PARSER-071: Flag to indicate we're parsing a match guard expression
+    /// When true, `=>` and `->` should not be treated as lambda syntax
+    pub in_guard_context: bool,
 }
 impl<'a> ParserState<'a> {
     #[must_use]
@@ -131,6 +134,7 @@ impl<'a> ParserState<'a> {
             arena: Arena::new(),
             interner: StringInterner::new(),
             expr_cache: VecDeque::with_capacity(8),
+            in_guard_context: false,  // PARSER-071: Initialize guard context flag
         }
     }
     /// Get all errors encountered during parsing
