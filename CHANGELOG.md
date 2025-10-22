@@ -4,6 +4,8 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.118.0] - 2025-10-22
+
 ### Added
 
 - **[STDLIB-006] Implement std::time module for timing measurements (GitHub Issue #55)**
