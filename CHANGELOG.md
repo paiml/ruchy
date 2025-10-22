@@ -6,6 +6,27 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ### Added
 
+- **[STDLIB-006] Implement std::time module for timing measurements (GitHub Issue #55)**
+  - Feature: `std::time::now_millis() -> i64` returns milliseconds since Unix epoch
+  - Use case: Enables compiler benchmarking infrastructure (unblocks INFRA-001/002/003)
+  - Implementation:
+    - Interpreter: std namespace with nested Object structure (`std` → `time` → `now_millis`)
+    - Transpiler: Path-based call handling generates `std::time::SystemTime::now()` code
+    - Transpiler: Module path detection ensures `std::time` uses `::` not `.` (field access vs path)
+  - Zero-cost: Aliases existing `timestamp()` implementation (no code duplication)
+  - Test coverage: 10/10 tests passing (basic, elapsed, benchmark, transpile, compile, all commands)
+  - Complexity: 1 (interpreter), nested match (transpiler) - well within <10 limit
+  - Files modified:
+    - `src/runtime/builtin_init.rs` (add_std_namespace function)
+    - `src/backend/transpiler/statements.rs` (std::time::now_millis call handling)
+    - `src/backend/transpiler/expressions_helpers/field_access.rs` (module path detection)
+    - `tests/stdlib_003_time.rs` (10 comprehensive tests with RED phase verification)
+  - Impact: Unblocks timing measurements for performance optimization and benchmarking
+  - Examples:
+    - Basic: `let timestamp = std::time::now_millis()`
+    - Elapsed: `let elapsed = std::time::now_millis() - start`
+    - Benchmark: `fun benchmark() { let start = std::time::now_millis(); ...; std::time::now_millis() - start }`
+
 - **[PARSER-070] Enable turbofish syntax in path expressions**
   - Feature: Support turbofish (`::<Type>`) in path expressions like `Vec::<i32>::new()`, `HashMap::<String, i32>::new()`
   - Examples: `Vec::<i32>::new()`, `HashMap::<String, i32>::new()`, `Vec::<Vec::<i32>>::new()`
