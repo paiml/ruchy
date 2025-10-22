@@ -4,6 +4,23 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.117.0] - 2025-10-22
+
+### Fixed
+
+- **[RELEASE-FIX] Correct dual-release protocol execution**
+  - Issue: v3.116.0 ruchy-wasm published with incorrect ruchy dependency version (3.114.0 instead of 3.116.0)
+  - Root cause: Failed to update ruchy dependency version in ruchy-wasm/Cargo.toml during version bump
+  - Actions taken:
+    1. Yanked broken ruchy-wasm v3.116.0 from crates.io
+    2. Fixed ruchy dependency: 3.114.0 → 3.116.0 in ruchy-wasm/Cargo.toml
+    3. Attempted republish but crates.io rejected (version already uploaded)
+    4. Bumped to v3.117.0 per crates.io immutability policy
+  - Functional changes: **NONE** - v3.117.0 is functionally identical to v3.116.0
+  - Purpose: Correctly publish both crates with synchronized versions per dual-release protocol
+  - Files modified: Cargo.toml (both crates), ruchy-wasm/Cargo.toml (dependency), Cargo.lock
+  - Note: Use v3.117.0 (not yanked v3.116.0)
+
 ## [3.116.0] - 2025-10-22
 
 ### Fixed
