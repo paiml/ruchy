@@ -152,8 +152,8 @@ impl BuiltinRegistry {
         self.register("json_get", builtin_json_get);
         self.register("json_set", builtin_json_set);
 
-        // HTTP functions (not available in WASM)
-        #[cfg(not(target_arch = "wasm32"))]
+        // HTTP functions (not available in WASM or builds without http-client feature)
+        #[cfg(all(not(target_arch = "wasm32"), feature = "http-client"))]
         {
             self.register("http_get", builtin_http_get);
             self.register("http_post", builtin_http_post);
