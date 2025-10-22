@@ -17,6 +17,7 @@ pub fn eval_string_method(
     method: &str,
     args: &[Value],
 ) -> Result<Value, InterpreterError> {
+    // Note: Turbofish stripping now handled centrally in eval_method_dispatch.rs (EVALUATOR-001)
     // STDLIB-007 (GitHub #47): format() accepts variadic arguments
     if method == "format" && !args.is_empty() {
         return eval_string_format(s, args);
@@ -44,6 +45,7 @@ fn eval_zero_arg_string_method(s: &Arc<str>, method: &str) -> Result<Value, Inte
         "trim_end" => Ok(Value::from_string(s.trim_end().to_string())),
         "chars" => eval_string_chars(s),
         "lines" => eval_string_lines(s),
+        "parse" => eval_string_parse(s),
         _ => Err(InterpreterError::RuntimeError(format!(
             "Unknown zero-argument string method: {method}"
         ))),
@@ -391,6 +393,22 @@ fn eval_generic_method(
             receiver.type_name()
         )))
     }
+}
+
+/// Parse string to integer (PARSER-069 support for turbofish)
+///
+/// # Complexity
+/// Cyclomatic complexity: 3 (within Toyota Way limits)
+fn eval_string_parse(s: &str) -> Result<Value, InterpreterError> {
+    s.trim()
+        .parse::<i64>()
+        .map(Value::Integer)
+        .map_err(|_| {
+            InterpreterError::RuntimeError(format!(
+                "Failed to parse '{}' as integer",
+                s
+            ))
+        })
 }
 
 #[cfg(test)]

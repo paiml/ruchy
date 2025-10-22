@@ -446,12 +446,28 @@ fn parse_method_or_field_access(
     receiver: Expr,
     method: String,
 ) -> Result<Expr> {
+    // PARSER-069 FIX: Check for turbofish generics (::) before checking for method call
+    // Example: "42".parse::<i32>() has :: after parse, not (
+    // Root cause: Parser was checking for ( immediately, treating turbofish as field access
+    let mut method_name = method;
+    if matches!(state.tokens.peek(), Some((Token::ColonColon, _))) {
+        state.tokens.advance(); // consume ::
+        // Check if next token is < for turbofish generics
+        if matches!(state.tokens.peek(), Some((Token::Less, _))) {
+            let turbofish = super::expressions::expressions_helpers::identifiers::parse_turbofish_generics(state)?;
+            method_name.push_str("::");
+            method_name.push_str(&turbofish);
+        } else {
+            bail!("Expected '<' after '::' in turbofish syntax");
+        }
+    }
+
     // Check if it's a method call (with parentheses) or field access
     if matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
-        parse_method_call_access(state, receiver, method)
+        parse_method_call_access(state, receiver, method_name)
     } else {
         // Field access
-        Ok(create_field_access(receiver, method))
+        Ok(create_field_access(receiver, method_name))
     }
 }
 /// Parse method call with arguments (complexity: 6)

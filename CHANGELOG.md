@@ -4,6 +4,28 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+### Fixed
+
+- **[PARSER-069] Fix turbofish syntax parsing in method calls**
+  - GitHub Issue: https://github.com/paiml/ruchy/issues/26
+  - Bug: Turbofish syntax (`::<Type>`) failed to parse in method calls everywhere (not just lambdas as originally reported)
+  - Example: `"42".parse::<i32>()` caused "Expected identifier...after '::'...got Less"
+  - Root cause: `parse_method_or_field_access()` checked for `(` immediately after method name; with turbofish, next token is `::`, so parser treated it as field access
+  - Solution (three components):
+    1. **Parser fix**: Check for `::` token before checking for `(` in `src/frontend/parser/functions.rs:444-472`
+    2. **Evaluator fix**: Strip turbofish from method names before method lookup in `src/runtime/interpreter.rs:3376-3504` and `src/runtime/eval_method_dispatch.rs:48-81`
+    3. **stdlib addition**: Implement `String.parse()` method in `src/runtime/eval_string_methods.rs:398-412`
+  - Module visibility fix: Made `expressions_helpers` visible within parser module (`src/frontend/parser/expressions.rs:10`)
+  - Test coverage: 8/8 core tests passing, 2 tests marked #[ignore] for PARSER-070 (path expression turbofish like `HashMap::<T>::new()` - separate feature)
+  - Files modified:
+    - `src/frontend/parser/functions.rs` - Added turbofish check before method call detection
+    - `src/frontend/parser/expressions.rs` - Made expressions_helpers module visible
+    - `src/runtime/interpreter.rs` - Strip turbofish in dispatch_method_call()
+    - `src/runtime/eval_method_dispatch.rs` - Strip turbofish centrally
+    - `src/runtime/eval_string_methods.rs` - Implement parse() method
+    - `tests/parser_069_turbofish_issue_26.rs` - Comprehensive test suite (NEW)
+  - Impact: Enables turbofish syntax for method calls (basic, lambdas, chains, conditions, higher-order functions)
+
 ### Changed
 
 - **[DEPS-042] Update wasmtime to v38.0.2 - Removes unmaintained fxhash dependency**
