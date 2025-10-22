@@ -642,6 +642,18 @@ fn try_binary_operators(
     token: &Token,
     min_prec: i32,
 ) -> Result<Option<Expr>> {
+    // PARSER-068 FIX: Check if Bang token has whitespace before it
+    // If there's whitespace (especially newline), treat ! as prefix unary NOT, not infix Send
+    if matches!(token, Token::Bang) {
+        if let Some((_, span)) = state.tokens.peek() {
+            // If there's a gap between left.span.end and Bang token, don't treat as infix
+            if span.start > left.span.end + 1 {
+                // There's whitespace - ! should be prefix operator on next line
+                return Ok(None);
+            }
+        }
+    }
+
     if let Some(bin_op) = expressions::token_to_binary_op(token) {
         let prec = expressions::get_precedence(bin_op);
         if prec < min_prec {
@@ -779,7 +791,8 @@ fn try_type_cast_operator(
         trailing_comment: None,
     }))
 }
-/// Try to parse actor operations (<-, <?, !) (complexity: 3, cognitive: 3)
+/// Try to parse actor operations (<-, <?, !) (complexity: 4, cognitive: 4)
+/// PARSER-068: Fixed Bang token ambiguity - don't treat ! as infix if there's whitespace before it
 fn try_new_actor_operators(
     state: &mut ParserState,
     left: Expr,
@@ -789,7 +802,18 @@ fn try_new_actor_operators(
     let expr_kind = match token {
         Token::LeftArrow => parse_actor_send_op(state, left, min_prec)?,
         Token::ActorQuery => parse_actor_query_op(state, left, min_prec)?,
-        Token::Bang => parse_actor_bang_op(state, left, min_prec)?,
+        Token::Bang => {
+            // PARSER-068 FIX: Check if Bang is adjacent to left expression
+            // If there's whitespace (especially newline), treat ! as prefix unary NOT, not infix Send
+            if let Some((_, span)) = state.tokens.peek() {
+                // If there's a gap between left.span.end and Bang token, don't treat as infix
+                if span.start > left.span.end + 1 {
+                    // There's whitespace - ! should be prefix operator on next line
+                    return Ok(None);
+                }
+            }
+            parse_actor_bang_op(state, left, min_prec)?
+        }
         _ => return Ok(None),
     };
     Ok(Some(create_actor_expr(expr_kind)))
