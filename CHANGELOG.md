@@ -6,6 +6,24 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [3.119.0] - 2025-10-22
 
+### Added
+
+- **[PARSER-072] Add single-quoted string support (GitHub Issue #57, Part 1/3)**
+  - Feature: Single-quoted strings now work equivalently to double-quoted strings
+  - Example: `'hello world'` and `"hello world"` are now interchangeable
+  - Implementation: Added single-quoted string regex pattern to lexer before char literal pattern
+  - Pattern order critical: Multi-char strings must match before single-char literals
+  - Test coverage: 10/10 tests passing (basic, escapes, empty, embedded quotes, concatenation, functions)
+  - Files modified:
+    - `src/frontend/lexer.rs` (add single-quoted string pattern to Token::String, lines 114-125)
+    - `tests/parser_072_single_quoted_strings.rs` (10 comprehensive tests)
+  - Impact: Chapter 2, Block 7 documentation now works correctly
+  - Examples:
+    - Basic: `let msg = 'hello world'`
+    - Equivalent: `assert_eq("hello", 'hello')` → true
+    - Embedded quotes: `'She said "hello"'` (no escaping needed)
+    - Char literals still work: `'x'` → Char token (not String)
+
 ### Fixed
 
 - **[PARSER-071] Fix guard clauses with external variable references (GitHub Issue #56)**

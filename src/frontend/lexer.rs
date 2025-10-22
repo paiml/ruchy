@@ -105,10 +105,23 @@ pub enum Token {
     Integer(String),
     #[regex(r"[0-9]+\.[0-9]+([eE][+-]?[0-9]+)?|[0-9]+[eE][+-]?[0-9]+", |lex| lex.slice().parse::<f64>().ok())]
     Float(f64),
+    // Double-quoted strings
     #[regex(r#""([^"\\]|\\.)*""#, |lex| {
         let s = lex.slice();
         let inner = &s[1..s.len()-1];
         Some(process_escapes(inner))
+    })]
+    // PARSER-072: Single-quoted strings (multi-char only, single-char handled by Char)
+    // Pattern: empty string ('') OR 2+ characters between single quotes
+    #[regex(r"'(([^'\\]|\\.)([^'\\]|\\.)+|)'", |lex| {
+        let s = lex.slice();
+        let inner = &s[1..s.len()-1];
+        // Only match if it's NOT a single character (let Char handle that)
+        if inner.len() != 1 && !(inner.starts_with('\\') && inner.len() == 2) {
+            Some(process_escapes(inner))
+        } else {
+            None
+        }
     })]
     String(String),
     #[regex(r#"f"([^"\\]|\\.)*""#, |lex| {
