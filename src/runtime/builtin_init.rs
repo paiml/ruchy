@@ -36,6 +36,7 @@ pub fn init_global_environment() -> HashMap<String, Value> {
     add_path_functions(&mut global_env);
     add_json_functions(&mut global_env);
     add_http_functions(&mut global_env);
+    add_std_namespace(&mut global_env);  // STDLIB-003: std::time module
 
     global_env
 }
@@ -224,6 +225,11 @@ fn add_random_time_functions(global_env: &mut HashMap<String, Value>) {
     );
     global_env.insert(
         "get_time_ms".to_string(),
+        Value::from_string("__builtin_timestamp__".to_string()),
+    );
+    // STDLIB-003: std::time::now_millis() - GitHub Issue #55
+    global_env.insert(
+        "std::time::now_millis".to_string(),
         Value::from_string("__builtin_timestamp__".to_string()),
     );
     global_env.insert(
@@ -415,6 +421,29 @@ fn add_http_functions(global_env: &mut HashMap<String, Value>) {
     global_env.insert("http_delete".to_string(), Value::from_string("__builtin_http_delete__".to_string()));
 }
 
+/// Add std namespace with time module
+/// STDLIB-003: GitHub Issue #55 - std::time module for timing measurements
+///
+/// # Complexity
+/// Cyclomatic complexity: 1 (within Toyota Way limits)
+fn add_std_namespace(global_env: &mut HashMap<String, Value>) {
+    use std::sync::Arc;
+
+    // Create time module object
+    let mut time_module = HashMap::new();
+    time_module.insert(
+        "now_millis".to_string(),
+        Value::from_string("__builtin_timestamp__".to_string()),
+    );
+
+    // Create std namespace object
+    let mut std_namespace = HashMap::new();
+    std_namespace.insert("time".to_string(), Value::Object(Arc::new(time_module)));
+
+    // Add std to global environment
+    global_env.insert("std".to_string(), Value::Object(Arc::new(std_namespace)));
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -501,8 +530,9 @@ mod tests {
         // file I/O functions: append_file, delete_file (STDLIB-003: 2 new, others existed)
         // string/array functions: substring, slice, join, unique, zip, enumerate (STDLIB-004: 6 new)
         // directory walking: walk, glob, search, walk_with_options (STDLIB-005: 4 new)
-        // Total: 89 base + 3 STDLIB-002 + 2 STDLIB-003 + 6 STDLIB-004 + 4 STDLIB-005 + 2 misc = 106
-        assert_eq!(env.len(), 106);
+        // std namespace: std (contains std::time::now_millis) (STDLIB-003: 1 new - GitHub Issue #55)
+        // Total: 89 base + 3 STDLIB-002 + 2 STDLIB-003 + 6 STDLIB-004 + 4 STDLIB-005 + 2 misc + 1 std = 107
+        assert_eq!(env.len(), 107);
     }
 
     #[test]

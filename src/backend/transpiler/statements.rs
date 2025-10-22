@@ -1318,6 +1318,28 @@ impl Transpiler {
             self.transpile_expr(func)?
         };
 
+        // STDLIB-003: Check for std::time::now_millis() path-based calls
+        if let ExprKind::FieldAccess { object, field } = &func.kind {
+            if let ExprKind::FieldAccess { object: std_obj, field: module_name } = &object.kind {
+                if let ExprKind::Identifier(std_name) = &std_obj.kind {
+                    if std_name == "std" && module_name == "time" && field == "now_millis" {
+                        // std::time::now_millis() - generate SystemTime code
+                        if !args.is_empty() {
+                            bail!("std::time::now_millis() expects no arguments");
+                        }
+                        return Ok(quote! {
+                            {
+                                std::time::SystemTime::now()
+                                    .duration_since(std::time::UNIX_EPOCH)
+                                    .expect("System time before Unix epoch")
+                                    .as_millis() as i64
+                            }
+                        });
+                    }
+                }
+            }
+        }
+
         // Check if this is a built-in function with special handling
         if let ExprKind::Identifier(name) = &func.kind {
             let base_name = if name.ends_with('!') {
@@ -3679,7 +3701,7 @@ impl Transpiler {
         args: &[Expr],
     ) -> Result<Option<TokenStream>> {
         match base_name {
-            "timestamp" | "get_time_ms" => {
+            "timestamp" | "get_time_ms" | "now_millis" => {
                 if !args.is_empty() {
                     bail!("{base_name}() expects no arguments");
                 }

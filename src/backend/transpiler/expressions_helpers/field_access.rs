@@ -7,6 +7,17 @@ use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 
 impl Transpiler {
+    /// Check if an expression represents a module path (like std::time)
+    /// STDLIB-003: Helper for distinguishing module paths from struct field access
+    fn is_module_path(expr: &Expr) -> bool {
+        use crate::frontend::ast::ExprKind;
+        match &expr.kind {
+            ExprKind::Identifier(name) => name == "std", // stdlib module
+            ExprKind::FieldAccess { object, .. } => Self::is_module_path(object),
+            _ => false,
+        }
+    }
+
     pub fn transpile_field_access(&self, object: &Expr, field: &str) -> Result<TokenStream> {
         use crate::frontend::ast::ExprKind;
         let obj_tokens = self.transpile_expr(object)?;
@@ -21,8 +32,12 @@ impl Transpiler {
                 })
             }
             ExprKind::FieldAccess { .. } => {
-                // Nested field access - check if numeric (tuple) or struct field
-                if field.chars().all(|c| c.is_ascii_digit()) {
+                // Nested field access - check if module path, numeric (tuple), or struct field
+                if Self::is_module_path(object) {
+                    // Module path like std::time::now_millis - use :: syntax
+                    let field_ident = format_ident!("{}", field);
+                    Ok(quote! { #obj_tokens::#field_ident })
+                } else if field.chars().all(|c| c.is_ascii_digit()) {
                     // Nested tuple access like (nested.0).1
                     let index: usize = field.parse().unwrap();
                     let index = syn::Index::from(index);
@@ -35,6 +50,11 @@ impl Transpiler {
             }
             ExprKind::Identifier(name) if name.contains("::") => {
                 // Module path identifier - use :: syntax
+                let field_ident = format_ident!("{}", field);
+                Ok(quote! { #obj_tokens::#field_ident })
+            }
+            ExprKind::Identifier(name) if name == "std" => {
+                // STDLIB-003: std module - use :: syntax for std::time, std::fs, etc.
                 let field_ident = format_ident!("{}", field);
                 Ok(quote! { #obj_tokens::#field_ident })
             }
