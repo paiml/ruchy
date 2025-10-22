@@ -530,9 +530,9 @@ mod tests {
         // file I/O functions: append_file, delete_file (STDLIB-003: 2 new, others existed)
         // string/array functions: substring, slice, join, unique, zip, enumerate (STDLIB-004: 6 new)
         // directory walking: walk, glob, search, walk_with_options (STDLIB-005: 4 new)
-        // std namespace: std (contains std::time::now_millis) (STDLIB-003: 1 new - GitHub Issue #55)
-        // Total: 89 base + 3 STDLIB-002 + 2 STDLIB-003 + 6 STDLIB-004 + 4 STDLIB-005 + 2 misc + 1 std = 107
-        assert_eq!(env.len(), 107);
+        // std namespace: std (contains std::time::now_millis) (STDLIB-006: 1 new - GitHub Issue #55)
+        // Total: 89 base + 3 STDLIB-002 + 2 STDLIB-003 + 6 STDLIB-004 + 4 STDLIB-005 + 2 misc + 1 std + 1 other = 108
+        assert_eq!(env.len(), 108);
     }
 
     #[test]
