@@ -138,12 +138,13 @@ fn parse_pub_visibility(state: &mut ParserState) -> Result<Visibility> {
 fn parse_scoped_visibility(state: &mut ParserState) -> Result<Visibility> {
     state.tokens.expect(&Token::LeftParen)?;
 
+    // PARSER-074: Match Token::Crate and Token::Super (not Identifier)
     let visibility = match state.tokens.peek() {
-        Some((Token::Identifier(id), _)) if id == "crate" => {
+        Some((Token::Crate, _)) => {
             state.tokens.advance();
             Visibility::PubCrate
         }
-        Some((Token::Identifier(id), _)) if id == "super" => {
+        Some((Token::Super, _)) => {
             state.tokens.advance();
             Visibility::PubSuper
         }
