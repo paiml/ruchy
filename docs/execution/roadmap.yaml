@@ -2,11 +2,11 @@
 # Extreme TDD + Toyota Way + Mutation Testing Enforcement
 
 metadata:
-  version: "3.24"
-  last_updated: "2025-10-21"
+  version: "3.25"
+  last_updated: "2025-10-22"
   current_sprint: "Book Compatibility Push - 83.2% Achieved, Target ≥95% (64 failures remaining)"
-  latest_release: "v3.107.0"
-  next_release: "v3.108.0 - PARSER-054 + systematic parser bug fixes (PARSER-061, 062, 063)"
+  latest_release: "v3.111.0"
+  next_release: "v3.112.0 - Continue systematic bug fixes"
   github_issues:
     completed:
       - id: 45
@@ -94,6 +94,18 @@ metadata:
     critical: []
     medium: []
     recently_completed:
+      - id: "PARSER-067"
+        title: "Implement struct pattern matching in match expressions"
+        priority: "HIGH"
+        status: "✅ COMPLETE (v3.111.0 - 2025-10-22)"
+        description: "Struct patterns in match arms now correctly bind field values to variables"
+        solution: "Implemented try_match_struct_pattern() with support for both Value::Struct and Value::Object"
+        impact: "Fixes ~19+ 'undefined variable' errors in production tests"
+        files_modified:
+          - "src/runtime/eval_pattern_match.rs (lines 63-65, 414-463)"
+          - "tests/parser_067_struct_pattern_test.rs (3 new tests)"
+        test_coverage: "3/3 tests passing (simple, multi-field, nested patterns)"
+        complexity: "8 (within Toyota Way ≤10 limit)"
       - id: "TOOLING-001"
         github_issue: 48
         url: "https://github.com/paiml/ruchy/issues/48"

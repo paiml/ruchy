@@ -5,7 +5,7 @@
 //! Extracted for maintainability and following Toyota Way principles.
 //! All functions maintain <10 cyclomatic complexity.
 
-use crate::frontend::ast::{Literal, Pattern};
+use crate::frontend::ast::{Literal, Pattern, StructPatternField};
 use crate::runtime::{InterpreterError, Value};
 
 /// Try to match a pattern against a value, returning bindings if successful
@@ -59,6 +59,9 @@ pub fn try_pattern_match(
         Pattern::QualifiedName(path) => try_match_qualified_name_pattern(path, value),
         Pattern::TupleVariant { path, patterns } => {
             try_match_tuple_variant_pattern(path, patterns, value, eval_literal)
+        }
+        Pattern::Struct { name, fields, .. } => {
+            try_match_struct_pattern(name, fields, value, eval_literal)
         }
         _ => Ok(None), // Other patterns not yet implemented
     }
@@ -406,6 +409,57 @@ fn extract_integer_from_pattern(pattern: &Pattern) -> Result<i64, InterpreterErr
             "Range pattern requires integer literals".to_string(),
         ))
     }
+}
+
+/// Try to match a struct pattern
+///
+/// # Complexity
+/// Cyclomatic complexity: 8 (within Toyota Way limits)
+fn try_match_struct_pattern(
+    struct_name: &str,
+    field_patterns: &[StructPatternField],
+    value: &Value,
+    eval_literal: &dyn Fn(&Literal) -> Value,
+) -> Result<Option<Vec<(String, Value)>>, InterpreterError> {
+    // Support both Value::Struct and Value::Object (duck typing)
+    let struct_fields = match value {
+        Value::Struct { name, fields } => {
+            // Check struct name matches (case-sensitive)
+            if name != struct_name {
+                return Ok(None);
+            }
+            fields
+        }
+        Value::Object(fields) => {
+            // Objects can match struct patterns (duck typing)
+            fields
+        }
+        _ => return Ok(None),
+    };
+
+    // Match each field pattern
+    let mut all_bindings = Vec::new();
+    for field_pattern in field_patterns {
+        // Get the field value from the struct
+        let field_value = match struct_fields.get(&field_pattern.name) {
+            Some(v) => v,
+            None => return Ok(None), // Field not found
+        };
+
+        // Match the field pattern (if specified)
+        if let Some(ref pattern) = field_pattern.pattern {
+            if let Some(bindings) = try_pattern_match(pattern, field_value, eval_literal)? {
+                all_bindings.extend(bindings);
+            } else {
+                return Ok(None);
+            }
+        } else {
+            // No pattern specified, bind field name directly
+            all_bindings.push((field_pattern.name.clone(), field_value.clone()));
+        }
+    }
+
+    Ok(Some(all_bindings))
 }
 
 #[cfg(test)]

@@ -4,6 +4,31 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.111.0] - 2025-10-22
+
+### Fixed
+
+- **[PARSER-067] Implement struct pattern matching in match expressions**
+  - Struct patterns in match arms now correctly bind field values to variables
+  - Root cause: `Pattern::Struct` was unhandled in `eval_pattern_match.rs`, falling through to catch-all that returns `None`
+  - Solution: Implemented `try_match_struct_pattern()` with support for both `Value::Struct` and `Value::Object` (duck typing)
+  - Files modified:
+    - `src/runtime/eval_pattern_match.rs` - Added struct pattern handler (lines 63-65, 414-463)
+    - `tests/parser_067_struct_pattern_test.rs` - TDD test suite with 3 passing tests
+  - Features:
+    - Case-sensitive struct name matching
+    - Multi-field destructuring: `Person { name, age } => ...`
+    - Nested struct patterns: `Person { name, addr } => ...`
+    - Field shorthand syntax: `Person { name }` binds `name` field to `name` variable
+  - Impact: Fixes ~19+ "undefined variable" errors in production tests
+  - Test coverage: 3/3 new tests passing (simple, multi-field, nested patterns)
+
+### Quality
+
+- **Pattern Matching Test Suite:** All library tests passing (3999 passed, 0 failed)
+- **TDD Implementation:** Created comprehensive test suite before merging fix
+- **Complexity:** `try_match_struct_pattern` = 8 (within Toyota Way ≤10 limit)
+
 ## [3.110.0] - 2025-10-21
 
 ### Fixed
