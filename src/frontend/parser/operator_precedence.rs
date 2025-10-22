@@ -101,6 +101,7 @@ pub fn is_prefix_operator(token: &Token) -> bool {
         token,
         Token::Bang          // ! (logical not)
         | Token::Minus       // - (negation)
+        | Token::Plus        // + (unary plus - identity)
         | Token::Tilde       // ~ (bitwise not)
         | Token::Ampersand   // & (reference)
         | Token::Star        // * (dereference)
@@ -248,7 +249,6 @@ mod tests {
     #[test]
     fn test_is_prefix_operator_returns_false_for_non_prefix() {
         // Test gap: verify is_prefix_operator returns false (not just true)
-        assert!(!is_prefix_operator(&Token::Plus), "Plus is not prefix");
         assert!(!is_prefix_operator(&Token::Slash), "Slash is not prefix");
         assert!(!is_prefix_operator(&Token::Dot), "Dot is not prefix");
         assert!(
@@ -265,6 +265,7 @@ mod tests {
             is_prefix_operator(&Token::Minus),
             "Minus (negation) is prefix"
         );
+        assert!(is_prefix_operator(&Token::Plus), "Plus (identity) is prefix");
         assert!(is_prefix_operator(&Token::Tilde), "Tilde is prefix");
         assert!(
             is_prefix_operator(&Token::Ampersand),
@@ -317,13 +318,10 @@ mod mutation_tests {
         // Test that function returns true for prefix operators
         assert!(is_prefix_operator(&Token::Bang), "Bang should be prefix");
         assert!(is_prefix_operator(&Token::Minus), "Minus should be prefix");
+        assert!(is_prefix_operator(&Token::Plus), "Plus should be prefix (identity)");
         assert!(is_prefix_operator(&Token::Tilde), "Tilde should be prefix");
 
         // Test that function returns false for non-prefix operators (proves not stub returning true)
-        assert!(
-            !is_prefix_operator(&Token::Plus),
-            "Plus should NOT be prefix"
-        );
         assert!(
             !is_prefix_operator(&Token::Slash),
             "Slash should NOT be prefix"

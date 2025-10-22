@@ -4,6 +4,24 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.122.0] - 2025-10-22
+
+### Added
+
+- **[PARSER-076] Implement unary plus operator (GitHub Issue #58, Part 1/4)**
+  - Feature: Unary plus operator now supported (`+expr`, identity operation)
+  - Examples: `+42`, `+x`, `+ +100`, `+10 * 2`
+  - Implementation: Identity operation - returns operand unchanged, no AST node created
+  - Optimization: `+42` transpiles to `42` (identity optimized away at parse time)
+  - Test coverage: 12/12 tests passing (literal, variable, float, expression, call, transpile, precedence, combos, regressions)
+  - Files modified:
+    - `src/frontend/parser/operator_precedence.rs` (add Token::Plus to is_prefix_operator, lines 104, 268, update tests)
+    - `src/frontend/parser/expressions.rs` (add Token::Plus to dispatch_prefix_token, line 38)
+    - `src/frontend/parser/expressions_helpers/unary_operators.rs` (add parse_unary_plus handler, lines 44, 69-74)
+    - `tests/parser_076_unary_plus.rs` (12 comprehensive tests)
+  - Impact: Parser edge cases from GitHub Issue #58 (1/4 complete)
+  - **GitHub Issue #58 Status**: 🔄 IN PROGRESS (PARSER-076 complete, 3 remaining: attributes, deep nesting, nested comments)
+
 ## [3.121.0] - 2025-10-22
 
 ### Added

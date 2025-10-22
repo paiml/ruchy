@@ -35,6 +35,7 @@ fn dispatch_prefix_token(state: &mut ParserState, token: Token, span: Span) -> R
 
         // Unary operators
         Token::Minus
+        | Token::Plus
         | Token::Bang
         | Token::Star
         | Token::Ampersand
