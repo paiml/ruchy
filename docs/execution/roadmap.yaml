@@ -17,6 +17,14 @@ metadata:
         priority: "CRITICAL"
         status: "✅ COMPLETE (v3.115.0 - 2025-10-22)"
         solution: "Fixed Bang token ambiguity - check whitespace gap before treating ! as infix Send operator"
+      - id: 42
+        url: "https://github.com/paiml/ruchy/issues/42"
+        title: "Update fxhash dependency (unmaintained)"
+        impact: "Quality - RUSTSEC-2025-0057 advisory"
+        ticket: "DEPS-042"
+        priority: "MEDIUM"
+        status: "✅ COMPLETE (v3.115.0 - 2025-10-22)"
+        solution: "Updated wasmtime 36.0.2 → 38.0.2, completely removes fxhash transitive dependency"
       - id: 45
         url: "https://github.com/paiml/ruchy/issues/45"
         title: "Multi-line Code Blocks with Inline Comments"
@@ -97,6 +105,19 @@ metadata:
         status: "Deployment Issue - Works in v3.115.0"
         description: "Nested scopes work correctly in WASM, production site needs v3.115.0 deployment"
     recently_completed:
+      - id: "DEPS-042"
+        github_issue: 42
+        title: "Update wasmtime to v38.0.2 - Removes unmaintained fxhash dependency"
+        priority: "MEDIUM"
+        status: "✅ COMPLETE (v3.115.0 - 2025-10-22)"
+        description: "Quality improvement - removes RUSTSEC-2025-0057 advisory for unmaintained fxhash v0.2.1"
+        root_cause: "Transitive dependency through wasmtime v36.0.2"
+        solution: "Update wasmtime from v36.0.2 to v38.0.2 (latest stable)"
+        verification: "cargo tree -p fxhash returns 'package not found' - completely removed"
+        impact: "Notebook feature builds successfully, no functional changes"
+        files_modified:
+          - "Cargo.toml (wasmtime version)"
+          - "Cargo.lock (auto-updated dependencies)"
       - id: "TOOLING-001"
         github_issue: 48
         title: "Integrate RuchyRuchy Debugging Tools into Main Project"

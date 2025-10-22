@@ -4,6 +4,17 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+### Changed
+
+- **[DEPS-042] Update wasmtime to v38.0.2 - Removes unmaintained fxhash dependency**
+  - GitHub Issue: https://github.com/paiml/ruchy/issues/42
+  - Problem: fxhash v0.2.1 marked as unmaintained (RUSTSEC-2025-0057)
+  - Root cause: Transitive dependency through wasmtime v36.0.2
+  - Solution: Update wasmtime from v36.0.2 to v38.0.2 (latest stable)
+  - Verification: `cargo tree -p fxhash` returns "package not found" - completely removed
+  - Impact: Quality improvement - removes unmaintained dependency warnings
+  - Files modified: Cargo.toml, Cargo.lock
+
 ## [3.115.0] - 2025-10-22
 
 ### Fixed
