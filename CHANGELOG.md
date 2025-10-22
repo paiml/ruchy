@@ -4,6 +4,33 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.119.0] - 2025-10-22
+
+### Fixed
+
+- **[PARSER-071] Fix guard clauses with external variable references (GitHub Issue #56)**
+  - Bug: Match guard expressions like `n if n < limit => body` failed with "Expected '=>' in match arm"
+  - Root cause: Parser treated `identifier =>` as lambda syntax (`x => x + 1`) and consumed `=>` token
+  - When parsing `n < limit`, seeing `limit =>` triggered lambda parser which consumed `=>` for match arm
+  - Solution: Added `in_guard_context: bool` flag to ParserState to prevent lambda interpretation in guards
+  - Implementation:
+    - Added `in_guard_context` field to ParserState struct (mod.rs:126)
+    - Created `parse_guard_expression()` helper that sets context flag (patterns.rs:726-749)
+    - Modified identifier parsing to check flag before lambda detection (identifiers.rs:41)
+    - Modified `parse_single_match_arm()` to use specialized guard parser (patterns.rs:736)
+  - Test coverage: 8/8 tests passing (external vars, compound expressions, function calls, transpile/check modes)
+  - Complexity: 3 (parse_guard_expression) - well within <10 limit
+  - Files modified:
+    - `src/frontend/parser/mod.rs` (add in_guard_context flag)
+    - `src/frontend/parser/expressions_helpers/patterns.rs` (parse_guard_expression)
+    - `src/frontend/parser/expressions_helpers/identifiers.rs` (guard context check)
+    - `tests/parser_071_guard_external_vars.rs` (8 comprehensive tests)
+  - Impact: External variables now work correctly in match guards
+  - Examples:
+    - Basic: `match 5 { n if n < limit => "less", _ => "greater" }`
+    - Compound: `match temp { t if t < 90 && is_summer => "warm", _ => "hot" }`
+    - Function call: `match 4 { n if is_even(n) => "even", _ => "odd" }`
+
 ## [3.118.0] - 2025-10-22
 
 ### Added

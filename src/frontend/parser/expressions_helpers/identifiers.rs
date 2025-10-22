@@ -37,7 +37,8 @@ pub(in crate::frontend::parser) fn parse_identifier_token(
         Token::Identifier(name) => {
             state.tokens.advance();
             // Check for fat arrow lambda: x => x * 2
-            if matches!(state.tokens.peek(), Some((Token::FatArrow, _))) {
+            // PARSER-071: Don't treat `=>` as lambda in match guard context
+            if !state.in_guard_context && matches!(state.tokens.peek(), Some((Token::FatArrow, _))) {
                 let ident_expr = Expr::new(ExprKind::Identifier(name.clone()), span);
                 super::super::parse_lambda_from_expr(state, ident_expr, span)
             } else {
