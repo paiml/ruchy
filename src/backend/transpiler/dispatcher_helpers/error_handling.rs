@@ -99,12 +99,15 @@ impl Transpiler {
                     // Transpile let-else: let PAT = EXPR else { BLOCK }
                     self.transpile_let_else(name, value, body, else_expr)
                 } else {
+                    // PARSER-073: Check for const attribute
+                    let is_const = expr.attributes.iter().any(|attr| attr.name == "const");
                     self.transpile_let_with_type(
                         name,
                         type_annotation.as_ref(),
                         value,
                         body,
                         *is_mutable,
+                        is_const,
                     )
                 }
             }

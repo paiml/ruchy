@@ -168,23 +168,26 @@ fn mark_expression_as_public(expr: &mut Expr) {
     }
 }
 
-/// Parse const token - handles const declarations for functions
+/// Parse const token - handles const declarations for functions and variables
 ///
 /// Similar to `parse_pub_token` but for const modifier
 ///
 /// # Examples
 /// ```ruchy
 /// const fn compile_time_fn() -> i32 { 42 }
+/// const PI = 3.14159
+/// const MAX_SIZE: i32 = 100
 /// ```
 pub(in crate::frontend::parser) fn parse_const_token(
     state: &mut ParserState,
-    _span: Span,
+    span: Span,
 ) -> Result<Expr> {
     state.tokens.advance(); // consume 'const'
 
-    // Check if next token is 'fun' or 'fn'
+    // Check what comes after 'const'
     match state.tokens.peek() {
         Some((Token::Fun | Token::Fn, _)) => {
+            // const function
             let mut expr = super::super::parse_prefix(state)?;
             // Mark the function as const by adding an attribute
             if let ExprKind::Function { .. } = &expr.kind {
@@ -196,8 +199,80 @@ pub(in crate::frontend::parser) fn parse_const_token(
             }
             Ok(expr)
         }
-        _ => bail!("Expected 'fun' or 'fn' after 'const'"),
+        Some((Token::Identifier(_), _)) => {
+            // const variable declaration
+            parse_const_variable(state, span)
+        }
+        _ => bail!("Expected identifier, 'fun', or 'fn' after 'const'"),
     }
+}
+
+/// Parse const variable declaration
+///
+/// Syntax: `const NAME [: Type] = value`
+/// Similar to let but always immutable (`is_mutable = false`)
+///
+/// # Examples
+/// ```ruchy
+/// const PI = 3.14159
+/// const MAX_SIZE: i32 = 100
+/// ```
+fn parse_const_variable(state: &mut ParserState, start_span: Span) -> Result<Expr> {
+    use crate::frontend::ast::Literal;
+    use crate::frontend::parser::{parse_expr_recursive, utils};
+
+    // Parse variable name
+    let name = match state.tokens.peek() {
+        Some((Token::Identifier(n), _)) => {
+            let name = n.clone();
+            state.tokens.advance();
+            name
+        }
+        _ => bail!("Expected identifier after 'const'"),
+    };
+
+    // Parse optional type annotation: `: Type`
+    let type_annotation = if matches!(state.tokens.peek(), Some((Token::Colon, _))) {
+        state.tokens.advance(); // consume ':'
+        Some(utils::parse_type(state)?)
+    } else {
+        None
+    };
+
+    // Expect '=' token
+    state.tokens.expect(&Token::Equal)?;
+
+    // Parse value expression
+    let value = Box::new(parse_expr_recursive(state)?);
+
+    // Const variables don't have 'in' clause - body is always unit
+    let body = Box::new(Expr::new(
+        ExprKind::Literal(Literal::Unit),
+        value.span,
+    ));
+
+    // Create Let expression with is_mutable = false
+    let end_span = value.span;
+    let mut expr = Expr::new(
+        ExprKind::Let {
+            name,
+            type_annotation,
+            value,
+            body,
+            is_mutable: false,  // const is never mutable
+            else_block: None,    // const doesn't support else
+        },
+        start_span.merge(end_span),
+    );
+
+    // Add "const" attribute to distinguish from regular let
+    expr.attributes.push(Attribute {
+        name: "const".to_string(),
+        args: vec![],
+        span: start_span,
+    });
+
+    Ok(expr)
 }
 
 /// Parse sealed token - handles sealed modifier for classes

@@ -5,8 +5,8 @@ metadata:
   version: "3.29"
   last_updated: "2025-10-22"
   current_sprint: "Book Compatibility Push - 83.2% Achieved, Target ≥95% (64 failures remaining)"
-  latest_release: "v3.118.0"
-  next_release: "v3.119.0 - Continue book compatibility + parser enhancements"
+  latest_release: "v3.120.0"
+  next_release: "v3.121.0 - Continue book compatibility + parser enhancements"
   github_issues:
     active:
       - id: 57
@@ -15,10 +15,10 @@ metadata:
         impact: "MEDIUM - Three missing features affecting book documentation (3 blocks)"
         tickets: "PARSER-072 (single quotes), PARSER-073 (const), PARSER-074 (visibility)"
         priority: "MEDIUM"
-        status: "🔄 IN PROGRESS - PARSER-072 complete (1/3), next: PARSER-073 (const)"
+        status: "🔄 IN PROGRESS - PARSER-074 pending (2/3 complete)"
         progress:
           - "PARSER-072: Single-quoted strings - ✅ COMPLETE (10/10 tests passing)"
-          - "PARSER-073: Const variable declarations - PENDING"
+          - "PARSER-073: Const variable declarations - ✅ COMPLETE (10/10 tests passing)"
           - "PARSER-074: Struct visibility modifiers - PENDING"
     completed:
       - id: 56
