@@ -4,6 +4,21 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.113.0] - 2025-10-22
+
+### Fixed
+
+- **[WASM-BUILD-002] Complete feature-gating for minimal builds**
+  - Fixed HTTP builtin functions requiring `http-client` feature
+  - Fixed CLI REPL invocation requiring `repl` feature
+  - Fixed coverage module REPL usage requiring `repl` feature
+  - Files modified:
+    - `src/runtime/eval_builtin.rs` - Added http-client guards + stub
+    - `src/cli/mod.rs` - Added repl guard + stub for execute_repl
+    - `src/quality/ruchy_coverage.rs` - Added repl guard + stub
+  - Impact: ruchy-wasm now publishes successfully to crates.io
+  - All builds work: default features, WASM, minimal (no-default-features)
+
 ## [3.112.0] - 2025-10-22
 
 ### Fixed

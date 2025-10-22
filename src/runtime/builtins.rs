@@ -1551,8 +1551,8 @@ fn set_json_path_recursive(json: &mut serde_json::Value, path: &[&str], value: s
 /// Builtin: `http_get(url)`
 /// Sends GET request and returns response body as string
 /// Complexity: 2 (error handling + stdlib delegation)
-/// Note: Not available for WASM targets
-#[cfg(not(target_arch = "wasm32"))]
+/// Note: Not available for WASM targets or builds without http-client feature
+#[cfg(all(not(target_arch = "wasm32"), feature = "http-client"))]
 fn builtin_http_get(args: &[Value]) -> Result<Value, InterpreterError> {
     if args.len() != 1 {
         return Err(InterpreterError::RuntimeError("http_get() expects 1 argument".to_string()));
@@ -1572,8 +1572,8 @@ fn builtin_http_get(args: &[Value]) -> Result<Value, InterpreterError> {
 /// Builtin: `http_post(url`, body)
 /// Sends POST request with body and returns response
 /// Complexity: 2 (error handling + stdlib delegation)
-/// Note: Not available for WASM targets
-#[cfg(not(target_arch = "wasm32"))]
+/// Note: Not available for WASM targets or builds without http-client feature
+#[cfg(all(not(target_arch = "wasm32"), feature = "http-client"))]
 fn builtin_http_post(args: &[Value]) -> Result<Value, InterpreterError> {
     if args.len() != 2 {
         return Err(InterpreterError::RuntimeError("http_post() expects 2 arguments".to_string()));
@@ -1593,8 +1593,8 @@ fn builtin_http_post(args: &[Value]) -> Result<Value, InterpreterError> {
 /// Builtin: `http_put(url`, body)
 /// Sends PUT request with body and returns response
 /// Complexity: 2 (error handling + stdlib delegation)
-/// Note: Not available for WASM targets
-#[cfg(not(target_arch = "wasm32"))]
+/// Note: Not available for WASM targets or builds without http-client feature
+#[cfg(all(not(target_arch = "wasm32"), feature = "http-client"))]
 fn builtin_http_put(args: &[Value]) -> Result<Value, InterpreterError> {
     if args.len() != 2 {
         return Err(InterpreterError::RuntimeError("http_put() expects 2 arguments".to_string()));
@@ -1614,8 +1614,8 @@ fn builtin_http_put(args: &[Value]) -> Result<Value, InterpreterError> {
 /// Builtin: `http_delete(url)`
 /// Sends DELETE request and returns response
 /// Complexity: 2 (error handling + stdlib delegation)
-/// Note: Not available for WASM targets
-#[cfg(not(target_arch = "wasm32"))]
+/// Note: Not available for WASM targets or builds without http-client feature
+#[cfg(all(not(target_arch = "wasm32"), feature = "http-client"))]
 fn builtin_http_delete(args: &[Value]) -> Result<Value, InterpreterError> {
     if args.len() != 1 {
         return Err(InterpreterError::RuntimeError("http_delete() expects 1 argument".to_string()));
