@@ -13,7 +13,7 @@ categories = ["wasm", "compilers", "web-programming"]
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-ruchy = { path = "..", version = "3.110.0" }
+ruchy = { path = "..", version = "3.110.0", default-features = false, features = ["wasm-compile"] }
 wasm-bindgen = "0.2"
 wasm-bindgen-futures = "0.4"
 js-sys = "0.3"
@@ -30,3 +30,6 @@ opt-level = "s"  # Optimize for size
 lto = true       # Link-time optimization
 codegen-units = 1  # Better optimization, slower compile
 strip = true     # Remove debug symbols
+
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = false  # Disable wasm-opt optimization (causes bulk memory errors)
