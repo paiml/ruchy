@@ -461,6 +461,23 @@ fn token_as_identifier(token: &Token) -> Option<String> {
 fn handle_colon_colon_operator(state: &mut ParserState, left: Expr) -> Result<Expr> {
     state.tokens.advance(); // consume ::
 
+    // PARSER-070: Check for turbofish syntax (`::<Type>`) in path expressions
+    // Examples: Vec::<i32>::new(), HashMap::<String, i32>::new()
+    if let Some((Token::Less, _)) = state.tokens.peek() {
+        // Parse turbofish type parameters: ::<Type1, Type2, ...>
+        parse_turbofish(state)?;
+
+        // After turbofish, expect :: again for method call
+        // Example: Vec::<i32>::new() - we're now at the second ::
+        if let Some((Token::ColonColon, _)) = state.tokens.peek() {
+            state.tokens.advance(); // consume second ::
+        } else {
+            return Err(anyhow::anyhow!(
+                "Expected '::' after turbofish type parameters"
+            ));
+        }
+    }
+
     // PARSER-064: Accept identifiers AND keywords after :: (keywords can be method names)
     // Examples: String::from(), Result::Ok(), Option::Some()
     match state.tokens.peek() {
@@ -484,6 +501,44 @@ fn handle_colon_colon_operator(state: &mut ParserState, left: Expr) -> Result<Ex
         Option::None => {
             Err(anyhow::anyhow!("Expected identifier after '::' but reached end of input"))
         }
+    }
+}
+
+/// Parse turbofish type parameters: ::<Type1, Type2, ...>
+/// PARSER-070: Extracted helper for parsing turbofish in path expressions
+fn parse_turbofish(state: &mut ParserState) -> Result<()> {
+    // Expect '<' token
+    if let Some((Token::Less, _)) = state.tokens.peek() {
+        state.tokens.advance(); // consume '<'
+
+        // Skip until matching '>' (handle nested angle brackets and '>>' tokens)
+        let mut depth = 1;
+        while depth > 0 {
+            match state.tokens.peek() {
+                Some((Token::Less, _)) => {
+                    depth += 1;
+                    state.tokens.advance();
+                }
+                Some((Token::Greater, _)) => {
+                    depth -= 1;
+                    state.tokens.advance();
+                }
+                Some((Token::RightShift, _)) => {
+                    // '>>' is two closing angle brackets
+                    depth -= 2;
+                    state.tokens.advance();
+                }
+                Some(_) => {
+                    state.tokens.advance();
+                }
+                None => {
+                    return Err(anyhow::anyhow!("Unexpected end of input while parsing turbofish type parameters"));
+                }
+            }
+        }
+        Ok(())
+    } else {
+        Err(anyhow::anyhow!("Expected '<' to start turbofish type parameters"))
     }
 }
 /// Handle safe navigation operator ?.

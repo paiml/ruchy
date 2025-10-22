@@ -2,11 +2,11 @@
 # Extreme TDD + Toyota Way + Mutation Testing Enforcement
 
 metadata:
-  version: "3.27"
+  version: "3.28"
   last_updated: "2025-10-22"
   current_sprint: "Book Compatibility Push - 83.2% Achieved, Target ≥95% (64 failures remaining)"
   latest_release: "v3.117.0"
-  next_release: "v3.118.0 - Continue parser enhancements and book compatibility"
+  next_release: "v3.118.0 - PARSER-070 path turbofish + continue book compatibility"
   github_issues:
     completed:
       - id: 54
@@ -113,6 +113,20 @@ metadata:
         status: "Deployment Issue - Works in v3.115.0"
         description: "Nested scopes work correctly in WASM, production site needs v3.115.0 deployment"
     recently_completed:
+      - id: "PARSER-070"
+        title: "Enable turbofish syntax in path expressions (Vec::<T>::new, HashMap::<K,V>::new)"
+        priority: "MEDIUM"
+        status: "✅ COMPLETE (v3.118.0 - 2025-10-22)"
+        description: "Path expression turbofish now supported: Vec::<i32>::new(), HashMap::<String, i32>::new(), Vec::<Vec::<i32>>::new()"
+        root_cause: "Parser expected identifier after '::' but turbofish starts with '<' token"
+        solution: "Modified handle_colon_colon_operator() to detect '<' after '::' and call parse_turbofish() helper. Added RightShift token handling for nested generics (>>)"
+        impact: "Completes turbofish support (PARSER-069 + PARSER-070 = full coverage)"
+        scope: "Path expressions only (Vec::new). Enum variants (Option::Some) out of scope."
+        test_coverage: "12/12 tests passing - basic, multi-param, nested generics, check/lint/transpile/ast commands"
+        complexity: "parse_turbofish: 8, handle_colon_colon_operator: 7 (both <10 ✓)"
+        files_modified:
+          - "src/frontend/parser/mod.rs (handle_colon_colon_operator + parse_turbofish)"
+          - "tests/parser_070_path_turbofish.rs (12 comprehensive tests)"
       - id: "PARSER-069"
         github_issue: 26
         title: "Fix turbofish syntax parsing in method calls (all contexts)"
