@@ -4,6 +4,8 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.116.0] - 2025-10-22
+
 ### Fixed
 
 - **[PARSER-069] Fix turbofish syntax parsing in method calls**
@@ -36,6 +38,25 @@ All notable changes to the Ruchy programming language will be documented in this
   - Verification: `cargo tree -p fxhash` returns "package not found" - completely removed
   - Impact: Quality improvement - removes unmaintained dependency warnings
   - Files modified: Cargo.toml, Cargo.lock
+
+### Documentation
+
+- **[DOC-001] Add debugger integration protocol to CLAUDE.md**
+  - Added comprehensive debugger-first development protocol
+  - Integration with TDD workflow (RED/GREEN/REFACTOR phases)
+  - Time-travel debugging commands and examples
+  - Notebook debugging with visual interface
+  - IDE integration examples (VS Code, vim)
+  - Why: Promote debugger usage over println debugging
+  - Reference: `book/src/phase4_debugger/interactive-debugging-guide.md`
+
+- **[DOC-002] Update release protocol for dual crate publishing**
+  - Changed from single-crate to dual-crate release protocol
+  - MANDATORY: Publish both `ruchy` and `ruchy-wasm` together
+  - Version sync requirement: Both crates must have same version number
+  - Step-by-step dual publishing workflow with verification
+  - Pre-publish checklist for quality gates
+  - Rationale: ruchy-wasm depends on ruchy, versions must stay in sync
 
 ## [3.115.0] - 2025-10-22
 

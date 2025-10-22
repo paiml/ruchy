@@ -190,6 +190,150 @@ RIGHT:
 - **Tooling Bugs**: CLI failures, invalid output, incorrect behavior
 - **Quality Bugs**: PMAT violations, complexity explosions, technical debt accumulation
 
+### 🚀 DEBUGGER INTEGRATION PROTOCOL (MANDATORY)
+
+**CRITICAL**: Use Ruchy's debugger infrastructure for ALL development and debugging workflows.
+
+**Why Debugger-First Development**:
+- **Time-Travel Debugging**: Step backward through execution (impossible in most languages!)
+- **Deterministic Replay**: Reproduce bugs exactly, every time
+- **AST Visualization**: See code structure while debugging
+- **DAP Protocol**: Universal IDE support (VS Code, vim, emacs, etc.)
+- **REPL Integration**: Interactive debugging like Python's pdb/ipdb
+
+#### When to Use Debugger (ALWAYS)
+
+**MANDATORY debugger usage for**:
+1. **Bug Investigation**: Drop `debug!()` breakpoint instead of println debugging
+2. **Test Failures**: Use time-travel to find exact failure point
+3. **Performance Issues**: Profile with time-travel replay
+4. **Integration Testing**: Record execution traces for post-mortem analysis
+5. **Documentation**: Record execution for examples
+
+#### Debugger-First Workflow
+
+**Instead of**:
+```rust
+// ❌ BAD: println debugging
+fn calculate_total(items: Vec<i32>) -> i32 {
+    println!("items: {:?}", items);  // Manual debugging
+    let mut total = 0;
+    for item in items {
+        println!("item: {}, total: {}", item, total);  // More manual debugging
+        total += item;
+    }
+    total
+}
+```
+
+**Use debugger**:
+```rust
+// ✅ GOOD: debugger-first
+fun calculate_total(items: Vec<i32>) -> i32 {
+    debug!()  // Drop into interactive debugger
+    let mut total = 0
+    for item in items {
+        total = total + item
+    }
+    total
+}
+
+// In debugger:
+(ruchy-debug) n          # Next line
+(ruchy-debug) p total    # Print variable
+(ruchy-debug) rn         # 🚀 REVERSE-NEXT (step backward!)
+(ruchy-debug) replay     # Replay execution
+```
+
+#### Time-Travel Debugging Commands
+
+**Forward Execution**:
+- `n` / `next`: Execute next line
+- `s` / `step`: Step into function
+- `c` / `continue`: Continue to next breakpoint
+
+**🚀 Time-Travel (Unique to Ruchy)**:
+- `rn` / `reverse-next`: Step backward one line
+- `rs` / `reverse-step`: Step out of function (backward)
+- `replay from N`: Replay from specific step
+- `replay`: Replay entire execution
+
+**Inspection**:
+- `p <var>`: Print variable value
+- `bt`: Show call stack
+- `up` / `down`: Navigate stack frames
+- `ast`: Show AST visualization
+
+#### Integration with Development Workflow
+
+**1. RED Phase (Write Failing Test)**:
+```bash
+# Run test with debugger
+ruchy test --debug tests/parser_069_turbofish_issue_26.rs
+# Debugger breaks on failure, inspect state
+```
+
+**2. GREEN Phase (Fix Bug)**:
+```bash
+# Use time-travel to find exact bug location
+(ruchy-debug) rn  # Step backward
+(ruchy-debug) p state  # Inspect state before bug
+```
+
+**3. REFACTOR Phase (Verify Fix)**:
+```bash
+# Replay execution to verify fix holds
+(ruchy-debug) replay
+```
+
+#### Notebook Debugging
+
+**Visual debugging in Ruchy notebooks**:
+```ruchy
+%%debug  # Magic command for visual debugging
+
+for row in dataset {
+    let processed = transform(row)  # Pause here with visual inspector
+    results.push(processed)
+}
+```
+
+**Visual interface shows**:
+- Current line highlighted
+- All variables with expandable inspection
+- Call stack panel
+- Time-travel controls: ◄◄ ◄ ► ►► buttons
+- AST visualization option
+
+#### IDE Integration (Universal via DAP)
+
+**VS Code**:
+```json
+// .vscode/launch.json
+{
+  "type": "ruchy",
+  "request": "launch",
+  "name": "Debug Ruchy",
+  "program": "${file}",
+  "timeTravel": true  // Enable time-travel!
+}
+```
+
+**Vim (with vimspector)**:
+```vim
+nmap <F10> :call vimspector#StepOver()<CR>
+nmap <S-F10> :call vimspector#ReverseStepOver()<CR>  " Reverse!
+```
+
+#### Why This Matters (Toyota Way)
+
+- **Jidoka**: Debugger stops the line for defects, provides immediate feedback
+- **Genchi Genbutsu**: Time-travel = "go and see" the exact moment bug occurred
+- **Kaizen**: Replay enables learning from past execution, continuous improvement
+- **Poka-Yoke**: Deterministic replay prevents "works on my machine" bugs
+
+**Documentation**: See `book/src/phase4_debugger/interactive-debugging-guide.md` for complete guide
+
 ### Mutation Testing Protocol (MANDATORY - Sprint 8)
 
 **CRITICAL**: Mutation testing is the GOLD STANDARD for test quality validation.
@@ -782,13 +926,42 @@ impl TypeChecker {
 - Dead code warnings → Remove or prefix with underscore
 - Missing doctests → Add runnable examples to documentation
 
-### MANDATORY RELEASE PUBLISHING PROTOCOL
+### MANDATORY DUAL-RELEASE PUBLISHING PROTOCOL
 
-**CRITICAL**: After EVERY version update, you MUST publish to crates.io immediately.
+**CRITICAL**: After EVERY version update, you MUST publish BOTH crates to crates.io immediately.
+
+**Why Dual Release**:
+- `ruchy`: Main compiler CLI and library
+- `ruchy-wasm`: WebAssembly bindings for browser/notebook use
+- **MUST stay in sync**: Same version number for consistency
 
 ```bash
 # MANDATORY after version bump and git push:
-cargo publish                    # Publish main package only
+# Step 1: Bump BOTH versions to same number
+sed -i 's/^version = ".*"/version = "X.Y.Z"/' Cargo.toml
+sed -i 's/^version = ".*"/version = "X.Y.Z"/' ruchy-wasm/Cargo.toml
+
+# Step 2: Publish main crate first (ruchy-wasm depends on it)
+cargo publish
+
+# Step 3: Wait 30 seconds for crates.io to index
+sleep 30
+
+# Step 4: Publish wasm crate
+cd ruchy-wasm && cargo publish
+```
+
+**Pre-publish Checklist**:
+- ✅ All tests passing (cargo test)
+- ✅ CHANGELOG.md updated with version changes
+- ✅ Git commit with version bump
+- ✅ Git push to main
+- ✅ Both crates build successfully (cargo check)
+
+**Version Sync Verification**:
+```bash
+# Verify versions match before publishing
+grep "^version" Cargo.toml ruchy-wasm/Cargo.toml
 ```
 
 ### Pre-commit Hooks (AUTO-INSTALLED via `pmat hooks install`)
