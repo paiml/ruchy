@@ -104,17 +104,17 @@ pub mod lazy;
 pub mod observatory;
 pub mod observatory_ui;
 pub mod pattern_matching;
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(all(not(target_arch = "wasm32"), feature = "repl"))]
 pub mod repl; // New EXTREME Quality REPL
               // pub mod repl_legacy; // Old REPL (backup) - temporarily disabled for integration
               // pub mod repl_modules;  // Temporarily disabled - compilation errors
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(all(not(target_arch = "wasm32"), feature = "repl"))]
 pub mod assessment;
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(all(not(target_arch = "wasm32"), feature = "repl"))]
 pub mod deterministic;
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(all(not(target_arch = "wasm32"), feature = "repl"))]
 pub mod magic;
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(all(not(target_arch = "wasm32"), feature = "repl"))]
 pub mod repl_recording;
 pub mod replay;
 pub mod replay_converter;
@@ -124,7 +124,7 @@ pub mod safe_arena;
 pub mod transaction;
 // pub mod resource_eval;  // Temporarily disabled - causes duplicate impl
 // Export the unified REPL
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(all(not(target_arch = "wasm32"), feature = "repl"))]
 pub use repl::{Repl, ReplConfig};
 // pub use repl_legacy::{ReplConfig, ReplState as LegacyReplState}; // Temporarily disabled
 // Export interpreter components
