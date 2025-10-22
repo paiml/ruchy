@@ -4,7 +4,27 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+### Added
+
+- **[PARSER-070] Enable turbofish syntax in path expressions**
+  - Feature: Support turbofish (`::<Type>`) in path expressions like `Vec::<i32>::new()`, `HashMap::<String, i32>::new()`
+  - Examples: `Vec::<i32>::new()`, `HashMap::<String, i32>::new()`, `Vec::<Vec::<i32>>::new()`
+  - Implementation: Modified `handle_colon_colon_operator()` to detect `<` after `::` and call `parse_turbofish()` helper
+  - Nested generics: Added `RightShift` token handling for `>>` in nested types
+  - Scope: Path expressions only (e.g., `Vec::new`). Enum variants (e.g., `Option::Some`) out of scope
+  - Test coverage: 12/12 tests passing (basic, multi-param, nested generics, all commands)
+  - Complexity: `parse_turbofish`: 8, `handle_colon_colon_operator`: 7 (both <10 ✓)
+  - Files modified:
+    - `src/frontend/parser/mod.rs` (handle_colon_colon_operator + parse_turbofish)
+    - `tests/parser_070_path_turbofish.rs` (12 comprehensive tests)
+  - Impact: Completes turbofish support (PARSER-069 + PARSER-070 = full coverage)
+
 ### Documentation
+
+- **[ROADMAP-UPDATE] Update roadmap.yaml to v3.28**
+  - Added PARSER-070 to recently_completed
+  - Updated metadata: version 3.27 → 3.28, next_release description
+  - Files modified: docs/execution/roadmap.yaml
 
 - **[ROADMAP-UPDATE] Update roadmap.yaml to v3.27**
   - Updated metadata: latest_release v3.115.0 → v3.117.0
