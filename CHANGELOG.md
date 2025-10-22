@@ -4,6 +4,14 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+### Documentation
+
+- **[ROADMAP-UPDATE] Update roadmap.yaml to v3.27**
+  - Updated metadata: latest_release v3.115.0 → v3.117.0
+  - Added Issue #26 (Turbofish) to completed issues
+  - Added PARSER-069, DOC-001, DOC-002, RELEASE-FIX to recently_completed
+  - Files modified: docs/execution/roadmap.yaml
+
 ## [3.117.0] - 2025-10-22
 
 ### Fixed
