@@ -81,27 +81,41 @@ metadata:
         status: "✅ COMPLETE (v3.81.0 - 2025-10-14)"
         solution: "Intelligent inference from 50+ built-in function signatures"
         commit: "4f21335d"
-    active_work:
+    active_work: []
+    critical: []
+    medium:
+      - id: 52
+        url: "https://github.com/paiml/ruchy/issues/52"
+        title: "WASM: Attributes (@) syntax causes parse errors"
+        priority: "MEDIUM"
+        status: "Deployment Issue - Works in v3.115.0"
+        description: "Attributes work correctly in WASM, production site needs v3.115.0 deployment"
+      - id: 51
+        url: "https://github.com/paiml/ruchy/issues/51"
+        title: "WASM: Multi-line code blocks with nested scopes fail to parse"
+        priority: "MEDIUM"
+        status: "Deployment Issue - Works in v3.115.0"
+        description: "Nested scopes work correctly in WASM, production site needs v3.115.0 deployment"
+    recently_completed:
+      - id: "TOOLING-001"
+        github_issue: 48
+        title: "Integrate RuchyRuchy Debugging Tools into Main Project"
+        priority: "HIGH"
+        status: "✅ COMPLETE (v3.115.0 - 2025-10-22)"
+        description: "Full integration of ruchyruchy debugging toolkit into pre-commit hooks"
+        solution: "Pre-commit hook validates debugging tools automatically (<6s)"
+        validation: "Source maps (3 lines), time-travel (3 steps), performance (100 mappings)"
+        documentation: "CLAUDE.md updated with RuchyRuchy section and usage guidelines"
+        ruchyruchy_version: "v0.7.0 (published to crates.io)"
       - id: "BOOK-COMPAT-001"
         github_issue: 50
-        url: "https://github.com/paiml/ruchy/issues/50"
         title: "Fix &str lifetime annotations in transpiler for struct fields"
         priority: "HIGH"
-        status: "🛑 STOP THE LINE - In Progress"
-        started: "2025-10-21"
-        description: "Transpiler doesn't generate Rust lifetime annotations for &str in struct fields, causing compilation failures"
-        root_cause: "Ch19 Ex2 failure - struct Person { name: &str } transpiles to Rust without lifetime parameter <'a>"
-        fix_required: "Generate struct Person<'a> { name: &'a str, ... } in transpiler output"
-        estimated_effort: "2-4 hours"
-        impact: "Blocks 100% book compatibility (currently 1 failure remaining)"
-        acceptance_criteria:
-          - "Ch19 Ex2 compiles successfully to binary"
-          - "All structs with &str fields get lifetime annotations"
-          - "Tests pass for lifetime annotation generation"
-          - "Complexity ≤10 for new code"
-    critical: []
-    medium: []
-    recently_completed:
+        status: "✅ COMPLETE (v3.107.0 - 2025-10-20)"
+        description: "Transpiler auto-generates lifetime annotations for structs with &str fields"
+        solution: "Added has_reference_fields(), has_lifetime_params(), transpile_struct_field_type_with_lifetime()"
+        tests: "4/4 tests passing in tests/book_compat_001_lifetime_annotations.rs"
+        impact: "Achieved 100% book compatibility (Ch19 Example 2 now compiles)"
       - id: "PARSER-068"
         github_issue: 54
         title: "Fix Bang (!) token ambiguity - Boolean negation vs Actor Send"
