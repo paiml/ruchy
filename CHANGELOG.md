@@ -4,6 +4,20 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.114.0] - 2025-10-22
+
+### Fixed
+
+- **[WASM-BUILD-003] Critical hotfix for HTTP builtin registration guards**
+  - Root cause: v3.113.0 feature-gated HTTP function *definitions* but not their *registration*
+  - When ruchy-wasm tried to build with `default-features = false`, registration code referenced non-existent functions
+  - Error: `cannot find value 'builtin_http_get' in this scope`
+  - Solution: Changed registration guard from `#[cfg(not(target_arch = "wasm32"))]` to `#[cfg(all(not(target_arch = "wasm32"), feature = "http-client"))]`
+  - Files modified:
+    - `src/runtime/builtins.rs` - Fixed HTTP registration guards (line 156)
+  - Impact: Enables successful ruchy-wasm v3.114.0 publishing to crates.io
+  - Test coverage: WASM builds successfully, cargo publish verification passes
+
 ## [3.113.0] - 2025-10-22
 
 ### Fixed
