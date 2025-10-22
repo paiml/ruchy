@@ -5,8 +5,9 @@ use super::{
 };
 
 // Helper modules for improved maintainability (TDG Structural improvement)
+// PARSER-069: Make expressions_helpers accessible within parser module for turbofish parsing
 #[path = "expressions_helpers/mod.rs"]
-mod expressions_helpers;
+pub(in crate::frontend::parser) mod expressions_helpers;
 pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
     let Some((token, span)) = state.tokens.peek() else {
         bail!("Unexpected end of input - expected expression");

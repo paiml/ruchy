@@ -59,15 +59,24 @@ where
     F2: Fn(&Value, &[Expr]) -> Result<Value, InterpreterError>,
     F3: Fn(&Expr, &[DataFrameColumn], usize) -> Result<Value, InterpreterError>,
 {
+    // EVALUATOR-001: Strip turbofish syntax from method names (centralized)
+    // Example: "parse::<i32>" becomes "parse"
+    // Turbofish is for type hints only, not used in runtime method lookup
+    let base_method = if let Some(pos) = method.find("::") {
+        &method[..pos]
+    } else {
+        method
+    };
+
     match receiver {
-        Value::String(s) => eval_string::eval_string_method(s, method, arg_values),
+        Value::String(s) => eval_string::eval_string_method(s, base_method, arg_values),
         Value::Array(arr) => {
-            eval_array::eval_array_method(arr, method, arg_values, &mut eval_function_call_value)
+            eval_array::eval_array_method(arr, base_method, arg_values, &mut eval_function_call_value)
         }
-        Value::Float(f) => eval_float_method(*f, method, args_empty),
-        Value::Integer(n) => eval_integer_method(*n, method, arg_values),
-        Value::DataFrame { columns } => eval_dataframe_method(columns, method, arg_values),
-        _ => eval_generic_method(receiver, method, args_empty),
+        Value::Float(f) => eval_float_method(*f, base_method, args_empty),
+        Value::Integer(n) => eval_integer_method(*n, base_method, arg_values),
+        Value::DataFrame { columns } => eval_dataframe_method(columns, base_method, arg_values),
+        _ => eval_generic_method(receiver, base_method, args_empty),
     }
 }
 

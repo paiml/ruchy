@@ -3380,15 +3380,24 @@ impl Interpreter {
         arg_values: &[Value],
         args_empty: bool,
     ) -> Result<Value, InterpreterError> {
+        // EVALUATOR-001: Strip turbofish syntax from method names
+        // Example: "parse::<i32>" becomes "parse"
+        // Turbofish is for type hints only, not used in runtime method lookup
+        let base_method = if let Some(pos) = method.find("::") {
+            &method[..pos]
+        } else {
+            method
+        };
+
         match receiver {
-            Value::String(s) => self.eval_string_method(s, method, arg_values),
-            Value::Array(arr) => self.eval_array_method(arr, method, arg_values),
-            Value::Float(f) => self.eval_float_method(*f, method, args_empty),
-            Value::Integer(n) => self.eval_integer_method(*n, method, arg_values),
-            Value::DataFrame { columns } => self.eval_dataframe_method(columns, method, arg_values),
+            Value::String(s) => self.eval_string_method(s, base_method, arg_values),
+            Value::Array(arr) => self.eval_array_method(arr, base_method, arg_values),
+            Value::Float(f) => self.eval_float_method(*f, base_method, args_empty),
+            Value::Integer(n) => self.eval_integer_method(*n, base_method, arg_values),
+            Value::DataFrame { columns } => self.eval_dataframe_method(columns, base_method, arg_values),
             Value::Object(obj) => {
                 // Check if this is a type definition with constructor
-                if method == "new" {
+                if base_method == "new" {
                     if let Some(Value::String(ref type_str)) = obj.get("__type") {
                         if let Some(Value::String(ref name)) = obj.get("__name") {
                             match type_str.as_ref() {
@@ -3411,27 +3420,27 @@ impl Interpreter {
 
                 // Check if this is an actor instance
                 if let Some(Value::String(actor_name)) = obj.get("__actor") {
-                    self.eval_actor_instance_method(obj, actor_name.as_ref(), method, arg_values)
+                    self.eval_actor_instance_method(obj, actor_name.as_ref(), base_method, arg_values)
                 }
                 // Check if this is a class instance
                 else if let Some(Value::String(class_name)) = obj.get("__class") {
-                    self.eval_class_instance_method(obj, class_name.as_ref(), method, arg_values)
+                    self.eval_class_instance_method(obj, class_name.as_ref(), base_method, arg_values)
                 }
                 // Check if this is a struct instance with impl methods
                 else if let Some(Value::String(struct_name)) =
                     obj.get("__struct_type").or_else(|| obj.get("__struct"))
                 {
-                    self.eval_struct_instance_method(obj, struct_name.as_ref(), method, arg_values)
+                    self.eval_struct_instance_method(obj, struct_name.as_ref(), base_method, arg_values)
                 }
                 // Check if this is a `DataFrame` builder
                 else if let Some(Value::String(type_str)) = obj.get("__type") {
                     if type_str.as_ref() == "DataFrameBuilder" {
-                        self.eval_dataframe_builder_method(obj, method, arg_values)
+                        self.eval_dataframe_builder_method(obj, base_method, arg_values)
                     } else {
-                        self.eval_object_method(obj, method, arg_values, args_empty)
+                        self.eval_object_method(obj, base_method, arg_values, args_empty)
                     }
                 } else {
-                    self.eval_object_method(obj, method, arg_values, args_empty)
+                    self.eval_object_method(obj, base_method, arg_values, args_empty)
                 }
             }
             Value::ObjectMut(cell_rc) => {
@@ -3446,7 +3455,7 @@ impl Interpreter {
                     self.eval_actor_instance_method_mut(
                         cell_rc,
                         actor_name.as_ref(),
-                        method,
+                        base_method,
                         arg_values,
                     )
                 }
@@ -3457,7 +3466,7 @@ impl Interpreter {
                     self.eval_class_instance_method_mut(
                         cell_rc,
                         class_name.as_ref(),
-                        method,
+                        base_method,
                         arg_values,
                     )
                 }
@@ -3470,12 +3479,12 @@ impl Interpreter {
                     self.eval_struct_instance_method_mut(
                         cell_rc,
                         struct_name.as_ref(),
-                        method,
+                        base_method,
                         arg_values,
                     )
                 } else {
                     drop(obj); // Release borrow before recursive call
-                    self.eval_object_method_mut(cell_rc, method, arg_values, args_empty)
+                    self.eval_object_method_mut(cell_rc, base_method, arg_values, args_empty)
                 }
             }
             Value::Class {
@@ -3484,13 +3493,13 @@ impl Interpreter {
                 methods,
             } => {
                 // Dispatch instance method call on Class
-                self.eval_class_instance_method_on_class(class_name, fields, methods, method, arg_values)
+                self.eval_class_instance_method_on_class(class_name, fields, methods, base_method, arg_values)
             }
             #[cfg(not(target_arch = "wasm32"))]
-            Value::HtmlDocument(doc) => self.eval_html_document_method(doc, method, arg_values),
+            Value::HtmlDocument(doc) => self.eval_html_document_method(doc, base_method, arg_values),
             #[cfg(not(target_arch = "wasm32"))]
-            Value::HtmlElement(elem) => self.eval_html_element_method(elem, method, arg_values),
-            _ => self.eval_generic_method(receiver, method, args_empty),
+            Value::HtmlElement(elem) => self.eval_html_element_method(elem, base_method, arg_values),
+            _ => self.eval_generic_method(receiver, base_method, args_empty),
         }
     }
 
