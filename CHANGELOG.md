@@ -4,6 +4,24 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.112.0] - 2025-10-22
+
+### Fixed
+
+- **[WASM-BUILD-001] Fix feature-gating for REPL-dependent modules**
+  - Root cause: `deterministic.rs`, `magic.rs`, and related modules depend on `repl` module but were only gated on `not(target_arch = "wasm32")`
+  - When `cargo publish` verified ruchy-wasm with `default-features = false`, REPL modules tried to compile without the `repl` feature
+  - Solution: Added `feature = "repl"` guard to all REPL-dependent modules (lines 107-128 in runtime/mod.rs)
+  - Files modified:
+    - `src/runtime/mod.rs` - Added `#[cfg(all(not(target_arch = "wasm32"), feature = "repl"))]` guards
+  - Impact: ruchy-wasm can now be published to crates.io
+  - Test coverage: WASM builds successfully, cargo publish verification passes
+
+### Quality
+
+- **Feature Gates:** Proper feature-gating prevents compilation errors in minimal builds
+- **WASM Support:** ruchy-wasm package can now be published and used in browsers
+
 ## [3.111.0] - 2025-10-22
 
 ### Fixed
