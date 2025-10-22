@@ -4,6 +4,27 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.121.0] - 2025-10-22
+
+### Added
+
+- **[PARSER-074] Support pub(crate) and pub(super) struct field visibility (GitHub Issue #57, Part 3/3)**
+  - Feature: Restricted visibility modifiers now working (`pub(crate)`, `pub(super)`)
+  - Bug: "Expected RightParen, found Crate" error when parsing `pub(crate) field: Type`
+  - Root Cause: Parser checked for `Token::Identifier("crate")` but lexer emits `Token::Crate`
+  - Fix: Updated `parse_scoped_visibility()` to match `Token::Crate` and `Token::Super`
+  - Test coverage: 9/9 tests passing (basic, pub(crate), pub(super), mixed, multiple, nested, transpile modes, regression)
+  - Files modified:
+    - `src/frontend/parser/expressions_helpers/structs.rs` (fix parse_scoped_visibility, lines 138-156)
+    - `tests/parser_074_pub_crate_visibility.rs` (9 comprehensive tests, 1 ignored)
+  - Impact: Chapter 19, Block 6 documentation now works correctly (Issue #57 COMPLETE - 3/3)
+  - Examples:
+    - Basic: `struct Account { pub(crate) balance: f64 }`
+    - pub(super): `struct User { pub(super) id: i32 }`
+    - Mixed: `pub name: String, pub(crate) email: String, password: String`
+  - Note: Transpiler emits `pub (crate)` with space (prettyplease formatting - valid Rust)
+  - **GitHub Issue #57 Status**: ✅ COMPLETE (all 3 parts implemented)
+
 ## [3.120.0] - 2025-10-22
 
 ### Added
