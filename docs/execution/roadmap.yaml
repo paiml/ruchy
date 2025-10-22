@@ -2,13 +2,21 @@
 # Extreme TDD + Toyota Way + Mutation Testing Enforcement
 
 metadata:
-  version: "3.25"
+  version: "3.26"
   last_updated: "2025-10-22"
   current_sprint: "Book Compatibility Push - 83.2% Achieved, Target ≥95% (64 failures remaining)"
-  latest_release: "v3.111.0"
-  next_release: "v3.112.0 - Continue systematic bug fixes"
+  latest_release: "v3.115.0"
+  next_release: "v3.116.0 - Continue systematic bug fixes"
   github_issues:
     completed:
+      - id: 54
+        url: "https://github.com/paiml/ruchy/issues/54"
+        title: "Boolean negation operator (!) causes runtime hang"
+        impact: "P0 - Runtime hang bug blocking production use"
+        ticket: "PARSER-068"
+        priority: "CRITICAL"
+        status: "✅ COMPLETE (v3.115.0 - 2025-10-22)"
+        solution: "Fixed Bang token ambiguity - check whitespace gap before treating ! as infix Send operator"
       - id: 45
         url: "https://github.com/paiml/ruchy/issues/45"
         title: "Multi-line Code Blocks with Inline Comments"
@@ -94,6 +102,18 @@ metadata:
     critical: []
     medium: []
     recently_completed:
+      - id: "PARSER-068"
+        github_issue: 54
+        title: "Fix Bang (!) token ambiguity - Boolean negation vs Actor Send"
+        priority: "P0 - CRITICAL"
+        status: "✅ COMPLETE (v3.115.0 - 2025-10-22)"
+        description: "Runtime hang when using ! as prefix unary NOT after newline"
+        root_cause: "Token::Bang served dual purpose (prefix NOT, infix Send) without context check"
+        fix: "Check whitespace gap before Bang token in try_new_actor_operators() and try_binary_operators()"
+        tests: "11/11 tests passing in tests/parser_068_bang_negation_issue_54.rs"
+        files_modified:
+          - "src/frontend/parser/mod.rs (lines 645-654, 805-816)"
+        complexity: "Both functions ≤10 (quality gates passed)"
       - id: "PARSER-067"
         title: "Implement struct pattern matching in match expressions"
         priority: "HIGH"

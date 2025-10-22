@@ -4,6 +4,44 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.115.0] - 2025-10-22
+
+### Fixed
+
+- **[PARSER-068] Critical hotfix for Bang (!) token ambiguity causing runtime hangs**
+  - GitHub Issue: https://github.com/paiml/ruchy/issues/54
+  - Priority: P0 - CRITICAL (runtime hang blocking production use)
+  - Bug: Boolean negation operator `!` caused infinite runtime hangs when used as prefix unary NOT after a newline
+  - Example:
+    ```ruchy
+    fun test() -> bool {
+        let is_false = false
+        !is_false  # Hung here - never completed
+    }
+    ```
+  - Root cause: `Token::Bang` serves dual purpose without context checking:
+    - Prefix unary: Logical NOT (`!expr`)
+    - Infix binary: Actor Send (`actor ! message`)
+  - Parser treated `!` after newline as infix continuation of previous expression, creating infinite loop in evaluation
+  - Solution: Check whitespace gap before `Token::Bang` in two handler functions:
+    - `try_new_actor_operators()` - Added span gap detection (lines 805-816)
+    - `try_binary_operators()` - Added span gap detection (lines 645-654)
+  - If whitespace gap > 1 character (indicating newline), treat `!` as prefix unary NOT instead of infix binary Send
+  - Files modified:
+    - `src/frontend/parser/mod.rs` - Added whitespace gap checks in both handler functions
+    - `tests/parser_068_bang_negation_issue_54.rs` - Comprehensive test suite (11/11 tests passing)
+  - Impact: Fixes critical runtime hang that blocked production use of boolean negation
+  - Test coverage:
+    - 11 passing tests covering: basic negation, function returns, double negation, if conditions, complex expressions, nested expressions, AST structure validation
+    - 1 ignored test for actor Send (feature not yet implemented)
+  - Quality gates: Both modified functions ≤10 complexity (within Toyota Way limits)
+
+### Quality
+
+- **EXTREME TDD Applied:** RED (failing test) → GREEN (minimal fix) → REFACTOR (quality gates)
+- **Comprehensive Testing:** 11/11 tests passing with tempfile-based test harness
+- **Zero Regression:** Actor Send operator remains functional for future implementation
+
 ## [3.114.0] - 2025-10-22
 
 ### Fixed
