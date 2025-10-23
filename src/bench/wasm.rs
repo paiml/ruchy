@@ -26,6 +26,7 @@
 
 use super::BenchmarkResults;
 use std::path::Path;
+#[cfg(feature = "notebook")]
 use std::time::Instant;
 
 /// Benchmark a WASM module function

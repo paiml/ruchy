@@ -319,7 +319,7 @@ fn execute_notebook_serve(port: u16, host: String, pid_file: Option<PathBuf>, ve
     }
 }
 
-fn execute_notebook_test(path: PathBuf, _coverage: bool, format: String, verbose: bool) -> Result<(), String> {
+fn execute_notebook_test(path: PathBuf, _coverage: bool, _format: String, verbose: bool) -> Result<(), String> {
     if verbose {
         println!("Testing notebook: {}", path.display());
     }
@@ -327,7 +327,7 @@ fn execute_notebook_test(path: PathBuf, _coverage: bool, format: String, verbose
     {
         let config = crate::notebook::testing::types::TestConfig::default();
         let report = run_test_command(&path, config)?;
-        match format.as_str() {
+        match _format.as_str() {
             "json" => match serde_json::to_string_pretty(&report) {
                 Ok(json) => println!("{json}"),
                 Err(e) => eprintln!("Failed to serialize report: {e}"),
@@ -438,18 +438,18 @@ fn execute_wasm_validate(module: std::path::PathBuf, verbose: bool) -> Result<()
     if verbose {
         println!("Validating WASM module: {}", module.display());
     }
-    let bytes = std::fs::read(&module).map_err(|e| format!("Failed to read WASM file: {e}"))?;
     #[cfg(feature = "notebook")]
     {
+        let bytes = std::fs::read(&module).map_err(|e| format!("Failed to read WASM file: {e}"))?;
         wasmparser::validate(&bytes).map_err(|e| format!("WASM validation error: {e}"))?;
         println!("✓ WASM module is valid");
+        Ok(())
     }
     #[cfg(not(feature = "notebook"))]
     {
         eprintln!("Warning: WASM validation requires notebook feature");
-        return Err("WASM validation not available without notebook feature".to_string());
+        Err("WASM validation not available without notebook feature".to_string())
     }
-    Ok(())
 }
 fn execute_test(cmd: TestCommand, verbose: bool) -> Result<(), String> {
     match cmd {
