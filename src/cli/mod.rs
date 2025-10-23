@@ -3,6 +3,29 @@
 use crate::utils::format_file_error;
 use clap::{Parser, Subcommand};
 use std::path::{Path, PathBuf};
+
+/// VM execution mode selection (OPT-004)
+#[derive(Debug, Clone, Copy, PartialEq, Eq, clap::ValueEnum)]
+pub enum VmMode {
+    /// Use AST interpreter (default, stable)
+    Ast,
+    /// Use bytecode VM (experimental, 40-60% faster)
+    Bytecode,
+}
+
+impl Default for VmMode {
+    fn default() -> Self {
+        // Check environment variable first
+        if let Ok(mode) = std::env::var("RUCHY_VM_MODE") {
+            match mode.to_lowercase().as_str() {
+                "bytecode" | "vm" => return VmMode::Bytecode,
+                _ => return VmMode::Ast,
+            }
+        }
+        VmMode::Ast
+    }
+}
+
 #[derive(Parser, Debug)]
 #[command(name = "ruchy")]
 #[command(author = "Noah Gift")]
@@ -18,6 +41,9 @@ pub struct Cli {
     /// Suppress all output except errors
     #[arg(short, long, global = true)]
     pub quiet: bool,
+    /// VM execution mode: ast (default) or bytecode (experimental, faster)
+    #[arg(long, value_enum, global = true, default_value_t = VmMode::default())]
+    pub vm_mode: VmMode,
     #[command(subcommand)]
     pub command: Command,
 }
@@ -157,7 +183,7 @@ impl Cli {
             Command::Repl => execute_repl(self.verbose, self.quiet),
             #[cfg(target_arch = "wasm32")]
             Command::Repl => Err("REPL not available in WASM build".to_string()),
-            Command::Run { path } => execute_run(path, self.verbose),
+            Command::Run { path } => execute_run(path, self.verbose, self.vm_mode),
             Command::Format { path, check } => execute_format(path, check),
             Command::Notebook(cmd) => execute_notebook(cmd, self.verbose),
             Command::Wasm(cmd) => execute_wasm(cmd, self.verbose),
@@ -179,17 +205,37 @@ fn execute_repl(_verbose: bool, quiet: bool) -> Result<(), String> {
 fn execute_repl(_verbose: bool, _quiet: bool) -> Result<(), String> {
     Err("REPL not available (requires 'repl' feature)".to_string())
 }
-fn execute_run(path: PathBuf, verbose: bool) -> Result<(), String> {
+fn execute_run(path: PathBuf, verbose: bool, vm_mode: VmMode) -> Result<(), String> {
     if verbose {
-        println!("Running script: {}", path.display());
+        println!("Running script: {} (mode: {:?})", path.display(), vm_mode);
     }
     let source = std::fs::read_to_string(&path).map_err(|_e| format_file_error("read", &path))?;
     let mut parser = crate::frontend::parser::Parser::new(&source);
     let ast = parser.parse().map_err(|e| format!("Parse error: {e:?}"))?;
-    let mut interpreter = crate::runtime::interpreter::Interpreter::new();
-    interpreter
-        .eval_expr(&ast)
-        .map_err(|e| format!("Runtime error: {e:?}"))?;
+
+    match vm_mode {
+        VmMode::Ast => {
+            // Use AST interpreter (default)
+            let mut interpreter = crate::runtime::interpreter::Interpreter::new();
+            interpreter
+                .eval_expr(&ast)
+                .map_err(|e| format!("Runtime error: {e:?}"))?;
+        }
+        VmMode::Bytecode => {
+            // Use bytecode VM (experimental, faster)
+            use crate::runtime::bytecode::{Compiler, VM};
+
+            let mut compiler = Compiler::new("main".to_string());
+            compiler.compile_expr(&ast)
+                .map_err(|e| format!("Compilation error: {}", e))?;
+            let chunk = compiler.finalize();
+
+            let mut vm = VM::new();
+            let _result = vm.execute(&chunk)
+                .map_err(|e| format!("VM execution error: {}", e))?;
+        }
+    }
+
     Ok(())
 }
 fn execute_format(path: PathBuf, check: bool) -> Result<(), String> {

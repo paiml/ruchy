@@ -283,20 +283,28 @@ fn write_file_with_context(path: &Path, content: &[u8]) -> Result<()> {
 
 // ============================================================================
 
+/// VM execution mode (OPT-004)
+#[derive(Debug, Clone, Copy, PartialEq, Eq, clap::ValueEnum)]
+pub enum VmMode {
+    /// Use AST interpreter (default, stable)
+    Ast,
+    /// Use bytecode VM (experimental, 40-60% faster)
+    Bytecode,
+}
+
 /// Handle run command - compile and execute a Ruchy file
-pub fn handle_run_command(file: &Path, verbose: bool) -> Result<()> {
+pub fn handle_run_command(file: &Path, verbose: bool, vm_mode: VmMode) -> Result<()> {
     log_run_start(file, verbose);
 
-    // CLI-UNIFY-002: Use interpreter (like handle_file_execution), not compiler
-    // This matches Deno/Python/Ruby/Node behavior: `run` = interpret immediately
-    // For compilation to binary, use: `ruchy compile`
+    if verbose {
+        println!("Execution mode: {:?}", vm_mode);
+    }
+
     let source = read_file_with_context(file)?;
 
     // FIX CLI-CONTRACT-RUN-001: Parse the entire file FIRST to catch syntax errors
-    // The REPL's multiline detection treats "Expected X, found EOF" as incomplete,
-    // but for file execution, this is a hard error.
     let mut parser = RuchyParser::new(&source);
-    let _ast = match parser.parse() {
+    let ast = match parser.parse() {
         Ok(ast) => ast,
         Err(e) => {
             eprintln!("✗ Syntax error: {e}");
@@ -305,24 +313,56 @@ pub fn handle_run_command(file: &Path, verbose: bool) -> Result<()> {
         }
     };
 
-    // Now that parsing succeeded, evaluate via REPL
-    let mut repl = create_repl()?;
+    match vm_mode {
+        VmMode::Ast => {
+            // CLI-UNIFY-002: Use interpreter (like handle_file_execution), not compiler
+            // This matches Deno/Python/Ruby/Node behavior: `run` = interpret immediately
+            // For compilation to binary, use: `ruchy compile`
+            let mut repl = create_repl()?;
 
-    match repl.eval(&source) {
-        Ok(_result) => {
-            // FIX CLI-CONTRACT-RUN-002: Don't print file evaluation results
-            // The user's code uses println() for output. We should NOT print the
-            // final value of file evaluation (that's REPL behavior, not script behavior).
-            // This matches Python/Ruby/Node: `python script.py` doesn't print the last value.
+            match repl.eval(&source) {
+                Ok(_result) => {
+                    // FIX CLI-CONTRACT-RUN-002: Don't print file evaluation results
+                    // The user's code uses println() for output. We should NOT print the
+                    // final value of file evaluation (that's REPL behavior, not script behavior).
+                    // This matches Python/Ruby/Node: `python script.py` doesn't print the last value.
 
-            // After evaluating the file, check if main() function exists and call it
-            // (but also don't print main's return value - it's not a println)
-            let _ = repl.eval("main()");
-            Ok(())
+                    // After evaluating the file, check if main() function exists and call it
+                    // (but also don't print main's return value - it's not a println)
+                    let _ = repl.eval("main()");
+                    Ok(())
+                }
+                Err(e) => {
+                    eprintln!("Error: {e}");
+                    std::process::exit(1);
+                }
+            }
         }
-        Err(e) => {
-            eprintln!("Error: {e}");
-            std::process::exit(1);
+        VmMode::Bytecode => {
+            // OPT-004: Bytecode VM execution path (40-60% faster than AST)
+            use ruchy::runtime::bytecode::{Compiler, VM};
+
+            let mut compiler = Compiler::new("main".to_string());
+            if let Err(e) = compiler.compile_expr(&ast) {
+                eprintln!("✗ Compilation error: {}", e);
+                eprintln!("Error: Compilation error: {}", e);
+                std::process::exit(1);
+            }
+
+            let chunk = compiler.finalize();
+            let mut vm = VM::new();
+
+            match vm.execute(&chunk) {
+                Ok(_result) => {
+                    // Don't print result (same as AST mode)
+                    Ok(())
+                }
+                Err(e) => {
+                    eprintln!("✗ VM execution error: {}", e);
+                    eprintln!("Error: VM execution error: {}", e);
+                    std::process::exit(1);
+                }
+            }
         }
     }
 }

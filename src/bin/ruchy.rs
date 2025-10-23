@@ -27,7 +27,7 @@ use handlers::{
     handle_check_command, handle_compile_command, handle_complex_command, handle_eval_command,
     handle_file_execution, handle_fuzz_command, handle_mutations_command, handle_parse_command,
     handle_property_tests_command, handle_repl_command, handle_run_command, handle_stdin_input,
-    handle_test_command, handle_transpile_command,
+    handle_test_command, handle_transpile_command, VmMode,
 };
 /// Configuration for code formatting
 #[derive(Debug, Clone)]
@@ -59,6 +59,9 @@ struct Cli {
     /// Enable verbose output
     #[arg(short = 'v', long)]
     verbose: bool,
+    /// VM execution mode: ast (default) or bytecode (experimental, faster)
+    #[arg(long, value_enum, default_value = "ast")]
+    vm_mode: VmMode,
     /// Script file to execute (alternative to subcommands)
     file: Option<PathBuf>,
     #[command(subcommand)]
@@ -832,7 +835,7 @@ fn main() -> Result<()> {
         return result;
     }
     // Handle subcommands
-    handle_command_dispatch(cli.command, cli.verbose)
+    handle_command_dispatch(cli.command, cli.verbose, cli.vm_mode)
 }
 /// Handle direct evaluation via -e flag or file argument (complexity: 4)
 fn try_handle_direct_evaluation(cli: &Cli) -> Option<Result<()>> {
@@ -859,7 +862,7 @@ fn try_handle_stdin(command: Option<&Commands>) -> Result<Option<Result<()>>> {
     Ok(None)
 }
 /// Dispatch commands to appropriate handlers (complexity: 6)
-fn handle_command_dispatch(command: Option<Commands>, verbose: bool) -> Result<()> {
+fn handle_command_dispatch(command: Option<Commands>, verbose: bool, vm_mode: VmMode) -> Result<()> {
     match command {
         Some(Commands::Repl { record }) => handle_repl_command(record),
         Some(Commands::New { name, lib }) => handlers::new::handle_new_command(&name, lib, verbose),
@@ -871,7 +874,7 @@ fn handle_command_dispatch(command: Option<Commands>, verbose: bool) -> Result<(
             output,
             minimal,
         }) => handle_transpile_command(&file, output.as_deref(), minimal, verbose),
-        Some(Commands::Run { file }) => handle_run_command(&file, verbose),
+        Some(Commands::Run { file }) => handle_run_command(&file, verbose, vm_mode),
         Some(Commands::Compile {
             file,
             output,
