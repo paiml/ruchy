@@ -4,6 +4,17 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+### Changed
+
+- **[QUALITY-013] Fix 4 compiler warnings (unused imports, unreachable code, unused variables)**
+  - Fixed: 4 compiler warnings in feature-gated code
+  - Files modified:
+    - `src/bench/wasm.rs` - Added `#[cfg(feature = "notebook")]` to `use std::time::Instant` (only used when notebook feature enabled)
+    - `src/cli/mod.rs:execute_wasm_validate` - Moved `bytes` variable and return statements inside cfg blocks (eliminated unreachable expression)
+    - `src/cli/mod.rs:execute_notebook_test` - Prefixed `format` parameter with underscore (conditionally used)
+  - Impact: Zero compiler warnings, cleaner build output
+  - Root Cause: Feature-gated code paths creating conditional usage of imports/variables
+
 ## [3.123.0] - 2025-10-23
 
 ### Fixed
