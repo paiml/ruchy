@@ -62,6 +62,7 @@ pub mod actor_concurrent;
 pub mod actor_runtime;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod async_runtime;
+pub mod bytecode; // OPT-001: Bytecode VM Foundation
 pub mod cache;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod completion;
