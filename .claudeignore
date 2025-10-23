@@ -1,0 +1,76 @@
+# Claude Code ignore file - prevent loading large files into context
+
+# Auto-generated documentation (CRITICAL - 5.6MB+)
+deep_context.md
+*_context.md
+
+# mdBook build artifacts (9MB+ of generated files)
+docs/notebook/book/book/
+**/book/book/
+searchindex.json
+searchindex.js
+print.html
+
+# Build artifacts
+target/
+fuzz/target/
+debug/
+*.rlib
+*.so
+*.o
+*.a
+
+# Test/debug binaries
+test_*
+debug_*
+a.out
+
+# Coverage reports
+coverage.html
+coverage.json
+coverage-report/
+coverage/
+
+# Mutation testing artifacts
+mutants.out/
+mutants.out.old/
+**/mutants.out*/
+*.log
+
+# IDE files
+.idea/
+.vscode/
+*.iml
+.DS_Store
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+*~
+*.orig
+*.old
+
+# Disabled/archived test directories
+tests_temp_disabled_*/
+*_disabled_*/
+
+# Node/NPM
+node_modules/
+package-lock.json
+
+# Playwright
+playwright-report/
+test-results/
+.playwright/
+
+# WASM artifacts (3MB+ binaries)
+pkg/
+ruchy-wasm/pkg/
+*.wasm
+
+# Large log files
+*.log
+
+# Git internals
+.git/
