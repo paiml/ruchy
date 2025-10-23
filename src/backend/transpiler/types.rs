@@ -199,13 +199,8 @@ impl Transpiler {
             quote! {}
         };
 
-        // Generate derive attributes
-        let derive_attrs = if derives.is_empty() {
-            quote! {}
-        } else {
-            let derive_idents: Vec<_> = derives.iter().map(|d| format_ident!("{}", d)).collect();
-            quote! { #[derive(#(#derive_idents),*)] }
-        };
+        // Generate derive attributes using helper (PARSER-077 fix)
+        let derive_attrs = self.generate_derive_attributes(&derives);
 
         // Generate tuple struct definition
         let struct_def = if type_params.is_empty() {
@@ -318,13 +313,8 @@ impl Transpiler {
             quote! {}
         };
 
-        // Generate derive attributes
-        let derive_attrs = if derives.is_empty() {
-            quote! {}
-        } else {
-            let derive_idents: Vec<_> = derives.iter().map(|d| format_ident!("{}", d)).collect();
-            quote! { #[derive(#(#derive_idents),*)] }
-        };
+        // Generate derive attributes using helper (PARSER-077 fix)
+        let derive_attrs = self.generate_derive_attributes(&derives);
 
         // Generate struct definition
         let struct_def = if effective_type_params.is_empty() {
