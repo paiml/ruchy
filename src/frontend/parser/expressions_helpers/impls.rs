@@ -238,7 +238,7 @@ fn parse_impl_method(state: &mut ParserState) -> Result<ImplMethod> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    
     use crate::frontend::parser::Parser;
 
     #[test]

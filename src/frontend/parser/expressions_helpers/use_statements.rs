@@ -346,7 +346,7 @@ fn parse_simple_import_with_alias(
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    
     use crate::frontend::parser::Parser;
 
     #[test]

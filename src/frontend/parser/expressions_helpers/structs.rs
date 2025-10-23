@@ -194,7 +194,7 @@ pub(in crate::frontend::parser) fn parse_single_struct_field(state: &mut ParserS
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    
     use crate::frontend::parser::Parser;
 
     #[test]

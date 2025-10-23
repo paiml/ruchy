@@ -139,7 +139,7 @@ fn parse_type_bounds(state: &mut ParserState) -> Result<Vec<String>> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    
     use crate::frontend::parser::Parser;
 
     #[test]
@@ -214,7 +214,7 @@ mod tests {
 
 #[cfg(test)]
 mod property_tests {
-    use super::*;
+    
     use crate::frontend::parser::Parser;
     use proptest::prelude::*;
 

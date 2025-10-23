@@ -9,7 +9,6 @@
 //! - REFACTOR: Apply quality gates (complexity ≤10, zero SATD)
 
 use assert_cmd::Command;
-use predicates::prelude::*;
 use std::io::Write;
 use tempfile::NamedTempFile;
 

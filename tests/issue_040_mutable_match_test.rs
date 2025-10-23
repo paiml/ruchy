@@ -201,7 +201,7 @@ println(x)
 
 #[cfg(test)]
 mod property_tests {
-    use super::*;
+    
     use std::process::Command;
 
     /// Property test: Counter increments correctly N times in match

@@ -2,7 +2,6 @@
 // RED Phase: Minimal reproduction tests demonstrating the defect
 
 use assert_cmd::Command;
-use predicates::prelude::*;
 
 fn ruchy_cmd() -> Command {
     Command::cargo_bin("ruchy").expect("Failed to find ruchy binary")

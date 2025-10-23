@@ -763,7 +763,7 @@ mod tests {
     #[tokio::test]
     async fn test_load_notebook_valid_file() {
         use crate::notebook::types::{Cell, Notebook};
-        use std::fs;
+        
         use tempfile::NamedTempFile;
 
         // Create a temporary .rnb file

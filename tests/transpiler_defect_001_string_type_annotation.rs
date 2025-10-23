@@ -10,7 +10,6 @@
 //! This test follows EXTREME TDD (RED → GREEN → REFACTOR)
 
 use assert_cmd::Command;
-use predicates::prelude::*;
 use std::fs;
 use tempfile::TempDir;
 

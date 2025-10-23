@@ -221,7 +221,7 @@ fn convert_to_trait_methods(methods: Vec<String>) -> Vec<TraitMethod> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    
     use crate::frontend::parser::Parser;
 
     #[test]

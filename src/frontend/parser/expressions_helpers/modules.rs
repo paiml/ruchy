@@ -122,7 +122,7 @@ fn skip_optional_semicolon(state: &mut ParserState) {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    
     use crate::frontend::parser::Parser;
 
     #[test]

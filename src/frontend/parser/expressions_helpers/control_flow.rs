@@ -165,7 +165,7 @@ pub(in crate::frontend::parser) fn parse_throw_token(
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    
     use crate::frontend::parser::Parser;
 
     #[test]

@@ -843,7 +843,7 @@ fn determine_self_type_from_params(params: &[Param]) -> SelfType {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    
     use crate::frontend::parser::Parser;
 
     #[test]
