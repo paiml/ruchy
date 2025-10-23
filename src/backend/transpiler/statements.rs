@@ -1018,28 +1018,58 @@ impl Transpiler {
     }
 
     /// Format a regular attribute
-    /// Complexity: 3 (within Toyota Way limits)
+    /// Complexity: 5 (within Toyota Way limits)
     ///
     /// Special handling for Rust attributes:
     /// - `#[test]` takes no arguments - strips any description provided
+    ///
+    /// PARSER-077 FIX: Manually construct TokenStream with Spacing::Joint
+    /// The quote! macro generates Punct { '#', spacing: Alone } which adds unwanted space
+    /// We need Punct { '#', spacing: Joint } for correct #[...] syntax
     fn format_regular_attribute(&self, attr: &crate::frontend::ast::Attribute) -> TokenStream {
+        use proc_macro2::{Punct, Spacing, Group, Delimiter, TokenTree};
+
         let attr_name = format_ident!("{}", attr.name);
 
         // BUG-033: Rust's #[test] attribute takes NO arguments
         // Strip descriptions: @test("desc") → #[test]
         if attr.name == "test" {
-            return quote! { #[#attr_name] };
+            // PARSER-077 FIX: Manual TokenStream construction with Spacing::Joint
+            let pound = Punct::new('#', Spacing::Joint);  // Joint = no space after
+            let attr_tokens = quote! { #attr_name };
+            let group = Group::new(Delimiter::Bracket, attr_tokens);
+
+            return vec![
+                TokenTree::Punct(pound),
+                TokenTree::Group(group),
+            ].into_iter().collect();
         }
 
+        // For other attributes without args, use same manual construction
         if attr.args.is_empty() {
-            quote! { #[#attr_name] }
+            let pound = Punct::new('#', Spacing::Joint);
+            let attr_tokens = quote! { #attr_name };
+            let group = Group::new(Delimiter::Bracket, attr_tokens);
+
+            vec![
+                TokenTree::Punct(pound),
+                TokenTree::Group(group),
+            ].into_iter().collect()
         } else {
+            // Attributes with args: #[attr_name(args)]
+            let pound = Punct::new('#', Spacing::Joint);
             let args: Vec<TokenStream> = attr
                 .args
                 .iter()
                 .map(|arg| arg.parse().unwrap_or_else(|_| quote! { #arg }))
                 .collect();
-            quote! { #[#attr_name(#(#args),*)] }
+            let attr_tokens = quote! { #attr_name(#(#args),*) };
+            let group = Group::new(Delimiter::Bracket, attr_tokens);
+
+            vec![
+                TokenTree::Punct(pound),
+                TokenTree::Group(group),
+            ].into_iter().collect()
         }
     }
 
