@@ -10,7 +10,6 @@
 // From: ruchy-book/test/extracted-examples/appendix-b-syntax-reference_example_27.ruchy
 
 use assert_cmd::Command;
-use predicates::prelude::*;
 use std::fs;
 use std::path::PathBuf;
 

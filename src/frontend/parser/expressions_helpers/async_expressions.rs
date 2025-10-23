@@ -221,7 +221,7 @@ fn parse_async_arrow_lambda(state: &mut ParserState) -> Result<Expr> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    
     use crate::frontend::parser::Parser;
 
     #[test]

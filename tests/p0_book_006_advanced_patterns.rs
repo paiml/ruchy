@@ -9,7 +9,6 @@
 //! - Pattern guards and conditions
 
 use ruchy::runtime::Repl;
-use std::env;
 
 #[test]
 fn test_tuple_destructuring() {

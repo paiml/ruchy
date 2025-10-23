@@ -146,7 +146,7 @@ pub(in crate::frontend::parser) fn parse_lambda_expression(
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    
     use crate::frontend::parser::Parser;
 
     #[test]

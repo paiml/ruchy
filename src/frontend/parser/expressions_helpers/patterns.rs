@@ -1198,7 +1198,7 @@ fn parse_or_pattern(state: &mut ParserState, first: Pattern) -> Result<Pattern> 
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    
     use crate::frontend::parser::Parser;
 
     #[test]

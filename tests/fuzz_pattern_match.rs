@@ -3,7 +3,7 @@
 //! Tests that pattern matching is robust against random inputs
 
 use ruchy::frontend::ast::{Literal, Pattern};
-use ruchy::runtime::{eval_pattern_match::try_pattern_match, InterpreterError, Value};
+use ruchy::runtime::{eval_pattern_match::try_pattern_match, Value};
 
 fn test_eval_literal(lit: &Literal) -> Value {
     match lit {

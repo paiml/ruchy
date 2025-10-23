@@ -157,7 +157,7 @@ fn validate_try_catch_structure(
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    
     use crate::frontend::parser::Parser;
 
     #[test]

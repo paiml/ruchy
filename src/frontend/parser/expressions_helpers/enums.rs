@@ -264,7 +264,7 @@ fn parse_variant_struct_fields(state: &mut ParserState) -> Result<Vec<StructFiel
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    
     use crate::frontend::parser::Parser;
 
     #[test]

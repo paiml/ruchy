@@ -171,7 +171,7 @@ fn parse_spawn_expr(state: &mut ParserState, span: Span) -> Result<Expr> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    
     use crate::frontend::parser::Parser;
 
     #[test]

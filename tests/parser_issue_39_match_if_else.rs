@@ -6,7 +6,6 @@
 //! Extreme TDD: RED → GREEN → REFACTOR
 
 use assert_cmd::Command;
-use predicates::prelude::*;
 
 fn ruchy_cmd() -> Command {
     Command::cargo_bin("ruchy").expect("Failed to find ruchy binary")

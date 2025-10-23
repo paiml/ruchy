@@ -92,7 +92,7 @@ pub(in crate::frontend::parser) fn parse_constructor_token(
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    
     use crate::frontend::parser::Parser;
 
     #[test]
@@ -147,7 +147,7 @@ mod tests {
 
 #[cfg(test)]
 mod property_tests {
-    use super::*;
+    
     use crate::frontend::parser::Parser;
     use proptest::prelude::*;
 

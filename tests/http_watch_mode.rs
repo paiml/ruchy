@@ -8,7 +8,6 @@
 
 use assert_cmd::Command;
 use std::fs;
-use std::io::Write as _;
 use std::thread;
 use std::time::Duration;
 use tempfile::TempDir;

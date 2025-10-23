@@ -105,7 +105,7 @@ fn maybe_parse_lambda(state: &mut ParserState, expr: Expr, span: Span) -> Result
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    
     use crate::frontend::parser::Parser;
 
     #[test]
