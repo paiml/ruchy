@@ -40,12 +40,14 @@ pub enum OpCode {
     LoadUpvalue = 0x0A,
     /// Store to upvalue
     StoreUpvalue = 0x0B,
+    /// Move value from one register to another
+    Move = 0x0C,
     /// Pop top of stack
-    Pop = 0x0C,
+    Pop = 0x0D,
     /// Duplicate top of stack
-    Dup = 0x0D,
+    Dup = 0x0E,
     /// Swap top two stack items
-    Swap = 0x0E,
+    Swap = 0x0F,
 
     // Arithmetic Operations (0x10-0x1F)
     /// Add top two values
@@ -159,9 +161,10 @@ impl OpCode {
             0x09 => Some(Self::StoreIndex),
             0x0A => Some(Self::LoadUpvalue),
             0x0B => Some(Self::StoreUpvalue),
-            0x0C => Some(Self::Pop),
-            0x0D => Some(Self::Dup),
-            0x0E => Some(Self::Swap),
+            0x0C => Some(Self::Move),
+            0x0D => Some(Self::Pop),
+            0x0E => Some(Self::Dup),
+            0x0F => Some(Self::Swap),
 
             // Arithmetic Operations
             0x10 => Some(Self::Add),
@@ -230,6 +233,7 @@ impl OpCode {
             Self::StoreIndex => "StoreIndex",
             Self::LoadUpvalue => "LoadUpvalue",
             Self::StoreUpvalue => "StoreUpvalue",
+            Self::Move => "Move",
             Self::Pop => "Pop",
             Self::Dup => "Dup",
             Self::Swap => "Swap",
