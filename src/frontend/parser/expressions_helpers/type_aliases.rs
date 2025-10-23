@@ -94,16 +94,6 @@ pub(in crate::frontend::parser) fn parse_generic_params(
                 // Legacy handling for char literals as lifetimes
                 state.tokens.advance();
             }
-            Some((Token::String(s), _)) => {
-                // PARSER-080: Single-char strings like 'a' are being lexed as String instead of Lifetime
-                // This is a temporary workaround - the real fix is in the lexer
-                if s.len() == 1 {
-                    params.push(format!("'{}'", s));
-                    state.tokens.advance();
-                } else {
-                    bail!("Expected type parameter or lifetime, got string: {:?}", s);
-                }
-            }
             tok => bail!("Expected type parameter or lifetime, got: {:?}", tok),
         }
         // Check for comma
@@ -201,14 +191,22 @@ mod tests {
     }
 
     #[test]
-    #[ignore] // PARSER-080: Lexer conflict - single-quoted strings match before lifetimes
     fn test_lifetime_parameter() {
-        // Bug: 'a> { value: &' is lexed as single String token instead of Lifetime
-        // Root cause: String pattern before Lifetime in lexer, greedy matching
-        // Fix required: Reorder lexer patterns or restrict String pattern
+        // PARSER-080: Fixed lexer to correctly tokenize 'a as Lifetime (not String)
+        // Lifetimes in generic parameters now work: struct Container<'a>
+        let code = "struct Container<'a> { value: String }";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Lifetime parameter in generics should parse");
+    }
+
+    #[test]
+    #[ignore] // PARSER-081: Reference types with lifetime annotations not yet implemented
+    fn test_lifetime_in_reference_type() {
+        // Bug: Parser doesn't support &'a Type syntax yet
+        // This requires extending type parsing to handle lifetime annotations
         let code = "struct Container<'a> { value: &'a str }";
         let result = Parser::new(code).parse();
-        assert!(result.is_ok(), "Lifetime parameter should parse");
+        assert!(result.is_ok(), "Reference with lifetime should parse");
     }
 }
 

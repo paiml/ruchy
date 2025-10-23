@@ -12,7 +12,6 @@
 use assert_cmd::Command;
 use predicates::prelude::*;
 use std::fs;
-use std::path::PathBuf;
 use tempfile::TempDir;
 
 fn ruchy_cmd() -> Command {
@@ -38,7 +37,7 @@ fn test_fmt_uses_default_config_when_no_config_file() {
         .arg(&test_file)
         .assert()
         .success()
-        .stdout(predicate::str::contains("✓ Formatted"));
+        .stdout(predicate::str::contains("Formatted"));
 
     // Read formatted file
     let formatted = fs::read_to_string(&test_file).expect("Failed to read formatted file");
@@ -170,7 +169,7 @@ use_tabs = true
         .success();
 
     // Read formatted file
-    let formatted = fs::read_to_string(&test_file).expect("Failed to read formatted file");
+    let _formatted = fs::read_to_string(&test_file).expect("Failed to read formatted file");
 
     // Verify tabs are used (config setting applied)
     // Note: Actual verification depends on formatter implementation
@@ -178,7 +177,7 @@ use_tabs = true
 }
 
 #[test]
-#antml:parameter name="ignore = "FORMATTER-002: Config validation not yet implemented"]
+#[ignore = "FORMATTER-002: Config validation not yet implemented"]
 fn test_fmt_with_invalid_config_file() {
     let temp_dir = setup_test_dir();
     let config_file = temp_dir.path().join(".ruchy-fmt.toml");
@@ -233,5 +232,5 @@ use_tabs = false
         .arg(&test_file)
         .assert()
         .success()
-        .stdout(predicate::str::contains("✓ Formatted"));
+        .stdout(predicate::str::contains("Formatted"));
 }

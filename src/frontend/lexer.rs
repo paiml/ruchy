@@ -112,8 +112,9 @@ pub enum Token {
         Some(process_escapes(inner))
     })]
     // PARSER-072: Single-quoted strings (multi-char only, single-char handled by Char)
-    // Pattern: empty string ('') OR 2+ characters between single quotes
-    #[regex(r"'(([^'\\]|\\.)([^'\\]|\\.)+|)'", |lex| {
+    // PARSER-080: Exclude '>' and newlines to prevent matching across lifetime boundaries
+    // Pattern: empty string ('') OR 2+ characters between single quotes (no '>', no newlines)
+    #[regex(r"'(([^'\\>\n]|\\.)([^'\\>\n]|\\.)+|)'", |lex| {
         let s = lex.slice();
         let inner = &s[1..s.len()-1];
         // Only match if it's NOT a single character (let Char handle that)
