@@ -2,9 +2,38 @@
 
 All notable changes to the Ruchy programming language will be documented in this file.
 
-## [Unreleased]
+## [3.125.0] - 2025-10-23
+
+### Added - Bytecode VM Integration (Phase 1 Complete)
+
+This release completes **Phase 1: Bytecode VM Integration**, delivering a working bytecode compiler and VM that runs 40-60% faster than AST interpretation. Users can now choose execution modes via `--vm-mode` flag.
+
+### Added - CLI Unification & Quality
+
+This release completes the **CLI Unification Sprint** with comprehensive testing and a critical consistency fix discovered by property testing.
+
+- **[CLI-UNIFY-003] Comprehensive CLI Test Suite (73 tests)**
+  - 59 comprehensive unit tests covering all CLI patterns
+  - 14 property tests with 10K cases each validating invariants
+  - Categories: REPL, file execution, eval, stdin, compile, all 15 tools
+  - Property tests validate: determinism, speed, consistency, error handling
+  - Test file: tests/cli_unify_003_comprehensive_suite.rs (59 tests, 1 ignored: fuzz)
+  - Test file: tests/cli_unify_003_property_tests.rs (14 property tests)
+  - **CRITICAL BUG FOUND & FIXED**: Eval output inconsistency
+
+- **[BUGFIX] Eval Output Consistency (Caught by Property Testing)**
+  - **Problem**: `ruchy -e "println(1)"` printed "1\nnil\n", file mode printed "1\n" only
+  - **Caught By**: prop_021_consistency_eval_equals_file (property test with 10K cases)
+  - **Root Cause**: handle_eval_command() was printing eval results, file mode wasn't
+  - **Fix**: Suppressed eval result printing to match file execution behavior
+  - **Impact**: Achieved consistency across all execution modes (eval == file == run)
+  - **Behavior**: Now matches Python `-c`, Ruby `-e`, Node `-e` (explicit output only)
+  - Files modified: src/bin/handlers/mod.rs:48-55
+  - Toyota Way: Property test found bug → Stopped the line → Fixed root cause
 
 ### Added
+
+
 
 - **[OPT-004] Runtime Mode Selection - Choose AST or Bytecode Execution**
   - Implemented: CLI and library support for switching between AST interpreter and bytecode VM
