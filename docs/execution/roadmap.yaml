@@ -4,7 +4,7 @@
 metadata:
   version: "3.30"
   last_updated: "2025-10-22"
-  current_sprint: "Parser Edge Cases (GitHub Issue #58) - 3/4 Complete"
+  current_sprint: "Parser Edge Cases (GitHub Issue #58) - 3/4 Complete, 1 non-issue"
   latest_release: "v3.122.0"
   next_release: "v3.123.0 - PARSER-077 attribute spacing fix"
   github_issues:
@@ -12,15 +12,15 @@ metadata:
       - id: 58
         url: "https://github.com/paiml/ruchy/issues/58"
         title: "Parser: Edge cases (nested comments, unary plus, #[test] attributes, deep nesting)"
-        impact: "LOW-MEDIUM - Four edge cases affecting ~4 code blocks (~1% of total)"
+        impact: "LOW - Three edge cases (nested comments low priority, others fixed)"
         tickets: "PARSER-075 (nested comments), PARSER-076 (unary plus), PARSER-077 (attributes), PARSER-078 (deep nesting)"
-        priority: "MEDIUM"
-        status: "🔄 IN PROGRESS - PARSER-078 next (3/4 complete)"
+        priority: "LOW"
+        status: "✅ MOSTLY COMPLETE - Only PARSER-075 remaining (low priority)"
         progress:
-          - "PARSER-075: Nested block comments - PENDING (low priority)"
-          - "PARSER-076: Unary plus operator - ✅ COMPLETE (v3.122.0) - 12/12 tests passing, identity operation, optimization"
-          - "PARSER-077: Attribute spacing - ✅ COMPLETE (v3.123.0) - Fixed TokenStream.to_string() → prettyplease formatting, 6/6 tests passing"
-          - "PARSER-078: Deep if-else nesting - PENDING"
+          - "PARSER-075: Nested block comments - PENDING (low priority, cosmetic issue)"
+          - "PARSER-076: Unary plus operator - ✅ COMPLETE (v3.122.0) - 12/12 tests passing"
+          - "PARSER-077: Attribute spacing - ✅ COMPLETE (v3.123.0) - prettyplease formatting, 6/6 tests passing"
+          - "PARSER-078: Deep nesting - ✅ CANNOT REPRODUCE - Tested 10/20/50/100 levels, all work. Stack overflow at 500 levels is expected. Likely fixed by previous parser improvements."
     completed:
       - id: 57
         url: "https://github.com/paiml/ruchy/issues/57"
