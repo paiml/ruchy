@@ -2,11 +2,11 @@
 # Extreme TDD + Toyota Way + Mutation Testing Enforcement
 
 metadata:
-  version: "3.31"
+  version: "3.32"
   last_updated: "2025-10-23"
-  current_sprint: "Quality Improvements - Zero compiler warnings"
+  current_sprint: "Performance Optimization - Bytecode VM Integration (Phase 1)"
   latest_release: "v3.123.0"
-  next_release: "v3.124.0 - QUALITY-013 compiler warnings fix"
+  next_release: "v3.124.0 - OPT-001 bytecode VM foundation"
   github_issues:
     active:
       - id: 58
@@ -565,6 +565,138 @@ notebook_excellence:
 
 # Current Sprint Tasks
 tasks:
+  # 🚀 PERFORMANCE OPTIMIZATION: Bytecode VM Integration (Phase 1 of 4)
+  # Based on ruchyruchy optimization report - 20-100x performance improvements
+  # Reference: ../ruchyruchy/OPTIMIZATION_REPORT_FOR_RUCHY.md
+
+  - id: "OPT-001"
+    title: "Bytecode VM Foundation - Instruction Set and Encoding"
+    status: "IN_PROGRESS"
+    priority: "🟡 HIGH"
+    phase: "Phase 1: Bytecode VM (4-6 weeks)"
+    time_estimated: "1 week"
+    specification: "../ruchyruchy/validation/optimizations/interpreter/test_bytecode_vm_refactor.ruchy"
+    description: |
+      Implement core bytecode instruction set and encoding infrastructure.
+      32-bit fixed-width instructions with 6-bit opcodes, register-based architecture.
+      Expected performance: 40-60% faster than AST walking, 30-40% memory reduction.
+    academic_references:
+      - "Würthinger et al. (2017) - One VM to Rule Them All"
+      - "Brunthaler (2010) - Inline Caching Meets Quickening"
+      - "Gal et al. (2009) - Trace-based Just-in-Time Type Specialization"
+    components:
+      - "Bytecode instruction enum (64 opcodes)"
+      - "32-bit fixed-width instruction encoding"
+      - "Register-based architecture (32 registers)"
+      - "Instruction format variants (ABC, ABx, AsBx, Ax)"
+      - "Peephole optimization infrastructure"
+    tests:
+      test_file: "tests/opt_001_bytecode_foundation.rs"
+      unit: 50  # Instruction encoding/decoding tests
+      property: 10  # Invariants: determinism, reversibility
+      property_cases: 10000
+      mutation_coverage_target: "≥80%"
+    tdd_steps:
+      - "RED: Write failing tests for instruction encoding"
+      - "GREEN: Implement minimal bytecode instruction enum"
+      - "REFACTOR: Optimize encoding with bit packing"
+    implementation:
+      - "src/runtime/bytecode/instruction.rs - Instruction enum and encoding"
+      - "src/runtime/bytecode/opcode.rs - Opcode definitions"
+      - "src/runtime/bytecode/mod.rs - Module exports"
+    quality:
+      complexity_max: 10
+      tdg_grade_target: "A-"
+      satd: 0
+
+  - id: "OPT-002"
+    title: "Bytecode Compiler - AST to Bytecode Translation"
+    status: "PENDING"
+    priority: "🟡 HIGH"
+    phase: "Phase 1: Bytecode VM (4-6 weeks)"
+    time_estimated: "2 weeks"
+    depends_on: ["OPT-001"]
+    description: |
+      Implement compiler that translates Ruchy AST to bytecode instructions.
+      Linear scan register allocation with peephole optimizations.
+    components:
+      - "AST visitor for bytecode generation"
+      - "Linear scan register allocator"
+      - "Constant pool management"
+      - "Jump target resolution"
+      - "Local variable tracking"
+    tests:
+      test_file: "tests/opt_002_bytecode_compiler.rs"
+      unit: 100  # AST node translation tests
+      integration: 20  # Full program compilation
+      property: 15  # Semantic preservation
+      property_cases: 10000
+      mutation_coverage_target: "≥80%"
+    quality:
+      complexity_max: 10
+      tdg_grade_target: "A-"
+      satd: 0
+
+  - id: "OPT-003"
+    title: "Bytecode VM Executor - Interpretation Loop"
+    status: "PENDING"
+    priority: "🟡 HIGH"
+    phase: "Phase 1: Bytecode VM (4-6 weeks)"
+    time_estimated: "2 weeks"
+    depends_on: ["OPT-001", "OPT-002"]
+    description: |
+      Implement bytecode VM with optimized dispatch and register-based execution.
+      Expected: 25-30% fewer instructions than stack-based VM.
+    components:
+      - "Optimized bytecode dispatch loop"
+      - "Register file (32 general-purpose registers)"
+      - "Stack frame management"
+      - "Upvalue handling for closures"
+      - "Exception handling support"
+    tests:
+      test_file: "tests/opt_003_bytecode_vm.rs"
+      unit: 80  # Opcode execution tests
+      integration: 30  # Full program execution
+      performance: 10  # Speed benchmarks vs AST interpreter
+      property: 15  # Correctness invariants
+      property_cases: 10000
+      mutation_coverage_target: "≥80%"
+    performance_targets:
+      - "40-60% faster than AST walking"
+      - "30-40% memory reduction"
+      - "50-60% cache miss reduction"
+    quality:
+      complexity_max: 10
+      tdg_grade_target: "A-"
+      satd: 0
+
+  - id: "OPT-004"
+    title: "Bytecode VM Integration - Runtime Mode Selection"
+    status: "PENDING"
+    priority: "🟡 HIGH"
+    phase: "Phase 1: Bytecode VM (4-6 weeks)"
+    time_estimated: "1 week"
+    depends_on: ["OPT-001", "OPT-002", "OPT-003"]
+    description: |
+      Integrate bytecode VM into runtime with mode selection.
+      Support both AST interpreter and bytecode VM during transition.
+    components:
+      - "Runtime mode enum (AST / Bytecode)"
+      - "CLI flag --vm-mode=<ast|bytecode>"
+      - "Environment variable RUCHY_VM_MODE"
+      - "Performance comparison tooling"
+    tests:
+      test_file: "tests/opt_004_vm_integration.rs"
+      unit: 20  # Mode selection tests
+      integration: 40  # Both modes produce identical results
+      performance: 15  # Benchmark both modes
+      property: 10  # Semantic equivalence
+      property_cases: 10000
+    quality:
+      complexity_max: 10
+      tdg_grade_target: "A-"
+      satd: 0
+
   # 🚨 CRITICAL: CLI Unification Sprint (STOP THE LINE)
   - id: "CLI-UNIFY-001"
     title: "Fix: 'ruchy' (no args) should open REPL, not show help"
