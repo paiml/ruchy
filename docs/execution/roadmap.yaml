@@ -2,11 +2,11 @@
 # Extreme TDD + Toyota Way + Mutation Testing Enforcement
 
 metadata:
-  version: "3.32"
+  version: "3.33"
   last_updated: "2025-10-23"
   current_sprint: "Performance Optimization - Bytecode VM Integration (Phase 1)"
   latest_release: "v3.123.0"
-  next_release: "v3.124.0 - OPT-001 bytecode VM foundation"
+  next_release: "v3.124.0 - OPT-002 bytecode compiler foundation"
   github_issues:
     active:
       - id: 58
@@ -611,7 +611,7 @@ tasks:
 
   - id: "OPT-002"
     title: "Bytecode Compiler - AST to Bytecode Translation"
-    status: "PENDING"
+    status: "IN_PROGRESS"
     priority: "🟡 HIGH"
     phase: "Phase 1: Bytecode VM (4-6 weeks)"
     time_estimated: "2 weeks"
@@ -620,17 +620,35 @@ tasks:
       Implement compiler that translates Ruchy AST to bytecode instructions.
       Linear scan register allocation with peephole optimizations.
     components:
-      - "AST visitor for bytecode generation"
-      - "Linear scan register allocator"
-      - "Constant pool management"
-      - "Jump target resolution"
-      - "Local variable tracking"
+      - "✅ AST visitor for bytecode generation"
+      - "✅ Linear scan register allocator"
+      - "✅ Constant pool management with deduplication"
+      - "✅ Jump target resolution for if/else"
+      - "✅ Local variable tracking"
+      - "✅ Control flow: if/else, blocks"
+      - "✅ Function calls"
+    implementation:
+      file: "src/runtime/bytecode/compiler.rs"
+      tests_passing: "9/9 unit tests"
+      features_complete:
+        - "Literals (integer, float, string, bool, unit, char, byte)"
+        - "Binary operations (arithmetic, comparison, logical, bitwise)"
+        - "Variable references (local and global)"
+        - "Let bindings"
+        - "Block expressions"
+        - "If/else expressions with conditional jumps"
+        - "Function calls with argument passing"
+      next_steps:
+        - "Add for/while loops"
+        - "Add match expressions"
+        - "Add lambda expressions"
+        - "Write property tests for semantic preservation"
     tests:
-      test_file: "tests/opt_002_bytecode_compiler.rs"
-      unit: 100  # AST node translation tests
-      integration: 20  # Full program compilation
-      property: 15  # Semantic preservation
-      property_cases: 10000
+      test_file: "src/runtime/bytecode/compiler.rs (tests module)"
+      unit: 9  # Currently: literals, binary, block, if, call, register allocator, constant pool
+      integration: 0  # Pending VM executor
+      property: 0  # Pending semantic preservation tests
+      property_cases: 0
       mutation_coverage_target: "≥80%"
     quality:
       complexity_max: 10

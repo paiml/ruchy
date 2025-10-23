@@ -6,6 +6,36 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ### Added
 
+- **[OPT-002] Bytecode Compiler - AST to Bytecode Translation (IN PROGRESS)**
+  - Implemented: Core compiler infrastructure translating Ruchy AST to bytecode instructions
+  - Components:
+    - `src/runtime/bytecode/compiler.rs` - BytecodeChunk, RegisterAllocator, Compiler
+    - BytecodeChunk: Instruction emission, constant pool with deduplication, jump patching
+    - RegisterAllocator: Linear scan with register reuse via free list
+    - Compiler: AST visitor pattern with register management
+  - Features implemented:
+    - ✅ Literals: integer, float, string, bool, unit, char, byte
+    - ✅ Binary operations: arithmetic (+, -, *, /, %), comparison (==, !=, <, >, <=, >=), logical (&&, ||), bitwise (&, |, ^, <<, >>)
+    - ✅ Variable references: local variables (HashMap) and global variables (LoadGlobal opcode)
+    - ✅ Let bindings: Local variable tracking with register assignment
+    - ✅ Block expressions: Sequential evaluation with register reuse
+    - ✅ If/else expressions: Conditional jumps (JumpIfFalse, Jump) with jump patching
+    - ✅ Function calls: Call opcode with argument passing
+  - Test coverage: 9/9 unit tests passing
+    - test_constant_pool_deduplication (duplicate constants return same index)
+    - test_register_allocator_basic (sequential allocation)
+    - test_register_allocator_reuse (freed registers reused)
+    - test_compile_integer_literal (CONST instruction generation)
+    - test_compile_binary_addition (ADD with register management)
+    - test_compile_block (sequential expression evaluation)
+    - test_compile_if_with_else (conditional branching with both paths)
+    - test_compile_if_without_else (conditional branching, nil on false)
+    - test_compile_function_call (CALL instruction with arguments)
+  - Opcodes added: Move (0x0C) for register-to-register transfers
+  - Next steps: for/while loops, match expressions, lambda expressions, property tests
+  - Reference: ../ruchyruchy/OPTIMIZATION_REPORT_FOR_RUCHY.md Section 2.1
+  - Impact: Foundational compiler for OPT-003 bytecode VM executor
+
 - **[OPT-001] Bytecode VM Foundation - Instruction Set and Encoding**
   - Implemented: Core bytecode infrastructure for 20-100x performance improvements
   - Components:
