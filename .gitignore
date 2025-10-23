@@ -75,3 +75,4 @@ pkg/
 # Backup files
 *.old
 docs/notebook/book/book/
+*.proptest-regressions

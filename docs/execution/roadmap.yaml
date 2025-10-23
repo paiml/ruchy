@@ -2,13 +2,14 @@
 # Extreme TDD + Toyota Way + Mutation Testing Enforcement
 
 metadata:
-  version: "3.37"
+  version: "3.38"
   last_updated: "2025-10-23"
   current_sprint: "Quality Infrastructure - Next Priority Task"
-  latest_release: "v3.124.0"
-  next_release: "v3.125.0 - CLI-UNIFY-003 comprehensive tests + eval consistency fix"
+  latest_release: "v3.125.0"
+  next_release: "TBD"
   phase_1_complete: "Bytecode VM Integration (OPT-001 through OPT-004) ✅"
   cli_unify_complete: "CLI Unification Sprint (CLI-UNIFY-001 through CLI-UNIFY-006) ✅"
+  release_notes_v3_125_0: "Bytecode VM Phase 1 + CLI Unification + 73 comprehensive tests + eval consistency fix"
   github_issues:
     active:
       - id: 58
