@@ -157,6 +157,8 @@ pub struct Compiler {
     locals: HashMap<String, u8>,
     /// Current scope depth
     scope_depth: usize,
+    /// Last result register (for Return instruction)
+    last_result: u8,
 }
 
 impl Compiler {
@@ -167,6 +169,7 @@ impl Compiler {
             registers: RegisterAllocator::new(),
             locals: HashMap::new(),
             scope_depth: 0,
+            last_result: 0,
         }
     }
 
@@ -174,7 +177,7 @@ impl Compiler {
     ///
     /// Returns the register containing the result.
     pub fn compile_expr(&mut self, expr: &Expr) -> Result<u8, String> {
-        match &expr.kind {
+        let result = match &expr.kind {
             ExprKind::Literal(lit) => self.compile_literal(lit),
             ExprKind::Binary { op, left, right } => self.compile_binary(op, left, right),
             ExprKind::Identifier(name) => self.compile_variable(name),
@@ -183,9 +186,11 @@ impl Compiler {
             ExprKind::If { condition, then_branch, else_branch } => {
                 self.compile_if(condition, then_branch, else_branch.as_deref())
             }
-            ExprKind::Call { func, args } => self.compile_call(func, args),
+            ExprKind::Call { func, args} => self.compile_call(func, args),
             _ => Err(format!("Unsupported expression kind: {:?}", expr.kind)),
-        }
+        }?;
+        self.last_result = result;
+        Ok(result)
     }
 
     /// Compile a literal value
@@ -396,8 +401,8 @@ impl Compiler {
 
     /// Finalize compilation and return the bytecode chunk
     pub fn finalize(mut self) -> BytecodeChunk {
-        // Emit return instruction
-        self.chunk.emit(Instruction::abc(OpCode::Return, 0, 0, 0), 0);
+        // Emit return instruction with the last result register
+        self.chunk.emit(Instruction::abc(OpCode::Return, self.last_result, 0, 0), 0);
 
         // Update register count
         self.chunk.register_count = self.registers.max_count();
