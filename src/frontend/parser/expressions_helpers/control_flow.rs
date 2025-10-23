@@ -183,9 +183,12 @@ mod tests {
     }
 
     #[test]
-    #[ignore] // PARSER-079: Break statements in blocks not yet working
+    #[ignore] // PARSER-079: Parser architecture issue - statements with lifetime tokens in for loops
     fn test_break_with_label() {
-        let code = "for x in xs { break 'outer }";
+        // Root cause: Parser gets confused when lifetime token appears in statement position within for loop
+        // Error: "Expected RightBrace, found Break" suggests statement parsing consumes tokens incorrectly
+        // Workaround: Use break without label, or use while loops which work correctly
+        let code = "for x in xs { break 'outer; }";
         let result = Parser::new(code).parse();
         assert!(result.is_ok(), "Break with label should parse successfully");
     }
