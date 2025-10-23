@@ -45,11 +45,13 @@ pub fn handle_eval_command(expr: &str, verbose: bool, format: &str) -> Result<()
     };
 
     match repl.eval(&expr_to_eval) {
-        Ok(result) => {
+        Ok(_result) => {
             if verbose {
                 eprintln!("Evaluation successful");
             }
-            print_eval_success(&result, format);
+            // CLI-UNIFY-003: Don't print eval results (match file execution behavior)
+            // Only explicit println() output should be shown (like Python/Ruby/Node)
+            // This fixes inconsistency caught by property test prop_021_consistency_eval_equals_file
             Ok(())
         }
         Err(e) => {

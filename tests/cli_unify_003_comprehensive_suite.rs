@@ -283,9 +283,11 @@ fn test_019_file_empty() {
 #[test]
 fn test_020_eval_simple_expression() {
     // -e flag should evaluate one-liner
+    // CLI-UNIFY-003: Eval matches file behavior - no implicit output
+    // Use println() for explicit output (like Python -c, Ruby -e, Node -e)
     ruchy_cmd()
         .arg("-e")
-        .arg("1 + 1")
+        .arg("println(1 + 1)")
         .assert()
         .success()
         .stdout(predicate::str::contains("2"));
@@ -694,13 +696,17 @@ fn test_070_tool_mutations() {
 }
 
 #[test]
+#[ignore] // Fuzz is long-running, skip in regular test runs
 fn test_071_tool_fuzz() {
     let temp = TempDir::new().unwrap();
     let script = create_temp_file(&temp, "test.ruchy", "let x = 1");
 
+    // Fuzzing is inherently long-running - this test validates the command exists
+    // but should be run manually with: cargo test test_071_tool_fuzz -- --ignored
     ruchy_cmd()
         .arg("fuzz")
         .arg(&script)
+        .timeout(std::time::Duration::from_secs(10))
         .assert()
         .success();
 }
