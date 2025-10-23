@@ -9,6 +9,9 @@ use ruchy::runtime::replay_converter::ConversionConfig;
 use ruchy::runtime::Repl;
 use ruchy::{Parser as RuchyParser, Transpiler, WasmEmitter};
 // Replay functionality imports removed - not needed in handler, used directly in REPL
+// PARSER-077: Add syn and prettyplease for proper TokenStream formatting
+use prettyplease;
+use syn;
 use std::fs;
 use std::io::{self, Read};
 use std::path::{Path, PathBuf};
@@ -207,6 +210,7 @@ fn parse_source(source: &str) -> Result<Expr> {
     parser.parse().with_context(|| "Failed to parse input")
 }
 /// Transpile AST to Rust code (complexity: 4)
+/// PARSER-077: Use prettyplease for proper formatting (no extra spaces)
 fn transpile_ast(ast: &Expr, minimal: bool) -> Result<String> {
     let mut transpiler = Transpiler::new();
     if minimal {
@@ -214,10 +218,14 @@ fn transpile_ast(ast: &Expr, minimal: bool) -> Result<String> {
             .transpile_minimal(ast)
             .with_context(|| "Failed to transpile to Rust (minimal)")
     } else {
-        transpiler
+        let tokens = transpiler
             .transpile_to_program(ast)
-            .map(|tokens| tokens.to_string())
-            .with_context(|| "Failed to transpile to Rust")
+            .with_context(|| "Failed to transpile to Rust")?;
+
+        // Parse TokenStream as syn::File and format with prettyplease
+        let syntax_tree = syn::parse2(tokens)
+            .with_context(|| "Failed to parse generated tokens as Rust syntax")?;
+        Ok(prettyplease::unparse(&syntax_tree))
     }
 }
 /// Write output to file or stdout (complexity: 5)
