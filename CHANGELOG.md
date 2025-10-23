@@ -4,6 +4,8 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.123.0] - 2025-10-23
+
 ### Fixed
 
 - **[PARSER-077] Fix attribute spacing bug - #[test] and #[derive(...)] with unwanted spaces (GitHub Issue #58, Part 2/4)**
@@ -19,6 +21,27 @@ All notable changes to the Ruchy programming language will be documented in this
   - Before: `# [derive (Debug , Clone)] struct Point { x : i32 }`
   - After: `#[derive(Debug, Clone)] struct Point { x: i32 }`
   - **GitHub Issue #58 Status**: 🔄 IN PROGRESS (PARSER-077 complete, 2 remaining: deep nesting, nested comments)
+
+### Changed
+
+- **[PARSER-078] Document deep if-else nesting investigation (GitHub Issue #58, Part 3/4)**
+  - Investigation: Tested 10/20/50/100 levels of deep nesting - all parse correctly
+  - Conclusion: Cannot reproduce - likely fixed by previous parser improvements (PARSER-064, 067, 062/063)
+  - Test coverage: Exhaustive nesting patterns (sequential if-return, nested with returns, mixed patterns)
+  - Files modified: `docs/execution/roadmap.yaml` (status update), investigation documented in `/tmp/parser_078_investigation.md`
+  - Impact: GitHub Issue #58 (3/4 complete), 1 remaining low-priority cosmetic issue
+
+- **[QUALITY-011] Remove 3 useless comparison warnings (u128 >= 0)**
+  - Fixed: Removed tautological `u128 >= 0` assertions that always evaluate to true
+  - Files modified:
+    - `src/notebook/engine.rs` (2 locations, lines 974, 1029) - replaced with method existence checks
+    - `tests/std_008_time.rs` (1 location, line 305-307) - replaced with meaningful elapsed time validation
+  - Impact: Cleaner code, zero compiler warnings
+
+- **[QUALITY-012] Remove unused import from PARSER-077 test**
+  - Fixed: Removed unused `use predicates::prelude::*;` from attribute spacing tests
+  - Files modified: `tests/transpiler_parser_077_attribute_spacing.rs` (line 13)
+  - Impact: Cleaner imports, zero compiler warnings
 
 ## [3.122.0] - 2025-10-22
 

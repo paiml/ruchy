@@ -61,71 +61,26 @@ fn process_data(items: Vec<Item>) -> Result<Output> {
 
 ## EXTREME TDD Protocol (CRITICAL RESPONSE TO ANY BUG)
 
-**ANY BUG IN ANY COMPONENT REQUIRES IMMEDIATE EXTREME TDD RESPONSE:**
-
-### Critical Bug Response (MANDATORY - ZERO EXCEPTIONS):
-
-**🛑 STOP THE LINE PROTOCOL:**
-
-1. **HALT ALL OTHER WORK**: Stop everything when ANY bug found (parser, transpiler, runtime, linter, tooling, etc.)
-2. **ROOT CAUSE ANALYSIS**: Use GENCHI GENBUTSU (go and see) to understand exact failure mode
-3. **EXTREME TDD FIX** (RED→GREEN→REFACTOR):
-   - **RED**: Write failing test that reproduces bug FIRST
-   - **GREEN**: Fix bug with minimal code changes
-   - **REFACTOR**: Apply PMAT quality gates (A- minimum, ≤10 complexity)
-4. **EXTREME TEST COVERAGE**: Create comprehensive test suites immediately:
-
-### 🚨 ABSOLUTE RULE: NO BUG IS OUT OF SCOPE (MANDATORY - ZERO EXCEPTIONS)
-
-**THE WORDS "THIS BUG IS OUT OF SCOPE" DO NOT EXIST IN OUR VOCABULARY**
+**🚨 ABSOLUTE RULE: NO BUG IS OUT OF SCOPE (MANDATORY - ZERO EXCEPTIONS)**
 
 **FORBIDDEN RESPONSES** (ABSOLUTELY NEVER SAY THESE):
-- ❌ "This bug is out of scope for the current task"
-- ❌ "This is a parser bug, we're working on the formatter"
-- ❌ "Let's mark this test as ignored and move on"
-- ❌ "Let's defer this to a future sprint"
-- ❌ "This is a separate issue"
-- ❌ "Let's work around this for now"
-- ❌ "This is a known limitation"
+- ❌ "This bug is out of scope" / "Let's mark this test as ignored" / "Let's defer this"
+- ❌ "This is a parser bug, we're working on the formatter" / "This is a separate issue"
+- ❌ "Let's work around this for now" / "This is a known limitation"
 
-**TOYOTA WAY PRINCIPLE**: When you find a bug, you STOP THE LINE and FIX IT. No exceptions. No deferrals. No workarounds.
+**TOYOTA WAY**: When you find ANY bug (parser, transpiler, runtime, linter, tooling) → STOP THE LINE and FIX IT immediately.
 
-**MANDATORY RESPONSE** (THE ONLY ACCEPTABLE RESPONSE):
-1. 🛑 **STOP THE LINE IMMEDIATELY**: Halt ALL other work when ANY bug found
-2. 🔍 **ROOT CAUSE ANALYSIS**: Use Five Whys and GENCHI GENBUTSU (go and see)
-3. 📋 **CREATE TICKET**: Add to docs/execution/roadmap.yaml with format: [PARSER-XXX], [FORMATTER-XXX], etc.
-   - **RuchyRuchy Integration**: File RuchyRuchy issues for missing debugging features
-   - **Ticket format**: [PARSER-XXX] for parser bugs, [TRANSPILER-XXX] for transpiler, etc.
-   - **Document**: Add to roadmap.yaml immediately with ticket ID, description, priority
-4. ✅ **EXTREME TDD IMPLEMENTATION**:
+**MANDATORY RESPONSE PROTOCOL**:
+1. 🛑 **STOP THE LINE**: Halt ALL other work immediately
+2. 🔍 **ROOT CAUSE ANALYSIS**: Five Whys + GENCHI GENBUTSU (go and see)
+3. 📋 **CREATE TICKET**: Add to docs/execution/roadmap.yaml ([PARSER-XXX], [TRANSPILER-XXX], etc.)
+4. ✅ **EXTREME TDD FIX** (RED→GREEN→REFACTOR):
    - **RED**: Write failing test that reproduces bug FIRST
    - **GREEN**: Fix bug with minimal code changes
    - **REFACTOR**: Apply PMAT quality gates (A- minimum, ≤10 complexity)
-5. 🧪 **PROPERTY TESTS**: Verify invariants hold with 10K+ random inputs
+5. 🧪 **PROPERTY TESTS**: Verify invariants with 10K+ random inputs
 6. 🧬 **MUTATION TESTS**: Prove tests catch real bugs (≥75% mutation coverage)
 7. ✅ **COMMIT**: Document fix with ticket reference
-
-**WHY THIS MATTERS**:
-- **Quality is non-negotiable**: Every bug deferred is technical debt that compounds
-- **User trust**: Ignoring bugs breaks user confidence
-- **Team velocity**: Small bugs become big problems
-- **Toyota Way**: Stop the line for ANY defect, no exceptions
-
-**EXAMPLE - CORRECT RESPONSE**:
-```
-Discovery: Parser fails with "Unexpected token: Plus" on line continuations with comments
-
-❌ WRONG: "This is a parser bug, out of scope for formatter work. Mark test as ignored."
-✅ RIGHT:
-  1. STOP THE LINE - this is a defect that blocks progress
-  2. Five Whys: Why does it fail? → Parser doesn't handle line continuations with comments
-  3. Create: [PARSER-053] Fix line continuation parsing with intervening comments
-  4. RED: test_parse_line_continuation_with_comment() - FAILS
-  5. GREEN: Fix parser to handle line continuations
-  6. Property test: All valid line continuations parse correctly
-  7. Mutation test: Verify parser tests catch line continuation bugs
-  8. Commit: [PARSER-053] Fix line continuation parsing with tests
-```
 
 ### 🚨 CRITICAL: Missing Language Feature Protocol (MANDATORY)
 
@@ -149,190 +104,27 @@ Discovery: Parser fails with "Unexpected token: Plus" on line continuations with
 6. 📝 **DOCUMENT**: Update LANG-COMP with working examples
 7. ✅ **COMMIT**: Complete implementation with ticket reference
 
-**Example - Correct Response to Missing Feature**:
-```
-Discovery: "Negative number literals don't work"
+**Example**: Missing feature → STOP → Verify with Genchi Genbutsu → Create ticket → TDD implementation → Commit
 
-WRONG: "Let's remove negative numbers from examples"
-RIGHT:
-  1. Stop the line
-  2. Verify: grep -r "Literal.*Negative" src/ (is it truly missing?)
-  3. Create: [PARSER-042] Implement negative number literals
-  4. RED: Write test_negative_literals() - fails
-  5. GREEN: Add parsing for `-123` syntax
-  6. Property test: All negative integers parse correctly
-  7. Commit: [PARSER-042] Implement negative number literals with tests
-```
+**Toyota Way**: Missing features ARE defects - implement with TDD, never skip
 
-**Toyota Way Principle**:
-- **Jidoka**: Stop the line when defects found - missing features ARE defects
-- **Genchi Genbutsu**: Go see if feature is truly missing (don't assume!)
-- **Kaizen**: Each missing feature is an opportunity to improve the language
-- **No Shortcuts**: Implement properly with TDD, don't work around
+### Test Coverage Requirements (MANDATORY - ALL Bug Categories):
+- **Unit Tests**: Parser (tokens/grammar/edge cases), Transpiler (Ruchy→Rust mappings), Runtime (evaluation paths/errors), Linter (rules/scope/AST), Tooling (CLI/flags/output)
+- **Integration Tests**: Full compile → execute → validate pipeline + All examples/
+- **Property Tests**: 10K+ cases via proptest (verify invariants hold)
+- **Fuzz Tests**: Millions of inputs via cargo-fuzz/AFL (find edge cases)
+- **Mutation Tests**: ≥75% coverage via cargo-mutants (prove tests catch real bugs)
+- **Regression Tests**: Every GitHub issue gets specific test case
 
-### Test Coverage Requirements (MANDATORY):
-- **Parser Tests**: Every token, every grammar rule, every edge case
-- **Transpiler Tests**: Every Ruchy construct → Rust construct mapping
-- **Runtime Tests**: Every evaluation path, every error condition
-- **Linter Tests**: Every lint rule, every scope scenario, every AST pattern
-- **Tooling Tests**: Every CLI command, every flag combination, every output format
-- **Integration Tests**: Full compile → execute → validate pipeline
-- **Property Tests**: Automated generation of valid/invalid programs (10K+ cases)
-- **Fuzz Tests**: Random input stress testing (AFL, cargo-fuzz)
-- **Mutation Tests**: 75%+ mutation coverage via cargo-mutants (empirical validation)
-- **Examples Tests**: All examples/ must compile and run
+### 🚀 DEBUGGER INTEGRATION (RuchyRuchy Tools - MANDATORY)
 
-### Bug Categories (ALL Subject to EXTREME TDD):
-- **Parser Bugs**: Grammar issues, tokenization errors, AST construction failures
-- **Transpiler Bugs**: Incorrect Rust code generation, type mismatches, codegen errors
-- **Runtime Bugs**: Evaluation errors, type system bugs, memory issues
-- **Linter Bugs**: False positives, false negatives, scope tracking errors
-- **Tooling Bugs**: CLI failures, invalid output, incorrect behavior
-- **Quality Bugs**: PMAT violations, complexity explosions, technical debt accumulation
+**Repository**: `../ruchyruchy` - Source maps, time-travel debugging, performance validation
+**Pre-commit**: Auto-validates debugging tools (<6s). See `../ruchyruchy/README.md`
 
-### 🚀 DEBUGGER INTEGRATION PROTOCOL (MANDATORY)
-
-**CRITICAL**: Use Ruchy's debugger infrastructure for ALL development and debugging workflows.
-
-**Why Debugger-First Development**:
-- **Time-Travel Debugging**: Step backward through execution (impossible in most languages!)
-- **Deterministic Replay**: Reproduce bugs exactly, every time
-- **AST Visualization**: See code structure while debugging
-- **DAP Protocol**: Universal IDE support (VS Code, vim, emacs, etc.)
-- **REPL Integration**: Interactive debugging like Python's pdb/ipdb
-
-#### When to Use Debugger (ALWAYS)
-
-**MANDATORY debugger usage for**:
-1. **Bug Investigation**: Drop `debug!()` breakpoint instead of println debugging
-2. **Test Failures**: Use time-travel to find exact failure point
-3. **Performance Issues**: Profile with time-travel replay
-4. **Integration Testing**: Record execution traces for post-mortem analysis
-5. **Documentation**: Record execution for examples
-
-#### Debugger-First Workflow
-
-**Instead of**:
-```rust
-// ❌ BAD: println debugging
-fn calculate_total(items: Vec<i32>) -> i32 {
-    println!("items: {:?}", items);  // Manual debugging
-    let mut total = 0;
-    for item in items {
-        println!("item: {}, total: {}", item, total);  // More manual debugging
-        total += item;
-    }
-    total
-}
-```
-
-**Use debugger**:
-```rust
-// ✅ GOOD: debugger-first
-fun calculate_total(items: Vec<i32>) -> i32 {
-    debug!()  // Drop into interactive debugger
-    let mut total = 0
-    for item in items {
-        total = total + item
-    }
-    total
-}
-
-// In debugger:
-(ruchy-debug) n          # Next line
-(ruchy-debug) p total    # Print variable
-(ruchy-debug) rn         # 🚀 REVERSE-NEXT (step backward!)
-(ruchy-debug) replay     # Replay execution
-```
-
-#### Time-Travel Debugging Commands
-
-**Forward Execution**:
-- `n` / `next`: Execute next line
-- `s` / `step`: Step into function
-- `c` / `continue`: Continue to next breakpoint
-
-**🚀 Time-Travel (Unique to Ruchy)**:
-- `rn` / `reverse-next`: Step backward one line
-- `rs` / `reverse-step`: Step out of function (backward)
-- `replay from N`: Replay from specific step
-- `replay`: Replay entire execution
-
-**Inspection**:
-- `p <var>`: Print variable value
-- `bt`: Show call stack
-- `up` / `down`: Navigate stack frames
-- `ast`: Show AST visualization
-
-#### Integration with Development Workflow
-
-**1. RED Phase (Write Failing Test)**:
-```bash
-# Run test with debugger
-ruchy test --debug tests/parser_069_turbofish_issue_26.rs
-# Debugger breaks on failure, inspect state
-```
-
-**2. GREEN Phase (Fix Bug)**:
-```bash
-# Use time-travel to find exact bug location
-(ruchy-debug) rn  # Step backward
-(ruchy-debug) p state  # Inspect state before bug
-```
-
-**3. REFACTOR Phase (Verify Fix)**:
-```bash
-# Replay execution to verify fix holds
-(ruchy-debug) replay
-```
-
-#### Notebook Debugging
-
-**Visual debugging in Ruchy notebooks**:
-```ruchy
-%%debug  # Magic command for visual debugging
-
-for row in dataset {
-    let processed = transform(row)  # Pause here with visual inspector
-    results.push(processed)
-}
-```
-
-**Visual interface shows**:
-- Current line highlighted
-- All variables with expandable inspection
-- Call stack panel
-- Time-travel controls: ◄◄ ◄ ► ►► buttons
-- AST visualization option
-
-#### IDE Integration (Universal via DAP)
-
-**VS Code**:
-```json
-// .vscode/launch.json
-{
-  "type": "ruchy",
-  "request": "launch",
-  "name": "Debug Ruchy",
-  "program": "${file}",
-  "timeTravel": true  // Enable time-travel!
-}
-```
-
-**Vim (with vimspector)**:
-```vim
-nmap <F10> :call vimspector#StepOver()<CR>
-nmap <S-F10> :call vimspector#ReverseStepOver()<CR>  " Reverse!
-```
-
-#### Why This Matters (Toyota Way)
-
-- **Jidoka**: Debugger stops the line for defects, provides immediate feedback
-- **Genchi Genbutsu**: Time-travel = "go and see" the exact moment bug occurred
-- **Kaizen**: Replay enables learning from past execution, continuous improvement
-- **Poka-Yoke**: Deterministic replay prevents "works on my machine" bugs
-
-**Documentation**: See `book/src/phase4_debugger/interactive-debugging-guide.md` for complete guide
+**Time-Travel Debugging** (instead of println):
+- Drop `debug!()` breakpoint + commands: `n` (next), `rn` (reverse-next), `p <var>` (print), `replay`
+- Use `ruchy test --debug` for test failures + DAP protocol (VS Code/vim/emacs)
+- **Documentation**: `book/src/phase4_debugger/interactive-debugging-guide.md`
 
 ### Mutation Testing Protocol (MANDATORY - Sprint 8)
 
@@ -386,47 +178,17 @@ grep "MISSED" core_mutations.txt
 4. **Analyze**: Draw conclusions only from the evidence
 5. **Document**: Record findings and next steps
 
-## Mandatory Testing Requirements (80% Property Test Coverage)
+## Mandatory Testing Requirements
 
-**CRITICAL**: Following paiml-mcp-agent-toolkit Sprint 88 success pattern:
+**Target**: 80% property test coverage across all modules (Sprint 88 pattern)
 
-1. **Property Test Coverage**: Target 80% of all modules with property tests
-2. **Doctests**: Every public function MUST have runnable documentation examples
-3. **Property Tests**: Use proptest to verify invariants with 10,000+ random inputs
-4. **Fuzz Tests**: Use cargo-fuzz or AFL to find edge cases with millions of inputs
-5. **Examples**: Create working examples in examples/ directory demonstrating correct usage
-6. **Integration Tests**: End-to-end scenarios covering real-world usage patterns
-7. **Regression Tests**: Specific test case that reproduces and prevents the exact defect
-
-**Property Test Injection Pattern** (from pmat):
-```rust
-#[cfg(test)]
-mod property_tests {
-    use super::*;
-    use proptest::prelude::*;
-    
-    proptest! {
-        #[test]
-        fn test_function_never_panics(input: String) {
-            let _ = function_under_test(&input); // Should not panic
-        }
-        
-        #[test]
-        fn test_invariant_holds(a: i32, b: i32) {
-            let result = add(a, b);
-            prop_assert_eq!(result, b + a); // Commutative property
-        }
-    }
-}
-```
-
-**Code Coverage Requirements** (QUALITY-008 Implemented):
-- **Current Baseline**: 33.34% overall (post-QUALITY-007 parser enhancements)
-- **Regression Prevention**: Pre-commit hooks BLOCK commits below baseline
-- **Direction**: Coverage must increase or stay same, NEVER decrease
-- **Parser Improvements**: Character literals, tuple destructuring, rest patterns now working
-- **Pattern Test Results**: 2 passing → 4 passing (100% improvement achieved)
-- **Enforcement**: Automated coverage checking with clear error messages
+**Requirements**:
+1. **Doctests**: Every public function has runnable documentation examples
+2. **Property Tests**: `proptest!` macro with 10K+ random inputs (80% of modules)
+3. **Examples**: Working code in examples/ directory demonstrating usage
+4. **Code Coverage**: ≥33.34% baseline (enforced by pre-commit hooks, NEVER decrease)
+   - Current: 33.34% (post-QUALITY-007: character literals, tuple destructuring, rest patterns)
+   - Direction: Must increase or stay same
 
 ## PMAT Quality Gates & Enforcement (v2.70+)
 
@@ -448,48 +210,114 @@ mod property_tests {
 - Mix: unit/doctests/property-tests/fuzz tests
 - Check ../ruchy-book and ../rosetta-ruchy at sprint start
 
-## RuchyRuchy Debugging Tools Integration
-
-**CRITICAL**: RuchyRuchy is a separate debugging toolkit project providing advanced debugging infrastructure for Ruchy.
-
-**Repository**: `../ruchyruchy` (sibling directory to main Ruchy project)
-
-**Tools Provided**:
-- **Source Map Generation**: 1:1 line mapping for Ruchy → Rust transpilation debugging
-- **Time-Travel Debugging**: Record-replay engine for stepping backward through execution
-- **Performance Validation**: Regression detection for compilation and runtime performance
-
-**Pre-commit Integration**: MANDATORY validation on every commit (<6s total)
-```bash
-# Validation runs automatically via pre-commit hook
-# Manual execution:
-cd ../ruchyruchy && ./scripts/validate-debugging-tools.sh
-
-# Symlinked to main project:
-./scripts/validate-debugging-tools.sh
-```
-
-**Setup Requirements**:
-1. Clone ruchyruchy as sibling directory: `git clone https://github.com/paiml/ruchyruchy ../ruchyruchy`
-2. Pre-commit hook automatically detects and validates debugging tools
-3. Validation includes: source maps (3 lines, <2s), time-travel (3 steps, <3s), performance (100 mappings, <1s)
-
-**Usage**:
-- Pre-commit hook validates debugging tools automatically
-- See `../ruchyruchy/README.md` for detailed documentation
-- See `../ruchyruchy/DEBUGGING_TOOLS_SESSION_SUMMARY.md` for implementation status
-
-**Why This Matters (Toyota Way)**:
-- **Jidoka**: Fast feedback loop (<6s) catches debugging tool regressions immediately
-- **Genchi Genbutsu**: Source maps enable "go and see" debugging at Rust code level
-- **Kaizen**: Time-travel debugging enables root cause analysis of complex bugs
-
 ## Scripting Policy
 
 **CRITICAL**: Use ONLY Ruchy scripts for adhoc scripting and testing. No Python, Bash scripts, or other languages for testing Ruchy functionality.
 
 ✅ **Allowed**: `*.ruchy` files loaded via `:load` command in REPL
 ❌ **Forbidden**: Python scripts, shell scripts, or any non-Ruchy testing code
+
+## 🚨 CRITICAL: Ruchy Execution Safety Protocol
+
+**ROOT CAUSE OF SESSION HANGS**: Runaway Ruchy processes with infinite loops caused 7 zombie processes running 50-96 days at 98% CPU each, system load 18.43.
+
+**MANDATORY: ALL ruchy script executions MUST have timeouts**
+
+### Execution Pattern (NO EXCEPTIONS):
+
+```bash
+# ✅ CORRECT - Always use timeout
+timeout 10 ruchy script.ruchy           # 10s for most operations
+timeout 10 ruchy transpile file.ruchy   # 10s for transpilation
+timeout 60 ruchy test --mutations       # 60s for heavy operations
+timeout 120 cargo test                  # 120s for test suites
+
+# ❌ FORBIDDEN - Never run without timeout
+ruchy script.ruchy                      # Can hang forever
+cargo run -- eval script.ruchy          # Can hang forever
+```
+
+### Safety Rules:
+
+1. **NEVER execute ruchy without timeout** - Use `timeout` command for ALL invocations
+2. **Check for infinite loops** - Validate scripts don't have `while true` with blocking I/O
+3. **Monitor temp files** - Clean up `/tmp/*.ruchy` after execution
+4. **Kill zombies immediately** - If you see high CPU ruchy processes, kill them: `pkill -9 -f "ruchy /tmp/"`
+
+### Preventive Measures:
+
+```bash
+# Before starting work: Check for zombie processes
+ps aux | grep "ruchy /tmp/" | grep -v grep
+
+# Clean up temp files
+rm -f /tmp/*.ruchy
+
+# Kill any ruchy processes older than 5 minutes
+pkill -f "ruchy /tmp/" --older 300
+```
+
+### Incident Response:
+
+If Claude session hangs during `cargo run` or `ruchy` execution:
+
+1. 🔍 **Diagnose**: `ps aux | grep ruchy | grep -v grep`
+2. 🛑 **Kill zombies**: `pkill -9 -f "ruchy /tmp/"`
+3. 🧹 **Clean up**: `rm -f /tmp/*.ruchy`
+4. 📊 **Verify**: `uptime` (load should be <4 on this system)
+
+**Reference Incident**: 2025-10-23 - 7 processes, 96 days runtime, system load 18.43 → killed → load 8.05
+
+## 🚨 CRITICAL: Claude Zombie Process Prevention
+
+**ROOT CAUSE OF PERSISTENT HANGS**: Zombie Claude Code processes accumulate over time, consuming CPU and memory.
+
+**Discovered 2025-10-23**: 6 zombie Claude processes:
+- 3 processes: **194-197% CPU** (2 full cores each), running **111-231 DAYS** (3-7 months!)
+- 3 processes: **8-10% CPU**, running **9-10 days**, 576-987MB RAM each
+- **Impact**: System load 7.4, 22GB swap usage, competing for resources with active sessions
+
+### Prevention Protocol (MANDATORY):
+
+**Before starting ANY Claude session:**
+```bash
+# 1. Check for zombie Claude processes (>1 day old)
+ps aux | grep claude | grep -v grep
+
+# 2. Kill zombies older than 1 day
+pkill -f "claude --dangerously-skip-permissions" --older 86400
+
+# 3. Verify system health
+uptime  # Load should be <4 on this system
+free -h # Swap usage should be <5GB
+```
+
+### Daily Cleanup (MANDATORY):
+
+```bash
+# Add to crontab: Kill Claude processes older than 24 hours
+0 */6 * * * pkill -f "claude --dangerously-skip-permissions" --older 86400
+
+# Check system load
+0 */1 * * * uptime >> /tmp/system-load-monitor.log
+```
+
+### When to Manually Kill Claude Sessions:
+
+1. **High CPU** (>50% for >10 minutes) → Old background session, kill it
+2. **Old sessions** (>24 hours) → Likely zombie, kill it
+3. **High memory** (>2GB for single session) → Memory leak, kill it
+4. **High system load** (>4 sustained) → Check for zombies: `ps aux | grep claude`
+
+**Why This Matters:**
+- Zombie Claude processes accumulate like zombie ruchy processes
+- Each zombie consumes 1-2 CPU cores indefinitely
+- Memory and swap usage grow over time
+- Active sessions compete with zombies, causing hangs
+
+**Reference Incident**: 2025-10-23
+- Before: 6 zombies, load 7.4, 22GB swap, sessions freezing
+- After: All killed, load 5.5 → 2.0, 7GB swap, sessions stable
 
 ## bashrs Quality Enforcement (Shell Scripts & Makefiles)
 
@@ -530,44 +358,7 @@ make lint-bashrs     # Everything (scripts + Makefile)
 - ✅ **Errors**: Block commit (exit 1)
 - ⚠️  **Warnings**: Allow commit (non-blocking)
 
-### Current Quality Status (2025-10-19)
-
-**Makefile**: 0 errors, 2 warnings (non-blocking)
-- MAKE003: Unquoted variable warning (line 766)
-- MAKE004: Missing .PHONY for 'dev' target (line 688)
-
-**Shell Scripts** (sample):
-- `./run-e2e-tests.sh`: 0 errors, 3 warnings
-- `./.pmat/test_book_compat.sh`: 0 errors, 17 warnings
-- `./.pmat/run_overnight_mutations.sh`: **5 errors** (MUST FIX)
-
-### Quality Standards
-
-**Errors (BLOCKING)**:
-- Syntax errors
-- Dangerous command patterns (e.g., `rm -rf /`)
-- Unquoted variables in critical contexts
-- Missing error handling for critical operations
-
-**Warnings (NON-BLOCKING)**:
-- ShellCheck-compatible style suggestions
-- Quoting recommendations
-- POSIX portability hints
-
-### Toyota Way Application
-
-**Jidoka**: bashrs stops the line for shell script defects
-- Pre-commit hook: Automated quality gates
-- Manual review: `make lint-bashrs` before any bash/Makefile changes
-
-**Kaizen**: Continuous improvement of shell quality
-- Fix errors immediately (blocking)
-- Address warnings incrementally (non-blocking)
-- Use bashrs suggestions as learning opportunities
-
-**NEVER BYPASS**: `git commit --no-verify` is FORBIDDEN
-- Fix root cause, don't bypass quality gates
-- If bashrs blocks incorrectly, fix bashrs detection
+**Quality Standards**: Errors block commits, warnings are non-blocking. Run `make lint-bashrs` before changes.
 
 ### Documented Exceptions
 
@@ -598,41 +389,11 @@ Navigation:
 
 **CRITICAL**: Check `../ruchy-book/INTEGRATION.md` for current compatibility status and regression detection.
 
-### ruchy-book Validation (Following pmat-book Pattern)
+### ruchy-book Validation
 
-**MANDATORY**: All commits MUST pass ruchy-book validation via pre-commit hook.
+**MANDATORY**: Pre-commit hook validates Ch01-05. Run `make validate-book` or auto via `git commit`.
 
-**Pattern**: Following `paiml-mcp-agent-toolkit/scripts/validate-pmat-book.sh`
-
-**Critical Chapters** (MUST pass):
-- Ch01: Getting Started - Basic functionality
-- Ch02: Variables and Types
-- Ch03: Control Flow
-- Ch05: Functions
-
-**Usage**:
-```bash
-# Manual validation (recommended before commits)
-make validate-book
-
-# Automatic validation (via pre-commit hook)
-git commit  # Runs validation automatically
-
-# Direct script execution
-./scripts/validate-ruchy-book.sh
-```
-
-**Features**:
-- Parallel execution (4 jobs default, configurable via RUCHY_BOOK_JOBS)
-- Fail-fast on first failure
-- 120-second timeout per chapter
-- Skips gracefully if ruchy-book not found
-
-**Why This Matters** (Toyota Way):
-- **Jidoka**: Stop the line if book examples break
-- **Genchi Genbutsu**: Validate examples work, not just exist
-- **Kaizen**: Continuous validation prevents documentation drift
-- **Quality Built-In**: Pre-commit hook catches issues before merge
+**Features**: Parallel execution, fail-fast, 120s timeout. See `../ruchy-book/INTEGRATION.md`
 
 ## Absolute Rules (From paiml-mcp-agent-toolkit)
 
@@ -659,56 +420,9 @@ git commit  # Runs validation automatically
 4. **Traceability**: Every change must be traceable back to business requirements via ticket system
 5. **Sprint Planning**: Work is organized by sprint with clear task dependencies and priorities
 
-### Pre-Implementation Verification (PMAT-Enforced)
-```rust
-// HALT. Before implementing ANY feature:
-□ Run PMAT baseline: `pmat quality-gate --fail-on-violation --checks=all`
-□ Check ../ruchy-book/INTEGRATION.md for latest compatibility report
-□ Check ../ruchy-book/docs/bugs/ruchy-runtime-bugs.md for known issues
-□ Locate specification section in SPECIFICATION.md
-□ Find task ID in docs/execution/roadmap.yaml (MANDATORY)
-□ Verify ticket dependencies completed via DAG
-□ Reference ticket number in all commits/PRs
-□ Check existing patterns in codebase (GENCHI GENBUTSU - Go And See!)
-  - For CLI tests: Use assert_cmd pattern from tests/fifteen_tool_validation.rs
-  - For property tests: Use proptest pattern from existing property_tests modules
-  - For mutation tests: Follow cargo-mutants pattern from Sprint 8
-□ PMAT complexity check: `pmat analyze complexity --max-cyclomatic 10`
-□ Confirm complexity budget (<10 cognitive) via PMAT verification
-□ Zero SATD: `pmat analyze satd --fail-on-violation`
-```
-
-### MANDATORY: assert_cmd for ALL CLI Testing
-
-**CRITICAL**: ALL tests that invoke CLI commands MUST use assert_cmd, NOT raw std::process::Command.
-
-**Why assert_cmd is Mandatory**:
-- **Deterministic**: Predicates provide clear, testable assertions
-- **Maintainable**: Standard pattern across all CLI tests
-- **Debuggable**: Better error messages than raw Command
-- **Proven**: Already used in fifteen_tool_validation.rs with 18/22 passing tests
-
-**Pattern (from fifteen_tool_validation.rs)**:
-```rust
-use assert_cmd::Command;
-use predicates::prelude::*;
-
-fn ruchy_cmd() -> Command {
-    Command::cargo_bin("ruchy").expect("Failed to find ruchy binary")
-}
-
-#[test]
-fn test_example() {
-    ruchy_cmd()
-        .arg("run")
-        .arg("examples/test.ruchy")
-        .assert()
-        .success()
-        .stdout(predicate::str::contains("expected output"));
-}
-```
-
-**Never Use**: `std::process::Command` for testing CLI - this is a quality defect.
+### CLI Testing Standard
+**Pattern**: Use `assert_cmd::Command` with predicates, NOT `std::process::Command`
+**Reference**: See `tests/fifteen_tool_validation.rs` for examples
 
 ### MANDATORY: Test Naming Convention (TRACEABILITY)
 
@@ -737,23 +451,7 @@ Examples:
 - **Validation**: Prove documentation examples are tested (not just written)
 - **Toyota Way**: Standard work enables quality - no standard = no quality
 
-**Test-to-Doc Linkage** (MANDATORY):
-```rust
-// File: tests/lang_comp/control_flow.rs
-// Links to: examples/lang_comp/03-control-flow/01_if.ruchy
-// Validates: LANG-COMP-003 Control Flow - If Expressions
-
-#[test]
-fn test_langcomp_003_01_if_expression_example_file() {
-    ruchy_cmd()
-        .arg("run")
-        .arg("examples/lang_comp/03-control-flow/01_if.ruchy")
-        .assert()
-        .success();
-}
-```
-
-**Generic Names are DEFECTS**: `test_if_true_branch()` provides ZERO traceability.
+**Generic Names are DEFECTS**: `test_if_true_branch()` provides ZERO traceability. Use ticket-based naming.
 
 ### Commit Message Format
 ```
@@ -789,192 +487,52 @@ Closes: TICKET-ID
 - **No Stale Documentation**: Every commit keeps documentation current
 - **Toyota Way**: Jidoka (quality built-in) - documentation is part of the commit, not an afterthought
 
-**Example Workflow**:
-```bash
-# 1. Make code changes
-# 2. Update roadmap.yaml with task completion
-# 3. Update CHANGELOG.md with change description
-# 4. Commit all together atomically
-git add src/ docs/execution/roadmap.yaml CHANGELOG.md
-git commit -m "[STDLIB-003] Implement file metadata functions
+**Workflow**: Code changes → Update roadmap.yaml → Update CHANGELOG.md → Commit atomically
 
-- Added fs_metadata(), fs_size(), fs_modified() functions
-- 12/12 tests passing (interpreter + transpiler modes)
-- Updated roadmap.yaml with STDLIB-003 completion
-- Updated CHANGELOG.md with new stdlib functions
-
-🤖 Generated with Claude Code
-Co-Authored-By: Claude <noreply@anthropic.com>"
-```
-
-**Forbidden**:
-- ❌ Committing code without updating roadmap.yaml
-- ❌ Committing code without updating CHANGELOG.md
-- ❌ "Will update documentation later"
-- ❌ Separate documentation commits after code commit
+**Forbidden**: Code commits without documentation updates
 
 ### End-of-Sprint Git Commit Protocol (MANDATORY)
 
-**CRITICAL**: After EVERY sprint completion, you MUST commit all changes immediately.
+**Sprint Completion Checklist**:
+1. ✅ All sprint tasks complete + unit tests passing
+2. ✅ **Property tests**: `cargo test <module>::property_tests -- --ignored --nocapture` (report results)
+3. ✅ **Mutation tests**: `cargo mutants --file tests/lang_comp/<module>.rs --timeout 300` (≥75% CAUGHT/MISSED)
+4. ✅ **15-Tool Validation**: All examples work with ALL 15 native tools
+5. ✅ **Roadmap + Documentation updated** with sprint status + test metrics
+6. ✅ **GIT COMMIT IMMEDIATELY**: `git add . && git commit` with sprint summary, test metrics, ticket list
 
-**Sprint Completion Checklist (ALL MANDATORY - ZERO EXCEPTIONS)**:
-1. ✅ All sprint tasks complete and verified
-2. ✅ **Unit tests passing**: All basic functionality tests green
-3. ✅ **Property tests EXECUTED**: Run ignored property tests, verify they pass, report results
-   ```bash
-   cargo test <test_module>::property_tests -- --ignored --nocapture
-   # Example: cargo test control_flow::property_tests -- --ignored --nocapture
-   ```
-4. ✅ **Mutation tests EXECUTED**: Run mutation testing on new code, achieve ≥75% coverage
-   ```bash
-   cargo mutants --file tests/lang_comp/<module>.rs --timeout 300
-   # Report: CAUGHT/MISSED ratio, must be ≥75%
-   ```
-5. ✅ **15-Tool Validation**: Verify examples work with ALL 15 native tools (sample validation acceptable)
-6. ✅ **Roadmap updated** with sprint completion status INCLUDING test metrics
-7. ✅ **Documentation updated** (examples, tests, validation results)
-8. ✅ **GIT COMMIT IMMEDIATELY** - Don't wait, commit now!
+**Toyota Way**: Atomic sprint commits prevent integration hell and data loss
 
-**Why Property & Mutation Testing is MANDATORY**:
-- **Property Tests**: Prove invariants hold across 10K+ random inputs (mathematical correctness)
-- **Mutation Tests**: Empirically prove tests catch real bugs, not just exercise code paths
-- **Without Both**: You have NO PROOF tests are effective - just coverage theater
+## TDG Scoring & Enforcement
 
-**Commit Protocol**:
-```bash
-# After sprint completion, ALWAYS run:
-git add .
-git status  # Verify changes
-git commit -m "[SPRINT-ID] Sprint completion: <brief summary>
-
-- All tasks complete: <list ticket IDs>
-- Tests: X/X passing
-- Examples: X files created
-- Validation: X-tool protocol verified
-- Roadmap: Updated with completion status
-
-🤖 Generated with Claude Code
-Co-Authored-By: Claude <noreply@anthropic.com>"
-
-git status  # Verify commit success
-```
-
-**Why This Matters (Toyota Way)**:
-- **Jidoka**: Each sprint is a complete unit of work - commit it atomically
-- **Genchi Genbutsu**: Working code on disk = empirical evidence of progress
-- **Kaizen**: Small, verified increments prevent integration hell
-- **Risk Mitigation**: Never lose completed work due to session interruption
-
-## MANDATORY: TDG Transactional Tracking
-
-**Scoring**: A+ (95-100), A (90-94), A- (85-89), B (80-84), C (70-79), D (60-69), F (<60)
-
+**Grades**: A+ (95-100), A (90-94), A- (85-89), B (80-84), C (70-79), D (60-69), F (<60)
 **Pre-Commit**: `pmat tdg . --min-grade A- --fail-on-violation` (BLOCKING)
 
 ## Compiler Architecture Patterns
 
-### Parser Pattern - Pratt with Error Recovery
-```rust
-impl Parser {
-    fn parse_expr(&mut self, min_bp: u8) -> Result<Expr, ParseError> {
-        let mut lhs = self.parse_prefix()?;
-        while let Some(&op) = self.peek() {
-            let (l_bp, r_bp) = op.binding_power();
-            if l_bp < min_bp { break; }
-            self.advance();
-            let rhs = self.parse_expr(r_bp)?;
-            lhs = Expr::binary(op, lhs, rhs, self.span());
-        }
-        Ok(lhs)
-    }
-}
-```
+**Parser**: Pratt parsing with error recovery, operator precedence via binding power
+**Type Inference**: Bidirectional checking (check vs infer), unification for type matching
 
-### Type Inference - Bidirectional Checking
-```rust
-impl TypeChecker {
-    fn check(&mut self, expr: &Expr, expected: Type) -> Result<(), TypeError> {
-        match (&expr.kind, expected) {
-            (ExprKind::Lambda(params, body), Type::Function(arg_tys, ret_ty)) => {
-                self.check_params(params, arg_tys)?;
-                self.check(body, *ret_ty)
-            }
-            _ => {
-                let inferred = self.infer(expr)?;
-                self.unify(inferred, expected)
-            }
-        }
-    }
-}
-```
-
-## MANDATORY Quality Gates (BLOCKING - Not Advisory)
+## Quality Gates Enforcement (BLOCKING - Not Advisory)
 
 ### SACRED RULE: NEVER BYPASS QUALITY GATES
+- ❌ **FORBIDDEN**: `git commit --no-verify`, skipping tests, ignoring checks, dismissing warnings
+- ✅ **Toyota Way**: Stop the line for ANY defect, fix root cause via Five Whys
 
-**ABSOLUTELY FORBIDDEN**:
-- `git commit --no-verify` - NEVER use this - NO EXCEPTIONS EVER
-- Skipping tests "temporarily" - NO exceptions
-- Ignoring failing quality checks - Must fix EVERY defect
-- Dismissing warnings as "unrelated" - All defects matter
+**Pre-commit Hooks** (AUTO-INSTALLED via `pmat hooks install`):
+- TDG A-, Function complexity ≤10, Basic REPL test, bashrs validation, book validation
 
-**Toyota Way Principle**: Stop the line for ANY defect. No defect is too small. No shortcut is acceptable.
+**When Clippy Blocks** - Fix root cause:
+- Missing `# Errors` → Add documentation with examples
+- `unwrap()` → Replace with `expect()` + meaningful messages
+- Dead code → Remove or prefix with underscore
+- Missing doctests → Add runnable examples
 
-**WHEN CLIPPY BLOCKS**: Always fix the root cause:
-- Missing `# Errors` sections → Add proper documentation with examples
-- Using `unwrap()` → Replace with `expect()` with meaningful messages  
-- Dead code warnings → Remove or prefix with underscore
-- Missing doctests → Add runnable examples to documentation
+**Make Lint Contract**: `cargo clippy --all-targets --all-features -- -D warnings` (EVERY warning = error)
 
-### MANDATORY DUAL-RELEASE PUBLISHING PROTOCOL
-
-**CRITICAL**: After EVERY version update, you MUST publish BOTH crates to crates.io immediately.
-
-**Why Dual Release**:
-- `ruchy`: Main compiler CLI and library
-- `ruchy-wasm`: WebAssembly bindings for browser/notebook use
-- **MUST stay in sync**: Same version number for consistency
-
-```bash
-# MANDATORY after version bump and git push:
-# Step 1: Bump BOTH versions to same number
-sed -i 's/^version = ".*"/version = "X.Y.Z"/' Cargo.toml
-sed -i 's/^version = ".*"/version = "X.Y.Z"/' ruchy-wasm/Cargo.toml
-
-# Step 2: Publish main crate first (ruchy-wasm depends on it)
-cargo publish
-
-# Step 3: Wait 30 seconds for crates.io to index
-sleep 30
-
-# Step 4: Publish wasm crate
-cd ruchy-wasm && cargo publish
-```
-
-**Pre-publish Checklist**:
-- ✅ All tests passing (cargo test)
-- ✅ CHANGELOG.md updated with version changes
-- ✅ Git commit with version bump
-- ✅ Git push to main
-- ✅ Both crates build successfully (cargo check)
-
-**Version Sync Verification**:
-```bash
-# Verify versions match before publishing
-grep "^version" Cargo.toml ruchy-wasm/Cargo.toml
-```
-
-### Pre-commit Hooks (AUTO-INSTALLED via `pmat hooks install`)
-Gates: TDG A-, Function complexity ≤10, Basic REPL test
-Install: `pmat hooks install`
-
-## The Make Lint Contract (Zero Warnings Allowed)
-```bash
-# make lint command from Makefile:
-cargo clippy --all-targets --all-features -- -D warnings
-```
-
-**Critical**: The `-D warnings` flag treats EVERY clippy warning as a hard error.
+### DUAL-RELEASE PUBLISHING PROTOCOL
+**After version bump**: Publish `ruchy` first, wait 30s, then `ruchy-wasm` (same version)
+**Checklist**: Tests pass, CHANGELOG updated, git commit/push, both crates build
 
 ## Language Feature Testing Protocol
 
@@ -1012,116 +570,47 @@ Language compatibility testing is **GATE 2** in our mandatory pre-commit hooks -
 
 ## 15 Native Tool Validation Protocol (LANG-COMP MANDATORY)
 
-**CRITICAL**: All language completeness documentation (LANG-COMP tickets) MUST validate examples using ALL 15 native Ruchy tools.
-
 **🚨 SACRED PRINCIPLE: LANG-COMP TESTS ARE DEFECT-FINDING TOOLS**
 
-**Purpose**: LANG-COMP tests are DESIGNED to find subtle compiler/interpreter defects
-- **NOT documentation**: These tests expose gaps in implementation
-- **NO WORKAROUNDS EVER**: If a LANG-COMP test fails → FIX THE COMPILER
-- **Stop The Line**: Every failure indicates a real defect (Toyota Way: Jidoka)
-- **Success Stories**:
-  - ✅ DEFECT-POW: Found pow() missing in eval mode → FIXED in eval_integer_method
-  - ✅ DEFECT-REF: Found reference operator (&) missing → FIXED in eval_operations
-  - ✅ DEFECT-TUPLE: Found tuple field access missing in eval → FIXED in eval_field_access
+**Purpose**: Find compiler/interpreter defects, NOT documentation
+- **NO WORKAROUNDS EVER**: LANG-COMP test fails → FIX THE COMPILER (Stop The Line)
+- **Success**: DEFECT-POW (pow() missing in eval), DEFECT-REF (& operator missing), DEFECT-TUPLE (tuple field access)
+- **Sacred Rule**: LANG-COMP failure = Compiler bug
 
-**Sacred Rule**: LANG-COMP test failing = Compiler bug. Fix compiler, NEVER skip tests.
+**Tool Support** (TOOL-VALIDATION sprint 2025-10-07):
+- **REPL**: `ruchy -e "$(cat file.ruchy)"` for eval validation
+- **Notebook**: Accepts file parameter for non-interactive mode
+- **WASM**: Validate with simple code (some feature limitations)
 
-**IMPORTANT**: Following TOOL-VALIDATION sprint completion (2025-10-07), ALL 15 tools now support validation via CLI. NO tools should be skipped:
-- **REPL**: Use `ruchy -e "$(cat file.ruchy)"` to execute code via eval flag (discovered 2025-10-07)
-- **Notebook**: Accepts file parameter for non-interactive validation mode
-- **WASM**: Some features have limitations, validate tool works with simple code
-
-### 15-Tool Validation Requirements (MANDATORY/BLOCKING)
-
-**EACH LANG-COMP TEST MUST BE NAMED BY TICKET AND INVOKE ALL 15 TOOLS - ZERO EXCEPTIONS**
+### 15-Tool Validation Requirements (MANDATORY - NO EXCEPTIONS)
 
 #### Mandatory Test Pattern (ALL 15 TOOLS - NO SKIPS):
 
-```rust
-#[test]
-fn test_langcomp_XXX_YY_feature_name() {
-    let example = example_path("XX-feature/YY_example.ruchy");
+**ALL 15 tools**: check, transpile, -e (eval), lint, compile, run, coverage, runtime --bigo, ast, wasm, provability, property-tests, mutations, fuzz, notebook
 
-    // TOOL 1: ruchy check
-    ruchy_cmd().arg("check").arg(&example).assert().success();
+**Test Structure**:
+- **Naming**: `fn test_langcomp_XXX_YY_feature_name()` (XXX = ticket, YY = section)
+- **Pattern**: Invoke all 15 tools via `ruchy_cmd().arg(<tool>).arg(&example).assert().success()`
+- **Acceptance**: Test passes ONLY if ALL 15 tools succeed
 
-    // TOOL 2: ruchy transpile
-    ruchy_cmd().arg("transpile").arg(&example).assert().success();
-
-    // TOOL 3: ruchy -e (execute code via eval - REPL functionality)
-    let code = std::fs::read_to_string(&example).unwrap();
-    ruchy_cmd().arg("-e").arg(&code).assert().success();
-
-    // TOOL 4: ruchy lint
-    ruchy_cmd().arg("lint").arg(&example).assert().success();
-
-    // TOOL 5: ruchy compile
-    ruchy_cmd().arg("compile").arg(&example).assert().success();
-
-    // TOOL 6: ruchy run
-    ruchy_cmd().arg("run").arg(&example).assert().success();
-
-    // TOOL 7: ruchy coverage
-    ruchy_cmd().arg("coverage").arg(&example).assert().success();
-
-    // TOOL 8: ruchy runtime --bigo
-    ruchy_cmd().arg("runtime").arg(&example).arg("--bigo").assert().success();
-
-    // TOOL 9: ruchy ast
-    ruchy_cmd().arg("ast").arg(&example).assert().success();
-
-    // TOOL 10: ruchy wasm
-    ruchy_cmd().arg("wasm").arg(&example).assert().success();
-
-    // TOOL 11: ruchy provability
-    ruchy_cmd().arg("provability").arg(&example).assert().success();
-
-    // TOOL 12: ruchy property-tests
-    ruchy_cmd().arg("property-tests").arg(&example).assert().success();
-
-    // TOOL 13: ruchy mutations
-    ruchy_cmd().arg("mutations").arg(&example).assert().success();
-
-    // TOOL 14: ruchy fuzz
-    ruchy_cmd().arg("fuzz").arg(&example).assert().success();
-
-    // TOOL 15: ruchy notebook (file validation mode)
-    ruchy_cmd().arg("notebook").arg(&example).assert().success();
-}
-```
-
-**ACCEPTANCE CRITERIA**: Test passes ONLY if ALL 15 tools succeed on the example file.
-
-**NAMING**: `test_langcomp_XXX_YY_feature_name` where XXX = ticket number, YY = section
-
-**MAKEFILE TARGET**: Run all LANG-COMP 15-tool validation tests with `make test-lang-comp`
-- Executes comprehensive 15-tool validation via `cargo test --test lang_comp_suite`
+**Makefile Target**: `make test-lang-comp` runs `cargo test --test lang_comp_suite`
 - Tests LANG-COMP-006 (Data Structures), 007 (Type Annotations), 008 (Methods), 009 (Pattern Matching)
-- Each test validates ALL 15 tools: check, transpile, eval (-e flag), lint, compile, run, coverage, runtime, ast, wasm, provability, property-tests, mutations, fuzz, notebook
-- Exits with error if any test fails (CI-friendly)
-- Current implementation: 4 test modules with full 15-tool coverage
+- Current: 4 test modules with full 15-tool coverage
 
-See: docs/SPECIFICATION.md Section 31
+**Reference**: docs/SPECIFICATION.md Section 31
 
-## The Development Flow (PMAT-Enforced)
+## Development Flow (PMAT-Enforced)
 
-### MANDATORY: PMAT Quality at Every Step
-```
-1. BASELINE CHECK: Run `pmat quality-gate --fail-on-violation --checks=all`
-2. LOCATE specification section in SPECIFICATION.md
-3. IDENTIFY task in execution roadmap with ticket number
-4. VERIFY dependencies complete via roadmap DAG
-5. IMPLEMENT with <10 complexity (verified by `pmat analyze complexity`)
-6. VALIDATE: Run `pmat quality-gate` before ANY commit
-7. COMMIT with task reference (only if PMAT passes)
-```
+**MANDATORY Steps**:
+1. **BASELINE**: `pmat quality-gate --fail-on-violation --checks=all`
+2. **LOCATE**: Find spec in SPECIFICATION.md + task in docs/execution/roadmap.yaml (MANDATORY ticket)
+3. **VERIFY**: Dependencies complete via roadmap DAG
+4. **CHECK PATTERNS**: Use GENCHI GENBUTSU - examine existing code patterns (assert_cmd, proptest, cargo-mutants)
+5. **IMPLEMENT**: <10 complexity (verify via `pmat analyze complexity`) + Zero SATD
+6. **VALIDATE**: `pmat quality-gate` before commit (TDG ≥A-, 85 points)
+7. **COMMIT**: With ticket reference (only if PMAT passes)
 
-### TDG Violation Response (IMMEDIATE):
-1. **HALT**: Stop when TDG < A- (85 points)
-2. **ANALYZE**: `pmat tdg <file> --include-components`
-3. **REFACTOR**: Fix specific component issues
-4. **VERIFY**: Re-run to prove A- achievement
+**TDG Violation Response**: HALT → ANALYZE (`pmat tdg <file> --include-components`) → REFACTOR → VERIFY A-
 
 ## Sprint Hygiene Protocol
 
