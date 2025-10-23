@@ -169,6 +169,167 @@ impl Value {
             Value::HtmlElement(_) => "html_element",
         }
     }
+
+    /// Add two values (for bytecode VM)
+    ///
+    /// Supports: Integer + Integer, Float + Float, mixed numeric types, String + String, Array + Array
+    pub fn add(&self, other: &Value) -> Result<Value, String> {
+        match (self, other) {
+            (Value::Integer(a), Value::Integer(b)) => {
+                a.checked_add(*b)
+                    .map(Value::Integer)
+                    .ok_or_else(|| "Integer overflow in addition".to_string())
+            }
+            (Value::Float(a), Value::Float(b)) => Ok(Value::Float(a + b)),
+            (Value::Integer(a), Value::Float(b)) => Ok(Value::Float(*a as f64 + b)),
+            (Value::Float(a), Value::Integer(b)) => Ok(Value::Float(a + *b as f64)),
+            (Value::String(a), Value::String(b)) => {
+                Ok(Value::from_string(format!("{}{}", a.as_ref(), b.as_ref())))
+            }
+            (Value::Array(a), Value::Array(b)) => {
+                let mut result = a.as_ref().to_vec();
+                result.extend_from_slice(b.as_ref());
+                Ok(Value::from_array(result))
+            }
+            _ => Err(format!("Cannot add {} and {}", self.type_name(), other.type_name())),
+        }
+    }
+
+    /// Subtract two values (for bytecode VM)
+    pub fn subtract(&self, other: &Value) -> Result<Value, String> {
+        match (self, other) {
+            (Value::Integer(a), Value::Integer(b)) => {
+                a.checked_sub(*b)
+                    .map(Value::Integer)
+                    .ok_or_else(|| "Integer overflow in subtraction".to_string())
+            }
+            (Value::Float(a), Value::Float(b)) => Ok(Value::Float(a - b)),
+            (Value::Integer(a), Value::Float(b)) => Ok(Value::Float(*a as f64 - b)),
+            (Value::Float(a), Value::Integer(b)) => Ok(Value::Float(a - *b as f64)),
+            _ => Err(format!("Cannot subtract {} from {}", other.type_name(), self.type_name())),
+        }
+    }
+
+    /// Multiply two values (for bytecode VM)
+    pub fn multiply(&self, other: &Value) -> Result<Value, String> {
+        match (self, other) {
+            (Value::Integer(a), Value::Integer(b)) => {
+                a.checked_mul(*b)
+                    .map(Value::Integer)
+                    .ok_or_else(|| "Integer overflow in multiplication".to_string())
+            }
+            (Value::Float(a), Value::Float(b)) => Ok(Value::Float(a * b)),
+            (Value::Integer(a), Value::Float(b)) => Ok(Value::Float(*a as f64 * b)),
+            (Value::Float(a), Value::Integer(b)) => Ok(Value::Float(a * *b as f64)),
+            _ => Err(format!("Cannot multiply {} and {}", self.type_name(), other.type_name())),
+        }
+    }
+
+    /// Divide two values (for bytecode VM)
+    pub fn divide(&self, other: &Value) -> Result<Value, String> {
+        match (self, other) {
+            (Value::Integer(a), Value::Integer(b)) => {
+                if *b == 0 {
+                    return Err("Division by zero".to_string());
+                }
+                Ok(Value::Integer(a / b))
+            }
+            (Value::Float(a), Value::Float(b)) => {
+                if *b == 0.0 {
+                    return Err("Division by zero".to_string());
+                }
+                Ok(Value::Float(a / b))
+            }
+            (Value::Integer(a), Value::Float(b)) => {
+                if *b == 0.0 {
+                    return Err("Division by zero".to_string());
+                }
+                Ok(Value::Float(*a as f64 / b))
+            }
+            (Value::Float(a), Value::Integer(b)) => {
+                if *b == 0 {
+                    return Err("Division by zero".to_string());
+                }
+                Ok(Value::Float(a / *b as f64))
+            }
+            _ => Err(format!("Cannot divide {} by {}", self.type_name(), other.type_name())),
+        }
+    }
+
+    /// Modulo operation (for bytecode VM)
+    pub fn modulo(&self, other: &Value) -> Result<Value, String> {
+        match (self, other) {
+            (Value::Integer(a), Value::Integer(b)) => {
+                if *b == 0 {
+                    return Err("Modulo by zero".to_string());
+                }
+                Ok(Value::Integer(a % b))
+            }
+            (Value::Float(a), Value::Float(b)) => {
+                if *b == 0.0 {
+                    return Err("Modulo by zero".to_string());
+                }
+                Ok(Value::Float(a % b))
+            }
+            (Value::Integer(a), Value::Float(b)) => {
+                if *b == 0.0 {
+                    return Err("Modulo by zero".to_string());
+                }
+                Ok(Value::Float(*a as f64 % b))
+            }
+            (Value::Float(a), Value::Integer(b)) => {
+                if *b == 0 {
+                    return Err("Modulo by zero".to_string());
+                }
+                Ok(Value::Float(a % *b as f64))
+            }
+            _ => Err(format!("Cannot modulo {} by {}", self.type_name(), other.type_name())),
+        }
+    }
+
+    /// Compare values with less-than operator (for bytecode VM)
+    pub fn less_than(&self, other: &Value) -> bool {
+        match (self, other) {
+            (Value::Integer(a), Value::Integer(b)) => a < b,
+            (Value::Float(a), Value::Float(b)) => a < b,
+            (Value::Integer(a), Value::Float(b)) => (*a as f64) < *b,
+            (Value::Float(a), Value::Integer(b)) => *a < (*b as f64),
+            _ => false,
+        }
+    }
+
+    /// Compare values with less-than-or-equal operator (for bytecode VM)
+    pub fn less_equal(&self, other: &Value) -> bool {
+        match (self, other) {
+            (Value::Integer(a), Value::Integer(b)) => a <= b,
+            (Value::Float(a), Value::Float(b)) => a <= b,
+            (Value::Integer(a), Value::Float(b)) => (*a as f64) <= *b,
+            (Value::Float(a), Value::Integer(b)) => *a <= (*b as f64),
+            _ => false,
+        }
+    }
+
+    /// Compare values with greater-than operator (for bytecode VM)
+    pub fn greater_than(&self, other: &Value) -> bool {
+        match (self, other) {
+            (Value::Integer(a), Value::Integer(b)) => a > b,
+            (Value::Float(a), Value::Float(b)) => a > b,
+            (Value::Integer(a), Value::Float(b)) => (*a as f64) > *b,
+            (Value::Float(a), Value::Integer(b)) => *a > (*b as f64),
+            _ => false,
+        }
+    }
+
+    /// Compare values with greater-than-or-equal operator (for bytecode VM)
+    pub fn greater_equal(&self, other: &Value) -> bool {
+        match (self, other) {
+            (Value::Integer(a), Value::Integer(b)) => a >= b,
+            (Value::Float(a), Value::Float(b)) => a >= b,
+            (Value::Integer(a), Value::Float(b)) => (*a as f64) >= *b,
+            (Value::Float(a), Value::Integer(b)) => *a >= (*b as f64),
+            _ => false,
+        }
+    }
 }
 
 #[cfg(test)]
@@ -232,6 +393,7 @@ mod tests {
         assert!(bool_val.as_f64().is_err());
     }
 }
+
 
 #[cfg(test)]
 mod mutation_tests {

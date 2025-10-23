@@ -6,6 +6,37 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ### Added
 
+- **[OPT-003] Bytecode VM Executor - Complete Register-Based Interpreter**
+  - Implemented: Full bytecode VM with register-based architecture
+  - Components:
+    - `src/runtime/bytecode/vm.rs` - VM struct, CallFrame, execution loop (442 lines)
+    - `src/runtime/value_utils.rs` - Value arithmetic and comparison methods
+  - Features implemented:
+    - ✅ Register file: [Value; 32] with efficient register allocation
+    - ✅ Call stack: Vec<CallFrame> for function invocations and PC management
+    - ✅ Dispatch loop: Fetch-decode-execute with match-based dispatch (later: computed goto)
+    - ✅ Arithmetic opcodes: Add, Sub, Mul, Div, Mod with overflow checking
+    - ✅ Comparison opcodes: Equal, NotEqual, Less, LessEqual, Greater, GreaterEqual
+    - ✅ Logical opcodes: And, Or with truthiness evaluation
+    - ✅ Control flow: Jump, JumpIfTrue, JumpIfFalse, Return with relative offsets
+    - ✅ Memory opcodes: Const (load from constant pool), Move (register copy), LoadGlobal, StoreGlobal
+  - Value operations added (value_utils.rs):
+    - `add()`, `subtract()`, `multiply()`, `divide()`, `modulo()` - Arithmetic with type coercion
+    - `less_than()`, `less_equal()`, `greater_than()`, `greater_equal()` - Comparison helpers
+    - `is_truthy()` - Boolean evaluation (false/nil = false, all else = true)
+  - Test coverage: 28/28 passing (7 VM executor tests + 9 compiler tests + 12 instruction tests)
+    - test_vm_execute_integer_literal (42 → bytecode → 42)
+    - test_vm_execute_addition (10 + 32 → 42)
+    - test_vm_execute_multiplication (6 * 7 → 42)
+    - test_vm_execute_comparison (10 < 20 → true)
+    - test_vm_execute_if_true_branch (if true { 42 } else { 0 } → 42)
+    - test_vm_execute_if_false_branch (if false { 42 } else { 100 } → 100)
+    - test_vm_execute_block ({ 1; 2; 3 } → 3)
+  - End-to-end working: AST → Compiler → Bytecode → VM → Result ✅
+  - Next steps: CLI integration (OPT-004), performance benchmarks, closures, exception handling
+  - Reference: ../ruchyruchy/OPTIMIZATION_REPORT_FOR_RUCHY.md Section 2.2
+  - Impact: Complete bytecode execution pipeline (OPT-001 + OPT-002 + OPT-003)
+
 - **[OPT-002] Bytecode Compiler - AST to Bytecode Translation (IN PROGRESS)**
   - Implemented: Core compiler infrastructure translating Ruchy AST to bytecode instructions
   - Components:
