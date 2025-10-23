@@ -970,8 +970,8 @@ a + b
                 let code = format!("{} {} {}", a, op.chars().next().unwrap(), b);
                 let result = engine.execute_cell_detailed(&code);
 
-                // Should always have timing information
-                prop_assert!(result.duration_ms() >= 0);
+                // Duration is u128, always non-negative (no assertion needed)
+                let _ = result.duration_ms();
             }
 
             #[test]
@@ -1025,8 +1025,8 @@ a + b
                 let mut engine = NotebookEngine::new().unwrap();
                 let result = engine.execute_cell_detailed(&invalid);
 
-                // Every result should have valid metadata
-                prop_assert!(result.duration_ms() >= 0);
+                // Duration is u128, always non-negative (no assertion needed)
+                let _ = result.duration_ms();
 
                 if result.is_success() {
                     prop_assert!(result.error().is_none());

@@ -302,7 +302,9 @@ mod property_tests {
             thread::sleep(Duration::from_millis(delay_ms));
             let elapsed = ruchy::stdlib::time::elapsed_millis(start).unwrap();
 
-            prop_assert!(elapsed >= 0, "Elapsed should always be >= 0");
+            // Elapsed is u128, always non-negative by type (no >= 0 check needed)
+            // Verify elapsed time is reasonable (at least the sleep duration)
+            assert!(elapsed >= delay_ms as u128, "Elapsed time should be at least the sleep duration");
         }
 
         #[test]
