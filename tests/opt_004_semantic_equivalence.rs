@@ -61,7 +61,7 @@ fn assert_semantic_equivalence(source: &str, expected: Value) {
 }
 
 // ============================================================================
-// Test Suite 1: Literals (5 tests)
+// Test Suite 1: Literals & Unary Operations (9 tests)
 // ============================================================================
 
 #[test]
@@ -69,11 +69,31 @@ fn test_opt_004_01_integer_literal() {
     assert_semantic_equivalence("42", Value::Integer(42));
 }
 
-// NOTE: Unary operators (negation) not yet implemented in bytecode compiler (OPT-005)
-// #[test]
-// fn test_opt_004_01_negative_integer() {
-//     assert_semantic_equivalence("-42", Value::Integer(-42));
-// }
+// OPT-005: Unary operators now implemented
+#[test]
+fn test_opt_004_01_negative_integer() {
+    assert_semantic_equivalence("-42", Value::Integer(-42));
+}
+
+#[test]
+fn test_opt_004_01_negative_float() {
+    assert_semantic_equivalence("-3.14", Value::Float(-3.14));
+}
+
+#[test]
+fn test_opt_004_01_logical_not_true() {
+    assert_semantic_equivalence("!true", Value::Bool(false));
+}
+
+#[test]
+fn test_opt_004_01_logical_not_false() {
+    assert_semantic_equivalence("!false", Value::Bool(true));
+}
+
+#[test]
+fn test_opt_004_01_bitwise_not() {
+    assert_semantic_equivalence("~5", Value::Integer(!5));
+}
 
 #[test]
 fn test_opt_004_01_float_literal() {
@@ -327,5 +347,6 @@ fn test_opt_004_07_comparison_chain() {
     );
 }
 
-// Total tests: 5 + 8 + 6 + 3 + 6 + 3 + 9 = 40 integration tests
+// Total tests: 9 + 8 + 6 + 3 + 6 + 3 + 9 = 44 integration tests
 // All tests verify semantic equivalence between AST and bytecode modes
+// Suite 1: Updated to 9 tests (added 5 unary operator tests for OPT-005)

@@ -768,12 +768,12 @@ tasks:
     tests:
       test_file: "tests/opt_004_semantic_equivalence.rs"
       unit: 0  # No unit tests needed (integration-first)
-      integration: 39  # Semantic equivalence tests (both modes produce identical results)
-      passing: "39/39 (100%)"
-      performance: 0  # Performance benchmarking deferred to OPT-005
+      integration: 44  # Semantic equivalence tests (both modes produce identical results) - updated to 44 in OPT-005
+      passing: "44/44 (100%)"
+      performance: 0  # Performance benchmarking deferred to future sprint
       property: 0  # Property tests deferred to future sprint
       property_cases: 0
-      note: "One test commented out: unary negation not yet supported in bytecode compiler (OPT-005)"
+      note: "Unary operators implemented in OPT-005 (5 new tests added)"
     tdd_steps:
       - "✅ RED: Compilation errors - VmMode enum not in scope"
       - "✅ GREEN: Exported VmMode from handlers module, updated imports"
@@ -786,6 +786,66 @@ tasks:
       tdg_grade: "A-"
       satd: 0
       notes: "handle_command_dispatch complexity = 6 (within Toyota Way limit of ≤10)"
+
+  - id: "OPT-005"
+    title: "Bytecode VM - Unary Operators Support"
+    status: "COMPLETE"
+    completed: "2025-10-24"
+    priority: "🟡 HIGH"
+    phase: "Phase 1: Bytecode VM (4-6 weeks)"
+    time_estimated: "2 hours"
+    time_actual: "1.5 hours"
+    efficiency: "133%"
+    depends_on: ["OPT-001", "OPT-002", "OPT-003", "OPT-004"]
+    description: |
+      Implement unary operators (negation, logical NOT, bitwise NOT) for bytecode compiler and VM.
+      Closes feature gap with AST interpreter for essential unary operations.
+      Enables expressions like -42, !true, ~5 in bytecode mode.
+    components:
+      - "✅ Compiler: compile_unary() method with UnaryOp dispatch"
+      - "✅ VM: unary_op() helper method for instruction execution"
+      - "✅ Opcodes: Neg (0x15), Not (0x26), BitNot (0x19) handlers"
+      - "✅ Tests: 5 new semantic equivalence tests"
+    implementation:
+      files:
+        - "src/runtime/bytecode/compiler.rs: UnaryOp import, ExprKind::Unary case, compile_unary() method"
+        - "src/runtime/bytecode/vm.rs: Neg/Not/BitNot opcode handlers, unary_op() helper"
+        - "tests/opt_004_semantic_equivalence.rs: 5 new unary operator tests"
+        - "src/bin/ruchy.rs: Fixed 4 test calls missing VmMode parameter"
+      features:
+        - "Negation (-): Integer and Float negation (e.g., -42, -3.14)"
+        - "Logical NOT (!): Boolean inversion via is_truthy() (e.g., !true, !false)"
+        - "Bitwise NOT (~): Integer bitwise complement (e.g., ~5 → -6)"
+        - "Type safety: Runtime type checking with informative error messages"
+        - "Semantic equivalence: AST and bytecode modes produce identical results"
+      working_examples:
+        - "ruchy --vm-mode bytecode -e \"-42\" → Integer(-42)"
+        - "ruchy --vm-mode bytecode -e \"!true\" → Bool(false)"
+        - "ruchy --vm-mode bytecode -e \"~5\" → Integer(-6)"
+    tests:
+      test_file: "tests/opt_004_semantic_equivalence.rs"
+      unit: 0
+      integration: 44  # Updated from 39 to 44 (5 new unary tests)
+      passing: "44/44 (100%)"
+      performance: 0
+      property: 0
+      property_cases: 0
+      note: "Reference (&) and Deref (*) operators deferred to future sprint"
+    tdd_steps:
+      - "✅ EXAMINE: Confirmed Neg/Not/BitNot opcodes already exist in opcode.rs"
+      - "✅ EXAMINE: Found UnaryOp enum and ExprKind::Unary in AST"
+      - "✅ RED: Added ExprKind::Unary case to compile_expr() → compilation error"
+      - "✅ GREEN: Implemented compile_unary() method in compiler"
+      - "✅ GREEN: Implemented unary_op() helper and opcode handlers in VM"
+      - "✅ REFACTOR: Added UnaryOp import to compiler"
+      - "✅ TEST: Uncommented negation test, added 4 more unary tests (all pass)"
+      - "✅ FIX: Fixed 4 CLI tests missing VmMode parameter (unrelated pre-existing issue)"
+    quality:
+      complexity_actual: 4
+      complexity_max: 10
+      tdg_grade: "A"
+      satd: 0
+      notes: "compile_unary() complexity = 4, unary_op() complexity = 2 (both well within limits)"
 
   # 🚨 CRITICAL: CLI Unification Sprint (STOP THE LINE)
   - id: "CLI-UNIFY-001"

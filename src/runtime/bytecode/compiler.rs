@@ -13,7 +13,7 @@
 
 use super::instruction::Instruction;
 use super::opcode::OpCode;
-use crate::frontend::ast::{BinaryOp, Expr, ExprKind, Literal};
+use crate::frontend::ast::{BinaryOp, Expr, ExprKind, Literal, UnaryOp};
 use crate::runtime::Value;
 use std::collections::HashMap;
 
@@ -180,6 +180,7 @@ impl Compiler {
         let result = match &expr.kind {
             ExprKind::Literal(lit) => self.compile_literal(lit),
             ExprKind::Binary { op, left, right } => self.compile_binary(op, left, right),
+            ExprKind::Unary { op, operand } => self.compile_unary(op, operand),
             ExprKind::Identifier(name) => self.compile_variable(name),
             ExprKind::Let { name, value, .. } => self.compile_let(name, value),
             ExprKind::Block(exprs) => self.compile_block(exprs),
@@ -254,6 +255,33 @@ impl Compiler {
         // Free input registers
         self.registers.free(left_reg);
         self.registers.free(right_reg);
+
+        Ok(result_reg)
+    }
+
+    /// Compile a unary operation
+    fn compile_unary(&mut self, op: &UnaryOp, operand: &Expr) -> Result<u8, String> {
+        let operand_reg = self.compile_expr(operand)?;
+        let result_reg = self.registers.allocate();
+
+        let opcode = match op {
+            UnaryOp::Negate => OpCode::Neg,
+            UnaryOp::Not => OpCode::Not,
+            UnaryOp::BitwiseNot => OpCode::BitNot,
+            UnaryOp::Reference | UnaryOp::Deref => {
+                return Err(format!("Unsupported unary operator: {:?}", op));
+            }
+        };
+
+        // Emit unary operation: R[result] = op R[operand]
+        // Using AB format: A = result, B = operand
+        self.chunk.emit(
+            Instruction::abc(opcode, result_reg, operand_reg, 0),
+            0,
+        );
+
+        // Free input register
+        self.registers.free(operand_reg);
 
         Ok(result_reg)
     }

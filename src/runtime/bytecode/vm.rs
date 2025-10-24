@@ -189,6 +189,18 @@ impl VM {
             OpCode::Div => self.binary_op(instruction, |a, b| a.divide(b)),
             OpCode::Mod => self.binary_op(instruction, |a, b| a.modulo(b)),
 
+            // Unary operations
+            OpCode::Neg => self.unary_op(instruction, |v| match v {
+                Value::Integer(i) => Ok(Value::Integer(-i)),
+                Value::Float(f) => Ok(Value::Float(-f)),
+                _ => Err(format!("Cannot negate {}", v.type_name())),
+            }),
+            OpCode::Not => self.unary_op(instruction, |v| Ok(Value::Bool(!v.is_truthy()))),
+            OpCode::BitNot => self.unary_op(instruction, |v| match v {
+                Value::Integer(i) => Ok(Value::Integer(!i)),
+                _ => Err(format!("Cannot apply bitwise NOT to {}", v.type_name())),
+            }),
+
             // Comparison operations
             OpCode::Equal => self.binary_op(instruction, |a, b| Ok(Value::Bool(a == b))),
             OpCode::NotEqual => self.binary_op(instruction, |a, b| Ok(Value::Bool(a != b))),
@@ -313,6 +325,20 @@ impl VM {
         let right = instruction.get_c() as usize;
 
         let result = op(&self.registers[left], &self.registers[right])?;
+        self.registers[dest] = result;
+        Ok(())
+    }
+
+    /// Execute a unary operation
+    #[inline]
+    fn unary_op<F>(&mut self, instruction: Instruction, op: F) -> Result<(), String>
+    where
+        F: FnOnce(&Value) -> Result<Value, String>,
+    {
+        let dest = instruction.get_a() as usize;
+        let operand = instruction.get_b() as usize;
+
+        let result = op(&self.registers[operand])?;
         self.registers[dest] = result;
         Ok(())
     }

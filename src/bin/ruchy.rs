@@ -1456,13 +1456,13 @@ mod tests {
 
     #[test]
     fn test_handle_command_dispatch_repl() {
-        let result = handle_command_dispatch(Some(Commands::Repl { record: None }), false);
+        let result = handle_command_dispatch(Some(Commands::Repl { record: None }), false, VmMode::Ast);
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_handle_command_dispatch_none() {
-        let result = handle_command_dispatch(None, false);
+        let result = handle_command_dispatch(None, false, VmMode::Ast);
         assert!(result.is_ok());
     }
 
@@ -1476,6 +1476,7 @@ mod tests {
                 file: temp_file.path().to_path_buf(),
             }),
             false,
+            VmMode::Ast,
         );
         assert!(result.is_ok());
     }
@@ -1492,6 +1493,7 @@ mod tests {
                 minimal: false,
             }),
             true,
+            VmMode::Ast,
         );
         assert!(result.is_ok());
     }
@@ -1506,6 +1508,7 @@ mod tests {
                 file: temp_file.path().to_path_buf(),
             }),
             false,
+            VmMode::Ast,
         );
         assert!(result.is_ok());
     }
