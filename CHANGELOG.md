@@ -33,7 +33,38 @@ This release completes the **CLI Unification Sprint** with comprehensive testing
 
 ### Added
 
-
+- **[OPT-005] Unary Operators for Bytecode Compiler - Complete Arithmetic and Logical Negation**
+  - Implemented: Full support for unary operators in bytecode compiler and VM
+  - Components:
+    - `src/runtime/bytecode/compiler.rs` - compile_unary() method with UnaryOp import
+    - `src/runtime/bytecode/vm.rs` - unary_op() helper and Neg/Not/BitNot handlers
+    - `tests/opt_004_semantic_equivalence.rs` - 5 new unary operator tests
+  - Features implemented:
+    - ✅ Negation operator (-): Integer and float negation (e.g., -42, -3.14)
+    - ✅ Logical NOT operator (!): Boolean inversion (e.g., !true, !false)
+    - ✅ Bitwise NOT operator (~): Integer bitwise complement (e.g., ~5)
+    - ✅ Compiler support: ExprKind::Unary case in compile_expr() dispatches to compile_unary()
+    - ✅ VM support: OpCode::Neg/Not/BitNot handlers using unary_op() helper
+    - ✅ Type safety: Runtime type checking with informative error messages
+  - Opcodes utilized:
+    - OpCode::Neg (0x15): Negate value (Integer/Float → negated value)
+    - OpCode::Not (0x26): Logical NOT (Any → Bool via is_truthy())
+    - OpCode::BitNot (0x19): Bitwise NOT (Integer → bitwise complement)
+  - Test coverage: 44/44 semantic equivalence tests passing (100%)
+    - Suite 1 updated: 4 original + 5 new unary tests = 9 total
+    - test_opt_004_01_negative_integer: -42 → Integer(-42)
+    - test_opt_004_01_negative_float: -3.14 → Float(-3.14)
+    - test_opt_004_01_logical_not_true: !true → Bool(false)
+    - test_opt_004_01_logical_not_false: !false → Bool(true)
+    - test_opt_004_01_bitwise_not: ~5 → Integer(-6)
+  - Semantic equivalence: AST and bytecode modes produce identical results for all unary operations
+  - Note: Reference (&) and Deref (*) operators not implemented (deferred to future sprint)
+  - Reference: docs/execution/roadmap.yaml (OPT-005)
+  - Impact: Bytecode VM now supports essential unary operations, closing feature gap with AST interpreter
+  - Files modified:
+    - src/runtime/bytecode/compiler.rs:16 (UnaryOp import), 183 (ExprKind::Unary case), 262-287 (compile_unary method)
+    - src/runtime/bytecode/vm.rs:192-202 (Neg/Not/BitNot handlers), 332-344 (unary_op helper)
+    - tests/opt_004_semantic_equivalence.rs:64 (suite title), 72-96 (5 new tests), 350-352 (test count update)
 
 - **[OPT-004] Runtime Mode Selection - Choose AST or Bytecode Execution**
   - Implemented: CLI and library support for switching between AST interpreter and bytecode VM
@@ -48,10 +79,10 @@ This release completes the **CLI Unification Sprint** with comprehensive testing
     - ✅ Environment variable: `RUCHY_VM_MODE=bytecode` (library level only)
     - ✅ Verbose mode logging: "Execution mode: Bytecode"
     - ✅ Dual execution paths in handle_run_command(): AST (REPL-based) and Bytecode (VM-based)
-  - Test coverage: 39/39 semantic equivalence tests passing (100%)
-    - Test suites: Literals (4), Arithmetic (8), Comparison (6), Logical (3), Control Flow (6), Blocks (3), Integration (9)
+  - Test coverage: 44/44 semantic equivalence tests passing (100%)
+    - Test suites: Literals & Unary (9), Arithmetic (8), Comparison (6), Logical (3), Control Flow (6), Blocks (3), Integration (9)
     - Verified: Both modes produce identical results for all supported language features
-    - Note: Unary negation test commented out (not yet implemented in bytecode compiler)
+    - Note: Unary operators implemented in OPT-005
   - Working examples:
     - `ruchy --vm-mode ast run test.ruchy` → AST interpreter (stable, 100% feature complete)
     - `ruchy --vm-mode bytecode run test.ruchy` → Bytecode VM (40-60% faster, core features working)
