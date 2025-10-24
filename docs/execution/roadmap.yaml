@@ -1027,6 +1027,68 @@ tasks:
       satd: 0
       notes: "compile_variable() complexity = 4 (simple Move + register allocation)"
 
+  - id: "OPT-009"
+    title: "Comprehensive While Loop Tests with Mutations + BUGFIX"
+    status: "COMPLETE"
+    completed: "2025-10-24"
+    priority: "🟡 HIGH"
+    phase: "Phase 1: Bytecode VM (4-6 weeks)"
+    time_estimated: "2 hours"
+    time_actual: "1.5 hours"
+    efficiency: "133%"
+    depends_on: ["OPT-006", "OPT-007", "OPT-008"]
+    description: |
+      Add comprehensive while loop tests with variable mutations (deferred from OPT-006).
+      BUGFIX: Fixed register allocation bug in compile_block (local variable registers were freed).
+      Validates that while loops + assignments work correctly together.
+    problem:
+      symptom: "while i < 3 { i = i + 1 } returned Nil instead of updating variable"
+      root_cause: "compile_block() freed local variable registers between expressions"
+      impact: "Variable corruption in loops with mutations"
+    solution:
+      approach: "Check if register is local variable before freeing in compile_block"
+      implementation: "Added is_local_register() helper method"
+    components:
+      - "✅ Fixed compile_block to preserve local variable registers"
+      - "✅ Added 5 comprehensive while loop tests with mutations"
+      - "✅ All 56 semantic equivalence tests passing (100%)"
+    implementation:
+      files:
+        - "src/runtime/bytecode/compiler.rs:327-355 (compile_block with is_local_register)"
+        - "tests/opt_004_semantic_equivalence.rs:350-415 (Suite 8: 5 new tests)"
+        - "tests/opt_004_semantic_equivalence.rs:466-470 (test count update)"
+      features:
+        - "Loop counter: while i < 3 { i = i + 1 }"
+        - "Accumulator pattern: sum = sum + i (1-5)"
+        - "Countdown: while i > 0 { i = i - 1 }"
+        - "Fibonacci: Multi-variable mutation in loops"
+        - "Post-loop value: Using variable after loop completion"
+      working_examples:
+        - "ruchy --vm-mode bytecode -e \"{ let mut i = 0; while i < 3 { i = i + 1 }; i }\" → Integer(3)"
+        - "ruchy --vm-mode bytecode -e \"{ let mut sum = 0; let mut i = 1; while i <= 5 { sum = sum + i; i = i + 1 }; sum }\" → Integer(15)"
+    tests:
+      test_file: "tests/opt_004_semantic_equivalence.rs"
+      unit: 0
+      integration: 56  # Updated from 51 to 56 (5 new while loop mutation tests)
+      passing: "56/56 (100%)"
+      performance: 0
+      property: 0
+      property_cases: 0
+      note: "Suite 8 expanded: 2 basic (OPT-006) + 5 with mutations (OPT-009) = 7 tests"
+    tdd_steps:
+      - "✅ RED: Added loop counter test → FAILED (returned Nil)"
+      - "✅ INVESTIGATE: Traced register allocation in compile_block"
+      - "✅ ROOT CAUSE: compile_block freed local variable registers"
+      - "✅ GREEN: Added is_local_register() check before freeing"
+      - "✅ REFACTOR: Added 4 more mutation tests (accumulator, countdown, fibonacci, post-loop)"
+      - "✅ VALIDATE: All 56/56 tests pass (100%)"
+    quality:
+      complexity_actual: 2
+      complexity_max: 10
+      tdg_grade: "A"
+      satd: 0
+      notes: "is_local_register() complexity = 2 (simple iterator), compile_block complexity unchanged"
+
   # 🚨 CRITICAL: CLI Unification Sprint (STOP THE LINE)
   - id: "CLI-UNIFY-001"
     title: "Fix: 'ruchy' (no args) should open REPL, not show help"

@@ -348,9 +348,8 @@ fn test_opt_004_07_comparison_chain() {
 }
 
 // ============================================================================
-// Test Suite 8: Loop Expressions (2 tests)
+// Test Suite 8: Loop Expressions (7 tests)
 // ============================================================================
-// Note: Full while loop tests with mutations deferred until assignment support (OPT-007)
 
 #[test]
 fn test_opt_004_08_while_loop_false_condition() {
@@ -367,6 +366,51 @@ fn test_opt_004_08_while_loop_then_value() {
     assert_semantic_equivalence(
         "{ while false { 42 }; 5 }",
         Value::Integer(5),
+    );
+}
+
+#[test]
+fn test_opt_004_08_while_loop_with_counter() {
+    // While loop with mutation - simple counter
+    assert_semantic_equivalence(
+        "{ let mut i = 0; while i < 3 { i = i + 1 }; i }",
+        Value::Integer(3),
+    );
+}
+
+#[test]
+fn test_opt_004_08_while_loop_with_accumulator() {
+    // While loop with accumulator pattern
+    assert_semantic_equivalence(
+        "{ let mut sum = 0; let mut i = 1; while i <= 5 { sum = sum + i; i = i + 1 }; sum }",
+        Value::Integer(15),
+    );
+}
+
+#[test]
+fn test_opt_004_08_while_loop_countdown() {
+    // While loop counting down
+    assert_semantic_equivalence(
+        "{ let mut i = 5; while i > 0 { i = i - 1 }; i }",
+        Value::Integer(0),
+    );
+}
+
+#[test]
+fn test_opt_004_08_while_loop_fibonacci() {
+    // While loop computing Fibonacci-like sequence
+    assert_semantic_equivalence(
+        "{ let mut a = 0; let mut b = 1; let mut i = 0; while i < 7 { let temp = a + b; a = b; b = temp; i = i + 1 }; a }",
+        Value::Integer(13),
+    );
+}
+
+#[test]
+fn test_opt_004_08_while_loop_result_after() {
+    // While loop result with value after loop
+    assert_semantic_equivalence(
+        "{ let mut x = 0; while x < 10 { x = x + 2 }; x + 2 }",
+        Value::Integer(12),
     );
 }
 
@@ -419,8 +463,8 @@ fn test_opt_004_09_assignment_in_expression() {
     );
 }
 
-// Total tests: 9 + 8 + 6 + 3 + 6 + 3 + 9 + 2 + 5 = 51 integration tests
+// Total tests: 9 + 8 + 6 + 3 + 6 + 3 + 9 + 7 + 5 = 56 integration tests
 // All tests verify semantic equivalence between AST and bytecode modes
 // Suite 1: Updated to 9 tests (added 5 unary operator tests for OPT-005)
-// Suite 8: Added 2 tests for while loops (OPT-006) - limited until full loop testing
+// Suite 8: Updated to 7 tests (2 basic OPT-006, 5 with mutations OPT-009)
 // Suite 9: Added 5 tests for assignments (OPT-007), self-referencing bug fixed in OPT-008

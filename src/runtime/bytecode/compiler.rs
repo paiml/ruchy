@@ -338,12 +338,20 @@ impl Compiler {
         for (i, expr) in exprs.iter().enumerate() {
             if i > 0 {
                 // Free previous result (except the last one)
-                self.registers.free(last_reg);
+                // But DON'T free if it's a local variable's register
+                if !self.is_local_register(last_reg) {
+                    self.registers.free(last_reg);
+                }
             }
             last_reg = self.compile_expr(expr)?;
         }
 
         Ok(last_reg)
+    }
+
+    /// Check if a register is used by a local variable
+    fn is_local_register(&self, reg: u8) -> bool {
+        self.locals.values().any(|&r| r == reg)
     }
 
     /// Compile an if expression

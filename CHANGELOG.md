@@ -33,6 +33,29 @@ This release completes the **CLI Unification Sprint** with comprehensive testing
 
 ### Added
 
+- **[OPT-009] Comprehensive While Loop Tests with Mutations + BUGFIX**
+  - Added 5 new while loop tests with variable mutations (now that OPT-007/OPT-008 are complete)
+  - **BUGFIX**: Fixed register allocation bug in compile_block
+    - **Problem**: Local variable registers were freed between block expressions
+    - **Root Cause**: compile_block() freed previous expression results without checking if they were local variables
+    - **Impact**: Variable corruption in loops - `while i < 3 { i = i + 1 }` failed
+    - **Fix**: Added is_local_register() check before freeing registers in blocks
+  - Toyota Way: Tests revealed bug → Stopped the line → Root cause analysis → Fixed immediately
+  - Test coverage: 56/56 semantic equivalence tests passing (100%)
+  - Suite 8: Expanded from 2 to 7 tests (5 new mutation tests)
+  - New tests:
+    - test_opt_004_08_while_loop_with_counter: Simple counter (i < 3)
+    - test_opt_004_08_while_loop_with_accumulator: Sum 1-5 (accumulator pattern)
+    - test_opt_004_08_while_loop_countdown: Countdown from 5 to 0
+    - test_opt_004_08_while_loop_fibonacci: Fibonacci sequence (7 iterations)
+    - test_opt_004_08_while_loop_result_after: Value after loop completion
+  - Files modified:
+    - src/runtime/bytecode/compiler.rs:327-355 (compile_block with is_local_register check)
+    - tests/opt_004_semantic_equivalence.rs:350-415 (5 new loop tests)
+    - tests/opt_004_semantic_equivalence.rs:466-470 (test count update)
+  - Quality: Complexity 2 (is_local_register helper), all tests pass
+  - Reference: Completes deferred work from OPT-006
+
 - **[OPT-008] BUGFIX: Self-Referencing Assignment in Bytecode Compiler**
   - **Problem**: `x = x + 32` returned 64 instead of 42 (incorrect value)
   - **Root Cause**: compile_variable() returned variable register directly, compile_binary() freed it
