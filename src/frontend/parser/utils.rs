@@ -165,6 +165,10 @@ mod tests {
         validate_url_path_safety,
         validate_url_scheme,
     };
+    use super::utils_helpers::string_interpolation::parse_string_interpolation;
+    use super::utils_helpers::imports::{parse_module_path, parse_import_legacy};
+    use super::utils_helpers::modules::parse_module;
+    use crate::frontend::TypeKind;
 
     // Sprint 13: Parser utils tests - URL validation
 
