@@ -347,6 +347,30 @@ fn test_opt_004_07_comparison_chain() {
     );
 }
 
-// Total tests: 9 + 8 + 6 + 3 + 6 + 3 + 9 = 44 integration tests
+// ============================================================================
+// Test Suite 8: Loop Expressions (2 tests)
+// ============================================================================
+// Note: Full while loop tests with mutations deferred until assignment support (OPT-007)
+
+#[test]
+fn test_opt_004_08_while_loop_false_condition() {
+    // While loop that never executes (condition is false)
+    assert_semantic_equivalence(
+        "while false { 42 }",
+        Value::Nil,
+    );
+}
+
+#[test]
+fn test_opt_004_08_while_loop_then_value() {
+    // While loop followed by another expression in block
+    assert_semantic_equivalence(
+        "{ while false { 42 }; 5 }",
+        Value::Integer(5),
+    );
+}
+
+// Total tests: 9 + 8 + 6 + 3 + 6 + 3 + 9 + 2 = 46 integration tests
 // All tests verify semantic equivalence between AST and bytecode modes
 // Suite 1: Updated to 9 tests (added 5 unary operator tests for OPT-005)
+// Suite 8: Added 2 tests for while loops (OPT-006) - limited until assignment support
