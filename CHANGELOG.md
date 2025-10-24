@@ -2,6 +2,42 @@
 
 All notable changes to the Ruchy programming language will be documented in this file.
 
+## [Unreleased]
+
+### Added
+
+- **[TEST-001] Comprehensive Box<T> and Vec<T> Generic Test Suite (PARSER-061/080)**
+  - Created 18 comprehensive integration tests validating Box<T> and Vec<T> support
+  - Tests verify features implemented in v3.96.0 (2025-10-19) work correctly
+  - Files created: tests/parser_061_080_box_vec_generics.rs
+  - Test breakdown:
+    - **Suite 1: Box<T> in Enum Variants (8 tests)**
+      - Parser acceptance (ruchy check)
+      - Transpiler correctness (ruchy transpile)
+      - Runtime instantiation (simple and recursive)
+      - Deep nesting (3 levels)
+      - Multiple type parameters
+      - Unary operator enum (from ruchyruchy BOOTSTRAP-006)
+      - Full recursive AST (from ruchyruchy BOOTSTRAP-006)
+    - **Suite 2: Vec<T> in Enum Variants (7 tests)**
+      - Parser acceptance (ruchy check)
+      - Transpiler correctness (ruchy transpile)
+      - Runtime instantiation (empty and with elements)
+      - Nested blocks (2 levels)
+      - Different type parameters (Vec<String>)
+      - Function parameter lists (bootstrap use case)
+    - **Suite 3: Combined Box<T> and Vec<T> (3 tests)**
+      - Box + Vec in same enum
+      - Vec<Box<T>> combination
+      - Complex AST with both (Type system + Lambda calculus)
+  - **All 18 tests passing** (test result: ok. 18 passed; 0 failed)
+  - Test patterns:
+    - Uses tempfile crate for file-based CLI testing (ruchy check/transpile/run)
+    - Avoids vec![] macro (not yet implemented) - uses Vec::new() + push() pattern
+    - Validates parser, transpiler, and interpreter integration end-to-end
+  - **Impact**: Prevents regressions in Box<T>/Vec<T> support critical for ruchyruchy bootstrap compiler
+  - Roadmap tickets: PARSER-061 (Box<T>), PARSER-080 (Vec<T>)
+
 ## [3.126.0] - 2025-10-24
 
 ### 🎉 Phase 1 Bytecode VM Integration - COMPLETE! (OPT-001 through OPT-010)
