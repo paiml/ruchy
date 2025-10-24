@@ -42,10 +42,11 @@ run_test() {
     local expected_pattern="$3"
     local max_duration="$4"
 
-    echo -n "  [$((TESTS_PASSED + TESTS_FAILED + 1))/$TOTAL_TESTS] $test_name... "
+    echo -n "  [$(($TESTS_PASSED + $TESTS_FAILED + 1))/$TOTAL_TESTS] $test_name... "
 
     # Run test with timeout
-    local start_time=$(date +%s)
+    local start_time
+    start_time="$(date +%s)"
     local output
     local exit_code
 
@@ -55,33 +56,35 @@ run_test() {
         exit_code=$?
     fi
 
-    local end_time=$(date +%s)
-    local duration=$((end_time - start_time))
+    local end_time
+    end_time="$(date +%s)"
+    local duration
+    duration=$(($end_time - $start_time))
 
     # Check if test passed
-    if [ $exit_code -eq 0 ] && echo "$output" | grep -q "$expected_pattern"; then
-        if [ $duration -le $max_duration ]; then
+    if [[ "$exit_code" -eq 0 ]] && echo "$output" | grep -q "$expected_pattern"; then
+        if [[ "$duration" -le "$max_duration" ]]; then
             echo -e "${GREEN}✅${NC} (${duration}s)"
-            TESTS_PASSED=$((TESTS_PASSED + 1))
+            TESTS_PASSED=$(($TESTS_PASSED + 1))
             return 0
         else
             echo -e "${RED}❌${NC} (too slow: ${duration}s > ${max_duration}s)"
-            TESTS_FAILED=$((TESTS_FAILED + 1))
+            TESTS_FAILED=$(($TESTS_FAILED + 1))
             return 1
         fi
     else
         echo -e "${RED}❌${NC}"
         echo "     Expected: $expected_pattern"
-        echo "     Got: $(echo "$output" | head -1)"
-        TESTS_FAILED=$((TESTS_FAILED + 1))
+        echo "     Got: $(printf '%s\n' "$output" | head -1)"
+        TESTS_FAILED=$(($TESTS_FAILED + 1))
         return 1
     fi
 }
 
 # Create temp test file for smoke tests
-TEMP_FILE=$(mktemp --suffix=.ruchy)
+TEMP_FILE="$(mktemp --suffix=.ruchy)"
 echo 'println(42)' > "$TEMP_FILE"
-trap "rm -f $TEMP_FILE" EXIT
+trap "rm -f \"$TEMP_FILE\"" EXIT
 
 # ============================================================================
 # SMOKE TEST 1: No args opens REPL (not help)
@@ -122,7 +125,7 @@ run_test \
 # ============================================================================
 # SMOKE TEST 5: Compile creates binary (can be slow)
 # ============================================================================
-COMPILE_OUTPUT=$(mktemp)
+COMPILE_OUTPUT="$(mktemp)"
 run_test \
     "ruchy compile → binary" \
     "cargo run --release --quiet --bin ruchy compile $TEMP_FILE --output $COMPILE_OUTPUT 2>/dev/null && test -f $COMPILE_OUTPUT" \
@@ -136,7 +139,7 @@ rm -f "$COMPILE_OUTPUT"
 # ============================================================================
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-if [ $TESTS_FAILED -eq 0 ]; then
+if [[ "$TESTS_FAILED" -eq 0 ]]; then
     echo -e "${GREEN}✅ All $TOTAL_TESTS smoke tests passed${NC}"
     echo ""
     exit 0
