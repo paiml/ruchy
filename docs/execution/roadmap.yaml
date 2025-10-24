@@ -1893,84 +1893,89 @@ tasks:
 
   - id: "PARSER-061"
     title: "Implement Box<T> support in enum variants"
-    status: "BLOCKED"
+    status: "✅ COMPLETE (v3.96.0 - 2025-10-19)"
+    completed: "2025-10-19"
     priority: "🔴 HIGH"
     discovered_by: "ruchyruchy bootstrap compiler (BOOTSTRAP-006/007)"
-    blocking: "ruchyruchy Stage 1 (AST Types + Parser Implementation)"
+    blocking: "ruchyruchy Stage 1 (AST Types + Parser Implementation) - ✅ NOW UNBLOCKED"
     time_estimated: "4-6h"
+    time_actual: "Already implemented"
+    rediscovery_date: "2025-10-24"
     description: |
-      Box<T> generic type parameters not supported in enum variants, preventing recursive data structures.
+      Box<T> generic type parameters in enum variants - ALREADY WORKING since v3.96.0!
 
-      Example that fails:
+      Investigation on 2025-10-24 revealed this feature was implemented in v3.96.0 (2025-10-19).
+      The roadmap was out of date - marked as BLOCKED when it actually works perfectly.
+
+      Example that WORKS:
       ```ruchy
       enum Expr {
-          Binary(BinOp, Box<Expr>, Box<Expr>)  // ❌ Syntax error
+          Literal(i32),
+          Binary(BinOp, Box<Expr>, Box<Expr>)  // ✅ Works perfectly!
       }
       ```
 
-      Root cause: Generic type parameters not fully supported in enum variants.
-      This blocks ALL recursive data structures including AST types, tree data structures, and graph representations.
-    blockers:
-      - "Generic type parameter support in parser"
-      - "Box<T> type representation in AST"
-      - "Box<T> runtime instantiation and evaluation"
-    phases:
-      - "Phase 1: Investigation (1-2h) - Understand parser/AST/transpiler gaps"
-      - "Phase 2: Implementation (4-6h) - EXTREME TDD: RED→GREEN→REFACTOR"
-    quality_gates:
-      - "Complexity ≤10 (PMAT enforced)"
-      - "Test coverage ≥75% mutation coverage"
-      - "Property tests (10,000+ iterations)"
-      - "Zero SATD comments"
-      - "TDG grade A- minimum (≥85 points)"
+      Verified working in all components:
+      - Parser: Accepts Box<T> syntax without errors
+      - Transpiler: Generates correct Rust code with Box<Expr>
+      - Interpreter: Evaluates Box::new() calls correctly
+      - ruchyruchy tests: All Box<T> validation tests passing
+    validation:
+      - "✅ Parser accepts Box<T> in enum variants (ruchy check passes)"
+      - "✅ Transpiler generates correct Rust: Box<Expr>"
+      - "✅ Interpreter evaluates Box::new() correctly"
+      - "✅ ruchyruchy test_box_expr_simple.ruchy passing"
+      - "✅ ruchyruchy test_box_in_enum_exact.ruchy passing"
+      - "✅ Full end-to-end pipeline working (parse → transpile → execute)"
     impact:
-      - "Enables full recursive AST types"
-      - "Unblocks ruchyruchy Stage 1 (parser implementation)"
-      - "Enables tree/graph algorithms in Ruchy"
-      - "Enables complex data structures"
+      - "✅ UNBLOCKED: Recursive AST types now possible"
+      - "✅ UNBLOCKED: ruchyruchy Stage 1 (parser implementation)"
+      - "✅ ENABLED: Tree/graph algorithms in Ruchy"
+      - "✅ ENABLED: Complex recursive data structures"
 
-  - id: "PARSER-062"
-    title: "Implement Vec<T> support in enum variants"
-    status: "BLOCKED"
+  - id: "PARSER-080"
+    title: "Implement Vec<T> support in enum variants (was PARSER-062)"
+    status: "✅ COMPLETE (v3.96.0 - 2025-10-19)"
+    completed: "2025-10-19"
     priority: "🔴 HIGH"
     discovered_by: "ruchyruchy bootstrap compiler (BOOTSTRAP-006/007)"
-    blocking: "ruchyruchy Stage 1 (AST Types + Parser Implementation)"
+    blocking: "ruchyruchy Stage 1 (AST Types + Parser Implementation) - ✅ NOW UNBLOCKED"
     depends_on: "PARSER-061"
     time_estimated: "4-6h"
+    time_actual: "Already implemented"
+    rediscovery_date: "2025-10-24"
+    note: "Renamed from PARSER-062 to PARSER-080 to avoid conflict with existing PARSER-062 (comments after control flow)"
     description: |
-      Vec<T> generic type parameters not supported in enum variants, preventing collection-based data structures.
+      Vec<T> generic type parameters in enum variants - ALREADY WORKING since v3.96.0!
 
-      Example that fails:
+      Investigation on 2025-10-24 revealed this feature was implemented in v3.96.0 (2025-10-19).
+      The roadmap was out of date - marked as BLOCKED when it actually works perfectly.
+
+      Example that WORKS:
       ```ruchy
       enum Statement {
-          Block(Vec<Statement>)  // ❌ Syntax error
+          Block(Vec<Statement>),  // ✅ Works perfectly!
+          Expr(i32)
       }
       ```
 
-      Root cause: Generic type parameters not fully supported in enum variants.
-      This blocks statement blocks, function parameter lists, and arbitrary-length collections.
-    blockers:
-      - "Generic type parameter support in parser"
-      - "Vec<T> type representation in AST"
-      - "Vec<T> runtime instantiation and evaluation"
-    phases:
-      - "Phase 3: Implementation (4-6h) - EXTREME TDD protocol (same as Box<T>)"
-      - "Phase 4: Validation (2-3h) - Verify ruchyruchy can proceed"
-    quality_gates:
-      - "Complexity ≤10 (PMAT enforced)"
-      - "Test coverage ≥75% mutation coverage"
-      - "Property tests (10,000+ iterations)"
-      - "Zero SATD comments"
-      - "TDG grade A- minimum (≥85 points)"
+      Verified working in all components:
+      - Parser: Accepts Vec<T> syntax without errors
+      - Transpiler: Generates correct Rust code with Vec<Statement>
+      - Interpreter: Evaluates vec![] macro correctly
+      - Full recursion working
     validation:
-      - "All 23 ruchyruchy tests passing"
-      - "BOOTSTRAP-006 (AST types) executable"
-      - "BOOTSTRAP-007 (Pratt parser) unblocked"
+      - "✅ Parser accepts Vec<T> in enum variants (ruchy check passes)"
+      - "✅ Transpiler generates correct Rust: Vec<Statement>"
+      - "✅ Interpreter evaluates vec![...] correctly"
+      - "✅ Full end-to-end pipeline working (parse → transpile → execute)"
+      - "✅ ruchyruchy BOOTSTRAP-006 (AST types) executable"
+      - "✅ ruchyruchy BOOTSTRAP-007 (Pratt parser) unblocked"
     impact:
-      - "Enables statement blocks"
-      - "Enables arbitrary-length collections"
-      - "Unblocks ruchyruchy Stage 1 completion"
-      - "Enables generic container types in general"
+      - "✅ ENABLED: Statement blocks with Vec<Statement>"
+      - "✅ ENABLED: Arbitrary-length collections in enum variants"
+      - "✅ UNBLOCKED: ruchyruchy Stage 1 completion"
+      - "✅ ENABLED: Generic container types (Vec<T>, Box<T>, HashMap<K,V>)"
 
   - id: "BUG-032"
     title: "Fix: range() function not transpiling to Rust syntax"
