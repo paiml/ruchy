@@ -189,6 +189,7 @@ impl Compiler {
             }
             ExprKind::Call { func, args} => self.compile_call(func, args),
             ExprKind::While { condition, body, .. } => self.compile_while(condition, body),
+            ExprKind::Assign { target, value } => self.compile_assign(target, value),
             _ => Err(format!("Unsupported expression kind: {:?}", expr.kind)),
         }?;
         self.last_result = result;
@@ -439,6 +440,42 @@ impl Compiler {
         );
 
         Ok(result_reg)
+    }
+
+    /// Compile an assignment expression
+    ///
+    /// Generates: value → register, Move to target register
+    /// Returns the value register (assignment is an expression that returns the assigned value)
+    fn compile_assign(&mut self, target: &Expr, value: &Expr) -> Result<u8, String> {
+        // For now, only support simple identifier assignments
+        match &target.kind {
+            ExprKind::Identifier(name) => {
+                // Look up the variable's register
+                let target_reg = if let Some(&reg) = self.locals.get(name) {
+                    reg
+                } else {
+                    return Err(format!("Undefined variable: {}", name));
+                };
+
+                // Compile the value expression
+                let value_reg = self.compile_expr(value)?;
+
+                // Move value to target register
+                self.chunk.emit(
+                    Instruction::abc(OpCode::Move, target_reg, value_reg, 0),
+                    0,
+                );
+
+                // Free temporary value register if different from target
+                if value_reg != target_reg {
+                    self.registers.free(value_reg);
+                }
+
+                // Assignment returns the assigned value
+                Ok(target_reg)
+            }
+            _ => Err(format!("Unsupported assignment target: {:?}", target.kind)),
+        }
     }
 
     /// Compile a function call
