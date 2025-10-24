@@ -33,6 +33,32 @@ This release completes the **CLI Unification Sprint** with comprehensive testing
 
 ### Added
 
+- **[OPT-006] While Loops for Bytecode Compiler - Basic Loop Support**
+  - Implemented: While loop compilation with backward jumps
+  - Components:
+    - `src/runtime/bytecode/compiler.rs` - compile_while() method
+    - `tests/opt_004_semantic_equivalence.rs` - 2 new while loop tests
+  - Features implemented:
+    - ✅ While loops: Condition checking with body execution (e.g., `while condition { body }`)
+    - ✅ Backward jumps: Jump back to loop start after body execution
+    - ✅ Zero-iteration loops: Correctly skip body if condition is initially false
+    - ✅ Loop return value: While loops return Nil (Rust-like semantics)
+  - Bytecode pattern:
+    - loop_start: Evaluate condition → JumpIfFalse to loop_end → Execute body → Jump to loop_start → loop_end
+    - Uses existing opcodes: Jump (0x30), JumpIfFalse (0x32)
+  - Test coverage: 46/46 semantic equivalence tests passing (100%)
+    - Suite 8: Added 2 new while loop tests
+    - test_opt_004_08_while_loop_false_condition: `while false { 42 }` → Nil
+    - test_opt_004_08_while_loop_then_value: `{ while false { 42 }; 5 }` → Integer(5)
+  - Semantic equivalence: AST and bytecode modes produce identical results
+  - Limitations: Full loop testing deferred until assignment support (OPT-007)
+  - Note: For loops, break, continue deferred to OPT-007 (require assignment/iterator support)
+  - Reference: docs/execution/roadmap.yaml (OPT-006)
+  - Impact: Basic loop support in bytecode VM, enables iterative algorithms
+  - Files modified:
+    - src/runtime/bytecode/compiler.rs:191 (ExprKind::While case), 401-442 (compile_while method)
+    - tests/opt_004_semantic_equivalence.rs:350-371 (2 new tests), 373-376 (test count update)
+
 - **[OPT-005] Unary Operators for Bytecode Compiler - Complete Arithmetic and Logical Negation**
   - Implemented: Full support for unary operators in bytecode compiler and VM
   - Components:

@@ -188,6 +188,7 @@ impl Compiler {
                 self.compile_if(condition, then_branch, else_branch.as_deref())
             }
             ExprKind::Call { func, args} => self.compile_call(func, args),
+            ExprKind::While { condition, body, .. } => self.compile_while(condition, body),
             _ => Err(format!("Unsupported expression kind: {:?}", expr.kind)),
         }?;
         self.last_result = result;
@@ -393,6 +394,49 @@ impl Compiler {
             // Patch jump to end (just after then branch)
             self.chunk.patch_jump(jump_to_else);
         }
+
+        Ok(result_reg)
+    }
+
+    /// Compile a while loop
+    ///
+    /// Generates: loop_start → check condition → if false jump to end → body → jump to start → loop_end
+    fn compile_while(&mut self, condition: &Expr, body: &Expr) -> Result<u8, String> {
+        let result_reg = self.registers.allocate();
+
+        // Mark loop start position
+        let loop_start = self.chunk.instructions.len();
+
+        // Compile condition
+        let cond_reg = self.compile_expr(condition)?;
+
+        // Emit conditional jump: if !condition, jump to loop end
+        let jump_to_end = self.chunk.emit(
+            Instruction::asbx(OpCode::JumpIfFalse, cond_reg, 0),
+            0,
+        );
+        self.registers.free(cond_reg);
+
+        // Compile body
+        let body_reg = self.compile_expr(body)?;
+        self.registers.free(body_reg);
+
+        // Emit backward jump to loop start
+        let offset = -((self.chunk.instructions.len() - loop_start + 1) as i16);
+        self.chunk.emit(
+            Instruction::asbx(OpCode::Jump, 0, offset),
+            0,
+        );
+
+        // Patch forward jump to end
+        self.chunk.patch_jump(jump_to_end);
+
+        // While loops return nil
+        let nil_const = self.chunk.add_constant(Value::Nil);
+        self.chunk.emit(
+            Instruction::abx(OpCode::Const, result_reg, nil_const),
+            0,
+        );
 
         Ok(result_reg)
     }
