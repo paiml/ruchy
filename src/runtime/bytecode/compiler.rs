@@ -13,9 +13,10 @@
 
 use super::instruction::Instruction;
 use super::opcode::OpCode;
-use crate::frontend::ast::{BinaryOp, Expr, ExprKind, Literal, UnaryOp};
+use crate::frontend::ast::{BinaryOp, Expr, ExprKind, Literal, Param, UnaryOp};
 use crate::runtime::Value;
 use std::collections::HashMap;
+use std::sync::Arc;
 
 /// Bytecode function chunk
 ///
@@ -190,6 +191,7 @@ impl Compiler {
             ExprKind::Call { func, args} => self.compile_call(func, args),
             ExprKind::While { condition, body, .. } => self.compile_while(condition, body),
             ExprKind::Assign { target, value } => self.compile_assign(target, value),
+            ExprKind::Function { name, params, body, .. } => self.compile_function(name, params, body),
             _ => Err(format!("Unsupported expression kind: {:?}", expr.kind)),
         }?;
         self.last_result = result;
@@ -494,32 +496,77 @@ impl Compiler {
 
     /// Compile a function call
     fn compile_call(&mut self, func: &Expr, args: &[Expr]) -> Result<u8, String> {
+        // OPT-011: Simplified calling convention for hybrid execution
+        // Store function and arguments in separate registers, VM will extract them
         let result_reg = self.registers.allocate();
 
         // Compile function expression
         let func_reg = self.compile_expr(func)?;
 
-        // Compile arguments
+        // Compile arguments to temporary registers
         let mut arg_regs = Vec::new();
         for arg in args {
             let arg_reg = self.compile_expr(arg)?;
             arg_regs.push(arg_reg);
         }
 
-        // Emit call instruction: R[result] = call R[func](R[arg0], R[arg1], ...)
-        // Using ABC format: A = result, B = func, C = arg_count
+        // Store func_reg and argument registers in chunk constants for VM to access
+        // Format: [func_reg, arg_reg1, arg_reg2, ...]
+        // This is a workaround until we implement proper bytecode calling convention
+        let mut call_info = vec![Value::Integer(func_reg as i64)];
+        call_info.extend(arg_regs.iter().map(|&r| Value::Integer(r as i64)));
+        let call_info_value = Value::from_array(call_info);
+        let call_info_idx = self.chunk.add_constant(call_info_value);
+
+        // Emit call instruction: R[result] = call with info from constants[call_info_idx]
+        // ABx format: A = result, Bx = call_info constant index
         self.chunk.emit(
-            Instruction::abc(OpCode::Call, result_reg, func_reg, args.len() as u8),
+            Instruction::abx(OpCode::Call, result_reg, call_info_idx),
             0,
         );
 
-        // Free function and argument registers
-        self.registers.free(func_reg);
-        for arg_reg in arg_regs {
-            self.registers.free(arg_reg);
-        }
+        // OPT-011: Don't free func_reg or arg_regs yet - they contain values needed at runtime
+        // TODO: Implement proper lifetime analysis for register allocation
+        // For now, accept some register pressure to ensure correctness
 
         Ok(result_reg)
+    }
+
+    /// Compile a function definition
+    ///
+    /// Creates a closure and stores it in locals for later invocation.
+    fn compile_function(&mut self, name: &str, params: &[Param], body: &Expr) -> Result<u8, String> {
+        // Extract parameter names
+        let param_names: Vec<String> = params
+            .iter()
+            .map(|p| p.name().to_string())
+            .collect();
+
+        // Create closure value
+        // Note: Using empty environment for now. Full lexical scoping will be added later.
+        let closure = Value::Closure {
+            params: param_names,
+            body: Arc::new(body.clone()),
+            env: Arc::new(HashMap::new()),
+        };
+
+        // Add closure to constant pool
+        let const_index = self.chunk.add_constant(closure);
+
+        // Allocate register for the closure
+        let closure_reg = self.registers.allocate();
+
+        // Emit CONST instruction to load closure into register
+        self.chunk.emit(
+            Instruction::abx(OpCode::Const, closure_reg, const_index),
+            0,
+        );
+
+        // Store function in locals table for later retrieval
+        self.locals.insert(name.to_string(), closure_reg);
+        self.chunk.local_names.push(name.to_string());
+
+        Ok(closure_reg)
     }
 
     /// Finalize compilation and return the bytecode chunk

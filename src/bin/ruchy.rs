@@ -1044,6 +1044,7 @@ mod tests {
             eval: Some("1 + 1".to_string()),
             format: "text".to_string(),
             verbose: false,
+            vm_mode: VmMode::Ast,
             file: None,
             command: None,
         };
@@ -1060,6 +1061,7 @@ mod tests {
             eval: None,
             format: "text".to_string(),
             verbose: false,
+            vm_mode: VmMode::Ast,
             file: Some(temp_file.path().to_path_buf()),
             command: None,
         };
@@ -1073,6 +1075,7 @@ mod tests {
             eval: None,
             format: "text".to_string(),
             verbose: false,
+            vm_mode: VmMode::Ast,
             file: None,
             command: None,
         };
