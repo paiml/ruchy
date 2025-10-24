@@ -2,10 +2,11 @@
 # Extreme TDD + Toyota Way + Mutation Testing Enforcement
 
 metadata:
-  version: "3.40"
+  version: "3.41"
   last_updated: "2025-10-24"
   current_sprint: "📊 Selecting Next Sprint (Phase 1 Bytecode VM Complete!)"
   latest_release: "v3.126.0"
+  latest_commit_message: "[TEST-001] Add comprehensive Box<T>/Vec<T> test suite (PARSER-061/080) - 18 tests validating v3.96.0 features"
   previous_release: "v3.125.0"
   phase_1_bytecode_vm: "✅ COMPLETE (OPT-001 through OPT-010) - 98-99% faster than AST!"
   cli_unify_complete: "✅ COMPLETE (CLI-UNIFY-001 through CLI-UNIFY-006)"
@@ -1932,6 +1933,20 @@ tasks:
       - "✅ UNBLOCKED: ruchyruchy Stage 1 (parser implementation)"
       - "✅ ENABLED: Tree/graph algorithms in Ruchy"
       - "✅ ENABLED: Complex recursive data structures"
+    test_coverage:
+      file: "tests/parser_061_080_box_vec_generics.rs"
+      suite: "Suite 1: Box<T> in Enum Variants"
+      tests: 8
+      coverage:
+        - "Parser acceptance (ruchy check)"
+        - "Transpiler correctness (ruchy transpile)"
+        - "Runtime instantiation (simple and recursive)"
+        - "Deep nesting (3 levels)"
+        - "Multiple type parameters (Box<i32>, Box<String>, Box<bool>)"
+        - "Unary operator enum (from BOOTSTRAP-006)"
+        - "Full recursive AST (Binary, Unary, Group - BOOTSTRAP-006)"
+      status: "✅ All 8 tests passing (2025-10-24)"
+      notes: "Uses tempfile for CLI integration testing, validates end-to-end pipeline"
 
   - id: "PARSER-080"
     title: "Implement Vec<T> support in enum variants (was PARSER-062)"
@@ -1976,6 +1991,25 @@ tasks:
       - "✅ ENABLED: Arbitrary-length collections in enum variants"
       - "✅ UNBLOCKED: ruchyruchy Stage 1 completion"
       - "✅ ENABLED: Generic container types (Vec<T>, Box<T>, HashMap<K,V>)"
+    test_coverage:
+      file: "tests/parser_061_080_box_vec_generics.rs"
+      suite: "Suite 2: Vec<T> in Enum Variants + Suite 3: Combined"
+      tests: 10
+      coverage:
+        - "Parser acceptance (ruchy check)"
+        - "Transpiler correctness (ruchy transpile)"
+        - "Runtime instantiation (empty Vec via Vec::new())"
+        - "Runtime with elements (Vec::new() + push() pattern)"
+        - "Nested blocks (2 levels)"
+        - "Different type parameters (Vec<String>)"
+        - "Function parameter lists (bootstrap use case)"
+        - "Box + Vec same enum (Node::Single, Node::Multiple)"
+        - "Vec<Box<T>> combination (function call arguments)"
+        - "Complex AST (Type system + Lambda calculus with both)"
+      status: "✅ All 10 tests passing (2025-10-24)"
+      notes: |
+        Tests use Vec::new() + push() pattern instead of vec![] macro (not yet implemented in interpreter).
+        Combined total: 18 tests (8 Box<T> + 7 Vec<T> + 3 Combined)
 
   - id: "BUG-032"
     title: "Fix: range() function not transpiling to Rust syntax"
