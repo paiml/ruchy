@@ -2,15 +2,15 @@
 # Extreme TDD + Toyota Way + Mutation Testing Enforcement
 
 metadata:
-  version: "3.39"
+  version: "3.40"
   last_updated: "2025-10-24"
-  current_sprint: "Phase 1 Bytecode VM - COMPLETE! (OPT-001 through OPT-010)"
-  latest_release: "v3.125.0"
-  next_release: "v3.126.0 - Bytecode VM Phase 1 Complete (OPT-005 through OPT-010)"
-  phase_1_complete: "Bytecode VM Integration (OPT-001 through OPT-010) ✅ - 98-99% faster than AST!"
-  cli_unify_complete: "CLI Unification Sprint (CLI-UNIFY-001 through CLI-UNIFY-006) ✅"
+  current_sprint: "📊 Selecting Next Sprint (Phase 1 Bytecode VM Complete!)"
+  latest_release: "v3.126.0"
+  previous_release: "v3.125.0"
+  phase_1_bytecode_vm: "✅ COMPLETE (OPT-001 through OPT-010) - 98-99% faster than AST!"
+  cli_unify_complete: "✅ COMPLETE (CLI-UNIFY-001 through CLI-UNIFY-006)"
+  release_notes_v3_126_0: "Phase 1 Bytecode VM Complete: Unary ops, loops, assignments, 2 bugfixes, 98-99% speedup validated, published to crates.io"
   release_notes_v3_125_0: "Bytecode VM Phase 1 + CLI Unification + 73 comprehensive tests + eval consistency fix"
-  release_notes_v3_126_0: "Bytecode VM Phase 1 Complete: Unary ops, loops, assignments, 2 bugfixes, 98-99% speedup validated"
   github_issues:
     active:
       - id: 58
