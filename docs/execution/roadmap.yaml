@@ -942,14 +942,14 @@ tasks:
         - "ruchy --vm-mode bytecode -e \"{ let mut x = 10; x = 42; x }\" → Integer(42)"
         - "ruchy --vm-mode bytecode -e \"{ let mut x = 10; (x = 40) + 2 }\" → Integer(42)"
       limitations:
-        - "Self-referencing assignments (x = x + 32) have bug - deferred to OPT-008"
         - "Compound assignments (+=, -=, etc.) not yet supported"
         - "Field/index assignments not yet supported"
+        - "Note: Self-referencing assignments bug fixed in OPT-008"
     tests:
       test_file: "tests/opt_004_semantic_equivalence.rs"
       unit: 0
-      integration: 51  # Updated from 46 to 51 (5 new assignment tests, 1 ignored)
-      passing: "51/52 (98% - 1 ignored for known bug)"
+      integration: 51  # Updated from 46 to 51 (5 new assignment tests)
+      passing: "51/51 (100% - bug fixed in OPT-008)"
       performance: 0
       property: 0
       property_cases: 0
@@ -968,7 +968,64 @@ tasks:
       complexity_max: 10
       tdg_grade: "A"
       satd: 0
-      notes: "compile_assign() complexity = 8 (within A+ limit of ≤10), known bug deferred"
+      notes: "compile_assign() complexity = 8 (within A+ limit of ≤10), bug fixed in OPT-008"
+
+  - id: "OPT-008"
+    title: "BUGFIX: Self-Referencing Assignment in Bytecode Compiler"
+    status: "COMPLETE"
+    completed: "2025-10-24"
+    priority: "🔴 CRITICAL"
+    phase: "Phase 1: Bytecode VM (4-6 weeks)"
+    defect_type: "Register allocation bug - variable registers freed while in use"
+    time_estimated: "1 hour"
+    time_actual: "0.5 hours"
+    efficiency: "200%"
+    depends_on: ["OPT-007"]
+    description: |
+      BUGFIX: Self-referencing assignments (x = x + 32) returned incorrect values.
+      Root cause: compile_variable() returned variable register directly, compile_binary() freed it.
+      Toyota Way: Bug found → Stopped the line → Root cause analysis → Fixed immediately.
+    problem:
+      symptom: "x = x + 32 returned 64 instead of 42 when x = 10"
+      root_cause: "compile_variable() returned var_reg, compile_binary() freed it"
+      impact: "Variable registers freed while still in use → undefined behavior"
+    solution:
+      approach: "compile_variable() now copies local variables to temporary registers"
+      rationale: "Variable registers must never be freed by expression compilation"
+      implementation: "Add Move instruction: temp_reg ← var_reg, return temp_reg"
+    components:
+      - "✅ Fixed compile_variable() to copy locals to temp registers"
+      - "✅ Un-ignored previously failing test"
+      - "✅ All 51 semantic equivalence tests now pass (100%)"
+    implementation:
+      files:
+        - "src/runtime/bytecode/compiler.rs:291-314 (compile_variable with Move for locals)"
+        - "tests/opt_004_semantic_equivalence.rs:395-402 (un-ignored test)"
+        - "tests/opt_004_semantic_equivalence.rs:426 (updated notes)"
+      changes:
+        before: "compile_variable() returned var_reg directly (freed by caller)"
+        after: "compile_variable() copies var_reg → temp_reg, returns temp_reg (safe to free)"
+    tests:
+      test_file: "tests/opt_004_semantic_equivalence.rs"
+      unit: 0
+      integration: 51  # All tests now pass (was 51/52 with 1 ignored)
+      passing: "51/51 (100%)"
+      performance: 0
+      property: 0
+      property_cases: 0
+      note: "Previously ignored test now passes: test_opt_004_09_assignment_with_arithmetic"
+    tdd_steps:
+      - "✅ INVESTIGATE: Traced bytecode generation for x = x + 32"
+      - "✅ ROOT CAUSE: compile_variable() returned var_reg, compile_binary() freed it"
+      - "✅ FIX: Modified compile_variable() to copy locals to temp registers"
+      - "✅ TEST: Un-ignored test_opt_004_09_assignment_with_arithmetic"
+      - "✅ VALIDATE: All 51/51 tests pass (100%)"
+    quality:
+      complexity_actual: 4
+      complexity_max: 10
+      tdg_grade: "A"
+      satd: 0
+      notes: "compile_variable() complexity = 4 (simple Move + register allocation)"
 
   # 🚨 CRITICAL: CLI Unification Sprint (STOP THE LINE)
   - id: "CLI-UNIFY-001"

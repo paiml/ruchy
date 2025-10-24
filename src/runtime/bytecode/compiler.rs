@@ -290,9 +290,15 @@ impl Compiler {
 
     /// Compile a variable reference
     fn compile_variable(&mut self, name: &str) -> Result<u8, String> {
-        if let Some(&reg) = self.locals.get(name) {
-            // Local variable - already in a register
-            Ok(reg)
+        if let Some(&var_reg) = self.locals.get(name) {
+            // Local variable - copy to temporary register
+            // This prevents compile_binary() from freeing the variable's register
+            let temp_reg = self.registers.allocate();
+            self.chunk.emit(
+                Instruction::abc(OpCode::Move, temp_reg, var_reg, 0),
+                0,
+            );
+            Ok(temp_reg)
         } else {
             // Global variable - need to load from global table
             let name_const = self.chunk.add_constant(Value::from_string(name.to_string()));
