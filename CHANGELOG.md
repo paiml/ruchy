@@ -33,11 +33,31 @@ This release completes the **CLI Unification Sprint** with comprehensive testing
 
 ### Added
 
+- **[OPT-008] BUGFIX: Self-Referencing Assignment in Bytecode Compiler**
+  - **Problem**: `x = x + 32` returned 64 instead of 42 (incorrect value)
+  - **Root Cause**: compile_variable() returned variable register directly, compile_binary() freed it
+  - **Impact**: Variable registers were freed while still in use, causing undefined behavior
+  - **Fix**: compile_variable() now copies local variables to temporary registers
+  - **Toyota Way**: Bug found → Stopped the line → Root cause analysis → Fixed immediately
+  - Components:
+    - `src/runtime/bytecode/compiler.rs` - compile_variable() now uses Move opcode for locals
+  - Test coverage: 51/51 semantic equivalence tests passing (100%, 0 ignored)
+  - Previously ignored test now passes: test_opt_004_09_assignment_with_arithmetic
+  - Bytecode pattern change:
+    - Before: Variable reference returned var_reg directly (freed by caller)
+    - After: Variable reference copies var_reg → temp_reg, returns temp_reg (safe to free)
+  - Files modified:
+    - src/runtime/bytecode/compiler.rs:291-314 (compile_variable with Move for locals)
+    - tests/opt_004_semantic_equivalence.rs:395-402 (un-ignored test, updated comment)
+    - tests/opt_004_semantic_equivalence.rs:426 (updated notes)
+  - Quality: Complexity unchanged, all tests pass
+  - Reference: Closes self-referencing assignment bug from OPT-007
+
 - **[OPT-007] Assignment Support for Bytecode Compiler - Variable Mutation**
   - Implemented: Variable assignment (`=`) operator for bytecode compiler
   - Components:
     - `src/runtime/bytecode/compiler.rs` - compile_assign() method
-    - `tests/opt_004_semantic_equivalence.rs` - 5 new assignment tests (1 ignored)
+    - `tests/opt_004_semantic_equivalence.rs` - 5 new assignment tests
   - Features implemented:
     - ✅ Simple assignment: Variable reassignment (e.g., `x = 42`)
     - ✅ Assignment returns value: Assignment is an expression (e.g., `y = (x = 42)`)
@@ -46,17 +66,15 @@ This release completes the **CLI Unification Sprint** with comprehensive testing
   - Bytecode pattern:
     - Compile RHS → value_reg → Move value_reg to target_reg
     - Uses existing opcode: Move (0x0C)
-  - Test coverage: 51/52 semantic equivalence tests passing (98%), 1 ignored
+  - Test coverage: 51/51 semantic equivalence tests passing (100%) - bug fixed in OPT-008
     - Suite 9: Added 5 new assignment tests
     - test_opt_004_09_simple_assignment: `x = 42` → Integer(42)
     - test_opt_004_09_assignment_returns_value: `y = (x = 42)` → Integer(42)
-    - test_opt_004_09_assignment_with_arithmetic: `x = 42` (simplified)
+    - test_opt_004_09_assignment_with_arithmetic: `x = x + 32` → Integer(42) (fixed in OPT-008)
     - test_opt_004_09_multiple_assignments: Sequential reassignments
     - test_opt_004_09_assignment_in_expression: `(x = 40) + 2` → Integer(42)
-    - **IGNORED**: test_opt_004_09_assignment_with_self_reference (known bug: `x = x + 32`)
-  - Semantic equivalence: AST and bytecode modes produce identical results (except ignored test)
+  - Semantic equivalence: AST and bytecode modes produce identical results
   - Limitations:
-    - Self-referencing assignments (`x = x + 32`) have a bug (deferred to OPT-008)
     - Compound assignments (`+=`, `-=`, etc.) not yet supported
     - Field/index assignments not yet supported
   - Reference: docs/execution/roadmap.yaml (OPT-007)
