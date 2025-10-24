@@ -560,6 +560,7 @@ mod tests {
         let cli = Cli {
             verbose: false,
             quiet: false,
+            vm_mode: VmMode::default(),
             command: Command::Repl,
         };
         assert!(!cli.verbose);
@@ -572,6 +573,7 @@ mod tests {
         let cli = Cli {
             verbose: true,
             quiet: true,
+            vm_mode: VmMode::default(),
             command: Command::Repl,
         };
         assert!(cli.verbose);
@@ -761,7 +763,7 @@ mod tests {
     #[test]
     fn test_execute_run_nonexistent_file() {
         let path = PathBuf::from("nonexistent.ruchy");
-        let result = execute_run(path, false);
+        let result = execute_run(path, false, VmMode::default());
         assert!(result.is_err());
     }
 

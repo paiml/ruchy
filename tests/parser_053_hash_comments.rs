@@ -216,8 +216,7 @@ mod property_tests {
             // Add hash comment to simple expression
             let input = format!("let x = {}\n    # comment\n    + 1", n);
 
-            let mut stream = TokenStream::new(&input);
-            let result = Parser::new(&mut stream).parse();
+            let result = Parser::new(&input).parse();
 
             prop_assert!(result.is_ok(), "Hash comment broke parsing for n={}", n);
         }
@@ -227,8 +226,7 @@ mod property_tests {
         fn prop_hash_comments_preserved_in_ast(comment in "[a-zA-Z0-9 ]{1,50}") {
             let input = format!("# {}\nlet x = 1", comment);
 
-            let mut stream = TokenStream::new(&input);
-            let result = Parser::new(&mut stream).parse();
+            let result = Parser::new(&input).parse();
 
             prop_assert!(result.is_ok(), "Failed to parse hash comment: {}", comment);
         }
