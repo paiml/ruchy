@@ -463,8 +463,58 @@ fn test_opt_004_09_assignment_in_expression() {
     );
 }
 
-// Total tests: 9 + 8 + 6 + 3 + 6 + 3 + 9 + 7 + 5 = 56 integration tests
+// ============================================================================
+// Test Suite 10: Function Calls (OPT-011)
+// ============================================================================
+
+#[test]
+fn test_opt_004_10_simple_function_call() {
+    // Simple function call with no arguments
+    assert_semantic_equivalence(
+        "{ fn answer() { 42 }; answer() }",
+        Value::Integer(42),
+    );
+}
+
+#[test]
+fn test_opt_004_10_function_with_one_arg() {
+    // Function call with single argument
+    assert_semantic_equivalence(
+        "{ fn double(x: i32) { x * 2 }; double(21) }",
+        Value::Integer(42),
+    );
+}
+
+#[test]
+fn test_opt_004_10_function_with_multiple_args() {
+    // Function call with multiple arguments
+    assert_semantic_equivalence(
+        "{ fn add(a: i32, b: i32) { a + b }; add(10, 32) }",
+        Value::Integer(42),
+    );
+}
+
+#[test]
+fn test_opt_004_10_nested_function_calls() {
+    // Nested function calls
+    assert_semantic_equivalence(
+        "{ fn inc(x: i32) { x + 1 }; fn double(x: i32) { x * 2 }; double(inc(20)) }",
+        Value::Integer(42),
+    );
+}
+
+#[test]
+fn test_opt_004_10_function_with_expression_args() {
+    // Function called with expression arguments
+    assert_semantic_equivalence(
+        "{ fn add(a: i32, b: i32) { a + b }; add(10 + 20, 6 * 2) }",
+        Value::Integer(42),
+    );
+}
+
+// Total tests: 9 + 8 + 6 + 3 + 6 + 3 + 9 + 7 + 5 + 5 = 61 integration tests
 // All tests verify semantic equivalence between AST and bytecode modes
 // Suite 1: Updated to 9 tests (added 5 unary operator tests for OPT-005)
 // Suite 8: Updated to 7 tests (2 basic OPT-006, 5 with mutations OPT-009)
+// Suite 10: 5 function call tests (OPT-011)
 // Suite 9: Added 5 tests for assignments (OPT-007), self-referencing bug fixed in OPT-008

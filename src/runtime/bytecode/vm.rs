@@ -18,7 +18,7 @@
 use super::instruction::Instruction;
 use super::opcode::OpCode;
 use super::compiler::BytecodeChunk;
-use crate::runtime::Value;
+use crate::runtime::{Interpreter, Value};
 use std::collections::HashMap;
 
 /// Maximum number of registers per call frame
@@ -101,6 +101,9 @@ pub struct VM {
     call_stack: Vec<CallFrame<'static>>,
     /// Global variables
     globals: HashMap<String, Value>,
+    /// Interpreter for hybrid execution (function calls)
+    /// OPT-011: Used to interpret closure bodies until full bytecode compilation implemented
+    interpreter: Interpreter,
 }
 
 impl VM {
@@ -110,6 +113,7 @@ impl VM {
             registers: std::array::from_fn(|_| Value::Nil),
             call_stack: Vec::new(),
             globals: HashMap::new(),
+            interpreter: Interpreter::new(),
         }
     }
 
@@ -254,6 +258,85 @@ impl VM {
                         frame.jump(offset);
                     }
                 }
+                Ok(())
+            }
+
+            OpCode::Call => {
+                // OPT-011: Function call implementation (hybrid approach)
+                // ABx format: A = result register, Bx = call_info constant index
+                // call_info = [func_reg, arg_reg1, arg_reg2, ...]
+                let result_reg = instruction.get_a() as usize;
+                let call_info_idx = instruction.get_bx() as usize;
+
+                // Get call info (func_reg + arg_regs) from constant pool
+                let frame = self.call_stack.last()
+                    .ok_or("No active call frame")?;
+                let call_info_value = frame.chunk.constants.get(call_info_idx)
+                    .ok_or_else(|| format!("Constant index out of bounds: {}", call_info_idx))?;
+
+                let call_info: Vec<usize> = match call_info_value {
+                    Value::Array(arr) => {
+                        arr.iter().map(|v| match v {
+                            Value::Integer(i) => Ok(*i as usize),
+                            _ => Err("Call info element must be an integer".to_string()),
+                        }).collect::<Result<Vec<_>, _>>()?
+                    }
+                    _ => return Err("Call info must be an array".to_string()),
+                };
+
+                // Extract func_reg (first element) and arg_regs (rest)
+                if call_info.is_empty() {
+                    return Err("Call info array is empty".to_string());
+                }
+                let func_reg = call_info[0];
+                let arg_regs = &call_info[1..];
+
+                // Get function from register
+                let func_value = self.registers[func_reg].clone();
+
+                // Extract closure
+                let (params, body, env) = match func_value {
+                    Value::Closure { params, body, env } => (params, body, env),
+                    _ => return Err(format!("Cannot call non-function value: {}", func_value.type_name())),
+                };
+
+                // Check argument count
+                if arg_regs.len() != params.len() {
+                    return Err(format!(
+                        "Function expects {} arguments, got {}",
+                        params.len(),
+                        arg_regs.len()
+                    ));
+                }
+
+                // Collect arguments from their registers
+                let mut args: Vec<Value> = Vec::new();
+                for &arg_reg in arg_regs {
+                    args.push(self.registers[arg_reg].clone());
+                }
+
+                // Push new scope for function call
+                self.interpreter.push_scope();
+
+                // Bind captured environment variables
+                for (name, value) in env.iter() {
+                    self.interpreter.set_variable(name, value.clone());
+                }
+
+                // Bind parameters to arguments
+                for (param, arg) in params.iter().zip(args.iter()) {
+                    self.interpreter.set_variable(param, arg.clone());
+                }
+
+                // Execute closure body using interpreter
+                let result = self.interpreter.eval_expr(&body)
+                    .map_err(|e| format!("Function call error: {}", e))?;
+
+                // Pop scope
+                self.interpreter.pop_scope();
+
+                // Store result in result register
+                self.registers[result_reg] = result;
                 Ok(())
             }
 
