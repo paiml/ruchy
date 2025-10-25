@@ -587,6 +587,51 @@ impl VM {
                 Ok(())
             }
 
+            OpCode::Match => {
+                // OPT-018: Match expression implementation (hybrid approach)
+                // ABx format: A = result register, Bx = match_idx constant
+                let result_reg = instruction.get_a() as usize;
+                let match_idx_const = instruction.get_bx() as usize;
+
+                // Get match index from constant pool
+                let frame = self.call_stack.last()
+                    .ok_or("No active call frame")?;
+                let match_idx_value = frame.chunk.constants.get(match_idx_const)
+                    .ok_or_else(|| format!("Constant index out of bounds: {}", match_idx_const))?;
+
+                let match_idx = match match_idx_value {
+                    Value::Integer(idx) => *idx as usize,
+                    _ => return Err("Match index must be an integer".to_string()),
+                };
+
+                // Get (expr, arms) from chunk's match_exprs
+                let (expr, arms) = frame.chunk.match_exprs.get(match_idx)
+                    .ok_or_else(|| format!("Match index out of bounds: {}", match_idx))?;
+
+                // Synchronize register-based locals to interpreter scope
+                // This allows pattern bindings and guards to access variables defined in bytecode mode
+                for (name, reg_idx) in frame.chunk.locals_map.iter() {
+                    let value = self.registers[*reg_idx as usize].clone();
+                    self.interpreter.set_variable(name, value);
+                }
+
+                // Execute match expression using interpreter
+                let result = self.interpreter.eval_match(expr, arms)
+                    .map_err(|e| format!("Match expression error: {}", e))?;
+
+                // Synchronize interpreter scope back to registers
+                // This allows mutations inside match arms to persist
+                for (name, reg_idx) in frame.chunk.locals_map.iter() {
+                    if let Some(value) = self.interpreter.get_variable(name) {
+                        self.registers[*reg_idx as usize] = value;
+                    }
+                }
+
+                // Store result in result register
+                self.registers[result_reg] = result;
+                Ok(())
+            }
+
             OpCode::Return => {
                 // Get return value from register specified in instruction
                 let return_reg = instruction.get_a() as usize;

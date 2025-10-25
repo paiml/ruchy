@@ -44,6 +44,10 @@ pub struct BytecodeChunk {
     /// Stores AST for method calls to enable interpreter delegation
     /// Each entry: (receiver_expr, method_name, args_exprs)
     pub method_calls: Vec<(Arc<Expr>, String, Vec<Arc<Expr>>)>,
+    /// Match expressions (for hybrid execution - OPT-018)
+    /// Stores AST for match expressions to enable interpreter delegation
+    /// Each entry: (match_expr, match_arms)
+    pub match_exprs: Vec<(Arc<Expr>, Vec<crate::frontend::ast::MatchArm>)>,
     /// Local variable name to register mapping (for hybrid execution)
     /// Enables synchronization between bytecode registers and interpreter scope
     pub locals_map: HashMap<String, u8>,
@@ -62,6 +66,7 @@ impl BytecodeChunk {
             line_numbers: Vec::new(),
             loop_bodies: Vec::new(),
             method_calls: Vec::new(),
+            match_exprs: Vec::new(),
             locals_map: HashMap::new(),
         }
     }
@@ -212,6 +217,7 @@ impl Compiler {
             ExprKind::IndexAccess { object, index } => self.compile_index_access(object, index),
             ExprKind::MethodCall { receiver, method, args } => self.compile_method_call(receiver, method, args),
             ExprKind::FieldAccess { object, field } => self.compile_field_access(object, field),
+            ExprKind::Match { expr, arms } => self.compile_match(expr, arms),
             _ => Err(format!("Unsupported expression kind: {:?}", expr.kind)),
         }?;
         self.last_result = result;
@@ -822,6 +828,36 @@ impl Compiler {
         // A = result register, Bx = method_call_idx
         self.chunk.emit(
             Instruction::abx(OpCode::MethodCall, result_reg, call_info_idx),
+            0,
+        );
+
+        Ok(result_reg)
+    }
+
+    /// Compile a match expression
+    ///
+    /// OPT-018: Hybrid approach - delegate to interpreter like for-loops
+    /// Match expressions require complex pattern matching logic (destructuring, guards, scope management),
+    /// so we store the AST and let the VM execute via interpreter.
+    fn compile_match(&mut self, expr: &Expr, arms: &[crate::frontend::ast::MatchArm]) -> Result<u8, String> {
+        // Store match expression AST in chunk for interpreter access
+        let match_idx = self.chunk.match_exprs.len();
+        self.chunk.match_exprs.push((
+            Arc::new(expr.clone()),
+            arms.to_vec(),
+        ));
+
+        // Store match index in constant pool
+        let match_info_value = Value::Integer(match_idx as i64);
+        let match_info_idx = self.chunk.add_constant(match_info_value);
+
+        // Allocate result register
+        let result_reg = self.registers.allocate();
+
+        // Emit Match instruction: ABx format
+        // A = result register, Bx = match_idx
+        self.chunk.emit(
+            Instruction::abx(OpCode::Match, result_reg, match_info_idx),
             0,
         );
 

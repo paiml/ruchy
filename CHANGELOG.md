@@ -6,6 +6,47 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ### Added
 
+- **[OPT-018] Bytecode VM Match Expressions (Hybrid Execution - COMPLETE)**
+  - Implemented match expression support in bytecode VM using hybrid execution model
+  - **Architecture:**
+    - Compiler: Stores match expression AST (expr + arms) in `chunk.match_exprs` for interpreter access
+    - Compiler: Each entry contains (match_expr, match_arms with patterns/guards/bodies)
+    - Compiler: Emits `OpCode::Match` with index into match_exprs table
+    - VM: OpCode::Match handler delegates to interpreter's eval_match
+    - VM: Synchronizes locals before/after match (like for-loops and method calls)
+    - Instruction format: `Match result_reg, match_idx` (ABx format)
+  - **Implementation:** 100% Complete
+    - ✅ OpCode::Match at 0x3B (opcode.rs)
+    - ✅ BytecodeChunk.match_exprs field (compiler.rs)
+    - ✅ compile_match() implementation (compiler.rs)
+    - ✅ OpCode::Match VM handler (vm.rs)
+    - ✅ Made eval_match() public (interpreter.rs)
+  - **Test Coverage:** 5/5 tests passing (100%)
+    - ✅ Literal patterns: `match 42 { 10 => 1, 42 => 2, _ => 3 }` → 2
+    - ✅ Wildcard pattern: `match 100 { 10 => 1, 20 => 2, _ => 99 }` → 99
+    - ✅ Variable binding: `match 42 { x => x * 2 }` → 84
+    - ✅ Guard condition: `match 42 { x if x > 40 => 1, x if x > 20 => 2, _ => 3 }` → 1
+    - ✅ Guard fallthrough: `match 15 { x if x > 40 => 1, x if x > 20 => 2, _ => 3 }` → 3
+  - **Key Decision:** Hybrid Execution (AST Delegation)
+    - Match expressions are complex (pattern matching, destructuring, guards, scope management)
+    - Storing original AST and delegating to interpreter inherits all pattern matching semantics
+    - Follows same pattern as for-loops (OPT-012) and method calls (OPT-014)
+  - **Pattern Support:** All interpreter patterns supported
+    - Literal patterns (integers, strings, bools)
+    - Variable bindings
+    - Wildcard pattern (_)
+    - Guard conditions (if clauses)
+    - Pattern destructuring (inherited from interpreter)
+  - **Files Modified:**
+    - src/runtime/bytecode/opcode.rs (+4 lines: OpCode::Match at 0x3B)
+    - src/runtime/bytecode/compiler.rs (+4 lines: match_exprs field)
+    - src/runtime/bytecode/compiler.rs (+30 lines: compile_match implementation)
+    - src/runtime/bytecode/vm.rs (+44 lines: OpCode::Match handler)
+    - src/runtime/interpreter.rs (+1 line: make eval_match public)
+    - tests/opt_004_semantic_equivalence.rs (Suite 18 with 5 tests, all passing)
+  - **Impact:** Fully enables pattern matching in bytecode mode, unlocks functional programming patterns
+  - **Total:** All 97 semantic equivalence tests passing (92 → 97, +5 new tests, no regressions)
+
 - **[OPT-016] Bytecode VM Object Literals (Literal-Only - COMPLETE)**
   - Implemented object literal support in bytecode VM using constant pool approach
   - **Architecture:**

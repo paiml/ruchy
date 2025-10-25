@@ -2943,7 +2943,7 @@ impl Interpreter {
     }
 
     /// Evaluate a match expression
-    fn eval_match(&mut self, expr: &Expr, arms: &[MatchArm]) -> Result<Value, InterpreterError> {
+    pub fn eval_match(&mut self, expr: &Expr, arms: &[MatchArm]) -> Result<Value, InterpreterError> {
         let value = self.eval_expr(expr)?;
 
         for arm in arms {

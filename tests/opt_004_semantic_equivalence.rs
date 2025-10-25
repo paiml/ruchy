@@ -854,11 +854,62 @@ fn test_opt_004_17_object_field_in_expression() {
     );
 }
 
-// Total tests: 9 + 8 + 6 + 3 + 6 + 3 + 9 + 7 + 5 + 5 + 5 + 6 + 5 + 5 + 4 + 3 = 89 integration tests
+// ============================================================================
+// Test Suite 18: Match Expressions (OPT-018)
+// ============================================================================
+// Match expressions with pattern matching (hybrid execution)
+
+#[test]
+fn test_opt_004_18_match_literal() {
+    // Simple match with literal patterns
+    assert_semantic_equivalence(
+        "match 42 { 10 => 1, 42 => 2, _ => 3 }",
+        Value::Integer(2),
+    );
+}
+
+#[test]
+fn test_opt_004_18_match_wildcard() {
+    // Match with wildcard pattern
+    assert_semantic_equivalence(
+        "match 100 { 10 => 1, 20 => 2, _ => 99 }",
+        Value::Integer(99),
+    );
+}
+
+#[test]
+fn test_opt_004_18_match_variable_binding() {
+    // Match with variable binding
+    assert_semantic_equivalence(
+        "match 42 { x => x * 2 }",
+        Value::Integer(84),
+    );
+}
+
+#[test]
+fn test_opt_004_18_match_with_guard() {
+    // Match with guard condition
+    assert_semantic_equivalence(
+        "match 42 { x if x > 40 => 1, x if x > 20 => 2, _ => 3 }",
+        Value::Integer(1),
+    );
+}
+
+#[test]
+fn test_opt_004_18_match_guard_fails() {
+    // Match where guard fails and falls through to next arm
+    assert_semantic_equivalence(
+        "match 15 { x if x > 40 => 1, x if x > 20 => 2, _ => 3 }",
+        Value::Integer(3),
+    );
+}
+
+// Total tests: 9 + 8 + 6 + 3 + 6 + 3 + 9 + 7 + 5 + 5 + 5 + 6 + 5 + 5 + 4 + 3 + 5 = 94 integration tests
 // All tests verify semantic equivalence between AST and bytecode modes
 // Suite 1: Updated to 9 tests (added 5 unary operator tests for OPT-005)
 // Suite 8: Updated to 7 tests (2 basic OPT-006, 5 with mutations OPT-009)
 // Suite 9: Added 5 tests for assignments (OPT-007), self-referencing bug fixed in OPT-008
+// Suite 18: Added 5 tests for match expressions (OPT-018)
 // Suite 10: 5 function call tests (OPT-011)
 // Suite 11: 5 for-loop tests (OPT-012)
 // Suite 12: 6 array indexing tests (OPT-013)

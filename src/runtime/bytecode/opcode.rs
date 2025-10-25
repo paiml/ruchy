@@ -118,6 +118,8 @@ pub enum OpCode {
     For = 0x39,
     /// Method call (hybrid execution - delegates to interpreter)
     MethodCall = 0x3A,
+    /// Match expression (hybrid execution - delegates to interpreter)
+    Match = 0x3B,
 
     // Object Operations (0x40-0x4F)
     /// Create new object
@@ -207,6 +209,7 @@ impl OpCode {
             0x38 => Some(Self::ExitTry),
             0x39 => Some(Self::For),
             0x3A => Some(Self::MethodCall),
+            0x3B => Some(Self::Match),
 
             // Object Operations
             0x40 => Some(Self::NewObject),
@@ -275,6 +278,7 @@ impl OpCode {
             Self::ExitTry => "ExitTry",
             Self::For => "For",
             Self::MethodCall => "MethodCall",
+            Self::Match => "Match",
             Self::NewObject => "NewObject",
             Self::NewArray => "NewArray",
             Self::NewClosure => "NewClosure",
