@@ -114,6 +114,8 @@ pub enum OpCode {
     EnterTry = 0x37,
     /// Exit try block
     ExitTry = 0x38,
+    /// For-loop iteration (hybrid execution - delegates to interpreter)
+    For = 0x39,
 
     // Object Operations (0x40-0x4F)
     /// Create new object
@@ -201,6 +203,7 @@ impl OpCode {
             0x36 => Some(Self::Throw),
             0x37 => Some(Self::EnterTry),
             0x38 => Some(Self::ExitTry),
+            0x39 => Some(Self::For),
 
             // Object Operations
             0x40 => Some(Self::NewObject),
@@ -267,6 +270,7 @@ impl OpCode {
             Self::Throw => "Throw",
             Self::EnterTry => "EnterTry",
             Self::ExitTry => "ExitTry",
+            Self::For => "For",
             Self::NewObject => "NewObject",
             Self::NewArray => "NewArray",
             Self::NewClosure => "NewClosure",

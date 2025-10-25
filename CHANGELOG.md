@@ -6,6 +6,35 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ### Added
 
+- **[OPT-012] Bytecode VM For-Loops (Hybrid Execution - COMPLETE)**
+  - Implemented for-loop support in bytecode VM using hybrid execution model
+  - **Architecture:**
+    - Compiler: Stores loop body AST in `chunk.loop_bodies` for interpreter access
+    - Compiler: Emits `OpCode::For` instruction with loop metadata (iterator reg, var name, body index)
+    - Compiler: Synchronizes locals map (`chunk.locals_map`) for register-to-scope bridging
+    - VM: OpCode::For handler delegates loop body execution to interpreter
+    - VM: Synchronizes register-based variables with interpreter scope before/after each iteration
+    - Instruction format: `For result_reg, loop_info_idx` (ABx format)
+  - **Test Coverage:** 5/5 tests passing (100%)
+    - ✅ Simple for-loop: `{ let mut sum = 0; for i in [1,2,3,4,5] { sum = sum + i }; sum }` → 15
+    - ✅ Last iteration value: `{ let mut result = 0; for i in [10,20,30] { result = i }; result }` → 30
+    - ✅ Empty array: `{ let mut sum = 0; for i in [] { sum = sum + 1 }; sum }` → 0
+    - ✅ Nested for-loops: `{ let mut sum = 0; for i in [1,2] { for j in [10,20] { sum = sum + i + j } }; sum }` → 66
+    - ✅ For-loop in function: `{ fn sum_array(arr) { let mut s = 0; for x in arr { s = s + x }; s }; sum_array([5,10,15]) }` → 30
+  - **Key Innovation:** Hybrid execution with scope synchronization
+    - Problem: Bytecode variables live in registers, but loop body executes in interpreter
+    - Solution: Before loop execution, copy all locals from registers to interpreter scope
+    - Solution: After each iteration, sync modified variables back to registers
+    - Enables mutable variable access across bytecode/interpreter boundary
+  - **Files Modified:**
+    - src/runtime/bytecode/opcode.rs (+4 lines: OpCode::For at 0x39)
+    - src/runtime/bytecode/compiler.rs (+12 lines: BytecodeChunk.loop_bodies, locals_map fields)
+    - src/runtime/bytecode/compiler.rs (+27 lines: compile_for implementation)
+    - src/runtime/bytecode/vm.rs (+102 lines: OpCode::For handler with scope sync)
+    - src/runtime/interpreter.rs (+14 lines: get_variable public method)
+    - tests/opt_004_semantic_equivalence.rs (Suite 11 with 5 tests, all passing)
+  - **Impact:** Fully enables for-loop iteration in bytecode mode, completes OPT-001-013 sequence
+
 - **[OPT-013] Bytecode VM Array Indexing (COMPLETE)**
   - Implemented full array indexing support: literal and variable arrays
   - **Architecture:**

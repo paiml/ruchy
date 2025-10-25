@@ -6409,6 +6409,20 @@ impl Interpreter {
         self.env_set_mut(name.to_string(), value);
     }
 
+    /// Get a variable from the environment stack
+    ///
+    /// Searches the environment stack from innermost to outermost scope.
+    /// Returns None if the variable is not found.
+    pub fn get_variable(&self, name: &str) -> Option<Value> {
+        // Search from innermost to outermost scope
+        for env in self.env_stack.iter().rev() {
+            if let Some(value) = env.get(name) {
+                return Some(value.clone());
+            }
+        }
+        None
+    }
+
     /// Pattern matching for try/catch
     ///
     /// # Complexity
