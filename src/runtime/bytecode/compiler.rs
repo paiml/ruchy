@@ -194,6 +194,7 @@ impl Compiler {
             ExprKind::Function { name, params, body, .. } => self.compile_function(name, params, body),
             ExprKind::List(elements) => self.compile_list(elements),
             ExprKind::For { var, iter, body, .. } => self.compile_for(var, iter, body),
+            ExprKind::IndexAccess { object, index } => self.compile_index_access(object, index),
             _ => Err(format!("Unsupported expression kind: {:?}", expr.kind)),
         }?;
         self.last_result = result;
@@ -609,6 +610,30 @@ impl Compiler {
         let result_reg = self.registers.allocate();
         self.chunk.emit(
             Instruction::abx(OpCode::Const, result_reg, const_index),
+            0,
+        );
+
+        Ok(result_reg)
+    }
+
+    /// Compile array indexing: arr[index]
+    ///
+    /// OPT-013: Array indexing using LoadIndex opcode
+    /// Compiles both the array and index expressions, then emits LoadIndex
+    fn compile_index_access(&mut self, object: &Expr, index: &Expr) -> Result<u8, String> {
+        // Compile the array/object expression
+        let object_reg = self.compile_expr(object)?;
+
+        // Compile the index expression
+        let index_reg = self.compile_expr(index)?;
+
+        // Allocate result register
+        let result_reg = self.registers.allocate();
+
+        // Emit LoadIndex instruction: result = object[index]
+        // Format: LoadIndex result_reg, object_reg, index_reg
+        self.chunk.emit(
+            Instruction::abc(OpCode::LoadIndex, result_reg, object_reg, index_reg),
             0,
         );
 

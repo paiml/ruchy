@@ -186,6 +186,50 @@ impl VM {
                 Ok(())
             }
 
+            // Array indexing: arr[index]
+            OpCode::LoadIndex => {
+                let dest = instruction.get_a() as usize;
+                let object_reg = instruction.get_b() as usize;
+                let index_reg = instruction.get_c() as usize;
+
+                let object = &self.registers[object_reg];
+                let index = &self.registers[index_reg];
+
+                // Get the indexed value
+                let result = match (object, index) {
+                    (Value::Array(arr), Value::Integer(i)) => {
+                        let idx = if *i < 0 {
+                            // Negative indexing: -1 is last element
+                            let len = arr.len() as i64;
+                            (len + i) as usize
+                        } else {
+                            *i as usize
+                        };
+
+                        arr.get(idx)
+                            .cloned()
+                            .ok_or_else(|| format!("Index {} out of bounds for array of length {}", i, arr.len()))
+                    }
+                    (Value::String(s), Value::Integer(i)) => {
+                        let chars: Vec<char> = s.chars().collect();
+                        let idx = if *i < 0 {
+                            let len = chars.len() as i64;
+                            (len + i) as usize
+                        } else {
+                            *i as usize
+                        };
+
+                        chars.get(idx)
+                            .map(|c| Value::from_string(c.to_string()))
+                            .ok_or_else(|| format!("Index {} out of bounds for string of length {}", i, chars.len()))
+                    }
+                    _ => Err(format!("Cannot index {} with {}", object.type_name(), index.type_name())),
+                }?;
+
+                self.registers[dest] = result;
+                Ok(())
+            }
+
             // Arithmetic operations
             OpCode::Add => self.binary_op(instruction, |a, b| a.add(b)),
             OpCode::Sub => self.binary_op(instruction, |a, b| a.subtract(b)),
