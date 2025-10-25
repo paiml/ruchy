@@ -16,7 +16,7 @@
 //! - 2 (AsBx): [ A: 8 bits | sBx: 16 bits ]          - One register + 16-bit signed immediate
 //! - 3 (Ax):   [ Ax: 24 bits ]                       - 24-bit immediate or offset
 //!
-//! Reference: ../ruchyruchy/OPTIMIZATION_REPORT_FOR_RUCHY.md
+//! Reference: ../`ruchyruchy/OPTIMIZATION_REPORT_FOR_RUCHY.md`
 //! Academic: Brunthaler (2010) - Inline Caching Meets Quickening
 
 use super::opcode::OpCode;
@@ -27,9 +27,9 @@ use super::opcode::OpCode;
 pub enum InstructionFormat {
     /// ABC format: 3 register operands (A, B, C)
     ABC = 0,
-    /// ABx format: 1 register + 16-bit unsigned immediate
+    /// `ABx` format: 1 register + 16-bit unsigned immediate
     ABx = 1,
-    /// AsBx format: 1 register + 16-bit signed immediate
+    /// `AsBx` format: 1 register + 16-bit signed immediate
     AsBx = 2,
     /// Ax format: 24-bit immediate (jumps, large constants)
     Ax = 3,
@@ -95,7 +95,7 @@ impl Instruction {
         Self(op_bits | fmt_bits | a_bits | b_bits | c_bits)
     }
 
-    /// Create instruction with ABx format (register + 16-bit unsigned immediate)
+    /// Create instruction with `ABx` format (register + 16-bit unsigned immediate)
     ///
     /// Used for operations like: R[a] = constants[bx]
     #[inline]
@@ -108,7 +108,7 @@ impl Instruction {
         Self(op_bits | fmt_bits | a_bits | bx_bits)
     }
 
-    /// Create instruction with AsBx format (register + 16-bit signed immediate)
+    /// Create instruction with `AsBx` format (register + 16-bit signed immediate)
     ///
     /// Used for conditional jumps with signed offsets.
     #[inline]

@@ -1023,7 +1023,7 @@ impl Transpiler {
     /// Special handling for Rust attributes:
     /// - `#[test]` takes no arguments - strips any description provided
     ///
-    /// PARSER-077 FIX: Manually construct TokenStream with Spacing::Joint
+    /// PARSER-077 FIX: Manually construct `TokenStream` with `Spacing::Joint`
     /// The quote! macro generates Punct { '#', spacing: Alone } which adds unwanted space
     /// We need Punct { '#', spacing: Joint } for correct #[...] syntax
     fn format_regular_attribute(&self, attr: &crate::frontend::ast::Attribute) -> TokenStream {

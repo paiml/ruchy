@@ -11,7 +11,7 @@ use std::sync::Arc;
 /// Evaluate a string method call
 ///
 /// # Complexity
-/// Cyclomatic complexity: 10 (within Toyota Way limits - added format() support)
+/// Cyclomatic complexity: 10 (within Toyota Way limits - added `format()` support)
 pub fn eval_string_method(
     s: &Arc<str>,
     method: &str,
@@ -405,8 +405,7 @@ fn eval_string_parse(s: &str) -> Result<Value, InterpreterError> {
         .map(Value::Integer)
         .map_err(|_| {
             InterpreterError::RuntimeError(format!(
-                "Failed to parse '{}' as integer",
-                s
+                "Failed to parse '{s}' as integer"
             ))
         })
 }

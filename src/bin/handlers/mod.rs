@@ -10,8 +10,6 @@ use ruchy::runtime::Repl;
 use ruchy::{Parser as RuchyParser, Transpiler, WasmEmitter};
 // Replay functionality imports removed - not needed in handler, used directly in REPL
 // PARSER-077: Add syn and prettyplease for proper TokenStream formatting
-use prettyplease;
-use syn;
 use std::fs;
 use std::io::{self, Read};
 use std::path::{Path, PathBuf};
@@ -1837,9 +1835,8 @@ pub fn handle_serve_command(
         let shutdown_tx_clone = shutdown_tx;
         std::thread::spawn(move || {
             let mut signals = Signals::new([SIGINT, SIGTERM]).expect("Failed to register signal handlers");
-            for _sig in signals.forever() {
+            if let Some(_sig) = signals.forever().next() {
                 let _ = shutdown_tx_clone.send(());
-                break;
             }
         });
     }

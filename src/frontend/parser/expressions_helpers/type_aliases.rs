@@ -94,7 +94,7 @@ pub(in crate::frontend::parser) fn parse_generic_params(
                 // Legacy handling for char literals as lifetimes
                 state.tokens.advance();
             }
-            tok => bail!("Expected type parameter or lifetime, got: {:?}", tok),
+            tok => bail!("Expected type parameter or lifetime, got: {tok:?}"),
         }
         // Check for comma
         if matches!(state.tokens.peek(), Some((Token::Comma, _))) {

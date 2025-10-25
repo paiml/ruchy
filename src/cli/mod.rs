@@ -227,12 +227,12 @@ fn execute_run(path: PathBuf, verbose: bool, vm_mode: VmMode) -> Result<(), Stri
 
             let mut compiler = Compiler::new("main".to_string());
             compiler.compile_expr(&ast)
-                .map_err(|e| format!("Compilation error: {}", e))?;
+                .map_err(|e| format!("Compilation error: {e}"))?;
             let chunk = compiler.finalize();
 
             let mut vm = VM::new();
             let _result = vm.execute(&chunk)
-                .map_err(|e| format!("VM execution error: {}", e))?;
+                .map_err(|e| format!("VM execution error: {e}"))?;
         }
     }
 

@@ -5,7 +5,7 @@
 //! Compact bytecode opcodes (6 bits, supports up to 64 operations)
 //! Based on ruchyruchy optimization research - register-based VM architecture
 //!
-//! Reference: ../ruchyruchy/OPTIMIZATION_REPORT_FOR_RUCHY.md
+//! Reference: ../`ruchyruchy/OPTIMIZATION_REPORT_FOR_RUCHY.md`
 //! Academic: Würthinger et al. (2017) - One VM to Rule Them All
 
 /// Bytecode operation codes

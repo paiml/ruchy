@@ -200,7 +200,7 @@ impl Transpiler {
         };
 
         // Generate derive attributes using helper (PARSER-077 fix)
-        let derive_attrs = self.generate_derive_attributes(&derives);
+        let derive_attrs = self.generate_derive_attributes(derives);
 
         // Generate tuple struct definition
         let struct_def = if type_params.is_empty() {
@@ -314,7 +314,7 @@ impl Transpiler {
         };
 
         // Generate derive attributes using helper (PARSER-077 fix)
-        let derive_attrs = self.generate_derive_attributes(&derives);
+        let derive_attrs = self.generate_derive_attributes(derives);
 
         // Generate struct definition
         let struct_def = if effective_type_params.is_empty() {
