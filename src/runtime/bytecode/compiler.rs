@@ -48,6 +48,10 @@ pub struct BytecodeChunk {
     /// Stores AST for match expressions to enable interpreter delegation
     /// Each entry: (match_expr, match_arms)
     pub match_exprs: Vec<(Arc<Expr>, Vec<crate::frontend::ast::MatchArm>)>,
+    /// Closures (for hybrid execution - OPT-019)
+    /// Stores AST for closures to enable interpreter delegation
+    /// Each entry: (params, body) - environment captured at runtime
+    pub closures: Vec<(Vec<String>, Arc<Expr>)>,
     /// Local variable name to register mapping (for hybrid execution)
     /// Enables synchronization between bytecode registers and interpreter scope
     pub locals_map: HashMap<String, u8>,
@@ -67,6 +71,7 @@ impl BytecodeChunk {
             loop_bodies: Vec::new(),
             method_calls: Vec::new(),
             match_exprs: Vec::new(),
+            closures: Vec::new(),
             locals_map: HashMap::new(),
         }
     }
@@ -218,6 +223,7 @@ impl Compiler {
             ExprKind::MethodCall { receiver, method, args } => self.compile_method_call(receiver, method, args),
             ExprKind::FieldAccess { object, field } => self.compile_field_access(object, field),
             ExprKind::Match { expr, arms } => self.compile_match(expr, arms),
+            ExprKind::Lambda { params, body } => self.compile_closure(params, body),
             _ => Err(format!("Unsupported expression kind: {:?}", expr.kind)),
         }?;
         self.last_result = result;
@@ -858,6 +864,42 @@ impl Compiler {
         // A = result register, Bx = match_idx
         self.chunk.emit(
             Instruction::abx(OpCode::Match, result_reg, match_info_idx),
+            0,
+        );
+
+        Ok(result_reg)
+    }
+
+    /// Compile a closure expression
+    ///
+    /// OPT-019: Hybrid approach - delegate to interpreter like for-loops, method calls, match
+    /// Closures require environment capture and complex scope management,
+    /// so we store the AST and let the VM create the closure with captured environment.
+    fn compile_closure(&mut self, params: &[crate::frontend::ast::Param], body: &Expr) -> Result<u8, String> {
+        // Extract parameter names
+        let param_names: Vec<String> = params
+            .iter()
+            .map(crate::frontend::ast::Param::name)
+            .collect();
+
+        // Store closure definition in chunk for runtime access
+        let closure_idx = self.chunk.closures.len();
+        self.chunk.closures.push((
+            param_names,
+            Arc::new(body.clone()),
+        ));
+
+        // Store closure index in constant pool
+        let closure_info_value = Value::Integer(closure_idx as i64);
+        let closure_info_idx = self.chunk.add_constant(closure_info_value);
+
+        // Allocate result register
+        let result_reg = self.registers.allocate();
+
+        // Emit NewClosure instruction: ABx format
+        // A = result register, Bx = closure_idx
+        self.chunk.emit(
+            Instruction::abx(OpCode::NewClosure, result_reg, closure_info_idx),
             0,
         );
 

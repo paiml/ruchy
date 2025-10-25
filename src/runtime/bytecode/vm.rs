@@ -21,6 +21,7 @@ use super::compiler::BytecodeChunk;
 use crate::frontend::ast::Expr;
 use crate::runtime::{Interpreter, Value};
 use std::collections::HashMap;
+use std::sync::Arc;
 
 /// Maximum number of registers per call frame
 const MAX_REGISTERS: usize = 32;
@@ -629,6 +630,50 @@ impl VM {
 
                 // Store result in result register
                 self.registers[result_reg] = result;
+                Ok(())
+            }
+
+            OpCode::NewClosure => {
+                // OPT-019: Closure creation (hybrid approach)
+                // ABx format: A = result register, Bx = closure_idx constant
+                let result_reg = instruction.get_a() as usize;
+                let closure_idx_const = instruction.get_bx() as usize;
+
+                // Get closure index from constant pool
+                let frame = self.call_stack.last()
+                    .ok_or("No active call frame")?;
+                let closure_idx_value = frame.chunk.constants.get(closure_idx_const)
+                    .ok_or_else(|| format!("Constant index out of bounds: {}", closure_idx_const))?;
+
+                let closure_idx = match closure_idx_value {
+                    Value::Integer(idx) => *idx as usize,
+                    _ => return Err("Closure index must be an integer".to_string()),
+                };
+
+                // Get (params, body) from chunk's closures
+                let (params, body) = frame.chunk.closures.get(closure_idx)
+                    .ok_or_else(|| format!("Closure index out of bounds: {}", closure_idx))?;
+
+                // Synchronize register-based locals to interpreter scope
+                // This ensures closures capture variables defined in bytecode mode
+                for (name, reg_idx) in frame.chunk.locals_map.iter() {
+                    let value = self.registers[*reg_idx as usize].clone();
+                    self.interpreter.set_variable(name, value);
+                }
+
+                // Capture current environment from interpreter
+                // This is the key to closures - we snapshot the current scope
+                let env = Arc::new(self.interpreter.current_env().clone());
+
+                // Create closure value
+                let closure = Value::Closure {
+                    params: params.clone(),
+                    body: body.clone(),
+                    env,
+                };
+
+                // Store closure in result register
+                self.registers[result_reg] = closure;
                 Ok(())
             }
 

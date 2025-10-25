@@ -6,6 +6,62 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ### Added
 
+- **[OPT-019] Bytecode VM Closure Support (Hybrid Execution - COMPLETE)**
+  - Implemented lambda/closure support in bytecode VM with environment capture
+  - **Architecture:**
+    - Compiler: Stores closure definitions (params + body AST) in `chunk.closures` for runtime access
+    - Compiler: Each entry contains (param_names, body_expr) - environment captured at runtime
+    - Compiler: Emits `OpCode::NewClosure` with index into closures table
+    - VM: Synchronizes register-based locals to interpreter scope before capture
+    - VM: Creates Value::Closure with captured environment snapshot
+    - Instruction format: `NewClosure result_reg, closure_idx` (ABx format)
+  - **Implementation:** 100% Complete
+    - ✅ OpCode::NewClosure at 0x1E (opcode.rs - renumbered from 0x42 to fix encoding bug)
+    - ✅ BytecodeChunk.closures field (compiler.rs)
+    - ✅ compile_closure() implementation (compiler.rs)
+    - ✅ OpCode::NewClosure VM handler with scope sync (vm.rs)
+    - ✅ Made Interpreter::current_env() public (interpreter.rs)
+  - **Test Coverage:** 5/5 tests passing (100%)
+    - ✅ No capture: `{ let f = |x| x + 1; f(41) }` → 42
+    - ✅ Single capture: `{ let y = 10; let f = |x| x + y; f(32) }` → 42
+    - ✅ Multiple captures: `{ let a = 10; let b = 20; let f = |x| x + a + b; f(12) }` → 42
+    - ✅ Nested closures: `{ let x = 10; let f = |y| { let g = |z| x + y + z; g(12) }; f(20) }` → 42
+    - ✅ Multiple params: `{ let f = |x, y| x + y; f(10, 32) }` → 42
+  - **Key Decision:** Hybrid Execution (AST Delegation with Environment Capture)
+    - Closures require environment capture and complex scope management
+    - Storing closure AST and letting VM create closure with captured environment
+    - Scope synchronization ensures closures capture variables defined in bytecode mode
+    - Follows same pattern as for-loops (OPT-012), method calls (OPT-014), match (OPT-018)
+  - **Files Modified:**
+    - src/runtime/bytecode/opcode.rs (renumbered NewClosure 0x42 → 0x1E, fixed 6-bit encoding overflow)
+    - src/runtime/bytecode/compiler.rs (+4 lines: closures field + initialization)
+    - src/runtime/bytecode/compiler.rs (+33 lines: compile_closure implementation)
+    - src/runtime/bytecode/vm.rs (+42 lines: OpCode::NewClosure handler with scope sync)
+    - src/runtime/interpreter.rs (+1 line: make current_env() public)
+    - tests/opt_004_semantic_equivalence.rs (Suite 19 with 5 tests, all passing)
+  - **Impact:** Fully enables closures and functional programming in bytecode mode
+  - **Total:** All 102 semantic equivalence tests passing (97 → 102, +5 new tests, no regressions)
+
+### Fixed
+
+- **[CRITICAL BUG] Opcode value overflow in 6-bit instruction encoding**
+  - **Issue:** Opcodes 0x40-0x52 exceeded 6-bit encoding limit (max 0x3F/63 decimal)
+  - **Impact:** NewClosure (0x42/66) decoded as LoadLocal (0x02), causing all closure tests to fail
+  - **Root Cause:** Opcode enum values exceeded instruction format's 6-bit opcode field (bits 31-26)
+  - **Symptom:** Upper 2 bits truncated during encoding, causing opcode misidentification
+  - **Fix:** Renumbered 8 overflow opcodes to fit within 0x00-0x3F range
+    - NewObject: 0x40 → 0x1C (64 → 28)
+    - NewArray: 0x41 → 0x1D (65 → 29)
+    - NewClosure: 0x42 → 0x1E (66 → 30)
+    - GetType: 0x43 → 0x1F (67 → 31)
+    - InstanceOf: 0x44 → 0x29 (68 → 41)
+    - InlineCache: 0x50 → 0x2A (80 → 42)
+    - Specialize: 0x51 → 0x2B (81 → 43)
+    - Deoptimize: 0x52 → 0x2C (82 → 44)
+  - **Utilization:** Used available gaps in 0x1C-0x1F and 0x29-0x2C ranges
+  - **Validation:** All 102 tests passing after fix (closure tests went from 0/5 → 5/5)
+  - **Files Modified:** src/runtime/bytecode/opcode.rs (enum values + from_u8 mapping)
+
 - **[OPT-018] Bytecode VM Match Expressions (Hybrid Execution - COMPLETE)**
   - Implemented match expression support in bytecode VM using hybrid execution model
   - **Architecture:**
