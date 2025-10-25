@@ -12,7 +12,7 @@
 //! - **Dispatch Loop**: Match-based dispatch (later: computed goto optimization)
 //! - **Memory**: Shared global variable storage + per-frame locals
 //!
-//! Reference: ../ruchyruchy/OPTIMIZATION_REPORT_FOR_RUCHY.md
+//! Reference: ../`ruchyruchy/OPTIMIZATION_REPORT_FOR_RUCHY.md`
 //! Academic: Brunthaler (2010) - Inline Caching Meets Quickening
 
 use super::instruction::Instruction;
@@ -64,11 +64,11 @@ impl<'a> CallFrame<'a> {
 
     /// Jump to a specific instruction offset (relative)
     ///
-    /// Note: advance_pc() will be called after this, so we compensate by subtracting 1
+    /// Note: `advance_pc()` will be called after this, so we compensate by subtracting 1
     #[inline]
     fn jump(&mut self, offset: i16) {
         // Offset is relative to current PC, but advance_pc will add 1, so we compensate
-        let target = (self.pc as i32) + (offset as i32);
+        let target = (self.pc as i32) + i32::from(offset);
         self.pc = target as usize;
     }
 }
@@ -135,13 +135,10 @@ impl VM {
         // Main execution loop
         while let Some(frame) = self.call_stack.last_mut() {
             // Fetch instruction
-            let instruction = match frame.fetch_instruction() {
-                Some(instr) => instr,
-                None => {
-                    // End of bytecode - pop frame
-                    self.call_stack.pop();
-                    continue;
-                }
+            let instruction = if let Some(instr) = frame.fetch_instruction() { instr } else {
+                // End of bytecode - pop frame
+                self.call_stack.pop();
+                continue;
             };
 
             // Decode opcode
@@ -173,7 +170,7 @@ impl VM {
                 let frame = self.call_stack.last()
                     .ok_or("No active call frame")?;
                 let value = frame.chunk.constants.get(const_idx)
-                    .ok_or_else(|| format!("Constant index out of bounds: {}", const_idx))?;
+                    .ok_or_else(|| format!("Constant index out of bounds: {const_idx}"))?;
 
                 self.registers[dest] = value.clone();
                 Ok(())
@@ -200,7 +197,7 @@ impl VM {
                 let frame = self.call_stack.last()
                     .ok_or("No active call frame")?;
                 let field_value = frame.chunk.constants.get(field_idx)
-                    .ok_or_else(|| format!("Constant index out of bounds: {}", field_idx))?;
+                    .ok_or_else(|| format!("Constant index out of bounds: {field_idx}"))?;
                 let field_name = match field_value {
                     Value::String(s) => s.as_ref(),
                     _ => return Err("Field name must be a string".to_string()),
@@ -214,25 +211,25 @@ impl VM {
                     Value::Object(ref map) => {
                         map.get(field_name)
                             .cloned()
-                            .ok_or_else(|| format!("Field '{}' not found in object", field_name))
+                            .ok_or_else(|| format!("Field '{field_name}' not found in object"))
                     }
                     Value::Struct { ref fields, ref name } => {
                         fields.get(field_name)
                             .cloned()
-                            .ok_or_else(|| format!("Field '{}' not found in struct {}", field_name, name))
+                            .ok_or_else(|| format!("Field '{field_name}' not found in struct {name}"))
                     }
                     Value::Class { ref fields, ref class_name, .. } => {
                         let fields_read = fields.read().unwrap();
                         fields_read.get(field_name)
                             .cloned()
-                            .ok_or_else(|| format!("Field '{}' not found in class {}", field_name, class_name))
+                            .ok_or_else(|| format!("Field '{field_name}' not found in class {class_name}"))
                     }
                     Value::Tuple(ref elements) => {
                         // Tuple field access (e.g., tuple.0, tuple.1)
                         field_name.parse::<usize>()
                             .ok()
                             .and_then(|idx| elements.get(idx).cloned())
-                            .ok_or_else(|| format!("Tuple index '{}' out of bounds", field_name))
+                            .ok_or_else(|| format!("Tuple index '{field_name}' out of bounds"))
                     }
                     _ => Err(format!("Cannot access field '{}' on type {}", field_name, object.type_name())),
                 }?;
@@ -285,11 +282,11 @@ impl VM {
             }
 
             // Arithmetic operations
-            OpCode::Add => self.binary_op(instruction, |a, b| a.add(b)),
-            OpCode::Sub => self.binary_op(instruction, |a, b| a.subtract(b)),
-            OpCode::Mul => self.binary_op(instruction, |a, b| a.multiply(b)),
-            OpCode::Div => self.binary_op(instruction, |a, b| a.divide(b)),
-            OpCode::Mod => self.binary_op(instruction, |a, b| a.modulo(b)),
+            OpCode::Add => self.binary_op(instruction, super::super::interpreter::Value::add),
+            OpCode::Sub => self.binary_op(instruction, super::super::interpreter::Value::subtract),
+            OpCode::Mul => self.binary_op(instruction, super::super::interpreter::Value::multiply),
+            OpCode::Div => self.binary_op(instruction, super::super::interpreter::Value::divide),
+            OpCode::Mod => self.binary_op(instruction, super::super::interpreter::Value::modulo),
 
             // Unary operations
             OpCode::Neg => self.unary_op(instruction, |v| match v {
@@ -306,10 +303,10 @@ impl VM {
             // Comparison operations
             OpCode::Equal => self.binary_op(instruction, |a, b| Ok(Value::Bool(a == b))),
             OpCode::NotEqual => self.binary_op(instruction, |a, b| Ok(Value::Bool(a != b))),
-            OpCode::Less => self.comparison_op(instruction, |a, b| a.less_than(b)),
-            OpCode::LessEqual => self.comparison_op(instruction, |a, b| a.less_equal(b)),
-            OpCode::Greater => self.comparison_op(instruction, |a, b| a.greater_than(b)),
-            OpCode::GreaterEqual => self.comparison_op(instruction, |a, b| a.greater_equal(b)),
+            OpCode::Less => self.comparison_op(instruction, super::super::interpreter::Value::less_than),
+            OpCode::LessEqual => self.comparison_op(instruction, super::super::interpreter::Value::less_equal),
+            OpCode::Greater => self.comparison_op(instruction, super::super::interpreter::Value::greater_than),
+            OpCode::GreaterEqual => self.comparison_op(instruction, super::super::interpreter::Value::greater_equal),
 
             // Logical operations
             OpCode::And => self.logical_op(instruction, |a, b| a && b),
@@ -328,10 +325,7 @@ impl VM {
                 let condition = instruction.get_a() as usize;
                 let offset = instruction.get_sbx();
 
-                let is_false = match &self.registers[condition] {
-                    Value::Bool(false) | Value::Nil => true,
-                    _ => false,
-                };
+                let is_false = matches!(&self.registers[condition], Value::Bool(false) | Value::Nil);
 
                 if is_false {
                     if let Some(frame) = self.call_stack.last_mut() {
@@ -370,7 +364,7 @@ impl VM {
                 let frame = self.call_stack.last()
                     .ok_or("No active call frame")?;
                 let call_info_value = frame.chunk.constants.get(call_info_idx)
-                    .ok_or_else(|| format!("Constant index out of bounds: {}", call_info_idx))?;
+                    .ok_or_else(|| format!("Constant index out of bounds: {call_info_idx}"))?;
 
                 let call_info: Vec<usize> = match call_info_value {
                     Value::Array(arr) => {
@@ -428,7 +422,7 @@ impl VM {
 
                 // Execute closure body using interpreter
                 let result = self.interpreter.eval_expr(&body)
-                    .map_err(|e| format!("Function call error: {}", e))?;
+                    .map_err(|e| format!("Function call error: {e}"))?;
 
                 // Pop scope
                 self.interpreter.pop_scope();
@@ -449,7 +443,7 @@ impl VM {
                 let frame = self.call_stack.last()
                     .ok_or("No active call frame")?;
                 let loop_info_value = frame.chunk.constants.get(loop_info_idx)
-                    .ok_or_else(|| format!("Constant index out of bounds: {}", loop_info_idx))?;
+                    .ok_or_else(|| format!("Constant index out of bounds: {loop_info_idx}"))?;
 
                 let loop_info: Vec<i64> = match loop_info_value {
                     Value::Array(arr) => {
@@ -498,13 +492,13 @@ impl VM {
 
                 // Get body from chunk's loop_bodies
                 let body = frame.chunk.loop_bodies.get(body_idx)
-                    .ok_or_else(|| format!("Loop body index out of bounds: {}", body_idx))?
+                    .ok_or_else(|| format!("Loop body index out of bounds: {body_idx}"))?
                     .clone();
 
                 // Synchronize register-based locals to interpreter scope
                 // This allows the loop body to access variables like 'sum' that were
                 // defined in bytecode mode but need to be visible to the interpreter
-                for (name, reg_idx) in frame.chunk.locals_map.iter() {
+                for (name, reg_idx) in &frame.chunk.locals_map {
                     let value = self.registers[*reg_idx as usize].clone();
                     self.interpreter.set_variable(name, value);
                 }
@@ -521,14 +515,14 @@ impl VM {
 
                     // Execute loop body using interpreter
                     last_result = self.interpreter.eval_expr(&body)
-                        .map_err(|e| format!("For-loop body error: {}", e))?;
+                        .map_err(|e| format!("For-loop body error: {e}"))?;
 
                     // Pop scope
                     self.interpreter.pop_scope();
 
                     // Synchronize interpreter scope back to registers
                     // This allows mutations to 'sum' inside the loop to persist
-                    for (name, reg_idx) in frame.chunk.locals_map.iter() {
+                    for (name, reg_idx) in &frame.chunk.locals_map {
                         if let Some(value) = self.interpreter.get_variable(name) {
                             self.registers[*reg_idx as usize] = value;
                         }
@@ -550,7 +544,7 @@ impl VM {
                 let frame = self.call_stack.last()
                     .ok_or("No active call frame")?;
                 let method_call_idx_value = frame.chunk.constants.get(method_call_idx_const)
-                    .ok_or_else(|| format!("Constant index out of bounds: {}", method_call_idx_const))?;
+                    .ok_or_else(|| format!("Constant index out of bounds: {method_call_idx_const}"))?;
 
                 let method_call_idx = match method_call_idx_value {
                     Value::Integer(idx) => *idx as usize,
@@ -559,11 +553,11 @@ impl VM {
 
                 // Get (receiver, method, args) from chunk's method_calls
                 let (receiver, method, args) = frame.chunk.method_calls.get(method_call_idx)
-                    .ok_or_else(|| format!("Method call index out of bounds: {}", method_call_idx))?;
+                    .ok_or_else(|| format!("Method call index out of bounds: {method_call_idx}"))?;
 
                 // Synchronize register-based locals to interpreter scope
                 // This allows method bodies to access variables defined in bytecode mode
-                for (name, reg_idx) in frame.chunk.locals_map.iter() {
+                for (name, reg_idx) in &frame.chunk.locals_map {
                     let value = self.registers[*reg_idx as usize].clone();
                     self.interpreter.set_variable(name, value);
                 }
@@ -573,11 +567,11 @@ impl VM {
 
                 // Execute method call using interpreter
                 let result = self.interpreter.eval_method_call(receiver, method, &args_exprs)
-                    .map_err(|e| format!("Method call error: {}", e))?;
+                    .map_err(|e| format!("Method call error: {e}"))?;
 
                 // Synchronize interpreter scope back to registers
                 // This allows mutations inside methods to persist
-                for (name, reg_idx) in frame.chunk.locals_map.iter() {
+                for (name, reg_idx) in &frame.chunk.locals_map {
                     if let Some(value) = self.interpreter.get_variable(name) {
                         self.registers[*reg_idx as usize] = value;
                     }
@@ -598,7 +592,7 @@ impl VM {
                 let frame = self.call_stack.last()
                     .ok_or("No active call frame")?;
                 let match_idx_value = frame.chunk.constants.get(match_idx_const)
-                    .ok_or_else(|| format!("Constant index out of bounds: {}", match_idx_const))?;
+                    .ok_or_else(|| format!("Constant index out of bounds: {match_idx_const}"))?;
 
                 let match_idx = match match_idx_value {
                     Value::Integer(idx) => *idx as usize,
@@ -607,22 +601,22 @@ impl VM {
 
                 // Get (expr, arms) from chunk's match_exprs
                 let (expr, arms) = frame.chunk.match_exprs.get(match_idx)
-                    .ok_or_else(|| format!("Match index out of bounds: {}", match_idx))?;
+                    .ok_or_else(|| format!("Match index out of bounds: {match_idx}"))?;
 
                 // Synchronize register-based locals to interpreter scope
                 // This allows pattern bindings and guards to access variables defined in bytecode mode
-                for (name, reg_idx) in frame.chunk.locals_map.iter() {
+                for (name, reg_idx) in &frame.chunk.locals_map {
                     let value = self.registers[*reg_idx as usize].clone();
                     self.interpreter.set_variable(name, value);
                 }
 
                 // Execute match expression using interpreter
                 let result = self.interpreter.eval_match(expr, arms)
-                    .map_err(|e| format!("Match expression error: {}", e))?;
+                    .map_err(|e| format!("Match expression error: {e}"))?;
 
                 // Synchronize interpreter scope back to registers
                 // This allows mutations inside match arms to persist
-                for (name, reg_idx) in frame.chunk.locals_map.iter() {
+                for (name, reg_idx) in &frame.chunk.locals_map {
                     if let Some(value) = self.interpreter.get_variable(name) {
                         self.registers[*reg_idx as usize] = value;
                     }
@@ -643,7 +637,7 @@ impl VM {
                 let frame = self.call_stack.last()
                     .ok_or("No active call frame")?;
                 let closure_idx_value = frame.chunk.constants.get(closure_idx_const)
-                    .ok_or_else(|| format!("Constant index out of bounds: {}", closure_idx_const))?;
+                    .ok_or_else(|| format!("Constant index out of bounds: {closure_idx_const}"))?;
 
                 let closure_idx = match closure_idx_value {
                     Value::Integer(idx) => *idx as usize,
@@ -652,11 +646,11 @@ impl VM {
 
                 // Get (params, body) from chunk's closures
                 let (params, body) = frame.chunk.closures.get(closure_idx)
-                    .ok_or_else(|| format!("Closure index out of bounds: {}", closure_idx))?;
+                    .ok_or_else(|| format!("Closure index out of bounds: {closure_idx}"))?;
 
                 // Synchronize register-based locals to interpreter scope
                 // This ensures closures capture variables defined in bytecode mode
-                for (name, reg_idx) in frame.chunk.locals_map.iter() {
+                for (name, reg_idx) in &frame.chunk.locals_map {
                     let value = self.registers[*reg_idx as usize].clone();
                     self.interpreter.set_variable(name, value);
                 }
@@ -698,7 +692,7 @@ impl VM {
                 let frame = self.call_stack.last()
                     .ok_or("No active call frame")?;
                 let name_value = frame.chunk.constants.get(name_idx)
-                    .ok_or_else(|| format!("Constant index out of bounds: {}", name_idx))?;
+                    .ok_or_else(|| format!("Constant index out of bounds: {name_idx}"))?;
 
                 let name = match name_value {
                     Value::String(s) => s.as_ref(),
@@ -706,7 +700,7 @@ impl VM {
                 };
 
                 let value = self.globals.get(name)
-                    .ok_or_else(|| format!("Undefined global variable: {}", name))?;
+                    .ok_or_else(|| format!("Undefined global variable: {name}"))?;
 
                 self.registers[dest] = value.clone();
                 Ok(())
@@ -719,7 +713,7 @@ impl VM {
                 let frame = self.call_stack.last()
                     .ok_or("No active call frame")?;
                 let name_value = frame.chunk.constants.get(name_idx)
-                    .ok_or_else(|| format!("Constant index out of bounds: {}", name_idx))?;
+                    .ok_or_else(|| format!("Constant index out of bounds: {name_idx}"))?;
 
                 let name = match name_value {
                     Value::String(s) => s.to_string(),
@@ -730,7 +724,7 @@ impl VM {
                 Ok(())
             }
 
-            _ => Err(format!("Unsupported opcode: {:?}", opcode)),
+            _ => Err(format!("Unsupported opcode: {opcode:?}")),
         }
     }
 

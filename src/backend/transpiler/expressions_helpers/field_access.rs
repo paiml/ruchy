@@ -7,7 +7,7 @@ use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 
 impl Transpiler {
-    /// Check if an expression represents a module path (like std::time)
+    /// Check if an expression represents a module path (like `std::time`)
     /// STDLIB-003: Helper for distinguishing module paths from struct field access
     fn is_module_path(expr: &Expr) -> bool {
         use crate::frontend::ast::ExprKind;
@@ -58,7 +58,7 @@ impl Transpiler {
                 let field_ident = format_ident!("{}", field);
                 Ok(quote! { #obj_tokens::#field_ident })
             }
-            ExprKind::Identifier(name) if name.chars().next().map_or(false, |c| c.is_uppercase()) => {
+            ExprKind::Identifier(name) if name.chars().next().is_some_and(char::is_uppercase) => {
                 // TRANSPILER-065: Type name (PascalCase) - use :: for associated functions/constructors
                 // Examples: String::from(), Result::Ok(), Vec::new()
                 // Heuristic: Rust types start with uppercase, instances with lowercase

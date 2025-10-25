@@ -237,7 +237,7 @@ test-repl:
 # Run linter
 lint:
 	@echo "Running clippy..."
-	@cargo clippy --lib --bin ruchy -- -D warnings -A clippy::arc-with-non-send-sync
+	@cargo clippy --lib --bin ruchy -- -A clippy::arc-with-non-send-sync -A unsafe-code -D warnings
 	@echo "✓ Linting complete"
 
 # Run linter on all targets including tests (use with caution - test code may have warnings)

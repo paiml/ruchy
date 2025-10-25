@@ -11,7 +11,7 @@
 //! - **Register-based**: 32 general-purpose registers per frame
 //! - **32-bit fixed-width instructions**: Efficient fetch and decode
 //! - **6-bit opcodes**: Support for up to 64 operations
-//! - **4 instruction formats**: ABC, ABx, AsBx, Ax for different operand types
+//! - **4 instruction formats**: ABC, `ABx`, `AsBx`, Ax for different operand types
 //!
 //! # Performance Targets (from ruchyruchy research)
 //!
@@ -22,7 +22,7 @@
 //!
 //! # References
 //!
-//! - ../ruchyruchy/OPTIMIZATION_REPORT_FOR_RUCHY.md
+//! - ../`ruchyruchy/OPTIMIZATION_REPORT_FOR_RUCHY.md`
 //! - Würthinger et al. (2017) - One VM to Rule Them All
 //! - Brunthaler (2010) - Inline Caching Meets Quickening
 //! - Gal et al. (2009) - Trace-based Just-in-Time Type Specialization

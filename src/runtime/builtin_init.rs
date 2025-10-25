@@ -422,7 +422,7 @@ fn add_http_functions(global_env: &mut HashMap<String, Value>) {
 }
 
 /// Add std namespace with time module
-/// STDLIB-003: GitHub Issue #55 - std::time module for timing measurements
+/// STDLIB-003: GitHub Issue #55 - `std::time` module for timing measurements
 ///
 /// # Complexity
 /// Cyclomatic complexity: 1 (within Toyota Way limits)

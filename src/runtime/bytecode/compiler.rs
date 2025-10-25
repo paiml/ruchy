@@ -8,7 +8,7 @@
 //! - Jump target resolution
 //! - Local variable tracking
 //!
-//! Reference: ../ruchyruchy/OPTIMIZATION_REPORT_FOR_RUCHY.md
+//! Reference: ../`ruchyruchy/OPTIMIZATION_REPORT_FOR_RUCHY.md`
 //! Expected: Efficient bytecode generation with minimal overhead
 
 use super::instruction::Instruction;
@@ -42,11 +42,11 @@ pub struct BytecodeChunk {
     pub loop_bodies: Vec<Arc<Expr>>,
     /// Method calls (for hybrid execution - OPT-014)
     /// Stores AST for method calls to enable interpreter delegation
-    /// Each entry: (receiver_expr, method_name, args_exprs)
+    /// Each entry: (`receiver_expr`, `method_name`, `args_exprs`)
     pub method_calls: Vec<(Arc<Expr>, String, Vec<Arc<Expr>>)>,
     /// Match expressions (for hybrid execution - OPT-018)
     /// Stores AST for match expressions to enable interpreter delegation
-    /// Each entry: (match_expr, match_arms)
+    /// Each entry: (`match_expr`, `match_arms`)
     pub match_exprs: Vec<(Arc<Expr>, Vec<crate::frontend::ast::MatchArm>)>,
     /// Closures (for hybrid execution - OPT-019)
     /// Stores AST for closures to enable interpreter delegation
@@ -239,7 +239,7 @@ impl Compiler {
             Literal::Bool(b) => Value::Bool(*b),
             Literal::Unit | Literal::Null => Value::Nil,
             Literal::Char(c) => Value::from_string(c.to_string()),
-            Literal::Byte(b) => Value::Integer(*b as i64),
+            Literal::Byte(b) => Value::Integer(i64::from(*b)),
         };
 
         let const_index = self.chunk.add_constant(value);
@@ -279,7 +279,7 @@ impl Compiler {
             BinaryOp::BitwiseXor => OpCode::BitXor,
             BinaryOp::LeftShift => OpCode::ShiftLeft,
             BinaryOp::RightShift => OpCode::ShiftRight,
-            _ => return Err(format!("Unsupported binary operator: {:?}", op)),
+            _ => return Err(format!("Unsupported binary operator: {op:?}")),
         };
 
         // Emit binary operation: R[result] = R[left] op R[right]
@@ -305,7 +305,7 @@ impl Compiler {
             UnaryOp::Not => OpCode::Not,
             UnaryOp::BitwiseNot => OpCode::BitNot,
             UnaryOp::Reference | UnaryOp::Deref => {
-                return Err(format!("Unsupported unary operator: {:?}", op));
+                return Err(format!("Unsupported unary operator: {op:?}"));
             }
         };
 
@@ -453,7 +453,7 @@ impl Compiler {
 
     /// Compile a while loop
     ///
-    /// Generates: loop_start → check condition → if false jump to end → body → jump to start → loop_end
+    /// Generates: `loop_start` → check condition → if false jump to end → body → jump to start → `loop_end`
     fn compile_while(&mut self, condition: &Expr, body: &Expr) -> Result<u8, String> {
         let result_reg = self.registers.allocate();
 
@@ -506,7 +506,7 @@ impl Compiler {
                 let target_reg = if let Some(&reg) = self.locals.get(name) {
                     reg
                 } else {
-                    return Err(format!("Undefined variable: {}", name));
+                    return Err(format!("Undefined variable: {name}"));
                 };
 
                 // Compile the value expression
@@ -549,8 +549,8 @@ impl Compiler {
         // Store func_reg and argument registers in chunk constants for VM to access
         // Format: [func_reg, arg_reg1, arg_reg2, ...]
         // This is a workaround until we implement proper bytecode calling convention
-        let mut call_info = vec![Value::Integer(func_reg as i64)];
-        call_info.extend(arg_regs.iter().map(|&r| Value::Integer(r as i64)));
+        let mut call_info = vec![Value::Integer(i64::from(func_reg))];
+        call_info.extend(arg_regs.iter().map(|&r| Value::Integer(i64::from(r))));
         let call_info_value = Value::from_array(call_info);
         let call_info_idx = self.chunk.add_constant(call_info_value);
 
@@ -575,7 +575,7 @@ impl Compiler {
         // Extract parameter names
         let param_names: Vec<String> = params
             .iter()
-            .map(|p| p.name().to_string())
+            .map(crate::frontend::ast::Param::name)
             .collect();
 
         // Create closure value
@@ -607,7 +607,7 @@ impl Compiler {
 
     /// Compile a list/array literal
     ///
-    /// OPT-012: Compile elements and create Value::Array in constant pool
+    /// OPT-012: Compile elements and create `Value::Array` in constant pool
     fn compile_list(&mut self, elements: &[Expr]) -> Result<u8, String> {
         // Compile each element
         let mut element_values = Vec::new();
@@ -623,7 +623,7 @@ impl Compiler {
                         Literal::Bool(b) => Value::Bool(*b),
                         Literal::Unit | Literal::Null => Value::Nil,
                         Literal::Char(c) => Value::from_string(c.to_string()),
-                        Literal::Byte(b) => Value::Integer(*b as i64),
+                        Literal::Byte(b) => Value::Integer(i64::from(*b)),
                     };
                     element_values.push(value);
                 }
@@ -651,8 +651,8 @@ impl Compiler {
 
     /// Compile a tuple literal
     ///
-    /// OPT-017: Compile elements and create Value::Tuple in constant pool
-    /// Follows same pattern as compile_list - literal-only for now
+    /// OPT-017: Compile elements and create `Value::Tuple` in constant pool
+    /// Follows same pattern as `compile_list` - literal-only for now
     fn compile_tuple(&mut self, elements: &[Expr]) -> Result<u8, String> {
         // Compile each element
         let mut element_values = Vec::new();
@@ -668,7 +668,7 @@ impl Compiler {
                         Literal::Bool(b) => Value::Bool(*b),
                         Literal::Unit | Literal::Null => Value::Nil,
                         Literal::Char(c) => Value::from_string(c.to_string()),
-                        Literal::Byte(b) => Value::Integer(*b as i64),
+                        Literal::Byte(b) => Value::Integer(i64::from(*b)),
                     };
                     element_values.push(value);
                 }
@@ -696,8 +696,8 @@ impl Compiler {
 
     /// Compile an object literal
     ///
-    /// OPT-016: Compile fields and create Value::Object in constant pool
-    /// Follows same pattern as compile_list/compile_tuple - literal-only for now
+    /// OPT-016: Compile fields and create `Value::Object` in constant pool
+    /// Follows same pattern as `compile_list/compile_tuple` - literal-only for now
     fn compile_object_literal(&mut self, fields: &[crate::frontend::ast::ObjectField]) -> Result<u8, String> {
         use crate::frontend::ast::ObjectField;
         use std::collections::HashMap;
@@ -718,7 +718,7 @@ impl Compiler {
                                 Literal::Bool(b) => Value::Bool(*b),
                                 Literal::Unit | Literal::Null => Value::Nil,
                                 Literal::Char(c) => Value::from_string(c.to_string()),
-                                Literal::Byte(b) => Value::Integer(*b as i64),
+                                Literal::Byte(b) => Value::Integer(i64::from(*b)),
                             };
                             object_map.insert(key.clone(), val);
                         }
@@ -751,8 +751,8 @@ impl Compiler {
 
     /// Compile array indexing: arr[index]
     ///
-    /// OPT-013: Array indexing using LoadIndex opcode
-    /// Compiles both the array and index expressions, then emits LoadIndex
+    /// OPT-013: Array indexing using `LoadIndex` opcode
+    /// Compiles both the array and index expressions, then emits `LoadIndex`
     fn compile_index_access(&mut self, object: &Expr, index: &Expr) -> Result<u8, String> {
         // Compile the array/object expression
         let object_reg = self.compile_expr(object)?;
@@ -789,7 +789,7 @@ impl Compiler {
         // Store for-loop metadata in constant pool
         // Format: [iter_reg, var_name, body_index]
         let loop_info = vec![
-            Value::Integer(iter_reg as i64),  // Register holding the iterator
+            Value::Integer(i64::from(iter_reg)),  // Register holding the iterator
             Value::from_string(var.to_string()),  // Loop variable name
             Value::Integer(body_idx as i64),  // Index into chunk.loop_bodies
         ];
@@ -812,7 +812,7 @@ impl Compiler {
     /// Compile a method call
     ///
     /// OPT-014: Hybrid approach - delegate to interpreter like for-loops
-    /// Method calls require complex dispatch logic (stdlib, mutating methods, DataFrame, Actor),
+    /// Method calls require complex dispatch logic (stdlib, mutating methods, `DataFrame`, Actor),
     /// so we store the AST and let the VM execute via interpreter.
     fn compile_method_call(&mut self, receiver: &Expr, method: &str, args: &[Expr]) -> Result<u8, String> {
         // Store method call AST in chunk for interpreter access

@@ -444,7 +444,7 @@ fn handle_dot_operator(state: &mut ParserState, left: Expr) -> Result<Expr> {
 /// PARSER-064: Extract identifier name from token (handles keywords used as identifiers)
 ///
 /// In Rust and Ruchy, keywords can be used as method/function names in path expressions.
-/// Example: String::from() - where 'from' is a keyword but valid after ::
+/// Example: `String::from()` - where 'from' is a keyword but valid after ::
 fn token_as_identifier(token: &Token) -> Option<String> {
     match token {
         Token::Identifier(name) => Some(name.clone()),

@@ -18,6 +18,7 @@
 #![allow(clippy::expect_used)]
 #![allow(clippy::missing_errors_doc)]
 #![allow(clippy::missing_panics_doc)]
+#![allow(clippy::arc_with_non_send_sync)] // Single-threaded runtime, Arc used for shared ownership not thread-safety
 // Additional clippy allows for P0 lint fixes
 #![allow(clippy::empty_line_after_doc_comments)]
 #![allow(clippy::manual_let_else)]

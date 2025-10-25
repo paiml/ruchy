@@ -18,6 +18,8 @@ complexity = { level = "warn", priority = -1 }
 perf = { level = "warn", priority = -1 }
 style = { level = "warn", priority = -1 }
 pedantic = { level = "warn", priority = -1 }
+# Override specific perf lints that are too strict (priority 10 overrides category and clippy::all)
+arc_with_non_send_sync = { level = "allow", priority = 10 }  # Value enum contains non-Send types (HtmlDocument, Expr in closures) - single-threaded code
 
 # Specific lints to deny  
 enum_glob_use = "deny"
@@ -141,7 +143,6 @@ cargo_common_metadata = "warn"
 
 # Allow some things that are too strict
 module_inception = "allow"
-arc-with-non-send-sync = "allow"  # Value enum contains HtmlDocument (uses Rc internally)
 # Allow test-related patterns as specified in CLAUDE.md
 unwrap_used = "allow"  # Tests can use unwrap for clarity
 expect_used = "allow"  # Tests can use expect for clarity
