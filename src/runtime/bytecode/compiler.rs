@@ -207,6 +207,7 @@ impl Compiler {
             ExprKind::Function { name, params, body, .. } => self.compile_function(name, params, body),
             ExprKind::List(elements) => self.compile_list(elements),
             ExprKind::Tuple(elements) => self.compile_tuple(elements),
+            ExprKind::ObjectLiteral { fields } => self.compile_object_literal(fields),
             ExprKind::For { var, iter, body, .. } => self.compile_for(var, iter, body),
             ExprKind::IndexAccess { object, index } => self.compile_index_access(object, index),
             ExprKind::MethodCall { receiver, method, args } => self.compile_method_call(receiver, method, args),
@@ -672,6 +673,61 @@ impl Compiler {
         let const_index = self.chunk.add_constant(tuple_value);
 
         // Allocate register and load tuple
+        let result_reg = self.registers.allocate();
+        self.chunk.emit(
+            Instruction::abx(OpCode::Const, result_reg, const_index),
+            0,
+        );
+
+        Ok(result_reg)
+    }
+
+    /// Compile an object literal
+    ///
+    /// OPT-016: Compile fields and create Value::Object in constant pool
+    /// Follows same pattern as compile_list/compile_tuple - literal-only for now
+    fn compile_object_literal(&mut self, fields: &[crate::frontend::ast::ObjectField]) -> Result<u8, String> {
+        use crate::frontend::ast::ObjectField;
+        use std::collections::HashMap;
+
+        // Build object map from field key-value pairs
+        let mut object_map = HashMap::new();
+        for field in fields {
+            match field {
+                ObjectField::KeyValue { key, value } => {
+                    // For now, only support literal values in object fields
+                    // Full expression support would require runtime object construction
+                    match &value.kind {
+                        ExprKind::Literal(lit) => {
+                            let val = match lit {
+                                Literal::Integer(i, _) => Value::Integer(*i),
+                                Literal::Float(f) => Value::Float(*f),
+                                Literal::String(s) => Value::from_string(s.clone()),
+                                Literal::Bool(b) => Value::Bool(*b),
+                                Literal::Unit | Literal::Null => Value::Nil,
+                                Literal::Char(c) => Value::from_string(c.to_string()),
+                                Literal::Byte(b) => Value::Integer(*b as i64),
+                            };
+                            object_map.insert(key.clone(), val);
+                        }
+                        _ => {
+                            // For non-literals, evaluate at runtime
+                            // TODO: Full expression support - for now return error
+                            return Err(format!("Object field values must be literals for now (found: {:?})", value.kind));
+                        }
+                    }
+                }
+                ObjectField::Spread { .. } => {
+                    return Err("Spread operator in object literals not yet supported in bytecode mode".to_string());
+                }
+            }
+        }
+
+        // Create object value
+        let object_value = Value::Object(Arc::new(object_map));
+        let const_index = self.chunk.add_constant(object_value);
+
+        // Allocate register and load object
         let result_reg = self.registers.allocate();
         self.chunk.emit(
             Instruction::abx(OpCode::Const, result_reg, const_index),
