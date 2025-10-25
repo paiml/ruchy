@@ -206,6 +206,7 @@ impl Compiler {
             ExprKind::Assign { target, value } => self.compile_assign(target, value),
             ExprKind::Function { name, params, body, .. } => self.compile_function(name, params, body),
             ExprKind::List(elements) => self.compile_list(elements),
+            ExprKind::Tuple(elements) => self.compile_tuple(elements),
             ExprKind::For { var, iter, body, .. } => self.compile_for(var, iter, body),
             ExprKind::IndexAccess { object, index } => self.compile_index_access(object, index),
             ExprKind::MethodCall { receiver, method, args } => self.compile_method_call(receiver, method, args),
@@ -626,6 +627,51 @@ impl Compiler {
         let const_index = self.chunk.add_constant(array_value);
 
         // Allocate register and load array
+        let result_reg = self.registers.allocate();
+        self.chunk.emit(
+            Instruction::abx(OpCode::Const, result_reg, const_index),
+            0,
+        );
+
+        Ok(result_reg)
+    }
+
+    /// Compile a tuple literal
+    ///
+    /// OPT-017: Compile elements and create Value::Tuple in constant pool
+    /// Follows same pattern as compile_list - literal-only for now
+    fn compile_tuple(&mut self, elements: &[Expr]) -> Result<u8, String> {
+        // Compile each element
+        let mut element_values = Vec::new();
+        for elem in elements {
+            // For now, only support literal elements in tuples
+            // Full expression support would require runtime tuple construction
+            match &elem.kind {
+                ExprKind::Literal(lit) => {
+                    let value = match lit {
+                        Literal::Integer(i, _) => Value::Integer(*i),
+                        Literal::Float(f) => Value::Float(*f),
+                        Literal::String(s) => Value::from_string(s.clone()),
+                        Literal::Bool(b) => Value::Bool(*b),
+                        Literal::Unit | Literal::Null => Value::Nil,
+                        Literal::Char(c) => Value::from_string(c.to_string()),
+                        Literal::Byte(b) => Value::Integer(*b as i64),
+                    };
+                    element_values.push(value);
+                }
+                _ => {
+                    // For non-literals, evaluate at runtime
+                    // TODO: Full expression support - for now return error
+                    return Err(format!("Tuple elements must be literals for now (found: {:?})", elem.kind));
+                }
+            }
+        }
+
+        // Create tuple value
+        let tuple_value = Value::Tuple(Arc::from(element_values.as_slice()));
+        let const_index = self.chunk.add_constant(tuple_value);
+
+        // Allocate register and load tuple
         let result_reg = self.registers.allocate();
         self.chunk.emit(
             Instruction::abx(OpCode::Const, result_reg, const_index),
