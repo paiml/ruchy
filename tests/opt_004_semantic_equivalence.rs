@@ -512,9 +512,59 @@ fn test_opt_004_10_function_with_expression_args() {
     );
 }
 
-// Total tests: 9 + 8 + 6 + 3 + 6 + 3 + 9 + 7 + 5 + 5 = 61 integration tests
+// ============================================================================
+// Test Suite 11: For Loops (OPT-012)
+// ============================================================================
+
+#[test]
+fn test_opt_004_11_simple_for_loop() {
+    // Simple for-loop over array
+    assert_semantic_equivalence(
+        "{ let mut sum = 0; for i in [1, 2, 3, 4, 5] { sum = sum + i }; sum }",
+        Value::Integer(15),
+    );
+}
+
+#[test]
+fn test_opt_004_11_for_loop_with_range() {
+    // For-loop returns last iteration value
+    assert_semantic_equivalence(
+        "{ let mut result = 0; for i in [10, 20, 30] { result = i }; result }",
+        Value::Integer(30),
+    );
+}
+
+#[test]
+fn test_opt_004_11_empty_for_loop() {
+    // For-loop over empty array
+    assert_semantic_equivalence(
+        "{ let mut sum = 0; for i in [] { sum = sum + 1 }; sum }",
+        Value::Integer(0),
+    );
+}
+
+#[test]
+fn test_opt_004_11_nested_for_loops() {
+    // Nested for-loops
+    assert_semantic_equivalence(
+        "{ let mut sum = 0; for i in [1, 2] { for j in [10, 20] { sum = sum + i + j } }; sum }",
+        Value::Integer(66), // (1+10) + (1+20) + (2+10) + (2+20) = 11 + 21 + 12 + 22 = 66
+    );
+}
+
+#[test]
+fn test_opt_004_11_for_loop_in_function() {
+    // For-loop inside function
+    assert_semantic_equivalence(
+        "{ fn sum_array(arr: Vec<i32>) { let mut s = 0; for x in arr { s = s + x }; s }; sum_array([5, 10, 15]) }",
+        Value::Integer(30),
+    );
+}
+
+// Total tests: 9 + 8 + 6 + 3 + 6 + 3 + 9 + 7 + 5 + 5 + 5 = 66 integration tests
 // All tests verify semantic equivalence between AST and bytecode modes
 // Suite 1: Updated to 9 tests (added 5 unary operator tests for OPT-005)
 // Suite 8: Updated to 7 tests (2 basic OPT-006, 5 with mutations OPT-009)
 // Suite 10: 5 function call tests (OPT-011)
 // Suite 9: Added 5 tests for assignments (OPT-007), self-referencing bug fixed in OPT-008
+// Suite 11: 5 for-loop tests (OPT-012)

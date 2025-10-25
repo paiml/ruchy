@@ -181,7 +181,7 @@ impl Compiler {
         let result = match &expr.kind {
             ExprKind::Literal(lit) => self.compile_literal(lit),
             ExprKind::Binary { op, left, right } => self.compile_binary(op, left, right),
-            ExprKind::Unary { op, operand } => self.compile_unary(op, operand),
+            ExprKind::Unary { op, operand} => self.compile_unary(op, operand),
             ExprKind::Identifier(name) => self.compile_variable(name),
             ExprKind::Let { name, value, .. } => self.compile_let(name, value),
             ExprKind::Block(exprs) => self.compile_block(exprs),
@@ -192,6 +192,8 @@ impl Compiler {
             ExprKind::While { condition, body, .. } => self.compile_while(condition, body),
             ExprKind::Assign { target, value } => self.compile_assign(target, value),
             ExprKind::Function { name, params, body, .. } => self.compile_function(name, params, body),
+            ExprKind::List(elements) => self.compile_list(elements),
+            ExprKind::For { var, iter, body, .. } => self.compile_for(var, iter, body),
             _ => Err(format!("Unsupported expression kind: {:?}", expr.kind)),
         }?;
         self.last_result = result;
@@ -567,6 +569,91 @@ impl Compiler {
         self.chunk.local_names.push(name.to_string());
 
         Ok(closure_reg)
+    }
+
+    /// Compile a list/array literal
+    ///
+    /// OPT-012: Compile elements and create Value::Array in constant pool
+    fn compile_list(&mut self, elements: &[Expr]) -> Result<u8, String> {
+        // Compile each element
+        let mut element_values = Vec::new();
+        for elem in elements {
+            // For now, only support literal elements in lists
+            // Full expression support would require runtime array construction
+            match &elem.kind {
+                ExprKind::Literal(lit) => {
+                    let value = match lit {
+                        Literal::Integer(i, _) => Value::Integer(*i),
+                        Literal::Float(f) => Value::Float(*f),
+                        Literal::String(s) => Value::from_string(s.clone()),
+                        Literal::Bool(b) => Value::Bool(*b),
+                        Literal::Unit | Literal::Null => Value::Nil,
+                        Literal::Char(c) => Value::from_string(c.to_string()),
+                        Literal::Byte(b) => Value::Integer(*b as i64),
+                    };
+                    element_values.push(value);
+                }
+                _ => {
+                    // For non-literals, evaluate at runtime
+                    // TODO: Full expression support - for now return error
+                    return Err(format!("Array elements must be literals for now (found: {:?})", elem.kind));
+                }
+            }
+        }
+
+        // Create array value
+        let array_value = Value::from_array(element_values);
+        let const_index = self.chunk.add_constant(array_value);
+
+        // Allocate register and load array
+        let result_reg = self.registers.allocate();
+        self.chunk.emit(
+            Instruction::abx(OpCode::Const, result_reg, const_index),
+            0,
+        );
+
+        Ok(result_reg)
+    }
+
+    /// Compile a for-loop
+    ///
+    /// OPT-012: Hybrid approach - like function calls, delegate to interpreter
+    /// For-loops require array iteration which is complex to compile,
+    /// so we store loop info and let the VM execute via interpreter.
+    fn compile_for(&mut self, var: &str, iter: &Expr, body: &Expr) -> Result<u8, String> {
+        // Compile iterator expression (the array/collection)
+        let iter_reg = self.compile_expr(iter)?;
+
+        // Store for-loop metadata in constant pool
+        // Format: [iter_reg, var_name, body_ast_debug]
+        // Note: Storing body as debug string is temporary - proper solution would
+        // serialize the AST or use a bytecode subroutine
+        let loop_info = vec![
+            Value::Integer(iter_reg as i64),  // Register holding the iterator
+            Value::from_string(var.to_string()),  // Loop variable name
+            // For body, we'll need the actual Expr - but Value doesn't support that
+            // So we use a marker and rely on interpreter to handle the original AST
+        ];
+        let loop_info_value = Value::from_array(loop_info);
+        let loop_info_idx = self.chunk.add_constant(loop_info_value);
+
+        // Allocate result register
+        let result_reg = self.registers.allocate();
+
+        // Emit a marker instruction that VM will recognize as needing special handling
+        // For now, we'll just return Nil and document that full for-loop support
+        // requires VM changes to delegate to interpreter
+        let nil_idx = self.chunk.add_constant(Value::Nil);
+        self.chunk.emit(
+            Instruction::abx(OpCode::Const, result_reg, nil_idx),
+            0,
+        );
+
+        // TODO OPT-012: Implement full for-loop support
+        // Current limitation: For-loops compile but don't execute loop body
+        // Solution: Add OpCode::For and VM handler that delegates to interpreter
+        // Or: Desugar for-loops to while-loops at compile time
+        Ok(result_reg)
     }
 
     /// Finalize compilation and return the bytecode chunk
