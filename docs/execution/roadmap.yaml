@@ -1406,6 +1406,75 @@ tasks:
       - "Field access on objects now fully functional"
       - "Literal-only pattern validated for all data structures (arrays, tuples, objects)"
 
+  - id: "OPT-018"
+    title: "Bytecode VM Match Expressions (Hybrid Execution)"
+    status: "COMPLETE"
+    completed: "2025-10-25"
+    priority: "🟡 HIGH"
+    phase: "Phase 2: Complex Features"
+    time_estimated: "3 hours"
+    time_actual: "1.5 hours"
+    efficiency: "200%"
+    depends_on: ["OPT-012", "OPT-014"]
+    description: |
+      Implemented match expression support in bytecode VM using hybrid execution model.
+      Follows same pattern as for-loops and method calls - store AST and delegate to interpreter.
+      Enables full pattern matching in bytecode mode.
+    architecture:
+      - "Compiler: Stores match expression AST (expr + arms) in chunk.match_exprs for interpreter access"
+      - "Compiler: Each entry contains (match_expr, match_arms with patterns/guards/bodies)"
+      - "Compiler: Emits OpCode::Match with index into match_exprs table"
+      - "VM: OpCode::Match handler delegates to interpreter's eval_match"
+      - "VM: Synchronizes locals before/after match (like for-loops and method calls)"
+      - "Instruction format: Match result_reg, match_idx (ABx format)"
+    components:
+      - "✅ OpCode::Match at 0x3B (opcode.rs)"
+      - "✅ BytecodeChunk.match_exprs field (compiler.rs)"
+      - "✅ compile_match() implementation (compiler.rs)"
+      - "✅ OpCode::Match VM handler (vm.rs)"
+      - "✅ Made eval_match() public (interpreter.rs)"
+    implementation:
+      files:
+        - "src/runtime/bytecode/opcode.rs (+4 lines: OpCode::Match at 0x3B + from_u8 + name)"
+        - "src/runtime/bytecode/compiler.rs (+4 lines: match_exprs field + initialization)"
+        - "src/runtime/bytecode/compiler.rs (+30 lines: compile_match method)"
+        - "src/runtime/bytecode/vm.rs (+44 lines: OpCode::Match handler with scope sync)"
+        - "src/runtime/interpreter.rs (+1 line: make eval_match public)"
+        - "tests/opt_004_semantic_equivalence.rs (Suite 18: 5 match tests)"
+      key_decision: "Hybrid Execution (AST Delegation)"
+      rationale: "Match expressions are complex (pattern matching, destructuring, guards, scope management). Storing original AST and delegating to interpreter inherits all pattern matching semantics automatically. Follows same pattern as for-loops (OPT-012) and method calls (OPT-014)."
+    tests:
+      test_file: "tests/opt_004_semantic_equivalence.rs (Suite 18)"
+      integration: 5
+      passing: "5/5 (100%)"
+      patterns_supported:
+        - "✅ Literal patterns: match 42 { 10 => 1, 42 => 2, _ => 3 } → 2"
+        - "✅ Wildcard pattern: match 100 { 10 => 1, 20 => 2, _ => 99 } → 99"
+        - "✅ Variable binding: match 42 { x => x * 2 } → 84"
+        - "✅ Guard condition: match 42 { x if x > 40 => 1, x if x > 20 => 2, _ => 3 } → 1"
+        - "✅ Guard fallthrough: match 15 { x if x > 40 => 1, x if x > 20 => 2, _ => 3 } → 3"
+      total_tests: "97/97 semantic equivalence tests passing (92 → 97, +5 new tests, no regressions)"
+    tdd_steps:
+      - "✅ RED: Research eval_match in interpreter, understand pattern matching complexity"
+      - "✅ GREEN: Implement OpCode::Match, compile_match(), VM handler with scope sync"
+      - "✅ REFACTOR: Added 5 tests (literal, wildcard, binding, guards), all passing"
+    quality:
+      complexity_actual: 6
+      complexity_max: 10
+      tdg_grade: "A"
+      satd: 0
+    pattern_support:
+      - "Literal patterns (integers, strings, bools)"
+      - "Variable bindings"
+      - "Wildcard pattern (_)"
+      - "Guard conditions (if clauses)"
+      - "Pattern destructuring (inherited from interpreter)"
+    impact:
+      - "Fully enables pattern matching in bytecode mode"
+      - "Unlocks functional programming patterns"
+      - "Hybrid execution pattern validated for complex control flow"
+      - "All interpreter pattern matching semantics available in bytecode mode"
+
   # 🚨 CRITICAL: CLI Unification Sprint (STOP THE LINE)
   - id: "CLI-UNIFY-001"
     title: "Fix: 'ruchy' (no args) should open REPL, not show help"
