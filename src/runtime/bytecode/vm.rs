@@ -384,6 +384,108 @@ impl VM {
                 Ok(())
             }
 
+            OpCode::For => {
+                // OPT-012: For-loop implementation (hybrid approach)
+                // ABx format: A = result register, Bx = loop_info constant index
+                // loop_info = [iter_reg, var_name, body_index]
+                let result_reg = instruction.get_a() as usize;
+                let loop_info_idx = instruction.get_bx() as usize;
+
+                // Get loop info from constant pool
+                let frame = self.call_stack.last()
+                    .ok_or("No active call frame")?;
+                let loop_info_value = frame.chunk.constants.get(loop_info_idx)
+                    .ok_or_else(|| format!("Constant index out of bounds: {}", loop_info_idx))?;
+
+                let loop_info: Vec<i64> = match loop_info_value {
+                    Value::Array(arr) => {
+                        let mut info = Vec::new();
+                        // First two elements are integers
+                        if arr.len() < 3 {
+                            return Err("Loop info array must have at least 3 elements".to_string());
+                        }
+                        if let Value::Integer(iter_reg) = arr[0] {
+                            info.push(iter_reg);
+                        } else {
+                            return Err("Loop info[0] must be an integer".to_string());
+                        }
+                        // Second element is the var name (skip for now, get separately)
+                        // Third element is body_index
+                        if let Value::Integer(body_idx) = arr[2] {
+                            info.push(body_idx);
+                        } else {
+                            return Err("Loop info[2] must be an integer".to_string());
+                        }
+                        info
+                    }
+                    _ => return Err("Loop info must be an array".to_string()),
+                };
+
+                let iter_reg = loop_info[0] as usize;
+                let body_idx = loop_info[1] as usize;
+
+                // Extract var name from loop_info
+                let var_name = match &loop_info_value {
+                    Value::Array(arr) if arr.len() >= 2 => {
+                        match &arr[1] {
+                            Value::String(s) => s.as_ref().to_string(),
+                            _ => return Err("Loop var name must be a string".to_string()),
+                        }
+                    }
+                    _ => return Err("Loop info must be an array".to_string()),
+                };
+
+                // Get iterator array from register
+                let iter_value = self.registers[iter_reg].clone();
+                let iter_array = match iter_value {
+                    Value::Array(arr) => arr,
+                    _ => return Err(format!("For-loop iterator must be an array, got {}", iter_value.type_name())),
+                };
+
+                // Get body from chunk's loop_bodies
+                let body = frame.chunk.loop_bodies.get(body_idx)
+                    .ok_or_else(|| format!("Loop body index out of bounds: {}", body_idx))?
+                    .clone();
+
+                // Synchronize register-based locals to interpreter scope
+                // This allows the loop body to access variables like 'sum' that were
+                // defined in bytecode mode but need to be visible to the interpreter
+                for (name, reg_idx) in frame.chunk.locals_map.iter() {
+                    let value = self.registers[*reg_idx as usize].clone();
+                    self.interpreter.set_variable(name, value);
+                }
+
+                // Execute loop by iterating over array elements
+                let mut last_result = Value::Nil;
+
+                for elem in iter_array.iter() {
+                    // Push new scope for loop iteration
+                    self.interpreter.push_scope();
+
+                    // Bind loop variable to current element
+                    self.interpreter.set_variable(&var_name, elem.clone());
+
+                    // Execute loop body using interpreter
+                    last_result = self.interpreter.eval_expr(&body)
+                        .map_err(|e| format!("For-loop body error: {}", e))?;
+
+                    // Pop scope
+                    self.interpreter.pop_scope();
+
+                    // Synchronize interpreter scope back to registers
+                    // This allows mutations to 'sum' inside the loop to persist
+                    for (name, reg_idx) in frame.chunk.locals_map.iter() {
+                        if let Some(value) = self.interpreter.get_variable(name) {
+                            self.registers[*reg_idx as usize] = value;
+                        }
+                    }
+                }
+
+                // Store result in result register (last iteration's result, or Nil if empty)
+                self.registers[result_reg] = last_result;
+                Ok(())
+            }
+
             OpCode::Return => {
                 // Get return value from register specified in instruction
                 let return_reg = instruction.get_a() as usize;

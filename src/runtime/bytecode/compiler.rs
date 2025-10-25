@@ -37,6 +37,12 @@ pub struct BytecodeChunk {
     pub local_names: Vec<String>,
     /// Source line numbers (parallel to instructions for debugging)
     pub line_numbers: Vec<usize>,
+    /// Loop bodies (for hybrid execution - OPT-012)
+    /// Stores AST bodies for for-loops to enable interpreter delegation
+    pub loop_bodies: Vec<Arc<Expr>>,
+    /// Local variable name to register mapping (for hybrid execution)
+    /// Enables synchronization between bytecode registers and interpreter scope
+    pub locals_map: HashMap<String, u8>,
 }
 
 impl BytecodeChunk {
@@ -50,6 +56,8 @@ impl BytecodeChunk {
             parameter_count: 0,
             local_names: Vec::new(),
             line_numbers: Vec::new(),
+            loop_bodies: Vec::new(),
+            locals_map: HashMap::new(),
         }
     }
 
@@ -653,15 +661,16 @@ impl Compiler {
         // Compile iterator expression (the array/collection)
         let iter_reg = self.compile_expr(iter)?;
 
+        // Store body AST in chunk's loop_bodies for interpreter access
+        let body_idx = self.chunk.loop_bodies.len();
+        self.chunk.loop_bodies.push(Arc::new(body.clone()));
+
         // Store for-loop metadata in constant pool
-        // Format: [iter_reg, var_name, body_ast_debug]
-        // Note: Storing body as debug string is temporary - proper solution would
-        // serialize the AST or use a bytecode subroutine
+        // Format: [iter_reg, var_name, body_index]
         let loop_info = vec![
             Value::Integer(iter_reg as i64),  // Register holding the iterator
             Value::from_string(var.to_string()),  // Loop variable name
-            // For body, we'll need the actual Expr - but Value doesn't support that
-            // So we use a marker and rely on interpreter to handle the original AST
+            Value::Integer(body_idx as i64),  // Index into chunk.loop_bodies
         ];
         let loop_info_value = Value::from_array(loop_info);
         let loop_info_idx = self.chunk.add_constant(loop_info_value);
@@ -669,19 +678,13 @@ impl Compiler {
         // Allocate result register
         let result_reg = self.registers.allocate();
 
-        // Emit a marker instruction that VM will recognize as needing special handling
-        // For now, we'll just return Nil and document that full for-loop support
-        // requires VM changes to delegate to interpreter
-        let nil_idx = self.chunk.add_constant(Value::Nil);
+        // Emit For instruction: ABx format
+        // A = result register, Bx = loop_info constant index
         self.chunk.emit(
-            Instruction::abx(OpCode::Const, result_reg, nil_idx),
+            Instruction::abx(OpCode::For, result_reg, loop_info_idx),
             0,
         );
 
-        // TODO OPT-012: Implement full for-loop support
-        // Current limitation: For-loops compile but don't execute loop body
-        // Solution: Add OpCode::For and VM handler that delegates to interpreter
-        // Or: Desugar for-loops to while-loops at compile time
         Ok(result_reg)
     }
 
@@ -692,6 +695,9 @@ impl Compiler {
 
         // Update register count
         self.chunk.register_count = self.registers.max_count();
+
+        // Copy locals mapping for hybrid execution (for-loops need interpreter access)
+        self.chunk.locals_map = self.locals.clone();
 
         self.chunk
     }
