@@ -6,27 +6,29 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ### Added
 
-- **[OPT-013] Bytecode VM Array Indexing (Partial - Literal Arrays)**
-  - Implemented array indexing for literal arrays: `[1, 2, 3][0]`, `[10, 20, 30][-1]`
+- **[OPT-013] Bytecode VM Array Indexing (COMPLETE)**
+  - Implemented full array indexing support: literal and variable arrays
   - **Architecture:**
     - Compiler: `compile_index_access()` emits LoadIndex instruction
+    - Compiler: Fixed `compile_let()` to compile body expression (critical bug fix)
     - VM: LoadIndex handler supports arrays and strings with negative indexing
     - Instruction format: `LoadIndex result_reg, object_reg, index_reg`
-  - **Test Coverage:** 4/6 tests passing
+  - **Test Coverage:** 6/6 tests passing (100%)
     - ✅ Simple array indexing: `[1, 2, 3][0]` → 1
     - ✅ Middle element: `[10, 20, 30][1]` → 20
     - ✅ Last element: `[5, 10, 15][2]` → 15
     - ✅ Negative indexing: `[10, 20, 30][-1]` → 30
-    - ⏸️ Variable indexing: 2 tests ignored (block tracking issue)
-  - **Limitation:** Array indexing with variables has block result tracking issue
-    - `{ let arr = [1, 2, 3]; arr[1] }` returns array instead of indexed value
-    - Root cause: compile_block/compile_let interaction with last_result
-    - Workaround: Use literal arrays directly for now
+    - ✅ Variable indexing: `{ let arr = [1, 2, 3]; arr[1] }` → 2
+    - ✅ Variable index: `{ let arr = [1, 2, 3]; let idx = 0; arr[idx] }` → 1
+  - **Bug Fix:** compile_let wasn't compiling the body expression
+    - Root cause: Let AST has `body` field that wasn't being compiled
+    - Fix: Updated compile_let signature to accept body parameter, compile and return it
+    - Impact: All let-binding scopes now work correctly in bytecode mode
   - **Files Modified:**
-    - src/runtime/bytecode/compiler.rs (+24 lines: compile_index_access method, ExprKind::IndexAccess case)
+    - src/runtime/bytecode/compiler.rs (+30 lines: compile_index_access, fixed compile_let)
     - src/runtime/bytecode/vm.rs (+44 lines: LoadIndex opcode handler)
-    - tests/opt_004_semantic_equivalence.rs (+68 lines: Suite 12 with 6 tests, 4 passing)
-  - **Impact:** Enables array element access in bytecode mode (partial), foundation for OPT-012 (for-loops)
+    - tests/opt_004_semantic_equivalence.rs (+68 lines: Suite 12 with 6 tests, all passing)
+  - **Impact:** Fully enables array element access in bytecode mode, unblocks OPT-012 (for-loops)
 
 - **[PARSER-075] Nested Block Comments with Depth Tracking (GitHub Issue #58, Part 2/4)**
   - Implemented Rust-style nested block comments: `/* outer /* inner */ still outer */`
