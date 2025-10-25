@@ -209,6 +209,7 @@ impl Compiler {
             ExprKind::For { var, iter, body, .. } => self.compile_for(var, iter, body),
             ExprKind::IndexAccess { object, index } => self.compile_index_access(object, index),
             ExprKind::MethodCall { receiver, method, args } => self.compile_method_call(receiver, method, args),
+            ExprKind::FieldAccess { object, field } => self.compile_field_access(object, field),
             _ => Err(format!("Unsupported expression kind: {:?}", expr.kind)),
         }?;
         self.last_result = result;
@@ -719,6 +720,32 @@ impl Compiler {
         // A = result register, Bx = method_call_idx
         self.chunk.emit(
             Instruction::abx(OpCode::MethodCall, result_reg, call_info_idx),
+            0,
+        );
+
+        Ok(result_reg)
+    }
+
+    /// Compile a field access
+    ///
+    /// OPT-015: Direct VM implementation (not hybrid)
+    /// Field access is simpler than method calls - just extract field from Value.
+    /// We can implement the match logic directly in the VM for better performance.
+    fn compile_field_access(&mut self, object: &Expr, field: &str) -> Result<u8, String> {
+        // Compile object expression
+        let object_reg = self.compile_expr(object)?;
+
+        // Store field name in constant pool
+        let field_value = Value::from_string(field.to_string());
+        let field_idx = self.chunk.add_constant(field_value);
+
+        // Allocate result register
+        let result_reg = self.registers.allocate();
+
+        // Emit LoadField instruction: ABC format
+        // A = result register, B = object register, C = field constant index
+        self.chunk.emit(
+            Instruction::abc(OpCode::LoadField, result_reg, object_reg, field_idx as u8),
             0,
         );
 
