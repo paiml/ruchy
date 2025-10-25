@@ -69,6 +69,48 @@ fn process_escapes(s: &str) -> String {
     }
     result
 }
+
+/// Lex nested block comments with depth tracking
+/// Handles Rust-style nested comments: /* outer /* inner */ still outer */
+fn lex_nested_block_comment(lex: &mut Lexer<Token>) -> Option<String> {
+    let remainder = lex.remainder();
+    let bytes = remainder.as_bytes();
+    let mut depth = 1; // We've already seen the opening /*
+    let mut content = String::new();
+    let mut i = 0;
+
+    while i < bytes.len() {
+        if i + 1 < bytes.len() && bytes[i] == b'/' && bytes[i + 1] == b'*' {
+            // Found nested opening /*
+            depth += 1;
+            content.push('/');
+            content.push('*');
+            i += 2;
+        } else if i + 1 < bytes.len() && bytes[i] == b'*' && bytes[i + 1] == b'/' {
+            // Found closing */
+            depth -= 1;
+            if depth == 0 {
+                // Found matching close - advance lexer and return content
+                lex.bump(i + 2);
+                return Some(content);
+            }
+            content.push('*');
+            content.push('/');
+            i += 2;
+        } else {
+            // Regular character - handle UTF-8
+            let ch = remainder[i..].chars().next()?;
+            content.push(ch);
+            i += ch.len_utf8();
+        }
+    }
+
+    // Reached end of input without finding matching close
+    // For error recovery, consume remainder
+    lex.bump(remainder.len());
+    Some(content)
+}
+
 #[derive(Logos, Debug, PartialEq, Clone)]
 #[logos(skip r"[ \t\n\f]+")]
 pub enum Token {
@@ -80,11 +122,8 @@ pub enum Token {
     #[regex(r"//[^\n]*", |lex| lex.slice()[2..].to_string())]
     LineComment(String),
 
-    #[regex(r"/\*([^*]|\*[^/])*\*/", |lex| {
-        let s = lex.slice();
-        // Preserve exact text including whitespace
-        s[2..s.len()-2].to_string()
-    })]
+    // PARSER-075: Nested block comments with depth tracking (Rust-style)
+    #[token("/*", lex_nested_block_comment)]
     BlockComment(String),
 
     // Python/Ruby-style hash comments (PARSER-053)

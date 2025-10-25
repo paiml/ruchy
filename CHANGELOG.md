@@ -6,6 +6,26 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ### Added
 
+- **[PARSER-075] Nested Block Comments with Depth Tracking (GitHub Issue #58, Part 2/4)**
+  - Implemented Rust-style nested block comments: `/* outer /* inner */ still outer */`
+  - **Architecture:**
+    - Replaced simple regex matcher with custom `lex_nested_block_comment()` callback
+    - Depth counter tracks `/*` (increment) and `*/` (decrement) pairs
+    - Comment ends when depth reaches 0
+    - Error recovery: unclosed comments consume to end of input
+  - **Test Coverage:** 20 comprehensive tests across 6 suites
+    - Suite 1: Simple block comments (4 tests, regression)
+    - Suite 2: Single-level nesting (4 tests)
+    - Suite 3: Multi-level nesting (2 tests, up to 5 levels deep)
+    - Suite 4: Real code context (2 tests, commented-out code with nesting)
+    - Suite 5: Edge cases (5 tests, unclosed, consecutive, special chars)
+    - Suite 6: Integration with other tokens (3 tests)
+  - **Files Modified:**
+    - src/frontend/lexer.rs (+42 lines: lex_nested_block_comment function)
+    - tests/parser_075_nested_block_comments.rs (+270 lines: 20 comprehensive tests)
+  - **Passes all tests:** 20/20 passing
+  - Related: GitHub Issue #58 - Unary Plus Operator Support (comprehensive parser fixes)
+
 - **[OPT-011] Bytecode VM Function Calls (Hybrid Execution)**
   - Implemented function call support in bytecode VM using hybrid approach
   - **Architecture:**
