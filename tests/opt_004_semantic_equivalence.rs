@@ -619,11 +619,61 @@ fn test_opt_004_12_nested_array_index() {
     );
 }
 
-// Total tests: 9 + 8 + 6 + 3 + 6 + 3 + 9 + 7 + 5 + 5 + 5 + 6 = 72 integration tests
+// ============================================================================
+// Test Suite 13: Method Calls (OPT-014)
+// ============================================================================
+
+#[test]
+fn test_opt_004_13_array_len() {
+    // Array.len() method
+    assert_semantic_equivalence(
+        "[1, 2, 3].len()",
+        Value::Integer(3),
+    );
+}
+
+#[test]
+fn test_opt_004_13_string_len() {
+    // String.len() method
+    assert_semantic_equivalence(
+        "\"hello\".len()",
+        Value::Integer(5),
+    );
+}
+
+#[test]
+fn test_opt_004_13_to_string() {
+    // Integer.to_string() method
+    assert_semantic_equivalence(
+        "42.to_string()",
+        Value::from_string("42".to_string()),
+    );
+}
+
+#[test]
+fn test_opt_004_13_method_in_let() {
+    // Method call on variable
+    assert_semantic_equivalence(
+        "{ let arr = [10, 20, 30]; arr.len() }",
+        Value::Integer(3),
+    );
+}
+
+#[test]
+fn test_opt_004_13_method_chain() {
+    // Simple method chain (to_string.len)
+    assert_semantic_equivalence(
+        "42.to_string().len()",
+        Value::Integer(2),
+    );
+}
+
+// Total tests: 9 + 8 + 6 + 3 + 6 + 3 + 9 + 7 + 5 + 5 + 5 + 6 + 5 = 77 integration tests
 // All tests verify semantic equivalence between AST and bytecode modes
 // Suite 1: Updated to 9 tests (added 5 unary operator tests for OPT-005)
 // Suite 8: Updated to 7 tests (2 basic OPT-006, 5 with mutations OPT-009)
-// Suite 10: 5 function call tests (OPT-011)
 // Suite 9: Added 5 tests for assignments (OPT-007), self-referencing bug fixed in OPT-008
-// Suite 11: 5 for-loop tests (OPT-012) - currently failing, need OpCode::For implementation
-// Suite 12: 6 array indexing tests (OPT-013) - ALL PASSING! Fixed compile_let to compile body
+// Suite 10: 5 function call tests (OPT-011)
+// Suite 11: 5 for-loop tests (OPT-012)
+// Suite 12: 6 array indexing tests (OPT-013)
+// Suite 13: 5 method call tests (OPT-014)

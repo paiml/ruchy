@@ -6,6 +6,36 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ### Added
 
+- **[OPT-014] Bytecode VM Method Calls (Hybrid Execution - COMPLETE)**
+  - Implemented method call support in bytecode VM using hybrid execution model
+  - **Architecture:**
+    - Compiler: Stores method call AST in `chunk.method_calls` for interpreter access
+    - Compiler: Each entry contains (receiver_expr, method_name, args_exprs)
+    - Compiler: Emits `OpCode::MethodCall` with index into method_calls table
+    - VM: OpCode::MethodCall handler delegates to interpreter's eval_method_call
+    - VM: Synchronizes locals before/after call (like for-loops)
+    - Instruction format: `MethodCall result_reg, method_call_idx` (ABx format)
+  - **Test Coverage:** 5/5 tests passing (100%)
+    - ✅ Array.len(): `[1, 2, 3].len()` → 3
+    - ✅ String.len(): `"hello".len()` → 5
+    - ✅ Integer.to_string(): `42.to_string()` → "42"
+    - ✅ Method on variable: `{ let arr = [10, 20, 30]; arr.len() }` → 3
+    - ✅ Method chain: `42.to_string().len()` → 2
+  - **Key Insight:** AST-based delegation for complex dispatch
+    - Problem: Method dispatch is complex (stdlib, mutating, DataFrame, Actor)
+    - Solution: Store original AST and delegate to interpreter
+    - Benefit: Inherits all method semantics automatically
+  - **Files Modified:**
+    - src/runtime/bytecode/opcode.rs (+4 lines: OpCode::MethodCall at 0x3A)
+    - src/runtime/bytecode/compiler.rs (+4 lines: BytecodeChunk.method_calls field)
+    - src/runtime/bytecode/compiler.rs (+25 lines: compile_method_call implementation)
+    - src/runtime/bytecode/vm.rs (+1 line: import Expr)
+    - src/runtime/bytecode/vm.rs (+46 lines: OpCode::MethodCall handler)
+    - src/runtime/interpreter.rs (+1 line: make eval_method_call public)
+    - tests/opt_004_semantic_equivalence.rs (Suite 13 with 5 tests, all passing)
+  - **Impact:** Fully enables method calls in bytecode mode, unlocks stdlib functionality
+  - **Total:** All 77 semantic equivalence tests passing (no regressions)
+
 - **[OPT-012] Bytecode VM For-Loops (Hybrid Execution - COMPLETE)**
   - Implemented for-loop support in bytecode VM using hybrid execution model
   - **Architecture:**

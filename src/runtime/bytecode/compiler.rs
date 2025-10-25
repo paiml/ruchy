@@ -40,6 +40,10 @@ pub struct BytecodeChunk {
     /// Loop bodies (for hybrid execution - OPT-012)
     /// Stores AST bodies for for-loops to enable interpreter delegation
     pub loop_bodies: Vec<Arc<Expr>>,
+    /// Method calls (for hybrid execution - OPT-014)
+    /// Stores AST for method calls to enable interpreter delegation
+    /// Each entry: (receiver_expr, method_name, args_exprs)
+    pub method_calls: Vec<(Arc<Expr>, String, Vec<Arc<Expr>>)>,
     /// Local variable name to register mapping (for hybrid execution)
     /// Enables synchronization between bytecode registers and interpreter scope
     pub locals_map: HashMap<String, u8>,
@@ -57,6 +61,7 @@ impl BytecodeChunk {
             local_names: Vec::new(),
             line_numbers: Vec::new(),
             loop_bodies: Vec::new(),
+            method_calls: Vec::new(),
             locals_map: HashMap::new(),
         }
     }
@@ -203,6 +208,7 @@ impl Compiler {
             ExprKind::List(elements) => self.compile_list(elements),
             ExprKind::For { var, iter, body, .. } => self.compile_for(var, iter, body),
             ExprKind::IndexAccess { object, index } => self.compile_index_access(object, index),
+            ExprKind::MethodCall { receiver, method, args } => self.compile_method_call(receiver, method, args),
             _ => Err(format!("Unsupported expression kind: {:?}", expr.kind)),
         }?;
         self.last_result = result;
@@ -682,6 +688,37 @@ impl Compiler {
         // A = result register, Bx = loop_info constant index
         self.chunk.emit(
             Instruction::abx(OpCode::For, result_reg, loop_info_idx),
+            0,
+        );
+
+        Ok(result_reg)
+    }
+
+    /// Compile a method call
+    ///
+    /// OPT-014: Hybrid approach - delegate to interpreter like for-loops
+    /// Method calls require complex dispatch logic (stdlib, mutating methods, DataFrame, Actor),
+    /// so we store the AST and let the VM execute via interpreter.
+    fn compile_method_call(&mut self, receiver: &Expr, method: &str, args: &[Expr]) -> Result<u8, String> {
+        // Store method call AST in chunk for interpreter access
+        let method_call_idx = self.chunk.method_calls.len();
+        self.chunk.method_calls.push((
+            Arc::new(receiver.clone()),
+            method.to_string(),
+            args.iter().map(|arg| Arc::new(arg.clone())).collect(),
+        ));
+
+        // Store method call index in constant pool
+        let call_info_value = Value::Integer(method_call_idx as i64);
+        let call_info_idx = self.chunk.add_constant(call_info_value);
+
+        // Allocate result register
+        let result_reg = self.registers.allocate();
+
+        // Emit MethodCall instruction: ABx format
+        // A = result register, Bx = method_call_idx
+        self.chunk.emit(
+            Instruction::abx(OpCode::MethodCall, result_reg, call_info_idx),
             0,
         );
 
