@@ -763,16 +763,98 @@ fn test_opt_004_15_tuple_field_in_expression() {
 }
 
 // ============================================================================
-// Test Suite 16: Object Field Access (OPT-016 - BLOCKED)
+// Test Suite 16: Object Literals (OPT-016)
 // ============================================================================
-// NOTE: Object field access testing still blocked by OPT-016 (ObjectLiteral)
-//
-// Tests will be added once OPT-016 is implemented:
-// - test_opt_004_16_object_field: requires ObjectLiteral
-// - test_opt_004_16_nested_field: requires ObjectLiteral
-// - test_opt_004_16_field_in_expression: requires ObjectLiteral
+// Literal-only objects compiled to constant pool (same as arrays/tuples)
+// Enables field access testing for objects
 
-// Total tests: 9 + 8 + 6 + 3 + 6 + 3 + 9 + 7 + 5 + 5 + 5 + 6 + 5 = 77 integration tests
+#[test]
+fn test_opt_004_16_object_basic() {
+    // Basic object with two fields
+    use std::sync::Arc;
+    use std::collections::HashMap;
+    let mut expected_map = HashMap::new();
+    expected_map.insert("x".to_string(), Value::Integer(10));
+    expected_map.insert("y".to_string(), Value::Integer(20));
+    assert_semantic_equivalence(
+        "{ x: 10, y: 20 }",
+        Value::Object(Arc::new(expected_map)),
+    );
+}
+
+#[test]
+fn test_opt_004_16_object_empty() {
+    // Empty object
+    use std::sync::Arc;
+    use std::collections::HashMap;
+    assert_semantic_equivalence(
+        "{}",
+        Value::Object(Arc::new(HashMap::new())),
+    );
+}
+
+#[test]
+fn test_opt_004_16_object_single_field() {
+    // Object with single field
+    use std::sync::Arc;
+    use std::collections::HashMap;
+    let mut expected_map = HashMap::new();
+    expected_map.insert("name".to_string(), Value::from_string("Alice".to_string()));
+    assert_semantic_equivalence(
+        "{ name: \"Alice\" }",
+        Value::Object(Arc::new(expected_map)),
+    );
+}
+
+#[test]
+fn test_opt_004_16_object_mixed_types() {
+    // Object with mixed types
+    use std::sync::Arc;
+    use std::collections::HashMap;
+    let mut expected_map = HashMap::new();
+    expected_map.insert("id".to_string(), Value::Integer(42));
+    expected_map.insert("name".to_string(), Value::from_string("test".to_string()));
+    expected_map.insert("active".to_string(), Value::Bool(true));
+    expected_map.insert("score".to_string(), Value::Float(3.14));
+    assert_semantic_equivalence(
+        "{ id: 42, name: \"test\", active: true, score: 3.14 }",
+        Value::Object(Arc::new(expected_map)),
+    );
+}
+
+// ============================================================================
+// Test Suite 17: Object Field Access (OPT-015 - Now Unblocked!)
+// ============================================================================
+// Field access on objects - completes OPT-015 testing
+
+#[test]
+fn test_opt_004_17_object_field() {
+    // Basic object field access
+    assert_semantic_equivalence(
+        "{ x: 10, y: 20 }.x",
+        Value::Integer(10),
+    );
+}
+
+#[test]
+fn test_opt_004_17_object_field_string() {
+    // Object field access - string value
+    assert_semantic_equivalence(
+        "{ name: \"Alice\", age: 30 }.name",
+        Value::from_string("Alice".to_string()),
+    );
+}
+
+#[test]
+fn test_opt_004_17_object_field_in_expression() {
+    // Object field access in arithmetic expression
+    assert_semantic_equivalence(
+        "{ x: 10, y: 20 }.x + { x: 10, y: 20 }.y",
+        Value::Integer(30),
+    );
+}
+
+// Total tests: 9 + 8 + 6 + 3 + 6 + 3 + 9 + 7 + 5 + 5 + 5 + 6 + 5 + 5 + 4 + 3 = 89 integration tests
 // All tests verify semantic equivalence between AST and bytecode modes
 // Suite 1: Updated to 9 tests (added 5 unary operator tests for OPT-005)
 // Suite 8: Updated to 7 tests (2 basic OPT-006, 5 with mutations OPT-009)

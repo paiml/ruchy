@@ -6,6 +6,40 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ### Added
 
+- **[OPT-016] Bytecode VM Object Literals (Literal-Only - COMPLETE)**
+  - Implemented object literal support in bytecode VM using constant pool approach
+  - **Architecture:**
+    - Compiler: Follows same pattern as compile_list/compile_tuple - literal-only fields
+    - Compiler: Creates Value::Object (HashMap) from literal key-value pairs and stores in constant pool
+    - Compiler: Emits OpCode::Const to load object into register
+    - No new opcode needed - reuses existing CONST instruction
+  - **Implementation:** 100% Complete
+    - ✅ compile_object_literal() method in compiler.rs (mirrors compile_list/compile_tuple pattern)
+    - ✅ ExprKind::ObjectLiteral handler in compile_expr match
+    - ✅ Supports all literal types: integer, float, string, bool, char, byte, unit
+    - ✅ Handles empty objects, single-field, multi-field
+  - **Test Coverage:** 7/7 tests passing (100%)
+    - ✅ Basic object: `{ x: 10, y: 20 }` → Object({ "x": 10, "y": 20 })
+    - ✅ Empty object: `{}` → Object({})
+    - ✅ Single field: `{ name: "Alice" }` → Object({ "name": "Alice" })
+    - ✅ Mixed types: `{ id: 42, name: "test", active: true, score: 3.14 }`
+    - ✅ Object field access (Suite 17 - OPT-015 tests now complete!):
+      - `{ x: 10, y: 20 }.x` → 10
+      - `{ name: "Alice", age: 30 }.name` → "Alice"
+      - `{ x: 10, y: 20 }.x + { x: 10, y: 20 }.y` → 30
+  - **Key Decision:** Literal-only vs Full Expression Support
+    - Literal-only sufficient for unblocking ALL OPT-015 field access tests
+    - Follows existing pattern from compile_list/compile_tuple for consistency
+    - Future: Full expression support will require NewObject opcode
+  - **Limitation:** Spread operator not supported
+    - Blocked: `{ ...other }` - spread requires runtime object merging
+    - Workaround: None currently - will be addressed in future sprint
+  - **Files Modified:**
+    - src/runtime/bytecode/compiler.rs (+1 line: ExprKind::ObjectLiteral match, +54 lines: compile_object_literal)
+    - tests/opt_004_semantic_equivalence.rs (Suite 16: 4 object tests, Suite 17: 3 field access tests)
+  - **Impact:** Completes OPT-015 field access testing (tuples + objects now both working!)
+  - **Total:** All 92 semantic equivalence tests passing (85 → 92, +7 new tests, no regressions)
+
 - **[OPT-017] Bytecode VM Tuple Literals (Literal-Only - COMPLETE)**
   - Implemented tuple literal support in bytecode VM using constant pool approach
   - **Architecture:**
