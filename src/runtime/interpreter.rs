@@ -3212,7 +3212,7 @@ impl Interpreter {
     }
 
     /// Evaluate a method call
-    fn eval_method_call(
+    pub fn eval_method_call(
         &mut self,
         receiver: &Expr,
         method: &str,

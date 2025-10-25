@@ -18,6 +18,7 @@
 use super::instruction::Instruction;
 use super::opcode::OpCode;
 use super::compiler::BytecodeChunk;
+use crate::frontend::ast::Expr;
 use crate::runtime::{Interpreter, Value};
 use std::collections::HashMap;
 
@@ -483,6 +484,54 @@ impl VM {
 
                 // Store result in result register (last iteration's result, or Nil if empty)
                 self.registers[result_reg] = last_result;
+                Ok(())
+            }
+
+            OpCode::MethodCall => {
+                // OPT-014: Method call implementation (hybrid approach)
+                // ABx format: A = result register, Bx = method_call_idx constant
+                let result_reg = instruction.get_a() as usize;
+                let method_call_idx_const = instruction.get_bx() as usize;
+
+                // Get method call index from constant pool
+                let frame = self.call_stack.last()
+                    .ok_or("No active call frame")?;
+                let method_call_idx_value = frame.chunk.constants.get(method_call_idx_const)
+                    .ok_or_else(|| format!("Constant index out of bounds: {}", method_call_idx_const))?;
+
+                let method_call_idx = match method_call_idx_value {
+                    Value::Integer(idx) => *idx as usize,
+                    _ => return Err("Method call index must be an integer".to_string()),
+                };
+
+                // Get (receiver, method, args) from chunk's method_calls
+                let (receiver, method, args) = frame.chunk.method_calls.get(method_call_idx)
+                    .ok_or_else(|| format!("Method call index out of bounds: {}", method_call_idx))?;
+
+                // Synchronize register-based locals to interpreter scope
+                // This allows method bodies to access variables defined in bytecode mode
+                for (name, reg_idx) in frame.chunk.locals_map.iter() {
+                    let value = self.registers[*reg_idx as usize].clone();
+                    self.interpreter.set_variable(name, value);
+                }
+
+                // Convert Vec<Arc<Expr>> to Vec<Expr> for eval_method_call
+                let args_exprs: Vec<Expr> = args.iter().map(|arc| (**arc).clone()).collect();
+
+                // Execute method call using interpreter
+                let result = self.interpreter.eval_method_call(receiver, method, &args_exprs)
+                    .map_err(|e| format!("Method call error: {}", e))?;
+
+                // Synchronize interpreter scope back to registers
+                // This allows mutations inside methods to persist
+                for (name, reg_idx) in frame.chunk.locals_map.iter() {
+                    if let Some(value) = self.interpreter.get_variable(name) {
+                        self.registers[*reg_idx as usize] = value;
+                    }
+                }
+
+                // Store result in result register
+                self.registers[result_reg] = result;
                 Ok(())
             }
 
