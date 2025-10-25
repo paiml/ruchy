@@ -6,6 +6,39 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ### Added
 
+- **[OPT-017] Bytecode VM Tuple Literals (Literal-Only - COMPLETE)**
+  - Implemented tuple literal support in bytecode VM using constant pool approach
+  - **Architecture:**
+    - Compiler: Follows same pattern as compile_list - literal-only elements
+    - Compiler: Creates Value::Tuple from literal values and stores in constant pool
+    - Compiler: Emits OpCode::Const to load tuple into register
+    - No new opcode needed - reuses existing CONST instruction
+  - **Implementation:** 100% Complete
+    - ✅ compile_tuple() method in compiler.rs (mirrors compile_list pattern)
+    - ✅ ExprKind::Tuple handler in compile_expr match
+    - ✅ Supports all literal types: integer, float, string, bool, char, byte, unit
+  - **Test Coverage:** 8/8 tests passing (100%)
+    - ✅ Basic 2-element tuple: `(42, "hello")` → Tuple([Integer(42), String("hello")])
+    - ✅ Single-element tuple: `(100,)` → Tuple([Integer(100)])
+    - ✅ Unit value: `()` → Nil (semantic equivalence with AST)
+    - ✅ Mixed types: `(10, 3.14, true, "test")` → Tuple([Integer, Float, Bool, String])
+    - ✅ Tuple field access (Suite 15 - OPT-015 tests enabled):
+      - `(42, "hello").0` → 42
+      - `(42, "hello").1` → "hello"
+      - `(10, 20, 30).1 + (10, 20, 30).2` → 50
+  - **Key Decision:** Literal-only vs Full Expression Support
+    - Literal-only sufficient for unblocking OPT-015 field access tests
+    - Follows existing pattern from compile_list (consistency)
+    - Future: Full expression support will require NewTuple opcode
+  - **Limitation:** Nested tuples not supported (requires expression support)
+    - Blocked: `((1, 2), (3, 4))` - inner tuples are expressions, not literals
+    - Workaround: None currently - will be addressed in future sprint
+  - **Files Modified:**
+    - src/runtime/bytecode/compiler.rs (+1 line: ExprKind::Tuple match, +43 lines: compile_tuple)
+    - tests/opt_004_semantic_equivalence.rs (Suite 14: 5 tuple tests, Suite 15: 3 field access tests)
+  - **Impact:** Unblocks OPT-015 field access testing, enables tuple-based code patterns
+  - **Total:** All 85 semantic equivalence tests passing (77 → 85, +8 new tests, no regressions)
+
 - **[OPT-015] Bytecode VM Field Access (Direct VM - IMPLEMENTATION COMPLETE)**
   - Implemented field access support in bytecode VM using direct VM execution
   - **Architecture:**

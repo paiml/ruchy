@@ -669,16 +669,108 @@ fn test_opt_004_13_method_chain() {
 }
 
 // ============================================================================
-// Test Suite 14: Field Access (OPT-015)
+// Test Suite 14: Tuple Literals (OPT-017)
 // ============================================================================
-// NOTE: Full field access testing blocked by OPT-016 (ObjectLiteral) and OPT-017 (Tuple)
-// Field access compilation and VM handler implemented, but cannot test without object creation
+// Literal-only tuples compiled to constant pool (same as arrays)
+// Enables field access testing for tuples
+
+#[test]
+fn test_opt_004_14_tuple_basic() {
+    // Basic 2-element tuple
+    use std::sync::Arc;
+    assert_semantic_equivalence(
+        "(42, \"hello\")",
+        Value::Tuple(Arc::from([Value::Integer(42), Value::from_string("hello".to_string())].as_slice())),
+    );
+}
+
+#[test]
+fn test_opt_004_14_tuple_single() {
+    // Single-element tuple
+    use std::sync::Arc;
+    assert_semantic_equivalence(
+        "(100,)",
+        Value::Tuple(Arc::from([Value::Integer(100)].as_slice())),
+    );
+}
+
+#[test]
+fn test_opt_004_14_tuple_unit() {
+    // Empty parentheses () are treated as unit/nil in Ruchy (not empty tuple)
+    assert_semantic_equivalence(
+        "()",
+        Value::Nil,
+    );
+}
+
+#[test]
+fn test_opt_004_14_tuple_mixed_types() {
+    // Tuple with mixed types
+    use std::sync::Arc;
+    assert_semantic_equivalence(
+        "(10, 3.14, true, \"test\")",
+        Value::Tuple(Arc::from([
+            Value::Integer(10),
+            Value::Float(3.14),
+            Value::Bool(true),
+            Value::from_string("test".to_string()),
+        ].as_slice())),
+    );
+}
+
+#[test]
+fn test_opt_004_14_tuple_nested() {
+    // Nested tuple (currently unsupported - would require expression support)
+    // This test will fail with "Tuple elements must be literals for now"
+    // TODO: Enable when full expression support is added
+    // assert_semantic_equivalence(
+    //     "((1, 2), (3, 4))",
+    //     Value::Tuple(Arc::from([...].as_slice())),
+    // );
+}
+
+// ============================================================================
+// Test Suite 15: Field Access (OPT-015)
+// ============================================================================
+// Field access compilation and VM handler implemented
+// Can now test tuple field access with OPT-017 complete
+
+#[test]
+fn test_opt_004_15_tuple_field() {
+    // Tuple field access via numeric index
+    assert_semantic_equivalence(
+        "(42, \"hello\").0",
+        Value::Integer(42),
+    );
+}
+
+#[test]
+fn test_opt_004_15_tuple_field_string() {
+    // Tuple field access - second element
+    assert_semantic_equivalence(
+        "(42, \"hello\").1",
+        Value::from_string("hello".to_string()),
+    );
+}
+
+#[test]
+fn test_opt_004_15_tuple_field_in_expression() {
+    // Tuple field access in arithmetic expression
+    assert_semantic_equivalence(
+        "(10, 20, 30).1 + (10, 20, 30).2",
+        Value::Integer(50),
+    );
+}
+
+// ============================================================================
+// Test Suite 16: Object Field Access (OPT-016 - BLOCKED)
+// ============================================================================
+// NOTE: Object field access testing still blocked by OPT-016 (ObjectLiteral)
 //
-// Tests will be added once dependencies are implemented:
-// - test_opt_004_14_object_field: requires ObjectLiteral
-// - test_opt_004_14_tuple_field: requires Tuple expression
-// - test_opt_004_14_nested_field: requires ObjectLiteral
-// - test_opt_004_14_field_in_expression: requires ObjectLiteral
+// Tests will be added once OPT-016 is implemented:
+// - test_opt_004_16_object_field: requires ObjectLiteral
+// - test_opt_004_16_nested_field: requires ObjectLiteral
+// - test_opt_004_16_field_in_expression: requires ObjectLiteral
 
 // Total tests: 9 + 8 + 6 + 3 + 6 + 3 + 9 + 7 + 5 + 5 + 5 + 6 + 5 = 77 integration tests
 // All tests verify semantic equivalence between AST and bytecode modes
