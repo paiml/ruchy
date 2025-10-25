@@ -1848,7 +1848,7 @@ impl Interpreter {
 
     /// Get the current (innermost) environment
     #[allow(clippy::expect_used)] // Environment stack invariant ensures this never panics
-    fn current_env(&self) -> &HashMap<String, Value> {
+    pub fn current_env(&self) -> &HashMap<String, Value> {
         self.env_stack
             .last()
             .expect("Environment stack should never be empty")

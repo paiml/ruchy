@@ -904,12 +904,60 @@ fn test_opt_004_18_match_guard_fails() {
     );
 }
 
-// Total tests: 9 + 8 + 6 + 3 + 6 + 3 + 9 + 7 + 5 + 5 + 5 + 6 + 5 + 5 + 4 + 3 + 5 = 94 integration tests
+// Test Suite 19: Closures (OPT-019)
+
+#[test]
+fn test_opt_004_19_closure_no_capture() {
+    // Simple closure with no environment capture
+    assert_semantic_equivalence(
+        "{ let f = |x| x + 1; f(41) }",
+        Value::Integer(42),
+    );
+}
+
+#[test]
+fn test_opt_004_19_closure_single_capture() {
+    // Closure capturing single variable from environment
+    assert_semantic_equivalence(
+        "{ let y = 10; let f = |x| x + y; f(32) }",
+        Value::Integer(42),
+    );
+}
+
+#[test]
+fn test_opt_004_19_closure_multiple_captures() {
+    // Closure capturing multiple variables
+    assert_semantic_equivalence(
+        "{ let a = 10; let b = 20; let f = |x| x + a + b; f(12) }",
+        Value::Integer(42),
+    );
+}
+
+#[test]
+fn test_opt_004_19_closure_nested() {
+    // Nested closures with environment capture
+    assert_semantic_equivalence(
+        "{ let x = 10; let f = |y| { let g = |z| x + y + z; g(12) }; f(20) }",
+        Value::Integer(42),
+    );
+}
+
+#[test]
+fn test_opt_004_19_closure_multiple_params() {
+    // Closure with multiple parameters
+    assert_semantic_equivalence(
+        "{ let f = |x, y| x + y; f(10, 32) }",
+        Value::Integer(42),
+    );
+}
+
+// Total tests: 9 + 8 + 6 + 3 + 6 + 3 + 9 + 7 + 5 + 5 + 5 + 6 + 5 + 5 + 4 + 3 + 5 + 5 = 99 integration tests
 // All tests verify semantic equivalence between AST and bytecode modes
 // Suite 1: Updated to 9 tests (added 5 unary operator tests for OPT-005)
 // Suite 8: Updated to 7 tests (2 basic OPT-006, 5 with mutations OPT-009)
-// Suite 9: Added 5 tests for assignments (OPT-007), self-referencing bug fixed in OPT-008
+// Suite 9: Added 5 tests for assignments (OPT-007), self-referencing bug fixed in OPT-008)
 // Suite 18: Added 5 tests for match expressions (OPT-018)
+// Suite 19: Added 5 tests for closures (OPT-019)
 // Suite 10: 5 function call tests (OPT-011)
 // Suite 11: 5 for-loop tests (OPT-012)
 // Suite 12: 6 array indexing tests (OPT-013)

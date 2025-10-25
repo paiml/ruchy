@@ -74,6 +74,14 @@ pub enum OpCode {
     ShiftLeft = 0x1A,
     /// Bit shift right
     ShiftRight = 0x1B,
+    /// Create new object
+    NewObject = 0x1C,
+    /// Create new array
+    NewArray = 0x1D,
+    /// Create new closure
+    NewClosure = 0x1E,
+    /// Get type of object
+    GetType = 0x1F,
 
     // Logical Operations (0x20-0x2F)
     /// Equality comparison
@@ -94,6 +102,14 @@ pub enum OpCode {
     And = 0x27,
     /// Logical OR (short-circuit)
     Or = 0x28,
+    /// Check if object is instance of type
+    InstanceOf = 0x29,
+    /// Inline cache for property access
+    InlineCache = 0x2A,
+    /// Type specialization
+    Specialize = 0x2B,
+    /// Deoptimize to baseline code
+    Deoptimize = 0x2C,
 
     // Control Flow (0x30-0x3F)
     /// Unconditional jump
@@ -120,26 +136,6 @@ pub enum OpCode {
     MethodCall = 0x3A,
     /// Match expression (hybrid execution - delegates to interpreter)
     Match = 0x3B,
-
-    // Object Operations (0x40-0x4F)
-    /// Create new object
-    NewObject = 0x40,
-    /// Create new array
-    NewArray = 0x41,
-    /// Create new closure
-    NewClosure = 0x42,
-    /// Get type of object
-    GetType = 0x43,
-    /// Check if object is instance of type
-    InstanceOf = 0x44,
-
-    // Optimization Operations (0x50-0x5F)
-    /// Inline cache for property access
-    InlineCache = 0x50,
-    /// Type specialization
-    Specialize = 0x51,
-    /// Deoptimize to baseline code
-    Deoptimize = 0x52,
 }
 
 impl OpCode {
@@ -185,6 +181,10 @@ impl OpCode {
             0x19 => Some(Self::BitNot),
             0x1A => Some(Self::ShiftLeft),
             0x1B => Some(Self::ShiftRight),
+            0x1C => Some(Self::NewObject),
+            0x1D => Some(Self::NewArray),
+            0x1E => Some(Self::NewClosure),
+            0x1F => Some(Self::GetType),
 
             // Logical Operations
             0x20 => Some(Self::Equal),
@@ -196,6 +196,10 @@ impl OpCode {
             0x26 => Some(Self::Not),
             0x27 => Some(Self::And),
             0x28 => Some(Self::Or),
+            0x29 => Some(Self::InstanceOf),
+            0x2A => Some(Self::InlineCache),
+            0x2B => Some(Self::Specialize),
+            0x2C => Some(Self::Deoptimize),
 
             // Control Flow
             0x30 => Some(Self::Jump),
@@ -210,18 +214,6 @@ impl OpCode {
             0x39 => Some(Self::For),
             0x3A => Some(Self::MethodCall),
             0x3B => Some(Self::Match),
-
-            // Object Operations
-            0x40 => Some(Self::NewObject),
-            0x41 => Some(Self::NewArray),
-            0x42 => Some(Self::NewClosure),
-            0x43 => Some(Self::GetType),
-            0x44 => Some(Self::InstanceOf),
-
-            // Optimization Operations
-            0x50 => Some(Self::InlineCache),
-            0x51 => Some(Self::Specialize),
-            0x52 => Some(Self::Deoptimize),
 
             _ => None,
         }

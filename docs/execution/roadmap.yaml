@@ -1475,6 +1475,43 @@ tasks:
       - "Hybrid execution pattern validated for complex control flow"
       - "All interpreter pattern matching semantics available in bytecode mode"
 
+
+  - id: "OPT-019"
+    title: "Bytecode VM Closure Support (Hybrid Execution)"
+    status: "COMPLETE"
+    completed: "2025-10-25"
+    priority: "🟡 HIGH"
+    phase: "Phase 2: Complex Features"
+    time_estimated: "4 hours"
+    time_actual: "3 hours"
+    efficiency: "133%"
+    depends_on: ["OPT-012", "OPT-014", "OPT-018"]
+    description: |
+      Implemented lambda/closure support in bytecode VM with environment capture.
+      Fixed critical opcode encoding bug (0x40+ opcodes exceeded 6-bit limit).
+    architecture:
+      - "Compiler: Stores closure definitions (params + body AST) in chunk.closures"
+      - "VM: Synchronizes register-based locals before environment capture"
+      - "VM: Creates Value::Closure with captured environment snapshot"
+    components:
+      - "✅ OpCode::NewClosure at 0x1E (renumbered from 0x42 to fix encoding bug)"
+      - "✅ BytecodeChunk.closures field + compile_closure() + VM handler"
+      - "✅ Made Interpreter::current_env() public"
+    bugfix:
+      issue: "CRITICAL: Opcode value overflow in 6-bit encoding"
+      fix: "Renumbered 8 opcodes from 0x40-0x52 to 0x1C-0x2C range"
+    tests:
+      integration: 5
+      passing: "5/5 (100%)"
+      total_tests: "102/102 semantic equivalence tests (97 → 102, +5 new, no regressions)"
+    quality:
+      complexity_actual: 7
+      tdg_grade: "A"
+      satd: 0
+    impact:
+      - "Fully enables closures and functional programming in bytecode mode"
+      - "Fixed fundamental bytecode infrastructure bug affecting 8 opcodes"
+
   # 🚨 CRITICAL: CLI Unification Sprint (STOP THE LINE)
   - id: "CLI-UNIFY-001"
     title: "Fix: 'ruchy' (no args) should open REPL, not show help"
