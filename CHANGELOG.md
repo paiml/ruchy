@@ -6,6 +6,37 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ### Added
 
+- **[OPT-011] Bytecode VM Function Calls (Hybrid Execution)**
+  - Implemented function call support in bytecode VM using hybrid approach
+  - **Architecture:**
+    - Compiler: `compile_function` creates Value::Closure, stores in locals
+    - Compiler: `compile_call` emits OpCode::Call with register info in constant pool
+    - VM: OpCode::Call handler delegates closure body execution to interpreter
+  - **Test Coverage:** 5 semantic equivalence tests (Suite 10)
+    - test_opt_004_10_simple_function_call (no arguments)
+    - test_opt_004_10_function_with_one_arg (single argument)
+    - test_opt_004_10_function_with_multiple_args (multiple arguments)
+    - test_opt_004_10_nested_function_calls (complex nested case)
+    - test_opt_004_10_function_with_expression_args (expression arguments)
+  - **Implementation:** Hybrid model - bytecode for main flow, interpreter for function bodies
+  - **Files Modified:**
+    - src/runtime/bytecode/compiler.rs (+67 lines: compile_function, enhanced compile_call)
+    - src/runtime/bytecode/vm.rs (+85 lines: OpCode::Call handler with interpreter)
+    - tests/opt_004_semantic_equivalence.rs (+51 lines: 5 semantic equivalence tests)
+    - src/bin/ruchy.rs (+3 lines: fixed test initializers missing vm_mode field)
+  - **Full bytecode compilation** of function bodies deferred to future optimization
+  - Commit: ecc25eef
+  - Roadmap: docs/execution/roadmap.yaml (OPT-011)
+
+- **[OPT-012] Bytecode VM Array Literals (Partial)**
+  - Implemented ExprKind::List compilation for literal-only arrays
+  - Arrays like `[1, 2, 3]` compile to Value::Array in constant pool
+  - **Limitation:** Only supports literal elements (integers, floats, strings, bools)
+  - **For-loops BLOCKED:** Requires array indexing opcodes (OpCode::ArrayGet, OpCode::ArrayLen)
+  - **Next Steps:** Implement array indexing infrastructure before completing for-loop support
+  - Files Modified: src/runtime/bytecode/compiler.rs (compile_list method)
+  - 5 for-loop semantic equivalence tests written but currently failing (expected)
+
 - **[TEST-001] Comprehensive Box<T> and Vec<T> Generic Test Suite (PARSER-061/080)**
   - Created 18 comprehensive integration tests validating Box<T> and Vec<T> support
   - Tests verify features implemented in v3.96.0 (2025-10-19) work correctly
