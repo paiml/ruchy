@@ -183,7 +183,7 @@ impl Compiler {
             ExprKind::Binary { op, left, right } => self.compile_binary(op, left, right),
             ExprKind::Unary { op, operand} => self.compile_unary(op, operand),
             ExprKind::Identifier(name) => self.compile_variable(name),
-            ExprKind::Let { name, value, .. } => self.compile_let(name, value),
+            ExprKind::Let { name, value, body, .. } => self.compile_let(name, value, body),
             ExprKind::Block(exprs) => self.compile_block(exprs),
             ExprKind::If { condition, then_branch, else_branch } => {
                 self.compile_if(condition, then_branch, else_branch.as_deref())
@@ -319,14 +319,18 @@ impl Compiler {
     }
 
     /// Compile a let binding
-    fn compile_let(&mut self, name: &str, value: &Expr) -> Result<u8, String> {
+    ///
+    /// Stores the value in a register, records it in the locals table,
+    /// then compiles and returns the body expression.
+    fn compile_let(&mut self, name: &str, value: &Expr, body: &Expr) -> Result<u8, String> {
         let value_reg = self.compile_expr(value)?;
 
         // Store in locals table
         self.locals.insert(name.to_string(), value_reg);
         self.chunk.local_names.push(name.to_string());
 
-        Ok(value_reg)
+        // Compile and return the body expression result
+        self.compile_expr(body)
     }
 
     /// Compile a block expression
