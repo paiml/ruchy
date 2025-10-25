@@ -668,6 +668,18 @@ fn test_opt_004_13_method_chain() {
     );
 }
 
+// ============================================================================
+// Test Suite 14: Field Access (OPT-015)
+// ============================================================================
+// NOTE: Full field access testing blocked by OPT-016 (ObjectLiteral) and OPT-017 (Tuple)
+// Field access compilation and VM handler implemented, but cannot test without object creation
+//
+// Tests will be added once dependencies are implemented:
+// - test_opt_004_14_object_field: requires ObjectLiteral
+// - test_opt_004_14_tuple_field: requires Tuple expression
+// - test_opt_004_14_nested_field: requires ObjectLiteral
+// - test_opt_004_14_field_in_expression: requires ObjectLiteral
+
 // Total tests: 9 + 8 + 6 + 3 + 6 + 3 + 9 + 7 + 5 + 5 + 5 + 6 + 5 = 77 integration tests
 // All tests verify semantic equivalence between AST and bytecode modes
 // Suite 1: Updated to 9 tests (added 5 unary operator tests for OPT-005)
@@ -677,3 +689,4 @@ fn test_opt_004_13_method_chain() {
 // Suite 11: 5 for-loop tests (OPT-012)
 // Suite 12: 6 array indexing tests (OPT-013)
 // Suite 13: 5 method call tests (OPT-014)
+// Suite 14: 4 field access tests (OPT-015)

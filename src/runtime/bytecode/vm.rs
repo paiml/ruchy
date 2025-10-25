@@ -188,6 +188,58 @@ impl VM {
             }
 
             // Array indexing: arr[index]
+            OpCode::LoadField => {
+                // OPT-015: Field access implementation
+                // ABC format: A = dest_reg, B = object_reg, C = field_constant_idx
+                let dest = instruction.get_a() as usize;
+                let object_reg = instruction.get_b() as usize;
+                let field_idx = instruction.get_c() as usize;
+
+                // Get field name from constant pool
+                let frame = self.call_stack.last()
+                    .ok_or("No active call frame")?;
+                let field_value = frame.chunk.constants.get(field_idx)
+                    .ok_or_else(|| format!("Constant index out of bounds: {}", field_idx))?;
+                let field_name = match field_value {
+                    Value::String(s) => s.as_ref(),
+                    _ => return Err("Field name must be a string".to_string()),
+                };
+
+                // Get object from register
+                let object = &self.registers[object_reg];
+
+                // Extract field based on Value type
+                let result = match object {
+                    Value::Object(ref map) => {
+                        map.get(field_name)
+                            .cloned()
+                            .ok_or_else(|| format!("Field '{}' not found in object", field_name))
+                    }
+                    Value::Struct { ref fields, ref name } => {
+                        fields.get(field_name)
+                            .cloned()
+                            .ok_or_else(|| format!("Field '{}' not found in struct {}", field_name, name))
+                    }
+                    Value::Class { ref fields, ref class_name, .. } => {
+                        let fields_read = fields.read().unwrap();
+                        fields_read.get(field_name)
+                            .cloned()
+                            .ok_or_else(|| format!("Field '{}' not found in class {}", field_name, class_name))
+                    }
+                    Value::Tuple(ref elements) => {
+                        // Tuple field access (e.g., tuple.0, tuple.1)
+                        field_name.parse::<usize>()
+                            .ok()
+                            .and_then(|idx| elements.get(idx).cloned())
+                            .ok_or_else(|| format!("Tuple index '{}' out of bounds", field_name))
+                    }
+                    _ => Err(format!("Cannot access field '{}' on type {}", field_name, object.type_name())),
+                }?;
+
+                self.registers[dest] = result;
+                Ok(())
+            }
+
             OpCode::LoadIndex => {
                 let dest = instruction.get_a() as usize;
                 let object_reg = instruction.get_b() as usize;
