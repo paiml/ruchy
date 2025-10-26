@@ -390,6 +390,10 @@ harness = false
 name = "wasm_performance"
 harness = false
 
+[[bench]]
+name = "bytecode_vm_performance"
+harness = false
+
 # Commented out due to compilation errors
 # [[bench]]
 # name = "shared_session_performance"
