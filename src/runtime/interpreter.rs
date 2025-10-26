@@ -1129,7 +1129,7 @@ impl Interpreter {
     }
 
     /// Evaluate miscellaneous expressions
-    /// Complexity: 5 (reduced from ~17)
+    /// Complexity: 7 (was 5, added import handling)
     fn eval_misc_expr(&mut self, expr_kind: &ExprKind) -> Result<Value, InterpreterError> {
         if Self::is_type_definition(expr_kind) {
             return self.eval_type_definition(expr_kind);
@@ -1141,10 +1141,21 @@ impl Interpreter {
             return self.eval_special_form(expr_kind);
         }
 
-        // Fallback for unimplemented expressions
-        Err(InterpreterError::RuntimeError(format!(
-            "Expression type not yet implemented: {expr_kind:?}"
-        )))
+        // Handle import statements (GitHub Issue #59)
+        // Currently no-op until full module resolution is implemented
+        match expr_kind {
+            ExprKind::Import { .. } | ExprKind::ImportAll { .. } | ExprKind::ImportDefault { .. } => {
+                // TODO: Implement module resolution and symbol imports
+                // For now, import statements are valid but don't load anything
+                Ok(Value::Nil)
+            }
+            _ => {
+                // Fallback for unimplemented expressions
+                Err(InterpreterError::RuntimeError(format!(
+                    "Expression type not yet implemented: {expr_kind:?}"
+                )))
+            }
+        }
     }
 
     /// Helper: Evaluate spawn actor expression with proper nesting handling
