@@ -1,0 +1,73 @@
+//! QUALITY-015: Linting Example
+//!
+//! This example demonstrates the `ruchy lint` command and how it correctly
+//! distinguishes between functions and variables.
+//!
+//! Run with: ruchy lint examples/18_linting.ruchy
+//!
+//! Expected output:
+//! - Functions (add, greet, main) are NOT flagged as "unused variable"
+//! - Unused local variable "unused_var" IS flagged
+
+// ========== Section 1: Used Functions (NOT flagged) ==========
+
+// Function: add - called from main()
+fun add(a: i32, b: i32) -> i32 {
+    a + b
+}
+
+// Function: greet - called from main()
+fun greet(name: str) {
+    println("Hello, {}!", name)
+}
+
+// Helper function: multiply - called from calculate()
+fun multiply(x: i32, y: i32) -> i32 {
+    x * y
+}
+
+// Function: calculate - called from main()
+fun calculate(data: i32) -> i32 {
+    multiply(data, 2) + 10
+}
+
+// ========== Section 2: Main Function (NOT flagged) ==========
+
+fun main() {
+    // Used variables (NOT flagged)
+    let result = add(5, 3)
+    println("Result: {}", result)
+
+    // Used function call
+    greet("World")
+
+    // Used function call with chaining
+    let calc_result = calculate(5)
+    println("Calculated: {}", calc_result)
+
+    // ========== Section 3: Unused Variable (SHOULD be flagged) ==========
+
+    // This variable is declared but never used
+    // The linter SHOULD flag this as "unused variable: unused_var"
+    let unused_var = 42
+
+    println("Done")
+}
+
+// ========== Expected Lint Output ==========
+//
+// $ ruchy lint examples/18_linting.ruchy
+//
+// warning: unused variable: `unused_var`
+//   --> examples/18_linting.ruchy:51:9
+//    |
+// 51 |     let unused_var = 42
+//    |         ^^^^^^^^^^ this variable is declared but never used
+//    |
+//
+// Functions (add, greet, multiply, calculate, main) are NOT flagged
+// because they are properly recognized as functions, not variables.
+//
+// This demonstrates the QUALITY-015 fix where functions were previously
+// incorrectly flagged as "unused variable" due to being classified as
+// VarType::Local instead of VarType::Function.

@@ -4,6 +4,42 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.135.0] - 2025-10-26
+
+### Fixed
+
+- **[QUALITY-015] Linter Function False Positives** (GitHub Issue #15)
+  - **Achievement**: Functions no longer incorrectly flagged as "unused variable"
+  - **Root Cause**: Functions were defined with `VarType::Local` instead of `VarType::Function` (line 350)
+  - **Solution**: Added `VarType::Function` variant and updated function definition logic
+  - **Test Coverage**: 12/12 tests passing (100%)
+    - ✅ Section 1: Function Usage Detection (3/3) - Used functions not flagged
+    - ✅ Section 2: Mutual Function Calls (1/1) - Chained function calls work
+    - ✅ Section 3: Regression Tests (2/2) - Unused variables still flagged
+    - ✅ Section 4: Truly Unused Functions (1/1) - No crashes
+    - ✅ Section 5: GitHub Issue #15 Reproduction (2/2) - Exact cases fixed
+    - ✅ Section 6: Property-Based Tests (3/3) - 30K random test cases
+  - **Property Tests**: 30,000 random test cases (10K per property)
+    - Property 1: Used functions NEVER flagged as "unused variable"
+    - Property 2: Unused local variables ALWAYS flagged (regression check)
+    - Property 3: Main function NEVER flagged regardless of body
+  - **Mutation Tests**: Running (≥75% coverage target)
+  - **Files Modified**:
+    - src/quality/linter.rs:
+      * Line 48: Added `VarType::Function` enum variant
+      * Line 350: Changed function definition to use `VarType::Function`
+      * Lines 638-641: Added exhaustive match for unused checks
+      * Line 683: Added exhaustive match for error messages
+    - tests/quality_015_lint_function_false_positives.rs: Comprehensive test suite (391 lines)
+    - examples/18_linting.ruchy: Demonstrates correct lint behavior (68 lines)
+  - **Impact**:
+    - Linter now usable in CI/CD pipelines without false positives
+    - Functions correctly distinguished from local variables
+    - Regression tests ensure unused variable detection still works
+  - **Ticket**: QUALITY-015
+  - **GitHub Issue**: https://github.com/paiml/ruchy/issues/15
+  - **Related**: EXTREME TDD protocol - RED-GREEN-REFACTOR with property and mutation tests
+
 ## [3.134.0] - 2025-10-26
 
 ### Added
