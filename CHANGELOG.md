@@ -4,6 +4,30 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.132.0] - 2025-10-26
+
+### Added
+
+- **[PARSER-060] Module Resolution MVP Implementation** 🎯
+  - **Achievement**: Complete module resolution infrastructure for multi-file Ruchy projects
+  - **Components Implemented**:
+    - File path resolution (Rust-style `::` and Python-style `.` notation)
+    - File loading and parsing with error handling
+    - Symbol extraction (functions, structs, consts) from expression-based AST
+    - Module caching with `Rc` to avoid re-parsing
+  - **Test Coverage**: 14/20 tests passing (70%)
+    - ✅ Section 1: File Resolution (5/5) - 100%
+    - ✅ Section 2: File Loading & Parsing (3/3) - 100%
+    - ✅ Section 3: Symbol Extraction (4/4) - 100%
+    - ❌ Section 4: Import Execution (0/6) - Not yet implemented
+    - ✅ Section 5: Module Cache (2/2) - 100%
+  - **Files Created**:
+    - src/runtime/module_loader.rs (367 lines): Complete module resolution infrastructure
+    - tests/parser_060_module_resolution.rs (362 lines): Comprehensive RED-GREEN-REFACTOR tests
+  - **Architecture**: Expression-based AST (no statements), RefCell caching, proper Result error types
+  - **Ticket**: PARSER-060
+  - **Reference**: docs/design/module_resolution_mvp.md
+
 ## [3.131.0] - 2025-10-26
 
 ### Documentation

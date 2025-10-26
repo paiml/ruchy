@@ -70,6 +70,7 @@ pub mod dataflow_debugger;
 pub mod dataflow_ui;
 pub mod grammar_coverage;
 pub mod interpreter;
+pub mod module_loader; // PARSER-060: Module resolution and import system
 pub mod object_helpers; // EXTREME TDD: RefCell-based mutable objects
 pub mod value_utils;
 // Decomposed interpreter modules
