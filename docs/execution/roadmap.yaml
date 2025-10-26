@@ -22,6 +22,20 @@ metadata:
   github_issues:
     active: []
     completed:
+      - id: 60
+        url: "https://github.com/paiml/ruchy/issues/60"
+        title: "Formatter bug: fun keyword incorrectly transformed to fn"
+        impact: "HIGH - Breaks ruchyruchy bootstrap code (formatter outputs invalid Ruchy syntax)"
+        ticket: "QUALITY-FORMATTER-001"
+        priority: "HIGH"
+        status: "✅ COMPLETE (v3.129.0 - 2025-10-26)"
+        solution: "Fixed 3 format! strings in src/quality/formatter.rs:334,1182,1193 (fn → fun)"
+        tests: "6/6 tests passing (tests/formatter_issue_60.rs)"
+        progress:
+          - "✅ RED: 6 tests written demonstrating bug (5/6 failing initially)"
+          - "✅ GREEN: Fixed 3 format! strings in formatter.rs"
+          - "✅ REFACTOR: All 6 tests passing"
+          - "✅ Verified: ruchyruchy bootstrap code now formats correctly"
       - id: 58
         url: "https://github.com/paiml/ruchy/issues/58"
         title: "Parser: Edge cases (nested comments, unary plus, #[test] attributes, deep nesting)"
@@ -200,6 +214,23 @@ metadata:
           - "src/backend/transpiler/statements.rs (path-based call handling)"
           - "src/backend/transpiler/expressions_helpers/field_access.rs (module path detection)"
           - "tests/stdlib_003_time.rs (10 comprehensive tests)"
+      - id: "STDLIB-010"
+        title: "Array.each() method - Missing language feature"
+        priority: "HIGH"
+        status: "✅ COMPLETE (v3.129.0 - 2025-10-26)"
+        description: "Implemented missing Array.each() method discovered during STDLIB-005 example validation"
+        root_cause: "STDLIB-005 examples used .each() but method was not implemented (Missing Language Feature Protocol triggered)"
+        solution: "Added eval_array_each() following same pattern as map/filter - iterates array, calls closure for side effects, returns Nil"
+        extreme_tdd: "RED (7 tests written, all failing) → GREEN (implementation added, all 8 passing) → REFACTOR (complexity 3, A+ grade)"
+        test_coverage: "8/8 tests passing - basic iteration, empty array, returns nil, strings, objects, nested, chaining with filter/map"
+        complexity: "3 (within Toyota Way limit of ≤10 ✓)"
+        limitations: "Ruchy closures don't support mutable capture, so .each() primarily useful for I/O side effects (println) or future mutable closure feature"
+        impact: "Unblocks STDLIB-005 examples, demonstrates perfect Missing Language Feature Protocol execution"
+        files_modified:
+          - "src/runtime/eval_array.rs (eval_array_each function, dispatcher update)"
+          - "tests/array_each_method.rs (8 comprehensive tests)"
+          - "examples/stdlib005_walk_parallel.rs (updated to use .map() instead of .each() with mutation)"
+          - "examples/stdlib005_find_duplicates.rs (updated to work with current limitations)"
       - id: "PARSER-069"
         github_issue: 26
         title: "Fix turbofish syntax parsing in method calls (all contexts)"

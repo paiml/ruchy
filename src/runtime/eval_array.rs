@@ -62,6 +62,7 @@ where
         "any" => eval_array_any(arr, args, &mut eval_function_call_value),
         "all" => eval_array_all(arr, args, &mut eval_function_call_value),
         "find" => eval_array_find(arr, args, &mut eval_function_call_value),
+        "each" => eval_array_each(arr, args, &mut eval_function_call_value),
 
         _ => Err(InterpreterError::RuntimeError(format!(
             "Unknown array method: {method}"
@@ -350,6 +351,27 @@ where
         if func_result.is_truthy() {
             return Ok(item.clone());
         }
+    }
+    Ok(Value::Nil)
+}
+
+/// STDLIB-010: Array.each() method
+/// Iterates over array elements, calling closure for side effects
+/// Returns Nil (unlike map which returns transformed results)
+///
+/// Complexity: 3 (within Toyota Way limit of ≤10)
+fn eval_array_each<F>(
+    arr: &Arc<[Value]>,
+    args: &[Value],
+    eval_function_call_value: &mut F,
+) -> Result<Value, InterpreterError>
+where
+    F: FnMut(&Value, &[Value]) -> Result<Value, InterpreterError>,
+{
+    validate_single_closure_argument(args, "each")?;
+    for item in arr.iter() {
+        // Call closure for side effects, discard result
+        eval_function_call_value(&args[0], std::slice::from_ref(item))?;
     }
     Ok(Value::Nil)
 }
