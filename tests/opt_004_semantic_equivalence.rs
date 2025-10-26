@@ -13,6 +13,7 @@
 use ruchy::frontend::parser::Parser as RuchyParser;
 use ruchy::runtime::bytecode::{Compiler, VM};
 use ruchy::runtime::interpreter::{Interpreter, Value};
+use std::sync::Arc;
 
 /// Helper: Execute program in AST mode
 fn execute_ast(source: &str) -> Result<Value, String> {
@@ -951,13 +952,93 @@ fn test_opt_004_19_closure_multiple_params() {
     );
 }
 
-// Total tests: 9 + 8 + 6 + 3 + 6 + 3 + 9 + 7 + 5 + 5 + 5 + 6 + 5 + 5 + 4 + 3 + 5 + 5 = 99 integration tests
+// ============================================================================
+// Test Suite 20: Non-Literal Collections (OPT-020)
+// ============================================================================
+
+#[test]
+fn test_opt_004_20_array_with_variable() {
+    // Array with variable element (not literal)
+    assert_semantic_equivalence(
+        "{ let x = 10; [x, 20, 30] }",
+        Value::from_array(vec![Value::Integer(10), Value::Integer(20), Value::Integer(30)]),
+    );
+}
+
+#[test]
+fn test_opt_004_20_array_with_expression() {
+    // Array with expression elements
+    assert_semantic_equivalence(
+        "[1 + 1, 2 * 3, 10 / 2]",
+        Value::from_array(vec![Value::Integer(2), Value::Integer(6), Value::Integer(5)]),
+    );
+}
+
+#[test]
+fn test_opt_004_20_array_all_variables() {
+    // Array with all variable elements
+    assert_semantic_equivalence(
+        "{ let x = 1; let y = 2; let z = 3; [x, y, z] }",
+        Value::from_array(vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)]),
+    );
+}
+
+#[test]
+fn test_opt_004_20_array_mixed() {
+    // Array with mixed literals, variables, and expressions
+    assert_semantic_equivalence(
+        "{ let x = 10; [5, x, x + 5, 30] }",
+        Value::from_array(vec![Value::Integer(5), Value::Integer(10), Value::Integer(15), Value::Integer(30)]),
+    );
+}
+
+#[test]
+fn test_opt_004_20_tuple_with_variables() {
+    // Tuple with variable elements
+    assert_semantic_equivalence(
+        "{ let x = 1; let y = 2; (x, y, x + y) }",
+        Value::Tuple(vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)].into()),
+    );
+}
+
+#[test]
+fn test_opt_004_20_tuple_with_expressions() {
+    // Tuple with expression elements
+    assert_semantic_equivalence(
+        "(1 + 1, 2 * 2, 3 + 3)",
+        Value::Tuple(vec![Value::Integer(2), Value::Integer(4), Value::Integer(6)].into()),
+    );
+}
+
+#[test]
+fn test_opt_004_20_object_with_variable_value() {
+    // Object literal with computed value
+    assert_semantic_equivalence(
+        "{ let x = 42; { answer: x } }",
+        Value::Object(Arc::new(vec![("answer".to_string(), Value::Integer(42))].into_iter().collect())),
+    );
+}
+
+#[test]
+fn test_opt_004_20_object_with_expression_value() {
+    // Object literal with expression value
+    assert_semantic_equivalence(
+        "{ let x = 10; { result: x * 2, sum: x + 5 } }",
+        Value::Object(Arc::new(vec![
+            ("result".to_string(), Value::Integer(20)),
+            ("sum".to_string(), Value::Integer(15)),
+        ].into_iter().collect())),
+    );
+}
+
+// Total tests: 9 + 8 + 6 + 3 + 6 + 3 + 9 + 7 + 5 + 5 + 5 + 6 + 5 + 5 + 4 + 3 + 5 + 5 + 8 = 107 integration tests
 // All tests verify semantic equivalence between AST and bytecode modes
 // Suite 1: Updated to 9 tests (added 5 unary operator tests for OPT-005)
 // Suite 8: Updated to 7 tests (2 basic OPT-006, 5 with mutations OPT-009)
 // Suite 9: Added 5 tests for assignments (OPT-007), self-referencing bug fixed in OPT-008)
 // Suite 18: Added 5 tests for match expressions (OPT-018)
 // Suite 19: Added 5 tests for closures (OPT-019)
+// Suite 20: Added 8 tests for non-literal collections (OPT-020)
 // Suite 10: 5 function call tests (OPT-011)
 // Suite 11: 5 for-loop tests (OPT-012)
 // Suite 12: 6 array indexing tests (OPT-013)

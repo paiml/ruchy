@@ -19,6 +19,48 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ### Added
 
+- **[OPT-020] Bytecode VM Non-Literal Collections (Runtime Construction - COMPLETE)**
+  - Implemented support for variables and expressions in array/tuple/object literals
+  - **Problem Solved:** Previously only literal values worked in collections (blocked real-world use)
+  - **Architecture:**
+    - Compiler: Checks if all elements are literals → optimize to constant pool
+    - Compiler: Mixed literals/variables → compile expressions to registers, emit runtime construction opcodes
+    - Compiler: Stores element/field registers in `chunk.array_element_regs` and `chunk.object_fields`
+    - VM: Runtime construction from register values via `NewArray`, `NewTuple`, `NewObject` opcodes
+  - **Implementation:** 100% Complete
+    - ✅ OpCode::NewTuple at 0x2D (opcode.rs - new opcode)
+    - ✅ Updated compile_list() for non-literal array elements (compiler.rs)
+    - ✅ Updated compile_tuple() for non-literal tuple elements (compiler.rs)
+    - ✅ Updated compile_object_literal() for non-literal field values (compiler.rs)
+    - ✅ OpCode::NewArray VM handler for runtime array construction (vm.rs)
+    - ✅ OpCode::NewTuple VM handler for runtime tuple construction (vm.rs)
+    - ✅ OpCode::NewObject VM handler for runtime object construction (vm.rs)
+    - ✅ Added `chunk.array_element_regs` and `chunk.object_fields` storage (compiler.rs)
+  - **Test Coverage:** 8/8 tests passing (100%)
+    - **Arrays (4 tests):**
+      - ✅ `{ let x = 10; [x, 20, 30] }` → `[10, 20, 30]` (variable element)
+      - ✅ `[1 + 1, 2 * 3, 10 / 2]` → `[2, 6, 5]` (expression elements)
+      - ✅ `{ let x = 1; let y = 2; let z = 3; [x, y, z] }` → `[1, 2, 3]` (all variables)
+      - ✅ `{ let x = 10; [5, x, x + 5, 30] }` → `[5, 10, 15, 30]` (mixed)
+    - **Tuples (2 tests):**
+      - ✅ `{ let x = 1; let y = 2; (x, y, x + y) }` → `(1, 2, 3)` (variables)
+      - ✅ `(1 + 1, 2 * 2, 3 + 3)` → `(2, 4, 6)` (expressions)
+    - **Objects (2 tests):**
+      - ✅ `{ let x = 42; { answer: x } }` → `{ answer: 42 }` (variable value)
+      - ✅ `{ let x = 10; { result: x * 2, sum: x + 5 } }` → `{ result: 20, sum: 15 }` (expressions)
+  - **Key Decision:** Hybrid Compilation (Literal Optimization + Runtime Construction)
+    - All-literal collections: Compile to constant pool at compile-time (optimization)
+    - Mixed collections: Compile elements to registers, construct at runtime
+    - Enables realistic use cases: `let x = 10; [x, x+1, x+2]`
+  - **Files Modified:**
+    - src/runtime/bytecode/opcode.rs (+1 opcode: NewTuple at 0x2D)
+    - src/runtime/bytecode/compiler.rs (+2 fields: array_element_regs, object_fields)
+    - src/runtime/bytecode/compiler.rs (~60 lines: updated compile_list/tuple/object_literal)
+    - src/runtime/bytecode/vm.rs (+60 lines: NewArray/NewTuple/NewObject handlers)
+    - tests/opt_004_semantic_equivalence.rs (Suite 20 with 8 tests, all passing)
+  - **Impact:** Unblocks real-world code patterns with variables in collections
+  - **Total:** All 110 semantic equivalence tests passing (102 → 110, +8 new tests, no regressions)
+
 - **[OPT-019] Bytecode VM Closure Support (Hybrid Execution - COMPLETE)**
   - Implemented lambda/closure support in bytecode VM with environment capture
   - **Architecture:**
