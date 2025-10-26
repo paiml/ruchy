@@ -355,7 +355,7 @@ where
     Ok(Value::Nil)
 }
 
-/// STDLIB-010: Array.each() method
+/// STDLIB-010: `Array.each()` method
 /// Iterates over array elements, calling closure for side effects
 /// Returns Nil (unlike map which returns transformed results)
 ///
