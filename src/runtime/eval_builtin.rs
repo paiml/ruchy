@@ -1709,8 +1709,8 @@ fn eval_walk_with_options(args: &[Value]) -> Result<Value, InterpreterError> {
 ///
 /// **Perfect Architecture**:
 /// - Parallel I/O (directory walking is I/O-bound - biggest bottleneck)
-/// - Returns FileEntry array for composition with array methods
-/// - Users apply transformations via .map(), .filter(), etc (composable!)
+/// - Returns `FileEntry` array for composition with array methods
+/// - Users apply transformations via `.map()`, `.filter()`, etc (composable!)
 /// - No closure execution in builtin (keeps architecture clean)
 ///
 /// Example:
@@ -1779,7 +1779,7 @@ fn eval_walk_parallel(args: &[Value]) -> Result<Value, InterpreterError> {
 ///
 /// **Perfect Composable Design**:
 /// - Single responsibility: Just computes MD5 hash
-/// - Users compose with walk_parallel() for duplicate finding:
+/// - Users compose with `walk_parallel()` for duplicate finding:
 ///   ```ruby
 ///   walk_parallel("/data")
 ///       .filter(fn(e) { e.is_file })
@@ -1794,11 +1794,11 @@ fn eval_compute_hash(args: &[Value]) -> Result<Value, InterpreterError> {
         Value::String(path) => {
             // Read file and compute MD5 hash
             let content = std::fs::read(path.as_ref()).map_err(|e| {
-                InterpreterError::RuntimeError(format!("Failed to read file '{}': {}", path, e))
+                InterpreterError::RuntimeError(format!("Failed to read file '{path}': {e}"))
             })?;
 
             let digest = md5::compute(&content);
-            let hash_string = format!("{:x}", digest);
+            let hash_string = format!("{digest:x}");
 
             Ok(Value::String(hash_string.into()))
         }

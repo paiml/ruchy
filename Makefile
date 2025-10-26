@@ -1340,10 +1340,6 @@ lint-frontend:
 	@echo "✅ Frontend linting complete"
 
 # Generate frontend coverage report
-coverage-frontend:
-	@echo "📊 Generating frontend coverage..."
-	@echo "      Target: ≥80% coverage"
-
 # Clean E2E artifacts
 clean-e2e:
 	@echo "🧹 Cleaning E2E artifacts..."
