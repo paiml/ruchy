@@ -4,6 +4,20 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.130.0] - 2025-10-26
+
+### Added
+
+- **[PARSER-059] Runtime Support for Import Statements (GitHub Issue #59)** 🛑
+  - **Achievement**: STOP THE LINE - Runtime MUST support import syntax (user requirement)
+  - **Problem**: Import statements parsed correctly but errored at runtime with "Expression type not yet implemented"
+  - **Solution**: Extreme TDD implementation of runtime import handling
+  - **Test Coverage**: 20/20 tests passing (15 parsing + 3 property + 5 runtime)
+  - **Impact**: Unblocks ruchyruchy project and all multi-file Ruchy development
+  - **Files**: interpreter.rs (+14 lines), issue_059_module_imports.rs (+128 lines), issue_059_multi_file_project.rs (NEW: 199 lines)
+  - **Example**: `cargo run --example issue_059_multi_file_project`
+  - **Ticket**: PARSER-059, GitHub Issue #59
+
 ### Changed
 
 - **[QUALITY] Cargo Clippy Pre-commit Hook + Lint Compliance** 🧹
