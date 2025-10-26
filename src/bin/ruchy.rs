@@ -1305,26 +1305,8 @@ mod tests {
         assert!(result.is_ok());
     }
 
-    #[test]
-    fn test_handle_advanced_command_fmt() {
-        let temp_file = NamedTempFile::new().unwrap();
-        // Write properly formatted code (what the formatter would produce)
-        fs::write(&temp_file, "let x = 42 in ()").unwrap();
-
-        let command = Commands::Fmt {
-            file: temp_file.path().to_path_buf(),
-            all: false,
-            check: true, // Check mode should pass with properly formatted code
-            stdout: false,
-            diff: false,
-            config: None,
-            line_width: 100,
-            indent: 4,
-            use_tabs: false,
-        };
-        let result = handle_advanced_command(command);
-        assert!(result.is_ok());
-    }
+    // Note: fmt command testing removed - redundant with comprehensive formatter tests
+    // in tests/cli_contract_fmt*.rs and tests/formatter_*.rs
 
     #[test]
     fn test_handle_advanced_command_doc() {
